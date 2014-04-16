@@ -1,0 +1,10 @@
+channellatencydata 200
+
+top node 0 -> switch 0:0:0
+top node 1 -> switch 1:0:0
+top switch 0:1:1 -> switch 1:1:1
+
+route switch 0 -> 0 { 0 }
+route switch 0 -> 1 { 1 }
+route switch 1 -> 0 { 1 }
+route switch 1 -> 1 { 0 }

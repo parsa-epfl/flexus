@@ -1,0 +1,98 @@
+// This report gives the total cycle time breakdown from the Execute component,
+// summed across CPUs, for one measurement.  Be sure to specify which
+// measurement you want the report for on the stat-manager command line, or
+// it will choose one (essentially) at random.
+//
+"<MSMT>"
+"Time Breakdown"                    "User"                                                                  "System"
+"Accounted Cycles"                  <SUM:.*(-uarch|-V|-execute)-TB:User:AccountedCycles>                            <SUM:.*(-uarch|-V|-execute)-TB:System:AccountedCycles>
+"Commits:Busy"                      <SUM:.*(-uarch|-V|-execute)-TB:User:Commits:Busy>                               <SUM:.*(-uarch|-V|-execute)-TB:System:Commits:Busy>
+"Commits:Spin"                      <SUM:.*(-uarch|-V|-execute)-TB:User:Commits:Spin>                               <SUM:.*(-uarch|-V|-execute)-TB:System:Commits:Spin>
+" "
+"Unknown"                           <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Unknown>                                <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Unknown>
+"Busy"                              <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Busy>                                   <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Busy>
+"Dataflow"                          <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Dataflow>                               <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Dataflow>
+"DataflowBubble"                    <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:DataflowBubble>                         <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:DataflowBubble>
+"Spin:Busy"                         <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Spin:Busy>                              <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Spin:Busy>
+"Spin:SBNonEmpty"                   <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Spin:SBNonEmpty>                        <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Spin:SBNonEmpty>
+"Spin:Stall"                        <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Spin:Stall>                             <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Spin:Stall>
+"WillRaise:Load"                    <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:WillRaise:Load>                         <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:WillRaise:Load>
+"WillRaise:Store"                   <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:WillRaise:Store>                        <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:WillRaise:Store>
+"WillRaise:Atomic"                  <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:WillRaise:Atomic>                       <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:WillRaise:Atomic>
+"WillRaise:Branch"                  <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:WillRaise:Branch>                       <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:WillRaise:Branch>
+"WillRaise:MEMBAR"                  <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:WillRaise:MEMBAR>                       <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:WillRaise:MEMBAR>
+"WillRaise:Computation"             <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:WillRaise:Computation>                  <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:WillRaise:Computation>
+"WillRaise:Synchronizing"           <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:WillRaise:Synchronizing>                <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:WillRaise:Synchronizing>
+"WillRaise:Other"                   <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:WillRaise:Other>                        <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:WillRaise:Other>
+"Load:Forwarded"                    <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Load:Forwarded>                         <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Load:Forwarded>
+"Load:L1"                           <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Load:L1>                                <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Load:L1>
+"Load:L2"                           <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Load:L2>                                <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Load:L2>
+"Load:L2:Coherence"                 <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Load:L2:Coherence>                      <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Load:L2:Coherence>
+"Load:PB"                           <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Load:PB>                                <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Load:PB>
+"Load:PeerL1:Coherence:Modified"    <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Load:PeerL1:Coherence:Modified>         <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Load:PeerL1:Coherence:Modified>
+"Load:PeerL1:Coherence:Shared"      <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Load:PeerL1:Coherence:Shared>           <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Load:PeerL1:Coherence:Shared>
+"Load:Local:Cold"                   <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Load:Local:Cold>                        <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Load:Local:Cold>
+"Load:Local:Replacement"            <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Load:Local:Replacement>                 <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Load:Local:Replacement>
+"Load:Local:DGP"                    <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Load:Local:DGP>                         <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Load:Local:DGP>
+"Load:Local:Coherence"              <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Load:Local:Coherence>                   <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Load:Local:Coherence>
+"Load:Remote:Cold"                  <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Load:Remote:Cold>                       <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Load:Remote:Cold>
+"Load:Remote:Replacement"           <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Load:Remote:Replacement>                <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Load:Remote:Replacement>
+"Load:Remote:DGP"                   <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Load:Remote:DGP>                        <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Load:Remote:DGP>
+"Load:Remote:Coherence:Shared"      <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Load:Remote:Coherence:Shared>           <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Load:Remote:Coherence:Shared>
+"Load:Remote:Coherence:Modified"    <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Load:Remote:Coherence:Modified>         <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Load:Remote:Coherence:Modified>
+"Load:Remote:Coherence:Invalid"     <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Load:Remote:Coherence:Invalid>          <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Load:Remote:Coherence:Invalid>
+"Store:Unknown"                     <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Store:Unkown>                           <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Store:Unkown>
+"Store:Forwarded"                   <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Store:Forwarded>                        <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Store:Forwarded>
+"Store:L1"                          <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Store:L1>                               <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Store:L1>
+"Store:L2"                          <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Store:L2>                               <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Store:L2>
+"Store:L2:Coherence"                <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Store:L2:Coherence>                     <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Store:L2:Coherence>
+"Store:PB"                          <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Store:PB>                               <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Store:PB>
+"Store:PeerL1:Coherence:Modified"   <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Store:PeerL1:Coherence:Modified>        <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Store:PeerL1:Coherence:Modified>
+"Store:PeerL1:Coherence:Shared"     <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Store:PeerL1:Coherence:Shared>          <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Store:PeerL1:Coherence:Shared>
+"Store:Local:Cold"                  <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Store:Local:Cold>                       <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Store:Local:Cold>
+"Store:Local:Replacement"           <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Store:Local:Replacement>                <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Store:Local:Replacement>
+"Store:Local:DGP"                   <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Store:Local:DGP>                        <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Store:Local:DGP>
+"Store:Local:Coherence"             <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Store:Local:Coherence>                  <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Store:Local:Coherence>
+"Store:Remote:Cold"                 <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Store:Remote:Cold>                      <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Store:Remote:Cold>
+"Store:Remote:Replacement"          <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Store:Remote:Replacement>               <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Store:Remote:Replacement>
+"Store:Remote:DGP"                  <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Store:Remote:DGP>                       <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Store:Remote:DGP>
+"Store:Remote:Coherence:Shared"     <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Store:Remote:Coherence:Shared>          <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Store:Remote:Coherence:Shared>
+"Store:Remote:Coherence:Modified"   <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Store:Remote:Coherence:Modified>        <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Store:Remote:Coherence:Modified>
+"Store:Remote:Coherence:Invalid"    <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Store:Remote:Coherence:Invalid>         <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Store:Remote:Coherence:Invalid>
+"Store:SBFull"                      <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Store:SBFull>                           <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Store:SBFull>
+"Atomic:Forwarded"                  <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Atomic:Forwarded>                       <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Atomic:Forwarded>
+"Atomic:L1"                         <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Atomic:L1>                              <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Atomic:L1>
+"Atomic:L2"                         <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Atomic:L2>                              <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Atomic:L2>
+"Atomic:L2:Coherence"               <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Atomic:L2:Coherence>                    <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Atomic:L2:Coherence>
+"Atomic:PB"                         <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Atomic:PB>                              <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Atomic:PB>
+"Atomic:PeerL1:Coherence:Modified"  <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Atomic:PeerL1:Coherence:Modified>       <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Atomic:PeerL1:Coherence:Modified>
+"Atomic:PeerL1:Coherence:Shared"    <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Atomic:PeerL1:Coherence:Shared>         <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Atomic:PeerL1:Coherence:Shared>
+"Atomic:Local:Cold"                 <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Atomic:Local:Cold>                      <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Atomic:Local:Cold>
+"Atomic:Local:Replacement"          <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Atomic:Local:Replacement>               <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Atomic:Local:Replacement>
+"Atomic:Local:DGP"                  <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Atomic:Local:DGP>                       <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Atomic:Local:DGP>
+"Atomic:Local:Coherence"            <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Atomic:Local:Coherence>                 <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Atomic:Local:Coherence>
+"Atomic:Remote:Cold"                <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Atomic:Remote:Cold>                     <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Atomic:Remote:Cold>
+"Atomic:Remote:Replacement"         <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Atomic:Remote:Replacement>              <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Atomic:Remote:Replacement>
+"Atomic:Remote:DGP"                 <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Atomic:Remote:DGP>                      <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Atomic:Remote:DGP>
+"Atomic:Remote:Coherence:Shared"    <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Atomic:Remote:Coherence:Shared>         <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Atomic:Remote:Coherence:Shared>
+"Atomic:Remote:Coherence:Modified"  <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Atomic:Remote:Coherence:Modified>       <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Atomic:Remote:Coherence:Modified>
+"Atomic:Remote:Coherence:Invalid"   <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Atomic:Remote:Coherence:Invalid>        <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Atomic:Remote:Coherence:Invalid>
+"Atomic:SBDrain"                    <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Atomic:SBDrain>                         <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Atomic:SBDrain>
+"Uncached:Unknown"                  <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Uncached:Unknown>                       <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Uncached:Unknown>
+"Uncached:SBDrain"                  <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Uncached:SBDrain>                       <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Uncached:SBDrain>
+"MEMBAR"                            <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:MEMBAR>                                 <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:MEMBAR>
+"EmptyROB:FailedSpeculation"        <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:EmptyROB:FailedSpeculation>             <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:EmptyROB:FailedSpeculation>
+"EmptyROB:Exception"                <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:EmptyROB:Exception>                     <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:EmptyROB:Exception>
+"EmptyROB:Unknown"                  <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:EmptyROB:Unknown>                       <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:EmptyROB:Unknown>
+"EmptyROB:IStall"                   <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:EmptyROB:IStall>                        <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:EmptyROB:IStall>
+"EmptyROB:Mispredict"               <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:EmptyROB:Mispredict>                    <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:EmptyROB:Mispredict>
+"EmptyROB:Sync"                     <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:EmptyROB:Sync>                          <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:EmptyROB:Sync>
+"EmptyROB:Resync"                   <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:EmptyROB:Resync>                        <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:EmptyROB:Resync>
+"SideEffect:Atomic"                 <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:SideEffect:Atomic>                      <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:SideEffect:Atomic>
+"SideEffect:Load"                   <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:SideEffect:Load>                        <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:SideEffect:Load>
+"SideEffect:Store"                  <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:SideEffect:Store>                       <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:SideEffect:Store>
+"SideEffect:SBDrain"                <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:SideEffect:SBDrain>                     <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:SideEffect:SBDrain>
+"Branch"                            <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:Branch>                                 <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:Branch>
+"SyncPipe"                          <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:SyncPipe>                               <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:SyncPipe>
+"SyncWhileSpeculating"              <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:SyncWhileSpeculating>                   <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:SyncWhileSpeculating>
+"FailedSpeculation"                 <SUM:.*(-uarch|-V|-execute)-TB:User:Bkd:FailedSpeculation>                      <SUM:.*(-uarch|-V|-execute)-TB:System:Bkd:FailedSpeculation>

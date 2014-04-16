@@ -1,0 +1,127 @@
+### L1d
+flexus.set "-L1d:bsize"                                        "64" # "Block size" (BlockSize)
+flexus.set "-L1d:level"                                       "eL1" # "CacheLevel" (CacheLevel)
+flexus.set "-L1d:assoc"                                         "2" # "Set associativity" (Associativity)
+flexus.set "-L1d:block_scout"                                   "0" # "Use precise block sharing info" (BlockScout)
+flexus.set "-L1d:clean_evict"                                   "1" # "Issue clean evictions" (CleanEvictions)
+flexus.set "-L1d:erb_size"                                      "8" # "Evicted Region Buffer size" (ERBSize)
+flexus.set "-L1d:gzip_flexpoints"                               "1" # "Compress flexpoints with gzip" (GZipFlexpoints)
+flexus.set "-L1d:mt_width"                                      "1" # "Number of threads sharing this cache" (MTWidth)
+flexus.set "-L1d:notify_reads"                                  "0" # "Notify on reads (does not notify on fast-hit)" (NotifyReads)
+flexus.set "-L1d:notify_writes"                                 "0" # "Notify on writes" (NotifyWrites)
+flexus.set "-L1d:protocol"                          "InclusiveMESI" # "Name of the coherence protocol (InclusiveMOESI)" (Protocol)
+flexus.set "-L1d:rsize"                                      "1024" # "Region size in bytes" (RegionSize)
+flexus.set "-L1d:rt_assoc"                                     "16" # "RegionTracker Associativity" (RTAssoc)
+flexus.set "-L1d:rt_repl"                                     "LRU" # "RegionTracker replacement policy (SetLRU | RegionLRU)" (RTReplPolicy)
+flexus.set "-L1d:rt_size"                                    "8192" # "RegionTracker size (number of regions tracked)" (RTSize)
+flexus.set "-L1d:size"                                      "32768" # "Cache size in bytes" (Size)
+flexus.set "-L1d:skew_block_set"                                "0" # "skew block set indices based on rt way" (SkewBlockSet)
+flexus.set "-L1d:std_array"                                     "1" # "Use Standard Tag Array instead of RegionTracker" (StdArray)
+flexus.set "-L1d:text_flexpoints"                               "0" # "Store flexpoints as text files (compatible with old FastCache component)" (TextFlexpoints)
+flexus.set "-L1d:trace_tracker_on"                              "0" # "Turn trace tracker on/off" (TraceTracker)
+flexus.set "-L1d:using_traces"                                  "0" # "References are coming from traces (allow certain inconsistancies" (UsingTraces)
+flexus.set "-L1d:downgrade_lru"                                 "0"
+flexus.set "-L1d:snoop_lru"                                     "0"
+
+
+
+
+### L2
+flexus.set "-L2:bsize"                                         "64" # "Block size" (BlockSize)
+flexus.set "-L2:level"                                        "eL2" # "CacheLevel" (CacheLevel)
+flexus.set "-L2:CMPWidth"                                       "0" # "Number of cores per CMP chip (0 = sys width)" (CMPWidth)
+flexus.set "-L2:always_multicast"                               "0" # "Perform multicast instead of serial snooping" (AlwaysMulticast)
+flexus.set "-L2:assoc"                                         "16" # "Set associativity" (Associativity)
+flexus.set "-L2:clean_evict"                                    "0" # "Issue clean evictions" (CleanEvictions)
+flexus.set "-L2:coherence_unit"                                "64" # "Coherence Unit" (CoherenceUnit)
+flexus.set "-L2:directory_type"                     "Infinite:Loc=Distributed:Interleaving=64" # "Directory Type" (DirectoryType)
+flexus.set "-L2:erb_size"                                       "8" # "Evicted Region Buffer size" (ERBSize)
+flexus.set "-L2:protocol"                               "SingleCMP" # "Protocol Type" (Protocol)
+flexus.set "-L2:rsize"                                       "1024" # "Region size in bytes" (RegionSize)
+flexus.set "-L2:rt_assoc"                                      "16" # "RegionTracker Associativity" (RTAssoc)
+flexus.set "-L2:rt_size"                                     "8192" # "RegionTracker size (number of regions tracked)" (RTSize)
+flexus.set "-L2:seperate_id"                                    "1" # "Track Instruction and Data caches separately" (SeparateID)
+flexus.set "-L2:size"                                     "8388608" # "Cache size in bytes" (Size)
+flexus.set "-L2:std_array"                                      "1" # "Use Standard Tag Array instead of RegionTracker" (StdArray)
+flexus.set "-L2:trace_tracker_on"                               "0" # "Turn trace tracker on/off" (TraceTracker)
+flexus.set "-L2:repl"						"LRU"
+
+
+
+
+
+
+### magic-break
+# MagicBreak MagicBreak [timing+trace]
+flexus.set "-magic-break:ckpt_cycle"                            "0" # "# of cycles between checkpoints." (CkptCycleInterval)
+flexus.set "-magic-break:ckpt_cycle_name"                       "0" # "Base cycle # from which to build checkpoint names." (CkptCycleName)
+flexus.set "-magic-break:ckpt_iter"                             "0" # "Checkpoint simulation when CPU 0 reaches each iteration." (CheckpointOnIteration)
+flexus.set "-magic-break:ckpt_trans"                           "-1" # "Quiesce and save every X transactions. -1 disables" (CheckpointEveryXTransactions)
+flexus.set "-magic-break:end_iter"                             "-1" # "Terminate simulation when CPU 0 reaches iteration.  -1 disables" (TerminateOnIteration)
+flexus.set "-magic-break:end_trans"                            "-1" # "Terminate simulation after ## transactions.  -1 disables" (TerminateOnTransaction)
+flexus.set "-magic-break:first_trans"                           "0" # "Transaction number for first transaction." (FirstTransactionIs)
+flexus.set "-magic-break:iter"                                  "0" # "Enable Iteration Counts" (EnableIterationCounts)
+flexus.set "-magic-break:min_cycle"                             "0" # "Minimum number of cycles to run when TerminateOnTransaction is enabled." (CycleMinimum)
+flexus.set "-magic-break:stats_trans"                        "1000" # "Statistics interval on ## transactions.  -1 disables" (TransactionStatsInterval)
+flexus.set "-magic-break:stop_cycle"                            "0" # "Cycle on which to halt simulation." (StopCycle)
+flexus.set "-magic-break:stop_on_magic"                        "-1" # "Terminate simulation on a specific magic breakpoint" (TerminateOnMagicBreak)
+flexus.set "-magic-break:trans"                                 "1" # "Enable Transaction Counts" (EnableTransactionCounts)
+
+
+
+
+
+
+
+
+
+
+### feeder
+# DecoupledFeeder [trace]
+flexus.set "-feeder:CMPwidth"                                   "0" # "Number of cores per CMP chip (0 = sys width)" (CMPWidth)
+flexus.set "-feeder:decouple_addr_spaces"                       "0" # "Decouple instruction from data address spaces" (DecoupleInstrDataSpaces)
+flexus.set "-feeder:housekeeping_period"                     "1000" # "Simics cycles between housekeeping events" (HousekeepingPeriod)
+flexus.set "-feeder:ifetch"                                     "1" # "Track and report instruction fetches" (TrackIFetch)
+flexus.set "-feeder:simics_quantum"                           "100" # "CPU quantum size in simics" (SimicsQuantum)
+flexus.set "-feeder:stick"                                    "0.0" # "CPU System tick frequency. 0.0 leaves frequency unchanged" (SystemTickFrequency)
+flexus.set "-feeder:whitebox_debug"                             "0" # "WhiteBox debugging on/off" (WhiteBoxDebug)
+flexus.set "-feeder:whitebox_debug_period"                  "10000" # "WhiteBox period" (WhiteBoxPeriod)
+
+
+
+
+
+### L1i
+# FastNewRTCache [trace]
+flexus.set "-L1i:assoc"                                         "2" # "Set associativity" (Associativity)
+flexus.set "-L1i:block_scout"                                   "0" # "Use precise block sharing info" (BlockScout)
+flexus.set "-L1i:bsize"                                        "64" # "Block size" (BlockSize)
+flexus.set "-L1i:clean_evict"                                   "1" # "Issue clean evictions" (CleanEvictions)
+flexus.set "-L1i:erb_size"                                      "8" # "Evicted Region Buffer size" (ERBSize)
+flexus.set "-L1i:gzip_flexpoints"                               "0" # "Compress flexpoints with gzip" (GZipFlexpoints)
+flexus.set "-L1i:level"                                      "eL1I" # "CacheLevel" (CacheLevel)
+flexus.set "-L1i:mt_width"                                      "1" # "Number of threads sharing this cache" (MTWidth)
+flexus.set "-L1i:notify_reads"                                  "0" # "Notify on reads (does not notify on fast-hit)" (NotifyReads)
+flexus.set "-L1i:notify_writes"                                 "0" # "Notify on writes" (NotifyWrites)
+flexus.set "-L1i:protocol"                          "InclusiveMESI" # "Name of the coherence protocol (InclusiveMOESI)" (Protocol)
+flexus.set "-L1i:rsize"                                      "1024" # "Region size in bytes" (RegionSize)
+flexus.set "-L1i:rt_assoc"                                     "16" # "RegionTracker Associativity" (RTAssoc)
+flexus.set "-L1i:rt_repl"                                     "LRU" # "RegionTracker replacement policy (SetLRU | RegionLRU)" (RTReplPolicy)
+flexus.set "-L1i:rt_size"                                    "8192" # "RegionTracker size (number of regions tracked)" (RTSize)
+flexus.set "-L1i:size"                                      "32768" # "Cache size in bytes" (Size)
+flexus.set "-L1i:skew_block_set"                                "0" # "skew block set indices based on rt way" (SkewBlockSet)
+flexus.set "-L1i:std_array"                                     "1" # "Use Standard Tag Array instead of RegionTracker" (StdArray)
+flexus.set "-L1i:text_flexpoints"                               "1" # "Store flexpoints as text files (compatible with old FastCache component)" (TextFlexpoints)
+flexus.set "-L1i:trace_tracker_on"                              "0" # "Turn trace tracker on/off" (TraceTracker)
+flexus.set "-L1i:using_traces"                                  "0" # "References are coming from traces (allow certain inconsistancies" (UsingTraces)
+flexus.set "-L1i:downgrade_lru"                                 "0"
+flexus.set "-L1i:snoop_lru"                                     "0"
+
+
+
+
+
+
+### bpwarm
+# BPWarm [trace]
+flexus.set "-bpwarm:cores"                                      "1" # "Number of cores" (Cores)

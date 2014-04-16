@@ -1,0 +1,60 @@
+#!/bin/bash
+
+
+USER=`whoami`
+ORIGINAL_WD=`pwd`
+
+IS_X86_ARCH=0
+IS_V9_ARCH=1
+
+FLEXUS_ROOT="$ORIGINAL_WD/.."
+
+# Extract the Simics path from makefile.defs
+SIMICS_BASE=`grep "^SIMICS_PATH" $FLEXUS_ROOT/makefile.defs | sed -e "s/SIMICS_PATH=//"`
+IS_SIMICS_3=`grep USING_SIMICS_3 $FLEXUS_ROOT/makefile.defs | grep -v SIMICS_INCLUDE | grep "^#"`
+
+if [[ $IS_SIMICS_3 == "" ]] ; then 
+	USING_SIMICS_3=1
+	echo "Launching simulation using Flexus version 3.0.0 (using SIMICS 3 version)"
+else
+	USING_SIMICS_3=0
+	echo "Launching simulation using Flexus version 2.1.1 (using SIMICS 2 version)"
+fi
+
+if [[ $IS_V9_ARCH -eq 0 && $IS_X86_ARCH -eq 0 ]] ; then
+	echo "You must specify an architecture to use"
+	echo "Edit IS_V9_ARCH or IS_X86_ARCH in prepare-test-app script"
+	exit
+fi
+
+if [[ $IS_V9_ARCH -eq 1 ]] ; then 
+
+	if [[ $USING_SIMICS_3 -eq 0 ]] ; then 
+		cp $SIMICS_BASE/home/sarek/sarek-common.simics ./__tmp.simics
+		sed -e '/add_scsi_cdrom/ i @add_scsi_disk(board_no = 6, slot_no = 5, scsi_target = 1, size = 4256972800, files = [[\"flexus-test-app-disk_v9.craff\",0,0,4256972800]])' < __tmp.simics > sarek-common.simics
+		rm __tmp.simics
+	
+	else 
+		cp $SIMICS_BASE/targets/serengeti/serengeti-6800-system.include ./__tmp.simics
+		sed -e '/create-std-scsi-cdrom/ i $flex_disk = (create-std-scsi-disk scsi_id = 1 size = 4256972800 file = \"flexus-test-app-disk_v9.craff\")' -e '/$scsi_bus.connect $scsi_cdrom/ i $scsi_bus.connect $flex_disk' < ./__tmp.simics > serengeti-6800-system.include
+		rm __tmp.simics
+	fi
+
+	$SIMICS_BASE/scripts/start-simics -no-win -x prepare-test-app-v9.simics
+	#$SIMICS_BASE/scripts/start-simics -x prepare-test-app-v9.simics
+
+
+else
+
+	if [[ $USING_SIMICS_3 -eq 0 ]] ; then
+		echo "The x86 version of Flexus doesn't support Simics 2 or lower version."
+		echo "Please upgrade to Simics 3"
+		exit
+	fi
+	
+	$SIMICS_BASE/scripts/start-simics -x prepare-test-app-x86.simics -no-win
+	#$SIMICS_BASE/scripts/start-simics -x prepare-test-app-x86.simics
+
+fi
+
+echo "Done!"

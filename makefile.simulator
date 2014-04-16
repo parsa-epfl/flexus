@@ -1,0 +1,119 @@
+# Get variables from Makefile.defs
+###############
+include $(FLEXUS_ROOT)/makefile.defs
+
+.PHONY: default core install standalone simics standalone-x86 standalone-v9 simics-x86 simics-v9 depend
+
+# Include simulator-specific variables
+###############
+include Makefile.$(SIMULATOR)
+
+# Set the target to the default (standalone or simics) if none was passed in
+###############
+default: $(DEFAULT_TARGET)
+
+# determine which platform we are building for
+###############
+ifeq ($(SELECTED_PLATFORM),default)
+export TARGET_PLATFORM=$(DEFAULT_PLATFORM)
+else
+export TARGET_PLATFORM=$(SELECTED_PLATFORM)
+endif
+
+# Include variant-specific stuff
+include $(FLEXUS_ROOT)/makefile.variant
+
+# Ensure that we support the selected target and platform
+###############
+ifeq ($(SUPPORTS_STANDALONE),true)
+standalone: standalone-$(TARGET_PLATFORM)
+else
+standalone:
+	echo "Standalone target not supported for $(SIMULATOR)"
+endif
+
+ifeq ($(SUPPORTS_SIMICS),true)
+simics: simics-$(TARGET_PLATFORM)
+else
+simics:
+	echo "Simics target not supported for $(SIMULATOR)"
+endif
+
+ifeq ($(SUPPORTS_X86),true)
+standalone-x86: depend
+	$(ECHO) "Building $(SIMULATOR) for x86 standalone"
+	$(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.simulator_$(SELECTED_CC) $(SIMULATOR).$(VARIANT_EXT).deps $(BUILD_OPTIONS) SIMULATOR=$(SIMULATOR)
+	$(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.simulator_$(SELECTED_CC) $(SIMULATOR).$(VARIANT_EXT) $(BUILD_OPTIONS) SIMULATOR=$(SIMULATOR)
+simics-x86: depend
+	$(ECHO) "Building $(SIMULATOR) for x86 simics"
+	$(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.simulator_$(SELECTED_CC) libflexus_$(SIMULATOR)_$(VARIANT).so.deps $(BUILD_OPTIONS) SIMULATOR=$(SIMULATOR)
+	$(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.simulator_$(SELECTED_CC) libflexus_$(SIMULATOR)_$(VARIANT).so libflexus_$(SIMULATOR)_$(VARIANT).so $(BUILD_OPTIONS) SIMULATOR=$(SIMULATOR)
+else
+standalone-x86:
+	echo "x86 target platform not supported for $(SIMULATOR)"
+simics-x86:
+	echo "x86 target platform not supported for $(SIMULATOR)"
+endif
+
+ifeq ($(SUPPORTS_V9),true)
+standalone-v9: depend
+	$(ECHO) "Building $(SIMULATOR) for $(VARIANT) standalone"
+	$(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.simulator_$(SELECTED_CC) $(SIMULATOR).$(VARIANT_EXT).deps $(BUILD_OPTIONS) SIMULATOR=$(SIMULATOR)
+	$(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.simulator_$(SELECTED_CC) $(SIMULATOR).$(VARIANT_EXT) $(BUILD_OPTIONS) SIMULATOR=$(SIMULATOR)
+simics-v9: depend
+	$(ECHO) "Building $(SIMULATOR) for $(VARIANT) simics"
+	$(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.simulator_$(SELECTED_CC) libflexus_$(SIMULATOR)_$(VARIANT).so.deps $(BUILD_OPTIONS) SIMULATOR=$(SIMULATOR)
+	$(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.simulator_$(SELECTED_CC) libflexus_$(SIMULATOR)_$(VARIANT).so $(BUILD_OPTIONS) SIMULATOR=$(SIMULATOR)
+else
+standalone-v9:
+	echo "v9 target platform not supported for $(SIMULATOR)"
+simics-v9:
+	echo "v9 target platform not supported for $(SIMULATOR)"
+endif
+
+# Set up a depend target
+###############
+
+depend: Makefile.depend.$(VARIANT)
+
+.SUFFIXES:
+.SUFFIXES: .cpp .$(GCC_DEP_EXT)
+.SUFFIXES: .cpp .$(ICC_DEP_EXT)
+
+.cpp.$(GCC_DEP_EXT):
+	$(GCC) $(INCLUDES) $(VARIANT_DEFINES) $(GCC_DEPFLAGS) -MF $@ -MM -MT $*.$(GCC_OEXT) $<
+
+Makefile.depend.$(GCC_VARIANT): $(patsubst %.cpp,%.$(GCC_DEP_EXT),$(wildcard *.cpp))
+	cat $^ > Makefile.depend.$(GCC_VARIANT)
+
+.cpp.$(ICC_DEP_EXT):
+	$(GCC) $(INCLUDES) $(VARIANT_DEFINES) -MF $@ -MM -MT $(VARIANT_EXT).ipo_out.o $<
+
+Makefile.depend.$(ICC_VARIANT): $(patsubst %.cpp,%.$(ICC_DEP_EXT),$(wildcard *.cpp))
+	cat $^ > Makefile.depend.$(ICC_VARIANT)
+
+# Clean the simulator
+###############
+clean:
+	echo "Cleaning $(SIMULATOR)"
+	rm -f *.*cc_o
+	rm -f *.*_dep
+	rm -f Makefile.depend.*
+	rm -f *.ipo_out.o
+	rm -f module_id.icc_o
+	rm -f *.il
+	rm -f *.so
+	rm -f *.lst he.ps re.ps *.hex *.mcd_lnk
+
+# Clobber the simulator
+###############
+clobber: clean
+	echo "Clobbering $(SIMULATOR)"
+	rm -f $(SIMULATOR).*.?cc
+	rm -f *.rom *.cnt
+
+install:
+	$(MAKE) $(SILENT_MAKE) simics TARGET=simics
+	echo "This make target may not work anymore - I haven't fixed it. -twenisch"
+	echo "cp libflexus_$(SIMULATOR)_$(VARIANT).so $(SIMICS_LIB_DIR)"
+	cp libflexus_$(SIMULATOR)_$(VARIANT).so $(SIMICS_LIB_DIR)

@@ -1,0 +1,74 @@
+# Regression trace for the network simulator
+#
+# format:
+# sequence cpu op phys_addr value
+
+
+# Initialize... ALLOCATE PAGES
+0      0 LD 0x1000
+1      0 LD 0x2000
+2      0 LD 0x3000
+3      0 LD 0x4000
+4      0 LD 0x5000
+5      0 LD 0x6000
+6      0 LD 0x7000
+
+# Basic connectivity to the node, check how long uncontended hops take
+
+# 0 hop
+1000   0 LD 0x1100
+
+# 1 hop
+2000   1 LD 0x1200
+
+# 2 hops
+3000   2 LD 0x1300
+
+# 3 hops
+4000   6 LD 0x1400
+
+# 4 hops
+5000   10 LD 0x1500
+
+# Try to flood node 0, add more nodes each time....
+10000  1 LD 0x2000
+10001  2 LD 0x2000
+
+# Four nodes
+11000  1 LD 0x2040
+11001  2 LD 0x2040
+11003  3 LD 0x2040
+11004  4 LD 0x2040
+
+# Eight nodes
+12000  1 LD 0x2040
+12001  2 LD 0x2040
+12002  3 LD 0x2040
+12003  4 LD 0x2040
+12004  5 LD 0x2040
+12005  6 LD 0x2040
+12006  7 LD 0x2040
+12007  8 LD 0x2040
+
+# 15 nodes
+13000  1 LD 0x2080
+13001  2 LD 0x2080
+13002  3 LD 0x2080
+13003  4 LD 0x2080
+13004  5 LD 0x2080
+13005  6 LD 0x2080
+13006  7 LD 0x2080
+13007  8 LD 0x2080
+13008  9 LD 0x2080
+13009 10 LD 0x2080
+13010 11 LD 0x2080
+13011 12 LD 0x2080
+13012 13 LD 0x2080
+13013 14 LD 0x2080
+13014 15 LD 0x2080
+
+# Now we can cause a flood of invalidations
+14000 0 ST 0x2080
+
+15000 0 ST 0x2081
+20000 0 LD 0x0000

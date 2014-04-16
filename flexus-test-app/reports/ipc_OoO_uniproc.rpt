@@ -1,0 +1,2 @@
+IPC: <EXPR:{sys-uarch-Commits}/{sys-cycles}> +/- <EXPR:ci95{sys-uarch-Commits}*100>%
+User-mode IPC: <EXPR:{sys-uarch-Commits:NonSpin:User}/{sys-cycles}> +/- <EXPR:ci95{sys-uarch-Commits:NonSpin:User}*100>%

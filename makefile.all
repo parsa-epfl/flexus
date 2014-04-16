@@ -1,0 +1,22 @@
+include makefile.defs
+
+.PHONY: core
+
+# This makefile is called with:
+#	$@ set to the name of the directory in which to build the simulator
+#	TARGET_OPTIONS first word as the target to build for that simulator
+#	TARGET_OPTIONS second word as the compiler to use
+
+COMPONENTS = $(shell cd $(COMPONENTS_DIR); ls --ignore=CVS) 
+SIMULATORS = $(shell cd $(SIMULATORS_DIR); ls --ignore=CVS) 
+
+.PHONY: recurse $(COMPONENTS) $(SIMULATORS) stat-manager
+
+$(COMPONENTS) $(SIMULATORS) stat-manager:
+	$(MAKE) $@ 
+
+.DEFAULT:
+	$(MAKE) -f makefile.all recurse
+
+recurse: $(COMPONENTS) $(SIMULATORS) stat-manager
+	$(MAKE) core 

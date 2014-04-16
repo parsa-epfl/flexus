@@ -1,0 +1,21 @@
+#ARM Cortex A8 - In-order
+
+run-command-file "core.simics"
+run-command-file "L1d-32KB-2way.simics"
+run-command-file "L1i-32KB-2way.simics"
+run-command-file "L2-shared-2MB-16way.simics"
+run-command-file "memory.simics"
+run-command-file "network.simics"
+
+flexus.set "-fag:faddrs"                                        "2" # "Max fetch addresses generated per cycle" (MaxFetchAddress)
+flexus.set "-ufetch:miss_queue_size"                            "2" # "Maximum size of the fetch miss queue" (MissQueueSize)
+
+flexus.set "-decoder:dispatch"                                  "2" # "Maximum dispatch per cycle" (DispatchWidth)
+flexus.set "-decoder:fiq"                                       "2" # "Fetch instruction queue size" (FIQSize)
+
+flexus.set "-uarch:in_order_execute"                            "1" # "Ensure that instructions execute in order" (InOrderExecute)
+flexus.set "-uarch:retire"                                      "2" # "Retirement width" (RetireWidth)
+flexus.set "-uarch:rob"                                         "8" # "Reorder buffer size" (ROBSize)
+flexus.set "-uarch:sb"                                         "10" # "Store buffer size" (SBSize)
+flexus.set "-uarch:storeprefetch"                              "16" # "Simultaneous store prefeteches" (StorePrefetches)
+

@@ -1,0 +1,2 @@
+IPC: <EXPR:{sys-execute-Commits}/{sys-cycles}> +/- <EXPR:ci95{sys-execute-Commits}*100>%
+User-mode IPC: <EXPR:{sys-execute-Commits:User}/{sys-cycles}> +/- <EXPR:ci95{sys-execute-Commits:User}*100>%

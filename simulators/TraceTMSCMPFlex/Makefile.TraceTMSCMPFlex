@@ -1,0 +1,12 @@
+# Siren Simulator build description
+
+REQUIRED_COMPONENTS = Common DecoupledFeeder FastCache FastCMPCache BPWarm FastBus MagicBreak TMSTracer TraceTracker
+
+SUPPORTS_STANDALONE = false
+SUPPORTS_SIMICS = true
+DEFAULT_TARGET = simics
+SUPPORTS_X86 = true
+SUPPORTS_V9 = true
+DEFAULT_PLATFORM = v9
+
+SIMICS_CLASSES = CLS:Flexus;CLS:SimicsInterface;CLS:DecoupledFeeder

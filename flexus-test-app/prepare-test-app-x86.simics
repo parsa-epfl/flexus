@@ -1,0 +1,156 @@
+#Simics version 2
+# set up 1 processor with 256MB
+#@boards = {0 : [[0, 1, 256]]}
+# set up 8 processors with 256MB
+#@boards = {0 : [[0, 4, 256], [1, 4, 0]]}
+#@cpu_spaces = 1
+
+@test_app_threads = 1
+#@test_app_threads = 4
+
+@global ckptdir
+@ckptdir = "/net/icfiler3/vol/units/parsa/parsacom/workloads/ckpts/"
+
+add-directory "%simics%"
+add-directory "%simics%/targets/x86-440bx"
+add-directory `ckptdir` + "/flexus_test_app_x86/baseline/phase_000/simics"
+
+if `SIM_lookup_file("tango-common.simics")` {
+	# Simics 3.x
+    #edit $num_cpus variable to change the number of cpus in the system
+    $num_cpus = 1
+    #$num_cpus = 4
+    #edit $megs_per_cpu variable to change the RAM memory associated with each processor (in MB)
+    $megs_per_cpu = 256
+	
+	script-branch {
+	wait-for-variable machine_defined
+	local $sym = (create-pci-sym53c810)
+	local $scsi_bus = (create-std-scsi-bus)
+	local $scsi_disk = (create-std-scsi-disk "FLEXUS" scsi_id = 0 size = 18351872000 file = "flexus-test-app-disk_x86.image")
+	$nb.connect pci-slot2 $sym
+	$scsi_bus.connect $sym
+	$scsi_bus.connect $scsi_disk
+	}
+    run-command-file "tango-common.simics"
+}
+
+
+$con = ($console.get-component-object con)
+#We have to switch to text console to be able to 
+#execute the "wait_for_string" function
+$con.switch-to-text-console 
+
+########################################################################
+@global py
+@py = SIM_get_object("python")
+@global phase
+@phase = 0
+@do_login = 1
+
+@from text_console_common import wait_for_string
+
+@def do_at_prompt():
+    global phase, test_app_threads
+    wait_for_string(conf.con0, "tango login:")
+    conf.con0.input = "root\n"
+    wait_for_string(conf.con0, "Password:")
+    conf.con0.input = "simics\n"
+    wait_for_string(conf.con0, "#")
+    conf.con0.input = "mount /dev/sda /mnt; cd /mnt/src; ./filter ../inputs/filter.blur3x3 " + `test_app_threads` + " < ../inputs/calcm.ppm > ~/calcm.out.ppm\n"
+    phase = 100
+    SIM_break_simulation("End")
+
+@def call_back_Warmup(cpu):
+    global phase
+    phase = 1
+    pr("Warmup start call back triggered\n")
+    ### change switch cpu time to (1)
+    sim_commands.cpu_switch_time_cmd((cli.int_t,1))
+    SIM_break_simulation("")
+
+@def call_back_StartParallel(cpu):
+    global phase
+    phase = 2
+    pr("Parallel phase start call back triggered\n")
+    SIM_break_simulation("")
+
+@def call_back_EndParallel(cpu):
+    global phase
+    phase = 3
+    pr("Parallel phase end call back triggered\n")
+    SIM_break_simulation("")
+
+@def call_back_Iteration(cpu):
+    pr("Iteration call back triggered\n")
+
+@def hap_core_simulation_stopped_callback(data, obj, exc, str):
+    global phase
+    global ckptdir
+    if phase == 0:
+        print "Who is calling?"
+    elif phase == 1:
+        phase = 0
+        pr("Warmup start call back executed\n")
+        py.execute_string = "write-configuration " + ckptdir + "/flexus_test_app_x86/baseline/phase_000/simics/phase_000"
+        SIM_quit(0)
+    elif phase == 2:
+        phase = 0
+        pr("Parallel phase start call back executed\n")
+        py.execute_string = "write-configuration " + ckptdir + "/flexus_test_app_x86/baseline/phase_000/simics/phase_000"
+        SIM_continue(0)
+    elif phase == 3:
+        phase = 0
+        pr("Parallel phase end call back executed\n")
+    elif phase == 4:
+        phase = 0
+        pr("Iteration call back executed\n")
+        SIM_continue(0)
+    elif phase == 100:
+        phase = 0
+        pr("Prompt reached\n")
+        SIM_continue(0)
+    else:
+        print "Unknown callback, phase is", phase
+        SIM_break_simulation("snore")
+
+@def hap_magic_callback(dummy, cpu, arg):
+    pc = SIM_get_program_counter(cpu);
+    addr = SIM_logical_to_physical(cpu, Sim_DI_Instruction, pc) + 5;
+    aBreakpoint = SIM_read_phys_memory(cpu, addr, 4);
+    if ((aBreakpoint & 0xFFFF0000) != 0xDEAD0000): 
+        aBreakpoint = 0;
+    else:
+        aBreakpoint = aBreakpoint & 0x0FF;
+    if aBreakpoint == 1:
+        call_back_Warmup(cpu)
+    elif aBreakpoint == 2:
+        call_back_StartParallel(cpu)
+    elif aBreakpoint == 3:
+        call_back_EndParallel(cpu)
+    elif aBreakpoint == 4:
+        call_back_Iteration(cpu)
+#    elif arg == 0x666:
+#        phase = 0
+#    elif arg == 0x667:
+#        phase = 0
+#    elif arg == 0x668:
+#        phase = 0
+#    elif arg == 0x669:
+#        phase = 0
+#    elif arg == 0x670:
+#        phase = 0
+#    else:
+#        print "Unknown callback, arg is", arg, ". Ignoring..."
+
+##@SIM_hap_register_callback("Core_Magic_Instruction", hap_magic_callback, None)
+@SIM_hap_add_callback("Core_Magic_Instruction", hap_magic_callback, None)
+
+##@SIM_hap_register_callback("Core_Simulation_Stopped", hap_core_simulation_stopped_callback, None)
+@SIM_hap_add_callback("Core_Simulation_Stopped", hap_core_simulation_stopped_callback, None)
+
+
+@if do_login == 1:
+    start_branch(do_at_prompt)
+
+run

@@ -1,0 +1,194 @@
+//
+//  Remote Engine (RE) micro code definition file
+//  (aka IE, RMH)
+//
+//  re.mdef  version 1.00	Sept-21-1999
+//
+magic	3341			// key to match micro code with engine version
+next	11 20			// next address field
+//
+// Basic entry points for locally activated actions
+//
+EP	L_RD    		15
+EP	L_RDEX    		14
+EP	L_EX    		13
+EP	L_ITOD    		12
+EP	L_WB    		11
+EP	L_REPLMNT    		10
+EP	L_RD_STALE    		 9
+EP	L_RDEX_STALE  		 8
+EP	L_EX_STALE    		 7
+EP	L_ITOD_STALE   		 6
+EP	L_WB_STALE    		 5
+EP	L_REPLMNT_STALE		 4
+EP	L_UNCRD 		 3
+EP	L_UNCWR 		 2
+EP	RE_HALT   		 0	// micoinstruction at address 0 should be a NOP
+//
+// Entry points for remotely activated actions
+//
+EP	RD_FWD    		16
+EP	RDEX_FWD    		17
+EP	ITODINVAL_FWD  		18
+EP	INVAL_FWD    		19
+EP	CMINVAL_FWD    		20
+EP	RD_RPL    		21
+EP	RDEX_RPL    		22
+EP	EX_RPL    		23
+EP	EXFAIL_RPL    		24
+EP	EXCHECK_RPL    		25
+EP	ITOD_RPL    		26
+EP	WB_ACK    		27
+EP	REPLMNT_ACK    		28
+EP	INVAL_ACK    		29
+EP	RCV_TIMEOUT		30
+EP	ERROR_MSG       	31
+EP      EAGER_RPL               32      // ** FIX: get rid of these two
+// EP      RACE_ACK                33
+// EP	RDEXEAGER_RPL  		34      // *** FIX: is >31 allowed?
+// EP	EXEAGER_RPL    		35
+// EP	ITODEAGER_RPL  		36
+// EP	WBRACE_ACK    		37
+// EP	REPLMNTRACE_ACK		39
+//
+// Instructions
+//
+instr	SEND		0 2 0
+arg	S_format	7 8 0		// which format to use
+arg	L_format	7 8 1
+arg	home_dst	9 10 0		// which destination
+arg	fwd_dst	        9 10 1
+arg	next_dst        9 10 2
+arg	RD_REQ		3 6 0
+arg     RDEX_REQ        3 6 1
+arg     EX_REQ          3 6 2
+arg     EX_UNPEND_FAIL  3 6 3
+arg   EX_UNPEND_SUCCESS 3 6 4 
+arg     ITOD_REQ        3 6 5
+arg     WB_REQ          3 6 6
+arg     SHRWB_REQ       3 6 7
+arg     REPLMNT_REQ     3 6 8
+arg     SHRREPLMNT_REQ  3 6 9
+arg     INVAL_ACK       3 6 10
+arg     CMINVAL_FWD     3 6 11
+arg     RD_RPL          3 6 12
+arg     RDEX_RPL        3 6 13
+arg     ITOD_RPL        3 6 14
+arg	ERROR_MSG	3 6 15
+//
+instr	RECEIVE		0 2 1
+value	RD_FWD    	0
+value	RDEX_FWD    	1
+value	ITODINVAL_FWD  	2
+value	INVAL_FWD    	3
+value	CMINVAL_FWD    	4
+value	RD_RPL    	5
+value	RDEX_RPL    	6
+value	EX_RPL    	7
+value	EXFAIL_RPL    	8
+value	EXCHECK_RPL    	9
+value	ITOD_RPL    	10
+value	WB_ACK    	11
+value	REPLMNT_ACK    	12
+value	INVAL_ACK    	13
+value	RCV_TIMEOUT	14
+// value	ERROR_MSG       15
+value   EAGER_RPL       15
+// value	RDEXEAGER_RPL  	15              // *** FIX: cannot be >15
+// value	EXEAGER_RPL    	17
+// value	ITODEAGER_RPL  	18
+// value	WBRACE_ACK    	19
+// value	REPLMNTRACE_ACK	20
+//
+instr	LSEND		0 2 2
+arg	S_format	7 8 0		// which format to use
+arg	L_format	7 8 1
+// arg	S_REC_format	7 8 2               // BOTH send and receive
+// arg	NULL_REC_format	7 8 3               // not used
+arg	L1_dst  	9 10 0		// which destination
+arg	L2_dst	        9 10 1
+// *** FIX: need to reduce number of messages
+arg	L_RD_RPL	3 6 0           // L_format
+arg	L_RDONCE_RPL	3 6 1
+arg	L_RDEX_RPL	3 6 2
+arg     L_RDEXEAGER_RPL 3 6 3
+arg     L_MB_DECR       3 6 0           // S_format
+arg     L_EX_RPL        3 6 1
+arg     L_EXEAGER_RPL   3 6 2
+arg     L_ITOD_RPL      3 6 3
+arg     L_ITODEAGER_RPL 3 6 4  
+arg     L_RDEX_DONE     3 6 5
+arg     L_EX_DONE       3 6 6
+arg     L_ITOD_DONE     3 6 7
+arg     L_WB_DONE       3 6 8
+arg     L_REPLMNT_DONE  3 6 9
+//
+instr	LSEND_REC	0 2 6
+arg	S_format	7 8 0		// which format to use
+arg	L1_dst  	9 10 0		// which destination
+arg	L2_dst	        9 10 1
+// *** FIX: need to reduce number of messages
+arg     R_INVAL         3 6 0           // S_format
+arg     L_EX_STALE      3 6 1
+arg     L_WB_STALE      3 6 2
+arg     L_RPLMNT_STALE  3 6 3
+arg     WB_RPL_RD       3 6 4
+arg     R_RD            3 6 5
+arg     R_RDEX          3 6 6
+arg     R_ITODINVAL     3 6 7
+value   INVAL_ACK       0
+value   L_REQ_VALID     1
+value   WB_RPL_DATA     2
+value   DIRTY_DATA_RPL  3
+value   CLEAN_DATA_RPL  4
+value   LRCV_TIMEOUT    5
+// value   UNUSED_0        6
+// value   UNUSED_1        7
+//
+instr	TEST		0 2 3
+arg	flag    	3 5 0
+arg	dir_state	3 5 1
+arg	delayed_flag	3 5 2
+value	VALUE_0		0
+value	VALUE_1		1
+value	VALUE_2		2
+value	VALUE_3		3
+value	VALUE_4		4
+value	VALUE_5		5
+value	VALUE_6		6
+value	VALUE_7		7
+value	VALUE_8		8
+value	VALUE_9		9
+value	VALUE_10	10
+value	VALUE_11	11
+value	VALUE_12	12
+value	VALUE_13	13
+value	VALUE_14	14
+value	VALUE_15	15
+//
+instr	SET		        0 2 4
+arg	ZERO		        6 6 0
+arg	ONE		        6 6 1
+arg	flag    	        3 5 0
+arg	delayed_flag   	        3 5 1
+arg	counter    	        3 5 2
+arg	re_status    	        3 5 3
+arg	error    	        3 5 4
+arg	inval_race      	7 7 1
+arg	rdfwd_delayed      	7 7 1
+arg	decr_invalack_cnt      	7 7 1
+arg	packet_pndg      	7 7 1
+arg	error_0           	7 7 1
+arg	fwd_done           	8 8 1
+arg	rdexfwd_delayed        	8 8 1
+arg	wb_rpl_done           	9 9 1
+arg	itodinvalfwd_delayed   	9 9 1
+arg	L2_unpended           	10 10 1
+//
+instr   MOVE                    0 2 5
+arg     from_ibuf_req           3 6 0
+arg     from_tsrf_delayed       3 6 1
+arg     from_ibuf_invalcnt      3 6 2
+arg     to_tsrf_delayed         7 10 0
+arg     to_tsrf_active          7 10 1
+arg     addto_tsrf_invalack_cnt 7 10 2

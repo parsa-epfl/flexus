@@ -1,0 +1,45 @@
+include makefile.defs
+
+.PHONY: core
+
+# This makefile is called with:
+#	$@ set to the name of the directory in which to build the simulator
+#	TARGET_OPTIONS first word as the target to build for that simulator
+#	TARGET_OPTIONS second word as the compiler to use
+
+DEBUG_SETTING_OVERRIDE=$(filter crit dev trace iface verb vverb inv,$(TARGET_OPTIONS))
+DEBUG_SETTING=$(if $(DEBUG_SETTING_OVERRIDE),$(DEBUG_SETTING_OVERRIDE),iface)
+
+ICC_SELECTED=$(filter icc,$(TARGET_OPTIONS))
+DOXYGEN_SELECTED=$(filter doc,$(TARGET_OPTIONS))
+GCC_SELECTED=$(if $(ICC_SELECTED)$(DOXYGEN_SELECTED),$(filter gcc,$(TARGET_OPTIONS)),gcc)
+
+override X86_SELECTED=$(filter x86,$(TARGET_OPTIONS))
+override V9_SELECTED=$(if $(X86_SELECTED),$(filter v9,$(TARGET_OPTIONS)),v9)
+
+TARGET_NO_DEBUG=$(strip $(filter-out crit dev trace iface verb vverb inv,$(TARGET_OPTIONS)))
+TARGET_NO_COMP=$(strip $(filter-out icc,$(filter-out gcc,$(TARGET_NO_DEBUG))))
+TARGET=$(strip $(filter-out v9,$(filter-out x86,$(filter-out doc,$(TARGET_NO_COMP)))))
+
+.DEFAULT core:
+ifeq ($(GCC_SELECTED),gcc)
+ifeq ($(X86_SELECTED),x86)
+	cd $(CORE_DIR) ; $(MAKE) $(SILENT_MAKE) $(TARGET) SELECTED_CC=gcc TARGET_PLATFORM=x86 SELECTED_DEBUG=$(DEBUG_SETTING)
+endif
+ifeq ($(V9_SELECTED),v9)
+	cd $(CORE_DIR) ; $(MAKE) $(SILENT_MAKE) $(TARGET) SELECTED_CC=gcc TARGET_PLATFORM=v9 SELECTED_DEBUG=$(DEBUG_SETTING)
+endif
+endif
+
+ifeq ($(ICC_SELECTED),icc)
+ifeq ($(X86_SELECTED),x86)
+	cd $(CORE_DIR) ; $(MAKE) $(SILENT_MAKE) $(TARGET) SELECTED_CC=icc TARGET_PLATFORM=x86 SELECTED_DEBUG=$(DEBUG_SETTING)
+endif
+ifeq ($(V9_SELECTED),v9)
+	cd $(CORE_DIR) ; $(MAKE) $(SILENT_MAKE) $(TARGET) SELECTED_CC=icc TARGET_PLATFORM=v9 SELECTED_DEBUG=$(DEBUG_SETTING)
+endif
+endif
+
+ifeq ($(DOXYGEN_SELECTED),doc)
+	cd $(CORE_DIR) ; $(MAKE) $(SILENT_MAKE) doc
+endif

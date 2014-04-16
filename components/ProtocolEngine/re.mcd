@@ -1,0 +1,1200 @@
+//
+//  Remote Engine (RE) micro code
+//
+//  re.mcd  version 1.00	19Mar2003
+//
+
+#define   ReceivedNoInvalTest            VALUE_0   // which invalidation received (for InvalidationReceived)
+#define   ReceivedLocalInvalTest         VALUE_1
+#define   ReceivedRemoteInvalTest        VALUE_2
+#define   ReceivedInvalHandledTest       VALUE_3
+
+#define MOVE(src, dest)   ARITH_OP Left##src BITOR Right##src To##dest
+#define NOOP              ARITH_OP LeftInvalidationAckCount BITOR RightInvalidationAckCount ToInvalidationAckCount
+
+//
+// ********** Entry points for locally generated transactions **********
+//
+
+Local_Read::
+
+    // Conditions which get us here:
+    // Read miss on a remote address & invalid state
+
+    // This is a normal read req
+    SET VALUE IsPrefetchRead ToZero;
+
+    // prefetch read requests branch over here
+    // after setting IsPrefetchRead to one
+  local_read_ep:
+
+    SEND ReadReq ToDirectory;
+    SET VALUE InvalidationReceived ReceivedNoInval;
+
+  read_miss__ack_pending_no_inv_pending:
+
+    RECEIVE if (ReadAck || ReadFwd) {
+
+      TEST IsPrefetchRead if (VALUE_0) {
+        // respond to normal read req
+        CPU_OP MissReply;
+      } else {
+        // respond to prefetch read req
+        CPU_OP PrefetchReadReply;
+      };
+
+      // If we received an invalidation, we conservatively assume that the
+      // read request beat the write request that caused the invalidation
+      // so we should *only* satisfy this single load command. To achieve
+      // this, we send a miss reply and an invalidation back-to-back.
+      // Look at the protocol diagrams in the internal scaffold website
+      // for a thorough explanation of the rational behind this decision.
+      TEST InvalidationReceived if (ReceivedInvalHandledTest) {
+        CPU_OP Invalidate
+        goto read_miss__one_inv_pending;
+      } else
+        goto read_miss_done;
+
+    } elseif (LocalInvalidationReq) {
+
+      // The invalidation needs to propagate to the cpu to squash all speculative loads.
+      // The cache line is also invalidated, and a ReadAck is expected with the new data.
+      // NOTE: we may want to assert that we expect a ReadAck.
+      CPU_OP Invalidate;
+
+      // Remember receipt of invalidation and type
+      SET VALUE InvalidationReceived ReceivedLocalInval;
+      SET VALUE InvalidationAckReceiver ToDirectory
+
+      goto read_miss__ack_pending_one_inv_pending;
+
+    } elseif (RemoteInvalidationReq) {
+
+      // The invalidation needs to propagate to the cpu to squash all speculative loads.
+      // The cache line is also invalidated, and a ReadAck is expected with the new data.
+      // NOTE: we may want to assert that we expect a ReadAck.
+      CPU_OP Invalidate;
+
+      // Remember receipt of invalidation and type
+      SET VALUE InvalidationReceived ReceivedRemoteInval;
+      SET VALUE InvalidationAckReceiver ToRacer
+
+      goto read_miss__ack_pending_one_inv_pending;
+
+    } else
+      goto err_exit;
+
+  read_miss__ack_pending_one_inv_pending:
+
+    RECEIVE if (ReadAck || ReadFwd) {
+
+      TEST IsPrefetchRead if (VALUE_0) {
+        // respond to normal read req
+        CPU_OP MissReply;
+      } else {
+        // respond to prefetch read req
+        CPU_OP PrefetchReadReply;
+      };
+
+      // If we received an invalidation, we conservatively assume that the
+      // read request beat the write request that caused the invalidation
+      // so we should *only* satisfy this single load command. To achieve
+      // this, we send a miss reply and an invalidation back-to-back.
+      // Look at the protocol diagrams in the internal scaffold website
+      // for a thorough explanation of the rational behind this decision.
+      CPU_OP Invalidate
+
+      goto read_miss__two_inv_pending;
+
+    } elseif (InvAck) {
+
+
+      TEST InvalidationReceived if (ReceivedRemoteInvalTest) {
+
+        SEND_RACER RemoteInvalidationAck ToInvAckReceiver;
+        SET VALUE InvalidationReceived ReceivedInvalHandled
+        goto read_miss__ack_pending_no_inv_pending;
+
+      } elseif (ReceivedLocalInvalTest) {
+
+        SEND_RACER LocalInvalidationAck ToInvAckReceiver;
+        SET VALUE InvalidationReceived ReceivedInvalHandled
+        goto read_miss__ack_pending_no_inv_pending;
+
+      } else
+        goto err_exit;
+
+    } else
+      goto err_exit;
+
+  read_miss__two_inv_pending:
+    RECEIVE if (InvAck) {
+      NOOP
+      goto read_miss__one_inv_pending;
+    } else
+      goto err_exit;
+
+  read_miss__one_inv_pending:
+    RECEIVE if (InvAck) {
+
+      TEST InvalidationReceived if (ReceivedRemoteInvalTest) {
+
+        SEND_RACER RemoteInvalidationAck ToInvAckReceiver;
+        SET VALUE InvalidationReceived ReceivedInvalHandled
+        goto read_miss_done;
+
+      } elseif (ReceivedLocalInvalTest) {
+
+        SEND_RACER LocalInvalidationAck ToInvAckReceiver;
+        SET VALUE InvalidationReceived ReceivedInvalHandled
+        goto read_miss_done;
+
+      } else
+        //If we have already handled the inv (due to previous ack's), we are done
+        goto read_miss_done;
+
+    } elseif (LocalInvalidationReq) {
+
+      // The invalidation needs to propagate to the cpu to squash all speculative loads.
+      // The cache line is also invalidated, and a ReadAck is expected with the new data.
+      // NOTE: we may want to assert that we expect a ReadAck.
+      CPU_OP Invalidate;
+
+      // Remember receipt of invalidation and type
+      SET VALUE InvalidationReceived ReceivedLocalInval;
+      SET VALUE InvalidationAckReceiver ToDirectory
+
+      goto read_miss__two_inv_pending;
+
+    } elseif (RemoteInvalidationReq) {
+
+      // The invalidation needs to propagate to the cpu to squash all speculative loads.
+      // The cache line is also invalidated, and a ReadAck is expected with the new data.
+      // NOTE: we may want to assert that we expect a ReadAck.
+      CPU_OP Invalidate;
+
+      // Remember receipt of invalidation and type
+      SET VALUE InvalidationReceived ReceivedRemoteInval;
+      SET VALUE InvalidationAckReceiver ToRacer
+
+      goto read_miss__two_inv_pending;
+
+    } else
+      goto err_exit;
+
+
+
+  read_miss_done:
+
+    NOOP;
+    halt;
+
+
+
+Local_Prefetch_Read::
+    SET VALUE IsPrefetchRead ToOne
+    goto local_read_ep;
+
+    halt;
+
+
+Local_WriteAccess::
+
+    // Conditions which get us here:
+    // Write miss on a remote address & invalid state
+
+    SEND WriteReq ToDirectory;
+    SET VALUE InvalidationAckCount ToZero;
+
+  write_miss_expect_ack:
+
+    RECEIVE if (WriteFwd) {
+      CPU_OP MissWritableReply
+      goto write_miss_done;
+
+    } elseif (RemoteInvalidationReq) {
+
+      // The invalidation can be received because of the impresice sharers bitmask,
+      // or when the invalidation message beats an UpgradeAccess at the remote engine.
+      // In the latter case, the invalidation will change the UpgradeAccess into
+      // a WriteAccess all the way to the cpu, and invalidate the cache line.
+      // Since this is a transaction initiated by a WriteAccess, the cache has no
+      // valid data for the line. Sending the invalidation to the cache would do nothing,
+      // plus there are no speculative loads to squash. So, we optimize out the invalidation.
+      // CPU_OP Invalidate;
+
+      // The ack has to be sent back in all cases to avoid deadlock.
+      SEND_RACER RemoteInvalidationAck ToRacer
+      goto write_miss_expect_ack;
+
+    } elseif (LocalInvalidationReq) {
+
+      // The invalidation can be received because of the impresice sharers bitmask,
+      // or when the invalidation message beats an UpgradeAccess at the remote engine.
+      // In the latter case, the invalidation will change the UpgradeAccess into
+      // a WriteAccess all the way to the cpu, and invalidate the cache line.
+      // Since this is a transaction initiated by a WriteAccess, the cache has no
+      // valid data for the line. Sending the invalidation to the cache would do nothing,
+      // plus there are no speculative loads to squash. So, we optimize out the invalidation.
+      // CPU_OP Invalidate;
+
+      // The ack has to be sent back in all cases to avoid deadlock.
+      SEND LocalInvalidationAck ToDirectory
+      goto write_miss_expect_ack;
+
+    } elseif (RemoteInvalidationAck) {
+      SET INCREMENT InvalidationAckCount
+      goto write_miss_expect_ack;
+
+    } elseif (WriteAck) {
+
+      //Recored the AnyInvalidation flag our eventual MissWritableReply
+      MOVE(MsgAnyInvalidations, AnyInvalidations);
+
+      // calculate how many invAcks are left to receive
+      ARITH_OP LeftMsgInvalidationsCount SUB RightInvalidationAckCount ToInvalidationAckCount;
+
+      //************** TODO ****************************
+      //Move the data from the WriteAck into a TSRF register
+      // -- No instruction can do this right now --
+      //************** TODO ****************************
+
+  write_miss_expect_count:
+
+      TEST InvalidationAckCount if (!VALUE_0) {
+
+        RECEIVE if (RemoteInvalidationAck) {
+          SET DECREMENT InvalidationAckCount
+          goto write_miss_expect_count;
+
+        } elseif (DeferredJumpMessage) {
+          REFUSE
+          goto write_miss_expect_count;
+
+        } else
+          goto err_exit;
+
+      } else {
+
+        TEST HomeNodeSharer if (VALUE_0) {
+          // reply to cpu indicating no other sharers
+          //************** TODO ****************************
+          //The data should be coming from the TRSF entry, not from the message
+          CPU_OP MissWritableReply
+          goto write_miss_done;
+        } else {
+          // reply to cpu indicating there exist other sharers
+          //************** TODO ****************************
+          //The data should be coming from the TRSF entry, not from the message
+          CPU_OP MissWritableReply
+          goto write_miss_done;
+        };
+      };
+
+    } elseif (DeferredJumpMessage) {
+      REFUSE
+      goto write_miss_expect_ack;
+
+    } else
+      goto err_exit;
+
+  write_miss_done:
+
+    NOOP;
+    halt;
+
+
+
+Local_UpgradeAccess::
+
+    // Conditions which get us here:
+    // Upgrade miss on a remote address & shared state
+
+    SEND UpgradeReq ToDirectory;
+    SET VALUE InvalidationAckCount ToZero;
+    SET VALUE InvalidationReceived ReceivedNoInval;
+
+  upgrade_miss_expect_ack:
+
+    RECEIVE if (WriteFwd) {
+      CPU_OP MissWritableReply
+      goto upgrade_miss_done;
+
+    } elseif (RemoteInvalidationReq) {
+
+      // The invalidation needs to propagate to the cpu to squash all speculative loads.
+      // The cache line is also invalidated, and a WrFwd is expected with the new data.
+      // NOTE: we may want to assert that we expect a WriteFwd.
+      CPU_OP Invalidate;
+
+      // Remember receipt of invalidation and type
+      SET VALUE InvalidationReceived ReceivedRemoteInval;
+      SET VALUE InvalidationAckReceiver ToRacer
+
+      goto upgrade_miss_expect_ack;
+
+    } elseif (LocalInvalidationReq) {
+
+      // The invalidation needs to propagate to the cpu to squash all speculative loads.
+      // The cache line is also invalidated, and a WrFwd is expected with the new data.
+      // NOTE: we may want to assert that we expect a WriteFwd.
+      CPU_OP Invalidate;
+
+      // Remember receipt of invalidation and type
+      SET VALUE InvalidationReceived ReceivedLocalInval;
+      SET VALUE InvalidationAckReceiver ToDirectory
+
+      goto upgrade_miss_expect_ack;
+
+    } elseif (RemoteInvalidationAck) {
+      SET INCREMENT InvalidationAckCount
+      goto upgrade_miss_expect_ack;
+
+    } elseif (WriteAck) {
+
+      //Recored the home node sharer bit for our eventual MissWritableReply
+      MOVE(MsgAnyInvalidations, AnyInvalidations);
+
+      // calculate how many invAcks are left to receive
+      ARITH_OP LeftMsgInvalidationsCount SUB RightInvalidationAckCount ToInvalidationAckCount
+
+      //************** TODO ****************************
+      //Move the data from the WriteAck into a TSRF register
+      // -- No instruction can do this right now --
+      //************** TODO ****************************
+
+      //Note that this jump goes to write_miss_expect_count, in Local_Write
+      //above.  This avoids code duplication.  Once the invalidation ack count
+      //reaches zero, we want to send a MissWritableReply to the CPU.
+      goto write_miss_expect_count;
+
+    } elseif (UpgradeAck) {
+
+      // calculate how many invalAcks are expected
+      ARITH_OP LeftMsgInvalidationsCount SUB RightInvalidationAckCount ToInvalidationAckCount;
+
+      // move the AnyInvalidations flag from the message to the tsrf register
+      MOVE(MsgAnyInvalidations, AnyInvalidations);
+
+  upgrade_miss_expect_count:
+
+      TEST InvalidationAckCount if (!VALUE_0) {
+
+        RECEIVE if (RemoteInvalidationAck) {
+          SET DECREMENT InvalidationAckCount
+          goto upgrade_miss_expect_count;
+
+        } elseif (DeferredJumpMessage) {
+          REFUSE
+          goto upgrade_miss_expect_count;
+
+        } else
+          goto err_exit;
+
+      } else {
+
+        TEST HomeNodeSharer if (VALUE_0) {
+          // reply to cpu indicating no other sharers
+          CPU_OP UpgradeReply
+          goto upgrade_miss_done;
+        } else {
+          // reply to cpu indicating there exist other sharers
+          CPU_OP UpgradeReply
+          goto upgrade_miss_done;
+        };
+      };
+
+      // Cache or cpu acknowledges receipt of Invalidation
+    } elseif (InvAck) {
+
+      TEST InvalidationReceived if (ReceivedRemoteInvalTest) {
+
+        SEND_RACER RemoteInvalidationAck ToInvAckReceiver;
+        SET VALUE InvalidationReceived ReceivedNoInval
+        goto upgrade_miss_expect_ack;
+
+      } elseif (ReceivedLocalInvalTest) {
+
+        SEND_RACER LocalInvalidationAck ToInvAckReceiver;
+        SET VALUE InvalidationReceived ReceivedNoInval
+        goto upgrade_miss_expect_ack;
+
+      } else
+        goto err_exit;
+
+    } elseif (DeferredJumpMessage) {
+      REFUSE
+      goto upgrade_miss_expect_ack;
+
+    } else
+      goto err_exit;
+
+  upgrade_miss_done:
+
+    NOOP;
+    halt;
+
+
+Local_DropHint::
+
+    // Conditions which get us here:
+    // eviction on a remote address & shared state
+    NOOP;
+    halt;
+
+
+#define False VALUE_0
+#define True  VALUE_1
+
+Local_Evict::
+
+    // Conditions which get us here:
+    // eviction on a remote address & modified state
+
+    // Will indicate whether we received an InvAck/InvUpdateAck to an invalidate
+    // or a DowngradeAck to a downgrade (at RecallReadReq and FwdReadReq we should
+    // send the message up towards the cpu to notify the dgp and squash speculative
+    // loads). Subsequent InvAcks are responses to invalidation requests
+    // (LocalInvalReq, RemoteInvalReq, RecallWriteReq, FwdWriteReq).
+    // Note that the cpu will receive at most one invalidation and one downgrade.
+    SET_RACER InvAckForFwdExpected ToFalse;
+    SET_RACER DowngradeAckExpected ToFalse;
+    SET_RACER RequestReplyToRacer ToFalse;
+    SET_RACER FwdReqOrStaleAckExpected ToFalse;
+
+    // Indicates that we sent a WritebackReq and we expect a WritebackAck.
+    // Set it now instead of later. It could be the case that while
+    // waiting for the invalidate ack we receive a recall request which
+    // acts as a writeback ack in our case. But then, when the invalidate
+    // ack arrives, we want to send the writeback out but we no longer expect
+    // to see a writeback ack since the recall assumes that responsibility.
+    // The same may happen with fwd requests. Note that we are always
+    // required to send the writeback request, so we can safely assume
+    // that we expect either a reply, or a recall/fwd request.
+    SET_RACER WritebackAckExpected ToTrue;
+
+    // It indicates whether we received a LocalInvalidateReq or a RemoteInvalReq.
+    // The reason for having those is so that we can send back the appropriate reply
+    // when the InvAck arrives.
+    SET VALUE InvalidationReceived ReceivedNoInval;
+
+    // The way we implement non-inclusive caches, a local nevict message is
+    // sent to the PE only when the last copy of the dirty line is evicted out of
+    // the cache array it was stored. In all other cases, the evicting cache will
+    // allocate data at the higher level or update them.
+    SEND WritebackReq ToDirectory;
+
+ evict_expect_writebackAck:
+    // We cannot continue until we receive a WritebackAck or a Recall/Fwd request.
+
+    ///////////// Get an InvAck
+    // NOTE: can we receive an InvUpdateAck? The line is not cached at all,
+    // but what happens if a recall/fwd request races with the writeback?
+    RECEIVE if (InvAck || InvUpdateAck) {
+
+      // If an inv ack is expected due to a FwdWriteReq or a RecallWriteReq
+      TEST InvAckForFwdExpected if (True) {
+
+        // If a reply is requested, it must be a FwdWriteReq
+        TEST RequestReplyToRacer if (True) {
+
+          SEND_RACER WriteFwd ToFwdRequester;
+
+          // Remember you are done with the reply
+          SET_RACER RequestReplyToRacer ToFalse;
+        };
+
+        // else it is a RecallWriteReq, no need to do anything about it
+
+        // Remember you are done with the inv ack
+        SET_RACER InvAckForFwdExpected ToFalse;
+
+      // else the invack is received due to a local/remote invalidation
+      } else {
+
+        // send back replies
+        TEST InvalidationReceived if (ReceivedRemoteInvalTest) {
+          SEND_RACER RemoteInvalidationAck ToInvAckReceiver;
+
+        } elseif (ReceivedLocalInvalTest) {
+          SEND_RACER LocalInvalidationAck ToInvAckReceiver;
+
+        } else
+          goto err_exit;
+      };
+
+      // forget about the invalidation (response to an invalidation req sent)
+      SET VALUE InvalidationReceived ReceivedNoInval
+
+      // are we done yet?
+      goto evict_are_we_done;
+
+    ///////////// Get a WritebackAck
+    } elseif (WritebackAck) {
+      SET_RACER WritebackAckExpected ToFalse
+
+      // are we done yet?
+      goto evict_are_we_done;
+
+    /////////// Get a remote inval
+    // This can only happen with the SpuriousSharer optimization
+    } elseif (RemoteInvalidationReq) {
+
+      // We still need to notify the execute component
+      CPU_OP Invalidate;
+
+      // Remember receipt of invalidation and type, and racer
+      SET VALUE InvalidationReceived ReceivedRemoteInval;
+      SET VALUE InvalidationAckReceiver ToRacer
+
+      // wait for the writebackAck
+      goto evict_expect_writebackAck;
+
+    /////////// Get a local inval
+    // This can only happen with the SpuriousSharer optimization
+    } elseif (LocalInvalidationReq) {
+
+      // We still need to notify the execute component
+      CPU_OP Invalidate;
+
+      // Remember receipt of invalidation and type, and racer
+      SET VALUE InvalidationReceived ReceivedLocalInval;
+      SET VALUE InvalidationAckReceiver ToRacer
+
+      // wait for the writebackAck
+      goto evict_expect_writebackAck;
+
+    /////////// Get a DowngradeAck
+    // This can come because of a RecallReadReq
+    } elseif (DowngradeAck || DowngradeUpdateAck) {
+
+      // make sure we actually expect that...
+      TEST DowngradeAckExpected if (True) {
+
+        // if a reply is requested
+        TEST RequestReplyToRacer if (True) {
+
+          // must be a fwd read req
+          SEND_RACER ReadFwd ToFwdRequester;
+
+          // indicate we sent the reply
+          SET_RACER RequestReplyToRacer ToFalse;
+        };
+
+        // indicate we received the DowngradeAck
+        SET_RACER DowngradeAckExpected ToFalse
+
+        // are we done yet?
+        goto evict_are_we_done;
+
+      } else
+        goto err_exit;
+
+    /////////// two-level jump
+    } elseif (DeferredJumpMessage) {
+
+      /////////// got a read recall
+      RECEIVE_DEFERRED_JUMP if (RecallReadReq) {
+
+        // We still need to notify the dgp component
+        CPU_OP Downgrade;
+
+        // Indicate we expect a DowngradeAck
+        SET_RACER DowngradeAckExpected ToTrue;
+
+        // Force the recall req to act as a WritebackAck
+        SET_RACER WritebackAckExpected ToFalse;
+
+        // Make sure we do not attempt to send a reply
+        // The home node will consume the data out of the WritebackReq
+        // which will eventually receive, so no other reply is needed.
+        SET_RACER RequestReplyToRacer ToFalse
+
+        // We may get any of the DowngradeAck, InvAck, InvUpdateAck, WritebackAck
+        // LocalInvalidateReq, RemoteInvalidateReq, RecallWriteReq.
+        // Better go to the high-level code to handle all those...
+        goto evict_expect_writebackAck;
+
+      /////////// got a write recall
+      } elseif (RecallWriteReq) {
+
+        // Send the invalidation request to the cache hierarchy
+        CPU_OP Invalidate;
+
+        // remember you expect an InvAck
+        SET_RACER InvAckForFwdExpected ToTrue;
+
+        // Force the recall req to act as a WritebackAck
+        SET_RACER WritebackAckExpected ToFalse;
+
+        // Make sure we do not attempt to send a reply
+        // The home node will consume the data out of the WritebackReq
+        // which will eventually receive, so no other reply is needed.
+        SET_RACER RequestReplyToRacer ToFalse
+
+        // At this point, the node is not a sharer as far as the directory is concerned.
+        // The only packets we may get are InvAck/InvUpdateAck, WritebackAck.
+
+        // Now we should wait for the InvAck.
+        goto evict_expect_writebackAck;
+
+      /////////// got a forwarded read
+      } elseif (ForwardedReadReq) {
+
+       evict_received_FwdRdReq:
+
+        // WritebackStaleReadAck may have been received
+        // and all the necessary actions were taken there.
+        // If so, we may be done
+        TEST FwdReqOrStaleAckExpected if (True) {
+
+          SET_RACER FwdReqOrStaleAckExpected ToFalse
+
+          // are we done yet?
+          goto evict_are_we_done;
+
+        // We just received a fwd req
+        } else {
+
+
+          // Send the downgrade request to the cpu, it has to be notified...
+          CPU_OP Downgrade;
+
+          // indicate we expect a DowngradeAck
+          SET_RACER DowngradeAckExpected ToTrue;
+
+          // indicate we haven't replied to the racer yet
+          SET_RACER RequestReplyToRacer ToTrue;
+
+          // Remember racer
+          SET_RACER FwdRequester ToRacer;
+
+          // remember we received the fwd req
+          SET_RACER FwdReqOrStaleAckExpected ToTrue
+
+          goto evict_expect_writebackAck;
+        };
+
+      /////////// got a writeback stale read
+      } elseif (WritebackStaleReadAck) {
+
+        SET_RACER WritebackAckExpected ToFalse
+        goto evict_received_FwdRdReq;
+
+      /////////// got a fwd write
+      } elseif (ForwardedWriteReq) {
+
+       evict_received_FwdWrReq:
+
+        // WritebackStaleWriteAck may have been received
+        // and all the necessary actions were taken there.
+        // If so, we may be done
+        TEST FwdReqOrStaleAckExpected if (True) {
+
+          SET_RACER FwdReqOrStaleAckExpected ToFalse
+
+          // are we done yet?
+          goto evict_are_we_done;
+
+        // We just received a fwd req
+        } else {
+
+          // Send the invalidation request to the cache hierarchy
+          CPU_OP Invalidate;
+
+          // At this point, the node is not a sharer as far as the directory is concerned.
+          // The only packets we may get are InvAck/InvUpdateAck, WritebackStaleWriteAck.
+
+          // we expect an inv ack
+          SET_RACER InvAckForFwdExpected ToTrue;
+
+          // indicate we haven't replied to the racer yet
+          SET_RACER RequestReplyToRacer ToTrue;
+
+          // Remember racer
+          SET_RACER FwdRequester ToRacer;
+
+          // Remember we received a fwd req
+          SET_RACER FwdReqOrStaleAckExpected ToTrue
+
+          goto evict_expect_writebackAck;
+        };
+
+      /////////// got a writeback stale write
+      } elseif (WritebackStaleWriteAck) {
+
+        SET_RACER WritebackAckExpected ToFalse
+        goto evict_received_FwdWrReq;
+
+      } else
+        goto err_exit;
+
+    } else
+    goto err_exit;
+
+    // are we done yet?
+  evict_are_we_done:
+    TEST WritebackAckExpected if (False) {
+      TEST FwdReqOrStaleAckExpected if (False) {
+        TEST InvAckForFwdExpected if (False) {
+          TEST DowngradeAckExpected if (False) {
+            NOOP
+            goto evict_done;
+          };
+        };
+      };
+    };
+
+    NOOP
+    goto evict_expect_writebackAck;
+
+    // oh yes... we are done indeed.
+  evict_done:
+    NOOP;
+    halt;
+
+
+Local_Flush::
+
+    // Conditions which get us here:
+    // flush on a remote address & modified state
+
+    // Indicate whether we received a DowngradeAck/DowngradeUpdateAck for the flushed line.
+    // DowngradeAcks are responses to downgrade requests (RecallReadReq or FwdReadReq).
+    // InvAcks are responses to invalidation requests (LocalInvalReq, RemoteInvalReq,
+    // RecallWriteReq, FwdWriteReq). Note that the cpu will receive at most one invalidation
+    // and one downgrade.
+    SET_RACER InvAckForFwdExpected ToFalse;
+    SET_RACER DowngradeAckExpected ToFalse;
+    SET_RACER RequestReplyToRacer ToFalse;
+    SET_RACER FwdReqOrStaleAckExpected ToFalse;
+
+    // Indicates that we sent a Flush and we expect a FlushAck.
+    // Set it now instead of later. It could be the case that while
+    // waiting for the downgrade ack we receive a recall request
+    // which acts as a flush ack in our case. But then, when the downgrade ack
+    // arrives, we want to send the flush out but we no longer expect
+    // to see a flush ack since the recall assumes that responsibility.
+    // The same may happen with fwd requests. Note that we are always
+    // required to send the flush request, so we can safely assume
+    // that we expect either a reply, or a recall/fwd request.
+    SET_RACER WritebackAckExpected ToTrue;
+
+    // Will indicate whether we received a LocalInvalidateReq or a RemoteInvalReq.
+    // The reason for having those is so that we can send back the appropriate reply
+    // when the InvAck arrives.
+    SET VALUE InvalidationReceived ReceivedNoInval;
+
+    // Send out the flush request
+    SEND FlushReq ToDirectory;
+
+ flush_expect_flushAck:
+    // We cannot continue until we receive a FlushAck or a Recall/Fwd request.
+
+    ///////////// Get an InvAck
+    RECEIVE if (InvAck || InvUpdateAck) {
+
+      // If an inv ack is expected due to a FwdWriteReq or a RecallWriteReq
+      TEST InvAckForFwdExpected if (True) {
+
+        // If a reply is requested, it must be a FwdWriteReq
+        TEST RequestReplyToRacer if (True) {
+
+          // NOTE: do we need to send a reply back?
+          // I think so (in order to enforce strict memory ordering)...
+          // SEND ForwardedWriteAck ToDirectory;
+
+          SEND_RACER WriteFwd ToFwdRequester;
+
+          // Remember you are done with the reply
+          SET_RACER RequestReplyToRacer ToFalse;
+
+        // else it is a RecallWriteReq
+        } else {
+
+          // NOTE: do we need to send a reply back?
+          // I think so (in order to enforce strict memory ordering)...
+          // SEND RecallWriteAck ToDirectory;
+          NOOP;
+
+        };
+
+        // Remember you are done with the inv ack
+        SET_RACER InvAckForFwdExpected ToFalse;
+
+      // else the invack is received due to a local/remote invalidation
+      } else {
+
+        // send back replies
+        TEST InvalidationReceived if (ReceivedRemoteInvalTest) {
+          SEND_RACER RemoteInvalidationAck ToInvAckReceiver;
+
+        } elseif (ReceivedLocalInvalTest) {
+          SEND_RACER LocalInvalidationAck ToInvAckReceiver;
+
+        } else
+          goto err_exit;
+      };
+
+      // forget about the invalidation (response to an invalidation req sent)
+      SET VALUE InvalidationReceived ReceivedNoInval
+
+      // are we done yet?
+      goto flush_are_we_done;
+
+    ///////////// Get a FlushAck
+    } elseif (FlushAck) {
+      SET_RACER WritebackAckExpected ToFalse
+
+      // are we done yet?
+      goto flush_are_we_done;
+
+    /////////// Get a remote inval
+    // This can only happen with the SpuriousSharer optimization
+    } elseif (RemoteInvalidationReq) {
+
+      // We still need to notify the execute component
+      CPU_OP Invalidate;
+
+      // Remember receipt of invalidation and type, and racer
+      SET VALUE InvalidationReceived ReceivedRemoteInval;
+      SET VALUE InvalidationAckReceiver ToRacer
+
+      // wait for the flushAck
+      goto flush_expect_flushAck;
+
+    /////////// Get a local inval
+    // This can only happen with the SpuriousSharer optimization
+    } elseif (LocalInvalidationReq) {
+
+      // We still need to notify the execute component
+      CPU_OP Invalidate;
+
+      // Remember receipt of invalidation and type, and racer
+      SET VALUE InvalidationReceived ReceivedLocalInval;
+      SET VALUE InvalidationAckReceiver ToRacer
+
+      // wait for the flushAck
+      goto flush_expect_flushAck;
+
+    /////////// two-level jump
+    } elseif (DeferredJumpMessage) {
+
+      /////////// got a read recall
+      RECEIVE_DEFERRED_JUMP if (RecallReadReq) {
+
+        // Force the recall req to act as a FlushAck
+        SET_RACER WritebackAckExpected ToFalse
+
+        // We may get any of the DowngradeAck, InvAck, InvUpdateAck, FlushAck
+        // LocalInvalidateReq, RemoteInvalidateReq, RecallWriteReq.
+        // Better go to the high-level code to handle all those...
+
+        // are we done yet?
+        goto flush_are_we_done;
+
+      /////////// got a write recall
+      } elseif (RecallWriteReq) {
+
+        // Send the invalidation request to the cache hierarchy
+        CPU_OP Invalidate;
+
+        // remember you expect an InvAck
+        SET_RACER InvAckForFwdExpected ToTrue;
+
+        // Force the recall req to act as a FlushAck
+        SET_RACER WritebackAckExpected ToFalse;
+
+        // Make sure we do not attempt to send a reply
+        // The home node will consume the data out of the WritebackReq
+        // which will eventually receive, so no other reply is needed.
+        SET_RACER RequestReplyToRacer ToFalse
+
+        // At this point, the node is not a sharer as far as the directory is concerned.
+        // The only packets we may get are InvAck/InvUpdateAck, WritebackAck.
+
+        // We have to wait for invAcks...
+        goto flush_expect_flushAck;
+
+      /////////// got a forwarded read
+      } elseif (ForwardedReadReq) {
+
+       flush_received_FwdRdReq:
+
+        // WritebackStaleReadAck may have been received
+        // and all the necessary actions were taken there.
+        // If so, we may be done
+        TEST FwdReqOrStaleAckExpected if (True) {
+
+          SET_RACER FwdReqOrStaleAckExpected ToFalse
+
+          // are we done yet?
+          goto flush_are_we_done;
+
+        // We just received a fwd req
+        } else {
+
+          // We have the data, so send a FwdRead immediately
+          SEND_RACER ReadFwd ToRacer;
+
+          // Remember we received the ForwardedReadReq and we expect
+          // the WritebackStaleReadAck, or the other way around.
+          SET_RACER FwdReqOrStaleAckExpected ToTrue
+
+          goto flush_expect_flushAck;
+        };
+
+      /////////// got a writeback stale read
+      } elseif (WritebackStaleReadAck) {
+
+        SET_RACER WritebackAckExpected ToFalse
+        goto flush_received_FwdRdReq;
+
+      /////////// got a fwd write
+      } elseif (ForwardedWriteReq) {
+
+       flush_received_FwdWrReq:
+
+        // WritebackStaleWriteAck may have been received
+        // and all the necessary actions were taken there.
+        // If so, we may be done
+        TEST FwdReqOrStaleAckExpected if (True) {
+
+          SET_RACER FwdReqOrStaleAckExpected ToFalse
+
+          // are we done yet?
+          goto flush_are_we_done;
+
+        // We just received a fwd req
+        } else {
+
+
+          // Send the invalidation request to the cache hierarchy
+          CPU_OP Invalidate;
+
+          // At this point, the node is not a sharer as far as the directory is concerned.
+          // The only packets we may get are InvAck/InvUpdateAck, WritebackStaleWriteAck.
+
+          // we expect an inv ack
+          SET_RACER InvAckForFwdExpected ToTrue;
+
+          // indicate we haven't replied to the racer yet
+          SET_RACER RequestReplyToRacer ToTrue;
+
+          // Remember racer
+          SET_RACER FwdRequester ToRacer;
+
+          // Remember we received a fwd req
+          SET_RACER FwdReqOrStaleAckExpected ToTrue
+
+          goto flush_expect_flushAck;
+        };
+
+      /////////// got a writeback stale write
+      } elseif (WritebackStaleWriteAck) {
+
+        SET_RACER WritebackAckExpected ToFalse
+        goto flush_received_FwdWrReq;
+
+      } else
+        goto err_exit;
+
+    } else
+    goto err_exit;
+
+    // are we done yet?
+  flush_are_we_done:
+    TEST WritebackAckExpected if (False) {
+      TEST FwdReqOrStaleAckExpected if (False) {
+        TEST InvAckForFwdExpected if (False) {
+          TEST DowngradeAckExpected if (False) {
+            TEST InvalidationReceived if (ReceivedNoInvalTest) {
+              NOOP
+              goto flush_done;
+            };
+          };
+        };
+      };
+    };
+
+    NOOP
+    goto flush_expect_flushAck;
+
+    // oh yes... we are done indeed.
+  flush_done:
+    NOOP;
+    halt;
+
+
+
+//
+// ********** Entry points for external transactions **********
+//
+
+RemoteInvalidationReq::
+
+    // Conditions which get us here:
+    // RemoteInvalidationReq on a remote address & invalid or shared state
+    // If the remote engine knew the line was invalid at the cache, the invalidation would not
+    // have to propagate all the way to the cpu. But the remote engine does not know the state.
+
+    CPU_OP Invalidate;
+
+    RECEIVE if (InvAck) {
+      SEND RemoteInvalidationAck ToRequester;
+    } else
+      goto err_exit;
+
+    halt;
+
+
+LocalInvalidationReq::
+
+    // Conditions which get us here:
+    // LocalInvalidationReq on a remote address & invalid or shared state
+    // If the remote engine knew the line was invalid at the cache, the invalidation would not
+    // have to propagate all the way to the cpu. But the remote engine does not know the state.
+
+    CPU_OP Invalidate;
+
+    RECEIVE if (InvAck) {
+      SEND LocalInvalidationAck ToRequester;
+    } else
+      goto err_exit;
+
+    halt;
+
+
+ForwardedReadReq::
+
+    // Conditions which get us here:
+    // ForwardedReadReq arrived & modified state
+
+    CPU_OP Downgrade;
+
+    RECEIVE if (DowngradeUpdateAck) {
+      SEND ForwardedReadAck ToDirectory;
+      SEND ReadFwd ToRequester;
+    } else
+      goto err_exit;
+
+    halt;
+
+
+ForwardedWriteReq::
+
+    // Conditions which get us here:
+    // ForwardedWriteReq arrived & modified state
+
+    // Flush local cache and invalidate line
+    CPU_OP Invalidate;
+
+    RECEIVE if (InvUpdateAck) {
+      SEND ForwardedWriteAck ToDirectory;
+      SEND WriteFwd ToRequester;
+    } else
+      goto err_exit;
+
+    halt;
+
+
+RecallReadReq::
+
+    // Conditions which get us here:
+    // RecallReadReq arrived & modified state
+
+    CPU_OP Downgrade;
+
+    RECEIVE if (DowngradeUpdateAck) {
+      SEND RecallReadAck ToDirectory;
+    } else
+      goto err_exit;
+
+    halt;
+
+
+RecallWriteReq::
+
+    // Conditions which get us here:
+    // RecallWriteReq arrived & modified state
+
+    // Flush local cache and invalidate line
+    CPU_OP Invalidate;
+
+    RECEIVE if (InvUpdateAck) {
+      SEND RecallWriteAck ToDirectory;
+    } else
+      goto err_exit;
+
+    halt;
+
+
+//
+// ********** Entry points for unexpected transactions **********
+//
+
+ReadAck::
+    NOOP
+    goto err_exit;
+    halt;
+
+WriteAck::
+    NOOP
+    goto err_exit;
+    halt;
+
+UpgradeAck::
+    NOOP
+    goto err_exit;
+    halt;
+
+WritebackAck::
+    NOOP
+    goto err_exit;
+    halt;
+
+WritebackStaleReadAck::
+    NOOP
+    goto err_exit;
+    halt;
+
+WritebackStaleWriteAck::
+    NOOP
+    goto err_exit;
+    halt;
+
+FlushAck::
+    NOOP
+    goto err_exit;
+    halt;
+
+RemoteInvalidationAck::
+    NOOP
+    goto err_exit;
+    halt;
+
+ReadFwd::
+    NOOP
+    goto err_exit;
+    halt;
+
+WriteFwd::
+    NOOP
+    goto err_exit;
+    halt;
+
+
+//
+// ********** Entry point for Error **********
+//
+
+Error::
+  err_exit:
+    SEND Error ToDirectory;
+    halt;
+
+Halt::
+    NOOP;
+    halt;
+
+%end

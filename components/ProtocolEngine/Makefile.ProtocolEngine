@@ -1,0 +1,43 @@
+# Additional make targets and build steps for the ProtocolEngine component
+
+# Get variables from Makefile.defs
+include $(FLEXUS_ROOT)/makefile.defs
+
+.PHONY: copy-to-simulator
+
+EXTENDED_COMPONENT_DEPENDENCIES=copy-to-simulator
+
+
+#
+# home engine
+#
+he.mcd_lnk: $(COMPONENTS_DIR)/ProtocolEngine/he.mcd
+	echo "ln -s $(COMPONENTS_DIR)/ProtocolEngine/he.mcd he.mcd_lnk"
+	ln -s $(COMPONENTS_DIR)/ProtocolEngine/he.mcd he.mcd_lnk
+
+he.rom: he.mcd_lnk $(COMPONENTS_DIR)/ProtocolEngine/he.mdef
+	echo "$(MASM_CPP) -C he.mcd_lnk | $(MASM) $(COMPONENTS_DIR)/ProtocolEngine/he.mdef he.rom he.lst he.ps"
+	$(MASM_CPP) -C he.mcd_lnk | $(MASM) $(COMPONENTS_DIR)/ProtocolEngine/he.mdef he.rom he.lst he.ps
+
+he.hex: he.rom rom2hex
+	rom2hex he.rom he.hex
+
+#
+# remote engine
+#
+re.mcd_lnk: $(COMPONENTS_DIR)/ProtocolEngine/re.mcd
+	echo "ln -s $(COMPONENTS_DIR)/ProtocolEngine/re.mcd re.mcd_lnk"
+	ln -s $(COMPONENTS_DIR)/ProtocolEngine/re.mcd re.mcd_lnk
+
+re.rom: re.mcd_lnk $(COMPONENTS_DIR)/ProtocolEngine/re.mdef
+	echo "$(MASM_CPP) -C re.mcd_lnk | $(MASM) $(COMPONENTS_DIR)/ProtocolEngine/re.mdef re.rom re.lst re.ps"
+	$(MASM_CPP) -C re.mcd_lnk | $(MASM) $(COMPONENTS_DIR)/ProtocolEngine/re.mdef re.rom re.lst re.ps
+
+re.hex: re.rom rom2hex
+	rom2hex re.rom re.hex
+
+copy-to-simulator: he.rom re.rom
+ifdef SIMULATOR
+	echo "Copying Microcode to $(SIMULATOR)"
+	cp re.rom he.rom $(SIMULATORS_DIR)/$(SIMULATOR)
+endif

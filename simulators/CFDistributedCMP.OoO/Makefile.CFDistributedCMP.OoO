@@ -1,0 +1,10 @@
+# Octopus Simulator build description
+
+REQUIRED_COMPONENTS = Common uFetch v9Decoder uArch FetchAddressGenerate Cache MemoryLoopback MemoryMap MagicBreak Directory MultiNic TraceTracker MTManager NetworkDestinationMapper ContentionFreeNetwork
+
+SUPPORTS_STANDALONE = false
+SUPPORTS_SIMICS = true
+DEFAULT_TARGET = simics
+SUPPORTS_X86 = false
+SUPPORTS_V9 = true
+DEFAULT_PLATFORM = v9

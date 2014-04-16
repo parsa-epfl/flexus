@@ -1,0 +1,7 @@
+#define FLEXUS_BEGIN_COMPONENT TrussNic
+#include FLEXUS_BEGIN_COMPONENT_DECLARATION()
+
+#define TrussNic_IMPLEMENTATION (<components/TrussNic/TrussNicImpl.hpp>)
+
+#include FLEXUS_END_COMPONENT_DECLARATION()
+#define FLEXUS_END_COMPONENT TrussNic

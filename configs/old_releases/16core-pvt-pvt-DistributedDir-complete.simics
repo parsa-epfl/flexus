@@ -1,0 +1,26 @@
+
+run-command-file "core.simics"
+run-command-file "16core_misc.simics"
+run-command-file "16core_network.simics"
+run-command-file "16core-Directory-distributed.simics"
+run-command-file "L1I_64KBx2way.simics"
+run-command-file "L1D_64KBx4way.simics"
+run-command-file "L2_1MB_Private.simics"
+
+flexus.set "-L1i:clean_evict" "0"
+flexus.set "-ufetch:clean_evict" "0"
+flexus.set "-ufetch:send_acks" "0"
+flexus.set "-ufetch:use_reply_channel" "0"
+flexus.set "-L1d:clean_evict" "0"
+flexus.set "-L1d:allow_evict_clean" "0"
+flexus.set "-L1d:use_reply_channel" "0"
+
+flexus.set "-L2:protocol" "InclusiveMOESI"
+flexus.set "-L2:cache_type" "InclMOESI2PhaseWB"
+
+# to differentiate from shared cache design
+flexus.set "-net-mapper:MemReplyToDir" "0"
+
+# Just for completeness, not necessary
+flexus.set "-mapper:VMIndexShift" "32"
+flexus.set "-mapper:VMXORShift" "-1"

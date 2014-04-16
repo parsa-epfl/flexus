@@ -1,0 +1,9 @@
+# Memory Timing
+flexus.set "-memory-map:nodes" "16"
+flexus.set "-memory-map:page_map" "1"
+flexus.set "-memory-map:pagesize" "8192"
+flexus.set "-memory-map:round_robin" "1"
+flexus.set "-memory-map:write_page_map" "1"
+flexus.set "-memory:UseFetchReply" "1"
+flexus.set "-memory:max_requests" "128"
+flexus.set "-memory:time" "250"

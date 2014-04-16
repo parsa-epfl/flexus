@@ -1,0 +1,10 @@
+# Octopus Simulator build description
+
+REQUIRED_COMPONENTS = Common BPWarm InorderSimicsFeeder CMPCache MemoryLoopback MemoryMap MagicBreak IFetch Execute Cache TraceTracker MultiNic NetShim MTManager SplitDestinationMapper WhiteBox VMMapper
+
+SUPPORTS_STANDALONE = false
+SUPPORTS_SIMICS = true
+DEFAULT_TARGET = simics
+SUPPORTS_X86 = true
+SUPPORTS_V9 = true
+DEFAULT_PLATFORM = v9

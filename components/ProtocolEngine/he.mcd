@@ -1,0 +1,777 @@
+//
+//  Home Engine (HE) micro code
+//
+//  Responsible for requests to local memory
+//  from local cpu or remote nodes.
+//
+//  he.mcd  version 1.00    11Mar2003
+//
+
+///////////////////////////////////////////////////////////////
+// IMPORTANT INFORMATION:
+//
+// Synchronization of home engine and cache controller:
+// ----------------------------------------------------
+//
+// The directory info is loaded implicitly at thread creation.
+//
+// The MEM_OP Read that reads the directory info locks the
+// MC for long enough to guarantee mutual exclusion to
+// the directory between the protocol engine and the cache
+// controller. The amount of cycles needed for this is the
+// maximum of the amount of cycles needed to perform the
+// actions between the comments reading
+//            NOTE: Beginning of bus interlock
+//            NOTE: End of bus interlock
+// in the state transitions below.
+//
+// Alternatively, one can lock the bus that goes to memory
+// instead of implementing a lock at the MC.
+//
+// Note that the cache controller should implement a similar mechanism.
+//
+//
+// Message queueing:
+// -----------------
+//
+// The messages that have to be queued are queued by the thread driver.
+// We still have comments at the places where this happens though.
+// All other events are treated as errors.
+//
+
+#define COLLECT_INVALIDATE_ACKS(expect_inv_acks_label, invals_done_label)  \
+    TEST InvalidationsCount if (VALUE_0)                                   \
+      goto invals_done_label                                               \
+    else {                                                                 \
+      RECEIVE if (LocalInvalidationAck) {                                  \
+        SET InvalidationsCount DECREMENT;                                  \
+        INPUT_Q_OP Dequeue LastMsg                                         \
+        goto expect_inv_acks_label;                                        \
+      } else                                                               \
+        goto err_exit;                                                     \
+    }
+
+
+//
+// NOOP
+// =========
+//
+#define NOOP    SET TempReg VALUE CurrentTempReg
+
+//
+// ********** Entry points for locally generated transactions **********
+//
+
+
+Local_Read::
+
+    // Conditions which get us here:
+    // Read miss & modified state
+
+    // This is a normal read req
+    SET VALUE IsPrefetchRead ToZero;
+
+    // prefetch read requests branch over here
+    // after setting IsPrefetchRead to one
+  local_read_ep:
+
+    INPUT_Q_OP Dequeue LocalReq;
+
+    // requester = local_node
+    SEND_FWD RecallReadReq ToOwner;
+
+    RECEIVE if (RecallReadAck) {
+
+      TEST IsPrefetchRead if (VALUE_0) {
+        // respond to normal read req
+        CPU_OP MissReply;
+      } else {
+        // respond to prefetch read req
+        CPU_OP PrefetchReadReply;
+      };
+
+      //Transition to shared state
+      SET DirectoryState VALUE Shared;
+
+      // The owner field may be hidden in the sharer's bitmask bits
+      SET SharersBitMask VALUE ToZero;
+      SET SharersBitMask BIT CurrentOwner ToOne
+
+      goto Local_Read_done;
+
+    } elseif (WritebackReq) {
+
+      TEST IsPrefetchRead if (VALUE_0) {
+        // respond to normal read req
+        CPU_OP MissReply;
+      } else {
+        // respond to prefetch read req
+        CPU_OP PrefetchReadReply;
+      };
+
+      // requester = racer = responder
+      //SEND WritebackAck ToRespondent;
+
+      // leave the owners bit set in the sharer bitmask
+      SET SharersBitMask VALUE ToZero;
+      SET SharersBitMask BIT CurrentOwner ToOne;
+      SET DirectoryState VALUE Shared
+      goto Local_Read_done;
+
+
+    } elseif (FlushReq) {
+
+      TEST IsPrefetchRead if (VALUE_0) {
+        // respond to normal read req
+        CPU_OP MissReply;
+      } else {
+        // respond to prefetch read req
+        CPU_OP PrefetchReadReply;
+      };
+
+      // requester = racer = responder
+      // No need to send a flush ack. The RE will receive the recall request.
+      // SEND FlushAck ToRespondent;
+
+      // leave the owners bit set in the sharer bitmask
+      SET SharersBitMask VALUE ToZero;
+      SET SharersBitMask BIT CurrentOwner ToOne;
+      SET DirectoryState VALUE Shared
+      goto Local_Read_done;
+
+    } else
+      goto err_exit;
+
+  Local_Read_done:
+
+    // The home node actively shares the line
+    SET SharersBitMask BIT HomeNode ToOne;
+
+    WRITE_DIRECTORY;
+
+    UNLOCK;
+
+    INPUT_Q_OP Dequeue LastMsg;
+
+    halt;
+
+
+Local_Prefetch_Read::
+    SET VALUE IsPrefetchRead ToOne
+    goto local_read_ep;
+
+    halt;
+
+
+Local_WriteAccess_Modified::
+
+    // Conditions which get us here:
+    // Write miss & modified state
+
+    INPUT_Q_OP Dequeue LocalReq;
+
+    // requester = local_node
+    SEND_FWD RecallWriteReq ToOwner;
+
+    RECEIVE if (RecallWriteAck) {
+      CPU_OP MissWritableReply;
+
+    } elseif (WritebackReq) {
+      CPU_OP MissWritableReply;
+
+      // requester = racer = responder
+      //SEND WritebackAck ToRespondent;
+
+    } elseif (FlushReq) {
+      CPU_OP MissWritableReply;
+
+      // requester = racer = responder
+      // No need to send a flush ack. The RE will receive the recall request.
+      // SEND FlushAck ToRespondent;
+
+    } else
+      goto err_exit;
+
+    SET SharersBitMask VALUE ToZero;
+
+    // The home node has the line (albeit not strictly shared)
+    SET SharersBitMask BIT HomeNode ToOne;
+
+    SET DirectoryState VALUE Invalid;
+
+    WRITE_DIRECTORY;
+
+    UNLOCK;
+
+    INPUT_Q_OP Dequeue LastMsg;
+
+    halt;
+
+
+Local_WriteAccess_Shared::
+
+    // Conditions which get us here:
+    // Write miss & shared state
+
+    INPUT_Q_OP Dequeue LocalReq;
+
+    // Does not invalidate local cache
+    // Side effect: set protocol engine register InvalidationsCount to #messages sent
+    // requester = local_node
+    SEND_FWD LocalInvalidationReq ToSharers;
+
+  local_write_shared_expect_inv_acks:
+
+    COLLECT_INVALIDATE_ACKS(local_write_shared_expect_inv_acks, local_write_shared_invals_done);
+
+  local_write_shared_invals_done:
+
+    CPU_OP MissWritableReply;
+
+    SET SharersBitMask VALUE ToZero;
+
+    // The home node has the line (albeit not strictly shared)
+    SET SharersBitMask BIT HomeNode ToOne;
+
+    SET DirectoryState VALUE Invalid;
+    WRITE_DIRECTORY;
+
+    UNLOCK;
+
+    halt;
+
+
+Local_UpgradeAccess::
+
+    // Conditions which get us here:
+    // Upgrade miss & shared state
+
+    INPUT_Q_OP Dequeue LocalReq;
+
+    // Does not invalidate local cache
+    // Side effect: set protocol engine register InvalidationsCount to #messages sent
+    // requester = local_node
+    SEND_FWD LocalInvalidationReq ToSharers;
+
+  local_upgrade_expect_inv_acks:
+
+    COLLECT_INVALIDATE_ACKS(local_upgrade_expect_inv_acks, local_upgrade_invals_done);
+
+  local_upgrade_invals_done:
+
+    CPU_OP UpgradeReply;
+
+    SET SharersBitMask VALUE ToZero;
+
+    // The home node has the line (albeit not strictly shared)
+    SET SharersBitMask BIT HomeNode ToOne;
+
+    SET DirectoryState VALUE Invalid;
+    WRITE_DIRECTORY;
+    UNLOCK;
+
+    halt;
+
+
+//
+// ********** Entry points for external transactions **********
+//
+
+
+ReadReq_Invalid::
+
+    // Conditions which get us here:
+    // ReadReq arrives & invalid state
+
+    // NOTE: Beginning of bus interlock
+    // NOTE: the thread driver has already locked the cpu out of the directory
+    // LOCK_OP Lock;
+
+    INPUT_Q_OP Dequeue RemoteReq;
+
+    // Local cpu may have stolen the data and modified them.
+    // Make sure you get an up-to-date copy.
+    CPU_OP Downgrade;
+
+    // Get ready to update the directory
+    SET SharersBitMask VALUE ToZero;
+    SET SharersBitMask BIT Requester ToOne;
+    SET DirectoryState VALUE Shared;
+
+    // Update the directory & data.
+    RECEIVE if (DowngradeAck || DowngradeUpdateAck) {
+      WRITE_DIRECTORY;
+
+    } else
+      goto err_exit;
+
+    // NOTE: End of bus interlock
+    UNLOCK;
+
+    // Send the reply. (requester = requester)
+    SEND ReadAck ToRequester;
+
+    INPUT_Q_OP Dequeue LastMsg;
+
+    halt;
+
+ReadReq_Shared::
+
+    // Conditions which get us here:
+    // ReadReq arrives & shared state
+
+    INPUT_Q_OP Dequeue RemoteReq;
+
+    // requester = requester
+    SEND ReadAck ToRequester;
+
+    SET SharersBitMask BIT Requester ToOne;
+    WRITE_DIRECTORY;
+
+    // NOTE: End of bus interlock
+    // Thread controller already locked the line.
+    UNLOCK;
+
+    halt;
+
+ReadReq_Modified::
+
+    // Conditions which get us here:
+    // ReadReq arrives & modified state
+
+    INPUT_Q_OP Dequeue RemoteReq;
+
+    // requester = requester
+    SEND_FWD ForwardedReadReq ToOwner;
+
+    RECEIVE if (ForwardedReadAck) {
+
+      // The owner field may be hidden in the sharer's bitmask bits
+      SET SharersBitMask VALUE ToZero;
+      SET SharersBitMask BIT CurrentOwner ToOne;
+      SET SharersBitMask BIT Requester ToOne;
+
+      SET DirectoryState Shared;
+      WRITE_DIRECTORY;
+
+    } elseif (WritebackReq) {
+
+      // requester = racer = respondent
+      SEND_FWD WritebackStaleReadAck ToRespondent;
+
+      // The owner field may be hidden in the sharer's bitmask bits
+      SET SharersBitMask VALUE ToZero;
+      SET SharersBitMask BIT Requester ToOne;
+
+      // set the owner's bit in the sharers bitmask
+      SET SharersBitMask BIT CurrentOwner ToOne;
+
+      SET DirectoryState VALUE Shared;
+      WRITE_DIRECTORY;
+
+    } elseif (FlushReq) {
+
+      // requester = racer = respondent
+      SEND_FWD WritebackStaleReadAck ToRespondent;
+
+      // The owner field may be hidden in the sharer's bitmask bits
+      SET SharersBitMask VALUE ToZero;
+      SET SharersBitMask BIT Requester ToOne;
+
+      // ...set the owner's bit in the sharers bitmask
+      SET SharersBitMask BIT CurrentOwner ToOne;
+
+      SET DirectoryState VALUE Shared;
+      WRITE_DIRECTORY;
+
+    } else
+        goto err_exit;
+
+    // NOTE: End of bus interlock
+    // Thread controller already locked the line.
+    UNLOCK;
+
+    INPUT_Q_OP Dequeue LastMsg;
+
+    halt;
+
+
+WriteReq_Invalid::
+
+    // Conditions which get us here:
+    // WriteReq arrives & invalid state
+
+    // NOTE: Beginning of bus interlock
+    // NOTE: the thread driver has already locked the cpu out of the directory
+    // LOCK_OP Lock;
+
+    INPUT_Q_OP Dequeue RemoteReq;
+
+    // Local cpu may have stolen the data and modified them.
+    // Make sure you get an up-to-date copy.
+    CPU_OP Invalidate;
+
+    // Get ready to update the directory
+    SET Owner VALUE Requester;
+    SET DirectoryState VALUE Modified;
+
+    // Not really needed. Used to help MRP
+    SET SharersBitMask VALUE ToZero;
+
+    SET InvalidationsCount VALUE ToZero;
+
+    // Update only the directory. Local CPU didn't write data.
+    RECEIVE if (InvAck) {
+
+      // requester = requester
+      SEND WriteAck ToRequester;
+
+      WRITE_DIRECTORY;
+
+    // Update both data and the directory. Local CPU wrote the line.
+    } elseif (InvUpdateAck) {
+
+      // requester = requester
+      SEND WriteAck ToRequester;
+
+      WRITE_DIRECTORY;
+
+    } else
+      goto err_exit;
+
+    // NOTE: End of bus interlock
+    UNLOCK;
+
+    INPUT_Q_OP Dequeue LastMsg;
+
+    halt;
+
+WriteReq_Shared::
+
+    // Conditions which get us here:
+    // ReadReq arrives & shared state
+
+    INPUT_Q_OP Dequeue RemoteReq;
+
+    // Does not invalidate requester
+    // Implicitly sets InvalidationsCount
+    // requester = requester
+    SEND_FWD RemoteInvalidationReq ToSharers;
+
+    // Local cpu may have acquired a copy of the data.
+    CPU_OP Invalidate;
+
+    // Get ready to update the directory
+    SET Owner VALUE Requester;
+    SET DirectoryState VALUE Modified;
+
+    // Not really needed. Used to help MRP
+    SET SharersBitMask VALUE ToZero;
+
+    // Update only the directory. Local CPU didn't write data.
+    RECEIVE if (InvAck) {
+
+      // requester = requester
+      SEND WriteAck ToRequester;
+
+      WRITE_DIRECTORY;
+
+    // Update both data and the directory. Local CPU wrote the line.
+    } elseif (InvUpdateAck) {
+
+      // requester = requester
+      SEND WriteAck ToRequester;
+
+      WRITE_DIRECTORY;
+
+    } else
+      goto err_exit;
+
+    // NOTE: End of bus interlock
+    UNLOCK;
+
+    INPUT_Q_OP Dequeue LastMsg;
+
+    halt;
+
+WriteReq_Modified::
+
+    // Conditions which get us here:
+    // WriteReq arrives & modified state
+
+  writereq_modified_ep:
+
+    INPUT_Q_OP Dequeue RemoteReq;
+
+    // requester = requester
+    SEND_FWD ForwardedWriteReq ToOwner;
+
+    SET Owner VALUE Requester;
+
+    SET SharersBitMask VALUE ToZero;
+
+  writereq_modified_receive:
+
+    RECEIVE if (ForwardedWriteAck) {
+      WRITE_DIRECTORY;
+
+    } elseif (WritebackReq) {
+
+      // if Writeback comes from new owner (write requester)
+      SET TempReg VALUE Respondent;
+      TEST CurrentOwnerInTempReg if (VALUE_1) {
+
+        // Do not consume WB yet. It should start its own transaction later...
+        INPUT_Q_OP Refuse LastMsg
+
+        goto writereq_modified_receive;
+
+      // else, Writeback comes from old owner
+      } else {
+
+        // requester = racer = respondent
+        SEND_FWD WritebackStaleWriteAck ToRespondent;
+
+        WRITE_DIRECTORY;
+      };
+
+    } elseif (FlushReq) {
+
+      // if FlushReq comes from new owner (write requester)
+      SET TempReg VALUE Respondent;
+      TEST CurrentOwnerInTempReg if (VALUE_1) {
+
+        // Do not consume FlushReq yet. It should start its own transaction later...
+        INPUT_Q_OP Refuse LastMsg
+
+        goto writereq_modified_receive;
+
+      // else, FlushReq comes from old owner
+      } else {
+
+        // requester = racer = respondent
+        SEND_FWD WritebackStaleWriteAck ToRespondent;
+
+        WRITE_DIRECTORY;
+      };
+
+    } else
+        goto err_exit;
+
+    // NOTE: End of bus interlock
+    // Thread controller already locked the line.
+    UNLOCK;
+
+    INPUT_Q_OP Dequeue LastMsg;
+
+    halt;
+
+
+UpgradeReq_Invalid::
+
+    // Conditions which get us here:
+    // UpgradeReq arrives & invalid state
+
+    // NOTE: Beginning of bus interlock
+    // NOTE: the thread driver has already locked the cpu out of the directory
+    // LOCK_OP Lock;
+
+    INPUT_Q_OP Dequeue RemoteReq;
+
+    // Local cpu may have stolen the data and modified them.
+    // Make sure you get an up-to-date copy.
+    CPU_OP Invalidate;
+
+    // Get ready to update the directory
+    SET Owner VALUE Requester;
+    SET DirectoryState VALUE Modified;
+    SET SharersBitMask VALUE ToZero;
+
+    SET InvalidationsCount VALUE ToZero;
+
+    // Update only the directory. Local CPU didn't write data.
+    RECEIVE if (InvAck) {
+
+      // requester = requester
+      SEND WriteAck ToRequester;
+
+
+      WRITE_DIRECTORY;
+
+    // Update both data and the directory. Local CPU wrote the line.
+    } elseif (InvUpdateAck) {
+
+      // requester = requester
+      SEND WriteAck ToRequester;
+
+      WRITE_DIRECTORY;
+
+    } else
+      goto err_exit;
+
+    // NOTE: End of bus interlock
+    UNLOCK;
+
+    INPUT_Q_OP Dequeue LastMsg;
+
+    halt;
+
+UpgradeReq_Shared::
+
+    // Conditions which get us here:
+    // UpgradeReq arrives & shared state
+
+    // NOTE: Beginning of bus interlock
+    // NOTE: the thread driver has already locked the cpu out of the directory
+    // LOCK_OP Lock;
+
+    INPUT_Q_OP Dequeue RemoteReq;
+
+    // Does not invalidate requester
+    // Implicitly sets InvalidationsCount
+    // requester = requester
+    SEND_FWD RemoteInvalidationReq ToSharers;
+
+    // Local cpu may have acquired a copy of the data.
+    CPU_OP Invalidate;
+
+    // Get ready to update the directory
+    SET Owner VALUE Requester;
+    SET DirectoryState VALUE Modified;
+
+    // Update only the directory. Local CPU didn't write data.
+    RECEIVE if (InvAck) {
+
+      // if the requester is a sharer, it is a normal upgrade
+      TEST RequesterIsSharer if (VALUE_1) {
+        // requester = requester
+        SEND UpgradeAck ToRequester;
+
+      // if the requester is not a sharer, an invalidation beat the upgrade. Treat it as a WriteReq.
+      } elseif (VALUE_0) {
+        // requester = requester
+        SEND WriteAck ToRequester;
+
+      } else
+        goto err_exit;
+
+      // Not really needed. Used to help MRP
+      SET SharersBitMask VALUE ToZero;
+
+      WRITE_DIRECTORY;
+
+    // Update both data and the directory. Local CPU wrote the line.
+    } elseif (InvUpdateAck) {
+
+      // if the requester is a sharer, it is a normal upgrade
+      TEST RequesterIsSharer if (VALUE_1) {
+        // requester = requester
+        SEND UpgradeAck ToRequester;
+
+      // if the requester is not a sharer, an invalidation beat the upgrade. Treat it as a WriteReq.
+      } elseif (VALUE_0) {
+        // requester = requester
+        SEND WriteAck ToRequester;
+
+      } else
+        goto err_exit;
+
+      // Not really needed. Used to help MRP
+      SET SharersBitMask VALUE ToZero;
+
+      WRITE_DIRECTORY;
+
+    } else
+      goto err_exit;
+
+    // NOTE: End of bus interlock
+    UNLOCK;
+
+    INPUT_Q_OP Dequeue LastMsg;
+
+    halt;
+
+
+UpgradeReq_Modified::
+
+    // Conditions which get us here:
+    // UpgradeReq arrives & modified state
+    // This means that the request was held off during the
+    // transition of the dir entry from shared to modified.
+
+    NOOP
+    goto writereq_modified_ep;
+    halt;
+
+
+WritebackReq::
+
+    // Conditions which get us here:
+    // WritebackReq arrives & modified state
+
+    // NOTE: Beginning of bus interlock
+    // NOTE: the thread driver has already locked the cpu out of the directory
+    // LOCK_OP Lock;
+
+    INPUT_Q_OP Dequeue RemoteReq;
+
+    // requester = requester
+    SEND WritebackAck ToRequester;
+
+    SET DirectoryState VALUE Shared;
+    SET SharersBitMask VALUE ToZero;
+    SET SharersBitMask BIT CurrentOwner ToOne;
+
+
+    WRITE_DIRECTORY;
+
+    // NOTE: End of bus interlock
+    UNLOCK;
+
+    halt;
+
+
+FlushReq::
+
+    // Conditions which get us here:
+    // FlushReq arrives & modified state
+
+    // NOTE: Beginning of bus interlock
+    // NOTE: the thread driver has already locked the cpu out of the directory
+    // LOCK_OP Lock;
+
+    // requester = requester
+    SEND FlushAck ToRequester;
+
+    // The owner field may be hidden in the sharer's bitmask bits
+    SET SharersBitMask VALUE ToZero;
+    SET SharersBitMask BIT CurrentOwner ToOne;
+
+    SET DirectoryState VALUE Shared;
+    WRITE_DIRECTORY;
+
+    // done after the directory write in order to keep the invariant that
+    // the old mask should be used for the MRP and last-mask predictions.
+    INPUT_Q_OP Dequeue RemoteReq;
+
+    // NOTE: End of bus interlock
+    UNLOCK;
+
+    halt;
+
+
+//
+// ********** Entry point for Error **********
+//
+
+Error::
+  err_exit:
+    SEND Error ToSharers;
+    halt;
+
+Halt::
+    NOOP;
+    halt;
+
+
+%end

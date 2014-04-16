@@ -1,0 +1,22 @@
+# Get variables from Makefile.defs
+include $(FLEXUS_ROOT)/makefile.defs
+
+SELECTED_CC=icc
+
+include makefile.all_ccs
+
+%.$(VARIANT_EXT).ipo_out.o: $(SOURCES)
+	echo "$(ICC) $(INCLUDES) $(ICC_CFLAGS) $(VARIANT_DEFINES) $(SOURCES)"
+	$(ICC) $(INCLUDES) $(ICC_CFLAGS) $(VARIANT_DEFINES) $(SOURCES)
+	mv ipo_out.o $@
+
+lib%_$(VARIANT).a: %.$(VARIANT_EXT).ipo_out.o
+	echo "$(AR) $(AR_FLAGS) $@ $^"
+	$(AR) $(AR_FLAGS) $@ $^
+	echo "$(RANLIB) $@"
+	$(RANLIB) $@
+	rm -f $@.fresh
+
+test/core-test.$(VARIANT_EXT): test/core-test.$(VARIANT_EXT).ipo_out.o
+	echo "$(ICC) $(ICC_LFLAGS) -L$(FLEXUS_INCLUDE)/core $^ -lcore_$(VARIANT)  -o $@"
+	$(ICC) $(ICC_LFLAGS) -L$(FLEXUS_INCLUDE)/core $^ -lcore_$(VARIANT) -o $@

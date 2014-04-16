@@ -1,0 +1,16 @@
+# Set up console capture.
+@try: 
+  con = SIM_get_object("con0")
+  python = SIM_get_object("python")
+  SIM_set_attribute(python, "execute-string", 'con0.capture-start "console.out"')
+except:
+  try:
+    server_con = SIM_get_object("server_con0")
+    client_con = SIM_get_object("client_con0")
+    python = SIM_get_object("python")
+    SIM_set_attribute(python, "execute-string", 'server_con0.capture-start "server_console.out"')
+    SIM_set_attribute(python, "execute-string", 'client_con0.capture-start "client_console.out"')
+  except: 
+    print "No console object found.  Console capture disabled"
+
+flexus.set-watchdog-timeout "90000"

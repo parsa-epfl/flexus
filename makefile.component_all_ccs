@@ -1,0 +1,20 @@
+# Component makefile for all compilers
+
+include $(FLEXUS_ROOT)/makefile.variant
+
+# Include component-specific variables
+###############
+-include Makefile.$(COMPONENT)
+
+.PHONY: test
+
+.SUFFIXES:
+.SUFFIXES: .cpp .$(OEXT)
+
+# Compile with GCC.  We can compile each source file separately
+
+include Makefile.depend.$(VARIANT)
+
+test: test.$(VARIANT_EXT)
+	echo "Running regression tests for $(COMPONENT) $(VARIANT)"
+	test.$(VARIANT_EXT)

@@ -1,0 +1,439 @@
+#!/usr/bin/env tclsh
+
+# === todo ===
+# cleanup when job finishes (-keep)
+
+###################| Helper procs |#########################################
+
+if {[info procs lassign] == ""} {
+	proc lassign {values args} {
+		while {[llength $values] < [llength $args]} {
+			lappend values {}
+		}
+		uplevel 1 [list foreach $args $values break]
+		lrange $values [llength $args] end
+	}
+}
+
+proc func {name arglist body} {
+	proc $name $arglist "
+		[list foreach arg $arglist { uplevel 1 set $arg [set $arg] }]
+		[list uplevel 1 $body]
+	"
+}
+
+proc range {fullr} {
+	foreach r [split $fullr ,] {
+		if {[regexp {^(\d+)-(\d+)$} $r -> s e]} {
+			for {set x $s} {$x <= $e} {incr x} { lappend res [format %03d $x] }
+		} elseif {[string is integer -strict $r]} {
+			lappend res [format %03d $r]
+		} else {
+			lappend res $r
+		}
+	}
+	return [lsort -unique $res]
+}
+
+proc jobspecs {lst} {
+	set res [list]
+	foreach e [split $lst ", "] {
+		catch { set e $::jobspecmap($e) }
+		set res [concat $res $e]
+	}
+	if {$res != $lst} { return [jobspecs $res] }
+	return [lsort -unique $res]
+}
+
+func copy {pattern dest} {
+	file mkdir $job_dir/$dest
+	catch { eval exec cp -Lf [glob $pattern] {$job_dir/$dest} }
+}
+
+func generate_job_dir_name {} {
+	if {$interactive} { return $basedir/interactive-$cfg }
+	return $basedir/$cfg-$simulator-%d%b%y-%H%M%S
+}
+
+func generate_run_dir_name {} {
+	set name [file join $flexstate $phase $flexpoint]
+	return $jobspec/[string map {/ _} $name]
+}
+
+proc rungen {names gens} {
+	foreach name $names {
+		foreach gen $gens {
+			lassign [uplevel 1 list $gen] jobspecs ckptset phaseflexpoint simicscmds
+			foreach jobspec $jobspecs {
+				lassign [split $phaseflexpoint :] phases flexpoints
+				if {$flexpoints eq ""} {
+					puts "Invalid run generator ($names) for workload ($jobspecs)."
+					exit -1
+				}
+				foreach var {ckptset phases flexpoints simicscmds} {
+					set ::rungens([list $name $jobspec $var]) [set $var]
+				}
+			}
+		}
+	}
+}
+
+###################| Process command line options |#########################
+
+if {[catch {
+
+	source [file join [file dirname [info script]] global.run_job.rc.tcl]
+	package require cmdline
+
+	set options "
+		{basedir.arg.secret {$basedir} {Base work directory}}
+		{specdir.arg.secret {$specdir} {}}
+		{userspecdir.arg {$userspecdir} {Specify alternative user spec path}}
+		{ckptdir.arg.secret {$ckptdir} {}}
+		{simicsdir.arg.secret {$simicsdir} {}}
+		{rcfile.arg.secret {$env(HOME)/.run_job.rc.tcl} {Custom RC file}}
+
+		{job.arg {} {Override job directory}}
+		{extend {Extend existing job directory}}
+		{clobber {Wipe job directory if it already exists}}
+
+		{cfg.arg interactive {Config name}}
+		{run.arg {} {Run generator to use}}
+		{runfxpt.arg {} {phase:flexpoint to run (overrides run generator)}}
+		{state.arg {} {FlexStates to use (comma separated)}}
+		{ckptset.arg _baseline {CheckPointSet to use}}
+		{simicscmds.arg {} {Additional Simics commands}}
+		{skipmissing {Do not abort on missing flexpoints}}
+		{ckpt-gen {Generate flex_state_out after running}}
+		{postprocess.arg {$postprocess} {Post-Process script}}
+		{extrasimicscmds.arg {} {Additional Simics commands on command-line}}
+
+		{local {Run jobs on local machine}}
+		{remote {Submit jobs to $remote_system}}
+		[set remote_args_$remote_system]
+		{norun {Set up job directory but do not run}}
+
+		{debug.arg iface {Debug level}}
+		{win {Skip -nowin argument to Simics (show X11 windows)}}
+		{ma {Pass -ma argument to Simics (needed for OoO jobs)}}
+		{valgrind {Run through Valgrind}}
+		{gdb {Wait for SIGSTOP at startup (for attaching gdb)}}
+
+		{list-specs {List available job-specs}}
+		{list-cfgs {List available configurations}}
+	"
+	set usage {[options] <simulator|NONE> <job-spec>}
+	foreach {k v} [cmdline::getoptions argv $options $usage] { set $k $v }
+	source $rcfile
+
+	if {${list-specs}} {
+		puts "=== Available JobSpecs ==="
+		foreach {name} [lsort -dictionary [array names jobspecmap]] {
+			puts "\t$name\n\t\t[join $jobspecmap($name) { }]"
+		}
+		exit 0
+	}
+
+	if {[llength $argv] != 2} { error [cmdline::usage $options $usage] }
+	lassign $argv simulator jobspecs
+
+	if {$simulator ne "NONE" && $cfg ne "" && ![file exist $userspecdir/$cfg]} {
+		if {![file exist $userspecdir]} { error "User spec dir ($userspecdir) does not exist" }
+		puts "Configuration ($cfg) does not exist in ($userspecdir)."
+		set list-cfgs 1
+	}
+
+	if {${list-cfgs}} {
+		set lst [list]
+		foreach {name} [glob $userspecdir/*/user-preload.simics] {
+			lappend lst [file tail [file dirname $name]]
+		}
+		puts "=== Available Configs ==="
+		puts "\t[join [lsort -dictionary $lst] "\n\t"]"
+		exit 0
+	}
+
+	set use_rungen [expr {$run ne ""}]
+	if {$use_rungen && ($ckptset ne "_baseline" || $simicscmds ne "")} {
+		error "Can't specify -ckptset or -simicscmds with -run generator name"
+	}
+	if {$ckptset eq "_baseline"} { set ckptset "baseline" }
+	if {!$use_rungen && $runfxpt eq ""} { set runfxpt 000:000 }
+	lassign [split $runfxpt :] phases flexpoints
+
+} msg]} {
+	puts stderr "Error: $msg"
+	exit -1
+}
+
+if {$simicscmds ne ""} {
+	set simicscmds $simics_commands($simicscmds)
+}
+set interactive [expr {!$local && !$remote}]
+set haveflexstate [expr {$state != {}}]
+if {$haveflexstate && ${ckpt-gen}} {
+	error "Can't specify FlexState when generating checkpoints"
+}
+if {$interactive && ${ckpt-gen}} {
+	error "Can't run interactively when generating checkpoints"
+}
+if {!$win} { lappend cmdline -no-win }
+if {$job eq ""} {
+	set job_dir [clock format [clock seconds] -format [generate_job_dir_name]]
+} else {
+	set job_dir "$basedir/$job"
+}
+if {$simulator ne "NONE"} {
+	set flexuslibfile [glob [pwd]/simulators/$simulator/libflexus*_$debug\_*.so]
+	set flexuslib [file tail $flexuslibfile]
+} else {
+	set flexuslib ""
+}
+
+###################| If job exists, try to remove |#########################
+
+if {[file exist $job_dir] && (!$extend || $clobber)} {
+	if {!$interactive && !$clobber} {
+		error "Directory $job_dir already exists (use -extend to extend or -clobber to remove)"
+	}
+	exec mv -f $job_dir $job_dir-old.[pid]
+	exec rm -rf $job_dir-old.[pid] &
+}
+if {![file exist $job_dir] && $extend} {
+	error "Directory $job_dir does not exist, can't extend"
+}
+
+###################| Create .skel directory |###############################
+
+set info_vars {simulator cfg simicscmds haveflexstate}
+if {!$extend} {
+
+copy [file join $specdir *] .skel/global
+if {$cfg ne ""} { copy $userspecdir/$cfg/* .skel/user }
+if {[file exist $job_dir/.skel/user/debug.cfg]} { ;# user's debug.cfg clobbers global
+	file rename $job_dir/.skel/global/debug.cfg $job_dir/.skel/global/debug.global
+}
+
+# save config
+set infofile [open "$job_dir/.skel/info.tcl" "w"]
+foreach var $info_vars {
+	puts $infofile [list set _$var [set $var]]
+}
+close $infofile
+
+###################| Create start.simics script |###########################
+
+set startfile [open $job_dir/.skel/start.simics "w"]
+puts $startfile "run-command-file global-preload.simics
+run-command-file user-preload.simics
+run-command-file job-load.simics
+@initial_steps = SIM_step_count(SIM_proc_no_2_ptr(0))"
+
+if {$simulator ne "NONE"} {
+	copy $flexuslibfile .skel
+	copy simulators/$simulator/*.{rom,topology,flp} .skel/user
+
+	set modulename [string map {_ -} [regsub {.*lib(.*).so} $flexuslib {\1}]]
+	puts $startfile "load-module $modulename
+run-command-file global-postload.simics
+run-command-file job-postload.simics
+run-command-file user-postload.simics
+run-command-file custom-postload.simics"
+
+	if {$haveflexstate} {
+		puts $startfile "flexus.load-state flexus_state_in"
+	}
+	# -ma for timing, -stall for trace, -fast only without flexus
+	if {$ma} { lappend cmdline -ma } else { lappend cmdline -stall }
+} else {
+	puts $startfile "run-command-file global-postload.simics
+run-command-file custom-postload.simics"
+	lappend cmdline -fast
+}
+
+if {!$interactive || ${ckpt-gen}} {
+	puts $startfile {run
+@delta_steps = SIM_step_count(SIM_proc_no_2_ptr(0))-initial_steps
+@insn_count = open('insn_count','w')
+@insn_count.write(str(delta_steps))
+@insn_count.write("\n")}
+ 	lappend cmdline -batch-mode -q
+}
+
+if {${ckpt-gen}} {
+	puts $startfile "@if not os.path.exists('flexus_state_out'):
+	os.mkdir('flexus_state_out')"
+	puts $startfile {write-configuration "flexus_state_out/simics-state"}
+	if {$flexuslib ne ""} {
+		puts $startfile {flexus.save-state "flexus_state_out"}
+	}
+}
+
+close $startfile
+
+set goshfilename $job_dir/.skel/global/go.sh
+set gofile [open $goshfilename "w"]
+if {$gdb} { append gosh_presimics "\nexport WAITFORSIGCONT=yes" }
+if {$valgrind} { append gosh_presimics "\nvalgrind --tool=memcheck -v --trace-children=yes \\" }
+puts $gofile "#!/bin/bash
+export SIMICS_EXTRA_LIB=`pwd`
+$gosh_presimics
+$simicsdir/scripts/start-simics -no-copyright -x start.simics $cmdline
+retcode=\$?
+$postprocess \$retcode
+exit \$retcode"
+close $gofile
+file attributes $goshfilename -permissions a+x
+
+} else { ;# if {!$extend}
+	# check to make sure -extend used with same arguments as original
+	source $job_dir/.skel/info.tcl
+	foreach var $info_vars {
+		if {[set $var] ne [set _$var]} {
+			puts stderr "Can't extend with -$var [set $var], $job_dir is for [set _$var]"
+			exit
+		}
+	}
+}
+
+###################| Run jobs |#############################################
+
+set run_dir_list {}
+foreach jobspec [jobspecs $jobspecs] {
+	if {![file exist $ckptdir/$jobspec]} {
+		puts stderr "Specified job directory ($ckptdir/$jobspec) does not exist."
+		exit -1
+	}
+	if {$use_rungen} {
+		if {![info exist ::rungens([list $run $jobspec ckptset])]} {
+			puts "Run generator ($run) not found for jobspec ($jobspec)."
+			exit -1
+		}
+		set ckptset $::rungens([list $run $jobspec ckptset])
+		set simicscmds $::rungens([list $run $jobspec simicscmds])
+		if {$runfxpt eq ""} {
+			set phases $::rungens([list $run $jobspec phases])
+			set flexpoints $::rungens([list $run $jobspec flexpoints])
+		}
+	}
+	if {![file exist $ckptdir/$jobspec/$ckptset/specs/job-postload.simics]} {
+		puts stderr "Specified directory is not a valid job ($ckptdir/$jobspec/$ckptset)."
+		exit -1
+	}
+	if {![file exist $job_dir/.skel/$jobspec]} { ;# might exist if -extend
+		copy $ckptdir/$jobspec/$ckptset/specs/* .skel/$jobspec
+	}
+	foreach flexstate [split $state ,] dummy {dummy} {
+		foreach phase [range $phases] {
+			foreach flexpoint [range $flexpoints] {
+				puts -nonewline stderr "\r\x1b\[KSetting up $jobspec ($phases:$flexpoints): $flexstate $phase:$flexpoint"
+				# find simics checkpoint to load
+				if {$flexpoint eq "000"} {
+					set ckpt $ckptdir/$jobspec/$ckptset/phase_$phase/simics/phase_$phase
+					if {$haveflexstate} {
+						puts stderr "\nRequested to simulate phase Simics state only (FlexPoint $phase:000), but FlexState $flexstate specified."
+						exit -1
+					}
+				} else {
+					set ckpt $ckptdir/$jobspec/$ckptset/phase_$phase/flexpoint_$flexpoint/simics/flexpoint_$flexpoint
+				}
+				if {$phase ne "000" && $flexpoint ne "000" && ![file exist $ckpt]} {
+					if {$skipmissing} {
+						puts stderr "\nRequested Simics checkpoint ($ckpt) does not exist... skipping."
+						continue
+					} else {
+						puts stderr "\nRequested Simics checkpoint ($ckpt) does not exist."
+						exit -1
+					}
+				}
+
+				set topdir [file join [file dirname $ckpt] ..]
+				set flexstatefile [file normalize [file join $topdir $flexstate flexstate.tar.gz]]
+				if {$haveflexstate && ![file exist $flexstatefile]} {
+					if {$skipmissing} {
+						puts stderr "\nRequested FlexState ($flexstate) does not exist ($flexstatefile)... skipping."
+						continue
+					} else {
+						puts stderr "\nRequested FlexState ($flexstate) does not exist ($flexstatefile)."
+						puts stderr "	Available FlexStates: [glob -tails -directory $topdir *]"
+						exit -1
+					}
+				}
+
+				set run_dir [file join $job_dir [generate_run_dir_name]]
+
+				if {![file exist $run_dir]} { ;# might exist if -extend
+					file mkdir $run_dir
+
+					# link spec files into run directory
+					exec bash -c "pushd $run_dir; ln -sf ../../.skel/{global,$jobspec}/* .; ln -sf ../../.skel/user/* .; rm -f '*'; ln -s ../../.skel/start.simics $run_dir/start.simics; popd"
+
+					set jobpreloadfd [open $run_dir/job-load.simics "a"]
+					puts $jobpreloadfd "read-configuration $ckpt"
+					close $jobpreloadfd
+
+					set customfile [open $run_dir/custom-postload.simics "w"]
+					# link flexus .so file, customize startup with flexpoint
+					if {$flexuslib ne ""} {
+						exec bash -c "ln -s ../../.skel/$flexuslib $run_dir/$flexuslib"
+						if {$haveflexstate} {
+							puts $customfile "@if not os.path.exists('flexus_state_in'):
+	os.mkdir('flexus_state_in')
+	os.system('tar xz -C flexus_state_in -f $flexstatefile')"
+						}
+					}
+					puts $customfile [string trim [subst $simicscmds]]
+					if {$extrasimicscmds ne ""} {
+						puts $customfile [string trim [subst $extrasimicscmds]]
+					}
+					close $customfile
+					lappend run_dir_list $run_dir
+				} else {
+					puts -nonewline stderr "\n$run_dir exists"
+					if {[file exist $run_dir/insn_count]} {
+						# skip if already executed
+						puts stderr ", ran at ([clock format [file mtime $run_dir/insn_count]])"
+					} else {
+						if {[file exist $run_dir/UIPC] && [file size $run_dir/UIPC]==0} {
+							lappend run_dir_list $run_dir
+							puts stderr ", failed?  will resubmit"
+						} else {
+							puts stderr ", still running?"
+						}
+					}
+				}
+			}
+		}
+		if {$remote} {
+			if {[llength $run_dir_list]} {
+				eval [set remote_exec_$remote_system]
+				set run_dir_list {}
+			} else {
+				puts -nonewline stderr "	Nothing to run..."
+			}
+		}
+	}
+	puts stderr ""
+}
+
+if {$remote} {
+	puts $job_dir
+} else {
+	package require Tclx
+	signal ignore SIGINT
+	set retcode 0
+	foreach run_dir $run_dir_list {
+		puts stderr >$run_dir
+		cd $run_dir
+		if {!$norun} { set retcode [system ./go.sh] }
+		puts stderr <$run_dir
+		if {$interactive && [llength $run_dir_list]>1} {
+			puts stderr "Interactive run, ran this job:"
+			puts stderr " [lindex $run_dir_list 0]"
+			puts stderr "Will not run other jobs:"
+			puts stderr " [join [lrange $run_dir_list 1 end] "\n "]"
+			break
+		}
+	}
+	exit $retcode
+}

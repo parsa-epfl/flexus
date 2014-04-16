@@ -1,0 +1,308 @@
+# 1 "q.mcd" 
+//
+// RMH Microcode
+//
+// Version 0.01
+//
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//
+// entry points for uncached stuff
+//
+RM_REQ_READ::						// entry point for uncached read request
+	SEND U_format node_dst UCR_REQ;			// send uncached read request
+	RECEIVE if (UCR_ACK) {				// expected reply is UCR_ACK
+		MOVE ibuf2obuf;				// no-op to wait for data
+		MOVE ibuf2obuf;				// preload data is driven from obuf
+		EXECUTE preload RD;			// give data to MBus
+	} else {					// something went wrong: unexpected reply
+ucx_err_exit:	SET ONE error error_0;			// assert error: uncached operation received wrong reply
+		EXECUTE preload BUS_ERROR;		//               we need to signal a bus error
+	};
+free_pkt:
+	SET ZERO rmh_status packet_pndg;		// free packet & terminate
+	halt;
+
+RM_REQ_WRITE::						// entry point for uncached write request
+	MOVE ibuf_ucw_obuf;				// no-op to wait for data
+	MOVE ibuf_ucw_obuf;				// pack dword from ibuf into D3 slot in obuf
+	SEND U_format node_dst UCW_REQ;			// send uncached write request
+	RECEIVE if (!UCW_ACK) goto ucx_err_exit;	// unexpected replies are an error
+	SET ONE rmh_status write_ack goto free_pkt;	// signal write completion, free packet and exit
+	halt;
+
+//
+// Get a new cache line
+//
+RM_REQ_LOAD_STALE::					// load request that was suspended
+	EXECUTE mem_read inc_tag to_ibuf;		// read the INC entry
+	MISC if (!INC_HIT) goto continue_load;		// still not done: continue normal RM_REQ_LOAD processing
+	SET;						// harmless NOOP (needed to terminate thread)
+	halt;
+	
+RM_REQ_LOAD::						// request to load a cache line to INC
+continue_load:
+	SET ONE inc_entry;				// decide which line to use
+
+	TEST inc_state if ((VALUE_1 || VALUE_5 || VALUE_9 || VALUE_13)) {		// **** we need to uncache this line
+		MOVE inc2aux;				// get next pointer to be inserted into UNC message
+		SEND O_format inc_node_dst UNC_REQ;	// send a request to get rid of the old cache line
+							// NOTE: it is possible to send the new request concurrently
+							//       this is an optimization to be done later
+		SET ZERO inc_state inc_state_0 inc_state_1;		// change INC state to invalid
+		EXECUTE mem_write inc_tag from_ibuf;	// write back INC line so that MB_CNTL can see it
+		req_load_retry1:			// if the wrong reply comes along, we need to retry here
+		RECEIVE if (INVAL_REQ || INVAL_FWD) {	// this may happen here
+			MISC verify if (!INC_HIT) {	// invalidation is not for the current INC line
+				EXECUTE fork_thread INVAL_REQ	// process it with the TSRF[0] context
+				goto req_load_retry1;		// then wait for the next reply
+			};
+			TEST aux_register if ((VALUE_1 || VALUE_3 || VALUE_5 || VALUE_7 || VALUE_9 || VALUE_11 || VALUE_13 || VALUE_15)) {	// non-zero next pointer ?
+				SEND O_format aux_dst INVAL_FWD;// yes: need to forward invalidation message
+			};
+		} elseif (!UNC_ACK) goto ucx_err_exit;	// unexpected reply: abort
+							// NOTE: we need to be more elaborate about error
+							//	 handling. ERROR packates should result in retries
+							//	 time-out's should be noted differently
+
+	} elseif ((VALUE_3 || VALUE_7 || VALUE_11 || VALUE_15)) {			// **** we need to write the data back first.
+		SET ZERO inc_state inc_state_0 inc_state_1;		// change INC state to invalid
+		EXECUTE mem_write inc_tag from_ibuf;	// write back INC line so that MB_CNTL can see it
+		MBUS_OP MB_REQ_CRI if (!DIRTY) {	// recall dirty line from cache
+			EXECUTE mem_read inc_line to_obuf;	// or INC - as the case may be.
+		} else {
+			EXECUTE mem_write inc_line from_obuf;	// need to save dirty data in case of a forward request
+		};
+		SEND D_format inc_node_dst WB_REQ;	// send dirty data back to home node
+		req_load_retry2:
+		RECEIVE if (D_FWD_REQ) {
+			MISC verify if (!INC_HIT) {	// may be a forward request for something else
+				EXECUTE fork_thread D_FWD_REQ	// process it with the TSRF[0] context
+				goto req_load_retry2;		// then wait for the next reply
+			};
+			EXECUTE mem_read inc_line to_obuf;	// get data
+			MOVE ibuf_aux2aux;			// get address
+			SEND D_format aux_dst DATA_FWD;		// done with forwarding
+		} elseif (!WB_ACK && !RECALL_REQ) goto ucx_err_exit;	// unexpected reply : abort
+							// NOTE: we need to be more elaborate about error
+							//	 handling. ERROR packates should result in retries
+							//	 time-out's should be noted differently
+	};
+
+	//
+	// At this point, we have freed an INC entry and proceed to retrieve the new data
+	//
+	SEND R_format node_dst;				// send a request for the new cache line
+	req_load_retry3:
+	RECEIVE if (INVAL_REQ) {			// we got an invalidation request
+		MISC verify if (!INC_HIT) {		// ... it may be unrelated
+			EXECUTE fork_thread INVAL_REQ	// process it with the TSRF[0] context
+			goto req_load_retry3;		// then wait for the next reply
+		};
+		SET ONE tsrf_state bit_0	// remember it
+			goto req_load_retry3;		// then wait for the next reply
+	} elseif (RECALL_REQ) {				// we got an recall request
+		MISC verify if (!INC_HIT) {		// ... it may be unrelated
+			EXECUTE fork_thread RECALL_REQ	// process it with the TSRF[0] context
+			goto req_load_retry3;		// then wait for the next reply
+		};
+		SET ONE tsrf_state bit_1	// remember it
+			goto req_load_retry3;		// then wait for the next reply
+	} elseif (D_FWD_REQ) {				// we got an data forward request
+		MISC verify if (!INC_HIT) {		// ... it may be unrelated
+			EXECUTE fork_thread D_FWD_REQ	// process it with the TSRF[0] context
+			goto req_load_retry3;		// then wait for the next reply
+		};		
+		SET ONE tsrf_state bit_0 bit_1;	// remember it
+		MOVE ibuf_aux2aux			// remember target node for forward request
+			goto req_load_retry3;		// then wait for the next reply
+	} elseif (CRE_ACK) {
+		SET ONE op_attributes exclusive;	// note that data was return exclusively
+	} elseif (CR_ACK) {
+		SET ZERO op_attributes exclusive;	// unnecessary, used as a no-op to wait for data
+	} else goto ucx_err_exit;			// unexpected reply: trouble
+							// NOTE: we need to be more elaborate about error
+							//	 handling. ERROR packates should result in retries
+							//	 time-out's should be noted differently
+
+	MOVE ibuf2obuf;					// move data from packet to obuf 
+	EXECUTE mem_read inc_tag to_ibuf;		// read the INC entry
+	TEST op_attributes if ((VALUE_1 || VALUE_3 || VALUE_5 || VALUE_7 || VALUE_9 || VALUE_11 || VALUE_13 || VALUE_15)) {
+		EXECUTE preload CI_CR_CRI;		// prime MB cntl: allow full access
+	} else {
+		EXECUTE preload CR;			// prime MB cntl: allow CR access only
+	};
+	EXECUTE mem_write inc_line from_obuf;		// store cache line in INC
+	MOVE addr_tsrf2inc;				// fill in the blanks
+	TEST op_attributes if ((VALUE_1 || VALUE_3 || VALUE_5 || VALUE_7 || VALUE_9 || VALUE_11 || VALUE_13 || VALUE_15)) {
+		SET ONE inc_state inc_state_0 inc_state_1;		// allow full access
+	} else {
+		SET ONE inc_state inc_state_0;		// allow read only access
+	};
+	EXECUTE mem_write inc_tag from_ibuf;		// write updated INC tag
+
+	TEST tsrf_state if ((VALUE_1 || VALUE_5 || VALUE_9 || VALUE_13))		// data needs to be destroyed
+		goto load_req_inval			// share code with INVAL_REQ processing
+	elseif ((VALUE_2 || VALUE_6 || VALUE_10 || VALUE_14))			// the home wants the data back
+		goto load_req_recall			// share code with RECALL_REQ processing
+	elseif ((VALUE_3 || VALUE_7 || VALUE_11 || VALUE_15))			// data needs to be forwarded
+		goto load_req_d_fwd			// share code with D_FWD_REQ processing
+	else	goto free_pkt;				// else: terminate
+	halt;
+
+
+//
+// Promote shared to exclusive
+//
+RM_REQ_OWN_STALE::
+	EXECUTE mem_read inc_tag to_ibuf;		// read the INC entry
+	MISC if (!INC_HIT) goto ucx_err_exit;		// NOTE: Error handling is in need of work
+	TEST inc_state if (!(VALUE_3 || VALUE_7 || VALUE_11 || VALUE_15)) goto own_cont;	// still need to promote line
+	SET;						// NO-OP to fill successor slots
+	halt;
+
+RM_REQ_OWN::						// request to own a line in the INC
+own_cont:
+	SEND O_format node_dst EX_REQ;			// send an upgrade request
+	RECEIVE if (!EX_ACK) goto ucx_err_exit;		// unexpected response
+// Note: Need to handle other cases <<<<<<<<<<
+	EXECUTE mem_read inc_tag to_ibuf;		// read the INC entry
+	SET ONE inc_state inc_state_0 inc_state_1;			// mark INC line as read write
+	EXECUTE mem_write inc_tag from_ibuf goto free_pkt;	// write updated INC tag & terminate
+	halt;
+
+//
+// Write over an entire line without retrieving it first
+//
+RM_REQ_REPLACE::					// request to write over a remote line
+	SET ONE error error_0;				// not yet implemented
+	halt;
+
+RM_REQ_REPLACE_STALE::					// TBD later
+	SET ONE error error_0;				// not yet implemented
+	halt;
+
+
+//
+// entry points for unsolicited messages
+//
+CR_ACK::						// unsolicited CR received
+	SET ONE error error_0 goto free_pkt;
+	halt;
+
+CRE_ACK::						// unsolicited CRE received
+	SET ONE error error_0 goto free_pkt;
+	halt;
+
+UNC_ACK::						// unsolicited UNC_ACK received
+	SET ONE error error_0 goto free_pkt;
+	halt;
+
+EX_ACK::						// unsolicited EX_ACK recived
+	SET ONE error error_0 goto free_pkt;
+	halt;
+
+WB_ACK::						// unsolicited WB_ACK recived
+	SET ONE error error_0 goto free_pkt;
+	halt;
+
+WA_ACK::						// unsolicited WA_ACK recived
+	SET ONE error error_0 goto free_pkt;
+	halt;
+
+UCR_ACK::						// unsolicited UCR_ACK recived
+	SET ONE error error_0 goto free_pkt;
+	halt;
+
+UCW_ACK::						// unsolicited UCW_ACK recived
+	SET ONE error error_0 goto free_pkt;
+	halt;
+
+SPARE_1R::						// unsolicited SPARE_1R received
+	SET ONE error error_0 goto free_pkt;
+	halt;
+
+DATA_FWD::						// unsolicited DATA_FWD received
+	SET ONE error error_0 goto free_pkt;
+	halt;
+
+INVAL_FWD::						// unsolicited INVAL_FWD received
+	SET ONE error error_0 goto free_pkt;
+	halt;
+
+MSG_14::						// undefined message: RAS_MSG_14
+	SET ONE error error_0 goto free_pkt;
+	halt;
+
+MSG_15::						// undefined message: RAS_MSG_15
+	SET ONE error error_0 goto free_pkt;
+	halt;
+
+//
+// RAS initiated requests:
+//
+D_FWD_REQ::						// data forward request
+	EXECUTE mem_read inc_tag to_ibuf;		// load inc tag
+	MISC if (INC_HIT) {				// locate INC entry
+		MOVE addr_inc2tsrf;			// load virtual address field
+		MOVE ibuf_aux2aux;			// get address of node to forward data to
+		load_req_d_fwd:				// entry point from load_req
+		SET ZERO inc_state inc_state_0 inc_state_1;		// invalidate entry
+		EXECUTE mem_write inc_tag from_ibuf;	// write back updated inc-tag
+		MBUS_OP MB_REQ_CRI if (!DIRTY) {	// see if data is in CPU $
+			EXECUTE mem_read inc_line to_obuf;	// no: get it from INC
+		};
+		SEND D_format aux_dst DATA_FWD goto free_pkt;	// send data to remote node
+	} else {
+		SET ONE error error_1 goto free_pkt;	// NOTE: error handling is not up to snuff
+	};
+	halt;
+
+RECALL_REQ:: 
+	EXECUTE mem_read inc_tag to_ibuf;		// load inc tag
+	MISC if (INC_HIT) {				// locate INC entry
+		MOVE addr_inc2tsrf;			// load virtual address field
+		load_req_recall:			// entry point from load_req
+		SET ZERO inc_state inc_state_0 inc_state_1;		// invalidate entry
+		EXECUTE mem_write inc_tag from_ibuf;	// write back updated inc-tag
+		MBUS_OP MB_REQ_CRI if (!DIRTY) {	// see if data is in CPU $
+			EXECUTE mem_read inc_line to_obuf;	// no: get it from INC
+		};
+		SEND D_format node_dst RECALL_ACK goto free_pkt;// send data back to home node
+	} else {
+		SET ONE error error_1 goto free_pkt;	// NOTE: error handling is not up to snuff
+	};
+	halt;
+
+INVAL_REQ::						// invalidation request
+	EXECUTE mem_read inc_tag to_ibuf;		// get INC tags
+	MISC if (INC_HIT) {
+		MOVE addr_inc2tsrf;			// load virtual address field
+		load_req_inval:				// entry point from load_req
+		MOVE inc2aux;				// load next pointer
+		SET ZERO inc_state inc_state_0 inc_state_1;		// invalidate entry
+		EXECUTE mem_write inc_tag from_ibuf;	// write back updated inc-tag
+		MBUS_OP MB_REQ_CI;			// invalidate data locally
+		TEST aux_register if ((VALUE_1 || VALUE_3 || VALUE_5 || VALUE_7 || VALUE_9 || VALUE_11 || VALUE_13 || VALUE_15)) {	// next-pointer != 0 ?
+			SEND O_format aux_dst INVAL_FWD goto free_pkt;	// forward invalidation
+		};
+	};
+	SEND O_format node_dst INVAL_ACK goto free_pkt;	// acknowledge invalidation
+	halt;
+
+%end

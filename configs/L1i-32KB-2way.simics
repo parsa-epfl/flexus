@@ -1,0 +1,45 @@
+### ufetch
+# uFetch [timing]
+flexus.set "-ufetch:associativity"                              "2" # "ICache associativity" (Associativity)
+flexus.set "-ufetch:clean_evict"                                "1" # "Enable eviction messages" (CleanEvict)
+flexus.set "-ufetch:evict_on_snoop"                             "0" # "Send evicts on Snoop Channel (otherwise use Request Channel)" (EvictOnSnoop)
+flexus.set "-ufetch:faq"                                       "24" # "Fetch address queue size" (FAQSize)
+flexus.set "-ufetch:finst"                                      "4" # "Max instructions fetched per cycle" (MaxFetchInstructions)
+flexus.set "-ufetch:flines"                                     "2" # "Max i-cache lines fetched per cycle" (MaxFetchLines)
+flexus.set "-ufetch:iline"                                     "64" # "Icache line size in bytes" (ICacheLineSize)
+#flexus.set "-ufetch:miss_queue_size"                            "4" # "Maximum size of the fetch miss queue" (MissQueueSize)
+flexus.set "-ufetch:perfect"                                    "0" # "Use a perfect ICache" (PerfectICache)
+flexus.set "-ufetch:prefetch"                                   "1" # "Enable Next-line Prefetcher" (PrefetchEnabled)
+flexus.set "-ufetch:send_acks"                                  "1" # "Send acknowledgements when we received data" (SendAcks)
+flexus.set "-ufetch:size"                                   "32768" # "ICache size in bytes" (Size)
+flexus.set "-ufetch:threads"                                    "1" # "Number of threads under control of this uFetch" (Threads)
+flexus.set "-ufetch:use_reply_channel"                          "1" # "Send replies on Reply Channel and only Evicts on Snoop Channel" (UseReplyChannel)
+
+
+
+
+
+### L1i
+# FastNewRTCache [trace]
+flexus.set "-L1i:assoc"                                         "2" # "Set associativity" (Associativity)
+flexus.set "-L1i:block_scout"                                   "0" # "Use precise block sharing info" (BlockScout)
+flexus.set "-L1i:bsize"                                        "64" # "Block size" (BlockSize)
+flexus.set "-L1i:clean_evict"                                   "1" # "Issue clean evictions" (CleanEvictions)
+flexus.set "-L1i:erb_size"                                      "8" # "Evicted Region Buffer size" (ERBSize)
+flexus.set "-L1i:gzip_flexpoints"                               "0" # "Compress flexpoints with gzip" (GZipFlexpoints)
+flexus.set "-L1i:mt_width"                                      "1" # "Number of threads sharing this cache" (MTWidth)
+flexus.set "-L1i:notify_reads"                                  "0" # "Notify on reads (does not notify on fast-hit)" (NotifyReads)
+flexus.set "-L1i:notify_writes"                                 "0" # "Notify on writes" (NotifyWrites)
+flexus.set "-L1i:protocol"                          "InclusiveMESI" # "Name of the coherence protocol (InclusiveMOESI)" (Protocol)
+flexus.set "-L1i:rsize"                                      "1024" # "Region size in bytes" (RegionSize)
+flexus.set "-L1i:rt_assoc"                                     "16" # "RegionTracker Associativity" (RTAssoc)
+flexus.set "-L1i:rt_repl"                                     "LRU" # "RegionTracker replacement policy (SetLRU | RegionLRU)" (RTReplPolicy)
+flexus.set "-L1i:rt_size"                                    "8192" # "RegionTracker size (number of regions tracked)" (RTSize)
+flexus.set "-L1i:size"                                      "32768" # "Cache size in bytes" (Size)
+flexus.set "-L1i:skew_block_set"                                "0" # "skew block set indices based on rt way" (SkewBlockSet)
+flexus.set "-L1i:std_array"                                     "1" # "Use Standard Tag Array instead of RegionTracker" (StdArray)
+flexus.set "-L1i:text_flexpoints"                               "1" # "Store flexpoints as text files (compatible with old FastCache component)" (TextFlexpoints)
+flexus.set "-L1i:trace_tracker_on"                              "0" # "Turn trace tracker on/off" (TraceTracker)
+flexus.set "-L1i:using_traces"                                  "0" # "References are coming from traces (allow certain inconsistancies" (UsingTraces)
+flexus.set "-L1i:downgrade_lru"                                 "0"
+flexus.set "-L1i:snoop_lru"                                     "0"

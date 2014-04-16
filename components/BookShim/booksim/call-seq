@@ -1,0 +1,30 @@
+Breakpoint 1, VC::Route (this=0x1e150f98, 
+    rf=0x41b4d0 <dim_order_torus(Router const*, Flit const*, int, OutputSet*, bool)>, router=0x1e14e120, f=0x1e33e090, in_channel=4) at vc.cpp:187
+187       rf( router, f, in_channel, _route_set, false );
+(gdb) backtrace
+#0  VC::Route (this=0x1e150f98, 
+    rf=0x41b4d0 <dim_order_torus(Router const*, Flit const*, int, OutputSet*, bool)>, router=0x1e14e120, f=0x1e33e090, in_channel=4) at vc.cpp:187
+#1  0x000000000046f62f in IQRouter::_InputQueuing (this=0x1e14e120)
+    at routers/iq_router.cpp:341
+#2  0x000000000046f73c in IQRouter::InternalStep (this=0x1e150f98)
+    at routers/iq_router.cpp:244
+#3  0x0000000000453499 in Network::InternalStep (this=0x1e0c6710)
+    at networks/network.cpp:136
+#4  0x00000000004252ef in TrafficManager::_Step (this=0x1e344e80)
+    at trafficmanager.cpp:881
+#5  0x0000000000425c85 in TrafficManager::_SingleSim (this=0x1e344e80)
+    at trafficmanager.cpp:1140
+#6  0x000000000042589a in TrafficManager::Run (this=0x1e344e80)
+    at trafficmanager.cpp:1260
+#7  0x0000000000404908 in AllocatorSim (config=@0x7fff6eaeda10) at main.cpp:221
+#8  0x00000000004055c2 in main (argc=<value optimized out>, 
+    argv=<value optimized out>) at main.cpp:278
+(gdb) 
+
+
+==============================================================
+
+
+//added by mehdi
+//modified by mehdi
+//Flexus-specific method--added by mehdi   

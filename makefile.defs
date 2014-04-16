@@ -1,0 +1,101 @@
+###############################################################################
+# Flexus setup
+###############################################################################
+# You will have to fill in the MAKE variables in this section to match your
+# environment
+
+# GCC Compiler Settings
+GCC_PATH=/home/parsacom/tools/gcc
+GCC_BINARY=g++
+GCC_VERSION_NOCHECK=true
+SIMICS_GLIBC_NOCHECK=true
+
+# Boost 1.33.1 path
+BOOST_PATH=/home/parsacom/tools/boost_1_33_1
+
+# Simics path
+SIMICS_PATH=/home/parsacom/tools/simics
+
+SIMICS_ARCH=amd64-linux
+#SIMICS_ARCH=x86-linux
+
+# Is Simics 3.0?
+USING_SIMICS_3=1
+
+###############################################################################
+# You are unlikely to have to modify variables below here
+###############################################################################
+
+ECHO=echo
+
+# Make control flags
+SILENT_MAKE=-s # Comment this out or change to -d to debug the Makefiles
+
+# Remove implicit rules to speed up operation
+SILENT_MAKE+=-r
+
+# Directories
+CORE_DIR=$(FLEXUS_ROOT)/core
+COMPONENTS_DIR=$(FLEXUS_ROOT)/components
+SIMULATORS_DIR=$(FLEXUS_ROOT)/simulators
+
+# Include paths
+FLEXUS_INCLUDE=$(FLEXUS_ROOT)
+BOOST_INCLUDE=$(BOOST_PATH)
+
+SIMICS_LIB_DIR=$(SIMICS_PATH)/$(SIMICS_ARCH)/lib
+SIMICS_SYSLIB_DIR=$(SIMICS_PATH)/$(SIMICS_ARCH)/sys/lib
+SIMICS_INCLUDE=$(if $(USING_SIMICS_3),$(SIMICS_PATH)/src/include,$(SIMICS_PATH)/$(SIMICS_ARCH)/obj/include)
+SIMICS_V9_INCLUDE=$(SIMICS_INCLUDE)/simics
+SIMICS_X86_INCLUDE=$(SIMICS_INCLUDE)/simics
+
+INCLUDES=-isystem $(BOOST_INCLUDE) -isystem $(SIMICS_INCLUDE) -I$(FLEXUS_INCLUDE) -Ibooksim -Ibooksim/arbiters -Ibooksim/allocators -Ibooksim/routers -Ibooksim/networks -IDRAMSim2
+BOOST_LIBRARIES=-Wl,--no-whole-archive -lboost_date_time -lboost_regex -lboost_serialization -lboost_iostreams -lz
+
+# other constants
+# List of "special" cpp files in components that are not part of a components library
+CORE=core
+CORE_STANDALONE=core_standalone
+CORE_SIMICS=core_simics
+SPECIAL_COMPONENT_CPPS = test.cpp
+
+# Compiler settings
+GCC=$(GCC_PATH)/bin/$(GCC_BINARY)
+GCC_LIB_PATH=$(GCC_PATH)/lib
+GCC_OPTFLAGS=-O3 -funroll-loops -fno-strict-aliasing
+GCC_LANGFLAGS=-Wall -fmessage-length=160 -x c++ -fPIC -Werror -Wno-unused -DNO_STORAGE
+ifeq "$(SIMICS_ARCH)" "amd64-linux"
+ARCH_FLAGS=-DX86_64
+else
+ARCH_FLAGS=
+endif
+GCC_CFLAGS=-c $(GCC_OPTFLAGS) $(GCC_LANGFLAGS) $(ARCH_FLAGS)
+GCC_LFLAGS=-Wl,--whole-archive
+GCC_SIMICS_LFLAGS=-shared -export-dynamic -Wl,--whole-archive
+GCC_DEPFLAGS=-M
+
+ICC=icc
+ICC_OPTFLAGS=-O3 -tpp7 -xi -axW -
+ICC_LANGFLAGS=-w1
+ICC_RPTFLAGS=-opt_report_level med -opt_report_file opt_report
+ICC_CFLAGS=-ipo_c $(ICC_OPTFLAGS) $(ICC_LANGFLAGS) #$(ICC_RPTFLAGS)
+ICC_MODID_CFLAGS=-c $(ICC_OPTFLAGS) $(ICC_LANGFLAGS)
+ICC_SIMICS_LFLAGS=-shared -export-dynamic
+ICC_LFLAGS=
+
+AR=ar
+AR_FLAGS=r
+RANLIB=ranlib
+
+# For microcode
+MASM_CPP = /lib/cpp
+MASM = $(COMPONENTS_DIR)/ProtocolEngine/masm/masm
+
+
+# Useful functions
+COMPONENT_HAS_LIBRARY = $(if $(strip $(filter-out $(SPECIAL_COMPONENT_CPPS),$(notdir $(wildcard $(COMPONENTS_DIR)/$(1)/*.cpp)))),yes,no)
+
+FILTER_LIBS = $(filter %.a,$1)
+FILTER_CPPS = $(filter %.cpp,$1)
+
+

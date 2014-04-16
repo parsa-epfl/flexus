@@ -1,0 +1,114 @@
+### fag
+# FetchAddressGenerate [timing]
+flexus.set "-fag:bpreds"                                        "2" # "Max branches predicted per cycle" (MaxBPred)
+#flexus.set "-fag:faddrs"                                        "3" # "Max fetch addresses generated per cycle" (MaxFetchAddress)
+flexus.set "-fag:threads"                                       "1" # "Number of threads under control of this FAG" (Threads)
+
+
+
+
+
+### decoder
+# v9Decoder [timing]
+#flexus.set "-decoder:dispatch"                                  "3" # "Maximum dispatch per cycle" (DispatchWidth)
+#flexus.set "-decoder:fiq"                                       "8" # "Fetch instruction queue size" (FIQSize)
+flexus.set "-decoder:multithread"                               "0" # "Enable multi-threaded execution" (Multithread)
+
+
+
+
+
+### uarch
+# uArch [timing]
+flexus.set "-uarch:break_on_resynch"                            "0" # "Break on resynchronizer" (BreakOnResynchronize)
+flexus.set "-uarch:ckpt_threshold"                              "0" # "Number of instructions between checkpoints.  0 disables periodic checkpoints" (CheckpointThreshold)
+flexus.set "-uarch:coherence"                                  "64" # "Coherence Unit" (CoherenceUnit)
+flexus.set "-uarch:consistency"                                 "1" # "Consistency Model" (ConsistencyModel)
+flexus.set "-uarch:early_sgp"                                   "0" # "Notify SGP Early" (EarlySGP)
+flexus.set "-uarch:fpAddOpLatency"                              "3" # "End-to-end latency of an FP ADD/SUB operation" (FpAddOpLatency)
+flexus.set "-uarch:fpAddOpPipelineResetTime"                    "1" # "Number of cycles required between subsequent FP ADD/SUB operations" (FpAddOpPipelineResetTime)
+flexus.set "-uarch:fpCmpOpLatency"                              "1" # "End-to-end latency of an FP compare operation" (FpCmpOpLatency)
+flexus.set "-uarch:fpCmpOpPipelineResetTime"                    "1" # "Number of cycles required between subsequent FP compare operations" (FpCmpOpPipelineResetTime)
+flexus.set "-uarch:fpCvtOpLatency"                              "4" # "End-to-end latency of an FP convert operation" (FpCvtOpLatency)
+flexus.set "-uarch:fpCvtOpPipelineResetTime"                    "1" # "Number of cycles required between subsequent FP convert operations" (FpCvtOpPipelineResetTime)
+flexus.set "-uarch:fpDivOpLatency"                              "6" # "End-to-end latency of an FP DIV operation" (FpDivOpLatency)
+flexus.set "-uarch:fpDivOpPipelineResetTime"                    "5" # "Number of cycles required between subsequent FP DIV operations" (FpDivOpPipelineResetTime)
+flexus.set "-uarch:fpMultOpLatency"                             "5" # "End-to-end latency of an FP MUL operation" (FpMultOpLatency)
+flexus.set "-uarch:fpMultOpPipelineResetTime"                   "2" # "Number of cycles required between subsequent FP MUL operations" (FpMultOpPipelineResetTime)
+flexus.set "-uarch:fpSqrtOpLatency"                             "6" # "End-to-end latency of an FP SQRT operation" (FpSqrtOpLatency)
+flexus.set "-uarch:fpSqrtOpPipelineResetTime"                   "5" # "Number of cycles required between subsequent FP SQRT operations" (FpSqrtOpPipelineResetTime)
+#flexus.set "-uarch:in_order_execute"                            "0" # "Ensure that instructions execute in order" (InOrderExecute)
+flexus.set "-uarch:in_order_memory"                             "0" # "Only allow ROB/SB head to issue to memory" (InOrderMemory)
+flexus.set "-uarch:intAluOpLatency"                             "1" # "End-to-end latency of an integer ALU operation" (IntAluOpLatency)
+flexus.set "-uarch:intAluOpPipelineResetTime"                   "1" # "Number of cycles required between subsequent integer ALU operations" (IntAluOpPipelineResetTime)
+flexus.set "-uarch:intDivOpLatency"                            "16" # "End-to-end latency of an integer DIV operation" (IntDivOpLatency)
+flexus.set "-uarch:intDivOpPipelineResetTime"                   "6" # "Number of cycles required between subsequent integer DIV operations" (IntDivOpPipelineResetTime)
+flexus.set "-uarch:intMultOpLatency"                            "3" # "End-to-end latency of an integer MUL operation" (IntMultOpLatency)
+flexus.set "-uarch:intMultOpPipelineResetTime"                  "1" # "Number of cycles required between subsequent integer MUL operations" (IntMultOpPipelineResetTime)
+flexus.set "-uarch:memports"                                    "2" # "Memory Ports" (MemoryPorts)
+flexus.set "-uarch:multithread"                                 "0" # "Enable multi-threaded execution" (Multithread)
+flexus.set "-uarch:naw_bypass_sb"                               "0" # "Allow Non-Allocating-Writes to bypass store-buffer" (NAWBypassSB)
+flexus.set "-uarch:naw_wait_at_sync"                            "0" # "Force MEMBAR #Sync to wait for non-allocating writes to finish" (NAWWaitAtSync)
+flexus.set "-uarch:numFpAlu"                                    "1" # "Number of FP ALUs" (NumFpAlu)
+flexus.set "-uarch:numFpMult"                                   "1" # "Number of FP MUL/DIV units" (NumFpMult)
+flexus.set "-uarch:numIntAlu"                                   "2" # "Number of integer ALUs" (NumIntAlu)
+flexus.set "-uarch:numIntMult"                                  "1" # "Number of integer MUL/DIV units" (NumIntMult)
+flexus.set "-uarch:off-chip-se"                                "90" # "Off-Chip Side-Effect latency" (OffChipLatency)
+flexus.set "-uarch:on-chip-se"                                  "1" # "On-Chip Side-Effect latency" (OnChipLatency)
+flexus.set "-uarch:prefetch_early"                              "0" # "Issue store prefetch requests when address resolves" (PrefetchEarly)
+#flexus.set "-uarch:retire"                                      "3" # "Retirement width" (RetireWidth)
+#flexus.set "-uarch:rob"                                        "60" # "Reorder buffer size" (ROBSize)
+#flexus.set "-uarch:sb"                                         "16" # "Store buffer size" (SBSize)
+flexus.set "-uarch:snoopports"                                  "1" # "Snoop Ports" (SnoopPorts)
+flexus.set "-uarch:spec_atomic_val"                             "0" # "Speculate on the Value of Atomics" (SpeculateOnAtomicValue)
+flexus.set "-uarch:spec_atomic_val_perfect"                     "0" # "Use perfect atomic value prediction" (SpeculateOnAtomicValuePerfect)
+flexus.set "-uarch:spec_ckpts"                                  "0" # "Number of checkpoints allowed.  0 for infinite" (SpeculativeCheckpoints)
+flexus.set "-uarch:spec_order"                                  "0" # "Speculate on Memory Order" (SpeculativeOrder)
+flexus.set "-uarch:spin_control"                                "1" # "Enable spin control" (SpinControl)
+#flexus.set "-uarch:storeprefetch"                              "16" # "Simultaneous store prefeteches" (StorePrefetches)
+flexus.set "-uarch:track_parallel"                              "0" # "Track which memory accesses can proceed in parallel" (TrackParallelAccesses)
+flexus.set "-uarch:validate-mmu"                                "0" # "Validate MMU after each instruction" (ValidateMMU)
+
+
+
+
+
+### magic-break
+# MagicBreak MagicBreak [timing+trace]
+flexus.set "-magic-break:ckpt_cycle"                            "0" # "# of cycles between checkpoints." (CkptCycleInterval)
+flexus.set "-magic-break:ckpt_cycle_name"                       "0" # "Base cycle # from which to build checkpoint names." (CkptCycleName)
+flexus.set "-magic-break:ckpt_iter"                             "0" # "Checkpoint simulation when CPU 0 reaches each iteration." (CheckpointOnIteration)
+flexus.set "-magic-break:ckpt_trans"                           "-1" # "Quiesce and save every X transactions. -1 disables" (CheckpointEveryXTransactions)
+flexus.set "-magic-break:end_iter"                             "-1" # "Terminate simulation when CPU 0 reaches iteration.  -1 disables" (TerminateOnIteration)
+flexus.set "-magic-break:end_trans"                            "-1" # "Terminate simulation after ## transactions.  -1 disables" (TerminateOnTransaction)
+flexus.set "-magic-break:first_trans"                           "0" # "Transaction number for first transaction." (FirstTransactionIs)
+flexus.set "-magic-break:iter"                                  "0" # "Enable Iteration Counts" (EnableIterationCounts)
+flexus.set "-magic-break:min_cycle"                             "0" # "Minimum number of cycles to run when TerminateOnTransaction is enabled." (CycleMinimum)
+flexus.set "-magic-break:stats_trans"                        "1000" # "Statistics interval on ## transactions.  -1 disables" (TransactionStatsInterval)
+flexus.set "-magic-break:stop_cycle"                            "0" # "Cycle on which to halt simulation." (StopCycle)
+flexus.set "-magic-break:stop_on_magic"                        "-1" # "Terminate simulation on a specific magic breakpoint" (TerminateOnMagicBreak)
+flexus.set "-magic-break:trans"                                 "1" # "Enable Transaction Counts" (EnableTransactionCounts)
+flexus.set "-magic-break:trans_type"                            "0" # "Workload type.  0=TPCC/JBB  1=WEB" (TransactionType)
+
+
+
+
+
+### feeder
+# DecoupledFeeder [trace]
+flexus.set "-feeder:CMPwidth"                                   "0" # "Number of cores per CMP chip (0 = sys width)" (CMPWidth)
+flexus.set "-feeder:decouple_addr_spaces"                       "0" # "Decouple instruction from data address spaces" (DecoupleInstrDataSpaces)
+flexus.set "-feeder:housekeeping_period"                     "1000" # "Simics cycles between housekeeping events" (HousekeepingPeriod)
+flexus.set "-feeder:ifetch"                                     "1" # "Track and report instruction fetches" (TrackIFetch)
+flexus.set "-feeder:simics_quantum"                           "100" # "CPU quantum size in simics" (SimicsQuantum)
+flexus.set "-feeder:stick"                                    "0.0" # "CPU System tick frequency. 0.0 leaves frequency unchanged" (SystemTickFrequency)
+flexus.set "-feeder:whitebox_debug"                             "0" # "WhiteBox debugging on/off" (WhiteBoxDebug)
+flexus.set "-feeder:whitebox_debug_period"                  "10000" # "WhiteBox period" (WhiteBoxPeriod)
+
+
+
+
+
+### bpwarm
+# BPWarm [trace]
+flexus.set "-bpwarm:cores"                                      "1" # "Number of cores" (Cores)

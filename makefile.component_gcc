@@ -1,0 +1,18 @@
+# Get variables from Makefile.defs
+include $(FLEXUS_ROOT)/makefile.defs
+
+include $(FLEXUS_ROOT)/makefile.component_all_ccs
+
+.cpp.$(OEXT):
+	$(ECHO) "$(GCC) $(INCLUDES) $(GCC_CFLAGS) $(VARIANT_DEFINES) $< -o $*.$(OEXT)"
+	$(GCC) $(INCLUDES) $(GCC_CFLAGS) $(VARIANT_DEFINES) $< -o $*.$(OEXT)
+
+$(COMPONENT).$(VARIANT_EXT).a: $(COMPONENT_LIB_SOURCES:.cpp=.$(OEXT))
+	$(ECHO) "$(AR) $(AR_FLAGS) $@ $^"
+	$(AR) $(AR_FLAGS) $@ $^ 
+	$(ECHO) "$(RANLIB) $@"
+	$(RANLIB) $@
+
+test.$(VARIANT_EXT): $(patsubst %.cpp,%.$(OEXT),$(TEST_SOURCES)) $(COMPONENT).$(VARIANT_EXT).a
+	$(ECHO) "$(GCC) $(GCC_LFLAGS) $(patsubst %.cpp,%.$(OEXT),$(TEST_SOURCES)) $(COMPONENT).$(VARIANT_EXT).a -o $@"
+	$(GCC) $(GCC_LFLAGS) $(patsubst %.cpp,%.$(OEXT),$(TEST_SOURCES)) $(COMPONENT).$(VARIANT_EXT).a -o $@

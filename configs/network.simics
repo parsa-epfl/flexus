@@ -1,0 +1,36 @@
+### nic
+# MultiNic2 [timing]
+flexus.set "-nic:recv-capacity"                                 "4" # "Recv Queue Capacity" (RecvCapacity)
+flexus.set "-nic:send-capacity"                                 "4" # "Send Queue Capacity" (SendCapacity)
+flexus.set "-nic:vc"                                            "3" # "Virtual channels" (VChannels)
+
+
+
+
+
+### network
+# MemoryNetwork [timing]
+flexus.set "-network:nodes"                              3*$NUMCPUS # "Number of Nodes" (NumNodes)
+flexus.set "-network:topology-file"            "16x3-mesh.topology" # "Network topology file" (NetworkTopologyFile)
+flexus.set "-network:virtual-channels"                          "3" # "Number of virtual channels" (VChannels)
+
+
+
+
+
+### net-mapper
+# SplitDestinationMapper [timing]
+flexus.set "-net-mapper:Cores"                             $NUMCPUS # "Number of cores" (Cores)
+flexus.set "-net-mapper:DirInterleaving"                       "64" # "Interleaving between directories (in bytes)" (DirInterleaving)
+flexus.set "-net-mapper:MemInterleaving"                       "64" # "Interleaving between memory controllers (in bytes)" (MemInterleaving)
+flexus.set "-net-mapper:DirLocation"                  "Distributed" # "Directory location (Distributed|AtMemory)" (DirLocation)
+flexus.set "-net-mapper:DirXORShift"                           "-1" # "XOR high order bits after shifting this many bits when calculating directory index" (DirXORShift)
+flexus.set "-net-mapper:Directories"                       $NUMCPUS # "Number of directories" (Directories)
+flexus.set "-net-mapper:Banks"                             $NUMCPUS # "Number of banks" (Banks) 
+flexus.set "-net-mapper:LocalDir"                               "0" # "Treate directory as always being local to the requester" (LocalDir)
+flexus.set "-net-mapper:MemControllers"                         "1" # "Number of memory controllers" (MemControllers)
+flexus.set "-net-mapper:MemLocation"                            "0" # "4,7,8,11" # "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15" # "Memory controller locations" (MemLocation)
+flexus.set "-net-mapper:MemReplyToDir"                          "1" # "Send memory replies to the directory (instead of original requester)" (MemReplyToDir)
+flexus.set "-net-mapper:MemXORShift"                           "-1" # "XOR high order bits after shifting this many bits when calculating memory index" (MemXORShift)
+flexus.set "-net-mapper:TwoPhaseWB"                             "0" # "2 Phase Write-Back sends NAcks to requester, not directory" (TwoPhaseWB)
+flexus.set "-net-mapper:MemAcksNeedData"                        "1" # "When memory replies directly to requester, require data with final ack" (MemAcksNeedData)

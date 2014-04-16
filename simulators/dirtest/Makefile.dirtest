@@ -1,0 +1,10 @@
+# DirTest Simulator build description
+
+REQUIRED_COMPONENTS = Directory DirTest Common
+
+SUPPORTS_STANDALONE = true
+SUPPORTS_SIMICS = false
+SUPPORTS_X86 = true
+SUPPORTS_V9 = true
+DEFAULT_TARGET = standalone
+DEFAULT_PLATFORM = v9

@@ -1,0 +1,576 @@
+//
+//  Remote Engine (RE) micro code
+//  (aka IE, RMH)
+//
+//  re.mcd  version 1.00	Sept-21-1999
+//
+
+// *** FIX: get rid of these define statements
+#define RDEXEAGER_RPL   EAGER_RPL
+#define EXEAGER_RPL     EAGER_RPL
+#define ITODEAGER_RPL   EAGER_RPL
+#define WBRACE_ACK      EAGER_RPL
+#define REPLMNTRACE_ACK EAGER_RPL
+// #define WBRACE_ACK      RACE_ACK
+// #define REPLMNTRACE_ACK RACE_ACK
+
+
+#define BIT_0_SET		(VALUE_1 || VALUE_3 || VALUE_5 || VALUE_7 || VALUE_9 || VALUE_11 || VALUE_13 || VALUE_15)
+#define BIT_1_SET		(VALUE_2 || VALUE_3 || VALUE_6 || VALUE_7 || VALUE_10 || VALUE_11 || VALUE_14 || VALUE_15)
+#define BIT_2_SET		(VALUE_4 || VALUE_5 || VALUE_6 || VALUE_7 || VALUE_12 || VALUE_13 || VALUE_14 || VALUE_15)
+#define BIT_3_SET		(VALUE_8 || VALUE_9 || VALUE_10 || VALUE_11 || VALUE_12 || VALUE_13 || VALUE_14 || VALUE_15)
+
+#define NOOP			SET
+
+#define INVAL_RACE		BIT_0_SET
+#define FWD_DONE		BIT_1_SET
+#define WB_RPL_DONE		BIT_2_SET
+#define L2_UNPENDED		BIT_3_SET
+
+#define LAST_INVAL		BIT_0_SET
+#define ZERO_INVALACK_CNT       BIT_1_SET
+#define FWD_SAME_AS_HOME        BIT_2_SET
+
+
+#define RDFWD_DELAYED           BIT_0_SET
+#define RDEXFWD_DELAYED         BIT_1_SET
+#define ITODINVALFWD_DELAYED    BIT_2_SET
+
+
+#define L_FWD_BEGIN(retry_label) \
+    } elseif (RD_FWD) { \
+        SET ONE delayed_flag rdfwd_delayed; \
+        MOVE from_ibuf_req to_tsrf_delayed \
+            goto retry_label; \
+    } elseif (RDEX_FWD) { \
+        SET ONE delayed_flag rdexfwd_delayed; \
+        MOVE from_ibuf_req to_tsrf_delayed \
+            goto retry_label; \
+    } elseif (ITODINVAL_FWD) { \
+        SET ONE delayed_flag itodinvalfwd_delayed; \
+        MOVE from_ibuf_req to_tsrf_delayed \
+            goto retry_label
+
+#define L_FWD_MID(retry_label) \
+    } elseif (INVAL_FWD) { \
+        SEND S_format fwd_dst INVAL_ACK \
+            goto retry_label; \
+    } elseif (CMINVAL_FWD) { \
+        TEST dir_state if (LAST_INVAL) { \
+            SEND S_format fwd_dst INVAL_ACK \
+                goto retry_label; \
+        } else { \
+            SEND S_format next_dst CMINVAL_FWD \
+                goto retry_label; \
+        }
+
+#define L_FWD_MID_INVALRACE(retry_label) \
+    } elseif (INVAL_FWD) { \
+        SET ONE flag inval_race; \
+        SEND S_format fwd_dst INVAL_ACK \
+            goto retry_label; \
+    } elseif (CMINVAL_FWD) { \
+        SET ONE flag inval_race; \
+        TEST dir_state if (LAST_INVAL) { \
+            SEND S_format fwd_dst INVAL_ACK \
+                goto retry_label; \
+        } else { \
+            SEND S_format next_dst CMINVAL_FWD \
+                goto retry_label; \
+        }
+
+#define L_FWD_MID_DOINVAL(retry_label) \
+    } elseif (INVAL_FWD) { \
+        LSEND_REC S_format L2_dst R_INVAL if (!INVAL_ACK) goto err_exit; \
+        SET ONE flag inval_race; \
+        SEND S_format fwd_dst INVAL_ACK \
+            goto retry_label; \
+    } elseif (CMINVAL_FWD) { \
+        LSEND_REC S_format L2_dst R_INVAL if (!INVAL_ACK) goto err_exit; \
+        SET ONE flag inval_race; \
+        TEST dir_state if (LAST_INVAL) { \
+            SEND S_format fwd_dst INVAL_ACK \
+                goto retry_label; \
+        } else { \
+            SEND S_format next_dst CMINVAL_FWD \
+                goto retry_label; \
+        }
+
+#define L_FWD_ERROR(retry_label) \
+    } elseif (RCV_TIMEOUT) goto err_exit \
+    else goto err_exit
+
+#define L_FWD_HANDLER(retry_label) \
+    L_FWD_BEGIN(retry_label); \
+    L_FWD_MID(retry_label); \
+    L_FWD_ERROR(retry_label)
+
+#define L_FWD_HANDLER_INVALRACE(retry_label) \
+    L_FWD_BEGIN(retry_label); \
+    L_FWD_MID_INVALRACE(retry_label); \
+    L_FWD_ERROR(retry_label)
+
+#define L_FWD_HANDLER_DOINVAL(retry_label) \
+    L_FWD_BEGIN(retry_label); \
+    L_FWD_MID_DOINVAL(retry_label); \
+    L_FWD_ERROR(retry_label)
+
+#define L_FWDINVAL_HANDLER(retry_label) \
+    L_FWD_MID(retry_label); \
+    L_FWD_ERROR(retry_label)
+
+
+
+
+//
+// ********** Entry points for locally generated transactions **********
+//
+
+
+L_RD::
+
+    // L2 provides i-fetch information
+
+    // L2 indirectly gets unpended through L1
+
+  l_rd_enter:
+    SEND S_format home_dst RD_REQ;
+  l_rd_retry:
+    RECEIVE if (RD_RPL) {
+        TEST flag if (!INVAL_RACE) {
+            LSEND L_format L1_dst L_RD_RPL
+                goto done;                          // no delayed fwd's possible
+        } else {
+            LSEND L_format L1_dst L_RDONCE_RPL
+                goto done;
+        };
+    } elseif (RDEX_RPL) {                           // possible due to exclusive promotion
+        LSEND L_format L1_dst L_RDEX_RPL
+           goto l_fwd_delayed;
+  L_FWD_HANDLER_INVALRACE(l_rd_retry);
+
+  l_fwd_delayed:  
+    TEST delayed_flag if (RDFWD_DELAYED) {
+        MOVE from_tsrf_delayed to_tsrf_active
+            goto r_rd_enter;
+    } elseif (RDEXFWD_DELAYED) {
+        MOVE from_tsrf_delayed to_tsrf_active
+            goto r_rdex_enter;
+    } elseif (ITODINVALFWD_DELAYED) {
+        MOVE from_tsrf_delayed to_tsrf_active
+            goto r_itodinval_enter;
+    } else goto done;
+
+  err_exit:
+    SET ONE error error_0
+        goto done;
+
+  done:
+    SET ZERO re_status packet_pndg;
+
+    halt;
+
+
+L_RDEX::
+
+    // assumes L2 does local invals before requesting l_rdex
+
+  l_rdex_enter:
+    SEND S_format home_dst RDEX_REQ;
+
+  l_rdex_retry:
+    RECEIVE if (RDEX_RPL) {
+  l_rdex_complete:
+        LSEND L_format L1_dst L_RDEX_RPL
+            goto l_fwd_delayed;
+    } elseif (RDEXEAGER_RPL) {
+        MOVE from_ibuf_invalcnt addto_tsrf_invalack_cnt;
+        TEST dir_state if (ZERO_INVALACK_CNT) goto l_rdex_complete
+        else {
+            LSEND L_format L1_dst L_RDEXEAGER_RPL
+                goto l_rdex_retry;
+        }; 
+    } elseif (INVAL_ACK) {
+        SET ONE counter decr_invalack_cnt;
+        TEST dir_state if (ZERO_INVALACK_CNT) {
+            LSEND S_format L1_dst L_MB_DECR;
+            LSEND S_format L2_dst L_RDEX_DONE
+                goto l_fwd_delayed;
+        } else goto l_rdex_retry;
+    L_FWD_HANDLER(l_rdex_retry);
+    halt;
+
+
+L_EX::
+
+    // possible that L1 requests a RdEx, turned into Ex by L2
+    //
+    // assumes L2 does local invals before requesting l_ex
+    //
+    // inval signals failure to both L1/L2, so no explicit failure signal
+
+  l_ex_enter:
+    SEND S_format home_dst EX_REQ;
+
+  l_ex_retry:
+    RECEIVE if (EX_RPL) {
+  l_ex_complete:
+        LSEND S_format L1_dst L_EX_RPL;               
+        LSEND S_format L2_dst L_EX_DONE
+            goto l_fwd_delayed;
+    } elseif (EXEAGER_RPL) {
+        MOVE from_ibuf_invalcnt addto_tsrf_invalack_cnt;
+        TEST dir_state if (ZERO_INVALACK_CNT) goto l_ex_complete
+        else {
+            LSEND S_format L1_dst L_EXEAGER_RPL
+                goto l_ex_retry;
+        };
+    } elseif (INVAL_ACK) {
+        SET ONE counter decr_invalack_cnt;
+        TEST dir_state if (ZERO_INVALACK_CNT) {
+            LSEND S_format L1_dst L_MB_DECR;
+            LSEND S_format L2_dst L_EX_DONE
+                goto l_fwd_delayed;
+        } else goto l_ex_retry;
+    } elseif (EXFAIL_RPL) {
+        // failure dictated by directory
+        TEST flag if (!INVAL_RACE) {
+            // failure, but we haven't seen inval yet;
+            // we do NOT wait for inval to arrive: we are guaranteed
+            // that the late inval will arrive before the completion
+            // of the next rd/rdex/itod from this node
+            //
+            // send dummy inval to signal failure to L2/L1
+            LSEND_REC S_format L2_dst R_INVAL if (!INVAL_ACK) goto err_exit
+            else goto done;
+        } else goto done;
+            // the incoming inval has already signaled L2 and L1 about failure
+    } elseif (EXCHECK_RPL) {
+        // failure due to inval_race when directory is in coarse-vectore mode
+        TEST flag if (INVAL_RACE) {
+            // rare case where there is an actual alias due to coarse-vector;
+            // the incoming inval has already signaled L2 and L1 about failure
+            //
+            SEND S_format home_dst EX_UNPEND_FAIL
+                goto done;            
+        } else {
+            // success case; will require invals to be sent out of
+            // home since we know dir is in coarse-vector
+            LSEND S_format L1_dst L_EXEAGER_RPL;
+            SEND S_format home_dst EX_UNPEND_SUCCESS;
+            MOVE from_ibuf_invalcnt addto_tsrf_invalack_cnt      // invalcnt from EXCHECK_RPL
+                goto l_ex_retry;
+        };
+    L_FWD_HANDLER_DOINVAL(l_ex_retry);
+    halt;
+
+
+L_ITOD::
+
+    // assumes L2 does local invals before requesting l_itod
+
+  l_itod_enter:
+    SEND S_format home_dst ITOD_REQ;
+  l_itod_retry:
+    RECEIVE if (ITOD_RPL) {
+  l_itod_complete:
+        LSEND S_format L1_dst L_ITOD_RPL;               
+        LSEND S_format L2_dst L_ITOD_DONE
+            goto l_fwd_delayed;
+    } elseif (ITODEAGER_RPL) {
+        MOVE from_ibuf_invalcnt addto_tsrf_invalack_cnt;
+        TEST dir_state if (ZERO_INVALACK_CNT) goto l_itod_complete
+        else {
+            LSEND S_format L1_dst L_ITODEAGER_RPL
+                goto l_itod_retry;
+        };
+    } elseif (INVAL_ACK) {
+        SET ONE counter decr_invalack_cnt;
+        TEST dir_state if (ZERO_INVALACK_CNT) {
+            LSEND S_format L1_dst L_MB_DECR;
+            LSEND S_format L2_dst L_ITOD_DONE
+                goto l_fwd_delayed;
+        } else goto l_itod_retry;
+    L_FWD_HANDLER(l_itod_retry);
+    halt;
+
+L_WB::
+
+  l_wb_enter:
+    SEND L_format home_dst WB_REQ;
+  l_wb_retry:
+    RECEIVE if (WB_ACK) {
+  l_wb_complete:
+        LSEND S_format L2_dst L_WB_DONE
+            goto done;
+    } elseif (WBRACE_ACK) {
+        TEST flag if (FWD_DONE && !L2_UNPENDED) goto l_wb_complete
+        elseif (FWD_DONE && L2_UNPENDED) goto done
+        else {
+            SET ONE flag wb_rpl_done
+                goto l_wb_retry;
+        };
+    } elseif (RD_FWD) {
+        TEST dir_state if (!FWD_SAME_AS_HOME) {
+            // request from home will be satisfied by the WB_REQ itself;
+            // L2 unpends itself when it notices this race
+            LSEND_REC S_format L2_dst WB_RPL_RD if (WB_RPL_DATA) {
+                SEND L_format fwd_dst RD_RPL;
+                SET ONE flag L2_unpended;
+            } else goto err_exit;
+        };
+        TEST flag if (!WB_RPL_DONE) {
+            SET ONE flag fwd_done
+                goto l_wb_retry;
+        } else goto done;
+    } elseif (RDEX_FWD) {
+        TEST dir_state if (!FWD_SAME_AS_HOME) {
+            LSEND_REC S_format L2_dst WB_RPL_RD if (WB_RPL_DATA) {
+                SEND L_format fwd_dst RDEX_RPL;
+                SET ONE flag L2_unpended;
+            } else goto err_exit;
+        };
+        TEST flag if (!WB_RPL_DONE) {
+            SET ONE flag fwd_done
+                goto l_wb_retry;
+        } else goto done;
+    } elseif (ITODINVAL_FWD) {
+        TEST dir_state if (!FWD_SAME_AS_HOME) {
+            SEND S_format fwd_dst ITOD_RPL;
+        };
+        TEST flag if (!WB_RPL_DONE) {
+            SET ONE flag fwd_done
+                goto l_wb_retry;
+        } else goto done;
+    L_FWDINVAL_HANDLER(l_wb_retry);
+        // for example, CMINVAL can happen if we are waiting for WBRACE_ACK,
+        // dir handles new requests and goes to coarse vector, causing aliased
+        // inval to this node
+    halt;
+
+
+L_REPLMNT::
+
+  l_replmnt_enter:
+    SEND S_format home_dst REPLMNT_REQ;
+  l_replmnt_retry:
+    RECEIVE if (REPLMNT_ACK) {
+  l_replmnt_complete:
+        LSEND S_format L2_dst L_REPLMNT_DONE
+            goto done;
+    } elseif (REPLMNTRACE_ACK) {
+        TEST flag if (FWD_DONE && !L2_UNPENDED) goto l_replmnt_complete
+        elseif (FWD_DONE && L2_UNPENDED) goto done
+        else {
+            SET ONE flag wb_rpl_done
+                goto l_replmnt_retry;
+        };
+    } elseif (RD_FWD) {
+        // get data from L2 even if read request is from home (unlike l_wb)
+        LSEND_REC S_format L2_dst WB_RPL_RD if (WB_RPL_DATA) {
+            SEND L_format fwd_dst RD_RPL;
+            SET ONE flag L2_unpended;
+        } else goto err_exit;
+        TEST flag if (!WB_RPL_DONE) {
+            SET ONE flag fwd_done
+                goto l_replmnt_retry;
+        } else goto done;
+    } elseif (RDEX_FWD) {
+        // get data from L2 even if rdex request is from home (unlike l_wb)
+        LSEND_REC S_format L2_dst WB_RPL_RD if (WB_RPL_DATA) {
+            SEND L_format fwd_dst RDEX_RPL;
+            SET ONE flag L2_unpended;
+        } else goto err_exit;
+        TEST flag if (!WB_RPL_DONE) {
+            SET ONE flag fwd_done
+                goto l_replmnt_retry;
+        } else goto done;
+    } elseif (ITODINVAL_FWD) {
+        // respond even if itod is from home (unlike l_wb)
+        SEND S_format fwd_dst ITOD_RPL;
+        TEST flag if (!WB_RPL_DONE) {
+            SET ONE flag fwd_done
+                goto l_replmnt_retry;
+        } else goto done;
+    L_FWDINVAL_HANDLER(l_replmnt_retry);
+    halt;
+
+
+L_RD_STALE::
+
+    NOOP goto l_rd_enter;
+    halt;
+
+L_RDEX_STALE::
+
+    NOOP goto l_rdex_enter;
+    halt;
+
+L_EX_STALE::
+
+    LSEND_REC S_format L2_dst L_EX_STALE if (L_REQ_VALID) goto l_ex_enter
+    else goto err_exit;
+    halt;
+
+L_ITOD_STALE::
+
+    NOOP goto l_itod_enter;
+    halt;
+
+L_WB_STALE::
+
+    LSEND_REC S_format L2_dst L_WB_STALE if (L_REQ_VALID) goto l_wb_enter
+    else goto err_exit;
+    halt;
+
+L_REPLMNT_STALE::
+
+    LSEND_REC S_format L2_dst L_RPLMNT_STALE if (L_REQ_VALID) goto l_replmnt_enter
+    else goto err_exit;
+    halt;
+
+RE_HALT::
+    NOOP goto done;
+    halt;
+
+
+// 
+// ********** Entry points for uncached transactions **********
+//
+
+L_UNCRD::
+    NOOP goto err_exit;
+    halt;
+
+L_UNCWR::
+    NOOP goto err_exit;
+    halt;
+
+// 
+// ********** Entry points for external transactions **********
+//
+
+
+RD_FWD::
+
+    // reply always comes directly from L2 (i.e., will do local L1 retrieval)
+
+  r_rd_enter:
+    LSEND_REC S_format L2_dst R_RD if (DIRTY_DATA_RPL) {
+        SEND L_format fwd_dst RD_RPL;
+        TEST dir_state if (!FWD_SAME_AS_HOME) {
+            SEND L_format home_dst SHRWB_REQ;
+        } else goto done;
+    } elseif (CLEAN_DATA_RPL) {
+        SEND L_format fwd_dst RD_RPL;
+        TEST dir_state if (!FWD_SAME_AS_HOME) {
+            SEND S_format home_dst SHRREPLMNT_REQ;
+        } else goto done;
+    } else goto err_exit;
+    halt;
+
+
+RDEX_FWD::
+  r_rdex_enter:
+    LSEND_REC S_format L2_dst R_RDEX if (DIRTY_DATA_RPL || CLEAN_DATA_RPL) {
+        SEND L_format fwd_dst RDEX_RPL;
+    } else goto err_exit;
+    halt;
+
+
+ITODINVAL_FWD::
+  r_itodinval_enter:
+    LSEND_REC S_format L2_dst R_ITODINVAL if (INVAL_ACK) {
+        SEND S_format fwd_dst ITOD_RPL;
+    } else goto err_exit;
+    halt;
+
+INVAL_FWD::
+    LSEND_REC S_format L2_dst R_INVAL if (INVAL_ACK) {
+        SEND S_format fwd_dst INVAL_ACK;
+    } else goto err_exit;
+    halt;
+
+CMINVAL_FWD::
+    LSEND_REC S_format L2_dst R_INVAL if (INVAL_ACK) {
+        TEST dir_state if (LAST_INVAL) {
+            SEND S_format fwd_dst INVAL_ACK;
+        } else {
+            SEND S_format next_dst CMINVAL_FWD;
+        };
+    } else goto err_exit;
+    halt;
+
+// 
+// ********** Entry points for unexpected transactions **********
+//
+
+RD_RPL::
+    NOOP goto err_exit;
+    halt;
+
+RDEX_RPL::
+    NOOP goto err_exit;
+    halt;
+
+EX_RPL::
+    NOOP goto err_exit;
+    halt;
+
+EXFAIL_RPL::
+    NOOP goto err_exit;
+    halt;
+
+EXCHECK_RPL::
+    NOOP goto err_exit;
+    halt;
+
+ITOD_RPL::
+    NOOP goto err_exit;
+    halt;
+
+WB_ACK::
+    NOOP goto err_exit;
+    halt;
+
+REPLMNT_ACK::
+    NOOP goto err_exit;
+    halt;
+
+INVAL_ACK::
+    NOOP goto err_exit;
+    halt;
+
+RCV_TIMEOUT::
+    NOOP goto err_exit;
+    halt;
+
+ERROR_MSG::
+    NOOP goto err_exit;
+    halt;
+
+// *** FIX: take the following out of comments
+
+RDEXEAGER_RPL::
+    NOOP goto err_exit;
+    halt;
+
+// EXEAGER_RPL::
+//     NOOP goto err_exit;
+//     halt;
+
+// ITODEAGER_RPL::
+//     NOOP goto err_exit;
+//     halt;
+
+// WBRACE_ACK::
+//     NOOP goto err_exit;
+//     halt;
+
+// REPLMNTRACE_ACK::
+//     NOOP goto err_exit;
+//     halt;
+
+
+
+%end

@@ -1,0 +1,327 @@
+//
+//  Remote Engine (RE) micro code definition file
+//
+//  Responsible for requests to remote memory
+//  from local cpu or remote nodes.
+//
+//  re.mdef  version 1.00   19Mar03
+//
+magic   6477              // key to match micro code with engine version
+//
+// Microcode instructions are 12 bits wide, next address bit is bit 22 (2048 instructions)
+// Keep the difference always the same (hardcoded in MASM)
+//
+next    12 22             // next address field
+//
+// Basic entry points for locally activated actions
+//
+EP  Halt                    0   // microinstruction at address 0 should be a NOP
+EP  Local_Read              1
+EP  Local_WriteAccess       2
+EP  Local_UpgradeAccess     3
+EP  Local_DropHint          4
+EP  Local_Evict             5
+EP  Local_Flush             6
+EP  Local_Prefetch_Read     7
+//
+// Entry points for remotely activated actions
+//
+EP  LocalInvalidationReq            8   // VC 1
+EP  RemoteInvalidationReq           9   // VC 1
+EP  ForwardedReadReq               10   // VC 1
+EP  ForwardedWriteReq              11   // VC 1
+EP  RecallReadReq                  12   // VC 1
+EP  RecallWriteReq                 13   // VC 1
+EP  ReadAck                        14   // VC 2 Contains data and HomeNodeSharer flag
+EP  WriteAck                       15   // VC 2 Contains data, #inval acks to expect and HomeNodeSharer flag
+EP  UpgradeAck                     16   // VC 2 #inval acks to expect and HomeNodeSharer flag
+EP  WritebackAck                   17   // VC 2
+EP  WritebackStaleReadAck          18   // VC 2
+EP  WritebackStaleWriteAck         19   // VC 2
+EP  FlushAck                       20   // VC 2
+EP  RemoteInvalidationAck          21   // VC 2
+EP  ReadFwd                        22   // VC 2 Contains Data
+EP  WriteFwd                       23   // VC 2 Contains Data
+//
+// Error Message
+//
+EP  Error                          31
+//
+//
+//
+//
+// Instructions
+//
+// Meta language
+// instr     <name>          <start bit> <end bit> <value>
+// arg       <name>          <start bit> <end bit> <value>
+// value     <name>          <value>
+//
+// SEND
+// ====
+//
+instr   SEND                       0  3   0
+//
+arg     ReadReq                    4  7   0       // VC 0
+arg     WriteReq                   4  7   1       // VC 0
+arg     UpgradeReq                 4  7   2       // VC 0
+arg     FlushReq                   4  7   3       // VC 1 Contains data
+arg     RemoteInvalidationAck      4  7   4       // VC 2                 NOTE: Can be received too. Make sure values match!!!
+arg     ReadFwd                    4  7   5       // VC 2 Contains Data   NOTE: Can be received too. Make sure values match!!!
+arg     WriteFwd                   4  7   6       // VC 2 Contains Data   NOTE: Can be received too. Make sure values match!!!
+arg     WritebackReq               4  7   7       // VC 1 Contains data
+arg     ForwardedWriteAck          4  7   8       // VC 2
+arg     ForwardedReadAck           4  7   9       // VC 2 Contains data
+arg     RecallReadAck              4  7  10       // VC 2 Contains data
+arg     RecallWriteAck             4  7  11       // VC 2 Contains data
+arg     LocalInvalidationAck       4  7  12       // VC 2
+//
+arg     Error                      4  7  15
+//
+//
+arg     ToRequester               10 11   0       // destination: node that initiated the transaction at the directory
+arg     ToDirectory               10 11   1       // destination: directory
+//
+//
+//
+//
+// SEND_RACER
+// ==========
+//
+instr   SEND_RACER                 0  3   9
+//
+arg     ReadReq                    4  7   0       // VC 0
+arg     WriteReq                   4  7   1       // VC 0
+arg     UpgradeReq                 4  7   2       // VC 0
+arg     FlushReq                   4  7   3       // VC 1 Contains data
+arg     RemoteInvalidationAck      4  7   4       // VC 2                 NOTE: Can be received too. Make sure values match!!!
+arg     ReadFwd                    4  7   5       // VC 2 Contains Data   NOTE: Can be received too. Make sure values match!!!
+arg     WriteFwd                   4  7   6       // VC 2 Contains Data   NOTE: Can be received too. Make sure values match!!!
+arg     WritebackReq               4  7   7       // VC 1 Contains data
+arg     ForwardedWriteAck          4  7   8       // VC 2
+arg     ForwardedReadAck           4  7   9       // VC 2 Contains data
+arg     RecallReadAck              4  7  10       // VC 2 Contains data
+arg     RecallWriteAck             4  7  11       // VC 2 Contains data
+arg     LocalInvalidationAck       4  7  12       // VC 2
+//
+arg     Error                      4  7  15
+//
+arg     ToInvAckReceiver          10 11   0       // destination: node stored in InvalidationAckReceiver register
+arg     ToFwdRequester            10 11   1       // destination: node stored in ToFwdRequester register
+arg     ToRacer                   10 11   2       // destination: node that beat this thread at the HE
+//
+//
+//
+//
+// RECEIVE
+// =======
+//
+instr  RECEIVE                  0  3  1
+//
+value  ReadAck                  0   // VC 2 Contains data and HomeNodeSharer flag
+value  WriteAck                 1   // VC 2 Contains data, #inval acks to expect and HomeNodeSharer flag
+value  UpgradeAck               2   // VC 2 #inval acks to expect and HomeNodeSharer flag
+value  WritebackAck             3   // VC 2
+value  RemoteInvalidationAck    4   // VC 2                NOTE: Can be sent too. Make sure values match!!!
+value  ReadFwd                  5   // VC 2 Contains Data  NOTE: Can be sent too. Make sure values match!!!
+value  WriteFwd                 6   // VC 2 Contains Data  NOTE: Can be sent too. Make sure values match!!!
+value  FlushAck                 7   // VC 2
+value  LocalInvalidationReq     8   // VC 1
+value  RemoteInvalidationReq    9   // VC 1
+//
+value  DeferredJumpMessage     10   // Dummy message to indicate a message is received that needs to be decoded
+                                    // by a 2-level receive instruction (RECEIVE_DEFERRED_JUMP). This is done
+                                    // because a normal HW decoder can be at most 16-way. For anything beyond
+                                    // that it is better to assume a 2-level dcoding scheme. Only rarely received
+                                    // messages end up in that category (currently it includes uncommon races)
+//
+value  InvAck                  11   // The cache acknowledges an Invalidate CPU_OP
+value  InvUpdateAck            12   // Contains data. The cache acknowledges an Invalidate CPU_OP.
+value  DowngradeAck            13   // The cache acknowledges a Downgrade CPU_OP
+value  DowngradeUpdateAck      14   // Contains data. The cache acknowledges a Downgrade CPU_OP.
+//
+value  Error                   15   // Error message
+//
+//
+//
+//
+// RECEIVE_DEFERRED_JUMP
+// =====================
+//
+instr  RECEIVE_DEFERRED_JUMP    0  3  2
+//
+value  WritebackStaleReadAck    0   // VC 2
+value  WritebackStaleWriteAck   1   // VC 2
+value  ForwardedReadReq         2   // VC 1
+value  ForwardedWriteReq        3   // VC 1
+value  RecallReadReq            4   // VC 1
+value  RecallWriteReq           5   // VC 1
+//
+value  Padding1                 6
+value  Padding2                 7
+value  Padding3                 8
+value  Padding4                 9
+value  Padding5                10
+value  Padding6                11
+value  Padding7                12
+value  Padding8                13
+value  Padding9                14
+//
+value  Error                   15   // Error message
+//
+//
+//
+//
+// TEST
+// ====
+//
+instr   TEST                       0  3  3
+//
+arg     InvalidationAckCount       4  7  0    // 0 if invAckCount is zero, 1 otherwise
+arg     InvalidationReceived       4  7  1
+arg     InvalidationAckReceiver    4  7  2
+arg     InvAckForFwdExpected       4  7  3
+arg     DowngradeAckExpected       4  7  4
+arg     RequestReplyToRacer        4  7  5
+arg     FwdReqOrStaleAckExpected   4  7  6
+arg     FwdRequester               4  7  7
+arg     WritebackAckExpected       4  7  8
+arg     HomeNodeSharer             4  7  9    // 1 if the home node is a sharer, 0 otherwise. This is used by DGP.
+arg     IsPrefetchRead             4  7 10    // 1 for prefetch reads, 0 for normal read requests
+//
+value   VALUE_0                    0  // for InvalidationReceived: ReceivedNoInval. Check #define in re.mcd.
+value   VALUE_1                    1  // for InvalidationReceived: ReceivedLocalInval. Check #define in re.mcd.
+value   VALUE_2                    2  // for InvalidationReceived: ReceivedRemoteInval. Check #define in re.mcd.
+value   VALUE_3                    3  // for InvalidationReceived: ReceivedInvalHandled. Check #define in re.mcd.
+value   VALUE_4                    4
+value   VALUE_5                    5
+value   VALUE_6                    6
+value   VALUE_7                    7
+value   VALUE_8                    8
+value   VALUE_9                    9
+value   VALUE_10                  10
+value   VALUE_11                  11
+value   VALUE_12                  12
+value   VALUE_13                  13
+value   VALUE_14                  14
+value   VALUE_15                  15
+//
+//
+//
+//
+// SET
+// ===
+//
+instr   SET                        0  3  4
+//
+arg     InvalidationAckCount       4  5  0
+arg     InvalidationReceived       4  5  1
+arg     InvalidationAckReceiver    4  5  2
+arg     IsPrefetchRead             4  5  3
+//
+arg     VALUE                      6  7  0
+arg     BIT                        6  7  1
+arg     DECREMENT                  6  7  2
+arg     INCREMENT                  6  7  3
+//
+arg     ReceivedNoInval            8 10  0   // which invalidation received (for InvalidationReceived)
+arg     ReceivedLocalInval         8 10  1
+arg     ReceivedRemoteInval        8 10  2
+arg     ReceivedInvalHandled       8 10  3
+//
+arg     ToRequester                8 10  0   // which destination (for InvalidationAckReceiver)
+arg     ToOwner                    8 10  1   // note: currently only ToRacer is actually used
+arg     ToDirectory                8 10  2
+arg     ToRespondent               8 10  3
+arg     ToRacer                    8 10  4
+//
+arg     ToZero                    11 11  0
+arg     ToOne                     11 11  1
+//
+//
+//
+//
+// SET_RACER
+// =========
+//
+instr   SET_RACER                  0  3  10
+//
+arg     InvAckForFwdExpected       4  6  0
+arg     DowngradeAckExpected       4  6  1
+arg     RequestReplyToRacer        4  6  2
+arg     FwdReqOrStaleAckExpected   4  6  3
+arg     FwdRequester               4  6  4
+arg     WritebackAckExpected       4  6  5
+//
+arg     ToRequester                9 11  0   // which destination (for FwdRequester)
+arg     ToOwner                    9 11  1
+arg     ToDirectory                9 11  2
+arg     ToRespondent               9 11  3
+arg     ToRacer                    9 11  4
+//
+arg     ToFalse                    9 11  0
+arg     ToTrue                     9 11  1
+//
+//
+//
+//
+// ARITH_OP
+// ========
+//
+// <left_arg> op <right_arg>  -->> <dest>
+// move: <arg> BITOR <arg>  -->> <dest>
+//
+instr   ARITH_OP                    0  3  5
+//
+arg     BITOR                       4  5  0
+arg     ADD                         4  5  1
+arg     SUB                         4  5  2
+//
+// left arg
+//
+arg     LeftInvalidationAckCount    6  7  0
+arg     LeftMsgInvalidationsCount   6  7  1   // from invals count field of last message received by thread
+arg     LeftAnyInvalidations        6  7  2
+arg     LeftMsgAnyInvalidations     6  7  3   // from any invalidations field of last message received by thread
+//
+// right arg
+//
+arg     RightInvalidationAckCount   8  9  0
+arg     RightMsgInvalidationsCount  8  9  1   // from invals count field of last message received by thread
+arg     RightAnyInvalidations       8  9  2
+arg     RightMsgAnyInvalidations    8  9  3   // from any invalidations field of last message received by thread
+//
+// destination
+//
+arg     ToInvalidationAckCount     10 11  0
+arg     ToAnyInvalidations         10 11  1
+//
+//
+//
+//
+// CPU_OP
+// ======
+//
+instr   CPU_OP                      0  3  6
+//
+// requests sent to cache from PE:
+arg     Invalidate                  4  7  0  // b0000 Flush dirty data (if they exists, and invalidate line).
+                                             // Expect either InvAck or InvUpdateAck with data.
+arg     Downgrade                   4  7  1  // b0001
+//
+// replies sent to cache from PE:
+arg     MissReply                   4  7  8  // b1000 Contains data
+arg     MissWritableReply           4  7  9  // b1001 Contains data
+arg     UpgradeReply                4  7 10  // b1010
+arg     PrefetchReadReply           4  7 11  // b1011 Contains data
+//
+//
+//
+//
+//
+//
+// REFUSE
+// ======
+//
+instr   REFUSE                   0 3 8
+//

@@ -1,0 +1,44 @@
+# Get variables from Makefile.defs
+###############
+include $(FLEXUS_ROOT)/makefile.defs
+
+# Include the common parts of the Makefile
+###############
+include $(FLEXUS_ROOT)/makefile.simulator_all_ccs
+
+SIMICS_MODNAME=MOD:flexus-$(SIMULATOR)-$(TARGET_PLATFORM)-$(SELECTED_DEBUG)-$(SELECTED_CC)
+
+.cpp.$(OEXT):
+	$(ECHO) "$(GCC) $(INCLUDES) $(GCC_CFLAGS) $(VARIANT_DEFINES) $< -o $*.$(OEXT)"
+	$(GCC) $(INCLUDES) $(GCC_CFLAGS) $(VARIANT_DEFINES) $< -o $*.$(OEXT)
+
+.PHONY: $(SIMULATOR).$(VARIANT_EXT).deps
+$(SIMULATOR).$(VARIANT_EXT).deps: $(COMPONENTS_WITH_LIBS) $(CORE_STANDALONE)
+$(SIMULATOR).$(VARIANT_EXT): $(patsubst %.cpp,%.$(OEXT),$(wildcard *.cpp)) $(COMPONENT_LIB_PATHS)
+	$(ECHO) "$(GCC) $(GCC_LFLAGS) *.$(OEXT) $(COMPONENT_LIB_PATHS) $(STANDALONE_LIB_PATH) $(CORE_LIB_PATH) $(BOOST_LIBRARIES)  -o $@"
+	$(GCC) $(GCC_LFLAGS) *.$(OEXT) $(COMPONENT_LIB_PATHS) -L$(CORE_DIR) -lcore_$(VARIANT) -lstandalone_$(VARIANT) $(BOOST_LIBRARIES)  -o $@
+
+ifeq ($(USING_SIMICS_3),1)
+
+module_id.x86_$(SELECTED_DEBUG)_gcc_o: $(SIMICS_X86_INCLUDE)/../module-id.template Makefile.$(SIMULATOR)
+	$(ECHO) "$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME=$(SIMICS_MODNAME) -DCLASSES=$(SIMICS_CLASSES) -c $(SIMICS_X86_INCLUDE)/../module-id.template -o $@"
+	$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME="\"$(SIMICS_MODNAME)\"" -DCLASSES="\"$(SIMICS_CLASSES)\"" $(SIMICS_X86_INCLUDE)/../module-id.template -o $@
+
+module_id.v9_$(SELECTED_DEBUG)_gcc_o: $(SIMICS_V9_INCLUDE)/../module-id.template Makefile.$(SIMULATOR)
+	$(ECHO) "$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME=$(SIMICS_MODNAME) -DCLASSES=$(SIMICS_CLASSES) -c $(SIMICS_V9_INCLUDE)/../module-id.template -o $@"
+	$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME="\"$(SIMICS_MODNAME)\"" -DCLASSES="\"$(SIMICS_CLASSES)\"" $(SIMICS_V9_INCLUDE)/../module-id.template -o $@
+else
+module_id.x86_$(SELECTED_DEBUG)_gcc_o: $(SIMICS_X86_INCLUDE)/module_id.c Makefile.$(SIMULATOR)
+	$(ECHO) "$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME=$(SIMICS_MODNAME) -DCLASSES=$(SIMICS_CLASSES) $(SIMICS_X86_INCLUDE)/module_id.c -o $@"
+	$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME="\"$(SIMICS_MODNAME)\"" -DCLASSES="\"$(SIMICS_CLASSES)\"" $(SIMICS_X86_INCLUDE)/module_id.c -o $@
+
+module_id.v9_$(SELECTED_DEBUG)_gcc_o: $(SIMICS_V9_INCLUDE)/module_id.c Makefile.$(SIMULATOR)
+	$(ECHO) "$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME=$(SIMICS_MODNAME) -DCLASSES=$(SIMICS_CLASSES) $(SIMICS_V9_INCLUDE)/module_id.c -o $@"
+	$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME="\"$(SIMICS_MODNAME)\"" -DCLASSES="\"$(SIMICS_CLASSES)\"" $(SIMICS_V9_INCLUDE)/module_id.c -o $@
+endif
+
+.PHONY: libflexus_$(SIMULATOR)_$(VARIANT).so.deps
+libflexus_$(SIMULATOR)_$(VARIANT).so.deps: $(COMPONENTS_WITH_LIBS) $(CORE_SIMICS)
+libflexus_$(SIMULATOR)_$(VARIANT).so: $(patsubst %.cpp,%.$(OEXT),$(wildcard *.cpp)) $(COMPONENT_LIB_PATHS) module_id.$(TARGET_PLATFORM)_$(SELECTED_DEBUG)_gcc_o $(CORE_DIR)/libcore_$(VARIANT).a.fresh
+	$(ECHO) "$(GCC) $(GCC_SIMICS_LFLAGS) *.$(OEXT) $(COMPONENT_LIB_PATHS) -L$(CORE_DIR) -Wl,--whole-archive -lcore_$(VARIANT) -lsimics_$(VARIANT) $(BOOST_LIBRARIES) -o $@"
+	$(GCC) $(GCC_SIMICS_LFLAGS) *.$(OEXT) $(COMPONENT_LIB_PATHS) -L$(CORE_DIR) -Wl,--whole-archive -lcore_$(VARIANT) -lsimics_$(VARIANT) $(BOOST_LIBRARIES) -o $@

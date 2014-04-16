@@ -1,0 +1,1203 @@
+# Boilerplate stuff
+ChannelLatency 100
+ChannelLatencyData 32
+ChannelLatencyControl 1
+LocalChannelLatencyDivider 8
+SwitchInputBuffers 5
+SwitchOutputBuffers 1
+SwitchInternalBuffersPerVC 1
+
+# Basic Switch/Node connections
+NumNodes 32
+NumSwitches 32
+SwitchPorts   5
+SwitchBandwidth 4
+
+Top Node 0 -> Switch 0:0
+Top Node 1 -> Switch 1:0
+Top Node 2 -> Switch 2:0
+Top Node 3 -> Switch 3:0
+Top Node 4 -> Switch 4:0
+Top Node 5 -> Switch 5:0
+Top Node 6 -> Switch 6:0
+Top Node 7 -> Switch 7:0
+Top Node 8 -> Switch 8:0
+Top Node 9 -> Switch 9:0
+Top Node 10 -> Switch 10:0
+Top Node 11 -> Switch 11:0
+Top Node 12 -> Switch 12:0
+Top Node 13 -> Switch 13:0
+Top Node 14 -> Switch 14:0
+Top Node 15 -> Switch 15:0
+Top Node 16 -> Switch 16:0
+Top Node 17 -> Switch 17:0
+Top Node 18 -> Switch 18:0
+Top Node 19 -> Switch 19:0
+Top Node 20 -> Switch 20:0
+Top Node 21 -> Switch 21:0
+Top Node 22 -> Switch 22:0
+Top Node 23 -> Switch 23:0
+Top Node 24 -> Switch 24:0
+Top Node 25 -> Switch 25:0
+Top Node 26 -> Switch 26:0
+Top Node 27 -> Switch 27:0
+Top Node 28 -> Switch 28:0
+Top Node 29 -> Switch 29:0
+Top Node 30 -> Switch 30:0
+Top Node 31 -> Switch 31:0
+
+# Topology for a 32 node TORUS
+Top Switch 0:3 -> Switch 1:1
+Top Switch 0:4 -> Switch 4:2
+Top Switch 1:3 -> Switch 2:1
+Top Switch 1:4 -> Switch 5:2
+Top Switch 2:3 -> Switch 3:1
+Top Switch 2:4 -> Switch 6:2
+Top Switch 3:3 -> Switch 0:1
+Top Switch 3:4 -> Switch 7:2
+Top Switch 4:3 -> Switch 5:1
+Top Switch 4:4 -> Switch 8:2
+Top Switch 5:3 -> Switch 6:1
+Top Switch 5:4 -> Switch 9:2
+Top Switch 6:3 -> Switch 7:1
+Top Switch 6:4 -> Switch 10:2
+Top Switch 7:3 -> Switch 4:1
+Top Switch 7:4 -> Switch 11:2
+Top Switch 8:3 -> Switch 9:1
+Top Switch 8:4 -> Switch 12:2
+Top Switch 9:3 -> Switch 10:1
+Top Switch 9:4 -> Switch 13:2
+Top Switch 10:3 -> Switch 11:1
+Top Switch 10:4 -> Switch 14:2
+Top Switch 11:3 -> Switch 8:1
+Top Switch 11:4 -> Switch 15:2
+Top Switch 12:3 -> Switch 13:1
+Top Switch 12:4 -> Switch 16:2
+Top Switch 13:3 -> Switch 14:1
+Top Switch 13:4 -> Switch 17:2
+Top Switch 14:3 -> Switch 15:1
+Top Switch 14:4 -> Switch 18:2
+Top Switch 15:3 -> Switch 12:1
+Top Switch 15:4 -> Switch 19:2
+Top Switch 16:3 -> Switch 17:1
+Top Switch 16:4 -> Switch 20:2
+Top Switch 17:3 -> Switch 18:1
+Top Switch 17:4 -> Switch 21:2
+Top Switch 18:3 -> Switch 19:1
+Top Switch 18:4 -> Switch 22:2
+Top Switch 19:3 -> Switch 16:1
+Top Switch 19:4 -> Switch 23:2
+Top Switch 20:3 -> Switch 21:1
+Top Switch 20:4 -> Switch 24:2
+Top Switch 21:3 -> Switch 22:1
+Top Switch 21:4 -> Switch 25:2
+Top Switch 22:3 -> Switch 23:1
+Top Switch 22:4 -> Switch 26:2
+Top Switch 23:3 -> Switch 20:1
+Top Switch 23:4 -> Switch 27:2
+Top Switch 24:3 -> Switch 25:1
+Top Switch 24:4 -> Switch 28:2
+Top Switch 25:3 -> Switch 26:1
+Top Switch 25:4 -> Switch 29:2
+Top Switch 26:3 -> Switch 27:1
+Top Switch 26:4 -> Switch 30:2
+Top Switch 27:3 -> Switch 24:1
+Top Switch 27:4 -> Switch 31:2
+Top Switch 28:3 -> Switch 29:1
+Top Switch 28:4 -> Switch 0:2
+Top Switch 29:3 -> Switch 30:1
+Top Switch 29:4 -> Switch 1:2
+Top Switch 30:3 -> Switch 31:1
+Top Switch 30:4 -> Switch 2:2
+Top Switch 31:3 -> Switch 28:1
+Top Switch 31:4 -> Switch 3:2
+
+# Deadlock-free routing tables
+
+# Switch 0 -> *
+Route Switch 0 -> 0 { 0:0 } 
+Route Switch 0 -> 1 { 3:1 } 
+Route Switch 0 -> 2 { 1:1 } 
+Route Switch 0 -> 3 { 1:1 } 
+Route Switch 0 -> 4 { 4:1 } 
+Route Switch 0 -> 5 { 3:1 } 
+Route Switch 0 -> 6 { 1:1 } 
+Route Switch 0 -> 7 { 1:1 } 
+Route Switch 0 -> 8 { 4:1 } 
+Route Switch 0 -> 9 { 3:1 } 
+Route Switch 0 -> 10 { 1:1 } 
+Route Switch 0 -> 11 { 1:1 } 
+Route Switch 0 -> 12 { 4:1 } 
+Route Switch 0 -> 13 { 3:1 } 
+Route Switch 0 -> 14 { 1:1 } 
+Route Switch 0 -> 15 { 1:1 } 
+Route Switch 0 -> 16 { 2:1 } 
+Route Switch 0 -> 17 { 3:1 } 
+Route Switch 0 -> 18 { 1:1 } 
+Route Switch 0 -> 19 { 1:1 } 
+Route Switch 0 -> 20 { 2:1 } 
+Route Switch 0 -> 21 { 3:1 } 
+Route Switch 0 -> 22 { 1:1 } 
+Route Switch 0 -> 23 { 1:1 } 
+Route Switch 0 -> 24 { 2:1 } 
+Route Switch 0 -> 25 { 3:1 } 
+Route Switch 0 -> 26 { 1:1 } 
+Route Switch 0 -> 27 { 1:1 } 
+Route Switch 0 -> 28 { 2:1 } 
+Route Switch 0 -> 29 { 3:1 } 
+Route Switch 0 -> 30 { 1:1 } 
+Route Switch 0 -> 31 { 1:1 } 
+
+# Switch 1 -> *
+Route Switch 1 -> 0 { 1:0 } 
+Route Switch 1 -> 1 { 0:0 } 
+Route Switch 1 -> 2 { 3:1 } 
+Route Switch 1 -> 3 { 1:1 } 
+Route Switch 1 -> 4 { 1:0 } 
+Route Switch 1 -> 5 { 4:1 } 
+Route Switch 1 -> 6 { 3:1 } 
+Route Switch 1 -> 7 { 1:1 } 
+Route Switch 1 -> 8 { 1:0 } 
+Route Switch 1 -> 9 { 4:1 } 
+Route Switch 1 -> 10 { 3:1 } 
+Route Switch 1 -> 11 { 1:1 } 
+Route Switch 1 -> 12 { 1:0 } 
+Route Switch 1 -> 13 { 4:1 } 
+Route Switch 1 -> 14 { 3:1 } 
+Route Switch 1 -> 15 { 1:1 } 
+Route Switch 1 -> 16 { 1:0 } 
+Route Switch 1 -> 17 { 2:1 } 
+Route Switch 1 -> 18 { 3:1 } 
+Route Switch 1 -> 19 { 1:1 } 
+Route Switch 1 -> 20 { 1:0 } 
+Route Switch 1 -> 21 { 2:1 } 
+Route Switch 1 -> 22 { 3:1 } 
+Route Switch 1 -> 23 { 1:1 } 
+Route Switch 1 -> 24 { 1:0 } 
+Route Switch 1 -> 25 { 2:1 } 
+Route Switch 1 -> 26 { 3:1 } 
+Route Switch 1 -> 27 { 1:1 } 
+Route Switch 1 -> 28 { 1:0 } 
+Route Switch 1 -> 29 { 2:1 } 
+Route Switch 1 -> 30 { 3:1 } 
+Route Switch 1 -> 31 { 1:1 } 
+
+# Switch 2 -> *
+Route Switch 2 -> 0 { 1:0 } 
+Route Switch 2 -> 1 { 1:0 } 
+Route Switch 2 -> 2 { 0:0 } 
+Route Switch 2 -> 3 { 3:1 } 
+Route Switch 2 -> 4 { 1:0 } 
+Route Switch 2 -> 5 { 1:0 } 
+Route Switch 2 -> 6 { 4:1 } 
+Route Switch 2 -> 7 { 3:1 } 
+Route Switch 2 -> 8 { 1:0 } 
+Route Switch 2 -> 9 { 1:0 } 
+Route Switch 2 -> 10 { 4:1 } 
+Route Switch 2 -> 11 { 3:1 } 
+Route Switch 2 -> 12 { 1:0 } 
+Route Switch 2 -> 13 { 1:0 } 
+Route Switch 2 -> 14 { 4:1 } 
+Route Switch 2 -> 15 { 3:1 } 
+Route Switch 2 -> 16 { 1:0 } 
+Route Switch 2 -> 17 { 1:0 } 
+Route Switch 2 -> 18 { 2:1 } 
+Route Switch 2 -> 19 { 3:1 } 
+Route Switch 2 -> 20 { 1:0 } 
+Route Switch 2 -> 21 { 1:0 } 
+Route Switch 2 -> 22 { 2:1 } 
+Route Switch 2 -> 23 { 3:1 } 
+Route Switch 2 -> 24 { 1:0 } 
+Route Switch 2 -> 25 { 1:0 } 
+Route Switch 2 -> 26 { 2:1 } 
+Route Switch 2 -> 27 { 3:1 } 
+Route Switch 2 -> 28 { 1:0 } 
+Route Switch 2 -> 29 { 1:0 } 
+Route Switch 2 -> 30 { 2:1 } 
+Route Switch 2 -> 31 { 3:1 } 
+
+# Switch 3 -> *
+Route Switch 3 -> 0 { 3:0 } 
+Route Switch 3 -> 1 { 1:0 } 
+Route Switch 3 -> 2 { 1:0 } 
+Route Switch 3 -> 3 { 0:0 } 
+Route Switch 3 -> 4 { 3:0 } 
+Route Switch 3 -> 5 { 1:0 } 
+Route Switch 3 -> 6 { 1:0 } 
+Route Switch 3 -> 7 { 4:1 } 
+Route Switch 3 -> 8 { 3:0 } 
+Route Switch 3 -> 9 { 1:0 } 
+Route Switch 3 -> 10 { 1:0 } 
+Route Switch 3 -> 11 { 4:1 } 
+Route Switch 3 -> 12 { 3:0 } 
+Route Switch 3 -> 13 { 1:0 } 
+Route Switch 3 -> 14 { 1:0 } 
+Route Switch 3 -> 15 { 4:1 } 
+Route Switch 3 -> 16 { 3:0 } 
+Route Switch 3 -> 17 { 1:0 } 
+Route Switch 3 -> 18 { 1:0 } 
+Route Switch 3 -> 19 { 2:1 } 
+Route Switch 3 -> 20 { 3:0 } 
+Route Switch 3 -> 21 { 1:0 } 
+Route Switch 3 -> 22 { 1:0 } 
+Route Switch 3 -> 23 { 2:1 } 
+Route Switch 3 -> 24 { 3:0 } 
+Route Switch 3 -> 25 { 1:0 } 
+Route Switch 3 -> 26 { 1:0 } 
+Route Switch 3 -> 27 { 2:1 } 
+Route Switch 3 -> 28 { 3:0 } 
+Route Switch 3 -> 29 { 1:0 } 
+Route Switch 3 -> 30 { 1:0 } 
+Route Switch 3 -> 31 { 2:1 } 
+
+# Switch 4 -> *
+Route Switch 4 -> 0 { 2:0 } 
+Route Switch 4 -> 1 { 3:1 } 
+Route Switch 4 -> 2 { 1:1 } 
+Route Switch 4 -> 3 { 1:1 } 
+Route Switch 4 -> 4 { 0:0 } 
+Route Switch 4 -> 5 { 3:1 } 
+Route Switch 4 -> 6 { 1:1 } 
+Route Switch 4 -> 7 { 1:1 } 
+Route Switch 4 -> 8 { 4:1 } 
+Route Switch 4 -> 9 { 3:1 } 
+Route Switch 4 -> 10 { 1:1 } 
+Route Switch 4 -> 11 { 1:1 } 
+Route Switch 4 -> 12 { 4:1 } 
+Route Switch 4 -> 13 { 3:1 } 
+Route Switch 4 -> 14 { 1:1 } 
+Route Switch 4 -> 15 { 1:1 } 
+Route Switch 4 -> 16 { 4:1 } 
+Route Switch 4 -> 17 { 3:1 } 
+Route Switch 4 -> 18 { 1:1 } 
+Route Switch 4 -> 19 { 1:1 } 
+Route Switch 4 -> 20 { 2:1 } 
+Route Switch 4 -> 21 { 3:1 } 
+Route Switch 4 -> 22 { 1:1 } 
+Route Switch 4 -> 23 { 1:1 } 
+Route Switch 4 -> 24 { 2:1 } 
+Route Switch 4 -> 25 { 3:1 } 
+Route Switch 4 -> 26 { 1:1 } 
+Route Switch 4 -> 27 { 1:1 } 
+Route Switch 4 -> 28 { 2:1 } 
+Route Switch 4 -> 29 { 3:1 } 
+Route Switch 4 -> 30 { 1:1 } 
+Route Switch 4 -> 31 { 1:1 } 
+
+# Switch 5 -> *
+Route Switch 5 -> 0 { 1:0 } 
+Route Switch 5 -> 1 { 2:0 } 
+Route Switch 5 -> 2 { 3:1 } 
+Route Switch 5 -> 3 { 1:1 } 
+Route Switch 5 -> 4 { 1:0 } 
+Route Switch 5 -> 5 { 0:0 } 
+Route Switch 5 -> 6 { 3:1 } 
+Route Switch 5 -> 7 { 1:1 } 
+Route Switch 5 -> 8 { 1:0 } 
+Route Switch 5 -> 9 { 4:1 } 
+Route Switch 5 -> 10 { 3:1 } 
+Route Switch 5 -> 11 { 1:1 } 
+Route Switch 5 -> 12 { 1:0 } 
+Route Switch 5 -> 13 { 4:1 } 
+Route Switch 5 -> 14 { 3:1 } 
+Route Switch 5 -> 15 { 1:1 } 
+Route Switch 5 -> 16 { 1:0 } 
+Route Switch 5 -> 17 { 4:1 } 
+Route Switch 5 -> 18 { 3:1 } 
+Route Switch 5 -> 19 { 1:1 } 
+Route Switch 5 -> 20 { 1:0 } 
+Route Switch 5 -> 21 { 2:1 } 
+Route Switch 5 -> 22 { 3:1 } 
+Route Switch 5 -> 23 { 1:1 } 
+Route Switch 5 -> 24 { 1:0 } 
+Route Switch 5 -> 25 { 2:1 } 
+Route Switch 5 -> 26 { 3:1 } 
+Route Switch 5 -> 27 { 1:1 } 
+Route Switch 5 -> 28 { 1:0 } 
+Route Switch 5 -> 29 { 2:1 } 
+Route Switch 5 -> 30 { 3:1 } 
+Route Switch 5 -> 31 { 1:1 } 
+
+# Switch 6 -> *
+Route Switch 6 -> 0 { 1:0 } 
+Route Switch 6 -> 1 { 1:0 } 
+Route Switch 6 -> 2 { 2:0 } 
+Route Switch 6 -> 3 { 3:1 } 
+Route Switch 6 -> 4 { 1:0 } 
+Route Switch 6 -> 5 { 1:0 } 
+Route Switch 6 -> 6 { 0:0 } 
+Route Switch 6 -> 7 { 3:1 } 
+Route Switch 6 -> 8 { 1:0 } 
+Route Switch 6 -> 9 { 1:0 } 
+Route Switch 6 -> 10 { 4:1 } 
+Route Switch 6 -> 11 { 3:1 } 
+Route Switch 6 -> 12 { 1:0 } 
+Route Switch 6 -> 13 { 1:0 } 
+Route Switch 6 -> 14 { 4:1 } 
+Route Switch 6 -> 15 { 3:1 } 
+Route Switch 6 -> 16 { 1:0 } 
+Route Switch 6 -> 17 { 1:0 } 
+Route Switch 6 -> 18 { 4:1 } 
+Route Switch 6 -> 19 { 3:1 } 
+Route Switch 6 -> 20 { 1:0 } 
+Route Switch 6 -> 21 { 1:0 } 
+Route Switch 6 -> 22 { 2:1 } 
+Route Switch 6 -> 23 { 3:1 } 
+Route Switch 6 -> 24 { 1:0 } 
+Route Switch 6 -> 25 { 1:0 } 
+Route Switch 6 -> 26 { 2:1 } 
+Route Switch 6 -> 27 { 3:1 } 
+Route Switch 6 -> 28 { 1:0 } 
+Route Switch 6 -> 29 { 1:0 } 
+Route Switch 6 -> 30 { 2:1 } 
+Route Switch 6 -> 31 { 3:1 } 
+
+# Switch 7 -> *
+Route Switch 7 -> 0 { 3:0 } 
+Route Switch 7 -> 1 { 1:0 } 
+Route Switch 7 -> 2 { 1:0 } 
+Route Switch 7 -> 3 { 2:0 } 
+Route Switch 7 -> 4 { 3:0 } 
+Route Switch 7 -> 5 { 1:0 } 
+Route Switch 7 -> 6 { 1:0 } 
+Route Switch 7 -> 7 { 0:0 } 
+Route Switch 7 -> 8 { 3:0 } 
+Route Switch 7 -> 9 { 1:0 } 
+Route Switch 7 -> 10 { 1:0 } 
+Route Switch 7 -> 11 { 4:1 } 
+Route Switch 7 -> 12 { 3:0 } 
+Route Switch 7 -> 13 { 1:0 } 
+Route Switch 7 -> 14 { 1:0 } 
+Route Switch 7 -> 15 { 4:1 } 
+Route Switch 7 -> 16 { 3:0 } 
+Route Switch 7 -> 17 { 1:0 } 
+Route Switch 7 -> 18 { 1:0 } 
+Route Switch 7 -> 19 { 4:1 } 
+Route Switch 7 -> 20 { 3:0 } 
+Route Switch 7 -> 21 { 1:0 } 
+Route Switch 7 -> 22 { 1:0 } 
+Route Switch 7 -> 23 { 2:1 } 
+Route Switch 7 -> 24 { 3:0 } 
+Route Switch 7 -> 25 { 1:0 } 
+Route Switch 7 -> 26 { 1:0 } 
+Route Switch 7 -> 27 { 2:1 } 
+Route Switch 7 -> 28 { 3:0 } 
+Route Switch 7 -> 29 { 1:0 } 
+Route Switch 7 -> 30 { 1:0 } 
+Route Switch 7 -> 31 { 2:1 } 
+
+# Switch 8 -> *
+Route Switch 8 -> 0 { 2:0 } 
+Route Switch 8 -> 1 { 3:1 } 
+Route Switch 8 -> 2 { 1:1 } 
+Route Switch 8 -> 3 { 1:1 } 
+Route Switch 8 -> 4 { 2:0 } 
+Route Switch 8 -> 5 { 3:1 } 
+Route Switch 8 -> 6 { 1:1 } 
+Route Switch 8 -> 7 { 1:1 } 
+Route Switch 8 -> 8 { 0:0 } 
+Route Switch 8 -> 9 { 3:1 } 
+Route Switch 8 -> 10 { 1:1 } 
+Route Switch 8 -> 11 { 1:1 } 
+Route Switch 8 -> 12 { 4:1 } 
+Route Switch 8 -> 13 { 3:1 } 
+Route Switch 8 -> 14 { 1:1 } 
+Route Switch 8 -> 15 { 1:1 } 
+Route Switch 8 -> 16 { 4:1 } 
+Route Switch 8 -> 17 { 3:1 } 
+Route Switch 8 -> 18 { 1:1 } 
+Route Switch 8 -> 19 { 1:1 } 
+Route Switch 8 -> 20 { 4:1 } 
+Route Switch 8 -> 21 { 3:1 } 
+Route Switch 8 -> 22 { 1:1 } 
+Route Switch 8 -> 23 { 1:1 } 
+Route Switch 8 -> 24 { 2:1 } 
+Route Switch 8 -> 25 { 3:1 } 
+Route Switch 8 -> 26 { 1:1 } 
+Route Switch 8 -> 27 { 1:1 } 
+Route Switch 8 -> 28 { 2:1 } 
+Route Switch 8 -> 29 { 3:1 } 
+Route Switch 8 -> 30 { 1:1 } 
+Route Switch 8 -> 31 { 1:1 } 
+
+# Switch 9 -> *
+Route Switch 9 -> 0 { 1:0 } 
+Route Switch 9 -> 1 { 2:0 } 
+Route Switch 9 -> 2 { 3:1 } 
+Route Switch 9 -> 3 { 1:1 } 
+Route Switch 9 -> 4 { 1:0 } 
+Route Switch 9 -> 5 { 2:0 } 
+Route Switch 9 -> 6 { 3:1 } 
+Route Switch 9 -> 7 { 1:1 } 
+Route Switch 9 -> 8 { 1:0 } 
+Route Switch 9 -> 9 { 0:0 } 
+Route Switch 9 -> 10 { 3:1 } 
+Route Switch 9 -> 11 { 1:1 } 
+Route Switch 9 -> 12 { 1:0 } 
+Route Switch 9 -> 13 { 4:1 } 
+Route Switch 9 -> 14 { 3:1 } 
+Route Switch 9 -> 15 { 1:1 } 
+Route Switch 9 -> 16 { 1:0 } 
+Route Switch 9 -> 17 { 4:1 } 
+Route Switch 9 -> 18 { 3:1 } 
+Route Switch 9 -> 19 { 1:1 } 
+Route Switch 9 -> 20 { 1:0 } 
+Route Switch 9 -> 21 { 4:1 } 
+Route Switch 9 -> 22 { 3:1 } 
+Route Switch 9 -> 23 { 1:1 } 
+Route Switch 9 -> 24 { 1:0 } 
+Route Switch 9 -> 25 { 2:1 } 
+Route Switch 9 -> 26 { 3:1 } 
+Route Switch 9 -> 27 { 1:1 } 
+Route Switch 9 -> 28 { 1:0 } 
+Route Switch 9 -> 29 { 2:1 } 
+Route Switch 9 -> 30 { 3:1 } 
+Route Switch 9 -> 31 { 1:1 } 
+
+# Switch 10 -> *
+Route Switch 10 -> 0 { 1:0 } 
+Route Switch 10 -> 1 { 1:0 } 
+Route Switch 10 -> 2 { 2:0 } 
+Route Switch 10 -> 3 { 3:1 } 
+Route Switch 10 -> 4 { 1:0 } 
+Route Switch 10 -> 5 { 1:0 } 
+Route Switch 10 -> 6 { 2:0 } 
+Route Switch 10 -> 7 { 3:1 } 
+Route Switch 10 -> 8 { 1:0 } 
+Route Switch 10 -> 9 { 1:0 } 
+Route Switch 10 -> 10 { 0:0 } 
+Route Switch 10 -> 11 { 3:1 } 
+Route Switch 10 -> 12 { 1:0 } 
+Route Switch 10 -> 13 { 1:0 } 
+Route Switch 10 -> 14 { 4:1 } 
+Route Switch 10 -> 15 { 3:1 } 
+Route Switch 10 -> 16 { 1:0 } 
+Route Switch 10 -> 17 { 1:0 } 
+Route Switch 10 -> 18 { 4:1 } 
+Route Switch 10 -> 19 { 3:1 } 
+Route Switch 10 -> 20 { 1:0 } 
+Route Switch 10 -> 21 { 1:0 } 
+Route Switch 10 -> 22 { 4:1 } 
+Route Switch 10 -> 23 { 3:1 } 
+Route Switch 10 -> 24 { 1:0 } 
+Route Switch 10 -> 25 { 1:0 } 
+Route Switch 10 -> 26 { 2:1 } 
+Route Switch 10 -> 27 { 3:1 } 
+Route Switch 10 -> 28 { 1:0 } 
+Route Switch 10 -> 29 { 1:0 } 
+Route Switch 10 -> 30 { 2:1 } 
+Route Switch 10 -> 31 { 3:1 } 
+
+# Switch 11 -> *
+Route Switch 11 -> 0 { 3:0 } 
+Route Switch 11 -> 1 { 1:0 } 
+Route Switch 11 -> 2 { 1:0 } 
+Route Switch 11 -> 3 { 2:0 } 
+Route Switch 11 -> 4 { 3:0 } 
+Route Switch 11 -> 5 { 1:0 } 
+Route Switch 11 -> 6 { 1:0 } 
+Route Switch 11 -> 7 { 2:0 } 
+Route Switch 11 -> 8 { 3:0 } 
+Route Switch 11 -> 9 { 1:0 } 
+Route Switch 11 -> 10 { 1:0 } 
+Route Switch 11 -> 11 { 0:0 } 
+Route Switch 11 -> 12 { 3:0 } 
+Route Switch 11 -> 13 { 1:0 } 
+Route Switch 11 -> 14 { 1:0 } 
+Route Switch 11 -> 15 { 4:1 } 
+Route Switch 11 -> 16 { 3:0 } 
+Route Switch 11 -> 17 { 1:0 } 
+Route Switch 11 -> 18 { 1:0 } 
+Route Switch 11 -> 19 { 4:1 } 
+Route Switch 11 -> 20 { 3:0 } 
+Route Switch 11 -> 21 { 1:0 } 
+Route Switch 11 -> 22 { 1:0 } 
+Route Switch 11 -> 23 { 4:1 } 
+Route Switch 11 -> 24 { 3:0 } 
+Route Switch 11 -> 25 { 1:0 } 
+Route Switch 11 -> 26 { 1:0 } 
+Route Switch 11 -> 27 { 2:1 } 
+Route Switch 11 -> 28 { 3:0 } 
+Route Switch 11 -> 29 { 1:0 } 
+Route Switch 11 -> 30 { 1:0 } 
+Route Switch 11 -> 31 { 2:1 } 
+
+# Switch 12 -> *
+Route Switch 12 -> 0 { 2:0 } 
+Route Switch 12 -> 1 { 3:1 } 
+Route Switch 12 -> 2 { 1:1 } 
+Route Switch 12 -> 3 { 1:1 } 
+Route Switch 12 -> 4 { 2:0 } 
+Route Switch 12 -> 5 { 3:1 } 
+Route Switch 12 -> 6 { 1:1 } 
+Route Switch 12 -> 7 { 1:1 } 
+Route Switch 12 -> 8 { 2:0 } 
+Route Switch 12 -> 9 { 3:1 } 
+Route Switch 12 -> 10 { 1:1 } 
+Route Switch 12 -> 11 { 1:1 } 
+Route Switch 12 -> 12 { 0:0 } 
+Route Switch 12 -> 13 { 3:1 } 
+Route Switch 12 -> 14 { 1:1 } 
+Route Switch 12 -> 15 { 1:1 } 
+Route Switch 12 -> 16 { 4:1 } 
+Route Switch 12 -> 17 { 3:1 } 
+Route Switch 12 -> 18 { 1:1 } 
+Route Switch 12 -> 19 { 1:1 } 
+Route Switch 12 -> 20 { 4:1 } 
+Route Switch 12 -> 21 { 3:1 } 
+Route Switch 12 -> 22 { 1:1 } 
+Route Switch 12 -> 23 { 1:1 } 
+Route Switch 12 -> 24 { 4:1 } 
+Route Switch 12 -> 25 { 3:1 } 
+Route Switch 12 -> 26 { 1:1 } 
+Route Switch 12 -> 27 { 1:1 } 
+Route Switch 12 -> 28 { 2:1 } 
+Route Switch 12 -> 29 { 3:1 } 
+Route Switch 12 -> 30 { 1:1 } 
+Route Switch 12 -> 31 { 1:1 } 
+
+# Switch 13 -> *
+Route Switch 13 -> 0 { 1:0 } 
+Route Switch 13 -> 1 { 2:0 } 
+Route Switch 13 -> 2 { 3:1 } 
+Route Switch 13 -> 3 { 1:1 } 
+Route Switch 13 -> 4 { 1:0 } 
+Route Switch 13 -> 5 { 2:0 } 
+Route Switch 13 -> 6 { 3:1 } 
+Route Switch 13 -> 7 { 1:1 } 
+Route Switch 13 -> 8 { 1:0 } 
+Route Switch 13 -> 9 { 2:0 } 
+Route Switch 13 -> 10 { 3:1 } 
+Route Switch 13 -> 11 { 1:1 } 
+Route Switch 13 -> 12 { 1:0 } 
+Route Switch 13 -> 13 { 0:0 } 
+Route Switch 13 -> 14 { 3:1 } 
+Route Switch 13 -> 15 { 1:1 } 
+Route Switch 13 -> 16 { 1:0 } 
+Route Switch 13 -> 17 { 4:1 } 
+Route Switch 13 -> 18 { 3:1 } 
+Route Switch 13 -> 19 { 1:1 } 
+Route Switch 13 -> 20 { 1:0 } 
+Route Switch 13 -> 21 { 4:1 } 
+Route Switch 13 -> 22 { 3:1 } 
+Route Switch 13 -> 23 { 1:1 } 
+Route Switch 13 -> 24 { 1:0 } 
+Route Switch 13 -> 25 { 4:1 } 
+Route Switch 13 -> 26 { 3:1 } 
+Route Switch 13 -> 27 { 1:1 } 
+Route Switch 13 -> 28 { 1:0 } 
+Route Switch 13 -> 29 { 2:1 } 
+Route Switch 13 -> 30 { 3:1 } 
+Route Switch 13 -> 31 { 1:1 } 
+
+# Switch 14 -> *
+Route Switch 14 -> 0 { 1:0 } 
+Route Switch 14 -> 1 { 1:0 } 
+Route Switch 14 -> 2 { 2:0 } 
+Route Switch 14 -> 3 { 3:1 } 
+Route Switch 14 -> 4 { 1:0 } 
+Route Switch 14 -> 5 { 1:0 } 
+Route Switch 14 -> 6 { 2:0 } 
+Route Switch 14 -> 7 { 3:1 } 
+Route Switch 14 -> 8 { 1:0 } 
+Route Switch 14 -> 9 { 1:0 } 
+Route Switch 14 -> 10 { 2:0 } 
+Route Switch 14 -> 11 { 3:1 } 
+Route Switch 14 -> 12 { 1:0 } 
+Route Switch 14 -> 13 { 1:0 } 
+Route Switch 14 -> 14 { 0:0 } 
+Route Switch 14 -> 15 { 3:1 } 
+Route Switch 14 -> 16 { 1:0 } 
+Route Switch 14 -> 17 { 1:0 } 
+Route Switch 14 -> 18 { 4:1 } 
+Route Switch 14 -> 19 { 3:1 } 
+Route Switch 14 -> 20 { 1:0 } 
+Route Switch 14 -> 21 { 1:0 } 
+Route Switch 14 -> 22 { 4:1 } 
+Route Switch 14 -> 23 { 3:1 } 
+Route Switch 14 -> 24 { 1:0 } 
+Route Switch 14 -> 25 { 1:0 } 
+Route Switch 14 -> 26 { 4:1 } 
+Route Switch 14 -> 27 { 3:1 } 
+Route Switch 14 -> 28 { 1:0 } 
+Route Switch 14 -> 29 { 1:0 } 
+Route Switch 14 -> 30 { 2:1 } 
+Route Switch 14 -> 31 { 3:1 } 
+
+# Switch 15 -> *
+Route Switch 15 -> 0 { 3:0 } 
+Route Switch 15 -> 1 { 1:0 } 
+Route Switch 15 -> 2 { 1:0 } 
+Route Switch 15 -> 3 { 2:0 } 
+Route Switch 15 -> 4 { 3:0 } 
+Route Switch 15 -> 5 { 1:0 } 
+Route Switch 15 -> 6 { 1:0 } 
+Route Switch 15 -> 7 { 2:0 } 
+Route Switch 15 -> 8 { 3:0 } 
+Route Switch 15 -> 9 { 1:0 } 
+Route Switch 15 -> 10 { 1:0 } 
+Route Switch 15 -> 11 { 2:0 } 
+Route Switch 15 -> 12 { 3:0 } 
+Route Switch 15 -> 13 { 1:0 } 
+Route Switch 15 -> 14 { 1:0 } 
+Route Switch 15 -> 15 { 0:0 } 
+Route Switch 15 -> 16 { 3:0 } 
+Route Switch 15 -> 17 { 1:0 } 
+Route Switch 15 -> 18 { 1:0 } 
+Route Switch 15 -> 19 { 4:1 } 
+Route Switch 15 -> 20 { 3:0 } 
+Route Switch 15 -> 21 { 1:0 } 
+Route Switch 15 -> 22 { 1:0 } 
+Route Switch 15 -> 23 { 4:1 } 
+Route Switch 15 -> 24 { 3:0 } 
+Route Switch 15 -> 25 { 1:0 } 
+Route Switch 15 -> 26 { 1:0 } 
+Route Switch 15 -> 27 { 4:1 } 
+Route Switch 15 -> 28 { 3:0 } 
+Route Switch 15 -> 29 { 1:0 } 
+Route Switch 15 -> 30 { 1:0 } 
+Route Switch 15 -> 31 { 2:1 } 
+
+# Switch 16 -> *
+Route Switch 16 -> 0 { 2:0 } 
+Route Switch 16 -> 1 { 3:1 } 
+Route Switch 16 -> 2 { 1:1 } 
+Route Switch 16 -> 3 { 1:1 } 
+Route Switch 16 -> 4 { 2:0 } 
+Route Switch 16 -> 5 { 3:1 } 
+Route Switch 16 -> 6 { 1:1 } 
+Route Switch 16 -> 7 { 1:1 } 
+Route Switch 16 -> 8 { 2:0 } 
+Route Switch 16 -> 9 { 3:1 } 
+Route Switch 16 -> 10 { 1:1 } 
+Route Switch 16 -> 11 { 1:1 } 
+Route Switch 16 -> 12 { 2:0 } 
+Route Switch 16 -> 13 { 3:1 } 
+Route Switch 16 -> 14 { 1:1 } 
+Route Switch 16 -> 15 { 1:1 } 
+Route Switch 16 -> 16 { 0:0 } 
+Route Switch 16 -> 17 { 3:1 } 
+Route Switch 16 -> 18 { 1:1 } 
+Route Switch 16 -> 19 { 1:1 } 
+Route Switch 16 -> 20 { 4:1 } 
+Route Switch 16 -> 21 { 3:1 } 
+Route Switch 16 -> 22 { 1:1 } 
+Route Switch 16 -> 23 { 1:1 } 
+Route Switch 16 -> 24 { 4:1 } 
+Route Switch 16 -> 25 { 3:1 } 
+Route Switch 16 -> 26 { 1:1 } 
+Route Switch 16 -> 27 { 1:1 } 
+Route Switch 16 -> 28 { 4:1 } 
+Route Switch 16 -> 29 { 3:1 } 
+Route Switch 16 -> 30 { 1:1 } 
+Route Switch 16 -> 31 { 1:1 } 
+
+# Switch 17 -> *
+Route Switch 17 -> 0 { 1:0 } 
+Route Switch 17 -> 1 { 2:0 } 
+Route Switch 17 -> 2 { 3:1 } 
+Route Switch 17 -> 3 { 1:1 } 
+Route Switch 17 -> 4 { 1:0 } 
+Route Switch 17 -> 5 { 2:0 } 
+Route Switch 17 -> 6 { 3:1 } 
+Route Switch 17 -> 7 { 1:1 } 
+Route Switch 17 -> 8 { 1:0 } 
+Route Switch 17 -> 9 { 2:0 } 
+Route Switch 17 -> 10 { 3:1 } 
+Route Switch 17 -> 11 { 1:1 } 
+Route Switch 17 -> 12 { 1:0 } 
+Route Switch 17 -> 13 { 2:0 } 
+Route Switch 17 -> 14 { 3:1 } 
+Route Switch 17 -> 15 { 1:1 } 
+Route Switch 17 -> 16 { 1:0 } 
+Route Switch 17 -> 17 { 0:0 } 
+Route Switch 17 -> 18 { 3:1 } 
+Route Switch 17 -> 19 { 1:1 } 
+Route Switch 17 -> 20 { 1:0 } 
+Route Switch 17 -> 21 { 4:1 } 
+Route Switch 17 -> 22 { 3:1 } 
+Route Switch 17 -> 23 { 1:1 } 
+Route Switch 17 -> 24 { 1:0 } 
+Route Switch 17 -> 25 { 4:1 } 
+Route Switch 17 -> 26 { 3:1 } 
+Route Switch 17 -> 27 { 1:1 } 
+Route Switch 17 -> 28 { 1:0 } 
+Route Switch 17 -> 29 { 4:1 } 
+Route Switch 17 -> 30 { 3:1 } 
+Route Switch 17 -> 31 { 1:1 } 
+
+# Switch 18 -> *
+Route Switch 18 -> 0 { 1:0 } 
+Route Switch 18 -> 1 { 1:0 } 
+Route Switch 18 -> 2 { 2:0 } 
+Route Switch 18 -> 3 { 3:1 } 
+Route Switch 18 -> 4 { 1:0 } 
+Route Switch 18 -> 5 { 1:0 } 
+Route Switch 18 -> 6 { 2:0 } 
+Route Switch 18 -> 7 { 3:1 } 
+Route Switch 18 -> 8 { 1:0 } 
+Route Switch 18 -> 9 { 1:0 } 
+Route Switch 18 -> 10 { 2:0 } 
+Route Switch 18 -> 11 { 3:1 } 
+Route Switch 18 -> 12 { 1:0 } 
+Route Switch 18 -> 13 { 1:0 } 
+Route Switch 18 -> 14 { 2:0 } 
+Route Switch 18 -> 15 { 3:1 } 
+Route Switch 18 -> 16 { 1:0 } 
+Route Switch 18 -> 17 { 1:0 } 
+Route Switch 18 -> 18 { 0:0 } 
+Route Switch 18 -> 19 { 3:1 } 
+Route Switch 18 -> 20 { 1:0 } 
+Route Switch 18 -> 21 { 1:0 } 
+Route Switch 18 -> 22 { 4:1 } 
+Route Switch 18 -> 23 { 3:1 } 
+Route Switch 18 -> 24 { 1:0 } 
+Route Switch 18 -> 25 { 1:0 } 
+Route Switch 18 -> 26 { 4:1 } 
+Route Switch 18 -> 27 { 3:1 } 
+Route Switch 18 -> 28 { 1:0 } 
+Route Switch 18 -> 29 { 1:0 } 
+Route Switch 18 -> 30 { 4:1 } 
+Route Switch 18 -> 31 { 3:1 } 
+
+# Switch 19 -> *
+Route Switch 19 -> 0 { 3:0 } 
+Route Switch 19 -> 1 { 1:0 } 
+Route Switch 19 -> 2 { 1:0 } 
+Route Switch 19 -> 3 { 2:0 } 
+Route Switch 19 -> 4 { 3:0 } 
+Route Switch 19 -> 5 { 1:0 } 
+Route Switch 19 -> 6 { 1:0 } 
+Route Switch 19 -> 7 { 2:0 } 
+Route Switch 19 -> 8 { 3:0 } 
+Route Switch 19 -> 9 { 1:0 } 
+Route Switch 19 -> 10 { 1:0 } 
+Route Switch 19 -> 11 { 2:0 } 
+Route Switch 19 -> 12 { 3:0 } 
+Route Switch 19 -> 13 { 1:0 } 
+Route Switch 19 -> 14 { 1:0 } 
+Route Switch 19 -> 15 { 2:0 } 
+Route Switch 19 -> 16 { 3:0 } 
+Route Switch 19 -> 17 { 1:0 } 
+Route Switch 19 -> 18 { 1:0 } 
+Route Switch 19 -> 19 { 0:0 } 
+Route Switch 19 -> 20 { 3:0 } 
+Route Switch 19 -> 21 { 1:0 } 
+Route Switch 19 -> 22 { 1:0 } 
+Route Switch 19 -> 23 { 4:1 } 
+Route Switch 19 -> 24 { 3:0 } 
+Route Switch 19 -> 25 { 1:0 } 
+Route Switch 19 -> 26 { 1:0 } 
+Route Switch 19 -> 27 { 4:1 } 
+Route Switch 19 -> 28 { 3:0 } 
+Route Switch 19 -> 29 { 1:0 } 
+Route Switch 19 -> 30 { 1:0 } 
+Route Switch 19 -> 31 { 4:1 } 
+
+# Switch 20 -> *
+Route Switch 20 -> 0 { 4:0 } 
+Route Switch 20 -> 1 { 3:1 } 
+Route Switch 20 -> 2 { 1:1 } 
+Route Switch 20 -> 3 { 1:1 } 
+Route Switch 20 -> 4 { 2:0 } 
+Route Switch 20 -> 5 { 3:1 } 
+Route Switch 20 -> 6 { 1:1 } 
+Route Switch 20 -> 7 { 1:1 } 
+Route Switch 20 -> 8 { 2:0 } 
+Route Switch 20 -> 9 { 3:1 } 
+Route Switch 20 -> 10 { 1:1 } 
+Route Switch 20 -> 11 { 1:1 } 
+Route Switch 20 -> 12 { 2:0 } 
+Route Switch 20 -> 13 { 3:1 } 
+Route Switch 20 -> 14 { 1:1 } 
+Route Switch 20 -> 15 { 1:1 } 
+Route Switch 20 -> 16 { 2:0 } 
+Route Switch 20 -> 17 { 3:1 } 
+Route Switch 20 -> 18 { 1:1 } 
+Route Switch 20 -> 19 { 1:1 } 
+Route Switch 20 -> 20 { 0:0 } 
+Route Switch 20 -> 21 { 3:1 } 
+Route Switch 20 -> 22 { 1:1 } 
+Route Switch 20 -> 23 { 1:1 } 
+Route Switch 20 -> 24 { 4:1 } 
+Route Switch 20 -> 25 { 3:1 } 
+Route Switch 20 -> 26 { 1:1 } 
+Route Switch 20 -> 27 { 1:1 } 
+Route Switch 20 -> 28 { 4:1 } 
+Route Switch 20 -> 29 { 3:1 } 
+Route Switch 20 -> 30 { 1:1 } 
+Route Switch 20 -> 31 { 1:1 } 
+
+# Switch 21 -> *
+Route Switch 21 -> 0 { 1:0 } 
+Route Switch 21 -> 1 { 4:0 } 
+Route Switch 21 -> 2 { 3:1 } 
+Route Switch 21 -> 3 { 1:1 } 
+Route Switch 21 -> 4 { 1:0 } 
+Route Switch 21 -> 5 { 2:0 } 
+Route Switch 21 -> 6 { 3:1 } 
+Route Switch 21 -> 7 { 1:1 } 
+Route Switch 21 -> 8 { 1:0 } 
+Route Switch 21 -> 9 { 2:0 } 
+Route Switch 21 -> 10 { 3:1 } 
+Route Switch 21 -> 11 { 1:1 } 
+Route Switch 21 -> 12 { 1:0 } 
+Route Switch 21 -> 13 { 2:0 } 
+Route Switch 21 -> 14 { 3:1 } 
+Route Switch 21 -> 15 { 1:1 } 
+Route Switch 21 -> 16 { 1:0 } 
+Route Switch 21 -> 17 { 2:0 } 
+Route Switch 21 -> 18 { 3:1 } 
+Route Switch 21 -> 19 { 1:1 } 
+Route Switch 21 -> 20 { 1:0 } 
+Route Switch 21 -> 21 { 0:0 } 
+Route Switch 21 -> 22 { 3:1 } 
+Route Switch 21 -> 23 { 1:1 } 
+Route Switch 21 -> 24 { 1:0 } 
+Route Switch 21 -> 25 { 4:1 } 
+Route Switch 21 -> 26 { 3:1 } 
+Route Switch 21 -> 27 { 1:1 } 
+Route Switch 21 -> 28 { 1:0 } 
+Route Switch 21 -> 29 { 4:1 } 
+Route Switch 21 -> 30 { 3:1 } 
+Route Switch 21 -> 31 { 1:1 } 
+
+# Switch 22 -> *
+Route Switch 22 -> 0 { 1:0 } 
+Route Switch 22 -> 1 { 1:0 } 
+Route Switch 22 -> 2 { 4:0 } 
+Route Switch 22 -> 3 { 3:1 } 
+Route Switch 22 -> 4 { 1:0 } 
+Route Switch 22 -> 5 { 1:0 } 
+Route Switch 22 -> 6 { 2:0 } 
+Route Switch 22 -> 7 { 3:1 } 
+Route Switch 22 -> 8 { 1:0 } 
+Route Switch 22 -> 9 { 1:0 } 
+Route Switch 22 -> 10 { 2:0 } 
+Route Switch 22 -> 11 { 3:1 } 
+Route Switch 22 -> 12 { 1:0 } 
+Route Switch 22 -> 13 { 1:0 } 
+Route Switch 22 -> 14 { 2:0 } 
+Route Switch 22 -> 15 { 3:1 } 
+Route Switch 22 -> 16 { 1:0 } 
+Route Switch 22 -> 17 { 1:0 } 
+Route Switch 22 -> 18 { 2:0 } 
+Route Switch 22 -> 19 { 3:1 } 
+Route Switch 22 -> 20 { 1:0 } 
+Route Switch 22 -> 21 { 1:0 } 
+Route Switch 22 -> 22 { 0:0 } 
+Route Switch 22 -> 23 { 3:1 } 
+Route Switch 22 -> 24 { 1:0 } 
+Route Switch 22 -> 25 { 1:0 } 
+Route Switch 22 -> 26 { 4:1 } 
+Route Switch 22 -> 27 { 3:1 } 
+Route Switch 22 -> 28 { 1:0 } 
+Route Switch 22 -> 29 { 1:0 } 
+Route Switch 22 -> 30 { 4:1 } 
+Route Switch 22 -> 31 { 3:1 } 
+
+# Switch 23 -> *
+Route Switch 23 -> 0 { 3:0 } 
+Route Switch 23 -> 1 { 1:0 } 
+Route Switch 23 -> 2 { 1:0 } 
+Route Switch 23 -> 3 { 4:0 } 
+Route Switch 23 -> 4 { 3:0 } 
+Route Switch 23 -> 5 { 1:0 } 
+Route Switch 23 -> 6 { 1:0 } 
+Route Switch 23 -> 7 { 2:0 } 
+Route Switch 23 -> 8 { 3:0 } 
+Route Switch 23 -> 9 { 1:0 } 
+Route Switch 23 -> 10 { 1:0 } 
+Route Switch 23 -> 11 { 2:0 } 
+Route Switch 23 -> 12 { 3:0 } 
+Route Switch 23 -> 13 { 1:0 } 
+Route Switch 23 -> 14 { 1:0 } 
+Route Switch 23 -> 15 { 2:0 } 
+Route Switch 23 -> 16 { 3:0 } 
+Route Switch 23 -> 17 { 1:0 } 
+Route Switch 23 -> 18 { 1:0 } 
+Route Switch 23 -> 19 { 2:0 } 
+Route Switch 23 -> 20 { 3:0 } 
+Route Switch 23 -> 21 { 1:0 } 
+Route Switch 23 -> 22 { 1:0 } 
+Route Switch 23 -> 23 { 0:0 } 
+Route Switch 23 -> 24 { 3:0 } 
+Route Switch 23 -> 25 { 1:0 } 
+Route Switch 23 -> 26 { 1:0 } 
+Route Switch 23 -> 27 { 4:1 } 
+Route Switch 23 -> 28 { 3:0 } 
+Route Switch 23 -> 29 { 1:0 } 
+Route Switch 23 -> 30 { 1:0 } 
+Route Switch 23 -> 31 { 4:1 } 
+
+# Switch 24 -> *
+Route Switch 24 -> 0 { 4:0 } 
+Route Switch 24 -> 1 { 3:1 } 
+Route Switch 24 -> 2 { 1:1 } 
+Route Switch 24 -> 3 { 1:1 } 
+Route Switch 24 -> 4 { 4:0 } 
+Route Switch 24 -> 5 { 3:1 } 
+Route Switch 24 -> 6 { 1:1 } 
+Route Switch 24 -> 7 { 1:1 } 
+Route Switch 24 -> 8 { 2:0 } 
+Route Switch 24 -> 9 { 3:1 } 
+Route Switch 24 -> 10 { 1:1 } 
+Route Switch 24 -> 11 { 1:1 } 
+Route Switch 24 -> 12 { 2:0 } 
+Route Switch 24 -> 13 { 3:1 } 
+Route Switch 24 -> 14 { 1:1 } 
+Route Switch 24 -> 15 { 1:1 } 
+Route Switch 24 -> 16 { 2:0 } 
+Route Switch 24 -> 17 { 3:1 } 
+Route Switch 24 -> 18 { 1:1 } 
+Route Switch 24 -> 19 { 1:1 } 
+Route Switch 24 -> 20 { 2:0 } 
+Route Switch 24 -> 21 { 3:1 } 
+Route Switch 24 -> 22 { 1:1 } 
+Route Switch 24 -> 23 { 1:1 } 
+Route Switch 24 -> 24 { 0:0 } 
+Route Switch 24 -> 25 { 3:1 } 
+Route Switch 24 -> 26 { 1:1 } 
+Route Switch 24 -> 27 { 1:1 } 
+Route Switch 24 -> 28 { 4:1 } 
+Route Switch 24 -> 29 { 3:1 } 
+Route Switch 24 -> 30 { 1:1 } 
+Route Switch 24 -> 31 { 1:1 } 
+
+# Switch 25 -> *
+Route Switch 25 -> 0 { 1:0 } 
+Route Switch 25 -> 1 { 4:0 } 
+Route Switch 25 -> 2 { 3:1 } 
+Route Switch 25 -> 3 { 1:1 } 
+Route Switch 25 -> 4 { 1:0 } 
+Route Switch 25 -> 5 { 4:0 } 
+Route Switch 25 -> 6 { 3:1 } 
+Route Switch 25 -> 7 { 1:1 } 
+Route Switch 25 -> 8 { 1:0 } 
+Route Switch 25 -> 9 { 2:0 } 
+Route Switch 25 -> 10 { 3:1 } 
+Route Switch 25 -> 11 { 1:1 } 
+Route Switch 25 -> 12 { 1:0 } 
+Route Switch 25 -> 13 { 2:0 } 
+Route Switch 25 -> 14 { 3:1 } 
+Route Switch 25 -> 15 { 1:1 } 
+Route Switch 25 -> 16 { 1:0 } 
+Route Switch 25 -> 17 { 2:0 } 
+Route Switch 25 -> 18 { 3:1 } 
+Route Switch 25 -> 19 { 1:1 } 
+Route Switch 25 -> 20 { 1:0 } 
+Route Switch 25 -> 21 { 2:0 } 
+Route Switch 25 -> 22 { 3:1 } 
+Route Switch 25 -> 23 { 1:1 } 
+Route Switch 25 -> 24 { 1:0 } 
+Route Switch 25 -> 25 { 0:0 } 
+Route Switch 25 -> 26 { 3:1 } 
+Route Switch 25 -> 27 { 1:1 } 
+Route Switch 25 -> 28 { 1:0 } 
+Route Switch 25 -> 29 { 4:1 } 
+Route Switch 25 -> 30 { 3:1 } 
+Route Switch 25 -> 31 { 1:1 } 
+
+# Switch 26 -> *
+Route Switch 26 -> 0 { 1:0 } 
+Route Switch 26 -> 1 { 1:0 } 
+Route Switch 26 -> 2 { 4:0 } 
+Route Switch 26 -> 3 { 3:1 } 
+Route Switch 26 -> 4 { 1:0 } 
+Route Switch 26 -> 5 { 1:0 } 
+Route Switch 26 -> 6 { 4:0 } 
+Route Switch 26 -> 7 { 3:1 } 
+Route Switch 26 -> 8 { 1:0 } 
+Route Switch 26 -> 9 { 1:0 } 
+Route Switch 26 -> 10 { 2:0 } 
+Route Switch 26 -> 11 { 3:1 } 
+Route Switch 26 -> 12 { 1:0 } 
+Route Switch 26 -> 13 { 1:0 } 
+Route Switch 26 -> 14 { 2:0 } 
+Route Switch 26 -> 15 { 3:1 } 
+Route Switch 26 -> 16 { 1:0 } 
+Route Switch 26 -> 17 { 1:0 } 
+Route Switch 26 -> 18 { 2:0 } 
+Route Switch 26 -> 19 { 3:1 } 
+Route Switch 26 -> 20 { 1:0 } 
+Route Switch 26 -> 21 { 1:0 } 
+Route Switch 26 -> 22 { 2:0 } 
+Route Switch 26 -> 23 { 3:1 } 
+Route Switch 26 -> 24 { 1:0 } 
+Route Switch 26 -> 25 { 1:0 } 
+Route Switch 26 -> 26 { 0:0 } 
+Route Switch 26 -> 27 { 3:1 } 
+Route Switch 26 -> 28 { 1:0 } 
+Route Switch 26 -> 29 { 1:0 } 
+Route Switch 26 -> 30 { 4:1 } 
+Route Switch 26 -> 31 { 3:1 } 
+
+# Switch 27 -> *
+Route Switch 27 -> 0 { 3:0 } 
+Route Switch 27 -> 1 { 1:0 } 
+Route Switch 27 -> 2 { 1:0 } 
+Route Switch 27 -> 3 { 4:0 } 
+Route Switch 27 -> 4 { 3:0 } 
+Route Switch 27 -> 5 { 1:0 } 
+Route Switch 27 -> 6 { 1:0 } 
+Route Switch 27 -> 7 { 4:0 } 
+Route Switch 27 -> 8 { 3:0 } 
+Route Switch 27 -> 9 { 1:0 } 
+Route Switch 27 -> 10 { 1:0 } 
+Route Switch 27 -> 11 { 2:0 } 
+Route Switch 27 -> 12 { 3:0 } 
+Route Switch 27 -> 13 { 1:0 } 
+Route Switch 27 -> 14 { 1:0 } 
+Route Switch 27 -> 15 { 2:0 } 
+Route Switch 27 -> 16 { 3:0 } 
+Route Switch 27 -> 17 { 1:0 } 
+Route Switch 27 -> 18 { 1:0 } 
+Route Switch 27 -> 19 { 2:0 } 
+Route Switch 27 -> 20 { 3:0 } 
+Route Switch 27 -> 21 { 1:0 } 
+Route Switch 27 -> 22 { 1:0 } 
+Route Switch 27 -> 23 { 2:0 } 
+Route Switch 27 -> 24 { 3:0 } 
+Route Switch 27 -> 25 { 1:0 } 
+Route Switch 27 -> 26 { 1:0 } 
+Route Switch 27 -> 27 { 0:0 } 
+Route Switch 27 -> 28 { 3:0 } 
+Route Switch 27 -> 29 { 1:0 } 
+Route Switch 27 -> 30 { 1:0 } 
+Route Switch 27 -> 31 { 4:1 } 
+
+# Switch 28 -> *
+Route Switch 28 -> 0 { 4:0 } 
+Route Switch 28 -> 1 { 3:1 } 
+Route Switch 28 -> 2 { 1:1 } 
+Route Switch 28 -> 3 { 1:1 } 
+Route Switch 28 -> 4 { 4:0 } 
+Route Switch 28 -> 5 { 3:1 } 
+Route Switch 28 -> 6 { 1:1 } 
+Route Switch 28 -> 7 { 1:1 } 
+Route Switch 28 -> 8 { 4:0 } 
+Route Switch 28 -> 9 { 3:1 } 
+Route Switch 28 -> 10 { 1:1 } 
+Route Switch 28 -> 11 { 1:1 } 
+Route Switch 28 -> 12 { 2:0 } 
+Route Switch 28 -> 13 { 3:1 } 
+Route Switch 28 -> 14 { 1:1 } 
+Route Switch 28 -> 15 { 1:1 } 
+Route Switch 28 -> 16 { 2:0 } 
+Route Switch 28 -> 17 { 3:1 } 
+Route Switch 28 -> 18 { 1:1 } 
+Route Switch 28 -> 19 { 1:1 } 
+Route Switch 28 -> 20 { 2:0 } 
+Route Switch 28 -> 21 { 3:1 } 
+Route Switch 28 -> 22 { 1:1 } 
+Route Switch 28 -> 23 { 1:1 } 
+Route Switch 28 -> 24 { 2:0 } 
+Route Switch 28 -> 25 { 3:1 } 
+Route Switch 28 -> 26 { 1:1 } 
+Route Switch 28 -> 27 { 1:1 } 
+Route Switch 28 -> 28 { 0:0 } 
+Route Switch 28 -> 29 { 3:1 } 
+Route Switch 28 -> 30 { 1:1 } 
+Route Switch 28 -> 31 { 1:1 } 
+
+# Switch 29 -> *
+Route Switch 29 -> 0 { 1:0 } 
+Route Switch 29 -> 1 { 4:0 } 
+Route Switch 29 -> 2 { 3:1 } 
+Route Switch 29 -> 3 { 1:1 } 
+Route Switch 29 -> 4 { 1:0 } 
+Route Switch 29 -> 5 { 4:0 } 
+Route Switch 29 -> 6 { 3:1 } 
+Route Switch 29 -> 7 { 1:1 } 
+Route Switch 29 -> 8 { 1:0 } 
+Route Switch 29 -> 9 { 4:0 } 
+Route Switch 29 -> 10 { 3:1 } 
+Route Switch 29 -> 11 { 1:1 } 
+Route Switch 29 -> 12 { 1:0 } 
+Route Switch 29 -> 13 { 2:0 } 
+Route Switch 29 -> 14 { 3:1 } 
+Route Switch 29 -> 15 { 1:1 } 
+Route Switch 29 -> 16 { 1:0 } 
+Route Switch 29 -> 17 { 2:0 } 
+Route Switch 29 -> 18 { 3:1 } 
+Route Switch 29 -> 19 { 1:1 } 
+Route Switch 29 -> 20 { 1:0 } 
+Route Switch 29 -> 21 { 2:0 } 
+Route Switch 29 -> 22 { 3:1 } 
+Route Switch 29 -> 23 { 1:1 } 
+Route Switch 29 -> 24 { 1:0 } 
+Route Switch 29 -> 25 { 2:0 } 
+Route Switch 29 -> 26 { 3:1 } 
+Route Switch 29 -> 27 { 1:1 } 
+Route Switch 29 -> 28 { 1:0 } 
+Route Switch 29 -> 29 { 0:0 } 
+Route Switch 29 -> 30 { 3:1 } 
+Route Switch 29 -> 31 { 1:1 } 
+
+# Switch 30 -> *
+Route Switch 30 -> 0 { 1:0 } 
+Route Switch 30 -> 1 { 1:0 } 
+Route Switch 30 -> 2 { 4:0 } 
+Route Switch 30 -> 3 { 3:1 } 
+Route Switch 30 -> 4 { 1:0 } 
+Route Switch 30 -> 5 { 1:0 } 
+Route Switch 30 -> 6 { 4:0 } 
+Route Switch 30 -> 7 { 3:1 } 
+Route Switch 30 -> 8 { 1:0 } 
+Route Switch 30 -> 9 { 1:0 } 
+Route Switch 30 -> 10 { 4:0 } 
+Route Switch 30 -> 11 { 3:1 } 
+Route Switch 30 -> 12 { 1:0 } 
+Route Switch 30 -> 13 { 1:0 } 
+Route Switch 30 -> 14 { 2:0 } 
+Route Switch 30 -> 15 { 3:1 } 
+Route Switch 30 -> 16 { 1:0 } 
+Route Switch 30 -> 17 { 1:0 } 
+Route Switch 30 -> 18 { 2:0 } 
+Route Switch 30 -> 19 { 3:1 } 
+Route Switch 30 -> 20 { 1:0 } 
+Route Switch 30 -> 21 { 1:0 } 
+Route Switch 30 -> 22 { 2:0 } 
+Route Switch 30 -> 23 { 3:1 } 
+Route Switch 30 -> 24 { 1:0 } 
+Route Switch 30 -> 25 { 1:0 } 
+Route Switch 30 -> 26 { 2:0 } 
+Route Switch 30 -> 27 { 3:1 } 
+Route Switch 30 -> 28 { 1:0 } 
+Route Switch 30 -> 29 { 1:0 } 
+Route Switch 30 -> 30 { 0:0 } 
+Route Switch 30 -> 31 { 3:1 } 
+
+# Switch 31 -> *
+Route Switch 31 -> 0 { 3:0 } 
+Route Switch 31 -> 1 { 1:0 } 
+Route Switch 31 -> 2 { 1:0 } 
+Route Switch 31 -> 3 { 4:0 } 
+Route Switch 31 -> 4 { 3:0 } 
+Route Switch 31 -> 5 { 1:0 } 
+Route Switch 31 -> 6 { 1:0 } 
+Route Switch 31 -> 7 { 4:0 } 
+Route Switch 31 -> 8 { 3:0 } 
+Route Switch 31 -> 9 { 1:0 } 
+Route Switch 31 -> 10 { 1:0 } 
+Route Switch 31 -> 11 { 4:0 } 
+Route Switch 31 -> 12 { 3:0 } 
+Route Switch 31 -> 13 { 1:0 } 
+Route Switch 31 -> 14 { 1:0 } 
+Route Switch 31 -> 15 { 2:0 } 
+Route Switch 31 -> 16 { 3:0 } 
+Route Switch 31 -> 17 { 1:0 } 
+Route Switch 31 -> 18 { 1:0 } 
+Route Switch 31 -> 19 { 2:0 } 
+Route Switch 31 -> 20 { 3:0 } 
+Route Switch 31 -> 21 { 1:0 } 
+Route Switch 31 -> 22 { 1:0 } 
+Route Switch 31 -> 23 { 2:0 } 
+Route Switch 31 -> 24 { 3:0 } 
+Route Switch 31 -> 25 { 1:0 } 
+Route Switch 31 -> 26 { 1:0 } 
+Route Switch 31 -> 27 { 2:0 } 
+Route Switch 31 -> 28 { 3:0 } 
+Route Switch 31 -> 29 { 1:0 } 
+Route Switch 31 -> 30 { 1:0 } 
+Route Switch 31 -> 31 { 0:0 } 

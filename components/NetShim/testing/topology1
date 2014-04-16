@@ -1,0 +1,16 @@
+# This is my first test topology
+# This is another comment
+
+# And another comment
+ChannelLatency 77
+ChannelLatencyData 10
+channellatencycontrol 1
+numnodes 2
+numswitches 2
+switchinputbuffers 1
+switchoutputbuffers 1
+switchinternalbufferspervc 3
+switchbandwidth 3
+switchports 2
+
+include topology2

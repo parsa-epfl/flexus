@@ -1,0 +1,9 @@
+#ifndef FLEXUS__LAYOUT_IN_COMPONENT_IMPLEMENTATION
+#error "Found end of component implementation without a corresponding begin"
+#endif //FLEXUS__LAYOUT_IN_COMPONENT_IMPLEMENTATION
+
+#undef FLEXUS__LAYOUT_IN_COMPONENT_IMPLEMENTATION
+
+#undef FLEXUS_BEGIN_COMPONENT
+#undef FLEXUS_END_COMPONENT
+

@@ -1,0 +1,189 @@
+//
+//  rmh micro code definition file
+//
+//  version 1.00	Nov-22-1993
+//
+magic	3341			// key to match micro code with TMC version
+next	11 19			// next address field
+//
+// Basic entry points for locally activated actions
+//
+EP	RM_REQ_READ		12
+EP	RM_REQ_WRITE		14
+EP	RM_REQ_LOAD		7
+EP	RM_REQ_LOAD_STALE	6	// LOAD request with stale INC header
+EP	RM_REQ_OWN		9
+EP	RM_REQ_OWN_STALE	8	// own request with stale INC header
+EP	RM_REQ_REPLACE		1
+EP	RM_REQ_REPLACE_STALE	0	// replace request with possibly stale INC header
+//
+// Entry points for remotely activated actions
+//
+EP	CR_ACK		16
+EP	CRE_ACK		17
+EP	UNC_ACK		18
+EP	EX_ACK		19
+EP	WB_ACK		20
+EP	WA_ACK		21
+EP	UCR_ACK		22
+EP	UCW_ACK		23
+EP	D_FWD_REQ	24
+EP	INVAL_REQ	25
+EP	RECALL_REQ	26
+EP	SPARE_1R	27
+EP	DATA_FWD	28
+EP	INVAL_FWD	29
+EP	MSG_14		30
+EP	MSG_15		31
+//
+// Instructions
+//
+instr	SEND		0 2 0		// send instruction
+arg	O_format	7 8 0		// which format to use
+arg	R_format	7 8 1
+arg	D_format	7 8 2
+arg	U_format	7 8 3
+arg	node_dst	9 10 0		// which destination address
+arg	aux_dst		9 10 1
+arg	inc_node_dst	9 10 2
+arg	next_dst	9 10 3
+arg	SPARE_2		3 6 0	
+arg	SPARE_3		3 6 1
+arg	UNC_REQ		3 6 2
+arg	EX_REQ		3 6 3	
+arg	WB_REQ		3 6 4
+arg	WA_REQ		3 6 5
+arg	UCR_REQ		3 6 6
+arg	UCW_REQ		3 6 7
+arg	SPARE_4		3 6 8
+arg	INVAL_ACK	3 6 9
+arg	RECALL_ACK	3 6 10
+arg	SPARE_1A	3 6 11
+arg	DATA_FWD	3 6 12		// RMH -> RMH
+arg	INVAL_FWD	3 6 13		// RMH -> RMH
+// arg	RMH_MSG_14	3 6 14		// can't be received: timeout
+// arg	RMH_MSG_15	3 6 15		// can't be received: error
+//
+instr	RECEIVE		0 2 1
+value	CR_ACK		0
+value	CRE_ACK		1
+value	UNC_ACK		2
+value	EX_ACK		3
+value	WB_ACK		4
+value	WA_ACK		5
+value	UCR_ACK		6
+value	UCW_ACK		7
+value	D_FWD_REQ	8
+value	INVAL_REQ	9
+value	RECALL_REQ	10	
+value	SPARE_1R	11	
+value	DATA_FWD	12
+value	INVAL_FWD	13
+value	RCV_TIMEOUT	14
+value	RCV_ERROR	15
+//
+instr	EXECUTE		0 2 2
+arg	mem_read	3 6 0		// memory read
+arg	mem_write	3 6 1		// mem write
+arg	inc_tag		7 7 0
+arg	inc_line	7 7 1
+arg	from_ibuf	8 8 0
+arg	to_ibuf		8 8 0
+arg	from_obuf   	8 8 1
+arg	to_obuf   	8 8 1
+arg	preload		3 6 2		// preload
+arg	RD		7 9 0
+arg	CI		7 9 1
+arg	CR		7 9 2
+arg	CI_CR_CRI	7 9 3
+arg	BUS_ERROR	7 9 4
+arg	fork_thread	3 6 4
+arg	D_FWD_REQ	7 10 8
+arg	INVAL_REQ	7 10 9
+arg	RECALL_REQ	7 10 10
+//
+instr	TEST		0 2 3		// test the inc state
+arg	inc_state	3 5 0
+arg	op_attributes	3 5 1
+arg	error_flags	3 5 2
+arg	retry_counter	3 5 3
+arg	rmh_status	3 5 4
+arg	tsrf_state	3 5 5
+arg	inc_entry	3 5 6
+arg	aux_register	3 5 7
+value	VALUE_0		0
+value	VALUE_1		1
+value	VALUE_2		2
+value	VALUE_3		3
+value	VALUE_4		4
+value	VALUE_5		5
+value	VALUE_6		6
+value	VALUE_7		7
+value	VALUE_8		8
+value	VALUE_9		9
+value	VALUE_10	10
+value	VALUE_11	11
+value	VALUE_12	12
+value	VALUE_13	13
+value	VALUE_14	14
+value	VALUE_15	15
+//
+instr	SET		0 2 4		// change inc state
+arg	inc_state	3 5 0
+arg	op_attributes	3 5 1
+arg	error		3 5 2
+arg	retry_counter	3 5 3
+arg	rmh_status	3 5 4
+arg	tsrf_state	3 5 5
+arg	inc_entry	3 5 6
+arg	aux_register	3 5 7
+arg	ZERO		6 6 0
+arg	ONE		6 6 1
+arg	bit_0		7 7 1
+arg	inc_state_0	7 7 1
+arg	exclusive	7 7 1
+arg	error_0		7 7 1
+arg	retry_cnt_0	7 7 1
+arg	write_ack	7 7 1
+arg	inc_line_0	7 7 1
+arg	aux_reg		7 7 1
+arg	bit_1		8 8 1
+arg	inc_state_1	8 8 1
+arg	pso		8 8 1
+arg	error_1		8 8 1
+arg	retry_cnt_1	8 8 1
+arg	store_pndg	8 8 1
+arg	inc_line_1	8 8 1
+arg	bit_2		9 9 1
+arg	inc_state_2	9 9 1
+arg	priority	9 9 1
+arg	retry_cnt_2	9 9 1
+arg	lock		9 9 1
+arg	tag_field	9 9 1
+arg	bit_3		10 10 1
+arg	inc_state_3	10 10 1
+arg	packet_pndg	10 10 1
+//
+instr	MOVE		0 2 5		// move stuff
+arg	addr_tsrf2inc	3 5 0
+arg	addr_inc2tsrf	3 5 1
+arg	aux2inc		3 5 2
+arg	inc2aux		3 5 3
+arg	ibuf2obuf	3 5 4
+arg	ibuf_ucw_obuf	3 5 5
+arg	ibuf_aux2aux	3 5 6
+//
+instr	MISC		0 2 6		// match INC entry
+arg	verify		3 3 1
+value	INC_HIT		0
+value	INC_MISS	1
+//
+instr	MBUS_OP		0 2 7
+arg	MB_REQ_CI	7 10 13
+arg	MB_REQ_CRI	7 10 10
+arg	MB_REQ_CR	7 10 12
+arg	MB_REQ_RD	7 10 14
+arg	MB_REQ_WR	7 10 15
+value	SUCCESS		0
+value	DIRTY		1
+value	ERROR		2

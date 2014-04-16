@@ -1,0 +1,243 @@
+//
+//  Home Engine (HE) micro code definition file
+//
+//  Responsible for requests to local memory
+//  from local cpu or remote nodes.
+//
+//  he.mdef  version 1.00   11Mar03
+//
+magic   6476              // key to match micro code with engine version
+//
+// Microcode instructions are 12 bits wide, next address bit is bit 21 (1024 instructions)
+// Keep the difference always the same (hardcoded in MASM)
+//
+next    12 22             // next address field
+//
+// Basic entry points for locally activated actions
+//
+EP  Halt                        0  // microinstruction at address 0 should be a NOOP
+EP  Local_Read                  1  // Read miss by local processor, dir state is modified
+EP  Local_WriteAccess_Shared    2  // Write miss by local processor, dir state is shared
+EP  Local_WriteAccess_Modified  3  // Write miss by local processor, dir state is modified
+EP  Local_UpgradeAccess         4  // Upgrade miss by local processor, dir state is shared
+EP  Local_Prefetch_Read         5  // Prefetch read miss by local processor, dir state is modified
+//
+// Entry points for remotely activated actions
+//
+EP  ReadReq_Invalid       16    // VC 0
+EP  ReadReq_Shared        17    // VC 0
+EP  ReadReq_Modified      18    // VC 0
+EP  WriteReq_Invalid      19    // VC 0
+EP  WriteReq_Shared       20    // VC 0
+EP  WriteReq_Modified     21    // VC 0
+EP  UpgradeReq_Invalid    22    // VC 0
+EP  UpgradeReq_Shared     23    // VC 0
+EP  UpgradeReq_Modified   24    // VC 0
+EP  FlushReq              25    // VC 1   Contains data
+EP  WritebackReq          26    // VC 1   Contains data
+//
+// Error Message
+//
+EP  Error                 31
+//
+//
+//
+//
+// Instructions
+//
+// Meta language
+// instr     <name>                 <start bit> <end bit> <value>
+// arg       <name>                 <start bit> <end bit> <value>
+// value     <name>                 <value>
+//
+// SEND
+// ====
+//
+instr   SEND                        0  3   0
+//
+arg     ReadAck                     4  6   0   // VC 2    Contains data and HomeNodeSharer flag
+arg     WriteAck                    4  6   1   // VC 2    Contains data, #inval acks to expect and HomeNodeSharer flag
+arg     UpgradeAck                  4  6   2   // VC 2    Contains #inval acks to expect and HomeNodeSharer flag
+arg     WritebackAck                4  6   3   // VC 2
+arg     FlushAck                    4  6   4   // VC 2
+//
+arg     Error                       4  6   7   // Error message
+//
+//
+arg     ToRequester                10 11   0   // send to cache line requester (node initiating transaction at home node)
+arg     ToOwner                    10 11   1   // send to cache line owner
+arg     ToSharers                  10 11   2   // send to ALL sharers and set PE register InvalidationsCount to #messages sent
+arg     ToRespondent               10 11   3   // send to node that sent the last message
+//
+//
+//
+//
+// SEND_FWD
+// ========
+//
+instr   SEND_FWD                    0  3   1
+//
+arg     LocalInvalidationReq        4  7   0   // VC 1
+arg     RemoteInvalidationReq       4  7   1   // VC 1
+arg     ForwardedReadReq            4  7   2   // VC 1
+arg     ForwardedWriteReq           4  7   3   // VC 1
+arg     RecallReadReq               4  7   4   // VC 1
+arg     RecallWriteReq              4  7   5   // VC 1
+arg     WritebackStaleReadAck       4  7   6   // VC 2
+arg     WritebackStaleWriteAck      4  7   7   // VC 2
+//
+arg     Error                       4  7  15   // Error message
+//
+//
+arg     ToRequester                10 11   0   // which destination
+arg     ToOwner                    10 11   1
+arg     ToSharers                  10 11   2   // side effect: set protocol engine register InvalidationsCount to #messages sent
+arg     ToRespondent               10 11   3
+//
+//
+//
+//
+// RECEIVE
+// =======
+//
+instr   RECEIVE                 0  3  2
+//
+value   WritebackReq            0    // VC 1   Contains data
+value   ForwardedWriteAck       1    // VC 2
+value   ForwardedReadAck        2    // VC 2   Contains data
+value   RecallReadAck           3    // VC 2   Contains data
+value   RecallWriteAck          4    // VC 2   Contains data
+value   LocalInvalidationAck    5    // VC 2
+value   FlushReq                6    // VC 1   Contains data
+//
+value   InvAck                  7    // The cache acknowledges an Invalidate CPU_OP
+value   InvUpdateAck            8    // Contains data. The cache acknowledges an Invalidate CPU_OP.
+value   DowngradeAck            9    // The cache acknowledges a Downgrade CPU_OP
+value   DowngradeUpdateAck     10    // Contains data. The cache acknowledges a Downgrade CPU_OP.
+//
+value   Padding2               11
+value   Padding3               12
+value   Padding4               13
+value   Padding5               14
+//
+value   Error                  15
+//
+//
+//
+//
+// TEST
+// ====
+//
+instr   TEST                   0  3  3
+//
+arg     InvalidationsCount     4  6  0    // internal register
+arg     CurrentOwnerInTempReg  4  6  1    // 1 if the value in tempreg is the current owner, 0 otherwise
+arg     RequesterIsSharer      4  6  2    // 1 if the requester is a sharer according ot the sharer bitmask, 0 otherwise.
+arg     IsPrefetchRead         4  6  4    // 1 for prefetch reads, 0 for normal read requests
+arg     ConfigurationReg       4  6  7    // read-only register.
+//
+value   VALUE_0                0 // CurrentOwner doesn't match value of TempReg when checking against CurrentOwnerInTempReg
+                                 // or, requester is not a sharer according to the sharer bitmask
+value   VALUE_1                1 // CurrentOwner matches value of TempReg when checking against CurrentOwnerInTempReg
+                                 // or, requester is a sharer according to the sharer bitmask
+value   VALUE_2                2
+value   VALUE_3                3
+value   VALUE_4                4
+value   VALUE_5                5
+value   VALUE_6                6
+value   VALUE_7                7
+value   VALUE_8                8
+value   VALUE_9                9
+value   VALUE_10              10
+value   VALUE_11              11
+value   VALUE_12              12
+value   VALUE_13              13
+value   VALUE_14              14
+value   VALUE_15              15
+//
+//
+//
+//
+// SET
+// ===
+//
+instr   SET                    0  3  4
+//
+arg     DirectoryState         4  6  0
+arg     Owner                  4  6  1    // Could be hidden in SharersBitMask bits
+arg     SharersBitMask         4  6  2    // Bits could also store owner info when in exclusive state
+arg     TempReg                4  6  3
+arg     InvalidationsCount     4  6  4
+arg     AnyInvalidations       4  6  5
+arg     IsPrefetchRead         4  6  6
+//
+arg     VALUE                  7  8  0
+arg     BIT                    7  8  1
+arg     DECREMENT              7  8  2
+arg     INCREMENT              7  8  3
+//
+arg     Invalid                9 10  0
+arg     Shared                 9 10  1
+arg     Modified               9 10  2
+//
+arg     Requester              9 10  0
+arg     CurrentOwner           9 10  1
+arg     Respondent             9 10  2
+arg     HomeNode               9 10  2
+arg     CurrentTempReg         9 10  3
+//
+arg     ToZero                11 11  0
+arg     ToOne                 11 11  1
+//
+//
+//
+//
+// UNLOCK
+// ======
+//
+instr   UNLOCK                 0 3 5
+//
+//
+//
+//
+//
+// CPU_OP
+// ======
+//
+instr   CPU_OP                      0  3  6
+//
+// requests sent to cache from PE:
+arg     Invalidate                  4  7  0  // b0000 Flush dirty data (if they exists, and invalidate line).
+                                             // Expect either CacheAck or CacheUpdateAck with data.
+arg     Downgrade                   4  7  1  // b0000
+//
+// replies sent to cache from PE:
+arg     MissReply                   4  7  8  // b1000 Contains data
+arg     MissWritableReply           4  7  9  // b1001 Contains data
+arg     UpgradeReply                4  7 10  // b1010
+arg     PrefetchReadReply           4  7 11  // b1011 Contains data
+//
+//
+//
+//
+//
+// WRITE_DIRECTORY
+// ======
+//
+instr   WRITE_DIRECTORY              0 3 7
+//
+//
+//
+//
+//
+// INPUT_Q_OP
+// ==========
+//
+instr   INPUT_Q_OP                   0 3 8
+//
+arg     Dequeue                      4 5 0
+arg     Refuse                       4 5 1
+//
+arg     LastMsg                      6 7 0
+arg     RemoteReq                    6 7 1
+arg     LocalReq                     6 7 2

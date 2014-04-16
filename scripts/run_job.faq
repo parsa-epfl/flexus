@@ -1,0 +1,289 @@
+Archive name: run_job.faq
+Last modified: 2007/10/11
+
+--------------------------------------------------------------------------------
+          How to run Flexus jobs with "run_job" and "stat-manager"
+--------------------------------------------------------------------------------
+
+This article describes how to use the run_job utility at CMU to run Flexus
+simulations and analyze the results using stat-manager.  You can obtain the
+latest copy of this article from the Flexus source tree, which is kept in SVN. 
+We also maintain a copy at:
+
+  /afs/scotch/project/scaffold/regress/run_job.faq
+
+NOTE: The AFS copy is moved there by hand after committing to SVN.  Please
+update it when you commit a new version.
+
+Index of Subjects
+-----------------
+1. Introduction and Scope
+2. Running Simulations with "run_job"
+3. Analyzing Results with "stat-manager"
+4. Extending
+5. Troubleshooting
+6. Developer's Reference
+
+
+********************************************************************************
+Item 1.
+
+Introduction and Scope
+----------------------
+
+This document describes two utilities: run_job and stat-manager.  run_job runs
+Flexus simulations within the Simics execution environment, while stat-manager
+parses and processes the databases of statistics that are produced.
+
+
+********************************************************************************
+Item 2.
+
+Running Simulations with "run_job"
+----------------------------------
+
+The run_job script is located at:
+
+  /afs/scotch/project/scaffold/regress/run_job
+
+It is a TCL script written by Mike Ferdman (mferdman@ece).  It has one
+user-specific resource file called '.run_job.rc.tcl' located in your $HOME
+directory (e.g., /afs/scotch/usr/$USER).  We first give some example usage of
+run_job and then describe the run_job.rc.tcl file format.
+
+To run an interactive timing job (using simulator DSMFlex.OoO, user
+configuration 'my-cfg', running 16cpu oracle/tpcc):
+
+  > run_job -ma -cfg my-cfg DSMFlex.OoO oracle_16cpu_16cl  
+
+To run an interactive trace job:
+
+  > run_job -cfg my-cfg TraceFlex oracle_16cpu_16cl
+
+The output of these interactive jobs would be in:
+
+  /home/$USER/results/interactive-my-cfg/oracle_16cpu_16cl/000_000/
+
+where the 000_000 signifies that no flexpoint was loaded as initial
+architectural state.  To load a flexpoint 1 from phase 0, using the 'baseline'
+checkpoint set:
+
+  > run_job -ma -cfg my-cfg -run 0:1 -state baseline DSMFlex.OoO oracle_16cpu_16cl
+
+The results will now be located in:  
+
+  /home/$USER/results/interactive-my-cfg/oracle_16cpu_16cl/baseline_000_001/
+
+To submit a series of jobs to condor, we first have to discuss the
+run_job.rc.tcl file in greater detail, as this file controls how sets of jobs
+are run.  The default run_job.rc.tcl is created for each user [FIXME: when/how?
+where is master?]  By default, the file has four sections: jobspecmap,
+flexus_commands, rungen trace, and rungen timing.  
+
+jobspecmap is a simple tree of job names you pass as the last argument to
+run_job, with many of the job names being macros that result in many jobs being
+run.  The flexus_commands section allows various flexus parameters to be
+defined (e.g., how long to run, whether to load a page map, etc.).  The names
+are arbitrary and get used in the rungen sections.  There are two rungen
+sections, one for trace jobs and one for timing jobs.  Each line contains the
+job-spec name, the checkpoint set to use by default, the phases/flexpoints to
+run, and the flexus_command set to use.
+  
+To run a set of commercial timing jobs (e.g., all web, tpcc, and tpc-h), using
+condor:
+
+  > run_job -condor -ma -cfg my-cfg -run timing -state baseline DSMFlex.OoO commercial-16
+
+This command will use the 'baseline' flexpoint set, which models a DSM with 8MB
+L2 caches.  To see a list of available flexpoint states for a given workload,
+pass '??' as the -state parameter and choose an individual workload (e.g.,
+oracle_16cpu_16cl, not oltp-16).
+
+A set of trace jobs would change 'timing' to 'trace', remove -ma, and
+substitute the appropriate simulator/configurations.
+
+All results from a condor job will be copied back to the machine the jobs were
+launched from, into:
+
+/home/$USER/results/$JOB_NAME/$WKLD/$PHASE_FLEXPOINT
+
+where $JOB_NAME is the string run_job returns on the console (e.g.
+/home/$USER/results/my-cfg-DSMFlex.OoO-10Oct07-164423).  Running multiple
+workloads from one run_job invocation (by using a macro name such as
+commercial-16, for example) will result in multiple subdirectories under
+$JOB_NAME.
+
+run_job will automatically 'collapse' the stats database the timing simulations
+produce.  This is performed using the stat-collpase utility, which reduces the
+stats_db.out.gz file to contain only the measurable portion (e.g., the last 50K
+cycles) of the simulation.  The resulting file is called
+stats_db.out.selected.gz.
+
+To sample the entire set of phases/flexpoints, Mike Ferdman has written a
+simple script that can be run after all simulations are complete.  Change to
+the '/home/$USER/results/$JOB_NAME' directory and execute
+~mferdman/bin/sample.sh.  This script may take several minutes, but will
+produce one stats_db:$WKLD.out.gz file for each $WKLD.  Each file is the result
+of running the stat-sample utility.
+
+Advanced Usage.  run_job has a number of additional arguments that are useful
+in various scenarios.  Use 'run_job -help' to get a list of arguments and short
+summaries.  Here are some of the more common ones.
+
+   -state value         FlexStates to use (comma separated) <>. FIXME: what for?
+   
+   -chkptset value      CheckPointSet to use <baseline>.  FIXME: what for?
+
+   -reqs value          Additional Condor requirements <True>.  Useful for
+                        instructing Condor you need a certain amount of memory 
+                        in megabytes (Memory > 1200) or similar requirements 
+                        string.  See Condor documentation for > details.
+
+   -norun               Set up job directory but do not run.  This is useful
+                        for attaching valgrind or gdb to the simics process to 
+                        see what's causing your simulator to crash.
+
+   -debug value         Debug level <iface>.  This specifies which simulator
+                        binary to use (e.g., DSMFlex.OoO-vverb)
+
+   -win                 Skip -nowin argument to Simics (show X11 windows)
+   -list-specs          List available job-specs from .run_job.rc.tcl
+   -list-cfgs           List available configurations from 
+                        $REGRESS/user-specs/$USER
+
+   -help                Print minimalist help message
+
+
+********************************************************************************
+Item 3.
+
+Analyzing Results with "stat-manager"
+-------------------------------------
+
+The utility stat-manager parses the large databases of results written by
+Flexus simulators.  The latest copy can be found at:
+
+/afs/scotch/project/scaffold/regress/stat-managerN
+
+where N is the highest number in the sequence of files present.  N is
+incremented every time the database format is changed.  This is an obvious area
+where we could improve things in the future (e.g., encoding versions in files
+and supporting a backwards-compatible stat-manager).
+
+A very basic usage of stat-manager is:
+
+  > stat-manager -d $STATS_DB list-measurements
+
+where $STATS_DB is a stats database file such as stats_db.out.gz found in the
+output directory from run_job (see Item 2 above).  list-measurements will list
+all the measurement names found in the database, such as "Region 000", "all",
+or "selection".  The concept behind a measurement is discussed later in this
+section.  For now, we give another example, this time actually seeing the results:
+
+  > stat-manager -d $STATS_DB print $MSMT
+
+where $MSMT is one of the measurements listed with the previous command.  This
+command will produce voluminous output, so either pipe to more/less or to a
+grep command to filter.  
+
+To examine specific counters or histograms, use the format-string command:
+
+  > stat-manager -d $STATS_DB format-string $STRING $MSMT
+
+where $STRING is, in the simplest version, "{MyStatName}".  MyStatName is the
+name of a StatCounter, StatInstanceCounter, StatLog2Histogram, etc. found in
+your Flexus simulator. 
+
+More complex uses of the format-string will build arithmetic and regular
+expressions into $STRING.  For example, "<EXPR:sum{MyStat.*}>" will sum all the
+counters that begin with the name "MyStat" and report the aggregate value.  The
+regular expressions supported include: FIXME.  Commands usable in the EXPR
+syntax include: FIXME.
+
+The StatInstanceCounter and StatLog2Histogram also support advanced commands
+within the format-string syntax.  These counters produce many values, and as
+such, it is desirable to compute aggregates or alter the representation
+programmatically.  The underlying data is all embedded in the stats files,
+these commands just manipulate its presentation.  
+
+For example, to compute the number of buckets in a StatInstanceCounter, use:
+
+  $STRING="{MyInstCounter;buckets}"  
+
+To show all the buckets, use: 
+  
+  $STRING="{MyInstCounter;all}"
+
+Some commands support options.  For example, instance counters can be thought
+of as probability mass functions.  To compute the cumulative mass and report
+the bucket at which the cumulative percentage first crosses the 99.3%
+threshold, use:  
+
+  $STRING="{MyInstCounter;pctile:99.3}"
+
+The commands available for instance counters are:
+
+  ;val:XX        # the count for bucket XX
+  ;count         # sum of all the counts (sum of values in all buckets)
+  ;weight        # weighted sum of all buckets
+  ;avg           # the arithmetic mean value
+  ;buckets       # the number of buckets
+  ;median        # the median bucket value
+  ;pctile:XX.X   # the bucket where the CDF crosses XX.X
+  ;mlp           # the mlp (weighted sum when there is at least one)
+  ;width:XX      # print values with width of XX
+  ;exclude:XX    # exclude bucket XX
+  ;hexall        # show all values, use hex output
+  ;hex           # use hex output
+  ;all           # show all values
+  ;cdfall        # show cumulative percentages for all values
+  ;cdf           # show cumulative percentages
+  ;sum:X-Y       # sum counts in buckets whose values are in [X,Y]
+  ;sum:-Y        # sum counts in buckets whose values are in (-inf,Y]
+  ;sum:X-        # sum counts in buckets whose values are in [X,+inf)
+  ;sum:XX        # same as val:XX
+
+The commands available for Log2Histograms are:
+ 
+  ;buckets       # the number of buckets
+  ;val:XX        # the count for bucket XX (power of two)
+  ;count         # the sum of all the counts (sum of values in all buckets)
+  ;sum:X-Y       # the sum of buckets X through Y
+
+
+FIXME: format command (files)
+
+FIXME: theory of 'measurements'
+
+********************************************************************************
+Item 4.
+
+Extending
+---------
+
+FIXME: how to add job-specs
+FIXME: how to create flexpoints
+
+********************************************************************************
+Item 5.
+
+Troubleshooting
+---------------
+
+
+
+********************************************************************************
+Item 6.
+
+Developers Reference
+--------------------
+
+FIXME: should answer following questions:
+  -- how to manipulate .run_job.rc.tcl
+  -- how to change the run_job code
+  
+FIXME: the missing stat-manager developers manual...  
+  -- what files to change to add commands/options
+  
+********************************************************************************
+

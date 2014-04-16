@@ -1,0 +1,20 @@
+
+run-command-file "core.simics"
+run-command-file "16core_misc.simics"
+run-command-file "16core_network.simics"
+run-command-file "L1I_64KBx2way.simics"
+run-command-file "L1D_64KBx4way.simics"
+run-command-file "L2_8MB_Shared.simics"
+run-command-file "16core_memory.simics"
+
+flexus.set "-L1i:clean_evict" "1"
+flexus.set "-ufetch:clean_evict" "1"
+flexus.set "-ufetch:send_acks" "1"
+flexus.set "-ufetch:use_reply_channel" "1"
+flexus.set "-L1d:clean_evict" "1"
+flexus.set "-L1d:allow_evict_clean" "1"
+flexus.set "-L1d:use_reply_channel" "1"
+
+flexus.set "-L1d:cache_type" "InclMESI2PhaseWB"
+flexus.set "-L1d:protocol" "InclusiveMESI"
+flexus.set "-L1i:protocol" "InclusiveMESI"
