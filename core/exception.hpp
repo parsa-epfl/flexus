@@ -124,6 +124,34 @@ public:
 };
 
 }  //End Namespace Simics
+
+namespace Qemu {
+using std::string;
+using std::memcpy;
+using std::strlen;
+using std::exception;
+using std::size_t;
+
+class QemuException : public Flexus::Core::FlexusException {
+  typedef Flexus::Core::FlexusException base;
+public:
+  QemuException()  : base() {}
+  explicit QemuException(string anExplanation):
+    base(anExplanation) {}
+  explicit QemuException(char const * anExplanation):
+    base(anExplanation) {}
+  QemuException(char const * aFile, int64_t aLine, string anExplanation) :
+    base(aFile, aLine, anExplanation) {}
+  QemuException(char const * aFile, int64_t aLine, char const * anExplanation) :
+    base(aFile, aLine, anExplanation) {}
+  virtual ~QemuException() throw() {}
+  virtual char const * no_explanation_str() const {
+    return "Unknown Simics exception";
+  }
+};
+
+}
+}
 } //namespace Flexus
 
 #endif //FLEXUS_EXCEPTION_HPP_INCLUDED
