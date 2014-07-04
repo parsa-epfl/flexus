@@ -63,13 +63,14 @@ int QEMU_mem_op_is_read(generic_transaction_t *mop)
 
 // note: see QEMU_callback_table in api.h
 // should return a unique identifier to the callback struct
-int QEMU_insert_callback(QEMU_callback_event_t event, QEMU_callback fn, void *arg) 
+int QEMU_insert_callback(QEMU_callback_event_t event, QEMU_callback_t fn, void *arg) 
 {
+	QEMU_callback_container_t *container = QEMU_all_callbacks.callbacks[event];
 	QEMU_all_callbacks.next_callback_id++;
 	return 42;
 }
 
-void QEMU_delete_callback(QEMU_callback_event_t, uint64_t callback_id) 
+void QEMU_delete_callback(QEMU_callback_event_t event, uint64_t callback_id) 
 {
 	return;
 }
