@@ -28,6 +28,11 @@ conf_object_t *QEMU_get_cpu_by_index(int index)
 	return cpu;
 }
 
+int QEMU_get_processor_number(conf_object_t *cpu) 
+{
+	return 42;
+}
+
 int QEMU_set_tick_frequency(conf_object_t *cpu, double tick_freq) 
 {
 	return 42;
@@ -75,7 +80,7 @@ void QEMU_delete_callback(QEMU_callback_event_t event, uint64_t callback_id)
 	return;
 }
 
-void QEMU_simulation_break(void) 
+void QEMU_break_simulation(const char *msg) 
 {
 	return;
 }
