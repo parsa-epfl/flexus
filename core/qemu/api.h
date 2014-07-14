@@ -68,6 +68,8 @@ typedef enum {
 	QEMU_DI_Data
 } data_or_instr_t;
 
+//[???]based on name it clears exceptions
+int QEMU_clear_exception(void);
 
 // read an arbitrary register.
 uint64_t QEMU_read_register(conf_object_t *cpu, int reg_index);
@@ -85,8 +87,11 @@ physical_address_t QEMU_logical_to_physical(conf_object_t *cpu,
 					data_or_instr_t fetch, logical_address_t va);
 void QEMU_simulation_break(void);
 // determine the memory operation type by the transaction struct.
+//[???]I assume return true if it is data, false otherwise
 int QEMU_mem_op_is_data(generic_transaction_t *mop);
+//[???]I assume return true if it is write, false otherwise
 int QEMU_mem_op_is_write(generic_transaction_t *mop);
+//[???]I assume return true if it is read, false otherwise
 int QEMU_mem_op_is_read(generic_transaction_t *mop);
 
 // insert callback to given event. 
@@ -117,3 +122,5 @@ struct QEMU_callback_table {
 struct QEMU_callback_table QEMU_all_callbacks = {0, {NULL}};
 
 int QEMU_insert_callback(QEMU_callback_event_t, QEMU_callback_t, void *arg);
+
+void QEMU_delete_callback(QEMU_callback_event_t event, uint64_t callback_id); //[???]format might be a bit off
