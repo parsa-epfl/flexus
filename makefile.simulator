@@ -2,7 +2,7 @@
 ###############
 include $(FLEXUS_ROOT)/makefile.defs
 
-.PHONY: default core install standalone simics standalone-x86 standalone-v9 simics-x86 simics-v9 depend
+.PHONY: default core install qemu standalone simics standalone-x86 standalone-v9 simics-x86 simics-v9 depend
 
 # Include simulator-specific variables
 ###############
@@ -25,6 +25,14 @@ include $(FLEXUS_ROOT)/makefile.variant
 
 # Ensure that we support the selected target and platform
 ###############
+
+ifeq ($(SUPPORTS_QEMU),true)
+qemu: qemu-$(TARGET_PLATFORM)
+else
+qemu:
+	echo "Qemu target not supported for $(SIMULATOR)"
+endif 
+
 ifeq ($(SUPPORTS_STANDALONE),true)
 standalone: standalone-$(TARGET_PLATFORM)
 else
@@ -64,10 +72,16 @@ simics-v9: depend
 	$(ECHO) "Building $(SIMULATOR) for $(VARIANT) simics"
 	$(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.simulator_$(SELECTED_CC) libflexus_$(SIMULATOR)_$(VARIANT).so.deps $(BUILD_OPTIONS) SIMULATOR=$(SIMULATOR)
 	$(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.simulator_$(SELECTED_CC) libflexus_$(SIMULATOR)_$(VARIANT).so $(BUILD_OPTIONS) SIMULATOR=$(SIMULATOR)
+qemu-v9: depend
+	$(ECHO) "Building $(SIMULATOR) for $(VARIANT) QEMU"
+	$(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.simulator_$(SELECTED_CC) libflexus_$(SIMULATOR)_$(VARIANT).so.deps $(BUILD_OPTIONS) SIMULATOR=$(SIMULATOR)
+	$(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.simulator_$(SELECTED_CC) libflexus_$(SIMULATOR)_$(VARIANT).so $(BUILD_OPTIONS) SIMULATOR=$(SIMULATOR)
 else
 standalone-v9:
 	echo "v9 target platform not supported for $(SIMULATOR)"
 simics-v9:
+	echo "v9 target platform not supported for $(SIMULATOR)"
+qemu-v9:
 	echo "v9 target platform not supported for $(SIMULATOR)"
 endif
 

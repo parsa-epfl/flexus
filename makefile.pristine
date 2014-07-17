@@ -57,6 +57,7 @@ BOOST_LIBRARIES=-Wl,--no-whole-archive -lboost_date_time -lboost_regex -lboost_s
 CORE=core
 CORE_STANDALONE=core_standalone
 CORE_SIMICS=core_simics
+CORE_QEMU=core_qemu
 SPECIAL_COMPONENT_CPPS = test.cpp
 
 # Compiler settings

@@ -9,7 +9,6 @@
 #include <core/simics/mai_api.hpp>
 
 #include <components/DecoupledFeeder/SimicsTracer.hpp>
-#include <components/WhiteBox/WhiteBoxIface.hpp>
 
 namespace Flexus {
 namespace Simics {
@@ -161,7 +160,7 @@ public:
     toL1D = aToL1D;
     toL1I = aToL1I;
     toNAW = aToNAW;
-    theWhiteBoxDebug = aWhiteBoxDebug;
+    theWhiteBoxDebug = false;
     theWhiteBoxPeriod = aWhiteBoxPeriod;
     theSendNonAllocatingStores = aSendNonAllocatingStores;
 
@@ -232,31 +231,7 @@ public:
 
     const int32_t k_no_stall = 0;
 
-    // WhiteBox Debugging
-    if (theWhiteBoxDebug) {
-      static int64_t whitebox_periodic_count = 0;
-      if (whitebox_periodic_count++ % theWhiteBoxPeriod == 0 ) {
-        nWhiteBox::CPUState state;
-        if (nWhiteBox::WhiteBox::getWhiteBox()->getState(theIndex, state)) {
-          std::stringstream tmp;
-          std::copy(state.theBackTrace.rbegin(),
-                    state.theBackTrace.rend(), std::ostream_iterator<uint32_t>(tmp, " "));
-          DBG_(Tmp, ( << "Feeder[" << theIndex << "] :WB"
-                      << "|" << whitebox_periodic_count
-                      << "|" << theIndex
-                      << "|" << "0"
-                      << "|" << state.theExecName
-                      << "|" << state.theThread
-                      << "|" << state.thePC
-                      << "|" << tmp.str() << "0"
-                      << "|1"
-                    ));
-        }
-      }
-    }
-
-    //debugTransaction(mem_trans);
-
+    
     if (space == thePhysIO) {
       mem_trans->s.block_STC = 1;
       IS_PRIV(mem_trans) ?  theOSStats->theIOOps++ : theUserStats->theIOOps++ ;

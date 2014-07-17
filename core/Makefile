@@ -3,10 +3,11 @@ include $(FLEXUS_ROOT)/makefile.defs
 
 STANDALONE_SOURCES = $(subst $(CORE_DIR)/,,$(shell ls $(CORE_DIR)/standalone/*.cpp  $(CORE_DIR)/standalone/aux_/*.cpp))
 SIMICS_SOURCES = $(subst $(CORE_DIR)/,,$(shell ls $(CORE_DIR)/simics/*.cpp $(CORE_DIR)/simics/aux_/*.cpp))
+QEMU_SOURCES = $(subst $(CORE_DIR)/,,$(shell ls $(CORE_DIR)/qemu/*.cpp $(CORE_DIR)/qemu/aux_/*.cpp))
 TEST_SOURCES = $(subst $(CORE_DIR)/,,$(shell ls $(CORE_DIR)/test/*.cpp))
 DOC_SOURCES = core_documentation.cpp
 PREFILTER_CORE_LIB_SOURCES = $(subst $(CORE_DIR)/,,$(shell ls $(CORE_DIR)/*/*.cpp)) $(subst $(CORE_DIR)/,,$(wildcard $(CORE_DIR)/*.cpp))
-CORE_LIB_SOURCES = $(filter-out $(STANDALONE_SOURCES) $(SIMICS_SOURCES) $(TEST_SOURCES) $(DOC_SOURCES),$(PREFILTER_CORE_LIB_SOURCES))
+CORE_LIB_SOURCES = $(filter-out $(STANDALONE_SOURCES) $(SIMICS_SOURCES) $(QEMU_SOURCES) $(TEST_SOURCES) $(DOC_SOURCES),$(PREFILTER_CORE_LIB_SOURCES))
 
 BOOST_DATE_TIME_PATH = $(BOOST_INCLUDE)/libs/date_time/src/gregorian
 BOOST_DATE_TIME_FILES = greg_month greg_weekday date_generators
@@ -36,7 +37,7 @@ include $(FLEXUS_ROOT)/makefile.variant
 .SUFFIXES:
 .SUFFIXES: .cpp .$(OEXT) .$(GCC_DEP_EXT) .$(ICC_DEP_EXT)
 
-.PHONY: default clean clobber standalone simics test doc core
+.PHONY: default clean clobber qemu standalone simics test doc core
 
 default: standalone
 
@@ -46,6 +47,9 @@ standalone: depend core
 
 simics: depend core
 	$(MAKE) -f makefile.$(SELECTED_CC) libsimics_$(VARIANT).a $(BUILD_OPTIONS) SOURCES="$(SIMICS_SOURCES)"
+
+qemu: depend core
+	$(MAKE) -f makefile.$(SELECTED_CC) libqemu_$(VARIANT).a $(BUILD_OPTIONS) SOURCES="$(QEMU_SOURCES)"
 
 test: depend core
 	$(MAKE) -f makefile.$(SELECTED_CC) test $(BUILD_OPTIONS) SOURCES="$(TEST_SOURCES)"
@@ -73,6 +77,7 @@ clean:
 	find . -name "Makefile.depend.*cc" | xargs rm -f
 	find . -name "core.*.ipo_out.o" | xargs rm -f
 	find . -name "standalone.*.ipo_out.o" | xargs rm -f
+	find . -name "qemu.*.ipo_out.o" | xargs rm -f
 	find . -name "simics.*.ipo_out.o" | xargs rm -f
 	find . -name "*.il" | xargs rm -f
 	find . -name "core-test.*.ipo_out.o" | xargs rm -f
@@ -98,7 +103,7 @@ depend: Makefile.depend.$(VARIANT)
 .cpp.$(GCC_DEP_EXT):
 	$(GCC) $(INCLUDES) $(VARIANT_DEFINES) $(GCC_DEPFLAGS) -MF $@ -MT $*.$(GCC_OEXT) $<
 
-Makefile.depend.$(GCC_VARIANT): $(patsubst %.cpp,%.$(GCC_DEP_EXT),$(CORE_LIB_SOURCES) $(STANDALONE_SOURCES) $(SIMICS_SOURCES) $(TEST_SOURCES))
+Makefile.depend.$(GCC_VARIANT): $(patsubst %.cpp,%.$(GCC_DEP_EXT),$(CORE_LIB_SOURCES) $(STANDALONE_SOURCES) $(SIMICS_SOURCES) $(TEST_SOURCES) $(QEMU_SOURCES))
 	cat $^ > Makefile.depend.$(GCC_VARIANT)
 
 
@@ -111,5 +116,8 @@ $(patsubst %.cpp,%.$(ICC_DEP_EXT),$(STANDALONE_SOURCES)): %.$(ICC_DEP_EXT): %.cp
 $(patsubst %.cpp,%.$(ICC_DEP_EXT),$(SIMICS_SOURCES)): %.$(ICC_DEP_EXT): %.cpp
 	$(GCC) $(INCLUDES) $(VARIANT_DEFINES) $(GCC_DEPFLAGS) -MF $@ -MT simics.$(VARIANT_EXT).ipo_out.o $<
 
-Makefile.depend.$(ICC_VARIANT): $(patsubst %.cpp,%.$(ICC_DEP_EXT),$(CORE_LIB_SOURCES) $(STANDALONE_SOURCES) $(SIMICS_SOURCES))
+$(patsubst %.cpp,%.$(ICC_DEP_EXT),$(QEMU_SOURCES)): %.$(ICC_DEP_EXT): %.cpp
+	$(GCC) $(INCLUDES) $(VARIANT_DEFINES) $(GCC_DEPFLAGS) -MF $@ -MT qemu.$(VARIANT_EXT).ipo_out.o $<
+
+Makefile.depend.$(ICC_VARIANT): $(patsubst %.cpp,%.$(ICC_DEP_EXT),$(CORE_LIB_SOURCES) $(STANDALONE_SOURCES) $(QEMU_SOURCES) $(SIMICS_SOURCES))
 	cat $^ > Makefile.depend.$(ICC_VARIANT)

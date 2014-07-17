@@ -151,7 +151,6 @@ public:
 };
 
 }
-}
 } //namespace Flexus
 
 #endif //FLEXUS_EXCEPTION_HPP_INCLUDED

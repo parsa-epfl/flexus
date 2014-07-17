@@ -56,6 +56,7 @@ BOOST_LIBRARIES=-Wl,--no-whole-archive -lboost_date_time -lboost_regex -lboost_s
 # List of "special" cpp files in components that are not part of a components library
 CORE=core
 CORE_STANDALONE=core_standalone
+CORE_QEMU=core_qemu
 CORE_SIMICS=core_simics
 SPECIAL_COMPONENT_CPPS = test.cpp
 

@@ -42,8 +42,6 @@ enum Persistence {
   Transient = API::Sim_Class_Kind_Pseudo
 };
 
-void runPython(std::vector<std::string> & aCommandVector);
-
 template <class ObjectClassImpl>
 class BuiltInObject : public aux_::Object, public aux_::BuiltIn {
 protected:

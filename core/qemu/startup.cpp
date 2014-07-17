@@ -12,14 +12,14 @@
 #include <core/component.hpp>
 
 extern "C" {
-#include "core/qemu/qemu_interface.h"
+#include <core/qemu/api.h>
 }
 
 namespace Flexus {
 
 namespace Core {
 void Break() {
-	// tell Qemu to pause simulation.
+	// QEMU: halt simulation and print message
 }
 void CreateFlexusObject();
 void PrepareFlexusObject();
@@ -30,17 +30,26 @@ namespace Qemu {
 using namespace Flexus::Core;
 namespace Qemu = Flexus::Qemu;
 
-
-void CreateFlexus() {
+void CreateFlexus(void *dummy) {
+  dummy = dummy; // to conform to QEMU_callback_t
   CreateFlexusObject();
-  Flexus::Core::index_t systemWidth = 1;
-  Flexus::Core::ComponentManager::getComponentManager().instantiateComponents(systemWidth);
-  ConfigurationManager::getConfigurationManager().processCommandLineConfiguration(0, 0);
+  /*
+  theSimicsInterface = theSimicsInterfaceFactory->create("flexus-simics-interface");
+  if (!theSimicsInterface) {
+    throw SimicsException("Unable to create SimicsInterface object in Simics");
+  }
+  */
+
+  Flexus::Core::index_t systemWidth = 1; // TODO: determine system width in QEMU
+  Flexus::Core::ComponentManager::getComponentManager()
+								.instantiateComponents(systemWidth);
+  ConfigurationManager::getConfigurationManager()
+						.processCommandLineConfiguration(0, 0);
 }
 
 void PrepareFlexus() {
   PrepareFlexusObject();
-  CallOnConfigReady(CreateFlexus);
+  QEMU_insert_callback(QEMU_config_ready, CreateFlexus, NULL);
 }
 
 } //end namespace Core
@@ -57,7 +66,7 @@ void print_copyright() {
   cerr << "Ippokratis Pandis, Minglong Shao, Jared Smolens, Stephen Somogyi," << endl;
   cerr << "Evangelos Vlachos, Thomas Wenisch, Roland Wunderlich" << endl;
   cerr << "Anastassia Ailamaki, Babak Falsafi and James C. Hoe." << endl << endl;
-  cerr << "Flexus Qemu simulator - Built as " << Flexus::theSimulatorName << endl << endl;
+  cerr << "Flexus Simics simulator - Built as " << Flexus::theSimulatorName << endl << endl;
 }
 
 }
@@ -76,9 +85,13 @@ extern "C" void qemuflex_init(void) {
 
   DBG_(Dev, ( << "Initializing Flexus." ));
 
+  //Do all the stuff we need to get Simics to know we are here
+  Flexus::Qemu::PrepareFlexus();
+
   DBG_(Iface, ( << "Flexus Initialized." ));
 }
 
 extern "C" void qemuflex_fini(void) {
-  delete theFlexusFactory;
+  //Theoretically, we would delete Flexus here, but Qemu currently does not call this function.
+  // delete theFlexusFactory;
 }

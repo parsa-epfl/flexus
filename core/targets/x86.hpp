@@ -33,4 +33,3 @@
 #define FLEXUS_SIMICS_API_HEADER(HEADER) <simics/HEADER##_api.h>
 #define FLEXUS_SIMICS_API_ARCH_HEADER <simics/x86_api.h>
 #endif
-

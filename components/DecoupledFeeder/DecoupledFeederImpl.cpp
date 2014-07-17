@@ -128,7 +128,7 @@ public:
     doHousekeeping();
   }
 
-  typedef Simics::HapToMemFnBinding<Simics::HAPs::Core_Periodic_Event, self, &self::OnPeriodicEvent> periodic_hap_t;
+  typedef Qemu::HapToMemFnBinding<Simics::HAPs::Core_Periodic_Event, self, &self::OnPeriodicEvent> periodic_hap_t;
   periodic_hap_t * thePeriodicHap;
 
 };  // end class DecoupledFeeder
