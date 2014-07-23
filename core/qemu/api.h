@@ -208,8 +208,11 @@ uint32_t QEMU_read_phys_memory(conf_object_t *cpu,
 								physical_address_t pa, int bytes);
 // return a conf_object_t of the cpu in question.
 conf_object_t *QEMU_get_cpu_by_index(int index);
+
+//TODO
 // return an int specifying the processor number of the cpu.
 int QEMU_get_processor_number(conf_object_t *cpu);
+
 // return an array of all processors
 conf_object_t QEMU_get_all_processors(int *numCPUs);
 // set the frequency of a given cpu.
@@ -235,10 +238,17 @@ typedef void (*QEMU_callback_t)(void *);
 
 typedef enum {
 	QEMU_config_ready,
-	QEMU_mem_op,
-	QEMU_dma_op,
-	QEMU_exec_instr,
-	QEMU_callback_event_count // MUST BE LAST.
+    QEMU_continuation,
+    QEMU_simulation_stopped,
+    QEMU_asynchronous_trap,
+    QEMU_exception_return,
+    QEMU_magic_instruction,
+    QEMU_ethernet_network_frame,
+    QEMU_ethernet_frame,
+    QEMU_periodic_event,
+    QEMU_xterm_break_string,
+    QEMU_gfx_break_string,
+    QEMU_callback_event_count // MUST BE LAST.
 } QEMU_callback_event_t;
 
 struct QEMU_callback_container {
