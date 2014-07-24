@@ -145,14 +145,111 @@ uint64_t QEMU_read_register(conf_object_t *cpu, int reg_index)
     //
     CPUState * qemucpu = cpu->object;
     CPUArchState *env_ptr = qemucpu->env_ptr;
-#ifdef TARGET_I386//tested using a function in monitor.c, and it seems to work
-
+#ifdef TARGET_I386
     //not sure how exactly to handle xmm regs since there are 16, but the monitor only displays 8
     if(reg_index<16){
         return (uint64_t)(env_ptr->regs[reg_index]);//regs[reg_index] is a target_ulong
     }else if(reg_index<32){//xmm regs
         //So this returns a 64bit number
+        //so how is it supposed to deal with 128bits???
+        //possibly it only reads the first 8 xmm registers?
+        //
+    }else if(reg_index<40){//MM registers 
+        //which are part of the FP registers.
+        return env_ptr->fpregs[reg_index-32].mmx.q;
+        //return the mmx part of the fpureg, as a uint64
+    }else{
+        //cpu_compute_eflags(CPUX86State); might do what we want.
+ /*102  eflags masks 
+ 103 #define CC_C    0x0001
+ 104 #define CC_P    0x0004
+ 105 #define CC_A    0x0010
+ 106 #define CC_Z    0x0040
+ 107 #define CC_S    0x0080
+ 108 #define CC_O    0x0800
+ 109 
+ 110 #define TF_SHIFT   8
+ 111 #define IOPL_SHIFT 12
+ 112 #define VM_SHIFT   17
+ 113 
+ 114 #define TF_MASK                 0x00000100
+ 115 #define IF_MASK                 0x00000200
+ 116 #define DF_MASK                 0x00000400
+ 117 #define IOPL_MASK               0x00003000
+ 118 #define NT_MASK                 0x00004000
+ 119 #define RF_MASK                 0x00010000
+ 120 #define VM_MASK                 0x00020000
+ 121 #define AC_MASK                 0x00040000
+ 122 #define VIF_MASK                0x00080000
+ 123 #define VIP_MASK                0x00100000
+ 124 #define ID_MASK                 0x00200000
+*/ 
+        //possibly helper_read_eflags(CPUX86State) from target-i386/cc_helper.c:332 Would be useful.
+        //it contains:
+        //uint32_t eflags;
+        //eflags = cpu_cc_compute_all(env, CC_OP);
+        //eflags |= (env->df & DF_MASK);
+        //eflags |= env->eflags & ~(VM_MASK | RF_MASK);
+        //return eflags;
+        //          
+        //ONLY PROBLEM WITH USING EFLAGS IS NOT ALL OF IT IS CC regs aren't set DF and CC flags are set to 0
+        //At least that is what target-i386/cpu.h says
+        //
+        //So far using env_ptr->eflags seems to be working, but should be tested more.
+        switch(reg_index){
+            case 40://pc
+                return (env_ptr->segs[R_CS].base + env_ptr->eip);
+                break;
+            case 41://CF    integer condition code flags
+                return (env_ptr->eflags & CC_C);
+                break;
+            case 42://DST   DST field is used to cache PF flag//not sure about this
+                return (env_ptr->eflags & CC_P);
+                break;
+            case 43://AF integer condition code flags
+                return (env_ptr->eflags & CC_A);
+                break;
+            case 44://ZF integer condition code flags
+                return (env_ptr->eflags & CC_Z);
+                break;
+            case 45://SF integer condition code flags
+                return (env_ptr->eflags & CC_S);
+                break;
+            case 46://OF integer condition code flags
+                return (env_ptr->eflags & CC_O);
+                break;
+            case 47://DF integer condition code flags
+                if(env_ptr->df==-1){//DF = 1//df is the 11th bit
+                    return 0x00000400;
+                }else if(env_ptr->df==1){//DF = 0
+                    return 0;
+                }
+                break;
+            case 48://EFLAGS    the whole 32 bits eflags
+                return (env_ptr->eflags);
+                break;
+            case 49://C0    floating point cc flags
+                return (env_ptr->eflags);
+                break;
+            case 50://C1    floating point cc flags
+                return (env_ptr->eflags);
+                break;
+            case 51://C2    floating point cc flags
+                return (env_ptr->eflags);
+                break;
+            case 52://C3    floating point cc flags
+                return (env_ptr->eflags);
+                break;
+            case 53://TOP   floating point stack top
+                return (env_ptr->fpstt);
+                break;
+            case 54://Not used  Dummy number that can be used.
+             //   return (env_ptr->eflags);
+                break;
+
+        }
     }
+    
 #elif TARGET_SPARC64//probably wrong--also I think v9==sparc64
    //TODO look more at target-sparc/win_helper.c:284 --has to do with pstate and general regs 
     if(reg_index<8){//general registers
@@ -249,6 +346,11 @@ uint64_t QEMU_read_register(conf_object_t *cpu, int reg_index)
             break;
         case 114://CWP
             //return (env_ptr->cwp);//currently wrong for some reason, gave 5 when QEMU monitor.c gave 2
+            //---I think the problem might have been caused by me not stoping the simulation
+            //before checking the values. So during the time between checking with monitor.c's function
+            //and my own it had changed.
+            
+            //sounds specific to sparc64, do we care about 32bit sparc?
             return cpu_get_cwp64(env_ptr);//seems to actually work
             break;
         case 115://ASI
