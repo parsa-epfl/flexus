@@ -462,6 +462,11 @@ int QEMU_insert_callback(QEMU_callback_event_t event, QEMU_callback_t fn, void *
 {
     //[???]use next_callback_id then update it
     //If there are multiple callback functions, we must chain them together.
+    //error checking-
+    if(event>=QEMU_callback_event_count){
+        //call some sort of errorthing possibly
+        return -1;
+    }
     QEMU_callback_container_t *container = QEMU_all_callbacks.callbacks[event];
     //Probably should error check
     //Also not sure if I should be using alloc here.
@@ -528,6 +533,7 @@ void QEMU_delete_callback(QEMU_callback_event_t event, uint64_t callback_id)
     //if it isn't there don't do anything.
     return;
 }
+
 
 //[???]Not sure what this does
 void QEMU_simulation_break(void)
