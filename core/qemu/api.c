@@ -2,6 +2,13 @@
 extern "C" {
 #endif
 #include "core/qemu/api.h"
+
+#ifdef DEBUG
+#define dbg_printf(...) printf(__VA_ARGS__)
+#else
+#define dbg_printf(...)
+#endif
+
 //[???]TODO functions
 //QEMU_read_phys_memory
 //QEMU_set_tick_frequency
@@ -138,7 +145,7 @@ int QEMU_get_processor_number(conf_object_t *cpu)
 conf_object_t *QEMU_get_all_processors(int *numCPUs)
 {
 	*numCPUs = 1; // can't return length of array, so this is overloaded
-	return (void*)0xdeadbeef;
+	return (conf_object_t*)0xdeadbeef;
 }
 
 int QEMU_set_tick_frequency(conf_object_t *cpu, double tick_freq) 
@@ -216,7 +223,7 @@ int QEMU_mem_op_is_read(generic_transaction_t *mop)
 
 // note: see QEMU_callback_table in api.h
 // should return a unique identifier to the callback struct
-int QEMU_insert_callback(QEMU_callback_event_t event, QEMU_callback_t fn, void *arg) 
+int QEMU_insert_callback(QEMU_callback_event_t event, (void*) fn) 
 {
     //[???]use next_callback_id then update it
 	//If there are multiple callback functions, we must chain them together.
@@ -224,21 +231,19 @@ int QEMU_insert_callback(QEMU_callback_event_t event, QEMU_callback_t fn, void *
     //Probably should error check
     //Also not sure if I should be using alloc here.
     QEMU_callback_container_t *containerNew = malloc(sizeof(QEMU_callback_container_t));
-    if(container == null){
+    if(container == NULL){
         //Simple case there is not a callback function for event 
         containerNew->id = QEMU_all_callbacks.next_callback_id;
         containerNew->callback = fn;
-        containerNew->callback_arg = arg;
-        containerNew->next = null;
-        QEMU_all_callbacks[event] = containerNew;
+        containerNew->next = NULL;
+        QEMU_all_callbacks.callbacks[event] = containerNew;
     }else{
         //we need to add another callback to the chain
         containerNew->id = QEMU_all_callbacks.next_callback_id;
         containerNew->callback = fn;
-        containerNew->callback_arg = arg;
-        containerNew->next = null;
+        containerNew->next = NULL;
         //Now find the current last function in the callbacks list
-        while(container->next!=null){
+        while(container->next!=NULL){
             container = container->next;
         }
         container->next = containerNew;
@@ -255,13 +260,13 @@ void QEMU_delete_callback(QEMU_callback_event_t event, uint64_t callback_id)
     QEMU_callback_container_t *container = QEMU_all_callbacks.callbacks[event];
     QEMU_callback_container_t *prev;
     //primary goal find the correct id
-    //check if container == null
-    if(container!=null){
+    //check if container == NULL
+    if(container!=NULL){
         //now perform first check 
-        while(container!=null){
+        while(container!=NULL){
             if(container->id == callback_id){
-                //if container->next==null we do not need to do anything
-                if(container->next != null){
+                //if container->next==NULL we do not need to do anything
+                if(container->next != NULL){
                     prev->next = container->next;
                     //remove container from the linked list
                 }
@@ -283,6 +288,63 @@ void QEMU_break_simulation(void)
     //or it could be pause_all_vcpus(void)
     pause_all_vcpus();
 	return;
+}
+
+void QEMU_execute_callbacks(
+		  QEMU_callback_event_t event
+		, QEMU_callback_args_t *event_data
+		)
+{
+	dbg_printf("Executing callbacks for event %d\n", event);
+	QEMU_callback_container_t *curr = QEMU_all_callbacks.callbacks[event];
+	for (; curr != NULL; curr = curr->next) {
+		dbg_printf("Executing callback id %"PRId64"\n");
+		void *callback = curr->callback;
+		switch (event) {
+			// noc : class_data, conf_object_t
+			case QEMU_config_ready:
+			case QEMU_continuation:
+			case QEMU_asynchronous_trap:
+			case QEMU_exception_return:
+			case QEMU_magic_instruction:
+			case QEMU_ethernet_network_frame:
+			case QEMU_ethernet_frame:
+			case QEMU_periodic_event:
+				*(cb_func_noc_t*)callback(
+						  event_data->noc->class_data
+						, event_data->noc->obj
+						);
+				break;
+			// nocIs : class_data, conf_object_t, int64_t, char*
+			case QEMU_simulation_stopped:
+				*(cb_func_nocIs_t*)callback(
+						  event_data->nocIs->class_data
+						, event_data->nocIs->obj
+						, event_data->nocIs->bigint
+						, event_data->nocIs->string
+						);
+				break;
+			// nocs : class_data, conf_object_t, char*
+			case QEMU_xterm_break_string:
+			case QEMU_gfx_break_string:
+				*(cb_func_nocs_t*)callback(
+						  event_data->nocs->class_data
+						, event_data->nocs->obj
+						, event_data->nocs->string
+						);
+				break;
+			// ncm : conf_object_t, generic_transaction_t
+			case QEMU_stc_miss:
+				*(cb_func_ncm_t*)callback(
+						, event_data->ncm->space
+						, event_data->ncm->trans
+						);
+				break;
+			default:
+				dbg_printf("Event not found...\n");
+				break;
+		}
+	}
 }
 
 #ifdef __cplusplus

@@ -107,7 +107,7 @@ struct generic_transaction {
 	physical_address_t physical_address;
 	size_t size;
 	mem_op_type_t type;
-	init_type_t ini_type;
+	ini_type_t ini_type;
 	exception_type_t exception;
 	unsigned int atomic:1;
 	unsigned int inquiry:1;
@@ -206,6 +206,8 @@ uint64_t QEMU_read_register(conf_object_t *cpu, int reg_index);
 // read an arbitrary physical memory address.
 uint32_t QEMU_read_phys_memory(conf_object_t *cpu, 
 								physical_address_t pa, int bytes);
+// get the physical memory for a given cpu.
+conf_object_t *QEMU_get_phys_mem(conf_object_t *cpu);
 // return a conf_object_t of the cpu in question.
 conf_object_t *QEMU_get_cpu_by_index(int index);
 // return an int specifying the processor number of the cpu.
@@ -230,21 +232,95 @@ int QEMU_mem_op_is_write(generic_transaction_t *mop);
 //[???]I assume return true if it is read, false otherwise
 int QEMU_mem_op_is_read(generic_transaction_t *mop);
 
-// insert callback to given event. 
-typedef void (*QEMU_callback_t)(void *);
+// callback function types.
+// 
+// naming convention:
+// ------------------
+// i - int
+// I - int64_t
+// e - exception_type_t
+// o - class data (void*)
+// s - string
+// m - generic_transaction_t*
+// c - conf_object_t*
+// v - void*
+
+typedef void (*cb_func_noc_t)(void *, conf_object_t *);
+typedef void (*cb_func_nocI_t)(void *, conf_object_t *, int64_t);
+typedef void (*cb_func_nocIs_t)(void *, conf_object_t *, int64_t, char *);
+typedef void (*cb_func_noiiI_t)(void *, int, int, int64_t);
+
+typedef void (*cb_func_ncm_t)(
+		  conf_object_t *
+		, generic_transaction_t *
+		);
+
+typedef void (*cb_func_nocs_t)(void *, conf_object_t *, char *);
+
+typedef struct {
+	void *class_data;
+	conf_object_t *obj;
+} QEMU_noc;
+
+typedef struct {
+	void *class_data;
+	conf_object_t *obj;
+	int64_t bigint;
+} QEMU_nocI;
+
+typedef struct {
+	void *class_data;
+	conf_object_t *obj;
+	char *string;
+	int64_t bigint;
+} QEMU_nocIs;
+
+typedef struct {
+	void *class_data;
+	int integer0;
+	int integer1;
+	int64_t bigint;
+} QEMU_noiiI;
+
+typedef struct {
+	conf_object_t *space;
+	generic_transaction_t *trans;
+} QEMU_ncm;
+
+typedef struct {
+	void *class_data;
+	conf_object_t *obj;
+	char *string;
+} QEMU_nocs;
+
+typedef union {
+	QEMU_noc	*noc;
+	QEMU_nocIs	*nocIs;
+	QEMU_nocI   *nocI;
+	QEMU_noiiI	*noiiI;
+	QEMU_nocs	*nocs;
+	QEMU_ncm	*ncm;
+} QEMU_callback_args_t;
 
 typedef enum {
 	QEMU_config_ready,
-	QEMU_mem_op,
-	QEMU_dma_op,
-	QEMU_exec_instr,
+	QEMU_continuation,
+	QEMU_simulation_stopped,
+	QEMU_asynchronous_trap,
+	QEMU_exception_return,
+	QEMU_magic_instruction,
+	QEMU_ethernet_network_frame,
+	QEMU_ethernet_frame,
+	QEMU_periodic_event,
+	QEMU_xterm_break_string,
+	QEMU_gfx_break_string,
+	QEMU_stc_miss,
 	QEMU_callback_event_count // MUST BE LAST.
 } QEMU_callback_event_t;
 
 struct QEMU_callback_container {
 	uint64_t id;
-	QEMU_callback_t callback;
-	void *callback_arg;
+	void *callback;
 	struct QEMU_callback_container *next;
 };
 typedef struct QEMU_callback_container QEMU_callback_container_t;
@@ -257,7 +333,12 @@ struct QEMU_callback_table {
 // global callback hash table
 struct QEMU_callback_table QEMU_all_callbacks = {0, {NULL}};
 
-int QEMU_insert_callback(QEMU_callback_event_t, QEMU_callback_t, void *arg);
+int QEMU_insert_callback(QEMU_callback_event_t event, void* fun);
 void QEMU_delete_callback(QEMU_callback_event_t event, uint64_t callback_id); //[???]format might be a bit off
+
+void QEMU_execute_callbacks(
+		  QEMU_callback_event_t event
+		, QEMU_callback_args_t event_data
+		);
 
 #endif
