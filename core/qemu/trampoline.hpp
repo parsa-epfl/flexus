@@ -347,5 +347,5 @@ public:
 }  //End Namespace Qemu
 } //namespace Flexus
 
-#endif //FLEXUS_SIMICS_TRAMPOLINE_HPP_INCLUDED
+#endif //FLEXUS_QEMU_TRAMPOLINE_HPP_INCLUDED
 

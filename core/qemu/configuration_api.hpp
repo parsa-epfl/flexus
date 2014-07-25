@@ -7,7 +7,7 @@
 #include <algorithm>
 
 #include <core/debug/debug.hpp>
-#include <core/qemu/trampoline.hpp>
+//#include <core/qemu/trampoline.hpp>
 #include <core/qemu/attribute_value.hpp>
 
 #include <boost/utility.hpp>
@@ -32,6 +32,12 @@ extern "C" {
 #include <core/qemu/api.h>
 }
 }
+
+template <class CppObjectClass>
+struct QemuObject {
+  API::conf_object_t conf_object;
+  CppObjectClass theObject;
+};
 
 namespace aux_ {
 //Stub function declarations which assist in making this code behave properly
@@ -190,39 +196,10 @@ public:
   }
 };
 
-//Stuff used for registering attributes.  Hopefully will go away soon.
-struct register_functor {
-  BaseClassImpl & theBase;
-  register_functor (BaseClassImpl & aBase) : theBase(aBase) {}
-  template< typename U > void operator()(U x) {
-    //x.doRegister(theBase);
-  }
-};
-
-template <class T, bool> struct register_helper {
-  static void registerAttributes(BaseClassImpl & aClass) {}
-};
-
-template <class T> struct register_helper<T, true> {
-  static void registerAttributes(BaseClassImpl & aClass) {
-    mpl::for_each < typename T::Attributes >( register_functor(aClass) );
-  }
-};
-
 typedef char YesType;
 typedef struct {
   char a[2];
 } NoType;
-
-template<class U>
-NoType hasAttributes_helper(...);
-template<class U>
-YesType hasAttributes_helper(typename U::Attributes const * );
-
-template<class T>
-struct hasAttributes {
-  static const bool value = sizeof(hasAttributes_helper<T>(0)) == sizeof(YesType) ;
-};
 
 template <class MemberFunction, int Arity>
 struct member_function_arity {
@@ -239,238 +216,6 @@ class ClassImpl < CppObjectClass, false /* ! builtin */ > : public BaseClassImpl
   typedef QemuObject<CppObjectClass> Qemu_object;
 
 public:
-
-  template <class Function>
-  typename boost::enable_if_c
-  < member_function_arity<Function, 0>::value
-  >::type
-  addCommand(
-		    Function aFunction
-		  , std::string const & aCommand
-		  , std::string const & aDescription 
-		  ) 
-  {
-    DBG_(Iface, ( << " addCommand " 
-				<< CppObjectClass::className() << '.' 
-				<< aCommand << "()") 
-			);
-
-#if 0
-    QemuCommandManager * mgr = QemuCommandManager::get();
-    mgr->addCommand
-    ( CppObjectClass::className()
-      , aCommand
-      , aDescription
-      , boost::bind
-      ( & invoke0< Function >
-        , aFunction
-        , _1
-        , _2
-        , _3
-        , _4
-      )
-    );
-#endif
-  }
-
-  template <class Function>
-  typename boost::enable_if_c
-  < member_function_arity<Function, 1>::value
-  >::type
-  addCommand(
-		    Function aFunction
-		  , std::string const & aCommand
-		  , std::string const & aDescription
-		  , std::string const & anArg1Name
-		  ) 
-  {
-    DBG_(Iface, ( << " addCommand " 
-				<< CppObjectClass::className() 
-				<< '.' << aCommand << '(' 
-				<< anArg1Name << ')') 
-			);
-
-#if 0
-    QemuCommandManager * mgr = QemuCommandManager::get();
-
-    mgr->addCommand
-    ( CppObjectClass::className()
-      , aCommand
-      , aDescription
-      , boost::bind
-      ( & invoke1< Function, typename boost::member_function_traits<Function>::arg1_type >
-        , aFunction
-        , aCommand
-        , _1
-        , _2
-        , _3
-        , _4
-      )
-      , anArg1Name
-      , aux_::QemuCommandArgClass<typename boost::member_function_traits<Function>::arg1_type>::value
-    );
-#endif
-  }
-
-  template <class Function>
-  typename boost::enable_if_c
-  < member_function_arity<Function, 2>::value
-  >::type
-  addCommand(
-		    Function aFunction
-		  , std::string const & aCommand
-		  , std::string const & aDescription
-		  , std::string const & anArg1Name
-		  , std::string const & anArg2Name
-		  ) 
-  {
-    DBG_(Iface, ( << " addCommand " << CppObjectClass::className() << '.' << aCommand << '(' << anArg1Name << ", " << anArg2Name << ')') );
-#if 0
-
-    QemuCommandManager * mgr = QemuCommandManager::get();
-    mgr->addCommand
-    ( CppObjectClass::className()
-      , aCommand
-      , aDescription
-      , boost::bind
-      ( & invoke2< Function, typename boost::member_function_traits<Function>::arg1_type, typename boost::member_function_traits<Function>::arg2_type >
-        , aFunction
-        , aCommand
-        , _1
-        , _2
-        , _3
-        , _4
-      )
-      , anArg1Name
-      , aux_::QemuCommandArgClass<typename boost::member_function_traits<Function>::arg1_type>::value
-      , anArg2Name
-      , aux_::QemuCommandArgClass<typename boost::member_function_traits<Function>::arg2_type>::value
-    );
-#endif
-  }
-
-  template <class Function>
-  typename boost::enable_if_c
-  < member_function_arity<Function, 3>::value
-  >::type
-  addCommand(
-		    Function aFunction
-		  , std::string const & aCommand
-		  , std::string const & aDescription
-		  , std::string const & anArg1Name
-		  , std::string const & anArg2Name
-		  , std::string const & anArg3Name
-		  ) 
-  {
-
-    DBG_(Iface, ( << " addCommand " << CppObjectClass::className() << '.' << aCommand << '(' << anArg1Name << ", " << anArg2Name << ", " << anArg3Name << ')') );
-
-#if 0
-    QemuCommandManager * mgr = QemuCommandManager::get();
-    mgr->addCommand
-    ( CppObjectClass::className()
-      , aCommand
-      , aDescription
-      , boost::bind
-      ( & invoke3< Function, typename boost::member_function_traits<Function>::arg1_type, typename boost::member_function_traits<Function>::arg2_type, typename boost::member_function_traits<Function>::arg3_type >
-        , aFunction
-        , aCommand
-        , _1
-        , _2
-        , _3
-        , _4
-      )
-      , anArg1Name
-      , aux_::QemuCommandArgClass<typename boost::member_function_traits<Function>::arg1_type>::value
-      , anArg2Name
-      , aux_::QemuCommandArgClass<typename boost::member_function_traits<Function>::arg2_type>::value
-      , anArg3Name
-      , aux_::QemuCommandArgClass<typename boost::member_function_traits<Function>::arg3_type>::value
-    );
-#endif
-  }
-
-  template <class ImplementationFn>
-  static void invoke0(
-		    ImplementationFn aFunction
-		  , API::conf_object_t * anObject
-		  , API::attr_value_t const & /* ignored */
-		  , API::attr_value_t const & /* ignored */
-		  , API::attr_value_t const & /* ignored */
-		  ) 
-  {
-    DBG_(Verb, ( << " invoke" << CppObjectClass::className() ) );
-    ((*cast_object(anObject)) .* aFunction) ();
-  }
-
-  template <class ImplementationFn, class Arg1>
-  static void invoke1(
-		    ImplementationFn aFunction
-		  , std::string aCommand
-		  , API::conf_object_t * anObject
-		  , API::attr_value_t const & anArg1
-		  , API::attr_value_t const & anArg2
-		  , API::attr_value_t const & /* ignored */
-		  ) 
-  {
-    DBG_(Verb, ( << " invoke " << CppObjectClass::className() << ":" << aCommand) );
-#if 0
-    try {
-      ((*cast_object(anObject)) .* aFunction) ( attribute_cast<Arg1>(anArg1)  );
-    } catch (bad_attribute_cast c) {
-      DBG_(Dev, ( << "Bad attribute cast." << anArg1.kind ));
-      DBG_(Verb, ( << "Obj name" << anObject->name ));
-      DBG_(Verb, ( << "Arg1.kind: " << anArg1.kind ));
-    }
-#endif
-  }
-
-  template <class ImplementationFn, class Arg1, class Arg2>
-  static void invoke2( 
-		  ImplementationFn aFunction
-		  , std::string aCommand
-		  , API::conf_object_t * anObject
-		  , API::attr_value_t const & anArg1
-		  , API::attr_value_t const & anArg2
-		  , API::attr_value_t const & /* ignored */
-		  ) 
-  {
-    DBG_(Verb, ( << " invoke " << CppObjectClass::className() << ":" << aCommand) );
-#if 0
-    try {
-      ((*cast_object(anObject)) .* aFunction) ( attribute_cast<Arg1>(anArg1), attribute_cast<Arg2>(anArg2));
-    } catch (bad_attribute_cast c) {
-      DBG_(Dev, ( << "Bad attribute cast." << anArg1.kind ));
-      DBG_(Verb, ( << "Obj name" << anObject->name ));
-      DBG_(Verb, ( << "Arg1.kind: " << anArg1.kind ));
-      DBG_(Verb, ( << "Arg2.kind: " << anArg2.kind ));
-    }
-#endif
-  }
-
-  template <class ImplementationFn, class Arg1, class Arg2, class Arg3>
-  static void invoke3(
-		  ImplementationFn aFunction
-		  , std::string aCommand
-		  , API::conf_object_t * anObject
-		  , API::attr_value_t const & anArg1
-		  , API::attr_value_t const & anArg2
-		  , API::attr_value_t const & anArg3
-		  ) 
-  {
-    DBG_(Verb, ( << " invoke " << CppObjectClass::className() << ":" << aCommand) );
-#if 0
-    try {
-      ((*cast_object(anObject)) .* aFunction) ( attribute_cast<Arg1>(anArg1), attribute_cast<Arg2>(anArg2), attribute_cast<Arg3>(anArg3));
-    } catch (bad_attribute_cast c) {
-      DBG_(Dev, ( << "Bad attribute cast." << anArg1.kind ));
-      DBG_(Verb, ( << "Obj name" << anObject->name ));
-      DBG_(Verb, ( << "Arg1.kind: " << anArg1.kind ));
-      DBG_(Verb, ( << "Arg2.kind: " << anArg2.kind ));
-      DBG_(Verb, ( << "Arg3.kind: " << anArg3.kind ));
-    }
-#endif
-  }
 
   //Note: the reintepret_casts in these methods are safe since QemuObject is POD and
   //conf_object comes first in QemuObject.
@@ -523,104 +268,6 @@ struct Class : public aux_::ClassImpl<CppObjectClass, aux_::is_builtin<CppObject
   Class(aux_::no_class_registration_tag const & aTag ) : base( aTag ) {}
 };
 
-namespace aux_ {
-//Implementation for Qemu objects
-#if 0
-template <typename DestType>
-struct AttributeCastImpl<DestType, object_tag> {
-  static DestType cast(const AttributeValue & anAttribute) {
-    if (AttributeFriend::getKind(anAttribute) != API::Sim_Val_Object) {
-      throw bad_attribute_cast();
-    }
-    API::conf_object_t * object = AttributeFriend::get<API::conf_object_t *>(anAttribute);
-    Class<DestType> target = Class<DestType>(no_class_registration_tag());
-    return target.cast_object(object);
-  }
-};
-} //namespace aux_
-
-//make_attribute helper.
-
-template <aux_::QemuSetFnT SetFn, aux_::QemuGetFnT GetFn>
-struct AttributeImpl { /*: public BaseAttribute*/
-  static void doRegister(
-		  Detail::BaseClassImpl & aClass
-		  , std::string anAttributeName
-		  , std::string anAttributeDescription
-		  ) 
-  {
-      DBG_(Dev, ( << "Registering " << anAttributeName ));
-#if 0
-    APIFwd::SIM_register_attribute(
-			aClass.getQemuClass()
-			, anAttributeName.c_str()
-			, GetFn
-			, 0
-			, SetFn
-			, 0
-			, API::Sim_Attr_Session
-			, anAttributeDescription.c_str()
-			);
-#endif
-  }
-
-};
-
-template <class T, typename R, R T::* DataMember >
-API::attr_value_t QemuGetAttribute(
-		void * /*ignored*/
-		, API::conf_object_t * anObject
-		, API::attr_value_t * /*ignored*/
-		) 
-{
-  return AttributeValue( &( (reinterpret_cast< QemuObject<T> * > (anObject) )->theObject) ->* DataMember);
-}
-
-template <class T, typename R, R T::* DataMember >
-API::set_error_t QemuSetAttribute(
-		void * /*ignored*/
-		, API::conf_object_t * anObject
-		, API::attr_value_t * aValue
-		, API::attr_value_t * /*ignored*/
-		) 
-{
-  try {
-    (&( (reinterpret_cast< QemuObject<T> * > (anObject) )->theObject) ->* DataMember) = attribute_cast<R>(*aValue);
-
-    return API::Sim_Set_Ok;
-  } catch (bad_attribute_cast & aBadCast) {
-    return API::Sim_Set_Illegal_Value;  //Could return a more specific error code, ie which type is desired.
-  }
-}
-
-template <class T, typename R, R T::* DataMember >
-struct Base {};
-
-template <class AttributeClass, 
-		  class ImplementationClass, 
-		  typename AttributeType, 
-		  AttributeType ImplementationClass::* DataMember >
-struct AttributeT
-    : public AttributeImpl
-    < & Qemu::QemuSetAttribute< ImplementationClass, AttributeType, DataMember >
-    , & Qemu::QemuGetAttribute< ImplementationClass, AttributeType, DataMember >
-    > {
-  typedef AttributeImpl
-  < & Qemu::QemuSetAttribute< ImplementationClass, AttributeType, DataMember >
-  , & Qemu::QemuGetAttribute< ImplementationClass, AttributeType, DataMember >
-  > base;
-  static void doRegister(Detail::BaseClassImpl & aClass) {
-#if 0
-    base::doRegister(
-			  aClass
-			, AttributeClass::attributeName()
-			, AttributeClass::attributeDescription()
-			);
-#endif
-  }
-};
-
-#endif
 template <class CppObjectClass >
 class Factory {
   typedef Class<CppObjectClass> class_;
