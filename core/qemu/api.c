@@ -1,7 +1,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-<<<<<<< HEAD
 #include "core/qemu/api.h"
 
 #ifdef DEBUG
@@ -15,32 +14,6 @@ extern "C" {
 //QEMU_set_tick_frequency
 //QEMU_logical_to_physical
 //QEMU_simulation_break
-=======
-#include "../flexus/core/qemu/api.h"
-
-//[???]TODO
-//Make sure read_reg is working correctly for SPARC, and x86.
-//What all does it need to have access to.
-//what register does the int map to?
-//for sparg is it like 0-7 maps to general.
-//what about floating point regs,  mmu regs and dmmu regs.
-
-//Other sparc registers
-//aregs[8](alternate general regs), 
-//bregs[8](backup for normal regs),
-//iregs[8](interrupt general regs)
-//mregs[8](mmu general regs)
-
-//possibly can figure out how to use register window for sparc
-//regwptr;
-//wim = window invalid mask
-//cwp = index of current register window
-
-//TODO: there is a saprc CPUTimer struct that might be used for set tick
-//frequency
-//QEMU_set_tick_frequency --LEAVING AS A DUMMY FUNCTION FOR NOW--
->>>>>>> a22a73f67e64a5e264ad71af0edb5641d9601211
-
 //[???]TODO functions that should be looked at more
 
 //QEMU_clear_exception
@@ -452,10 +425,6 @@ int QEMU_get_processor_number(conf_object_t *cpu){
 
 conf_object_t *QEMU_get_all_processors(int *numCPUs)
 {
-<<<<<<< HEAD
-	*numCPUs = 1; // can't return length of array, so this is overloaded
-	return (conf_object_t*)0xdeadbeef;
-=======
     QemuOpts * opts;
     opts = qemu_opts_find(qemu_find_opts("smp-opts"), NULL); 
     int c= qemu_opt_get_number(opts, "cpus", 0); 
@@ -487,7 +456,6 @@ conf_object_t *QEMU_get_all_processors(int *numCPUs)
         
     }
     return cpus;
->>>>>>> a22a73f67e64a5e264ad71af0edb5641d9601211
 }
 
 int QEMU_set_tick_frequency(conf_object_t *cpu, double tick_freq) 
@@ -598,12 +566,7 @@ int QEMU_insert_callback(QEMU_callback_event_t event, (void*) fn)
         //Simple case there is not a callback function for event 
         containerNew->id = QEMU_all_callbacks.next_callback_id;
         containerNew->callback = fn;
-<<<<<<< HEAD
         containerNew->next = NULL;
-=======
-        containerNew->callback_arg = arg;
-        containerNew->next = null;
->>>>>>> a22a73f67e64a5e264ad71af0edb5641d9601211
         QEMU_all_callbacks.callbacks[event] = containerNew;
     }else{
         //we need to add another callback to the chain
@@ -628,7 +591,6 @@ void QEMU_delete_callback(QEMU_callback_event_t event, uint64_t callback_id)
     QEMU_callback_container_t *container = QEMU_all_callbacks.callbacks[event];
     QEMU_callback_container_t *prev;
     //primary goal find the correct id
-<<<<<<< HEAD
     //check if container == NULL
     if(container!=NULL){
         //now perform first check 
@@ -636,26 +598,6 @@ void QEMU_delete_callback(QEMU_callback_event_t event, uint64_t callback_id)
             if(container->id == callback_id){
                 //if container->next==NULL we do not need to do anything
                 if(container->next != NULL){
-=======
-    //check if container == null//null might not work?
-    if(container!=null){
-        //now perform first check
-        if(container->id == callback_id){
-            //if container->next==null we do not need to do anything
-           // if(container->next != null){
-                QEMU_all_callbacks.callbacks[event] = container->next;
-                //remove container from the linked list
-          //  }
-            free(container);//might not be how it is used.
-            return;
-        }
-        prev = container;
-        container = container->next;
-        while(container!=null){
-            if(container->id == callback_id){
-                //if container->next==null we do not need to do anything
-            //    if(container->next != null){
->>>>>>> a22a73f67e64a5e264ad71af0edb5641d9601211
                     prev->next = container->next;
                     //remove container from the linked list
               //  }
