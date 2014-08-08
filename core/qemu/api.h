@@ -202,9 +202,17 @@ typedef enum {
 int QEMU_clear_exception(void);
 
 // read an arbitrary register.
+//TODO: This might cause problems.
+//to fix just have it always be __uint128_t.
+
+#ifdef TARGET_I386//128bit for x86 because the xmm regs are 128 bits long.
+__uint128_t qemu_read_register(conf_object_t *cpu, int reg_index);
+#else
 uint64_t QEMU_read_register(conf_object_t *cpu, int reg_index);
+#endif
+
 // read an arbitrary physical memory address.
-uint32_t QEMU_read_phys_memory(conf_object_t *cpu, 
+uint64_t QEMU_read_phys_memory(conf_object_t *cpu, 
 								physical_address_t pa, int bytes);
 // get the physical memory for a given cpu.
 conf_object_t *QEMU_get_phys_mem(conf_object_t *cpu);
@@ -317,6 +325,7 @@ typedef enum {
     QEMU_periodic_event,
     QEMU_xterm_break_string,
     QEMU_gfx_break_string,
+    QEMU_stc_miss,
     QEMU_callback_event_count // MUST BE LAST.
 } QEMU_callback_event_t;
 
@@ -340,7 +349,7 @@ void QEMU_delete_callback(QEMU_callback_event_t event, uint64_t callback_id); //
 
 void QEMU_execute_callbacks(
 		  QEMU_callback_event_t event
-		, QEMU_callback_args_t event_data
+		, QEMU_callback_args_t *event_data
 		);
 
 #endif
