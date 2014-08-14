@@ -1,14 +1,9 @@
 #ifndef FLEXUS_QEMU_TRAMPOLINE_HPP_INCLUDED
 #define FLEXUS_QEMU_TRAMPOLINE_HPP_INCLUDED
+#include <core/qemu/api_wrappers.hpp>
 
 namespace Flexus {
 namespace Qemu {
-
-namespace API {
-extern "C" {
-#include <core/qemu/api.h>
-}
-} //namespace API
 
 template <class CppObjectClass>
 struct QemuObject {

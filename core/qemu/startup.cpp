@@ -30,17 +30,10 @@ namespace Qemu {
 using namespace Flexus::Core;
 namespace Qemu = Flexus::Qemu;
 
-void CreateFlexus(void *dummy) {
-  dummy = dummy; // to conform to QEMU_callback_t
+void CreateFlexus() {
   CreateFlexusObject();
-  /*
-  theSimicsInterface = theSimicsInterfaceFactory->create("flexus-simics-interface");
-  if (!theSimicsInterface) {
-    throw SimicsException("Unable to create SimicsInterface object in Simics");
-  }
-  */
-
-  Flexus::Core::index_t systemWidth = 1; // TODO: determine system width in QEMU
+  Flexus::Core::index_t systemWidth; // TODO: determine system width in QEMU
+  QEMU_get_all_processors((int*)&systemWidth);
   Flexus::Core::ComponentManager::getComponentManager()
 								.instantiateComponents(systemWidth);
   ConfigurationManager::getConfigurationManager()
@@ -49,7 +42,7 @@ void CreateFlexus(void *dummy) {
 
 void PrepareFlexus() {
   PrepareFlexusObject();
-  QEMU_insert_callback(QEMU_config_ready, CreateFlexus, NULL);
+  QEMU_insert_callback(QEMU_config_ready, (void*)&CreateFlexus);
 }
 
 } //end namespace Core

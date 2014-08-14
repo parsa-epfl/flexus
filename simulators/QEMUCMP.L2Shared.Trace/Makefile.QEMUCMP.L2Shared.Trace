@@ -1,13 +1,14 @@
 # Siren Simulator build description
 
-REQUIRED_COMPONENTS = Common DecoupledFeederQEMU FastCache FastCMPCache FastMemoryLoopback MagicBreak BPWarm TraceTracker
+REQUIRED_COMPONENTS = Common DecoupledFeederQEMU FastCache FastCMPCache FastMemoryLoopback MagicBreakQEMU BPWarm TraceTracker 
 
+$(GCC_CFLAGS) = $(GCC_CFLAGS) -DCONFIG_QEMU
 SUPPORTS_STANDALONE = false
 SUPPORTS_SIMICS = false
 SUPPORTS_QEMU = true
 DEFAULT_TARGET = qemu
 SUPPORTS_X86 = true
 SUPPORTS_V9 = true
-DEFAULT_PLATFORM = v9
+DEFAULT_PLATFORM = x86
 
-# SIMICS_CLASSES = CLS:Flexus;CLS:SimicsInterface;CLS:DecoupledFeeder
+SIMICS_CLASSES = CLS:Flexus;CLS:QemuInterface;CLS:DecoupledFeederQEMU

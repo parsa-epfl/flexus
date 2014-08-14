@@ -3,12 +3,6 @@
 
 namespace Flexus {
 namespace Qemu {
-namespace API {
-extern "C" {
-#include <core/qemu/api.h>
-}
-} //namespace API
-
 namespace APIFwd {
 
 void QEMU_break_simulation(const char * aMessage) {

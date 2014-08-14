@@ -20,7 +20,6 @@
 
 #include <core/stats.hpp>
 
-#include <core/simics/configuration_api.hpp>
 #include <core/exception.hpp>
 
 #include <core/boost_extensions/padded_string_cast.hpp>
@@ -31,9 +30,14 @@
 
 #include <core/flexus.hpp>
 
+#ifndef CONFIG_QEMU
+#include <core/simics/configuration_api.hpp>
 #include <core/simics/api_wrappers.hpp>
 #include <core/simics/control_api.hpp>
 #include <core/simics/mai_api.hpp>
+#else
+#include <core/qemu/configuration_api.hpp>
+#endif
 
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
@@ -168,6 +172,7 @@ public:
   void printMMU(int32_t aCPU);
 
 public:
+#ifndef CONFIG_QEMU
   FlexusImpl(Simics::API::conf_object_t * anObject )
     : theWatchdogTimeout(100000)
     , theNumWatchdogs(0)
@@ -188,13 +193,43 @@ public:
     , theSaveCtr(1) {
     Flexus::Dbg::Debugger::theDebugger->connectCycleCount(&theCycleCount);
   }
+#else
+  FlexusImpl(Qemu::API::conf_object_t * anObject )
+    : theWatchdogTimeout(100000)
+    , theNumWatchdogs(0)
+    , theInitialized(false)
+    , theCycleCount(0)
+    , theStatInterval(1000000)
+    , theRegionInterval(100000000)
+    , theProfileInterval(1000000)
+    , theTimestampInterval(100000)
+    , theStopCycle(2000000000)
+    , theCycleCountStat("sys-cycles")
+    , theWatchdogWarning(false)
+    , theQuiesceRequested(false)
+    , theSaveRequested(false)
+    , theFastMode(false)
+    , theBreakCPU(-1)
+    , theBreakInsn(0)
+    , theSaveCtr(1) {
+    Flexus::Dbg::Debugger::theDebugger->connectCycleCount(&theCycleCount);
+  }
+#endif
   virtual ~FlexusImpl() {}
 };
 
+#ifndef CONFIG_QEMU
 void FlexusImpl::printMMU( int32_t aCPU ) {
   Flexus::Simics::Processor::getProcessor(aCPU)->dumpMMU();
   Flexus::Simics::Processor::getProcessor(aCPU)->validateMMU();
 }
+#else
+void FlexusImpl::printMMU( int32_t aCPU ) {
+  //Flexus::Qemu::Processor::getProcessor(aCPU)->dumpMMU();
+  //Flexus::Qemu::Processor::getProcessor(aCPU)->validateMMU();
+	DBG_(Crit, ( << "printMMU not implemented yet. Still need to port mai_api.hpp " ) );
+}
+#endif
 
 void FlexusImpl::initializeComponents() {
   Stat::getStatManager()->initialize();
@@ -219,7 +254,11 @@ void FlexusImpl::advanceCycles(int64_t aCycleCount) {
       theSaveRequested = false;
       doSave( theSaveName );
     } else {
+#ifndef CONFIG_QEMU
       Simics::BreakSimulation( "Flexus is quiesced." );
+#else
+	Qemu::API::QEMU_break_simulation("Flexus is quiesced.");
+#endif
       return;
     }
   }
@@ -494,11 +533,15 @@ void FlexusImpl::loadState(std::string const & aDirName) {
 
 void FlexusImpl::doLoad(std::string const & aDirName) {
   DBG_( Crit, ( << "Loading Flexus state from subdirectory " << aDirName ) );
-
+#ifndef CONFIG_QEMU
   if (! initialized() ) {
     initializeComponents();
   }
   ComponentManager::getComponentManager().doLoad( aDirName );
+#else 
+  // FIXME TODO XXX
+    DBG_( Crit, ( << "Actually, QEMU can't do this... Yet?? " ) );
+#endif
 }
 
 void FlexusImpl::doSave(std::string const & aDirName, bool justFlexus) {
@@ -507,6 +550,7 @@ void FlexusImpl::doSave(std::string const & aDirName, bool justFlexus) {
   } else {
     DBG_( Crit, ( << "Saving Flexus and Simics state in subdirectory " << aDirName ) );
   }
+#ifndef CONFIG_QEMU
   mkdir(aDirName.c_str(), 0777);
   if (!justFlexus) {
     std::string simics_cfg_name(aDirName);
@@ -514,6 +558,11 @@ void FlexusImpl::doSave(std::string const & aDirName, bool justFlexus) {
     Simics::WriteCheckpoint(simics_cfg_name.c_str());
   }
   ComponentManager::getComponentManager().doSave( aDirName );
+#else
+  // FIXME TODO XXX
+    DBG_( Crit, ( << "Actually, QEMU can't do this... Yet??" ) );
+#endif
+
 }
 
 void FlexusImpl::backupStats(std::string const & aFilename) const {
@@ -674,9 +723,14 @@ void FlexusImpl::terminateSimulation() {
 #ifdef WRITE_ALL_MEASUREMENT_OUT
   writeMeasurement("all", "all.measurement.out");
 #endif
+#ifndef CONFIG_QEMU
   Flexus::Simics::BreakSimulation("Simulation terminated by flexus.");
+#else
+	Flexus::Qemu::API::Qemu_break_simulation("Simulation terminated by flexus.");
+#endif
 }
 
+#ifndef CONFIG_QEMU
 class Flexus_Obj : public Simics::AddInObject<FlexusImpl> {
   typedef Simics::AddInObject<FlexusImpl> base;
 public:
@@ -970,8 +1024,40 @@ public:
 
   }
 };
+#else
+class Flexus_Obj : public Flexus::Qemu::AddInObject<FlexusImpl> {
+  typedef Flexus::Qemu::AddInObject<FlexusImpl> base;
+public:
+  static const Flexus::Qemu::Persistence  class_persistence = Flexus::Qemu::Session;
+  static std::string className() {
+    return "Flexus";
+  }
+  static std::string classDescription() {
+    return "Flexus main class";
+  }
 
+  Flexus_Obj() : base() {}
+  Flexus_Obj(Flexus::Qemu::API::conf_object_t * anObject) : base(anObject) {}
+  Flexus_Obj(FlexusImpl * anImpl) : base(anImpl) {}
+
+  template <class Class>
+  static void defineClass(Class & aClass) {
+	aClass = aClass; // normally, command definitions would go here
+	// in order to add commands to the QEMU command line to interface
+	// with Flexus. But we haven't gotten around to this yet, because
+	// we're awesome.
+  }
+};
+
+
+#endif
+
+#ifndef CONFIG_QEMU
 typedef Simics::Factory< Flexus_Obj > FlexusFactory;
+#else
+typedef Qemu::Factory< Flexus_Obj > FlexusFactory;
+#endif
+
 Flexus_Obj theFlexusObj;
 FlexusFactory * theFlexusFactory;
 FlexusInterface * theFlexus = 0; //This is initialized from startup.cpp
