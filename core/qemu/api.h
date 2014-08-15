@@ -8,16 +8,59 @@
 #define ASSERT(COND) assert(COND)
 #define REQUIRES(COND) assert(COND)
 #define ENSURES(COND) assert(COND)
+#define dbg_printf(COND printf(COND)
 #else
-#define ASSERT(COND) ((void)0)
-#define REQUIRES(COND) ((void)0)
-#define ENSURES(COND) ((void)0)
+#define ASSERT(...)
+#define REQUIRES(...)
+#define ENSURES(...)
+#define dbg_printf(...)
 #endif
 
 typedef uint64_t cycles_t;
 typedef uint64_t physical_address_t;
 typedef uint64_t logical_address_t;
+typedef void* conf_class_t;
 typedef int exception_type_t;
+
+
+// not defined in api.c, defined in external binaries (exec.o, libqemuutil.a)
+struct CPUX86State;
+typedef struct CPUX86State CPUX86State;
+typedef CPUX86State CPUArchState;
+struct CPUState;
+typedef struct CPUState CPUState;
+
+struct QemuOptsList;
+struct QemuOpts;
+typedef struct QemuOptsList QemuOptsList;
+typedef struct QemuOpts QemuOpts;
+
+typedef uint64_t hwaddr;
+
+void cpu_physical_memory_rw(hwaddr addr, uint8_t *buf,
+		                            int len, int is_write);
+
+void pause_all_vcpus(void);
+CPUState *qemu_get_cpu(int index);
+QemuOpts *qemu_opts_find(QemuOptsList *list, const char *id);
+QemuOptsList *qemu_find_opts(const char *group);
+uint64_t qemu_opt_get_number(QemuOpts *opts, const char *name, 
+		uint64_t defval);
+
+#ifdef TARGET_I386
+__uint128_t cpu_read_register(CPUState *env_ptr, int reg_index);
+#else
+uint64_t cpu_read_register(CPUState *cpu, int reg_index);
+#endif
+physical_address_t mmu_logical_to_physical(CPUState *cs, logical_address_t va);
+uint64_t cpu_get_program_counter(CPUState *cs);
+void* cpu_get_address_space(CPUState *cs);
+int cpu_proc_num(CPUState *cs);
+void cpu_pop_indexes(int *indexes);
+
+extern int smp_cpus;
+
+// things for api.c:
 
 struct conf_object {
 	void *object; // pointer to the struct in question
@@ -27,11 +70,6 @@ struct conf_object {
 	} type;
 };
 typedef struct conf_object conf_object_t;
-
-struct conf_class {
-	conf_object_t obj;
-};
-typedef struct conf_class conf_class_t;
 
 typedef enum {
 	QEMU_Class_Kind_Vanilla,
@@ -111,6 +149,9 @@ struct generic_transaction {
 	exception_type_t exception;
 	unsigned int atomic:1;
 	unsigned int inquiry:1;
+	unsigned int may_stall:1;
+	unsigned int speculative:1;
+	unsigned int ignore:1;
 };
 typedef struct generic_transaction generic_transaction_t;
 
@@ -190,6 +231,7 @@ struct memory_transaction {
 	uint8_t	     address_space;
 #elif FLEXUS_TARGET == FLEXUS_TARGET_x86
 	processor_mode_t mode;
+	unsigned int io:1;
 #endif
 
 };
@@ -204,9 +246,17 @@ typedef enum {
 int QEMU_clear_exception(void);
 
 // read an arbitrary register.
+//TODO: This might cause problems.
+//to fix just have it always be __uint128_t.
+
+#ifdef TARGET_I386//128bit for x86 because the xmm regs are 128 bits long.
+__uint128_t qemu_read_register(conf_object_t *cpu, int reg_index);
+#else
 uint64_t QEMU_read_register(conf_object_t *cpu, int reg_index);
+#endif
+
 // read an arbitrary physical memory address.
-uint32_t QEMU_read_phys_memory(conf_object_t *cpu, 
+uint64_t QEMU_read_phys_memory(conf_object_t *cpu, 
 								physical_address_t pa, int bytes);
 // get the physical memory for a given cpu.
 conf_object_t *QEMU_get_phys_mem(conf_object_t *cpu);
@@ -217,8 +267,11 @@ conf_object_t *QEMU_get_cpu_by_index(int index);
 // return an int specifying the processor number of the cpu.
 int QEMU_get_processor_number(conf_object_t *cpu);
 
+// how many instructions have been executed since the start of QEMU for a CPU
+uint64_t QEMU_step_count(conf_object_t *cpu);
+
 // return an array of all processors
-conf_object_t QEMU_get_all_processors(int *numCPUs);
+conf_object_t *QEMU_get_all_processors(int *numCPUs);
 // set the frequency of a given cpu.
 int QEMU_set_tick_frequency(conf_object_t *cpu, double tick_freq);
 // get freq of given cpu
@@ -229,6 +282,8 @@ uint64_t QEMU_get_program_counter(conf_object_t *cpu);
 physical_address_t QEMU_logical_to_physical(conf_object_t *cpu, 
 					data_or_instr_t fetch, logical_address_t va);
 void QEMU_break_simulation(const char *msg);
+// dummy function at the moment. should flush the translation cache.
+void QEMU_flush_all_caches(void);
 // determine the memory operation type by the transaction struct.
 //[???]I assume return true if it is data, false otherwise
 int QEMU_mem_op_is_data(generic_transaction_t *mop);
@@ -319,6 +374,7 @@ typedef enum {
     QEMU_periodic_event,
     QEMU_xterm_break_string,
     QEMU_gfx_break_string,
+	QEMU_stc_miss,
     QEMU_callback_event_count // MUST BE LAST.
 } QEMU_callback_event_t;
 
@@ -334,15 +390,12 @@ struct QEMU_callback_table {
 	QEMU_callback_container_t *callbacks[QEMU_callback_event_count];
 };
 
-// global callback hash table
-struct QEMU_callback_table QEMU_all_callbacks = {0, {NULL}};
-
 int QEMU_insert_callback(QEMU_callback_event_t event, void* fun);
 void QEMU_delete_callback(QEMU_callback_event_t event, uint64_t callback_id); //[???]format might be a bit off
 
 void QEMU_execute_callbacks(
 		  QEMU_callback_event_t event
-		, QEMU_callback_args_t event_data
+		, QEMU_callback_args_t *event_data
 		);
 
 #endif

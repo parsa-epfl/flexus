@@ -7,8 +7,9 @@
 #include <algorithm>
 
 #include <core/debug/debug.hpp>
-//#include <core/qemu/trampoline.hpp>
+#include <core/qemu/trampoline.hpp>
 #include <core/qemu/attribute_value.hpp>
+#include <core/qemu/api_wrappers.hpp>
 
 #include <boost/utility.hpp>
 #include <boost/function.hpp>
@@ -17,28 +18,8 @@
 #include <core/boost_extensions/member_function_traits.hpp>
 #include <boost/bind.hpp>
 
-/*
-extern "C" {
-  //Typedef within simics removed in Qemu 2.0
-  typedef Flexus::Qemu::API::conf_object_t * (*new_instance_t)(Flexus::Qemu::API::parse_object_t *);
-  typedef int (*delete_instance_t)(Flexus::Qemu::API::conf_object_t *);
-}
-*/
-
 namespace Flexus {
 namespace Qemu {
-namespace API {
-extern "C" {
-#include <core/qemu/api.h>
-}
-}
-
-template <class CppObjectClass>
-struct QemuObject {
-  API::conf_object_t conf_object;
-  CppObjectClass theObject;
-};
-
 namespace aux_ {
 //Stub function declarations which assist in making this code behave properly
 //both with and without simics
@@ -220,37 +201,36 @@ public:
   //Note: the reintepret_casts in these methods are safe since QemuObject is POD and
   //conf_object comes first in QemuObject.
 
-  //This function is the constructor Qemu will call to create objects of the type this class
-  //represents.
+  // This function is the constructor Qemu will call to create objects of the type 
+  // this class represents.
   static API::conf_object_t * constructor(void *aThing) {
-    //Note: the reintepret cast here is safe since QemuObject is POD and
-    //conf_object comes first in QemuObject.
+    // Note: the reintepret cast here is safe since QemuObject is POD and
+    // conf_object comes first in QemuObject.
 	  return 0;
   }
 
-  //The corresponding destructor
+  // The corresponding destructor
   static int destructor(API::conf_object_t * anInstance) {
+	  delete anInstance;
 	  return 0;
   }
 
-  //Cast a bare conf_object_t * to the C++ object type
+  // Cast a bare conf_object_t * to the C++ object type
   static CppObjectClass cast_object(API::conf_object_t * aQemuObject) {
-	  return 0;
+	return CppObjectClass(aQemuObject);
   }
 
 protected:
-  //The no-argument constructor registers the Addin class represented by this object with Qemu.
+  // The no-argument constructor registers the Addin class represented by this 
+  // object with Qemu.
   ClassImpl() {
 	// this call does nothing
-    theQemuClass = 0;//aux_::RegisterClass_stub(CppObjectClass::className(), &class_data);
-
-   /* register_helper< CppObjectClass, hasAttributes<CppObjectClass>::value >::registerAttributes(*this);
-
-    CppObjectClass::defineClass(*this);*/
+    theQemuClass = new API::conf_class_t;
+    CppObjectClass::defineClass(*this);
   }
 
-  //This constructor does not register the class.  Used when the class is already registered, by
-  //some of the engine of attribute_cast<>
+  // This constructor does not register the class.  Used when the class is already 
+  // registered, by some of the engine of attribute_cast<>
   ClassImpl(no_class_registration_tag const &) {
 	  theQemuClass = 0;
   }
@@ -259,8 +239,15 @@ protected:
 }//End aux_
 
 template <class CppObjectClass>
-struct Class : public aux_::ClassImpl<CppObjectClass, aux_::is_builtin<CppObjectClass>::value > {
-  typedef aux_::ClassImpl<CppObjectClass, aux_::is_builtin<CppObjectClass>::value > base;
+struct Class : public aux_::ClassImpl<
+						  CppObjectClass
+						, aux_::is_builtin<CppObjectClass>::value 
+						> 
+{
+  typedef aux_::ClassImpl<
+	    CppObjectClass
+	  , aux_::is_builtin<CppObjectClass>::value 
+	  > base;
   typedef CppObjectClass object_type;
 
   //Forwarding constructors

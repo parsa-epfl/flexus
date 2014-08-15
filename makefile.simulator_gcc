@@ -42,8 +42,8 @@ endif
 ifeq ($(SUPPORTS_QEMU),true)
 libflexus_$(SIMULATOR)_$(VARIANT).so.deps: $(COMPONENTS_WITH_LIBS) $(CORE_QEMU)
 libflexus_$(SIMULATOR)_$(VARIANT).so: $(patsubst %.cpp,%.$(OEXT),$(wildcard *.cpp)) $(COMPONENT_LIB_PATHS) module_id.$(TARGET_PLATFORM)_$(SELECTED_DEBUG)_gcc_o $(CORE_DIR)/libcore_$(VARIANT).a.fresh
-	$(ECHO) "$(GCC) *.$(OEXT) $(COMPONENT_LIB_PATHS) -L$(CORE_DIR) -Wl,--whole-archive -lcore_$(VARIANT) -lqemu_$(VARIANT) $(BOOST_LIBRARIES) -o $@"
-	$(GCC) *.$(OEXT) $(COMPONENT_LIB_PATHS) -L$(CORE_DIR) -Wl,--whole-archive -lcore_$(VARIANT) -lqemu_$(VARIANT) $(BOOST_LIBRARIES) -o $@
+	$(ECHO) "$(GCC) $(GCC_SIMICS_LFLAGS) *.$(OEXT) $(COMPONENT_LIB_PATHS) -L$(CORE_DIR) -Wl,--whole-archive -lcore_$(VARIANT) -lqemu_$(VARIANT) $(BOOST_LIBRARIES) -o $@"
+	$(GCC) *.$(OEXT) $(GCC_SIMICS_LFLAGS) $(COMPONENT_LIB_PATHS) -L$(CORE_DIR) -Wl,--whole-archive -lcore_$(VARIANT) -lqemu_$(VARIANT) $(BOOST_LIBRARIES) -o $@
 else
 libflexus_$(SIMULATOR)_$(VARIANT).so.deps: $(COMPONENTS_WITH_LIBS) $(CORE_SIMICS)
 libflexus_$(SIMULATOR)_$(VARIANT).so: $(patsubst %.cpp,%.$(OEXT),$(wildcard *.cpp)) $(COMPONENT_LIB_PATHS) module_id.$(TARGET_PLATFORM)_$(SELECTED_DEBUG)_gcc_o $(CORE_DIR)/libcore_$(VARIANT).a.fresh
