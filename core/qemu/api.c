@@ -1,12 +1,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 #include "api.h"
 #include <inttypes.h>
 
+
 //Functions I am not sure on(wasn't the last person to work on them)
 //The callback functions
-
 
 //Functions that I think do what they should, but are hard to test
 //QEMU_read_register

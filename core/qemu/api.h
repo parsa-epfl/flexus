@@ -225,6 +225,7 @@ typedef enum {
 
 struct memory_transaction {
 	generic_transaction_t s;
+
 #if FLEXUS_TARGET == FLEXUS_TARGET_v9
 	unsigned int cache_virtual:1;
 	unsigned int cache_physical:1;
@@ -234,6 +235,7 @@ struct memory_transaction {
 	processor_mode_t mode;
 	unsigned int io:1;
 #endif
+
 };
 typedef struct memory_transaction memory_transaction_t;
 
