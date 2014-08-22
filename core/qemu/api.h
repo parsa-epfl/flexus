@@ -252,7 +252,7 @@ int QEMU_clear_exception(void);
 //to fix just have it always be __uint128_t.
 
 #ifdef TARGET_I386//128bit for x86 because the xmm regs are 128 bits long.
-__uint128_t qemu_read_register(conf_object_t *cpu, int reg_index);
+__uint128_t QEMU_read_register(conf_object_t *cpu, int reg_index);
 #else
 uint64_t QEMU_read_register(conf_object_t *cpu, int reg_index);
 #endif
@@ -310,16 +310,25 @@ int QEMU_mem_op_is_read(generic_transaction_t *mop);
 // v - void*
 
 typedef void (*cb_func_noc_t)(void *, conf_object_t *);
+typedef void (*cb_func_noc_t2)(void*, void *, conf_object_t *);
 typedef void (*cb_func_nocI_t)(void *, conf_object_t *, int64_t);
+typedef void (*cb_func_nocI_t2)(void*, void *, conf_object_t *, int64_t);
 typedef void (*cb_func_nocIs_t)(void *, conf_object_t *, int64_t, char *);
+typedef void (*cb_func_nocIs_t2)(void *, void *, conf_object_t *, int64_t, char *);
 typedef void (*cb_func_noiiI_t)(void *, int, int, int64_t);
+typedef void (*cb_func_noiiI_t2)(void *, void *, int, int, int64_t);
 
 typedef void (*cb_func_ncm_t)(
 		  conf_object_t *
 		, generic_transaction_t *
 		);
-
+typedef void (*cb_func_ncm_t2)(
+          void *
+		, conf_object_t *
+		, generic_transaction_t *
+		);
 typedef void (*cb_func_nocs_t)(void *, conf_object_t *, char *);
+typedef void (*cb_func_nocs_t2)(void *, void *, conf_object_t *, char *);
 
 typedef struct {
 	void *class_data;

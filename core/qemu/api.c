@@ -349,8 +349,10 @@ void QEMU_execute_callbacks(
 			case QEMU_asynchronous_trap:
 			case QEMU_exception_return:
 			case QEMU_magic_instruction:
+                //TODO:needs to be implemented for magicbreak
 			case QEMU_ethernet_network_frame:
 			case QEMU_ethernet_frame:
+                //TODO:needs to be implemented for magicbreak
 			case QEMU_periodic_event:
 				(*(cb_func_noc_t)callback)(
 						  event_data->noc->class_data
@@ -368,6 +370,7 @@ void QEMU_execute_callbacks(
 				break;
 			// nocs : class_data, conf_object_t, char*
 			case QEMU_xterm_break_string:
+                //TODO:needs to be implemented for magicbreak
 			case QEMU_gfx_break_string:
 				(*(cb_func_nocs_t)callback)(
 						  event_data->nocs->class_data
