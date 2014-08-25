@@ -66,10 +66,12 @@ struct conf_object {
 	void *object; // pointer to the struct in question
 	enum { // what kind of QEMU struct does it represent
 		QEMUCPUState, // add new types as necessary
-		QEMUAddressSpace
+		QEMUAddressSpace,
+		QEMUNetworkDevice
 	} type;
 };
 typedef struct conf_object conf_object_t;
+typedef conf_object_t processor_t;
 
 typedef enum {
 	QEMU_Class_Kind_Vanilla,
@@ -252,7 +254,7 @@ int QEMU_clear_exception(void);
 //to fix just have it always be __uint128_t.
 
 #ifdef TARGET_I386//128bit for x86 because the xmm regs are 128 bits long.
-__uint128_t qemu_read_register(conf_object_t *cpu, int reg_index);
+__uint128_t QEMU_read_register(conf_object_t *cpu, int reg_index);
 #else
 uint64_t QEMU_read_register(conf_object_t *cpu, int reg_index);
 #endif
@@ -262,6 +264,8 @@ uint64_t QEMU_read_phys_memory(conf_object_t *cpu,
 								physical_address_t pa, int bytes);
 // get the physical memory for a given cpu.
 conf_object_t *QEMU_get_phys_mem(conf_object_t *cpu);
+// get the network device for ethernet frame tracing
+conf_object_t *QEMU_get_ethernet(void);
 // return a conf_object_t of the cpu in question.
 conf_object_t *QEMU_get_cpu_by_index(int index);
 
@@ -308,16 +312,25 @@ int QEMU_mem_op_is_read(generic_transaction_t *mop);
 // v - void*
 
 typedef void (*cb_func_noc_t)(void *, conf_object_t *);
+typedef void (*cb_func_noc_t2)(void*, void *, conf_object_t *);
 typedef void (*cb_func_nocI_t)(void *, conf_object_t *, int64_t);
+typedef void (*cb_func_nocI_t2)(void*, void *, conf_object_t *, int64_t);
 typedef void (*cb_func_nocIs_t)(void *, conf_object_t *, int64_t, char *);
+typedef void (*cb_func_nocIs_t2)(void *, void *, conf_object_t *, int64_t, char *);
 typedef void (*cb_func_noiiI_t)(void *, int, int, int64_t);
+typedef void (*cb_func_noiiI_t2)(void *, void *, int, int, int64_t);
 
 typedef void (*cb_func_ncm_t)(
 		  conf_object_t *
 		, generic_transaction_t *
 		);
-
+typedef void (*cb_func_ncm_t2)(
+          void *
+		, conf_object_t *
+		, generic_transaction_t *
+		);
 typedef void (*cb_func_nocs_t)(void *, conf_object_t *, char *);
+typedef void (*cb_func_nocs_t2)(void *, void *, conf_object_t *, char *);
 
 typedef struct {
 	void *class_data;
@@ -371,7 +384,6 @@ typedef enum {
     QEMU_asynchronous_trap,
     QEMU_exception_return,
     QEMU_magic_instruction,
-    QEMU_ethernet_network_frame,
     QEMU_ethernet_frame,
     QEMU_periodic_event,
     QEMU_xterm_break_string,
@@ -382,6 +394,7 @@ typedef enum {
 
 struct QEMU_callback_container {
 	uint64_t id;
+	void *obj;
 	void *callback;
 	struct QEMU_callback_container *next;
 };
@@ -392,7 +405,7 @@ struct QEMU_callback_table {
 	QEMU_callback_container_t *callbacks[QEMU_callback_event_count];
 };
 
-int QEMU_insert_callback(QEMU_callback_event_t event, void* fun);
+int QEMU_insert_callback(QEMU_callback_event_t event, void *obj, void* fun);
 void QEMU_delete_callback(QEMU_callback_event_t event, uint64_t callback_id); //[???]format might be a bit off
 
 void QEMU_execute_callbacks(

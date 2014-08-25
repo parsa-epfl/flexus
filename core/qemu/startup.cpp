@@ -42,7 +42,7 @@ void CreateFlexus() {
 
 void PrepareFlexus() {
   PrepareFlexusObject();
-  QEMU_insert_callback(QEMU_config_ready, (void*)&CreateFlexus);
+  QEMU_insert_callback(QEMU_config_ready, NULL, (void*)&CreateFlexus);
 }
 
 } //end namespace Core

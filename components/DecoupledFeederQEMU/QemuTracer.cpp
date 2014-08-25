@@ -12,6 +12,7 @@
 
 #include <core/stats.hpp>
 namespace Stat = Flexus::Stat;
+//was only in namespace nDecoupledFeeder
 
 namespace nDecoupledFeeder {
 
@@ -22,6 +23,19 @@ namespace API = Qemu::API;
 
 std::set< API::conf_object_t *> theTimingModels;
 const uint32_t kLargeMemoryQueue = 16000;
+extern "C"{
+        void TraceMemHierOperate(
+				void *obj
+			  , API::conf_object_t * space
+			  , API::generic_transaction_t * aMemTrans
+			  );
+	    void DMAMemHierOperate(
+				void *obj
+		      , API::conf_object_t * space
+			  , API::generic_transaction_t * aMemTrans
+			  );
+    
+}
 
 struct TracerStats {
   Stat::StatCounter theMemOps_stat;
@@ -620,6 +634,11 @@ private:
 			    Flexus::Qemu::API::QEMU_trace_mem_hier
 			  , callback
 			  );*/
+	  API::QEMU_insert_callback(
+			    API::QEMU_stc_miss
+			  , ((void*) this)
+			  , (void*)&TraceMemHierOperate
+			  );
   }
 
   void registerDMAInterface() {
@@ -630,6 +649,11 @@ private:
 			    Flexus::Qemu::API::QEMU_trace_mem_hier
 			  , callback
 			  );*/
+	  API::QEMU_insert_callback(
+			    API::QEMU_stc_miss
+			  , ((void*) &theDMATracer)
+			  , (void*)&DMAMemHierOperate
+			  );
   }
 
 };
@@ -645,5 +669,25 @@ QemuTracerManager * QemuTracerManager::construct(int32_t aNumCPUs
                                                     ) {
   return new QemuTracerManagerImpl(aNumCPUs, toL1D, toL1I, toDMA, toNAW, aWhiteBoxDebug, aWhiteBoxPeriod, aSendNonAllocatingStores);
 }
+extern "C"{ 
+    void TraceMemHierOperate(
+				void *obj
+			  , API::conf_object_t * space
+			  , API::generic_transaction_t * aMemTrans
+			  )
+	{
+		static_cast<QemuTracerImpl*>(obj)->trace_mem_hier_operate(space, aMemTrans);
+	}
+    void DMAMemHierOperate(
+				void *obj
+			  , API::conf_object_t * space
+			  , API::generic_transaction_t * aMemTrans
+			  )
+	{
+		static_cast<DMATracerImpl*>(obj)->dma_mem_hier_operate(space, aMemTrans);
+	}
+}
+
+
 
 } //end nDecoupledFeeder
