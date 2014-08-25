@@ -231,6 +231,7 @@ struct memory_transaction {
 	unsigned int cache_virtual:1;
 	unsigned int cache_physical:1;
 	unsigned int priv:1;
+	unsigned int io:1;
 	uint8_t	     address_space;
 	uint8_t        prefetch_fcn;
 #elif FLEXUS_TARGET == FLEXUS_TARGET_x86
@@ -322,12 +323,12 @@ typedef void (*cb_func_noiiI_t2)(void *, void *, int, int, int64_t);
 
 typedef void (*cb_func_ncm_t)(
 		  conf_object_t *
-		, generic_transaction_t *
+		, memory_transaction_t *
 		);
 typedef void (*cb_func_ncm_t2)(
           void *
 		, conf_object_t *
-		, generic_transaction_t *
+		, memory_transaction_t *
 		);
 typedef void (*cb_func_nocs_t)(void *, conf_object_t *, char *);
 typedef void (*cb_func_nocs_t2)(void *, void *, conf_object_t *, char *);
@@ -359,7 +360,7 @@ typedef struct {
 
 typedef struct {
 	conf_object_t *space;
-	generic_transaction_t *trans;
+	memory_transaction_t *trans;
 } QEMU_ncm;
 
 typedef struct {

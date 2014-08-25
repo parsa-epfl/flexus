@@ -27,12 +27,12 @@ extern "C"{
         void TraceMemHierOperate(
 				void *obj
 			  , API::conf_object_t * space
-			  , API::generic_transaction_t * aMemTrans
+			  , API::memory_transaction_t * mem_trans
 			  );
 	    void DMAMemHierOperate(
 				void *obj
 		      , API::conf_object_t * space
-			  , API::generic_transaction_t * aMemTrans
+			  , API::memory_transaction_t * mem_trans
 			  );
     
 }
@@ -207,10 +207,8 @@ public:
   }
 
   API::cycles_t trace_mem_hier_operate(API::conf_object_t * space
-		  , API::generic_transaction_t * aMemTrans
+		  , API::memory_transaction_t * mem_trans
 		  ) {
-    Qemu::API::memory_transaction_t * mem_trans 
-		= reinterpret_cast<Qemu::API::memory_transaction_t *>(aMemTrans);
 
     const int32_t k_no_stall = 0;
 
@@ -457,11 +455,9 @@ public:
 
   API::cycles_t dma_mem_hier_operate(
 		    API::conf_object_t * space
-		  , API::generic_transaction_t * aMemTrans
+		  , API::memory_transaction_t * mem_trans
 		  ) 
   {
-    Qemu::API::memory_transaction_t * mem_trans = 
-		reinterpret_cast<Qemu::API::memory_transaction_t *>(aMemTrans);
 
     const int32_t k_no_stall = 0;
 
@@ -672,18 +668,18 @@ extern "C"{
     void TraceMemHierOperate(
 				void *obj
 			  , API::conf_object_t * space
-			  , API::generic_transaction_t * aMemTrans
+			  , API::memory_transaction_t * mem_trans
 			  )
 	{
-		static_cast<QemuTracerImpl*>(obj)->trace_mem_hier_operate(space, aMemTrans);
+		static_cast<QemuTracerImpl*>(obj)->trace_mem_hier_operate(space, mem_trans);
 	}
     void DMAMemHierOperate(
 				void *obj
 			  , API::conf_object_t * space
-			  , API::generic_transaction_t * aMemTrans
+			  , API::memory_transaction_t * mem_trans
 			  )
 	{
-		static_cast<DMATracerImpl*>(obj)->dma_mem_hier_operate(space, aMemTrans);
+		static_cast<DMATracerImpl*>(obj)->dma_mem_hier_operate(space, mem_trans);
 	}
 }
 
