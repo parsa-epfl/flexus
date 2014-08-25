@@ -68,7 +68,7 @@ conf_object_t *QEMU_get_phys_memory(conf_object_t *cpu){
     //As far as I can tell it works.
     conf_object_t *as = malloc(sizeof(conf_object_t));
     as->type = QEMUAddressSpace;
-    as->object = cpu_get_address_space(cpu->object);
+    as->object = (AddressSpace *)cpu_get_address_space(cpu->object);
     return as;
 }
 
