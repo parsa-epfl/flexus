@@ -250,8 +250,9 @@ public:
 
     //Minimal memory message implementation
     theMemoryMessage.address() = PhysicalMemoryAddress( mem_trans->s.physical_address );
-    API::logical_address_t pc_logical = API::QEMU_get_program_counter(theCPU);
-    theMemoryMessage.pc() = VirtualMemoryAddress( pc_logical );
+//    API::logical_address_t pc_logical = API::QEMU_get_program_counter(theCPU);
+//    theMemoryMessage.pc() = VirtualMemoryAddress( pc_logical );
+    theMemoryMessage.pc() = VirtualMemoryAddress( mem_trans->s.pc );
     theMemoryMessage.priv() = IS_PRIV(mem_trans);
 
     //Set the type field of the memory operation

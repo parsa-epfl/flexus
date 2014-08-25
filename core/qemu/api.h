@@ -141,6 +141,7 @@ struct generic_transaction {
 	conf_object_t *ini_ptr; // note: for efficiency, arrange struct from
 	char *real_address;     // largest datatype to smallest to avoid
 	uint64_t bytes;         // unnecessary padding.
+        logical_address_t pc; // QEMU pc not updated regularly, need to send pc
 	logical_address_t logical_address;
 	physical_address_t physical_address;
 	size_t size;
@@ -229,6 +230,7 @@ struct memory_transaction {
 	unsigned int cache_physical:1;
 	unsigned int priv:1;
 	uint8_t	     address_space;
+	uint8_t        prefetch_fcn;
 #elif FLEXUS_TARGET == FLEXUS_TARGET_x86
 	processor_mode_t mode;
 	unsigned int io:1;
