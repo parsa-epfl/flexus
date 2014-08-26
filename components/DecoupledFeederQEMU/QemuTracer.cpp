@@ -212,14 +212,7 @@ public:
 
     const int32_t k_no_stall = 0;
 
-    
-    if (space == thePhysIO) {
-      IS_PRIV(mem_trans) ?  theOSStats->theIOOps++ : theUserStats->theIOOps++ ;
-      theBothStats->theIOOps++;
-      return k_no_stall; //Not a memory operation
-    }
-
-#if FLEXUS_TARGET_IS(x86)
+#if FLEXUS_TARGET_IS(x86) || FLEXUS_TARGET_IS(v9)
     if (mem_trans->io ) {
       //Count data accesses
       IS_PRIV(mem_trans) ?  theOSStats->theIOOps++ : theUserStats->theIOOps++ ;
