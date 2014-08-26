@@ -255,8 +255,8 @@ public:
 
     //Minimal memory message implementation
     theMemoryMessage.address() = PhysicalMemoryAddress( mem_trans->s.physical_address );
-//    API::logical_address_t pc_logical = API::QEMU_get_program_counter(theCPU);
-//    theMemoryMessage.pc() = VirtualMemoryAddress( pc_logical );
+    API::logical_address_t pc_logical = API::QEMU_get_program_counter(theCPU);
+    theMemoryMessage.pc() = VirtualMemoryAddress( pc_logical );
     theMemoryMessage.pc() = VirtualMemoryAddress( mem_trans->s.pc );
     theMemoryMessage.priv() = IS_PRIV(mem_trans);
 
@@ -266,7 +266,6 @@ public:
 
 #if FLEXUS_TARGET_IS(v9)
       // record the opcode
-
       API::physical_address_t pc = API::QEMU_logical_to_physical(theCPU, API::QEMU_DI_Instruction, pc_logical);
       uint32_t op_code = API::QEMU_read_phys_memory(theCPU, pc, 4);
 

@@ -743,7 +743,7 @@ class SimPrintHandlerImpl : public SimPrintHandler {
         //Flexus::Qemu::v9ProcessorImpl cpu(aCpu);
         uint64_t vaddr = readG(aCpu, 1);
         for (int32_t i = 0; i < 1024; ++i) {
-          simprint_buffer[i] = readVAddr2(cpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + i), 0x80, 1);
+          simprint_buffer[i] = readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + i), 0x80, 1);
           if (simprint_buffer[i] == 0) {
             break;
           }
@@ -764,7 +764,7 @@ class SimPrintHandlerImpl : public SimPrintHandler {
           xact_.struct_version = struct_version;
           xact_.pid = readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 8), 0x80, 8);
           xact_.xact_num = readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 16), 0x80, 8);
-          xact_.xact_type = readVAddr(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 24), 0x80, 8);
+          xact_.xact_type = readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 24), 0x80, 8);
           xact_.marker_type = readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 32), 0x80, 8);
           xact_.marker_num = readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 40), 0x80, 8);
           xact_.xact_struct_base_addr = readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 48), 0x80, 8);
@@ -794,7 +794,7 @@ class SimPrintHandlerImpl : public SimPrintHandler {
         VirtualMemoryAddress file_addr = VirtualMemoryAddress(readG(aCpu, 3));
         uint64_t line = readG(aCpu, 4);
         uint64_t value = readG(aCpu, 5);
-        VirtualMemoryAddress pc = Qemu::API::QEMU_get_program_counter(aCpu);
+        VirtualMemoryAddress pc = (VirtualMemoryAddress)Qemu::API::QEMU_get_program_counter(aCpu);
         char fn[256];
         char file[256];
         readString(aCpu, fn_addr, fn, sizeof(fn));
@@ -808,21 +808,21 @@ class SimPrintHandlerImpl : public SimPrintHandler {
         //SimPrint web
         //Flexus::Qemu::v9ProcessorImpl cpu(aCpu);
         uint64_t vaddr = readG(aCpu, 1);
-        int64_t struct_version = cpu.readVAddr(Flexus::SharedTypes::VirtualMemoryAddress(vaddr), 0x80, 8);
+        int64_t struct_version = readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr), 0x80, 8);
         if (struct_version != 1) {
           DBG_(Dev, AddCat(SimPrint) ( << "CPU[" << cpu_no << "] SimPrint Web encountered marker with unknown struct_version: " << struct_version ));
         } else {
           web_version1 web_;
           web_.struct_version = struct_version;
-          web_.client = cpu.readVAddr(Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 8), 0x80, 8);
-          web_.generator = cpu.readVAddr(Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 16), 0x80, 8);
-          web_.marker_type = cpu.readVAddr(Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 24), 0x80, 8);
-          web_.marker_num = cpu.readVAddr(Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 32), 0x80, 8);
-          web_.curr_time = cpu.readVAddr(Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 40), 0x80, 8);
-          web_.type_or_size = cpu.readVAddr(Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 48), 0x80, 8);
-          web_.class_or_sleep = cpu.readVAddr(Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 56), 0x80, 8);
-          web_.base_addr = cpu.readVAddr(Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 64), 0x80, 8);
-          web_.canary = cpu.readVAddr(Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 72), 0x80, 8);
+          web_.client = readVAddr2(aCpu,Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 8), 0x80, 8);
+          web_.generator = readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 16), 0x80, 8);
+          web_.marker_type = readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 24), 0x80, 8);
+          web_.marker_num = readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 32), 0x80, 8);
+          web_.curr_time = readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 40), 0x80, 8);
+          web_.type_or_size = readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 48), 0x80, 8);
+          web_.class_or_sleep = readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 56), 0x80, 8);
+          web_.base_addr = readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 64), 0x80, 8);
+          web_.canary = readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 72), 0x80, 8);
 
           std::string canary("ok");
           if (web_.canary != 0xDEAD) {
