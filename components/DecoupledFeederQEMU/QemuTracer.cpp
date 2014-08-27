@@ -255,8 +255,6 @@ public:
 
     //Minimal memory message implementation
     theMemoryMessage.address() = PhysicalMemoryAddress( mem_trans->s.physical_address );
-    API::logical_address_t pc_logical = API::QEMU_get_program_counter(theCPU);
-    theMemoryMessage.pc() = VirtualMemoryAddress( pc_logical );
     theMemoryMessage.pc() = VirtualMemoryAddress( mem_trans->s.pc );
     theMemoryMessage.priv() = IS_PRIV(mem_trans);
 
@@ -266,7 +264,7 @@ public:
 
 #if FLEXUS_TARGET_IS(v9)
       // record the opcode
-      API::physical_address_t pc = API::QEMU_logical_to_physical(theCPU, API::QEMU_DI_Instruction, pc_logical);
+      API::physical_address_t pc = API::QEMU_logical_to_physical(theCPU, API::QEMU_DI_Instruction, mem_trans->s.pc);
       uint32_t op_code = API::QEMU_read_phys_memory(theCPU, pc, 4);
 
       //LDD(a)            is 11-- ---0 -001 1--- ---- ---- ---- ----
@@ -623,7 +621,7 @@ private:
 			  , callback
 			  );*/
 	  API::QEMU_insert_callback(
-			    API::QEMU_stc_miss
+			    API::QEMU_cpu_mem_trans
 			  , ((void*) this)
 			  , (void*)&TraceMemHierOperate
 			  );
@@ -638,7 +636,7 @@ private:
 			  , callback
 			  );*/
 	  API::QEMU_insert_callback(
-			    API::QEMU_stc_miss
+			    API::QEMU_dma_mem_trans
 			  , ((void*) &theDMATracer)
 			  , (void*)&DMAMemHierOperate
 			  );
