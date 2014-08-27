@@ -1,5 +1,5 @@
 #ifndef FLEXUS_DECOUPLED_FEEDER_QEMU_TRACER_HPP_INCLUDED
-#define FLEXUS_DECOUPLED_FEEDER_SIMICS_TRACER_HPP_INCLUDED
+#define FLEXUS_DECOUPLED_FEEDER_QEMU_TRACER_HPP_INCLUDED
 
 #include <components/Common/Slices/MemoryMessage.hpp>
 
@@ -14,8 +14,8 @@ struct QemuTracerManager {
 				 , boost::function< void(int, MemoryMessage &, uint32_t) > toL1I
 				 , boost::function< void(MemoryMessage &) > toDMA
 				 , boost::function< void(int, MemoryMessage &) > toNAW
-				 , bool aWhiteBoxDebug
-				 , int32_t aWhiteBoxPeriod
+//				 , bool aWhiteBoxDebug
+//				 , int32_t aWhiteBoxPeriod
 				 , bool aSendNonAllocatingStores
 				);
   virtual ~QemuTracerManager()  {}

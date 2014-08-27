@@ -49,8 +49,10 @@ SIMICS_INCLUDE=$(if $(USING_SIMICS_3),$(SIMICS_PATH)/src/include,$(SIMICS_PATH)/
 SIMICS_V9_INCLUDE=$(SIMICS_INCLUDE)/simics
 SIMICS_X86_INCLUDE=$(SIMICS_INCLUDE)/simics
 
-QEMU_LIB_DIR=/home/jbiggs/src/qemuflex/qemu-2.0.0/x86_64-softmmu/
-QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-x86_64-softmmu
+
+# FIXME user has to update manually
+QEMU_LIB_DIR=/home/underwoo/qemuflex/qemu-2.0.0/sparc64-softmmu/
+QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-sparc64
 
 INCLUDES=-isystem $(BOOST_INCLUDE) -isystem $(SIMICS_INCLUDE) $(QEMU_INCLUDE) -I$(FLEXUS_INCLUDE) -Ibooksim -Ibooksim/arbiters -Ibooksim/allocators -Ibooksim/routers -Ibooksim/networks -IDRAMSim2
 BOOST_LIBRARIES=-Wl,--no-whole-archive -lboost_date_time -lboost_regex -lboost_serialization -lboost_iostreams -lz

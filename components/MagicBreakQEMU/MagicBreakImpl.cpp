@@ -1,4 +1,4 @@
-#include <components/MagicBreak/MagicBreak.hpp>
+#include <components/MagicBreakQEMU/MagicBreak.hpp>
 
 #define FLEXUS_BEGIN_COMPONENT MagicBreak
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()

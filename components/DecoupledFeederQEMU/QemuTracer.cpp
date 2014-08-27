@@ -1,3 +1,5 @@
+//FIXME: note commented out all uses of WhiteBox
+
 #include <set>
 
 #include <core/boost_extensions/padded_string_cast.hpp>
@@ -121,8 +123,8 @@ class QemuTracerImpl {
   boost::function< void(int, MemoryMessage &, uint32_t) > toL1I;
   boost::function< void(int, MemoryMessage &) > toNAW;
 
-  bool theWhiteBoxDebug;
-  int32_t  theWhiteBoxPeriod;
+//  bool theWhiteBoxDebug;
+//  int32_t  theWhiteBoxPeriod;
   bool theSendNonAllocatingStores;
 
 public:
@@ -141,8 +143,8 @@ public:
             , boost::function< void(int, MemoryMessage &) > aToL1D
             , boost::function< void(int, MemoryMessage &, uint32_t) > aToL1I
             , boost::function< void(int, MemoryMessage &) > aToNAW
-            , bool aWhiteBoxDebug
-            , int32_t aWhiteBoxPeriod
+  //          , bool aWhiteBoxDebug
+    //        , int32_t aWhiteBoxPeriod
             , bool aSendNonAllocatingStores
  	
            ) {
@@ -151,8 +153,8 @@ public:
     toL1D = aToL1D;
     toL1I = aToL1I;
     toNAW = aToNAW;
-    theWhiteBoxDebug = false;
-    theWhiteBoxPeriod = aWhiteBoxPeriod;
+ //   theWhiteBoxDebug = false;
+ //   theWhiteBoxPeriod = aWhiteBoxPeriod;
     theSendNonAllocatingStores = aSendNonAllocatingStores;
 
     theUserStats = new TracerStats(boost::padded_string_cast < 2, '0' > (theIndex) + "-feeder-User:");
@@ -504,8 +506,8 @@ class QemuTracerManagerImpl : public QemuTracerManager {
   boost::function< void(MemoryMessage &) > toDMA;
   boost::function< void(int, MemoryMessage &) > toNAW;
 
-  bool theWhiteBoxDebug;
-  int32_t  theWhiteBoxPeriod;
+//  bool theWhiteBoxDebug;
+//  int32_t  theWhiteBoxPeriod;
   bool theSendNonAllocatingStores;
 public:
   QemuTracerManagerImpl(
@@ -514,8 +516,8 @@ public:
 	  , boost::function< void(int, MemoryMessage &, uint32_t) > aToL1I
 	  , boost::function< void(MemoryMessage &) > aToDMA
 	  , boost::function< void(int, MemoryMessage &) > aToNAW
-	  , bool aWhiteBoxDebug
-	  , int32_t aWhiteBoxPeriod
+//	  , bool aWhiteBoxDebug
+//	  , int32_t aWhiteBoxPeriod
 	  , bool aSendNonAllocatingStores
 	 )
     : theNumCPUs(aNumCPUs)
@@ -524,8 +526,8 @@ public:
     , toL1I(aToL1I)
     , toDMA(aToDMA)
     , toNAW(aToNAW)
-    , theWhiteBoxDebug(aWhiteBoxDebug)
-    , theWhiteBoxPeriod(aWhiteBoxPeriod) 
+  //  , theWhiteBoxDebug(aWhiteBoxDebug)
+  //  , theWhiteBoxPeriod(aWhiteBoxPeriod) 
     , theSendNonAllocatingStores(aSendNonAllocatingStores) {
     DBG_( Dev, ( << "Initializing QemuTracerManager."  ) );
     theNumCPUs = aNumCPUs;
@@ -598,8 +600,8 @@ private:
 			  , toL1D
 			  , toL1I
 			  , toNAW
-			  , theWhiteBoxDebug
-			  , theWhiteBoxPeriod
+//			  , theWhiteBoxDebug
+//			  , theWhiteBoxPeriod
 			  , theSendNonAllocatingStores
 			  );
       }
@@ -658,11 +660,11 @@ QemuTracerManager * QemuTracerManager::construct(int32_t aNumCPUs
     , boost::function< void(int, MemoryMessage &, uint32_t) > toL1I
     , boost::function< void(MemoryMessage &) > toDMA
     , boost::function< void(int, MemoryMessage &) > toNAW
-    , bool aWhiteBoxDebug
-    , int32_t aWhiteBoxPeriod
+//    , bool aWhiteBoxDebug
+//    , int32_t aWhiteBoxPeriod
     , bool aSendNonAllocatingStores
                                                     ) {
-  return new QemuTracerManagerImpl(aNumCPUs, toL1D, toL1I, toDMA, toNAW, aWhiteBoxDebug, aWhiteBoxPeriod, aSendNonAllocatingStores);
+  return new QemuTracerManagerImpl(aNumCPUs, toL1D, toL1I, toDMA, toNAW,/* aWhiteBoxDebug, aWhiteBoxPeriod,*/ aSendNonAllocatingStores);
 }
 extern "C"{ 
     void TraceMemHierOperate(

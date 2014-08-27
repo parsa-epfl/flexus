@@ -1096,7 +1096,8 @@ extern "C" {
 
 }
 
-#if 0
+//FIXME Possibly incorrect in some way, was commented
+//#if 0
 boost::intrusive_ptr<IterationTracker> BreakpointTracker::newIterationTracker() {
   return new IterationTrackerImpl();
 }
@@ -1122,6 +1123,6 @@ boost::intrusive_ptr<ConsoleStringTracker> BreakpointTracker::newConsoleStringTr
   return new ConsoleStringTrackerImpl();
 }
 
-#endif
+//#endif
 } //namespace nMagicBreak
 

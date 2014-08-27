@@ -28,8 +28,12 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/lambda/lambda.hpp>
 
-#include <core/flexus.hpp>
+//FIXME don't do this need to make sure CONFIG_QEMU is defined elsewhere
+#ifndef CONFIG_QEMU
+#define CONFIG_QEMU//should be set elsewhere
+#endif
 
+#include <core/flexus.hpp>
 #ifndef CONFIG_QEMU
 #include <core/simics/configuration_api.hpp>
 #include <core/simics/api_wrappers.hpp>
@@ -726,7 +730,7 @@ void FlexusImpl::terminateSimulation() {
 #ifndef CONFIG_QEMU
   Flexus::Simics::BreakSimulation("Simulation terminated by flexus.");
 #else
-	Flexus::Qemu::API::Qemu_break_simulation("Simulation terminated by flexus.");
+	Flexus::Qemu::API::QEMU_break_simulation("Simulation terminated by flexus.");
 #endif
 }
 
@@ -1041,8 +1045,9 @@ public:
   Flexus_Obj(FlexusImpl * anImpl) : base(anImpl) {}
 
   template <class Class>
-  static void defineClass(Class & aClass) {
-	aClass = aClass; // normally, command definitions would go here
+  static void defineClass(Class & aC) {
+//	aClass = aClass; // normally, command definitions would go here
+//Don't think above does anything
 	// in order to add commands to the QEMU command line to interface
 	// with Flexus. But we haven't gotten around to this yet, because
 	// we're awesome.
@@ -1071,7 +1076,7 @@ void CreateFlexusObject() {
 }
 
 void PrepareFlexusObject() {
-  theFlexusFactory = new FlexusFactory();
+    Core::theFlexusFactory = new FlexusFactory();
 }
 
 }

@@ -1,4 +1,4 @@
-
+//FIXME Removed WhiteBox (commented out) of all places used in the simulator
 
 
 #define FLEXUS_WIRING_FILE
@@ -9,19 +9,19 @@
 #include <core/simulator_name.hpp>
 namespace Flexus {
 //Simulator Name
-std::string theSimulatorName = "CMP.L2Shared.Trace v1.0";
+std::string theSimulatorName = "QEMUCMP.L2Shared.Trace v1.0";
 }
 
 
 #include FLEXUS_BEGIN_DECLARATION_SECTION()
 
-#include <components/DecoupledFeeder/DecoupledFeeder.hpp>
+#include <components/DecoupledFeederQEMU/DecoupledFeeder.hpp>
 #include <components/FastCache/FastCache.hpp>
 #include <components/FastCMPCache/FastCMPCache.hpp>
 #include <components/FastMemoryLoopback/FastMemoryLoopback.hpp>
-#include <components/MagicBreak/MagicBreak.hpp>
+#include <components/MagicBreakQEMU/MagicBreak.hpp>
 #include <components/BPWarm/BPWarm.hpp>
-#include <components/WhiteBox/WhiteBox.hpp>
+//#include <components/WhiteBox/WhiteBox.hpp>
 
 #include FLEXUS_END_DECLARATION_SECTION()
 
@@ -34,7 +34,7 @@ CREATE_CONFIGURATION( FastCMPCache, "L2", theL2Cfg );
 CREATE_CONFIGURATION( FastMemoryLoopback, "memory", theMemoryCfg );
 CREATE_CONFIGURATION( MagicBreak, "magic-break", theMagicBreakCfg );
 CREATE_CONFIGURATION( BPWarm, "bpwarm", theBPWarmCfg );
-CREATE_CONFIGURATION( WhiteBox, "white-box", theWhiteBoxCfg );
+//CREATE_CONFIGURATION( WhiteBox, "white-box", theWhiteBoxCfg );
 
 //You may optionally initialize configuration parameters from within this
 //function.  This initialization occur before the command line is processed,
@@ -47,7 +47,7 @@ bool initializeParameters() {
 
   theBPWarmCfg.Cores.initialize(getSystemWidth());
 
-  theFeederCfg.SimicsQuantum.initialize(100);
+//  theFeederCfg.SimicsQuantum.initialize(100);
   theFeederCfg.TrackIFetch.initialize(true);
   theFeederCfg.HousekeepingPeriod.initialize(1000);
   theFeederCfg.SystemTickFrequency.initialize(0.0);
@@ -120,7 +120,7 @@ FLEXUS_INSTANTIATE_COMPONENT_ARRAY( FastCache, theL1ICfg, theL1I, SCALE_WITH_SYS
 FLEXUS_INSTANTIATE_COMPONENT( FastCMPCache, theL2Cfg, theL2 );
 FLEXUS_INSTANTIATE_COMPONENT( FastMemoryLoopback, theMemoryCfg, theMemory );
 FLEXUS_INSTANTIATE_COMPONENT( MagicBreak, theMagicBreakCfg, theMagicBreak );
-FLEXUS_INSTANTIATE_COMPONENT( WhiteBox, theWhiteBoxCfg, theWhiteBox );
+//FLEXUS_INSTANTIATE_COMPONENT( WhiteBox, theWhiteBoxCfg, theWhiteBox );
 
 #include FLEXUS_END_COMPONENT_INSTANTIATION_SECTION()
 

@@ -14,7 +14,14 @@
 #include <core/boost_extensions/lexical_cast.hpp>
 
 #include <core/target.hpp>
+
+//FIXME need to make sure that CONFIG_QEMU actually works
+#ifndef CONFIG_QEMU
+#define Config_QEMU
+#endif
+#ifndef CONFIG_QEMU
 #include <core/simics/control_api.hpp>
+#endif
 
 #include <core/flexus.hpp>
 #include <core/stats.hpp>

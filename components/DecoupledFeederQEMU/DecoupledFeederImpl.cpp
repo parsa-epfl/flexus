@@ -40,8 +40,8 @@ public:
                 , boost::bind( &DecoupledFeederComponent::toL1I, this, _1, _2, _3)
                 , boost::bind( &DecoupledFeederComponent::toDMA, this, _1)
                 , boost::bind( &DecoupledFeederComponent::toNAW, this, _1, _2)
-                , cfg.WhiteBoxDebug
-                , cfg.WhiteBoxPeriod
+                //, cfg.WhiteBoxDebug
+                //, cfg.WhiteBoxPeriod
                 , cfg.SendNonAllocatingStores
 			  );
 
