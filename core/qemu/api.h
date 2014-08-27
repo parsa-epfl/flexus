@@ -389,7 +389,8 @@ typedef enum {
     QEMU_periodic_event,
     QEMU_xterm_break_string,
     QEMU_gfx_break_string,
-	QEMU_stc_miss,
+    QEMU_cpu_mem_trans,
+	QEMU_dma_mem_trans,
     QEMU_callback_event_count // MUST BE LAST.
 } QEMU_callback_event_t;
 
