@@ -65,9 +65,9 @@ extern int smp_cpus;
 struct conf_object {
 	void *object; // pointer to the struct in question
 	enum { // what kind of QEMU struct does it represent
-		QEMUCPUState, // add new types as necessary
-		QEMUAddressSpace,
-		QEMUNetworkDevice
+		QEMU_CPUState, // add new types as necessary
+		QEMU_AddressSpace,
+		QEMU_NetworkDevice
 	} type;
 };
 typedef struct conf_object conf_object_t;
