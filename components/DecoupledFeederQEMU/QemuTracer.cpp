@@ -117,8 +117,8 @@ class QemuTracerImpl {
   TracerStats * theUserStats;
   TracerStats * theOSStats;
   TracerStats * theBothStats;
-
   MemoryMessage theMemoryMessage;
+    public:
   boost::function< void(int, MemoryMessage &) > toL1D;
   boost::function< void(int, MemoryMessage &, uint32_t) > toL1I;
   boost::function< void(int, MemoryMessage &) > toNAW;
@@ -156,11 +156,9 @@ public:
  //   theWhiteBoxDebug = false;
  //   theWhiteBoxPeriod = aWhiteBoxPeriod;
     theSendNonAllocatingStores = aSendNonAllocatingStores;
-
     theUserStats = new TracerStats(boost::padded_string_cast < 2, '0' > (theIndex) + "-feeder-User:");
     theOSStats = new TracerStats(boost::padded_string_cast < 2, '0' > (theIndex) + "-feeder-OS:");
     theBothStats = new TracerStats(boost::padded_string_cast < 2, '0' > (theIndex) + "-feeder-");
-
 	API::conf_object_t *thePhysMemory = API::QEMU_get_phys_mem(theCPU);
     theTimingModels.insert(thePhysMemory);
 
@@ -169,7 +167,6 @@ public:
 #else
     thePhysIO = 0;
 #endif
-
   }
 
   void updateStats() {
@@ -211,9 +208,9 @@ public:
   API::cycles_t trace_mem_hier_operate(API::conf_object_t * space
 		  , API::memory_transaction_t * mem_trans
 		  ) {
-
+    //Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
+    //toL1D((int32_t) 0, msg); 
     const int32_t k_no_stall = 0;
-
 #if FLEXUS_TARGET_IS(x86) || FLEXUS_TARGET_IS(v9)
     if (mem_trans->io ) {
       //Count data accesses
@@ -231,7 +228,7 @@ public:
       return k_no_stall; //Not a memory operation
     }
 #endif
-
+   
 #if 0
 #if FLEXUS_TARGET_IS(v9)
     if (mem_trans->address_space == 0x71 ) {
@@ -250,7 +247,6 @@ public:
     }
 #endif
 #endif
-
     if (mem_trans->s.type == API::QEMU_Trans_Instr_Fetch) {
       return insn_fetch(mem_trans);
     }
@@ -304,6 +300,9 @@ public:
         IS_PRIV(mem_trans) ?  theOSStats->theRMWOps++ : theUserStats->theRMWOps++ ;
         theBothStats->theRMWOps++;
       } else {
+          //FIXME getting an error with swap, says the opcode is 7cc2, which means the first 2 bytes are all 0s
+          //this might not be possible in sparc.
+//        printf("LDD: %x, STD: %x, CAS: %x, RMW: %x\n", kLDD_mask, kSTD_mask, kRMW_mask, kCAS_mask);
         DBG_Assert( false, ( << "Unknown atomic operation. Opcode: " << std::hex << op_code << " pc: " << pc << std::dec ) );
       }
 #else
@@ -317,7 +316,11 @@ public:
       switch (mem_trans->s.type) {
         case API::QEMU_Trans_Load:
           theMemoryMessage.type() = MemoryMessage::LoadReq;
-          IS_PRIV(mem_trans) ?  theOSStats->theLoadOps++ : theUserStats->theLoadOps++ ;
+          if(IS_PRIV(mem_trans)){
+              theOSStats->theLoadOps++;
+          }else{
+              theUserStats->theLoadOps++ ;
+          }
           theBothStats->theLoadOps++;
           break;
         case API::QEMU_Trans_Store:
@@ -352,9 +355,8 @@ public:
       }
     }
 #endif
-
+    
     toL1D(theIndex, theMemoryMessage);
-
     return k_no_stall; //Never stalls
   }
 
@@ -453,7 +455,6 @@ public:
   {
 
     const int32_t k_no_stall = 0;
-
     //debugTransaction(mem_trans);
     if (API::QEMU_mem_op_is_write(&mem_trans->s)) {
       DBG_( Verb, ( << "DMA To Mem: " << std::hex << mem_trans->s.physical_address  << std::dec << " Size: " << mem_trans->s.size ) );
@@ -518,19 +519,19 @@ public:
     , toDMA(aToDMA)
     , toNAW(aToNAW)
   //  , theWhiteBoxDebug(aWhiteBoxDebug)
-  //  , theWhiteBoxPeriod(aWhiteBoxPeriod) 
+  //  , theWhiteBoxPeriod(aWhiteBoxPeriod)
     , theSendNonAllocatingStores(aSendNonAllocatingStores) {
     DBG_( Dev, ( << "Initializing QemuTracerManager."  ) );
     theNumCPUs = aNumCPUs;
 
     //Dump translation caches
     Qemu::API::QEMU_flush_all_caches();
-
+    
+    //Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
+    //toL1D((int32_t) 0, msg); 
     detectClientServer();
-
     createTracers();
     createDMATracer();
-
     DBG_( Dev, ( << "Done initializing QemuTracerManager."  ) );
   }
 
@@ -565,15 +566,18 @@ private:
 
     //Create QemuTracer Factory
     Qemu::Factory<QemuTracer> tracer_factory;
-    registerTimingInterface();
+    //registerTimingInterface();
+
 
     //Create QemuTracer Objects
+    //FIXME I believe this had been used incorrectly as the end point of the inner for loop.
+    //In the simics it was being used, but not sure why or how it works.
     const int32_t max_qemu_cpu_no = 384;
     for (
 			  int32_t ii = 0
 			, qemu_cpu_no = 0; ii < theNumCPUs ; ++ii
 			, ++qemu_cpu_no
-		) 
+		)
 	{
       std::string feeder_name("flexus-feeder");
       if (theNumCPUs > 1) {
@@ -582,9 +586,9 @@ private:
       theTracers[ii] = tracer_factory.create(feeder_name);
 
       API::conf_object_t * cpu = 0;
-      for ( ; qemu_cpu_no < max_qemu_cpu_no; qemu_cpu_no++) {
+      for ( ; qemu_cpu_no < theNumCPUs; qemu_cpu_no++) {
+          
 		cpu = API::QEMU_get_cpu_by_index(qemu_cpu_no);
-
         theTracers[ii]->init(
 			    cpu
 			  , ii
@@ -595,6 +599,11 @@ private:
 //			  , theWhiteBoxPeriod
 			  , theSendNonAllocatingStores
 			  );
+    //Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
+    //theTracers[0]->toL1D((int32_t) 0, msg); 
+    //Should not be here, need to also change the function
+    //    registerTimingInterface(&theTracers[ii]);
+    registerTimingInterface();
       }
 	}
   }
@@ -612,7 +621,7 @@ private:
 		theDMATracer->init(toDMA);
 	}
 
-  void registerTimingInterface() { 
+  void registerTimingInterface(/*QemuTracerImpl * p*/) { 
 	  // XXX: Pass addr of each individual tracer object depending on number 
 	  // of CPUs. Now need to revamp the callback interface to integrate 
 	  // conf_object_t, so that callbacks can be called per configuration
@@ -622,9 +631,17 @@ private:
 			    Flexus::Qemu::API::QEMU_trace_mem_hier
 			  , callback
 			  );*/
-	  API::QEMU_insert_callback(
+      //TODO figure out how to get the cpuNum
+      QemuTracer * p = (theTracers);
+      if(p){
+
+   // Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
+ //   (p[0])->toL1D((int32_t) 0, msg); 
+      }
+    //FIXME: I am not sure how best to pass the object to the callback function. This way could possibly cause problems with multiple cpus
+      API::QEMU_insert_callback(
 			    API::QEMU_cpu_mem_trans
-			  , ((void*) this)
+			  , ((void*) &(p[0]))
 			  , (void*)&TraceMemHierOperate
 			  );
   }
@@ -637,9 +654,11 @@ private:
 			    Flexus::Qemu::API::QEMU_trace_mem_hier
 			  , callback
 			  );*/
+    //FIXME: I am not sure how best to pass the object to the callback function. This way could possibly cause problems with multiple cpus
+      DMATracerImpl * p = new DMATracerImpl(0);
 	  API::QEMU_insert_callback(
 			    API::QEMU_dma_mem_trans
-			  , ((void*) &theDMATracer)
+			  , ((void*) &(p[0]))
 			  , (void*)&DMAMemHierOperate
 			  );
   }
@@ -665,15 +684,15 @@ extern "C"{
 			  )
 	{
 		static_cast<QemuTracerImpl*>(obj)->trace_mem_hier_operate(space, mem_trans);
-	}
+	};
     void DMAMemHierOperate(
 				void *obj
 			  , API::conf_object_t * space
 			  , API::memory_transaction_t * mem_trans
 			  )
 	{
-		static_cast<DMATracerImpl*>(obj)->dma_mem_hier_operate(space, mem_trans);
-	}
+		(static_cast<DMATracerImpl*>(obj))->dma_mem_hier_operate(space, mem_trans);
+	};
 }
 
 

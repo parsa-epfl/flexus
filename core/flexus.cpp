@@ -30,7 +30,7 @@
 
 //FIXME don't do this need to make sure CONFIG_QEMU is defined elsewhere
 #ifndef CONFIG_QEMU
-#define CONFIG_QEMU//should be set elsewhere
+//#define CONFIG_QEMU//should be set elsewhere
 #endif
 
 #include <core/flexus.hpp>
@@ -247,7 +247,6 @@ void FlexusImpl::initializeComponents() {
 }
 
 void FlexusImpl::advanceCycles(int64_t aCycleCount) {
-
   theCycleCount += aCycleCount;
   theCycleCountStat += aCycleCount;
 
@@ -1073,9 +1072,16 @@ void CreateFlexusObject() {
   if (!theFlexus) {
     DBG_Assert(false, ( << "Unable to create Flexus object in Simics"));
   }
+
+}
+
+//Might not be best.
+void initFlexus(){
+    theFlexus->initializeComponents();
 }
 
 void PrepareFlexusObject() {
+   
     Core::theFlexusFactory = new FlexusFactory();
 }
 

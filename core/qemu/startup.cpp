@@ -23,6 +23,7 @@ void Break() {
 }
 void CreateFlexusObject();
 void PrepareFlexusObject();
+void initFlexus();
 }
 
 namespace Qemu {
@@ -31,20 +32,28 @@ using namespace Flexus::Core;
 namespace Qemu = Flexus::Qemu;
 
 void CreateFlexus() {
+    std::cerr<<"start of createflexus!!!\n";
   CreateFlexusObject();
+  std::cerr<<"test\n\n";
   Flexus::Core::index_t systemWidth; // TODO: determine system width in QEMU
   QEMU_get_all_processors((int*)&systemWidth);
+  //printf("systemWidth: %d\n", systemWidth); 
   Flexus::Core::ComponentManager::getComponentManager()
 								.instantiateComponents(systemWidth);
+ 
   ConfigurationManager::getConfigurationManager()
 						.processCommandLineConfiguration(0, 0);
+   //not sure if this is correct or where it should be. 
+ std::cerr<<"systemWidth: " <<systemWidth << std::endl;
 }
 
 void PrepareFlexus() {
   PrepareFlexusObject();
   QEMU_insert_callback(QEMU_config_ready, NULL, (void*)&CreateFlexus);
 }
-
+extern "C" void flexus_init(void) {
+    initFlexus();
+}
 } //end namespace Core
 } //end namespace Flexus
 
@@ -62,6 +71,11 @@ void print_copyright() {
   cerr << "Flexus Simics simulator - Built as " << Flexus::theSimulatorName << endl << endl;
 }
 
+
+
+}
+extern "C" void flexInit(){
+    Flexus::Qemu::flexus_init();
 }
 
 extern "C" void qemuflex_init(void) {

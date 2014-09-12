@@ -20,8 +20,10 @@ namespace nDecoupledFeeder {
 
 using namespace Flexus;
 using namespace Flexus::Qemu;
-
-class FLEXUS_COMPONENT(DecoupledFeeder) {
+extern "C" {
+    void houseKeeping(void*,void*,void*);
+}
+ class FLEXUS_COMPONENT(DecoupledFeeder) {
   FLEXUS_COMPONENT_IMPL( DecoupledFeeder );
 
   //The Qemu objects (one for each processor) for getting trace data
@@ -44,6 +46,12 @@ public:
                 //, cfg.WhiteBoxPeriod
                 , cfg.SendNonAllocatingStores
 			  );
+    printf("Is the FLEXUS_COMPONENT_CONSTRUCTOR(DecoupledFeeder) run?\n");
+    size_t i;
+    Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
+//    DecoupledFeederComponent::toL1D((int32_t) 0, msg); 
+    
+  //  printf("toL1D %p\n", DecoupledFeederComponent::toL1D);
 
   }
 
@@ -56,7 +64,7 @@ public:
   void initialize(void) {
     //Disable cycle-callback
     //Flexus::Qemu::theQemuInterface->disableCycleHook();
-
+    printf("Decoupled feeder intialized? START...");
     //theTracer->setQemuQuantum(cfg.QemuQuantum);
     if (cfg.TrackIFetch) {
       theTracer->enableInstructionTracing();
@@ -76,12 +84,13 @@ public:
 
 	//TODO fix this with actual QEMU_insert_callback.
     //thePeriodicHap = new periodic_hap_t(this, cfg.HousekeepingPeriod);
+    Qemu::API::QEMU_insert_callback(Qemu::API::QEMU_periodic_event,(void*)this, (void*)&houseKeeping);
     theFlexus->advanceCycles(0);
-
     theCMPWidth = cfg.CMPWidth;
     if (theCMPWidth == 0) {
       theCMPWidth = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
     }
+    printf("Hello decouple feeder!\n");
   }
 
   void finalize(void) {}
@@ -89,6 +98,7 @@ public:
   std::pair< uint64_t, uint32_t> theFetchInfo;
 
   void toL1D(int32_t anIndex, MemoryMessage & aMessage) {
+  //  printf("toL1D interface entry!\n");
     FLEXUS_CHANNEL_ARRAY( ToL1D, anIndex ) << aMessage;
   }
 
@@ -109,6 +119,7 @@ public:
 
   void updateInstructionCounts() {
     //Count instructions
+    //FIXME Currently Does nothing since step_count ha not been implemented
     for (int32_t i = 0; i < theNumCPUs; ++i) {
 	  Qemu::API::conf_object_t *curr_cpu = Qemu::API::QEMU_get_cpu_by_index(i);
 	  int64_t temp = Qemu::API::QEMU_step_count(curr_cpu);
@@ -120,7 +131,7 @@ public:
   void doHousekeeping() {
     updateInstructionCounts();
     theTracer->updateStats();
-
+    
     theFlexus->advanceCycles(cfg.HousekeepingPeriod);
     theFlexus->invokeDrives();
   }
@@ -133,20 +144,34 @@ public:
   //periodic_hap_t * thePeriodicHap;
 
 };  // end class DecoupledFeeder
-
+extern "C" {
+void houseKeeping(void* obj, void * ign, void* ign2){
+    static_cast<DecoupledFeederComponent*>(obj)->doHousekeeping();
+}
+}
 }  // end Namespace nDecoupledFeeder
 
+//extern "C" {
+//void houseKeeping(void* obj, void * ign, void* ign2){
+//    printf("Is houseKeeping being run?  1\n");
+//        nDecoupledFeeder::houseKeep(obj);
+//}
+//}
 FLEXUS_COMPONENT_INSTANTIATOR( DecoupledFeeder, nDecoupledFeeder);
 FLEXUS_PORT_ARRAY_WIDTH( DecoupledFeeder, ToL1D ) {
-  return Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+  //  printf("DecoupldFeeder 1\n");
+    return Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 FLEXUS_PORT_ARRAY_WIDTH( DecoupledFeeder, ToL1I ) {
+ //   printf("DecoupldFeeder 2\n");
   return Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 FLEXUS_PORT_ARRAY_WIDTH( DecoupledFeeder, ToBPred ) {
+ //   printf("DecoupldFeeder 3\n");
   return Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 FLEXUS_PORT_ARRAY_WIDTH( DecoupledFeeder, ToNAW ) {
+ //   printf("DecoupldFeeder 4\n");
   return Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 

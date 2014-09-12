@@ -1,13 +1,19 @@
+/*
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 #include "api.h"
+#include "qom/cpu.h"
+#include "qemu/option.h"
+#include "qemu/config-file.h"
+#include "sysemu/cpus.h"
 #include <inttypes.h>
 
+extern int smp_cpus;
 
 //Functions I am not sure on(wasn't the last person to work on them)
 //The callback functions
+
 
 //Functions that I think do what they should, but are hard to test
 //QEMU_read_register
@@ -53,15 +59,22 @@ int QEMU_clear_exception(void)
 //Could cause problems in api.h, to fix just have it always
 //be __uint128_t
 #ifdef TARGET_I386//128bit for x86 because the xmm regs are 128 bits long.
-uint128_t QEMU_read_register(conf_object_t *cpu, int reg_index)
-#else
+__uint128_t QEMU_read_register(conf_object_t *cpu, int reg_index)
+#elif defined(TARGET_SPARC64)
 uint64_t QEMU_read_register(conf_object_t *cpu, int reg_index)
+#else
+#error "Architecture not supported for QEMUFLEX API."
 #endif
 {
 	REQUIRES(cpu->type == QEMUCPUState);
     CPUState * qemucpu = cpu->object;
 	return cpu_read_register(qemucpu, reg_index);
 }
+
+conf_object_t *QEMU_get_ethernet(void) {
+	return NULL;
+}
+
 //get the physical memory for a given cpu TODO: WHAT DOES THIS RETURN
 //Assuming it returns the AddressSpace of the cpu.
 conf_object_t *QEMU_get_phys_memory(conf_object_t *cpu){
@@ -94,7 +107,7 @@ uint64_t QEMU_read_phys_memory(conf_object_t *cpu,
 #ifdef TARGET_X86_64//little endian
 		t = (t | ((uint64_t)( buf[7-i] & 0x00000000000000ff))<<4*8);//read in the second word
 		t = (t | ((uint64_t)( buf[3-i] & 0x00000000000000ff)));//read in the first word
-#elif TARGET_SPARC64 //big endian(I think)
+#elif defined(TARGET_SPARC64) //big endian(I think)
 
 		t = (t | ((uint64_t)( buf[i+4] & 0x00000000000000ff)));//read in the second word
 		t = (t | ((uint64_t)( buf[i] & 0x00000000000000ff))<<4*8);//read in the first word
@@ -123,7 +136,15 @@ int QEMU_get_processor_number(conf_object_t *cpu){
 	return cpu_proc_num(env);
 }
 
+uint64_t QEMU_step_count(conf_object_t *cpu){
+    return 42;
+}
+conf_object_t * QEMU_get_phys_mem(conf_object_t *cpu){
+    return 0;
+} 
+void QEMU_flush_all_caches(){
 
+}
 conf_object_t *QEMU_get_all_processors(int *numCPUs)
 {
 	//ifdef CONFIG_SMP--doesn't work for some reason
@@ -256,7 +277,7 @@ void QEMU_break_simulation(const char * msg)
 
 // note: see QEMU_callback_table in api.h
 // should return a unique identifier to the callback struct
-int QEMU_insert_callback(QEMU_callback_event_t event, void* fn) 
+int QEMU_insert_callback(QEMU_callback_event_t event, void* obj, void* fn) 
 {
     //[???]use next_callback_id then update it
     //If there are multiple callback functions, we must chain them together.
@@ -270,15 +291,24 @@ int QEMU_insert_callback(QEMU_callback_event_t event, void* fn)
     //Also not sure if I should be using alloc here.
     QEMU_callback_container_t *containerNew = malloc(sizeof(QEMU_callback_container_t));
     if(container == NULL){
+        if(event==QEMU_dma_mem_trans){
+            if(!obj){
+                printf("error obj should not be null!\n");
+            }
+            printf("cpu_mem event inserted\n\n\n");
+        }
         //Simple case there is not a callback function for event 
         containerNew->id = QEMU_all_callbacks.next_callback_id;
         containerNew->callback = fn;
+		containerNew->obj = obj;
         containerNew->next = NULL;
         QEMU_all_callbacks.callbacks[event] = containerNew;
     }else{
+        printf("Error, currently there should be no events with multiple callbacks\n");
         //we need to add another callback to the chain
         containerNew->id = QEMU_all_callbacks.next_callback_id;
         containerNew->callback = fn;
+		containerNew->obj = obj;
         containerNew->next = NULL;
         //Now find the current last function in the callbacks list
         while(container->next!=NULL){
@@ -337,53 +367,107 @@ void QEMU_execute_callbacks(
 		, QEMU_callback_args_t *event_data
 		)
 {
-	dbg_printf("Executing callbacks for event %d\n", event);
+
+	printf("Executing callbacks for event %d\n", event);
 	QEMU_callback_container_t *curr = QEMU_all_callbacks.callbacks[event];
 	for (; curr != NULL; curr = curr->next) {
-		dbg_printf("Executing callback id %"PRId64"\n");
+		printf("Executing callback id %"PRId64"\n");
 		void *callback = curr->callback;
+		printf("Executing callback id %"PRId64"\n");
 		switch (event) {
 			// noc : class_data, conf_object_t
 			case QEMU_config_ready:
+ 		        (*(cb_func_void)callback)(
+							);
+               
+                break;
 			case QEMU_continuation:
 			case QEMU_asynchronous_trap:
 			case QEMU_exception_return:
 			case QEMU_magic_instruction:
-                //TODO:needs to be implemented for magicbreak
 			case QEMU_ethernet_network_frame:
 			case QEMU_ethernet_frame:
-                //TODO:needs to be implemented for magicbreak
 			case QEMU_periodic_event:
-				(*(cb_func_noc_t)callback)(
-						  event_data->noc->class_data
-						, event_data->noc->obj
-						);
+				if (!curr->obj)
+					(*(cb_func_noc_t)callback)(
+							  event_data->noc->class_data
+							, event_data->noc->obj
+							);
+				else
+					(*(cb_func_noc_t2)callback)(
+							  curr->obj
+							, event_data->noc->class_data
+							, event_data->noc->obj
+							);
+
 				break;
 			// nocIs : class_data, conf_object_t, int64_t, char*
 			case QEMU_simulation_stopped:
-				(*(cb_func_nocIs_t)callback)(
-						  event_data->nocIs->class_data
-						, event_data->nocIs->obj
-						, event_data->nocIs->bigint
-						, event_data->nocIs->string
-						);
+				if (!curr->obj)
+					(*(cb_func_nocIs_t)callback)(
+							  event_data->nocIs->class_data
+							, event_data->nocIs->obj
+							, event_data->nocIs->bigint
+							, event_data->nocIs->string
+							);
+				else
+					(*(cb_func_nocIs_t2)callback)(
+							  curr->obj
+							, event_data->nocIs->class_data
+							, event_data->nocIs->obj
+							, event_data->nocIs->bigint
+							, event_data->nocIs->string
+							);
+
 				break;
 			// nocs : class_data, conf_object_t, char*
 			case QEMU_xterm_break_string:
-                //TODO:needs to be implemented for magicbreak
 			case QEMU_gfx_break_string:
-				(*(cb_func_nocs_t)callback)(
-						  event_data->nocs->class_data
+				if (!curr->obj)
+					(*(cb_func_nocs_t)callback)(
+							  event_data->nocs->class_data
+							, event_data->nocs->obj
+							, event_data->nocs->string
+							);
+				else
+					(*(cb_func_nocs_t2)callback)(
+						  curr->obj
+						, event_data->nocs->class_data
 						, event_data->nocs->obj
 						, event_data->nocs->string
 						);
+
 				break;
-			// ncm : conf_object_t, generic_transaction_t
-			case QEMU_stc_miss:
-				(*(cb_func_ncm_t)callback)(
-						  event_data->ncm->space
-						, event_data->ncm->trans
-						);
+			// ncm : conf_object_t, memory_transaction_t
+			case QEMU_cpu_mem_trans:
+                printf("is this run\n");
+                if (!curr->obj)
+					(*(cb_func_ncm_t)callback)(
+							  event_data->ncm->space
+							, event_data->ncm->trans
+							);
+				else
+					(*(cb_func_ncm_t2)callback)(
+							  curr->obj
+							, event_data->ncm->space
+							, event_data->ncm->trans
+							);
+
+				break;
+
+			case QEMU_dma_mem_trans:
+				if (!curr->obj)
+					(*(cb_func_ncm_t)callback)(
+							  event_data->ncm->space
+							, event_data->ncm->trans
+							);
+				else
+					(*(cb_func_ncm_t2)callback)(
+							  curr->obj
+							, event_data->ncm->space
+							, event_data->ncm->trans
+							);
+
 				break;
 			default:
 				dbg_printf("Event not found...\n");
@@ -395,3 +479,4 @@ void QEMU_execute_callbacks(
 #ifdef __cplusplus
 }
 #endif
+*/

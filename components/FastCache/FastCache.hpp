@@ -30,7 +30,7 @@ COMPONENT_PARAMETERS(
 
   PARAMETER( SkewBlockSet, bool, "skew block set indices based on rt way", "skew_block_set", false )
 
-  PARAMETER( Protocol, std::string, "Name of the coherence protocol (InclusiveMOESI)", "protocol", "InclusiveMOESI" )
+  PARAMETER( Protocol, std::string, "Name of the coherence protocol (InclusiveMESI)", "protocol", "InclusiveMESI" )
 
   PARAMETER( UsingTraces, bool, "References are coming from traces (allow certain inconsistancies", "using_traces", true )
 

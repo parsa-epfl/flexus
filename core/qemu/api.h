@@ -386,6 +386,7 @@ typedef enum {
     QEMU_exception_return,
     QEMU_magic_instruction,
     QEMU_ethernet_frame,
+    QEMU_ethernet_network_frame, 
     QEMU_periodic_event,
     QEMU_xterm_break_string,
     QEMU_gfx_break_string,
