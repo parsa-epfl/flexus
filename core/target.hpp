@@ -8,7 +8,16 @@
 #define CAT_D(x,y) x##y
 
 #ifdef TARGET_PLATFORM
-#include CAT(FLEXUS_TARGET_ID_,TARGET_PLATFORM)()
+
+#if TARGET_PLATFORM == x86
+#include <core/targets/x86.hpp>
+#elif TARGET_PLATFORM == v9
+#include <core/targets/v9.hpp>
+#else
+#error "No correct platform specified"
+#endif
+
+//#include CAT(FLEXUS_TARGET_ID_,TARGET_PLATFORM)()
 #else
 #error "TARGET_PLATFORM was not passed in from the make command line"
 #endif

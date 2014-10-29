@@ -1,4 +1,4 @@
-#ifdef FLEXUS_TARGET
+#if defined(FLEXUS_TARGET) && (FLEXUS_TARGET == 0)
 #error "Only a single target may be defined in a simulator"
 #endif //FLEXUS_TARGET
 

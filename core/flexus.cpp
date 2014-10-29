@@ -30,7 +30,7 @@
 
 //FIXME don't do this need to make sure CONFIG_QEMU is defined elsewhere
 #ifndef CONFIG_QEMU
-//#define CONFIG_QEMU//should be set elsewhere
+#define CONFIG_QEMU//should be set elsewhere
 #endif
 
 #include <core/flexus.hpp>
