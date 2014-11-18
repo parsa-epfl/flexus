@@ -140,6 +140,7 @@ typedef enum {
 } ini_type_t;
 
 struct generic_transaction {
+        CPUState *cpu_state;// state of the CPU source of the transaction
 	conf_object_t *ini_ptr; // note: for efficiency, arrange struct from
 	char *real_address;     // largest datatype to smallest to avoid
 	uint64_t bytes;         // unnecessary padding.
@@ -276,6 +277,19 @@ int QEMU_get_processor_number(conf_object_t *cpu);
 
 // how many instructions have been executed since the start of QEMU for a CPU
 uint64_t QEMU_step_count(conf_object_t *cpu);
+
+// return an array of all processorsthe totalt number of processors
+// (numSockets * numCores * numthreads CPUs)
+int QEMU_get_num_cpus(void);
+
+// return the number of sockets on he motherboard
+int QEMU_get_num_sockets(void);
+
+// returns the number of cores per CPU socket
+int QEMU_get_num_cores(void);
+
+// return the number of native threads per core
+int QEMU_get_num_threads_per_core(void);
 
 // return an array of all processors
 conf_object_t *QEMU_get_all_processors(int *numCPUs);

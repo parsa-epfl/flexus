@@ -2,6 +2,9 @@
 
 #include <set>
 
+// For debug only
+#include <iostream>
+
 #include <core/boost_extensions/padded_string_cast.hpp>
 
 #include <core/types.hpp>
@@ -203,6 +206,11 @@ public:
     toL1I(theIndex, theMemoryMessage, opcode);
 
     return k_no_stall; //Never stalls
+  }
+
+  bool isTransactionForMe( API::memory_transaction_t * mem_trans ) {
+    API::CPUState * transCPUState = reinterpret_cast<API::CPUState*>(mem_trans->s.cpu_state);
+    return API::QEMU_get_processor_number(theCPU) == API::cpu_proc_num(transCPUState);
   }
 
   API::cycles_t trace_mem_hier_operate(API::conf_object_t * space
@@ -523,6 +531,7 @@ public:
     , theSendNonAllocatingStores(aSendNonAllocatingStores) {
     DBG_( Dev, ( << "Initializing QemuTracerManager."  ) );
     theNumCPUs = aNumCPUs;
+    std::cout<<"Detected number of CPUs : "<<theNumCPUs<<std::endl;
 
     //Dump translation caches
     Qemu::API::QEMU_flush_all_caches();
@@ -556,6 +565,31 @@ public:
   void enableInstructionTracing() {
   }
 
+  void DispatchTraceMemHierOperate(
+			   API::conf_object_t * space,
+                           API::memory_transaction_t * mem_trans ) {
+    bool found = false;
+    for( int i = 0; i < theNumCPUs; i++ ) {
+      QemuTracerImpl * tracer = &theTracers[i];
+      if( tracer->isTransactionForMe( mem_trans ) ) {
+        tracer->trace_mem_hier_operate(space, mem_trans );
+	if( i != 0 )
+	  std::cout<<"Mem trans sent to CPU "<<i<<std::endl;
+        found = true;
+        break;//found dedicated tracer
+      }
+    }
+
+    if(!found) {
+      std::cout<<"Mem trans not correctly dispatched"<<std::endl;
+
+      API::CPUState* memTransCPUState = mem_trans->s.cpu_state;
+      std::cout<<"Mem trans cpu index: "<<API::cpu_proc_num(memTransCPUState)<<std::endl;
+      
+      delete ((int*)42);
+    }
+  }
+
 private:
   void detectClientServer() {
     theClientServer = false;
@@ -572,23 +606,14 @@ private:
     //Create QemuTracer Objects
     //FIXME I believe this had been used incorrectly as the end point of the inner for loop.
     //In the simics it was being used, but not sure why or how it works.
-    const int32_t max_qemu_cpu_no = 384;
-    for (
-			  int32_t ii = 0
-			, qemu_cpu_no = 0; ii < theNumCPUs ; ++ii
-			, ++qemu_cpu_no
-		)
-	{
+    for ( int32_t ii = 0; ii < theNumCPUs ; ++ii ) {
       std::string feeder_name("flexus-feeder");
       if (theNumCPUs > 1) {
         feeder_name += '-' + boost::padded_string_cast < 2, '0' > (ii);
       }
       theTracers[ii] = tracer_factory.create(feeder_name);
 
-      API::conf_object_t * cpu = 0;
-      for ( ; qemu_cpu_no < theNumCPUs; qemu_cpu_no++) {
-          
-		cpu = API::QEMU_get_cpu_by_index(qemu_cpu_no);
+      API::conf_object_t * cpu = API::QEMU_get_cpu_by_index(ii);
         theTracers[ii]->init(
 			    cpu
 			  , ii
@@ -599,13 +624,12 @@ private:
 //			  , theWhiteBoxPeriod
 			  , theSendNonAllocatingStores
 			  );
+    }
     //Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
     //theTracers[0]->toL1D((int32_t) 0, msg); 
     //Should not be here, need to also change the function
     //    registerTimingInterface(&theTracers[ii]);
     registerTimingInterface();
-      }
-	}
   }
 
 	void createDMATracer(void) {
@@ -640,9 +664,9 @@ private:
       }
     //FIXME: I am not sure how best to pass the object to the callback function. This way could possibly cause problems with multiple cpus
       API::QEMU_insert_callback(
-			    API::QEMU_cpu_mem_trans
-			  , ((void*) &(p[0]))
-			  , (void*)&TraceMemHierOperate
+				API::QEMU_cpu_mem_trans,
+                                reinterpret_cast<void*>(this),
+			        reinterpret_cast<void*>(&TraceMemHierOperate)
 			  );
   }
 
@@ -683,7 +707,8 @@ extern "C"{
 			  , API::memory_transaction_t * mem_trans
 			  )
 	{
-		static_cast<QemuTracerImpl*>(obj)->trace_mem_hier_operate(space, mem_trans);
+          QemuTracerManagerImpl* manager = static_cast<QemuTracerManagerImpl*>(obj);
+	  manager->DispatchTraceMemHierOperate(space, mem_trans);
 	};
     void DMAMemHierOperate(
 				void *obj

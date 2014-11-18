@@ -37,6 +37,7 @@ public:
   FLEXUS_COMPONENT_CONSTRUCTOR(DecoupledFeeder)
     : base( FLEXUS_PASS_CONSTRUCTOR_ARGS ) {
     theNumCPUs = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+
     theTracer = QemuTracerManager::construct(theNumCPUs
                 , boost::bind( &DecoupledFeederComponent::toL1D, this, _1, _2)
                 , boost::bind( &DecoupledFeederComponent::toL1I, this, _1, _2, _3)
@@ -88,7 +89,7 @@ public:
     theFlexus->advanceCycles(0);
     theCMPWidth = cfg.CMPWidth;
     if (theCMPWidth == 0) {
-      theCMPWidth = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+      theCMPWidth = Qemu::QPI::QEMU_get_num_threads_per_core();
     }
     printf("Hello decouple feeder!\n");
   }

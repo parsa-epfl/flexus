@@ -15,6 +15,9 @@ extern "C" {
 #include <core/qemu/api.h>
 }
 
+// For debug purposes
+#include <iostream>
+
 namespace Flexus {
 
 namespace Core {
@@ -32,12 +35,12 @@ using namespace Flexus::Core;
 namespace Qemu = Flexus::Qemu;
 
 void CreateFlexus() {
-    std::cerr<<"start of createflexus!!!\n";
   CreateFlexusObject();
-  std::cerr<<"test\n\n";
-  Flexus::Core::index_t systemWidth; // TODO: determine system width in QEMU
+
+  // TODO: check that if what we want is sockets * cores * threads per core
+  // or sockets*cores
+  Flexus::Core::index_t systemWidth;
   QEMU_get_all_processors((int*)&systemWidth);
-  //printf("systemWidth: %d\n", systemWidth); 
   Flexus::Core::ComponentManager::getComponentManager()
 								.instantiateComponents(systemWidth);
  
