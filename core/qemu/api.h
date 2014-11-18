@@ -291,6 +291,15 @@ int QEMU_get_num_cores(void);
 // return the number of native threads per core
 int QEMU_get_num_threads_per_core(void);
 
+// return the id of the socket of the processor
+int QEMU_cpu_get_socket_id(conf_object_t *cpu);
+
+// return the core id of the processor
+int QEMU_cpu_get_core_id(conf_object_t *cpu);
+
+// return the hread id of the processor
+int QEMU_cpu_get_thread_id(conf_object_t *cpu);
+
 // return an array of all processors
 conf_object_t *QEMU_get_all_processors(int *numCPUs);
 // set the frequency of a given cpu.

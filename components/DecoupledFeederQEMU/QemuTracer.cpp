@@ -707,6 +707,7 @@ extern "C"{
 			  , API::memory_transaction_t * mem_trans
 			  )
 	{
+	  // Thread safe as is, no need to add muteces
           QemuTracerManagerImpl* manager = static_cast<QemuTracerManagerImpl*>(obj);
 	  manager->DispatchTraceMemHierOperate(space, mem_trans);
 	};

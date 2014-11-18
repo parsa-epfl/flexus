@@ -89,7 +89,7 @@ public:
     theFlexus->advanceCycles(0);
     theCMPWidth = cfg.CMPWidth;
     if (theCMPWidth == 0) {
-      theCMPWidth = Qemu::QPI::QEMU_get_num_threads_per_core();
+      theCMPWidth = Qemu::API::QEMU_get_num_cores();
     }
     printf("Hello decouple feeder!\n");
   }

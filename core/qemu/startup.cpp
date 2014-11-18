@@ -37,10 +37,8 @@ namespace Qemu = Flexus::Qemu;
 void CreateFlexus() {
   CreateFlexusObject();
 
-  // TODO: check that if what we want is sockets * cores * threads per core
-  // or sockets*cores
-  Flexus::Core::index_t systemWidth;
-  QEMU_get_all_processors((int*)&systemWidth);
+  // No CMT support, just CMP
+  Flexus::Core::index_t systemWidth = QEMU_get_num_cpus();
   Flexus::Core::ComponentManager::getComponentManager()
 								.instantiateComponents(systemWidth);
  

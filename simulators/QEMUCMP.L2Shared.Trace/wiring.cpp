@@ -48,6 +48,7 @@ bool initializeParameters() {
   theBPWarmCfg.Cores.initialize(getSystemWidth());
 
 //  theFeederCfg.SimicsQuantum.initialize(100);
+  theFeederCfg.CMPWidth.initialize( getSystemWidth() );
   theFeederCfg.TrackIFetch.initialize(true);
   theFeederCfg.HousekeepingPeriod.initialize(1000);
   theFeederCfg.SystemTickFrequency.initialize(0.0);
@@ -75,6 +76,7 @@ bool initializeParameters() {
   theL1ICfg.NotifyReads.initialize(false);
   theL1ICfg.NotifyWrites.initialize(false);
 
+  theL2Cfg.CMPWidth.initialize( getSystemWidth() );
   theL2Cfg.Size.initialize(8 * M);
   theL2Cfg.Associativity.initialize(8);
   theL2Cfg.BlockSize.initialize(64);
