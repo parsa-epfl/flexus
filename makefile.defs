@@ -50,13 +50,13 @@ SIMICS_V9_INCLUDE=$(SIMICS_INCLUDE)/simics
 SIMICS_X86_INCLUDE=$(SIMICS_INCLUDE)/simics
 
 # FIXME user has to update manually
-QEMU_LIB_DIR=/home/underwoo/qemuflex/qemu-2.0.0/sparc64-softmmu/
-QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-sparc64
-#QEMU_LIB_DIR=/home/salha/qemuflex/qemu-2.0.0/sparc64-softmmu/
-#QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-sparc64-softmmu
+#QEMU_LIB_DIR=/home/hillouli/Documents/qemuflex/qemu-2.0.0/sparc64-softmmu/
+#QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-sparc64
+QEMU_LIB_DIR=/home/hillouli/Documents/qemuflex/qemu-2.0.0/x86_64-softmmu/
+QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-x86_64
 
 INCLUDES=-isystem $(BOOST_INCLUDE) -isystem $(SIMICS_INCLUDE) $(QEMU_INCLUDE) -I$(FLEXUS_INCLUDE) -Ibooksim -Ibooksim/arbiters -Ibooksim/allocators -Ibooksim/routers -Ibooksim/networks -IDRAMSim2
-BOOST_LIBRARIES=-Wl,--no-whole-archive -lboost_date_time -lboost_regex -lboost_serialization -lboost_iostreams -lz
+BOOST_LIBRARIES=-Wl,--no-whole-archive -lboost_date_time -lboost_regex -lboost_serialization -lboost_iostreams -L/home/hillouli/Documents/qemuflex/flexus/stat-manager -lz
 
 # other constants
 # List of "special" cpp files in components that are not part of a components library
@@ -76,8 +76,8 @@ ARCH_FLAGS=-DX86_64
 else
 ARCH_FLAGS=
 endif
-GCC_CFLAGS=-c $(GCC_OPTFLAGS) $(GCC_LANGFLAGS) $(ARCH_FLAGS)
-GCC_LFLAGS=-Wl,--whole-archive
+GCC_CFLAGS=-c $(GCC_OPTFLAGS) $(GCC_LANGFLAGS) $(ARCH_FLAGS) -fPIC
+GCC_LFLAGS=-Wl,--whole-archive -fPIC
 GCC_SIMICS_LFLAGS=-shared -export-dynamic -Wl,--whole-archive
 GCC_DEPFLAGS=-M
 
