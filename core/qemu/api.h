@@ -419,7 +419,6 @@ typedef enum {
 } QEMU_callback_event_t;
 
 struct QEMU_callback_container {
-        int cpu_id;
 	uint64_t id;
 	void *obj;
 	void *callback;
@@ -431,8 +430,16 @@ struct QEMU_callback_table {
 	uint64_t next_callback_id;
 	QEMU_callback_container_t *callbacks[QEMU_callback_event_count];
 };
+typedef struct QEMU_callback_table QEMU_callback_table_t;
 
 #define QEMUFLEX_GENERIC_CALLBACK -1
+
+// Initialize the callback tables for every processor
+// Must be called at QEMU startup, before initializing Flexus
+void QEMU_setup_callback_tables();
+// Free the allocated memory for the callback tables
+void QEMU_free_callback_tables();
+
 // insert a callback specific for the given cpu or -1 for a generic callback
 int QEMU_insert_callback( int cpu_id, QEMU_callback_event_t event, void* obj, void* fun);
 // delete a callback specific for the given cpu or -1 for a generic callback

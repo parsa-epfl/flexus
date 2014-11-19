@@ -99,7 +99,7 @@ extern "C" void qemuflex_init(void) {
   DBG_(Iface, ( << "Flexus Initialized." ));
 }
 
-extern "C" void qemuflex_fini(void) {
+extern "C" void qemuflex_quit(void) {
   //Theoretically, we would delete Flexus here, but Qemu currently does not call this function.
   // delete theFlexusFactory;
 }
