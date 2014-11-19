@@ -50,7 +50,7 @@ void CreateFlexus() {
 
 void PrepareFlexus() {
   PrepareFlexusObject();
-  QEMU_insert_callback(QEMU_config_ready, NULL, (void*)&CreateFlexus);
+  QEMU_insert_callback(QEMUFLEX_GENERIC_CALLBACK, QEMU_config_ready, NULL, (void*)&CreateFlexus);
 }
 extern "C" void flexus_init(void) {
     initFlexus();

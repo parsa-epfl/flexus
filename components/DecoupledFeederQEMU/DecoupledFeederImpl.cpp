@@ -85,7 +85,7 @@ public:
 
 	//TODO fix this with actual QEMU_insert_callback.
     //thePeriodicHap = new periodic_hap_t(this, cfg.HousekeepingPeriod);
-    Qemu::API::QEMU_insert_callback(Qemu::API::QEMU_periodic_event,(void*)this, (void*)&houseKeeping);
+    Qemu::API::QEMU_insert_callback(QEMUFLEX_GENERIC_CALLBACK, Qemu::API::QEMU_periodic_event,(void*)this, (void*)&houseKeeping);
     theFlexus->advanceCycles(0);
     theCMPWidth = cfg.CMPWidth;
     if (theCMPWidth == 0) {

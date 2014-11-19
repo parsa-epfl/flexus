@@ -419,6 +419,7 @@ typedef enum {
 } QEMU_callback_event_t;
 
 struct QEMU_callback_container {
+        int cpu_id;
 	uint64_t id;
 	void *obj;
 	void *callback;
@@ -431,12 +432,16 @@ struct QEMU_callback_table {
 	QEMU_callback_container_t *callbacks[QEMU_callback_event_count];
 };
 
-int QEMU_insert_callback(QEMU_callback_event_t event, void *obj, void* fun);
-void QEMU_delete_callback(QEMU_callback_event_t event, uint64_t callback_id); //[???]format might be a bit off
-
+#define QEMUFLEX_GENERIC_CALLBACK -1
+// insert a callback specific for the given cpu or -1 for a generic callback
+int QEMU_insert_callback( int cpu_id, QEMU_callback_event_t event, void* obj, void* fun);
+// delete a callback specific for the given cpu or -1 for a generic callback
+void QEMU_delete_callback( int cpu_id, QEMU_callback_event_t event, uint64_t callback_id);
+// execute a callback trigered by the given cpu id or -1 for a generic callback
 void QEMU_execute_callbacks(
-		  QEMU_callback_event_t event
-		, QEMU_callback_args_t *event_data
+		  int cpu_id,
+		  QEMU_callback_event_t event,
+		  QEMU_callback_args_t *event_data
 		);
 
 #endif

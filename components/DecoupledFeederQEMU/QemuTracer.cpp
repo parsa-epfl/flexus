@@ -208,14 +208,14 @@ public:
     return k_no_stall; //Never stalls
   }
 
-  bool isTransactionForMe( API::memory_transaction_t * mem_trans ) {
-    API::CPUState * transCPUState = reinterpret_cast<API::CPUState*>(mem_trans->s.cpu_state);
-    return API::QEMU_get_processor_number(theCPU) == API::cpu_proc_num(transCPUState);
-  }
-
-  API::cycles_t trace_mem_hier_operate(API::conf_object_t * space
-		  , API::memory_transaction_t * mem_trans
-		  ) {
+  API::cycles_t trace_mem_hier_operate(
+				       API::conf_object_t * space,
+				       API::memory_transaction_t * mem_trans ) {
+    API::CPUState * cs = mem_trans->s.cpu_state;
+    int csn = cpu_proc_num(cs);
+    int mn = API::QEMU_get_processor_number(theCPU);
+    if(csn != mn || mn != 0)
+      std::cout<<"Mem trans ["<<mn<<"] "<<csn<<std::endl;
     //Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
     //toL1D((int32_t) 0, msg); 
     const int32_t k_no_stall = 0;
@@ -565,31 +565,6 @@ public:
   void enableInstructionTracing() {
   }
 
-  void DispatchTraceMemHierOperate(
-			   API::conf_object_t * space,
-                           API::memory_transaction_t * mem_trans ) {
-    bool found = false;
-    for( int i = 0; i < theNumCPUs; i++ ) {
-      QemuTracerImpl * tracer = &theTracers[i];
-      if( tracer->isTransactionForMe( mem_trans ) ) {
-        tracer->trace_mem_hier_operate(space, mem_trans );
-	if( i != 0 )
-	  std::cout<<"Mem trans sent to CPU "<<i<<std::endl;
-        found = true;
-        break;//found dedicated tracer
-      }
-    }
-
-    if(!found) {
-      std::cout<<"Mem trans not correctly dispatched"<<std::endl;
-
-      API::CPUState* memTransCPUState = mem_trans->s.cpu_state;
-      std::cout<<"Mem trans cpu index: "<<API::cpu_proc_num(memTransCPUState)<<std::endl;
-      
-      delete ((int*)42);
-    }
-  }
-
 private:
   void detectClientServer() {
     theClientServer = false;
@@ -663,11 +638,15 @@ private:
  //   (p[0])->toL1D((int32_t) 0, msg); 
       }
     //FIXME: I am not sure how best to pass the object to the callback function. This way could possibly cause problems with multiple cpus
-      API::QEMU_insert_callback(
-				API::QEMU_cpu_mem_trans,
-                                reinterpret_cast<void*>(this),
-			        reinterpret_cast<void*>(&TraceMemHierOperate)
-			  );
+      for(int i = 0; i < theNumCPUs; i++ ){
+        API::conf_object_t * cpu = API::QEMU_get_cpu_by_index(i);
+	API::QEMU_insert_callback(
+				  API::QEMU_get_processor_number(cpu),
+				  API::QEMU_cpu_mem_trans,
+				  reinterpret_cast<void*>(theTracers+i),
+				  reinterpret_cast<void*>(&TraceMemHierOperate)
+				  );
+      }
   }
 
   void registerDMAInterface() {
@@ -681,6 +660,7 @@ private:
     //FIXME: I am not sure how best to pass the object to the callback function. This way could possibly cause problems with multiple cpus
       DMATracerImpl * p = new DMATracerImpl(0);
 	  API::QEMU_insert_callback(
+			    QEMUFLEX_GENERIC_CALLBACK,
 			    API::QEMU_dma_mem_trans
 			  , ((void*) &(p[0]))
 			  , (void*)&DMAMemHierOperate
@@ -708,8 +688,8 @@ extern "C"{
 			  )
 	{
 	  // Thread safe as is, no need to add muteces
-          QemuTracerManagerImpl* manager = static_cast<QemuTracerManagerImpl*>(obj);
-	  manager->DispatchTraceMemHierOperate(space, mem_trans);
+          QemuTracer* tracer = reinterpret_cast<QemuTracer*>(obj);
+	  (*tracer)->trace_mem_hier_operate(space, mem_trans);
 	};
     void DMAMemHierOperate(
 				void *obj

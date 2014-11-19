@@ -137,11 +137,12 @@ public:
   }
   void enable() {
    // theMagicBreakpointHap.reset(new on_magic_break_t(this));
-   Qemu::API::QEMU_insert_callback(
-		    Qemu::API::QEMU_magic_instruction
-		  , (void*) this
-		  , (void*)&IterationTrackerMagicBreakpoint
-		  );
+    Qemu::API::QEMU_insert_callback(
+				    QEMUFLEX_GENERIC_CALLBACK,
+				    Qemu::API::QEMU_magic_instruction,
+				    (void*) this,
+				    (void*)&IterationTrackerMagicBreakpoint
+				    );
 
 
     int32_t iter = 0;
@@ -406,10 +407,11 @@ public:
   
     //not sure it goes here
     Qemu::API::QEMU_insert_callback(
-		    Qemu::API::QEMU_magic_instruction
-		  , (void*) this
-		  , (void*)&TransactionTrackerMagicBreakpoint
-		  );
+				    QEMUFLEX_GENERIC_CALLBACK,
+				    Qemu::API::QEMU_magic_instruction,
+				    (void*) this,
+				    (void*)&TransactionTrackerMagicBreakpoint
+				    );
 
 
   }
@@ -450,10 +452,11 @@ public:
     : theMagicBreakpoint(aBreakpoint)
   {
   Qemu::API::QEMU_insert_callback(
-		    Qemu::API::QEMU_magic_instruction
-		  , (void*) this
-		  , (void *)&BreakpointTrackerMagicBreakpoint
-		  );
+				  QEMUFLEX_GENERIC_CALLBACK,
+				  Qemu::API::QEMU_magic_instruction,
+				  (void*) this,
+				  (void *)&BreakpointTrackerMagicBreakpoint
+				  );
 
 
   }
@@ -487,11 +490,12 @@ public:
     , theStopBreakpoint(1)
   {
       //I think goes here? Possibly it should go in enable()
-      Qemu::API::QEMU_insert_callback(
-		    Qemu::API::QEMU_magic_instruction
-		  , (void*) this
-		  , (void *) &RegressionTrackerMagicBreakpoint
-		  );
+    Qemu::API::QEMU_insert_callback(
+				    QEMUFLEX_GENERIC_CALLBACK,
+				    Qemu::API::QEMU_magic_instruction,
+				    (void*) this,
+				    (void *) &RegressionTrackerMagicBreakpoint
+				    );
   }
 
   void enable() {
@@ -865,11 +869,12 @@ class SimPrintHandlerImpl : public SimPrintHandler {
 
 public:
   SimPrintHandlerImpl() {
-	Qemu::API::QEMU_insert_callback(
-		    Qemu::API::QEMU_magic_instruction
-		  , (void*) this
-		  , (void *) &SimPrintHandlerMagicBreakpoint
-		  );
+    Qemu::API::QEMU_insert_callback(
+				    QEMUFLEX_GENERIC_CALLBACK,
+				    Qemu::API::QEMU_magic_instruction,
+				    (void*) this,
+				    (void *) &SimPrintHandlerMagicBreakpoint
+				    );
 
   }
 };
@@ -976,11 +981,12 @@ public:
     theNetwork = Qemu::API::QEMU_get_ethernet();
     if (theNetwork != 0) {
 		//Qemu::API::QEMU_insert_callback(Qemu::API::QEMU_ethernet_frame, &this->OnPacket);
-          Qemu::API::QEMU_insert_callback(
-		    Qemu::API::QEMU_ethernet_frame
-		  , (void*) this
-		  , (void*) &PacketTrackerEthernetFrame
-		  );
+      Qemu::API::QEMU_insert_callback(
+				      QEMUFLEX_GENERIC_CALLBACK,
+				      Qemu::API::QEMU_ethernet_frame,
+				      (void*) this,
+				      (void*) &PacketTrackerEthernetFrame
+				      );
     }
   }
 
@@ -1018,11 +1024,12 @@ public:
 
   ConsoleStringTrackerImpl()
   {
-      Qemu::API::QEMU_insert_callback(
-		    Qemu::API::QEMU_xterm_break_string
-		  , (void*) this
-		  , (void*)&ConsoleStringTrackerXTermString
-		  );
+    Qemu::API::QEMU_insert_callback(
+				    QEMUFLEX_GENERIC_CALLBACK,
+				    Qemu::API::QEMU_xterm_break_string,
+				    (void*) this,
+				    (void*)&ConsoleStringTrackerXTermString
+				    );
   }
 
 };
