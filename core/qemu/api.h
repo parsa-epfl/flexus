@@ -24,10 +24,6 @@ typedef int exception_type_t;
 
 
 // not defined in api.c, defined in external binaries (exec.o, libqemuutil.a)
-struct CPUX86State;
-typedef struct CPUX86State CPUX86State;
-typedef CPUX86State CPUArchState;
-struct CPUState;
 typedef struct CPUState CPUState;
 
 struct QemuOptsList;
@@ -47,18 +43,12 @@ QemuOptsList *qemu_find_opts(const char *group);
 uint64_t qemu_opt_get_number(QemuOpts *opts, const char *name, 
 		uint64_t defval);
 
-#ifdef TARGET_I386
-__uint128_t cpu_read_register(CPUState *env_ptr, int reg_index);
-#else
-uint64_t cpu_read_register(CPUState *cpu, int reg_index);
-#endif
-physical_address_t mmu_logical_to_physical(CPUState *cs, logical_address_t va);
-uint64_t cpu_get_program_counter(CPUState *cs);
-void* cpu_get_address_space(CPUState *cs);
-int cpu_proc_num(CPUState *cs);
+void cpu_read_register(void *env_ptr, int reg_index, unsigned *reg_size, void *data_out);
+physical_address_t mmu_logical_to_physical(void *cs, logical_address_t va);
+uint64_t cpu_get_program_counter(void *cs);
+void* cpu_get_address_space(void *cs);
+int cpu_proc_num(void *cs);
 void cpu_pop_indexes(int *indexes);
-
-extern int smp_cpus;
 
 // things for api.c:
 
@@ -140,7 +130,7 @@ typedef enum {
 } ini_type_t;
 
 struct generic_transaction {
-        CPUState *cpu_state;// state of the CPU source of the transaction
+        void *cpu_state;// (CPUState*) state of the CPU source of the transaction
 	conf_object_t *ini_ptr; // note: for efficiency, arrange struct from
 	char *real_address;     // largest datatype to smallest to avoid
 	uint64_t bytes;         // unnecessary padding.
@@ -225,23 +215,26 @@ typedef enum {
 	QEMU_CPU_Mode_Hypervisor
 } processor_mode_t;
 
-struct memory_transaction {
-	generic_transaction_t s;
-
-#if FLEXUS_TARGET == FLEXUS_TARGET_v9
+typedef struct memory_transaction_sparc_specific {
 	unsigned int cache_virtual:1;
 	unsigned int cache_physical:1;
 	unsigned int priv:1;
-	unsigned int io:1;
 	uint8_t	     address_space;
 	uint8_t        prefetch_fcn;
-#elif FLEXUS_TARGET == FLEXUS_TARGET_x86
-	processor_mode_t mode;
-	unsigned int io:1;
-#endif
+} memory_transaction_sparc_specific_t;
 
-};
-typedef struct memory_transaction memory_transaction_t;
+typedef struct memory_transaction_i386_specific {
+  processor_mode_t mode;
+} memory_transaction_i386_specific_t;
+
+typedef struct memory_transaction {
+  generic_transaction_t s;
+  unsigned int io:1;
+  union{
+    memory_transaction_sparc_specific_t sparc_specific;
+    memory_transaction_i386_specific_t i386_specific;
+  };
+} memory_transaction_t;
 
 typedef enum {
 	QEMU_DI_Instruction,
@@ -252,14 +245,13 @@ typedef enum {
 int QEMU_clear_exception(void);
 
 // read an arbitrary register.
-//TODO: This might cause problems.
-//to fix just have it always be __uint128_t.
-
-#ifdef TARGET_I386//128bit for x86 because the xmm regs are 128 bits long.
-__uint128_t QEMU_read_register(conf_object_t *cpu, int reg_index);
-#else
-uint64_t QEMU_read_register(conf_object_t *cpu, int reg_index);
-#endif
+// query the content/size of a register
+// if reg_size != NULL, write the size of the register (in bytes) in reg_size
+// if data_out != NULL, write the content of the register in data_out
+void QEMU_read_register(conf_object_t *cpu,
+			int reg_index,
+			unsigned *reg_size,
+			void *data_out);
 
 // read an arbitrary physical memory address.
 uint64_t QEMU_read_phys_memory(conf_object_t *cpu, 
@@ -271,7 +263,6 @@ conf_object_t *QEMU_get_ethernet(void);
 // return a conf_object_t of the cpu in question.
 conf_object_t *QEMU_get_cpu_by_index(int index);
 
-//TODO
 // return an int specifying the processor number of the cpu.
 int QEMU_get_processor_number(conf_object_t *cpu);
 
@@ -436,9 +427,9 @@ typedef struct QEMU_callback_table QEMU_callback_table_t;
 
 // Initialize the callback tables for every processor
 // Must be called at QEMU startup, before initializing Flexus
-void QEMU_setup_callback_tables();
+void QEMU_setup_callback_tables(void);
 // Free the allocated memory for the callback tables
-void QEMU_free_callback_tables();
+void QEMU_free_callback_tables(void);
 
 // insert a callback specific for the given cpu or -1 for a generic callback
 int QEMU_insert_callback( int cpu_id, QEMU_callback_event_t event, void* obj, void* fun);

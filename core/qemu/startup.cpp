@@ -37,7 +37,6 @@ namespace Qemu = Flexus::Qemu;
 void CreateFlexus() {
   CreateFlexusObject();
 
-  // No CMT support, just CMP
   Flexus::Core::index_t systemWidth = QEMU_get_num_cpus();
   Flexus::Core::ComponentManager::getComponentManager()
 								.instantiateComponents(systemWidth);

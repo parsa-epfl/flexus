@@ -579,8 +579,16 @@ char readVAddr2(Qemu::API::conf_object_t *cpu, VirtualMemoryAddress anAddr, int 
             ,size);
 }
 
+// FIXME: make a proper x86 variant
 uint64_t readG(Qemu::API::conf_object_t *cpu, int reg){
-    return Qemu::API::QEMU_read_register(cpu, reg);
+#if FLEXUS_TARGET_IS(v9)
+  uint64_t reg_content;
+  Qemu::API::QEMU_read_register(cpu, reg, NULL, &reg_content);
+#elif FLEXUS_TARGET_IS(x86)
+  __uint128_t reg_content;
+  Qemu::API::QEMU_read_register(cpu, reg, NULL, &reg_content);
+#endif
+  return uint64_t(reg_content);
 }
 class SimPrintHandlerImpl : public SimPrintHandler {
 

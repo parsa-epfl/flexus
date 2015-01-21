@@ -105,9 +105,9 @@ struct TracerStats {
 };
 
 #if FLEXUS_TARGET_IS(v9)
-#define IS_PRIV(mem_trans) (mem_trans->priv)
+#define IS_PRIV(mem_trans) (mem_trans->sparc_specific.priv)
 #else //!FLEXUS_TARGET_IS(v9)
-#define IS_PRIV(mem_trans) (mem_trans->mode == API::QEMU_CPU_Mode_Supervisor)
+#define IS_PRIV(mem_trans) (mem_trans->i386_specific.mode == API::QEMU_CPU_Mode_Supervisor)
 #endif //FLEXUS_TARGET_IS(v9)
 
 class QemuTracerImpl {
@@ -187,7 +187,15 @@ public:
 		VirtualMemoryAddress( mem_trans->s.logical_address );
     theMemoryMessage.type() = MemoryMessage::FetchReq;
     theMemoryMessage.priv() = IS_PRIV(mem_trans);
-    theMemoryMessage.tl() = API::QEMU_read_register(theCPU, 46 /* kTL */);
+#if FLEXUS_TARGET_IS(v9)
+    uint64_t reg_content;
+    API::QEMU_read_register(theCPU, 46 /* kTL */, NULL, &reg_content );
+#elif FLEXUS_TARGET_IS(x86)
+    //FIXME : not correct for x86
+    __uint128_t reg_content;
+    API::QEMU_read_register(theCPU, 46 /* kTL */, NULL, &reg_content );
+#endif
+    theMemoryMessage.tl() = reg_content;
     uint32_t opcode = 
 		API::QEMU_read_phys_memory(theCPU, mem_trans->s.physical_address, 4);
 
@@ -204,18 +212,15 @@ public:
 				<< theMemoryMessage) 
 			);
     toL1I(theIndex, theMemoryMessage, opcode);
-
+    //std::cout<<"index : "<<theIndex<<std::endl;
     return k_no_stall; //Never stalls
   }
 
   API::cycles_t trace_mem_hier_operate(
 				       API::conf_object_t * space,
 				       API::memory_transaction_t * mem_trans ) {
-    API::CPUState * cs = mem_trans->s.cpu_state;
-    int csn = cpu_proc_num(cs);
+    API::CPUState * cs = reinterpret_cast<API::CPUState*>(mem_trans->s.cpu_state);
     int mn = API::QEMU_get_processor_number(theCPU);
-    if(csn != mn || mn != 0)
-      std::cout<<"Mem trans ["<<mn<<"] "<<csn<<std::endl;
     //Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
     //toL1D((int32_t) 0, msg); 
     const int32_t k_no_stall = 0;
@@ -365,6 +370,9 @@ public:
 #endif
     
     toL1D(theIndex, theMemoryMessage);
+    if( theIndex != 0){
+      //std::cout<<"index : "<<theIndex<<std::endl;
+    }
     return k_no_stall; //Never stalls
   }
 
@@ -582,6 +590,7 @@ private:
     //FIXME I believe this had been used incorrectly as the end point of the inner for loop.
     //In the simics it was being used, but not sure why or how it works.
     for ( int32_t ii = 0; ii < theNumCPUs ; ++ii ) {
+      std::cout<<"i: "<<ii<<std::endl;
       std::string feeder_name("flexus-feeder");
       if (theNumCPUs > 1) {
         feeder_name += '-' + boost::padded_string_cast < 2, '0' > (ii);
