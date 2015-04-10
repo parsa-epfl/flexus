@@ -20,7 +20,7 @@ BOOST_REGEX_FILES =  c_regex_traits cpp_regex_traits regex_traits_defaults \
 BOOST_REGEX_SOURCES = $(addsuffix .cpp, $(BOOST_REGEX_FILES))
 
 BOOST_SERIALIZATION_PATH = $(BOOST_INCLUDE)/libs/serialization/src
-BOOST_SERIALIZATION_FILES =      basic_archive basic_archive_impl basic_iarchive \
+BOOST_SERIALIZATION_FILES = archive_exception basic_binary_iprimitive basic_binary_oprimitive basic_archive basic_iarchive \
 	basic_iserializer basic_oarchive basic_oserializer basic_pointer_iserializer \
 	basic_pointer_oserializer basic_serializer_map basic_text_iprimitive \
 	basic_text_oprimitive binary_iarchive  binary_oarchive codecvt_null \
@@ -54,7 +54,7 @@ qemu: depend core
 test: depend core
 	$(MAKE) -f makefile.$(SELECTED_CC) test $(BUILD_OPTIONS) SOURCES="$(TEST_SOURCES)"
 
-core: depend iostreams
+core: depend boost_libs
 	$(MAKE) -f makefile.$(SELECTED_CC) libcore_$(VARIANT).a $(BUILD_OPTIONS) SOURCES="$(CORE_LIB_SOURCES)"
 
 date_time: depend
@@ -69,6 +69,12 @@ serialization: depend regex
 iostreams: depend serialization
 	$(MAKE) -f makefile.$(SELECTED_CC) libboost_iostreams.a $(BUILD_OPTIONS)  BOOST_SRC_DIR="$(BOOST_IOSTREAMS_PATH)" SOURCES="$(BOOST_IOSTREAMS_SOURCES)"
 
+boost_libs:
+	mkdir -p lib
+	cd $(BOOST_INCLUDE) && \
+	./bootstrap.sh --with-libraries=date_time,regex,serialization,iostreams && \
+	echo "Building Boost Libraries: date_time regex serialization iostreams" && \
+	./b2 --stagedir=$(FLEXUS_ROOT)/core variant=release link=static stage
 
 clean:
 	echo "Cleaning core"

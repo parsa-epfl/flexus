@@ -46,6 +46,11 @@ public:
     currRecvCount = currSendCount = 0;
   }
 
+//NEED TO CHECK THIS!!!
+  void finalize() override {
+
+  }
+
   // Ports
   bool available(interface::DRequestFromCore const &) {
     return sendQueue.size() < cfg.SendCapacity;

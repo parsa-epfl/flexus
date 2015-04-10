@@ -14,8 +14,8 @@
 
 #include <core/performance/profile.hpp>
 
-#include <boost/lambda/lambda.hpp>
-#include <boost/bind.hpp>
+//#include <boost/lambda/lambda.hpp>
+//#include <boost/bind.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <ext/hash_map>
 
@@ -368,7 +368,7 @@ public:
     bool dir_valid;
 
     // Perform directory lookup
-    boost::tie(sharers, state, dir_entry, dir_valid) = theDirectory->snoopLookup(0, addr, aMessage.type());
+    std::tie(sharers, state, dir_entry, dir_valid) = theDirectory->snoopLookup(0, addr, aMessage.type());
 
     // Perform cache lookup
     lookup = theCache->lookup(addr);
@@ -480,7 +480,7 @@ private:
     std::list<boost::function<void(void)> > extra_actions;
 
     // Perform directory lookup
-    boost::tie(sharers, state, dir_entry) = theDirectory->lookup(anIndex, addr, aMessage.type(), extra_actions);
+    std::tie(sharers, state, dir_entry) = theDirectory->lookup(anIndex, addr, aMessage.type(), extra_actions);
 
     // TODO: check if we need to remap cur_location
 

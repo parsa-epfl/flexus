@@ -19,8 +19,7 @@ int32_t  msSerial = 0;
 
 MessageStateList * allocMessageStateList ( void )
 {
-  MessageStateList 
-    * newNode;
+  MessageStateList *newNode;
 
   if ( mslFreeList == NULL ) {
     int
@@ -67,7 +66,7 @@ bool freeMessageStateList ( MessageStateList * msgl )
   assert ( msgl->usageCount == 0 );
 #endif
 
-  msgl->msg = (MessageState*)msgl->msg->serial;
+  msgl->msg = (MessageState*)(intptr_t)msgl->msg->serial;
   //  msgl->msg   = NULL;
   msgl->prev  = NULL;
   msgl->next  = mslFreeList;

@@ -35,7 +35,7 @@ ProtocolMessage::ProtocolMessage(tAddress anAddress, tVC aVC, Protocol::Protocol
   , theTracker(aTracker)
 {}
 
-std::ostream & operator<<(std::ostream & anOstream, const ProtocolMessage::ProtocolMessage & aPacket) {
+std::ostream & operator<<(std::ostream & anOstream, const ProtocolMessage & aPacket) {
   anOstream << "VC" << aPacket.VC();
   if (aPacket.isLocal()) {
     anOstream << " local";

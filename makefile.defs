@@ -5,13 +5,13 @@
 # environment
 
 # GCC Compiler Settings
-GCC_PATH=/home/parsacom/tools/gcc
+GCC_PATH=/home/psaropou/toolchains
 GCC_BINARY=g++
 GCC_VERSION_NOCHECK=true
 SIMICS_GLIBC_NOCHECK=true
 
-# Boost 1.33.1 path
-BOOST_PATH=/home/parsacom/tools/boost_1_33_1
+# Boost 1.57.0 path
+BOOST_PATH=/home/psaropou/flexus_game/boost_1_57_0
 
 # Simics path
 SIMICS_PATH=/home/parsacom/tools/simics
@@ -55,7 +55,7 @@ SIMICS_X86_INCLUDE=$(SIMICS_INCLUDE)/simics
 QEMU_LIB_DIR=/home/hillouli/Documents/qemuflex/qemu-2.0.0/x86_64-softmmu/
 QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-x86_64
 
-INCLUDES=-isystem $(BOOST_INCLUDE) -isystem $(SIMICS_INCLUDE) $(QEMU_INCLUDE) -I$(FLEXUS_INCLUDE) -Ibooksim -Ibooksim/arbiters -Ibooksim/allocators -Ibooksim/routers -Ibooksim/networks -IDRAMSim2
+INCLUDES=-isystem $(BOOST_INCLUDE) -isystem $(SIMICS_INCLUDE) $(QEMU_INCLUDE) -I$(FLEXUS_INCLUDE) -Ibooksim -Ibooksim/arbiters -Ibooksim/allocators -Ibooksim/routers -Ibooksim/networks -IDRAMSim2 
 BOOST_LIBRARIES=-Wl,--no-whole-archive -lboost_date_time -lboost_regex -lboost_serialization -lboost_iostreams -L/home/hillouli/Documents/qemuflex/flexus/stat-manager -lz
 
 # other constants
@@ -67,10 +67,10 @@ CORE_SIMICS=core_simics
 SPECIAL_COMPONENT_CPPS = test.cpp
 
 # Compiler settings
-GCC=$(GCC_PATH)/bin/$(GCC_BINARY)
+GCC=$(GCC_PATH)/bin/$(GCC_BINARY) -std=c++14
 GCC_LIB_PATH=$(GCC_PATH)/lib
 GCC_OPTFLAGS=-O3 -funroll-loops -fno-strict-aliasing
-GCC_LANGFLAGS=-Wall -fmessage-length=160 -x c++ -fPIC -Werror -Wno-unused -DNO_STORAGE
+GCC_LANGFLAGS=-Wall -fmessage-length=160 -x c++ -fPIC -Werror -Wno-unused -Wno-write-strings -Wno-deprecated -DNO_STORAGE
 ifeq "$(SIMICS_ARCH)" "amd64-linux"
 ARCH_FLAGS=-DX86_64
 else

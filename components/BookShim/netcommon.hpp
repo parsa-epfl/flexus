@@ -96,7 +96,7 @@ namespace nNetShim
                    int32_t flexusInFastMode_
                    ) :
       srcNode    ( srcNode_ ),
-      destNode   ( destNode ),
+      destNode   ( destNode_ ),
       priority   ( priority_ ),
       networkVC  ( 0 ),
       nextHop    ( -1 ),

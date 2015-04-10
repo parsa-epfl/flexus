@@ -500,7 +500,7 @@ void ChaosRouter::_NextInterestingChannel( )
 
 void ChaosRouter::_OutputAdvance( )
 {
-  Flit *f, *f2;
+  Flit *f = nullptr, *f2 = nullptr;
   Credit *c;
   bool advanced;
   int  mq;

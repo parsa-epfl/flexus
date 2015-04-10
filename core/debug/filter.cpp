@@ -1,7 +1,4 @@
-#include <algorithm>
-
-#include <boost/lambda/bind.hpp>
-#include <boost/lambda/construct.hpp>
+//#include <algorithm>
 
 #include <core/boost_extensions/lexical_cast.hpp>
 
@@ -12,15 +9,14 @@
 
 namespace Flexus {
 namespace Dbg {
-using boost::lambda::_1;
-using boost::lambda::bind;
-using boost::lambda::var;
-using boost::lambda::delete_ptr;
 
 typedef Filter::MatchResult MatchResult;
 
 void CompoundFilter::destruct() {
-  std::for_each(theFilters.begin(), theFilters.end(), bind( delete_ptr(), _1)); //Clean up all pointers owned by theActions
+  for(auto filter: theFilters){
+    delete filter;
+  }
+  //std::for_each(theFilters.begin(), theFilters.end(), bind( delete_ptr(), _1)); //Clean up all pointers owned by theActions
 }
 
 //Returns Exclude if any filter returns exclude.
@@ -43,7 +39,10 @@ MatchResult CompoundFilter::match(Entry const & anEntry) {
 }
 
 void CompoundFilter::printConfiguration(std::ostream & anOstream, std::string const & anIndent) {
-  std::for_each(theFilters.begin(), theFilters.end(), bind(&Filter::printConfiguration, _1, var(anOstream), anIndent) );
+  for(auto filter: theFilters){
+    filter->printConfiguration(anOstream, anIndent);
+  }
+  //std::for_each(theFilters.begin(), theFilters.end(), bind(&Filter::printConfiguration, _1, var(anOstream), anIndent) );
 };
 
 void CompoundFilter::add(Filter * aFilter) {
@@ -68,7 +67,10 @@ void IncludeFilter::printConfiguration(std::ostream & anOstream, std::string con
   if (iter != theFilters.end()) {
     (*iter)->printConfiguration(anOstream, anIndent + "+ ");
     ++iter;
-    std::for_each(iter, theFilters.end(), bind(&Filter::printConfiguration, _1, var(anOstream), anIndent + "& ") );
+    for(auto filter: theFilters){
+      filter->printConfiguration(anOstream, anIndent + "& ");
+    }
+    //std::for_each(iter, theFilters.end(), bind(&Filter::printConfiguration, _1, var(anOstream), anIndent + "& ") );
   }
   anOstream << anIndent << ";\n";
 };
@@ -93,7 +95,10 @@ void ExcludeFilter::printConfiguration(std::ostream & anOstream, std::string con
   if (iter != theFilters.end()) {
     (*iter)->printConfiguration(anOstream, anIndent + "- ");
     ++iter;
-    std::for_each(iter, theFilters.end(), bind(&Filter::printConfiguration, _1, var(anOstream), anIndent + "& ") );
+    for(auto filter: theFilters){
+      filter->printConfiguration(anOstream, anIndent + "& ");
+    }
+    //std::for_each(iter, theFilters.end(), bind(&Filter::printConfiguration, _1, var(anOstream), anIndent + "& ") );
   }
   anOstream << anIndent << ";\n";
 };

@@ -101,7 +101,7 @@ public:
 
   SimpleDirectoryState & operator=(uint64_t s) {
     for (int32_t i = 0; i < theNumSharers; i++, s >>= 1) {
-      theSharers[i] = ((s & 1 == 1) ? true : false);
+      theSharers[i] = (((s & 1) == 1) ? true : false);
     }
     return *this;
   }
@@ -124,7 +124,7 @@ public:
 
   SimpleDirectoryState & operator|=(uint64_t s) {
     for (int32_t i = 0; i < theNumSharers; i++, s >>= 1) {
-      theSharers[i] = theSharers[i] || ((s & 1 == 1) ? true : false);
+      theSharers[i] = theSharers[i] || (((s & 1) == 1) ? true : false);
    }
     return *this;
   }

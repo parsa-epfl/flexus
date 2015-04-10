@@ -3,9 +3,9 @@
 
 #define PHOENIX_LIMIT 6
 
-#include <boost/spirit/phoenix/functions.hpp>
-#include <boost/spirit/phoenix/casts.hpp>
-#include <boost/spirit/phoenix/binders.hpp>
+#include <boost/spirit/include/phoenix1_functions.hpp>
+#include <boost/spirit/include/phoenix1_casts.hpp>
+#include <boost/spirit/include/phoenix1_binders.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
 
 namespace phoenix {

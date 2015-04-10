@@ -232,7 +232,7 @@ u_int SIM_logtwo(LIB_Type_max_uint x)
 	u_int rval = 0;
 
 	while (x >> rval && rval < sizeof(LIB_Type_max_uint) << 3) rval++;
-	if (x == (BIGONE << rval - 1)) rval--;
+	if (x == (BIGONE << (rval - 1))) rval--;
 
 	return rval;
 }

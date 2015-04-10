@@ -9,8 +9,6 @@
 #include <components/FastCMPCache/BlockDirectoryEntry.hpp>
 #include <ext/hash_map>
 
-#include <boost/tuple/tuple.hpp>
-
 #include <list>
 
 #include <components/Common/Util.hpp>
@@ -162,7 +160,7 @@ public:
     // Also need to change replacement policy
   }
 
-  virtual boost::tuple<SharingVector, SharingState, AbstractEntry_p>
+  virtual std::tuple<SharingVector, SharingState, AbstractEntry_p>
   lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<boost::function<void(void)> > &xtra_actions) {
 
     StandardDirectoryEntry * entry = findOrCreateEntry(address, !MemoryMessage::isEvictType(req_type));
@@ -175,10 +173,10 @@ public:
 
     BlockEntryWrapper_p wrapper(new BlockEntryWrapper(*entry));
 
-    return boost::tie(entry->sharers(), entry->state(), wrapper);
+    return std::make_tuple(entry->sharers(), entry->state(), wrapper);
   }
 
-  virtual boost::tuple<SharingVector, SharingState, AbstractEntry_p, bool>
+  virtual std::tuple<SharingVector, SharingState, AbstractEntry_p, bool>
   snoopLookup(int32_t index, PhysicalMemoryAddress address, MMType req_type) {
 
     StandardDirectoryEntry * entry = findOrCreateEntry(address, false);
@@ -190,12 +188,12 @@ public:
       SharingState state = ZeroSharers;
       BlockEntryWrapper_p wrapper;
       valid = false;
-      return boost::tie(sharers, state, wrapper, valid);
+      return std::make_tuple(sharers, state, wrapper, valid);
     }
 
     BlockEntryWrapper_p wrapper(new BlockEntryWrapper(*entry));
 
-    return boost::tie(entry->sharers(), entry->state(), wrapper, valid);
+    return std::make_tuple(entry->sharers(), entry->state(), wrapper, valid);
   }
   void saveState( std::ostream & s, const std::string & aDirName ) {
     boost::archive::binary_oarchive oa(s);

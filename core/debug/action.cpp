@@ -6,12 +6,7 @@
 #include <map>
 #include <set>
 
-#include <boost/lambda/bind.hpp>
-#include <boost/lambda/construct.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/optional.hpp>
-#include <core/boost_extensions/lexical_cast.hpp>
 
 #include <core/target.hpp>
 
@@ -25,15 +20,6 @@
 
 #include <core/flexus.hpp>
 #include <core/stats.hpp>
-
-namespace Flexus {
-namespace Dbg {
-using boost::lambda::_1;
-using boost::lambda::bind;
-using boost::lambda::var;
-using boost::lambda::delete_ptr;
-}
-}
 
 #include <core/boost_extensions/circular_buffer.hpp>
 
@@ -49,18 +35,27 @@ void Break();
 namespace Dbg {
 
 void CompoundAction::printConfiguration(std::ostream & anOstream, std::string const & anIndent) {
-  std::for_each(theActions.begin(), theActions.end(), bind(&Action::printConfiguration, _1, var(anOstream), anIndent) );
+  for(auto action: theActions){
+    action->printConfiguration(anOstream, anIndent);
+  }
+  //std::for_each(theActions.begin(), theActions.end(), bind(&Action::printConfiguration, _1, var(anOstream), anIndent) );
 }
 
 void CompoundAction::process(Entry const & anEntry) {
-  std::for_each(theActions.begin(), theActions.end(), bind(&Action::process, _1, anEntry));
+  for(auto action: theActions){
+    action->process(anEntry);
+  }
+  //std::for_each(theActions.begin(), theActions.end(), bind(&Action::process, _1, anEntry));
 }
 
 CompoundAction::~CompoundAction() {
-  std::for_each(theActions.begin(), theActions.end(), boost::lambda::delete_ptr()); //Clean up all pointers owned by theActions
+  for(auto action: theActions){
+    delete action;
+  }
+  //std::for_each(theActions.begin(), theActions.end(), boost::lambda::delete_ptr()); //Clean up all pointers owned by theActions
 }
 
-void CompoundAction::add(std::auto_ptr<Action> anAction) {
+void CompoundAction::add(std::unique_ptr<Action> anAction) {
   theActions.push_back(anAction.release()); //Ownership assumed by theActions
 }
 
@@ -100,7 +95,7 @@ public:
 };
 
 //The StreamManager instance
-boost::scoped_ptr<StreamManager> theStreamManager;
+std::unique_ptr<StreamManager> theStreamManager;
 
 //StreamManager accessor
 inline StreamManager & streamManager() {

@@ -25,11 +25,11 @@ public:
   virtual void printConfiguration(std::ostream & anOstream, std::string const & anIndent);
   virtual void process(Entry const & anEntry);
   virtual ~CompoundAction();
-  void add(std::auto_ptr<Action> anAction);
+  void add(std::unique_ptr<Action> anAction);
 };
 
 class ConsoleLogAction : public Action {
-  std::auto_ptr<Format> theFormat;
+  std::unique_ptr<Format> theFormat;
 public:
   ConsoleLogAction(Format * aFormat)
     : theFormat(aFormat)
@@ -41,7 +41,7 @@ public:
 class FileLogAction : public Action {
   std::string theFilename;
   std::ostream & theOstream;
-  std::auto_ptr<Format> theFormat;
+  std::unique_ptr<Format> theFormat;
 public:
   FileLogAction(std::string aFilename, Format * aFormat);
   virtual void printConfiguration(std::ostream & anOstream, std::string const & anIndent);
@@ -85,7 +85,7 @@ class FileSpillAction : public Action {
   std::string theBufferName;
   std::string theFilename;
   std::ostream & theOstream;
-  std::auto_ptr<Format> theFormat;
+  std::unique_ptr<Format> theFormat;
 public:
   FileSpillAction(std::string const & aBufferName, std::string const & aFilename, Format * aFormat);
   virtual void printConfiguration(std::ostream & anOstream, std::string const & anIndent);
@@ -94,7 +94,7 @@ public:
 
 class ConsoleSpillAction : public Action {
   std::string theBufferName;
-  std::auto_ptr<Format> theFormat;
+  std::unique_ptr<Format> theFormat;
 public:
   ConsoleSpillAction(std::string const & aBufferName, Format * aFormat);
   virtual void printConfiguration(std::ostream & anOstream, std::string const & anIndent);

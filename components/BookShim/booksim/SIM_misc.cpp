@@ -242,9 +242,9 @@ LIB_Type_max_uint SIM_bus_state(SIM_bus_t *bus, LIB_Type_max_uint old_data, LIB_
 
 				while (bus->data_width > done_width) {
 					if (SIM_Hamming(old_state & mask_bus, new_data & mask_data, mask_bus) > bus->grp_width / 2)
-						new_state += (~(new_data & mask_data) & mask_bus) << done_width + done_width / bus->grp_width;
+						new_state += (~(new_data & mask_data) & mask_bus) << (done_width + done_width / bus->grp_width);
 					else
-						new_state += (new_data & mask_data) << done_width + done_width / bus->grp_width;
+						new_state += (new_data & mask_data) << (done_width + done_width / bus->grp_width);
 
 					done_width += bus->grp_width;
 					old_state >>= bus->grp_width + 1;

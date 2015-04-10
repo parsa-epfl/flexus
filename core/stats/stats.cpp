@@ -15,7 +15,7 @@
 #include <boost/regex.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
-#include <boost/spirit/iterator/file_iterator.hpp>
+#include <boost/spirit/include/classic_file_iterator.hpp>
 #include <boost/optional.hpp>
 
 #include <boost/iostreams/filtering_stream.hpp>
@@ -870,11 +870,11 @@ public:
     if (matches.size() == 0) {
       std::cout << "No measurement matches " << aMeasurementSpec << std::endl;
     } else {
-      boost::spirit::file_iterator<> first(aFile.c_str());
+      boost::spirit::classic::file_iterator<> first(aFile.c_str());
 
       if (first) {
-        boost::spirit::file_iterator<> last = first.make_end();
-        StatFormatter< boost::spirit::file_iterator<> > formatter(matches, anOstream);
+        boost::spirit::classic::file_iterator<> last = first.make_end();
+        StatFormatter< boost::spirit::classic::file_iterator<> > formatter(matches, anOstream);
         formatter.format(first, last);
 
       } else {
@@ -942,7 +942,7 @@ public:
     if (matches.size() == 0) {
       std::cout << "No measurement matches " << aMeasurementSpec << std::endl;
     } else {
-      boost::spirit::file_iterator<> first(aFile.c_str());
+      boost::spirit::classic::file_iterator<> first(aFile.c_str());
 
       if (first) {
         std::string collapsedMeasurementName("Collapsed");
@@ -950,8 +950,8 @@ public:
         boost::intrusive_ptr<Measurement> collapsedMeasurement( doReduce(eSum, collapsedMeasurementName, matches) );
         toCollapse[collapsedMeasurementName] = collapsedMeasurement.get();
 
-        boost::spirit::file_iterator<> last = first.make_end();
-        StatFormatter< boost::spirit::file_iterator<> > formatter(toCollapse, anOstream);
+        boost::spirit::classic::file_iterator<> last = first.make_end();
+        StatFormatter< boost::spirit::classic::file_iterator<> > formatter(toCollapse, anOstream);
         formatter.format(first, last);
 
       } else {
