@@ -26,6 +26,10 @@ module_id.v9.icc_o: $(SIMICS_V9_INCLUDE)/module_id.c
 	$(ECHO) "$(ICC) $(ICC_MODID_CFLAGS) -I$(SIMICS_V9_INCLUDE) -DMODNAME="\"MOD:flexus-$(SIMULATOR)-$(TARGET_PLATFORM)-$(SELECTED_CC)\"" -DCLASSES=\"CLS:Flexus\" $(SIMICS_V9_INCLUDE)/module_id.c -o $@"
 	$(ICC) $(ICC_MODID_CFLAGS) -I$(SIMICS_V9_INCLUDE) -DMODNAME="\"MOD:flexus-$(SIMULATOR)-$(TARGET_PLATFORM)-$(SELECTED_CC)\"" -DCLASSES=\"CLS:Flexus\" $(SIMICS_V9_INCLUDE)/module_id.c -o $@
 
+module_id.ARM.icc_o: $(SIMICS_V9_INCLUDE)/module_id.c
+	$(ECHO) "$(ICC) $(ICC_MODID_CFLAGS) -I$(SIMICS_V9_INCLUDE) -DMODNAME="\"MOD:flexus-$(SIMULATOR)-$(TARGET_PLATFORM)-$(SELECTED_CC)\"" -DCLASSES=\"CLS:Flexus\" $(SIMICS_V9_INCLUDE)/module_id.c -o $@"
+	$(ICC) $(ICC_MODID_CFLAGS) -I$(SIMICS_V9_INCLUDE) -DMODNAME="\"MOD:flexus-$(SIMULATOR)-$(TARGET_PLATFORM)-$(SELECTED_CC)\"" -DCLASSES=\"CLS:Flexus\" $(SIMICS_V9_INCLUDE)/module_id.c -o $@
+
 .PHONY: libflexus_$(SIMULATOR)_$(VARIANT).so.deps
 libflexus_$(SIMULATOR)_$(VARIANT).so.deps: $(COMPONENTS_WITH_LIBS) $(CORE_SIMICS)
 libflexus_$(SIMULATOR)_$(VARIANT).so: $(patsubst %.cpp,%.$(OEXT),$(wildcard *.cpp)) $(VARIANT).ipo_out.o $(COMPONENT_LIB_PATHS) module_id.$(TARGET_PLATFORM).icc_o $(CORE_DIR)/libcore_$(VARIANT).a.fresh

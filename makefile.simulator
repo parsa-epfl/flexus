@@ -91,6 +91,22 @@ qemu-v9:
 	echo "v9 target platform not supported for $(SIMULATOR)"
 endif
 
+ifeq ($(SUPPORTS_ARM),true)
+standalone-arm: depend
+	$(ECHO) "Building $(SIMULATOR) for $(VARIANT) standalone"
+	$(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.simulator_$(SELECTED_CC) $(SIMULATOR).$(VARIANT_EXT).deps $(BUILD_OPTIONS) SIMULATOR=$(SIMULATOR)
+	$(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.simulator_$(SELECTED_CC) $(SIMULATOR).$(VARIANT_EXT) $(BUILD_OPTIONS) SIMULATOR=$(SIMULATOR)
+qemu-arm: depend
+	$(ECHO) "Building $(SIMULATOR) for $(VARIANT) QEMU"
+	$(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.simulator_$(SELECTED_CC) libflexus_$(SIMULATOR)_$(VARIANT).so.deps $(BUILD_OPTIONS) SIMULATOR=$(SIMULATOR)
+	$(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.simulator_$(SELECTED_CC) libflexus_$(SIMULATOR)_$(VARIANT).so $(BUILD_OPTIONS) SIMULATOR=$(SIMULATOR)
+else
+standalone-arm:
+	echo "ARM target platform not supported for $(SIMULATOR)"
+qemu-arm:
+	echo "ARM target platform not supported for $(SIMULATOR)"
+endif
+
 # Set up a depend target
 ###############
 

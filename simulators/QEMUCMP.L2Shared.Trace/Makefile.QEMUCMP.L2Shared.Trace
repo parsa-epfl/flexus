@@ -2,13 +2,14 @@
 #Currently WhiteBox is removed from wiring, and DecoupledFeederQEMU
 REQUIRED_COMPONENTS = CommonQEMU DecoupledFeederQEMU FastCache FastCMPCache FastMemoryLoopback MagicBreakQEMU BPWarm TraceTrackerQEMU 
 #may need QEMU versions of Common and TraceTracker
-$(GCC_CFLAGS) = $(GCC_CFLAGS) -DCONFIG_QEMU -CONFIG_QEMU
+$(GCC_CFLAGS) = $(GCC_CFLAGS) -DCONFIG_QEMU
 SUPPORTS_STANDALONE = false
 SUPPORTS_SIMICS = false
 SUPPORTS_QEMU = true
 DEFAULT_TARGET = qemu
 SUPPORTS_X86 = true
 SUPPORTS_V9 = true
+SUPPORTS_ARM = true
 DEFAULT_PLATFORM = x86
 
 SIMICS_CLASSES = CLS:Flexus;CLS:QemuInterface;CLS:DecoupledFeederQEMU

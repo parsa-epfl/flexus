@@ -15,10 +15,11 @@ GCC_SELECTED=$(if $(ICC_SELECTED)$(DOXYGEN_SELECTED),$(filter gcc,$(TARGET_OPTIO
 
 override X86_SELECTED=$(filter x86,$(TARGET_OPTIONS))
 override V9_SELECTED=$(if $(X86_SELECTED),$(filter v9,$(TARGET_OPTIONS)),v9)
+override ARM_SELECTED=$(if $(V9_SELECTED),$(filter ARM,$(TARGET_OPTIONS)),ARM)
 
 TARGET_NO_DEBUG=$(strip $(filter-out crit dev trace iface verb vverb inv,$(TARGET_OPTIONS)))
 TARGET_NO_COMP=$(strip $(filter-out icc,$(filter-out gcc,$(TARGET_NO_DEBUG))))
-TARGET=$(strip $(filter-out v9,$(filter-out x86,$(filter-out doc,$(TARGET_NO_COMP)))))
+TARGET=$(strip $(filter-out ARM,$(filter-out v9,$(filter-out x86,$(filter-out doc,$(TARGET_NO_COMP))))))
 
 # Detemine if the target component has any parts that are compiled separately (ie if it generates a library)
 ifdef LOCAL_COMPONENT_HAS_LIBRARY
@@ -40,6 +41,11 @@ ifeq ($(V9_SELECTED),v9)
 	cd $(COMPONENTS_DIR)/$@ ; $(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.component $(TARGET) SELECTED_CC=gcc TARGET_PLATFORM=v9 SELECTED_DEBUG=$(DEBUG_SETTING) COMPONENT=$@
 endif
 
+# ARM with gcc
+ifeq ($(ARM_SELECTED),ARM)
+     cd $(COMPONENTS_DIR)/$@ ; $(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.component $(TARGET) SELECTED_CC=gcc TARGET_PLATFORM=ARM SELECTED_DEBUG=$(DEBUG_SETTING) COMPONENT=$@
+endif
+
 endif
 # End GCC targets
 
@@ -56,6 +62,11 @@ endif
 # v9 with icc
 ifeq ($(V9_SELECTED),v9)
 	cd $(COMPONENTS_DIR)/$@ ; $(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.component $(TARGET) SELECTED_CC=icc TARGET_PLATFORM=v9 SELECTED_DEBUG=$(DEBUG_SETTING) COMPONENT=$@
+endif
+
+# ARM with icc
+ifeq ($(ARM_SELECTED),ARM)
+	cd $(COMPONENTS_DIR)/$@ ; $(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.component $(TARGET) SELECTED_CC=icc TARGET_PLATFORM=ARM SELECTED_DEBUG=$(DEBUG_SETTING) COMPONENT=$@
 endif
 
 endif
