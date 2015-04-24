@@ -3,6 +3,7 @@
 
 #define FLEXUS_TARGET_ID_x86()                                    <core/targets/x86.hpp>
 #define FLEXUS_TARGET_ID_v9()                                     <core/targets/v9.hpp>
+#define FLEXUS_TARGET_ID_ARM()                                    <core/targets/ARM.hpp>
 
 #define CAT(x,y) CAT_D(x,y)
 #define CAT_D(x,y) x##y
@@ -13,6 +14,8 @@
 #include <core/targets/x86.hpp>
 #elif TARGET_PLATFORM == v9
 #include <core/targets/v9.hpp>
+#elif TARGET_PLATFORM == ARM
+#include <core/targets/ARM.hpp>
 #else
 #error "No correct platform specified"
 #endif

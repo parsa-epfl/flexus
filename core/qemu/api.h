@@ -227,12 +227,17 @@ typedef struct memory_transaction_i386_specific {
   processor_mode_t mode;
 } memory_transaction_i386_specific_t;
 
+typedef struct memory_transaction_arm_specific {
+  processor_mode_t mode;
+} memory_transaction_arm_specific_t;
+
 typedef struct memory_transaction {
   generic_transaction_t s;
   unsigned int io:1;
   union{
     memory_transaction_sparc_specific_t sparc_specific;
     memory_transaction_i386_specific_t i386_specific;
+    memory_transaction_arm_specific_t arm_specific;
   };
 } memory_transaction_t;
 
