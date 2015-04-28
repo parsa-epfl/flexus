@@ -28,9 +28,9 @@ module_id.v9_$(SELECTED_DEBUG)_gcc_o: $(SIMICS_V9_INCLUDE)/../module-id.template
 	$(ECHO) "$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME=$(SIMICS_MODNAME) -DCLASSES=$(SIMICS_CLASSES) -c $(SIMICS_V9_INCLUDE)/../module-id.template -o $@"
 	$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME="\"$(SIMICS_MODNAME)\"" -DCLASSES="\"$(SIMICS_CLASSES)\"" $(SIMICS_V9_INCLUDE)/../module-id.template -o $@
 
-module_id.ARM_$(SELECTED_DEBUG)_gcc_o: $(SIMICS_V9_INCLUDE)/../module-id.template Makefile.$(SIMULATOR)
-	$(ECHO) "$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME=$(SIMICS_MODNAME) -DCLASSES=$(SIMICS_CLASSES) -c $(SIMICS_V9_INCLUDE)/../module-id.template -o $@"
-	$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME="\"$(SIMICS_MODNAME)\"" -DCLASSES="\"$(SIMICS_CLASSES)\"" $(SIMICS_V9_INCLUDE)/../module-id.template -o $@
+module_id.arm_$(SELECTED_DEBUG)_gcc_o: $(SIMICS_ARM_INCLUDE)/../module-id.template Makefile.$(SIMULATOR)
+	$(ECHO) "$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME=$(SIMICS_MODNAME) -DCLASSES=$(SIMICS_CLASSES) -c $(SIMICS_ARM_INCLUDE)/../module-id.template -o $@"
+	$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME="\"$(SIMICS_MODNAME)\"" -DCLASSES="\"$(SIMICS_CLASSES)\"" $(SIMICS_ARM_INCLUDE)/../module-id.template -o $@
 else
 module_id.x86_$(SELECTED_DEBUG)_gcc_o: $(SIMICS_X86_INCLUDE)/module_id.c Makefile.$(SIMULATOR)
 	$(ECHO) "$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME=$(SIMICS_MODNAME) -DCLASSES=$(SIMICS_CLASSES) $(SIMICS_X86_INCLUDE)/module_id.c -o $@"
@@ -40,9 +40,9 @@ module_id.v9_$(SELECTED_DEBUG)_gcc_o: $(SIMICS_V9_INCLUDE)/module_id.c Makefile.
 	$(ECHO) "$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME=$(SIMICS_MODNAME) -DCLASSES=$(SIMICS_CLASSES) $(SIMICS_V9_INCLUDE)/module_id.c -o $@"
 	$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME="\"$(SIMICS_MODNAME)\"" -DCLASSES="\"$(SIMICS_CLASSES)\"" $(SIMICS_V9_INCLUDE)/module_id.c -o $@
 
-module_id.ARM_$(SELECTED_DEBUG)_gcc_o: $(SIMICS_V9_INCLUDE)/module_id.c Makefile.$(SIMULATOR)
-	$(ECHO) "$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME=$(SIMICS_MODNAME) -DCLASSES=$(SIMICS_CLASSES) $(SIMICS_V9_INCLUDE)/module_id.c -o $@"
-	$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME="\"$(SIMICS_MODNAME)\"" -DCLASSES="\"$(SIMICS_CLASSES)\"" $(SIMICS_V9_INCLUDE)/module_id.c -o $@
+module_id.arm_$(SELECTED_DEBUG)_gcc_o: $(SIMICS_ARM_INCLUDE)/module_id.c Makefile.$(SIMULATOR)
+	$(ECHO) "$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME=$(SIMICS_MODNAME) -DCLASSES=$(SIMICS_CLASSES) $(SIMICS_ARM_INCLUDE)/module_id.c -o $@"
+	$(GCC) $(GCC_CFLAGS) $(INCLUDES) -DMODNAME="\"$(SIMICS_MODNAME)\"" -DCLASSES="\"$(SIMICS_CLASSES)\"" $(SIMICS_ARM_INCLUDE)/module_id.c -o $@
 endif
 
 .PHONY: libflexus_$(SIMULATOR)_$(VARIANT).so.deps

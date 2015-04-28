@@ -14,12 +14,17 @@ DOXYGEN_SELECTED=$(filter doc,$(TARGET_OPTIONS))
 GCC_SELECTED=$(if $(ICC_SELECTED)$(DOXYGEN_SELECTED),$(filter gcc,$(TARGET_OPTIONS)),gcc)
 
 override X86_SELECTED=$(filter x86,$(TARGET_OPTIONS))
-override V9_SELECTED=$(if $(X86_SELECTED),$(filter v9,$(TARGET_OPTIONS)),v9)
-override ARM_SELECTED=$(if $(V9_SELECTED),$(filter ARM,$(TARGET_OPTIONS)),ARM)
+override V9_SELECTED=$(filter v9,$(TARGET_OPTIONS))
+override ARM_SELECTED=$(filter arm,$(TARGET_OPTIONS))
+#override V9_SELECTED=$(if $(X86_SELECTED),$(filter v9,$(TARGET_OPTIONS)),v9)
+#override ARM_SELECTED=$(if $(X86_SELECTED)$(V9_SELECTED),$(filter arm,$(TARGET_OPTIONS)),arm)
+#override ARM_SELECTED=$(if $(X86_SELECTED),$(filter ARM,$(TARGET_OPTIONS)),$(if $(V9_SELECTED),$(filter ARM,$(TARGET_OPTIONS)),ARM))))
+#override ARM_SELECTED=$(filter arm,$(TARGET_OPTIONS))
 
 TARGET_NO_DEBUG=$(strip $(filter-out crit dev trace iface verb vverb inv,$(TARGET_OPTIONS)))
 TARGET_NO_COMP=$(strip $(filter-out icc,$(filter-out gcc,$(TARGET_NO_DEBUG))))
-TARGET=$(strip $(filter-out ARM,$(filter-out v9,$(filter-out x86,$(filter-out doc,$(TARGET_NO_COMP))))))
+TARGET=$(strip $(filter-out arm,$(filter-out v9,$(filter-out x86,$(filter-out doc,$(TARGET_NO_COMP))))))
+#TARGET=$(strip $(filter-out v9,$(filter-out x86,$(filter-out doc,$(TARGET_NO_COMP)))))
 
 # Detemine if the target component has any parts that are compiled separately (ie if it generates a library)
 ifdef LOCAL_COMPONENT_HAS_LIBRARY
@@ -31,6 +36,11 @@ ifeq ($(LOCAL_COMPONENT_HAS_LIBRARY),yes)
 # GCC targets
 #############
 ifeq ($(GCC_SELECTED),gcc)
+# ARM with gcc
+ifeq ($(ARM_SELECTED),arm)
+	cd $(COMPONENTS_DIR)/$@ ; $(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.component $(TARGET) SELECTED_CC=gcc TARGET_PLATFORM=arm SELECTED_DEBUG=$(DEBUG_SETTING) COMPONENT=$@
+endif
+
 # x86 with gcc
 ifeq ($(X86_SELECTED),x86)
 	cd $(COMPONENTS_DIR)/$@ ; $(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.component $(TARGET) SELECTED_CC=gcc TARGET_PLATFORM=x86 SELECTED_DEBUG=$(DEBUG_SETTING) COMPONENT=$@
@@ -39,11 +49,6 @@ endif
 # v9 with gcc
 ifeq ($(V9_SELECTED),v9)
 	cd $(COMPONENTS_DIR)/$@ ; $(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.component $(TARGET) SELECTED_CC=gcc TARGET_PLATFORM=v9 SELECTED_DEBUG=$(DEBUG_SETTING) COMPONENT=$@
-endif
-
-# ARM with gcc
-ifeq ($(ARM_SELECTED),ARM)
-     cd $(COMPONENTS_DIR)/$@ ; $(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.component $(TARGET) SELECTED_CC=gcc TARGET_PLATFORM=ARM SELECTED_DEBUG=$(DEBUG_SETTING) COMPONENT=$@
 endif
 
 endif
@@ -65,8 +70,8 @@ ifeq ($(V9_SELECTED),v9)
 endif
 
 # ARM with icc
-ifeq ($(ARM_SELECTED),ARM)
-	cd $(COMPONENTS_DIR)/$@ ; $(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.component $(TARGET) SELECTED_CC=icc TARGET_PLATFORM=ARM SELECTED_DEBUG=$(DEBUG_SETTING) COMPONENT=$@
+ifeq ($(ARM_SELECTED),arm)
+	cd $(COMPONENTS_DIR)/$@ ; $(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.component $(TARGET) SELECTED_CC=icc TARGET_PLATFORM=arm SELECTED_DEBUG=$(DEBUG_SETTING) COMPONENT=$@
 endif
 
 endif

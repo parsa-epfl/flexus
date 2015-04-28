@@ -2,7 +2,7 @@
 ###############
 include $(FLEXUS_ROOT)/makefile.defs
 
-.PHONY: default core install qemu standalone simics standalone-x86 standalone-v9 simics-x86 simics-v9 depend
+.PHONY: default core install qemu standalone simics standalone-x86 standalone-v9 standalone-arm simics-x86 simics-v9 simics-arm depend
 
 # Include simulator-specific variables
 ###############
@@ -96,6 +96,8 @@ standalone-arm: depend
 	$(ECHO) "Building $(SIMULATOR) for $(VARIANT) standalone"
 	$(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.simulator_$(SELECTED_CC) $(SIMULATOR).$(VARIANT_EXT).deps $(BUILD_OPTIONS) SIMULATOR=$(SIMULATOR)
 	$(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.simulator_$(SELECTED_CC) $(SIMULATOR).$(VARIANT_EXT) $(BUILD_OPTIONS) SIMULATOR=$(SIMULATOR)
+simics-arm:
+	echo "ARM target platform not supported for $(SIMULATOR)"
 qemu-arm: depend
 	$(ECHO) "Building $(SIMULATOR) for $(VARIANT) QEMU"
 	$(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.simulator_$(SELECTED_CC) libflexus_$(SIMULATOR)_$(VARIANT).so.deps $(BUILD_OPTIONS) SIMULATOR=$(SIMULATOR)
