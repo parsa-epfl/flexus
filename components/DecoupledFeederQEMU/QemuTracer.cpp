@@ -106,6 +106,9 @@ struct TracerStats {
 
 #if FLEXUS_TARGET_IS(v9)
 #define IS_PRIV(mem_trans) (mem_trans->sparc_specific.priv)
+#elif FLEXUS_TARGET_IS(ARM)
+  // TODO HAndle it correctly!
+#define IS_PRIV(mem_trans) (false)
 #else //!FLEXUS_TARGET_IS(v9)
 #define IS_PRIV(mem_trans) (mem_trans->i386_specific.mode == API::QEMU_CPU_Mode_Supervisor)
 #endif //FLEXUS_TARGET_IS(v9)
@@ -194,6 +197,10 @@ public:
     //FIXME : not correct for x86
     __uint128_t reg_content;
     API::QEMU_read_register(theCPU, 46 /* kTL */, NULL, &reg_content );
+#elif FLEXUS_TARGET_IS(ARM)
+    //FIXME : not correct for ARM
+    __uint128_t reg_content;
+    API::QEMU_read_register(theCPU, 46 /* kTL */, NULL, &reg_content );
 #endif
     theMemoryMessage.tl() = reg_content;
     uint32_t opcode = 
@@ -224,7 +231,7 @@ public:
     //Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
     //toL1D((int32_t) 0, msg); 
     const int32_t k_no_stall = 0;
-#if FLEXUS_TARGET_IS(x86) || FLEXUS_TARGET_IS(v9)
+#if FLEXUS_TARGET_IS(x86) || FLEXUS_TARGET_IS(v9) || FLEXUS_TARGET_IS(ARM)
     if (mem_trans->io ) {
       //Count data accesses
       IS_PRIV(mem_trans) ?  theOSStats->theIOOps++ : theUserStats->theIOOps++ ;

@@ -228,7 +228,8 @@ typedef struct memory_transaction_i386_specific {
 } memory_transaction_i386_specific_t;
 
 typedef struct memory_transaction_arm_specific {
-  processor_mode_t mode;
+  // wether or not the transaction comes from the user
+  unsigned int user:1;
 } memory_transaction_arm_specific_t;
 
 typedef struct memory_transaction {
