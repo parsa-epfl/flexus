@@ -48,6 +48,7 @@ SIMICS_SYSLIB_DIR=$(SIMICS_PATH)/$(SIMICS_ARCH)/sys/lib
 SIMICS_INCLUDE=$(if $(USING_SIMICS_3),$(SIMICS_PATH)/src/include,$(SIMICS_PATH)/$(SIMICS_ARCH)/obj/include)
 SIMICS_V9_INCLUDE=$(SIMICS_INCLUDE)/simics
 SIMICS_X86_INCLUDE=$(SIMICS_INCLUDE)/simics
+SIMICS_ARM_INCLUDE=$(SIMICS_INCLUDE)/simics
 
 # FIXME user has to update manually
 #QEMU_LIB_DIR=/home/hillouli/Documents/qemuflex/qemu-2.0.0/sparc64-softmmu/
