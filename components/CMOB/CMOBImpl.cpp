@@ -83,11 +83,6 @@ public:
     theWasHit.resize( cfg.CMOBSize, false);
   }
 
-//NEED TO CHECK THIS!!!
-  void finalize(){
-
-  }
-
   // Ports
   FLEXUS_PORT_ALWAYS_AVAILABLE(TMSif_Request);
   void push(interface::TMSif_Request const &,  boost::intrusive_ptr<CMOBMessage> & aMessage) {

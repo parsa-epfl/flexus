@@ -574,7 +574,7 @@ void ugal_flatfly_onchip( const Router *r, const Flit *f, int in_channel,
     vcEnd   = gWriteReplyEndVC >> 1;
   }else if ( f->type ==  Flit::ANY_TYPE ) {
     vcBegin = 0 >> 1;
-    vcEnd   = (gNumVCS-1) >> 1;
+    vcEnd   = gNumVCS-1 >> 1;
   }
 
 

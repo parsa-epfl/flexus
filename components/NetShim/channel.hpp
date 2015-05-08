@@ -9,7 +9,7 @@ typedef enum ChannelState {
   CS_IDLE,
   CS_WAIT_FOR_ACCEPT,
   CS_TRANSFERRING
-} ChannelState;
+};
 
 class Channel;
 class NetSwitch;

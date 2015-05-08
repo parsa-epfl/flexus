@@ -14,6 +14,7 @@
 #include <components/FastCMPCache/SharingVector.hpp>
 #include <components/FastCMPCache/AbstractProtocol.hpp>
 
+#include <boost/tuple/tuple.hpp>
 #include <boost/function.hpp>
 
 #include <list>
@@ -87,10 +88,10 @@ public:
   AbstractDirectory() :  theDirectoryInterleaving(64), theDirectoryLocation(Distributed) {};
   virtual ~AbstractDirectory() {}
 
-  virtual std::tuple<SharingVector, SharingState, AbstractEntry_p>
+  virtual boost::tuple<SharingVector, SharingState, AbstractEntry_p>
   lookup(int, PhysicalMemoryAddress, MMType, std::list<boost::function<void(void)> > &xtra_actions) = 0;
 
-  virtual std::tuple<SharingVector, SharingState, AbstractEntry_p, bool>
+  virtual boost::tuple<SharingVector, SharingState, AbstractEntry_p, bool>
   snoopLookup(int, PhysicalMemoryAddress, MMType) = 0;
 
   virtual void processSnoopResponse(int32_t index, const MMType & type, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {

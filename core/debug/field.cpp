@@ -35,7 +35,7 @@ void Field::setValue(int64_t aValue) const {
 }
 
 bool Field::isNumeric() const {
-  return theNumericValue != boost::none;
+  return theNumericValue;
 }
 
 std::string const & Field::value() const {

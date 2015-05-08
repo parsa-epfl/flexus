@@ -684,7 +684,7 @@ protected:
       BlockDirectoryEntry_p block(new BlockDirectoryEntry(addr));
       std::list<TaglessDirectoryBucket *>::iterator bucket_iter = result->theBuckets.begin();
       for (; bucket_iter != result->theBuckets.end(); bucket_iter++) {
-        (*bucket_iter)->thePreciseDirectory.insert(std::make_pair(addr, block));
+        (*bucket_iter)->thePreciseDirectory.insert(std::make_pair<PhysicalMemoryAddress, BlockDirectoryEntry_p>(addr, block));
       }
       result->theTrueState = block;
     } else {
@@ -810,7 +810,7 @@ protected:
   }
 
 public:
-  virtual std::tuple<SharingVector, SharingState, AbstractEntry_p>
+  virtual boost::tuple<SharingVector, SharingState, AbstractEntry_p>
   lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<boost::function<void(void)> > &xtra_actions) {
 
     TaglessLookupResult_p block = findOrCreateEntry(address, index);
@@ -868,10 +868,10 @@ public:
 
     DBG_(Trace, ( << "Received " << req_type << " request from core " << index << " for block " << std::hex << address << " Tagless state = " << block->theTaglessState.sharers() << ", TueState = " << block->theTrueState->sharers() ));
 
-    return std::make_tuple(block->theTaglessState.sharers(), block->theTaglessState.state(), block);
+    return boost::tie(block->theTaglessState.sharers(), block->theTaglessState.state(), block);
   }
 
-  virtual std::tuple<SharingVector, SharingState, AbstractEntry_p, bool>
+  virtual boost::tuple<SharingVector, SharingState, AbstractEntry_p, bool>
   snoopLookup(int32_t index, PhysicalMemoryAddress address, MMType req_type) {
 
     TaglessLookupResult_p block = findEntry(address, index);
@@ -879,7 +879,7 @@ public:
     DBG_(Trace, ( << "Received " << req_type << " request from core " << index << " for block " << std::hex << address << " Tagless state = " << block->theTaglessState.sharers() << ", TueState = " << block->theTrueState->sharers() ));
 
     bool valid = true;
-    return std::make_tuple(block->theTaglessState.sharers(), block->theTaglessState.state(), block, valid);
+    return boost::tie(block->theTaglessState.sharers(), block->theTaglessState.state(), block, valid);
   }
   void saveState( std::ostream & s, const std::string & aDirName ) {
     boost::archive::binary_oarchive oa(s);

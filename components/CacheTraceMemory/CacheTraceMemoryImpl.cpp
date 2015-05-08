@@ -388,11 +388,6 @@ public:
     }
   }
 
-//Need to check this implementation!!!!
-  void finalize() override {
-
-  }
-
   // Ports
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(FromNode_Snoop);
   void push(interface::FromNode_Snoop const &, index_t anIndex, MemoryTransport & transport) {

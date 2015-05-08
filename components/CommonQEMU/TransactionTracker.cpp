@@ -1,9 +1,9 @@
 #include <algorithm>
 
-//#include <boost/lambda/lambda.hpp>
-//#include <boost/lambda/bind.hpp>
+#include <boost/lambda/lambda.hpp>
+#include <boost/lambda/bind.hpp>
 
-#include <memory>
+#include <boost/shared_ptr.hpp>
 #include <core/stats.hpp>
 
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
@@ -17,14 +17,14 @@ namespace Flexus {
 namespace SharedTypes {
 
 namespace Stat = Flexus::Stat;
-//namespace ll = boost::lambda;
+namespace ll = boost::lambda;
 
 uint64_t theGloballyUniqueId = 0;
 uint64_t getTTGUID() {
   return theGloballyUniqueId++;
 }
-std::shared_ptr<TransactionTracer> TransactionTracker::theTracer;
-std::shared_ptr<TransactionStatManager> TransactionTracker::theTSM;
+boost::shared_ptr<TransactionTracer> TransactionTracker::theTracer;
+boost::shared_ptr<TransactionStatManager> TransactionTracker::theTSM;
 
 class TransactionTracerImpl : public TransactionTracer {
   bool includeTransaction(TransactionTracker const & aTransaction) {
@@ -136,8 +136,8 @@ class TransactionTracerImpl : public TransactionTracer {
   }
 };
 
-std::shared_ptr<TransactionTracer> TransactionTracer::createTracer() {
-  return std::shared_ptr<TransactionTracer>(new TransactionTracerImpl());
+boost::shared_ptr<TransactionTracer> TransactionTracer::createTracer() {
+  return boost::shared_ptr<TransactionTracer>(new TransactionTracerImpl());
 }
 
 struct XactCatStats {
@@ -241,39 +241,29 @@ private:
 
   template <class StatT, class UpdateT >
   void accum( StatT XactCatStats::* aCounter, UpdateT anUpdate, std::vector<XactCatStats *> & aCategoryList) {
-    for(auto stats: aCategoryList){
-      *aCounter += anUpdate;
-    }
-    //using ll::_1;
-    //using ll::bind;
-    //std::for_each( aCategoryList.begin(), aCategoryList.end(), bind( aCounter, _1) += anUpdate);
+    using ll::_1;
+    using ll::bind;
+    std::for_each( aCategoryList.begin(), aCategoryList.end(), bind( aCounter, _1) += anUpdate);
   }
 
   template <class StatT, class UpdateT >
   void append( StatT XactCatStats::* aCounter, UpdateT anUpdate, std::vector<XactCatStats *> & aCategoryList) {
-    for(auto stats: aCategoryList){
-      *aCounter << anUpdate;
-    }
-    // using ll::_1;
-    // using ll::bind;
-    // std::for_each( aCategoryList.begin(), aCategoryList.end(), bind( aCounter, _1) << anUpdate);
+    using ll::_1;
+    using ll::bind;
+    std::for_each( aCategoryList.begin(), aCategoryList.end(), bind( aCounter, _1) << anUpdate);
   }
 
   static void accountCycles( std::vector<XactCatStats *> const & aCategoryList, boost::tuple<std::string, std::string, int> const & aDetail ) {
-    for(auto stats: aCategoryList){
-      stats->accountDelay(aDetail.get<0>(), aDetail.get<2>());
-      stats->accountDelay(aDetail.get<1>(), aDetail.get<2>());
-    }
-    // using ll::_1;
-    // using ll::bind;
+    using ll::_1;
+    using ll::bind;
 
-    // std::for_each
-    // ( aCategoryList.begin()
-    //   , aCategoryList.end()
-    //   , ( bind( & XactCatStats::accountDelay , _1, aDetail.get<0>(), aDetail.get<2>() )
-    //       , bind( & XactCatStats::accountDelay , _1, aDetail.get<1>(), aDetail.get<2>() )
-    //     )
-    // );
+    std::for_each
+    ( aCategoryList.begin()
+      , aCategoryList.end()
+      , ( bind( & XactCatStats::accountDelay , _1, aDetail.get<0>(), aDetail.get<2>() )
+          , bind( & XactCatStats::accountDelay , _1, aDetail.get<1>(), aDetail.get<2>() )
+        )
+    );
   }
 
 public:
@@ -303,8 +293,8 @@ public:
 
 };
 
-std::shared_ptr<TransactionStatManager> TransactionStatManager::createTSM() {
-  return std::shared_ptr<TransactionStatManager>(new TransactionStatManagerImpl());
+boost::shared_ptr<TransactionStatManager> TransactionStatManager::createTSM() {
+  return boost::shared_ptr<TransactionStatManager>(new TransactionStatManagerImpl());
 }
 
 } //SharedTypes

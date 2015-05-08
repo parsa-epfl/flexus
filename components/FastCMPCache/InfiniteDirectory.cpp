@@ -164,7 +164,7 @@ protected:
   InfiniteDirectoryEntry * findOrCreateEntry(PhysicalMemoryAddress addr) {
     inf_directory_t::iterator iter;
     bool success;
-    std::tie(iter, success) = theDirectory.insert( std::make_pair(addr, InfiniteDirectoryEntry_p()) );
+    boost::tie(iter, success) = theDirectory.insert( std::make_pair<PhysicalMemoryAddress, InfiniteDirectoryEntry_p>(addr, InfiniteDirectoryEntry_p()) );
     if (success) {
       iter->second = new InfiniteDirectoryEntry(addr);
     }
@@ -180,7 +180,7 @@ protected:
   }
 
 public:
-  virtual std::tuple<SharingVector, SharingState, AbstractEntry_p>
+  virtual boost::tuple<SharingVector, SharingState, AbstractEntry_p>
   lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<boost::function<void(void)> > &xtra_actions) {
 
     InfiniteDirectoryEntry_p entry = findEntry(address);
@@ -191,10 +191,10 @@ public:
       state = entry->state;
     }
 
-    return std::make_tuple(sharers, state, entry);
+    return boost::tie(sharers, state, entry);
   }
 
-  virtual std::tuple<SharingVector, SharingState, AbstractEntry_p, bool>
+  virtual boost::tuple<SharingVector, SharingState, AbstractEntry_p, bool>
   snoopLookup(int32_t index, PhysicalMemoryAddress address, MMType req_type) {
 
     InfiniteDirectoryEntry_p entry = findEntry(address);
@@ -207,7 +207,7 @@ public:
       state = entry->state;
     }
 
-    return std::make_tuple(sharers, state, entry, valid);
+    return boost::tie(sharers, state, entry, valid);
   }
 
   virtual void processRequestResponse(int32_t index, const MMType & request, MMType & response,

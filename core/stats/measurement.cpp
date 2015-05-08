@@ -183,8 +183,8 @@ int64_t SimpleMeasurement :: minAsLongLong(std::string const & aFieldSpec) {
 
     while (iter != end) {
       if (boost::regex_match(iter->first, field_filter)) {
-        if (min != boost::none ||  iter->second.asLongLong() < *min) {
-          min = iter->second.asLongLong();
+        if (! min ||  iter->second.asLongLong() < *min) {
+          min.reset( iter->second.asLongLong() );
         }
       }
       ++iter;

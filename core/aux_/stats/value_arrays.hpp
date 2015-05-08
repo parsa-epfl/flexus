@@ -16,6 +16,7 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/set.hpp>
 #include <boost/serialization/serialization.hpp>
+#include <boost/serialization/is_abstract.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
 namespace ll = boost::lambda;

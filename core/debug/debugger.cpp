@@ -1,6 +1,9 @@
 #include <core/debug/debugger.hpp>
 
-//#include <algorithm>
+#include <boost/lambda/lambda.hpp>
+#include <boost/lambda/bind.hpp>
+#include <boost/lambda/construct.hpp>
+#include <algorithm>
 #include <iostream>
 #include <iomanip>
 #include <map>
@@ -18,25 +21,21 @@ Flexus::Dbg::Category Stats("Stats", &Stats_debug_enabled);
 namespace Flexus {
 namespace Dbg {
 
+using boost::lambda::_1;
+using boost::lambda::bind;
+using boost::lambda::var;
+using boost::lambda::delete_ptr;
+
 Debugger::~Debugger() {
-  for(auto target: theTargets){
-    delete target;
-  }
-  //std::for_each(theTargets.begin(), theTargets.end(), boost::lambda::delete_ptr()); //Clean up all pointers owned by theTargets
+  std::for_each(theTargets.begin(), theTargets.end(), boost::lambda::delete_ptr()); //Clean up all pointers owned by theTargets
 }
 
 void Debugger::process(Entry const & anEntry) {
-  for(auto target: theTargets){
-    target->process(anEntry);
-  }
-  //std::for_each(theTargets.begin(), theTargets.end(), bind( &Target::process, _1, anEntry) );
+  std::for_each(theTargets.begin(), theTargets.end(), bind( &Target::process, _1, anEntry) );
 }
 
 void Debugger::printConfiguration(std::ostream & anOstream) {
-  for(auto target: theTargets){
-    target->printConfiguration(anOstream, std::string());
-  }
-  //std::for_each(theTargets.begin(), theTargets.end(), bind( &Target::printConfiguration, _1, var(anOstream), std::string()) );
+  std::for_each(theTargets.begin(), theTargets.end(), bind( &Target::printConfiguration, _1, var(anOstream), std::string()) );
 }
 
 void Debugger::add(Target * aTarget) { //Ownership assumed by Debugger
@@ -94,7 +93,7 @@ void Debugger::registerComponent(std::string const & aComponent, uint32_t anInde
   iter = theComponents.find(aComponent);
   if (iter == theComponents.end()) {
     bool ignored;
-    std::tie(iter, ignored) = theComponents.insert( std::make_pair( aComponent, std::vector<bool *>(anIndex + 1, 0) ));
+    boost::tie(iter, ignored) = theComponents.insert( std::make_pair( aComponent, std::vector<bool *>(anIndex + 1, 0) ));
   } else if (iter->second.size() < anIndex + 1) {
     iter->second.resize(anIndex + 1, 0);
   }
@@ -187,10 +186,7 @@ void Debugger::doNextAt() {
 }
 
 void Debugger::reset() {
-  for(auto target: theTargets){
-    delete target;
-  }
-  //std::for_each(theTargets.begin(), theTargets.end(), boost::lambda::delete_ptr()); //Clean up all pointers owned by theTargets
+  std::for_each(theTargets.begin(), theTargets.end(), boost::lambda::delete_ptr()); //Clean up all pointers owned by theTargets
   theTargets.clear();
 }
 

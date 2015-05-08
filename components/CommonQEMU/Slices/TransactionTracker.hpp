@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#include <memory>
+#include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
 
@@ -43,13 +43,13 @@ class TransactionTracker;
 struct TransactionTracer {
   virtual void trace(TransactionTracker const & aTransaction) = 0;
   virtual ~TransactionTracer() {}
-  static std::shared_ptr<TransactionTracer> createTracer();
+  static boost::shared_ptr<TransactionTracer> createTracer();
 };
 
 struct TransactionStatManager {
   virtual ~TransactionStatManager() {};
   virtual void count(TransactionTracker const & aTransaction) = 0;
-  static std::shared_ptr<TransactionStatManager> createTSM();
+  static boost::shared_ptr<TransactionStatManager> createTSM();
 };
 
 uint64_t getTTGUID();
@@ -57,8 +57,8 @@ uint64_t getTTGUID();
 class TransactionTracker : public boost::counted_base { /*, public FastAlloc*/
   typedef Flexus::SharedTypes::PhysicalMemoryAddress MemoryAddress;
 
-  static std::shared_ptr<TransactionTracer> theTracer;
-  static std::shared_ptr<TransactionStatManager> theTSM;
+  static boost::shared_ptr<TransactionTracer> theTracer;
+  static boost::shared_ptr<TransactionStatManager> theTSM;
 
   //None of the fields in TransactionTracker are guaranteed to be filled
   //in, so they are all optional
