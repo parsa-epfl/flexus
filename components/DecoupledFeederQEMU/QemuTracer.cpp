@@ -107,11 +107,12 @@ struct TracerStats {
 #if FLEXUS_TARGET_IS(v9)
 #define IS_PRIV(mem_trans) (mem_trans->sparc_specific.priv)
 #elif FLEXUS_TARGET_IS(ARM)
-  // TODO HAndle it correctly!
-#define IS_PRIV(mem_trans) (false)
-#else //!FLEXUS_TARGET_IS(v9)
+#define IS_PRIV(mem_trans) (!mem_trans->arm_specific.user)
+#elif FLEXUS_TARGET_IS(X86)
 #define IS_PRIV(mem_trans) (mem_trans->i386_specific.mode == API::QEMU_CPU_Mode_Supervisor)
-#endif //FLEXUS_TARGET_IS(v9)
+#else // !FLEXUS_TARGET_IS(v9) && !FLEXUS_TARGET(ARM) && !FLEXUS_TARGET(X86)
+#error Unknown target
+#endif //FLEXUS_TARGET_IS(v9) || FLEXUS_TARGET(ARM) || FLEXUS_TARGET(X86)
 
 class QemuTracerImpl {
   API::conf_object_t * theUnderlyingObject;
