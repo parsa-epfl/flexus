@@ -184,33 +184,33 @@ public:
 
   API::cycles_t insn_fetch(Qemu::API::memory_transaction_t * mem_trans) {
     const int32_t k_no_stall = 0;
-
     theMemoryMessage.address() = 
 		PhysicalMemoryAddress( mem_trans->s.physical_address );
     theMemoryMessage.pc() = 
 		VirtualMemoryAddress( mem_trans->s.logical_address );
     theMemoryMessage.type() = MemoryMessage::FetchReq;
     theMemoryMessage.priv() = IS_PRIV(mem_trans);
+    theMemoryMessage.reqSize() = 4;
 #if FLEXUS_TARGET_IS(v9)
     uint64_t reg_content;
     API::QEMU_read_register(theCPU, 46 /* kTL */, NULL, &reg_content );
-#elif FLEXUS_TARGET_IS(x86)
-    //FIXME : not correct for x86
-    __uint128_t reg_content;
-    API::QEMU_read_register(theCPU, 46 /* kTL */, NULL, &reg_content );
-#elif FLEXUS_TARGET_IS(ARM)
-    //FIXME : not correct for ARM
-    __uint128_t reg_content;
-    API::QEMU_read_register(theCPU, 46 /* kTL */, NULL, &reg_content );
-#endif
     theMemoryMessage.tl() = reg_content;
+#else
+    theMemoryMessage.tl() = 0;
+#endif
+
+    // TODO FIXME
+#if FLEXUS_TARGET_IS(v9)
     uint32_t opcode = 
 		API::QEMU_read_phys_memory(theCPU, mem_trans->s.physical_address, 4);
-
+#else
+    uint32_t opcode = 0;
+#endif
     IS_PRIV(mem_trans) ?  
 		theOSStats->theFetches++ : theUserStats->theFetches++ ;
     theBothStats->theFetches++;
 
+// TODO FIXME
     DBG_ (VVerb, ( 
 				<< "sending fetch[" 
 				<< theIndex 

@@ -129,6 +129,12 @@ typedef enum {
 	QEMU_Initiator_Other           = 0x4000  /* initiator == NULL */
 } ini_type_t;
 
+typedef enum {
+  QEMU_Non_Branch = 0,
+  QEMU_Conditional_Branch = 1,
+  QEMU_Unconditional_Branch = 2
+} branch_type_t;
+
 struct generic_transaction {
         void *cpu_state;// (CPUState*) state of the CPU source of the transaction
 	conf_object_t *ini_ptr; // note: for efficiency, arrange struct from
@@ -141,6 +147,8 @@ struct generic_transaction {
 	mem_op_type_t type;
 	ini_type_t ini_type;
 	exception_type_t exception;
+        branch_type_t branch_type;
+        unsigned int annul : 1;// annul the delay slot or not
 	unsigned int atomic:1;
 	unsigned int inquiry:1;
 	unsigned int may_stall:1;
