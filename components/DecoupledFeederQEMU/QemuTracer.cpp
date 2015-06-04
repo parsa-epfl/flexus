@@ -14,6 +14,7 @@
 #include <core/qemu/api_wrappers.hpp>
 
 #include <components/DecoupledFeederQEMU/QemuTracer.hpp>
+#include <components/uFetch/uFetchTypes.hpp>
 
 #include <core/stats.hpp>
 namespace Stat = Flexus::Stat;
@@ -191,6 +192,18 @@ public:
     theMemoryMessage.type() = MemoryMessage::FetchReq;
     theMemoryMessage.priv() = IS_PRIV(mem_trans);
     theMemoryMessage.reqSize() = 4;
+
+    eBranchType branchTypeTable[ API::QEMU_BRANCH_TYPE_COUNT ] = {
+      kNonBranch,
+      kConditional,
+      kUnconditional,
+      kCall,
+      kReturn,
+      kLastBranchType
+    };
+
+    theMemoryMessage.branchType() = branchTypeTable[ mem_trans->s.branch_type ];
+    theMemoryMessage.branchAnnul() = (mem_trans->s.annul != 0);
 #if FLEXUS_TARGET_IS(v9)
     uint64_t reg_content;
     API::QEMU_read_register(theCPU, 46 /* kTL */, NULL, &reg_content );
@@ -327,7 +340,7 @@ public:
         DBG_Assert( false, ( << "Unknown atomic operation. Opcode: " << std::hex << op_code << " pc: " << pc << std::dec ) );
       }
 #else
-      //Assume all atomic x86 operations are RMWs.  This may not be true
+      //Assume all atomic x86 & ARM atomic operations are RMWs.  This may not be true
       theMemoryMessage.type() = MemoryMessage::RMWReq;
       IS_PRIV(mem_trans) ?  theOSStats->theRMWOps++ : theUserStats->theRMWOps++ ;
       theBothStats->theRMWOps++;

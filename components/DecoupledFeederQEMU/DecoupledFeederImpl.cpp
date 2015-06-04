@@ -1,6 +1,7 @@
 #include <components/DecoupledFeederQEMU/DecoupledFeeder.hpp>
 
 #include <components/DecoupledFeederQEMU/QemuTracer.hpp>
+#include <components/uFetch/uFetchTypes.hpp>
 #include <core/qemu/api_wrappers.hpp>
 
 #include <core/stats.hpp>
@@ -40,7 +41,7 @@ public:
 
     theTracer = QemuTracerManager::construct(theNumCPUs
                 , boost::bind( &DecoupledFeederComponent::toL1D, this, _1, _2)
-                , boost::bind( &DecoupledFeederComponent::toL1I, this, _1, _2, _3)
+                , boost::bind( &DecoupledFeederComponent::modernToL1I, this, _1, _2)
                 , boost::bind( &DecoupledFeederComponent::toDMA, this, _1)
                 , boost::bind( &DecoupledFeederComponent::toNAW, this, _1, _2)
                 //, cfg.WhiteBoxDebug
@@ -110,14 +111,28 @@ public:
   void toDMA(MemoryMessage & aMessage) {
     FLEXUS_CHANNEL( ToDMA ) << aMessage;
   }
-
+  /*
   void toL1I(int32_t anIndex, MemoryMessage & aMessage, uint32_t anOpcode) {
     FLEXUS_CHANNEL_ARRAY( ToL1I, anIndex ) << aMessage;
     theFetchInfo.first = aMessage.pc();
     theFetchInfo.second = anOpcode;
     FLEXUS_CHANNEL_ARRAY( ToBPred, anIndex ) << theFetchInfo;
   }
+  */
+  void modernToL1I(int32_t anIndex, MemoryMessage & aMessage) {
+    FLEXUS_CHANNEL_ARRAY( ToL1I, anIndex ) << aMessage;
 
+    pc_type_annul_triplet thePCTypeAndAnnulTriplet;
+    thePCTypeAndAnnulTriplet.first = aMessage.pc();
+
+    std::pair< uint32_t, uint32_t> theTypeAndAnnulPair;
+    theTypeAndAnnulPair.first = (uint32_t)aMessage.branchType();
+    theTypeAndAnnulPair.second = (uint32_t)aMessage.branchAnnul();
+
+    thePCTypeAndAnnulTriplet.second = theTypeAndAnnulPair;
+
+    FLEXUS_CHANNEL_ARRAY( ToBPred, anIndex ) << thePCTypeAndAnnulTriplet;
+  }
   void updateInstructionCounts() {
     //Count instructions
     //FIXME Currently Does nothing since step_count ha not been implemented

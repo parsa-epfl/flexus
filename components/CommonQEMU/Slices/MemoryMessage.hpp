@@ -13,6 +13,7 @@
 
 #include <components/CommonQEMU/Slices/FillLevel.hpp>
 #include <components/CommonQEMU/Slices/FillType.hpp>
+#include <components/uFetch/uFetchTypes.hpp>
 
 namespace Flexus {
 namespace SharedTypes {
@@ -325,6 +326,8 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     , theAckRequired(true)
     , theAckRequiresData(false)
     , theEvictHasData(false)
+    , theBranchType(kNonBranch)
+    , theBranchAnnul(false)
   {}
   explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress)
     : theType(aType)
@@ -342,6 +345,8 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     , theAckRequired(true)
     , theAckRequiresData(false)
     , theEvictHasData(false)
+    , theBranchType(kNonBranch)
+    , theBranchAnnul(false)
   {}
   explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC)
     : theType(aType)
@@ -359,6 +364,8 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     , theAckRequired(true)
     , theAckRequiresData(false)
     , theEvictHasData(false)
+    , theBranchType(kNonBranch)
+    , theBranchAnnul(false)
   {}
   explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC, DataWord aData)
     : theType(aType)
@@ -376,6 +383,8 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     , theAckRequired(true)
     , theAckRequiresData(false)
     , theEvictHasData(false)
+    , theBranchType(kNonBranch)
+    , theBranchAnnul(false)
   {}
   explicit MemoryMessage(MemoryMessage & aMsg)
     : theType(aMsg.theType)
@@ -393,6 +402,8 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     , theAckRequired(aMsg.theAckRequired)
     , theAckRequiresData(aMsg.theAckRequiresData)
     , theEvictHasData(aMsg.theEvictHasData)
+    , theBranchType(aMsg.theBranchType)
+    , theBranchAnnul(aMsg.theBranchAnnul)
   {}
 
   static intrusive_ptr<MemoryMessage> newLoad(MemoryAddress anAddress, VirtualMemoryAddress aPC) {
@@ -536,6 +547,14 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
 
   bool & evictHasData() {
     return theEvictHasData;
+  }
+
+  eBranchType & branchType() {
+    return theBranchType;
+  }
+
+  bool & branchAnnul() {
+    return theBranchAnnul;
   }
 
   bool isRequest() const {
@@ -1001,6 +1020,8 @@ private:
   bool theAckRequired;
   bool theAckRequiresData;
   bool theEvictHasData;
+  eBranchType theBranchType;
+  bool theBranchAnnul;
 };
 
 std::ostream & operator << (std::ostream & s, MemoryMessage const & aMemMsg);

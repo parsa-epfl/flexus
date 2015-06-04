@@ -27,6 +27,7 @@ class FLEXUS_COMPONENT(BPWarm) {
   std::vector< bool >                                theOne;
 
   std::pair<eBranchType, bool> decode( uint32_t opcode ) {
+#if FLEXUS_TARGET_IS(v9)
     uint32_t op = opcode >> 30 & 3;
     switch (op) {
       case 0: {
@@ -60,6 +61,9 @@ class FLEXUS_COMPONENT(BPWarm) {
       default:
         return std::make_pair(kNonBranch, false);
     }
+#else
+    return std::make_pair(kNonBranch, false);
+#endif
   }
 
   void doUpdate(VirtualMemoryAddress theActual,
@@ -207,6 +211,40 @@ public:
     }
   }
 
+  ///////////////// ITraceInModern port
+  bool available( interface::ITraceInModern const &,
+                  index_t anIndex) {
+    return true;
+  }
+  void push( interface::ITraceInModern const &,
+             index_t           anIndex,
+             std::pair< uint64_t, std::pair< uint32_t, uint32_t> > & aPCAndTypeAndAnnulPair) {
+    bool anOne = theOne[anIndex];
+
+    uint64_t aVirtualPC = aPCAndTypeAndAnnulPair.first;
+    std::pair< eBranchType, bool > aTypeAndAnnulPair = std::pair< eBranchType, bool >(
+							    (eBranchType)aPCAndTypeAndAnnulPair.second.first,
+							    (bool)aPCAndTypeAndAnnulPair.second.second );
+
+    if (theFetchType[anIndex][!anOne] != kNonBranch) {
+      doUpdate(VirtualMemoryAddress(aVirtualPC), anIndex);
+    }
+    theOne[anIndex] = !theOne[anIndex];
+    anOne = theOne[anIndex];
+
+    eBranchType aFetchType;
+    bool aFetchAnnul;
+    boost::tie(aFetchType, aFetchAnnul) = aTypeAndAnnulPair;
+    theFetchType[anIndex][anOne] = aFetchType;
+    theFetchAnnul[anIndex][anOne] = aFetchAnnul;
+
+    if (theFetchType[anIndex][anOne] != kNonBranch) {
+      //save the other relevant state and make a prediction
+      theFetchAddress[anIndex][anOne] = VirtualMemoryAddress(aVirtualPC);
+      theFetchState[anIndex][anOne].thePredictedType =  kNonBranch;
+      doPredict(anIndex);
+    }
+  }
 };
 
 }//End namespace nBPWarm
@@ -222,6 +260,8 @@ FLEXUS_PORT_ARRAY_WIDTH( BPWarm, InsnOut )    {
 FLEXUS_PORT_ARRAY_WIDTH( BPWarm, ITraceIn )   {
   return (cfg.Cores);
 }
-
+FLEXUS_PORT_ARRAY_WIDTH( BPWarm, ITraceInModern )   {
+  return (cfg.Cores);
+}
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
 #define FLEXUS_END_COMPONENT BPWarm

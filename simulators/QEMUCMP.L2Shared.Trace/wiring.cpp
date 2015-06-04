@@ -134,7 +134,7 @@ FLEXUS_INSTANTIATE_COMPONENT( MagicBreak, theMagicBreakCfg, theMagicBreak );
 //====                                  ==
 WIRE(theFeeder, ToL1D,                  theL1D, RequestIn)
 WIRE(theFeeder, ToL1I,                  theL1I, FetchRequestIn)
-WIRE(theFeeder, ToBPred,                theBPWarm, ITraceIn)
+WIRE(theFeeder, ToBPred,                theBPWarm, ITraceInModern)
 WIRE(theFeeder, ToDMA,                  theMemory, DMA)
 
 WIRE(theL1D, RequestOut,                theL2, RequestIn)

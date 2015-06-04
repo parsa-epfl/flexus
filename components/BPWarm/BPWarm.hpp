@@ -10,11 +10,13 @@ COMPONENT_PARAMETERS(
 );
 
 typedef std::pair< uint64_t, uint32_t> ulong_pair;
+typedef std::pair< uint64_t, std::pair< uint32_t, uint32_t > > pc_type_annul_triplet;
 
 COMPONENT_INTERFACE(
   DYNAMIC_PORT_ARRAY( PushInput, InstructionTransport, InsnIn )
   DYNAMIC_PORT_ARRAY( PushOutput, InstructionTransport, InsnOut )
   DYNAMIC_PORT_ARRAY( PushInput, ulong_pair, ITraceIn )
+  DYNAMIC_PORT_ARRAY( PushInput, pc_type_annul_triplet, ITraceInModern )
 );
 
 #include FLEXUS_END_COMPONENT_DECLARATION()

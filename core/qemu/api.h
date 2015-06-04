@@ -132,7 +132,11 @@ typedef enum {
 typedef enum {
   QEMU_Non_Branch = 0,
   QEMU_Conditional_Branch = 1,
-  QEMU_Unconditional_Branch = 2
+  QEMU_Unconditional_Branch = 2,
+  QEMU_Call_Branch = 3,
+  QEMU_Return_Branch = 4,
+  QEMU_Last_Branch_Type = 5,
+  QEMU_BRANCH_TYPE_COUNT
 } branch_type_t;
 
 struct generic_transaction {

@@ -1,7 +1,7 @@
 #ifndef FLEXUS_DECOUPLED_FEEDER_QEMU_TRACER_HPP_INCLUDED
 #define FLEXUS_DECOUPLED_FEEDER_QEMU_TRACER_HPP_INCLUDED
 
-#include <components/Common/Slices/MemoryMessage.hpp>
+#include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 
 namespace nDecoupledFeeder {
 
