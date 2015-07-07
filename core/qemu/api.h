@@ -227,6 +227,31 @@ typedef enum {
 	QEMU_CPU_Mode_Hypervisor
 } processor_mode_t;
 
+typedef enum {
+  QEMU_Instruction_Cache = 1,
+  QEMU_Data_Cache = 2,
+  QEMU_Prefetch_Buffer = 4
+} cache_type_t;
+
+typedef enum {
+  QEMU_Invalidate_Cache = 0,
+  QEMU_Clean_Cache = 1,
+  QEMU_Flush_Cache = 2,
+  QEMU_Prefetch_Cache = 3
+} cache_maintenance_op_t;
+
+typedef struct set_and_way_data{
+  uint32_t set;
+  uint32_t way;
+} set_and_way_data_t;
+
+/* little structure to hold an address range */
+/* it is inclusive: if start == end, the range contains start */
+typedef struct address_range{
+  physical_address_t start_paddr;
+  physical_address_t end_paddr;
+} address_range_t;
+
 typedef struct memory_transaction_sparc_specific {
 	unsigned int cache_virtual:1;
 	unsigned int cache_physical:1;
@@ -247,6 +272,15 @@ typedef struct memory_transaction_arm_specific {
 typedef struct memory_transaction {
   generic_transaction_t s;
   unsigned int io:1;
+  cache_type_t cache;// cache to operate on
+  cache_maintenance_op_t cache_op;// operation to perform on cache
+  int line:1; // 1 for line, 0 for whole cache
+  int data_is_set_and_way : 1;// wether or not the operation provides set&way or address (range)
+  union{
+    set_and_way_data_t set_and_way;
+    address_range_t addr_range;// same start and end addresses for not range operations
+  };
+
   union{
     memory_transaction_sparc_specific_t sparc_specific;
     memory_transaction_i386_specific_t i386_specific;

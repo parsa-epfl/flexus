@@ -370,6 +370,31 @@ public:
           break;
         case API::QEMU_Trans_Instr_Fetch:
           DBG_Assert(false);
+        case API::QEMU_Trans_Cache:
+	  // We don't really support these operations
+	  return k_no_stall;
+	  /*
+	  if( mem_trans->cache_op == API::QEMU_Invalidate_Cache ) {
+	    theMemoryMesage.type() = MemoryMessage::Invalidate;
+
+	    if( mem_trans->cache == API::QEMU_Instruction_Cache ) {
+	      toL1I( theIndex, theMemoryMessage);
+	    } else if( mem_trans->cache == API::QEMU_Data_Cache ) {
+	      toL1D( theIndex, theMemoryMessage );
+	    }
+	    return k_no_stall;
+	  } else if( mem_trans->cache_op == API::QEMU_Clean_Cache ) {
+	    theMemoryMesage.type() = MemoryMessage::Invalidate;
+
+	    if( mem_trans->cache == API::QEMU_Instruction_Cache ) {
+	      toL1I( theIndex, theMemoryMessage);
+	    } else if( mem_trans->cache == API::QEMU_Data_Cache ) {
+	      toL1D( theIndex, theMemoryMessage );
+	    }
+	    return k_no_stall;
+	  }
+	  break;
+	  */
         default:
           DBG_(Crit, ( << "unhandled transaction type.  Transaction follows:"));
           debugTransaction(mem_trans);
