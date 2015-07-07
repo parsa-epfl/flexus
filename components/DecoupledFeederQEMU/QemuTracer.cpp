@@ -642,12 +642,13 @@ private:
 		//Create QemuTracer Factory
 		Qemu::Factory<DMATracer> tracer_factory;
 		API::conf_class_t * trace_class = tracer_factory.getQemuClass();
-		registerDMAInterface();
 
 		std::string tracer_name("dma-tracer");
 		theDMATracer = tracer_factory.create(tracer_name);
 		DBG_( Crit, ( << "Connecting to DMA memory map" ) );
 		theDMATracer->init(toDMA);
+
+		registerDMAInterface();
 	}
 
   void registerTimingInterface(/*QemuTracerImpl * p*/) { 
@@ -688,11 +689,11 @@ private:
 			  , callback
 			  );*/
     //FIXME: I am not sure how best to pass the object to the callback function. This way could possibly cause problems with multiple cpus
-      DMATracerImpl * p = new DMATracerImpl(0);
+    DMATracerImpl * p = (&theDMATracer);
 	  API::QEMU_insert_callback(
 			    QEMUFLEX_GENERIC_CALLBACK,
 			    API::QEMU_dma_mem_trans
-			  , ((void*) &(p[0]))
+			    , ((void*)p)
 			  , (void*)&DMAMemHierOperate
 			  );
   }
@@ -727,7 +728,8 @@ extern "C"{
 			  , API::memory_transaction_t * mem_trans
 			  )
 	{
-		(static_cast<DMATracerImpl*>(obj))->dma_mem_hier_operate(space, mem_trans);
+	  DMATracerImpl* tracer = reinterpret_cast<DMATracerImpl*>(obj);
+	  tracer->dma_mem_hier_operate(space, mem_trans);
 	};
 }
 
