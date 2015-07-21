@@ -16,6 +16,7 @@ GCC_SELECTED=$(if $(ICC_SELECTED)$(DOXYGEN_SELECTED),$(filter gcc,$(TARGET_OPTIO
 override X86_SELECTED=$(filter x86,$(TARGET_OPTIONS))
 override V9_SELECTED=$(filter v9,$(TARGET_OPTIONS))
 override ARM_SELECTED=$(filter arm,$(TARGET_OPTIONS))
+override CLOBBER_SELECTED=$(filter clobber,$(TARGET_OPTIONS))
 #override V9_SELECTED=$(if $(X86_SELECTED),$(filter v9,$(TARGET_OPTIONS)),v9)
 #override ARM_SELECTED=$(if $(X86_SELECTED)$(V9_SELECTED),$(filter arm,$(TARGET_OPTIONS)),arm)
 #override ARM_SELECTED=$(if $(X86_SELECTED),$(filter ARM,$(TARGET_OPTIONS)),$(if $(V9_SELECTED),$(filter ARM,$(TARGET_OPTIONS)),ARM))))
@@ -51,6 +52,11 @@ ifeq ($(V9_SELECTED),v9)
 	cd $(COMPONENTS_DIR)/$@ ; $(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.component $(TARGET) SELECTED_CC=gcc TARGET_PLATFORM=v9 SELECTED_DEBUG=$(DEBUG_SETTING) COMPONENT=$@
 endif
 
+# clobber target
+ifeq ($(CLOBBER_SELECTED),clobber)
+	cd $(COMPONENTS_DIR)/$@ ; $(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.component clobber COMPONENT=$@
+endif
+
 endif
 # End GCC targets
 
@@ -72,6 +78,11 @@ endif
 # ARM with icc
 ifeq ($(ARM_SELECTED),arm)
 	cd $(COMPONENTS_DIR)/$@ ; $(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.component $(TARGET) SELECTED_CC=icc TARGET_PLATFORM=arm SELECTED_DEBUG=$(DEBUG_SETTING) COMPONENT=$@
+endif
+
+# clobber target
+ifeq ($(CLOBBER_SELECTED),clobber)
+	cd $(COMPONENTS_DIR)/$@ ; $(MAKE) $(SILENT_MAKE) -f $(FLEXUS_ROOT)/makefile.component clobber COMPONENT=$@
 endif
 
 endif
