@@ -30,6 +30,8 @@ extern "C" {
 namespace Flexus {
 namespace Simics {
 
+void runPython(std::vector<std::string> & aCommandVector);
+
 namespace aux_ {
 //Stub function declarations which assist in making this code behave properly
 //both with and without simics
