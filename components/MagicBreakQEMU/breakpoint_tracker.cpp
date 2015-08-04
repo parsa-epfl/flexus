@@ -584,6 +584,9 @@ uint64_t readG(Qemu::API::conf_object_t *cpu, int reg){
 #if FLEXUS_TARGET_IS(v9)
   uint64_t reg_content;
   Qemu::API::QEMU_read_register(cpu, reg, NULL, &reg_content);
+#elif FLEXUS_TARGET_IS(ARM)
+  uint64_t reg_content;
+  Qemu::API::QEMU_read_register(cpu, reg, NULL, &reg_content);
 #elif FLEXUS_TARGET_IS(x86)
   __uint128_t reg_content;
   Qemu::API::QEMU_read_register(cpu, reg, NULL, &reg_content);

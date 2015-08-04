@@ -9,12 +9,16 @@
 #define CAT_D(x,y) x##y
 
 #ifdef TARGET_PLATFORM
+#define TARGET_PLATFORM_x86 0
+#define TARGET_PLATFORM_v9 1
+#define TARGET_PLATFORM_arm 2
+#define DETECTED_TARGET_PLATFORM CAT(TARGET_PLATFORM_, TARGET_PLATFORM)
 
-#if TARGET_PLATFORM == x86
+#if DETECTED_TARGET_PLATFORM == TARGET_PLATFORM_x86
 #include <core/targets/x86.hpp>
-#elif TARGET_PLATFORM == v9
+#elif DETECTED_TARGET_PLATFORM == TARGET_PLATFORM_v9
 #include <core/targets/v9.hpp>
-#elif TARGET_PLATFORM == ARM
+#elif DETECTED_TARGET_PLATFORM == TARGET_PLATFORM_arm
 #include <core/targets/ARM.hpp>
 #else
 #error "No correct platform specified"

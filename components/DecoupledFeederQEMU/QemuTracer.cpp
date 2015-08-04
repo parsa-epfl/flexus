@@ -240,7 +240,6 @@ public:
   API::cycles_t trace_mem_hier_operate(
 				       API::conf_object_t * space,
 				       API::memory_transaction_t * mem_trans ) {
-    API::CPUState * cs = reinterpret_cast<API::CPUState*>(mem_trans->s.cpu_state);
     int mn = API::QEMU_get_processor_number(theCPU);
     //Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
     //toL1D((int32_t) 0, msg); 
@@ -255,7 +254,7 @@ public:
 #endif
 
 #if FLEXUS_TARGET_IS(v9)
-    if (! mem_trans->cache_physical ) {
+    if (! mem_trans->sparc_specific.cache_physical ) {
       //Count data accesses
       IS_PRIV(mem_trans) ?  theOSStats->theUncacheableOps++ : theUserStats->theUncacheableOps++ ;
       theBothStats->theUncacheableOps++;
@@ -265,7 +264,7 @@ public:
    
 #if 0
 #if FLEXUS_TARGET_IS(v9)
-    if (mem_trans->address_space == 0x71 ) {
+    if (mem_trans->sparc_specific.address_space == 0x71 ) {
       //BLK stores to ASI 71.
       //These stores update the data caches on hit, but do not allocate on
       //miss.  The best way to model these in
@@ -403,7 +402,7 @@ public:
       }
     }
 #if FLEXUS_TARGET_IS(v9)
-    if (mem_trans->address_space == 0x71 ) {
+    if (mem_trans->sparc_specific.address_space == 0x71 ) {
       //BLK stores to ASI 71.
       //These stores update the data caches on hit, but do not allocate on
       //miss.  The best way to model these in

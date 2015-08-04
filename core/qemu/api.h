@@ -2,6 +2,10 @@
 #define QEMU_API_H
 #include <inttypes.h>
 #include <stdlib.h>
+//#include "cpu.h"
+//#include "qom/cpu.h"
+//#include "qemu-common.h"
+//#include "qemu/option.h"
 
 #ifdef DEBUG // temporary, just to make requirements of dummies clear
 #include <assert.h>
@@ -22,28 +26,11 @@ typedef uint64_t logical_address_t;
 typedef void* conf_class_t;
 typedef int exception_type_t;
 
+// query the content/size of a register
+// if reg_size != NULL, write the size of the register (in bytes) in reg_size
+// if data_out != NULL, write the content of the register in data_out
+void cpu_read_register( void *env_ptr, int reg_index, unsigned *reg_size, void *data_out );
 
-// not defined in api.c, defined in external binaries (exec.o, libqemuutil.a)
-typedef struct CPUState CPUState;
-
-struct QemuOptsList;
-struct QemuOpts;
-typedef struct QemuOptsList QemuOptsList;
-typedef struct QemuOpts QemuOpts;
-
-typedef uint64_t hwaddr;
-
-void cpu_physical_memory_rw(hwaddr addr, uint8_t *buf,
-		                            int len, int is_write);
-
-void pause_all_vcpus(void);
-CPUState *qemu_get_cpu(int index);
-QemuOpts *qemu_opts_find(QemuOptsList *list, const char *id);
-QemuOptsList *qemu_find_opts(const char *group);
-uint64_t qemu_opt_get_number(QemuOpts *opts, const char *name, 
-		uint64_t defval);
-
-void cpu_read_register(void *env_ptr, int reg_index, unsigned *reg_size, void *data_out);
 physical_address_t mmu_logical_to_physical(void *cs, logical_address_t va);
 uint64_t cpu_get_program_counter(void *cs);
 void* cpu_get_address_space(void *cs);
@@ -293,6 +280,9 @@ typedef enum {
 	QEMU_DI_Data
 } data_or_instr_t;
 
+conf_object_t *QEMU_get_phys_memory(conf_object_t *cpu);
+conf_object_t *QEMU_get_ethernet(void);
+
 //[???]based on name it clears exceptions
 int QEMU_clear_exception(void);
 
@@ -310,8 +300,6 @@ uint64_t QEMU_read_phys_memory(conf_object_t *cpu,
 								physical_address_t pa, int bytes);
 // get the physical memory for a given cpu.
 conf_object_t *QEMU_get_phys_mem(conf_object_t *cpu);
-// get the network device for ethernet frame tracing
-conf_object_t *QEMU_get_ethernet(void);
 // return a conf_object_t of the cpu in question.
 conf_object_t *QEMU_get_cpu_by_index(int index);
 
@@ -321,7 +309,7 @@ int QEMU_get_processor_number(conf_object_t *cpu);
 // how many instructions have been executed since the start of QEMU for a CPU
 uint64_t QEMU_step_count(conf_object_t *cpu);
 
-// return an array of all processorsthe totalt number of processors
+// return an array of all processorsthe totaltthe total number of processors
 // (numSockets * numCores * numthreads CPUs)
 int QEMU_get_num_cpus(void);
 
@@ -344,7 +332,9 @@ int QEMU_cpu_get_core_id(conf_object_t *cpu);
 int QEMU_cpu_get_thread_id(conf_object_t *cpu);
 
 // return an array of all processors
+// (numSockets * numCores * numthreads CPUs)
 conf_object_t *QEMU_get_all_processors(int *numCPUs);
+
 // set the frequency of a given cpu.
 int QEMU_set_tick_frequency(conf_object_t *cpu, double tick_freq);
 // get freq of given cpu
@@ -377,7 +367,7 @@ int QEMU_mem_op_is_read(generic_transaction_t *mop);
 // m - generic_transaction_t*
 // c - conf_object_t*
 // v - void*
-
+typedef void (*cb_func_void)(void);
 typedef void (*cb_func_noc_t)(void *, conf_object_t *);
 typedef void (*cb_func_noc_t2)(void*, void *, conf_object_t *);
 typedef void (*cb_func_nocI_t)(void *, conf_object_t *, int64_t);
@@ -398,6 +388,7 @@ typedef void (*cb_func_ncm_t2)(
 		);
 typedef void (*cb_func_nocs_t)(void *, conf_object_t *, char *);
 typedef void (*cb_func_nocs_t2)(void *, void *, conf_object_t *, char *);
+
 
 typedef struct {
 	void *class_data;
@@ -434,7 +425,6 @@ typedef struct {
 	conf_object_t *obj;
 	char *string;
 } QEMU_nocs;
-
 typedef union {
 	QEMU_noc	*noc;
 	QEMU_nocIs	*nocIs;
@@ -452,7 +442,7 @@ typedef enum {
     QEMU_exception_return,
     QEMU_magic_instruction,
     QEMU_ethernet_frame,
-    QEMU_ethernet_network_frame, 
+    QEMU_ethernet_network_frame,
     QEMU_periodic_event,
     QEMU_xterm_break_string,
     QEMU_gfx_break_string,
