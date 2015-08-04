@@ -3,7 +3,7 @@
 #define FLEXUS_BEGIN_COMPONENT TraceTrackerComponent
 #include FLEXUS_BEGIN_COMPONENT_DECLARATION()
 
-#include "components/Common/TraceTracker.hpp"
+#include "components/CommonQEMU/TraceTracker.hpp"
 
 COMPONENT_PARAMETERS(
   PARAMETER(Enable, bool, "Enable Trace Tracker", "enable", false )

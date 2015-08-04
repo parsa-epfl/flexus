@@ -1,4 +1,4 @@
-#include <components/TraceTracker/TraceTrackerComponent.hpp>
+#include <components/TraceTrackerQEMU/TraceTrackerComponent.hpp>
 
 #define DBG_DeclareCategories TraceTrack
 #define DBG_SetDefaultOps AddCat(TraceTrack)
