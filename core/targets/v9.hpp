@@ -24,12 +24,6 @@
 #define TARGET_MEM_TRANS v9_memory_transaction_t
 
 
-//FIXME Need to make sure CONFIG_QEMU is defined elsewhere
-#ifndef CONFIG_QEMU
-#define CONFIG_QEMU
-#endif
-
-
 #ifndef CONFIG_QEMU
 #define FLEXUS_SIMICS_TARGET_REGISTER_ID() <core/simics/v9/register_id.hpp>
 #define FLEXUS_SIMICS_TARGET_INSTRUCTION_EXTENSTIONS() <core/simics/v9/instructions.hpp>
@@ -43,6 +37,6 @@
 #define FLEXUS_SIMICS_API_ARCH_HEADER <simics/sparc_api.h>
 #endif
 #else
-//QEMU stuff? no idea what to put here.
+//QEMU stuff: nothing really needed
 #endif
 
