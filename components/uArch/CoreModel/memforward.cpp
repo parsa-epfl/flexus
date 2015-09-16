@@ -1,5 +1,6 @@
 #include "coreModelImpl.hpp"
 #include <core/simics/mai_api.hpp>
+#include <boost/optional/optional_io.hpp>
 
 #define DBG_DeclareCategories uArchCat
 #define DBG_SetDefaultOps AddCat(uArchCat)

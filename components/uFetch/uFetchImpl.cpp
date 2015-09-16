@@ -589,7 +589,7 @@ private:
             theIcacheVMiss[i] = boost::none;
             theFetchReplyTransactionTracker[i] = tracker;
             if (aTransport[TransactionTrackerTag] && aTransport[TransactionTrackerTag]->fillLevel()) {
-              theLastMiss[i] = std::make_pair((reply->address() & theBlockMask), *aTransport[TransactionTrackerTag]->fillLevel());
+              theLastMiss[i] = std::make_pair(PhysicalMemoryAddress(reply->address() & theBlockMask), *aTransport[TransactionTrackerTag]->fillLevel());
             } else {
               DBG_(Dev, ( << "Received Fetch Reply with no TransactionTrackerTag" ));
             }

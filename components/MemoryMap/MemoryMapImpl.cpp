@@ -278,7 +278,7 @@ public:
           DBG_(VVerb, ( << "Page " << addr << " assigned to node " << node ) );
           HomeMap::iterator ignored;
           bool is_new;
-          boost::tie(ignored, is_new) = theHomeMap.insert( std::make_pair(addr, node) );
+          std::tie(ignored, is_new) = theHomeMap.insert( {PhysicalMemoryAddress(addr), node_id_t(node)} );
           DBG_Assert(is_new);
           ++count;
         }

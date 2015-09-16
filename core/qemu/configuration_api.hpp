@@ -265,12 +265,11 @@ public:
     theClass = &theStaticClass;
   }
   typename class_::object_type create(std::string aQemuName) {
-    //Ask simics to create the object for us
     API::conf_object_t * object = aux_::NewObject_stub(
-							const_cast<API::conf_class_t *>
-							( theClass->getQemuClass() )
-							, aQemuName
-						);
+              const_cast<API::conf_class_t *>
+              ( theClass->getQemuClass() )
+              , aQemuName
+            );
 
     if (!object) {
       throw QemuException(std::string("An exception occured while attempting to"

@@ -355,12 +355,9 @@ void CoreImpl::complete ( MemOp const & anOperation ) {
       theMSHRs.erase( match );
 
       //The MSHR has to be erased before we can call either of these
-
-      std::for_each
-      ( complete_list.begin()
-        , complete_list.end()
-        , ll::bind( &CoreImpl::completeLSQ, ll::var(this), ll::_1, anOperation )
-      );
+      for(auto& entry: complete_list){
+        this->completeLSQ(entry, anOperation);
+      }
 
       std::list< boost::intrusive_ptr<Instruction> >::iterator iter, end;
       iter = wake_list.begin();

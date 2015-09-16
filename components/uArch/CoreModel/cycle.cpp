@@ -1217,7 +1217,7 @@ void CoreImpl::doSquash() {
     {
       FLEXUS_PROFILE_N("CoreImpl::doSquash() squash");
       rob_t::reverse_iterator iter = theROB.rbegin();
-      rob_t::reverse_iterator end = make_reverse_iterator( erase_iter );
+      rob_t::reverse_iterator end = boost::make_reverse_iterator( erase_iter );
       while ( iter != end) {
         (*iter)->squash();
         ++iter;

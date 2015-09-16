@@ -545,8 +545,12 @@ public:
   }
   typename class_::object_type create(std::string aSimicsName) {
     //Ask simics to create the object for us
-    API::conf_object_t * object = aux_::NewObject_stub(
-                                    const_cast<API::conf_class_t *>( theClass->getSimicsClass() ), aSimicsName, theClass->constructor);
+    auto constructor = theClass->constructor;
+    API::conf_object_t * object = 
+      aux_::NewObject_stub(
+        const_cast<API::conf_class_t *>( theClass->getSimicsClass() ), 
+        aSimicsName, *constructor
+      );
 
     if (!object) {
       throw SimicsException(std::string("An exception occured while attempting to create object ") + aSimicsName);

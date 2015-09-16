@@ -6,7 +6,7 @@
 namespace nNetShim
 {
 
-  typedef enum ChannelState
+  enum ChannelState
     {
       CS_IDLE,
       CS_WAIT_FOR_ACCEPT,

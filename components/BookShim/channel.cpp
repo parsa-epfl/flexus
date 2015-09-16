@@ -19,7 +19,7 @@ namespace nNetShim
       if ((i == 0 || i == 1) && bufferCount_ == INT_MAX) {
         bufferCount[i] = 1;
       } else {
-	bufferCount[i] = bufferCount_;
+  bufferCount[i] = bufferCount_;
       }
     }
 
@@ -95,7 +95,7 @@ namespace nNetShim
       out << " " << buffersUsed[i];
 
       out << " / " << bufferCount[i]
-	  << " buffers used";
+    << " buffers used";
 
       out << endl;
     }
@@ -126,7 +126,7 @@ namespace nNetShim
 
     buffersUsed[msg->networkVC]++;
 
-	TRACE ( msg, "InputPort::insertMessage " << msg->serial << " into buffer with " 
+  TRACE ( msg, "InputPort::insertMessage " << msg->serial << " into buffer with " 
                       << buffersUsed[msg->networkVC] << " entries" );
 
     // Queue for a delay
@@ -208,7 +208,7 @@ namespace nNetShim
 
     buffersUsed[msg->networkVC]++;
 
-	TRACE ( msg, "OutputPort::insertMessage " << msg->serial << " into buffer with " 
+  TRACE ( msg, "OutputPort::insertMessage " << msg->serial << " into buffer with " 
                       << buffersUsed[msg->networkVC] << " entries" );
     
     channel->notifyWaitingMessage();
@@ -288,7 +288,7 @@ namespace nNetShim
               // For local node-switch channels, the channel occupancy is shorter 
               // than for switch-switch channels
               //busy = msg->transmitLatency / localLatencyDivider;
-			  // automatically round up to nearest integer
+        // automatically round up to nearest integer
               busy = (msg->transmitLatency + localLatencyDivider - 1) / localLatencyDivider;
               if ( busy <= 0 ) busy = 1;
               TRACE ( msg, "Channel setting busy time to: " << busy << " with divider: " 
