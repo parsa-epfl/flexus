@@ -684,7 +684,7 @@ protected:
       BlockDirectoryEntry_p block(new BlockDirectoryEntry(addr));
       std::list<TaglessDirectoryBucket *>::iterator bucket_iter = result->theBuckets.begin();
       for (; bucket_iter != result->theBuckets.end(); bucket_iter++) {
-        (*bucket_iter)->thePreciseDirectory.insert(std::make_pair<PhysicalMemoryAddress, BlockDirectoryEntry_p>(addr, block));
+        (*bucket_iter)->thePreciseDirectory.insert(std::make_pair(addr, block));
       }
       result->theTrueState = block;
     } else {

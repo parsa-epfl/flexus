@@ -16,7 +16,7 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/set.hpp>
 #include <boost/serialization/serialization.hpp>
-#include <boost/serialization/is_abstract.hpp>
+#include <boost/serialization/export.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
 namespace ll = boost::lambda;
@@ -107,7 +107,7 @@ void load(Archive & ar, ::boost::intrusive_ptr<StatValueArrayBase> & ptr, uint32
 } //Stat
 } //Flexus
 
-BOOST_IS_ABSTRACT(Flexus::Stat::aux_::StatValueArrayBase)
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(Flexus::Stat::aux_::StatValueArrayBase)
 
 namespace boost {
 namespace serialization {

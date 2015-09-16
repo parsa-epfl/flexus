@@ -49,15 +49,27 @@ void Break();
 namespace Dbg {
 
 void CompoundAction::printConfiguration(std::ostream & anOstream, std::string const & anIndent) {
-  std::for_each(theActions.begin(), theActions.end(), bind(&Action::printConfiguration, _1, var(anOstream), anIndent) );
+	for(auto* anAction: theActions)
+	{
+		anAction->printConfiguration(anOstream, anIndent);
+	}
+  //std::for_each(theActions.begin(), theActions.end(), bind(&Action::printConfiguration, _1, var(anOstream), anIndent) );
 }
 
 void CompoundAction::process(Entry const & anEntry) {
-  std::for_each(theActions.begin(), theActions.end(), bind(&Action::process, _1, anEntry));
+	for (auto* anAction : theActions)
+	{
+		anAction->process(anEntry);
+	}
+  //std::for_each(theActions.begin(), theActions.end(), bind(&Action::process, _1, anEntry));
 }
 
 CompoundAction::~CompoundAction() {
-  std::for_each(theActions.begin(), theActions.end(), boost::lambda::delete_ptr()); //Clean up all pointers owned by theActions
+	for (auto* anAction : theActions)
+	{
+		delete anAction;
+	}
+  //std::for_each(theActions.begin(), theActions.end(), boost::lambda::delete_ptr()); //Clean up all pointers owned by theActions
 }
 
 void CompoundAction::add(std::auto_ptr<Action> anAction) {

@@ -3,6 +3,11 @@
 
 #include <boost/intrusive_ptr.hpp>
 #include <boost/lambda/lambda.hpp>
+#if __cplusplus > 199711L
+  #include <cstdint>
+#else
+  #include <stdint.h>
+#endif
 
 namespace boost {
 

@@ -1,5 +1,5 @@
-#include <boost/spirit/core.hpp>
-#include <boost/spirit/core.hpp>
+#include <boost/spirit/include/classic_core.hpp>
+//#include <boost/spirit/core.hpp>
 #include <iostream>
 #include <stack>
 #include <functional>
@@ -11,7 +11,7 @@ namespace Flexus {
 namespace Stat {
 namespace aux_ {
 
-using namespace boost::spirit;
+using namespace boost::spirit::classic;
 using namespace std;
 
 struct push_float {

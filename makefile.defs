@@ -5,13 +5,13 @@
 # environment
 
 # GCC Compiler Settings
-GCC_PATH=/home/parsacom/tools/gcc
-GCC_BINARY=g++
+GCC_PATH=$(CURRENT_TOOLCHAIN)
+GCC_BINARY=g++-5.2 --std=c++14
 GCC_VERSION_NOCHECK=true
 SIMICS_GLIBC_NOCHECK=true
 
 # Boost 1.33.1 path
-BOOST_PATH=/home/parsacom/tools/boost_1_33_1
+BOOST_PATH=$(EXT_STORAGE)/boost_1_59_0
 
 # Simics path
 SIMICS_PATH=/home/parsacom/tools/simics
@@ -51,19 +51,19 @@ SIMICS_X86_INCLUDE=$(SIMICS_INCLUDE)/simics
 SIMICS_ARM_INCLUDE=$(SIMICS_INCLUDE)/simics
 
 # FIXME user has to update manually
-#QEMU_LIB_DIR=/home/hillouli/qemuflex/qemu-parsa/sparc64-softmmu/
-#QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-sparc64
-#QEMU_LIB_DIR=/home/hillouli/qemuflex/qemu-parsa/x86_64-softmmu/
+QEMU_LIB_DIR=$(EXT_STORAGE)/flexus_repo/qemuflex/qemu-parsa/sparc64-softmmu/
+QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-sparc64
+#QEMU_LIB_DIR=$(EXT_STORAGE)/flexus_repo/qemuflex/qemu-parsa/x86_64-softmmu/
 #QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-x86_64
-#QEMU_LIB_DIR=/home/hillouli/qemuflex/qemu-parsa/arm-softmmu/
+#QEMU_LIB_DIR=$(EXT_STORAGE)/flexus_repo/qemuflex/qemu-parsa/arm-softmmu/
 #QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-arm
-QEMU_LIB_DIR=/home/hillouli/qemuflex/qemu-parsa/aarch64-softmmu/
-QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-aarch64
+#QEMU_LIB_DIR=$(EXT_STORAGE)/flexus_repo/qemuflex/qemu-parsa/aarch64-softmmu/
+#QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-aarch64
 export TARGET_EMULATOR=qemu
 #export TARGET_EMULATOR=simics
 
 INCLUDES=-isystem $(BOOST_INCLUDE) -isystem $(SIMICS_INCLUDE) $(QEMU_INCLUDE) -I$(FLEXUS_INCLUDE) -Ibooksim -Ibooksim/arbiters -Ibooksim/allocators -Ibooksim/routers -Ibooksim/networks -IDRAMSim2
-BOOST_LIBRARIES=-Wl,--no-whole-archive -lboost_date_time -lboost_regex -lboost_serialization -lboost_iostreams -L/home/hillouli/Documents/qemuflex/flexus/stat-manager -lz
+BOOST_LIBRARIES=-L$(FLEXUS_INCLUDE)/core/lib -Wl,--no-whole-archive -lboost_date_time -lboost_regex -lboost_serialization -lboost_iostreams -lboost_system -L/home/hillouli/Documents/qemuflex/flexus/stat-manager -lz
 
 # other constants
 # List of "special" cpp files in components that are not part of a components library
@@ -77,7 +77,7 @@ SPECIAL_COMPONENT_CPPS = test.cpp
 GCC=$(GCC_PATH)/bin/$(GCC_BINARY)
 GCC_LIB_PATH=$(GCC_PATH)/lib
 GCC_OPTFLAGS=-O3 -funroll-loops -fno-strict-aliasing
-GCC_LANGFLAGS=-Wall -fmessage-length=160 -x c++ -fPIC -Werror -Wno-unused -DNO_STORAGE
+GCC_LANGFLAGS=-Wall -fmessage-length=160 -x c++ -fPIC -Werror -Wno-unused -Wno-deprecated -Wno-maybe-uninitialized -DNO_STORAGE
 ifeq "$(SIMICS_ARCH)" "amd64-linux"
 ARCH_FLAGS=-DX86_64
 else

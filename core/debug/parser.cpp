@@ -3,10 +3,14 @@
 
 #define PHOENIX_LIMIT 6
 
-#include <boost/spirit/core.hpp>
-#include <boost/spirit/utility.hpp>
-#include <boost/spirit/attribute.hpp>
-#include <boost/spirit/iterator/file_iterator.hpp>
+#include <boost/spirit/include/classic_core.hpp>
+#include <boost/spirit/include/classic_utility.hpp>
+#include <boost/spirit/include/classic_attribute.hpp>
+#include <boost/spirit/include/classic_file_iterator.hpp>
+// #include <boost/spirit/core.hpp>
+// #include <boost/spirit/utility.hpp>
+// #include <boost/spirit/attribute.hpp>
+// #include <boost/spirit/iterator/file_iterator.hpp>
 
 #include <core/boost_extensions/phoenix.hpp>
 
@@ -14,7 +18,7 @@ namespace Flexus {
 namespace Dbg {
 
 namespace aux_ {
-using namespace boost::spirit;
+using namespace boost::spirit::classic;
 using namespace phoenix;
 
 int32_t s_crit = SevCrit;
@@ -67,61 +71,61 @@ public:
 
 //Closures for parse rules.  These closures set up local variable scopes during parsing
 //so parse rules can pass data around
-struct log_closure : public boost::spirit::closure<log_closure, Action *, CompoundFormat * > {
+struct log_closure : public boost::spirit::classic::closure<log_closure, Action *, CompoundFormat * > {
   member1 theAction;
   member2 theFormat;
 };
 
-struct spill_closure : public boost::spirit::closure<spill_closure, Action *, CompoundFormat *, std::string > {
+struct spill_closure : public boost::spirit::classic::closure<spill_closure, Action *, CompoundFormat *, std::string > {
   member1 theAction;
   member2 theFormat;
   member3 theBuffer;
 };
 
-struct at_closure : public boost::spirit::closure<at_closure, uint64_t> {
+struct at_closure : public boost::spirit::classic::closure<at_closure, uint64_t> {
   member1 theCycle;
 };
 
-struct format_closure : public boost::spirit::closure<format_closure, Format * > {
+struct format_closure : public boost::spirit::classic::closure<format_closure, Format * > {
   member1 theFormat;
 };
 
-struct return_string_closure : public boost::spirit::closure<return_string_closure, std::string > {
+struct return_string_closure : public boost::spirit::classic::closure<return_string_closure, std::string > {
   member1 theRetVal;
 };
 
-struct return_longlong_closure : public boost::spirit::closure<return_longlong_closure, int64_t> {
+struct return_longlong_closure : public boost::spirit::classic::closure<return_longlong_closure, int64_t> {
   member1 theRetVal;
 };
 
-struct compound_filter_closure : public boost::spirit::closure<compound_filter_closure, CompoundFilter * > {
+struct compound_filter_closure : public boost::spirit::classic::closure<compound_filter_closure, CompoundFilter * > {
   member1 theChain;
 };
 
-struct return_filter_closure : public boost::spirit::closure<return_filter_closure, Filter *> {
+struct return_filter_closure : public boost::spirit::classic::closure<return_filter_closure, Filter *> {
   member1 theRetVal;
 };
 
-struct return_action_closure : public boost::spirit::closure<return_action_closure, Action *> {
+struct return_action_closure : public boost::spirit::classic::closure<return_action_closure, Action *> {
   member1 theRetVal;
 };
 
-struct general_filter_closure : public boost::spirit::closure<general_filter_closure, Filter *, std::string> {
+struct general_filter_closure : public boost::spirit::classic::closure<general_filter_closure, Filter *, std::string> {
   member1 theRetVal;
   member2 theFieldName;
 };
 
-struct severity_filter_closure : public boost::spirit::closure<severity_filter_closure, Filter *, int64_t> {
+struct severity_filter_closure : public boost::spirit::classic::closure<severity_filter_closure, Filter *, int64_t> {
   member1 theRetVal;
   member2 theSeverity;
 };
 
-struct return_severity_closure : public boost::spirit::closure<return_severity_closure, int64_t> {
+struct return_severity_closure : public boost::spirit::classic::closure<return_severity_closure, int64_t> {
   member1 theRetVal;
 };
 
 //The Debugger's parse grammar
-struct DebugGrammar : public boost::spirit::grammar<DebugGrammar> {
+struct DebugGrammar : public boost::spirit::classic::grammar<DebugGrammar> {
 
   //The parse context used to accumulate the results of the parse
   Context & theContext;
@@ -508,7 +512,7 @@ public:
 
   void parse(std::string const & aConfiguration) {
     theContext.reset();
-    if (boost::spirit::parse(aConfiguration.begin(), aConfiguration.end(), theDebugGrammar, boost::spirit::space_p).full) {
+    if (boost::spirit::classic::parse(aConfiguration.begin(), aConfiguration.end(), theDebugGrammar, boost::spirit::classic::space_p).full) {
       //Good!
     } else {
       std::cout << "parsing failed\n";
@@ -517,16 +521,16 @@ public:
 
   void parseFile(std::string const & aFileName) {
 
-    boost::spirit::file_iterator<> first(aFileName.c_str());
+    boost::spirit::classic::file_iterator<> first(aFileName.c_str());
 
     if (!first) {
 
       parse( std::string(built_in_debug_cfg) );
 
     } else {
-      boost::spirit::file_iterator<> last = first.make_end();
+      boost::spirit::classic::file_iterator<> last = first.make_end();
       theContext.reset();
-      if (boost::spirit::parse(first, last, theDebugGrammar, boost::spirit::space_p).full) {
+      if (boost::spirit::classic::parse(first, last, theDebugGrammar, boost::spirit::classic::space_p).full) {
         std::cout << "Successfully parsed debug configurations from " << aFileName << "\n";
       } else {
         std::cout << "DEBUG ERROR: Failed to parse debug configurations from " << aFileName << "\n";

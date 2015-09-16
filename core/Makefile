@@ -9,28 +9,28 @@ DOC_SOURCES = core_documentation.cpp
 PREFILTER_CORE_LIB_SOURCES = $(subst $(CORE_DIR)/,,$(shell ls $(CORE_DIR)/*/*.cpp)) $(subst $(CORE_DIR)/,,$(wildcard $(CORE_DIR)/*.cpp))
 CORE_LIB_SOURCES = $(filter-out $(STANDALONE_SOURCES) $(SIMICS_SOURCES) $(QEMU_SOURCES) $(TEST_SOURCES) $(DOC_SOURCES),$(PREFILTER_CORE_LIB_SOURCES))
 
-BOOST_DATE_TIME_PATH = $(BOOST_INCLUDE)/libs/date_time/src/gregorian
-BOOST_DATE_TIME_FILES = greg_month greg_weekday date_generators
-BOOST_DATE_TIME_SOURCES = $(addsuffix .cpp, $(BOOST_DATE_TIME_FILES))
+# BOOST_DATE_TIME_PATH = $(BOOST_INCLUDE)/libs/date_time/src/gregorian
+# BOOST_DATE_TIME_FILES = greg_month greg_weekday date_generators
+# BOOST_DATE_TIME_SOURCES = $(addsuffix .cpp, $(BOOST_DATE_TIME_FILES))
 
-BOOST_REGEX_PATH = $(BOOST_INCLUDE)/libs/regex/src
-BOOST_REGEX_FILES =  c_regex_traits cpp_regex_traits regex_traits_defaults \
-	cregex fileiter posix_api regex regex_debug w32_regex_traits icu static_mutex \
-	regex_raw_buffer wide_posix_api instances winstances usinstances wc_regex_traits
-BOOST_REGEX_SOURCES = $(addsuffix .cpp, $(BOOST_REGEX_FILES))
+# BOOST_REGEX_PATH = $(BOOST_INCLUDE)/libs/regex/src
+# BOOST_REGEX_FILES =  c_regex_traits cpp_regex_traits regex_traits_defaults \
+# 	cregex fileiter posix_api regex regex_debug w32_regex_traits icu static_mutex \
+# 	regex_raw_buffer wide_posix_api instances winstances usinstances wc_regex_traits
+# BOOST_REGEX_SOURCES = $(addsuffix .cpp, $(BOOST_REGEX_FILES))
 
-BOOST_SERIALIZATION_PATH = $(BOOST_INCLUDE)/libs/serialization/src
-BOOST_SERIALIZATION_FILES =      basic_archive basic_archive_impl basic_iarchive \
-	basic_iserializer basic_oarchive basic_oserializer basic_pointer_iserializer \
-	basic_pointer_oserializer basic_serializer_map basic_text_iprimitive \
-	basic_text_oprimitive binary_iarchive  binary_oarchive codecvt_null \
-	extended_type_info extended_type_info_no_rtti extended_type_info_typeid polymorphic_iarchive \
-	polymorphic_oarchive stl_port text_iarchive text_oarchive void_cast
-BOOST_SERIALIZATION_SOURCES = $(addsuffix .cpp, $(BOOST_SERIALIZATION_FILES))
+# BOOST_SERIALIZATION_PATH = $(BOOST_INCLUDE)/libs/serialization/src
+# BOOST_SERIALIZATION_FILES =      basic_archive basic_archive_impl basic_iarchive \
+# 	basic_iserializer basic_oarchive basic_oserializer basic_pointer_iserializer \
+# 	basic_pointer_oserializer basic_serializer_map basic_text_iprimitive \
+# 	basic_text_oprimitive binary_iarchive  binary_oarchive codecvt_null \
+# 	extended_type_info extended_type_info_no_rtti extended_type_info_typeid polymorphic_iarchive \
+# 	polymorphic_oarchive stl_port text_iarchive text_oarchive void_cast
+# BOOST_SERIALIZATION_SOURCES = $(addsuffix .cpp, $(BOOST_SERIALIZATION_FILES))
 
-BOOST_IOSTREAMS_PATH = $(BOOST_INCLUDE)/libs/iostreams/src
-BOOST_IOSTREAMS_FILES = zlib bzip2 file_descriptor mapped_file
-BOOST_IOSTREAMS_SOURCES = $(addsuffix .cpp, $(BOOST_IOSTREAMS_FILES))
+# BOOST_IOSTREAMS_PATH = $(BOOST_INCLUDE)/libs/iostreams/src
+# BOOST_IOSTREAMS_FILES = zlib bzip2 file_descriptor mapped_file
+# BOOST_IOSTREAMS_SOURCES = $(addsuffix .cpp, $(BOOST_IOSTREAMS_FILES))
 
 include $(FLEXUS_ROOT)/makefile.variant
 
@@ -54,20 +54,32 @@ qemu: depend core
 test: depend core
 	$(MAKE) -f makefile.$(SELECTED_CC) test $(BUILD_OPTIONS) SOURCES="$(TEST_SOURCES)"
 
-core: depend iostreams
+# core: depend iostreams
+# 	$(MAKE) -f makefile.$(SELECTED_CC) libcore_$(VARIANT).a $(BUILD_OPTIONS) SOURCES="$(CORE_LIB_SOURCES)"
+
+core: depend boost_libs
 	$(MAKE) -f makefile.$(SELECTED_CC) libcore_$(VARIANT).a $(BUILD_OPTIONS) SOURCES="$(CORE_LIB_SOURCES)"
 
-date_time: depend
-	$(MAKE) -f makefile.$(SELECTED_CC) libboost_date_time.a $(BUILD_OPTIONS) BOOST_SRC_DIR="$(BOOST_DATE_TIME_PATH)" SOURCES="$(BOOST_DATE_TIME_SOURCES)"
+boost_libs:
+	mkdir -p lib
+	cd $(BOOST_INCLUDE) && \
+	export PATH=$(GCC_PATH):$(PATH) && \
+	./bootstrap.sh --without-icu --with-libraries=date_time,regex,serialization,iostreams,system && \
+	echo "Building Boost Libraries: date_time regex serialization iostreams system" && \
+	./b2 --build-dir=/tmp/build-boost --stagedir=$(FLEXUS_ROOT)/core variant=release link=static,shared stage || \
+	echo "Boost already built..."
 
-regex: depend date_time
-	$(MAKE) -f makefile.$(SELECTED_CC) libboost_regex.a $(BUILD_OPTIONS)  BOOST_SRC_DIR="$(BOOST_REGEX_PATH)" SOURCES="$(BOOST_REGEX_SOURCES)"
+# date_time: depend
+# 	$(MAKE) -f makefile.$(SELECTED_CC) libboost_date_time.a $(BUILD_OPTIONS) BOOST_SRC_DIR="$(BOOST_DATE_TIME_PATH)" SOURCES="$(BOOST_DATE_TIME_SOURCES)"
 
-serialization: depend regex
-	$(MAKE) -f makefile.$(SELECTED_CC) libboost_serialization.a $(BUILD_OPTIONS)  BOOST_SRC_DIR="$(BOOST_SERIALIZATION_PATH)" SOURCES="$(BOOST_SERIALIZATION_SOURCES)"
+# regex: depend date_time
+# 	$(MAKE) -f makefile.$(SELECTED_CC) libboost_regex.a $(BUILD_OPTIONS)  BOOST_SRC_DIR="$(BOOST_REGEX_PATH)" SOURCES="$(BOOST_REGEX_SOURCES)"
 
-iostreams: depend serialization
-	$(MAKE) -f makefile.$(SELECTED_CC) libboost_iostreams.a $(BUILD_OPTIONS)  BOOST_SRC_DIR="$(BOOST_IOSTREAMS_PATH)" SOURCES="$(BOOST_IOSTREAMS_SOURCES)"
+# serialization: depend regex
+# 	$(MAKE) -f makefile.$(SELECTED_CC) libboost_serialization.a $(BUILD_OPTIONS)  BOOST_SRC_DIR="$(BOOST_SERIALIZATION_PATH)" SOURCES="$(BOOST_SERIALIZATION_SOURCES)"
+
+# iostreams: depend serialization
+# 	$(MAKE) -f makefile.$(SELECTED_CC) libboost_iostreams.a $(BUILD_OPTIONS)  BOOST_SRC_DIR="$(BOOST_IOSTREAMS_PATH)" SOURCES="$(BOOST_IOSTREAMS_SOURCES)"
 
 
 clean:

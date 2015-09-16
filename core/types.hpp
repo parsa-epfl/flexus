@@ -5,6 +5,11 @@
 #include <iomanip>
 #include <boost/serialization/serialization.hpp>
 #include <boost/operators.hpp>
+#if __cplusplus > 199711L
+  #include <cstdint>
+#else
+  #include <stdint.h>
+#endif
 
 #include <core/target.hpp>
 

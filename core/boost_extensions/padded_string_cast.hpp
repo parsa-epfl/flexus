@@ -4,6 +4,11 @@
 #include <sstream>
 #include <string>
 #include <iomanip>
+#if __cplusplus > 199711L
+  #include <cstdint>
+#else
+  #include <stdint.h>
+#endif
 
 namespace boost {
 

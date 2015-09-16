@@ -164,7 +164,7 @@ protected:
   InfiniteDirectoryEntry * findOrCreateEntry(PhysicalMemoryAddress addr) {
     inf_directory_t::iterator iter;
     bool success;
-    boost::tie(iter, success) = theDirectory.insert( std::make_pair<PhysicalMemoryAddress, InfiniteDirectoryEntry_p>(addr, InfiniteDirectoryEntry_p()) );
+    boost::tie(iter, success) = theDirectory.insert( std::make_pair(addr, InfiniteDirectoryEntry_p()) );
     if (success) {
       iter->second = new InfiniteDirectoryEntry(addr);
     }

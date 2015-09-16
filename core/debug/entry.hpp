@@ -1,7 +1,6 @@
 #ifndef FLEXUS_CORE_DEBUG_ENTRY_HPP_INCLUDED
 #define FLEXUS_CORE_DEBUG_ENTRY_HPP_INCLUDED
 
-#include <string>
 #include <set>
 
 #include <core/debug/field.hpp>

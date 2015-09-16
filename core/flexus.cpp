@@ -24,8 +24,12 @@
 
 #include <core/boost_extensions/padded_string_cast.hpp>
 
+#ifndef __STDC_CONSTANT_MACROS
 #define __STDC_CONSTANT_MACROS
+#endif
 #include <boost/date_time/posix_time/posix_time.hpp>
+
+
 #include <boost/lambda/lambda.hpp>
 
 //FIXME don't do this need to make sure CONFIG_QEMU is defined elsewhere
