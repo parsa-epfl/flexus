@@ -5,13 +5,13 @@
 # environment
 
 # GCC Compiler Settings
-GCC_PATH=$(CURRENT_TOOLCHAIN)
+GCC_PATH=/net/parsasrv3/mnt/parsafiler3/homedirs/psaropou/toolchain-5.2
 GCC_BINARY=g++-5.2 --std=c++14
 GCC_VERSION_NOCHECK=true
 SIMICS_GLIBC_NOCHECK=true
 
 # Boost 1.33.1 path
-BOOST_PATH=$(EXT_STORAGE)/boost_1_59_0
+BOOST_PATH=/net/parsasrv3/mnt/parsafiler3/homedirs/psaropou/boost_1_59_0
 
 # Simics path
 SIMICS_PATH=/home/parsacom/tools/simics
@@ -51,7 +51,7 @@ SIMICS_X86_INCLUDE=$(SIMICS_INCLUDE)/simics
 SIMICS_ARM_INCLUDE=$(SIMICS_INCLUDE)/simics
 
 # FIXME user has to update manually
-QEMU_LIB_DIR=$(EXT_STORAGE)/flexus_repo/qemuflex/qemu-parsa/sparc64-softmmu/
+QEMU_LIB_DIR=/home/daglis/flexus/qemuflex/qemu-parsa/sparc64-softmmu/
 QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-sparc64
 #QEMU_LIB_DIR=$(EXT_STORAGE)/flexus_repo/qemuflex/qemu-parsa/x86_64-softmmu/
 #QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-x86_64
