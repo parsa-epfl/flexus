@@ -16,7 +16,7 @@
 #include <components/Common/Slices/AbstractInstruction.hpp>
 #include <components/Common/Slices/MemOp.hpp>
 #include <components/Common/Slices/TransactionTracker.hpp>
-#include <core/simics/sparcmmu.hpp>
+#include <core/qemu/sparcmmu.hpp>
 
 namespace Flexus {
 namespace SharedTypes {

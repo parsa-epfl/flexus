@@ -355,6 +355,13 @@ int QEMU_mem_op_is_write(generic_transaction_t *mop);
 //[???]I assume return true if it is read, false otherwise
 int QEMU_mem_op_is_read(generic_transaction_t *mop);
 
+//ALEX - begin
+//For Timing (mai)
+instruction_error_t QEMU_instruction_handle_interrupt(conf_object_t *cpu, pseudo_exceptions_t pendingInterrupt);
+int QEMU_get_pending_exception();
+int QEMU_advance();
+//ALEX - end
+
 // callback function types.
 // 
 // naming convention:

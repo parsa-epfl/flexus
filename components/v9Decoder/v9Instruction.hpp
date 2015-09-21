@@ -6,7 +6,7 @@
 
 #include <components/Common/Slices/FillLevel.hpp>
 #include <components/uFetch/uFetchTypes.hpp>
-#include <core/simics/sparcmmu.hpp>
+#include <core/qemu/sparcmmu.hpp>
 
 namespace nv9Decoder {
 

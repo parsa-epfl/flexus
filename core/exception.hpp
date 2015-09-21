@@ -146,7 +146,7 @@ public:
     base(aFile, aLine, anExplanation) {}
   virtual ~QemuException() throw() {}
   virtual char const * no_explanation_str() const {
-    return "Unknown Simics exception";
+    return "Unknown QEMU exception";
   }
 };
 
