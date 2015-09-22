@@ -7,7 +7,7 @@
 #include <components/FastCMPCache/SharingVector.hpp>
 #include <components/FastCMPCache/AbstractProtocol.hpp>
 #include <components/FastCMPCache/BlockDirectoryEntry.hpp>
-#include <ext/hash_map>
+#include <unordered_map>
 
 #include <boost/dynamic_bitset.hpp>
 
@@ -33,7 +33,7 @@ struct AddrHash {
     return addr >> 6;
   }
 };
-typedef __gnu_cxx::hash_map<PhysicalMemoryAddress, BlockDirectoryEntry_p, AddrHash> inf_directory_t;
+typedef std::unordered_map<PhysicalMemoryAddress, BlockDirectoryEntry_p, AddrHash> inf_directory_t;
 
 struct TaglessDirectoryBucket : public AbstractDirectoryEntry {
   BlockDirectoryEntry theTaglessEntry;

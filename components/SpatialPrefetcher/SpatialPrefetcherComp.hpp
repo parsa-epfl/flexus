@@ -2,7 +2,7 @@
 #include <fstream>
 #include <sstream>
 
-#include <ext/hash_map>
+#include <unordered_map>
 
 #include "seq_map.hpp"
 
@@ -85,7 +85,7 @@ bool operator < (const SpatialPattern & a, const SpatialPattern & b) {
   return false;
 }
 
-typedef __gnu_cxx::hash_map<GroupAddress, SpatialPattern, IntHash> SpatialGroupUsage;
+typedef std::unordered_map<GroupAddress, SpatialPattern, IntHash> SpatialGroupUsage;
 typedef SpatialGroupUsage::iterator GroupUsageIter;
 
 void savePattern(std::ostream & ofs, SpatialPattern pattern) {
@@ -326,9 +326,9 @@ struct GroupOrderingEntry {
     theNextSeqNo++;
   }
 };
-typedef __gnu_cxx::hash_map<GroupAddress, GroupOrderingEntry, IntHash> GroupOrderingBuild;
+typedef std::unordered_map<GroupAddress, GroupOrderingEntry, IntHash> GroupOrderingBuild;
 typedef GroupOrderingBuild::iterator OrderingBuildIter;
-typedef __gnu_cxx::hash_map<RepetIndex, OrderingMap, IntHash> GroupOrderingHistory;
+typedef std::unordered_map<RepetIndex, OrderingMap, IntHash> GroupOrderingHistory;
 typedef GroupOrderingHistory::iterator OrderingHistoryIter;
 
 struct CurrentStreamEntry {
@@ -410,7 +410,7 @@ struct DoneStreamEntry {
     return theHits;
   }
 };
-typedef __gnu_cxx::hash_map<GroupAddress, DoneStreamEntry, IntHash> DoneStreamTable;
+typedef std::unordered_map<GroupAddress, DoneStreamEntry, IntHash> DoneStreamTable;
 typedef DoneStreamTable::iterator DoneStreamIter;
 
 struct GroupTimeEntry {
@@ -427,7 +427,7 @@ struct GroupTimeEntry {
     , lastEnd(curr)
   {}
 };
-typedef __gnu_cxx::hash_map<GroupAddress, GroupTimeEntry, IntHash> SpatialGroupTime;
+typedef std::unordered_map<GroupAddress, GroupTimeEntry, IntHash> SpatialGroupTime;
 typedef SpatialGroupTime::iterator GroupTimeIter;
 
 struct ActiveGroupEntry {
@@ -440,7 +440,7 @@ struct ActiveGroupEntry {
     , outstanding(initial)
   {}
 };
-typedef __gnu_cxx::hash_map<GroupAddress, ActiveGroupEntry, IntHash> SpatialGroupActive;
+typedef std::unordered_map<GroupAddress, ActiveGroupEntry, IntHash> SpatialGroupActive;
 typedef SpatialGroupActive::iterator ActiveGroupIter;
 
 enum CacheBlockState {
@@ -450,7 +450,7 @@ enum CacheBlockState {
   ePresent
 };
 const char * CacheStateStr[] = {"Prefetching", "Filling", "Prefetched", "Present"};
-typedef __gnu_cxx::hash_map<BlockAddress, CacheBlockState, IntHash> CacheTable;
+typedef std::unordered_map<BlockAddress, CacheBlockState, IntHash> CacheTable;
 typedef CacheTable::iterator CacheIter;
 typedef std::pair<CacheIter, bool> CacheInsert;
 
@@ -968,7 +968,7 @@ private:
 
   // for active groups tracking
   SpatialGroupActive theActiveGroups;
-  typedef std::map<uint32_t, int> ActiveGenTime; // this CANNOT be a hash_map!
+  typedef std::map<uint32_t, int> ActiveGenTime; // this CANNOT be an unordered_map!
   typedef ActiveGenTime::iterator ActiveGenIter;
   ActiveGenTime theActiveGenBegins;
   ActiveGenTime theActiveGenEnds;

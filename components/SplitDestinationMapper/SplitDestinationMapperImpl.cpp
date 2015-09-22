@@ -6,7 +6,6 @@
 #include <core/simics/mai_api.hpp>
 
 #include <boost/bind.hpp>
-#include <ext/hash_map>
 
 #include <fstream>
 

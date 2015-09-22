@@ -15,7 +15,7 @@ using boost::uniform_real;
 using boost::uniform_int;
 using boost::integer_traits;
 using std::deque;
-using std::auto_ptr;
+using std::unique_ptr;
 using namespace Flexus::Core;
 using namespace Flexus::SharedTypes;
 

@@ -81,7 +81,7 @@ SPECIAL_COMPONENT_CPPS = test.cpp
 GCC=$(GCC_PATH)/bin/$(GCC_BINARY)
 GCC_LIB_PATH=$(GCC_PATH)/lib
 GCC_OPTFLAGS=-O3 -funroll-loops -fno-strict-aliasing
-GCC_LANGFLAGS=-Wall -fmessage-length=160 -fpermissive -x c++ -fPIC -Werror -Wno-unused -Wno-deprecated -Wno-maybe-uninitialized -Wno-parentheses -Wno-int-to-pointer-cast -Wno-logical-not-parentheses -DNO_STORAGE
+GCC_LANGFLAGS=-Wall -fmessage-length=160 -fpermissive -x c++ -fPIC -Werror -Wno-unused -Wno-maybe-uninitialized -Wno-parentheses -Wno-int-to-pointer-cast -Wno-logical-not-parentheses -DNO_STORAGE
 ifeq "$(SIMICS_ARCH)" "amd64-linux"
 ARCH_FLAGS=-DX86_64
 else

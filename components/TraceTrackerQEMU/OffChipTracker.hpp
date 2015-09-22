@@ -1,7 +1,7 @@
 #ifndef _OFFCHIP_TRACKER_HPP_
 #define _OFFCHIP_TRACKER_HPP_
 
-#include <ext/hash_map>
+#include <unordered_map>
 #include <boost/dynamic_bitset.hpp>
 
 using namespace Flexus;
@@ -303,7 +303,7 @@ private:
   }
 };
 
-typedef __gnu_cxx::hash_map<address_t, PrefetchEntry> PrefetchMap;
+typedef std::unordered_map<address_t, PrefetchEntry> PrefetchMap;
 typedef PrefetchMap::iterator PrefetchMapIter;
 
 struct PrefetchTracker {
@@ -720,7 +720,7 @@ struct SgpTrackEntry {
   }
 };
 
-typedef __gnu_cxx::hash_map<address_t, SgpTrackEntry> SgpTrackMap;
+typedef std::unordered_map<address_t, SgpTrackEntry> SgpTrackMap;
 typedef SgpTrackMap::iterator SgpTrackIter;
 
 class SgpTracker {

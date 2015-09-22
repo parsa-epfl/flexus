@@ -6,7 +6,7 @@
 #include <components/FastCMPCache/AbstractDirectory.hpp>
 #include <components/FastCMPCache/SharingVector.hpp>
 #include <components/FastCMPCache/AbstractProtocol.hpp>
-#include <ext/hash_map>
+#include <unordered_map>
 
 #include <list>
 #include <algorithm>
@@ -111,7 +111,7 @@ private:
       return addr >> 6;
     }
   };
-  typedef __gnu_cxx::hash_map<PhysicalMemoryAddress, InfiniteDirectoryEntry_p, AddrHash> inf_directory_t;
+  typedef std::unordered_map<PhysicalMemoryAddress, InfiniteDirectoryEntry_p, AddrHash> inf_directory_t;
   inf_directory_t theDirectory;
 
   InfiniteDirectory() : AbstractDirectory() {};

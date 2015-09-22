@@ -8,7 +8,6 @@
 
 using namespace boost::multi_index;
 
-#include <ext/hash_map>
 #include <list>
 
 namespace nFastCMPCache {

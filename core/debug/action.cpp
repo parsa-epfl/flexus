@@ -57,7 +57,7 @@ CompoundAction::~CompoundAction() {
 	}
 }
 
-void CompoundAction::add(std::auto_ptr<Action> anAction) {
+void CompoundAction::add(std::unique_ptr<Action> anAction) {
   theActions.push_back(anAction.release()); //Ownership assumed by theActions
 }
 

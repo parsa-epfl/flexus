@@ -75,7 +75,7 @@ private:
 
   MemoryTransport ack;  // reply message
 
-  std::auto_ptr<RdramBlackbox> theBlackbox; // Deleted automagically
+  std::unique_ptr<RdramBlackbox> theBlackbox; // Deleted automagically
   //  when the rdram goes away
 
   //The Simics object for getting trace data
@@ -94,7 +94,7 @@ public:
     cout << endl;
 
     cyclesElapsed = 0;
-    theBlackbox = std::auto_ptr<RdramBlackbox>(new RdramBlackbox());
+    theBlackbox = std::make_unique<RdramBlackbox>();
 
     Simics::Factory<Rdram_SimicsObject> rdram_factory;
     theRdramObject = rdram_factory.create("rdram");

@@ -15,7 +15,6 @@
 #include <core/performance/profile.hpp>
 
 #include <boost/intrusive_ptr.hpp>
-#include <ext/hash_map>
 
 #include <list>
 #include <fstream>

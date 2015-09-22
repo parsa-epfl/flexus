@@ -7,7 +7,6 @@
 #include <components/FastCMPCache/SharingVector.hpp>
 #include <components/FastCMPCache/AbstractProtocol.hpp>
 #include <components/FastCMPCache/BlockDirectoryEntry.hpp>
-#include <ext/hash_map>
 
 #include <tuple>
 

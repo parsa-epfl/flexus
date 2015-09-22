@@ -29,7 +29,7 @@ class FLEXUS_COMPONENT(CMPCache) {
 
 private:
 
-  std::auto_ptr<AbstractCacheController> theController;
+  std::unique_ptr<AbstractCacheController> theController;
 
 public:
 

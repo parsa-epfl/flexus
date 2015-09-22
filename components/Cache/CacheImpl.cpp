@@ -31,7 +31,7 @@ class FLEXUS_COMPONENT(Cache) {
 
 private:
 
-  std::auto_ptr<CacheController> theController; //Deleted automagically when the cache goes away
+  std::unique_ptr<CacheController> theController; //Deleted automagically when the cache goes away
 
   Stat::StatCounter theBusDeadlocks;
 
