@@ -6,8 +6,6 @@
 #include <string>
 
 #include <boost/function.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
 
 #include <core/simics/trampoline.hpp>
 #include <core/exception.hpp>
@@ -222,12 +220,9 @@ public:
     }
   }
   void OnInitialConfig(API::conf_object_t * ignored) {
-    using namespace boost::lambda;
-    for_each(
-      theInitialConfigFunctors.begin(),
-      theInitialConfigFunctors.end(),
-      boost::lambda::bind<void>(boost::lambda::_1) //Invoke the functor stored in the vector.  Note that we need to tell bind the return type
-    );
+    for(auto& anInitialConfigFunctor: theInitialConfigFunctors){
+      anInitialConfigFunctor();
+    }//Invoke the functor stored in the vector.
     //Self destruct after the Initial Config Hap
     delete this;
     theStaticInitialConfigHapHandler = 0;

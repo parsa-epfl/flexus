@@ -96,13 +96,13 @@ class FLEXUS_COMPONENT(NetShim) {
       // In particular, checking if a node will accept a message (.available()) and
       // final delivery of a message must be function objects for now.
       if (! theAvail) {
-        theAvail =
-          ll::bind( &NetShimComponent::isNodeAvailable,
-                    this, ll::_1,ll::_2);
+        theAvail = [this](auto x, auto y){ return this->isNodeAvailable(x,y); };
+        // ll::bind( &NetShimComponent::isNodeAvailable,
+        //           this, ll::_1, ll::_2);
 
-        theDeliver =
-          ll::bind ( &NetShimComponent::deliverMessage,
-                     this, ll::_1 );
+        theDeliver = [this](auto x){ return this->deliverMessage(x); };
+        // ll::bind ( &NetShimComponent::deliverMessage,
+        //            this, ll::_1 );
 
         nc->setCallbacks ( theAvail, theDeliver );
       }

@@ -1,8 +1,6 @@
 #ifndef FLEXUS_v9DECODER_SEMANTICACTIONS_HPP_INCLUDED
 #define FLEXUS_v9DECODER_SEMANTICACTIONS_HPP_INCLUDED
 
-#include <boost/tuple/tuple.hpp>
-
 #include "OperandCode.hpp"
 #include <components/uArch/RegisterType.hpp>
 #include <components/Common/Slices/MemOp.hpp>

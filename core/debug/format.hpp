@@ -37,7 +37,7 @@ public:
   virtual void printConfiguration(std::ostream & anOstream, std::string const & anIndent) const;
   virtual void format(std::ostream & anOstream, Entry const & anEntry) const;
   virtual ~CompoundFormat() {
-    destruct(); //Done to avoid dependency on boost::lambda
+    destruct();
   }
   void destruct();
 

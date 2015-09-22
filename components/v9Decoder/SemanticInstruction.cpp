@@ -2,11 +2,6 @@
 
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <boost/throw_exception.hpp>
-#include <boost/shared_ptr.hpp>
-
-#include <boost/lambda/lambda.hpp>
-
-namespace ll = boost::lambda;
 
 #include <core/target.hpp>
 #include <core/debug/debug.hpp>
@@ -89,8 +84,8 @@ nuArch::InstructionDependance SemanticInstruction::makeInstructionDependance( In
   DBG_Assert( reinterpret_cast<long>(aDependance.theTarget) != 0x1 );
   nuArch::InstructionDependance ret_val;
   ret_val.instruction = boost::intrusive_ptr<nuArch::Instruction>(this);
-  ret_val.satisfy = ll::bind( &DependanceTarget::invokeSatisfy, aDependance.theTarget, aDependance.theArg);
-  ret_val.squash = ll::bind( &DependanceTarget::invokeSquash, aDependance.theTarget, aDependance.theArg);
+  ret_val.satisfy = [&aDependance](){ return aDependance.theTarget->invokeSatisfy(aDependance.theArg); };
+  ret_val.squash = [&aDependance](){ return aDependance.theTarget->invokeSquash(aDependance.theArg); };
   return ret_val;
 }
 

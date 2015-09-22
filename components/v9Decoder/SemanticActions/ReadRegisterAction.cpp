@@ -4,8 +4,6 @@
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <boost/throw_exception.hpp>
 #include <boost/function.hpp>
-#include <boost/lambda/lambda.hpp>
-namespace ll = boost::lambda;
 
 #include <boost/none.hpp>
 
@@ -61,7 +59,7 @@ struct ReadRegisterAction : public BaseSemanticAction {
       setReady( 0, core()->requestRegister( name, theInstruction->makeInstructionDependance(dependance()) ) == kReady );
       //theInstruction->addSquashEffect( disconnectRegister( theInstruction, theRegisterCode ) );
       //theInstruction->addRetirementEffect( disconnectRegister( theInstruction, theRegisterCode ) );
-      core()->connectBypass( name, theInstruction, ll::bind( &ReadRegisterAction::bypass, this, ll::_1) );
+      core()->connectBypass( name, theInstruction, [this](auto x){ return this->bypass(x); });
       theConnected = true;
     }
     if (! signalled() ) {

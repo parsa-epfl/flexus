@@ -111,7 +111,7 @@ public:
   typedef maf_t::index<by_order>::type::iterator order_iterator;
 
   MissAddressFile(int32_t aSize) : theSize(aSize), theReserve(0), theCurSize(0) {
-    regionFunc = boost::bind(&MissAddressFile::defaultRegionFunc, this, _1);
+    regionFunc = [this](auto x){ return this->defaultRegionFunc(x);}; //std::bind(&MissAddressFile::defaultRegionFunc, this, _1);
   }
 
   void dump() {
@@ -188,16 +188,16 @@ public:
   }
 
   void setState(iterator & entry, MAFState state) {
-    theMAF.modify(entry, ll::bind( &MAFEntry::theState, ll::_1) = state);
+    theMAF.modify(entry, [&state](auto& x){ x.theState = state; });//ll::bind( &MAFEntry::theState, ll::_1) = state);
   }
 
   void setCacheEBReserved(iterator & entry, int32_t reserved) {
-    theMAF.modify(entry, ll::bind( &MAFEntry::theCacheEBReserved, ll::_1) = reserved);
+    theMAF.modify(entry, [reserved](auto& x){ x.theCacheEBReserved = reserved; }); //ll::bind( &MAFEntry::theCacheEBReserved, ll::_1) = reserved);
   }
 
   void removeFirst(const MemoryAddress & addr, int32_t requester) {
     iterator first, last;
-    boost::tie(first, last) = findAll(addr, eWaitAck);
+    std::tie(first, last) = findAll(addr, eWaitAck);
     for (; first != last; first++) {
       DBG_Assert(first != theMAF.end(), ( << "Unable to find MAF for block " << std::hex << addr << " from core " << requester ));
       // The matching request is the one with the same requester
@@ -231,23 +231,23 @@ public:
   }
 
   void wake(iterator & entry) {
-    theMAF.modify(entry, ll::bind( &MAFEntry::theState, ll::_1) = eWaking);
+    theMAF.modify(entry, [](auto& x){ x.theState = eWaking; }); //ll::bind( &MAFEntry::theState, ll::_1) = eWaking);
   }
   void wakeAfterEvict(iterator & entry) {
-    theMAF.modify(entry, ll::bind( &MAFEntry::theState, ll::_1) = eWaking);
+    theMAF.modify(entry, [](auto& x){ x.theState = eWaking; }); //ll::bind( &MAFEntry::theState, ll::_1) = eWaking);
     iterator first, last, next;
-    boost::tie(first, last) = theMAF.equal_range( boost::make_tuple(entry->address(), eWaitRequest) );
+    std::tie(first, last) = theMAF.equal_range( std::make_tuple(entry->address(), eWaitRequest) );
     next = first;
     next++;
     for (; first != theMAF.end() && first != last; first = next, next++) {
       if (first->address() == entry->address()) {
-        theMAF.modify(first, ll::bind( &MAFEntry::theState, ll::_1) = eWaking);
+        theMAF.modify(first, [](auto& x){ x.theState = eWaking; }); //ll::bind( &MAFEntry::theState, ll::_1) = eWaking);
       }
     }
   }
 
   void wake(order_iterator & entry) {
-    theMAF.get<by_order>().modify(entry, ll::bind( &MAFEntry::theState, ll::_1) = eWaking);
+    theMAF.get<by_order>().modify(entry, [](auto& x){ x.theState = eWaking; }); //ll::bind( &MAFEntry::theState, ll::_1) = eWaking);
   }
 
   bool hasWakingEntry() {
@@ -267,7 +267,7 @@ public:
     maf_t::index<by_order>::type::iterator iter = theMAF.get<by_order>().begin();
     for (; iter != theMAF.get<by_order>().end() && iter->theState != eWaking; iter++);
     DBG_Assert( iter != theMAF.get<by_order>().end() );
-    theMAF.get<by_order>().modify(iter, ll::bind( &MAFEntry::theState, ll::_1) = eInPipeline);
+    theMAF.get<by_order>().modify(iter, [](auto& x){ x.theState = eInPipeline; }); //ll::bind( &MAFEntry::theState, ll::_1) = eInPipeline);
     return theMAF.project<by_address>(iter);
   }
 

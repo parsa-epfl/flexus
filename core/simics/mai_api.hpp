@@ -432,7 +432,7 @@ public:
   PhysicalMemoryAddress translateInstruction_SimicsImpl(VirtualMemoryAddress anAddress) const;
   long fetchInstruction_SimicsImpl(VirtualMemoryAddress const & anAddress);
 
-  boost::tuple < PhysicalMemoryAddress, bool/*cacheable*/, bool/*side-effect*/ > translateTSB_SimicsImpl(VirtualMemoryAddress anAddress, int anASI) const;
+  std::tuple < PhysicalMemoryAddress, bool/*cacheable*/, bool/*side-effect*/ > translateTSB_SimicsImpl(VirtualMemoryAddress anAddress, int anASI) const;
   unsigned long long readVAddr_SimicsImpl(VirtualMemoryAddress anAddress, int anASI, int aSize) const;
   unsigned long long readVAddrXendian_SimicsImpl(VirtualMemoryAddress anAddress, int anASI, int aSize) const;
   void translate_SimicsImpl(  API::v9_memory_transaction_t & xact, VirtualMemoryAddress anAddress, int anASI ) const;

@@ -9,10 +9,7 @@
 #include <components/FastCMPCache/BlockDirectoryEntry.hpp>
 #include <ext/hash_map>
 
-#include <boost/tuple/tuple.hpp>
 #include <boost/dynamic_bitset.hpp>
-#include <boost/bind.hpp>
-#include <boost/lambda/lambda.hpp>
 
 #include <list>
 #include <vector>
@@ -484,32 +481,32 @@ private:
 
     if (strcasecmp(policy.c_str(), "simple") == 0) {
       DBG_Assert( (theNumBuckets & (theNumBuckets - 1)) == 0, ( << "theNumBuckets = " << theNumBuckets << " != Power of 2" ) );
-      hash_fns.push_back(boost::bind(&TaglessDirectory::simple_hash, this, _1));
+      hash_fns.push_back([this](auto x){return this->simple_hash(x);});
     } else if (strcasecmp(policy.c_str(), "rotated_prime") == 0) {
-      hash_fns.push_back(boost::bind(&TaglessDirectory::rotated_prime_modulo_hash, this, _1));
+      hash_fns.push_back([this](auto x){return this->rotated_prime_modulo_hash(x);});
       theNumBuckets = get_next_prime(theNumBuckets);
     } else if (strcasecmp(policy.c_str(), "full_prime") == 0) {
-      hash_fns.push_back(boost::bind(&TaglessDirectory::full_prime_modulo_hash, this, _1));
+      hash_fns.push_back([this](auto x){return this->full_prime_modulo_hash(x);});
       theNumBuckets = get_next_prime(theNumBuckets);
     } else if (strcasecmp(policy.c_str(), "prime") == 0) {
-      hash_fns.push_back(boost::bind(&TaglessDirectory::prime_modulo_hash, this, _1));
+      hash_fns.push_back([this](auto x){return this->prime_modulo_hash(x);});
       theNumBuckets = get_next_prime(theNumBuckets);
     } else if (strcasecmp(policy.c_str(), "my_hash") == 0) {
       DBG_Assert( (theNumBuckets & (theNumBuckets - 1)) == 0, ( << "theNumBuckets = " << theNumBuckets << " != Power of 2" ) );
-      hash_fns.push_back(boost::bind(&TaglessDirectory::my_hash, this, _1));
+      hash_fns.push_back([this](auto x){return this->my_hash(x);});
     } else if (strcasecmp(policy.c_str(), "overlap") == 0) {
       DBG_Assert( (theNumBuckets & (theNumBuckets - 1)) == 0, ( << "theNumBuckets = " << theNumBuckets << " != Power of 2" ) );
-      hash_fns.push_back(boost::bind(&TaglessDirectory::overlap_hash, this, _1));
+      hash_fns.push_back([this](auto x){return this->overlap_hash(x);});
     } else if (strcasecmp(policy.c_str(), "xor") == 0) {
       DBG_Assert( (theNumBuckets & (theNumBuckets - 1)) == 0, ( << "theNumBuckets = " << theNumBuckets << " != Power of 2" ) );
-      hash_fns.push_back(boost::bind(&TaglessDirectory::xor_hash, this, _1));
+      hash_fns.push_back([this](auto x){return this->xor_hash(x);});
       if (theHashXORShift <= 0) {
         theHashXORShift = 32 - log_base2(theNumBuckets);
       }
     } else if (strncasecmp(policy.c_str(), "shift", 5) == 0) {
       DBG_Assert( (theNumBuckets & (theNumBuckets - 1)) == 0, ( << "theNumBuckets = " << theNumBuckets << " != Power of 2" ) );
       int32_t shift = boost::lexical_cast<int>(policy.substr(6));
-      hash_fns.push_back(boost::bind(&TaglessDirectory::shift_hash, this, shift, _1));
+      hash_fns.push_back([this, shift](auto x){return this->shift_hash(shift, x);});
     } else if (strncasecmp(policy.c_str(), "matrix", 6) == 0) {
       std::string matrix_type = policy.substr(7);
       std::list<int> matrix;
@@ -810,7 +807,7 @@ protected:
   }
 
 public:
-  virtual boost::tuple<SharingVector, SharingState, AbstractEntry_p>
+  virtual std::tuple<SharingVector, SharingState, AbstractEntry_p>
   lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<boost::function<void(void)> > &xtra_actions) {
 
     TaglessLookupResult_p block = findOrCreateEntry(address, index);
@@ -868,10 +865,10 @@ public:
 
     DBG_(Trace, ( << "Received " << req_type << " request from core " << index << " for block " << std::hex << address << " Tagless state = " << block->theTaglessState.sharers() << ", TueState = " << block->theTrueState->sharers() ));
 
-    return boost::tie(block->theTaglessState.sharers(), block->theTaglessState.state(), block);
+    return std::tie(block->theTaglessState.sharers(), block->theTaglessState.state(), block);
   }
 
-  virtual boost::tuple<SharingVector, SharingState, AbstractEntry_p, bool>
+  virtual std::tuple<SharingVector, SharingState, AbstractEntry_p, bool>
   snoopLookup(int32_t index, PhysicalMemoryAddress address, MMType req_type) {
 
     TaglessLookupResult_p block = findEntry(address, index);
@@ -879,7 +876,7 @@ public:
     DBG_(Trace, ( << "Received " << req_type << " request from core " << index << " for block " << std::hex << address << " Tagless state = " << block->theTaglessState.sharers() << ", TueState = " << block->theTrueState->sharers() ));
 
     bool valid = true;
-    return boost::tie(block->theTaglessState.sharers(), block->theTaglessState.state(), block, valid);
+    return std::tie(block->theTaglessState.sharers(), block->theTaglessState.state(), block, valid);
   }
   void saveState( std::ostream & s, const std::string & aDirName ) {
     boost::archive::binary_oarchive oa(s);

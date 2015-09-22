@@ -8,7 +8,6 @@
 #include <core/flexus.hpp>
 
 #include <boost/function.hpp>
-#include <boost/bind.hpp>
 
 #define DBG_DefineCategories Feeder
 #define DBG_SetDefaultOps AddCat(Feeder)
@@ -40,10 +39,10 @@ public:
     theNumCPUs = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 
     theTracer = QemuTracerManager::construct(theNumCPUs
-                , boost::bind( &DecoupledFeederComponent::toL1D, this, _1, _2)
-                , boost::bind( &DecoupledFeederComponent::modernToL1I, this, _1, _2)
-                , boost::bind( &DecoupledFeederComponent::toDMA, this, _1)
-                , boost::bind( &DecoupledFeederComponent::toNAW, this, _1, _2)
+                , [this](auto x, auto y){ return this->toL1D(x,y); } //boost::bind( &DecoupledFeederComponent::toL1D, this, _1, _2)
+                , [this](auto x, auto y){ return this->modernToL1I(x,y); } //boost::bind( &DecoupledFeederComponent::modernToL1I, this, _1, _2)
+                , [this](auto x){ return this->toDMA(x); } //boost::bind( &DecoupledFeederComponent::toDMA, this, _1)
+                , [this](auto x, auto y){ return this->toNAW(x,y); } //boost::bind( &DecoupledFeederComponent::toNAW, this, _1, _2)
                 //, cfg.WhiteBoxDebug
                 //, cfg.WhiteBoxPeriod
                 , cfg.SendNonAllocatingStores

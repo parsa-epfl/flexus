@@ -61,7 +61,7 @@ public:
       //Note that multi-uop instructions can cause theFIQ to fill beyond its
       //configured size.
       while (! final_uop ) {
-        boost::tie( insn, final_uop ) = decode( *iter, flexusIndex(), ++theInsnSequenceNo, uop ++);
+        std::tie( insn, final_uop ) = decode( *iter, flexusIndex(), ++theInsnSequenceNo, uop ++);
         insn->setFetchTransactionTracker(iter->theTransaction);
 
         // Set Fill Level for the insn
@@ -94,7 +94,7 @@ public:
     bool is_sync = false;
     std::pair<int, bool> dispatch_state;
     FLEXUS_CHANNEL(  AvailableDispatchIn ) >> dispatch_state;
-    boost::tie(available_dispatch, is_sync) = dispatch_state;
+    std::tie(available_dispatch, is_sync) = dispatch_state;
 
     return ( theFIQ.empty() || (available_dispatch == 0) || (theSyncInsnInProgress && !is_sync) );
   }
@@ -130,7 +130,7 @@ private:
     bool is_sync = false;
     std::pair<int, bool> dispatch_state;
     FLEXUS_CHANNEL(  AvailableDispatchIn ) >> dispatch_state;
-    boost::tie(available_dispatch, is_sync) = dispatch_state;
+    std::tie(available_dispatch, is_sync) = dispatch_state;
 
     int64_t theOpcode;
 

@@ -10,9 +10,6 @@
 #include <components/FastCMPDirectory/Utility.hpp>
 #include <ext/hash_map>
 
-#include <boost/tuple/tuple.hpp>
-#include <boost/lambda/lambda.hpp>
-
 #include <list>
 #include <algorithm>
 
@@ -171,7 +168,7 @@ protected:
   }
 
 public:
-  virtual boost::tuple<SharingVector, SharingState, int, AbstractEntry_p>
+  virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
   lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) {
 
     InfiniteDirectoryEntry_p entry = findEntry(address);
@@ -186,7 +183,7 @@ public:
     int32_t dir_loc = address2DirLocation(address, index);
     msgs.push_back(TopologyMessage(index, dir_loc));
 
-    return boost::tie(sharers, state, dir_loc, entry);
+    return std::make_tuple(sharers, state, dir_loc, entry);
   }
 
   virtual void processRequestResponse(int32_t index, const MMType & request, MMType & response,

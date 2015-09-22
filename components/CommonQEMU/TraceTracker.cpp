@@ -476,7 +476,7 @@ TraceTracker::TraceTracker()
 
 void TraceTracker::initialize() {
   DBG_(Iface, ( << "initializing TraceTracker"));
-  Flexus::Stat::getStatManager()->addFinalizer( ll::bind(&TraceTracker::finalize, this) );
+  Flexus::Stat::getStatManager()->addFinalizer( [this](){return this->finalize();});
 }
 
 void TraceTracker::finalize() {

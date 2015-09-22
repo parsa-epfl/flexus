@@ -4,8 +4,6 @@
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <boost/throw_exception.hpp>
 #include <boost/function.hpp>
-#include <boost/lambda/lambda.hpp>
-namespace ll = boost::lambda;
 
 #include <boost/none.hpp>
 
@@ -32,11 +30,9 @@ using namespace nuArch;
 
 void connect( std::list<InternalDependance> const & dependances, simple_action & aSource) {
   BaseSemanticAction & act = *(aSource.action);
-  std::for_each
-  ( dependances.begin()
-    , dependances.end()
-    , ll::bind( &BaseSemanticAction::addDependance, ll::var(act), ll::_1)
-  );
+  for(auto& aDependance: dependances){
+    act.addDependance(aDependance);
+  }
 }
 
 void BaseSemanticAction::addRef() {

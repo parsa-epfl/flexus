@@ -115,13 +115,13 @@ long PacketCount;
     // In particular, checking if a node will accept a message (.available()) and
     // final delivery of a message must be function objects for now.
     if (! theAvail) {
-      theAvail =
-        ll::bind( &MemoryNetworkComponent::isNodeAvailable,
-                  this, ll::_1, ll::_2);
+        theAvail = [this](auto x, auto y){ return this->isNodeAvailable(x,y); };
+          // ll::bind( &MemoryNetworkComponent::isNodeAvailable,
+          //           this, ll::_1,ll::_2);
 
-      theDeliver =
-        ll::bind ( &MemoryNetworkComponent::deliverMessage,
-                   this, ll::_1 );
+        theDeliver = [this](auto x){ return this->deliverMessage(x); };
+          // ll::bind ( &MemoryNetworkComponent::deliverMessage,
+          //            this, ll::_1 );
 
       nc->setCallbacks ( theAvail, theDeliver );
     }

@@ -11,8 +11,7 @@
 #include <components/FastCMPDirectory/RegionDirEntry.hpp>
 #include <ext/hash_map>
 
-#include <boost/tuple/tuple.hpp>
-
+#include <tuple>
 #include <list>
 
 #include <components/Common/Serializers.hpp>
@@ -168,7 +167,7 @@ protected:
   }
 
 public:
-  virtual boost::tuple<SharingVector, SharingState, int, AbstractEntry_p>
+  virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
   lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) {
 
     PhysicalMemoryAddress tag(get_tag(address));
@@ -181,7 +180,7 @@ public:
       for (int32_t i = 0; i < theBlocksPerRegion; i++, addr += theBlockSize) {
         if ((*entry)[i].state() != ZeroSharers) {
           DBG_(Iface, ( << "Directory Evicting Block: " << addr ));
-          xtra_actions.push_back(boost::lambda::bind(theInvalidateAction, addr, (*entry)[i].sharers()));
+          xtra_actions.push_back([this, addr, entry](){ return this->theInvalidateAction(addr,(*entry)[i].sharers()); });
         }
       }
       entry->reset(tag);
@@ -194,7 +193,7 @@ public:
     int32_t offset = get_offset(address);
     BlockEntryWrapper_p block( new BlockEntryWrapper((*entry)[offset]));
     DBG_(Iface, ( << "Lookup: tag=" << std::hex << tag << ", set=" << get_set(tag) << ", offset=" << offset << ", block=" << block ));
-    return boost::tie((*block)->sharers(), (*block)->state(), dir_loc, block);
+    return std::make_tuple((*block)->sharers(), (*block)->state(), dir_loc, block);
   }
 
   void saveState( std::ostream & s, const std::string & aDirName ) {

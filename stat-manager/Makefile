@@ -17,18 +17,18 @@ all: stat-manager stat-collapse stat-sample
 
 stat-manager: $(subst .cpp,.stats_o,$(SOURCES) stat-manager.cpp )
 	echo $^
-	echo "$(GCC) $(GCC_OPTFLAGS) $(INCLUDES) -DSELECTED_DEBUG=dev -DTARGET_PLATFORM=v9 -I.. $^ $(BOOST_LIBRARIES) -pthread -static -o $@"
-	$(GCC) $(GCC_OPTFLAGS) $(INCLUDES) -DSELECTED_DEBUG=dev -DTARGET_PLATFORM=v9 -I.. $^ $(BOOST_LIBRARIES) -pthread -static -o $@
+	echo "$(GCC) $(GCC_OPTFLAGS) $(INCLUDES) -DSELECTED_DEBUG=dev -DTARGET_PLATFORM=v9 -I.. $^ $(BOOST_LIBRARIES) -pthread -o $@"
+	$(GCC) $(GCC_OPTFLAGS) $(INCLUDES) -DSELECTED_DEBUG=dev -DTARGET_PLATFORM=v9 -I.. $^ $(BOOST_LIBRARIES) -pthread -o $@
 
 stat-collapse: $(subst .cpp,.stats_o,$(SOURCES) stat-collapse.cpp )
 	echo $^
-	echo "$(GCC) $(GCC_OPTFLAGS) $(INCLUDES) -DSELECTED_DEBUG=dev -DTARGET_PLATFORM=v9 -I.. $^ $(BOOST_LIBRARIES) -pthread -static -o $@"
-	$(GCC) $(GCC_OPTFLAGS) $(INCLUDES) -DSELECTED_DEBUG=dev -DTARGET_PLATFORM=v9 -I.. $^ $(BOOST_LIBRARIES) -pthread -static -o $@
+	echo "$(GCC) $(GCC_OPTFLAGS) $(INCLUDES) -DSELECTED_DEBUG=dev -DTARGET_PLATFORM=v9 -I.. $^ $(BOOST_LIBRARIES) -pthread -o $@"
+	$(GCC) $(GCC_OPTFLAGS) $(INCLUDES) -DSELECTED_DEBUG=dev -DTARGET_PLATFORM=v9 -I.. $^ $(BOOST_LIBRARIES) -pthread -o $@
 
 stat-sample: $(subst .cpp,.stats_o,$(SOURCES) stat-sample.cpp )
 	echo $^
-	echo "$(GCC) $(GCC_OPTFLAGS) $(INCLUDES) -DSELECTED_DEBUG=dev -DTARGET_PLATFORM=v9 -I.. $^ $(BOOST_LIBRARIES) -pthread -static -o $@"
-	$(GCC) $(GCC_OPTFLAGS) $(INCLUDES) -DSELECTED_DEBUG=dev -DTARGET_PLATFORM=v9 -I.. $^ $(BOOST_LIBRARIES) -pthread -static -o $@
+	echo "$(GCC) $(GCC_OPTFLAGS) $(INCLUDES) -DSELECTED_DEBUG=dev -DTARGET_PLATFORM=v9 -I.. $^ $(BOOST_LIBRARIES) -pthread -o $@"
+	$(GCC) $(GCC_OPTFLAGS) $(INCLUDES) -DSELECTED_DEBUG=dev -DTARGET_PLATFORM=v9 -I.. $^ $(BOOST_LIBRARIES) -pthread -o $@
 
 
 clean:

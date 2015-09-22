@@ -19,8 +19,6 @@
 
 namespace nDgpTable {
 
-namespace ll = boost::lambda;
-
 class DgpMain {
 public:
   // General types
@@ -104,7 +102,7 @@ public:
 */
   {
     DBG_Assert(!(theUseBoth && theSmartBoth));
-    Flexus::Stat::getStatManager()->addFinalizer( ll::bind( &DgpMain::finalizeStats, this) );
+    Flexus::Stat::getStatManager()->addFinalizer( [this](){ return this->finalize(); });//ll::bind( &DgpMain::finalizeStats, this) );
     myHistoryTable.setSigMapper( &mySigMapper0 );
   }
 

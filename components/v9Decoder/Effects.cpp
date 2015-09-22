@@ -196,7 +196,7 @@ struct MapDestinationEffect : public Effect {
     unmapped_reg name( anInstruction.operand< unmapped_reg > (theInputCode) );
     mapped_reg mapped_name;
     mapped_reg previous_mapping;
-    boost::tie(mapped_name, previous_mapping ) = anInstruction.core()->create( name );
+    std::tie(mapped_name, previous_mapping ) = anInstruction.core()->create( name );
     anInstruction.setOperand(theOutputCode, mapped_name);
     anInstruction.setOperand(thePreviousMappingCode, previous_mapping );
     if (mapped_name.theType == ccBits) {

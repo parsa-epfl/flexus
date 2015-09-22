@@ -10,7 +10,7 @@
 
 #include <core/stats.hpp>
 
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 #include <list>
 
@@ -163,7 +163,7 @@ protected:
   InfDirRegStatsEntry * findOrCreateEntry(PhysicalMemoryAddress addr) {
     inf_directory_t::iterator iter;
     bool success;
-    boost::tie(iter, success) = theDirectory.insert( std::make_pair<PhysicalMemoryAddress, InfDirRegStatsEntry_p>(getRegion(addr), InfDirRegStatsEntry_p()) );
+    std::tie(iter, success) = theDirectory.insert( std::make_pair<PhysicalMemoryAddress, InfDirRegStatsEntry_p>(getRegion(addr), InfDirRegStatsEntry_p()) );
     if (success) {
       iter->second = new InfDirRegStatsEntry(getRegion(addr), theBlocksPerRegion);
     }
@@ -198,7 +198,7 @@ protected:
   }
 
 public:
-  virtual boost::tuple<SharingVector, SharingState, int, AbstractEntry_p>
+  virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
   lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) {
 
     s = BreakdownStats::NonShared;
@@ -262,7 +262,7 @@ public:
     int32_t dir_loc = address2DirLocation(address, index);
     msgs.push_back(TopologyMessage(index, dir_loc));
 
-    return boost::tie(sharers, state, dir_loc, entry);
+    return std::make_tuple(sharers, state, dir_loc, entry);
   }
 
   virtual void processRequestResponse(int32_t index, const MMType & request, MMType & response,
@@ -287,7 +287,7 @@ public:
     // Now, store a copy of this entry in a per-core cache
     inf_directory_t::iterator iter;
     bool success;
-    boost::tie(iter, success) = theDirectoryCache[index].insert( std::make_pair<PhysicalMemoryAddress, InfDirRegStatsEntry_p>(getRegion(address), InfDirRegStatsEntry_p() ) );
+    std::tie(iter, success) = theDirectoryCache[index].insert( std::make_pair<PhysicalMemoryAddress, InfDirRegStatsEntry_p>(getRegion(address), InfDirRegStatsEntry_p() ) );
 #if 0
     if (!success) {
       // Delete the old entry

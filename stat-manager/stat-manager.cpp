@@ -5,16 +5,9 @@
 #include <cstdlib>
 
 #include <boost/function.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
 
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
-
-namespace ll = boost::lambda;
-using ll::_1;
-using ll::_2;
-using ll::_3;
 
 #include <core/stats.hpp>
 
@@ -240,7 +233,7 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
         ++i;
         if (i < aCount) {
           std::string db_name = anArgList[i];
-          theCommands.push_back(  ll::bind( &loadDatabase, db_name, true) );
+          theCommands.emplace_back( [db_name](){ return loadDatabase(db_name, true); }); //ll::bind( &loadDatabase, db_name, true) );
           database_loaded = true;
         } else {
           std::cout << "Must specify database with -d" << std::endl;
@@ -264,20 +257,20 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
   }
 
   if (! per_node) {
-    theCommands.push_back(  ll::bind( &reduceNodes) );
+    theCommands.emplace_back( [](){ return reduceNodes(); }); //ll::bind( &reduceNodes) );
   }
 
   //Handle command
   std::string command(anArgList[i]);
 
   if (command == "list-stats") {
-    theCommands.push_back( listStats );
+    theCommands.emplace_back( listStats );
   } else if (command == "list-measurements") {
-    theCommands.push_back( listMeasurements );
+    theCommands.emplace_back( listMeasurements );
   } else if (command == "help") {
     if (i + 1 < aCount) {
       std::string command = anArgList[i+1];
-      theCommands.push_front(  ll::bind( &help, command ) );
+      theCommands.push_front(  [&command](){ return help(command); });//ll::bind( &help, command ) );
     } else {
       theCommands.push_front( usage );
     }
@@ -285,7 +278,7 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
   } else if (command == "print") {
     if (i + 1 < aCount) {
       std::string measurement = anArgList[i+1];
-      theCommands.push_back(  ll::bind( &printMeasurement, measurement) );
+      theCommands.emplace_back( [&measurement](){ return printMeasurement(measurement); }); //ll::bind( &printMeasurement, measurement) );
     } else {
       std::cout << "Must specify a measurment to print." << std::endl;
       std::exit(-1);
@@ -302,7 +295,7 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
     if (i + 2 < aCount) {
       measurements = anArgList[i+2];
     }
-    theCommands.push_back(  ll::bind( &formatString, fmt, measurements ) );
+    theCommands.emplace_back(  [&fmt, &measurements](){ return formatString(fmt, measurements); });//ll::bind( &formatString, fmt, measurements ) );
   } else if (command == "sample-string") {
     std::string fmt;
     if (i + 1 < aCount) {
@@ -311,7 +304,7 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
       std::cout << "Must specify a template string to format." << std::endl;
       std::exit(-1);
     }
-    theCommands.push_back(  ll::bind( &formatStringSample, fmt) );
+    theCommands.emplace_back( [&fmt](){ return formatStringSample(fmt); }); //ll::bind( &formatStringSample, fmt) );
   } else if (command == "format") {
     std::string file;
     std::string measurements("all");
@@ -324,7 +317,7 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
     if (i + 2 < aCount) {
       measurements = anArgList[i+2];
     }
-    theCommands.push_back(  ll::bind( &format, file, measurements ) );
+    theCommands.emplace_back( [&file, &measurements](){ return format(file, measurements); }); //ll::bind( &format, file, measurements ) );
   } else if (command == "collapse-string") {
     std::string fmt;
     std::string measurements("Region*");
@@ -337,7 +330,7 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
     if (i + 2 < aCount) {
       measurements = anArgList[i+2];
     }
-    theCommands.push_back(  ll::bind( &collapseString, fmt, measurements ) );
+    theCommands.emplace_back( [&fmt, &measurements](){ return collapseString(fmt, measurements); }); //ll::bind( &collapseString, fmt, measurements ) );
   } else if (command == "collapse-file") {
     std::string file;
     std::string measurements("Region*");
@@ -350,7 +343,7 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
     if (i + 2 < aCount) {
       measurements = anArgList[i+2];
     }
-    theCommands.push_back(  ll::bind( &collapse, file, measurements ) );
+    theCommands.emplace_back( [&file, &measurements](){ return collapse(file, measurements); }); //ll::bind( &collapse, file, measurements ) );
   } else if (command == "save") {
     std::string file;
     std::string measurements("all");
@@ -363,14 +356,14 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
     if (i + 2 < aCount) {
       measurements = anArgList[i+2];
     }
-    theCommands.push_back(  ll::bind( &save, file, measurements ) );
+    theCommands.emplace_back(  [&file, &measurements](){ return save(file, measurements); });//ll::bind( &save, file, measurements ) );
   } else {
     std::cout << command << " is not a valid command." << std::endl;
     std::exit(-1);
   }
 
   if (! database_loaded ) {
-    theCommands.push_front(  ll::bind( &loadDatabase, "stats_db.out", false ) );
+    theCommands.push_front( [](){ return loadDatabase("stats_db.out", false); }); //ll::bind( &loadDatabase, "stats_db.out", false ) );
   }
 }
 

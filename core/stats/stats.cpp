@@ -13,8 +13,6 @@
 #include <boost/function.hpp>
 #define BOOST_NO_WREGEX
 #include <boost/regex.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
 #include <boost/spirit/include/classic_file_iterator.hpp>
 //#include <boost/spirit/iterator/file_iterator.hpp>
 #include <boost/optional.hpp>
@@ -1324,11 +1322,9 @@ void InstanceCounterPrint::doPrint(std::ostream & anOstream, std::string const &
   int64_t sum = 0;
   int64_t count = elements.size();
 
-  std::for_each
-  ( elements.begin()
-    , elements.end()
-    , ll::var(sum) += ll::bind( &sort_helper::count, ll::_1 )
-  );
+  for(auto& element: elements){
+    sum += element.count;
+  }
 
   float sum_f = sum;
 

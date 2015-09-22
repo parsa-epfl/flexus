@@ -140,7 +140,7 @@ public:
 
   virtual void setSharers(uint64_t s) {
 #if MAX_NUM_SHARERS > 64
-#error "MAX_NUM_SHARERS must be less than or equal to 64, or you just re-write some functions
+#error "MAX_NUM_SHARERS must be less than or equal to 64, or you just re-write some functions"
 #endif
     for (int32_t i = 0; i < 64; i++, s >>= 1) {
       sharers[i] = (s & 1);

@@ -17,7 +17,6 @@
 
 #include <core/performance/profile.hpp>
 
-#include <boost/bind.hpp>
 #include <fstream>
 #include <string>
 
@@ -190,7 +189,7 @@ public:
                             );
     }
 
-    Flexus::Stat::getStatManager()->addFinalizer(ll::bind( &nFastCache::FastCacheComponent::finalize, this ));
+    Flexus::Stat::getStatManager()->addFinalizer([this](){ return this->finalize(); });//ll::bind( &nFastCache::FastCacheComponent::finalize, this ));
 
   }
 

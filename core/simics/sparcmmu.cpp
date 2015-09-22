@@ -1,8 +1,5 @@
 #include <boost/throw_exception.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
-#include <boost/lambda/bind.hpp>
-namespace ll = boost::lambda;
 
 #include <core/target.hpp>
 #include <core/types.hpp>
@@ -158,7 +155,7 @@ bool side_effect(API::v9_memory_transaction_t & xact) {
   return (xact.side_effect || xact.s.inverse_endian);
 }
 
-boost::tuple<PhysicalMemoryAddress, bool, bool> v9ProcessorImpl::translateTSB_SimicsImpl(VirtualMemoryAddress anAddress, int anASI) const {
+std::tuple<PhysicalMemoryAddress, bool, bool> v9ProcessorImpl::translateTSB_SimicsImpl(VirtualMemoryAddress anAddress, int anASI) const {
   //Check for known special-case ASIs
 
   try {

@@ -9,8 +9,7 @@
 
 #include <core/stats.hpp>
 
-#include <boost/tuple/tuple.hpp>
-
+#include <tuple>
 #include <list>
 
 namespace nFastCMPDirectory {
@@ -504,7 +503,7 @@ public:
     }
   }
 
-  virtual boost::tuple<SharingVector, SharingState, int, AbstractEntry_p>
+  virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
   lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) {
 
     // Reset state information

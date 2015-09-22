@@ -10,8 +10,7 @@
 #include <components/FastCMPDirectory/BlockDirectoryEntry.hpp>
 #include <ext/hash_map>
 
-#include <boost/tuple/tuple.hpp>
-
+#include <tuple>
 #include <list>
 
 #include <components/Common/Util.hpp>
@@ -158,7 +157,7 @@ protected:
   }
 
 public:
-  virtual boost::tuple<SharingVector, SharingState, int, AbstractEntry_p>
+  virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
   lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) {
 
     StandardDirectoryEntry * entry = findOrCreateEntry(address, !MemoryMessage::isEvictType(req_type));
@@ -175,7 +174,7 @@ public:
 
     BlockEntryWrapper_p wrapper(new BlockEntryWrapper(*entry));
 
-    return boost::tie(entry->sharers(), entry->state(), dir_loc, wrapper);
+    return std::make_tuple(entry->sharers(), entry->state(), dir_loc, wrapper);
   }
 
   void saveState( std::ostream & s, const std::string & aDirName ) {

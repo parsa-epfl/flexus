@@ -5,10 +5,7 @@
 
 #include <boost/regex.hpp>
 #include <boost/throw_exception.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
-#include <boost/lambda/bind.hpp>
-namespace ll = boost::lambda;
 
 #include <core/target.hpp>
 #include <core/types.hpp>
@@ -58,7 +55,7 @@ void onInterrupt (void * aPtr, API::conf_object_t * anObj, long long aVector) {
 
 void v9ProcessorImpl::initialize() {
   DBG_( Dev, ( << "CPU[" << Simics::APIFwd::SIM_get_processor_number(*this) << "] Registering for interrupts "));
-  theInterruptManager.registerCPU( *this, ll::bind( &v9ProcessorImpl::handleInterrupt, this, ll::_1 ) );
+  theInterruptManager.registerCPU( *this, [this](auto x){return this->handleInterrupt(x);});
 }
 
 void v9ProcessorImpl::handleInterrupt( long long aVector) {

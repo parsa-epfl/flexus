@@ -25,11 +25,11 @@ using namespace Core;
 using namespace SharedTypes;
 
 class uArch_SimicsObject_Impl  {
-  boost::shared_ptr<microArch> theMicroArch;
+  std::shared_ptr<microArch> theMicroArch;
 public:
   uArch_SimicsObject_Impl(Flexus::Simics::API::conf_object_t * /*ignored*/ ) {}
 
-  void setMicroArch(boost::shared_ptr<microArch> aMicroArch) {
+  void setMicroArch(std::shared_ptr<microArch> aMicroArch) {
     theMicroArch = aMicroArch;
   }
 
@@ -189,7 +189,7 @@ Simics::Factory<uArch_SimicsObject> theuArchSimicsFactory;
 class FLEXUS_COMPONENT(uArch) {
   FLEXUS_COMPONENT_IMPL(uArch);
 
-  boost::shared_ptr<microArch> theMicroArch;
+  std::shared_ptr<microArch> theMicroArch;
   uArch_SimicsObject theuArchObject;
 
 public:
@@ -260,12 +260,12 @@ public:
     options.fpSqrtOpPipelineResetTime = cfg.FpSqrtOpPipelineResetTime;
 
     theMicroArch = microArch::construct ( options
-                                          , ll::bind( &uArchComponent::squash, this, ll::_1)
-                                          , ll::bind( &uArchComponent::redirect, this, ll::_1, ll::_2)
-                                          , ll::bind( &uArchComponent::changeState, this, ll::_1, ll::_2)
-                                          , ll::bind( &uArchComponent::feedback, this, ll::_1)
-                                          , ll::bind( &uArchComponent::notifyTMS, this, ll::_1, ll::_2, ll::_3) /* CMU-ONLY */
-                                          , ll::bind( &uArchComponent::signalStoreForwardingHit, this, ll::_1)
+                                          , [this](auto x){ return this->squash(x);}
+                                          , [this](auto x, auto y){ return this->redirect(x,y);}
+                                          , [this](auto x, auto y){ return this->changeState(x,y);}
+                                          , [this](auto x){ return this->feedback(x);}
+                                          , [this](auto x, auto y, auto z){ return this->notifyTMS(x,y,z);}/* CMU-ONLY */
+                                          , [this](auto x){ return this->signalStoreForwardingHit(x);}
                                         );
 
     theuArchObject = theuArchSimicsFactory.create( (std::string("uarch-") + boost::padded_string_cast < 2, '0' > (flexusIndex())).c_str() );

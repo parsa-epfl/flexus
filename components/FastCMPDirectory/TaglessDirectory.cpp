@@ -10,11 +10,11 @@
 #include <components/FastCMPDirectory/BlockDirectoryEntry.hpp>
 #include <ext/hash_map>
 
-#include <boost/tuple/tuple.hpp>
 #include <boost/dynamic_bitset.hpp>
 #include <boost/bind.hpp>
 #include <boost/lambda/lambda.hpp>
 
+#include <tuple>
 #include <list>
 #include <vector>
 
@@ -720,7 +720,7 @@ protected:
 
       bool success;
       DBG_(Verb, ( << "Allocating directory entry for addr: " << std::hex << addr << " in set " << std::dec << set_index << ", bucket " << bucket_index ));
-      boost::tie(iter, success) = bucket->thePreciseDirectory.insert( std::make_pair<PhysicalMemoryAddress, BlockDirectoryEntry>(addr, BlockDirectoryEntry(addr)));
+      std::tuple(iter, success) = bucket->thePreciseDirectory.insert( std::make_pair<PhysicalMemoryAddress, BlockDirectoryEntry>(addr, BlockDirectoryEntry(addr)));
       DBG_Assert(success);
     } else {
       if (bucket->theTaglessEntry.sharers() != iter->second.sharers()) {
@@ -816,7 +816,7 @@ virtual void processRequestResponse(int32_t index, const MMType & request, MMTyp
 }
 
 public:
-virtual boost::tuple<SharingVector, SharingState, int, AbstractEntry_p>
+virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
 lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) {
 
   // We have everything, now we just need to determine WHERE the directory is, and add the appropriate messages
@@ -878,7 +878,7 @@ lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<
 
   DBG_(Trace, ( << "Received " << req_type << " request from core " << index << " for block " << std::hex << address << " Tagless state = " << block->theTaglessState.sharers() << ", TueState = " << block->theTrueState->sharers() ));
 
-  return boost::tie(block->theTaglessState.sharers(), block->theTaglessState.state(), dir_loc, block);
+  return std::make_tuple(block->theTaglessState.sharers(), block->theTaglessState.state(), dir_loc, block);
 }
 
 void saveState( std::ostream & s, const std::string & aDirName ) {

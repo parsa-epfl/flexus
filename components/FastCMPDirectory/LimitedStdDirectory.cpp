@@ -10,8 +10,7 @@
 #include <components/FastCMPDirectory/AbstractProtocol.hpp>
 #include <ext/hash_map>
 
-#include <boost/tuple/tuple.hpp>
-
+#include <tuple>
 #include <list>
 
 #include <components/Common/Util.hpp>
@@ -241,14 +240,14 @@ protected:
   }
 
 public:
-  virtual boost::tuple<SharingVector, SharingState, int, AbstractEntry_p>
+  virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
   lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) {
 
     LimitedDirectoryEntry * entry = findOrCreateEntry(address, !MemoryMessage::isEvictType(req_type));
     DBG_Assert(entry != NULL);
     if (entry->address != address) {
       // We're evicting an existing entry
-      xtra_actions.push_back(boost::lambda::bind(theInvalidateAction, entry->address, entry->sharers));
+      xtra_actions.push_back([this, entry](){ return this->theInvalidateAction(entry->address, entry->sharers); });
       entry->address = address;
       entry->sharers.clear();
       entry->state = ZeroSharers;
@@ -260,7 +259,7 @@ public:
 
     LimitedEntryWrapper_p wrapper(new LimitedEntryWrapper(*entry));
 
-    return boost::tie(entry->sharers, entry->state, dir_loc, wrapper);
+    return std::tuple(entry->sharers, entry->state, dir_loc, wrapper);
   }
 
   void saveState( std::ostream & s, const std::string & aDirName ) {

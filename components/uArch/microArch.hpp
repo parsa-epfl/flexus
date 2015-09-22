@@ -2,7 +2,7 @@
 #define FLEXUS_uARCH_microARCH_HPP_INCLUDED
 
 #include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <components/Common/Slices/MemOp.hpp>
 #include <components/Common/Slices/PredictorMessage.hpp> /* CMU-ONLY */
@@ -18,7 +18,7 @@ namespace nuArch {
 using Flexus::SharedTypes::VirtualMemoryAddress;
 
 struct microArch {
-  static boost::shared_ptr<microArch>
+  static std::shared_ptr<microArch>
   construct( uArchOptions_t options
              , boost::function< void(eSquashCause)> squash
              , boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress)> redirect

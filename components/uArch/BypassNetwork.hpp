@@ -5,9 +5,6 @@
 #include <list>
 #include <vector>
 
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
-
 #include "uArchInterfaces.hpp"
 
 namespace ll = boost::lambda;
@@ -139,7 +136,7 @@ public:
   void disconnect( mapped_reg anIndex, boost::intrusive_ptr<Instruction> inst) {
     FLEXUS_PROFILE();
     bypass_handle_list & list = lookup(anIndex);
-    std::remove_if( list.begin(), list.end(), ll::bind( &bypass_handle::first, ll::_1) == inst);
+    std::remove_if( list.begin(), list.end(), [&inst](auto& x){ return x.first == inst; }); //( &bypass_handle::first, ll::_1) == inst);
   }
   */
 
@@ -155,7 +152,7 @@ public:
     bypass_handle_list::iterator end = list.end();
     while (iter != end) {
       if ( iter->second(aValue) ) {
-        bypass_handle_list::iterator temp = iter;
+        auto temp = iter;
         ++iter;
         list.erase(temp);
       } else {

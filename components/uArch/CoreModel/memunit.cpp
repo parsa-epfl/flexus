@@ -267,7 +267,7 @@ void CoreImpl::accessMem( PhysicalMemoryAddress anAddress, boost::intrusive_ptr<
   memq_t::index<by_insn>::type::iterator iter = theMemQueue.get<by_insn>().find( anInsn );
   if (iter != theMemQueue.get<by_insn>().end() && iter->isAtomic() && iter->theQueue == kSSB) {
     DBG_(Dev, ( << theName << " atomic committing in body of checkpoint " << *iter ) );
-    theMemQueue.get<by_insn>().modify( iter, ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
+    theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
   }
 }
 
@@ -351,7 +351,7 @@ void CoreImpl::clearSSB( ) {
   int32_t sb_count  = 0;
   int32_t sbnaw_count  = 0;
   memq_t::index<by_queue>::type::iterator lb, iter, ub;
-  boost::tie( lb, ub) = theMemQueue.get<by_queue>().equal_range( boost::make_tuple( kSSB ) );
+  std::tie( lb, ub) = theMemQueue.get<by_queue>().equal_range( boost::make_tuple( kSSB ) );
   iter = lb;
   while (iter != ub) {
     DBG_(Iface, ( << theName << " unrequire " << *iter ) );
@@ -384,7 +384,7 @@ int32_t CoreImpl::clearSSB( uint64_t aLowestInsnSeq ) {
   int32_t sbnaw_count  = 0;
   int32_t remaining_ssb_count = 0;
   memq_t::index<by_queue>::type::iterator lb, iter, ub;
-  boost::tie( lb, ub) = theMemQueue.get<by_queue>().equal_range( boost::make_tuple( kSSB ) );
+  std::tie( lb, ub) = theMemQueue.get<by_queue>().equal_range( boost::make_tuple( kSSB ) );
   iter = lb;
   bool first_found = false;
   while (iter != ub ) {
@@ -478,7 +478,7 @@ void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry 
   lsq_entry->theASI = anASI;
   if (anAddr == kUnresolved) {
     lsq_entry->thePaddr = PhysicalMemoryAddress(kUnresolved);
-    theMemQueue.get<by_insn>().modify( lsq_entry, ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = PhysicalMemoryAddress(kUnresolved));
+    theMemQueue.get<by_insn>().modify( lsq_entry, [](auto& x){ x.thePaddr_aligned = PhysicalMemoryAddress(kUnresolved);});//ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = PhysicalMemoryAddress(kUnresolved));
   } else {
     //Map logical to physical
     Flexus::Simics::Translation xlat;
@@ -547,7 +547,7 @@ void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry 
           }
     */
     PhysicalMemoryAddress addr_aligned(lsq_entry->thePaddr & 0xFFFFFFFFFFFFFFF8ULL);
-    theMemQueue.get<by_insn>().modify( lsq_entry, ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = addr_aligned);
+    theMemQueue.get<by_insn>().modify( lsq_entry, [&addr_aligned](auto& x){ x.thePaddr_aligned = addr_aligned; });//ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = addr_aligned);
 
     /* CMU-ONLY-BLOCK-BEGIN */
     if (theTrackParallelAccesses && !xlat.isSideEffect() && xlat.isCacheable() && lsq_entry->thePaddr != kInvalid && lsq_entry->thePaddr != PhysicalMemoryAddress(kUnresolved)) {
@@ -582,7 +582,7 @@ void CoreImpl::addSLATEntry( PhysicalMemoryAddress anAddress, boost::intrusive_p
 void CoreImpl::removeSLATEntry( PhysicalMemoryAddress anAddress, boost::intrusive_ptr<Instruction> anInstruction ) {
   DBG_Assert( anAddress != 0 );
   SpeculativeLoadAddressTracker::iterator iter, end;
-  boost::tie(iter, end) = theSLAT.equal_range(anAddress);
+  std::tie(iter, end) = theSLAT.equal_range(anAddress);
   DBG_Assert(iter != end);
   bool found = false;
   while (iter != end) {

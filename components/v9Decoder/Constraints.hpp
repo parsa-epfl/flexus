@@ -1,8 +1,6 @@
 #ifndef FLEXUS_v9DECODER_CONSTRAINTS_HPP_INCLUDED
 #define FLEXUS_v9DECODER_CONSTRAINTS_HPP_INCLUDED
 
-#include <boost/tuple/tuple.hpp>
-
 #include <components/Common/Slices/MemOp.hpp>
 #include "OperandCode.hpp"
 #include "SemanticInstruction.hpp"

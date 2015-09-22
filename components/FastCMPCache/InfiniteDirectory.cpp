@@ -8,9 +8,6 @@
 #include <components/FastCMPCache/AbstractProtocol.hpp>
 #include <ext/hash_map>
 
-#include <boost/tuple/tuple.hpp>
-#include <boost/lambda/lambda.hpp>
-
 #include <list>
 #include <algorithm>
 
@@ -20,8 +17,6 @@ using nCommonSerializers::StdDirEntryExtendedSerializer;
 
 #include <components/Common/Util.hpp>
 using nCommonUtil::log_base2;
-
-using namespace boost::lambda;
 
 namespace nFastCMPCache {
 
@@ -164,7 +159,7 @@ protected:
   InfiniteDirectoryEntry * findOrCreateEntry(PhysicalMemoryAddress addr) {
     inf_directory_t::iterator iter;
     bool success;
-    boost::tie(iter, success) = theDirectory.insert( std::make_pair(addr, InfiniteDirectoryEntry_p()) );
+    std::tie(iter, success) = theDirectory.insert( std::make_pair(addr, InfiniteDirectoryEntry_p()) );
     if (success) {
       iter->second = new InfiniteDirectoryEntry(addr);
     }
@@ -180,7 +175,7 @@ protected:
   }
 
 public:
-  virtual boost::tuple<SharingVector, SharingState, AbstractEntry_p>
+  virtual std::tuple<SharingVector, SharingState, AbstractEntry_p>
   lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<boost::function<void(void)> > &xtra_actions) {
 
     InfiniteDirectoryEntry_p entry = findEntry(address);
@@ -191,10 +186,10 @@ public:
       state = entry->state;
     }
 
-    return boost::tie(sharers, state, entry);
+    return std::tie(sharers, state, entry);
   }
 
-  virtual boost::tuple<SharingVector, SharingState, AbstractEntry_p, bool>
+  virtual std::tuple<SharingVector, SharingState, AbstractEntry_p, bool>
   snoopLookup(int32_t index, PhysicalMemoryAddress address, MMType req_type) {
 
     InfiniteDirectoryEntry_p entry = findEntry(address);
@@ -207,7 +202,7 @@ public:
       state = entry->state;
     }
 
-    return boost::tie(sharers, state, entry, valid);
+    return std::tie(sharers, state, entry, valid);
   }
 
   virtual void processRequestResponse(int32_t index, const MMType & request, MMType & response,

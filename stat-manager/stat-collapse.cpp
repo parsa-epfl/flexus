@@ -5,16 +5,9 @@
 #include <cstdlib>
 
 #include <boost/function.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
 
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
-
-namespace ll = boost::lambda;
-using ll::_1;
-using ll::_2;
-using ll::_3;
 
 #include <core/stats.hpp>
 
@@ -113,10 +106,10 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
   std::string input_file = anArgList[3];
   std::string output_file = anArgList[4];
 
-  theCommands.push_back(  ll::bind( &loadDatabase, input_file ) );
-  theCommands.push_back(  ll::bind( &computeRegions, start_insn, end_insn ) );
-  theCommands.push_back(  ll::bind( &reduceSum, ll::var(region_string) ) );
-  theCommands.push_back(  ll::bind( &save, output_file, "selection" ) );
+  theCommands.emplace_back( [&input_file](){ return loadDatabase(input_file); }); //ll::bind( &loadDatabase, input_file ) );
+  theCommands.emplace_back( [&start_insn, &end_insn](){ return computeRegions(start_insn,end_insn); }); //ll::bind( &computeRegions, start_insn, end_insn ) );
+  theCommands.emplace_back( [](){ return reduceSum(region_string); }); //ll::bind( &reduceSum, ll::var(region_string) ) );
+  theCommands.emplace_back( [&output_file](){ return save(output_file, "selection"); }); //ll::bind( &save, output_file, "selection" ) );
 
 }
 
