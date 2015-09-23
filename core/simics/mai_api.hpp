@@ -473,10 +473,32 @@ public:
 };
 #endif //FLEXUS_TARGET_IS(x86)
 
+#if FLEXUS_TARGET_IS(ARM)
+class armProcessorImpl :  public BaseProcessorImpl {
+
+public:
+  explicit armProcessorImpl(API::conf_object_t * aProcessor)
+    : BaseProcessorImpl(aProcessor) {
+  }
+
+  void breakSimulation() {
+    API::SIM_break_cycle( *this, 0);
+  }
+
+  bool validateMMU() {
+    return true;
+  }
+  void dumpMMU() {}
+
+};
+#endif //FLEXUS_TARGET_IS(ARM)
+
 #if FLEXUS_TARGET_IS(v9)
 #define PROCESSOR_IMPL v9ProcessorImpl
 #elif FLEXUS_TARGET_IS(x86)
 #define PROCESSOR_IMPL x86ProcessorImpl
+#elif FLEXUS_TARGET_IS(ARM)
+#define PROCESSOR_IMPL armProcessorImpl
 #else
 #error "Architecture does not support MAI"
 #endif
