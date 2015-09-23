@@ -204,7 +204,8 @@ public:
 
     theMemoryMessage.branchType() = branchTypeTable[ mem_trans->s.branch_type ];
     theMemoryMessage.branchAnnul() = (mem_trans->s.annul != 0);
-#if FLEXUS_TARGET_IS(v9)
+    // TODO FIXME: provokes crash whe reading register
+#if FLEXUS_TARGET_IS(v9) && 0
     uint64_t reg_content;
     API::QEMU_read_register(theCPU, 46 /* kTL */, NULL, &reg_content );
     theMemoryMessage.tl() = reg_content;
@@ -212,8 +213,8 @@ public:
     theMemoryMessage.tl() = 0;
 #endif
 
-    // TODO FIXME
-#if FLEXUS_TARGET_IS(v9)
+    // TODO FIXME: provokes crash
+#if FLEXUS_TARGET_IS(v9) && 0
     uint32_t opcode = 
 		API::QEMU_read_phys_memory(theCPU, mem_trans->s.physical_address, 4);
 #else
@@ -293,7 +294,8 @@ public:
     if (mem_trans->s.atomic) {
       //Need to determine opcode, as this may be an RMW or CAS
 
-#if FLEXUS_TARGET_IS(v9)
+      // TODO FIXME: provokes crash
+#if FLEXUS_TARGET_IS(v9) && 0
       // record the opcode
       API::physical_address_t pc = API::QEMU_logical_to_physical(theCPU, API::QEMU_DI_Instruction, mem_trans->s.pc);
       uint32_t op_code = API::QEMU_read_phys_memory(theCPU, pc, 4);

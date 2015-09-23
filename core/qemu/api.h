@@ -2,40 +2,16 @@
 #define QEMU_API_H
 #include <inttypes.h>
 #include <stdlib.h>
-//#include "cpu.h"
-//#include "qom/cpu.h"
-//#include "qemu-common.h"
-//#include "qemu/option.h"
 
-#ifdef DEBUG // temporary, just to make requirements of dummies clear
-#include <assert.h>
-#define ASSERT(COND) assert(COND)
-#define REQUIRES(COND) assert(COND)
-#define ENSURES(COND) assert(COND)
-#define dbg_printf(COND printf(COND)
-#else
-#define ASSERT(...)
-#define REQUIRES(...)
-#define ENSURES(...)
-#define dbg_printf(...)
-#endif
+///
+/// Data structures declarations
+///
 
 typedef uint64_t cycles_t;
 typedef uint64_t physical_address_t;
 typedef uint64_t logical_address_t;
 typedef void* conf_class_t;
 typedef int exception_type_t;
-
-// query the content/size of a register
-// if reg_size != NULL, write the size of the register (in bytes) in reg_size
-// if data_out != NULL, write the content of the register in data_out
-void cpu_read_register( void *env_ptr, int reg_index, unsigned *reg_size, void *data_out );
-
-physical_address_t mmu_logical_to_physical(void *cs, logical_address_t va);
-uint64_t cpu_get_program_counter(void *cs);
-void* cpu_get_address_space(void *cs);
-int cpu_proc_num(void *cs);
-void cpu_pop_indexes(int *indexes);
 
 // things for api.c:
 
@@ -280,8 +256,137 @@ typedef enum {
 	QEMU_DI_Data
 } data_or_instr_t;
 
+///
+/// State interaction API
+///
+/// Get/set machine state from the Flexus.
+///
+
+typedef void (*CPU_READ_REGISTER_PROC)(void* env_ptr, int reg_index, unsigned *reg_size, void *data_out);
+typedef physical_address_t (*MMU_LOGICAL_TO_PHYSICAL_PROC)(void *cs, logical_address_t va);
+typedef uint64_t (*CPU_GET_PROGRAM_COUNTER_PROC)(void* cs);
+typedef void* (*CPU_GET_ADDRESS_SPACE_PROC)(void* cs);
+typedef int (*CPU_PROC_NUM_PROC)(void* cs);
+typedef void (*CPU_POP_INDEXES_PROC)(int* indexes);
+typedef conf_object_t* (*QEMU_GET_PHYS_MEMORY_PROC)(conf_object_t* cpu);
+typedef conf_object_t* (*QEMU_GET_ETHERNET_PROC)(void);
+typedef int (*QEMU_CLEAR_EXCEPTION_PROC)(void);
+typedef void (*QEMU_READ_REGISTER_PROC)(conf_object_t *cpu, int reg_index, unsigned* reg_size, void* data_out);
+typedef uint64_t (*QEMU_READ_PHYS_MEMORY_PROC)(conf_object_t *cpu, physical_address_t pa, int bytes);
+typedef conf_object_t *(*QEMU_GET_PHYS_MEM_PROC)(conf_object_t *cpu);
+typedef conf_object_t* (*QEMU_GET_CPU_BY_INDEX_PROC)(int index);
+typedef int (*QEMU_GET_PROCESSOR_NUMBER_PROC)(conf_object_t *cpu);
+typedef uint64_t (*QEMU_STEP_COUNT_PROC)(conf_object_t *cpu);
+typedef int (*QEMU_GET_NUM_CPUS_PROC)(void);
+typedef int (*QEMU_GET_NUM_SOCKETS_PROC)(void);
+typedef int (*QEMU_GET_NUM_CORES_PROC)(void);
+typedef int (*QEMU_GET_NUM_THREADS_PER_CORE_PROC)(void);
+typedef int (*QEMU_CPU_GET_SOCKET_ID_PROC)(conf_object_t *cpu);
+typedef int (*QEMU_CPU_GET_CORE_ID_PROC)(conf_object_t *cpu);
+typedef int (*QEMU_CPU_GET_THREAD_ID_PROC)(conf_object_t *cpu);
+typedef conf_object_t* (*QEMU_GET_ALL_PROCESSORS_PROC)(int *numCPUS);
+typedef int (*QEMU_SET_TICK_FREQUENCY_PROC)(conf_object_t *cpu, double tick_freq);
+typedef double (*QEMU_GET_TICK_FREQUENCY_PROC)(conf_object_t *cpu);
+typedef uint64_t (*QEMU_GET_PROGRAM_COUNTER_PROC)(conf_object_t *cpu);
+typedef physical_address_t (*QEMU_LOGICAL_TO_PHYSICAL_PROC)(conf_object_t *cpu, 
+					data_or_instr_t fetch, logical_address_t va);
+typedef void (*QEMU_BREAK_SIMULATION_PROC)(const char* msg);
+typedef void (*QEMU_FLUSH_ALL_CACHES_PROC)(void);
+typedef int (*QEMU_MEM_OP_IS_DATA_PROC)(generic_transaction_t *mop);
+typedef int (*QEMU_MEM_OP_IS_WRITE_PROC)(generic_transaction_t *mop);
+typedef int (*QEMU_MEM_OP_IS_READ_PROC)(generic_transaction_t *mop);
+
+//ALEX - begin 
+////For Timing (mai) 
+typedef instruction_error_t (*QEMU_INSTRUCTION_HANDLE_INTERRUPT_PROC)(conf_object_t *cpu, pseudo_exceptions_t pendingInterrupt);
+typedef int (*QEMU_GET_PENDING_EXCEPTION_PROC)(void);
+typedef int (*QEMU_ADVANCE_PROC)(void);
+////ALEX - end 
+
+#ifndef QEMUFLEX_PROTOTYPES
+extern CPU_READ_REGISTER_PROC cpu_read_register;
+extern MMU_LOGICAL_TO_PHYSICAL_PROC mmu_logical_to_physical;
+extern CPU_GET_PROGRAM_COUNTER_PROC cpu_get_program_counter;
+extern CPU_GET_ADDRESS_SPACE_PROC cpu_get_address_space;
+extern CPU_PROC_NUM_PROC cpu_proc_num;
+extern CPU_POP_INDEXES_PROC cpu_pop_indexes;
+extern QEMU_GET_PHYS_MEMORY_PROC QEMU_get_phys_memory;
+extern QEMU_GET_ETHERNET_PROC QEMU_get_ethernet;
+extern QEMU_CLEAR_EXCEPTION_PROC QEMU_clear_exception;
+extern QEMU_READ_REGISTER_PROC QEMU_read_register;
+extern QEMU_READ_PHYS_MEMORY_PROC QEMU_read_phys_memory;
+extern QEMU_GET_PHYS_MEM_PROC QEMU_get_phys_mem;
+extern QEMU_GET_CPU_BY_INDEX_PROC QEMU_get_cpu_by_index;
+extern QEMU_GET_PROCESSOR_NUMBER_PROC QEMU_get_processor_number;
+extern QEMU_STEP_COUNT_PROC QEMU_step_count;
+extern QEMU_GET_NUM_CPUS_PROC QEMU_get_num_cpus;
+
+// return the number of sockets on he motherboard
+extern QEMU_GET_NUM_SOCKETS_PROC QEMU_get_num_sockets;
+
+// returns the number of cores per CPU socket
+extern QEMU_GET_NUM_CORES_PROC QEMU_get_num_cores;
+
+// return the number of native threads per core
+extern QEMU_GET_NUM_THREADS_PER_CORE_PROC QEMU_get_num_threads_per_core;
+
+// return the id of the socket of the processor
+extern QEMU_CPU_GET_SOCKET_ID_PROC QEMU_cpu_get_socket_id;
+
+// return the core id of the processor
+extern QEMU_CPU_GET_CORE_ID_PROC QEMU_cpu_get_core_id;
+
+// return the hread id of the processor
+extern QEMU_CPU_GET_THREAD_ID_PROC QEMU_cpu_get_thread_id;
+
+// return an array of all processors
+// (numSockets * numCores * numthreads CPUs)
+extern QEMU_GET_ALL_PROCESSORS_PROC QEMU_get_all_processors;
+
+// set the frequency of a given cpu.
+extern QEMU_SET_TICK_FREQUENCY_PROC QEMU_set_tick_frequency;
+
+// get freq of given cpu
+extern QEMU_GET_TICK_FREQUENCY_PROC QEMU_get_tick_frequency;
+
+// get the program counter of a given cpu.
+extern QEMU_GET_PROGRAM_COUNTER_PROC QEMU_get_program_counter;
+
+// convert a logical address to a physical address.
+extern QEMU_LOGICAL_TO_PHYSICAL_PROC QEMU_logical_to_physical;
+
+extern QEMU_BREAK_SIMULATION_PROC QEMU_break_simulation;
+
+// dummy function at the moment. should flush the translation cache.
+extern QEMU_FLUSH_ALL_CACHES_PROC QEMU_flush_all_caches;
+
+// determine the memory operation type by the transaction struct.
+//[???]I assume return true if it is data, false otherwise
+extern QEMU_MEM_OP_IS_DATA_PROC QEMU_mem_op_is_data;
+
+//[???]I assume return true if it is write, false otherwise
+extern QEMU_MEM_OP_IS_WRITE_PROC QEMU_mem_op_is_write;
+
+//[???]I assume return true if it is read, false otherwise
+extern QEMU_MEM_OP_IS_READ_PROC QEMU_mem_op_is_read;
+
+extern QEMU_INSTRUCTION_HANDLE_INTERRUPT_PROC QEMU_instruction_handle_interrupt;
+extern QEMU_GET_PENDING_EXCEPTION_PROC QEMU_get_pending_exception;
+extern QEMU_ADVANCE_PROC QEMU_advance;
+#else /* QEMUFLEX_PROTOTYPES */
+// query the content/size of a register
+// if reg_size != NULL, write the size of the register (in bytes) in reg_size
+// if data_out != NULL, write the content of the register in data_out
+void cpu_read_register( void *env_ptr, int reg_index, unsigned *reg_size, void *data_out );
+
+physical_address_t mmu_logical_to_physical(void *cs, logical_address_t va);
+uint64_t cpu_get_program_counter(void *cs);
+void* cpu_get_address_space(void *cs);
+int cpu_proc_num(void *cs);
+void cpu_pop_indexes(int *indexes);
 conf_object_t *QEMU_get_phys_memory(conf_object_t *cpu);
 conf_object_t *QEMU_get_ethernet(void);
+
 
 //[???]based on name it clears exceptions
 int QEMU_clear_exception(void);
@@ -354,6 +459,22 @@ int QEMU_mem_op_is_data(generic_transaction_t *mop);
 int QEMU_mem_op_is_write(generic_transaction_t *mop);
 //[???]I assume return true if it is read, false otherwise
 int QEMU_mem_op_is_read(generic_transaction_t *mop);
+
+//ALEX - begin 
+////For Timing (mai) 
+instruction_error_t QEMU_instruction_handle_interrupt(conf_object_t *cpu, pseudo_exceptions_t pendingInterrupt); 
+int QEMU_get_pending_exception(); 
+int QEMU_advance(); 
+////ALEX - end 
+
+#endif /* QEMUFLEX_PROTYPES */
+
+///
+/// Callback API
+///
+/// The callback API is used to send event notifications
+/// to the Flexus when using trace mode.
+///
 
 // callback function types.
 // 
@@ -467,21 +588,129 @@ typedef struct QEMU_callback_table QEMU_callback_table_t;
 
 #define QEMUFLEX_GENERIC_CALLBACK -1
 
+typedef int (*QEMU_INSERT_CALLBACK_PROC)( int cpu_id, QEMU_callback_event_t event, void* obj, void* fun);
+typedef void (*QEMU_DELETE_CALLBACK_PROC)( int cpu_id, QEMU_callback_event_t event, uint64_t callback_id);
+
+#ifndef QEMUFLEX_PROTOTYPES
+// insert a callback specific for the given cpu or -1 for a generic callback
+extern QEMU_INSERT_CALLBACK_PROC QEMU_insert_callback;
+
+// delete a callback specific for the given cpu or -1 for a generic callback
+extern QEMU_DELETE_CALLBACK_PROC QEMU_delete_callback;
+#else
+// insert a callback specific for the given cpu or -1 for a generic callback
+int QEMU_insert_callback( int cpu_id, QEMU_callback_event_t event, void* obj, void* fun);
+// delete a callback specific for the given cpu or -1 for a generic callback
+void QEMU_delete_callback( int cpu_id, QEMU_callback_event_t event, uint64_t callback_id);
+#endif /* QEMUFLEX_PROTYPES */
+
+///
+/// QEMU QEMUFLEX internals
+///
+
+#ifdef QEMUFLEX_QEMU_INTERNAL
 // Initialize the callback tables for every processor
 // Must be called at QEMU startup, before initializing Flexus
 void QEMU_setup_callback_tables(void);
 // Free the allocated memory for the callback tables
 void QEMU_free_callback_tables(void);
-
-// insert a callback specific for the given cpu or -1 for a generic callback
-int QEMU_insert_callback( int cpu_id, QEMU_callback_event_t event, void* obj, void* fun);
-// delete a callback specific for the given cpu or -1 for a generic callback
-void QEMU_delete_callback( int cpu_id, QEMU_callback_event_t event, uint64_t callback_id);
 // execute a callback trigered by the given cpu id or -1 for a generic callback
 void QEMU_execute_callbacks(
 		  int cpu_id,
 		  QEMU_callback_event_t event,
 		  QEMU_callback_args_t *event_data
 		);
+#endif /* QEMUFLEX_QEMU_INTERNAL */
+
+///
+/// Simulator interface function passing
+///
+typedef struct QFLEX_API_Interface_Hooks {
+CPU_READ_REGISTER_PROC cpu_read_register;
+MMU_LOGICAL_TO_PHYSICAL_PROC mmu_logical_to_physical;
+CPU_GET_PROGRAM_COUNTER_PROC cpu_get_program_counter;
+CPU_GET_ADDRESS_SPACE_PROC cpu_get_address_space;
+CPU_PROC_NUM_PROC cpu_proc_num;
+CPU_POP_INDEXES_PROC cpu_pop_indexes;
+QEMU_GET_PHYS_MEMORY_PROC QEMU_get_phys_memory;
+QEMU_GET_ETHERNET_PROC QEMU_get_ethernet;
+QEMU_CLEAR_EXCEPTION_PROC QEMU_clear_exception;
+QEMU_READ_REGISTER_PROC QEMU_read_register;
+QEMU_READ_PHYS_MEMORY_PROC QEMU_read_phys_memory;
+QEMU_GET_PHYS_MEM_PROC QEMU_get_phys_mem;
+QEMU_GET_CPU_BY_INDEX_PROC QEMU_get_cpu_by_index;
+QEMU_GET_PROCESSOR_NUMBER_PROC QEMU_get_processor_number;
+QEMU_STEP_COUNT_PROC QEMU_step_count;
+QEMU_GET_NUM_CPUS_PROC QEMU_get_num_cpus;
+
+// return the number of sockets on he motherboard
+QEMU_GET_NUM_SOCKETS_PROC QEMU_get_num_sockets;
+
+// returns the number of cores per CPU socket
+QEMU_GET_NUM_CORES_PROC QEMU_get_num_cores;
+
+// return the number of native threads per core
+QEMU_GET_NUM_THREADS_PER_CORE_PROC QEMU_get_num_threads_per_core;
+
+// return the id of the socket of the processor
+QEMU_CPU_GET_SOCKET_ID_PROC QEMU_cpu_get_socket_id;
+
+// return the core id of the processor
+QEMU_CPU_GET_CORE_ID_PROC QEMU_cpu_get_core_id;
+
+// return the hread id of the processor
+QEMU_CPU_GET_THREAD_ID_PROC QEMU_cpu_get_thread_id;
+
+// return an array of all processors
+// (numSockets * numCores * numthreads CPUs)
+QEMU_GET_ALL_PROCESSORS_PROC QEMU_get_all_processors;
+
+// set the frequency of a given cpu.
+QEMU_SET_TICK_FREQUENCY_PROC QEMU_set_tick_frequency;
+
+// get freq of given cpu
+QEMU_GET_TICK_FREQUENCY_PROC QEMU_get_tick_frequency;
+
+// get the program counter of a given cpu.
+QEMU_GET_PROGRAM_COUNTER_PROC QEMU_get_program_counter;
+
+// convert a logical address to a physical address.
+QEMU_LOGICAL_TO_PHYSICAL_PROC QEMU_logical_to_physical;
+
+QEMU_BREAK_SIMULATION_PROC QEMU_break_simulation;
+
+// dummy function at the moment. should flush the translation cache.
+QEMU_FLUSH_ALL_CACHES_PROC QEMU_flush_all_caches;
+
+// determine the memory operation type by the transaction struct.
+//[???]I assume return true if it is data, false otherwise
+QEMU_MEM_OP_IS_DATA_PROC QEMU_mem_op_is_data;
+
+//[???]I assume return true if it is write, false otherwise
+QEMU_MEM_OP_IS_WRITE_PROC QEMU_mem_op_is_write;
+
+//[???]I assume return true if it is read, false otherwise
+QEMU_MEM_OP_IS_READ_PROC QEMU_mem_op_is_read;
+
+QEMU_INSTRUCTION_HANDLE_INTERRUPT_PROC QEMU_instruction_handle_interrupt;
+QEMU_GET_PENDING_EXCEPTION_PROC QEMU_get_pending_exception;
+QEMU_ADVANCE_PROC QEMU_advance;
+
+// insert a callback specific for the given cpu or -1 for a generic callback
+QEMU_INSERT_CALLBACK_PROC QEMU_insert_callback;
+
+// delete a callback specific for the given cpu or -1 for a generic callback
+QEMU_DELETE_CALLBACK_PROC QEMU_delete_callback;
+} QFLEX_API_Interface_Hooks_t;
+
+
+#ifdef QEMUFLEX_QEMU_INTERNAL
+void QFLEX_API_get_interface_hooks(QFLEX_API_Interface_Hooks_t* hooks);
+#endif /* QEMUFLEX_QEMU_INTERNAL */
+
+
+#ifdef QEMUFLEX_FLEXUS_INTERNAL
+void QFLEX_API_set_interface_hooks( const QFLEX_API_Interface_Hooks_t* hooks );
+#endif /* QEMUFLEX_FLEXUS_INTERNAL */
 
 #endif

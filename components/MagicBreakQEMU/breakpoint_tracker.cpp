@@ -72,7 +72,7 @@ class IterationTrackerImpl : public IterationTracker {
   bool theCkptFlag;
     public:
   void OnMagicBreakpoint( Qemu::API::conf_object_t * aCpu, long long aBreakpoint) {
-    uint32_t cpu_no = Qemu::APIFwd::QEMU_get_processor_number(aCpu);
+    uint32_t cpu_no = Qemu::API::QEMU_get_processor_number(aCpu);
 
 #if FLEXUS_TARGET_IS(x86)
     Qemu::API::processor_t * cpu = reinterpret_cast<Qemu::API::processor_t *>(aCpu);
@@ -743,7 +743,7 @@ class SimPrintHandlerImpl : public SimPrintHandler {
     public:
   void OnMagicBreakpoint( Qemu::API::conf_object_t * aCpu, long long aBreakpoint) {
 #if FLEXUS_TARGET_IS(v9)
-    uint32_t cpu_no = Qemu::APIFwd::QEMU_get_processor_number(aCpu);
+    uint32_t cpu_no = Qemu::API::QEMU_get_processor_number(aCpu);
 
     switch (aBreakpoint) {
       case 0x666: {
