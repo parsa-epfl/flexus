@@ -74,7 +74,7 @@ void Arbiter::AddRequest( int input, int id, int pri )
 Arbiter *Arbiter::NewArbiter( Module *parent, const string& name,
 			      const string &arb_type, int size)
 {
-  Arbiter *a = NULL;
+  Arbiter *a = nullptr;
   if(arb_type == "round_robin") {
     a = new RoundRobinArbiter( parent, name, size );
   } else if(arb_type == "matrix") {

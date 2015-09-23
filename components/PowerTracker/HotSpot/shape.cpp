@@ -104,7 +104,7 @@ void print_shape_entry(shape_t * shape, int32_t i) {
 void print_shape(shape_t * shape) {
   int32_t i;
   if (!shape) {
-    fprintf(stdout, "printing shape curve: NULL\n");
+    fprintf(stdout, "printing shape curve: nullptr\n");
     return;
   }
   fprintf(stdout, "printing shape curve with %d elements\n", shape->size);
@@ -267,7 +267,7 @@ tree_node_t * tree_node_stack_pop(tree_node_stack_t * stack) {
     return stack->array[stack->top];
   } else {
     fatal("attempting to pop from an already empty stack\n");
-    return NULL;
+    return nullptr;
   }
 }
 
@@ -283,7 +283,7 @@ tree_node_t * tree_from_NPE(flp_desc_t * flp_desc,
                             tree_node_stack_t * stack,
                             NPE_t * expr) {
   int32_t i;
-  tree_node_t * node = NULL, *left, *right;
+  tree_node_t * node = nullptr, *left, *right;
 
   if (!tree_node_stack_isempty(stack))
     fatal("stack not empty\n");
@@ -295,7 +295,7 @@ tree_node_t * tree_from_NPE(flp_desc_t * flp_desc,
     /* leaf */
     if (expr->elements[i] >= 0) {
       node->curve = shape_duplicate(flp_desc->units[expr->elements[i]].shape);
-      node->left = node->right = NULL;
+      node->left = node->right = nullptr;
       node->label.unit = expr->elements[i];
       /*	internal node denoting a cut	*/
     } else {
@@ -314,9 +314,9 @@ tree_node_t * tree_from_NPE(flp_desc_t * flp_desc,
 }
 
 void free_tree(tree_node_t * root) {
-  if (root->left != NULL)
+  if (root->left != nullptr)
     free_tree(root->left);
-  if (root->right != NULL)
+  if (root->right != nullptr)
     free_tree(root->right);
   free_shape(root->curve);
   free(root);
@@ -324,9 +324,9 @@ void free_tree(tree_node_t * root) {
 
 /* debug print	*/
 void print_tree(tree_node_t * root, flp_desc_t * flp_desc) {
-  if (root->left != NULL)
+  if (root->left != nullptr)
     print_tree(root->left, flp_desc);
-  if (root->right != NULL)
+  if (root->right != nullptr)
     print_tree(root->right, flp_desc);
 
   if (root->label.unit >= 0)
@@ -346,9 +346,9 @@ void print_tree(tree_node_t * root, flp_desc_t * flp_desc) {
  * corresponding to the `pos'th entry of root->curve
  */
 void print_tree_relevant(tree_node_t * root, int32_t pos, flp_desc_t * flp_desc) {
-  if (root->left != NULL)
+  if (root->left != nullptr)
     print_tree_relevant(root->left, root->curve->left_pos[pos], flp_desc);
-  if (root->right != NULL)
+  if (root->right != nullptr)
     print_tree_relevant(root->right, root->curve->right_pos[pos], flp_desc);
 
   if (root->label.unit >= 0)

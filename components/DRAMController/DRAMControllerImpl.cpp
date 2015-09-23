@@ -360,7 +360,7 @@ void push(interface::LoopbackIn const &, MemoryTransport & aMessageTransport) {
 
     uint64_t address= aMessageTransport[MemoryMessageTag]->address();
     address=translateAddress(address);
-    Transaction t = Transaction(operation, address, NULL);
+    Transaction t = Transaction(operation, address, nullptr);
     alignTransactionAddress(t);
     mem->addTransaction(t);
     MemoryMessage::MemoryMessageType aType;

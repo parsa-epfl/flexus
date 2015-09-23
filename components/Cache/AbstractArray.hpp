@@ -174,7 +174,7 @@ AbstractArray<_State>* constructArray(std::string & anArrayConfiguration, const 
   }
 
   DBG_Assert(false, ( << "Failed to create Instance of '" << name << "'" ) );
-  return NULL;
+  return nullptr;
 }
 
 };  // namespace nCache

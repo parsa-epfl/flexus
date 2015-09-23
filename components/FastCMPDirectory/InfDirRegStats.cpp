@@ -113,17 +113,17 @@ private:
   }
 
   inline void setRegionSize(const std::string & arg) {
-    theRegionSize = std::strtoul(arg.c_str(), NULL, 0);
+    theRegionSize = std::strtoul(arg.c_str(), nullptr, 0);
   }
 
   inline void setBlockSize(const std::string & arg) {
-    theBlockSize = std::strtoul(arg.c_str(), NULL, 0);
+    theBlockSize = std::strtoul(arg.c_str(), nullptr, 0);
   }
 
 protected:
   virtual void addSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     InfDirRegStatsEntry * my_entry = dynamic_cast<InfDirRegStatsEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       my_entry = findOrCreateEntry(address);
     }
     my_entry->addSharer(index, getBlockOffset(address));
@@ -131,7 +131,7 @@ protected:
 
   virtual void addExclusiveSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     InfDirRegStatsEntry * my_entry = dynamic_cast<InfDirRegStatsEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       my_entry = findOrCreateEntry(address);
     }
     my_entry->addSharer(index, getBlockOffset(address));
@@ -145,7 +145,7 @@ protected:
 
   virtual void removeSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     InfDirRegStatsEntry * my_entry = dynamic_cast<InfDirRegStatsEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     my_entry->removeSharer(index, getBlockOffset(address));
@@ -153,7 +153,7 @@ protected:
 
   virtual void makeSharerExclusive(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     InfDirRegStatsEntry * my_entry = dynamic_cast<InfDirRegStatsEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     // Make it exclusive
@@ -173,7 +173,7 @@ protected:
   InfDirRegStatsEntry_p findEntry(PhysicalMemoryAddress addr) {
     inf_directory_t::iterator iter = theDirectory.find(getRegion(addr));
     if (iter == theDirectory.end()) {
-      return NULL;
+      return nullptr;
     }
     return iter->second;
   }
@@ -209,7 +209,7 @@ public:
     SharingVector sharers;
     SharingState  state = ZeroSharers;
     bool is_shared = false;
-    if (entry != NULL) {
+    if (entry != nullptr) {
       int32_t offset = getBlockOffset(address);
       sharers = entry->sharers[offset];
       state = entry->state[offset];
@@ -271,9 +271,9 @@ public:
     AbstractDirectory::processRequestResponse(index, request, response, dir_entry, address, off_chip);
 
     InfDirRegStatsEntry_p my_entry = dynamic_cast<InfDirRegStatsEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       my_entry = findEntry(address);
-      if (my_entry == NULL) {
+      if (my_entry == nullptr) {
         return;
       }
     }

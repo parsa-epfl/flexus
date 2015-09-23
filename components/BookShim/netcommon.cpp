@@ -10,8 +10,8 @@ namespace nNetShim
   
   int64_t currTime;
   
-MessageStateList * mslFreeList = NULL;
-MessageStateList * msFreeList  = NULL;
+MessageStateList * mslFreeList = nullptr;
+MessageStateList * msFreeList  = nullptr;
 
 #define ALLOCATION_BLOCK_SIZE  (512)
 
@@ -22,14 +22,14 @@ MessageStateList * allocMessageStateList ( void )
   MessageStateList 
     * newNode;
 
-  if ( mslFreeList == NULL ) {
+  if ( mslFreeList == nullptr ) {
     int
       i;
     
     // Allocate more nodes 
     mslFreeList = new MessageStateList[ALLOCATION_BLOCK_SIZE];
     
-    assert ( mslFreeList != NULL );
+    assert ( mslFreeList != nullptr );
 
     // Set up next pointers
     for ( i = 0; i < ALLOCATION_BLOCK_SIZE - 1; i++ )
@@ -39,8 +39,8 @@ MessageStateList * allocMessageStateList ( void )
   newNode = mslFreeList;
   mslFreeList = newNode->next;
 
-  newNode->prev = NULL;
-  newNode->next = NULL;
+  newNode->prev = nullptr;
+  newNode->next = nullptr;
   newNode->delay = 0;
 
 #ifdef NS_DEBUG
@@ -68,8 +68,8 @@ bool freeMessageStateList ( MessageStateList * msgl )
 #endif
 
   msgl->msg = (MessageState*)msgl->msg->serial;
-  //  msgl->msg   = NULL;
-  msgl->prev  = NULL;
+  //  msgl->msg   = nullptr;
+  msgl->prev  = nullptr;
   msgl->next  = mslFreeList;
   mslFreeList = msgl;
 
@@ -84,12 +84,12 @@ MessageState * allocMessageState ( void )
   MessageStateList
     * msl;
 
-  if ( msFreeList == NULL ) {
+  if ( msFreeList == nullptr ) {
     int32_t 
       i;
     
     newState = new MessageState[ALLOCATION_BLOCK_SIZE];
-    assert ( newState != NULL );
+    assert ( newState != nullptr );
 
     memset ( newState, 0, sizeof(MessageState[ALLOCATION_BLOCK_SIZE]) );
 
@@ -97,7 +97,7 @@ MessageState * allocMessageState ( void )
       freeMessageState ( &newState[i] );
   }
 
-  assert ( msFreeList != NULL );
+  assert ( msFreeList != nullptr );
 
   msl = msFreeList;
   msFreeList = msl->next;
@@ -121,7 +121,7 @@ bool freeMessageState  ( MessageState * msg )
 
   TRACE ( msg, " deallocating message" );
 
-  msg->myList = NULL;
+  msg->myList = nullptr;
   msg->serial = -msg->serial;
 
   newNode       = allocMessageStateList ( msg );

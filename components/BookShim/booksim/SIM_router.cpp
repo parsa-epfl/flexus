@@ -372,7 +372,7 @@ int SIM_buf_power_data_read(SIM_array_info_t *info, SIM_array_t *arr, LIB_Type_m
 	/* precharge */
 	SIM_array_pre_record(&arr->data_bitline_pre, info->blk_bits);
 	/* drive the wordline */
-	SIM_array_dec(info, arr, NULL, 0, SIM_ARRAY_READ);
+	SIM_array_dec(info, arr, nullptr, 0, SIM_ARRAY_READ);
 	/* read data */
 	SIM_array_data_read(info, arr, data);
 
@@ -405,9 +405,9 @@ int SIM_buf_power_data_write(SIM_array_info_t *info, SIM_array_t *arr, u_char *d
 
 
 	/* drive the wordline */
-	SIM_array_dec(info, arr, NULL, 0, SIM_ARRAY_WRITE);
+	SIM_array_dec(info, arr, nullptr, 0, SIM_ARRAY_WRITE);
 	/* write data */
-	SIM_array_data_write(info, arr, NULL, N_ITEM, data_lineFlexus, old_dataFlexus, new_dataFlexus);
+	SIM_array_data_write(info, arr, nullptr, N_ITEM, data_lineFlexus, old_dataFlexus, new_dataFlexus);
 
 	delete [] data_lineFlexus;//= new u_char[PARM(flit_width)];
 	delete [] old_dataFlexus; // = new u_char[PARM(flit_width)];

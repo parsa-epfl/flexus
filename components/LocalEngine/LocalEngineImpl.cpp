@@ -90,7 +90,7 @@ public:
     return find(anAddress, true);
   }
   EntryType_p find(const MemoryAddress & anAddress, bool removeEntry = false) {
-    EntryType_p ret = NULL;
+    EntryType_p ret = nullptr;
     typename std::vector<EntryType_p>::iterator entries;
     for (entries = theList.begin(); entries != theList.end(); entries++) {
       if ( anAddress == (*entries)->getAddress() ) {

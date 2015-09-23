@@ -1372,11 +1372,11 @@ int SIM_array_init(SIM_array_info_t *info, int is_fifo, u_int n_read_port, u_int
 
 
 	/* ==================== call back functions ==================== */
-	info->get_entry_valid_bit = NULL;
-	info->get_entry_dirty_bit = NULL;
-	info->get_entry_tag = NULL;
-	info->get_set_tag = NULL;
-	info->get_set_use_bit = NULL;
+	info->get_entry_valid_bit = nullptr;
+	info->get_entry_dirty_bit = nullptr;
+	info->get_entry_tag = nullptr;
+	info->get_set_tag = nullptr;
+	info->get_set_use_bit = nullptr;
 
 
 	/* initialize state variables */

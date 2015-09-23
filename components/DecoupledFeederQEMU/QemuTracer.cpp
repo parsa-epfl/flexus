@@ -207,7 +207,7 @@ public:
     // TODO FIXME: provokes crash whe reading register
 #if FLEXUS_TARGET_IS(v9) && 0
     uint64_t reg_content;
-    API::QEMU_read_register(theCPU, 46 /* kTL */, NULL, &reg_content );
+    API::QEMU_read_register(theCPU, 46 /* kTL */, nullptr, &reg_content );
     theMemoryMessage.tl() = reg_content;
 #else
     theMemoryMessage.tl() = 0;

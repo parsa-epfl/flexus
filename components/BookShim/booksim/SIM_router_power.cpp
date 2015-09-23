@@ -70,7 +70,7 @@ int SIM_router_power_init(SIM_router_info_t *info, SIM_router_power_t *router)
 
 	/* HACK HACK HACK */
 	if (info->exp_xb_model)
-		SIM_crossbar_init(&router->exp_xb, info->exp_xb_model, 2 * info->n_switch_in - 1, 2 * info->n_switch_out - 1, info->exp_in_seg, info->exp_out_seg, info->flit_width, info->degree, info->connect_type, info->trans_type, 0, 0, NULL);
+		SIM_crossbar_init(&router->exp_xb, info->exp_xb_model, 2 * info->n_switch_in - 1, 2 * info->n_switch_out - 1, info->exp_in_seg, info->exp_out_seg, info->flit_width, info->degree, info->connect_type, info->trans_type, 0, 0, nullptr);
 
 	/* initialize various buffers */
 	if (info->in_buf) {
@@ -101,8 +101,8 @@ int SIM_router_power_init(SIM_router_info_t *info, SIM_router_power_t *router)
 		req_len = info->central_buf_info.data_arr_height;
 
 		/* assuming no segmentation for central buffer in/out crossbars */
-		SIM_crossbar_init(&router->in_cbuf_crsbar, MATRIX_CROSSBAR, info->n_switch_in, info->pipe_depth * info->central_buf_info.write_ports, 0, 0, info->flit_width, 0, info->connect_type, info->trans_type, cbuf_width, 0, NULL);
-		SIM_crossbar_init(&router->out_cbuf_crsbar, MATRIX_CROSSBAR, info->pipe_depth * info->central_buf_info.read_ports, info->n_switch_out, 0, 0, info->flit_width, 0, info->connect_type, info->trans_type, 0, cbuf_width, NULL);
+		SIM_crossbar_init(&router->in_cbuf_crsbar, MATRIX_CROSSBAR, info->n_switch_in, info->pipe_depth * info->central_buf_info.write_ports, 0, 0, info->flit_width, 0, info->connect_type, info->trans_type, cbuf_width, 0, nullptr);
+		SIM_crossbar_init(&router->out_cbuf_crsbar, MATRIX_CROSSBAR, info->pipe_depth * info->central_buf_info.read_ports, info->n_switch_out, 0, 0, info->flit_width, 0, info->connect_type, info->trans_type, 0, cbuf_width, nullptr);
 
 		/* dirty hack */
 		SIM_fpfp_init(&router->cbuf_ff, info->cbuf_ff_model, 0);

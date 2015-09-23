@@ -23,12 +23,12 @@ namespace nNetShim
       }
     }
 
-    channel = NULL;
+    channel = nullptr;
 
     assert ( bufferCount_ > 0 );
 
     for ( i = 0; i < MAX_VC; i++ ) {
-      mslHead[i]     = mslTail[i] = NULL;
+      mslHead[i]     = mslTail[i] = nullptr;
       buffersUsed[i] = 0;
     }
   }
@@ -40,7 +40,7 @@ namespace nNetShim
     msl = allocMessageStateList ( msg );
 
     assert(msg->networkVC >= 0 && msg->networkVC < MAX_VC);
-    if ( mslHead[msg->networkVC] == NULL ) {
+    if ( mslHead[msg->networkVC] == nullptr ) {
       mslHead[msg->networkVC] = mslTail[msg->networkVC] = msl;
 
       // For time at head statistics
@@ -63,12 +63,12 @@ namespace nNetShim
 
     msl = mslHead[vc];
 
-    assert ( msl != NULL );
+    assert ( msl != nullptr );
 
     msg = msl->msg;
 
-    if ( msl->next == NULL )
-      mslHead[vc] = mslTail[vc] = NULL;
+    if ( msl->next == nullptr )
+      mslHead[vc] = mslTail[vc] = nullptr;
     else {
       mslHead[vc] = mslHead[vc]->next;
       mslHead[vc]->msg->atHeadTime -= currTime;
@@ -113,7 +113,7 @@ namespace nNetShim
     : ChannelPort ( bufferCount_ )
   {
     channelLatency = channelLatency_;
-    delayHead = delayTail = NULL;
+    delayHead = delayTail = nullptr;
     netSwitch = netSwitch_;
     netNode   = netNode_;
   }
@@ -138,7 +138,7 @@ namespace nNetShim
     }
 
     // Insert into the ordered queue
-    if ( delayHead == NULL ) {
+    if ( delayHead == nullptr ) {
       delayHead = delayTail = msl;
     } else {
       delayTail->next = msl;
@@ -164,15 +164,15 @@ namespace nNetShim
         * oldNode = delayHead;
       
       delayHead = oldNode->next;
-      if ( delayHead == NULL ) 
-        delayTail = NULL;
+      if ( delayHead == nullptr ) 
+        delayTail = nullptr;
       
       // Notify the switch (if any) that a message is ready
-      if ( netSwitch != NULL ) { 
+      if ( netSwitch != nullptr ) { 
         netSwitch->notifyWaitingMessage ( oldNode->msg->networkVC );
       }
       
-      if ( netNode != NULL ) {
+      if ( netNode != nullptr ) {
         netNode->notifyWaitingMessage();
       }        
       
@@ -236,8 +236,8 @@ namespace nNetShim
     localLatencyDivider = 1;
     state = CS_IDLE;
 
-    fromPort = NULL;
-    toPort   = NULL;
+    fromPort = nullptr;
+    toPort   = nullptr;
 
     messagesWaiting = 0;
   }

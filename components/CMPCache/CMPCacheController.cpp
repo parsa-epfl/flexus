@@ -717,7 +717,7 @@ void CMPCacheController::finalizeProcess(ProcessEntry_p process) {
       unreserveSnoopOut( process, process->getSnoopTransports().size());
       sendSnoops(process);
       unreserveReplyOut(process, 1);
-      DBG_Assert(process->getReplyTransport()[MemoryMessageTag] != NULL, ( << "No reply msg for " << * (process->transport()[MemoryMessageTag]) ));
+      DBG_Assert(process->getReplyTransport()[MemoryMessageTag] != nullptr, ( << "No reply msg for " << * (process->transport()[MemoryMessageTag]) ));
       sendReply(process);
       break;
     case eFwdAndReply:
@@ -725,7 +725,7 @@ void CMPCacheController::finalizeProcess(ProcessEntry_p process) {
       unreserveSnoopOut( process, process->getSnoopTransports().size());
       sendSnoops(process);
       unreserveReplyOut(process, 1);
-      DBG_Assert(process->getReplyTransport()[MemoryMessageTag] != NULL, ( << "No reply msg for " << * (process->transport()[MemoryMessageTag]) ));
+      DBG_Assert(process->getReplyTransport()[MemoryMessageTag] != nullptr, ( << "No reply msg for " << * (process->transport()[MemoryMessageTag]) ));
       sendReply(process);
       break;
     case eFwdAndWakeEvictMAF:
@@ -746,12 +746,12 @@ void CMPCacheController::finalizeProcess(ProcessEntry_p process) {
       break;
     case eReply:
       unreserveReplyOut(process, 1);
-      DBG_Assert(process->getReplyTransport()[MemoryMessageTag] != NULL, ( << "No reply msg for " << * (process->transport()[MemoryMessageTag]) ));
+      DBG_Assert(process->getReplyTransport()[MemoryMessageTag] != nullptr, ( << "No reply msg for " << * (process->transport()[MemoryMessageTag]) ));
       sendReply(process);
       break;
     case eReplyAndRemoveMAF:
       unreserveReplyOut(process, 1);
-      DBG_Assert(process->getReplyTransport()[MemoryMessageTag] != NULL, ( << "No reply msg for " << * (process->transport()[MemoryMessageTag]) ));
+      DBG_Assert(process->getReplyTransport()[MemoryMessageTag] != nullptr, ( << "No reply msg for " << * (process->transport()[MemoryMessageTag]) ));
       sendReply(process);
       //thePolicy->MAF().removeFirst(process->transport()[MemoryMessageTag]->address(), process->transport()[DestinationTag]->requester);
       thePolicy->MAF().remove(process->maf());

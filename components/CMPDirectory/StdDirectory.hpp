@@ -134,7 +134,7 @@ private:
           return LookupResult_p(new LookupResult(this, &(theBlocks[i]), anAddress, true));
         }
       }
-      return LookupResult_p(new LookupResult(this, NULL, anAddress, false));
+      return LookupResult_p(new LookupResult(this, nullptr, anAddress, false));
     }
 
     virtual boost::tuple<bool, bool, MemoryAddress, _State> allocate(LookupResult_p lookup, MemoryAddress anAddress, const _State & aState) {
@@ -235,13 +235,13 @@ public:
     std::list< std::pair< std::string, std::string> >::const_iterator iter = theConfiguration.begin();
     for (; iter != theConfiguration.end(); iter++) {
       if (iter->first == "sets") {
-        theNumSets = strtoll(iter->second.c_str(), NULL, 0);
+        theNumSets = strtoll(iter->second.c_str(), nullptr, 0);
       } else if (iter->first == "total_sets" || iter->first == "global_sets") {
-        int32_t global_sets = strtol(iter->second.c_str(), NULL, 0);
+        int32_t global_sets = strtol(iter->second.c_str(), nullptr, 0);
         theNumSets = global_sets / theBanks;
         DBG_Assert( (theNumSets * theBanks) == global_sets, ( << "global_sets (" << global_sets << ") is not divisible by number of banks (" << theBanks << ")" ));
       } else if (iter->first == "assoc" || iter->first == "associativity") {
-        theAssociativity = strtol(iter->second.c_str(), NULL, 0);
+        theAssociativity = strtol(iter->second.c_str(), nullptr, 0);
       } else if (iter->first == "skew" || iter->first == "skew_set") {
         theSkewSet = (strcasecmp(iter->second.c_str(), "true") == 0);
       } else {
@@ -298,7 +298,7 @@ public:
 
   virtual bool allocate(boost::intrusive_ptr<AbstractLookupResult<_State> > lookup, MemoryAddress address, const _State & state) {
     StdLookupResult * std_lookup = dynamic_cast<StdLookupResult *>(lookup.get());
-    DBG_Assert(std_lookup != NULL, ( << "allocate() was not passed a valid StdLookupResult"));
+    DBG_Assert(std_lookup != nullptr, ( << "allocate() was not passed a valid StdLookupResult"));
     bool success, has_victim;
     _State v_state(0);
     MemoryAddress v_addr;

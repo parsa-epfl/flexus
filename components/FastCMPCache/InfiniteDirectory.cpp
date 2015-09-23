@@ -119,7 +119,7 @@ private:
 protected:
   virtual void addSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     InfiniteDirectoryEntry * my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       my_entry = findOrCreateEntry(address);
     }
     my_entry->addSharer(index);
@@ -127,7 +127,7 @@ protected:
 
   virtual void addExclusiveSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     InfiniteDirectoryEntry * my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       my_entry = findOrCreateEntry(address);
     }
     my_entry->addSharer(index);
@@ -141,7 +141,7 @@ protected:
 
   virtual void removeSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     InfiniteDirectoryEntry * my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     my_entry->removeSharer(index);
@@ -149,7 +149,7 @@ protected:
 
   virtual void makeSharerExclusive(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     InfiniteDirectoryEntry * my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     // Make it exclusive
@@ -169,7 +169,7 @@ protected:
   InfiniteDirectoryEntry_p findEntry(PhysicalMemoryAddress addr) {
     inf_directory_t::iterator iter = theDirectory.find(addr);
     if (iter == theDirectory.end()) {
-      return NULL;
+      return nullptr;
     }
     return iter->second;
   }
@@ -181,7 +181,7 @@ public:
     InfiniteDirectoryEntry_p entry = findEntry(address);
     SharingVector sharers;
     SharingState  state = ZeroSharers;
-    if (entry != NULL) {
+    if (entry != nullptr) {
       sharers = entry->sharers;
       state = entry->state;
     }
@@ -196,7 +196,7 @@ public:
     bool valid = false;
     SharingVector sharers;
     SharingState  state = ZeroSharers;
-    if (entry != NULL) {
+    if (entry != nullptr) {
       valid = true;
       sharers = entry->sharers;
       state = entry->state;
@@ -215,7 +215,7 @@ public:
     }
 
     InfiniteDirectoryEntry * my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     if (my_entry->state == ZeroSharers) {

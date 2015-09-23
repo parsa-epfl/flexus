@@ -810,9 +810,9 @@ private:
     	strcpy(charOrg, strOrg.c_str());
     	std::string *tokens = new std::string[theNumVMs];
     	char *temp=strtok(charOrg,";");
-    	while (temp!=NULL){
+    	while (temp!=nullptr){
       	  tokens[i++]=temp;
-      	  temp = strtok (NULL, ";");
+      	  temp = strtok (nullptr, ";");
         }
         delete charOrg;
         // the organization vector will have the new indices and the machine vector will have them in muliple rows; one for each VM
@@ -820,9 +820,9 @@ private:
           char *charMachine = new char[tokens[i].length()+1];
           strcpy(charMachine,tokens[i].c_str());
           temp=strtok(charMachine,",");
-          while (temp!=NULL){
+          while (temp!=nullptr){
             organization[j++]=atoi(temp);
-            temp = strtok (NULL,",");
+            temp = strtok (nullptr,",");
           }
           delete charMachine;
         }

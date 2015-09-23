@@ -59,7 +59,7 @@ struct FileRecord {
   int32_t readFile(uint8_t * aBuffer, int32_t aLength, int32_t aCpu) {
     int32_t ret = gzread(theFiles[aCpu], aBuffer, aLength);
     if (ret == 0) {
-      if (switchFile(aCpu) == NULL) {
+      if (switchFile(aCpu) == nullptr) {
         return 0;
       }
       ret = gzread(theFiles[aCpu], aBuffer, aLength);

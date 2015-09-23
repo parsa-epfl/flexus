@@ -353,7 +353,7 @@ public:
     theFAQ[anIndex].clear();
     theIcacheMiss[anIndex] = boost::none;
     theIcacheVMiss[anIndex] = boost::none;
-    theFetchReplyTransactionTracker[anIndex] = NULL;
+    theFetchReplyTransactionTracker[anIndex] = nullptr;
     theLastMiss[anIndex] = boost::none;
     theIcachePrefetch[anIndex] = boost::none;
     theLastPrefetchVTagSet[anIndex] = 0;
@@ -486,7 +486,7 @@ private:
     PhysicalMemoryAddress temp(paddr & theBlockMask);
     theIcacheMiss[anIndex] = temp;
     theIcacheVMiss[anIndex] = vaddr;
-    theFetchReplyTransactionTracker[anIndex] = NULL;
+    theFetchReplyTransactionTracker[anIndex] = nullptr;
 
     DBG_( Iface, Comp(*this) ( << "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << anIndex << "] L1I MISS " << vaddr << " " << *theIcacheMiss[anIndex]));
 

@@ -134,9 +134,9 @@ double ** dmatrix(int32_t nr, int32_t nc) {
   double ** m;
 
   m = (double **) calloc (nr, sizeof(double *));
-  assert(m != NULL);
+  assert(m != nullptr);
   m[0] = (double *) calloc (nr * nc, sizeof(double));
-  assert(m[0] != NULL);
+  assert(m[0] != nullptr);
 
   for (i = 1; i < nr; i++)
     m[i] =  m[0] + nc * i;
@@ -154,9 +154,9 @@ int32_t ** imatrix(int32_t nr, int32_t nc) {
   int32_t ** m;
 
   m = (int32_t **) calloc (nr, sizeof(int32_t *));
-  assert(m != NULL);
+  assert(m != nullptr);
   m[0] = (int32_t *) calloc (nr * nc, sizeof(int));
-  assert(m[0] != NULL);
+  assert(m[0] != nullptr);
 
   for (i = 1; i < nr; i++)
     m[i] = m[0] + nc * i;
@@ -199,13 +199,13 @@ double ** *dcuboid_tail(int32_t nr, int32_t nc, int32_t nl, int32_t xtra) {
 
   /* 1-d array of pointers to the rows of the 2-d array below	*/
   m = (double ** *) calloc (nl, sizeof(double **));
-  assert(m != NULL);
+  assert(m != nullptr);
   /* 2-d array of pointers denoting (layer, row)	*/
   m[0] = (double **) calloc (nl * nr, sizeof(double *));
-  assert(m[0] != NULL);
+  assert(m[0] != nullptr);
   /* the actual 3-d data array	*/
   m[0][0] = (double *) calloc (nl * nr * nc + xtra, sizeof(double));
-  assert(m[0][0] != NULL);
+  assert(m[0][0] != nullptr);
 
   /* remaining pointers of the 1-d pointer array	*/
   for (i = 1; i < nl; i++)

@@ -3,81 +3,81 @@ namespace Qemu{
 namespace API{
 #include "api.h"
 
-CPU_READ_REGISTER_PROC cpu_read_register= NULL;
-MMU_LOGICAL_TO_PHYSICAL_PROC mmu_logical_to_physical= NULL;
-CPU_GET_PROGRAM_COUNTER_PROC cpu_get_program_counter= NULL;
-CPU_GET_ADDRESS_SPACE_PROC cpu_get_address_space= NULL;
-CPU_PROC_NUM_PROC cpu_proc_num= NULL;
-CPU_POP_INDEXES_PROC cpu_pop_indexes= NULL;
-QEMU_GET_PHYS_MEMORY_PROC QEMU_get_phys_memory= NULL;
-QEMU_GET_ETHERNET_PROC QEMU_get_ethernet= NULL;
-QEMU_CLEAR_EXCEPTION_PROC QEMU_clear_exception= NULL;
-QEMU_READ_REGISTER_PROC QEMU_read_register= NULL;
-QEMU_READ_PHYS_MEMORY_PROC QEMU_read_phys_memory= NULL;
-QEMU_GET_PHYS_MEM_PROC QEMU_get_phys_mem= NULL;
-QEMU_GET_CPU_BY_INDEX_PROC QEMU_get_cpu_by_index= NULL;
-QEMU_GET_PROCESSOR_NUMBER_PROC QEMU_get_processor_number= NULL;
-QEMU_STEP_COUNT_PROC QEMU_step_count= NULL;
-QEMU_GET_NUM_CPUS_PROC QEMU_get_num_cpus= NULL;
+CPU_READ_REGISTER_PROC cpu_read_register= nullptr;
+MMU_LOGICAL_TO_PHYSICAL_PROC mmu_logical_to_physical= nullptr;
+CPU_GET_PROGRAM_COUNTER_PROC cpu_get_program_counter= nullptr;
+CPU_GET_ADDRESS_SPACE_PROC cpu_get_address_space= nullptr;
+CPU_PROC_NUM_PROC cpu_proc_num= nullptr;
+CPU_POP_INDEXES_PROC cpu_pop_indexes= nullptr;
+QEMU_GET_PHYS_MEMORY_PROC QEMU_get_phys_memory= nullptr;
+QEMU_GET_ETHERNET_PROC QEMU_get_ethernet= nullptr;
+QEMU_CLEAR_EXCEPTION_PROC QEMU_clear_exception= nullptr;
+QEMU_READ_REGISTER_PROC QEMU_read_register= nullptr;
+QEMU_READ_PHYS_MEMORY_PROC QEMU_read_phys_memory= nullptr;
+QEMU_GET_PHYS_MEM_PROC QEMU_get_phys_mem= nullptr;
+QEMU_GET_CPU_BY_INDEX_PROC QEMU_get_cpu_by_index= nullptr;
+QEMU_GET_PROCESSOR_NUMBER_PROC QEMU_get_processor_number= nullptr;
+QEMU_STEP_COUNT_PROC QEMU_step_count= nullptr;
+QEMU_GET_NUM_CPUS_PROC QEMU_get_num_cpus= nullptr;
 
 // return the number of sockets on he motherboard
-QEMU_GET_NUM_SOCKETS_PROC QEMU_get_num_sockets= NULL;
+QEMU_GET_NUM_SOCKETS_PROC QEMU_get_num_sockets= nullptr;
 
 // returns the number of cores per CPU socket
-QEMU_GET_NUM_CORES_PROC QEMU_get_num_cores= NULL;
+QEMU_GET_NUM_CORES_PROC QEMU_get_num_cores= nullptr;
 
 // return the number of native threads per core
-QEMU_GET_NUM_THREADS_PER_CORE_PROC QEMU_get_num_threads_per_core= NULL;
+QEMU_GET_NUM_THREADS_PER_CORE_PROC QEMU_get_num_threads_per_core= nullptr;
 
 // return the id of the socket of the processor
-QEMU_CPU_GET_SOCKET_ID_PROC QEMU_cpu_get_socket_id= NULL;
+QEMU_CPU_GET_SOCKET_ID_PROC QEMU_cpu_get_socket_id= nullptr;
 
 // return the core id of the processor
-QEMU_CPU_GET_CORE_ID_PROC QEMU_cpu_get_core_id= NULL;
+QEMU_CPU_GET_CORE_ID_PROC QEMU_cpu_get_core_id= nullptr;
 
 // return the hread id of the processor
-QEMU_CPU_GET_THREAD_ID_PROC QEMU_cpu_get_thread_id= NULL;
+QEMU_CPU_GET_THREAD_ID_PROC QEMU_cpu_get_thread_id= nullptr;
 
 // return an array of all processors
 // (numSockets * numCores * numthreads CPUs)
-QEMU_GET_ALL_PROCESSORS_PROC QEMU_get_all_processors= NULL;
+QEMU_GET_ALL_PROCESSORS_PROC QEMU_get_all_processors= nullptr;
 
 // set the frequency of a given cpu.
-QEMU_SET_TICK_FREQUENCY_PROC QEMU_set_tick_frequency= NULL;
+QEMU_SET_TICK_FREQUENCY_PROC QEMU_set_tick_frequency= nullptr;
 
 // get freq of given cpu
-QEMU_GET_TICK_FREQUENCY_PROC QEMU_get_tick_frequency= NULL;
+QEMU_GET_TICK_FREQUENCY_PROC QEMU_get_tick_frequency= nullptr;
 
 // get the program counter of a given cpu.
-QEMU_GET_PROGRAM_COUNTER_PROC QEMU_get_program_counter= NULL;
+QEMU_GET_PROGRAM_COUNTER_PROC QEMU_get_program_counter= nullptr;
 
 // convert a logical address to a physical address.
-QEMU_LOGICAL_TO_PHYSICAL_PROC QEMU_logical_to_physical= NULL;
+QEMU_LOGICAL_TO_PHYSICAL_PROC QEMU_logical_to_physical= nullptr;
 
-QEMU_BREAK_SIMULATION_PROC QEMU_break_simulation= NULL;
+QEMU_BREAK_SIMULATION_PROC QEMU_break_simulation= nullptr;
 
 // dummy function at the moment. should flush the translation cache.
-QEMU_FLUSH_ALL_CACHES_PROC QEMU_flush_all_caches= NULL;
+QEMU_FLUSH_ALL_CACHES_PROC QEMU_flush_all_caches= nullptr;
 
 // determine the memory operation type by the transaction struct.
 //[???]I assume return true if it is data, false otherwise
-QEMU_MEM_OP_IS_DATA_PROC QEMU_mem_op_is_data= NULL;
+QEMU_MEM_OP_IS_DATA_PROC QEMU_mem_op_is_data= nullptr;
 
 //[???]I assume return true if it is write, false otherwise
-QEMU_MEM_OP_IS_WRITE_PROC QEMU_mem_op_is_write= NULL;
+QEMU_MEM_OP_IS_WRITE_PROC QEMU_mem_op_is_write= nullptr;
 
 //[???]I assume return true if it is read, false otherwise
-QEMU_MEM_OP_IS_READ_PROC QEMU_mem_op_is_read= NULL;
+QEMU_MEM_OP_IS_READ_PROC QEMU_mem_op_is_read= nullptr;
 
-QEMU_INSTRUCTION_HANDLE_INTERRUPT_PROC QEMU_instruction_handle_interrupt = NULL;
-QEMU_GET_PENDING_EXCEPTION_PROC QEMU_get_pending_exception = NULL;
-QEMU_ADVANCE_PROC QEMU_advance = NULL;
+QEMU_INSTRUCTION_HANDLE_INTERRUPT_PROC QEMU_instruction_handle_interrupt = nullptr;
+QEMU_GET_PENDING_EXCEPTION_PROC QEMU_get_pending_exception = nullptr;
+QEMU_ADVANCE_PROC QEMU_advance = nullptr;
 
 // insert a callback specific for the given cpu or -1 for a generic callback
-QEMU_INSERT_CALLBACK_PROC QEMU_insert_callback= NULL;
+QEMU_INSERT_CALLBACK_PROC QEMU_insert_callback= nullptr;
 
 // delete a callback specific for the given cpu or -1 for a generic callback
-QEMU_DELETE_CALLBACK_PROC QEMU_delete_callback= NULL;
+QEMU_DELETE_CALLBACK_PROC QEMU_delete_callback= nullptr;
 
 void QFLEX_API_set_interface_hooks( const QFLEX_API_Interface_Hooks_t* hooks ) {
   cpu_read_register= hooks->cpu_read_register;

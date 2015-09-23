@@ -125,12 +125,12 @@ public:
   }
 
   void addSnoopTransport(MemoryTransport & aTransport) {
-    DBG_Assert(aTransport[DestinationTag] != NULL, ( << "MemoryMessage: " << (*aTransport[MemoryMessageTag]) ));
+    DBG_Assert(aTransport[DestinationTag] != nullptr, ( << "MemoryMessage: " << (*aTransport[MemoryMessageTag]) ));
     theSnoopTransports.push_back(aTransport);
   }
 
   void setReplyTransport(MemoryTransport & aTransport) {
-    DBG_Assert(aTransport[DestinationTag] != NULL);
+    DBG_Assert(aTransport[DestinationTag] != nullptr);
     theReplyTransport = aTransport;
   }
 
@@ -237,7 +237,7 @@ inline std::ostream & operator<<(std::ostream & os, const ProcessEntry & p) {
   if (p.getEBReserved()) {
     os << "EB reserved, ";
   }
-  if (p.transport()[MemoryMessageTag] != NULL) {
+  if (p.transport()[MemoryMessageTag] != nullptr) {
     os << *(p.transport()[MemoryMessageTag]);
   }
   return os;

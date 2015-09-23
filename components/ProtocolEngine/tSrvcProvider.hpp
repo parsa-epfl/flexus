@@ -116,7 +116,7 @@ public:
         const tMemOpDest dest,
         const tAddress   address,
         const tDirEntry  dir_entry,
-        const void   *   pMsgData = NULL) = 0;
+        const void   *   pMsgData = nullptr) = 0;
 
   ////////////////////////////////////////////////////////////////////////
   //

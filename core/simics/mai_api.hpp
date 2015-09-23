@@ -421,8 +421,8 @@ public:
   void releaseMMUCkpt();
   void rollbackMMUCkpts(int n);
   void resyncMMU();
-  bool validateMMU(MMU::mmu_t * m = NULL);
-  void dumpMMU(MMU::mmu_t * m = NULL);
+  bool validateMMU(MMU::mmu_t * m = nullptr);
+  void dumpMMU(MMU::mmu_t * m = nullptr);
   void initializeASIInfo();
 
   unsigned long long mmuRead(VirtualMemoryAddress anAddress, int anASI);

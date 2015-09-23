@@ -299,7 +299,7 @@ public:
 
     bool   valid_result;
 
-    RTLookupResult() : rt_cache(NULL), valid_result(false) {}
+    RTLookupResult() : rt_cache(nullptr), valid_result(false) {}
     RTLookupResult(bool valid, RTCache * rtc, uint64_t addr) : rt_cache(rtc), tagset(addr), valid_result(valid) {}
 
     friend class RTCache;

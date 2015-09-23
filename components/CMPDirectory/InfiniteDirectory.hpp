@@ -133,7 +133,7 @@ public:
 
   virtual bool allocate(boost::intrusive_ptr<AbstractLookupResult<_State> > lookup, MemoryAddress address, const _State & state) {
     InfiniteLookupResult * inf_lookup = dynamic_cast<InfiniteLookupResult *>(lookup.get());
-    DBG_Assert(inf_lookup != NULL, ( << "allocate() was not passed a valid InfiniteLookupResult" ));
+    DBG_Assert(inf_lookup != nullptr, ( << "allocate() was not passed a valid InfiniteLookupResult" ));
     std::pair<iterator, bool> ret = theDirectory.insert(InfDirEntry(address, state));
     inf_lookup->theIterator = ret.first;
     return ret.second;

@@ -634,7 +634,7 @@ void DirectoryController::finalizeProcess(ProcessEntry_p process) {
       unreserveSnoopOut( process, process->getSnoopTransports().size());
       sendSnoops(process);
       unreserveReplyOut(process, 1);
-      DBG_Assert(process->getReplyTransport()[MemoryMessageTag] != NULL, ( << "No reply msg for " << *(process->transport()[MemoryMessageTag]) ));
+      DBG_Assert(process->getReplyTransport()[MemoryMessageTag] != nullptr, ( << "No reply msg for " << *(process->transport()[MemoryMessageTag]) ));
       sendReply(process);
       break;
     case eFwdAndReply:
@@ -642,7 +642,7 @@ void DirectoryController::finalizeProcess(ProcessEntry_p process) {
       unreserveSnoopOut( process, process->getSnoopTransports().size());
       sendSnoops(process);
       unreserveReplyOut(process, 1);
-      DBG_Assert(process->getReplyTransport()[MemoryMessageTag] != NULL, ( << "No reply msg for " << *(process->transport()[MemoryMessageTag]) ));
+      DBG_Assert(process->getReplyTransport()[MemoryMessageTag] != nullptr, ( << "No reply msg for " << *(process->transport()[MemoryMessageTag]) ));
       sendReply(process);
       break;
     case eForwardAndRemoveMAF:
@@ -669,12 +669,12 @@ void DirectoryController::finalizeProcess(ProcessEntry_p process) {
       break;
     case eReply:
       unreserveReplyOut(process, 1);
-      DBG_Assert(process->getReplyTransport()[MemoryMessageTag] != NULL, ( << "No reply msg for " << *(process->transport()[MemoryMessageTag]) ));
+      DBG_Assert(process->getReplyTransport()[MemoryMessageTag] != nullptr, ( << "No reply msg for " << *(process->transport()[MemoryMessageTag]) ));
       sendReply(process);
       break;
     case eReplyAndRemoveMAF:
       unreserveReplyOut(process, 1);
-      DBG_Assert(process->getReplyTransport()[MemoryMessageTag] != NULL, ( << "No reply msg for " << *(process->transport()[MemoryMessageTag]) ));
+      DBG_Assert(process->getReplyTransport()[MemoryMessageTag] != nullptr, ( << "No reply msg for " << *(process->transport()[MemoryMessageTag]) ));
       sendReply(process);
       thePolicy->MAF().remove(process->maf());
       thePolicy->wakeMAFs(process->transport()[MemoryMessageTag]->address());

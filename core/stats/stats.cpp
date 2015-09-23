@@ -1108,7 +1108,7 @@ public:
 aux_::StatManagerImpl * theStatManagerImpl;
 
 StatManager * getStatManager() {
-  if (theStatManagerImpl == NULL) {
+  if (theStatManagerImpl == nullptr) {
     theStatManagerImpl = new aux_::StatManagerImpl();
   }
   return theStatManagerImpl;

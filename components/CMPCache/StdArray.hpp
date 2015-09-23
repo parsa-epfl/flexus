@@ -84,7 +84,7 @@ public:
     theBlockAddress ( aBlockAddress ),
     isHit           ( aIsHit ),
     theOrigState    ( aIsHit ? aBlock->state() : _DefaultState ) {
-    DBG_Assert( (aBlock == NULL) || (aBlock->tag() == aBlockAddress), ( << "Created Lookup where tag " << std::hex << (uint64_t)aBlock->tag() << " != address " << (uint64_t)aBlockAddress ));
+    DBG_Assert( (aBlock == nullptr) || (aBlock->tag() == aBlockAddress), ( << "Created Lookup where tag " << std::hex << (uint64_t)aBlock->tag() << " != address " << (uint64_t)aBlockAddress ));
   }
 
   const _State & state() const {
@@ -117,10 +117,10 @@ public:
     return !isHit;
   }
   bool found( void ) const {
-    return theBlock != NULL;
+    return theBlock != nullptr;
   }
   bool valid( void ) const {
-    return theBlock != NULL;
+    return theBlock != nullptr;
   }
 
   MemoryAddress blockAddress ( void ) const {
@@ -172,17 +172,17 @@ public:
     }
 
     // Miss on this set
-    return LookupResult_p( new LookupResult( this, NULL, anAddress, false ) );
+    return LookupResult_p( new LookupResult( this, nullptr, anAddress, false ) );
   }
 
   virtual LookupResult_p  allocate(LookupResult_p lookup, MemoryAddress anAddress) {
     // First look for an invalid tag match
-    if (lookup->theBlock != NULL) {
+    if (lookup->theBlock != nullptr) {
       lookup->isHit = true;
       DBG_Assert( lookup->theBlock->tag() == anAddress, ( << "Lookup Tag " << std::hex << (uint64_t)lookup->theBlock->tag() << " != " << (uint64_t)anAddress ));
       // don't need to change the lookup, just fix order and return no victim
       recordAccess(lookup->theBlock);
-      return LookupResult_p( new LookupResult( this, NULL, anAddress, false ) );
+      return LookupResult_p( new LookupResult( this, nullptr, anAddress, false ) );
 
     } else {
       Block<_State, _DefaultState> * victim = pickVictim();
@@ -205,15 +205,15 @@ public:
 
   virtual LookupResult_p  replaceLocked(LookupResult_p lookup, MemoryAddress anAddress) {
     // First look for an invalid tag match
-    if (lookup->theBlock != NULL && lookup->theBlock->state().isLocked()) {
+    if (lookup->theBlock != nullptr && lookup->theBlock->state().isLocked()) {
       lookup->isHit = true;
       DBG_Assert( lookup->theBlock->tag() == anAddress, ( << "Lookup Tag " << std::hex << (uint64_t)lookup->theBlock->tag() << " != " << (uint64_t)anAddress ));
       // don't need to change the lookup, just fix order and return no victim
       recordAccess(lookup->theBlock);
-      return LookupResult_p( new LookupResult( this, NULL, anAddress, false ) );
+      return LookupResult_p( new LookupResult( this, nullptr, anAddress, false ) );
     } else {
       bool swap_locked_victim = false;
-      if (lookup->theBlock != NULL) {
+      if (lookup->theBlock != nullptr) {
         // there's already a block with the right tag, but it's unlocked and we can't go over our threshold
         // so change the address of the current block to avoid problems
         swap_locked_victim = true;
@@ -336,7 +336,7 @@ public:
       }
     }
     DBG_Assert(false, ( << "All blocks in the set are protected."));
-    return NULL;
+    return nullptr;
   }
 
   virtual Block<_State, _DefaultState> * pickLockedVictim() {
@@ -349,7 +349,7 @@ public:
       }
     }
     DBG_Assert(false, ( << "All blocks in the set are protected."));
-    return NULL;
+    return nullptr;
   }
 
 
@@ -460,7 +460,7 @@ public:
   }
   virtual Block<_State, _DefaultState> * pickLockedVictim() {
     DBG_Assert(false, ( << "This code needs to be implemented." ));
-    return NULL;
+    return nullptr;
   }
 
   virtual bool recordAccess(Block<_State, _DefaultState> * aBlock) {
@@ -550,14 +550,14 @@ public:
     std::list< std::pair< std::string, std::string> >::const_iterator iter = theConfiguration.begin();
     for (; iter != theConfiguration.end(); iter++) {
       if (iter->first == "sets") {
-        theNumSets = strtoll(iter->second.c_str(), NULL, 0);
+        theNumSets = strtoll(iter->second.c_str(), nullptr, 0);
       } else if (iter->first == "total_sets" || iter->first == "global_sets") {
-        int32_t global_sets = strtol(iter->second.c_str(), NULL, 0);
+        int32_t global_sets = strtol(iter->second.c_str(), nullptr, 0);
         theNumSets = global_sets / theTotalBanks;
         DBG_Assert( (theNumSets * theTotalBanks) == global_sets, ( << "global_sets (" << global_sets
                     << ") is not divisible by number of banks (" << theTotalBanks << ")" ));
       } else if (strcasecmp(iter->first.c_str(), "assoc") == 0 || strcasecmp(iter->first.c_str(), "associativity") == 0) {
-        theAssociativity = strtol(iter->second.c_str(), NULL, 0);
+        theAssociativity = strtol(iter->second.c_str(), nullptr, 0);
       } else if (strcasecmp(iter->first.c_str(), "repl") == 0 || strcasecmp(iter->first.c_str(), "replacement") == 0) {
         if (strcasecmp(iter->second.c_str(), "lru") == 0) {
           theReplacementPolicy = REPLACEMENT_LRU;
@@ -682,7 +682,7 @@ public:
   virtual boost::intrusive_ptr<AbstractArrayLookupResult<_State> > allocate( boost::intrusive_ptr<AbstractArrayLookupResult<_State> > lookup,
       const MemoryAddress & anAddress ) {
     StdLookupResult<_State, _DefaultState> * std_lookup = dynamic_cast<StdLookupResult<_State, _DefaultState>*>(lookup.get());
-    DBG_Assert(std_lookup != NULL);
+    DBG_Assert(std_lookup != nullptr);
 
     return std_lookup->theSet->allocate(std_lookup, blockAddress(anAddress));
 
@@ -690,7 +690,7 @@ public:
 
   virtual bool recordAccess(boost::intrusive_ptr<AbstractArrayLookupResult<_State> > lookup) {
     StdLookupResult<_State, _DefaultState> * std_lookup = dynamic_cast<StdLookupResult<_State, _DefaultState>*>(lookup.get());
-    DBG_Assert(std_lookup != NULL);
+    DBG_Assert(std_lookup != nullptr);
     DBG_Assert( std_lookup->valid() );
 
     return std_lookup->theSet->recordAccess(std_lookup->theBlock);
@@ -698,7 +698,7 @@ public:
 
   virtual void invalidateBlock(boost::intrusive_ptr<AbstractArrayLookupResult<_State> > lookup) {
     StdLookupResult<_State, _DefaultState> * std_lookup = dynamic_cast<StdLookupResult<_State, _DefaultState>*>(lookup.get());
-    DBG_Assert(std_lookup != NULL);
+    DBG_Assert(std_lookup != nullptr);
     DBG_Assert( std_lookup->valid() );
 
     std_lookup->theSet->invalidateBlock(std_lookup->theBlock);
@@ -795,7 +795,7 @@ public:
   virtual boost::intrusive_ptr<AbstractArrayLookupResult<_State> > replaceLockedBlock(boost::intrusive_ptr<AbstractArrayLookupResult<_State> > lookup, MemoryAddress const & anAddress ) {
 
     StdLookupResult<_State, _DefaultState> * std_lookup = dynamic_cast<StdLookupResult<_State, _DefaultState>*>(lookup.get());
-    DBG_Assert(std_lookup != NULL);
+    DBG_Assert(std_lookup != nullptr);
 
     return std_lookup->theSet->replaceLocked(std_lookup, blockAddress(anAddress));
   }

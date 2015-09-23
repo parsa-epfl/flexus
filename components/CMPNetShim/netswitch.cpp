@@ -35,7 +35,7 @@ NetSwitch::NetSwitch  ( const int32_t name_,      // Name/id of the switch
   outputPorts     = new ChannelOutputPortP[numPorts];
 
   for ( i = 0; i < numPorts; i++ ) {
-    inputPorts[i]  = new ChannelInputPort ( inputBufferDepth, channelLatency_, this, NULL );
+    inputPorts[i]  = new ChannelInputPort ( inputBufferDepth, channelLatency_, this, nullptr );
     outputPorts[i] = new ChannelOutputPort ( outputBufferDepth );
   }
 
@@ -355,7 +355,7 @@ bool NetSwitchInternalBuffer::dumpState ( ostream & out ) {
   }
 
   for ( i = 0; i < MAX_VC; i++ ) {
-    if ( ageBufferHead[i] != NULL ) {
+    if ( ageBufferHead[i] != nullptr ) {
       out << "  Head serial: " << ageBufferHead[i]->msg->serial << endl;
       break;
     }
@@ -369,19 +369,19 @@ bool NetSwitchInternalBuffer::dumpState ( ostream & out ) {
 
 NetSwitchInternalBuffer::NetSwitchInternalBuffer ( const int32_t bufferCount_,
     NetSwitch * netSwitch_ ) :
-  currMessage   ( NULL ),
+  currMessage   ( nullptr ),
   currPriority  ( 0 ),
   netSwitch     ( netSwitch_ ) {
   int
   i;
 
   assert ( bufferCount_ >= 0 );
-  assert ( netSwitch != NULL );
+  assert ( netSwitch != nullptr );
 
   for ( i = 0; i < MAX_VC; i++ ) {
     buffersUsed[i] = 0;
     bufferCount[i] = bufferCount_;
-    ageBufferHead[i] = ageBufferTail[i] = NULL;
+    ageBufferHead[i] = ageBufferTail[i] = nullptr;
   }
 }
 
@@ -399,7 +399,7 @@ bool NetSwitchInternalBuffer::insertMessage ( MessageState * msg ) {
 
   msl = allocMessageStateList ( msg );
 
-  if ( ageBufferTail[vc] == NULL ) {
+  if ( ageBufferTail[vc] == nullptr ) {
     ageBufferHead[vc] = ageBufferTail[vc] = msl;
   } else {
     msl->prev = ageBufferTail[vc];
@@ -422,7 +422,7 @@ bool NetSwitchInternalBuffer::removeMessage ( void ) {
   MessageStateList
   * msl = currMessage;
 
-  assert ( msl != NULL );
+  assert ( msl != nullptr );
 
   buffersUsed[msl->msg->networkVC]--;
 
@@ -430,13 +430,13 @@ bool NetSwitchInternalBuffer::removeMessage ( void ) {
   msl->msg->atHeadTime += currTime;
   msl->msg->bufferTime += currTime;
 
-  if ( msl->next == NULL ) {
+  if ( msl->next == nullptr ) {
     ageBufferTail[msl->msg->networkVC] = msl->prev;
   } else {
     msl->next->prev = msl->prev;
   }
 
-  if ( msl->prev == NULL ) {
+  if ( msl->prev == nullptr ) {
     ageBufferHead[msl->msg->networkVC] = msl->next;
   } else {
     msl->prev->next = msl->next;

@@ -23,7 +23,7 @@ FILE         *         _fp_stderr;
 FILE         **        _fpp_stderr = &stderr;
 
 uint32_t          ___debugf_line = 0;
-char         *         ___debugf_file = NULL;
+char         *         ___debugf_file = nullptr;
 
 static   uint8_t ___debug_trigger = 1;
 
@@ -63,7 +63,7 @@ get_date_string (time_t time_num) {      // Time to parse, or 0 for current time
   struct tm * timestr;
 
   if (!time_num) {
-    time_num = time (NULL);
+    time_num = time (nullptr);
   }
   timestr = localtime (&time_num);
   strcpy (date_str, asctime (timestr));
@@ -76,7 +76,7 @@ get_date_string (time_t time_num) {      // Time to parse, or 0 for current time
 FILE *
 ___stdin_from_file(char * name) {
   _fp_stdin = fopen(name, "r");
-  if (_fp_stdin == NULL)
+  if (_fp_stdin == nullptr)
     ___fatal("___stdin_to_file::");
   _fpp_stdin = &_fp_stdin;
   return _fp_stdin;
@@ -85,7 +85,7 @@ ___stdin_from_file(char * name) {
 FILE *
 ___stdout_to_file(char * name) {
   _fp_stdout = fopen(name, "w+");
-  if (_fp_stdout == NULL)
+  if (_fp_stdout == nullptr)
     ___fatal("___stdout_to_file::");
   _fpp_stdout = &_fp_stdout;
   return _fp_stdout;
@@ -94,7 +94,7 @@ ___stdout_to_file(char * name) {
 FILE *
 ___stderr_to_file(char * name) {
   _fp_stderr = fopen(name, "w+");
-  if (_fp_stderr == NULL)
+  if (_fp_stderr == nullptr)
     ___fatal("___stderr_to_file::");
   _fpp_stderr = &_fp_stderr;
   return _fp_stderr;

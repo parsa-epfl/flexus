@@ -316,7 +316,7 @@ void v9ProcessorImpl::resyncMMU() {
 bool v9ProcessorImpl::validateMMU(MMU::mmu_t * anMMU) {
   MMU::mmu_t simics_mmu, *our_mmu;
   MMU::fm_init_mmu_from_simics(&simics_mmu, SIM_get_attribute(*this, "mmu").u.object);
-  if (anMMU == NULL) our_mmu = &(theMMUs[id()]);
+  if (anMMU == nullptr) our_mmu = &(theMMUs[id()]);
   else our_mmu = anMMU;
   if (MMU::fm_compare_mmus(our_mmu, &simics_mmu)) {
     return false;
@@ -343,7 +343,7 @@ void v9ProcessorImpl::mmuWrite(VirtualMemoryAddress anAddress, int anASI, unsign
 }
 
 void v9ProcessorImpl::dumpMMU(MMU::mmu_t * anMMU) {
-  MMU::mmu_t * m = (anMMU == NULL) ? &(theMMUs[id()]) : anMMU;
+  MMU::mmu_t * m = (anMMU == nullptr) ? &(theMMUs[id()]) : anMMU;
   MMU::fm_print_mmu_regs(m);
 }
 

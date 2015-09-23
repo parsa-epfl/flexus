@@ -180,7 +180,7 @@ void NonInclusiveMESIPolicy::doRequest( ProcessEntry_p process, bool has_maf ) {
 
   // Can we find the block in the directory evict buffer
   const AbstractDirEBEntry<State> * d_eb = theDirEvictBuffer->find(address);
-  if (d_eb != NULL) {
+  if (d_eb != nullptr) {
     if (d_eb->invalidatesPending()) {
       // We've sent out back invalidates to evict this block
       // Wait until they get back before processing the new request
@@ -208,7 +208,7 @@ void NonInclusiveMESIPolicy::doRequest( ProcessEntry_p process, bool has_maf ) {
   // If we didn't find it in the directory
   if (!dir_lookup->found()) {
     // We already did an EB lookup, check if we found it
-    if (d_eb != NULL) {
+    if (d_eb != nullptr) {
       // Move the entry from the EB into the directory
       if (!allocateDirectoryEntry(dir_lookup, address, d_eb->state())) {
         // if this fails then we have a set conflict, so insert the MAF and return
@@ -889,7 +889,7 @@ void NonInclusiveMESIPolicy::doEvict( ProcessEntry_p process , bool has_maf) {
   bool valid_sharer = false;
   if (dir_lookup->found()) {
     valid_sharer = dir_lookup->state().isSharer(source);
-  } else if (d_eb != NULL) {
+  } else if (d_eb != nullptr) {
     valid_sharer = d_eb->state().isSharer(source);
   }
 
@@ -909,7 +909,7 @@ void NonInclusiveMESIPolicy::doEvict( ProcessEntry_p process , bool has_maf) {
     if (c_lookup->state() == CacheState::Invalid) {
 
       // Steal Cache EB reservations from Dir EB entry if possible
-      if (d_eb != NULL && d_eb->cacheEBReserved() > 0) {
+      if (d_eb != nullptr && d_eb->cacheEBReserved() > 0) {
         DBG_(Trace, ( << theCMPCacheInfo.theName << " - Recovering " << d_eb->cacheEBReserved() << " saved cacheEB reservations." ));
         process->cache_eb_reserved += d_eb->cacheEBReserved();
         d_eb->cacheEBReserved() = 0;
@@ -949,7 +949,7 @@ void NonInclusiveMESIPolicy::doEvict( ProcessEntry_p process , bool has_maf) {
     }
   }
 
-  if (d_eb != NULL) {
+  if (d_eb != nullptr) {
      DBG_Assert( !active_write_req );
 
     if (d_eb->state().isSharer( source )) {
@@ -1020,7 +1020,7 @@ void NonInclusiveMESIPolicy::handleReply( ProcessEntry_p process ) {
       process->setAction(eNoAction);
 
       const AbstractDirEBEntry<State> * d_eb = theDirEvictBuffer->find(req->address());
-      DBG_Assert(d_eb != NULL);
+      DBG_Assert(d_eb != nullptr);
       if (d_eb->state().isSharer(process->transport()[DestinationTag]->other)) {
         d_eb->state().removeSharer( process->transport()[DestinationTag]->other );
       }
@@ -1627,9 +1627,9 @@ MemoryTransport NonInclusiveMESIPolicy::getIdleWorkTransport() {
   MemoryTransport transport;
 
   const AbstractDirEBEntry<State> * d_eb = theDirEvictBuffer->oldestRequiringInvalidates();
-  //DBG_Assert(d_eb != NULL, ( << "Called getIdleWorkTransport while no IdleWork outstanding!"));
+  //DBG_Assert(d_eb != nullptr, ( << "Called getIdleWorkTransport while no IdleWork outstanding!"));
 
-  if (d_eb == NULL) {
+  if (d_eb == nullptr) {
     transport.set(MemoryMessageTag, MemoryMessage_p(new MemoryMessage(MemoryMessage::NumMemoryMessageTypes)));
     return transport;
   }

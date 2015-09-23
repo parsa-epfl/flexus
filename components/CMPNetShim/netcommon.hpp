@@ -79,7 +79,7 @@ public:
     replTS     ( 0 ),
 #endif
     // CMU-ONLY-BLOCK-END
-    myList          ( NULL )
+    myList          ( nullptr )
   {}
 
   MessageState ( int32_t srcNode_,
@@ -106,7 +106,7 @@ public:
     replTS     ( 0 ),
 #endif
     // CMU-ONLY-BLOCK-END
-    myList     ( NULL )
+    myList     ( nullptr )
   {}
 
 public:
@@ -128,7 +128,7 @@ public:
     atHeadTime = 0;
     acceptTime = 0;
     transmitLatency = transmitLatency_;
-    myList = NULL;
+    myList = nullptr;
     hopCount = -1;
     startTS  = startTS_;
 
@@ -189,9 +189,9 @@ class MessageStateList {
 
 public:
   MessageStateList ( void ) :
-    msg  ( NULL ),
-    prev ( NULL ),
-    next ( NULL ),
+    msg  ( nullptr ),
+    prev ( nullptr ),
+    next ( nullptr ),
     delay ( 0 ) {
 #ifdef NS_DEBUG
     usageCount = 0;

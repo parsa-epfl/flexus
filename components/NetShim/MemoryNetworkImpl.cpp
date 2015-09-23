@@ -261,7 +261,7 @@ private:
     msg->flexusInFastMode = Flexus::Core::theFlexus->isFastMode();
     msg->hopCount        = -1;  // Note, the local switch also gets counted, so we start at -1
     msg->startTS         = Flexus::Core::theFlexus->cycleCount();
-    msg->myList          = NULL;
+    msg->myList          = nullptr;
 
     if (transport[TransactionTrackerTag]) {
       std::string cause( boost::padded_string_cast < 3, '0' > (transport[NetworkMessageTag]->src) + " -> " + boost::padded_string_cast < 3, '0' > (transport[NetworkMessageTag]->dest) );

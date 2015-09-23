@@ -33,8 +33,8 @@ private:
 
 public:
   static RTCoordinator & getCoordinator() {
-    static RTCoordinator * theCoordinator = NULL;
-    if (theCoordinator == NULL) {
+    static RTCoordinator * theCoordinator = nullptr;
+    if (theCoordinator == nullptr) {
       theCoordinator = new RTCoordinator();
     }
     return *theCoordinator;

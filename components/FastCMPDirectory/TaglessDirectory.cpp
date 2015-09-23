@@ -559,7 +559,7 @@ protected:
   virtual void addSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     TaglessLookupResult * my_entry = dynamic_cast<TaglessLookupResult *>(dir_entry.get());
 
-    DBG_Assert(my_entry != NULL);
+    DBG_Assert(my_entry != nullptr);
     std::list<TaglessDirectoryBucket *>::iterator bucket_iter = my_entry->theBuckets.begin();
     for (; bucket_iter != my_entry->theBuckets.end(); bucket_iter++) {
       (*bucket_iter)->theTaglessEntry.addSharer(index);
@@ -570,7 +570,7 @@ protected:
 
   virtual void addExclusiveSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     TaglessLookupResult * my_entry = dynamic_cast<TaglessLookupResult *>(dir_entry.get());
-    DBG_Assert(my_entry != NULL);
+    DBG_Assert(my_entry != nullptr);
 
     std::list<TaglessDirectoryBucket *>::iterator bucket_iter = my_entry->theBuckets.begin();
     for (; bucket_iter != my_entry->theBuckets.end(); bucket_iter++) {
@@ -590,13 +590,13 @@ protected:
 
   virtual void removeSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     //BlockDirectoryEntry *my_entry = dynamic_cast<BlockDirectoryEntry*>(dir_entry);
-    //if (my_entry == NULL) {
+    //if (my_entry == nullptr) {
     // return;
     //}
     //my_entry->removeSharer(index);
 
     TaglessLookupResult * my_entry = dynamic_cast<TaglessLookupResult *>(dir_entry.get());
-    DBG_Assert(my_entry != NULL);
+    DBG_Assert(my_entry != nullptr);
 
     my_entry->theTrueState->removeSharer(index);
 
@@ -645,14 +645,14 @@ protected:
 
   virtual void makeSharerExclusive(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     //BlockDirectoryEntry *my_entry = dynamic_cast<BlockDirectoryEntry*>(dir_entry);
-    //if (my_entry == NULL) {
+    //if (my_entry == nullptr) {
     // return;
     //}
     // Make it exclusive
     //my_entry->makeExclusive(index);
 
     TaglessLookupResult * my_entry = dynamic_cast<TaglessLookupResult *>(dir_entry.get());
-    DBG_Assert(my_entry != NULL);
+    DBG_Assert(my_entry != nullptr);
 
     my_entry->theTrueState->makeExclusive(index);
   }
@@ -758,7 +758,7 @@ virtual void processRequestResponse(int32_t index, const MMType & request, MMTyp
   }
 
   TaglessLookupResult * my_entry = dynamic_cast<TaglessLookupResult *>(dir_entry.get());
-  if (my_entry == NULL) {
+  if (my_entry == nullptr) {
     return;
   }
 

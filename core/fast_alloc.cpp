@@ -66,7 +66,7 @@ void * FastAlloc::moreStructs(int32_t bucket) {
 FastAlloc * FastAlloc::inUseList;
 
 FastAlloc::FastAlloc() {
-  inUsePrev = NULL;
+  inUsePrev = nullptr;
   inUseNext = inUseList;
   if (inUseList) {
     inUseList->inUsePrev = this;

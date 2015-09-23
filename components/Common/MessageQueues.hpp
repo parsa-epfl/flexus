@@ -191,7 +191,7 @@ public:
                 uint32_t aNumPipelines,
                 int64_t anIssueLatency,
                 int64_t aLatency,
-                boost::intrusive_ptr<Stat::StatLog2Histogram> anInterArrival = NULL )
+                boost::intrusive_ptr<Stat::StatLog2Histogram> anInterArrival = nullptr )
     : theCurrentSize(0)
     , theIssueLatency(anIssueLatency)
     , theLatency(aLatency)
@@ -203,7 +203,7 @@ public:
       theServerReadyTimes.push_back( 0 );
     }
 
-    if ( anInterArrival == NULL ) {
+    if ( anInterArrival == nullptr ) {
       theInterArrival = new Stat::StatLog2Histogram(aName + "-InterArrivalTimes");
     }
   }

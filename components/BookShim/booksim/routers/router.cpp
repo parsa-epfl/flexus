@@ -79,7 +79,7 @@ Router::Router( const Configuration& config,
 
  
    //orion
-   SIM_router_init(&router_info, &router_power, NULL); 
+   SIM_router_init(&router_info, &router_power, nullptr); 
    LastCxbarIn= new int[_outputs];
    link_power= new double[_outputs];
    for(int mg=0;mg<_outputs;mg++)

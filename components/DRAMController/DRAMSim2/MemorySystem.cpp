@@ -50,12 +50,12 @@ unsigned NUM_RANKS;
 
 namespace DRAMSim {
 
-powerCallBack_t MemorySystem::ReportPower = NULL;
+powerCallBack_t MemorySystem::ReportPower = nullptr;
 
 MemorySystem::MemorySystem(unsigned id, unsigned int megsOfMemory, CSVWriter &csvOut_, ostream &dramsim_log_) :
 		dramsim_log(dramsim_log_),
-		ReturnReadData(NULL),
-		WriteDataDone(NULL),
+		ReturnReadData(nullptr),
+		WriteDataDone(nullptr),
 		systemID(id),
 		csvOut(csvOut_)
 {
@@ -177,7 +177,7 @@ bool MemorySystem::WillAcceptTransaction()
 bool MemorySystem::addTransaction(bool isWrite, uint64_t addr)
 {
 	TransactionType type = isWrite ? DATA_WRITE : DATA_READ;
-	Transaction *trans = new Transaction(type,addr,NULL);
+	Transaction *trans = new Transaction(type,addr,nullptr);
 	// push_back in memoryController will make a copy of this during
 	// addTransaction so it's kosher for the reference to be local 
 

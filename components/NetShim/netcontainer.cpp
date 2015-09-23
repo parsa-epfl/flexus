@@ -45,10 +45,10 @@ const char STR_CLOSECURLY[] = "}";
 #define TOP_TOKEN_COUNT ( sizeof(topTokens)/sizeof(TokenMap) )
 
 NetContainer::NetContainer ( void ) :
-  channels              ( NULL ),
-  switches              ( NULL ),
-  nodes                 ( NULL ),
-  mslHead               ( NULL ),
+  channels              ( nullptr ),
+  switches              ( nullptr ),
+  nodes                 ( nullptr ),
+  mslHead               ( nullptr ),
   activeMessages        ( 0 ),
 
   channelLatency        ( -1 ),
@@ -776,7 +776,7 @@ bool NetContainer::insertMessage ( MessageState * msg ) {
 
   newNode = allocMessageStateList ( msg );
 
-  if ( mslHead == NULL ) {
+  if ( mslHead == nullptr ) {
     mslHead = mslTail = newNode;
   } else {
     mslTail->next = newNode;
@@ -812,7 +812,7 @@ bool NetContainer::insertMessage ( MessageState * msg ) {
 }
 
 bool NetContainer::deliverMessage ( MessageState * msg ) {
-  assert ( msg->myList != NULL );
+  assert ( msg->myList != nullptr );
 
   // Deliver the message to the flexus node
   if ( deliverMessagePtr ( msg ) ) {
@@ -836,7 +836,7 @@ bool NetContainer::deliverMessage ( MessageState * msg ) {
   activeMessages--;
 
   if ( activeMessages == 0 ) {
-    assert ( mslHead == NULL && mslTail == NULL );
+    assert ( mslHead == nullptr && mslTail == nullptr );
   }
 
   // Clean up the message
@@ -854,7 +854,7 @@ bool NetContainer::dumpState ( ostream & out, const int32_t flags ) {
 
   if ( flags & NS_DUMP_METAINFO ) {
     out << "Active messages: " <<  getActiveMessages() << endl;
-    if ( mslHead != NULL ) {
+    if ( mslHead != nullptr ) {
       out << "Oldest message serial: " << mslHead->msg->serial << endl;
       out << "Newest message serial: " << mslTail->msg->serial << endl;
     }

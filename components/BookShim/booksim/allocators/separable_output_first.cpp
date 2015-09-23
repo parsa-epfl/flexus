@@ -77,7 +77,7 @@ void SeparableOutputFirstAllocator::Allocate() {
     
     // Execute the output arbiters and propagate the grants to the
     // input arbiters.
-    int in = _output_arb[output]->Arbitrate( NULL, NULL ) ;
+    int in = _output_arb[output]->Arbitrate( nullptr, nullptr ) ;
     
     if ( in > -1 ) {
       list<sRequest>::const_iterator it  = _requests[in].begin() ;

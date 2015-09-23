@@ -93,7 +93,7 @@ protected:
   }
 
   inline void setInterleaving(std::string & arg) {
-    theDirectoryInterleaving = strtoul(arg.c_str(), NULL, 0);
+    theDirectoryInterleaving = strtoul(arg.c_str(), nullptr, 0);
   }
 
   inline void recordSnoopMiss() {

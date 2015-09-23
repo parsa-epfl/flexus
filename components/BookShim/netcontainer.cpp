@@ -51,10 +51,10 @@ namespace nNetShim
 
 
   NetContainer::NetContainer ( void ) :
-    channels              ( NULL ),
-    switches              ( NULL ),
-    nodes                 ( NULL ),
-    mslHead               ( NULL ),
+    channels              ( nullptr ),
+    switches              ( nullptr ),
+    nodes                 ( nullptr ),
+    mslHead               ( nullptr ),
     activeMessages        ( 0 ),
 
     channelLatency        ( -1 ),
@@ -795,7 +795,7 @@ namespace nNetShim
 
     newNode = allocMessageStateList ( msg );
 
-    if ( mslHead == NULL ) {
+    if ( mslHead == nullptr ) {
       mslHead = mslTail = newNode;
     } else {
       mslTail->next = newNode;
@@ -832,7 +832,7 @@ namespace nNetShim
 
   bool NetContainer::deliverMessage ( MessageState * msg )
   {
-    assert ( msg->myList != NULL );
+    assert ( msg->myList != nullptr );
 
     // Deliver the message to the flexus node
     if ( deliverMessagePtr ( msg ) ) {
@@ -856,7 +856,7 @@ namespace nNetShim
     activeMessages--;
 
     if ( activeMessages == 0 ) {
-      assert ( mslHead == NULL && mslTail == NULL );
+      assert ( mslHead == nullptr && mslTail == nullptr );
     }
 
     // Clean up the message
@@ -875,7 +875,7 @@ namespace nNetShim
 
     if ( flags & NS_DUMP_METAINFO ) {
       out << "Active messages: " <<  getActiveMessages() << endl;
-      if ( mslHead != NULL ) {
+      if ( mslHead != nullptr ) {
         out << "Oldest message serial: " << mslHead->msg->serial << endl;
         out << "Newest message serial: " << mslTail->msg->serial << endl;
       }

@@ -220,7 +220,7 @@ public:
   //Initialization
   void initialize() {
     pipeIn = popen("gzip -d -c outtrace3.gz", "r");
-    if (pipeIn == NULL) {
+    if (pipeIn == nullptr) {
       DBG_(Crit, ( << "Error: could not open trace file!" ) );
       exit(-1);
     }

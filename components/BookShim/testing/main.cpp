@@ -5,7 +5,7 @@ using namespace nNetShim;
 using namespace std;
 
 NetContainer
-  * nc = NULL;
+  * nc = nullptr;
 
 int32_t main ( int32_t argc, char ** argv ) 
 {

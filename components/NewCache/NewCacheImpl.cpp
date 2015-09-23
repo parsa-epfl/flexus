@@ -220,7 +220,7 @@ public:
     if (theFlexus->isFastMode()) {
       return 0;
     }
-    DBG_Assert(trans[MemoryMessageTag] != NULL);
+    DBG_Assert(trans[MemoryMessageTag] != nullptr);
     return ( (trans[MemoryMessageTag]->reqSize() > 0) ? cfg.BusTime_Data : cfg.BusTime_NoData) - 1;
   }
 

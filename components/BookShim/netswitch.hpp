@@ -49,9 +49,9 @@ public:
 
   inline bool getMessage ( MessageState *& msg )
   {
-    msg = NULL;
+    msg = nullptr;
 
-    if ( currMessage == NULL )
+    if ( currMessage == nullptr )
       return true;
 
     msg = currMessage->msg;
@@ -60,12 +60,12 @@ public:
 
   bool nextMessage ( void )
   {
-    if ( currMessage == NULL )
+    if ( currMessage == nullptr )
       return true;
 
     currMessage = currMessage->next;
 
-    if ( currMessage == NULL )
+    if ( currMessage == nullptr )
       return true;
 
     return false;

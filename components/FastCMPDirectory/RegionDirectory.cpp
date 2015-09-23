@@ -91,14 +91,14 @@ protected:
     //BlockDirectoryEntry *my_entry = dynamic_cast<BlockDirectoryEntry*>(dir_entry);
     BlockDirectoryEntry * my_entry(&(dynamic_cast<BlockEntryWrapper *>(dir_entry.get())->block));
 
-    DBG_Assert(my_entry != NULL);
+    DBG_Assert(my_entry != nullptr);
     my_entry->addSharer(index);
   }
 
   virtual void addExclusiveSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     //BlockDirectoryEntry *my_entry = dynamic_cast<BlockDirectoryEntry*>(dir_entry);
     BlockDirectoryEntry * my_entry(&(dynamic_cast<BlockEntryWrapper *>(dir_entry.get())->block));
-    DBG_Assert(my_entry != NULL);
+    DBG_Assert(my_entry != nullptr);
     my_entry->addSharer(index);
     my_entry->makeExclusive(index);
   }
@@ -111,7 +111,7 @@ protected:
   virtual void removeSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     //BlockDirectoryEntry *my_entry = dynamic_cast<BlockDirectoryEntry*>(dir_entry);
     BlockDirectoryEntry * my_entry(&(dynamic_cast<BlockEntryWrapper *>(dir_entry.get())->block));
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     my_entry->removeSharer(index);
@@ -120,7 +120,7 @@ protected:
   virtual void makeSharerExclusive(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     //BlockDirectoryEntry *my_entry = dynamic_cast<BlockDirectoryEntry*>(dir_entry);
     BlockDirectoryEntry * my_entry(&(dynamic_cast<BlockEntryWrapper *>(dir_entry.get())->block));
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     // Make it exclusive
@@ -172,7 +172,7 @@ public:
 
     PhysicalMemoryAddress tag(get_tag(address));
     RegionDirEntry * entry = findOrCreateEntry(tag);
-    DBG_Assert(entry != NULL);
+    DBG_Assert(entry != nullptr);
     if (entry->tag() != tag) {
       // We're evicting an existing entry
       PhysicalMemoryAddress addr(entry->tag());
@@ -227,11 +227,11 @@ public:
     std::list<std::pair<std::string, std::string> >::iterator iter = args.begin();
     for (; iter != args.end(); iter++) {
       if (strcasecmp(iter->first.c_str(), "sets") == 0) {
-        directory->theNumSets = strtol(iter->second.c_str(), NULL, 0);
+        directory->theNumSets = strtol(iter->second.c_str(), nullptr, 0);
       } else if (strcasecmp(iter->first.c_str(), "assoc") == 0) {
-        directory->theAssociativity = strtol(iter->second.c_str(), NULL, 0);
+        directory->theAssociativity = strtol(iter->second.c_str(), nullptr, 0);
       } else if (strcasecmp(iter->first.c_str(), "rsize") == 0) {
-        directory->theRegionSize = strtol(iter->second.c_str(), NULL, 0);
+        directory->theRegionSize = strtol(iter->second.c_str(), nullptr, 0);
       } else if (strcasecmp(iter->first.c_str(), "skew") == 0) {
         if (strcasecmp(iter->second.c_str(), "true") == 0) {
           directory->theSkewSet = true;

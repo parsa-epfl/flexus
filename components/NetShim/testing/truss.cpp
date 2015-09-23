@@ -6,7 +6,7 @@ using namespace nNetShim;
 using namespace std;
 
 NetContainer
-* nc = NULL;
+* nc = nullptr;
 
 int32_t
 numNodes = 0,
@@ -127,7 +127,7 @@ bool trussIsNodeAvailable ( const int32_t node,
   } else {
     // If the slave has no message waiting in the delay buffer,
     // it's free to receive a message.
-    return ( slaveInput[node-numMasters] == NULL );
+    return ( slaveInput[node-numMasters] == nullptr );
   }
 }
 
@@ -151,8 +151,8 @@ bool deliverMasterMessages ( void ) {
 
       masterReplListHead[i] = msl->next;
 
-      if ( msl->next == NULL )
-        masterReplListTail[i] = NULL;
+      if ( msl->next == nullptr )
+        masterReplListTail[i] = nullptr;
 
       freeMessageStateList ( msl );
       masterListSize[i]--;
@@ -177,7 +177,7 @@ bool deliverSlaveMessages ( void ) {
               << slaveInput[i]->replTS << " @ " << currTime );
 
       freeMessageState ( slaveInput[i] );
-      slaveInput[i] = NULL;
+      slaveInput[i] = nullptr;
       localPendingMsgs--;
     }
   }
@@ -211,8 +211,8 @@ bool initializeTruss ( void ) {
 
   for ( i = 0; i < numMasters; i++ ) {
     masterListSize[i] = 0;
-    masterReplListHead[i] = masterReplListTail[i] = NULL;
-    slaveInput[i]         = NULL;
+    masterReplListHead[i] = masterReplListTail[i] = nullptr;
+    slaveInput[i]         = nullptr;
   }
 
   reinitNetwork();

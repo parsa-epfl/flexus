@@ -513,7 +513,7 @@ boost::tuple<bool, bool, Action> InclusiveMOESI::doRequest( MemoryTransport     
     MemoryMessage_p original_miss;
     TransactionTracker_p original_tracker;
     boost::tie( original_miss, original_tracker) = theController->getWaitingMAFEntry( msg->address() );
-    bool waiting_maf = (original_miss != NULL);
+    bool waiting_maf = (original_miss != nullptr);
 
     State state = result->state();
 
@@ -875,7 +875,7 @@ boost::tuple<bool, bool, Action> InclusiveMOESI::doRequest( MemoryTransport     
 
     // If we get here, then we're servicing a reply msg
     // This means we should have an outstanding miss for this address, otherwise, we're in trouble
-    DBG_Assert( original_miss != NULL, ( << "received reply with no corresponding miss : " << (*msg) ));
+    DBG_Assert( original_miss != nullptr, ( << "received reply with no corresponding miss : " << (*msg) ));
 
     // Most of our actions depend on the type of the original message, so use that for the high-level swich
 
@@ -1169,8 +1169,8 @@ boost::tuple<bool, bool, Action> InclusiveMOESI::doRequest( MemoryTransport     
     MemoryMessage_p      msg = transport[MemoryMessageTag];
     TransactionTracker_p tracker = transport[TransactionTrackerTag];
 
-    DBG_Assert( msg != NULL );
-    DBG_Assert( tracker != NULL );
+    DBG_Assert( msg != nullptr );
+    DBG_Assert( tracker != nullptr );
 
     SnoopBuffer::snoop_iter snp = theSnoopBuffer.findEntry(getBlockAddress(msg->address()));
     DBG_Assert(snp != theSnoopBuffer.end(), ( << "received snoop reply but no waiting snoops: " << *msg));
@@ -1206,8 +1206,8 @@ boost::tuple<bool, bool, Action> InclusiveMOESI::doRequest( MemoryTransport     
     }
 
     MemoryMessage_p orig_msg = snp->transport[MemoryMessageTag];
-    DBG_Assert( snp->transport[MemoryMessageTag] != NULL );
-    DBG_Assert( snp->transport[TransactionTrackerTag] != NULL );
+    DBG_Assert( snp->transport[MemoryMessageTag] != nullptr );
+    DBG_Assert( snp->transport[TransactionTrackerTag] != nullptr );
 
     // Determine proper response based on current cache/EB state
     State block_state(State::Invalid);

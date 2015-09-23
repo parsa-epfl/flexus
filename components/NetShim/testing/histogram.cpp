@@ -25,7 +25,7 @@ Histogram::Histogram ( const COUNTER * bucketList,
                        const bool dontInitialize ) {
 
   /* Do basic consistency checks on the histogram buckets */
-  if ( bucketList == NULL ) {
+  if ( bucketList == nullptr ) {
     exit ( 1 );
   }
 
@@ -59,14 +59,14 @@ Histogram::Histogram ( const COUNTER * bucketList,
  */
 Histogram::~Histogram() {
 
-  if ( buckets != NULL ) {
+  if ( buckets != nullptr ) {
     delete[] buckets;
-    buckets = NULL;
+    buckets = nullptr;
   }
 
-  if ( bucketValues != NULL ) {
+  if ( bucketValues != nullptr ) {
     delete[] bucketValues;
-    bucketValues = NULL;
+    bucketValues = nullptr;
   }
 
 }

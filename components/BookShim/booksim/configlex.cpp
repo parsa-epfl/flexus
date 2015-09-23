@@ -112,7 +112,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 /* Returned upon end-of-file. */
-#define YY_NULL 0
+#define YY_nullptr 0
 
 /* Promotes a possibly negative, possibly signed char to an unsigned
  * integer for use as an array index.  If the signed char is negative,
@@ -521,7 +521,7 @@ YY_MALLOC_DECL
 #define ECHO (void) fwrite( yytext, yyleng, 1, yyout )
 #endif
 
-/* Gets input and stuffs it into "buf".  number of characters read, or YY_NULL,
+/* Gets input and stuffs it into "buf".  number of characters read, or YY_nullptr,
  * is returned in "result".
  */
 #ifndef YY_INPUT
@@ -548,7 +548,7 @@ YY_MALLOC_DECL
  * some compilers to complain about unreachable statements.
  */
 #ifndef yyterminate
-#define yyterminate() return YY_NULL
+#define yyterminate() return YY_nullptr
 #endif
 
 /* Number of entries by which start-condition stack grows. */
@@ -586,7 +586,7 @@ YY_MALLOC_DECL
 YY_DECL
 	{
 	register yy_state_type yy_current_state;
-	register char *yy_cp = NULL, *yy_bp = NULL;
+	register char *yy_cp = nullptr, *yy_bp = nullptr;
 	register int yy_act;
 
 #line 26 "config.l"
@@ -809,8 +809,8 @@ case YY_STATE_EOF(INITIAL):
 					 * yy_c_buf_p so that if some total
 					 * hoser (like flex itself) wants to
 					 * call the scanner after we return the
-					 * YY_NULL, it'll still work - another
-					 * YY_NULL will get returned.
+					 * YY_nullptr, it'll still work - another
+					 * YY_nullptr will get returned.
 					 */
 					yy_c_buf_p = yytext_ptr + YY_MORE_ADJ;
 

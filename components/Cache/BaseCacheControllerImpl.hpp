@@ -424,7 +424,7 @@ public:
   // get a message decsribing the work to be done
   // also reserve any necessary controller resources
   virtual MemoryMessage_p getIdleWorkMessage(ProcessEntry_p process) {
-    return NULL;
+    return nullptr;
   }
 
   virtual void removeIdleWorkReservations(ProcessEntry_p process, Action & action) { }

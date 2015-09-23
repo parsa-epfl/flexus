@@ -39,7 +39,7 @@ TaglessPolicy::TaglessPolicy(const DirectoryInfo & params)
   , theDefaultState(params.theCores) {
   AbstractDirectory<State> *abs_directory = constructDirectory<State, State>(params);
   theDirectory = dynamic_cast<TaglessDirectory<State>*>(abs_directory);
-  DBG_Assert(theDirectory != NULL, ( << "Failed to create a Tagless directory." ));
+  DBG_Assert(theDirectory != nullptr, ( << "Failed to create a Tagless directory." ));
 }
 
 TaglessPolicy::~TaglessPolicy() {
@@ -455,7 +455,7 @@ void TaglessPolicy::handleReply( ProcessEntry_p process ) {
     DBG_Assert( lookup->found(), ( << theDirectoryInfo.theName << "Received WriteAck for unfound block: " << *req ));
 
     // Need to include details about which sharers no longer have copies
-    DBG_Assert(process->transport()[TaglessDirMsgTag] != NULL, ( << "Received WriteAck with no TaglessDirMsg: " << *req ));
+    DBG_Assert(process->transport()[TaglessDirMsgTag] != nullptr, ( << "Received WriteAck with no TaglessDirMsg: " << *req ));
     lookup->setSharer( requester, process->transport()[TaglessDirMsgTag] );
 
     process->setMAF(maf);
@@ -474,7 +474,7 @@ void TaglessPolicy::handleReply( ProcessEntry_p process ) {
     DBG_Assert( lookup->found() );
 
     // Need to include details about which sharers no longer have copies
-    DBG_Assert(process->transport()[TaglessDirMsgTag] != NULL, ( << "Received WriteAck with no TaglessDirMsg: " << *req ));
+    DBG_Assert(process->transport()[TaglessDirMsgTag] != nullptr, ( << "Received WriteAck with no TaglessDirMsg: " << *req ));
     lookup->setSharer( requester, process->transport()[TaglessDirMsgTag] );
 
     process->setMAF(maf);

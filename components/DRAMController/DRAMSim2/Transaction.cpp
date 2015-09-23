@@ -52,7 +52,7 @@ Transaction::Transaction(TransactionType transType, uint64_t addr, void *dat) :
 Transaction::Transaction(const Transaction &t)
 	: transactionType(t.transactionType)
 	  , address(t.address)
-	  , data(NULL)
+	  , data(nullptr)
 	  , timeAdded(t.timeAdded)
 	  , timeReturned(t.timeReturned)
 {
