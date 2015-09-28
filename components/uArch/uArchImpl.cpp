@@ -27,7 +27,7 @@ using namespace SharedTypes;
 class uArch_SimicsObject_Impl  {
   boost::shared_ptr<microArch> theMicroArch;
 public:
-  uArch_SimicsObject_Impl(Flexus::Simics::API::conf_object_t * /*ignored*/ ) {}
+  uArch_SimicsObject_Impl(Flexus::Qemu::API::conf_object_t * /*ignored*/ ) {}
 
   void setMicroArch(boost::shared_ptr<microArch> aMicroArch) {
     theMicroArch = aMicroArch;
@@ -85,9 +85,9 @@ public:
 };
 
 class uArch_SimicsObject : public Simics::AddInObject <uArch_SimicsObject_Impl> {
-  typedef Simics::AddInObject<uArch_SimicsObject_Impl> base;
+  typedef Qemu::AddInObject<uArch_SimicsObject_Impl> base;
 public:
-  static const Simics::Persistence  class_persistence = Simics::Session;
+  static const Qemu::Persistence  class_persistence = Qemu::Session;
   //These constants are defined in Simics/simics.cpp
   static std::string className() {
     return "uArch";
@@ -97,7 +97,7 @@ public:
   }
 
   uArch_SimicsObject() : base() { }
-  uArch_SimicsObject(Simics::API::conf_object_t * aSimicsObject) : base(aSimicsObject) {}
+  uArch_SimicsObject(Qemu::API::conf_object_t * aSimicsObject) : base(aSimicsObject) {}
   uArch_SimicsObject(uArch_SimicsObject_Impl * anImpl) : base(anImpl) {}
 
   template <class Class>
@@ -184,7 +184,7 @@ public:
 
 };
 
-Simics::Factory<uArch_SimicsObject> theuArchSimicsFactory;
+Qemu::Factory<uArch_SimicsObject> theuArchSimicsFactory;
 
 class FLEXUS_COMPONENT(uArch) {
   FLEXUS_COMPONENT_IMPL(uArch);

@@ -6,7 +6,7 @@ namespace nuArch {
   int ValueTracker::theNumTrackers = 0;
 
   API::cycles_t DMATracerImpl::dma_mem_hier_operate(API::conf_object_t * space, API::map_list_t * map, API::generic_transaction_t * aMemTrans) {
-  Flexus::Simics::APIFwd::memory_transaction_t * mem_trans = reinterpret_cast<Flexus::Simics::APIFwd::memory_transaction_t *>(aMemTrans);
+  Flexus::Qemu::APIFwd::memory_transaction_t * mem_trans = reinterpret_cast<Flexus::Qemu::APIFwd::memory_transaction_t *>(aMemTrans);
 
   const int32_t k_no_stall = 0;
 

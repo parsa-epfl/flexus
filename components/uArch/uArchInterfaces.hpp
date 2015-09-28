@@ -241,8 +241,8 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction {
   virtual bool isSquashed() const = 0;
   virtual void reinstate() = 0; //reverse of annul
 
-  virtual void setMMU(Flexus::Simics::MMU::mmu_t m) = 0;
-  virtual boost::optional<Flexus::Simics::MMU::mmu_t> getMMU() const = 0;
+  virtual void setMMU(Flexus::Qemu::MMU::mmu_t m) = 0;
+  virtual boost::optional<Flexus::Qemu::MMU::mmu_t> getMMU() const = 0;
 
   virtual eInstructionClass instClass() const = 0;
   virtual eInstructionCode instCode() const = 0;

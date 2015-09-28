@@ -174,15 +174,15 @@ int fm_compare_mmus(mmu_t * a, mmu_t * b);
 
 } //end namespace MMU
 #endif
-} //end Namespace Simics
+} //end Namespace Qemu
 } //end namespace Flexus
 
 #if FLEXUS_TARGET_IS(v9)
-#include <core/simics/mai_api.hpp>
+#include <core/qemu/mai_api.hpp>
 namespace Flexus {
-namespace Simics {
+namespace Qemu {
 namespace MMU {
-void fm_init_mmu_from_simics(mmu_t * mmu, Flexus::Qemu::API::conf_object_t * chmmu);
+//void fm_init_mmu_from_simics(mmu_t * mmu, Flexus::Qemu::API::conf_object_t * chmmu); //FIXME
 }
 }
 }

@@ -31,32 +31,32 @@ extern "C" {
 } //namespace API
 } //namespace Qemu
 } //namespace Flexus
-
-namespace Flexus {
-namespace Simics {
-struct InstructionRaisesException : public SimicsException {
-  InstructionRaisesException () : SimicsException("InstructionRaisesException") {}
-};
-struct UnresolvedDependenciesException : public SimicsException {
-  UnresolvedDependenciesException () : SimicsException("UnresolvedDependenciesException") {}
-};
-struct SpeculativeException : public SimicsException {
-  SpeculativeException () : SimicsException("SpeculativeException ") {}
-};
-struct StallingException : public SimicsException {
-  StallingException () : SimicsException("StallingException ") {}
-};
-struct SyncException : public SimicsException {
-  SyncException() : SimicsException("SyncException") {}
-};
-
-struct MemoryException : public SimicsException {
-  MemoryException() : SimicsException("MemoryException") {}
-};
-
-} //namespace Simics
-} //namespace Flexus
 */
+namespace Flexus {
+namespace Qemu {
+struct InstructionRaisesException : public QemuException {
+  InstructionRaisesException () : QemuException("InstructionRaisesException") {}
+};
+struct UnresolvedDependenciesException : public QemuException {
+  UnresolvedDependenciesException () : QemuException("UnresolvedDependenciesException") {}
+};
+struct SpeculativeException : public QemuException {
+  SpeculativeException () : QemuException("SpeculativeException ") {}
+};
+struct StallingException : public QemuException {
+  StallingException () : QemuException("StallingException ") {}
+};
+struct SyncException : public QemuException {
+  SyncException() : QemuException("SyncException") {}
+};
+
+struct MemoryException : public QemuException {
+  MemoryException() : QemuException("MemoryException") {}
+};
+
+} //namespace Qemu
+} //namespace Flexus
+
 
 namespace Flexus {
 namespace Qemu {
@@ -109,7 +109,7 @@ protected:
       if (anException == API::SimExc_Memory) {
         throw MemoryException();
       } else {
-        throw SimicsException(API::SIM_last_error());
+        throw QemuException(API::SIM_last_error());
       }
     }
   }
@@ -195,7 +195,9 @@ public:
   }
 
   unsigned long long readRegister(int aRegister) const {
-    return API::QEMU_read_register(*this, aRegister);
+    uint64_t reg_content;
+    API::QEMU_read_register(*this, aRegister, NULL, &reg_content);
+    return reg_content;
   }
 
   void writeRegister(int aRegister, unsigned long long aValue) const {
@@ -233,11 +235,11 @@ public:
 /* //added by jevdjic 
  unsigned long long getMemorySizeInMB(){ //memory size in MB
   try{
-    Simics::API::conf_object_t *memory = API::SIM_get_object("server_memory_image");
+    Qemu::API::conf_object_t *memory = API::SIM_get_object("server_memory_image");
     if (memory==0) memory = API::SIM_get_object("memory_image");
     if(memory==0) memory = API::SIM_get_object("memory0_image"); 
     if(memory==0) return 0;
-    Simics::API:: attr_value_t size = API::SIM_get_attribute(memory, "size");
+    Qemu::API:: attr_value_t size = API::SIM_get_attribute(memory, "size");
     return size.u.integer/(1024*1024);	
   }catch(MemoryException &abError){
     return 0;
@@ -249,7 +251,7 @@ public:
     try {
       assert(false);
       //API::physical_address_t phy_addr(anAddress);
-      //Simics::API::SIM_write_phys_memory( *this, phy_addr, aValue, aSize);
+      //Qemu::API::SIM_write_phys_memory( *this, phy_addr, aValue, aSize);
       //checkException();
     } catch (MemoryException & anError ) {
       DBG_( Crit, ( << "Unable to write " << aValue << " to  " << anAddress << "[" << aSize << "]" ) );
@@ -344,7 +346,9 @@ public:
   void initializeMMUs();
 
   VirtualMemoryAddress getNPC() const {
-    return VirtualMemoryAddress( API::QEMU_read_register(*this, kReg_npc) );
+    uint64_t reg_content;
+    API::QEMU_read_register(*this, aRegister, NULL, &reg_content);
+    return VirtualMemoryAddress( reg_content );
   }
 
   API::sparc_v9_interface * sparc() const {
@@ -484,7 +488,7 @@ public:
 
   void breakSimulation() {
     //API::SIM_break_cycle( *this, 0);
-    assert(false);	//FIXME - implement SimBreak
+    API::QEMU_break_simulation("");
   }
 };
 #endif //FLEXUS_TARGET_IS(v9)
@@ -511,15 +515,19 @@ public:
   }
 
   static Processor getProcessor(int aProcessorNumber) {
-    return Processor(APIFwd::SIM_get_processor(ProcessorMapper::mapFlexusIndex2ProcNum(aProcessorNumber)));
+    return Processor(APIFwd::QEMU_get_processor(ProcessorMapper::mapFlexusIndex2ProcNum(aProcessorNumber)));
   }
 
   static Processor getProcessor(std::string const & aProcessorName) {
-    return Processor(API::SIM_get_object(aProcessorName.c_str()));
+    assert(false);	//ALEX - FIXME
+    return getProcessor(0);
+    //return Processor(API::SIM_get_object(aProcessorName.c_str()));
   }
 
   static Processor current() {
-    return Processor(API::SIM_current_processor());
+    assert(false);	//ALEX - FIXME
+    return getProcessor(0);
+    //return Processor(API::SIM_current_processor());
   }
 };
 

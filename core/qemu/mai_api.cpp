@@ -91,12 +91,15 @@ int v9ProcessorImpl::getPendingInterrupt() const {
 
 int v9ProcessorImpl::advance(bool anAcceptInterrupt) {
   int exception = 0;
+
+//ALEX - TODO: Init interrupts
 /*
   if (! theInterruptsConnected) {
     theInterruptsConnected = true;
     initialize();
   }
 */
+
 //ALEX - TODO: When advance() is called, need to tell QEMU to advance one instruction.
 //Also need to deal with interrupts and exceptions
 /*
@@ -121,7 +124,8 @@ int v9ProcessorImpl::advance(bool anAcceptInterrupt) {
         return -1;
       case API::QEMU_IE_Step_Breakpoint:
         //Return to prompt next cycle
-        //API::SIM_break_cycle(*this, 0);	//FIXME
+        //API::SIM_break_cycle(*this, 0);	
+        API::QEMU_break_simulation("");
         break;
       default:
         DBG_( Crit, ( << "Bad return value from QEMU_instruction_handle_interrupt" ) );

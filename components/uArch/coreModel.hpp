@@ -7,12 +7,12 @@
 #include <components/Common/Slices/PredictorMessage.hpp> /* CMU-ONLY */
 
 namespace Flexus {
-namespace Simics {
+namespace Qemu {
 struct Translation;
-} //Simics
+} //Qemu
 } //Flexus
 
-namespace nuArch {
+namespaQemurch {
 
 enum eLoseWritePermission {
   eLosePerm_Invalidate
@@ -58,7 +58,7 @@ struct v9State {
 
 struct CoreModel : public uArch {
   static CoreModel * construct(uArchOptions_t options
-                               , boost::function< void (Flexus::Simics::Translation &, bool) > translate
+                               , boost::function< void (Flexus::Qemu::Translation &, bool) > translate
                                , boost::function< int(bool) > advance
                                , boost::function< void(eSquashCause) > squash
                                , boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress) > redirect

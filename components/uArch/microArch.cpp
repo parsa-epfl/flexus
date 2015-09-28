@@ -63,7 +63,7 @@ class microArchImpl : public microArch {
 
   boost::scoped_ptr<CoreModel> theCore;
   int32_t theAvailableROB;
-  Flexus::Simics::Processor theCPU;
+  Flexus::Qemu::Processor theCPU;
   Stat::StatCounter theResynchronizations;
   Stat::StatCounter theResyncInstructions;
   Stat::StatCounter theOtherResyncs;
@@ -71,7 +71,7 @@ class microArchImpl : public microArch {
   int32_t theExceptionRaised;
   bool theBreakOnResynchronize;
   bool theDriveClients;
-  Flexus::Simics::Processor theClientCPUs[64];
+  Flexus::Qemu::Processor theClientCPUs[64];
   int32_t theNumClients;
   int32_t theNode;
   boost::function< void(eSquashCause)> squash;
@@ -119,8 +119,8 @@ public:
     , signalStoreForwardingHit(_signalStoreForwardingHit) {
 #if 0
     bool client_server = false;
-    if (Flexus::Simics::API::SIM_get_object("cpu0") == 0) {
-      if (Flexus::Simics::API::SIM_get_object("server_cpu0") == 0) {
+    if (Flexus::Qemu::API::SIM_get_object("cpu0") == 0) {
+      if (Flexus::Qemu::API::SIM_get_object("server_cpu0") == 0) {
         DBG_Assert( false, ( << theName << "microArch cannot locate cpu0 or server_cpu0 objects." ) );
       } else {
         DBG_( Dev, ( << theName << " microArch detected client-server simulation.  Connecting to server_cpu" << theNode) );
@@ -132,26 +132,26 @@ public:
       // std::string my_cpu("server_cpu");
       // my_cpu += boost::lexical_cast<std::string>(theNode);
 
-      // theCPU = Flexus::Simics::Processor::getProcessor(my_cpu);
-      theCPU = Flexus::Simics::Processor::getProcessor(theNode);
+      // theCPU = Flexus::Qemu::Processor::getProcessor(my_cpu);
+      theCPU = Flexus::Qemu::Processor::getProcessor(theNode);
 
       if (theNode == 0) {
         setupDriveClients();
       }
     } else {
-      theCPU = Flexus::Simics::Processor::getProcessor(theNode);
+      theCPU = Flexus::Qemu::Processor::getProcessor(theNode);
     }
 #endif
 
-    if ((Flexus::Simics::API::SIM_get_object("cpu0") == 0) && (Flexus::Simics::API::SIM_get_object("machine0_cpu0")==0)) {
-      if ((Flexus::Simics::API::SIM_get_object("server_cpu0") == 0) && (Flexus::Simics::API::SIM_get_object("machine0_server_cpu0")==0)) {
+    if ((Flexus::Qemu::API::SIM_get_object("cpu0") == 0) && (Flexus::Qemu::API::SIM_get_object("machine0_cpu0")==0)) {
+      if ((Flexus::Qemu::API::SIM_get_object("server_cpu0") == 0) && (Flexus::Qemu::API::SIM_get_object("machine0_server_cpu0")==0)) {
         DBG_Assert( false, ( << theName << "microArch cannot locate cpu0 or server_cpu0 objects." ) );
       } else {
         DBG_( Dev, ( << theName << " microArch detected client-server simulation.  Connecting to server_cpu" << theNode) );
       }
     }
-    theCPU = Flexus::Simics::Processor::getProcessor(theNode);
-    if (Flexus::Simics::ProcessorMapper::numClients() > 0 ){
+    theCPU = Flexus::Qemu::Processor::getProcessor(theNode);
+    if (Flexus::Qemu::ProcessorMapper::numClients() > 0 ){
       if (theNode == 0) {
         setupDriveClients();
       }
@@ -165,7 +165,7 @@ public:
       DBG_Assert( false , ( << "Simics appears to be running without the -ma option.  You must launch Simics with -ma to run out-of-order simulations (node " << theNode << ")" ) );
     }
 
-    DBG_( Crit, ( << theName << " connected to " << (static_cast<Flexus::Simics::API::conf_object_t *>(theCPU))->name ));
+    DBG_( Crit, ( << theName << " connected to " << (static_cast<Flexus::Qemu::API::conf_object_t *>(theCPU))->name ));
 
     theAvailableROB = theCore->availableROB();
 
@@ -185,24 +185,24 @@ public:
     bool is_vm_configuration = false;
     int max_vm = 1;
     int vm = 0;
-    if (Flexus::Simics::API::SIM_get_object("machine0_client_cpu0")!=0){
+    if (Flexus::Qemu::API::SIM_get_object("machine0_client_cpu0")!=0){
       DBG_(Dev, ( << "Found machine0_client_cpu0 using vm configuration."));
       is_vm_configuration = true;
       max_vm=16;
     }
 
     while (true) {
-      Flexus::Simics::API::conf_object_t * client = 0;
+      Flexus::Qemu::API::conf_object_t * client = 0;
       for ( ; simics_cpu_no < max_simics_cpu_no; simics_cpu_no++) {
         std::string client_cpu("client_cpu");
         if (is_vm_configuration) {
       	  client_cpu = "machine" + boost::lexical_cast<std::string>(vm) + "_client_cpu";
 	}
         client_cpu += boost::lexical_cast<std::string>(simics_cpu_no);
-        client = Flexus::Simics::API::SIM_get_object(client_cpu.c_str());
+        client = Flexus::Qemu::API::SIM_get_object(client_cpu.c_str());
         if (client != 0) {
           DBG_( Dev, ( << theName << " microArch will drive " << client_cpu << " with fixed IPC " << kClientIPC) );
-          theClientCPUs[i] = Flexus::Simics::Processor(client);
+          theClientCPUs[i] = Flexus::Qemu::Processor(client);
           break;
         }
         // added by PLotfi to support SPECweb2009 workloads
@@ -211,10 +211,10 @@ public:
           client_cpu = "machine" + boost::lexical_cast<std::string>(vm) + "_besim_cpu";
         }
         client_cpu += boost::lexical_cast<std::string>(simics_cpu_no);
-        client = Flexus::Simics::API::SIM_get_object(client_cpu.c_str());
+        client = Flexus::Qemu::API::SIM_get_object(client_cpu.c_str());
         if (client != 0) {
           DBG_( Dev, ( << theName << " microArch will drive " << client_cpu << " with fixed IPC " << kClientIPC) );
-          theClientCPUs[i] = Flexus::Simics::Processor(client);
+          theClientCPUs[i] = Flexus::Qemu::Processor(client);
           break;
         }
       }
@@ -268,48 +268,48 @@ public:
         //Need to get load value from simics
         DBG_Assert(false);
         DBG_( Verb, ( << "Performing side-effect load to " << op->theVAddr << " ASI: " << op->theASI ));
-	ValueTracker::valueTracker(Flexus::Simics::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).access(theCPU->id(), op->thePAddr);
-        Flexus::Simics::Translation xlat;
+	ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).access(theCPU->id(), op->thePAddr);
+        Flexus::Qemu::Translation xlat;
         xlat.theVaddr = op->theVAddr;
         xlat.theASI = op->theASI;
         xlat.theTL = theCore->getTL();
         xlat.thePSTATE = theCore->getPSTATE();
-        xlat.theType = Flexus::Simics::Translation::eLoad;
+        xlat.theType = Flexus::Qemu::Translation::eLoad;
         op->theValue = theCPU->readVAddrXendian( xlat, op->theSize );
 
       } else {
         //Need to get load value from the ValueTracker
-	uint64_t val = ValueTracker::valueTracker(Flexus::Simics::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).load(theCPU->id(),op->thePAddr,op->theSize);
+	uint64_t val = ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).load(theCPU->id(),op->thePAddr,op->theSize);
         if (op->theReverseEndian) {
-          op->theValue = Flexus::Simics::endianFlip( val, op->theSize );
+          op->theValue = Flexus::Qemu::endianFlip( val, op->theSize );
         } else {
           op->theValue = val;
         }
         if (op->theASI == 0x24 || op->theASI == 0x34 ) {
           //Quad LDD
-          op->theExtendedValue = ValueTracker::valueTracker(Flexus::Simics::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).load( theCPU->id(), PhysicalMemoryAddress(op->thePAddr + 8), op->theSize);
+          op->theExtendedValue = ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).load( theCPU->id(), PhysicalMemoryAddress(op->thePAddr + 8), op->theSize);
           DBG_( Verb, ( << "Performing quad LDD for addr " << op->thePAddr << " val: " << op->theValue << " ext: " << op->theExtendedValue) );
           DBG_Assert( ! op->theReverseEndian, ( << "FIXME: inverse endian QUAD_LDD is not implemented. ") );
         }
       }
     } else if ( op->theOperation == kRMWReply || op->theOperation == kCASReply ) {
       //RMW operations load int32_t theExtendedValue
-      ValueTracker::valueTracker(Flexus::Simics::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).access( theCPU->id(), op->thePAddr);
-      Flexus::Simics::Translation xlat;
+      ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).access( theCPU->id(), op->thePAddr);
+      Flexus::Qemu::Translation xlat;
       xlat.theVaddr = op->theVAddr;
       xlat.theASI = op->theASI;
       xlat.theTL = theCore->getTL();
       xlat.thePSTATE = theCore->getPSTATE();
-      xlat.theType = Flexus::Simics::Translation::eStore;
+      xlat.theType = Flexus::Qemu::Translation::eStore;
       op->theExtendedValue = theCPU->readVAddrXendian( xlat, op->theSize );
     } else if ( op->theOperation == kStoreReply && !op->theSideEffect && ! op->theAtomic ) {
       //Need to inform ValueTracker that this store is complete
       uint64_t value = op->theValue;
       if (op->theReverseEndian) {
-        value = Flexus::Simics::endianFlip(value, op->theSize);
+        value = Flexus::Qemu::endianFlip(value, op->theSize);
         DBG_(Verb, ( << "Performing inverse endian store for addr " << std::hex << op->thePAddr << " val: " << op->theValue << " inv: " << value << std::dec ));
       }
-      ValueTracker::valueTracker(Flexus::Simics::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).commitStore( theCPU->id(), op->thePAddr, op->theSize, value);
+      ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).commitStore( theCPU->id(), op->thePAddr, op->theSize, value);
     }
     theCore->pushMemOp( op );
   }
@@ -382,7 +382,7 @@ public:
     } catch ( ResynchronizeWithSimicsException & e) {
       ++theResynchronizations;
       if (theExceptionRaised) {
-        DBG_( Verb, ( << "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id() << "] Exception Raised: " << Flexus::Simics::API::SIM_get_exception_name(theCPU, theExceptionRaised) << "(" << theExceptionRaised << "). Resynchronizing with Simics.") );
+        DBG_( Verb, ( << "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id() << "] Exception Raised: " << Flexus::Qemu::API::SIM_get_exception_name(theCPU, theExceptionRaised) << "(" << theExceptionRaised << "). Resynchronizing with Simics.") );
         ++theExceptions;
       } else if (e.expected) {
         DBG_( Verb, ( << "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id() << "] Resynchronizing Instruction. Resynchronizing with Simics.") );
@@ -410,7 +410,7 @@ public:
     }
   }
 
-  void translate(Flexus::Simics::Translation & aTranslation, bool aTakeTrap) const {
+  void translate(Flexus::Qemu::Translation & aTranslation, bool aTakeTrap) const {
     theCPU->translate(aTranslation, aTakeTrap);
   }
 
