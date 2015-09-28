@@ -68,7 +68,7 @@ public:
       std::cout << "FactoryMap contains: " << iter->first << std::endl;
     }
     DBG_Assert(false, ( << "Failed to create Instance of '" << name << "'" ) );
-    return NULL;
+    return nullptr;
   }
 
 };

@@ -716,7 +716,7 @@ public:
         updatePeerL1HopsStats = boost::bind( &FastCMPNetworkControllerComponent::updatePeerL1HopsStats_Private, this, _1, _2); /* CMU-ONLY */
         updateReplyHopsStats = boost::bind( &FastCMPNetworkControllerComponent::updateReplyHopsStats_Private, this, _1, _2); /* CMU-ONLY */
         updateReqRoundTripHopsStats = boost::bind( &FastCMPNetworkControllerComponent::updateReqRoundTripHopsStats_Private, this, _1); /* CMU-ONLY */
-        updateOffChipStats = NULL; /* CMU-ONLY */
+        updateOffChipStats = nullptr; /* CMU-ONLY */
       } else if (thePlacement == kSharedCache) {
         routeCoreReq = boost::bind( &FastCMPNetworkControllerComponent::routeCoreReq_Shared, this, _1, _2);
         propagateSnoopUp = boost::bind( &FastCMPNetworkControllerComponent::propagateSnoopUp_Shared, this, _1, _2);

@@ -2,7 +2,7 @@
 
 namespace nuArch {
 
-  ValueTracker ** ValueTracker::theGlobalTracker = NULL;
+  ValueTracker ** ValueTracker::theGlobalTracker = nullptr;
   int ValueTracker::theNumTrackers = 0;
 
   API::cycles_t DMATracerImpl::dma_mem_hier_operate(API::conf_object_t * space, API::map_list_t * map, API::generic_transaction_t * aMemTrans) {

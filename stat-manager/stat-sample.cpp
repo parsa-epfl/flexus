@@ -5,16 +5,9 @@
 #include <cstdlib>
 
 #include <boost/function.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
 
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
-
-namespace ll = boost::lambda;
-using ll::_1;
-using ll::_2;
-using ll::_3;
 
 #include <core/stats.hpp>
 
@@ -105,19 +98,19 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
   std::string output_file = anArgList[1];
   std::string first_file = anArgList[2];
 
-  theCommands.push_back(  ll::bind( &loadDatabase, first_file, std::string(""), true ) );
+  theCommands.push_back( [&first_file](){ return loadDatabase(first_file, "", true); }); //ll::bind( &loadDatabase, first_file, std::string(""), true ) );
   for (int32_t i = 3; i < aCount; ++i) {
     std::stringstream prefix;
     prefix << std::setw(2) << std::setfill('0') << (i - 1) << '-';
-    theCommands.push_back(  ll::bind( &loadDatabase, std::string(anArgList[i]), prefix.str(), false) );
+    theCommands.push_back( [i, &anArgList, &prefix](){ return loadDatabase(std::string(anArgList[i]), prefix.str(), false); }); //ll::bind( &loadDatabase, std::string(anArgList[i]), prefix.str(), false) );
   }
-  theCommands.push_back(  ll::bind( &reduceSum ) );
-  theCommands.push_back(  ll::bind( &reduceAvg ) );
-  theCommands.push_back(  ll::bind( &reduceStdev, "pernode-stdev"  ) );
-  theCommands.push_back(  ll::bind( &reduceCount) );
-  theCommands.push_back(  ll::bind( &reduceNodes ) );
-  theCommands.push_back(  ll::bind( &reduceStdev, "stdev" ) );
-  theCommands.push_back(  ll::bind( &save, output_file, "(sum|count|avg|stdev|pernode-stdev)" ) );
+  theCommands.push_back( [](){ return reduceSum(); }); //ll::bind( &reduceSum ) );
+  theCommands.push_back( [](){ return reduceAvg(); }); //ll::bind( &reduceAvg ) );
+  theCommands.push_back( [](){ return reduceStdev("pernode-stdev"); }); //ll::bind( &reduceStdev, "pernode-stdev"  ) );
+  theCommands.push_back( [](){ return reduceCount(); }); // ll::bind( &reduceCount) );
+  theCommands.push_back( [](){ return reduceNodes(); }); // ll::bind( &reduceNodes ) );
+  theCommands.push_back( [](){ return reduceStdev("stdev"); }); // ll::bind( &reduceStdev, "stdev" ) );
+  theCommands.push_back( [&output_file](){ return save(output_file, "(sum|count|avg|stdev|pernode-stdev)"); }); // ll::bind( &save, output_file, "(sum|count|avg|stdev|pernode-stdev)" ) );
 
 }
 

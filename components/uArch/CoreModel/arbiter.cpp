@@ -34,7 +34,7 @@ MemoryPortArbiter::MemoryPortArbiter( CoreImpl & aCore, int32_t aNumPorts, int32
 void MemoryPortArbiter::inOrderArbitrate() {
   //load at LSQ head gets to go first
   memq_t::index<by_queue>::type::iterator iter, end;
-  boost::tie(iter, end) = theCore.theMemQueue.get<by_queue>().equal_range( boost::make_tuple( kLSQ ) );
+  std::tie(iter, end) = theCore.theMemQueue.get<by_queue>().equal_range( boost::make_tuple( kLSQ ) );
   while (iter != end) {
     if (iter->status() == kComplete) {
       ++iter;
@@ -47,7 +47,7 @@ void MemoryPortArbiter::inOrderArbitrate() {
   }
 
   //Now try SB head
-  boost::tie(iter, end) = theCore.theMemQueue.get<by_queue>().equal_range( boost::make_tuple( kSB ) );
+  std::tie(iter, end) = theCore.theMemQueue.get<by_queue>().equal_range( boost::make_tuple( kSB ) );
   if (iter != end) {
     DBG_Assert(iter->theOperation == kStore);
     if ( theCore.hasMemPort() && iter->status() == kAwaitingPort ) {
@@ -414,7 +414,7 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
   }
 
   bool ignored;
-  boost::tie(lsq_entry->theMSHR, ignored) = theMSHRs.insert( std::make_pair(mshr.thePaddr, mshr) );
+  std::tie(lsq_entry->theMSHR, ignored) = theMSHRs.insert( std::make_pair(mshr.thePaddr, mshr) );
   theMemoryPorts.push_back( op);
   DBG_( Verb, ( << theName << " " << *lsq_entry << " issuing operation " << *op) );
 }
@@ -622,7 +622,7 @@ void CoreImpl::issueStorePrefetch( boost::intrusive_ptr<Instruction> anInstructi
   }
 
   bool is_new = false;
-  boost::tie(iter, is_new) = theOutstandingStorePrefetches.insert( std::make_pair( aligned,  std::set<boost::intrusive_ptr<Instruction> >() ));
+  std::tie(iter, is_new) = theOutstandingStorePrefetches.insert( std::make_pair( aligned,  std::set<boost::intrusive_ptr<Instruction> >() ));
   iter->second.insert(anInstruction);
   if ( ! is_new) {
     DBG_( Verb, ( << theName << " Store prefetch request by " << *lsq_entry << " ignored because prefetch already outstanding." ) );
@@ -706,7 +706,7 @@ void CoreImpl::resolveCheckpoint() {
       DBG_(Verb, ( << theName << " Resolving speculation: " << theMemQueue.front()) );
       theMemQueue.front().theInstruction->resolveSpeculation();
       if (theMemQueue.front().isAtomic()) {
-        theMemQueue.modify( theMemQueue.begin(), ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
+        theMemQueue.modify( theMemQueue.begin(), [](auto& x){ x.theQueue = kSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
       } else if (theMemQueue.front().isLoad()) {
         eraseLSQ( theMemQueue.front().theInstruction );
       }

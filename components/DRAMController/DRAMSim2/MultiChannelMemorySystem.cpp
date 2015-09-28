@@ -190,7 +190,7 @@ void MultiChannelMemorySystem::InitOutputFiles(string traceFilename)
 	{
 		string basefilename = deviceIniFilename.substr(deviceIniFilename.find_last_of("/")+1);
 		string verify_filename =  "sim_out_"+basefilename;
-		if (sim_description != NULL)
+		if (sim_description != nullptr)
 		{
 			verify_filename += "."+sim_description_str;
 		}
@@ -232,7 +232,7 @@ void MultiChannelMemorySystem::InitOutputFiles(string traceFilename)
 			{
 				traceFilename = traceFilename.substr(lastSlash+1,traceFilename.length()-lastSlash-1);
 			}
-			if (sim_description != NULL)
+			if (sim_description != nullptr)
 			{
 				traceFilename += "."+sim_description_str;
 			}
@@ -298,7 +298,7 @@ void MultiChannelMemorySystem::InitOutputFiles(string traceFilename)
 	}
 #ifdef LOG_OUTPUT
 	string dramsimLogFilename("dramsim");
-	if (sim_description != NULL)
+	if (sim_description != nullptr)
 	{
 		dramsimLogFilename += "."+sim_description_str; 
 	}

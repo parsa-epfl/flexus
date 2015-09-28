@@ -11,7 +11,7 @@ namespace nNetShim
     messagesWaiting ( 0 )
   {
     fromNodePort = new ChannelOutputPort ( INT_MAX );
-    toNodePort   = new ChannelInputPort ( 1, 1, NULL, this );
+    toNodePort   = new ChannelInputPort ( 1, 1, nullptr, this );
   }
 
   bool NetNode::drive ( void )

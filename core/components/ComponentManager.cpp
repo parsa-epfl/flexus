@@ -4,8 +4,6 @@
 
 #include <boost/function.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
 
 #include <core/component.hpp>
 #include <core/debug/debug.hpp>
@@ -80,20 +78,26 @@ public:
 
   bool isQuiesced() const {
     bool quiesced = true;
-    std::for_each
-    ( theComponents.begin()
-      , theComponents.end()
-      , ll::var(quiesced) = ll::var(quiesced) && ll::bind( &ComponentInterface::isQuiesced, ll::_1 )
-    );
+    for(auto* aComponent: theComponents){
+      quiesced = quiesced && aComponent->isQuiesced();
+    }
+    // std::for_each
+    // ( theComponents.begin()
+    //   , theComponents.end()
+    //   , ll::var(quiesced) = ll::var(quiesced) && ll::bind( &ComponentInterface::isQuiesced, ll::_1 )
+    // );
     return quiesced;
   }
 
   void doSave(std::string const & aDirectory) const {
-    std::for_each
-    ( theComponents.begin()
-      , theComponents.end()
-      , ll::bind( &ComponentInterface::saveState, ll::_1, aDirectory )
-    );
+    for(auto* aComponent: theComponents){
+      aComponent->saveState(aDirectory);
+    }
+    // std::for_each
+    // ( theComponents.begin()
+    //   , theComponents.end()
+    //   , ll::bind( &ComponentInterface::saveState, ll::_1, aDirectory )
+    // );
   }
 
   void doLoad(std::string const & aDirectory) {

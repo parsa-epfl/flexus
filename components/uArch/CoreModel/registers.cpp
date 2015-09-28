@@ -95,7 +95,7 @@ std::pair<mapped_reg, mapped_reg> CoreImpl::create( unmapped_reg aReg ) {
   unmapped_reg reg = theWindowMap.rotate(aReg);
   std::pair<mapped_reg, mapped_reg> mapped;
   mapped.first.theType = mapped.second.theType = aReg.theType;
-  boost::tie( mapped.first.theIndex, mapped.second.theIndex) = mapTable(reg.theType).create(reg.theIndex);
+  std::tie( mapped.first.theIndex, mapped.second.theIndex) = mapTable(reg.theType).create(reg.theIndex);
   mapRegister(mapped.first);
 
   eResourceStatus status = theRegisters.status( mapped.second ) ;

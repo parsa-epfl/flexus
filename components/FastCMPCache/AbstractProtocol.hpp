@@ -7,8 +7,6 @@
 #include <components/FastCMPCache/CoherenceStates.hpp>
 #include <components/FastCMPCache/CacheStats.hpp>
 
-#include <ext/hash_map>
-
 #include <core/types.hpp>
 
 namespace nFastCMPCache {

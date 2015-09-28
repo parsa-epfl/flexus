@@ -328,7 +328,7 @@ public:
 
     // If data come from a message, the pointer should be non-null
     // NOTE: in Kraken we do not pass data around. Reintroduce the assert after data support is provided.
-    // DBG_Assert((data_src != DATA_FROM_MSG) || (pMsgData != NULL));
+    // DBG_Assert((data_src != DATA_FROM_MSG) || (pMsgData != nullptr));
 
     // create a memory message
     intrusive_ptr<MemoryMessage> msg;
@@ -472,7 +472,7 @@ public:
         const tMemOpDest dest,
         const tAddress   address,
         const tDirEntry  dir_entry,
-        const void   *   pMsgData = NULL) {
+        const void   *   pMsgData = nullptr) {
     DBG_(Iface, ( << theProtocolEngine->engineName()
                   << " Memory Operation " << operation
                   << " addr=0x" << &std::hex << (uint64_t) address
@@ -481,7 +481,7 @@ public:
                   << " ptr_data=0x" << &std::hex << pMsgData));
 
     // If data come from a message, the pointer should be non-null
-    // DBG_Assert(((dest != DATA_FROM_MESSAGE) && (dest != DIRECTORY_AND_DATA_FROM_MESSAGE)) || (pMsgData != NULL));
+    // DBG_Assert(((dest != DATA_FROM_MESSAGE) && (dest != DIRECTORY_AND_DATA_FROM_MESSAGE)) || (pMsgData != nullptr));
 
     if (dest == DIRECTORY || dest == DIRECTORY_AND_DATA_FROM_MESSAGE) {
       if (operation == READ) {

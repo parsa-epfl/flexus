@@ -129,7 +129,7 @@ void InclusiveMOESIPolicy::doRequest( ProcessEntry_p process, bool has_maf ) {
   }
   // No MAF entry, what about the evict buffer
   const AbstractEBEntry<State>* eb = theEvictBuffer->find(address);
-  if (eb != NULL) {
+  if (eb != nullptr) {
     if (eb->invalidatesPending()) {
       // We've sent out back invalidates to evict this block
       // Wait until they get back before processing the new request
@@ -157,7 +157,7 @@ void InclusiveMOESIPolicy::doRequest( ProcessEntry_p process, bool has_maf ) {
   // If we didn't find it in the directory
   if (!lookup->found()) {
     // We already did an EB lookup, check if we found it
-    if (eb != NULL) {
+    if (eb != nullptr) {
       // Move the entry from the EB into the directory
       if (!allocateDirectoryEntry(lookup, address, eb->state())) {
         // if this fails then we have a set conflict, so insert the MAF and return
@@ -444,7 +444,7 @@ void InclusiveMOESIPolicy::handleSnoop( ProcessEntry_p process ) {
   // Now look for any EB entries
   const AbstractEBEntry<State>* eb = theEvictBuffer->find(req->address());
 
-  if (eb != NULL) {
+  if (eb != nullptr) {
     eb->state().removeSharer( source );
 
     bool wake_maf = false;
@@ -499,7 +499,7 @@ void InclusiveMOESIPolicy::handleReply( ProcessEntry_p process ) {
     // InvalidateAck+InvUpdateAck imply there is an outstanding Eviction
 
     const AbstractEBEntry<State>* eb = theEvictBuffer->find(req->address());
-    DBG_Assert(eb != NULL);
+    DBG_Assert(eb != nullptr);
 
     eb->state().removeSharer( process->transport()[DestinationTag]->other );
 
@@ -685,9 +685,9 @@ MemoryTransport InclusiveMOESIPolicy::getIdleWorkTransport() {
   MemoryTransport transport;
 
   const AbstractEBEntry<State>* eb = theEvictBuffer->oldestRequiringInvalidates();
-  //DBG_Assert(eb != NULL, ( << "Called getIdleWorkTransport while no IdleWork outstanding!"));
+  //DBG_Assert(eb != nullptr, ( << "Called getIdleWorkTransport while no IdleWork outstanding!"));
 
-  if (eb == NULL) {
+  if (eb == nullptr) {
     transport.set(MemoryMessageTag, MemoryMessage_p(new MemoryMessage(MemoryMessage::NumMemoryMessageTypes)));
     return transport;
   }

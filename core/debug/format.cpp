@@ -2,18 +2,10 @@
 #include <iostream>
 #include <algorithm>
 
-// #include <boost/lambda/bind.hpp>
-// #include <boost/lambda/construct.hpp>
-
 #include <core/debug/format.hpp>
 
 namespace Flexus {
 namespace Dbg {
-
-// using boost::lambda::_1;
-// using boost::lambda::bind;
-// using boost::lambda::var;
-// using boost::lambda::delete_ptr;
 
 void translateEscapes(std::string & aString) {
   std::string clean_value(aString);
@@ -93,8 +85,7 @@ void FieldFormat::printConfiguration(std::ostream & anOstream, std::string const
 void CompoundFormat::destruct() {
   for(auto* aFormat: theFormats){
     delete aFormat;
-  }
-  //std::for_each(theFormats.begin(), theFormats.end(), boost::lambda::delete_ptr()); //Clean up all pointers owned by theFormats
+  } //Clean up all pointers owned by theFormats
 }
 
 //Assumes ownership of the passed in Format
@@ -106,14 +97,12 @@ void CompoundFormat::printConfiguration(std::ostream & anOstream, std::string co
   for(auto* aFormat: theFormats){
     aFormat->printConfiguration(anOstream, anIndent);
   }
-  //std::for_each(theFormats.begin(), theFormats.end(), bind(&Format::printConfiguration, _1, var(anOstream), anIndent) );
 }
 
 void CompoundFormat::format(std::ostream & anOstream, Entry const & anEntry) const {
   for(auto* aFormat: theFormats){
     aFormat->format(anOstream, anEntry);
   }
-  //std::for_each(theFormats.begin(), theFormats.end(), bind(&Format::format, _1, var(anOstream), anEntry));
 }
 
 } //Dbg

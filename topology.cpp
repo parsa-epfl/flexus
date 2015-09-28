@@ -135,13 +135,13 @@ int main ( int argc, char ** argv ) {
 bool processArguments ( int argc, char ** argv ) {
 
   static struct option long_options[] = {
-    { "torus",		0,	NULL,	't'},
-    { "mesh",		0,	NULL,	'm'},
-    { "crossbar",       0,      NULL,   'c'},
-    { "adaptive",	0,	NULL, 	'a'},
-    { "width",		1,	NULL,	'w'},
-    { "nodes",		1,	NULL,	'n'},
-    { "file",		1,	NULL,	'f'}
+    { "torus",		0,	nullptr,	't'},
+    { "mesh",		0,	nullptr,	'm'},
+    { "crossbar",       0,      nullptr,   'c'},
+    { "adaptive",	0,	nullptr, 	'a'},
+    { "width",		1,	nullptr,	'w'},
+    { "nodes",		1,	nullptr,	'n'},
+    { "file",		1,	nullptr,	'f'}
   };
   int c, index;
   while ( (c = getopt_long(argc, argv, "af:chmn:tw:", long_options, &index)) >= 0) {

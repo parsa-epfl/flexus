@@ -7,9 +7,8 @@
 #include <components/FastCMPCache/SharingVector.hpp>
 #include <components/FastCMPCache/AbstractProtocol.hpp>
 #include <components/FastCMPCache/BlockDirectoryEntry.hpp>
-#include <ext/hash_map>
 
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 #include <list>
 
@@ -86,7 +85,7 @@ protected:
   virtual void addSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     //StandardDirectoryEntry *my_entry = dynamic_cast<StandardDirectoryEntry*>(dir_entry);
     StandardDirectoryEntry * my_entry(&(dynamic_cast<BlockEntryWrapper *>(dir_entry.get())->block));
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       my_entry = findOrCreateEntry(address);
     }
     my_entry->addSharer(index);
@@ -95,7 +94,7 @@ protected:
   virtual void addExclusiveSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     //StandardDirectoryEntry *my_entry = dynamic_cast<StandardDirectoryEntry*>(dir_entry);
     StandardDirectoryEntry * my_entry(&(dynamic_cast<BlockEntryWrapper *>(dir_entry.get())->block));
-    DBG_Assert(my_entry != NULL);
+    DBG_Assert(my_entry != nullptr);
     my_entry->addSharer(index);
     my_entry->makeExclusive(index);
   }
@@ -108,7 +107,7 @@ protected:
   virtual void removeSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     //StandardDirectoryEntry *my_entry = dynamic_cast<StandardDirectoryEntry*>(dir_entry);
     StandardDirectoryEntry * my_entry(&(dynamic_cast<BlockEntryWrapper *>(dir_entry.get())->block));
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     my_entry->removeSharer(index);
@@ -117,7 +116,7 @@ protected:
   virtual void makeSharerExclusive(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     //StandardDirectoryEntry *my_entry = dynamic_cast<StandardDirectoryEntry*>(dir_entry);
     StandardDirectoryEntry * my_entry(&(dynamic_cast<BlockEntryWrapper *>(dir_entry.get())->block));
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     // Make it exclusive
@@ -162,27 +161,27 @@ public:
     // Also need to change replacement policy
   }
 
-  virtual boost::tuple<SharingVector, SharingState, AbstractEntry_p>
+  virtual std::tuple<SharingVector, SharingState, AbstractEntry_p>
   lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<boost::function<void(void)> > &xtra_actions) {
 
     StandardDirectoryEntry * entry = findOrCreateEntry(address, !MemoryMessage::isEvictType(req_type));
-    DBG_Assert(entry != NULL);
+    DBG_Assert(entry != nullptr);
     if (entry->tag() != address) {
       // We're evicting an existing entry
-      xtra_actions.push_back(boost::lambda::bind(theInvalidateAction, entry->tag(), entry->sharers()));
+      xtra_actions.push_back([&entry, this](){ theInvalidateAction(entry->tag(), entry->sharers());});
       entry->reset(address);
     }
 
     BlockEntryWrapper_p wrapper(new BlockEntryWrapper(*entry));
 
-    return boost::tie(entry->sharers(), entry->state(), wrapper);
+    return std::tie(entry->sharers(), entry->state(), wrapper);
   }
 
-  virtual boost::tuple<SharingVector, SharingState, AbstractEntry_p, bool>
+  virtual std::tuple<SharingVector, SharingState, AbstractEntry_p, bool>
   snoopLookup(int32_t index, PhysicalMemoryAddress address, MMType req_type) {
 
     StandardDirectoryEntry * entry = findOrCreateEntry(address, false);
-    DBG_Assert(entry != NULL);
+    DBG_Assert(entry != nullptr);
 
     bool valid = true;
     if (entry->tag() != address) {
@@ -190,12 +189,12 @@ public:
       SharingState state = ZeroSharers;
       BlockEntryWrapper_p wrapper;
       valid = false;
-      return boost::tie(sharers, state, wrapper, valid);
+      return std::tie(sharers, state, wrapper, valid);
     }
 
     BlockEntryWrapper_p wrapper(new BlockEntryWrapper(*entry));
 
-    return boost::tie(entry->sharers(), entry->state(), wrapper, valid);
+    return std::tie(entry->sharers(), entry->state(), wrapper, valid);
   }
   void saveState( std::ostream & s, const std::string & aDirName ) {
     boost::archive::binary_oarchive oa(s);
@@ -246,9 +245,9 @@ public:
     std::list<std::pair<std::string, std::string> >::iterator iter = args.begin();
     for (; iter != args.end(); iter++) {
       if (strcasecmp(iter->first.c_str(), "sets") == 0) {
-        directory->theNumSets = strtol(iter->second.c_str(), NULL, 0);
+        directory->theNumSets = strtol(iter->second.c_str(), nullptr, 0);
       } else if (strcasecmp(iter->first.c_str(), "assoc") == 0) {
-        directory->theAssociativity = strtol(iter->second.c_str(), NULL, 0);
+        directory->theAssociativity = strtol(iter->second.c_str(), nullptr, 0);
       } else if (strcasecmp(iter->first.c_str(), "repl") == 0) {
         if (strcasecmp(iter->second.c_str(), "lru") == 0) {
           directory->theReplPolicy = LRURepl;

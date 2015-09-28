@@ -29,9 +29,6 @@
 #endif
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-
-#include <boost/lambda/lambda.hpp>
-
 //FIXME don't do this need to make sure CONFIG_QEMU is defined elsewhere
 #ifndef CONFIG_QEMU
 #define CONFIG_QEMU//should be set elsewhere
@@ -365,7 +362,9 @@ void FlexusImpl::watchdogCheck() {
 }
 
 void FlexusImpl::watchdogIncrement() {
-  std::for_each(theWatchdogCounts.begin(), theWatchdogCounts.end(), boost::lambda::_1 += 255 );
+  for(auto aWatchdogCount: theWatchdogCounts){
+    aWatchdogCount += 255;
+  }
 }
 
 void FlexusImpl::watchdogReset(uint32_t anIndex) {

@@ -9,7 +9,6 @@
 #include <iomanip>
 #include <cmath>
 #include <numeric>
-#include <boost/regex.hpp>
 #include <boost/function.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/map.hpp>
@@ -17,9 +16,6 @@
 #include <boost/serialization/set.hpp>
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/export.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
-namespace ll = boost::lambda;
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <core/boost_extensions/lexical_cast.hpp>
 

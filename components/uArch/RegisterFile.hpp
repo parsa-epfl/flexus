@@ -5,11 +5,8 @@
 #include <list>
 #include <vector>
 
-#include <boost/lambda/lambda.hpp>
 
 #include "uArchInterfaces.hpp"
-
-namespace ll = boost::lambda;
 
 namespace nuArch {
 
@@ -40,23 +37,34 @@ public:
   void reset() {
     FLEXUS_PROFILE();
     for (uint32_t i = 0; i < theDependances.size(); ++i) {
-      std::for_each
-      ( theDependances[i].begin()
-        , theDependances[i].end()
-        , ll::bind( &std::list< InstructionDependance  > ::clear, ll::_1 )
-      );
+      for(auto& aDependance: theDependances[i]){
+        aDependance.clear();
+      }
+      // std::for_each
+      // ( theDependances[i].begin()
+      //   , theDependances[i].end()
+      //   , ll::bind( &std::list< InstructionDependance  > ::clear, ll::_1 )
+      // );
 
-      std::for_each
-      ( theStatus[i].begin()
-        , theStatus[i].end()
-        , ll::_1 = kUnmapped
-      );
+      for(auto& aStatus: theStatus[i]){
+        aStatus = kUnmapped;
+      }
 
-      std::for_each
-      ( theRegs[i].begin()
-        , theRegs[i].end()
-        , ll::_1 = 0ULL
-      );
+      // std::for_each
+      // ( theStatus[i].begin()
+      //   , theStatus[i].end()
+      //   , ll::_1 = kUnmapped
+      // );
+
+      for(auto& aReg: theRegs[i]){
+        aReg = 0ULL;
+      }
+      
+      // std::for_each
+      // ( theRegs[i].begin()
+      //   , theRegs[i].end()
+      //   , ll::_1 = 0ULL
+      // );
     }
   }
 

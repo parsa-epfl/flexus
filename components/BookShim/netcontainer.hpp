@@ -74,7 +74,7 @@ namespace nNetShim
 
     bool networkEmpty ( void ) const
     {
-      return ( mslHead == NULL );
+      return ( mslHead == nullptr );
     }
 
     int32_t getActiveMessages ( void ) const

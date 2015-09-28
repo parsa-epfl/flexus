@@ -198,12 +198,12 @@ static ConfigMap configMap[] =
 	DEFINE_BOOL_PARAM(DEBUG_POWER,SYS_PARAM),
 	DEFINE_BOOL_PARAM(VIS_FILE_OUTPUT,SYS_PARAM),
 	DEFINE_BOOL_PARAM(VERIFICATION_OUTPUT,SYS_PARAM),
-	{"", NULL, UINT, SYS_PARAM, false} // tracer value to signify end of list; if you delete it, epic fail will result
+	{"", nullptr, UINT, SYS_PARAM, false} // tracer value to signify end of list; if you delete it, epic fail will result
 };
 
 void IniReader::WriteParams(std::ofstream &visDataOut, paramType type)
 {
-	for (size_t i=0; configMap[i].variablePtr != NULL; i++)
+	for (size_t i=0; configMap[i].variablePtr != nullptr; i++)
 	{
 		if (configMap[i].parameterType == type)
 		{
@@ -261,7 +261,7 @@ void IniReader::SetKey(string key, string valueString, bool isSystemParam, size_
 	uint64_t int64Value;
 	float floatValue;
 
-	for (i=0; configMap[i].variablePtr != NULL; i++)
+	for (i=0; configMap[i].variablePtr != nullptr; i++)
 	{
 		istringstream iss(valueString);
 		// match up the string in the config map with the key we parsed
@@ -340,7 +340,7 @@ void IniReader::SetKey(string key, string valueString, bool isSystemParam, size_
 		}
 	}
 
-	if (configMap[i].variablePtr == NULL)
+	if (configMap[i].variablePtr == nullptr)
 	{
 		DEBUG("WARNING: UNKNOWN KEY '"<<key<<"' IN INI FILE");
 	}
@@ -438,7 +438,7 @@ void IniReader::OverrideKeys(const OverrideMap *map)
 bool IniReader::CheckIfAllSet()
 {
 	// check to make sure all parameters that we exepected were set
-	for (size_t i=0; configMap[i].variablePtr != NULL; i++)
+	for (size_t i=0; configMap[i].variablePtr != nullptr; i++)
 	{
 		if (!configMap[i].wasSet)
 		{

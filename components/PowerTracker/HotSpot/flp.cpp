@@ -1219,7 +1219,7 @@ void print_flp (flp_t * flp) {
 }
 
 /* print the statistics about this floorplan.
- * note that connects_file is NULL if wire
+ * note that connects_file is nullptr if wire
  * information is already populated
  */
 void print_flp_stats(flp_t * flp, RC_model_t * model,
@@ -1230,7 +1230,7 @@ void print_flp_stats(flp_t * flp, RC_model_t * model,
   double wire_metric;
   double peak, avg;		/* temperature	*/
   double * power, *temp;
-  FILE * fp = NULL;
+  FILE * fp = nullptr;
   char str[STR_SIZE];
 
   if (connects_file) {

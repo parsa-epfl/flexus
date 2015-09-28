@@ -337,7 +337,7 @@ struct ValueTracker {
 
       tracker::iterator iter;
       bool ignored;
-      boost::tie(iter, ignored) = theTracker.insert( std::make_pair ( aligned, ValueTrack( aCPU, updated_value, simics_value) ) );
+      std::tie(iter, ignored) = theTracker.insert( std::make_pair ( aligned, ValueTrack( aCPU, updated_value, simics_value) ) );
       //When the store is completed, Simics will reflect the value visible to
       //this processor
       cpu->writePAddr( aligned, 8, updated_value );

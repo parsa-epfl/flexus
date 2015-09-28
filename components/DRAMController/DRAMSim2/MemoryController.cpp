@@ -47,7 +47,7 @@ MemoryController::MemoryController(MemorySystem *parent, CSVWriter &csvOut_, ost
 		dramsim_log(dramsim_log_),
 		bankStates(NUM_RANKS, vector<BankState>(NUM_BANKS, dramsim_log)),
 		commandQueue(bankStates, dramsim_log_),
-		poppedBusPacket(NULL),
+		poppedBusPacket(nullptr),
 		csvOut(csvOut_),
 		totalTransactions(0),
 		refreshRank(0)
@@ -57,8 +57,8 @@ MemoryController::MemoryController(MemorySystem *parent, CSVWriter &csvOut_, ost
 
 
 	//bus related fields
-	outgoingCmdPacket = NULL;
-	outgoingDataPacket = NULL;
+	outgoingCmdPacket = nullptr;
+	outgoingDataPacket = nullptr;
 	dataCyclesLeft = 0;
 	cmdCyclesLeft = 0;
 
@@ -120,7 +120,7 @@ void MemoryController::receiveFromBus(BusPacket *bpacket)
 //sends read data back to the CPU
 void MemoryController::returnReadData(const Transaction *trans)
 {
-	if (parentMemorySystem->ReturnReadData!=NULL)
+	if (parentMemorySystem->ReturnReadData!=nullptr)
 	{
 		(*parentMemorySystem->ReturnReadData)(parentMemorySystem->systemID, trans->address, currentClockCycle);
 	}
@@ -175,30 +175,30 @@ void MemoryController::update()
 
 
 	//check for outgoing command packets and handle countdowns
-	if (outgoingCmdPacket != NULL)
+	if (outgoingCmdPacket != nullptr)
 	{
 		cmdCyclesLeft--;
 		if (cmdCyclesLeft == 0) //packet is ready to be received by rank
 		{
 			(*ranks)[outgoingCmdPacket->rank]->receiveFromBus(outgoingCmdPacket);
-			outgoingCmdPacket = NULL;
+			outgoingCmdPacket = nullptr;
 		}
 	}
 
 	//check for outgoing data packets and handle countdowns
-	if (outgoingDataPacket != NULL)
+	if (outgoingDataPacket != nullptr)
 	{
 		dataCyclesLeft--;
 		if (dataCyclesLeft == 0)
 		{
 			//inform upper levels that a write is done
-			if (parentMemorySystem->WriteDataDone!=NULL)
+			if (parentMemorySystem->WriteDataDone!=nullptr)
 			{
 				(*parentMemorySystem->WriteDataDone)(parentMemorySystem->systemID,outgoingDataPacket->physicalAddress, currentClockCycle);
 			}
 
 			(*ranks)[outgoingDataPacket->rank]->receiveFromBus(outgoingDataPacket);
-			outgoingDataPacket=NULL;
+			outgoingDataPacket=nullptr;
 		}
 	}
 
@@ -225,7 +225,7 @@ void MemoryController::update()
 			}
 
 			// queue up the packet to be sent
-			if (outgoingDataPacket != NULL)
+			if (outgoingDataPacket != nullptr)
 			{
 				ERROR("== Error - Data Bus Collision");
 				exit(-1);
@@ -462,7 +462,7 @@ void MemoryController::update()
 		}
 
 		//check for collision on bus
-		if (outgoingCmdPacket != NULL)
+		if (outgoingCmdPacket != nullptr)
 		{
 			ERROR("== Error - Command Bus Collision");
 			exit(-1);
@@ -852,7 +852,7 @@ void MemoryController::printStats(bool finalStats)
 		actprePower[r] = ((double)actpreEnergy[r] / (double)(cyclesElapsed)) * Vdd / 1000.0;
 		averagePower[r] = ((backgroundEnergy[r] + burstEnergy[r] + refreshEnergy[r] + actpreEnergy[r]) / (double)cyclesElapsed) * Vdd / 1000.0;
 
-		if ((*parentMemorySystem->ReportPower)!=NULL)
+		if ((*parentMemorySystem->ReportPower)!=nullptr)
 		{
 			(*parentMemorySystem->ReportPower)(backgroundPower[r],burstPower[r],refreshPower[r],actprePower[r]);
 		}

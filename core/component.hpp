@@ -1,11 +1,8 @@
 #ifndef FLEXUS_COMPONENT_HPP_INCLUDED
 #define FLEXUS_COMPONENT_HPP_INCLUDED
 
-#include <stdint.h>
+#include <cstdint>
 #include <boost/function.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
-namespace ll = boost::lambda;
 
 #include <core/configuration_macros.hpp>
 #include <core/interface_macros.hpp>
@@ -214,7 +211,7 @@ struct ComponentInstance  {
     , theConfiguration(aConfiguration)
     , theScaleWithSystem(aScaleWithSystem)
     , theMultiply(aMultiply) {
-    ComponentManager::getComponentManager().registerHandle( ll::bind( & ComponentInstance::instantiator, this, ll::_1 ) );
+    ComponentManager::getComponentManager().registerHandle( [this](auto x){return this->instantiator(x);});
   }
 
   void instantiator(Flexus::Core::index_t aSystemWidth) {

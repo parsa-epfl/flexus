@@ -17,7 +17,6 @@
 
 #include <core/performance/profile.hpp>
 
-#include <boost/bind.hpp>
 #include <fstream>
 #include <string>
 
@@ -190,7 +189,7 @@ public:
                             );
     }
 
-    Flexus::Stat::getStatManager()->addFinalizer(ll::bind( &nFastCache::FastCacheComponent::finalize, this ));
+    Flexus::Stat::getStatManager()->addFinalizer([this](){ return this->finalize(); });//ll::bind( &nFastCache::FastCacheComponent::finalize, this ));
 
   }
 
@@ -252,7 +251,7 @@ public:
 
     DBG_( Iface, Addr(aMessage.address()) ( << "Done, reply: " << aMessage ));
     DBG_( Iface, Addr(aMessage.address()) ( << "Request Left Lookup tagset: " << std::hex << lookup->address() << " in state " << state2String(lookup->getState()) << std::dec ));
-    if (snp_lookup != NULL) {
+    if (snp_lookup != nullptr) {
       DBG_( Iface, Addr(aMessage.address()) ( << "Request Left Snoop Lookup tagset: " << std::hex << snp_lookup->address() << " in state " << state2String(snp_lookup->getState()) << std::dec ));
     }
   }

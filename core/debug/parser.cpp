@@ -33,8 +33,8 @@ int32_t s_inv = SevInv;
 //The parse context.  The parser has one context object.  This object lets the parser accumulate
 //parser pieces of the debug configuration and then hand them off to the debugger.
 struct Context {
-  std::auto_ptr<CompoundFilter>  theFilters;
-  std::auto_ptr<CompoundAction>  theActions;
+  std::unique_ptr<CompoundFilter>  theFilters;
+  std::unique_ptr<CompoundAction>  theActions;
   std::string theTargetName;
 public:
   Context()
@@ -53,7 +53,7 @@ public:
   }
 
   void addAction(Action * anAction) { //Ownership of anAction passed in
-    theActions->add(std::auto_ptr<Action>(anAction)); //Onwership of anAction passed to theActions
+    theActions->add(std::unique_ptr<Action>(anAction)); //Onwership of anAction passed to theActions
   }
 
   void addFilter(Filter * aFilter) {  //Ownership of aFilter passed in

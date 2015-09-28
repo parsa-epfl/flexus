@@ -92,8 +92,8 @@ public:
     : theName(options.name)
     , theCore(CoreModel::construct(
                 options
-                , ll::bind( &microArchImpl::translate, this, ll::_1, ll::_2 )
-                , ll::bind( &microArchImpl::advance, this, ll::_1 )
+                , [this](auto x, auto y){ return this->translate(x,y); }
+                , [this](auto x){ return this->advance(x); }
                 , _squash
                 , _redirect
                 , _changeState
@@ -836,7 +836,7 @@ private:
 
 };
 
-boost::shared_ptr<microArch> microArch::construct( uArchOptions_t options
+std::shared_ptr<microArch> microArch::construct( uArchOptions_t options
     , boost::function< void(eSquashCause) > squash
     , boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress) > redirect
     , boost::function< void(int, int) > changeState
@@ -844,14 +844,13 @@ boost::shared_ptr<microArch> microArch::construct( uArchOptions_t options
     , boost::function< void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> ) > notifyTMS /* CMU-ONLY */
     , boost::function< void( bool )> signalStoreForwardingHit
                                                  ) {
-  return boost::shared_ptr<microArch>(new microArchImpl( options
+  return std::make_shared<microArchImpl>(options
                                       , squash
                                       , redirect
                                       , changeState
                                       , feedback
                                       , notifyTMS /* CMU-ONLY */
                                       , signalStoreForwardingHit
-                                                       )
                                      );
 }
 

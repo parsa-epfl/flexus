@@ -314,8 +314,8 @@ int SIM_crossbar_init(SIM_crossbar_t *crsbar, int model, u_int n_in, u_int n_out
 
 				ctr_length = n_in * data_width * CrsbarCellWidth * (n_out / 2) / 2;
 
-				crsbar->e_chg_out = SIM_crossbar_out_cap(0, degree, 0, connect_type, trans_type, NULL) * EnergyFactor;
-				crsbar->e_chg_in = SIM_crossbar_in_cap(in_wire_cap, n_out, 0, connect_type, trans_type, NULL) * EnergyFactor;
+				crsbar->e_chg_out = SIM_crossbar_out_cap(0, degree, 0, connect_type, trans_type, nullptr) * EnergyFactor;
+				crsbar->e_chg_in = SIM_crossbar_in_cap(in_wire_cap, n_out, 0, connect_type, trans_type, nullptr) * EnergyFactor;
 				crsbar->e_chg_int = SIM_crossbar_int_cap(degree, connect_type, trans_type) * EnergyFactor;
 
 				/* redundant field */

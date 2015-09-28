@@ -20,7 +20,7 @@ TemperatureTracker::~TemperatureTracker() {
 void TemperatureTracker::writeSteadyStateTemperatures() {
   int32_t i;
 
-  if (enabled && strcmp(model->config->steady_file, NULLFILE)) {
+  if (enabled && strcmp(model->config->steady_file, nullptrFILE)) {
     // Find the average per cycle power dissipated
     // Avoid a divide by zero if the user exits the simulator right after starting it
     cycles = std::max(cycles, 1ul);
@@ -68,7 +68,7 @@ void TemperatureTracker::initialize(thermal_config_t & config, const std::string
   avg_power = hotspot_vector(model);
 
   // Set up initial instantaneous temperatures
-  if (strcmp(model->config->init_file, NULLFILE)) {
+  if (strcmp(model->config->init_file, nullptrFILE)) {
     if (!model->config->dtm_used) { // initial T = steady T for no DTM
       read_temp(model, hs_temp, model->config->init_file, FALSE);
     } else { // Initial T = clipped steady T with DTM

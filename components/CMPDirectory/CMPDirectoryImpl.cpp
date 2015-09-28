@@ -29,7 +29,7 @@ class FLEXUS_COMPONENT(CMPDirectory) {
 
 private:
 
-  std::auto_ptr<DirectoryController> theController;
+  std::unique_ptr<DirectoryController> theController;
 
 public:
 

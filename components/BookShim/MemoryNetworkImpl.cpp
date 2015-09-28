@@ -190,13 +190,13 @@ class FLEXUS_COMPONENT(MemoryNetwork) {
       // In particular, checking if a node will accept a message (.available()) and
       // final delivery of a message must be function objects for now.
       if (! theAvail) {
-        theAvail =
-          ll::bind( &MemoryNetworkComponent::isNodeAvailable,
-                    this, ll::_1,ll::_2);
+        theAvail = [this](auto x, auto y){ return this->isNodeAvailable(x,y); };
+          // ll::bind( &MemoryNetworkComponent::isNodeAvailable,
+          //           this, ll::_1,ll::_2);
 
-        theDeliver =
-          ll::bind ( &MemoryNetworkComponent::deliverMessage,
-                     this, ll::_1 );
+        theDeliver = [this](auto x){ return this->deliverMessage(x); };
+          // ll::bind ( &MemoryNetworkComponent::deliverMessage,
+          //            this, ll::_1 );
 	#ifndef UseBook
         nc->setCallbacks ( theAvail, theDeliver );
 	#endif
@@ -272,7 +272,7 @@ bool BookToFlex_msg()
 			msg->flexusInFastMode=FN.trafficManager->Book2Flex[0][i].flexusInFastMode;// = Flexus::Core::theFlexus->isFastMode();
 			msg->hopCount=FN.trafficManager->Book2Flex[0][i].hopCount      ;//  = -1;  // Note, the local switch also gets counted, so we start at -1
 			msg->startTS=FN.trafficManager->Book2Flex[0][i].startTS       ;//  = Flexus::Core::theFlexus->cycleCount();
-			msg->myList= NULL;
+			msg->myList= nullptr;
 			msg->serial=FN.trafficManager->Book2Flex[0][i].serial;
 
 		        	
@@ -432,7 +432,7 @@ int sent_packet_no;//added by mehdi
     msg->flexusInFastMode = Flexus::Core::theFlexus->isFastMode();
     msg->hopCount        = -1;  // Note, the local switch also gets counted, so we start at -1
     msg->startTS         = Flexus::Core::theFlexus->cycleCount();
-    msg->myList          = NULL;
+    msg->myList          = nullptr;
 
     if (transport[TransactionTrackerTag]) {
       std::string cause( boost::padded_string_cast<3,'0'>(transport[NetworkMessageTag]->src) + " -> " + boost::padded_string_cast<3,'0'>(transport[NetworkMessageTag]->dest) );
@@ -474,7 +474,7 @@ int sent_packet_no;//added by mehdi
 	BP2->flexusInFastMode=msg->flexusInFastMode;// = Flexus::Core::theFlexus->isFastMode();
 	BP2->hopCount=msg->hopCount      ;//  = -1;  // Note, the local switch also gets counted, so we start at -1
 	BP2->startTS=msg->startTS       ;//  = Flexus::Core::theFlexus->cycleCount();
-	//BP2->myList=msg->myList        ;//  = NULL;
+	//BP2->myList=msg->myList        ;//  = nullptr;
 	BP2->serial=msg->serial;
 	
 	

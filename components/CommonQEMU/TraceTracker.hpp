@@ -6,7 +6,7 @@
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 #include <core/target.hpp>
 #include <core/types.hpp>
 #include <core/stats.hpp>

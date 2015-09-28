@@ -159,7 +159,7 @@ public:
 
   virtual const AbstractDirEBEntry<_State> * find(MemoryAddress anAddress) {
     iterator ret = theDirEvictBuffer.find(anAddress);
-    return ((ret != theDirEvictBuffer.end()) ? & (*ret) : NULL);
+    return ((ret != theDirEvictBuffer.end()) ? & (*ret) : nullptr);
   }
 
   virtual void remove(MemoryAddress anAddress) {
@@ -230,10 +230,10 @@ public:
     typename evict_buf_t::template nth_index<1>::type::iterator o_iter;
     o_iter = theDirEvictBuffer.get<1>().begin();
     for (; o_iter != theDirEvictBuffer.get<1>().end() && !o_iter->invalidatesRequired(); o_iter++);
-//		return ((o_iter != theDirEvictBuffer.get<1>().end()) ? &(*o_iter) : NULL);
-    const AbstractDirEBEntry<_State> * ret = ((o_iter != theDirEvictBuffer.get<1>().end()) ? & (*o_iter) : NULL);
-    if (ret == NULL) {
-      DBG_(Iface, ( << "oldestRequiringInvalidates() === NULL. CurSize = " << theCurSize << ", theReserve = " << theReserve << ", theSize = " << theSize << ", PendInval = " << thePendingInvalidates ));
+//		return ((o_iter != theDirEvictBuffer.get<1>().end()) ? &(*o_iter) : nullptr);
+    const AbstractDirEBEntry<_State> * ret = ((o_iter != theDirEvictBuffer.get<1>().end()) ? & (*o_iter) : nullptr);
+    if (ret == nullptr) {
+      DBG_(Iface, ( << "oldestRequiringInvalidates() === nullptr. CurSize = " << theCurSize << ", theReserve = " << theReserve << ", theSize = " << theSize << ", PendInval = " << thePendingInvalidates ));
     }
     return ret;
   }

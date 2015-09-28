@@ -6,10 +6,7 @@
 #include <components/FastCMPCache/AbstractDirectory.hpp>
 #include <components/FastCMPCache/SharingVector.hpp>
 #include <components/FastCMPCache/AbstractProtocol.hpp>
-#include <ext/hash_map>
-
-#include <boost/tuple/tuple.hpp>
-#include <boost/lambda/lambda.hpp>
+#include <unordered_map>
 
 #include <list>
 #include <algorithm>
@@ -20,8 +17,6 @@ using nCommonSerializers::StdDirEntryExtendedSerializer;
 
 #include <components/Common/Util.hpp>
 using nCommonUtil::log_base2;
-
-using namespace boost::lambda;
 
 namespace nFastCMPCache {
 
@@ -116,7 +111,7 @@ private:
       return addr >> 6;
     }
   };
-  typedef __gnu_cxx::hash_map<PhysicalMemoryAddress, InfiniteDirectoryEntry_p, AddrHash> inf_directory_t;
+  typedef std::unordered_map<PhysicalMemoryAddress, InfiniteDirectoryEntry_p, AddrHash> inf_directory_t;
   inf_directory_t theDirectory;
 
   InfiniteDirectory() : AbstractDirectory() {};
@@ -124,7 +119,7 @@ private:
 protected:
   virtual void addSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     InfiniteDirectoryEntry * my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       my_entry = findOrCreateEntry(address);
     }
     my_entry->addSharer(index);
@@ -132,7 +127,7 @@ protected:
 
   virtual void addExclusiveSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     InfiniteDirectoryEntry * my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       my_entry = findOrCreateEntry(address);
     }
     my_entry->addSharer(index);
@@ -146,7 +141,7 @@ protected:
 
   virtual void removeSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     InfiniteDirectoryEntry * my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     my_entry->removeSharer(index);
@@ -154,7 +149,7 @@ protected:
 
   virtual void makeSharerExclusive(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     InfiniteDirectoryEntry * my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     // Make it exclusive
@@ -164,7 +159,7 @@ protected:
   InfiniteDirectoryEntry * findOrCreateEntry(PhysicalMemoryAddress addr) {
     inf_directory_t::iterator iter;
     bool success;
-    boost::tie(iter, success) = theDirectory.insert( std::make_pair(addr, InfiniteDirectoryEntry_p()) );
+    std::tie(iter, success) = theDirectory.insert( std::make_pair(addr, InfiniteDirectoryEntry_p()) );
     if (success) {
       iter->second = new InfiniteDirectoryEntry(addr);
     }
@@ -174,40 +169,40 @@ protected:
   InfiniteDirectoryEntry_p findEntry(PhysicalMemoryAddress addr) {
     inf_directory_t::iterator iter = theDirectory.find(addr);
     if (iter == theDirectory.end()) {
-      return NULL;
+      return nullptr;
     }
     return iter->second;
   }
 
 public:
-  virtual boost::tuple<SharingVector, SharingState, AbstractEntry_p>
+  virtual std::tuple<SharingVector, SharingState, AbstractEntry_p>
   lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<boost::function<void(void)> > &xtra_actions) {
 
     InfiniteDirectoryEntry_p entry = findEntry(address);
     SharingVector sharers;
     SharingState  state = ZeroSharers;
-    if (entry != NULL) {
+    if (entry != nullptr) {
       sharers = entry->sharers;
       state = entry->state;
     }
 
-    return boost::tie(sharers, state, entry);
+    return std::tie(sharers, state, entry);
   }
 
-  virtual boost::tuple<SharingVector, SharingState, AbstractEntry_p, bool>
+  virtual std::tuple<SharingVector, SharingState, AbstractEntry_p, bool>
   snoopLookup(int32_t index, PhysicalMemoryAddress address, MMType req_type) {
 
     InfiniteDirectoryEntry_p entry = findEntry(address);
     bool valid = false;
     SharingVector sharers;
     SharingState  state = ZeroSharers;
-    if (entry != NULL) {
+    if (entry != nullptr) {
       valid = true;
       sharers = entry->sharers;
       state = entry->state;
     }
 
-    return boost::tie(sharers, state, entry, valid);
+    return std::tie(sharers, state, entry, valid);
   }
 
   virtual void processRequestResponse(int32_t index, const MMType & request, MMType & response,
@@ -220,7 +215,7 @@ public:
     }
 
     InfiniteDirectoryEntry * my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     if (my_entry->state == ZeroSharers) {

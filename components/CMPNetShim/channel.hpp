@@ -40,7 +40,7 @@ public:
       return false;
     }
 
-    msg = NULL;
+    msg = nullptr;
     return true;
   }
 
@@ -50,7 +50,7 @@ public:
   // may be non-zero, but the message is not yet available.
   inline bool hasMessage ( const int32_t vc ) {
     assert(vc >= 0 && vc < MAX_VC);
-    return ( mslHead[vc] != NULL );
+    return ( mslHead[vc] != nullptr );
   }
 
   inline bool hasBufferSpace ( const int32_t vc ) {
@@ -75,7 +75,7 @@ public:
   }
 
   bool isConnected ( void ) {
-    return ( channel != NULL );
+    return ( channel != nullptr );
   }
 
 protected:
@@ -155,7 +155,7 @@ public:
     if ( ChannelPort::removeMessage ( vc, msg ) )
       return true;
     msg->acceptTime += currTime;
-    if ( mslHead[vc] != NULL ) {
+    if ( mslHead[vc] != nullptr ) {
       mslHead[vc]->msg->acceptTime -= currTime;
     }
     return false;

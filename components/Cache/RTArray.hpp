@@ -338,7 +338,7 @@ public:
     bool   region_allocated;
     _BState   orig_state;
 
-    RTLookupResult() : rt_cache(NULL), block_allocated(false), region_allocated(false), orig_state(_DefaultBState) {}
+    RTLookupResult() : rt_cache(nullptr), block_allocated(false), region_allocated(false), orig_state(_DefaultBState) {}
     RTLookupResult(bool rvalid, bool bvalid, RTArray<_BState, _DefaultBState> *rtc, uint64_t addr)
       : rt_cache(rtc), tagset(addr), block_allocated(bvalid), region_allocated(rvalid), orig_state(_DefaultBState) {}
 
@@ -523,30 +523,30 @@ public:
     for (; iter != args.end(); iter++) {
       DBG_(Iface, ( << "RTArray parsing option '" << iter->first << "' = '" << iter->second << "'" ));
       if (strcasecmp(iter->first.c_str(), "sets") == 0) {
-        theNumDataSets = strtol(iter->second.c_str(), NULL, 0);
+        theNumDataSets = strtol(iter->second.c_str(), nullptr, 0);
       } else if ((strcasecmp(iter->first.c_str(), "assoc") == 0)
                  || (strcasecmp(iter->first.c_str(), "associativity") == 0)) {
-        theAssociativity = strtol(iter->second.c_str(), NULL, 0);
+        theAssociativity = strtol(iter->second.c_str(), nullptr, 0);
       } else if ((strcasecmp(iter->first.c_str(), "rsize") == 0)
                  || (strcasecmp(iter->first.c_str(), "region_size") == 0)) {
-        theRegionSize = strtol(iter->second.c_str(), NULL, 0);
+        theRegionSize = strtol(iter->second.c_str(), nullptr, 0);
       } else if ((strcasecmp(iter->first.c_str(), "rtsets") == 0)
                  || (strcasecmp(iter->first.c_str(), "rt_sets") == 0)) {
-        theNumRTSets = strtol(iter->second.c_str(), NULL, 0);
+        theNumRTSets = strtol(iter->second.c_str(), nullptr, 0);
       } else if ((strcasecmp(iter->first.c_str(), "rtassoc") == 0)
                  || (strcasecmp(iter->first.c_str(), "rt_assoc") == 0)
                  || (strcasecmp(iter->first.c_str(), "rtassociativity") == 0)
                  || (strcasecmp(iter->first.c_str(), "rt_associativity") == 0)) {
-        theRTAssociativity = strtol(iter->second.c_str(), NULL, 0);
+        theRTAssociativity = strtol(iter->second.c_str(), nullptr, 0);
       } else if ((strcasecmp(iter->first.c_str(), "repl") == 0)
                  || (strcasecmp(iter->first.c_str(), "replacement") == 0)) {
         theReplPolicy = string2ReplPolicy(iter->second);
       } else if ((strcasecmp(iter->first.c_str(), "erb") == 0)
                  || (strcasecmp(iter->first.c_str(), "erb_size") == 0)) {
-        theERBSize = strtol(iter->second.c_str(), NULL, 0);
+        theERBSize = strtol(iter->second.c_str(), nullptr, 0);
       } else if ((strcasecmp(iter->first.c_str(), "erb_threshold") == 0)
                  || (strcasecmp(iter->first.c_str(), "erbthreshold") == 0)) {
-        theERBThreshold = strtol(iter->second.c_str(), NULL, 0);
+        theERBThreshold = strtol(iter->second.c_str(), nullptr, 0);
       } else {
         DBG_Assert(false, ( << "RTArray received invalid option '" << iter->first << "' = '" << iter->second << "'" ));
       }
@@ -961,13 +961,13 @@ public:
 
   void  recordAccess(AbstractLookup_p abs_lookup) {
     RTLookupResult * lookup = dynamic_cast<RTLookupResult *>(abs_lookup.get());
-    DBG_Assert(lookup != NULL);
+    DBG_Assert(lookup != nullptr);
     lookup->updateLRU();
   }
 
   void  invalidateBlock(AbstractLookup_p abs_lookup) {
     RTLookupResult * lookup = dynamic_cast<RTLookupResult *>(abs_lookup.get());
-    DBG_Assert(lookup != NULL);
+    DBG_Assert(lookup != nullptr);
 
     lookup->block = make_block_lru(lookup->block_set, lookup->block);
     DBG_Assert(isConsistent(lookup->tagset));
@@ -975,7 +975,7 @@ public:
 
   bool canAllocate(AbstractLookup_p abs_lookup, const MemoryAddress & anAddress) {
     RTLookupResult * lookup = dynamic_cast<RTLookupResult *>(abs_lookup.get());
-    DBG_Assert(lookup != NULL);
+    DBG_Assert(lookup != nullptr);
 
     uint64_t tagset = anAddress;
     uint64_t rt_tag = get_rt_tag(tagset);
@@ -1030,7 +1030,7 @@ public:
 
   AbstractLookup_p allocate(AbstractLookup_p abs_lookup, const MemoryAddress & anAddress) {
     RTLookupResult * lookup = dynamic_cast<RTLookupResult *>(abs_lookup.get());
-    DBG_Assert(lookup != NULL);
+    DBG_Assert(lookup != nullptr);
 
     uint64_t tagset = anAddress;
     uint64_t rt_tag = get_rt_tag(tagset);
@@ -1344,7 +1344,7 @@ public:
 
     //DBG_Assert(entry != end);
     if (entry == end) {
-      return NULL;
+      return nullptr;
     }
 
     DBG_(Verb, ( << theName << ": regionProbeState(" << std::hex << tagset << std::dec << ")" ));

@@ -9,7 +9,7 @@ NetNode::NetNode ( const int32_t      nodeId_,
   nc              ( nc_ ),
   messagesWaiting ( 0 ) {
   fromNodePort = new ChannelOutputPort ( INT_MAX );
-  toNodePort   = new ChannelInputPort ( 1, 1, NULL, this );
+  toNodePort   = new ChannelInputPort ( 1, 1, nullptr, this );
 }
 
 bool NetNode::drive ( void ) {

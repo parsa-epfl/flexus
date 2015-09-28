@@ -5,9 +5,9 @@
 PerBlockPower::PerBlockPower() :
   numCoreTiles(0),
   numL2Tiles(0),
-  corePowers(0), // NULL
-  l2uDynamic(0), // NULL
-  l2uLeakage(0)  // NULL
+  corePowers(0), // nullptr
+  l2uDynamic(0), // nullptr
+  l2uLeakage(0)  // nullptr
 { }
 
 PerBlockPower::~PerBlockPower() {

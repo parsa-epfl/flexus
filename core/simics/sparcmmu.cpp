@@ -1,8 +1,5 @@
 #include <boost/throw_exception.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
-#include <boost/lambda/bind.hpp>
-namespace ll = boost::lambda;
 
 #include <core/target.hpp>
 #include <core/types.hpp>
@@ -158,7 +155,7 @@ bool side_effect(API::v9_memory_transaction_t & xact) {
   return (xact.side_effect || xact.s.inverse_endian);
 }
 
-boost::tuple<PhysicalMemoryAddress, bool, bool> v9ProcessorImpl::translateTSB_SimicsImpl(VirtualMemoryAddress anAddress, int anASI) const {
+std::tuple<PhysicalMemoryAddress, bool, bool> v9ProcessorImpl::translateTSB_SimicsImpl(VirtualMemoryAddress anAddress, int anASI) const {
   //Check for known special-case ASIs
 
   try {
@@ -319,7 +316,7 @@ void v9ProcessorImpl::resyncMMU() {
 bool v9ProcessorImpl::validateMMU(MMU::mmu_t * anMMU) {
   MMU::mmu_t simics_mmu, *our_mmu;
   MMU::fm_init_mmu_from_simics(&simics_mmu, SIM_get_attribute(*this, "mmu").u.object);
-  if (anMMU == NULL) our_mmu = &(theMMUs[id()]);
+  if (anMMU == nullptr) our_mmu = &(theMMUs[id()]);
   else our_mmu = anMMU;
   if (MMU::fm_compare_mmus(our_mmu, &simics_mmu)) {
     return false;
@@ -346,7 +343,7 @@ void v9ProcessorImpl::mmuWrite(VirtualMemoryAddress anAddress, int anASI, unsign
 }
 
 void v9ProcessorImpl::dumpMMU(MMU::mmu_t * anMMU) {
-  MMU::mmu_t * m = (anMMU == NULL) ? &(theMMUs[id()]) : anMMU;
+  MMU::mmu_t * m = (anMMU == nullptr) ? &(theMMUs[id()]) : anMMU;
   MMU::fm_print_mmu_regs(m);
 }
 

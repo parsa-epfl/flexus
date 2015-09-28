@@ -70,8 +70,8 @@ public:
     // in SPECweb2009 in addition to client and server machines, a third group of machines exists to represent backend. The name of these mahines starts with "besim"
     int besim_cpu_count = 0;
     // end PLotfi
-    API::conf_object_t * queue = API::SIM_next_queue(NULL);
-    while (queue != NULL) {
+    API::conf_object_t * queue = API::SIM_next_queue(nullptr);
+    while (queue != nullptr) {
       if (std::strstr(queue->name, "client") != 0) {
         ++client_cpu_count;
       } else if (std::strstr(queue->name, "besim") != 0) { // added by PLotfi

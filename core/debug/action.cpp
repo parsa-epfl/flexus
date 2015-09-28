@@ -6,9 +6,6 @@
 #include <map>
 #include <set>
 
-#include <boost/lambda/bind.hpp>
-#include <boost/lambda/construct.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/optional.hpp>
 #include <core/boost_extensions/lexical_cast.hpp>
@@ -25,15 +22,6 @@
 
 #include <core/flexus.hpp>
 #include <core/stats.hpp>
-
-namespace Flexus {
-namespace Dbg {
-using boost::lambda::_1;
-using boost::lambda::bind;
-using boost::lambda::var;
-using boost::lambda::delete_ptr;
-}
-}
 
 #include <core/boost_extensions/circular_buffer.hpp>
 
@@ -53,7 +41,6 @@ void CompoundAction::printConfiguration(std::ostream & anOstream, std::string co
 	{
 		anAction->printConfiguration(anOstream, anIndent);
 	}
-  //std::for_each(theActions.begin(), theActions.end(), bind(&Action::printConfiguration, _1, var(anOstream), anIndent) );
 }
 
 void CompoundAction::process(Entry const & anEntry) {
@@ -61,7 +48,6 @@ void CompoundAction::process(Entry const & anEntry) {
 	{
 		anAction->process(anEntry);
 	}
-  //std::for_each(theActions.begin(), theActions.end(), bind(&Action::process, _1, anEntry));
 }
 
 CompoundAction::~CompoundAction() {
@@ -69,10 +55,9 @@ CompoundAction::~CompoundAction() {
 	{
 		delete anAction;
 	}
-  //std::for_each(theActions.begin(), theActions.end(), boost::lambda::delete_ptr()); //Clean up all pointers owned by theActions
 }
 
-void CompoundAction::add(std::auto_ptr<Action> anAction) {
+void CompoundAction::add(std::unique_ptr<Action> anAction) {
   theActions.push_back(anAction.release()); //Ownership assumed by theActions
 }
 
@@ -178,7 +163,7 @@ void SeverityAction::process(Entry const & anEntry) {
 #if 0
 class SaveBufferManager {
   typedef boost::circular_buffer< Entry const & > entry_buffer;
-  typedef std::map<std::string, boost::shared_ptr< entry_buffer > > buf_map;
+  typedef std::map<std::string, std::shared_ptr< entry_buffer > > buf_map;
   buf_map theBuffers;
 public:
   //Need destructor

@@ -370,12 +370,12 @@ public:
       if (cfg.HotSpotInitialTemperatureFile != "") {
         strcpy(hotSpotConfig.init_file, cfg.HotSpotInitialTemperatureFile.c_str());
       } else {
-        strcpy(hotSpotConfig.init_file, NULLFILE);
+        strcpy(hotSpotConfig.init_file, nullptrFILE);
       }
       if (cfg.HotSpotSteadyStateTemperatureFile != "") {
         strcpy(hotSpotConfig.steady_file, cfg.HotSpotSteadyStateTemperatureFile.c_str());
       } else {
-        strcpy(hotSpotConfig.steady_file, NULLFILE);
+        strcpy(hotSpotConfig.steady_file, nullptrFILE);
       }
 
       hotSpotConfig.init_temp = cfg.DefaultTemperature + 273.15; // Used if initial temperature file not specified

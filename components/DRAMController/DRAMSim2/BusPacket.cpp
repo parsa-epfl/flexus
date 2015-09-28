@@ -60,7 +60,7 @@ BusPacket::BusPacket(BusPacketType packtype, uint64_t physicalAddr,
 
 void BusPacket::print(uint64_t currentClockCycle, bool dataStart)
 {
-	if (this == NULL)
+	if (this == nullptr)
 	{
 		return;
 	}
@@ -101,7 +101,7 @@ void BusPacket::print(uint64_t currentClockCycle, bool dataStart)
 }
 void BusPacket::print()
 {
-	if (this == NULL) //pointer use makes this a necessary precaution
+	if (this == nullptr) //pointer use makes this a necessary precaution
 	{
 		return;
 	}
@@ -144,7 +144,7 @@ void BusPacket::print()
 
 void BusPacket::printData() const 
 {
-	if (data == NULL)
+	if (data == nullptr)
 	{
 		PRINTN("NO DATA");
 		return;

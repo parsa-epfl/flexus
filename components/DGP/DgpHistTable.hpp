@@ -66,7 +66,7 @@ public:
 
   void reset() {
     theHistory.clear();
-    theSigMapper = NULL;
+    theSigMapper = nullptr;
   }
 
   void setSigMapper(SignatureMapping * aMapper) {

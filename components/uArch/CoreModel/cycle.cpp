@@ -388,7 +388,7 @@ void CoreImpl::checkTranslation( boost::intrusive_ptr<Instruction> anInsn) {
 void CoreImpl::createCheckpoint( boost::intrusive_ptr<Instruction> anInsn) {
   std::map< boost::intrusive_ptr< Instruction >, Checkpoint>::iterator ckpt;
   bool is_new;
-  boost::tie(ckpt, is_new) = theCheckpoints.insert( std::make_pair( anInsn, Checkpoint() ) );
+  std::tie(ckpt, is_new) = theCheckpoints.insert( std::make_pair( anInsn, Checkpoint() ) );
   anInsn->setHasCheckpoint(true);
   getv9State( ckpt->second.theState );
   Flexus::Simics::Processor::getProcessor( theNode )->ckptMMU();
@@ -422,7 +422,7 @@ void CoreImpl::requireWritePermission( memq_t::index<by_insn>::type::iterator aW
     std::map<PhysicalMemoryAddress, std::pair<int, bool> >::iterator sbline;
     bool is_new;
     DBG_( Iface, ( << theName << "requireWritePermission : " << *aWrite ) );
-    boost::tie(sbline, is_new) = theSBLines_Permission.insert( std::make_pair( addr, std::make_pair(1, false) ) );
+    std::tie(sbline, is_new) = theSBLines_Permission.insert( std::make_pair( addr, std::make_pair(1, false) ) );
     if ( is_new ) {
       ++theSBLines_Permission_falsecount;
       DBG_Assert( theSBLines_Permission_falsecount >= 0);
@@ -606,7 +606,7 @@ void CoreImpl::retireMem( boost::intrusive_ptr<Instruction> anInsn) {
       DBG_Assert( theSpeculativeOrder );
       DBG_(Trace, ( << theName << " Spec-Retire Atomic: " << *iter ) );
 
-      theMemQueue.get<by_insn>().modify( iter, ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
+      theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
       --theLSQCount;
       DBG_Assert( theLSQCount >= 0);
       ++theSBCount;
@@ -643,7 +643,7 @@ void CoreImpl::retireMem( boost::intrusive_ptr<Instruction> anInsn) {
           iter->theInstruction->setMayCommit(false);
 
           //Move the MEMBAR to the SSB and update counts
-          theMemQueue.get<by_insn>().modify( iter, ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
+          theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
           --theLSQCount;
           DBG_Assert( theLSQCount >= 0);
           ++theSBNAWCount;
@@ -691,7 +691,7 @@ void CoreImpl::retireMem( boost::intrusive_ptr<Instruction> anInsn) {
         }
       }
 
-      theMemQueue.get<by_insn>().modify( iter, ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
+      theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
       --theLSQCount;
       DBG_Assert( theLSQCount >= 0);
 
@@ -735,7 +735,7 @@ void CoreImpl::retireMem( boost::intrusive_ptr<Instruction> anInsn) {
       DBG_Assert( ! sbFull() );
 
       //Move the MEMBAR to the SSB and update counts
-      theMemQueue.get<by_insn>().modify( iter, ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
+      theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
       --theLSQCount;
       DBG_Assert( theLSQCount >= 0);
       ++theSBCount;
@@ -816,7 +816,7 @@ void CoreImpl::commitStore( boost::intrusive_ptr<Instruction> anInsn) {
       DBG_(Verb, ( << theName << " Inverse endian store: " << *iter << " inverted value: " <<  std::hex << value << std::dec ) );
     }
     ValueTracker::valueTracker(Flexus::Simics::ProcessorMapper::mapFlexusIndex2VM(theNode)).store( theNode, iter->thePaddr, iter->theSize, value);
-    theMemQueue.get<by_insn>().modify( iter, ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
+    theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
   }
 }
 

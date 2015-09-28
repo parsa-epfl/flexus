@@ -1071,7 +1071,7 @@ void CacheController::runWakeSnoopProcess(ProcessEntry_p aProcess ) {
   DBG_(Trace, ( << " runWakeSnoopProcess " << aProcess->serial() << ": " << *aProcess->transport()[MemoryMessageTag] ) );
   TransactionTracker_p tracker = aProcess->transport()[TransactionTrackerTag];
 
-  DBG_Assert(tracker != NULL);
+  DBG_Assert(tracker != nullptr);
 
   Action action = theCacheControllerImpl->handleWakeSnoop( aProcess->transport() );
   aProcess->consumeAction(action);
@@ -1693,7 +1693,7 @@ void CacheController::doTransmitProcess( ProcessEntry_p aProcess ) {
 
   if ( aProcess->hasFrontMessage() ) {
     unreserveFrontSideOut( aProcess );
-    DBG_Assert( aProcess->frontTransport()[MemoryMessageTag] != NULL, ( << "Process serial: " << aProcess->serial() << " addr: " << std::hex << (uint64_t)addressOf( aProcess ) << " missing Front Transport MemoryMessage." ));
+    DBG_Assert( aProcess->frontTransport()[MemoryMessageTag] != nullptr, ( << "Process serial: " << aProcess->serial() << " addr: " << std::hex << (uint64_t)addressOf( aProcess ) << " missing Front Transport MemoryMessage." ));
     sendFront ( aProcess->frontTransport(), aProcess->sendToD(), aProcess->sendToI() );
   }
 
@@ -1776,7 +1776,7 @@ void CacheController::sendFront(MemoryTransport  & transport, bool to_D, bool to
     transport[TransactionTrackerTag]->setDelayCause(theName, "Front Tx");
   }
 
-  DBG_Assert( transport[MemoryMessageTag] != NULL );
+  DBG_Assert( transport[MemoryMessageTag] != nullptr );
 
   DBG_Assert ( transport[MemoryMessageTag]->coreIdx() >= 0 &&
                transport[MemoryMessageTag]->coreIdx() < theCores );

@@ -7,10 +7,10 @@
 #include <components/FastCMPDirectory/Utility.hpp>
 #include <ext/hash_map>
 
-#include <boost/tuple/tuple.hpp>
 #include <boost/lambda/if.hpp>
 #include <boost/lambda/casts.hpp>
 
+#include <tuple>
 #include <list>
 #include <vector>
 
@@ -125,11 +125,11 @@ private:
   InfiniteRegionDirectory() : AbstractDirectory() {};
 
   inline void setRegionSize(const std::string & arg) {
-    theRegionSize = std::strtoul(arg.c_str(), NULL, 0);
+    theRegionSize = std::strtoul(arg.c_str(), nullptr, 0);
   }
 
   inline void setBlockSize(const std::string & arg) {
-    theBlockSize = std::strtoul(arg.c_str(), NULL, 0);
+    theBlockSize = std::strtoul(arg.c_str(), nullptr, 0);
   }
 
   inline void setTrackShared(const std::string & arg) {
@@ -157,7 +157,7 @@ private:
 protected:
   virtual void addSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     InfiniteRegionDirectoryEntry * my_entry = dynamic_cast<InfiniteRegionDirectoryEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       my_entry = findOrCreateEntry(address);
     }
     my_entry->addSharer(index, getBlockOffset(address));
@@ -165,7 +165,7 @@ protected:
 
   virtual void addExclusiveSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     InfiniteRegionDirectoryEntry * my_entry = dynamic_cast<InfiniteRegionDirectoryEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       my_entry = findOrCreateEntry(address);
     }
     my_entry->addSharer(index, getBlockOffset(address));
@@ -174,7 +174,7 @@ protected:
 
   virtual void failedSnoop(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     InfiniteRegionDirectoryEntry * my_entry = dynamic_cast<InfiniteRegionDirectoryEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     // If there's only 1 sharer then we can safely remove the sharer
@@ -190,7 +190,7 @@ protected:
 
   virtual void removeSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     InfiniteRegionDirectoryEntry * my_entry = dynamic_cast<InfiniteRegionDirectoryEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     // We only actually remove the sharer if they don't have ANY blocks from this region
@@ -211,7 +211,7 @@ protected:
 
   virtual void makeSharerExclusive(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     InfiniteRegionDirectoryEntry * my_entry = dynamic_cast<InfiniteRegionDirectoryEntry *>(dir_entry.get());
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     // Make it exclusive
@@ -231,19 +231,19 @@ protected:
   InfiniteRegionDirectoryEntry_p findEntry(PhysicalMemoryAddress addr) {
     inf_region_dir_t::iterator iter = theDirectory.find(getRegion(addr));
     if (iter == theDirectory.end()) {
-      return NULL;
+      return nullptr;
     }
     return iter->second;
   }
 
 public:
-  virtual boost::tuple<SharingVector, SharingState, int, AbstractEntry_p>
+  virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
   lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) {
 
     InfiniteRegionDirectoryEntry_p entry = findEntry(address);
     SharingVector sharers;
     SharingState  state = ZeroSharers;
-    if (entry != NULL && entry->isBlockPresent(getBlockOffset(address))) {
+    if (entry != nullptr && entry->isBlockPresent(getBlockOffset(address))) {
       sharers = entry->sharers;
       state = entry->state;
       if (theTrackSharedBlocks && !entry->isBlockShared(getBlockOffset(address))) {
@@ -251,7 +251,7 @@ public:
       }
     }
 #if 0
-    if (entry == NULL) {
+    if (entry == nullptr) {
       DBG_(Dev, ( << "No Dir entry for region 0x" << std::hex << (uint64_t)getRegion(address) ));
     } else {
       DBG_(Dev, ( << "Dir entry: " << (*entry) ));
@@ -262,7 +262,7 @@ public:
     int32_t dir_loc = address2DirLocation(address, index);
     msgs.push_back(TopologyMessage(index, dir_loc));
 
-    return boost::tie(sharers, state, dir_loc, entry);
+    return std::tuple(sharers, state, dir_loc, entry);
   }
 
   virtual void initialize(const std::string & aName) {

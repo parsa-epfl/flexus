@@ -298,7 +298,7 @@ public:
       MemoryAddress tag(makeTag(anAddress));
       region_iterator r_iter = theEvictBuffer.find(tag);
       if (r_iter == theEvictBuffer.end()) {
-        return NULL;
+        return nullptr;
       }
       block_iterator b_iter = r_iter->theBlockList.begin();
       for (; b_iter != r_iter->theBlockList.end() && b_iter->address() <= anAddress; b_iter++) {
@@ -306,7 +306,7 @@ public:
           return &(*b_iter);
         }
       }
-      return NULL;
+      return nullptr;
     }
     virtual const AbstractEBEntry<_EState>& back() {
       return theEvictBuffer.get<1>().back().theBlockList.back();
@@ -319,7 +319,7 @@ public:
           return &(*b_iter);
         }
       }
-      return NULL;
+      return nullptr;
     }
     virtual const AbstractEBEntry<_EState>* oldestRequiringInvalidates() {
       order_iterator o_iter = theEvictBuffer.get<1>().begin();
@@ -336,7 +336,7 @@ public:
           DBG_(Trace, ( << "No Idle Work for Region: " << std::hex << o_iter->theAddress << ", Inval Pending: " << std::dec << o_iter->theInvalidatesPending << ", owner: " << o_iter->theOwner << ", revoke sent: " << std::boolalpha << o_iter->theRevokeSent << ", blocks present: " << o_iter->theBlockList.size() ));
         }
       }
-      return NULL;
+      return nullptr;
     }
     virtual bool idleWorkReady() const {
       order_iterator o_iter = theEvictBuffer.get<1>().begin();
@@ -546,15 +546,15 @@ public:
     std::list< std::pair< std::string, std::string> >::const_iterator iter = theConfiguration.begin();
     for (; iter != theConfiguration.end(); iter++) {
       if (iter->first == "sets") {
-        theNumSets = strtoll(iter->second.c_str(), NULL, 0);
+        theNumSets = strtoll(iter->second.c_str(), nullptr, 0);
       } else if (iter->first == "total_sets" || iter->first == "global_sets") {
-        int32_t global_sets = strtol(iter->second.c_str(), NULL, 0);
+        int32_t global_sets = strtol(iter->second.c_str(), nullptr, 0);
         theNumSets = global_sets / theBanks;
         DBG_Assert( (theNumSets * theBanks) == global_sets, ( << "global_sets (" << global_sets << ") is not divisible by number of banks (" << theBanks << ")" ));
       } else if (iter->first == "rsize" || iter->first == "region_size") {
-        theRegionSize = strtol(iter->second.c_str(), NULL, 0);
+        theRegionSize = strtol(iter->second.c_str(), nullptr, 0);
       } else if (iter->first == "assoc" || iter->first == "associativity") {
-        theAssociativity = strtol(iter->second.c_str(), NULL, 0);
+        theAssociativity = strtol(iter->second.c_str(), nullptr, 0);
       } else if (iter->first == "skew" || iter->first == "skew_set") {
         theSkewSet = boost::lexical_cast<bool>(iter->second);
       } else {
@@ -672,7 +672,7 @@ public:
 
   virtual bool allocate(boost::intrusive_ptr<AbstractLookupResult<_State> > lookup, MemoryAddress address, const _State & state) {
     RegionLookupResult * reg_lookup = dynamic_cast<RegionLookupResult *>(lookup.get());
-    DBG_Assert(reg_lookup != NULL, ( << "allocate() was not passed a valid RegionLookupResult"));
+    DBG_Assert(reg_lookup != nullptr, ( << "allocate() was not passed a valid RegionLookupResult"));
 
     RegionSet & set = *(reg_lookup->theSet);
 
@@ -721,7 +721,7 @@ public:
   // Bypasses the Evict Buffer
   virtual bool allocateRegion(boost::intrusive_ptr<AbstractLookupResult<_State> > lookup, MemoryAddress & address, std::vector<_State> &state) {
     RegionLookupResult * reg_lookup = dynamic_cast<RegionLookupResult *>(lookup.get());
-    DBG_Assert(reg_lookup != NULL, ( << "allocate() was not passed a valid RegionLookupResult"));
+    DBG_Assert(reg_lookup != nullptr, ( << "allocate() was not passed a valid RegionLookupResult"));
 
     RegionSet & set = *(reg_lookup->theSet);
 
@@ -768,7 +768,7 @@ public:
         return LookupResult_p(new LookupResult(&set, &(set[i]), makeOffset(address), true));
       }
     }
-    return LookupResult_p(new LookupResult(&set, NULL, makeOffset(address), false));
+    return LookupResult_p(new LookupResult(&set, nullptr, makeOffset(address), false));
   }
 
   virtual bool sameSet(MemoryAddress a, MemoryAddress b) {

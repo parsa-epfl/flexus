@@ -1,8 +1,4 @@
 #include <core/debug/debugger.hpp>
-
-// #include <boost/lambda/lambda.hpp>
-// #include <boost/lambda/bind.hpp>
-// #include <boost/lambda/construct.hpp>
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
@@ -21,30 +17,22 @@ Flexus::Dbg::Category Stats("Stats", &Stats_debug_enabled);
 namespace Flexus {
 namespace Dbg {
 
-// using boost::lambda::_1;
-// using boost::lambda::bind;
-// using boost::lambda::var;
-// using boost::lambda::delete_ptr;
-
 Debugger::~Debugger() {
   for(auto* aTarget: theTargets){
     delete aTarget;
-  }
-  //std::for_each(theTargets.begin(), theTargets.end(), boost::lambda::delete_ptr()); //Clean up all pointers owned by theTargets
+  } //Clean up all pointers owned by theTargets
 }
 
 void Debugger::process(Entry const & anEntry) {
   for(auto* aTarget: theTargets){
     aTarget->process(anEntry);
   }
-  //std::for_each(theTargets.begin(), theTargets.end(), bind( &Target::process, _1, anEntry) );
 }
 
 void Debugger::printConfiguration(std::ostream & anOstream) {
   for(auto* aTarget: theTargets){
     aTarget->printConfiguration(anOstream, std::string());
   }
-  //std::for_each(theTargets.begin(), theTargets.end(), bind( &Target::printConfiguration, _1, var(anOstream), std::string()) );
 }
 
 void Debugger::add(Target * aTarget) { //Ownership assumed by Debugger
@@ -198,7 +186,6 @@ void Debugger::reset() {
   for(auto* aTarget: theTargets){
     delete aTarget;
   }
-  //std::for_each(theTargets.begin(), theTargets.end(), boost::lambda::delete_ptr()); //Clean up all pointers owned by theTargets
   theTargets.clear();
 }
 

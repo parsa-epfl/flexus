@@ -291,7 +291,7 @@ public:
              MemoryTransport & aMessage ) {
     index_t nic_index = (dirIndex2NodeIndex(anIndex) * NUM_VC) + REQUEST_VC;
 
-    DBG_Assert(aMessage[DestinationTag] != NULL);
+    DBG_Assert(aMessage[DestinationTag] != nullptr);
 
     DBG_Assert(aMessage[DestinationTag]->type != DestinationMessage::Multicast, ( << "Received Multicast message from DirRequest!"  << *aMessage[DestinationTag] ));
     // Setup the network message
@@ -313,7 +313,7 @@ public:
              MemoryTransport & aMessage ) {
     index_t nic_index = (dirIndex2NodeIndex(anIndex) * NUM_VC) + SNOOP_VC;
 
-    DBG_Assert(aMessage[DestinationTag] != NULL);
+    DBG_Assert(aMessage[DestinationTag] != nullptr);
 
     fixupMemoryLocation(aMessage, anIndex);
     fixupDirectoryLocation(aMessage, anIndex);
@@ -338,7 +338,7 @@ public:
              MemoryTransport & aMessage ) {
     index_t nic_index = (dirIndex2NodeIndex(anIndex) * NUM_VC) + REPLY_VC;
 
-    DBG_Assert(aMessage[DestinationTag] != NULL, ( << "Receive Msg with no destination, MemMsg = " << *(aMessage[MemoryMessageTag]) ));
+    DBG_Assert(aMessage[DestinationTag] != nullptr, ( << "Receive Msg with no destination, MemMsg = " << *(aMessage[MemoryMessageTag]) ));
 
     DBG_Assert(aMessage[DestinationTag]->type != DestinationMessage::Multicast, ( << "Received Multicast message from DirReply!"  << *aMessage[DestinationTag] ));
     // Setup the network message
@@ -361,7 +361,7 @@ public:
              MemoryTransport & aMessage ) {
     index_t nic_index = (memIndex2NodeIndex(anIndex) * NUM_VC) + REPLY_VC;
 
-    DBG_Assert(aMessage[DestinationTag] != NULL);
+    DBG_Assert(aMessage[DestinationTag] != nullptr);
 
     // Need to send the reply either to the Requester or Directory
     if (cfg.MemReplyToDir) {
@@ -549,7 +549,7 @@ private:
     ret->dst_port = 0;
     ret->vc = aVC;
     ret->size = aMessage[MemoryMessageTag]->messageSize();
-    if (aMessage[TaglessDirMsgTag] != NULL) {
+    if (aMessage[TaglessDirMsgTag] != nullptr) {
       ret->size += aMessage[TaglessDirMsgTag]->messageSize();
     }
     DBG_Assert(ret->size >= 0, ( << "Couldn't calculate size for message: " << *(aMessage[MemoryMessageTag]) ));

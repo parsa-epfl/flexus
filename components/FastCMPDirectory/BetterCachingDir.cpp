@@ -9,8 +9,7 @@
 
 #include <core/stats.hpp>
 
-#include <boost/tuple/tuple.hpp>
-
+#include <tuple>
 #include <list>
 
 namespace nFastCMPDirectory {
@@ -36,9 +35,9 @@ class BetterCachingDirEntry : public AbstractDirectoryEntry {
 public:
   ~BetterCachingDirEntry() {
     for (uint32_t i = 0; i < cached_entries.size(); i++) {
-      if (cached_entries[i] != NULL) {
+      if (cached_entries[i] != nullptr) {
         delete cached_entries[i];
-        cached_entries[i] = NULL;
+        cached_entries[i] = nullptr;
       }
     }
   }
@@ -70,7 +69,7 @@ private:
   }
 
   inline void addCachedSharer(int32_t index, int32_t offset, int32_t cache) {
-    DBG_Assert(cached_entries[cache] != NULL);
+    DBG_Assert(cached_entries[cache] != nullptr);
     cached_entries[cache]->sharers[offset].addSharer(index);
     if (cached_entries[cache]->sharers[offset].countSharers() == 1) {
       cached_entries[cache]->state[offset] = OneSharer;
@@ -86,7 +85,7 @@ private:
   }
 
   inline void makeCachedExclusive(int32_t index, int32_t offset, int32_t cache) {
-    DBG_Assert(cached_entries[cache] != NULL);
+    DBG_Assert(cached_entries[cache] != nullptr);
     DBG_Assert(cached_entries[cache]->sharers[offset].isSharer(index), ( << "Region " << region << " Block " << offset << " Core " << index << " is not a sharer " << cached_entries[cache]->sharers[offset].getSharers() ) );
     DBG_Assert(cached_entries[cache]->sharers[offset].countSharers() == 1, ( << "Region " << region << " Block " << offset << " cached_entry[" << cache << "] has " << cached_entries[cache]->sharers[offset].countSharers() << " sharers at offset " << offset ));
     cached_entries[cache]->state[offset] = ExclSharer;
@@ -102,7 +101,7 @@ private:
   }
 
   inline void removeCachedSharer(int32_t index, int32_t offset, int32_t cache) {
-    DBG_Assert(cached_entries[cache] != NULL);
+    DBG_Assert(cached_entries[cache] != nullptr);
     cached_entries[cache]->sharers[offset].removeSharer(index);
     if (cached_entries[cache]->sharers[offset].countSharers() == 0) {
       cached_entries[cache]->state[offset] = ZeroSharers;
@@ -112,7 +111,7 @@ private:
   }
 
   inline void cacheEntry(int32_t index) {
-    if (cached_entries[index] == NULL) {
+    if (cached_entries[index] == nullptr) {
       cached_entries[index] = new CachedEntry(sharers, state);
     } else {
       cached_entries[index]->sharers = sharers;
@@ -121,7 +120,7 @@ private:
   }
 
   inline void updateCachedEntry(int32_t cache, int32_t offset) {
-    DBG_Assert(cached_entries[cache] != NULL);
+    DBG_Assert(cached_entries[cache] != nullptr);
     cached_entries[cache]->sharers[offset] = sharers[offset];
     cached_entries[cache]->state[offset] = state[offset];
   }
@@ -181,11 +180,11 @@ private:
   }
 
   inline void setRegionSize(const std::string & arg) {
-    theRegionSize = std::strtoul(arg.c_str(), NULL, 0);
+    theRegionSize = std::strtoul(arg.c_str(), nullptr, 0);
   }
 
   inline void setBlockSize(const std::string & arg) {
-    theBlockSize = std::strtoul(arg.c_str(), NULL, 0);
+    theBlockSize = std::strtoul(arg.c_str(), nullptr, 0);
   }
 
   inline void setBlockScoutSnoops(const std::string & arg) {
@@ -199,7 +198,7 @@ private:
 protected:
   virtual void addSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     BetterCachingEntry_p my_entry(dynamic_cast<BetterCachingDirEntry *>(dir_entry.get()));
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       my_entry = findOrCreateEntry(address);
     }
     my_entry->addSharer(index, getBlockOffset(address));
@@ -207,7 +206,7 @@ protected:
 
   virtual void addExclusiveSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     BetterCachingEntry_p my_entry(dynamic_cast<BetterCachingDirEntry *>(dir_entry.get()));
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       my_entry = findOrCreateEntry(address);
     }
     my_entry->addSharer(index, getBlockOffset(address));
@@ -221,7 +220,7 @@ protected:
 
   virtual void removeSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     BetterCachingEntry_p my_entry(dynamic_cast<BetterCachingDirEntry *>(dir_entry.get()));
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     my_entry->removeSharer(index, getBlockOffset(address));
@@ -229,7 +228,7 @@ protected:
 
   virtual void makeSharerExclusive(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     BetterCachingEntry_p my_entry(dynamic_cast<BetterCachingDirEntry *>(dir_entry.get()));
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     // Make it exclusive
@@ -239,7 +238,7 @@ protected:
   BetterCachingEntry_p findOrCreateEntry(PhysicalMemoryAddress addr) {
     inf_directory_t::iterator iter;
     bool success;
-    boost::tie(iter, success) = theDirectory.insert( std::make_pair<PhysicalMemoryAddress, BetterCachingDirEntry *>(getRegion(addr), NULL) );
+    boost::tie(iter, success) = theDirectory.insert( std::make_pair<PhysicalMemoryAddress, BetterCachingDirEntry *>(getRegion(addr), nullptr) );
     if (success) {
       iter->second = BetterCachingEntry_p(new BetterCachingDirEntry(getRegion(addr), theBlocksPerRegion, theNumCores));
     }
@@ -249,7 +248,7 @@ protected:
   BetterCachingEntry_p findEntry(PhysicalMemoryAddress addr) {
     inf_directory_t::iterator iter = theDirectory.find(getRegion(addr));
     if (iter == theDirectory.end()) {
-      return NULL;
+      return nullptr;
     }
     return iter->second;
   }
@@ -279,7 +278,7 @@ protected:
     std::list<int> cache_list;
     // Need to recall sharers
     for (int32_t i = 0; i < theNumCores; i++) {
-      if (entry->cached_entries[i] != NULL) {
+      if (entry->cached_entries[i] != nullptr) {
         // Collect information from this sharer
         for (int32_t block = 0; block < theBlocksPerRegion; block++) {
           if ( entry->cached_entries[i]->sharers[block].isSharer(i) ) {
@@ -289,7 +288,7 @@ protected:
           }
         }
         delete entry->cached_entries[i];
-        entry->cached_entries[i] = NULL;
+        entry->cached_entries[i] = nullptr;
 
         if (i != index) {
           cache_list.push_back(i);
@@ -323,7 +322,7 @@ protected:
       case MemoryMessage::Invalidate:
       case MemoryMessage::ReturnNAck:
         recordSnoopMiss();
-        if (my_entry == NULL) {
+        if (my_entry == nullptr) {
           return;
         }
         my_entry->removeCachedSharer(index, offset, node);
@@ -331,18 +330,18 @@ protected:
       case MemoryMessage::InvalidateAck:
       case MemoryMessage::InvUpdateAck:
         recordSnoopHit();
-        if (my_entry == NULL) {
+        if (my_entry == nullptr) {
           return;
         }
         my_entry->removeCachedSharer(index, offset, node);
         break;
       case MemoryMessage::ReturnReply:
         recordSnoopHit();
-        if (my_entry == NULL) {
+        if (my_entry == nullptr) {
           return;
         }
         // If the snooped node has a cached directory, we have to make sure it doesn't think it has an exclusive copy
-        if (my_entry->cached_entries[index] != NULL && my_entry->cached_entries[index]->state[offset] == ExclSharer) {
+        if (my_entry->cached_entries[index] != nullptr && my_entry->cached_entries[index]->state[offset] == ExclSharer) {
           my_entry->cached_entries[index]->state[offset] = ManySharers;
         }
         break;
@@ -350,7 +349,7 @@ protected:
       case MemoryMessage::DownUpdateAck:
         DBG_Assert(false);
         recordSnoopHit();
-        if (my_entry == NULL) {
+        if (my_entry == nullptr) {
           return;
         }
         my_entry->removeCachedSharer(index, offset, node);
@@ -360,7 +359,7 @@ protected:
         break;
     }
     if (theBlockScoutSnoopResponse) {
-      if (my_entry == NULL || my_entry->cached_entries[node] == NULL) {
+      if (my_entry == nullptr || my_entry->cached_entries[node] == nullptr) {
         return;
       }
       // Update this entry with information about all the blocks present at the given node
@@ -400,11 +399,11 @@ protected:
         // This is really the only special case.
         // We need to make sure the snooped node doesn't think it has an Excl Copy
         BetterCachingDirEntry * my_entry = dynamic_cast<BetterCachingDirEntry *>(dir_entry.get());
-        if (my_entry == NULL) {
+        if (my_entry == nullptr) {
           return;
         }
         int32_t offset = getBlockOffset(address);
-        if (my_entry->cached_entries[index] != NULL && my_entry->cached_entries[index]->state[offset] == ExclSharer) {
+        if (my_entry->cached_entries[index] != nullptr && my_entry->cached_entries[index]->state[offset] == ExclSharer) {
           my_entry->cached_entries[index]->state[offset] = ManySharers;
         }
         break;
@@ -504,7 +503,7 @@ public:
     }
   }
 
-  virtual boost::tuple<SharingVector, SharingState, int, AbstractEntry_p>
+  virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
   lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) {
 
     // Reset state information
@@ -518,14 +517,14 @@ public:
     BetterCachingEntry_p entry = findEntry(address);
     SharingVector sharers;
     SharingState  state = ZeroSharers;
-    if (entry != NULL) {
+    if (entry != nullptr) {
       DBG_(Iface, Addr(address) ( << "Found directory entry" ));
       int32_t offset = getBlockOffset(address);
       sharers = entry->sharers[offset];
       state = entry->state[offset];
 
       // Check Cached copy
-      if (entry->cached_entries[index] != NULL) {
+      if (entry->cached_entries[index] != nullptr) {
         (*theFoundCachedDirEntry_stat)++;
         dir_loc = index;
         DBG_(Iface, Addr(address) ( << "Found cached entry (index = " << index << ", offset = " << offset ));
@@ -597,7 +596,7 @@ public:
               bool found_potential_sharers = false;
               // We also need to snoop any nodes that have cached entries
               for (int32_t i = 0; i < theNumCores; i++) {
-                if (i != index && entry->cached_entries[i] != NULL) {
+                if (i != index && entry->cached_entries[i] != nullptr) {
                   sharers.addSharer(i);
                   found_potential_sharers = true;
                 }
@@ -644,7 +643,7 @@ public:
 #if 0
             bool found_potential_sharers = false;
             for (int32_t i = 0; i < theNumCores; i++) {
-              if (i != index && entry->cached_entries[i] != NULL) {
+              if (i != index && entry->cached_entries[i] != nullptr) {
                 sharers.addSharer(i);
                 found_potential_sharers = true;
               }
@@ -688,7 +687,7 @@ public:
           // If this is a non-shared region, then we need should do a directory update,
           // but don't actually recall the cached entry
           for (int32_t core = 0; core < theNumCores; core++) {
-            if (entry->cached_entries[core] != NULL) {
+            if (entry->cached_entries[core] != nullptr) {
               DBG_(Iface, Addr(address) ( << "Getting Directory info from solo node " << core ));
               entry->state = entry->cached_entries[core]->state;
               entry->sharers = entry->cached_entries[core]->sharers;
@@ -703,7 +702,7 @@ public:
               // Need to recall if this is a R/W region
               if (entry->is_rw_region) {
                 delete entry->cached_entries[core];
-                entry->cached_entries[core] = NULL;
+                entry->cached_entries[core] = nullptr;
                 (*theRecallCachedEntries_stat)++;
               }
             }
@@ -719,7 +718,7 @@ public:
           if (state != ExclSharer) {
             DBG_(Iface, Addr(address) ( << "Adding caching nodes as sharers" ));
             for (int32_t i = 0; i < theNumCores; i++) {
-              if (i != index && entry->cached_entries[i] != NULL) {
+              if (i != index && entry->cached_entries[i] != nullptr) {
                 sharers.addSharer(i);
               }
             }
@@ -758,16 +757,16 @@ public:
     }
 
     BetterCachingEntry_p my_entry(dynamic_cast<BetterCachingDirEntry *>(dir_entry.get()));
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       my_entry = findEntry(address);
-      if (my_entry == NULL) {
+      if (my_entry == nullptr) {
         DBG_(Iface, Addr(address) ( << "No Directory entry after processing response" ));
         return;
       }
     }
 
     // Is the directory already cached?
-    if (my_entry->cached_entries[index] != NULL) {
+    if (my_entry->cached_entries[index] != nullptr) {
       int32_t offset = getBlockOffset(address);
       // we should make sure that the cached entry matches the directory entry for this block
       if (requires_directory) {
@@ -803,7 +802,7 @@ public:
     }
     if (my_entry->is_non_shared) {
       for (int32_t i = 0; i < theNumCores; i++) {
-        if (my_entry->cached_entries[i] != NULL) {
+        if (my_entry->cached_entries[i] != nullptr) {
           my_entry->is_non_shared = false;
         }
       }

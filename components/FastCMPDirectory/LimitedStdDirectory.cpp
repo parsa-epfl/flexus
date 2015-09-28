@@ -10,8 +10,7 @@
 #include <components/FastCMPDirectory/AbstractProtocol.hpp>
 #include <ext/hash_map>
 
-#include <boost/tuple/tuple.hpp>
-
+#include <tuple>
 #include <list>
 
 #include <components/Common/Util.hpp>
@@ -162,7 +161,7 @@ private:
 protected:
   virtual void addSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     LimitedDirectoryEntry * my_entry(&(dynamic_cast<LimitedEntryWrapper *>(dir_entry.get())->entry));
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       my_entry = findOrCreateEntry(address);
     }
     my_entry->addSharer(index);
@@ -171,7 +170,7 @@ protected:
   virtual void addExclusiveSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     //LimitedDirectoryEntry *my_entry = dynamic_cast<LimitedDirectoryEntry*>(dir_entry);
     LimitedDirectoryEntry * my_entry(&(dynamic_cast<LimitedEntryWrapper *>(dir_entry.get())->entry));
-    DBG_Assert(my_entry != NULL);
+    DBG_Assert(my_entry != nullptr);
     my_entry->addSharer(index);
     my_entry->makeExclusive(index);
   }
@@ -184,7 +183,7 @@ protected:
   virtual void removeSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     //LimitedDirectoryEntry *my_entry = dynamic_cast<LimitedDirectoryEntry*>(dir_entry);
     LimitedDirectoryEntry * my_entry(&(dynamic_cast<LimitedEntryWrapper *>(dir_entry.get())->entry));
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     my_entry->removeSharer(index);
@@ -193,7 +192,7 @@ protected:
   virtual void makeSharerExclusive(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     //LimitedDirectoryEntry *my_entry = dynamic_cast<LimitedDirectoryEntry*>(dir_entry);
     LimitedDirectoryEntry * my_entry(&(dynamic_cast<LimitedEntryWrapper *>(dir_entry.get())->entry));
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     // Make it exclusive
@@ -206,7 +205,7 @@ protected:
 
     //LimitedDirectoryEntry *my_entry = dynamic_cast<LimitedDirectoryEntry*>(dir_entry);
     LimitedDirectoryEntry * my_entry(&(dynamic_cast<LimitedEntryWrapper *>(dir_entry.get())->entry));
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     my_entry->clearPendingInvals();
@@ -241,14 +240,14 @@ protected:
   }
 
 public:
-  virtual boost::tuple<SharingVector, SharingState, int, AbstractEntry_p>
+  virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
   lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) {
 
     LimitedDirectoryEntry * entry = findOrCreateEntry(address, !MemoryMessage::isEvictType(req_type));
-    DBG_Assert(entry != NULL);
+    DBG_Assert(entry != nullptr);
     if (entry->address != address) {
       // We're evicting an existing entry
-      xtra_actions.push_back(boost::lambda::bind(theInvalidateAction, entry->address, entry->sharers));
+      xtra_actions.push_back([this, entry](){ return this->theInvalidateAction(entry->address, entry->sharers); });
       entry->address = address;
       entry->sharers.clear();
       entry->state = ZeroSharers;
@@ -260,7 +259,7 @@ public:
 
     LimitedEntryWrapper_p wrapper(new LimitedEntryWrapper(*entry));
 
-    return boost::tie(entry->sharers, entry->state, dir_loc, wrapper);
+    return std::tuple(entry->sharers, entry->state, dir_loc, wrapper);
   }
 
   void saveState( std::ostream & s, const std::string & aDirName ) {
@@ -294,13 +293,13 @@ public:
     std::list<std::pair<std::string, std::string> >::iterator iter = args.begin();
     for (; iter != args.end(); iter++) {
       if (strcasecmp(iter->first.c_str(), "sets") == 0) {
-        directory->theNumSets = strtol(iter->second.c_str(), NULL, 0);
+        directory->theNumSets = strtol(iter->second.c_str(), nullptr, 0);
       } else if (strcasecmp(iter->first.c_str(), "assoc") == 0) {
-        directory->theAssociativity = strtol(iter->second.c_str(), NULL, 0);
+        directory->theAssociativity = strtol(iter->second.c_str(), nullptr, 0);
       } else if (strcasecmp(iter->first.c_str(), "num_pointers") == 0) {
-        directory->theNumPointers = strtol(iter->second.c_str(), NULL, 0);
+        directory->theNumPointers = strtol(iter->second.c_str(), nullptr, 0);
       } else if (strcasecmp(iter->first.c_str(), "granularity") == 0) {
-        directory->theGranularity = strtol(iter->second.c_str(), NULL, 0);
+        directory->theGranularity = strtol(iter->second.c_str(), nullptr, 0);
       } else if (strcasecmp(iter->first.c_str(), "skew") == 0) {
         if (strcasecmp(iter->second.c_str(), "true") == 0) {
           directory->theSkewSet = true;

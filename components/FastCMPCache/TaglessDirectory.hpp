@@ -264,7 +264,7 @@ public:
   // We don't have an evict buffer, just return null
   // (the policy should be aware of this and provide it's own InfiniteEvictBuffer to make everything work nicely
   virtual DirEvictBuffer<_EState>* getEvictBuffer() {
-    return NULL;
+    return nullptr;
   }
 
   virtual bool loadState(std::istream & is) {

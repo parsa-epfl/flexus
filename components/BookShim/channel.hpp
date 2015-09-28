@@ -44,7 +44,7 @@ namespace nNetShim
         return false;
       }
 
-      msg = NULL;
+      msg = nullptr;
       return true;
     }
 
@@ -54,7 +54,7 @@ namespace nNetShim
 
           out << "VC " << vc << ": ";
           MessageStateList* msl = mslHead[vc];
-          for(; msl != NULL; msl = msl->next ) {
+          for(; msl != nullptr; msl = msl->next ) {
                 out << msl->msg->serial << ", ";
           }
 
@@ -67,7 +67,7 @@ namespace nNetShim
     inline bool hasMessage ( const int32_t vc )
     {
       assert(vc >= 0 && vc < MAX_VC);
-      return ( mslHead[vc] != NULL );
+      return ( mslHead[vc] != nullptr );
     }
 
     inline bool hasBufferSpace ( const int32_t vc )
@@ -96,7 +96,7 @@ namespace nNetShim
 
     bool isConnected ( void )
     {
-      return ( channel != NULL );
+      return ( channel != nullptr );
     }
 
   protected:
@@ -180,7 +180,7 @@ namespace nNetShim
       if ( ChannelPort::removeMessage ( vc, msg ) )
         return true;
       msg->acceptTime += currTime;
-      if ( mslHead[vc] != NULL ) {
+      if ( mslHead[vc] != nullptr ) {
         mslHead[vc]->msg->acceptTime -= currTime;
       }
       return false;

@@ -48,8 +48,8 @@ Rank::Rank(ostream &dramsim_log_) :
 
 {
 
-	memoryController = NULL;
-	outgoingDataPacket = NULL;
+	memoryController = nullptr;
+	outgoingDataPacket = nullptr;
 	dataCyclesLeft = 0;
 	currentClockCycle = 0;
 
@@ -301,14 +301,14 @@ void Rank::update()
 
 	// An outgoing packet is one that is currently sending on the bus
 	// do the book keeping for the packet's time left on the bus
-	if (outgoingDataPacket != NULL)
+	if (outgoingDataPacket != nullptr)
 	{
 		dataCyclesLeft--;
 		if (dataCyclesLeft == 0)
 		{
 			//if the packet is done on the bus, call receiveFromBus and free up the bus
 			memoryController->receiveFromBus(outgoingDataPacket);
-			outgoingDataPacket = NULL;
+			outgoingDataPacket = nullptr;
 		}
 	}
 

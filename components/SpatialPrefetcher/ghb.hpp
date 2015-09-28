@@ -2,8 +2,6 @@
 #include <fstream>
 #include <sstream>
 
-#include <ext/hash_map>
-
 #include "seq_map.hpp"
 
 using namespace boost::multi_index;

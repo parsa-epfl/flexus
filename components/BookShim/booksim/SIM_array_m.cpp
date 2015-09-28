@@ -84,8 +84,8 @@ int SIM_array_port_state_init( SIM_array_info_t *info, SIM_array_port_state_t *p
 
 int SIM_array_set_state_init( SIM_array_info_t *info, SIM_array_set_state_t *set )
 {
-	set->entry = NULL;
-	set->entry_set = NULL;
+	set->entry = nullptr;
+	set->entry_set = nullptr;
 
 	if ( IS_FULLY_ASSOC( info )) {
 		set->write_flag = 0;

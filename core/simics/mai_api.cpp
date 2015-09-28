@@ -5,10 +5,7 @@
 
 #include <boost/regex.hpp>
 #include <boost/throw_exception.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
-#include <boost/lambda/bind.hpp>
-namespace ll = boost::lambda;
 
 #include <core/target.hpp>
 #include <core/types.hpp>
@@ -58,7 +55,7 @@ void onInterrupt (void * aPtr, API::conf_object_t * anObj, long long aVector) {
 
 void v9ProcessorImpl::initialize() {
   DBG_( Dev, ( << "CPU[" << Simics::APIFwd::SIM_get_processor_number(*this) << "] Registering for interrupts "));
-  theInterruptManager.registerCPU( *this, ll::bind( &v9ProcessorImpl::handleInterrupt, this, ll::_1 ) );
+  theInterruptManager.registerCPU( *this, [this](auto x){return this->handleInterrupt(x);});
 }
 
 void v9ProcessorImpl::handleInterrupt( long long aVector) {
@@ -192,7 +189,7 @@ unsigned long long v9ProcessorImpl::interruptRead(VirtualMemoryAddress anAddress
 
 #endif //FLEXUS_TARGET_IS(v9)
 
-ProcessorMapper * ProcessorMapper::theMapper = NULL;
+ProcessorMapper * ProcessorMapper::theMapper = nullptr;
 
 struct cpu_desc_t {
   int vm;
@@ -446,9 +443,9 @@ ProcessorMapper::ProcessorMapper() {
     strcpy(charOrg, strOrg.c_str());
     std::string *tokens = new std::string[theNumVMs];
     char *temp=strtok(charOrg,";");
-    while (temp!=NULL){
+    while (temp!=nullptr){
       tokens[i++]=temp;
-      temp = strtok (NULL, ";");
+      temp = strtok (nullptr, ";");
     }
     delete charOrg;
     // the organization vector will have the new indices and the machine vector will have them in muliple rows; one for each VM
@@ -456,10 +453,10 @@ ProcessorMapper::ProcessorMapper() {
       char *charMachine = new char[tokens[i].length()+1];
       strcpy(charMachine,tokens[i].c_str());
       temp=strtok(charMachine,",");
-      while (temp!=NULL){
+      while (temp!=nullptr){
         organization[j++]=atoi(temp);
         machines[i].push_back(atoi(temp));
-        temp = strtok (NULL,",");
+        temp = strtok (nullptr,",");
       }
       delete charMachine;
     }
@@ -507,28 +504,28 @@ ProcessorMapper::ProcessorMapper() {
 }
 
 int ProcessorMapper::mapFlexusIndex2ProcNum(int index) {
-  if (theMapper == NULL) {
+  if (theMapper == nullptr) {
     theMapper = new ProcessorMapper();
   }
   return theMapper->theProcMap[index].first;
 }
 
 int ProcessorMapper::mapClientNum2ProcNum(int index) {
-  if (theMapper == NULL) {
+  if (theMapper == nullptr) {
     theMapper = new ProcessorMapper();
   }
   return theMapper->theClientMap[index];
 }
 
 int ProcessorMapper::mapProcNum2FlexusIndex(int index) {
-  if (theMapper == NULL) {
+  if (theMapper == nullptr) {
     theMapper = new ProcessorMapper();
   }
   return theMapper->theReverseMap[index].first;
 }
 
 int ProcessorMapper::mapFlexusIndex2VM(int index) {
-  if (theMapper == NULL) {
+  if (theMapper == nullptr) {
     theMapper = new ProcessorMapper();
   }
   if (theMapper->theNumVMs == 0) {
@@ -538,22 +535,22 @@ int ProcessorMapper::mapFlexusIndex2VM(int index) {
 }
 
 int ProcessorMapper::numVMs() {
-  if (theMapper == NULL) {
+  if (theMapper == nullptr) {
     theMapper = new ProcessorMapper();
-    DBG_Assert(theMapper != NULL);
+    DBG_Assert(theMapper != nullptr);
   }
   return theMapper->theNumVMs;
 }
 
 int ProcessorMapper::numClients() {
-  if (theMapper == NULL) {
+  if (theMapper == nullptr) {
     theMapper = new ProcessorMapper();
   }
   return (int)(theMapper->theClientMap.size());
 }
 
 int ProcessorMapper::numProcessors() {
-  if (theMapper == NULL) {
+  if (theMapper == nullptr) {
     theMapper = new ProcessorMapper();
   }
   return (int)(theMapper->theProcMap.size());

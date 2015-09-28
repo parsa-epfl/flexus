@@ -65,7 +65,7 @@ Bank::Bank(ostream &dramsim_log_):
 
 Bank::DataStruct *Bank::searchForRow(unsigned row, DataStruct *head)
 {
-	while (head != NULL)
+	while (head != nullptr)
 	{
 		if (head->row == row)
 		{
@@ -76,15 +76,15 @@ Bank::DataStruct *Bank::searchForRow(unsigned row, DataStruct *head)
 		head = head->next;
 	}
 	//if we get here, didn't find it
-	return NULL;
+	return nullptr;
 }
 
 void Bank::read(BusPacket *busPacket)
 {
 	DataStruct *rowHeadNode = rowEntries[busPacket->column];
-	DataStruct *foundNode = NULL;
+	DataStruct *foundNode = nullptr;
 
-	if ((foundNode = Bank::searchForRow(busPacket->row, rowHeadNode)) == NULL)
+	if ((foundNode = Bank::searchForRow(busPacket->row, rowHeadNode)) == nullptr)
 	{
 		// the row hasn't been written before, so it isn't in the list
 		//if(SHOW_SIM_OUTPUT) DEBUG("== Warning - Read from previously unwritten row " << busPacket->row);
@@ -115,9 +115,9 @@ void Bank::write(const BusPacket *busPacket)
 
 	// head of the list we need to search
 	DataStruct *rowHeadNode = rowEntries[busPacket->column];
-	DataStruct *foundNode = NULL;
+	DataStruct *foundNode = nullptr;
 
-	if ((foundNode = Bank::searchForRow(busPacket->row, rowHeadNode)) == NULL)
+	if ((foundNode = Bank::searchForRow(busPacket->row, rowHeadNode)) == nullptr)
 	{
 		//not found
 		DataStruct *newRowNode = (DataStruct *)malloc(sizeof(DataStruct));

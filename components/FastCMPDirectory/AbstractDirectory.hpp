@@ -14,9 +14,7 @@
 #include <components/FastCMPDirectory/AbstractProtocol.hpp>
 #include <components/FastCMPDirectory/Utility.hpp>
 
-#include <boost/tuple/tuple.hpp>
-#include <boost/function.hpp>
-
+#include <tuple>
 #include <list>
 
 namespace nFastCMPDirectory {
@@ -95,7 +93,7 @@ protected:
   }
 
   inline void setInterleaving(std::string & arg) {
-    theDirectoryInterleaving = strtoul(arg.c_str(), NULL, 0);
+    theDirectoryInterleaving = strtoul(arg.c_str(), nullptr, 0);
   }
 
   inline void recordSnoopMiss() {
@@ -120,7 +118,7 @@ public:
   AbstractDirectory() :  theDirectoryInterleaving(64), theDirectoryLocation(Distributed) {};
   virtual ~AbstractDirectory() {}
 
-  virtual boost::tuple<SharingVector, SharingState, int, AbstractEntry_p>
+  virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
   lookup(int, PhysicalMemoryAddress, MMType, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) = 0;
 
   virtual int32_t processSnoopResponse(int32_t index, const MMType & type, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {

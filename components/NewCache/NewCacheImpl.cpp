@@ -31,7 +31,7 @@ class FLEXUS_COMPONENT(NewCache) {
 
 private:
 
-  std::auto_ptr<CacheController> theController; //Deleted automagically when the cache goes away
+  std::unique_ptr<CacheController> theController; //Deleted automagically when the cache goes away
 
   Stat::StatCounter theBusDeadlocks;
 
@@ -220,7 +220,7 @@ public:
     if (theFlexus->isFastMode()) {
       return 0;
     }
-    DBG_Assert(trans[MemoryMessageTag] != NULL);
+    DBG_Assert(trans[MemoryMessageTag] != nullptr);
     return ( (trans[MemoryMessageTag]->reqSize() > 0) ? cfg.BusTime_Data : cfg.BusTime_NoData) - 1;
   }
 

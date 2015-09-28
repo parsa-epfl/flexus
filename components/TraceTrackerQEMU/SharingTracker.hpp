@@ -16,7 +16,7 @@ extern "C" {
 }
 }
 
-#include <ext/hash_map>
+#include <unordered_map>
 
 using namespace Flexus;
 using namespace Core;
@@ -200,7 +200,7 @@ class SharingTracker {
   Qemu::API::conf_object_t * theCPU;
   uint64_t * theCurrValue;
 
-  typedef __gnu_cxx::hash_map<address_t, SharingInfo, IntHash> SharingMap;
+  typedef std::unordered_map<address_t, SharingInfo, IntHash> SharingMap;
   std::vector<SharingMap> theInvalidTags;
 
   Stat::StatCounter statFalseSharing;

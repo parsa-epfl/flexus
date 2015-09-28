@@ -3,10 +3,10 @@
 #include <iomanip>
 #include <algorithm>
 #include <vector>
+#include <memory>
 
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <boost/throw_exception.hpp>
-#include <boost/shared_ptr.hpp>
 #include <core/metaprogram.hpp>
 #include <boost/variant/get.hpp>
 #include <boost/optional.hpp>
@@ -59,7 +59,7 @@ class CoreImpl : public CoreModel {
 
   //Map Tables
   RegisterWindowMap theWindowMap;
-  std::vector< boost::shared_ptr<PhysicalMap> > theMapTables;
+  std::vector< std::shared_ptr<PhysicalMap> > theMapTables;
 
   RegisterWindowMap theArchitecturalWindowMap;
 

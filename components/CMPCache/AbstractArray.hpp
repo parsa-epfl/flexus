@@ -115,7 +115,7 @@ public:
 
   virtual LookupResult_p replaceLockedBlock(LookupResult_p lookup, MemoryAddress const & anAddress ) {
     DBG_Assert(false, ( << "Derived class does not implement replaceLockedBlock() function." ));
-    return NULL;
+    return nullptr;
   }
 
   virtual void setLockedThreshold(int32_t threshold) {
@@ -199,7 +199,7 @@ AbstractArray<_State> * constructArray(std::string & anArrayConfiguration, CMPCa
   }
 
   DBG_Assert(false, ( << "Failed to create Instance of '" << name << "'" ) );
-  return NULL;
+  return nullptr;
 }
 
 };  // namespace nCMPCache

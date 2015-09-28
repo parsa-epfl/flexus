@@ -3018,7 +3018,7 @@ std::pair<boost::intrusive_ptr<v9Instruction>, bool> format_3_mem( Flexus::Share
     case 0x34:
     case 0x36:
     case 0x37:
-      boost::tie( ret_val, last_uop) = fp_memory( op3, aFetchedOpcode, aCPU, aSequenceNo, aUop);
+      std::tie( ret_val, last_uop) = fp_memory( op3, aFetchedOpcode, aCPU, aSequenceNo, aUop);
       break;
     case 0x21:
       ret_val = ldfsr( aFetchedOpcode, aCPU, aSequenceNo);
@@ -3075,7 +3075,7 @@ std::pair< boost::intrusive_ptr<AbstractInstruction>, bool> decode( Flexus::Shar
       break;
 
     case 3: //Memory
-      boost::tie(ret_val, last_uop) = format_3_mem( aFetchedOpcode, aCPU, aSequenceNo, aUop);
+      std::tie(ret_val, last_uop) = format_3_mem( aFetchedOpcode, aCPU, aSequenceNo, aUop);
       break;
 
     default:

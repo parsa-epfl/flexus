@@ -129,7 +129,7 @@ inline
 void FastAlloc::deallocate(void * p, size_t sz) {
   int32_t b;
 
-  DBG_Assert(p != NULL);
+  DBG_Assert(p != nullptr);
 
   if (sz > Max_Alloc_Size) {
     ::delete [] ((char *) p);

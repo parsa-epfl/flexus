@@ -72,12 +72,12 @@ protected:
   }
 
   virtual void setProtectedBlock(MemoryAddress addr, bool flag){
-    LookupResult_p lookup = NULL;
+    LookupResult_p lookup = nullptr;
     lookup = (*theArray)[addr];
-    if (lookup != NULL)
+    if (lookup != nullptr)
       lookup->setProtected(flag);
     else
-      DBG_(Dev,( << " NULL lookup in setProtectedBlock. This would cause segmentation fault !!!!  "));
+      DBG_(Dev,( << " nullptr lookup in setProtectedBlock. This would cause segmentation fault !!!!  "));
   }
 
   virtual uint32_t arrayEvictResourcesFree() const {

@@ -101,7 +101,7 @@ AbstractDirectory<_State, _EState>* constructDirectory(const DirectoryInfo & par
   }
 
   DBG_Assert(false, ( << "Failed to create instance of '" << type << "' directory. Type unknown." ));
-  return NULL;
+  return nullptr;
 }
 
 }; // nCMPDirectory

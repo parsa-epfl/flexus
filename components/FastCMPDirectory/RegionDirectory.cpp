@@ -11,8 +11,7 @@
 #include <components/FastCMPDirectory/RegionDirEntry.hpp>
 #include <ext/hash_map>
 
-#include <boost/tuple/tuple.hpp>
-
+#include <tuple>
 #include <list>
 
 #include <components/Common/Serializers.hpp>
@@ -92,14 +91,14 @@ protected:
     //BlockDirectoryEntry *my_entry = dynamic_cast<BlockDirectoryEntry*>(dir_entry);
     BlockDirectoryEntry * my_entry(&(dynamic_cast<BlockEntryWrapper *>(dir_entry.get())->block));
 
-    DBG_Assert(my_entry != NULL);
+    DBG_Assert(my_entry != nullptr);
     my_entry->addSharer(index);
   }
 
   virtual void addExclusiveSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     //BlockDirectoryEntry *my_entry = dynamic_cast<BlockDirectoryEntry*>(dir_entry);
     BlockDirectoryEntry * my_entry(&(dynamic_cast<BlockEntryWrapper *>(dir_entry.get())->block));
-    DBG_Assert(my_entry != NULL);
+    DBG_Assert(my_entry != nullptr);
     my_entry->addSharer(index);
     my_entry->makeExclusive(index);
   }
@@ -112,7 +111,7 @@ protected:
   virtual void removeSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     //BlockDirectoryEntry *my_entry = dynamic_cast<BlockDirectoryEntry*>(dir_entry);
     BlockDirectoryEntry * my_entry(&(dynamic_cast<BlockEntryWrapper *>(dir_entry.get())->block));
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     my_entry->removeSharer(index);
@@ -121,7 +120,7 @@ protected:
   virtual void makeSharerExclusive(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     //BlockDirectoryEntry *my_entry = dynamic_cast<BlockDirectoryEntry*>(dir_entry);
     BlockDirectoryEntry * my_entry(&(dynamic_cast<BlockEntryWrapper *>(dir_entry.get())->block));
-    if (my_entry == NULL) {
+    if (my_entry == nullptr) {
       return;
     }
     // Make it exclusive
@@ -168,12 +167,12 @@ protected:
   }
 
 public:
-  virtual boost::tuple<SharingVector, SharingState, int, AbstractEntry_p>
+  virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
   lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) {
 
     PhysicalMemoryAddress tag(get_tag(address));
     RegionDirEntry * entry = findOrCreateEntry(tag);
-    DBG_Assert(entry != NULL);
+    DBG_Assert(entry != nullptr);
     if (entry->tag() != tag) {
       // We're evicting an existing entry
       PhysicalMemoryAddress addr(entry->tag());
@@ -181,7 +180,7 @@ public:
       for (int32_t i = 0; i < theBlocksPerRegion; i++, addr += theBlockSize) {
         if ((*entry)[i].state() != ZeroSharers) {
           DBG_(Iface, ( << "Directory Evicting Block: " << addr ));
-          xtra_actions.push_back(boost::lambda::bind(theInvalidateAction, addr, (*entry)[i].sharers()));
+          xtra_actions.push_back([this, addr, entry](){ return this->theInvalidateAction(addr,(*entry)[i].sharers()); });
         }
       }
       entry->reset(tag);
@@ -194,7 +193,7 @@ public:
     int32_t offset = get_offset(address);
     BlockEntryWrapper_p block( new BlockEntryWrapper((*entry)[offset]));
     DBG_(Iface, ( << "Lookup: tag=" << std::hex << tag << ", set=" << get_set(tag) << ", offset=" << offset << ", block=" << block ));
-    return boost::tie((*block)->sharers(), (*block)->state(), dir_loc, block);
+    return std::make_tuple((*block)->sharers(), (*block)->state(), dir_loc, block);
   }
 
   void saveState( std::ostream & s, const std::string & aDirName ) {
@@ -228,11 +227,11 @@ public:
     std::list<std::pair<std::string, std::string> >::iterator iter = args.begin();
     for (; iter != args.end(); iter++) {
       if (strcasecmp(iter->first.c_str(), "sets") == 0) {
-        directory->theNumSets = strtol(iter->second.c_str(), NULL, 0);
+        directory->theNumSets = strtol(iter->second.c_str(), nullptr, 0);
       } else if (strcasecmp(iter->first.c_str(), "assoc") == 0) {
-        directory->theAssociativity = strtol(iter->second.c_str(), NULL, 0);
+        directory->theAssociativity = strtol(iter->second.c_str(), nullptr, 0);
       } else if (strcasecmp(iter->first.c_str(), "rsize") == 0) {
-        directory->theRegionSize = strtol(iter->second.c_str(), NULL, 0);
+        directory->theRegionSize = strtol(iter->second.c_str(), nullptr, 0);
       } else if (strcasecmp(iter->first.c_str(), "skew") == 0) {
         if (strcasecmp(iter->second.c_str(), "true") == 0) {
           directory->theSkewSet = true;

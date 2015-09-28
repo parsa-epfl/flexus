@@ -15,7 +15,7 @@ blist_t * new_blist(int32_t idx, double occupancy) {
     fatal("memory allocation error\n");
   ptr->idx = idx;
   ptr->occupancy = occupancy;
-  ptr->next = NULL;
+  ptr->next = nullptr;
   return ptr;
 }
 
@@ -69,13 +69,13 @@ void reset_b2gmap(grid_model_t * model, layer_t * layer) {
         free(ptr);
         ptr = temp;
       }
-      layer->b2gmap[i][j] = NULL;
+      layer->b2gmap[i][j] = nullptr;
     }
 }
 
 /* create a linked list node and append it at the end	*/
 void blist_append(blist_t * head, int32_t idx, double occupancy) {
-  blist_t * tail = NULL;
+  blist_t * tail = nullptr;
 
   if (!head)
     fatal("blist_append called with empty list\n");
@@ -384,7 +384,7 @@ void parse_layer_file(grid_model_t * model, FILE * fp) {
  */
 void populate_layers_grid(grid_model_t * model, flp_t * flp_default) {
   char str[STR_SIZE];
-  FILE * fp = NULL;
+  FILE * fp = nullptr;
 
   /* lcf file specified	*/
   if (model->has_lcf) {
@@ -455,7 +455,7 @@ grid_model_t * alloc_grid_model(thermal_config_t * config, flp_t * flp_default) 
     fatal("unknown mapping mode\n");
 
   /* layer configuration file specified?	*/
-  if (strcmp(model->config.grid_layer_file, NULLFILE))
+  if (strcmp(model->config.grid_layer_file, nullptrFILE))
     model->has_lcf = TRUE;
   else {
     model->has_lcf = FALSE;
@@ -1903,11 +1903,11 @@ void compute_temp_grid(grid_model_t * model, double * power, double * temp, doub
   /* map the block power/temp numbers to the grid	*/
   xlate_vector_b2g(model, power, p, V_POWER);
 
-  /* if temp is NULL, re-use the temperature from the
+  /* if temp is nullptr, re-use the temperature from the
    * last call. otherwise, translate afresh and remember
    * the grid and block temperature arrays for future use
    */
-  if (temp != NULL) {
+  if (temp != nullptr) {
     xlate_vector_b2g(model, temp, model->last_trans, V_TEMP);
     model->last_temp = temp;
   }

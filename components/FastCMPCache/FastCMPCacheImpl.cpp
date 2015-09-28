@@ -14,10 +14,7 @@
 
 #include <core/performance/profile.hpp>
 
-#include <boost/lambda/lambda.hpp>
-#include <boost/bind.hpp>
 #include <boost/intrusive_ptr.hpp>
-#include <ext/hash_map>
 
 #include <list>
 #include <fstream>
@@ -227,7 +224,7 @@ public:
     theDirStats = new DirectoryStats(statName());
     theCacheStats = new CacheStats(statName());
 
-    Stat::getStatManager()->addFinalizer( boost::lambda::bind( &nFastCMPCache::FastCMPCacheComponent::finalize, this ) );
+    Stat::getStatManager()->addFinalizer([this](){this->finalize();});
 
     std::string empty_string;
 
@@ -241,9 +238,9 @@ public:
     theDirectory->setNumCores(theCMPWidth);
     theDirectory->setNumCaches(theCMPWidth);
     theDirectory->setBlockSize(cfg.CoherenceUnit);
-    theDirectory->setPortOperations( boost::bind( &FastCMPCacheComponent::sendRegionProbe, this, _1, _2),
-                                     boost::bind( &FastCMPCacheComponent::scheduleDelayedAction, this, _1) );
-    theDirectory->setInvalidateAction( boost::bind( &FastCMPCacheComponent::invalidateBlock, this, _1, _2) );
+    theDirectory->setPortOperations( [this](auto x, auto y){this->sendRegionProbe(x,y);},
+                                     [this](auto x){this->scheduleDelayedAction(x);} );
+    theDirectory->setInvalidateAction( [this](auto x, auto y){this->invalidateBlock(x,y);} );
     theDirectory->initialize(statName());
 
     theProtocol = CREATE_PROTOCOL(cfg.Protocol);
@@ -277,8 +274,8 @@ public:
                               cfg.BlockSize,
                               num_sets,
                               cfg.Associativity,
-                              boost::bind( &FastCMPCacheComponent::evict, this, _1, _2),
-                              boost::bind( &FastCMPCacheComponent::sendInvalidate, this, _1, _2, _3),
+                              [this](auto x, auto y){ return this->evict(x, y);},
+                              [this](auto x, auto y, auto z){ return this->sendInvalidate(x,y,z);},
                               theIndex,
                               cfg.CacheLevel,
                               cfg.ReplPolicy
@@ -288,9 +285,9 @@ public:
                               cfg.BlockSize,
                               num_sets,
                               cfg.Associativity,
-                              boost::bind( &FastCMPCacheComponent::evict, this, _1, _2),
-                              boost::bind( &FastCMPCacheComponent::evictRegion, this, _1, _2),
-                              boost::bind( &FastCMPCacheComponent::sendInvalidate, this, _1, _2, _3),
+                              [this](auto x, auto y){ return this->evict(x, y);},
+                              [this](auto x, auto y){ return this->evictRegion(x, y);},
+                              [this](auto x, auto y, auto z){ return this->sendInvalidate(x,y,z);},
                               theIndex,
                               cfg.CacheLevel,
                               cfg.RegionSize,
@@ -302,7 +299,7 @@ public:
                             );
     }
 
-    Flexus::Stat::getStatManager()->addFinalizer( ll::bind(&CacheStats::update, theCacheStats) );
+    Flexus::Stat::getStatManager()->addFinalizer( [this](){ return this->theCacheStats->update(); } );
 
   }
 
@@ -368,7 +365,7 @@ public:
     bool dir_valid;
 
     // Perform directory lookup
-    boost::tie(sharers, state, dir_entry, dir_valid) = theDirectory->snoopLookup(0, addr, aMessage.type());
+    std::tie(sharers, state, dir_entry, dir_valid) = theDirectory->snoopLookup(0, addr, aMessage.type());
 
     // Perform cache lookup
     lookup = theCache->lookup(addr);
@@ -480,7 +477,7 @@ private:
     std::list<boost::function<void(void)> > extra_actions;
 
     // Perform directory lookup
-    boost::tie(sharers, state, dir_entry) = theDirectory->lookup(anIndex, addr, aMessage.type(), extra_actions);
+    std::tie(sharers, state, dir_entry) = theDirectory->lookup(anIndex, addr, aMessage.type(), extra_actions);
 
     // TODO: check if we need to remap cur_location
 

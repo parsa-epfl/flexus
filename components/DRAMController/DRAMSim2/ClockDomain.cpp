@@ -100,9 +100,9 @@ namespace ClockDomain
 		ClockUpdateCB *callback = new Callback<TestObj, void>(this, &TestObj::cb);
 
 		//ClockDomainCrosser x(5,2,&cb);
-		//ClockDomainCrosser x(2,5,NULL);
-		//ClockDomainCrosser x(37,41,NULL);
-		//ClockDomainCrosser x(41,37,NULL);
+		//ClockDomainCrosser x(2,5,nullptr);
+		//ClockDomainCrosser x(37,41,nullptr);
+		//ClockDomainCrosser x(41,37,nullptr);
 		//cout << "(main) callback address: " << (uint64_t)&cb << endl;
 		ClockDomainCrosser x(0.5, callback);
 		cout <<"------------------------------------------\n";

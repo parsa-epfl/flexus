@@ -248,20 +248,17 @@ CoreImpl::CoreImpl( uArchOptions_t options
 
   //Map table for rRegisters
   theMapTables.push_back
-  ( boost::shared_ptr<PhysicalMap>
-    ( new PhysicalMap( krRegs_Total , reg_file_sizes[rRegisters]) )
+  ( std::make_shared<PhysicalMap>( krRegs_Total , reg_file_sizes[rRegisters])
   );
 
   //Map table for fRegisters
   theMapTables.push_back
-  ( boost::shared_ptr<PhysicalMap>
-    ( new PhysicalMap( kfRegs, reg_file_sizes[fRegisters]) )
+  ( std::make_shared<PhysicalMap>( kfRegs, reg_file_sizes[fRegisters])
   );
 
   //Map table for ccBits
   theMapTables.push_back
-  ( boost::shared_ptr<PhysicalMap>
-    ( new PhysicalMap( 5, reg_file_sizes[ccBits]) )
+  ( std::make_shared<PhysicalMap>( 5, reg_file_sizes[ccBits])
   );
 
   reset();

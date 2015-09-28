@@ -12,13 +12,9 @@
 #include <boost/function.hpp>
 #define BOOST_NO_WREGEX
 #include <boost/regex.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
 #include <boost/optional.hpp>
 
 #include <core/stats.hpp>
-
-namespace ll = boost::lambda;
 
 namespace Flexus {
 namespace Stat {
@@ -367,11 +363,14 @@ void printInst( std::ostream & anOstream, std::map<int64_t, int64_t> const  & bu
   int64_t sum = 0;
   int64_t count = elements.size();
 
-  std::for_each
-  ( buckets.begin()
-    , buckets.end()
-    , ll::var(sum) += ll::bind( &std::map<int64_t, int64_t>::value_type::second, ll::_1 )
-  );
+  for(auto& bucket: buckets){
+    sum += bucket.second;
+  }
+  // std::for_each
+  // ( buckets.begin()
+  //   , buckets.end()
+  //   , ll::var(sum) += ll::bind( &std::map<int64_t, int64_t>::value_type::second, ll::_1 )
+  // );
 
   //Print implementation here
   anOstream << std::endl;
@@ -456,23 +455,29 @@ void printInst2Hist( std::ostream & anOstream, std::map<int64_t, int64_t> const 
     }
   }
 
-  std::for_each
-  ( elements.begin()
-    , elements.end()
-    , ll::var(total_count) += ll::bind( &sort_value_helper::count, ll::_1 )
-  );
+  for(auto& element: elements){
+    total_count += element.count;
+    weighted_total += element.product();
+    square_sum += element.sqsum();
+  }
 
-  std::for_each
-  ( elements.begin()
-    , elements.end()
-    , ll::var(weighted_total) += ll::bind( &sort_value_helper::product, ll::_1 )
-  );
+  // std::for_each
+  // ( elements.begin()
+  //   , elements.end()
+  //   , ll::var(total_count) += ll::bind( &sort_value_helper::count, ll::_1 )
+  // );
 
-  std::for_each
-  ( elements.begin()
-    , elements.end()
-    , ll::var(square_sum) += ll::bind( &sort_value_helper::sqsum, ll::_1 )
-  );
+  // std::for_each
+  // ( elements.begin()
+  //   , elements.end()
+  //   , ll::var(weighted_total) += ll::bind( &sort_value_helper::product, ll::_1 )
+  // );
+
+  // std::for_each
+  // ( elements.begin()
+  //   , elements.end()
+  //   , ll::var(square_sum) += ll::bind( &sort_value_helper::sqsum, ll::_1 )
+  // );
 
   double stdev = std::sqrt( square_sum / total_count - ( weighted_total / total_count ) * ( weighted_total / total_count ) );
 
@@ -781,7 +786,7 @@ PeriodicMeasurement::PeriodicMeasurement( std::string const & aName, std::string
   , theAccumulationType(anAccumulationType) {
   //Period of zero is not allowed.
   if (aPeriod > 0) {
-    getStatManager()->addEvent(getStatManager()->ticks() + aPeriod, ll::bind( &PeriodicMeasurement::fire, this) );
+    getStatManager()->addEvent(getStatManager()->ticks() + aPeriod, [this](){ return this->fire(); }); //ll::bind( &PeriodicMeasurement::fire, this) );
   }
 }
 
@@ -830,7 +835,7 @@ void PeriodicMeasurement :: fire () {
       ++iter;
     }
 
-    getStatManager()->addEvent(getStatManager()->ticks() + thePeriod, ll::bind( &PeriodicMeasurement::fire, this) );
+    getStatManager()->addEvent(getStatManager()->ticks() + thePeriod, [this](){ return this->fire(); }); //ll::bind( &PeriodicMeasurement::fire, this) );
   }
 }
 
@@ -844,7 +849,7 @@ LoggedPeriodicMeasurement::LoggedPeriodicMeasurement( std::string const & aName,
   , theOstream(anOstream) {
   //Period of zero is not allowed.
   if (aPeriod > 0) {
-    getStatManager()->addEvent(getStatManager()->ticks() + aPeriod, ll::bind( &LoggedPeriodicMeasurement::fire, this) );
+    getStatManager()->addEvent(getStatManager()->ticks() + aPeriod, [this](){ return this->fire(); }); //ll::bind( &LoggedPeriodicMeasurement::fire, this) );
   }
 }
 
@@ -912,7 +917,7 @@ void LoggedPeriodicMeasurement  :: fire () {
       }
     }
 
-    getStatManager()->addEvent(getStatManager()->ticks() + thePeriod, ll::bind( &LoggedPeriodicMeasurement::fire, this) );
+    getStatManager()->addEvent(getStatManager()->ticks() + thePeriod, [this](){ return this->fire(); }); //ll::bind( &LoggedPeriodicMeasurement::fire, this) );
   }
 }
 

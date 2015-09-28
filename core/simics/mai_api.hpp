@@ -421,8 +421,8 @@ public:
   void releaseMMUCkpt();
   void rollbackMMUCkpts(int n);
   void resyncMMU();
-  bool validateMMU(MMU::mmu_t * m = NULL);
-  void dumpMMU(MMU::mmu_t * m = NULL);
+  bool validateMMU(MMU::mmu_t * m = nullptr);
+  void dumpMMU(MMU::mmu_t * m = nullptr);
   void initializeASIInfo();
 
   unsigned long long mmuRead(VirtualMemoryAddress anAddress, int anASI);
@@ -432,7 +432,7 @@ public:
   PhysicalMemoryAddress translateInstruction_SimicsImpl(VirtualMemoryAddress anAddress) const;
   long fetchInstruction_SimicsImpl(VirtualMemoryAddress const & anAddress);
 
-  boost::tuple < PhysicalMemoryAddress, bool/*cacheable*/, bool/*side-effect*/ > translateTSB_SimicsImpl(VirtualMemoryAddress anAddress, int anASI) const;
+  std::tuple < PhysicalMemoryAddress, bool/*cacheable*/, bool/*side-effect*/ > translateTSB_SimicsImpl(VirtualMemoryAddress anAddress, int anASI) const;
   unsigned long long readVAddr_SimicsImpl(VirtualMemoryAddress anAddress, int anASI, int aSize) const;
   unsigned long long readVAddrXendian_SimicsImpl(VirtualMemoryAddress anAddress, int anASI, int aSize) const;
   void translate_SimicsImpl(  API::v9_memory_transaction_t & xact, VirtualMemoryAddress anAddress, int anASI ) const;
@@ -473,10 +473,32 @@ public:
 };
 #endif //FLEXUS_TARGET_IS(x86)
 
+#if FLEXUS_TARGET_IS(ARM)
+class armProcessorImpl :  public BaseProcessorImpl {
+
+public:
+  explicit armProcessorImpl(API::conf_object_t * aProcessor)
+    : BaseProcessorImpl(aProcessor) {
+  }
+
+  void breakSimulation() {
+    API::SIM_break_cycle( *this, 0);
+  }
+
+  bool validateMMU() {
+    return true;
+  }
+  void dumpMMU() {}
+
+};
+#endif //FLEXUS_TARGET_IS(ARM)
+
 #if FLEXUS_TARGET_IS(v9)
 #define PROCESSOR_IMPL v9ProcessorImpl
 #elif FLEXUS_TARGET_IS(x86)
 #define PROCESSOR_IMPL x86ProcessorImpl
+#elif FLEXUS_TARGET_IS(ARM)
+#define PROCESSOR_IMPL armProcessorImpl
 #else
 #error "Architecture does not support MAI"
 #endif

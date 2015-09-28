@@ -22,15 +22,15 @@ void Target::process(Entry const & anEntry) {
 Filter & Target::filter() {
   return *theFilter;
 }
-void Target::setFilter(std::auto_ptr<Filter> aFilter) {
-  theFilter = aFilter;
+void Target::setFilter(std::unique_ptr<Filter> aFilter) {
+  theFilter = std::move(aFilter);
 }
 
 Action & Target::action() {
   return *theAction;
 }
-void Target::setAction(std::auto_ptr<Action> anAction) {
-  theAction = anAction;
+void Target::setAction(std::unique_ptr<Action> anAction) {
+  theAction = std::move(anAction);
 }
 
 void Target::printConfiguration(std::ostream & anOstream, std::string const & anIndent) {

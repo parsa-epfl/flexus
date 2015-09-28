@@ -283,7 +283,7 @@ protected:
     snoop_map_t::iterator iter = snoop_map.begin();
     for (; iter != snoop_map.end(); iter++) {
       delete iter->second.first;
-      iter->second.first = NULL;
+      iter->second.first = nullptr;
     }
     snoop_map.clear();
   }
@@ -618,7 +618,7 @@ GenerateCoherenceProtocol(std::string name, bool using_traces, CP::message_funct
   } else {
     DBG_Assert(false, ( << "Unknown CoherenceProtocol '" << name << "'") );
   }
-  return NULL;
+  return nullptr;
 }
 
 };

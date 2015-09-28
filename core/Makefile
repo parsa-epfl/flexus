@@ -57,7 +57,8 @@ test: depend core
 # core: depend iostreams
 # 	$(MAKE) -f makefile.$(SELECTED_CC) libcore_$(VARIANT).a $(BUILD_OPTIONS) SOURCES="$(CORE_LIB_SOURCES)"
 
-core: depend boost_libs
+#core: 
+core:
 	$(MAKE) -f makefile.$(SELECTED_CC) libcore_$(VARIANT).a $(BUILD_OPTIONS) SOURCES="$(CORE_LIB_SOURCES)"
 
 boost_libs:
@@ -66,8 +67,7 @@ boost_libs:
 	export PATH=$(GCC_PATH):$(PATH) && \
 	./bootstrap.sh --without-icu --with-libraries=date_time,regex,serialization,iostreams,system && \
 	echo "Building Boost Libraries: date_time regex serialization iostreams system" && \
-	./b2 --build-dir=/tmp/build-boost --stagedir=$(FLEXUS_ROOT)/core variant=release link=static,shared stage || \
-	echo "Boost already built..."
+	./b2 --build-dir=/tmp/build-boost --stagedir=$(CURRENT_TOOLCHAIN) variant=release link=static,shared stage 
 
 # date_time: depend
 # 	$(MAKE) -f makefile.$(SELECTED_CC) libboost_date_time.a $(BUILD_OPTIONS) BOOST_SRC_DIR="$(BOOST_DATE_TIME_PATH)" SOURCES="$(BOOST_DATE_TIME_SOURCES)"

@@ -5,8 +5,6 @@
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <boost/throw_exception.hpp>
 #include <boost/function.hpp>
-#include <boost/lambda/lambda.hpp>
-namespace ll = boost::lambda;
 
 #include <core/target.hpp>
 #include <core/debug/debug.hpp>
@@ -42,7 +40,7 @@ bool checkStoreQueueAvailable( SemanticInstruction * anInstruction ) {
 }
 
 boost::function<bool()> storeQueueAvailableConstraint( SemanticInstruction * anInstruction ) {
-  return ll::bind( &checkStoreQueueAvailable, anInstruction );
+  return [anInstruction](){ return checkStoreQueueAvailable(anInstruction); };
 }
 
 bool checkMembarStoreStoreConstraint( SemanticInstruction * anInstruction ) {
@@ -53,7 +51,7 @@ bool checkMembarStoreStoreConstraint( SemanticInstruction * anInstruction ) {
 }
 
 boost::function<bool()> membarStoreStoreConstraint( SemanticInstruction * anInstruction ) {
-  return ll::bind( &checkMembarStoreStoreConstraint, anInstruction );
+  return [anInstruction](){ return checkMembarStoreStoreConstraint(anInstruction); };
 }
 
 bool checkMembarStoreLoadConstraint( SemanticInstruction * anInstruction ) {
@@ -64,7 +62,7 @@ bool checkMembarStoreLoadConstraint( SemanticInstruction * anInstruction ) {
 }
 
 boost::function<bool()> membarStoreLoadConstraint( SemanticInstruction * anInstruction ) {
-  return ll::bind( &checkMembarStoreLoadConstraint, anInstruction );
+  return [anInstruction](){ return checkMembarStoreLoadConstraint(anInstruction); };
 }
 
 bool checkMembarSyncConstraint( SemanticInstruction * anInstruction ) {
@@ -75,7 +73,7 @@ bool checkMembarSyncConstraint( SemanticInstruction * anInstruction ) {
 }
 
 boost::function<bool()> membarSyncConstraint( SemanticInstruction * anInstruction ) {
-  return ll::bind( &checkMembarSyncConstraint, anInstruction );
+  return [anInstruction](){ return checkMembarSyncConstraint(anInstruction); };
 }
 
 bool checkMemoryConstraint( SemanticInstruction * anInstruction ) {
@@ -103,7 +101,7 @@ bool checkMemoryConstraint( SemanticInstruction * anInstruction ) {
 }
 
 boost::function<bool()> loadMemoryConstraint( SemanticInstruction * anInstruction ) {
-  return ll::bind( &checkMemoryConstraint, anInstruction );
+  return [anInstruction](){ return checkMemoryConstraint(anInstruction); };
 }
 
 bool checkStoreQueueEmpty( SemanticInstruction * anInstruction ) {
@@ -114,7 +112,7 @@ bool checkStoreQueueEmpty( SemanticInstruction * anInstruction ) {
 }
 
 boost::function<bool()> storeQueueEmptyConstraint( SemanticInstruction * anInstruction ) {
-  return ll::bind( &checkStoreQueueEmpty, anInstruction );
+  return [anInstruction](){ return checkStoreQueueEmpty; };
 }
 
 bool checkSideEffectStoreConstraint( SemanticInstruction * anInstruction ) {
@@ -125,7 +123,7 @@ bool checkSideEffectStoreConstraint( SemanticInstruction * anInstruction ) {
 }
 
 boost::function<bool()> sideEffectStoreConstraint( SemanticInstruction * anInstruction ) {
-  return ll::bind( &checkSideEffectStoreConstraint, anInstruction );
+  return [anInstruction](){ return checkSideEffectStoreConstraint(anInstruction); };
 }
 
 } //nv9Decoder

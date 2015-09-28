@@ -11,9 +11,14 @@
 #include <core/configuration.hpp>
 #include <core/component.hpp>
 
-extern "C" {
+#define QEMUFLEX_FLEXUS_INTERNAL
+namespace Flexus{
+namespace Qemu{
+namespace API{
 #include <core/qemu/api.h>
-}
+} // API
+} // Qemu
+} // Flexus
 
 // For debug purposes
 #include <iostream>
@@ -37,7 +42,7 @@ namespace Qemu = Flexus::Qemu;
 void CreateFlexus() {
   CreateFlexusObject();
 
-  Flexus::Core::index_t systemWidth = QEMU_get_num_cpus();
+  Flexus::Core::index_t systemWidth = Qemu::API::QEMU_get_num_cpus();
   Flexus::Core::ComponentManager::getComponentManager()
 								.instantiateComponents(systemWidth);
  
@@ -49,7 +54,7 @@ void CreateFlexus() {
 
 void PrepareFlexus() {
   PrepareFlexusObject();
-  QEMU_insert_callback(QEMUFLEX_GENERIC_CALLBACK, QEMU_config_ready, NULL, (void*)&CreateFlexus);
+  Qemu::API::QEMU_insert_callback(QEMUFLEX_GENERIC_CALLBACK, Qemu::API::QEMU_config_ready, nullptr, (void*)&CreateFlexus);
 }
 extern "C" void flexus_init(void) {
     initFlexus();
@@ -78,7 +83,8 @@ extern "C" void flexInit(){
     Flexus::Qemu::flexus_init();
 }
 
-extern "C" void qemuflex_init(void) {
+extern "C" void qemuflex_init(Flexus::Qemu::API::QFLEX_API_Interface_Hooks_t* hooks) {
+  Flexus::Qemu::API::QFLEX_API_set_interface_hooks( hooks );
   std::cerr << "Entered init_local\n";
 
   print_copyright();

@@ -86,7 +86,7 @@ namespace nNetShim
       replTS     ( 0 ),
 #endif
       // CMU-ONLY-BLOCK-END
-      myList          ( NULL )
+      myList          ( nullptr )
     {}
 
     MessageState ( int32_t srcNode_,
@@ -113,7 +113,7 @@ namespace nNetShim
       replTS     ( 0 ),
 #endif
       // CMU-ONLY-BLOCK-END
-      myList     ( NULL )
+      myList     ( nullptr )
     {}
 
   public:
@@ -136,7 +136,7 @@ namespace nNetShim
       atHeadTime = 0;
       acceptTime = 0;
       transmitLatency = transmitLatency_;
-      myList = NULL;
+      myList = nullptr;
       hopCount = -1;
       startTS  = startTS_;
       
@@ -198,9 +198,9 @@ namespace nNetShim
 
   public:
     MessageStateList ( void ) :
-      msg  ( NULL ),
-      prev ( NULL ),
-      next ( NULL ),
+      msg  ( nullptr ),
+      prev ( nullptr ),
+      next ( nullptr ),
       delay ( 0 )
     {
 #ifdef NS_DEBUG

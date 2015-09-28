@@ -260,7 +260,7 @@ private:
     std::list<TopologyMessage> msg_list;
     std::list<boost::function<void(void)> > extra_actions;
 
-    boost::tie(sharers, state, cur_location, dir_entry) = theDirectory->lookup(anIndex, addr, aMessage.type(), msg_list, extra_actions);
+    std::tie(sharers, state, cur_location, dir_entry) = theDirectory->lookup(anIndex, addr, aMessage.type(), msg_list, extra_actions);
 
     // Next, we use the sharing state and the request type to determine the actions based on some coherence protocol
     // The actions consist of the following information:

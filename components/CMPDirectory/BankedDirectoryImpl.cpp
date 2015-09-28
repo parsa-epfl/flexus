@@ -30,7 +30,7 @@ class FLEXUS_COMPONENT(BankedDirectory) {
 
 private:
 
-  std::auto_ptr<BankedController> theController;
+  std::unique_ptr<BankedController> theController;
 
 public:
 

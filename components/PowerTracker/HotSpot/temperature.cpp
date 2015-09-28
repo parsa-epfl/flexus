@@ -34,10 +34,10 @@ thermal_config_t default_thermal_config(void) {
   /* others	*/
   config.ambient = 45 + 273.15;		/* in kelvin	*/
   /* initial temperatures	from file	*/
-  strcpy(config.init_file, NULLFILE);
+  strcpy(config.init_file, nullptrFILE);
   config.init_temp = 60 + 273.15;		/* in Kelvin	*/
   /* steady state temperatures to file	*/
-  strcpy(config.steady_file, NULLFILE);
+  strcpy(config.steady_file, nullptrFILE);
   /* 3.33 us sampling interval = 10K cycles at 3GHz	*/
   config.sampling_intvl = 3.333e-6;
   config.base_proc_freq = 3e9;		/* base processor frequency in Hz	*/
@@ -52,9 +52,9 @@ thermal_config_t default_thermal_config(void) {
   config.grid_rows = 64;				/* grid resolution - no. of rows	*/
   config.grid_cols = 64;				/* grid resolution - no. of cols	*/
   /* layer configuration from	file */
-  strcpy(config.grid_layer_file, NULLFILE);
+  strcpy(config.grid_layer_file, nullptrFILE);
   /* output steady state grid temperatures apart from block temperatures */
-  strcpy(config.grid_steady_file, NULLFILE);
+  strcpy(config.grid_steady_file, nullptrFILE);
   /*
    * mapping mode between block and grid models.
    * default: use the temperature of the center
@@ -360,7 +360,7 @@ double * hotspot_vector(RC_model_t * model) {
   else if (model->type == GRID_MODEL)
     return hotspot_vector_grid(model->grid);
   else fatal("unknown model type\n");
-  return NULL;
+  return nullptr;
 }
 
 /* copy 'src' to 'dst' except for a window of 'size'
