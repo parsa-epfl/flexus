@@ -1,5 +1,5 @@
 #include "coreModelImpl.hpp"
-#include <core/simics/mai_api.hpp>
+#include <core/qemu/mai_api.hpp>
 #include <boost/optional/optional_io.hpp>
 
 #define DBG_DeclareCategories uArchCat
@@ -25,7 +25,7 @@ inline uint64_t mask( eSize aSize) {
 uint64_t value( MemQueueEntry const & anEntry, bool aFlipEndian ) {
   DBG_Assert( anEntry.theValue );
   if (aFlipEndian) {
-    return Flexus::Simics::endianFlip( *anEntry.theValue, anEntry.theSize );
+    return Flexus::Qemu::endianFlip( *anEntry.theValue, anEntry.theSize );
   } else {
     return *anEntry.theValue;
   }
@@ -93,7 +93,7 @@ void CoreImpl::forwardValue( MemQueueEntry const & aStore, memq_t::index< by_ins
       if (aLoad->theInverseEndian == aStore.theInverseEndian || !aStore.theValue) {
         aLoad->loadValue() = aStore.theValue;
       } else {
-        aLoad->loadValue() = Flexus::Simics::endianFlip( *aStore.theValue, aStore.theSize);
+        aLoad->loadValue() = Flexus::Qemu::endianFlip( *aStore.theValue, aStore.theSize);
         DBG_(Dev, ( << "Inverse endian forwarding of " << *aStore.theValue << " from " << aStore << " to " << *aLoad  << " load value: " << aLoad->loadValue() ));
       }
       signalStoreForwardingHit_fn(true);

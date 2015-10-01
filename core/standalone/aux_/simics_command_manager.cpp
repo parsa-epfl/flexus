@@ -1,3 +1,5 @@
+#ifndef CONFIG_QEMU
+
 #include <string>
 #include <vector>
 
@@ -49,3 +51,4 @@ void SimicsCommandManager::addCommand(std::string const & aNamespaceName, std::s
 } //namespace aux_
 } //namespace Simics
 } //namespace Flexus
+#endif //CONFIG_QEMU

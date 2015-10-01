@@ -21,7 +21,7 @@
 #define DBG_SetDefaultOps AddCat(uFetch)
 #include DBG_Control()
 
-#include <core/simics/mai_api.hpp>
+#include <core/qemu/mai_api.hpp>
 #include <components/Common/seq_map.hpp>
 
 #define LOG2(x)         \
@@ -187,7 +187,7 @@ class FLEXUS_COMPONENT(uFetch) {
   std::vector< std::list< FetchAddr > > theFAQ;
 
   //This opcode is used to signal an ITLB miss to the core, to force
-  //a resync with Simics
+  //a resync with Qemu 
   static const int32_t kITLBMiss = 0UL; //illtrap
 
   //Statistics on the ICache
@@ -219,7 +219,7 @@ class FLEXUS_COMPONENT(uFetch) {
   // Set of outstanding evicts.
   std::set< uint64_t > theEvictSet;
 
-  //Cache the last translation to avoid calling Simics
+  //Cache the last translation to avoid calling Qemu 
   uint64_t theLastVTagSet;
   PhysicalMemoryAddress theLastPhysical;
 
@@ -399,8 +399,8 @@ public:
     sendMisses();
   }
 
-  Simics::Processor cpu(index_t anIndex) {
-    return Simics::Processor::getProcessor(flexusIndex() * cfg.Threads + anIndex);
+  Qemu::Processor cpu(index_t anIndex) {
+    return Qemu::Processor::getProcessor(flexusIndex() * cfg.Threads + anIndex);
   }
 
 private:
@@ -417,11 +417,11 @@ private:
 
       ++ (*theLastPrefetchVTagSet[anIndex]);
       VirtualMemoryAddress vprefetch = VirtualMemoryAddress( *theLastPrefetchVTagSet[anIndex] << theIndexShift );
-      Flexus::Simics::Translation xlat;
+      Flexus::Qemu::Translation xlat;
       xlat.theVaddr = vprefetch;
       xlat.theTL = theCPUState[anIndex].theTL;
       xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
-      xlat.theType = Flexus::Simics::Translation::eFetch;
+      xlat.theType = Flexus::Qemu::Translation::eFetch;
       cpu(anIndex)->translate(xlat, false /* do not trap */ );
       if (! xlat.thePaddr ) {
         //Unable to translate for prefetch
@@ -453,11 +453,11 @@ private:
         return true; //Failed translations are treated as hits - they will cause an ITLB miss in the pipe.
       }
     } else {
-      Flexus::Simics::Translation xlat;
+      Flexus::Qemu::Translation xlat;
       xlat.theVaddr = vaddr;
       xlat.theTL = theCPUState[anIndex].theTL;
       xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
-      xlat.theType = Flexus::Simics::Translation::eFetch;
+      xlat.theType = Flexus::Qemu::Translation::eFetch;
       cpu(anIndex)->translate(xlat, false /* do not trap */ );
       paddr = xlat.thePaddr;
       if (paddr == 0) {
@@ -803,7 +803,7 @@ private:
           available_lines.insert( block_addr );
         }
 
-        int64_t op_code = fetchFromSimics( anIndex, fetch_addr.theAddress );
+        int64_t op_code = fetchFromQemu( anIndex, fetch_addr.theAddress );
 
         theFAQ[anIndex].pop_front();
         DBG_(Verb, ( << "Fetched " << fetch_addr.theAddress ) );
@@ -835,13 +835,13 @@ private:
 
   }
 
-  int64_t fetchFromSimics(index_t anIndex, VirtualMemoryAddress const & anAddress) {
+  int64_t fetchFromQemu(index_t anIndex, VirtualMemoryAddress const & anAddress) {
     int64_t op_code;
-    Flexus::Simics::Translation xlat;
+    Flexus::Qemu::Translation xlat;
     xlat.theVaddr = anAddress;
     xlat.theTL = theCPUState[anIndex].theTL;
     xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
-    xlat.theType = Flexus::Simics::Translation::eFetch;
+    xlat.theType = Flexus::Qemu::Translation::eFetch;
     op_code = cpu(anIndex)->fetchInstruction(xlat, false /* do not take traps - the OOO core will do it */ );
     if (xlat.theException == 0) {
       DBG_(Verb, Comp(*this) ( << "Fetch " << anAddress << " op: " << std::hex << std::setw(8) << op_code << std::dec ) );

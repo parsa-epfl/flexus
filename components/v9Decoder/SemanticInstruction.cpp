@@ -8,7 +8,7 @@
 #include <core/types.hpp>
 #include <core/stats.hpp>
 #include <core/performance/profile.hpp>
-#include <core/simics/mai_api.hpp>
+#include <core/qemu/mai_api.hpp>
 #include <components/uArch/uArchInterfaces.hpp>
 #include <components/uFetch/uFetchTypes.hpp>
 
@@ -157,8 +157,8 @@ bool SemanticInstruction::postValidate() {
     DBG_( Dev, ( << *this << " PostValidation failed: Exception mismatch flexus=" << std::hex << willRaise() << " simics=" << theRaisedException << std::dec ) );
     return false;
   }
-  if ( Flexus::Simics::Processor::getProcessor(theCPU)->getPC()  != theNPC && ! theRaisedException ) {
-    DBG_( Dev, ( << *this << " PostValidation failed: NPC mismatch flexus=" << theNPC << " simics=" << Flexus::Simics::Processor::getProcessor(theCPU)->getPC() ) );
+  if ( Flexus::Qemu::Processor::getProcessor(theCPU)->getPC()  != theNPC && ! theRaisedException ) {
+    DBG_( Dev, ( << *this << " PostValidation failed: NPC mismatch flexus=" << theNPC << " simics=" << Flexus::Qemu::Processor::getProcessor(theCPU)->getPC() ) );
     return false;
   }
 
@@ -341,12 +341,12 @@ void SemanticInstruction::describe(std::ostream & anOstream) const {
 }
 
 int32_t SemanticInstruction::retryTranslation() {
-  Flexus::Simics::Translation xlat;
+  Flexus::Qemu::Translation xlat;
   xlat.theVaddr = pc();
   xlat.theTL = core()->getTL();
   xlat.thePSTATE = core()->getPSTATE();
-  xlat.theType = Flexus::Simics::Translation::eFetch;
-  Flexus::Simics::Processor::getProcessor(theCPU)->translate(xlat, true);
+  xlat.theType = Flexus::Qemu::Translation::eFetch;
+  Flexus::Qemu::Processor::getProcessor(theCPU)->translate(xlat, true);
   return xlat.theException;
 }
 

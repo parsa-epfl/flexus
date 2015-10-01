@@ -8,7 +8,7 @@
 #include DBG_Control()
 
 #include <core/flexus.hpp>
-#include <core/simics/mai_api.hpp>
+#include <core/qemu/mai_api.hpp>
 
 #include <components/Common/BranchPredictor.hpp>
 #include <components/MTManager/MTManager.hpp>
@@ -43,13 +43,13 @@ public:
     theRedirectNextPC.resize(cfg.Threads);
     theRedirect.resize(cfg.Threads);
     for (uint32_t i = 0; i < cfg.Threads; ++i) {
-      Simics::Processor cpu = Simics::Processor::getProcessor(flexusIndex() * cfg.Threads + i);
+      Qemu::Processor cpu = Qemu::Processor::getProcessor(flexusIndex() * cfg.Threads + i);
       thePC[i] = cpu->getPC();
       theNextPC[i] = cpu->getNPC();
       theRedirectPC[i] = MemoryAddress(0);
       theRedirectNextPC[i] = MemoryAddress(0);
       theRedirect[i] = false;
-      DBG_( Dev, Comp(*this) ( << "Thread[" << flexusIndex() << "." << i << "] connected to " << ((static_cast<Flexus::Simics::API::conf_object_t *>(cpu))->name ) << " Initial PC: " << thePC[i] ) );
+      DBG_( Dev, Comp(*this) ( << "Thread[" << flexusIndex() << "." << i << "] connected to " << ((static_cast<Flexus::Qemu::API::conf_object_t *>(cpu))->name ) << " Initial PC: " << thePC[i] ) );
     }
     theCurrentThread = cfg.Threads;
     theBranchPredictor.reset( BranchPredictor::combining(statName(), flexusIndex()) );

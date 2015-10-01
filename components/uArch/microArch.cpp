@@ -12,7 +12,7 @@
 #include <core/debug/debug.hpp>
 #include <core/types.hpp>
 #include <components/uArch/uArchInterfaces.hpp>
-#include <core/simics/mai_api.hpp>
+#include <core/qemu/mai_api.hpp>
 #include <core/flexus.hpp>
 #include <core/stats.hpp>
 namespace Stat = Flexus::Stat;
@@ -143,8 +143,8 @@ public:
     }
 #endif
 
-    if ((Flexus::Qemu::API::SIM_get_object("cpu0") == 0) && (Flexus::Qemu::API::SIM_get_object("machine0_cpu0")==0)) {
-      if ((Flexus::Qemu::API::SIM_get_object("server_cpu0") == 0) && (Flexus::Qemu::API::SIM_get_object("machine0_server_cpu0")==0)) {
+    if ((Flexus::Qemu::API::QEMU_get_object("cpu0") == 0) && (Flexus::Qemu::API::QEMU_get_object("machine0_cpu0")==0)) {
+      if ((Flexus::Qemu::API::QEMU_get_object("server_cpu0") == 0) && (Flexus::Qemu::API::QEMU_get_object("machine0_server_cpu0")==0)) {
         DBG_Assert( false, ( << theName << "microArch cannot locate cpu0 or server_cpu0 objects." ) );
       } else {
         DBG_( Dev, ( << theName << " microArch detected client-server simulation.  Connecting to server_cpu" << theNode) );
@@ -185,7 +185,7 @@ public:
     bool is_vm_configuration = false;
     int max_vm = 1;
     int vm = 0;
-    if (Flexus::Qemu::API::SIM_get_object("machine0_client_cpu0")!=0){
+    if (Flexus::Qemu::API::QEMU_get_object("machine0_client_cpu0")!=0){
       DBG_(Dev, ( << "Found machine0_client_cpu0 using vm configuration."));
       is_vm_configuration = true;
       max_vm=16;
@@ -199,7 +199,7 @@ public:
       	  client_cpu = "machine" + boost::lexical_cast<std::string>(vm) + "_client_cpu";
 	}
         client_cpu += boost::lexical_cast<std::string>(simics_cpu_no);
-        client = Flexus::Qemu::API::SIM_get_object(client_cpu.c_str());
+        client = Flexus::Qemu::API::QEMU_get_object(client_cpu.c_str());
         if (client != 0) {
           DBG_( Dev, ( << theName << " microArch will drive " << client_cpu << " with fixed IPC " << kClientIPC) );
           theClientCPUs[i] = Flexus::Qemu::Processor(client);
@@ -211,7 +211,7 @@ public:
           client_cpu = "machine" + boost::lexical_cast<std::string>(vm) + "_besim_cpu";
         }
         client_cpu += boost::lexical_cast<std::string>(simics_cpu_no);
-        client = Flexus::Qemu::API::SIM_get_object(client_cpu.c_str());
+        client = Flexus::Qemu::API::QEMU_get_object(client_cpu.c_str());
         if (client != 0) {
           DBG_( Dev, ( << theName << " microArch will drive " << client_cpu << " with fixed IPC " << kClientIPC) );
           theClientCPUs[i] = Flexus::Qemu::Processor(client);
@@ -382,7 +382,8 @@ public:
     } catch ( ResynchronizeWithSimicsException & e) {
       ++theResynchronizations;
       if (theExceptionRaised) {
-        DBG_( Verb, ( << "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id() << "] Exception Raised: " << Flexus::Qemu::API::SIM_get_exception_name(theCPU, theExceptionRaised) << "(" << theExceptionRaised << "). Resynchronizing with Simics.") );
+        //DBG_( Verb, ( << "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id() << "] Exception Raised: " << Flexus::Qemu::API::SIM_get_exception_name(theCPU, theExceptionRaised) << "(" << theExceptionRaised << "). Resynchronizing with Simics.") );
+        DBG_( Verb, ( << "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id() << "] Exception Raised: " << theExceptionRaised << ". Resynchronizing with Simics.") );
         ++theExceptions;
       } else if (e.expected) {
         DBG_( Verb, ( << "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id() << "] Resynchronizing Instruction. Resynchronizing with Simics.") );

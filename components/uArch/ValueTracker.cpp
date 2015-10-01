@@ -5,6 +5,8 @@ namespace nuArch {
   ValueTracker ** ValueTracker::theGlobalTracker = nullptr;
   int ValueTracker::theNumTrackers = 0;
 
+  //ALEX - WARNING: Disabled dma for now
+/*
   API::cycles_t DMATracerImpl::dma_mem_hier_operate(API::conf_object_t * space, API::map_list_t * map, API::generic_transaction_t * aMemTrans) {
   Flexus::Qemu::APIFwd::memory_transaction_t * mem_trans = reinterpret_cast<Flexus::Qemu::APIFwd::memory_transaction_t *>(aMemTrans);
 
@@ -22,5 +24,5 @@ namespace nuArch {
 
   return k_no_stall; //Never stalls
 }
-
+*/
 } //nuArch

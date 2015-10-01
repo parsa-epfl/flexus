@@ -3,7 +3,7 @@
 #include <core/types.hpp>
 #include <core/stats.hpp>
 
-#include <core/simics/mai_api.hpp>
+#include <core/qemu/mai_api.hpp>
 
 #include <boost/bind.hpp>
 

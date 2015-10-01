@@ -13,7 +13,7 @@
 #include <boost/shared_array.hpp>
 #include <core/boost_extensions/padded_string_cast.hpp>
 #include <core/types.hpp>
-#include <core/simics/configuration_api.hpp>
+#include <core/qemu/configuration_api.hpp>
 #include <core/stats.hpp>
 
 #include <components/Common/MemoryMap.hpp>
@@ -118,11 +118,11 @@ std::ostream & operator<<(std::ostream & anOstream, MemoryPage const & aMemoryPa
 
 typedef std::map<PhysicalMemoryAddress, MemoryPage> PageMap;
 
-class PageMap_SimicsObject_Impl  {
+class PageMap_QemuObject_Impl  {
   PageMap * thePageMap; //Non-owning pointer
 
 public:
-  PageMap_SimicsObject_Impl(Simics::API::conf_object_t * /*ignored*/ )
+  PageMap_QemuObject_Impl(Qemu::API::conf_object_t * /*ignored*/ )
     : thePageMap(0)
   {}
 
@@ -143,10 +143,10 @@ public:
   }
 };
 
-class PageMap_SimicsObject : public Simics::AddInObject <PageMap_SimicsObject_Impl> {
-  typedef Simics::AddInObject<PageMap_SimicsObject_Impl> base;
+class PageMap_QemuObject : public Qemu::AddInObject <PageMap_QemuObject_Impl> {
+  typedef Qemu::AddInObject<PageMap_QemuObject_Impl> base;
 public:
-  static const Simics::Persistence  class_persistence = Simics::Session;
+  static const Qemu::Persistence  class_persistence = Qemu::Session;
   //These constants are defined in Simics/simics.cpp
   static std::string className() {
     return "MemoryMap";
@@ -155,30 +155,32 @@ public:
     return "Flexus MemoryMap object";
   }
 
-  PageMap_SimicsObject() : base() { }
-  PageMap_SimicsObject(Simics::API::conf_object_t * aSimicsObject) : base(aSimicsObject) {}
-  PageMap_SimicsObject(PageMap_SimicsObject_Impl * anImpl) : base(anImpl) {}
+  PageMap_QemuObject() : base() { }
+  PageMap_QemuObject(Qemu::API::conf_object_t * aQemuObject) : base(aQemuObject) {}
+  PageMap_QemuObject(PageMap_QemuObject_Impl * anImpl) : base(anImpl) {}
 
   template <class Class>
   static void defineClass(Class & aClass) {
 
-    aClass.addCommand
-    ( & PageMap_SimicsObject_Impl::printStats
+//ALEX - This is adding functions to Simics' Command Line Interface.
+//Disabled it, as the interface with QEMU is probably completely different
+/*    aClass.addCommand
+    ( & PageMap_QemuObject_Impl::printStats
       , "print-stats"
       , "Print out memory map statistics"
     );
-
+*/
   }
 
 };
 
-Simics::Factory<PageMap_SimicsObject> thePageMapFactory;
+Qemu::Factory<PageMap_QemuObject> thePageMapFactory;
 
 class FLEXUS_COMPONENT(MemoryMap), public MemoryMapFactory {
   FLEXUS_COMPONENT_IMPL(MemoryMap);
 
   PageMap thePageMap;
-  PageMap_SimicsObject thePageMapObject;
+  PageMap_QemuObject thePageMapObject;
   uint32_t theNumCPUs;
   uint32_t theNode_shift;
   uint32_t theNode_mask;

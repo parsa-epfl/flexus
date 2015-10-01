@@ -3,7 +3,7 @@
 
 #include <core/simulator_layout.hpp>
 #include <core/performance/profile.hpp>
-#include <core/simics/configuration_api.hpp>
+#include <core/qemu/configuration_api.hpp>
 //#include <components/SplitDestinationMapper/SplitDestinationMapperStats.hpp>
 #include <core/boost_extensions/intrusive_ptr.hpp>
 

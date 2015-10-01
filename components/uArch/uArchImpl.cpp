@@ -12,7 +12,7 @@
 #include <core/debug/debug.hpp>
 #include "microArch.hpp"
 
-#include <core/simics/mai_api.hpp>
+#include <core/qemu/mai_api.hpp>
 
 #define DBG_DefineCategories uArchCat, Special
 #define DBG_SetDefaultOps AddCat(uArchCat)
@@ -24,10 +24,10 @@ using namespace Flexus;
 using namespace Core;
 using namespace SharedTypes;
 
-class uArch_SimicsObject_Impl  {
+class uArch_QemuObject_Impl  {
   std::shared_ptr<microArch> theMicroArch;
 public:
-  uArch_SimicsObject_Impl(Flexus::Qemu::API::conf_object_t * /*ignored*/ ) {}
+  uArch_QemuObject_Impl(Flexus::Qemu::API::conf_object_t * /*ignored*/ ) {}
 
   void setMicroArch(std::shared_ptr<microArch> aMicroArch) {
     theMicroArch = aMicroArch;
@@ -84,8 +84,9 @@ public:
 
 };
 
-class uArch_SimicsObject : public Simics::AddInObject <uArch_SimicsObject_Impl> {
-  typedef Qemu::AddInObject<uArch_SimicsObject_Impl> base;
+class uArch_QemuObject : public Qemu::AddInObject <uArch_QemuObject_Impl> {
+
+  typedef Qemu::AddInObject<uArch_QemuObject_Impl> base;
 public:
   static const Qemu::Persistence  class_persistence = Qemu::Session;
   //These constants are defined in Simics/simics.cpp
@@ -96,10 +97,14 @@ public:
     return "uArch object";
   }
 
-  uArch_SimicsObject() : base() { }
-  uArch_SimicsObject(Qemu::API::conf_object_t * aSimicsObject) : base(aSimicsObject) {}
-  uArch_SimicsObject(uArch_SimicsObject_Impl * anImpl) : base(anImpl) {}
+  uArch_QemuObject() : base() { }
+  uArch_QemuObject(Qemu::API::conf_object_t * aQemuObject) : base(aQemuObject) {}
+  uArch_QemuObject(uArch_QemuObject_Impl * anImpl) : base(anImpl) {}
 
+//ALEX - This is adding functions to Simics' Command Line Interface.
+//Disabled it, as the interface with QEMU is probably completely different
+
+/*
   template <class Class>
   static void defineClass(Class & aClass) {
 
@@ -181,16 +186,16 @@ public:
     );
 
   }
-
+*/
 };
 
-Qemu::Factory<uArch_SimicsObject> theuArchSimicsFactory;
+Qemu::Factory<uArch_QemuObject> theuArchQemuFactory;
 
 class FLEXUS_COMPONENT(uArch) {
   FLEXUS_COMPONENT_IMPL(uArch);
 
   std::shared_ptr<microArch> theMicroArch;
-  uArch_SimicsObject theuArchObject;
+  uArch_QemuObject theuArchObject;
 
 public:
   FLEXUS_COMPONENT_CONSTRUCTOR(uArch)
@@ -268,7 +273,7 @@ public:
                                           , [this](auto x){ return this->signalStoreForwardingHit(x);}
                                         );
 
-    theuArchObject = theuArchSimicsFactory.create( (std::string("uarch-") + boost::padded_string_cast < 2, '0' > (flexusIndex())).c_str() );
+    theuArchObject = theuArchQemuFactory.create( (std::string("uarch-") + boost::padded_string_cast < 2, '0' > (flexusIndex())).c_str() );
     theuArchObject->setMicroArch(theMicroArch);
 
   }

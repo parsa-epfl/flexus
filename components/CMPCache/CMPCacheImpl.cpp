@@ -5,7 +5,7 @@
 
 #include <boost/scoped_ptr.hpp>
 #include <core/performance/profile.hpp>
-#include <core/simics/configuration_api.hpp>
+#include <core/qemu/configuration_api.hpp>
 
 #include <components/CMPCache/AbstractCacheController.hpp>
 

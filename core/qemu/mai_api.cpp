@@ -61,12 +61,12 @@ void onInterrupt (void * aPtr, API::conf_object_t * anObj, long long aVector) {
 #if FLEXUS_TARGET_IS(v9)
 
 void v9ProcessorImpl::initialize() {
-  DBG_( Dev, ( << "CPU[" << Qemu::APIFwd::SIM_get_processor_number(*this) << "] Registering for interrupts "));
+  DBG_( Dev, ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] Registering for interrupts "));
   theInterruptManager.registerCPU( *this, ll::bind( &v9ProcessorImpl::handleInterrupt, this, ll::_1 ) );
 }
 
 void v9ProcessorImpl::handleInterrupt( long long aVector) {
-  DBG_( Iface, ( << "CPU[" << Simics::APIFwd::QEMU_get_processor_number(*this) << "] Interrupt " << std::hex << aVector << std::dec ));
+  DBG_( Iface, ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] Interrupt " << std::hex << aVector << std::dec ));
   thePendingInterrupt = aVector;
 }
 
@@ -116,7 +116,7 @@ int v9ProcessorImpl::advance(bool anAcceptInterrupt) {
         return interrupt;
       case API::QEMU_IE_Interrupts_Disabled:
         // OK try later 
-        DBG_( Crit, ( << "Got QEMU_IE_Interruts_Disabled trying to take an interrupt on CPU[" << Qemu::APIFwd::QEMU_get_processor_number(*this) << "]"  ) );
+        DBG_( Crit, ( << "Got QEMU_IE_Interruts_Disabled trying to take an interrupt on CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "]"  ) );
         return -1;
       case API::QEMU_IE_Illegal_Interrupt_Point:
         // OK try later 
@@ -148,18 +148,18 @@ int v9ProcessorImpl::advance(bool anAcceptInterrupt) {
     if (err == API::Sim_IE_Exception ) {
       err = API::SIM_instruction_handle_exception(inst);
       exception = getPendingException();
-      DBG_( Verb, ( << "Exception raised by CPU[" << Simics::APIFwd::SIM_get_processor_number(*this) << "]: " << err << " Exception #:" << exception) );
+      DBG_( Verb, ( << "Exception raised by CPU[" << Simics::API::SIM_get_processor_number(*this) << "]: " << err << " Exception #:" << exception) );
       API::SIM_instruction_end(inst);
       if (err != API::Sim_IE_OK) {
-        DBG_( Crit, ( << "Got an error trying to handle exception on CPU[" << Simics::APIFwd::SIM_get_processor_number(*this) << ": " << err << " exception was: " << exception) );
+        DBG_( Crit, ( << "Got an error trying to handle exception on CPU[" << Simics::API::SIM_get_processor_number(*this) << ": " << err << " exception was: " << exception) );
       }
       return exception; //Instruction is already ended
     } else if (err == API::Sim_IE_Code_Breakpoint || err == API::Sim_IE_Step_Breakpoint || err == API::Sim_IE_Hap_Breakpoint ) {
-      DBG_( Verb, ( << "Triggerred Breakpoint on CPU[" << Simics::APIFwd::SIM_get_processor_number(*this) << "]" ) );
+      DBG_( Verb, ( << "Triggerred Breakpoint on CPU[" << Simics::API::SIM_get_processor_number(*this) << "]" ) );
       API::SIM_break_cycle(*this, 0);
       retry = true;
     } else if (err != API::Sim_IE_OK) {
-      DBG_( Crit, ( << "Got an error trying to advance CPU[" << Simics::APIFwd::SIM_get_processor_number(*this) << "]: " << err) );
+      DBG_( Crit, ( << "Got an error trying to advance CPU[" << Simics::API::SIM_get_processor_number(*this) << "]: " << err) );
       //Some error other than an exception
     }
   } while ( retry );
@@ -178,7 +178,9 @@ unsigned long long v9ProcessorImpl::interruptRead(VirtualMemoryAddress anAddress
   API::v9_memory_transaction_t xact;
   memset( &xact, 0, sizeof(API::v9_memory_transaction_t ) );
   xact.priv = 1;
-#if SIM_VERSION < 1200
+#if defined(CONFIG_QEMU)
+  xact.access_type = API::V9_Access_Normal;
+#elif SIM_VERSION < 1200
   xact.align_kind = API::Align_Natural;
 #else
   //align_kind was replaced by access_type in Simics 2.2.x
@@ -195,7 +197,7 @@ unsigned long long v9ProcessorImpl::interruptRead(VirtualMemoryAddress anAddress
   xact.s.real_address = reinterpret_cast<char *>(&aValue);
   xact.s.exception = API::QEMU_PE_No_Exception;
 
-  API::exception_type_t except = sparc()->access_asi_handler(theProcessor, &xact);
+  API::exception_type_t except = API::QEMU_PE_No_Exception;	//sparc()->access_asi_handler(theProcessor, &xact); 	//ALEX - FIXME
   if (except != API::QEMU_PE_No_Exception) {
     DBG_( Dev, ( << "except: " << except  ) );
   }
@@ -235,9 +237,9 @@ ProcessorMapper::ProcessorMapper() {
 
   //API::SIM_clear_exception();		//ALEX - FIXME
 
-  API::attr_value_t proc_list = API::QEMU_get_all_processors();
+  int proc_count = API::QEMU_get_num_cores();
+  API::conf_object_t *proc_list = API::QEMU_get_all_processors(&proc_count);	//ALEX - FIXME: This should return a list of cpu objects
   //DBG_Assert( proc_list.kind == API::Sim_Val_List, ( << "SIM_get_all_processors() did NOT return a LIST" ));	//ALEX - FIXME
-  int proc_count = proc_list.u.list.size;
   std::vector<cpu_desc_t> cpu_list;
   int num_flexus_cpus = 0;
   int num_client_cpus = 0;
@@ -255,8 +257,9 @@ ProcessorMapper::ProcessorMapper() {
   // end PLotfi
   DBG_(Crit, ( << "Searching " << proc_count << " cpus." ));
   for (int i = 0; i < proc_count; i++) {
-    API::conf_object_t * cpu = proc_list.u.list.vector[i].u.object;
-    int qemu_id = APIFwd::SIM_get_processor_number(cpu);
+    assert(false);	//FIXME
+    API::conf_object_t * cpu = nullptr;	//proc_list.u.list.vector[i].u.object;	//ALEX- FIXME: Get head of processor list "proc_list"
+    int qemu_id = API::QEMU_get_processor_number(cpu);
     DBG_(Crit, ( << "Processor " << i << ": " << cpu->name << " - CPU " << qemu_id ));
 
     boost::cmatch what;
@@ -572,6 +575,6 @@ int ProcessorMapper::numProcessors() {
   return (int)(theMapper->theProcMap.size());
 }
 
-} //end Namespace Simics
+} //end Namespace Qemu 
 } //end namespace Flexus
 

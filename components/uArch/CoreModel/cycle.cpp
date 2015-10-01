@@ -369,12 +369,12 @@ void CoreImpl::checkTranslation( boost::intrusive_ptr<Instruction> anInsn) {
   DBG_Assert(  iter != theMemQueue.get<by_insn>().end());
 
   if (!anInsn->isAnnulled() && !anInsn->isSquashed()) {
-    Flexus::Simics::Translation xlat;
+    Flexus::Qemu::Translation xlat;
     xlat.theVaddr = iter->theVaddr;
     xlat.theASI = iter->theASI;
     xlat.theTL = getTL();
     xlat.thePSTATE = getPSTATE() ;
-    xlat.theType = ( iter->isStore() ? Flexus::Simics::Translation::eStore :  Flexus::Simics::Translation::eLoad) ;
+    xlat.theType = ( iter->isStore() ? Flexus::Qemu::Translation::eStore :  Flexus::Qemu::Translation::eLoad) ;
     translate(xlat, true);
     iter->theException = xlat.theException;
     if (iter->theException != 0 ) {
@@ -391,7 +391,7 @@ void CoreImpl::createCheckpoint( boost::intrusive_ptr<Instruction> anInsn) {
   std::tie(ckpt, is_new) = theCheckpoints.insert( std::make_pair( anInsn, Checkpoint() ) );
   anInsn->setHasCheckpoint(true);
   getv9State( ckpt->second.theState );
-  Flexus::Simics::Processor::getProcessor( theNode )->ckptMMU();
+  Flexus::Qemu::Processor::getProcessor( theNode )->ckptMMU();
   DBG_(Verb, ( << theName << "Collecting checkpoint for " << *anInsn) );
   DBG_Assert(is_new);
 
@@ -409,7 +409,7 @@ void CoreImpl::freeCheckpoint( boost::intrusive_ptr<Instruction> anInsn) {
   DBG_Assert( ckpt != theCheckpoints.end() );
   theCheckpoints.erase(ckpt);
   anInsn->setHasCheckpoint(false);
-  Flexus::Simics::Processor::getProcessor( theNode )->releaseMMUCkpt();
+  Flexus::Qemu::Processor::getProcessor( theNode )->releaseMMUCkpt();
   if (theOpenCheckpoint == anInsn) {
     theOpenCheckpoint = 0;
   }
@@ -673,7 +673,7 @@ void CoreImpl::retireMem( boost::intrusive_ptr<Instruction> anInsn) {
       if (! anInsn->isAnnulled()  && iter->theMMU) {
         DBG_Assert(mmuASI(iter->theASI));
         DBG_( Verb, ( << theName << " MMU write: " << *iter ) );
-        Flexus::Simics::Processor::getProcessor( theNode )->mmuWrite(iter->theVaddr, iter->theASI, *iter->theValue );
+        Flexus::Qemu::Processor::getProcessor( theNode )->mmuWrite(iter->theVaddr, iter->theASI, *iter->theValue );
       }
       eraseLSQ( anInsn );
     } else {
@@ -812,10 +812,10 @@ void CoreImpl::commitStore( boost::intrusive_ptr<Instruction> anInsn) {
 
     uint64_t value = *iter->theValue;
     if (iter->theInverseEndian) {
-      value = Flexus::Simics::endianFlip(value, iter->theSize);
+      value = Flexus::Qemu::endianFlip(value, iter->theSize);
       DBG_(Verb, ( << theName << " Inverse endian store: " << *iter << " inverted value: " <<  std::hex << value << std::dec ) );
     }
-    ValueTracker::valueTracker(Flexus::Simics::ProcessorMapper::mapFlexusIndex2VM(theNode)).store( theNode, iter->thePaddr, iter->theSize, value);
+    ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theNode)).store( theNode, iter->thePaddr, iter->theSize, value);
     theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
   }
 }
@@ -892,7 +892,7 @@ void CoreImpl::retire() {
 
     if (theValidateMMU) {
       // save MMU with this instruction so we can check at commit
-      theROB.front()->setMMU( Flexus::Simics::Processor::getProcessor( theNode )->getMMU() );
+      theROB.front()->setMMU( Flexus::Qemu::Processor::getProcessor( theNode )->getMMU() );
     }
 
     accountRetire( theROB.front() );
@@ -1006,7 +1006,7 @@ void CoreImpl::doAbortSpeculation() {
   restorev9State( ckpt->second.theState);
 
   // restore MMU
-  Flexus::Simics::Processor::getProcessor( theNode )->rollbackMMUCkpts(num_ckpts_discarded - 1);
+  Flexus::Qemu::Processor::getProcessor( theNode )->rollbackMMUCkpts(num_ckpts_discarded - 1);
 
   //Clean up SRB and SSB.
   theSRB.erase( srb_ckpt, theSRB.end());
@@ -1088,10 +1088,10 @@ void CoreImpl::commit() {
     if (theValidateMMU) {
       DBG_Assert(theSRB.front()->getMMU(), ( << theName << " instruction does not have MMU: " << *theSRB.front()));
       DBG_(Verb, ( << theName << " comparing MMU state after: " << *theSRB.front()));
-      Flexus::Simics::MMU::mmu_t mmu = *(theSRB.front()->getMMU());
-      if (! Flexus::Simics::Processor::getProcessor( theNode )->validateMMU(&mmu)) {
+      Flexus::Qemu::MMU::mmu_t mmu = *(theSRB.front()->getMMU());
+      if (! Flexus::Qemu::Processor::getProcessor( theNode )->validateMMU(&mmu)) {
         DBG_(Crit, ( << theName << " MMU mismatch after FinalCommit of: " << *theSRB.front()));
-        Flexus::Simics::Processor::getProcessor( theNode )->dumpMMU(&mmu);
+        Flexus::Qemu::Processor::getProcessor( theNode )->dumpMMU(&mmu);
       }
     }
 
@@ -1114,12 +1114,12 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
 
   /* CMU-ONLY-BLOCK-BEGIN */
   if (theBBVTracker) {
-    Flexus::Simics::Translation xlat;
+    Flexus::Qemu::Translation xlat;
     xlat.theVaddr = anInstruction->pc();
     xlat.theASI = 0x80;
     xlat.theTL = getTL();
     xlat.thePSTATE = getPSTATE();
-    xlat.theType = Flexus::Simics::Translation::eFetch;
+    xlat.theType = Flexus::Qemu::Translation::eFetch;
     translate(xlat, false);
     theBBVTracker->commitInsn( xlat.thePaddr, anInstruction->instClass() == clsBranch );
   }
@@ -1455,7 +1455,7 @@ void CoreImpl::valuePredictAtomic() {
       ++theValuePredictions;
 
       if (theSpeculateOnAtomicValuePerfect) {
-	lsq_head->theExtendedValue = ValueTracker::valueTracker(Flexus::Simics::ProcessorMapper::mapFlexusIndex2VM(theNode)).load( theNode, lsq_head->thePaddr, lsq_head->theSize);
+	lsq_head->theExtendedValue = ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theNode)).load( theNode, lsq_head->thePaddr, lsq_head->theSize);
       } else {
         if (lsq_head->theOperation == kCAS) {
           lsq_head->theExtendedValue = lsq_head->theCompareValue;

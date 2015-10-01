@@ -13,9 +13,10 @@ typedef uint64_t logical_address_t;
 typedef void* conf_class_t;
 typedef int exception_type_t;
 
-// things for api.c:
+// things for api.cpp:
 
 struct conf_object {
+        char *name;
 	void *object; // pointer to the struct in question
 	enum { // what kind of QEMU struct does it represent
 		QEMU_CPUState, // add new types as necessary
@@ -256,6 +257,61 @@ typedef enum {
 	QEMU_DI_Data
 } data_or_instr_t;
 
+#ifdef FLEXUS_TARGET_v9
+
+//TODO: Interfaces for Sparc cpu and mmu
+typedef struct sparc_v9_interface {
+	//This is the interface for a Sparc CPU in QEMU. The interface should provide the following functions:
+	//uint64_t read_fp_register_x(conf_object_t *cpu, int reg)
+	//void write_fp_register_x(conf_object_t *cpu, int reg, uint64 value);
+	//uint64_t read_global_register(conf_object_t *cpu, int globals, int reg);
+	//uint64_t read_window_register(conf_object_t *cpu, int window, int reg);
+	//exception_type_t access_asi_handler(conf_object_t *cpu, v9_memory_transaction_t *mem_op);
+} sparc_v9_interface_t;
+
+typedef struct {
+	//This is the interface for a Sparc mmu in QEMU. The interface should provide the following functions:
+        //exception_type_t (*logical_to_physical)(conf_object_t *mmu_obj, v9_memory_transaction_t *);
+} mmu_interface_t;
+
+typedef enum {
+        V9_Access_Normal,
+        V9_Access_Normal_FP,
+        V9_Access_Double_FP, /* ldd/std */
+        V9_Access_Short_FP,
+        V9_Access_FSR,
+        V9_Access_Atomic,
+        V9_Access_Atomic_Load,
+        V9_Access_Prefetch,
+        V9_Access_Partial_Store,
+        V9_Access_Ldd_Std_1,
+        V9_Access_Ldd_Std_2,
+        V9_Access_Block,
+        V9_Access_Internal1
+} sparc_access_type_t;
+
+typedef struct v9_memory_transaction {
+        generic_transaction_t s;
+        unsigned              cache_virtual:1;
+        unsigned              cache_physical:1;
+        unsigned              side_effect:1;
+        unsigned              priv:1;
+        unsigned              red:1;
+        unsigned              hpriv:1;
+        unsigned              henb:1;
+        /* Because of a bug in the Sun Studio12 C compiler, bit fields must not
+ *            be followed by members with alignment smaller than 32 bit.
+ *                       See bug 9151. */
+        uint32_t address_space;
+        uint8_t                 prefetch_fcn;
+        sparc_access_type_t   access_type;
+
+        /* if non-zero, the id needed to calculate the program counter */
+        intptr_t turbo_miss_id;
+} v9_memory_transaction_t;
+
+#endif //FLEXUS_TARGET_IS(v9)
+
 ///
 /// State interaction API
 ///
@@ -301,6 +357,7 @@ typedef int (*QEMU_MEM_OP_IS_READ_PROC)(generic_transaction_t *mop);
 typedef instruction_error_t (*QEMU_INSTRUCTION_HANDLE_INTERRUPT_PROC)(conf_object_t *cpu, pseudo_exceptions_t pendingInterrupt);
 typedef int (*QEMU_GET_PENDING_EXCEPTION_PROC)(void);
 typedef int (*QEMU_ADVANCE_PROC)(void);
+typedef conf_object_t* (*QEMU_GET_OBJECT_PROC)(const char *name);
 ////ALEX - end 
 
 #ifndef QEMUFLEX_PROTOTYPES
@@ -373,6 +430,7 @@ extern QEMU_MEM_OP_IS_READ_PROC QEMU_mem_op_is_read;
 extern QEMU_INSTRUCTION_HANDLE_INTERRUPT_PROC QEMU_instruction_handle_interrupt;
 extern QEMU_GET_PENDING_EXCEPTION_PROC QEMU_get_pending_exception;
 extern QEMU_ADVANCE_PROC QEMU_advance;
+extern QEMU_GET_OBJECT_PROC QEMU_get_object;
 #else /* QEMUFLEX_PROTOTYPES */
 // query the content/size of a register
 // if reg_size != NULL, write the size of the register (in bytes) in reg_size
@@ -465,7 +523,9 @@ int QEMU_mem_op_is_read(generic_transaction_t *mop);
 instruction_error_t QEMU_instruction_handle_interrupt(conf_object_t *cpu, pseudo_exceptions_t pendingInterrupt); 
 int QEMU_get_pending_exception(); 
 int QEMU_advance(); 
+conf_object_t *QEMU_get_object(const char *name);	//generic function to get a pointer to a QEMU object by name
 ////ALEX - end 
+//
 
 #endif /* QEMUFLEX_PROTOTYPES */
 
@@ -602,7 +662,7 @@ extern QEMU_DELETE_CALLBACK_PROC QEMU_delete_callback;
 int QEMU_insert_callback( int cpu_id, QEMU_callback_event_t event, void* obj, void* fun);
 // delete a callback specific for the given cpu or -1 for a generic callback
 void QEMU_delete_callback( int cpu_id, QEMU_callback_event_t event, uint64_t callback_id);
-#endif /* QEMUFLEX_PROTYPES */
+#endif /* QEMUFLEX_PROTOTYPES */
 
 ///
 /// QEMU QEMUFLEX internals
@@ -695,6 +755,7 @@ QEMU_MEM_OP_IS_READ_PROC QEMU_mem_op_is_read;
 QEMU_INSTRUCTION_HANDLE_INTERRUPT_PROC QEMU_instruction_handle_interrupt;
 QEMU_GET_PENDING_EXCEPTION_PROC QEMU_get_pending_exception;
 QEMU_ADVANCE_PROC QEMU_advance;
+QEMU_GET_OBJECT_PROC QEMU_get_object;
 
 // insert a callback specific for the given cpu or -1 for a generic callback
 QEMU_INSERT_CALLBACK_PROC QEMU_insert_callback;

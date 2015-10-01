@@ -11,7 +11,10 @@
 #include <core/qemu/mai_api.hpp>
 #include <core/boost_extensions/padded_string_cast.hpp>
 
-#include <core/simics/configuration_api.hpp>
+#include <core/qemu/configuration_api.hpp>
+
+//ALEX - Remove the following if running w/ Qemu instead of Simics
+#ifndef CONFIG_QEMU
 namespace Flexus {
 namespace Qemu {
 namespace API {
@@ -34,6 +37,10 @@ extern "C" {
 } //namespace API
 } //namespace Qemu
 } //namespace Flexus
+#else
+#include <core/qemu/api.h>
+#endif
+
 namespace API = Flexus::Qemu::API;
 
 #include <components/Common/Slices/MemOp.hpp>
@@ -117,15 +124,18 @@ public:
   void init(API::conf_object_t * aMapObject, int aVM) {
     theMapObject = aMapObject;
     theVM = aVM;
-    API::attr_value_t attr;
-    attr.kind = API::Sim_Val_Object;
-    attr.u.object = theUnderlyingObject;
+//ALEX - Not setting up tracer for now. 
+//
+    //API::attr_value_t attr;
+    //attr.kind = API::Sim_Val_Object;
+    //attr.u.object = theUnderlyingObject;
 
-    /* Tell memory we have a mem hier */
-    API::SIM_set_attribute(theMapObject, "timing_model", &attr);
+    /* Tell memory we have a mem hier */	
+    //API::SIM_set_attribute(theMapObject, "timing_model", &attr);
   }
 
-  API::cycles_t dma_mem_hier_operate(API::conf_object_t * space, API::map_list_t * map, API::generic_transaction_t * aMemTrans);
+  //ALEX - WARNING: Disabled dma for now. Also in ValueTracker.cpp
+  //API::cycles_t dma_mem_hier_operate(API::conf_object_t * space, API::map_list_t * map, API::generic_transaction_t * aMemTrans);
 
 };  // class DMATracerImpl
 
@@ -170,22 +180,26 @@ struct ValueTracker {
   void register_mem_iface(int vm) {
     DBG_(Tmp, ( << "Registering DMA tracker " << vm));
 
-    API::conf_object_t * dma_map_object = API::SIM_get_object( "dma_mem" );
-    API::SIM_clear_exception();
+    API::conf_object_t * dma_map_object = API::QEMU_get_object( "dma_mem" );
+    API::QEMU_clear_exception();
     if (! dma_map_object) {
       std::string dma_map_name = "dma_mem" + boost::lexical_cast<std::string>(vm);
-      dma_map_object=API::SIM_get_object( dma_map_name.c_str());
+      dma_map_object=API::QEMU_get_object( dma_map_name.c_str());
     }
+
+   DBG_(Crit, ( << "ALEX -- WARNING: DMA tracker has not been set up (Needs to be fixed)"));
+//ALEX - Need to handle dma! Temporarily commented out the following:
+/*
     if (! dma_map_object) {
       bool client_server = false;
       DBG_( Dev, ( << "Creating DMA map object" ) );
       std::string cpu_name = "machine" + boost::lexical_cast<std::string>(vm) + "_cpu0";
       std::string cpu_mem_name = cpu_name + "_mem";
-      API::conf_object_t * cpu0_mem = API::SIM_get_object(cpu_mem_name.c_str());
-      API::conf_object_t * cpu0 = API::SIM_get_object(cpu_name.c_str());
+      API::conf_object_t * cpu0_mem = API::QEMU_get_object(cpu_mem_name.c_str());
+      API::conf_object_t * cpu0 = API::QEMU_get_object(cpu_name.c_str());
       if ((vm == 0) && (!cpu0_mem)){
-          cpu0_mem = API::SIM_get_object("cpu0_mem");
-          cpu0 = API::SIM_get_object("cpu0");
+          cpu0_mem = API::QEMU_get_object("cpu0_mem");
+          cpu0 = API::QEMU_get_object("cpu0");
       }
 
       if ( ! cpu0_mem ) {
@@ -193,15 +207,15 @@ struct ValueTracker {
 	cpu_name = "machine" + boost::lexical_cast<std::string>(vm) + "_server_cpu0";
 	//cpu_mem_name = "machine" + boost::lexical_cast<std::string>(vm) + "_server_server_cpu0_mem";
         cpu_mem_name = "server_machine" + boost::lexical_cast<std::string>(vm) + "_server_cpu0_mem";
-	cpu0_mem = API::SIM_get_object(cpu_mem_name.c_str());
-	cpu0 = API::SIM_get_object(cpu_name.c_str());
+	cpu0_mem = API::QEMU_get_object(cpu_mem_name.c_str());
+	cpu0 = API::QEMU_get_object(cpu_name.c_str());
 	if ((vm == 0) && (!cpu0_mem)){
-	  cpu0_mem = API::SIM_get_object("server_cpu0_mem");
-	  cpu0 = API::SIM_get_object("server_cpu0");
+	  cpu0_mem = API::QEMU_get_object("server_cpu0_mem");
+	  cpu0 = API::QEMU_get_object("server_cpu0");
         }
         DBG_Assert(cpu0_mem, ( << "Unable to connect DMA because there is no cpu0_mem"));
       }
-
+      
       API::attr_value_t map_key = API::SIM_make_attr_string("map");
       API::attr_value_t map_value = API::SIM_get_attribute(cpu0_mem, "map");
       API::attr_value_t map_pair = API::SIM_make_attr_list(2, map_key, map_value);
@@ -222,6 +236,7 @@ struct ValueTracker {
           API::SIM_set_attribute(all_objects.u.list.vector[i].u.object, "memory_space", &dma_attr );
         }
       }
+      
     }
 
     //Create SimicsTracer Factory
@@ -240,6 +255,7 @@ struct ValueTracker {
     theDMATracer->init(dma_map_object,vm);
 
     DBG_(Tmp, ( << "Done registering DMA tracker"));
+*/
   }
 
   void access( uint32_t aCPU, PhysicalMemoryAddress anAddress ) {

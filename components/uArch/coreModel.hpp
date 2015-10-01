@@ -12,7 +12,7 @@ struct Translation;
 } //Qemu
 } //Flexus
 
-namespaQemurch {
+namespace nuArch {
 
 enum eLoseWritePermission {
   eLosePerm_Invalidate

@@ -116,8 +116,8 @@ protected:
 */
   BaseProcessorImpl(API::conf_object_t * aProcessor)
     : theProcessor(aProcessor)
-    , theProcessorNumber(aProcessor ? ProcessorMapper::mapProcNum2FlexusIndex(APIFwd::QEMU_get_processor_number(aProcessor)) : 0)
-    , theQEMUProcessorNumber(aProcessor ? APIFwd::QEMU_get_processor_number(aProcessor) : 0)
+    , theProcessorNumber(aProcessor ? ProcessorMapper::mapProcNum2FlexusIndex(API::QEMU_get_processor_number(aProcessor)) : 0)
+    , theQEMUProcessorNumber(aProcessor ? API::QEMU_get_processor_number(aProcessor) : 0)
   {}
 
 public:
@@ -325,7 +325,7 @@ struct Translation {
 class v9ProcessorImpl :  public BaseProcessorImpl {
 private:
   static const int kReg_npc = 33;
-  mutable API::sparc_v9_interface * theSparcAPI;
+  mutable API::sparc_v9_interface_t * theSparcAPI;
   mutable API::conf_object_t * theMMU;
   mutable API::mmu_interface_t * theMMUAPI;
   int thePendingInterrupt;
@@ -347,11 +347,11 @@ public:
 
   VirtualMemoryAddress getNPC() const {
     uint64_t reg_content;
-    API::QEMU_read_register(*this, aRegister, NULL, &reg_content);
+    API::QEMU_read_register(*this, kReg_npc, NULL, &reg_content);
     return VirtualMemoryAddress( reg_content );
   }
 
-  API::sparc_v9_interface * sparc() const {
+  API::sparc_v9_interface_t * sparc() const {
     if (theSparcAPI == 0) {
       assert(false); //FIXME
       //theSparcAPI = reinterpret_cast<API::sparc_v9_interface *>( API::SIM_get_interface(*this, "sparc_v9"));
@@ -471,7 +471,7 @@ public:
   PhysicalMemoryAddress translateInstruction_QemuImpl(VirtualMemoryAddress anAddress) const;
   long fetchInstruction_QemuImpl(VirtualMemoryAddress const & anAddress);
 
-  boost::tuple < PhysicalMemoryAddress, bool/*cacheable*/, bool/*side-effect*/ > translateTSB_QEMUImpl(VirtualMemoryAddress anAddress, int anASI) const;
+  std::tuple < PhysicalMemoryAddress, bool/*cacheable*/, bool/*side-effect*/ > translateTSB_QEMUImpl(VirtualMemoryAddress anAddress, int anASI) const;
   unsigned long long readVAddr_QEMUImpl(VirtualMemoryAddress anAddress, int anASI, int aSize) const;
   unsigned long long readVAddrXendian_QEMUImpl(VirtualMemoryAddress anAddress, int anASI, int aSize) const;
   void translate_QEMUImpl(  API::v9_memory_transaction_t & xact, VirtualMemoryAddress anAddress, int anASI ) const;
@@ -515,13 +515,12 @@ public:
   }
 
   static Processor getProcessor(int aProcessorNumber) {
-    return Processor(APIFwd::QEMU_get_processor(ProcessorMapper::mapFlexusIndex2ProcNum(aProcessorNumber)));
+    return Processor(API::QEMU_get_cpu_by_index(ProcessorMapper::mapFlexusIndex2ProcNum(aProcessorNumber)));
   }
 
   static Processor getProcessor(std::string const & aProcessorName) {
-    assert(false);	//ALEX - FIXME
-    return getProcessor(0);
-    //return Processor(API::SIM_get_object(aProcessorName.c_str()));
+    return Processor(API::QEMU_get_object(aProcessorName.c_str()));
+//    return Processor(API::QEMU_get_object());
   }
 
   static Processor current() {

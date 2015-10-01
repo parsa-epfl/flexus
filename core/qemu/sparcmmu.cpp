@@ -45,7 +45,8 @@ void v9ProcessorImpl::initializeMMUs() {
     theMMUMap.resize( num_procs );
 
     for (unsigned int i = 0; i < theMMUs.size(); ++i) {
-      API::conf_object_t * cpu = Qemu::APIFwd::QEMU_get_processor(ProcessorMapper::mapFlexusIndex2ProcNum(i));
+      //API::conf_object_t * cpu = Qemu::API::QEMU_get_processor(ProcessorMapper::mapFlexusIndex2ProcNum(i));
+      API::conf_object_t * cpu = Qemu::API::QEMU_get_cpu_by_index(ProcessorMapper::mapFlexusIndex2ProcNum(i));
       //MMU::fm_init_mmu_from_simics( &theMMUs[i], SIM_get_attribute(cpu, "mmu").u.object );
       //ALEX - FIXME: Get mmu from QEMU
     }
@@ -159,7 +160,7 @@ bool side_effect(API::v9_memory_transaction_t & xact) {
   return (xact.side_effect || xact.s.inverse_endian);
 }
 
-boost::tuple<PhysicalMemoryAddress, bool, bool> v9ProcessorImpl::translateTSB_QemuImpl(VirtualMemoryAddress anAddress, int anASI) const {
+std::tuple<PhysicalMemoryAddress, bool, bool> v9ProcessorImpl::translateTSB_QemuImpl(VirtualMemoryAddress anAddress, int anASI) const {
   //Check for known special-case ASIs
 
   try {
@@ -266,7 +267,8 @@ void v9ProcessorImpl::translate_QemuImpl(  API::v9_memory_transaction_t & xact, 
 
   API::exception_type_t except;
   DBG_Assert(mmu());
-  except = mmu()->logical_to_physical( theMMU, &xact ) ;  //ALEX - FIXME: Need an MMU API in QEMU
+  //except = mmu()->logical_to_physical( theMMU, &xact ) ;  //ALEX - FIXME: Need an MMU API in QEMU
+  except = API::Qemu_PE_No_Exception;	//temp dummy
 
   if (anASI == 0x80) {
     //Translate via the CPU as well, to confirm that it gives the same paddr
@@ -276,7 +278,7 @@ void v9ProcessorImpl::translate_QemuImpl(  API::v9_memory_transaction_t & xact, 
     API::physical_address_t phy_addr = API::QEMU_logical_to_physical(*this, API::QEMU_DI_Data, addr);
     checkException();
     if (phy_addr != xact.s.physical_address ) {
-      DBG_(Verb, ( << "CPU[" << Qemu::APIFwd::QEMU_get_processor_number(*this) << "] Translation difference between CPU and MMU for " << anAddress << ".  Using CPU translation of " << PhysicalMemoryAddress(phy_addr) ));
+      DBG_(Verb, ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] Translation difference between CPU and MMU for " << anAddress << ".  Using CPU translation of " << PhysicalMemoryAddress(phy_addr) ));
       xact.s.physical_address = phy_addr;
       return;
     }
@@ -294,19 +296,19 @@ MMU::mmu_t v9ProcessorImpl::getMMU() {
 }
 
 void v9ProcessorImpl::ckptMMU() {
-  DBG_(Verb, ( << "CPU[" << Qemu::APIFwd::QEMU_get_processor_number(*this) << "] checkpointing MMU. size=" << theMMUckpts[id()].size()));
+  DBG_(Verb, ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] checkpointing MMU. size=" << theMMUckpts[id()].size()));
   theMMUckpts[id()].push_back(theMMUs[id()]);
 }
 
 void v9ProcessorImpl::releaseMMUCkpt() {
-  DBG_(Verb, ( << "CPU[" << Qemu::APIFwd::QEMU_get_processor_number(*this) << "] releasing oldest MMU checkpoint. size=" << theMMUckpts[id()].size()));
-  DBG_Assert(!theMMUckpts[id()].empty(), ( << "CPU[" << Qemu::APIFwd::QEMU_get_processor_number(*this) << "] has no checkpoint to release"));
+  DBG_(Verb, ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] releasing oldest MMU checkpoint. size=" << theMMUckpts[id()].size()));
+  DBG_Assert(!theMMUckpts[id()].empty(), ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] has no checkpoint to release"));
   theMMUckpts[id()].pop_front();
 }
 
 void v9ProcessorImpl::rollbackMMUCkpts(int n) {
-  DBG_(Verb, ( << "CPU[" << Qemu::APIFwd::QEMU_get_processor_number(*this) << "] rolling back " << n << " MMU checkpoints"));
-  DBG_Assert(theMMUckpts[id()].size() > (unsigned)n, ( << "CPU[" << Qemu::APIFwd::QEMU_get_processor_number(*this) << "] has " << theMMUckpts[id()].size() << " but needs > " << n));
+  DBG_(Verb, ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] rolling back " << n << " MMU checkpoints"));
+  DBG_Assert(theMMUckpts[id()].size() > (unsigned)n, ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] has " << theMMUckpts[id()].size() << " but needs > " << n));
   // remove n checkpoints to get back to where we started
   for (int i = 0; i < n; ++i) theMMUckpts[id()].pop_back();
   theMMUs[id()] = theMMUckpts[id()].back();

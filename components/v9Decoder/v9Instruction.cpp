@@ -11,7 +11,7 @@
 #include <core/types.hpp>
 #include <components/uArch/uArchInterfaces.hpp>
 #include <components/uFetch/uFetchTypes.hpp>
-#include <core/simics/mai_api.hpp>
+#include <core/qemu/mai_api.hpp>
 #include <core/stats.hpp>
 
 #include "v9Instruction.hpp"
@@ -42,7 +42,7 @@ void satisfyAtDispatch( SemanticInstruction * inst, std::list<InternalDependance
 }
 
 void v9Instruction::describe(std::ostream & anOstream) const {
-  Flexus::Simics::Processor cpu = Flexus::Simics::Processor::getProcessor(theCPU);
+  Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(theCPU);
   anOstream << "#" << theSequenceNo << "[" << std::setfill('0') << std::right << std::setw(2) << cpu->id() <<  "] "
             << "@" << thePC  << " |" << std::hex << std::setw(8) << theOpcode << std::dec << "| "
             << std::left << std::setw(30) << std::setfill(' ') << disassemble();
@@ -58,7 +58,7 @@ void v9Instruction::describe(std::ostream & anOstream) const {
 }
 
 std::string v9Instruction::disassemble() const {
-  return Flexus::Simics::Processor::getProcessor(theCPU)->disassemble(thePC);
+  return Flexus::Qemu::Processor::getProcessor(theCPU)->disassemble(thePC);
 }
 
 void v9Instruction::setWillRaise(int32_t aSetting) {
@@ -119,7 +119,7 @@ struct MAGIC : public v9Instruction {
     return true;
   }
   virtual bool preValidate() {
-    Flexus::Simics::Processor cpu = Flexus::Simics::Processor::getProcessor(theCPU);
+    Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(theCPU);
     if ( cpu->getPC()  != thePC ) {
       DBG_( Crit, ( << *this << " PreValidation failed: PC mismatch flexus=" << thePC << " simics=" << cpu->getPC() ) );
     }
@@ -133,7 +133,7 @@ struct MAGIC : public v9Instruction {
   }
 
   virtual bool postValidate() {
-    Flexus::Simics::Processor cpu = Flexus::Simics::Processor::getProcessor(theCPU);
+    Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(theCPU);
     if ( cpu->getPC()  != theNPC ) {
       DBG_( Crit, ( << *this << " PostValidation failed: PC mismatch flexus=" << theNPC << " simics=" << cpu->getPC() ) );
     }

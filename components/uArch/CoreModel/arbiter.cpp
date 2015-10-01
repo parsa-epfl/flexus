@@ -1,6 +1,6 @@
 #include "coreModelImpl.hpp"
 
-#include <core/simics/mai_api.hpp>
+#include <core/qemu/mai_api.hpp>
 
 #include "../ValueTracker.hpp"
 
@@ -507,10 +507,10 @@ void CoreImpl::issueStore() {
           //Need to inform ValueTracker that this store is complete
           uint64_t value = op.theValue;
           if (op.theReverseEndian) {
-            value = Flexus::Simics::endianFlip(value, op.theSize);
+            value = Flexus::Qemu::endianFlip(value, op.theSize);
             DBG_(Verb, ( << "Performing inverse endian store for addr " << std::hex << op.thePAddr << " val: " << op.theValue << " inv: " << value << std::dec ));
           }
-	  ValueTracker::valueTracker(Flexus::Simics::ProcessorMapper::mapFlexusIndex2VM(theNode)).commitStore( theNode, op.thePAddr, op.theSize, value);
+	  ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theNode)).commitStore( theNode, op.thePAddr, op.theSize, value);
           completeLSQ( theMemQueue.project<by_insn>(theMemQueue.begin()), op);
           return;
         }
@@ -814,7 +814,7 @@ void CoreImpl::checkExtraLatencyTimeout() {
       if ( mmuASI(lsq_head->theASI)) {
         if (lsq_head->isLoad()) {
           //Perform MMU access for loads.  Stores are done in retireMem()
-          lsq_head->theValue = Flexus::Simics::Processor::getProcessor( theNode )->mmuRead(lsq_head->theVaddr, lsq_head->theASI);
+          lsq_head->theValue = Flexus::Qemu::Processor::getProcessor( theNode )->mmuRead(lsq_head->theVaddr, lsq_head->theASI);
           lsq_head->theExtendedValue = 0;
           DBG_( Verb, ( << theName << " MMU read: " << *lsq_head ) );
         }
@@ -827,7 +827,7 @@ void CoreImpl::checkExtraLatencyTimeout() {
       } else if (interruptASI(lsq_head->theASI)) {
         if (lsq_head->isLoad()) {
           //Perform Interrupt access for loads.  We let Simics worry about stores
-          lsq_head->theValue = Flexus::Simics::Processor::getProcessor( theNode )->interruptRead(lsq_head->theVaddr, lsq_head->theASI);
+          lsq_head->theValue = Flexus::Qemu::Processor::getProcessor( theNode )->interruptRead(lsq_head->theVaddr, lsq_head->theASI);
           lsq_head->theExtendedValue = 0;
           DBG_( Verb, ( << theName << " Interrupt read: " << *lsq_head ) );
         }

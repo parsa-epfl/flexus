@@ -1,6 +1,8 @@
 #ifndef FLEXUS_SIMICS_SPARC_MMU_HPP_INCLUDED
 #define FLEXUS_SIMICS_SPARC_MMU_HPP_INCLUDED
 
+#include "sparcmmu_defines.h"
+
 namespace Flexus {
 namespace Qemu {
 

@@ -48,7 +48,7 @@ class CoreImpl : public CoreModel {
   //Simulation
   std::string theName;
   uint32_t theNode;
-  boost::function< void (Flexus::Simics::Translation &, bool) > translate;
+  boost::function< void (Flexus::Qemu::Translation &, bool) > translate;
   boost::function<int(bool)> advance_fn;
   boost::function< void(eSquashCause)> squash_fn;
   boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress)> redirect_fn;
@@ -459,7 +459,7 @@ private:
   //==========================================================================
 public:
   CoreImpl( uArchOptions_t options
-            , boost::function< void (Flexus::Simics::Translation &, bool) > xlat
+            , boost::function< void (Flexus::Qemu::Translation &, bool) > xlat
             , boost::function< int(bool) > advance
             , boost::function< void(eSquashCause)> squash
             , boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress) > redirect

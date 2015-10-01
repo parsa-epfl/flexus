@@ -1,9 +1,10 @@
+#ifndef CONFIG_QEMU
 #include <iostream>
 #include <cstring>
 #include <cstdlib>
 
 #include <core/target.hpp>
-#include <core/simics/api_wrappers.hpp>
+#include <core/qemu/api_wrappers.hpp>
 
 namespace Flexus {
 namespace Simics {
@@ -53,4 +54,4 @@ void SIM_write_configuration_to_file(const char * aFilename) {
 } //namespace APIFwd
 } //End Namespace Simics
 } //namespace Flexus
-
+#endif //CONFIG_QEMU

@@ -257,7 +257,7 @@ void CoreImpl::accessMem( PhysicalMemoryAddress anAddress, boost::intrusive_ptr<
   if (anAddress != 0) {
     //Ensure that the correct memory value for this node is in Simics' memory
     //image before we advance Simics
-    ValueTracker::valueTracker(Flexus::Simics::ProcessorMapper::mapFlexusIndex2VM(theNode)).access(theNode, anAddress);
+    ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theNode)).access(theNode, anAddress);
   }
   PhysicalMemoryAddress block_addr( static_cast<uint64_t>(anAddress) & ~( theCoherenceUnit - 1) );
   if (block_addr != 0) {
@@ -481,12 +481,12 @@ void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry 
     theMemQueue.get<by_insn>().modify( lsq_entry, [](auto& x){ x.thePaddr_aligned = PhysicalMemoryAddress(kUnresolved);});//ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = PhysicalMemoryAddress(kUnresolved));
   } else {
     //Map logical to physical
-    Flexus::Simics::Translation xlat;
+    Flexus::Qemu::Translation xlat;
     xlat.theVaddr = anAddr ;
     xlat.theASI = lsq_entry->theASI;
     xlat.theTL = getTL();
     xlat.thePSTATE = getPSTATE() ;
-    xlat.theType = ( lsq_entry->isStore() ? Flexus::Simics::Translation::eStore :  Flexus::Simics::Translation::eLoad) ;
+    xlat.theType = ( lsq_entry->isStore() ? Flexus::Qemu::Translation::eStore :  Flexus::Qemu::Translation::eLoad) ;
     translate(xlat, false);
     lsq_entry->thePaddr = xlat.thePaddr;
     lsq_entry->theSideEffect = xlat.isSideEffect() || ( ! xlat.isTranslating() && ! xlat.isMMU() );

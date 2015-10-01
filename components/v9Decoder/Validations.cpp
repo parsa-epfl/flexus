@@ -13,7 +13,7 @@ namespace ll = boost::lambda;
 #include <core/types.hpp>
 
 #include <components/uArch/uArchInterfaces.hpp>
-#include <core/simics/mai_api.hpp>
+#include <core/qemu/mai_api.hpp>
 
 #include "SemanticInstruction.hpp"
 #include "Effects.hpp"
@@ -55,28 +55,28 @@ static const int32_t kCLEANWIN = 95;
 
 void overrideRegister::operator () () {
   uint64_t flexus = theInstruction->operand< uint64_t > (theOperandCode);
-  uint64_t simics = Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->readRegister( theReg );
+  uint64_t simics = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readRegister( theReg );
   if (flexus != simics) {
     DBG_( Verb, ( << *theInstruction << " overriding simics register " << theReg << " = " << std::hex << simics << " with flexus " << theOperandCode << " = " << flexus << std::dec ));
-    Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->writeRegister( theReg, flexus );
+    Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->writeRegister( theReg, flexus );
   }
 }
 
 void overrideFloatSingle::operator () () {
   uint64_t flexus = theInstruction->operand< uint64_t > (theOperandCode);
-  uint64_t simics = Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->readF( theReg & (~1) );
+  uint64_t simics = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readF( theReg & (~1) );
   uint64_t flexus_align = simics;
   if (theReg & 1) {
     flexus_align = ( (flexus_align &  0xFFFFFFFF00000000ULL) | (flexus & 0xFFFFFFFFULL) );
     if (flexus_align != simics) {
       DBG_( Verb, ( << *theInstruction << " overriding simics f-register " << theReg << " = " << std::hex << simics << " with flexus " << theOperandCode << " = " << flexus_align << std::dec ));
-      Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->writeF( theReg, flexus_align );
+      Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->writeF( theReg, flexus_align );
     }
   } else {
     flexus_align = ( (flexus_align &  0xFFFFFFFFULL) | (flexus << 32) );
     if (flexus_align != simics) {
       DBG_( Verb, ( << *theInstruction << " overriding simics f-register " << theReg << " = " << std::hex << simics << " with flexus " << theOperandCode << " = " << flexus_align << std::dec ));
-      Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->writeF( theReg, flexus_align );
+      Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->writeF( theReg, flexus_align );
     }
   }
 }
@@ -84,11 +84,11 @@ void overrideFloatSingle::operator () () {
 void overrideFloatDouble::operator () () {
   uint64_t flexus_hi = theInstruction->operand< uint64_t > (theOperandCodeHi);
   uint64_t flexus_lo = theInstruction->operand< uint64_t > (theOperandCodeLo);
-  uint64_t simics = Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->readF( theReg );
+  uint64_t simics = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readF( theReg );
   uint64_t flexus_align = ( ( flexus_hi << 32 ) | (flexus_lo & 0xFFFFFFFFULL) );
   if (flexus_align != simics) {
     DBG_( Verb, ( << *theInstruction << " overriding simics f-register " << theReg << " = " << std::hex << simics << " with flexus " << theOperandCodeHi << ":" << theOperandCodeLo << " = " << flexus_align << std::dec ));
-    Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->writeF( theReg, flexus_align );
+    Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->writeF( theReg, flexus_align );
   }
 }
 
@@ -104,13 +104,13 @@ bool validateRegister::operator () () {
   uint64_t flexus = theInstruction->operand< uint64_t > (theOperandCode);
   uint64_t simics = 0;
   if (theReg == nuArch::kRegY) {
-    simics = Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->readRegister( kY );
+    simics = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readRegister( kY );
   } else if (theReg == nuArch::kRegASI) {
-    simics = Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->readRegister( kASI );
+    simics = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readRegister( kASI );
   } else if (theReg == nuArch::kRegGSR) {
-    simics = Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->readRegister( kGSR );
+    simics = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readRegister( kGSR );
   } else {
-    simics = Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->readRegister( theReg );
+    simics = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readRegister( theReg );
   }
   DBG_( VVerb, ( << "Validating reg " << theReg << " flexus=" << std::hex << flexus << " simics=" << simics << std::dec << "\n" << std::internal << *theInstruction ) );
   DBG_( Dev, Condition( flexus != simics) ( << "Validation Mismatch for reg " << theReg << " flexus=" << std::hex << flexus << " simics=" << simics << std::dec << "\n" << std::internal << *theInstruction ) );
@@ -124,7 +124,7 @@ bool validateFRegister::operator () () {
   }
 
   uint64_t flexus = theInstruction->operand< uint64_t > (theOperandCode);
-  uint64_t simics = Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->readF( theReg & (~1) );
+  uint64_t simics = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readF( theReg & (~1) );
   if (theReg & 1) {
     simics &= 0xFFFFFFFFULL;
   } else {
@@ -140,7 +140,7 @@ bool validateCC::operator () () {
   }
 
   std::bitset<8> flexus( theInstruction->operand< std::bitset<8> > (theOperandCode) );
-  std::bitset<8> simics( Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->readRegister( kCCR ) );
+  std::bitset<8> simics( Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readRegister( kCCR ) );
   DBG_( Dev, Condition( flexus != simics) ( << "Validation Mismatch for CC bits flexus=" << flexus << " simics=" << simics << "\n" << std::internal << *theInstruction ) );
   return (flexus == simics);
 }
@@ -152,7 +152,7 @@ bool validateFCC::operator () () {
 
   std::bitset<8> flexus( theInstruction->operand< std::bitset<8> > (theOperandCode) );
   uint32_t flexus_fcc = flexus.to_ulong() & 3;
-  uint64_t fsr = Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->readRegister( kFSR );
+  uint64_t fsr = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readRegister( kFSR );
   uint32_t simics_fcc = 0;
   switch (theFCC) {
     case 0:
@@ -203,26 +203,26 @@ bool validateMemory::operator () () {
       break;
   }
 
-  Flexus::Simics::Processor c = Flexus::Simics::Processor::getProcessor(theInstruction->cpu());
-  Flexus::Simics::Translation xlat;
+  Flexus::Qemu::Processor c = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu());
+  Flexus::Qemu::Translation xlat;
   xlat.theVaddr = flexus_addr;
-  xlat.theType = Flexus::Simics::Translation::eLoad;
+  xlat.theType = Flexus::Qemu::Translation::eLoad;
   xlat.theTL = c->readRegister( kTL );
   xlat.thePSTATE = c->readRegister( kPSTATE );
   xlat.theASI = asi;
   c->translate(xlat, false);
   if (xlat.isMMU()) {
-    //bool mmu_ok = Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->validateMMU();
+    //bool mmu_ok = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->validateMMU();
     //if (! mmu_ok) {
     //DBG_( Dev, Condition( ! mmu_ok) ( << "Validation Mismatch for MMUs\n" << std::internal << *theInstruction ) );
-    //Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->dumpMMU();
+    //Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->dumpMMU();
     //}
     return true;
   } else if (xlat.thePaddr > 0x400000000LL) {
     DBG_( Iface, ( << "Non-memory store " << std::hex << asi << " flexus=" << flexus_value << " Insn: " << *theInstruction ) );
     return true;
   } else if (xlat.isTranslating() && !xlat.isSideEffect()) {
-    uint64_t simics_value = c->readVAddrXendian_SimicsImpl( xlat.theVaddr, xlat.theASI, static_cast<int>(theSize) );
+    uint64_t simics_value = c->readVAddrXendian_QEMUImpl( xlat.theVaddr, xlat.theASI, static_cast<int>(theSize) );
     DBG_( Dev, Condition( flexus_value != simics_value) ( << "Validation Mismatch for address " << flexus_addr << " flexus=" << std::hex << flexus_value << " simics=" << simics_value << std::dec << "\n" << std::internal << *theInstruction ) );
     return (flexus_value == simics_value);
   } else {
@@ -275,7 +275,7 @@ bool validateTPR::operator () () {
 
   uint64_t flexus_value = theInstruction->operand< uint64_t > (theOperandCode);
   uint64_t tl = theInstruction->operand< uint64_t > (theTLOperandCode);
-  uint64_t simics_value = Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->readRegister( simicsReg( thePR ) + tl - 1);
+  uint64_t simics_value = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readRegister( simicsReg( thePR ) + tl - 1);
   DBG_( Dev, Condition( flexus_value != simics_value) ( << "Validation Mismatch for " << theInstruction->core()->prName( thePR ) << " flexus=" << std::hex << flexus_value << " simics=" << simics_value << std::dec << "\n" << std::internal << *theInstruction ) );
   return (flexus_value == simics_value);
 }
@@ -286,7 +286,7 @@ bool doValidatePR( SemanticInstruction * theInstruction, eOperandCode theOperand
   }
 
   uint64_t flexus_value = theInstruction->operand< uint64_t > (theOperandCode);
-  uint64_t simics_value = Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->readRegister( simicsReg( thePR )  );
+  uint64_t simics_value = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readRegister( simicsReg( thePR )  );
   DBG_( Dev, Condition( flexus_value != simics_value) ( << "Validation Mismatch for " << theInstruction->core()->prName( thePR ) << " flexus=" << std::hex << flexus_value << " simics=" << simics_value << std::dec << "\n" << std::internal << *theInstruction ) );
   return (flexus_value == simics_value);
 }
@@ -315,7 +315,7 @@ bool validateFPRS::operator () () {
 
 
   uint64_t flexus_value = theInstruction->operand< uint64_t > (kocFPRS);
-  uint64_t simics_value = Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->readRegister( kFPRS );
+  uint64_t simics_value = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readRegister( kFPRS );
   DBG_( Dev, Condition( flexus_value != simics_value) ( << "Validation Mismatch for FPRS flexus=" << std::hex << flexus_value << " simics=" << simics_value << std::dec << "\n" << std::internal << *theInstruction ) );
   return (flexus_value == simics_value);
 }
@@ -326,7 +326,7 @@ bool validateFSR::operator () () {
   }
 
   uint64_t flexus_value = theInstruction->operand< uint64_t > (kocFSR);
-  uint64_t simics_value = Flexus::Simics::Processor::getProcessor(theInstruction->cpu())->readRegister( kFSR );
+  uint64_t simics_value = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readRegister( kFSR );
   DBG_( Dev, Condition( flexus_value != simics_value) ( << "Validation Mismatch for FSR flexus=" << std::hex << flexus_value << " simics=" << simics_value << std::dec << "\n" << std::internal << *theInstruction ) );
   return (flexus_value == simics_value);
 }

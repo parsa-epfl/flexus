@@ -7,7 +7,7 @@
 namespace nuArch {
 
 CoreImpl::CoreImpl( uArchOptions_t options
-                    , boost::function< void (Flexus::Simics::Translation &, bool) > xlat
+                    , boost::function< void (Flexus::Qemu::Translation &, bool) > xlat
                     , boost::function<int(bool)> _advance
                     , boost::function< void(eSquashCause)> _squash
                     , boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress)> _redirect
@@ -539,7 +539,7 @@ void CoreImpl::setRoundingMode(uint32_t aRoundingMode) {
 }
 
 CoreModel * CoreModel::construct( uArchOptions_t options
-                                  , boost::function< void (Flexus::Simics::Translation &, bool) > translate
+                                  , boost::function< void (Flexus::Qemu::Translation &, bool) > translate
                                   , boost::function<int(bool)> advance
                                   , boost::function< void(eSquashCause)> squash
                                   , boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress)> redirect

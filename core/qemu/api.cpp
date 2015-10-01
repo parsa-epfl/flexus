@@ -72,6 +72,7 @@ QEMU_MEM_OP_IS_READ_PROC QEMU_mem_op_is_read= nullptr;
 QEMU_INSTRUCTION_HANDLE_INTERRUPT_PROC QEMU_instruction_handle_interrupt = nullptr;
 QEMU_GET_PENDING_EXCEPTION_PROC QEMU_get_pending_exception = nullptr;
 QEMU_ADVANCE_PROC QEMU_advance = nullptr;
+QEMU_GET_OBJECT_PROC QEMU_get_object = nullptr;
 
 // insert a callback specific for the given cpu or -1 for a generic callback
 QEMU_INSERT_CALLBACK_PROC QEMU_insert_callback= nullptr;
