@@ -222,7 +222,7 @@ bool validateMemory::operator () () {
     DBG_( Iface, ( << "Non-memory store " << std::hex << asi << " flexus=" << flexus_value << " Insn: " << *theInstruction ) );
     return true;
   } else if (xlat.isTranslating() && !xlat.isSideEffect()) {
-    uint64_t simics_value = c->readVAddrXendian_QEMUImpl( xlat.theVaddr, xlat.theASI, static_cast<int>(theSize) );
+    uint64_t simics_value = c->readVAddrXendian_QemuImpl( xlat.theVaddr, xlat.theASI, static_cast<int>(theSize) );
     DBG_( Dev, Condition( flexus_value != simics_value) ( << "Validation Mismatch for address " << flexus_addr << " flexus=" << std::hex << flexus_value << " simics=" << simics_value << std::dec << "\n" << std::internal << *theInstruction ) );
     return (flexus_value == simics_value);
   } else {

@@ -166,9 +166,11 @@ std::tuple<PhysicalMemoryAddress, bool, bool> v9ProcessorImpl::translateTSB_Qemu
   try {
     API::v9_memory_transaction_t xact;
     translate_QemuImpl( xact, anAddress, anASI);
-    return boost::make_tuple( PhysicalMemoryAddress( xact.s.physical_address ), (xact.s.physical_address != 0 ) && cacheable(xact), (xact.s.physical_address == 0 ) || side_effect(xact)  );
+    //return boost::make_tuple( PhysicalMemoryAddress( xact.s.physical_address ), (xact.s.physical_address != 0 ) && cacheable(xact), (xact.s.physical_address == 0 ) || side_effect(xact)  );
+    return std::make_tuple( PhysicalMemoryAddress( xact.s.physical_address ), (xact.s.physical_address != 0 ) && cacheable(xact), (xact.s.physical_address == 0 ) || side_effect(xact)  );
   } catch (MemoryException & anError ) {
-    return boost::make_tuple( PhysicalMemoryAddress(0), false, true);
+    //return boost::make_tuple( PhysicalMemoryAddress(0), false, true);
+    return std::make_tuple( PhysicalMemoryAddress(0), false, true);
   }
 }
 
@@ -251,7 +253,9 @@ void v9ProcessorImpl::translate_QemuImpl(  API::v9_memory_transaction_t & xact, 
   API::logical_address_t addr(anAddress);
   memset( &xact, 0, sizeof(API::v9_memory_transaction_t ) );
   xact.priv = 1;
-#if SIM_VERSION < 1200
+#if defined(CONFIG_QEMU)
+  xact.access_type = API::V9_Access_Normal;
+#elif SIM_VERSION < 1200
   xact.align_kind = API::Align_Natural;
 #else
   //align_kind was replaced by access_type in Simics 2.2.x
@@ -260,15 +264,15 @@ void v9ProcessorImpl::translate_QemuImpl(  API::v9_memory_transaction_t & xact, 
   xact.address_space = anASI;
   xact.s.logical_address = addr;
   xact.s.size = 4;
-  xact.s.type = API::Sim_Trans_Load;
+  xact.s.type = API::QEMU_Trans_Load;
   xact.s.inquiry = 1;
-  xact.s.ini_type = API::Sim_Initiator_Other;
-  xact.s.exception = API::Sim_PE_No_Exception;
+  xact.s.ini_type = API::QEMU_Initiator_Other;
+  xact.s.exception = API::QEMU_PE_No_Exception;
 
   API::exception_type_t except;
   DBG_Assert(mmu());
   //except = mmu()->logical_to_physical( theMMU, &xact ) ;  //ALEX - FIXME: Need an MMU API in QEMU
-  except = API::Qemu_PE_No_Exception;	//temp dummy
+  except = API::QEMU_PE_No_Exception;	//temp dummy
 
   if (anASI == 0x80) {
     //Translate via the CPU as well, to confirm that it gives the same paddr
@@ -284,7 +288,7 @@ void v9ProcessorImpl::translate_QemuImpl(  API::v9_memory_transaction_t & xact, 
     }
   }
 
-  if ( except != API::Qemu_PE_No_Exception ) {
+  if ( except != API::QEMU_PE_No_Exception ) {
     DBG_( Verb, ( << "Exception during translation: " << except ) );
     throw MemoryException();
   }

@@ -471,10 +471,10 @@ public:
   PhysicalMemoryAddress translateInstruction_QemuImpl(VirtualMemoryAddress anAddress) const;
   long fetchInstruction_QemuImpl(VirtualMemoryAddress const & anAddress);
 
-  std::tuple < PhysicalMemoryAddress, bool/*cacheable*/, bool/*side-effect*/ > translateTSB_QEMUImpl(VirtualMemoryAddress anAddress, int anASI) const;
-  unsigned long long readVAddr_QEMUImpl(VirtualMemoryAddress anAddress, int anASI, int aSize) const;
-  unsigned long long readVAddrXendian_QEMUImpl(VirtualMemoryAddress anAddress, int anASI, int aSize) const;
-  void translate_QEMUImpl(  API::v9_memory_transaction_t & xact, VirtualMemoryAddress anAddress, int anASI ) const;
+  std::tuple < PhysicalMemoryAddress, bool/*cacheable*/, bool/*side-effect*/ > translateTSB_QemuImpl(VirtualMemoryAddress anAddress, int anASI) const;
+  unsigned long long readVAddr_QemuImpl(VirtualMemoryAddress anAddress, int anASI, int aSize) const;
+  unsigned long long readVAddrXendian_QemuImpl(VirtualMemoryAddress anAddress, int anASI, int aSize) const;
+  void translate_QemuImpl(  API::v9_memory_transaction_t & xact, VirtualMemoryAddress anAddress, int anASI ) const;
 
   //MMUImpl
   void translate_MMUImpl( Translation & aTranslation, bool aTakeTrap) const;

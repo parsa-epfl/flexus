@@ -103,6 +103,7 @@ typedef enum {
   QEMU_BRANCH_TYPE_COUNT
 } branch_type_t;
 
+//Original definition in /home/parsacom/tools/simics/src/include/simics/core/memory.h
 struct generic_transaction {
         void *cpu_state;// (CPUState*) state of the CPU source of the transaction
 	conf_object_t *ini_ptr; // note: for efficiency, arrange struct from
@@ -122,6 +123,7 @@ struct generic_transaction {
 	unsigned int may_stall:1;
 	unsigned int speculative:1;
 	unsigned int ignore:1;
+	unsigned int inverse_endian:1;
 };
 typedef struct generic_transaction generic_transaction_t;
 
