@@ -256,9 +256,21 @@ ProcessorMapper::ProcessorMapper() {
   //boost::regex non_vm_expression("((?:)|(?:server_)|(?:client_))cpu([0-9]*)");
   // end PLotfi
   DBG_(Crit, ( << "Searching " << proc_count << " cpus." ));
+  DBG_(Crit, ( << "WARNING: Need to fix this to distinguish between different cpu types (server, client, etc.).")); //For now, all the cpus are considered to be server cpus
+
   for (int i = 0; i < proc_count; i++) {
-    assert(false);	//FIXME
-    API::conf_object_t * cpu = nullptr;	//proc_list.u.list.vector[i].u.object;	//ALEX- FIXME: Get head of processor list "proc_list"
+    API::conf_object_t * cpu = &(proc_list[i]);
+    int qemu_id = API::QEMU_get_processor_number(cpu);
+    DBG_(Crit, ( << "Processor " << i << ": " << cpu->name << " - CPU " << qemu_id ));
+     
+    bool is_client = false;
+    num_flexus_cpus++;
+    int vm = 0;
+    cpu_list.push_back(cpu_desc_t(vm, proc_count, qemu_id, is_client)); //ALEX: Not sure about 2nd parameter
+  }
+/* //ALEX - This was the simics part  
+  for (int i = 0; i < proc_count; i++) {
+    API::conf_object_t * cpu = proc_list.u.list.vector[i].u.object;	
     int qemu_id = API::QEMU_get_processor_number(cpu);
     DBG_(Crit, ( << "Processor " << i << ": " << cpu->name << " - CPU " << qemu_id ));
 
@@ -300,8 +312,8 @@ ProcessorMapper::ProcessorMapper() {
     }
   }
   // Don't forget to free the processor list
-  //SIM_free_attribute(proc_list);	//ALEX - Do we need this for QEMU?
-
+  SIM_free_attribute(proc_list);	
+*/
   DBG_(Crit, ( << "Found " << num_flexus_cpus << " Flexus CPUs and " << num_client_cpus << " Client CPUs and " << num_besim_cpus << " Besim CPUs in " << (max_vm + 1) << " VMs"));
   theProcMap.resize(num_flexus_cpus, std::make_pair(0, 0));
   theClientMap.resize(num_client_cpus + num_besim_cpus, 0);
@@ -519,7 +531,7 @@ ProcessorMapper::ProcessorMapper() {
   }
   delete [] machines;
   DBG_(Dev, ( << "Finished creating Processor Mapper."));
-  //API::SIM_clear_exception();		//ALEX - FIXME
+  //API::SIM_clear_exception();		//ALEX - Why would this cause a simics exception?
 }
 
 int ProcessorMapper::mapFlexusIndex2ProcNum(int index) {

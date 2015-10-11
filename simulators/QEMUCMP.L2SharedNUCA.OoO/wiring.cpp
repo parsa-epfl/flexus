@@ -210,7 +210,7 @@ bool initializeParameters() {
   theMagicBreakCfg.TerminateOnMagicBreak.initialize(-1);
   theMagicBreakCfg.EnableIterationCounts.initialize(false);
 
-  return true; //Abort simulation if parameters are not initialized
+  return false; //Abort simulation if parameters are not initialized
 }
 
 #include FLEXUS_END_COMPONENT_CONFIGURATION_SECTION()

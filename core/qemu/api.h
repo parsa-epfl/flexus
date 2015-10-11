@@ -321,6 +321,7 @@ typedef struct v9_memory_transaction {
 ///
 
 typedef void (*CPU_READ_REGISTER_PROC)(void* env_ptr, int reg_index, unsigned *reg_size, void *data_out);
+typedef uint64_t (*READREG_PROC)(void *cs_, int reg_idx, int reg_type);
 typedef physical_address_t (*MMU_LOGICAL_TO_PHYSICAL_PROC)(void *cs, logical_address_t va);
 typedef uint64_t (*CPU_GET_PROGRAM_COUNTER_PROC)(void* cs);
 typedef void* (*CPU_GET_ADDRESS_SPACE_PROC)(void* cs);
@@ -330,6 +331,7 @@ typedef conf_object_t* (*QEMU_GET_PHYS_MEMORY_PROC)(conf_object_t* cpu);
 typedef conf_object_t* (*QEMU_GET_ETHERNET_PROC)(void);
 typedef int (*QEMU_CLEAR_EXCEPTION_PROC)(void);
 typedef void (*QEMU_READ_REGISTER_PROC)(conf_object_t *cpu, int reg_index, unsigned* reg_size, void* data_out);
+typedef uint64_t (*QEMU_READ_REGISTER_BY_TYPE_PROC)(conf_object_t *cpu, int reg_index, int reg_type);
 typedef uint64_t (*QEMU_READ_PHYS_MEMORY_PROC)(conf_object_t *cpu, physical_address_t pa, int bytes);
 typedef conf_object_t *(*QEMU_GET_PHYS_MEM_PROC)(conf_object_t *cpu);
 typedef conf_object_t* (*QEMU_GET_CPU_BY_INDEX_PROC)(int index);
@@ -364,6 +366,7 @@ typedef conf_object_t* (*QEMU_GET_OBJECT_PROC)(const char *name);
 
 #ifndef QEMUFLEX_PROTOTYPES
 extern CPU_READ_REGISTER_PROC cpu_read_register;
+extern READREG_PROC readReg;
 extern MMU_LOGICAL_TO_PHYSICAL_PROC mmu_logical_to_physical;
 extern CPU_GET_PROGRAM_COUNTER_PROC cpu_get_program_counter;
 extern CPU_GET_ADDRESS_SPACE_PROC cpu_get_address_space;
@@ -373,6 +376,7 @@ extern QEMU_GET_PHYS_MEMORY_PROC QEMU_get_phys_memory;
 extern QEMU_GET_ETHERNET_PROC QEMU_get_ethernet;
 extern QEMU_CLEAR_EXCEPTION_PROC QEMU_clear_exception;
 extern QEMU_READ_REGISTER_PROC QEMU_read_register;
+extern QEMU_READ_REGISTER_BY_TYPE_PROC QEMU_read_register_by_type;
 extern QEMU_READ_PHYS_MEMORY_PROC QEMU_read_phys_memory;
 extern QEMU_GET_PHYS_MEM_PROC QEMU_get_phys_mem;
 extern QEMU_GET_CPU_BY_INDEX_PROC QEMU_get_cpu_by_index;
@@ -438,6 +442,7 @@ extern QEMU_GET_OBJECT_PROC QEMU_get_object;
 // if reg_size != NULL, write the size of the register (in bytes) in reg_size
 // if data_out != NULL, write the content of the register in data_out
 void cpu_read_register( void *env_ptr, int reg_index, unsigned *reg_size, void *data_out );
+uint64_t readReg(void *cs_, int reg_idx, int reg_type); 
 
 physical_address_t mmu_logical_to_physical(void *cs, logical_address_t va);
 uint64_t cpu_get_program_counter(void *cs);
@@ -459,6 +464,8 @@ void QEMU_read_register(conf_object_t *cpu,
 			int reg_index,
 			unsigned *reg_size,
 			void *data_out);
+
+uint64_t QEMU_read_register_by_type(conf_object_t *cpu, int reg_index, int reg_type);
 
 // read an arbitrary physical memory address.
 uint64_t QEMU_read_phys_memory(conf_object_t *cpu, 
@@ -689,6 +696,7 @@ void QEMU_execute_callbacks(
 ///
 typedef struct QFLEX_API_Interface_Hooks {
 CPU_READ_REGISTER_PROC cpu_read_register;
+READREG_PROC readReg;
 MMU_LOGICAL_TO_PHYSICAL_PROC mmu_logical_to_physical;
 CPU_GET_PROGRAM_COUNTER_PROC cpu_get_program_counter;
 CPU_GET_ADDRESS_SPACE_PROC cpu_get_address_space;
@@ -698,6 +706,7 @@ QEMU_GET_PHYS_MEMORY_PROC QEMU_get_phys_memory;
 QEMU_GET_ETHERNET_PROC QEMU_get_ethernet;
 QEMU_CLEAR_EXCEPTION_PROC QEMU_clear_exception;
 QEMU_READ_REGISTER_PROC QEMU_read_register;
+QEMU_READ_REGISTER_BY_TYPE_PROC QEMU_read_register_by_type;
 QEMU_READ_PHYS_MEMORY_PROC QEMU_read_phys_memory;
 QEMU_GET_PHYS_MEM_PROC QEMU_get_phys_mem;
 QEMU_GET_CPU_BY_INDEX_PROC QEMU_get_cpu_by_index;

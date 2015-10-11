@@ -387,33 +387,23 @@ public:
   }
 
   unsigned long long readG(int aRegister) const {
-    //return sparc()->read_global_register(*this, 0, aRegister);
-    assert(false);
-    return 0;
+    return API::QEMU_read_register_by_type(*this, aRegister, 0);
   }
 
   unsigned long long readAG(int aRegister) const {
-    //return sparc()->read_global_register(*this, 1, aRegister);
-    assert(false);
-    return 0;
+    return API::QEMU_read_register_by_type(*this, aRegister, 1);
   }
 
   unsigned long long readMG(int aRegister) const {
-    //return sparc()->read_global_register(*this, 2, aRegister);
-    assert(false);
-    return 0;
+    return API::QEMU_read_register_by_type(*this, aRegister, 3);
   }
 
   unsigned long long readIG(int aRegister) const {
-    //return sparc()->read_global_register(*this, 3, aRegister);
-    assert(false);
-    return 0;
+    return API::QEMU_read_register_by_type(*this, aRegister, 2);
   }
 
   unsigned long long readWindowed(int aWindow, int aRegister) const {
-    //return sparc()->read_window_register(*this, aWindow, aRegister);
-    assert(false);
-    return 0;
+    return API::QEMU_read_register_by_type(*this, aWindow*16+aRegister, 4);
   }
 
   unsigned long long interruptRead(VirtualMemoryAddress anAddress, int anASI) const;

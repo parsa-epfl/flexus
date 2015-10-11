@@ -4,6 +4,7 @@ namespace API{
 #include "api.h"
 
 CPU_READ_REGISTER_PROC cpu_read_register= nullptr;
+READREG_PROC readReg= nullptr;
 MMU_LOGICAL_TO_PHYSICAL_PROC mmu_logical_to_physical= nullptr;
 CPU_GET_PROGRAM_COUNTER_PROC cpu_get_program_counter= nullptr;
 CPU_GET_ADDRESS_SPACE_PROC cpu_get_address_space= nullptr;
@@ -13,6 +14,7 @@ QEMU_GET_PHYS_MEMORY_PROC QEMU_get_phys_memory= nullptr;
 QEMU_GET_ETHERNET_PROC QEMU_get_ethernet= nullptr;
 QEMU_CLEAR_EXCEPTION_PROC QEMU_clear_exception= nullptr;
 QEMU_READ_REGISTER_PROC QEMU_read_register= nullptr;
+QEMU_READ_REGISTER_BY_TYPE_PROC QEMU_read_register_by_type= nullptr;
 QEMU_READ_PHYS_MEMORY_PROC QEMU_read_phys_memory= nullptr;
 QEMU_GET_PHYS_MEM_PROC QEMU_get_phys_mem= nullptr;
 QEMU_GET_CPU_BY_INDEX_PROC QEMU_get_cpu_by_index= nullptr;
@@ -82,6 +84,7 @@ QEMU_DELETE_CALLBACK_PROC QEMU_delete_callback= nullptr;
 
 void QFLEX_API_set_interface_hooks( const QFLEX_API_Interface_Hooks_t* hooks ) {
   cpu_read_register= hooks->cpu_read_register;
+  readReg= hooks->readReg;
   mmu_logical_to_physical= hooks->mmu_logical_to_physical;
   cpu_get_program_counter= hooks->cpu_get_program_counter;
   cpu_get_address_space= hooks->cpu_get_address_space;
@@ -91,6 +94,7 @@ void QFLEX_API_set_interface_hooks( const QFLEX_API_Interface_Hooks_t* hooks ) {
   QEMU_get_ethernet= hooks->QEMU_get_ethernet;
   QEMU_clear_exception= hooks->QEMU_clear_exception;
   QEMU_read_register= hooks->QEMU_read_register;
+  QEMU_read_register_by_type= hooks->QEMU_read_register_by_type;
   QEMU_read_phys_memory= hooks->QEMU_read_phys_memory;
   QEMU_get_phys_mem= hooks->QEMU_get_phys_mem;
   QEMU_get_cpu_by_index= hooks->QEMU_get_cpu_by_index;
@@ -116,6 +120,7 @@ void QFLEX_API_set_interface_hooks( const QFLEX_API_Interface_Hooks_t* hooks ) {
   QEMU_instruction_handle_interrupt = hooks->QEMU_instruction_handle_interrupt;
   QEMU_get_pending_exception = hooks->QEMU_get_pending_exception;
   QEMU_advance = hooks->QEMU_advance;
+  QEMU_get_object = hooks->QEMU_get_object;
   QEMU_insert_callback= hooks->QEMU_insert_callback;
   QEMU_delete_callback= hooks->QEMU_delete_callback;
 }

@@ -143,6 +143,8 @@ public:
     }
 #endif
 
+    DBG_( Crit, ( << "WARNING: uArch trying to figure out if we have a multi-tier setting. Need to fix this when we solve the cpu naming issue."));
+/* //ALEX- FIXME
     if ((Flexus::Qemu::API::QEMU_get_object("cpu0") == 0) && (Flexus::Qemu::API::QEMU_get_object("machine0_cpu0")==0)) {
       if ((Flexus::Qemu::API::QEMU_get_object("server_cpu0") == 0) && (Flexus::Qemu::API::QEMU_get_object("machine0_server_cpu0")==0)) {
         DBG_Assert( false, ( << theName << "microArch cannot locate cpu0 or server_cpu0 objects." ) );
@@ -150,6 +152,7 @@ public:
         DBG_( Dev, ( << theName << " microArch detected client-server simulation.  Connecting to server_cpu" << theNode) );
       }
     }
+*/
     theCPU = Flexus::Qemu::Processor::getProcessor(theNode);
     if (Flexus::Qemu::ProcessorMapper::numClients() > 0 ){
       if (theNode == 0) {
