@@ -376,9 +376,7 @@ public:
 
 //FIXME: The following functions for SPARC should be implemented in QEMU
   unsigned long long readF(int aRegister) const {
-    assert(false);
-    return 0;
-    //return sparc()->read_fp_register_x(*this, aRegister);
+    return API::QEMU_read_register_by_type(*this, aRegister, 5);
   }
 
   void writeF(int aRegister, unsigned long long aValue) const {
@@ -403,7 +401,7 @@ public:
   }
 
   unsigned long long readWindowed(int aWindow, int aRegister) const {
-    return API::QEMU_read_register_by_type(*this, aWindow*16+aRegister, 4);
+    return API::QEMU_read_register_by_type(*this, aWindow*16+aRegister-8, 4);
   }
 
   unsigned long long interruptRead(VirtualMemoryAddress anAddress, int anASI) const;

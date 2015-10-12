@@ -636,7 +636,8 @@ private:
 
   void fillFRegisters() {
     for (int32_t i = 0; i < 64; i += 2) {
-      uint64_t ret_val = theCPU->readF(i);
+      //uint64_t ret_val = theCPU->readF(i);
+      uint64_t ret_val = theCPU->readF(i/2);
       theCore->initializeRegister( fReg(i), ret_val >> 32);
       theCore->initializeRegister( fReg(i + 1), ret_val & 0xFFFFFFFFULL);
     }
