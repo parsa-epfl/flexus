@@ -16,9 +16,9 @@
 #ifndef CONFIG_QEMU
 #define Config_QEMU
 #endif
-#ifndef CONFIG_QEMU
-#include <core/simics/control_api.hpp>
-#endif
+// #ifndef CONFIG_QEMU
+// #include <core/simics/control_api.hpp>
+// #endif
 
 #include <core/flexus.hpp>
 #include <core/stats.hpp>

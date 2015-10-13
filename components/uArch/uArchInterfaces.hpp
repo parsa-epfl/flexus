@@ -45,9 +45,7 @@ struct SemanticAction {
   }
   virtual ~SemanticAction() {}
 };
-} //nuArch
 
-namespace boost {
 inline void intrusive_ptr_add_ref(nuArch::SemanticAction * p) {
   p->addRef();
 }
@@ -55,7 +53,8 @@ inline void intrusive_ptr_add_ref(nuArch::SemanticAction * p) {
 inline void intrusive_ptr_release(nuArch::SemanticAction * p) {
   p->releaseRef();
 }
-} //boost
+
+} //nuArch
 
 namespace nuArch {
 

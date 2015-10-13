@@ -664,7 +664,7 @@ public:
     MemoryAddress victim_addr(0);
     _BState victim_state(_DefaultBState);
 
-    const RTEntry & region = theERB.get<by_order>().front();
+    const RTEntry & region = (theERB.template get<by_order>()).front();
     uint64_t addr = region.tag;
 
     bool found_valid_blocks = false;
@@ -682,14 +682,14 @@ public:
           break;
         }
 
-        way_iterator block = tag_set->get<by_way>().find(region.ways[i]);
-        DBG_Assert( block != tag_set->get<by_way>().end() );
+        way_iterator block = (tag_set->template get<by_way>()).find(region.ways[i]);
+        DBG_Assert( block != (tag_set->template get<by_way>()).end() );
 
         // Paranoid consistency check
         if (get_rt_tag(block->tag) != region.tag) {
           DBG_( Crit, ( << theName << " RT tag: " << std::hex << region.tag << " Block tag: " << block->tag << " offset: " << i << std::dec ));
-          tag_iterator t_block = tag_set->get<by_tag>().find(addr);
-          tag_iterator t_end = tag_set->get<by_tag>().end();
+          tag_iterator t_block = (tag_set->template get<by_tag>()).find(addr);
+          tag_iterator t_end = (tag_set->template get<by_tag>()).end();
           if (t_block != t_end) {
             DBG_Assert( !region.state[i].isValid(), ( << "found block in way " << t_block->way << " instead of way " << region.ways[i] ));
           } else {
@@ -702,8 +702,8 @@ public:
         victim_state = region.state[i];
         victim_addr = MemoryAddress(addr);
 
-        tag_set->get<by_way>().modify(block, ChangeBlockState(_DefaultBState));
-        theERB.get<by_order>().modify(theERB.get<by_order>().begin(), InvalidateRTState(i));
+        (tag_set->template get<by_way>()).modify(block, ChangeBlockState(_DefaultBState));
+        (theERB.template get<by_order>()).modify((theERB.template get<by_order>()).begin(), InvalidateRTState(i));
 
         make_block_lru(tag_set, block);
 
@@ -716,7 +716,7 @@ public:
         victim_addr = MemoryAddress(region.tag);
       }
       evictRegion(MemoryAddress(region.tag), region.owner, (region.region_state == SHARED_REGION));
-      theERB.get<by_order>().pop_front();
+      (theERB.template get<by_order>()).pop_front();
     }
     DBG_(Trace, Set( (CompName) << theName ) Addr(victim_addr) ( << "Getting Preemptive Eviction for block: " << std::hex << victim_addr << " in state " << victim_state ));
     return std::make_pair(victim_state, victim_addr);
@@ -732,13 +732,13 @@ public:
       int rt_set_index = get_rt_set(tagset);
 
       rt_set_t * rt_set = &(theRVA[rt_set_index]);
-      rt_index * rt  = &(rt_set->get<by_tag>());
+      rt_index * rt  = &(rt_set->template get<by_tag>());
       rt_iterator entry = rt->find(rt_tag);
       rt_iterator end  = rt->end();
 
       if (entry == end) {
         rt_set  = &theERB;
-        rt  = &(theERB.get<by_tag>());
+        rt  = &(theERB.template get<by_tag>());
         entry = rt->find(rt_tag);
         end  = rt->end();
       }
@@ -747,7 +747,7 @@ public:
         rt->modify(entry, ChangeRegionOwner(owner));
       }
     } else {
-      result.rt_set->get<by_tag>().modify(result.region, ChangeRegionOwner(owner));
+      (result.rt_set->template get<by_tag>()).modify(result.region, ChangeRegionOwner(owner));
     }
   }
 
@@ -757,13 +757,13 @@ public:
       int rt_set_index = get_rt_set(tagset);
 
       rt_set_t * rt_set = &(theRVA[rt_set_index]);
-      rt_index * rt  = &(rt_set->get<by_tag>());
+      rt_index * rt  = &(rt_set->template get<by_tag>());
       rt_iterator entry = rt->find(rt_tag);
       rt_iterator end  = rt->end();
 
       if (entry == end) {
         rt_set  = &theERB;
-        rt  = &(theERB.get<by_tag>());
+        rt  = &(theERB.template get<by_tag>());
         entry = rt->find(rt_tag);
         end  = rt->end();
       }
@@ -779,39 +779,39 @@ public:
   }
 
   inline rt_iterator update_lru(rt_set_t * rt_set, rt_iterator entry) {
-    rt_order_iterator cur = rt_set->project<by_order>(entry);
-    rt_order_iterator tail = rt_set->get<by_order>().end();
-    rt_set->get<by_order>().relocate(tail, cur);
-    return rt_set->project<by_tag>(cur);
+    rt_order_iterator cur = rt_set->template project<by_order>(entry);
+    rt_order_iterator tail = (rt_set->template get<by_order>()).end();
+    (rt_set->template get<by_order>()).relocate(tail, cur);
+    return (rt_set->template project<by_tag>(cur));
   }
 
   inline way_iterator update_lru(block_set_t * set, way_iterator entry) {
-    order_iterator cur = set->project<by_order>(entry);
-    order_iterator tail = set->get<by_order>().end();
-    set->get<by_order>().relocate(tail, cur);
-    return set->project<by_way>(cur);
+    order_iterator cur = (set->template project<by_order>(entry));
+    order_iterator tail = (set->template get<by_order>()).end();
+    (set->template get<by_order>()).relocate(tail, cur);
+    return (set->template project<by_way>(cur));
   }
 
   inline way_iterator make_block_lru(block_set_t * set, way_iterator entry) {
-    order_iterator cur = set->project<by_order>(entry);
-    order_iterator head = set->get<by_order>().begin();
-    set->get<by_order>().relocate(head, cur);
-    return set->project<by_way>(cur);
+    order_iterator cur = (set->template project<by_order>(entry));
+    order_iterator head = (set->template get<by_order>()).begin();
+    (set->template get<by_order>()).relocate(head, cur);
+    return (set->template project<by_way>(cur));
   }
 
   inline tag_iterator make_block_lru(block_set_t * set, tag_iterator entry) {
-    order_iterator cur = set->project<by_order>(entry);
-    order_iterator head = set->get<by_order>().begin();
-    set->get<by_order>().relocate(head, cur);
-    return set->project<by_tag>(cur);
+    order_iterator cur = (set->template project<by_order>(entry));
+    order_iterator head = (set->template get<by_order>()).begin();
+    (set->template get<by_order>()).relocate(head, cur);
+    return (set->template project<by_tag>(cur));
   }
 
   way_iterator replace_lru_block(block_set_t * set, uint64_t tag, const _BState & state, LookupResult_p v_lookup) {
-    order_iterator block = set->get<by_order>().begin();
-    DBG_Assert(block != set->get<by_order>().end());
+    order_iterator block = (set->template get<by_order>()).begin();
+    DBG_Assert(block != (set->template get<by_order>()).end());
     while (block->state.isValid() && block->state.isProtected()) {
       block++;
-      DBG_Assert(block != set->get<by_order>().end(), ( << "No Un-protected blocks to evict"));
+      DBG_Assert(block != (set->template get<by_order>()).end(), ( << "No Un-protected blocks to evict"));
     }
     if (block->state.isValid()) {
       uint64_t rt_tag = get_rt_tag(block->tag);
@@ -819,12 +819,12 @@ public:
       int32_t offset = get_block_offset(block->tag);
 
       rt_set_t * rt_set = &(theRVA[rt_set_index]);
-      rt_index * rt  = &(rt_set->get<by_tag>());
+      rt_index * rt  = &(rt_set->template get<by_tag>());
       rt_iterator entry = rt->find(rt_tag);
       rt_iterator end  = rt->end();
 
       if (entry == end) {
-        rt  = &(theERB.get<by_tag>());
+        rt  = &(theERB.template get<by_tag>());
         entry = rt->find(rt_tag);
         end  = rt->end();
         if (entry == end) {
@@ -844,14 +844,14 @@ public:
       v_lookup->tagset = block->tag;
     }
 
-    set->get<by_order>().modify(block, ReplaceBlock(tag, state));
-    order_iterator tail = set->get<by_order>().end();
-    set->get<by_order>().relocate(tail, block);
+    (set->template get<by_order>()).modify(block, ReplaceBlock(tag, state));
+    order_iterator tail = (set->template get<by_order>()).end();
+    (set->template get<by_order>()).relocate(tail, block);
     DBG_Assert(isConsistent(tag));
     if (v_lookup->orig_state.isValid()) {
       DBG_Assert(isConsistent(v_lookup->tagset));
     }
-    return set->project<by_way>(block);
+    return (set->template project<by_way>(block));
   }
 
   inline bool isConsistent( uint64_t tagset) {
@@ -860,21 +860,21 @@ public:
 // It looks like the codes working, so it's turned off to speed things up
 #if 0
     block_set_t * block_set = &(theBlocks[get_block_set(tagset, 0)]);
-    tag_iterator block = block_set->get<by_tag>().find(get_block_tag(tagset));
-    tag_iterator bend   = block_set->get<by_tag>().end();
+    tag_iterator block = (block_set->template get<by_tag>()).find(get_block_tag(tagset));
+    tag_iterator bend   = (block_set->template get<by_tag>()).end();
 
     uint64_t rt_tag = get_rt_tag(tagset);
     int rt_set_index = get_rt_set(tagset);
     int32_t offset = get_block_offset(tagset);
 
     rt_set_t * rt_set = &(theRVA[rt_set_index]);
-    rt_index * rt  = &(rt_set->get<by_tag>());
+    rt_index * rt  = &(rt_set->template get<by_tag>());
     rt_iterator entry = rt->find(rt_tag);
     rt_iterator end  = rt->end();
 
     if (entry == end) {
       rt_set  = &theERB;
-      rt  = &(theERB.get<by_tag>());
+      rt  = &(theERB.template get<by_tag>());
       entry = rt->find(rt_tag);
       end  = rt->end();
     }
@@ -914,14 +914,14 @@ public:
     bool region_allocated = false;
 
     rt_set_t * rt_set = &(theRVA[rt_set_index]);
-    rt_index * rt  = &(rt_set->get<by_tag>());
+    rt_index * rt  = &(rt_set->template get<by_tag>());
     rt_iterator entry = rt->find(rt_tag);
     rt_iterator end  = rt->end();
 
     if (entry == end) {
       // No region entry in RVA, check ERB
       rt_set  = &theERB;
-      rt  = &(theERB.get<by_tag>());
+      rt  = &(theERB.template get<by_tag>());
       entry = rt->find(rt_tag);
       end  = rt->end();
     }
@@ -934,12 +934,12 @@ public:
       if (entry->state[offset].isValid()) {
         // The block is valid
 
-        tag_iterator t_block = block_set->get<by_tag>().find(get_block_tag(tagset));
-        tag_iterator t_end   = block_set->get<by_tag>().end();
+        tag_iterator t_block = (block_set->template get<by_tag>()).find(get_block_tag(tagset));
+        tag_iterator t_end   = (block_set->template get<by_tag>()).end();
 
         DBG_Assert( t_block != t_end, ( << "tagset 0x" << std::hex << (uint64_t)tagset << ", BTag 0x" << (uint64_t)get_block_tag(tagset) << ", rt_tag 0x" << rt_tag << ", rt_set 0x" << rt_set_index << ", offset " << std::dec << offset ));
 
-        way_iterator block = block_set->project<by_way>(t_block);
+        way_iterator block = block_set->template project<by_way>(t_block);
 
         LookupResult_p ret = new RTLookupResult(true, true, this, tagset);
 
@@ -983,7 +983,7 @@ public:
     int32_t offset    = get_block_offset(tagset);
 
     rt_set_t * rt_set = &(theRVA[rt_set_index]);
-    rt_index * rt  = &(rt_set->get<by_tag>());
+    rt_index * rt  = &(rt_set->template get<by_tag>());
     rt_iterator entry = rt->find(rt_tag);
     rt_iterator end  = rt->end();
 
@@ -993,7 +993,7 @@ public:
     if (entry == end) {
       // No region entry in RVA, check ERB
       rt_set  = &theERB;
-      rt  = &(theERB.get<by_tag>());
+      rt  = &(theERB.template get<by_tag>());
       entry = rt->find(rt_tag);
       end  = rt->end();
     }
@@ -1005,7 +1005,7 @@ public:
 
     block_set_t * block_set = &(theBlocks[get_block_set(tagset, 0)]);
 
-    way_iterator block = block_set->get<by_way>().end();
+    way_iterator block = (block_set->template get<by_way>()).end();
     int32_t way = block_set->size();
 
     // 1. Is the set full?
@@ -1014,11 +1014,11 @@ public:
     if ( way < theAssociativity) {
       return true;
     } else {
-      order_iterator block = block_set->get<by_order>().begin();
-      DBG_Assert(block != block_set->get<by_order>().end());
+      order_iterator block = (block_set->template get<by_order>()).begin();
+      DBG_Assert(block != (block_set->template get<by_order>()).end());
       while (block->state.isValid() && block->state.isProtected()) {
         block++;
-        if (block == block_set->get<by_order>().end()) {
+        if (block == (block_set->template get<by_order>()).end()) {
           return false;
         }
       }
@@ -1038,14 +1038,14 @@ public:
     int32_t offset    = get_block_offset(tagset);
 
     rt_set_t * rt_set = &(theRVA[rt_set_index]);
-    rt_index * rt  = &(rt_set->get<by_tag>());
+    rt_index * rt  = &(rt_set->template get<by_tag>());
     rt_iterator entry = rt->find(rt_tag);
     rt_iterator end  = rt->end();
 
     if (entry == end) {
       // No region entry in RVA, check ERB
       rt_set  = &theERB;
-      rt  = &(theERB.get<by_tag>());
+      rt  = &(theERB.template get<by_tag>());
       entry = rt->find(rt_tag);
       end  = rt->end();
     }
@@ -1054,16 +1054,16 @@ public:
     if (entry == end) {
       DBG_(Verb, ( << theName << " - Allocating new RVA entry with tag: " << std::hex << rt_tag << std::dec ));
       rt_set = &(theRVA[rt_set_index]);
-      rt  = &(rt_set->get<by_tag>());
+      rt  = &(rt_set->template get<by_tag>());
 
       // Start by adding another way to the set
       int32_t way = rt->size();
 
       // If the RVA set has too may ways, move one to the ERB
       if (way >= theRTAssociativity) {
-        way = rt_set->get<by_order>().front().way;
-        theERB.get<by_order>().push_back(rt_set->get<by_order>().front());
-        rt_set->get<by_order>().pop_front();
+        way = (rt_set->template get<by_order>()).front().way;
+        (theERB.template get<by_order>()).push_back((rt_set->template get<by_order>()).front());
+        (rt_set->template get<by_order>()).pop_front();
 
         // We need to reserve space in the ERB anytime we might need to evict a region
         DBG_Assert( (int)theERB.size() <= theERBSize );
@@ -1072,10 +1072,10 @@ public:
 
       // Finally, add the new region entry to the RVA set
       std::pair<rt_order_iterator, bool> temp;
-      temp = rt_set->get<by_order>().push_back(RTEntry(theBlocksPerRegion, rt_tag, way));
-      DBG_Assert((int)rt_set->get<by_order>().size() <= theRTAssociativity);
+      temp = (rt_set->template get<by_order>()).push_back(RTEntry(theBlocksPerRegion, rt_tag, way));
+      DBG_Assert((int)(rt_set->template get<by_order>()).size() <= theRTAssociativity);
       DBG_Assert(temp.second);
-      entry = rt_set->project<by_tag>(temp.first);
+      entry = rt_set->template project<by_tag>(temp.first);
       end   = rt->end();
 
       allocRegion(anAddress);
@@ -1089,12 +1089,12 @@ public:
     if (entry->state[offset].isValid()) {
       // The block is valid
 
-      tag_iterator t_block = block_set->get<by_tag>().find(get_block_tag(tagset));
-      tag_iterator t_end   = block_set->get<by_tag>().end();
+      tag_iterator t_block = (block_set->template get<by_tag>()).find(get_block_tag(tagset));
+      tag_iterator t_end   = (block_set->template get<by_tag>()).end();
 
       DBG_Assert( t_block != t_end );
 
-      way_iterator block = block_set->project<by_way>(t_block);
+      way_iterator block = block_set->template project<by_way>(t_block);
 
       update_lru(block_set, block);
 
@@ -1120,7 +1120,7 @@ public:
 
       // First, find a replacement block
       uint64_t block_tag = get_block_tag(tagset);
-      way_iterator block = block_set->get<by_way>().end();
+      way_iterator block = (block_set->template get<by_way>()).end();
       int32_t way = block_set->size();
 
       // Try to find a matching tag in the BST
@@ -1133,34 +1133,34 @@ public:
 
       LookupResult_p v_lookup( new RTLookupResult(false, false, this, 0));
 
-      tag_iterator t_block = block_set->get<by_tag>().find(block_tag);
-      tag_iterator t_end   = block_set->get<by_tag>().end();
+      tag_iterator t_block = (block_set->template get<by_tag>()).find(block_tag);
+      tag_iterator t_end   = (block_set->template get<by_tag>()).end();
       if (t_block != t_end) {
-        block = block_set->project<by_way>(t_block);
+        block = block_set->template project<by_way>(t_block);
         way = block->way;
-        block_set->get<by_way>().modify(block, ChangeBlockState(_DefaultBState));
+        (block_set->template get<by_way>()).modify(block, ChangeBlockState(_DefaultBState));
         update_lru(block_set, block);
         DBG_Assert(block->way == way);
         DBG_(Verb, ( << theName << "Found matching BST tag, new state is " << block->state));
       } else {
         // First, check if the set is full yet, if not simply add the block to the set.
         if (way < theAssociativity) {
-          std::pair<order_iterator, bool> result = block_set->get<by_order>().push_back(BlockEntry(block_tag, _DefaultBState, way));
+          std::pair<order_iterator, bool> result = (block_set->template get<by_order>()).push_back(BlockEntry(block_tag, _DefaultBState, way));
           if (!result.second) {
             DBG_(Dev, ( << theName << " Failed to insert block. Existing block tag: " << std::hex << result.first->tag << std::dec << ", way: " << result.first->way ));
             DBG_(Dev, ( << theName << " Failed to insert block. New block tag: " << std::hex << block_tag << std::dec << ", way: " << way ));
             DBG_(Dev, ( << theName << " Was in state " << std::hex << result.first->state << std::dec ));
-            DBG_(Dev, ( << theName << " size: " << block_set->get<by_way>().size() ));
+            DBG_(Dev, ( << theName << " size: " << (block_set->template get<by_way>()).size() ));
             DBG_(Dev, ( << theName << " set: " << std::hex << block_tag ));
             DBG_(Dev, ( << theName << " Inserting block " << std::hex << block_tag << " in set: " << get_block_set(tagset, entry->way) << ", way: " << way << ", size: " << block_set->size() ));
             DBG_Assert(false);
           }
-          block = block_set->project<by_way>(result.first);
+          block = block_set->template project<by_way>(result.first);
           DBG_Assert(block->way == way);
           DBG_(Trace, ( << theName << " Allocated new block: " << std::hex << tagset << ", state is " << block->state));
-        } else if (!block_set->get<by_order>().front().state.isValid()) {
+        } else if (!(block_set->template get<by_order>()).front().state.isValid()) {
           // Next, look for an invalid block (that would naturally be at the bottom (front) of the LRU
-          way = block_set->get<by_order>().front().way;
+          way = (block_set->template get<by_order>()).front().way;
           block = replace_lru_block(block_set, block_tag, _DefaultBState, v_lookup);
           DBG_Assert(block->way == way);
           DBG_(Verb, ( << theName << " Replaced Invalid Block, new state is " << block->state));
@@ -1168,7 +1168,7 @@ public:
           // Set is full of valid blocks, use replacement policy
           if (theReplPolicy == SET_LRU) {
             // The LRU block might be protected, so wait till we do the replacement to get the way
-            // way = block_set->get<by_order>().front().way;
+            // way = (block_set->template get<by_order>()).front().way;
             block = replace_lru_block(block_set, block_tag, _DefaultBState, v_lookup);
             way = block->way;
             DBG_(Verb, ( << theName << " Replaced LRU block, state is " << block->state));
@@ -1190,7 +1190,7 @@ public:
         }
       }
 
-      DBG_Assert(block != block_set->get<by_way>().end());
+      DBG_Assert(block != (block_set->template get<by_way>()).end());
       DBG_Assert(way < theAssociativity);
 
       rt->modify(entry, AllocateBlock(offset, _DefaultBState, way));
@@ -1218,13 +1218,13 @@ public:
   }
 
   void setPrefetched(RTLookupResult & result, bool val) {
-    result.rt_set->get<by_tag>().modify(result.region, ChangeRTPrefetched(result.offset, val));
-    result.block_set->get<by_way>().modify(result.block, ChangeBlockPrefetched(val));
+    (result.rt_set->template get<by_tag>()).modify(result.region, ChangeRTPrefetched(result.offset, val));
+    (result.block_set->template get<by_way>()).modify(result.block, ChangeBlockPrefetched(val));
   }
 
   void setProtected(RTLookupResult & result, bool val) {
-    result.rt_set->get<by_tag>().modify(result.region, ChangeRTProtected(result.offset, val));
-    result.block_set->get<by_way>().modify(result.block, ChangeBlockProtected(val));
+    (result.rt_set->template get<by_tag>()).modify(result.region, ChangeRTProtected(result.offset, val));
+    (result.block_set->template get<by_way>()).modify(result.block, ChangeBlockProtected(val));
   }
 
   void updateState(RTLookupResult & result, const _BState & new_state, bool make_MRU, bool make_LRU) {
@@ -1232,8 +1232,8 @@ public:
 
     DBG_(Trace, Set( (CompName) << theName ) Addr(result.tagset) ( << "Setting State of block: " << std::hex << result.tagset << " to " << new_state ));
 
-    result.rt_set->get<by_tag>().modify(result.region, ChangeRTState(result.offset, new_state));
-    result.block_set->get<by_way>().modify(result.block, ChangeBlockState(new_state));
+    (result.rt_set->template get<by_tag>()).modify(result.region, ChangeRTState(result.offset, new_state));
+    (result.block_set->template get<by_way>()).modify(result.block, ChangeBlockState(new_state));
 
     // Fixup LRU order
     if (make_MRU) {
@@ -1252,13 +1252,13 @@ public:
     int rt_set_index = get_rt_set(tagset);
 
     rt_set_t * rt_set = &(theRVA[rt_set_index]);
-    rt_index * rt  = &(rt_set->get<by_tag>());
+    rt_index * rt  = &(rt_set->template get<by_tag>());
     rt_iterator entry = rt->find(rt_tag);
     rt_iterator end  = rt->end();
 
     if (entry == end) {
       rt_set  = &theERB;
-      rt  = &(theERB.get<by_tag>());
+      rt  = &(theERB.template get<by_tag>());
       entry = rt->find(rt_tag);
       end  = rt->end();
     }
@@ -1278,13 +1278,13 @@ public:
     int rt_set_index = get_rt_set(tagset);
 
     rt_set_t * rt_set = &(theRVA[rt_set_index]);
-    rt_index * rt  = &(rt_set->get<by_tag>());
+    rt_index * rt  = &(rt_set->template get<by_tag>());
     rt_iterator entry = rt->find(rt_tag);
     rt_iterator end  = rt->end();
 
     if (entry == end) {
       rt_set  = &theERB;
-      rt  = &(theERB.get<by_tag>());
+      rt  = &(theERB.template get<by_tag>());
       entry = rt->find(rt_tag);
       end  = rt->end();
     }
@@ -1306,13 +1306,13 @@ public:
     int rt_set_index = get_rt_set(tagset);
 
     rt_set_t * rt_set = &(theRVA[rt_set_index]);
-    rt_index * rt  = &(rt_set->get<by_tag>());
+    rt_index * rt  = &(rt_set->template get<by_tag>());
     rt_iterator entry = rt->find(rt_tag);
     rt_iterator end  = rt->end();
 
     if (entry == end) {
       rt_set  = &theERB;
-      rt  = &(theERB.get<by_tag>());
+      rt  = &(theERB.template get<by_tag>());
       entry = rt->find(rt_tag);
       end  = rt->end();
     }
@@ -1331,13 +1331,13 @@ public:
     int rt_set_index = get_rt_set(tagset);
 
     rt_set_t * rt_set = &(theRVA[rt_set_index]);
-    rt_index * rt  = &(rt_set->get<by_tag>());
+    rt_index * rt  = &(rt_set->template get<by_tag>());
     rt_iterator entry = rt->find(rt_tag);
     rt_iterator end  = rt->end();
 
     if (entry == end) {
       rt_set  = &theERB;
-      rt  = &(theERB.get<by_tag>());
+      rt  = &(theERB.template get<by_tag>());
       entry = rt->find(rt_tag);
       end  = rt->end();
     }
@@ -1359,13 +1359,13 @@ public:
     int rt_set_index = get_rt_set(tagset);
 
     rt_set_t * rt_set = &(theRVA[rt_set_index]);
-    rt_index * rt  = &(rt_set->get<by_tag>());
+    rt_index * rt  = &(rt_set->template get<by_tag>());
     rt_iterator entry = rt->find(rt_tag);
     rt_iterator end  = rt->end();
 
     if (entry == end) {
       rt_set  = &theERB;
-      rt  = &(theERB.get<by_tag>());
+      rt  = &(theERB.template get<by_tag>());
       entry = rt->find(rt_tag);
       end  = rt->end();
     }
@@ -1386,13 +1386,13 @@ public:
     int rt_set_index = get_rt_set(tagset);
 
     rt_set_t * rt_set = &(theRVA[rt_set_index]);
-    rt_index * rt  = &(rt_set->get<by_tag>());
+    rt_index * rt  = &(rt_set->template get<by_tag>());
     rt_iterator entry = rt->find(rt_tag);
     rt_iterator end  = rt->end();
 
     if (entry == end) {
       rt_set  = &theERB;
-      rt  = &(theERB.get<by_tag>());
+      rt  = &(theERB.template get<by_tag>());
       entry = rt->find(rt_tag);
       end  = rt->end();
     }
@@ -1412,13 +1412,13 @@ public:
     int rt_set_index = get_rt_set(tagset);
 
     rt_set_t * rt_set = &(theRVA[rt_set_index]);
-    rt_index * rt  = &(rt_set->get<by_tag>());
+    rt_index * rt  = &(rt_set->template get<by_tag>());
     rt_iterator entry = rt->find(rt_tag);
     rt_iterator end  = rt->end();
 
     if (entry == end) {
       rt_set  = &theERB;
-      rt  = &(theERB.get<by_tag>());
+      rt  = &(theERB.template get<by_tag>());
       entry = rt->find(rt_tag);
       end  = rt->end();
     }
@@ -1457,13 +1457,13 @@ public:
     int rt_set_index = get_rt_set(tagset);
 
     rt_set_t * rt_set = &(theRVA[rt_set_index]);
-    rt_index * rt  = &(rt_set->get<by_tag>());
+    rt_index * rt  = &(rt_set->template get<by_tag>());
     rt_iterator entry = rt->find(rt_tag);
     rt_iterator end  = rt->end();
 
     if (entry == end) {
       rt_set  = &theERB;
-      rt  = &(theERB.get<by_tag>());
+      rt  = &(theERB.template get<by_tag>());
       entry = rt->find(rt_tag);
       end  = rt->end();
     }
@@ -1520,7 +1520,7 @@ public:
         if (serial.owner != -1) {
           DBG_(Verb, ( << "Loaded delegated region " << std::hex << (uint64_t)serial.tag << " Owner is: " << std::dec << (int)serial.owner ));
         }
-        theRVA[set].get<by_order>().push_back(RTEntry(theBlocksPerRegion, serial.tag, way, rstate, serial.owner));
+        (theRVA[set].template get<by_order>()).push_back(RTEntry(theBlocksPerRegion, serial.tag, way, rstate, serial.owner));
       }
     }
 
@@ -1547,7 +1547,7 @@ public:
       if (serial.owner != -1) {
         DBG_(Verb, ( << "Loaded delegated region " << std::hex << (uint64_t)serial.tag << " Owner is: " << std::dec << (int)serial.owner ));
       }
-      theERB.get<by_order>().push_back(RTEntry(theBlocksPerRegion, serial.tag, way, rstate, serial.owner));
+      (theERB.template get<by_order>()).push_back(RTEntry(theBlocksPerRegion, serial.tag, way, rstate, serial.owner));
     }
 
     ia >> set_count;
@@ -1562,7 +1562,7 @@ public:
         ia >> bs;
         _BState bstate(_DefaultBState);
         bstate = _BState::char2State(bs.state);
-        theBlocks[set].get<by_order>().push_back(BlockEntry(bs.tag, bstate, way));
+        (theBlocks[set].template get<by_order>()).push_back(BlockEntry(bs.tag, bstate, way));
 
         if (bstate != _DefaultBState) {
           uint64_t rt_tag = get_rt_tag(bs.tag);
@@ -1570,12 +1570,12 @@ public:
           int32_t offset    = get_block_offset(bs.tag);
 
           rt_set_t * rt_set = &(theRVA[rt_set_index]);
-          rt_index * rt  = &(rt_set->get<by_tag>());
+          rt_index * rt  = &(rt_set->template get<by_tag>());
           rt_iterator entry = rt->find(rt_tag);
           rt_iterator end  = rt->end();
           if (entry == end) {
             rt_set = &theERB;
-            rt  = &(rt_set->get<by_tag>());
+            rt  = &(rt_set->template get<by_tag>());
             entry = rt->find(rt_tag);
             end  = rt->end();
             DBG_Assert(entry != end);

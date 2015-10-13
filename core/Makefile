@@ -2,12 +2,13 @@
 include $(FLEXUS_ROOT)/makefile.defs
 
 STANDALONE_SOURCES = $(subst $(CORE_DIR)/,,$(shell ls $(CORE_DIR)/standalone/*.cpp  $(CORE_DIR)/standalone/aux_/*.cpp))
-SIMICS_SOURCES = $(subst $(CORE_DIR)/,,$(shell ls $(CORE_DIR)/simics/*.cpp $(CORE_DIR)/simics/aux_/*.cpp))
+#SIMICS_SOURCES = $(subst $(CORE_DIR)/,,$(shell ls $(CORE_DIR)/simics/*.cpp $(CORE_DIR)/simics/aux_/*.cpp))
 QEMU_SOURCES = $(subst $(CORE_DIR)/,,$(shell ls $(CORE_DIR)/qemu/*.cpp $(CORE_DIR)/qemu/aux_/*.cpp))
 TEST_SOURCES = $(subst $(CORE_DIR)/,,$(shell ls $(CORE_DIR)/test/*.cpp))
 DOC_SOURCES = core_documentation.cpp
 PREFILTER_CORE_LIB_SOURCES = $(subst $(CORE_DIR)/,,$(shell ls $(CORE_DIR)/*/*.cpp)) $(subst $(CORE_DIR)/,,$(wildcard $(CORE_DIR)/*.cpp))
-CORE_LIB_SOURCES = $(filter-out $(STANDALONE_SOURCES) $(SIMICS_SOURCES) $(QEMU_SOURCES) $(TEST_SOURCES) $(DOC_SOURCES),$(PREFILTER_CORE_LIB_SOURCES))
+#CORE_LIB_SOURCES = $(filter-out $(STANDALONE_SOURCES) $(SIMICS_SOURCES) $(QEMU_SOURCES) $(TEST_SOURCES) $(DOC_SOURCES),$(PREFILTER_CORE_LIB_SOURCES))
+CORE_LIB_SOURCES = $(filter-out $(STANDALONE_SOURCES) $(QEMU_SOURCES) $(TEST_SOURCES) $(DOC_SOURCES),$(PREFILTER_CORE_LIB_SOURCES))
 
 # BOOST_DATE_TIME_PATH = $(BOOST_INCLUDE)/libs/date_time/src/gregorian
 # BOOST_DATE_TIME_FILES = greg_month greg_weekday date_generators

@@ -50,17 +50,17 @@ public:
   typedef typename MapTable::size_type size_type;
 
   iterator begin() {
-    return theMap.get<by_index>().begin();
+    return (theMap.template get<by_index>()).begin();
   }
   iterator end() {
-    return theMap.get<by_index>().end();
+    return (theMap.template get<by_index>()).end();
   }
 
   seq_iter beginSeq() {
-    return theMap.get<by_LRU>().begin();
+    return (theMap.template get<by_LRU>()).begin();
   }
   seq_iter endSeq() {
-    return theMap.get<by_LRU>().end();
+    return (theMap.template get<by_LRU>()).end();
   }
 
   size_type size() const {
@@ -68,51 +68,51 @@ public:
   }
 
   const T_val & front() const {
-    return theMap.get<by_LRU>().front().second;
+    return (theMap.template get<by_LRU>()).front().second;
   }
 
   const T_key & front_key() const {
-    return theMap.get<by_LRU>().front().first;
+    return (theMap.template get<by_LRU>()).front().first;
   }
 
   std::pair<iterator, bool> insert( const std::pair<T_key, T_val> & apair ) {
-    std::pair<LruIter, bool> inspair = theMap.get<by_LRU>().push_back(apair);
-    IndexIter iter = theMap.project<by_index>(inspair.first);
+    std::pair<LruIter, bool> inspair = (theMap.template get<by_LRU>()).push_back(apair);
+    IndexIter iter = theMap.template project<by_index>(inspair.first);
     return std::make_pair(iter, inspair.second);
   }
 
   iterator find(const T_key & key) const {
-    return theMap.get<by_index>().find(key);
+    return (theMap.template get<by_index>()).find(key);
   }
 
   seq_iter findSeq(const T_key & key) const {
-    return theMap.project<by_LRU>( theMap.get<by_index>().find(key) );
+    return theMap.template project<by_LRU>( (theMap.template get<by_index>()).find(key) );
   }
 
   void erase(iterator iter) {
-    theMap.get<by_index>().erase(iter);
+    (theMap.template get<by_index>()).erase(iter);
   }
 
   void eraseSeq(seq_iter iter) {
-    theMap.get<by_LRU>().erase(iter);
+    (theMap.template get<by_LRU>()).erase(iter);
   }
 
   void push_back( const std::pair<T_key, T_val> & apair ) {
-    theMap.get<by_LRU>().push_back(apair);
+    (theMap.template get<by_LRU>()).push_back(apair);
   }
 
   void pop_front() {
-    theMap.get<by_LRU>().pop_front();
+    (theMap.template get<by_LRU>()).pop_front();
   }
 
   void move_back(iterator const & iter) {
-    theMap.relocate( theMap.get<by_LRU>().end(), theMap.project<by_LRU>(iter) );
+    theMap.relocate( (theMap.template get<by_LRU>()).end(), theMap.template project<by_LRU>(iter) );
   }
 
   unsigned dist_back(iterator const & iter) const {
-    LruIter pos = theMap.project<by_LRU>(iter);
+    LruIter pos = theMap.template project<by_LRU>(iter);
     unsigned dist = 0;
-    while (pos != theMap.get<by_LRU>().end()) {
+    while (pos != (theMap.template get<by_LRU>()).end()) {
       dist++;
       pos++;
     }

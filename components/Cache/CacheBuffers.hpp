@@ -261,7 +261,7 @@ public:
     typename evict_buf_t::iterator iter = theEvictions.begin();
     typename evict_buf_t::iterator end = theEvictions.end();
     while (iter != end && !iter->theSnoopRequired) iter++;
-    return theEvictions.project<1>(iter);
+    return (theEvictions.template project<1>(iter));
   }
 
   virtual void setEvictable ( MemoryAddress anAddress,
@@ -361,36 +361,36 @@ public:
   // exact address checking should be fine here, since the original writeback
   // request should have been aligned on a block boundary
   iterator find(MemoryAddress const & anAddress) {
-    return theEvictions.get<1>().find(anAddress);
+    return (theEvictions.template get<1>()).find(anAddress);
   }
 
   void remove(iterator iter) {
     if (iter != end()) {
       DBG_( Iface, ( << "Evict buffer removing entry for " << iter->theBlockAddress ) );
-      theEvictions.get<1>().erase(iter);
+      (theEvictions.template get<1>()).erase(iter);
       theCurSize--;
       DBG_Assert( theCurSize == (uint32_t)theEvictions.size() );
     }
   }
 
   const_o_iterator o_begin() const {
-    return  theEvictions.get<0>().begin();
+    return  (theEvictions.template get<0>()).begin();
   }
 
   const_o_iterator o_end() const {
-    return  theEvictions.get<0>().end();
+    return  (theEvictions.template get<0>()).end();
   }
 
   const_iterator begin() const {
-    return  theEvictions.get<1>().begin();
+    return  (theEvictions.template get<1>()).begin();
   }
 
   const_iterator end() const {
-    return  theEvictions.get<1>().end();
+    return  (theEvictions.template get<1>()).end();
   }
 
   iterator end() {
-    return  theEvictions.get<1>().end();
+    return  (theEvictions.template get<1>()).end();
   }
 
   const EvictEntry<_State>& front() const {

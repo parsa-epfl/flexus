@@ -200,8 +200,8 @@ public:
   virtual std::string listInvalidates() const {
     std::stringstream aList;
     aList << std::hex;
-    seq_iterator iter = theDirEvictBuffer.get<1>().begin();
-    seq_iterator end = theDirEvictBuffer.get<1>().end();
+    seq_iterator iter = (theDirEvictBuffer.template get<1>()).begin();
+    seq_iterator end = (theDirEvictBuffer.template get<1>()).end();
     for (; iter != end; iter++) {
       if (iter->invalidatesPending()) aList << " 0x" << iter->address();
     }
@@ -211,7 +211,7 @@ public:
 
   virtual bool idleWorkReady() const {
     if (theDirEvictBuffer.size() != 0) {
-      return theDirEvictBuffer.get<1>().back().invalidatesRequired();
+      return (theDirEvictBuffer.template get<1>()).back().invalidatesRequired();
     } else {
       return false;
     }
@@ -228,10 +228,10 @@ public:
 
   virtual const AbstractDirEBEntry<_State> * oldestRequiringInvalidates() {
     typename evict_buf_t::template nth_index<1>::type::iterator o_iter;
-    o_iter = theDirEvictBuffer.get<1>().begin();
-    for (; o_iter != theDirEvictBuffer.get<1>().end() && !o_iter->invalidatesRequired(); o_iter++);
-//		return ((o_iter != theDirEvictBuffer.get<1>().end()) ? &(*o_iter) : nullptr);
-    const AbstractDirEBEntry<_State> * ret = ((o_iter != theDirEvictBuffer.get<1>().end()) ? & (*o_iter) : nullptr);
+    o_iter = (theDirEvictBuffer.template get<1>()).begin();
+    for (; o_iter != (theDirEvictBuffer.template get<1>()).end() && !o_iter->invalidatesRequired(); o_iter++);
+//		return ((o_iter != (theDirEvictBuffer.template get<1>()).end()) ? &(*o_iter) : nullptr);
+    const AbstractDirEBEntry<_State> * ret = ((o_iter != (theDirEvictBuffer.template get<1>()).end()) ? & (*o_iter) : nullptr);
     if (ret == nullptr) {
       DBG_(Iface, ( << "oldestRequiringInvalidates() === nullptr. CurSize = " << theCurSize << ", theReserve = " << theReserve << ", theSize = " << theSize << ", PendInval = " << thePendingInvalidates ));
     }
@@ -240,7 +240,7 @@ public:
 
   virtual void insert(MemoryAddress addr, _State state) {
     theCurSize++;
-    theDirEvictBuffer.get<1>().push_back(EvictEntry(addr, state, this));
+    (theDirEvictBuffer.template get<1>()).push_back(EvictEntry(addr, state, this));
   }
 
 }; // DirEvictBuffer<>
