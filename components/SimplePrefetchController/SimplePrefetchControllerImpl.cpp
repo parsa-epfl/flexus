@@ -4,7 +4,7 @@
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
 
 #include <ext/hash_set>
-#include <ext/hash_map>
+#include <unordered_map>
 #include <fstream>
 
 #include <boost/multi_index_container.hpp>
@@ -101,7 +101,7 @@ public:
 typedef SharedTypes::PhysicalMemoryAddress MemoryAddress;
 
 class ActivePrefetchFile {
-  typedef __gnu_cxx::hash_map<MemoryAddress, std::pair<uint64_t, MemoryMessage::MemoryMessageType> > maf_t;
+  typedef std::unordered_map<MemoryAddress, std::pair<uint64_t, MemoryMessage::MemoryMessageType> > maf_t;
   maf_t theMaf;
 
   Stat::StatInstanceCounter<int64_t> theCyclesWithN;
@@ -713,7 +713,7 @@ private:
       bool done = false;
       uint64_t access_time;
       MemoryMessage::MemoryMessageType type;
-      boost::tie( access_time, type) = theActivePrefetches.getLate( aMessage->address() );
+      std::tie( access_time, type) = theActivePrefetches.getLate( aMessage->address() );
       if ( access_time != 0 ) {
         if ( aTracker->fillLevel() && (aMessage->type() == MemoryMessage::PrefetchReadReply || aMessage->type() == MemoryMessage::PrefetchWritableReply)) {
           switch (type) {

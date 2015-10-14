@@ -10,10 +10,10 @@ using Flexus::SharedTypes::MemoryMessage;
 struct QemuTracerManager {
   static QemuTracerManager * construct(
 				   int32_t aNumCPUs
-				 , boost::function< void(int, MemoryMessage &) > toL1D
-				 , boost::function< void(int, MemoryMessage &, uint32_t) > toL1I
-				 , boost::function< void(MemoryMessage &) > toDMA
-				 , boost::function< void(int, MemoryMessage &) > toNAW
+				 , std::function< void(int, MemoryMessage &) > toL1D
+				 , std::function< void(int, MemoryMessage &, uint32_t) > toL1I
+				 , std::function< void(MemoryMessage &) > toDMA
+				 , std::function< void(int, MemoryMessage &) > toNAW
 //				 , bool aWhiteBoxDebug
 //				 , int32_t aWhiteBoxPeriod
 				 , bool aSendNonAllocatingStores

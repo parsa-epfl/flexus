@@ -3,7 +3,7 @@
 
 #include <string>
 #include <iostream>
-#include <boost/function.hpp>
+#include <functional>
 #include <core/boost_extensions/intrusive_ptr.hpp>
 
 #include <core/types.hpp>
@@ -76,8 +76,8 @@ struct StatManager {
   virtual void tick(int64_t anAdvance = 1) = 0;
   virtual int64_t ticks() = 0;
   virtual void reduceNodes(std::string const & aMeasurementSpec) = 0;
-  virtual void addEvent(int64_t aDeadline, boost::function<void()> anEvent) = 0;
-  virtual void addFinalizer(boost::function<void()> aFinalizer) = 0;
+  virtual void addEvent(int64_t aDeadline, std::function<void()> anEvent) = 0;
+  virtual void addFinalizer(std::function<void()> aFinalizer) = 0;
   virtual void save(std::ostream & anOstream) const = 0;
   virtual void load(std::istream & anIstream) = 0;
   virtual void loadMore(std::istream & anIstream, std::string const & aPrefix) = 0;

@@ -10,7 +10,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/throw_exception.hpp>
 #include <boost/serialization/split_free.hpp>
-#include <boost/function.hpp>
+#include <functional>
 #define BOOST_NO_WREGEX
 #include <boost/regex.hpp>
 #include <boost/spirit/include/classic_file_iterator.hpp>
@@ -635,12 +635,12 @@ class StatManagerImpl : public StatManager {
   measurement_collection theMeasurements;
   int64_t theTick;
   boost::intrusive_ptr<Measurement> theAllMeasurement;
-  std::list< boost::function< void() > > theFinalizers;
+  std::list< std::function< void() > > theFinalizers;
   bool theLoaded;
 
   struct event {
     int64_t theDeadline;
-    boost::function< void() > theEvent;
+    std::function< void() > theEvent;
     friend bool operator < (event const & aLeft, event const & aRight) {
       return aLeft.theDeadline > aRight.theDeadline; //Lower time means higher priority.
     }
@@ -1018,11 +1018,11 @@ public:
     }
   }
 
-  void addFinalizer(boost::function<void()> aFinalizer) {
+  void addFinalizer(std::function<void()> aFinalizer) {
     theFinalizers.push_back(aFinalizer);
   }
 
-  void addEvent(int64_t aDeadline, boost::function<void()> anEvent) {
+  void addEvent(int64_t aDeadline, std::function<void()> anEvent) {
     event evt;
     evt.theDeadline = aDeadline;
     evt.theEvent = anEvent;

@@ -936,14 +936,14 @@ private:
 
     //Orphan any prefetch-buffer entries associated with this queue
     PrefetchBuffer::index<by_queue>::type::iterator iter, temp, end;
-    boost::tie(iter, end) = theBufferContents.get<by_queue>().equal_range(q.id());
+    std::tie(iter, end) = theBufferContents.get<by_queue>().equal_range(q.id());
     while (iter != end) {
       temp = iter;
       ++iter;
       theBufferContents.get<by_queue>().modify( temp, ll::bind( &PrefetchEntry::theQueue, ll::_1) = -1);
     }
 
-    boost::tie(iter, end) = thePendingPrefetches.get<by_queue>().equal_range(q.id());
+    std::tie(iter, end) = thePendingPrefetches.get<by_queue>().equal_range(q.id());
     while (iter != end) {
       temp = iter;
       ++iter;

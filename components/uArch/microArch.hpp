@@ -1,7 +1,7 @@
 #ifndef FLEXUS_uARCH_microARCH_HPP_INCLUDED
 #define FLEXUS_uARCH_microARCH_HPP_INCLUDED
 
-#include <boost/function.hpp>
+#include <functional>
 #include <memory>
 
 #include <components/Common/Slices/MemOp.hpp>
@@ -20,12 +20,12 @@ using Flexus::SharedTypes::VirtualMemoryAddress;
 struct microArch {
   static std::shared_ptr<microArch>
   construct( uArchOptions_t options
-             , boost::function< void(eSquashCause)> squash
-             , boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress)> redirect
-             , boost::function< void(int, int)> changeState
-             , boost::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback
-             , boost::function< void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> )> notifyTMS /* CMU-ONLY */
-             , boost::function< void(bool) > aStoreForwardingHitFunction
+             , std::function< void(eSquashCause)> squash
+             , std::function< void(VirtualMemoryAddress, VirtualMemoryAddress)> redirect
+             , std::function< void(int, int)> changeState
+             , std::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback
+             , std::function< void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> )> notifyTMS /* CMU-ONLY */
+             , std::function< void(bool) > aStoreForwardingHitFunction
            );
 
   virtual int32_t availableROB() = 0;

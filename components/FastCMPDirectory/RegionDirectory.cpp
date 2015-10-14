@@ -9,7 +9,7 @@
 #include <components/FastCMPDirectory/AbstractProtocol.hpp>
 #include <components/FastCMPDirectory/BlockDirectoryEntry.hpp>
 #include <components/FastCMPDirectory/RegionDirEntry.hpp>
-#include <ext/hash_map>
+#include <unordered_map>
 
 #include <tuple>
 #include <list>
@@ -168,7 +168,7 @@ protected:
 
 public:
   virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
-  lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) {
+  lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<std::function<void(void)> > &xtra_actions) {
 
     PhysicalMemoryAddress tag(get_tag(address));
     RegionDirEntry * entry = findOrCreateEntry(tag);

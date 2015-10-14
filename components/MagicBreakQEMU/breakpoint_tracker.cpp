@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <core/qemu/api_wrappers.hpp>
 #include <core/debug/debug.hpp>

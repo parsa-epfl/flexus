@@ -166,10 +166,10 @@ public:
 
     eBranchType aFetchType;
     bool aFetchAnnul;
-    boost::tie(aFetchType, aFetchAnnul) = decode( anInstruction[ArchitecturalInstructionTag]->opcode() );
+    std::tie(aFetchType, aFetchAnnul) = decode( anInstruction[ArchitecturalInstructionTag]->opcode() );
     theFetchType[anIndex][anOne] = aFetchType;
     theFetchAnnul[anIndex][anOne] = aFetchAnnul;
-    // boost::tie(theFetchType[anIndex][anOne], theFetchAnnul[anIndex][anOne]) = decode( anInstruction[ArchitecturalInstructionTag]->opcode() );
+    // std::tie(theFetchType[anIndex][anOne], theFetchAnnul[anIndex][anOne]) = decode( anInstruction[ArchitecturalInstructionTag]->opcode() );
 
     if (theFetchType[anIndex][anOne] != kNonBranch) {
       //save the other relevant state and make a prediction
@@ -198,10 +198,10 @@ public:
 
     eBranchType aFetchType;
     bool aFetchAnnul;
-    boost::tie(aFetchType, aFetchAnnul) = decode( aPCOpcodePair.second );
+    std::tie(aFetchType, aFetchAnnul) = decode( aPCOpcodePair.second );
     theFetchType[anIndex][anOne] = aFetchType;
     theFetchAnnul[anIndex][anOne] = aFetchAnnul;
-    // boost::tie(theFetchType[anIndex][anOne], theFetchAnnul[anIndex][anOne]) = decode( aPCOpcodePair.second );
+    // std::tie(theFetchType[anIndex][anOne], theFetchAnnul[anIndex][anOne]) = decode( aPCOpcodePair.second );
 
     if (theFetchType[anIndex][anOne] != kNonBranch) {
       //save the other relevant state and make a prediction
@@ -234,7 +234,7 @@ public:
 
     eBranchType aFetchType;
     bool aFetchAnnul;
-    boost::tie(aFetchType, aFetchAnnul) = aTypeAndAnnulPair;
+    std::tie(aFetchType, aFetchAnnul) = aTypeAndAnnulPair;
     theFetchType[anIndex][anOne] = aFetchType;
     theFetchAnnul[anIndex][anOne] = aFetchAnnul;
 

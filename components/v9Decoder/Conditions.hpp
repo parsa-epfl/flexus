@@ -14,9 +14,9 @@ namespace nv9Decoder {
 struct Condition {
   bool isNegated;
   bool isXcc;
-  boost::function<bool(std::bitset<8> const & aCC, int)> theTest;
+  std::function<bool(std::bitset<8> const & aCC, int)> theTest;
 
-  Condition(bool negate, bool xcc, boost::function<bool(std::bitset<8> const & aCC, int)> test)
+  Condition(bool negate, bool xcc, std::function<bool(std::bitset<8> const & aCC, int)> test)
     : isNegated(negate)
     , isXcc(xcc)
     , theTest(test)
@@ -32,9 +32,9 @@ uint32_t packCondition(bool aFloating, bool Xcc, uint32_t aCondition);
 bool isFloating(uint32_t aPackedCondition);
 
 struct FCondition {
-  boost::function<bool(std::bitset<8> const & aCC)> theTest;
+  std::function<bool(std::bitset<8> const & aCC)> theTest;
 
-  FCondition(boost::function<bool(std::bitset<8> const & aCC)> test)
+  FCondition(std::function<bool(std::bitset<8> const & aCC)> test)
     : theTest(test)
   {}
   bool operator()( std::bitset<8> const & aCC) {
@@ -45,9 +45,9 @@ FCondition fcondition(uint32_t aCondition);
 
 struct RCondition {
   bool isNegated;
-  boost::function<bool(int64_t)> theTest;
+  std::function<bool(int64_t)> theTest;
 
-  RCondition(bool negate, boost::function<bool(int64_t aCC)> test)
+  RCondition(bool negate, std::function<bool(int64_t aCC)> test)
     : isNegated(negate)
     , theTest(test)
   {}

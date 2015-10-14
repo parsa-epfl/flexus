@@ -14,7 +14,7 @@ using namespace boost::multi_index;
 
 #include <boost/bind.hpp>
 #define _BACKWARD_BACKWARD_WARNING_H
-#include <ext/hash_map>
+#include <unordered_map>
 
 #include <fstream>
 
@@ -45,12 +45,12 @@ typedef uint32_t tTileID;
 typedef uint32_t tCoreID;
 typedef uint32_t tL2SliceID;
 
-typedef boost::function<tL2SliceID( const index_t anIndex, MemoryMessage & aMessage ) > tRouteCoreReq_func;
-typedef boost::function<void( index_t anIndex, MemoryMessage & aMessage ) > tPropagateSnoopUp_func;
-typedef boost::function<void( index_t anIndex, MemoryMessage & aMessage ) > tUpdateOffChipStats_func; /* CMU-ONLY */
-typedef boost::function<void( const tL2SliceID anL2ID, const tCoreID aCoreID ) > tUpdatePeerL1HopsStats_func; /* CMU-ONLY */
-typedef boost::function<void( const tL2SliceID anL2ID, const tCoreID aCoreID ) > tUpdateReplyHopsStats_func; /* CMU-ONLY */
-typedef boost::function<void( const int32_t reqRoundTripHops ) > tUpdateReqRoundTripHopsStats_func; /* CMU-ONLY */
+typedef std::function<tL2SliceID( const index_t anIndex, MemoryMessage & aMessage ) > tRouteCoreReq_func;
+typedef std::function<void( index_t anIndex, MemoryMessage & aMessage ) > tPropagateSnoopUp_func;
+typedef std::function<void( index_t anIndex, MemoryMessage & aMessage ) > tUpdateOffChipStats_func; /* CMU-ONLY */
+typedef std::function<void( const tL2SliceID anL2ID, const tCoreID aCoreID ) > tUpdatePeerL1HopsStats_func; /* CMU-ONLY */
+typedef std::function<void( const tL2SliceID anL2ID, const tCoreID aCoreID ) > tUpdateReplyHopsStats_func; /* CMU-ONLY */
+typedef std::function<void( const int32_t reqRoundTripHops ) > tUpdateReqRoundTripHopsStats_func; /* CMU-ONLY */
 
 static const tTileID TILE_ID_UNDEF = ( 1ULL << (sizeof(tTileID) * 8) ) - 1;
 
@@ -695,35 +695,35 @@ public:
 
     /* CMU-ONLY-BLOCK-BEGIN */
     if (thePlacement == kRNUCACache) {
-      routeCoreReq = boost::bind( &FastCMPNetworkControllerComponent::routeCoreReq_RNUCA, this, _1, _2);
-      propagateSnoopUp = boost::bind( &FastCMPNetworkControllerComponent::propagateSnoopUp_RNUCA, this, _1, _2);
-      updatePeerL1HopsStats = boost::bind( &FastCMPNetworkControllerComponent::updatePeerL1HopsStats_RNUCA, this, _1, _2);
-      updateReplyHopsStats = boost::bind( &FastCMPNetworkControllerComponent::updateReplyHopsStats_RNUCA, this, _1, _2);
-      updateReqRoundTripHopsStats = boost::bind( &FastCMPNetworkControllerComponent::updateReqRoundTripHopsStats_RNUCA, this, _1);
-      updateOffChipStats = boost::bind( &FastCMPNetworkControllerComponent::updateOffChipStats_RNUCA, this, _1, _2);
+      routeCoreReq = std::bind( &FastCMPNetworkControllerComponent::routeCoreReq_RNUCA, this, _1, _2);
+      propagateSnoopUp = std::bind( &FastCMPNetworkControllerComponent::propagateSnoopUp_RNUCA, this, _1, _2);
+      updatePeerL1HopsStats = std::bind( &FastCMPNetworkControllerComponent::updatePeerL1HopsStats_RNUCA, this, _1, _2);
+      updateReplyHopsStats = std::bind( &FastCMPNetworkControllerComponent::updateReplyHopsStats_RNUCA, this, _1, _2);
+      updateReqRoundTripHopsStats = std::bind( &FastCMPNetworkControllerComponent::updateReqRoundTripHopsStats_RNUCA, this, _1);
+      updateOffChipStats = std::bind( &FastCMPNetworkControllerComponent::updateOffChipStats_RNUCA, this, _1, _2);
     } else
       /* CMU-ONLY-BLOCK-END */
       if (thePlacement == kPrivateCache) {
 
         /* CMU-ONLY-BLOCK-BEGIN */
         if (thePrivateWithASR)
-          routeCoreReq = boost::bind( &FastCMPNetworkControllerComponent::routeCoreReq_ASR, this, _1, _2);
+          routeCoreReq = std::bind( &FastCMPNetworkControllerComponent::routeCoreReq_ASR, this, _1, _2);
         else
           /* CMU-ONLY-BLOCK-END */
-          routeCoreReq = boost::bind( &FastCMPNetworkControllerComponent::routeCoreReq_Private, this, _1, _2);
+          routeCoreReq = std::bind( &FastCMPNetworkControllerComponent::routeCoreReq_Private, this, _1, _2);
 
-        propagateSnoopUp = boost::bind( &FastCMPNetworkControllerComponent::propagateSnoopUp_Private, this, _1, _2);
-        updatePeerL1HopsStats = boost::bind( &FastCMPNetworkControllerComponent::updatePeerL1HopsStats_Private, this, _1, _2); /* CMU-ONLY */
-        updateReplyHopsStats = boost::bind( &FastCMPNetworkControllerComponent::updateReplyHopsStats_Private, this, _1, _2); /* CMU-ONLY */
-        updateReqRoundTripHopsStats = boost::bind( &FastCMPNetworkControllerComponent::updateReqRoundTripHopsStats_Private, this, _1); /* CMU-ONLY */
+        propagateSnoopUp = std::bind( &FastCMPNetworkControllerComponent::propagateSnoopUp_Private, this, _1, _2);
+        updatePeerL1HopsStats = std::bind( &FastCMPNetworkControllerComponent::updatePeerL1HopsStats_Private, this, _1, _2); /* CMU-ONLY */
+        updateReplyHopsStats = std::bind( &FastCMPNetworkControllerComponent::updateReplyHopsStats_Private, this, _1, _2); /* CMU-ONLY */
+        updateReqRoundTripHopsStats = std::bind( &FastCMPNetworkControllerComponent::updateReqRoundTripHopsStats_Private, this, _1); /* CMU-ONLY */
         updateOffChipStats = nullptr; /* CMU-ONLY */
       } else if (thePlacement == kSharedCache) {
-        routeCoreReq = boost::bind( &FastCMPNetworkControllerComponent::routeCoreReq_Shared, this, _1, _2);
-        propagateSnoopUp = boost::bind( &FastCMPNetworkControllerComponent::propagateSnoopUp_Shared, this, _1, _2);
-        updatePeerL1HopsStats = boost::bind( &FastCMPNetworkControllerComponent::updatePeerL1HopsStats_Shared, this, _1, _2); /* CMU-ONLY */
-        updateReplyHopsStats = boost::bind( &FastCMPNetworkControllerComponent::updateReplyHopsStats_Shared, this, _1, _2); /* CMU-ONLY */
-        updateReqRoundTripHopsStats = boost::bind( &FastCMPNetworkControllerComponent::updateReqRoundTripHopsStats_Shared, this, _1); /* CMU-ONLY */
-        updateOffChipStats = boost::bind( &FastCMPNetworkControllerComponent::updateOffChipStats_Shared, this, _1, _2); /* CMU-ONLY */
+        routeCoreReq = std::bind( &FastCMPNetworkControllerComponent::routeCoreReq_Shared, this, _1, _2);
+        propagateSnoopUp = std::bind( &FastCMPNetworkControllerComponent::propagateSnoopUp_Shared, this, _1, _2);
+        updatePeerL1HopsStats = std::bind( &FastCMPNetworkControllerComponent::updatePeerL1HopsStats_Shared, this, _1, _2); /* CMU-ONLY */
+        updateReplyHopsStats = std::bind( &FastCMPNetworkControllerComponent::updateReplyHopsStats_Shared, this, _1, _2); /* CMU-ONLY */
+        updateReqRoundTripHopsStats = std::bind( &FastCMPNetworkControllerComponent::updateReqRoundTripHopsStats_Shared, this, _1); /* CMU-ONLY */
+        updateOffChipStats = std::bind( &FastCMPNetworkControllerComponent::updateOffChipStats_Shared, this, _1, _2); /* CMU-ONLY */
       } else {
         DBG_Assert( false );
       }
@@ -1657,7 +1657,7 @@ private:
 
   } tPageMapEntry;
 
-  typedef __gnu_cxx::hash_map <  const tAddress // block address
+  typedef std::unordered_map <  const tAddress // block address
   , tPageMapEntry  // entry pointer
   , PageHash       // cache-line hashing
   > tPageMap;
@@ -2981,7 +2981,7 @@ private:
 
   tChipDirEntry anInvalChipDirEntry;
 
-  typedef __gnu_cxx::hash_map <  const tAddress // block address
+  typedef std::unordered_map <  const tAddress // block address
   , tChipDirEntry   // entry pointer
   , CacheLineHash   // cache-line hashing
   > tChipDir;
@@ -4770,7 +4770,7 @@ sendOCR:
 
         tPageMap::iterator iter;
         bool is_new;
-        boost::tie(iter, is_new) = thePageMap.insert( std::make_pair( theAddress, thePageMapEntry ) );
+        std::tie(iter, is_new) = thePageMap.insert( std::make_pair( theAddress, thePageMapEntry ) );
         DBG_Assert(is_new);
       }
       ifsRNUCAPageMap.close();
@@ -4878,7 +4878,7 @@ sendOCR:
 
         tChipDir::iterator iter;
         bool is_new;
-        boost::tie(iter, is_new) = theChipDir.insert( std::make_pair( theAddress, theChipDirEntry ) );
+        std::tie(iter, is_new) = theChipDir.insert( std::make_pair( theAddress, theChipDirEntry ) );
         DBG_Assert(is_new);
       }
       ifs.close();

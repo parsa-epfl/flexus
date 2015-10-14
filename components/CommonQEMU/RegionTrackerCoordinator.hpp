@@ -1,7 +1,7 @@
 #ifndef __REGION_TRACKER_COORDINATOR_HPP__
 #define __REGION_TRACKER_COORDINATOR_HPP__
 
-#include <boost/function.hpp>
+#include <functional>
 #include <boost/dynamic_bitset.hpp>
 
 #include <vector>
@@ -13,14 +13,14 @@ namespace nRTCoordinator {
 typedef Flexus::SharedTypes::PhysicalMemoryAddress MemoryAddress;
 
 struct RTFunctionList {
-  boost::function<int32_t (MemoryAddress)> probeOwner;
-  boost::function<bool (MemoryAddress, int)> setOwner;
-  boost::function<boost::dynamic_bitset<> (MemoryAddress)> probePresence;
+  std::function<int32_t (MemoryAddress)> probeOwner;
+  std::function<bool (MemoryAddress, int)> setOwner;
+  std::function<boost::dynamic_bitset<> (MemoryAddress)> probePresence;
 };
 
 struct NotifierFunctionList {
-  boost::function<void (MemoryAddress)> regionEvictNotify;
-  boost::function<void (MemoryAddress)> regionAllocNotify;
+  std::function<void (MemoryAddress)> regionEvictNotify;
+  std::function<void (MemoryAddress)> regionAllocNotify;
 };
 
 class RTCoordinator {
@@ -90,13 +90,13 @@ public:
   }
 
   void regionAllocNotify(int32_t index, MemoryAddress addr) {
-    if (index < (int)theNotifiers.size() && !theNotifiers[index].regionAllocNotify.empty()) {
+    if (index < (int)theNotifiers.size() && theNotifiers[index].regionAllocNotify) {
       theNotifiers[index].regionAllocNotify(addr);
     }
   }
 
   void regionEvictNotify(int32_t index, MemoryAddress addr) {
-    if (index < (int)theNotifiers.size() && !theNotifiers[index].regionEvictNotify.empty()) {
+    if (index < (int)theNotifiers.size() && theNotifiers[index].regionEvictNotify) {
       theNotifiers[index].regionEvictNotify(addr);
     }
   }

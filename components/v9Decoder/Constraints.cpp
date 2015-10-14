@@ -4,7 +4,7 @@
 
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <boost/throw_exception.hpp>
-#include <boost/function.hpp>
+#include <functional>
 
 #include <core/target.hpp>
 #include <core/debug/debug.hpp>
@@ -39,7 +39,7 @@ bool checkStoreQueueAvailable( SemanticInstruction * anInstruction ) {
   return true;
 }
 
-boost::function<bool()> storeQueueAvailableConstraint( SemanticInstruction * anInstruction ) {
+std::function<bool()> storeQueueAvailableConstraint( SemanticInstruction * anInstruction ) {
   return [anInstruction](){ return checkStoreQueueAvailable(anInstruction); };
 }
 
@@ -50,7 +50,7 @@ bool checkMembarStoreStoreConstraint( SemanticInstruction * anInstruction ) {
   return anInstruction->core()->mayRetire_MEMBARStSt();
 }
 
-boost::function<bool()> membarStoreStoreConstraint( SemanticInstruction * anInstruction ) {
+std::function<bool()> membarStoreStoreConstraint( SemanticInstruction * anInstruction ) {
   return [anInstruction](){ return checkMembarStoreStoreConstraint(anInstruction); };
 }
 
@@ -61,7 +61,7 @@ bool checkMembarStoreLoadConstraint( SemanticInstruction * anInstruction ) {
   return anInstruction->core()->mayRetire_MEMBARStLd();
 }
 
-boost::function<bool()> membarStoreLoadConstraint( SemanticInstruction * anInstruction ) {
+std::function<bool()> membarStoreLoadConstraint( SemanticInstruction * anInstruction ) {
   return [anInstruction](){ return checkMembarStoreLoadConstraint(anInstruction); };
 }
 
@@ -72,7 +72,7 @@ bool checkMembarSyncConstraint( SemanticInstruction * anInstruction ) {
   return anInstruction->core()->mayRetire_MEMBARSync();
 }
 
-boost::function<bool()> membarSyncConstraint( SemanticInstruction * anInstruction ) {
+std::function<bool()> membarSyncConstraint( SemanticInstruction * anInstruction ) {
   return [anInstruction](){ return checkMembarSyncConstraint(anInstruction); };
 }
 
@@ -100,7 +100,7 @@ bool checkMemoryConstraint( SemanticInstruction * anInstruction ) {
   return true;
 }
 
-boost::function<bool()> loadMemoryConstraint( SemanticInstruction * anInstruction ) {
+std::function<bool()> loadMemoryConstraint( SemanticInstruction * anInstruction ) {
   return [anInstruction](){ return checkMemoryConstraint(anInstruction); };
 }
 
@@ -111,7 +111,7 @@ bool checkStoreQueueEmpty( SemanticInstruction * anInstruction ) {
   return anInstruction->core()->sbEmpty();
 }
 
-boost::function<bool()> storeQueueEmptyConstraint( SemanticInstruction * anInstruction ) {
+std::function<bool()> storeQueueEmptyConstraint( SemanticInstruction * anInstruction ) {
   return [anInstruction](){ return checkStoreQueueEmpty; };
 }
 
@@ -122,7 +122,7 @@ bool checkSideEffectStoreConstraint( SemanticInstruction * anInstruction ) {
   return anInstruction->core()->checkStoreRetirement(boost::intrusive_ptr<nuArch::Instruction>(anInstruction));
 }
 
-boost::function<bool()> sideEffectStoreConstraint( SemanticInstruction * anInstruction ) {
+std::function<bool()> sideEffectStoreConstraint( SemanticInstruction * anInstruction ) {
   return [anInstruction](){ return checkSideEffectStoreConstraint(anInstruction); };
 }
 

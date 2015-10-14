@@ -2,7 +2,7 @@
 #include <vector>
 #include <algorithm>
 
-#include <boost/function.hpp>
+#include <functional>
 #include <boost/scoped_ptr.hpp>
 
 #include <core/component.hpp>
@@ -20,8 +20,8 @@ namespace aux_ {
 
 class ComponentManagerImpl : public ComponentManager {
 
-  typedef std::vector< boost::function< void (Flexus::Core::index_t ) > > instatiation_vector;
-  std::vector< boost::function< void (Flexus::Core::index_t aSystemWidth ) > > theInstantiationFunctions;
+  typedef std::vector< std::function< void (Flexus::Core::index_t ) > > instatiation_vector;
+  std::vector< std::function< void (Flexus::Core::index_t aSystemWidth ) > > theInstantiationFunctions;
   std::vector< ComponentInterface * > theComponents;
   Flexus::Core::index_t theSystemWidth;
 
@@ -32,7 +32,7 @@ public:
     return theSystemWidth;
   }
 
-  void registerHandle( boost::function< void (Flexus::Core::index_t) > anInstantiator) {
+  void registerHandle( std::function< void (Flexus::Core::index_t) > anInstantiator) {
     theInstantiationFunctions.push_back(anInstantiator);
   }
 

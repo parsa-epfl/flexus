@@ -253,7 +253,7 @@ public:
 
   void processMemoryReply(MemoryMessage & msg) {
     std::multimap< MemoryAddress, cmob_message_t >::iterator begin, iter, end;
-    boost::tie(begin, end) = thePendingReads.equal_range( msg.address() );
+    std::tie(begin, end) = thePendingReads.equal_range( msg.address() );
     iter = begin;
     while (iter != end) {
       finishRead(iter->second);

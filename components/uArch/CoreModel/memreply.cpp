@@ -18,7 +18,7 @@ void CoreImpl::invalidate( PhysicalMemoryAddress anAddress) {
   //at the rest of theMemQueue
   if (isSpeculating()) {
     SpeculativeLoadAddressTracker::iterator iter, end;
-    boost::tie(iter, end) = theSLAT.equal_range( anAddress );
+    std::tie(iter, end) = theSLAT.equal_range( anAddress );
     boost::optional< boost::intrusive_ptr<Instruction> > violator;
     while (iter != end ) {
       if (! violator || iter->second->sequenceNo() < (*violator)->sequenceNo() ) {
@@ -68,8 +68,8 @@ void CoreImpl::invalidate( PhysicalMemoryAddress anAddress) {
 
   memq_t::index< by_paddr >::type::iterator start, temp, end;
 
-  start = theMemQueue.get<by_paddr>().lower_bound( boost::make_tuple( anAddress ) );
-  end = theMemQueue.get<by_paddr>().upper_bound( boost::make_tuple( PhysicalMemoryAddress(anAddress + static_cast<int>(theCoherenceUnit - 1)) ) );
+  start = theMemQueue.get<by_paddr>().lower_bound( std::make_tuple( anAddress ) );
+  end = theMemQueue.get<by_paddr>().upper_bound( std::make_tuple( PhysicalMemoryAddress(anAddress + static_cast<int>(theCoherenceUnit - 1)) ) );
   if (start == end) {
     return; //No matches for this physical memory address
   }
@@ -96,11 +96,11 @@ void CoreImpl::invalidate( PhysicalMemoryAddress anAddress) {
   } else if (consistencyModel() == kSC && ! sbEmpty()) {
     if (theSpeculativeOrder) {
       //For speculative order, anything in the SB is considered complete.
-      memq_t::index<by_queue>::type::iterator ssb_head = theMemQueue.get<by_queue>().lower_bound( boost::make_tuple( kSSB ) );
+      memq_t::index<by_queue>::type::iterator ssb_head = theMemQueue.get<by_queue>().lower_bound( std::make_tuple( kSSB ) );
       if (ssb_head == theMemQueue.get<by_queue>().end() || ssb_head->theQueue != kSSB) {
         //SSB is empty - try the LSQ
         if (theLSQCount > 0) {
-          ssb_head = theMemQueue.get<by_queue>().lower_bound( boost::make_tuple( kLSQ ) );
+          ssb_head = theMemQueue.get<by_queue>().lower_bound( std::make_tuple( kLSQ ) );
         } else {
           //Everthing in the SB is actually done.
           return;
@@ -113,7 +113,7 @@ void CoreImpl::invalidate( PhysicalMemoryAddress anAddress) {
     }
   } else {
     memq_t::index<by_queue>::type::iterator iter, end;
-    boost::tie(iter, end) = theMemQueue.get<by_queue>().equal_range( boost::make_tuple( kLSQ ) );
+    std::tie(iter, end) = theMemQueue.get<by_queue>().equal_range( std::make_tuple( kLSQ ) );
     while (iter != end) {
       //We search from the front of the LSQ for the first operation to meet the conditions above
       if (    ( iter->isLoad() && iter->status() != kComplete && iter->status() != kAnnulled)  //Any non-anulled and non-complete load
@@ -160,8 +160,8 @@ void CoreImpl::invalidate( PhysicalMemoryAddress anAddress) {
         }
         doLoad( theMemQueue.project<by_insn>(temp), boost::none );
         if (research) {
-          start = theMemQueue.get<by_paddr>().lower_bound( boost::make_tuple( addr, seq_num ) );
-          end = theMemQueue.get<by_paddr>().upper_bound( boost::make_tuple( PhysicalMemoryAddress(anAddress + static_cast<int>(theCoherenceUnit - 1)) ) );
+          start = theMemQueue.get<by_paddr>().lower_bound( std::make_tuple( addr, seq_num ) );
+          end = theMemQueue.get<by_paddr>().upper_bound( std::make_tuple( PhysicalMemoryAddress(anAddress + static_cast<int>(theCoherenceUnit - 1)) ) );
         }
 
         //Record invalidate replays

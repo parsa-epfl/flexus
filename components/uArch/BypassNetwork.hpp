@@ -16,7 +16,7 @@ protected:
   uint32_t theRRegs;
   uint32_t theFRegs;
   uint32_t theCCRegs;
-  typedef boost::function< bool(register_value) > bypass_fn;
+  typedef std::function< bool(register_value) > bypass_fn;
   typedef std::pair< boost::intrusive_ptr<Instruction>, bypass_fn> bypass_handle;
   typedef std::list< bypass_handle > bypass_handle_list;
   typedef std::vector< bypass_handle_list > bypass_map;

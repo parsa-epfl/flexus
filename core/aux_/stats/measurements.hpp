@@ -10,7 +10,7 @@
 #include <cmath>
 #include <numeric>
 #include <boost/regex.hpp>
-#include <boost/function.hpp>
+#include <functional>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>

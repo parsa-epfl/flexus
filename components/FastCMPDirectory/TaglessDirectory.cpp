@@ -8,11 +8,9 @@
 #include <components/FastCMPDirectory/SharingVector.hpp>
 #include <components/FastCMPDirectory/AbstractProtocol.hpp>
 #include <components/FastCMPDirectory/BlockDirectoryEntry.hpp>
-#include <ext/hash_map>
+#include <unordered_map>
 
 #include <boost/dynamic_bitset.hpp>
-#include <boost/bind.hpp>
-#include <boost/lambda/lambda.hpp>
 
 #include <tuple>
 #include <list>
@@ -37,7 +35,7 @@ struct AddrHash {
     return addr >> 6;
   }
 };
-typedef __gnu_cxx::hash_map<PhysicalMemoryAddress, BlockDirectoryEntry_p, AddrHash> inf_directory_t;
+typedef std::unordered_map<PhysicalMemoryAddress, BlockDirectoryEntry_p, AddrHash> inf_directory_t;
 
 struct TaglessDirectoryBucket : public AbstractDirectoryEntry {
   BlockDirectoryEntry theTaglessEntry;
@@ -71,7 +69,7 @@ private:
 
   TaglessDirectory() : AbstractDirectory(), theTrackCollisions(false), theTrackBitCounts(false), theTrackBitPatterns(false), thePartitioned(true) {};
 
-  typedef boost::function<int(uint64_t)> hash_fn_t;
+  typedef std::function<int(uint64_t)> hash_fn_t;
 
   std::list<hash_fn_t> hash_fns;
 
@@ -485,32 +483,32 @@ private:
 
     if (strcasecmp(policy.c_str(), "simple") == 0) {
       DBG_Assert( (theNumBuckets & (theNumBuckets - 1)) == 0, ( << "theNumBuckets = " << theNumBuckets << " != Power of 2" ) );
-      hash_fns.push_back(boost::bind(&TaglessDirectory::simple_hash, this, _1));
+      hash_fns.push_back(std::bind(&TaglessDirectory::simple_hash, this, _1));
     } else if (strcasecmp(policy.c_str(), "rotated_prime") == 0) {
-      hash_fns.push_back(boost::bind(&TaglessDirectory::rotated_prime_modulo_hash, this, _1));
+      hash_fns.push_back(std::bind(&TaglessDirectory::rotated_prime_modulo_hash, this, _1));
       theNumBuckets = get_next_prime(theNumBuckets);
     } else if (strcasecmp(policy.c_str(), "full_prime") == 0) {
-      hash_fns.push_back(boost::bind(&TaglessDirectory::full_prime_modulo_hash, this, _1));
+      hash_fns.push_back(std::bind(&TaglessDirectory::full_prime_modulo_hash, this, _1));
       theNumBuckets = get_next_prime(theNumBuckets);
     } else if (strcasecmp(policy.c_str(), "prime") == 0) {
-      hash_fns.push_back(boost::bind(&TaglessDirectory::prime_modulo_hash, this, _1));
+      hash_fns.push_back(std::bind(&TaglessDirectory::prime_modulo_hash, this, _1));
       theNumBuckets = get_next_prime(theNumBuckets);
     } else if (strcasecmp(policy.c_str(), "my_hash") == 0) {
       DBG_Assert( (theNumBuckets & (theNumBuckets - 1)) == 0, ( << "theNumBuckets = " << theNumBuckets << " != Power of 2" ) );
-      hash_fns.push_back(boost::bind(&TaglessDirectory::my_hash, this, _1));
+      hash_fns.push_back(std::bind(&TaglessDirectory::my_hash, this, _1));
     } else if (strcasecmp(policy.c_str(), "overlap") == 0) {
       DBG_Assert( (theNumBuckets & (theNumBuckets - 1)) == 0, ( << "theNumBuckets = " << theNumBuckets << " != Power of 2" ) );
-      hash_fns.push_back(boost::bind(&TaglessDirectory::overlap_hash, this, _1));
+      hash_fns.push_back(std::bind(&TaglessDirectory::overlap_hash, this, _1));
     } else if (strcasecmp(policy.c_str(), "xor") == 0) {
       DBG_Assert( (theNumBuckets & (theNumBuckets - 1)) == 0, ( << "theNumBuckets = " << theNumBuckets << " != Power of 2" ) );
-      hash_fns.push_back(boost::bind(&TaglessDirectory::xor_hash, this, _1));
+      hash_fns.push_back(std::bind(&TaglessDirectory::xor_hash, this, _1));
       if (theHashXORShift <= 0) {
         theHashXORShift = 32 - log_base2(theNumBuckets);
       }
     } else if (strncasecmp(policy.c_str(), "shift", 5) == 0) {
       DBG_Assert( (theNumBuckets & (theNumBuckets - 1)) == 0, ( << "theNumBuckets = " << theNumBuckets << " != Power of 2" ) );
       int32_t shift = boost::lexical_cast<int>(policy.substr(6));
-      hash_fns.push_back(boost::bind(&TaglessDirectory::shift_hash, this, shift, _1));
+      hash_fns.push_back(std::bind(&TaglessDirectory::shift_hash, this, shift, _1));
     } else if (strncasecmp(policy.c_str(), "matrix", 6) == 0) {
       std::string matrix_type = policy.substr(7);
       std::list<int> matrix;
@@ -817,7 +815,7 @@ virtual void processRequestResponse(int32_t index, const MMType & request, MMTyp
 
 public:
 virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
-lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) {
+lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<std::function<void(void)> > &xtra_actions) {
 
   // We have everything, now we just need to determine WHERE the directory is, and add the appropriate messages
   int32_t dir_loc = address2DirLocation(address, index);

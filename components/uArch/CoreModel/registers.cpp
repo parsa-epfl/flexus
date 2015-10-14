@@ -11,7 +11,7 @@ void CoreImpl::bypass(mapped_reg aReg, register_value aValue) {
   theBypassNetwork.write(aReg, aValue, *this);
 }
 
-void CoreImpl::connectBypass(mapped_reg aReg, boost::intrusive_ptr<Instruction> inst, boost::function< bool( register_value) > fn) {
+void CoreImpl::connectBypass(mapped_reg aReg, boost::intrusive_ptr<Instruction> inst, std::function< bool( register_value) > fn) {
   theBypassNetwork.connect(aReg, inst, fn);
 }
 

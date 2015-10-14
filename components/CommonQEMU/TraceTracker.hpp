@@ -4,7 +4,7 @@
 #include <map>
 
 #include <core/boost_extensions/intrusive_ptr.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/optional.hpp>
 #include <tuple>
 #include <core/target.hpp>

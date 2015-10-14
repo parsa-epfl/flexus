@@ -4,7 +4,7 @@
 #include <set>
 #include <list>
 
-#include <boost/function.hpp>
+#include <functional>
 
 namespace nGlobalHasher {
 
@@ -12,7 +12,7 @@ typedef Flexus::SharedTypes::PhysicalMemoryAddress Address;
 
 class GlobalHasher {
 private:
-  typedef boost::function<int(const Address &)> hash_fn_t;
+  typedef std::function<int(const Address &)> hash_fn_t;
   typedef std::list<hash_fn_t>::iterator hash_iterator_t;
 
   GlobalHasher();
@@ -29,7 +29,7 @@ private:
   int32_t shift_hash(int32_t offset, int32_t shift, const Address & addr) const;
   int32_t full_prime_hash(int32_t offset, int32_t prime, const Address & addr) const;
 
-  boost::function<int(int)> createMatrixHash(std::string args, int32_t num_buckets, int32_t shift, int32_t mask, int32_t offset) const;
+  std::function<int(int)> createMatrixHash(std::string args, int32_t num_buckets, int32_t shift, int32_t mask, int32_t offset) const;
 
 public:
   std::set<int> hashAddr(const Address & addr);

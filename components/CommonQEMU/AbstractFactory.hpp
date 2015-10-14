@@ -5,13 +5,13 @@
 
 #include <map>
 #include <list>
-#include <boost/function.hpp>
+#include <functional>
 
 template<class _AbstractType, typename _ParamType>
 class AbstractFactory {
 public:
   //typedef _AbstractType *(cons_func_t)(std::list< std:pair<std::string, std::string> >&);
-  typedef boost::function<_AbstractType* ( std::list< std::pair<std::string, std::string> >&, const _ParamType & )> cons_func_t;
+  typedef std::function<_AbstractType* ( std::list< std::pair<std::string, std::string> >&, const _ParamType & )> cons_func_t;
 
 private:
   typedef std::map<std::string, cons_func_t> factory_map_t;

@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <core/debug/debug.hpp>
 #include <core/target.hpp>

@@ -4,7 +4,7 @@
 #include <deque>
 #include <cstdlib>
 
-#include <boost/function.hpp>
+#include <functional>
 
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
@@ -18,7 +18,7 @@ void Break() {}
 
 using namespace Flexus::Stat;
 
-std::deque< boost::function< void () > > theCommands;
+std::deque< std::function< void () > > theCommands;
 
 void usage() {
   std::cout << "Usage: stat-collapse <start msmt cycle> <end msmt cycle> <input stat file> <output stat file>" << std::endl;

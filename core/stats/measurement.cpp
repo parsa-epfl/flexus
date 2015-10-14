@@ -9,7 +9,7 @@
 #include <boost/serialization/split_free.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
-#include <boost/function.hpp>
+#include <functional>
 #define BOOST_NO_WREGEX
 #include <boost/regex.hpp>
 #include <boost/optional.hpp>

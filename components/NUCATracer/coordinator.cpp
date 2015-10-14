@@ -7,10 +7,7 @@
 #include DBG_Control()
 
 #include <fstream>
-#include <boost/shared_ptr.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
-namespace l = boost::lambda;
+#include <memory>
 #include <boost/utility.hpp>
 #define __STDC_CONSTANT_MACROS
 #include <boost/date_time/posix_time/posix_time.hpp>

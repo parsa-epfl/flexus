@@ -15,7 +15,7 @@
 #include <components/FastCMPCache/AbstractProtocol.hpp>
 
 #include <tuple>
-#include <boost/function.hpp>
+#include <functional>
 
 #include <list>
 
@@ -60,11 +60,11 @@ protected:
   } theDirectoryLocation;
 
   struct Port_Fn_t {
-    boost::function<void (RegionScoutMessage &, int)> sendRegionProbe;
-    boost::function<void (boost::function<void(void)>)> scheduleDelayedAction;
+    std::function<void (RegionScoutMessage &, int)> sendRegionProbe;
+    std::function<void (std::function<void(void)>)> scheduleDelayedAction;
   } thePorts;
 
-  boost::function<void (PhysicalMemoryAddress, SharingVector)> theInvalidateAction;
+  std::function<void (PhysicalMemoryAddress, SharingVector)> theInvalidateAction;
 
   inline void recordSnoopMiss() {
     theStats->theSnoopMisses++;
@@ -89,7 +89,7 @@ public:
   virtual ~AbstractDirectory() {}
 
   virtual std::tuple<SharingVector, SharingState, AbstractEntry_p>
-  lookup(int, PhysicalMemoryAddress, MMType, std::list<boost::function<void(void)> > &xtra_actions) = 0;
+  lookup(int, PhysicalMemoryAddress, MMType, std::list<std::function<void(void)> > &xtra_actions) = 0;
 
   virtual std::tuple<SharingVector, SharingState, AbstractEntry_p, bool>
   snoopLookup(int, PhysicalMemoryAddress, MMType) = 0;
@@ -181,13 +181,13 @@ public:
     theBlockSize = size;
   }
 
-  void setPortOperations( boost::function<void (RegionScoutMessage &, int)> regionProbe,
-                          boost::function<void(boost::function<void(void)>)> delayedAction) {
+  void setPortOperations( std::function<void (RegionScoutMessage &, int)> regionProbe,
+                          std::function<void(std::function<void(void)>)> delayedAction) {
     thePorts.sendRegionProbe = regionProbe;
     thePorts.scheduleDelayedAction = delayedAction;
   }
 
-  void setInvalidateAction(boost::function<void (PhysicalMemoryAddress, SharingVector)> action) {
+  void setInvalidateAction(std::function<void (PhysicalMemoryAddress, SharingVector)> action) {
     theInvalidateAction = action;
   }
 

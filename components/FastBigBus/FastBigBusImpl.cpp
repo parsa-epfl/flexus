@@ -1,7 +1,7 @@
 #include <components/FastBigBus/FastBigBus.hpp>
 
 #include <fstream>
-#include <ext/hash_map>
+#include <unordered_map>
 #include <boost/tuple/tuple.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -154,7 +154,7 @@ public:
           DBG_(VVerb, ( << "Page " << addr << " assigned to node " << node ) );
           pagemap_t::iterator ignored;
           bool is_new;
-          boost::tie(ignored, is_new) = thePageMap.insert( std::make_pair(addr, node) );
+          std::tie(ignored, is_new) = thePageMap.insert( std::make_pair(addr, node) );
           DBG_Assert(is_new, ( << "(" << addr << "," << node << ")"));
           ++count;
         }
@@ -187,7 +187,7 @@ public:
     block_address_t page_addr = addr >> thePageSizeL2;
 
     // 'insert', which won't really insert if its already there
-    boost::tie(iter, is_new) = thePageMap.insert( std::make_pair( page_addr, req_node ) ); //Optimized for first-touch
+    std::tie(iter, is_new) = thePageMap.insert( std::make_pair( page_addr, req_node ) ); //Optimized for first-touch
 
     // if found, return mapping
     if (is_new && theRoundRobin) {
@@ -205,14 +205,14 @@ private:
 
   uint32_t thePageSizeL2;
 
-  typedef __gnu_cxx::hash_map<block_address_t, unsigned, IntHash > pagemap_t;
+  typedef std::unordered_map<block_address_t, unsigned, IntHash > pagemap_t;
   pagemap_t thePageMap;
 };
 
 class FLEXUS_COMPONENT(FastBigBus) {
   FLEXUS_COMPONENT_IMPL( FastBigBus );
 
-  typedef __gnu_cxx::hash_map<block_address_t, dir_entry_t, IntHash > directory_t;
+  typedef std::unordered_map<block_address_t, dir_entry_t, IntHash > directory_t;
   directory_t theDirectory;
   block_address_t theBlockMask;
   MemoryMessage theSnoopMessage;
@@ -678,7 +678,7 @@ public:
     //Lookup or insert the new block in the directory
     directory_t::iterator iter;
     bool is_new;
-    boost::tie(iter, is_new) = theDirectory.insert( std::make_pair( blockAddr, dir_entry_t(anIndex) ) ); //Optimized for exclusive case - avoids shift operation on writes.
+    std::tie(iter, is_new) = theDirectory.insert( std::make_pair( blockAddr, dir_entry_t(anIndex) ) ); //Optimized for exclusive case - avoids shift operation on writes.
     if (is_new) {
       //New block
       switch (message.type()) {
@@ -922,7 +922,7 @@ label_existing_read_cases:
     //Lookup or insert the new block in the directory
     directory_t::iterator iter;
     bool is_new;
-    boost::tie(iter, is_new) = theDirectory.insert( std::make_pair( blockAddr, dir_entry_t(kNAW) ) );
+    std::tie(iter, is_new) = theDirectory.insert( std::make_pair( blockAddr, dir_entry_t(kNAW) ) );
 
     if (! is_new) {
       coherence_state_t & state = iter->second.state;
@@ -974,7 +974,7 @@ label_existing_read_cases:
       //Lookup or insert the new block in the directory
       directory_t::iterator iter;
       bool is_new;
-      boost::tie(iter, is_new) = theDirectory.insert( std::make_pair( blockAddr, dir_entry_t(kDMA) ) );
+      std::tie(iter, is_new) = theDirectory.insert( std::make_pair( blockAddr, dir_entry_t(kDMA) ) );
       if (! is_new) {
         coherence_state_t & state = iter->second.state;
 

@@ -58,14 +58,14 @@ struct v9State {
 
 struct CoreModel : public uArch {
   static CoreModel * construct(uArchOptions_t options
-                               , boost::function< void (Flexus::Qemu::Translation &, bool) > translate
-                               , boost::function< int(bool) > advance
-                               , boost::function< void(eSquashCause) > squash
-                               , boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress) > redirect
-                               , boost::function< void(int, int) > change_mode
-                               , boost::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback
-                               , boost::function< void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> )> notifyTMS /* CMU-ONLY */
-                               , boost::function< void( bool )> signalStoreForwardingHit
+                               , std::function< void (Flexus::Qemu::Translation &, bool) > translate
+                               , std::function< int(bool) > advance
+                               , std::function< void(eSquashCause) > squash
+                               , std::function< void(VirtualMemoryAddress, VirtualMemoryAddress) > redirect
+                               , std::function< void(int, int) > change_mode
+                               , std::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback
+                               , std::function< void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> )> notifyTMS /* CMU-ONLY */
+                               , std::function< void( bool )> signalStoreForwardingHit
                               );
 
   //Interface to mircoArch

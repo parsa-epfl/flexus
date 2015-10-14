@@ -9,7 +9,7 @@
 #include <core/simics/hap_api.hpp>
 #include <core/simics/mai_api.hpp>
 
-#include <boost/function.hpp>
+#include <functional>
 #include <boost/bind.hpp>
 
 #define DBG_DefineCategories Feeder
@@ -38,10 +38,10 @@ public:
     : base( FLEXUS_PASS_CONSTRUCTOR_ARGS ) {
     theNumCPUs = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
     theTracer = SimicsTracerManager::construct(theNumCPUs
-                , boost::bind( &DecoupledFeederComponent::toL1D, this, _1, _2)
-                , boost::bind( &DecoupledFeederComponent::toL1I, this, _1, _2, _3)
-                , boost::bind( &DecoupledFeederComponent::toDMA, this, _1)
-                , boost::bind( &DecoupledFeederComponent::toNAW, this, _1, _2)
+                , std::bind( &DecoupledFeederComponent::toL1D, this, _1, _2)
+                , std::bind( &DecoupledFeederComponent::toL1I, this, _1, _2, _3)
+                , std::bind( &DecoupledFeederComponent::toDMA, this, _1)
+                , std::bind( &DecoupledFeederComponent::toNAW, this, _1, _2)
                 , cfg.WhiteBoxDebug
                 , cfg.WhiteBoxPeriod
                 , cfg.SendNonAllocatingStores

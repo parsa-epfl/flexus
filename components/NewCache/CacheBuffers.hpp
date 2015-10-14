@@ -485,11 +485,11 @@ public:
   }
 
   snoop_iter getActiveEntry(MemoryAddress const & anAddress) {
-    return theSnoops.find( boost::tuple<MemoryAddress, SnoopStates>( anAddress, kSnoopOutstanding ));
+    return theSnoops.find( std::tuple<MemoryAddress, SnoopStates>( anAddress, kSnoopOutstanding ));
   }
 
   std::pair<snoop_iter, snoop_iter> getWaitingEntries(MemoryAddress const & anAddress) {
-    return theSnoops.equal_range( boost::tuple<MemoryAddress, SnoopStates>( anAddress, kSnoopWaiting ));
+    return theSnoops.equal_range( std::tuple<MemoryAddress, SnoopStates>( anAddress, kSnoopWaiting ));
   }
 
   snoop_iter end() {
@@ -500,17 +500,17 @@ public:
   // request should have been aligned on a block boundary
   snoop_iter findEntry(MemoryAddress const & anAddress) {
 
-    snoop_iter iter = theSnoops.find( boost::make_tuple( anAddress, kSnoopOutstanding ));
+    snoop_iter iter = theSnoops.find( std::make_tuple( anAddress, kSnoopOutstanding ));
     return iter;
   }
 
   bool hasEntry(MemoryAddress const & anAddress) {
-    snoop_iter iter = theSnoops.find( boost::make_tuple( anAddress, kSnoopOutstanding ));
+    snoop_iter iter = theSnoops.find( std::make_tuple( anAddress, kSnoopOutstanding ));
     if (iter != theSnoops.end()) {
       return true;
     }
 
-    iter = theSnoops.find( boost::make_tuple( anAddress, kSnoopWaiting ));
+    iter = theSnoops.find( std::make_tuple( anAddress, kSnoopWaiting ));
     if (iter != theSnoops.end()) {
       return true;
     }
@@ -524,7 +524,7 @@ public:
   }
 
   bool hasSnoopsOutstanding(MemoryAddress const & anAddress) {
-    snoop_iter iter = theSnoops.find( boost::make_tuple( anAddress, kSnoopOutstanding ));
+    snoop_iter iter = theSnoops.find( std::make_tuple( anAddress, kSnoopOutstanding ));
     if (iter != theSnoops.end()) {
       return true;
     }
@@ -551,7 +551,7 @@ public:
 
   bool wakeWaitingEntries(MemoryAddress const & anAddress) {
     snoop_iter iter, end;
-    boost::tie(iter, end) = getWaitingEntries(anAddress);
+    std::tie(iter, end) = getWaitingEntries(anAddress);
     if (iter != end) {
       theWakeList.insert(theWakeList.end(), iter, end);
       theSnoops.erase(iter, end);

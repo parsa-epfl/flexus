@@ -67,7 +67,7 @@ private:
 
   TaglessDirectory() : AbstractDirectory(), theTrackCollisions(false), theTrackBitCounts(false), theTrackBitPatterns(false), thePartitioned(true) {};
 
-  typedef boost::function<int(uint64_t)> hash_fn_t;
+  typedef std::function<int(uint64_t)> hash_fn_t;
 
   std::list<hash_fn_t> hash_fns;
 
@@ -539,7 +539,7 @@ private:
         DBG_Assert(false, ( << "Unknown Matrix Hash Type '" << matrix_type << "'" ));
       }
       theMatrixHashes.push_back(MatrixHash(matrix, theHashShift, theHashMask));
-      hash_fns.push_back(boost::ref(theMatrixHashes.back()));
+      hash_fns.push_back(theMatrixHashes.back());//boost::ref(theMatrixHashes.back()));
     } else {
       DBG_Assert(false, ( << "Unknown Hash Policy '" << policy << "'" ));
     }
@@ -808,7 +808,7 @@ protected:
 
 public:
   virtual std::tuple<SharingVector, SharingState, AbstractEntry_p>
-  lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<boost::function<void(void)> > &xtra_actions) {
+  lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<std::function<void(void)> > &xtra_actions) {
 
     TaglessLookupResult_p block = findOrCreateEntry(address, index);
 
@@ -865,7 +865,7 @@ public:
 
     DBG_(Trace, ( << "Received " << req_type << " request from core " << index << " for block " << std::hex << address << " Tagless state = " << block->theTaglessState.sharers() << ", TueState = " << block->theTrueState->sharers() ));
 
-    return std::tie(block->theTaglessState.sharers(), block->theTaglessState.state(), block);
+    return std::make_tuple(block->theTaglessState.sharers(), block->theTaglessState.state(), block);
   }
 
   virtual std::tuple<SharingVector, SharingState, AbstractEntry_p, bool>

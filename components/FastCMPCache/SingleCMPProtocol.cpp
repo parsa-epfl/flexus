@@ -210,7 +210,7 @@ public:
   };
 
   virtual const PrimaryAction & getAction(CoherenceState_t c_state, SharingState d_state, MemoryMessage::MemoryMessageType type, PhysicalMemoryAddress address) {
-    protocol_hash_t::const_iterator iter = theProtocolHash.get<0>().find( boost::make_tuple(c_state, d_state, type) );
+    protocol_hash_t::const_iterator iter = theProtocolHash.get<0>().find( std::make_tuple(c_state, d_state, type) );
     if (iter == theProtocolHash.end() || iter->action.poison) {
       DBG_Assert(false, ( << "Poison Action! C_State: " << state2String(c_state) << ", D_State: " << SharingStatePrinter(d_state) << ", Request: " << type << ", Address: 0x" << std::hex << (uint64_t)address ));
       return poison_action;

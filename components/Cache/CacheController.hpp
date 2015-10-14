@@ -16,9 +16,6 @@
 #ifndef FLEXUS_CACHE_CONTROLLER_HPP_INCLUDED
 #define FLEXUS_CACHE_CONTROLLER_HPP_INCLUDED
 
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
-namespace ll = boost::lambda;
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
@@ -280,7 +277,7 @@ public:
     theMaxMAFTargets << theMshrs.size();
     account(kRead, 1);
 
-    maf_iter iter  = theMshrs.find( boost::make_tuple( aBlockAddress, kWaitResponse ) );
+    maf_iter iter  = theMshrs.find( std::make_tuple( aBlockAddress, kWaitResponse ) );
     modifyState ( iter, kCompleted );
 
     return iter;
@@ -325,7 +322,7 @@ public:
     if (iter->state == kWaitResponse) {
       --theWaitResponseEntries;
     }
-    theMshrs.modify(iter, ll::bind( &MafEntry::state, ll::_1 ) = aState);
+    theMshrs.modify(iter, [aState](auto& x){ return x.state = aState; });
     if (aState == kWaitResponse) {
       ++theWaitResponseEntries;
       theMaxMAFMisses << theWaitResponseEntries;
@@ -334,11 +331,11 @@ public:
 
   bool contains ( const MemoryAddress  & aBlockAddress ) const {
     DBG_(Trace, ( << "Searching MAF for block " << std::hex << aBlockAddress ));
-    return theMshrs.count( boost::make_tuple( aBlockAddress ) ) > 0;
+    return theMshrs.count( std::make_tuple( aBlockAddress ) ) > 0;
   }
 
   bool contains ( const MemoryAddress  & aBlockAddress , MafStates aState) const {
-    return theMshrs.count( boost::make_tuple( aBlockAddress, aState ) ) > 0;
+    return theMshrs.count( std::make_tuple( aBlockAddress, aState ) ) > 0;
   }
 
   std::pair
@@ -346,7 +343,7 @@ public:
   , boost::intrusive_ptr<TransactionTracker>
   >
   getWaitingMAFEntry( const MemoryAddress  & aBlockAddress) {
-    maf_t::iterator iter = theMshrs.find( boost::make_tuple( aBlockAddress, kWaitResponse ) );
+    maf_t::iterator iter = theMshrs.find( std::make_tuple( aBlockAddress, kWaitResponse ) );
     if ( iter == theMshrs.end() ) {
       DBG_( Iface, ( << "Expected to find MAF entry for " << aBlockAddress << " but found none.") );
       return std::make_pair( boost::intrusive_ptr<MemoryMessage>(0), boost::intrusive_ptr<TransactionTracker>(0) );
@@ -356,22 +353,22 @@ public:
   }
 
   maf_iter getWaitingMAFEntryIter ( const MemoryAddress & aBlockAddress ) {
-    return theMshrs.find( boost::make_tuple( aBlockAddress, kWaitResponse ) );
+    return theMshrs.find( std::make_tuple( aBlockAddress, kWaitResponse ) );
   }
 
   maf_iter getProbingMAFEntry( const MemoryAddress & aBlockAddress) {
-    return theMshrs.find( boost::make_tuple( aBlockAddress, kWaitProbe ) );
+    return theMshrs.find( std::make_tuple( aBlockAddress, kWaitProbe ) );
   }
 
   Transport getWaitingMAFEntryTransport ( const MemoryAddress & aBlockAddress ) {
-    maf_t::iterator iter = theMshrs.find( boost::make_tuple( aBlockAddress, kWaitResponse ) );
+    maf_t::iterator iter = theMshrs.find( std::make_tuple( aBlockAddress, kWaitResponse ) );
     DBG_Assert( iter != theMshrs.end() );
     return iter->transport;
   }
 
   Transport removeWaitingMafEntry( const MemoryAddress  & aBlockAddress ) {
     Transport ret_val;
-    maf_t::iterator iter = theMshrs.find( boost::make_tuple( aBlockAddress, kWaitResponse ) );
+    maf_t::iterator iter = theMshrs.find( std::make_tuple( aBlockAddress, kWaitResponse ) );
     DBG_Assert( iter != theMshrs.end() );
     --theWaitResponseEntries;
     ret_val = iter->transport;
@@ -385,17 +382,17 @@ public:
     // Need to prioritize waiting MAFs WaitRegion -> WaitSnoop -> Wait Address
 
     maf_t::iterator iter;
-    iter = theMshrs.find( boost::make_tuple( aBlockAddress, kWaitRegion ) );
+    iter = theMshrs.find( std::make_tuple( aBlockAddress, kWaitRegion ) );
     if (iter == theMshrs.end() ) {
-      iter = theMshrs.find( boost::make_tuple( aBlockAddress, kWaitSnoop ) );
+      iter = theMshrs.find( std::make_tuple( aBlockAddress, kWaitSnoop ) );
       if (iter != theMshrs.end() ) {
         modifyState(iter, kWaking);
       } else {
-        iter = theMshrs.find( boost::make_tuple( aBlockAddress, kWaitEvict ) );
+        iter = theMshrs.find( std::make_tuple( aBlockAddress, kWaitEvict ) );
         if (iter != theMshrs.end() ) {
           modifyState(iter, kWaking);
         } else {
-          iter = theMshrs.find( boost::make_tuple( aBlockAddress, kWaitAddress ) );
+          iter = theMshrs.find( std::make_tuple( aBlockAddress, kWaitAddress ) );
         }
       }
     }
@@ -405,7 +402,7 @@ public:
   std::list<boost::intrusive_ptr<MemoryMessage> > getAllMessages( const MemoryAddress  & aBlockAddress) {
     std::list< boost::intrusive_ptr<MemoryMessage> > ret_val;
     maf_t::iterator iter, end;
-    boost::tie(iter, end) = theMshrs.equal_range( boost::make_tuple( aBlockAddress ) );
+    std::tie(iter, end) = theMshrs.equal_range( std::make_tuple( aBlockAddress ) );
     while (iter != end) {
       ret_val.push_back( iter->transport[MemoryMessageTag] );
       ++iter;
@@ -416,7 +413,7 @@ public:
   std::list<boost::intrusive_ptr<MemoryMessage> > getAllUncompletedMessages( const MemoryAddress  & aBlockAddress) {
     std::list< boost::intrusive_ptr<MemoryMessage> > ret_val;
     maf_t::iterator iter, end;
-    boost::tie(iter, end) = theMshrs.equal_range( boost::make_tuple( aBlockAddress ) );
+    std::tie(iter, end) = theMshrs.equal_range( std::make_tuple( aBlockAddress ) );
     while (iter != end) {
       if ( iter->state != kCompleted ) {
         ret_val.push_back( iter->transport[MemoryMessageTag] );

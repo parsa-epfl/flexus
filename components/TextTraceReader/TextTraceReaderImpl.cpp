@@ -5,7 +5,7 @@
 #include <components/Common/Slices/MemoryMessage.hpp>
 
 #include <boost/bind.hpp>
-#include <ext/hash_map>
+#include <unordered_map>
 
 #include <fstream>
 

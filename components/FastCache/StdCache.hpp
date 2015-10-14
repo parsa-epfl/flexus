@@ -3,7 +3,7 @@
 
 #include <components/FastCache/AbstractCache.hpp>
 
-#include <boost/function.hpp>
+#include <functional>
 #include <boost/dynamic_bitset.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/key_extractors.hpp>

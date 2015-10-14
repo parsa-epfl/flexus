@@ -345,7 +345,7 @@ public:
     theScheduledActions.insert(ActionItem(preceeding_stage, iteration, eLongLatencyStage, stage_count));
   }
   inline std::pair<ActionSet::iterator, ActionSet::iterator> getReadyActions(PipelineAction stage, int32_t count) {
-    return theScheduledActions.equal_range( boost::make_tuple(stage, count) );
+    return theScheduledActions.equal_range( std::make_tuple(stage, count) );
   }
   inline void eraseActions(ActionSet::iterator first, ActionSet::iterator last) {
     theScheduledActions.erase(first, last);

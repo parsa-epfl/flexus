@@ -48,14 +48,14 @@ class CoreImpl : public CoreModel {
   //Simulation
   std::string theName;
   uint32_t theNode;
-  boost::function< void (Flexus::Qemu::Translation &, bool) > translate;
-  boost::function<int(bool)> advance_fn;
-  boost::function< void(eSquashCause)> squash_fn;
-  boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress)> redirect_fn;
-  boost::function< void(int, int)> change_mode_fn;
-  boost::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback_fn;
-  boost::function< void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> ) > notifyTMS_fn; /* CMU-ONLY */
-  boost::function< void( bool )> signalStoreForwardingHit_fn;
+  std::function< void (Flexus::Qemu::Translation &, bool) > translate;
+  std::function<int(bool)> advance_fn;
+  std::function< void(eSquashCause)> squash_fn;
+  std::function< void(VirtualMemoryAddress, VirtualMemoryAddress)> redirect_fn;
+  std::function< void(int, int)> change_mode_fn;
+  std::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback_fn;
+  std::function< void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> ) > notifyTMS_fn; /* CMU-ONLY */
+  std::function< void( bool )> signalStoreForwardingHit_fn;
 
   //Map Tables
   RegisterWindowMap theWindowMap;
@@ -459,14 +459,14 @@ private:
   //==========================================================================
 public:
   CoreImpl( uArchOptions_t options
-            , boost::function< void (Flexus::Qemu::Translation &, bool) > xlat
-            , boost::function< int(bool) > advance
-            , boost::function< void(eSquashCause)> squash
-            , boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress) > redirect
-            , boost::function< void(int, int) > change_mode
-            , boost::function< void( boost::intrusive_ptr<BranchFeedback> ) > feedback
-            , boost::function< void ( PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> ) > notifyTMS /* CMU-ONLY */
-            , boost::function< void( bool )> signalStoreForwardingHit
+            , std::function< void (Flexus::Qemu::Translation &, bool) > xlat
+            , std::function< int(bool) > advance
+            , std::function< void(eSquashCause)> squash
+            , std::function< void(VirtualMemoryAddress, VirtualMemoryAddress) > redirect
+            , std::function< void(int, int) > change_mode
+            , std::function< void( boost::intrusive_ptr<BranchFeedback> ) > feedback
+            , std::function< void ( PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> ) > notifyTMS /* CMU-ONLY */
+            , std::function< void( bool )> signalStoreForwardingHit
           );
 
   virtual ~CoreImpl() {}
@@ -599,7 +599,7 @@ public:
   //Bypass Network Interface
   //==========================================================================
   void bypass(mapped_reg aReg, register_value aValue);
-  void connectBypass(mapped_reg aReg, boost::intrusive_ptr<Instruction> inst, boost::function<bool(register_value)> fn);
+  void connectBypass(mapped_reg aReg, boost::intrusive_ptr<Instruction> inst, std::function<bool(register_value)> fn);
 
   //Register File Interface
   //==========================================================================

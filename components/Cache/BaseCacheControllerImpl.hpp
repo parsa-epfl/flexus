@@ -338,7 +338,7 @@ public:
 
   virtual MemoryAddress getBlockAddress( MemoryAddress const & anAddress) const = 0;
   virtual BlockOffset getBlockOffset( MemoryAddress const & anAddress) const = 0;
-  virtual boost::function<bool (MemoryAddress a, MemoryAddress b)> setCompareFn() const = 0;
+  virtual std::function<bool (MemoryAddress a, MemoryAddress b)> setCompareFn() const = 0;
 
   virtual bool canStartRequest( MemoryAddress const & anAddress) const = 0;
   virtual void addPendingRequest( MemoryAddress const & anAddress) = 0;
@@ -390,7 +390,7 @@ protected:
 
   // Perform lookup, select action and update cache state if necessary
   // Returns (was_hit, was_prefetch, Action)
-  virtual boost::tuple<bool, bool, Action> doRequest ( MemoryTransport        transport,
+  virtual std::tuple<bool, bool, Action> doRequest ( MemoryTransport        transport,
       bool                   has_maf_entry,
       TransactionTracker_p aWakingTracker =  TransactionTracker_p() ) = 0;
 

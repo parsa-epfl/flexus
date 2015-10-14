@@ -244,7 +244,7 @@ public:
   }
 
   boost::optional<maf_iter> getActive( MemoryAddress const & anAddress) {
-    maf_iter iter = theMshrs.find( boost::make_tuple( anAddress, false ) );
+    maf_iter iter = theMshrs.find( std::make_tuple( anAddress, false ) );
     if (iter == theMshrs.end()) {
       return boost::none;
     } else {
@@ -253,7 +253,7 @@ public:
   }
 
   std::pair< maf_iter, maf_iter > getAllEntries( MemoryAddress const & aBlockAddress) {
-    return theMshrs.equal_range( boost::make_tuple( aBlockAddress ) );
+    return theMshrs.equal_range( std::make_tuple( aBlockAddress ) );
   }
 
 };  // end class MissAddressFile
@@ -492,7 +492,7 @@ private:
     if (theWakeMAFAddress) {
       DBG_Assert( ! theMAF.getActive( *theWakeMAFAddress ));
       MissAddressFile::maf_iter iter, end;
-      boost::tie(iter, end) = theMAF.getAllEntries(*theWakeMAFAddress);
+      std::tie(iter, end) = theMAF.getAllEntries(*theWakeMAFAddress);
       //Can require 1 master, 1 front, 1 request, 1 snoop
       while ( iter != end && !qFrontSideOut.full() && !qBackSideOutRequest.full() && !qBackSideOutSnoop.full() && ! qMasterOut.full()) {
         //The only things that can be blocked on address in the MAF is a
@@ -914,7 +914,7 @@ private:
         drop( msg->address(), false, true); //Notify master only
         //Convert any blocked UpgradeReq's into WriteReq's
         MissAddressFile::maf_iter begin, end;
-        boost::tie(begin, end) = theMAF.getAllEntries( msg->address() );
+        std::tie(begin, end) = theMAF.getAllEntries( msg->address() );
         while (begin != end) {
           if (begin->isMemory() && begin->isBlocked() ) {
             if (begin->memoryTransport()[MemoryMessageTag]->type() == MemoryMessage::UpgradeReq) {
@@ -936,7 +936,7 @@ private:
       //Convert any blocked UpgradeReq's into WriteReq's
       case MemoryMessage::InvUpdateAck: {
         MissAddressFile::maf_iter begin, end;
-        boost::tie(begin, end) = theMAF.getAllEntries( msg->address() );
+        std::tie(begin, end) = theMAF.getAllEntries( msg->address() );
         while (begin != end) {
           if (begin->isMemory() && begin->isBlocked() ) {
             if (begin->memoryTransport()[MemoryMessageTag]->type() == MemoryMessage::UpgradeReq) {

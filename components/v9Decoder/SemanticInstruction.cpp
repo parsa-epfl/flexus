@@ -104,7 +104,7 @@ bool SemanticInstruction::mayRetire() const {
   FLEXUS_PROFILE();
   bool ok = theRetirementDepends[0] && theRetirementDepends[1] && theRetirementDepends[2] && theRetirementDepends[3];
   for (
-    std::list< boost::function< bool()> >::const_iterator iter = theRetirementConstraints.begin(),
+    std::list< std::function< bool()> >::const_iterator iter = theRetirementConstraints.begin(),
     end = theRetirementConstraints.end();
     ok && (iter != end) ;
     ++iter) {
@@ -177,19 +177,19 @@ bool SemanticInstruction::postValidate() {
   return ok;
 }
 
-void SemanticInstruction::addPrevalidation( boost::function< bool() > aValidation) {
+void SemanticInstruction::addPrevalidation( std::function< bool() > aValidation) {
   thePreValidations.push_back(aValidation);
 }
 
-void SemanticInstruction::addPostvalidation( boost::function< bool() > aValidation) {
+void SemanticInstruction::addPostvalidation( std::function< bool() > aValidation) {
   thePostValidations.push_back(aValidation);
 }
 
-void SemanticInstruction::addOverride( boost::function< void() > anOverride) {
+void SemanticInstruction::addOverride( std::function< void() > anOverride) {
   theOverrideFns.push_back(anOverride);
 }
 
-void SemanticInstruction::addRetirementConstraint( boost::function< bool() > aConstraint) {
+void SemanticInstruction::addRetirementConstraint( std::function< bool() > aConstraint) {
   theRetirementConstraints.push_back(aConstraint);
 }
 

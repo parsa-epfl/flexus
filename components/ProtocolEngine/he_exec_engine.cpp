@@ -377,7 +377,7 @@ void tHEExecEngine::handle_HE_INSTR_CPU_OP(tThread aThread, const uint32_t args)
 
   tCpuOpType operation;
   std::string operation_descr;
-  boost::tie( operation, operation_descr) = determineHECPUOp( args );
+  std::tie( operation, operation_descr) = determineHECPUOp( args );
 
   DBG_(Iface, ( << theEngineName
                 << " [" << aThread << "]"

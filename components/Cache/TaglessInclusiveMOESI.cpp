@@ -94,7 +94,7 @@ TaglessInclusiveMOESIControllerImpl::TaglessInclusiveMOESIControllerImpl ( Cache
 }
 
 // Perform lookup, select action and update cache state if necessary
-boost::tuple<bool, bool, Action> TaglessInclusiveMOESIControllerImpl::doRequest( MemoryTransport      transport,
+std::tuple<bool, bool, Action> TaglessInclusiveMOESIControllerImpl::doRequest( MemoryTransport      transport,
     bool                 has_maf_entry,
     TransactionTracker_p waking_tracker) {
   bool is_write = false;
@@ -115,7 +115,7 @@ boost::tuple<bool, bool, Action> TaglessInclusiveMOESIControllerImpl::doRequest(
   // For now, we stall ALL requests if we have an outstanding request for this block
   if (has_maf_entry) {
     //DBG_(Trace, ( << " Stalling request while we have a MAF entry, block state is " << lookup->state() << " : " << (*msg) ));
-    return boost::make_tuple(false, false, Action(kInsertMAF_WaitAddress, tracker));
+    return std::make_tuple(false, false, Action(kInsertMAF_WaitAddress, tracker));
   }
 
   // If this is a miss, then look in the Evict buffer
@@ -126,7 +126,7 @@ boost::tuple<bool, bool, Action> TaglessInclusiveMOESIControllerImpl::doRequest(
       // If we're in the process of evicting the block, wait for the evict to complete
       // to avoid any races
       if (evictee->pending()) {
-        return boost::make_tuple(false, false, Action(kInsertMAF_WaitEvict, tracker));
+        return std::make_tuple(false, false, Action(kInsertMAF_WaitEvict, tracker));
       }
 
       State block_state = evictee->state();
@@ -165,7 +165,7 @@ boost::tuple<bool, bool, Action> TaglessInclusiveMOESIControllerImpl::doRequest(
          && ((msg->type() == MemoryMessage::ReadReq) || (msg->type() == MemoryMessage::FetchReq))) {
       // Make sure any waiting snoops are also reads or fetches
       SnoopBuffer::snoop_iter end;
-      boost::tie(iter, end) = theSnoopBuffer.getWaitingEntries(getBlockAddress(msg->address()));
+      std::tie(iter, end) = theSnoopBuffer.getWaitingEntries(getBlockAddress(msg->address()));
       for (; iter != end; iter++) {
         if ( (iter->message->type() != MemoryMessage::ReadFwd)
              && (iter->message->type() != MemoryMessage::FetchFwd)) {
@@ -178,9 +178,9 @@ boost::tuple<bool, bool, Action> TaglessInclusiveMOESIControllerImpl::doRequest(
     }
     if (snoop_inval_pending) {
 #endif
-      return boost::make_tuple(false, false, Action(kInsertMAF_WaitSnoop, tracker));
+      return std::make_tuple(false, false, Action(kInsertMAF_WaitSnoop, tracker));
     } else if (theSnoopBuffer.hasEntry(getBlockAddress(msg->address() ) ) ) {
-      return boost::make_tuple(false, false, Action(kInsertMAF_WaitSnoop, tracker));
+      return std::make_tuple(false, false, Action(kInsertMAF_WaitSnoop, tracker));
     }
 
     if (msg->type() == MemoryMessage::UpgradeReq && lookup->state() == State::Invalid) {
@@ -427,7 +427,7 @@ boost::tuple<bool, bool, Action> TaglessInclusiveMOESIControllerImpl::doRequest(
       }
     }
 
-    return boost::make_tuple(!is_miss, was_prefetched, action);
+    return std::make_tuple(!is_miss, was_prefetched, action);
   }
 
   bool TaglessInclusiveMOESIControllerImpl::evictBlock(LookupResult_p victim) {
@@ -500,7 +500,7 @@ boost::tuple<bool, bool, Action> TaglessInclusiveMOESIControllerImpl::doRequest(
     // Look for an outstanding request
     MemoryMessage_p original_miss;
     TransactionTracker_p original_tracker;
-    boost::tie( original_miss, original_tracker) = theController->getWaitingMAFEntry( msg->address() );
+    std::tie( original_miss, original_tracker) = theController->getWaitingMAFEntry( msg->address() );
     bool waiting_maf = (original_miss != nullptr);
 
     State state = result->state();
@@ -1372,7 +1372,7 @@ boost::tuple<bool, bool, Action> TaglessInclusiveMOESIControllerImpl::doRequest(
           evEntry = theEvictBuffer.end();
           // Look for waiting entries in the snoop buffer that belong to this evict
           SnoopBuffer::snoop_iter iter, end;
-          boost::tie(iter, end) = theSnoopBuffer.getWaitingEntries(msg->address());
+          std::tie(iter, end) = theSnoopBuffer.getWaitingEntries(msg->address());
           for (; iter != end; iter++) {
             if (iter->transport[MemoryMessageTag]->isEvictType()) {
               theSnoopBuffer.remove(iter);

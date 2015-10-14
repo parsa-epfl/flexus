@@ -6,13 +6,9 @@
 #include <core/flexus.hpp>
 #include <core/stats.hpp>
 
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
-
 #include <algorithm>
 
 namespace nXactTimeBreakdown {
-namespace ll = boost::lambda;
 
 namespace {
 const char * kStallNames[] = {

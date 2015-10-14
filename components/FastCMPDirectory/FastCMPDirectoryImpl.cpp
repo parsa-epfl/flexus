@@ -8,10 +8,8 @@
 
 #include <core/performance/profile.hpp>
 
-#include <boost/lambda/lambda.hpp>
-#include <boost/bind.hpp>
 #include <boost/intrusive_ptr.hpp>
-#include <ext/hash_map>
+#include <unordered_map>
 
 #include <list>
 #include <fstream>
@@ -54,7 +52,7 @@ class FLEXUS_COMPONENT(FastCMPDirectory) {
 
   bool theAlwaysMulticast;
 
-  std::list<boost::function<void(void)> > theScheduledActions;
+  std::list<std::function<void(void)> > theScheduledActions;
 
   inline MemoryMessage::MemoryMessageType combineSnoopResponse( MemoryMessage::MemoryMessageType & a, MemoryMessage::MemoryMessageType & b) const {
 
@@ -108,7 +106,7 @@ public:
     FLEXUS_CHANNEL_ARRAY(RegionProbe, index) << msg;
   }
 
-  void scheduleDelayedAction(boost::function<void(void)> fn) {
+  void scheduleDelayedAction(std::function<void(void)> fn) {
     theScheduledActions.push_back(fn);
   }
 
@@ -160,9 +158,9 @@ public:
     theDirectory->setNumCores(theCMPWidth);
     theDirectory->setTopology(theTopology);
     theDirectory->setBlockSize(cfg.CoherenceUnit);
-    theDirectory->setPortOperations( boost::bind( &FastCMPDirectoryComponent::sendRegionProbe, this, _1, _2),
-                                     boost::bind( &FastCMPDirectoryComponent::scheduleDelayedAction, this, _1) );
-    theDirectory->setInvalidateAction( boost::bind( &FastCMPDirectoryComponent::invalidateBlock, this, _1, _2) );
+    theDirectory->setPortOperations( std::bind( &FastCMPDirectoryComponent::sendRegionProbe, this, _1, _2),
+                                     std::bind( &FastCMPDirectoryComponent::scheduleDelayedAction, this, _1) );
+    theDirectory->setInvalidateAction( std::bind( &FastCMPDirectoryComponent::invalidateBlock, this, _1, _2) );
     theDirectory->initialize(statName());
 
     theProtocol = CREATE_PROTOCOL(cfg.Protocol);
@@ -258,7 +256,7 @@ private:
     int cur_location;
     AbstractEntry_p dir_entry;
     std::list<TopologyMessage> msg_list;
-    std::list<boost::function<void(void)> > extra_actions;
+    std::list<std::function<void(void)> > extra_actions;
 
     std::tie(sharers, state, cur_location, dir_entry) = theDirectory->lookup(anIndex, addr, aMessage.type(), msg_list, extra_actions);
 

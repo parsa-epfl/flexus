@@ -3,9 +3,7 @@
 
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <boost/throw_exception.hpp>
-#include <boost/function.hpp>
-#include <boost/lambda/lambda.hpp>
-namespace ll = boost::lambda;
+#include <functional>
 
 #include <boost/none.hpp>
 

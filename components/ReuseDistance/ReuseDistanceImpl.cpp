@@ -4,7 +4,7 @@
 #include <iomanip>
 
 #include <boost/bind.hpp>
-#include <ext/hash_map>
+#include <unordered_map>
 
 #include <core/flexus.hpp>
 #include <core/stats.hpp>
@@ -193,7 +193,7 @@ class FLEXUS_COMPONENT(ReuseDistance) {
 
   } tReuseMapEntry;
 
-  typedef __gnu_cxx::hash_map < const block_address_t, // block address
+  typedef std::unordered_map < const block_address_t, // block address
           tReuseMapEntry,        // reuse map entry  pointer
           IntHash
           > tReuseMap;
@@ -201,7 +201,7 @@ class FLEXUS_COMPONENT(ReuseDistance) {
   tReuseMap theReuseMap;
 
   //////////////////// the PC-reuse-distance correlation stats
-  typedef __gnu_cxx::hash_map < const block_address_t, // pc block address
+  typedef std::unordered_map < const block_address_t, // pc block address
           tLineReuseDist,        // PC-reuse-distance correlation stats entry pointer
           IntHash
           > tPCCorrMap;

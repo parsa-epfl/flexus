@@ -89,7 +89,7 @@ private:
 
   /* Extra support for tracking number of entries by region, state, and requesters */
 
-  boost::function<MemoryAddress(MemoryAddress)> regionFunc;
+  std::function<MemoryAddress(MemoryAddress)> regionFunc;
 
   std::map< MemoryAddress, std::map<int, int> > theRegionRecorder;
 
@@ -102,10 +102,10 @@ private:
 
 public:
   MissAddressFile(int32_t aSize) : theSize(aSize), theReserve(0), theCurSize(0) {
-    regionFunc = boost::bind(&MissAddressFile::defaultRegionFunc, this, _1);
+    regionFunc = std::bind(&MissAddressFile::defaultRegionFunc, this, _1);
   }
 
-  void registerRegionFunc(boost::function<MemoryAddress(MemoryAddress)> func) {
+  void registerRegionFunc(std::function<MemoryAddress(MemoryAddress)> func) {
     regionFunc = func;
   }
 
@@ -113,15 +113,15 @@ public:
   typedef maf_t::index<by_order>::type::iterator order_iterator;
 
   iterator find(MemoryAddress address) {
-    return theMAF.find( boost::make_tuple(address) );
+    return theMAF.find( std::make_tuple(address) );
   }
 
   iterator findFirst(MemoryAddress address, MAFState state) {
-    return theMAF.find( boost::make_tuple(address, state) );
+    return theMAF.find( std::make_tuple(address, state) );
   }
 
   std::pair<iterator, iterator> findAll(MemoryAddress address, MAFState state) {
-    return theMAF.equal_range( boost::make_tuple(address, state) );
+    return theMAF.equal_range( std::make_tuple(address, state) );
   }
 
   order_iterator ordered_begin() {
@@ -172,7 +172,7 @@ public:
   }
 
   void setState(iterator & entry, MAFState state) {
-    theMAF.modify(entry, ll::bind( &MAFEntry::theState, ll::_1) = state);
+    theMAF.modify(entry, [state](auto& x){ return x.theState = state; }); //ll::bind( &MAFEntry::theState, ll::_1) = state);
   }
 
   void remove(iterator & entry) {
@@ -200,7 +200,7 @@ public:
   void wakeAfterEvict(iterator & entry) {
     theMAF.modify(entry, ll::bind( &MAFEntry::theState, ll::_1) = eWaking);
     iterator first, last, next;
-    boost::tie(first, last) = theMAF.equal_range( boost::make_tuple(entry->address(), eWaitRequest) );
+    std::tie(first, last) = theMAF.equal_range( std::make_tuple(entry->address(), eWaitRequest) );
     next = first;
     next++;
     for (; first != theMAF.end() && first != last; first = next, next++) {

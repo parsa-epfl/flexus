@@ -248,8 +248,8 @@ public:
     return iter->second;
   }
 
-  typedef boost::function<void(MemoryMessage & message)> message_function_t;
-  typedef boost::function<bool(uint64_t, bool, bool)> invalidate_function_t;
+  typedef std::function<void(MemoryMessage & message)> message_function_t;
+  typedef std::function<bool(uint64_t, bool, bool)> invalidate_function_t;
 
   CoherenceProtocol(message_function_t fwd, message_function_t cnt, invalidate_function_t inval)
     : forwardMessage(fwd), continueSnoop(cnt), sendInvalidate(inval) {}

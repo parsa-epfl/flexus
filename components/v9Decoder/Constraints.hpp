@@ -9,16 +9,16 @@ namespace nv9Decoder {
 
 struct SemanticInstruction;
 
-boost::function<bool()> membarStoreLoadConstraint( SemanticInstruction * anInstruction );
-boost::function<bool()> membarStoreStoreConstraint( SemanticInstruction * anInstruction );
-boost::function<bool()> membarSyncConstraint( SemanticInstruction * anInstruction );
-boost::function<bool()> loadMemoryConstraint( SemanticInstruction * anInstruction );
-boost::function<bool()> storeQueueAvailableConstraint( SemanticInstruction * anInstruction );
-boost::function<bool()> storeQueueEmptyConstraint( SemanticInstruction * anInstruction );
+std::function<bool()> membarStoreLoadConstraint( SemanticInstruction * anInstruction );
+std::function<bool()> membarStoreStoreConstraint( SemanticInstruction * anInstruction );
+std::function<bool()> membarSyncConstraint( SemanticInstruction * anInstruction );
+std::function<bool()> loadMemoryConstraint( SemanticInstruction * anInstruction );
+std::function<bool()> storeQueueAvailableConstraint( SemanticInstruction * anInstruction );
+std::function<bool()> storeQueueEmptyConstraint( SemanticInstruction * anInstruction );
 
-boost::function<void()> saveWillRaiseCondition( SemanticInstruction * anInstruction );
-boost::function<void()> restoreWillRaiseCondition( SemanticInstruction * anInstruction );
-boost::function<bool()> sideEffectStoreConstraint( SemanticInstruction * anInstruction );
+std::function<void()> saveWillRaiseCondition( SemanticInstruction * anInstruction );
+std::function<void()> restoreWillRaiseCondition( SemanticInstruction * anInstruction );
+std::function<bool()> sideEffectStoreConstraint( SemanticInstruction * anInstruction );
 
 } //nv9Decoder
 

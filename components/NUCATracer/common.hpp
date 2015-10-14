@@ -6,7 +6,7 @@
 #include <vector>
 #include <iostream>
 
-#include <boost/function.hpp>
+#include <functional>
 #include <boost/utility.hpp>
 #include <core/debug/debug.hpp>
 #include <core/stats.hpp>
@@ -15,7 +15,7 @@
 #include <core/target.hpp>
 #include <core/types.hpp>
 #include <core/boost_extensions/lexical_cast.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <components/Common/Slices/FillType.hpp>
 #include <components/Common/Slices/FillLevel.hpp>

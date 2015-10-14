@@ -5,10 +5,10 @@
 namespace nInorderSimicsFeeder {
 
 class SimicsCycleManager {
-  std::vector< boost::shared_ptr<SimicsTraceConsumer> > & theConsumers;
+  std::vector< std::shared_ptr<SimicsTraceConsumer> > & theConsumers;
 
 public:
-  SimicsCycleManager(std::vector< boost::shared_ptr<SimicsTraceConsumer> > & aConsumers, bool aClientServer)
+  SimicsCycleManager(std::vector< std::shared_ptr<SimicsTraceConsumer> > & aConsumers, bool aClientServer)
     : theConsumers(aConsumers) {
     for (uint32_t i = 0; i < theConsumers.size(); ++i) {
       std::string name("cpu");
@@ -24,7 +24,7 @@ public:
     }
   }
 
-  SimicsCycleManager(std::vector< boost::shared_ptr<SimicsTraceConsumer> > & aConsumers)
+  SimicsCycleManager(std::vector< std::shared_ptr<SimicsTraceConsumer> > & aConsumers)
     : theConsumers(aConsumers) {
     for (uint32_t i = 0; i < theConsumers.size(); ++i) {
       Simics::API::conf_object_t * cpu = Simics::API::SIM_get_processor( Simics::ProcessorMapper::mapFlexusIndex2ProcNum(i));

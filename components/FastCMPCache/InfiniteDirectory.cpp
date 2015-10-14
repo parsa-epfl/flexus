@@ -176,7 +176,7 @@ protected:
 
 public:
   virtual std::tuple<SharingVector, SharingState, AbstractEntry_p>
-  lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<boost::function<void(void)> > &xtra_actions) {
+  lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<std::function<void(void)> > &xtra_actions) {
 
     InfiniteDirectoryEntry_p entry = findEntry(address);
     SharingVector sharers;

@@ -1,8 +1,6 @@
 #define DBG_DeclareCategories MRPTrace
 #include DBG_Control()
 
-#include <boost/lambda/bind.hpp>
-
 #define HIST_DEPTH 4
 
 #include "MrpCommon.hpp"
@@ -79,7 +77,7 @@ public:
     , mySignatureTable(numSets, assoc)
     , stats(aName)
     , myPredictions(stats) {
-    Flexus::Stat::getStatManager()->addFinalizer( ll::bind( &MrpMain::finalizeStats, this) );
+    Flexus::Stat::getStatManager()->addFinalizer( []{ return this->finalizeStats(); });
   }
 
   uint32_t lastPrediction() {

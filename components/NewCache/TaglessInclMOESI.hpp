@@ -44,7 +44,7 @@ public:
     return theArray->blockOffset(anAddress);
   }
 
-  virtual boost::function<bool (MemoryAddress a, MemoryAddress b)> setCompareFn() const {
+  virtual std::function<bool (MemoryAddress a, MemoryAddress b)> setCompareFn() const {
     return theArray->setCompareFn();
   }
 
@@ -84,11 +84,11 @@ protected:
   }
 
   // Perform lookup, select action and update cache state if necessary
-  virtual boost::tuple<bool, bool, Action> doRequest ( MemoryTransport        transport,
+  virtual std::tuple<bool, bool, Action> doRequest ( MemoryTransport        transport,
       bool                   has_maf_entry,
       TransactionTracker_p aWakingTracker =  TransactionTracker_p() );
 #if 0
-  virtual boost::tuple<bool, bool, Action> doRequest ( MemoryMessage_p        msg,
+  virtual std::tuple<bool, bool, Action> doRequest ( MemoryMessage_p        msg,
       TransactionTracker_p   tracker,
       bool                   has_maf_entry,
       TransactionTracker_p aWakingTracker =  TransactionTracker_p() );

@@ -1,7 +1,7 @@
 #ifndef FLEXUS_SLICES__MEMOP_HPP_INCLUDED
 #define FLEXUS_SLICES__MEMOP_HPP_INCLUDED
 
-#include <boost/function.hpp>
+#include <functional>
 #include <boost/dynamic_bitset.hpp>
 
 #include <components/CommonQEMU/Slices/AbstractInstruction.hpp>

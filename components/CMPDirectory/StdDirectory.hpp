@@ -137,10 +137,10 @@ private:
       return LookupResult_p(new LookupResult(this, nullptr, anAddress, false));
     }
 
-    virtual boost::tuple<bool, bool, MemoryAddress, _State> allocate(LookupResult_p lookup, MemoryAddress anAddress, const _State & aState) {
+    virtual std::tuple<bool, bool, MemoryAddress, _State> allocate(LookupResult_p lookup, MemoryAddress anAddress, const _State & aState) {
       int32_t i = pickVictim();
       if (i < 0) {
-        return boost::make_tuple(false, false, anAddress, aState);
+        return std::make_tuple(false, false, anAddress, aState);
       }
       MemoryAddress v_addr(theBlocks[i].tag());
       _State v_state(theBlocks[i].state());
@@ -149,7 +149,7 @@ private:
       lookup->theBlock = &(theBlocks[i]);
       lookup->isValid = true;
       lookup->theAddress = anAddress;
-      return boost::make_tuple(true, !v_state.noSharers(), v_addr, v_state);
+      return std::make_tuple(true, !v_state.noSharers(), v_addr, v_state);
     }
 
     virtual int32_t pickVictim() {
@@ -302,7 +302,7 @@ public:
     bool success, has_victim;
     _State v_state(0);
     MemoryAddress v_addr;
-    boost::tie(success, has_victim, v_addr, v_state) =
+    std::tie(success, has_victim, v_addr, v_state) =
       std_lookup->theSet->allocate(std_lookup, address, state);
 
     if (has_victim) {

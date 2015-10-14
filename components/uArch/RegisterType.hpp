@@ -1,7 +1,7 @@
 #ifndef FLEXUS_uARCH_REGISTERTYPE_HPP_INCLUDED
 #define FLEXUS_uARCH_REGISTERTYPE_HPP_INCLUDED
 
-#include <boost/function.hpp>
+#include <functional>
 
 #include <components/Common/Slices/AbstractInstruction.hpp>
 

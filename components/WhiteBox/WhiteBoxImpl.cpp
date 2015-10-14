@@ -95,7 +95,7 @@ struct WhiteBoxImpl : WhiteBox {
           if (cpu_num == (static_cast<int> ( i )) ) {
             bool ignored1, ignored2;
             PhysicalMemoryAddress paddr;
-            boost::tie( paddr, ignored1, ignored2) = cpu->translateTSB_SimicsImpl(VirtualMemoryAddress(cpu_ptr + 0x10), 4 /*NUCLEUS*/ );
+            std::tie( paddr, ignored1, ignored2) = cpu->translateTSB_SimicsImpl(VirtualMemoryAddress(cpu_ptr + 0x10), 4 /*NUCLEUS*/ );
             theThreadTs[i] = paddr;
             DBG_(Dev, ( << "CPU[" << i << "] thread_t point at paddr: " <<  std::hex << theThreadTs[i] << std::dec ) );
             cpu_ptr = VirtualMemoryAddress(cpu->readVAddr(VirtualMemoryAddress(cpu_ptr + 0x48), 4 /*NUCLEUS*/, 8)); //next CPU pointer at offset 0x48
@@ -148,7 +148,7 @@ struct WhiteBoxImpl : WhiteBox {
           if (cpu_num == (static_cast<int> ( i )) ) {
             bool ignored1, ignored2;
             PhysicalMemoryAddress paddr;
-            boost::tie( paddr, ignored1, ignored2) = cpu->translateTSB_SimicsImpl(VirtualMemoryAddress(cpu_ptr + 0x18), 4 /*NUCLEUS*/ );
+            std::tie( paddr, ignored1, ignored2) = cpu->translateTSB_SimicsImpl(VirtualMemoryAddress(cpu_ptr + 0x18), 4 /*NUCLEUS*/ );
             theIdleThreadTs[i] = paddr;
             DBG_(Dev, ( << "CPU[" << i << "] idle_thread_t point at paddr: " <<  std::hex << theIdleThreadTs[i] << std::dec ) );
             cpu_ptr = VirtualMemoryAddress(cpu->readVAddr(VirtualMemoryAddress(cpu_ptr + 0x48), 4 /*NUCLEUS*/, 8)); //next CPU pointer at offset 0x48

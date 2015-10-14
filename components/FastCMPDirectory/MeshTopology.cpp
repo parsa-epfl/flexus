@@ -5,12 +5,9 @@
 #include <components/FastCMPDirectory/SharingVector.hpp>
 #include <components/FastCMPDirectory/Utility.hpp>
 
-#include <boost/lambda/lambda.hpp>
-
 #include <cmath>
 
 using namespace Flexus::SharedTypes;
-using namespace boost::lambda;
 
 namespace nFastCMPDirectory {
 

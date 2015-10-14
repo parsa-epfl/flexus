@@ -1,4 +1,4 @@
-#include <boost/function.hpp>
+#include <functional>
 
 #ifndef FLEXUS_CORE_FLEXUS_HPP__INCLUDED
 #define FLEXUS_CORE_FLEXUS_HPP__INCLUDED
@@ -35,7 +35,7 @@ public:
   virtual int32_t breakCPU() const = 0;
   virtual int32_t breakInsn() const = 0;
 
-  virtual void onTerminate( boost::function<void () > ) = 0;
+  virtual void onTerminate( std::function<void () > ) = 0;
   virtual void terminateSimulation() = 0;
   virtual void quiesce() = 0;
   virtual void quiesceAndSave(uint32_t aSaveNum) = 0;

@@ -52,7 +52,7 @@ bool tThreadScheduler::isQueueStalled(tVC aQueue) {
 
 void tThreadScheduler::releaseAllQueues(tThread aThread) {
   tThreadToStalledQueueMap::iterator  first_match, iter, last_match;
-  boost::tie(first_match, last_match) = theThreadToStalledQueueMap.equal_range(aThread);
+  std::tie(first_match, last_match) = theThreadToStalledQueueMap.equal_range(aThread);
 
   iter = first_match;
   while (iter != last_match) {
@@ -98,7 +98,7 @@ void tThreadScheduler::unblockThreads(tThread aThread) {
     tThreadMap::iterator first_thread;
     tThreadMap::iterator last_thread;
 
-    boost::tie(first_thread, last_thread) = theLiveThreads.equal_range(aThread.address());
+    std::tie(first_thread, last_thread) = theLiveThreads.equal_range(aThread.address());
     while (first_thread != last_thread) {
       if (  first_thread->second.isState( eRunnable )
             || first_thread->second.isState( eWaiting )
@@ -134,7 +134,7 @@ void tThreadScheduler::reclaimThread(tThread aThread) {
   tThreadMap::iterator first_match;
   tThreadMap::iterator last_match;
 
-  boost::tie(first_match, last_match) = theLiveThreads.equal_range(aThread.address());
+  std::tie(first_match, last_match) = theLiveThreads.equal_range(aThread.address());
 
   while (first_match != last_match) {
     if (first_match->second == aThread) {

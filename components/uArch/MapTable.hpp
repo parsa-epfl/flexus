@@ -6,10 +6,7 @@
 #include <vector>
 
 #include <boost/iterator/counting_iterator.hpp>
-#include <boost/lambda/lambda.hpp>
 #include "RegisterType.hpp"
-
-namespace ll = boost::lambda;
 
 namespace nuArch {
 
@@ -208,22 +205,26 @@ struct PhysicalMap {
     std::vector<pRegister> registers;
     registers.resize( theRegisterCount );
 
-    std::for_each
-    ( theMappings.begin()
-      , theMappings.end()
-      , ++ ll::var(registers) [ ll::_1 ]
-    );
+    for(const auto& aMapping: theMappings)
+      ++registers[aMapping];
+    // std::for_each
+    // ( theMappings.begin()
+    //   , theMappings.end()
+    //   , ++ ll::var(registers) [ ll::_1 ]
+    // );
 
-    std::for_each
-    ( theFreeList.begin()
-      , theFreeList.end()
-      , ++ ll::var(registers) [ ll::_1 ]
-    );
+    for(const auto& aFree: theFreeList)
+      ++registers[aFree];
+    //std::for_each
+    // ( theFreeList.begin()
+    //   , theFreeList.end()
+    //   , ++ ll::var(registers) [ ll::_1 ]
+    // );
 
     if ( std::find_if
          ( registers.begin()
            , registers.end()
-           , ll::_1 > 1U
+           , [](const auto& x){ return x > 1U; }//ll::_1 > 1U
          )
          != registers.end()
        ) {
@@ -241,11 +242,13 @@ struct PhysicalMap {
       if ((i & 7) == 7 ) anOstream << "\n\t";
     }
     anOstream << "\n\tFree List\n\t";
-    std::for_each
-    ( theFreeList.begin()
-      , theFreeList.end()
-      , ll::var(anOstream) << 'p' << ll::_1 << ' '
-    );
+    for(const auto& aFree: theFreeList)
+      anOstream << 'p' << aFree << ' ';
+    // std::for_each
+    // ( theFreeList.begin()
+    //   , theFreeList.end()
+    //   , ll::var(anOstream) << 'p' << ll::_1 << ' '
+    // );
     anOstream << std::endl;
   }
 
@@ -256,11 +259,13 @@ struct PhysicalMap {
     }
   }
   void dumpFreeList(std::ostream & anOstream) {
-    std::for_each
-    ( theFreeList.begin()
-      , theFreeList.end()
-      , ll::var(anOstream) << 'p' << ll::_1 << ' '
-    );
+    for(const auto& aFree: theFreeList)
+      anOstream << 'p' << aFree << ' ';
+    // std::for_each
+    // ( theFreeList.begin()
+    //   , theFreeList.end()
+    //   , ll::var(anOstream) << 'p' << ll::_1 << ' '
+    // );
     anOstream << std::endl;
   }
   void dumpReverseMappings(std::ostream & anOstream) {

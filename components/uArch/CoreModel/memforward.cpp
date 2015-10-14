@@ -170,7 +170,7 @@ boost::optional< memq_t::index< by_insn >::type::iterator > CoreImpl::snoopStore
     }
   } else {
     memq_t::index< by_paddr >::type::iterator load = theMemQueue.project< by_paddr >(aLoad);
-    memq_t::index< by_paddr >::type::iterator oldest_match = theMemQueue.get<by_paddr>().lower_bound( boost::make_tuple(aLoad->thePaddr_aligned));
+    memq_t::index< by_paddr >::type::iterator oldest_match = theMemQueue.get<by_paddr>().lower_bound( std::make_tuple(aLoad->thePaddr_aligned));
     aCachedSnoopState = snoopQueue( load, oldest_match, aLoad);
   }
 
@@ -187,7 +187,7 @@ void CoreImpl::updateDependantLoads( memq_t::index< by_insn >::type::iterator an
 
   memq_t::index< by_paddr >::type::iterator updated_store = theMemQueue.project< by_paddr >(anUpdatedStore);
   memq_t::index< by_paddr >::type::iterator iter, entry, last_match;
-  last_match = theMemQueue.get<by_paddr>().upper_bound( boost::make_tuple(updated_store->thePaddr_aligned ));
+  last_match = theMemQueue.get<by_paddr>().upper_bound( std::make_tuple(updated_store->thePaddr_aligned ));
 
   //Loads with higher sequence numbers than anUpdatedStore must be squashed and obtain their new value
   boost::optional< memq_t::index< by_insn >::type::iterator > cached_search;
@@ -203,8 +203,8 @@ void CoreImpl::updateDependantLoads( memq_t::index< by_insn >::type::iterator an
       bool research = (iter != last_match);
       cached_search = doLoad( theMemQueue.project<by_insn>(entry), cached_search );
       if ( research ) {
-        iter = theMemQueue.get<by_paddr>().lower_bound( boost::make_tuple(updated_store->thePaddr_aligned, seq_no) );
-        last_match = theMemQueue.get<by_paddr>().upper_bound( boost::make_tuple(updated_store->thePaddr_aligned) );
+        iter = theMemQueue.get<by_paddr>().lower_bound( std::make_tuple(updated_store->thePaddr_aligned, seq_no) );
+        last_match = theMemQueue.get<by_paddr>().upper_bound( std::make_tuple(updated_store->thePaddr_aligned) );
       }
     } else if ( entry->isStore() && (entry->status() != kAnnulled) && intersects( *updated_store, *entry) ) {
       DBG_( Verb, ( << "Search terminated at " << *entry ) );
@@ -236,14 +236,14 @@ void CoreImpl::applyAllStores( memq_t::index< by_insn >::type::iterator aLoad ) 
   DBG_( Verb, ( << theName << " Partial snoop applying stores: " << *aLoad) );
   //Need to apply every overlapping store to the value of this load.
   memq_t::index< by_paddr >::type::iterator load = theMemQueue.project< by_paddr >(aLoad);
-  memq_t::index< by_paddr >::type::iterator oldest_match = theMemQueue.get<by_paddr>().lower_bound( boost::make_tuple(aLoad->thePaddr_aligned));
+  memq_t::index< by_paddr >::type::iterator oldest_match = theMemQueue.get<by_paddr>().lower_bound( std::make_tuple(aLoad->thePaddr_aligned));
   applyStores( oldest_match, load, aLoad);
 
   if ((aLoad->theASI == 0x24) || (aLoad->theASI == 0x2C)) {
     DBG_( Verb, ( << theName << " Partial snoop applying stores: " << *aLoad) );
     //Need to apply every overlapping store to the value of this load.
-    memq_t::index< by_paddr >::type::iterator end = theMemQueue.get<by_paddr>().upper_bound( boost::make_tuple(aLoad->thePaddr_aligned + 8) );
-    memq_t::index< by_paddr >::type::iterator it  = theMemQueue.get<by_paddr>().lower_bound( boost::make_tuple(aLoad->thePaddr_aligned + 8) );
+    memq_t::index< by_paddr >::type::iterator end = theMemQueue.get<by_paddr>().upper_bound( std::make_tuple(aLoad->thePaddr_aligned + 8) );
+    memq_t::index< by_paddr >::type::iterator it  = theMemQueue.get<by_paddr>().lower_bound( std::make_tuple(aLoad->thePaddr_aligned + 8) );
     do {
       DBG_(Verb, ( << theName << " QW Snoop applying " << *it << " to " << *aLoad));
       overlay(*it, *aLoad, true /* ext */);

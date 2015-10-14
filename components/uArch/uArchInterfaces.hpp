@@ -4,7 +4,7 @@
 #include <bitset>
 #include <list>
 
-#include <boost/function.hpp>
+#include <functional>
 #include <core/debug/debug.hpp>
 #include <core/metaprogram.hpp>
 #include <boost/variant.hpp>
@@ -181,9 +181,9 @@ struct uArchOptions_t {
   eConsistencyModel
   consistencyModel;
   uint32_t  coherenceUnit;
-  boost::function< boost::tuple< PhysicalMemoryAddress, bool, bool> ( VirtualMemoryAddress, int32_t ) >
+  std::function< std::tuple< PhysicalMemoryAddress, bool, bool> ( VirtualMemoryAddress, int32_t ) >
   translate;
-  boost::function< PhysicalMemoryAddress ( VirtualMemoryAddress ) >
+  std::function< PhysicalMemoryAddress ( VirtualMemoryAddress ) >
   translatePC;
   bool          speculativeOrder;
   bool          speculateOnAtomicValue;
@@ -311,8 +311,8 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction {
 
 struct InstructionDependance {
   boost::intrusive_ptr< Instruction > instruction; //For lifetime control
-  boost::function < void() > squash;
-  boost::function < void() > satisfy;
+  std::function < void() > squash;
+  std::function < void() > satisfy;
 };
 
 struct Interaction : public boost::counted_base {
@@ -634,7 +634,7 @@ struct uArch {
   virtual void bypass(mapped_reg aReg, register_value aValue) {
     DBG_Assert(false);
   }
-  virtual void connectBypass(mapped_reg aReg, boost::intrusive_ptr<Instruction> inst, boost::function<bool(register_value)> ) {
+  virtual void connectBypass(mapped_reg aReg, boost::intrusive_ptr<Instruction> inst, std::function<bool(register_value)> ) {
     DBG_Assert(false);
   }
   //virtual void disconnectBypass(mapped_reg aReg, boost::intrusive_ptr<Instruction> inst) { DBG_Assert(false); }

@@ -132,9 +132,9 @@ class SimicsTracerImpl {
   TracerStats * theBothStats;
 
   MemoryMessage theMemoryMessage;
-  boost::function< void(int, MemoryMessage &) > toL1D;
-  boost::function< void(int, MemoryMessage &, uint32_t) > toL1I;
-  boost::function< void(int, MemoryMessage &) > toNAW;
+  std::function< void(int, MemoryMessage &) > toL1D;
+  std::function< void(int, MemoryMessage &, uint32_t) > toL1I;
+  std::function< void(int, MemoryMessage &) > toNAW;
 
 public:
   SimicsTracerImpl(API::conf_object_t * anUnderlyingObject)
@@ -147,7 +147,7 @@ public:
   }
 
   // Initialize the tracer to the desired CPU
-  void init(API::conf_object_t * aCPU, index_t anIndex, boost::function< void(int, MemoryMessage &) > aToL1D, boost::function< void(int, MemoryMessage &, uint32_t) > aToL1I, boost::function< void(int, MemoryMessage &) > aToNAW) {
+  void init(API::conf_object_t * aCPU, index_t anIndex, std::function< void(int, MemoryMessage &) > aToL1D, std::function< void(int, MemoryMessage &, uint32_t) > aToL1I, std::function< void(int, MemoryMessage &) > aToNAW) {
     theCPU = aCPU;
     theIndex = anIndex;
     toL1D = aToL1D;
@@ -435,7 +435,7 @@ class DMATracerImpl {
   int32_t theVM;
 
   MemoryMessage theMemoryMessage;
-  boost::function< void(int, MemoryMessage &) > toDMA;
+  std::function< void(int, MemoryMessage &) > toDMA;
 
 public:
   DMATracerImpl(API::conf_object_t * anUnderlyingObjec)
@@ -444,7 +444,7 @@ public:
   {}
 
   // Initialize the tracer to the desired CPU
-  void init(API::conf_object_t * aMapObject, int32_t aVM, boost::function< void(int, MemoryMessage &) > aToDMA) {
+  void init(API::conf_object_t * aMapObject, int32_t aVM, std::function< void(int, MemoryMessage &) > aToDMA) {
     theMapObject = aMapObject;
     toDMA = aToDMA;
     theVM = aVM;
@@ -503,13 +503,13 @@ class SimicsTracerManagerImpl : public SimicsTracerManager {
   bool theClientServer;
   SimicsTracer * theTracers;
   DMATracer * theDMATracer;
-  boost::function< void(int, MemoryMessage &) > toL1D;
-  boost::function< void(int, MemoryMessage &, uint32_t) > toL1I;
-  boost::function< void(int, MemoryMessage &) > toDMA;
-  boost::function< void(int, MemoryMessage &) > toNAW;
+  std::function< void(int, MemoryMessage &) > toL1D;
+  std::function< void(int, MemoryMessage &, uint32_t) > toL1I;
+  std::function< void(int, MemoryMessage &) > toDMA;
+  std::function< void(int, MemoryMessage &) > toNAW;
 
 public:
-  SimicsTracerManagerImpl(int32_t aNumCPUs, boost::function< void(int, MemoryMessage &) > aToL1D, boost::function< void(int, MemoryMessage &, uint32_t) > aToL1I, boost::function< void(int, MemoryMessage &) > aToDMA, boost::function< void(int, MemoryMessage &) > aToNAW)
+  SimicsTracerManagerImpl(int32_t aNumCPUs, std::function< void(int, MemoryMessage &) > aToL1D, std::function< void(int, MemoryMessage &, uint32_t) > aToL1I, std::function< void(int, MemoryMessage &) > aToDMA, std::function< void(int, MemoryMessage &) > aToNAW)
     : theNumCPUs(aNumCPUs)
     , theNumVMs(1)
     , theVirtualized(false)
@@ -1027,7 +1027,7 @@ private:
 
 };
 
-SimicsTracerManager * SimicsTracerManager::construct(int32_t aNumCPUs, boost::function< void(int, MemoryMessage &) > toL1D, boost::function< void(int, MemoryMessage &, uint32_t) > toL1I, boost::function< void(int, MemoryMessage &) > toDMA, boost::function< void(int, MemoryMessage &) > toNAW) {
+SimicsTracerManager * SimicsTracerManager::construct(int32_t aNumCPUs, std::function< void(int, MemoryMessage &) > toL1D, std::function< void(int, MemoryMessage &, uint32_t) > toL1I, std::function< void(int, MemoryMessage &) > toDMA, std::function< void(int, MemoryMessage &) > toNAW) {
   return new SimicsTracerManagerImpl(aNumCPUs, toL1D, toL1I, toDMA, toNAW);
 }
 

@@ -18,7 +18,7 @@
 
 #include <iomanip>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 namespace Flexus {
 namespace Simics {
@@ -99,7 +99,7 @@ class FLEXUS_COMPONENT(InorderSimicsFeeder) {
   int32_t theNumVMs;
   SimicsTracer * theTracers;
 
-  std::vector< boost::shared_ptr<SimicsTraceConsumer> > theConsumers;
+  std::vector< std::shared_ptr<SimicsTraceConsumer> > theConsumers;
 
   boost::scoped_ptr<SimicsCycleManager> theSimicsCycleManager;
 
@@ -253,7 +253,7 @@ public:
       } else {
         name = "sys-feeder" ;
       }
-      theConsumers.push_back( boost::shared_ptr<SimicsTraceConsumer>(new SimicsTraceConsumer(name)) );
+      theConsumers.push_back( std::shared_ptr<SimicsTraceConsumer>(new SimicsTraceConsumer(name)) );
     }
 
 #if 0

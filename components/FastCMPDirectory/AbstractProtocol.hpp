@@ -3,7 +3,7 @@
 
 #include <components/Common/Slices/MemoryMessage.hpp>
 #include <components/FastCMPDirectory/AbstractFactory.hpp>
-#include <ext/hash_map>
+#include <unordered_map>
 
 #include <core/types.hpp>
 

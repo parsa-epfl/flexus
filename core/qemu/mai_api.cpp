@@ -8,10 +8,8 @@
 
 #include <boost/regex.hpp>
 #include <boost/throw_exception.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/function.hpp>
-#include <boost/lambda/bind.hpp>
-namespace ll = boost::lambda;
+#include <memory>
+#include <functional>
 
 #include <core/target.hpp>
 #include <core/types.hpp>
@@ -30,7 +28,7 @@ void onInterrupt (void * aPtr, Qemu::API::conf_object_t * anObj, long long aVect
 
 struct InterruptManager {
   int theHandle;
-  typedef std::map< Qemu::API::conf_object_t *, boost::function< void( long long) > > dispatch_map;
+  typedef std::map< Qemu::API::conf_object_t *, std::function< void( long long) > > dispatch_map;
   dispatch_map theInterruptDispatch;
 
   void registerHAP() {
@@ -38,7 +36,7 @@ struct InterruptManager {
     //theHandle = API::SIM_hap_add_callback( "Core_Asynchronous_Trap", reinterpret_cast< API::obj_hap_func_t>(&onInterrupt), 0);
   }
 
-  void registerCPU(API::conf_object_t * aCPU, boost::function< void( long long) > aDispatchFn ) {
+  void registerCPU(API::conf_object_t * aCPU, std::function< void( long long) > aDispatchFn ) {
     if (theInterruptDispatch.empty()) {
       registerHAP();
     }
@@ -62,7 +60,7 @@ void onInterrupt (void * aPtr, API::conf_object_t * anObj, long long aVector) {
 
 void v9ProcessorImpl::initialize() {
   DBG_( Dev, ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] Registering for interrupts "));
-  theInterruptManager.registerCPU( *this, ll::bind( &v9ProcessorImpl::handleInterrupt, this, ll::_1 ) );
+  theInterruptManager.registerCPU( *this, [this](int64_t x){ return this->handleInterrupt(x); });//ll::bind( &v9ProcessorImpl::handleInterrupt, this, ll::_1 ) );
 }
 
 void v9ProcessorImpl::handleInterrupt( long long aVector) {

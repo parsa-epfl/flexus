@@ -152,7 +152,7 @@ public:
 
   void reset(Flexus::SharedTypes::PhysicalMemoryAddress addr) {
     theAddress = addr;
-    std::for_each(theWays.begin(), theWays.end(), boost::lambda::_1 = -1);
+    for(auto& aWay: theWays) aWay = -1;
     owner = -1;
     shared = true;
   }

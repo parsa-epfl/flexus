@@ -5,7 +5,7 @@
 #include <components/FastCMPDirectory/SharingVector.hpp>
 #include <components/FastCMPDirectory/AbstractProtocol.hpp>
 #include <components/FastCMPDirectory/Utility.hpp>
-#include <ext/hash_map>
+#include <unordered_map>
 
 #include <boost/lambda/if.hpp>
 #include <boost/lambda/casts.hpp>
@@ -109,7 +109,7 @@ private:
       return (std::size_t)(addr >> 10);
     }
   };
-  typedef __gnu_cxx::hash_map<PhysicalMemoryAddress, InfiniteRegionDirectoryEntry_p, AddrHash> inf_region_dir_t;
+  typedef std::unordered_map<PhysicalMemoryAddress, InfiniteRegionDirectoryEntry_p, AddrHash> inf_region_dir_t;
   inf_region_dir_t theDirectory;
 
   uint64_t theBlockSize;
@@ -221,7 +221,7 @@ protected:
   InfiniteRegionDirectoryEntry * findOrCreateEntry(PhysicalMemoryAddress addr) {
     inf_region_dir_t::iterator iter;
     bool success;
-    boost::tie(iter, success) = theDirectory.insert( std::make_pair<PhysicalMemoryAddress, InfiniteRegionDirectoryEntry_p>(getRegion(addr), InfiniteRegionDirectoryEntry_p()) );
+    std::tie(iter, success) = theDirectory.insert( std::make_pair<PhysicalMemoryAddress, InfiniteRegionDirectoryEntry_p>(getRegion(addr), InfiniteRegionDirectoryEntry_p()) );
     if (success) {
       iter->second = new InfiniteRegionDirectoryEntry(getRegion(addr), theBlocksPerRegion);
     }
@@ -238,7 +238,7 @@ protected:
 
 public:
   virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
-  lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) {
+  lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<std::function<void(void)> > &xtra_actions) {
 
     InfiniteRegionDirectoryEntry_p entry = findEntry(address);
     SharingVector sharers;

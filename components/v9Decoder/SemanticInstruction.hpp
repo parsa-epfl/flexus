@@ -1,7 +1,7 @@
 #ifndef FLEXUS_v9DECODER_SEMANTICINSTRUCTION_HPP_INCLUDED
 #define FLEXUS_v9DECODER_SEMANTICINSTRUCTION_HPP_INCLUDED
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/dynamic_bitset.hpp>
 
 #include <components/uArch/uArchInterfaces.hpp>
@@ -31,11 +31,11 @@ private:
 
   boost::intrusive_ptr< BranchFeedback > theBranchFeedback;
 
-  std::list< boost::function< bool() > > theRetirementConstraints;
+  std::list< std::function< bool() > > theRetirementConstraints;
 
-  std::list< boost::function< bool() > > thePreValidations;
-  std::list< boost::function< bool() > > thePostValidations;
-  std::list< boost::function< void() > > theOverrideFns;
+  std::list< std::function< bool() > > thePreValidations;
+  std::list< std::function< bool() > > thePostValidations;
+  std::list< std::function< void() > > theOverrideFns;
 
   bool theOverrideSimics;
   bool thePrevalidationsPassed;
@@ -133,11 +133,11 @@ public:
   void addAnnulmentEffect( Effect * );
   void addReinstatementEffect( Effect * );
 
-  void addRetirementConstraint( boost::function< bool()> );
+  void addRetirementConstraint( std::function< bool()> );
 
-  void addOverride( boost::function< void()> anOverrideFn);
-  void addPrevalidation( boost::function< bool() > aValidation);
-  void addPostvalidation( boost::function< bool() > aValidation);
+  void addOverride( std::function< void()> anOverrideFn);
+  void addPrevalidation( std::function< bool() > aValidation);
+  void addPostvalidation( std::function< bool() > aValidation);
 
   void describe(std::ostream & anOstream) const;
 

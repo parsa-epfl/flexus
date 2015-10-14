@@ -134,9 +134,9 @@ public:
     }
 
     theProtocol = GenerateCoherenceProtocol(cfg.Protocol, cfg.UsingTraces,
-                                            boost::bind( &FastCacheComponent::forwardMessage, this, _1),
-                                            boost::bind( &FastCacheComponent::continueSnoop, this, _1),
-                                            boost::bind( &FastCacheComponent::sendInvalidate, this, _1, _2, _3),
+                                            [this](auto& msg){ return this->forwardMessage(msg); },
+                                            [this](auto& msg){ return this->continueSnoop(msg);}, 
+                                            [this](uint64_t addr, bool icache, bool dcache){ return this->sendInvalidate(addr, icache, dcache); },
                                             cfg.DowngradeLRU,
                                             cfg.SnoopLRU);
     theStats = new CacheStats(statName());
@@ -164,8 +164,8 @@ public:
                               cfg.BlockSize,
                               num_sets,
                               cfg.Associativity,
-                              boost::bind( &FastCacheComponent::evict, this, _1, _2),
-                              boost::bind( &FastCacheComponent::sendInvalidate, this, _1, _2, _3),
+                              [this](uint64_t aTagset, CoherenceState_t aLineState){ return this->evict(aTagset, aLineState); },
+                              [this](uint64_t addr, bool icache, bool dcache){ return this->sendInvalidate(addr, icache, dcache); },
                               theIndex,
                               cfg.CacheLevel,
                               cfg.RTReplPolicy,
@@ -175,9 +175,9 @@ public:
       theCache = new RTCache( cfg.BlockSize,
                               num_sets,
                               cfg.Associativity,
-                              boost::bind( &FastCacheComponent::evict, this, _1, _2),
-                              boost::bind( &FastCacheComponent::evictRegion, this, _1, _2),
-                              boost::bind( &FastCacheComponent::sendInvalidate, this, _1, _2, _3),
+                              [this](uint64_t aTagset, CoherenceState_t aLineState){ return this->evict(aTagset, aLineState); },
+                              [this](uint64_t aTagset, int32_t owner){ return this->evictRegion(aTagset, owner); },
+                              [this](uint64_t addr, bool icache, bool dcache){ return this->sendInvalidate(addr, icache, dcache); },
                               theIndex,
                               cfg.CacheLevel,
                               cfg.RegionSize,
@@ -311,7 +311,7 @@ public:
     CoherenceProtocol::StatMemberPtr stat_ptr;
 
     // Determine Actions based on state and snoop type
-    boost::tie(fn_ptr, stat_ptr) = theProtocol->getSnoopAction(snp_lookup->getState(), aMessage.type());
+    std::tie(fn_ptr, stat_ptr) = theProtocol->getSnoopAction(snp_lookup->getState(), aMessage.type());
 
     // Perform Actions
     (*fn_ptr)(snp_lookup, aMessage);

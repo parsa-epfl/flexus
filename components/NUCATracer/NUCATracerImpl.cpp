@@ -59,7 +59,7 @@ public:
     if (cfg.OnSwitch) {
       mkdir(cfg.TraceOutPath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
       theCoordinator = new tCoordinator(cfg.TraceOutPath.c_str(), false /* create the files */ );
-      theFlexus->onTerminate( boost::bind( &TraceCoordinator::finalize, theCoordinator) );
+      theFlexus->onTerminate( std::bind( &TraceCoordinator::finalize, theCoordinator) );
     }
   }
 

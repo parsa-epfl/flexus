@@ -56,11 +56,11 @@ protected:
   } theDirectoryLocation;
 
   struct Port_Fn_t {
-    boost::function<void (RegionScoutMessage &, int)> sendRegionProbe;
-    boost::function<void (boost::function<void(void)>)> scheduleDelayedAction;
+    std::function<void (RegionScoutMessage &, int)> sendRegionProbe;
+    std::function<void (std::function<void(void)>)> scheduleDelayedAction;
   } thePorts;
 
-  boost::function<void (PhysicalMemoryAddress, SharingVector)> theInvalidateAction;
+  std::function<void (PhysicalMemoryAddress, SharingVector)> theInvalidateAction;
 
   inline int32_t address2Tile(PhysicalMemoryAddress addr) {
     return (( addr >> theTileShift ) & theTileMask);
@@ -119,7 +119,7 @@ public:
   virtual ~AbstractDirectory() {}
 
   virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
-  lookup(int, PhysicalMemoryAddress, MMType, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) = 0;
+  lookup(int, PhysicalMemoryAddress, MMType, std::list<TopologyMessage> &msgs, std::list<std::function<void(void)> > &xtra_actions) = 0;
 
   virtual int32_t processSnoopResponse(int32_t index, const MMType & type, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
     switch (type) {
@@ -226,13 +226,13 @@ public:
     theBlockSize = size;
   }
 
-  void setPortOperations( boost::function<void (RegionScoutMessage &, int)> regionProbe,
-                          boost::function<void(boost::function<void(void)>)> delayedAction) {
+  void setPortOperations( std::function<void (RegionScoutMessage &, int)> regionProbe,
+                          std::function<void(std::function<void(void)>)> delayedAction) {
     thePorts.sendRegionProbe = regionProbe;
     thePorts.scheduleDelayedAction = delayedAction;
   }
 
-  void setInvalidateAction(boost::function<void (PhysicalMemoryAddress, SharingVector)> action) {
+  void setInvalidateAction(std::function<void (PhysicalMemoryAddress, SharingVector)> action) {
     theInvalidateAction = action;
   }
 

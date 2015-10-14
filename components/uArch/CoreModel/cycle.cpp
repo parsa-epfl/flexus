@@ -1441,7 +1441,7 @@ void CoreImpl::handleTrap() {
 void CoreImpl::valuePredictAtomic() {
   FLEXUS_PROFILE();
   if (theSpeculateOnAtomicValue && theLSQCount > 0) {
-    memq_t::index<by_queue>::type::iterator lsq_head = theMemQueue.get<by_queue>().lower_bound( boost::make_tuple( kLSQ ) );
+    memq_t::index<by_queue>::type::iterator lsq_head = theMemQueue.get<by_queue>().lower_bound( std::make_tuple( kLSQ ) );
     if (     (   lsq_head->isAtomic() )
              &&   ( ! lsq_head->isAbnormalAccess() )
              &&   ( ! lsq_head->theExtendedValue )

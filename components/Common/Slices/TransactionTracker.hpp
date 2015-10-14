@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
 
@@ -43,13 +43,13 @@ class TransactionTracker;
 struct TransactionTracer {
   virtual void trace(TransactionTracker const & aTransaction) = 0;
   virtual ~TransactionTracer() {}
-  static boost::shared_ptr<TransactionTracer> createTracer();
+  static std::shared_ptr<TransactionTracer> createTracer();
 };
 
 struct TransactionStatManager {
   virtual ~TransactionStatManager() {};
   virtual void count(TransactionTracker const & aTransaction) = 0;
-  static boost::shared_ptr<TransactionStatManager> createTSM();
+  static std::shared_ptr<TransactionStatManager> createTSM();
 };
 
 uint64_t getTTGUID();
@@ -57,8 +57,8 @@ uint64_t getTTGUID();
 class TransactionTracker : public boost::counted_base { /*, public FastAlloc*/
   typedef Flexus::SharedTypes::PhysicalMemoryAddress MemoryAddress;
 
-  static boost::shared_ptr<TransactionTracer> theTracer;
-  static boost::shared_ptr<TransactionStatManager> theTSM;
+  static std::shared_ptr<TransactionTracer> theTracer;
+  static std::shared_ptr<TransactionStatManager> theTSM;
 
   //None of the fields in TransactionTracker are guaranteed to be filled
   //in, so they are all optional
@@ -85,7 +85,7 @@ class TransactionTracker : public boost::counted_base { /*, public FastAlloc*/
   boost::optional<tFillType> theFillType;
   boost::optional< tFillLevel > theOriginatorLevel;
   boost::optional< tFillLevel > theFillLevel;
-  //std::vector< boost::tuple< std::string, std::string, int> > theCycleAccounting;
+  //std::vector< std::tuple< std::string, std::string, int> > theCycleAccounting;
   boost::optional<bool> theFetch;
   boost::optional<bool> theWrite;
   boost::optional<bool> theSpeculativeAtomicLoad;
@@ -273,14 +273,14 @@ public:
   void recordDelay() {
     /*
     if ( theCurrentDelayCause ) {
-      theCycleAccounting.push_back( boost::make_tuple(*theCurrentDelayComponent, *theCurrentDelayCause, Flexus::Core::theFlexus->cycleCount() - theLastTimestamp) );
+      theCycleAccounting.push_back( std::make_tuple(*theCurrentDelayComponent, *theCurrentDelayCause, Flexus::Core::theFlexus->cycleCount() - theLastTimestamp) );
     } else {
-      theCycleAccounting.push_back( boost::make_tuple(std::string("Unknown Component"), std::string("Unknown Cause"), Flexus::Core::theFlexus->cycleCount() - theLastTimestamp) );
+      theCycleAccounting.push_back( std::make_tuple(std::string("Unknown Component"), std::string("Unknown Cause"), Flexus::Core::theFlexus->cycleCount() - theLastTimestamp) );
     }
     */
   }
   /*
-  std::vector< boost::tuple< std::string, std::string, int> > const & cycleAccounting() const {
+  std::vector< std::tuple< std::string, std::string, int> > const & cycleAccounting() const {
     return theCycleAccounting;
   }
   */

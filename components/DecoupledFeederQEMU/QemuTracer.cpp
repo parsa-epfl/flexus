@@ -127,9 +127,9 @@ class QemuTracerImpl {
   TracerStats * theBothStats;
   MemoryMessage theMemoryMessage;
     public:
-  boost::function< void(int, MemoryMessage &) > toL1D;
-  boost::function< void(int, MemoryMessage &, uint32_t) > toL1I;
-  boost::function< void(int, MemoryMessage &) > toNAW;
+  std::function< void(int, MemoryMessage &) > toL1D;
+  std::function< void(int, MemoryMessage &, uint32_t) > toL1I;
+  std::function< void(int, MemoryMessage &) > toNAW;
 
 //  bool theWhiteBoxDebug;
 //  int32_t  theWhiteBoxPeriod;
@@ -148,9 +148,9 @@ public:
   // Initialize the tracer to the desired CPU
   void init(API::conf_object_t * aCPU
             , index_t anIndex
-            , boost::function< void(int, MemoryMessage &) > aToL1D
-            , boost::function< void(int, MemoryMessage &, uint32_t) > aToL1I
-            , boost::function< void(int, MemoryMessage &) > aToNAW
+            , std::function< void(int, MemoryMessage &) > aToL1D
+            , std::function< void(int, MemoryMessage &, uint32_t) > aToL1I
+            , std::function< void(int, MemoryMessage &) > aToNAW
   //          , bool aWhiteBoxDebug
     //        , int32_t aWhiteBoxPeriod
             , bool aSendNonAllocatingStores
@@ -495,7 +495,7 @@ class DMATracerImpl {
   API::conf_object_t * theUnderlyingObject;
 
   MemoryMessage theMemoryMessage;
-  boost::function< void(MemoryMessage &) > toDMA;
+  std::function< void(MemoryMessage &) > toDMA;
 
 public:
   DMATracerImpl(API::conf_object_t * anUnderlyingObjec)
@@ -504,7 +504,7 @@ public:
   {}
 
   // Initialize the tracer to the desired CPU
-  void init(boost::function< void(MemoryMessage &) > aToDMA) {
+  void init(std::function< void(MemoryMessage &) > aToDMA) {
     toDMA = aToDMA;
   }
 
@@ -556,10 +556,10 @@ class QemuTracerManagerImpl : public QemuTracerManager {
   bool theClientServer;
   QemuTracer * theTracers;
   DMATracer theDMATracer;
-  boost::function< void(int, MemoryMessage &) > toL1D;
-  boost::function< void(int, MemoryMessage &, uint32_t) > toL1I;
-  boost::function< void(MemoryMessage &) > toDMA;
-  boost::function< void(int, MemoryMessage &) > toNAW;
+  std::function< void(int, MemoryMessage &) > toL1D;
+  std::function< void(int, MemoryMessage &, uint32_t) > toL1I;
+  std::function< void(MemoryMessage &) > toDMA;
+  std::function< void(int, MemoryMessage &) > toNAW;
 
 //  bool theWhiteBoxDebug;
 //  int32_t  theWhiteBoxPeriod;
@@ -567,10 +567,10 @@ class QemuTracerManagerImpl : public QemuTracerManager {
 public:
   QemuTracerManagerImpl(
 		int32_t aNumCPUs
-	  , boost::function< void(int, MemoryMessage &) > aToL1D
-	  , boost::function< void(int, MemoryMessage &, uint32_t) > aToL1I
-	  , boost::function< void(MemoryMessage &) > aToDMA
-	  , boost::function< void(int, MemoryMessage &) > aToNAW
+	  , std::function< void(int, MemoryMessage &) > aToL1D
+	  , std::function< void(int, MemoryMessage &, uint32_t) > aToL1I
+	  , std::function< void(MemoryMessage &) > aToDMA
+	  , std::function< void(int, MemoryMessage &) > aToNAW
 //	  , bool aWhiteBoxDebug
 //	  , int32_t aWhiteBoxPeriod
 	  , bool aSendNonAllocatingStores
@@ -727,10 +727,10 @@ private:
 };
 
 QemuTracerManager * QemuTracerManager::construct(int32_t aNumCPUs
-    , boost::function< void(int, MemoryMessage &) > toL1D
-    , boost::function< void(int, MemoryMessage &, uint32_t) > toL1I
-    , boost::function< void(MemoryMessage &) > toDMA
-    , boost::function< void(int, MemoryMessage &) > toNAW
+    , std::function< void(int, MemoryMessage &) > toL1D
+    , std::function< void(int, MemoryMessage &, uint32_t) > toL1I
+    , std::function< void(MemoryMessage &) > toDMA
+    , std::function< void(int, MemoryMessage &) > toNAW
 //    , bool aWhiteBoxDebug
 //    , int32_t aWhiteBoxPeriod
     , bool aSendNonAllocatingStores

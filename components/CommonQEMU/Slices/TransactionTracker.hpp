@@ -273,9 +273,9 @@ public:
   void recordDelay() {
     /*
     if ( theCurrentDelayCause ) {
-      theCycleAccounting.push_back( boost::make_tuple(*theCurrentDelayComponent, *theCurrentDelayCause, Flexus::Core::theFlexus->cycleCount() - theLastTimestamp) );
+      theCycleAccounting.push_back( std::make_tuple(*theCurrentDelayComponent, *theCurrentDelayCause, Flexus::Core::theFlexus->cycleCount() - theLastTimestamp) );
     } else {
-      theCycleAccounting.push_back( boost::make_tuple(std::string("Unknown Component"), std::string("Unknown Cause"), Flexus::Core::theFlexus->cycleCount() - theLastTimestamp) );
+      theCycleAccounting.push_back( std::make_tuple(std::string("Unknown Component"), std::string("Unknown Cause"), Flexus::Core::theFlexus->cycleCount() - theLastTimestamp) );
     }
     */
   }

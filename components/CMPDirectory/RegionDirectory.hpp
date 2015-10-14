@@ -364,7 +364,7 @@ public:
       }
       bool success;
       region_iterator r_iter;
-      boost::tie(r_iter, success) = theEvictBuffer.insert(REBEntry(MemoryAddress(region.tag())));
+      std::tie(r_iter, success) = theEvictBuffer.insert(REBEntry(MemoryAddress(region.tag())));
       //DBG_Assert(success, ( << theName << " Found " << std::hex << region.tag() << " in evict buffer" ));
       if (success) {
         DBG_(Trace, ( << theName << " Inserting " << std::hex << region.tag() << " into evict buffer" ));
@@ -678,7 +678,7 @@ public:
 
     int32_t way;
     bool was_valid;
-    boost::tie(way, was_valid) = selectVictim(set);
+    std::tie(way, was_valid) = selectVictim(set);
     if (way < 0) {
       // If there are no "un-protected" ways we fail
       return false;
@@ -727,7 +727,7 @@ public:
 
     int32_t way;
     bool was_valid;
-    boost::tie(way, was_valid) = selectVictim(set);
+    std::tie(way, was_valid) = selectVictim(set);
     if (way < 0) {
       // If there are no "un-protected" ways we fail
       return false;
@@ -742,7 +742,7 @@ public:
     reg_lookup->theOffset = makeOffset(address);
     reg_lookup->isValid   = true;
 
-    std::for_each(state.begin(), state.end(), boost::bind(&_State::reset, _1));
+    std::for_each(state.begin(), state.end(), std::bind(&_State::reset, _1));
     if (was_valid) {
       state = victim.state();
       address = victim.tag();

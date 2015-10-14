@@ -534,7 +534,7 @@ void InclusiveMOESIPolicy::handleReply( ProcessEntry_p process ) {
 
   } else if (req->type() == MemoryMessage::FetchAck || req->type() == MemoryMessage::ReadAck) {
     maf_iter_t first, last;
-    boost::tie(first, last) = theMAF.findAll(req->address(), eWaitAck);
+    std::tie(first, last) = theMAF.findAll(req->address(), eWaitAck);
     DBG_Assert(first != theMAF.end());
     for (; first != last; first++) {
       // The matching request is the one with the same requester
@@ -602,7 +602,7 @@ void InclusiveMOESIPolicy::handleReply( ProcessEntry_p process ) {
 
     // Need to find the missing request
     maf_iter_t first, last;
-    boost::tie(first, last) = theMAF.findAll(req->address(), eWaitAck);
+    std::tie(first, last) = theMAF.findAll(req->address(), eWaitAck);
     DBG_Assert(first != theMAF.end());
     for (; first != last; first++) {
       // The matching request is the one with the same requester

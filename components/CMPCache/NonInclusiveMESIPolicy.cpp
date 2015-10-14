@@ -162,7 +162,7 @@ void NonInclusiveMESIPolicy::doRequest( ProcessEntry_p process, bool has_maf ) {
   // The correct thing to do in that case is to ignore them
   if (maf_waiting && req_type == MemoryMessage::FetchReq) {
     maf_iter_t first, last;
-    boost::tie(first, last) = theMAF.findAll(address, eWaitAck);
+    std::tie(first, last) = theMAF.findAll(address, eWaitAck);
     for (; first != theMAF.end() && first != last; first++) {
       // The matching request is the one with the same requester
       if (first->transport()[DestinationTag]->requester == requester) {
@@ -825,7 +825,7 @@ void NonInclusiveMESIPolicy::doEvict( ProcessEntry_p process , bool has_maf) {
 
   // Look for active entries in the MAF that might require special actions
   maf_iter_t maf, last;
-  boost::tie(maf, last) = theMAF.findAll(req->address(), eWaitAck);
+  std::tie(maf, last) = theMAF.findAll(req->address(), eWaitAck);
 
   for (maf_iter_t iter = maf; iter != last && iter != theMAF.end(); iter++) {
     if (iter->transport()[MemoryMessageTag]->address() != address) {
@@ -1086,7 +1086,7 @@ void NonInclusiveMESIPolicy::handleReply( ProcessEntry_p process ) {
     case MemoryMessage::FetchAck:
     case MemoryMessage::ReadAck: {
       maf_iter_t first, last;
-      boost::tie(first, last) = theMAF.findAll(req->address(), eWaitAck);
+      std::tie(first, last) = theMAF.findAll(req->address(), eWaitAck);
       DBG_Assert(first != theMAF.end(), ( << "Unable to find MAF waiting for Ack: " << *req ));
       for (; first != last; first++) {
         DBG_Assert(first != theMAF.end(), ( << "Unable to find MAF waiting for Ack: " << *req ));
@@ -1260,7 +1260,7 @@ void NonInclusiveMESIPolicy::handleReply( ProcessEntry_p process ) {
       // Just forward the reply to the requester
 
       maf_iter_t first, last;
-      boost::tie(first, last) = theMAF.findAll(req->address(), eWaitAck);
+      std::tie(first, last) = theMAF.findAll(req->address(), eWaitAck);
       DBG_Assert(first != theMAF.end());
       for (; first != last; first++) {
         // The matching request is the one with the same requester
@@ -1294,7 +1294,7 @@ void NonInclusiveMESIPolicy::handleReply( ProcessEntry_p process ) {
       // For all requests, update sharing information and forward reply to requester (with no Ack required)
 
       maf_iter_t first, last;
-      boost::tie(first, last) = theMAF.findAll(req->address(), eWaitAck);
+      std::tie(first, last) = theMAF.findAll(req->address(), eWaitAck);
       DBG_Assert(first != theMAF.end());
       for (; first != last; first++) {
         // The matching request is the one with the same requester
@@ -1359,7 +1359,7 @@ void NonInclusiveMESIPolicy::handleReply( ProcessEntry_p process ) {
 
       // Need to find the missing request
       maf_iter_t first, last;
-      boost::tie(first, last) = theMAF.findAll(req->address(), eWaitAck);
+      std::tie(first, last) = theMAF.findAll(req->address(), eWaitAck);
       DBG_Assert(first != theMAF.end());
       bool multiple_active_requests = false;
       for (; first != last; first++) {

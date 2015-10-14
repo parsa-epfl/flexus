@@ -1,7 +1,7 @@
 #include <core/debug/debug.hpp>
 #include <components/FastCMPDirectory/AbstractProtocol.hpp>
 #include <components/Common/Slices/MemoryMessage.hpp>
-#include <ext/hash_map>
+#include <unordered_map>
 #include <list>
 
 namespace nFastCMPDirectory {
@@ -17,7 +17,7 @@ private:
     };
   };
 
-  typedef __gnu_cxx::hash_map<key_t, PrimaryAction, hash_func_t> protocol_hash_t;
+  typedef std::unordered_map<key_t, PrimaryAction, hash_func_t> protocol_hash_t;
   protocol_hash_t theProtocolHash;
 
   PrimaryAction poison_action;

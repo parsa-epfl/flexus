@@ -13,7 +13,7 @@
 #include <core/configuration.hpp>
 #include <core/component.hpp>
 
-#include <boost/function.hpp>
+#include <functional>
 
 #include <core/metaprogram.hpp>
 #include <core/drive_reference.hpp>
@@ -69,7 +69,7 @@ private:
   std::string theCurrentStatRegionName;
   uint32_t theCurrentStatRegion;
 
-  typedef std::vector<boost::function< void ()> > void_fn_vector;
+  typedef std::vector<std::function< void ()> > void_fn_vector;
   void_fn_vector theTerminateFunctions;
 
   bool theWatchdogWarning;
@@ -171,7 +171,7 @@ public:
   void listComponents();
   void printDebugConfiguration();
   void writeDebugConfiguration(std::string const & aFilename);
-  void onTerminate( boost::function<void () > );
+  void onTerminate( std::function<void () > );
   void terminateSimulation();
   void log(std::string const & aName, std::string const & anInterval, std::string const & aRegEx);
   void printMMU(int32_t aCPU);
@@ -704,7 +704,7 @@ void FlexusImpl::writeDebugConfiguration(std::string const & aFilename) {
   Flexus::Dbg::Debugger::theDebugger->printConfiguration(out);
 }
 
-void FlexusImpl::onTerminate(boost::function<void () > aFn) {
+void FlexusImpl::onTerminate(std::function<void () > aFn) {
   theTerminateFunctions.push_back(aFn);
 }
 

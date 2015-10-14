@@ -94,7 +94,7 @@ private:
 
   /* Extra support for tracking number of entries by region, state, and requesters */
 
-  boost::function<MemoryAddress(MemoryAddress)> regionFunc;
+  std::function<MemoryAddress(MemoryAddress)> regionFunc;
 
   std::map< MemoryAddress, std::map<int, int> > theRegionRecorder;
 
@@ -132,20 +132,20 @@ public:
     }
   }
 
-  void registerRegionFunc(boost::function<MemoryAddress(MemoryAddress)> func) {
+  void registerRegionFunc(std::function<MemoryAddress(MemoryAddress)> func) {
     regionFunc = func;
   }
 
   iterator find(MemoryAddress address) {
-    return theMAF.find( boost::make_tuple(address) );
+    return theMAF.find( std::make_tuple(address) );
   }
 
   iterator findFirst(MemoryAddress address, MAFState state) {
-    return theMAF.find( boost::make_tuple(address, state) );
+    return theMAF.find( std::make_tuple(address, state) );
   }
 
   std::pair<iterator, iterator> findAll(MemoryAddress address, MAFState state) {
-    return theMAF.equal_range( boost::make_tuple(address, state) );
+    return theMAF.equal_range( std::make_tuple(address, state) );
   }
 
   order_iterator ordered_begin() {

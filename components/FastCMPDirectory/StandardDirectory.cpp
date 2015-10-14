@@ -8,7 +8,7 @@
 #include <components/FastCMPDirectory/SharingVector.hpp>
 #include <components/FastCMPDirectory/AbstractProtocol.hpp>
 #include <components/FastCMPDirectory/BlockDirectoryEntry.hpp>
-#include <ext/hash_map>
+#include <unordered_map>
 
 #include <tuple>
 #include <list>
@@ -158,7 +158,7 @@ protected:
 
 public:
   virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
-  lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) {
+  lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<std::function<void(void)> > &xtra_actions) {
 
     StandardDirectoryEntry * entry = findOrCreateEntry(address, !MemoryMessage::isEvictType(req_type));
     DBG_Assert(entry != nullptr);

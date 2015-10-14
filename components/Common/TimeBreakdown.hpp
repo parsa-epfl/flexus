@@ -6,9 +6,6 @@
 #include <core/flexus.hpp>
 #include <core/stats.hpp>
 
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
-
 #include <algorithm>
 
 namespace nTimeBreakdown {
@@ -551,11 +548,7 @@ struct TimeBreakdown {
   void advanceSpeculation() {
     DBG_Assert( isSpeculating );
     //Commit speculative counters and reset them to zero
-    std::for_each
-    ( theClasses.begin()
-      , theClasses.end()
-      , ll::bind( &TimeClass::commitPending, ll::var(ll::_1) )
-    );
+    for(auto* aClass: theClasses) aClass->commitPending();
   }
   void endSpeculation() {
     advanceSpeculation();
@@ -565,11 +558,7 @@ struct TimeBreakdown {
     DBG_Assert( isSpeculating );
     //Replace speculative counters with the specified "failed speculation" category
     //Reset speculative counters
-    std::for_each
-    ( theClasses.begin()
-      , theClasses.end()
-      , ll::bind( &TimeClass::abortPending, ll::var(ll::_1), aCycleClass )
-    );
+    for(auto* aClass: theClasses) aClass->abortPending(aCycleClass);
     isSpeculating = false;
   }
 

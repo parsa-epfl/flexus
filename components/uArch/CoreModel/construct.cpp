@@ -7,14 +7,14 @@
 namespace nuArch {
 
 CoreImpl::CoreImpl( uArchOptions_t options
-                    , boost::function< void (Flexus::Qemu::Translation &, bool) > xlat
-                    , boost::function<int(bool)> _advance
-                    , boost::function< void(eSquashCause)> _squash
-                    , boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress)> _redirect
-                    , boost::function< void(int, int)> _change_mode
-                    , boost::function< void( boost::intrusive_ptr<BranchFeedback> )> _feedback
-                    , boost::function< void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> ) > _notifyTMS /* CMU-ONLY */
-                    , boost::function< void( bool )> _signalStoreForwardingHit
+                    , std::function< void (Flexus::Qemu::Translation &, bool) > xlat
+                    , std::function<int(bool)> _advance
+                    , std::function< void(eSquashCause)> _squash
+                    , std::function< void(VirtualMemoryAddress, VirtualMemoryAddress)> _redirect
+                    , std::function< void(int, int)> _change_mode
+                    , std::function< void( boost::intrusive_ptr<BranchFeedback> )> _feedback
+                    , std::function< void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> ) > _notifyTMS /* CMU-ONLY */
+                    , std::function< void( bool )> _signalStoreForwardingHit
                   )
   : theName(options.name)
   , theNode(options.node)
@@ -539,14 +539,14 @@ void CoreImpl::setRoundingMode(uint32_t aRoundingMode) {
 }
 
 CoreModel * CoreModel::construct( uArchOptions_t options
-                                  , boost::function< void (Flexus::Qemu::Translation &, bool) > translate
-                                  , boost::function<int(bool)> advance
-                                  , boost::function< void(eSquashCause)> squash
-                                  , boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress)> redirect
-                                  , boost::function< void(int, int)> change_mode
-                                  , boost::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback
-                                  , boost::function<void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> )> notifyTMS /* CMU-ONLY */
-                                  , boost::function< void( bool )> signalStoreForwardingHit
+                                  , std::function< void (Flexus::Qemu::Translation &, bool) > translate
+                                  , std::function<int(bool)> advance
+                                  , std::function< void(eSquashCause)> squash
+                                  , std::function< void(VirtualMemoryAddress, VirtualMemoryAddress)> redirect
+                                  , std::function< void(int, int)> change_mode
+                                  , std::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback
+                                  , std::function<void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> )> notifyTMS /* CMU-ONLY */
+                                  , std::function< void( bool )> signalStoreForwardingHit
                                 ) {
 
   return new CoreImpl( options

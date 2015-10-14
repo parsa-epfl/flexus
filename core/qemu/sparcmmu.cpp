@@ -1,8 +1,6 @@
 #include <boost/throw_exception.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/function.hpp>
-#include <boost/lambda/bind.hpp>
-namespace ll = boost::lambda;
+#include <memory>
+#include <functional>
 
 #include <core/target.hpp>
 #include <core/types.hpp>
@@ -166,10 +164,10 @@ std::tuple<PhysicalMemoryAddress, bool, bool> v9ProcessorImpl::translateTSB_Qemu
   try {
     API::v9_memory_transaction_t xact;
     translate_QemuImpl( xact, anAddress, anASI);
-    //return boost::make_tuple( PhysicalMemoryAddress( xact.s.physical_address ), (xact.s.physical_address != 0 ) && cacheable(xact), (xact.s.physical_address == 0 ) || side_effect(xact)  );
+    //return std::make_tuple( PhysicalMemoryAddress( xact.s.physical_address ), (xact.s.physical_address != 0 ) && cacheable(xact), (xact.s.physical_address == 0 ) || side_effect(xact)  );
     return std::make_tuple( PhysicalMemoryAddress( xact.s.physical_address ), (xact.s.physical_address != 0 ) && cacheable(xact), (xact.s.physical_address == 0 ) || side_effect(xact)  );
   } catch (MemoryException & anError ) {
-    //return boost::make_tuple( PhysicalMemoryAddress(0), false, true);
+    //return std::make_tuple( PhysicalMemoryAddress(0), false, true);
     return std::make_tuple( PhysicalMemoryAddress(0), false, true);
   }
 }

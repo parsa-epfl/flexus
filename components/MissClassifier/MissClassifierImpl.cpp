@@ -4,7 +4,7 @@
 #include <iomanip>
 
 #include <boost/bind.hpp>
-#include <ext/hash_map>
+#include <unordered_map>
 
 #include <core/flexus.hpp>
 #include <core/stats.hpp>
@@ -41,7 +41,7 @@ class FLEXUS_COMPONENT(MissClassifier) {
       return key;
     }
   };
-  typedef __gnu_cxx::hash_map < const block_address_t, // block address
+  typedef std::unordered_map < const block_address_t, // block address
           bool,                  // probed
           IntHash
           > tClassifierMap;
@@ -157,7 +157,7 @@ public:
     //Lookup or insert the new block in the directory
     tClassifierMap::iterator iter;
     bool is_new;
-    boost::tie(iter, is_new) = theClassifierMap.insert( std::make_pair( blockAddr, false ) ); //probed is initially false
+    std::tie(iter, is_new) = theClassifierMap.insert( std::make_pair( blockAddr, false ) ); //probed is initially false
     bool & theProbed = iter->second;
 
     switch (aMessage.type()) {
@@ -307,7 +307,7 @@ public:
 
       tClassifierMap::iterator iter;
       bool is_new;
-      boost::tie(iter, is_new) = theClassifierMap.insert( std::make_pair( theAddress, theProbed ) );
+      std::tie(iter, is_new) = theClassifierMap.insert( std::make_pair( theAddress, theProbed ) );
       DBG_Assert(is_new);
     }
 

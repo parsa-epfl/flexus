@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/optional.hpp>
 
@@ -41,10 +41,10 @@ private:
   typedef tProtocolEngine<tHEExecEngine> tHomeEngine;
   typedef tProtocolEngine<tREExecEngine> tRemoteEngine;
 
-  boost::shared_ptr<tHomeEngine>      theHomeEngine;        // the home engine
-  boost::shared_ptr<tRemoteEngine>    theRemoteEngine;      // the remote engine
-  boost::shared_ptr<ServiceFlexus>    theHESrvc;            // service provider for the home engine
-  boost::shared_ptr<ServiceFlexus>    theRESrvc;            // service provider for the remote engine
+  std::shared_ptr<tHomeEngine>      theHomeEngine;        // the home engine
+  std::shared_ptr<tRemoteEngine>    theRemoteEngine;      // the remote engine
+  std::shared_ptr<ServiceFlexus>    theHESrvc;            // service provider for the home engine
+  std::shared_ptr<ServiceFlexus>    theRESrvc;            // service provider for the remote engine
 
   struct ReceiveBuffer {
     ReceiveBuffer() : theTransport() {}
@@ -94,18 +94,18 @@ public:
     theMemoryMap = Flexus::SharedTypes::MemoryMap::getMemoryMap(node_id);
 
     // first make the service providers
-    theHESrvc = boost::shared_ptr<ServiceFlexus>(new ServiceFlexus(node_id, max_nodes, theMemoryMap, cfg.CPI));
+    theHESrvc = std::shared_ptr<ServiceFlexus>(new ServiceFlexus(node_id, max_nodes, theMemoryMap, cfg.CPI));
 
     // and pass them into the engines
     std::string HE_name = boost::padded_string_cast < 2, '0' > (flexusIndex()) + "-HE";
-    theHomeEngine = boost::shared_ptr<tHomeEngine>( new tHomeEngine( HE_name, *theHESrvc, cfg.TSRFSize));
+    theHomeEngine = std::shared_ptr<tHomeEngine>( new tHomeEngine( HE_name, *theHESrvc, cfg.TSRFSize));
     theHESrvc->setProtocolEngine(theHomeEngine);
     theHomeEngine->init();
 
     if (cfg.Remote) {
       std::string RE_name = boost::padded_string_cast < 2, '0' > (flexusIndex()) + "-RE";
-      theRESrvc = boost::shared_ptr<ServiceFlexus>(new ServiceFlexus(node_id, max_nodes, theMemoryMap, cfg.CPI));
-      theRemoteEngine = boost::shared_ptr<tRemoteEngine>(new tRemoteEngine(RE_name, *theRESrvc, cfg.TSRFSize));
+      theRESrvc = std::shared_ptr<ServiceFlexus>(new ServiceFlexus(node_id, max_nodes, theMemoryMap, cfg.CPI));
+      theRemoteEngine = std::shared_ptr<tRemoteEngine>(new tRemoteEngine(RE_name, *theRESrvc, cfg.TSRFSize));
       theRESrvc->setProtocolEngine(theRemoteEngine);
       theRemoteEngine->init();
     }

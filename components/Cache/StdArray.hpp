@@ -662,8 +662,8 @@ public:
     return theSets[makeSet(addr)]->getTags();
   }
 
-  virtual boost::function<bool (MemoryAddress a, MemoryAddress b)> setCompareFn() const {
-    return boost::bind( &StdArray<_State, _DefaultState>::sameSet, *this, _1, _2);
+  virtual std::function<bool (MemoryAddress a, MemoryAddress b)> setCompareFn() const {
+    return [this](auto a, auto b){ return this->sameSet(a, b); };//std::bind( &StdArray<_State, _DefaultState>::sameSet, *this, _1, _2);
   }
 
   virtual uint64_t getSet(MemoryAddress const & addr) const {

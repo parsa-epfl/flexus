@@ -12,7 +12,7 @@
 #include <core/qemu/api_wrappers.hpp>
 
 #include <boost/utility.hpp>
-#include <boost/function.hpp>
+#include <functional>
 #include <boost/type_traits/is_base_and_derived.hpp>
 
 #include <core/boost_extensions/member_function_traits.hpp>

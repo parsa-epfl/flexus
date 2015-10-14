@@ -5,7 +5,7 @@
 
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <boost/throw_exception.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <core/metaprogram.hpp>
 #include <boost/variant/get.hpp>
 #include <boost/optional.hpp>

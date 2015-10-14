@@ -3,9 +3,7 @@
 
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <boost/throw_exception.hpp>
-#include <boost/function.hpp>
-#include <boost/lambda/lambda.hpp>
-namespace ll = boost::lambda;
+#include <functional>
 
 #include <boost/none.hpp>
 
@@ -57,11 +55,14 @@ struct OperandPrintHelper {
   {}
   friend std::ostream & operator << (std::ostream & anOstream, OperandPrintHelper const & aHelper) {
     int32_t i = 0;
-    std::for_each
-    ( aHelper.theOperands.begin()
-      , aHelper.theOperands.end()
-      , ll::var(anOstream) << " op" << ++ ll::var(i) << "=" << ll::_1
-    );
+    for(auto& anOperand: aHelper.theOperands){
+      anOstream << " op" << ++i << "=" << anOperand;
+    }
+    // std::for_each
+    // ( aHelper.theOperands.begin()
+    //   , aHelper.theOperands.end()
+    //   , ll::var(anOstream) << " op" << ++ ll::var(i) << "=" << ll::_1
+    // );
     return anOstream;
   }
 };

@@ -1251,7 +1251,7 @@ public:
     if (theEnableRepet) {
       RepetReturnType repet;
       int64_t seq_no;
-      boost::tie( repet, seq_no ) = doRepetCommit(addr, pc, ltime);
+      std::tie( repet, seq_no ) = doRepetCommit(addr, pc, ltime);
       if (repet == kRepetRetNewGen) {
         if (!theEnableStitch) {
           if (theEnableBufFetch) doBufFetchGen(addr, pc, seq_no);
@@ -1270,7 +1270,7 @@ public:
     if (theEnableRepet) {
       RepetReturnType repet;
       int64_t seq_no;
-      boost::tie( repet, seq_no ) = doRepetCommit(addr, pc, ltime);
+      std::tie( repet, seq_no ) = doRepetCommit(addr, pc, ltime);
       if (repet == kRepetRetNewGen) {
         if (!theEnableStitch) {
           if (theEnableBufFetch) doBufFetchGen(addr, pc, seq_no);

@@ -34,7 +34,7 @@ private:
 
   int32_t theCPI;
 
-  boost::shared_ptr<tProtocolEngineBase> theProtocolEngine;
+  std::shared_ptr<tProtocolEngineBase> theProtocolEngine;
 
 public:
 
@@ -51,7 +51,7 @@ public:
 
   virtual ~ServiceFlexus() { }
 
-  void setProtocolEngine(boost::shared_ptr<tProtocolEngineBase> aProtocolEngine) {
+  void setProtocolEngine(std::shared_ptr<tProtocolEngineBase> aProtocolEngine) {
     DBG_Assert(aProtocolEngine);
     theProtocolEngine = aProtocolEngine;
   }

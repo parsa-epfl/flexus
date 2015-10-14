@@ -5,7 +5,7 @@
 #include <components/FastCMPDirectory/SharingVector.hpp>
 #include <components/FastCMPDirectory/AbstractProtocol.hpp>
 #include <components/FastCMPDirectory/Utility.hpp>
-#include <ext/hash_map>
+#include <unordered_map>
 
 #include <core/stats.hpp>
 
@@ -136,7 +136,7 @@ private:
       return addr >> 10;
     }
   };
-  typedef __gnu_cxx::hash_map<PhysicalMemoryAddress, BetterCachingEntry_p, AddrHash> inf_directory_t;
+  typedef std::unordered_map<PhysicalMemoryAddress, BetterCachingEntry_p, AddrHash> inf_directory_t;
   inf_directory_t theDirectory;
 
   BetterCachingDir() : AbstractDirectory(), theRegionSize(1024), theBlockSize(64), theBlockScoutSnoopResponse(false) {};
@@ -238,7 +238,7 @@ protected:
   BetterCachingEntry_p findOrCreateEntry(PhysicalMemoryAddress addr) {
     inf_directory_t::iterator iter;
     bool success;
-    boost::tie(iter, success) = theDirectory.insert( std::make_pair<PhysicalMemoryAddress, BetterCachingDirEntry *>(getRegion(addr), nullptr) );
+    std::tie(iter, success) = theDirectory.insert( std::make_pair<PhysicalMemoryAddress, BetterCachingDirEntry *>(getRegion(addr), nullptr) );
     if (success) {
       iter->second = BetterCachingEntry_p(new BetterCachingDirEntry(getRegion(addr), theBlocksPerRegion, theNumCores));
     }
@@ -504,7 +504,7 @@ public:
   }
 
   virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
-  lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) {
+  lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<std::function<void(void)> > &xtra_actions) {
 
     // Reset state information
     requires_directory = true;
@@ -745,7 +745,7 @@ public:
     // Initial message from requestor to directory
     msgs.push_front(TopologyMessage(index, dir_loc));
 
-    return boost::tie(sharers, state, dir_loc, entry);
+    return std::tie(sharers, state, dir_loc, entry);
   }
 
   virtual void processRequestResponse(int32_t index, const MMType & request, MMType & response,

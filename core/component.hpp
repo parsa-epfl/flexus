@@ -2,7 +2,7 @@
 #define FLEXUS_COMPONENT_HPP_INCLUDED
 
 #include <cstdint>
-#include <boost/function.hpp>
+#include <functional>
 
 #include <core/configuration_macros.hpp>
 #include <core/interface_macros.hpp>
@@ -25,7 +25,7 @@ struct ComponentManager {
   virtual void doSave(std::string const & aDirectory) const = 0;
   virtual void doLoad(std::string const & aDirectory) = 0;
   virtual void registerComponent( ComponentInterface * aComponent) = 0;
-  virtual void registerHandle( boost::function< void (Flexus::Core::index_t) > anInstantiator) = 0;
+  virtual void registerHandle( std::function< void (Flexus::Core::index_t) > anInstantiator) = 0;
   virtual void instantiateComponents(Flexus::Core::index_t aSystemWidth  )  = 0;
   virtual Flexus::Core::index_t systemWidth() const = 0;
   static ComponentManager & getComponentManager();

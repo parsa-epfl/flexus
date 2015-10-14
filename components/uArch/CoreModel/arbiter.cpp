@@ -34,7 +34,7 @@ MemoryPortArbiter::MemoryPortArbiter( CoreImpl & aCore, int32_t aNumPorts, int32
 void MemoryPortArbiter::inOrderArbitrate() {
   //load at LSQ head gets to go first
   memq_t::index<by_queue>::type::iterator iter, end;
-  std::tie(iter, end) = theCore.theMemQueue.get<by_queue>().equal_range( boost::make_tuple( kLSQ ) );
+  std::tie(iter, end) = theCore.theMemQueue.get<by_queue>().equal_range( std::make_tuple( kLSQ ) );
   while (iter != end) {
     if (iter->status() == kComplete) {
       ++iter;
@@ -47,7 +47,7 @@ void MemoryPortArbiter::inOrderArbitrate() {
   }
 
   //Now try SB head
-  std::tie(iter, end) = theCore.theMemQueue.get<by_queue>().equal_range( boost::make_tuple( kSB ) );
+  std::tie(iter, end) = theCore.theMemQueue.get<by_queue>().equal_range( std::make_tuple( kSB ) );
   if (iter != end) {
     DBG_Assert(iter->theOperation == kStore);
     if ( theCore.hasMemPort() && iter->status() == kAwaitingPort ) {
@@ -214,7 +214,7 @@ void CoreImpl::requestPort(memq_t::index< by_insn >::type::iterator lsq_entry) {
     }
   }
   if (lsq_entry->thePartialSnoop ) {
-    memq_t::index<by_queue>::type::iterator lsq_head = theMemQueue.get<by_queue>().lower_bound( boost::make_tuple( kLSQ ) );
+    memq_t::index<by_queue>::type::iterator lsq_head = theMemQueue.get<by_queue>().lower_bound( std::make_tuple( kLSQ ) );
     if (lsq_entry->theInstruction != lsq_head->theInstruction) {
       DBG_( Verb, ( << theName << " Memory Port request by " << *lsq_entry << " ignored because it is a partial snoop and not the LSQ head" ));
       return;
@@ -543,7 +543,7 @@ void CoreImpl::issueAtomicSpecWrite() {
 void CoreImpl::issuePartialSnoop() {
   FLEXUS_PROFILE();
   if ( thePartialSnoopersOutstanding > 0 ) {
-    memq_t::index<by_queue>::type::iterator lsq_head = theMemQueue.get<by_queue>().lower_bound( boost::make_tuple( kLSQ ) );
+    memq_t::index<by_queue>::type::iterator lsq_head = theMemQueue.get<by_queue>().lower_bound( std::make_tuple( kLSQ ) );
     DBG_Assert( lsq_head != theMemQueue.get<by_queue>().end() );
     if (lsq_head->thePartialSnoop &&
         ( lsq_head->status() == kAwaitingIssue || lsq_head->status() == kAwaitingPort ) ) {
@@ -754,7 +754,7 @@ bool CoreImpl::checkStoreRetirement( boost::intrusive_ptr<Instruction> aStore) {
 void CoreImpl::issueSpecial() {
   FLEXUS_PROFILE();
   if (theLSQCount > 0) {
-    memq_t::index<by_queue>::type::iterator lsq_head = theMemQueue.get<by_queue>().lower_bound( boost::make_tuple( kLSQ ) );
+    memq_t::index<by_queue>::type::iterator lsq_head = theMemQueue.get<by_queue>().lower_bound( std::make_tuple( kLSQ ) );
     if (      (lsq_head->isAbnormalAccess())
               &&    lsq_head->status() == kAwaitingIssue
               &&   ( ! lsq_head->isMarker() )
@@ -805,7 +805,7 @@ void CoreImpl::checkExtraLatencyTimeout() {
   FLEXUS_PROFILE();
 
   if (theLSQCount > 0) {
-    memq_t::index<by_queue>::type::iterator lsq_head = theMemQueue.get<by_queue>().lower_bound( boost::make_tuple( kLSQ ) );
+    memq_t::index<by_queue>::type::iterator lsq_head = theMemQueue.get<by_queue>().lower_bound( std::make_tuple( kLSQ ) );
     if ( lsq_head->theExtraLatencyTimeout
          && lsq_head->theExtraLatencyTimeout.get() <= theFlexus->cycleCount()
          && lsq_head->status() == kAwaitingIssue

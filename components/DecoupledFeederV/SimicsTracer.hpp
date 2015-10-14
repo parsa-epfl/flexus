@@ -8,7 +8,7 @@ namespace nDecoupledFeederV {
 using Flexus::SharedTypes::MemoryMessage;
 
 struct SimicsTracerManager {
-  static SimicsTracerManager * construct(int32_t aNumCPUs, boost::function< void(int, MemoryMessage &) > toL1D, boost::function< void(int, MemoryMessage &, uint32_t) > toL1I, boost::function< void(int, MemoryMessage &) > toDMA, boost::function< void(int, MemoryMessage &) > toNAW);
+  static SimicsTracerManager * construct(int32_t aNumCPUs, std::function< void(int, MemoryMessage &) > toL1D, std::function< void(int, MemoryMessage &, uint32_t) > toL1I, std::function< void(int, MemoryMessage &) > toDMA, std::function< void(int, MemoryMessage &) > toNAW);
   virtual ~SimicsTracerManager()  {}
   virtual void setSimicsQuantum(int64_t aQuantum)  = 0;
   virtual void enableInstructionTracing() = 0;

@@ -8,7 +8,7 @@
 #include <components/FastCMPDirectory/SharingVector.hpp>
 #include <components/FastCMPDirectory/AbstractProtocol.hpp>
 #include <components/FastCMPDirectory/Utility.hpp>
-#include <ext/hash_map>
+#include <unordered_map>
 
 #include <list>
 #include <algorithm>
@@ -104,7 +104,7 @@ private:
       return addr >> 6;
     }
   };
-  typedef __gnu_cxx::hash_map<PhysicalMemoryAddress, InfiniteDirectoryEntry_p, AddrHash> inf_directory_t;
+  typedef std::unordered_map<PhysicalMemoryAddress, InfiniteDirectoryEntry_p, AddrHash> inf_directory_t;
   inf_directory_t theDirectory;
 
   InfiniteDirectory() : AbstractDirectory() {};
@@ -169,7 +169,7 @@ protected:
 
 public:
   virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
-  lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) {
+  lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<std::function<void(void)> > &xtra_actions) {
 
     InfiniteDirectoryEntry_p entry = findEntry(address);
     SharingVector sharers;

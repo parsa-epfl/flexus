@@ -10,7 +10,7 @@
 #include <list>
 
 #include <boost/intrusive_ptr.hpp>
-#include <boost/function.hpp>
+#include <functional>
 #include <boost/dynamic_bitset.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/key_extractors.hpp>
@@ -426,7 +426,7 @@ public:
 
   enum RTReplPolicy_t { SET_LRU, REGION_LRU };
 
-  typedef boost::function<void (MemoryAddress, int, bool)> observer_func_t;
+  typedef std::function<void (MemoryAddress, int, bool)> observer_func_t;
   typedef std::list<observer_func_t> observer_list_t;
 
 private:
@@ -720,9 +720,9 @@ public:
     theERBReserve = 0;
 
     nRTCoordinator::RTFunctionList my_functions;
-    my_functions.probeOwner = boost::bind(&RTArray::regionProbeOwner, this, _1);
-    my_functions.setOwner = boost::bind(&RTArray::regionSetOwner, this, _1, _2);
-    my_functions.probePresence = boost::bind(&RTArray::regionProbePresence, this, _1);
+    my_functions.probeOwner = [this](MemoryAddress&& addr){ return this->regionProbeOwner(addr); }; //std::bind(&RTArray::regionProbeOwner, this, _1);
+    my_functions.setOwner = [this](MemoryAddress&& addr, int32_t owner){ return this->regionSetOwner(addr, owner); }; //std::bind(&RTArray::regionSetOwner, this, _1, _2);
+    my_functions.probePresence = [this](MemoryAddress&& addr){ return this->regionProbePresence(addr); };//std::bind(&RTArray::regionProbePresence, this, _1);
     nRTCoordinator::RTCoordinator::getCoordinator().registerRTFunctions(theNodeId, my_functions);
   }
 

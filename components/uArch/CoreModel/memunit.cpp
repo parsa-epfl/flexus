@@ -340,8 +340,8 @@ void CoreImpl::cleanMSHRS( uint64_t aDiscardAfterSequenceNum ) {
 
 void CoreImpl::clearLSQ( ) {
   theMemQueue.get<by_queue>().erase
-  ( theMemQueue.get<by_queue>().lower_bound( boost::make_tuple( kLSQ ) )
-    , theMemQueue.get<by_queue>().upper_bound( boost::make_tuple( kLSQ ) )
+  ( theMemQueue.get<by_queue>().lower_bound( std::make_tuple( kLSQ ) )
+    , theMemQueue.get<by_queue>().upper_bound( std::make_tuple( kLSQ ) )
   );
   theLSQCount = 0;
   DBG_Assert( theLSQCount + theSBCount + theSBNAWCount == static_cast<long>(theMemQueue.size()) );
@@ -351,7 +351,7 @@ void CoreImpl::clearSSB( ) {
   int32_t sb_count  = 0;
   int32_t sbnaw_count  = 0;
   memq_t::index<by_queue>::type::iterator lb, iter, ub;
-  std::tie( lb, ub) = theMemQueue.get<by_queue>().equal_range( boost::make_tuple( kSSB ) );
+  std::tie( lb, ub) = theMemQueue.get<by_queue>().equal_range( std::make_tuple( kSSB ) );
   iter = lb;
   while (iter != ub) {
     DBG_(Iface, ( << theName << " unrequire " << *iter ) );
@@ -384,7 +384,7 @@ int32_t CoreImpl::clearSSB( uint64_t aLowestInsnSeq ) {
   int32_t sbnaw_count  = 0;
   int32_t remaining_ssb_count = 0;
   memq_t::index<by_queue>::type::iterator lb, iter, ub;
-  std::tie( lb, ub) = theMemQueue.get<by_queue>().equal_range( boost::make_tuple( kSSB ) );
+  std::tie( lb, ub) = theMemQueue.get<by_queue>().equal_range( std::make_tuple( kSSB ) );
   iter = lb;
   bool first_found = false;
   while (iter != ub ) {

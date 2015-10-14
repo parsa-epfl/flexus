@@ -6,7 +6,7 @@
 #include <components/FastCMPDirectory/AbstractProtocol.hpp>
 #include <components/FastCMPDirectory/Utility.hpp>
 #include <components/FastCMPDirectory/BreakdownStats.hpp>
-#include <ext/hash_map>
+#include <unordered_map>
 
 #include <core/stats.hpp>
 
@@ -66,7 +66,7 @@ private:
       return addr >> 10;
     }
   };
-  typedef __gnu_cxx::hash_map<PhysicalMemoryAddress, InfDirRegStatsEntry_p, AddrHash> inf_directory_t;
+  typedef std::unordered_map<PhysicalMemoryAddress, InfDirRegStatsEntry_p, AddrHash> inf_directory_t;
   inf_directory_t theDirectory;
   inf_directory_t * theDirectoryCache;
 
@@ -199,7 +199,7 @@ protected:
 
 public:
   virtual std::tuple<SharingVector, SharingState, int, AbstractEntry_p>
-  lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<boost::function<void(void)> > &xtra_actions) {
+  lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<TopologyMessage> &msgs, std::list<std::function<void(void)> > &xtra_actions) {
 
     s = BreakdownStats::NonShared;
     bh = BreakdownStats::Miss;

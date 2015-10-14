@@ -235,7 +235,7 @@ public:
   }
 
   eProbeMAFResult  probeMAF( MemoryAddress const & anAddress) const {
-    maf_t::iterator iter = theMshrs.find( boost::make_tuple( anAddress, false ) );
+    maf_t::iterator iter = theMshrs.find( std::make_tuple( anAddress, false ) );
     if (iter == theMshrs.end()) {
       return kNoMatch;
     } else {
@@ -259,7 +259,7 @@ public:
   }
 
   bool cancel( MemoryAddress const & anAddress) const {
-    maf_t::iterator iter = theMshrs.find( boost::make_tuple( anAddress, false ) );
+    maf_t::iterator iter = theMshrs.find( std::make_tuple( anAddress, false ) );
     if (iter == theMshrs.end()) {
       return false;
     } else {
@@ -291,7 +291,7 @@ public:
   }
 
   boost::optional<maf_iter> hasActive( MemoryAddress const & anAddress) {
-    maf_iter iter = theMshrs.find( boost::make_tuple( anAddress, false ) );
+    maf_iter iter = theMshrs.find( std::make_tuple( anAddress, false ) );
     if (iter == theMshrs.end()) {
       return boost::none;
     } else {
@@ -300,7 +300,7 @@ public:
   }
 
   bool noEntries( MemoryAddress const & anAddress) {
-    maf_iter iter = theMshrs.find( boost::make_tuple( anAddress ) );
+    maf_iter iter = theMshrs.find( std::make_tuple( anAddress ) );
     if (iter == theMshrs.end()) {
       return true;
     } else {
@@ -310,7 +310,7 @@ public:
   }
 
   void removeActive( MemoryAddress const & anAddress) {
-    maf_t::iterator iter = theMshrs.find( boost::make_tuple( anAddress, false ) );
+    maf_t::iterator iter = theMshrs.find( std::make_tuple( anAddress, false ) );
     if (iter != theMshrs.end()) {
       eEntryType type = iter->type();
       theMshrs.erase(iter);
@@ -320,7 +320,7 @@ public:
 
   void removeAll( MemoryAddress const & anAddress) {
     maf_t::iterator first, temp, last;
-    boost::tie(first, last) = getAllEntries( anAddress );
+    std::tie(first, last) = getAllEntries( anAddress );
     while (first != last) {
       temp = first;
       ++first;
@@ -331,7 +331,7 @@ public:
   }
 
   std::pair< maf_iter, maf_iter > getAllEntries( MemoryAddress const & aBlockAddress) {
-    return theMshrs.equal_range( boost::make_tuple( aBlockAddress ) );
+    return theMshrs.equal_range( std::make_tuple( aBlockAddress ) );
   }
 
   void remove(maf_iter iter) {
@@ -341,11 +341,11 @@ public:
   }
 
   void blockOnPrefetch( maf_iter iter ) {
-    theMshrs.modify(iter, ll::bind( &MAFEntry::theBlockedOnAddress, ll::_1 ) = false);
+    theMshrs.modify(iter, [](auto& x){ return x.theBlockedOnAddress = false; });//ll::bind( &MAFEntry::theBlockedOnAddress, ll::_1 ) = false);
   }
 
   void make_active( maf_iter iter ) {
-    theMshrs.modify(iter, ll::bind( &MAFEntry::theBlockedOnAddress, ll::_1 ) = false);
+    theMshrs.modify(iter, [](auto& x){ return x.theBlockedOnAddress = false; });//ll::bind( &MAFEntry::theBlockedOnAddress, ll::_1 ) = false);
   }
 
 };  // end class MissAddressFile
@@ -589,7 +589,7 @@ private:
     if (theWakeMAFAddress) {
       DBG_Assert( ! theMAF.hasActive( *theWakeMAFAddress ));
       MissAddressFile::maf_iter iter, end;
-      boost::tie(iter, end) = theMAF.getAllEntries(*theWakeMAFAddress);
+      std::tie(iter, end) = theMAF.getAllEntries(*theWakeMAFAddress);
       while ( iter != end && !qFrontSideOut.full() && !qMasterOut.full() && !qBackSideOutRequest.full() ) {
         bool remove_maf = true;
         //The only things that can be blocked on address in the MAF is a

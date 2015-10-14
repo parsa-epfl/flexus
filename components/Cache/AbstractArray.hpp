@@ -62,7 +62,7 @@ public:
   virtual void recordAccess ( LookupResult_p lookup) = 0;
   virtual void invalidateBlock ( LookupResult_p lookup) = 0;
 
-  virtual boost::function<bool (MemoryAddress a, MemoryAddress b)> setCompareFn() const = 0;
+  virtual std::function<bool (MemoryAddress a, MemoryAddress b)> setCompareFn() const = 0;
 
   // Checkpoint reading/writing functions
   virtual bool saveState ( std::ostream & s ) = 0;

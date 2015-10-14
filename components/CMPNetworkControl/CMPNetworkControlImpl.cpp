@@ -18,7 +18,7 @@ using namespace boost::multi_index;
 
 #include <boost/bind.hpp>
 #define _BACKWARD_BACKWARD_WARNING_H
-#include <ext/hash_map>
+#include <unordered_map>
 
 #include <fstream>
 
@@ -86,7 +86,7 @@ private:
   tPlacement thePlacement; // L2 design
 
   // member function pointer for processing core requests
-  typedef boost::function<int32_t ( const index_t anIndex, MemoryTransport & aTransport ) > tGetL2IDForCoreReq_func;
+  typedef std::function<int32_t ( const index_t anIndex, MemoryTransport & aTransport ) > tGetL2IDForCoreReq_func;
   tGetL2IDForCoreReq_func getL2IDForCoreReq;
 
   /* CMU-ONLY-BLOCK-BEGIN */
@@ -121,7 +121,7 @@ private:
     uint32_t acount;
   } tPendingPurgesMapEntry;
 
-  typedef __gnu_cxx::hash_map <  const tAddress  // block address
+  typedef std::unordered_map <  const tAddress  // block address
   , tPendingPurgesMapEntry  // entry pointer
   , PageHash         // page hashing
   > tPendingPurgesMap;
@@ -179,15 +179,15 @@ public:
     /* CMU-ONLY-BLOCK-BEGIN */
     if (cfg.Placement == "R-NUCA") {
       thePlacement = kRNUCACache;
-      getL2IDForCoreReq = boost::bind( &CMPNetworkControlComponent::getL2IDForCoreReq_RNUCA, this, _1, _2);
+      getL2IDForCoreReq = std::bind( &CMPNetworkControlComponent::getL2IDForCoreReq_RNUCA, this, _1, _2);
     } else
       /* CMU-ONLY-BLOCK-END */
       if (cfg.Placement == "private") {
         thePlacement = kPrivateCache;
-        getL2IDForCoreReq = boost::bind( &CMPNetworkControlComponent::getL2IDForCoreReq_private, this, _1, _2);
+        getL2IDForCoreReq = std::bind( &CMPNetworkControlComponent::getL2IDForCoreReq_private, this, _1, _2);
       } else if (cfg.Placement == "shared") {
         thePlacement = kSharedCache;
-        getL2IDForCoreReq = boost::bind( &CMPNetworkControlComponent::getL2IDForCoreReq_shared, this, _1, _2);
+        getL2IDForCoreReq = std::bind( &CMPNetworkControlComponent::getL2IDForCoreReq_shared, this, _1, _2);
       } else {
         DBG_Assert(false, ( << "Unknown L2 design") );
       }
@@ -1131,7 +1131,7 @@ private:
 
   } tPageMapEntry;
 
-  typedef __gnu_cxx::hash_map <  const tAddress // block address
+  typedef std::unordered_map <  const tAddress // block address
   , tPageMapEntry  // entry pointer
   , PageHash       // cache-line hashing
   > tPageMap;
@@ -1809,7 +1809,7 @@ private:
 
         tPageMap::iterator iter;
         bool is_new;
-        boost::tie(iter, is_new) = thePageMap.insert( std::make_pair( theAddress, thePageMapEntry ) );
+        std::tie(iter, is_new) = thePageMap.insert( std::make_pair( theAddress, thePageMapEntry ) );
         DBG_Assert(is_new);
       }
       ifs.close();

@@ -11,7 +11,7 @@ private:
   Simics::API::conf_object_t * theUnderlyingObject;
   Simics::API::conf_object_t * theCPU;
   index_t theIndex;
-  boost::shared_ptr<SimicsTraceConsumer> theConsumer;
+  std::shared_ptr<SimicsTraceConsumer> theConsumer;
   SimicsCycleManager * theCycleManager; //Non-owning pointer
   StoreBuffer theStoreBuffer;
   bool theInterruptsEnabled;
@@ -94,7 +94,7 @@ public:
 
   }
 
-  void setTraceConsumer(boost::shared_ptr<SimicsTraceConsumer> aConsumer) {
+  void setTraceConsumer(std::shared_ptr<SimicsTraceConsumer> aConsumer) {
     theConsumer = aConsumer;
     theConsumer->init(theIndex);
   }

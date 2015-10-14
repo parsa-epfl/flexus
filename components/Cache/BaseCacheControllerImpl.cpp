@@ -347,7 +347,7 @@ BaseCacheControllerImpl::examineRequest ( MemoryTransport      transport,
 
   bool was_hit, was_prefetched;
   Action action;
-  boost::tie(was_hit, was_prefetched, action) = doRequest(transport, has_maf_entry, aWakingTracker);
+  std::tie(was_hit, was_prefetched, action) = doRequest(transport, has_maf_entry, aWakingTracker);
 
   requests++;
 

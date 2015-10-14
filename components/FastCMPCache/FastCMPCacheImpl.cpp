@@ -73,7 +73,7 @@ class FLEXUS_COMPONENT(FastCMPCache) {
 
   bool theAlwaysMulticast;
 
-  std::list<boost::function<void(void)> > theScheduledActions;
+  std::list<std::function<void(void)> > theScheduledActions;
 
   inline MemoryMessage::MemoryMessageType combineSnoopResponse( MemoryMessage::MemoryMessageType & a, MemoryMessage::MemoryMessageType & b) const {
 
@@ -130,7 +130,7 @@ public:
     FLEXUS_CHANNEL_ARRAY(RegionProbe, index) << msg;
   }
 
-  void scheduleDelayedAction(boost::function<void(void)> fn) {
+  void scheduleDelayedAction(std::function<void(void)> fn) {
     theScheduledActions.push_back(fn);
   }
 
@@ -361,7 +361,7 @@ public:
     SharingVector sharers;
     SharingState state;
     AbstractEntry_p dir_entry;
-    std::list<boost::function<void(void)> > extra_actions;
+    std::list<std::function<void(void)> > extra_actions;
     bool dir_valid;
 
     // Perform directory lookup
@@ -474,7 +474,7 @@ private:
     SharingVector sharers;
     SharingState state;
     AbstractEntry_p dir_entry;
-    std::list<boost::function<void(void)> > extra_actions;
+    std::list<std::function<void(void)> > extra_actions;
 
     // Perform directory lookup
     std::tie(sharers, state, dir_entry) = theDirectory->lookup(anIndex, addr, aMessage.type(), extra_actions);

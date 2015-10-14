@@ -122,8 +122,8 @@ class FLEXUS_COMPONENT(NetShim) {
 public:
 
   // Interface to the NetContainer
-  boost::function<bool(const int, const int)> theAvail;
-  boost::function<bool(const MessageState *)> theDeliver;
+  std::function<bool(const int, const int)> theAvail;
+  std::function<bool(const MessageState *)> theDeliver;
 
   // Can another message be removed from the network?
   // Encapsulated in a function object "theAvail" to call from outside code

@@ -6,7 +6,7 @@
 
 #include <cstring>
 
-#include <boost/function.hpp>
+#include <functional>
 #include <boost/dynamic_bitset.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/key_extractors.hpp>
@@ -62,9 +62,9 @@ using Flexus::SharedTypes::PhysicalMemoryAddress;
 
 namespace nFastCache {
 
-typedef boost::function<void( uint64_t tagset, CoherenceState_t state) > evict_function_t;
-typedef boost::function<void( uint64_t tagset, int32_t owner ) > region_evict_function_t;
-typedef boost::function<bool( uint64_t tagset, bool icache, bool dcache ) > invalidate_function_t;
+typedef std::function<void( uint64_t tagset, CoherenceState_t state) > evict_function_t;
+typedef std::function<void( uint64_t tagset, int32_t owner ) > region_evict_function_t;
+typedef std::function<bool( uint64_t tagset, bool icache, bool dcache ) > invalidate_function_t;
 
 class RTCache : public AbstractCache {
 public:

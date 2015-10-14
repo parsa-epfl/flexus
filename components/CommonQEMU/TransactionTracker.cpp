@@ -1,8 +1,5 @@
 #include <algorithm>
 
-// #include <boost/lambda/lambda.hpp>
-// #include <boost/lambda/bind.hpp>
-
 #include <memory>
 #include <core/stats.hpp>
 

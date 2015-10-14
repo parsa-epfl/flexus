@@ -74,20 +74,20 @@ class microArchImpl : public microArch {
   Flexus::Qemu::Processor theClientCPUs[64];
   int32_t theNumClients;
   int32_t theNode;
-  boost::function< void(eSquashCause)> squash;
-  boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress)> redirect;
-  boost::function< void(int, int)> changeState;
-  boost::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback;
-  boost::function< void( bool )> signalStoreForwardingHit;
+  std::function< void(eSquashCause)> squash;
+  std::function< void(VirtualMemoryAddress, VirtualMemoryAddress)> redirect;
+  std::function< void(int, int)> changeState;
+  std::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback;
+  std::function< void( bool )> signalStoreForwardingHit;
 
 public:
   microArchImpl( uArchOptions_t options
-                 , boost::function< void(eSquashCause)> _squash
-                 , boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress)> _redirect
-                 , boost::function< void(int, int)> _changeState
-                 , boost::function< void( boost::intrusive_ptr<BranchFeedback> )> _feedback
-                 , boost::function<void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> )> _notifyTMS /* CMU-ONLY */
-                 , boost::function< void(bool) > _signalStoreForwardingHit
+                 , std::function< void(eSquashCause)> _squash
+                 , std::function< void(VirtualMemoryAddress, VirtualMemoryAddress)> _redirect
+                 , std::function< void(int, int)> _changeState
+                 , std::function< void( boost::intrusive_ptr<BranchFeedback> )> _feedback
+                 , std::function<void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> )> _notifyTMS /* CMU-ONLY */
+                 , std::function< void(bool) > _signalStoreForwardingHit
                )
     : theName(options.name)
     , theCore(CoreModel::construct(
@@ -842,12 +842,12 @@ private:
 };
 
 std::shared_ptr<microArch> microArch::construct( uArchOptions_t options
-    , boost::function< void(eSquashCause) > squash
-    , boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress) > redirect
-    , boost::function< void(int, int) > changeState
-    , boost::function< void( boost::intrusive_ptr<BranchFeedback> ) > feedback
-    , boost::function< void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> ) > notifyTMS /* CMU-ONLY */
-    , boost::function< void( bool )> signalStoreForwardingHit
+    , std::function< void(eSquashCause) > squash
+    , std::function< void(VirtualMemoryAddress, VirtualMemoryAddress) > redirect
+    , std::function< void(int, int) > changeState
+    , std::function< void( boost::intrusive_ptr<BranchFeedback> ) > feedback
+    , std::function< void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> ) > notifyTMS /* CMU-ONLY */
+    , std::function< void( bool )> signalStoreForwardingHit
                                                  ) {
   return std::make_shared<microArchImpl>(options
                                       , squash

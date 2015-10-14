@@ -28,7 +28,7 @@ using namespace boost::multi_index;
 #include <boost/throw_exception.hpp>
 #include <boost/serialization/list.hpp>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <core/stats.hpp>
 

@@ -6,7 +6,7 @@
 #include <core/stats.hpp>
 
 #include <boost/bind.hpp>
-#include <ext/hash_map>
+#include <unordered_map>
 
 #define DBG_DefineCategories PerfectPlacement
 #define DBG_SetDefaultOps AddCat(PerfectPlacement) Comp(*this)

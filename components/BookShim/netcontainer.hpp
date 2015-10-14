@@ -6,7 +6,7 @@
 #include "netnode.hpp"
 
 #ifndef NS_STANDALONE
-# include <boost/function.hpp>
+# include <functional>
 #endif
 
 namespace nNetShim
@@ -87,8 +87,8 @@ namespace nNetShim
     bool insertMessage ( MessageState * msg );
 
 #ifndef NS_STANDALONE
-    bool setCallbacks (  boost::function<bool(const int, const int)> isNodeAvailablePtr_,
-                         boost::function<bool(const MessageState *)> deliverMessagePtr_ )
+    bool setCallbacks (  std::function<bool(const int, const int)> isNodeAvailablePtr_,
+                         std::function<bool(const MessageState *)> deliverMessagePtr_ )
     {
       isNodeAvailablePtr = isNodeAvailablePtr_;
       deliverMessagePtr  = deliverMessagePtr_;
@@ -198,8 +198,8 @@ namespace nNetShim
       openFiles;
 
 #ifndef NS_STANDALONE
-  boost::function<bool(const int, const int)> isNodeAvailablePtr;
-  boost::function<bool(const MessageState *)> deliverMessagePtr;
+  std::function<bool(const int, const int)> isNodeAvailablePtr;
+  std::function<bool(const MessageState *)> deliverMessagePtr;
 #else
     bool ( * deliverMessagePtr ) ( const MessageState * msg );
     bool ( * isNodeAvailablePtr ) ( const int32_t node, const int32_t vc );
