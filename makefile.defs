@@ -56,18 +56,10 @@ SIMICS_X86_INCLUDE=$(SIMICS_INCLUDE)/simics
 SIMICS_ARM_INCLUDE=$(SIMICS_INCLUDE)/simics
 
 # FIXME user has to update manually
-QEMU_LIB_DIR=/home/daglis/flexus/qemuflex/qemu-parsa/sparc64-softmmu/
-#QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-sparc64
-#QEMU_LIB_DIR=$(EXT_STORAGE)/flexus_repo/qemuflex/qemu-parsa/x86_64-softmmu/
-#QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-x86_64
-#QEMU_LIB_DIR=$(EXT_STORAGE)/flexus_repo/qemuflex/qemu-parsa/arm-softmmu/
-#QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-arm
-#QEMU_LIB_DIR=$(EXT_STORAGE)/flexus_repo/qemuflex/qemu-parsa/aarch64-softmmu/
-#QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-aarch64
 export TARGET_EMULATOR=qemu
 #export TARGET_EMULATOR=simics
 
-INCLUDES=-isystem $(BOOST_INCLUDE) -isystem $(SIMICS_INCLUDE) $(QEMU_INCLUDE) -I$(FLEXUS_INCLUDE) -Ibooksim -Ibooksim/arbiters -Ibooksim/allocators -Ibooksim/routers -Ibooksim/networks -IDRAMSim2
+INCLUDES=-isystem $(BOOST_INCLUDE) -isystem $(SIMICS_INCLUDE) -I$(FLEXUS_INCLUDE) -Ibooksim -Ibooksim/arbiters -Ibooksim/allocators -Ibooksim/routers -Ibooksim/networks -IDRAMSim2
 BOOST_LIBRARIES=-Wl,--no-whole-archive -L$(BOOST_BINARIES) -lboost_date_time -lboost_regex -lboost_serialization -lboost_iostreams -lboost_system -lz #-L/home/hillouli/Documents/qemuflex/flexus/stat-manager 
 
 # other constants
