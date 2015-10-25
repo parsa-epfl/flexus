@@ -32,6 +32,7 @@ void Break() {
 void CreateFlexusObject();
 void PrepareFlexusObject();
 void initFlexus();
+void startTimingFlexus(); 
 }
 
 namespace Qemu {
@@ -59,6 +60,9 @@ void PrepareFlexus() {
 extern "C" void flexus_init(void) {
     initFlexus();
 }
+extern "C" void start_timing_sim(void) {
+    startTimingFlexus(); 
+}
 } //end namespace Core
 } //end namespace Flexus
 
@@ -81,6 +85,10 @@ void print_copyright() {
 }
 extern "C" void flexInit(){
     Flexus::Qemu::flexus_init();
+}
+
+extern "C" void startTiming(){
+    Flexus::Qemu::start_timing_sim();
 }
 
 extern "C" void qemuflex_init(Flexus::Qemu::API::QFLEX_API_Interface_Hooks_t* hooks) {
