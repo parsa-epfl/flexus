@@ -53,13 +53,15 @@ public:
   }
 
   void initComponents() {
-    DBG_( Dev, ( << "Initalizing components..." ) );
+    DBG_( Dev, ( << "Initializing " << theComponents.size() <<" components..." ) );
     std::vector< ComponentInterface * >::iterator iter = theComponents.begin();
     std::vector< ComponentInterface * >::iterator end = theComponents.end();
+    int counter = 1;
     while (iter != end) {
-      DBG_( Dev, ( << "Initalizing " << (*iter)->name() ) );
+      DBG_( Dev, ( << "Component " << counter << ": Initializing " << (*iter)->name() ) );
       (*iter)->initialize();
       ++iter;
+      ++counter;
     }
   }
 
