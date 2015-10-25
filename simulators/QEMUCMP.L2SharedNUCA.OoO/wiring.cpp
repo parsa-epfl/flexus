@@ -61,6 +61,8 @@ CREATE_CONFIGURATION( MagicBreak, "magic-break", theMagicBreakCfg );
 //
 //Return value indicates whether simulation should abort if any parameters
 //are left at their default values;
+
+//Default values set for 1 core
 bool initializeParameters() {
   DBG_( Dev, ( << " initializing Parameters..." ) );
 
@@ -118,7 +120,7 @@ bool initializeParameters() {
 
   theL1dCfg.Cores.initialize( 1 );
   theL1dCfg.BlockSize.initialize(64);
-  theL1dCfg.Ports.initialize(4);
+  theL1dCfg.Ports.initialize(2);
   theL1dCfg.PreQueueSizes.initialize(4);
   theL1dCfg.TagLatency.initialize(0);
   theL1dCfg.TagIssueLatency.initialize(1);
@@ -138,20 +140,20 @@ bool initializeParameters() {
   theL1dCfg.NoBus.initialize(false);
   theL1dCfg.Banks.initialize(1);
   theL1dCfg.TraceAddress.initialize(0);
-  theL1dCfg.CacheType.initialize("InclMESI2PhaseWB");
+  theL1dCfg.CacheType.initialize("InclusiveMESI");
   theL1dCfg.ArrayConfiguration.initialize("STD:size=65536:assoc=4:repl=LRU");
   theL1dCfg.EvictOnSnoop.initialize(true);
   theL1dCfg.UseReplyChannel.initialize(true);
 
-  theL2Cfg.Cores.initialize(64);
+  theL2Cfg.Cores.initialize(2);
   theL2Cfg.BlockSize.initialize(64);
-  theL2Cfg.Banks.initialize(64);
+  theL2Cfg.Banks.initialize(1);
   theL2Cfg.BankInterleaving.initialize(64);
   theL2Cfg.Groups.initialize(1);
   theL2Cfg.GroupInterleaving.initialize(4096);
   theL2Cfg.DirLatency.initialize(3);
   theL2Cfg.DirIssueLatency.initialize(1);
-  theL2Cfg.TagLatency.initialize(3);
+  theL2Cfg.TagLatency.initialize(1);
   theL2Cfg.TagIssueLatency.initialize(1);
   theL2Cfg.DataLatency.initialize(7);
   theL2Cfg.DataIssueLatency.initialize(1);
@@ -164,29 +166,30 @@ bool initializeParameters() {
   theL2Cfg.DirectoryConfig.initialize("");
   theL2Cfg.CacheLevel.initialize(eL2);
   theL2Cfg.EvictClean.initialize(false);
-  theL2Cfg.ArrayConfiguration.initialize("STD:size=1048576:assoc=16:repl=LRU");
+  theL2Cfg.ArrayConfiguration.initialize("STD:sets=1024:assoc=16:repl=LRU");
 
   theNicCfg.VChannels.initialize(3);
   theNicCfg.RecvCapacity.initialize(4);
   theNicCfg.SendCapacity.initialize(1);
 
   //theNetworkCfg.NetworkTopologyFile.initialize("16node-torus.topology");
-  theNetworkCfg.NetworkTopologyFile.initialize("64x3-mesh.topology");
+  theNetworkCfg.NetworkTopologyFile.initialize("1x3-mesh.topology");
   theNetworkCfg.NumNodes.initialize( 3 * getSystemWidth() );
   theNetworkCfg.VChannels.initialize( 3 );
 
-  theNetMapperCfg.Cores.initialize(16);
-  theNetMapperCfg.Directories.initialize(16);
-  theNetMapperCfg.MemControllers.initialize(4);
+  theNetMapperCfg.Cores.initialize(1);
+  theNetMapperCfg.Directories.initialize(1);
+  theNetMapperCfg.Banks.initialize(1);
+  theNetMapperCfg.MemControllers.initialize(1);
   theNetMapperCfg.DirInterleaving.initialize(64);
   theNetMapperCfg.MemInterleaving.initialize(4096);
   theNetMapperCfg.DirLocation.initialize("Distributed");
-  theNetMapperCfg.MemLocation.initialize("4,7,8,11");
+  theNetMapperCfg.MemLocation.initialize("0");
   theNetMapperCfg.MemReplyToDir.initialize(true);
   theNetMapperCfg.MemAcksNeedData.initialize(true);
 
-  theMemoryCfg.Delay.initialize(240);
-  theMemoryCfg.MaxRequests.initialize(128);
+  theMemoryCfg.Delay.initialize(120);
+  theMemoryCfg.MaxRequests.initialize(64);
   theMemoryCfg.UseFetchReply.initialize(true);
 
   theMemoryMapCfg.PageSize.initialize(8 * K);
@@ -210,7 +213,7 @@ bool initializeParameters() {
   theMagicBreakCfg.TerminateOnMagicBreak.initialize(-1);
   theMagicBreakCfg.EnableIterationCounts.initialize(false);
 
-  return false; //Abort simulation if parameters are not initialized
+  return false; //true = Abort simulation if parameters are not initialized
 }
 
 #include FLEXUS_END_COMPONENT_CONFIGURATION_SECTION()
