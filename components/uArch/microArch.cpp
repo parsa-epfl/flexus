@@ -5,8 +5,8 @@
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <boost/throw_exception.hpp>
 
-#define __STDC_CONSTANT_MACROS
-#include <boost/date_time/posix_time/posix_time.hpp>
+// #define __STDC_CONSTANT_MACROS
+// #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <core/target.hpp>
 #include <core/debug/debug.hpp>
@@ -28,6 +28,7 @@ namespace Stat = Flexus::Stat;
 namespace nuArch {
 
 using Flexus::Core::theFlexus;
+using namespace std::chrono;
 
 static const int32_t kY = 34;
 static const int32_t kCCR = 35;
@@ -352,8 +353,9 @@ public:
   void skipCycle() {
     FLEXUS_PROFILE();
     if ((theCPU->id() == 0) && ( (theFlexus->cycleCount() % 10000) == 0) ) {
-      boost::posix_time::ptime now(boost::posix_time::second_clock::local_time());
-      DBG_(Dev, ( << "Timestamp: " << boost::posix_time::to_simple_string(now)));
+      auto now(system_clock::now());
+      auto tt = system_clock::to_time_t(now);
+      DBG_(Dev, ( << "Timestamp: " << std::put_time(std::localtime(&tt), "%Y-%h-%d %T")));
     }
 
     if (theDriveClients) {
@@ -368,8 +370,9 @@ public:
   void cycle() {
     FLEXUS_PROFILE();
     if ((theCPU->id() == 0) && ( (theFlexus->cycleCount() % 10000) == 0) ) {
-      boost::posix_time::ptime now(boost::posix_time::second_clock::local_time());
-      DBG_(Dev, ( << "Timestamp: " << boost::posix_time::to_simple_string(now)));
+      auto now(system_clock::now());
+      auto tt = system_clock::to_time_t(now);
+      DBG_(Dev, ( << "Timestamp: " << std::put_time(std::localtime(&tt), "%Y-%h-%d %T")));
     }
 
     if (theDriveClients) {

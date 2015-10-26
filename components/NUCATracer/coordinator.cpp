@@ -9,8 +9,9 @@
 #include <fstream>
 #include <memory>
 #include <boost/utility.hpp>
-#define __STDC_CONSTANT_MACROS
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <chrono>
+// #define __STDC_CONSTANT_MACROS
+// #include <boost/date_time/posix_time/posix_time.hpp>
 
 std::ostream & operator << (std::ostream & str, TraceData const & aTraceData) {
   str << std::setw(12) << aTraceData.theFillLevel ;
@@ -67,8 +68,9 @@ int32_t tCoordinator::getOCAccess(TraceData * aRecord) {
 }
 
 void tCoordinator::finalize() {
-  boost::posix_time::ptime now(boost::posix_time::second_clock::local_time());
-  DBG_(Dev, ( << "Finalizing state. " << boost::posix_time::to_simple_string(now)));
+  auto now(std::chrono::system_clock::now());
+  auto tt = std::chrono::system_clock::to_time_t(now);
+  DBG_(Dev, ( << "Finalizing state. " << std::put_time(std::localtime(&tt), "%Y-%h-%d %T")));
 
   trace::flushFiles();
 }
