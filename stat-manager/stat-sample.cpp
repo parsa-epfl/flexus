@@ -63,19 +63,19 @@ void loadDatabase( std::string const & aName, std::string const & aPrefix, bool 
 }
 
 void reduceSum() {
-  getStatManager()->reduce(eSum, ".*selection", "sum", std::cout);
+  getStatManager()->reduce(eReduction::eSum, ".*selection", "sum", std::cout);
 }
 
 void reduceAvg() {
-  getStatManager()->reduce(eAverage, ".*selection", "avg", std::cout);
+  getStatManager()->reduce(eReduction::eAverage, ".*selection", "avg", std::cout);
 }
 
 void reduceStdev(std::string const & aMsmt) {
-  getStatManager()->reduce(eStdDev, ".*selection", aMsmt, std::cout);
+  getStatManager()->reduce(eReduction::eStdDev, ".*selection", aMsmt, std::cout);
 }
 
 void reduceCount() {
-  getStatManager()->reduce(eCount, ".*selection", "count", std::cout);
+  getStatManager()->reduce(eReduction::eCount, ".*selection", "count", std::cout);
 }
 
 void reduceNodes() {

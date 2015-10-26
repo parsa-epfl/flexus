@@ -55,7 +55,7 @@ void loadDatabase( std::string const & aName) {
 }
 
 void reduceSum(std::string const & aMeasurementRestriction) {
-  getStatManager()->reduce(eSum, aMeasurementRestriction, "selection", std::cout);
+  getStatManager()->reduce(eReduction::eSum, aMeasurementRestriction, "selection", std::cout);
 }
 
 void save(std::string const & aFilename, std::string const & aMeasurementRestriction) {
