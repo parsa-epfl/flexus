@@ -11,12 +11,10 @@
 #include <core/qemu/attribute_value.hpp>
 #include <core/qemu/api_wrappers.hpp>
 
-#include <boost/utility.hpp>
+#include <type_traits>
 #include <functional>
-#include <boost/type_traits/is_base_and_derived.hpp>
 
 #include <core/boost_extensions/member_function_traits.hpp>
-#include <boost/bind.hpp>
 
 namespace Flexus {
 namespace Qemu {
@@ -40,7 +38,7 @@ class BuiltInObject : public aux_::Object, public aux_::BuiltIn {
 protected:
   ObjectClassImpl theImpl;
 public:
-  typedef ObjectClassImpl implementation_class;
+  using implementation_class = ObjectClassImpl;
 
   BuiltInObject () : theImpl(0) {}
   explicit BuiltInObject (ObjectClassImpl & anImpl) : theImpl(anImpl) {}
@@ -80,7 +78,7 @@ template <class ObjectClassImpl>
 class AddInObject /*: public aux_::Object */{
   ObjectClassImpl * theImpl;
 public:
-  typedef ObjectClassImpl implementation_class;
+  using implementation_class = ObjectClassImpl;
   AddInObject() : theImpl(0) {}
   explicit AddInObject(API::conf_object_t * aQemuObject) : 
 	  theImpl(new ObjectClassImpl(aQemuObject)) {}
@@ -131,14 +129,14 @@ struct no_class_registration_tag {};
 //trait template for determining of CppObjectClass represents a Qemu Builtin class
 template <class CppObjectClass>
 struct is_builtin {
-  static const bool value = boost::is_base_and_derived<BuiltIn, CppObjectClass>::value;
+  static const bool value = std::is_base_of<BuiltIn, CppObjectClass>::value;
 };
 
 //This class collects functionality common to both the Builtin and Addin
 //implementations of Class.  Also, it allows us to store pointers to
 //Class objects as BaseClassImpl *, so we don't have to know what the
 //CppObjectClass template argument is.
-class BaseClassImpl : boost::noncopyable {
+class BaseClassImpl{
 protected:
   API::conf_class_t * theQemuClass; //Qemu class data structure
 
@@ -155,6 +153,11 @@ public:
   bool operator !=(const BaseClassImpl & aClass) {
     return !(*this == aClass);
   }
+
+  //Non-copyable
+  BaseClassImpl() = default;
+  BaseClassImpl(const BaseClassImpl&) = delete;
+  BaseClassImpl& operator=(const BaseClassImpl&) = delete;
 };
 
 //Implementation of the Class type for Qemu classes
@@ -177,10 +180,10 @@ public:
   }
 };
 
-typedef char YesType;
-typedef struct {
+using YesType = char;
+struct NoType {
   char a[2];
-} NoType;
+} ;
 
 template <class MemberFunction, int Arity>
 struct member_function_arity {
@@ -194,7 +197,7 @@ class ClassImpl < CppObjectClass, false /* ! builtin */ > : public BaseClassImpl
   //Note: the ordering of the elements in this struct is significant. conf_object
   //must come first, and this struct must be a POD, to guarantee that the
   //reinterpret_casts below are legal.
-  typedef QemuObject<CppObjectClass> Qemu_object;
+  using Qemu_object = QemuObject<CppObjectClass>;
 
 public:
 
@@ -244,11 +247,11 @@ struct Class : public aux_::ClassImpl<
 						, aux_::is_builtin<CppObjectClass>::value 
 						> 
 {
-  typedef aux_::ClassImpl<
+  using base = aux_::ClassImpl<
 	    CppObjectClass
 	  , aux_::is_builtin<CppObjectClass>::value 
-	  > base;
-  typedef CppObjectClass object_type;
+	  >;
+  using object_type = CppObjectClass;
 
   //Forwarding constructors
   Class() {}
@@ -257,7 +260,7 @@ struct Class : public aux_::ClassImpl<
 
 template <class CppObjectClass >
 class Factory {
-  typedef Class<CppObjectClass> class_;
+  using class_ = Class<CppObjectClass>;
   class_ * theClass;
 public:
   Factory() {

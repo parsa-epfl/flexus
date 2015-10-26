@@ -500,7 +500,7 @@ public:
   }
   void newValue(accumulation_type aValueType) {
     theValues.push_back( simple_type(theSet.size()) ) ;
-    if (aValueType == Reset) {
+    if (aValueType == accumulation_type::Reset) {
       theSet.clear();
     }
   }

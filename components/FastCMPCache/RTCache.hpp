@@ -58,9 +58,9 @@ using Flexus::SharedTypes::PhysicalMemoryAddress;
 
 namespace nFastCMPCache {
 
-typedef std::function<void( uint64_t tagset, CoherenceState_t state) > evict_function_t;
-typedef std::function<void( uint64_t tagset, int32_t owner ) > region_evict_function_t;
-typedef std::function<bool( uint64_t tagset, bool icache, bool dcache ) > invalidate_function_t;
+using evict_function_t = std::function<void( uint64_t tagset, CoherenceState_t state) >;
+using region_evict_function_t = std::function<void( uint64_t tagset, int32_t owner ) >;
+using invalidate_function_t = std::function<bool( uint64_t tagset, bool icache, bool dcache ) >;
 
 class RTCache : public AbstractCache {
 public:
@@ -209,7 +209,7 @@ public:
     }
   };
 
-  typedef multi_index_container
+  using rt_set_t = multi_index_container
   < RTEntry
   , indexed_by
   < sequenced < tag<by_order> >
@@ -220,11 +220,11 @@ public:
   >
   >
   >
-  rt_set_t;
+ ;
 
-  typedef rt_set_t::index<by_order>::type::iterator rt_order_iterator;
-  typedef rt_set_t::index<by_tag>::type::iterator  rt_iterator;
-  typedef rt_set_t::index<by_tag>::type    rt_index;
+  using rt_order_iterator = rt_set_t::index<by_order>::type::iterator;
+  using rt_iterator = rt_set_t::index<by_tag>::type::iterator;
+  using rt_index = rt_set_t::index<by_tag>::type;
 
   // Structur to mimic traditional tag array (BST like structure)
   struct BlockEntry {
@@ -260,7 +260,7 @@ public:
     CoherenceState_t state;
   };
 
-  typedef multi_index_container
+  using block_set_t = multi_index_container
   < BlockEntry
   , indexed_by
   < sequenced < tag<by_order> >
@@ -275,13 +275,13 @@ public:
   >
   >
   >
-  block_set_t;
+ ;
 
-  typedef block_set_t::index<by_order>::type::iterator order_iterator;
-  typedef block_set_t::index<by_tag>::type::iterator  tag_iterator;
-  typedef block_set_t::index<by_way>::type::iterator  way_iterator;
+  using order_iterator = block_set_t::index<by_order>::type::iterator;
+  using tag_iterator = block_set_t::index<by_tag>::type::iterator;
+  using way_iterator = block_set_t::index<by_way>::type::iterator;
 
-  typedef block_set_t::index<by_way>::type    way_index;
+  using way_index = block_set_t::index<by_way>::type;
 
   class RTLookupResult : public LookupResult {
   public:
@@ -335,7 +335,7 @@ public:
     }
   };
 
-  typedef boost::intrusive_ptr<RTLookupResult> RTLookupResult_p;
+  using RTLookupResult_p = boost::intrusive_ptr<RTLookupResult>;
 
   enum RTReplPolicy_t { SET_LRU, REGION_LRU };
 

@@ -48,9 +48,9 @@ class TransactionTracerImpl : public TransactionTracer {
   static void processCycles( std::tuple<std::string, std::string, int> const & aCause) {
     DBG_(VVerb,
          Cat(TransactionDetailsTrace)
-         Set( (Component) << aCause.get<0>() )
-         Set( (Cause) << aCause.get<1>() )
-         SetNumeric( (Cycles) aCause.get<2>() )
+         Set( (Component) << std::get<0>(aCause) )
+         Set( (Cause) << std::get<1>(aCause) )
+         SetNumeric( (Cycles) std::get<2>(aCause) )
         );
   }
 
@@ -267,8 +267,8 @@ private:
     // std::for_each
     // ( aCategoryList.begin()
     //   , aCategoryList.end()
-    //   , ( bind( & XactCatStats::accountDelay , _1, aDetail.get<0>(), aDetail.get<2>() )
-    //       , bind( & XactCatStats::accountDelay , _1, aDetail.get<1>(), aDetail.get<2>() )
+    //   , ( bind( & XactCatStats::accountDelay , _1, std::get<0>(aDetail), std::get<2>(aDetail) )
+    //       , bind( & XactCatStats::accountDelay , _1, std::get<1>(aDetail), std::get<2>(aDetail) )
     //     )
     // );
   }

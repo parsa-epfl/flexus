@@ -206,7 +206,7 @@ public:
   typedef maf_t::iterator maf_iter;
 
   void account(eEntryType anEntry, int32_t aDelta) {
-    //Accumulate counts since the last accounting
+    //accumulation_type::Accumulate counts since the last accounting
     int64_t time = Flexus::Core::theFlexus->cycleCount() - theLastAccounting;
     if (time > 0) {
       for (int32_t i = 0; i < kLastType; ++i) {

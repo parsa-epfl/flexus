@@ -18,7 +18,7 @@ class StatValue_PredictionCounter;
 
 class Stat; //forward declare
 
-enum accumulation_type {
+enum class accumulation_type {
   Accumulate
   , Reset
 };
@@ -40,7 +40,7 @@ public:
   void reject(int64_t anOverride);
 };
 
-enum eReduction {
+enum class eReduction {
   eSum
   , eAverage
   , eStdDev

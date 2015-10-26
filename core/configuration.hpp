@@ -2,6 +2,7 @@
 #define FLEXUS_CONFIGURATION_HPP_INCLUDED
 
 #include <sstream>
+#include <type_traits>
 
 #include <boost/utility.hpp>
 #include <core/boost_extensions/lexical_cast.hpp>
@@ -15,23 +16,27 @@ namespace Flexus {
 namespace Core {
 
 using std::string;
-using boost::noncopyable;
+using std::is_integral;
+using std::is_same;
+
 using boost::lexical_cast;
 using boost::bad_lexical_cast;
-using boost::is_integral;
-using boost::is_same;
 
 namespace aux_ {
 //These classes must be complete before ConfigurationManager can be defined, hence,
 //they appear before ConfigurationManager
 
 //Base class for Dynamic Parameters
-struct ParameterBase : private noncopyable {
+struct ParameterBase {
   //The Parameter definition object describing the command line options
   std::string theName;
   std::string theDescription;
   std::string theSwitch;
   const std::string & theConfig;
+
+  //Non-copyable
+  ParameterBase(const ParameterBase&) = delete;
+  ParameterBase& operator=(const ParameterBase&) = delete;
 
   //Constructor taking a ParameterDefinition object.  Defined after ConfigurationManager
   //as it requires the declaration of theConfigurationManager.
@@ -50,7 +55,7 @@ struct ParameterBase : private noncopyable {
 
 } //End aux_
 
-struct ConfigurationManager : private noncopyable {
+struct ConfigurationManager{
   //Sets up a configuration based on anArgc and anArgv
   virtual void processCommandLineConfiguration(int32_t anArgc, char ** anArgv) = 0;
 
@@ -71,6 +76,9 @@ struct ConfigurationManager : private noncopyable {
   static std::string getParameterValue(std::string const & aName, bool exact = true);
   // end PLotfi
 
+  //Non-copyable
+  ConfigurationManager(const ConfigurationManager&) = delete;
+  ConfigurationManager& operator=(const ConfigurationManager&) = delete;
 protected:
   //Constructible by derived classes only
   ConfigurationManager() {}

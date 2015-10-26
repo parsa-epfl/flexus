@@ -25,15 +25,15 @@ protected:
   char const * theFile;
   int64_t theLine;
 public:
-  FlexusException()  : theExplanation(0), theFile(0), theLine(0) {}
+  FlexusException()  : theExplanation(nullptr), theFile(nullptr), theLine(0) {}
   explicit FlexusException(string anExplanation) :
-    theFile(0),
+    theFile(nullptr),
     theLine(0) {
     theExplanation = new char[anExplanation.size() +1];
     memcpy(theExplanation, anExplanation.c_str(), anExplanation.size() + 1);
   }
   explicit FlexusException(char const * anExplanation) :
-    theFile(0),
+    theFile(nullptr),
     theLine(0) {
     size_t len = strlen(anExplanation);
     theExplanation = new char[len + 1];
@@ -60,7 +60,7 @@ public:
     theFile(anException.theFile),
     theLine(anException.theLine) {
     //Copying an exception MOVES ownership of the explanation
-    anException.theExplanation = 0;
+    anException.theExplanation = nullptr;
   }
 
   virtual ~FlexusException() throw() {

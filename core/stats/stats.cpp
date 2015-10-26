@@ -14,15 +14,12 @@
 #define BOOST_NO_WREGEX
 #include <boost/regex.hpp>
 #include <boost/spirit/include/classic_file_iterator.hpp>
-//#include <boost/spirit/iterator/file_iterator.hpp>
 #include <boost/optional.hpp>
 
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 
 #include <core/stats.hpp>
-
-namespace ll = boost::lambda;
 
 namespace Flexus {
 namespace Stat {
@@ -223,77 +220,93 @@ void Prediction::connectCounter( boost::intrusive_ptr< aux_::StatValue_Predictio
 }
 
 void Prediction::confirm() {
-  std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
-  std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
-  while (iter != end) {
-    (*iter)->confirm(theUpdate);
-    ++iter;
-  }
+  for(auto& aCounter: theCounters)
+    aCounter->confirm(theUpdate);
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
+  // while (iter != end) {
+  //   (*iter)->confirm(theUpdate);
+  //   ++iter;
+  // }
   theCounters.clear();
 }
 
 void Prediction::confirm(int64_t anOverride) {
-  std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
-  std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
-  while (iter != end) {
-    (*iter)->confirm(anOverride);
-    ++iter;
-  }
+  for(auto& aCounter: theCounters)
+    aCounter->confirm(anOverride);
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
+  // while (iter != end) {
+  //   (*iter)->confirm(anOverride);
+  //   ++iter;
+  // }
 }
 
 void Prediction::dismiss() {
-  std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
-  std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
-  while (iter != end) {
-    (*iter)->dismiss();
-    ++iter;
-  }
+  for(auto& aCounter: theCounters)
+    aCounter->dismiss();
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
+  // while (iter != end) {
+  //   (*iter)->dismiss();
+  //   ++iter;
+  // }
   theCounters.clear();
 }
 
 void Prediction::guess() {
-  std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
-  std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
-  while (iter != end) {
-    (*iter)->guess(theUpdate);
-    ++iter;
-  }
+  for(auto& aCounter: theCounters)
+    aCounter->guess(theUpdate);
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
+  // while (iter != end) {
+  //   (*iter)->guess(theUpdate);
+  //   ++iter;
+  // }
 }
 
 void Prediction::guess(int64_t anOverride) {
-  std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
-  std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
-  while (iter != end) {
-    (*iter)->guess(anOverride);
-    ++iter;
-  }
+  for(auto& aCounter: theCounters)
+    aCounter->guess(anOverride);
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
+  // while (iter != end) {
+  //   (*iter)->guess(anOverride);
+  //   ++iter;
+  // }
 }
 
 void Prediction::goodGuess() {
-  std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
-  std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
-  while (iter != end) {
-    (*iter)->goodGuess();
-    ++iter;
-  }
+  for(auto& aCounter: theCounters)
+    aCounter->goodGuess();
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
+  // while (iter != end) {
+  //   (*iter)->goodGuess();
+  //   ++iter;
+  // }
 }
 
 void Prediction::reject() {
-  std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
-  std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
-  while (iter != end) {
-    (*iter)->reject(theUpdate);
-    ++iter;
-  }
+  for(auto& aCounter: theCounters)
+    aCounter->reject(theUpdate);
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
+  // while (iter != end) {
+  //   (*iter)->reject(theUpdate);
+  //   ++iter;
+  // }
 }
 
 void Prediction::reject(int64_t anOverride) {
-  std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
-  std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
-  while (iter != end) {
-    (*iter)->reject(anOverride);
-    ++iter;
-  }
+  for(auto& aCounter: theCounters)
+    aCounter->reject(anOverride);
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
+  // while (iter != end) {
+  //   (*iter)->reject(anOverride);
+  //   ++iter;
+  // }
 }
 
 namespace aux_ {
@@ -435,11 +448,11 @@ public:
   RootDirective( LineFormatter<BiDirIter> & aFormatter)
     : theFormatter(aFormatter)
   {}
-  bool ready() {
-    if (theSubDirective) {
-      return theSubDirective->ready();
-    }
-    return true;
+  bool ready() { return theSubDirective ? theSubDirective->ready(): true;
+    // if (theSubDirective) {
+    //   return theSubDirective->ready();
+    // }
+    // return true;
   }
   void addLine(BiDirIter aStart, BiDirIter anEnd) {
     if (theSubDirective) {
@@ -527,28 +540,46 @@ public:
 
     try {
       boost::regex measurement_filter(theMeasurementSpec);
-      typename measurement_map::iterator iter = theFormatter.measurements().begin();
-      typename measurement_map::iterator end = theFormatter.measurements().end();
+      for(auto& aMeasurement: theFormatter.measurements()){
+        if (boost::regex_match(aMeasurement.first, measurement_filter)) {
+          theFormatter.setDefaultMeasurement(aMeasurement.first);
 
-      while (iter != end) {
-        if (boost::regex_match(iter->first, measurement_filter)) {
-          theFormatter.setDefaultMeasurement(iter->first);
-
-          typename line_vector::iterator l_iter = theLines.begin();
-          typename line_vector::iterator l_end = theLines.end();
-
-          while (l_iter != l_end) {
-            if (l_iter->theDirective) {
-              l_iter->theDirective->process();
-            }
-            if (l_iter->theLine) {
-              theFormatter.format(l_iter->theLine->first, l_iter->theLine->second);
-            }
-            ++l_iter;
+          for(auto& aLine: theLines){
+            if(aLine.theDirective)
+              aLine.theDirective->process();
+            else
+              theFormatter.format(aLine.theLine->first, aLine.theLine->second);
           }
         }
-        ++iter;
       }
+      // typename measurement_map::iterator iter = theFormatter.measurements().begin();
+      // typename measurement_map::iterator end = theFormatter.measurements().end();
+
+      // while (iter != end) {
+      //   if (boost::regex_match(iter->first, measurement_filter)) {
+      //     theFormatter.setDefaultMeasurement(iter->first);
+
+      //     for(auto& aLine: theLines){
+      //       if(aLine.theDirective)
+      //         aLine.theDirective->process();
+      //       else
+      //         theFormatter.format(aLine.theLine->first, aLine.theLine->second);
+      //     }
+      //     // typename line_vector::iterator l_iter = theLines.begin();
+      //     // typename line_vector::iterator l_end = theLines.end();
+
+      //     // while (l_iter != l_end) {
+      //     //   if (l_iter->theDirective) {
+      //     //     l_iter->theDirective->process();
+      //     //   }
+      //     //   if (l_iter->theLine) {
+      //     //     theFormatter.format(l_iter->theLine->first, l_iter->theLine->second);
+      //     //   }
+      //     //   ++l_iter;
+      //     // }
+      //   }
+      //   ++iter;
+      // }
 
     } catch (boost::bad_expression & anExcept) {
       theFormatter.out() << "{ERR:Bad Measurement Spec: " << theMeasurementSpec << "}";
@@ -672,26 +703,32 @@ public:
     theStats.push_back(aStat);
     theStatNames.push_back(aStat->name());
 
-    measurement_collection::iterator iter = theMeasurements.begin();
-    measurement_collection::iterator end = theMeasurements.end();
-    while (iter != end) {
-      if (iter->second.get() != 0) {
-        iter->second->addToMeasurement(aStat);
-      }
-      ++iter;
-    }
+    for(auto& aMeasurement: theMeasurements)
+      if(aMeasurement.second.get() != nullptr)
+        aMeasurement.second->addToMeasurement(aStat);
+
+    // measurement_collection::iterator iter = theMeasurements.begin();
+    // measurement_collection::iterator end = theMeasurements.end();
+    // while (iter != end) {
+    //   if (iter->second.get() != 0) {
+    //     iter->second->addToMeasurement(aStat);
+    //   }
+    //   ++iter;
+    // }
   }
 
   boost::intrusive_ptr<Measurement> openMeasurement(std::string const & aName, std::string const & aStatSpec = std::string(".*")) {
     if (theMeasurements.find(aName) == theMeasurements.end()) {
       boost::intrusive_ptr<SimpleMeasurement> measurement(new SimpleMeasurement(aName, aStatSpec));
 
-      stat_collection::iterator iter = theStats.begin();
-      stat_collection::iterator end = theStats.end();
-      while (iter != end) {
-        measurement->addToMeasurement(*iter);
-        ++iter;
-      }
+      for(auto* aStat: theStats)
+        measurement->addToMeasurement(aStat);
+      // stat_collection::iterator iter = theStats.begin();
+      // stat_collection::iterator end = theStats.end();
+      // while (iter != end) {
+      //   measurement->addToMeasurement(*iter);
+      //   ++iter;
+      // }
 
       theMeasurements[aName] = measurement;
       return measurement;
@@ -704,13 +741,14 @@ public:
   void openPeriodicMeasurement(std::string const & aName, int64_t aPeriod, accumulation_type anAccumulation, std::string const & aStatSpec = std::string(".*")) {
     if (theMeasurements.find(aName) == theMeasurements.end()) {
       boost::intrusive_ptr<PeriodicMeasurement> measurement(new PeriodicMeasurement(aName, aStatSpec, aPeriod, anAccumulation));
-
-      stat_collection::iterator iter = theStats.begin();
-      stat_collection::iterator end = theStats.end();
-      while (iter != end) {
-        measurement->addToMeasurement(*iter);
-        ++iter;
-      }
+      for(auto* aStat: theStats)
+        measurement->addToMeasurement(aStat);
+      // stat_collection::iterator iter = theStats.begin();
+      // stat_collection::iterator end = theStats.end();
+      // while (iter != end) {
+      //   measurement->addToMeasurement(*iter);
+      //   ++iter;
+      // }
 
       theMeasurements[aName] = measurement;
     } else {
@@ -721,13 +759,14 @@ public:
   void openLoggedPeriodicMeasurement(std::string const & aName, int64_t aPeriod, accumulation_type anAccumulation, std::ostream & anOstream, std::string const & aStatSpec = std::string(".*")) {
     if (theMeasurements.find(aName) == theMeasurements.end()) {
       boost::intrusive_ptr<LoggedPeriodicMeasurement> measurement(new LoggedPeriodicMeasurement(aName, aStatSpec, aPeriod, anAccumulation, anOstream));
-
-      stat_collection::iterator iter = theStats.begin();
-      stat_collection::iterator end = theStats.end();
-      while (iter != end) {
-        measurement->addToMeasurement(*iter);
-        ++iter;
-      }
+      for(auto* aStat: theStats)
+        measurement->addToMeasurement(aStat);
+      // stat_collection::iterator iter = theStats.begin();
+      // stat_collection::iterator end = theStats.end();
+      // while (iter != end) {
+      //   measurement->addToMeasurement(*iter);
+      //   ++iter;
+      // }
 
       theMeasurements[aName] = measurement;
     } else {
@@ -738,24 +777,31 @@ public:
   void reduceNodes(std::string const & aMeasurementSpec) {
     boost::regex spec(aMeasurementSpec);
     measurement_collection selected_measurements;
-    measurement_collection::iterator iter = theMeasurements.begin();
-    measurement_collection::iterator end = theMeasurements.end();
-    while (iter != end) {
-      if (boost::regex_match(iter->first, spec)) {
-        selected_measurements.insert( *iter );
-      }
-      ++iter;
-    }
+    for(auto& aMeasurement: theMeasurements)
+      if (boost::regex_match(aMeasurement.first, spec))
+        selected_measurements.insert(aMeasurement);
+    // measurement_collection::iterator iter = theMeasurements.begin();
+    // measurement_collection::iterator end = theMeasurements.end();
+    // while (iter != end) {
+    //   if (boost::regex_match(iter->first, spec)) {
+    //     selected_measurements.insert( *iter );
+    //   }
+    //   ++iter;
+    // }
 
-    measurement_collection::iterator sel_iter = selected_measurements.begin();
-    measurement_collection::iterator sel_end = selected_measurements.end();
-    while (sel_iter != sel_end) {
-      SimpleMeasurement * msmt = dynamic_cast<SimpleMeasurement *>(sel_iter->second.get());
-      if (msmt) {
-        msmt->reduceNodes();
-      }
-      ++sel_iter;
+    for(auto& aMeasurement: selected_measurements) {
+      auto* msmt = dynamic_cast<SimpleMeasurement *>(aMeasurement.second.get());
+      if (msmt) msmt->reduceNodes();
     }
+    // measurement_collection::iterator sel_iter = selected_measurements.begin();
+    // measurement_collection::iterator sel_end = selected_measurements.end();
+    // while (sel_iter != sel_end) {
+    //   SimpleMeasurement * msmt = dynamic_cast<SimpleMeasurement *>(sel_iter->second.get());
+    //   if (msmt) {
+    //     msmt->reduceNodes();
+    //   }
+    //   ++sel_iter;
+    // }
   }
 
   void finalize() {
@@ -764,12 +810,14 @@ public:
       theFinalizers.pop_front();
     }
 
-    measurement_collection::iterator iter = theMeasurements.begin();
-    measurement_collection::iterator end = theMeasurements.end();
-    while (iter != end) {
-      iter->second->close();
-      ++iter;
-    }
+    for(auto& aMeasurement: theMeasurements)
+      aMeasurement.second->close();
+    // measurement_collection::iterator iter = theMeasurements.begin();
+    // measurement_collection::iterator end = theMeasurements.end();
+    // while (iter != end) {
+    //   iter->second->close();
+    //   ++iter;
+    // }
   }
 
   void closeMeasurement(std::string const & aName) {
@@ -783,31 +831,37 @@ public:
   }
 
   void listStats(std::ostream & anOstream) {
-    stat_names::iterator iter = theStatNames.begin();
-    stat_names::iterator end = theStatNames.end();
-    while (iter != end) {
-      anOstream << * iter << std::endl;
-      ++iter;
-    }
+    for(auto& aStatName: theStatNames)
+      anOstream << aStatName << std::endl;
+    // stat_names::iterator iter = theStatNames.begin();
+    // stat_names::iterator end = theStatNames.end();
+    // while (iter != end) {
+    //   anOstream << * iter << std::endl;
+    //   ++iter;
+    // }
   }
 
   void listMeasurements(std::ostream & anOstream) {
-    measurement_collection::iterator iter = theMeasurements.begin();
-    measurement_collection::iterator end = theMeasurements.end();
-    while (iter != end) {
-      anOstream << * iter->second << std::endl;
-      ++iter;
-    }
+    for(auto& aMeasurement: theMeasurements)
+      anOstream << *aMeasurement.second << std::endl;
+    // measurement_collection::iterator iter = theMeasurements.begin();
+    // measurement_collection::iterator end = theMeasurements.end();
+    // while (iter != end) {
+    //   anOstream << * iter->second << std::endl;
+    //   ++iter;
+    // }
   }
 
   boost::intrusive_ptr<Measurement> doReduce(eReduction aReduction, std::string aName, std::map< std::string, Measurement * > & aMatches) {
     boost::intrusive_ptr<Measurement> collapsedMeasurement( openMeasurement(aName) );
 
-    std::map< std::string, Measurement * >::iterator matchIter = aMatches.begin();
-    while (matchIter != aMatches.end()) {
-      collapsedMeasurement->reduce(aReduction, matchIter->second);
-      ++matchIter;
-    }
+    for(auto& aMatch: aMatches)
+      collapsedMeasurement->reduce(aReduction, aMatch.second);
+    // std::map< std::string, Measurement * >::iterator matchIter = aMatches.begin();
+    // while (matchIter != aMatches.end()) {
+    //   collapsedMeasurement->reduce(aReduction, matchIter->second);
+    //   ++matchIter;
+    // }
     collapsedMeasurement->close();
 
     return collapsedMeasurement;
@@ -816,14 +870,17 @@ public:
   void printMeasurement(std::string const & aMeasurementSpec, std::ostream & anOstream) {
     boost::regex spec(aMeasurementSpec);
     std::map< std::string, Measurement * > matches;
-    measurement_collection::iterator iter = theMeasurements.begin();
-    measurement_collection::iterator end = theMeasurements.end();
-    while (iter != end) {
-      if (boost::regex_match(iter->first, spec)) {
-        matches[iter->first] = iter->second.get();
-      }
-      ++iter;
-    }
+    for(auto& pair: theMeasurements)
+      if (boost::regex_match(pair.first, spec))
+        matches[pair.first] = pair.second.get();
+    // measurement_collection::iterator iter = theMeasurements.begin();
+    // measurement_collection::iterator end = theMeasurements.end();
+    // while (iter != end) {
+    //   if (boost::regex_match(iter->first, spec)) {
+    //     matches[iter->first] = iter->second.get();
+    //   }
+    //   ++iter;
+    // }
     if (matches.size() == 0) {
       std::cout << "No measurement matches " << aMeasurementSpec << std::endl;
     } else if (matches.size() == 1) {
@@ -831,22 +888,26 @@ public:
       matchIter->second->print(anOstream);
     } else {
       std::cout << "Collapsing all matching measurements:" << std::endl;
-      boost::intrusive_ptr<Measurement> collapsedMeasurement( doReduce(eSum, "Collapsed", matches) );
+      boost::intrusive_ptr<Measurement> collapsedMeasurement( doReduce(eReduction::eSum, "Collapsed", matches) );
       collapsedMeasurement->print(anOstream);
     }
   }
 
   void format(std::string const & aMeasurementSpec, std::string const & aFormat, std::ostream & anOstream) {
     boost::regex spec(aMeasurementSpec);
+
     std::map< std::string, Measurement * > matches;
-    measurement_collection::iterator iter = theMeasurements.begin();
-    measurement_collection::iterator end = theMeasurements.end();
-    while (iter != end) {
-      if (boost::regex_match(iter->first, spec)) {
-        matches[iter->first] = iter->second.get();
-      }
-      ++iter;
-    }
+    for(auto& pair: theMeasurements)
+      if (boost::regex_match(pair.first, spec))
+        matches[pair.first] = pair.second.get();
+    // measurement_collection::iterator iter = theMeasurements.begin();
+    // measurement_collection::iterator end = theMeasurements.end();
+    // while (iter != end) {
+    //   if (boost::regex_match(iter->first, spec)) {
+    //     matches[iter->first] = iter->second.get();
+    //   }
+    //   ++iter;
+    // }
     if (matches.size() == 0) {
       std::cout << "No measurement matches " << aMeasurementSpec << std::endl;
     } else {
@@ -858,14 +919,17 @@ public:
   void formatFile(std::string const & aMeasurementSpec, std::string const & aFile, std::ostream & anOstream) {
     boost::regex spec(aMeasurementSpec);
     std::map< std::string, Measurement * > matches;
-    measurement_collection::iterator iter = theMeasurements.begin();
-    measurement_collection::iterator end = theMeasurements.end();
-    while (iter != end) {
-      if (boost::regex_match(iter->first, spec)) {
-        matches[iter->first] = iter->second.get();
-      }
-      ++iter;
-    }
+    for(auto& pair: theMeasurements)
+      if (boost::regex_match(pair.first, spec))
+        matches[pair.first] = pair.second.get();
+    // measurement_collection::iterator iter = theMeasurements.begin();
+    // measurement_collection::iterator end = theMeasurements.end();
+    // while (iter != end) {
+    //   if (boost::regex_match(iter->first, spec)) {
+    //     matches[iter->first] = iter->second.get();
+    //   }
+    //   ++iter;
+    // }
     if (matches.size() == 0) {
       std::cout << "No measurement matches " << aMeasurementSpec << std::endl;
     } else {
@@ -886,20 +950,23 @@ public:
   void collapse(std::string const & aMeasurementSpec, std::string const & aFormat, std::ostream & anOstream) {
     boost::regex spec(aMeasurementSpec);
     std::map< std::string, Measurement * > matches;
-    measurement_collection::iterator iter = theMeasurements.begin();
-    measurement_collection::iterator end = theMeasurements.end();
-    while (iter != end) {
-      if (boost::regex_match(iter->first, spec)) {
-        matches[iter->first] = iter->second.get();
-      }
-      ++iter;
-    }
+    for(auto& pair: theMeasurements)
+      if (boost::regex_match(pair.first, spec))
+        matches[pair.first] = pair.second.get();
+    // measurement_collection::iterator iter = theMeasurements.begin();
+    // measurement_collection::iterator end = theMeasurements.end();
+    // while (iter != end) {
+    //   if (boost::regex_match(iter->first, spec)) {
+    //     matches[iter->first] = iter->second.get();
+    //   }
+    //   ++iter;
+    // }
     if (matches.size() == 0) {
       std::cout << "No measurement matches " << aMeasurementSpec << std::endl;
     } else {
       std::string collapsedMeasurementName("Collapsed");
       std::map< std::string, Measurement * > toCollapse;
-      boost::intrusive_ptr<Measurement> collapsedMeasurement( doReduce(eSum, collapsedMeasurementName, matches) );
+      boost::intrusive_ptr<Measurement> collapsedMeasurement( doReduce(eReduction::eSum, collapsedMeasurementName, matches) );
       toCollapse[collapsedMeasurementName] = collapsedMeasurement.get();
 
       StatFormatter<std::string::const_iterator> formatter(toCollapse, anOstream);
@@ -910,14 +977,17 @@ public:
   void reduce(eReduction aReduction, std::string const & aMeasurementSpec, std::string const & aDestMeasurement, std::ostream & anOstream) {
     boost::regex spec(aMeasurementSpec);
     std::map< std::string, Measurement * > matches;
-    measurement_collection::iterator iter = theMeasurements.begin();
-    measurement_collection::iterator end = theMeasurements.end();
-    while (iter != end) {
-      if (boost::regex_match(iter->first, spec)) {
-        matches[iter->first] = iter->second.get();
-      }
-      ++iter;
-    }
+    for(auto& pair: theMeasurements)
+      if (boost::regex_match(pair.first, spec))
+        matches[pair.first] = pair.second.get();
+    // measurement_collection::iterator iter = theMeasurements.begin();
+    // measurement_collection::iterator end = theMeasurements.end();
+    // while (iter != end) {
+    //   if (boost::regex_match(iter->first, spec)) {
+    //     matches[iter->first] = iter->second.get();
+    //   }
+    //   ++iter;
+    // }
     if (matches.size() == 0) {
       std::cout << "No measurement matches " << aMeasurementSpec << std::endl;
     } else {
@@ -930,14 +1000,17 @@ public:
   void collapseFile(std::string const & aMeasurementSpec, std::string const & aFile, std::ostream & anOstream) {
     boost::regex spec(aMeasurementSpec);
     std::map< std::string, Measurement * > matches;
-    measurement_collection::iterator iter = theMeasurements.begin();
-    measurement_collection::iterator end = theMeasurements.end();
-    while (iter != end) {
-      if (boost::regex_match(iter->first, spec)) {
-        matches[iter->first] = iter->second.get();
-      }
-      ++iter;
-    }
+    for(auto& pair: theMeasurements)
+      if (boost::regex_match(pair.first, spec))
+        matches[pair.first] = pair.second.get();
+    // measurement_collection::iterator iter = theMeasurements.begin();
+    // measurement_collection::iterator end = theMeasurements.end();
+    // while (iter != end) {
+    //   if (boost::regex_match(iter->first, spec)) {
+    //     matches[iter->first] = iter->second.get();
+    //   }
+    //   ++iter;
+    // }
     if (matches.size() == 0) {
       std::cout << "No measurement matches " << aMeasurementSpec << std::endl;
     } else {
@@ -946,7 +1019,7 @@ public:
       if (first) {
         std::string collapsedMeasurementName("Collapsed");
         std::map< std::string, Measurement * > toCollapse;
-        boost::intrusive_ptr<Measurement> collapsedMeasurement( doReduce(eSum, collapsedMeasurementName, matches) );
+        boost::intrusive_ptr<Measurement> collapsedMeasurement( doReduce(eReduction::eSum, collapsedMeasurementName, matches) );
         toCollapse[collapsedMeasurementName] = collapsedMeasurement.get();
 
         boost::spirit::classic::file_iterator<> last = first.make_end();
@@ -963,14 +1036,17 @@ public:
   void saveMeasurements(std::string const & aMeasurementSpec, std::string const & aFile) const {
     boost::regex spec(aMeasurementSpec);
     measurement_collection selected_measurements;
-    measurement_collection::const_iterator iter = theMeasurements.begin();
-    measurement_collection::const_iterator end = theMeasurements.end();
-    while (iter != end) {
-      if (boost::regex_match(iter->first, spec)) {
-        selected_measurements.insert( *iter );
-      }
-      ++iter;
-    }
+    for(auto& pair: theMeasurements)
+      if (boost::regex_match(pair.first, spec))
+        selected_measurements.insert(pair);
+    // measurement_collection::const_iterator iter = theMeasurements.begin();
+    // measurement_collection::const_iterator end = theMeasurements.end();
+    // while (iter != end) {
+    //   if (boost::regex_match(iter->first, spec)) {
+    //     selected_measurements.insert( *iter );
+    //   }
+    //   ++iter;
+    // }
     if (selected_measurements.size() == 0) {
       std::cout << "No measurement matches " << aMeasurementSpec << std::endl;
     } else {
@@ -1090,15 +1166,21 @@ public:
     ia >> measurements;
     ia >> tick;
 
-    measurement_collection::iterator iter = measurements.begin();
-    measurement_collection::iterator end = measurements.end();
-    while (iter != end) {
-      std::string name = iter->second->name();
-      name = aPrefix + name;
-      iter->second->resetName( name );
-      theMeasurements[name] = iter->second;
-      ++iter;
+    for(auto& aMeasurement: measurements){
+      auto name = aPrefix + aMeasurement.second->name();
+      aMeasurement.second->resetName( name );
+      theMeasurements[name] = aMeasurement.second;
     }
+
+    // measurement_collection::iterator iter = measurements.begin();
+    // measurement_collection::iterator end = measurements.end();
+    // while (iter != end) {
+    //   std::string name = iter->second->name();
+    //   name = aPrefix + name;
+    //   iter->second->resetName( name );
+    //   theMeasurements[name] = iter->second;
+    //   ++iter;
+    // }
 
   }
 
@@ -1371,19 +1453,20 @@ void InstanceCounterPrint::doPrint(std::ostream & anOstream, std::string const &
   int64_t displayed_sum = 0;
   int64_t overall_sum = 0;
   float cdf_pct = 0;
-  for (uint32_t i = 0; i < elements.size(); ++i) {
-    if (exclude && (elements[i].value == excludeBucket)) continue;
+  for(auto& element: elements){
+    auto value = element.value;
+    auto count = element.count;
+    
+    if (exclude && (value == excludeBucket)) continue;
 
-    if (exclude && (elements[i].value == excludeBucket)) continue;
-
-    float pct = static_cast<float>(elements[i].count) / sum_f * 100.0;
+    float pct = static_cast<float>(count) / sum_f * 100.0;
     cdf_pct += pct;
-    if (!printAll && elements[i].count <= 1) break;
+    if (!printAll && count <= 1) break;
     ++displayed_count;
-    displayed_sum += elements[i].count;
-    overall_sum += elements[i].count * elements[i].value;
+    displayed_sum += count;
+    overall_sum += count * value;
     anOstream << "      ";
-    anOstream << std::left << std::setw(10) << std::setfill(' ') << elements[i].count;
+    anOstream << std::left << std::setw(10) << std::setfill(' ') << count;
     if (printCDF) {
       anOstream << std::right << std::setprecision(2) << std::fixed << std::setw(6) << cdf_pct << "% ";
     } else {
@@ -1392,13 +1475,41 @@ void InstanceCounterPrint::doPrint(std::ostream & anOstream, std::string const &
     if (valuePrintWidth >= 0) {
       anOstream << std::setw(valuePrintWidth);
     }
-    if (valuePrintHex || ((elements[i].value > 100000) && ((elements[i].value & 63) == 0))) {
-      anOstream << "0x" << std::hex << elements[i].value << std::dec;
+    if (valuePrintHex || ((value > 100000) && ((value & 63) == 0))) {
+      anOstream << "0x" << std::hex << value << std::dec;
     } else {
-      anOstream << elements[i].value;
+      anOstream << value;
     }
     anOstream << std::endl;
   }
+  // for (uint32_t i = 0; i < elements.size(); ++i) {
+  //   if (exclude && (elements[i].value == excludeBucket)) continue;
+
+  //   if (exclude && (elements[i].value == excludeBucket)) continue;
+
+  //   float pct = static_cast<float>(elements[i].count) / sum_f * 100.0;
+  //   cdf_pct += pct;
+  //   if (!printAll && elements[i].count <= 1) break;
+  //   ++displayed_count;
+  //   displayed_sum += elements[i].count;
+  //   overall_sum += elements[i].count * elements[i].value;
+  //   anOstream << "      ";
+  //   anOstream << std::left << std::setw(10) << std::setfill(' ') << elements[i].count;
+  //   if (printCDF) {
+  //     anOstream << std::right << std::setprecision(2) << std::fixed << std::setw(6) << cdf_pct << "% ";
+  //   } else {
+  //     anOstream << std::right << std::setprecision(2) << std::fixed << std::setw(6) << pct << "% ";
+  //   }
+  //   if (valuePrintWidth >= 0) {
+  //     anOstream << std::setw(valuePrintWidth);
+  //   }
+  //   if (valuePrintHex || ((elements[i].value > 100000) && ((elements[i].value & 63) == 0))) {
+  //     anOstream << "0x" << std::hex << elements[i].value << std::dec;
+  //   } else {
+  //     anOstream << elements[i].value;
+  //   }
+  //   anOstream << std::endl;
+  // }
   if ( displayed_count != count ) {
     float pct = static_cast<float>(sum - displayed_sum) / sum_f * 100.0;
     anOstream << "      ";

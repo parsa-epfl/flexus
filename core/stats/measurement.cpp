@@ -675,30 +675,28 @@ void SimpleMeasurement :: reduce(eReduction aReduction, Measurement * aMeasureme
   }
   //std::cerr << "Collapsing measurement: " << aMeasurement->name() << std::endl;
 
-  stat_handle_map::iterator iter = simple->theStats.begin();
-  stat_handle_map::iterator end = simple->theStats.end();
-  while (iter != end) {
-    if (theStats.find(iter->first) == theStats.end()) {
+  for(auto& aStat: simple->theStats){
+    if (theStats.find(aStat.first) == theStats.end()) {
       try {
         switch ( aReduction) {
-          case eSum: {
-            boost::intrusive_ptr<StatValueBase> accumulator = iter->second.sumAccumulator();
-            theStats[iter->first] = StatValueHandle(iter->first, accumulator);
+          case eReduction::eSum: {
+            auto accumulator = aStat.second.sumAccumulator();
+            theStats[aStat.first] = StatValueHandle(aStat.first, accumulator);
             break;
           }
-          case eAverage: {
-            boost::intrusive_ptr<StatValueBase> accumulator = iter->second.avgAccumulator();
-            theStats[iter->first] = StatValueHandle(iter->first, accumulator);
+          case eReduction::eAverage: {
+            auto accumulator = aStat.second.avgAccumulator();
+            theStats[aStat.first] = StatValueHandle(aStat.first, accumulator);
             break;
           }
-          case eStdDev: {
-            boost::intrusive_ptr<StatValueBase> accumulator = iter->second.stdevAccumulator();
-            theStats[iter->first] = StatValueHandle(iter->first, accumulator);
+          case eReduction::eStdDev: {
+            auto accumulator = aStat.second.stdevAccumulator();
+            theStats[aStat.first] = StatValueHandle(aStat.first, accumulator);
             break;
           }
-          case eCount: {
-            boost::intrusive_ptr<StatValueBase> accumulator = iter->second.countAccumulator();
-            theStats[iter->first] = StatValueHandle(iter->first, accumulator);
+          case eReduction::eCount: {
+            auto accumulator = aStat.second.countAccumulator();
+            theStats[aStat.first] = StatValueHandle(aStat.first, accumulator);
             break;
           }
           default:
@@ -706,33 +704,33 @@ void SimpleMeasurement :: reduce(eReduction aReduction, Measurement * aMeasureme
         }
       } catch ( ... ) {
         //std::cerr  << "Can't accumulate stat " << iter->first << std::endl;
-        theStats.erase(iter->first);
+        theStats.erase(aStat.first);
       }
     } else {
       try {
         switch ( aReduction) {
-          case eSum: {
-            boost::intrusive_ptr<StatValueBase> accumulator = theStats[iter->first].getValue();
-            fold( *accumulator, * (iter->second.getValue()), & StatValueBase::reduceSum );
-            theStats[iter->first].setValue(accumulator);
+          case eReduction::eSum: {
+            auto accumulator = theStats[aStat.first].getValue();
+            fold( *accumulator, * (aStat.second.getValue()), & StatValueBase::reduceSum );
+            theStats[aStat.first].setValue(accumulator);
             break;
           }
-          case eAverage: {
-            boost::intrusive_ptr<StatValueBase> accumulator = theStats[iter->first].getValue();
-            fold( *accumulator, * (iter->second.getValue()), & StatValueBase::reduceAvg );
-            theStats[iter->first].setValue(accumulator);
+          case eReduction::eAverage: {
+            auto accumulator = theStats[aStat.first].getValue();
+            fold( *accumulator, * (aStat.second.getValue()), & StatValueBase::reduceAvg );
+            theStats[aStat.first].setValue(accumulator);
             break;
           }
-          case eStdDev: {
-            boost::intrusive_ptr<StatValueBase> accumulator = theStats[iter->first].getValue();
-            fold( *accumulator, * (iter->second.getValue()), & StatValueBase::reduceStdDev );
-            theStats[iter->first].setValue(accumulator);
+          case eReduction::eStdDev: {
+            auto accumulator = theStats[aStat.first].getValue();
+            fold( *accumulator, * (aStat.second.getValue()), & StatValueBase::reduceStdDev );
+            theStats[aStat.first].setValue(accumulator);
             break;
           }
-          case eCount: {
-            boost::intrusive_ptr<StatValueBase> accumulator = theStats[iter->first].getValue();
-            fold( *accumulator, * (iter->second.getValue()), & StatValueBase::reduceCount );
-            theStats[iter->first].setValue(accumulator);
+          case eReduction::eCount: {
+            auto accumulator = theStats[aStat.first].getValue();
+            fold( *accumulator, * (aStat.second.getValue()), & StatValueBase::reduceCount );
+            theStats[aStat.first].setValue(accumulator);
             break;
           }
           default:
@@ -740,11 +738,80 @@ void SimpleMeasurement :: reduce(eReduction aReduction, Measurement * aMeasureme
         }
       } catch ( ... ) {
         //std::cerr  << "Can't accumulate stat " << iter->first << std::endl;
-        theStats.erase(iter->first);
+        theStats.erase(aStat.first);
       }
     }
-    ++iter;
   }
+  // stat_handle_map::iterator iter = simple->theStats.begin();
+  // stat_handle_map::iterator end = simple->theStats.end();
+  // while (iter != end) {
+  //   if (theStats.find(iter->first) == theStats.end()) {
+  //     try {
+  //       switch ( aReduction) {
+  //         case eReduction::eSum: {
+  //           boost::intrusive_ptr<StatValueBase> accumulator = iter->second.sumAccumulator();
+  //           theStats[iter->first] = StatValueHandle(iter->first, accumulator);
+  //           break;
+  //         }
+  //         case eReduction::eAverage: {
+  //           boost::intrusive_ptr<StatValueBase> accumulator = iter->second.avgAccumulator();
+  //           theStats[iter->first] = StatValueHandle(iter->first, accumulator);
+  //           break;
+  //         }
+  //         case eReduction::eStdDev: {
+  //           boost::intrusive_ptr<StatValueBase> accumulator = iter->second.stdevAccumulator();
+  //           theStats[iter->first] = StatValueHandle(iter->first, accumulator);
+  //           break;
+  //         }
+  //         case eReduction::eCount: {
+  //           boost::intrusive_ptr<StatValueBase> accumulator = iter->second.countAccumulator();
+  //           theStats[iter->first] = StatValueHandle(iter->first, accumulator);
+  //           break;
+  //         }
+  //         default:
+  //           DBG_Assert(false);
+  //       }
+  //     } catch ( ... ) {
+  //       //std::cerr  << "Can't accumulate stat " << iter->first << std::endl;
+  //       theStats.erase(iter->first);
+  //     }
+  //   } else {
+  //     try {
+  //       switch ( aReduction) {
+  //         case eReduction::eSum: {
+  //           boost::intrusive_ptr<StatValueBase> accumulator = theStats[iter->first].getValue();
+  //           fold( *accumulator, * (iter->second.getValue()), & StatValueBase::reduceSum );
+  //           theStats[iter->first].setValue(accumulator);
+  //           break;
+  //         }
+  //         case eReduction::eAverage: {
+  //           boost::intrusive_ptr<StatValueBase> accumulator = theStats[iter->first].getValue();
+  //           fold( *accumulator, * (iter->second.getValue()), & StatValueBase::reduceAvg );
+  //           theStats[iter->first].setValue(accumulator);
+  //           break;
+  //         }
+  //         case eReduction::eStdDev: {
+  //           boost::intrusive_ptr<StatValueBase> accumulator = theStats[iter->first].getValue();
+  //           fold( *accumulator, * (iter->second.getValue()), & StatValueBase::reduceStdDev );
+  //           theStats[iter->first].setValue(accumulator);
+  //           break;
+  //         }
+  //         case eReduction::eCount: {
+  //           boost::intrusive_ptr<StatValueBase> accumulator = theStats[iter->first].getValue();
+  //           fold( *accumulator, * (iter->second.getValue()), & StatValueBase::reduceCount );
+  //           theStats[iter->first].setValue(accumulator);
+  //           break;
+  //         }
+  //         default:
+  //           DBG_Assert(false);
+  //       }
+  //     } catch ( ... ) {
+  //       //std::cerr  << "Can't accumulate stat " << iter->first << std::endl;
+  //       theStats.erase(iter->first);
+  //     }
+  //   }
+  //   ++iter;
+  // }
 }
 
 void SimpleMeasurement :: reduceNodes() {
@@ -908,13 +975,15 @@ void LoggedPeriodicMeasurement  :: fire () {
     print(theOstream);
     theOstream.flush();
 
-    if (theAccumulationType == Reset) {
-      stat_handle_map::iterator iter = theStats.begin();
-      stat_handle_map::iterator end = theStats.end();
-      while (iter != end) {
-        iter->second.reset();
-        ++iter;
-      }
+    if (theAccumulationType == accumulation_type::Reset) {
+      for(auto& aStat:theStats)
+        aStat.second.reset();
+      // stat_handle_map::iterator iter = theStats.begin();
+      // stat_handle_map::iterator end = theStats.end();
+      // while (iter != end) {
+      //   iter->second.reset();
+      //   ++iter;
+      // }
     }
 
     getStatManager()->addEvent(getStatManager()->ticks() + thePeriod, [this](){ return this->fire(); }); //ll::bind( &LoggedPeriodicMeasurement::fire, this) );

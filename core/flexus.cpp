@@ -474,7 +474,7 @@ void FlexusImpl::log(std::string const & aName, std::string const & anInterval, 
   DBG_(Dev, Set( (Source) << "flexus") ( << "Logging: " << aRegEx << " every " << anInterval << " cycles as measurement " << aName << " to " << aName + ".out" ) );
   std::string filename(aName + ".out");
   std::ofstream * log =  new std::ofstream( filename.c_str()); //Leaks intentionally
-  Stat::getStatManager()->openLoggedPeriodicMeasurement(aName.c_str(), interval, Stat::Accumulate, *log, aRegEx.c_str());
+  Stat::getStatManager()->openLoggedPeriodicMeasurement(aName.c_str(), interval, Stat::accumulation_type::Accumulate, *log, aRegEx.c_str());
 }
 
 void FlexusImpl::writeMeasurement(std::string const & aMeasurement, std::string const & aFilename) {

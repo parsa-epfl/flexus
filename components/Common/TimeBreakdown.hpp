@@ -309,7 +309,7 @@ struct TimeBreakdown {
 
     void commitPending() {
       if (theHasPending) {
-        //Accumulate pending stall cycles
+        //accumulation_type::Accumulate pending stall cycles
         std::vector<Stat::StatCounter *>::iterator iter = theStallAccumulators.begin();
         std::vector<Stat::StatCounter *>::iterator end = theStallAccumulators.end();
         std::vector<int>::iterator pend_iter = pendStallAccumulators.begin();

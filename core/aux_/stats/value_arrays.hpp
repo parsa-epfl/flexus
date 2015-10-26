@@ -67,7 +67,7 @@ public:
     anOstream << theValues.back();
   }
   void newValue(accumulation_type aValueType) {
-    if (aValueType == Accumulate) {
+    if (aValueType == accumulation_type::Accumulate) {
       theValues.push_back(theValues.back());
     } else {
       theValues.push_back( simple_type(theInitialValue) );
@@ -132,7 +132,7 @@ public:
         anOstream << theValues.back();
       }
       void newValue(accumulation_type aValueType) {
-        if (aValueType == Accumulate) {
+        if (aValueType == accumulation_type::Accumulate) {
           theValues.push_back(theValues.back());
         } else {
           theValues.push_back( simple_type(theInitialValue) );
@@ -191,7 +191,7 @@ public:
     anOstream << theValues.back();
   }
   void newValue(accumulation_type aValueType) {
-    if (aValueType == Accumulate) {
+    if (aValueType == accumulation_type::Accumulate) {
       theValues.push_back(theValues.back());
     } else {
       theValues.push_back( simple_type(theInitialValue) );
@@ -243,7 +243,7 @@ public:
     anOstream << theValues.back();
   }
   void newValue(accumulation_type aValueType) {
-    if (aValueType == Accumulate) {
+    if (aValueType == accumulation_type::Accumulate) {
       theValues.push_back(theValues.back());
     } else {
       theValues.push_back( simple_type(0) );
@@ -295,7 +295,7 @@ public:
     anOstream << theValues.back();
   }
   void newValue(accumulation_type aValueType) {
-    if (aValueType == Accumulate) {
+    if (aValueType == accumulation_type::Accumulate) {
       theValues.push_back(theValues.back());
     } else {
       theValues.push_back( simple_type(0) );
@@ -347,7 +347,7 @@ public:
     anOstream << theValues.back();
   }
   void newValue(accumulation_type aValueType) {
-    if (aValueType == Accumulate) {
+    if (aValueType == accumulation_type::Accumulate) {
       theValues.push_back(theValues.back());
     } else {
       theValues.push_back( simple_type(0) );

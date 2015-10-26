@@ -274,7 +274,7 @@ public:
     if (cfg.EnableTransactionCounts) {
       theTrackers.push_back(BreakpointTracker::newTransactionTracker(cfg.TransactionType, cfg.TerminateOnTransaction, cfg.TransactionStatsInterval, cfg.CheckpointEveryXTransactions, cfg.FirstTransactionIs, cfg.CycleMinimum));
       theTransactionsOut.open("transactions.out");
-      Stat::getStatManager()->openLoggedPeriodicMeasurement("Transactions", 1000000, Stat::Accumulate, theTransactionsOut, "(DB2.*)|(JBB.*)|(WEB.*)");
+      Stat::getStatManager()->openLoggedPeriodicMeasurement("Transactions", 1000000, Stat::accumulation_type::Accumulate, theTransactionsOut, "(DB2.*)|(JBB.*)|(WEB.*)");
     }
     if (cfg.StopCycle > 0 || cfg.CkptCycleInterval > 0) {
       theCycleTracker = BreakpointTracker::newCycleTracker( cfg.StopCycle, cfg.CkptCycleInterval, cfg.CkptCycleName );
