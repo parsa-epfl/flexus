@@ -204,8 +204,8 @@ public:
 
     theMemoryMessage.branchType() = branchTypeTable[ mem_trans->s.branch_type ];
     theMemoryMessage.branchAnnul() = (mem_trans->s.annul != 0);
-    // TODO FIXME: provokes crash whe reading register
-#if FLEXUS_TARGET_IS(v9) && 0
+
+#if FLEXUS_TARGET_IS(v9)
     uint64_t reg_content;
     API::QEMU_read_register(theCPU, 46 /* kTL */, nullptr, &reg_content );
     theMemoryMessage.tl() = reg_content;
@@ -213,8 +213,7 @@ public:
     theMemoryMessage.tl() = 0;
 #endif
 
-    // TODO FIXME: provokes crash
-#if FLEXUS_TARGET_IS(v9) && 0
+#if FLEXUS_TARGET_IS(v9)
     uint32_t opcode = 
 		API::QEMU_read_phys_memory(theCPU, mem_trans->s.physical_address, 4);
 #else
@@ -234,7 +233,6 @@ public:
 				<< theMemoryMessage) 
 			);
     toL1I(theIndex, theMemoryMessage, opcode);
-    //std::cout<<"index : "<<theIndex<<std::endl;
     return k_no_stall; //Never stalls
   }
 
@@ -263,7 +261,6 @@ public:
     }
 #endif
    
-#if 0
 #if FLEXUS_TARGET_IS(v9)
     if (mem_trans->sparc_specific.address_space == 0x71 ) {
       //BLK stores to ASI 71.
@@ -280,7 +277,6 @@ public:
       return k_no_stall; //Not a memory operation
     }
 #endif
-#endif
     if (mem_trans->s.type == API::QEMU_Trans_Instr_Fetch) {
       return insn_fetch(mem_trans);
     }
@@ -294,8 +290,7 @@ public:
     if (mem_trans->s.atomic) {
       //Need to determine opcode, as this may be an RMW or CAS
 
-      // TODO FIXME: provokes crash
-#if FLEXUS_TARGET_IS(v9) && 0
+#if FLEXUS_TARGET_IS(v9)
       // record the opcode
       API::physical_address_t pc = API::QEMU_logical_to_physical(theCPU, API::QEMU_DI_Instruction, mem_trans->s.pc);
       uint32_t op_code = API::QEMU_read_phys_memory(theCPU, pc, 4);
