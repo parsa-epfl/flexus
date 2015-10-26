@@ -9,8 +9,8 @@ CURRENT_TOOLCHAIN=$(EXT_STORAGE)/toolchain-5.2
 
 # GCC Compiler Settings
 GCC_PATH=/net/parsasrv3/mnt/parsafiler3/homedirs/psaropou/toolchain-5.2
-#GCC_BINARY=g++-5.2 --std=c++14
-GCC_BINARY=clang --std=c++14 -stdlib=libstdc++
+GCC_BINARY=g++-5.2 --std=c++14
+#GCC_BINARY=clang --std=c++14 -stdlib=libstdc++
 GCC_VERSION_NOCHECK=true
 SIMICS_GLIBC_NOCHECK=true
 
@@ -56,18 +56,10 @@ SIMICS_X86_INCLUDE=$(SIMICS_INCLUDE)/simics
 SIMICS_ARM_INCLUDE=$(SIMICS_INCLUDE)/simics
 
 # FIXME user has to update manually
-QEMU_LIB_DIR=/home/daglis/flexus/qemuflex/qemu-parsa/sparc64-softmmu/
-#QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-sparc64
-#QEMU_LIB_DIR=$(EXT_STORAGE)/flexus_repo/qemuflex/qemu-parsa/x86_64-softmmu/
-#QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-x86_64
-#QEMU_LIB_DIR=$(EXT_STORAGE)/flexus_repo/qemuflex/qemu-parsa/arm-softmmu/
-#QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-arm
-#QEMU_LIB_DIR=$(EXT_STORAGE)/flexus_repo/qemuflex/qemu-parsa/aarch64-softmmu/
-#QEMU_INCLUDE=-L$(CORE_DIR)/qemu -L$(QEMU_LIB_DIR) -lqemuflex-aarch64
 export TARGET_EMULATOR=qemu
 #export TARGET_EMULATOR=simics
 
-INCLUDES=-isystem $(BOOST_INCLUDE) -isystem $(SIMICS_INCLUDE) $(QEMU_INCLUDE) -I$(FLEXUS_INCLUDE) -Ibooksim -Ibooksim/arbiters -Ibooksim/allocators -Ibooksim/routers -Ibooksim/networks -IDRAMSim2
+INCLUDES=-isystem $(BOOST_INCLUDE) -isystem $(SIMICS_INCLUDE) -I$(FLEXUS_INCLUDE) -Ibooksim -Ibooksim/arbiters -Ibooksim/allocators -Ibooksim/routers -Ibooksim/networks -IDRAMSim2
 BOOST_LIBRARIES=-Wl,--no-whole-archive -L$(BOOST_BINARIES) -lboost_date_time -lboost_regex -lboost_serialization -lboost_iostreams -lboost_system -lz #-L/home/hillouli/Documents/qemuflex/flexus/stat-manager 
 
 # other constants
@@ -83,9 +75,9 @@ GCC=$(GCC_PATH)/bin/$(GCC_BINARY)
 GCC_LIB_PATH=$(GCC_PATH)/lib
 GCC_OPTFLAGS=-O3 -funroll-loops -fno-strict-aliasing
 #UNCOMMENT FOR GCC
-#GCC_LANGFLAGS=-Wall -fmessage-length=160 -fpermissive -x c++ -fPIC -Werror -Wno-unused -Wno-maybe-uninitialized -Wno-parentheses -Wno-int-to-pointer-cast -Wno-logical-not-parentheses -DNO_STORAGE
+GCC_LANGFLAGS=-Wall -fmessage-length=160 -fpermissive -x c++ -fPIC -Werror -Wno-unused -Wno-maybe-uninitialized -Wno-parentheses -Wno-int-to-pointer-cast -Wno-logical-not-parentheses -DNO_STORAGE
 #UNCOMMENT FOR CLANG
-GCC_LANGFLAGS=-Wall -fmessage-length=160 -x c++ -fPIC -fpermissive -Werror -Wno-unused -Wno-uninitialized -Wno-parentheses -Wno-int-to-pointer-cast -Wno-logical-not-parentheses -Wno-write-strings -Wno-string-plus-int -Wno-mismatched-tags -Wno-overloaded-virtual -Wno-redeclared-class-member -Wno-null-dereference -Wno-tautological-constant-out-of-range-compare -Wno-constant-logical-operand -Wno-unknown-pragmas -Wno-mismatched-new-delete -Wno-tautological-undefined-compare -DNO_STORAGE
+#GCC_LANGFLAGS=-Wall -fmessage-length=160 -x c++ -fPIC -fpermissive -Werror -Wno-unused -Wno-uninitialized -Wno-parentheses -Wno-int-to-pointer-cast -Wno-logical-not-parentheses -Wno-write-strings -Wno-string-plus-int -Wno-mismatched-tags -Wno-overloaded-virtual -Wno-redeclared-class-member -Wno-null-dereference -Wno-tautological-constant-out-of-range-compare -Wno-constant-logical-operand -Wno-unknown-pragmas -Wno-mismatched-new-delete -Wno-tautological-undefined-compare -DNO_STORAGE
 ifeq "$(SIMICS_ARCH)" "amd64-linux"
 ARCH_FLAGS=-DX86_64
 else

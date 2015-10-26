@@ -6,6 +6,8 @@
 #include <core/types.hpp>
 #include <core/qemu/api_wrappers.hpp>
 
+#if FLEXUS_TARGET_IS(v9) // For now, just disable that.
+
 #include "mai_api.hpp"
 
 #include <core/qemu/sparcmmu.hpp>
@@ -1485,3 +1487,4 @@ fm_compare_mmus(mmu_t * a, mmu_t * b) {
 } //end Namespace Simics
 } //end namespace Flexus
 
+#endif // IS_V9

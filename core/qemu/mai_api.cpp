@@ -15,6 +15,8 @@
 #include <core/types.hpp>
 #include <core/qemu/api_wrappers.hpp>
 
+#if FLEXUS_TARGET_IS(v9) // For now, we just disable that.
+
 // added by PLotfi
 #include <core/configuration.hpp>
 // end PLotfi
@@ -588,3 +590,4 @@ int ProcessorMapper::numProcessors() {
 } //end Namespace Qemu 
 } //end namespace Flexus
 
+#endif // IS_V9

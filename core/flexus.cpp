@@ -324,6 +324,7 @@ void FlexusImpl::invokeDrives() {
 void FlexusImpl::doCycle() {
   FLEXUS_PROFILE();
   DBG_(VVerb, Core() ( << "Start of Cycle" ) );
+  DBG_(Tmp, Core() ( << "Start of Cycle " << theCycleCount ) );
 
   advanceCycles(1);
 
@@ -337,6 +338,7 @@ void FlexusImpl::doCycle() {
   invokeDrives();
 
   DBG_(VVerb, Core() ( << "End of Cycle" ) );
+  DBG_(Tmp, Core() ( << "End of Cycle " << theCycleCount-1 ) );
 
 }
 
@@ -1081,6 +1083,12 @@ void CreateFlexusObject() {
 //Might not be best.
 void initFlexus(){
     theFlexus->initializeComponents();
+}
+
+void startTimingFlexus(){
+   for (;;) { 		//ALEX - infinite loop for now!
+       theFlexus->doCycle();
+   }
 }
 
 void PrepareFlexusObject() {
