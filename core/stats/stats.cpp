@@ -6,13 +6,12 @@
 #include <queue>
 #include <list>
 #include <fstream>
+#include <regex>
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/throw_exception.hpp>
 #include <boost/serialization/split_free.hpp>
 #include <functional>
-#define BOOST_NO_WREGEX
-#include <boost/regex.hpp>
 #include <boost/spirit/include/classic_file_iterator.hpp>
 #include <boost/optional.hpp>
 
@@ -320,9 +319,9 @@ public:
 private:
   measurement_map & theMeasurements;
   std::ostream & theOut;
-  boost::regex theFieldRegex;
-  boost::regex theFieldDetailsRegex;
-  boost::regex theOperationDetailsRegex;
+  std::regex theFieldRegex;
+  std::regex theFieldDetailsRegex;
+  std::regex theOperationDetailsRegex;
   std::string theDefaultMeasurement;
 public:
   LineFormatter( measurement_map & aMeasurementSet, std::ostream & anOut)
@@ -334,13 +333,13 @@ public:
     , theDefaultMeasurement(theMeasurements.begin()->first)
   { }
 
-  bool operator()(const boost::match_results< BiDirIter >& aMatch) {
+  bool operator()(const std::match_results< BiDirIter >& aMatch) {
     if (aMatch[1].matched) {
       theOut << aMatch.str(1);
     }
     if (aMatch[2].matched) {
-      boost::match_results<BiDirIter> details;
-      if ( boost::regex_match(aMatch[2].first, aMatch[2].second, details, theFieldDetailsRegex)) {
+      std::match_results<BiDirIter> details;
+      if ( std::regex_match(aMatch[2].first, aMatch[2].second, details, theFieldDetailsRegex)) {
         std::string field(details[1].first, details[1].second);
         std::string options;
         std::string measurement(theDefaultMeasurement);
@@ -366,8 +365,8 @@ public:
       }
     }
     if (aMatch[3].matched) {
-      boost::match_results<BiDirIter> details;
-      if ( boost::regex_match(aMatch[3].first, aMatch[3].second, details, theOperationDetailsRegex)) {
+      std::match_results<BiDirIter> details;
+      if ( std::regex_match(aMatch[3].first, aMatch[3].second, details, theOperationDetailsRegex)) {
         std::string operation(details[1].first, details[1].second);
         std::string options;
         std::string measurement(theDefaultMeasurement);
@@ -395,7 +394,10 @@ public:
   }
 
   void format( BiDirIter aFirst, BiDirIter aSecond) {
-    if (aFirst != aSecond && boost::regex_grep(*this, aFirst, aSecond, theFieldRegex)  > 0) {
+    std::regex_iterator<BiDirIter> iter(aFirst, aSecond, theFieldRegex), end{};
+    std::for_each(iter, end, *this);
+    if (aFirst != aSecond && iter != end) {
+    //if (aFirst != aSecond && boost::regex_grep(*this, aFirst, aSecond, theFieldRegex)  > 0) {
       theOut << std::endl;
     }
   }
@@ -539,9 +541,9 @@ public:
   bool process() {
 
     try {
-      boost::regex measurement_filter(theMeasurementSpec);
+      std::regex measurement_filter(theMeasurementSpec);
       for(auto& aMeasurement: theFormatter.measurements()){
-        if (boost::regex_match(aMeasurement.first, measurement_filter)) {
+        if (std::regex_match(aMeasurement.first, measurement_filter)) {
           theFormatter.setDefaultMeasurement(aMeasurement.first);
 
           for(auto& aLine: theLines){
@@ -556,7 +558,7 @@ public:
       // typename measurement_map::iterator end = theFormatter.measurements().end();
 
       // while (iter != end) {
-      //   if (boost::regex_match(iter->first, measurement_filter)) {
+      //   if (std::regex_match(iter->first, measurement_filter)) {
       //     theFormatter.setDefaultMeasurement(iter->first);
 
       //     for(auto& aLine: theLines){
@@ -581,7 +583,7 @@ public:
       //   ++iter;
       // }
 
-    } catch (boost::bad_expression & anExcept) {
+    } catch (std::regex_error & anExcept) {
       theFormatter.out() << "{ERR:Bad Measurement Spec: " << theMeasurementSpec << "}";
     }
 
@@ -593,8 +595,8 @@ template <class BiDirIter>
 class LineProcessor {
   std::map<std::string, Measurement *> & theMeasurements;
   std::ostream & theOut;
-  boost::regex theCommentRegex;
-  boost::regex theDirectiveRegex;
+  std::regex theCommentRegex;
+  std::regex theDirectiveRegex;
   LineFormatter<BiDirIter> theLineFormatter;
   RootDirective<BiDirIter> theDirectiveStack;
 
@@ -608,13 +610,13 @@ public:
     , theDirectiveStack(theLineFormatter)
   { }
 
-  bool operator()(const boost::match_results<BiDirIter> & aMatch) {
+  bool operator()(const std::match_results<BiDirIter> & aMatch) {
     //See what kind of line we have
-    boost::match_results< BiDirIter > directive_match;
-    if (boost::regex_match(aMatch[0].first, aMatch[0].second, theCommentRegex)) {
+    std::match_results< BiDirIter > directive_match;
+    if (std::regex_match(aMatch[0].first, aMatch[0].second, theCommentRegex)) {
       //Comments are removed from the output
       return true;
-    } else if (boost::regex_match(aMatch[0].first, aMatch[0].second, directive_match, theDirectiveRegex)) {
+    } else if (std::regex_match(aMatch[0].first, aMatch[0].second, directive_match, theDirectiveRegex)) {
       if (directive_match.str(1) == "FOR-MEASUREMENTS") {
         std::string measurements(".*");
         if (directive_match[2].matched) {
@@ -639,7 +641,7 @@ public:
 
 template <class BiDirIter>
 class StatFormatter {
-  boost::regex theLineRegex;
+  std::regex theLineRegex;
   LineProcessor<BiDirIter> theLineProcessor;
 public:
   StatFormatter( std::map<std::string, Measurement *> & aMeasurementSet, std::ostream & anOut)
@@ -648,7 +650,10 @@ public:
   {}
 
   void format(BiDirIter aBegin, BiDirIter anEnd) {
-    boost::regex_grep(theLineProcessor, aBegin, anEnd, theLineRegex, boost::match_not_dot_newline);
+    std::regex_iterator<BiDirIter> iter(aBegin, anEnd, theLineRegex);
+    std::regex_iterator<BiDirIter> end{};
+    std::for_each(iter, end, theLineProcessor);
+    //boost::regex_grep(theLineProcessor, aBegin, anEnd, theLineRegex, std::match_not_dot_newline);
   }
 };
 
@@ -775,15 +780,15 @@ public:
   }
 
   void reduceNodes(std::string const & aMeasurementSpec) {
-    boost::regex spec(aMeasurementSpec);
+    std::regex spec(aMeasurementSpec);
     measurement_collection selected_measurements;
     for(auto& aMeasurement: theMeasurements)
-      if (boost::regex_match(aMeasurement.first, spec))
+      if (std::regex_match(aMeasurement.first, spec))
         selected_measurements.insert(aMeasurement);
     // measurement_collection::iterator iter = theMeasurements.begin();
     // measurement_collection::iterator end = theMeasurements.end();
     // while (iter != end) {
-    //   if (boost::regex_match(iter->first, spec)) {
+    //   if (std::regex_match(iter->first, spec)) {
     //     selected_measurements.insert( *iter );
     //   }
     //   ++iter;
@@ -868,15 +873,15 @@ public:
   }
 
   void printMeasurement(std::string const & aMeasurementSpec, std::ostream & anOstream) {
-    boost::regex spec(aMeasurementSpec);
+    std::regex spec(aMeasurementSpec);
     std::map< std::string, Measurement * > matches;
     for(auto& pair: theMeasurements)
-      if (boost::regex_match(pair.first, spec))
+      if (std::regex_match(pair.first, spec))
         matches[pair.first] = pair.second.get();
     // measurement_collection::iterator iter = theMeasurements.begin();
     // measurement_collection::iterator end = theMeasurements.end();
     // while (iter != end) {
-    //   if (boost::regex_match(iter->first, spec)) {
+    //   if (std::regex_match(iter->first, spec)) {
     //     matches[iter->first] = iter->second.get();
     //   }
     //   ++iter;
@@ -894,16 +899,16 @@ public:
   }
 
   void format(std::string const & aMeasurementSpec, std::string const & aFormat, std::ostream & anOstream) {
-    boost::regex spec(aMeasurementSpec);
+    std::regex spec(aMeasurementSpec);
 
     std::map< std::string, Measurement * > matches;
     for(auto& pair: theMeasurements)
-      if (boost::regex_match(pair.first, spec))
+      if (std::regex_match(pair.first, spec))
         matches[pair.first] = pair.second.get();
     // measurement_collection::iterator iter = theMeasurements.begin();
     // measurement_collection::iterator end = theMeasurements.end();
     // while (iter != end) {
-    //   if (boost::regex_match(iter->first, spec)) {
+    //   if (std::regex_match(iter->first, spec)) {
     //     matches[iter->first] = iter->second.get();
     //   }
     //   ++iter;
@@ -917,15 +922,15 @@ public:
   }
 
   void formatFile(std::string const & aMeasurementSpec, std::string const & aFile, std::ostream & anOstream) {
-    boost::regex spec(aMeasurementSpec);
+    std::regex spec(aMeasurementSpec);
     std::map< std::string, Measurement * > matches;
     for(auto& pair: theMeasurements)
-      if (boost::regex_match(pair.first, spec))
+      if (std::regex_match(pair.first, spec))
         matches[pair.first] = pair.second.get();
     // measurement_collection::iterator iter = theMeasurements.begin();
     // measurement_collection::iterator end = theMeasurements.end();
     // while (iter != end) {
-    //   if (boost::regex_match(iter->first, spec)) {
+    //   if (std::regex_match(iter->first, spec)) {
     //     matches[iter->first] = iter->second.get();
     //   }
     //   ++iter;
@@ -948,15 +953,15 @@ public:
   }
 
   void collapse(std::string const & aMeasurementSpec, std::string const & aFormat, std::ostream & anOstream) {
-    boost::regex spec(aMeasurementSpec);
+    std::regex spec(aMeasurementSpec);
     std::map< std::string, Measurement * > matches;
     for(auto& pair: theMeasurements)
-      if (boost::regex_match(pair.first, spec))
+      if (std::regex_match(pair.first, spec))
         matches[pair.first] = pair.second.get();
     // measurement_collection::iterator iter = theMeasurements.begin();
     // measurement_collection::iterator end = theMeasurements.end();
     // while (iter != end) {
-    //   if (boost::regex_match(iter->first, spec)) {
+    //   if (std::regex_match(iter->first, spec)) {
     //     matches[iter->first] = iter->second.get();
     //   }
     //   ++iter;
@@ -975,15 +980,15 @@ public:
   }
 
   void reduce(eReduction aReduction, std::string const & aMeasurementSpec, std::string const & aDestMeasurement, std::ostream & anOstream) {
-    boost::regex spec(aMeasurementSpec);
+    std::regex spec(aMeasurementSpec);
     std::map< std::string, Measurement * > matches;
     for(auto& pair: theMeasurements)
-      if (boost::regex_match(pair.first, spec))
+      if (std::regex_match(pair.first, spec))
         matches[pair.first] = pair.second.get();
     // measurement_collection::iterator iter = theMeasurements.begin();
     // measurement_collection::iterator end = theMeasurements.end();
     // while (iter != end) {
-    //   if (boost::regex_match(iter->first, spec)) {
+    //   if (std::regex_match(iter->first, spec)) {
     //     matches[iter->first] = iter->second.get();
     //   }
     //   ++iter;
@@ -998,15 +1003,15 @@ public:
   }
 
   void collapseFile(std::string const & aMeasurementSpec, std::string const & aFile, std::ostream & anOstream) {
-    boost::regex spec(aMeasurementSpec);
+    std::regex spec(aMeasurementSpec);
     std::map< std::string, Measurement * > matches;
     for(auto& pair: theMeasurements)
-      if (boost::regex_match(pair.first, spec))
+      if (std::regex_match(pair.first, spec))
         matches[pair.first] = pair.second.get();
     // measurement_collection::iterator iter = theMeasurements.begin();
     // measurement_collection::iterator end = theMeasurements.end();
     // while (iter != end) {
-    //   if (boost::regex_match(iter->first, spec)) {
+    //   if (std::regex_match(iter->first, spec)) {
     //     matches[iter->first] = iter->second.get();
     //   }
     //   ++iter;
@@ -1034,15 +1039,15 @@ public:
   }
 
   void saveMeasurements(std::string const & aMeasurementSpec, std::string const & aFile) const {
-    boost::regex spec(aMeasurementSpec);
+    std::regex spec(aMeasurementSpec);
     measurement_collection selected_measurements;
     for(auto& pair: theMeasurements)
-      if (boost::regex_match(pair.first, spec))
+      if (std::regex_match(pair.first, spec))
         selected_measurements.insert(pair);
     // measurement_collection::const_iterator iter = theMeasurements.begin();
     // measurement_collection::const_iterator end = theMeasurements.end();
     // while (iter != end) {
-    //   if (boost::regex_match(iter->first, spec)) {
+    //   if (std::regex_match(iter->first, spec)) {
     //     selected_measurements.insert( *iter );
     //   }
     //   ++iter;

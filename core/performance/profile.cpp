@@ -4,16 +4,19 @@
 #include <iomanip>
 #include <string>
 #include <vector>
+#include <chrono>
 #include <algorithm>
 
 #include <boost/lexical_cast.hpp>
 
-#ifndef __STDC_CONSTANT_MACROS
-#define __STDC_CONSTANT_MACROS
-#endif
-#include <boost/date_time/posix_time/posix_time.hpp>
+// #ifndef __STDC_CONSTANT_MACROS
+// #define __STDC_CONSTANT_MACROS
+// #endif
+// #include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace nProfile {
+
+using namespace std::chrono;
 
 ProfileManager * theProfileManager = 0;
 Profiler * theProfileTOS = 0;
@@ -51,7 +54,7 @@ std::string leftmost( std::string const & aString, uint32_t N) {
   return retval;
 }
 
-boost::posix_time::ptime last_reset(boost::posix_time::second_clock::local_time());
+system_clock::time_point last_reset(system_clock::now());
 
 void ProfileManager::reset() {
   std::vector< Profiler *>::iterator iter, end;
@@ -59,7 +62,7 @@ void ProfileManager::reset() {
     (*iter)->reset();
   }
 
-  last_reset = boost::posix_time::second_clock::local_time();
+  last_reset = system_clock::now();
   theStartTime = rdtsc();
 }
 
@@ -70,8 +73,8 @@ void ProfileManager::report(std::ostream & out) {
   float program_time = programTime() / 100 ;
 
   out << "Ticks Since Reset: " << program_time << std::endl << std::endl;
-  boost::posix_time::ptime now(boost::posix_time::second_clock::local_time());
-  out << "Wall Clock Since Reset: " << boost::posix_time::to_simple_string( boost::posix_time::time_period(last_reset, now).length() ) << std::endl << std::endl;
+  system_clock::time_point now(system_clock::now());
+  out << "Wall Clock Since Reset: " << duration_cast<microseconds>(now - last_reset).count() << "us" << std::endl << std::endl;
 
   out << "Worst sources, by Self Time \n";
   std::sort( theProfilers.begin(), theProfilers.end(), &sortSelfTime);

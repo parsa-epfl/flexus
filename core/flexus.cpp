@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <chrono>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -24,10 +25,10 @@
 
 #include <core/boost_extensions/padded_string_cast.hpp>
 
-#ifndef __STDC_CONSTANT_MACROS
-#define __STDC_CONSTANT_MACROS
-#endif
-#include <boost/date_time/posix_time/posix_time.hpp>
+// #ifndef __STDC_CONSTANT_MACROS
+// #define __STDC_CONSTANT_MACROS
+// #endif
+// #include <boost/date_time/posix_time/posix_time.hpp>
 
 //FIXME don't do this need to make sure CONFIG_QEMU is defined elsewhere
 #ifndef CONFIG_QEMU
@@ -51,6 +52,7 @@ namespace Flexus {
 namespace Core {
 
 using Flexus::Wiring::theDrive;
+using namespace std::chrono;
 
 class FlexusImpl : public FlexusInterface {
 private:
@@ -270,8 +272,9 @@ void FlexusImpl::advanceCycles(int64_t aCycleCount) {
   //Check how much time has elapsed every 1024*1024 cycles
   static uint64_t last_timestamp = 0;
   if ( !theCycleCount || theCycleCount - last_timestamp >= theTimestampInterval ) {
-    boost::posix_time::ptime now(boost::posix_time::second_clock::local_time());
-    DBG_(Dev, Core() ( << "Timestamp: " << boost::posix_time::to_simple_string(now)));
+    system_clock::time_point now(system_clock::now());
+    auto tt = system_clock::to_time_t(now);
+    DBG_(Dev, Core() ( << "Timestamp: " << std::put_time(std::localtime(&tt), "%Y-%h-%d %T")));
     last_timestamp = theCycleCount;
   }
 
@@ -711,8 +714,9 @@ void FlexusImpl::onTerminate(std::function<void () > aFn) {
 }
 
 void FlexusImpl::terminateSimulation() {
-  boost::posix_time::ptime now(boost::posix_time::second_clock::local_time());
-  DBG_(Dev, Core() ( << "Terminating simulation. Timestamp: " << boost::posix_time::to_simple_string(now)));
+  system_clock::time_point now(system_clock::now());
+  auto tt = system_clock::to_time_t(now); 
+  DBG_(Dev, Core() ( << "Terminating simulation. Timestamp: " << std::put_time(std::localtime(&tt), "%Y-%h-%d %T")));
   DBG_(Dev, Core() ( << "Saving final stats_db."));
   ;
   for
