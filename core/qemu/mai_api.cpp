@@ -4,9 +4,9 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <regex>
 #include <cmath>
 
-#include <boost/regex.hpp>
 #include <boost/throw_exception.hpp>
 #include <memory>
 #include <functional>
@@ -250,10 +250,10 @@ ProcessorMapper::ProcessorMapper() {
 
   //ALEX - FIXME: Probably need to change the following naming convention for QEMU
   // changed by PLotfi
-  boost::regex vm_expression("machine([0-9]*)_((?:)|(?:server_)|(?:client_)|(?:besim_))cpu([0-9]*)");
-  //boost::regex vm_expression("machine([0-9]*)_((?:)|(?:server_)|(?:client_))cpu([0-9]*)");
-  boost::regex non_vm_expression("((?:)|(?:server_)|(?:client_)|(?:besim_))cpu([0-9]*)");
-  //boost::regex non_vm_expression("((?:)|(?:server_)|(?:client_))cpu([0-9]*)");
+  std::regex vm_expression("machine([0-9]*)_((?:)|(?:server_)|(?:client_)|(?:besim_))cpu([0-9]*)");
+  //std::regex vm_expression("machine([0-9]*)_((?:)|(?:server_)|(?:client_))cpu([0-9]*)");
+  std::regex non_vm_expression("((?:)|(?:server_)|(?:client_)|(?:besim_))cpu([0-9]*)");
+  //std::regex non_vm_expression("((?:)|(?:server_)|(?:client_))cpu([0-9]*)");
   // end PLotfi
   DBG_(Crit, ( << "Searching " << proc_count << " cpus." ));
   DBG_(Crit, ( << "WARNING: Need to fix this to distinguish between different cpu types (server, client, etc.).")); //For now, all the cpus are considered to be server cpus
@@ -274,8 +274,8 @@ ProcessorMapper::ProcessorMapper() {
     int qemu_id = API::QEMU_get_processor_number(cpu);
     DBG_(Crit, ( << "Processor " << i << ": " << cpu->name << " - CPU " << qemu_id ));
 
-    boost::cmatch what;
-    if (boost::regex_match(cpu->name, what, vm_expression)) {
+    std::cmatch what;
+    if (std::regex_match(cpu->name, what, vm_expression)) {
       int vm = boost::lexical_cast<int>(what[1]);
       int cpu = boost::lexical_cast<int>(what[3]);
       bool is_client = false;
@@ -293,7 +293,7 @@ ProcessorMapper::ProcessorMapper() {
         max_vm = vm;
       }
       cpu_list.push_back(cpu_desc_t(vm, cpu, qemu_id, is_client));
-    } else if (boost::regex_match(cpu->name, what, non_vm_expression)) {
+    } else if (std::regex_match(cpu->name, what, non_vm_expression)) {
       DBG_(Crit, ( << "Found CPU: '" << what[1] << "' - " << what[2] ));
       int vm = 0;
       int cpu = boost::lexical_cast<int>(what[2]);

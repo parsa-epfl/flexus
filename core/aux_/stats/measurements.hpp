@@ -9,7 +9,7 @@
 #include <iomanip>
 #include <cmath>
 #include <numeric>
-#include <boost/regex.hpp>
+#include <regex>
 #include <functional>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/map.hpp>
@@ -26,14 +26,15 @@ namespace aux_ {
 
 class Measurement : public boost::counted_base {
   std::string theName;
-  boost::regex theStatExpression;
+  std::string theStatExpressionStr;
+  std::regex theStatExpression;
 
 private:
   friend class boost::serialization::access;
   template<class Archive>
   void save(Archive & ar, uint32_t version) const {
     ar & theName;
-    std::string temp(theStatExpression.str());
+    std::string temp(theStatExpressionStr);
     ar & temp;
   }
   template<class Archive>
@@ -41,6 +42,7 @@ private:
     ar & theName;
     std::string temp;
     ar & temp;
+    theStatExpressionStr = temp;
     theStatExpression = temp;
   }
   BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -51,6 +53,7 @@ public:
 
   Measurement( std::string const & aName, std::string const & aStatExpression)
     : theName(aName)
+    , theStatExpressionStr(aStatExpression)
     , theStatExpression(aStatExpression)
   {}
   virtual ~Measurement() {}

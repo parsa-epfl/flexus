@@ -60,7 +60,7 @@ export TARGET_EMULATOR=qemu
 #export TARGET_EMULATOR=simics
 
 INCLUDES=-isystem $(BOOST_INCLUDE) -isystem $(SIMICS_INCLUDE) -I$(FLEXUS_INCLUDE) -Ibooksim -Ibooksim/arbiters -Ibooksim/allocators -Ibooksim/routers -Ibooksim/networks -IDRAMSim2
-BOOST_LIBRARIES=-Wl,--no-whole-archive -L$(BOOST_BINARIES) -lboost_regex -lboost_serialization -lboost_iostreams -lz #-L/home/hillouli/Documents/qemuflex/flexus/stat-manager 
+BOOST_LIBRARIES=-Wl,--no-whole-archive -L$(BOOST_BINARIES) -lboost_serialization -lboost_iostreams -lz
 
 # other constants
 # List of "special" cpp files in components that are not part of a components library
