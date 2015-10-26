@@ -270,7 +270,7 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
   } else if (command == "help") {
     if (i + 1 < aCount) {
       std::string command = anArgList[i+1];
-      theCommands.push_front(  [&command](){ return help(command); });//ll::bind( &help, command ) );
+      theCommands.push_front(  [command]{ help(command); });//ll::bind( &help, command ) );
     } else {
       theCommands.push_front( usage );
     }
@@ -278,7 +278,7 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
   } else if (command == "print") {
     if (i + 1 < aCount) {
       std::string measurement = anArgList[i+1];
-      theCommands.emplace_back( [&measurement](){ return printMeasurement(measurement); }); //ll::bind( &printMeasurement, measurement) );
+      theCommands.emplace_back( [measurement]{ printMeasurement(measurement); }); //ll::bind( &printMeasurement, measurement) );
     } else {
       std::cout << "Must specify a measurment to print." << std::endl;
       std::exit(-1);
@@ -295,7 +295,7 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
     if (i + 2 < aCount) {
       measurements = anArgList[i+2];
     }
-    theCommands.emplace_back(  [&fmt, &measurements](){ return formatString(fmt, measurements); });//ll::bind( &formatString, fmt, measurements ) );
+    theCommands.emplace_back(  [fmt, measurements]{ formatString(fmt, measurements); });//ll::bind( &formatString, fmt, measurements ) );
   } else if (command == "sample-string") {
     std::string fmt;
     if (i + 1 < aCount) {
@@ -304,7 +304,7 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
       std::cout << "Must specify a template string to format." << std::endl;
       std::exit(-1);
     }
-    theCommands.emplace_back( [&fmt](){ return formatStringSample(fmt); }); //ll::bind( &formatStringSample, fmt) );
+    theCommands.emplace_back( [fmt](){ formatStringSample(fmt); }); //ll::bind( &formatStringSample, fmt) );
   } else if (command == "format") {
     std::string file;
     std::string measurements("all");
@@ -317,7 +317,7 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
     if (i + 2 < aCount) {
       measurements = anArgList[i+2];
     }
-    theCommands.emplace_back( [&file, &measurements](){ return format(file, measurements); }); //ll::bind( &format, file, measurements ) );
+    theCommands.emplace_back( [file, measurements]{ format(file, measurements); }); //ll::bind( &format, file, measurements ) );
   } else if (command == "collapse-string") {
     std::string fmt;
     std::string measurements("Region*");
@@ -330,7 +330,7 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
     if (i + 2 < aCount) {
       measurements = anArgList[i+2];
     }
-    theCommands.emplace_back( [&fmt, &measurements](){ return collapseString(fmt, measurements); }); //ll::bind( &collapseString, fmt, measurements ) );
+    theCommands.emplace_back( [fmt, measurements]{ collapseString(fmt, measurements); }); //ll::bind( &collapseString, fmt, measurements ) );
   } else if (command == "collapse-file") {
     std::string file;
     std::string measurements("Region*");
@@ -343,7 +343,7 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
     if (i + 2 < aCount) {
       measurements = anArgList[i+2];
     }
-    theCommands.emplace_back( [&file, &measurements](){ return collapse(file, measurements); }); //ll::bind( &collapse, file, measurements ) );
+    theCommands.emplace_back( [file, measurements]{ collapse(file, measurements); }); //ll::bind( &collapse, file, measurements ) );
   } else if (command == "save") {
     std::string file;
     std::string measurements("all");
@@ -356,14 +356,14 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
     if (i + 2 < aCount) {
       measurements = anArgList[i+2];
     }
-    theCommands.emplace_back(  [&file, &measurements](){ return save(file, measurements); });//ll::bind( &save, file, measurements ) );
+    theCommands.emplace_back(  [file, measurements]{ save(file, measurements); });//ll::bind( &save, file, measurements ) );
   } else {
     std::cout << command << " is not a valid command." << std::endl;
     std::exit(-1);
   }
 
   if (! database_loaded ) {
-    theCommands.push_front( [](){ return loadDatabase("stats_db.out", false); }); //ll::bind( &loadDatabase, "stats_db.out", false ) );
+    theCommands.push_front( []{ loadDatabase("stats_db.out", false); }); //ll::bind( &loadDatabase, "stats_db.out", false ) );
   }
 }
 
