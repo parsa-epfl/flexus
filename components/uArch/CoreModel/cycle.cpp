@@ -5,7 +5,7 @@
 #include <components/Common/Slices/FillLevel.hpp>
 #include <components/Common/TraceTracker.hpp>
 
-#include <components/WhiteBox/WhiteBoxIface.hpp>
+//#include <components/WhiteBox/WhiteBoxIface.hpp>
 
 #define DBG_DeclareCategories uArchCat
 #define DBG_SetDefaultOps AddCat(uArchCat)
@@ -1472,7 +1472,8 @@ void CoreImpl::valuePredictAtomic() {
 }
 
 bool CoreImpl::isIdleLoop() {
-  uint64_t idle = nWhiteBox::WhiteBox::getWhiteBox()->get_idle_thread_t(theNode);
+  return false;		//ALEX - we don't currently have WhiteBox in QEMU
+  /*uint64_t idle = nWhiteBox::WhiteBox::getWhiteBox()->get_idle_thread_t(theNode);
   unmapped_reg reg;
   reg.theType = rRegisters;
   reg.theIndex = 7;  // %g7 holds current thread
@@ -1480,7 +1481,7 @@ bool CoreImpl::isIdleLoop() {
 
   DBG_(Verb, ( << theName << " isIdleLoop: idle=0x" << std::hex << idle << "== ct=0x" << ct << " : " << (ct == idle)));
 
-  return ((idle != 0) && (ct == idle));
+  return ((idle != 0) && (ct == idle));*/
 }
 
 uint64_t CoreImpl::pc() const {
