@@ -1,6 +1,7 @@
 #include <list>
 #include <iostream>
 #include <iomanip>
+#include <chrono>
 
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <boost/throw_exception.hpp>
