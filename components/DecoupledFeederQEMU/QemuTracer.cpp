@@ -205,7 +205,7 @@ public:
     theMemoryMessage.branchType() = branchTypeTable[ mem_trans->s.branch_type ];
     theMemoryMessage.branchAnnul() = (mem_trans->s.annul != 0);
 
-#if FLEXUS_TARGET_IS(v9)
+#if FLEXUS_TARGET_IS(v9) & 0
     uint64_t reg_content;
     API::QEMU_read_register(theCPU, 46 /* kTL */, nullptr, &reg_content );
     theMemoryMessage.tl() = reg_content;
@@ -213,7 +213,7 @@ public:
     theMemoryMessage.tl() = 0;
 #endif
 
-#if FLEXUS_TARGET_IS(v9)
+#if FLEXUS_TARGET_IS(v9) & 0
     uint32_t opcode = 
 		API::QEMU_read_phys_memory(theCPU, mem_trans->s.physical_address, 4);
 #else
