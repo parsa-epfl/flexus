@@ -364,6 +364,14 @@ typedef int (*QEMU_ADVANCE_PROC)(void);
 typedef conf_object_t* (*QEMU_GET_OBJECT_PROC)(const char *name);
 ////ALEX - end 
 
+
+/// DAMIEN - 
+/// Higher order API functions
+typedef int (*QEMU_IS_IN_SIMULATION_PROC)(void);
+typedef void (*QEMU_TOGGLE_SIMULATION_PROC)(int enable);
+typedef void (*QEMU_FLUSH_TB_CACHE_PROC)(void);
+/// END DAMIEN
+
 #ifndef QEMUFLEX_PROTOTYPES
 extern CPU_READ_REGISTER_PROC cpu_read_register;
 extern READREG_PROC readReg;
@@ -437,6 +445,10 @@ extern QEMU_INSTRUCTION_HANDLE_INTERRUPT_PROC QEMU_instruction_handle_interrupt;
 extern QEMU_GET_PENDING_EXCEPTION_PROC QEMU_get_pending_exception;
 extern QEMU_ADVANCE_PROC QEMU_advance;
 extern QEMU_GET_OBJECT_PROC QEMU_get_object;
+
+extern QEMU_IS_IN_SIMULATION_PROC QEMU_is_in_simulation;
+extern QEMU_TOGGLE_SIMULATION_PROC QEMU_toggle_simulation;
+extern QEMU_FLUSH_TB_CACHE_PROC QEMU_flush_tb_cache;
 #else /* QEMUFLEX_PROTOTYPES */
 // query the content/size of a register
 // if reg_size != NULL, write the size of the register (in bytes) in reg_size
@@ -536,6 +548,9 @@ conf_object_t *QEMU_get_object(const char *name);	//generic function to get a po
 ////ALEX - end 
 //
 
+int QEMU_is_in_simulation();
+void QEMU_toggle_simulation(int enable);
+void QEMU_flush_tb_cache(void);
 #endif /* QEMUFLEX_PROTOTYPES */
 
 ///
@@ -767,6 +782,10 @@ QEMU_INSTRUCTION_HANDLE_INTERRUPT_PROC QEMU_instruction_handle_interrupt;
 QEMU_GET_PENDING_EXCEPTION_PROC QEMU_get_pending_exception;
 QEMU_ADVANCE_PROC QEMU_advance;
 QEMU_GET_OBJECT_PROC QEMU_get_object;
+
+QEMU_IS_IN_SIMULATION_PROC QEMU_is_in_simulation;
+QEMU_TOGGLE_SIMULATION_PROC QEMU_toggle_simulation;
+QEMU_FLUSH_TB_CACHE_PROC QEMU_flush_tb_cache;
 
 // insert a callback specific for the given cpu or -1 for a generic callback
 QEMU_INSERT_CALLBACK_PROC QEMU_insert_callback;
