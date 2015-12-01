@@ -364,6 +364,10 @@ typedef int (*QEMU_ADVANCE_PROC)(void);
 typedef conf_object_t* (*QEMU_GET_OBJECT_PROC)(const char *name);
 ////ALEX - end 
 
+//NOOSHIN - begin 
+//For Timing
+typedef int (*QEMU_CPU_EXEC_PROC)(conf_object_t *cpu);
+//NOOSHIN - end
 
 /// DAMIEN - 
 /// Higher order API functions
@@ -445,6 +449,10 @@ extern QEMU_INSTRUCTION_HANDLE_INTERRUPT_PROC QEMU_instruction_handle_interrupt;
 extern QEMU_GET_PENDING_EXCEPTION_PROC QEMU_get_pending_exception;
 extern QEMU_ADVANCE_PROC QEMU_advance;
 extern QEMU_GET_OBJECT_PROC QEMU_get_object;
+
+//NOOSHIN: begin
+extern QEMU_CPU_EXEC_PROC QEMU_cpu_exec_proc;
+//NOOSHIN: end
 
 extern QEMU_IS_IN_SIMULATION_PROC QEMU_is_in_simulation;
 extern QEMU_TOGGLE_SIMULATION_PROC QEMU_toggle_simulation;
@@ -547,6 +555,10 @@ int QEMU_advance();
 conf_object_t *QEMU_get_object(const char *name);	//generic function to get a pointer to a QEMU object by name
 ////ALEX - end 
 //
+
+//NOOSHIN: begin
+int QEMU_cpu_exec_proc(conf_object_t *cpu);
+//NOOSHIN: end
 
 int QEMU_is_in_simulation();
 void QEMU_toggle_simulation(int enable);
@@ -782,6 +794,10 @@ QEMU_INSTRUCTION_HANDLE_INTERRUPT_PROC QEMU_instruction_handle_interrupt;
 QEMU_GET_PENDING_EXCEPTION_PROC QEMU_get_pending_exception;
 QEMU_ADVANCE_PROC QEMU_advance;
 QEMU_GET_OBJECT_PROC QEMU_get_object;
+
+//NOOSHIN: begin
+QEMU_CPU_EXEC_PROC QEMU_cpu_exec_proc;
+//NOOSHIN: end
 
 QEMU_IS_IN_SIMULATION_PROC QEMU_is_in_simulation;
 QEMU_TOGGLE_SIMULATION_PROC QEMU_toggle_simulation;
