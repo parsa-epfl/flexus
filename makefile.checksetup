@@ -17,9 +17,9 @@ boost_version:
 else
 ifndef BOOST_VERSION_NOCHECK
 boost_version:
-	if [[ -d $(BOOST_INCLUDE)/boost ]] ; then \
+	if [ -d $(BOOST_INCLUDE)/boost ] ; then \
 	  BOOST_VER=`grep "#define BOOST_VERSION " $(BOOST_INCLUDE)/boost/version.hpp | awk '{ print $$3 }'`; \
-	  if [[ $$BOOST_VER == "$(REQUIRED_BOOST_VERSION)" ]] ; then \
+	  if [ $$BOOST_VER == "$(REQUIRED_BOOST_VERSION)" ] ; then \
 	    true ; \
 	  else \
 	    echo "$(BOOST_INCLUDE) reports its version as $$BOOST_VER." ; \
@@ -36,62 +36,12 @@ boost_version:
 	fi
 else
 boost_version:
-	if [[ -d $(BOOST_INCLUDE)/boost ]] ; then \
+	if [ -d $(BOOST_INCLUDE)/boost ] ; then \
 	  true ; \
 	else \
 	  echo "$(BOOST_INCLUDE) does not appear to point to Boost 1.59.0." ; \
 	  echo "You must set BOOST_INCLUDE in makefile.defs to the Boost 1.59.0 root directory" ; \
 	  echo "(which has subdirectories boost, libs, etc.)." ; \
-	  echo "See Flexus quick start guide for instructions on configuring Flexus." ; \
-	  false ; \
-	fi
-endif
-endif
-
-
-# This target ensures that the path to Simcis is set, and that we are actually
-# running with Simics 2.0.28 or Simics 2.2.19.  You can override the version
-# check by setting SIMICS_VERSION_NOCHECK=true in makefile.defs
-# Simics 2.0.28
-REQUIRED_SIMICS_2_0_VERSION=1051
-# Simics 2.2.12
-REQUIRED_SIMICS_2_2_VERSION=1201
-REQUIRED_SIMICS_3_0_VERSION=1302
-
-ifndef SIMICS_PATH
-simics_version:
-	echo "You must set SIMICS_PATH in makefile.defs to point to the root directory of Simics 2.0.28 or Simics 2.2.12." ; \
-	echo "See Flexus quick start guide for instructions on configuring Flexus." ; \
-	false
-
-else
-ifndef SIMICS_VERSION_NOCHECK
-simics_version:
-	if [[ -d $(SIMICS_PATH) && -d $(SIMICS_LIB_DIR) && -d $(SIMICS_INCLUDE)/simics ]] ; then \
-	  SIMICS_VER=`grep "#define SIM_VERSION " $(SIMICS_INCLUDE)/simics/global.h | awk '{ print $$3 }'`; \
-	  SIMICS_VER_COMPAT=`grep "#define SIM_VERSION_COMPAT " $(SIMICS_INCLUDE)/simics/global.h | awk '{ print $$3 }'`; \
-	  if [[ $$SIMICS_VER == "$(REQUIRED_SIMICS_2_0_VERSION)" || $$SIMICS_VER == "$(REQUIRED_SIMICS_2_2_VERSION)" || $$SIMICS_VER_COMPAT == "$(REQUIRED_SIMICS_3_0_VERSION)" ]] ; then \
-	    true ; \
-	  else \
-	    echo "$(SIMICS_PATH) reports its version as $$SIMCIS_VER." ; \
-	    echo "Flexus supports $(REQUIRED_SIMICS_2_0_VERSION) or $(REQUIRED_SIMICS_2_2_VERSION)." ; \
-	    echo "You can override this check and force make to continue by adding" ; \
-	    echo "SIMICS_VERSION_NOCHECK=true to makefile.defs" ; \
-	    false ; \
-	  fi \
-	else \
-	  echo "$(SIMICS_PATH) does not appear to point to a Simics installation." ; \
-	  echo "You must set SIMICS_PATH in makefile.defs to point to the root directory of Simics 2.0.28 or Simics 2.2.12." ; \
-	  echo "See Flexus quick start guide for instructions on configuring Flexus." ; \
-	  false ; \
-	fi
-else
-simics_version:
-	if [[ -d $(SIMICS_PATH) && -d $(SIMICS_LIB_DIR) && -d $(SIMICS_INCLUDE)/simics ]] ; then \
-	  true ; \
-	else \
-	  echo "$(SIMICS_PATH) does not appear to point to a Simics installation." ; \
-	  echo "You must set SIMICS_PATH in makefile.defs to point to the root directory of Simics 2.0.28 or Simics 2.2.12." ; \
 	  echo "See Flexus quick start guide for instructions on configuring Flexus." ; \
 	  false ; \
 	fi
@@ -108,11 +58,11 @@ simics_gcc_libs:
 	OK=1 ; \
 	for LIB in libstdc++.so.6 ; do \
 	  diff $(SIMICS_SYSLIB_DIR)/$$LIB $(GCC_LIB_PATH)/$$LIB >& /dev/null ; \
-	  if [[ $$? -ne 0 ]] ; then \
+	  if [ $$? -ne 0 ] ; then \
 	    OK=0 ; \
 	  fi ; \
 	done ; \
-	if [[ $$OK -eq 1 ]] ; then true ; else \
+	if [$$OK -eq 1 ] ; then true ; else \
 	  echo "The GCC GLIBC libraries do not appear to be installed in $(SIMICS_SYSLIB_DIR)." ; \
 	  echo "You will probably get dynamic link errors when you load Flexus into Simics." ; \
 	  echo "\"make install\" can fix this for you." ; \

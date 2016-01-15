@@ -10,20 +10,20 @@ install_glibc:
 	OK=1 ; \
 	for LIB in libstdc++.so.6 ; do \
 	  diff $(SIMICS_SYSLIB_DIR)/$$LIB $(GCC_LIB_PATH)/$$LIB >& /dev/null ; \
-	  if [[ $$? -ne 0 ]] ; then \
+	  if [ $$? -ne 0 ] ; then \
 	    OK=0 ; \
 	  fi ; \
 	done ; \
-	if [[ $$OK -eq 0 ]] ; then \
-	  if [[ ! -d $(SIMICS_SYSLIB_DIR)/bak ]] ; then \
+	if [ $$OK -eq 0 ] ; then \
+	  if [ ! -d $(SIMICS_SYSLIB_DIR)/bak ] ; then \
 	    mkdir $(SIMICS_SYSLIB_DIR)/bak ; \
 	  fi ; \
-	  if [[ ! -e $(SIMICS_SYSLIB_DIR)/bak/libgcc_s.so.1  ]] ; then \
+	  if [ ! -e $(SIMICS_SYSLIB_DIR)/bak/libgcc_s.so.1  ] ; then \
 	    mv $(SIMICS_SYSLIB_DIR)/libgcc_s.so.1 $(SIMICS_SYSLIB_DIR)/bak ; \
           else \
             rm -f $(SIMICS_SYSLIB_DIR)/libgcc_s.so.1 ; \
 	  fi ; \
-	  if [[ ! -e $(SIMICS_SYSLIB_DIR)/bak/libstdc++.so.5 ]] ; then \
+	  if [ ! -e $(SIMICS_SYSLIB_DIR)/bak/libstdc++.so.5 ] ; then \
 	    mv $(SIMICS_SYSLIB_DIR)/libstdc++.so.5 $(SIMICS_SYSLIB_DIR)/bak ; \
           else \
             rm -f $(SIMICS_SYSLIB_DIR)/libstdc++.so.5 ; \
@@ -35,12 +35,12 @@ install_glibc:
 
 
 uninstall_glibc:
-	if [[ -d $(SIMICS_SYSLIB_DIR)/bak ]] ; then \
-	  if [[ -e $(SIMICS_SYSLIB_DIR)/bak/libgcc_s.so.1  ]] ; then \
+	if [ -d $(SIMICS_SYSLIB_DIR)/bak ] ; then \
+	  if [ -e $(SIMICS_SYSLIB_DIR)/bak/libgcc_s.so.1  ] ; then \
 	    rm -f $(SIMICS_SYSLIB_DIR)/libgcc_s.so.1 ; \
 	    cp $(SIMICS_SYSLIB_DIR)/bak/libgcc_s.so.1 $(SIMICS_SYSLIB_DIR) ; \
 	  fi ; \
-	  if [[ -e $(SIMICS_SYSLIB_DIR)/bak/libstdc++.so.5 ]] ; then \
+	  if [ -e $(SIMICS_SYSLIB_DIR)/bak/libstdc++.so.5 ] ; then \
             rm -f $(SIMICS_SYSLIB_DIR)/libstdc++.so.5 ; \
             rm -f $(SIMICS_SYSLIB_DIR)/libstdc++.so.6 ; \
 	    cp $(SIMICS_SYSLIB_DIR)/bak/libstdc++.so.5 $(SIMICS_SYSLIB_DIR) ; \
