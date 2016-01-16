@@ -364,12 +364,20 @@ typedef int (*QEMU_ADVANCE_PROC)(void);
 typedef conf_object_t* (*QEMU_GET_OBJECT_PROC)(const char *name);
 ////ALEX - end 
 
+//NOOSHIN - begin 
+//For Timing
+//int cpu_exec(CPUArchState *env)
+typedef int (*QEMU_CPU_EXEC_PROC)(conf_object_t *cpu);
+//NOOSHIN - end
 
 /// DAMIEN - 
 /// Higher order API functions
 typedef int (*QEMU_IS_IN_SIMULATION_PROC)(void);
 typedef void (*QEMU_TOGGLE_SIMULATION_PROC)(int enable);
 typedef void (*QEMU_FLUSH_TB_CACHE_PROC)(void);
+
+// Get the instruction count for the given processor
+typedef uint64_t (*QEMU_GET_INSTRUCTION_COUNT_PROC)(int cpu_number);
 /// END DAMIEN
 
 #ifndef QEMUFLEX_PROTOTYPES
@@ -446,9 +454,15 @@ extern QEMU_GET_PENDING_EXCEPTION_PROC QEMU_get_pending_exception;
 extern QEMU_ADVANCE_PROC QEMU_advance;
 extern QEMU_GET_OBJECT_PROC QEMU_get_object;
 
+//NOOSHIN: begin
+extern QEMU_CPU_EXEC_PROC QEMU_cpu_exec_proc;
+//NOOSHIN: end
+
 extern QEMU_IS_IN_SIMULATION_PROC QEMU_is_in_simulation;
 extern QEMU_TOGGLE_SIMULATION_PROC QEMU_toggle_simulation;
 extern QEMU_FLUSH_TB_CACHE_PROC QEMU_flush_tb_cache;
+
+extern QEMU_GET_INSTRUCTION_COUNT_PROC QEMU_get_instruction_count;
 #else /* QEMUFLEX_PROTOTYPES */
 // query the content/size of a register
 // if reg_size != NULL, write the size of the register (in bytes) in reg_size
@@ -548,9 +562,16 @@ conf_object_t *QEMU_get_object(const char *name);	//generic function to get a po
 ////ALEX - end 
 //
 
+//NOOSHIN
+int QEMU_cpu_exec_proc(conf_object_t *cpu);
+//NOOSHIN
+
 int QEMU_is_in_simulation();
 void QEMU_toggle_simulation(int enable);
 void QEMU_flush_tb_cache(void);
+
+// Get the instruction count for the given processor
+uint64_t QEMU_get_instruction_count(int cpu_number);
 #endif /* QEMUFLEX_PROTOTYPES */
 
 ///
@@ -693,6 +714,12 @@ void QEMU_delete_callback( int cpu_id, QEMU_callback_event_t event, uint64_t cal
 ///
 
 #ifdef QEMUFLEX_QEMU_INTERNAL
+// Initialize the callback tables for every processor and also the
+// different counts.
+void QEMU_initialize(void);
+// Free the callback table
+void QEMU_shutdown(void);
+
 // Initialize the callback tables for every processor
 // Must be called at QEMU startup, before initializing Flexus
 void QEMU_setup_callback_tables(void);
@@ -704,6 +731,11 @@ void QEMU_execute_callbacks(
 		  QEMU_callback_event_t event,
 		  QEMU_callback_args_t *event_data
 		);
+
+// Initialize to 0 the instruction counts for every processor
+void QEMU_initialize_counts(void);
+// Increment the instruction count for the given cpu
+void QEMU_increment_instruction_count(int cpu_number);
 #endif /* QEMUFLEX_QEMU_INTERNAL */
 
 ///
@@ -783,6 +815,10 @@ QEMU_GET_PENDING_EXCEPTION_PROC QEMU_get_pending_exception;
 QEMU_ADVANCE_PROC QEMU_advance;
 QEMU_GET_OBJECT_PROC QEMU_get_object;
 
+//NOOSHIN: begin
+QEMU_CPU_EXEC_PROC QEMU_cpu_exec_proc;
+//NOOSHIN: end
+
 QEMU_IS_IN_SIMULATION_PROC QEMU_is_in_simulation;
 QEMU_TOGGLE_SIMULATION_PROC QEMU_toggle_simulation;
 QEMU_FLUSH_TB_CACHE_PROC QEMU_flush_tb_cache;
@@ -792,6 +828,8 @@ QEMU_INSERT_CALLBACK_PROC QEMU_insert_callback;
 
 // delete a callback specific for the given cpu or -1 for a generic callback
 QEMU_DELETE_CALLBACK_PROC QEMU_delete_callback;
+
+QEMU_GET_INSTRUCTION_COUNT_PROC QEMU_get_instruction_count;
 } QFLEX_API_Interface_Hooks_t;
 
 
