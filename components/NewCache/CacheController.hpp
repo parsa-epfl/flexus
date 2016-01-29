@@ -723,7 +723,7 @@ class CacheController {
   std::string theName;
 
   CacheInitInfo theCacheInitInfo;
-  boost::scoped_ptr<BaseCacheControllerImpl> theCacheControllerImpl;
+  std::unique_ptr<BaseCacheControllerImpl> theCacheControllerImpl;
 
   int32_t theCores;
   int32_t theBanks;

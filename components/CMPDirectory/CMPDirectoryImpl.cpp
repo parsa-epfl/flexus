@@ -22,7 +22,7 @@ using namespace Flexus;
 using namespace Core;
 using namespace SharedTypes;
 
-using boost::scoped_ptr;
+using std::unique_ptr;
 
 class FLEXUS_COMPONENT(CMPDirectory) {
   FLEXUS_COMPONENT_IMPL(CMPDirectory);

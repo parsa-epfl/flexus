@@ -4,19 +4,19 @@
 # You will have to fill in the MAKE variables in this section to match your
 # environment
 
-EXT_STORAGE=/mnt/hgfs/scratch/deps
+#EXT_STORAGE=/mnt/hgfs/scratch/deps
 CURRENT_TOOLCHAIN=$(EXT_STORAGE)
 
 # GCC Compiler Settings
 GCC_PATH=/usr
-GCC_BINARY=g++-5 --std=c++14
+GCC_BINARY=g++ --std=c++14
 #GCC_BINARY=clang --std=c++14 -stdlib=libstdc++
 GCC_VERSION_NOCHECK=true
 SIMICS_GLIBC_NOCHECK=true
 
 # Boost 1.59.0 path
-BOOST_PATH=$(EXT_STORAGE)/boost_1_59_0
-BOOST_BINARIES=$(CURRENT_TOOLCHAIN)/libs/lib
+BOOST_PATH=/usr/include
+BOOST_BINARIES=/usr/lib/x86_64-linux-gnu/
 BOOST_VERSION_NOCHECK=true in makefile.defs
 
 # Simics path
@@ -60,7 +60,7 @@ SIMICS_ARM_INCLUDE=$(SIMICS_INCLUDE)/simics
 export TARGET_EMULATOR=qemu
 #export TARGET_EMULATOR=simics
 
-INCLUDES=-isystem $(BOOST_INCLUDE) -isystem $(SIMICS_INCLUDE) -I$(FLEXUS_INCLUDE) -Ibooksim -Ibooksim/arbiters -Ibooksim/allocators -Ibooksim/routers -Ibooksim/networks -IDRAMSim2
+INCLUDES=-DBOOST_MPL_CFG_NO_PREPROCESSED_HEADERS -DBOOST_MPL_LIMIT_VECTOR_SIZE=50 -isystem $(BOOST_INCLUDE) -isystem $(SIMICS_INCLUDE) -I$(FLEXUS_INCLUDE) -Ibooksim -Ibooksim/arbiters -Ibooksim/allocators -Ibooksim/routers -Ibooksim/networks -IDRAMSim2
 BOOST_LIBRARIES=-Wl,--no-whole-archive -L$(BOOST_BINARIES) -lboost_serialization -lboost_iostreams -lz
 
 # other constants

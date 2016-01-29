@@ -53,6 +53,7 @@ struct BTBEntry {
     , theBranchType( aType )
     , theTarget( aTarget) {
   }
+  BTBEntry( ) {}
 private:
   friend class boost::serialization::access;
   template<class Archive>
@@ -61,7 +62,6 @@ private:
     ar & theBranchType;
     ar & theTarget;
   }
-  BTBEntry( ) {}
 
 };
 

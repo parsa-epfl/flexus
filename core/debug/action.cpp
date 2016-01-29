@@ -97,7 +97,7 @@ public:
 };
 
 //The StreamManager instance
-boost::scoped_ptr<StreamManager> theStreamManager;
+std::unique_ptr<StreamManager> theStreamManager;
 
 //StreamManager accessor
 inline StreamManager & streamManager() {
@@ -191,7 +191,7 @@ public:
   }
 };
 
-boost::scoped_ptr<SaveBufferManager> theSaveBufferManager;
+std::unique_ptr<SaveBufferManager> theSaveBufferManager;
 
 inline SaveBufferManager & saveBufferManager() {
   if (theSaveBufferManager.get() == 0) {

@@ -125,7 +125,7 @@ public:
 
 } //namespace aux_
 
-boost::scoped_ptr<aux_::ComponentManagerImpl> theComponentManager(0);
+std::unique_ptr<aux_::ComponentManagerImpl> theComponentManager{};
 
 ComponentManager & ComponentManager::getComponentManager() {
   if (theComponentManager == 0) {

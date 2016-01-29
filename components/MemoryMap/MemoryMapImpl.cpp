@@ -190,7 +190,7 @@ class FLEXUS_COMPONENT(MemoryMap), public MemoryMapFactory {
   // for first touch allocation
   typedef std::map<PhysicalMemoryAddress, node_id_t> HomeMap;
   HomeMap theHomeMap;
-  boost::scoped_ptr< std::ofstream > theHomeMapFile;
+  std::unique_ptr< std::ofstream > theHomeMapFile;
   std::vector<boost::intrusive_ptr<Flexus::Stat::StatCounter> > thePageCounts;
 
 public:

@@ -63,7 +63,7 @@ class microArchImpl : public microArch {
 
   std::string theName;
 
-  boost::scoped_ptr<CoreModel> theCore;
+  std::unique_ptr<CoreModel> theCore;
   int32_t theAvailableROB;
   Flexus::Qemu::Processor theCPU;
   Stat::StatCounter theResynchronizations;

@@ -397,9 +397,9 @@ void push(interface::LoopbackIn const &, MemoryTransport & aMessageTransport) {
 void finalize() {}
 
 private:
- boost::scoped_ptr< nMessageQueues::DelayFifo< DRAMSim::TimestampedTransport > > outQueue;
- boost::scoped_ptr< DRAMSim::MessageMap> pendingList;
- boost::scoped_ptr< DRAMSim::MessageMap> evictedList; 
+ std::unique_ptr< nMessageQueues::DelayFifo< DRAMSim::TimestampedTransport > > outQueue;
+ std::unique_ptr< DRAMSim::MessageMap> pendingList;
+ std::unique_ptr< DRAMSim::MessageMap> evictedList; 
 
 };
 

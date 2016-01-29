@@ -28,7 +28,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)  {
   std::vector<MemoryAddress> theRedirectPC;
   std::vector<MemoryAddress> theRedirectNextPC;
   std::vector<bool> theRedirect;
-  boost::scoped_ptr<BranchPredictor> theBranchPredictor;
+  std::unique_ptr<BranchPredictor> theBranchPredictor;
   uint32_t theCurrentThread;
 
 public:

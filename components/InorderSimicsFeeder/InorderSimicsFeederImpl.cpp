@@ -101,7 +101,7 @@ class FLEXUS_COMPONENT(InorderSimicsFeeder) {
 
   std::vector< std::shared_ptr<SimicsTraceConsumer> > theConsumers;
 
-  boost::scoped_ptr<SimicsCycleManager> theSimicsCycleManager;
+  std::unique_ptr<SimicsCycleManager> theSimicsCycleManager;
 
   // Memory trace (optional)
   bool traceInit;
