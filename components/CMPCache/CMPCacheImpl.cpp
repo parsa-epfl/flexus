@@ -3,7 +3,6 @@
 
 #include <components/CMPCache/CMPCache.hpp>
 
-#include <boost/scoped_ptr.hpp>
 #include <core/performance/profile.hpp>
 #include <core/qemu/configuration_api.hpp>
 

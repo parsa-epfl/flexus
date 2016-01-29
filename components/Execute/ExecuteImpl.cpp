@@ -785,13 +785,13 @@ private:
         std::string spin_string = "Addrs {";
         std::set<PhysicalMemoryAddress>::iterator ma_iter = theSpinMemoryAddresses.begin();
         while (ma_iter != theSpinMemoryAddresses.end()) {
-          spin_string += boost::lexical_cast<std::string>(*ma_iter) + ",";
+          spin_string += std::to_string(*ma_iter) + ",";
           ++ma_iter;
         }
         spin_string += "} PCs {";
         std::set<VirtualMemoryAddress>::iterator va_iter = theSpinPCs.begin();
         while (va_iter != theSpinPCs.end()) {
-          spin_string += boost::lexical_cast<std::string>(*va_iter) + ",";
+          spin_string += std::to_string(*va_iter) + ",";
           ++va_iter;
         }
         spin_string += "}";
@@ -835,13 +835,13 @@ private:
           std::string spin_string = "Addrs {";
           std::set<PhysicalMemoryAddress>::iterator ma_iter = theSpinMemoryAddresses.begin();
           while (ma_iter != theSpinMemoryAddresses.end()) {
-            spin_string += boost::lexical_cast<std::string>(*ma_iter) + ",";
+            spin_string += std::to_string(*ma_iter) + ",";
             ++ma_iter;
           }
           spin_string += "} PCs {";
           std::set<VirtualMemoryAddress>::iterator va_iter = theSpinPCs.begin();
           while (va_iter != theSpinPCs.end()) {
-            spin_string += boost::lexical_cast<std::string>(*va_iter) + ",";
+            spin_string += std::to_string(*va_iter) + ",";
             ++va_iter;
           }
           spin_string += "}";

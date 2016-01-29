@@ -3,7 +3,6 @@
 
 #include <components/CMPDirectory/BankedDirectory.hpp>
 
-#include <boost/scoped_ptr.hpp>
 #include <core/performance/profile.hpp>
 #include <core/simics/configuration_api.hpp>
 

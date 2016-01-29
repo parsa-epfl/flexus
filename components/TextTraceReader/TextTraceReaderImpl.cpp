@@ -4,7 +4,6 @@
 #include <core/stats.hpp>
 #include <components/Common/Slices/MemoryMessage.hpp>
 
-#include <boost/bind.hpp>
 #include <unordered_map>
 
 #include <fstream>

@@ -578,7 +578,7 @@ public:
     return theMap.size();
   }
   int64_t count(int64_t aKey) const {
-    std::string key = boost::lexical_cast<std::string>( aKey );
+    std::string key = std::to_string( aKey );
     instance_map::const_iterator iter = theMap.find(key);
     if (iter != theMap.end()) {
       return iter->second;

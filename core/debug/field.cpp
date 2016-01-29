@@ -41,7 +41,7 @@ bool Field::isNumeric() const {
 std::string const & Field::value() const {
   if (! theTextValue) {
     if (isNumeric()) {
-      theTextValue.reset(boost::lexical_cast<std::string>(*theNumericValue));
+      theTextValue.reset(std::to_string(*theNumericValue));
     } else {
       theTextValue.reset(std::string());
     }

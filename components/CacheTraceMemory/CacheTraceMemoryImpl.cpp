@@ -258,7 +258,7 @@ class FLEXUS_COMPONENT(CacheTraceMemory) {
       }
     }
     std::string nextFile(int32_t aCpu) {
-      return ( theBaseName + boost::lexical_cast<std::string>(aCpu) + ".sordtrace64." + boost::lexical_cast<std::string>(theFileNo[aCpu]++) + ".gz" );
+      return ( theBaseName + std::to_string(aCpu) + ".sordtrace64." + std::to_string(theFileNo[aCpu]++) + ".gz" );
     }
     void switchFile(int32_t aCpu) {
       DBG_Assert(theFiles);

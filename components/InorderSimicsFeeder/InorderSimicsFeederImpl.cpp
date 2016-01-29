@@ -288,12 +288,12 @@ public:
       for (; vm < maxNumVMs && ii < theNumCPUs; vm++) {
         bool client_server = false;
         std::string name("machine");
-        name += boost::lexical_cast<std::string>(vm);
+        name += std::to_string(vm);
         name += "_cpu0";
         //DBG_(Crit, ( << "Looking for " << name ));
         if (Simics::API::SIM_get_object(name.c_str()) == 0) {
           name = "machine";
-          name += boost::lexical_cast<std::string>(vm);
+          name += std::to_string(vm);
           name += "_server_cpu0";
           //DBG_(Crit, ( << "Looking for " << name ));
           if (Simics::API::SIM_get_object(name.c_str()) != 0) {
@@ -305,11 +305,11 @@ public:
         int32_t num_remaining = theNumCPUs - ii;
         for (int32_t i = 0; i < num_remaining && ii < theNumCPUs; i++, ii++) {
           std::string name("machine");
-          name += boost::lexical_cast<std::string>(vm);
+          name += std::to_string(vm);
           if (client_server) {
             name += "_server";
           }
-          name += "_cpu" + boost::lexical_cast<std::string>(i);
+          name += "_cpu" + std::to_string(i);
 
           //DBG_(Crit, ( << "Looking for " << name ));
           Simics::API::conf_object_t * cpu = Simics::API::SIM_get_object( name.c_str() );
@@ -350,7 +350,7 @@ public:
         if (client_server) {
           name = "server_cpu";
         }
-        name += boost::lexical_cast<std::string>(ii);
+        name += std::to_string(ii);
         DBG_( Crit, ( << "Connecting: " << name ) );
         Simics::API::conf_object_t * cpu = Simics::API::SIM_get_object( name.c_str() );
         cpu_vector[ii] = cpu;

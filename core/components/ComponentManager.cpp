@@ -3,7 +3,6 @@
 #include <algorithm>
 
 #include <functional>
-#include <boost/scoped_ptr.hpp>
 
 #include <core/component.hpp>
 #include <core/debug/debug.hpp>

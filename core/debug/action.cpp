@@ -6,7 +6,6 @@
 #include <map>
 #include <set>
 
-#include <boost/scoped_ptr.hpp>
 #include <boost/optional.hpp>
 #include <core/boost_extensions/lexical_cast.hpp>
 
