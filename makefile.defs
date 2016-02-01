@@ -59,7 +59,7 @@ SIMICS_ARM_INCLUDE=$(SIMICS_INCLUDE)/simics
 export TARGET_EMULATOR=qemu
 #export TARGET_EMULATOR=simics
 
-INCLUDES=-isystem $(BOOST_INCLUDE) -isystem $(SIMICS_INCLUDE) -I$(FLEXUS_INCLUDE) -Ibooksim -Ibooksim/arbiters -Ibooksim/allocators -Ibooksim/routers -Ibooksim/networks -IDRAMSim2
+INCLUDES=-DBOOST_MPL_CFG_NO_PREPROCESSED_HEADERS -DBOOST_MPL_LIMIT_VECTOR_SIZE=50 -isystem $(BOOST_INCLUDE) -isystem $(SIMICS_INCLUDE) -I$(FLEXUS_INCLUDE) -Ibooksim -Ibooksim/arbiters -Ibooksim/allocators -Ibooksim/routers -Ibooksim/networks -IDRAMSim2
 BOOST_LIBRARIES=-Wl,--no-whole-archive -L$(BOOST_BINARIES) -lboost_serialization -lboost_iostreams -lz
 
 # other constants
