@@ -40,7 +40,7 @@ public:
 
     theTracer = QemuTracerManager::construct(theNumCPUs
                 , [this](int32_t x, MemoryMessage& y){ this->toL1D(x,y); } //std::bind( &DecoupledFeederComponent::toL1D, this, _1, _2)
-                , [this](int32_t x, MemoryMessage& y, auto dummy){ this->modernToL1I(x,y); } //std::bind( &DecoupledFeederComponent::modernToL1I, this, _1, _2)
+                , [this](int32_t x, MemoryMessage& y, uint32_t dummy){ this->modernToL1I(x,y); } //std::bind( &DecoupledFeederComponent::modernToL1I, this, _1, _2)
                 , [this](MemoryMessage& x){ this->toDMA(x); } //std::bind( &DecoupledFeederComponent::toDMA, this, _1)
                 , [this](int32_t x, MemoryMessage& y){ this->toNAW(x,y); } //std::bind( &DecoupledFeederComponent::toNAW, this, _1, _2)
                 //, cfg.WhiteBoxDebug

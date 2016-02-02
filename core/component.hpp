@@ -211,7 +211,7 @@ struct ComponentInstance  {
     , theConfiguration(aConfiguration)
     , theScaleWithSystem(aScaleWithSystem)
     , theMultiply(aMultiply) {
-    ComponentManager::getComponentManager().registerHandle( [this](auto x){return this->instantiator(x);});
+    ComponentManager::getComponentManager().registerHandle( [this](Flexus::Core::index_t x){return this->instantiator(x);});
   }
 
   void instantiator(Flexus::Core::index_t aSystemWidth) {

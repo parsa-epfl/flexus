@@ -21,19 +21,3 @@
 #define TARGET_X86
 
 #define TARGET_MEM_TRANS x86_memory_transaction_t
-
-#ifndef CONFIG_QEMU
-#define FLEXUS_SIMICS_TARGET_REGISTER_ID() <core/simics/x86/register_id.hpp>
-#define FLEXUS_SIMICS_TARGET_INSTRUCTION_EXTENSTIONS() <core/simics/x86/instructions.hpp>
-
-#include <simics/global.h>
-#if SIM_VERSION > 1300
-#define FLEXUS_SIMICS_API_HEADER(HEADER) <simics/core/HEADER.h>
-#define FLEXUS_SIMICS_API_ARCH_HEADER <simics/arch/x86.h>
-#else
-#define FLEXUS_SIMICS_API_HEADER(HEADER) <simics/HEADER##_api.h>
-#define FLEXUS_SIMICS_API_ARCH_HEADER <simics/x86_api.h>
-#endif
-#else
-// QEMU stuff: nothing really needed
-#endif /* CONFIG_QEMU*/
