@@ -76,13 +76,13 @@ QEMU_GET_PENDING_EXCEPTION_PROC QEMU_get_pending_exception = nullptr;
 QEMU_ADVANCE_PROC QEMU_advance = nullptr;
 QEMU_GET_OBJECT_PROC QEMU_get_object = nullptr;
 
-//NOOSHIN: begin
 QEMU_CPU_EXEC_PROC QEMU_cpu_exec_proc = nullptr;
-//NOOSHIN: end
 
 QEMU_IS_IN_SIMULATION_PROC QEMU_is_in_simulation = nullptr;
 QEMU_TOGGLE_SIMULATION_PROC QEMU_toggle_simulation = nullptr;
 QEMU_FLUSH_TB_CACHE_PROC QEMU_flush_tb_cache = nullptr;
+
+QEMU_GET_INSTRUCTION_COUNT_PROC QEMU_get_instruction_count = nullptr;
 
 // insert a callback specific for the given cpu or -1 for a generic callback
 QEMU_INSERT_CALLBACK_PROC QEMU_insert_callback= nullptr;
@@ -132,9 +132,11 @@ void QFLEX_API_set_interface_hooks( const QFLEX_API_Interface_Hooks_t* hooks ) {
   QEMU_is_in_simulation = hooks->QEMU_is_in_simulation;
   QEMU_toggle_simulation = hooks->QEMU_toggle_simulation;
   QEMU_flush_tb_cache = hooks->QEMU_flush_tb_cache;
+  QEMU_get_instruction_count = hooks->QEMU_get_instruction_count;
   QEMU_insert_callback= hooks->QEMU_insert_callback;
   QEMU_delete_callback= hooks->QEMU_delete_callback;
-  QEMU_cpu_exec_proc = hooks->QEMU_cpu_exec_proc;//NOOSHIN
+
+  QEMU_cpu_exec_proc = hooks->QEMU_cpu_exec_proc;
 }
 
 } // namespace API
