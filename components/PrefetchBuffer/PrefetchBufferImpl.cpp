@@ -353,7 +353,7 @@ public:
 class FLEXUS_COMPONENT(PrefetchBuffer), public PB {
   FLEXUS_COMPONENT_IMPL(PrefetchBuffer);
 
-  boost::scoped_ptr<PBController> theController;
+  std::unique_ptr<PBController> theController;
 
   boost::optional< MemoryAddress > theWakeMAFAddress;
 

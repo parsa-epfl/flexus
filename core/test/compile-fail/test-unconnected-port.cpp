@@ -1,7 +1,6 @@
 #include <list>
 
 #include <boost/test/unit_test.hpp>
-#include <boost/bind.hpp>
 #include <boost/preprocessor/iteration/iterate.hpp>
 #include <boost/preprocessor/repetition/enum.hpp>
 #include <boost/preprocessor/punctuation/comma_if.hpp>

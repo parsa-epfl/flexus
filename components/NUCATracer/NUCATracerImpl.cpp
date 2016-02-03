@@ -1,6 +1,5 @@
 #include <components/NUCATracer/NUCATracer.hpp>
 
-#include <boost/bind.hpp>
 #include <core/simics/api_wrappers.hpp>
 #include <core/simics/mai_api.hpp>
 

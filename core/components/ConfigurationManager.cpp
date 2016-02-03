@@ -153,7 +153,7 @@ public:
 
 
 
-boost::scoped_ptr<aux_::ConfigurationManagerDetails> theConfigurationManager(0);
+std::unique_ptr<aux_::ConfigurationManagerDetails> theConfigurationManager{};
 
 ConfigurationManager & ConfigurationManager::getConfigurationManager() {
   if (theConfigurationManager == 0) {

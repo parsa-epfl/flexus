@@ -3,7 +3,6 @@
 #include <iostream>
 #include <iomanip>
 
-#include <boost/bind.hpp>
 #include <unordered_map>
 
 #include <core/flexus.hpp>

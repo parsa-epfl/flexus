@@ -366,7 +366,6 @@ typedef conf_object_t* (*QEMU_GET_OBJECT_PROC)(const char *name);
 
 //NOOSHIN - begin 
 //For Timing
-//int cpu_exec(CPUArchState *env)
 typedef int (*QEMU_CPU_EXEC_PROC)(conf_object_t *cpu);
 //NOOSHIN - end
 
@@ -562,9 +561,9 @@ conf_object_t *QEMU_get_object(const char *name);	//generic function to get a po
 ////ALEX - end 
 //
 
-//NOOSHIN
+//NOOSHIN: begin
 int QEMU_cpu_exec_proc(conf_object_t *cpu);
-//NOOSHIN
+//NOOSHIN: end
 
 int QEMU_is_in_simulation();
 void QEMU_toggle_simulation(int enable);

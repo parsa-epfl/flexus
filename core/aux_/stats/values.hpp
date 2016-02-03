@@ -34,6 +34,7 @@ private:
     ar & boost::serialization::base_object<StatValueBase>(*this);
     ar & theValue;
   }
+public:
   StatValue_Counter() {}
 
   friend class StatValue_AvgAccumulator;
@@ -254,6 +255,7 @@ private:
     ar & theValue;
     ar & theIsValid;
   }
+public:
   StatValue_Max() {}
 
 public:
@@ -326,6 +328,7 @@ private:
     ar & theTotal;
     ar & theCount;
   }
+public:
   StatValue_Average() {}
 
   friend class StatValue_AvgAccumulator;
@@ -402,6 +405,7 @@ private:
     ar & SumSq;
     ar & SigmaSqSum;
   }
+public:
   StatValue_StdDev() {}
 
 public:
