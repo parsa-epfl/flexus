@@ -5,6 +5,7 @@
 
 #include <core/qemu/mai_api.hpp>
 
+#include <boost/bind.hpp>
 
 #include <fstream>
 

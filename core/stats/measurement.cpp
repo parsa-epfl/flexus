@@ -4,6 +4,7 @@
 #include <list>
 #include <fstream>
 
+#include <boost/scoped_ptr.hpp>
 #include <boost/throw_exception.hpp>
 #include <boost/serialization/split_free.hpp>
 #include <boost/archive/binary_oarchive.hpp>

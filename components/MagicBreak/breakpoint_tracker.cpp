@@ -74,7 +74,7 @@ class IterationTrackerImpl : public IterationTracker {
   }
 
   typedef Simics::HapToMemFnBinding<Simics::HAPs::Core_Magic_Instruction, IterationTrackerImpl, &IterationTrackerImpl::OnMagicBreakpoint> on_magic_break_t;
-  std::unique_ptr< on_magic_break_t > theMagicBreakpointHap;
+  boost::scoped_ptr< on_magic_break_t > theMagicBreakpointHap;
 
 public:
   IterationTrackerImpl()
@@ -400,7 +400,7 @@ class RegressionTrackerImpl : public RegressionTracker {
   }
 
   typedef Simics::HapToMemFnBinding<Simics::HAPs::Core_Magic_Instruction, RegressionTrackerImpl, &RegressionTrackerImpl::OnMagicBreakpoint> on_magic_break_t;
-  std::unique_ptr< on_magic_break_t > theMagicBreakpointHap;
+  boost::scoped_ptr< on_magic_break_t > theMagicBreakpointHap;
 
   int64_t theLastBreakpoint;
   int64_t theStopBreakpoint;
@@ -760,7 +760,7 @@ class SimPrintHandlerImpl : public SimPrintHandler {
   }
 
   typedef Simics::HapToMemFnBinding<Simics::HAPs::Core_Magic_Instruction, SimPrintHandlerImpl, &SimPrintHandlerImpl::OnMagicBreakpoint> on_magic_break_t;
-  std::unique_ptr< on_magic_break_t > theMagicBreakpointHap;
+  boost::scoped_ptr< on_magic_break_t > theMagicBreakpointHap;
 
   int64_t theLastBreakpoint;
   int64_t theStopBreakpoint;

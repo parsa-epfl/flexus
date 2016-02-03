@@ -5,6 +5,7 @@
 
 #include <core/simics/mai_api.hpp>
 
+#include <boost/bind.hpp>
 #include <unordered_map>
 
 #include <fstream>

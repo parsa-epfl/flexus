@@ -207,7 +207,7 @@ public:
   }
 
 private:
-  std::unique_ptr< nMessageQueues::DelayFifo< MemoryTransport > > outQueue;
+  boost::scoped_ptr< nMessageQueues::DelayFifo< MemoryTransport > > outQueue;
 
 };
 

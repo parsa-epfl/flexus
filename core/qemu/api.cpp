@@ -76,9 +76,7 @@ QEMU_GET_PENDING_EXCEPTION_PROC QEMU_get_pending_exception = nullptr;
 QEMU_ADVANCE_PROC QEMU_advance = nullptr;
 QEMU_GET_OBJECT_PROC QEMU_get_object = nullptr;
 
-//NOOSHIN: begin
-QEMU_CPU_EXEC_PROC QEMU_cpu_exec_proc = nullptr;
-//NOOSHIN: end
+QEMU_CPU_EXEC_PROC QEMU_cpu_exec_proc;
 
 QEMU_IS_IN_SIMULATION_PROC QEMU_is_in_simulation = nullptr;
 QEMU_TOGGLE_SIMULATION_PROC QEMU_toggle_simulation = nullptr;

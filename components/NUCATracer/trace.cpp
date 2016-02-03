@@ -46,7 +46,7 @@ struct FileRecord {
     }
   }
   std::string nextFile(int32_t aCpu) {
-    return ( theBaseName + std::to_string(aCpu) + ".trace." + std::to_string(theFileNo[aCpu]++) + ".gz" );
+    return ( theBaseName + boost::lexical_cast<std::string>(aCpu) + ".trace." + boost::lexical_cast<std::string>(theFileNo[aCpu]++) + ".gz" );
   }
   gzFile switchFile(int32_t aCpu) {
     gzclose(theFiles[aCpu]);
@@ -75,7 +75,7 @@ struct FileRecord {
     }
   }
   std::string getName( int32_t aCpu ) {
-    return (theBaseName + std::to_string(aCpu) + ".trace." + std::to_string(theFileNo[aCpu]) + ".gz" );
+    return (theBaseName + boost::lexical_cast<std::string>(aCpu) + ".trace." + boost::lexical_cast<std::string>(theFileNo[aCpu]) + ".gz" );
   }
 };
 

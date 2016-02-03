@@ -44,7 +44,7 @@
 template <int32_t w, typename Source>
 std::string fill(Source s) {
   std::ostringstream ss;
-  ss << std::setfill('0') << std::setw(w) << std::to_string(s);
+  ss << std::setfill('0') << std::setw(w) << boost::lexical_cast<std::string>(s);
   return ss.str();
 }
 

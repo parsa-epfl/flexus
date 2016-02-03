@@ -15,7 +15,7 @@ public:
       if (aClientServer) {
         name = "server_cpu";
       }
-      name += std::to_string(i);
+      name += boost::lexical_cast<std::string>(i);
       Simics::API::conf_object_t * cpu = Simics::API::SIM_get_object( name.c_str() );
       DBG_Assert(cpu != 0, ( << "CycleManager cannot locate " << name << " object. No such object in Simics" ));
 

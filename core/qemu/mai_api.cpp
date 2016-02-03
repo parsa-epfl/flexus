@@ -92,13 +92,6 @@ int v9ProcessorImpl::getPendingInterrupt() const {
 int v9ProcessorImpl::advance(bool anAcceptInterrupt) {
   int exception = 0;
 
-//NOOSHIN : begin
-DBG_(Iface,(<<"In advance flexus"));
-//DBG_(Tmp, (<<"NOOSHIN: IN advance Flexus"));
-DBG_(Tmp, Core() ( << "In advance flexus " ) );
-exception = Qemu::API::QEMU_cpu_exec_proc(this->theProcessor);
-//NOOSHIN : end
-
 //ALEX - TODO: Init interrupts
 /*
   if (! theInterruptsConnected) {
@@ -172,7 +165,7 @@ exception = Qemu::API::QEMU_cpu_exec_proc(this->theProcessor);
   } while ( retry );
   API::SIM_instruction_end(inst);
 */
-  //exception = API::QEMU_advance();
+  exception = API::QEMU_advance();
   return exception;
 }
 

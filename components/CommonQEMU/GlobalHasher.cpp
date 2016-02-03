@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+#include <boost/bind.hpp>
 
 #include <core/target.hpp>
 #include <core/debug/debug.hpp>

@@ -12,6 +12,7 @@
 
 using namespace boost::multi_index;
 
+#include <boost/bind.hpp>
 #define _BACKWARD_BACKWARD_WARNING_H
 #include <unordered_map>
 

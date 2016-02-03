@@ -14,7 +14,7 @@ namespace mpl = boost::mpl;
 #define BOOST_MPL_LIMIT_VECTOR_SIZE 50
 #endif
 
-//#define BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
+#define BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
 #include <boost/mpl/vector.hpp>
 
 #undef BOOST_MPL_NO_PREPROCESSED_HEADERS

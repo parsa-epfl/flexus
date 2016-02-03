@@ -101,7 +101,7 @@ struct LongLong {
     return anEntry.getNumeric(aField);
   }
   std::string toString(int64_t const & aValue) {
-    return std::to_string(aValue);
+    return boost::lexical_cast<std::string>(aValue);
   }
 };
 

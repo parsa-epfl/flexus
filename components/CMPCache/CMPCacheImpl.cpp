@@ -3,6 +3,7 @@
 
 #include <components/CMPCache/CMPCache.hpp>
 
+#include <boost/scoped_ptr.hpp>
 #include <core/performance/profile.hpp>
 #include <core/qemu/configuration_api.hpp>
 
@@ -21,7 +22,7 @@ using namespace Flexus;
 using namespace Core;
 using namespace SharedTypes;
 
-using std::unique_ptr;
+using boost::scoped_ptr;
 
 class FLEXUS_COMPONENT(CMPCache) {
   FLEXUS_COMPONENT_IMPL(CMPCache);

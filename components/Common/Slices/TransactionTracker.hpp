@@ -10,6 +10,7 @@
 
 #include <memory>
 #include <boost/optional.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <core/types.hpp>

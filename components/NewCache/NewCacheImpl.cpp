@@ -3,6 +3,7 @@
 
 #include <components/NewCache/NewCache.hpp>
 
+#include <boost/scoped_ptr.hpp>
 #include <core/performance/profile.hpp>
 #include <core/simics/configuration_api.hpp>
 
@@ -23,7 +24,7 @@ using namespace Flexus;
 using namespace Core;
 using namespace SharedTypes;
 
-using std::unique_ptr;
+using boost::scoped_ptr;
 
 class FLEXUS_COMPONENT(NewCache) {
   FLEXUS_COMPONENT_IMPL(NewCache);

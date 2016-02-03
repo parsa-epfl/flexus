@@ -127,7 +127,7 @@ uint64_t translateAddress(uint64_t address){
       throw FlexusException();
     }
    std::string str1=name();
-   str1.append(std::to_string(flexusIndex()));
+   str1.append(boost::lexical_cast<string>(flexusIndex()));
    theStats=new MemStats(str1);
  
     theMemoryMap = MemoryMap::getMemoryMap(flexusIndex());
@@ -185,7 +185,7 @@ uint64_t translateAddress(uint64_t address){
 #ifdef DRAM_TEST
  void printMessage(MemoryTransport & aMessage){
             std::string str="/home/jevdjic/dramvalid/oracle_NAS";
-            str.append(std::to_string(flexusIndex()));
+            str.append(boost::lexical_cast<string>(flexusIndex()));
             str.append(".txt");
             char* cstr = new char [str.size()+1];
             strcpy (cstr, str.c_str());
@@ -201,7 +201,7 @@ uint64_t translateAddress(uint64_t address){
  void printTransaction(Transaction & t){
             std::string str="/home/jevdjic/dramvalid/oracle_NAS";
              
-            str.append(std::to_string(flexusIndex()));
+            str.append(boost::lexical_cast<string>(flexusIndex()));
             str.append(".txt");
             char* cstr = new char [str.size()+1];
             strcpy (cstr, str.c_str());
@@ -397,9 +397,9 @@ void push(interface::LoopbackIn const &, MemoryTransport & aMessageTransport) {
 void finalize() {}
 
 private:
- std::unique_ptr< nMessageQueues::DelayFifo< DRAMSim::TimestampedTransport > > outQueue;
- std::unique_ptr< DRAMSim::MessageMap> pendingList;
- std::unique_ptr< DRAMSim::MessageMap> evictedList; 
+ boost::scoped_ptr< nMessageQueues::DelayFifo< DRAMSim::TimestampedTransport > > outQueue;
+ boost::scoped_ptr< DRAMSim::MessageMap> pendingList;
+ boost::scoped_ptr< DRAMSim::MessageMap> evictedList; 
 
 };
 

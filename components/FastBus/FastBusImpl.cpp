@@ -3,6 +3,7 @@
 #include <fstream>
 #define _BACKWARD_BACKWARD_WARNING_H
 #include <unordered_map>
+#include <boost/tuple/tuple.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 

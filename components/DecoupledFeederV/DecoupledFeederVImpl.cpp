@@ -10,6 +10,7 @@
 #include <core/simics/mai_api.hpp>
 
 #include <functional>
+#include <boost/bind.hpp>
 
 #define DBG_DefineCategories Feeder
 #define DBG_SetDefaultOps AddCat(Feeder)

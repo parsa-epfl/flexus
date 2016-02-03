@@ -213,7 +213,7 @@ private:
       if (theTrackBitCounts) {
         theBitCounters = new Flexus::Stat::StatCounter*[theFreeBits];
         for (int32_t i = 0; i < theFreeBits; i++) {
-          theBitCounters[i] = new Flexus::Stat::StatCounter(aName + "-BitUsed:" + std::to_string(i));
+          theBitCounters[i] = new Flexus::Stat::StatCounter(aName + "-BitUsed:" + boost::lexical_cast<std::string>(i));
         }
       }
 
@@ -224,7 +224,7 @@ private:
           theBitPatternCounters[i] = new Flexus::Stat::StatCounter*[theNumBuckets];
           for (int32_t j = 0; j < theNumBuckets; j++) {
             theBitPatternCounters[i][j] = new Flexus::Stat::StatCounter(aName + "-BitPattern:"
-                + std::to_string(i) + ":" + std::to_string(j) );
+                + boost::lexical_cast<std::string>(i) + ":" + boost::lexical_cast<std::string>(j) );
           }
         }
       }

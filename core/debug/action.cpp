@@ -6,6 +6,7 @@
 #include <map>
 #include <set>
 
+#include <boost/scoped_ptr.hpp>
 #include <boost/optional.hpp>
 #include <core/boost_extensions/lexical_cast.hpp>
 
@@ -96,7 +97,7 @@ public:
 };
 
 //The StreamManager instance
-std::unique_ptr<StreamManager> theStreamManager;
+boost::scoped_ptr<StreamManager> theStreamManager;
 
 //StreamManager accessor
 inline StreamManager & streamManager() {
@@ -190,7 +191,7 @@ public:
   }
 };
 
-std::unique_ptr<SaveBufferManager> theSaveBufferManager;
+boost::scoped_ptr<SaveBufferManager> theSaveBufferManager;
 
 inline SaveBufferManager & saveBufferManager() {
   if (theSaveBufferManager.get() == 0) {

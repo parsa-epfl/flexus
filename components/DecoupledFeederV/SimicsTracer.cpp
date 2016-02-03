@@ -663,12 +663,12 @@ private:
       for (; vm < maxNumVMs && ii < theNumCPUs; vm++) {
         bool client_server = false;
         std::string name("machine");
-        name += std::to_string(vm);
+        name += boost::lexical_cast<std::string>(vm);
         name += "_cpu0";
         //DBG_(Crit, ( << "Looking for " << name ));
         if (API::SIM_get_object(name.c_str()) == 0) {
           name = "machine";
-          name += std::to_string(vm);
+          name += boost::lexical_cast<std::string>(vm);
           name += "_server_cpu0";
           //DBG_(Crit, ( << "Looking for " << name ));
           if (API::SIM_get_object(name.c_str()) != 0) {
@@ -680,11 +680,11 @@ private:
         int32_t num_remaining = theNumCPUs - ii;
         for (int32_t i = 0; i < num_remaining && ii < theNumCPUs; i++, ii++) {
           std::string name("machine");
-          name += std::to_string(vm);
+          name += boost::lexical_cast<std::string>(vm);
           if (client_server) {
             name += "_server";
           }
-          name += "_cpu" + std::to_string(i);
+          name += "_cpu" + boost::lexical_cast<std::string>(i);
 
           //DBG_(Crit, ( << "Looking for " << name ));
           API::conf_object_t * cpu = API::SIM_get_object( name.c_str() );
@@ -856,7 +856,7 @@ private:
 
         API::conf_object_t * cpu = 0;
         for ( ; simics_cpu_no < max_simics_cpu_no; simics_cpu_no++) {
-          std::string simics_name = name + std::to_string(simics_cpu_no);
+          std::string simics_name = name + boost::lexical_cast<std::string>(simics_cpu_no);
 
           DBG_( Crit, ( << "Connecting: " << simics_name ) );
           cpu = API::SIM_get_object( simics_name.c_str() );
@@ -940,21 +940,21 @@ private:
     } else {
       theDMATracer = new DMATracer[theNumVMs];
       for (int32_t vm = 0; vm < theNumVMs; vm++) {
-        std::string dma_map_name = "dma_mem" + std::to_string(vm);
+        std::string dma_map_name = "dma_mem" + boost::lexical_cast<std::string>(vm);
         API::conf_object_t * dma_map_object = API::SIM_get_object( dma_map_name.c_str() );
         API::SIM_clear_exception();
         if (! dma_map_object) {
           bool client_server = false;
           DBG_( Dev, ( << "Creating DMA map object" ) );
-          std::string cpu_name = "machine" + std::to_string(vm);
+          std::string cpu_name = "machine" + boost::lexical_cast<std::string>(vm);
           cpu_name += "_cpu0";
           std::string cpu_mem_name = cpu_name + "_mem";
           API::conf_object_t * cpu0_mem = API::SIM_get_object( cpu_mem_name.c_str() );
           API::conf_object_t * cpu0 = API::SIM_get_object( cpu_name.c_str() );
           if ( ! cpu0_mem ) {
-            cpu_name = "machine" + std::to_string(vm);
+            cpu_name = "machine" + boost::lexical_cast<std::string>(vm);
             cpu_name += "_server_cpu0";
-            cpu_mem_name = "machine" + std::to_string(vm);
+            cpu_mem_name = "machine" + boost::lexical_cast<std::string>(vm);
             cpu_mem_name += "_server_cpu0_mem";
             client_server = true;
             cpu0_mem = API::SIM_get_object(cpu_mem_name.c_str());
@@ -1003,7 +1003,7 @@ private:
         API::conf_class_t * trace_class = tracer_factory.getSimicsClass();
         registerDMAInterface(trace_class);
 
-        std::string tracer_name = "dma-tracer" + std::to_string(vm);
+        std::string tracer_name = "dma-tracer" + boost::lexical_cast<std::string>(vm);
         theDMATracer[vm] = tracer_factory.create(tracer_name);
         DBG_( Crit, ( << "Connecting to DMA memory map" ) );
         theDMATracer[vm]->init(dma_map_object, vm, toDMA);

@@ -183,7 +183,7 @@ struct ValueTracker {
     API::conf_object_t * dma_map_object = API::QEMU_get_object( "dma_mem" );
     API::QEMU_clear_exception();
     if (! dma_map_object) {
-      std::string dma_map_name = "dma_mem" + std::to_string(vm);
+      std::string dma_map_name = "dma_mem" + boost::lexical_cast<std::string>(vm);
       dma_map_object=API::QEMU_get_object( dma_map_name.c_str());
     }
 
@@ -193,7 +193,7 @@ struct ValueTracker {
     if (! dma_map_object) {
       bool client_server = false;
       DBG_( Dev, ( << "Creating DMA map object" ) );
-      std::string cpu_name = "machine" + std::to_string(vm) + "_cpu0";
+      std::string cpu_name = "machine" + boost::lexical_cast<std::string>(vm) + "_cpu0";
       std::string cpu_mem_name = cpu_name + "_mem";
       API::conf_object_t * cpu0_mem = API::QEMU_get_object(cpu_mem_name.c_str());
       API::conf_object_t * cpu0 = API::QEMU_get_object(cpu_name.c_str());
@@ -204,9 +204,9 @@ struct ValueTracker {
 
       if ( ! cpu0_mem ) {
         client_server = true;
-	cpu_name = "machine" + std::to_string(vm) + "_server_cpu0";
-	//cpu_mem_name = "machine" + std::to_string(vm) + "_server_server_cpu0_mem";
-        cpu_mem_name = "server_machine" + std::to_string(vm) + "_server_cpu0_mem";
+	cpu_name = "machine" + boost::lexical_cast<std::string>(vm) + "_server_cpu0";
+	//cpu_mem_name = "machine" + boost::lexical_cast<std::string>(vm) + "_server_server_cpu0_mem";
+        cpu_mem_name = "server_machine" + boost::lexical_cast<std::string>(vm) + "_server_cpu0_mem";
 	cpu0_mem = API::QEMU_get_object(cpu_mem_name.c_str());
 	cpu0 = API::QEMU_get_object(cpu_name.c_str());
 	if ((vm == 0) && (!cpu0_mem)){
@@ -221,7 +221,7 @@ struct ValueTracker {
       API::attr_value_t map_pair = API::SIM_make_attr_list(2, map_key, map_value);
       API::attr_value_t map_list = API::SIM_make_attr_list(1, map_pair);
       API::conf_class_t * memory_space = API::SIM_get_class( "memory-space" );
-      std::string dma_map_name = "dma_mem" + std::to_string(vm);
+      std::string dma_map_name = "dma_mem" + boost::lexical_cast<std::string>(vm);
       dma_map_object = SIM_create_object(memory_space, dma_map_name.c_str(), map_list);
       DBG_Assert( dma_map_object, ( << "Failed to create object ' " << dma_map_name << "'"));
       API::conf_class_t * schizo = API::SIM_get_class( "serengeti-schizo" );
@@ -249,7 +249,7 @@ struct ValueTracker {
     API::SIM_register_interface(trace_class, "timing-model", timing_interface);
 
     std::string tracer_name("dma-tracer");
-    tracer_name += std::to_string(vm);
+    tracer_name += boost::lexical_cast<std::string>(vm);
     theDMATracer = tracer_factory.create(tracer_name);
     DBG_( Crit, ( << "Connecting to DMA memory map" ) );
     theDMATracer->init(dma_map_object,vm);

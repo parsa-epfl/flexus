@@ -182,15 +182,15 @@ struct DgpStats {
     , Organization        ( aName + "-Organization", std::string("finite"))
 #endif
     , Configuration        (   std::string("Block Addr Bits: ")
-                               + std::to_string(blockAddrBits)
+                               + boost::lexical_cast<std::string>(blockAddrBits)
                                + "PC Bits: "
-                               + std::to_string(pcBits)
+                               + boost::lexical_cast<std::string>(pcBits)
                                + "Cache Block Size: "
-                               + std::to_string(l2BlockSize)
+                               + boost::lexical_cast<std::string>(l2BlockSize)
                                + "Num Sets: "
-                               + std::to_string(numSets)
+                               + boost::lexical_cast<std::string>(numSets)
                                + "Associativity: "
-                               + std::to_string(assoc)
+                               + boost::lexical_cast<std::string>(assoc)
                            )
   {}
 

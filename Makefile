@@ -57,14 +57,14 @@ else
 # Otherwise, it is an error.  In the case of an error, we print out all legal targets
 
 .DEFAULT core:
-	if [ -e makefile.$@ ] ; then \
+	if [[ -e makefile.$@ ]] ; then \
 		$(MAKE) $(SILENT_MAKE) -f makefile.$@ $@ ; \
-	elif [ -d $(SIMULATORS_DIR)/$@ ] ; then \
+	elif [[ -d $(SIMULATORS_DIR)/$@ ]] ; then \
 		$(MAKE) $(SILENT_MAKE) -f makefile.simulators $@ ; \
-	elif [ -d $(COMPONENTS_DIR)/$@ ] ; then \
+	elif [[ -d $(COMPONENTS_DIR)/$@ ]] ; then \
 		$(MAKE) $(SILENT_MAKE) -f makefile.components $@ ; \
 	else \
-		if [ "$@" != "list_targets" ] ; then \
+		if [[ "$@" != "list_targets" ]] ; then \
 			echo "$@ is not a valid simulator or component." ; \
 		fi ; \
 		echo "Supported simulators:" ; \
