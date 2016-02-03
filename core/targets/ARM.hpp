@@ -24,20 +24,3 @@
 #define TARGET_MEM_TRANS arm_memory_transaction_t
 
 
-#ifndef CONFIG_QEMU
-#define FLEXUS_SIMICS_TARGET_REGISTER_ID() <core/simics/v9/register_id.hpp>
-#define FLEXUS_SIMICS_TARGET_INSTRUCTION_EXTENSTIONS() <core/simics/v9/instructions.hpp>
-
-#include <simics/global.h>
-#if SIM_VERSION > 1300
-#define FLEXUS_SIMICS_API_HEADER(HEADER) <simics/core/HEADER.h>
-#define FLEXUS_SIMICS_API_ARCH_HEADER <simics/arch/sparc.h>
-#else /* SIM_VERSION <= 1300 */
-#define FLEXUS_SIMICS_API_HEADER(HEADER) <simics/HEADER##_api.h>
-#define FLEXUS_SIMICS_API_ARCH_HEADER <simics/sparc_api.h>
-#endif /* SIM_VERSION */
-#else
-//QEMU: nothing really needed.
-#endif /* CONFIG_QEMU */
-
-

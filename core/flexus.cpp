@@ -1,5 +1,6 @@
 #include <string>
 #include <iostream>
+#include <ctime>
 #include <fstream>
 #include <sstream>
 #include <chrono>
@@ -274,7 +275,7 @@ void FlexusImpl::advanceCycles(int64_t aCycleCount) {
   if ( !theCycleCount || theCycleCount - last_timestamp >= theTimestampInterval ) {
     system_clock::time_point now(system_clock::now());
     auto tt = system_clock::to_time_t(now);
-    DBG_(Dev, Core() ( << "Timestamp: " << std::put_time(std::localtime(&tt), "%Y-%h-%d %T")));
+    DBG_(Dev, Core() ( << "Timestamp: " << std::asctime(std::localtime(&tt))));
     last_timestamp = theCycleCount;
   }
 
@@ -716,7 +717,7 @@ void FlexusImpl::onTerminate(std::function<void () > aFn) {
 void FlexusImpl::terminateSimulation() {
   system_clock::time_point now(system_clock::now());
   auto tt = system_clock::to_time_t(now); 
-  DBG_(Dev, Core() ( << "Terminating simulation. Timestamp: " << std::put_time(std::localtime(&tt), "%Y-%h-%d %T")));
+  DBG_(Dev, Core() ( << "Terminating simulation. Timestamp: " << std::asctime(std::localtime(&tt))));
   DBG_(Dev, Core() ( << "Saving final stats_db."));
   ;
   for

@@ -6,17 +6,19 @@
 
 
 CURRENT_TOOLCHAIN=/custom_toolchain
-HOME_DIR=/home/root
+HOME_DIR=/home/damien/git/qemuflex/
 # GCC Compiler Settings
-GCC_PATH=$(CURRENT_TOOLCHAIN)
-GCC_BINARY=g++-5.3 --std=c++14
+# If we don't provide something in GCC_PATH, it just tries to use the local one
+#$(CURRENT_TOOLCHAIN)
+#GCC_PATH= 
+GCC_BINARY=g++ --std=c++11
 GCC_VERSION_NOCHECK=true
 SIMICS_GLIBC_NOCHECK=true
 
 # Boost 1.59.0 path
 BOOST_PATH=$(HOME_DIR)/boost_1_59_0
-BOOST_BINARIES=$(CURRENT_TOOLCHAIN)/lib64
-BOOST_VERSION_NOCHECK=true in makefile.defs
+BOOST_BINARIES=$(HOME_DIR)/boost_1_59_0/stage/lib/
+BOOST_VERSION_NOCHECK=true
 
 # Simics path
 SIMICS_PATH=/home/parsacom/tools/simics
@@ -60,7 +62,7 @@ export TARGET_EMULATOR=qemu
 #export TARGET_EMULATOR=simics
 
 INCLUDES=-DBOOST_MPL_CFG_NO_PREPROCESSED_HEADERS -DBOOST_MPL_LIMIT_VECTOR_SIZE=50 -isystem $(BOOST_INCLUDE) -isystem $(SIMICS_INCLUDE) -I$(FLEXUS_INCLUDE) -Ibooksim -Ibooksim/arbiters -Ibooksim/allocators -Ibooksim/routers -Ibooksim/networks -IDRAMSim2
-BOOST_LIBRARIES=-Wl,--no-whole-archive -L$(BOOST_BINARIES) -lboost_serialization -lboost_iostreams -lz
+BOOST_LIBRARIES=-Wl,--no-whole-archive -L$(BOOST_BINARIES) -lboost_regex -lboost_serialization -lboost_iostreams -lz
 
 # other constants
 # List of "special" cpp files in components that are not part of a components library
@@ -71,9 +73,15 @@ CORE_SIMICS=core_simics
 SPECIAL_COMPONENT_CPPS = test.cpp
 
 # Compiler settings
+
+ifneq ($(strip $(GCC_PATH)),)
 GCC=$(GCC_PATH)/bin/$(GCC_BINARY)
+else
+GCC=$(GCC_BINARY)
+endif
+
 GCC_LIB_PATH=$(GCC_PATH)/lib
-GCC_OPTFLAGS=-O3 -funroll-loops -fno-strict-aliasing
+GCC_OPTFLAGS=-g -O2 #-O3 -funroll-loops -fno-strict-aliasing
 #UNCOMMENT FOR GCC
 GCC_LANGFLAGS=-Wall -fmessage-length=160 -fpermissive -x c++ -fPIC -Werror -Wno-unused -Wno-maybe-uninitialized -Wno-parentheses -Wno-int-to-pointer-cast -Wno-logical-not-parentheses -DNO_STORAGE -DBOOST_SYSTEM_NO_DEPRECATED 
 #UNCOMMENT FOR CLANG

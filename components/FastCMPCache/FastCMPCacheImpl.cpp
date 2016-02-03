@@ -238,9 +238,9 @@ public:
     theDirectory->setNumCores(theCMPWidth);
     theDirectory->setNumCaches(theCMPWidth);
     theDirectory->setBlockSize(cfg.CoherenceUnit);
-    theDirectory->setPortOperations( [this](auto x, auto y){this->sendRegionProbe(x,y);},
-                                     [this](auto x){this->scheduleDelayedAction(x);} );
-    theDirectory->setInvalidateAction( [this](auto x, auto y){this->invalidateBlock(x,y);} );
+    theDirectory->setPortOperations( [this](RegionScoutMessage & msg, int32_t index){this->sendRegionProbe(msg,index);},
+                                     [this](std::function<void(void)> fn){this->scheduleDelayedAction(fn);} );
+    theDirectory->setInvalidateAction( [this](PhysicalMemoryAddress address, SharingVector sharers){this->invalidateBlock(address, sharers);} );
     theDirectory->initialize(statName());
 
     theProtocol = CREATE_PROTOCOL(cfg.Protocol);
@@ -274,8 +274,8 @@ public:
                               cfg.BlockSize,
                               num_sets,
                               cfg.Associativity,
-                              [this](auto x, auto y){ return this->evict(x, y);},
-                              [this](auto x, auto y, auto z){ return this->sendInvalidate(x,y,z);},
+                              [this](uint64_t aTagset, CoherenceState_t aLineState){ return this->evict(aTagset, aLineState);},
+                              [this](uint64_t addr, bool icache, bool dcache){ return this->sendInvalidate(addr, icache, dcache);},
                               theIndex,
                               cfg.CacheLevel,
                               cfg.ReplPolicy
@@ -285,9 +285,9 @@ public:
                               cfg.BlockSize,
                               num_sets,
                               cfg.Associativity,
-                              [this](auto x, auto y){ return this->evict(x, y);},
-                              [this](auto x, auto y){ return this->evictRegion(x, y);},
-                              [this](auto x, auto y, auto z){ return this->sendInvalidate(x,y,z);},
+                              [this](uint64_t aTagset, CoherenceState_t aLineState){ return this->evict(aTagset, aLineState);},
+                              [this](uint64_t aTagset, int32_t owner){ return this->evictRegion(aTagset, owner);},
+                              [this](uint64_t addr, bool icache, bool dcache){ return this->sendInvalidate(addr, icache, dcache);},
                               theIndex,
                               cfg.CacheLevel,
                               cfg.RegionSize,

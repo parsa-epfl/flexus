@@ -4,7 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <regex>
+#include <boost/regex.hpp>
 #include <cmath>
 
 #include <boost/throw_exception.hpp>
@@ -257,9 +257,9 @@ ProcessorMapper::ProcessorMapper() {
 
   //ALEX - FIXME: Probably need to change the following naming convention for QEMU
   // changed by PLotfi
-  std::regex vm_expression("machine([0-9]*)_((?:)|(?:server_)|(?:client_)|(?:besim_))cpu([0-9]*)");
+  boost::regex vm_expression("machine([0-9]*)_((?:)|(?:server_)|(?:client_)|(?:besim_))cpu([0-9]*)");
   //std::regex vm_expression("machine([0-9]*)_((?:)|(?:server_)|(?:client_))cpu([0-9]*)");
-  std::regex non_vm_expression("((?:)|(?:server_)|(?:client_)|(?:besim_))cpu([0-9]*)");
+  boost::regex non_vm_expression("((?:)|(?:server_)|(?:client_)|(?:besim_))cpu([0-9]*)");
   //std::regex non_vm_expression("((?:)|(?:server_)|(?:client_))cpu([0-9]*)");
   // end PLotfi
   DBG_(Crit, ( << "Searching " << proc_count << " cpus." ));
