@@ -38,7 +38,7 @@ public:
     currRecvCount = 0;
 
     for (int32_t i = 0; i < cfg.VChannels.value; i++) {
-      theRQueueSizes.push_back(new Stat::StatMax("max rcv queue [vc:" + boost::lexical_cast<std::string>(i) + "]", this));
+      theRQueueSizes.push_back(new Stat::StatMax("max rcv queue [vc:" + std::to_string(i) + "]", this));
     }
   }
 

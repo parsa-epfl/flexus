@@ -3,7 +3,6 @@
 
 #include <components/Cache/Cache.hpp>
 
-#include <boost/scoped_ptr.hpp>
 #include <core/performance/profile.hpp>
 #include <core/qemu/configuration_api.hpp>
 
@@ -24,7 +23,7 @@ using namespace Flexus;
 using namespace Core;
 using namespace SharedTypes;
 
-using boost::scoped_ptr;
+using std::unique_ptr;
 
 class FLEXUS_COMPONENT(Cache) {
   FLEXUS_COMPONENT_IMPL(Cache);

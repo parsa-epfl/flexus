@@ -672,8 +672,8 @@ public:
       unsigned ii;
       for (ii = 0; ii <= theMaxSgpBits; ii++) {
         std::string name(theName);
-        name += "-" + boost::lexical_cast<std::string>(theBlockSize << ii) + "B";
-        name += "-" + boost::lexical_cast<std::string>(theBlockSize) + "B";
+        name += "-" + std::to_string(theBlockSize << ii) + "B";
+        name += "-" + std::to_string(theBlockSize) + "B";
         theUsageStats.push_back(new Stat::StatInstanceCounter<int64_t>(name));
       }
     }

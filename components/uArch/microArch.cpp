@@ -63,7 +63,7 @@ class microArchImpl : public microArch {
 
   std::string theName;
 
-  boost::scoped_ptr<CoreModel> theCore;
+  std::unique_ptr<CoreModel> theCore;
   int32_t theAvailableROB;
   Flexus::Qemu::Processor theCPU;
   Stat::StatCounter theResynchronizations;
@@ -132,7 +132,7 @@ public:
 
     if (client_server) {
       // std::string my_cpu("server_cpu");
-      // my_cpu += boost::lexical_cast<std::string>(theNode);
+      // my_cpu += std::to_string(theNode);
 
       // theCPU = Flexus::Qemu::Processor::getProcessor(my_cpu);
       theCPU = Flexus::Qemu::Processor::getProcessor(theNode);
@@ -201,9 +201,9 @@ public:
       for ( ; simics_cpu_no < max_simics_cpu_no; simics_cpu_no++) {
         std::string client_cpu("client_cpu");
         if (is_vm_configuration) {
-      	  client_cpu = "machine" + boost::lexical_cast<std::string>(vm) + "_client_cpu";
+      	  client_cpu = "machine" + std::to_string(vm) + "_client_cpu";
 	}
-        client_cpu += boost::lexical_cast<std::string>(simics_cpu_no);
+        client_cpu += std::to_string(simics_cpu_no);
         client = Flexus::Qemu::API::QEMU_get_object(client_cpu.c_str());
         if (client != 0) {
           DBG_( Dev, ( << theName << " microArch will drive " << client_cpu << " with fixed IPC " << kClientIPC) );
@@ -213,9 +213,9 @@ public:
         // added by PLotfi to support SPECweb2009 workloads
         client_cpu = "besim_cpu";
         if (is_vm_configuration) {
-          client_cpu = "machine" + boost::lexical_cast<std::string>(vm) + "_besim_cpu";
+          client_cpu = "machine" + std::to_string(vm) + "_besim_cpu";
         }
-        client_cpu += boost::lexical_cast<std::string>(simics_cpu_no);
+        client_cpu += std::to_string(simics_cpu_no);
         client = Flexus::Qemu::API::QEMU_get_object(client_cpu.c_str());
         if (client != 0) {
           DBG_( Dev, ( << theName << " microArch will drive " << client_cpu << " with fixed IPC " << kClientIPC) );

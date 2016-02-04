@@ -733,6 +733,8 @@ void QEMU_execute_callbacks(
 
 // Initialize to 0 the instruction counts for every processor
 void QEMU_initialize_counts(void);
+// Free the memory for the counters
+void QEMU_deinitialize_counts(void);
 // Increment the instruction count for the given cpu
 void QEMU_increment_instruction_count(int cpu_number);
 #endif /* QEMUFLEX_QEMU_INTERNAL */

@@ -700,7 +700,7 @@ private:
 
       API::conf_object_t * cpu = 0;
       for ( ; simics_cpu_no < max_simics_cpu_no; simics_cpu_no++) {
-        std::string simics_name = name + boost::lexical_cast<std::string>(simics_cpu_no);
+        std::string simics_name = name + std::to_string(simics_cpu_no);
 
         DBG_( Crit, ( << "Connecting: " << simics_name ) );
         cpu = API::SIM_get_object( simics_name.c_str() );

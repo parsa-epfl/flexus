@@ -30,7 +30,7 @@ class DGPComponent : public FlexusComponentBase<DGPComponent, Cfg> {
   FLEXUS_COMPONENT_IMPL(nDGP::DGPComponent, Cfg);
 
   // the actual DGP object
-  boost::scoped_ptr<DgpMain> theDgp;
+  std::unique_ptr<DgpMain> theDgp;
 
 public:
   std::list<MemoryTransport> toCache_Snoop;

@@ -69,10 +69,10 @@ long PacketCount;
 	//end of medhi
 
     for ( i = 0; i < cfg.VChannels; i++ ) {
-      theNetworkLatencyHistograms.push_back ( new Stat::StatLog2Histogram  ( "NetworkLatency   VC[" + boost::lexical_cast<std::string>(i) + "]", this ) );
-      theBufferTimes.push_back              ( new Stat::StatLog2Histogram ( "BufferTime       VC[" + boost::lexical_cast<std::string>(i) + "]", this ) );
-      theAtHeadTimes.push_back              ( new Stat::StatLog2Histogram ( "AtBufferHeadTime VC[" + boost::lexical_cast<std::string>(i) + "]", this ) );
-      theAcceptWaitTimes.push_back          ( new Stat::StatLog2Histogram ( "AcceptWaitTime   VC[" + boost::lexical_cast<std::string>(i) + "]", this ) );
+      theNetworkLatencyHistograms.push_back ( new Stat::StatLog2Histogram  ( "NetworkLatency   VC[" + std::to_string(i) + "]", this ) );
+      theBufferTimes.push_back              ( new Stat::StatLog2Histogram ( "BufferTime       VC[" + std::to_string(i) + "]", this ) );
+      theAtHeadTimes.push_back              ( new Stat::StatLog2Histogram ( "AtBufferHeadTime VC[" + std::to_string(i) + "]", this ) );
+      theAcceptWaitTimes.push_back          ( new Stat::StatLog2Histogram ( "AcceptWaitTime   VC[" + std::to_string(i) + "]", this ) );
     }
 
     nc = new NetContainer();

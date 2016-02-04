@@ -5,7 +5,6 @@
 
 #include <core/stats.hpp>
 
-#include <boost/bind.hpp>
 #include <unordered_map>
 
 #define DBG_DefineCategories PerfectPlacement

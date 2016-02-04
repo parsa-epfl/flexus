@@ -18,7 +18,7 @@ typedef Flexus::SharedTypes::VirtualMemoryAddress MemoryAddress;
 class FLEXUS_COMPONENT(BPWarm) {
   FLEXUS_COMPONENT_IMPL(BPWarm);
 
-  boost::scoped_ptr<FastBranchPredictor> theBranchPredictor;
+  std::unique_ptr<FastBranchPredictor> theBranchPredictor;
 
   std::vector< std::vector< VirtualMemoryAddress > > theFetchAddress;
   std::vector< std::vector< BPredState > >           theFetchState;

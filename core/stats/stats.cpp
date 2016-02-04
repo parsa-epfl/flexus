@@ -8,7 +8,6 @@
 #include <fstream>
 #include <boost/regex.hpp>
 
-#include <boost/scoped_ptr.hpp>
 #include <boost/throw_exception.hpp>
 #include <boost/serialization/split_free.hpp>
 #include <functional>

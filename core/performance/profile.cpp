@@ -86,7 +86,7 @@ void ProfileManager::report(std::ostream & out) {
   out << "% ";
   out << "\n";
   for (iter = theProfilers.begin(), end = theProfilers.end(), i = 0; iter != end && i < 200; ++iter, ++i) {
-    std::string file_line = (*iter)->file() + ":" + boost::lexical_cast<std::string>((*iter)->line());
+    std::string file_line = (*iter)->file() + ":" + std::to_string((*iter)->line());
     out << rightmost(file_line, 30) << " ";
     out << leftmost((*iter)->name(), 30) << " ";
     out << std::setiosflags(std::ios::right) << std::setw(11) << (*iter)->selfTime() << "   ";
@@ -105,7 +105,7 @@ void ProfileManager::report(std::ostream & out) {
   out << "% ";
   out << "\n";
   for (iter = theProfilers.begin(), end = theProfilers.end(), i = 0; iter != end && i < 200; ++iter, ++i) {
-    std::string file_line = (*iter)->file() + ":" + boost::lexical_cast<std::string>((*iter)->line());
+    std::string file_line = (*iter)->file() + ":" + std::to_string((*iter)->line());
     out << rightmost(file_line, 30) << " ";
     out << leftmost((*iter)->name(), 30) << " ";
     out << std::setiosflags(std::ios::right) << std::setw(11) << (*iter)->totalTime() << "   ";

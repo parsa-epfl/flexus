@@ -2,7 +2,6 @@
 
 #include <fstream>
 #include <unordered_map>
-#include <boost/tuple/tuple.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 

@@ -308,7 +308,7 @@ TrafficManager::TrafficManager( const Configuration &config, Network **net )
     tmp_name.seekp( 0, ios::beg );   
 
     // added by PLotfi
-    string Number = boost::lexical_cast<string>( i );
+    string Number = std::to_string( i );
     ((BooksimStats *)global_theBooksimStats)->PairLatency_SumSample[i] = new Stat::StatCounter(((BooksimStats *)global_theBooksimStats)->theInitialName + "-Booksim:PairLatency:" + Number + ":SumSample");
     ((BooksimStats *)global_theBooksimStats)->PairLatency_NoSample[i]  = new Stat::StatCounter(((BooksimStats *)global_theBooksimStats)->theInitialName + "-Booksim:PairLatency:" + Number + ":NoSample");
     

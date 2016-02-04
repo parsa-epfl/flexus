@@ -73,7 +73,7 @@ public:
   void initialize() {
     int32_t i;
     for ( i = 0; i < cfg.VChannels; i++ ) {
-      theNetworkLatencyHistograms.push_back ( new Stat::StatLog2Histogram  ( "NetworkLatency   VC[" + boost::lexical_cast<std::string>(i) + "]", this ) );
+      theNetworkLatencyHistograms.push_back ( new Stat::StatLog2Histogram  ( "NetworkLatency   VC[" + std::to_string(i) + "]", this ) );
     }
 
     theNumNodes = cfg.NumNodes;

@@ -3,7 +3,6 @@
 #include <algorithm>
 
 #include <functional>
-#include <boost/scoped_ptr.hpp>
 
 #include <core/component.hpp>
 #include <core/debug/debug.hpp>
@@ -125,7 +124,7 @@ public:
 
 } //namespace aux_
 
-boost::scoped_ptr<aux_::ComponentManagerImpl> theComponentManager(0);
+std::unique_ptr<aux_::ComponentManagerImpl> theComponentManager{};
 
 ComponentManager & ComponentManager::getComponentManager() {
   if (theComponentManager == 0) {

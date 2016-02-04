@@ -2,7 +2,6 @@
 #define FLEXUS_CORE_TEST_TEST_UTILS_HPP_INCLUDED
 
 #include <boost/test/unit_test.hpp>
-#include <boost/bind.hpp>
 #include <boost/preprocessor/iteration/iterate.hpp>
 #include <boost/preprocessor/iteration/local.hpp>
 #include <boost/preprocessor/repetition/enum.hpp>
