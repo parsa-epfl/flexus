@@ -1,5 +1,0 @@
-#!/bin/sh
-
-TOOLCHAIN_BASE=/custom_toolchain
-export PATH=$TOOLCHAIN_BASE/bin:$PATH
-export LD_LIBRARY_PATH=$TOOLCHAIN_BASE/lib:$TOOLCHAIN_BASE/lib64:$LD_LIBRARY_PATH
