@@ -481,32 +481,32 @@ private:
 
     if (strcasecmp(policy.c_str(), "simple") == 0) {
       DBG_Assert( (theNumBuckets & (theNumBuckets - 1)) == 0, ( << "theNumBuckets = " << theNumBuckets << " != Power of 2" ) );
-      hash_fns.push_back([this](auto x){return this->simple_hash(x);});
+      hash_fns.push_back([this](uint64_t addr){return this->simple_hash(addr);});
     } else if (strcasecmp(policy.c_str(), "rotated_prime") == 0) {
-      hash_fns.push_back([this](auto x){return this->rotated_prime_modulo_hash(x);});
+      hash_fns.push_back([this](uint64_t addr){return this->rotated_prime_modulo_hash(addr);});
       theNumBuckets = get_next_prime(theNumBuckets);
     } else if (strcasecmp(policy.c_str(), "full_prime") == 0) {
-      hash_fns.push_back([this](auto x){return this->full_prime_modulo_hash(x);});
+      hash_fns.push_back([this](uint64_t addr){return this->full_prime_modulo_hash(addr);});
       theNumBuckets = get_next_prime(theNumBuckets);
     } else if (strcasecmp(policy.c_str(), "prime") == 0) {
-      hash_fns.push_back([this](auto x){return this->prime_modulo_hash(x);});
+      hash_fns.push_back([this](uint64_t addr){return this->prime_modulo_hash(addr);});
       theNumBuckets = get_next_prime(theNumBuckets);
     } else if (strcasecmp(policy.c_str(), "my_hash") == 0) {
       DBG_Assert( (theNumBuckets & (theNumBuckets - 1)) == 0, ( << "theNumBuckets = " << theNumBuckets << " != Power of 2" ) );
-      hash_fns.push_back([this](auto x){return this->my_hash(x);});
+      hash_fns.push_back([this](uint64_t addr){return this->my_hash(addr);});
     } else if (strcasecmp(policy.c_str(), "overlap") == 0) {
       DBG_Assert( (theNumBuckets & (theNumBuckets - 1)) == 0, ( << "theNumBuckets = " << theNumBuckets << " != Power of 2" ) );
-      hash_fns.push_back([this](auto x){return this->overlap_hash(x);});
+      hash_fns.push_back([this](uint64_t addr){return this->overlap_hash(addr);});
     } else if (strcasecmp(policy.c_str(), "xor") == 0) {
       DBG_Assert( (theNumBuckets & (theNumBuckets - 1)) == 0, ( << "theNumBuckets = " << theNumBuckets << " != Power of 2" ) );
-      hash_fns.push_back([this](auto x){return this->xor_hash(x);});
+      hash_fns.push_back([this](uint64_t addr){return this->xor_hash(addr);});
       if (theHashXORShift <= 0) {
         theHashXORShift = 32 - log_base2(theNumBuckets);
       }
     } else if (strncasecmp(policy.c_str(), "shift", 5) == 0) {
       DBG_Assert( (theNumBuckets & (theNumBuckets - 1)) == 0, ( << "theNumBuckets = " << theNumBuckets << " != Power of 2" ) );
       int32_t shift = boost::lexical_cast<int>(policy.substr(6));
-      hash_fns.push_back([this, shift](auto x){return this->shift_hash(shift, x);});
+      hash_fns.push_back([this, shift](uint64_t addr){return this->shift_hash(shift, addr);});
     } else if (strncasecmp(policy.c_str(), "matrix", 6) == 0) {
       std::string matrix_type = policy.substr(7);
       std::list<int> matrix;

@@ -13,9 +13,9 @@ namespace Dbg {
 typedef Filter::MatchResult MatchResult;
 
 void CompoundFilter::destruct() {
-  for(auto* aFilter:theFilters){
-    delete aFilter;
-  } //Clean up all pointers owned by theActions
+  std::for_each( theFilters.begin(), theFilters.end(), [](Filter* aFilter) {
+      delete aFilter;
+  });//Clean up all pointers owned by theActions
 }
 
 //Returns Exclude if any filter returns exclude.
@@ -38,9 +38,9 @@ MatchResult CompoundFilter::match(Entry const & anEntry) {
 }
 
 void CompoundFilter::printConfiguration(std::ostream & anOstream, std::string const & anIndent) {
-  for(auto* aFilter: theFilters){
-    aFilter->printConfiguration(anOstream, anIndent);
-  }
+  std::for_each( theFilters.begin(), theFilters.end(), [&anOstream, &anIndent](Filter* aFilter) {
+      aFilter->printConfiguration(anOstream, anIndent);
+  });
 };
 
 void CompoundFilter::add(Filter * aFilter) {
@@ -65,7 +65,7 @@ void IncludeFilter::printConfiguration(std::ostream & anOstream, std::string con
   if (iter != theFilters.end()) {
     (*iter)->printConfiguration(anOstream, anIndent + "+ ");
     ++iter;
-    std::for_each(iter, theFilters.end(), [&anOstream, &anIndent](auto* aFilter){ return aFilter->printConfiguration(anOstream, anIndent + "& ");});
+    std::for_each(iter, theFilters.end(), [&anOstream, &anIndent](Filter* aFilter){ return aFilter->printConfiguration(anOstream, anIndent + "& ");});
     //std::for_each(iter, theFilters.end(), std::bind(&Filter::printConfiguration, std::_1, std::var(anOstream), anIndent + "& ") );
   }
   anOstream << anIndent << ";\n";
@@ -91,7 +91,7 @@ void ExcludeFilter::printConfiguration(std::ostream & anOstream, std::string con
   if (iter != theFilters.end()) {
     (*iter)->printConfiguration(anOstream, anIndent + "- ");
     ++iter;
-    std::for_each(iter, theFilters.end(), [&anOstream, &anIndent](auto* aFilter){ return aFilter->printConfiguration(anOstream, anIndent + "& ");});
+    std::for_each(iter, theFilters.end(), [&anOstream, &anIndent](Filter* aFilter){ return aFilter->printConfiguration(anOstream, anIndent + "& ");});
     //std::for_each(iter, theFilters.end(), std::bind(&Filter::printConfiguration, std::_1, std::var(anOstream), anIndent + "& ") );
   }
   anOstream << anIndent << ";\n";

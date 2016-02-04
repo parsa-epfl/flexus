@@ -4,7 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <regex>
+#include <boost/regex.hpp>
 #include <cmath>
 
 #include <boost/throw_exception.hpp>
@@ -92,13 +92,6 @@ int v9ProcessorImpl::getPendingInterrupt() const {
 int v9ProcessorImpl::advance(bool anAcceptInterrupt) {
   int exception = 0;
 
-//NOOSHIN : begin
-DBG_(Iface,(<<"In advance flexus"));
-//DBG_(Tmp, (<<"NOOSHIN: IN advance Flexus"));
-DBG_(Tmp, Core() ( << "In advance flexus " ) );
-exception = Qemu::API::QEMU_cpu_exec_proc(this->theProcessor);
-//NOOSHIN : end
-
 //ALEX - TODO: Init interrupts
 /*
   if (! theInterruptsConnected) {
@@ -172,7 +165,7 @@ exception = Qemu::API::QEMU_cpu_exec_proc(this->theProcessor);
   } while ( retry );
   API::SIM_instruction_end(inst);
 */
-  //exception = API::QEMU_advance();
+  exception = API::QEMU_advance();
   return exception;
 }
 
@@ -257,9 +250,9 @@ ProcessorMapper::ProcessorMapper() {
 
   //ALEX - FIXME: Probably need to change the following naming convention for QEMU
   // changed by PLotfi
-  std::regex vm_expression("machine([0-9]*)_((?:)|(?:server_)|(?:client_)|(?:besim_))cpu([0-9]*)");
+  boost::regex vm_expression("machine([0-9]*)_((?:)|(?:server_)|(?:client_)|(?:besim_))cpu([0-9]*)");
   //std::regex vm_expression("machine([0-9]*)_((?:)|(?:server_)|(?:client_))cpu([0-9]*)");
-  std::regex non_vm_expression("((?:)|(?:server_)|(?:client_)|(?:besim_))cpu([0-9]*)");
+  boost::regex non_vm_expression("((?:)|(?:server_)|(?:client_)|(?:besim_))cpu([0-9]*)");
   //std::regex non_vm_expression("((?:)|(?:server_)|(?:client_))cpu([0-9]*)");
   // end PLotfi
   DBG_(Crit, ( << "Searching " << proc_count << " cpus." ));

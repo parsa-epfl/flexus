@@ -135,8 +135,7 @@ void QFLEX_API_set_interface_hooks( const QFLEX_API_Interface_Hooks_t* hooks ) {
   QEMU_get_instruction_count = hooks->QEMU_get_instruction_count;
   QEMU_insert_callback= hooks->QEMU_insert_callback;
   QEMU_delete_callback= hooks->QEMU_delete_callback;
-
-  QEMU_cpu_exec_proc = hooks->QEMU_cpu_exec_proc;
+  QEMU_cpu_exec_proc = hooks->QEMU_cpu_exec_proc;///NOOSHIN
 }
 
 } // namespace API

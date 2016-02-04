@@ -134,8 +134,8 @@ public:
     }
 
     theProtocol = GenerateCoherenceProtocol(cfg.Protocol, cfg.UsingTraces,
-                                            [this](auto& msg){ return this->forwardMessage(msg); },
-                                            [this](auto& msg){ return this->continueSnoop(msg);}, 
+                                            [this](MemoryMessage& msg){ return this->forwardMessage(msg); },
+                                            [this](MemoryMessage& msg){ return this->continueSnoop(msg);}, 
                                             [this](uint64_t addr, bool icache, bool dcache){ return this->sendInvalidate(addr, icache, dcache); },
                                             cfg.DowngradeLRU,
                                             cfg.SnoopLRU);

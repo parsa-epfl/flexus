@@ -119,22 +119,22 @@ void GlobalHasher::initialize(std::list<std::string> &hash_configs, int32_t init
     std::list<std::string>::iterator cfg = hash_configs.begin();
     for (; cfg != hash_configs.end(); cfg++, first_bucket += offset) {
       if (strcasecmp(cfg->c_str(), "simple") == 0) {
-        theHashList.push_back([this, first_bucket](const auto& x){ return this->simple_hash(first_bucket, x); });//std::bind(&GlobalHasher::simple_hash, this, first_bucket, _1));
+        theHashList.push_back([this, first_bucket](const Address& x){ return this->simple_hash(first_bucket, x); });//std::bind(&GlobalHasher::simple_hash, this, first_bucket, _1));
         DBG_(Dev, ( << "Added simple hash function to global hasher." ) );
       } else if (strncasecmp(cfg->c_str(), "xor", 3) == 0) {
         int32_t xor_shift = boost::lexical_cast<int>(cfg->substr(4));
-        theHashList.push_back([this, first_bucket, xor_shift](const auto& x){ return this->xor_hash(first_bucket, xor_shift, x); });//std::bind(&GlobalHasher::xor_hash, this, first_bucket, xor_shift, _1));
+        theHashList.push_back([this, first_bucket, xor_shift](const Address& x){ return this->xor_hash(first_bucket, xor_shift, x); });//std::bind(&GlobalHasher::xor_hash, this, first_bucket, xor_shift, _1));
         DBG_(Dev, ( << "Added XOR hash function to global hasher. XOR Shift = " << xor_shift << ", first = " << first_bucket ));
       } else if (strncasecmp(cfg->c_str(), "shift", 5) == 0) {
         int32_t shift = boost::lexical_cast<int>(cfg->substr(6));
-        theHashList.push_back([this, first_bucket, shift](const auto& x){ return this->shift_hash(first_bucket, shift, x); }); //std::bind(&GlobalHasher::shift_hash, this, first_bucket, shift, _1));
+        theHashList.push_back([this, first_bucket, shift](const Address& x){ return this->shift_hash(first_bucket, shift, x); }); //std::bind(&GlobalHasher::shift_hash, this, first_bucket, shift, _1));
         DBG_(Dev, ( << "Added Shift hash function to global hasher. Shift = " << shift ));
       } else if (strncasecmp(cfg->c_str(), "matrix", 6) == 0) {
         theHashList.push_back(createMatrixHash(cfg->substr(7), buckets_per_hash, theHashShift, theHashMask, first_bucket));
         DBG_(Dev, ( << "Added Matrix hash function to global hasher. Args = " << cfg->substr(7) ));
       } else if (strcasecmp(cfg->c_str(), "full_prime") == 0) {
         int32_t closest_prime = nCommonUtil::get_closest_prime(buckets_per_hash);
-        theHashList.push_back([this, closest_prime, first_bucket](const auto& x){ return this->shift_hash(closest_prime, first_bucket, x); });//std::bind(&GlobalHasher::shift_hash, this, closest_prime, first_bucket, _1));
+        theHashList.push_back([this, closest_prime, first_bucket](const Address& x){ return this->shift_hash(closest_prime, first_bucket, x); });//std::bind(&GlobalHasher::shift_hash, this, closest_prime, first_bucket, _1));
         DBG_(Dev, ( << "Added Full Prime hash function to global hasher. Closest prime = " << closest_prime ));
       }
     }

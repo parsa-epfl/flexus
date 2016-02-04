@@ -71,9 +71,15 @@ CORE_SIMICS=core_simics
 SPECIAL_COMPONENT_CPPS = test.cpp
 
 # Compiler settings
+
+ifneq ($(strip $(GCC_PATH)),)
 GCC=$(GCC_PATH)/bin/$(GCC_BINARY)
+else
+GCC=$(GCC_BINARY)
+endif
+
 GCC_LIB_PATH=$(GCC_PATH)/lib
-GCC_OPTFLAGS=-O3 -funroll-loops -fno-strict-aliasing
+GCC_OPTFLAGS=-g -O2 #-O3 -funroll-loops -fno-strict-aliasing
 #UNCOMMENT FOR GCC
 GCC_LANGFLAGS=-Wall -fmessage-length=160 -fpermissive -x c++ -fPIC -Werror -Wno-unused -Wno-maybe-uninitialized -Wno-parentheses -Wno-int-to-pointer-cast -Wno-logical-not-parentheses -DNO_STORAGE -DBOOST_SYSTEM_NO_DEPRECATED 
 #UNCOMMENT FOR CLANG

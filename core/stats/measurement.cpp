@@ -10,7 +10,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <functional>
-#include <regex>
+#include <boost/regex.hpp>
 #include <boost/optional.hpp>
 
 #include <core/stats.hpp>
@@ -55,7 +55,7 @@ void fold( StatValueBase & anAccumulator, StatValueBase const & anRHS, void ( St
 }
 
 bool Measurement::includeStat( Stat * aStat ) {
-  return std::regex_match(aStat->name(), theStatExpression);
+  return boost::regex_match(aStat->name(), theStatExpression);
 }
 
 void SimpleMeasurement :: addToMeasurement( Stat * aStat ) {
@@ -151,33 +151,33 @@ double SimpleMeasurement :: asDouble(std::string const & aFieldSpec) {
 
 int64_t SimpleMeasurement :: sumAsLongLong(std::string const & aFieldSpec) {
   try {
-    std::regex field_filter(aFieldSpec);
+    boost::regex field_filter(aFieldSpec);
     int64_t sum = 0;
     stat_handle_map::iterator iter = theStats.begin();
     stat_handle_map::iterator end = theStats.end();
 
     while (iter != end) {
-      if (std::regex_match(iter->first, field_filter)) {
+      if (boost::regex_match(iter->first, field_filter)) {
         sum += iter->second.asLongLong();
       }
       ++iter;
     }
 
     return sum;
-  } catch (std::regex_error & anExcept) {
+  } catch (boost::regex_error & anExcept) {
     throw CalcException(std::string("{ERR:Bad Field Filter: ") + aFieldSpec + " }");
   }
 }
 
 int64_t SimpleMeasurement :: minAsLongLong(std::string const & aFieldSpec) {
   try {
-    std::regex field_filter(aFieldSpec);
+    boost::regex field_filter(aFieldSpec);
     boost::optional<int64_t> min;
     stat_handle_map::iterator iter = theStats.begin();
     stat_handle_map::iterator end = theStats.end();
 
     while (iter != end) {
-      if (std::regex_match(iter->first, field_filter)) {
+      if (boost::regex_match(iter->first, field_filter)) {
         if (! min ||  iter->second.asLongLong() < *min) {
           min.reset( iter->second.asLongLong() );
         }
@@ -189,20 +189,20 @@ int64_t SimpleMeasurement :: minAsLongLong(std::string const & aFieldSpec) {
     }
 
     return *min;
-  } catch (std::regex_error & anExcept) {
+  } catch (boost::regex_error & anExcept) {
     throw CalcException(std::string("{ERR:Bad Field Filter: ") + aFieldSpec + " }");
   }
 }
 
 int64_t SimpleMeasurement :: maxAsLongLong(std::string const & aFieldSpec) {
   try {
-    std::regex field_filter(aFieldSpec);
+    boost::regex field_filter(aFieldSpec);
     int64_t max = 0;
     stat_handle_map::iterator iter = theStats.begin();
     stat_handle_map::iterator end = theStats.end();
 
     while (iter != end) {
-      if (std::regex_match(iter->first, field_filter)) {
+      if (boost::regex_match(iter->first, field_filter)) {
         if (iter->second.asLongLong() > max) {
           max = iter->second.asLongLong();
         }
@@ -211,21 +211,21 @@ int64_t SimpleMeasurement :: maxAsLongLong(std::string const & aFieldSpec) {
     }
 
     return max;
-  } catch (std::regex_error & anExcept) {
+  } catch (boost::regex_error & anExcept) {
     throw CalcException(std::string("{ERR:Bad Field Filter: ") + aFieldSpec + " }");
   }
 }
 
 double SimpleMeasurement :: avgAsDouble(std::string const & aFieldSpec) {
   try {
-    std::regex field_filter(aFieldSpec);
+    boost::regex field_filter(aFieldSpec);
     double sum = 0.0;
     int32_t count = 0;
     stat_handle_map::iterator iter = theStats.begin();
     stat_handle_map::iterator end = theStats.end();
 
     while (iter != end) {
-      if (std::regex_match(iter->first, field_filter)) {
+      if (boost::regex_match(iter->first, field_filter)) {
         sum += iter->second.asLongLong();
         ++count;
       }
@@ -233,7 +233,7 @@ double SimpleMeasurement :: avgAsDouble(std::string const & aFieldSpec) {
     }
 
     return sum / count;
-  } catch (std::regex_error & anExcept) {
+  } catch (boost::regex_error & anExcept) {
     throw CalcException(std::string("{ERR:Bad Field Filter: ") + aFieldSpec + " }");
   }
 }
@@ -290,13 +290,13 @@ void printBuckets( std::ostream & anOstream, std::vector<int64_t> const & bucket
 void SimpleMeasurement :: doHISTSUM(std::ostream & anOstream, std::string const & options) {
 
   try {
-    std::regex field_filter(options);
+    boost::regex field_filter(options);
     stat_handle_map::iterator iter = theStats.begin();
     stat_handle_map::iterator end = theStats.end();
     std::vector<int64_t> buckets;
 
     while (iter != end) {
-      if (std::regex_match(iter->first, field_filter)) {
+      if (boost::regex_match(iter->first, field_filter)) {
         boost::intrusive_ptr< StatValueBase > val = iter->second.getValue();
         StatValueBase * val_ptr = val.get();
         StatValue_Log2Histogram * hist = dynamic_cast<StatValue_Log2Histogram *>(val_ptr);
@@ -316,7 +316,7 @@ void SimpleMeasurement :: doHISTSUM(std::ostream & anOstream, std::string const 
 
     printBuckets( anOstream, buckets );
 
-  } catch (std::regex_error & anExcept) {
+  } catch (boost::regex_error & anExcept) {
     anOstream <<  "{ERR:Bad Field Filter: " << options << " }";
   } catch (...) {
     anOstream << "{ERR:Unable to construct HISTSUM.  Stat is probably not a Log2Histogram}";
@@ -560,13 +560,13 @@ void printInst2Hist( std::ostream & anOstream, std::map<int64_t, int64_t> const 
 void SimpleMeasurement :: doINSTSUM(std::ostream & anOstream, std::string const & options) {
 
   try {
-    std::regex field_filter(options);
+    boost::regex field_filter(options);
     stat_handle_map::iterator iter = theStats.begin();
     stat_handle_map::iterator end = theStats.end();
     std::map<int64_t, int64_t> instances;
 
     while (iter != end) {
-      if (std::regex_match(iter->first, field_filter)) {
+      if (boost::regex_match(iter->first, field_filter)) {
         boost::intrusive_ptr< StatValueBase > val = iter->second.getValue();
         StatValueBase * val_ptr = val.get();
         StatValue_InstanceCounter<int64_t> * inst = dynamic_cast<StatValue_InstanceCounter<int64_t> *>(val_ptr);
@@ -581,7 +581,7 @@ void SimpleMeasurement :: doINSTSUM(std::ostream & anOstream, std::string const 
 
     printInst( anOstream, instances);
 
-  } catch (std::regex_error & anExcept) {
+  } catch (boost::regex_error & anExcept) {
     anOstream <<  "{ERR:Bad Field Filter: " << options << " }";
   } catch (...) {
     anOstream << "{ERR:Unable to construct INSTSUM.  Stat is probably not an InstanceCounter}";
@@ -600,13 +600,13 @@ void SimpleMeasurement :: doINST2HIST(std::ostream & anOstream, std::string cons
       parameters = options.substr(loc + 1);
     }
 
-    std::regex field_filter(field);
+    boost::regex field_filter(field);
     stat_handle_map::iterator iter = theStats.begin();
     stat_handle_map::iterator end = theStats.end();
     std::map<int64_t, int64_t> instances;
 
     while (iter != end) {
-      if (std::regex_match(iter->first, field_filter)) {
+      if (boost::regex_match(iter->first, field_filter)) {
         boost::intrusive_ptr< StatValueBase > val = iter->second.getValue();
         StatValueBase * val_ptr = val.get();
         StatValue_InstanceCounter<int64_t> * inst = dynamic_cast<StatValue_InstanceCounter<int64_t> *>(val_ptr);
@@ -621,7 +621,7 @@ void SimpleMeasurement :: doINST2HIST(std::ostream & anOstream, std::string cons
 
     printInst2Hist( anOstream, instances, parameters);
 
-  } catch (std::regex_error & anExcept) {
+  } catch (boost::regex_error & anExcept) {
     anOstream <<  "{ERR:Bad Field Filter: " << options << " }";
   } catch (...) {
     anOstream << "{ERR:Unable to construct INSTSUM.  Stat is probably not an InstanceCounter}";
@@ -632,11 +632,11 @@ void SimpleMeasurement :: doINST2HIST(std::ostream & anOstream, std::string cons
 void SimpleMeasurement :: doCSV(std::ostream & anOstream, std::string const & options) {
 
   try {
-    std::regex options_parser("\\(([^\\)]*)\\)(:)?(.*)?");
-    std::smatch results;
-    if ( std::regex_match(options, results, options_parser )) {
+    boost::regex options_parser("\\(([^\\)]*)\\)(:)?(.*)?");
+    boost::smatch results;
+    if ( boost::regex_match(options, results, options_parser )) {
 
-      std::regex field_filter(results.str(1));
+      boost::regex field_filter(results.str(1));
       std::string field_options;
       if (results[3].matched) {
         field_options = results.str(3);
@@ -647,7 +647,7 @@ void SimpleMeasurement :: doCSV(std::ostream & anOstream, std::string const & op
       stat_handle_map::iterator end = theStats.end();
 
       while (iter != end) {
-        if (std::regex_match(iter->first, field_filter)) {
+        if (boost::regex_match(iter->first, field_filter)) {
           if (!first) {
             anOstream << " ";
           }
@@ -660,7 +660,7 @@ void SimpleMeasurement :: doCSV(std::ostream & anOstream, std::string const & op
 
     }
 
-  } catch (std::regex_error & anExcept) {
+  } catch (boost::regex_error & anExcept) {
     anOstream << "{ERR:Bad Field Filter}";
   }
 
@@ -814,7 +814,7 @@ void SimpleMeasurement :: reduce(eReduction aReduction, Measurement * aMeasureme
 }
 
 void SimpleMeasurement :: reduceNodes() {
-  std::regex perNodeFilter("\\d+-(.*)");
+  boost::regex perNodeFilter("\\d+-(.*)");
   std::string extractStatExp("\\1");
   std::deque<std::string> toDelete;
   std::deque<std::string>::iterator delIter;
@@ -822,8 +822,8 @@ void SimpleMeasurement :: reduceNodes() {
   stat_handle_map::iterator iter = theStats.begin();
   //stat_handle_map::iterator end = theStats.end();
   while (iter != theStats.end()) {
-    std::smatch pieces;
-    if (std::regex_match(iter->first, pieces, perNodeFilter)) {
+    boost::smatch pieces;
+    if (boost::regex_match(iter->first, pieces, perNodeFilter)) {
       std::string nodeStatName = std::string("Nodes-") + pieces[1].str();
       if (theStats.find(nodeStatName) == theStats.end()) {
         theStats[nodeStatName] = (iter->second);
