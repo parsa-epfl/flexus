@@ -10,14 +10,14 @@ HOME_DIR=/home/damien/git/qemuflex/
 # GCC Compiler Settings
 # If we don't provide something in GCC_PATH, it just tries to use the local one
 #$(CURRENT_TOOLCHAIN)
-#GCC_PATH= 
+#GCC_PATH=
 GCC_BINARY=g++ --std=c++11
 GCC_VERSION_NOCHECK=true
 SIMICS_GLIBC_NOCHECK=true
 
 # Boost 1.59.0 path
-BOOST_PATH=$(HOME_DIR)/boost_1_59_0
-BOOST_BINARIES=$(HOME_DIR)/boost_1_59_0/stage/lib/
+BOOST_PATH=/home/parsacom/tools/boost-qflex/include
+BOOST_BINARIES=/home/parsacom/tools/boost-qflex/lib
 BOOST_VERSION_NOCHECK=true
 
 # Simics path
