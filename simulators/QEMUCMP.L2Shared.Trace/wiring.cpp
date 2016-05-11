@@ -57,7 +57,7 @@ bool initializeParameters() {
   static const int M = 1024 * K;
 
   theL1DCfg.MTWidth.initialize( 1 );
-  theL1DCfg.Size.initialize(64 * K);
+  theL1DCfg.Size.initialize(32 * K);
   theL1DCfg.Associativity.initialize(2);
   theL1DCfg.BlockSize.initialize(64);
   theL1DCfg.CleanEvictions.initialize(false);
@@ -67,7 +67,7 @@ bool initializeParameters() {
   theL1DCfg.NotifyWrites.initialize(false);
 
   theL1ICfg.MTWidth.initialize( 1 );
-  theL1ICfg.Size.initialize(64 * K);
+  theL1ICfg.Size.initialize(32 * K);
   theL1ICfg.Associativity.initialize(2);
   theL1ICfg.BlockSize.initialize(64);
   theL1ICfg.CleanEvictions.initialize(false);
