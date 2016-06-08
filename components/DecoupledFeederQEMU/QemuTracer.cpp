@@ -48,6 +48,8 @@ struct TracerStats {
   Stat::StatCounter theIOOps_stat;
   Stat::StatCounter theUncacheableOps_stat;
   Stat::StatCounter theFetches_stat;
+  Stat::StatCounter theLoadExOps_stat;
+  Stat::StatCounter theStoreExOps_stat;
   Stat::StatCounter theRMWOps_stat;
   Stat::StatCounter theCASOps_stat;
   Stat::StatCounter theLoadOps_stat;
@@ -57,6 +59,8 @@ struct TracerStats {
   int64_t theIOOps;
   int64_t theUncacheableOps;
   int64_t theFetches;
+  int64_t theLoadExOps;
+  int64_t theStoreExOps;
   int64_t theRMWOps;
   int64_t theCASOps;
   int64_t theLoadOps;
@@ -68,6 +72,8 @@ struct TracerStats {
     , theIOOps_stat(aName + "IOOps")
     , theUncacheableOps_stat(aName + "UncacheableOps")
     , theFetches_stat(aName + "Fetches")
+    , theLoadExOps_stat(aName + "LoadExOps")
+    , theStoreExOps_stat(aName + "StoreExOps")
     , theRMWOps_stat(aName + "RMWOps")
     , theCASOps_stat(aName + "CASOps")
     , theLoadOps_stat(aName + "LoadOps")
@@ -77,6 +83,8 @@ struct TracerStats {
     , theIOOps(0)
     , theUncacheableOps(0)
     , theFetches(0)
+    , theLoadExOps(0)
+    , theStoreExOps(0)
     , theRMWOps(0)
     , theCASOps(0)
     , theLoadOps(0)
@@ -85,10 +93,13 @@ struct TracerStats {
   {}
 
   void update() {
-    theMemOps_stat += theLoadOps + theStoreOps + theCASOps + theRMWOps + thePrefetchOps;
+    theMemOps_stat += theLoadOps + theStoreOps + theCASOps + theLoadExOps + theStoreExOps +
+                      theRMWOps + thePrefetchOps;
     theIOOps_stat += theIOOps;
     theUncacheableOps_stat += theUncacheableOps;
     theFetches_stat += theFetches;
+    theLoadExOps_stat += theLoadExOps;
+    theStoreExOps_stat += theStoreExOps;
     theRMWOps_stat += theRMWOps;
     theCASOps_stat += theCASOps;
     theLoadOps_stat += theLoadOps;
@@ -97,6 +108,8 @@ struct TracerStats {
     theIOOps = 0;
     theUncacheableOps = 0;
     theFetches = 0;
+    theLoadExOps = 0;
+    theStoreExOps = 0;
     theRMWOps = 0;
     theCASOps = 0;
     theLoadOps = 0;
@@ -288,9 +301,9 @@ public:
 
     //Set the type field of the memory operation
     if (mem_trans->s.atomic) {
-      //Need to determine opcode, as this may be an RMW or CAS
 
 #if FLEXUS_TARGET_IS(v9)
+      // Need to determine opcode, as this may be an RMW or CAS
       // record the opcode
       API::physical_address_t pc = API::QEMU_logical_to_physical(theCPU, API::QEMU_DI_Instruction, mem_trans->s.pc);
       uint32_t op_code = API::QEMU_read_phys_memory(theCPU, pc, 4);
@@ -335,8 +348,24 @@ public:
 //        printf("LDD: %x, STD: %x, CAS: %x, RMW: %x\n", kLDD_mask, kSTD_mask, kRMW_mask, kCAS_mask);
         DBG_Assert( false, ( << "Unknown atomic operation. Opcode: " << std::hex << op_code << " pc: " << pc << std::dec ) );
       }
-#else
-      //Assume all atomic x86 & ARM atomic operations are RMWs.  This may not be true
+#elif FLEXUS_TARGET_IS(ARM)
+      theMemoryMessage.type() = MemoryMessage::RMWReq;
+      switch (mem_trans->s.type) {
+          case API::QEMU_Trans_Load:
+              IS_PRIV(mem_trans) ? theOSStats->theLoadExOps++ : theUserStats->theLoadExOps++ ;
+              theBothStats->theLoadExOps++;
+              break;
+          case API::QEMU_Trans_Store:
+              IS_PRIV(mem_trans) ?  theOSStats->theStoreExOps++ : theUserStats->theStoreExOps++ ;
+              theBothStats->theStoreExOps++;
+              break;
+          default:
+              DBG_(Crit, ( << "unhandled transaction type.  Transaction follows:"));
+              debugTransaction(mem_trans);
+              DBG_Assert(false);
+              break;
+      }
+#else //Assume all atomic x86 atomic operations are RMWs.
       theMemoryMessage.type() = MemoryMessage::RMWReq;
       IS_PRIV(mem_trans) ?  theOSStats->theRMWOps++ : theUserStats->theRMWOps++ ;
       theBothStats->theRMWOps++;
