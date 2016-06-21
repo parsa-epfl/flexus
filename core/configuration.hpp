@@ -158,8 +158,9 @@ struct DynamicParameter : public ParameterBase {
       theConfig.*(param_def::member()) = boost::lexical_cast<typename param_def::type>(aValue);
       theOverridden = true;
     } catch (bad_lexical_cast e) {
-      DBG_(Crit, ( << "Bad Lexical Cast attempting to set dynamic parameter.") );
-      std::cout << "WARNING: Unable to set parameter " << param_def::name() << " to " << aValue << std::endl;
+      DBG_(Crit, ( << "Bad Lexical Cast attempting to set dynamic parameter." << std::endl
+                   << "WARNING: Unable to set parameter " << param_def::name() << " to "
+                   << aValue << ": " << e.what() ));
     }
   }
 

@@ -13,7 +13,7 @@
 
 //FIXME need to make sure that CONFIG_QEMU actually works
 #ifndef CONFIG_QEMU
-#define Config_QEMU
+#define CONFIG_QEMU
 #endif
 // #ifndef CONFIG_QEMU
 // #include <core/simics/control_api.hpp>

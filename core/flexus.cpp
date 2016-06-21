@@ -244,9 +244,10 @@ void FlexusImpl::initializeComponents() {
   theCurrentStatRegion = 0;
   theCurrentStatRegionName = std::string("Region ") + boost::padded_string_cast < 3, '0' > (theCurrentStatRegion++);
   Stat::getStatManager()->openMeasurement(theCurrentStatRegionName);
-  ConfigurationManager::getConfigurationManager().checkAllOverrides();
   ComponentManager::getComponentManager().initComponents();
+  parseConfiguration("user_postload");
   writeConfiguration("configuration.out");
+  ConfigurationManager::getConfigurationManager().checkAllOverrides();
   theInitialized = true;
 }
 

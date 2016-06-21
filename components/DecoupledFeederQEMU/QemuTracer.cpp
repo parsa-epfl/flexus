@@ -253,6 +253,7 @@ public:
 				       API::conf_object_t * space,
 				       API::memory_transaction_t * mem_trans ) {
     int mn = API::QEMU_get_processor_number(theCPU);
+    //debugTransaction(mem_trans); // ustiugov: uncomment to track every memory op
     //Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
     //toL1D((int32_t) 0, msg); 
     const int32_t k_no_stall = 0;
@@ -454,42 +455,45 @@ public:
 	unsigned opcode = 0;
 
     DBG_(Tmp, SetNumeric( (ScaffoldIdx) theIndex)
-         ( << "Mem Heir Instr: " << opcode << " pc: " << &std::hex << pc)
+         ( << "Mem Hier Instr: " << opcode << " logical pc: " << &std::hex << pc_logical << " pc: " << pc)
         );
 
     if (API::QEMU_mem_op_is_data(&mem_trans->s)) {
       if (API::QEMU_mem_op_is_write(&mem_trans->s)) {
         DBG_(Tmp, SetNumeric( (ScaffoldIdx) theIndex)
-             ( << "  Write @" << &std::hex << mem_trans->s.physical_address << &std::dec << '[' << mem_trans->s.size << ']'
+             ( << "  Write v@" << &std::hex << mem_trans->s.logical_address << " p@" << mem_trans->s.physical_address << &std::dec << " size=" << mem_trans->s.size
                << " type=" << mem_trans->s.type
                << (  mem_trans->s.atomic ? " atomic" : "" )
                << (  mem_trans->s.may_stall ? "" : " no-stall" )
                << (  mem_trans->s.inquiry ? " inquiry" : "")
                << (  mem_trans->s.speculative ? " speculative" : "")
                << (  mem_trans->s.ignore ? " ignore" : "")
+               << (  IS_PRIV(mem_trans) ? " priv" : " user")
              )
             );
       } else {
         if ( mem_trans->s.type == API::QEMU_Trans_Prefetch) {
           DBG_(Tmp, SetNumeric( (ScaffoldIdx) theIndex)
-               ( << "  Prefetch @" << &std::hex << mem_trans->s.physical_address << &std::dec << '[' << mem_trans->s.size  << ']'
+               ( << "  Prefetch v@" << &std::hex << mem_trans->s.logical_address << " p@" << mem_trans->s.physical_address << &std::dec << " size=" << mem_trans->s.size
                  << " type=" << mem_trans->s.type
                  << (  mem_trans->s.atomic ? " atomic" : "" )
                  << (  mem_trans->s.may_stall ? "" : " no-stall" )
                  << (  mem_trans->s.inquiry ? " inquiry" : "")
                  << (  mem_trans->s.speculative ? " speculative" : "")
                  << (  mem_trans->s.ignore ? " ignore" : "")
+                 << (  IS_PRIV(mem_trans) ? " priv" : " user")
                )
               );
         } else {
           DBG_(Tmp, SetNumeric( (ScaffoldIdx) theIndex)
-               ( << "  Read @" << &std::hex << mem_trans->s.physical_address << &std::dec << '[' << mem_trans->s.size  << ']'
+               ( << "  Read v@" << &std::hex << mem_trans->s.logical_address << " p@" << mem_trans->s.physical_address << &std::dec << " size=" << mem_trans->s.size
                  << " type=" << mem_trans->s.type
                  << (  mem_trans->s.atomic ? " atomic" : "" )
                  << (  mem_trans->s.may_stall ? "" : " no-stall" )
                  << (  mem_trans->s.inquiry ? " inquiry" : "")
                  << (  mem_trans->s.speculative ? " speculative" : "")
                  << (  mem_trans->s.ignore ? " ignore" : "")
+                 << (  IS_PRIV(mem_trans) ? " priv" : " user")
                )
               );
         }
