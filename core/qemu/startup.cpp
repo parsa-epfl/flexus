@@ -10,6 +10,7 @@
 #include <core/simulator_name.hpp>
 #include <core/configuration.hpp>
 #include <core/component.hpp>
+#include <boost/version.hpp>
 
 #define QEMUFLEX_FLEXUS_INTERNAL
 namespace Flexus{
@@ -72,12 +73,14 @@ using std::cerr;
 using std::endl;
 
 void print_copyright() {
-  cerr << "\nFlexus (C) 2006-2010 The SimFlex Project" << endl;
-  cerr << "Eric Chung, Michael Ferdman, Brian Gold, Nikos Hardavellas, Jangwook Kim," << endl;
+  cerr << "\nFlexus (C) 2006-2016 The QFlex Project" << endl;
+  cerr << "Alexandros Daglis, Arash Pourhabibi, Damien Hilloulin," << endl;
+  cerr << "Dmitrii Ustiugov, Eric Chung, Mario Drumond, Michael Ferdman," << endl;
+  cerr << "Brian Gold, Nikos Hardavellas, Jangwook Kim, Javier Picorel," << endl;
   cerr << "Ippokratis Pandis, Minglong Shao, Jared Smolens, Stephen Somogyi," << endl;
   cerr << "Evangelos Vlachos, Thomas Wenisch, Roland Wunderlich" << endl;
   cerr << "Anastassia Ailamaki, Babak Falsafi and James C. Hoe." << endl << endl;
-  cerr << "Flexus Simics simulator - Built as " << Flexus::theSimulatorName << endl << endl;
+  cerr << "QFlex simulator - Built as " << Flexus::theSimulatorName << endl << endl;
 }
 
 
@@ -105,6 +108,8 @@ extern "C" void qemuflex_init(Flexus::Qemu::API::QFLEX_API_Interface_Hooks_t* ho
   }
 
   DBG_(Dev, ( << "Initializing Flexus." ));
+  DBG_(Dev, ( << "Compiled with Boost: " << BOOST_VERSION / 100000 << "."
+              << BOOST_VERSION / 100 % 1000 << "." << BOOST_VERSION % 100 ));
 
   //Do all the stuff we need to get Simics to know we are here
   Flexus::Qemu::PrepareFlexus();
