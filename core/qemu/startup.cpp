@@ -73,14 +73,12 @@ using std::cerr;
 using std::endl;
 
 void print_copyright() {
-  cerr << "\nFlexus (C) 2006-2016 The QFlex Project" << endl;
-  cerr << "Alexandros Daglis, Arash Pourhabibi, Damien Hilloulin," << endl;
-  cerr << "Dmitrii Ustiugov, Eric Chung, Mario Drumond, Michael Ferdman," << endl;
-  cerr << "Brian Gold, Nikos Hardavellas, Nooshin Mirzadeh, Jangwook Kim, Javier Picorel," << endl;
+  cerr << "\nFlexus (C) 2006-2010 The SimFlex Project" << endl;
+  cerr << "Eric Chung, Michael Ferdman, Brian Gold, Nikos Hardavellas, Jangwook Kim," << endl;
   cerr << "Ippokratis Pandis, Minglong Shao, Jared Smolens, Stephen Somogyi," << endl;
   cerr << "Evangelos Vlachos, Thomas Wenisch, Roland Wunderlich" << endl;
   cerr << "Anastassia Ailamaki, Babak Falsafi and James C. Hoe." << endl << endl;
-  cerr << "QFlex simulator - Built as " << Flexus::theSimulatorName << endl << endl;
+  cerr << "Flexus Simics simulator - Built as " << Flexus::theSimulatorName << endl << endl;
 }
 
 
