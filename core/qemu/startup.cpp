@@ -76,7 +76,7 @@ void print_copyright() {
   cerr << "\nFlexus (C) 2006-2016 The QFlex Project" << endl;
   cerr << "Alexandros Daglis, Arash Pourhabibi, Damien Hilloulin," << endl;
   cerr << "Dmitrii Ustiugov, Eric Chung, Mario Drumond, Michael Ferdman," << endl;
-  cerr << "Brian Gold, Nikos Hardavellas, Jangwook Kim, Javier Picorel," << endl;
+  cerr << "Brian Gold, Nikos Hardavellas, Nooshin Mirzadeh, Jangwook Kim, Javier Picorel," << endl;
   cerr << "Ippokratis Pandis, Minglong Shao, Jared Smolens, Stephen Somogyi," << endl;
   cerr << "Evangelos Vlachos, Thomas Wenisch, Roland Wunderlich" << endl;
   cerr << "Anastassia Ailamaki, Babak Falsafi and James C. Hoe." << endl << endl;
