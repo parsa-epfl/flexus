@@ -614,7 +614,6 @@ public:
     , theSendNonAllocatingStores(aSendNonAllocatingStores) {
     DBG_( Dev, ( << "Initializing QemuTracerManager."  ) );
     theNumCPUs = aNumCPUs;
-    std::cout<<"Detected number of CPUs : "<<theNumCPUs<<std::endl;
 
     //Dump translation caches
     Qemu::API::QEMU_flush_all_caches();
@@ -665,7 +664,6 @@ private:
     //FIXME I believe this had been used incorrectly as the end point of the inner for loop.
     //In the simics it was being used, but not sure why or how it works.
     for ( int32_t ii = 0; ii < theNumCPUs ; ++ii ) {
-      std::cout<<"i: "<<ii<<std::endl;
       std::string feeder_name("flexus-feeder");
       if (theNumCPUs > 1) {
         feeder_name += '-' + boost::padded_string_cast < 2, '0' > (ii);

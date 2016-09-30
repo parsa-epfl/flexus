@@ -240,14 +240,15 @@ void FlexusImpl::printMMU( int32_t aCPU ) {
 #endif
 
 void FlexusImpl::initializeComponents() {
+  DBG_(Tmp, ( << "Inititializing Flexus components..." ));
   Stat::getStatManager()->initialize();
   theCurrentStatRegion = 0;
   theCurrentStatRegionName = std::string("Region ") + boost::padded_string_cast < 3, '0' > (theCurrentStatRegion++);
   Stat::getStatManager()->openMeasurement(theCurrentStatRegionName);
-  ComponentManager::getComponentManager().initComponents();
   parseConfiguration("user_postload");
   writeConfiguration("configuration.out");
   ConfigurationManager::getConfigurationManager().checkAllOverrides();
+  ComponentManager::getComponentManager().initComponents();
   theInitialized = true;
 }
 

@@ -21,6 +21,8 @@ namespace API{
 } // Qemu
 } // Flexus
 
+#include <fstream>
+
 // For debug purposes
 #include <iostream>
 
@@ -44,14 +46,23 @@ namespace Qemu = Flexus::Qemu;
 void CreateFlexus() {
   CreateFlexusObject();
 
-  Flexus::Core::index_t systemWidth = Qemu::API::QEMU_get_num_cpus();
-  Flexus::Core::ComponentManager::getComponentManager()
-								.instantiateComponents(systemWidth);
- 
-  ConfigurationManager::getConfigurationManager()
-						.processCommandLineConfiguration(0, 0);
-   //not sure if this is correct or where it should be. 
- std::cerr<<"systemWidth: " <<systemWidth << std::endl;
+  Flexus::Core::index_t system_width;
+  std::ifstream ifs("preload_system_width");
+
+  if ( !ifs.good() ) {
+      DBG_( Crit, ( << "Fatal error! Components instantiation failed due "
+                    "to the system width is not defined!" << "Report this error to the QFlex team on GitHub." ) );
+      exit(1);
+  } else {
+      ifs >> system_width;
+  }
+  ifs.close();
+
+  DBG_( Crit, ( << "Instantiating Flexus components with SystemWidth="
+                << system_width << "..." ) );
+
+  Flexus::Core::ComponentManager::getComponentManager().instantiateComponents(system_width);
+  ConfigurationManager::getConfigurationManager().processCommandLineConfiguration(0, 0);
 }
 
 void PrepareFlexus() {
