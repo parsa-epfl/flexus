@@ -40,6 +40,9 @@ QEMU_CPU_GET_CORE_ID_PROC QEMU_cpu_get_core_id= nullptr;
 // return the hread id of the processor
 QEMU_CPU_GET_THREAD_ID_PROC QEMU_cpu_get_thread_id= nullptr;
 
+// set quantum value for all vcpus
+QEMU_CPU_SET_QUANTUM QEMU_cpu_set_quantum = nullptr;
+
 // return an array of all processors
 // (numSockets * numCores * numthreads CPUs)
 QEMU_GET_ALL_PROCESSORS_PROC QEMU_get_all_processors= nullptr;
@@ -117,6 +120,7 @@ void QFLEX_API_set_interface_hooks( const QFLEX_API_Interface_Hooks_t* hooks ) {
   QEMU_cpu_get_socket_id= hooks->QEMU_cpu_get_socket_id;
   QEMU_cpu_get_core_id= hooks->QEMU_cpu_get_core_id;
   QEMU_cpu_get_thread_id= hooks->QEMU_cpu_get_thread_id;
+  QEMU_cpu_set_quantum= hooks->QEMU_cpu_set_quantum;
   QEMU_get_all_processors= hooks->QEMU_get_all_processors;
   QEMU_set_tick_frequency= hooks->QEMU_set_tick_frequency;
   QEMU_get_tick_frequency= hooks->QEMU_get_tick_frequency;
