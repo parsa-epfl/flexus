@@ -1,2 +1,0 @@
-EXTRA_COMPONENT_SOURCES=DRAMSim2/Bank.cpp DRAMSim2/BankState.cpp DRAMSim2/BusPacket.cpp DRAMSim2/CommandQueue.cpp DRAMSim2/IniReader.cpp DRAMSim2/MemoryController.cpp DRAMSim2/MemorySystem.cpp DRAMSim2/Rank.cpp DRAMSim2/SimulatorObject.cpp DRAMSim2/Transaction.cpp DRAMSim2/ClockDomain.cpp
-

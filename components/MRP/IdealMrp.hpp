@@ -1,7 +1,0 @@
-#define FLEXUS_BEGIN_COMPONENT IdealMrp
-#include FLEXUS_BEGIN_COMPONENT_DECLARATION()
-
-#define IdealMrp_IMPLEMENTATION (<components/MRP/IdealMrpImpl.hpp>)
-
-#include FLEXUS_END_COMPONENT_DECLARATION()
-#define FLEXUS_END_COMPONENT IdealMrp
