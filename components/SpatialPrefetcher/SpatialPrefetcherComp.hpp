@@ -14,7 +14,7 @@
 
 #include <boost/dynamic_bitset.hpp>
 
-#include <components/Common/Slices/PrefetchCommand.hpp>
+#include <components/CommonQEMU/Slices/PrefetchCommand.hpp>
 #include <components/DecoupledFeeder/SimicsTracer.hpp>
 
 using namespace boost::multi_index;

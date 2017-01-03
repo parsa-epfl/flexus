@@ -3,7 +3,7 @@
 #define FLEXUS_BEGIN_COMPONENT BPWarm
 #include FLEXUS_BEGIN_COMPONENT_DECLARATION()
 
-#include <components/Common/Transports/InstructionTransport.hpp>
+#include <components/CommonQEMU/Transports/InstructionTransport.hpp>
 
 COMPONENT_PARAMETERS(
   PARAMETER( Cores, int, "Number of cores", "cores", 1 )

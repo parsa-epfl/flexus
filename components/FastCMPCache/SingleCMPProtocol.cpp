@@ -1,5 +1,5 @@
 #include <core/debug/debug.hpp>
-#include <components/Common/Slices/MemoryMessage.hpp>
+#include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 #include <components/FastCMPCache/AbstractProtocol.hpp>
 
 #include <boost/multi_index_container.hpp>

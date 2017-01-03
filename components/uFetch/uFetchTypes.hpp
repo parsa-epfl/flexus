@@ -5,8 +5,8 @@
 #include <iostream>
 
 #include <core/boost_extensions/intrusive_ptr.hpp>
-#include <components/Common/Slices/TransactionTracker.hpp>
-#include <components/Common/Slices/FillLevel.hpp>
+#include <components/CommonQEMU/Slices/TransactionTracker.hpp>
+#include <components/CommonQEMU/Slices/FillLevel.hpp>
 
 namespace Flexus {
 namespace SharedTypes {

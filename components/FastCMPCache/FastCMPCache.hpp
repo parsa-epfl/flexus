@@ -1,7 +1,7 @@
 #include <core/simulator_layout.hpp>
 
-#include <components/Common/Slices/MemoryMessage.hpp>
-#include <components/Common/Slices/RegionScoutMessage.hpp>
+#include <components/CommonQEMU/Slices/MemoryMessage.hpp>
+#include <components/CommonQEMU/Slices/RegionScoutMessage.hpp>
 
 #define FLEXUS_BEGIN_COMPONENT FastCMPCache
 #include FLEXUS_BEGIN_COMPONENT_DECLARATION()

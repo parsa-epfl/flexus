@@ -2,8 +2,8 @@
 
 #include <components/uFetch/uFetchTypes.hpp>
 
-#include <components/Common/Transports/MemoryTransport.hpp>
-#include <components/Common/Slices/AbstractInstruction.hpp>
+#include <components/CommonQEMU/Transports/MemoryTransport.hpp>
+#include <components/CommonQEMU/Slices/AbstractInstruction.hpp>
 
 #define FLEXUS_BEGIN_COMPONENT uFetch
 #include FLEXUS_BEGIN_COMPONENT_DECLARATION()

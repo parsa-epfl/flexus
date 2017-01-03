@@ -13,7 +13,7 @@
 #include <components/FastCache/RTCache.hpp>
 #include <components/FastCache/StdCache.hpp>
 
-#include <components/Common/TraceTracker.hpp>
+#include <components/CommonQEMU/TraceTracker.hpp>
 
 #include <core/performance/profile.hpp>
 

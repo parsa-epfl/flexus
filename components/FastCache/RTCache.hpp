@@ -1,7 +1,7 @@
 #ifndef FLEXUS_FASTCACHE_RTCACHE_HPP_INCLUDED
 #define FLEXUS_FASTCACHE_RTCACHE_HPP_INCLUDED
 
-#include <components/Common/TraceTracker.hpp>
+#include <components/CommonQEMU/TraceTracker.hpp>
 #include <components/FastCache/AbstractCache.hpp>
 
 #include <cstring>
@@ -50,11 +50,11 @@ struct BlockSerializer {
 BOOST_CLASS_TRACKING(BlockSerializer, boost::serialization::track_never)
 #endif
 
-#include <components/Common/Serializers.hpp>
+#include <components/CommonQEMU/Serializers.hpp>
 
 using nCommonSerializers::BlockSerializer;
 
-#include <components/Common/Util.hpp>
+#include <components/CommonQEMU/Util.hpp>
 
 using nCommonUtil::log_base2;
 

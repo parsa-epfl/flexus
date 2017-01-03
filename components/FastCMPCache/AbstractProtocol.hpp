@@ -1,7 +1,7 @@
 #ifndef FASTCMPCACHE_PROTOCOL_HPP
 #define FASTCMPCACHE_PROTOCOL_HPP
 
-#include <components/Common/Slices/MemoryMessage.hpp>
+#include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 #include <components/FastCMPCache/AbstractFactory.hpp>
 
 #include <components/FastCMPCache/CoherenceStates.hpp>

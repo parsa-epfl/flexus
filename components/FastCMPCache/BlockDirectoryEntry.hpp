@@ -1,7 +1,7 @@
 #ifndef __BLOCK_DIRECTORY_ENTRY_HPP__
 #define __BLOCK_DIRECTORY_ENTRY_HPP__
 
-#include <components/Common/Serializers.hpp>
+#include <components/CommonQEMU/Serializers.hpp>
 
 namespace nFastCMPCache {
 

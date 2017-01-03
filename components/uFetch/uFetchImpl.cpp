@@ -9,10 +9,10 @@
 #include <components/uFetch/uFetchTypes.hpp>
 #include <components/MTManager/MTManager.hpp>
 
-#include <components/Common/Transports/MemoryTransport.hpp>
-#include <components/Common/Slices/MemoryMessage.hpp>
-#include <components/Common/Slices/TransactionTracker.hpp>
-#include <components/Common/Slices/ExecuteState.hpp>
+#include <components/CommonQEMU/Transports/MemoryTransport.hpp>
+#include <components/CommonQEMU/Slices/MemoryMessage.hpp>
+#include <components/CommonQEMU/Slices/TransactionTracker.hpp>
+#include <components/CommonQEMU/Slices/ExecuteState.hpp>
 
 #define FLEXUS_BEGIN_COMPONENT uFetch
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
@@ -22,7 +22,7 @@
 #include DBG_Control()
 
 #include <core/qemu/mai_api.hpp>
-#include <components/Common/seq_map.hpp>
+#include <components/CommonQEMU/seq_map.hpp>
 
 #define LOG2(x)         \
   ((x)==1 ? 0 :         \

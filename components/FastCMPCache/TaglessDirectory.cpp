@@ -18,8 +18,8 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/list.hpp>
 
-#include <components/Common/Serializers.hpp>
-#include <components/Common/Util.hpp>
+#include <components/CommonQEMU/Serializers.hpp>
+#include <components/CommonQEMU/Util.hpp>
 
 using nCommonSerializers::StdDirEntrySerializer;
 using nCommonUtil::log_base2;

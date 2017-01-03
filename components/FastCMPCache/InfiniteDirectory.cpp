@@ -11,11 +11,11 @@
 #include <list>
 #include <algorithm>
 
-#include <components/Common/Serializers.hpp>
+#include <components/CommonQEMU/Serializers.hpp>
 //using nCommonSerializers::StdDirEntrySerializer;
 using nCommonSerializers::StdDirEntryExtendedSerializer;
 
-#include <components/Common/Util.hpp>
+#include <components/CommonQEMU/Util.hpp>
 using nCommonUtil::log_base2;
 
 namespace nFastCMPCache {

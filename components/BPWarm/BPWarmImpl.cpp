@@ -1,11 +1,11 @@
 #include <components/BPWarm/BPWarm.hpp>
 
-#include <components/Common/Slices/ArchitecturalInstruction.hpp>
+#include <components/CommonQEMU/Slices/ArchitecturalInstruction.hpp>
 
 #define FLEXUS_BEGIN_COMPONENT BPWarm
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
 
-#include <components/Common/BranchPredictor.hpp>
+#include <components/CommonQEMU/BranchPredictor.hpp>
 
 namespace nBPWarm {
 

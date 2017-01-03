@@ -10,9 +10,9 @@
 #include <boost/multi_index/composite_key.hpp>
 using namespace boost::multi_index;
 
-#include <components/Common/GlobalHasher.hpp>
-#include <components/Common/Util.hpp>
-#include <components/Common/Serializers.hpp>
+#include <components/CommonQEMU/GlobalHasher.hpp>
+#include <components/CommonQEMU/Util.hpp>
+#include <components/CommonQEMU/Serializers.hpp>
 using nCommonUtil::log_base2;
 using nCommonUtil::AddressHash;
 using nCommonSerializers::StdDirEntrySerializer;

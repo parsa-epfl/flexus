@@ -3,9 +3,9 @@
 #include <memory>
 #include <zlib.h>
 
-#include <components/Common/Slices/TransactionTracker.hpp>
+#include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 
-#include <components/Common/TraceTracker.hpp>
+#include <components/CommonQEMU/TraceTracker.hpp>
 
 #include <core/stats.hpp>
 #include <core/performance/profile.hpp>

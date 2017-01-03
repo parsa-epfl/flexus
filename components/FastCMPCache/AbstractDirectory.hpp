@@ -6,10 +6,10 @@
 
 #include <core/boost_extensions/intrusive_ptr.hpp>
 
-#include <components/Common/Slices/RegionScoutMessage.hpp>
+#include <components/CommonQEMU/Slices/RegionScoutMessage.hpp>
 
 #include <components/FastCMPCache/AbstractFactory.hpp>
-#include <components/Common/Util.hpp>
+#include <components/CommonQEMU/Util.hpp>
 
 #include <components/FastCMPCache/SharingVector.hpp>
 #include <components/FastCMPCache/AbstractProtocol.hpp>

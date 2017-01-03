@@ -1,6 +1,6 @@
 #include <core/simulator_layout.hpp>
 
-#include <components/Common/Transports/MemoryTransport.hpp>
+#include <components/CommonQEMU/Transports/MemoryTransport.hpp>
 
 #define FLEXUS_BEGIN_COMPONENT PortCombiner
 #include FLEXUS_BEGIN_COMPONENT_DECLARATION()

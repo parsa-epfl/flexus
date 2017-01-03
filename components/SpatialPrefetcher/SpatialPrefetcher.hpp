@@ -1,7 +1,7 @@
 #include <core/simulator_layout.hpp>
 
-#include <components/Common/Transports/PrefetchTransport.hpp>
-#include <components/Common/Slices/TransactionTracker.hpp>
+#include <components/CommonQEMU/Transports/PrefetchTransport.hpp>
+#include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 
 #define FLEXUS_BEGIN_COMPONENT SpatialPrefetcher
 #include FLEXUS_BEGIN_COMPONENT_DECLARATION()
