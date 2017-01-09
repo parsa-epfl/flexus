@@ -5,7 +5,7 @@
 
 #include <fstream>
 
-#include <components/MagicBreak/breakpoint_tracker.hpp>
+#include <components/MagicBreakQEMU/breakpoint_tracker.hpp>
 #include <core/qemu/configuration_api.hpp>
 #include <core/stats.hpp>
 
