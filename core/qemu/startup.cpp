@@ -127,12 +127,34 @@ using std::cerr;
 using std::endl;
 
 void print_copyright() {
-  cerr << "\nFlexus (C) 2006-2010 The SimFlex Project" << endl;
-  cerr << "Eric Chung, Michael Ferdman, Brian Gold, Nikos Hardavellas, Jangwook Kim," << endl;
-  cerr << "Ippokratis Pandis, Minglong Shao, Jared Smolens, Stephen Somogyi," << endl;
-  cerr << "Evangelos Vlachos, Thomas Wenisch, Roland Wunderlich" << endl;
-  cerr << "Anastassia Ailamaki, Babak Falsafi and James C. Hoe." << endl << endl;
-  cerr << "Flexus Simics simulator - Built as " << Flexus::theSimulatorName << endl << endl;
+
+  cerr << "////////////////////////////////////////////////////////////////////////////////////////////////////////" << endl;
+  cerr << "//                                                                                                    //" << endl;
+  cerr << "//           ************                                                                             //" << endl;
+  cerr << "//          **************                                                                            //" << endl;
+  cerr << "//   *      **************      *                                                                     //" << endl;
+  cerr << "//  **      ***  ****  ***     ***                                                                    //" << endl;
+  cerr << "// ***      **************      ***                                                                   //" << endl;
+  cerr << "// ****     **************     ****                                                                   //" << endl;
+  cerr << "//  ******************************   ***********    *                                                 //" << endl;
+  cerr << "//    *********        **********   *************  ***                                                //" << endl;
+  cerr << "//      *****            *****      ***            ***       *****      *        *                    //" << endl;
+  cerr << "//      ****              ****      ***            ***    ***********  ****    ****                   //" << endl;
+  cerr << "//      ****               ***      **********     ***   ****     ****   ********                     //" << endl;
+  cerr << "//      ****          *** ****      **********     ***   *************     ****                       //" << endl;
+  cerr << "//       ****          ******       ***            ***   ***             ********                     //" << endl;
+  cerr << "//        *****        *******      ***            ***    ****   ****   ****  ****                    //" << endl;
+  cerr << "//           ****    ****   ***     ***            ***      ********   ***      ***                   //" << endl;
+  cerr << "//                                                                                                    //" << endl; 
+  cerr << "//   QFlex (C) 2016-2017                                                                              //" << endl;
+  cerr << "//   Website: https://parsalab.github.io/qflex/                                                       //" << endl;
+  cerr << "//   QFlex uses software developed externally:                                                        //" << endl;
+  cerr << "//   [NS-3](https://www.gnu.org/copyleft/gpl.html)                                                    //" << endl;
+  cerr << "//   [QEMU](http://wiki.qemu.org/License)                                                             //" << endl;
+  cerr << "//   [SimFlex] (http://parsa.epfl.ch/simflex/)                                                        //" << endl;
+  cerr << "//                                                                                                    //" << endl; 
+  cerr << "////////////////////////////////////////////////////////////////////////////////////////////////////////" << endl << endl << endl;;
+  cerr << "//   QFlex simulator - Built as " << Flexus::theSimulatorName << endl << endl;
 }
 
 
