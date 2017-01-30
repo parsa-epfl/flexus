@@ -115,7 +115,6 @@ depend: Makefile.depend.$(VARIANT)
 
 .SUFFIXES:
 .SUFFIXES: .cpp .$(GCC_DEP_EXT)
-.SUFFIXES: .cpp .$(ICC_DEP_EXT)
 
 .cpp.$(GCC_DEP_EXT):
 	$(GCC) $(INCLUDES) $(VARIANT_DEFINES) $(GCC_DEPFLAGS) -MF $@ -MM -MT $*.$(GCC_OEXT) $<
@@ -123,9 +122,4 @@ depend: Makefile.depend.$(VARIANT)
 Makefile.depend.$(GCC_VARIANT): $(patsubst %.cpp,%.$(GCC_DEP_EXT),$(wildcard *.cpp) $(filter-out $(wildcard test*/*.cpp), $(wildcard */*.cpp)))
 	cat $^ > Makefile.depend.$(GCC_VARIANT)
 
-.cpp.$(ICC_DEP_EXT):
-	$(GCC) $(INCLUDES) $(VARIANT_DEFINES) -MF $@ -MM -MT $(VARIANT_EXT).ipo_out.o $<
-
-Makefile.depend.$(ICC_VARIANT): $(patsubst %.cpp,%.$(ICC_DEP_EXT),$(wildcard *.cpp) $(wildcard */*.cpp))
-	cat $^ > Makefile.depend.$(ICC_VARIANT)
 

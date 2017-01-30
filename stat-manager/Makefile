@@ -47,7 +47,7 @@ include ../makefile.defs
 SOURCES = ../core/stats/stats.cpp ../core/stats/measurement.cpp ../core/stats/stats_calc.cpp $(wildcard ../core/debug/*.cpp)
 
 %.stats_o: %.cpp
-	$(GCC) $(GCC_OPTFLAGS) $(GCC_LANGFLAGS) -isystem $(BOOST_INCLUDE) -isystem $(SIMICS_INCLUDE) -DSELECTED_DEBUG=dev -DTARGET_PLATFORM=v9 -I.. -c $^ -o $@
+	$(GCC) $(GCC_OPTFLAGS) $(GCC_LANGFLAGS) -isystem $(BOOST_INCLUDE) -DSELECTED_DEBUG=dev -DTARGET_PLATFORM=v9 -I.. -c $^ -o $@
 
 all: stat-manager stat-collapse stat-sample
 

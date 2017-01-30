@@ -36,7 +36,7 @@
 # DO-NOT-REMOVE end-copyright-block   
 include makefile.defs
 
-.PHONY: core install stat-manager
+.PHONY: core stat-manager
 
 stat-manager:
 	@cd stat-manager ; $(MAKE) $(SILENT_MAKE) -f Makefile all
@@ -50,20 +50,11 @@ ifndef FLEXUS_ROOT
 list_targets:
 	$(MAKE) $(SILENT_MAKE) FLEXUS_ROOT=`pwd` $@
 
-install:
-	$(MAKE) $(SILENT_MAKE) FLEXUS_ROOT=`pwd` -f makefile.install install
-
-uninstall:
-	$(MAKE) $(SILENT_MAKE) FLEXUS_ROOT=`pwd` -f makefile.install uninstall
-
 else
 # We know what Flexus root is.
 
-install:
-	$(MAKE) $(SILENT_MAKE) FLEXUS_ROOT=`pwd` -f makefile.install install
-
 ifndef SETUP_OK
-# Check the Flexus setup to make sure all paths are correct, Simics, and Boost
+# Check the Flexus setup to make sure all paths are correct and Boost
 # are installed correctly.
 
 .DEFAULT core:

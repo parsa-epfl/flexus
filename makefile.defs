@@ -41,29 +41,15 @@
 # environment
 
 
-CURRENT_TOOLCHAIN=/custom_toolchain
-HOME_DIR=/home/damien/git/qemuflex/
 # GCC Compiler Settings
-# If we don't provide something in GCC_PATH, it just tries to use the local one
-#$(CURRENT_TOOLCHAIN)
 #GCC_PATH=
 GCC_BINARY=g++ --std=c++11
 GCC_VERSION_NOCHECK=true
-SIMICS_GLIBC_NOCHECK=true
 
 # Boost 1.59.0 path
-BOOST_PATH=/home/parsacom/tools/boost-qflex/include
-BOOST_BINARIES=/home/parsacom/tools/boost-qflex/lib
+BOOST_PATH=/usr/local/include
+BOOST_BINARIES=/usr/local/lib
 BOOST_VERSION_NOCHECK=true
-
-# Simics path
-SIMICS_PATH=/home/parsacom/tools/simics
-
-SIMICS_ARCH=amd64-linux
-#SIMICS_ARCH=x86-linux
-
-# Is Simics 3.0?
-USING_SIMICS_3=1
 
 ###############################################################################
 # You are unlikely to have to modify variables below here
@@ -86,26 +72,16 @@ SIMULATORS_DIR=$(FLEXUS_ROOT)/simulators
 FLEXUS_INCLUDE=$(FLEXUS_ROOT)
 BOOST_INCLUDE=$(BOOST_PATH)
 
-SIMICS_LIB_DIR=$(SIMICS_PATH)/$(SIMICS_ARCH)/lib
-SIMICS_SYSLIB_DIR=$(SIMICS_PATH)/$(SIMICS_ARCH)/sys/lib
-SIMICS_INCLUDE=$(if $(USING_SIMICS_3),$(SIMICS_PATH)/src/include,$(SIMICS_PATH)/$(SIMICS_ARCH)/obj/include)
-SIMICS_V9_INCLUDE=$(SIMICS_INCLUDE)/simics
-SIMICS_X86_INCLUDE=$(SIMICS_INCLUDE)/simics
-SIMICS_ARM_INCLUDE=$(SIMICS_INCLUDE)/simics
-
-# FIXME user has to update manually
+# Target Emulator
 export TARGET_EMULATOR=qemu
-#export TARGET_EMULATOR=simics
 
-INCLUDES=-DBOOST_MPL_CFG_NO_PREPROCESSED_HEADERS -DBOOST_MPL_LIMIT_VECTOR_SIZE=50 -isystem $(BOOST_INCLUDE) -isystem $(SIMICS_INCLUDE) -I$(FLEXUS_INCLUDE) -Ibooksim -Ibooksim/arbiters -Ibooksim/allocators -Ibooksim/routers -Ibooksim/networks -IDRAMSim2
+INCLUDES=-DBOOST_MPL_CFG_NO_PREPROCESSED_HEADERS -DBOOST_MPL_LIMIT_VECTOR_SIZE=50 -isystem $(BOOST_INCLUDE) -I$(FLEXUS_INCLUDE) -IDRAMSim2
 BOOST_LIBRARIES=-Wl,--no-whole-archive -L$(BOOST_BINARIES) -lboost_regex -lboost_serialization -lboost_iostreams -lz
 
 # other constants
 # List of "special" cpp files in components that are not part of a components library
 CORE=core
-CORE_STANDALONE=core_standalone
 CORE_QEMU=core_qemu
-CORE_SIMICS=core_simics
 SPECIAL_COMPONENT_CPPS = test.cpp
 
 # Compiler settings
@@ -122,24 +98,11 @@ GCC_OPTFLAGS=-g -O2 #-O3 -funroll-loops -fno-strict-aliasing
 GCC_LANGFLAGS=-Wall -fmessage-length=160 -fpermissive -x c++ -fPIC -Werror -Wno-unused -Wno-maybe-uninitialized -Wno-parentheses -Wno-int-to-pointer-cast -Wno-logical-not-parentheses -DNO_STORAGE -DBOOST_SYSTEM_NO_DEPRECATED 
 #UNCOMMENT FOR CLANG
 #GCC_LANGFLAGS=-Wall -fmessage-length=160 -x c++ -fPIC -fpermissive -Werror -Wno-unused -Wno-uninitialized -Wno-parentheses -Wno-int-to-pointer-cast -Wno-logical-not-parentheses -Wno-write-strings -Wno-string-plus-int -Wno-mismatched-tags -Wno-overloaded-virtual -Wno-redeclared-class-member -Wno-null-dereference -Wno-tautological-constant-out-of-range-compare -Wno-constant-logical-operand -Wno-unknown-pragmas -Wno-mismatched-new-delete -Wno-tautological-undefined-compare -DNO_STORAGE -DBOOST_SYSTEM_NO_DEPRECATED 
-ifeq "$(SIMICS_ARCH)" "amd64-linux"
-ARCH_FLAGS=-DX86_64
-else
 ARCH_FLAGS=
-endif
 GCC_CFLAGS=-c $(GCC_OPTFLAGS) $(GCC_LANGFLAGS) $(ARCH_FLAGS) -fPIC
 GCC_LFLAGS=-Wl,--whole-archive -fPIC
-GCC_SIMICS_LFLAGS=-shared -Wl,--whole-archive -Wl,-export-dynamic
+GCC_QEMU_LFLAGS=-shared -Wl,--whole-archive -Wl,-export-dynamic
 GCC_DEPFLAGS=-M
-
-ICC=icc
-ICC_OPTFLAGS=-O3 -tpp7 -xi -axW -
-ICC_LANGFLAGS=-w1
-ICC_RPTFLAGS=-opt_report_level med -opt_report_file opt_report
-ICC_CFLAGS=-ipo_c $(ICC_OPTFLAGS) $(ICC_LANGFLAGS) #$(ICC_RPTFLAGS)
-ICC_MODID_CFLAGS=-c $(ICC_OPTFLAGS) $(ICC_LANGFLAGS)
-ICC_SIMICS_LFLAGS=-shared -export-dynamic
-ICC_LFLAGS=
 
 AR=ar
 AR_FLAGS=r

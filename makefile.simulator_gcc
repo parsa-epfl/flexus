@@ -42,17 +42,15 @@ include $(FLEXUS_ROOT)/makefile.defs
 ###############
 include $(FLEXUS_ROOT)/makefile.simulator_all_ccs
 
-SIMICS_MODNAME=MOD:flexus-$(SIMULATOR)-$(TARGET_PLATFORM)-$(SELECTED_DEBUG)-$(SELECTED_CC)
-
 .cpp.$(OEXT):
 	$(ECHO) "$(GCC) $(INCLUDES) $(GCC_CFLAGS) $(VARIANT_DEFINES) $< -o $*.$(OEXT)"
 	$(GCC) $(INCLUDES) $(GCC_CFLAGS) $(VARIANT_DEFINES) $< -o $*.$(OEXT)
 
 .PHONY: $(SIMULATOR).$(VARIANT_EXT).deps
-$(SIMULATOR).$(VARIANT_EXT).deps: $(COMPONENTS_WITH_LIBS) $(CORE_STANDALONE)
+$(SIMULATOR).$(VARIANT_EXT).deps: $(COMPONENTS_WITH_LIBS)
 $(SIMULATOR).$(VARIANT_EXT): $(patsubst %.cpp,%.$(OEXT),$(wildcard *.cpp)) $(COMPONENT_LIB_PATHS)
-	$(ECHO) "$(GCC) $(GCC_LFLAGS) *.$(OEXT) $(COMPONENT_LIB_PATHS) $(STANDALONE_LIB_PATH) $(CORE_LIB_PATH) $(BOOST_LIBRARIES)  -o $@"
-	$(GCC) $(GCC_LFLAGS) *.$(OEXT) $(COMPONENT_LIB_PATHS) -L$(CORE_DIR) -lcore_$(VARIANT) -lstandalone_$(VARIANT) $(BOOST_LIBRARIES)  -o $@
+	$(ECHO) "$(GCC) $(GCC_LFLAGS) *.$(OEXT) $(COMPONENT_LIB_PATHS) $(CORE_LIB_PATH) $(BOOST_LIBRARIES)  -o $@"
+	$(GCC) $(GCC_LFLAGS) *.$(OEXT) $(COMPONENT_LIB_PATHS) -L$(CORE_DIR) -lcore_$(VARIANT) $(BOOST_LIBRARIES)  -o $@
 
 
 .PHONY: libflexus_$(SIMULATOR)_$(VARIANT).so.deps
@@ -60,12 +58,7 @@ $(SIMULATOR).$(VARIANT_EXT): $(patsubst %.cpp,%.$(OEXT),$(wildcard *.cpp)) $(COM
 ifeq ($(SUPPORTS_QEMU),true)
 libflexus_$(SIMULATOR)_$(VARIANT).so.deps: $(COMPONENTS_WITH_LIBS) $(CORE_QEMU)
 libflexus_$(SIMULATOR)_$(VARIANT).so: $(patsubst %.cpp,%.$(OEXT),$(wildcard *.cpp)) $(COMPONENT_LIB_PATHS) $(CORE_DIR)/libcore_$(VARIANT).a.fresh
-	$(ECHO) "$(GCC) $(GCC_SIMICS_LFLAGS) *.$(OEXT) $(COMPONENT_LIB_PATHS) -L$(CORE_DIR) -Wl,--whole-archive -lcore_$(VARIANT) -lqemu_$(VARIANT) $(BOOST_LIBRARIES) -o $@"
-	$(GCC) *.$(OEXT) $(GCC_SIMICS_LFLAGS) $(COMPONENT_LIB_PATHS) -L$(CORE_DIR) -Wl,--whole-archive -lcore_$(VARIANT) -lqemu_$(VARIANT) $(BOOST_LIBRARIES) -o $@
-else
-libflexus_$(SIMULATOR)_$(VARIANT).so.deps: $(COMPONENTS_WITH_LIBS) $(CORE_SIMICS)
-libflexus_$(SIMULATOR)_$(VARIANT).so: $(patsubst %.cpp,%.$(OEXT),$(wildcard *.cpp)) $(COMPONENT_LIB_PATHS)  $(CORE_DIR)/libcore_$(VARIANT).a.fresh
-	$(ECHO) "$(GCC) $(GCC_SIMICS_LFLAGS) *.$(OEXT) $(COMPONENT_LIB_PATHS) -L$(CORE_DIR) -Wl,--whole-archive -lcore_$(VARIANT) -lsimics_$(VARIANT) $(BOOST_LIBRARIES) -o $@"
-	$(GCC) $(GCC_SIMICS_LFLAGS) *.$(OEXT) $(COMPONENT_LIB_PATHS) -L$(CORE_DIR) -Wl,--whole-archive -lcore_$(VARIANT) -lsimics_$(VARIANT) $(BOOST_LIBRARIES) -o $@
+	$(ECHO) "$(GCC) $(GCC_QEMU_LFLAGS) *.$(OEXT) $(COMPONENT_LIB_PATHS) -L$(CORE_DIR) -Wl,--whole-archive -lcore_$(VARIANT) -lqemu_$(VARIANT) $(BOOST_LIBRARIES) -o $@"
+	$(GCC) *.$(OEXT) $(GCC_QEMU_LFLAGS) $(COMPONENT_LIB_PATHS) -L$(CORE_DIR) -Wl,--whole-archive -lcore_$(VARIANT) -lqemu_$(VARIANT) $(BOOST_LIBRARIES) -o $@
 endif
 

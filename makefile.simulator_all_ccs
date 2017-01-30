@@ -54,25 +54,16 @@ COMPONENTS_WITH_LIBS = $(foreach COMPONENT, $(REQUIRED_COMPONENTS),$(if $(filter
 
 COMPONENT_LIB_PATHS=$(foreach COMPONENT, $(COMPONENTS_WITH_LIBS),$(COMPONENTS_DIR)/$(COMPONENT)/$(COMPONENT).$(VARIANT_EXT).a)
 CORE_LIB_PATH=$(CORE_DIR)/libcore_$(VARIANT).a
-STANDALONE_LIB_PATH=$(CORE_DIR)/libstandalone_$(VARIANT).a
 
-.PHONY: $(CORE_STANDALONE) $(CORE_SIMICS) $(CORE_QEMU) $(COMPONENTS_WITH_LIBS)
+.PHONY: $(CORE_QEMU) $(COMPONENTS_WITH_LIBS)
 
-$(CORE_DIR)/libcore_$(VARIANT).a.fresh $(CORE_DIR)/libsimics_$(VARIANT).a.fresh:
+$(CORE_DIR)/libcore_$(VARIANT).a.fresh:
 	echo "Detected core change, relinking simulator..."
 	touch $@
 
 $(COMPONENTS_WITH_LIBS):
 	$(ECHO) "Checking dependant component $(VARIANT) $@"
 	cd ../.. ; $(MAKE) $(SILENT_MAKE) $@ TARGET=library TARGET_OPTIONS="$(TARGET_PLATFORM) $(SELECTED_DEBUG)" SIMULATOR=$(SIMULATOR)
-
-$(CORE_STANDALONE):
-	$(ECHO) "Checking standalone $(VARIANT) core"
-	cd ../.. ; $(MAKE) $(SILENT_MAKE) $(CORE) TARGET=standalone TARGET_OPTIONS="$(TARGET_PLATFORM) $(SELECTED_DEBUG)"
-
-$(CORE_SIMICS):
-	$(ECHO) "Checking simics $(VARIANT) core"
-	cd ../.. ; $(MAKE) $(SILENT_MAKE) $(CORE) TARGET=simics TARGET_OPTIONS="$(TARGET_PLATFORM) $(SELECTED_DEBUG)"
 
 $(CORE_QEMU):
 	$(ECHO) "Checking qemu $(VARIANT) core"

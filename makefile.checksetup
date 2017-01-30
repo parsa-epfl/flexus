@@ -36,9 +36,9 @@
 # DO-NOT-REMOVE end-copyright-block   
 include makefile.defs
 
-.PHONY: check_setup boost_version simics_version simics_gcc_libs
+.PHONY: check_setup boost_version
 
-check_setup: boost_version simics_version simics_gcc_libs
+check_setup: boost_version
 
 # This target ensures that the path to Boost is set, and that we are actually
 # running with Boost 1.59.0.  You can override the version check by setting
@@ -82,32 +82,4 @@ boost_version:
 	  false ; \
 	fi
 endif
-endif
-
-
-
-# This target ensures that the gcc GLIBC libraries have been copied into
-# the Simics x86-linux/sys/lib directory.
-# You can disable this check by setting SIMICS_GLIBC_NOCHECK=true in makefile.defs
-ifndef SIMICS_GLIBC_NOCHECK
-simics_gcc_libs:
-	OK=1 ; \
-	for LIB in libstdc++.so.6 ; do \
-	  diff $(SIMICS_SYSLIB_DIR)/$$LIB $(GCC_LIB_PATH)/$$LIB >& /dev/null ; \
-	  if [ $$? -ne 0 ] ; then \
-	    OK=0 ; \
-	  fi ; \
-	done ; \
-	if [$$OK -eq 1 ] ; then true ; else \
-	  echo "The GCC GLIBC libraries do not appear to be installed in $(SIMICS_SYSLIB_DIR)." ; \
-	  echo "You will probably get dynamic link errors when you load Flexus into Simics." ; \
-	  echo "\"make install\" can fix this for you." ; \
-	  echo "You can disable this check by adding SIMICS_GLIBC_NOCHECK=true to makefile.defs." ; \
-	  echo "See Flexus quick start guide for instructions on configuring Flexus." ; \
-	  false ; \
-	fi ;
-
-else
-simics_gcc_libs:
-	true
 endif
