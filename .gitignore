@@ -1,0 +1,13 @@
+.o
+*.d
+*_o
+*_dep
+*.a
+*_gcc
+*stat-*
+*.a
+*_gcc
+*stat-*
+*.fresh
+*.so
+*.swp
