@@ -86,6 +86,14 @@
 #include <boost/iostreams/filter/gzip.hpp>
 
 namespace Flexus {
+
+#ifdef CONFIG_QEMU
+extern "C"{
+    void QemuSaveState(std::string const & aDirName);
+    void QemuLoadState(std::string const & aDirName);
+}
+#endif // CONFIG_QEMU
+
 namespace Core {
 
 using Flexus::Wiring::theDrive;
@@ -286,6 +294,21 @@ void FlexusImpl::initializeComponents() {
   ConfigurationManager::getConfigurationManager().checkAllOverrides();
   ComponentManager::getComponentManager().initComponents();
   theInitialized = true;
+
+  // registering callbacks for save and load state (single flexus instance)
+  Flexus::Qemu::API::conf_object_t * cpu = Flexus::Qemu::API::QEMU_get_cpu_by_index(0);
+  Flexus::Qemu::API::QEMU_insert_callback(
+          Flexus::Qemu::API::QEMU_get_processor_number(cpu),
+          Flexus::Qemu::API::QEMU_flexus_save_state,
+          reinterpret_cast<void*>(theFlexus),
+          reinterpret_cast<void*>(&QemuSaveState)
+          );
+  Flexus::Qemu::API::QEMU_insert_callback(
+          Flexus::Qemu::API::QEMU_get_processor_number(cpu),
+          Flexus::Qemu::API::QEMU_flexus_load_state,
+          reinterpret_cast<void*>(theFlexus),
+          reinterpret_cast<void*>(&QemuLoadState)
+          );
 }
 
 void FlexusImpl::advanceCycles(int64_t aCycleCount) {
@@ -1138,6 +1161,18 @@ void PrepareFlexusObject() {
    
     Core::theFlexusFactory = new FlexusFactory();
 }
+
+#ifdef CONFIG_QEMU
+extern "C"{
+    void QemuSaveState(std::string const & aDirName) {
+        theFlexus->saveState(aDirName);
+    }
+
+    void QemuLoadState(std::string const & aDirName) {
+        theFlexus->loadState(aDirName);
+    }
+}
+#endif // CONFIG_QEMU
 
 }
 }

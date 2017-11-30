@@ -83,7 +83,10 @@ public:
   virtual void setProfileInterval(std::string const & aValue) = 0;
   virtual void setTimestampInterval(std::string const & aValue) = 0;
   virtual void setRegionInterval(std::string const & aValue) = 0;
-
+#ifdef CONFIG_QEMU
+  void saveState(std::string const & aDirName);
+  void loadState(std::string const & aDirName);
+#endif // CONFIG_QEMU
 };
 
 extern FlexusInterface * theFlexus;
