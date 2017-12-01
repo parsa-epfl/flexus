@@ -84,8 +84,8 @@ public:
   virtual void setTimestampInterval(std::string const & aValue) = 0;
   virtual void setRegionInterval(std::string const & aValue) = 0;
 #ifdef CONFIG_QEMU
-  void saveState(std::string const & aDirName);
-  void loadState(std::string const & aDirName);
+  virtual void saveState(std::string const & aDirName) = 0;
+  virtual void loadState(std::string const & aDirName) = 0;
 #endif // CONFIG_QEMU
 };
 

@@ -89,8 +89,8 @@ namespace Flexus {
 
 #ifdef CONFIG_QEMU
 extern "C"{
-    void QemuSaveState(std::string const & aDirName);
-    void QemuLoadState(std::string const & aDirName);
+    void QemuSaveState(void * obj, const char * aDirName);
+    void QemuLoadState(void * obj, const char * aDirName);
 }
 #endif // CONFIG_QEMU
 
@@ -606,15 +606,10 @@ void FlexusImpl::loadState(std::string const & aDirName) {
 
 void FlexusImpl::doLoad(std::string const & aDirName) {
   DBG_( Crit, ( << "Loading Flexus state from subdirectory " << aDirName ) );
-#ifndef CONFIG_QEMU
   if (! initialized() ) {
     initializeComponents();
   }
   ComponentManager::getComponentManager().doLoad( aDirName );
-#else 
-  // FIXME TODO XXX
-    DBG_( Crit, ( << "Actually, QEMU can't do this... Yet?? " ) );
-#endif
 }
 
 void FlexusImpl::doSave(std::string const & aDirName, bool justFlexus) {
@@ -623,19 +618,15 @@ void FlexusImpl::doSave(std::string const & aDirName, bool justFlexus) {
   } else {
     DBG_( Crit, ( << "Saving Flexus and Simics state in subdirectory " << aDirName ) );
   }
-#ifndef CONFIG_QEMU
   mkdir(aDirName.c_str(), 0777);
+#ifndef CONFIG_QEMU
   if (!justFlexus) {
     std::string simics_cfg_name(aDirName);
     simics_cfg_name += "/simics-state";
     Simics::WriteCheckpoint(simics_cfg_name.c_str());
   }
-  ComponentManager::getComponentManager().doSave( aDirName );
-#else
-  // FIXME TODO XXX
-    DBG_( Crit, ( << "Actually, QEMU can't do this... Yet??" ) );
 #endif
-
+  ComponentManager::getComponentManager().doSave( aDirName );
 }
 
 void FlexusImpl::backupStats(std::string const & aFilename) const {
@@ -1164,12 +1155,16 @@ void PrepareFlexusObject() {
 
 #ifdef CONFIG_QEMU
 extern "C"{
-    void QemuSaveState(std::string const & aDirName) {
-        theFlexus->saveState(aDirName);
+    void QemuSaveState(void * obj, const char * aDirNameChar) {
+        std::string aDirName(aDirNameChar);
+        FlexusInterface* flexusObj = reinterpret_cast<FlexusInterface*>(obj);
+        flexusObj->saveState(aDirName);
     }
 
-    void QemuLoadState(std::string const & aDirName) {
-        theFlexus->loadState(aDirName);
+    void QemuLoadState(void * obj, const char * aDirNameChar) {
+        std::string aDirName(aDirNameChar);
+        FlexusInterface* flexusObj = reinterpret_cast<FlexusInterface*>(obj);
+        flexusObj->loadState(aDirName);
     }
 }
 #endif // CONFIG_QEMU
