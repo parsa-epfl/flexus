@@ -33,7 +33,9 @@
 // ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
 // CONTRACT, TORT OR OTHERWISE).
 //
-// DO-NOT-REMOVE end-copyright-block   
+// DO-NOT-REMOVE end-copyright-block
+
+
 #ifndef FLEXUS_uFETCH_TYPES_HPP_INCLUDED
 #define FLEXUS_uFETCH_TYPES_HPP_INCLUDED
 
@@ -82,6 +84,8 @@ struct BPredState : boost::counted_base {
 
 struct FetchAddr {
   Flexus::SharedTypes::VirtualMemoryAddress theAddress;
+//  uint32_t theConvertedInstruction;
+
   boost::intrusive_ptr<BPredState> theBPState;
   FetchAddr(Flexus::SharedTypes::VirtualMemoryAddress anAddress)
     : theAddress(anAddress)
@@ -104,19 +108,26 @@ typedef int64_t Opcode;
 
 struct FetchedOpcode {
   VirtualMemoryAddress thePC;
+//  uint32_t theConvertedInstruction;
+#if FLEXUS_TARGET_IS(v9)
   VirtualMemoryAddress theNextPC;
+#endif
   Opcode theOpcode;
   boost::intrusive_ptr<BPredState> theBPState;
   boost::intrusive_ptr<TransactionTracker> theTransaction;
 
   FetchedOpcode( VirtualMemoryAddress anAddr
-                 , VirtualMemoryAddress aNextAddr
+                 //, uint32_t aConvertedInstruction
+//                 , VirtualMemoryAddress aNextAddr
                  , Opcode anOpcode
                  , boost::intrusive_ptr<BPredState> aBPState
                  , boost::intrusive_ptr<TransactionTracker> aTransaction
                )
     : thePC(anAddr)
+//    ,theConvertedInstruction(aConvertedInstruction)
+#if FLEXUS_TARGET_IS(v9)
     , theNextPC(aNextAddr)
+#endif
     , theOpcode(anOpcode)
     , theBPState(aBPState)
     , theTransaction(aTransaction)

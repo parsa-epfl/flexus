@@ -1,46 +1,3 @@
-// DO-NOT-REMOVE begin-copyright-block 
-//QFlex consists of several software components that are governed by various
-//licensing terms, in addition to software that was developed internally.
-//Anyone interested in using QFlex needs to fully understand and abide by the
-//licenses governing all the software components.
-//
-//### Software developed externally (not by the QFlex group)
-//
-//    * [NS-3](https://www.gnu.org/copyleft/gpl.html)
-//    * [QEMU](http://wiki.qemu.org/License) 
-//    * [SimFlex] (http://parsa.epfl.ch/simflex/)
-//
-//Software developed internally (by the QFlex group)
-//**QFlex License**
-//
-//QFlex
-//Copyright (c) 2016, Parallel Systems Architecture Lab, EPFL
-//All rights reserved.
-//
-//Redistribution and use in source and binary forms, with or without modification,
-//are permitted provided that the following conditions are met:
-//
-//    * Redistributions of source code must retain the above copyright notice,
-//      this list of conditions and the following disclaimer.
-//    * Redistributions in binary form must reproduce the above copyright notice,
-//      this list of conditions and the following disclaimer in the documentation
-//      and/or other materials provided with the distribution.
-//    * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,
-//      nor the names of its contributors may be used to endorse or promote
-//      products derived from this software without specific prior written
-//      permission.
-//
-//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-//ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-//WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-//DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,
-//EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-//CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-//GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-//HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-//LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
-//THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// DO-NOT-REMOVE end-copyright-block   
 #include <stdlib.h>
 #include <signal.h>
 #include <unistd.h>
@@ -53,7 +10,7 @@
 #include <core/simulator_name.hpp>
 #include <core/configuration.hpp>
 #include <core/component.hpp>
-#include <boost/version.hpp>
+#include <core/qemu/qemu.h>
 
 #define QEMUFLEX_FLEXUS_INTERNAL
 namespace Flexus{
@@ -63,8 +20,6 @@ namespace API{
 } // API
 } // Qemu
 } // Flexus
-
-#include <fstream>
 
 // For debug purposes
 #include <iostream>
@@ -78,7 +33,8 @@ void Break() {
 void CreateFlexusObject();
 void PrepareFlexusObject();
 void initFlexus();
-void startTimingFlexus(); 
+void startTimingFlexus();
+void handleInterruptFlexus(void* anObj,long long aVector);
 }
 
 namespace Qemu {
@@ -89,23 +45,14 @@ namespace Qemu = Flexus::Qemu;
 void CreateFlexus() {
   CreateFlexusObject();
 
-  Flexus::Core::index_t system_width;
-  std::ifstream ifs("preload_system_width");
-
-  if ( !ifs.good() ) {
-      DBG_( Crit, ( << "Fatal error! Components instantiation failed due "
-                    "to the system width is not defined!" << "Report this error to the QFlex team on GitHub." ) );
-      exit(1);
-  } else {
-      ifs >> system_width;
-  }
-  ifs.close();
-
-  DBG_( Crit, ( << "Instantiating Flexus components with SystemWidth="
-                << system_width << "..." ) );
-
-  Flexus::Core::ComponentManager::getComponentManager().instantiateComponents(system_width);
-  ConfigurationManager::getConfigurationManager().processCommandLineConfiguration(0, 0);
+  Flexus::Core::index_t systemWidth = Qemu::API::QEMU_get_num_cpus();
+  Flexus::Core::ComponentManager::getComponentManager()
+								.instantiateComponents(systemWidth);
+ 
+  ConfigurationManager::getConfigurationManager()
+						.processCommandLineConfiguration(0, 0);
+   //not sure if this is correct or where it should be. 
+ std::cerr<<"systemWidth: " <<systemWidth << std::endl;
 }
 
 void PrepareFlexus() {
@@ -118,6 +65,13 @@ extern "C" void flexus_init(void) {
 extern "C" void start_timing_sim(void) {
     startTimingFlexus(); 
 }
+
+extern "C" void handle_interruptTwo(void * anObj, long long aVector){
+    std::cerr << "in the second handle interrupt\n"<<std::endl;
+    //onInterrupt(0 , anObj, aVector);
+    handleInterruptFlexus(anObj, aVector);
+}
+
 } //end namespace Core
 } //end namespace Flexus
 
@@ -127,34 +81,12 @@ using std::cerr;
 using std::endl;
 
 void print_copyright() {
-
-  cerr << "////////////////////////////////////////////////////////////////////////////////////////////////////////" << endl;
-  cerr << "//                                                                                                    //" << endl;
-  cerr << "//           ************                                                                             //" << endl;
-  cerr << "//          **************                                                                            //" << endl;
-  cerr << "//   *      **************      *                                                                     //" << endl;
-  cerr << "//  **      ***  ****  ***     ***                                                                    //" << endl;
-  cerr << "// ***      **************      ***                                                                   //" << endl;
-  cerr << "// ****     **************     ****                                                                   //" << endl;
-  cerr << "//  ******************************   ***********    *                                                 //" << endl;
-  cerr << "//    *********        **********   *************  ***                                                //" << endl;
-  cerr << "//      *****            *****      ***            ***       *****      *        *                    //" << endl;
-  cerr << "//      ****              ****      ***            ***    ***********  ****    ****                   //" << endl;
-  cerr << "//      ****               ***      **********     ***   ****     ****   ********                     //" << endl;
-  cerr << "//      ****          *** ****      **********     ***   *************     ****                       //" << endl;
-  cerr << "//       ****          ******       ***            ***   ***             ********                     //" << endl;
-  cerr << "//        *****        *******      ***            ***    ****   ****   ****  ****                    //" << endl;
-  cerr << "//           ****    ****   ***     ***            ***      ********   ***      ***                   //" << endl;
-  cerr << "//                                                                                                    //" << endl; 
-  cerr << "//   QFlex (C) 2016-2017                                                                              //" << endl;
-  cerr << "//   Website: https://parsa-epfl.github.io/qflex/                                                     //" << endl;
-  cerr << "//   QFlex uses software developed externally:                                                        //" << endl;
-  cerr << "//   [NS-3](https://www.gnu.org/copyleft/gpl.html)                                                    //" << endl;
-  cerr << "//   [QEMU](http://wiki.qemu.org/License)                                                             //" << endl;
-  cerr << "//   [SimFlex] (http://parsa.epfl.ch/simflex/)                                                        //" << endl;
-  cerr << "//                                                                                                    //" << endl; 
-  cerr << "////////////////////////////////////////////////////////////////////////////////////////////////////////" << endl << endl << endl;;
-  cerr << "//   QFlex simulator - Built as " << Flexus::theSimulatorName << endl << endl;
+  cerr << "\nFlexus (C) 2006-2010 The SimFlex Project" << endl;
+  cerr << "Eric Chung, Michael Ferdman, Brian Gold, Nikos Hardavellas, Jangwook Kim," << endl;
+  cerr << "Ippokratis Pandis, Minglong Shao, Jared Smolens, Stephen Somogyi," << endl;
+  cerr << "Evangelos Vlachos, Thomas Wenisch, Roland Wunderlich" << endl;
+  cerr << "Anastassia Ailamaki, Babak Falsafi and James C. Hoe." << endl << endl;
+  cerr << "Flexus Simics simulator - Built as " << Flexus::theSimulatorName << endl << endl;
 }
 
 
@@ -166,6 +98,19 @@ extern "C" void flexInit(){
 
 extern "C" void startTiming(){
     Flexus::Qemu::start_timing_sim();
+}
+
+extern "C" void handleInterrupt(void* anObj, long long aVector){
+    cerr << "Flexus: in handle interrupt\n"<<endl;
+    if (Flexus::Qemu::handle_interruptTwo != NULL){
+      cerr << "Flexus: handle_interrupt is not null " << std::hex << (void *) Flexus::Qemu::handle_interruptTwo << "\n"<<endl;  
+      Flexus::Qemu::handle_interruptTwo(anObj, aVector);
+      //cerr << "Flexus: flexInit is not null " << std::hex << (void *) Flexus::Qemu::flexus_init << "\n"<<endl;
+      //Flexus::Qemu::flexus_init();
+      //exit(-1);
+    }else{
+      cerr << "Flexus: handle_interrupt is null\n"<<endl;
+    }
 }
 
 extern "C" void qemuflex_init(Flexus::Qemu::API::QFLEX_API_Interface_Hooks_t* hooks) {
@@ -182,8 +127,6 @@ extern "C" void qemuflex_init(Flexus::Qemu::API::QFLEX_API_Interface_Hooks_t* ho
   }
 
   DBG_(Dev, ( << "Initializing Flexus." ));
-  DBG_(Dev, ( << "Compiled with Boost: " << BOOST_VERSION / 100000 << "."
-              << BOOST_VERSION / 100 % 1000 << "." << BOOST_VERSION % 100 ));
 
   //Do all the stuff we need to get Simics to know we are here
   Flexus::Qemu::PrepareFlexus();

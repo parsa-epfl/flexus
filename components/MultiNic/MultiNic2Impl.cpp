@@ -33,4 +33,9 @@
 // ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
 // CONTRACT, TORT OR OTHERWISE).
 //
-// DO-NOT-REMOVE end-copyright-block   
+// DO-NOT-REMOVE end-copyright-block
+
+
+#define FLEXUS_MULTI_NIC_NUMPORTS 2
+#include "MultiNicXImpl.hpp"
+

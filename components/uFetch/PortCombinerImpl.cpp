@@ -33,7 +33,9 @@
 // ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
 // CONTRACT, TORT OR OTHERWISE).
 //
-// DO-NOT-REMOVE end-copyright-block   
+// DO-NOT-REMOVE end-copyright-block
+
+
 #include <components/uFetch/PortCombiner.hpp>
 
 #define FLEXUS_BEGIN_COMPONENT PortCombiner

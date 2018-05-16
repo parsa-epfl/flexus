@@ -95,7 +95,7 @@ endif
 GCC_LIB_PATH=$(GCC_PATH)/lib
 GCC_OPTFLAGS=-g -O2 #-O3 -funroll-loops -fno-strict-aliasing
 #UNCOMMENT FOR GCC
-GCC_LANGFLAGS=-Wall -fmessage-length=160 -fpermissive -x c++ -fPIC -Werror -Wno-unused -Wno-maybe-uninitialized -Wno-parentheses -Wno-int-to-pointer-cast -Wno-logical-not-parentheses -DNO_STORAGE -DBOOST_SYSTEM_NO_DEPRECATED 
+GCC_LANGFLAGS=-Wall -fmessage-length=160 -fpermissive -x c++ -fPIC -DNO_STORAGE -DBOOST_SYSTEM_NO_DEPRECATED 
 #UNCOMMENT FOR CLANG
 #GCC_LANGFLAGS=-Wall -fmessage-length=160 -x c++ -fPIC -fpermissive -Werror -Wno-unused -Wno-uninitialized -Wno-parentheses -Wno-int-to-pointer-cast -Wno-logical-not-parentheses -Wno-write-strings -Wno-string-plus-int -Wno-mismatched-tags -Wno-overloaded-virtual -Wno-redeclared-class-member -Wno-null-dereference -Wno-tautological-constant-out-of-range-compare -Wno-constant-logical-operand -Wno-unknown-pragmas -Wno-mismatched-new-delete -Wno-tautological-undefined-compare -DNO_STORAGE -DBOOST_SYSTEM_NO_DEPRECATED 
 ARCH_FLAGS=

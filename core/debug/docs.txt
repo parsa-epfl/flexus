@@ -261,7 +261,8 @@ Run Time Configuration
 ====
 
   Currently, the debug system reads debug.cfg in the current directory on
-startup to configure itself.
+startup to configure itself.  At some point, you will be able to load and
+modify configurations from within Simics.
 
 Here is the configuration file format:
 

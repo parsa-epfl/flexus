@@ -1,55 +1,15 @@
-// DO-NOT-REMOVE begin-copyright-block 
-//QFlex consists of several software components that are governed by various
-//licensing terms, in addition to software that was developed internally.
-//Anyone interested in using QFlex needs to fully understand and abide by the
-//licenses governing all the software components.
-//
-//### Software developed externally (not by the QFlex group)
-//
-//    * [NS-3](https://www.gnu.org/copyleft/gpl.html)
-//    * [QEMU](http://wiki.qemu.org/License) 
-//    * [SimFlex] (http://parsa.epfl.ch/simflex/)
-//
-//Software developed internally (by the QFlex group)
-//**QFlex License**
-//
-//QFlex
-//Copyright (c) 2016, Parallel Systems Architecture Lab, EPFL
-//All rights reserved.
-//
-//Redistribution and use in source and binary forms, with or without modification,
-//are permitted provided that the following conditions are met:
-//
-//    * Redistributions of source code must retain the above copyright notice,
-//      this list of conditions and the following disclaimer.
-//    * Redistributions in binary form must reproduce the above copyright notice,
-//      this list of conditions and the following disclaimer in the documentation
-//      and/or other materials provided with the distribution.
-//    * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,
-//      nor the names of its contributors may be used to endorse or promote
-//      products derived from this software without specific prior written
-//      permission.
-//
-//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-//ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-//WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-//DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,
-//EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-//CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-//GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-//HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-//LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
-//THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// DO-NOT-REMOVE end-copyright-block   
 namespace Flexus{
 namespace Qemu{
 namespace API{
 #include "api.h"
 
 CPU_READ_REGISTER_PROC cpu_read_register= nullptr;
+CPU_WRITE_REGISTER_PROC cpu_write_register= nullptr;
+
 READREG_PROC readReg= nullptr;
 MMU_LOGICAL_TO_PHYSICAL_PROC mmu_logical_to_physical= nullptr;
 CPU_GET_PROGRAM_COUNTER_PROC cpu_get_program_counter= nullptr;
+CPU_GET_INSTRUCTION_PROC cpu_get_instruction= nullptr;
 CPU_GET_ADDRESS_SPACE_PROC cpu_get_address_space= nullptr;
 CPU_PROC_NUM_PROC cpu_proc_num= nullptr;
 CPU_POP_INDEXES_PROC cpu_pop_indexes= nullptr;
@@ -83,9 +43,6 @@ QEMU_CPU_GET_CORE_ID_PROC QEMU_cpu_get_core_id= nullptr;
 // return the hread id of the processor
 QEMU_CPU_GET_THREAD_ID_PROC QEMU_cpu_get_thread_id= nullptr;
 
-// set quantum value for all vcpus
-QEMU_CPU_SET_QUANTUM QEMU_cpu_set_quantum = nullptr;
-
 // return an array of all processors
 // (numSockets * numCores * numthreads CPUs)
 QEMU_GET_ALL_PROCESSORS_PROC QEMU_get_all_processors= nullptr;
@@ -99,10 +56,17 @@ QEMU_GET_TICK_FREQUENCY_PROC QEMU_get_tick_frequency= nullptr;
 // get the program counter of a given cpu.
 QEMU_GET_PROGRAM_COUNTER_PROC QEMU_get_program_counter= nullptr;
 
+QEMU_GET_INSTRUCTION_PROC QEMU_get_instruction = nullptr;
+
 // convert a logical address to a physical address.
 QEMU_LOGICAL_TO_PHYSICAL_PROC QEMU_logical_to_physical= nullptr;
 
 QEMU_BREAK_SIMULATION_PROC QEMU_break_simulation= nullptr;
+
+QEMU_IS_STOPPED_PROC QEMU_is_stopped = nullptr;
+
+QEMU_SET_SIMULATION_TIME_PROC QEMU_setSimulationTime= nullptr;
+QEMU_GET_SIMULATION_TIME_PROC QEMU_getSimulationTime= nullptr;
 
 // dummy function at the moment. should flush the translation cache.
 QEMU_FLUSH_ALL_CACHES_PROC QEMU_flush_all_caches= nullptr;
@@ -140,9 +104,11 @@ QEMU_DELETE_CALLBACK_PROC QEMU_delete_callback= nullptr;
 
 void QFLEX_API_set_interface_hooks( const QFLEX_API_Interface_Hooks_t* hooks ) {
   cpu_read_register= hooks->cpu_read_register;
+  cpu_write_register=hooks->cpu_write_register;
   readReg= hooks->readReg;
   mmu_logical_to_physical= hooks->mmu_logical_to_physical;
   cpu_get_program_counter= hooks->cpu_get_program_counter;
+  cpu_get_instruction= hooks->cpu_get_instruction;
   cpu_get_address_space= hooks->cpu_get_address_space;
   cpu_proc_num= hooks->cpu_proc_num;
   cpu_pop_indexes= hooks->cpu_pop_indexes;
@@ -163,13 +129,16 @@ void QFLEX_API_set_interface_hooks( const QFLEX_API_Interface_Hooks_t* hooks ) {
   QEMU_cpu_get_socket_id= hooks->QEMU_cpu_get_socket_id;
   QEMU_cpu_get_core_id= hooks->QEMU_cpu_get_core_id;
   QEMU_cpu_get_thread_id= hooks->QEMU_cpu_get_thread_id;
-  QEMU_cpu_set_quantum= hooks->QEMU_cpu_set_quantum;
   QEMU_get_all_processors= hooks->QEMU_get_all_processors;
   QEMU_set_tick_frequency= hooks->QEMU_set_tick_frequency;
   QEMU_get_tick_frequency= hooks->QEMU_get_tick_frequency;
   QEMU_get_program_counter= hooks->QEMU_get_program_counter;
+  QEMU_get_instruction= hooks->QEMU_get_instruction;
   QEMU_logical_to_physical= hooks->QEMU_logical_to_physical;
   QEMU_break_simulation= hooks->QEMU_break_simulation;
+  QEMU_is_stopped = hooks->QEMU_is_stopped;
+  QEMU_getSimulationTime= hooks->QEMU_getSimulationTime;
+  QEMU_setSimulationTime= hooks->QEMU_setSimulationTime;
   QEMU_flush_all_caches= hooks->QEMU_flush_all_caches;
   QEMU_mem_op_is_data= hooks->QEMU_mem_op_is_data;
   QEMU_mem_op_is_write= hooks->QEMU_mem_op_is_write;

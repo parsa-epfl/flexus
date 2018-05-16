@@ -33,7 +33,9 @@
 // ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
 // CONTRACT, TORT OR OTHERWISE).
 //
-// DO-NOT-REMOVE end-copyright-block   
+// DO-NOT-REMOVE end-copyright-block
+
+
 #include <fstream>
 #include <set>
 
@@ -283,9 +285,11 @@ private:
   */
   bool lookup( PhysicalMemoryAddress const & anAddress ) {
     if (theI.lookup(anAddress)) {
-      DBG_( Verb, Comp(*this) ( << "Core[" << std::setfill('0') << std::setw(2) << flexusIndex() << "] I-Lookup hit: " << anAddress ));
+        DBG_( Tmp, Comp(*this) ( << "Core[" << std::setfill('0') << std::setw(2) << flexusIndex() << "] I-Lookup hit: " << anAddress ));
+        DBG_( Verb, Comp(*this) ( << "Core[" << std::setfill('0') << std::setw(2) << flexusIndex() << "] I-Lookup hit: " << anAddress ));
       return true;
     }
+    DBG_( Tmp, Comp(*this) ( << "Core[" << std::setfill('0') << std::setw(2) << flexusIndex() << "] I-Lookup Miss addr: " << anAddress ));
     DBG_( Verb, Comp(*this) ( << "Core[" << std::setfill('0') << std::setw(2) << flexusIndex() << "] I-Lookup Miss addr: " << anAddress ));
     return false;
   }
@@ -363,6 +367,7 @@ public:
     } else {
       fname += "/" + boost::padded_string_cast < 2, '0' > (flexusIndex()) + "-L1i";
     }
+    DBG_( Tmp, (<< "file for sys-L1i "<<fname));
     theI.loadState(fname);
   }
 
@@ -480,15 +485,19 @@ private:
   bool icacheLookup( index_t anIndex, VirtualMemoryAddress vaddr ) {
     //Translate virtual address to physical.
     //First, see if it is our cached translation
+
+    DBG_(Tmp, (<<"Looking up instruction in cache"));//NOOSHIN
     PhysicalMemoryAddress paddr;
     uint64_t tagset = vaddr >> theIndexShift;
     if ( tagset == theLastVTagSet ) {
       paddr = theLastPhysical;
       if (paddr == 0) {
+          DBG_(Tmp, (<<"Last Physical translation lookup failed!"));
         ++theFailedTranslations;
         return true; //Failed translations are treated as hits - they will cause an ITLB miss in the pipe.
       }
     } else {
+      DBG_(Tmp, (<<"Not in Flexus cache...Will look into Qemu now!"));
       Flexus::Qemu::Translation xlat;
       xlat.theVaddr = vaddr;
       xlat.theTL = theCPUState[anIndex].theTL;
@@ -497,8 +506,14 @@ private:
       cpu(anIndex)->translate(xlat, false /* do not trap */ );
       paddr = xlat.thePaddr;
       if (paddr == 0) {
+          assert(false);
+        DBG_(Tmp, (<<"Translation failed!"));
         ++theFailedTranslations;
         return true; //Failed translations are treated as hits - they will cause an ITLB miss in the pipe.
+      }
+      else
+      {
+          DBG_(Tmp, (<<"Translation success!"));
       }
       //Cache translation
       theLastPhysical = paddr;
@@ -524,7 +539,7 @@ private:
     theIcacheVMiss[anIndex] = vaddr;
     theFetchReplyTransactionTracker[anIndex] = nullptr;
 
-    DBG_( Iface, Comp(*this) ( << "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << anIndex << "] L1I MISS " << vaddr << " " << *theIcacheMiss[anIndex]));
+    DBG_( Tmp, Comp(*this) ( << "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << anIndex << "] L1I MISS " << vaddr << " " << *theIcacheMiss[anIndex]));
 
     if ( theIcachePrefetch[anIndex] && *theIcacheMiss[anIndex] == *theIcachePrefetch[anIndex] ) {
       theIcachePrefetch[anIndex] = boost::none;
@@ -541,6 +556,7 @@ private:
       theLastPrefetchVTagSet[anIndex] = tagset;
       prefetchNext(anIndex);
     }
+    DBG_(Tmp, (<<"in icacheLookup before return false"));//NOOSHIN
     return false;
   }
 
@@ -603,7 +619,7 @@ private:
     boost::intrusive_ptr<MemoryMessage> reply = aTransport[MemoryMessageTag];
     boost::intrusive_ptr<TransactionTracker> tracker = aTransport[ TransactionTrackerTag ];
 
-    //The fetch unit better only get load replies
+    //The FETCH UNIT better only get load replies
     //DBG_Assert (reply->type() == MemoryMessage::FetchReply);
 
     switch ( reply->type() ) {
@@ -742,7 +758,7 @@ private:
         break;
       }
       default:
-        DBG_Assert ( false, Comp(*this) ( << "Unhandled message received: " << *reply ) );
+        DBG_Assert ( false, Comp(*this) ( << "FETCH UNIT: Unhandled message received: " << *reply ) );
     }
   }
 
@@ -792,8 +808,12 @@ private:
   //Implementation of the FetchDrive drive interface
   void doFetch(index_t anIndex) {
 
+      //DBG_(Tmp, (<<"FETCH UNIT: Entering doFetch"));
+
+
     if (theIcacheMiss[anIndex]) {
       ++theMissCycles;
+      DBG_(Tmp, (<<"FETCH UNIT: in theIcacheMiss" << theMissCycles.theRefCount << "cycles missed so far"));
       return;
     }
 
@@ -802,7 +822,8 @@ private:
     DBG_Assert( FLEXUS_CHANNEL_ARRAY( AvailableFIQ, anIndex ).available() ) ;
     FLEXUS_CHANNEL_ARRAY( AvailableFIQ, anIndex ) >> available_fiq;
 
-    if (available_fiq > 0 && ( theFAQ[anIndex].size() > 1 || theFlexus->quiescing()) ) {
+
+    if (available_fiq > 0 && ( theFAQ[anIndex].size() > 0 || theFlexus->quiescing()) ) {
       pFetchBundle bundle(new FetchBundle);
 
       std::set< VirtualMemoryAddress> available_lines;
@@ -810,8 +831,8 @@ private:
       if (available_fiq < remaining_fetch) {
         remaining_fetch = available_fiq;
       }
-
-      while ( remaining_fetch > 0 && ( theFAQ[anIndex].size() > 1 || theFlexus->quiescing())) {
+      DBG_(Tmp, (<<"FETCH UNIT: starting to process the fetches... " << remaining_fetch << " remaining"));
+      while ( remaining_fetch > 0 && ( theFAQ[anIndex].size() > 0 || theFlexus->quiescing())) {
         bool from_icache(false);
 
         FetchAddr fetch_addr = theFAQ[anIndex].front();
@@ -835,16 +856,20 @@ private:
             }
             from_icache = true;
           }
+          else
+          {
+              DBG_(Verb, (<<"FETCH UNIT: Instruction Cache disabled!"));
+          }
 
           available_lines.insert( block_addr );
         }
 
         int64_t op_code = fetchFromQemu( anIndex, fetch_addr.theAddress );
-
+        
         theFAQ[anIndex].pop_front();
-        DBG_(Verb, ( << "Fetched " << fetch_addr.theAddress ) );
+        //DBG_(Tmp, ( << "\e[1;34m" << "FETCH UNIT: Fetched " << fetch_addr.theAddress << " and poping it out of FAQ" << "\e[0m" ) );
         bundle->theOpcodes.push_back( FetchedOpcode( fetch_addr.theAddress
-                                      , theFAQ[anIndex].empty() ?  VirtualMemoryAddress(0) : theFAQ[anIndex].front().theAddress
+//                                      , theFAQ[anIndex].empty() ?  VirtualMemoryAddress(0) : theFAQ[anIndex].front().theAddress
                                       , op_code
                                       , fetch_addr.theBPState
                                       , theFetchReplyTransactionTracker[anIndex]
@@ -864,26 +889,46 @@ private:
         }
         --remaining_fetch;
       }
+
       if (bundle->theOpcodes.size() > 0) {
         FLEXUS_CHANNEL_ARRAY( FetchBundleOut, anIndex ) << bundle;
       }
+    }
+    else
+    {
+        DBG_(Tmp, (  <<"\e[1;35m" << "FETCH UNIT:  Not processing the fetches if any"<< "\e[0m"));
+        DBG_(Tmp, (  <<"\e[1;35m" << "available_fiq: " << available_fiq
+                   << " fetch address queue size: "<< theFAQ[anIndex].size()
+                   << " Flexus quiescing: " << theFlexus->quiescing()  << "\e[0m"));
     }
 
   }
 
   int64_t fetchFromQemu(index_t anIndex, VirtualMemoryAddress const & anAddress) {
+    DBG_(Verb, (<<"FETCH UNIT: In fetch from QEMU"));
     int64_t op_code;
     Flexus::Qemu::Translation xlat;
     xlat.theVaddr = anAddress;
     xlat.theTL = theCPUState[anIndex].theTL;
     xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
     xlat.theType = Flexus::Qemu::Translation::eFetch;
+    xlat.theException = 0; // just for now
+
+    //DBG_(Tmp, (<<"FETCH UNIT: Starting Opcode Translation"));
     op_code = cpu(anIndex)->fetchInstruction(xlat, false /* do not take traps - the OOO core will do it */ );
+    //DBG_(Tmp, (<<"FETCH UNIT: Finished Opcode Translation"));
+
     if (xlat.theException == 0) {
-      DBG_(Verb, Comp(*this) ( << "Fetch " << anAddress << " op: " << std::hex << std::setw(8) << op_code << std::dec ) );
+      //DBG_(Tmp, (<<"FETCH UNIT: Not an exception"));
+      DBG_(Tmp, Comp(*this) ( <<"\e[1;34m" << "FETCH UNIT: " << anAddress << " op: " << std::hex << std::setw(8) << op_code << std::dec<< "\e[0m" ) );//NOOSHIN
+
+
+
       return op_code;
     } else {
-      DBG_(Iface, Comp(*this) ( << "No translation for " << anAddress << " TL: " << std::hex << theCPUState[anIndex].theTL << " PSTATE: " << theCPUState[anIndex].thePSTATE << " MMU exception: " << xlat.theException << std::dec ) );
+      DBG_(Tmp, (<<"FETCH UNIT: Hit an exception"));
+      DBG_(Tmp, Comp(*this) ( <<"\e[1;34m" << "No translation for " << anAddress << " TL: " << std::hex << theCPUState[anIndex].theTL <<
+                              " PSTATE: " << theCPUState[anIndex].thePSTATE << " MMU exception: " << xlat.theException << std::dec<< "\e[0m" ) );
       return kITLBMiss /* or other exception - OoO will figure it out */;
     }
   }
