@@ -1,1 +1,1 @@
-../../../qemu/libqemuflex/api.h
+../../../libqflex/api.h
