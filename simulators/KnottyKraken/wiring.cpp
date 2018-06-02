@@ -25,6 +25,7 @@ std::string theSimulatorName = "KnottyKraken v1.0";
 #include<components/armDecoder/armDecoder.hpp>
 #include<components/uArchARM/uArchARM.hpp>
 #include<components/SplitDestinationMapper/SplitDestinationMapper.hpp>
+#include <components/ITLB/ITLB.hpp>
 
 
 #include FLEXUS_END_DECLARATION_SECTION()
@@ -32,6 +33,7 @@ std::string theSimulatorName = "KnottyKraken v1.0";
 
 #include FLEXUS_BEGIN_COMPONENT_CONFIGURATION_SECTION()
 
+CREATE_CONFIGURATION( ITLB , "TEST_ITLB", theITLBCfg );
 
 CREATE_CONFIGURATION( FetchAddressGenerate, "fag", theFAGCfg );
 CREATE_CONFIGURATION( uFetch, "ufetch", theuFetchCfg );
@@ -258,6 +260,8 @@ bool initializeParameters() {
 #include FLEXUS_BEGIN_COMPONENT_INSTANTIATION_SECTION()
 //All component Instances are created here.  This section
 //also creates handles for each component
+//
+FLEXUS_INSTANTIATE_COMPONENT_ARRAY( ITLB , theITLBCfg, theITLB, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( FetchAddressGenerate, theFAGCfg, theFAG, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( uFetch, theuFetchCfg, theuFetch, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);

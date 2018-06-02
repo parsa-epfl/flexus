@@ -1,7 +1,7 @@
 # Octopus Simulator build description
 
 #Currently WhiteBox is removed from wiring
-REQUIRED_COMPONENTS = CommonQEMU uFetch armDecoder uArchARM FetchAddressGenerate Cache MemoryLoopback MemoryMap MagicBreakQEMU CMPCache MultiNic NetShim TraceTrackerQEMU MTManager SplitDestinationMapper
+REQUIRED_COMPONENTS = CommonQEMU uFetch armDecoder uArchARM FetchAddressGenerate Cache MemoryLoopback MemoryMap MagicBreakQEMU CMPCache MultiNic NetShim TraceTrackerQEMU MTManager SplitDestinationMapper ITLB
 
 SUPPORTS_STANDALONE = false
 SUPPORTS_SIMICS = false
