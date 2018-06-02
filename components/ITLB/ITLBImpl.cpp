@@ -121,7 +121,6 @@ public:
     theBusTxCountdown = 0;
     theBusDirection = kIdle;
 
-    //theController.reset();/*new CacheController(statName(),
     new CacheController(statName(),
             cfg.Cores,
             cfg.ArrayConfiguration,
@@ -149,6 +148,7 @@ public:
             cfg.EvictOnSnoop,
             cfg.UseReplyChannel
                 );
+    theController.reset();
   }
 
   void finalize() {}
