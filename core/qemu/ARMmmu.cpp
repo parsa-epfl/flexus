@@ -108,8 +108,6 @@ bool side_effect(API::arm_memory_transaction_t & xact) {
 }
 
 std::tuple<PhysicalMemoryAddress, bool, bool> armProcessorImpl::translateTSB_QemuImpl(VirtualMemoryAddress anAddress, int anASI) const {
-  //Check for known special-case ASIs
-
   try {
     API::arm_memory_transaction_t xact;
     translate_QemuImpl( xact, anAddress, anASI);
