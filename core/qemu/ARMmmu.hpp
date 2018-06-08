@@ -92,6 +92,19 @@ class TTEDescriptor
         tte_raw_t rawDescriptor;
         TranslationGranule myGranule;;
 };
+
+/* RAW DESCRIPTOR FORMATS ON AARCH64 REFERENCE MANUAL - SECTION D4.3 - D4-2061 */
+// INVALID ENTRY bit[0] = 0
+/* VALID BLOCK ENTRY: For level 1, n = 42, level 2, n = 29.
+ * [ 63:51 | ---- | 50:48 | 47:n     | n-1:16 | 15:12  -- | 11:2 ----- | 1 | 0 ] 
+ * [ upper attrs. | res0  | OA[47:n] |  res0  | OA[51:48] | low. attrs | 0 | 1 ]
+ *
+ * VALID TABLE ENTRY:
+ * [ 63 ---- | 62:61 - | 60 ---- | 59 ----- | 58:51  | 50:48 |-----  47:16  ----- |----- 15:12 ------ | 11:2 - | 1 | 0 ]
+ * [ NSTable | APTable | XNTable | PXNTable | IGNORE | res0  | Next-level [47:16] | Next-level[51:48] | IGNORE | 1 | 1 ]
+ * - entries for NS,AP,XN,PXN only valid in Stage1, res0 in Stage 2
+ */
+
 // Msutherl - antiquated + orphaned, needs to go soon
 typedef unsigned long long tte_tag;
 typedef unsigned long long tte_data;
