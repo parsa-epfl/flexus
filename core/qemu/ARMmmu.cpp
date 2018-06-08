@@ -616,6 +616,42 @@ bool is4KSupported() { return true; } // FIXME
 bool is16KGranuleSupported() { return false; } // FIXUS
 bool is64KGranuleSupported() { return false; }
 
+/* Msutherl - June'18
+ * - Add code for TTE Descriptor classes
+ */
+address_t 
+TTEDescriptor::extractBitRange(address_t input, unsigned upperBitBound, unsigned lowerBitBound)
+{
+    address_t result = input >> lowerBitBound;
+    address_t upperMask = (1ULL << (upperBitBound-lowerBitBound+1))-1;
+    return result & upperMask;
+}
+
+bool 
+TTEDescriptor::extractSingleBitAsBool(address_t input, unsigned bitshift)
+{
+    address_t rawbit = ((input >> bitshift) & 0x1);
+    return rawbit ? true : false ;
+}
+
+bool
+TTEDescriptor::isValid() 
+{
+    return TTEDescriptor::extractSingleBitAsBool(rawDescriptor,0);
+}
+
+bool
+TTEDescriptor::isTableEntry()
+{
+    return TTEDescriptor::extractSingleBitAsBool( rawDescriptor, 1 );
+}
+
+bool
+TTEDescriptor::isBlockEntry()
+{
+    return !(TTEDescriptor::extractSingleBitAsBool( rawDescriptor, 1 ));
+}
+
 } // end namespace MMU
 } //end Namespace Simics
 } //end namespace Flexus

@@ -76,11 +76,34 @@ class TTEDescriptor
 {
     public:
         TTEDescriptor() {} 
+        TTEDescriptor(unsigned tteGranuleSize) : myGranule(tteGranuleSize) { } 
         typedef unsigned long long tte_raw_t;
+
+        // Helper for shifting and extracting values from bit-ranges
+        static address_t extractBitRange(address_t input, unsigned upperBitBound, unsigned lowerBitBound);
+        static bool extractSingleBitAsBool(address_t input, unsigned bitNum);
+
+        // helper functions for reading ARM64 descriptors
+        bool isValid();
+        bool isTableEntry();
+        bool isBlockEntry();
+
     private:
         tte_raw_t rawDescriptor;
-        TranslationGranule matchingGranule;
+        TranslationGranule myGranule;;
 };
+
+/* RAW DESCRIPTOR FORMATS ON AARCH64 REFERENCE MANUAL - SECTION D4.3 - D4-2061 */
+// INVALID ENTRY bit[0] = 0
+/* VALID BLOCK ENTRY: For level 1, n = 42, level 2, n = 29.
+ * [ 63:51 | ---- | 50:48 | 47:n     | n-1:16 | 15:12  -- | 11:2 ----- | 1 | 0 ] 
+ * [ upper attrs. | res0  | OA[47:n] |  res0  | OA[51:48] | low. attrs | 0 | 1 ]
+ *
+ * VALID TABLE ENTRY:
+ * [ 63 ---- | 62:61 - | 60 ---- | 59 ----- | 58:51  | 50:48 |-----  47:16  ----- |----- 15:12 ------ | 11:2 - | 1 | 0 ]
+ * [ NSTable | APTable | XNTable | PXNTable | IGNORE | res0  | Next-level [47:16] | Next-level[51:48] | IGNORE | 1 | 1 ]
+ * - entries for NS,AP,XN,PXN only valid in Stage1, res0 in Stage 2
+ */
 
 // Msutherl - antiquated + orphaned, needs to go soon
 typedef unsigned long long tte_tag;
@@ -93,37 +116,6 @@ typedef struct mmu {
      * - TLB tags/data are refactored into Flexus state 
      */
     mmu_regs_t mmu_regs;
-
-  /* general MMU registers */
-    /*
-  mmu_reg_t primary_context;
-  mmu_reg_t secondary_context;
-  mmu_reg_t pa_watchpoint;
-  mmu_reg_t va_watchpoint;
-  */
-
-  /* D- and I-TLB registers */
-  /*tlb_regs_t d_regs;
-  /tlb_regs_t i_regs;
-  */
-
-  //unsigned long long lfsr;   /* LFSR bits for replacement */
-
-  /* D-TLB tags and data */
-    /*
-  tte_tag  dt16_tag[16];
-  tte_data dt16_data[16];
-  tte_tag  dt512_tag[512];
-  tte_data dt512_data[512];
-  */
-
-  /* I-TLB tags and data */
-    /*
-  tte_tag  it16_tag[16];
-  tte_data it16_data[16];
-  tte_tag  it128_tag[128];
-  tte_data it128_data[128];
-  */
 
 } mmu_t;
 
