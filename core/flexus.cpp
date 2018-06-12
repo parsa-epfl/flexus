@@ -17,6 +17,7 @@
 
 #include <functional>
 #include <core/qemu/qemu.h>
+#include <core/qemu/qmp_api.hpp>
 #include <core/metaprogram.hpp>
 #include <core/drive_reference.hpp>
 
@@ -235,7 +236,7 @@ void FlexusImpl::printMMU( int32_t aCPU ) {
 void FlexusImpl::printMMU( int32_t aCPU ) {
   //Flexus::Qemu::Processor::getProcessor(aCPU)->dumpMMU();
   //Flexus::Qemu::Processor::getProcessor(aCPU)->validateMMU();
-	DBG_(Crit, ( << "printMMU not implemented yet. Still need to port mai_api.hpp " ) );
+    DBG_(Crit, ( << "printMMU not implemented yet. Still need to port mai_api.hpp " ) );
 }
 #endif
 
@@ -264,7 +265,7 @@ void FlexusImpl::advanceCycles(int64_t aCycleCount) {
 #ifndef CONFIG_QEMU
       Simics::BreakSimulation( "Flexus is quiesced." );
 #else
-	Qemu::API::QEMU_break_simulation("Flexus is quiesced.");
+    Qemu::API::QEMU_break_simulation("Flexus is quiesced.");
 #endif
       return;
     }
@@ -550,7 +551,9 @@ void FlexusImpl::doLoad(std::string const & aDirName) {
     initializeComponents();
   }
   ComponentManager::getComponentManager().doLoad( aDirName );
-#else 
+#else
+  ComponentManager::getComponentManager().doLoad( aDirName );
+
   // FIXME TODO XXX
     DBG_( Crit, ( << "Actually, QEMU can't do this... Yet?? " ) );
 #endif
@@ -571,8 +574,8 @@ void FlexusImpl::doSave(std::string const & aDirName, bool justFlexus) {
   }
   ComponentManager::getComponentManager().doSave( aDirName );
 #else
-  // FIXME TODO XXX
-    DBG_( Crit, ( << "Actually, QEMU can't do this... Yet??" ) );
+  ComponentManager::getComponentManager().doSave( aDirName );
+  DBG_( Crit, ( << "Saving Flexus state in subdirectory " << aDirName ) );
 #endif
 
 }
@@ -716,7 +719,7 @@ void FlexusImpl::onTerminate(std::function<void () > aFn) {
 
 void FlexusImpl::terminateSimulation() {
   system_clock::time_point now(system_clock::now());
-  auto tt = system_clock::to_time_t(now); 
+  auto tt = system_clock::to_time_t(now);
   DBG_(Dev, Core() ( << "Terminating simulation. Timestamp: " << std::asctime(std::localtime(&tt))));
   DBG_(Dev, Core() ( << "Saving final stats_db."));
   ;
@@ -739,7 +742,7 @@ void FlexusImpl::terminateSimulation() {
 #ifndef CONFIG_QEMU
   Flexus::Simics::BreakSimulation("Simulation terminated by flexus.");
 #else
-	Flexus::Qemu::API::QEMU_break_simulation("Simulation terminated by flexus.");
+    Flexus::Qemu::API::QEMU_break_simulation("Simulation terminated by flexus.");
 #endif
 }
 
@@ -1077,11 +1080,26 @@ FlexusFactory * theFlexusFactory;
 FlexusInterface * theFlexus = 0; //This is initialized from startup.cpp
 
 void CreateFlexusObject() {
-  theFlexusObj = Core::theFlexusFactory->create("flexus");
+  theFlexusObj =Core::theFlexusFactory->create("flexus");
   theFlexus = &Core::theFlexusObj;
   if (!theFlexus) {
     DBG_Assert(false, ( << "Unable to create Flexus object in Simics"));
   }
+
+}
+
+void callQMP(Flexus::Qemu::API::qmp_flexus_cmd_t aCMD, const char* anArgs) {
+
+    try {
+        qmp_flexus_i& q = qmp(aCMD);
+        if (anArgs != NULL){
+            q.execute(static_cast<string>(anArgs));
+        } else {
+           q.execute("");
+        }
+    } catch (qmp_not_implemented){
+        DBG_(Crit, (<< "QMP call not implemented!"));
+    }
 
 }
 
@@ -1090,6 +1108,10 @@ void initFlexus(){
     theFlexus->initializeComponents();
 }
 
+void deinitFlexus(){
+    if(theFlexusFactory)
+        delete theFlexusFactory;
+}
 void startTimingFlexus(){
    while (! Qemu::API::QEMU_is_stopped()) {
 

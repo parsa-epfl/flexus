@@ -33,6 +33,8 @@ void Break() {
 void CreateFlexusObject();
 void PrepareFlexusObject();
 void initFlexus();
+void deinitFlexus();
+void callQMP(Flexus::Qemu::API::qmp_flexus_cmd_t aCMD, const char* args);
 void startTimingFlexus();
 void handleInterruptFlexus(void* anObj,long long aVector);
 }
@@ -47,10 +49,10 @@ void CreateFlexus() {
 
   Flexus::Core::index_t systemWidth = Qemu::API::QEMU_get_num_cpus();
   Flexus::Core::ComponentManager::getComponentManager()
-								.instantiateComponents(systemWidth);
+                                .instantiateComponents(systemWidth);
  
   ConfigurationManager::getConfigurationManager()
-						.processCommandLineConfiguration(0, 0);
+                        .processCommandLineConfiguration(0, 0);
    //not sure if this is correct or where it should be. 
  std::cerr<<"systemWidth: " <<systemWidth << std::endl;
 }
@@ -58,12 +60,24 @@ void CreateFlexus() {
 void PrepareFlexus() {
   PrepareFlexusObject();
   Qemu::API::QEMU_insert_callback(QEMUFLEX_GENERIC_CALLBACK, Qemu::API::QEMU_config_ready, nullptr, (void*)&CreateFlexus);
+
+
 }
+
+extern "C" void qmp_call(Flexus::Qemu::API::qmp_flexus_cmd_t aCMD, const char* anArgs) {
+    callQMP(aCMD, anArgs);
+}
+
 extern "C" void flexus_init(void) {
     initFlexus();
 }
+
+extern "C" void flexus_deinit(void) {
+    deinitFlexus();
+}
+
 extern "C" void start_timing_sim(void) {
-    startTimingFlexus(); 
+    startTimingFlexus();
 }
 
 extern "C" void handle_interruptTwo(void * anObj, long long aVector){
@@ -92,8 +106,18 @@ void print_copyright() {
 
 
 }
+
+extern "C" void qmpcall(Flexus::Qemu::API::qmp_flexus_cmd_t aCMD, const char* anArgs ){
+    Flexus::Qemu::qmp_call(aCMD, anArgs);
+}
+
+
 extern "C" void flexInit(){
     Flexus::Qemu::flexus_init();
+}
+
+extern "C" void flexDeinit(){
+    Flexus::Qemu::flexus_deinit();
 }
 
 extern "C" void startTiming(){
@@ -103,7 +127,7 @@ extern "C" void startTiming(){
 extern "C" void handleInterrupt(void* anObj, long long aVector){
     cerr << "Flexus: in handle interrupt\n"<<endl;
     if (Flexus::Qemu::handle_interruptTwo != NULL){
-      cerr << "Flexus: handle_interrupt is not null " << std::hex << (void *) Flexus::Qemu::handle_interruptTwo << "\n"<<endl;  
+      cerr << "Flexus: handle_interrupt is not null " << std::hex << (void *) Flexus::Qemu::handle_interruptTwo << "\n"<<endl;
       Flexus::Qemu::handle_interruptTwo(anObj, aVector);
       //cerr << "Flexus: flexInit is not null " << std::hex << (void *) Flexus::Qemu::flexus_init << "\n"<<endl;
       //Flexus::Qemu::flexus_init();
@@ -113,7 +137,7 @@ extern "C" void handleInterrupt(void* anObj, long long aVector){
     }
 }
 
-extern "C" void qemuflex_init(Flexus::Qemu::API::QFLEX_API_Interface_Hooks_t* hooks) {
+extern "C" void qflex_init(Flexus::Qemu::API::QFLEX_API_Interface_Hooks_t* hooks) {
   Flexus::Qemu::API::QFLEX_API_set_interface_hooks( hooks );
   std::cerr << "Entered init_local\n";
 
@@ -134,7 +158,6 @@ extern "C" void qemuflex_init(Flexus::Qemu::API::QFLEX_API_Interface_Hooks_t* ho
   DBG_(Iface, ( << "Flexus Initialized." ));
 }
 
-extern "C" void qemuflex_quit(void) {
-  //Theoretically, we would delete Flexus here, but Qemu currently does not call this function.
-  // delete theFlexusFactory;
+extern "C" void qflex_quit(void) {
+    flexDeinit();
 }

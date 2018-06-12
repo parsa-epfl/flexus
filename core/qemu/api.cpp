@@ -96,6 +96,7 @@ QEMU_FLUSH_TB_CACHE_PROC QEMU_flush_tb_cache = nullptr;
 
 QEMU_GET_INSTRUCTION_COUNT_PROC QEMU_get_instruction_count = nullptr;
 
+
 // insert a callback specific for the given cpu or -1 for a generic callback
 QEMU_INSERT_CALLBACK_PROC QEMU_insert_callback= nullptr;
 
