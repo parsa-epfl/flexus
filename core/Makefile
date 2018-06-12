@@ -1,8 +1,6 @@
 # Get variables from Makefile.defs
 include $(FLEXUS_ROOT)/makefile.defs
 
-STANDALONE_SOURCES = $(subst $(CORE_DIR)/,,$(shell ls $(CORE_DIR)/standalone/*.cpp  $(CORE_DIR)/standalone/aux_/*.cpp))
-#SIMICS_SOURCES = $(subst $(CORE_DIR)/,,$(shell ls $(CORE_DIR)/simics/*.cpp $(CORE_DIR)/simics/aux_/*.cpp))
 QEMU_SOURCES = $(subst $(CORE_DIR)/,,$(shell ls $(CORE_DIR)/qemu/*.cpp $(CORE_DIR)/qemu/aux_/*.cpp))
 TEST_SOURCES = $(subst $(CORE_DIR)/,,$(shell ls $(CORE_DIR)/test/*.cpp))
 DOC_SOURCES = core_documentation.cpp
@@ -38,16 +36,11 @@ include $(FLEXUS_ROOT)/makefile.variant
 .SUFFIXES:
 .SUFFIXES: .cpp .$(OEXT) .$(GCC_DEP_EXT) .$(ICC_DEP_EXT)
 
-.PHONY: default clean clobber qemu standalone simics test doc core
+.PHONY: default clean clobber qemu test doc core
 
-default: standalone
+default: qemu 
 
 # Standalone target
-standalone: depend core
-	$(MAKE) -f makefile.$(SELECTED_CC) libstandalone_$(VARIANT).a $(BUILD_OPTIONS) SOURCES="$(STANDALONE_SOURCES)"
-
-simics: depend core
-	$(MAKE) -f makefile.$(SELECTED_CC) libsimics_$(VARIANT).a $(BUILD_OPTIONS) SOURCES="$(SIMICS_SOURCES)"
 
 qemu: depend core
 	$(MAKE) -f makefile.$(SELECTED_CC) libqemu_$(VARIANT).a $(BUILD_OPTIONS) SOURCES="$(QEMU_SOURCES)"
@@ -89,9 +82,7 @@ clean:
 	find . -name "*.*_dep" | xargs rm -f
 	find . -name "Makefile.depend.*cc" | xargs rm -f
 	find . -name "core.*.ipo_out.o" | xargs rm -f
-	find . -name "standalone.*.ipo_out.o" | xargs rm -f
 	find . -name "qemu.*.ipo_out.o" | xargs rm -f
-	find . -name "simics.*.ipo_out.o" | xargs rm -f
 	find . -name "*.il" | xargs rm -f
 	find . -name "core-test.*.ipo_out.o" | xargs rm -f
 	find . -name "core-test.*.?cc" | xargs rm -f
@@ -122,12 +113,6 @@ Makefile.depend.$(GCC_VARIANT): $(patsubst %.cpp,%.$(GCC_DEP_EXT),$(CORE_LIB_SOU
 
 $(patsubst %.cpp,%.$(ICC_DEP_EXT),$(CORE_LIB_SOURCES)): %.$(ICC_DEP_EXT): %.cpp
 	$(GCC) $(INCLUDES) $(VARIANT_DEFINES) $(GCC_DEPFLAGS) -MF $@ -MT core.$(VARIANT_EXT).ipo_out.o $<
-
-$(patsubst %.cpp,%.$(ICC_DEP_EXT),$(STANDALONE_SOURCES)): %.$(ICC_DEP_EXT): %.cpp
-	$(GCC) $(INCLUDES) $(VARIANT_DEFINES) $(GCC_DEPFLAGS) -MF $@ -MT standalone.$(VARIANT_EXT).ipo_out.o $<
-
-$(patsubst %.cpp,%.$(ICC_DEP_EXT),$(SIMICS_SOURCES)): %.$(ICC_DEP_EXT): %.cpp
-	$(GCC) $(INCLUDES) $(VARIANT_DEFINES) $(GCC_DEPFLAGS) -MF $@ -MT simics.$(VARIANT_EXT).ipo_out.o $<
 
 $(patsubst %.cpp,%.$(ICC_DEP_EXT),$(QEMU_SOURCES)): %.$(ICC_DEP_EXT): %.cpp
 	$(GCC) $(INCLUDES) $(VARIANT_DEFINES) $(GCC_DEPFLAGS) -MF $@ -MT qemu.$(VARIANT_EXT).ipo_out.o $<
