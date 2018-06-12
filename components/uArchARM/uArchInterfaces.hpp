@@ -194,6 +194,26 @@ enum eInstructionCode
   , codeLastCode
 };
 
+
+typedef enum eAccType
+//Special cases
+{
+    kAccType_NORMAL, kAccType_VEC,           // Normal loads and stores
+    kAccType_STREAM, kAccType_VECSTREAM,     // Streaming loads and stores
+    kAccType_ATOMIC, kAccType_ATOMICRW,      // Atomic loads and stores
+    kAccType_ORDERED, kAccType_ORDEREDRW,    // Load-Acquire and Store-Release
+    kAccType_LIMITEDORDERED,                // Load-LOAcquire and Store-LORelease
+    kAccType_UNPRIV,                        // Load and store unprivileged
+    kAccType_IFETCH,                        // Instruction fetch
+    kAccType_PTW,                           // Page table walk
+    // Other operations
+    kAccType_DC,                            // Data cache maintenance
+    kAccType_IC,                            // Instruction cache maintenance
+    kAccType_DCZVA,                         // DC ZVA instructions
+    kAccType_AT,                            // Address translation
+    kLastAccType,                           // last one for debugging
+}eAccType;
+
 std::ostream & operator << ( std::ostream & anOstream, eInstructionCode aCode);
 
 // Options to the OoO core structure are added here.  Do not forget to
@@ -476,10 +496,10 @@ struct uArchARM {
     virtual void redirectFetch( VirtualMemoryAddress anAddress ) {
     DBG_Assert(false);
     }
-    virtual void insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB ) {
+    virtual void insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB, eAccType type ) {
     DBG_Assert(false);
     }
-    virtual void insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB, InstructionDependance const & aDependance ) {
+    virtual void insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB, InstructionDependance const & aDependance , eAccType type) {
     DBG_Assert(false);
     }
     virtual void eraseLSQ( boost::intrusive_ptr< Instruction > anInsn ) {

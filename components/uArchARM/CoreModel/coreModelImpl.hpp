@@ -76,6 +76,8 @@ namespace Stat = Flexus::Stat;
 #include <components/CommonQEMU/Slices/PredictorMessage.hpp> /* CMU-ONLY */
 #include "bbv.hpp" /* CMU-ONLY */
 
+#include "pstate.hpp"
+
 namespace nuArchARM {
 
 using nXactTimeBreakdown::TimeBreakdown;
@@ -779,8 +781,8 @@ void setFPSR( uint64_t anFPSR) {
   bool speculativeConsistency( ) const {
     return theSpeculativeOrder;
   }
-  void insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB);
-  void insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB, InstructionDependance  const & aDependance  );
+  void insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB, eAccType type);
+  void insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB, InstructionDependance  const & aDependance , eAccType type );
   void eraseLSQ( boost::intrusive_ptr< Instruction > anInsn );
   void cleanMSHRS( uint64_t aDiscardAfterSequenceNum );
   void clearLSQ();

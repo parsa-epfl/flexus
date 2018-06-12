@@ -140,7 +140,7 @@ void CoreImpl::breakMSHRLink( memq_t::index<by_insn>::type::iterator iter ) {
 
 }
 
-void CoreImpl::insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB, InstructionDependance  const & aDependance  ) {
+void CoreImpl::insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB, InstructionDependance  const & aDependance , eAccType type ) {
   FLEXUS_PROFILE();
   theMemQueue.push_back( MemQueueEntry(anInsn, ++theMemorySequenceNum, anOperation, aSize, aBypassSB && theNAWBypassSB, aDependance) );
   DBG_( Verb, ( << "Pushed LSQEntry: " << theMemQueue.back() ) );
@@ -148,7 +148,7 @@ void CoreImpl::insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation
 //  DBG_Assert( theLSQCount + theSBCount + theSBNAWCount == static_cast<long>(theMemQueue.size()) );
 }
 
-void CoreImpl::insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB ) {
+void CoreImpl::insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB , eAccType type) {
   FLEXUS_PROFILE();
   theMemQueue.push_back( MemQueueEntry(anInsn, ++theMemorySequenceNum, anOperation, aSize, aBypassSB && theNAWBypassSB ) );
   DBG_( Tmp, ( << "Pushed LSQEntry: " << theMemQueue.back() ) );

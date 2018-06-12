@@ -459,7 +459,7 @@ void resetArchitecturalState()
   }
 
   void resetPSTATE() {
-    uint64_t pstate = theCPU->readRegister( 0, API::PSTATE );
+    uint64_t pstate= theCPU->readRegister( 0, API::PSTATE );
     theCore->setPSTATE( pstate );
   }
 
