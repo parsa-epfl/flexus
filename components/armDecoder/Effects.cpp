@@ -583,12 +583,20 @@ Effect * returnFromTrap(SemanticInstruction * inst,  bool isRetry) {
 
 struct BranchEffect: public Effect {
   VirtualMemoryAddress theTarget;
+  bool theHasTarget;
   BranchEffect( VirtualMemoryAddress aTarget)
     : theTarget(aTarget)
+    , theHasTarget(true)
+  {}
+  BranchEffect( )
+    : theHasTarget(false)
   {}
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
     DBG_( Tmp, ( << anInstruction << " BranchEffect " ) );//NOOSHIN
+
+//    if (!theHasTarget)
+//        theTarget = anInstruction.operand(kAddress);
 
     if ( anInstruction.redirectPC(theTarget, anInstruction.pc() + 4 ) ) {
       DBG_( Tmp, ( << anInstruction << " BRANCH:  Must redirect.") );
@@ -647,6 +655,10 @@ Effect * branch(SemanticInstruction * inst,  VirtualMemoryAddress aTarget) {
   return new(inst->icb()) BranchEffect( aTarget );
 }
 
+Effect * branch(SemanticInstruction * inst) {
+  return new(inst->icb()) BranchEffect();
+}
+
 Effect * branchAfterNext(SemanticInstruction * inst, VirtualMemoryAddress aTarget) {
   return new(inst->icb()) BranchAfterNext(aTarget);
 }
@@ -658,10 +670,10 @@ Effect * branchAfterNext(SemanticInstruction * inst, eOperandCode anOperandCode)
 struct BranchConditionallyEffect: public Effect {
   VirtualMemoryAddress theTarget;
   bool theAnnul;
-  uint32_t theCondition;
+  Condition & theCondition;
   bool isFloating;
   eOperandCode theCCRCode;
-  BranchConditionallyEffect( VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition, bool floating, eOperandCode aCCRCode)
+  BranchConditionallyEffect( VirtualMemoryAddress aTarget, bool anAnnul, Condition & aCondition, bool floating, eOperandCode aCCRCode)
     : theTarget(aTarget)
     , theAnnul(anAnnul)
     , theCondition(aCondition)
@@ -681,16 +693,7 @@ struct BranchConditionallyEffect: public Effect {
     feedback->theActualTarget = theTarget;
     feedback->theBPState = anInstruction.bpState();
 
-    bool result;
-    if (isFloating) {
-      FCondition cond = fcondition( theCondition );
-      result = cond(cc);
-      DBG_( Tmp, ( << anInstruction << " Floating condition: " << theCondition << " cc: " << cc.to_ulong() << " result: " << result ) );
-    } else {
-      Condition cond = condition( theCondition );
-
-      result = cond(cc);
-    }
+    bool result/* = theCondition(operands)*/;
 
     if ( result ) {
       //Taken
@@ -719,16 +722,16 @@ struct BranchConditionallyEffect: public Effect {
   }
 };
 
-Effect * branchConditionally(SemanticInstruction * inst, VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition, bool isFloating) {
+Effect * branchConditionally(SemanticInstruction * inst, VirtualMemoryAddress aTarget, bool anAnnul, Condition & aCondition, bool isFloating) {
   return new(inst->icb()) BranchConditionallyEffect( aTarget, anAnnul, aCondition, isFloating, kCCps );
 }
 
 struct BranchRegConditionallyEffect: public Effect {
   VirtualMemoryAddress theTarget;
   bool theAnnul;
-  uint32_t theCondition;
+  Condition & theCondition;
   eOperandCode theValueCode;
-  BranchRegConditionallyEffect( VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition, eOperandCode aValueCode)
+  BranchRegConditionallyEffect( VirtualMemoryAddress aTarget, bool anAnnul, Condition & aCondition, eOperandCode aValueCode)
     : theTarget(aTarget)
     , theAnnul(anAnnul)
     , theCondition(aCondition)
@@ -746,24 +749,24 @@ struct BranchRegConditionallyEffect: public Effect {
     feedback->theActualTarget = theTarget;
     feedback->theBPState = anInstruction.bpState();
 
-    RCondition cond( rcondition(theCondition) );
+//    RCondition cond( rcondition(theCondition) );
 
-    if ( cond( val ) ) {
-      //Taken
-      DBG_( Tmp, ( << anInstruction << " register conditional branch TAKEN" ) );
-      anInstruction.core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , new BranchInteraction(theTarget) );
-      feedback->theActualDirection = kTaken;
-    } else {
-      //Not Taken
-      DBG_( Tmp, ( << anInstruction << " register conditional branch  NOT TAKEN" ) );
-      if (theAnnul) {
-        DBG_( Tmp, ( << anInstruction.identify() << " Annul Next Instruction") );
-        anInstruction.core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , new AnnulInstruction() );
-//        anInstruction.redirectNPC( anInstruction.pc() + 8 );
-      }
-      anInstruction.core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , new BranchInteraction( anInstruction.pc() + 8 ) );
-      feedback->theActualDirection = kNotTaken;
-    }
+//    if ( cond( val ) ) {
+//      //Taken
+//      DBG_( Tmp, ( << anInstruction << " register conditional branch TAKEN" ) );
+//      anInstruction.core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , new BranchInteraction(theTarget) );
+//      feedback->theActualDirection = kTaken;
+//    } else {
+//      //Not Taken
+//      DBG_( Tmp, ( << anInstruction << " register conditional branch  NOT TAKEN" ) );
+//      if (theAnnul) {
+//        DBG_( Tmp, ( << anInstruction.identify() << " Annul Next Instruction") );
+//        anInstruction.core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , new AnnulInstruction() );
+////        anInstruction.redirectNPC( anInstruction.pc() + 8 );
+//      }
+//      anInstruction.core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , new BranchInteraction( anInstruction.pc() + 8 ) );
+//      feedback->theActualDirection = kNotTaken;
+//    }
     anInstruction.core()->branchFeedback(feedback);
     Effect::invoke(anInstruction);
   }
@@ -773,7 +776,7 @@ struct BranchRegConditionallyEffect: public Effect {
   }
 };
 
-Effect * branchRegConditionally(SemanticInstruction * inst, VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition)  {
+Effect * branchRegConditionally(SemanticInstruction * inst, VirtualMemoryAddress aTarget, bool anAnnul, Condition & aCondition)  {
   return new(inst->icb()) BranchRegConditionallyEffect( aTarget, anAnnul, aCondition, kOperand1 );
 }
 
@@ -783,27 +786,31 @@ struct AllocateLSQEffect : public Effect {
   bool hasDependance;
   InternalDependance theDependance;
   bool theBypassSB;
-  AllocateLSQEffect( eOperation anOperation, eSize aSize, bool aBypassSB, InternalDependance const & aDependance )
+  eAccType theAccType;
+
+  AllocateLSQEffect( eOperation anOperation, eSize aSize, bool aBypassSB, InternalDependance const & aDependance , eAccType type)
     : theOperation(anOperation)
     , theSize(aSize)
     , hasDependance(true)
     , theDependance(aDependance)
     , theBypassSB(aBypassSB)
+    , theAccType(type)
   {}
-  AllocateLSQEffect( eOperation anOperation, eSize aSize, bool aBypassSB)
+  AllocateLSQEffect( eOperation anOperation, eSize aSize, bool aBypassSB, eAccType type)
     : theOperation(anOperation)
     , theSize(aSize)
     , hasDependance(false)
     , theBypassSB(aBypassSB)
+    , theAccType(type)
   {}
 
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
     DBG_( Tmp, ( << "\e[1;32m"<< anInstruction.identify() << " Allocate LSQ Entry"<< "\e[0m") );
     if (hasDependance) {
-      anInstruction.core()->insertLSQ( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , theOperation, theSize, theBypassSB, anInstruction.makeInstructionDependance(theDependance) );
+      anInstruction.core()->insertLSQ( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , theOperation, theSize, theBypassSB, anInstruction.makeInstructionDependance(theDependance), theAccType );
     } else {
-      anInstruction.core()->insertLSQ( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , theOperation, theSize, theBypassSB);
+      anInstruction.core()->insertLSQ( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , theOperation, theSize, theBypassSB, theAccType);
     }
     Effect::invoke(anInstruction);
   }
@@ -814,24 +821,24 @@ struct AllocateLSQEffect : public Effect {
   }
 };
 
-Effect * allocateStore(SemanticInstruction * inst, eSize aSize, bool aBypassSB)  {
-  return new(inst->icb()) AllocateLSQEffect( kStore, aSize, aBypassSB );
+Effect * allocateStore(SemanticInstruction * inst, eSize aSize, bool aBypassSB, eAccType type)  {
+  return new(inst->icb()) AllocateLSQEffect( kStore, aSize, aBypassSB, type);
 }
 
-Effect * allocateMEMBAR(SemanticInstruction * inst )  {
-  return new(inst->icb()) AllocateLSQEffect( kMEMBARMarker, kWord, false );
+Effect * allocateMEMBAR(SemanticInstruction * inst , eAccType type)  {
+  return new(inst->icb()) AllocateLSQEffect( kMEMBARMarker, kWord, false, type );
 }
 
-Effect * allocateLoad(SemanticInstruction * inst, eSize aSize, InternalDependance const & aDependance) {
-  return new(inst->icb()) AllocateLSQEffect( kLoad, aSize, false, aDependance );
+Effect * allocateLoad(SemanticInstruction * inst, eSize aSize, InternalDependance const & aDependance, eAccType type) {
+  return new(inst->icb()) AllocateLSQEffect( kLoad, aSize, false, aDependance, type );
 }
 
-Effect * allocateCAS(SemanticInstruction * inst, eSize aSize, InternalDependance const & aDependance) {
-  return new(inst->icb()) AllocateLSQEffect( kCAS, aSize, false, aDependance );
+Effect * allocateCAS(SemanticInstruction * inst, eSize aSize, InternalDependance const & aDependance, eAccType type) {
+  return new(inst->icb()) AllocateLSQEffect( kCAS, aSize, false, aDependance, type );
 }
 
-Effect * allocateRMW(SemanticInstruction * inst, eSize aSize, InternalDependance const & aDependance) {
-  return new(inst->icb()) AllocateLSQEffect( kRMW, aSize, false, aDependance );
+Effect * allocateRMW(SemanticInstruction * inst, eSize aSize, InternalDependance const & aDependance, eAccType type) {
+  return new(inst->icb()) AllocateLSQEffect( kRMW, aSize, false, aDependance, type);
 }
 
 struct EraseLSQEffect : public Effect {

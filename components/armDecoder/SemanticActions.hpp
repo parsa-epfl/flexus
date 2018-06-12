@@ -79,27 +79,15 @@ struct Operation {
   uint64_t theNZCV;
 };
 
-struct MicroOp : public Operation {
-  virtual ~MicroOp() {}
-  virtual Operand operator()( std::vector< Operand > const & operands ) = 0;
-    
-  std::vector< Operation* > theOperations;
-  
-    virtual addMicroOp(int opNummber, Operand const operand)
-    {
-        
-    }
 
-  virtual void setContext( uint64_t aContext ) {}
-  virtual char const * describe() const = 0;
-
-};
 
 Operation & operation( eOpType T );
 Operation & ccCalc( int32_t anOp3Code );
 Operation & fp_op1( int32_t anfop );
 Operation & fp_op2( int32_t anfop );
 Operation & shift( int32_t aShiftCode, bool a64Bit );
+
+
 
 class BaseSemanticAction : public SemanticAction, public UncountedComponent {
 private:
@@ -365,11 +353,8 @@ predicated_action constantAction
   , boost::optional<eOperandCode> aBypass
 );
 
-dependant_action branchCCAction
-( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition, bool floating);
-
-dependant_action branchCondAction
-( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool onZero);
+//dependant_action branchCCAction
+//( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, Condition aCondition, std::vector< std::list<InternalDependance> > & opDeps, bool floating);
 
 dependant_action branchRegAction
 ( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition);

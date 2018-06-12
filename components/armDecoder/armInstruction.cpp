@@ -344,17 +344,7 @@ arminst nop( armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 
 void addReadRD( SemanticInstruction * inst, uint32_t rd) {
 
-  predicated_dependant_action update_value = updateStoreValueAction( inst );
-//  if (rd == 0 ) {
-//    //Handle the r0 source case - there is no need to read a register at all.
-//    inst->setOperand( kResult, static_cast<uint64_t>(0) );
-//    inst->addDispatchEffect( satisfy(inst, update_value.dependance) );
-//    inst->addDispatchAction( update_value );
-//    connectDependance( inst->retirementDependance(), update_value );
-
-//  } else {
-    //Set up the mapping and readRegister actions.  Make the execute action
-    //depend on reading the register value
+    predicated_dependant_action update_value = updateStoreValueAction( inst );
 
     setRD( inst, rd);
 
@@ -365,12 +355,8 @@ void addReadRD( SemanticInstruction * inst, uint32_t rd) {
     connectDependance( update_value.dependance, read_value );
     connectDependance( inst->retirementDependance(), update_value );
 
-//    inst->addPrevalidation( validateRegister( rd, kResult, inst ) );
-//  }
-
-  inst->addAnnulmentEffect( squash( inst, update_value.predicate ) );
-  inst->addReinstatementEffect( satisfy( inst, update_value.predicate ) );
-
+    inst->addAnnulmentEffect( squash( inst, update_value.predicate ) );
+    inst->addReinstatementEffect( satisfy( inst, update_value.predicate ) );
 }
 
 void satisfyAtDispatch( SemanticInstruction * inst, std::list<InternalDependance> & dependances) {
@@ -526,7 +512,7 @@ void ArmFormatOperands( SemanticInstruction * inst, uint32_t reg,
 //    if (operands.is_simm13()) {
 //      addSimm13( inst, operands.simm13(), kOperand2, rs_deps[1] );
 //    } else {
-//      addReadRRegister( inst, 2, operands.rs2(), rs_deps[1] );
+//      addReadXRegister( inst, 2, operands.rs2(), rs_deps[1] );
 //    }
 }
 
@@ -912,42 +898,40 @@ A64_SHIFT_TYPE_ASR = 2,
 A64_SHIFT_TYPE_ROR = 3
 };
 
-SemanticInstruction  * branch_cc( bool annul, bool useXcc, uint32_t cond, VirtualMemoryAddress target, Flexus::SharedTypes::FetchedOpcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo ) {
-  SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
+//SemanticInstruction  * branch_cc( bool annul, bool useXcc, uint32_t cond, VirtualMemoryAddress target, Flexus::SharedTypes::FetchedOpcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo ) {
+//  SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
-  DBG_Assert(cond <= 0xF);
+//  DBG_Assert(cond <= 0xF);
 
-  inst->setClass(clsBranch, codeBranchConditional);
+//  inst->setClass(clsBranch, codeBranchConditional);
 
-  std::list<InternalDependance>  rs_deps;
-  dependant_action br = branchCCAction( inst, target, annul, packCondition(false, useXcc, cond), false) ;
-  connectDependance( inst->retirementDependance(), br );
-  rs_deps.push_back( br.dependance );
+//  std::list<InternalDependance>  rs_deps;
+//  dependant_action br = branchCCAction( inst, target, annul, packCondition(false, useXcc, cond), false) ;
+//  connectDependance( inst->retirementDependance(), br );
+//  rs_deps.push_back( br.dependance );
 
-  addReadCC(inst, 0 , 1, rs_deps) ;
-  //inst->addDispatchAction( br );
+//  addReadCC(inst, 0 , 1, rs_deps) ;
+//  //inst->addDispatchAction( br );
 
-  inst->addRetirementEffect( updateConditional(inst) );
+//  inst->addRetirementEffect( updateConditional(inst) );
 
-  return inst;
-}
+//  return inst;
+//}
 
-void branch_cond( SemanticInstruction * inst, VirtualMemoryAddress target, bool onZero)
-{
-  inst->setClass(clsBranch, codeBranchConditional);
 
-  std::list<InternalDependance>  rs_deps;
-  dependant_action br = branchCondAction( inst, target, onZero) ;
-  connectDependance( inst->retirementDependance(), br );
-  rs_deps.push_back( br.dependance );
+//void branch_cc( SemanticInstruction * inst, VirtualMemoryAddress target, eCondCode aCode, std::vector< std::list<InternalDependance> > & rs_deps)
+//{
+//  inst->setClass(clsBranch, codeBranchConditional);
 
-  addReadCC(inst, 0 , 1, rs_deps) ;
-  inst->addDispatchAction( br );
+//  dependant_action br = branchCCAction( inst, target, false, condition(aCode), rs_deps, false) ;
+//  connectDependance( inst->retirementDependance(), br );
+//  rs_deps.push_back( br.dependance );
 
-  inst->addRetirementEffect( updateConditional(inst) );
-}
+//  inst->addDispatchAction( br );
+//  inst->addRetirementEffect( updateConditional(inst) );
+//}
 
-void branch_always( SemanticInstruction * inst, bool annul, VirtualMemoryAddress target, armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo )
+void branch_always( SemanticInstruction * inst, bool annul, VirtualMemoryAddress target)
 {
     DBG_(Tmp, (<<"DECODER: In branch_always"));
 
@@ -960,7 +944,6 @@ void branch_always( SemanticInstruction * inst, bool annul, VirtualMemoryAddress
     }
     inst->addRetirementEffect( updateUnconditional( inst, target ) );
 }
-
 
 void  MEMBAR( SemanticInstruction * inst, armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo, uint32_t i ) {
 
@@ -1064,7 +1047,7 @@ void strex(SemanticInstruction * inst, int srcReg, int addrReg, int size)
     inst->addRetirementEffect( retireMem(inst) );
     inst->addSquashEffect( eraseLSQ(inst) );
 
-    inst->addDispatchEffect( allocateStore( inst, eSize(1<<size), false ) );
+    inst->addDispatchEffect( allocateStore( inst, eSize(1<<size), false, kAccType_ORDERED) );
     inst->addRetirementConstraint( storeQueueAvailableConstraint(inst) );
     inst->addRetirementConstraint( sideEffectStoreConstraint(inst) );
 
@@ -1073,13 +1056,13 @@ void strex(SemanticInstruction * inst, int srcReg, int addrReg, int size)
     inst->addCommitEffect( commitStore(inst) );
 }
 
-//void stgpr( SemanticInstruction * inst, uint64_t source,
+//void STR( SemanticInstruction * inst, uint64_t source,
 //            /*uint64_t addr, */int size, int memidx,
 //            bool iss_valid,
 //            unsigned int iss_srt,
 //            bool iss_sf, bool iss_ar)
 
-void stgpr(SemanticInstruction * inst, int srcReg, int addrReg, int size)
+void STR(SemanticInstruction * inst, int srcReg, int addrReg, int size, eAccType type)
 {
     DBG_(Tmp,(<< "\033[1;31m DECODER: Store General Reg \033[0m"));
     inst->setClass(clsStore, codeStore);
@@ -1093,7 +1076,7 @@ void stgpr(SemanticInstruction * inst, int srcReg, int addrReg, int size)
     inst->addRetirementEffect( retireMem(inst) );
     inst->addSquashEffect( eraseLSQ(inst) );
 
-    inst->addDispatchEffect( allocateStore( inst, eSize(1<<size), false ) );
+    inst->addDispatchEffect( allocateStore( inst, eSize(1<<size), false, type ));
     inst->addRetirementConstraint( storeQueueAvailableConstraint(inst) );
     inst->addRetirementConstraint( sideEffectStoreConstraint(inst) );
 
@@ -1101,11 +1084,7 @@ void stgpr(SemanticInstruction * inst, int srcReg, int addrReg, int size)
     inst->addPostvalidation( validateMemory( kAddress, kOperand3, kResult, eSize(1<<size), inst ) );
     inst->addCommitEffect( commitStore(inst) );
 }
-//void ldgpr( SemanticInstruction * inst, uint64_t dest, /*uint64_t addr,*/
-//            int size, bool is_signed,
-//            bool extend, int memidx,
-//            bool iss_valid, unsigned int iss_srt,
-//            bool iss_sf, bool iss_ar)
+
 void ldgpr(SemanticInstruction * inst, int destReg, int addrReg, int size, bool sign_extend)
 {
     DBG_(Tmp,(<< "\033[1;31m DECODER: Load General Reg \033[0m"));
@@ -1124,7 +1103,7 @@ void ldgpr(SemanticInstruction * inst, int destReg, int addrReg, int size, bool 
     predicated_dependant_action load;
     load = loadAction( inst, eSize(1<<size), sign_extend, kPD );
 
-    inst->addDispatchEffect( allocateLoad( inst, eSize(1<<size), load.dependance ) );
+    inst->addDispatchEffect( allocateLoad( inst, eSize(1<<size), load.dependance, kAccType_NORMAL ) );
     inst->addCommitEffect( accessMem(inst) );
     inst->addRetirementConstraint( loadMemoryConstraint(inst) );
 
@@ -1148,7 +1127,7 @@ void ldfpr(SemanticInstruction * inst, int addrReg, int destReg, int size)
     predicated_dependant_action load;
     load = loadFloatingAction( inst, eSize(1<<size), kPFD0, kPFD1);
 
-    inst->addDispatchEffect( allocateLoad( inst, eSize(1<<size), load.dependance ) );
+    inst->addDispatchEffect( allocateLoad( inst, eSize(1<<size), load.dependance, kAccType_ORDERED ) );
     inst->addCommitEffect( accessMem(inst) );
     inst->addRetirementConstraint( loadMemoryConstraint(inst) );
 
@@ -1173,7 +1152,7 @@ void stfpr(SemanticInstruction * inst, int addrReg, int dest, int size)
     inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
     inst->addRetirementEffect( retireMem(inst) );
 
-    inst->addDispatchEffect( allocateStore( inst, eSize(1<<size), true ) );
+    inst->addDispatchEffect( allocateStore( inst, eSize(1<<size), true, kAccType_ORDERED ) );
     inst->addCommitEffect( commitStore(inst) );
     inst->addRetirementConstraint( storeQueueAvailableConstraint(inst) );
     inst->addRetirementConstraint( sideEffectStoreConstraint(inst) );
@@ -1799,6 +1778,8 @@ arminst disas_uncond_b_reg( armcode const & aFetchedOpcode, uint32_t  aCPU, int6
                                                         aSequenceNo) );
 
     unsigned int opc, op2, op3, rn, op4;
+    std::vector<std::list<InternalDependance> > rs_deps(1);
+
 
     opc = extract32(aFetchedOpcode.theOpcode, 21, 4);
     op2 = extract32(aFetchedOpcode.theOpcode, 16, 5);
@@ -1816,13 +1797,21 @@ arminst disas_uncond_b_reg( armcode const & aFetchedOpcode, uint32_t  aCPU, int6
     case 2: /* RET */
         DBG_(Tmp,(<< "\033[1;31m DECODER: Unconditional branch (register) : BR?BLR?RET \033[0m"));
         DBG_(Tmp,(<< "\033[1;31m DECODER: Will set the PC using the value in X30 \033[0m"));
-        // set pc from reg 30
 
-        if(opc == 1){
-            predicated_action exec = readPCAction( inst );
-            inst->addDispatchAction( exec );
-            addDestination( inst, 30 /*return address*/, exec);
+        addReadXRegister(inst, 1, rn, rs_deps[0]);
+        simple_action target = calcAddressAction( inst, rs_deps);
+        dependant_action br = branchToCalcAddressAction( inst );
+        connectDependance( br.dependance, target );
+        connectDependance( inst->retirementDependance(), br );
+        inst->addRetirementEffect( updateUnconditional( inst, kAddress ) );
+
+        if (opc == 1) { // BLR
+
+            inst->setOperand(kOperand2, 4);
+            predicated_action act = addExecute(inst, operation(kADD_), rs_deps);
+            addDestination(inst, 30, act);
         }
+
         break;
     case 4: /* ERET */
         DBG_(Tmp,(<< "\033[1;31m DECODER: Unconditional branch (register) : ERET \033[0m"));
@@ -1838,6 +1827,12 @@ arminst disas_uncond_b_reg( armcode const & aFetchedOpcode, uint32_t  aCPU, int6
     case 5: /* DRPS */
         DBG_(Tmp,(<< "\033[1;31m DECODER: Unconditional branch (register) : DRPS \033[0m"));
 
+//        System
+//        DRPS
+//        if !Halted() || PSTATE.EL == EL0 then UnallocatedEncoding();
+//        Operation
+//        DRPSInstruction();
+
         if (rn != 0x1f) {
             return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
         } else {
@@ -1850,9 +1845,6 @@ arminst disas_uncond_b_reg( armcode const & aFetchedOpcode, uint32_t  aCPU, int6
     }
 
     return inst;
-
-
-//    s->base.is_jmp = DISAS_JUMP;
 }
 
 /* Exception generation
@@ -1864,6 +1856,8 @@ arminst disas_uncond_b_reg( armcode const & aFetchedOpcode, uint32_t  aCPU, int6
  */
 arminst disas_exc(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    return blackBox( aFetchedOpcode, aCPU, aSequenceNo);
+
     int opc = extract32(aFetchedOpcode.theOpcode, 21, 3);
     int op2_ll = extract32(aFetchedOpcode.theOpcode, 0, 5);
     int imm16 = extract32(aFetchedOpcode.theOpcode, 5, 16);
@@ -2032,29 +2026,32 @@ arminst disas_system(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSe
  */
 arminst disas_cond_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
+                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
     unsigned int cond;
     uint64_t addr;
 
+    std::vector<std::list<InternalDependance> > rs_deps(1);
+
     if ((aFetchedOpcode.theOpcode & (1 << 4)) || (aFetchedOpcode.theOpcode & (1 << 24))) {
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-        return;
     }
-    addr = aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 5, 19) * 4 - 4;
+    addr = aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 5, 19) * 4;
     cond = extract32(aFetchedOpcode.theOpcode, 0, 4);
 
-//    if (cond < 0x0e) {
-//        /* genuinely conditional branches */
-//        TCGLabel *label_match = gen_new_label();
-//        arm_gen_test_cc(cond, label_match);
-//        gen_goto_tb(s, 0, s->pc);
-//        gen_set_label(label_match);
-//        gen_goto_tb(s, 1, addr);
-//    } else {
-//        /* 0xe and 0xf are both "always" conditions */
-//        gen_goto_tb(s, 0, addr);
-//    }
+    VirtualMemoryAddress target(addr);
+    inst->setOperand(kOperand1, cond);
+
+
+    if (cond < 0x0e) {
+        /* genuinely conditional branches */
+//        branch_cc(inst, target, kBCOND_, rs_deps);
+
+    } else {
+        /* 0xe and 0xf are both "always" conditions */
+        branch_always(inst, false, target);
+    }
 }
 
 
@@ -2066,25 +2063,29 @@ arminst disas_cond_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t
  */
 arminst disas_test_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
+                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
+
     unsigned int bit_pos, op, rt;
     uint64_t addr;
-//    TCGLabel *label_match;
-//    TCGv_i64 tcg_cmp;
+    std::vector<std::list<InternalDependance> > rs_deps(2);
+
 
     bit_pos = (extract32(aFetchedOpcode.theOpcode, 31, 1) << 5) | extract32(aFetchedOpcode.theOpcode, 19, 5);
     op = extract32(aFetchedOpcode.theOpcode, 24, 1); /* 0: TBZ; 1: TBNZ */
     addr = aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 5, 14) * 4 - 4;
     rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
+    VirtualMemoryAddress target(addr);
 
-//    tcg_cmp = tcg_temp_new_i64();
-//    tcg_gen_andi_i64(tcg_cmp, cpu_reg(s, rt), (1ULL << bit_pos));
-//    label_match = gen_new_label();
-//    tcg_gen_brcondi_i64(op ? TCG_COND_NE : TCG_COND_EQ,
-//                        tcg_cmp, 0, label_match);
-//    tcg_temp_free_i64(tcg_cmp);
-//    gen_goto_tb(s, 0, s->pc);
-//    gen_set_label(label_match);
-//    gen_goto_tb(s, 1, addr);
+    addReadXRegister(inst, 1, rt, rs_deps[0]);
+    inst->setOperand(kOperand2, (1ULL<<bit_pos));
+
+    if (op == 0) {  // TBZ
+//        branch_cc(inst,target, kTBZ_, rs_deps);
+    } else {
+//        branch_cc(inst,target, kTBNZ_, rs_deps);
+    }
+
 }
 
 //static brcondi_i64(bool cond, TCGv_i64 arg1, int64_t arg2, TCGLabel *l)
@@ -2120,13 +2121,13 @@ arminst disas_comp_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t
 
     addReadXRegister(inst, 1, rt, rs_deps[0], sf);
 
-    if (op) // CBNZ
+    if (op == 0) // CBZ
     {
-        branch_cond(inst, target, false);
+//        branch_cc(inst, target, kCBZ_);
     }
-    else if (op == 0) // CBZ
+    else
     {
-        branch_cond(inst, target, true);
+//        branch_cc(inst, target, kCBNZ_);
     }
 
 
@@ -2177,8 +2178,6 @@ arminst disas_uncond_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64
 /* Branches, exception generating and system instructions */
 arminst disas_b_exc_sys(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
-
     DBG_(Tmp,(<< "\033[1;31m DECODER: Branches, exception generating and system instructions \033[0m"));
     switch (extract32(aFetchedOpcode.theOpcode, 25, 7)) {
     case 0x0a: case 0x0b:
@@ -2214,6 +2213,14 @@ arminst disas_b_exc_sys(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
 
     assert(false);
 }
+
+/* Load/store exclusive
+ * 31 30             24 23 22 21 20    16 15       10     5    0                    0
+ * +----+-------------+---+--+--+--------+--+--------+-----+----+
+ * |size| 0 0 1 0 0 0 | o2|L |o1|  Rs    |o0|  Rt2   |  Rn | Rt |
+ * +----+-------------+---+--+--+--------+--+--------+-----+----+
+ */
+
 arminst disas_ldst_excl(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
@@ -2222,13 +2229,12 @@ arminst disas_ldst_excl(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
     int rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
     int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
     int rt2 = extract32(aFetchedOpcode.theOpcode, 10, 5);
-    int is_lasr = extract32(aFetchedOpcode.theOpcode, 15, 1);
+    int is_lasr = extract32(aFetchedOpcode.theOpcode, 15, 1); // o0
     int rs = extract32(aFetchedOpcode.theOpcode, 16, 5);
-    int is_pair = extract32(aFetchedOpcode.theOpcode, 21, 1);
-    int is_store = !extract32(aFetchedOpcode.theOpcode, 22, 1);
-    int is_excl = !extract32(aFetchedOpcode.theOpcode, 23, 1);
+    int is_pair = extract32(aFetchedOpcode.theOpcode, 21, 1);  // o1
+    int is_store = !extract32(aFetchedOpcode.theOpcode, 22, 1); // L
+    int is_excl = !extract32(aFetchedOpcode.theOpcode, 23, 1); // o2
     int size = extract32(aFetchedOpcode.theOpcode, 30, 2);
-    //TCGv_i64 tcg_addr;
 
     if ((!is_excl && !is_pair && !is_lasr) ||
         (!is_excl && is_pair) ||
@@ -2237,56 +2243,20 @@ arminst disas_ldst_excl(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
 
     }
 
-//    if (rn == 31) {
-//        gen_check_sp_alignment(s);
+//    if (is_excl) {  // o2
+//        if (!is_store) {  // ! L
+//            if (!is_pair) {  // o1
+//                 STR(inst, rt, rn, (1<<size), is_lasr ? kAccType_ORDERED : kAccType_LIMITEDORDERED); // STLRB , STLLRB
+//            } else {
+//       c          CAS(inst, rt, rn, rs, (1<<size), is_lasr ? kAccType_ORDEREDRW : kAccType_ATOMICRW, kAccType_ATOMICRW); // STLRB , STLLRB
+//              }
+//        } else {
+//            bool iss_sf = disas_ldst_compute_iss_sf(size, false, 0);
+//            /* Generate ISS for non-exclusive accesses including LASR.  */
+//        } else {
+//            }
+//        }
 //    }
-    //tcg_addr = read_cpu_reg_sp(s, rn, 1);
-
-    /* Note that since TCG is single threaded load-acquire/store-release
-     * semantics require no extra if (is_lasr) { ... } handling.
-     */
-
-    if (is_excl) {
-        if (!is_store) {
-//            s->is_ldex = true;
-//            //gen_load_exclusive(s, rt, rt2, tcg_addr, size, is_pair);
-                ldrex(inst, rt, rt2, rn);
-
-            if (is_lasr) {
-//                tcg_gen_mb(TCG_MO_ALL | TCG_BAR_LDAQ);
-                MEMBAR(inst,aFetchedOpcode,aCPU,aSequenceNo, 0);
-            }
-        } else {
-            if (is_lasr) {
-//                tcg_gen_mb(TCG_MO_ALL | TCG_BAR_STRL);
-                MEMBAR(inst,aFetchedOpcode,aCPU,aSequenceNo, 0);
-            }
-//            gen_store_exclusive(s, rs, rt, rt2, tcg_addr, size, is_pair);
-            strex(inst,rt,rn,size);
-        }
-    } else {
-        //TCGv_i64 tcg_rt = cpu_reg(s, rt);
-        bool iss_sf = disas_ldst_compute_iss_sf(size, false, 0);
-
-        /* Generate ISS for non-exclusive accesses including LASR.  */
-        if (is_store) {
-            if (is_lasr) {
-//                tcg_gen_mb(TCG_MO_ALL | TCG_BAR_STRL);
-                MEMBAR(inst,aFetchedOpcode,aCPU,aSequenceNo, 0);
-            }
-//            do_gpr_st(s, tcg_rt, tcg_addr, size,
-//                      true, rt, iss_sf, is_lasr);
-            stgpr(inst,rt,rn,size);
-        } else {
-//            do_gpr_ld(s, tcg_rt, tcg_addr, size, false, false,
-//                      true, rt, iss_sf, is_lasr);
-            ldgpr(inst, rt,rn,size, false);
-            if (is_lasr) {
-//                tcg_gen_mb(TCG_MO_ALL | TCG_BAR_LDAQ);
-                MEMBAR(inst,aFetchedOpcode,aCPU,aSequenceNo, 0);
-            }
-        }
-    }
 
     return inst;
 }
@@ -2352,7 +2322,7 @@ arminst disas_ld_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSe
         inst->addRetirementEffect( retireMem(inst) );
 
 
-        inst->addDispatchEffect( allocateLoad( inst, (operands.rd() == 0 ? kWord : kDoubleWord), load.dependance ) );
+        inst->addDispatchEffect( allocateLoad( inst, (operands.rd() == 0 ? kWord : kDoubleWord), load.dependance, kAccType_ORDERED ) );
         inst->addCommitEffect( accessMem(inst) );
         inst->addRetirementConstraint( loadMemoryConstraint(inst) );
 
@@ -2376,7 +2346,7 @@ arminst disas_ld_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSe
           load = loadAction( inst, eSize(1<<size), is_signed, kPD );
         }
     }
-    inst->addDispatchEffect( allocateLoad( inst, eSize(1<<size), load.dependance ) );
+    inst->addDispatchEffect( allocateLoad( inst, eSize(1<<size), load.dependance, kAccType_ORDERED ) );
     inst->addCommitEffect( accessMem(inst) );
     inst->addRetirementConstraint( loadMemoryConstraint(inst) );
     addDestination( inst, operands.rd(), load);
@@ -2542,7 +2512,7 @@ arminst disas_ldst_pair(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
 //            do_gpr_st(s, tcg_rt2, tcg_addr, size,
 //                      false, 0, false, false);
 
-//            stgpr(inst, rt, rn, size);
+//            STR(inst, rt, rn, size);
             DBG_(Tmp,(<< "\033[1;31m DECODER: Store General Reg \033[0m"));
             inst->setClass(clsStore, codeStore);
 
@@ -2550,7 +2520,7 @@ arminst disas_ldst_pair(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
             inst->addRetirementEffect( retireMem(inst) );
             inst->addSquashEffect( eraseLSQ(inst) );
 
-            inst->addDispatchEffect( allocateStore( inst, eSize(1<<size), false ) );
+            inst->addDispatchEffect( allocateStore( inst, eSize(1<<size), false, kAccType_ORDERED) );
             inst->addRetirementConstraint( storeQueueAvailableConstraint(inst) );
             inst->addRetirementConstraint( sideEffectStoreConstraint(inst) );
 
@@ -2563,7 +2533,7 @@ arminst disas_ldst_pair(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
 
 //            satisfyAtDispatch(inst, rs_deps[0]);
 
-//            stgpr(inst, rt2, rn, size);
+//            STR(inst, rt2, rn, size);
         }
     }
 
@@ -2706,7 +2676,7 @@ arminst disas_ldst_reg_imm9(armcode const & aFetchedOpcode, uint32_t  aCPU, int6
         if (is_store) {
 //            do_gpr_st_memidx(s, tcg_rt, tcg_addr, size, memidx,
 //                             iss_valid, rt, iss_sf, false);
-            stgpr(inst, rt, rn, size);
+//            STR(inst, rt, rn, size);
         } else {
 //            do_gpr_ld_memidx(s, tcg_rt, tcg_addr, size,
 //                             is_signed, is_extended, memidx,
@@ -2878,7 +2848,7 @@ arminst disas_ldst_reg_roffset(armcode const & aFetchedOpcode,uint32_t  aCPU, in
         if (is_store) {
 //            do_gpr_st(s, tcg_rt, tcg_addr, size,
 //                      true, rt, iss_sf, false);
-            stgpr(inst, rn, rt, size);
+//            STR(inst, rn, rt, size);
         } else {
 //            do_gpr_ld(s, tcg_rt, tcg_addr, size,
 //                      is_signed, is_extended,
@@ -2988,7 +2958,7 @@ arminst disas_ldst_reg_unsigned_imm(armcode const & aFetchedOpcode, uint32_t  aC
         if (is_store) {
             DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register-ST nonVECTOR #2\033[0m"));
 
-//            stgpr(inst, rt, size, memidx,
+//            STR(inst, rt, size, memidx,
 //                   true, rt, iss_sf, false);
             inst->setClass(clsStore, codeStoreFP);
             addReadXRegister(inst,2,rt, rs_deps[1]);
@@ -2997,7 +2967,7 @@ arminst disas_ldst_reg_unsigned_imm(armcode const & aFetchedOpcode, uint32_t  aC
 //            inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
             inst->addRetirementEffect( retireMem(inst) );
 //            inst->addPrevalidation( validateFPSR(inst) );
-            inst->addDispatchEffect( allocateStore( inst, eSize(1<<size), false ) );
+            inst->addDispatchEffect( allocateStore( inst, eSize(1<<size), false , kAccType_ORDERED) );
             inst->addCommitEffect( commitStore(inst) );
 //            inst->addRetirementConstraint( storeQueueAvailableConstraint(inst) );
 //            inst->addRetirementConstraint( sideEffectStoreConstraint(inst) );
@@ -3016,7 +2986,7 @@ arminst disas_ldst_reg_unsigned_imm(armcode const & aFetchedOpcode, uint32_t  aC
             inst->addRetirementEffect( retireMem(inst) );
             predicated_dependant_action load;
             load = loadAction( inst, eSize(1 << size), is_extended, kPD );
-            inst->addDispatchEffect( allocateLoad( inst, eSize(1<<size), load.dependance ) );
+            inst->addDispatchEffect( allocateLoad( inst, eSize(1<<size), load.dependance, kAccType_ORDERED ) );
             inst->addCommitEffect( accessMem(inst) );
             inst->addRetirementConstraint( loadMemoryConstraint(inst) );
             addDestination( inst, rt, load);

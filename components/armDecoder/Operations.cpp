@@ -552,34 +552,34 @@ struct SDivX : public Operation  {
   }
 } SDivX_;
 
-struct MovCC : public Operation {
-  virtual Operand operator()( std::vector<Operand> const & operands  ) {
-    DBG_Assert( operands.size() == 4);
-    uint64_t false_val = boost::get<uint64_t>(operands[0]);
-    uint64_t true_val = boost::get<uint64_t>(operands[1]);
-    std::bitset<8> cc = boost::get<std::bitset<8> >(operands[2]);
-    uint64_t packed_condition = boost::get<uint64_t >(operands[3]);
+//struct MovCC : public Operation {
+//  virtual Operand operator()( std::vector<Operand> const & operands  ) {
+//    DBG_Assert( operands.size() == 4);
+//    uint64_t false_val = boost::get<uint64_t>(operands[0]);
+//    uint64_t true_val = boost::get<uint64_t>(operands[1]);
+//    std::bitset<8> cc = boost::get<std::bitset<8> >(operands[2]);
+//    uint64_t packed_condition = boost::get<uint64_t >(operands[3]);
 
-    bool result;
-    if (isFloating(packed_condition)) {
-      FCondition cond = fcondition(packed_condition);
-      result = cond(cc);
-    } else {
-      Condition cond = condition(packed_condition);
-      result = cond(cc);
-    }
-    if ( result ) {
-      DBG_( Tmp, ( << "MovCC returning true value: " << true_val ) );
-      return true_val;
-    } else {
-      DBG_( Tmp, ( << "MovCC returning false value: " << false_val ) );
-      return false_val;
-    }
-  }
-  virtual char const * describe() const {
-    return "MovCC";
-  }
-} MovCC_;
+//    bool result;
+//    if (isFloating(packed_condition)) {
+//      FCondition cond = fcondition(packed_condition);
+//      result = cond(cc);
+//    } else {
+//      Condition cond = condition(packed_condition);
+//      result = cond(cc);
+//    }
+//    if ( result ) {
+//      DBG_( Tmp, ( << "MovCC returning true value: " << true_val ) );
+//      return true_val;
+//    } else {
+//      DBG_( Tmp, ( << "MovCC returning false value: " << false_val ) );
+//      return false_val;
+//    }
+//  }
+//  virtual char const * describe() const {
+//    return "MovCC";
+//  }
+//} MovCC_;
 
 struct MOV_ : public Operation {
   virtual Operand operator()( std::vector<Operand> const & operands  ) {
@@ -614,57 +614,57 @@ struct MOVK_ : public Operation {
   }
 } MOVK_;
 
-struct TCC : public Operation {
-  virtual Operand operator()( std::vector<Operand> const & operands  ) {
-    DBG_Assert( operands.size() == 4);
-    //uint64_t false_val = boost::get<uint64_t>(operands[0]);
-    uint64_t true_val = boost::get<uint64_t>(operands[1]);
-    std::bitset<8> cc = boost::get<std::bitset<8> >(operands[2]);
-    uint64_t packed_condition = boost::get<uint64_t >(operands[3]);
+//struct TCC : public Operation {
+//  virtual Operand operator()( std::vector<Operand> const & operands  ) {
+//    DBG_Assert( operands.size() == 4);
+//    //uint64_t false_val = boost::get<uint64_t>(operands[0]);
+//    uint64_t true_val = boost::get<uint64_t>(operands[1]);
+//    std::bitset<8> cc = boost::get<std::bitset<8> >(operands[2]);
+//    uint64_t packed_condition = boost::get<uint64_t >(operands[3]);
 
-    bool result;
-    if (isFloating(packed_condition)) {
-      FCondition cond = fcondition(packed_condition);
-      result = cond(cc);
-    } else {
-      Condition cond = condition(packed_condition);
-      result = cond(cc);
-    }
-    if ( result ) {
-      DBG_( Tmp, ( << "TCC tests true, raise trap: " << true_val ) );
-      return true_val;
-    } else {
-      DBG_( Tmp, ( << "TCC tests false, no trap") );
-      return 0;
-    }
-  }
-  virtual char const * describe() const {
-    return "TCC";
-  }
-} TCC_;
+//    bool result;
+//    if (isFloating(packed_condition)) {
+//      FCondition cond = fcondition(packed_condition);
+//      result = cond(cc);
+//    } else {
+//      Condition cond = condition(packed_condition);
+//      result = cond(cc);
+//    }
+//    if ( result ) {
+//      DBG_( Tmp, ( << "TCC tests true, raise trap: " << true_val ) );
+//      return true_val;
+//    } else {
+//      DBG_( Tmp, ( << "TCC tests false, no trap") );
+//      return 0;
+//    }
+//  }
+//  virtual char const * describe() const {
+//    return "TCC";
+//  }
+//} TCC_;
 
-struct ICC2ULONG : public Operation {
-  virtual Operand operator()( std::vector<Operand> const & operands  ) {
-    DBG_Assert( operands.size() == 1);
-    std::bitset<8> ccr = boost::get<std::bitset<8> >(operands[0]);
-    return ccr.to_ulong();
-  }
-  virtual char const * describe() const {
-    return "ICC2ULONG";
-  }
-} ICC2ULONG_;
+//struct ICC2ULONG : public Operation {
+//  virtual Operand operator()( std::vector<Operand> const & operands  ) {
+//    DBG_Assert( operands.size() == 1);
+//    std::bitset<8> ccr = boost::get<std::bitset<8> >(operands[0]);
+//    return ccr.to_ulong();
+//  }
+//  virtual char const * describe() const {
+//    return "ICC2ULONG";
+//  }
+//} ICC2ULONG_;
 
-struct ULONG2ICC : public Operation {
-  virtual Operand operator()( std::vector<Operand> const & operands  ) {
-    DBG_Assert( operands.size() == 1);
-    uint64_t val = boost::get<uint64_t >(operands[0]);
-    std::bitset<8> ccr(val);
-    return ccr;
-  }
-  virtual char const * describe() const {
-    return "ULONG2ICC";
-  }
-} ULONG2ICC_;
+//struct ULONG2ICC : public Operation {
+//  virtual Operand operator()( std::vector<Operand> const & operands  ) {
+//    DBG_Assert( operands.size() == 1);
+//    uint64_t val = boost::get<uint64_t >(operands[0]);
+//    std::bitset<8> ccr(val);
+//    return ccr;
+//  }
+//  virtual char const * describe() const {
+//    return "ULONG2ICC";
+//  }
+//} ULONG2ICC_;
 
 
 struct LastOp : public Operation {
@@ -727,8 +727,8 @@ Operation & operation( eOpType T ) {
       return SDiv_;
     case kSDivX_:
       return SDivX_;
-    case kMovCC_:
-      return MovCC_;
+//    case kMovCC_:
+//      return MovCC_;
     case kMOV_:
       return MOV_;
     case kMOVN_:
@@ -741,16 +741,16 @@ Operation & operation( eOpType T ) {
       return Zext_;
     case kNot_:
       return Not_;
-    case kTCC_:
-      return TCC_;
+//    case kTCC_:
+//      return TCC_;
     case kAlign_:
       return Align_;
     case kAlignLittle_:
       return AlignLittle_;
-    case kULONG2ICC_:
-      return ULONG2ICC_;
-    case kICC2ULONG_:
-      return ICC2ULONG_;
+//    case kULONG2ICC_:
+//      return ULONG2ICC_;
+//    case kICC2ULONG_:
+//      return ICC2ULONG_;
     case kAddTrunc_:
       return AddTrunc_;
     case kROR_:

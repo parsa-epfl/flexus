@@ -1,14 +1,14 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
 // Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
 //
 // For more information, see the SimFlex project website at:
@@ -39,64 +39,36 @@
 #ifndef FLEXUS_ARMDECODER_CONDITIONS_HPP_INCLUDED
 #define FLEXUS_ARMDECODER_CONDITIONS_HPP_INCLUDED
 
-#include <iostream>
+#include "SemanticInstruction.hpp"
+#include "OperandMap.hpp"
 
-#include <bitset>
-
-#include <core/boost_extensions/intrusive_ptr.hpp>
-
-#include <core/types.hpp>
 
 namespace narmDecoder {
+using namespace nuArchARM;
+
+enum eCondCode {
+    kCBZ_,
+    kCBNZ_,
+    kTBZ_,
+    kTBNZ_,
+    kBCOND_,
+    kLastCond_,
+};
+
+
 
 struct Condition {
-  bool isNegated;
-  bool isXcc;
-  std::function<bool(std::bitset<8> const & aCC, int)> theTest;
-
-  Condition(bool negate, bool xcc, std::function<bool(std::bitset<8> const & aCC, int)> test)
-    : isNegated(negate)
-    , isXcc(xcc)
-    , theTest(test)
-  {}
-  bool operator()( std::bitset<8> const & aCC) {
-    bool cond = theTest( aCC, ( isXcc ? 4 :  0) );
-    return cond ^ isNegated;
-  }
+  virtual ~Condition() {}
+  virtual bool operator()( std::vector< Operand > const & operands ) = 0;
+  virtual char const * describe() const = 0;
+    void setInstruction(SemanticInstruction * anInstruction){
+        theInstruction = anInstruction;
+    }
+  SemanticInstruction * theInstruction;
 };
-Condition condition(bool aNegate, bool Xcc, uint32_t aCondition);
-Condition condition(uint32_t aPackedCondition);
-uint32_t packCondition(bool aFloating, bool Xcc, uint32_t aCondition);
-bool isFloating(uint32_t aPackedCondition);
 
-struct FCondition {
-  std::function<bool(std::bitset<8> const & aCC)> theTest;
+Condition & condition (eCondCode aCond);
 
-  FCondition(std::function<bool(std::bitset<8> const & aCC)> test)
-    : theTest(test)
-  {}
-  bool operator()( std::bitset<8> const & aCC) {
-    return theTest( aCC );
-  }
-};
-FCondition fcondition(uint32_t aCondition);
-
-struct RCondition {
-  bool isNegated;
-  std::function<bool(int64_t)> theTest;
-
-  RCondition(bool negate, std::function<bool(int64_t aCC)> test)
-    : isNegated(negate)
-    , theTest(test)
-  {}
-  bool operator()( int64_t aVal) {
-    bool cond = theTest( aVal );
-    return cond ^ isNegated;
-  }
-};
-RCondition rcondition(uint32_t aCondition);
-
-bool rconditionValid ( uint32_t aCondition );
 
 } //armDecoder
 

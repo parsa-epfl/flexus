@@ -1,14 +1,14 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
 // Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
 //
 // For more information, see the SimFlex project website at:
@@ -35,252 +35,118 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
-#include <core/boost_extensions/intrusive_ptr.hpp>
-#include <boost/throw_exception.hpp>
-
-#include <boost/function.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
-namespace ll = boost::lambda;
-
-#include <core/target.hpp>
-#include <core/debug/debug.hpp>
-#include <core/types.hpp>
-
-#include <components/uArchARM/uArchInterfaces.hpp>
-
 #include "Conditions.hpp"
-
-#define DBG_DeclareCategories armDecoder
-#define DBG_SetDefaultOps AddCat(armDecoder)
-#include DBG_Control()
+#include <components/uArchARM/uArchInterfaces.hpp>
+#include "components/uArchARM/CoreModel/pstate.hpp"
 
 namespace narmDecoder {
-
 using namespace nuArchARM;
 
-static const int32_t Z = nuArchARM::Z;
-static const int32_t V = nuArchARM::V;
-static const int32_t C = nuArchARM::C;
-static const int32_t N = nuArchARM::N;
-
-static const uint32_t E = nuArchARM::fccE;
-static const uint32_t L = nuArchARM::fccL;
-static const uint32_t G = nuArchARM::fccG;
-static const uint32_t U = nuArchARM::fccU;
-
-uint32_t packCondition(bool aFloating, bool Xcc, uint32_t aCondition) {
-  uint32_t ret_val = aCondition;
-  if (Xcc) {
-    ret_val |= 0x10;
-  }
-  if (aFloating) {
-    ret_val |= 0x20;
-  }
-  return ret_val;
-}
-
-bool isFloating( uint32_t aPackedCondition) {
-  return aPackedCondition & 0x20;
-}
-
-Condition condition(uint32_t aCondition) {
-  return condition( aCondition & 0x8, aCondition & 0x10, (aCondition & 0x7) );
-}
-
-Condition condition(bool aNegate, bool Xcc, uint32_t aCondition) {
-  DBG_Assert (aCondition <= 7);
-  switch (aCondition) {
-    case 0: //Always
-      return Condition
-             ( aNegate
-               , Xcc
-               , ll::_2 == ll::_2 //Binary functor which always returns true
-             );
-    case 1: //Equal:  Z
-      return Condition
-             ( aNegate
-               , Xcc
-               , ll::bind( &std::bitset<8>::test, ll::_1, Z + ll::_2 )
-             );
-    case 2: //LessOrEqual: Z or ( N xor V )
-      return Condition
-             ( aNegate
-               , Xcc
-               , ll::bind( &std::bitset<8>::test, ll::_1, Z + ll::_2 ) | ( ll::bind( &std::bitset<8>::test, ll::_1, N + ll::_2 ) ^ ll::bind( &std::bitset<8>::test, ll::_1, V + ll::_2 ) )
-             );
-    case 3: //Less: ( N xor V )
-      return Condition
-             ( aNegate
-               , Xcc
-               , ll::bind( &std::bitset<8>::test, ll::_1, N + ll::_2 ) ^ ll::bind( &std::bitset<8>::test, ll::_1, V + ll::_2 )
-             );
-    case 4: //LessOrEqualUnsigned: ( C or Z )
-      return Condition
-             ( aNegate
-               , Xcc
-               , ll::bind( &std::bitset<8>::test, ll::_1, C + ll::_2 ) | ll::bind( &std::bitset<8>::test, ll::_1, Z + ll::_2 )
-             );
-    case 5: //CarrySet: ( C )
-      return Condition
-             ( aNegate
-               , Xcc
-               , ll::bind( &std::bitset<8>::test, ll::_1, C + ll::_2 )
-             );
-    case 6: //Negative: ( N )
-      return Condition
-             ( aNegate
-               , Xcc
-               , ll::bind( &std::bitset<8>::test, ll::_1, N + ll::_2 )
-             );
-    case 7: //OverflowSet: ( V )
-      return Condition
-             ( aNegate
-               , Xcc
-               , ll::bind( &std::bitset<8>::test, ll::_1, V + ll::_2 )
-             );
+bool ConditionHolds(const pstate & pstate, int condcode )
+{
+    bool result;
+    switch (condcode) {
+    case 0: // EQ or NE
+        result =  pstate.Z();
+    case 1: // CS or CC
+        result =  pstate.C();
+    case 2: // MI or PL
+        result =  pstate.N();
+    case 3: // VS or VC
+        result =  pstate.V();
+    case 4: // HI or LS
+        result =  (pstate.C() && pstate.Z() == 0);
+    case 5: // GE or LT
+        result =  (pstate.N() == pstate.V());
+    case 6: // GT or LE
+        result =  ((pstate.N() == pstate.V()) && (pstate.Z() == 0));
+    case 7: // AL
+        result =  true;
     default:
-      DBG_Assert(false);
-      //Suppress warning:
-      return Condition
-             ( aNegate
-               , Xcc
-               , ll::bind( &std::bitset<8>::test, ll::_1, Z + ll::_2 )
-             );
-  }
+        DBG_Assert(false);
+        break;
+    }
+
+    // Condition flag values in the set '111x' indicate always true
+    // Otherwise, invert condition if necessary.
+
+    if ((condcode & 1 == 0) && (condcode != 15 /*1111*/))
+        return !result;
+    else
+        return result;
 }
 
-FCondition fcondition(uint32_t aCondition) {
-  switch (aCondition & 0xF) {
-    case 0: //Never
-      return FCondition
-             ( ll::_1 != ll::_1 //unary functor which returns false
-             );
-    case 1: //NotEqual : L or G or U
-      return FCondition
-             (  ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == L )
-                || ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == G )
-                || ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == U )
-             );
-    case 2: //LessOrGreator: L or G
-      return FCondition
-             (  ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == L )
-                || ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == G )
-             );
-    case 3: //UnorderedOrLess: ( L or U )
-      return FCondition
-             (  ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == L )
-                || ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == U )
-             );
-    case 4: //Less
-      return FCondition
-             (  ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == L )
-             );
-    case 5: //UnorderedOrGreater ( G or U )
-      return FCondition
-             (  ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == G )
-                || ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == U )
-             );
-    case 6: //Greater ( G )
-      return FCondition
-             (  ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == G )
-             );
-    case 7: //Unordered ( U )
-      return FCondition
-             (  ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == U )
-             );
-    case 8: //Always
-      return FCondition
-             ( ll::_1 == ll::_1 //unary functor which returns true
-             );
-    case 9: //Equal: E
-      return FCondition
-             ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == E
-             );
-    case 10: //UnorderedOrEqual ( U or E )
-      return FCondition
-             (  ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == U )
-                || ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == E )
-             );
-    case 11: //GreaterOrEqual ( G or E )
-      return FCondition
-             (  ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == G )
-                || ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == E )
-             );
-    case 12: //UnorderedGreaterOrEqual ( U or G or E )
-      return FCondition
-             (  ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == G )
-                || ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == E )
-                || ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == U )
-             );
-    case 13: //LessOrEqual ( L or E )
-      return FCondition
-             (  ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == L )
-                || ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == E )
-             );
-    case 14: //UnorderedLessOrEqual ( U or L or E )
-      return FCondition
-             (  ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == L )
-                || ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == E )
-                || ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == U )
-             );
-    case 15: //Ordered( L or G or E )
-      return FCondition
-             (  ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == G )
-                || ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == E )
-                || ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == L )
-             );
 
-    default:
-      DBG_Assert(false);
-      //Suppress warning:
-      return FCondition
-             (  ( ll::bind( &std::bitset<8>::to_ulong, ll::_1 ) == G )
-             );
+struct CBZ : public Condition {
+  virtual bool operator()( std::vector<Operand> const & operands  ) {
+    DBG_Assert( operands.size() == 1);
+    return boost::get<uint64_t>(operands[0]) == 0;
   }
+  virtual char const * describe() const {
+    return "Compare and Branch on Zero";
+  }
+} CBZ_;
+
+struct CBNZ : public Condition {
+  virtual bool operator()( std::vector<Operand> const & operands  ) {
+    DBG_Assert( operands.size() == 1);
+    return boost::get<uint64_t>(operands[0]) != 0;
+  }
+  virtual char const * describe() const {
+    return "Compare and Branch on Non Zero";
+  }
+} CBNZ_;
+
+struct TBZ : public Condition {
+  virtual bool operator()( std::vector<Operand> const & operands  ) {
+    DBG_Assert( operands.size() == 2);
+    return (boost::get<uint64_t>(operands[0]) & boost::get<uint64_t>(operands[0])) == 0;
+  }
+  virtual char const * describe() const {
+    return "Test and Branch on Zero";
+  }
+} TBZ_;
+
+struct TBNZ : public Condition {
+  virtual bool operator()( std::vector<Operand> const & operands  ) {
+    DBG_Assert( operands.size() == 2);
+    return (boost::get<uint64_t>(operands[0]) & boost::get<uint64_t>(operands[0])) != 0;
+  }
+  virtual char const * describe() const {
+    return "Test and Branch on Non Zero";
+  }
+} TBNZ_;
+
+
+struct BCOND : public Condition {
+
+  virtual bool operator()( std::vector<Operand> const & operands  ) {
+    DBG_Assert( operands.size() == 1);
+
+    pstate p (theInstruction->core()->getPSTATE());
+    return ConditionHolds(p, boost::get<uint64_t>(operands[0]) );
+  }
+  virtual char const * describe() const {
+    return "Branch COnditionally";
+  }
+} BCOND_;
+
+
+Condition & condition(eCondCode aCond) {
+    switch(aCond)
+    {
+    case kCBZ_:
+        return CBZ_;
+    case kCBNZ_:
+         return CBNZ_;
+    case kTBZ_:
+        return TBZ_;
+    case kTBNZ_:
+         return TBNZ_;
+    case kBCOND_:
+         return BCOND_;
+    }
 }
 
-RCondition rcondition(uint32_t aCondition) {
-  bool negate = aCondition & 0x4;
-  switch (aCondition & 0x3) {
-    case 1: //EqualZero
-      return RCondition
-             ( negate
-               , ll::_1 == 0LL
-             );
-    case 2: //LessOrEqualZero
-      return RCondition
-             ( negate
-               , ll::_1 <= 0LL
-             );
-    case 3: //LessZero
-      return RCondition
-             ( negate
-               , ll::_1 < 0LL
-             );
-    case 0: //Reserved
-    default:
-      DBG_Assert(false);
-      //Suppress warning:
-      return RCondition
-             ( negate
-               , ll::_1 == 0LL
-             );
-  }
-}
-
-bool rconditionValid ( uint32_t aCondition ) {
-
-  switch ( aCondition & 0x3 ) {
-    case 1:
-    case 2:
-    case 3:
-      return true;
-    default:
-      return false;
-  }
-
-}
 
 } //armDecoder

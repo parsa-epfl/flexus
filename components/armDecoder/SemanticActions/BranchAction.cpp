@@ -71,15 +71,15 @@ struct BranchCCAction : public BaseSemanticAction {
 
   VirtualMemoryAddress theTarget;
   bool theAnnul;
-  uint32_t theCondition;
+//  Condition & theCondition;
   bool isFloating;
   uint32_t theFeedbackCount;
 
-  BranchCCAction( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition, bool floating)
-    : BaseSemanticAction ( anInstruction, 1 )
+  BranchCCAction( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, int numOperands, bool anAnnul/*, Condition aCondition*/, bool floating)
+    : BaseSemanticAction ( anInstruction, numOperands )
     , theTarget(aTarget)
     , theAnnul(anAnnul)
-    , theCondition(aCondition)
+//    , theCondition(aCondition)
     , isFloating(floating)
     , theFeedbackCount(0) {
     theInstruction->setExecuted(false);
@@ -89,7 +89,11 @@ struct BranchCCAction : public BaseSemanticAction {
     if (ready() ) {
       if (theInstruction->hasPredecessorExecuted()) {
 
-        std::bitset<8> cc = theInstruction->operand< std::bitset<8> > (kOperand1);
+
+      std::vector< Operand > operands;
+      for (int32_t i = 0; i < numOperands(); ++i) {
+        operands.push_back( op( kOperand1 + i ) );
+      }
 
         boost::intrusive_ptr<BranchFeedback> feedback( new BranchFeedback() );
         feedback->thePC = theInstruction->pc();
@@ -97,19 +101,22 @@ struct BranchCCAction : public BaseSemanticAction {
         feedback->theActualTarget = theTarget;
         feedback->theBPState = theInstruction->bpState();
 
-        bool result;
-        if (isFloating) {
-          FCondition cond = fcondition( theCondition );
-          result = cond(cc);
-          DBG_( Tmp, ( << *this << " Floating condition: " << theCondition << " cc: " << cc.to_ulong() << " result: " << result ) );
-        } else {
-          Condition cond = condition( theCondition );
-          result = cond(cc);
-        }
+//        theCondition.setInstruction(theInstruction);
+
+        bool result/* = theCondition(operands)*/;
+
+//        if (isFloating) {
+//          FCondition cond = fcondition( theCondition );
+//          result = cond(cc);
+//          DBG_( Tmp, ( << *this << " Floating condition: " << theCondition << " cc: " << cc.to_ulong() << " result: " << result ) );
+//        } else {
+//          Condition cond = condition( theCondition );
+//          result = cond(cc);
+//        }
 
         if ( result ) {
           //Taken
-          DBG_( Tmp, ( << *this << " conditional branch CC: " << cc << " TAKEN" ) );
+//          DBG_( Tmp, ( << *this << " conditional branch CC: " << cc << " TAKEN" ) );
           core()->applyToNext( theInstruction, branchInteraction(theTarget) );
           feedback->theActualDirection = kTaken;
 
@@ -121,7 +128,7 @@ struct BranchCCAction : public BaseSemanticAction {
 
         } else {
           //Not Taken
-          DBG_( Tmp, ( << *this << " conditional branch CC: " << cc << " NOT TAKEN" ) );
+//          DBG_( Tmp, ( << *this << " conditional branch CC: " << cc << " NOT TAKEN" ) );
           feedback->theActualDirection = kNotTaken;
 
           if (theAnnul) {
@@ -145,6 +152,10 @@ struct BranchCCAction : public BaseSemanticAction {
 
   void describe( std::ostream & anOstream) const {
     anOstream << theInstruction->identify() << " BranchCC Action";
+  }
+
+  Operand op( eOperandCode aCode) {
+    return theInstruction->operand(aCode);
   }
 };
 
@@ -178,7 +189,20 @@ struct BranchCondAction : public BaseSemanticAction {
         feedback->theActualTarget = theTarget;
         feedback->theBPState = theInstruction->bpState();
 
-        if ( cond == theOnZero ) {
+
+//        Condition cond = condition( theCondition );
+
+
+        bool cc;
+//        if (theOnZero) {
+//            cc = cond == 0;
+//        }
+//        else
+//        {
+//            cc = cond != 0;
+//        }
+
+        if ( cc ) {
           //Taken
 //          DBG_( Tmp, ( << *this << " conditional branch Cond: " << cc << " TAKEN" ) );
           core()->applyToNext( theInstruction, branchInteraction(theTarget) );
@@ -219,19 +243,21 @@ struct BranchCondAction : public BaseSemanticAction {
   }
 };
 
-dependant_action branchCCAction
-( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition, bool floating) {
-  BranchCCAction * act(new(anInstruction->icb()) BranchCCAction ( anInstruction, aTarget, anAnnul, aCondition, floating ) );
+//dependant_action branchCCAction ( SemanticInstruction * anInstruction,
+//                                  VirtualMemoryAddress aTarget, bool anAnnul,
+//                                  Condition aCondition,
+//                                  std::vector< std::list<InternalDependance> > & opDeps,
+//                                  bool floating
+//                                  )
+//{
+//    std::vector<eOperandCode> operands;
+//    for (uint32_t i = 0; i < opDeps.size(); ++i) {
+//      operands.push_back( eOperandCode( kOperand1 + i) );
+//    }
+//  BranchCCAction * act(new(anInstruction->icb()) BranchCCAction ( anInstruction, aTarget, operands.size(), anAnnul, aCondition, floating ) );
 
-  return dependant_action( act, act->dependance() );
-}
-
-dependant_action branchCondAction
-( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool onZero) {
-  BranchCondAction * act(new(anInstruction->icb()) BranchCondAction ( anInstruction, aTarget, onZero) );
-
-  return dependant_action( act, act->dependance() );
-}
+//  return dependant_action( act, act->dependance() );
+//}
 
 struct BranchRegAction : public BaseSemanticAction {
 
@@ -260,32 +286,32 @@ struct BranchRegAction : public BaseSemanticAction {
         feedback->theActualTarget = theTarget;
         feedback->theBPState = theInstruction->bpState();
 
-        RCondition cond( rcondition(theCondition) );
+//        RCondition cond( rcondition(theCondition) );
 
-        if ( cond(val) ) {
-          //Taken
-          DBG_( Tmp, ( << *this << " conditional branch val: " << val << " TAKEN" ) );
-          core()->applyToNext( theInstruction, branchInteraction(theTarget) );
-          feedback->theActualDirection = kTaken;
+//        if ( cond(val) ) {
+//          //Taken
+//          DBG_( Tmp, ( << *this << " conditional branch val: " << val << " TAKEN" ) );
+//          core()->applyToNext( theInstruction, branchInteraction(theTarget) );
+//          feedback->theActualDirection = kTaken;
 
-          if (theAnnul) {
-            DBG_( Tmp, ( << *this << " Annul Next Instruction") );
-            core()->applyToNext( theInstruction , reinstateInstructionInteraction() );
-  //          theInstruction->redirectNPC( theInstruction->pc() + 4 );
-          }
+//          if (theAnnul) {
+//            DBG_( Tmp, ( << *this << " Annul Next Instruction") );
+//            core()->applyToNext( theInstruction , reinstateInstructionInteraction() );
+//  //          theInstruction->redirectNPC( theInstruction->pc() + 4 );
+//          }
 
-        } else {
-          //Not Taken
-          DBG_( Tmp, ( << *this << " conditional branch val: " << val << " NOT TAKEN" ) );
-          core()->applyToNext( theInstruction, branchInteraction( VirtualMemoryAddress(0) ) );
-          feedback->theActualDirection = kNotTaken;
+//        } else {
+//          //Not Taken
+//          DBG_( Tmp, ( << *this << " conditional branch val: " << val << " NOT TAKEN" ) );
+//          core()->applyToNext( theInstruction, branchInteraction( VirtualMemoryAddress(0) ) );
+//          feedback->theActualDirection = kNotTaken;
 
-          if (theAnnul) {
-            DBG_( Tmp, ( << *this << " Annul Next Instruction") );
-            core()->applyToNext( theInstruction, annulInstructionInteraction() );
- //           theInstruction->redirectNPC( theInstruction->pc() + 8, theInstruction->pc() + 4);
-          }
-        }
+//          if (theAnnul) {
+//            DBG_( Tmp, ( << *this << " Annul Next Instruction") );
+//            core()->applyToNext( theInstruction, annulInstructionInteraction() );
+// //           theInstruction->redirectNPC( theInstruction->pc() + 8, theInstruction->pc() + 4);
+//          }
+//        }
         theInstruction->setBranchFeedback(feedback);
 
         satisfyDependants();

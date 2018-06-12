@@ -142,4 +142,7 @@ simple_action readRegisterAction ( SemanticInstruction * anInstruction, eOperand
   return new(anInstruction->icb()) ReadRegisterAction( anInstruction, aRegisterCode, anOperandCode, is64);
 }
 
+
+
+
 } //narmDecoder

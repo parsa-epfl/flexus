@@ -41,16 +41,19 @@
 
 #include <memory>
 #include <boost/dynamic_bitset.hpp>
+//#include "components/armDecoder/Conditions.hpp"
+
+#include "Effects.hpp"
 
 #include <components/uArchARM/uArchInterfaces.hpp>
 #include "armInstruction.hpp"
 #include "OperandMap.hpp"
 #include "InstructionComponentBuffer.hpp"
-#include "Effects.hpp"
 
 namespace narmDecoder {
 
 struct simple_action;
+struct EffectChain;
 
 struct SemanticInstruction : public armInstruction {
 private:

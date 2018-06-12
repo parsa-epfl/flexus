@@ -46,15 +46,16 @@
 
 #include "OperandCode.hpp"
 #include <components/uArchARM/RegisterType.hpp>
+#include <components/uArchARM/uArchInterfaces.hpp>
 #include <components/CommonQEMU/Slices/MemOp.hpp>
 #include <components/uFetch/uFetchTypes.hpp>
-#include "Conditions.hpp"
 #include "InstructionComponentBuffer.hpp"
 #include "Interactions.hpp"
 
 namespace nuArchARM {
 struct uArchARM;
 struct SemanticAction;
+enum eAccType;
 }
 
 namespace narmDecoder {
@@ -68,6 +69,7 @@ using nuArchARM::eSize;
 
 struct BaseSemanticAction;
 struct SemanticInstruction;
+struct Condition;
 
 struct Effect : UncountedComponent {
   Effect * theNext;
@@ -154,29 +156,21 @@ Effect * satisfy( SemanticInstruction * inst, InternalDependance const & aDepend
 Effect * squash( SemanticInstruction * inst, InternalDependance const & aDependance);
 Effect * annulNext(SemanticInstruction * inst);
 Effect * branch(SemanticInstruction * inst, VirtualMemoryAddress aTarget);
+Effect * branch(SemanticInstruction * inst);
 Effect * returnFromTrap(SemanticInstruction * inst,  bool isDone);
 Effect * branchAfterNext(SemanticInstruction * inst, VirtualMemoryAddress aTarget);
 Effect * branchAfterNext(SemanticInstruction * inst, eOperandCode aCode);
-Effect * branchConditionally(SemanticInstruction * inst, VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition, bool isFloating);
+Effect * branchConditionally(SemanticInstruction * inst, VirtualMemoryAddress aTarget, bool anAnnul, Condition & aCondition, bool isFloating);
 Effect * branchRegConditionally(SemanticInstruction * inst, VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition);
-Effect * allocateLoad(SemanticInstruction * inst, eSize aSize, InternalDependance const  & aDependance);
+Effect * allocateLoad(SemanticInstruction * inst, eSize aSize, InternalDependance const  & aDependance, nuArchARM::eAccType type);
 Effect * allocateCAS(SemanticInstruction * inst, eSize aSize, InternalDependance const & aDependance);
 Effect * allocateRMW(SemanticInstruction * inst, eSize aSize, InternalDependance const & aDependance);
 Effect * eraseLSQ(SemanticInstruction * inst);
-Effect * allocateStore(SemanticInstruction * inst, eSize aSize, bool aBypassSB);
+Effect * allocateStore(SemanticInstruction * inst, eSize aSize, bool aBypassSB, nuArchARM::eAccType type);
 Effect * allocateMEMBAR(SemanticInstruction * inst);
 Effect * retireMem(SemanticInstruction * inst);
 Effect * commitStore(SemanticInstruction * inst);
 Effect * accessMem(SemanticInstruction * inst);
-//Effect * saveWindow(SemanticInstruction * inst);
-//Effect * restoreWindow(SemanticInstruction * inst);
-//Effect * saveWindowPriv(SemanticInstruction * inst);
-//Effect * restoreWindowPriv(SemanticInstruction * inst);
-//Effect * saveTrap(SemanticInstruction * inst);
-//Effect * restoreTrap(SemanticInstruction * inst);
-//Effect * flushWTrap(SemanticInstruction * inst);
-//Effect * savedWindow(SemanticInstruction * inst);
-//Effect * restoredWindow(SemanticInstruction * inst);
 Effect * updateConditional(SemanticInstruction * inst);
 Effect * updateUnconditional(SemanticInstruction * inst, VirtualMemoryAddress aTarget);
 Effect * updateUnconditional(SemanticInstruction * inst, eOperandCode anOperandCode);
