@@ -216,9 +216,9 @@ std::unique_ptr<aux_::ConfigurationManagerDetails> theConfigurationManager{};
 
 ConfigurationManager & ConfigurationManager::getConfigurationManager() {
   if (theConfigurationManager == 0) {
-    std::cerr << "Initializing Flexus::ConfigurationManager...";
+    DBG_(Dev, ( << "Initializing Flexus::ConfigurationManager..." ));
     theConfigurationManager.reset(new aux_::ConfigurationManagerDetails());
-    std::cerr << "done" << std::endl;
+    DBG_(Dev, ( << "ConfigurationManager initializing" ));
   }
   return *theConfigurationManager;
 }
