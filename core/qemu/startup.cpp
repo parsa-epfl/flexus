@@ -78,7 +78,9 @@ void Break() {
 void CreateFlexusObject();
 void PrepareFlexusObject();
 void initFlexus();
-void startTimingFlexus(); 
+void deinitFlexus();
+void callQMP(Flexus::Qemu::API::qmp_flexus_cmd_t aCMD, const char* args);
+void startTimingFlexus();
 }
 
 namespace Qemu {
@@ -92,17 +94,19 @@ void CreateFlexus() {
   Flexus::Core::index_t system_width;
   std::ifstream ifs("preload_system_width");
 
+
   if ( !ifs.good() ) {
-      DBG_( Crit, ( << "Fatal error! Components instantiation failed due "
-                    "to the system width is not defined!" << "Report this error to the QFlex team on GitHub." ) );
-      exit(1);
+      DBG_( Crit, ( << "Warning! Components instantiation failed due "
+                    "to the system width is not defined!" << " Defulting to 1 cpu"<< "Report this error to the QFlex team on GitHub." ) );
+      system_width = 1;
+
+//      exit(1);
   } else {
       ifs >> system_width;
   }
   ifs.close();
 
-  DBG_( Crit, ( << "Instantiating Flexus components with SystemWidth="
-                << system_width << "..." ) );
+  DBG_( Crit, ( << "Instantiating Flexus components with SystemWidth = " << system_width ) );
 
   Flexus::Core::ComponentManager::getComponentManager().instantiateComponents(system_width);
   ConfigurationManager::getConfigurationManager().processCommandLineConfiguration(0, 0);
@@ -112,9 +116,19 @@ void PrepareFlexus() {
   PrepareFlexusObject();
   Qemu::API::QEMU_insert_callback(QEMUFLEX_GENERIC_CALLBACK, Qemu::API::QEMU_config_ready, nullptr, (void*)&CreateFlexus);
 }
+
+extern "C" void qmp_call(Flexus::Qemu::API::qmp_flexus_cmd_t aCMD, const char* anArgs) {
+    callQMP(aCMD, anArgs);
+}
+
 extern "C" void flexus_init(void) {
     initFlexus();
 }
+
+extern "C" void flexus_deinit(void) {
+    deinitFlexus();
+}
+
 extern "C" void start_timing_sim(void) {
     startTimingFlexus(); 
 }
@@ -157,6 +171,9 @@ void print_copyright() {
   cerr << "//   QFlex simulator - Built as " << Flexus::theSimulatorName << endl << endl;
 }
 
+extern "C" void qmpcall(Flexus::Qemu::API::qmp_flexus_cmd_t aCMD, const char* anArgs ){
+    Flexus::Qemu::qmp_call(aCMD, anArgs);
+}
 
 
 }
@@ -164,13 +181,17 @@ extern "C" void flexInit(){
     Flexus::Qemu::flexus_init();
 }
 
+extern "C" void flexDeinit(){
+    Flexus::Qemu::flexus_deinit();
+}
+
 extern "C" void startTiming(){
     Flexus::Qemu::start_timing_sim();
 }
 
-extern "C" void qemuflex_init(Flexus::Qemu::API::QFLEX_API_Interface_Hooks_t* hooks) {
+extern "C" void qflex_init(Flexus::Qemu::API::QFLEX_API_Interface_Hooks_t* hooks) {
   Flexus::Qemu::API::QFLEX_API_set_interface_hooks( hooks );
-  std::cerr << "Entered init_local\n";
+//  std::cerr << "Entered init_local\n";
 
   print_copyright();
 
@@ -191,7 +212,6 @@ extern "C" void qemuflex_init(Flexus::Qemu::API::QFLEX_API_Interface_Hooks_t* ho
   DBG_(Iface, ( << "Flexus Initialized." ));
 }
 
-extern "C" void qemuflex_quit(void) {
-  //Theoretically, we would delete Flexus here, but Qemu currently does not call this function.
-  // delete theFlexusFactory;
+extern "C" void qflex_quit(void) {
+    flexDeinit();
 }
