@@ -128,9 +128,9 @@ std::unique_ptr<aux_::ComponentManagerImpl> theComponentManager{};
 
 ComponentManager & ComponentManager::getComponentManager() {
   if (theComponentManager == 0) {
-    std::cerr << "Initializing Flexus::ComponentManager...";
+    DBG_(Dev, ( << "Initializing Flexus::ComponentManager..." ));
     theComponentManager.reset(new aux_::ComponentManagerImpl());
-    std::cerr << "done" << std::endl;
+    DBG_(Dev, ( << "ComponentManager initialized" ));
   }
   return *theComponentManager;
 }
