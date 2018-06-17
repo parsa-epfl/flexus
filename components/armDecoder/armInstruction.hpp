@@ -422,111 +422,11 @@ protected:
     , theSquashed(false)
     , theExecuted(true)
     , theInstructionClass(clsSynchronizing)
-    //, theASI(0x80)
     , theHaltDispatch(false)
     , theHasCheckpoint(false)
     , theRetireStallCycles(0)
     , theMayCommit(true)
     , theInsnSourceLevel(eL1I) {
-    // FIXME: merge with the already-implemented armDecoder code so we don't have to decode twice
-    // Various possible fields used to identify instructions
-    // Warning, some have the same names in the manual but represent DIFFERENT
-    // bits.  eg see "rcond" below
-    uint32_t op = (theOpcode >> 30) & 0x3;      // [31:30]
-    uint32_t fcn = (theOpcode >> 25) & 0x1f;    // [29:25], used for DONE and RETRY
-    uint32_t op2 = (theOpcode >> 22) & 0x7;     // [24:22]
-    uint32_t op3 = (theOpcode >> 19) & 0x3f;    // [24:19]
-    uint32_t iField = (theOpcode >> 13) & 0x1;  // [13], this one is called just 'i' in the manual
-    uint32_t opf = (theOpcode >> 5) & 0x1ff;    // [13:5], for fp
-    uint32_t a36 = (theOpcode >> 10) & 7;   // This field is called "rcond" for A.36, however "rcond" is used
-    // for different bits for branch instructions
-
-    theUsesIntAlu = false;
-    theUsesIntMult = false;
-    theUsesIntDiv = false;
-    theUsesFpAdd = false;
-    theUsesFpCmp = false;
-    theUsesFpCvt = false;
-    theUsesFpMult = false;
-    theUsesFpDiv = false;
-    theUsesFpSqrt = false;
-
-    // All memory accesses require address computation
-    if ((op == 0x3) ||
-        // A.3 - Branch on Integer Register with Prediction
-        ((op == 0) && (op2 == 0x3) && (((theOpcode >> 28) & 1) == 0)) ||
-        // A.48 - SETHI, but not NOP (which is a special case of SETHI)
-        ((op == 0) && (op2 == 0x4) && (fcn != 0) && ((theOpcode && 0x1fffff) == 0)) ||
-        // A.2 - Add
-        ((op == 2) && ((op3 == 0) || (op3 == 0x10) || (op3 == 0x8) || (op3 == 0x18)) ) ||
-        // A.24 - Jump and Link
-        ((op == 0x2) && (op3 == 0x38)) ||
-        // A.31 - Logical Operations
-        ((op == 0x2) && ((op3 == 0x1) || (op3 == 0x11)  || (op3 == 0x5)  || (op3 == 0x15) || (op3 == 0x2)  || (op3 == 0x12)  || (op3 == 0x6)  || (op3 == 0x16) || (op3 == 0x3)  || (op3 == 0x13)  || (op3 == 0x7)  || (op3 == 0x17))) ||
-        // A.34 - Move F-P Register on Integer Register Condtion (FMOVr)
-        ((op == 0x2) && (op3 == 0x35) && (iField == 0) && ((((theOpcode >> 5) & 0x1f) == 5) || (((theOpcode >> 5) & 0x1f) == 6) || (((theOpcode >> 5) & 0x1f) == 7))) ||
-        // A.36 - Move Integer Register on Register Condition
-        ((op == 0x2) && (op3 == 0x2f) && (a36 != 0) && (a36 != 4)) ||
-        // A.39 - Multiply Step
-        ((op == 0x2) && (op3 == 0x24)) ||
-        // A.41 - Population Count
-        ((op == 0x2) && (op3 == 0x2e) && (((theOpcode >> 14) & 0x1f) == 0) )  ||
-        // A.45 - Return
-        ((op == 0x2) && (op3 == 0x39)) ||
-        // A.46 - Save and Restore
-        ((op == 0x2) && (op3 == 0x3c)) ||
-        ((op == 0x2) && (op3 == 0x3d)) ||
-        // A.49 - Shift
-        ((op == 0x2) && ((op3 == 0x25) || (op3 == 0x26) || (op3 == 0x27)) ) ||
-        // A.56 - Subtract
-        ((op == 0x2) && ( (op3 == 0x4) || (op3 == 0x14) || (op3 == 0xc) || (op3 == 0x1c)) ) ||
-        // A.59 - Tagged Add
-        ((op == 0x2) && ( (op3 == 0x20) || (op3 == 0x22)) ) ||
-        // A.60 - Tagged Subtract
-        ((op == 0x2) && ((op3 == 0x21) || (op3 == 0x23)) ) ||
-        // A.61 - Trap on Integer Condition Codes
-        ((op == 0x2) && (op3 == 0x3a)) ||
-        // A.62 - Write Privileged Register
-        ((op == 0x2) && (op3 == 0x32)) ||
-        // A.63 - Write State Register
-        ((op == 0x2) && (op3 == 0x30)) ) {
-      theUsesIntAlu = true;
-    }
-    // A.10 Divide, A.37 - Multiply and Divide (64) (1 half)
-    else if ((op == 0x2) && ((op3 == 0xe) || (op3 == 0xf) || (op3 == 0x1e) || (op3 == 0x1f) || (op3 == 0x2d) || (op3 == 0xd))) {
-      theUsesIntDiv = true;
-    }
-    // A.37 - Multiply and Divide (64) (1 half), A.38 - Multiply (32)
-    else if ((op == 0x2) && ((op3 == 0x9)  || (op3 == 0xa) || (op3 == 0xb) || (op3 == 0x1a) || (op3 == 0x1b))) {
-      theUsesIntMult = true;
-    }
-    // A.12 - Floating-Point Add and Subtract
-    else if ((op == 0x2) && (op3 == 0x34) && ((opf == 0x41) || (opf == 0x42) || (opf == 0x43) || (opf == 0x45) || (opf == 0x46) || (opf == 0x47))) {
-      theUsesFpAdd = true;
-    }
-    // A.14 - Convert Floating-Point to Integer, A.15 - Convert Between Floating-Point Formats, A.16 - Convert Integer To Floating-Point
-    else if ((op == 0x2) && (op3 == 0x34)
-             && (
-               ((opf == 0x81) || (opf == 0x82) || (opf == 0x83) || (opf == 0xd1) || (opf == 0xd2) || (opf == 0xd3)) ||
-               ((opf == 0xc9) || (opf == 0xcd) || (opf == 0xc6) || (opf == 0xce) || (opf == 0xc7) || (opf == 0xcb)) ||
-               ((opf == 0x84) || (opf == 0x88) || (opf == 0x8c) || (opf == 0xc4) || (opf == 0xc8) || (opf == 0xcc))
-             )) {
-      theUsesFpCvt = true;
-    }
-    // A.13 - Floating-Point Compare
-    else if ((op == 0x2) && (((theOpcode >> 27) & 0x7) == 0) && (op3 == 0x35) && ((opf == 0x51) || (opf == 0x52) || (opf == 0x53) || (opf == 0x55) || (opf == 0x56) || (opf == 0x57))) {
-      theUsesFpCmp = true;
-    }
-    // A.18 - Floating-Point Multiply and Divide, A.19 - Floating-Point Square Root
-    else if ((op == 0x2) && (op3 == 0x34)) {
-      if ((opf == 0x49) || (opf == 0x4a)  || (opf == 0x4b) || (opf == 0x69) || (opf == 0x6e)) {
-        theUsesFpMult = true;
-      } else if ((opf == 0x4d)  || (opf == 0x4e)  || (opf == 0x4f)) {
-        theUsesFpDiv = true;
-      } else if ((opf == 0x29) || (opf == 0x2a) || (opf == 0x2b)) {
-        theUsesFpSqrt = true;
-      }
-    }
   }
 
   // So that armDecoder can send opcodes out to PowerTracker
@@ -535,6 +435,9 @@ public:
     return theOpcode;
   }
 };
+
+typedef boost::intrusive_ptr<armInstruction>  arminst;
+typedef Flexus::SharedTypes::FetchedOpcode armcode;
 
 } //armDecoder
 
