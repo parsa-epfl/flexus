@@ -149,7 +149,7 @@ struct CONCAT32 : public Operation {
     uint64_t conc = op1 << 32 | op2;
 
 //    result = concat<lsb+datasize-1:lsb>;
-    uint64_t result = conc & ((uint64_t)~0ULL >> lsb+31) | lsb;
+    uint64_t result = conc & ((uint64_t)~0ULL >> (lsb+31)) | lsb;
     return result;
   }
   virtual char const * describe() const {
@@ -163,10 +163,10 @@ struct CONCAT64 : public Operation {
     uint64_t op1 =  boost::get<uint64_t>(operands[0]);
     uint64_t op2 =  boost::get<uint64_t>(operands[1]);
     uint64_t lsb =  boost::get<uint64_t>(operands[2]);
-    __uint128_t conc = op1 << 64 | op2;
+    __uint128_t conc = op1 << 63 | op2;
 
 //    result = concat<lsb+datasize-1:lsb>;
-    uint64_t result = conc & ((__uint128_t)~0ULL >> lsb+63) | lsb;
+    uint64_t result = conc & ((__uint128_t)~0ULL >> (lsb+63)) | lsb;
     return result;
   }
   virtual char const * describe() const {
