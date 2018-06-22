@@ -113,10 +113,8 @@ std::tuple<PhysicalMemoryAddress, bool, bool> armProcessorImpl::translateTSB_Qem
   try {
     API::arm_memory_transaction_t xact;
     translate_QemuImpl( xact, anAddress, anASI);
-    //return std::make_tuple( PhysicalMemoryAddress( xact.s.physical_address ), (xact.s.physical_address != 0 ) && cacheable(xact), (xact.s.physical_address == 0 ) || side_effect(xact)  );
     return std::make_tuple( PhysicalMemoryAddress( xact.s.physical_address ), (xact.s.physical_address != 0 ) && cacheable(xact), (xact.s.physical_address == 0 ) || side_effect(xact)  );
   } catch (MemoryException & anError ) {
-    //return std::make_tuple( PhysicalMemoryAddress(0), false, true);
     return std::make_tuple( PhysicalMemoryAddress(0), false, true);
   }
 }

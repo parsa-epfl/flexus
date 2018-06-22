@@ -52,7 +52,7 @@ extern Flexus::Stat::StatCounter theICBs;
 
 struct InstructionComponentBuffer {
 
-  char theComponentBuffer[kICBSize ];
+  char theComponentBuffer[kICBSize];
   char * theNextAlloc;
   size_t theFreeSpace;
   InstructionComponentBuffer * theExtensionBuffer;
@@ -90,7 +90,7 @@ struct InstructionComponentBuffer {
 
 struct UncountedComponent {
   void operator delete(void *) {
-    /*Nothing to do on delete*/
+    /*Nothing to do on delete*/ // FIXME: this leaks, since icb.alloc() calls new(...)
   }
   void * operator new( size_t aSize, InstructionComponentBuffer & aICB ) {
     return aICB.alloc( aSize );

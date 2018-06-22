@@ -121,33 +121,34 @@ public:
     theBusTxCountdown = 0;
     theBusDirection = kIdle;
 
-    theController.reset();/*new CacheController(statName(),
-                                            cfg.Cores,
-                                            cfg.ArrayConfiguration,
-                                            cfg.BlockSize,
-                                            cfg.Banks,
-                                            cfg.Ports,
-                                            cfg.TagLatency,
-                                            cfg.TagIssueLatency,
-                                            cfg.DataLatency,
-                                            cfg.DataIssueLatency,
-                                            (int)flexusIndex(),
-                                            cfg.CacheLevel,
-                                            cfg.QueueSizes,
-                                            cfg.PreQueueSizes,
-                                            cfg.MAFSize,
-                                            cfg.MAFTargetsPerRequest,
-                                            cfg.EvictBufferSize,
-                                            cfg.SnoopBufferSize,
-                                            cfg.ProbeFetchMiss,
-                                            cfg.EvictClean,
-                                            cfg.EvictWritableHasData,
-                                            cfg.CacheType,
-                                            cfg.TraceAddress,
-                                            false, // cfg.AllowOffChipStreamFetch
-                                            cfg.EvictOnSnoop,
-                                            cfg.UseReplyChannel
-                                           )); */
+    //theController.reset();/*new CacheController(statName(),
+    new CacheController(statName(),
+            cfg.Cores,
+            cfg.ArrayConfiguration,
+            cfg.BlockSize,
+            1,//cfg.Banks,
+            1,//cfg.Ports,
+            1,//cfg.TagLatency,
+            1,//cfg.TagIssueLatency,
+            1,//cfg.DataLatency,
+            1,//cfg.DataIssueLatency,
+            (int)flexusIndex(),
+            cfg.CacheLevel,
+            cfg.QueueSizes,
+            cfg.PreQueueSizes,
+            cfg.MAFSize,
+            cfg.MAFTargetsPerRequest,
+            cfg.EvictBufferSize,
+            cfg.SnoopBufferSize,
+            cfg.ProbeFetchMiss,
+            cfg.EvictClean,
+            cfg.EvictWritableHasData,
+            cfg.CacheType,
+            cfg.TraceAddress,
+            false, // cfg.AllowOffChipStreamFetch
+            cfg.EvictOnSnoop,
+            cfg.UseReplyChannel
+                );
   }
 
   void finalize() {}
