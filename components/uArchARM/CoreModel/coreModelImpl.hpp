@@ -145,7 +145,11 @@ class CoreImpl : public CoreModel {
   uint64_t thePSTATE;      //6
   uint64_t theFPSR;         //6
   uint64_t theFPCR;          //37
-
+  uint64_t theCurrentEL;
+  uint64_t theDAIF;
+  uint64_t theNZCV;
+  uint64_t theSPSel;
+  uint64_t theSPSR;
 
   uint64_t thePC;
  // uint32_t thePendingTrap;
@@ -698,57 +702,24 @@ public:
   void restoreARMState( armState & aState);
   void compareARMState( armState & aLeft, armState & aRight);
   bool isIdleLoop();
+  uint64_t pc() const;
 
-    uint64_t pc() const;
-
-    uint64_t getPSTATE() {
-    return thePSTATE;
-    }
-    void setPSTATE( uint64_t aPSTATE) {
-    if (aPSTATE != thePSTATE)
-      thePSTATE = aPSTATE;
-    }
-
-    uint64_t getSP( unsigned idx) {
-      return theSP_EL[idx];
-    }
-
-    void setSP( uint64_t aSP, unsigned idx) {
-      if (aSP != theSP_EL[idx])
-        theSP_EL[idx] = aSP;
-    }
-
-    uint64_t getEL( unsigned idx) {
-        return theELR_EL[idx];
-    }
-
-    void setEL( uint64_t aEL, unsigned idx) {
-    if (aEL != theELR_EL[idx])
-      theELR_EL[idx] = aEL;
-    }
-    uint64_t getSPSR( unsigned idx) {
-      return theSPSR_EL[idx];
-    }
-
-    void setSPSR( uint64_t aSPSR, unsigned idx) {
-      if (aSPSR != theSPSR_EL[idx])
-        theSPSR_EL[idx] = aSPSR;
-    }
-
-void setFPSR( uint64_t anFPSR) {
-  theFPSR = anFPSR;
-}
-
-  uint64_t getFPSR() {
-    return theFPSR;
-  }
-
-  void setFPCR( uint64_t anFPCR) {
-    theFPCR = anFPCR;
-  }
-  uint64_t getFPCR(){
-    return theFPCR;
-  }
+  uint64_t getPSTATE() { return thePSTATE; }
+  void setPSTATE( uint64_t aPSTATE) { thePSTATE = aPSTATE; }
+  uint64_t getSP( unsigned idx) { return theSP_EL[idx]; }
+  void setSP( uint64_t aSP, unsigned idx) { theSP_EL[idx] = aSP; }
+  uint64_t getEL( unsigned idx) { return theELR_EL[idx]; }
+  void setEL( uint64_t aEL, unsigned idx) { theELR_EL[idx] = aEL; }
+  uint64_t getSPSR_EL( unsigned idx) { return theSPSR_EL[idx]; }
+  void setSPSR_EL( uint64_t aSPSR, unsigned idx) { theSPSR_EL[idx] = aSPSR; }
+  void setFPSR( uint64_t anFPSR) { theFPSR = anFPSR; }
+  uint64_t getFPSR() { return theFPSR; }
+  void setFPCR( uint64_t anFPCR) { theFPCR = anFPCR; }
+  uint64_t getFPCR(){ return theFPCR; }
+  void setCurrentEL( uint64_t anEL){ theCurrentEL = anEL; }
+  uint64_t getCurrentEL(){ return theCurrentEL; }
+  void setSPSR( uint64_t anSPSR){ theSPSR = anSPSR; }
+  uint64_t getSPSR(){ return theSPSR; }
 
   void writeFPSR( uint64_t anFPSR);
   uint64_t readFPSR();
