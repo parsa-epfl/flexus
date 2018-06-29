@@ -156,7 +156,6 @@ Effect * satisfy( SemanticInstruction * inst, InternalDependance const & aDepend
 Effect * squash( SemanticInstruction * inst, InternalDependance const & aDependance);
 Effect * annulNext(SemanticInstruction * inst);
 Effect * branch(SemanticInstruction * inst, VirtualMemoryAddress aTarget);
-Effect * branch(SemanticInstruction * inst);
 Effect * returnFromTrap(SemanticInstruction * inst,  bool isDone);
 Effect * branchAfterNext(SemanticInstruction * inst, VirtualMemoryAddress aTarget);
 Effect * branchAfterNext(SemanticInstruction * inst, eOperandCode aCode);
