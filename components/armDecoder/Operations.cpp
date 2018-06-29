@@ -60,6 +60,9 @@ using namespace nuArchARM;
 
 struct Add : public Operation {
   virtual Operand operator()( std::vector<Operand> const & operands  ) {
+    if (hasOwnOperands())
+        operands = theOperands;
+
     DBG_Assert( operands.size() == 2);
     return boost::get<uint64_t>(operands[0]) + boost::get<uint64_t>(operands[1]);
   }
