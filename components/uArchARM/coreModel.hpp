@@ -93,12 +93,16 @@ struct CoreModel : public uArchARM {
   virtual uint64_t getSP(unsigned idx) = 0;
   virtual void setEL( uint64_t aEL, unsigned idx) = 0;
   virtual uint64_t getEL(unsigned idx) = 0;
-  virtual void setSPSR( uint64_t aSPSR, unsigned idx) = 0;
-  virtual uint64_t getSPSR(unsigned idx) = 0;
+  virtual void setSPSR_EL( uint64_t aSPSR, unsigned idx) = 0;
+  virtual uint64_t getSPSR_EL(unsigned idx) = 0;
   virtual void setFPCR( uint64_t anFPCR) = 0;
+  virtual void setSPSR(uint64_t anSPSR) = 0;
+  virtual uint64_t getSPSR() = 0;
+  virtual void setCurrentEL(uint64_t anEL) = 0;
+  virtual uint64_t getCurrentEL() = 0;
 
-    virtual void getARMState( armState & aState) = 0;
-    virtual void restoreARMState( armState & aState) = 0;
+  virtual void getARMState( armState & aState) = 0;
+  virtual void restoreARMState( armState & aState) = 0;
 
   virtual void setPC( uint64_t aPC) = 0;
   virtual uint64_t pc() const = 0;

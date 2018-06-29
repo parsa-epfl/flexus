@@ -62,6 +62,8 @@ namespace Stat = Flexus::Stat;
 #define DBG_SetDefaultOps AddCat(uArchCat)
 #include DBG_Control()
 #include "../../core/qemu/mai_api.hpp"
+#include <components/armDecoder/armBitManip.hpp>
+
 namespace nuArchARM {
 
 using Flexus::Core::theFlexus;
@@ -445,6 +447,7 @@ void resetArchitecturalState()
   void resetSpecialRegs() {
 
     resetPSTATE();
+    resetCurrentEL();
     resetSP();
     resetEL();
     resetSPSR();
@@ -481,12 +484,12 @@ void resetArchitecturalState()
       }
 
   }
-  void resetSPSR() {
+  void resetSPSR_EL() {
       uint64_t spsr;
       for (int i=0; i<3;++i)
       {
-          spsr = theCPU->readRegister( i, API::SAVED_PROGRAM_STATUS );
-          theCore->setSPSR( spsr, i );
+          spsr = theCPU->readRegister( i, API::SPSR_EL );
+          theCore->setSPSR_EL( spsr, i );
       }
 
   }
@@ -501,6 +504,17 @@ void resetArchitecturalState()
     uint64_t fpcr = theCPU->readRegister( 0, API::FLOATING_POINT );
     theCore->setFPCR( fpcr );
   }
+
+  void resetCurrentEL() {
+    uint64_t ps = theCore.get()->getPSTATE();
+    theCore->setCurrentEL( extract32(ps, 2, 2) );
+  }
+
+  void resetSPSR() {
+    uint64_t spsr = theCPU->readRegister( 0, API::SPSR );
+    theCore->setSPSR( spsr );
+  }
+
 
   // fills/re-sets global registers to the state they are
   // in the VM (i.e. client)

@@ -56,6 +56,12 @@
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 #include <core/qemu/ARMmmu.hpp>
 
+
+#define EL0 0
+#define EL1 1
+#define EL2 2
+#define EL3 3
+
 namespace Flexus {
 namespace SharedTypes {
 struct BranchFeedback;
@@ -194,6 +200,12 @@ enum eInstructionCode
   , codeLastCode
 };
 
+typedef enum eMemOp
+{
+    kMemOp_LOAD,
+    kMemOp_STORE,
+    kMemOp_PREFETCH,
+}eMemOp;
 
 typedef enum eAccType
 //Special cases
@@ -541,79 +553,39 @@ struct uArchARM {
     DBG_Assert(false);
     return true;
     }
-    virtual uint32_t getRoundingMode() {
-    DBG_Assert(false);
-    return 0;
-    }
-    virtual uint64_t getPSTATE() {
-    DBG_Assert(false);
-    return 0;
-    }
-    virtual uint64_t getFPSR() {
-    DBG_Assert(false);
-    return 0;
-    }
-    virtual uint64_t getFPCR() {
-    DBG_Assert(false);
-    return 0;
-    }
-    virtual uint64_t getSP(unsigned idx){
-        DBG_Assert(false);
-        return 0;
-    }
-    virtual uint64_t getEL(unsigned idx){
-        DBG_Assert(false);
-        return 0;
-    }
-    virtual uint64_t getSPSR(unsigned idx){
-        DBG_Assert(false);
-        return 0;
-    }
-    virtual void setFPSR(uint64_t aValue) {
-      DBG_Assert(false);
-    }
-    virtual uint64_t readFPSR() {
-      DBG_Assert(false);
-      return 0;
-    }
-    virtual void setFPCR(uint64_t aValue) {
-      DBG_Assert(false);
-    }
-    virtual uint64_t readFPCR() {
-      DBG_Assert(false);
-      return 0;
-    }
-    virtual void writeFPCR(uint64_t aValue) {
-      DBG_Assert(false);
-    }
-    virtual void writeFPSR(uint64_t aValue) {
-      DBG_Assert(false);
-    }
+    virtual uint32_t getRoundingMode()              { DBG_Assert(false); return 0; }
+    virtual uint64_t getPSTATE()                    { DBG_Assert(false); return 0; }
+    virtual uint64_t getFPSR()                      { DBG_Assert(false); return 0; }
+    virtual void setFPSR(uint64_t aValue)           { DBG_Assert(false); }
+    virtual uint64_t readFPSR()                     { DBG_Assert(false); return 0; }
+    virtual void writeFPSR(uint64_t aValue)         { DBG_Assert(false); }
 
-    virtual uint64_t getXRegister(uint32_t aReg) {
-        DBG_Assert(false);
-        return 0;
-    }
-    virtual void setXRegister(uint32_t aReg, uint64_t aVal) {
-        DBG_Assert(false);
-    }
-    virtual void writePR(uint32_t aPR, uint64_t aVal) {
-    DBG_Assert(false);
-    }
-    virtual void updatePSTATEbits(uint64_t mask) {
-    DBG_Assert(false);
-    }
-    virtual uint64_t readPR(uint32_t aPR) {
-    DBG_Assert(false);
-    return 0;
-    }
-    virtual std::string prName(uint32_t aPR) {
-    DBG_Assert(false);
-    return "";
-    }
-    virtual void bypass(mapped_reg aReg, register_value aValue) {
-    DBG_Assert(false);
-    }
+
+
+
+    virtual uint64_t getFPCR()                      { DBG_Assert(false); return 0; }
+    virtual void setFPCR(uint64_t aValue)           { DBG_Assert(false); }
+    virtual uint64_t readFPCR()                     { DBG_Assert(false); return 0; }
+    virtual void writeFPCR(uint64_t aValue)         { DBG_Assert(false); }
+
+    virtual void setCurrentEL( uint64_t anEL)       { DBG_Assert(false); }
+    virtual uint64_t getCurrentEL()                 { DBG_Assert(false); return 0; }
+
+    virtual void setSPSR( uint64_t anSPSR)          { DBG_Assert(false); }
+    virtual uint64_t getSPSR()                      { DBG_Assert(false); return 0; }
+
+    virtual uint64_t getSP(unsigned idx)            { DBG_Assert(false); return 0; }
+    virtual uint64_t getEL(unsigned idx)            { DBG_Assert(false); return 0; }
+    virtual uint64_t getSPSR_EL(unsigned idx)       { DBG_Assert(false); return 0; }
+
+    virtual uint64_t getXRegister(uint32_t aReg) { DBG_Assert(false); }
+    virtual void setXRegister(uint32_t aReg, uint64_t aVal) { DBG_Assert(false); }
+
+    virtual void writePR(uint32_t aPR, uint64_t aVal) { DBG_Assert(false); }
+    virtual void updatePSTATEbits(uint64_t mask) { DBG_Assert(false); }
+    virtual uint64_t readPR(uint32_t aPR) { DBG_Assert(false); }
+    virtual std::string prName(uint32_t aPR) { DBG_Assert(false); }
+    virtual void bypass(mapped_reg aReg, register_value aValue) { DBG_Assert(false); }
     virtual void connectBypass(mapped_reg aReg, boost::intrusive_ptr<Instruction> inst, std::function<bool(register_value)> ) {
     DBG_Assert(false);
     }
