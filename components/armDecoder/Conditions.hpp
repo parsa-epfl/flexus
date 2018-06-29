@@ -61,9 +61,11 @@ struct Condition {
   virtual ~Condition() {}
   virtual bool operator()( std::vector< Operand > const & operands ) = 0;
   virtual char const * describe() const = 0;
-    void setInstruction(SemanticInstruction * anInstruction){
-        theInstruction = anInstruction;
-    }
+  void setInstruction(SemanticInstruction * anInstruction){
+      theInstruction = anInstruction;
+  }
+
+protected:
   SemanticInstruction * theInstruction;
 };
 
