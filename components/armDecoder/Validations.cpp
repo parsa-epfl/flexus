@@ -371,4 +371,14 @@ bool validateFPSR::operator () () {
   return (flexus_value == simics_value);
 }
 
+bool validateLegalReturn::operator ()() {
+    if (theInstruction->core()->getCurrentEL() == EL0) {
+        return false;
+    }
+    return true;
+
+
+
+};
+
 } //narmDecoder

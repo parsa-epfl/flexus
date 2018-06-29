@@ -226,6 +226,14 @@ struct validateSaveRestore {
   bool operator () ();
 };
 
+struct validateLegalReturn {
+  SemanticInstruction * theInstruction;
+  validateLegalReturn( SemanticInstruction * anInstruction)
+    : theInstruction(anInstruction)
+  {}
+  bool operator () ();
+};
+
 } //narmDecoder
 
 #endif //FLEXUS_armDECODER_VALIDATIONS_HPP_INCLUDED
