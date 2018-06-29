@@ -217,7 +217,7 @@ struct FPExecuteAction : public ExecuteBase {
           operands.push_back( op( theOperands[i] ) );
         }
 
-        theOperation.setContext( core()->getRoundingMode() );
+//        theOperation.setContext( core()->getRoundingMode() )
         Operand result = theOperation( operands );
         if (theSize == kDoubleWord) {
           uint64_t val = boost::get<uint64_t>(result);

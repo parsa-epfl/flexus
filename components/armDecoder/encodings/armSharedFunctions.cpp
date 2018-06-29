@@ -40,6 +40,89 @@
 namespace narmDecoder {
 using namespace nuArchARM;
 
+eConstraint ConstrainUnpredictable(eUnpredictable which){
+    switch (which) {
+    case kUnpredictable_WBOVERLAPLD:
+        return kConstraint_WBSUPPRESS; // return loaded value
+    case kUnpredictable_WBOVERLAPST:
+        return kConstraint_NONE; // store pre-writeback value
+    case kUnpredictable_LDPOVERLAP:
+        return kConstraint_UNDEF; // instruction is case kUnDEFINED
+    case kUnpredictable_BASEOVERLAP:
+        return kConstraint_NONE; // use original address
+    case kUnpredictable_DATAOVERLAP:
+        return kConstraint_NONE; // store original value
+    case kUnpredictable_DEVPAGE2:
+        return kConstraint_FAULT; // take an alignment fault
+    case kUnpredictable_INSTRDEVICE:
+        return kConstraint_NONE; // Do not take a fault
+    case kUnpredictable_RESMAIR:
+        return kConstraint_UNKNOWN; // Map to case kUnKNOWN value
+    case kUnpredictable_RESTEXCB:
+        return kConstraint_UNKNOWN; // Map to case kUnKNOWN value
+    case kUnpredictable_RESDACR:
+        return kConstraint_UNKNOWN; // Map to case kUnKNOWN value
+    case kUnpredictable_RESPRRR:
+        return kConstraint_UNKNOWN; // Map to case kUnKNOWN value
+    case kUnpredictable_RESVTCRS:
+        return kConstraint_UNKNOWN; // Map to case kUnKNOWN value
+    case kUnpredictable_RESTnSZ:
+        return kConstraint_FORCE; // Map to the limit value
+    case kUnpredictable_LARGEIPA:
+        return kConstraint_FORCE;// Restrict the inputsize to the PAMax value
+    case kUnpredictable_ESRCONDPASS:
+        return kConstraint_FALSE; // Report as "AL"
+    case kUnpredictable_ILZEROIT:
+        return kConstraint_FALSE; // Do not zero PSTATE.IT
+    case kUnpredictable_ILZEROT:
+        return kConstraint_FALSE; // Do not zero PSTATE.T
+    case kUnpredictable_BPVECTORCATCHPRI:
+        return kConstraint_TRUE; // Debug Vector Catch: match on 2nd halfword
+    case kUnpredictable_VCMATCHHALF:
+        return kConstraint_FALSE; // No match
+    case kUnpredictable_VCMATCHDAPA:
+        return kConstraint_FALSE; // No match on Data Abort or Prefetch abort
+    case kUnpredictable_WPMASKANDBAS:
+        return kConstraint_FALSE; // Watchpoint disabled
+    case kUnpredictable_WPBASCONTIGUOUS:
+        return kConstraint_FALSE; // Watchpoint disabled
+    case kUnpredictable_RESWPMASK:
+        return kConstraint_DISABLED; // Watchpoint disabled
+    case kUnpredictable_WPMASKEDBITS:
+        return kConstraint_FALSE; // Watchpoint disabled
+    case kUnpredictable_RESBPWPCTRL:
+        return kConstraint_DISABLED; // Breakpoint/watchpoint disabled
+    case kUnpredictable_BPNOTIMPL:
+        return kConstraint_DISABLED; // Breakpoint disabled
+    case kUnpredictable_RESBPTYPE:
+        return kConstraint_DISABLED; // Breakpoint disabled
+    case kUnpredictable_BPNOTCTXCMP:
+        return kConstraint_DISABLED; // Breakpoint disabled
+    case kUnpredictable_BPMATCHHALF:
+        return kConstraint_FALSE; // No match
+    case kUnpredictable_BPMISMATCHHALF:
+        return kConstraint_FALSE; // No match
+    case kUnpredictable_RESTARTALIGNPC:
+        return kConstraint_FALSE; // Do not force alignment
+    case kUnpredictable_RESTARTZEROUPPERPC:
+        return kConstraint_TRUE; // Force zero extension
+    case kUnpredictable_ZEROUPPER:
+        return kConstraint_TRUE; // zero top halves of X registers
+    case kUnpredictable_ERETZEROUPPERPC:
+        return kConstraint_TRUE; // zero top half of PC
+    case kUnpredictable_A32FORCEALIGNPC:
+        return kConstraint_FALSE; // Do not force alignment
+    case kUnpredictable_SMD:
+        return kConstraint_UNDEF; // disabled SMC is case kUnallocated
+    case kUnpredictable_AFUPDATE: // AF update for alignment or permission fault
+        return kConstraint_TRUE;
+    case kUnpredictable_IESBinDebug: // Use SCTLR[].IESB in Debug state
+        return kConstraint_TRUE;
+    }
+}
+
+
+
 static void setRD( SemanticInstruction * inst, uint32_t rd) {
   DBG_(Tmp, (<< "\e[1;35m"<<"DECODER: EFFECT: Writing to x[" << rd << "]"<<"\e[0m"));
   reg regRD;
@@ -336,9 +419,6 @@ void addAddressCompute( SemanticInstruction * inst, std::vector< std::list<Inter
   connectDependance( update_address.dependances[0], exec);
   connectDependance( inst->retirementDependance(), update_address );
 }
-
-
-
 
 void  MEMBAR( SemanticInstruction * inst, armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo, uint32_t i ) {
 

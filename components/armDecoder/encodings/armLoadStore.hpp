@@ -49,6 +49,17 @@ void ldgpr(SemanticInstruction * inst, int destReg, int addrReg, int size, bool 
 void ldfpr(SemanticInstruction * inst, int addrReg, int destReg, int size);
 void stfpr(SemanticInstruction * inst, int addrReg, int dest, int size);
 
+SemanticInstruction * CASP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * CASB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * STXRB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * STLXRB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * STLLRB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * STLRB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * LDLARB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * LDARB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * LDAXRB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * LDXRB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+
 } // narmDecoder
 
 #endif // FLEXUS_armDECODER_armLOADSTORE_HPP_INCLUDED

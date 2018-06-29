@@ -45,6 +45,7 @@
 #include <components/uArchARM/RegisterType.hpp>
 #include <components/CommonQEMU/Slices/MemOp.hpp>
 #include "OperandMap.hpp"
+#include "Conditions.hpp"
 #include "Effects.hpp"
 #include "SemanticInstruction.hpp"
 
@@ -66,17 +67,24 @@ struct Operation {
   virtual Operand evalExtra( std::vector< Operand > const & operands ) {
     return 0;
   }
-  virtual void setContext( uint64_t aContext ) {}
   virtual char const * describe() const = 0;
 
-    virtual void setOperands(eOperandCode aCode, Operand aValue){
-        assert(false);
-    }
+  void setOperands(Operand aValue){
+        theOperands.push_back(aValue);
+        if (!hasOperands)
+            hasOperands = true;
+  }
+  bool hasOwnOperands(){
+      return hasOperands;
+  }
+
 
   virtual uint64_t getNZCVbits() { return theNZCV; }
   virtual bool hasNZCVFlags() { return theNZCV; }
   bool theNZCVFlags;
   uint64_t theNZCV;
+  std::vector< Operand > const theOperands;
+  bool hasOperands;
 };
 
 
@@ -353,8 +361,8 @@ predicated_action constantAction
   , boost::optional<eOperandCode> aBypass
 );
 
-//dependant_action branchCCAction
-//( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, Condition aCondition, std::vector< std::list<InternalDependance> > & opDeps, bool floating);
+dependant_action branchCCAction
+( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, Condition & aCondition, bool floating);
 
 dependant_action branchRegAction
 ( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition);

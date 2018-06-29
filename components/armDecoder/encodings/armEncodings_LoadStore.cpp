@@ -877,35 +877,55 @@ arminst disas_ldst_excl(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
     int rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
     int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
     int rt2 = extract32(aFetchedOpcode.theOpcode, 10, 5);
-    int is_lasr = extract32(aFetchedOpcode.theOpcode, 15, 1); // o0
+    int o0 = extract32(aFetchedOpcode.theOpcode, 15, 1); // is_lasr
     int rs = extract32(aFetchedOpcode.theOpcode, 16, 5);
-    int is_pair = extract32(aFetchedOpcode.theOpcode, 21, 1);  // o1
-    int is_store = !extract32(aFetchedOpcode.theOpcode, 22, 1); // L
-    int is_excl = !extract32(aFetchedOpcode.theOpcode, 23, 1); // o2
+    int o1 = extract32(aFetchedOpcode.theOpcode, 21, 1);  // is_pair
+    int L = extract32(aFetchedOpcode.theOpcode, 22, 1); // is_store
+    int o2 = extract32(aFetchedOpcode.theOpcode, 23, 1); // is_excl
     int size = extract32(aFetchedOpcode.theOpcode, 30, 2);
 
-    if ((!is_excl && !is_pair && !is_lasr) ||
-        (!is_excl && is_pair) ||
-        (is_pair && size < 2)) {
+    if ( ((o2 && o1) || (!o2 && o1)) && rt2 != 31 && size != 0) {
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-
     }
+    int decision = o0 | (o1<<1) | (L<<2) | (o2<<3);
 
-    if (is_excl) {  // o2
-        if (!is_store) {  // ! L
-            if (!is_pair) {  // o1
-                 STR(inst, rt, rn, (1<<size), is_lasr ? kAccType_ORDERED : kAccType_LIMITEDORDERED); // STLRB , STLLRB
-            } else {
-//                 CAS(inst, rt, rn, rs, (1<<size), is_lasr ? kAccType_ORDEREDRW : kAccType_ATOMICRW, kAccType_ATOMICRW); // STLRB , STLLRB
-            }
-        } else {
-            bool iss_sf = disas_ldst_compute_iss_sf(size, false, 0);
-            /* Generate ISS for non-exclusive accesses including LASR.  */
-        }
-    } else {
-
+    switch (decision) {
+    case 0:
+        STXRB(aFetchedOpcode, aCPU, aSequenceNo);
+        break;
+    case 1:
+        STLXRB(aFetchedOpcode, aCPU, aSequenceNo);
+        break;
+    case 2:case 3:
+    case 6:case 7:
+        CASP(aFetchedOpcode, aCPU, aSequenceNo);
+        break;
+    case 4:
+        LDXRB(aFetchedOpcode, aCPU, aSequenceNo);
+        break;
+    case 5:
+        LDAXRB(aFetchedOpcode, aCPU, aSequenceNo);
+        break;
+    case 8:
+        STLLRB(aFetchedOpcode, aCPU, aSequenceNo);
+        break;
+    case 9:
+        STLRB(aFetchedOpcode, aCPU, aSequenceNo);
+        break;
+    case 10:case 11:
+    case 14:case 15:
+        CASB(aFetchedOpcode, aCPU, aSequenceNo);
+        break;
+    case 12:
+        LDLARB(aFetchedOpcode, aCPU, aSequenceNo);
+        break;
+    case 13:
+        LDARB(aFetchedOpcode, aCPU, aSequenceNo);
+        break;
+    default:
+        DBG_Assert(false);
+        break;
     }
-
 
     return inst;
 }

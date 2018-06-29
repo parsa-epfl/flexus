@@ -43,7 +43,23 @@
 
 namespace narmDecoder {
 
-void branch_always( SemanticInstruction * inst, bool annul, VirtualMemoryAddress target);
+
+SemanticInstruction * B(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * BL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * BR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * BLR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * RET(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+
+
+
+SemanticInstruction * CBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * CBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * TBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * TBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * BCOND(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+
+void branch_always( SemanticInstruction * inst, bool immediate, VirtualMemoryAddress target);
+void branch_cc( SemanticInstruction * inst, VirtualMemoryAddress target, eCondCode aCode);
 
 } // narmDecoder
 #endif // FLEXUS_armDECODER_armBRANCH_HPP_INCLUDED

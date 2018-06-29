@@ -76,54 +76,25 @@ arminst disas_uncond_b_reg( armcode const & aFetchedOpcode, uint32_t  aCPU, int6
     case 2: /* RET */
         DBG_(Tmp,(<< "\033[1;31m DECODER: Unconditional branch (register) : BR?BLR?RET \033[0m"));
         DBG_(Tmp,(<< "\033[1;31m DECODER: Will set the PC using the value in X30 \033[0m"));
-
-        addReadXRegister(inst, 1, rn, rs_deps[0]);
-        simple_action target = calcAddressAction( inst, rs_deps);
-        dependant_action br = branchToCalcAddressAction( inst );
-        connectDependance( br.dependance, target );
-        connectDependance( inst->retirementDependance(), br );
-        inst->addRetirementEffect( updateUnconditional( inst, kAddress ) );
-
-        if (opc == 1) { // BLR
-
-            inst->setOperand(kOperand2, 4);
-            predicated_action act = addExecute(inst, operation(kADD_), rs_deps);
-            addDestination(inst, 30, act);
+        if (opc == 1 || opx == 2) { // BLR and RET
+            return BLR(aFetchedOpcode, aCPU, aSequenceNo);
+        } else {
+            return BR(aFetchedOpcode, aCPU, aSequenceNo);
         }
 
         break;
     case 4: /* ERET */
         DBG_(Tmp,(<< "\033[1;31m DECODER: Unconditional branch (register) : ERET \033[0m"));
+        inst->addPrevalidation( validateLegalReturn(inst) );
+        return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
 
-//        if (s->current_el == 0) {
-//            unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-//            return;
-//        }
-//        gen_helper_exception_return(cpu_env);
-        /* Must exit loop to check un-masked IRQs */
-//        s->base.is_jmp = DISAS_EXIT;
-        return;
     case 5: /* DRPS */
         DBG_(Tmp,(<< "\033[1;31m DECODER: Unconditional branch (register) : DRPS \033[0m"));
+        return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
 
-//        System
-//        DRPS
-//        if !Halted() || PSTATE.EL == EL0 then UnallocatedEncoding();
-//        Operation
-//        DRPSInstruction();
-
-        if (rn != 0x1f) {
-            return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-        } else {
-            return unsupported_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-        }
-        return;
     default:
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-        return;
     }
-
-    return inst;
 }
 
 /* Exception generation
@@ -305,30 +276,11 @@ arminst disas_system(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSe
  */
 arminst disas_cond_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
-                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
-
-    unsigned int cond;
-    uint64_t addr;
-
     if ((aFetchedOpcode.theOpcode & (1 << 4)) || (aFetchedOpcode.theOpcode & (1 << 24))) {
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
-    addr = aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 5, 19) * 4;
-    cond = extract32(aFetchedOpcode.theOpcode, 0, 4);
 
-    VirtualMemoryAddress target(addr);
-    inst->setOperand(kOperand1, cond);
-
-
-    if (cond < 0x0e) {
-        /* genuinely conditional branches */
-        branch_cc(inst, target, kBCOND_);
-
-    } else {
-        /* 0xe and 0xf are both "always" conditions */
-        branch_always(inst, false, target);
-    }
+    return BCOND(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Test and branch (immediate)
@@ -339,27 +291,12 @@ arminst disas_cond_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t
  */
 arminst disas_test_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
-                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
+    unsigned op = extract32(aFetchedOpcode.theOpcode, 24, 1); /* 0: TBZ; 1: TBNZ */
 
-    unsigned int bit_pos, op, rt;
-    uint64_t addr;
-    std::vector<std::list<InternalDependance> > rs_deps(1);
-
-
-    bit_pos = (extract32(aFetchedOpcode.theOpcode, 31, 1) << 5) | extract32(aFetchedOpcode.theOpcode, 19, 5);
-    op = extract32(aFetchedOpcode.theOpcode, 24, 1); /* 0: TBZ; 1: TBNZ */
-    addr = aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 5, 14) * 4 - 4;
-    rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    VirtualMemoryAddress target(addr);
-
-    addReadXRegister(inst, 1, rt, rs_deps[0]);
-    inst->setOperand(kOperand2, (1ULL<<bit_pos));
-
-    if (op == 0) {  // TBZ
-        branch_cc(inst,target, kTBZ_);
+    if (op == 0) {
+        return TBZ(aFetchedOpcode, aCPU, aSequenceNo);
     } else {
-        branch_cc(inst,target, kTBNZ_);
+        return TBNZ(aFetchedOpcode, aCPU, aSequenceNo);
     }
 
 }
@@ -372,33 +309,13 @@ arminst disas_test_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t
  */
 arminst disas_comp_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
-                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
+    unsigned op = extract32(aFetchedOpcode.theOpcode, 24, 1); /* 0: CBZ; 1: CBNZ */
 
-    std::vector<std::list<InternalDependance> > rs_deps(1);
-    unsigned int sf, op, rt;
-    uint64_t addr;
-
-
-    sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-    op = extract32(aFetchedOpcode.theOpcode, 24, 1); /* 0: CBZ; 1: CBNZ */
-    rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    addr = aFetchedOpcode.thePC + (sextract32(aFetchedOpcode.theOpcode, 5, 19) * 4);
-    VirtualMemoryAddress target(addr);
-
-    addReadXRegister(inst, 1, rt, rs_deps[0], sf);
-
-    if (op == 0) // CBZ
-    {
-        branch_cc(inst, target, kCBZ_);
+    if (op == 0) {
+        return CBZ(aFetchedOpcode, aCPU, aSequenceNo);
+    } else {
+        return CBNZ(aFetchedOpcode, aCPU, aSequenceNo);
     }
-    else
-    {
-        branch_cc(inst, target, kCBNZ_);
-    }
-
-
-    return inst;
 }
 
 /* Unconditional branch (immediate)
@@ -409,32 +326,43 @@ arminst disas_comp_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t
  */
 arminst disas_uncond_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
-                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
-
-    uint64_t addr = aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 0, 26) * 4 - 4;
-    VirtualMemoryAddress target(addr);
-
     if (aFetchedOpcode.theOpcode & (1U << 31)) {  // BL
         /* Branch with Link branches to a PC-relative offset,
          * setting the register X30 to PC+4.
          * It provides a hint that this is a subroutine call.*/
 
-        std::vector< std::list<InternalDependance> > rs_deps(2);
-        inst->setOperand(kOperand1, aFetchedOpcode.thePC);
-        inst->setOperand(kOperand2, 4);
-        predicated_action exec = addExecute(inst, operation(kADD_),rs_deps);
-
-        addDestination(inst, 30, exec);
-        inst->addDispatchEffect( branch( inst, target ) );
+        return BL(aFetchedOpcode, aCPU, aSequenceNo);
     } else { // B
-        inst->addDispatchEffect( branch( inst, target ) );
+        return B(aFetchedOpcode, aCPU, aSequenceNo);
     }
 
-    return inst;
 }
 
-/* Branches, exception generating and system instructions */
+/* Branches, exception generating and system instructions
+
+ 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1 0
++--------+--------+-----------+------------------------------------------------------
+|  op0   |   101  |    op1    |
++--------+--------+-----------+-------------------------------------------------------
+
+
++--------+-------+
+|  op0   |  op1  |
++--------+-------+
+|  010   | 0xxx  | Conditional branch (immediate)
+|  010   | 1xxx  | UNALLOCATED
+|  110   | 00xx  | Exception generation
+|  110   | 0100  | System
+|  110   | 0101  | UNALLOCATED
+|  110   | 011x  | UNALLOCATED
+|  110   | 1xxx  | Unconditional branch (register)
+|  x00   |       | Unconditional branch (Immediate)
+|  x01   | 0xxx  | Compare and branch (immediate)
+|  x01   | 1xxx  | Test and branch (immediate)
+|  x11   |       | UNALLOCATED
+
+*/
+
 arminst disas_b_exc_sys(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
     DBG_(Tmp,(<< "\033[1;31m DECODER: Branches, exception generating and system instructions \033[0m"));

@@ -68,15 +68,14 @@ void ldrex( SemanticInstruction * inst, uint32_t rs, uint32_t rs2,  uint32_t des
   inst->addSquashEffect( eraseLSQ(inst) );
   addDestination( inst, dest, rmw);
 }
-void strex(SemanticInstruction * inst, int srcReg, int addrReg, int size)
+
+static void store(SemanticInstruction * inst, int srcReg, int addrReg, int size)
 {
     DBG_(Tmp,(<< "\033[1;31m DECODER: Store General Reg \033[0m"));
     inst->setClass(clsAtomic, codeSTREX);
     std::vector< std::list<InternalDependance> > rs_deps(2);
-
     // get memory address
-    addAddressCompute( inst, rs_deps ) ;
-    addReadXRegister(inst, 1, addrReg, rs_deps[0]);
+    addAddressCompute( inst, rs_deps );
 
     inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
     inst->addRetirementEffect( retireMem(inst) );
@@ -91,7 +90,36 @@ void strex(SemanticInstruction * inst, int srcReg, int addrReg, int size)
     inst->addCommitEffect( commitStore(inst) );
 }
 
-void STR(SemanticInstruction * inst, int srcReg, int addrReg, int size, eAccType type)
+void strex(SemanticInstruction * inst, int srcReg, int addrReg, int size)
+{
+    DBG_(Tmp,(<< "\033[1;31m DECODER: Store General Reg \033[0m"));
+    inst->setClass(clsAtomic, codeSTREX);
+    std::vector< std::list<InternalDependance> > rs_deps(2);
+
+    // get memory address
+    addAddressCompute( inst, rs_deps );
+    addReadXRegister(inst, 1, addrReg, rs_deps[0]);
+
+    inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
+    inst->addRetirementEffect( retireMem(inst) );
+    inst->addSquashEffect( eraseLSQ(inst) );
+
+    inst->addDispatchEffect( allocateStore( inst, eSize(1<<size), false, kAccType_ORDERED) );
+    inst->addRetirementConstraint( storeQueueAvailableConstraint(inst) );
+    inst->addRetirementConstraint( sideEffectStoreConstraint(inst) );
+
+    addReadRD( inst, srcReg );
+    inst->addPostvalidation( validateMemory( kAddress, kOperand3, kResult, eSize(1<<size), inst ) );
+    inst->addCommitEffect( commitStore(inst) );
+}
+/*
+ * Store LORelease Register Byte stores a byte from a 32-bit register to a memory
+ * location. The instruction also has memory ordering semantics as
+ * described in Load LOAcquire, Store LORelease. For information about memory
+ * accesses, see Load/Store addressing modes.
+ *
+ */
+void STLRB(SemanticInstruction * inst, int srcReg, int addrReg, int size, eAccType type)
 {
     DBG_(Tmp,(<< "\033[1;31m DECODER: Store General Reg \033[0m"));
     inst->setClass(clsStore, codeStore);
@@ -188,5 +216,68 @@ void stfpr(SemanticInstruction * inst, int addrReg, int dest, int size)
 
     addReadFValue( inst, dest, eSize(1<<size) );
 }
+
+
+
+void mem (SemanticInstruction * inst, )
+{
+
+}
+/* Store Exclusive Register Byte stores a byte from a register to memory
+ * if the PE has exclusive access to the memory address, and returns a status
+ * value of 0 if the store was successful, or of 1 if no store was performed.
+ * See Synchronization and semaphores. The memory access is atomic.
+ * For information about memory accesses see Load/Store addressing modes.
+ */
+SemanticInstruction * STXRB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
+                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
+    unsigned int o0 = extract32(aFetchedOpcode.theOpcode, 15, 1);
+    unsigned int L = extract32(aFetchedOpcode.theOpcode, 22, 1);
+    unsigned int size = extract32(aFetchedOpcode.theOpcode, 30, 2);
+    unsigned int rs = extract32(aFetchedOpcode.theOpcode, 16, 5);
+    unsigned int rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
+    unsigned int rt2 = extract32(aFetchedOpcode.theOpcode, 10, 5);
+    unsigned int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
+
+//    std::vector< std::list<InternalDependance> > addr_deps(1);
+//    addReadXRegister(inst, 1, rn, addr_deps[0]);
+//    addAddressCompute(inst, addr_deps);
+
+//    std::vector< std::list<InternalDependance> > data_deps(1);
+//    addReadXRegister(inst, 1, rt, data_deps[0]);
+
+//    bit status = '1';
+    // Check whether the Exclusive Monitors are set to include the
+    // physical memory locations corresponding to virtual address
+    // range [address, address+dbytes-1].
+//    if AArch64.ExclusiveMonitorsPass(address, dbytes) then
+    // This atomic write will be rejected if it does not refer
+    // to the same physical locations after address translation.
+//        Mem[address, dbytes, acctype] = data;
+//        status = ExclusiveMonitorsStatus();
+//    X[s] = ZeroExtend(status, 32);
+
+    eAccType acctype = o0 == 1 ? kAccType_ORDERED : kAccType_ATOMIC;
+
+    inst->addDispatchEffect( allocateStore( inst, size, false, acctype ) );
+    inst->addRetirementConstraint( storeQueueAvailableConstraint(inst) );
+    inst->addRetirementConstraint( sideEffectStoreConstraint(inst) );
+
+    addReadRD( inst, rt );
+    inst->addPostvalidation( validateMemory( kAddress, kOperand3, kResult, size, inst ) );
+    inst->addCommitEffect( commitStore(inst) );
+}
+
+SemanticInstruction * CASP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * CASB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * STLXRB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * STLLRB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * STLRB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * LDLARB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * LDARB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * LDAXRB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+SemanticInstruction * LDXRB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+
 
 } // narmDecoder
