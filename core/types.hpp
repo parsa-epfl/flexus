@@ -1,9 +1,11 @@
 #ifndef TYPES_HPP
 #define TYPES_HPP
 
+#include <vector>
 #include <iostream>
 #include <iomanip>
 #include <boost/serialization/serialization.hpp>
+#include <boost/dynamic_bitset.hpp>
 #include <boost/operators.hpp>
 #if __cplusplus > 199711L
   #include <cstdint>
@@ -78,6 +80,17 @@ public:
   }
 
 }; // class MemoryAddress_
+
+typedef boost::dynamic_bitset<> bits;
+
+bits fillbits(const int bitSize);
+bool anyBits(bits b);
+bits concat_bits (const bits & lhs, const bits & rhs);
+
+std::pair<bits,bits> splitBits(const bits & input);
+
+
+
 
 typedef uint32_t Word32Bit;
 typedef int64_t Word64Bit;
