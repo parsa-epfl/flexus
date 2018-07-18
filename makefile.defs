@@ -43,7 +43,7 @@
 
 # GCC Compiler Settings
 #GCC_PATH=
-GCC_BINARY=g++ --std=c++11
+GCC_BINARY=g++ --std=c++14
 GCC_VERSION_NOCHECK=true
 
 # Boost 1.59.0 path
