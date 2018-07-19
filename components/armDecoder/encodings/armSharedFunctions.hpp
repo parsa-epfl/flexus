@@ -68,7 +68,7 @@ namespace narmDecoder {
 using namespace nuArchARM;
 
 typedef enum eConstraint
-{// General:
+{// General:;LLLLLLLLLLLLLLLLLLL 
     kConstraint_NONE,
     kConstraint_UNKNOWN,
     kConstraint_UNDEF,
@@ -87,7 +87,7 @@ typedef enum eConstraint
     kConstraint_FORCENOSLCHECK
 }eConstraint;
 
-enum eUnpredictable
+typedef enum eUnpredictable
 {
     // Writeback/transfer register overlap (load):
     kUnpredictable_WBOVERLAPLD,
@@ -179,22 +179,27 @@ enum eUnpredictable
 eConstraint ConstrainUnpredictable(eUnpredictable which);
 
 // Source
-void addReadRD( SemanticInstruction * inst, uint32_t rd) ;
+void addUpdateData( SemanticInstruction * inst, uint32_t data_reg, size_t size);
+//void addReadRD( SemanticInstruction * inst, uint32_t rd) ;
 void addReadFDs( SemanticInstruction * inst, uint32_t fd, eSize aSize, std::vector<InternalDependance> & aValueDependance);
 void addReadFValue( SemanticInstruction * inst, uint32_t fd, eSize aSize);
 void addReadCC( SemanticInstruction * inst, int32_t ccNum, int32_t anOpNumber, std::list<InternalDependance> & dependances);
 void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t rs, std::list<InternalDependance> & dependances, bool is_64 = true);
 void addAnnulment( SemanticInstruction * inst, eRegisterType aType, predicated_action & exec, InternalDependance const & aWritebackDependance);
+void addRD1Annulment( SemanticInstruction * inst, predicated_action & exec, InternalDependance const & aWritebackDependance);
 void addWriteback( SemanticInstruction * inst, eRegisterType aType, predicated_action & exec, bool addSquash = true);
+void addRD1Writeback( SemanticInstruction * inst, predicated_action & exec);
 
 // Destination
 void addDestination( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool addSquash = true);
+void addPairDestination( SemanticInstruction * inst, uint32_t rd, uint32_t rd1, predicated_action & exec, bool addSquash = true);
+void addFDestination( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool addSquash = true);
 void addFloatingDestination( SemanticInstruction * inst, uint32_t fd, eSize aSize, predicated_action & exec);
 void addAddressCompute( SemanticInstruction * inst, std::vector< std::list<InternalDependance> > & rs_deps);
 
 // aux
-predicated_action addExecute_XTRA( SemanticInstruction * inst, Operation & anOperation, uint32_t rd, std::vector< std::list<InternalDependance> > & rs_deps, bool write_xtra);
-predicated_action addExecute( SemanticInstruction * inst, Operation & anOperation, std::vector< std::list<InternalDependance> > & rs_deps);
+predicated_action addExecute_XTRA( SemanticInstruction * inst, std::unique_ptr<Operation> & anOperation, uint32_t rd, std::vector< std::list<InternalDependance> > & rs_deps, bool write_xtra);
+predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operation> & anOperation, std::vector< std::list<InternalDependance> > & rs_deps);
 
 void  MEMBAR( SemanticInstruction * inst, armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo, uint32_t i );
 void satisfyAtDispatch( SemanticInstruction * inst, std::list<InternalDependance> & dependances);

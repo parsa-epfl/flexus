@@ -71,7 +71,7 @@ void branch_cc( SemanticInstruction * inst, VirtualMemoryAddress target, eCondCo
 * * Operation:
 * BranchTo(PC[] + offset, BranchType_JMP);
 */
-SemanticInstruction * B(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+arminst B(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
     uint64_t addr = aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 0, 26) * 4 - 4;
@@ -89,7 +89,7 @@ SemanticInstruction * B(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
 *  X[30] = PC[] + 4;
 *  BranchTo(PC[] + offset, BranchType_CALL);
 */
-SemanticInstruction * BL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+arminst BL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
     uint64_t addr = aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 0, 26) * 4 - 4;
@@ -97,7 +97,10 @@ SemanticInstruction * BL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t
     std::vector< std::list<InternalDependance> > rs_deps(2);
     inst->setOperand(kOperand1, aFetchedOpcode.thePC);
     inst->setOperand(kOperand2, 4);
-    predicated_action exec = addExecute(inst, operation(kADD_),rs_deps);
+
+
+    std::unique_ptr<Operation> ptr = operation(kADD_);
+    predicated_action exec = addExecute(inst, ptr,rs_deps);
 
     addDestination(inst, 30, exec);
     inst->addDispatchEffect( branch( inst, target ) );
@@ -114,7 +117,7 @@ SemanticInstruction * BL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t
 * if IsZero(operand1) == TRUE then
 * BranchTo(PC[] + offset, BranchType_JMP);
 */
-SemanticInstruction * CBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+arminst CBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
     unsigned int sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
@@ -140,7 +143,7 @@ SemanticInstruction * CBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_
 * if IsZero(operand1) == FALSE then
 * BranchTo(PC[] + offset, BranchType_JMP);
 */
-SemanticInstruction * CBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+arminst CBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
     unsigned int sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
@@ -168,7 +171,7 @@ SemanticInstruction * CBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64
  * BranchTo(PC[] + offset, BranchType_JMP);
  *
 */
-SemanticInstruction * TBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+arminst TBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
@@ -201,7 +204,7 @@ SemanticInstruction * TBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_
  * BranchTo(PC[] + offset, BranchType_JMP);
  *
 */
-SemanticInstruction * TBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+arminst TBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
@@ -230,7 +233,7 @@ SemanticInstruction * TBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64
  * if ConditionHolds(condition) then
  * BranchTo(PC[] + offset, BranchType_JMP);
  */
-SemanticInstruction * BCOND(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+arminst BCOND(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
@@ -261,7 +264,7 @@ SemanticInstruction * BCOND(armcode const & aFetchedOpcode, uint32_t  aCPU, int6
  * bits(64) target = X[n];
  * BranchTo(target, BranchType_JMP);
  */
-SemanticInstruction * BR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+arminst BR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
@@ -288,9 +291,8 @@ SemanticInstruction * BR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t
  * if branch_type == BranchType_CALL then X[30] = PC[] + 4;
  * BranchTo(target, branch_type);
  */
-SemanticInstruction * BLR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
-    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
-                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
+arminst BLR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+
 
     unsigned int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
     unsigned int op = extract32(aFetchedOpcode.theOpcode, 21, 2);
@@ -299,6 +301,8 @@ SemanticInstruction * BLR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 
+    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
+                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
     std::vector<std::list<InternalDependance> > rs_deps(1);
     addReadXRegister(inst, 1, rn, rs_deps[0]);
 
@@ -309,10 +313,11 @@ SemanticInstruction * BLR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_
     inst->addRetirementEffect( updateUnconditional( inst, kAddress ) );
 
     // Link
-    Operation& op = operation(kADD_);
-    op.setOperands(aFetchedOpcode.thePC);
-    op.setOperands(4);
-    predicated_action exec = addExecute(inst, operation(kADD_),rs_deps);
+    std::unique_ptr<Operation> addop = operation(kADD_);
+    addop->setOperands(aFetchedOpcode.thePC);
+    addop->setOperands(4);
+
+    predicated_action exec = addExecute(inst, addop, rs_deps);
     addDestination(inst, 30, exec);
 
     return inst;

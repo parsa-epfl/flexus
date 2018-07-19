@@ -86,7 +86,7 @@ protected:
   uint64_t theRetireStallCycles;
   bool theMayCommit;
 
-  boost::optional<Flexus::Qemu::MMU::mmu_t> theMMU;
+//  boost::optional<Flexus::Qemu::MMU::mmu_t> theMMU;
 
   bool theUsesIntAlu;
   bool theUsesIntMult;
@@ -207,12 +207,12 @@ public:
     return isRetired() || isSquashed();
   }
 
-  virtual void setMMU(Flexus::Qemu::MMU::mmu_t m) {
-    theMMU = m;
-  }
-  virtual boost::optional<Flexus::Qemu::MMU::mmu_t> getMMU() const {
-    return theMMU;
-  }
+//  virtual void setMMU(Flexus::Qemu::MMU::mmu_t m) {
+//    theMMU = m;
+//  }
+//  virtual boost::optional<Flexus::Qemu::MMU::mmu_t> getMMU() const {
+//    return theMMU;
+//  }
 
 
   std::string printInstClass() const {

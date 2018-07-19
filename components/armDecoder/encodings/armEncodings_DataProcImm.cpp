@@ -73,7 +73,7 @@ arminst disas_pc_rel_adr(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t
 
     ADR(inst, base, offset, rd);
 
-    return inst;
+    return arminst(inst);
 }
 
 /* Logical (immediate)
@@ -135,7 +135,7 @@ arminst disas_logic_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
         break;
     }
 
-    return inst;
+    return arminst(inst);
 }
 
 /*
@@ -184,7 +184,7 @@ arminst disas_movw_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t a
         break;
     }
 
-    return inst;
+    return arminst(inst);
 }
 
 /* Bitfield
@@ -259,7 +259,7 @@ arminst disas_extract(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aS
         EXTR(inst, rd, rn, rm, imm, sf);
     }
 
-    return inst;
+    return arminst(inst);
 }
 
 /*
@@ -308,7 +308,7 @@ arminst disas_add_sub_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_
 
     }
 
-    return inst;
+    return arminst(inst);
 }
 
 /* Data processing - immediate */

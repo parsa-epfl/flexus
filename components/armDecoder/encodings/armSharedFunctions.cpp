@@ -180,11 +180,28 @@ static void setFCCd( int32_t fcc, SemanticInstruction * inst) {
   inst->setOperand( kCCd, regCCd );
 }
 
-void addReadRD( SemanticInstruction * inst, uint32_t rd) {
+//void addReadRD( SemanticInstruction * inst, uint32_t rd) {
 
-    predicated_dependant_action update_value = updateStoreValueAction( inst );
+//    predicated_dependant_action update_value = updateStoreValueAction( inst );
 
-    setRD( inst, rd);
+//    setRD( inst, rd);
+
+//    inst->addDispatchEffect( mapSource( inst, kRD, kPD ) );
+//    simple_action read_value = readRegisterAction( inst, kPD, kResult );
+//    inst->addDispatchAction( read_value );
+
+//    connectDependance( update_value.dependance, read_value );
+//    connectDependance( inst->retirementDependance(), update_value );
+
+//    inst->addAnnulmentEffect( squash( inst, update_value.predicate ) );
+//    inst->addReinstatementEffect( satisfy( inst, update_value.predicate ) );
+//}
+
+void addUpdateData( SemanticInstruction * inst) {
+
+    predicated_dependant_action update_value = updateStoreValueAction( inst, kResult);
+
+//    setRD( inst, addr_reg);
 
     inst->addDispatchEffect( mapSource( inst, kRD, kPD ) );
     simple_action read_value = readRegisterAction( inst, kPD, kResult );
@@ -213,7 +230,7 @@ void addReadFDs( SemanticInstruction * inst, uint32_t fd, eSize aSize, std::vect
       inst->addDispatchEffect( mapSource( inst, kFD0, kPFD0 ) );
       simple_action read_value = readRegisterAction( inst, kPFD0, kfResult0 );
       inst->addDispatchAction( read_value );
-      inst->addPrevalidation( validateFRegister( fd, kfResult0, inst ) );
+      inst->addPrevalidation( validateVRegister( fd, kfResult0, inst ) );
 
       connectDependance( aValueDependance[0], read_value );
       inst->addDispatchEffect( satisfy( inst, aValueDependance[1] ) );
@@ -233,17 +250,17 @@ void addReadFDs( SemanticInstruction * inst, uint32_t fd, eSize aSize, std::vect
       inst->addDispatchEffect( mapSource( inst, kFD0, kPFD0 ) );
       simple_action read_value = readRegisterAction( inst, kPFD0, kfResult0 );
       inst->addDispatchAction( read_value );
-      inst->addPrevalidation( validateFRegister( actual_fd, kfResult0, inst ) );
+      inst->addPrevalidation( validateVRegister( actual_fd, kfResult0, inst ) );
 
       inst->addDispatchEffect( mapSource( inst, kFD1, kPFD1 ) );
       simple_action read_value1 = readRegisterAction( inst, kPFD1, kfResult1 );
       inst->addDispatchAction( read_value1 );
-      inst->addPrevalidation( validateFRegister( actual_fd | 1, kfResult1, inst ) );
+      inst->addPrevalidation( validateVRegister( actual_fd | 1, kfResult1, inst ) );
 
       connectDependance( aValueDependance[0], read_value );
       connectDependance( aValueDependance[1], read_value1 );
-      inst->addPostvalidation( validateMemory( kAddress, kOperand3, kfResult0, kWord, inst ) );
-      inst->addPostvalidation( validateMemory( kAddress, 4, kOperand3, kfResult1, kWord, inst ) );
+      inst->addPostvalidation( validateMemory( kAddress, kfResult0, kWord, inst ) );
+      inst->addPostvalidation( validateMemory( kAddress, kOperand3, kfResult1, kWord, inst ) );
 
       break;
     }
@@ -280,7 +297,7 @@ void addReadCC( SemanticInstruction * inst, int32_t ccNum, int32_t anOpNumber, s
   inst->addDispatchAction( act );
 }
 
-void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t rs, std::list<InternalDependance> & dependances, bool is_64 = true) {
+void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t rs, std::list<InternalDependance> & dependances, bool is_64) {
 
     //Calculate operand codes from anOpNumber
     DBG_Assert( anOpNumber == 1 || anOpNumber == 2 || anOpNumber == 3 || anOpNumber == 4 || anOpNumber == 5 );
@@ -294,7 +311,7 @@ void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t 
     simple_action act = readRegisterAction( inst, cPS, cOperand, is_64 );
     connect( dependances, act );
     inst->addDispatchAction( act );
-//    inst->addPrevalidation( validateRegister( rs, cOperand, inst ) );
+    inst->addPrevalidation( validateXRegister( rs, cOperand, inst ) );
 
 }
 
@@ -308,6 +325,32 @@ void addAnnulment( SemanticInstruction * inst, eRegisterType aType, predicated_a
   inst->addAnnulmentEffect( squash( inst, exec.predicate ) );
   inst->addReinstatementEffect( squash( inst, annul.predicate ) );
   inst->addReinstatementEffect( satisfy ( inst, exec.predicate ) );
+}
+
+void addRD1Annulment( SemanticInstruction * inst, predicated_action & exec, InternalDependance const & aWritebackDependance) {
+  predicated_action annul = annulRD1Action( inst );
+  inst->addDispatchAction( annul );
+
+  connectDependance( aWritebackDependance, annul );
+
+  inst->addAnnulmentEffect( satisfy( inst, annul.predicate ) );
+  inst->addAnnulmentEffect( squash( inst, exec.predicate ) );
+  inst->addReinstatementEffect( squash( inst, annul.predicate ) );
+  inst->addReinstatementEffect( satisfy ( inst, exec.predicate ) );
+}
+
+void addRD1Writeback( SemanticInstruction * inst, predicated_action & exec) {
+  inst->addDispatchEffect( mapRD1Destination(inst) );
+
+  //Create the writeback action
+  dependant_action wb = writebackRD1Action( inst );
+  //inst->addDispatchAction( wb );
+
+  addRD1Annulment( inst, exec, wb.dependance );
+
+  //Make writeback depend on execute, make retirement depend on writeback
+  connectDependance( wb.dependance, exec );
+  connectDependance( inst->retirementDependance(), wb );
 }
 
 void addWriteback( SemanticInstruction * inst, eRegisterType aType, predicated_action & exec, bool addSquash = true) {
@@ -327,19 +370,34 @@ void addWriteback( SemanticInstruction * inst, eRegisterType aType, predicated_a
   connectDependance( wb.dependance, exec );
   connectDependance( inst->retirementDependance(), wb );
 }
+
+
 void addDestination( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool addSquash = true) {
-//  if (rd != 0) {
+
     setRD( inst, rd);
     addWriteback( inst, xRegisters, exec, addSquash );
-//    inst->addPostvalidation( validateRegister( rd, kResult, inst  ) );
-    inst->addOverride( overrideRegister( rd, kResult, inst ) );
-//  } else {
-    //No need to write back.  Make retirement depend on execution
-//    InternalDependance dep( inst->retirementDependance() );
-//    connectDependance( dep, exec );
-//  }
+    inst->addPostvalidation( validateXRegister( rd, kResult, inst  ) );
+//    inst->addOverride( overrideRegister( rd, kResult, inst ) );
+}
 
+void addPairDestination( SemanticInstruction * inst, uint32_t rd, uint32_t rd1, predicated_action & exec, bool addSquash = true) {
 
+    setRD( inst, rd);
+    addWriteback( inst, xRegisters, exec );
+    inst->addPostvalidation( validateXRegister( rd, kResult, inst  ) );
+//    inst->addOverride( overrideRegister( operands.rd(), kResult, inst ) );
+    setRD1( inst, rd1);
+    addRD1Writeback( inst, exec );
+    inst->addPostvalidation( validateXRegister( rd1, kResult1, inst  ) );
+//    inst->addOverride( overrideRegister( operands.rd() + 1, kResult1, inst ) );
+}
+
+void addFDestination( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool addSquash = true) {
+
+    setFD( inst, kFD0, rd);
+    addWriteback( inst, vRegisters, exec, addSquash );
+    inst->addPostvalidation( validateVRegister( rd, kResult, inst  ) );
+//    inst->addOverride( overrideRegister( rd, kResult, inst ) );
 }
 
 
@@ -355,7 +413,7 @@ void ArmFormatOperands( SemanticInstruction * inst, uint32_t reg,
 //    }
 }
 
-predicated_action addExecute_XTRA( SemanticInstruction * inst, Operation & anOperation, uint32_t rd, std::vector< std::list<InternalDependance> > & rs_deps, bool write_xtra) {
+predicated_action addExecute_XTRA( SemanticInstruction * inst, std::unique_ptr<Operation> & anOperation, uint32_t rd, std::vector< std::list<InternalDependance> > & rs_deps, bool write_xtra) {
   predicated_action exec;
 //  if (rd == 0) {
 //    exec = executeAction_XTRA( inst, anOperation, rs_deps, boost::none, (write_xtra ? boost::optional<eOperandCode>(kXTRApd) : boost::none));
@@ -366,7 +424,7 @@ predicated_action addExecute_XTRA( SemanticInstruction * inst, Operation & anOpe
   return exec;
 }
 
-predicated_action addExecute( SemanticInstruction * inst, Operation & anOperation, std::vector< std::list<InternalDependance> > & rs_deps) {
+predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operation> & anOperation, std::vector< std::list<InternalDependance> > & rs_deps) {
   predicated_action exec;
 
     exec = executeAction( inst, anOperation, rs_deps, kResult, kPD );
@@ -374,39 +432,96 @@ predicated_action addExecute( SemanticInstruction * inst, Operation & anOperatio
     return exec;
 }
 
+void addFloatingAnnulment( SemanticInstruction * inst, int32_t anIndex, predicated_action & exec, InternalDependance const & aWritebackDependance) {
+  predicated_action annul = floatingAnnulAction( inst, anIndex );
+  //inst->addDispatchAction( annul );
+
+  connectDependance( aWritebackDependance, annul );
+
+//  inst->addDispatchEffect( recordFPRS(inst));
+  inst->addAnnulmentEffect( satisfy( inst, annul.predicate ) );
+  inst->addAnnulmentEffect( squash( inst, exec.predicate ) );
+  inst->addReinstatementEffect( squash( inst, annul.predicate ) );
+  inst->addReinstatementEffect( satisfy ( inst, exec.predicate ) );
+}
+
+void addFloatingWriteback( SemanticInstruction * inst, int32_t anIndex, predicated_action & exec) {
+  inst->addDispatchEffect( mapFDestination( inst, anIndex) );
+
+  //Create the writeback action
+  dependant_action wb = floatingWritebackAction( inst, anIndex );
+  //inst->addDispatchAction( wb );
+
+  addFloatingAnnulment( inst, anIndex, exec, wb.dependance );
+
+  //Make writeback depend on execute, make retirement depend on writeback
+  connectDependance( wb.dependance, exec );
+  connectDependance( inst->retirementDependance(), wb );
+}
+
+void addDoubleFloatingWriteback( SemanticInstruction * inst, predicated_action & exec) {
+  inst->addDispatchEffect( mapFDestination( inst, 0) );
+  inst->addDispatchEffect( mapFDestination( inst, 1) );
+
+  //Create the writeback action
+  dependant_action wb0 = floatingWritebackAction( inst, 0 );
+  dependant_action wb1 = floatingWritebackAction( inst, 1 );
+
+  predicated_action annul0 = floatingAnnulAction( inst, 0 );
+  predicated_action annul1 = floatingAnnulAction( inst, 1 );
+
+  connectDependance( wb0.dependance, annul0 );
+  connectDependance( wb1.dependance, annul1 );
+
+//  inst->addDispatchEffect( recordFPRS(inst));
+  inst->addAnnulmentEffect( satisfy( inst, annul0.predicate ) );
+  inst->addAnnulmentEffect( satisfy( inst, annul1.predicate ) );
+  inst->addAnnulmentEffect( squash( inst, exec.predicate ) );
+
+  inst->addReinstatementEffect( squash( inst, annul0.predicate ) );
+  inst->addReinstatementEffect( squash( inst, annul1.predicate ) );
+  inst->addReinstatementEffect( satisfy ( inst, exec.predicate ) );
+
+  //Make writeback depend on execute, make retirement depend on writeback
+  connectDependance( wb0.dependance, exec );
+  connectDependance( wb1.dependance, exec );
+  connectDependance( inst->retirementDependance(), wb0 );
+  connectDependance( inst->retirementDependance(), wb1 );
+}
+
 void addFloatingDestination( SemanticInstruction * inst, uint32_t fd, eSize aSize, predicated_action & exec) {
 
-//  switch ( aSize ) {
-//    case kWord: {
-//      setFD(inst, kFD0, fd);
-//      addFloatingWriteback( inst, 0, exec );
+  switch ( aSize ) {
+    case kWord: {
+      setFD(inst, kFD0, fd);
+      addFloatingWriteback( inst, 0, exec );
 //      inst->addRetirementEffect( updateFPRS(inst, fd) );
 //      inst->addPostvalidation( validateFPRS(inst) );
-//      inst->addPostvalidation( validateFRegister( fd, kfResult0, inst  ) );
+      inst->addPostvalidation( validateVRegister( fd, kfResult0, inst  ) );
 //      inst->addOverride( overrideFloatSingle( fd, kfResult0, inst ) );
-//      break;
-//    }
-//    case kDoubleWord: {
-//      //Move fd[0] to fd[5]
-//      boost::dynamic_bitset<> fdb(6, fd);
-//      fdb[5] = fdb[0];
-//      fdb[0] = 0;
-//      int32_t actual_fd = fdb.to_ulong();
-//      setFD(inst, kFD0, actual_fd);
-//      setFD(inst, kFD1, actual_fd | 1);
+      break;
+    }
+    case kDoubleWord: {
+      //Move fd[0] to fd[5]
+      boost::dynamic_bitset<> fdb(6, fd);
+      fdb[5] = fdb[0];
+      fdb[0] = 0;
+      int32_t actual_fd = fdb.to_ulong();
+      setFD(inst, kFD0, actual_fd);
+      setFD(inst, kFD1, actual_fd | 1);
 //      inst->addRetirementEffect( updateFPRS(inst, actual_fd) );
 //      inst->addPostvalidation( validateFPRS(inst) );
-////      addFloatingWriteback( inst, 0, exec );
-////      addFloatingWriteback( inst, 1, exec );
-//      addDoubleFloatingWriteback( inst, exec ); // Use specialized function to avoid squash->satisfy->squash deadlock problem with annulment/reinstatement
-//      inst->addPostvalidation( validateFRegister( actual_fd, kfResult0, inst  ) );
-//      inst->addPostvalidation( validateFRegister( actual_fd | 1, kfResult1, inst  ) );
+//      addFloatingWriteback( inst, 0, exec );
+//      addFloatingWriteback( inst, 1, exec );
+      addDoubleFloatingWriteback( inst, exec ); // Use specialized function to avoid squash->satisfy->squash deadlock problem with annulment/reinstatement
+      inst->addPostvalidation( validateVRegister( actual_fd, kfResult0, inst  ) );
+      inst->addPostvalidation( validateVRegister( actual_fd | 1, kfResult1, inst  ) );
 //      inst->addOverride( overrideFloatDouble( actual_fd, kfResult0, kfResult1, inst ) );
-//      break;
-//    }
-//    default:
-//      DBG_Assert(false);
-//  }
+      break;
+    }
+    default:
+      DBG_Assert(false);
+  }
 }
 
 void addAddressCompute( SemanticInstruction * inst, std::vector< std::list<InternalDependance> > & rs_deps) {

@@ -76,7 +76,7 @@ arminst disas_uncond_b_reg( armcode const & aFetchedOpcode, uint32_t  aCPU, int6
     case 2: /* RET */
         DBG_(Tmp,(<< "\033[1;31m DECODER: Unconditional branch (register) : BR?BLR?RET \033[0m"));
         DBG_(Tmp,(<< "\033[1;31m DECODER: Will set the PC using the value in X30 \033[0m"));
-        if (opc == 1 || opx == 2) { // BLR and RET
+        if (opc == 1 || op2 == 2) { // BLR and RET
             return BLR(aFetchedOpcode, aCPU, aSequenceNo);
         } else {
             return BR(aFetchedOpcode, aCPU, aSequenceNo);

@@ -44,19 +44,19 @@
 namespace narmDecoder {
 
 
-SemanticInstruction * B(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-SemanticInstruction * BL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-SemanticInstruction * BR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-SemanticInstruction * BLR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-SemanticInstruction * RET(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst B(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst BL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst BR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst BLR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst RET(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 
 
 
-SemanticInstruction * CBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-SemanticInstruction * CBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-SemanticInstruction * TBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-SemanticInstruction * TBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-SemanticInstruction * BCOND(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst CBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst CBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst TBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst TBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst BCOND(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 
 void branch_always( SemanticInstruction * inst, bool immediate, VirtualMemoryAddress target);
 void branch_cc( SemanticInstruction * inst, VirtualMemoryAddress target, eCondCode aCode);

@@ -122,7 +122,7 @@ arminst disas_ldst_reg_imm9(armcode const & aFetchedOpcode, uint32_t  aCPU, int6
 
 
     int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    int imm9 = sextract32(aFetchedOpcode.theOpcode, 12, 9);
+    uint64_t imm9 = (uint64_t)sextract32(aFetchedOpcode.theOpcode, 12, 9);
     int idx = extract32(aFetchedOpcode.theOpcode, 10, 2);
     bool is_signed = false;
     bool is_store = false;
@@ -195,7 +195,7 @@ arminst disas_ldst_reg_imm9(armcode const & aFetchedOpcode, uint32_t  aCPU, int6
     addReadXRegister(inst, 1, rn, rs_deps[0]);
     if (!post_index) {
         //tcg_gen_addi_i64(tcg_addr, tcg_addr, imm9);
-        inst->setOperand(kUopAddressOffset, static_cast<uint64_t>(imm9));
+        inst->setOperand(kUopAddressOffset, imm9);
         addAddressCompute(inst,rs_deps);
     }
 
@@ -221,19 +221,19 @@ arminst disas_ldst_reg_imm9(armcode const & aFetchedOpcode, uint32_t  aCPU, int6
 //            do_gpr_ld_memidx(s, tcg_rt, tcg_addr, size,
 //                             is_signed, is_extended, memidx,
 //                             iss_valid, rt, iss_sf, false);
-            ldgpr(inst, rt, rn, size, false);
+//            ldgpr(inst, rt, rn, size, false);
         }
     }
 
     if (writeback) {
 //        TCGv_i64 tcg_rn = cpu_reg_sp(s, rn);
         if (post_index) {
-            predicated_action add = addExecute(inst,operation(kADD_),rs_deps);
-            addDestination(inst,rn,add);
+//            predicated_action add = addExecute(inst,operation(kADD_),rs_deps);
+//            addDestination(inst,rn,add);
             //tcg_gen_addi_i64(tcg_addr, tcg_addr, imm9);
         }
-        predicated_action mov = addExecute(inst,operation(kMOV_),rs_deps);
-        addDestination(inst,rn,mov);
+//        predicated_action mov = addExecute(inst,operation(kMOV_),rs_deps);
+//        addDestination(inst,rn,mov);
 //        tcg_gen_mov_i64(tcg_rn, tcg_addr);
     }
 }
@@ -377,14 +377,14 @@ arminst disas_ldst_reg_roffset(armcode const & aFetchedOpcode,uint32_t  aCPU, in
     if (is_vector) {
         if (is_store) {
 //            do_fp_st(s, rt, tcg_addr, size);
-            stfpr(inst, rn, rt, size);
+//            stfpr(inst, rn, rt, size);
         } else {
 //            do_fp_ld(s, rt, tcg_addr, size);
-            ldfpr(inst, rn, rt, size);
+//            ldfpr(inst, rn, rt, size);
         }
     } else {
 //        TCGv_i64 tcg_rt = cpu_reg(s, rt);
-        bool iss_sf = disas_ldst_compute_iss_sf(size, is_signed, opc);
+//        bool iss_sf = disas_ldst_compute_iss_sf(size, is_signed, opc);
         if (is_store) {
 //            do_gpr_st(s, tcg_rt, tcg_addr, size,
 //                      true, rt, iss_sf, false);
@@ -393,7 +393,7 @@ arminst disas_ldst_reg_roffset(armcode const & aFetchedOpcode,uint32_t  aCPU, in
 //            do_gpr_ld(s, tcg_rt, tcg_addr, size,
 //                      is_signed, is_extended,
 //                      true, rt, iss_sf, false);
-            ldgpr(inst, rn, rt, size, is_signed);
+//            ldgpr(inst, rn, rt, size, is_signed);
         }
     }
     return inst;
@@ -423,117 +423,117 @@ arminst disas_ldst_reg_unsigned_imm(armcode const & aFetchedOpcode, uint32_t  aC
                                         bool is_vector)
 {
     SemanticInstruction * inst (new SemanticInstruction(aFetchedOpcode.thePC,aFetchedOpcode.theOpcode,aFetchedOpcode.theBPState,aCPU,aSequenceNo));
-    int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    unsigned int imm12 = extract32(aFetchedOpcode.theOpcode, 10, 12);
-    unsigned int offset;
+//    int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
+//    unsigned int imm12 = extract32(aFetchedOpcode.theOpcode, 10, 12);
+//    unsigned int offset;
 
-//    TCGv_i64 tcg_addr;
+////    TCGv_i64 tcg_addr;
 
-    uint64_t addr;
-    bool is_store;
-    bool is_signed = false;
-    bool is_extended = false;
-    int memidx = 0;
+//    uint64_t addr;
+//    bool is_store;
+//    bool is_signed = false;
+//    bool is_extended = false;
+//    int memidx = 0;
 
-    if (is_vector) {
-        DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register  VECTOR#1\033[0m"));
+//    if (is_vector) {
+//        DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register  VECTOR#1\033[0m"));
 
-        size |= (opc & 2) << 1;
-        if (size > 4) {
-            return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-        }
-        is_store = !extract32(opc, 0, 1);
-//        if (!fp_access_check(s)) {
-//            return;
+//        size |= (opc & 2) << 1;
+//        if (size > 4) {
+//            return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
 //        }
-    } else {
-        DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register  non-VECTOR#1\033[0m"));
+//        is_store = !extract32(opc, 0, 1);
+////        if (!fp_access_check(s)) {
+////            return;
+////        }
+//    } else {
+//        DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register  non-VECTOR#1\033[0m"));
 
-        if (size == 3 && opc == 2) {
-            /* PRFM - prefetch */
-        }
-        if (opc == 3 && size > 1) {
-            return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-        }
-        is_store = (opc == 0);
-        is_signed = extract32(opc, 1, 1);
-        is_extended = (size < 3) && extract32(opc, 0, 1);
-    }
-
-//    if (rn == 31) {
-//        gen_check_sp_alignment(s);
+//        if (size == 3 && opc == 2) {
+//            /* PRFM - prefetch */
+//        }
+//        if (opc == 3 && size > 1) {
+//            return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+//        }
+//        is_store = (opc == 0);
+//        is_signed = extract32(opc, 1, 1);
+//        is_extended = (size < 3) && extract32(opc, 0, 1);
 //    }
 
-    //tcg_addr = read_cpu_reg_sp(s, rn, 1);
-    //tcg_gen_addi_i64(tcg_addr, tcg_addr, offset);
+////    if (rn == 31) {
+////        gen_check_sp_alignment(s);
+////    }
 
-    std::vector< std::list<InternalDependance> > rs_deps(2);
-    addReadXRegister(inst,1,rn,rs_deps[0]);
-    offset = imm12 << size;
+//    //tcg_addr = read_cpu_reg_sp(s, rn, 1);
+//    //tcg_gen_addi_i64(tcg_addr, tcg_addr, offset);
 
-    inst->setOperand( kUopAddressOffset, offset );
-    addAddressCompute(inst,rs_deps);
+//    std::vector< std::list<InternalDependance> > rs_deps(2);
+//    addReadXRegister(inst,1,rn,rs_deps[0]);
+//    offset = imm12 << size;
+
+//    inst->setOperand( kUopAddressOffset, offset );
+//    addAddressCompute(inst,rs_deps);
 
 
 
-    if (is_vector) {
+//    if (is_vector) {
 
-        if (is_store) {
-            DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register-STF-VECTOR #2\033[0m"));
+//        if (is_store) {
+//            DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register-STF-VECTOR #2\033[0m"));
 
-            stfpr(inst, rt, rn, size);
-            //do_fp_st(s, rt, tcg_addr, size);
-        } else {
-            DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register-LDF-VECTOR #2\033[0m"));
+////            stfpr(inst, rt, rn, size);
+//            //do_fp_st(s, rt, tcg_addr, size);
+//        } else {
+//            DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register-LDF-VECTOR #2\033[0m"));
 
-            ldfpr(inst, rn, rt, size);
-            //do_fp_ld(s, rt, tcg_addr, size);
-        }
-    } else {
-        DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register nonVECTOR #2\033[0m"));
+////            ldfpr(inst, rn, rt, size);
+//            //do_fp_ld(s, rt, tcg_addr, size);
+//        }
+//    } else {
+//        DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register nonVECTOR #2\033[0m"));
 
-        //TCGv_i64 tcg_rt = cpu_reg(s, rt);
+//        //TCGv_i64 tcg_rt = cpu_reg(s, rt);
 
-        bool iss_sf = disas_ldst_compute_iss_sf(eSize(1 << size), is_signed, opc);
-        if (is_store) {
-            DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register-ST nonVECTOR #2\033[0m"));
+////        bool iss_sf = disas_ldst_compute_iss_sf(eSize(1 << size), is_signed, opc);
+//        if (is_store) {
+//            DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register-ST nonVECTOR #2\033[0m"));
 
-//            STR(inst, rt, size, memidx,
-//                   true, rt, iss_sf, false);
-            inst->setClass(clsStore, codeStoreFP);
-            addReadXRegister(inst,2,rt, rs_deps[1]);
-            addAddressCompute( inst, rs_deps ) ;
-            inst->addSquashEffect( eraseLSQ(inst) );
-//            inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
-            inst->addRetirementEffect( retireMem(inst) );
-//            inst->addPrevalidation( validateFPSR(inst) );
-            inst->addDispatchEffect( allocateStore( inst, eSize(1<<size), false , kAccType_ORDERED) );
-            inst->addCommitEffect( commitStore(inst) );
-//            inst->addRetirementConstraint( storeQueueAvailableConstraint(inst) );
-//            inst->addRetirementConstraint( sideEffectStoreConstraint(inst) );
+////            STR(inst, rt, size, memidx,
+////                   true, rt, iss_sf, false);
+//            inst->setClass(clsStore, codeStoreFP);
+//            addReadXRegister(inst,2,rt, rs_deps[1]);
+//            addAddressCompute( inst, rs_deps ) ;
+//            inst->addSquashEffect( eraseLSQ(inst) );
+////            inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
+//            inst->addRetirementEffect( retireMem(inst) );
+////            inst->addPrevalidation( validateFPSR(inst) );
+//            inst->addDispatchEffect( allocateStore( inst, eSize(1<<size), false , kAccType_ORDERED) );
+//            inst->addCommitEffect( commitStore(inst) );
+////            inst->addRetirementConstraint( storeQueueAvailableConstraint(inst) );
+////            inst->addRetirementConstraint( sideEffectStoreConstraint(inst) );
 
-//            do_gpr_st(s, tcg_rt, tcg_addr, size,
-//                      true, rt, iss_sf, false);
-        } else {
-            DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register-LD nonVECTOR #2\033[0m"));
+////            do_gpr_st(s, tcg_rt, tcg_addr, size,
+////                      true, rt, iss_sf, false);
+//        } else {
+//            DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register-LD nonVECTOR #2\033[0m"));
 
-//            ldgpr(inst, rt, size, is_signed, is_extended, memidx,
-//                  true, rt, iss_sf, false);
-            inst->setClass(clsLoad, codeLoad);
-            addAddressCompute( inst, rs_deps ) ;
-            inst->addSquashEffect( eraseLSQ(inst) );
-//            inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
-            inst->addRetirementEffect( retireMem(inst) );
-            predicated_dependant_action load;
-            load = loadAction( inst, eSize(1 << size), is_extended, kPD );
-            inst->addDispatchEffect( allocateLoad( inst, eSize(1<<size), load.dependance, kAccType_ORDERED ) );
-            inst->addCommitEffect( accessMem(inst) );
-            inst->addRetirementConstraint( loadMemoryConstraint(inst) );
-            addDestination( inst, rt, load);
-//            do_gpr_ld(s, tcg_rt, tcg_addr, size, is_signed, is_extended,
-//                      true, rt, iss_sf, false);
-        }
-    }
+////            ldgpr(inst, rt, size, is_signed, is_extended, memidx,
+////                  true, rt, iss_sf, false);
+//            inst->setClass(clsLoad, codeLoad);
+//            addAddressCompute( inst, rs_deps ) ;
+//            inst->addSquashEffect( eraseLSQ(inst) );
+////            inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
+//            inst->addRetirementEffect( retireMem(inst) );
+//            predicated_dependant_action load;
+//            load = loadAction( inst, eSize(1 << size), is_extended, kPD );
+//            inst->addDispatchEffect( allocateLoad( inst, eSize(1<<size), load.dependance, kAccType_ORDERED ) );
+//            inst->addCommitEffect( accessMem(inst) );
+//            inst->addRetirementConstraint( loadMemoryConstraint(inst) );
+//            addDestination( inst, rt, load);
+////            do_gpr_ld(s, tcg_rt, tcg_addr, size, is_signed, is_extended,
+////                      true, rt, iss_sf, false);
+//        }
+//    }
     return inst;
 }
 
@@ -601,173 +601,28 @@ arminst disas_ldst_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t a
  * imm7 = signed offset (multiple of 4 or 8 depending on size)
  */
 arminst disas_ldst_pair(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
+{   
+        int rt = extract32(aFetchedOpcode.thePC, 0, 5);
+        int rn = extract32(aFetchedOpcode.thePC, 5, 5);
+        int rt2 = extract32(aFetchedOpcode.thePC, 10, 5);
+        uint64_t offset = sextract64(aFetchedOpcode.thePC, 15, 7);
+        int index = extract32(aFetchedOpcode.thePC, 23, 2);
+        bool is_vector = extract32(aFetchedOpcode.thePC, 26, 1);
+        bool is_load = extract32(aFetchedOpcode.thePC, 22, 1);
+        int opc = extract32(aFetchedOpcode.thePC, 30, 2);
 
-    SemanticInstruction* inst(new SemanticInstruction(aFetchedOpcode.thePC,aFetchedOpcode.theOpcode,aFetchedOpcode.theBPState,
-                                                      aCPU,aSequenceNo));
-    int rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    int rt2 = extract32(aFetchedOpcode.theOpcode, 10, 5);
-    uint64_t offset = sextract64(aFetchedOpcode.theOpcode, 15, 7);
-    int index = extract32(aFetchedOpcode.theOpcode, 23, 2);
-    bool is_vector = extract32(aFetchedOpcode.theOpcode, 26, 1);
-    bool is_load = extract32(aFetchedOpcode.theOpcode, 22, 1);
-    int opc = extract32(aFetchedOpcode.theOpcode, 30, 2);
-    int memidx = 0;
-    bool is_signed = false;
-    bool postindex = false;
-    bool wback = false;
+        bool is_signed = false;
+        bool postindex = false;
+        bool wback = false;
+        int size;
 
-    //TCGv_i64 tcg_addr; /* calculated address */
-    int size;
-
-    if (opc == 3) {
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-    }
-
-    if (is_vector) {
-        size = 2 + opc;
-    } else {
-        size = 2 + extract32(opc, 1, 1);
-        is_signed = extract32(opc, 0, 1);
-        if (!is_load && is_signed) {
+        if (opc == 3) {
             return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
         }
-    }
+        
+        
+//        STNP(aFetchedOpcode, aCPU, aSequenceNo);
 
-    switch (index) {
-    case 1: /* post-index */
-        postindex = true;
-        wback = true;
-        break;
-    case 0:
-        /* signed offset with "non-temporal" hint. Since we don't emulate
-         * caches we don't care about hints to the cache system about
-         * data access patterns, and handle this identically to plain
-         * signed offset.
-         */
-        if (is_signed) {
-            /* There is no non-temporal-hint version of LDPSW */
-            return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-        }
-        postindex = false;
-        break;
-    case 2: /* signed offset, rn not updated */
-        postindex = false;
-        break;
-    case 3: /* pre-index */
-        postindex = false;
-        wback = true;
-        break;
-    }
-//    if (is_vector && !fp_access_check(s)) {
-//        return;
-//    }
-    offset <<= size;
-//    if (rn == 31) {
-//        gen_check_sp_alignment(s);
-//    }
-//    tcg_addr = read_cpu_reg_sp(s, rn, 1);
-
-    std::vector<std::list<InternalDependance>> rs_deps(3);
-    addReadXRegister(inst, 1, rn, rs_deps[0]);
-
-    if (!postindex) {
-//        //tcg_gen_addi_i64(tcg_addr, tcg_addr, offset);
-        inst->setOperand( kUopAddressOffset, offset );
-    }
-
-    addAddressCompute(inst, rs_deps);
-    satisfyAtDispatch(inst, rs_deps[0]);
-
-    if (is_vector) {
-        assert(false);
-//        if (is_load) {
-//            do_fp_ld(s, rt, tcg_addr, size);
-//        } else {
-//            do_fp_st(s, rt, tcg_addr, size);
-//        }
-//        //tcg_gen_addi_i64(tcg_addr, tcg_addr, 1 << size);
-//        if (is_load) {
-//            do_fp_ld(s, rt2, tcg_addr, size);
-//        } else {
-//            do_fp_st(s, rt2, tcg_addr, size);
-//        }
-    } else {
-        //TCGv_i64 tcg_rt = cpu_reg(s, rt);
-        //TCGv_i64 tcg_rt2 = cpu_reg(s, rt2);
-//        addReadXRegister(inst, 1, rt, rs_deps[1]);
-//        addReadXRegister(inst, 2, rt2, rs_deps[2]);
-        if (is_load) {
-            //TCGv_i64 tmp = tcg_temp_new_i64();
-            /* Do not modify tcg_rt before recognizing any exception
-             * from the second load.
-             */
-//            do_gpr_ld(s, tmp, tcg_addr, size, is_signed, false,
-//                      false, 0, false, false);
-//            //tcg_gen_addi_i64(tcg_addr, tcg_addr, 1 << size);
-//            do_gpr_ld(s, tcg_rt2, tcg_addr, size, is_signed, false,
-//                      false, 0, false, false);
-//            //tcg_gen_mov_i64(tcg_rt, tmp);
-//            tcg_temp_free_i64(tmp);
-
-            ldgpr(inst, rt, rn, size,false);
-            inst->setOperand( kUopAddressOffset, static_cast<uint64_t>(1 << size) );
-            addAddressCompute(inst,rs_deps);
-//            satisfyAtDispatch(inst, rs_deps[1]);
-
-//            ldgpr(inst, rt2, rn, size, false);
-//            predicated_action mov = addExecute(inst, operation(kMOV_),rs_deps);
-//            addDestination(inst, rt, mov);
-//            satisfyAtDispatch(inst, rs_deps[2]);
-
-
-        } else {
-//            do_gpr_st(s, tcg_rt, tcg_addr, size,
-//                      false, 0, false, false);
-//            //tcg_gen_addi_i64(tcg_addr, tcg_addr, 1 << size);
-//            do_gpr_st(s, tcg_rt2, tcg_addr, size,
-//                      false, 0, false, false);
-
-//            STR(inst, rt, rn, size);
-            DBG_(Tmp,(<< "\033[1;31m DECODER: Store General Reg \033[0m"));
-            inst->setClass(clsStore, codeStore);
-
-//            inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
-            inst->addRetirementEffect( retireMem(inst) );
-            inst->addSquashEffect( eraseLSQ(inst) );
-
-            inst->addDispatchEffect( allocateStore( inst, eSize(1<<size), false, kAccType_ORDERED) );
-            inst->addRetirementConstraint( storeQueueAvailableConstraint(inst) );
-            inst->addRetirementConstraint( sideEffectStoreConstraint(inst) );
-
-            addReadRD( inst, rt );
-//            inst->addPostvalidation( validateMemory( kAddress, kOperand3, kResult, eSize(1<<size), inst ) );
-            inst->addCommitEffect( commitStore(inst) );
-
-//            inst->setOperand( kUopAddressOffset, static_cast<uint64_t>(1 << size) );
-//            addAddressCompute(inst,rs_deps);
-
-//            satisfyAtDispatch(inst, rs_deps[0]);
-
-//            STR(inst, rt2, rn, size);
-        }
-    }
-
-    if (wback) {
-        predicated_action e;
-        if (postindex) {
-//            //tcg_gen_addi_i64(tcg_addr, tcg_addr, offset - (1 << size));
-            inst->setOperand(kOperand2, offset - (1 << size));
-            e = addExecute(inst, operation(kADD_),rs_deps);
-        } else {
-//            //tcg_gen_subi_i64(tcg_addr, tcg_addr, 1 << size);
-            e = addExecute(inst, operation(kSUB_),rs_deps);
-        }
-//        //tcg_gen_mov_i64(cpu_reg_sp(s, rn), tcg_addr);
-        addDestination(inst, rn, e);
-    }
-    return inst;
 }
 
 /*
@@ -785,82 +640,21 @@ arminst disas_ldst_pair(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
  */
 arminst disas_ld_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-//    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
+    unsigned int V = extract32(aFetchedOpcode.theOpcode, 26, 1);
+    unsigned int opc = extract32(aFetchedOpcode.theOpcode, 30, 2);
 
-//    int rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
-//    int64_t imm = sextract32(aFetchedOpcode.theOpcode, 5, 19) << 2;
-//    bool is_vector = extract32(aFetchedOpcode.theOpcode, 26, 1);
-//    int opc = extract32(aFetchedOpcode.theOpcode, 30, 2);
-//    bool is_signed = false;
-//    int size = 2;
-//    //TCGv_i64 tcg_rt, tcg_addr;
-
-//    if (is_vector) {
-//        if (opc == 3) {
-//            unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-//            return;
-//        }
-//        size = 2 + opc;
-////        if (!fp_access_check(s)) {
-////            return;
-////        }
-////    } else {
-//        if (opc == 3) {
-//            /* PRFM (literal) : prefetch */
-//            return;
-//        }
-//        size = 2 + extract32(opc, 0, 1);
-//        is_signed = extract32(opc, 1, 1);
-//    }
-
-//    std::vector< std::list<InternalDependance> > rs_deps(2);
-//    addAddressCompute( inst, rs_deps ) ;
-//    ArmFormatOperands( inst, operands.rn(), rs_deps );
-
-//    //tcg_rt = cpu_reg(s, rt);
-//    //tcg_addr = tcg_const_i64((s->pc - 4) + imm);
-
-//    predicated_dependant_action load = loadAction( inst, (operands.rd() == 0 ? kWord : kDoubleWord), false, boost::none );
-
-//    if (is_vector) {
-//        inst->setClass(clsLoad, codeLoadFP);
-//        //do_fp_ld(s, rt, tcg_addr, size);
-//        inst->addSquashEffect( eraseLSQ(inst) );
-////        inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
-//        inst->addRetirementEffect( retireMem(inst) );
-
-
-//        inst->addDispatchEffect( allocateLoad( inst, (operands.rd() == 0 ? kWord : kDoubleWord), load.dependance, kAccType_ORDERED ) );
-//        inst->addCommitEffect( accessMem(inst) );
-//        inst->addRetirementConstraint( loadMemoryConstraint(inst) );
-
-//        connectDependance( inst->retirementDependance(), load );
-//        inst->addRetirementEffect( writeFPSR(inst, (operands.rd() == 0 ? kWord : kDoubleWord)) );
-//        inst->setHaltDispatch();
-////        inst->addPostvalidation( validateFPSR(inst) );
-
-//    } else {
-//        inst->setClass(clsLoad, codeLoad);
-////        inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
-//        inst->addRetirementEffect( retireMem(inst) );
-//        inst->addSquashEffect( eraseLSQ(inst) );
-//        /* Only unsigned 32bit loads target 32bit registers.  */
-//        bool iss_sf = opc != 0;
-//        //do_gpr_ld(s, tcg_rt, tcg_addr, size, is_signed, false, true, rt, iss_sf, false);
-
-//        if (operands.rd() == 0) {
-//          load = loadAction( inst, eSize(1<<size), is_signed, boost::none );
-//        } else {
-//          load = loadAction( inst, eSize(1<<size), is_signed, kPD );
-//        }
-//    }
-//    inst->addDispatchEffect( allocateLoad( inst, eSize(1<<size), load.dependance, kAccType_ORDERED ) );
-//    inst->addCommitEffect( accessMem(inst) );
-//    inst->addRetirementConstraint( loadMemoryConstraint(inst) );
-//    addDestination( inst, operands.rd(), load);
-//    //tcg_temp_free_i64(tcg_addr);
-//    return boost::intrusive_ptr<armInstruction>(inst);
-
+    switch (V+ (opc << 1)) {
+    case 0:case 2:
+        return LDR(aFetchedOpcode, aCPU, aSequenceNo);
+    case 1: case 3: case 5:
+        return LDRF(aFetchedOpcode, aCPU, aSequenceNo);
+    case 4:
+        return LDRSW(aFetchedOpcode, aCPU, aSequenceNo);
+    case 6:
+        return PRFM(aFetchedOpcode, aCPU, aSequenceNo);
+    default:
+        break;
+    }
 }
 
 /* Load/storeexclusive
@@ -871,63 +665,42 @@ arminst disas_ld_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSe
  */
 arminst disas_ldst_excl(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
-                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
+    unsigned int rt2 = extract32(aFetchedOpcode.theOpcode, 10, 5);
+    unsigned int o0 = extract32(aFetchedOpcode.theOpcode, 15, 1); // is_lasr
+    unsigned int o1 = extract32(aFetchedOpcode.theOpcode, 21, 1);  // is_pair
+    unsigned int L = extract32(aFetchedOpcode.theOpcode, 22, 1); // is_store
+    unsigned int o2 = extract32(aFetchedOpcode.theOpcode, 23, 1); // is_excl
 
-    int rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    int rt2 = extract32(aFetchedOpcode.theOpcode, 10, 5);
-    int o0 = extract32(aFetchedOpcode.theOpcode, 15, 1); // is_lasr
-    int rs = extract32(aFetchedOpcode.theOpcode, 16, 5);
-    int o1 = extract32(aFetchedOpcode.theOpcode, 21, 1);  // is_pair
-    int L = extract32(aFetchedOpcode.theOpcode, 22, 1); // is_store
-    int o2 = extract32(aFetchedOpcode.theOpcode, 23, 1); // is_excl
-    int size = extract32(aFetchedOpcode.theOpcode, 30, 2);
-
-    if ( ((o2 && o1) || (!o2 && o1)) && rt2 != 31 && size != 0) {
+    if ( ((o2 && o1) || (!o2 && o1)) && rt2 != 31) {
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
-    int decision = o0 | (o1<<1) | (L<<2) | (o2<<3);
+    unsigned int decision = o0 | (o1<<1) | (L<<2) | (o2<<3);
 
     switch (decision) {
-    case 0:
-        STXRB(aFetchedOpcode, aCPU, aSequenceNo);
-        break;
-    case 1:
-        STLXRB(aFetchedOpcode, aCPU, aSequenceNo);
+    case 0:case 1:
+        return STXR(aFetchedOpcode, aCPU, aSequenceNo);
         break;
     case 2:case 3:
     case 6:case 7:
-        CASP(aFetchedOpcode, aCPU, aSequenceNo);
+        return CASP(aFetchedOpcode, aCPU, aSequenceNo);
         break;
-    case 4:
-        LDXRB(aFetchedOpcode, aCPU, aSequenceNo);
+    case 4:case 5:
+        return LDXR(aFetchedOpcode, aCPU, aSequenceNo);
         break;
-    case 5:
-        LDAXRB(aFetchedOpcode, aCPU, aSequenceNo);
-        break;
-    case 8:
-        STLLRB(aFetchedOpcode, aCPU, aSequenceNo);
-        break;
-    case 9:
-        STLRB(aFetchedOpcode, aCPU, aSequenceNo);
+    case 8:case 9:
+        return STLR(aFetchedOpcode, aCPU, aSequenceNo);
         break;
     case 10:case 11:
     case 14:case 15:
-        CASB(aFetchedOpcode, aCPU, aSequenceNo);
+        return CAS(aFetchedOpcode, aCPU, aSequenceNo);
         break;
-    case 12:
-        LDLARB(aFetchedOpcode, aCPU, aSequenceNo);
-        break;
-    case 13:
-        LDARB(aFetchedOpcode, aCPU, aSequenceNo);
+    case 12:case 13:
+        return LDAR(aFetchedOpcode, aCPU, aSequenceNo);
         break;
     default:
         DBG_Assert(false);
         break;
     }
-
-    return inst;
 }
 
 /* Loads and stores */
@@ -936,12 +709,10 @@ arminst disas_ldst(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequ
     switch (extract32(aFetchedOpcode.theOpcode, 24, 6)) {
     case 0x08: /* Load/store exclusive */
         DBG_(Tmp,(<< "\033[1;31mDECODER: Load/store exclusiv \033[0m"));
-
         return disas_ldst_excl(aFetchedOpcode, aCPU,aSequenceNo);
         break;
     case 0x18: case 0x1c: /* Load register (literal) */
         DBG_(Tmp,(<< "\033[1;31mDECODER: Load register (literal) \033[0m"));
-
         return disas_ld_lit(aFetchedOpcode, aCPU,aSequenceNo);
         break;
     case 0x28: case 0x29:

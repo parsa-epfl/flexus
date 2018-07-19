@@ -45,7 +45,8 @@ void ADR(SemanticInstruction* inst, uint64_t base, uint64_t offset, uint64_t rd)
     std::vector<std::list<InternalDependance> > rs_deps;
     inst->setOperand(kOperand1, base);
     inst->setOperand(kOperand2, offset);
-    predicated_action exec = addExecute(inst, operation(kADD_), rs_deps);
+    std::unique_ptr<Operation> ptr = operation(kADD_);
+    predicated_action exec = addExecute(inst, ptr, rs_deps);
     addDestination(inst, rd, exec);
 }
 
@@ -55,7 +56,9 @@ void EXTR(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint32_t rm  , ui
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
     addReadXRegister(inst, 2, rm, rs_deps[1], sf ? true : false);
     inst->setOperand(kOperand3, imm);
-    predicated_action exec = addExecute(inst, operation(sf ? kCONCAT64_ : kCONCAT32_),rs_deps);
+
+    std::unique_ptr<Operation> ptr = operation(sf ? kCONCAT64_ : kCONCAT32_);
+    predicated_action exec = addExecute(inst, ptr ,rs_deps);
     addDestination(inst, rd, exec);
 }
 
@@ -100,7 +103,9 @@ void MOVK(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, boo
     std::vector<std::list<InternalDependance> > rs_deps(2);
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
     inst->setOperand(kOperand2, imm);
-    predicated_action exec = addExecute(inst, operation(kMOVK_),rs_deps);
+
+    std::unique_ptr<Operation> ptr = operation(kMOVK_);
+    predicated_action exec = addExecute(inst, ptr,rs_deps);
     addDestination(inst, rd, exec);
 }
 
@@ -109,7 +114,9 @@ void MOV(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool
     std::vector<std::list<InternalDependance> > rs_deps(2);
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
     inst->setOperand(kOperand2, imm);
-    predicated_action exec = addExecute(inst, is_not ? operation(kMOVN_) : operation(kMOV_),rs_deps);
+
+    std::unique_ptr<Operation> ptr = operation(is_not ? kMOVN_: kMOV_);
+    predicated_action exec = addExecute(inst,ptr,rs_deps);
     addDestination(inst, rd, exec);
 }
 
@@ -118,7 +125,9 @@ void XOR(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool
     std::vector<std::list<InternalDependance> > rs_deps(2);
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
     inst->setOperand(kOperand2, imm);
-    predicated_action exec = addExecute(inst, operation(kXOR_) ,rs_deps);
+
+    std::unique_ptr<Operation> ptr = operation(kXOR_);
+    predicated_action exec = addExecute(inst, ptr ,rs_deps);
     addDestination(inst, rd, exec);
 }
 
@@ -127,7 +136,9 @@ void ORR(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool
     std::vector<std::list<InternalDependance> > rs_deps(2);
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
     inst->setOperand(kOperand2, imm);
-    predicated_action exec = addExecute(inst, operation(kORR_) ,rs_deps);
+
+    std::unique_ptr<Operation> ptr = operation(kORR_);
+    predicated_action exec = addExecute(inst, ptr ,rs_deps);
     addDestination(inst, rd, exec);
 }
 
@@ -136,7 +147,8 @@ void AND(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool
     std::vector<std::list<InternalDependance> > rs_deps(2);
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
     inst->setOperand(kOperand2, imm);
-    predicated_action exec = addExecute(inst, S ? operation(kANDS_) : operation(kAND_) ,rs_deps);
+    std::unique_ptr<Operation> ptr = operation(S ? kANDS_ : kAND_);
+    predicated_action exec = addExecute(inst, ptr, rs_deps);
     addDestination(inst, rd, exec);
 }
 
@@ -148,7 +160,9 @@ void ADD(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool
     if (S) { // ADDS
         inst->setOperand(kOperand3, 0); // carry in bit
     }
-    predicated_action exec = addExecute(inst, S ? operation(kADDS_) : operation(kADD_) ,rs_deps);
+
+    std::unique_ptr<Operation> ptr = operation(S ? kADDS_ : kADD_);
+    predicated_action exec = addExecute(inst, ptr ,rs_deps);
     addDestination(inst, rd, exec);
 }
 
@@ -160,7 +174,9 @@ void SUB(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool
     if (S) { // SUBS
         inst->setOperand(kOperand3, 1); // carry in bit
     }
-    predicated_action exec = addExecute(inst, S ? operation(kSUBS_) : operation(kSUB_) ,rs_deps);
+
+    std::unique_ptr<Operation> ptr = operation(S ? kSUBS_ : kSUB_);
+    predicated_action exec = addExecute(inst, ptr ,rs_deps);
     addDestination(inst, rd, exec);
 }
 

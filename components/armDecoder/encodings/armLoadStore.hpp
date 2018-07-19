@@ -42,23 +42,32 @@
 
 namespace narmDecoder {
 
-void ldrex( SemanticInstruction * inst, uint32_t rs, uint32_t rs2,  uint32_t dest);
-void strex(SemanticInstruction * inst, int srcReg, int addrReg, int size);
-void STR(SemanticInstruction * inst, int srcReg, int addrReg, int size, eAccType type);
-void ldgpr(SemanticInstruction * inst, int destReg, int addrReg, int size, bool sign_extend);
-void ldfpr(SemanticInstruction * inst, int addrReg, int destReg, int size);
-void stfpr(SemanticInstruction * inst, int addrReg, int dest, int size);
 
-SemanticInstruction * CASP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-SemanticInstruction * CASB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-SemanticInstruction * STXRB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-SemanticInstruction * STLXRB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-SemanticInstruction * STLLRB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-SemanticInstruction * STLRB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-SemanticInstruction * LDLARB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-SemanticInstruction * LDARB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-SemanticInstruction * LDAXRB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-SemanticInstruction * LDXRB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+// Load/store exclusive
+arminst CASP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst CAS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst STXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst STLR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst LDAR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst LDXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+
+// Load register (literal)
+arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst LDRF(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst LDRSW(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst PRFM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+
+// Load/store pair (all forms)
+arminst LDFP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst STFP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst LDPSW(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst LDP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+
+/* Load/store register (all forms) */
+arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+
 
 } // narmDecoder
 
