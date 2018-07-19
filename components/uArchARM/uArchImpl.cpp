@@ -346,22 +346,22 @@ private:
 
           case kStorePrefetch:
             //pc = Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
-            operation = MemoryMessage::newStorePrefetch(op->thePAddr, op->thePC, DataWord(op->theValue));
+            operation = MemoryMessage::newStorePrefetch(op->thePAddr, op->thePC, op->theValue);
             break;
 
           case kStore:
             //pc = Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
-            operation = MemoryMessage::newStore(op->thePAddr, op->thePC, DataWord(op->theValue));
+            operation = MemoryMessage::newStore(op->thePAddr, op->thePC, op->theValue);
             break;
 
           case kRMW:
             //pc = Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
-            operation = MemoryMessage::newRMW(op->thePAddr, op->thePC, DataWord(op->theValue));
+            operation = MemoryMessage::newRMW(op->thePAddr, op->thePC, op->theValue);
             break;
 
           case kCAS:
             //pc = Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
-            operation = MemoryMessage::newCAS(op->thePAddr, op->thePC, DataWord(op->theValue));
+            operation = MemoryMessage::newCAS(op->thePAddr, op->thePC, op->theValue);
             break;
 
           default:

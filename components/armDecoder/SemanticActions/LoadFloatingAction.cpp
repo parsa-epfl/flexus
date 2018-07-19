@@ -102,24 +102,24 @@ struct LoadFloatingAction : public PredicatedSemanticAction {
       DBG_(Tmp, ( << *this << " received floating load value" ));
       switch (theSize) {
         case kWord: {
-          uint64_t value = core()->retrieveLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
-          theInstruction->setOperand(kfResult0, value & 0xFFFFFFFFULL );
+          bits value = core()->retrieveLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
+          theInstruction->setOperand(kfResult0, value & bits(0xFFFFFFFFULL) );
           if (theBypass0) {
             mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass0);
-            DBG_(Tmp, ( << *this << " bypassing value=" << (value & 0xFFFFFFFFULL) << " to " << name));
-            core()->bypass( name, value & 0xFFFFFFFFULL);
+            DBG_(Tmp, ( << *this << " bypassing value=" << (value & bits(0xFFFFFFFFULL)) << " to " << name));
+            core()->bypass( name, value & bits(0xFFFFFFFFULL));
           }
 
           break;
         }
         case kDoubleWord: {
-          uint64_t value = core()->retrieveLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
-          theInstruction->setOperand(kfResult1, value & 0xFFFFFFFFULL );
+          bits value = core()->retrieveLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
+          theInstruction->setOperand(kfResult1, value & bits(0xFFFFFFFFULL) );
           theInstruction->setOperand(kfResult0, value >> 32 );
           if (theBypass1) {
             mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass1);
-            DBG_(Tmp, ( << *this << " bypassing value=" << (value & 0xFFFFFFFFULL) << " to " << name));
-            core()->bypass( name, value & 0xFFFFFFFFULL);
+            DBG_(Tmp, ( << *this << " bypassing value=" << (value & bits(0xFFFFFFFFULL)) << " to " << name));
+            core()->bypass( name, value & bits(0xFFFFFFFFULL));
           }
           if (theBypass0) {
             mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass0);

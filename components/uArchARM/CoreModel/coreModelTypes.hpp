@@ -120,10 +120,9 @@ struct MemQueueEntry {
   uint64_t theSequenceNum;
   eQueue theQueue;
   mutable VirtualMemoryAddress theVaddr;
-  mutable int32_t theASI;
   mutable bool theSideEffect;
   mutable bool theInverseEndian;
-  mutable bool theMMU;
+//  mutable bool theMMU;
   mutable bool theNonCacheable;
   mutable int32_t theException;
   mutable PhysicalMemoryAddress thePaddr;
@@ -136,9 +135,9 @@ struct MemQueueEntry {
   mutable bool theStoreComplete;
   mutable bool theSpeculatedValue;
   mutable bool theBypassSB;
-  mutable boost::optional< uint64_t > theValue;
-  mutable boost::optional< uint64_t > theExtendedValue;
-  mutable boost::optional< uint64_t > theCompareValue;
+  mutable boost::optional< bits > theExtendedValue;
+  mutable boost::optional< bits > theValue;
+  mutable boost::optional< bits > theCompareValue;
   mutable boost::optional< MSHRs_t::iterator > theMSHR;
   mutable std::set< uint64_t > theParallelAddresses;
   mutable boost::optional< uint64_t > theExtraLatencyTimeout;
@@ -148,10 +147,9 @@ struct MemQueueEntry {
     , theSequenceNum(aSequenceNum)
     , theQueue(kLSQ)
     , theVaddr(kUnresolved)
-    , theASI(0x80)
     , theSideEffect(false)
     , theInverseEndian(false)
-    , theMMU(false)
+//    , theMMU(false)
     , theNonCacheable(false)
     , theException(0)
     , thePaddr(kUnresolved)
@@ -177,15 +175,15 @@ struct MemQueueEntry {
     return theOperation == kMEMBARMarker ;
   }
   bool isAtomic() const {
-    return theOperation == kRMW || theOperation == kCAS ;
+    return theOperation == kRMW || theOperation == kCAS || theOperation == kCASP ;
   }
   bool isAbnormalAccess() const {
-    return theSideEffect || theMMU || theException != 0 || interruptASI(theASI);
+    return theSideEffect || /*theMMU ||*/ theException != 0 /*|| interruptASI(theASI)*/;
   }
   bool isNAW() const {
     return theBypassSB;
   }
-  boost::optional< uint64_t> & loadValue( ) const {
+  boost::optional< bits > & loadValue( ) const {
     if (isAtomic()) {
       return theExtendedValue;
     } else {
@@ -234,10 +232,10 @@ struct MemQueueEntry {
           return kIssuedToMemory; //Preload is issued to memoty
         } else if (theIssued) {
           return kAwaitingPort;  //Preload is awaiting port
-        } else if ( theExtendedValue && ! theValue ) {
+        } /*else if ( theExtendedValue && ! theValue ) {
           //Store is awaiting value
           return kAwaitingValue;
-        } else {
+        }*/ else {
           return kAwaitingIssue; //Preload is awaiting issue
         }
         break;

@@ -122,7 +122,7 @@ std::ostream & operator << ( std::ostream & anOstream, eOperandCode aCode) {
   return anOstream;
 }
 
-std::ostream & operator << ( std::ostream & anOstream, std::bitset<8> const & aCC) {
+std::ostream & operator << ( std::ostream & anOstream, Flexus::Core::bits const & aCC) {
   anOstream
       << " x{ "
       << ( aCC[N] ? "" : "!" ) << "N "

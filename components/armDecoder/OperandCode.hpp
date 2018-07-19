@@ -49,6 +49,7 @@ enum eOpType {
     kADD_,
     kADDS_,
 
+    kCONCAT_,
     kCONCAT32_,
     kCONCAT64_,
 
@@ -94,7 +95,6 @@ enum eOpType {
     kASR_,
     kLSR,
     kLSL,
-    kLastOperation,
 };
 
 enum eArchState {
@@ -159,6 +159,7 @@ enum eOperandCode {
   , kXTRAout
   , kResultCC
   , kAddress
+  , kStatus
   , kCondition
   , kStoredValue
   , kocFPSR

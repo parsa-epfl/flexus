@@ -46,67 +46,69 @@
 
 namespace nuArchARM {
 
-inline uint64_t mask( eSize aSize) {
+inline bits mask( eSize aSize) {
   switch (aSize) {
     case kByte:
-      return 0xFFULL;
+      return bits(8, 0xFFU);
     case kHalfWord:
-      return 0xFFFFULL;
+      return bits(16, 0xFFFF);
     case kWord:
-      return 0xFFFFFFFFULL;
+      return bits(32, 0xFFFFFFFF);
     case kDoubleWord:
-      return 0xFFFFFFFFFFFFFFFFULL;
+      return bits(64, 0xFFFFFFFFFFFFFFFF);
+  case kQuadWord:
+    return bits(128, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF);
   }
-  return 0xFFFFFFFFFFFFFFFFULL;
+  DBG_Assert( false );
 }
 
-uint64_t value( MemQueueEntry const & anEntry, bool aFlipEndian ) {
+bits value( MemQueueEntry const & anEntry, bool aFlipEndian ) {
   DBG_Assert( anEntry.theValue );
-  if (aFlipEndian) {
-    return Flexus::Qemu::endianFlip( *anEntry.theValue, anEntry.theSize );
-  } else {
+//  if (aFlipEndian) {
+//    return bits(Flexus::Qemu::endianFlip( *anEntry.theValue, anEntry.theSize ));
+//  } else {
     return *anEntry.theValue;
-  }
+//  }
 }
 
-uint64_t loadValue( MemQueueEntry const & anEntry ) {
+bits loadValue( MemQueueEntry const & anEntry ) {
   DBG_Assert( anEntry.loadValue());
   return *anEntry.loadValue();
 }
 
-int32_t offset (MemQueueEntry const & anEntry) {
+uint64_t offset (MemQueueEntry const & anEntry) {
   return ( 8 - static_cast<int>(anEntry.theSize) ) - (static_cast<uint64_t>( anEntry.thePaddr ) - anEntry.thePaddr_aligned);
 }
 
-uint64_t makeMask(MemQueueEntry const & anEntry) {
-  uint64_t mask = nuArchARM::mask(anEntry.theSize);
-  mask <<= ( offset(anEntry) * 8 );
+bits makeMask(MemQueueEntry const & anEntry) {
+  bits mask = nuArchARM::mask(anEntry.theSize);
+  mask = mask << ( offset(anEntry) * 8 );
   return mask;
 }
 
 bool covers( MemQueueEntry const & aStore, MemQueueEntry const & aLoad) {
-  uint64_t required = makeMask(aLoad);
-  uint64_t available = makeMask(aStore) ;
+  bits required = makeMask(aLoad);
+  bits available = makeMask(aStore) ;
   return ( (required & available) == required);
 }
 
 bool intersects( MemQueueEntry const & aStore, MemQueueEntry const & aLoad) {
-  uint64_t required = makeMask(aLoad);
-  uint64_t available = makeMask(aStore) ;
-  return ( (required & available) != 0 );
+  bits required = makeMask(aLoad);
+  bits available = makeMask(aStore) ;
+  return ( (required & available).any() );
 }
 
-uint64_t align( MemQueueEntry const & anEntry, bool flipEndian ) {
+bits align( MemQueueEntry const & anEntry, bool flipEndian ) {
   return ( value(anEntry, flipEndian) << ( offset(anEntry) * 8) );
 }
 
-uint64_t alignLoad( MemQueueEntry const & anEntry ) {
+bits alignLoad( MemQueueEntry const & anEntry ) {
   return ( loadValue(anEntry) << ( offset(anEntry) * 8) );
 }
 
-void writeAligned( MemQueueEntry const & anEntry, uint64_t anAlignedValue, bool use_ext = false ) {
-  uint64_t masked_value = anAlignedValue & makeMask(anEntry);
-  masked_value >>= ( offset(anEntry) * 8);
+void writeAligned( MemQueueEntry const & anEntry, bits anAlignedValue, bool use_ext = false ) {
+  bits masked_value = anAlignedValue & makeMask(anEntry);
+  masked_value = masked_value >> ( offset(anEntry) * 8);
   if (!use_ext) {
     anEntry.loadValue() = masked_value;
   } else {
@@ -115,23 +117,23 @@ void writeAligned( MemQueueEntry const & anEntry, uint64_t anAlignedValue, bool 
 }
 
 void overlay( MemQueueEntry const & aStore, MemQueueEntry const & aLoad, bool use_ext = false) {
-  uint64_t available = makeMask(aStore) ;   //Determine what part of the int64_t the store covers
-  uint64_t store_aligned = align(aStore, aStore.theInverseEndian != aLoad.theInverseEndian);   //align the store value for computation, flip endianness if neccessary
-  uint64_t load_aligned = alignLoad(aLoad); //align the load value for computation
-  load_aligned &= ( ~available );                     //zero out the overlap region in the load
-  load_aligned |= ( store_aligned & available );      //paste the store value into the overlap
+  bits available = makeMask(aStore) ;   //Determine what part of the int64_t the store covers
+  bits store_aligned = align(aStore, aStore.theInverseEndian != aLoad.theInverseEndian);   //align the store value for computation, flip endianness if neccessary
+  bits load_aligned = alignLoad(aLoad); //align the load value for computation
+  load_aligned = load_aligned & ( ~available );                     //zero out the overlap region in the load
+  load_aligned = load_aligned | ( store_aligned & available );      //paste the store value into the overlap
   writeAligned( aLoad, load_aligned, use_ext );                //un-align the value and put it back in the load
 }
 
 void CoreImpl::forwardValue( MemQueueEntry const & aStore, memq_t::index< by_insn >::type::iterator aLoad) {
   FLEXUS_PROFILE();
-  if ( covers(aStore, *aLoad) && (aLoad->theASI != 0x24) && (aLoad->theASI != 0x2C)) { //QUAD-LDDs are always considered partial-snoops.
+  if ( covers(aStore, *aLoad) /*&& (aLoad->theASI != 0x24) && (aLoad->theASI != 0x2C)*/) { //QUAD-LDDs are always considered partial-snoops.
     if (aLoad->theSize == aStore.theSize) {
       //Sizes match and load covers store - simply copy value
       if (aLoad->theInverseEndian == aStore.theInverseEndian || !aStore.theValue) {
         aLoad->loadValue() = aStore.theValue;
       } else {
-        aLoad->loadValue() = Flexus::Qemu::endianFlip( *aStore.theValue, aStore.theSize);
+        aLoad->loadValue() = bits(Flexus::Qemu::endianFlip( (*aStore.theValue).to_ulong(), aStore.theSize));
         DBG_(Dev, ( << "Inverse endian forwarding of " << *aStore.theValue << " from " << aStore << " to " << *aLoad  << " load value: " << aLoad->loadValue() ));
       }
       signalStoreForwardingHit_fn(true);
@@ -277,17 +279,17 @@ void CoreImpl::applyAllStores( memq_t::index< by_insn >::type::iterator aLoad ) 
   memq_t::index< by_paddr >::type::iterator oldest_match = theMemQueue.get<by_paddr>().lower_bound( std::make_tuple(aLoad->thePaddr_aligned));
   applyStores( oldest_match, load, aLoad);
 
-  if ((aLoad->theASI == 0x24) || (aLoad->theASI == 0x2C)) {
-    DBG_( Verb, ( << theName << " Partial snoop applying stores: " << *aLoad) );
-    //Need to apply every overlapping store to the value of this load.
-    memq_t::index< by_paddr >::type::iterator end = theMemQueue.get<by_paddr>().upper_bound( std::make_tuple(aLoad->thePaddr_aligned + 8) );
-    memq_t::index< by_paddr >::type::iterator it  = theMemQueue.get<by_paddr>().lower_bound( std::make_tuple(aLoad->thePaddr_aligned + 8) );
-    do {
-      DBG_(Verb, ( << theName << " QW Snoop applying " << *it << " to " << *aLoad));
-      overlay(*it, *aLoad, true /* ext */);
-      ++it;
-    } while (it != end);
-  }
+//  if ((aLoad->theASI == 0x24) || (aLoad->theASI == 0x2C)) {
+//    DBG_( Verb, ( << theName << " Partial snoop applying stores: " << *aLoad) );
+//    //Need to apply every overlapping store to the value of this load.
+//    memq_t::index< by_paddr >::type::iterator end = theMemQueue.get<by_paddr>().upper_bound( std::make_tuple(aLoad->thePaddr_aligned + 8) );
+//    memq_t::index< by_paddr >::type::iterator it  = theMemQueue.get<by_paddr>().lower_bound( std::make_tuple(aLoad->thePaddr_aligned + 8) );
+//    do {
+//      DBG_(Verb, ( << theName << " QW Snoop applying " << *it << " to " << *aLoad));
+//      overlay(*it, *aLoad, true /* ext */);
+//      ++it;
+//    } while (it != end);
+//  }
 
 }
 

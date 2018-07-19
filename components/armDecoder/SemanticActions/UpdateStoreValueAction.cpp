@@ -70,7 +70,8 @@ using namespace nuArchARM;
 using nuArchARM::Instruction;
 
 struct UpdateStoreValueAction : public PredicatedSemanticAction {
-  eOperandCode theOperandCode;
+  eOperandCode theOperandCode,theOperandCode1,theOperandCode2;
+  bool isPair;
 
   UpdateStoreValueAction ( SemanticInstruction * anInstruction, eOperandCode anOperandCode )
     : PredicatedSemanticAction ( anInstruction, 1, true )
@@ -101,10 +102,10 @@ struct UpdateStoreValueAction : public PredicatedSemanticAction {
     //Should ensure that we got execution units here
     if (! cancelled() ) {
       if ( thePredicate && ready() ) {
-        uint64_t value = theInstruction->operand< uint64_t > (theOperandCode);
-        DBG_( Tmp, ( << *this << " updating store value=" << value) );
-        core()->updateStoreValue( boost::intrusive_ptr<Instruction>(theInstruction), value);
-        satisfyDependants();
+            bits value = theInstruction->operand< bits > (theOperandCode);
+            DBG_( Tmp, ( << *this << " updating store value=" << value) );
+            core()->updateStoreValue( boost::intrusive_ptr<Instruction>(theInstruction), value);
+            satisfyDependants();
       }
     }
   }
@@ -115,8 +116,8 @@ struct UpdateStoreValueAction : public PredicatedSemanticAction {
 };
 
 predicated_dependant_action updateStoreValueAction
-( SemanticInstruction * anInstruction ) {
-  UpdateStoreValueAction * act(new(anInstruction->icb()) UpdateStoreValueAction( anInstruction, kResult ) );
+( SemanticInstruction * anInstruction , eOperandCode data) {
+  UpdateStoreValueAction * act(new(anInstruction->icb()) UpdateStoreValueAction( anInstruction, data ) );
   return predicated_dependant_action( act, act->dependance(), act->predicate() );
 }
 
@@ -128,17 +129,24 @@ predicated_dependant_action updateRMWValueAction
 
 struct UpdateCASValueAction : public BaseSemanticAction {
 
+  bool thePair;
+
   UpdateCASValueAction ( SemanticInstruction * anInstruction )
     : BaseSemanticAction ( anInstruction, 3 )
   { }
 
+  UpdateCASValueAction ( SemanticInstruction * anInstruction, bool aPair )
+    : BaseSemanticAction ( anInstruction, 5 )
+    , thePair(aPair)
+  { }
+
   void doEvaluate() {
     if (ready()) {
-      uint64_t store_value = theInstruction->operand< uint64_t > (kOperand4);
-      uint64_t cmp_value = theInstruction->operand< uint64_t > (kOperand2);
-      DBG_( Tmp, ( << *this << " updating CAS write=" << store_value << " cmp=" << cmp_value) );
-      core()->updateCASValue( boost::intrusive_ptr<Instruction>(theInstruction), store_value, cmp_value);
-      satisfyDependants();
+            bits store_value = theInstruction->operand< bits > (kOperand1);
+            bits cmp_value = theInstruction->operand< bits > (kOperand2);
+            DBG_( Tmp, ( << *this << " updating CAS write=" << store_value << " cmp=" << cmp_value) );
+            core()->updateCASValue( boost::intrusive_ptr<Instruction>(theInstruction), store_value, cmp_value);
+            satisfyDependants();
     }
   }
 
@@ -146,6 +154,9 @@ struct UpdateCASValueAction : public BaseSemanticAction {
     anOstream << theInstruction->identify() << " UpdateCASValue";
   }
 };
+
+
+
 
 multiply_dependant_action updateCASValueAction
 ( SemanticInstruction * anInstruction ) {
@@ -166,7 +177,7 @@ struct UpdateSTDValueAction : public BaseSemanticAction {
 
   void doEvaluate() {
     if (ready()) {
-      uint64_t value = (theInstruction->operand< uint64_t > (kResult) << 32) | (theInstruction->operand< uint64_t > (kResult1) & 0xFFFFFFFFULL);
+      bits value = (theInstruction->operand< bits > (kResult) << 32) | (theInstruction->operand< bits > (kResult1) & bits(0xFFFFFFFFULL));
       DBG_( Tmp, ( << *this << " updating store value=" << value) );
       core()->updateStoreValue( boost::intrusive_ptr<Instruction>(theInstruction), value);
       satisfyDependants();

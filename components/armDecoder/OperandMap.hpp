@@ -49,11 +49,12 @@
 
 namespace narmDecoder {
 
-std::ostream & operator << ( std::ostream &, std::bitset<8> const & );
-
 using nuArchARM::register_value;
 using nuArchARM::mapped_reg;
 using nuArchARM::reg;
+
+std::ostream & operator << ( std::ostream &, Flexus::Core::bits const & );
+
 
 typedef
 mpl::push_front

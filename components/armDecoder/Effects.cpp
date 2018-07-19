@@ -74,8 +74,10 @@ using nuArchARM::ccBits;
 using nuArchARM::eSize;
 
 using nuArchARM::kLoad;
+using nuArchARM::kLDP;
 using nuArchARM::kStore;
 using nuArchARM::kCAS;
+using nuArchARM::kCASP;
 using nuArchARM::kRMW;
 
 void EffectChain::invoke(SemanticInstruction & anInstruction) {
@@ -422,13 +424,6 @@ void BranchInteraction::operator() (boost::intrusive_ptr<nuArchARM::Instruction>
   if (theTarget == 0) {
     theTarget = anInstruction->pc() + 4;
   }
-
-//  if (anInstruction->redirectNPC(theTarget) ) {
-//    DBG_( Tmp, ( << *anInstruction << " Branch Redirection.") );
-//    if ( aCore.squashAfter(anInstruction) ) {
-//      aCore.redirectFetch(theTarget);
-//    }
-//  }
 }
 
 void BranchInteraction::describe(std::ostream & anOstream) const {
@@ -527,60 +522,6 @@ Effect * updateCall(SemanticInstruction * inst, VirtualMemoryAddress aTarget) {
   return new(inst->icb()) BranchFeedbackEffect( );
 }
 
-struct ReturnFromTrapEffect: public Effect {
-  bool theRetry;
-  ReturnFromTrapEffect(bool isRetry)
-    : theRetry(isRetry)
-  {}
-  void invoke(SemanticInstruction & anInstruction) {
-    FLEXUS_PROFILE();
-    DBG_( Tmp, ( << anInstruction << " ReturnFromTrapEffect " ) );//NOOSHIN
-
-//    VirtualMemoryAddress target;
-//    VirtualMemoryAddress tnpc;
-//    int32_t tl = anInstruction.core()->getTL();
-//    if (tl >= 5 || tl < 0) {
-//      DBG_( Crit, ( << anInstruction << " TL is out of range in ReturnFromTrapEffect.") );
-//    }
-
-    //Redirect NPC
-//    if (theRetry) {
-//      DBG_( Iface, ( << anInstruction << " RETRY.") );
-//      target = VirtualMemoryAddress(anInstruction.core()->getTPC(tl));
-//      tnpc = target + 4;
-//      if ( anInstruction.core()->getTNPC(tl) != anInstruction.core()->getTPC(tl) + 4) {
-//        DBG_( Iface, ( << anInstruction << " TNPC is not TPC + 4.  Creating BranchInteraction.") );
-//        anInstruction.core()->deferInteraction( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , new BranchInteraction(VirtualMemoryAddress(anInstruction.core()->getTNPC(tl))) );
-//        tnpc = VirtualMemoryAddress(anInstruction.core()->getTNPC(tl));
-//      }
-//    } else {
-//      DBG_( Iface, ( << anInstruction << " DONE.") );
-//      target = VirtualMemoryAddress(anInstruction.core()->getTNPC(tl));
-//      tnpc = VirtualMemoryAddress(anInstruction.core()->getTNPC(tl) + 4);
-//    }
-
-//    if ( anInstruction.redirectNPC(target, tnpc) ) {
-//      DBG_( Iface, ( << anInstruction << " Return from Trap.") );
-//      if ( anInstruction.core()->squashAfter(boost::intrusive_ptr<nuArchARM::Instruction> (&anInstruction)) ) {
-//        anInstruction.core()->redirectFetch(target);
-//      }
-//    }
-
-//    //Restore saved state
-//    anInstruction.core()->popTL();
-
-    Effect::invoke(anInstruction);
-  }
-  void describe(std::ostream & anOstream) const {
-    anOstream << " Return from Trap";
-    Effect::describe(anOstream);
-  }
-};
-
-Effect * returnFromTrap(SemanticInstruction * inst,  bool isRetry) {
-  return new(inst->icb()) ReturnFromTrapEffect( isRetry);
-}
-
 struct BranchEffect: public Effect {
   VirtualMemoryAddress theTarget;
   bool theHasTarget;
@@ -639,7 +580,7 @@ struct BranchAfterNextWithOperand : public Effect {
 
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
-    VirtualMemoryAddress target(anInstruction.operand< uint64_t > (theOperandCode));
+    VirtualMemoryAddress target(anInstruction.operand< bits > (theOperandCode).to_ulong());
     DBG_( Tmp, ( << anInstruction.identify() << " Branch after next instruction to " << theOperandCode << "(" << target << ")" ) );
     anInstruction.core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , new BranchInteraction(target) );
     Effect::invoke(anInstruction);
@@ -680,7 +621,7 @@ struct BranchConditionallyEffect: public Effect {
 
     FLEXUS_PROFILE();
     mapped_reg name = anInstruction.operand< mapped_reg > (theCCRCode);
-    std::bitset<8> cc = boost::get< std::bitset<8> >( anInstruction.core()->readRegister( name ) );
+    bits cc = boost::get< bits >( anInstruction.core()->readRegister( name ) );
 
     boost::intrusive_ptr<BranchFeedback> feedback( new BranchFeedback() );
     feedback->thePC = anInstruction.pc();
@@ -736,7 +677,7 @@ struct BranchRegConditionallyEffect: public Effect {
       DBG_( Tmp, ( << anInstruction << " BranchRegConditionallyEffect " ) );//NOOSHIN
 
     FLEXUS_PROFILE();
-    uint64_t val = anInstruction.operand< uint64_t > (theValueCode);
+    bits val = anInstruction.operand< bits > (theValueCode);
 
     boost::intrusive_ptr<BranchFeedback> feedback( new BranchFeedback() );
     feedback->thePC = anInstruction.pc();
@@ -916,80 +857,6 @@ Effect * accessMem(SemanticInstruction * inst) {
   return new(inst->icb()) AccessMemEffect( );
 }
 
-struct ReadPREffect: public Effect {
-  uint32_t thePR;
-  ReadPREffect( uint32_t aPR)
-    : thePR(aPR)
-  {}
-
-  void invoke(SemanticInstruction & anInstruction) {
-      DBG_( Tmp, ( << anInstruction << " ReadPREffect " ) );//NOOSHIN
-
-    FLEXUS_PROFILE();
-    if (! anInstruction.isAnnulled()) {
-      uint64_t pr = anInstruction.core()->readPR(thePR);
-      mapped_reg name = anInstruction.operand< mapped_reg > (kPD);
-      DBG_( Tmp, ( << anInstruction << " Read " << anInstruction.core()->prName(thePR) << " value= " << std::hex << pr << std::dec << " rd=" << name) );
-      //NOOSHIN: Tmp -> Tmp
-      anInstruction.setOperand(kResult, pr);
-      anInstruction.core()->writeRegister( name, pr );
-      anInstruction.core()->bypass( name, pr);
-    } else {
-      //ReadPR was annulled.  Copy PPD to PD
-      mapped_reg dest = anInstruction.operand< mapped_reg > (kPD);
-      mapped_reg prev = anInstruction.operand< mapped_reg > (kPPD);
-      register_value val = anInstruction.core()->readRegister( prev );
-      anInstruction.core()->writeRegister( dest, val);
-      anInstruction.setOperand(kResult, val );
-    }
-    Effect::invoke(anInstruction);
-  }
-
-  void describe(std::ostream & anOstream) const {
-    anOstream << " Read PR " << thePR;
-    Effect::describe(anOstream);
-  }
-};
-
-Effect * readPR(SemanticInstruction * inst, uint32_t aPR) {
-  return new(inst->icb()) ReadPREffect(aPR);
-}
-
-struct WritePREffect: public Effect {
-  uint32_t thePR;
-  WritePREffect( uint32_t aPR)
-    : thePR(aPR)
-  {}
-
-  void invoke(SemanticInstruction & anInstruction) {
-    FLEXUS_PROFILE();
-    DBG_( Tmp, ( << anInstruction << " WritePREffect " ) );//NOOSHIN
-
-    if (! anInstruction.isAnnulled()) {
-      uint64_t pr = anInstruction.operand< uint64_t > (kResult);
-      DBG_( Tmp, ( << anInstruction << " Write " << anInstruction.core()->prName(thePR) << " value= " << std::hex << pr << std::dec ) );
-
-      anInstruction.setOperand(kResult, pr);
-      anInstruction.core()->writePR( thePR, pr );
-//      anInstruction.setOperand(kocTL, anInstruction.core()->getTL() );
-    } else {
-      anInstruction.setOperand(kResult, anInstruction.core()->readPR(thePR) );
-//      anInstruction.setOperand(kocTL, anInstruction.core()->getTL() );
-
-    }
-    Effect::invoke(anInstruction);
-  }
-
-  void describe(std::ostream & anOstream) const {
-    anOstream << " Write PR " << thePR;
-    Effect::describe(anOstream);
-  }
-};
-
-Effect * writePR(SemanticInstruction * inst, uint32_t aPR) {
-  return new(inst->icb()) WritePREffect(aPR);
-}
-
 struct ForceResyncEffect: public Effect {
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
@@ -1060,226 +927,5 @@ Effect * immuException(SemanticInstruction * inst) {
   return new(inst->icb()) IMMUExceptionEffect();
 }
 
-struct TccEffect: public Effect {
-  void invoke(SemanticInstruction & anInstruction) {
-    DBG_( Tmp, ( << anInstruction << " TccEffect") );//NOOSHIN
-
-    uint64_t val = anInstruction.operand< uint64_t > (kResult);
-    if (val == 0) {
-      DBG_( Tmp, ( << anInstruction << " TCC condition false.  No trap. " ) );//NOOSHIN
-    } else {
-      DBG_( Tmp, ( << anInstruction << " TCC raises trap: " << val ) );//NOOSHIN
-      anInstruction.setWillRaise( 0x100 + val );
-//      anInstruction.core()->takeTrap( boost::intrusive_ptr<Instruction>(& anInstruction), anInstruction.willRaise());
-
-    }
-  }
-  void describe(std::ostream & anOstream) const {
-    anOstream << " Trap on condition";
-    Effect::describe(anOstream);
-  }
-};
-
-Effect * tccEffect(SemanticInstruction * inst) {
-  return new(inst->icb()) TccEffect();
-}
-
-struct UpdateFPCREffect: public Effect {
-  uint32_t theDestFPReg;
-  UpdateFPCREffect( uint32_t aDestReg)
-    : theDestFPReg(aDestReg)
-  {}
-
-  void invoke(SemanticInstruction & anInstruction) {
-    FLEXUS_PROFILE();
-    DBG_( Tmp, ( << anInstruction << " UpdateFPCREffect " ) );
-
-    if (! anInstruction.isAnnulled()) {
-
-      uint64_t fpcr = anInstruction.core()->getFPCR();
-      if (theDestFPReg < 32) {
-        fpcr |= 1;  //set DL
-        anInstruction.core()->setFPCR(fpcr);
-      } else {
-        fpcr |= 2; //set DU
-        anInstruction.core()->setFPCR(fpcr);
-      }
-      anInstruction.setOperand(kocFPCR, fpcr);
-      DBG_( Tmp, ( << anInstruction << " Update FPCR value= " << std::hex << fpcr << std::dec ) );
-    }
-    Effect::invoke(anInstruction);
-  }
-
-  void describe(std::ostream & anOstream) const {
-    anOstream << " Update FPCR";
-    Effect::describe(anOstream);
-  }
-};
-
-Effect * updateFPCR(SemanticInstruction * inst, uint32_t aDestReg) {
-  return new(inst->icb()) UpdateFPCREffect(aDestReg);
-}
-
-struct WriteFPCREffect: public Effect {
-  WriteFPCREffect()
-  {}
-
-  void invoke(SemanticInstruction & anInstruction) {
-    FLEXUS_PROFILE();
-    DBG_( Tmp, ( << anInstruction << " Write FPCR value= " ) );
-
-    if (! anInstruction.isAnnulled()) {
-      uint64_t fpcr = anInstruction.operand< uint64_t > (kResult);
-      DBG_( Tmp, ( << anInstruction << " Write FPCR value= " << std::hex << fpcr << std::dec ) );
-
-      anInstruction.setOperand(kocFPCR, fpcr);
-      anInstruction.core()->setFPCR( fpcr );
-    } else {
-      anInstruction.setOperand(kocFPCR, anInstruction.core()->getFPCR() );
-    }
-    Effect::invoke(anInstruction);
-  }
-
-  void describe(std::ostream & anOstream) const {
-    anOstream << " Write FPCR";
-    Effect::describe(anOstream);
-  }
-};
-
-Effect * writeFPCR(SemanticInstruction * inst) {
-  return new(inst->icb()) WriteFPCREffect();
-}
-
-struct RecordFPCREffect: public Effect {
-  RecordFPCREffect()
-  {}
-
-  void invoke(SemanticInstruction & anInstruction) {
-      DBG_( Tmp, ( << anInstruction.identify() << " RecordFPCREffect ") );
-
-    FLEXUS_PROFILE();
-    uint64_t fpcr = anInstruction.core()->getFPCR();
-    anInstruction.setOperand(kocFPCR, fpcr);
-    Effect::invoke(anInstruction);
-  }
-
-  void describe(std::ostream & anOstream) const {
-    anOstream << " Record FPCR";
-    Effect::describe(anOstream);
-  }
-};
-
-Effect * recordFPCR(SemanticInstruction * inst) {
-  return new(inst->icb()) RecordFPCREffect();
-}
-
-struct ReadFPCREffect: public Effect {
-  ReadFPCREffect()
-  {}
-
-  void invoke(SemanticInstruction & anInstruction) {
-      DBG_( Tmp, ( << anInstruction.identify() << " ReadFPCREffect ") );
-
-    FLEXUS_PROFILE();
-
-    if (! anInstruction.isAnnulled()) {
-      uint64_t val = anInstruction.core()->getFPCR();
-      mapped_reg name = anInstruction.operand< mapped_reg > (kPD);
-      DBG_( Tmp, ( << anInstruction << " ReadFPCR value= " << std::hex << val << std::dec << " rd=" << name) );
-
-      anInstruction.setOperand(kResult, val);
-      anInstruction.core()->writeRegister( name, val );
-      anInstruction.core()->bypass( name, val);
-    } else {
-      //ReadFPCR was annulled.  Copy PPD to PD
-      mapped_reg dest = anInstruction.operand< mapped_reg > (kPD);
-      mapped_reg prev = anInstruction.operand< mapped_reg > (kPPD);
-      register_value val = anInstruction.core()->readRegister( prev );
-      anInstruction.core()->writeRegister( dest, val);
-      anInstruction.setOperand(kResult, val );
-    }
-
-    Effect::invoke(anInstruction);
-  }
-
-  void describe(std::ostream & anOstream) const {
-    anOstream << " Read FPCR";
-    Effect::describe(anOstream);
-  }
-};
-
-Effect * readFPCR(SemanticInstruction * inst) {
-  return new(inst->icb()) ReadFPCREffect();
-}
-
-struct WriteFPSREffect: public Effect {
-  eSize theSize;
-  WriteFPSREffect(eSize aSize)
-    : theSize(aSize)
-  {}
-
-  void invoke(SemanticInstruction & anInstruction) {
-    FLEXUS_PROFILE();
-    DBG_( Tmp, ( << anInstruction.identify() << " WriteFPSREffect ") );
-
-    if (! anInstruction.isAnnulled()) {
-      uint64_t fpsr = anInstruction.operand< uint64_t > (kResult);
-      DBG_( Tmp, ( << anInstruction << " Write FPSR value= " << std::hex << fpsr << std::dec ) );
-
-      if (theSize == kWord) {
-        uint64_t current_fpsr = anInstruction.core()->readFPSR();
-        fpsr = (current_fpsr & 0xFFFFFFFF00000000ULL) | fpsr;
-      }
-      anInstruction.setOperand(kocFPSR, fpsr);
-      anInstruction.core()->writeFPSR( fpsr );
-    } else {
-      anInstruction.setOperand(kocFPSR, anInstruction.core()->readFPSR() );
-    }
-    Effect::invoke(anInstruction);
-  }
-
-  void describe(std::ostream & anOstream) const {
-    anOstream << " Write FPSR";
-    Effect::describe(anOstream);
-  }
-};
-
-Effect * writeFPSR(SemanticInstruction * inst, eSize aSize) {
-  return new(inst->icb()) WriteFPSREffect(aSize);
-}
-
-struct StoreFPSREffect: public Effect {
-  eSize theSize;
-  StoreFPSREffect(eSize aSize)
-    : theSize(aSize)
-  {}
-
-  void invoke(SemanticInstruction & anInstruction) {
-    FLEXUS_PROFILE();
-    DBG_( Tmp, ( << anInstruction.identify() << " writeFPSR ") );
-
-    if (! anInstruction.isAnnulled()) {
-      uint64_t fpsr = anInstruction.core()->readFPSR();
-      anInstruction.setOperand(kocFPSR, fpsr );
-      if (theSize == kWord) {
-        fpsr &= 0xFFFFFFFFULL;
-      }
-      DBG_( Tmp, ( << anInstruction << " Store FPSR value= " << std::hex << fpsr << std::dec ) );
-      anInstruction.core()->updateStoreValue( boost::intrusive_ptr<Instruction>(& anInstruction), fpsr);
-    } else {
-      anInstruction.setOperand(kocFPSR, anInstruction.core()->readFPSR() );
-    }
-    Effect::invoke(anInstruction);
-  }
-
-  void describe(std::ostream & anOstream) const {
-    anOstream << " Store FPSR";
-    Effect::describe(anOstream);
-  }
-};
-
-Effect * storeFPSR(SemanticInstruction * inst, eSize aSize) {
-  return new(inst->icb()) StoreFPSREffect(aSize);
-}
 
 } //narmDecoder

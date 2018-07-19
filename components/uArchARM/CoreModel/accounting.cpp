@@ -80,11 +80,13 @@ void CoreImpl::accountResyncReason( boost::intrusive_ptr< Instruction > anInstru
       ++theResync_DeviceAccess;
       break;
     case codeLoad:
+    case codeLoadEX:
     case codeLoadFP:
     case codeLDD:
         ++theResync_Unknown;
         break;
     case codeCAS:
+    case codeCASP:
     case codeSWAP:
     case codeLDREX:
       ++theResync_Unknown;
@@ -999,9 +1001,9 @@ void CoreImpl::completeAccounting() {
                 theTimeBreakdown.stall(nXactTimeBreakdown::kSideEffect_Store);
               }
             }
-          } else if (iter->theMMU) {
+          } /*else if (iter->theMMU) {
             theTimeBreakdown.stall(nXactTimeBreakdown::kMMUAccess);
-          }
+          }*/
         }
       }
 

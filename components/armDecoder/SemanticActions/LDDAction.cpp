@@ -96,28 +96,28 @@ struct LDDAction : public PredicatedSemanticAction {
   void doEvaluate() {}
 
   void doLoad() {
-    int32_t asi = theInstruction->operand< uint64_t > (kOperand3);
-    if (asi == 0x24 || asi == 0x34) {
-      //Quad LDD
-      uint64_t value = core()->retrieveLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
-      uint64_t value1 = core()->retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
-      theInstruction->setOperand(kResult, value );
-      theInstruction->setOperand(kResult1, value1 );
+//    int32_t asi = theInstruction->operand< bits > (kOperand3);
+//    if (asi == 0x24 || asi == 0x34) {
+//      //Quad LDD
+//      uint64_t value = core()->retrieveLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
+//      uint64_t value1 = core()->retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
+//      theInstruction->setOperand(kResult, value );
+//      theInstruction->setOperand(kResult1, value1 );
 
-      DBG_(Tmp, ( << *this << " Quad LDD received load value=" << value << " value1=" << value1));
-      if (theBypass0) {
-        mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass0);
-        core()->bypass( name, value );
-      }
-      if (theBypass1) {
-        mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass1);
-        core()->bypass( name, value1 );
-      }
-    } else {
+//      DBG_(Tmp, ( << *this << " Quad LDD received load value=" << value << " value1=" << value1));
+//      if (theBypass0) {
+//        mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass0);
+//        core()->bypass( name, value );
+//      }
+//      if (theBypass1) {
+//        mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass1);
+//        core()->bypass( name, value1 );
+//      }
+//    } else {
       //Normal LDD
-      uint64_t value = core()->retrieveLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
+      bits value = core()->retrieveLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
       theInstruction->setOperand(kResult, value >> 32);
-      theInstruction->setOperand(kResult1, value & 0xFFFFFFFFULL );
+      theInstruction->setOperand(kResult1, value & bits(0xFFFFFFFFULL) );
 
       DBG_(Tmp, ( << *this << " received load value=" << value));
       if (theBypass0) {
@@ -126,9 +126,9 @@ struct LDDAction : public PredicatedSemanticAction {
       }
       if (theBypass1) {
         mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass1);
-        core()->bypass( name, value & 0xFFFFFFFFULL );
+        core()->bypass( name, value & bits(0xFFFFFFFFULL) );
       }
-    }
+//    }
     satisfyDependants();
   }
 

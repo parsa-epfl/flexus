@@ -410,7 +410,7 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     , theBranchType(kNonBranch)
     , theBranchAnnul(false)
   {}
-  explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC, DataWord aData)
+  explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC, bits aData)
     : theType(aType)
     , theAddress(anAddress)
     , theAssociatedPC(aPC)
@@ -453,16 +453,16 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     intrusive_ptr<MemoryMessage> msg = new MemoryMessage(LoadReq, anAddress, aPC);
     return msg;
   }
-  static intrusive_ptr<MemoryMessage> newStore(MemoryAddress anAddress, VirtualMemoryAddress aPC, DataWord aData) {
+  static intrusive_ptr<MemoryMessage> newStore(MemoryAddress anAddress, VirtualMemoryAddress aPC, bits aData) {
     intrusive_ptr<MemoryMessage> msg = new MemoryMessage(StoreReq, anAddress, aPC, aData);
     return msg;
   }
 
-  static intrusive_ptr<MemoryMessage> newRMW(MemoryAddress anAddress, VirtualMemoryAddress aPC, DataWord aData) {
+  static intrusive_ptr<MemoryMessage> newRMW(MemoryAddress anAddress, VirtualMemoryAddress aPC, bits aData) {
     intrusive_ptr<MemoryMessage> msg = new MemoryMessage(RMWReq, anAddress, aPC, aData);
     return msg;
   }
-  static intrusive_ptr<MemoryMessage> newCAS(MemoryAddress anAddress, VirtualMemoryAddress aPC, DataWord aData) {
+  static intrusive_ptr<MemoryMessage> newCAS(MemoryAddress anAddress, VirtualMemoryAddress aPC, bits aData) {
     intrusive_ptr<MemoryMessage> msg = new MemoryMessage(CmpxReq, anAddress, aPC, aData);
     return msg;
   }
@@ -470,7 +470,7 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     intrusive_ptr<MemoryMessage> msg = new MemoryMessage(AtomicPreloadReq, anAddress, aPC);
     return msg;
   }
-  static intrusive_ptr<MemoryMessage> newStorePrefetch(MemoryAddress anAddress, VirtualMemoryAddress aPC, DataWord aData) {
+  static intrusive_ptr<MemoryMessage> newStorePrefetch(MemoryAddress anAddress, VirtualMemoryAddress aPC, bits aData) {
     intrusive_ptr<MemoryMessage> msg = new MemoryMessage(StorePrefetchReq, anAddress, aPC, aData);
     return msg;
   }
@@ -494,7 +494,7 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
   const VirtualMemoryAddress pc() const {
     return theAssociatedPC;
   }
-  const DataWord data() const {
+  const bits data() const {
     return theData;
   }
   const int32_t reqSize() const {
@@ -515,7 +515,7 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
   VirtualMemoryAddress & pc() {
     return theAssociatedPC;
   }
-  DataWord & data() {
+  bits & data() {
     return theData;
   }
   int32_t & reqSize() {
@@ -1049,7 +1049,7 @@ private:
   MemoryMessageType theType;
   MemoryAddress theAddress;
   VirtualMemoryAddress theAssociatedPC;
-  DataWord theData;
+  bits theData;
   int32_t theReqSize;
   int32_t  theCoreIdx;
   uint32_t theSerial;

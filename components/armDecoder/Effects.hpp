@@ -162,8 +162,11 @@ Effect * branchAfterNext(SemanticInstruction * inst, eOperandCode aCode);
 Effect * branchConditionally(SemanticInstruction * inst, VirtualMemoryAddress aTarget, bool anAnnul, Condition & aCondition, bool isFloating);
 Effect * branchRegConditionally(SemanticInstruction * inst, VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition);
 Effect * allocateLoad(SemanticInstruction * inst, eSize aSize, InternalDependance const  & aDependance, nuArchARM::eAccType type);
-Effect * allocateCAS(SemanticInstruction * inst, eSize aSize, InternalDependance const & aDependance);
-Effect * allocateRMW(SemanticInstruction * inst, eSize aSize, InternalDependance const & aDependance);
+Effect * allocateCAS(SemanticInstruction * inst, eSize aSize, InternalDependance const & aDependance, nuArchARM::eAccType type);
+Effect * allocateCAS(SemanticInstruction * inst, eSize aSize, InternalDependance const & aDependance, nuArchARM::eAccType type);
+Effect * allocateCASP(SemanticInstruction * inst, eSize aSize, InternalDependance const & aDependance, nuArchARM::eAccType type);
+Effect * allocateCAS(SemanticInstruction * inst, eSize aSize, InternalDependance const & aDependance, nuArchARM::eAccType type);
+Effect * allocateRMW(SemanticInstruction * inst, eSize aSize, InternalDependance const & aDependance, nuArchARM::eAccType type);
 Effect * eraseLSQ(SemanticInstruction * inst);
 Effect * allocateStore(SemanticInstruction * inst, eSize aSize, bool aBypassSB, nuArchARM::eAccType type);
 Effect * allocateMEMBAR(SemanticInstruction * inst);
@@ -175,19 +178,19 @@ Effect * updateUnconditional(SemanticInstruction * inst, VirtualMemoryAddress aT
 Effect * updateUnconditional(SemanticInstruction * inst, eOperandCode anOperandCode);
 Effect * updateCall(SemanticInstruction * inst, VirtualMemoryAddress aTarget);
 Effect * updateNonBranch(SemanticInstruction * inst);
-Effect * readPR(SemanticInstruction * inst, uint32_t aPR);
-Effect * writePR(SemanticInstruction * inst, uint32_t aPR);
+//Effect * readPR(SemanticInstruction * inst, uint32_t aPR);
+//Effect * writePR(SemanticInstruction * inst, uint32_t aPR);
 Effect * mapXTRA(SemanticInstruction * inst);
 Effect * forceResync(SemanticInstruction * inst);
 Effect * immuException(SemanticInstruction * inst);
 Effect * dmmuTranslationCheck(SemanticInstruction * inst);
-Effect * tccEffect(SemanticInstruction * inst);
-Effect * updateFPSR(SemanticInstruction * inst, uint32_t aDestReg);
-Effect * writeFPCR(SemanticInstruction * inst);
-Effect * recordFPCR(SemanticInstruction * inst);
-Effect * readFPSR(SemanticInstruction * inst);
-Effect * writeFPSR(SemanticInstruction * inst, eSize aSize);
-Effect * storeFPSR(SemanticInstruction * inst, eSize aSize);
+//Effect * tccEffect(SemanticInstruction * inst);
+//Effect * updateFPSR(SemanticInstruction * inst, uint32_t aDestReg);
+//Effect * writeFPCR(SemanticInstruction * inst);
+//Effect * recordFPCR(SemanticInstruction * inst);
+//Effect * readFPSR(SemanticInstruction * inst);
+//Effect * writeFPSR(SemanticInstruction * inst, eSize aSize);
+//Effect * storeFPSR(SemanticInstruction * inst, eSize aSize);
 
 
 } //narmDecoder

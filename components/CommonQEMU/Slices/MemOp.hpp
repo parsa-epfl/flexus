@@ -54,10 +54,12 @@ namespace Flexus {
 namespace SharedTypes {
 
 enum eOperation { //Sorted by priority for requesting memory ports
-  kLoad
+    kLoad
+  , kLDP
   , kAtomicPreload
   , kRMW
   , kCAS
+  , kCASP
   , kStorePrefetch
   , kStore
   , kInvalidate
@@ -81,21 +83,24 @@ enum eOperation { //Sorted by priority for requesting memory ports
 std::ostream & operator << ( std::ostream & anOstream, eOperation op);
 
 enum eSize {
-  kByte = 1
+    kByte = 1
   , kHalfWord = 2
   , kWord = 4
   , kDoubleWord = 8
+  , kQuadWord = 16
+  ,
 };
+
+
 
 struct MemOp : boost::counted_base {
   eOperation theOperation;
   eSize theSize;
   VirtualMemoryAddress theVAddr;
-  int32_t theASI;
   PhysicalMemoryAddress thePAddr;
   VirtualMemoryAddress thePC;
-  uint64_t theValue;
-  uint64_t theExtendedValue;
+  bits theValue;
+  bits theExtendedValue;
   bool theReverseEndian;
   bool theNonCacheable;
   bool theSideEffect;
@@ -106,7 +111,6 @@ struct MemOp : boost::counted_base {
     : theOperation( kINVALID_OPERATION )
     , theSize( kWord )
     , theVAddr( VirtualMemoryAddress(0) )
-    , theASI( 0x80 )
     , thePAddr( PhysicalMemoryAddress(0) )
     , thePC (VirtualMemoryAddress(0) )
     , theValue( 0 )
@@ -121,7 +125,6 @@ struct MemOp : boost::counted_base {
     : theOperation( anOther.theOperation )
     , theSize( anOther.theSize)
     , theVAddr( anOther.theVAddr)
-    , theASI( anOther.theASI )
     , thePAddr( anOther.thePAddr)
     , thePC( anOther.thePC)
     , theValue( anOther.theValue)

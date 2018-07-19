@@ -80,7 +80,7 @@ bool ConditionHolds(const pstate & pstate, int condcode )
 struct CBZ : public Condition {
   virtual bool operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 1);
-    return boost::get<uint64_t>(operands[0]) == 0;
+    return boost::get<bits>(operands[0]).none();
   }
   virtual char const * describe() const {
     return "Compare and Branch on Zero";
@@ -90,7 +90,7 @@ struct CBZ : public Condition {
 struct CBNZ : public Condition {
   virtual bool operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 1);
-    return boost::get<uint64_t>(operands[0]) != 0;
+    return boost::get<bits>(operands[0]).any();
   }
   virtual char const * describe() const {
     return "Compare and Branch on Non Zero";
@@ -100,7 +100,7 @@ struct CBNZ : public Condition {
 struct TBZ : public Condition {
   virtual bool operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 2);
-    return (boost::get<uint64_t>(operands[0]) & boost::get<uint64_t>(operands[0])) == 0;
+    return (boost::get<bits>(operands[0]) & boost::get<bits>(operands[0])).none();
   }
   virtual char const * describe() const {
     return "Test and Branch on Zero";
@@ -110,7 +110,7 @@ struct TBZ : public Condition {
 struct TBNZ : public Condition {
   virtual bool operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 2);
-    return (boost::get<uint64_t>(operands[0]) & boost::get<uint64_t>(operands[0])) != 0;
+    return (boost::get<bits>(operands[0]) & boost::get<bits>(operands[0])).any();
   }
   virtual char const * describe() const {
     return "Test and Branch on Non Zero";

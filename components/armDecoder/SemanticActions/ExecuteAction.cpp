@@ -72,9 +72,9 @@ using namespace nuArchARM;
 struct ExecuteBase : public PredicatedSemanticAction {
   eOperandCode theOperands[5];
   eOperandCode theResult;
-  Operation & theOperation;
+  std::unique_ptr<Operation> & theOperation;
 
-  ExecuteBase ( SemanticInstruction * anInstruction, std::vector<eOperandCode> & anOperands, eOperandCode aResult, Operation & anOperation)
+  ExecuteBase ( SemanticInstruction * anInstruction, std::vector<eOperandCode> & anOperands, eOperandCode aResult, std::unique_ptr<Operation> & anOperation)
     : PredicatedSemanticAction( anInstruction, anOperands.size(), true )
     , theResult( aResult )
     , theOperation( anOperation ) {
@@ -108,7 +108,7 @@ struct ExecuteAction : public ExecuteBase {
   boost::optional<eOperandCode> theBypass;
   bool theFlags;
 
-  ExecuteAction ( SemanticInstruction * anInstruction, std::vector<eOperandCode> & anOperands, eOperandCode aResult, Operation & anOperation, boost::optional<eOperandCode> aBypass)
+  ExecuteAction ( SemanticInstruction * anInstruction, std::vector<eOperandCode> & anOperands, eOperandCode aResult, std::unique_ptr<Operation> & anOperation, boost::optional<eOperandCode> aBypass)
     : ExecuteBase( anInstruction, anOperands, aResult, anOperation )
     , theBypass(aBypass) {
     theInstruction->setExecuted(false);
@@ -123,9 +123,9 @@ struct ExecuteAction : public ExecuteBase {
           operands.push_back( op( theOperands[i] ) );
         }
 
-        Operand result = theOperation( operands );
-        if (theOperation.hasNZCVFlags()){
-            uint64_t nzcv = theOperation.getNZCVbits();
+        Operand result = theOperation->operator()(operands );
+        if (theOperation->hasNZCVFlags()){
+            uint64_t nzcv = theOperation->getNZCVbits();
             theInstruction->core()->updatePSTATEbits(nzcv);
         }
 
@@ -146,7 +146,7 @@ struct ExecuteAction : public ExecuteBase {
   }
 
   void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " ExecuteAction " << theOperation.describe();
+    anOstream << theInstruction->identify() << " ExecuteAction " << theOperation->describe();
   }
 };
 
@@ -155,7 +155,7 @@ struct ExecuteAction_WithXTRA : public ExecuteBase {
   boost::optional<eOperandCode> theBypass;
   boost::optional<eOperandCode> theBypassXTRA;
 
-  ExecuteAction_WithXTRA ( SemanticInstruction * anInstruction, std::vector<eOperandCode> & anOperands, eOperandCode aResult, eOperandCode anXTRA, Operation & anOperation, boost::optional<eOperandCode> aBypassResult, boost::optional<eOperandCode> aBypassXTRA  )
+  ExecuteAction_WithXTRA ( SemanticInstruction * anInstruction, std::vector<eOperandCode> & anOperands, eOperandCode aResult, eOperandCode anXTRA, std::unique_ptr<Operation> & anOperation, boost::optional<eOperandCode> aBypassResult, boost::optional<eOperandCode> aBypassXTRA  )
     : ExecuteBase( anInstruction, anOperands, aResult, anOperation )
     , theXTRA(anXTRA)
     , theBypass(aBypassResult)
@@ -171,8 +171,8 @@ struct ExecuteAction_WithXTRA : public ExecuteBase {
           operands.push_back( op( theOperands[i] ) );
         }
 
-        Operand result = theOperation( operands );
-        Operand xtra = theOperation.evalExtra( operands );
+        Operand result = theOperation->operator()(operands );
+        Operand xtra = theOperation->evalExtra( operands );
         theInstruction->setOperand(theResult, result);
         theInstruction->setOperand(theXTRA, xtra);
         DBG_( Tmp, ( << *this << " operands: " << OperandPrintHelper(operands) << " result=" << result << " xtra=" << xtra) );
@@ -196,14 +196,14 @@ struct ExecuteAction_WithXTRA : public ExecuteBase {
   }
 
   void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " ExecuteAction " << theOperation.describe();
+    anOstream << theInstruction->identify() << " ExecuteAction " << theOperation->describe();
   }
 };
 
 struct FPExecuteAction : public ExecuteBase {
   eSize theSize;
 
-  FPExecuteAction ( SemanticInstruction * anInstruction, std::vector<eOperandCode> & anOperands, Operation & anOperation, eSize aSize)
+  FPExecuteAction ( SemanticInstruction * anInstruction, std::vector<eOperandCode> & anOperands, std::unique_ptr<Operation> & anOperation, eSize aSize)
     : ExecuteBase( anInstruction, anOperands, (aSize == kByte ? kResultCC : kfResult0), anOperation )
     , theSize(aSize) {
     theInstruction->setExecuted(false);
@@ -218,15 +218,15 @@ struct FPExecuteAction : public ExecuteBase {
         }
 
 //        theOperation.setContext( core()->getRoundingMode() )
-        Operand result = theOperation( operands );
+        Operand result = theOperation->operator ()(operands );
         if (theSize == kDoubleWord) {
-          uint64_t val = boost::get<uint64_t>(result);
+          bits val = boost::get<bits>(result);
           theInstruction->setOperand(theResult, val >> 32);
           mapped_reg name0 = theInstruction->operand< mapped_reg > (kPFD0);
           core()->bypass( name0,  val >> 32);
-          theInstruction->setOperand(eOperandCode(theResult + 1), val & 0xFFFFFFFFULL);
+          theInstruction->setOperand(eOperandCode(theResult + 1), val & bits(val.size(),0xFFFFFFFFULL));
           mapped_reg name1 = theInstruction->operand< mapped_reg > (kPFD1);
-          core()->bypass( name1,  val & 0xFFFFFFFFULL);
+          core()->bypass( name1,  val & bits(val.size(),0xFFFFFFFFULL));
 
         } else if (theSize == kWord) {
           //Word
@@ -241,11 +241,11 @@ struct FPExecuteAction : public ExecuteBase {
         }
         DBG_( Tmp, ( << *this << " operands: " << OperandPrintHelper(operands) << " val=" << result << " theResult=" << theResult) );
 
-        uint64_t fpsr = core()->readFPSR();
-        if (fpsr & 0xf) {
-          DBG_(Tmp, ( << *this << " clearing exceptions in FPSR"));
-          core()->writeFPSR(fpsr & ~0xf);
-        }
+//        uint64_t fpsr = core()->readFPSR();
+//        if (fpsr & 0xf) {
+//          DBG_(Tmp, ( << *this << " clearing exceptions in FPSR"));
+//          core()->writeFPSR(fpsr & ~0xf);
+//        }
 
         satisfyDependants();
         theInstruction->setExecuted(true);
@@ -257,13 +257,13 @@ struct FPExecuteAction : public ExecuteBase {
   }
 
   void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " FPExecuteAction " << theOperation.describe();
+    anOstream << theInstruction->identify() << " FPExecuteAction " << theOperation->describe();
   }
 };
 
 predicated_action executeAction
 ( SemanticInstruction * anInstruction
-  , Operation & anOperation
+  , std::unique_ptr<Operation> & anOperation
   , std::vector< std::list<InternalDependance> > & opDeps
   , eOperandCode aResult
   , boost::optional<eOperandCode> aBypass
@@ -282,7 +282,7 @@ predicated_action executeAction
 
 predicated_action executeAction_XTRA
 ( SemanticInstruction * anInstruction
-  , Operation & anOperation
+  , std::unique_ptr<Operation> & anOperation
   , std::vector< std::list<InternalDependance> > & opDeps
   , boost::optional<eOperandCode> aBypass
   , boost::optional<eOperandCode> aBypassXTRA
@@ -301,7 +301,7 @@ predicated_action executeAction_XTRA
 
 predicated_action fpExecuteAction
 ( SemanticInstruction * anInstruction
-  , Operation & anOperation
+  , std::unique_ptr<Operation> & anOperation
   , int32_t num_ops
   , eSize aDestSize
   , eSize aSrcSize
@@ -352,7 +352,8 @@ simple_action calcAddressAction
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
     operands.push_back( eOperandCode( kOperand1 + i) );
   }
-  ExecuteAction * act(new(anInstruction->icb()) ExecuteAction( anInstruction, operands, kAddress, operation(kADD_), boost::none ) );
+  std::unique_ptr<Operation> add = operation(kADD_);
+  ExecuteAction * act(new(anInstruction->icb()) ExecuteAction( anInstruction, operands, kAddress, add, boost::none ) );
 
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
     opDeps[i].push_back( act->dependance(i) );
@@ -362,7 +363,7 @@ simple_action calcAddressAction
 
 predicated_action visOp
 ( SemanticInstruction * anInstruction
-  , Operation & anOperation
+  , std::unique_ptr<Operation> & anOperation
   , std::vector< std::list<InternalDependance> > & deps
 ) {
   std::vector<eOperandCode> operands;

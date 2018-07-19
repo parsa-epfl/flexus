@@ -158,13 +158,16 @@ enum eInstructionCode
   , codeALIGN
   //Memory
   , codeLoad
+  , codeLoadEX
   , codeLoadFP
   , codeLDD
   , codeStore
+  , codeStoreEX
   , codeStoreFP
   , codeSTD
   //Atomics
   , codeCAS
+  , codeCASP
   , codeSWAP
   , codeLDREX
   , codeSTREX
@@ -305,8 +308,8 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction {
   virtual bool isSquashed() const = 0;
   virtual void reinstate() = 0; //reverse of annul
 
-  virtual void setMMU(Flexus::Qemu::MMU::mmu_t m) = 0;
-  virtual boost::optional<Flexus::Qemu::MMU::mmu_t> getMMU() const = 0;
+//  virtual void setMMU(Flexus::Qemu::MMU::mmu_t m) = 0;
+//  virtual boost::optional<Flexus::Qemu::MMU::mmu_t> getMMU() const = 0;
 
   virtual eInstructionClass instClass() const = 0;
   virtual std::string instClassName() const = 0;
@@ -437,7 +440,7 @@ inline mapped_reg ccReg(uint32_t anIndex) {
   return ret_val;
 }
 
-typedef boost::variant< uint64_t , std::bitset<8> > register_value;
+typedef boost::variant< uint64_t , bits > register_value;
 
 struct uArchARM {
 
@@ -517,16 +520,16 @@ struct uArchARM {
     virtual void eraseLSQ( boost::intrusive_ptr< Instruction > anInsn ) {
     DBG_Assert(false);
     }
-    virtual void resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, VirtualMemoryAddress theAddr/*, int32_t theASI*/ ) {
+    virtual void resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, VirtualMemoryAddress theAddr ) {
     DBG_Assert(false);
     }
-    virtual void updateStoreValue( boost::intrusive_ptr< Instruction > anInsn, uint64_t aValue, boost::optional<uint64_t> anExtendedValue = boost::none ) {
+    virtual void updateStoreValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, boost::optional<uint64_t> anExtendedValue = boost::none ) {
     DBG_Assert(false);
     }
     virtual void annulStoreValue( boost::intrusive_ptr< Instruction > anInsn ) {
     DBG_Assert(false);
     }
-    virtual void updateCASValue( boost::intrusive_ptr< Instruction > anInsn, uint64_t aValue, uint64_t aCMPValue ) {
+    virtual void updateCASValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, bits aCMPValue ) {
     DBG_Assert(false);
     }
     virtual void retireMem( boost::intrusive_ptr<Instruction> aCorrespondingInstruction) {
@@ -541,13 +544,13 @@ struct uArchARM {
     virtual void accessMem( PhysicalMemoryAddress anAddress, boost::intrusive_ptr<Instruction> anInsn ) {
     DBG_Assert(false);
     }
-    virtual uint64_t retrieveLoadValue( boost::intrusive_ptr<Instruction> aCorrespondingInstruction) {
+    virtual bits retrieveLoadValue( boost::intrusive_ptr<Instruction> aCorrespondingInstruction) {
     DBG_Assert(false);
-    return 0;
+    return bits(0);
     }
-    virtual uint64_t retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction> aCorrespondingInstruction) {
+    virtual bits retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction> aCorrespondingInstruction) {
     DBG_Assert(false);
-    return 0;
+    return bits(0);
     }
     virtual bool checkStoreRetirement( boost::intrusive_ptr<Instruction> aStore) {
     DBG_Assert(false);
@@ -557,16 +560,16 @@ struct uArchARM {
     virtual uint64_t getPSTATE()                    { DBG_Assert(false); return 0; }
     virtual uint64_t getFPSR()                      { DBG_Assert(false); return 0; }
     virtual void setFPSR(uint64_t aValue)           { DBG_Assert(false); }
-    virtual uint64_t readFPSR()                     { DBG_Assert(false); return 0; }
-    virtual void writeFPSR(uint64_t aValue)         { DBG_Assert(false); }
+//    virtual uint64_t readFPSR()                     { DBG_Assert(false); return 0; }
+//    virtual void writeFPSR(uint64_t aValue)         { DBG_Assert(false); }
 
 
 
 
     virtual uint64_t getFPCR()                      { DBG_Assert(false); return 0; }
     virtual void setFPCR(uint64_t aValue)           { DBG_Assert(false); }
-    virtual uint64_t readFPCR()                     { DBG_Assert(false); return 0; }
-    virtual void writeFPCR(uint64_t aValue)         { DBG_Assert(false); }
+//    virtual uint64_t readFPCR()                     { DBG_Assert(false); return 0; }
+//    virtual void writeFPCR(uint64_t aValue)         { DBG_Assert(false); }
 
     virtual void setCurrentEL( uint64_t anEL)       { DBG_Assert(false); }
     virtual uint64_t getCurrentEL()                 { DBG_Assert(false); return 0; }

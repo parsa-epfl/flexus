@@ -121,7 +121,7 @@ CoreImpl::CoreImpl( uArchOptions_t options
   , theBBVTracker( /*BBVTracker::createBBVTracker(aNode)*/ 0 )  /* CMU-ONLY */
   , theOnChipLatency(options.onChipLatency)
   , theOffChipLatency(options.offChipLatency)
-  , theValidateMMU(options.validateMMU)
+//  , theValidateMMU(options.validateMMU)
   , theNumMemoryPorts(options.numMemoryPorts)
   , theNumSnoopPorts(options.numSnoopPorts)
   , theMispredictCycles ( 0 ) // for IStall and mispredict stats

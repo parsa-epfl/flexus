@@ -433,7 +433,7 @@ void CoreImpl::checkTranslation( boost::intrusive_ptr<Instruction> anInsn) {
     DBG_(Tmp, ( << " is not Annulled " ) );//NOOSHIN
     Flexus::Qemu::Translation xlat;
     xlat.theVaddr = iter->theVaddr;
-    xlat.theASI = iter->theASI;
+//    xlat.theASI = iter->theASI;
     //xlat.theTL = getTL();
     xlat.thePSTATE = getPSTATE() ;
     xlat.theType = ( iter->isStore() ? Flexus::Qemu::Translation::eStore :  Flexus::Qemu::Translation::eLoad) ;
@@ -454,7 +454,7 @@ void CoreImpl::createCheckpoint( boost::intrusive_ptr<Instruction> anInsn) {
   anInsn->setHasCheckpoint(true);
   //getv9State( ckpt->second.theState );
   getARMState( ckpt->second.theState );
-  Flexus::Qemu::Processor::getProcessor( theNode )->ckptMMU();
+//  Flexus::Qemu::Processor::getProcessor( theNode )->ckptMMU();
   DBG_(Verb, ( << theName << "Collecting checkpoint for " << *anInsn) );
   DBG_Assert(is_new);
 
@@ -472,7 +472,7 @@ void CoreImpl::freeCheckpoint( boost::intrusive_ptr<Instruction> anInsn) {
   DBG_Assert( ckpt != theCheckpoints.end() );
   theCheckpoints.erase(ckpt);
   anInsn->setHasCheckpoint(false);
-  Flexus::Qemu::Processor::getProcessor( theNode )->releaseMMUCkpt();
+//  Flexus::Qemu::Processor::getProcessor( theNode )->releaseMMUCkpt();
   if (theOpenCheckpoint == anInsn) {
     theOpenCheckpoint = 0;
   }
@@ -632,7 +632,7 @@ void CoreImpl::retireMem( boost::intrusive_ptr<Instruction> anInsn) {
     if (iter->theOperation == kRMW) {
       ++theAtomicVal_RMWs;
       DBG_Assert(iter->theExtendedValue);
-      if (*iter->theExtendedValue == 0) {
+      if ((*iter->theExtendedValue).none()) {
         ++theAtomicVal_RMWs_Zero;
       } else {
         ++theAtomicVal_RMWs_NonZero;
@@ -641,7 +641,7 @@ void CoreImpl::retireMem( boost::intrusive_ptr<Instruction> anInsn) {
       ++theAtomicVal_CASs;
       DBG_Assert(iter->theExtendedValue, ( << *iter ) );
       DBG_Assert(iter->theCompareValue, ( << *iter ) );
-      if (*iter->theExtendedValue == 0) {
+      if ((*iter->theExtendedValue).any()) {
         ++theAtomicVal_CASs_Zero;
       } else {
         ++theAtomicVal_CASs_NonZero;
@@ -735,11 +735,11 @@ void CoreImpl::retireMem( boost::intrusive_ptr<Instruction> anInsn) {
     }
   } else if (iter->theOperation == kStore) {
     if (anInsn->isAnnulled() || iter->isAbnormalAccess()) {
-      if (! anInsn->isAnnulled()  && iter->theMMU) {
-        DBG_Assert(mmuASI(iter->theASI));
-        DBG_( Verb, ( << theName << " MMU write: " << *iter ) );
-        Flexus::Qemu::Processor::getProcessor( theNode )->mmuWrite(iter->theVaddr, iter->theASI, *iter->theValue );
-      }
+//      if (! anInsn->isAnnulled()  && iter->theMMU) {
+////        DBG_Assert(mmuASI(iter->theASI));
+//        DBG_( Verb, ( << theName << " MMU write: " << *iter ) );
+////        Flexus::Qemu::Processor::getProcessor( theNode )->mmuWrite(iter->theVaddr/*, iter->theASI*/, *iter->theValue );
+//      }
       eraseLSQ( anInsn );
     } else {
       //See if this store is to the same cache block as the preceding store
@@ -877,11 +877,11 @@ void CoreImpl::commitStore( boost::intrusive_ptr<Instruction> anInsn) {
     DBG_Assert( iter->theValue );
     DBG_Assert( iter->thePaddr != 0 );
 
-    uint64_t value = *iter->theValue;
-    if (iter->theInverseEndian) {
-      value = Flexus::Qemu::endianFlip(value, iter->theSize);
-      DBG_(Verb, ( << theName << " Inverse endian store: " << *iter << " inverted value: " <<  std::hex << value << std::dec ) );
-    }
+    bits value = *iter->theValue;
+//    if (iter->theInverseEndian) {
+//      value = Flexus::Qemu::endianFlip(value, iter->theSize);
+//      DBG_(Verb, ( << theName << " Inverse endian store: " << *iter << " inverted value: " <<  std::hex << value << std::dec ) );
+//    }
     ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theNode)).store( theNode, iter->thePaddr, iter->theSize, value);
     //theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
     theMemQueue.get<by_insn>().modify( iter, ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
@@ -971,12 +971,12 @@ void CoreImpl::retire() {
     //  }
     //}
 
-    if (theValidateMMU) {
-        DBG_( Tmp, ( << "Validate MMU " ));
+//    if (theValidateMMU) {
+//        DBG_( Tmp, ( << "Validate MMU " ));
 
-      // save MMU with this instruction so we can check at commit
-      theROB.front()->setMMU( Flexus::Qemu::Processor::getProcessor( theNode )->getMMU() );
-    }
+//      // save MMU with this instruction so we can check at commit
+//      theROB.front()->setMMU( Flexus::Qemu::Processor::getProcessor( theNode )->getMMU() );
+//    }
 
     accountRetire( theROB.front() );
 
@@ -1100,7 +1100,7 @@ void CoreImpl::doAbortSpeculation() {
   restoreARMState( ckpt->second.theState);
 
   // restore MMU
-  Flexus::Qemu::Processor::getProcessor( theNode )->rollbackMMUCkpts(num_ckpts_discarded - 1);
+//  Flexus::Qemu::Processor::getProcessor( theNode )->rollbackMMUCkpts(num_ckpts_discarded - 1);
 
   //Clean up SRB and SSB.
   theSRB.erase( srb_ckpt, theSRB.end());
@@ -1190,15 +1190,15 @@ void CoreImpl::commit() {
 
     DBG_( Tmp, ( <<  theSRB.front() << " committed in Client" ) );
 
-    if (theValidateMMU) {
-      DBG_Assert(theSRB.front()->getMMU(), ( << theName << " instruction does not have MMU: " << *theSRB.front()));
-      DBG_(Tmp, ( << theName << " comparing MMU state after: " << *theSRB.front()));
-      Flexus::Qemu::MMU::mmu_t mmu = *(theSRB.front()->getMMU());
-      if (! Flexus::Qemu::Processor::getProcessor( theNode )->validateMMU(&mmu)) {
-        DBG_(Tmp, ( << theName << " MMU mismatch after FinalCommit of: " << *theSRB.front()));
-        Flexus::Qemu::Processor::getProcessor( theNode )->dumpMMU(&mmu);
-      }
-    }
+//    if (theValidateMMU) {
+//      DBG_Assert(theSRB.front()->getMMU(), ( << theName << " instruction does not have MMU: " << *theSRB.front()));
+//      DBG_(Tmp, ( << theName << " comparing MMU state after: " << *theSRB.front()));
+//      Flexus::Qemu::MMU::mmu_t mmu = *(theSRB.front()->getMMU());
+//      if (! Flexus::Qemu::Processor::getProcessor( theNode )->validateMMU(&mmu)) {
+//        DBG_(Tmp, ( << theName << " MMU mismatch after FinalCommit of: " << *theSRB.front()));
+//        Flexus::Qemu::Processor::getProcessor( theNode )->dumpMMU(&mmu);
+//      }
+//    }
 
     setSuccess(true);
     theSRB.pop_front();
@@ -1226,7 +1226,7 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
   if (theBBVTracker) {
     Flexus::Qemu::Translation xlat;
     xlat.theVaddr = anInstruction->pc();
-    xlat.theASI = 0x80;
+//    xlat.theASI = 0x80;
     //xlat.theTL = getTL();
     xlat.thePSTATE = getPSTATE();
     xlat.theType = Flexus::Qemu::Translation::eFetch;
@@ -1418,45 +1418,6 @@ void CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, int32_t
   anInstruction->raise(aTrapNum);
 }
 
-//void CoreImpl::popTL() {
-//  thePopTLRequested = true;
-//}
-
-//void CoreImpl::handlePopTL() {
-//  if ( ! thePopTLRequested) {
-//    return;
-//  }
-//  thePopTLRequested = false;
-//  int32_t tl = getTL();
-//  if (tl <= 0 || tl > 5) {
-//    return;
-//  }
-//  DBG_( Verb,  ( << theName << " Pop trap. TL=" << tl) );
-//  uint64_t tstate = getTSTATE(tl);
-//  uint64_t cwp = tstate & 0x7;
-//  uint64_t asi = ( tstate >> 24) & 0xFF;
-//  uint64_t ccr = ( tstate >> 32) & 0xFF;
-//  uint64_t pstate = ( tstate >> 8) & 0xFFF;
-
-//  setTL( tl - 1);
-//  DBG_( Verb,  ( << theName << "    TL: " << std::hex << getTL() ) );
-
-//  setPSTATE(pstate);
-//  //setAG(pstate & 1);
-//  //setMG(pstate & 0x400ULL);
-//  //setIG(pstate & 0x800ULL);
-//  DBG_( Verb,  ( << theName << "    PSTATE: " << std::hex << getPSTATE() ) );
-
-//  setASI(asi);
-//  DBG_( Verb,  ( << theName << "    ASI: " << std::hex << getASI() ) );
-
-//  setCWP(cwp);
-//  DBG_( Verb,  ( << theName << "    CWP: " << std::hex << getCWP() ) );
-
-//  setCCR(ccr);
-//  DBG_( Verb,  ( << theName << "    CCR: " << std::hex << getCCR() ) );
-//}
-
 bool CoreImpl::acceptInterrupt() {
   if (    (thePendingInterrupt > 0)   //Interrupt is pending
           && ! theInterruptSignalled       //Already accepted the interrupt
@@ -1596,7 +1557,7 @@ void CoreImpl::valuePredictAtomic() {
         if (lsq_head->theOperation == kCAS) {
           lsq_head->theExtendedValue = lsq_head->theCompareValue;
         } else {
-          lsq_head->theExtendedValue = 0;
+          lsq_head->theExtendedValue->reset();
         }
       }
       if (lsq_head->theDependance) {

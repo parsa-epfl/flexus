@@ -460,7 +460,7 @@ private:
       VirtualMemoryAddress vprefetch = VirtualMemoryAddress( *theLastPrefetchVTagSet[anIndex] << theIndexShift );
       Flexus::Qemu::Translation xlat;
       xlat.theVaddr = vprefetch;
-      xlat.theTL = theCPUState[anIndex].theTL;
+//      xlat.theTL = theCPUState[anIndex].theTL;
       xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
       xlat.theType = Flexus::Qemu::Translation::eFetch;
       cpu(anIndex)->translate(xlat, false /* do not trap */ );
@@ -500,7 +500,7 @@ private:
       DBG_(Tmp, (<<"Not in Flexus cache...Will look into Qemu now!"));
       Flexus::Qemu::Translation xlat;
       xlat.theVaddr = vaddr;
-      xlat.theTL = theCPUState[anIndex].theTL;
+//      xlat.theTL = theCPUState[anIndex].theTL;
       xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
       xlat.theType = Flexus::Qemu::Translation::eFetch;
       cpu(anIndex)->translate(xlat, false /* do not trap */ );
@@ -909,7 +909,7 @@ private:
     int64_t op_code;
     Flexus::Qemu::Translation xlat;
     xlat.theVaddr = anAddress;
-    xlat.theTL = theCPUState[anIndex].theTL;
+//    xlat.theTL = theCPUState[anIndex].theTL;
     xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
     xlat.theType = Flexus::Qemu::Translation::eFetch;
     xlat.theException = 0; // just for now

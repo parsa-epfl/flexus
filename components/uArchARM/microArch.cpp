@@ -170,7 +170,7 @@ public:
     }		
 
     DBG_( Tmp, ( << "CORE:  Initializing MMU ")  );
-    theCPU->initializeMMUs();
+//    theCPU->initializeMMUs();
 
     if (! theCPU->mai_mode()) {
       DBG_Assert( false , ( << "Simics appears to be running without the -ma option.  You must launch Simics with -ma to run out-of-order simulations (node " << theNode << ")" ) );
@@ -253,46 +253,44 @@ public:
       if (op->theSideEffect || op->thePAddr > 0x40000000000LL) {
         //Need to get load value from simics
         DBG_Assert(false);
-        DBG_( Verb, ( << "Performing side-effect load to " << op->theVAddr << " ASI: " << op->theASI ));
+        DBG_( Verb, ( << "Performing side-effect load to " << op->theVAddr));
 	ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).access(theCPU->id(), op->thePAddr);
         Flexus::Qemu::Translation xlat;
         xlat.theVaddr = op->theVAddr;
-        xlat.theASI = op->theASI;
+//        xlat.theASI = op->theASI;
         //xlat.theTL = theCore->getTL();
         xlat.thePSTATE = theCore->getPSTATE();
         xlat.theType = Flexus::Qemu::Translation::eLoad;
-        op->theValue = theCPU->readVAddrXendian( xlat, op->theSize );
+        op->theValue = bits(theCPU->readVAddrXendian( xlat, op->theSize ));
 
       } else {
         //Need to get load value from the ValueTracker
-	uint64_t val = ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).load(theCPU->id(),op->thePAddr,op->theSize);
+    bits val = ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).load(theCPU->id(),op->thePAddr,op->theSize);
         if (op->theReverseEndian) {
-          op->theValue = Flexus::Qemu::endianFlip( val, op->theSize );
+          op->theValue = bits(Flexus::Qemu::endianFlip( val.to_ulong(), op->theSize ));
         } else {
-          op->theValue = val;
+          op->theValue = bits(val);
         }
-        if (op->theASI == 0x24 || op->theASI == 0x34 ) {
-          //Quad LDD
-          op->theExtendedValue = ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).load( theCPU->id(), PhysicalMemoryAddress(op->thePAddr + 8), op->theSize);
-          DBG_( Verb, ( << "Performing quad LDD for addr " << op->thePAddr << " val: " << op->theValue << " ext: " << op->theExtendedValue) );
-          DBG_Assert( ! op->theReverseEndian, ( << "FIXME: inverse endian QUAD_LDD is not implemented. ") );
-        }
+//        if (op->theASI == 0x24 || op->theASI == 0x34 ) {
+//          //Quad LDD
+//          op->theExtendedValue = bits(ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).load( theCPU->id(), PhysicalMemoryAddress(op->thePAddr + 8), op->theSize));
+//          DBG_( Verb, ( << "Performing quad LDD for addr " << op->thePAddr << " val: " << op->theValue << " ext: " << op->theExtendedValue) );
+//          DBG_Assert( ! op->theReverseEndian, ( << "FIXME: inverse endian QUAD_LDD is not implemented. ") );
+//        }
       }
     } else if ( op->theOperation == kRMWReply || op->theOperation == kCASReply ) {
       //RMW operations load int32_t theExtendedValue
       ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).access( theCPU->id(), op->thePAddr);
       Flexus::Qemu::Translation xlat;
       xlat.theVaddr = op->theVAddr;
-      xlat.theASI = op->theASI;
-      //xlat.theTL = theCore->getTL();
       xlat.thePSTATE = theCore->getPSTATE();
       xlat.theType = Flexus::Qemu::Translation::eStore;
-      op->theExtendedValue = theCPU->readVAddrXendian( xlat, op->theSize );
+      op->theExtendedValue = bits(theCPU->readVAddrXendian( xlat, op->theSize ));
     } else if ( op->theOperation == kStoreReply && !op->theSideEffect && ! op->theAtomic ) {
       //Need to inform ValueTracker that this store is complete
-      uint64_t value = op->theValue;
+      bits value = op->theValue;
       if (op->theReverseEndian) {
-        value = Flexus::Qemu::endianFlip(value, op->theSize);
+        value = bits(Flexus::Qemu::endianFlip(value.to_ulong(), op->theSize));
         DBG_(Verb, ( << "Performing inverse endian store for addr " << std::hex << op->thePAddr << " val: " << op->theValue << " inv: " << value << std::dec ));
       }
       ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).commitStore( theCPU->id(), op->thePAddr, op->theSize, value);
@@ -441,7 +439,7 @@ void resetArchitecturalState()
     resetSpecialRegs();
     fillXRegisters();
     fillVRegisters();
-    theCPU->resyncMMU();
+//    theCPU->resyncMMU();
 }
 
   void resetSpecialRegs() {
@@ -462,7 +460,7 @@ void resetArchitecturalState()
   }
 
   void resetPSTATE() {
-    uint64_t pstate= theCPU->readRegister( 0, API::PSTATE );
+    uint64_t pstate = theCPU->readRegister( 0, API::PSTATE );
     theCore->setPSTATE( pstate );
   }
 
@@ -579,8 +577,6 @@ void resetArchitecturalState()
     std::cout << "  0x" << std::hex << std::setw(16) << std::setfill('0') << state.thePC;
     std::cout << "          %ccr               %fpsr               %fpsr                %pstate\n";
     std::cout << std::endl;
-    std::cout << "          %asi               %gsr                %tl                 %pil\n";
-    std::cout << "  0x" << std::hex << std::setw(16) << std::setfill('0') << state.theASI;
   }
 
   void pregsAll() {

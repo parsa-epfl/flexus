@@ -70,7 +70,8 @@ using nuArchARM::Instruction;
 
 struct UpdateAddressAction : public BaseSemanticAction {
 
-  eOperandCode theAddressCode;
+  eOperandCode theAddressCode, theAddressCode2;
+  bool thePair;
 
   UpdateAddressAction ( SemanticInstruction * anInstruction, eOperandCode anAddressCode )
     : BaseSemanticAction ( anInstruction, 2 )
@@ -97,18 +98,15 @@ struct UpdateAddressAction : public BaseSemanticAction {
 
   void updateAddress() {
     if (ready()) {
-      uint64_t addr = theInstruction->operand< uint64_t > (theAddressCode);
-      if (theInstruction->hasOperand( kUopAddressOffset ) ) {
-        uint64_t offset = theInstruction->operand< uint64_t > (kUopAddressOffset);
-        DBG_(Tmp, (<<"\e[1;33m"<<"DISPATCH: UpdateAddressAction: adding offset " << offset << " to address "<< addr <<" \e[0m"));
-        addr += offset;
-      }
-//      int32_t asi = theInstruction->operand< uint64_t > (kOperand3);
-      VirtualMemoryAddress vaddr(addr);
-      DBG_( Tmp, ( << *this << " updating vaddr=" << vaddr /*<< " asi=" << std::hex << asi << std::dec*/) );
-      core()->resolveVAddr( boost::intrusive_ptr<Instruction>(theInstruction), vaddr/*, asi*/);
-//      eInstruction->setASI(asi);
-
+          bits addr = theInstruction->operand< bits > (theAddressCode);
+          if (theInstruction->hasOperand( kUopAddressOffset ) ) {
+            uint64_t offset = theInstruction->operand< uint64_t > (kUopAddressOffset);
+            DBG_(Tmp, (<<"\e[1;33m"<<"DISPATCH: UpdateAddressAction: adding offset " << offset << " to address "<< addr <<" \e[0m"));
+            addr = bits(addr.size(), (addr.to_ulong()) + offset);
+          }
+          VirtualMemoryAddress vaddr(addr.to_ulong());
+          DBG_( Tmp, ( << *this << " updating vaddr=" << vaddr /*<< " asi=" << std::hex << asi << std::dec*/) );
+          core()->resolveVAddr( boost::intrusive_ptr<Instruction>(theInstruction), vaddr/*, asi*/);
       satisfyDependants();
     }
   }
@@ -119,8 +117,8 @@ struct UpdateAddressAction : public BaseSemanticAction {
 };
 
 multiply_dependant_action updateAddressAction
-( SemanticInstruction * anInstruction ) {
-  UpdateAddressAction * act(new(anInstruction->icb()) UpdateAddressAction( anInstruction, kAddress ) );
+( SemanticInstruction * anInstruction, eOperandCode aCode ) {
+  UpdateAddressAction * act(new(anInstruction->icb()) UpdateAddressAction( anInstruction, aCode ) );
   std::vector<InternalDependance> dependances;
   dependances.push_back( act->dependance(0) );
   dependances.push_back( act->dependance(1) );
@@ -129,13 +127,14 @@ multiply_dependant_action updateAddressAction
 }
 
 multiply_dependant_action updateCASAddressAction
-( SemanticInstruction * anInstruction ) {
-  UpdateAddressAction * act(new(anInstruction->icb()) UpdateAddressAction( anInstruction, kOperand1 ) );
+( SemanticInstruction * anInstruction, eOperandCode aCode ) {
+  UpdateAddressAction * act(new(anInstruction->icb()) UpdateAddressAction( anInstruction, aCode) );
   std::vector<InternalDependance> dependances;
   dependances.push_back( act->dependance(0) );
   dependances.push_back( act->dependance(1) );
 
   return multiply_dependant_action( act, dependances );
 }
+
 
 } //narmDecoder

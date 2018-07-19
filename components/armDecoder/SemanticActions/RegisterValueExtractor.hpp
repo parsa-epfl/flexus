@@ -51,7 +51,7 @@ struct register_value_extractor : boost::static_visitor<register_value> {
     return v;
   }
 
-  register_value operator()(std::bitset<8> v) const {
+  register_value operator()(bits v) const {
     return v;
   }
 

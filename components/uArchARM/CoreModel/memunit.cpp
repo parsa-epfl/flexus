@@ -39,6 +39,7 @@
 #include "coreModelImpl.hpp"
 #include "../ValueTracker.hpp"
 #include <boost/optional/optional_io.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 
 #define DBG_DeclareCategories uArchCat
 #define DBG_SetDefaultOps AddCat(uArchCat)
@@ -494,7 +495,7 @@ boost::intrusive_ptr<MemOp> CoreImpl::popSnoopOp() {
   return ret_val;
 }
 
-uint64_t CoreImpl::retrieveLoadValue( boost::intrusive_ptr<Instruction> anInsn) {
+bits CoreImpl::retrieveLoadValue( boost::intrusive_ptr<Instruction> anInsn) {
   FLEXUS_PROFILE();
   memq_t::index< by_insn >::type::iterator lsq_entry = theMemQueue.get<by_insn>().find( anInsn );
 
@@ -503,7 +504,7 @@ uint64_t CoreImpl::retrieveLoadValue( boost::intrusive_ptr<Instruction> anInsn) 
   return * lsq_entry->theValue;
 }
 
-uint64_t CoreImpl::retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction> anInsn) {
+bits CoreImpl::retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction> anInsn) {
   FLEXUS_PROFILE();
   memq_t::index< by_insn >::type::iterator lsq_entry = theMemQueue.get<by_insn>().find( anInsn );
 
@@ -512,10 +513,9 @@ uint64_t CoreImpl::retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction> 
   return * lsq_entry->theExtendedValue;
 }
 
-void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry , VirtualMemoryAddress anAddr/*, int32_t anASI*/  ) {
+void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry , VirtualMemoryAddress anAddr ) {
   FLEXUS_PROFILE();
   lsq_entry->theVaddr = anAddr;
-//  lsq_entry->theASI = anASI;
   DBG_(Tmp,(<<"in updateVaddr"));//NOOOSHIN
   if (anAddr == kUnresolved) {
     lsq_entry->thePaddr = PhysicalMemoryAddress(kUnresolved);
@@ -532,9 +532,9 @@ void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry 
     xlat.theType = ( lsq_entry->isStore() ? Flexus::Qemu::Translation::eStore :  Flexus::Qemu::Translation::eLoad) ;
     translate(xlat, false);
     lsq_entry->thePaddr = xlat.thePaddr;
-    lsq_entry->theSideEffect = xlat.isSideEffect() || ( ! xlat.isTranslating() && ! xlat.isMMU() );
+    lsq_entry->theSideEffect = xlat.isSideEffect() || ( ! xlat.isTranslating() /*&& ! xlat.isMMU() */);
     lsq_entry->theInverseEndian = xlat.isXEndian();
-    lsq_entry->theMMU = xlat.isMMU();
+//    lsq_entry->theMMU = xlat.isMMU();
     lsq_entry->theNonCacheable = ! xlat.isCacheable();
     //lsq_entry->theInstruction->setWillRaise(xlat.theException);
     lsq_entry->theException = xlat.theException;
@@ -543,7 +543,7 @@ void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry 
       lsq_entry->theSideEffect  = true;
     }
 
-    if ( lsq_entry->theSideEffect && !xlat.isMMU() && !xlat.isInterrupt()  ) {
+    if ( lsq_entry->theSideEffect && /*!xlat.isMMU() &&*/ !xlat.isInterrupt()  ) {
       DBG_( Verb, ( << theName << " SideEffect access: " << *lsq_entry ) );
       if (lsq_entry->theOperation == kLoad) {
         lsq_entry->theInstruction->changeInstCode(codeSideEffectLoad);
@@ -555,10 +555,10 @@ void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry 
         lsq_entry->theInstruction->changeInstCode(codeSideEffectAtomic);
         lsq_entry->theInstruction->forceResync();
       }
-    } else if ( lsq_entry->theMMU ) {
+    } /*else if ( lsq_entry->theMMU ) {
       DBG_( Verb, ( << theName << " MMU access: " << *lsq_entry ) );
       lsq_entry->theInstruction->changeInstCode(codeMMUAccess);
-    } else {
+    }*/ else {
       // Restore the original instruction code
       if ( lsq_entry->theInstruction->instCode() == codeSideEffectLoad  ||
            lsq_entry->theInstruction->instCode() == codeSideEffectStore ||
@@ -641,7 +641,7 @@ void CoreImpl::removeSLATEntry( PhysicalMemoryAddress anAddress, boost::intrusiv
   DBG_Assert(found, ( << "No SLAT entry matching " << anAddress << " for " << *anInstruction));
 }
 
-void CoreImpl::resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, VirtualMemoryAddress anAddr/*, int32_t anASI */) {
+void CoreImpl::resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, VirtualMemoryAddress anAddr) {
   FLEXUS_PROFILE();
   memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( anInsn );
   DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end());
@@ -666,7 +666,7 @@ void CoreImpl::resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, Virtual
     lsq_entry->theIssued = false;
   }
 
-  updateVaddr( lsq_entry, anAddr/*, anASI*/ );
+  updateVaddr( lsq_entry, anAddr);
 
   switch (lsq_entry->status()) {
     case kComplete:
@@ -747,7 +747,7 @@ boost::optional< memq_t::index< by_insn >::type::iterator >  CoreImpl::doLoad( m
     return aCachedSnoopState;
   }
 
-  boost::optional< uint64_t > previous_value( boost::none );
+  boost::optional< bits > previous_value;
   //First, deal with cleaning up the previous status of this load instruction
   switch ( lsq_entry->status()) {
     case kAwaitingValue:
@@ -881,13 +881,16 @@ void CoreImpl::doStore( memq_t::index< by_insn >::type::iterator lsq_entry) {
   updateDependantLoads( lsq_entry );
 }
 
-void CoreImpl::updateCASValue( boost::intrusive_ptr< Instruction > anInsn, uint64_t aValue, uint64_t aCompareValue ) {
+
+
+
+void CoreImpl::updateCASValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, bits aCompareValue ) {
   FLEXUS_PROFILE();
   memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( anInsn );
   DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end());
   DBG_Assert( lsq_entry->theOperation == kCAS );
 
-  boost::optional< uint64_t > previous_value( lsq_entry->theValue );
+  boost::optional< bits > previous_value( lsq_entry->theValue );
 
   lsq_entry->theAnnulled = false;
   lsq_entry->theCompareValue = aCompareValue;
@@ -911,14 +914,14 @@ void CoreImpl::updateCASValue( boost::intrusive_ptr< Instruction > anInsn, uint6
   }
 }
 
-void CoreImpl::updateStoreValue( boost::intrusive_ptr< Instruction > anInsn, uint64_t aValue, boost::optional<uint64_t> anExtendedValue) {
+void CoreImpl::updateStoreValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, boost::optional<bits> anExtendedValue) {
   FLEXUS_PROFILE();
   memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( anInsn );
   DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end());
   DBG_Assert( lsq_entry->theOperation != kLoad );
   DBG_( Verb, ( << "Updated store value for " << *lsq_entry << " to " << aValue << "[:" << anExtendedValue << "]" ));
 
-  boost::optional< uint64_t > previous_value( lsq_entry->theValue );
+  bits previous_value(lsq_entry->theValue.get());
 
   lsq_entry->theAnnulled = false;
   lsq_entry->theValue = aValue;

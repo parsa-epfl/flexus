@@ -181,7 +181,7 @@ struct BranchCondAction : public BaseSemanticAction {
     if (ready() ) {
       if (theInstruction->hasPredecessorExecuted()) {
 
-        uint64_t cond = theInstruction->operand< uint64_t> (kOperand1);
+        bits cond = theInstruction->operand< bits> (kOperand1);
 
         boost::intrusive_ptr<BranchFeedback> feedback( new BranchFeedback() );
         feedback->thePC = theInstruction->pc();
@@ -278,7 +278,7 @@ struct BranchRegAction : public BaseSemanticAction {
   void doEvaluate() {
     if (ready() ) {
       if (theInstruction->hasPredecessorExecuted()) {
-        uint64_t val = theInstruction->operand< uint64_t > (kOperand1);
+        bits val = theInstruction->operand< bits > (kOperand1);
 
         boost::intrusive_ptr<BranchFeedback> feedback( new BranchFeedback() );
         feedback->thePC = theInstruction->pc();
@@ -351,8 +351,8 @@ struct BranchToCalcAddressAction : public BaseSemanticAction {
       if (theInstruction->hasPredecessorExecuted()) {
 
         //Feedback is taken care of by the updateUncoditional effect at retirement
-        uint64_t target = theInstruction->operand< uint64_t > (theTarget);
-        VirtualMemoryAddress target_addr(target);
+        bits target = theInstruction->operand< bits > (theTarget);
+        VirtualMemoryAddress target_addr(target.to_ulong());
         DBG_( Tmp, ( << *this << " branc to mapped_reg target: " << target_addr ) );
         core()->applyToNext( theInstruction, branchInteraction(target_addr) );
 

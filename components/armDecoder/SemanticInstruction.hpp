@@ -214,9 +214,9 @@ template<> inline nuArchARM::reg  & SemanticInstruction::operand< nuArchARM::reg
   return theOperands.operand<reg>( anOperand );
 }
 
-template<> inline std::bitset<8>  & SemanticInstruction::operand< std::bitset<8> >( eOperandCode anOperand ) {
+template<> inline bits  & SemanticInstruction::operand< bits >( eOperandCode anOperand ) {
   //DBG_Assert( theOperands.hasOperand(anOperand), ( << "Request for unavailable operand " << anOperand << "(" << static_cast<int>(anOperand) << ") by\n" << std::internal << *this << std::left ) );
-  return theOperands.operand< std::bitset<8> >( anOperand );
+  return theOperands.operand< bits >( anOperand );
 }
 
 template <> inline uint64_t & SemanticInstruction::operand< uint64_t >( eOperandCode anOperand ) {

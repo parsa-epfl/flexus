@@ -95,9 +95,6 @@ void MemQueueEntry::describe(std::ostream & anOstream) const {
     if (theCompareValue) {
       anOstream << " ?=" << *theCompareValue;
     }
-    if (theASI != 0x80) {
-      anOstream << " {asi 0x" << std::hex << theASI << std::dec << "}";
-    }
 
     if (theAnnulled) {
       anOstream << " {annulled}";
@@ -120,9 +117,9 @@ void MemQueueEntry::describe(std::ostream & anOstream) const {
     if (theBypassSB) {
       anOstream << " {bypass-SB}";
     }
-    if (theMMU) {
-      anOstream << " {mmu}";
-    }
+//    if (theMMU) {
+//      anOstream << " {mmu}";
+//    }
     if (theNonCacheable) {
       anOstream << " {non-cacheable}";
     }

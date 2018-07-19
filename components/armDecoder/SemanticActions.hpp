@@ -56,6 +56,15 @@ struct uArchARM;
 
 namespace narmDecoder {
 
+
+
+enum eSignCode {
+    kSignExtend,
+    kZeroExtend,
+    kNoExtention,
+    kLastExt
+};
+
 using nuArchARM::SemanticAction;
 using nuArchARM::eRegisterType;
 using nuArchARM::uArchARM;
@@ -80,7 +89,7 @@ struct Operation {
 
 
   virtual uint64_t getNZCVbits() { return theNZCV; }
-  virtual bool hasNZCVFlags() { return theNZCV; }
+  virtual bool hasNZCVFlags() { return theNZCVFlags; }
   bool theNZCVFlags;
   uint64_t theNZCV;
   std::vector< Operand > const theOperands;
@@ -89,13 +98,7 @@ struct Operation {
 
 
 
-Operation & operation( eOpType T );
-Operation & ccCalc( int32_t anOp3Code );
-Operation & fp_op1( int32_t anfop );
-Operation & fp_op2( int32_t anfop );
-Operation & shift( int32_t aShiftCode, bool a64Bit );
-
-
+std::unique_ptr<Operation> operation( eOpType T );
 
 class BaseSemanticAction : public SemanticAction, public UncountedComponent {
 private:
@@ -238,7 +241,7 @@ simple_action readRegisterAction
 
 predicated_action executeAction
 ( SemanticInstruction * anInstruction
-  , Operation & anOperation
+  , std::unique_ptr<Operation> & anOperation
   , std::vector< std::list<InternalDependance> > & opDeps
   , eOperandCode aResult
   , boost::optional<eOperandCode> aBypass
@@ -246,7 +249,7 @@ predicated_action executeAction
 
 predicated_action executeAction_XTRA
 ( SemanticInstruction * anInstruction
-  , Operation & anOperation
+  , std::unique_ptr<Operation> & anOperation
   , std::vector< std::list<InternalDependance> > & opDeps
   , boost::optional<eOperandCode> aBypass
   , boost::optional<eOperandCode> aBypassY
@@ -254,7 +257,7 @@ predicated_action executeAction_XTRA
 
 predicated_action fpExecuteAction
 ( SemanticInstruction * anInstruction
-  , Operation & anOperation
+  , std::unique_ptr<Operation> & anOperation
   , int32_t num_ops
   , eSize aDestSize
   , eSize aSrcSize
@@ -263,7 +266,7 @@ predicated_action fpExecuteAction
 
 predicated_action visOp
 ( SemanticInstruction * anInstruction
-  , Operation & anOperation
+  , std::unique_ptr<Operation> & anOperation
   , std::vector< std::list<InternalDependance> > & deps
 );
 
@@ -312,7 +315,8 @@ predicated_dependant_action updateRMWValueAction
 ( SemanticInstruction * anInstruction );
 
 predicated_dependant_action updateStoreValueAction
-( SemanticInstruction * anInstruction );
+( SemanticInstruction * anInstruction, eOperandCode data );
+
 
 multiply_dependant_action updateSTDValueAction
 ( SemanticInstruction * anInstruction );
@@ -329,11 +333,19 @@ predicated_dependant_action loadAction
 predicated_dependant_action casAction
 ( SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass );
 
+predicated_dependant_action caspAction
+( SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass );
+
+
 predicated_dependant_action rmwAction
 ( SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass );
 
 predicated_dependant_action lddAction
 ( SemanticInstruction * anInstruction, boost::optional<eOperandCode> aBypass0, boost::optional<eOperandCode> aBypass1  );
+
+predicated_dependant_action ldpAction
+( SemanticInstruction * anInstruction, eSize aSize, bool aSignCode, boost::optional<eOperandCode> aBypass0, boost::optional<eOperandCode> aBypass1  );
+
 
 predicated_dependant_action loadFloatingAction
 ( SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass0, boost::optional<eOperandCode> aBypass1);
@@ -357,6 +369,13 @@ predicated_action readSTICKAction
 predicated_action constantAction
 ( SemanticInstruction * anInstruction
   , uint64_t aConstant
+  , eOperandCode aResult
+  , boost::optional<eOperandCode> aBypass
+);
+
+predicated_action operandAction
+( SemanticInstruction * anInstruction
+  , eOperandCode anOperand
   , eOperandCode aResult
   , boost::optional<eOperandCode> aBypass
 );

@@ -209,53 +209,53 @@ void CoreImpl::setXRegister(uint32_t aReg, uint64_t aVal) {
 //    return 0;
 //}
 
-void CoreImpl::writeFPSR( uint64_t anFPSR) {
-  theFPSR = anFPSR;
-  std::bitset<8> fcc0( ( anFPSR >> 10) & 3 );
-  std::bitset<8> fcc1( ( anFPSR >> 32) & 3 );
-  std::bitset<8> fcc2( ( anFPSR >> 34) & 3 );
-  std::bitset<8> fcc3( ( anFPSR >> 36) & 3 );
+//void CoreImpl::writeFPSR( uint64_t anFPSR) {
+//  theFPSR = anFPSR;
+//  bits fcc0( ( anFPSR >> 10) & 3 );
+//  bits fcc1( ( anFPSR >> 32) & 3 );
+//  bits fcc2( ( anFPSR >> 34) & 3 );
+//  bits fcc3( ( anFPSR >> 36) & 3 );
 
-  reg r;
-  r.theType = ccBits;
+//  reg r;
+//  r.theType = ccBits;
 
-  r.theIndex = 1;
-  theRegisters.poke( map(r), fcc0);
-  r.theIndex = 2;
-  theRegisters.poke( map(r), fcc1);
-  r.theIndex = 3;
-  theRegisters.poke( map(r), fcc2);
-  r.theIndex = 4;
-  theRegisters.poke( map(r), fcc3);
-  setRoundingMode( (anFPSR >> 30) & 3 );
-}
+//  r.theIndex = 1;
+//  theRegisters.poke( map(r), fcc0);
+//  r.theIndex = 2;
+//  theRegisters.poke( map(r), fcc1);
+//  r.theIndex = 3;
+//  theRegisters.poke( map(r), fcc2);
+//  r.theIndex = 4;
+//  theRegisters.poke( map(r), fcc3);
+//  setRoundingMode( (anFPSR >> 30) & 3 );
+//}
 
-uint64_t CoreImpl::readFPSR() {
-  uint64_t fpsr = theFPSR;
-  reg r;
-  r.theType = ccBits;
+//uint64_t CoreImpl::readFPSR() {
+//  uint64_t fpsr = theFPSR;
+//  reg r;
+//  r.theType = ccBits;
 
-  try {
-    r.theIndex = 1;
-    std::bitset<8> fcc0 = boost::get< std::bitset<8> >(theRegisters.peek( map(r) ));
-    r.theIndex = 2;
-    std::bitset<8> fcc1 = boost::get< std::bitset<8> >(theRegisters.peek( map(r) ));
-    r.theIndex = 3;
-    std::bitset<8> fcc2 = boost::get< std::bitset<8> >(theRegisters.peek( map(r) ));
-    r.theIndex = 4;
-    std::bitset<8> fcc3 = boost::get< std::bitset<8> >(theRegisters.peek( map(r) ));
-    uint64_t fcc0_ull = ( fcc0.to_ulong() & 3);
-    uint64_t fcc1_ull = ( fcc1.to_ulong() & 3);
-    uint64_t fcc2_ull = ( fcc2.to_ulong() & 3);
-    uint64_t fcc3_ull = ( fcc3.to_ulong() & 3);
-    //Mask out all FCC fields
-    fpsr &= 0xFFFFFFC0FFFFF3FFULL;
-    fpsr |= (fcc0_ull << 10) | (fcc1_ull << 32) | (fcc2_ull << 34) | (fcc3_ull << 36);
-  } catch (...) {
-    DBG_(Dev, ( << "readFPSR() threw an exception.  return an incorrect value and let validation clean it up. (mapped_reg.theIndex = " << r.theIndex << ", map(mapped_reg) = " << map(r) << ")" ) );
-  }
-  return fpsr;
-}
+//  try {
+//    r.theIndex = 1;
+//    std::bitset<8> fcc0 = boost::get< bits >(theRegisters.peek( map(r) ));
+//    r.theIndex = 2;
+//    std::bitset<8> fcc1 = boost::get< bits >(theRegisters.peek( map(r) ));
+//    r.theIndex = 3;
+//    std::bitset<8> fcc2 = boost::get< std::bitset<8> >(theRegisters.peek( map(r) ));
+//    r.theIndex = 4;
+//    std::bitset<8> fcc3 = boost::get< std::bitset<8> >(theRegisters.peek( map(r) ));
+//    uint64_t fcc0_ull = ( fcc0.to_ulong() & 3);
+//    uint64_t fcc1_ull = ( fcc1.to_ulong() & 3);
+//    uint64_t fcc2_ull = ( fcc2.to_ulong() & 3);
+//    uint64_t fcc3_ull = ( fcc3.to_ulong() & 3);
+//    //Mask out all FCC fields
+//    fpsr &= 0xFFFFFFC0FFFFF3FFULL;
+//    fpsr |= (fcc0_ull << 10) | (fcc1_ull << 32) | (fcc2_ull << 34) | (fcc3_ull << 36);
+//  } catch (...) {
+//    DBG_(Dev, ( << "readFPSR() threw an exception.  return an incorrect value and let validation clean it up. (mapped_reg.theIndex = " << r.theIndex << ", map(mapped_reg) = " << map(r) << ")" ) );
+//  }
+//  return fpsr;
+//}
 
 void CoreImpl::getARMState( armState & aState) {
   reg r;
@@ -304,7 +304,7 @@ void CoreImpl::compareARMState(armState & aLeft, armState & aRight) {
   DBG_Assert( (aLeft.theFPCR == aRight.theFPCR), ( << std::hex << "aLeft.theFPCR = "  << aLeft.theFPCR << ", aRight.theFPCR = " << aRight.theFPCR << std::dec ));
   DBG_Assert( (aLeft.theFPSR == aRight.theFPSR), ( << std::hex << "aLeft.theFPSR = "  << aLeft.theFPSR << ", aRight.theFPSR = " << aRight.theFPSR << std::dec ));
   DBG_Assert( (aLeft.thePSTATE == aRight.thePSTATE), ( << std::hex << "aLeft.thePSTATE = "  << aLeft.thePSTATE << ", aRight.thePSTATE = " << aRight.thePSTATE << std::dec ));
-  DBG_Assert( (aLeft.theASI == aRight.theASI), ( << std::hex << "aLeft.theASI = "  << aLeft.theASI << ", aRight.theASI = " << aRight.theASI << std::dec ));
+//  DBG_Assert( (aLeft.theASI == aRight.theASI), ( << std::hex << "aLeft.theASI = "  << aLeft.theASI << ", aRight.theASI = " << aRight.theASI << std::dec ));
  }
 
 } //nuArchARM

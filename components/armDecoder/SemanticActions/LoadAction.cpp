@@ -69,14 +69,14 @@ using nuArchARM::Instruction;
 
 struct LoadAction : public PredicatedSemanticAction {
   eSize theSize;
-  bool theSignExtend;
+  eSignCode theSignExtend;
   boost::optional<eOperandCode> theBypass;
   bool theLoadExtended;
 
-  LoadAction( SemanticInstruction * anInstruction, eSize aSize, bool aSignExtend,  boost::optional<eOperandCode> aBypass, bool aLoadExtended)
+  LoadAction( SemanticInstruction * anInstruction, eSize aSize, eSignCode aSigncode,  boost::optional<eOperandCode> aBypass, bool aLoadExtended)
     : PredicatedSemanticAction ( anInstruction, 1, true )
     , theSize(aSize)
-    , theSignExtend(aSignExtend)
+    , theSignExtend(aSigncode)
     , theBypass(aBypass)
     , theLoadExtended(aLoadExtended)
   { }
@@ -97,7 +97,7 @@ struct LoadAction : public PredicatedSemanticAction {
   }
 
   void doLoad() {
-    uint64_t value;
+    bits value;
     if (theLoadExtended) {
       value = core()->retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
     } else {
@@ -105,21 +105,21 @@ struct LoadAction : public PredicatedSemanticAction {
     }
     switch (theSize) {
       case kByte:
-        value &= 0xFFULL;
-        if (theSignExtend && (value & 0x80ULL)) {
-          value |= 0xFFFFFFFFFFFFFF00ULL;
+        value &= bits(value.size(), 0xFFULL);
+        if ((theSignExtend != kNoExtention) && anyBits(value & bits(value.size(),0x80ULL))) {
+          value |= theSignExtend == kSignExtend ? bits(value.size(),0xFFFFFFFFFFFFFF00ULL) : bits(value.size(),0ULL);
         }
         break;
       case kHalfWord:
-        value &= 0xFFFFULL;
-        if (theSignExtend && (value & 0x8000ULL)) {
-          value |= 0xFFFFFFFFFFFF0000ULL;
+        value &= bits(value.size(),0xFFFFULL);
+        if ((theSignExtend != kNoExtention) && anyBits(value & bits(value.size(),0x8000ULL))) {
+            value |= theSignExtend == kSignExtend ? bits(value.size(),0xFFFFFFFFFFFFFF00ULL) : bits(value.size(),0ULL);
         }
         break;
       case kWord:
-        value &= 0xFFFFFFFFULL;
-        if (theSignExtend && (value & 0x80000000ULL)) {
-          value |= 0xFFFFFFFF00000000ULL;
+        value &= bits(value.size(),0xFFFFFFFFULL);
+        if ((theSignExtend != kNoExtention) && anyBits(value & bits(value.size(),0x80000000ULL))) {
+            value |= theSignExtend == kSignExtend ? bits(value.size(),0xFFFFFFFFFFFFFF00ULL) : bits(value.size(),0ULL);
         }
         break;
       case kDoubleWord:
@@ -144,18 +144,19 @@ struct LoadAction : public PredicatedSemanticAction {
 };
 
 predicated_dependant_action loadAction
-( SemanticInstruction * anInstruction, eSize aSize, bool aSignExtend, boost::optional<eOperandCode> aBypass ) {
-  LoadAction * act(new(anInstruction->icb()) LoadAction( anInstruction, aSize, aSignExtend, aBypass, false ) );
+( SemanticInstruction * anInstruction, eSize aSize, eSignCode aSignCode, boost::optional<eOperandCode> aBypass ) {
+  LoadAction * act(new(anInstruction->icb()) LoadAction( anInstruction, aSize, aSignCode, aBypass, false ) );
   return predicated_dependant_action( act, act->dependance(), act->predicate() );
 }
 predicated_dependant_action casAction
 ( SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass ) {
-  LoadAction * act(new(anInstruction->icb()) LoadAction( anInstruction, aSize, false, aBypass, true) );
+  LoadAction * act(new(anInstruction->icb()) LoadAction( anInstruction, aSize, kNoExtention, aBypass, true) );
   return predicated_dependant_action( act, act->dependance(), act->predicate() );
 }
+
 predicated_dependant_action rmwAction
 ( SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass ) {
-  LoadAction * act(new(anInstruction->icb()) LoadAction( anInstruction, aSize, false, aBypass, true) );
+  LoadAction * act(new(anInstruction->icb()) LoadAction( anInstruction, aSize, kNoExtention, aBypass, true) );
   return predicated_dependant_action( act, act->dependance(), act->predicate() );
 }
 

@@ -277,7 +277,7 @@ private:
   BBVTracker * theBBVTracker; /* CMU-ONLY */
   uint32_t theOnChipLatency;
   uint32_t theOffChipLatency;
-  bool theValidateMMU;
+//  bool theValidateMMU;
 
 public:
   std::list< boost::intrusive_ptr< MemOp > > theMemoryPorts;
@@ -685,15 +685,8 @@ public:
   std::pair<mapped_reg, mapped_reg> create( reg aReg );
   void free( mapped_reg aReg );
   void restore( reg aName, mapped_reg aReg );
-//  uint32_t saveWindow();
-//  void saveWindowPriv();
-//  void saved();
-//  uint32_t restoreWindow();
-//  void restoreWindowPriv();
-//  void restored();
-//  int32_t selectedRegisterSet() const;
 
-  //Synchronization with Simics
+  //Synchronization with Qemu
   //==========================================================================
 public:
   void reset();
@@ -721,8 +714,8 @@ public:
   void setSPSR( uint64_t anSPSR){ theSPSR = anSPSR; }
   uint64_t getSPSR(){ return theSPSR; }
 
-  void writeFPSR( uint64_t anFPSR);
-  uint64_t readFPSR();
+//  void writeFPSR( uint64_t anFPSR);
+//  uint64_t readFPSR();
 
   void setRoundingMode( uint32_t aRoundingMode );
   uint32_t getRoundingMode() {
@@ -733,8 +726,6 @@ public:
   uint64_t readPR(uint32_t aPR);
   std::string prName(uint32_t aPR);
 
-//  void setASI(uint64_t);
-//  uint64_t getASI();
   void setXRegister(uint32_t aReg, uint64_t aVal);
   uint64_t getXRegister(uint32_t aReg);
 
@@ -805,12 +796,12 @@ public:
   //Address and Value resolution for Loads and Stores
   //==========================================================================
 public:
-  uint64_t retrieveLoadValue( boost::intrusive_ptr<Instruction> anInsn);
-  uint64_t retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction> anInsn);
-  void resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, VirtualMemoryAddress anAddr/*, int32_t anASI*/ );
-  void updateStoreValue( boost::intrusive_ptr< Instruction > anInsn, uint64_t aValue, boost::optional<uint64_t> anExtendedValue = boost::none);
+  bits retrieveLoadValue( boost::intrusive_ptr<Instruction> anInsn);
+  bits retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction> anInsn);
+  void resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, VirtualMemoryAddress anAddr);
+  void updateStoreValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, boost::optional<bits> anExtendedValue = boost::none);
   void annulStoreValue( boost::intrusive_ptr< Instruction > anInsn );
-  void updateCASValue( boost::intrusive_ptr< Instruction > anInsn, uint64_t aValue, uint64_t aCMPValue );
+  void updateCASValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, bits aCMPValue );
 
   //Value forwarding
   //==========================================================================

@@ -331,8 +331,8 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
         DBG_( Verb, ( << "Cache atomic preload to invalid address for " << *lsq_entry ) );
         //Unable to map virtual address to physical address for load.  Load is
         //speculative or TLB miss.
-        lsq_entry->theValue = 0;
-        lsq_entry->theExtendedValue = 0;
+        lsq_entry->theValue->reset();
+        lsq_entry->theExtendedValue->reset();
         DBG_Assert(lsq_entry->theDependance);
         lsq_entry->theDependance->satisfy();
         return;
@@ -349,8 +349,8 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
         DBG_( Verb, ( << "Cache read to invalid address for " << *lsq_entry ) );
         //Unable to map virtual address to physical address for load.  Load is
         //speculative or TLB miss.
-        lsq_entry->theValue = 0;
-        lsq_entry->theExtendedValue = 0;
+        lsq_entry->theValue->reset();
+        lsq_entry->theExtendedValue->reset();
         DBG_Assert(lsq_entry->theDependance);
         lsq_entry->theDependance->satisfy();
         return;
@@ -401,7 +401,6 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
   op->theOperation = mshr.theOperation = issue_op;
   DBG_Assert( op->theVAddr != kUnresolved);
   op->theVAddr = lsq_entry->theVaddr;
-  op->theASI = lsq_entry->theASI;
   op->theSideEffect = lsq_entry->theSideEffect;
   op->theReverseEndian = lsq_entry->theInverseEndian;
   op->theNonCacheable = lsq_entry->theNonCacheable;
@@ -420,7 +419,7 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
   if (lsq_entry->theValue) {
     op->theValue = *lsq_entry->theValue;
   } else {
-    op->theValue = 0;
+    op->theValue.reset();
   }
 
   boost::intrusive_ptr<TransactionTracker> tracker = new TransactionTracker;
@@ -529,7 +528,6 @@ void CoreImpl::issueStore() {
           MemOp op;
           op.theOperation = kStoreReply;
           op.theVAddr = theMemQueue.front().theVaddr;
-          op.theASI = theMemQueue.front().theASI;
           op.theSideEffect = theMemQueue.front().theSideEffect;
           op.theReverseEndian = theMemQueue.front().theInverseEndian;
           op.theNonCacheable = theMemQueue.front().theNonCacheable;
@@ -539,13 +537,13 @@ void CoreImpl::issueStore() {
           if (theMemQueue.front().theValue) {
             op.theValue = *theMemQueue.front().theValue;
           } else {
-            op.theValue = 0;
+            op.theValue.reset();
           }
           theMemQueue.front().theIssued = true;
           //Need to inform ValueTracker that this store is complete
-          uint64_t value = op.theValue;
+          bits value = op.theValue;
           if (op.theReverseEndian) {
-            value = Flexus::Qemu::endianFlip(value, op.theSize);
+            value = bits(Flexus::Qemu::endianFlip(value.to_ulong(), op.theSize));
             DBG_(Verb, ( << "Performing inverse endian store for addr " << std::hex << op.thePAddr << " val: " << op.theValue << " inv: " << value << std::dec ));
           }
 	  ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theNode)).commitStore( theNode, op.thePAddr, op.theSize, value);
@@ -673,11 +671,10 @@ void CoreImpl::issueStorePrefetch( boost::intrusive_ptr<Instruction> anInstructi
   boost::intrusive_ptr<MemOp> op(new MemOp());
   op->theOperation = kStorePrefetch;
   op->theVAddr = lsq_entry->theVaddr;
-  op->theASI = lsq_entry->theASI;
   op->thePAddr = lsq_entry->thePaddr;
   op->thePC = lsq_entry->theInstruction->pc();
   op->theSize = lsq_entry->theSize;
-  op->theValue = 0;
+  op->theValue.clear();
   if (lsq_entry->theBypassSB) {
     DBG_(Dev, ( << "NAW store prefetch: " << *lsq_entry ) );
     op->theNAW = true;
@@ -719,7 +716,7 @@ void CoreImpl::issueAtomic() {
     if (theMemQueue.front().thePaddr == kInvalid) {
       //CAS to unsupported ASI.  Pretend the operation is done.
       theMemQueue.front().theIssued = true;
-      theMemQueue.front().theExtendedValue = 0;
+      theMemQueue.front().theExtendedValue->reset();
       theMemQueue.front().theStoreComplete = true;
       theMemQueue.front().theInstruction->resolveSpeculation();
       DBG_Assert(theMemQueue.front().theDependance);
@@ -779,7 +776,7 @@ bool CoreImpl::checkStoreRetirement( boost::intrusive_ptr<Instruction> aStore) {
     return true;
   } else if (iter->isAbnormalAccess()) {
     if (iter->theExtraLatencyTimeout && theFlexus->cycleCount() > *iter->theExtraLatencyTimeout) {
-      if (iter->theSideEffect && ! iter->theException  && ! interruptASI(iter->theASI) && ! mmuASI(iter->theASI) ) {
+      if (iter->theSideEffect && ! iter->theException  /*&& ! interruptASI(iter->theASI) && ! mmuASI(iter->theASI)*/ ) {
         return sbEmpty();
       } else {
         return true;
@@ -808,31 +805,31 @@ void CoreImpl::issueSpecial() {
       } else if (lsq_head->theBypassSB) {
         DBG_(Dev, ( << "NAW store completed on the sly: " << *lsq_head ) );
         lsq_head->theExtraLatencyTimeout = theFlexus->cycleCount();
-      } else if (lsq_head->theMMU) {
+      } /*else if (lsq_head->theMMU) {
         lsq_head->theExtraLatencyTimeout = theFlexus->cycleCount() + theOnChipLatency;
-      } else {
-        DBG_Assert( lsq_head->theSideEffect || interruptASI(lsq_head->theASI));
+      }*/ else {
+        DBG_Assert( lsq_head->theSideEffect /*|| interruptASI(lsq_head->theASI)*/);
 
         //Can't issue side-effect accesses while speculating
         if (! theIsSpeculating ) {
           //SideEffect access to unsupported ASI
           uint32_t latency = 0;
-          switch (lsq_head->theASI) {
-              // see UltraSPARC III cu manual for details
-            case 0x15: // ASI_PHYS_BYPASS_EC_WITH_EBIT
-            case 0x1D: // ASI_PHYS_BYPASS_EC_WITH_EBIT_LITTLE
-            case 0x4A: // ASI_FIREPLANE_CONFIG_REG or ASI_FIREPLANE_ADDRESS_REG
-              latency = theOffChipLatency;
-              ++theSideEffectOffChip;
-              DBG_( Verb, ( << theName << " Set SideEffect access time to " << latency << " " << *lsq_head) );
-              break;
-            default:
-              // everything else is on-chip
-              latency = theOnChipLatency;
-              ++theSideEffectOnChip;
-              DBG_( Verb, ( << theName << " Set SideEffect access time to " << latency << " " << *lsq_head) );
-              break;
-          }
+//          switch (lsq_head->theASI) {
+//              // see UltraSPARC III cu manual for details
+//            case 0x15: // ASI_PHYS_BYPASS_EC_WITH_EBIT
+//            case 0x1D: // ASI_PHYS_BYPASS_EC_WITH_EBIT_LITTLE
+//            case 0x4A: // ASI_FIREPLANE_CONFIG_REG or ASI_FIREPLANE_ADDRESS_REG
+//              latency = theOffChipLatency;
+//              ++theSideEffectOffChip;
+//              DBG_( Verb, ( << theName << " Set SideEffect access time to " << latency << " " << *lsq_head) );
+//              break;
+//            default:
+//              // everything else is on-chip
+//              latency = theOnChipLatency;
+//              ++theSideEffectOnChip;
+//              DBG_( Verb, ( << theName << " Set SideEffect access time to " << latency << " " << *lsq_head) );
+//              break;
+//          }
           lsq_head->theExtraLatencyTimeout = theFlexus->cycleCount() + latency;
         }
       }
@@ -851,20 +848,20 @@ void CoreImpl::checkExtraLatencyTimeout() {
          && lsq_head->status() == kAwaitingIssue
        ) {
 
-      if ( mmuASI(lsq_head->theASI)) {
+      /*if ( mmuASI(lsq_head->theASI)) {
         if (lsq_head->isLoad()) {
           //Perform MMU access for loads.  Stores are done in retireMem()
           lsq_head->theValue = Flexus::Qemu::Processor::getProcessor( theNode )->mmuRead(lsq_head->theVaddr, lsq_head->theASI);
           lsq_head->theExtendedValue = 0;
           DBG_( Verb, ( << theName << " MMU read: " << *lsq_head ) );
         }
-      } else if (lsq_head->theException) {
+      } else */if (lsq_head->theException) {
         DBG_( Verb, ( << theName << " Memory access raises exception.  Completing the operation: " << *lsq_head ) );
         lsq_head->theIssued = true;
-        lsq_head->theValue = 0;
-        lsq_head->theExtendedValue = 0;
+        lsq_head->theValue->reset();
+        lsq_head->theExtendedValue->reset();
 
-      } else if (interruptASI(lsq_head->theASI)) {
+      } /*else if (interruptASI(lsq_head->theASI)) {
         if (lsq_head->isLoad()) {
           //Perform Interrupt access for loads.  We let Simics worry about stores
           lsq_head->theValue = Flexus::Qemu::Processor::getProcessor( theNode )->interruptRead(lsq_head->theVaddr, lsq_head->theASI);
@@ -872,13 +869,13 @@ void CoreImpl::checkExtraLatencyTimeout() {
           DBG_( Verb, ( << theName << " Interrupt read: " << *lsq_head ) );
         }
 
-      } else {
+      } */else {
 
         DBG_( Verb, ( << theName << " SideEffect access to unknown Paddr.  Completing the operation: " << *lsq_head ) );
         lsq_head->theIssued = true;
-        lsq_head->theValue = 0;
-        lsq_head->theExtendedValue = 0;
-        if (lsq_head->isLoad()) {
+        lsq_head->theValue->reset();
+        lsq_head->theExtendedValue->reset();
+       if (lsq_head->isLoad()) {
           lsq_head->theInstruction->forceResync();
         }
       }

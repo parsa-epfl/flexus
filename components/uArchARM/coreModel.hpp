@@ -66,7 +66,7 @@ struct armState {
   uint64_t theFPSR;
   uint64_t theFPCR;
   uint64_t thePSTATE;
-  uint64_t theASI;
+//  uint64_t theASI;
 };
 struct CoreModel : public uArchARM {
   static CoreModel * construct(uArchOptions_t options

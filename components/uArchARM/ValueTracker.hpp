@@ -372,7 +372,7 @@ struct ValueTracker {
     }
   }
 
-  void store( uint32_t aCPU, PhysicalMemoryAddress anAddress, eSize aSize, uint64_t aStoreValue) {
+  void store( uint32_t aCPU, PhysicalMemoryAddress anAddress, eSize aSize, bits aStoreValue) {
     FLEXUS_PROFILE();
     DBG_Assert( anAddress != 0 );
     DBG_Assert( anAddress < 0x40000000000LL );
@@ -469,7 +469,7 @@ struct ValueTracker {
     }
   }
 
-  void commitStore( uint32_t aCPU, PhysicalMemoryAddress anAddress, eSize aSize, uint64_t aStoreValue) {
+  void commitStore( uint32_t aCPU, PhysicalMemoryAddress anAddress, eSize aSize, bits aStoreValue) {
     FLEXUS_PROFILE();
     DBG_Assert( anAddress != 0 );
     DBG_Assert( anAddress < 0x40000000000LL );
@@ -527,7 +527,7 @@ struct ValueTracker {
     }
   }
 
-  uint64_t load( uint32_t aCPU, PhysicalMemoryAddress anAddress, eSize aSize) {
+  bits load( uint32_t aCPU, PhysicalMemoryAddress anAddress, eSize aSize) {
     FLEXUS_PROFILE();
     DBG_Assert( anAddress != 0 );
     DBG_Assert( aSize <= 8 );
@@ -544,7 +544,7 @@ struct ValueTracker {
     if ( iter == theTracker.end() ) {
       uint64_t val = cpu->readPAddr( anAddress, aSize );
       DBG_( Iface, ( << "CPU[" << aCPU << "] Load.NoOutstandingValues " << anAddress << "[" << aSize << "] = " << std::hex << val << std::dec ) );
-      return val;
+      return bits(val);
     }
 
     if (iter->second.theSimicsReflectsCPU == kPoisonedByDMA) {
@@ -563,11 +563,11 @@ struct ValueTracker {
 
         uint64_t val = cpu->readPAddr( anAddress, aSize );
         DBG_( Trace, AddCategory(Special)( << "CPU[" << aCPU << "] Load.SwitchToGlobalValue " << anAddress << "[" << aSize << "] = " << std::hex << val << std::dec ) );
-        return val;
+        return bits(val);
       } else {
         uint64_t val = cpu->readPAddr( anAddress, aSize );
         DBG_( Iface, ( << "CPU[" << aCPU << "] Load.SimicsAlreadySetToGlobal " << anAddress << "[" << aSize << "] = " << std::hex << val << std::dec ) );
-        return val;
+        return bits(val);
       }
     }
 
@@ -579,12 +579,12 @@ struct ValueTracker {
 
       uint64_t val = cpu->readPAddr( anAddress, aSize );
       DBG_( Trace, AddCategory(Special) ( << "CPU[" << aCPU << "] Load.SwitchToLocalValue " << anAddress << "[" << aSize << "] = " << std::hex << val << std::dec ) );
-      return val;
+      return bits(val);
     } else {
 
       uint64_t val = cpu->readPAddr( anAddress, aSize );
       DBG_( Iface, ( << "CPU[" << aCPU << "] Load.SimicsAlreadySetToLocal " << anAddress << "[" << aSize << "] = " << std::hex << val << std::dec ) );
-      return val;
+      return bits(val);
     }
   }
 
@@ -623,11 +623,11 @@ private:
     return mask;
   }
 
-  uint64_t align( uint64_t aValue, PhysicalMemoryAddress anAddress, eSize aSize) {
-    return ( aValue << ( offset(anAddress, aSize) * 8) );
+  uint64_t align( bits aValue, PhysicalMemoryAddress anAddress, eSize aSize) {
+    return ( aValue << ( offset(anAddress, aSize) * 8) ).to_ulong();
   }
 
-  uint64_t overlay( uint64_t anOriginalValue, PhysicalMemoryAddress anAddress, eSize aSize, uint64_t aValue) {
+  uint64_t overlay( uint64_t anOriginalValue, PhysicalMemoryAddress anAddress, eSize aSize, bits aValue) {
     uint64_t available = makeMask(anAddress, aSize) ;           //Determine what part of the int64_t the update covers
     uint64_t update_aligned = align(aValue, anAddress, aSize);  //align the update value for computation
     anOriginalValue &= ( ~available );                                    //zero out the overlap region in the original value

@@ -88,7 +88,6 @@ std::ostream & operator << ( std::ostream & anOstream, MemOp const & aMemOp) {
       << aMemOp.theOperation
       << "(" << aMemOp.theSize << ") "
       << aMemOp.theVAddr
-      << "[" << aMemOp.theASI << "] "
       << aMemOp.thePAddr
       << " pc:" << aMemOp.thePC
       ;

@@ -118,8 +118,8 @@ struct ReadRegisterAction : public BaseSemanticAction
         DBG_( Tmp, ( << *this << " read " << theRegisterCode << "(" << name << ")" ) );
         Operand aValue = core()->readRegister( name );
         if (!the64){ // reading w reg >> only the botom half
-            uint64_t v = boost::get<uint64_t>(aValue);
-            v &= 0xffffffff;
+            bits v = boost::get<bits>(aValue);
+            v &= bits(v.size(),0xffffffff);
             aValue = v;
         }
         theInstruction->setOperand(theOperandCode, aValue);
