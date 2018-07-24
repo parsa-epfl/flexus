@@ -50,6 +50,25 @@
 namespace Flexus {
 namespace SharedTypes {
 
+
+eSize dbSize(int s){
+    switch (s) {
+    case 8:
+        return kByte;
+    case 16:
+        return kHalfWord;
+    case 32:
+        return kWord;
+    case 64:
+        return kDoubleWord;
+    case 128:
+        return kQuadWord;
+    default:
+        assert(false);
+        break;
+    }
+}
+
 std::ostream & operator <<( std::ostream & anOstream, eOperation op) {
   const char * map_tables[] = {
     "Load"

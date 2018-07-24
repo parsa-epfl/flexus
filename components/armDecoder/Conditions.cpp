@@ -70,7 +70,7 @@ bool ConditionHolds(const pstate & pstate, int condcode )
     // Condition flag values in the set '111x' indicate always true
     // Otherwise, invert condition if necessary.
 
-    if ((condcode & 1 == 0) && (condcode != 15 /*1111*/))
+    if (((condcode & 1) == 0) && (condcode != 15 /*1111*/))
         return !result;
     else
         return result;

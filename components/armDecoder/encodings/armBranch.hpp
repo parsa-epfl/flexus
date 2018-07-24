@@ -43,20 +43,44 @@
 
 namespace narmDecoder {
 
-
+// Unconditional branch (immediate)
 arminst B(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 arminst BL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+
+// Unconditional branch (register)
 arminst BR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 arminst BLR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 arminst RET(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst ERET(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo); // TODO
+arminst DPRS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo); // TODO
 
 
-
+// Compare and branch (immediate)
 arminst CBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 arminst CBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+
+// Test and branch (immediate)
 arminst TBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 arminst TBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+
+// Conditional branch (immediate)
 arminst BCOND(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+
+// System TODO
+arminst HINT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst SYNC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst MSR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst SYS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+
+// Exception generation TODO
+arminst SVC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst HVC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst SMC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst BRK(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst HLT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst DCPS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+
+
 
 void branch_always( SemanticInstruction * inst, bool immediate, VirtualMemoryAddress target);
 void branch_cc( SemanticInstruction * inst, VirtualMemoryAddress target, eCondCode aCode);

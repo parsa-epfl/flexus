@@ -52,37 +52,28 @@ namespace narmDecoder {
  */
 arminst disas_data_proc_2src(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    unsigned int sf, rm, opcode, rn, rd;
-    sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-    rm = extract32(aFetchedOpcode.theOpcode, 16, 5);
-    opcode = extract32(aFetchedOpcode.theOpcode, 10, 6);
-    rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
-
     if (extract32(aFetchedOpcode.theOpcode, 29, 1)) {
-        unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-        return;
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 
-    switch (opcode) {
+    switch (extract32(aFetchedOpcode.theOpcode, 10, 6)) {
     case 2: /* UDIV */
-//        handle_div(aFetchedOpcode, aCPU, aSequenceNo, false, sf, rm, rn, rd);
-        break;
+        return UDIV(aFetchedOpcode, aCPU, aSequenceNo);
     case 3: /* SDIV */
-//        handle_div(aFetchedOpcode, aCPU, aSequenceNo, true, sf, rm, rn, rd);
-        break;
+        return SDIV(aFetchedOpcode, aCPU, aSequenceNo);
+
     case 8: /* LSLV */
-//        handle_shift_reg(aFetchedOpcode, aCPU, aSequenceNo, A64_SHIFT_TYPE_LSL, sf, rm, rn, rd);
-        break;
+        return LSLV(aFetchedOpcode, aCPU, aSequenceNo);
+
     case 9: /* LSRV */
-//        handle_shift_reg(aFetchedOpcode, aCPU, aSequenceNo, A64_SHIFT_TYPE_LSR, sf, rm, rn, rd);
-        break;
+        return LSRV(aFetchedOpcode, aCPU, aSequenceNo);
+
     case 10: /* ASRV */
-//        handle_shift_reg(aFetchedOpcode, aCPU, aSequenceNo, A64_SHIFT_TYPE_ASR, sf, rm, rn, rd);
-        break;
+        return ASRV(aFetchedOpcode, aCPU, aSequenceNo);
+
     case 11: /* RORV */
-//        handle_shift_reg(aFetchedOpcode, aCPU, aSequenceNo, A64_SHIFT_TYPE_ROR, sf, rm, rn, rd);
-        break;
+        return RORV(aFetchedOpcode, aCPU, aSequenceNo);
+
     case 16:
     case 17:
     case 18:
@@ -91,15 +82,9 @@ arminst disas_data_proc_2src(armcode const & aFetchedOpcode, uint32_t  aCPU, int
     case 21:
     case 22:
     case 23: /* CRC32 */
-    {
-        int sz = extract32(opcode, 0, 2);
-        bool crc32c = extract32(opcode, 2, 1);
-//        handle_crc32(aFetchedOpcode, aCPU, aSequenceNo, sf, sz, crc32c, rm, rn, rd);
-        break;
-    }
+        return CRC32(aFetchedOpcode, aCPU, aSequenceNo);
     default:
-        unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-        break;
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 }
 
@@ -111,37 +96,25 @@ arminst disas_data_proc_2src(armcode const & aFetchedOpcode, uint32_t  aCPU, int
  */
 arminst disas_data_proc_1src(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    unsigned int sf, opcode, rn, rd;
-
     if (extract32(aFetchedOpcode.theOpcode, 29, 1) || extract32(aFetchedOpcode.theOpcode, 16, 5)) {
-        unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-        return;
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 
-    sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-    opcode = extract32(aFetchedOpcode.theOpcode, 10, 6);
-    rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
-
-    switch (opcode) {
+    switch (extract32(aFetchedOpcode.theOpcode, 10, 6)) {
     case 0: /* RBIT */
-//        handle_rbit(aFetchedOpcode, aCPU, aSequenceNo, sf, rn, rd);
-        break;
+        return RBIT(aFetchedOpcode, aCPU, aSequenceNo);
     case 1: /* REV16 */
-//        handle_rev16(aFetchedOpcode, aCPU, aSequenceNo, sf, rn, rd);
-        break;
+        return REV16(aFetchedOpcode, aCPU, aSequenceNo);
     case 2: /* REV32 */
-//        handle_rev32(aFetchedOpcode, aCPU, aSequenceNo, sf, rn, rd);
-        break;
+        return REV32(aFetchedOpcode, aCPU, aSequenceNo);
     case 3: /* REV64 */
-//        handle_rev64(aFetchedOpcode, aCPU, aSequenceNo, sf, rn, rd);
-        break;
+        return REV64(aFetchedOpcode, aCPU, aSequenceNo);
     case 4: /* CLZ */
-//        handle_clz(aFetchedOpcode, aCPU, aSequenceNo, sf, rn, rd);
-        break;
+        return CLZ(aFetchedOpcode, aCPU, aSequenceNo);
     case 5: /* CLS */
-//        handle_cls(aFetchedOpcode, aCPU, aSequenceNo, sf, rn, rd);
-        break;
+        return CLS(aFetchedOpcode, aCPU, aSequenceNo);
+    default:
+        DBG_Assert(false);
     }
 }
 
@@ -153,52 +126,17 @@ arminst disas_data_proc_1src(armcode const & aFetchedOpcode, uint32_t  aCPU, int
  */
 arminst disas_cond_select(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    unsigned int sf, else_inv, rm, cond, else_inc, rn, rd;
-//    TCGv_i64 tcg_rd, zero;
-//    DisasCompare64 c;
-
-    if (extract32(aFetchedOpcode.theOpcode, 29, 1) || extract32(aFetchedOpcode.theOpcode, 11, 1)) {
+    if (extract32(aFetchedOpcode.thePC, 29, 1) || extract32(aFetchedOpcode.thePC, 11, 1)) {
         /* S == 1 or op2<1> == 1 */
-        unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
-    sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-    else_inv = extract32(aFetchedOpcode.theOpcode, 30, 1);
-    rm = extract32(aFetchedOpcode.theOpcode, 16, 5);
-    cond = extract32(aFetchedOpcode.theOpcode, 12, 4);
-    else_inc = extract32(aFetchedOpcode.theOpcode, 10, 1);
-    rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
 
-//    tcg_rd = cpu_reg(s, rd);
+    if (!extract32(aFetchedOpcode.thePC, 30, 1)) {
+        return extract32(aFetchedOpcode.thePC, 10, 1) ? CSINC(aFetchedOpcode, aCPU, aSequenceNo) : CSEL(aFetchedOpcode, aCPU, aSequenceNo);
+    } else {
+        return extract32(aFetchedOpcode.thePC, 10, 1) ? CSNEG(aFetchedOpcode, aCPU, aSequenceNo) : CSINV(aFetchedOpcode, aCPU, aSequenceNo);
+    }
 
-//    a64_test_cc(&c, cond);
-//    zero = tcg_const_i64(0);
-
-//    if (rn == 31 && rm == 31 && (else_inc ^ else_inv)) {
-//        /* CSET & CSETM.  */
-//        //tcg_gen_setcond_i64(tcg_invert_cond(c.cond), tcg_rd, c.value, zero);
-//        if (else_inv) {
-//            //tcg_gen_neg_i64(tcg_rd, tcg_rd);
-//        }
-//    } else {
-//        TCGv_i64 t_true = cpu_reg(s, rn);
-//        TCGv_i64 t_false = read_cpu_reg(s, rm, 1);
-//        if (else_inv && else_inc) {
-//            //tcg_gen_neg_i64(t_false, t_false);
-//        } else if (else_inv) {
-//            //tcg_gen_not_i64(t_false, t_false);
-//        } else if (else_inc) {
-//            //tcg_gen_addi_i64(t_false, t_false, 1);
-//        }
-//        //tcg_gen_movcond_i64(c.cond, tcg_rd, c.value, zero, t_true, t_false);
-//    }
-
-//    tcg_temp_free_i64(zero);
-//    a64_free_cc(&c);
-
-//    if (!sf) {
-//        //tcg_gen_ext32u_i64(tcg_rd, tcg_rd);
-//    }
 }
 
 /* Conditional compare (immediate / register)
@@ -210,100 +148,16 @@ arminst disas_cond_select(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_
  */
 arminst disas_cc(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    unsigned int sf, op, y, cond, rn, nzcv, is_imm;
-//    TCGv_i32 tcg_t0, tcg_t1, tcg_t2;
-//    TCGv_i64 tcg_tmp, tcg_y, tcg_rn;
-//    DisasCompare c;
-
-    if (!extract32(aFetchedOpcode.theOpcode, 29, 1)) {
-        unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-        return;
+    if (!extract32(aFetchedOpcode.thePC, 29, 1)) {
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
-    if (aFetchedOpcode.theOpcode & (1 << 10 | 1 << 4)) {
-        unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-        return;
+    if (aFetchedOpcode.thePC & (1 << 10 | 1 << 4)) {
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
-    sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-    op = extract32(aFetchedOpcode.theOpcode, 30, 1);
-    is_imm = extract32(aFetchedOpcode.theOpcode, 11, 1);
-    y = extract32(aFetchedOpcode.theOpcode, 16, 5); /* y = rm (mapped_reg) or imm5 (imm) */
-    cond = extract32(aFetchedOpcode.theOpcode, 12, 4);
-    rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    nzcv = extract32(aFetchedOpcode.theOpcode, 0, 4);
 
-    /* Set T0 = !COND.  */
-//    tcg_t0 = tcg_temp_new_i32();
-//    arm_test_cc(&c, cond);
-//    //tcg_gen_setcondi_i32(tcg_invert_cond(c.cond), tcg_t0, c.value, 0);
-//    arm_free_cc(&c);
+    return extract32(aFetchedOpcode.thePC, 30, 1) ?
+        CCMP(aFetchedOpcode, aCPU, aSequenceNo) : CCMN(aFetchedOpcode, aCPU, aSequenceNo);
 
-//    /* Load the arguments for the new comparison.  */
-//    if (is_imm) {
-//        tcg_y = new_tmp_a64(s);
-//        //tcg_gen_movi_i64(tcg_y, y);
-//    } else {
-//        tcg_y = cpu_reg(s, y);
-//    }
-//    tcg_rn = cpu_reg(s, rn);
-
-//    /* Set the flags for the new comparison.  */
-//    tcg_tmp = tcg_temp_new_i64();
-//    if (op) {
-//        gen_sub_CC(sf, tcg_tmp, tcg_rn, tcg_y);
-//    } else {
-//        gen_add_CC(sf, tcg_tmp, tcg_rn, tcg_y);
-//    }
-//    tcg_temp_free_i64(tcg_tmp);
-
-//    /* If COND was false, force the flags to #nzcv.  Compute two masks
-//     * to help with this: T1 = (COND ? 0 : -1), T2 = (COND ? -1 : 0).
-//     * For tcg hosts that support ANDC, we can make do with just T1.
-//     * In either case, allow the tcg optimizer to delete any unused mask.
-//     */
-//    tcg_t1 = tcg_temp_new_i32();
-//    tcg_t2 = tcg_temp_new_i32();
-//    //tcg_gen_neg_i32(tcg_t1, tcg_t0);
-//    //tcg_gen_subi_i32(tcg_t2, tcg_t0, 1);
-
-//    if (nzcv & 8) { /* N */
-//        //tcg_gen_or_i32(cpu_NF, cpu_NF, tcg_t1);
-//    } else {
-//        if (TCG_TARGET_HAS_andc_i32) {
-//            //tcg_gen_andc_i32(cpu_NF, cpu_NF, tcg_t1);
-//        } else {
-//            //tcg_gen_and_i32(cpu_NF, cpu_NF, tcg_t2);
-//        }
-//    }
-//    if (nzcv & 4) { /* Z */
-//        if (TCG_TARGET_HAS_andc_i32) {
-//            //tcg_gen_andc_i32(cpu_ZF, cpu_ZF, tcg_t1);
-//        } else {
-//            //tcg_gen_and_i32(cpu_ZF, cpu_ZF, tcg_t2);
-//        }
-//    } else {
-//        //tcg_gen_or_i32(cpu_ZF, cpu_ZF, tcg_t0);
-//    }
-//    if (nzcv & 2) { /* C */
-//        //tcg_gen_or_i32(cpu_CF, cpu_CF, tcg_t0);
-//    } else {
-//        if (TCG_TARGET_HAS_andc_i32) {
-//            //tcg_gen_andc_i32(cpu_CF, cpu_CF, tcg_t1);
-//        } else {
-//            //tcg_gen_and_i32(cpu_CF, cpu_CF, tcg_t2);
-//        }
-//    }
-//    if (nzcv & 1) { /* V */
-//        //tcg_gen_or_i32(cpu_VF, cpu_VF, tcg_t1);
-//    } else {
-//        if (TCG_TARGET_HAS_andc_i32) {
-//            //tcg_gen_andc_i32(cpu_VF, cpu_VF, tcg_t1);
-//        } else {
-//            //tcg_gen_and_i32(cpu_VF, cpu_VF, tcg_t2);
-//        }
-//    }
-//    tcg_temp_free_i32(tcg_t0);
-//    tcg_temp_free_i32(tcg_t1);
-//    tcg_temp_free_i32(tcg_t2);
 }
 
 /* Add/subtract (with carry)
@@ -315,8 +169,15 @@ arminst disas_cc(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequen
  */
 arminst disas_adc_sbc(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+    if (extract32(aFetchedOpcode.thePC, 10, 6) != 0) {
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
 
+    if (extract32(aFetchedOpcode.thePC, 30, 1)) {
+        return extract32(aFetchedOpcode.thePC,29,1) ? ADC(aFetchedOpcode, aCPU, aSequenceNo) : ADCS(aFetchedOpcode, aCPU, aSequenceNo);
+    } else {
+        return extract32(aFetchedOpcode.thePC,29,1) ? SBC(aFetchedOpcode, aCPU, aSequenceNo) : SBCS(aFetchedOpcode, aCPU, aSequenceNo);
+    }
 }
 
 /* Data-processing (3 source)
@@ -328,7 +189,30 @@ arminst disas_adc_sbc(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aS
  */
 arminst disas_data_proc_3src(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+    int op_id = (extract32(aFetchedOpcode.thePC, 29, 3) << 4) |
+                (extract32(aFetchedOpcode.thePC, 21, 3) << 1) |
+                 extract32(aFetchedOpcode.thePC, 15, 1);
+    bool is_signed = false;
+
+    /* Note that op_id is sf:op54:op31:o0 so it includes the 32/64 size flag */
+    switch (op_id) {
+    case 0x42: /* SMADDL */
+    case 0x43: /* SMSUBL */
+    case 0x44: /* SMULH */
+        is_signed = true;
+        break;
+    case 0x0: /* MADD (32bit) */
+    case 0x1: /* MSUB (32bit) */
+    case 0x40: /* MADD (64bit) */
+    case 0x41: /* MSUB (64bit) */
+    case 0x4a: /* UMADDL */
+    case 0x4b: /* UMSUBL */
+    case 0x4c: /* UMULH */
+        break;
+    default:
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
+
 }
 
 /*
@@ -347,8 +231,15 @@ arminst disas_data_proc_3src(armcode const & aFetchedOpcode, uint32_t  aCPU, int
  */
 arminst disas_add_sub_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+    if ((extract32(aFetchedOpcode.thePC,15,1) && ! extract32(aFetchedOpcode.thePC, 31, 1)) || extract32(aFetchedOpcode.thePC,22,2) == 0x4  ) {
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
 
+    if (extract32(aFetchedOpcode.thePC, 30, 1) == 0){
+        return (extract32(aFetchedOpcode.thePC,29,1) ? ADDS(aFetchedOpcode, aCPU, aSequenceNo) : ADD(aFetchedOpcode, aCPU, aSequenceNo));
+    } else {
+        return (extract32(aFetchedOpcode.thePC,29,1) ? SUBS(aFetchedOpcode, aCPU, aSequenceNo) : SUB(aFetchedOpcode, aCPU, aSequenceNo));
+    }
 }
 
 /*
@@ -370,64 +261,85 @@ arminst disas_add_sub_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_
  */
 arminst disas_add_sub_ext_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+
+    if (extract32(aFetchedOpcode.thePC,10,3) > 0x4 ) {
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
+    if (extract32(aFetchedOpcode.thePC,10,3) != 0x0 ) {
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
+
+
+    if (!extract32(aFetchedOpcode.thePC, 30, 1)){
+        return extract32(aFetchedOpcode.thePC,29,1) ? ADDS(aFetchedOpcode, aCPU, aSequenceNo) : ADD(aFetchedOpcode, aCPU, aSequenceNo);
+    } else {
+        return extract32(aFetchedOpcode.thePC,29,1) ? SUBS(aFetchedOpcode, aCPU, aSequenceNo) : SUB(aFetchedOpcode, aCPU, aSequenceNo);
+    }
 
 }
 
 
+/* Logical (shifted register)
+ *   31  30 29 28       24 23   22 21  20  16 15    10 9    5 4    0
+ * +----+-----+-----------+-------+---+------+--------+------+------+
+ * | sf | opc | 0 1 0 1 0 | shift | N |  Rm  |  imm6  |  Rn  |  Rd  |
+ * +----+-----+-----------+-------+---+------+--------+------+------+
+ */
 arminst disas_logic_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+    int N = extract32(aFetchedOpcode.thePC, 21, 1);
 
+    switch (extract32(aFetchedOpcode.thePC, 29, 2)) {
+    case 0x0:
+        return N ? BIC(aFetchedOpcode, aCPU, aSequenceNo) : AND(aFetchedOpcode, aCPU, aSequenceNo);
+    case 0x1:
+        return N ? ORN(aFetchedOpcode, aCPU, aSequenceNo) : ORR(aFetchedOpcode, aCPU, aSequenceNo);
+    case 0x2:
+        return N ? EON(aFetchedOpcode, aCPU, aSequenceNo) : EOR(aFetchedOpcode, aCPU, aSequenceNo);
+    case 0x3:
+        return N ? BICS(aFetchedOpcode, aCPU, aSequenceNo) : ANDS(aFetchedOpcode, aCPU, aSequenceNo);
+    default:
+        DBG_Assert(false);
+        break;
+    }
 }
 
 /* Data processing - register */
 arminst disas_data_proc_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    switch (extract32(aFetchedOpcode.theOpcode, 24, 5))
-    {
+    switch (extract32(aFetchedOpcode.thePC, 24, 5)) {
         case 0x0a: /* Logical (shifted register) */
-        DBG_(Tmp,(<< "\033[1;31m DECODER: Data processing - register: disas_logic_reg  \033[0m"));
             return disas_logic_reg(aFetchedOpcode, aCPU, aSequenceNo);
         case 0x0b: /* Add/subtract */
-            if (aFetchedOpcode.theOpcode & (1 << 21)) { /* (extended register) */
-                DBG_(Tmp,(<< "\033[1;31m DECODER: Data processing - register: disas_add_sub_ext_reg  \033[0m"));
+            if (aFetchedOpcode.thePC & (1 << 21)) { /* (extended register) */
                 return disas_add_sub_ext_reg(aFetchedOpcode, aCPU, aSequenceNo);
             } else {
-                DBG_(Tmp,(<< "\033[1;31m DECODER: Data processing - register: disas_add_sub_reg  \033[0m"));
                 return disas_add_sub_reg(aFetchedOpcode, aCPU, aSequenceNo);
             }
-            break;
         case 0x1b: /* Data-processing (3 source) */
-        DBG_(Tmp,(<< "\033[1;31m DECODER: Data processing - register: Data-processing (3 source)  \033[0m"));
             return disas_data_proc_3src(aFetchedOpcode, aCPU, aSequenceNo);
         case 0x1a:
-            switch (extract32(aFetchedOpcode.theOpcode, 21, 3))
-            {
-                case 0x0: /* Add/subtract (with carry) */
-                DBG_(Tmp,(<< "\033[1;31m DECODER: Data processing - Add/subtract (with carry)  \033[0m"));
-                    return disas_adc_sbc(aFetchedOpcode, aCPU, aSequenceNo);
-                case 0x2: /* Conditional compare */
-                DBG_(Tmp,(<< "\033[1;31m DECODER: Data processing - Conditional compare  \033[0m"));
-                    return disas_cc(aFetchedOpcode, aCPU, aSequenceNo); /* both imm and reg forms */
-                case 0x4: /* Conditional select */
-                DBG_(Tmp,(<< "\033[1;31m DECODER: Data processing - Conditional select  \033[0m"));
-                    return disas_cond_select(aFetchedOpcode, aCPU, aSequenceNo);
-                case 0x6: /* Data-processing */
-                    if (aFetchedOpcode.theOpcode & (1 << 30)) { /* (1 source) */
-                        DBG_(Tmp,(<< "\033[1;31m DECODER: Data processing - (1 source)  \033[0m"));
-                        return disas_data_proc_1src(aFetchedOpcode, aCPU, aSequenceNo);
-                    } else {            /* (2 source) */
-                        DBG_(Tmp,(<< "\033[1;31m DECODER: Data processing - (2 source)   \033[0m"));
-                        return disas_data_proc_2src(aFetchedOpcode, aCPU, aSequenceNo);
-                    }
-                    break;
-                default:
-                    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+            switch (extract32(aFetchedOpcode.thePC, 21, 3)) {
+            case 0x0: /* Add/subtract (with carry) */
+                return disas_adc_sbc(aFetchedOpcode, aCPU, aSequenceNo);
+            case 0x2: /* Conditional compare */
+                return disas_cc(aFetchedOpcode, aCPU, aSequenceNo); /* both imm and reg forms */
+            case 0x4: /* Conditional select */
+                return disas_cond_select(aFetchedOpcode, aCPU, aSequenceNo);
+            case 0x6: /* Data-processing */
+                if (aFetchedOpcode.thePC & (1 << 30)) { /* (1 source) */
+                    return disas_data_proc_1src(aFetchedOpcode, aCPU, aSequenceNo);
+                } else {            /* (2 source) */
+                    return disas_data_proc_2src(aFetchedOpcode, aCPU, aSequenceNo);
+                }
+                break;
+            default:
+                return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
             }
+            break;
         default:
-            return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-    }
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+        }
 }
 
 } // narmDecoder

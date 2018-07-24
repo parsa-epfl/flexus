@@ -1,4 +1,4 @@
-// DO-NOT-REMOVE begin-copyright-block
+// DO-NOT-REMOVE begin-copyright-block 
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
@@ -43,6 +43,7 @@
 #include <boost/throw_exception.hpp>
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/lambda/bind.hpp>
 namespace ll = boost::lambda;
 
 #include <boost/none.hpp>
@@ -58,7 +59,6 @@ namespace ll = boost::lambda;
 #include "../SemanticInstruction.hpp"
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
-#include "PredicatedSemanticAction.hpp"
 
 #define DBG_DeclareCategories armDecoder
 #define DBG_SetDefaultOps AddCat(armDecoder)
@@ -68,49 +68,35 @@ namespace narmDecoder {
 
 using namespace nuArchARM;
 
-struct OperandAction : public PredicatedSemanticAction {
-  eOperandCode theOperand;
-  eOperandCode theResult;
-  boost::optional<eOperandCode> theBypass;
-  int theOffset;
+struct ReadConstantAction : public BaseSemanticAction
+{
+  int theVal;
+  eOperandCode theOperandCode;
 
-  OperandAction( SemanticInstruction * anInstruction, eOperandCode anOperand, eOperandCode aResult, int anOffset, boost::optional<eOperandCode> aBypass )
-    : PredicatedSemanticAction( anInstruction, 1, true )
-    , theOperand(anOperand)
-    , theResult( aResult )
-    , theBypass( aBypass )
-    , theOffset(anOffset)
+  ReadConstantAction( SemanticInstruction * anInstruction, eOperandCode aVal, eOperandCode anOperandCode)
+    : BaseSemanticAction( anInstruction, 1 )
+    , theVal( aVal )
+    , theOperandCode( anOperandCode )
+
+  {}
+
+  void doEvaluate()
   {
-    setReady( 0, true );
+    theInstruction->setOperand(theOperandCode, theVal);
   }
 
-  void doEvaluate() {
-    DBG_( Tmp, ( << *this << " applied") );
-    if (theBypass) {
-      mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass);
-      bits value = theInstruction->operand<bits>(theOperand);
-      theInstruction->setOperand(theResult, value);
-
-      core()->bypass( name, value );
-    }
-    satisfyDependants();
+  void describe( std::ostream & anOstream) const
+  {
+    anOstream << theInstruction->identify() << " ReadConstant " << theVal << " to " << theOperandCode;
   }
-
-  void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " store constant " << theOperand << " in " << theResult;
-  }
-
 };
 
-predicated_action operandAction
-( SemanticInstruction * anInstruction
-  , eOperandCode anOperand
-  , eOperandCode aResult
-  , int anOffset
-  , boost::optional<eOperandCode> aBypass
-) {
-  OperandAction * act(new(anInstruction->icb()) OperandAction( anInstruction, anOperand, aResult, anOffset, aBypass) );
-  return predicated_action( act, act->predicate() );
+simple_action readConstantAction ( SemanticInstruction * anInstruction, int aVal, eOperandCode anOperandCode)
+{
+  return new(anInstruction->icb()) ReadConstantAction( anInstruction, aVal, anOperandCode);
 }
+
+
+
 
 } //narmDecoder

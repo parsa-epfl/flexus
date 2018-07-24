@@ -50,7 +50,6 @@ void branch_always( SemanticInstruction * inst, bool immediate, VirtualMemoryAdd
     inst->addDispatchEffect( branch( inst, target ) );
     inst->addRetirementEffect( updateUnconditional( inst, target ) );
 }
-
 void branch_cc( SemanticInstruction * inst, VirtualMemoryAddress target, eCondCode aCode) {
   inst->setClass(clsBranch, codeBranchConditional);
 
@@ -322,6 +321,26 @@ arminst BLR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 
     return inst;
 }
+
+
+arminst ERET(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst DPRS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+
+
+
+// System
+arminst HINT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst SYNC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst MSR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst SYS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+
+// Exception generation
+arminst SVC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst HVC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst SMC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst BRK(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst HLT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst DCPS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
 
 
 } // narmDecoder

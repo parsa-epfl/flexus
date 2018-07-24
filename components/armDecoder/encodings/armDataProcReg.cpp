@@ -41,4 +41,61 @@
 namespace narmDecoder {
 using namespace nuArchARM;
 
+
+// Logical (shifted register)
+arminst AND(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst ANDS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst BIC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst BICS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst ORN(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst ORR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst EON(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst EOR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+
+
+// Add/subtract (shifted register / extended register)
+arminst ADD(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst ADDS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst SUB(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst SUBS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+
+
+// Data-processing (3 source)
+
+
+// Add/subtract (with carry)
+arminst ADC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst ADCS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst SBC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst SBCS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+
+
+// Conditional compare (immediate / register)
+arminst CCMP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst CCMN(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+
+// Conditional select
+arminst CSINC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst CSNEG(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst CSEL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst CSINV(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+
+// Data-processing (1 source)
+arminst RBIT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst REV16(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst REV32(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst REV64(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst CLZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst CLS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+
+// Data-processing (2 sources)
+arminst UDIV(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst SDIV(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst LSLV(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst LSRV(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst ASRV(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst RORV(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst CRC32(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+
+
 }

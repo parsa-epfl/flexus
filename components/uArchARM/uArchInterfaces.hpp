@@ -581,13 +581,13 @@ struct uArchARM {
     virtual uint64_t getEL(unsigned idx)            { DBG_Assert(false); return 0; }
     virtual uint64_t getSPSR_EL(unsigned idx)       { DBG_Assert(false); return 0; }
 
-    virtual uint64_t getXRegister(uint32_t aReg) { DBG_Assert(false); }
+    virtual uint64_t getXRegister(uint32_t aReg) { DBG_Assert(false); return 0; }
     virtual void setXRegister(uint32_t aReg, uint64_t aVal) { DBG_Assert(false); }
 
     virtual void writePR(uint32_t aPR, uint64_t aVal) { DBG_Assert(false); }
     virtual void updatePSTATEbits(uint64_t mask) { DBG_Assert(false); }
-    virtual uint64_t readPR(uint32_t aPR) { DBG_Assert(false); }
-    virtual std::string prName(uint32_t aPR) { DBG_Assert(false); }
+    virtual uint64_t readPR(uint32_t aPR) { DBG_Assert(false); return 0; }
+    virtual std::string prName(uint32_t aPR) { DBG_Assert(false); return 0; }
     virtual void bypass(mapped_reg aReg, register_value aValue) { DBG_Assert(false); }
     virtual void connectBypass(mapped_reg aReg, boost::intrusive_ptr<Instruction> inst, std::function<bool(register_value)> ) {
     DBG_Assert(false);

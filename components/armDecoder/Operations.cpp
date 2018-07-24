@@ -62,13 +62,17 @@ typedef struct ADD : public Operation {
     ADD();
     virtual ~ADD();
   virtual Operand operator()( std::vector<Operand> const & operands  ) {
-    if (hasOwnOperands())
-        operands = theOperands;
-
-    DBG_Assert( operands.size() == 2);
-    uint64_t op1 = boost::get<uint64_t>(operands[0]);
-    uint64_t op2 = boost::get<uint64_t>(operands[1]);
-    return op1+op2;
+    if (hasOwnOperands()) {
+        DBG_Assert( theOperands.size() == 2);
+        uint64_t op1 = boost::get<uint64_t>(theOperands[0]);
+        uint64_t op2 = boost::get<uint64_t>(theOperands[1]);
+        return op1+op2;
+    } else {
+        DBG_Assert( operands.size() == 2);
+        uint64_t op1 = boost::get<uint64_t>(operands[0]);
+        uint64_t op2 = boost::get<uint64_t>(operands[1]);
+        return op1+op2;
+    }
   }
   virtual char const * describe() const {
     return "Add";
@@ -295,7 +299,7 @@ typedef struct LSL : public Operation  {
     virtual ~LSL();
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 1);
-    return ~boost::get<uint64_t>(operands[0]) ;
+    return boost::get<uint64_t>(operands[0]) << boost::get<uint64_t>(operands[1]);
   }
   virtual char const * describe() const {
     return "LSL";
@@ -675,9 +679,9 @@ std::unique_ptr<Operation> operation( eOpType T ) {
         return std::make_unique<ROR_>();
     case kASR_:
         return std::make_unique<ASR_>();
-    case kLSR:
+    case kLSR_:
         return std::make_unique<LSR_>();
-    case kLSL:
+    case kLSL_:
         return std::make_unique<LSL_>();
     default:
         DBG_Assert( false, ( << "Unimplemented operation type: " << T ) );

@@ -315,6 +315,36 @@ void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t 
 
 }
 
+
+void addReadVRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t rs, std::list<InternalDependance> & dependances) {
+
+    //Calculate operand codes from anOpNumber
+    DBG_Assert( anOpNumber == 1 || anOpNumber == 2 || anOpNumber == 3 || anOpNumber == 4 || anOpNumber == 5 );
+    eOperandCode cOperand = eOperandCode( kOperand1 + anOpNumber - 1);
+    eOperandCode cRS = eOperandCode( kRS1 + anOpNumber - 1);
+    eOperandCode cPS = eOperandCode( kPS1 + anOpNumber - 1);
+
+    DBG_(Tmp, (<< "\e[1;31m"<<"DECODER: Reading x[" << rs << "] with opNumber " << cRS << " and storing it in " << cPS << "\e[0m"));
+    setRS( inst, cRS , rs );
+    inst->addDispatchEffect( mapSource( inst, cRS, cPS ) );
+    simple_action act = readRegisterAction( inst, cPS, cOperand, true );
+    connect( dependances, act );
+    inst->addDispatchAction( act );
+    inst->addPrevalidation( validateVRegister( rs, cOperand, inst ) );
+
+}
+
+void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, int val, std::list<InternalDependance> & dependances){
+
+    eOperandCode cOperand = eOperandCode( kOperand1 + anOpNumber - 1);
+
+    simple_action act = readConstantAction( inst, val, cOperand );
+    connect( dependances, act );
+    inst->addDispatchAction( act );
+
+}
+
+
 void addAnnulment( SemanticInstruction * inst, eRegisterType aType, predicated_action & exec, InternalDependance const & aWritebackDependance) {
   predicated_action annul = annulAction( inst, aType );
   //inst->addDispatchAction( annul );
@@ -392,7 +422,7 @@ void addPairDestination( SemanticInstruction * inst, uint32_t rd, uint32_t rd1, 
 //    inst->addOverride( overrideRegister( operands.rd() + 1, kResult1, inst ) );
 }
 
-void addFDestination( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool addSquash = true) {
+void addVDestination( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool addSquash = true) {
 
     setFD( inst, kFD0, rd);
     addWriteback( inst, vRegisters, exec, addSquash );
@@ -424,10 +454,10 @@ predicated_action addExecute_XTRA( SemanticInstruction * inst, std::unique_ptr<O
   return exec;
 }
 
-predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operation> & anOperation, std::vector< std::list<InternalDependance> > & rs_deps) {
+predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operation> & anOperation, std::vector< std::list<InternalDependance> > & rs_deps, eOperandCode aResult, boost::optional<eOperandCode> aBypass ) {
   predicated_action exec;
 
-    exec = executeAction( inst, anOperation, rs_deps, kResult, kPD );
+    exec = executeAction( inst, anOperation, rs_deps, aResult, aBypass );
     inst->addDispatchAction( exec );
     return exec;
 }

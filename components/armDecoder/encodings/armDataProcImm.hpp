@@ -50,6 +50,8 @@
 
 namespace narmDecoder {
 
+
+//TODO
 void ADR(SemanticInstruction* inst, uint64_t base, uint64_t offset, uint64_t rd);
 void EXTR(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint32_t rm  , uint64_t imm, bool sf);
 void SBFM(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint32_t imms, uint64_t immr, bool sf);

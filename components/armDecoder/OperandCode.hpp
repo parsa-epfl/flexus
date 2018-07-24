@@ -90,11 +90,10 @@ enum eOpType {
     kICC2ULONG_,
     kAddTrunc_,
 
-
     kROR_,
     kASR_,
-    kLSR,
-    kLSL,
+    kLSR_,
+    kLSL_,
 };
 
 enum eArchState {
@@ -165,6 +164,8 @@ enum eOperandCode {
   , kocFPSR
   , kocFPCR
   , kUopAddressOffset
+  , kExtendValue
+  , kShiftValue
   , kLastOperandCode
 };
 

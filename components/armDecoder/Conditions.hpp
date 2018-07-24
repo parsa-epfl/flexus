@@ -52,7 +52,6 @@ enum eCondCode {
     kTBZ_,
     kTBNZ_,
     kBCOND_,
-    kLastCond_,
 };
 
 

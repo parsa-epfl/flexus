@@ -82,9 +82,9 @@ arminst disas_b_exc_sys(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
 //<<--Loads and Stores
 arminst disas_ldst_single_struct(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 arminst disas_ldst_multiple_struct(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst disas_ldst_reg_imm9(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo,int opc, int size,int rt,bool is_vector);
-arminst disas_ldst_reg_roffset(armcode const & aFetchedOpcode,uint32_t  aCPU, int64_t aSequenceNo,int opc, int size,int rt,bool is_vector);
-arminst disas_ldst_reg_unsigned_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo,int opc, int size,int rt,bool is_vector);
+arminst disas_ldst_reg_imm9(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst disas_ldst_reg_roffset(armcode const & aFetchedOpcode,uint32_t  aCPU, int64_t aSequenceNo);
+arminst disas_ldst_reg_unsigned_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 arminst disas_ldst_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 arminst disas_ldst_pair(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 arminst disas_ld_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);

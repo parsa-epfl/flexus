@@ -102,6 +102,17 @@ struct UpdateAddressAction : public BaseSemanticAction {
           if (theInstruction->hasOperand( kUopAddressOffset ) ) {
             uint64_t offset = theInstruction->operand< uint64_t > (kUopAddressOffset);
             DBG_(Tmp, (<<"\e[1;33m"<<"DISPATCH: UpdateAddressAction: adding offset " << offset << " to address "<< addr <<" \e[0m"));
+
+            if (theInstruction->hasOperand( kExtendValue ) ) {
+                uint64_t extend = theInstruction->operand< uint64_t > (kExtendValue);
+
+
+            } else if (theInstruction->hasOperand( kShiftValue ) ) {
+                uint64_t shift = theInstruction->operand< uint64_t > (kExtendValue);
+
+            }
+
+
             addr = bits(addr.size(), (addr.to_ulong()) + offset);
           }
           VirtualMemoryAddress vaddr(addr.to_ulong());

@@ -86,11 +86,11 @@ arminst disas_uncond_b_reg( armcode const & aFetchedOpcode, uint32_t  aCPU, int6
     case 4: /* ERET */
         DBG_(Tmp,(<< "\033[1;31m DECODER: Unconditional branch (register) : ERET \033[0m"));
         inst->addPrevalidation( validateLegalReturn(inst) );
-        return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+        return ERET(aFetchedOpcode, aCPU, aSequenceNo);
 
     case 5: /* DRPS */
         DBG_(Tmp,(<< "\033[1;31m DECODER: Unconditional branch (register) : DRPS \033[0m"));
-        return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+        return DPRS(aFetchedOpcode, aCPU, aSequenceNo);
 
     default:
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
@@ -106,104 +106,31 @@ arminst disas_uncond_b_reg( armcode const & aFetchedOpcode, uint32_t  aCPU, int6
  */
 arminst disas_exc(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    return blackBox( aFetchedOpcode, aCPU, aSequenceNo);
+    int ll = extract32(aFetchedOpcode.thePC, 0, 2);
+    int opc = extract32(aFetchedOpcode.thePC, 21, 3) << 2;
 
-    int opc = extract32(aFetchedOpcode.theOpcode, 21, 3);
-    int op2_ll = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    int imm16 = extract32(aFetchedOpcode.theOpcode, 5, 16);
-//    TCGv_i32 tmp;
+    int res = opc | ll;
 
-    switch (opc) {
-    case 0:
-        /* For SVC, HVC and SMC we advance the single-step state
-         * machine before taking the exception. This is architecturally
-         * mandated, to ensure that single-stepping a system call
-         * instruction works properly.
-         */
-        switch (op2_ll) {
-        case 1:                                                     /* SVC */
-//            gen_ss_advance(s);
-//            gen_exception_insn(s, 0, EXCP_SWI, syn_aa64_svc(imm16),
-//                               default_exception_el(s));
-            break;
-        case 2:                                                     /* HVC */
-//            if (s->current_el == 0) {
-//                unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-//                break;
-//            }
-            /* The pre HVC helper handles cases when HVC gets trapped
-             * as an undefined insn by runtime configuration.
-             */
-//            gen_a64_set_pc_im(s->pc - 4);
-//            gen_helper_pre_hvc(cpu_env);
-//            gen_ss_advance(s);
-//            gen_exception_insn(s, 0, EXCP_HVC, syn_aa64_hvc(imm16), 2);
-            break;
-        case 3:                                                     /* SMC */
-//            if (s->current_el == 0) {
-//                unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-//                break;
-//            }
-//            gen_a64_set_pc_im(s->pc - 4);
-//            tmp = tcg_const_i32(syn_aa64_smc(imm16));
-//            gen_helper_pre_smc(cpu_env, tmp);
-//            tcg_temp_free_i32(tmp);
-//            gen_ss_advance(s);
-//            gen_exception_insn(s, 0, EXCP_SMC, syn_aa64_smc(imm16), 3);
-            break;
-        default:
-            return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-            break;
-        }
-        break;
-    case 1:
-        if (op2_ll != 0) {
-            return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-            break;
-        }
-        /* BRK */
-//        gen_exception_insn(s, 4, EXCP_BKPT, syn_aa64_bkpt(imm16),
-//                           default_exception_el(s));
-        break;
-    case 2:
-        if (op2_ll != 0) {
-            return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-            break;
-        }
-        /* HLT. This has two purposes.
-         * Architecturally, it is an external halting debug instruction.
-         * Since QEMU doesn't implement external debug, we treat this as
-         * it is required for halting debug disabled: it will UNDEF.
-         * Secondly, "HLT 0xf000" is the A64 semihosting syscall instruction.
-         */
-//        if (semihosting_enabled() && imm16 == 0xf000) {
-//#ifndef CONFIG_USER_ONLY
-//            /* In system mode, don't allow userspace access to semihosting,
-//             * to provide some semblance of security (and for consistency
-//             * with our 32-bit semihosting).
-//             */
-//            if (s->current_el == 0) {
-//                unsupported_encoding(aFetchedOpcode,  aCPU, aSequenceNo);
-//                break;
-//            }
-//#endif
-//            gen_exception_internal_insn(s, 0, EXCP_SEMIHOST);
-//        } else {
-//            unsupported_encoding(aFetchedOpcode,  aCPU, aSequenceNo);
-//        }
-        break;
-    case 5:
-        if (op2_ll < 1 || op2_ll > 3) {
-            return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-            break;
-        }
-        /* DCPS1, DCPS2, DCPS3 */
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-        break;
+    switch (res) {
+    case 0x1:
+        return SVC(aFetchedOpcode, aCPU, aSequenceNo);
+    case 0x2:
+        return HVC(aFetchedOpcode, aCPU, aSequenceNo);
+    case 0x3:
+        return SMC(aFetchedOpcode, aCPU, aSequenceNo);
+    case 0x4:
+        return BRK(aFetchedOpcode, aCPU, aSequenceNo);
+    case 0x5:
+        return HLT(aFetchedOpcode, aCPU, aSequenceNo);
+    case 0x15:
+    case 0x16:
+        return DCPS(aFetchedOpcode, aCPU, aSequenceNo);
     default:
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
         break;
     }
+
+
+
 }
 
 /* System
@@ -214,58 +141,42 @@ arminst disas_exc(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSeque
  */
 arminst disas_system(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-//    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC,
-//                                                        aFetchedOpcode.theOpcode,
-//                                                        aFetchedOpcode.theBPState,
-//                                                        aCPU,
-//                                                        aSequenceNo) );
+        unsigned int l, op0, op1, crn, crm, op2, rt;
+        l = extract32(aFetchedOpcode.thePC, 21, 1);
+        op0 = extract32(aFetchedOpcode.thePC, 19, 2);
+        op1 = extract32(aFetchedOpcode.thePC, 16, 3);
+        crn = extract32(aFetchedOpcode.thePC, 12, 4);
+        crm = extract32(aFetchedOpcode.thePC, 8, 4);
+        op2 = extract32(aFetchedOpcode.thePC, 5, 3);
+        rt = extract32(aFetchedOpcode.thePC, 0, 5);
 
-    return blackBox( aFetchedOpcode, aCPU, aSequenceNo);
-
-    unsigned int l, op0, op1, crn, crm, op2, rt;
-    l = extract32(aFetchedOpcode.theOpcode, 21, 1);
-    op0 = extract32(aFetchedOpcode.theOpcode, 19, 2);
-    op1 = extract32(aFetchedOpcode.theOpcode, 16, 3);
-    crn = extract32(aFetchedOpcode.theOpcode, 12, 4);
-    crm = extract32(aFetchedOpcode.theOpcode, 8, 4);
-    op2 = extract32(aFetchedOpcode.theOpcode, 5, 3);
-    rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
-
-    if (op0 == 0) {
-        if (l || rt != 31) {
-            unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-            DBG_(Tmp,(<< "\033[1;31m DECODER: unallocated_encoding \033[0m"));
-
-            return;
+        if (op0 == 0) {
+            if (l || rt != 31) {
+                return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+            }
+            switch (crn) {
+            case 2: /* HINT (including allocated hints like NOP, YIELD, etc) */
+                HINT(aFetchedOpcode, aCPU, aSequenceNo);
+                break;
+            case 3: /* CLREX, DSB, DMB, ISB */
+                SYNC(aFetchedOpcode, aCPU, aSequenceNo);
+                break;
+            case 4: /* MSR (immediate) */
+                MSR(aFetchedOpcode, aCPU, aSequenceNo);
+                break;
+            default:
+                return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+            }
         }
-        switch (crn) {
-        case 2: /* HINT (including allocated hints like NOP, YIELD, etc) */
-            DBG_(Tmp,(<< "\033[1;31m DECODER: NOP, YIELD, etc \033[0m"));
 
-//            handle_hint(aFetchedOpcode.theOpcode, op1, op2, crm);
-            break;
-        case 3: /* CLREX, DSB, DMB, ISB */
-            DBG_(Tmp,(<< "\033[1;31m DECODER: CLREX, DSB, DMB, ISB \033[0m"));
-
-//            handle_sync(aFetchedOpcode.theOpcode, op1, op2, crm);
-            break;
-        case 4: /* MSR (immediate) */
-            DBG_(Tmp,(<< "\033[1;31m DECODER: MSR (immediate)  \033[0m"));
-
-//            handle_msr_i(aFetchedOpcode.theOpcode, op1, op2, crm);
-            break;
-        default:
-            DBG_(Tmp,(<< "\033[1;31m DECODER: unallocated_encoding  \033[0m"));
-
-            unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-            break;
-        }
-        //return inst;
-    }
-//    handle_sys(aFetchedOpcode.theOpcode,  l, op0, op1, op2, crn, crm, rt);
-    DBG_(Tmp,(<< "\033[1;31m DECODER: handle_sys  \033[0m"));
-
-    //return inst;
+        /* MRS - move from system register
+         * MSR (register) - move to system register
+         * SYS
+         * SYSL
+         * These are all essentially the same insn in 'read' and 'write'
+         * versions, with varying op0 fields.
+         */
+        SYS(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Conditional branch (immediate)

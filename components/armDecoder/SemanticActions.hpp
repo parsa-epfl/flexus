@@ -92,7 +92,7 @@ struct Operation {
   virtual bool hasNZCVFlags() { return theNZCVFlags; }
   bool theNZCVFlags;
   uint64_t theNZCV;
-  std::vector< Operand > const theOperands;
+  std::vector< Operand > theOperands;
   bool hasOperands;
 };
 
@@ -239,6 +239,12 @@ simple_action readRegisterAction
   , bool is64  = true
 );
 
+simple_action readConstantAction
+( SemanticInstruction * anInstruction
+  , int aVal
+  , eOperandCode anOperandCode
+);
+
 predicated_action executeAction
 ( SemanticInstruction * anInstruction
   , std::unique_ptr<Operation> & anOperation
@@ -377,6 +383,7 @@ predicated_action operandAction
 ( SemanticInstruction * anInstruction
   , eOperandCode anOperand
   , eOperandCode aResult
+  , int anOffset
   , boost::optional<eOperandCode> aBypass
 );
 

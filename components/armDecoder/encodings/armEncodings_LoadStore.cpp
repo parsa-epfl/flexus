@@ -110,185 +110,35 @@ arminst disas_ldst_multiple_struct(armcode const & aFetchedOpcode, uint32_t  aCP
  * size: 00 -> 8 bit, 01 -> 16 bit, 10 -> 32 bit, 11 -> 64bit
  * opc: 00 -> store, 01 -> loadu, 10 -> loads 64, 11 -> loads 32
  */
-arminst disas_ldst_reg_imm9(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo,
-                                int opc,
-                                int size,
-                                int rt,
-                                bool is_vector)
+arminst disas_ldst_reg_imm9(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    assert(false);
+     int size = extract32(aFetchedOpcode.theOpcode, 30, 2);
+     bool V = extract32(aFetchedOpcode.theOpcode, 26, 1);
+     int opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
+     bool is_store = (opc == 0);
 
-    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
+     if (((opc & 1) == 1)){
+         if (V && size != 0){
+             return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+         }
+         else if (((size & 0) == 1) && (opc == 0x3)) {
+             return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+         }
+     }
 
-
-    int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    uint64_t imm9 = (uint64_t)sextract32(aFetchedOpcode.theOpcode, 12, 9);
-    int idx = extract32(aFetchedOpcode.theOpcode, 10, 2);
-    bool is_signed = false;
-    bool is_store = false;
-    bool is_extended = false;
-    bool is_unpriv = (idx == 2);
-    bool iss_valid = !is_vector;
-    bool post_index;
-    bool writeback;
-
-//    TCGv_i64 tcg_addr;
-
-    if (is_vector) {
-        assert(false);
-        size |= (opc & 2) << 1;
-        if (size > 4 || is_unpriv) {
-            unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-            return;
-        }
-        is_store = ((opc & 1) == 0);
-//        if (!fp_access_check(s)) {
-//            return;
-//        }
-    } else {
-        if (size == 3 && opc == 2) {
-            /* PRFM - prefetch */
-            if (is_unpriv) {
-                unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-                return;
-            }
-            return;
-        }
-        if (opc == 3 && size > 1) {
-            unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-            return;
-        }
-        is_store = (opc == 0);
-        is_signed = extract32(opc, 1, 1);
-        is_extended = (size < 3) && extract32(opc, 0, 1);
-    }
-
-    switch (idx) {
-    case 0:
-    case 2:
-        post_index = false;
-        writeback = false;
-        break;
-    case 1:
-        post_index = true;
-        writeback = true;
-        break;
-    case 3:
-        post_index = false;
-        writeback = true;
-        break;
-    }
-
-    //if (rn == 31) {
-        /*
-         * The AArch64 architecture mandates that (if enabled via PSTATE
-         * or SCTLR bits) there is a check that SP is 16-aligned on every
-         * SP-relative load or store (with an exception generated if it is not).
-         * In line with general QEMU practice regarding misaligned accesses
-        */
-        //gen_check_sp_alignment(s);
-
-    //}
-
-    //tcg_addr = read_cpu_reg_sp(s, rn, 1);
-    std::vector<std::list<InternalDependance> > rs_deps(1);
-    addReadXRegister(inst, 1, rn, rs_deps[0]);
-    if (!post_index) {
-        //tcg_gen_addi_i64(tcg_addr, tcg_addr, imm9);
-        inst->setOperand(kUopAddressOffset, imm9);
-        addAddressCompute(inst,rs_deps);
-    }
-
-    if (is_vector) {
-        assert(false);
-//        if (is_store) {
-//            do_fp_st(s, rt, tcg_addr, size);
-//        } else {
-//            do_fp_ld(s, rt, tcg_addr, size);
-//        }
-    } else {
-//        TCGv_i64 tcg_rt = cpu_reg(s, rt);
-//        int memidx = is_unpriv ? get_a64_user_mem_index(s) : get_mem_index(s);
-        int memidx = 0;
-//        memidx = aFetchedCode.theMemidx;
-        bool iss_sf = disas_ldst_compute_iss_sf(size, is_signed, opc);
-
-        if (is_store) {
-//            do_gpr_st_memidx(s, tcg_rt, tcg_addr, size, memidx,
-//                             iss_valid, rt, iss_sf, false);
-//            STR(inst, rt, rn, size);
-        } else {
-//            do_gpr_ld_memidx(s, tcg_rt, tcg_addr, size,
-//                             is_signed, is_extended, memidx,
-//                             iss_valid, rt, iss_sf, false);
-//            ldgpr(inst, rt, rn, size, false);
-        }
-    }
-
-    if (writeback) {
-//        TCGv_i64 tcg_rn = cpu_reg_sp(s, rn);
-        if (post_index) {
-//            predicated_action add = addExecute(inst,operation(kADD_),rs_deps);
-//            addDestination(inst,rn,add);
-            //tcg_gen_addi_i64(tcg_addr, tcg_addr, imm9);
-        }
-//        predicated_action mov = addExecute(inst,operation(kMOV_),rs_deps);
-//        addDestination(inst,rn,mov);
-//        tcg_gen_mov_i64(tcg_rn, tcg_addr);
-    }
-}
-
-
-static void ext_and_shift_reg(uint_fast64_t rd, uint_fast64_t rs,
-                              int option, unsigned int shift)
-{
-    int extsize = extract32(option, 0, 2);
-    bool is_signed = extract32(option, 2, 1);
-
-    if (is_signed) {
-        switch (extsize) {
-        case 0:
-//            tcg_gen_ext8s_i64(tcg_out, tcg_in);
-            assert(false);
-            break;
-        case 1:
-//            tcg_gen_ext16s_i64(tcg_out, tcg_in);
-            assert(false);
-            break;
-        case 2:
-//            tcg_gen_ext32s_i64(tcg_out, tcg_in);
-            assert(false);
-            break;
-        case 3:
-//            tcg_gen_mov_i64(tcg_out, tcg_in);
-            assert(false);
-            break;
-        }
-    } else {
-        switch (extsize) {
-        case 0:
-//            tcg_gen_ext8u_i64(tcg_out, tcg_in);
-            assert(false);
-            break;
-        case 1:
-//            tcg_gen_ext16u_i64(tcg_out, tcg_in);
-            assert(false);
-            break;
-        case 2:
-//            tcg_gen_ext32u_i64(tcg_out, tcg_in);
-            assert(false);
-            break;
-        case 3:
-//            tcg_gen_mov_i64(tcg_out, tcg_in);
-            assert(false);
-            break;
-        }
-    }
-
-    if (shift) {
-//        tcg_gen_shli_i64(tcg_out, tcg_out, shift);
-        assert(false);
-    }
+     if (V) {
+         if (is_store){
+             return STRF(aFetchedOpcode, aCPU, aSequenceNo);
+         } else {
+             return LDRF(aFetchedOpcode, aCPU, aSequenceNo);
+         }
+     } else {
+         if (is_store){
+             return STR(aFetchedOpcode, aCPU, aSequenceNo);
+         } else {
+             return LDR(aFetchedOpcode, aCPU, aSequenceNo);
+         }
+     }
 }
 
 
@@ -313,90 +163,76 @@ static void ext_and_shift_reg(uint_fast64_t rd, uint_fast64_t rs,
  * Rn: address register or SP for base
  * Rm: offset register or ZR for offset
  */
-arminst disas_ldst_reg_roffset(armcode const & aFetchedOpcode,uint32_t  aCPU, int64_t aSequenceNo,
-                                   int opc,
-                                   int size,
-                                   int rt,
-                                   bool is_vector)
+arminst disas_ldst_reg_roffset(armcode const & aFetchedOpcode,uint32_t  aCPU, int64_t aSequenceNo)
 {
-    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
+    int size = extract32(aFetchedOpcode.theOpcode, 30, 2);
+    int option = extract32(aFetchedOpcode.theOpcode, 13, 3);
+    int V = extract32(aFetchedOpcode.theOpcode, 26, 1);
+    int opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
+    bool is_store = (opc == 0);
 
-    int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    int shift = extract32(aFetchedOpcode.theOpcode, 12, 1);
-    int rm = extract32(aFetchedOpcode.theOpcode, 16, 5);
-    int opt = extract32(aFetchedOpcode.theOpcode, 13, 3);
-    bool is_signed = false;
-    bool is_store = false;
-    bool is_extended = false;
-
-//    TCGv_i64 tcg_rm;
-//    TCGv_i64 tcg_addr;
-
-    if (extract32(opt, 1, 1) == 0) {
+    if (size != 0 || (option & 1) == 0){
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 
-    if (is_vector) {
-        size |= (opc & 2) << 1;
-        if (size > 4) {
-            return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-        }
-        is_store = !extract32(opc, 0, 1);
-//        if (!fp_access_check(s)) {
-//            return;
-//        }
-    } else {
-        if (size == 3 && opc == 2) {
-            /* PRFM - prefetch */
-            return;
-        }
-        if (opc == 3 && size > 1) {
-            return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-        }
-        is_store = (opc == 0);
-        is_signed = extract32(opc, 1, 1);
-        is_extended = (size < 3) && extract32(opc, 0, 1);
-    }
-
-//    if (rn == 31) {
-//        gen_check_sp_alignment(s);
-//    }
-
-//    tcg_addr = read_cpu_reg_sp(s, rn, 1);
-//    tcg_rm = read_cpu_reg(s, rm, 1);
-//    ext_and_shift_reg(tcg_rm, tcg_rm, opt, shift ? size : 0);
-//    tcg_gen_add_i64(tcg_addr, tcg_addr, tcg_rm);
-
-    std::vector<std::list<InternalDependance> > rs_deps(2);
-//    addReadXRegister(inst, 1, rn, rs_deps[0]);
-//    addReadXRegister(inst, 2, rm, rs_deps[1]);
-//    ext_and_shift_reg(rm, rm, opt, shift ? size : 0);
-
-
-
-    if (is_vector) {
-        if (is_store) {
-//            do_fp_st(s, rt, tcg_addr, size);
-//            stfpr(inst, rn, rt, size);
+    if (V) {
+        if (is_store){
+            return STRF(aFetchedOpcode, aCPU, aSequenceNo);
         } else {
-//            do_fp_ld(s, rt, tcg_addr, size);
-//            ldfpr(inst, rn, rt, size);
+            DBG_Assert(false);
         }
     } else {
-//        TCGv_i64 tcg_rt = cpu_reg(s, rt);
-//        bool iss_sf = disas_ldst_compute_iss_sf(size, is_signed, opc);
-        if (is_store) {
-//            do_gpr_st(s, tcg_rt, tcg_addr, size,
-//                      true, rt, iss_sf, false);
-//            STR(inst, rn, rt, size);
+        if (is_store){
+            return STR(aFetchedOpcode, aCPU, aSequenceNo);
         } else {
-//            do_gpr_ld(s, tcg_rt, tcg_addr, size,
-//                      is_signed, is_extended,
-//                      true, rt, iss_sf, false);
-//            ldgpr(inst, rn, rt, size, is_signed);
+            return LDR(aFetchedOpcode, aCPU, aSequenceNo);
         }
     }
-    return inst;
+}
+
+/* Atomic memory operations
+ *
+ *  31  30      27  26    24    22  21   16   15    12    10    5     0
+ * +------+-------+---+-----+-----+---+----+----+-----+-----+----+-----+
+ * | size | 1 1 1 | V | 0 0 | A R | 1 | Rs | o3 | opc | 0 0 | Rn |  Rt |
+ * +------+-------+---+-----+-----+--------+----+-----+-----+----+-----+
+ *
+ * Rt: the result register
+ * Rn: base address or SP
+ * Rs: the source register for the operation
+ * V: vector flag (always 0 as of v8.3)
+ * A: acquire flag
+ * R: release flag
+ */
+arminst disas_ldst_atomic(armcode const & aFetchedOpcode,uint32_t  aCPU, int64_t aSequenceNo)
+{
+    int o3_opc = extract32(aFetchedOpcode.thePC, 12, 4);
+    bool V = extract32(aFetchedOpcode.thePC, 26, 1);
+    if (V) {
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
+    switch (o3_opc) {
+    case 000: /* LDADD */
+        return LDADD(aFetchedOpcode, aCPU, aSequenceNo);
+    case 001: /* LDCLR */
+        return LDCLR(aFetchedOpcode, aCPU, aSequenceNo);
+    case 002: /* LDEOR */
+        return LDEOR(aFetchedOpcode, aCPU, aSequenceNo);
+    case 003: /* LDSET */
+        return LDSET(aFetchedOpcode, aCPU, aSequenceNo);
+    case 004: /* LDSMAX */
+        return LDSMAX(aFetchedOpcode, aCPU, aSequenceNo);
+    case 005: /* LDSMIN */
+        return LDSMIN(aFetchedOpcode, aCPU, aSequenceNo);
+    case 006: /* LDUMAX */
+        return LDUMAX(aFetchedOpcode, aCPU, aSequenceNo);
+    case 007: /* LDUMIN */
+        return LDUMIN(aFetchedOpcode, aCPU, aSequenceNo);
+    case 010: /* SWP */
+        return SWP(aFetchedOpcode, aCPU, aSequenceNo);
+    default:
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
 }
 
 /*
@@ -416,161 +252,59 @@ arminst disas_ldst_reg_roffset(armcode const & aFetchedOpcode,uint32_t  aCPU, in
  * Rn: base address register (inc SP)
  * Rt: target register
  */
-arminst disas_ldst_reg_unsigned_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo,
-                                        int opc,
-                                        int size,
-                                        int rt,
-                                        bool is_vector)
+arminst disas_ldst_reg_unsigned_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    SemanticInstruction * inst (new SemanticInstruction(aFetchedOpcode.thePC,aFetchedOpcode.theOpcode,aFetchedOpcode.theBPState,aCPU,aSequenceNo));
-//    int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-//    unsigned int imm12 = extract32(aFetchedOpcode.theOpcode, 10, 12);
-//    unsigned int offset;
+    int size = extract32(aFetchedOpcode.theOpcode, 30, 2);
+    int V = extract32(aFetchedOpcode.theOpcode, 26, 1);
+    int opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
+    bool is_store = ((opc == 0) || ((opc == 2) && (size == 0)));
 
-////    TCGv_i64 tcg_addr;
+    if (size != 0 || size != 1){
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
 
-//    uint64_t addr;
-//    bool is_store;
-//    bool is_signed = false;
-//    bool is_extended = false;
-//    int memidx = 0;
+    if (V) {
+        if (is_store){
+            return STRF(aFetchedOpcode, aCPU, aSequenceNo);
+        } else {
+            return LDRF(aFetchedOpcode, aCPU, aSequenceNo);
+        }
+    } else {
+        if (is_store){
+            return STR(aFetchedOpcode, aCPU, aSequenceNo);
+        } else {
+            return LDR(aFetchedOpcode, aCPU, aSequenceNo);
+        }
+    }
 
-//    if (is_vector) {
-//        DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register  VECTOR#1\033[0m"));
-
-//        size |= (opc & 2) << 1;
-//        if (size > 4) {
-//            return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-//        }
-//        is_store = !extract32(opc, 0, 1);
-////        if (!fp_access_check(s)) {
-////            return;
-////        }
-//    } else {
-//        DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register  non-VECTOR#1\033[0m"));
-
-//        if (size == 3 && opc == 2) {
-//            /* PRFM - prefetch */
-//        }
-//        if (opc == 3 && size > 1) {
-//            return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-//        }
-//        is_store = (opc == 0);
-//        is_signed = extract32(opc, 1, 1);
-//        is_extended = (size < 3) && extract32(opc, 0, 1);
-//    }
-
-////    if (rn == 31) {
-////        gen_check_sp_alignment(s);
-////    }
-
-//    //tcg_addr = read_cpu_reg_sp(s, rn, 1);
-//    //tcg_gen_addi_i64(tcg_addr, tcg_addr, offset);
-
-//    std::vector< std::list<InternalDependance> > rs_deps(2);
-//    addReadXRegister(inst,1,rn,rs_deps[0]);
-//    offset = imm12 << size;
-
-//    inst->setOperand( kUopAddressOffset, offset );
-//    addAddressCompute(inst,rs_deps);
-
-
-
-//    if (is_vector) {
-
-//        if (is_store) {
-//            DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register-STF-VECTOR #2\033[0m"));
-
-////            stfpr(inst, rt, rn, size);
-//            //do_fp_st(s, rt, tcg_addr, size);
-//        } else {
-//            DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register-LDF-VECTOR #2\033[0m"));
-
-////            ldfpr(inst, rn, rt, size);
-//            //do_fp_ld(s, rt, tcg_addr, size);
-//        }
-//    } else {
-//        DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register nonVECTOR #2\033[0m"));
-
-//        //TCGv_i64 tcg_rt = cpu_reg(s, rt);
-
-////        bool iss_sf = disas_ldst_compute_iss_sf(eSize(1 << size), is_signed, opc);
-//        if (is_store) {
-//            DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register-ST nonVECTOR #2\033[0m"));
-
-////            STR(inst, rt, size, memidx,
-////                   true, rt, iss_sf, false);
-//            inst->setClass(clsStore, codeStoreFP);
-//            addReadXRegister(inst,2,rt, rs_deps[1]);
-//            addAddressCompute( inst, rs_deps ) ;
-//            inst->addSquashEffect( eraseLSQ(inst) );
-////            inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
-//            inst->addRetirementEffect( retireMem(inst) );
-////            inst->addPrevalidation( validateFPSR(inst) );
-//            inst->addDispatchEffect( allocateStore( inst, eSize(1<<size), false , kAccType_ORDERED) );
-//            inst->addCommitEffect( commitStore(inst) );
-////            inst->addRetirementConstraint( storeQueueAvailableConstraint(inst) );
-////            inst->addRetirementConstraint( sideEffectStoreConstraint(inst) );
-
-////            do_gpr_st(s, tcg_rt, tcg_addr, size,
-////                      true, rt, iss_sf, false);
-//        } else {
-//            DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register-LD nonVECTOR #2\033[0m"));
-
-////            ldgpr(inst, rt, size, is_signed, is_extended, memidx,
-////                  true, rt, iss_sf, false);
-//            inst->setClass(clsLoad, codeLoad);
-//            addAddressCompute( inst, rs_deps ) ;
-//            inst->addSquashEffect( eraseLSQ(inst) );
-////            inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
-//            inst->addRetirementEffect( retireMem(inst) );
-//            predicated_dependant_action load;
-//            load = loadAction( inst, eSize(1 << size), is_extended, kPD );
-//            inst->addDispatchEffect( allocateLoad( inst, eSize(1<<size), load.dependance, kAccType_ORDERED ) );
-//            inst->addCommitEffect( accessMem(inst) );
-//            inst->addRetirementConstraint( loadMemoryConstraint(inst) );
-//            addDestination( inst, rt, load);
-////            do_gpr_ld(s, tcg_rt, tcg_addr, size, is_signed, is_extended,
-////                      true, rt, iss_sf, false);
-//        }
-//    }
-    return inst;
 }
 
 /* Load/store register (all forms) */
 arminst disas_ldst_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    int rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    int opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
-    bool is_vector = extract32(aFetchedOpcode.theOpcode, 26, 1);
-    int size = extract32(aFetchedOpcode.theOpcode, 30, 2);
-
-    switch (extract32(aFetchedOpcode.theOpcode, 24, 2)) {
+    switch (extract32(aFetchedOpcode.thePC, 24, 2)) {
     case 0:
-        if (extract32(aFetchedOpcode.theOpcode, 21, 1) == 1 && extract32(aFetchedOpcode.theOpcode, 10, 2) == 2) {
-            DBG_(Tmp,(<< "\033[1;31m disas_ldst_reg_roffset\033[0m"));
-            return disas_ldst_reg_roffset(aFetchedOpcode, aCPU,aSequenceNo, opc, size, rt, is_vector);
-        } else {
+        if (extract32(aFetchedOpcode.thePC, 21, 1) == 0) {
             /* Load/store register (unscaled immediate)
              * Load/store immediate pre/post-indexed
              * Load/store register unprivileged
              */
-            DBG_(Tmp,(<< "\033[1;31m Load/store - register (unscaled immediate)"
-                      " - immediate pre/post-indexed"
-                      " - register unprivilege\033[0m"));
-
-            return disas_ldst_reg_imm9( aFetchedOpcode, aCPU,aSequenceNo,opc, size, rt, is_vector);
+            return disas_ldst_reg_imm9(aFetchedOpcode, aCPU, aSequenceNo);
+        }
+        switch (extract32(aFetchedOpcode.thePC, 10, 2)) {
+        case 0:
+            return disas_ldst_atomic(aFetchedOpcode, aCPU, aSequenceNo);
+        case 2:
+            return disas_ldst_reg_roffset(aFetchedOpcode, aCPU, aSequenceNo);
         }
         break;
     case 1:
-        DBG_(Tmp,(<< "\033[1;31m DECODER: Load/Store Unsigned Immediate - Register\033[0m"));
-        return disas_ldst_reg_unsigned_imm(aFetchedOpcode, aCPU,aSequenceNo,opc, size, rt, is_vector);
-        break;
-    default:
-        unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-        break;
+        return disas_ldst_reg_unsigned_imm(aFetchedOpcode, aCPU, aSequenceNo);
     }
+    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
 }
+
+
 
 /*
  * LDNP (Load Pair - non-temporal hint)
@@ -602,27 +336,22 @@ arminst disas_ldst_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t a
  */
 arminst disas_ldst_pair(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {   
-        int rt = extract32(aFetchedOpcode.thePC, 0, 5);
-        int rn = extract32(aFetchedOpcode.thePC, 5, 5);
-        int rt2 = extract32(aFetchedOpcode.thePC, 10, 5);
-        uint64_t offset = sextract64(aFetchedOpcode.thePC, 15, 7);
-        int index = extract32(aFetchedOpcode.thePC, 23, 2);
-        bool is_vector = extract32(aFetchedOpcode.thePC, 26, 1);
-        bool is_load = extract32(aFetchedOpcode.thePC, 22, 1);
-        int opc = extract32(aFetchedOpcode.thePC, 30, 2);
+    bool is_vector = extract32(aFetchedOpcode.thePC, 26, 1);
+    bool is_load = extract32(aFetchedOpcode.thePC, 22, 1);
 
-        bool is_signed = false;
-        bool postindex = false;
-        bool wback = false;
-        int size;
-
-        if (opc == 3) {
-            return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    if (is_vector) {
+        if (is_load) {
+            return LDFP(aFetchedOpcode, aCPU, aSequenceNo);
+        } else {
+            return STFP(aFetchedOpcode, aCPU, aSequenceNo);
         }
-        
-        
-//        STNP(aFetchedOpcode, aCPU, aSequenceNo);
-
+    } else {
+        if (is_load) {
+            return LDP(aFetchedOpcode, aCPU, aSequenceNo);
+        } else {
+            return STP(aFetchedOpcode, aCPU, aSequenceNo);
+        }
+    }
 }
 
 /*
@@ -645,9 +374,9 @@ arminst disas_ld_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSe
 
     switch (V+ (opc << 1)) {
     case 0:case 2:
-        return LDR(aFetchedOpcode, aCPU, aSequenceNo);
+        return LDR_lit(aFetchedOpcode, aCPU, aSequenceNo);
     case 1: case 3: case 5:
-        return LDRF(aFetchedOpcode, aCPU, aSequenceNo);
+        return LDRF_lit(aFetchedOpcode, aCPU, aSequenceNo);
     case 4:
         return LDRSW(aFetchedOpcode, aCPU, aSequenceNo);
     case 6:
@@ -710,32 +439,25 @@ arminst disas_ldst(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequ
     case 0x08: /* Load/store exclusive */
         DBG_(Tmp,(<< "\033[1;31mDECODER: Load/store exclusiv \033[0m"));
         return disas_ldst_excl(aFetchedOpcode, aCPU,aSequenceNo);
-        break;
     case 0x18: case 0x1c: /* Load register (literal) */
         DBG_(Tmp,(<< "\033[1;31mDECODER: Load register (literal) \033[0m"));
         return disas_ld_lit(aFetchedOpcode, aCPU,aSequenceNo);
-        break;
     case 0x28: case 0x29:
     case 0x2c: case 0x2d: /* Load/store pair (all forms) */
         DBG_(Tmp,(<< "\033[1;31m DECODER: Load/store pair (all forms) \033[0m"));
         return disas_ldst_pair(aFetchedOpcode, aCPU,aSequenceNo);
-        break;
     case 0x38: case 0x39:
     case 0x3c: case 0x3d: /* Load/store register (all forms) */
         DBG_(Tmp,(<< "\033[1;31m DECODER: Load/store register (all forms) \033[0m"));
         return disas_ldst_reg(aFetchedOpcode, aCPU,aSequenceNo);
-        break;
     case 0x0c: /* AdvSIMD load/store multiple structures */
         DBG_(Tmp,(<< "\033[1;31mDECODER: AdvSIMD load/store multiple structures \033[0m"));
-        disas_ldst_multiple_struct(aFetchedOpcode, aCPU,aSequenceNo);
-        break;
+        return disas_ldst_multiple_struct(aFetchedOpcode, aCPU,aSequenceNo);
     case 0x0d: /* AdvSIMD load/store single structure */
         DBG_(Tmp,(<< "\033[1;31mDECODER: AdvSIMD load/store single structure \033[0m"));
-        disas_ldst_single_struct(aFetchedOpcode, aCPU,aSequenceNo);
-        break;
+        return disas_ldst_single_struct(aFetchedOpcode, aCPU,aSequenceNo);
     default:
-        unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-        break;
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 }
 
