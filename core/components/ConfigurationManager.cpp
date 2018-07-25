@@ -8,6 +8,7 @@
 #include <core/configuration.hpp>
 
 #include <core/debug/debug.hpp>
+#include <boost/algorithm/string.hpp>
 
 namespace Flexus {
 namespace Wiring {
@@ -87,7 +88,29 @@ public:
   }
 
   void parseConfiguration(std::istream & anIstream) {
-    std::cout << "WARNING: Parsing configuration files is not yet implemented." << std::endl;
+    std::string line;
+    std::vector<std::string> strs;
+    while( std::getline(anIstream, line) ) {
+        boost::split(strs, line, boost::is_any_of(" \t\""), boost::token_compress_on);
+
+        std::string param_name, value, comment;
+        param_name = strs[1];
+        value = strs[2];
+
+        // get the comment
+        std::stringstream ss;
+        for(size_t i = 3; i < strs.size(); ++i)
+        {
+              if(i != 3)
+                      ss << " ";
+                ss << strs[i];
+        }
+        comment = ss.str();
+
+        DBG_(Iface, ( << "Dynamic param:" << param_name << ", value:" << value
+                     << ", comment:" << comment) );
+        set(param_name, value);
+    }
   }
 
   void set(std::string const & aName, std::string const & aValue) {

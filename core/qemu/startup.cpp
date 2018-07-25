@@ -80,6 +80,7 @@ void PrepareFlexusObject();
 void initFlexus();
 void deinitFlexus();
 void callQMP(Flexus::Qemu::API::qmp_flexus_cmd_t aCMD, const char* args);
+void setCfg(const char* aFile);
 void startTimingFlexus();
 }
 
@@ -120,7 +121,9 @@ void PrepareFlexus() {
 extern "C" void qmp_call(Flexus::Qemu::API::qmp_flexus_cmd_t aCMD, const char* anArgs) {
     callQMP(aCMD, anArgs);
 }
-
+extern "C" void set_config(const char* aFile) {
+    setCfg(aFile);
+}
 extern "C" void flexus_init(void) {
     initFlexus();
 }
@@ -174,7 +177,9 @@ void print_copyright() {
 extern "C" void qmpcall(Flexus::Qemu::API::qmp_flexus_cmd_t aCMD, const char* anArgs ){
     Flexus::Qemu::qmp_call(aCMD, anArgs);
 }
-
+extern "C" void setConfig(const char* aFile ){
+    Flexus::Qemu::set_config(aFile);
+}
 
 }
 extern "C" void flexInit(){
