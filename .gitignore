@@ -12,3 +12,4 @@
 *.so
 *.swp
 tags
+makefile.defs

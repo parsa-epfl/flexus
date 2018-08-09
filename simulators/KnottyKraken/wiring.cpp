@@ -33,7 +33,7 @@ std::string theSimulatorName = "KnottyKraken v1.0";
 
 #include FLEXUS_BEGIN_COMPONENT_CONFIGURATION_SECTION()
 
-CREATE_CONFIGURATION( ITLB , "TEST_ITLB", theITLBCfg );
+//CREATE_CONFIGURATION( ITLB , "Test_ITLB", theITLBCfg );
 
 CREATE_CONFIGURATION( FetchAddressGenerate, "fag", theFAGCfg );
 CREATE_CONFIGURATION( uFetch, "ufetch", theuFetchCfg );
@@ -207,7 +207,7 @@ bool initializeParameters() {
   theNicCfg.SendCapacity.initialize(1);
 
   //theNetworkCfg.NetworkTopologyFile.initialize("16node-torus.topology");
-  theNetworkCfg.NetworkTopologyFile.initialize("/home/hoss/qflex/flexus/simulators/KnottyKraken/1x3-mesh.topology");
+  theNetworkCfg.NetworkTopologyFile.initialize("/home/msutherl/qflex/flexus/simulators/KnottyKraken/1x3-mesh.topology");
   theNetworkCfg.NumNodes.initialize( 3 );
   theNetworkCfg.VChannels.initialize( 3 );
 
@@ -261,7 +261,7 @@ bool initializeParameters() {
 //All component Instances are created here.  This section
 //also creates handles for each component
 //
-FLEXUS_INSTANTIATE_COMPONENT_ARRAY( ITLB , theITLBCfg, theITLB, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
+//FLEXUS_INSTANTIATE_COMPONENT_ARRAY( ITLB , theITLBCfg, theITLB, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( FetchAddressGenerate, theFAGCfg, theFAG, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( uFetch, theuFetchCfg, theuFetch, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
