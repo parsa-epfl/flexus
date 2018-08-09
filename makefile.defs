@@ -42,13 +42,13 @@
 
 
 # GCC Compiler Settings
-#GCC_PATH=
-GCC_BINARY=g++ --std=c++14
-GCC_VERSION_NOCHECK=true
+GCC_PATH=/home/parsacom/tools/gcc-qflex
+GCC_BINARY=g++ --std=c++11
+GCC_VERSION_NOCHECK=false
 
 # Boost 1.59.0 path
-BOOST_PATH=/usr/local/include
-BOOST_BINARIES=/usr/local/lib
+BOOST_PATH=/home/msutherl/include
+BOOST_BINARIES=/home/msutherl/lib
 BOOST_VERSION_NOCHECK=true
 
 ###############################################################################
