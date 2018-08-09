@@ -28,24 +28,6 @@ std::vector<std::deque<MMU::mmu_t> > theMMUckpts;
 
 std::vector<int> theMMUMap;
 
-void armProcessorImpl::initializeMMUs() {
-  if (!theMMUs_initialized) {
-    theMMUs_initialized = true;
-
-    int num_procs = ProcessorMapper::numProcessors();
-    theMMUs.resize( num_procs );
-    theMMUckpts.resize( num_procs );
-
-    theMMUMap.resize( num_procs );
-
-    for (unsigned int i = 0; i < theMMUs.size(); ++i) {
-      API::conf_object_t * cpu = Qemu::API::QEMU_get_cpu_by_index(ProcessorMapper::mapFlexusIndex2ProcNum(i));
-      //MMU::fm_init_mmu_from_simics( &theMMUs[i], SIM_get_attribute(cpu, "mmu").u.object );
-      //ALEX - FIXME: Get mmu from QEMU
-    }
-  }
-}
-
 bool isTranslatingASI(int anASI) {
   switch (anASI) {
     case 0:
@@ -54,23 +36,8 @@ bool isTranslatingASI(int anASI) {
       return false;
   }
 }
-
-long /*opcode*/ armProcessorImpl::fetchInstruction(Translation & aTranslation, bool aTakeTrap) {
-  return fetchInstruction_MMUImpl(aTranslation, aTakeTrap);
-}
-
-void armProcessorImpl::translate(Translation & aTranslation, bool aTakeException) const {
-  DBG_( Tmp, ( << "MMU: translating... " << VirtualMemoryAddress(aTranslation.theVaddr)) );
-  translate_MMUImpl(aTranslation, aTakeException);
-  DBG_( Tmp, ( << "MMU after translate " << PhysicalMemoryAddress(aTranslation.thePaddr)) );
-}
-
 unsigned long long armProcessorImpl::readVAddr(VirtualMemoryAddress anAddress, int anASI, int aSize) const {
   return readVAddr_QemuImpl(anAddress, anASI, aSize);
-}
-
-unsigned long long armProcessorImpl::readVAddrXendian(Translation & aTranslation, int aSize) const {
-  return readVAddrXendian_MMUImpl(aTranslation, aSize);
 }
 
 PhysicalMemoryAddress armProcessorImpl::translateInstruction_QemuImpl( VirtualMemoryAddress anAddress) const {
@@ -105,16 +72,6 @@ bool cacheable(API::arm_memory_transaction_t & xact) {
 
 bool side_effect(API::arm_memory_transaction_t & xact) {
   return (xact.side_effect || xact.s.inverse_endian);
-}
-
-std::tuple<PhysicalMemoryAddress, bool, bool> armProcessorImpl::translateTSB_QemuImpl(VirtualMemoryAddress anAddress, int anASI) const {
-  try {
-    API::arm_memory_transaction_t xact;
-    translate_QemuImpl( xact, anAddress, anASI);
-    return std::make_tuple( PhysicalMemoryAddress( xact.s.physical_address ), (xact.s.physical_address != 0 ) && cacheable(xact), (xact.s.physical_address == 0 ) || side_effect(xact)  );
-  } catch (MemoryException & anError ) {
-    return std::make_tuple( PhysicalMemoryAddress(0), false, true);
-  }
 }
 
 unsigned long long endianFlip(unsigned long long val, int aSize) {
@@ -213,7 +170,7 @@ void armProcessorImpl::translate_QemuImpl(  API::arm_memory_transaction_t & xact
   xact.s.exception = API::QEMU_PE_No_Exception;
 
   API::exception_type_t except;
-  DBG_Assert(mmu());
+  //DBG_Assert(mmu());
   //except = mmu()->logical_to_physical( theMMU, &xact ) ;  //ALEX - FIXME: Need an MMU API in QEMU
   except = API::QEMU_PE_No_Exception;	//temp dummy
 
@@ -235,145 +192,14 @@ void armProcessorImpl::translate_QemuImpl(  API::arm_memory_transaction_t & xact
     DBG_( Verb, ( << "Exception during translation: " << except ) );
     throw MemoryException();
   }
-
 }
 
-MMU::mmu_t armProcessorImpl::getMMU() {
-  return theMMUs[id()];
-}
-
-void armProcessorImpl::ckptMMU() {
-  DBG_(Verb, ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] checkpointing MMU. size=" << theMMUckpts[id()].size()));
-  theMMUckpts[id()].push_back(theMMUs[id()]);
-}
-
-void armProcessorImpl::releaseMMUCkpt() {
-  DBG_(Verb, ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] releasing oldest MMU checkpoint. size=" << theMMUckpts[id()].size()));
-  DBG_Assert(!theMMUckpts[id()].empty(), ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] has no checkpoint to release"));
-  theMMUckpts[id()].pop_front();
-}
-
-void armProcessorImpl::rollbackMMUCkpts(int n) {
-  DBG_(Verb, ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] rolling back " << n << " MMU checkpoints"));
-  DBG_Assert(theMMUckpts[id()].size() > (unsigned)n, ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] has " << theMMUckpts[id()].size() << " but needs > " << n));
-  // remove n checkpoints to get back to where we started
-  for (int i = 0; i < n; ++i) theMMUckpts[id()].pop_back();
-  theMMUs[id()] = theMMUckpts[id()].back();
-  theMMUckpts[id()].pop_back();
-}
-
-void armProcessorImpl::resyncMMU() {
-  //MMU::fm_init_mmu_from_simics(&theMMUs[id()], SIM_get_attribute(*this, "mmu").u.object );	//ALEX - FIXME
-}
-
-bool armProcessorImpl::validateMMU(MMU::mmu_t * anMMU) {
-  MMU::mmu_t simics_mmu, *our_mmu;
-  //MMU::fm_init_mmu_from_simics(&simics_mmu, SIM_get_attribute(*this, "mmu").u.object);  //ALEX - FIXME
-  assert(false);
-  if (anMMU == NULL) our_mmu = &(theMMUs[id()]);
-  else our_mmu = anMMU;
-  if (MMU::fm_compare_mmus(our_mmu, &simics_mmu)) {
-    return false;
-  }
-  return true;
-}
-
-unsigned long long armProcessorImpl::mmuRead(VirtualMemoryAddress anAddress, int anASI) {
-  MMU::mmu_access_t access;
-  access.va = anAddress;
-  access.asi = anASI;
-  access.type = MMU::mmu_access_load;
-  mmu_access( &theMMUs[id()], & access );
-  return access.val;
-}
-
-void armProcessorImpl::mmuWrite(VirtualMemoryAddress anAddress, int anASI, unsigned long long aValue) {
-  MMU::mmu_access_t access;
-  access.va = anAddress;
-  access.asi = anASI;
-  access.type = MMU::mmu_access_store;
-  access.val = aValue;
-  mmu_access( &theMMUs[id()], & access );
-}
-
-void armProcessorImpl::dumpMMU(MMU::mmu_t * anMMU) {
-  MMU::mmu_t * m = (anMMU == NULL) ? &(theMMUs[id()]) : anMMU;
-  MMU::fm_print_mmu_regs(m);
-}
-
-void armProcessorImpl::translate_MMUImpl(Translation & aTranslation, bool aTakeException) const {
-
-    aTranslation.thePaddr = translateInstruction_QemuImpl(aTranslation.theVaddr);
-    DBG_( Tmp, ( <<"\e[33m" << "MMU: " << VirtualMemoryAddress(aTranslation.theVaddr)<< " -> "
-    << PhysicalMemoryAddress(aTranslation.thePaddr)<< "\e[0m")  );
-}
 
 unsigned long int Endian_DWord_Conversion(unsigned long int dword)//NOOSHIN
 {
-  //return ((dword>>24)&0x000000FF) | ((dword>>8)&0x0000FF00) | ((dword<<8)&0x00FF0000) | ((dword<<24)&0xFF000000);
-    unsigned long int w = __builtin_bswap32 (dword);
-    unsigned long int dw = __builtin_bswap64 (dword);
     return __builtin_bswap64 (dword);
 }
 
-
-long armProcessorImpl::fetchInstruction_MMUImpl(Translation & aTranslation, bool aTakeTrap) {
-  uint64_t op_code = 0;
-
-  translate_MMUImpl(aTranslation, aTakeTrap );
-  if (aTranslation.thePaddr != 0) {
-    try {
-      op_code = Qemu::API::QEMU_read_phys_memory( *this, aTranslation.thePaddr, 4);
-      //op_code = Endian_DWord_Conversion(op_code);
-      checkException();
-    } catch (...) {
-
-      DBG_(Tmp,(<<"OPCODE IS GOING TO SET ZEROOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO") );
-      op_code = 0;
-    }
-  }
-
-  DBG_(Tmp, (<< "\e[34m" <<"MMU: Opcode is "<<  std::hex << std::setw(8) << op_code << std::dec << "\e[0m"));
-  return op_code;
-}
-
-unsigned long long armProcessorImpl::readVAddr_MMUImpl(Translation & aTranslation, int aSize) const {
-  try {
-    translate_MMUImpl(aTranslation, false);
-
-    DBG_(Tmp, ( << "Virtual: " << aTranslation.theVaddr << " ASI: " << aTranslation.theASI << " Size: " << aSize << " Physical: " << aTranslation.thePaddr ) );//NOOSHIN
-
-    unsigned long long value = Qemu::API::QEMU_read_phys_memory( *this, aTranslation.thePaddr, aSize);
-    checkException();
-
-    return value;
-  } catch (MemoryException & anError ) { }
-  return 0;
-}
-
-unsigned long long armProcessorImpl::readVAddrXendian_MMUImpl(Translation & aTranslation, int aSize) const {
-  try {
-    translate_MMUImpl(aTranslation, false);
-
-    DBG_(VVerb, ( << "Virtual: " << aTranslation.theVaddr << " ASI: " << aTranslation.theASI << " Size: " << aSize << " Physical: " << aTranslation.thePaddr ) );
-
-    unsigned long long value = Qemu::API::QEMU_read_phys_memory( *this, aTranslation.thePaddr, aSize);
-    checkException();
-
-    if (aTranslation.isXEndian()) {
-      DBG_(Verb, ( << "Inverse endian access to " << aTranslation.theVaddr  << " ASI: " << aTranslation.theASI  << " Size: " << aSize ) );
-      value = endianFlip(value, aSize);
-    }
-
-    if (aTranslation.theASI == 0x80 && (aTranslation.thePSTATE & 0x100 /*PSTATE.CLE*/)) {
-      DBG_(Verb, ( << "PSTATE.CLE set.  Inverting endianness of  " << aTranslation.theVaddr  << " ASI: " << aTranslation.theASI  << " Size: " << aSize ) );
-      value = endianFlip(value, aSize);
-    }
-
-    return value;
-  } catch (MemoryException & anError ) { }
-  return 0;
-}
 
 bool Translation::isCacheable() {
   return MMU::mmu_is_cacheable( theTTEEntry );
@@ -383,29 +209,6 @@ bool Translation::isSideEffect() {
 }
 bool Translation::isXEndian() {
   return MMU::mmu_is_xendian( theTTEEntry );
-}
-
-bool Translation::isMMU() {
-  switch (theASI) {
-    case 0: //I-MMU
-      return true;
-
-    default: //all others
-      return false;
-  }
-}
-bool Translation::isInterrupt() {
-  switch (theASI) {
-    case 0:
-      return true;
-
-    default: //all others
-      return false;
-  }
-}
-
-bool Translation::isTranslating() {
-  return isTranslatingASI(theASI);
 }
 
 namespace MMU {

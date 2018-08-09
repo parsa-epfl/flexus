@@ -243,7 +243,6 @@ struct Translation {
 class arm_tte_t {
 };
 
-#if FLEXUS_TARGET_IS(ARM)
 using namespace MMU;
 class armProcessorImpl :  public BaseProcessorImpl {
 private:
