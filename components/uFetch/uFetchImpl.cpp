@@ -371,6 +371,12 @@ public:
     theI.loadState(fname);
   }
 
+  // Msutherl: TLB in-out functions
+  FLEXUS_PORT_ALWAYS_AVAILABLE(TLBReturnIn);
+  void push( interface::TLBReturnIn const &, TranslationReturnedFromTLB& aTranslation ) {
+      // TODO
+  }
+
   //FetchAddressIn
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(FetchAddressIn);
   void push( interface::FetchAddressIn const &, index_t anIndex, boost::intrusive_ptr<FetchCommand> & aCommand) {
@@ -833,38 +839,37 @@ private:
       FETCH_DBG("starting to process the fetches..." << remaining_fetch);
 
       while ( remaining_fetch > 0 && ( theFAQ[anIndex].size() > 0 || theFlexus->quiescing())) {
-        bool from_icache(false);
+          bool from_icache(false);
 
-        FetchAddr fetch_addr = theFAQ[anIndex].front();
-        VirtualMemoryAddress block_addr( fetch_addr.theAddress & theBlockMask);
+          FetchAddr fetch_addr = theFAQ[anIndex].front();
+          VirtualMemoryAddress block_addr( fetch_addr.theAddress & theBlockMask);
 
-        if ( available_lines.count( block_addr ) == 0) {
-          //Line needs to be fetched from I-cache
-          if (available_lines.size() >= cfg.MaxFetchLines) {
-            //Reached limit of I-cache reads per cycle
-            break;
+          if ( available_lines.count( block_addr ) == 0) {
+              //Line needs to be fetched from I-cache
+              if (available_lines.size() >= cfg.MaxFetchLines) {
+                  //Reached limit of I-cache reads per cycle
+                  break;
+              }
+
+              // Notify the PowerTracker of Icache access
+              bool garbage = true;
+              FLEXUS_CHANNEL(InstructionFetchSeen) << garbage;
+
+              if ( ! cfg.PerfectICache ) {
+                  //Do I-cache access here.
+                  if (! icacheLookup( anIndex, block_addr ) ) {
+                      break;
+                  }
+                  from_icache = true;
+              }
+              else
+              {
+                  DBG_(Verb, (<<"FETCH UNIT: Instruction Cache disabled!"));
+              }
+              available_lines.insert( block_addr );
           }
 
-          // Notify the PowerTracker of Icache access
-          bool garbage = true;
-          FLEXUS_CHANNEL(InstructionFetchSeen) << garbage;
-
-          if ( ! cfg.PerfectICache ) {
-            //Do I-cache access here.
-            if (! icacheLookup( anIndex, block_addr ) ) {
-              break;
-            }
-            from_icache = true;
-          }
-          else
-          {
-              DBG_(Verb, (<<"FETCH UNIT: Instruction Cache disabled!"));
-          }
-
-          available_lines.insert( block_addr );
-        }
-
-        uint32_t op_code = fetchFromQemu( anIndex, fetch_addr.theAddress );
+        int64_t op_code = fetchFromQemu( anIndex, fetch_addr.theAddress );
         
         theFAQ[anIndex].pop_front();
         //DBG_(Tmp, ( << "\e[1;34m" << "FETCH UNIT: Fetched " << fetch_addr.theAddress << " and poping it out of FAQ" << "\e[0m" ) );
@@ -919,9 +924,9 @@ private:
     xlat.theType = Flexus::Qemu::Translation::eFetch;
     xlat.theException = 0; // just for now
 
-    //DBG_(Tmp, (<<"FETCH UNIT: Starting Opcode Translation"));
-    op_code = cpu(anIndex)->fetchInstruction_QemuImpl(anAddress);
-    //DBG_(Tmp, (<<"FETCH UNIT: Finished Opcode Translation"));
+    // TODO: Create bundle of stuff to send to TLB Component
+
+    op_code = cpu(anIndex)->fetchInstruction_QemuImpl( anAddress ); // FIXME: Msutherl - magic QEMU translation and read phys mem
 
     if (xlat.theException == 0) {
       //DBG_(Tmp, (<<"FETCH UNIT: Not an exception"));
@@ -964,6 +969,15 @@ FLEXUS_PORT_ARRAY_WIDTH( uFetch, ICount )   {
 FLEXUS_PORT_ARRAY_WIDTH( uFetch, Stalled )   {
   return (cfg.Threads);
 }
+
+/* Msutherl
+FLEXUS_PORT_ARRAY_WIDTH( uFetch, TLBLookupOut ) {
+    return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH( uFetch, TLBReturnIn) {
+    return (cfg.Threads);
+}
+*/
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
 #define FLEXUS_END_COMPONENT uFetch

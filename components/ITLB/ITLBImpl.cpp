@@ -156,25 +156,6 @@ public:
   // Ports
   //======
 
-  //FrontSideIn_Snoop
-  //-----------------
-  bool available( interface::FrontSideIn_Snoop const &,
-                  index_t anIndex ) {
-    return ! theController->FrontSideIn_Snoop[0].full();
-  }
-  void push( interface::FrontSideIn_Snoop const &,
-             index_t           anIndex,
-             MemoryTransport & aMessage ) {
-    DBG_Assert(! theController->FrontSideIn_Snoop[0].full());
-    aMessage[MemoryMessageTag]->coreIdx() = anIndex;
-    DBG_(Trace, Comp(*this) ( << "Received on Port FrontSideIn(Snoop) [" << anIndex << "]: " << *(aMessage[MemoryMessageTag]) ) Addr(aMessage[MemoryMessageTag]->address()) );
-    if (aMessage[TransactionTrackerTag]) {
-      aMessage[TransactionTrackerTag]->setDelayCause(name(), "Front Rx");
-    }
-
-    theController->FrontSideIn_Snoop[0].enqueue(aMessage);
-  }
-
   //FrontSideIn_Request
   //-------------------
   bool available( interface::FrontSideIn_Request const &,
@@ -459,15 +440,19 @@ public:
 
   }
 
+  // Msutherl
+  FLEXUS_PORT_ALWAYS_AVAILABLE(AddressesToTranslate); // FIXME: will change w. non-atomic mem-reads
+  void push( interface::AddressesToTranslate const &,
+             pFetchBundle & translateUs ) {
+      // TODO
+  }
+
 };
 
 } //End Namespace nTLB
 
 FLEXUS_COMPONENT_INSTANTIATOR( ITLB , nTLB );
 FLEXUS_PORT_ARRAY_WIDTH( ITLB , FrontSideOut_I )           {
-  return (cfg.Cores);
-}
-FLEXUS_PORT_ARRAY_WIDTH( ITLB , FrontSideIn_Snoop )      {
   return (cfg.Cores);
 }
 FLEXUS_PORT_ARRAY_WIDTH( ITLB , FrontSideIn_Request )    {

@@ -280,7 +280,6 @@ public:
     
     // Msutherl - june'18
     // - added smaller MMU interface (resolving walks + memory accesses resolved in Flexus components I/D TLBs)
-
   MMU::TTEDescriptor getNextTTDescriptor( mmu_t* mmu, PhysicalMemoryAddress pa );
 
   bits readVAddr(VirtualMemoryAddress anAddress, int aSize) const;

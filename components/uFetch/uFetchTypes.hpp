@@ -132,6 +132,10 @@ struct FetchedOpcode {
   { }
 };
 
+struct TranslationReturnedFromTLB: public boost::counted_base {
+    std::vector< std::pair<VirtualMemoryAddress,PhysicalMemoryAddress> > translatedAddresses;
+};
+
 struct FetchBundle : public boost::counted_base {
   std::list< FetchedOpcode > theOpcodes;
   std::list< tFillLevel > theFillLevels;

@@ -302,6 +302,10 @@ WIRE( theuFetch, FetchBundleOut,        theDecoder, FetchBundleIn         )
 WIRE( theDecoder, SquashOut,            theuFetch, SquashIn               )
 WIRE( theuArch, ChangeCPUState,         theuFetch, ChangeCPUState         )
 
+// Fetch to ITLB: MARK
+WIRE( theuFetch, TLBLookupOut,          theITLB, AddressesToTranslate     )
+WIRE( theITLB, TranslationsToReturn,    theuFetch, TLBReturnIn            )
+
 //Decoder to uArch
 WIRE( theDecoder, AvailableDispatchIn,  theuArch, AvailableDispatchOut    )
 WIRE( theDecoder, DispatchOut,          theuArch, DispatchIn              )
