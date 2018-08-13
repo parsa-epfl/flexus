@@ -50,6 +50,8 @@
 #include "OperandMap.hpp"
 #include "Conditions.hpp"
 
+#include "MakeUniqueWrapper.hpp"
+
 #define DBG_DeclareCategories armDecoder
 #define DBG_SetDefaultOps AddCat(armDecoder)
 #include DBG_Control()

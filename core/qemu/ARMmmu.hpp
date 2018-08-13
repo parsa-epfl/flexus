@@ -90,7 +90,7 @@ class TTEDescriptor
 
     private:
         tte_raw_t rawDescriptor;
-        TranslationGranule myGranule;;
+        TranslationGranule myGranule;
 };
 
 /* RAW DESCRIPTOR FORMATS ON AARCH64 REFERENCE MANUAL - SECTION D4.3 - D4-2061 */

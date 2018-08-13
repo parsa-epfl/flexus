@@ -251,6 +251,13 @@ bool initializeParameters() {
   theMagicBreakCfg.TerminateOnMagicBreak.initialize(-1);
   theMagicBreakCfg.EnableIterationCounts.initialize(false);
 
+  // Msutherl: put ITLB stuff here because I'm too lazy to make a postload
+  theITLBCfg.Cores.initialize(1);
+  theITLBCfg.CacheLevel.initialize(eL1);
+  theITLBCfg.ArrayConfiguration.initialize("STD:size=4096:assoc=4:repl=LRU");
+  theITLBCfg.TextFlexpoints.initialize(false);
+  theITLBCfg.GZipFlexpoints.initialize(false);
+
   return true; //true = Abort simulation if parameters are not initialized
 }
 

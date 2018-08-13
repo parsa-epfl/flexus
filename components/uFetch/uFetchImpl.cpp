@@ -463,7 +463,7 @@ private:
 //      xlat.theTL = theCPUState[anIndex].theTL;
       xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
       xlat.theType = Flexus::Qemu::Translation::eFetch;
-      cpu(anIndex)->translate(xlat);
+      cpu(anIndex)->translateInstruction(vprefetch); // msutherl
       if (! xlat.thePaddr ) {
         //Unable to translate for prefetch
         theLastPrefetchVTagSet[anIndex] = boost::none;
@@ -503,7 +503,7 @@ private:
 //      xlat.theTL = theCPUState[anIndex].theTL;
       xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
       xlat.theType = Flexus::Qemu::Translation::eFetch;
-      cpu(anIndex)->translate(xlat);
+      cpu(anIndex)->translateInstruction(vaddr); // Msutherl
       paddr = xlat.thePaddr;
       if (paddr == 0) {
           assert(false);
@@ -873,7 +873,7 @@ private:
                                       , op_code
                                       , fetch_addr.theBPState
                                       , theFetchReplyTransactionTracker[anIndex]
-                                                   )
+                                      )
                                     );
         if (from_icache && theLastMiss[anIndex] && theLastPhysical == theLastMiss[anIndex]->first) {
           bundle->theFillLevels.push_back(theLastMiss[anIndex]->second);
@@ -917,14 +917,16 @@ private:
 //    xlat.theTL = theCPUState[anIndex].theTL;
     xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
     xlat.theType = Flexus::Qemu::Translation::eFetch;
-//    xlat.theException = 0; // just for now
+    xlat.theException = 0; // just for now
 
-    op_code = cpu(anIndex)->fetchInstruction(xlat);
-    if (true /*xlat.theException == 0*/) {
-        FETCH_DBG(anAddress << " op: " << "  end: " << __builtin_bswap32 ((uint32_t)op_code) << "  dec:" << op_code << "  hex:" << std::hex << op_code << std::dec );
-        FETCH_DBG("This is from Qemu: " << cpu(anIndex)->disassemble(anAddress) );
+    //DBG_(Tmp, (<<"FETCH UNIT: Starting Opcode Translation"));
+    op_code = cpu(anIndex)->fetchInstruction_QemuImpl(anAddress);
+    //DBG_(Tmp, (<<"FETCH UNIT: Finished Opcode Translation"));
 
-        return op_code;
+    if (xlat.theException == 0) {
+      //DBG_(Tmp, (<<"FETCH UNIT: Not an exception"));
+      DBG_(Tmp, Comp(*this) ( <<"\e[1;34m" << "FETCH UNIT: " << anAddress << " op: " << std::hex << std::setw(8) << op_code << std::dec<< "\e[0m" ) );//NOOSHIN
+      return op_code;
     } else {
 //      FETCH_DBG("Hit an exception");
 //      FETCH_DBG("No translation for " << anAddress << " TL: " << std::hex << theCPUState[anIndex].theTL <<

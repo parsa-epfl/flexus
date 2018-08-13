@@ -49,6 +49,10 @@
 COMPONENT_PARAMETERS(
   PARAMETER( Cores, int, "Number of cores", "cores", 1 )
   PARAMETER( CacheLevel, Flexus::SharedTypes::tFillLevel, "CacheLevel", "level", Flexus::SharedTypes::eUnknown )
+  PARAMETER( ArrayConfiguration, std::string, "Configuration of cache array (STD:sets=1024:assoc=16:repl=LRU", "array_config", "STD:sets=1024:assoc=16:repl=LRU" )
+  PARAMETER( TextFlexpoints, bool, "Store flexpoints as text files (compatible with old FastCache component)", "text_flexpoints", false )
+  PARAMETER( GZipFlexpoints, bool, "Compress flexpoints with gzip", "gzip_flexpoints", true )
+  /*
   PARAMETER( BlockSize, int, "Block size", "bsize", 8 ) // 64b = 8B entries
   PARAMETER( QueueSizes, uint32_t, "Size of input and output queues", "queue_size", 8 )
   PARAMETER( PreQueueSizes, uint32_t, "Size of input arbitration queues", "pre_queue_size", 4 )
@@ -63,14 +67,10 @@ COMPONENT_PARAMETERS(
   PARAMETER( FastEvictClean, bool, "Send clean evicts without reserving data bus", "fast_evict_clean", false )
   PARAMETER( TraceAddress, uint32_t, "Address to initiate tracing", "trace_address", 0 )
   PARAMETER( CacheType, std::string, "Type of cache (InclusiveMOESI)", "cache_type", "InclusiveMOESI" )
-  PARAMETER( ArrayConfiguration, std::string, "Configuration of cache array (STD:sets=1024:assoc=16:repl=LRU", "array_config", "STD:sets=1024:assoc=16:repl=LRU" )
   PARAMETER( UseReplyChannel, bool, "Separate Reply and Snoop channels on BackSide", "use_reply_channel", false )
-  PARAMETER( TextFlexpoints, bool, "Store flexpoints as text files (compatible with old FastCache component)", "text_flexpoints", false )
-  PARAMETER( GZipFlexpoints, bool, "Compress flexpoints with gzip", "gzip_flexpoints", true )
-
   PARAMETER( BusTime_NoData, uint32_t, "Bus transfer time - no data", "bustime_nodata", 1 )
   PARAMETER( BusTime_Data, uint32_t, "Bus transfer time - data", "bustime_data", 2 )
-  // msutherl - FIXME remove notion of a bus
+  */
 );
 
 COMPONENT_INTERFACE(

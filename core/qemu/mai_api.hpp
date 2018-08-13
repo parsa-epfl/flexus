@@ -240,8 +240,8 @@ struct Translation {
   bool isTranslating();
 };
 
-class arm_tte_t {
-};
+////////// Msutherl
+// - from here down
 
 using namespace MMU;
 class armProcessorImpl :  public BaseProcessorImpl {
@@ -261,9 +261,10 @@ public:
     , theInterruptsConnected(false) {
     theARMAPI = 0;
   }
+
   API::armInterface_t * arm() const {
     if (theARMAPI == 0) {
-      assert(false);
+      assert(false); //FIXME
     }
     return theARMAPI;
   }
@@ -280,13 +281,13 @@ public:
     // Msutherl - june'18
     // - added smaller MMU interface (resolving walks + memory accesses resolved in Flexus components I/D TLBs)
 
-    arm_tte_t getNextTTAddress( mmu_t* mmu, PhysicalMemoryAddress pa ); // FIXME: is the pte in vmem or pmem?
+  MMU::TTEDescriptor getNextTTDescriptor( mmu_t* mmu, PhysicalMemoryAddress pa );
 
   bits readVAddr(VirtualMemoryAddress anAddress, int aSize) const;
   bits readVAddrXendian(Translation & aTranslation, int aSize) const;
 
 
-
+  //QemuImpl MMU API
   PhysicalMemoryAddress translateInstruction_QemuImpl(VirtualMemoryAddress anAddress) const;
   long fetchInstruction_QemuImpl(VirtualMemoryAddress const & anAddress);
 
@@ -294,7 +295,7 @@ public:
   unsigned long long readVAddrXendian_QemuImpl(VirtualMemoryAddress anAddress, int anASI, int aSize) const;
   void translate_QemuImpl(  API::arm_memory_transaction_t & xact, VirtualMemoryAddress anAddress, int anASI ) const;
 
-  int advance();
+  int advance(bool anAcceptInterrupt);
   int getPendingException() const;
   int getPendingInterrupt() const;
 

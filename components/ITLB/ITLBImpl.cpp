@@ -120,7 +120,35 @@ public:
   void initialize() {
     theBusTxCountdown = 0;
     theBusDirection = kIdle;
-    theController.reset();
+
+    //theController.reset();/*new CacheController(statName(),
+    new CacheController(statName(),
+            cfg.Cores,
+            cfg.ArrayConfiguration,
+            64,//cfg.BlockSize,
+            1,//cfg.Banks,
+            1,//cfg.Ports,
+            1,//cfg.TagLatency,
+            1,//cfg.TagIssueLatency,
+            1,//cfg.DataLatency,
+            1,//cfg.DataIssueLatency,
+            (int)flexusIndex(),
+            cfg.CacheLevel,
+            0,//cfg.QueueSizes,
+            0,//cfg.PreQueueSizes,
+            0,//cfg.MAFSize,
+            0,//cfg.MAFTargetsPerRequest,
+            1,//cfg.EvictBufferSize,
+            1,//cfg.SnoopBufferSize,
+            false,//cfg.ProbeFetchMiss,
+            false,//cfg.EvictClean,
+            false,//cfg.EvictWritableHasData,
+            "InclusiveMESI",//cfg.CacheType,
+            0,//cfg.TraceAddress,
+            false, // cfg.AllowOffChipStreamFetch
+            false,//cfg.EvictOnSnoop,
+            false//cfg.UseReplyChannel
+            );
   }
 
   void finalize() {}
@@ -217,7 +245,8 @@ public:
       return 0;
     }
     DBG_Assert(trans[MemoryMessageTag] != nullptr);
-    return ( (trans[MemoryMessageTag]->reqSize() > 0) ? cfg.BusTime_Data : cfg.BusTime_NoData) - 1;
+    return 1; // FIXME: instantaneous transfer
+    //return ( (trans[MemoryMessageTag]->reqSize() > 0) ? cfg.BusTime_Data : cfg.BusTime_NoData) - 1;
   }
 
   void busCycle() {
@@ -288,7 +317,8 @@ public:
     //regardless of bus state.  We use this hack with SimplePrefetchController
     //because it uses clean evict messages to maintain duplicate tags, but the
     //CleanEvicts would not be propagated over the bus in the real system
-    if (cfg.FastEvictClean) {
+    //if (cfg.FastEvictClean) {
+    if ( false ) { // FIXME: FastEvictClaen for TLB equivalent?
       if (theBusDirection == kIdle) {
         if ( !theController->BackSideOut_Snoop.empty() && FLEXUS_CHANNEL(BackSideOut_Snoop).available()) {
           MemoryMessage::MemoryMessageType type = theController->BackSideOut_Snoop.peek()[MemoryMessageTag]->type();
