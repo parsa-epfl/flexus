@@ -197,7 +197,7 @@ arminst disas_bitfield(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t a
 {
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
-    unsigned int sf, n, opc, ri, si, rn, rd, bitsize, pos, len;
+    uint32_t sf, n, opc, ri, si, rn, rd, bitsize, pos, len;
 
     sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
     opc = extract32(aFetchedOpcode.theOpcode, 29, 2);
@@ -211,7 +211,7 @@ arminst disas_bitfield(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t a
     if (!sf && n != 1){
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo); // ReservedValue()
     }
-    if (!sf && n != 0 || ri != 0 || si != 0){
+    if (!sf && n != 0 || ri != 0 || si != 0){ // FIXME
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo); // ReservedValue()
     }
 
@@ -227,7 +227,7 @@ arminst disas_bitfield(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t a
     default:
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
-
+    return arminst(inst); // FIXME: msutherl, is this correct?
 }
 
 /* Extract
@@ -277,10 +277,9 @@ arminst disas_extract(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aS
  */
 arminst disas_add_sub_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    SemanticInstruction* inst(new SemanticInstruction(aFetchedOpcode.thePC,aFetchedOpcode.theOpcode,
-                                                      aFetchedOpcode.theBPState, aCPU,aSequenceNo));
-    int rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
+    SemanticInstruction* inst(new SemanticInstruction(aFetchedOpcode.thePC,aFetchedOpcode.theOpcode,aFetchedOpcode.theBPState, aCPU,aSequenceNo));
+    uint32_t rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
+    uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
     uint64_t imm = extract32(aFetchedOpcode.theOpcode, 10, 12);
     int shift = extract32(aFetchedOpcode.theOpcode, 22, 2);
     bool S = extract32(aFetchedOpcode.theOpcode, 29, 1);
