@@ -915,7 +915,7 @@ private:
     xlat.theException = 0; // just for now
 
     //DBG_(Tmp, (<<"FETCH UNIT: Starting Opcode Translation"));
-    op_code = cpu(anIndex)->fetchInstruction(xlat, false /* do not take traps - the OOO core will do it */ );
+    op_code = cpu(anIndex)->fetchInstruction_QemuImpl(anAddress);
     //DBG_(Tmp, (<<"FETCH UNIT: Finished Opcode Translation"));
 
     if (xlat.theException == 0) {
