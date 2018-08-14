@@ -63,8 +63,8 @@ COMPONENT_INTERFACE(
   PORT(PushInput, MemoryTransport, BackSideIn_Request)
   PORT(PushInput, MemoryTransport, BackSideIn_Reply)
 
-  PORT( PushInput, pFetchBundle, AddressesToTranslate )
-  PORT( PushOutput, TranslationReturnedFromTLB , TranslationsToReturn )
+  PORT( PushInput, TranslationVecWrapper, AddressesToTranslate )
+  PORT( PushOutput, TranslationVecWrapper, TranslationsToReturn )
 
   DRIVE(CacheDrive)
 );

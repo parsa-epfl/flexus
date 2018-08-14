@@ -45,6 +45,7 @@
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 #include <components/CommonQEMU/Slices/FillLevel.hpp>
+#include <core/qemu/mai_api.hpp>
 
 namespace Flexus {
 namespace SharedTypes {
@@ -132,8 +133,8 @@ struct FetchedOpcode {
   { }
 };
 
-struct TranslationReturnedFromTLB: public boost::counted_base {
-    std::vector< std::pair<VirtualMemoryAddress,PhysicalMemoryAddress> > translatedAddresses;
+struct TranslationVecWrapper : public boost::counted_base {
+    std::vector< Flexus::Qemu::Translation > internalContainer; // from mai_api
 };
 
 struct FetchBundle : public boost::counted_base {
@@ -142,6 +143,7 @@ struct FetchBundle : public boost::counted_base {
 };
 
 typedef boost::intrusive_ptr<FetchBundle> pFetchBundle;
+typedef boost::intrusive_ptr<TranslationVecWrapper> TranslatedAddresses;
 
 struct CPUState {
   int32_t theTL;

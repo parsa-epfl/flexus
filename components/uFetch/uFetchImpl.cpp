@@ -373,7 +373,7 @@ public:
 
   // Msutherl: TLB in-out functions
   FLEXUS_PORT_ALWAYS_AVAILABLE(TLBReturnIn);
-  void push( interface::TLBReturnIn const &, TranslationReturnedFromTLB& aTranslation ) {
+  void push( interface::TLBReturnIn const &, TranslationVecWrapper& retdTranslations ) {
       // TODO
   }
 
@@ -925,9 +925,9 @@ private:
     xlat.theException = 0; // just for now
 
     // TODO: Create bundle of stuff to send to TLB Component
+    
 
-    op_code = cpu(anIndex)->fetchInstruction_QemuImpl( anAddress ); // FIXME: Msutherl - magic QEMU translation and read phys mem
-
+    op_code = cpu(anIndex)->fetchInstruction_QemuImpl( anAddress ); // magic QEMU
     if (xlat.theException == 0) {
       //DBG_(Tmp, (<<"FETCH UNIT: Not an exception"));
       DBG_(Tmp, Comp(*this) ( <<"\e[1;34m" << "FETCH UNIT: " << anAddress << " op: " << std::hex << std::setw(8) << op_code << std::dec<< "\e[0m" ) );//NOOSHIN
