@@ -970,15 +970,6 @@ FLEXUS_PORT_ARRAY_WIDTH( uFetch, Stalled )   {
   return (cfg.Threads);
 }
 
-/* Msutherl
-FLEXUS_PORT_ARRAY_WIDTH( uFetch, TLBLookupOut ) {
-    return (cfg.Threads);
-}
-FLEXUS_PORT_ARRAY_WIDTH( uFetch, TLBReturnIn) {
-    return (cfg.Threads);
-}
-*/
-
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
 #define FLEXUS_END_COMPONENT uFetch
 
