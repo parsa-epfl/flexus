@@ -135,6 +135,19 @@ struct FetchedOpcode {
 
 struct TranslationVecWrapper : public boost::counted_base {
     std::vector< Flexus::Qemu::Translation > internalContainer; // from mai_api
+
+    void addNewTranslation(Flexus::Qemu::Translation aTr) {
+        internalContainer.push_back(aTr);
+    }
+
+    void updateExistingTranslation(VirtualMemoryAddress aVAddr, PhysicalMemoryAddress translatedAddress) {
+        for( auto& translation : internalContainer ) {
+            if( translation.theVaddr == aVAddr ) {
+                translation.thePaddr = translatedAddress;
+                return;
+            }
+        }
+    }
 };
 
 struct FetchBundle : public boost::counted_base {

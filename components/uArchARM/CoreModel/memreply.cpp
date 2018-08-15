@@ -577,7 +577,7 @@ void CoreImpl::completeLSQ( memq_t::index<by_insn>::type::iterator lsq_entry, Me
 
       eraseLSQ( lsq_entry->theInstruction );
     } else {
-      DBG_Assert( ! lsq_entry->theQueue == kSSB );
+      DBG_Assert( !(lsq_entry->theQueue == kSSB) );
       DBG_Assert( lsq_entry->theSideEffect, ( << *lsq_entry) );
     }
   }

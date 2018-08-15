@@ -144,6 +144,8 @@ public:
       }
 
       DBG_( Crit, ( << theName << " connected to " << (static_cast<Flexus::Qemu::API::conf_object_t *>(theCPU))->name ));
+    DBG_( Tmp, ( << "CORE:  Initializing MMU ")  );
+    theCPU->initializeMMU();
 
       theAvailableROB = theCore->availableROB();
 

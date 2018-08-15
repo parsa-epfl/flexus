@@ -7,9 +7,7 @@
 #include <core/qemu/api_wrappers.hpp>
 
 #include "mai_api.hpp"
-
 #include <core/qemu/ARMmmu.hpp>
-
 #include <stdio.h>
 
 #define DBG_DefineCategories MMUCat
@@ -41,18 +39,15 @@ unsigned long long armProcessorImpl::readVAddr(VirtualMemoryAddress anAddress, i
 }
 
 PhysicalMemoryAddress armProcessorImpl::translateInstruction_QemuImpl( VirtualMemoryAddress anAddress) const {
-  try {
-    API::logical_address_t addr(anAddress);
-    API::physical_address_t phy_addr = API::QEMU_logical_to_physical(*this, API::QEMU_DI_Instruction, addr);
-    //checkException();
-
-    return PhysicalMemoryAddress(phy_addr);
-  } catch (MemoryException & anError ) {
-
+    try {
+        API::logical_address_t addr(anAddress);
+        API::physical_address_t phy_addr = API::QEMU_logical_to_physical(*this, API::QEMU_DI_Instruction, addr);
+        //checkException();
+        return PhysicalMemoryAddress(phy_addr);
+    } catch (MemoryException & anError ) {
         DBG_(Tmp, (<<"ARM MMU: Got an Error: " << anError.what()));
-
-    return PhysicalMemoryAddress(0);
-  }
+        return PhysicalMemoryAddress(0);
+    }
 }
 
 long armProcessorImpl::fetchInstruction_QemuImpl(VirtualMemoryAddress const & anAddress) {
@@ -311,6 +306,22 @@ void
 fm_print_mmu_regs(mmu_t * mmu) {
   mmu_regs_t* mmu_regs = &(mmu->mmu_regs);
   // FIXME: print ARM control registers
+}
+
+void
+mmu_t::initRegsFromQEMUObject(mmu_regs_t* qemuRegs)
+{
+    mmu_regs.SCTLR_EL1 = qemuRegs->SCTLR_EL1;
+    mmu_regs.SCTLR_EL2 = qemuRegs->SCTLR_EL2;
+    mmu_regs.SCTLR_EL3 = qemuRegs->SCTLR_EL3;
+    mmu_regs.TCR_EL1 = qemuRegs->TCR_EL1;
+    mmu_regs.TCR_EL2 = qemuRegs->TCR_EL2;
+    mmu_regs.TCR_EL3 = qemuRegs->TCR_EL2;
+    mmu_regs.TTBR0_EL1 = qemuRegs->TTBR0_EL1;
+    mmu_regs.TTBR1_EL1 = qemuRegs->TTBR1_EL1;
+    mmu_regs.TTBR0_EL2 = qemuRegs->TTBR0_EL2;
+    mmu_regs.TTBR1_EL2 = qemuRegs->TTBR1_EL2;
+    mmu_regs.TTBR0_EL3 = qemuRegs->TTBR0_EL3;
 }
 
 //ALEX - FIXME: Pair the Flexus mmu with the QEMU mmu

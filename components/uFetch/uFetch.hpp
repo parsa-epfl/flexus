@@ -77,8 +77,8 @@ COMPONENT_INTERFACE(
   PORT( PushOutput, MemoryTransport, FetchSnoopOut )
   PORT( PushOutput, MemoryTransport, FetchReplyOut )
 
-  PORT( PushOutput, TranslationVecWrapper, TLBLookupOut )
-  PORT( PushInput, TranslationVecWrapper, TLBReturnIn )
+  PORT( PushOutput, TranslatedAddresses , TLBLookupOut )
+  PORT( PushInput, TranslatedAddresses , TLBReturnIn )
 
   PORT( PushOutput, bool, InstructionFetchSeen ) // Notify PowerTracker when an instruction is fetched.
   PORT( PushOutput, bool, ClockTickSeen )        // Notify PowerTracker when the clock in this core ticks. This goes here just because uFetch is driven first and it's convenient.

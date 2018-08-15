@@ -248,19 +248,24 @@ class armProcessorImpl :  public BaseProcessorImpl {
 private:
   static const int kReg_npc = 102;
   mutable API::armInterface_t * theARMAPI;
+  std::shared_ptr<mmu_t> theMMU;
+  mutable API::mmu_interface_t* theMMUAPI;
   int thePendingInterrupt;
   bool theInterruptsConnected;
+  bool mmuInitialized;
 
   void initialize();
-  void handleInterrupt( long long aVector);
+  void handleInterrupt( long long aVector );
 
 public:
   explicit armProcessorImpl(API::conf_object_t * aProcessor)
     : BaseProcessorImpl(aProcessor)
+    , theARMAPI(nullptr)
+    , theMMU(nullptr)
+    , theMMUAPI(nullptr)
     , thePendingInterrupt( API::QEMU_PE_No_Exception )
-    , theInterruptsConnected(false) {
-    theARMAPI = 0;
-  }
+    , theInterruptsConnected(false)
+    , mmuInitialized(false) { }
 
   API::armInterface_t * arm() const {
     if (theARMAPI == 0) {
@@ -268,6 +273,25 @@ public:
     }
     return theARMAPI;
   }
+
+  // Msutherl: Added functions back for MMU interactions.
+  void initializeMMU();
+  std::shared_ptr<MMU::mmu_t> mmu();
+
+//FIXME: The following functions for SPARC should be implemented in QEMU
+  unsigned long long readX(int aRegister) const {
+    return API::QEMU_read_register_by_type(*this, aRegister, 5);
+  }
+
+  void writeF(int aRegister, unsigned long long aValue) const {
+    assert(false);
+    //sparc()->write_fp_register_x(*this, aRegister, aValue);
+  }
+
+  unsigned long long readG(int aRegister) const {
+    return API::QEMU_read_register_by_type(*this, aRegister, 0);
+  }
+
   unsigned long long interruptRead(VirtualMemoryAddress anAddress, int anASI) const;
 
   long long getSystemTickInterval() const {

@@ -51,6 +51,8 @@ QEMU_INSERT_CALLBACK_PROC QEMU_insert_callback= nullptr;
 QEMU_DELETE_CALLBACK_PROC QEMU_delete_callback= nullptr;
 QEMU_DISASSEMBLE_PROC QEMU_disassemble = nullptr;
 QEMU_DUMP_STATE_PROC QEMU_dump_state = nullptr;
+// Get MMU register state on initialization
+QEMU_GET_MMU_STATE_PROC QEMU_get_mmu_state= nullptr;
 
 void QFLEX_API_set_Interface_Hooks( const QFLEX_API_Interface_Hooks_t* hooks ) {
   QEMU_get_phys_memory = hooks->QEMU_get_phys_memory;
@@ -96,6 +98,8 @@ void QFLEX_API_set_Interface_Hooks( const QFLEX_API_Interface_Hooks_t* hooks ) {
   QEMU_cpu_execute = hooks->QEMU_cpu_execute;///NOOSHIN
   QEMU_disassemble = hooks->QEMU_disassemble;
   QEMU_dump_state = hooks->QEMU_dump_state;
+  // Msutherl: MMU hooks
+  QEMU_get_mmu_state= hooks->QEMU_get_mmu_state;
 }
 
 } // namespace API

@@ -4,7 +4,6 @@
 
 namespace Flexus {
 namespace Qemu {
-
 namespace MMU {
 
 typedef unsigned long long address_t;
@@ -109,15 +108,15 @@ class TTEDescriptor
 typedef unsigned long long tte_tag;
 typedef unsigned long long tte_data;
 
-typedef struct mmu {
-
-    /* Msutherl - jun'18
-     * - Adds system registers for controlling table walk
-     * - TLB tags/data are refactored into Flexus state 
-     */
-    mmu_regs_t mmu_regs;
-
-} mmu_t;
+class mmu_t {
+    public:
+        /* Msutherl - jun'18
+         * - Adds system registers for controlling table walk
+         * - TLB tags/data are refactored into Flexus state 
+         */
+        mmu_regs_t mmu_regs;
+        void initRegsFromQEMUObject(mmu_regs_t* qemuRegs);
+};
 
 typedef enum {
   CLASS_ASI_PRIMARY        = 0,

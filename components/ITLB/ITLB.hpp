@@ -63,8 +63,8 @@ COMPONENT_INTERFACE(
   PORT(PushInput, MemoryTransport, BackSideIn_Request)
   PORT(PushInput, MemoryTransport, BackSideIn_Reply)
 
-  PORT( PushInput, TranslationVecWrapper, AddressesToTranslate )
-  PORT( PushOutput, TranslationVecWrapper, TranslationsToReturn )
+  PORT( PushInput, TranslatedAddresses, AddressesToTranslate )
+  PORT( PushOutput, TranslatedAddresses, TranslationsToReturn )
 
   DRIVE(CacheDrive)
 );

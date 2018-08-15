@@ -48,6 +48,8 @@
 
 #include "components/TLBControllers/TLBController.hpp"
 
+#include <core/qemu/mai_api.hpp>
+
 #define DBG_DefineCategories ITLB
 #include DBG_Control()
 #define DBG_DefineCategories TLBMissTracking
@@ -443,7 +445,7 @@ public:
   // Msutherl
   FLEXUS_PORT_ALWAYS_AVAILABLE(AddressesToTranslate); // FIXME: will change w. non-atomic mem-reads
   void push( interface::AddressesToTranslate const &,
-             TranslationVecWrapper& translateUs ) {
+             TranslatedAddresses& translateUs ) {
       // TODO
   }
 

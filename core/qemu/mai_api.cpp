@@ -32,6 +32,8 @@ using namespace Flexus::Core;
 
 #include <core/configuration.hpp>
 
+#include <core/MakeUniqueWrapper.hpp>
+
 namespace Flexus {
 namespace Qemu {
 
@@ -438,7 +440,30 @@ int ProcessorMapper::numProcessors() {
   return (int)(theMapper->theProcMap.size());
 }
 
-} //end Namespace Qemu
+
+// Msutherl: MMU functionality
+void armProcessorImpl::initializeMMU() {
+  if (!mmuInitialized) {
+    mmuInitialized = true;
+    // get QEMU MMU api
+    this->mmu();
+    // TODO: something else here?
+  }
+}
+
+std::shared_ptr<MMU::mmu_t>
+armProcessorImpl::mmu() {
+    if (!mmuInitialized) {
+        //Obtain the MMU object
+        API::mmu_api_obj_t* mmu_obj = API::QEMU_get_mmu_state(theQEMUProcessorNumber);
+        void* rawObjectFromQEMU = mmu_obj->object;
+        theMMU = std::make_shared<mmu_t>();
+        theMMU->initRegsFromQEMUObject( reinterpret_cast<mmu_regs_t*>(rawObjectFromQEMU) );
+    }
+    return theMMU;
+}
+
+} //end Namespace Qemu 
 } //end namespace Flexus
 
 #endif // IS_V9

@@ -271,6 +271,9 @@ class FLEXUS_COMPONENT(uFetch) {
 
   std::vector<CPUState> theCPUState;
 
+  // Magic for checking TLB walk.
+  TranslatedAddresses TranslationsFromTLB;
+
 private:
   //I-Cache manipulation functions
   //=================================================================
@@ -373,8 +376,8 @@ public:
 
   // Msutherl: TLB in-out functions
   FLEXUS_PORT_ALWAYS_AVAILABLE(TLBReturnIn);
-  void push( interface::TLBReturnIn const &, TranslationVecWrapper& retdTranslations ) {
-      // TODO
+  void push( interface::TLBReturnIn const &, TranslatedAddresses& retdTranslations ) {
+      TranslationsFromTLB = retdTranslations;
   }
 
   //FetchAddressIn
@@ -924,8 +927,27 @@ private:
     xlat.theType = Flexus::Qemu::Translation::eFetch;
     xlat.theException = 0; // just for now
 
-    // TODO: Create bundle of stuff to send to TLB Component
-    
+    TranslatedAddresses SendUsToTLB(new TranslationVecWrapper);
+    SendUsToTLB->addNewTranslation( xlat );
+    DBG_Assert( FLEXUS_CHANNEL(TLBLookupOut).available() );
+    FLEXUS_CHANNEL(TLBLookupOut) << SendUsToTLB;
+    // push-push should always mean TranslationsFromTLB is filled
+
+    PhysicalMemoryAddress magicTranslation = cpu(anIndex)->translateInstruction_QemuImpl(anAddress);
+    Flexus::Qemu::Translation tr = TranslationsFromTLB->internalContainer.front();
+    DBG_Assert( tr.theVaddr == anAddress, ( << "In FetchFromQEMU, TranslationsFromTLB->vaddr = " << tr.theVaddr << ", fetchVaddr = " << anAddress ));
+    if( tr.thePaddr == magicTranslation ) {
+        DBG_(Tmp, ( << "Magic QEMU translation == MMU Translation. Vaddr = "
+                    << std::hex << anAddress 
+                    << std::dec << ", Paddr = " 
+                    << std::hex << tr.thePaddr << std::dec));
+    } else {
+        DBG_Assert(false, ( << "ERROR: Magic QEMU translation NOT EQUAL TO MMU Translation. Vaddr = " << std::hex << anAddress 
+                    << std::dec << ", PADDR_MMU = " 
+                    << std::hex << tr.thePaddr 
+                    << std::dec << ", PADDR_QEMU = "
+                    << std::hex << magicTranslation << std::dec));
+    }
 
     op_code = cpu(anIndex)->fetchInstruction_QemuImpl( anAddress ); // magic QEMU
     if (xlat.theException == 0) {
