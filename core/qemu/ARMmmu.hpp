@@ -5,46 +5,11 @@
 namespace Flexus {
 namespace Qemu {
 namespace MMU {
+#include "mmuRegisters.h"
+
 
 typedef unsigned long long address_t;
-typedef unsigned long long mmu_reg_t;
 typedef unsigned char asi_t;
-
-//    The MMU has the following features:
-
-//    48-entry fully-associative L1 instruction TLB.
-//    32-entry fully-associative L1 data TLB for data load and store pipelines.
-
-//    4-way set-associative 1024-entry L2 TLB in each processor.
-//    Intermediate table walk caches.
-//    The TLB entries contain a global indicator or an Address Space Identifier (ASID) to permit context switches without TLB flushes.
-//    The TLB entries contain a Virtual Machine Identifier (VMID) to permit virtual machine switches without TLB flushes.
-
-//    Each TLB entry typically contains not just physical
-//    and Virtual Addresses, but also attributes such as memory type,
-//    cache policies, access permissions, the Address Space ID (ASID),
-//    and the Virtual Machine ID (VMID).
-
-typedef struct mmu_regs {
-    /* Msutherl - june'18
-     * Defined all registers, only coded MMU for stage 1 tablewalk (no monitor or hypervisor)
-     */
-    /* type      -      ARM_NAME            - funct. */
-    mmu_reg_t           SCTLR_EL1;          // enables/disables Secure EL1/EL0 translation
-    mmu_reg_t           SCTLR_EL2;          // enables/disables Non-Secure EL2 Stage 1, Non-Secure EL1/EL0 Stage 2
-    mmu_reg_t           SCTLR_EL3;          // enables/disables Secure EL3 Stage 1
-    // all SCTLRs also include cacheability bits for PTEs
-    
-    mmu_reg_t           TCR_EL1;            // controls Secure/NonSecure EL1/EL0
-    mmu_reg_t           TCR_EL2;            // controls Secure EL2Stg1 and Non-Secure EL1/EL0 Stage 2
-    mmu_reg_t           TCR_EL3;            // controls Secure EL3 Stage 1
-
-    mmu_reg_t           TTBR0_EL1;          // controls lower address range for EL1 (default 0x0 - 0xffff ffff ffff), configurable through TCR_ELx.T0SZ
-    mmu_reg_t           TTBR1_EL1;          // upper address range for EL1, size also configurable through TCR_ELx.T1SZ
-    mmu_reg_t           TTBR0_EL3;          // controls single address range for EL3
-    mmu_reg_t           TTBR0_EL2;          // controls lower address range for EL2 (default 0x0 - 0xffff ffff ffff), config. as above
-    mmu_reg_t           TTBR1_EL2;          // upper address range for EL2
-} mmu_regs_t;
 
 /* Msutherl - june'18
  * - added definitions for granules and varying sizes

@@ -446,7 +446,7 @@ public:
   FLEXUS_PORT_ALWAYS_AVAILABLE(AddressesToTranslate); // FIXME: will change w. non-atomic mem-reads
   void push( interface::AddressesToTranslate const &,
              TranslatedAddresses& translateUs ) {
-      // TODO
+      FLEXUS_CHANNEL(TranslationsToReturn) << translateUs;
   }
 
 };

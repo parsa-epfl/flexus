@@ -444,23 +444,22 @@ int ProcessorMapper::numProcessors() {
 // Msutherl: MMU functionality
 void armProcessorImpl::initializeMMU() {
   if (!mmuInitialized) {
-    mmuInitialized = true;
-    // get QEMU MMU api
-    this->mmu();
-    // TODO: something else here?
+      // get QEMU MMU api
+      DBG_(Iface, ( << "MMU starting to initialize from QEMU state."));
+      API::mmu_api_obj_t* mmu_obj = API::QEMU_get_mmu_state(theQEMUProcessorNumber);
+      void* rawObjectFromQEMU = mmu_obj->object;
+      theMMU = std::make_shared<mmu_t>();
+      theMMU->initRegsFromQEMUObject( reinterpret_cast<mmu_regs_t*>(rawObjectFromQEMU) );
+      mmuInitialized = true;
   }
 }
 
 std::shared_ptr<MMU::mmu_t>
-armProcessorImpl::mmu() {
+armProcessorImpl::getMMUPointer() {
     if (!mmuInitialized) {
-        //Obtain the MMU object
-        API::mmu_api_obj_t* mmu_obj = API::QEMU_get_mmu_state(theQEMUProcessorNumber);
-        void* rawObjectFromQEMU = mmu_obj->object;
-        theMMU = std::make_shared<mmu_t>();
-        theMMU->initRegsFromQEMUObject( reinterpret_cast<mmu_regs_t*>(rawObjectFromQEMU) );
+        return std::shared_ptr<MMU::mmu_t>(theMMU);
     }
-    return theMMU;
+    return nullptr;
 }
 
 } //end Namespace Qemu 

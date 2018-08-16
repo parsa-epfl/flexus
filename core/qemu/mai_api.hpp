@@ -276,7 +276,7 @@ public:
 
   // Msutherl: Added functions back for MMU interactions.
   void initializeMMU();
-  std::shared_ptr<MMU::mmu_t> mmu();
+  std::shared_ptr<MMU::mmu_t> getMMUPointer();
 
 //FIXME: The following functions for SPARC should be implemented in QEMU
   unsigned long long readX(int aRegister) const {

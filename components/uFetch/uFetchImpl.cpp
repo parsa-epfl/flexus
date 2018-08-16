@@ -378,6 +378,7 @@ public:
   FLEXUS_PORT_ALWAYS_AVAILABLE(TLBReturnIn);
   void push( interface::TLBReturnIn const &, TranslatedAddresses& retdTranslations ) {
       TranslationsFromTLB = retdTranslations;
+      DBG_(Iface,( << "Set TranslationsFromTLB component...."));
   }
 
   //FetchAddressIn
@@ -933,6 +934,7 @@ private:
     FLEXUS_CHANNEL(TLBLookupOut) << SendUsToTLB;
     // push-push should always mean TranslationsFromTLB is filled
 
+    DBG_(Iface,( << "Starting magic translation after sending to TLB...."));
     PhysicalMemoryAddress magicTranslation = cpu(anIndex)->translateInstruction_QemuImpl(anAddress);
     Flexus::Qemu::Translation tr = TranslationsFromTLB->internalContainer.front();
     DBG_Assert( tr.theVaddr == anAddress, ( << "In FetchFromQEMU, TranslationsFromTLB->vaddr = " << tr.theVaddr << ", fetchVaddr = " << anAddress ));
