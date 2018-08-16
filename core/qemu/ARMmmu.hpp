@@ -172,7 +172,7 @@ address_t mmu_generate_tsb_ptr(address_t va,
 
 void mmu_access(mmu_t * mmu, mmu_access_t * access);
 
-void fm_print_mmu_regs(mmu_t * mmu);
+void fm_print_mmu_regs(mmu_regs_t* mmu);
 int fm_compare_regs(mmu_regs_t* a, mmu_regs_t * b, const char * who);
 int fm_compare_mmus(mmu_t * a, mmu_t * b);
 

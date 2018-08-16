@@ -303,9 +303,19 @@ mmu_access(mmu_t * mmu, mmu_access_t * access) {
 #define FM_GET_BITS(val, msb, lsb) ((val >> lsb) & ((1ULL<<(msb-lsb+1)) - 1))
 
 void
-fm_print_mmu_regs(mmu_t * mmu) {
-  mmu_regs_t* mmu_regs = &(mmu->mmu_regs);
-  // FIXME: print ARM control registers
+fm_print_mmu_regs(mmu_regs_t* r) {
+  std::cout << "SCTLR_EL1: " << std::hex << r->SCTLR_EL1 << std::dec << std::endl
+            << "SCTLR_EL2: " << std::hex << r->SCTLR_EL2 << std::dec << std::endl
+            << "SCTLR_EL3: " << std::hex << r->SCTLR_EL3 << std::dec << std::endl
+            << "TCR_EL1: " << std::hex << r->TCR_EL1 << std::dec << std::endl
+            << "TCR_EL2: " << std::hex << r->TCR_EL2 << std::dec << std::endl
+            << "TCR_EL3: " << std::hex << r->TCR_EL3 << std::dec << std::endl
+            << "TTBR0_EL1: " << std::hex << r->TTBR0_EL1 << std::dec << std::endl
+            << "TTBR1_EL1: " << std::hex << r->TTBR1_EL1 << std::dec << std::endl
+            << "TTBR0_EL2: " << std::hex << r->TTBR0_EL2 << std::dec << std::endl
+            << "TTBR1_EL2: " << std::hex << r->TTBR1_EL2 << std::dec << std::endl
+            << "TTBR0_EL3: " << std::hex << r->TTBR0_EL3 << std::dec << std::endl;
+            ;
 }
 
 void
@@ -322,6 +332,8 @@ mmu_t::initRegsFromQEMUObject(mmu_regs_t* qemuRegs)
     mmu_regs.TTBR0_EL2 = qemuRegs->TTBR0_EL2;
     mmu_regs.TTBR1_EL2 = qemuRegs->TTBR1_EL2;
     mmu_regs.TTBR0_EL3 = qemuRegs->TTBR0_EL3;
+    DBG_(Iface, ( << "Initializing mmu registers from QEMU...."));
+    fm_print_mmu_regs(&(this->mmu_regs));
 }
 
 //ALEX - FIXME: Pair the Flexus mmu with the QEMU mmu
