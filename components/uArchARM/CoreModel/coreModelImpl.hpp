@@ -850,6 +850,10 @@ public:
   void finishMiss( boost::intrusive_ptr<TransactionTracker> tracker, bool matched_mshr );
   void processTable();
 
+  // MMU and Multi-stage translation
+  // - Msutherl: Aug'18
+  //==========================================================================
+
   //Debugging
   //==========================================================================
 public:

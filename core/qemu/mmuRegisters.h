@@ -59,13 +59,14 @@ typedef struct mmu_regs {
     mmu_reg_t TTBR1[3]; // only EL1/EL2
 
     mmu_reg_t ID_AA64MMFR0_EL1; // only implemented in EL1 as far as I know.
+
     /* type      -      ARM_NAME            - funct.
      * ----DO NOT REMOVE---- PEOPLE WILL NEED TO KNOW THIS *
-    mmu_reg_t           SCTLR_EL1;          // enables/disables Secure EL1/EL0 translation
-    mmu_reg_t           SCTLR_EL2;          // enables/disables Non-Secure EL2 Stage 1, Non-Secure EL1/EL0 Stage 2
-    mmu_reg_t           SCTLR_EL3;          // enables/disables Secure EL3 Stage 1
+     mmu_reg_t           SCTLR_EL1;          // enables/disables Secure EL1/EL0 translation
+     mmu_reg_t           SCTLR_EL2;          // enables/disables Non-Secure EL2 Stage 1, Non-Secure EL1/EL0 Stage 2
+     mmu_reg_t           SCTLR_EL3;          // enables/disables Secure EL3 Stage 1
     // all SCTLRs also include cacheability bits for PTEs
-    //
+
     mmu_reg_t           TCR_EL1;            // controls Secure/NonSecure EL1/EL0
     mmu_reg_t           TCR_EL2;            // controls Secure EL2Stg1 and Non-Secure EL1/EL0 Stage 2
     mmu_reg_t           TCR_EL3;            // controls Secure EL3 Stage 1

@@ -229,7 +229,7 @@ public:
 public:
   FLEXUS_PORT_ALWAYS_AVAILABLE(DispatchIn);
   void push( interface::DispatchIn const &, boost::intrusive_ptr< AbstractInstruction > & anInstruction ) {
-    //DBG_(Tmp, (<<"Get the inst in uArchARM: "<<"  Class: "<<anInstruction->instClass()));
+    DBG_(Tmp, (<<"Get the inst in uArchARM: "));
     theMicroArch->dispatch(anInstruction);
   }
 
@@ -256,6 +256,28 @@ public:
   FLEXUS_PORT_ALWAYS_AVAILABLE( WritePermissionLost );
   void push( interface::WritePermissionLost const &, PhysicalMemoryAddress & anAddress) {
     theMicroArch->writePermissionLost(anAddress);
+  }
+
+  // Msutherl
+  FLEXUS_PORT_ALWAYS_AVAILABLE(AddressesToTranslate);
+  void push( interface::AddressesToTranslate const &,
+             TranslatedAddresses& translateUs ) {
+      /* TODO: add requests to the cache controller to actually place the TTE descr.
+       * requests into the flexus memory hierarchy.
+       * - for now, just does the translation walk
+       */
+      // commence
+      for( auto& iter : translateUs->internalContainer ) {
+          uint8_t flexusCurrentELRegime = 1; // FIXME: should return tr. regime for addr
+          if ( theMicroArch->IsTranslationEnabledAtCurrentEL( flexusCurrentELRegime ) ) {
+              VirtualMemoryAddress vaddrToTranslate = iter.theVaddr;
+          } else {
+              DBG_Assert( false, ( << "SORRY, translation is not enabled at EL " << flexusCurrentELRegime ) );
+          }
+      }
+
+      // fin
+      FLEXUS_CHANNEL(TranslationsToReturn) << translateUs;
   }
 
 public:

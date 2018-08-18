@@ -7,9 +7,15 @@ namespace Qemu {
 namespace MMU {
 #include "mmuRegisters.h"
 
+#define VADDR_WIDTH 48
 
 typedef unsigned long long address_t;
 typedef unsigned char asi_t;
+
+// Helper for shifting and extracting values from bit-ranges
+address_t extractBitsWithBounds(address_t input, unsigned upperBitBound, unsigned lowerBitBound);
+address_t extractBitsWithRange(address_t input, unsigned lowerBound, unsigned numBits);
+bool extractSingleBitAsBool(address_t input, unsigned bitNum);
 
 /* Msutherl - june'18
  * - added definitions for granules and varying sizes
@@ -22,19 +28,28 @@ class TranslationGranule
         unsigned granuleShift;
         unsigned granuleEntries;
 
-    public:
-        TranslationGranule() : KBSize(4096), logKBSize(12), granuleShift(9), granuleEntries(512) { }
-        TranslationGranule(unsigned ksize) : KBSize(ksize), logKBSize(log2(ksize)),
-            granuleShift(logKBSize-3), granuleEntries(exp2(granuleShift)) { }
-            // -3 for all ARM specs (ARMv8 ref manual, D4-2021)
-};
+        uint8_t PARange_RawValue;
+        uint8_t PAddrWidth;
+        uint8_t IAddrWidth;
 
-bool is4KSupported();
-bool is16KGranuleSupported();
-bool is64KGranuleSupported();
-/* Support or lack thereof is coded in register:
- * ID_AA64MMFR0_EL1.TGRAN4 (TGRAN16, TGRAN64) // FIXME: add to libqflexAPI?
- */
+    public:
+        TranslationGranule() : KBSize(4096), logKBSize(12), granuleShift(9), granuleEntries(512), PAddrWidth(48), IAddrWidth(48) { } // 4KB default
+        TranslationGranule(unsigned ksize) : KBSize(ksize), logKBSize(log2(ksize)),
+            granuleShift(logKBSize-3), granuleEntries(exp2(granuleShift)), PAddrWidth(48), IAddrWidth(48) { } // -3 for all ARM specs (ARMv8 ref manual, D4-2021)
+        TranslationGranule(unsigned ksize,unsigned ASize) : KBSize(ksize), logKBSize(log2(ksize)), granuleShift(logKBSize-3), granuleEntries(exp2(granuleShift)), PAddrWidth(ASize), IAddrWidth(ASize) { }
+        TranslationGranule(unsigned ksize,unsigned PASize, unsigned IASize) : KBSize(ksize), logKBSize(log2(ksize)), granuleShift(logKBSize-3), granuleEntries(exp2(granuleShift)), PAddrWidth(PASize), IAddrWidth(IASize) { }
+
+        unsigned getKBSize() const { return KBSize; }
+        unsigned getlogKBSize() const { return logKBSize; }
+        unsigned getGranuleShift() const { return granuleShift; }
+        unsigned getGranuleEntries() const { return granuleEntries; }
+        uint8_t getPARange_Raw() const { return PARange_RawValue; }
+        void setPARange_Raw(uint8_t aRawValue) { PARange_RawValue = aRawValue; }
+        uint8_t getPAddrWidth() const { return PAddrWidth; }
+        void setPAddrWidth(uint8_t aSize) { PAddrWidth = aSize; }
+        uint8_t getIAddrWidth() const { return IAddrWidth; }
+        void setIAddrWidth(uint8_t aSize) { IAddrWidth = aSize; }
+};
 
 class TTEDescriptor
 {
@@ -42,10 +57,6 @@ class TTEDescriptor
         TTEDescriptor() {} 
         TTEDescriptor(unsigned tteGranuleSize) : myGranule(tteGranuleSize) { } 
         typedef unsigned long long tte_raw_t;
-
-        // Helper for shifting and extracting values from bit-ranges
-        static address_t extractBitRange(address_t input, unsigned upperBitBound, unsigned lowerBitBound);
-        static bool extractSingleBitAsBool(address_t input, unsigned bitNum);
 
         // helper functions for reading ARM64 descriptors
         bool isValid();
@@ -80,7 +91,28 @@ class mmu_t {
          * - TLB tags/data are refactored into Flexus state 
          */
         mmu_regs_t mmu_regs;
+        bit_configs_t aarch64_bit_configs;
+        TranslationGranule TG0_Granule;
+        TranslationGranule TG1_Granule;
+
+        /* Accessors that get higher data about this MMU *
+         * e.g., is it enabled, what sizes does it implement....
+         * - ALL the references for the magic numbers come from the AARCH64 Manual,
+         *      and have page #s documented re in ARM-mmu.txt (parsa wiki).
+         * - Some of them are in mmuRegisters.h as well.
+         */
+        bool is4KGranuleSupported();
+        bool is16KGranuleSupported();
+        bool is64KGranuleSupported();
+        unsigned getGranuleSize(unsigned granuleNum);
+        unsigned getPASize();
+        unsigned getIAOffsetValue(bool isBRO);
+
+        /* Functions that are called externally from TLBs, uArch, etc.... */
         void initRegsFromQEMUObject(mmu_regs_t* qemuRegs);
+        bool IsExcLevelEnabled(uint8_t elToValidate) const ;
+        void setupAddressSpaceSizesAndGranules(void);
+
 };
 
 typedef enum {

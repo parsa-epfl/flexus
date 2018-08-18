@@ -92,6 +92,9 @@ struct microArch {
   virtual void printAssignments(std::string) = 0;
   virtual void writePermissionLost(PhysicalMemoryAddress anAddress) = 0;
 
+  // Msutherl
+  virtual bool IsTranslationEnabledAtCurrentEL(uint8_t el) = 0;
+
 };
 
 } //nuArchARM

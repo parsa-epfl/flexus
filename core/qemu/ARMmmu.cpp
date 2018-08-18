@@ -208,6 +208,30 @@ bool Translation::isXEndian() {
 
 namespace MMU {
 
+address_t 
+extractBitsWithBounds(address_t input, unsigned upperBitBound, unsigned lowerBitBound)
+{
+    address_t result = input >> lowerBitBound;
+    address_t upperMask = (1ULL << (upperBitBound-lowerBitBound+1))-1;
+    return result & upperMask;
+}
+
+address_t 
+extractBitsWithRange(address_t input, unsigned lbound, unsigned numBits)
+{
+    address_t result = input >> lbound;
+    address_t upperMask = (1ULL << numBits)-1;
+    return result & upperMask;
+}
+
+bool 
+extractSingleBitAsBool(address_t input, unsigned bitshift)
+{
+    address_t rawbit = ((input >> bitshift) & 0x1);
+    return rawbit ? true : false ;
+}
+
+
 using namespace Flexus::Qemu::API;
 
 #define U_BIT_MASK (1ULL<<43)
@@ -304,104 +328,159 @@ mmu_access(mmu_t * mmu, mmu_access_t * access) {
 
 void
 fm_print_mmu_regs(mmu_regs_t* r) {
-  std::cout << "SCTLR_EL1: " << std::hex << r->SCTLR_EL1 << std::dec << std::endl
-            << "SCTLR_EL2: " << std::hex << r->SCTLR_EL2 << std::dec << std::endl
-            << "SCTLR_EL3: " << std::hex << r->SCTLR_EL3 << std::dec << std::endl
-            << "TCR_EL1: " << std::hex << r->TCR_EL1 << std::dec << std::endl
-            << "TCR_EL2: " << std::hex << r->TCR_EL2 << std::dec << std::endl
-            << "TCR_EL3: " << std::hex << r->TCR_EL3 << std::dec << std::endl
-            << "TTBR0_EL1: " << std::hex << r->TTBR0_EL1 << std::dec << std::endl
-            << "TTBR1_EL1: " << std::hex << r->TTBR1_EL1 << std::dec << std::endl
-            << "TTBR0_EL2: " << std::hex << r->TTBR0_EL2 << std::dec << std::endl
-            << "TTBR1_EL2: " << std::hex << r->TTBR1_EL2 << std::dec << std::endl
-            << "TTBR0_EL3: " << std::hex << r->TTBR0_EL3 << std::dec << std::endl;
+  std::cout << "SCTLR_EL1: " << std::hex << r->SCTLR[EL1] << std::dec << std::endl
+            << "SCTLR_EL2: " << std::hex << r->SCTLR[EL2] << std::dec << std::endl
+            << "SCTLR_EL3: " << std::hex << r->SCTLR[EL3] << std::dec << std::endl
+            << "TCR_EL1: " << std::hex << r->TCR[EL1] << std::dec << std::endl
+            << "TCR_EL2: " << std::hex << r->TCR[EL2] << std::dec << std::endl
+            << "TCR_EL3: " << std::hex << r->TCR[EL3] << std::dec << std::endl
+            << "TTBR0_EL1: " << std::hex << r->TTBR0[EL1] << std::dec << std::endl
+            << "TTBR1_EL1: " << std::hex << r->TTBR1[EL1] << std::dec << std::endl
+            << "TTBR0_EL2: " << std::hex << r->TTBR0[EL2] << std::dec << std::endl
+            << "TTBR1_EL2: " << std::hex << r->TTBR1[EL2] << std::dec << std::endl
+            << "TTBR0_EL3: " << std::hex << r->TTBR0[EL3] << std::dec << std::endl;
             ;
 }
 
 void
 mmu_t::initRegsFromQEMUObject(mmu_regs_t* qemuRegs)
 {
-    mmu_regs.SCTLR_EL1 = qemuRegs->SCTLR_EL1;
-    mmu_regs.SCTLR_EL2 = qemuRegs->SCTLR_EL2;
-    mmu_regs.SCTLR_EL3 = qemuRegs->SCTLR_EL3;
-    mmu_regs.TCR_EL1 = qemuRegs->TCR_EL1;
-    mmu_regs.TCR_EL2 = qemuRegs->TCR_EL2;
-    mmu_regs.TCR_EL3 = qemuRegs->TCR_EL2;
-    mmu_regs.TTBR0_EL1 = qemuRegs->TTBR0_EL1;
-    mmu_regs.TTBR1_EL1 = qemuRegs->TTBR1_EL1;
-    mmu_regs.TTBR0_EL2 = qemuRegs->TTBR0_EL2;
-    mmu_regs.TTBR1_EL2 = qemuRegs->TTBR1_EL2;
-    mmu_regs.TTBR0_EL3 = qemuRegs->TTBR0_EL3;
+    mmu_regs.SCTLR[EL1] = qemuRegs->SCTLR[EL1];
+    mmu_regs.SCTLR[EL2] = qemuRegs->SCTLR[EL2];
+    mmu_regs.SCTLR[EL3] = qemuRegs->SCTLR[EL3];
+    mmu_regs.TCR[EL1] = qemuRegs->TCR[EL1];
+    mmu_regs.TCR[EL2] = qemuRegs->TCR[EL2];
+    mmu_regs.TCR[EL3] = qemuRegs->TCR[EL3];
+    mmu_regs.TTBR0[EL1] = qemuRegs->TTBR0[EL1];
+    mmu_regs.TTBR1[EL1] = qemuRegs->TTBR1[EL1];
+    mmu_regs.TTBR0[EL2] = qemuRegs->TTBR0[EL2];
+    mmu_regs.TTBR1[EL2] = qemuRegs->TTBR1[EL2];
+    mmu_regs.TTBR0[EL3] = qemuRegs->TTBR0[EL3];
     DBG_(Iface, ( << "Initializing mmu registers from QEMU...."));
     fm_print_mmu_regs(&(this->mmu_regs));
 }
 
-//ALEX - FIXME: Pair the Flexus mmu with the QEMU mmu
-/*
-#define FM_COPY_FROM_SIMICS(ours, simics) \
-do { attr_value_t val = SIM_get_attribute(chmmu, simics); \
-     ours = val.u.integer; } while(0);
-
-#define FM_COPY_LIST_FROM_SIMICS(ours, simics) \
-do { attr_value_t val = SIM_get_attribute(chmmu, simics); \
-     int i, size = val.u.list.size; \
-     for (i = 0; i < size; i++) { \
-       ours[i] = val.u.list.vector[i].u.integer; \
-     } SIM_free_attribute(val); } while(0);
-*/
-/*
- * fm_init_mmu_from_simics: initializes an MMU to Simics MMU state
- */
-/*
-void
-fm_init_mmu_from_simics(mmu_t * mmu, conf_object_t * chmmu) {
-  tlb_regs_t * d_regs = &(mmu->d_regs);
-  tlb_regs_t * i_regs = &(mmu->i_regs);
-
-  FM_COPY_FROM_SIMICS(mmu->primary_context,      "ctxt_primary");
-  FM_COPY_FROM_SIMICS(mmu->secondary_context,    "ctxt_secondary");
-
-  FM_COPY_FROM_SIMICS(d_regs->sfar,              "dsfar");
-  FM_COPY_FROM_SIMICS(d_regs->sfsr,              "dsfsr");
-  FM_COPY_FROM_SIMICS(d_regs->tag_access,        "dtag_access");
-  FM_COPY_FROM_SIMICS(d_regs->tsb_tag_target,    "dtag_target");
-  FM_COPY_FROM_SIMICS(d_regs->tsb,               "dtsb");
-  FM_COPY_FROM_SIMICS(d_regs->tsb_nx,            "dtsb_nx");
-  FM_COPY_FROM_SIMICS(d_regs->tsb_px,            "dtsb_px");
-  FM_COPY_FROM_SIMICS(d_regs->tsb_sx,            "dtsb_sx");
-  FM_COPY_FROM_SIMICS(d_regs->tsbp64k,           "dtsbp64k");
-  FM_COPY_FROM_SIMICS(d_regs->tsbp8k,            "dtsbp8k");
-  FM_COPY_FROM_SIMICS(d_regs->tsbpd,             "dtsbpd");
-
-  FM_COPY_FROM_SIMICS(i_regs->sfsr,              "isfsr");
-  FM_COPY_FROM_SIMICS(i_regs->tag_access,        "itag_access");
-  FM_COPY_FROM_SIMICS(i_regs->tsb_tag_target,    "itag_target");
-  FM_COPY_FROM_SIMICS(i_regs->tsb,               "itsb");
-  FM_COPY_FROM_SIMICS(i_regs->tsb_nx,            "itsb_nx");
-  FM_COPY_FROM_SIMICS(i_regs->tsb_px,            "itsb_px");
-  FM_COPY_FROM_SIMICS(i_regs->tsbp64k,           "itsbp64k");
-  FM_COPY_FROM_SIMICS(i_regs->tsbp8k,            "itsbp8k");
-  i_regs->sfar   = (mmu_reg_t)(-1);
-  i_regs->tsb_sx = (mmu_reg_t)(-1);
-  i_regs->tsbpd  = (mmu_reg_t)(-1);
-
-  FM_COPY_FROM_SIMICS(mmu->lfsr,                 "lfsr");
-
-  FM_COPY_FROM_SIMICS(mmu->pa_watchpoint,        "pa_watchpoint");
-  FM_COPY_FROM_SIMICS(mmu->va_watchpoint,        "va_watchpoint");
-
-  FM_COPY_LIST_FROM_SIMICS(mmu->dt16_tag,        "dtlb_fa_tagread");
-  FM_COPY_LIST_FROM_SIMICS(mmu->dt16_data,       "dtlb_fa_daccess");
-  FM_COPY_LIST_FROM_SIMICS(mmu->dt512_tag,       "dtlb_2w_tagread");
-  FM_COPY_LIST_FROM_SIMICS(mmu->dt512_data,      "dtlb_2w_daccess");
-
-  FM_COPY_LIST_FROM_SIMICS(mmu->it16_tag,        "itlb_fa_tagread");
-  FM_COPY_LIST_FROM_SIMICS(mmu->it16_data,       "itlb_fa_daccess");
-  FM_COPY_LIST_FROM_SIMICS(mmu->it128_tag,       "itlb_2w_tagread");
-  FM_COPY_LIST_FROM_SIMICS(mmu->it128_data,      "itlb_2w_daccess");
-
+bool
+mmu_t::IsExcLevelEnabled(uint8_t EL) const {
+    DBG_Assert( EL > 0 && EL <= 3,
+                ( << "ERROR, ARM MMU: Transl. Request Not Supported at Invalid EL = " << EL ) );
+    return extractSingleBitAsBool ( mmu_regs.SCTLR[EL], aarch64_bit_configs.M_Bit );
 }
-*/
+
+void
+mmu_t::setupAddressSpaceSizesAndGranules(void)
+{
+    unsigned TG0_Size = getGranuleSize(0);
+    unsigned TG1_Size = getGranuleSize(1);
+    unsigned PASize = getPASize();
+    unsigned BR0_Offset = getIAOffsetValue(true);
+    unsigned BR1_Offset = getIAOffsetValue(false);
+    this->TG0_Granule = TranslationGranule(TG0_Size,PASize,BR0_Offset);
+    this->TG1_Granule = TranslationGranule(TG1_Size,PASize,BR1_Offset);
+}
+
+bool 
+mmu_t::is4KGranuleSupported() { 
+    address_t TGran4 = extractBitsWithRange(mmu_regs.ID_AA64MMFR0_EL1,
+                                            aarch64_bit_configs.TGran4_Base,
+                                            aarch64_bit_configs.TGran_NumBits);
+    return ( TGran4 == 0b0000 );
+}
+bool 
+mmu_t::is16KGranuleSupported() {
+    address_t TGran16 = extractBitsWithRange(mmu_regs.ID_AA64MMFR0_EL1,
+                                            aarch64_bit_configs.TGran16_Base,
+                                            aarch64_bit_configs.TGran_NumBits);
+    return ( TGran16 == 0b0001 );
+}
+bool 
+mmu_t::is64KGranuleSupported() { 
+    address_t TGran64 = extractBitsWithRange(mmu_regs.ID_AA64MMFR0_EL1,
+                                            aarch64_bit_configs.TGran64_Base,
+                                            aarch64_bit_configs.TGran_NumBits);
+
+    return ( TGran64 == 0b0000 );
+}
+
+unsigned
+mmu_t::getGranuleSize(unsigned granuleNum)
+{
+    if( granuleNum == 0 ) { // TG0
+        address_t TG_SZ = extractBitsWithRange(mmu_regs.TCR[EL1],
+                                                aarch64_bit_configs.TG0_Base,
+                                                aarch64_bit_configs.TG0_NumBits);
+        switch ( TG_SZ ) {
+            case 0b00:
+                return 1<<12; // 4KB
+            case 0b01:
+                return 1<<16; // 64KB
+            case 0b11:
+                return 1<<14; // 16KB
+            default:
+                DBG_Assert(false, ( << "Unknown value in getting TG0 Granule Size. TG_SZ = " << TG_SZ ));
+                return 0;
+        }
+    } else { // TG1
+        address_t TG_SZ = extractBitsWithRange(mmu_regs.TCR[EL1],
+                                                aarch64_bit_configs.TG1_Base,
+                                                aarch64_bit_configs.TG1_NumBits);
+        switch ( TG_SZ ) {
+            case 0b10:
+                return 1<<12; // 4KB
+            case 0b11:
+                return 1<<16; // 64KB
+            case 0b01:
+                return 1<<14; // 16KB
+            default:
+                DBG_Assert(false, ( << "Unknown value in getting TG1 Granule Size. TG_SZ = " << TG_SZ ));
+                return 0;
+        }
+    }
+}
+
+unsigned
+mmu_t::getPASize()
+{
+    address_t pRange_Config = extractBitsWithRange(mmu_regs.ID_AA64MMFR0_EL1,
+                                                    aarch64_bit_configs.PARange_Base,
+                                                    aarch64_bit_configs.PARange_NumBits);
+    switch( pRange_Config ) {
+        case 0b0000:
+            return 32;
+        case 0b0001:
+            return 36;
+        case 0b0010:
+            return 40;
+        case 0b0011:
+            return 42;
+        case 0b0100:
+            return 44;
+        case 0b0101:
+            return 48;
+        case 0b0110:
+            return 52;
+        default:
+            DBG_Assert(false, ( << "Unknown value in getting PAddr Width. Raw Value from MMU = " << pRange_Config ));
+            return 0;
+    }
+}
+
+unsigned
+mmu_t::getIAOffsetValue(bool isBRO)
+{
+    address_t ret = 16;
+    if( isBRO ) { // brooooooooooo, chahh!
+        ret = extractBitsWithRange(mmu_regs.TCR[EL1],
+                aarch64_bit_configs.TG0_SZ_Base,
+                aarch64_bit_configs.TGn_SZ_NumBits);
+    } else { // cheerio old boy!
+        ret = extractBitsWithRange(mmu_regs.TCR[EL1],
+                aarch64_bit_configs.TG1_SZ_Base,
+                aarch64_bit_configs.TGn_SZ_NumBits);
+    }
+    return ret;
+}
+
 #define FM_COMPARE_FIELD(who, field) do { \
   if (a->field != b->field) { \
    DBG_(Crit, (<< "Mismatch in " << who << "->" << #field)); \
@@ -433,45 +512,25 @@ fm_compare_mmus(mmu_t * a, mmu_t * b) {
   mismatch |= fm_compare_regs(&(a->mmu_regs), &(b->mmu_regs), "mmu->d_regs");
   return mismatch;
 }
-
-bool is4KSupported() { return true; } // FIXME 
-bool is16KGranuleSupported() { return false; } // FIXUS
-bool is64KGranuleSupported() { return false; }
-
 /* Msutherl - June'18
  * - Add code for TTE Descriptor classes
  */
-address_t 
-TTEDescriptor::extractBitRange(address_t input, unsigned upperBitBound, unsigned lowerBitBound)
-{
-    address_t result = input >> lowerBitBound;
-    address_t upperMask = (1ULL << (upperBitBound-lowerBitBound+1))-1;
-    return result & upperMask;
-}
-
-bool 
-TTEDescriptor::extractSingleBitAsBool(address_t input, unsigned bitshift)
-{
-    address_t rawbit = ((input >> bitshift) & 0x1);
-    return rawbit ? true : false ;
-}
-
 bool
 TTEDescriptor::isValid() 
 {
-    return TTEDescriptor::extractSingleBitAsBool(rawDescriptor,0);
+    return extractSingleBitAsBool(rawDescriptor,0);
 }
 
 bool
 TTEDescriptor::isTableEntry()
 {
-    return TTEDescriptor::extractSingleBitAsBool( rawDescriptor, 1 );
+    return extractSingleBitAsBool( rawDescriptor, 1 );
 }
 
 bool
 TTEDescriptor::isBlockEntry()
 {
-    return !(TTEDescriptor::extractSingleBitAsBool( rawDescriptor, 1 ));
+    return !(extractSingleBitAsBool( rawDescriptor, 1 ));
 }
 
 } // end namespace MMU

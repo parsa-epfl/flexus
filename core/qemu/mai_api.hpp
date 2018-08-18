@@ -278,6 +278,10 @@ public:
   void initializeMMU();
   std::shared_ptr<MMU::mmu_t> getMMUPointer();
 
+  uint8_t getQEMUExceptionLevel( ) const { 
+      return API::QEMU_get_current_el(*this);
+  }
+
 //FIXME: The following functions for SPARC should be implemented in QEMU
   unsigned long long readX(int aRegister) const {
     return API::QEMU_read_register_by_type(*this, aRegister, 5);

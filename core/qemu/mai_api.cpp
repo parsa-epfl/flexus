@@ -450,6 +450,7 @@ void armProcessorImpl::initializeMMU() {
       void* rawObjectFromQEMU = mmu_obj->object;
       theMMU = std::make_shared<mmu_t>();
       theMMU->initRegsFromQEMUObject( reinterpret_cast<mmu_regs_t*>(rawObjectFromQEMU) );
+      theMMU->setupAddressSpaceSizesAndGranules();
       mmuInitialized = true;
   }
 }

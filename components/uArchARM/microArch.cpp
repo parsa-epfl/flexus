@@ -539,6 +539,10 @@ void resetArchitecturalState()
     pregsSys(state);
   }
 
+    bool IsTranslationEnabledAtCurrentEL(uint8_t el) {
+        return theCPU->getMMUPointer()->IsExcLevelEnabled(el);
+    }
+
 };
 
 std::shared_ptr<microArch> microArch::construct( uArchOptions_t options

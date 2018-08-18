@@ -443,9 +443,22 @@ public:
   }
 
   // Msutherl
-  FLEXUS_PORT_ALWAYS_AVAILABLE(AddressesToTranslate); // FIXME: will change w. non-atomic mem-reads
+  FLEXUS_PORT_ALWAYS_AVAILABLE(AddressesToTranslate);
   void push( interface::AddressesToTranslate const &,
              TranslatedAddresses& translateUs ) {
+      /* TODO: add requests to the cache controller to actually place the TTE descr.
+       * requests into the flexus memory hierarchy.
+       * - for now, just does the translation walk
+       */
+      // commence
+      for( auto& iter : translateUs->internalContainer ) {
+          if( true ) {
+              // TODO: TLB structure lookup & return hit/miss
+          }
+          uint8_t flexusCurrentELRegime = 1; // FIXME: should return tr. regime for addr
+      }
+
+      // fin
       FLEXUS_CHANNEL(TranslationsToReturn) << translateUs;
   }
 
