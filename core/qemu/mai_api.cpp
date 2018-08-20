@@ -463,6 +463,76 @@ armProcessorImpl::getMMUPointer() {
     return nullptr;
 }
 
+void
+armProcessorImpl::translate(Translation & aTranslation, bool aTakeException) const {
+    DBG_Assert( false, ( << "DIDN'T WANT TO EVER GET HERE........"));
+}
+
+MMU::TTEDescriptor
+armProcessorImpl::getNextTTDescriptor(Translation& currentTranslation)
+{
+    // TODO
+}
+
+void
+armProcessorImpl::InitialTranslationSetup( Translation& aTranslation )
+{
+    aTranslation.isBR0 = theMMU->checkBR0RangeForVAddr( aTranslation );
+    uint8_t initialLevel = theMMU->getInitialLookupLevel(aTranslation);
+    aTranslation.requiredTableLookups = 4 - initialLevel;
+    aTranslation.currentLookupLevel = initialLevel;
+    aTranslation.granuleSize = theMMU->getGranuleSize(aTranslation.isBR0);
+     // Resolve TTBR base.
+
+    switch( aTranslation.currentLookupLevel ) {
+        case 0:
+            aTranslation.TTAddressResolver = ( aTranslation.isBR0 ?
+                    std::make_shared<MMU::L0Resolver>(aTranslation.isBR0,
+                        theMMU->TG0_Granule, theMMU->mmu_regs.TTBR0[getQEMUExceptionLevel()]) :
+                    std::make_shared<MMU::L0Resolver>(aTranslation.isBR0,
+                        theMMU->TG1_Granule,theMMU->mmu_regs.TTBR1[getQEMUExceptionLevel()]) );
+            break;
+        case 1:
+            aTranslation.TTAddressResolver = ( aTranslation.isBR0 ?
+                    std::make_shared<MMU::L1Resolver>(aTranslation.isBR0,
+                        theMMU->TG0_Granule, theMMU->mmu_regs.TTBR0[getQEMUExceptionLevel()]) :
+                    std::make_shared<MMU::L1Resolver>(aTranslation.isBR0,
+                        theMMU->TG1_Granule,theMMU->mmu_regs.TTBR1[getQEMUExceptionLevel()]) );
+            break;
+        case 2:
+            aTranslation.TTAddressResolver = ( aTranslation.isBR0 ?
+                    std::make_shared<MMU::L2Resolver>(aTranslation.isBR0,
+                        theMMU->TG0_Granule, theMMU->mmu_regs.TTBR0[getQEMUExceptionLevel()]) :
+                    std::make_shared<MMU::L2Resolver>(aTranslation.isBR0,
+                        theMMU->TG1_Granule,theMMU->mmu_regs.TTBR1[getQEMUExceptionLevel()]) );
+            break;
+        case 3:
+            aTranslation.TTAddressResolver = ( aTranslation.isBR0 ?
+                    std::make_shared<MMU::L3Resolver>(aTranslation.isBR0,
+                        theMMU->TG0_Granule, theMMU->mmu_regs.TTBR0[getQEMUExceptionLevel()]) :
+                    std::make_shared<MMU::L3Resolver>(aTranslation.isBR0,
+                        theMMU->TG1_Granule,theMMU->mmu_regs.TTBR1[getQEMUExceptionLevel()]) );
+            break;
+        default:
+            DBG_Assert(false, ( << "Random lookup level in InitialTranslationSetup: " << initialLevel));
+    }
+}
+
+void
+armProcessorImpl::doTTEAccess( Translation& aTranslation )
+{
+    /* 
+     * 1) Entire phys addr comes from the TTAddressResolver object
+     * 2) Do access (right now, with magic QEMU)
+     * 3) Assert validity etc.
+     * 4) Setup next TTAddressResolver
+     */
+    PhysicalMemoryAddress TTEDescriptor = PhysicalMemoryAddress( aTranslation.TTAddressResolver->resolve(aTranslation.theVaddr) );
+    unsigned long long rawMemoryValue = API::QEMU_read_phys_memory( *this, TTEDescriptor, 64 );
+    /* Do some magic checks */
+    /* Remake the next level resolver */
+}
+
 } //end Namespace Qemu 
 } //end namespace Flexus
 

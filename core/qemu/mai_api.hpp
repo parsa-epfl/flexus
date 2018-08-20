@@ -238,6 +238,13 @@ struct Translation {
   bool isXEndian();
   bool isInterrupt();
   bool isTranslating();
+
+  // Msutherl: additional stuff....
+  uint8_t requiredTableLookups;
+  uint8_t currentLookupLevel;
+  bool isBR0;
+  uint32_t granuleSize;
+  std::shared_ptr<MMU::TTResolver> TTAddressResolver;
 };
 
 ////////// Msutherl
@@ -274,9 +281,13 @@ public:
     return theARMAPI;
   }
 
-  // Msutherl: Added functions back for MMU interactions.
+  // Msutherl: Added functions for MMU interactions.
+  // - added smaller MMU interface (resolving walks + memory accesses resolved in Flexus components)
   void initializeMMU();
   std::shared_ptr<MMU::mmu_t> getMMUPointer();
+  MMU::TTEDescriptor getNextTTDescriptor(Translation& aTr );
+  void InitialTranslationSetup( Translation& aTr );
+  void doTTEAccess( Translation& aTr );
 
   uint8_t getQEMUExceptionLevel( ) const { 
       return API::QEMU_get_current_el(*this);
@@ -302,7 +313,7 @@ public:
     return (long long)API::QEMU_get_tick_frequency(*this);
   }
 
-  //Public MMU API
+  // LEGACY MMU API, FIXME - REMOVE THIS WHEN DONE WITH NEW MMU
   void translate(Translation & aTranslation, bool aTakeException) const;
   long /*opcode*/ fetchInstruction(Translation & aTranslation, bool aTakeTrap);
     
@@ -312,7 +323,6 @@ public:
 
   bits readVAddr(VirtualMemoryAddress anAddress, int aSize) const;
   bits readVAddrXendian(Translation & aTranslation, int aSize) const;
-
 
   //QemuImpl MMU API
   PhysicalMemoryAddress translateInstruction_QemuImpl(VirtualMemoryAddress anAddress) const;

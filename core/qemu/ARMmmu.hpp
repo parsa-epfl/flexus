@@ -1,9 +1,13 @@
 #ifndef FLEXUS_SIMICS_ARM_MMU_HPP_INCLUDED
 #define FLEXUS_SIMICS_ARM_MMU_HPP_INCLUDED
-#include <cmath>
+
+#include "ARMTranslationGranules.hpp"
+#include "TTResolvers.hpp"
+#include "bitUtilities.hpp"
 
 namespace Flexus {
 namespace Qemu {
+struct Translation;
 namespace MMU {
 #include "mmuRegisters.h"
 
@@ -11,53 +15,11 @@ namespace MMU {
 
 typedef unsigned long long address_t;
 typedef unsigned char asi_t;
-
-// Helper for shifting and extracting values from bit-ranges
-address_t extractBitsWithBounds(address_t input, unsigned upperBitBound, unsigned lowerBitBound);
-address_t extractBitsWithRange(address_t input, unsigned lowerBound, unsigned numBits);
-bool extractSingleBitAsBool(address_t input, unsigned bitNum);
-
-/* Msutherl - june'18
- * - added definitions for granules and varying sizes
- */
-class TranslationGranule
-{
-    private:
-        unsigned KBSize;
-        unsigned logKBSize;
-        unsigned granuleShift;
-        unsigned granuleEntries;
-
-        uint8_t PARange_RawValue;
-        uint8_t PAddrWidth;
-        uint8_t IAddrWidth;
-
-    public:
-        TranslationGranule() : KBSize(4096), logKBSize(12), granuleShift(9), granuleEntries(512), PAddrWidth(48), IAddrWidth(48) { } // 4KB default
-        TranslationGranule(unsigned ksize) : KBSize(ksize), logKBSize(log2(ksize)),
-            granuleShift(logKBSize-3), granuleEntries(exp2(granuleShift)), PAddrWidth(48), IAddrWidth(48) { } // -3 for all ARM specs (ARMv8 ref manual, D4-2021)
-        TranslationGranule(unsigned ksize,unsigned ASize) : KBSize(ksize), logKBSize(log2(ksize)), granuleShift(logKBSize-3), granuleEntries(exp2(granuleShift)), PAddrWidth(ASize), IAddrWidth(ASize) { }
-        TranslationGranule(unsigned ksize,unsigned PASize, unsigned IASize) : KBSize(ksize), logKBSize(log2(ksize)), granuleShift(logKBSize-3), granuleEntries(exp2(granuleShift)), PAddrWidth(PASize), IAddrWidth(IASize) { }
-
-        unsigned getKBSize() const { return KBSize; }
-        unsigned getlogKBSize() const { return logKBSize; }
-        unsigned getGranuleShift() const { return granuleShift; }
-        unsigned getGranuleEntries() const { return granuleEntries; }
-        uint8_t getPARange_Raw() const { return PARange_RawValue; }
-        void setPARange_Raw(uint8_t aRawValue) { PARange_RawValue = aRawValue; }
-        uint8_t getPAddrWidth() const { return PAddrWidth; }
-        void setPAddrWidth(uint8_t aSize) { PAddrWidth = aSize; }
-        uint8_t getIAddrWidth() const { return IAddrWidth; }
-        void setIAddrWidth(uint8_t aSize) { IAddrWidth = aSize; }
-};
+typedef unsigned long long tte_raw_t;
 
 class TTEDescriptor
 {
     public:
-        TTEDescriptor() {} 
-        TTEDescriptor(unsigned tteGranuleSize) : myGranule(tteGranuleSize) { } 
-        typedef unsigned long long tte_raw_t;
-
         // helper functions for reading ARM64 descriptors
         bool isValid();
         bool isTableEntry();
@@ -65,7 +27,6 @@ class TTEDescriptor
 
     private:
         tte_raw_t rawDescriptor;
-        TranslationGranule myGranule;
 };
 
 /* RAW DESCRIPTOR FORMATS ON AARCH64 REFERENCE MANUAL - SECTION D4.3 - D4-2061 */
@@ -108,11 +69,17 @@ class mmu_t {
         unsigned getPASize();
         unsigned getIAOffsetValue(bool isBRO);
 
-        /* Functions that are called externally from TLBs, uArch, etc.... */
+        bool checkBR0RangeForVAddr(Translation& aTr) const ;
+        uint8_t getInitialLookupLevel( Translation& currentTr) const ;
+        uint8_t getIAWidth(bool isBR0) const {
+            return ( isBR0 ? TG0_Granule.getIAddrWidth() 
+                           : TG1_Granule.getIAddrWidth() );
+        }
+
+    public: /* Functions that are called externally from TLBs, uArch, etc.... */
         void initRegsFromQEMUObject(mmu_regs_t* qemuRegs);
         bool IsExcLevelEnabled(uint8_t elToValidate) const ;
         void setupAddressSpaceSizesAndGranules(void);
-
 };
 
 typedef enum {

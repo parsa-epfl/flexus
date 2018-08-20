@@ -264,13 +264,13 @@ public:
              TranslatedAddresses& translateUs ) {
       /* TODO: add requests to the cache controller to actually place the TTE descr.
        * requests into the flexus memory hierarchy.
-       * - for now, just does the translation walk
+       * - for now, just does the translation walk in theMicroArch 
        */
       // commence
-      for( auto& iter : translateUs->internalContainer ) {
+      for( auto& translation : translateUs->internalContainer ) {
           uint8_t flexusCurrentELRegime = 1; // FIXME: should return tr. regime for addr
           if ( theMicroArch->IsTranslationEnabledAtCurrentEL( flexusCurrentELRegime ) ) {
-              VirtualMemoryAddress vaddrToTranslate = iter.theVaddr;
+              theMicroArch->translate( translation, false );
           } else {
               DBG_Assert( false, ( << "SORRY, translation is not enabled at EL " << flexusCurrentELRegime ) );
           }

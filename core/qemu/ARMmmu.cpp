@@ -207,29 +207,59 @@ bool Translation::isXEndian() {
 }
 
 namespace MMU {
+#define FM_COMPARE_FIELD(who, field) do { \
+  if (a->field != b->field) { \
+   DBG_(Crit, (<< "Mismatch in " << who << "->" << #field)); \
+  DBG_(Crit, (<< " us:        " << std::hex << a->field)); \
+  DBG_(Crit, (<< " simics:    " << std::hex << b->field)); \
+    mismatch = 1; } } while(0);
 
-address_t 
-extractBitsWithBounds(address_t input, unsigned upperBitBound, unsigned lowerBitBound)
-{
-    address_t result = input >> lowerBitBound;
-    address_t upperMask = (1ULL << (upperBitBound-lowerBitBound+1))-1;
-    return result & upperMask;
+#define FM_COMPARE_ARRAY(a, b, len, who) do { \
+  int i; \
+  for (i = 0; i < len; i++) { \
+    if (a[i] != b[i]) { \
+   DBG_(Crit, (<< "Mismatch in " << who << "[" << i << "]")); \
+   DBG_(Crit, (<< " us:        " << std::hex << a[i])); \
+   DBG_(Crit, (<< " simics:    " << std::hex << b[i])); \
+      mismatch = 1; } } } while(0);
+
+/*
+ * fm_compare_regs: compare d- or i-tlb registers
+ */
+int
+fm_compare_regs(mmu_regs_t* a, mmu_regs_t * b, const char * who) {
+  return 0;
 }
 
-address_t 
-extractBitsWithRange(address_t input, unsigned lbound, unsigned numBits)
-{
-    address_t result = input >> lbound;
-    address_t upperMask = (1ULL << numBits)-1;
-    return result & upperMask;
+/* fm_compare_mmus: compares two MMUs and prints any differences */
+int
+fm_compare_mmus(mmu_t * a, mmu_t * b) {
+  int mismatch = 0;
+  mismatch |= fm_compare_regs(&(a->mmu_regs), &(b->mmu_regs), "mmu->d_regs");
+  return mismatch;
 }
 
-bool 
-extractSingleBitAsBool(address_t input, unsigned bitshift)
+/* Msutherl - June'18
+ * - Add code for TTE Descriptor classes
+ */
+bool
+TTEDescriptor::isValid() 
 {
-    address_t rawbit = ((input >> bitshift) & 0x1);
-    return rawbit ? true : false ;
+    return extractSingleBitAsBool(rawDescriptor,0);
 }
+
+bool
+TTEDescriptor::isTableEntry()
+{
+    return extractSingleBitAsBool( rawDescriptor, 1 );
+}
+
+bool
+TTEDescriptor::isBlockEntry()
+{
+    return !(extractSingleBitAsBool( rawDescriptor, 1 ));
+}
+
 
 
 using namespace Flexus::Qemu::API;
@@ -481,59 +511,16 @@ mmu_t::getIAOffsetValue(bool isBRO)
     return ret;
 }
 
-#define FM_COMPARE_FIELD(who, field) do { \
-  if (a->field != b->field) { \
-   DBG_(Crit, (<< "Mismatch in " << who << "->" << #field)); \
-  DBG_(Crit, (<< " us:        " << std::hex << a->field)); \
-  DBG_(Crit, (<< " simics:    " << std::hex << b->field)); \
-    mismatch = 1; } } while(0);
-
-#define FM_COMPARE_ARRAY(a, b, len, who) do { \
-  int i; \
-  for (i = 0; i < len; i++) { \
-    if (a[i] != b[i]) { \
-   DBG_(Crit, (<< "Mismatch in " << who << "[" << i << "]")); \
-   DBG_(Crit, (<< " us:        " << std::hex << a[i])); \
-   DBG_(Crit, (<< " simics:    " << std::hex << b[i])); \
-      mismatch = 1; } } } while(0);
-
-/*
- * fm_compare_regs: compare d- or i-tlb registers
- */
-int
-fm_compare_regs(mmu_regs_t* a, mmu_regs_t * b, const char * who) {
-  return 0;
-}
-
-/* fm_compare_mmus: compares two MMUs and prints any differences */
-int
-fm_compare_mmus(mmu_t * a, mmu_t * b) {
-  int mismatch = 0;
-  mismatch |= fm_compare_regs(&(a->mmu_regs), &(b->mmu_regs), "mmu->d_regs");
-  return mismatch;
-}
-/* Msutherl - June'18
- * - Add code for TTE Descriptor classes
- */
 bool
-TTEDescriptor::isValid() 
-{
-    return extractSingleBitAsBool(rawDescriptor,0);
+mmu_t::checkBR0RangeForVAddr(Translation& aTr) const {
 }
 
-bool
-TTEDescriptor::isTableEntry()
-{
-    return extractSingleBitAsBool( rawDescriptor, 1 );
-}
-
-bool
-TTEDescriptor::isBlockEntry()
-{
-    return !(extractSingleBitAsBool( rawDescriptor, 1 ));
+uint8_t 
+mmu_t::getInitialLookupLevel( Translation& currentTr) const {
 }
 
 } // end namespace MMU
+
 } //end Namespace Simics
 } //end namespace Flexus
 

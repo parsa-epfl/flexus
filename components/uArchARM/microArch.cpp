@@ -304,11 +304,7 @@ public:
       DBG_(Dev, ( << "Timestamp: " << boost::posix_time::to_simple_string(now)));
     }
 
-//    if (theDriveClients) {
-//      driveClients();
-//    }
     try {
-
         //Record free ROB space for next cycle
       theAvailableROB = theCore->availableROB();
 
@@ -340,13 +336,40 @@ public:
         DBG_( Crit, ( << theName << " PC mismatch expected: " << theCPU->getPC() << " actual: " << std::hex << theCore->pc() << std::dec )  );
       }
     }
+<<<<<<< HEAD
     CORE_DBG("--------------FINISH MICROARCH------------------------");
 
 }
 
   void translate(Flexus::Qemu::Translation & aTranslation) const {
     theCPU->translate(aTranslation);
+=======
+    DBG_( Tmp, ( << "\e[1;32m"<< "uARCH: Ending Cycle "<< this<<"\e[0m"));
   }
+
+  void translate(Flexus::Qemu::Translation & aTranslation, bool aTakeTrap) {
+      /* MicroArch translate looks like this:
+       * - Foreach level of tablewalk
+       *    - Calculate the bits that will be resolved. Depends on:
+       *        - IA/OA sizes.
+       *        - Granule of this translation regime
+       *        - level of walk
+       *    - Read base+offset of table (PAddr) and get TTE descriptor
+       *    - Parse it, get the matching PA bits, and check if done
+       *    - Raise fault if need be (TODO)
+       */
+      theCPU->InitialTranslationSetup(aTranslation);
+
+      // getting here only happens on a NEW translation req.
+      for(int i = 0; i < aTranslation.requiredTableLookups;i++) {
+          theCPU->doTTEAccess(aTranslation);
+      }
+>>>>>>> Adds all subclasses for resolving descriptor addresses, L0-L3. Need to remove some of the hardcoded bits in resolve() functions
+  }
+
+  void intermediateTranslationStep(Flexus::Qemu::Translation& aTr) {
+      // TODO
+  } 
 
 private:
 
