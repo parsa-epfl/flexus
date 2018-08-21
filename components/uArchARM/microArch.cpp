@@ -349,14 +349,8 @@ public:
 
   void translate(Flexus::Qemu::Translation & aTranslation, bool aTakeTrap) {
       /* MicroArch translate looks like this:
-       * - Foreach level of tablewalk
-       *    - Calculate the bits that will be resolved. Depends on:
-       *        - IA/OA sizes.
-       *        - Granule of this translation regime
-       *        - level of walk
-       *    - Read base+offset of table (PAddr) and get TTE descriptor
-       *    - Parse it, get the matching PA bits, and check if done
-       *    - Raise fault if need be (TODO)
+       * - Call into MMU to setup the translation parameter
+       * - For each level, decode and create the TTE Access
        */
       theCPU->InitialTranslationSetup(aTranslation);
 

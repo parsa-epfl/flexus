@@ -482,8 +482,8 @@ armProcessorImpl::InitialTranslationSetup( Translation& aTranslation )
     aTranslation.requiredTableLookups = 4 - initialLevel;
     aTranslation.currentLookupLevel = initialLevel;
     aTranslation.granuleSize = theMMU->getGranuleSize(aTranslation.isBR0);
-     // Resolve TTBR base.
 
+     // Resolve TTBR base.
     switch( aTranslation.currentLookupLevel ) {
         case 0:
             aTranslation.TTAddressResolver = ( aTranslation.isBR0 ?
@@ -526,6 +526,14 @@ armProcessorImpl::doTTEAccess( Translation& aTranslation )
      * 2) Do access (right now, with magic QEMU)
      * 3) Assert validity etc.
      * 4) Setup next TTAddressResolver
+       * - Foreach level of tablewalk
+       *    - Calculate the bits that will be resolved. Depends on:
+       *        - IA/OA sizes.
+       *        - Granule of this translation regime
+       *        - level of walk
+       *    - Read base+offset of table (PAddr) and get TTE descriptor
+       *    - Parse it, get the matching PA bits, and check if done
+       *    - Raise fault if need be (TODO)
      */
     PhysicalMemoryAddress TTEDescriptor = PhysicalMemoryAddress( aTranslation.TTAddressResolver->resolve(aTranslation.theVaddr) );
     unsigned long long rawMemoryValue = API::QEMU_read_phys_memory( *this, TTEDescriptor, 64 );
