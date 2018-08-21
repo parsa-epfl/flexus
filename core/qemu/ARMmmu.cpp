@@ -9,6 +9,7 @@
 #include "mai_api.hpp"
 #include <core/qemu/ARMmmu.hpp>
 #include <stdio.h>
+#include <core/MakeUniqueWrapper.hpp>
 
 #define DBG_DefineCategories MMUCat
 #define DBG_SetDefaultOps AddCat(MMUCat)
@@ -402,13 +403,16 @@ mmu_t::setupAddressSpaceSizesAndGranules(void)
 {
     unsigned TG0_Size = getGranuleSize(0);
     unsigned TG1_Size = getGranuleSize(1);
-    unsigned PASize = getPASize();
+    unsigned PASize = parsePASizeFromRegs();
     unsigned BR0_Offset = getIAOffsetValue(true);
     unsigned BR1_Offset = getIAOffsetValue(false);
-    this->TG0_Granule = TranslationGranule(TG0_Size,PASize,BR0_Offset);
-    this->TG1_Granule = TranslationGranule(TG1_Size,PASize,BR1_Offset);
+    this->Gran0 = std::make_shared<TG0_Granule>(TG0_Size,PASize,BR0_Offset);
+    this->Gran1 = std::make_shared<TG1_Granule>(TG1_Size,PASize,BR1_Offset);
 }
 
+/* Magic numbers taken from:
+ * ARMv8-A ref manual, Page D7-2335
+ */
 bool 
 mmu_t::is4KGranuleSupported() { 
     address_t TGran4 = extractBitsWithRange(mmu_regs.ID_AA64MMFR0_EL1,
@@ -432,6 +436,9 @@ mmu_t::is64KGranuleSupported() {
     return ( TGran64 == 0b0000 );
 }
 
+/* Magic numbers taken from:
+ * ARMv8-A ref manual, Page D7-2487.
+ */
 unsigned
 mmu_t::getGranuleSize(unsigned granuleNum)
 {
@@ -469,11 +476,14 @@ mmu_t::getGranuleSize(unsigned granuleNum)
 }
 
 unsigned
-mmu_t::getPASize()
+mmu_t::parsePASizeFromRegs()
 {
     address_t pRange_Config = extractBitsWithRange(mmu_regs.ID_AA64MMFR0_EL1,
                                                     aarch64_bit_configs.PARange_Base,
                                                     aarch64_bit_configs.PARange_NumBits);
+    /* Magic numbers taken from:
+     * ARMv8-A ref manual, Page D4-2014.
+     */
     switch( pRange_Config ) {
         case 0b0000:
             return 32;
@@ -512,11 +522,23 @@ mmu_t::getIAOffsetValue(bool isBRO)
 }
 
 bool
-mmu_t::checkBR0RangeForVAddr(Translation& aTr) const {
+mmu_t::checkBR0RangeForVAddr( Translation& aTr ) const {
 }
 
 uint8_t 
 mmu_t::getInitialLookupLevel( Translation& currentTr) const {
+}
+
+uint8_t
+mmu_t::getIASize(bool isBR0) const {
+    return ( isBR0 ? Gran0->getIAddrSize() 
+            : Gran1->getIAddrSize() );
+}
+
+uint8_t
+mmu_t::getPAWidth(bool isBR0) const {
+    return ( isBR0 ? Gran0->getPAddrWidth() 
+            : Gran1->getPAddrWidth() );
 }
 
 } // end namespace MMU

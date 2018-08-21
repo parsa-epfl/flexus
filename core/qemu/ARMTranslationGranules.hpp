@@ -19,12 +19,10 @@ class TranslationGranule
 
         uint8_t PARange_RawValue;
         uint8_t PAddrWidth;
-        uint8_t IAddrWidth;
+        uint8_t IAddrOffset;
 
     public:
         TranslationGranule();
-        TranslationGranule(unsigned ksize);
-        TranslationGranule(unsigned ksize,unsigned ASize);
         TranslationGranule(unsigned ksize,unsigned PASize, unsigned IASize);
         unsigned getKBSize() const;
         unsigned getlogKBSize() const;
@@ -34,8 +32,31 @@ class TranslationGranule
         void setPARange_Raw(uint8_t aRawValue);
         uint8_t getPAddrWidth() const;
         void setPAddrWidth(uint8_t aSize);
-        uint8_t getIAddrWidth() const;
-        void setIAddrWidth(uint8_t aSize);
+        uint8_t getIAddrOffset() const;
+        void setIAddrOffset(uint8_t aSize);
+
+        uint8_t NumBitsResolvedPerTTAccess() const ;
+        uint8_t getIAddrSize() const ;
+        virtual uint64_t GetLowerAddressRangeLimit() const ;
+        virtual uint64_t GetUpperAddressRangeLimit() const ; // TODO for faults
+};
+
+class TG0_Granule : public TranslationGranule 
+{
+    public:
+        TG0_Granule();
+        TG0_Granule(unsigned granuleSize,unsigned PAddrSize, unsigned IAOffset);
+        uint64_t GetLowerAddressRangeLimit() const ;
+        uint64_t GetUpperAddressRangeLimit() const ; // TODO for faults
+};
+
+class TG1_Granule : public TranslationGranule 
+{
+    public:
+        TG1_Granule();
+        TG1_Granule(unsigned granuleSize,unsigned PAddrSize, unsigned IAOffset);
+        uint64_t GetLowerAddressRangeLimit() const ;
+        uint64_t GetUpperAddressRangeLimit() const ; // TODO for faults
 };
 
 } // end MMU

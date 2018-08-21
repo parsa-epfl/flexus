@@ -288,7 +288,10 @@ public:
   MMU::TTEDescriptor getNextTTDescriptor(Translation& aTr );
   void InitialTranslationSetup( Translation& aTr );
   void doTTEAccess( Translation& aTr );
+private:
+  void setupTTResolver( Translation& aTr, uint64_t rawTTDescriptor) ;
 
+public:
   uint8_t getQEMUExceptionLevel( ) const { 
       return API::QEMU_get_current_el(*this);
   }

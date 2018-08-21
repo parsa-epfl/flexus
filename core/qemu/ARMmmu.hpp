@@ -53,8 +53,8 @@ class mmu_t {
          */
         mmu_regs_t mmu_regs;
         bit_configs_t aarch64_bit_configs;
-        TranslationGranule TG0_Granule;
-        TranslationGranule TG1_Granule;
+        std::shared_ptr<TranslationGranule> Gran0;
+        std::shared_ptr<TranslationGranule> Gran1;
 
         /* Accessors that get higher data about this MMU *
          * e.g., is it enabled, what sizes does it implement....
@@ -66,15 +66,13 @@ class mmu_t {
         bool is16KGranuleSupported();
         bool is64KGranuleSupported();
         unsigned getGranuleSize(unsigned granuleNum);
-        unsigned getPASize();
+        unsigned parsePASizeFromRegs();
         unsigned getIAOffsetValue(bool isBRO);
 
         bool checkBR0RangeForVAddr(Translation& aTr) const ;
         uint8_t getInitialLookupLevel( Translation& currentTr) const ;
-        uint8_t getIAWidth(bool isBR0) const {
-            return ( isBR0 ? TG0_Granule.getIAddrWidth() 
-                           : TG1_Granule.getIAddrWidth() );
-        }
+        uint8_t getIASize(bool isBR0) const ;
+        uint8_t getPAWidth(bool isBR0) const ;
 
     public: /* Functions that are called externally from TLBs, uArch, etc.... */
         void initRegsFromQEMUObject(mmu_regs_t* qemuRegs);

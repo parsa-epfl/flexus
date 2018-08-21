@@ -2,11 +2,14 @@
 #define _ARM_TT_RESOLVERS_DEFINED_HPP_
 #include "ARMTranslationGranules.hpp"
 
+#include <stdint.h>
+#include <memory>
 namespace Flexus {
 namespace Qemu {
 namespace MMU {
 
 typedef unsigned long long address_t;
+typedef std::shared_ptr<TranslationGranule> _TTResolver_Shptr_T ;
 
 /* Used for dealing with all varying address widths and granules, figures out
  * which bits to get and index and discard. 
@@ -14,21 +17,24 @@ typedef unsigned long long address_t;
 class TTResolver
 {
     public:
-        TTResolver(bool abro, TranslationGranule& aGranule,address_t aTTBR); 
-        virtual address_t resolve(address_t inputAddress) { return 0; }
+        TTResolver(bool abro, _TTResolver_Shptr_T aGranule,address_t aTTBR,uint8_t PAddrWidth); 
+        virtual address_t resolve(address_t inputAddress);
+        void updateRawBaseRegister(address_t newTTBR);
     protected:
         // for going through the TT
         bool isBR0;
         address_t RawTTBRReg;
         uint8_t TTBR_LSB;
-        uint8_t TTBR_NumBits;
+        uint8_t TTBR_MSB;
         uint8_t offset_LSB;
-        uint8_t offset_NumBits;
-        uint8_t IAWidth;
+        uint8_t offset_MSB;
+        uint8_t IAddressWidth;
+        uint8_t PAddressWidth;
+        uint8_t TnSz;
         address_t descriptorIndex;
 
         // for setting input-output bits dependent on TG size
-        TranslationGranule regimeTG;
+        _TTResolver_Shptr_T regimeTG;
 
         // utility
         address_t maskAndShiftInputAddress(address_t anAddr);
@@ -36,23 +42,19 @@ class TTResolver
 
 class L0Resolver : public TTResolver {
     public:
-        L0Resolver(bool abro, TranslationGranule& aGranule,address_t tbr); 
-        virtual address_t resolve(address_t aTranslation);
+        L0Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t tbr,uint8_t aPAW); 
 };
 class L1Resolver: public TTResolver {
     public:
-        L1Resolver(bool abro, TranslationGranule& aGranule,address_t attbr); 
-        virtual address_t resolve(address_t aTranslation);
+        L1Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t attbr,uint8_t aPAW); 
 };
 class L2Resolver: public TTResolver {
     public:
-        L2Resolver(bool abro, TranslationGranule& aGranule,address_t attbr); 
-        virtual address_t resolve(address_t aTranslation);
+        L2Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t attbr,uint8_t aPAW); 
 };
 class L3Resolver: public TTResolver {
     public:
-        L3Resolver(bool abro, TranslationGranule& aGranule,address_t attbr); 
-        virtual address_t resolve(address_t aTranslation);
+        L3Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t attbr,uint8_t aPAW); 
 };
 
 
