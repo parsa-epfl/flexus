@@ -240,11 +240,13 @@ struct Translation {
   bool isTranslating();
 
   // Msutherl: additional stuff....
+  uint8_t ELRegime;
   uint8_t requiredTableLookups;
   uint8_t currentLookupLevel;
   bool isBR0;
   uint32_t granuleSize;
   std::shared_ptr<MMU::TTResolver> TTAddressResolver;
+  uint64_t BlockSizeFromTTs;
 };
 
 ////////// Msutherl
@@ -287,7 +289,7 @@ public:
   std::shared_ptr<MMU::mmu_t> getMMUPointer();
   MMU::TTEDescriptor getNextTTDescriptor(Translation& aTr );
   void InitialTranslationSetup( Translation& aTr );
-  void doTTEAccess( Translation& aTr );
+  bool doTTEAccess( Translation& aTr );
 private:
   void setupTTResolver( Translation& aTr, uint64_t rawTTDescriptor) ;
 

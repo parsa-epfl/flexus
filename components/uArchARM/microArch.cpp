@@ -336,15 +336,7 @@ public:
         DBG_( Crit, ( << theName << " PC mismatch expected: " << theCPU->getPC() << " actual: " << std::hex << theCore->pc() << std::dec )  );
       }
     }
-<<<<<<< HEAD
     CORE_DBG("--------------FINISH MICROARCH------------------------");
-
-}
-
-  void translate(Flexus::Qemu::Translation & aTranslation) const {
-    theCPU->translate(aTranslation);
-=======
-    DBG_( Tmp, ( << "\e[1;32m"<< "uARCH: Ending Cycle "<< this<<"\e[0m"));
   }
 
   void translate(Flexus::Qemu::Translation & aTranslation, bool aTakeTrap) {
@@ -358,7 +350,7 @@ public:
       for(int i = 0; i < aTranslation.requiredTableLookups;i++) {
           theCPU->doTTEAccess(aTranslation);
       }
->>>>>>> Adds all subclasses for resolving descriptor addresses, L0-L3. Need to remove some of the hardcoded bits in resolve() functions
+      // once we get here, output address is in the PhysicalAddress field of aTranslation, done
   }
 
   void intermediateTranslationStep(Flexus::Qemu::Translation& aTr) {

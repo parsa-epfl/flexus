@@ -270,6 +270,7 @@ public:
       for( auto& translation : translateUs->internalContainer ) {
           uint8_t flexusCurrentELRegime = 1; // FIXME: should return tr. regime for addr
           if ( theMicroArch->IsTranslationEnabledAtCurrentEL( flexusCurrentELRegime ) ) {
+              translation.ELRegime = flexusCurrentELRegime;
               theMicroArch->translate( translation, false );
           } else {
               DBG_Assert( false, ( << "SORRY, translation is not enabled at EL " << flexusCurrentELRegime ) );

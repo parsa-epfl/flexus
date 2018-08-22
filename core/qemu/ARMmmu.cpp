@@ -523,10 +523,19 @@ mmu_t::getIAOffsetValue(bool isBRO)
 
 bool
 mmu_t::checkBR0RangeForVAddr( Translation& aTr ) const {
+    uint64_t upperBR0Bound = Gran0->GetUpperAddressRangeLimit();
+    uint64_t lowerBR1Bound = Gran1->GetLowerAddressRangeLimit();
+    if( aTr.theVaddr <= upperBR0Bound ) {
+        return true; // br0
+    } else if ( aTr.theVaddr >= lowerBR1Bound ) {
+        return false; // br1
+    }
 }
 
 uint8_t 
 mmu_t::getInitialLookupLevel( Translation& currentTr) const {
+    return ( currentTr.isBR0 ? Gran0->getInitialLookupLevel()
+            : Gran1->getInitialLookupLevel() );
 }
 
 uint8_t

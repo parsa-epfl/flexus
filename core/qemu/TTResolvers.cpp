@@ -29,6 +29,15 @@ TTResolver::resolve(address_t inputAddress)
     return output;
 }
 
+/* Return: Shifted and Masked bits of output address (physical or intermediate)
+ * given the rawTTE which has been read from QEMUs physical memory
+ *  - Depending on Granule Size, and Translation Level....
+ */
+address_t 
+TTResolver::getBlockOutputBits(address_t rawTTEFromPhysMemory)
+{
+}
+
 address_t
 TTResolver::maskAndShiftInputAddress(address_t anAddr)
 {
@@ -63,6 +72,16 @@ L0Resolver::L0Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t aTTBR,u
     offset_MSB = y; 
 }
 
+/* Return: Shifted and Masked bits of output address (physical or intermediate)
+ * given the rawTTE which has been read from QEMUs physical memory
+ */
+address_t 
+L0Resolver::getBlockOutputBits(address_t rawTTEFromPhysMemory)
+{
+    return 0; /* Level 0 not allowed to be a block descriptor in 4k Granules*/
+    // FIXME: when you do this for other granule sizes, L0 is possible afaik
+}
+
 L1Resolver::L1Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t aTTBR,uint8_t aPhysAddrWidth) :
     TTResolver(abro,aGranule,aTTBR,aPhysAddrWidth)
 {
@@ -74,6 +93,17 @@ L1Resolver::L1Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t aTTBR,u
     TTBR_MSB = PAddressWidth - 1;
     offset_LSB = 30; // (bit 30 since previous was 39, 4K granules resolve 9 bits/level
     offset_MSB = y; 
+}
+
+/* Return: Shifted and Masked bits of output address (physical or intermediate)
+ * given the rawTTE which has been read from QEMUs physical memory
+ */
+address_t 
+L1Resolver::getBlockOutputBits(address_t rawTTEFromPhysMemory)
+{
+    unsigned int blockLSB = 30, blockMSB = 47;
+    address_t output = extractBitsWithBounds(rawTTEFromPhysMemory,blockLSB,blockMSB);
+    return (output << blockLSB);
 }
 
 L2Resolver::L2Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t aTTBR,uint8_t aPhysAddrWidth) :
@@ -89,6 +119,17 @@ L2Resolver::L2Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t aTTBR,u
     offset_MSB = y; 
 }
 
+/* Return: Shifted and Masked bits of output address (physical or intermediate)
+ * given the rawTTE which has been read from QEMUs physical memory
+ */
+address_t 
+L2Resolver::getBlockOutputBits(address_t rawTTEFromPhysMemory)
+{
+    unsigned int blockLSB = 21, blockMSB = 47;
+    address_t output = extractBitsWithBounds(rawTTEFromPhysMemory,blockLSB,blockMSB);
+    return (output << blockLSB);
+}
+
 L3Resolver::L3Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t aTTBR,uint8_t aPhysAddrWidth) :
     TTResolver(abro,aGranule,aTTBR,aPhysAddrWidth)
 {
@@ -97,6 +138,17 @@ L3Resolver::L3Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t aTTBR,u
     TTBR_MSB = PAddressWidth - 1;
     offset_LSB = 12; // (bit 12 since previous was 21, 4K granules resolve 9 bits/level
     offset_MSB = 20; 
+}
+
+/* Return: Shifted and Masked bits of output address (physical or intermediate)
+ * given the rawTTE which has been read from QEMUs physical memory
+ */
+address_t 
+L3Resolver::getBlockOutputBits(address_t rawTTEFromPhysMemory)
+{
+    unsigned int blockLSB = 12, blockMSB = 47;
+    address_t output = extractBitsWithBounds(rawTTEFromPhysMemory,blockLSB,blockMSB);
+    return (output << blockLSB);
 }
 
 } // end MMU

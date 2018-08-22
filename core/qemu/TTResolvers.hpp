@@ -19,6 +19,7 @@ class TTResolver
     public:
         TTResolver(bool abro, _TTResolver_Shptr_T aGranule,address_t aTTBR,uint8_t PAddrWidth); 
         virtual address_t resolve(address_t inputAddress);
+        virtual address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
         void updateRawBaseRegister(address_t newTTBR);
     protected:
         // for going through the TT
@@ -43,18 +44,22 @@ class TTResolver
 class L0Resolver : public TTResolver {
     public:
         L0Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t tbr,uint8_t aPAW); 
+        address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
 };
 class L1Resolver: public TTResolver {
     public:
         L1Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t attbr,uint8_t aPAW); 
+        address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
 };
 class L2Resolver: public TTResolver {
     public:
         L2Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t attbr,uint8_t aPAW); 
+        address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
 };
 class L3Resolver: public TTResolver {
     public:
         L3Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t attbr,uint8_t aPAW); 
+        address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
 };
 
 

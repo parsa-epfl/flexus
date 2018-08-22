@@ -37,8 +37,9 @@ class TranslationGranule
 
         uint8_t NumBitsResolvedPerTTAccess() const ;
         uint8_t getIAddrSize() const ;
+        uint8_t getInitialLookupLevel() const ;
         virtual uint64_t GetLowerAddressRangeLimit() const ;
-        virtual uint64_t GetUpperAddressRangeLimit() const ; // TODO for faults
+        virtual uint64_t GetUpperAddressRangeLimit() const ;
 };
 
 class TG0_Granule : public TranslationGranule 
@@ -47,7 +48,7 @@ class TG0_Granule : public TranslationGranule
         TG0_Granule();
         TG0_Granule(unsigned granuleSize,unsigned PAddrSize, unsigned IAOffset);
         uint64_t GetLowerAddressRangeLimit() const ;
-        uint64_t GetUpperAddressRangeLimit() const ; // TODO for faults
+        uint64_t GetUpperAddressRangeLimit() const ;
 };
 
 class TG1_Granule : public TranslationGranule 
@@ -56,7 +57,7 @@ class TG1_Granule : public TranslationGranule
         TG1_Granule();
         TG1_Granule(unsigned granuleSize,unsigned PAddrSize, unsigned IAOffset);
         uint64_t GetLowerAddressRangeLimit() const ;
-        uint64_t GetUpperAddressRangeLimit() const ; // TODO for faults
+        uint64_t GetUpperAddressRangeLimit() const ;
 };
 
 } // end MMU
