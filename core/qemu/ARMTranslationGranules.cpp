@@ -116,7 +116,9 @@ TG0_Granule::GetLowerAddressRangeLimit() const {
  */
 uint64_t
 TG0_Granule::GetUpperAddressRangeLimit() const {
-    return ((1<<(64-getIAddrOffset()))-1);
+    uint8_t TnSz = getIAddrOffset();
+    uint64_t val = pow(2,64-TnSz) - 1;
+    return val;
 }
 
 /*
@@ -134,7 +136,7 @@ TG1_Granule::TG1_Granule(unsigned granuleSize,unsigned PAddrSize, unsigned IAOff
 uint64_t
 TG1_Granule::GetLowerAddressRangeLimit() const {
     uint8_t TnSz = getIAddrOffset();
-    uint64_t val = (2^64) - (2^(64-TnSz));
+    uint64_t val = pow(2,64) - pow(2,(64-TnSz));
     return val;
 }
 

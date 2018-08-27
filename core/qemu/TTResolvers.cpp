@@ -14,7 +14,7 @@ namespace MMU {
 TTResolver::TTResolver(bool abro, _TTResolver_Shptr_T aGranule,address_t aTTBR,uint8_t PAddrWidth) :
     isBR0(abro), RawTTBRReg(aTTBR), PAddressWidth(PAddrWidth), regimeTG(aGranule) 
 { 
-    TnSz = regimeTG->getIAddrSize();
+    TnSz = regimeTG->getIAddrOffset();
     IAddressWidth = 64 - regimeTG->getIAddrSize();
 }
 
@@ -22,10 +22,13 @@ TTResolver::TTResolver(bool abro, _TTResolver_Shptr_T aGranule,address_t aTTBR,u
 address_t
 TTResolver::resolve(address_t inputAddress)
 {
-    address_t output = extractBitsWithBounds(RawTTBRReg,TTBR_LSB,TTBR_MSB);
-    std::cout << "TTBR Base Bits: " << std::hex << output << std::dec << std::endl;
+    std::cout << "TTBR RAW: " << std::hex << RawTTBRReg << std::dec << std::endl;
+    address_t output = extractBitsWithBounds(RawTTBRReg,TTBR_MSB,TTBR_LSB);
+    std::cout << "TTBR EXTRACT: " << std::hex << output << std::dec << std::endl;
+    output = output << TTBR_LSB;
+    std::cout << "TTBR SHIFT : " << std::hex << output << std::dec << std::endl;
     output |= maskAndShiftInputAddress(inputAddress);
-    std::cout << "TTE To Read Bits: " << std::hex << output << std::dec << std::endl;
+    std::cout << "TTE Indexed: " << std::hex << output << std::dec << std::endl;
     return output;
 }
 
@@ -36,12 +39,13 @@ TTResolver::resolve(address_t inputAddress)
 address_t 
 TTResolver::getBlockOutputBits(address_t rawTTEFromPhysMemory)
 {
+    return 0; // always a subclass
 }
 
 address_t
 TTResolver::maskAndShiftInputAddress(address_t anAddr)
 {
-    address_t output = extractBitsWithBounds(anAddr,offset_LSB,offset_MSB);
+    address_t output = extractBitsWithBounds(anAddr,offset_MSB,offset_LSB);
     return (output << 3);
 }
 
@@ -70,6 +74,10 @@ L0Resolver::L0Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t aTTBR,u
     TTBR_MSB = PAddressWidth - 1;
     offset_LSB = 39; // Least significant bit of index
     offset_MSB = y; 
+    std::cout << std::dec << "Setting TTBR_LSB: " << (int) TTBR_LSB
+              << ", TTBR_MSB: " << (int) TTBR_MSB
+              << ", offset_LSB: " << (int) offset_LSB
+              << ", offset_MSB: " << (int) offset_MSB << std::endl;
 }
 
 /* Return: Shifted and Masked bits of output address (physical or intermediate)
@@ -147,7 +155,7 @@ address_t
 L3Resolver::getBlockOutputBits(address_t rawTTEFromPhysMemory)
 {
     unsigned int blockLSB = 12, blockMSB = 47;
-    address_t output = extractBitsWithBounds(rawTTEFromPhysMemory,blockLSB,blockMSB);
+    address_t output = extractBitsWithBounds(rawTTEFromPhysMemory,blockMSB,blockLSB);
     return (output << blockLSB);
 }
 

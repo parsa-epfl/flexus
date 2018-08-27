@@ -369,13 +369,59 @@ fm_print_mmu_regs(mmu_regs_t* r) {
             << "TTBR1_EL1: " << std::hex << r->TTBR1[EL1] << std::dec << std::endl
             << "TTBR0_EL2: " << std::hex << r->TTBR0[EL2] << std::dec << std::endl
             << "TTBR1_EL2: " << std::hex << r->TTBR1[EL2] << std::dec << std::endl
-            << "TTBR0_EL3: " << std::hex << r->TTBR0[EL3] << std::dec << std::endl;
+            << "TTBR0_EL3: " << std::hex << r->TTBR0[EL3] << std::dec << std::endl
+            << "ID_AA64MMFR0_EL1: " << std::hex << r->ID_AA64MMFR0_EL1 << std::dec << std::endl;
             ;
+}
+
+void
+mmu_t::setupBitConfigs() {
+    // enable and endian-ness
+    // - in SCTLR_ELx
+    aarch64_bit_configs.M_Bit = 0; // 0b1 = MMU enabled
+    aarch64_bit_configs.EE_Bit = 25; // endianness of EL1, 0b0 is little-endian
+    aarch64_bit_configs.EoE_Bit = 24; // endianness of EL0, 0b0 is little-endian
+
+    // Granule that this MMU supports
+    // - in ID_AA64MMFR0_EL1
+    aarch64_bit_configs.TGran4_Base = 28;  // = 0b0000 IF supported, = 0b1111 if not
+    aarch64_bit_configs.TGran16_Base = 20; // = 0b0000 if NOT supported, 0b0001 IF supported (yes, this is correct)
+    aarch64_bit_configs.TGran64_Base = 24; // = 0b0000 IF supported, = 0b1111 if not
+    aarch64_bit_configs.TGran_NumBits = 4;
+
+    // Granule configured for EL1 (TODO: add others if we ever care about them in the future)
+    // - in TCR_ELx
+    aarch64_bit_configs.TG0_Base = 14; /* 00 = 4KB
+                              01 = 64KB
+                              11 = 16KB */
+    aarch64_bit_configs.TG0_NumBits = 2;
+    aarch64_bit_configs.TG1_Base = 30; /* 01 = 16KB
+                              10 = 4KB
+                              11 = 64KB (yes, this is different than TG0) */
+    aarch64_bit_configs.TG1_NumBits = 2;
+
+    // Physical, output, and input address sizes. ( in ID_AA64MMFR0_EL1 )
+    aarch64_bit_configs.PARange_Base = 0; /* 0b0000 = 32b
+                                 0b0001 = 36b
+                                 0b0010 = 40b
+                                 0b0011 = 42b
+                                 0b0100 = 44b
+                                 0b0101 = 48b
+                                 0b0110 = 52b */
+    aarch64_bit_configs.PARange_NumBits = 4;
+
+    // translation range sizes, chooses which VA's map to TTBR0 and TTBR1
+    // - in TCR_ELx
+    aarch64_bit_configs.TG0_SZ_Base = 0;
+    aarch64_bit_configs.TG1_SZ_Base = 16;
+    aarch64_bit_configs.TGn_SZ_NumBits = 6;
 }
 
 void
 mmu_t::initRegsFromQEMUObject(mmu_regs_t* qemuRegs)
 {
+    setupBitConfigs(); // initialize AARCH64 bit locations for masking
+
     mmu_regs.SCTLR[EL1] = qemuRegs->SCTLR[EL1];
     mmu_regs.SCTLR[EL2] = qemuRegs->SCTLR[EL2];
     mmu_regs.SCTLR[EL3] = qemuRegs->SCTLR[EL3];
@@ -387,7 +433,8 @@ mmu_t::initRegsFromQEMUObject(mmu_regs_t* qemuRegs)
     mmu_regs.TTBR0[EL2] = qemuRegs->TTBR0[EL2];
     mmu_regs.TTBR1[EL2] = qemuRegs->TTBR1[EL2];
     mmu_regs.TTBR0[EL3] = qemuRegs->TTBR0[EL3];
-    DBG_(Iface, ( << "Initializing mmu registers from QEMU...."));
+    mmu_regs.ID_AA64MMFR0_EL1 = qemuRegs->ID_AA64MMFR0_EL1;
+    DBG_(Tmp , ( << "Initializing mmu registers from QEMU...."));
     fm_print_mmu_regs(&(this->mmu_regs));
 }
 
@@ -404,6 +451,7 @@ mmu_t::setupAddressSpaceSizesAndGranules(void)
     unsigned TG0_Size = getGranuleSize(0);
     unsigned TG1_Size = getGranuleSize(1);
     unsigned PASize = parsePASizeFromRegs();
+    PASize = 48; // FIXME: ID_AAMMFR0 REGISTER ALWAYS 0 FROM QEMU????
     unsigned BR0_Offset = getIAOffsetValue(true);
     unsigned BR1_Offset = getIAOffsetValue(false);
     this->Gran0 = std::make_shared<TG0_Granule>(TG0_Size,PASize,BR0_Offset);
@@ -521,15 +569,15 @@ mmu_t::getIAOffsetValue(bool isBRO)
     return ret;
 }
 
-bool
+int
 mmu_t::checkBR0RangeForVAddr( Translation& aTr ) const {
-    uint64_t upperBR0Bound = Gran0->GetUpperAddressRangeLimit();
-    uint64_t lowerBR1Bound = Gran1->GetLowerAddressRangeLimit();
+    int64_t upperBR0Bound = Gran0->GetUpperAddressRangeLimit();
+    int64_t lowerBR1Bound = Gran1->GetLowerAddressRangeLimit();
     if( aTr.theVaddr <= upperBR0Bound ) {
-        return true; // br0
+        return 0; // br0
     } else if ( aTr.theVaddr >= lowerBR1Bound ) {
-        return false; // br1
-    }
+        return 1; // br1
+    } else return -1; // fault
 }
 
 uint8_t 

@@ -69,7 +69,7 @@ class mmu_t {
         unsigned parsePASizeFromRegs();
         unsigned getIAOffsetValue(bool isBRO);
 
-        bool checkBR0RangeForVAddr(Translation& aTr) const ;
+        int checkBR0RangeForVAddr(Translation& aTr) const ;
         uint8_t getInitialLookupLevel( Translation& currentTr) const ;
         uint8_t getIASize(bool isBR0) const ;
         uint8_t getPAWidth(bool isBR0) const ;
@@ -78,6 +78,9 @@ class mmu_t {
         void initRegsFromQEMUObject(mmu_regs_t* qemuRegs);
         bool IsExcLevelEnabled(uint8_t elToValidate) const ;
         void setupAddressSpaceSizesAndGranules(void);
+
+    private:
+        void setupBitConfigs();
 };
 
 typedef enum {

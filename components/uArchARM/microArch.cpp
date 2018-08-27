@@ -348,8 +348,9 @@ public:
 
       // getting here only happens on a NEW translation req.
       for(int i = 0; i < aTranslation.requiredTableLookups;i++) {
-          theCPU->doTTEAccess(aTranslation);
-      }
+          bool done = theCPU->doTTEAccess(aTranslation);
+          if( done ) break;
+      } 
       // once we get here, output address is in the PhysicalAddress field of aTranslation, done
   }
 
