@@ -52,7 +52,7 @@
 #include <core/component.hpp>
 
 #include <functional>
-
+#include <core/qemu/qmp_api.hpp>
 #include <core/metaprogram.hpp>
 #include <core/drive_reference.hpp>
 
@@ -73,17 +73,16 @@
 #endif
 
 #include <core/flexus.hpp>
-#ifndef CONFIG_QEMU
-#include <core/simics/configuration_api.hpp>
-#include <core/simics/api_wrappers.hpp>
-#include <core/simics/control_api.hpp>
-#include <core/simics/mai_api.hpp>
-#else
+#ifdef CONFIG_QEMU
 #include <core/qemu/configuration_api.hpp>
+#else
+#error flexus supports qemu only
 #endif
 
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
+
+static std::string config_file;
 
 namespace Flexus {
 namespace Core {
@@ -271,7 +270,7 @@ void FlexusImpl::printMMU( int32_t aCPU ) {
 void FlexusImpl::printMMU( int32_t aCPU ) {
   //Flexus::Qemu::Processor::getProcessor(aCPU)->dumpMMU();
   //Flexus::Qemu::Processor::getProcessor(aCPU)->validateMMU();
-	DBG_(Crit, ( << "printMMU not implemented yet. Still need to port mai_api.hpp " ) );
+    DBG_(Crit, ( << "printMMU not implemented yet. Still need to port mai_api.hpp " ) );
 }
 #endif
 
@@ -281,7 +280,7 @@ void FlexusImpl::initializeComponents() {
   theCurrentStatRegion = 0;
   theCurrentStatRegionName = std::string("Region ") + boost::padded_string_cast < 3, '0' > (theCurrentStatRegion++);
   Stat::getStatManager()->openMeasurement(theCurrentStatRegionName);
-  parseConfiguration("user_postload");
+  parseConfiguration(config_file);
   writeConfiguration("configuration.out");
   ConfigurationManager::getConfigurationManager().checkAllOverrides();
   ComponentManager::getComponentManager().initComponents();
@@ -302,7 +301,7 @@ void FlexusImpl::advanceCycles(int64_t aCycleCount) {
 #ifndef CONFIG_QEMU
       Simics::BreakSimulation( "Flexus is quiesced." );
 #else
-	Qemu::API::QEMU_break_simulation("Flexus is quiesced.");
+    Qemu::API::QEMU_break_simulation("Flexus is quiesced.");
 #endif
       return;
     }
@@ -588,9 +587,8 @@ void FlexusImpl::doLoad(std::string const & aDirName) {
     initializeComponents();
   }
   ComponentManager::getComponentManager().doLoad( aDirName );
-#else 
-  // FIXME TODO XXX
-    DBG_( Crit, ( << "Actually, QEMU can't do this... Yet?? " ) );
+#else
+  ComponentManager::getComponentManager().doLoad( aDirName );
 #endif
 }
 
@@ -609,8 +607,8 @@ void FlexusImpl::doSave(std::string const & aDirName, bool justFlexus) {
   }
   ComponentManager::getComponentManager().doSave( aDirName );
 #else
-  // FIXME TODO XXX
-    DBG_( Crit, ( << "Actually, QEMU can't do this... Yet??" ) );
+  ComponentManager::getComponentManager().doSave( aDirName );
+  DBG_( Crit, ( << "Saving Flexus state in subdirectory " << aDirName ) );
 #endif
 
 }
@@ -1123,11 +1121,33 @@ void CreateFlexusObject() {
 
 }
 
+void setCfg(const char* aFile){
+    config_file = aFile;
+}
+void callQMP(Flexus::Qemu::API::qmp_flexus_cmd_t aCMD, const char* anArgs) {
+
+    try {
+        qmp_flexus_i& q = qmp(aCMD);
+        if (anArgs != NULL){
+            q.execute(static_cast<string>(anArgs));
+        } else {
+           q.execute("");
+        }
+    } catch (qmp_not_implemented){
+        DBG_(Crit, (<< "QMP call not implemented!"));
+    }
+
+}
+
 //Might not be best.
 void initFlexus(){
     theFlexus->initializeComponents();
 }
 
+void deinitFlexus(){
+    if(theFlexusFactory)
+        delete theFlexusFactory;
+}
 void startTimingFlexus(){
    for (;;) { 		//ALEX - infinite loop for now!
        theFlexus->doCycle();
