@@ -58,6 +58,8 @@
 #include <components/CommonQEMU/Slices/FillType.hpp>
 #include <components/uFetch/uFetchTypes.hpp>
 
+#include <components/CommonQEMU/Slices/AbstractInstruction.hpp>
+
 namespace Flexus {
 namespace SharedTypes {
 
@@ -1045,6 +1047,10 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     return ProbedNotPresent;
   }
 
+
+public:
+  boost::intrusive_ptr<AbstractInstruction> theInstruction;
+
 private:
   MemoryMessageType theType;
   MemoryAddress theAddress;
@@ -1065,6 +1071,7 @@ private:
   bool theEvictHasData;
   eBranchType theBranchType;
   bool theBranchAnnul;
+
 };
 
 std::ostream & operator << (std::ostream & s, MemoryMessage const & aMemMsg);

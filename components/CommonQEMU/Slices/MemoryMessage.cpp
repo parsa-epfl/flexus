@@ -151,13 +151,19 @@ std::ostream & operator << (std::ostream & s, MemoryMessage::MemoryMessageType c
   return s << message_types[aMemMsgType];
 }
 std::ostream & operator << (std::ostream & s, MemoryMessage const & aMemMsg) {
-  return s << "MemoryMessage[" << aMemMsg.type()
+    if (aMemMsg.theInstruction) {
+        s << "instr=>> " << *(aMemMsg.theInstruction) << " << ";
+    }
+         s
+         << "MemoryMessage[" << aMemMsg.type()
          << "]: Addr:0x" << std::hex << aMemMsg.address()
          << " Size:" << std::dec << aMemMsg.reqSize() << " Serial: " << aMemMsg.serial()
          << " Core: " << aMemMsg.coreIdx()
          << " DStream: " << std::boolalpha << aMemMsg.isDstream()
          << " Outstanding Msgs: " << aMemMsg.outstandingMsgs()
          << (aMemMsg.ackRequired() ? (aMemMsg.ackRequiresData() ? " Requires Ack+Data" : " Requires Ack") : "");
+
+         return s;
 }
 
 } //namespace SharedTypes

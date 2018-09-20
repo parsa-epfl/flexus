@@ -50,6 +50,8 @@
 #include <components/CommonQEMU/Slices/AbstractInstruction.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 
+#include <components/CommonQEMU/Slices/AbstractInstruction.hpp>
+
 namespace Flexus {
 namespace SharedTypes {
 
@@ -108,6 +110,8 @@ struct MemOp : boost::counted_base {
   bool theAtomic;
   bool theNAW;
   boost::intrusive_ptr< TransactionTracker > theTracker;
+  boost::intrusive_ptr<AbstractInstruction> theInstruction;
+
   MemOp( )
     : theOperation( kINVALID_OPERATION )
     , theSize( kWord )
@@ -136,6 +140,7 @@ struct MemOp : boost::counted_base {
     , theAtomic(anOther.theAtomic)
     , theNAW(anOther.theNAW)
     , theTracker( anOther.theTracker )
+    , theInstruction (anOther.theInstruction)
   {}
 
 };

@@ -104,6 +104,7 @@ std::ostream & operator <<( std::ostream & anOstream, eOperation op) {
 
 std::ostream & operator << ( std::ostream & anOstream, MemOp const & aMemOp) {
   anOstream
+      << "instr=[ " << aMemOp.theInstruction << " ] "
       << aMemOp.theOperation
       << "(" << aMemOp.theSize << ") "
       << aMemOp.theVAddr
