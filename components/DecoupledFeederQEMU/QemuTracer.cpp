@@ -295,7 +295,7 @@ public:
   API::cycles_t trace_mem_hier_operate(
 				       API::conf_object_t * space,
 				       API::memory_transaction_t * mem_trans ) {
-    int mn = API::QEMU_get_processor_number(theCPU);
+    int mn = API::QEMU_get_cpu_index(theCPU);
     //debugTransaction(mem_trans); // ustiugov: uncomment to track every memory op
     //Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
     //toL1D((int32_t) 0, msg); 
@@ -350,7 +350,7 @@ public:
       // Need to determine opcode, as this may be an RMW or CAS
       // record the opcode
       API::physical_address_t pc = API::QEMU_logical_to_physical(theCPU, API::QEMU_DI_Instruction, mem_trans->s.pc);
-      uint32_t op_code = API::QEMU_read_phys_memory(theCPU, pc, 4);
+      uint32_t op_code = API::QEMU_read_phys_memory(pc, 4);
 
       //LDD(a)            is 11-- ---0 -001 1--- ---- ---- ---- ----
       //STD(a)            is 11-- ---0 -011 1--- ---- ---- ---- ----
@@ -767,7 +767,7 @@ private:
       for(int i = 0; i < theNumCPUs; i++ ){
         API::conf_object_t * cpu = API::QEMU_get_cpu_by_index(i);
 	API::QEMU_insert_callback(
-				  API::QEMU_get_processor_number(cpu),
+                  API::QEMU_get_cpu_index(cpu),
 				  API::QEMU_cpu_mem_trans,
 				  reinterpret_cast<void*>(theTracers+i),
 				  reinterpret_cast<void*>(&TraceMemHierOperate)

@@ -463,7 +463,7 @@ private:
 //      xlat.theTL = theCPUState[anIndex].theTL;
       xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
       xlat.theType = Flexus::Qemu::Translation::eFetch;
-      cpu(anIndex)->translate(xlat, false /* do not trap */ );
+      cpu(anIndex)->translate(xlat);
       if (! xlat.thePaddr ) {
         //Unable to translate for prefetch
         theLastPrefetchVTagSet[anIndex] = boost::none;
@@ -503,7 +503,7 @@ private:
 //      xlat.theTL = theCPUState[anIndex].theTL;
       xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
       xlat.theType = Flexus::Qemu::Translation::eFetch;
-      cpu(anIndex)->translate(xlat, false /* do not trap */ );
+      cpu(anIndex)->translate(xlat);
       paddr = xlat.thePaddr;
       if (paddr == 0) {
           assert(false);
@@ -808,8 +808,7 @@ private:
   //Implementation of the FetchDrive drive interface
   void doFetch(index_t anIndex) {
 
-      //DBG_(Tmp, (<<"FETCH UNIT: Entering doFetch"));
-
+    FETCH_DBG("--------------START FETCHING------------------------");
 
     if (theIcacheMiss[anIndex]) {
       ++theMissCycles;
@@ -831,7 +830,8 @@ private:
       if (available_fiq < remaining_fetch) {
         remaining_fetch = available_fiq;
       }
-      DBG_(Tmp, (<<"FETCH UNIT: starting to process the fetches... " << remaining_fetch << " remaining"));
+      FETCH_DBG("starting to process the fetches..." << remaining_fetch);
+
       while ( remaining_fetch > 0 && ( theFAQ[anIndex].size() > 0 || theFlexus->quiescing())) {
         bool from_icache(false);
 
@@ -864,7 +864,7 @@ private:
           available_lines.insert( block_addr );
         }
 
-        int64_t op_code = fetchFromQemu( anIndex, fetch_addr.theAddress );
+        uint32_t op_code = fetchFromQemu( anIndex, fetch_addr.theAddress );
         
         theFAQ[anIndex].pop_front();
         //DBG_(Tmp, ( << "\e[1;34m" << "FETCH UNIT: Fetched " << fetch_addr.theAddress << " and poping it out of FAQ" << "\e[0m" ) );
@@ -891,44 +891,44 @@ private:
       }
 
       if (bundle->theOpcodes.size() > 0) {
+          FETCH_DBG("Sending Fetches out ... ");
+
         FLEXUS_CHANNEL_ARRAY( FetchBundleOut, anIndex ) << bundle;
       }
     }
     else
     {
-        DBG_(Tmp, (  <<"\e[1;35m" << "FETCH UNIT:  Not processing the fetches if any"<< "\e[0m"));
-        DBG_(Tmp, (  <<"\e[1;35m" << "available_fiq: " << available_fiq
+        FETCH_DBG( "Not processing the fetches if any" );
+        FETCH_DBG("available_fiq: " << available_fiq
                    << " fetch address queue size: "<< theFAQ[anIndex].size()
-                   << " Flexus quiescing: " << theFlexus->quiescing()  << "\e[0m"));
+                   << " Flexus quiescing: " << theFlexus->quiescing());
     }
+
+    FETCH_DBG("--------------FINISH FETCHING------------------------");
+
 
   }
 
-  int64_t fetchFromQemu(index_t anIndex, VirtualMemoryAddress const & anAddress) {
-    DBG_(Verb, (<<"FETCH UNIT: In fetch from QEMU"));
-    int64_t op_code;
+  uint32_t fetchFromQemu(index_t anIndex, VirtualMemoryAddress const & anAddress) {
+    FETCH_DBG("Address = " << anAddress);
+    uint32_t op_code;
     Flexus::Qemu::Translation xlat;
     xlat.theVaddr = anAddress;
 //    xlat.theTL = theCPUState[anIndex].theTL;
     xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
     xlat.theType = Flexus::Qemu::Translation::eFetch;
-    xlat.theException = 0; // just for now
+//    xlat.theException = 0; // just for now
 
-    //DBG_(Tmp, (<<"FETCH UNIT: Starting Opcode Translation"));
-    op_code = cpu(anIndex)->fetchInstruction(xlat, false /* do not take traps - the OOO core will do it */ );
-    //DBG_(Tmp, (<<"FETCH UNIT: Finished Opcode Translation"));
+    op_code = cpu(anIndex)->fetchInstruction(xlat);
+    if (true /*xlat.theException == 0*/) {
+        FETCH_DBG(anAddress << " op: " << "  end: " << __builtin_bswap32 ((uint32_t)op_code) << "  dec:" << op_code << "  hex:" << std::hex << op_code << std::dec );
+        FETCH_DBG("This is from Qemu: " << cpu(anIndex)->disassemble(anAddress) );
 
-    if (xlat.theException == 0) {
-      //DBG_(Tmp, (<<"FETCH UNIT: Not an exception"));
-      DBG_(Tmp, Comp(*this) ( <<"\e[1;34m" << "FETCH UNIT: " << anAddress << " op: " << std::hex << std::setw(8) << op_code << std::dec<< "\e[0m" ) );//NOOSHIN
-
-
-
-      return op_code;
+        return op_code;
     } else {
-      DBG_(Tmp, (<<"FETCH UNIT: Hit an exception"));
-      DBG_(Tmp, Comp(*this) ( <<"\e[1;34m" << "No translation for " << anAddress << " TL: " << std::hex << theCPUState[anIndex].theTL <<
-                              " PSTATE: " << theCPUState[anIndex].thePSTATE << " MMU exception: " << xlat.theException << std::dec<< "\e[0m" ) );
+//      FETCH_DBG("Hit an exception");
+//      FETCH_DBG("No translation for " << anAddress << " TL: " << std::hex << theCPUState[anIndex].theTL <<
+//                              " PSTATE: " << theCPUState[anIndex].thePSTATE << " MMU exception: " << xlat.theException << std::dec<< "\e[0m" );
       return kITLBMiss /* or other exception - OoO will figure it out */;
     }
   }

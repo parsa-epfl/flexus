@@ -115,7 +115,7 @@ class IterationTrackerImpl : public IterationTracker {
   bool theCkptFlag;
     public:
   void OnMagicBreakpoint( Qemu::API::conf_object_t * aCpu, long long aBreakpoint) {
-    uint32_t cpu_no = Qemu::API::QEMU_get_processor_number(aCpu);
+    uint32_t cpu_no = Qemu::API::QEMU_get_cpu_index(aCpu);
 
 #if FLEXUS_TARGET_IS(x86)
     Qemu::API::processor_t * cpu = reinterpret_cast<Qemu::API::processor_t *>(aCpu);
@@ -609,15 +609,15 @@ struct web_version1 {
 using Flexus::SharedTypes::VirtualMemoryAddress;
 //Helperfunction to read Vadddresses
 char readVAddr(Qemu::API::conf_object_t *cpu, VirtualMemoryAddress anAddr, int size){
-    return Qemu::API::QEMU_read_phys_memory(cpu
-            , Qemu::API::QEMU_logical_to_physical(cpu, Qemu::API::QEMU_DI_Data 
+    return Qemu::API::QEMU_read_phys_memory(
+            Qemu::API::QEMU_logical_to_physical(cpu, Qemu::API::QEMU_DI_Data
             ,anAddr)
             ,size);
 } 
 char readVAddr2(Qemu::API::conf_object_t *cpu, VirtualMemoryAddress anAddr, int asi, int size){
     //TODO implement correctly, currently doesn't do anything with ASI which is wrong
-    return Qemu::API::QEMU_read_phys_memory(cpu
-            , Qemu::API::QEMU_logical_to_physical(cpu, Qemu::API::QEMU_DI_Data
+    return Qemu::API::QEMU_read_phys_memory(
+            Qemu::API::QEMU_logical_to_physical(cpu, Qemu::API::QEMU_DI_Data
             ,anAddr)
             ,size);
 }
@@ -628,8 +628,7 @@ uint64_t readG(Qemu::API::conf_object_t *cpu, int reg){
   uint64_t reg_content;
   Qemu::API::QEMU_read_register(cpu, reg, nullptr, &reg_content);
 #elif FLEXUS_TARGET_IS(ARM)
-  uint64_t reg_content;
-  Qemu::API::QEMU_read_register(cpu, reg, nullptr, &reg_content);
+  uint64_t reg_content = Qemu::API::QEMU_read_register(cpu, reg, Qemu::API::GENERAL);
 #elif FLEXUS_TARGET_IS(x86)
   __uint128_t reg_content;
   Qemu::API::QEMU_read_register(cpu, reg, nullptr, &reg_content);
@@ -786,7 +785,7 @@ class SimPrintHandlerImpl : public SimPrintHandler {
     public:
   void OnMagicBreakpoint( Qemu::API::conf_object_t * aCpu, long long aBreakpoint) {
 #if FLEXUS_TARGET_IS(v9)
-    uint32_t cpu_no = Qemu::API::QEMU_get_processor_number(aCpu);
+    uint32_t cpu_no = Qemu::API::QEMU_get_cpu_index(aCpu);
 
     switch (aBreakpoint) {
       case 0x666: {

@@ -93,7 +93,7 @@ public:
     for (uint32_t i = 0; i < cfg.Threads; ++i) {
       Qemu::Processor cpu = Qemu::Processor::getProcessor(flexusIndex() * cfg.Threads + i);
       thePC[i] = cpu->getPC();
-      DBG_(Tmp,(<<"\033[1;35m FGU: core: "<< i <<" PC: "<< thePC[i] <<"\033[0m"));
+      AGU_DBG("PC(" << i << ") = "<< thePC[i]);
 #if FLEXUS_TARGET_IS(v9)
       theNextPC[i] = cpu->getNPC();
 #endif
@@ -102,10 +102,6 @@ public:
       theRedirectNextPC[i] = MemoryAddress(0);
 #endif
       theRedirect[i] = false;
-      DBG_( Tmp, Comp(*this) ( << "\e[1;34m" << "Thread[" << flexusIndex() << "." << i << "] connected to "
-                               << ((static_cast<Flexus::Qemu::API::conf_object_t *>(cpu))->name )
-                               << " Initial PC: " << thePC[i]
-                               << "\e[0m" ) );
     }
     theCurrentThread = cfg.Threads;
     theBranchPredictor.reset( BranchPredictor::combining(statName(), flexusIndex()) );
@@ -168,6 +164,8 @@ private:
   //Implementation of the FetchDrive drive interface
   void doAddressGen(index_t anIndex) {
 
+    AGU_DBG("--------------START ADDRESS GEN------------------------");
+
     if (theFlexus->quiescing()) {
         DBG_(Tmp,(<<"FGU: Flexus is quiescing!.. come back later" ) );
       return;
@@ -200,19 +198,16 @@ private:
 
     boost::intrusive_ptr<FetchCommand> fetch(new FetchCommand());
     while ( max_addrs > 0 ) {
-
-        DBG_(Tmp, (<<"FGU: getting addresses: " << max_addrs << " remaining"));
+      AGU_DBG("Getting addresses: " << max_addrs << " remaining");
 
       FetchAddr faddr(thePC[anIndex]);
       Qemu::Processor cpu = Qemu::Processor::getProcessor(0);
-//      theConvertedInstruction[anIndex] = cpu->getInstruction((uint64_t)thePC[anIndex]);
-//      faddr.theConvertedInstruction = theConvertedInstruction[anIndex];
 
       //Advance the PC
       if ( theBranchPredictor->isBranch( faddr.theAddress ) ) {
-          DBG_(Tmp,(<<"FGU: Predicting a Branch: " ) );
+          AGU_DBG("Predicting a Branch");
         if (max_predicts == 0) {
-            DBG_(Tmp,(<<"FGU: Config set the max prediction to zero, so no prediction for you!!" ) );
+            AGU_DBG("Config set the max prediction to zero, so no prediction");
           break;
         }
 #if FLEXUS_TARGET_IS(v9)
@@ -223,42 +218,43 @@ private:
           theNextPC[anIndex] = thePC[anIndex] + 4;
         }
 #else
-          thePC[anIndex]+=4;
-          DBG_(Tmp,(<<"FGU: advancing PC to: " << thePC[anIndex] << " for core: " << anIndex ) );
-
+          thePC[anIndex] = theBranchPredictor->predict( faddr );
+          if (thePC[anIndex] == 0) {
+            thePC[anIndex] = thePC[anIndex] + 4;
+          }
 #endif
-        DBG_(Verb, ( << "FGU: Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress ) );
+        AGU_DBG("Advancing PC to: " << thePC[anIndex] << " for core: " << anIndex);
+        AGU_DBG("Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress);
+
         fetch->theFetches.push_back( faddr);
         -- max_predicts;
       } else {
 #if FLEXUS_TARGET_IS(v9)
         thePC[anIndex] = theNextPC[anIndex];
-#else
-       // thePC[anIndex] +=4;
-        // DBG_(Tmp,(<<"FGU: advancing PC to: " << thePC[anIndex] << " for core: " << anIndex ) );
-#endif
-        DBG_(Tmp, ( <<"\e[1;34m" << "FGU: Enqueing Fetch for core[" << anIndex << "] " << faddr.theAddress << "\e[0m" ) );//NOOSHIN
-        fetch->theFetches.push_back( faddr );
-#if FLEXUS_TARGET_IS(v9)
         theNextPC[anIndex] = thePC[anIndex] + 4;
 #else
-        thePC[anIndex] +=4;
-        DBG_(Tmp,(<<"\e[1;34m" <<"FGU: advancing PC to: " << thePC[anIndex] << " for core: " << anIndex << "\e[0m" ) );
+       thePC[anIndex] += 4;
 #endif
+
+       AGU_DBG("Advancing PC to: " << thePC[anIndex] << " for core: " << anIndex);
+       AGU_DBG("Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress);
+        fetch->theFetches.push_back( faddr );
       }
 
       --max_addrs;
     }
 
     if (fetch->theFetches.size() > 0) {
-       DBG_(Tmp, ( << "FGU: sending total fetches: " << fetch->theFetches.size() ) );
+      AGU_DBG("Sending total fetches: " << fetch->theFetches.size());
+
       //Send it to FetchOut
       FLEXUS_CHANNEL_ARRAY(FetchAddrOut, anIndex) << fetch;
-    }
-    else
-    {
-        DBG_(Tmp, ( << "FGU: No fetches to send!!" ) );
-    }
+    } else {
+        AGU_DBG("No fetches to send");
+      }
+
+    AGU_DBG("--------------FINISH ADDRESS GEN------------------------");
+
   }
 
 public:
