@@ -195,8 +195,7 @@ extern "C" void startTiming(){
 }
 
 extern "C" void qflex_init(Flexus::Qemu::API::QFLEX_API_Interface_Hooks_t* hooks) {
-  Flexus::Qemu::API::QFLEX_API_set_interface_hooks( hooks );
-//  std::cerr << "Entered init_local\n";
+  Flexus::Qemu::API::QFLEX_API_set_Interface_Hooks( hooks );
 
   print_copyright();
 

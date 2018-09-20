@@ -1,6 +1,7 @@
 #include "types.hpp"
 
-using namespace Flexus::Core;
+namespace Flexus {
+namespace Core{
 
 bits add_bits(const bits & lhs, const bits & rhs){
     bits sum = lhs ^ rhs;
@@ -51,6 +52,17 @@ bits concat_bits (const bits & lhs, const bits & rhs){
     return result;
 }
 
+bits construct(uint8_t* bytes, int size){
+    bits result;
+    std::string b, all;
+    for (int i = (size-1); i >= 0; i--){
+        bits a(8, bytes[i]);
+        to_string(a, b);
+        all += b;
+    }
+    populateBitSet(all, result);
+    return result;
+}
 
 std::pair<bits,bits> splitBits(const bits & input){
 
@@ -61,5 +73,8 @@ std::pair<bits,bits> splitBits(const bits & input){
 
     return std::make_pair(first, second);
 
+}
+
+}
 }
 

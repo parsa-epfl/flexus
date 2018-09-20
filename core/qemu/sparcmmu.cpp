@@ -189,7 +189,7 @@ long v9ProcessorImpl::fetchInstruction_QemuImpl(VirtualMemoryAddress const & anA
   API::physical_address_t phy_addr = API::QEMU_logical_to_physical(*this, API::QEMU_DI_Instruction, addr);
   checkException();
 
-  long op_code = Qemu::API::QEMU_read_phys_memory( *this, phy_addr, 4);
+  long op_code = Qemu::API::QEMU_read_phys_memory( phy_addr, 4);
   checkException();
 
   return op_code;
@@ -244,7 +244,7 @@ unsigned long long v9ProcessorImpl::readVAddr_QemuImpl(VirtualMemoryAddress anAd
   try {
     API::v9_memory_transaction_t xact;
     translate_QemuImpl( xact, anAddress, anASI );
-    unsigned long long value = Qemu::API::QEMU_read_phys_memory( *this, xact.s.physical_address, aSize);
+    unsigned long long value = Qemu::API::QEMU_read_phys_memory( xact.s.physical_address, aSize);
     checkException();
 
     return value;
@@ -261,7 +261,7 @@ unsigned long long v9ProcessorImpl::readVAddrXendian_QemuImpl(VirtualMemoryAddre
 
     DBG_(VVerb, ( << "Virtual: " << anAddress << " ASI: " << anASI << " Size: " << aSize << " Physical: " << xact.s.physical_address) );
 
-    unsigned long long value = Qemu::API::QEMU_read_phys_memory( *this, xact.s.physical_address, aSize);
+    unsigned long long value = Qemu::API::QEMU_read_phys_memory( xact.s.physical_address, aSize);
     checkException();
 
     if (xact.s.inverse_endian) {
@@ -277,7 +277,7 @@ unsigned long long v9ProcessorImpl::readVAddrXendian_QemuImpl(VirtualMemoryAddre
         API::logical_address_t addr(anAddress);
         API::physical_address_t phy_addr = API::QEMU_logical_to_physical(*this, API::QEMU_DI_Data, addr);
         checkException();
-        unsigned long long value = Qemu::API::QEMU_read_phys_memory( *this, phy_addr, aSize);
+        unsigned long long value = Qemu::API::QEMU_read_phys_memory( phy_addr, aSize);
         checkException();
         return value;
       } catch (MemoryException & anError ) {}
@@ -325,7 +325,7 @@ void v9ProcessorImpl::translate_QemuImpl(  API::v9_memory_transaction_t & xact, 
     API::physical_address_t phy_addr = API::QEMU_logical_to_physical(*this, API::QEMU_DI_Data, addr);
     checkException();
     if (phy_addr != xact.s.physical_address ) {
-      DBG_(Verb, ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] Translation difference between CPU and MMU for " << anAddress << ".  Using CPU translation of " << PhysicalMemoryAddress(phy_addr) ));
+      DBG_(Verb, ( << "CPU[" << Qemu::API::QEMU_get_cpu_index(*this) << "] Translation difference between CPU and MMU for " << anAddress << ".  Using CPU translation of " << PhysicalMemoryAddress(phy_addr) ));
       xact.s.physical_address = phy_addr;
       return;
     }
@@ -343,19 +343,19 @@ MMU::mmu_t v9ProcessorImpl::getMMU() {
 }
 
 void v9ProcessorImpl::ckptMMU() {
-  DBG_(Verb, ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] checkpointing MMU. size=" << theMMUckpts[id()].size()));
+  DBG_(Verb, ( << "CPU[" << Qemu::API::QEMU_get_cpu_index(*this) << "] checkpointing MMU. size=" << theMMUckpts[id()].size()));
   theMMUckpts[id()].push_back(theMMUs[id()]);
 }
 
 void v9ProcessorImpl::releaseMMUCkpt() {
-  DBG_(Verb, ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] releasing oldest MMU checkpoint. size=" << theMMUckpts[id()].size()));
-  DBG_Assert(!theMMUckpts[id()].empty(), ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] has no checkpoint to release"));
+  DBG_(Verb, ( << "CPU[" << Qemu::API::QEMU_get_cpu_index(*this) << "] releasing oldest MMU checkpoint. size=" << theMMUckpts[id()].size()));
+  DBG_Assert(!theMMUckpts[id()].empty(), ( << "CPU[" << Qemu::API::QEMU_get_cpu_index(*this) << "] has no checkpoint to release"));
   theMMUckpts[id()].pop_front();
 }
 
 void v9ProcessorImpl::rollbackMMUCkpts(int n) {
-  DBG_(Verb, ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] rolling back " << n << " MMU checkpoints"));
-  DBG_Assert(theMMUckpts[id()].size() > (unsigned)n, ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] has " << theMMUckpts[id()].size() << " but needs > " << n));
+  DBG_(Verb, ( << "CPU[" << Qemu::API::QEMU_get_cpu_index(*this) << "] rolling back " << n << " MMU checkpoints"));
+  DBG_Assert(theMMUckpts[id()].size() > (unsigned)n, ( << "CPU[" << Qemu::API::QEMU_get_cpu_index(*this) << "] has " << theMMUckpts[id()].size() << " but needs > " << n));
   // remove n checkpoints to get back to where we started
   for (int i = 0; i < n; ++i) theMMUckpts[id()].pop_back();
   theMMUs[id()] = theMMUckpts[id()].back();
@@ -480,7 +480,7 @@ long v9ProcessorImpl::fetchInstruction_MMUImpl(Translation & aTranslation, bool 
   translate_MMUImpl(aTranslation, aTakeTrap );
   if (aTranslation.thePaddr != 0) {
     try {
-      op_code = Qemu::API::QEMU_read_phys_memory( *this, aTranslation.thePaddr, 4);
+      op_code = Qemu::API::QEMU_read_phys_memory( aTranslation.thePaddr, 4);
       checkException();
     } catch (...) {
       op_code = 0;
@@ -496,7 +496,7 @@ unsigned long long v9ProcessorImpl::readVAddr_MMUImpl(Translation & aTranslation
 
     DBG_(VVerb, ( << "Virtual: " << aTranslation.theVaddr << " ASI: " << aTranslation.theASI << " Size: " << aSize << " Physical: " << aTranslation.thePaddr ) );
 
-    unsigned long long value = Qemu::API::QEMU_read_phys_memory( *this, aTranslation.thePaddr, aSize);
+    unsigned long long value = Qemu::API::QEMU_read_phys_memory( aTranslation.thePaddr, aSize);
     checkException();
 
     return value;
@@ -510,7 +510,7 @@ unsigned long long v9ProcessorImpl::readVAddrXendian_MMUImpl(Translation & aTran
 
     DBG_(VVerb, ( << "Virtual: " << aTranslation.theVaddr << " ASI: " << aTranslation.theASI << " Size: " << aSize << " Physical: " << aTranslation.thePaddr ) );
 
-    unsigned long long value = Qemu::API::QEMU_read_phys_memory( *this, aTranslation.thePaddr, aSize);
+    unsigned long long value = Qemu::API::QEMU_read_phys_memory( aTranslation.thePaddr, aSize);
     checkException();
 
     if (aTranslation.isXEndian()) {
@@ -569,10 +569,6 @@ bool Translation::isInterrupt() {
     default: //all others
       return false;
   }
-}
-
-bool Translation::isTranslating() {
-  return isTranslatingASI(theASI);
 }
 
 namespace MMU {

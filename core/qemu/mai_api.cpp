@@ -1,4 +1,4 @@
-//ALEX: THIS FILE IS CURRENTLY A DUMMY. 
+//ALEX: THIS FILE IS CURRENTLY A DUMMY.
 //Copied this file from SimFlex. Will gradually populate it properly.
 
 #include <iostream>
@@ -7,6 +7,7 @@
 #include <boost/regex.hpp>
 #include <cmath>
 
+#include <boost/utility.hpp>
 #include <boost/throw_exception.hpp>
 #include <memory>
 #include <functional>
@@ -16,18 +17,23 @@
 #include <core/qemu/api_wrappers.hpp>
 #include <core/qemu/qemu.h>
 
+
+#include <core/target.hpp>
+#include <core/flexus.hpp>
+#include <core/exception.hpp>
+#include <core/qemu/configuration_api.hpp>
+#include <core/types.hpp>
+#include <core/qemu/mai_api.hpp>
+
+
+using namespace Flexus::Core;
+
 #if FLEXUS_TARGET_IS(v9) || FLEXUS_TARGET_IS(ARM)// For now, we just disable that.
 
-// added by PLotfi
 #include <core/configuration.hpp>
-// end PLotfi
-
-#include "mai_api.hpp"
 
 namespace Flexus {
 namespace Qemu {
-
-//void onInterrupt (void * aPtr, Qemu::API::conf_object_t * anObj, long long aVector);
 
 struct InterruptManager {
   int theHandle;
@@ -67,26 +73,42 @@ void onInterrupt (void * aPtr, void* anObj, long long aVector) {
 }
 
 void armProcessorImpl::initialize() {
-  DBG_( Dev, ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] Registering for interrupts "));
+  DBG_( Dev, ( << "CPU[" << Qemu::API::QEMU_get_cpu_index(*this) << "] Registering for interrupts "));
   theInterruptManager.registerCPU( this->theProcessor, [this](int64_t x){ return this->handleInterrupt(x); });//ll::bind( &v9ProcessorImpl::handleInterrupt, this, ll::_1 ) );
 }
 
 void armProcessorImpl::handleInterrupt( long long aVector) {
    DBG_( Tmp, ( << "Flexus: in handleInterrupt " ));
-  DBG_( Tmp, ( << "CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "] Interrupt " << std::hex << aVector << std::dec ));
+  DBG_( Tmp, ( << "CPU[" << Qemu::API::QEMU_get_cpu_index(*this) << "] Interrupt " << std::hex << aVector << std::dec ));
   thePendingInterrupt = aVector;
+}
+
+
+//static aaa (uint8_t* code, size_t size ){
+//    for (int i = 0; i < size; i++){
+//        code[i]
+//    }
+//}
+
+uint32_t armProcessorImpl::fetchInstruction(Translation & aTranslation) {
+  API::logical_address_t addr = aTranslation.theVaddr;
+  API::physical_address_t phy_addr = API::QEMU_logical_to_physical(*this, API::QEMU_DI_Instruction, addr);
+
+  bits a = construct(Qemu::API::QEMU_read_phys_memory( phy_addr, 4), 4);
+
+  return (uint32_t) (construct(Qemu::API::QEMU_read_phys_memory( phy_addr, 4), 4).to_ulong());
 }
 
 static const int kTL = 46;
 static const int kTT1 = 78;
 
 int armProcessorImpl::getPendingException() const {
-  int tl = readRegister( kTL );
-  if (tl > 0) {
-    return readRegister( kTT1 + tl - 1);
-  } else {
-    return 0;
-  }
+//  int tl = readRegister( kTL );
+//  if (tl > 0) {
+//    return readRegister( kTT1 + tl - 1);
+//  } else {
+//    return 0;
+//  }
 }
 
 int armProcessorImpl::getPendingInterrupt() const {
@@ -96,112 +118,11 @@ int armProcessorImpl::getPendingInterrupt() const {
   return thePendingInterrupt;
 }
 
-int armProcessorImpl::advance(bool anAcceptInterrupt) {
+int armProcessorImpl::advance() {
   int exception = 0;
 
-//  if (! theInterruptsConnected) {
-//    theInterruptsConnected = true;
-//    initialize();
-//  }
+exception = Qemu::API::QEMU_cpu_execute(theProcessor);
 
-//DBG_(Tmp, ( << "MAI: advancing QEMU " ) );
-exception = Qemu::API::QEMU_cpu_exec_proc(this->theProcessor);
-
-//if (exception == 0x10000){
-//  DBG_(Tmp, (<<"Get an EXCEPTION_INTERRUPT"));
-//  exception = Qemu::API::QEMU_cpu_exec_proc(this->theProcessor);
-//}
-
-//ALEX - TODO: When advance() is called, need to tell QEMU to advance one instruction.
-//Also need to deal with interrupts and exceptions
-
- /* if (anAcceptInterrupt) {
-    //Try to take the interrupt now.
-    int interrupt = thePendingInterrupt;
-    switch (API::QEMU_instruction_handle_interrupt(*this, thePendingInterrupt)) {
-      case API::QEMU_IE_No_Exception:
-        thePendingInterrupt = API::QEMU_PE_No_Exception;
-        DBG_( Crit, ( << "Got QEMU_IE_No_Exception trying to take an interrupt" ) );
-        break;
-      case API::QEMU_IE_OK:
-        thePendingInterrupt = API::QEMU_PE_No_Exception;
-        return interrupt;
-      case API::QEMU_IE_Interrupts_Disabled:
-        // OK try later
-        DBG_( Crit, ( << "Got QEMU_IE_Interruts_Disabled trying to take an interrupt on CPU[" << Qemu::API::QEMU_get_processor_number(*this) << "]"  ) );
-        return -1;
-      case API::QEMU_IE_Illegal_Interrupt_Point:
-        // OK try later
-        DBG_( Crit, ( << "Got QEMU_IE_Illegal_Interrupt_Point trying to take an interrupt" ) );
-        return -1;
-      case API::QEMU_IE_Step_Breakpoint:
-        //Return to prompt next cycle
-        //API::SIM_break_cycle(*this, 0);
-        API::QEMU_break_simulation("");
-        break;
-      default:
-        DBG_( Crit, ( << "Bad return value from QEMU_instruction_handle_interrupt" ) );
-    }
-  }*/
-
-/*  int except = API::QEMU_get_pending_exception();
-  if (except != API::QEMUExc_No_Exception) {
-    DBG_( Crit, ( << "Pending Exception: " << except ) );
-  }
-
-  //Normal instruction processing
-  API::instruction_id_t inst = API::SIM_instruction_begin(*this);
-  API::SIM_instruction_insert(0, inst);
-
-  bool retry = false;
-  do {
-    retry = false;
-    API::instruction_error_t err = API::SIM_instruction_commit(inst);
-    if (err == API::Sim_IE_Exception ) {
-      err = API::SIM_instruction_handle_exception(inst);
-      exception = getPendingException();
-      DBG_( Verb, ( << "Exception raised by CPU[" << Simics::API::SIM_get_processor_number(*this) << "]: " << err << " Exception #:" << exception) );
-      API::SIM_instruction_end(inst);
-      if (err != API::Sim_IE_OK) {
-        DBG_( Crit, ( << "Got an error trying to handle exception on CPU[" << Simics::API::SIM_get_processor_number(*this) << ": " << err << " exception was: " << exception) );
-      }
-      return exception; //Instruction is already ended
-    } else if (err == API::Sim_IE_Code_Breakpoint || err == API::Sim_IE_Step_Breakpoint || err == API::Sim_IE_Hap_Breakpoint ) {
-      DBG_( Verb, ( << "Triggerred Breakpoint on CPU[" << Simics::API::SIM_get_processor_number(*this) << "]" ) );
-      API::SIM_break_cycle(*this, 0);
-      retry = true;
-    } else if (err != API::Sim_IE_OK) {
-      DBG_( Crit, ( << "Got an error trying to advance CPU[" << Simics::API::SIM_get_processor_number(*this) << "]: " << err) );
-      //Some error other than an exception
-    }
-  } while ( retry );
-  API::SIM_instruction_end(inst);
-*/
-
-//  DBG_(Tmp, (<< "The exception received from qemu: "<< exception));
-//  //NOOSHIN : end
-
-//  switch(exception){
-
-//     case 0x10000:
-//       //exception = 0x64;
-//       exception = 0;
-//       break;
-//     case 0x10001:
-//     case 0x10002:
-//     case 0x10003:
-//     case 0x10004:
-//       //read the register
-//       exception = getPendingException();//check
-//       break;
-
-//     default:
-//       DBG_(Tmp, (<<"It is not an exception, it may be an interrupt: "<< exception));
-//       return 0; //FIXME: What do we do in this case?
-//       //QEMU_read_register(this->theProcessor, int reg_index, unsigned *reg_size, void *data_out)
-//  }
-
-//  //exception = API::QEMU_advance();
   return exception;
 }
 
@@ -269,7 +190,7 @@ ProcessorMapper::ProcessorMapper() {
   // Find the Processors, Find All of them
 
   int proc_count = API::QEMU_get_num_cores();
-  API::conf_object_t *proc_list = API::QEMU_get_all_processors(&proc_count);
+  API::conf_object_t *proc_list = API::QEMU_get_all_cpus();
   std::vector<cpu_desc_t> cpu_list;
   int num_flexus_cpus = 0;
   int num_client_cpus = proc_count;
@@ -282,7 +203,7 @@ ProcessorMapper::ProcessorMapper() {
 
   for (int i = 0; i < proc_count; i++) {
     API::conf_object_t * cpu = &(proc_list[i]);
-    int qemu_id = API::QEMU_get_processor_number(cpu);
+    int qemu_id = API::QEMU_get_cpu_index(cpu);
     DBG_(Tmp, ( << "Processor " << i << ": " << cpu->name << " - CPU " << qemu_id ));
 
     bool is_client = false;
@@ -331,7 +252,7 @@ ProcessorMapper::ProcessorMapper() {
   if (strThreads == "not_found")
     numThreads = 1;
   else
-    numThreads = atoi(strThreads.c_str()); 
+    numThreads = atoi(strThreads.c_str());
 
   DBG_Assert(numThreads > 0, ( << "Number of threads per core: " << numThreads));
 
@@ -359,17 +280,17 @@ ProcessorMapper::ProcessorMapper() {
         num_vm_rows = (int)std::ceil(std::sqrt(cores_per_vm));
         num_vm_cols = num_vm_rows;
         DBG_(Crit, ( << "Square VM: " << num_vm_rows << "x" << num_vm_cols ));
-      } 
-      else { // Non square number of cores per VM. Dividing by 2 it becomes square number. 
-             // e.g. 32 --> 32/2 = 16 and hence 8 rows of 4 cores each.  
-  	     // so the VMs are mapped correctly according to the chip topology. 	
+      }
+      else { // Non square number of cores per VM. Dividing by 2 it becomes square number.
+             // e.g. 32 --> 32/2 = 16 and hence 8 rows of 4 cores each.
+         // so the VMs are mapped correctly according to the chip topology.
         num_vm_cols = (int) std::ceil(std::sqrt(cores_per_vm/2));
         num_vm_rows = cores_per_vm/num_vm_cols;
         DBG_(Crit, ( << "Rectangular VM: " << num_vm_rows << "x" << num_vm_cols ));
       }
-    }  
+    }
     else { // Non square number of VMs. Dividing by it becomes square number.
-  	   // e.g. 8 --> 8/2 = 4 and hence 2 rows of 4 VMs each. 
+       // e.g. 8 --> 8/2 = 4 and hence 2 rows of 4 VMs each.
       vms_per_row = (int)std::ceil(std::sqrt(theNumVMs/2));
       vms_per_col = theNumVMs/vms_per_row;
       DBG_(Crit, ( << "Rectangular topology of VMs (rowsXcols): " << vms_per_col << "x" << vms_per_row ));
@@ -378,8 +299,8 @@ ProcessorMapper::ProcessorMapper() {
         num_vm_cols = num_vm_rows;
         DBG_(Crit, ( << "Square VM: " << num_vm_rows << "x" << num_vm_cols ));
       }
-      else { // Non square number of cores per VM. Dividing by 2 it becomes square number. 
-  	     // e.g. 32 --> 32/2 = 16 and hence 4 rows of 8 cores each.  
+      else { // Non square number of cores per VM. Dividing by 2 it becomes square number.
+         // e.g. 32 --> 32/2 = 16 and hence 4 rows of 8 cores each.
         num_vm_rows = (int) std::ceil(std::sqrt(cores_per_vm/2));
         num_vm_cols = cores_per_vm/num_vm_rows;
         DBG_(Crit, ( << "Rectangular VM: " << num_vm_rows << "x" << num_vm_cols ));
@@ -392,8 +313,8 @@ ProcessorMapper::ProcessorMapper() {
     DBG_(Dev, ( << "Manual organization of VMs according to the configuration file"));
     int i=0,j=0;
     // Search for the organization parameter
-    std::string strOrg = Flexus::Core::ConfigurationManager::getParameterValue("-mapper:organization"); 
-    DBG_Assert(strOrg != "not_found", ( << "-mapper:organization parameter does not exist in the configuration file" )); 
+    std::string strOrg = Flexus::Core::ConfigurationManager::getParameterValue("-mapper:organization");
+    DBG_Assert(strOrg != "not_found", ( << "-mapper:organization parameter does not exist in the configuration file" ));
 /*
     found=(ss.str()).find(str4)+str4.length();
     start=(ss.str()).find(str,found);
@@ -430,7 +351,7 @@ ProcessorMapper::ProcessorMapper() {
       theClientMap[client_index] = iter->qemu_id;
       DBG_(Crit, ( << "Client[" << client_index << "] = " << iter->qemu_id ));
       client_index++;
-    } 
+    }
     else {
       if (manual==0){ // re-map flexus index, so VMs are organized in a nice grid
         int core_index = flexus_index / numThreads;
@@ -517,7 +438,7 @@ int ProcessorMapper::numProcessors() {
   return (int)(theMapper->theProcMap.size());
 }
 
-} //end Namespace Qemu 
+} //end Namespace Qemu
 } //end namespace Flexus
 
 #endif // IS_V9

@@ -89,11 +89,11 @@ bits concat_bits (const bits & lhs, const bits & rhs);
 
 std::pair<bits,bits> splitBits(const bits & input);
 
-
+bits construct(uint8_t* bytes, int size);
 
 
 typedef uint32_t Word32Bit;
-typedef int64_t Word64Bit;
+typedef uint64_t Word64Bit;
 
 } // end namespace Core
 
