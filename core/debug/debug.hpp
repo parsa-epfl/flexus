@@ -15,6 +15,8 @@
 
 #define DBG_Control()     <core/debug/control.hpp>
 
+
+
 #define DBG_(Sev, operations) \
   BOOST_PP_CAT(DBG__Undefined_Severity_Level__,Sev) ( BOOST_PP_CAT(DBG__internal_,Sev) ) ( DBG_internal_Sev_to_int(Sev) , operations)   /**/
 
@@ -89,6 +91,63 @@ extern bool Stats_debug_enabled;
 #define DBG_SetCoreDebugging true
 #define DBG_SetAssertions true
 #include DBG_Control()
+
+
+#define RESET   "\e[0m"
+#define BLACK   "\e[1;30m"
+#define RED     "\e[1;31m"
+#define GREEN   "\e[0;32m"
+#define YELLOW  "\e[1;33m"
+#define BLUE    "\e[1;34m"
+#define PURPLE  "\e[1;35m"
+#define CYAN    "\e[1;36m"
+#define WHITE   "\e[1;37m"
+
+#define BG_BLACK   "\e[40m"
+#define BG_RED     "\e[41m"
+#define BG_GREEN   "\e[42m"
+#define BG_YELLOW  "\e[43m"
+#define BG_BLUE    "\e[44m"
+#define BG_PURPLE  "\e[45m"
+#define BG_CYAN    "\e[46m"
+#define BG_WHITE   "\e[47m"
+
+
+#define __TRACE_W(COLOR, WORD) \
+    do { \
+    DBG_(Tmp,(<< COLOR <<__func__ << " " << WORD << RESET)); \
+    } while(0)
+
+#define __TRACE(COLOR) \
+    do { \
+    DBG_(Tmp,(<< COLOR <<__func__ << RESET)); \
+    } while(0)
+
+#define DECODER_TRACE \
+    __TRACE (RED)
+#define SEMANTICS_TRACE \
+    __TRACE (CYAN)
+#define DISPATCH_TRACE \
+    __TRACE (YELLOW)
+#define CORE_TRACE \
+    __TRACE (GREEN)
+
+
+#define SEMANTICS_DBG(WORD) \
+    __TRACE_W (CYAN, WORD)
+#define DECODER_DBG(WORD) \
+    __TRACE_W (RED, WORD)
+#define DISPATCH_DBG(WORD) \
+    __TRACE_W (YELLOW, WORD)
+#define CORE_DBG(WORD) \
+    __TRACE_W (GREEN, WORD)
+#define FETCH_DBG(WORD) \
+    __TRACE_W (BLUE, WORD)
+#define AGU_DBG(WORD) \
+    __TRACE_W (PURPLE, WORD)
+#define FLEXUS_DBG(WORD) \
+    __TRACE_W (WHITE, WORD)
+
 
 #endif //FLEXUS_CORE_DEBUG_DEBUG_HPP_INCLUDED
 
