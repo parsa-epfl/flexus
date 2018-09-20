@@ -386,7 +386,7 @@ void resetArchitecturalState()
 {
     theCore->setPC( theCPU->getPC());
     resetRoundingMode();
-    resetSpecialRegs();
+    //resetSpecialRegs(); // Mark removed until exceptions can be read from QEMU
     fillXRegisters();
     fillVRegisters();
 }
