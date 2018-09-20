@@ -45,13 +45,12 @@
 namespace nuArchARM {
 
 CoreImpl::CoreImpl( uArchOptions_t options
-                    , std::function< void (Flexus::Qemu::Translation &, bool) > xlat
-                    , std::function<int(bool)> _advance
+                    , std::function< void (Flexus::Qemu::Translation &) > xlat
+                    , std::function<int()> _advance
                     , std::function< void(eSquashCause)> _squash
                     , std::function< void(VirtualMemoryAddress)> _redirect
                     , std::function< void(int, int)> _change_mode
                     , std::function< void( boost::intrusive_ptr<BranchFeedback> )> _feedback
-                    , std::function< void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> ) > _notifyTMS /* CMU-ONLY */
                     , std::function< void( bool )> _signalStoreForwardingHit
                   )
   : theName(options.name)
@@ -62,7 +61,6 @@ CoreImpl::CoreImpl( uArchOptions_t options
   , redirect_fn(_redirect)
   , change_mode_fn(_change_mode)
   , feedback_fn(_feedback)
-  , notifyTMS_fn(_notifyTMS) /* CMU-ONLY */
   , signalStoreForwardingHit_fn(_signalStoreForwardingHit)
  // , thePendingTrap(0)
   , theBypassNetwork( kxRegs_Total + 2 * options.ROBSize, kvRegs + 4 * options.ROBSize, 5 + options.ROBSize)
@@ -272,7 +270,6 @@ CoreImpl::CoreImpl( uArchOptions_t options
   , intMultCyclesToReady(options.numIntMult, 0)
   , fpAluCyclesToReady(options.numFpAlu, 0)
   , fpMultCyclesToReady(options.numFpMult, 0)
-  , theSuccess(false)
 {
 
     // original constructor continues here...
@@ -301,6 +298,9 @@ CoreImpl::CoreImpl( uArchOptions_t options
     );
 
   reset();
+
+  // create system operation mappings
+//  initSystemRegisters(theSystemRegisters);
 
   theCommitUSArray[0] = &theCommitCount_NonSpin_User;
   theCommitUSArray[1] = &theCommitCount_NonSpin_System;
@@ -499,13 +499,12 @@ void CoreImpl::setRoundingMode(uint32_t aRoundingMode) {
 }
 
 CoreModel * CoreModel::construct( uArchOptions_t options
-                                  , std::function< void (Flexus::Qemu::Translation &, bool) > translate
-                                  , std::function<int(bool)> advance
+                                  , std::function< void (Flexus::Qemu::Translation &) > translate
+                                  , std::function<int()> advance
                                   , std::function< void(eSquashCause)> squash
                                   , std::function< void(VirtualMemoryAddress)> redirect
                                   , std::function< void(int, int)> change_mode
                                   , std::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback
-                                  , std::function<void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> )> notifyTMS /* CMU-ONLY */
                                   , std::function< void( bool )> signalStoreForwardingHit
                                 ) {
 
@@ -516,7 +515,6 @@ CoreModel * CoreModel::construct( uArchOptions_t options
                        , redirect
                        , change_mode
                        , feedback
-                       , notifyTMS /* CMU-ONLY */
                        , signalStoreForwardingHit
                      );
 }

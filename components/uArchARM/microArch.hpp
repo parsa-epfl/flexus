@@ -62,7 +62,6 @@ struct microArch {
              , std::function< void(VirtualMemoryAddress)> redirect
              , std::function< void(int, int)> changeState
              , std::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback
-             , std::function< void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> )> notifyTMS /* CMU-ONLY */
              , std::function< void(bool) > aStoreForwardingHitFunction
            );
 

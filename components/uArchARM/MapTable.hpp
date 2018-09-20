@@ -209,7 +209,7 @@ struct PhysicalMap {
     pRegister new_reg = theFreeList.front();
     theFreeList.pop_front();
     theMappings[aRegisterName] = new_reg;
-    DBG_(Tmp, ( << "\e[1;35m" << "Mapping archReg[" << aRegisterName << "] to pReg[" <<  new_reg << "] - previous pReg[" << previous_reg<<  "]\e[0m"));
+    DISPATCH_DBG("Mapping archReg[" << aRegisterName << "] -> pReg[" <<  new_reg << "] - previous pReg[" << previous_reg << "]");
     theAssignedRegisters[aRegisterName].push_back(new_reg);
     DBG_Assert( theReverseMappings[new_reg] == -1);
     theReverseMappings[new_reg] = aRegisterName;

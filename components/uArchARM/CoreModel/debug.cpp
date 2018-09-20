@@ -219,16 +219,16 @@ void CoreImpl::dumpMSHR() {
 }
 
 void CoreImpl::dumpActions() {
-  /*
-    action_list_t::iterator iter, end;
 
-    if ( ! theRescheduledActions.empty() ) {
-      DBG_( VVerb, ( << " *** Rescheduled SemanticActions ***" ) );
-      for ( iter = theRescheduledActions.begin(), end = theRescheduledActions.end(); iter != end; ++iter) {
-        DBG_( VVerb, ( << **iter ) );
-      }
-    }
-  */
+//    action_list_t::iterator iter, end;
+
+//    if ( ! theRescheduledActions.empty() ) {
+//      DBG_( VVerb, ( << " *** Rescheduled SemanticActions ***" ) );
+//      for ( iter = theRescheduledActions.begin(), end = theRescheduledActions.end(); iter != end; ++iter) {
+//        DBG_( VVerb, ( << **iter ) );
+//      }
+//    }
+
 }
 
 void CoreImpl::printROB() {

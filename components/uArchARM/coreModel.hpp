@@ -70,13 +70,12 @@ struct armState {
 };
 struct CoreModel : public uArchARM {
   static CoreModel * construct(uArchOptions_t options
-                               , std::function< void (Flexus::Qemu::Translation &, bool) > translate
-                               , std::function< int(bool) > advance
+                               , std::function< void (Flexus::Qemu::Translation &) > translate
+                               , std::function< int() > advance
                                , std::function< void(eSquashCause) > squash
                                , std::function< void(VirtualMemoryAddress) > redirect
                                , std::function< void(int, int) > change_mode
                                , std::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback
-                               , std::function< void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> )> notifyTMS /* CMU-ONLY */
                                , std::function< void( bool )> signalStoreForwardingHit
                               );
 
@@ -86,21 +85,6 @@ struct CoreModel : public uArchARM {
 //  virtual int32_t selectedRegisterSet() const = 0;
   virtual void setRoundingMode(uint32_t aRoundingMode) = 0;
 
-
-  virtual void setPSTATE( uint64_t aPSTATE) = 0;
-  virtual uint64_t getPSTATE( ) = 0;
-  virtual void setSP( uint64_t aSP, unsigned idx) = 0;
-  virtual uint64_t getSP(unsigned idx) = 0;
-  virtual void setEL( uint64_t aEL, unsigned idx) = 0;
-  virtual uint64_t getEL(unsigned idx) = 0;
-  virtual void setSPSR_EL( uint64_t aSPSR, unsigned idx) = 0;
-  virtual uint64_t getSPSR_EL(unsigned idx) = 0;
-  virtual void setFPCR( uint64_t anFPCR) = 0;
-  virtual void setSPSR(uint64_t anSPSR) = 0;
-  virtual uint64_t getSPSR() = 0;
-  virtual void setCurrentEL(uint64_t anEL) = 0;
-  virtual uint64_t getCurrentEL() = 0;
-
   virtual void getARMState( armState & aState) = 0;
   virtual void restoreARMState( armState & aState) = 0;
 
@@ -109,9 +93,6 @@ struct CoreModel : public uArchARM {
   virtual void dumpActions() = 0;
   virtual void reset() = 0;
   virtual void resetARM() = 0;
-
-  virtual bool getSuccess() = 0;
-  virtual void setSuccess(bool val) = 0;
 
   virtual int32_t availableROB() const = 0;
   virtual bool isSynchronized() const = 0;
@@ -141,9 +122,9 @@ struct CoreModel : public uArchARM {
 
 };
 
-struct ResynchronizeWithSimicsException {
+struct ResynchronizeWithQemuException {
   bool expected;
-  ResynchronizeWithSimicsException(bool was_expected = false )  : expected(was_expected) {}
+  ResynchronizeWithQemuException(bool was_expected = false )  : expected(was_expected) {}
 };
 
 } //nuArchARM

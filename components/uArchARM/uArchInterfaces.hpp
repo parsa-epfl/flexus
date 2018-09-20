@@ -54,8 +54,10 @@
 #include <components/CommonQEMU/Slices/AbstractInstruction.hpp>
 #include <components/CommonQEMU/Slices/MemOp.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
-#include <core/qemu/ARMmmu.hpp>
+#include "CoreModel/SCTLR_EL.hpp"
+//#include "systemRegister.hpp"
 
+#include <core/qemu/mai_api.hpp>
 
 #define EL0 0
 #define EL1 1
@@ -69,6 +71,8 @@ struct BranchFeedback;
 }
 
 namespace nuArchARM {
+
+//struct SysRegInfo;
 
 using namespace Flexus::SharedTypes;
 
@@ -129,6 +133,69 @@ enum eConsistencyModel {
   , kRMO
 };
 
+
+enum eAccessResult {
+        /* Access is permitted */
+        kACCESS_OK = 0,
+        /* Access fails due to a configurable trap or enable which would
+         * result in a categorized exception syndrome giving information about
+         * the failing instruction (ie syndrome category 0x3, 0x4, 0x5, 0x6,
+         * 0xc or 0x18). The exception is taken to the usual target EL (EL1 or
+         * PL1 if in EL0, otherwise to the current EL).
+         */
+       kACCESS_TRAP = 1,
+        /* Access fails and results in an exception syndrome 0x0 ("uncategorized").
+         * Note that this is not a catch-all case -- the set of cases which may
+         * result in this failure is specifically defined by the architecture.
+         */
+       kACCESS_TRAP_UNCATEGORIZED = 2,
+        /* AskACCESS_TRAP, but for traps directly to EL2 or EL3 */
+       kACCESS_TRAP_EL2 = 3,
+       kACCESS_TRAP_EL3 = 4,
+        /* AskACCESS_UNCATEGORIZED, but for traps directly to EL2 or EL3 */
+       kACCESS_TRAP_UNCATEGORIZED_EL2 = 5,
+       kACCESS_TRAP_UNCATEGORIZED_EL3 = 6,
+        /* Access fails and results in an exception syndrome for an FP access,
+         * trapped directly to EL2 or EL3
+         */
+       kACCESS_TRAP_FP_EL2 = 7,
+       kACCESS_TRAP_FP_EL3 = 8,
+};
+
+enum eCacheType {
+    kInstructionCache,
+    kDataCache,
+};
+
+
+enum eCachePoint {
+    kPoC, // Point of Coherency (PoC). For a particular address, the PoC is the point at which all observers,
+          // for example, cores, DSPs, or DMA engines, that can access memory, are guaranteed to see the same copy
+          // of a memory location. Typically, this is the main external system memory.
+
+    kPoU, // Point of Unification (PoU). The PoU for a core is the point at which the instruction and data caches and
+          // translation table walks of the core are guaranteed to see the same copy of a memory location. For example,
+          // a unified level 2 cache would be the point of unification in a system with Harvard level 1 caches and a TLB
+          // for caching translation table entries. If no external cache is present, main memory would be the Point of Unification.
+};
+
+enum eShareableDomain {
+  kNonShareable,   // This represents memory accessible only by a single processor or other agent,
+                    // so memory accesses never need to be synchronized with other processors.
+                    // This domain is not typically used in SMP systems.
+
+  KInnerShareable, // This represents a shareability domain that can be shared by multiple processors,
+                    // but not necessarily all of the agents in the system. A system might have multiple Inner Shareable domains.
+                    // An operation that affects one Inner Shareable domain does not affect other Inner Shareable domains in the system.
+                    // An example of such a domain might be a quad-core Cortex-A57 cluster.
+
+  kOuterShareable, // An outer shareable (OSH) domain re-orderis shared by multiple agents and can consist of one or more inner shareable domains.
+                    // An operation that affects an outer shareable domain also implicitly affects all inner shareable domains inside it. However,
+                    // it does not otherwise behave as an inner shareable operation.
+
+  kFullSystem,     // An operation on the full system (SY) affects all observers in the system.
+};
+
 enum eInstructionClass {
   clsLoad
   , clsStore
@@ -142,7 +209,7 @@ enum eInstructionClass {
 enum eInstructionCode
 //Special cases
 {
-  codeBlackBox = 0
+  codeBlackBox
   , codeITLBMiss
   , codeNOP
   , codeMAGIC
@@ -153,24 +220,26 @@ enum eInstructionCode
   , codeDiv
   , codeRDPR
   , codeWRPR
+  //Register Window Manipulation
+  , codeRestore
+  , codeSave
+  , codeRestored
+  , codeSaved
+  , codeFLUSHW
   //FP
   , codeFP
   , codeALIGN
   //Memory
   , codeLoad
-  , codeLoadEX
   , codeLoadFP
   , codeLDD
   , codeStore
-  , codeStoreEX
   , codeStoreFP
   , codeSTD
   //Atomics
   , codeCAS
-  , codeCASP
   , codeSWAP
-  , codeLDREX
-  , codeSTREX
+  , codeLDSTUB
   //Branches
   , codeBranchUnconditional
   , codeBranchConditional
@@ -541,6 +610,61 @@ struct uArchARM {
     virtual void commitStore( boost::intrusive_ptr<Instruction> aCorrespondingInstruction) {
     DBG_Assert(false);
     }
+
+    virtual uint32_t currentEL() {
+        DBG_Assert(false);
+        return 0;
+    }
+
+    virtual void invalidateCache(eCacheType aType, eShareableDomain aDomain, eCachePoint aPoint){
+        DBG_Assert(false);
+    }
+
+    virtual void invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, eCachePoint aPoint){
+        DBG_Assert(false);
+    }
+
+    virtual void invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, uint32_t aSize, eCachePoint aPoint){
+        DBG_Assert(false);
+    }
+
+    virtual eAccessResult accessZVA(){
+        DBG_Assert(false);
+        return kACCESS_OK;
+    }
+
+
+    virtual uint32_t readDCZID_EL0(){
+        DBG_Assert(false);
+        return 0;
+    }
+
+    virtual SCTLR_EL _SCTLR(uint32_t anELn){
+        DBG_Assert(false);
+        return SCTLR_EL(0);
+    }
+
+//    virtual SysRegInfo* getSysRegInfo(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t CRn, uint8_t CRm, bool hasCP = false){
+//        DBG_Assert(false);
+//        return nullptr;
+//    }
+
+//    virtual void initSystemRegisters(std::multimap<int, SysRegInfo*> * aMap){
+//        DBG_Assert(false);
+//    }
+
+
+    virtual uint32_t increaseEL(){
+        DBG_Assert(false);
+        return 0;
+    }
+
+    virtual uint32_t decreaseEL(){
+    DBG_Assert(false);
+    return 0;
+    }
+
+
     virtual void accessMem( PhysicalMemoryAddress anAddress, boost::intrusive_ptr<Instruction> anInsn ) {
     DBG_Assert(false);
     }
@@ -557,29 +681,33 @@ struct uArchARM {
     return true;
     }
     virtual uint32_t getRoundingMode()              { DBG_Assert(false); return 0; }
-    virtual uint64_t getPSTATE()                    { DBG_Assert(false); return 0; }
-    virtual uint64_t getFPSR()                      { DBG_Assert(false); return 0; }
-    virtual void setFPSR(uint64_t aValue)           { DBG_Assert(false); }
-//    virtual uint64_t readFPSR()                     { DBG_Assert(false); return 0; }
-//    virtual void writeFPSR(uint64_t aValue)         { DBG_Assert(false); }
 
+    virtual uint32_t getPSTATE()                    { DBG_Assert(false); return 0; }
+    virtual void setPSTATE(uint32_t aPSTATE)        { DBG_Assert(false); }
 
+    virtual uint32_t getFPSR()                      { DBG_Assert(false); return 0; }
+    virtual void setFPSR(uint32_t aValue)           { DBG_Assert(false); }
+    virtual uint32_t getFPCR()                      { DBG_Assert(false); return 0; }
+    virtual void setFPCR(uint32_t aValue)           { DBG_Assert(false); }
+    virtual uint32_t readFPCR()                     { DBG_Assert(false); return 0; }
+    virtual void writeFPCR(uint32_t aValue)         { DBG_Assert(false); }
 
+    virtual void setSCTLR_EL( uint64_t* aSCTLR)        { DBG_Assert(false); }
+    virtual uint64_t* getSCTLR_EL()                     { DBG_Assert(false); return nullptr; }
 
-    virtual uint64_t getFPCR()                      { DBG_Assert(false); return 0; }
-    virtual void setFPCR(uint64_t aValue)           { DBG_Assert(false); }
-//    virtual uint64_t readFPCR()                     { DBG_Assert(false); return 0; }
-//    virtual void writeFPCR(uint64_t aValue)         { DBG_Assert(false); }
+    virtual void setHCREL2( uint64_t aSCTLR)        { DBG_Assert(false); }
+    virtual uint64_t getHCREL2()                     { DBG_Assert(false); return 0; }
 
-    virtual void setCurrentEL( uint64_t anEL)       { DBG_Assert(false); }
-    virtual uint64_t getCurrentEL()                 { DBG_Assert(false); return 0; }
+//    virtual uint32_t getDCZID_EL0();
+//    virtual void setDCZID_EL0(uint32_t aDCZID_EL0);
 
-    virtual void setSPSR( uint64_t anSPSR)          { DBG_Assert(false); }
-    virtual uint64_t getSPSR()                      { DBG_Assert(false); return 0; }
+    virtual bool isAARCH64(){ DBG_Assert(false); return false; }
+    virtual void setAARCH64(bool aMode){ DBG_Assert(false);}
 
-    virtual uint64_t getSP(unsigned idx)            { DBG_Assert(false); return 0; }
-    virtual uint64_t getEL(unsigned idx)            { DBG_Assert(false); return 0; }
-    virtual uint64_t getSPSR_EL(unsigned idx)       { DBG_Assert(false); return 0; }
+    virtual void setException( Flexus::Qemu::API::exception_t anEXP)  { DBG_Assert(false); }
+    virtual Flexus::Qemu::API::exception_t getException()  { DBG_Assert(false); }
+
+    virtual uint64_t getSP()            { DBG_Assert(false); return 0; }
 
     virtual uint64_t getXRegister(uint32_t aReg) { DBG_Assert(false); return 0; }
     virtual void setXRegister(uint32_t aReg, uint64_t aVal) { DBG_Assert(false); }

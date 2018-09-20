@@ -106,59 +106,64 @@ std::ostream & operator << ( std::ostream & anOstream, fccVals aVal) {
 }
 
 std::ostream & operator << ( std::ostream & anOstream, eInstructionCode aCode) {
-  const char * insn_codes[] =
-    //Special cases
-  {
-    "BlackBox"
-    , "ITLBMiss"
-    , "NOP"
-    , "MAGIC"
-    //ALU
-    , "SETHI"
-    , "ALU"
-    , "Mul"
-    , "Div"
-    , "RDPR"
-    , "WRPR"
-    //FP
-    , "FP"
-    , "ALIGN"
-    //Memory
-    , "Load"
-    , "LoadFP"
-    , "LDD"
-    , "Store"
-    , "StoreFP"
-    , "STD"
-    //Atomics
-    , "CAS"
-    , "SWAP"
-    , "LDREX"
-    , "STREX"
-    //Branches
-    , "BranchUnconditional"
-    , "BranchConditional"
-    , "BranchFPConditional"
-    , "CALL"
-    , "RETURN"
-    //MEMBARs
-    , "MEMBARSync"
-    , "MEMBARStLd"
-    , "MEMBARStSt"
-    //Unsupported Instructions
-    , "RDPRUnsupported"
-    , "WRPRUnsupported"
-    , "POPCUnsupported"
-    , "RETRYorDONE"
-    , "ExceptionUnsupported"
-    , "Exception"
-    , "SideEffectLoad"
-    , "SideEffectStore"
-    , "SideEffectAtomic"
-    , "DeviceAccess"
-    , "MMUAccess"
-    , "Tcc"
-  };
+    const char * insn_codes[] =
+      //Special cases
+    {
+      "BlackBox"
+      , "ITLBMiss"
+      , "NOP"
+      , "MAGIC"
+      //ALU
+      , "SETHI"
+      , "ALU"
+      , "Mul"
+      , "Div"
+      , "RDPR"
+      , "WRPR"
+      //Register Window Manipulation
+      , "Restore"
+      , "Save"
+      , "Restored"
+      , "Saved"
+      , "FLUSHW"
+      //FP
+      , "FP"
+      , "ALIGN"
+      //Memory
+      , "Load"
+      , "LoadFP"
+      , "LDD"
+      , "Store"
+      , "StoreFP"
+      , "STD"
+      //Atomics
+      , "CAS"
+      , "SWAP"
+      , "LDSTUB"
+      //Branches
+      , "BranchUnconditional"
+      , "BranchConditional"
+      , "BranchFPConditional"
+      , "CALL"
+      , "RETURN"
+      //MEMBARs
+      , "MEMBARSync"
+      , "MEMBARStLd"
+      , "MEMBARStSt"
+      //Unsupported Instructions
+      , "RDPRUnsupported"
+      , "WRPRUnsupported"
+      , "POPCUnsupported"
+      , "RETRYorDONE"
+      , "ExceptionUnsupported"
+      , "Exception"
+      , "SideEffectLoad"
+      , "SideEffectStore"
+      , "SideEffectAtomic"
+      , "DeviceAccess"
+      , "MMUAccess"
+      , "Tcc"
+    };
   if (aCode >= codeLastCode) {
     anOstream << "Invalid code(" << static_cast<int>(aCode) << ")";
   } else {

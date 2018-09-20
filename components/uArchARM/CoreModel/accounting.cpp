@@ -80,15 +80,15 @@ void CoreImpl::accountResyncReason( boost::intrusive_ptr< Instruction > anInstru
       ++theResync_DeviceAccess;
       break;
     case codeLoad:
-    case codeLoadEX:
+//    case codeLoadEX:
     case codeLoadFP:
     case codeLDD:
         ++theResync_Unknown;
         break;
     case codeCAS:
-    case codeCASP:
+//    case codeCASP:
     case codeSWAP:
-    case codeLDREX:
+//    case codeLDREX:
       ++theResync_Unknown;
         break;
     case codeSideEffectLoad:
@@ -830,7 +830,7 @@ void CoreImpl::accountRetire( boost::intrusive_ptr<Instruction> anInst) {
           break;
         } //clsAtomic
         case clsBranch:
-          DBG_(Tmp, (<<"Get a Branch........."));
+//          DBG_(Tmp, (<<"Get a Branch........."));
           theLastStallCause = nXactTimeBreakdown::kBranch;
           break;
         case clsMEMBAR:

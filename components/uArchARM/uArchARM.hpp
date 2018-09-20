@@ -115,7 +115,6 @@ COMPONENT_INTERFACE(
   PORT( PushOutput, vaddr_pair, RedirectOut )
   PORT( PushOutput, CPUState, ChangeCPUState )
   PORT( PushOutput, boost::intrusive_ptr<BranchFeedback>, BranchFeedbackOut )
-  PORT( PushOutput, PredictorTransport, NotifyTMS ) /* CMU-ONLY */
   PORT( PushOutput, MemoryTransport, MemoryOut_Request )
   PORT( PushOutput, MemoryTransport, MemoryOut_Snoop )
   PORT( PushInput, MemoryTransport, MemoryIn )

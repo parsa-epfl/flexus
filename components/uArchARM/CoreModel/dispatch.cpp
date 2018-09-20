@@ -219,14 +219,14 @@ void CoreImpl::dispatch( boost::intrusive_ptr< Instruction > anInsn) {
   std::list< boost::intrusive_ptr< Interaction > > dispatch_interactions;
   std::swap( dispatch_interactions, theDispatchInteractions );
 
-  anInsn->doDispatchEffects();
+   anInsn->doDispatchEffects();
 
   while (  ! dispatch_interactions.empty()) {
     DBG_( Tmp, ( << theName << " applying deferred interation " << (* dispatch_interactions.front() ) << " to " << *anInsn ) );
     (* dispatch_interactions.front() )(anInsn, *this);
     dispatch_interactions.pop_front();
   }
-  DBG_( Tmp, ( << "\e[1;35m" <<"DISPATCH: Done Dispatch"<< "\e[0m" ) );
+  DISPATCH_DBG("Done");
 }
 
 void CoreImpl::applyToNext( boost::intrusive_ptr< Instruction > anInsn, boost::intrusive_ptr<Interaction> anInteraction) {

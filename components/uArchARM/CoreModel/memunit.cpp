@@ -175,18 +175,6 @@ void CoreImpl::eraseLSQ( boost::intrusive_ptr< Instruction > anInsn ) {
     case kLSQ:
       --theLSQCount;
       DBG_Assert( theLSQCount >= 0);
-
-      /* CMU-ONLY-BLOCK-BEGIN */
-      //When we retire loads, if they were satisfied by the memory system
-      //(they have a transaction tracker object), inform the Consort component
-      if (iter->theOperation == kLoad && !anInsn->isAnnulled() && !anInsn->isComplete() && anInsn->getTransactionTracker()) {
-        if (anInsn->getTransactionTracker()->fillLevel() && *anInsn->getTransactionTracker()->fillLevel() == ePrefetchBuffer) {
-          notifyTMS_fn( PredictorMessage::eReadPredicted, iter->thePaddr,  anInsn->getTransactionTracker());
-        } else {
-          notifyTMS_fn( PredictorMessage::eReadNonPredicted, iter->thePaddr,  anInsn->getTransactionTracker());
-        }
-      }
-      /* CMU-ONLY-BLOCK-END */
       break;
     case kSSB:
     case kSB:
@@ -308,7 +296,7 @@ void CoreImpl::accessMem( PhysicalMemoryAddress anAddress, boost::intrusive_ptr<
   if (iter != theMemQueue.get<by_insn>().end() && iter->isAtomic() && iter->theQueue == kSSB) {
     DBG_(Dev, ( << theName << " atomic committing in body of checkpoint " << *iter ) );
     //theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
-    theMemQueue.get<by_insn>().modify( iter, ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
+    ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theNode)).access(theNode, anAddress);
   }
 }
 
@@ -530,7 +518,7 @@ void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry 
     //xlat.theTL = getTL();
     xlat.thePSTATE = getPSTATE() ;
     xlat.theType = ( lsq_entry->isStore() ? Flexus::Qemu::Translation::eStore :  Flexus::Qemu::Translation::eLoad) ;
-    translate(xlat, false);
+    translate(xlat);
     lsq_entry->thePaddr = xlat.thePaddr;
     lsq_entry->theSideEffect = xlat.isSideEffect() || ( ! xlat.isTranslating() /*&& ! xlat.isMMU() */);
     lsq_entry->theInverseEndian = xlat.isXEndian();
@@ -646,21 +634,27 @@ void CoreImpl::resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, Virtual
   memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( anInsn );
   DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end());
   if ( lsq_entry->theVaddr == anAddr  ) {
+      CORE_DBG("no update neccessary for "<< anAddr);
     return;  //No change
   }
   DBG_( Verb, ( << "Resolved VAddr for " << *lsq_entry << " to " << anAddr) );
+  CORE_DBG("Resolved VAddr for " << *lsq_entry << " to " << anAddr);
 
   if ( lsq_entry->isStore() && lsq_entry->theValue ) {
+    CORE_DBG("lsq_entry->isStore() && lsq_entry->theValue");
     resnoopDependantLoads(lsq_entry);
   }
 
   if (anAddr == kUnresolved) {
+      CORE_DBG("anAddr == kUnresolved");
     if (lsq_entry->isLoad() && lsq_entry->loadValue()) {
+        CORE_DBG("lsq_entry->isLoad() && lsq_entry->loadValue()");
       DBG_Assert( lsq_entry->theDependance );
       lsq_entry->theDependance->squash();
       lsq_entry->loadValue() = boost::none;
     }
     if (lsq_entry->theMSHR) {
+        CORE_DBG("lsq_entry->theMSHR");
       breakMSHRLink( lsq_entry );
     }
     lsq_entry->theIssued = false;
@@ -734,12 +728,16 @@ void CoreImpl::resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, Virtual
 boost::optional< memq_t::index< by_insn >::type::iterator >  CoreImpl::doLoad( memq_t::index< by_insn >::type::iterator lsq_entry, boost::optional< memq_t::index< by_insn >::type::iterator > aCachedSnoopState ) {
   DBG_Assert( lsq_entry->isLoad() ) ;
 
+  CORE_DBG(theName << " doLoad: " << *lsq_entry);
   DBG_( Verb, ( << theName << " doLoad: " << *lsq_entry ) );
 
   if (lsq_entry->isAtomic() && lsq_entry->thePartialSnoop) {
+      CORE_DBG("lsq_entry->isAtomic() && lsq_entry->thePartialSnoop");
+
     //Partial-snoop atomics must wait for the SB to drain and issue
     //non-speculatively
     if (lsq_entry->loadValue() && lsq_entry->theDependance) {
+        CORE_DBG("lsq_entry->loadValue() && lsq_entry->theDependance");
       lsq_entry->theDependance->squash();
     }
     lsq_entry->loadValue() = boost::none;
@@ -876,7 +874,7 @@ void CoreImpl::resnoopDependantLoads( memq_t::index< by_insn >::type::iterator l
 void CoreImpl::doStore( memq_t::index< by_insn >::type::iterator lsq_entry) {
   FLEXUS_PROFILE();
   DBG_Assert( lsq_entry->isStore());
-
+  CORE_TRACE;
   //Also used by atomics when their value or address changes
   updateDependantLoads( lsq_entry );
 }

@@ -134,7 +134,6 @@ std::pair<mapped_reg, mapped_reg> CoreImpl::create( reg aReg ) {
   std::pair<mapped_reg, mapped_reg> mapped;
   mapped.first.theType = mapped.second.theType = aReg.theType;
   std::tie( mapped.first.theIndex, mapped.second.theIndex) = mapTable(reg.theType).create(reg.theIndex);
-  DBG_(Tmp,(<< "\e[1;32m"<<"Mapping new pReg[" << mapped.first.theIndex<< "] prev pReg[" << mapped.second.theIndex << "]\e[0m"));
   mapRegister(mapped.first);
 
   eResourceStatus s = theRegisters.status( mapped.first ) ;

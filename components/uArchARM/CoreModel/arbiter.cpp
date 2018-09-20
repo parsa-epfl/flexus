@@ -397,6 +397,7 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
 
   //Fill in an MSHR and memory port
   boost::intrusive_ptr<MemOp> op(new MemOp());
+  op->theInstruction = anInstruction;
   MSHR mshr;
   op->theOperation = mshr.theOperation = issue_op;
   DBG_Assert( op->theVAddr != kUnresolved);
@@ -684,7 +685,7 @@ void CoreImpl::issueStorePrefetch( boost::intrusive_ptr<Instruction> anInstructi
   tracker->setAddress( op->thePAddr );
   tracker->setInitiator(theNode);
   op->theTracker = tracker;
-
+  op->theInstruction = anInstruction;
   theMemoryPorts.push_back(op);
   if (lsq_entry->theOperation == kStore) {
     ++theStorePrefetches;

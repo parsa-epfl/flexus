@@ -76,7 +76,10 @@ namespace Stat = Flexus::Stat;
 #include <components/CommonQEMU/Slices/PredictorMessage.hpp> /* CMU-ONLY */
 #include "bbv.hpp" /* CMU-ONLY */
 
-#include "pstate.hpp"
+#include "PSTATE.hpp"
+#include "SCTLR_EL.hpp"
+#include "../systemRegister.hpp"
+
 
 namespace nuArchARM {
 
@@ -89,13 +92,12 @@ class CoreImpl : public CoreModel {
   std::string theName;
   uint32_t theNode;
 
-  std::function< void (Flexus::Qemu::Translation &, bool) > translate;
-  std::function<int(bool)> advance_fn;
+  std::function< void (Flexus::Qemu::Translation &) > translate;
+  std::function<int()> advance_fn;
   std::function< void(eSquashCause)> squash_fn;
   std::function< void(VirtualMemoryAddress)> redirect_fn;
   std::function< void(int, int)> change_mode_fn;
   std::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback_fn;
-  std::function< void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> ) > notifyTMS_fn; /* CMU-ONLY */
   std::function< void( bool )> signalStoreForwardingHit_fn;
 
   // register renaming  architectural -> physical
@@ -104,56 +106,27 @@ class CoreImpl : public CoreModel {
   std::vector< std::shared_ptr<PhysicalMap> > theMapTables;
   RegisterWindowMap theArchitecturalWindowMap;
 
-  /*
-   * In AArch64 state, the following registers are available:
-   * Thirty-one 64-bit general-purpose registers X0-X30, the bottom halves of which are accessible as W0-W30.
-   * Four stack pointer registers SP_EL0, SP_EL1, SP_EL2, SP_EL3.
-   * Three exception link registers ELR_EL1, ELR_EL2, ELR_EL3.
-   * Three saved program status registers SPSR_EL1, SPSR_EL2, SPSR_EL3.
-   * One program counter.
-  */
-
-//  There is no register called X31 or W31. Many instructions are encoded such that the number 31 represents the zero register,
-//  ZR (WZR/XZR). There is also a restricted group of instructions where one or more of the arguments are encoded such that number
-//  31 represents the Stack Pointer (SP)
-//  uint64_t xregs[32];
-
-  uint64_t theSP_EL[4]; // stack pointer
-  uint64_t theELR_EL[3]; // exception link
-  uint64_t theSPSR_EL[3]; // Program Status Register
-
-//  WZR	32 bits	Zero register
-//  XZR	64 bits	Zero register
-//  WSP	32 bits	Current stack pointer
-//  SP	64 bits	Current stack pointer
-//  PC	64 bits	Program counter
-
-//  In the ARMv8 architecture, when executing in AArch64, the exception return state is held
-//  in the following dedicated registers for each Exception level:
-//  * Exception Link Register (ELR).
-//  * Saved Processor State Register (SPSR).
-//  There is a dedicated SP per Exception level, but it is not used to hold return state.
-//  Special registers by Exception level
-//                                            EL0         EL1         EL2         EL3
-//  Stack Pointer (SP)                        SP_EL0      SP_EL1      SP_EL2      SP_EL3
-//  Exception Link Register (ELR)                         ELR_EL1     ELR_EL2     ELR_EL3
-//  Saved Process Status Register (SPSR)                  SPSR_EL1	SPSR_EL2	SPSR_EL3
-
   //Register Files
   RegisterFile theRegisters;
   int32_t theRoundingMode;
-  uint64_t thePSTATE;      //6
-  uint64_t theFPSR;         //6
-  uint64_t theFPCR;          //37
-  uint64_t theCurrentEL;
-  uint64_t theDAIF;
-  uint64_t theNZCV;
-  uint64_t theSPSel;
-  uint64_t theSPSR;
 
-  uint64_t thePC;
+  uint32_t thePC;
+  bool theAARCH64;
+  uint32_t thePSTATE;
+
+
+//  std::multimap<int, SysRegInfo*> * theSystemRegisters;
+
+  uint32_t theDCZID_EL0;
+  uint64_t theSCTLR_EL[4];
+  uint64_t theHCR_EL2;
+  uint32_t theFPSR;
+  uint32_t theFPCR;
+  Flexus::Qemu::API::exception_t theEXP;
+
  // uint32_t thePendingTrap;
  // boost::intrusive_ptr<Instruction> theTrapInstruction;
+ std::string theDumpState;
 
   //Bypass Network
   BypassNetwork theBypassNetwork;
@@ -202,7 +175,6 @@ class CoreImpl : public CoreModel {
 public:
   memq_t theMemQueue;
 private:
-  bool theSuccess;
   int64_t theLSQCount;
   int64_t theSBCount; //Includes SSB
   int64_t theSBNAWCount;
@@ -516,13 +488,12 @@ private:
   //==========================================================================
 public:
   CoreImpl( uArchOptions_t options
-            , std::function< void (Flexus::Qemu::Translation &, bool) > xlat
-            , std::function< int(bool) > advance
+            , std::function< void (Flexus::Qemu::Translation &) > xlat
+            , std::function< int() > advance
             , std::function< void(eSquashCause)> squash
             , std::function< void(VirtualMemoryAddress) > redirect
             , std::function< void(int, int) > change_mode
             , std::function< void( boost::intrusive_ptr<BranchFeedback> ) > feedback
-            , std::function< void ( PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> ) > notifyTMS /* CMU-ONLY */
             , std::function< void( bool )> signalStoreForwardingHit
           );
 
@@ -533,10 +504,7 @@ public:
 public:
   void skipCycle();
   void cycle(int32_t aPendingInterrupt);
-
-  void setSuccess(bool val);
-  bool getSuccess();
-
+  std::string dumpState();
 
 
 private:
@@ -697,25 +665,30 @@ public:
   bool isIdleLoop();
   uint64_t pc() const;
 
-  uint64_t getPSTATE() { return thePSTATE; }
-  void setPSTATE( uint64_t aPSTATE) { thePSTATE = aPSTATE; }
-  uint64_t getSP( unsigned idx) { return theSP_EL[idx]; }
-  void setSP( uint64_t aSP, unsigned idx) { theSP_EL[idx] = aSP; }
-  uint64_t getEL( unsigned idx) { return theELR_EL[idx]; }
-  void setEL( uint64_t aEL, unsigned idx) { theELR_EL[idx] = aEL; }
-  uint64_t getSPSR_EL( unsigned idx) { return theSPSR_EL[idx]; }
-  void setSPSR_EL( uint64_t aSPSR, unsigned idx) { theSPSR_EL[idx] = aSPSR; }
-  void setFPSR( uint64_t anFPSR) { theFPSR = anFPSR; }
-  uint64_t getFPSR() { return theFPSR; }
-  void setFPCR( uint64_t anFPCR) { theFPCR = anFPCR; }
-  uint64_t getFPCR(){ return theFPCR; }
-  void setCurrentEL( uint64_t anEL){ theCurrentEL = anEL; }
-  uint64_t getCurrentEL(){ return theCurrentEL; }
-  void setSPSR( uint64_t anSPSR){ theSPSR = anSPSR; }
-  uint64_t getSPSR(){ return theSPSR; }
+  bool isAARCH64() {return theAARCH64;}
+  void setAARCH64(bool aMode) {theAARCH64 = aMode;}
 
-//  void writeFPSR( uint64_t anFPSR);
-//  uint64_t readFPSR();
+
+
+  uint32_t getPSTATE() { return thePSTATE; }
+  void setPSTATE( uint32_t aPSTATE) { thePSTATE = aPSTATE; }
+  void setFPSR( uint32_t anFPSR) { theFPSR = anFPSR; }
+  uint32_t getFPSR() { return theFPSR; }
+  void setFPCR( uint32_t anFPCR) { theFPCR = anFPCR; }
+  uint32_t getFPCR() { return theFPCR; }
+
+//  uint32_t getDCZID_EL0() {return theDCZID_EL0;}
+//  void setDCZID_EL0(uint32_t aDCZID_EL0) {theDCZID_EL0 = aDCZID_EL0;}
+
+  void setSCTLR_EL( uint64_t* aSCTLR_EL) { memcpy(theSCTLR_EL, aSCTLR_EL, sizeof(uint64_t)*4 ); }
+  uint64_t* getSCTLR_EL() { return theSCTLR_EL; }
+
+  void setHCREL2( uint64_t aHCREL2) { theHCR_EL2 = aHCREL2; }
+  uint64_t getHCREL2() { return theHCR_EL2; }
+
+  void setException( Flexus::Qemu::API::exception_t anEXP) { theEXP = anEXP; }
+  Flexus::Qemu::API::exception_t getException() { return theEXP; }
+
 
   void setRoundingMode( uint32_t aRoundingMode );
   uint32_t getRoundingMode() {
@@ -754,6 +727,26 @@ public:
   bool canPushMemOp();
   boost::intrusive_ptr<MemOp> popMemOp();
   boost::intrusive_ptr<MemOp> popSnoopOp();
+
+  uint32_t currentEL();
+  uint32_t increaseEL();
+  uint32_t decreaseEL();
+
+  void invalidateCache(eCacheType aType, eShareableDomain aDomain, eCachePoint aPoint);
+  void invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, eCachePoint aPoint);
+  void invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, uint32_t aSize, eCachePoint aPoint);
+
+  eAccessResult accessZVA();
+  uint32_t readDCZID_EL0();
+
+
+  SCTLR_EL _SCTLR(uint32_t anELn);
+  PSTATE _PSTATE();
+
+//  SysRegInfo* getSysRegInfo(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t CRn, uint8_t CRm, bool hasCP);
+
+//  void initSystemRegisters(std::multimap<int, SysRegInfo*> * aMap);
+
 private:
   bool hasSnoopBuffer() const {
     return theSnoopPorts.size() < theNumSnoopPorts;

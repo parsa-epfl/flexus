@@ -39,54 +39,73 @@
 #define FLEXUS_uARCHARM_PSTATE_HPP_INCLUDED
 
 #include "components/armDecoder/OperandMap.hpp"
+#include "components/armDecoder/armBitManip.hpp"
 
-using namespace narmDecoder;
+/* Bit definitions for ARMv8 SPSR (PSTATE) format.
+ * Only these are valid when in AArch64 mode; in
+ * AArch32 mode SPSRs are basically CPSR-format.
+ */
+#define PSTATE_SP (1U)
+#define PSTATE_M (0xFU)
+#define PSTATE_nRW (1U << 4)
+#define PSTATE_F (1U << 6)
+#define PSTATE_I (1U << 7)
+#define PSTATE_A (1U << 8)
+#define PSTATE_D (1U << 9)
+#define PSTATE_IL (1U << 20)
+#define PSTATE_SS (1U << 21)
+#define PSTATE_V (1U << 28)
+#define PSTATE_C (1U << 29)
+#define PSTATE_Z (1U << 30)
+#define PSTATE_N (1U << 31)
+#define PSTATE_NZCV (PSTATE_N | PSTATE_Z | PSTATE_C | PSTATE_V)
+#define PSTATE_DAIF (PSTATE_D | PSTATE_A | PSTATE_I | PSTATE_F)
+#define CACHED_PSTATE_BITS (PSTATE_NZCV | PSTATE_DAIF)
+/* Mode values for AArch64 */
+#define PSTATE_MODE_EL3h 13
+#define PSTATE_MODE_EL3t 12
+#define PSTATE_MODE_EL2h 9
+#define PSTATE_MODE_EL2t 8
+#define PSTATE_MODE_EL1h 5
+#define PSTATE_MODE_EL1t 4
+#define PSTATE_MODE_EL0t 0
 
-typedef struct pstate{
+using namespace nuArchARM;
+
+typedef struct PSTATE{
 
 
-    pstate(uint64_t src){
+    PSTATE(uint64_t src){
         theVal = src;
     }
     int N() const{
-        return theVal & (1ULL << 31);
+        return theVal & PSTATE_N;
     }
     int Z() const{
-        return theVal & (1ULL << 30);
+        return theVal & PSTATE_Z;
     }
     int C() const{
-        return theVal & (1ULL << 29);
+        return theVal & PSTATE_C;
     }
     int V() const{
-        return theVal & (1ULL << 28);
+        return theVal & PSTATE_V;
     }
 
-    pstate& operator=(const pstate &rhs) {
-        theVal = rhs.getVal();
-        theEL = rhs.getEL();
-        return *this;
-    }
 
-    bool operator==(const pstate &rhs) {
-        return theVal == rhs.getVal() && theEL == rhs.getEL();
-    }
 
-    bool operator!=(const pstate &rhs) {
-        return theVal != rhs.getVal() || theEL != rhs.getEL();
-    }
 
-    const uint64_t getVal() const{
+    const uint32_t getVal() const{
         return theVal;
     }
-    const int getEL() const {
-        return theEL;
+
+    const uint32_t getEL() const {
+        return extract32(theVal, 2, 2);
     }
 
 private:
-    uint64_t theVal;
-    int theEL;
+    uint32_t theVal;
 
-}pstate;
+}PSTATE;
 
 
 

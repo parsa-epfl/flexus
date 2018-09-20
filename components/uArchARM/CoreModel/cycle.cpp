@@ -34,7 +34,9 @@
 // CONTRACT, TORT OR OTHERWISE).
 //
 // DO-NOT-REMOVE end-copyright-block
-
+#include <iostream>
+#include <sstream>
+#include <fstream>
 
 #include "coreModelImpl.hpp"
 #include <core/debug/severity.hpp>
@@ -47,17 +49,22 @@
 
 #include <components/armDecoder/armInstruction.hpp>
 
+#include <components/armDecoder/armBitManip.hpp>
+
 #define DBG_DeclareCategories uArchCat
 #define DBG_SetDefaultOps AddCat(uArchCat)
 #include DBG_Control()
 
-namespace narmDecoder/*nv9Decoder*/ {
+namespace narmDecoder {
 extern uint32_t theInsnCount;
 }
 
 namespace nuArchARM {
 
 void CoreImpl::cycle(int32_t aPendingInterrupt) {
+
+    CORE_DBG("--------------START CORE------------------------");
+
 
   FLEXUS_PROFILE();
 
@@ -87,7 +94,7 @@ void CoreImpl::cycle(int32_t aPendingInterrupt) {
     if ( narmDecoder::theInsnCount > 1000000 ) {
       DBG_( Tmp, ( << theName << "Garbage-collect detects too many live instructions.  Forcing resynchronize.") );
       ++theResync_GarbageCollect;
-      throw ResynchronizeWithSimicsException();
+      throw ResynchronizeWithQemuException();
     }
   }
 
@@ -102,7 +109,7 @@ void CoreImpl::cycle(int32_t aPendingInterrupt) {
 //  }
 
   if (Flexus::Dbg::Debugger::theDebugger->theMinimumSeverity <= 3) {
-      DBG_( Tmp, ( << "Dumping..." ) );
+//      DBG_( Tmp, ( << "Dumping..." ) );
 
     dumpROB();
     dumpSRB();
@@ -110,14 +117,13 @@ void CoreImpl::cycle(int32_t aPendingInterrupt) {
     dumpMSHR();
     dumpCheckpoints();
     dumpSBPermissions();
-    //dumpActions();
-    DBG_( Tmp, ( << "Dumping done" ) );
+//    dumpActions();
+//    DBG_( Tmp, ( << "Dumping done" ) );
 
   }
 
   if (theIsSpeculating) {
-      DBG_( Tmp, ( << "Speculating" ) );
-
+    CORE_DBG("Speculating" );
     DBG_Assert( theCheckpoints.size() > 0);
     DBG_Assert( ! theSRB.empty() );
     DBG_Assert( theSBCount + theSBNAWCount > 0 );
@@ -179,7 +185,7 @@ void CoreImpl::cycle(int32_t aPendingInterrupt) {
     }
 #endif //VALIDATE STORE PREFETCHING
   } else {
-      DBG_( Tmp, ( << "CORE: Not Speculating" ) );
+      CORE_DBG("Not Speculating" );
 
     DBG_Assert( theCheckpoints.size() == 0);
     DBG_Assert( theSRB.empty() );
@@ -189,15 +195,15 @@ void CoreImpl::cycle(int32_t aPendingInterrupt) {
   DBG_Assert((theSBCount + theSBNAWCount) >= 0);
   DBG_Assert((static_cast<int> (theSBLines_Permission.size())) <= theSBCount + theSBNAWCount );
 
-  DBG_( Tmp, ( << "*** Prepare *** " ) );
+//  DBG_( Tmp, ( << "*** Prepare *** " ) );
 
   processMemoryReplies();
   prepareCycle();
 
-  DBG_( Tmp, ( << "*** Eval *** " ) );
+//  DBG_( Tmp, ( << "*** Eval *** " ) );
   evaluate();
 
-  DBG_( Tmp, ( << "*** Issue Mem *** " ) );
+//  DBG_( Tmp, ( << "*** Issue Mem *** " ) );
 
   issuePartialSnoop();
   issueStore();
@@ -253,14 +259,11 @@ void CoreImpl::cycle(int32_t aPendingInterrupt) {
     theRedirectRequested = false;
     theIdleThisCycle = false;
   }
-
-  //DBG_( Tmp, ( << "CORE: End Cycle" << theFlexus->cycleCount() << "=================") );
-
   if (theIdleThisCycle) {
     ++theIdleCycleCount;
   } else {
     theIdleCycleCount = 0;
-    DBG_( Tmp, ( << theName << " Non-Idle" ) );
+//    CORE_DBG(theName << " Non-Idle" );
   }
   theIdleThisCycle = true;
 
@@ -268,6 +271,9 @@ void CoreImpl::cycle(int32_t aPendingInterrupt) {
   for (i = theROB.begin(); i != theROB.end(); ++i) {
     i->get()->decrementCanRetireCounter();
   }
+
+  CORE_DBG("--------------FINISH CORE------------------------");
+
 
 }
 
@@ -283,17 +289,14 @@ void CoreImpl::prepareCycle() {
 
 void CoreImpl::evaluate() {
   FLEXUS_PROFILE();
+  CORE_DBG("--------------START EVALUATING------------------------");
+
   while (! theActiveActions.empty()) {
     theActiveActions.top()->evaluate();
     theActiveActions.pop();
   }
-}
+  CORE_DBG("--------------FINISH EVALUATING------------------------");
 
-bool CoreImpl::getSuccess(){
-    return theSuccess;
-}
-void CoreImpl::setSuccess(bool val){
-    theSuccess = val;
 }
 
 void CoreImpl::arbitrate() {
@@ -437,8 +440,8 @@ void CoreImpl::checkTranslation( boost::intrusive_ptr<Instruction> anInsn) {
     //xlat.theTL = getTL();
     xlat.thePSTATE = getPSTATE() ;
     xlat.theType = ( iter->isStore() ? Flexus::Qemu::Translation::eStore :  Flexus::Qemu::Translation::eLoad) ;
-    translate(xlat, true);
-    iter->theException = xlat.theException;
+    translate(xlat);
+//    iter->theException = xlat.theException;
     if (iter->theException != 0 ) {
       DBG_(Tmp, ( <<  theName << " Taking MMU exception: " << iter->theException << " "  << *iter ) );//NOOSHIN
       takeTrap(anInsn, iter->theException);
@@ -865,6 +868,95 @@ bool CoreImpl::mayRetire_MEMBARSync( ) const {
   return mayRetire_MEMBARStLd();
 }
 
+uint32_t CoreImpl::currentEL() {
+    return extract32(thePSTATE, 2, 2);
+}
+
+void CoreImpl::invalidateCache(eCacheType aType, eShareableDomain aDomain, eCachePoint aPoint){
+    // TODO
+}
+
+
+void CoreImpl::invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, eCachePoint aPoint){
+    // TODO
+}
+
+
+void CoreImpl::invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, uint32_t aSize, eCachePoint aPoint){
+    // TODO
+}
+
+
+eAccessResult CoreImpl::accessZVA()
+{
+    /* We don't implement EL2, so the only control on DC ZVA is the
+     * bit in the SCTLR which can prohibit access for EL0.
+     */
+    if (currentEL() == EL0 && !(_SCTLR(1).DZE())) {
+        return kACCESS_TRAP;
+    }
+    return kACCESS_OK;
+}
+
+
+
+uint32_t CoreImpl::readDCZID_EL0(){
+
+    int dzp_bit = 1 << 4;
+
+    /* DZP indicates whether DC ZVA access is allowed */
+    if (accessZVA() == kACCESS_OK) {
+        dzp_bit = 0;
+    }
+    return theDCZID_EL0 | dzp_bit;
+}
+
+
+PSTATE CoreImpl::_PSTATE(){
+    return PSTATE(thePSTATE);
+}
+
+SCTLR_EL CoreImpl::_SCTLR(uint32_t anELn){
+    DBG_Assert(anELn >= 0 || anELn <= 3);
+    return SCTLR_EL(theSCTLR_EL[anELn]);
+}
+
+//void CoreImpl::initSystemRegisters(std::multimap<int, SysRegInfo*> * aMap){
+//    aMap = initSysRegs();
+//}
+
+
+//SysRegInfo* CoreImpl::getSysRegInfo(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t CRn, uint8_t CRm, bool hasCP){
+//    std::array <uint8_t, 5> ar = {opc0, opc1, opc2, CRn, CRm};
+//    if (hasCP){
+//        return getRegInfo_cp(ar);
+//    }
+//    return getRegInfo(ar);
+//}
+
+
+uint32_t CoreImpl::increaseEL() {
+    uint32_t el = extract32(thePSTATE, 2, 2);
+    if (el < 0 || el >= 1)
+        DBG_Assert(false);
+
+    el++;
+    //update pstate
+    thePSTATE &= 0xfffffff3;
+    thePSTATE |= (el << 2);
+}
+
+uint32_t CoreImpl::decreaseEL() {
+    uint32_t el = extract32(thePSTATE, 2, 2);
+    if (el <= 0 || el > 1)
+        DBG_Assert(false);
+
+    el--;
+    //update pstate
+    thePSTATE &= 0xfffffff3;
+    thePSTATE |= (el << 2);
+}
+
 void CoreImpl::commitStore( boost::intrusive_ptr<Instruction> anInsn) {
   FLEXUS_PROFILE();
   memq_t::index<by_insn>::type::iterator iter = theMemQueue.get<by_insn>().find(anInsn);
@@ -896,12 +988,12 @@ void CoreImpl::retire() {
   theRetireCount = 0;
   while ( !theROB.empty() && !stop_retire ) {
 
-      DBG_(Tmp, ( << " CORE: ROB size "<< theROB.size()));
+      CORE_DBG("ROB size "<< theROB.size());
 
-//  if (! theROB.front()->mayRetire() ) {
-//        DBG_(Tmp, ( << " CORE: ROB front may NOT retire "));
-//      break;
-//    }
+  if (! theROB.front()->mayRetire() ) {
+        CORE_DBG("Cant Retire due to pending retirement dependance " << *theROB.front());
+      break;
+    }
 
     if (theTSOBReplayStalls > 0) {
       break;
@@ -953,7 +1045,7 @@ void CoreImpl::retire() {
 
     theSpinRetireSinceReset++;
 
-    DBG_( Tmp, ( << theName << " Retire:" << *theROB.front() ) );
+    CORE_DBG(theName << " Retire:" << *theROB.front() );
     if (!acceptInterrupt()) {
       theROB.front()->checkTraps();  // take traps only if we don't take interrupt
       //DBG_( Tmp, ( << "take traps only if we don't take interrupts" ) );
@@ -1003,6 +1095,7 @@ void CoreImpl::retire() {
     //thePC = theROB.front()->npc();
     //DBG_(Dev, ( << theName << " PC: " << std::hex << thePC << std::dec ) );
 
+    CORE_DBG("instruction to the secondary retirement buffer " << *(theROB.front()));
     theSRB.push_back(theROB.front());
     //DBG_( Tmp, ( << "theSRB.push_back(theROB.front())" ));
 
@@ -1011,7 +1104,7 @@ void CoreImpl::retire() {
  //   }
   }
   if (theROB.size() == 0)
-    DBG_(Tmp, ( << " CORE: ROB is empty! " << theROB.size() ));
+    CORE_DBG("ROB is empty! ->" << theROB.size());
 
 }
 
@@ -1156,51 +1249,70 @@ void CoreImpl::doAbortSpeculation() {
 
 }
 
+
+std::string CoreImpl::dumpState(){
+
+    std::ofstream fp;
+    fp.open("flexus-dump-state.txt");
+
+    std::stringstream ss;
+    mapped_reg sp;
+    sp.theType = xRegisters;
+    sp.theIndex=31;
+
+    ss << std::hex << "PC=" << std::setw(16)<< std::setfill('0') << thePC << "  " << "SP=" << std::setw(16)<< std::setfill('0') << boost::get<uint64_t>(theRegisters.peek(sp)) << std::dec << std::endl;
+
+    for (int i = 0; i < 31; i++) {
+        mapped_reg mreg;
+        mreg.theType = xRegisters;
+        mreg.theIndex=i;
+
+        ss << "X" << std::setw(2) << std::setfill('0') << i << "="<< std::hex << std::setw(16)<< std::setfill('0') << boost::get<uint64_t>(theRegisters.peek(mreg)) << std::dec;
+        if ((i % 4) == 3) {
+            ss << std::endl;
+        } else {
+            ss << " ";
+        }
+    }
+
+    fp << ss.rdbuf();
+    fp.close();
+
+    return ss.str();
+}
+
 void CoreImpl::commit() {
   FLEXUS_PROFILE();
 
   if (theAbortSpeculation) {
-      DBG_(Tmp, ( << " theAbortSpeculation" ));
-
     doAbortSpeculation();
   }
 
-  bool srb = theSRB.empty();
-  //DBG_(Tmp, ( << " SRB size: " << theSRB.size()));
-
-
   while (! theSRB.empty() && (theSRB.front()->mayCommit() || theSRB.front()->isSquashed()) ) {
 
-      //DBG_(Tmp, ( << "! theSRB.empty() && (theSRB.front()->mayCommit() || theSRB.front()->isSquashed())"));
-
     if (theSRB.front()->hasCheckpoint()) {
-        DBG_(Tmp, ( << " theSRB.front()->hasCheckpoint()"));
-
       freeCheckpoint( theSRB.front() );
     }
 
-//    DBG_( Tmp, ( << theName << " FinalCommit:" << *theSRB.front() << " NPC=" << theSRB.front()->pc()) );
-//    if (! theSRB.front()->willRaise()) {
-//      theSRB.front()->doCommitEffects();
-//      DBG_( VVerb, ( <<  theName << " commit effects complete" ) );
-//    }
+    DBG_( Tmp, ( << theName << " FinalCommit:" << *theSRB.front()) );
+    if (! theSRB.front()->willRaise()) {
+      theSRB.front()->doCommitEffects();
+      DBG_( Tmp, ( <<  theName << " commit effects complete" ) );
+    }
 
     commit( theSRB.front() );
-    //DBG_( Tmp, ( <<  theSRB.size_() << " theSRB size" ) );
-
-    DBG_( Tmp, ( <<  theSRB.front() << " committed in Client" ) );
+    DBG_( Tmp, ( <<  theName << " committed in Qemu" ) );
 
 //    if (theValidateMMU) {
 //      DBG_Assert(theSRB.front()->getMMU(), ( << theName << " instruction does not have MMU: " << *theSRB.front()));
 //      DBG_(Tmp, ( << theName << " comparing MMU state after: " << *theSRB.front()));
 //      Flexus::Qemu::MMU::mmu_t mmu = *(theSRB.front()->getMMU());
 //      if (! Flexus::Qemu::Processor::getProcessor( theNode )->validateMMU(&mmu)) {
-//        DBG_(Tmp, ( << theName << " MMU mismatch after FinalCommit of: " << *theSRB.front()));
+//        DBG_(Crit, ( << theName << " MMU mismatch after FinalCommit of: " << *theSRB.front()));
 //        Flexus::Qemu::Processor::getProcessor( theNode )->dumpMMU(&mmu);
 //      }
 //    }
 
-    setSuccess(true);
     theSRB.pop_front();
   }
 }
@@ -1210,7 +1322,7 @@ int f_validation = 0;
 
 void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
   FLEXUS_PROFILE();
-  DBG_(Tmp, ( << "\033[1m\033[30m"<< "CORE: commiting: "<< *anInstruction  << anInstruction->pc()<< "\e[0m"));
+  CORE_DBG(*anInstruction);
 
 //  Detect kernel-panic
 //  if (  ( anInstruction->pc() == 0x1000d31c )
@@ -1222,18 +1334,9 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
 //    }
 //  }
 
-  /* CMU-ONLY-BLOCK-BEGIN */
-  if (theBBVTracker) {
-    Flexus::Qemu::Translation xlat;
-    xlat.theVaddr = anInstruction->pc();
-//    xlat.theASI = 0x80;
-    //xlat.theTL = getTL();
-    xlat.thePSTATE = getPSTATE();
-    xlat.theType = Flexus::Qemu::Translation::eFetch;
-    translate(xlat, false);
-    theBBVTracker->commitInsn( xlat.thePaddr, anInstruction->instClass() == clsBranch );
-  }
-  /* CMU-ONLY-BLOCK-END */
+  Flexus::Qemu::Processor::getProcessor( theNode )->dump_state();
+
+  theDumpState = dumpState();
 
   bool validation_passed = true;
 
@@ -1243,13 +1346,21 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
   bool adv = anInstruction->advancesSimics();
 
   if (anInstruction->advancesSimics()) {
+      CORE_DBG("Instruction is neither annuled nor is a micro-op");
+
     validation_passed &= anInstruction->preValidate();
+
+
+
     DBG_( Tmp, Condition(!validation_passed) ( << *anInstruction << "Prevalidation failure." ) );
-    bool take_interrupt = theInterruptSignalled && (anInstruction == theInterruptInstruction);
-    theInterruptSignalled = false;
-    theInterruptInstruction = 0;
-    //DBG_(Tmp, (<<"BEFORE ADVANCE_FN"));//NOOSHIN
-    raised = advance_fn(take_interrupt);
+//    bool take_interrupt = theInterruptSignalled && (anInstruction == theInterruptInstruction);
+//    theInterruptSignalled = false;
+//    theInterruptInstruction = 0;
+
+    CORE_DBG("Instruction is neither annuled nor is a micro-op");
+
+    raised = advance_fn();
+
     if ( raised != 0) {
       if ( anInstruction->willRaise() != raised) {
         DBG_( Tmp, ( << *anInstruction << " Core did not predict correct exception for this instruction raised=0x" << std::hex << raised << " will_raise=0x" << anInstruction->willRaise() << std::dec ) );
@@ -1269,52 +1380,34 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
       anInstruction->raise(raised);
     } else if (anInstruction->willRaise()) {
       DBG_(Tmp, ( << *anInstruction << " DANGER:  Core predicted exception: " << std::hex << anInstruction->willRaise() << " but simics says no exception"));
-      //DBG_Assert(false, (<< *anInstruction << " Core predicted exception: " << std::hex << anInstruction->willRaise() << " but simics says no exception"));
     }
   }
 
   accountCommit(anInstruction, raised);
 
   if (anInstruction->resync()) {
-    DBG_( Tmp, ( << "Forced Resync:" << *anInstruction ) );
+    CORE_DBG("Forced Resync:" << *anInstruction);
+
     //Subsequent Empty ROB stalls (until next dispatch) are the result of a
     //synchronizing instruction.
     theEmptyROBCause = kSync;
     if (! resync_accounted) {
       accountResyncReason(anInstruction);
     }
-    throw ResynchronizeWithSimicsException(true);
+    throw ResynchronizeWithQemuException(true);
   }
   validation_passed &= anInstruction->postValidate();
-  if (! validation_passed ) {
-    DBG_( Dev, ( << "Failed Validation\n" << std::internal << *anInstruction << std::left ) );
-    DBG_( Tmp, ( << "Failed Validation\n" << std::internal << *anInstruction << std::left ) );
+//  if (! validation_passed ) {
+//    CORE_DBG("Failed Validation " << std::internal << *anInstruction << std::left);
 
-//    printf("s_validation: %i \n", s_validation);
-//    printf("f_validation: %i \n", ++f_validation);
+//    //Subsequent Empty ROB stalls (until next dispatch) are the result of a
+//    //modelling error resynchronization instruction.
+//    theEmptyROBCause = kResync;
+//    ++theResync_FailedValidation;
 
-    if (f_validation < 10)
-    {
-
-
-    //Subsequent Empty ROB stalls (until next dispatch) are the result of a
-    //modelling error resynchronization instruction.
-    theEmptyROBCause = kResync;
-    ++theResync_FailedValidation;
-
-    throw ResynchronizeWithSimicsException();
-    }
-  }
-  else
-  {
-//      printf("s_validation: %i \n", ++s_validation);
-//      printf("f_validation: %i \n", f_validation);
-
-  }
-
-  DBG_( Tmp, ( << "uARCH Validated!" << std::internal << *anInstruction << std::left ) );
-
-
+//    throw ResynchronizeWithQemuException();
+//  }
+  CORE_DBG("uARCH Validated " << std::internal << *anInstruction << std::left);
 }
 
 bool CoreImpl::squashAfter( boost::intrusive_ptr< Instruction > anInsn) {
@@ -1449,7 +1542,7 @@ bool CoreImpl::acceptInterrupt() {
  //   DBG_( Crit,  ( << theName << " ROB non-empty in handle trap.  Resynchronize instead.") );
  //   theEmptyROBCause = kResync;
  //   ++theResync_FailedHandleTrap;
- //   throw ResynchronizeWithSimicsException();
+ //   throw ResynchronizeWithQemuException();
  // }
 
   //Increment trap level
@@ -1552,7 +1645,7 @@ void CoreImpl::valuePredictAtomic() {
       ++theValuePredictions;
 
       if (theSpeculateOnAtomicValuePerfect) {
-	lsq_head->theExtendedValue = ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theNode)).load( theNode, lsq_head->thePaddr, lsq_head->theSize);
+          lsq_head->theExtendedValue = ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theNode)).load( theNode, lsq_head->thePaddr, lsq_head->theSize);
       } else {
         if (lsq_head->theOperation == kCAS) {
           lsq_head->theExtendedValue = lsq_head->theCompareValue;

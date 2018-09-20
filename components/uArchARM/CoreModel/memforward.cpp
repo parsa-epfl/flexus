@@ -133,7 +133,8 @@ void CoreImpl::forwardValue( MemQueueEntry const & aStore, memq_t::index< by_ins
       if (aLoad->theInverseEndian == aStore.theInverseEndian || !aStore.theValue) {
         aLoad->loadValue() = aStore.theValue;
       } else {
-        aLoad->loadValue() = bits(Flexus::Qemu::endianFlip( (*aStore.theValue).to_ulong(), aStore.theSize));
+          assert(false);
+//        aLoad->loadValue() = bits(Flexus::Qemu::endianFlip( (*aStore.theValue).to_ulong(), aStore.theSize));
         DBG_(Dev, ( << "Inverse endian forwarding of " << *aStore.theValue << " from " << aStore << " to " << *aLoad  << " load value: " << aLoad->loadValue() ));
       }
       signalStoreForwardingHit_fn(true);
@@ -220,10 +221,12 @@ boost::optional< memq_t::index< by_insn >::type::iterator > CoreImpl::snoopStore
 void CoreImpl::updateDependantLoads( memq_t::index< by_insn >::type::iterator anUpdatedStore ) {
   FLEXUS_PROFILE();
   if (anUpdatedStore->thePaddr == kUnresolved || anUpdatedStore->thePaddr == kInvalid) {
+      CORE_DBG("anUpdatedStore->thePaddr == kUnresolved || anUpdatedStore->thePaddr == kInvalid");
     return;
   }
 
   DBG_( Verb, ( << "Updating loads dependant on " << *anUpdatedStore ) );
+  CORE_DBG("Updating loads dependant on " << *anUpdatedStore);
 
   memq_t::index< by_paddr >::type::iterator updated_store = theMemQueue.project< by_paddr >(anUpdatedStore);
   memq_t::index< by_paddr >::type::iterator iter, entry, last_match;
@@ -239,6 +242,8 @@ void CoreImpl::updateDependantLoads( memq_t::index< by_insn >::type::iterator an
     uint64_t seq_no = iter->theSequenceNum;
     DBG_Assert (entry->theSequenceNum > updated_store->theSequenceNum, ( << " entry: " << *entry << " updated_store: " << *updated_store));
     if (entry->isLoad() && intersects( *updated_store, *entry)) {
+        CORE_DBG("Loads of overlapping address must re-snoop");
+
       //Loads of overlapping address must re-snoop
       bool research = (iter != last_match);
       cached_search = doLoad( theMemQueue.project<by_insn>(entry), cached_search );
@@ -247,11 +252,14 @@ void CoreImpl::updateDependantLoads( memq_t::index< by_insn >::type::iterator an
         last_match = theMemQueue.get<by_paddr>().upper_bound( std::make_tuple(updated_store->thePaddr_aligned) );
       }
     } else if ( entry->isStore() && (entry->status() != kAnnulled) && intersects( *updated_store, *entry) ) {
+      CORE_DBG("Search terminated at " << *entry);
       DBG_( Verb, ( << "Search terminated at " << *entry ) );
       break; //Stop on a subsequent store which intersects this store.  Loads past this point will not change outcome as a result of this store
     }
   }
   DBG_( Verb, ( << "Search complete." ) );
+  CORE_DBG("Search complete.");
+
 }
 
 void CoreImpl::applyStores( memq_t::index< by_paddr >::type::iterator aFirstStore, memq_t::index< by_paddr >::type::iterator aLastStore, memq_t::index< by_insn >::type::iterator aLoad ) {

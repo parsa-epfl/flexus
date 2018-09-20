@@ -64,6 +64,8 @@ namespace Stat = Flexus::Stat;
 #include "../../core/qemu/mai_api.hpp"
 #include <components/armDecoder/armBitManip.hpp>
 
+#define MAX_CLIENT_SIZE 64
+
 namespace nuArchARM {
 
 using Flexus::Core::theFlexus;
@@ -74,30 +76,6 @@ using namespace std::chrono;
  */
 
 static const int32_t kClientIPC = 1;
-
-static const int32_t kFPCR = API::FPCR; //  Floating-point Control Register
-static const int32_t kFPSR = API::FPSR; //  Floating-point Status Register
-
-static const int32_t kPSTATE = 41;
-
-static const int32_t kWZR = 51; //WZR	32 bits	Zero register
-static const int32_t kXZR = 52; //XZR	64 bits	Zero register
-static const int32_t kWSP = 53; //WSP	32 bits	Current stack pointer
-static const int32_t kSP = 54; //SP	64 bits	Current stack pointer
-static const int32_t kPC = 55; //PC	64 bits	Program counter
-
-static const int32_t kSP_EL0 = 70;
-static const int32_t kSP_EL1 = 71;
-static const int32_t kSP_EL2 = 72;
-static const int32_t kSP_EL3 = 73;
-
-static const int32_t kELR_EL1 = 80;
-static const int32_t kELR_EL2 = 81;
-static const int32_t kELR_EL3 = 82;
-
-static const int32_t kSPSR_EL1 = 90;
-static const int32_t kSPSR_EL2 = 91;
-static const int32_t kSPSR_EL3 = 92;
 
 
 class microArchImpl : public microArch {
@@ -114,7 +92,7 @@ class microArchImpl : public microArch {
   int32_t theExceptionRaised;
   bool theBreakOnResynchronize;
   bool theDriveClients;
-  Flexus::Qemu::Processor theClientCPUs[1];
+  Flexus::Qemu::Processor theClientCPUs[MAX_CLIENT_SIZE];
   int32_t theNumClients;
   int32_t theNode;
   std::function< void(eSquashCause)> squash;
@@ -129,19 +107,17 @@ public:
                  , std::function< void(VirtualMemoryAddress)> _redirect
                  , std::function< void(int, int)> _changeState
                  , std::function< void( boost::intrusive_ptr<BranchFeedback> )> _feedback
-                 , std::function<void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> )> _notifyTMS /* CMU-ONLY */
                  , std::function< void(bool) > _signalStoreForwardingHit
                )
     : theName(options.name)
     , theCore(CoreModel::construct(
                 options
-                , ll::bind( &microArchImpl::translate, this, ll::_1, ll::_2 )
-                , ll::bind( &microArchImpl::advance, this, ll::_1 )
+                , ll::bind( &microArchImpl::translate, this, ll::_1)
+                , ll::bind( &microArchImpl::advance, this )
                 , _squash
                 , _redirect
                 , _changeState
                 , _feedback
-                , _notifyTMS /* CMU-ONLY */
                 , _signalStoreForwardingHit
               )
              )
@@ -161,73 +137,44 @@ public:
     , feedback(_feedback)
     , signalStoreForwardingHit(_signalStoreForwardingHit)
   {
+      theCPU = Flexus::Qemu::Processor::getProcessor(theNode);
 
-    theCPU = Flexus::Qemu::Processor::getProcessor(theNode);
-    if (Flexus::Qemu::ProcessorMapper::numClients() > 0 ){
       if (theNode == 0) {
         setupDriveClients();
       }
-    }		
 
-    DBG_( Tmp, ( << "CORE:  Initializing MMU ")  );
-//    theCPU->initializeMMUs();
+      DBG_( Crit, ( << theName << " connected to " << (static_cast<Flexus::Qemu::API::conf_object_t *>(theCPU))->name ));
 
-    if (! theCPU->mai_mode()) {
-      DBG_Assert( false , ( << "Simics appears to be running without the -ma option.  You must launch Simics with -ma to run out-of-order simulations (node " << theNode << ")" ) );
-    }
-    DBG_( Crit, ( << theName << " connected to " << (static_cast<Flexus::Qemu::API::conf_object_t *>(theCPU))->name ));
-    theAvailableROB = theCore->availableROB();
-    DBG_( Tmp, ( << "CORE:  Resetting Architectural State ")  );
+      theAvailableROB = theCore->availableROB();
 
-    resetArchitecturalState();
-    if (theBreakOnResynchronize && (theNode == 0)) {
-      DBG_( Crit, ( << "Simulation will stop on unexpected synchronizations" ) );
-    }
+      resetArchitecturalState();
+
+      if (theBreakOnResynchronize && (theNode == 0)) {
+        DBG_( Crit, ( << "Simulation will stop on unexpected synchronizations" ) );
+      }
   }
 
   void setupDriveClients() {
-    int32_t i = 0;
-    int32_t qemu_cpu_no = 0;
-    const int32_t max_qemu_cpu_no = 1024;
-    bool is_vm_configuration = false;
-    int max_vm = 1;
-    int vm = 0;
-    if (Flexus::Qemu::API::QEMU_get_object("cpu0")!=0){
-      DBG_(Dev, ( << "Found cpu0 using vm configuration."));
-      is_vm_configuration = true;
-      max_vm=16;
-    }
-
-    while (true) {
-      Flexus::Qemu::API::conf_object_t * client = 0;
-     // for ( ; qemu_cpu_no < max_qemu_cpu_no; qemu_cpu_no++) {
-
-        std::string client_cpu("cpu0");
-        client = Flexus::Qemu::API::QEMU_get_object(client_cpu.c_str());
-        if (client != 0) {
-          DBG_( Dev, ( << theName << " microArch will drive " << client_cpu << " with fixed IPC " << kClientIPC) );
+      for (int i = 0; i < MAX_CLIENT_SIZE; i++) {
+          std::string cpu = "cpu" + std::to_string(i);
+          Flexus::Qemu::API::conf_object_t * client = Flexus::Qemu::API::QEMU_get_object_by_name(cpu.c_str());
+          if (!client){
+              break;
+          }
           theClientCPUs[i] = Flexus::Qemu::Processor(client);
-          ++i;
-          ++qemu_cpu_no;
-          break;
-        } else {
-            assert(false);
-        }
-     // }
-
-
-    }
-    theNumClients = i;
-    theDriveClients = true;
+          if (!theDriveClients){
+              theDriveClients = true;
+          }
+      }
+      theNumClients = 1;
   }
 
   void driveClients() {
-    DBG_( Tmp, ( << theName << " Driving " << theNumClients << " client CPUs at IPC: " << kClientIPC ) );
+    CORE_DBG(theName << " Driving " << theNumClients << " client CPUs at IPC: " << kClientIPC);
     for (int32_t i = 0; i < theNumClients; ++i) {
       for (int32_t ipc = 0; ipc < kClientIPC; ++ipc) {
-        if ( theClientCPUs[i]->advance(true)) {
-            theCore->setSuccess(false);
-        }
+        theClientCPUs[i]->advance();
+
       }
     }
   }
@@ -261,16 +208,16 @@ public:
         //xlat.theTL = theCore->getTL();
         xlat.thePSTATE = theCore->getPSTATE();
         xlat.theType = Flexus::Qemu::Translation::eLoad;
-        op->theValue = bits(theCPU->readVAddrXendian( xlat, op->theSize ));
+        op->theValue = theCPU->readVAddr( xlat.theVaddr, op->theSize );
 
       } else {
         //Need to get load value from the ValueTracker
     bits val = ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).load(theCPU->id(),op->thePAddr,op->theSize);
-        if (op->theReverseEndian) {
-          op->theValue = bits(Flexus::Qemu::endianFlip( val.to_ulong(), op->theSize ));
-        } else {
+//        if (op->theReverseEndian) {
+//          op->theValue = bits(Flexus::Qemu::endianFlip( val.to_ulong(), op->theSize ));
+//        } else {
           op->theValue = bits(val);
-        }
+//        }
 //        if (op->theASI == 0x24 || op->theASI == 0x34 ) {
 //          //Quad LDD
 //          op->theExtendedValue = bits(ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).load( theCPU->id(), PhysicalMemoryAddress(op->thePAddr + 8), op->theSize));
@@ -285,14 +232,14 @@ public:
       xlat.theVaddr = op->theVAddr;
       xlat.thePSTATE = theCore->getPSTATE();
       xlat.theType = Flexus::Qemu::Translation::eStore;
-      op->theExtendedValue = bits(theCPU->readVAddrXendian( xlat, op->theSize ));
+      op->theExtendedValue = theCPU->readVAddr( xlat.theVaddr, op->theSize );
     } else if ( op->theOperation == kStoreReply && !op->theSideEffect && ! op->theAtomic ) {
       //Need to inform ValueTracker that this store is complete
       bits value = op->theValue;
-      if (op->theReverseEndian) {
-        value = bits(Flexus::Qemu::endianFlip(value.to_ulong(), op->theSize));
-        DBG_(Verb, ( << "Performing inverse endian store for addr " << std::hex << op->thePAddr << " val: " << op->theValue << " inv: " << value << std::dec ));
-      }
+//      if (op->theReverseEndian) {
+//        value = bits(Flexus::Qemu::endianFlip(value.to_ulong(), op->theSize));
+//        DBG_(Verb, ( << "Performing inverse endian store for addr " << std::hex << op->thePAddr << " val: " << op->theValue << " inv: " << value << std::dec ));
+//      }
       ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).commitStore( theCPU->id(), op->thePAddr, op->theSize, value);
     }
     theCore->pushMemOp( op );
@@ -337,33 +284,35 @@ public:
       DBG_(Dev, ( << "Timestamp: " << boost::posix_time::to_simple_string(now)));
     }
 
-    if (theDriveClients) {
-      driveClients();
-    }
+//    if (theDriveClients) {
+//      CORE_TRACE;
+//      driveClients();
+//    }
 
     theAvailableROB = theCore->availableROB();
     theCore->skipCycle();
   }
 
   void cycle() {
-    DBG_( Tmp, ( << "\e[1;32m"<< "uARCH: Starting Cycle "<< this << "\e[0m"));
-    FLEXUS_PROFILE();
+      CORE_DBG("--------------START MICROARCH------------------------");
+
+      FLEXUS_PROFILE();
     if ((theCPU->id() == 0) && ( (theFlexus->cycleCount() % 10000) == 0) ) {
       boost::posix_time::ptime now(boost::posix_time::second_clock::local_time());
       DBG_(Dev, ( << "Timestamp: " << boost::posix_time::to_simple_string(now)));
     }
 
-    if (theDriveClients /*&& theCore->getSuccess()*/) {
-      driveClients();
-    }else     
-        DBG_( Tmp, ( << "\e[1;32m"<< "uARCH: Not advancing QEMU as FLEXUS is still processing an instruction"<< "\e[0m"));
+//    if (theDriveClients) {
+//      driveClients();
+//    }
     try {
 
         //Record free ROB space for next cycle
       theAvailableROB = theCore->availableROB();
+
       theCore->cycle(theCPU->getPendingInterrupt());
 
-    } catch ( ResynchronizeWithSimicsException & e) {
+    } catch ( ResynchronizeWithQemuException & e) {
       ++theResynchronizations;
       if (theExceptionRaised) {
         //DBG_( Verb, ( << "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id() << "] Exception Raised: " << Flexus::Qemu::API::SIM_get_exception_name(theCPU, theExceptionRaised) << "(" << theExceptionRaised << "). Resynchronizing with Simics.") );
@@ -389,12 +338,12 @@ public:
         DBG_( Crit, ( << theName << " PC mismatch expected: " << theCPU->getPC() << " actual: " << std::hex << theCore->pc() << std::dec )  );
       }
     }
-    DBG_( Tmp, ( << "\e[1;32m"<< "uARCH: Ending Cycle "<< this<<"\e[0m"));
+    CORE_DBG("--------------FINISH MICROARCH------------------------");
 
-  }
+}
 
-  void translate(Flexus::Qemu::Translation & aTranslation, bool aTakeTrap) const {
-    theCPU->translate(aTranslation, aTakeTrap);
+  void translate(Flexus::Qemu::Translation & aTranslation) const {
+    theCPU->translate(aTranslation);
   }
 
 private:
@@ -425,9 +374,10 @@ private:
     redirect(redirect_address);
   }
 
-  int32_t advance(bool anAcceptPendingInterrupt) {
+  int32_t advance() {
+    CORE_TRACE;
     FLEXUS_PROFILE();
-    theExceptionRaised = theCPU->advance(anAcceptPendingInterrupt);
+    theExceptionRaised = theCPU->advance();
     theFlexus->watchdogReset(theCPU->id());
     return theExceptionRaised;
   }
@@ -439,86 +389,64 @@ void resetArchitecturalState()
     resetSpecialRegs();
     fillXRegisters();
     fillVRegisters();
-//    theCPU->resyncMMU();
 }
 
   void resetSpecialRegs() {
 
     resetPSTATE();
-    resetCurrentEL();
-    resetSP();
-    resetEL();
-    resetSPSR();
     resetFPCR();
     resetFPSR();
 
   }
 
   void resetRoundingMode() {
-    uint64_t fpsr = theCPU->readRegister(-1, kFPSR);
+    uint64_t fpsr = theCPU->readFPSR();
     theCore->setRoundingMode( (fpsr >> 30) & 3 );
   }
 
+  void resetAARCH64() {
+      bool aarch64 = theCPU->readAARCH64();
+      theCore->setAARCH64( aarch64 );
+  }
+
+//  void resetDCZID_EL0() {
+//      theCore->setDCZID_EL0(theCPU->readDCZID_EL0());
+//  }
+
   void resetPSTATE() {
-    uint64_t pstate = theCPU->readRegister( 0, API::PSTATE );
+    uint64_t pstate = theCPU->readPSTATE();
     theCore->setPSTATE( pstate );
   }
 
-  void resetSP() {
-      uint64_t sp;
-      for (int i=0; i<4;++i)
-      {
-          sp = theCPU->readRegister( i, API::STACK_POINTER );
-          theCore->setSP( sp, i);
-      }
-
+  void resetException() {
+    API::exception_t exp;
+    theCPU->readException(&exp);
+    theCore->setException( exp );
   }
-  void resetEL() {
-      uint64_t el;
-      for (int i=0; i<3;++i)
-      {
-          el = theCPU->readRegister( i, API::EXCEPTION_LINK );
-          theCore->setEL( el , i);
-      }
 
+  void resetHCREL2() {
+    theCore->setHCREL2(theCPU->readHCREL2());
   }
-  void resetSPSR_EL() {
-      uint64_t spsr;
-      for (int i=0; i<3;++i)
-      {
-          spsr = theCPU->readRegister( i, API::SPSR_EL );
-          theCore->setSPSR_EL( spsr, i );
-      }
 
+  void resetSCTLR_EL() {
+    theCore->setSCTLR_EL(theCPU->readSCTLR());
   }
+
   // fills/re-sets the  to the state they are
   // in the VM (i.e. client)
   void resetFPSR() {
-    uint64_t fpsr = theCPU->readRegister( 0,  API::FLOATING_POINT );
-    theCore->setFPSR( fpsr );
+    theCore->setFPSR( theCPU->readFPSR() );
   }
 
   void resetFPCR() {
-    uint64_t fpcr = theCPU->readRegister( 0, API::FLOATING_POINT );
-    theCore->setFPCR( fpcr );
+    theCore->setFPCR( theCPU->readFPCR() );
   }
-
-  void resetCurrentEL() {
-    uint64_t ps = theCore.get()->getPSTATE();
-    theCore->setCurrentEL( extract32(ps, 2, 2) );
-  }
-
-  void resetSPSR() {
-    uint64_t spsr = theCPU->readRegister( 0, API::SPSR );
-    theCore->setSPSR( spsr );
-  }
-
 
   // fills/re-sets global registers to the state they are
   // in the VM (i.e. client)
   void fillXRegisters() {
     for (int32_t i = 0; i < 32; ++i) {
-      uint64_t val = theCPU->readRegister(i, API::GENERAL);
+      uint64_t val = theCPU->readXRegister(i);
       theCore->initializeRegister( xReg(i), val);
     }
   }
@@ -526,7 +454,7 @@ void resetArchitecturalState()
   // in the VM (i.e. client)
   void fillVRegisters() {
     for (int32_t i = 0; i < 32; ++i) {
-      uint64_t val = theCPU->readRegister(i, API::FLOATING_POINT);
+      uint64_t val = theCPU->readVRegister(i);
       theCore->initializeRegister( vReg(i), val);
     }
   }
@@ -616,7 +544,6 @@ std::shared_ptr<microArch> microArch::construct( uArchOptions_t options
     , std::function< void(VirtualMemoryAddress) > redirect
     , std::function< void(int, int) > changeState
     , std::function< void( boost::intrusive_ptr<BranchFeedback> ) > feedback
-    , std::function< void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> ) > notifyTMS /* CMU-ONLY */
     , std::function< void( bool )> signalStoreForwardingHit
                                                  ) {
   return std::make_shared<microArchImpl>(options
@@ -624,7 +551,6 @@ std::shared_ptr<microArch> microArch::construct( uArchOptions_t options
                                       , redirect
                                       , changeState
                                       , feedback
-                                      , notifyTMS /* CMU-ONLY */
                                       , signalStoreForwardingHit
                                      );
 }

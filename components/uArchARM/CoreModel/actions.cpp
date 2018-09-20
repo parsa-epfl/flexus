@@ -41,13 +41,12 @@
 namespace nuArchARM {
 
 void CoreImpl::create( boost::intrusive_ptr< SemanticAction > anAction) {
-    DBG_(Tmp, (<<"\e[1;33m"<<"ACTION: creating semantic action " << *anAction << " - " << "\e[0m"));
+    CORE_DBG(*anAction);
     theRescheduledActions.push( anAction );
 }
 void CoreImpl::reschedule( boost::intrusive_ptr< SemanticAction > anAction) {
-    DBG_(Tmp, (<<"\e[1;33m"<<"ACTION: rescheduling semantic action" << anAction << "\e[0m"));
-
-  theRescheduledActions.push( anAction );
+    CORE_DBG(*anAction);
+    theRescheduledActions.push( anAction );
 }
 
 bool ActionOrder::operator()(boost::intrusive_ptr< SemanticAction > const & l, boost::intrusive_ptr< SemanticAction > const & r) const {

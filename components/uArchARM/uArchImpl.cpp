@@ -216,7 +216,6 @@ public:
                                             , ll::bind( &uArchARMComponent::redirect, this, ll::_1)
                                             , ll::bind( &uArchARMComponent::changeState, this, ll::_1, ll::_2)
                                             , ll::bind( &uArchARMComponent::feedback, this, ll::_1)
-                                            , ll::bind( &uArchARMComponent::notifyTMS, this, ll::_1, ll::_2, ll::_3) /* CMU-ONLY */
                                             , ll::bind( &uArchARMComponent::signalStoreForwardingHit, this, ll::_1)
                                         );
 
@@ -267,7 +266,7 @@ public:
   }
 
 private:
-  struct ResynchronizeWithSimicsException {};
+  struct ResynchronizeWithQemuException {};
 
   void squash(eSquashCause aSquashReason) {
     FLEXUS_CHANNEL( SquashOut ) << aSquashReason;
@@ -293,17 +292,6 @@ private:
     bool value = true;
     FLEXUS_CHANNEL( StoreForwardingHitSeen ) << value;
   }
-
-  /* CMU-ONLY-BLOCK-BEGIN */
-  void notifyTMS(PredictorMessage::tPredictorMessageType aType, PhysicalMemoryAddress anAddress, boost::intrusive_ptr<TransactionTracker> aTracker) {
-    //Inform TMS that we are completing read
-    boost::intrusive_ptr<PredictorMessage> pmsg (new PredictorMessage(aType, flexusIndex(), anAddress));
-    PredictorTransport pt;
-    pt.set(PredictorMessageTag, pmsg);
-    pt.set(TransactionTrackerTag, aTracker);
-    FLEXUS_CHANNEL(NotifyTMS) << pt;
-  }
-  /* CMU-ONLY-BLOCK-END */
 
   void doCycle() {
     if (cfg.Multithread) {
@@ -367,7 +355,10 @@ private:
           default:
             DBG_Assert( false,  ( << "Unknown memory operation type: " << op->theOperation ) );
         }
+
       }
+      operation->theInstruction = op->theInstruction;
+
       operation->reqSize() = op->theSize;
       if (op->theTracker) {
         transport.set(TransactionTrackerTag, op->theTracker);
