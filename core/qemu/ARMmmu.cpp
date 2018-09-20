@@ -571,11 +571,16 @@ mmu_t::getIAOffsetValue(bool isBRO)
 
 int
 mmu_t::checkBR0RangeForVAddr( Translation& aTr ) const {
-    int64_t upperBR0Bound = Gran0->GetUpperAddressRangeLimit();
-    int64_t lowerBR1Bound = Gran1->GetLowerAddressRangeLimit();
-    if( aTr.theVaddr <= upperBR0Bound ) {
+    uint64_t upperBR0Bound = Gran0->GetUpperAddressRangeLimit();
+    uint64_t lowerBR1Bound = Gran1->GetLowerAddressRangeLimit();
+    /*
+    std::cout << "UBound for BR0: " << std::hex << upperBR0Bound << std::dec << ", "
+              << "LBound for BR1: " << std::hex << lowerBR1Bound << std::dec << ", "
+              << "vAddr: " << std::hex << aTr.theVaddr << std::dec << std::endl;
+    */
+    if( (uint64_t)aTr.theVaddr <= upperBR0Bound ) {
         return 0; // br0
-    } else if ( aTr.theVaddr >= lowerBR1Bound ) {
+    } else if ( (uint64_t)aTr.theVaddr >= lowerBR1Bound ) {
         return 1; // br1
     } else return -1; // fault
 }

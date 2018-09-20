@@ -551,13 +551,15 @@ armProcessorImpl::doTTEAccess( Translation& aTranslation )
        *    - Parse it, get the matching PA bits, and check if done
        *    - Raise fault if need be (TODO)
      */
-    PhysicalMemoryAddress tmp(API::QEMU_logical_to_physical(*this,API::QEMU_DI_Instruction,aTranslation.theVaddr));
-    DBG_(Tmp,( <<" QEMU Translated: " << std::hex << aTranslation.theVaddr << std::dec << ", to: " << std::hex << tmp << std::dec));
-    PhysicalMemoryAddress TTEDescriptor = PhysicalMemoryAddress( aTranslation.TTAddressResolver->resolve(aTranslation.theVaddr) );
-    DBG_(Tmp,(<< "Current Translation Level: " << aTranslation.currentLookupLevel
+    if( aTranslation.currentLookupLevel == 0 ) {
+        PhysicalMemoryAddress tmp(API::QEMU_logical_to_physical(*this,API::QEMU_DI_Instruction,aTranslation.theVaddr));
+        DBG_(Tmp,( <<" QEMU Translated: " << std::hex << aTranslation.theVaddr << std::dec << ", to: " << std::hex << tmp << std::dec));
+    }
+    PhysicalMemoryAddress TTEDescriptor( aTranslation.TTAddressResolver->resolve(aTranslation.theVaddr) );
+    DBG_(Tmp,(<< "Current Translation Level: " << (unsigned int) aTranslation.currentLookupLevel
              << ", Returned TTE Descriptor Address: " << std::hex <<  TTEDescriptor << std::dec ));
     unsigned long long rawTTEValue = API::QEMU_read_phys_memory( *this, TTEDescriptor, 8 );
-    DBG_(Tmp,(<< "Current Translation Level: " << aTranslation.currentLookupLevel
+    DBG_(Tmp,(<< "Current Translation Level: " << (unsigned int) aTranslation.currentLookupLevel
              << ", Read Raw TTE Desc. from QEMU : " << std::hex << rawTTEValue << std::dec ));
     /* Check Valid */
     bool validBit = extractSingleBitAsBool(rawTTEValue,0);
@@ -592,7 +594,7 @@ armProcessorImpl::doTTEAccess( Translation& aTranslation )
                     aTranslation.BlockSizeFromTTs = 1<<21; // 2MB block
                     break;
                 default:
-                    DBG_Assert( false , ( << "Encountered Non-standard BLOCK entry, in intermediate TT walk stage " << aTranslation.currentLookupLevel << ", should have been a memory mapped region. TTE = " << std::hex << rawTTEValue << std::dec));
+                    DBG_Assert( false , ( << "Encountered Non-standard BLOCK entry, in intermediate TT walk stage " << (unsigned int) aTranslation.currentLookupLevel << ", should have been a memory mapped region. TTE = " << std::hex << rawTTEValue << std::dec));
             }
             PhysicalMemoryAddress PageOffsetMask( aTranslation.granuleSize-1 );
             PhysicalMemoryAddress maskedVAddr( aTranslation.theVaddr & PageOffsetMask );
