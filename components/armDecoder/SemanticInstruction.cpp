@@ -125,23 +125,21 @@ nuArchARM::InstructionDependance SemanticInstruction::makeInstructionDependance(
   DBG_Assert( reinterpret_cast<long>(aDependance.theTarget) != 0x1 );
   nuArchARM::InstructionDependance ret_val;
   ret_val.instruction = boost::intrusive_ptr<nuArchARM::Instruction>(this);
-
-//  DBG_(Tmp, (<<"in makeInstructionDependence"));
   ret_val.satisfy = boost::bind( &DependanceTarget::invokeSatisfy, aDependance.theTarget, aDependance.theArg);
   ret_val.squash = boost::bind( &DependanceTarget::invokeSquash, aDependance.theTarget, aDependance.theArg);
   return ret_val;
 }
 
 void SemanticInstruction::setMayRetire(int32_t aBit, bool aFlag) {
-  DBG_(Tmp, (<<"In setMayRetire\n"));//NOOSHIN
+  SEMANTICS_TRACE;
   DBG_Assert( aBit < theRetireDepCount, ( << "setMayRetire setting a bit that is out of range: " << aBit << "\n" << std::internal << *this ) );
   bool may_retire = mayRetire();
-  DBG_(Tmp, (<<"After mayRetire, aBit:"<< aBit));//NOOSHIN
+  SEMANTICS_DBG("aBit = " << aBit);
   theRetirementDepends[aBit] = aFlag;
   if (mayRetire() && ! may_retire ) {
-    DBG_( Tmp, ( << identify() << " may retire" ) );
+      SEMANTICS_DBG(identify() << " may retire");
   } else if ( ! mayRetire() && may_retire ) {
-    DBG_( Tmp, ( << identify() << " may not retire" ) );
+      SEMANTICS_DBG(identify() << " may not retire");
   }
 }
 
@@ -172,7 +170,7 @@ void SemanticInstruction::decrementCanRetireCounter() {
 }
 
 InternalDependance SemanticInstruction::retirementDependance() {
-//  DBG_Assert( theRetireDepCount < 5 );
+  DBG_Assert( theRetireDepCount < 5 );
   theRetirementDepends[theRetireDepCount] = false;
   return InternalDependance( &theRetirementTarget, theRetireDepCount++);
 }
@@ -216,7 +214,7 @@ bool SemanticInstruction::postValidate() {
   }
   bool ok = true;
   while (ok && !thePostValidations.empty()) {
-//    ok &= thePostValidations.front();
+    ok &= thePostValidations.front()();
     thePostValidations.pop_front();
   }
   return ok;
@@ -255,16 +253,20 @@ void SemanticInstruction::reinstate() {
 }
 
 void SemanticInstruction::doDispatchEffects() {
+  DISPATCH_DBG("START DISPATCHING ACTIONS");
   FLEXUS_PROFILE();
   armInstruction::doDispatchEffects();
   while (! theDispatchActions.empty()) {
-//    DBG_(Tmp, (<<"\e[1;33m"<<"ACTION: dispatching remaining... " << theDispatchActions.size() << "\e[0m"));
     core()->create( theDispatchActions.front() );
     theDispatchActions.pop_front();
 
   }
-  DBG_(Tmp, (<<"\e[1;33m"<<"ACTION: invoking " << *this << "\e[0m"));
+  DISPATCH_DBG("FINISH DISPATCHING ACTIONS");
+
+  DISPATCH_DBG("START DISPATCHING EFFECTS");
   theDispatchEffects.invoke(*this);
+  DISPATCH_DBG("FINISH DISPATCHING EFFECTS");
+
 };
 
 void SemanticInstruction::doRetirementEffects() {
@@ -394,8 +396,8 @@ int32_t SemanticInstruction::retryTranslation() {
   //xlat.theTL = core()->getTL();
   xlat.thePSTATE = core()->getPSTATE();
   xlat.theType = Flexus::Qemu::Translation::eFetch;
-  Flexus::Qemu::Processor::getProcessor(theCPU)->translate(xlat, true);
-  return xlat.theException;
+  Flexus::Qemu::Processor::getProcessor(theCPU)->translate(xlat);
+  return 0/*xlat.theException*/;
 }
 
 } //narmDecoder

@@ -44,7 +44,6 @@
 
 #include <components/CommonQEMU/Slices/FillLevel.hpp>
 #include <components/uFetch/uFetchTypes.hpp>
-#include <core/qemu/ARMmmu.hpp>
 #include <components/uArchARM/coreModel.hpp>
 
 namespace narmDecoder {
@@ -295,6 +294,8 @@ public:
   void setClass( eInstructionClass anInstructionClass, eInstructionCode aCode) {
     theInstructionClass = anInstructionClass;
     theOriginalInstructionCode = theInstructionCode = aCode;
+    DECODER_DBG(*this);
+
   }
 
 //  Opcode opcode() const ;

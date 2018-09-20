@@ -113,6 +113,7 @@ eIndex getIndex ( unsigned int index) {
  * between the reads and writes.
  */
 arminst CASP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+    DECODER_TRACE;
     int o0 = extract32(aFetchedOpcode.theOpcode, 15, 1);
     int L = extract32(aFetchedOpcode.theOpcode, 22, 1);
     int size = extract32(aFetchedOpcode.theOpcode, 30, 1);
@@ -130,7 +131,7 @@ arminst CASP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
-    inst->setClass(clsAtomic, codeCASP);
+    inst->setClass(clsAtomic, codeCAS);
 
     size <<= 32;
     int datasize = size*2;
@@ -184,6 +185,7 @@ arminst CASP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
  * modification of the memory location can take place between the read and write.
  */
 arminst CAS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
+    DECODER_TRACE;
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
     int o0 = extract32(aFetchedOpcode.theOpcode, 15, 1);
@@ -238,6 +240,7 @@ arminst CAS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
  * For information about memory accesses see Load/Store addressing modes.
  */
 arminst STXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+    DECODER_TRACE;
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
     int o0 = extract32(aFetchedOpcode.theOpcode, 15, 1);
@@ -270,6 +273,7 @@ arminst STXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
  * described in Load-Acquire, Store-Release. For information about memory accesses, see Load/Store addressing modes.
  */
 arminst STLR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
+    DECODER_TRACE;
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
     int o0 = extract32(aFetchedOpcode.theOpcode, 15, 1);
@@ -311,6 +315,7 @@ arminst STLR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
  * Load/Store addressing modes.
  */
 arminst LDAR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
+    DECODER_TRACE;
     int o0 = extract32(aFetchedOpcode.theOpcode, 15, 1);
     int L = extract32(aFetchedOpcode.theOpcode, 22, 1);
     int size = 8 << extract32(aFetchedOpcode.theOpcode, 30, 1);
@@ -350,6 +355,7 @@ arminst LDAR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
  * modes.
  */
 arminst LDXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
+    DECODER_TRACE;
    int rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
    int o0 = extract32(aFetchedOpcode.theOpcode, 15, 1);
    int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
@@ -360,7 +366,7 @@ arminst LDXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
     eAccType acctype = (o0 == 1) ? kAccType_ORDERED : kAccType_ATOMIC;
-    inst->setClass(clsLoad, codeLoadEX);
+    inst->setClass(clsLoad, codeLoad);
 
     std::vector< std::list<InternalDependance> > rs_deps(1);
     addAddressCompute( inst, rs_deps ) ;
@@ -388,6 +394,7 @@ arminst LDXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
  * For information about memory accesses, see Load/Store addressing modes.
  */
 arminst LDR_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
+    DECODER_TRACE;
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
@@ -448,10 +455,12 @@ arminst LDR_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenc
  * Security state and Exception level, an attempt to execute the instruction might be trapped.
  */
 arminst LDRF_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
+    DECODER_TRACE;
 }
 
 // Load/store pair (all forms)
 arminst LDPF(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
+    DECODER_TRACE;
     int opc = extract32(aFetchedOpcode.theOpcode, 30, 2);
     int L = extract32(aFetchedOpcode.theOpcode, 22, 1);
     eIndex index = getIndex(extract32(aFetchedOpcode.theOpcode, 23, 3));
@@ -502,7 +511,7 @@ return arminst(inst);
 
 }
 arminst STPF(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
-
+    DECODER_TRACE;
     int opc = extract32(aFetchedOpcode.theOpcode, 30, 2);
     int L = extract32(aFetchedOpcode.theOpcode, 22, 1);
     eIndex index = getIndex(extract32(aFetchedOpcode.theOpcode, 23, 3));
@@ -543,7 +552,7 @@ arminst STPF(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     }
 
     // read data registers
-    addReadVRegister(inst, 1, rt, data_deps[1]);
+    addReadVRegister(inst, 1, rt, data_deps[0]);
     addReadVRegister(inst, 2, rt2, data_deps[1]);
 
     std::unique_ptr<Operation> ptr =  operation(kCONCAT_);
@@ -569,6 +578,7 @@ arminst STPF(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     return arminst(inst);
 }
 arminst LDP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
+    DECODER_TRACE;
     int opc = extract32(aFetchedOpcode.theOpcode, 30, 2);
     int L = extract32(aFetchedOpcode.theOpcode, 22, 1);
     eIndex index = getIndex(extract32(aFetchedOpcode.theOpcode, 23, 3));
@@ -621,7 +631,7 @@ return arminst(inst);
 
 }
 arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
-
+    DECODER_TRACE;
     int opc = extract32(aFetchedOpcode.theOpcode, 30, 2);
     int L = extract32(aFetchedOpcode.theOpcode, 22, 1);
     eIndex index = getIndex(extract32(aFetchedOpcode.theOpcode, 23, 3));
@@ -690,6 +700,7 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 }
 
 arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
+    DECODER_TRACE;
     int rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
     int opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
     int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
@@ -706,7 +717,7 @@ arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     eIndex index = kNoOffset;
     bool is_signed = false;
 
-    if (opc & 0x2 == 0) {
+    if ((opc & 0x2) == 0) {
         regsize = (size == 0x4) ? 64 : 32;
     } else {
         if (size == 0x4) {
@@ -767,16 +778,17 @@ arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 
     std::vector< std::list<InternalDependance> > rs_deps(1);
 
+
     addAddressCompute( inst, rs_deps ) ;
     if (index != kPostIndex) {
         inst->setOperand(kUopAddressOffset, imm);
     }
-
     addReadXRegister(inst, 1, rn, rs_deps[0], regsize == 64);
+
 
     if (index == kRegOffset){
         std::vector< std::list<InternalDependance> > offset_deps(2);
-        addReadXRegister(inst, kUopAddressOffset, rm, offset_deps[0], regsize == 64);
+        addReadXRegister(inst, 1, rm, offset_deps[0], regsize == 64);
         std::unique_ptr<Operation> op ;
         if (S) {
             op = operation(kLSL_);
@@ -804,6 +816,7 @@ arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 
 
 arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
+    DECODER_TRACE;
     int rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
     int opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
     int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
@@ -873,6 +886,7 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 }
 
 arminst STRF(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
+    DECODER_TRACE;
     int rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
     int opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
     int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
@@ -925,7 +939,7 @@ arminst STRF(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
         inst->setOperand(kUopAddressOffset, imm);
     }
 
-    addReadVRegister(inst, 1, rn, rs_deps[0], regsize == 64);
+    addReadVRegister(inst, 1, rn, rs_deps[0]);
 
     inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
     inst->addRetirementEffect( retireMem(inst) );
@@ -940,6 +954,7 @@ arminst STRF(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 
 }
 arminst LDRF(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
+    DECODER_TRACE;
     unsigned int rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
     unsigned int opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
     unsigned int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
@@ -995,7 +1010,7 @@ arminst LDRF(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
         inst->setOperand(kUopAddressOffset, imm);
     }
 
-    addReadVRegister(inst, 1, rn, rs_deps[0], regsize == 64);
+    addReadVRegister(inst, 1, rn, rs_deps[0]);
 
 
     inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );

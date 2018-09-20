@@ -71,15 +71,15 @@ struct BranchCCAction : public BaseSemanticAction {
 
   VirtualMemoryAddress theTarget;
   bool theAnnul;
-//  Condition & theCondition;
+  std::unique_ptr<Condition> theCondition;
   bool isFloating;
   uint32_t theFeedbackCount;
 
-  BranchCCAction( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, int numOperands, bool anAnnul/*, Condition aCondition*/, bool floating)
-    : BaseSemanticAction ( anInstruction, numOperands )
+  BranchCCAction( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, std::unique_ptr<Condition> & aCondition, bool floating)
+    : BaseSemanticAction ( anInstruction, 1 )
     , theTarget(aTarget)
     , theAnnul(anAnnul)
-//    , theCondition(aCondition)
+    , theCondition(std::move(aCondition))
     , isFloating(floating)
     , theFeedbackCount(0) {
     theInstruction->setExecuted(false);
@@ -243,21 +243,13 @@ struct BranchCondAction : public BaseSemanticAction {
   }
 };
 
-//dependant_action branchCCAction ( SemanticInstruction * anInstruction,
-//                                  VirtualMemoryAddress aTarget, bool anAnnul,
-//                                  Condition aCondition,
-//                                  std::vector< std::list<InternalDependance> > & opDeps,
-//                                  bool floating
-//                                  )
-//{
-//    std::vector<eOperandCode> operands;
-//    for (uint32_t i = 0; i < opDeps.size(); ++i) {
-//      operands.push_back( eOperandCode( kOperand1 + i) );
-//    }
-//  BranchCCAction * act(new(anInstruction->icb()) BranchCCAction ( anInstruction, aTarget, operands.size(), anAnnul, aCondition, floating ) );
+dependant_action branchCCAction
+( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, std::unique_ptr<Condition> aCondition, bool floating)
+{
+  BranchCCAction * act(new(anInstruction->icb()) BranchCCAction ( anInstruction, aTarget, anAnnul, aCondition, floating ) );
 
-//  return dependant_action( act, act->dependance() );
-//}
+  return dependant_action( act, act->dependance() );
+}
 
 struct BranchRegAction : public BaseSemanticAction {
 

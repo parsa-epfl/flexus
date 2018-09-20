@@ -81,7 +81,6 @@ struct LoadFloatingAction : public PredicatedSemanticAction {
 
   void satisfy(int32_t anArg) {
     BaseSemanticAction::satisfy(anArg);
-    DBG_(Tmp, (<<"After BaseSemanticAction Float"));
     if ( !cancelled() && ready() && thePredicate) {
       //Bypass
       doLoad();
@@ -99,14 +98,12 @@ struct LoadFloatingAction : public PredicatedSemanticAction {
 
   void doLoad() {
     if (ready() && thePredicate) {
-      DBG_(Tmp, ( << *this << " received floating load value" ));
       switch (theSize) {
         case kWord: {
           bits value = core()->retrieveLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
           theInstruction->setOperand(kfResult0, value & bits(0xFFFFFFFFULL) );
           if (theBypass0) {
             mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass0);
-            DBG_(Tmp, ( << *this << " bypassing value=" << (value & bits(0xFFFFFFFFULL)) << " to " << name));
             core()->bypass( name, value & bits(0xFFFFFFFFULL));
           }
 
@@ -118,12 +115,10 @@ struct LoadFloatingAction : public PredicatedSemanticAction {
           theInstruction->setOperand(kfResult0, value >> 32 );
           if (theBypass1) {
             mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass1);
-            DBG_(Tmp, ( << *this << " bypassing value=" << (value & bits(0xFFFFFFFFULL)) << " to " << name));
             core()->bypass( name, value & bits(0xFFFFFFFFULL));
           }
           if (theBypass0) {
             mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass0);
-            DBG_(Tmp, ( << *this << " bypassing value=" << (value >> 32) << " to " << name));
             core()->bypass( name, value >> 32);
           }
 

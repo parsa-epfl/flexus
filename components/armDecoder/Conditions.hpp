@@ -57,7 +57,7 @@ enum eCondCode {
 
 
 struct Condition {
-  virtual ~Condition() {}
+    virtual ~Condition(){}
   virtual bool operator()( std::vector< Operand > const & operands ) = 0;
   virtual char const * describe() const = 0;
   void setInstruction(SemanticInstruction * anInstruction){
@@ -68,7 +68,7 @@ protected:
   SemanticInstruction * theInstruction;
 };
 
-Condition & condition (eCondCode aCond);
+std::unique_ptr<Condition> condition (eCondCode aCond);
 
 
 } //armDecoder

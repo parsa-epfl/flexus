@@ -58,12 +58,12 @@ namespace narmDecoder {
 
 using namespace nuArchARM;
 
-typedef struct ADD : public Operation {
-    ADD();
-    virtual ~ADD();
+typedef struct OFFSET : public Operation {
+    OFFSET(){}
+    virtual ~OFFSET(){}
   virtual Operand operator()( std::vector<Operand> const & operands  ) {
     if (hasOwnOperands()) {
-        DBG_Assert( theOperands.size() == 2);
+        DBG_Assert( theOperands.size() == 1 || theOperands.size() == 2, (<< *theInstruction) );
         uint64_t op1 = boost::get<uint64_t>(theOperands[0]);
         uint64_t op2 = boost::get<uint64_t>(theOperands[1]);
         return op1+op2;
@@ -77,11 +77,29 @@ typedef struct ADD : public Operation {
   virtual char const * describe() const {
     return "Add";
   }
+} OFFSET_;
+
+
+typedef struct ADD : public Operation {
+    ADD(){}
+    virtual ~ADD(){}
+  virtual Operand operator()( std::vector<Operand> const & operands  ) {
+        make_local(operands);
+        SEMANTICS_DBG( "ADDING with " << operands.size() << " the: " << theOperands.size() );
+        DBG_Assert( checkNumOperands({1,2}), (<< *theInstruction << "num operands: " << operands.size()) );
+
+        return
+                boost::get<uint64_t>(hasOwnOperands() ? theOperands[0] : operands[0]) +
+                boost::get<uint64_t>(hasOwnOperands() ? theOperands[1] : operands[1]);
+  }
+  virtual char const * describe() const {
+    return "Add";
+  }
 } ADD_;
 
 typedef struct ADDS : public Operation {
-    ADDS();
-    virtual ~ADDS();
+    ADDS(){}
+    virtual ~ADDS(){}
 
   virtual Operand operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 3);
@@ -109,8 +127,8 @@ typedef struct ADDS : public Operation {
 } ADDS_;
 
 typedef struct SUB : public Operation {
-    SUB();
-    virtual ~SUB();
+    SUB(){}
+    virtual ~SUB(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 2);
     return boost::get<uint64_t>(operands[0]) - boost::get<uint64_t>(operands[1]);
@@ -121,8 +139,8 @@ typedef struct SUB : public Operation {
 } SUB_;
 
 typedef struct SUBS : public Operation {
-    SUBS();
-    virtual ~SUBS();
+    SUBS(){}
+    virtual ~SUBS(){}
   virtual Operand operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 3);
     bits carry_in = boost::get<bits >(operands[2]);
@@ -153,8 +171,8 @@ typedef struct SUBS : public Operation {
 
 
 typedef struct CONCAT : public Operation {
-    CONCAT();
-    virtual ~CONCAT();
+    CONCAT(){}
+    virtual ~CONCAT(){}
   virtual Operand operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 2);
     bits op1 =  boost::get<bits>(operands[0]);
@@ -170,8 +188,8 @@ typedef struct CONCAT : public Operation {
 
 
 typedef struct AND : public Operation {
-    AND();
-    virtual ~AND();
+    AND(){}
+    virtual ~AND(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 2);
     return boost::get<uint64_t>(operands[0]) & boost::get<uint64_t>(operands[1]);
@@ -182,8 +200,8 @@ typedef struct AND : public Operation {
 } AND_;
 
 typedef struct ANDS : public Operation {
-    ANDS();
-    virtual ~ANDS();
+    ANDS(){}
+    virtual ~ANDS(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 2);
     uint64_t result = boost::get<uint64_t>(operands[0]) & boost::get<uint64_t>(operands[1]);
@@ -205,8 +223,8 @@ typedef struct ANDS : public Operation {
 } ANDS_;
 
 typedef struct ORR : public Operation  {
-    ORR();
-    virtual ~ORR();
+    ORR(){}
+    virtual ~ORR(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 2);
     return boost::get<uint64_t>(operands[0]) | boost::get<uint64_t>(operands[1]);
@@ -217,8 +235,8 @@ typedef struct ORR : public Operation  {
 } ORR_;
 
 typedef struct XOR : public Operation  {
-    XOR();
-    virtual ~XOR();
+    XOR(){}
+    virtual ~XOR(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 2);
     return boost::get<uint64_t>(operands[0]) ^ boost::get<uint64_t>(operands[1]);
@@ -232,8 +250,8 @@ typedef struct XOR : public Operation  {
 
 typedef struct AndN : public Operation {
 
-    AndN();
-    virtual ~AndN();
+    AndN(){}
+    virtual ~AndN(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 2);
     return boost::get<uint64_t>(operands[0]) & ~boost::get<uint64_t>(operands[1]) ;
@@ -245,8 +263,8 @@ typedef struct AndN : public Operation {
 
 
 typedef struct EoN : public Operation  {
-    EoN();
-    virtual ~EoN();
+    EoN(){}
+    virtual ~EoN(){}
 
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 2);
@@ -258,8 +276,8 @@ typedef struct EoN : public Operation  {
 } EoN_;
 
 typedef struct OrN : public Operation  {
-    OrN();
-    virtual ~OrN();
+    OrN(){}
+    virtual ~OrN(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 2);
     return boost::get<uint64_t>(operands[0])  | ~boost::get<uint64_t>(operands[1]) ;
@@ -270,8 +288,8 @@ typedef struct OrN : public Operation  {
 } OrN_;
 
 typedef struct Not : public Operation  {
-    Not();
-    virtual ~Not();
+    Not(){}
+    virtual ~Not(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 1);
     return ~boost::get<uint64_t>(operands[0]) ;
@@ -283,8 +301,8 @@ typedef struct Not : public Operation  {
 
 
 typedef struct ROR : public Operation  {
-    ROR();
-    virtual ~ROR();
+    ROR(){}
+    virtual ~ROR(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 1);
     return ~boost::get<uint64_t>(operands[0]) ;
@@ -295,8 +313,8 @@ typedef struct ROR : public Operation  {
 } ROR_;
 
 typedef struct LSL : public Operation  {
-    LSL();
-    virtual ~LSL();
+    LSL(){}
+    virtual ~LSL(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 1);
     return boost::get<uint64_t>(operands[0]) << boost::get<uint64_t>(operands[1]);
@@ -307,8 +325,8 @@ typedef struct LSL : public Operation  {
 } LSL_;
 
 typedef struct ASR : public Operation  {
-    ASR();
-    virtual ~ASR();
+    ASR(){}
+    virtual ~ASR(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 1);
     return ~boost::get<uint64_t>(operands[0]) ;
@@ -319,8 +337,8 @@ typedef struct ASR : public Operation  {
 } ASR_;
 
 typedef struct LSR : public Operation  {
-    LSR();
-    virtual ~LSR();
+    LSR(){}
+    virtual ~LSR(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 1);
     return ~boost::get<uint64_t>(operands[0]) ;
@@ -331,8 +349,8 @@ typedef struct LSR : public Operation  {
 } LSR_;
 
 typedef struct Sext : public Operation  {
-    Sext();
-    virtual ~Sext();
+    Sext(){}
+    virtual ~Sext(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 2);
     return boost::get<uint64_t>(operands[0])  | SIGNED_UPPER_BOUND_64;
@@ -343,8 +361,8 @@ typedef struct Sext : public Operation  {
 } Sext_;
 
 typedef struct Zext : public Operation  {
-    Zext();
-    virtual ~Zext();
+    Zext(){}
+    virtual ~Zext(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 2);
     return boost::get<uint64_t>(operands[0]);
@@ -355,8 +373,8 @@ typedef struct Zext : public Operation  {
 } Zext_;
 
 typedef struct Xnor : public Operation  {
-    Xnor();
-    virtual ~Xnor();
+    Xnor(){}
+    virtual ~Xnor(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 2);
     return boost::get<uint64_t>(operands[0]) ^ ~boost::get<uint64_t>(operands[1]) ;
@@ -367,8 +385,8 @@ typedef struct Xnor : public Operation  {
 } Xnor_;
 
 typedef struct UMul : public Operation  {
-    UMul();
-    virtual ~UMul();
+    UMul(){}
+    virtual ~UMul(){}
   uint64_t calc(std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 2);
     uint64_t op0 = boost::get<uint64_t>(operands[0]) & 0xFFFFFFFF;
@@ -388,8 +406,8 @@ typedef struct UMul : public Operation  {
 } UMul_;
 
 typedef struct UMulH : public Operation  {
-    UMulH();
-    virtual ~UMulH();
+    UMulH(){}
+    virtual ~UMulH(){}
   uint64_t calc(std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 2);
     uint64_t op0 = (boost::get<uint64_t>(operands[0]) & 0xFFFFFFFF);
@@ -409,8 +427,8 @@ typedef struct UMulH : public Operation  {
 } UMulH_;
 
 typedef struct SMul : public Operation  {
-    SMul();
-    virtual ~SMul();
+    SMul(){}
+    virtual ~SMul(){}
   uint64_t calc( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 2);
     uint64_t op0 = boost::get<uint64_t>(operands[0]) & 0xFFFFFFFFULL;
@@ -432,8 +450,8 @@ typedef struct SMul : public Operation  {
 } SMul_;
 
 typedef struct SMulH : public Operation  {
-    SMulH();
-    virtual ~SMulH();
+    SMulH(){}
+    virtual ~SMulH(){}
   uint64_t calc( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 2);
     uint64_t op0 = boost::get<uint64_t>(operands[0]) & 0xFFFFFFFFULL;
@@ -454,8 +472,8 @@ typedef struct SMulH : public Operation  {
   }
 } SMulH_;
 typedef struct UDiv : public Operation  {
-    UDiv();
-    virtual ~UDiv();
+    UDiv(){}
+    virtual ~UDiv(){}
   uint64_t calc( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 3);
     uint64_t op0 = boost::get<uint64_t>(operands[0]) & 0xFFFFFFFF;
@@ -483,8 +501,8 @@ typedef struct UDiv : public Operation  {
 } UDiv_;
 
 typedef struct SDiv : public Operation  {
-    SDiv();
-    virtual ~SDiv();
+    SDiv(){}
+    virtual ~SDiv(){}
   uint64_t calc( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 3);
     uint64_t op0 = boost::get<uint64_t>(operands[0]) & 0xFFFFFFFF;
@@ -515,8 +533,8 @@ typedef struct SDiv : public Operation  {
 } SDiv_;
 
 typedef struct MulX : public Operation  {
-    MulX();
-    virtual ~MulX();
+    MulX(){}
+    virtual ~MulX(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 2);
     return boost::get<uint64_t>(operands[0]) * boost::get<uint64_t>(operands[1]);
@@ -527,8 +545,8 @@ typedef struct MulX : public Operation  {
 } MulX_;
 
 typedef struct UDivX : public Operation  {
-    UDivX();
-    virtual ~UDivX();
+    UDivX(){}
+    virtual ~UDivX(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 2);
     if (boost::get<uint64_t>(operands[1]) != 0) {
@@ -543,8 +561,8 @@ typedef struct UDivX : public Operation  {
 } UDivX_;
 
 typedef struct SDivX : public Operation  {
-    SDivX();
-    virtual ~SDivX();
+    SDivX(){}
+    virtual ~SDivX(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 2);
     int64_t op0_s = boost::get<uint64_t>(operands[0]);
@@ -561,8 +579,8 @@ typedef struct SDivX : public Operation  {
 } SDivX_;
 
 typedef struct MOV_ : public Operation {
-    MOV_();
-    virtual ~MOV_();
+    MOV_(){}
+    virtual ~MOV_(){}
   virtual Operand operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 2);
     return boost::get<uint64_t>(operands[1]);
@@ -573,8 +591,8 @@ typedef struct MOV_ : public Operation {
 } MOV_;
 
 typedef struct MOVN_ : public Operation {
-    MOVN_();
-    virtual ~MOVN_();
+    MOVN_(){}
+    virtual ~MOVN_(){}
     virtual Operand operator()( std::vector<Operand> const & operands  ) {
       DBG_Assert( operands.size() == 2);
       return ~boost::get<uint64_t>(operands[1]);
@@ -585,8 +603,8 @@ typedef struct MOVN_ : public Operation {
 } MOVN_;
 
 typedef struct MOVK_ : public Operation {
-    MOVK_();
-    virtual ~MOVK_();
+    MOVK_(){}
+    virtual ~MOVK_(){}
     virtual Operand operator()( std::vector<Operand> const & operands  ) {
       DBG_Assert( operands.size() == 2);
       uint64_t rd =  boost::get<uint64_t>(operands[0]);
@@ -616,12 +634,20 @@ typedef struct MOVK_ : public Operation {
 //std::unique_ptr<Operation> shift( eOpType T ) {
 //}
 
+std::unique_ptr<Operation> operation2( eOpType T ) {
+    std::unique_ptr<Operation> ptr;
+  switch (T) {
+  case kSUB_:
+    ptr.reset(new SUB_());
+  }
+  return ptr;
+}
 
 std::unique_ptr<Operation> operation( eOpType T ) {
   switch (T) {
-    case kADD_:
+  case kADD_:
       return std::make_unique<ADD_>();
-    case kAND_:
+  case kAND_:
       return std::make_unique<AND_>();
   case kANDS_:
     return std::make_unique<ANDS_>();

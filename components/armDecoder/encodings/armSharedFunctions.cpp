@@ -121,14 +121,34 @@ eConstraint ConstrainUnpredictable(eUnpredictable which){
     }
 }
 
+/* The input should be a value in the bottom e bits (with higher
+ * bits zero); returns that value replicated into every element
+ * of size e in a 64 bit integer.
+ */
+uint64_t bitfield_replicate(uint64_t mask, unsigned int e)
+{
+    assert(e != 0);
+    while (e < 64) {
+        mask |= mask << e;
+        e *= 2;
+    }
+    return mask;
+}
+
+uint64_t bitmask64(unsigned int length)
+{
+    assert(length > 0 && length <= 64);
+    return ~0ULL >> (64 - length);
+}
 
 
-static void setRD( SemanticInstruction * inst, uint32_t rd) {
-  DBG_(Tmp, (<< "\e[1;35m"<<"DECODER: EFFECT: Writing to x[" << rd << "]"<<"\e[0m"));
+void setRD( SemanticInstruction * inst, uint32_t rd) {
   reg regRD;
   regRD.theType = xRegisters;
   regRD.theIndex = rd;
   inst->setOperand( kRD, regRD );
+  DECODER_DBG( "Writing to x[" << rd << "]"<<"\e[0m");
+
 }
 
 static void setRD1( SemanticInstruction * inst, uint32_t rd1) {
@@ -197,7 +217,7 @@ static void setFCCd( int32_t fcc, SemanticInstruction * inst) {
 //    inst->addReinstatementEffect( satisfy( inst, update_value.predicate ) );
 //}
 
-void addUpdateData( SemanticInstruction * inst) {
+void addUpdateData( SemanticInstruction * inst, uint32_t data_reg, size_t size) {
 
     predicated_dependant_action update_value = updateStoreValueAction( inst, kResult);
 
@@ -305,7 +325,8 @@ void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t 
     eOperandCode cRS = eOperandCode( kRS1 + anOpNumber - 1);
     eOperandCode cPS = eOperandCode( kPS1 + anOpNumber - 1);
 
-    DBG_(Tmp, (<< "\e[1;31m"<<"DECODER: Reading x[" << rs << "] with opNumber " << cRS << " and storing it in " << cPS << "\e[0m"));
+    DECODER_DBG("Reading x[" << rs << "] and mapping it [" << cRS << " -> " << cPS << "]");
+
     setRS( inst, cRS , rs );
     inst->addDispatchEffect( mapSource( inst, cRS, cPS ) );
     simple_action act = readRegisterAction( inst, cPS, cOperand, is_64 );
@@ -324,7 +345,7 @@ void addReadVRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t 
     eOperandCode cRS = eOperandCode( kRS1 + anOpNumber - 1);
     eOperandCode cPS = eOperandCode( kPS1 + anOpNumber - 1);
 
-    DBG_(Tmp, (<< "\e[1;31m"<<"DECODER: Reading x[" << rs << "] with opNumber " << cRS << " and storing it in " << cPS << "\e[0m"));
+    DECODER_DBG("Reading v[" << rs << "] with opNumber " << cRS << " and storing it in " << cPS << "\e[0m");
     setRS( inst, cRS , rs );
     inst->addDispatchEffect( mapSource( inst, cRS, cPS ) );
     simple_action act = readRegisterAction( inst, cPS, cOperand, true );
@@ -336,6 +357,7 @@ void addReadVRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t 
 
 void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, int val, std::list<InternalDependance> & dependances){
 
+    DBG_Assert( anOpNumber == 1 || anOpNumber == 2 || anOpNumber == 3 || anOpNumber == 4 || anOpNumber == 5 );
     eOperandCode cOperand = eOperandCode( kOperand1 + anOpNumber - 1);
 
     simple_action act = readConstantAction( inst, val, cOperand );
@@ -344,7 +366,12 @@ void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, int val, s
 
 }
 
+void addCheckSystemAccess(SemanticInstruction * inst, uint32_t op0, uint32_t op1, uint32_t crn, uint32_t crm, uint32_t op2, uint32_t rt){
 
+    simple_action act = systemAction(inst, op0 ,op1 ,crn ,crm ,op2 ,rt);
+
+
+}
 void addAnnulment( SemanticInstruction * inst, eRegisterType aType, predicated_action & exec, InternalDependance const & aWritebackDependance) {
   predicated_action annul = annulAction( inst, aType );
   //inst->addDispatchAction( annul );
@@ -383,7 +410,19 @@ void addRD1Writeback( SemanticInstruction * inst, predicated_action & exec) {
   connectDependance( inst->retirementDependance(), wb );
 }
 
-void addWriteback( SemanticInstruction * inst, eRegisterType aType, predicated_action & exec, bool addSquash = true) {
+void addWriteback( SemanticInstruction * inst, eRegisterType aType, bool addSquash) {
+  if (addSquash) {
+    inst->addDispatchEffect( mapDestination( inst, aType ) );
+  } else {
+    inst->addDispatchEffect( mapDestination_NoSquashEffects( inst, aType ) );
+  }
+
+  dependant_action wb = writebackAction( inst, aType );
+
+  connectDependance( inst->retirementDependance(), wb );
+}
+
+void addWriteback( SemanticInstruction * inst, eRegisterType aType, predicated_action & exec, bool addSquash) {
   if (addSquash) {
     inst->addDispatchEffect( mapDestination( inst, aType ) );
   } else {
@@ -392,7 +431,7 @@ void addWriteback( SemanticInstruction * inst, eRegisterType aType, predicated_a
 
   //Create the writeback action
   dependant_action wb = writebackAction( inst, aType );
-  //inst->addDispatchAction( wb );
+//  inst->addDispatchAction( wb );
 
   addAnnulment( inst, aType, exec, wb.dependance );
 
@@ -422,7 +461,7 @@ void addPairDestination( SemanticInstruction * inst, uint32_t rd, uint32_t rd1, 
 //    inst->addOverride( overrideRegister( operands.rd() + 1, kResult1, inst ) );
 }
 
-void addVDestination( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool addSquash = true) {
+void addVDestination( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool addSquash) {
 
     setFD( inst, kFD0, rd);
     addWriteback( inst, vRegisters, exec, addSquash );
@@ -458,7 +497,15 @@ predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operat
   predicated_action exec;
 
     exec = executeAction( inst, anOperation, rs_deps, aResult, aBypass );
-    inst->addDispatchAction( exec );
+//    inst->addDispatchAction( exec );
+    return exec;
+}
+
+predicated_action addExecute2( SemanticInstruction * inst, std::unique_ptr<Operation> anOperation, std::vector< std::list<InternalDependance> > & rs_deps, eOperandCode aResult, boost::optional<eOperandCode> aBypass ) {
+  predicated_action exec;
+
+    exec = executeAction( inst, anOperation, rs_deps, aResult, aBypass );
+//    inst->addDispatchAction( exec );
     return exec;
 }
 
@@ -555,8 +602,7 @@ void addFloatingDestination( SemanticInstruction * inst, uint32_t fd, eSize aSiz
 }
 
 void addAddressCompute( SemanticInstruction * inst, std::vector< std::list<InternalDependance> > & rs_deps) {
-    DBG_(Tmp, (<< "\e[1;31m"<<"DECODER: Computing address" << "\e[0m"));
-
+  DECODER_TRACE;
   multiply_dependant_action update_address = updateAddressAction( inst );
   inst->addDispatchEffect( satisfy( inst, update_address.dependances[1] ) );
   simple_action exec = calcAddressAction( inst, rs_deps);

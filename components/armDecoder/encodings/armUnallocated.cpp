@@ -45,7 +45,6 @@ struct BlackBoxInstruction : public armInstruction {
 
   BlackBoxInstruction(VirtualMemoryAddress aPC, Opcode anOpcode, boost::intrusive_ptr<BPredState> aBPState, uint32_t  aCPU, int64_t aSequenceNo)
     : armInstruction(aPC, anOpcode, aBPState, aCPU, aSequenceNo) {
-      DBG_(Tmp,(<< "\033[2;31m DECODER: BLACKBOXING \033[0m"));
     setClass(clsSynchronizing, codeBlackBox);
     forceResync();
   }
@@ -66,6 +65,7 @@ struct BlackBoxInstruction : public armInstruction {
 
 arminst blackBox( armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo )
 {
+  DECODER_TRACE;
   return arminst( new BlackBoxInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo));
 }
 
@@ -73,7 +73,6 @@ arminst grayBox( armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequen
 {
   arminst inst( new BlackBoxInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo));
   inst->forceResync();
-  DBG_(Tmp, (<<"In grayBox"));
   inst->setClass(clsSynchronizing, aCode);
   return inst;
 }
@@ -86,14 +85,14 @@ arminst nop( armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 
 arminst unallocated_encoding(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    DBG_(Tmp,(<< "\033[1;31m DECODER: unallocated_encoding \033[0m"));
+    DECODER_TRACE;
     return blackBox( aFetchedOpcode, aCPU, aSequenceNo);
     /* Unallocated and reserved encodings are uncategorized */
 }
 
 arminst unsupported_encoding(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    DBG_(Tmp,(<< "\033[1;31m DECODER: unsupported_encoding \033[0m"));
+    DECODER_TRACE;
     /* Unallocated and reserved encodings are uncategorized */
     return blackBox( aFetchedOpcode, aCPU, aSequenceNo);
     //throw Exception;

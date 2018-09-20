@@ -90,7 +90,6 @@ private:
       : theInstruction(anInstruction)
     {}
     void satisfy(int32_t anArg) {
-      DBG_(Tmp, (<<"Satisfy anArg"));//NOOSHIN
       theInstruction.setMayRetire(anArg, true);
     }
     void squash(int32_t anArg) {
@@ -154,6 +153,7 @@ public:
   }
 
   void setOperand( eOperandCode anOperand, Operand const & aT ) {
+    SEMANTICS_DBG(identify() << ": [ " << anOperand << "->" << aT << " ]");
     theOperands.set( anOperand, aT );
   }
 
@@ -162,6 +162,7 @@ public:
 
   Operand & operand( eOperandCode anOperand )  {
     DBG_Assert( theOperands.hasOperand(anOperand), ( << "Request for unavailable operand " << anOperand << "(" << static_cast<int>(anOperand) << ") by\n" << std::internal << *this << std::left ) );
+    SEMANTICS_DBG(identify() << "requesting " << anOperand);
     return theOperands.operand( anOperand );
   }
 

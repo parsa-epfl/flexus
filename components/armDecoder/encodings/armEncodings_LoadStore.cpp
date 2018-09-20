@@ -68,6 +68,8 @@ namespace narmDecoder {
  */
 arminst disas_ldst_single_struct(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
+
     assert(false);
 }
 
@@ -91,6 +93,7 @@ arminst disas_ldst_single_struct(armcode const & aFetchedOpcode, uint32_t  aCPU,
  */
 arminst disas_ldst_multiple_struct(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
     assert(false);
 }
 
@@ -112,6 +115,8 @@ arminst disas_ldst_multiple_struct(armcode const & aFetchedOpcode, uint32_t  aCP
  */
 arminst disas_ldst_reg_imm9(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+     DECODER_TRACE;
+
      int size = extract32(aFetchedOpcode.theOpcode, 30, 2);
      bool V = extract32(aFetchedOpcode.theOpcode, 26, 1);
      int opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
@@ -165,6 +170,7 @@ arminst disas_ldst_reg_imm9(armcode const & aFetchedOpcode, uint32_t  aCPU, int6
  */
 arminst disas_ldst_reg_roffset(armcode const & aFetchedOpcode,uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
     int size = extract32(aFetchedOpcode.theOpcode, 30, 2);
     int option = extract32(aFetchedOpcode.theOpcode, 13, 3);
     int V = extract32(aFetchedOpcode.theOpcode, 26, 1);
@@ -206,6 +212,7 @@ arminst disas_ldst_reg_roffset(armcode const & aFetchedOpcode,uint32_t  aCPU, in
  */
 arminst disas_ldst_atomic(armcode const & aFetchedOpcode,uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
     int o3_opc = extract32(aFetchedOpcode.thePC, 12, 4);
     bool V = extract32(aFetchedOpcode.thePC, 26, 1);
     if (V) {
@@ -254,6 +261,7 @@ arminst disas_ldst_atomic(armcode const & aFetchedOpcode,uint32_t  aCPU, int64_t
  */
 arminst disas_ldst_reg_unsigned_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
     int size = extract32(aFetchedOpcode.theOpcode, 30, 2);
     int V = extract32(aFetchedOpcode.theOpcode, 26, 1);
     int opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
@@ -282,6 +290,8 @@ arminst disas_ldst_reg_unsigned_imm(armcode const & aFetchedOpcode, uint32_t  aC
 /* Load/store register (all forms) */
 arminst disas_ldst_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
+
     switch (extract32(aFetchedOpcode.thePC, 24, 2)) {
     case 0:
         if (extract32(aFetchedOpcode.thePC, 21, 1) == 0) {
@@ -336,6 +346,8 @@ arminst disas_ldst_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t a
  */
 arminst disas_ldst_pair(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {   
+    DECODER_TRACE;
+
     bool is_vector = extract32(aFetchedOpcode.thePC, 26, 1);
     bool is_load = extract32(aFetchedOpcode.thePC, 22, 1);
 
@@ -369,6 +381,8 @@ arminst disas_ldst_pair(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
  */
 arminst disas_ld_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
+
     unsigned int V = extract32(aFetchedOpcode.theOpcode, 26, 1);
     unsigned int opc = extract32(aFetchedOpcode.theOpcode, 30, 2);
 
@@ -394,6 +408,8 @@ arminst disas_ld_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSe
  */
 arminst disas_ldst_excl(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
+
     unsigned int rt2 = extract32(aFetchedOpcode.theOpcode, 10, 5);
     unsigned int o0 = extract32(aFetchedOpcode.theOpcode, 15, 1); // is_lasr
     unsigned int o1 = extract32(aFetchedOpcode.theOpcode, 21, 1);  // is_pair
@@ -437,24 +453,18 @@ arminst disas_ldst(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequ
 {
     switch (extract32(aFetchedOpcode.theOpcode, 24, 6)) {
     case 0x08: /* Load/store exclusive */
-        DBG_(Tmp,(<< "\033[1;31mDECODER: Load/store exclusiv \033[0m"));
         return disas_ldst_excl(aFetchedOpcode, aCPU,aSequenceNo);
     case 0x18: case 0x1c: /* Load register (literal) */
-        DBG_(Tmp,(<< "\033[1;31mDECODER: Load register (literal) \033[0m"));
         return disas_ld_lit(aFetchedOpcode, aCPU,aSequenceNo);
     case 0x28: case 0x29:
     case 0x2c: case 0x2d: /* Load/store pair (all forms) */
-        DBG_(Tmp,(<< "\033[1;31m DECODER: Load/store pair (all forms) \033[0m"));
         return disas_ldst_pair(aFetchedOpcode, aCPU,aSequenceNo);
     case 0x38: case 0x39:
     case 0x3c: case 0x3d: /* Load/store register (all forms) */
-        DBG_(Tmp,(<< "\033[1;31m DECODER: Load/store register (all forms) \033[0m"));
         return disas_ldst_reg(aFetchedOpcode, aCPU,aSequenceNo);
     case 0x0c: /* AdvSIMD load/store multiple structures */
-        DBG_(Tmp,(<< "\033[1;31mDECODER: AdvSIMD load/store multiple structures \033[0m"));
         return disas_ldst_multiple_struct(aFetchedOpcode, aCPU,aSequenceNo);
     case 0x0d: /* AdvSIMD load/store single structure */
-        DBG_(Tmp,(<< "\033[1;31mDECODER: AdvSIMD load/store single structure \033[0m"));
         return disas_ldst_single_struct(aFetchedOpcode, aCPU,aSequenceNo);
     default:
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);

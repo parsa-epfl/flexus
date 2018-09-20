@@ -1,4 +1,4 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
@@ -82,12 +82,12 @@ using namespace nuArchARM;
 
 void armInstruction::describe(std::ostream & anOstream) const {
   Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(theCPU);
-  anOstream << printInstClass()
-            << "#" << theSequenceNo << "[" << std::setfill('0') << std::right << std::setw(2) << cpu->id() <<  "] "
-            << "@" << thePC  << " |" << std::hex << std::setw(8) << theOpcode << std::dec << "| "
-            << std::left << std::setw(30) << std::setfill(' '); //<< disassemble();
+  anOstream <<
+            "#" << theSequenceNo << "[" << std::setfill('0') << std::right << std::setw(2) << cpu->id() <<  "] "
+            << printInstClass() << " PC: @" << thePC  << " OPC: | " << std::hex << theOpcode << std::dec << " | ";
+//            << std::endl << "QEMU disas: " << std::setfill(' ') << cpu->disassemble(thePC);
   if ( theRaisedException) {
-    anOstream << " {raised " << cpu->describeException(theRaisedException) << "(" << theRaisedException << ")} ";
+    anOstream << " {raised " /*<< cpu->describeException(theRaisedException) << "(" << theRaisedException*/ << ")} ";
   }
   if (theResync) {
     anOstream << " {force-resync}";
@@ -161,7 +161,7 @@ bool armInstruction::usesFpSqrt() const {
 }
 
 
-std::pair< boost::intrusive_ptr<AbstractInstruction>, bool> decode( armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo, int32_t aUop )
+std::pair< boost::intrusive_ptr<AbstractInstruction>, bool> decode( Flexus::SharedTypes::FetchedOpcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo, int32_t aUop )
 {
     bool last_uop = true;
     boost::intrusive_ptr<AbstractInstruction> ret_val = disas_a64_insn(aFetchedOpcode, aCPU, aSequenceNo, aUop);

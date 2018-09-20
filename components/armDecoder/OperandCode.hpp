@@ -103,7 +103,7 @@ enum eArchState {
 };
 
 enum eOperandCode {
-  kRS1
+    kRS1
   , kRS2
   , kRS3
   , kRS4
@@ -164,8 +164,6 @@ enum eOperandCode {
   , kocFPSR
   , kocFPCR
   , kUopAddressOffset
-  , kExtendValue
-  , kShiftValue
   , kLastOperandCode
 };
 

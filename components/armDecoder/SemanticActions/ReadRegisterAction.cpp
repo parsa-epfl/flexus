@@ -100,23 +100,27 @@ struct ReadRegisterAction : public BaseSemanticAction
 
   void doEvaluate()
   {
-    DBG_( Tmp, ( <<  "\e[1;36m SEMANTICS: Evaluating Read Register Action - "  << *this <<"\e[0m") );
+    SEMANTICS_DBG(*this);
 
     if (! theConnected) {
+        SEMANTICS_DBG("Connecting");
+
       mapped_reg name = theInstruction->operand< mapped_reg > (theRegisterCode);
       setReady( 0, core()->requestRegister( name, theInstruction->makeInstructionDependance(dependance()) ) == kReady );
-      //theInstruction->addSquashEffect( disconnectRegister( theInstruction, theRegisterCode ) );
-      //theInstruction->addRetirementEffect( disconnectRegister( theInstruction, theRegisterCode ) );
+//      theInstruction->addSquashEffect( disconnectRegister( theInstruction, theRegisterCode ) );
+//      theInstruction->addRetirementEffect( disconnectRegister( theInstruction, theRegisterCode ) );
       core()->connectBypass( name, theInstruction, ll::bind( &ReadRegisterAction::bypass, this, ll::_1) );
       theConnected = true;
     }
     if (! signalled() ) {
+        SEMANTICS_DBG("Signalling");
+
       mapped_reg name = theInstruction->operand< mapped_reg > (theRegisterCode);
       eResourceStatus status = core()->requestRegister( name );
       if (status == kReady) {
         mapped_reg name = theInstruction->operand< mapped_reg > (theRegisterCode);
-        DBG_( Tmp, ( << *this << " read " << theRegisterCode << "(" << name << ")" ) );
         Operand aValue = core()->readRegister( name );
+        uint64_t reg  = boost::get<uint64_t>(aValue);
         if (!the64){ // reading w reg >> only the botom half
             bits v = boost::get<bits>(aValue);
             v &= bits(v.size(),0xffffffff);

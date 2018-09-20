@@ -43,31 +43,25 @@ namespace narmDecoder {
 /* C3.1 A64 instruction index by encoding */
 arminst disas_a64_insn( armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo, int32_t aUop )
 {
-    DBG_(Tmp,(<< "\033[1;31m DECODER: Decoding " << std::hex << aFetchedOpcode.theOpcode << std::dec << "\033[0m"));
+    DECODER_DBG(   "#" << aSequenceNo << ": opcode = " << std::hex << aFetchedOpcode.theOpcode << std::dec);
 
     switch (extract32(aFetchedOpcode.theOpcode, 25, 4)) {
     case 0x0: case 0x1: case 0x2: case 0x3: /* UNALLOCATED */
-        DBG_(Tmp,(<< "\033[1;31m DECODER: UNALLOCATED \033[0m"));
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     case 0x8: case 0x9: /* Data processing - immediate */
-        DBG_(Tmp,(<< "\033[1;31m DECODER: Data processing - immediate \033[0m"));
         return disas_data_proc_imm(aFetchedOpcode,  aCPU, aSequenceNo);
     case 0xa: case 0xb: /* Branch, exception generation and system insns */
-         DBG_(Tmp,(<< "\033[1;31m DECODER: Branch, exception generation and system insns \033[0m"));
          return disas_b_exc_sys(aFetchedOpcode, aCPU, aSequenceNo);
     case 0x4:
     case 0x6:
     case 0xc:
     case 0xe:      /* Loads and stores */
-        DBG_(Tmp,(<< "\033[1;31m DECODER: Loads and stores \033[0m"));
         return disas_ldst(aFetchedOpcode,  aCPU, aSequenceNo);
     case 0x5:
     case 0xd:      /* Data processing - register */
-        DBG_(Tmp,(<< "\033[1;31m DECODER: Data processing - register  \033[0m"));
         return disas_data_proc_reg(aFetchedOpcode,  aCPU, aSequenceNo);
     case 0x7:
     case 0xf:      /* Data processing - SIMD and floating point */
-        DBG_(Tmp,(<< "\033[1;31m DECODER: Data processing - SIMD and floating point \033[0m"));
         return disas_data_proc_simd_fp(aFetchedOpcode,  aCPU, aSequenceNo);
     default:
         DBG_Assert(false, (<< "DECODER: unhandled decoding case!")); /* all 15 cases should be handled above */

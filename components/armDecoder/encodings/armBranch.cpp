@@ -43,7 +43,7 @@ namespace narmDecoder {
 using namespace nuArchARM;
 
 void branch_always( SemanticInstruction * inst, bool immediate, VirtualMemoryAddress target) {
-    DBG_(Tmp, (<<"DECODER: In branch_always"));
+    DECODER_TRACE;
 
     inst->setClass(clsBranch, codeBranchUnconditional);
 
@@ -51,6 +51,8 @@ void branch_always( SemanticInstruction * inst, bool immediate, VirtualMemoryAdd
     inst->addRetirementEffect( updateUnconditional( inst, target ) );
 }
 void branch_cc( SemanticInstruction * inst, VirtualMemoryAddress target, eCondCode aCode) {
+    DECODER_TRACE;
+
   inst->setClass(clsBranch, codeBranchConditional);
 
   std::list<InternalDependance> rs_deps;
@@ -71,11 +73,35 @@ void branch_cc( SemanticInstruction * inst, VirtualMemoryAddress target, eCondCo
 * BranchTo(PC[] + offset, BranchType_JMP);
 */
 arminst B(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+    DECODER_TRACE;
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
-    uint64_t addr = aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 0, 26) * 4 - 4;
+    inst->setClass(clsBranch, codeBranchUnconditional);
+
+    uint64_t pc = aFetchedOpcode.thePC;
+    int64_t offset = sextract32(aFetchedOpcode.theOpcode, 0, 26) * 4;
+    uint64_t addr = pc + offset;
     VirtualMemoryAddress target(addr);
     inst->addDispatchEffect( branch( inst, target ) );
+    inst->addRetirementEffect( updateUnconditional( inst, target ) );
+
+    inst->addPrevalidation(validatePC(pc, inst));
+
+    inst->addPostvalidation(validatePC(addr, inst));
+
+    if (extract32(aFetchedOpcode.theOpcode, 31, 1)){ // BL
+
+        int rd = 30;
+        setRD( inst, rd);
+
+        predicated_action exec = constantAction( inst, aFetchedOpcode.thePC+4, kResult, kPD ) ;
+        inst->addDispatchAction(exec);
+
+        addWriteback( inst, xRegisters, exec );
+        inst->addPostvalidation( validateXRegister( rd, kResult, inst  ) );
+
+    }
+
     return inst;
 
 }
@@ -89,8 +115,12 @@ arminst B(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
 *  BranchTo(PC[] + offset, BranchType_CALL);
 */
 arminst BL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+    DECODER_TRACE;
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
+
+    inst->setClass(clsBranch, codeBranchUnconditional);
+
     uint64_t addr = aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 0, 26) * 4 - 4;
     VirtualMemoryAddress target(addr);
     std::vector< std::list<InternalDependance> > rs_deps(2);
@@ -117,6 +147,7 @@ arminst BL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) 
 * BranchTo(PC[] + offset, BranchType_JMP);
 */
 arminst CBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+    DECODER_TRACE;
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
     unsigned int sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
@@ -143,6 +174,7 @@ arminst CBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 * BranchTo(PC[] + offset, BranchType_JMP);
 */
 arminst CBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+    DECODER_TRACE;
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
     unsigned int sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
@@ -171,6 +203,8 @@ arminst CBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
  *
 */
 arminst TBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+    DECODER_TRACE;
+
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
@@ -204,6 +238,8 @@ arminst TBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
  *
 */
 arminst TBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+    DECODER_TRACE;
+
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
@@ -233,6 +269,7 @@ arminst TBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
  * BranchTo(PC[] + offset, BranchType_JMP);
  */
 arminst BCOND(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+    DECODER_TRACE;
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
@@ -264,6 +301,7 @@ arminst BCOND(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceN
  * BranchTo(target, BranchType_JMP);
  */
 arminst BR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+    DECODER_TRACE;
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
@@ -291,10 +329,10 @@ arminst BR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) 
  * BranchTo(target, branch_type);
  */
 arminst BLR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+DECODER_TRACE;
 
-
-    unsigned int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    unsigned int op = extract32(aFetchedOpcode.theOpcode, 21, 2);
+    uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
+    uint32_t op = extract32(aFetchedOpcode.theOpcode, 21, 2);
 
     if (op > 2) {
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
@@ -323,24 +361,36 @@ arminst BLR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 }
 
 
-arminst ERET(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
-arminst DPRS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst ERET(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
+arminst DPRS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
 
 
 
 // System
-arminst HINT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
-arminst SYNC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
-arminst MSR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
-arminst SYS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst HINT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE;return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
+arminst SYNC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
+arminst MSR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
+arminst SYS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
+    DECODER_TRACE;
+    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
+                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
+    uint32_t op1 = extract32(aFetchedOpcode.theOpcode, 16, 2);
+    uint32_t CRn = extract32(aFetchedOpcode.theOpcode, 16, 2);
+    uint32_t CRm = extract32(aFetchedOpcode.theOpcode, 16, 2);
+    uint32_t op2 = extract32(aFetchedOpcode.theOpcode, 16, 2);
+    uint32_t Rt = extract32(aFetchedOpcode.theOpcode, 16, 2);
+
+//    addCheckSystemAccess(inst, 1, op1, CRn, CRm, op2, Rt, 1);
+    return inst;
+}
 
 // Exception generation
-arminst SVC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
-arminst HVC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
-arminst SMC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
-arminst BRK(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
-arminst HLT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
-arminst DCPS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){}
+arminst SVC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
+arminst HVC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
+arminst SMC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
+arminst BRK(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
+arminst HLT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
+arminst DCPS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
 
 
 } // narmDecoder

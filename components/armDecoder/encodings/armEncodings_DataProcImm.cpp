@@ -55,13 +55,17 @@ namespace narmDecoder {
  */
 arminst disas_pc_rel_adr(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
+
     SemanticInstruction* inst(new SemanticInstruction(aFetchedOpcode.thePC,aFetchedOpcode.theOpcode,
                                                       aFetchedOpcode.theBPState, aCPU,aSequenceNo));
 
-    unsigned int  rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
+
+    inst->setClass(clsBranch, codeBranchUnconditional);
+    uint32_t  rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
     uint64_t offset = sextract64(aFetchedOpcode.theOpcode, 5, 19);
     offset = offset << 2 | extract32(aFetchedOpcode.theOpcode, 29, 2);
-    unsigned int op = extract32(aFetchedOpcode.theOpcode, 31, 1);
+    uint32_t op = extract32(aFetchedOpcode.theOpcode, 31, 1);
     uint64_t base = aFetchedOpcode.thePC;
 
 
@@ -73,7 +77,7 @@ arminst disas_pc_rel_adr(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t
 
     ADR(inst, base, offset, rd);
 
-    return arminst(inst);
+    return inst;
 }
 
 /* Logical (immediate)
@@ -84,8 +88,10 @@ arminst disas_pc_rel_adr(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t
  */
 arminst disas_logic_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
+
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
-    unsigned int sf, opc, is_n, immr, imms, rn, rd;
+    uint32_t sf, opc, is_n, immr, imms, rn, rd;
     uint64_t wmask;
     bool is_and = false;
 
@@ -152,9 +158,11 @@ arminst disas_logic_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
  */
 arminst disas_movw_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
+
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
-    int rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
+    uint32_t rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
     uint64_t imm = extract32(aFetchedOpcode.theOpcode, 5, 16);
     int sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
     int opc = extract32(aFetchedOpcode.theOpcode, 29, 2);
@@ -195,9 +203,11 @@ arminst disas_movw_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t a
  */
 arminst disas_bitfield(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
+
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
-    unsigned int sf, n, opc, ri, si, rn, rd, bitsize, pos, len;
+    uint32_t sf, n, opc, ri, si, rn, rd, bitsize, pos, len;
 
     sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
     opc = extract32(aFetchedOpcode.theOpcode, 29, 2);
@@ -238,10 +248,12 @@ arminst disas_bitfield(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t a
  */
 arminst disas_extract(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
+
     SemanticInstruction* inst(new SemanticInstruction(aFetchedOpcode.thePC,aFetchedOpcode.theOpcode,
                                                       aFetchedOpcode.theBPState, aCPU,aSequenceNo));
 
-    unsigned int sf, n, rm, imm, rn, rd, bitsize, op21, op0;
+    uint32_t sf, n, rm, imm, rn, rd, bitsize, op21, op0;
 
     sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
     n = extract32(aFetchedOpcode.theOpcode, 22, 1);
@@ -277,10 +289,12 @@ arminst disas_extract(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aS
  */
 arminst disas_add_sub_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
+
     SemanticInstruction* inst(new SemanticInstruction(aFetchedOpcode.thePC,aFetchedOpcode.theOpcode,
                                                       aFetchedOpcode.theBPState, aCPU,aSequenceNo));
-    int rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
+    uint32_t rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
+    uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
     uint64_t imm = extract32(aFetchedOpcode.theOpcode, 10, 12);
     int shift = extract32(aFetchedOpcode.theOpcode, 22, 2);
     bool S = extract32(aFetchedOpcode.theOpcode, 29, 1);
@@ -316,25 +330,18 @@ arminst disas_data_proc_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int6
 {
     switch (extract32(aFetchedOpcode.theOpcode, 23, 6)) {
     case 0x20: case 0x21: /* PC-rel. addressing */
-        DBG_(Tmp,(<< "\033[1;31mDECODER: PC-rel. addressing \033[0m"));
         return disas_pc_rel_adr(aFetchedOpcode,  aCPU, aSequenceNo);
     case 0x22: case 0x23: /* Add/subtract (immediate) */
-        DBG_(Tmp,(<< "\033[1;31mDECODER: Add/subtract (immediate) \033[0m"));
         return disas_add_sub_imm(aFetchedOpcode,  aCPU, aSequenceNo);
     case 0x24: /* Logical (immediate) */
-        DBG_(Tmp,(<< "\033[1;31mDECODER: Logical (immediate) \033[0m"));
         return disas_logic_imm(aFetchedOpcode,  aCPU, aSequenceNo);
     case 0x25: /* Move wide (immediate) */
-        DBG_(Tmp,(<< "\033[1;31mDECODER: Move wide (immediate) \033[0m"));
         return disas_movw_imm(aFetchedOpcode,  aCPU, aSequenceNo);
     case 0x26: /* Bitfield */
-        DBG_(Tmp,(<< "\033[1;31mDECODER: Bitfield \033[0m"));
         return disas_bitfield(aFetchedOpcode,  aCPU, aSequenceNo);
     case 0x27: /* Extract */
-        DBG_(Tmp,(<< "\033[1;31mDECODER: Extract \033[0m"));
         return disas_extract(aFetchedOpcode,  aCPU, aSequenceNo);
     default:
-        DBG_(Tmp,(<< "\033[1;31mDECODER: Extract \033[0m"));
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 

@@ -43,7 +43,6 @@
 #include <boost/throw_exception.hpp>
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
 namespace ll = boost::lambda;
 
 #include <boost/none.hpp>
@@ -60,6 +59,9 @@ namespace ll = boost::lambda;
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
 
+#include <components/uArchARM/CoreModel/SCTLR_EL.hpp>
+#include <components/uArchARM/systemRegister.hpp>
+
 #define DBG_DeclareCategories armDecoder
 #define DBG_SetDefaultOps AddCat(armDecoder)
 #include DBG_Control()
@@ -68,38 +70,42 @@ namespace narmDecoder {
 
 using namespace nuArchARM;
 
-struct ReadConstantAction : public BaseSemanticAction
-{
-  int theVal;
-  eOperandCode theOperandCode;
+struct SystemAction : public BaseSemanticAction {
+  uint32_t theOp0, theOp1, theOp2, theCRn, theCRm, theRT;
+  bool thehasCP;
 
-  ReadConstantAction( SemanticInstruction * anInstruction, eOperandCode aVal, eOperandCode anOperandCode)
+  SystemAction( SemanticInstruction * anInstruction,
+                uint32_t op0,
+                uint32_t op1,
+                uint32_t crn,
+                uint32_t crm,
+                uint32_t op2,
+                uint32_t rt ,
+                bool hasCP)
     : BaseSemanticAction( anInstruction, 1 )
-    , theVal( aVal )
-    , theOperandCode( anOperandCode )
-
+    , theOp0( op0 )
+    , theOp1( op1 )
+    , theOp2( op2 )
+    , theCRn( crn )
+    , theCRm( crm )
+    , theRT( rt )
+    , thehasCP (hasCP)
   {}
 
-  void doEvaluate()
-  {
-    theInstruction->setOperand(theOperandCode, theVal);
-
-    satisfyDependants();
+  void doEvaluate() {
+    // Cache maintenance
+//      theInstruction->core()->getSysRegInfo(theOp0, theOp1, theOp2, theCRn, theCRm, thehasCP)->accessfn(theInstruction->core());
 
   }
 
-  void describe( std::ostream & anOstream) const
-  {
-    anOstream << theInstruction->identify() << " ReadConstant " << theVal << " to " << theOperandCode;
+  void describe( std::ostream & anOstream) const {
+    anOstream << theInstruction->identify() << " System Check ";
   }
 };
 
-simple_action readConstantAction ( SemanticInstruction * anInstruction, int aVal, eOperandCode anOperandCode)
-{
-  return new(anInstruction->icb()) ReadConstantAction( anInstruction, aVal, anOperandCode);
+
+simple_action systemAction(SemanticInstruction * anInstruction, uint32_t op0, uint32_t op1, uint32_t crn, uint32_t crm, uint32_t op2, uint32_t rt, bool hasCP = true) {
+  return new(anInstruction->icb()) SystemAction(anInstruction, op0, op1, crn, crm, op2, rt, hasCP);
 }
-
-
-
 
 } //narmDecoder

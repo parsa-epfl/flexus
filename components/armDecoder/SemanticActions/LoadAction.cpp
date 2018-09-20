@@ -83,7 +83,7 @@ struct LoadAction : public PredicatedSemanticAction {
 
   void satisfy(int32_t anArg) {
     BaseSemanticAction::satisfy(anArg);
-    DBG_(Tmp, (<<"After BaseSemanticAction Load"));
+    SEMANTICS_DBG(*this);
     if ( !cancelled() && ready() && thePredicate ) {
       doLoad();
     }
@@ -97,6 +97,7 @@ struct LoadAction : public PredicatedSemanticAction {
   }
 
   void doLoad() {
+      SEMANTICS_DBG(*this);
     bits value;
     if (theLoadExtended) {
       value = core()->retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
@@ -127,10 +128,10 @@ struct LoadAction : public PredicatedSemanticAction {
     }
 
     theInstruction->setOperand(kResult, value);
-    DBG_(Tmp, ( << *this << " received load value=" << value));
+    SEMANTICS_DBG(*this << " received load value=" << value);
     if (theBypass) {
       mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass);
-      DBG_(Tmp, ( << *this << " bypassing value=" << value << " to " << name));
+      SEMANTICS_DBG(*this << " bypassing value=" << value << " to " << name);
       core()->bypass( name, value );
     }
     satisfyDependants();

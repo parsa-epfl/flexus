@@ -74,9 +74,8 @@ struct PredicatedSemanticAction : public BaseSemanticAction {
       : theAction(anAction)
     {}
     void satisfy(int32_t anArg) {
-      DBG_(Tmp, (<<"In Predicate"));
+      SEMANTICS_TRACE;
       theAction.predicate_on(anArg);
-      DBG_(Tmp, (<<"After Predicate on"));
     }
     void squash(int32_t anArg) {
       theAction.predicate_off(anArg);

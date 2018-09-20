@@ -35,14 +35,30 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-#include "Conditions.hpp"
+
+#include <core/boost_extensions/intrusive_ptr.hpp>
+#include <boost/throw_exception.hpp>
+
+#include <core/target.hpp>
+#include <core/debug/debug.hpp>
+#include <core/types.hpp>
+
 #include <components/uArchARM/uArchInterfaces.hpp>
-#include "components/uArchARM/CoreModel/pstate.hpp"
+#include <components/uArchARM/RegisterType.hpp>
+#include "components/uArchARM/CoreModel/PSTATE.hpp"
+
+#include "SemanticActions.hpp"
+#include "OperandMap.hpp"
+#include "Conditions.hpp"
+
+#define DBG_DeclareCategories armDecoder
+#define DBG_SetDefaultOps AddCat(armDecoder)
+#include DBG_Control()
 
 namespace narmDecoder {
 using namespace nuArchARM;
 
-bool ConditionHolds(const pstate & pstate, int condcode )
+bool ConditionHolds(const PSTATE & pstate, int condcode )
 {
     bool result;
     switch (condcode) {
@@ -77,7 +93,9 @@ bool ConditionHolds(const pstate & pstate, int condcode )
 }
 
 
-struct CBZ : public Condition {
+typedef struct CBZ : public Condition {
+    CBZ(){}
+    virtual ~CBZ(){}
   virtual bool operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 1);
     return boost::get<bits>(operands[0]).none();
@@ -85,9 +103,11 @@ struct CBZ : public Condition {
   virtual char const * describe() const {
     return "Compare and Branch on Zero";
   }
-} CBZ_;
+}CBZ;
 
-struct CBNZ : public Condition {
+typedef struct CBNZ : public Condition {
+    CBNZ(){}
+    virtual ~CBNZ(){}
   virtual bool operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 1);
     return boost::get<bits>(operands[0]).any();
@@ -95,9 +115,11 @@ struct CBNZ : public Condition {
   virtual char const * describe() const {
     return "Compare and Branch on Non Zero";
   }
-} CBNZ_;
+}CBNZ;
 
-struct TBZ : public Condition {
+typedef struct TBZ : public Condition {
+    TBZ(){}
+    virtual ~TBZ(){}
   virtual bool operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 2);
     return (boost::get<bits>(operands[0]) & boost::get<bits>(operands[0])).none();
@@ -105,9 +127,11 @@ struct TBZ : public Condition {
   virtual char const * describe() const {
     return "Test and Branch on Zero";
   }
-} TBZ_;
+}TBZ;
 
-struct TBNZ : public Condition {
+typedef struct TBNZ : public Condition {
+    TBNZ(){}
+    virtual ~TBNZ(){}
   virtual bool operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 2);
     return (boost::get<bits>(operands[0]) & boost::get<bits>(operands[0])).any();
@@ -115,38 +139,42 @@ struct TBNZ : public Condition {
   virtual char const * describe() const {
     return "Test and Branch on Non Zero";
   }
-} TBNZ_;
+}TBNZ;
 
 
-struct BCOND : public Condition {
-
+typedef struct BCOND : public Condition {
+    BCOND(){}
+    virtual ~BCOND(){}
   virtual bool operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 1);
 
-    pstate p (theInstruction->core()->getPSTATE());
+    PSTATE p (theInstruction->core()->getPSTATE());
     return ConditionHolds(p, boost::get<uint64_t>(operands[0]) );
   }
   virtual char const * describe() const {
     return "Branch COnditionally";
   }
-} BCOND_;
+}BCOND;
 
 
-Condition & condition(eCondCode aCond) {
+std::unique_ptr<Condition> condition(eCondCode aCond) {
     switch(aCond)
     {
     case kCBZ_:
-        return CBZ_;
+        return std::make_unique<CBZ>();
     case kCBNZ_:
-         return CBNZ_;
+        return std::make_unique<CBNZ>();
     case kTBZ_:
-        return TBZ_;
+        return std::make_unique<TBZ>();
     case kTBNZ_:
-         return TBNZ_;
+         return std::make_unique<TBNZ>();
     case kBCOND_:
-         return BCOND_;
+         return std::make_unique<BCOND>();
     }
 }
+
+
+
 
 
 } //armDecoder

@@ -89,7 +89,8 @@ struct WritebackAction : public BaseSemanticAction {
 
   void doEvaluate() {
     if (ready()) {
-      DBG_( Tmp, ( << *this << " rd: " << theRd << " result: " << theResult) );
+      SEMANTICS_DBG("Writing " << theResult << " to " << theRd);
+
       mapped_reg name = theInstruction->operand< mapped_reg > (theRd);
       register_value result = boost::apply_visitor( register_value_extractor(), theInstruction->operand( theResult ) );
       core()->writeRegister( name, result );

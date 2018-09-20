@@ -79,7 +79,7 @@ struct LDDAction : public PredicatedSemanticAction {
 
   void satisfy(int32_t anArg) {
     BaseSemanticAction::satisfy(anArg);
-    DBG_(Tmp, (<<"After the stisfy of BaseSemanticAction"));
+    SEMANTICS_DBG(*theInstruction << *this);
     if ( !cancelled() && ready() && thePredicate) {
       //Bypass
       doLoad();
@@ -96,6 +96,7 @@ struct LDDAction : public PredicatedSemanticAction {
   void doEvaluate() {}
 
   void doLoad() {
+      SEMANTICS_DBG(*this);
 //    int32_t asi = theInstruction->operand< bits > (kOperand3);
 //    if (asi == 0x24 || asi == 0x34) {
 //      //Quad LDD
@@ -104,7 +105,6 @@ struct LDDAction : public PredicatedSemanticAction {
 //      theInstruction->setOperand(kResult, value );
 //      theInstruction->setOperand(kResult1, value1 );
 
-//      DBG_(Tmp, ( << *this << " Quad LDD received load value=" << value << " value1=" << value1));
 //      if (theBypass0) {
 //        mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass0);
 //        core()->bypass( name, value );
@@ -119,7 +119,8 @@ struct LDDAction : public PredicatedSemanticAction {
       theInstruction->setOperand(kResult, value >> 32);
       theInstruction->setOperand(kResult1, value & bits(0xFFFFFFFFULL) );
 
-      DBG_(Tmp, ( << *this << " received load value=" << value));
+      SEMANTICS_DBG(*this<< " received load value=" << value);
+
       if (theBypass0) {
         mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass0);
         core()->bypass( name, value >> 32 );

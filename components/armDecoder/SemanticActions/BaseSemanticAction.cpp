@@ -95,18 +95,17 @@ void BaseSemanticAction::releaseRef() {
 }
 
 void BaseSemanticAction::Dep::satisfy(int32_t anArg) {
-//    DBG_(Tmp, (<<"\e[1;33m" << "ACTION: BaseSemanticAction: Satisfying a dependant - " << this <<  "\e[0m"));
+    SEMANTICS_DBG(theAction.theInstruction->identify() << " "<< theAction << " " << anArg);
   theAction.satisfy(anArg);
 }
 void BaseSemanticAction::Dep::squash(int32_t anArg) {
-    DBG_(Tmp, (<<"\e[1;33m"<<"ACTION: BaseSemanticAction: Squashing a dependant - " << this << "\e[0m"));
+    SEMANTICS_DBG(theAction.theInstruction->identify() << " "<< theAction);
   theAction.squash(anArg);
 }
 
 void BaseSemanticAction::satisfyDependants() {
   if (! cancelled() && ! signalled() )  {
     for ( int32_t i = 0; i < theEndOfDependances; ++i) {
-        DBG_(Tmp, (<<"\e[1;33m"<<"ACTION: Satisfying a dependant - " << *this << "\e[0m"));
       theDependances[i].satisfy();
     }
     theSignalled = true;
@@ -114,14 +113,13 @@ void BaseSemanticAction::satisfyDependants() {
   }
   else
   {
-      DBG_(Tmp, (<<"\e[1;33m"<<"NOTE: Dependants were canceled!" << "\e[0m"));
+      SEMANTICS_DBG(theInstruction << "NOTE: Dependants were canceled!");
 
   }
 }
 
 void BaseSemanticAction::satisfy(int32_t anArg) {
   if ( !cancelled() ) {
-    DBG_(Tmp, (<<"\e[1;33m"<<"ACTION: BaseSemanticAction::satisfy - " << *this << "\e[0m"));
     bool was_ready = ready();
     setReady(anArg, true);
     theSquashed = false;
@@ -129,14 +127,13 @@ void BaseSemanticAction::satisfy(int32_t anArg) {
       setReady(anArg, true);
       reschedule();
     }
-  }
-  else {
-      DBG_(Tmp, (<<"\e[1;33m"<<"NOTE: Action was canceled!" << "\e[0m"));
+  } else {
+      SEMANTICS_DBG(theInstruction << "NOTE: Action were canceled!");
   }
 }
 
 void BaseSemanticAction::squash(int32_t anOperand) {
-    DBG_(Tmp, (<<"\e[1;33m"<<"ACTION: Squashing - " << *this << "\e[0m"));
+    SEMANTICS_DBG(*theInstruction << *this);
   setReady(anOperand, false);
   squashDependants();
 }
@@ -144,8 +141,8 @@ void BaseSemanticAction::squash(int32_t anOperand) {
 void BaseSemanticAction::squashDependants() {
   if (! theSquashed) {
     if (core()) {
-        DBG_(Tmp, (<<"\e[1;33m"<<"ACTION: Squashing a dependant" << "\e[0m"));
 
+      SEMANTICS_DBG(theInstruction);
       for ( int32_t i = 0; i < theEndOfDependances; ++i) {
         theDependances[i].squash();
       }
@@ -153,14 +150,11 @@ void BaseSemanticAction::squashDependants() {
     theSignalled = false;
     theSquashed = true;
   }
-  DBG_(Tmp, (<<"\e[1;33m"<<"NOTE: Squashing a dependant" << "\e[0m"));
-
 }
 
 void BaseSemanticAction::evaluate() {
   theScheduled = false;
   if ( !cancelled() ) {
-    DBG_( Tmp, ( << "\e[1;36m SEMANTICS: Evaluating... " <<  *this << "\e[0m") );
     doEvaluate();
   }
 }
@@ -173,7 +167,7 @@ void BaseSemanticAction::addDependance( InternalDependance const & aDependance) 
 
 void BaseSemanticAction::reschedule() {
   if (!theScheduled && core()) {
-    DBG_(Tmp, ( << *this << " rescheduled" ));
+    SEMANTICS_DBG(*this << " rescheduled");
     theScheduled = true;
     core()->reschedule(this);
   }
@@ -209,7 +203,7 @@ void PredicatedSemanticAction::squash(int32_t anOperand) {
 
 void PredicatedSemanticAction::predicate_off(int) {
   if ( !cancelled() && thePredicate ) {
-    DBG_( Tmp, ( << *this << " predicated off. ") );
+      SEMANTICS_DBG(*theInstruction << *this);
     reschedule();
     thePredicate = false;
     squashDependants();
@@ -218,7 +212,7 @@ void PredicatedSemanticAction::predicate_off(int) {
 
 void PredicatedSemanticAction::predicate_on(int) {
   if (!cancelled() && ! thePredicate ) {
-    DBG_( Tmp, ( << *this << " predicated on. ") );
+      SEMANTICS_DBG(*theInstruction << *this);
     reschedule();
     thePredicate = true;
     squashDependants();

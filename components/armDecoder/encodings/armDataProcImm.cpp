@@ -42,16 +42,21 @@ using namespace nuArchARM;
 
 void ADR(SemanticInstruction* inst, uint64_t base, uint64_t offset, uint64_t rd)
 {
-    std::vector<std::list<InternalDependance> > rs_deps;
-    inst->setOperand(kOperand1, base);
-    inst->setOperand(kOperand2, offset);
+    DECODER_TRACE;
+    std::vector<std::list<InternalDependance> > rs_deps(2);
+
     std::unique_ptr<Operation> ptr = operation(kADD_);
     predicated_action exec = addExecute(inst, ptr, rs_deps);
+
+    addReadConstant(inst, 1, base, rs_deps[0]);
+    addReadConstant(inst, 2, offset, rs_deps[1]);
+
     addDestination(inst, rd, exec);
 }
 
 void EXTR(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint32_t rm  , uint64_t imm, bool sf)
 {
+    DECODER_TRACE;
     std::vector<std::list<InternalDependance> > rs_deps(3);
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
     addReadXRegister(inst, 2, rm, rs_deps[1], sf ? true : false);
@@ -100,6 +105,7 @@ void SBFM(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint32_t imms, ui
 
 void MOVK(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf)
 {
+    DECODER_TRACE;
     std::vector<std::list<InternalDependance> > rs_deps(2);
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
     inst->setOperand(kOperand2, imm);
@@ -111,6 +117,7 @@ void MOVK(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, boo
 
 void MOV(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool is_not)
 {
+    DECODER_TRACE;
     std::vector<std::list<InternalDependance> > rs_deps(2);
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
     inst->setOperand(kOperand2, imm);
@@ -122,6 +129,7 @@ void MOV(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool
 
 void XOR(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool S)
 {
+    DECODER_TRACE;
     std::vector<std::list<InternalDependance> > rs_deps(2);
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
     inst->setOperand(kOperand2, imm);
@@ -133,6 +141,7 @@ void XOR(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool
 
 void ORR(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool S)
 {
+    DECODER_TRACE;
     std::vector<std::list<InternalDependance> > rs_deps(2);
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
     inst->setOperand(kOperand2, imm);
@@ -144,6 +153,7 @@ void ORR(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool
 
 void AND(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool S)
 {
+    DECODER_TRACE;
     std::vector<std::list<InternalDependance> > rs_deps(2);
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
     inst->setOperand(kOperand2, imm);
@@ -154,6 +164,7 @@ void AND(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool
 
 void ADD(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool S)
 {
+    DECODER_TRACE;
     std::vector<std::list<InternalDependance> > rs_deps(2);
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
     inst->setOperand(kOperand2, imm);
@@ -168,6 +179,7 @@ void ADD(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool
 
 void SUB(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool S)
 {
+    DECODER_TRACE;
     std::vector<std::list<InternalDependance> > rs_deps(2);
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
     inst->setOperand(kOperand2, imm);
@@ -175,8 +187,8 @@ void SUB(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool
         inst->setOperand(kOperand3, 1); // carry in bit
     }
 
-    std::unique_ptr<Operation> ptr = operation(S ? kSUBS_ : kSUB_);
-    predicated_action exec = addExecute(inst, ptr ,rs_deps);
+//    std::unique_ptr<Operation> ptr = operation(S ? kSUBS_ : kSUB_);
+    predicated_action exec = addExecute2(inst, operation(S ? kSUBS_ : kSUB_) ,rs_deps);
     addDestination(inst, rd, exec);
 }
 

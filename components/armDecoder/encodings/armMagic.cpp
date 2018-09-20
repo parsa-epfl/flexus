@@ -44,7 +44,7 @@ using namespace nuArchARM;
 struct MAGIC : public armInstruction {
   MAGIC(VirtualMemoryAddress aPC, Opcode anOpcode, boost::intrusive_ptr<BPredState> aBPState, uint32_t aCPU, int64_t aSequenceNo)
     : armInstruction(aPC, anOpcode, aBPState, aCPU, aSequenceNo) {
-    DBG_(Tmp, (<<"In MAGIC"));//NOOSHIN
+    DECODER_TRACE;
     setClass(clsSynchronizing, codeMAGIC);
 
   }
@@ -55,15 +55,10 @@ struct MAGIC : public armInstruction {
   virtual bool preValidate() {
     Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(theCPU);
     if ( cpu->getPC()  != thePC ) {
-      DBG_( Tmp, ( << *this << " PreValidation failed: PC mismatch flexus=" << thePC << " simics=" << cpu->getPC() ) );
+      DBG_( Tmp, ( << *this << " PreValidation failed: PC mismatch flexus=" << thePC << " qemu=" << cpu->getPC() ) );
     }
-//    if ( cpu->getNPC()  != theNPC ) {
-//      DBG_( Tmp, ( << *this << " PreValidation failed: NPC mismatch flexus=" << theNPC << " simics=" << cpu->getNPC() ) );
-//    }
     return
-      (   cpu->getPC()     == thePC
-          //&&  cpu->getNPC() == theNPC
-      );
+      cpu->getPC()== thePC;
   }
 
   virtual bool postValidate() {

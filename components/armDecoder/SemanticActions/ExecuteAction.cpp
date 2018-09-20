@@ -72,12 +72,13 @@ using namespace nuArchARM;
 struct ExecuteBase : public PredicatedSemanticAction {
   eOperandCode theOperands[5];
   eOperandCode theResult;
-  std::unique_ptr<Operation> & theOperation;
+  std::unique_ptr<Operation> theOperation;
 
   ExecuteBase ( SemanticInstruction * anInstruction, std::vector<eOperandCode> & anOperands, eOperandCode aResult, std::unique_ptr<Operation> & anOperation)
     : PredicatedSemanticAction( anInstruction, anOperands.size(), true )
     , theResult( aResult )
-    , theOperation( anOperation ) {
+    , theOperation( std::move(anOperation) ) {
+
     for (int32_t i = 0; i < numOperands(); ++i) {
       theOperands[i] = anOperands[i];
     }
@@ -123,6 +124,7 @@ struct ExecuteAction : public ExecuteBase {
           operands.push_back( op( theOperands[i] ) );
         }
 
+        theOperation->theInstruction = theInstruction;
         Operand result = theOperation->operator()(operands );
         if (theOperation->hasNZCVFlags()){
             uint64_t nzcv = theOperation->getNZCVbits();
@@ -243,7 +245,6 @@ struct FPExecuteAction : public ExecuteBase {
 
 //        uint64_t fpsr = core()->readFPSR();
 //        if (fpsr & 0xf) {
-//          DBG_(Tmp, ( << *this << " clearing exceptions in FPSR"));
 //          core()->writeFPSR(fpsr & ~0xf);
 //        }
 
@@ -273,7 +274,6 @@ predicated_action executeAction
     operands.push_back( eOperandCode( kOperand1 + i) );
   }
   ExecuteAction * act(new(anInstruction->icb()) ExecuteAction( anInstruction, operands, aResult, anOperation, aBypass) );
-
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
     opDeps[i].push_back( act->dependance(i) );
   }

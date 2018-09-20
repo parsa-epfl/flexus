@@ -101,31 +101,32 @@ struct UpdateAddressAction : public BaseSemanticAction {
           bits addr = theInstruction->operand< bits > (theAddressCode);
           if (theInstruction->hasOperand( kUopAddressOffset ) ) {
             uint64_t offset = theInstruction->operand< uint64_t > (kUopAddressOffset);
-            DBG_(Tmp, (<<"\e[1;33m"<<"DISPATCH: UpdateAddressAction: adding offset " << offset << " to address "<< addr <<" \e[0m"));
-
-            if (theInstruction->hasOperand( kExtendValue ) ) {
-                uint64_t extend = theInstruction->operand< uint64_t > (kExtendValue);
-
-
-            } else if (theInstruction->hasOperand( kShiftValue ) ) {
-                uint64_t shift = theInstruction->operand< uint64_t > (kExtendValue);
-
-            }
-
+            SEMANTICS_DBG("UpdateAddressAction: adding offset " << offset << " to address "<< addr);
 
             addr = bits(addr.size(), (addr.to_ulong()) + offset);
           }
           VirtualMemoryAddress vaddr(addr.to_ulong());
-          DBG_( Tmp, ( << *this << " updating vaddr=" << vaddr /*<< " asi=" << std::hex << asi << std::dec*/) );
           core()->resolveVAddr( boost::intrusive_ptr<Instruction>(theInstruction), vaddr/*, asi*/);
-      satisfyDependants();
-    }
+          SEMANTICS_DBG(*this << " updating vaddr = " << vaddr);
+          satisfyDependants();
+     }
   }
 
   void describe( std::ostream & anOstream) const {
     anOstream << theInstruction->identify() << " UpdateAddressAction";
   }
 };
+
+
+multiply_dependant_action updateAddressAction
+( SemanticInstruction * anInstruction) {
+  UpdateAddressAction * act(new(anInstruction->icb()) UpdateAddressAction( anInstruction, kAddress ) );
+  std::vector<InternalDependance> dependances;
+  dependances.push_back( act->dependance(0) );
+  dependances.push_back( act->dependance(1) );
+
+  return multiply_dependant_action( act, dependances );
+}
 
 multiply_dependant_action updateAddressAction
 ( SemanticInstruction * anInstruction, eOperandCode aCode ) {

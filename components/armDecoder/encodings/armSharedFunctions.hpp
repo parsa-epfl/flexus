@@ -64,6 +64,7 @@
 #include "../armBitManip.hpp"
 #include <components/uArchARM/uArchInterfaces.hpp>
 
+
 namespace narmDecoder {
 using namespace nuArchARM;
 
@@ -186,10 +187,14 @@ void addReadFValue( SemanticInstruction * inst, uint32_t fd, eSize aSize);
 void addReadCC( SemanticInstruction * inst, int32_t ccNum, int32_t anOpNumber, std::list<InternalDependance> & dependances);
 void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t rs, std::list<InternalDependance> & dependances, bool is_64 = true);
 void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, int val, std::list<InternalDependance> & dependances);
-void addReadVRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t rs, std::list<InternalDependance> & dependances, bool is_64 = true);
+void addReadVRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t rs, std::list<InternalDependance> & dependances);
+
+void addCheckSystemAccess(SemanticInstruction * inst, uint32_t op0, uint32_t op1, uint32_t crn, uint32_t crm, uint32_t op2, uint32_t rt);
+
 void addAnnulment( SemanticInstruction * inst, eRegisterType aType, predicated_action & exec, InternalDependance const & aWritebackDependance);
 void addRD1Annulment( SemanticInstruction * inst, predicated_action & exec, InternalDependance const & aWritebackDependance);
 void addWriteback( SemanticInstruction * inst, eRegisterType aType, predicated_action & exec, bool addSquash = true);
+void addWriteback( SemanticInstruction * inst, eRegisterType aType, bool addSquash = true);
 void addRD1Writeback( SemanticInstruction * inst, predicated_action & exec);
 
 // Destination
@@ -198,10 +203,12 @@ void addPairDestination( SemanticInstruction * inst, uint32_t rd, uint32_t rd1, 
 void addVDestination( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool addSquash = true);
 void addFloatingDestination( SemanticInstruction * inst, uint32_t fd, eSize aSize, predicated_action & exec);
 void addAddressCompute( SemanticInstruction * inst, std::vector< std::list<InternalDependance> > & rs_deps);
+void setRD( SemanticInstruction * inst, uint32_t rd);
 
 // aux
 predicated_action addExecute_XTRA( SemanticInstruction * inst, std::unique_ptr<Operation> & anOperation, uint32_t rd, std::vector< std::list<InternalDependance> > & rs_deps, bool write_xtra);
 predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operation> & anOperation, std::vector< std::list<InternalDependance> > & rs_deps, eOperandCode aResult = kResult, boost::optional<eOperandCode> aBypass = boost::optional<eOperandCode>(boost::none));
+predicated_action addExecute2( SemanticInstruction * inst, std::unique_ptr<Operation> anOperation, std::vector< std::list<InternalDependance> > & rs_deps, eOperandCode aResult = kResult, boost::optional<eOperandCode> aBypass = boost::optional<eOperandCode>(boost::none));
 
 void  MEMBAR( SemanticInstruction * inst, armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo, uint32_t i );
 void satisfyAtDispatch( SemanticInstruction * inst, std::list<InternalDependance> & dependances);

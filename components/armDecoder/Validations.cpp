@@ -75,28 +75,47 @@ bool validateXRegister::operator () () {
   }
 
   uint64_t flexus = theInstruction->operand< uint64_t > (theOperandCode);
-  uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readRegister( theReg );
+  uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readXRegister( theReg );
 
-  DBG_( Tmp, ( << "Validating mapped_reg " << theReg << " flexus=" << std::hex << flexus << " simics=" << qemu << std::dec << "\n" << std::internal << *theInstruction ) );
+  DBG_( Tmp, ( << "Validating mapped_reg " << theReg << " flexus=" << std::hex << flexus << " qemu=" << qemu << std::dec << "\n" << std::internal << *theInstruction ) );
+
+  return (flexus == qemu);
+}
+
+
+bool validatePC::operator () () {
+  if (theInstruction->isSquashed() || theInstruction->isAnnulled()) {
+    return true; //Don't check
+  }
+  if (theInstruction->raised()) {
+    DBG_( Tmp, ( << " Not performing  validation because of exception. " << *theInstruction ) );
+    return true;
+  }
+
+  uint64_t flexus = theAddr;
+  uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPC();
+
+  DBG_( Tmp, ( << "Validating flexus PC=" << std::hex << flexus << " qemu PC=" << qemu << std::dec << "\n" << std::internal << *theInstruction ) );
 
   return (flexus == qemu);
 }
 
 bool validateVRegister::operator () () {
 
-  if (theInstruction->isSquashed() || theInstruction->isAnnulled()) {
-    return true; //Don't check
-  }
+    return true;
+//  if (theInstruction->isSquashed() || theInstruction->isAnnulled()) {
+//    return true; //Don't check
+//  }
 
-  uint64_t flexus = theInstruction->operand< uint64_t > (theOperandCode);
-  uint64_t simics = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readX( theReg & (~1) );
-  if (theReg & 1) {
-    simics &= 0xFFFFFFFFULL;
-  } else {
-    simics >>= 32;
-  }
-  DBG_( Dev, Condition( flexus != simics) ( << "Validation Mismatch for mapped_reg " << theReg << " flexus=" << std::hex << flexus << " simics=" << simics << std::dec << "\n" << std::internal << *theInstruction ) );
-  return (flexus == simics);
+//  uint64_t flexus = theInstruction->operand< uint64_t > (theOperandCode);
+//  uint64_t simics = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readX( theReg & (~1) );
+//  if (theReg & 1) {
+//    simics &= 0xFFFFFFFFULL;
+//  } else {
+//    simics >>= 32;
+//  }
+//  DBG_( Dev, Condition( flexus != simics) ( << "Validation Mismatch for mapped_reg " << theReg << " flexus=" << std::hex << flexus << " simics=" << simics << std::dec << "\n" << std::internal << *theInstruction ) );
+//  return (flexus == simics);
 }
 
 bool validateMemory::operator () () {
@@ -155,9 +174,9 @@ bool validateMemory::operator () () {
 }
 
 bool validateLegalReturn::operator ()() {
-    if (theInstruction->core()->getCurrentEL() == EL0) {
-        return false;
-    }
+//    if (theInstruction->core()->getCurrentEL() == EL0) {
+//        return false;
+//    }
     return true;
 }
 
@@ -201,5 +220,46 @@ bool AArch64ExclusiveMonitorsPass::operator ()() {
 
 }
 
+
+bool checkSystemAccess::operator ()(){
+//    bool unallocated = false;
+//    bool need_secure = false;
+//    uint32_t min_EL;
+
+//        // Check for unallocated encodings
+//    switch(theOp1) {
+//      case 0: case 1: case 2:
+//        min_EL = EL1;
+//        break;
+//      case 3:
+//        min_EL = EL0;
+//        break;
+//      case 4:
+//        min_EL = EL2;
+//        DBG_Assert(false, (<< "we dont model EL2"));
+
+//        break;
+//      case 5:
+//    //      if !HaveVirtHostExt() then UnallocatedEncoding();
+//        min_EL = EL2;
+//        DBG_Assert(false, (<< "we dont model EL2"));
+//      case 6:
+//        min_EL = EL3;
+//        DBG_Assert(false, (<< "we dont model EL3"));
+
+//      case  7:
+//        min_EL = EL1;
+//        need_secure = true;
+//    }
+    return true;
+
+    //    if (theInstruction->core()->currentEL()< min_EL)
+    //        return UnallocatedEncoding();
+
+    // FIXME -- Figure out how to get the appropirate system reg
+    //    (take_trap, target_el) = AArch64.CheckSystemRegisterTraps(op0, op1, crn, crm, op2, read);
+    //    if take_trap then
+    //        AArch64.SystemRegisterTrap(target_el, op0, op2, op1, crn, rt, crm, read);
+}
 
 } //narmDecoder

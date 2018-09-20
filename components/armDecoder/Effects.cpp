@@ -82,7 +82,6 @@ using nuArchARM::kRMW;
 
 void EffectChain::invoke(SemanticInstruction & anInstruction) {
   if (theFirst) {
-      DBG_(Tmp, (<<"\e[1;32m"<<"EFFECTCHAIN: invoking "<< anInstruction << "\e[0m"));
     theFirst->invoke(anInstruction);
   }
 }
@@ -119,10 +118,12 @@ struct MapSourceEffect : public Effect {
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
     reg name( anInstruction.operand< reg > (theInputCode) );
-    mapped_reg mapped_name = anInstruction.core()->map( name );
+    mapped_reg  mapped_name = anInstruction.core()->map( name );
     anInstruction.setOperand(theOutputCode, mapped_name);
-    DBG_( Tmp, ( <<"\e[1;32m"<< anInstruction.identify() << " MapEffect " <<  theInputCode << "(" << name <<
-                 ")" << " mapped to " << mapped_name << " stored in " << theOutputCode<<"\e[0m") );
+
+    SEMANTICS_DBG(anInstruction.identify() <<  theInputCode << " (" << name << ")" <<
+                                              " mapped to " << theOutputCode << "(" << mapped_name << ")");
+
     Effect::invoke(anInstruction);
   }
 
@@ -151,7 +152,7 @@ Effect * mapSource( SemanticInstruction * inst, eOperandCode anInputCode, eOpera
 //    anInstruction.core()->disconnectRegister( mapping, &anInstruction );
 //    //We no longer disconnect from bypass - we just wait for the register to
 //    //get unmapped, even though this extends the life of the instruction object
-//    //anInstruction.core()->disconnectBypass( mapping, &anInstruction );
+//    anInstruction.core()->disconnectBypass( mapping, &anInstruction );
 //    Effect::invoke(anInstruction);
 //  }
 
@@ -235,7 +236,6 @@ struct MapDestinationEffect : public Effect {
 
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
-    DBG_(Tmp, (<< "\e[1;32m"<<"EFFECT: invoking " << this << anInstruction << "\e[0m"));
     reg name( anInstruction.operand< reg > (theInputCode) );
     mapped_reg mapped_name;
     mapped_reg previous_mapping;
@@ -255,9 +255,9 @@ struct MapDestinationEffect : public Effect {
       anInstruction.addSquashEffect( new(anInstruction.icb())  FreeMappingEffect( theOutputCode ) );
     }
 
-    DBG_( Tmp, ( <<"\e[1;32m EFFECT: "<< anInstruction.identify() << " MapEffect new mapping for " << theInputCode <<
-                 "(" << name << ") to " << mapped_name << " stored in " << theOutputCode <<
-                 " previous mapping " << previous_mapping << " stored in " << thePreviousMappingCode << "\e[0m" ) );
+    SEMANTICS_DBG(anInstruction.identify() << " Mapping " << theInputCode <<"(" << name << ")" <<
+                                              " to " << theOutputCode <<"(" << mapped_name << ")" <<
+                                              " previous mapping " << thePreviousMappingCode <<"(" <<  previous_mapping << ")" );
     Effect::invoke(anInstruction);
   }
 
@@ -325,8 +325,7 @@ struct SatisfyDependanceEffect : public Effect {
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
 
-    //DBG_( Tmp, ( << anInstruction.identify()  <<" SatisfyDependanceEffect ") );
-
+    SEMANTICS_TRACE;
     theDependance.satisfy();
     Effect::invoke(anInstruction);
   }
@@ -742,7 +741,7 @@ struct AllocateLSQEffect : public Effect {
 
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
-    DBG_( Tmp, ( << "\e[1;32m"<< anInstruction.identify() << " Allocate LSQ Entry"<< "\e[0m") );
+    SEMANTICS_DBG(anInstruction.identify() << " Allocate LSQ Entry");
     if (hasDependance) {
       anInstruction.core()->insertLSQ( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , theOperation, theSize, theBypassSB, anInstruction.makeInstructionDependance(theDependance), theAccType );
     } else {
@@ -840,7 +839,7 @@ Effect * commitStore(SemanticInstruction * inst) {
 struct AccessMemEffect: public Effect {
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
-    DBG_( Tmp, ( << anInstruction.identify() << " AccessMemEffect ") );
+    DBG_( Tmp, ( << anInstruction.identify() ) );
 
     anInstruction.core()->accessMem( anInstruction.getAccessAddress(), boost::intrusive_ptr<nuArchARM::Instruction> (&anInstruction)  );
     DBG_( Tmp, ( << anInstruction << " Access memory: " << anInstruction.getAccessAddress()) );
@@ -848,7 +847,7 @@ struct AccessMemEffect: public Effect {
   }
 
   void describe(std::ostream & anOstream) const {
-    anOstream << " Commit Store";
+    anOstream << " AccessMemEffect";
     Effect::describe(anOstream);
   }
 };

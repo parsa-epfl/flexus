@@ -120,7 +120,7 @@ public:
 
   FLEXUS_PORT_ALWAYS_AVAILABLE(AvailableFIQOut);
   int32_t pull( interface::AvailableFIQOut const &) {
-    int32_t avail = 1;//cfg.FIQSize - theFIQ.size();
+    int32_t avail = 1;//cfg.FIQSize - theFIQ.size() FIXME;
     if (avail < 0) {
       avail = 0;
     }
@@ -168,7 +168,7 @@ public:
 private:
   //Implementation of the FetchDrive drive interface
   void doDecode() {
-      DBG_( Tmp, ( << "\e[1;33m"<< "Decoder Component: Starting Cycle "<< "\e[0m"));
+      DISPATCH_DBG("--------------START DISPATCHING------------------------");
 
     DBG_Assert( FLEXUS_CHANNEL( AvailableDispatchIn ).available() ) ;
     //the FLEXUS_CHANNEL can only write to an lvalue, hence this rather
@@ -192,13 +192,11 @@ private:
                && !theFIQ.empty()
                && !theSyncInsnInProgress
           )) {
-        DBG_( Tmp, Comp(*this) ( << "\e[1;35m" <<"DISPATCH: CANT DISPATCH \n" <<
+        DISPATCH_DBG("Cant dispatch" <<
                                  "available_dispatch     " <<   available_dispatch    << "\n" <<
                                  "dispatched < cfg.DispatchWidth             " <<   int(dispatched < cfg.DispatchWidth)            <<"\n"<<
                                  "theFIQ is empty         " <<   int(theFIQ.empty())        <<"\n"<<
-                                 "no Sync Insn In Progress  " <<   int(!theSyncInsnInProgress) <<
-
-                                 "\e[0m") );
+                                 "no Sync Insn In Progress  " <<   int(!theSyncInsnInProgress) );
 
     }
     while (    available_dispatch > 0
@@ -209,7 +207,7 @@ private:
       if (theFIQ.front()->haltDispatch()) {
         //May only dispatch black box op when core is synchronized
         if (is_sync && dispatched == 0) {
-          DBG_( Tmp, Comp(*this) ( << "DISPATCH: (halt-dispatch) " << *theFIQ.front()));
+          DISPATCH_DBG("Halt-dispatch " << *theFIQ.front());
           boost::intrusive_ptr< AbstractInstruction > inst(theFIQ.front());
           theFIQ.pop_front();
 
@@ -220,12 +218,12 @@ private:
           FLEXUS_CHANNEL( DispatchOut ) << inst;
           theSyncInsnInProgress = true;
         } else {
-            DBG_( Tmp, Comp(*this) ( << "DISPATCH: No available " << *theFIQ.front()));
+            DISPATCH_DBG("No available " << *theFIQ.front());
           break; //No more dispatching this cycle
         }
 
       } else {
-        DBG_( Tmp, Comp(*this) ( << "\e[1;35m" <<"DISPATCH: " << *theFIQ.front() <<"\e[0m") );
+        DISPATCH_DBG("Dispatching " << *theFIQ.front());
         boost::intrusive_ptr< AbstractInstruction > inst(theFIQ.front());
         theFIQ.pop_front();
 
@@ -238,9 +236,8 @@ private:
       ++dispatched;
       --available_dispatch;
     }
-    DBG_( Tmp, ( << "\e[1;33m"<< "Decoder Component: Ending Cycle "<< "\e[0m"));
 
-
+    DISPATCH_DBG("--------------FINISH DISPATCHING------------------------");
   }
 };
 

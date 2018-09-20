@@ -80,25 +80,38 @@ struct Operation {
 
   void setOperands(Operand aValue){
         theOperands.push_back(aValue);
-        if (!hasOperands)
-            hasOperands = true;
-  }
-  bool hasOwnOperands(){
-      return hasOperands;
+
   }
 
+
+  bool hasOwnOperands(){
+      return theOperands.size() != 0;
+  }
+
+  void make_local(std::vector< Operand > const & operands){
+      if (!hasOwnOperands())
+          theOperands = operands;
+  }
+
+  bool checkNumOperands(std::vector<unsigned> aNum){
+      for (unsigned i=0; i < aNum.size(); i++)
+        if (theOperands.size() == aNum[i])
+            return true;
+    return false;
+  }
 
   virtual uint64_t getNZCVbits() { return theNZCV; }
   virtual bool hasNZCVFlags() { return theNZCVFlags; }
   bool theNZCVFlags;
   uint64_t theNZCV;
   std::vector< Operand > theOperands;
-  bool hasOperands;
+  SemanticInstruction * theInstruction;
+
 };
 
 
-
 std::unique_ptr<Operation> operation( eOpType T );
+std::unique_ptr<Operation> operation2( eOpType T );
 
 class BaseSemanticAction : public SemanticAction, public UncountedComponent {
 private:
@@ -311,6 +324,12 @@ predicated_action floatingAnnulAction
   , int32_t anIndex
 );
 
+simple_action systemAction(SemanticInstruction * anInstruction, uint32_t op0, uint32_t op1, uint32_t crn, uint32_t crm, uint32_t op2, uint32_t rt);
+
+
+multiply_dependant_action updateAddressAction
+( SemanticInstruction * anInstruction, eOperandCode aCode );
+
 multiply_dependant_action updateAddressAction
 ( SemanticInstruction * anInstruction );
 
@@ -334,7 +353,7 @@ multiply_dependant_action updateFloatingStoreValueAction
 ( SemanticInstruction * anInstruction, eSize aSize );
 
 predicated_dependant_action loadAction
-( SemanticInstruction * anInstruction, eSize aSize, bool aSignExtend, boost::optional<eOperandCode> aBypass );
+( SemanticInstruction * anInstruction, eSize aSize, eSignCode aSignExtend, boost::optional<eOperandCode> aBypass );
 
 predicated_dependant_action casAction
 ( SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass );
@@ -388,7 +407,7 @@ predicated_action operandAction
 );
 
 dependant_action branchCCAction
-( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, Condition & aCondition, bool floating);
+( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, std::unique_ptr<Condition> aCondition, bool floating);
 
 dependant_action branchRegAction
 ( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition);

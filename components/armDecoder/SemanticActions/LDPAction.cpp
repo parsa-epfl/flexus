@@ -85,7 +85,7 @@ struct LDPAction : public PredicatedSemanticAction {
 
   void satisfy(int32_t anArg) {
     BaseSemanticAction::satisfy(anArg);
-    DBG_(Tmp, (<<"After BaseSemanticAction Load"));
+    SEMANTICS_DBG(*theInstruction);
     if ( !cancelled() && ready() && thePredicate ) {
       doLoad();
     }
@@ -99,6 +99,7 @@ struct LDPAction : public PredicatedSemanticAction {
   }
 
   void doLoad() {
+    SEMANTICS_DBG(*this);
     bits value;
     value = core()->retrieveLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
 
@@ -108,8 +109,7 @@ struct LDPAction : public PredicatedSemanticAction {
     theInstruction->setOperand(kResult, pairValues.first);
     theInstruction->setOperand(kResult1, pairValues.second);
 
-
-    DBG_(Tmp, ( << *this << " received load values = "  << pairValues.first << " and " << pairValues.second ));
+    SEMANTICS_DBG(*this << " received load values = "  << pairValues.first << " and " << pairValues.second);
 
 
     if (theBypass0) {

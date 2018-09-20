@@ -231,6 +231,10 @@ arminst disas_data_proc_3src(armcode const & aFetchedOpcode, uint32_t  aCPU, int
  */
 arminst disas_add_sub_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
+
+    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+
     if ((extract32(aFetchedOpcode.thePC,15,1) && ! extract32(aFetchedOpcode.thePC, 31, 1)) || extract32(aFetchedOpcode.thePC,22,2) == 0x4  ) {
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }

@@ -68,35 +68,27 @@ namespace narmDecoder {
 
 using namespace nuArchARM;
 
-struct ReadConstantAction : public BaseSemanticAction
+struct ExceptionAction : public BaseSemanticAction
 {
-  int theVal;
-  eOperandCode theOperandCode;
 
-  ReadConstantAction( SemanticInstruction * anInstruction, eOperandCode aVal, eOperandCode anOperandCode)
+  ExceptionAction( SemanticInstruction * anInstruction)
     : BaseSemanticAction( anInstruction, 1 )
-    , theVal( aVal )
-    , theOperandCode( anOperandCode )
-
   {}
 
   void doEvaluate()
   {
-    theInstruction->setOperand(theOperandCode, theVal);
-
-    satisfyDependants();
 
   }
 
   void describe( std::ostream & anOstream) const
   {
-    anOstream << theInstruction->identify() << " ReadConstant " << theVal << " to " << theOperandCode;
+    anOstream << theInstruction->identify() << " ExceptionAction ";
   }
 };
 
-simple_action readConstantAction ( SemanticInstruction * anInstruction, int aVal, eOperandCode anOperandCode)
+simple_action exceptionAction ( SemanticInstruction * anInstruction)
 {
-  return new(anInstruction->icb()) ReadConstantAction( anInstruction, aVal, anOperandCode);
+  return new(anInstruction->icb()) ExceptionAction( anInstruction);
 }
 
 

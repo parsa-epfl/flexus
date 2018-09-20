@@ -61,6 +61,29 @@ struct validateXRegister {
   bool operator () ();
 };
 
+
+struct checkSystemAccess {
+  SemanticInstruction * theInstruction;
+
+  checkSystemAccess( SemanticInstruction * anInstruction )
+    : theInstruction(anInstruction)
+  {}
+
+  bool operator () ();
+};
+
+struct validatePC {
+  uint64_t theAddr;
+  SemanticInstruction * theInstruction;
+
+  validatePC( uint64_t anAddr, SemanticInstruction * anInstruction )
+    : theAddr(anAddr)
+    , theInstruction(anInstruction)
+  { }
+
+  bool operator () ();
+};
+
 struct validateVRegister {
   uint32_t theReg;
   eOperandCode theOperandCode;

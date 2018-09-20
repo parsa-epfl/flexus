@@ -214,6 +214,7 @@ arminst disas_data_proc_fp(armcode const & aFetchedOpcode, uint32_t  aCPU, int64
 
 arminst disas_data_proc_simd(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
     return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
@@ -224,7 +225,7 @@ arminst disas_data_proc_simd_fp(armcode const & aFetchedOpcode, uint32_t  aCPU, 
         disas_data_proc_fp(aFetchedOpcode, aCPU, aSequenceNo);
     } else {
         /* SIMD, including crypto */
-        DBG_Assert(false);
+        return disas_data_proc_simd(aFetchedOpcode, aCPU, aSequenceNo);
     }}
 
 } // narmDecoder
