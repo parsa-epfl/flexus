@@ -364,8 +364,8 @@ void FlexusImpl::invokeDrives() {
 
 void FlexusImpl::doCycle() {
   FLEXUS_PROFILE();
-  DBG_(Tmp, ( << "------------------------------" ) );
-  DBG_(Tmp, Core() ( << "Start of Cycle " << theCycleCount ) );
+
+  FLEXUS_DBG("--------------START FLEXUS CYCLE " << theCycleCount <<" ------------------------");
 
   advanceCycles(1);
 
@@ -378,8 +378,8 @@ void FlexusImpl::doCycle() {
 
   invokeDrives();
 
-  DBG_(Tmp, Core() ( << "End of Cycle " << theCycleCount-1 ) );
-  DBG_(Tmp, ( << "------------------------------" ) );
+  FLEXUS_DBG("--------------FINISH FLEXUS CYCLE " << theCycleCount-1 <<" ------------------------");
+
 
 }
 
@@ -1145,19 +1145,20 @@ void initFlexus(){
 }
 
 void deinitFlexus(){
+    DBG_(Tmp, (<< "Cleaning up Flexus"));
     if(theFlexusFactory)
         delete theFlexusFactory;
 }
 void startTimingFlexus(){
-   while (! Qemu::API::QEMU_is_stopped()) {
-
-       //ALEX - infinite loop for now!
-       theFlexus->doCycle();
+   while (theFlexus->cycleCount() <= Qemu::API::QEMU_getSimulationTime()) {
+     theFlexus->doCycle();
    }
+
+   QEMU_break_simulation("End of the simulation.");
+
 }
 
-void PrepareFlexusObject() {
-   
+void PrepareFlexusObject() {   
     Core::theFlexusFactory = new FlexusFactory();
 }
 
