@@ -273,7 +273,7 @@ public:
               DBG_(Tmp,(<<" ---- STARTING NEW TRANSLATION ---- "
                           << std::hex << translation.theVaddr << std::dec ));
               translation.ELRegime = flexusCurrentELRegime;
-              theMicroArch->translate( translation, false );
+              theMicroArch->translate( translation );
           } else {
               DBG_Assert( false, ( << "SORRY, translation is not enabled at EL " << flexusCurrentELRegime ) );
           }

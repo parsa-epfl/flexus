@@ -7,6 +7,9 @@
 #include <core/exception.hpp>
 #include <core/qemu/configuration_api.hpp>
 #include <core/types.hpp>
+
+#include <core/qemu/ARMmmu.hpp>
+
 using namespace Flexus::Core;
 
 namespace Flexus {
@@ -222,6 +225,12 @@ uint64_t readHCREL2() const {
 
 };
 
+
+
+////////// Msutherl
+// - from here down
+
+using namespace MMU;
 struct Translation {
   VirtualMemoryAddress theVaddr;
   int thePSTATE;
@@ -249,10 +258,6 @@ struct Translation {
   uint64_t BlockSizeFromTTs;
 };
 
-////////// Msutherl
-// - from here down
-
-using namespace MMU;
 class armProcessorImpl :  public BaseProcessorImpl {
 private:
   static const int kReg_npc = 102;
@@ -298,20 +303,6 @@ public:
       return API::QEMU_get_current_el(*this);
   }
 
-//FIXME: The following functions for SPARC should be implemented in QEMU
-  unsigned long long readX(int aRegister) const {
-    return API::QEMU_read_register_by_type(*this, aRegister, 5);
-  }
-
-  void writeF(int aRegister, unsigned long long aValue) const {
-    assert(false);
-    //sparc()->write_fp_register_x(*this, aRegister, aValue);
-  }
-
-  unsigned long long readG(int aRegister) const {
-    return API::QEMU_read_register_by_type(*this, aRegister, 0);
-  }
-
   unsigned long long interruptRead(VirtualMemoryAddress anAddress, int anASI) const;
 
   long long getSystemTickInterval() const {
@@ -319,8 +310,8 @@ public:
   }
 
   // LEGACY MMU API, FIXME - REMOVE THIS WHEN DONE WITH NEW MMU
-  void translate(Translation & aTranslation, bool aTakeException) const;
-  long /*opcode*/ fetchInstruction(Translation & aTranslation, bool aTakeTrap);
+  void translate(Translation & aTranslation) const;
+  uint32_t fetchInstruction(Translation & aTranslation);
     
     // Msutherl - june'18
     // - added smaller MMU interface (resolving walks + memory accesses resolved in Flexus components I/D TLBs)
@@ -333,11 +324,11 @@ public:
   PhysicalMemoryAddress translateInstruction_QemuImpl(VirtualMemoryAddress anAddress) const;
   long fetchInstruction_QemuImpl(VirtualMemoryAddress const & anAddress);
 
-  unsigned long long readVAddr_QemuImpl(VirtualMemoryAddress anAddress, int anASI, int aSize) const;
+  unsigned long long readVAddr_QemuImpl(VirtualMemoryAddress anAddress, int aSize) const;
   unsigned long long readVAddrXendian_QemuImpl(VirtualMemoryAddress anAddress, int anASI, int aSize) const;
   void translate_QemuImpl(  API::arm_memory_transaction_t & xact, VirtualMemoryAddress anAddress, int anASI ) const;
 
-  int advance(bool anAcceptInterrupt);
+  int advance();
   int getPendingException() const;
   int getPendingInterrupt() const;
 
@@ -358,10 +349,13 @@ public:
 
   explicit Processor(API::conf_object_t * aProcessor):
     base( PROCESSOR_IMPL (aProcessor) ) {}
-
-  operator API::conf_object_t * () {
-    return theImpl;
+ 
+  /*
+  operator API::conf_object_t* () {
+    return *this ;
   }
+  */
+  
 
   static Processor getProcessor(int aProcessorNumber) {
     return Processor(API::QEMU_get_cpu_by_index(ProcessorMapper::mapFlexusIndex2ProcNum(aProcessorNumber)));

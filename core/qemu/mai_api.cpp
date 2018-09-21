@@ -121,11 +121,11 @@ int armProcessorImpl::getPendingInterrupt() const {
 }
 
 int armProcessorImpl::advance() {
-  int exception = 0;
+    int exception = 0;
 
-exception = Qemu::API::QEMU_cpu_execute(theProcessor);
+    exception = Qemu::API::QEMU_cpu_execute(theProcessor);
 
-  return exception;
+    return exception;
 }
 
 unsigned long long endianFlip(unsigned long long val, int aSize);
@@ -463,7 +463,7 @@ armProcessorImpl::getMMUPointer() {
 }
 
 void
-armProcessorImpl::translate(Translation & aTranslation, bool aTakeException) const {
+armProcessorImpl::translate(Translation & aTranslation) const {
     DBG_Assert( false, ( << "DIDN'T WANT TO EVER GET HERE........"));
 }
 
@@ -558,7 +558,7 @@ armProcessorImpl::doTTEAccess( Translation& aTranslation )
     PhysicalMemoryAddress TTEDescriptor( aTranslation.TTAddressResolver->resolve(aTranslation.theVaddr) );
     DBG_(Tmp,(<< "Current Translation Level: " << (unsigned int) aTranslation.currentLookupLevel
              << ", Returned TTE Descriptor Address: " << std::hex <<  TTEDescriptor << std::dec ));
-    unsigned long long rawTTEValue = API::QEMU_read_phys_memory( *this, TTEDescriptor, 8 );
+    unsigned long long rawTTEValue = API::QEMU_read_phys_memory(  TTEDescriptor, 8 );
     DBG_(Tmp,(<< "Current Translation Level: " << (unsigned int) aTranslation.currentLookupLevel
              << ", Read Raw TTE Desc. from QEMU : " << std::hex << rawTTEValue << std::dec ));
     /* Check Valid */

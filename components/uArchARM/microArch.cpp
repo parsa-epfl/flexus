@@ -143,7 +143,7 @@ public:
         setupDriveClients();
       }
 
-      DBG_( Crit, ( << theName << " connected to " << (static_cast<Flexus::Qemu::API::conf_object_t *>(theCPU))->name ));
+      DBG_( Crit, ( << theName << " connected to " << (static_cast<Flexus::Qemu::API::conf_object_t *>(*theCPU))->name ));
     DBG_( Tmp, ( << "CORE:  Initializing MMU ")  );
     theCPU->initializeMMU();
 
@@ -339,7 +339,7 @@ public:
     CORE_DBG("--------------FINISH MICROARCH------------------------");
   }
 
-  void translate(Flexus::Qemu::Translation & aTranslation, bool aTakeTrap) {
+  void translate(Flexus::Qemu::Translation & aTranslation) {
       /* MicroArch translate looks like this:
        * - Call into MMU to setup the translation parameter
        * - For each level, decode and create the TTE Access

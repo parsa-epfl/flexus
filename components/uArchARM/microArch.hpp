@@ -94,7 +94,7 @@ struct microArch {
 
   // Msutherl
   virtual bool IsTranslationEnabledAtCurrentEL(uint8_t el) = 0;
-  virtual void translate(Flexus::Qemu::Translation& aTr, bool handleTraps) = 0;
+  virtual void translate(Flexus::Qemu::Translation& aTr) = 0;
   virtual void intermediateTranslationStep(Flexus::Qemu::Translation& aTr) = 0; // TODO
 
 };

@@ -35,9 +35,13 @@ bool isTranslatingASI(int anASI) {
       return false;
   }
 }
-unsigned long long armProcessorImpl::readVAddr(VirtualMemoryAddress anAddress, int anASI, int aSize) const {
-  return readVAddr_QemuImpl(anAddress, anASI, aSize);
+
+/*
+Flexus::Core::bits
+armProcessorImpl::readVAddr(VirtualMemoryAddress anAddress , int aSize) const {
+  return readVAddr_QemuImpl(anAddress, aSize);
 }
+*/
 
 PhysicalMemoryAddress armProcessorImpl::translateInstruction_QemuImpl( VirtualMemoryAddress anAddress) const {
     try {
@@ -56,7 +60,7 @@ long armProcessorImpl::fetchInstruction_QemuImpl(VirtualMemoryAddress const & an
   API::physical_address_t phy_addr = API::QEMU_logical_to_physical(*this, API::QEMU_DI_Instruction, addr);
   checkException();
 
-  long op_code = Qemu::API::QEMU_read_phys_memory( *this, phy_addr, 4);
+  long op_code = Qemu::API::QEMU_read_phys_memory( phy_addr, 4);
   checkException();
 
   return op_code;
@@ -93,11 +97,11 @@ unsigned long long endianFlip(unsigned long long val, int aSize) {
   return ret_val;
 }
 
-unsigned long long armProcessorImpl::readVAddr_QemuImpl(VirtualMemoryAddress anAddress, int anASI, int aSize) const {
+unsigned long long armProcessorImpl::readVAddr_QemuImpl(VirtualMemoryAddress anAddress, int aSize) const {
   try {
     API::arm_memory_transaction_t xact;
-    translate_QemuImpl( xact, anAddress, anASI );
-    unsigned long long value = Qemu::API::QEMU_read_phys_memory( *this, xact.s.physical_address, aSize);
+    translate_QemuImpl( xact, anAddress , 0);
+    unsigned long long value = Qemu::API::QEMU_read_phys_memory(xact.s.physical_address, aSize);
     checkException();
 
     return value;
@@ -114,7 +118,7 @@ unsigned long long armProcessorImpl::readVAddrXendian_QemuImpl(VirtualMemoryAddr
 
     DBG_(VVerb, ( << "Virtual: " << anAddress << " ASI: " << anASI << " Size: " << aSize << " Physical: " << xact.s.physical_address) );
 
-    unsigned long long value = Qemu::API::QEMU_read_phys_memory( *this, xact.s.physical_address, aSize);
+    unsigned long long value = Qemu::API::QEMU_read_phys_memory( xact.s.physical_address, aSize);
     checkException();
 
     if (xact.s.inverse_endian) {
@@ -130,7 +134,7 @@ unsigned long long armProcessorImpl::readVAddrXendian_QemuImpl(VirtualMemoryAddr
         API::logical_address_t addr(anAddress);
         API::physical_address_t phy_addr = API::QEMU_logical_to_physical(*this, API::QEMU_DI_Data, addr);
         checkException();
-        unsigned long long value = Qemu::API::QEMU_read_phys_memory( *this, phy_addr, aSize);
+        unsigned long long value = Qemu::API::QEMU_read_phys_memory(  phy_addr, aSize);
         checkException();
         return value;
       } catch (MemoryException & anError ) {}
