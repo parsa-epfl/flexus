@@ -115,7 +115,7 @@ class CoreImpl : public CoreModel {
   uint32_t thePSTATE;
 
 
-//  std::multimap<int, SysRegInfo*> * theSystemRegisters;
+  std::multimap<int, SysRegInfo*> * theSystemRegisters;
 
   uint32_t theDCZID_EL0;
   uint64_t theSCTLR_EL[4];
@@ -743,9 +743,9 @@ public:
   SCTLR_EL _SCTLR(uint32_t anELn);
   PSTATE _PSTATE();
 
-//  SysRegInfo* getSysRegInfo(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t CRn, uint8_t CRm, bool hasCP);
+  SysRegInfo* getSysRegInfo(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t CRn, uint8_t CRm, bool hasCP);
 
-//  void initSystemRegisters(std::multimap<int, SysRegInfo*> * aMap);
+  void initSystemRegisters(std::multimap<int, SysRegInfo*> * aMap);
 
 private:
   bool hasSnoopBuffer() const {

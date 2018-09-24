@@ -370,17 +370,36 @@ arminst DPRS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 arminst HINT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE;return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
 arminst SYNC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
 arminst MSR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
+
 arminst SYS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
     DECODER_TRACE;
+
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
-    uint32_t op1 = extract32(aFetchedOpcode.theOpcode, 16, 2);
-    uint32_t CRn = extract32(aFetchedOpcode.theOpcode, 16, 2);
-    uint32_t CRm = extract32(aFetchedOpcode.theOpcode, 16, 2);
-    uint32_t op2 = extract32(aFetchedOpcode.theOpcode, 16, 2);
-    uint32_t Rt = extract32(aFetchedOpcode.theOpcode, 16, 2);
 
-//    addCheckSystemAccess(inst, 1, op1, CRn, CRm, op2, Rt, 1);
+    uint32_t l, op0, op1, crn, crm, op2, rt;
+    l = extract32(aFetchedOpcode.thePC, 21, 1);
+    op0 = extract32(aFetchedOpcode.thePC, 19, 2);
+    op1 = extract32(aFetchedOpcode.thePC, 16, 3);
+    crn = extract32(aFetchedOpcode.thePC, 12, 4);
+    crm = extract32(aFetchedOpcode.thePC, 8, 4);
+    op2 = extract32(aFetchedOpcode.thePC, 5, 3);
+    rt = extract32(aFetchedOpcode.thePC, 0, 5);
+
+    if (l){
+//      inst->addPrevalidation(addCheckSystemAccess(inst, op0, op1, op2, crn, crm, l));
+        inst->addPrevalidation(SysReg_access(inst, op0, op1, op2, crn, crm, l));
+        predicated_action act = readPrivAction(inst, kResult, op0, op1, op2, crn, crm);
+        addDestination(inst, rt, act);
+
+    } else {
+        std::vector< std::list<InternalDependance> > rs_deps(1);
+        addReadXRegister(inst, 1, rt, rs_deps[0]);
+
+        predicated_action act = addExecute(inst, Operation(kMOV_), rs_deps);
+        addPrivWriteback(inst, act, op0, op1, op2, crn, crm);
+    }
+
     return inst;
 }
 

@@ -366,12 +366,6 @@ void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, int val, s
 
 }
 
-void addCheckSystemAccess(SemanticInstruction * inst, uint32_t op0, uint32_t op1, uint32_t crn, uint32_t crm, uint32_t op2, uint32_t rt){
-
-    simple_action act = systemAction(inst, op0 ,op1 ,crn ,crm ,op2 ,rt);
-
-
-}
 void addAnnulment( SemanticInstruction * inst, eRegisterType aType, predicated_action & exec, InternalDependance const & aWritebackDependance) {
   predicated_action annul = annulAction( inst, aType );
   //inst->addDispatchAction( annul );
@@ -421,6 +415,14 @@ void addWriteback( SemanticInstruction * inst, eRegisterType aType, bool addSqua
 
   connectDependance( inst->retirementDependance(), wb );
 }
+
+void addPrivWriteback( SemanticInstruction * inst, predicated_action & exec, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm ) {
+
+  dependant_action wb = writePrivAction( inst, op0, op1, op2, crn, crm );
+
+  //Make writeback depend on execute, make retirement depend on writeback
+  connectDependance( wb.dependance, exec );
+  connectDependance( inst->retirementDependance(), wb );}
 
 void addWriteback( SemanticInstruction * inst, eRegisterType aType, predicated_action & exec, bool addSquash) {
   if (addSquash) {

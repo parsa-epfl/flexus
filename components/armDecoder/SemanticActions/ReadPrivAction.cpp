@@ -60,6 +60,8 @@ namespace ll = boost::lambda;
 #include "../SemanticActions.hpp"
 #include "PredicatedSemanticAction.hpp"
 
+#include <components/uArchARM/systemRegister.hpp>
+
 #define DBG_DeclareCategories armDecoder
 #define DBG_SetDefaultOps AddCat(armDecoder)
 #include DBG_Control()
@@ -68,94 +70,57 @@ namespace narmDecoder {
 
 using namespace nuArchARM;
 
-struct ReadFPSRAction : public PredicatedSemanticAction {
-  eOperandCode theResult;
+struct ReadPrivAction : public PredicatedSemanticAction {
+  eOperandCode theOperandCode;
+  uint8_t theOp0, theOp1, theOp2, theCRn, theCRm;
+  bool thehasCP;
 
-  ReadFPSRAction( SemanticInstruction * anInstruction, eOperandCode aResult )
+  ReadPrivAction( SemanticInstruction * anInstruction,
+                  eOperandCode anOperandCode,
+                  uint8_t op0,
+                  uint8_t op1,
+                  uint8_t crn,
+                  uint8_t crm,
+                  uint8_t op2,
+                  bool hasCP )
     : PredicatedSemanticAction( anInstruction, 1, true )
-    , theResult( aResult ) {
+    , theOperandCode( anOperandCode )
+    , theOp0( op0 )
+    , theOp1( op1 )
+    , theOp2( op2 )
+    , theCRn( crn )
+    , theCRm( crm )
+    , thehasCP (hasCP)
+  {
     setReady( 0, true );
   }
 
   void doEvaluate() {
-    uint64_t fpsr = theInstruction->core()->getFPSR() ;
-    theInstruction->setOperand(theResult, fpsr);
-    DBG_( Tmp, ( << *this << " read FPSR") );
+
+      // further access checks
+      SysRegInfo* ri = theInstruction->core()->getSysRegInfo(theOp0, theOp1, theOp2, theCRn, theCRm, thehasCP);
+      if (ri->accessfn(theInstruction->core()) == kACCESS_OK){
+          Operand val = ri->readfn(theInstruction->core());
+            theInstruction->setOperand(theOperandCode, val);
+      }
     satisfyDependants();
   }
 
   void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " Read FPSR store in " << theResult;
+    anOstream << theInstruction->identify() << " Read SYS store in " << theOperandCode;
   }
 
 };
 
-predicated_action readFPSRAction
-( SemanticInstruction * anInstruction
+predicated_action readPrivAction
+( SemanticInstruction * anInstruction, eOperandCode anOperandCode,
+  uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm, bool hasCP
 ) {
-  ReadFPSRAction * act(new(anInstruction->icb()) ReadFPSRAction( anInstruction, kResult) );
+  ReadPrivAction * act(new(anInstruction->icb()) ReadPrivAction( anInstruction, anOperandCode, op0, op1, op2, crn, crm, hasCP) );
 
   return predicated_action( act, act->predicate() );
 }
 
-struct ReadTICKAction : public PredicatedSemanticAction {
-  eOperandCode theResult;
 
-  ReadTICKAction( SemanticInstruction * anInstruction, eOperandCode aResult )
-    : PredicatedSemanticAction( anInstruction, 1, true )
-    , theResult( aResult ) {
-    setReady( 0, true );
-  }
-
-  void doEvaluate() {
-//    uint64_t tick = theInstruction->core()->getTICK() ;
-//    theInstruction->setOperand(theResult, tick);
-    DBG_( Tmp, ( << *this << " read TICK") );
-    satisfyDependants();
-  }
-
-  void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " Read TICK store in " << theResult;
-  }
-
-};
-
-predicated_action readTICKAction
-( SemanticInstruction * anInstruction
-) {
-  ReadTICKAction * act(new(anInstruction->icb()) ReadTICKAction( anInstruction, kResult) );
-
-  return predicated_action( act, act->predicate() );
-}
-
-struct ReadSTICKAction : public PredicatedSemanticAction {
-  eOperandCode theResult;
-
-  ReadSTICKAction( SemanticInstruction * anInstruction, eOperandCode aResult )
-    : PredicatedSemanticAction( anInstruction, 1, true )
-    , theResult( aResult ) {
-    setReady( 0, true );
-  }
-
-  void doEvaluate() {
-//    uint64_t stick = theInstruction->core()->getSTICK() ;
-//    theInstruction->setOperand(theResult, stick);
-    DBG_( Tmp, ( << *this << " read STICK") );
-    satisfyDependants();
-  }
-
-  void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " Read STICK store in " << theResult;
-  }
-
-};
-
-predicated_action readSTICKAction
-( SemanticInstruction * anInstruction
-) {
-  ReadSTICKAction * act(new(anInstruction->icb()) ReadSTICKAction( anInstruction, kResult) );
-
-  return predicated_action( act, act->predicate() );
-}
 
 } //narmDecoder

@@ -144,9 +144,6 @@ arminst disas_system(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSe
 {
     DECODER_TRACE;
 
-    static int disas_system_counter;
-    disas_system_counter++;
-
     return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
     DECODER_TRACE;
     unsigned int l, op0, op1, crn, crm, op2, rt;

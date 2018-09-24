@@ -299,6 +299,11 @@ dependant_action writebackAction
   , eRegisterType aType
 );
 
+dependant_action writePrivAction
+( SemanticInstruction * anInstruction
+  , uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm, eOperandCode anOperandCode = kResult, bool hasCP = false
+);
+
 dependant_action writebackRD1Action ( SemanticInstruction * anInstruction );
 
 dependant_action writeXTRA
@@ -323,8 +328,6 @@ predicated_action floatingAnnulAction
 ( SemanticInstruction * anInstruction
   , int32_t anIndex
 );
-
-simple_action systemAction(SemanticInstruction * anInstruction, uint32_t op0, uint32_t op1, uint32_t crn, uint32_t crm, uint32_t op2, uint32_t rt);
 
 
 multiply_dependant_action updateAddressAction
@@ -379,17 +382,17 @@ predicated_action readPCAction
 ( SemanticInstruction * anInstruction
 );
 
-predicated_action readFPSRAction
-( SemanticInstruction * anInstruction
+predicated_action readPrivAction
+( SemanticInstruction * anInstruction, eOperandCode anOperandCode,
+  uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm, bool hasCP = false
 );
 
-predicated_action readTICKAction
-( SemanticInstruction * anInstruction
+predicated_action systemAction
+(SemanticInstruction * anInstruction,
+ uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm, uint8_t rt, bool hasCP = false
 );
 
-predicated_action readSTICKAction
-( SemanticInstruction * anInstruction
-);
+
 
 predicated_action constantAction
 ( SemanticInstruction * anInstruction

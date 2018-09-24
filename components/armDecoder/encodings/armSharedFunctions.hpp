@@ -194,6 +194,7 @@ void addCheckSystemAccess(SemanticInstruction * inst, uint32_t op0, uint32_t op1
 void addAnnulment( SemanticInstruction * inst, eRegisterType aType, predicated_action & exec, InternalDependance const & aWritebackDependance);
 void addRD1Annulment( SemanticInstruction * inst, predicated_action & exec, InternalDependance const & aWritebackDependance);
 void addWriteback( SemanticInstruction * inst, eRegisterType aType, predicated_action & exec, bool addSquash = true);
+void addPrivWriteback( SemanticInstruction * inst, predicated_action & exec, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm);
 void addWriteback( SemanticInstruction * inst, eRegisterType aType, bool addSquash = true);
 void addRD1Writeback( SemanticInstruction * inst, predicated_action & exec);
 

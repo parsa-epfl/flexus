@@ -58,10 +58,9 @@ namespace ll = boost::lambda;
 #include "../SemanticInstruction.hpp"
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
+#include "RegisterValueExtractor.hpp"
 
-#include <components/uArchARM/CoreModel/SCTLR_EL.hpp>
 #include <components/uArchARM/systemRegister.hpp>
-#include "PredicatedSemanticAction.hpp"
 
 #define DBG_DeclareCategories armDecoder
 #define DBG_SetDefaultOps AddCat(armDecoder)
@@ -71,45 +70,48 @@ namespace narmDecoder {
 
 using namespace nuArchARM;
 
-struct SystemAction : public PredicatedSemanticAction {
-  uint8_t theOp0, theOp1, theOp2, theCRn, theCRm, theRT;
+struct WritePrivAction : public BaseSemanticAction {
+  uint8_t theOp0, theOp1, theOp2, theCRn, theCRm;
   bool thehasCP;
   eOperandCode theOperandCode;
-  bool theRead;
 
-  SystemAction( SemanticInstruction * anInstruction,
-                uint8_t op0,
-                uint8_t op1,
-                uint8_t op2,
-                uint8_t crn,
-                uint8_t crm,
-                uint8_t rt ,
-                bool hasCP)
-    : PredicatedSemanticAction( anInstruction, 1, true)
+  WritePrivAction ( SemanticInstruction * anInstruction, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm, eOperandCode anOperandCode, bool hasCP )
+    : BaseSemanticAction ( anInstruction, 1 )
     , theOp0( op0 )
     , theOp1( op1 )
     , theOp2( op2 )
     , theCRn( crn )
     , theCRm( crm )
-    , theRT( rt )
     , thehasCP (hasCP)
-  {}
+    , theOperandCode(anOperandCode)
+  { }
+
 
   void doEvaluate() {
 
+      // further access checks
+      SysRegInfo* ri = theInstruction->core()->getSysRegInfo(theOp0, theOp1, theOp2, theCRn, theCRm, thehasCP);
+      if (ri->accessfn(theInstruction->core()) == kACCESS_OK){
+          Operand val = theInstruction->operand(theOperandCode);
+          ri->writefn(theInstruction->core());
+      }
+    satisfyDependants();
   }
 
+
   void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " System Check ";
+    anOstream << theInstruction->identify() << " WritePrivAction";
   }
 };
 
+dependant_action writePrivAction
+( SemanticInstruction * anInstruction
+  , uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm, eOperandCode anOperandCode, bool hasCP
+) {
 
-predicated_action systemAction
-(SemanticInstruction * anInstruction, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm, uint8_t rt, bool hasCP) {
-  SystemAction * act(new (anInstruction->icb()) SystemAction(anInstruction, op0, op1, crn, crm, op2, rt, hasCP));
-
-  return predicated_action( act, act->predicate() );
+    WritePrivAction * act = new(anInstruction->icb()) WritePrivAction( anInstruction, op0, op1, op2, crn, crm, anOperandCode,  hasCP);
+    return dependant_action( act, act->dependance() );
 }
+
 
 } //narmDecoder

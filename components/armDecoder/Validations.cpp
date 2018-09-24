@@ -55,6 +55,7 @@
 #include "Effects.hpp"
 #include "SemanticActions.hpp"
 #include "Validations.hpp"
+#include <components/uArchARM/systemRegister.hpp>
 
 #define DBG_DeclareCategories armDecoder
 #define DBG_SetDefaultOps AddCat(armDecoder)
@@ -219,42 +220,45 @@ bool AArch64ExclusiveMonitorsPass::operator ()() {
     return true;
 
 }
-
+bool SysReg_access::operator ()(){
+    SysRegInfo* ri = theInstruction->core()->getSysRegInfo(theOpc0, theOpc1, theOpc2, theCRn, theCRm);
+    return (ri->access >> ((theInstruction->core()->currentEL() * 2) + theIsRead)) & 1;
+}
 
 bool checkSystemAccess::operator ()(){
-//    bool unallocated = false;
-//    bool need_secure = false;
-//    uint32_t min_EL;
+    bool unallocated = false;
+    bool need_secure = false;
+    uint32_t min_EL;
 
-//        // Check for unallocated encodings
-//    switch(theOp1) {
-//      case 0: case 1: case 2:
-//        min_EL = EL1;
-//        break;
-//      case 3:
-//        min_EL = EL0;
-//        break;
-//      case 4:
-//        min_EL = EL2;
-//        DBG_Assert(false, (<< "we dont model EL2"));
+        // Check for unallocated encodings
+    switch(theOpc1) {
+      case 0: case 1: case 2:
+        min_EL = EL1;
+        break;
+      case 3:
+        min_EL = EL0;
+        break;
+      case 4:
+        min_EL = EL2;
+        DBG_Assert(false, (<< "we dont model EL2"));
 
-//        break;
-//      case 5:
-//    //      if !HaveVirtHostExt() then UnallocatedEncoding();
-//        min_EL = EL2;
-//        DBG_Assert(false, (<< "we dont model EL2"));
-//      case 6:
-//        min_EL = EL3;
-//        DBG_Assert(false, (<< "we dont model EL3"));
+        break;
+      case 5:
+    //      if !HaveVirtHostExt() then UnallocatedEncoding();
+        min_EL = EL2;
+        DBG_Assert(false, (<< "we dont model EL2"));
+      case 6:
+        min_EL = EL3;
+        DBG_Assert(false, (<< "we dont model EL3"));
 
-//      case  7:
-//        min_EL = EL1;
-//        need_secure = true;
-//    }
+      case  7:
+        min_EL = EL1;
+        need_secure = true;
+    }
     return true;
 
-    //    if (theInstruction->core()->currentEL()< min_EL)
-    //        return UnallocatedEncoding();
+//        if (theInstruction->core()->currentEL()< min_EL)
+//            return false;
 
     // FIXME -- Figure out how to get the appropirate system reg
     //    (take_trap, target_el) = AArch64.CheckSystemRegisterTraps(op0, op1, crn, crm, op2, read);

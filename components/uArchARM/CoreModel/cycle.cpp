@@ -921,18 +921,18 @@ SCTLR_EL CoreImpl::_SCTLR(uint32_t anELn){
     return SCTLR_EL(theSCTLR_EL[anELn]);
 }
 
-//void CoreImpl::initSystemRegisters(std::multimap<int, SysRegInfo*> * aMap){
-//    aMap = initSysRegs();
-//}
+void CoreImpl::initSystemRegisters(std::multimap<int, SysRegInfo*> * aMap){
+    aMap = initSysRegs();
+}
 
 
-//SysRegInfo* CoreImpl::getSysRegInfo(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t CRn, uint8_t CRm, bool hasCP){
-//    std::array <uint8_t, 5> ar = {opc0, opc1, opc2, CRn, CRm};
-//    if (hasCP){
-//        return getRegInfo_cp(ar);
-//    }
-//    return getRegInfo(ar);
-//}
+SysRegInfo* CoreImpl::getSysRegInfo(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t CRn, uint8_t CRm, bool hasCP){
+    std::array <uint8_t, 5> ar = {opc0, opc1, opc2, CRn, CRm};
+    if (hasCP){
+        return getRegInfo_cp(ar);
+    }
+    return getRegInfo(ar);
+}
 
 
 uint32_t CoreImpl::increaseEL() {
