@@ -2,8 +2,8 @@
 #define _ARM_TRANSLATION_GRANULES_DEFINED_HPP_
 #include <stdint.h>
 
-namespace Flexus {
-namespace Qemu {
+//namespace Flexus {
+//namespace Qemu {
 namespace MMU {
 
 /* Msutherl - june'18
@@ -61,6 +61,6 @@ class TG1_Granule : public TranslationGranule
 };
 
 } // end MMU
-} // end Qemu
-} // end Flexus
+//} // end Qemu
+//} // end Flexus
 #endif //_ARM_TRANSLATION_GRANULES_DEFINED_HPP_

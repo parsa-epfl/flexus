@@ -391,11 +391,11 @@ void SemanticInstruction::describe(std::ostream & anOstream) const {
 }
 
 int32_t SemanticInstruction::retryTranslation() {
-  Flexus::Qemu::Translation xlat;
+  Flexus::SharedTypes::Translation xlat;
   xlat.theVaddr = pc();
   //xlat.theTL = core()->getTL();
   xlat.thePSTATE = core()->getPSTATE();
-  xlat.theType = Flexus::Qemu::Translation::eFetch;
+  xlat.theType = Flexus::SharedTypes::Translation::eFetch;
   Flexus::Qemu::Processor::getProcessor(theCPU)->translate(xlat);
   return 0/*xlat.theException*/;
 }

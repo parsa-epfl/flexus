@@ -45,7 +45,7 @@
 namespace nuArchARM {
 
 CoreImpl::CoreImpl( uArchOptions_t options
-                    , std::function< void (Flexus::Qemu::Translation &) > xlat
+                    //, std::function< void (Flexus::Qemu::Translation &) > xlat
                     , std::function<int()> _advance
                     , std::function< void(eSquashCause)> _squash
                     , std::function< void(VirtualMemoryAddress)> _redirect
@@ -55,7 +55,7 @@ CoreImpl::CoreImpl( uArchOptions_t options
                   )
   : theName(options.name)
   , theNode(options.node)
-  , translate(xlat)
+  //, translate(xlat)
   , advance_fn(_advance)
   , squash_fn(_squash)
   , redirect_fn(_redirect)
@@ -271,6 +271,9 @@ CoreImpl::CoreImpl( uArchOptions_t options
   , fpAluCyclesToReady(options.numFpAlu, 0)
   , fpMultCyclesToReady(options.numFpMult, 0)
 {
+
+    // Msutherl - for MMU verification. Remove when done
+    theQEMUCPU = Flexus::Qemu::Processor::getProcessor(theNode);
 
     // original constructor continues here...
     prepareMemOpAccounting();
@@ -499,7 +502,7 @@ void CoreImpl::setRoundingMode(uint32_t aRoundingMode) {
 }
 
 CoreModel * CoreModel::construct( uArchOptions_t options
-                                  , std::function< void (Flexus::Qemu::Translation &) > translate
+                                  //, std::function< void (Flexus::Qemu::Translation &) > translate
                                   , std::function<int()> advance
                                   , std::function< void(eSquashCause)> squash
                                   , std::function< void(VirtualMemoryAddress)> redirect
@@ -509,7 +512,7 @@ CoreModel * CoreModel::construct( uArchOptions_t options
                                 ) {
 
   return new CoreImpl( options
-                       , translate
+                       //, translate
                        , advance
                        , squash
                        , redirect

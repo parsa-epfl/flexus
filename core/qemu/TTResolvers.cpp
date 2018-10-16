@@ -3,8 +3,6 @@
 #include <iostream>
 #include <assert.h>
 
-namespace Flexus {
-namespace Qemu {
 namespace MMU {
 
 /*
@@ -160,5 +158,3 @@ L3Resolver::getBlockOutputBits(address_t rawTTEFromPhysMemory)
 }
 
 } // end MMU
-} // end Qemu
-} // end Flexus

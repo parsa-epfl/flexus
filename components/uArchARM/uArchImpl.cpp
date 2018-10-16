@@ -42,6 +42,7 @@
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
 
 #include <components/CommonQEMU/Slices/MemoryMessage.hpp>
+#include <components/CommonQEMU/Slices/Translation.hpp>
 #include <components/CommonQEMU/Slices/ExecuteState.hpp>
 #include <components/MTManager/MTManager.hpp>
 
@@ -269,10 +270,11 @@ public:
       // commence
       for( auto& translation : translateUs->internalContainer ) {
           uint8_t flexusCurrentELRegime = 1; // FIXME: should return tr. regime for addr
-          if ( theMicroArch->IsTranslationEnabledAtCurrentEL( flexusCurrentELRegime ) ) {
+          if ( theMicroArch->IsTranslationEnabledAtEL( flexusCurrentELRegime ) ) {
               DBG_(Tmp,(<<" ---- STARTING NEW TRANSLATION ---- "
                           << std::hex << translation.theVaddr << std::dec ));
-              translation.ELRegime = flexusCurrentELRegime;
+              // FIXME: This is now a different slice. Re-enable it.
+              //translation.ELRegime = flexusCurrentELRegime;
               theMicroArch->translate( translation );
           } else {
               DBG_Assert( false, ( << "SORRY, translation is not enabled at EL " << flexusCurrentELRegime ) );

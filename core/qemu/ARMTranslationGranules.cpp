@@ -1,8 +1,6 @@
 #include "ARMTranslationGranules.hpp"
 #include <cmath>
 
-namespace Flexus {
-namespace Qemu {
 namespace MMU {
 
     /*
@@ -150,5 +148,3 @@ TG1_Granule::GetUpperAddressRangeLimit() const {
 }
 
 } // end MMU
-} // end Qemu
-} // end Flexus

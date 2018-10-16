@@ -27,6 +27,7 @@
 
 
 using namespace Flexus::Core;
+using Flexus::SharedTypes::Translation;
 
 #if FLEXUS_TARGET_IS(v9) || FLEXUS_TARGET_IS(ARM)// For now, we just disable that.
 
@@ -85,16 +86,9 @@ void armProcessorImpl::handleInterrupt( long long aVector) {
   thePendingInterrupt = aVector;
 }
 
-
-//static aaa (uint8_t* code, size_t size ){
-//    for (int i = 0; i < size; i++){
-//        code[i]
-//    }
-//}
-
 uint32_t armProcessorImpl::fetchInstruction(Translation & aTranslation) {
   API::logical_address_t addr = aTranslation.theVaddr;
-  API::physical_address_t phy_addr = API::QEMU_logical_to_physical(*this, API::QEMU_DI_Instruction, addr);
+  API::physical_address_t phy_addr = Qemu::API::QEMU_logical_to_physical(*this, Qemu::API::QEMU_DI_Instruction, addr);
 
   bits a = construct(Qemu::API::QEMU_read_phys_memory( phy_addr, 4), 4);
 
@@ -440,170 +434,13 @@ int ProcessorMapper::numProcessors() {
   return (int)(theMapper->theProcMap.size());
 }
 
-
-// Msutherl: MMU functionality
-void armProcessorImpl::initializeMMU() {
-  if (!mmuInitialized) {
-      // get QEMU MMU api
-      API::mmu_api_obj_t* mmu_obj = API::QEMU_get_mmu_state(theQEMUProcessorNumber);
-      void* rawObjectFromQEMU = mmu_obj->object;
-      theMMU = std::make_shared<mmu_t>();
-      theMMU->initRegsFromQEMUObject( reinterpret_cast<mmu_regs_t*>(rawObjectFromQEMU) );
-      theMMU->setupAddressSpaceSizesAndGranules();
-      mmuInitialized = true;
-      DBG_(Tmp,( << "MMU object init'd, " << std::hex << theMMU << std::dec ));
-  }
+// Msutherl: Fetch MMU's registers
+std::shared_ptr<mmu_regs_t>
+armProcessorImpl::getMMURegsFromQEMU() {
+    API::mmu_api_obj_t* mmu_obj = API::QEMU_get_mmu_state(theQEMUProcessorNumber);
+    mmu_regs_t* regsFromQEMU = reinterpret_cast<mmu_regs_t*>( mmu_obj->object );
+    return std::make_shared<mmu_regs_t>(*regsFromQEMU);
 }
-
-std::shared_ptr<MMU::mmu_t>
-armProcessorImpl::getMMUPointer() {
-    if (mmuInitialized) {
-        return std::shared_ptr<MMU::mmu_t>(theMMU);
-    } else return nullptr;
-}
-
-void
-armProcessorImpl::translate(Translation & aTranslation) const {
-    DBG_Assert( false, ( << "DIDN'T WANT TO EVER GET HERE........"));
-}
-
-MMU::TTEDescriptor
-armProcessorImpl::getNextTTDescriptor(Translation& currentTranslation)
-{
-    // TODO
-}
-
-/* Local helper function to set up a TTResolver based on level and TTBR */
-void 
-armProcessorImpl::setupTTResolver( Translation& aTranslation, uint64_t TTDescriptor )
-{
-    uint8_t PAWidth = theMMU->getPAWidth(aTranslation.isBR0);
-     // Resolve TTBR base.
-    switch( aTranslation.currentLookupLevel ) {
-        case 0:
-            aTranslation.TTAddressResolver = ( aTranslation.isBR0 ?
-                    std::make_shared<MMU::L0Resolver>(aTranslation.isBR0,theMMU->Gran0, TTDescriptor,PAWidth) :
-                    std::make_shared<MMU::L0Resolver>(aTranslation.isBR0,
-                        theMMU->Gran1,TTDescriptor,PAWidth) );
-            break;
-        case 1:
-            aTranslation.TTAddressResolver = ( aTranslation.isBR0 ?
-                    std::make_shared<MMU::L1Resolver>(aTranslation.isBR0,
-                        theMMU->Gran0, TTDescriptor,PAWidth) :
-                    std::make_shared<MMU::L1Resolver>(aTranslation.isBR0,
-                        theMMU->Gran1,TTDescriptor,PAWidth) );
-            break;
-        case 2:
-            aTranslation.TTAddressResolver = ( aTranslation.isBR0 ?
-                    std::make_shared<MMU::L2Resolver>(aTranslation.isBR0,
-                        theMMU->Gran0, TTDescriptor ,PAWidth) :
-                    std::make_shared<MMU::L2Resolver>(aTranslation.isBR0,
-                        theMMU->Gran1,TTDescriptor,PAWidth) );
-            break;
-        case 3:
-            aTranslation.TTAddressResolver = ( aTranslation.isBR0 ?
-                    std::make_shared<MMU::L3Resolver>(aTranslation.isBR0,
-                        theMMU->Gran0, TTDescriptor,PAWidth) :
-                    std::make_shared<MMU::L3Resolver>(aTranslation.isBR0,
-                        theMMU->Gran1,TTDescriptor,PAWidth) );
-            break;
-        default:
-            DBG_Assert(false, ( << "Random lookup level in InitialTranslationSetup: " << aTranslation.currentLookupLevel));
-    }
-}
-
-void
-armProcessorImpl::InitialTranslationSetup( Translation& aTranslation )
-{
-    int br = theMMU->checkBR0RangeForVAddr( aTranslation );
-    if( br != -1 ) {
-        if( br == 0 ) {
-            aTranslation.isBR0 = true;
-        } else aTranslation.isBR0 = false;
-    }
-    else DBG_Assert(false, ( << "FAULTING Vaddr, neither in BR0 or BR1: " << std::hex << aTranslation.theVaddr << std::dec ));
-    uint8_t initialLevel = theMMU->getInitialLookupLevel(aTranslation);
-    aTranslation.requiredTableLookups = 4 - initialLevel;
-    aTranslation.currentLookupLevel = initialLevel;
-    aTranslation.granuleSize = theMMU->getGranuleSize(aTranslation.isBR0);
-
-    uint8_t EL = aTranslation.ELRegime;
-    uint64_t initialTTBR;
-    if(aTranslation.isBR0) initialTTBR = theMMU->mmu_regs.TTBR0[EL];
-    else initialTTBR = theMMU->mmu_regs.TTBR1[EL];
-    setupTTResolver(aTranslation, initialTTBR);
-}
-
-bool
-armProcessorImpl::doTTEAccess( Translation& aTranslation )
-{
-    /* 
-     * 1) Entire phys addr comes from the TTAddressResolver object
-     * 2) Do access (right now, with magic QEMU)
-     * 3) Assert validity etc.
-     * 4) Setup next TTAddressResolver
-       * - Foreach level of tablewalk
-       *    - Calculate the bits that will be resolved. Depends on:
-       *        - IA/OA sizes.
-       *        - Granule of this translation regime
-       *        - level of walk
-       *    - Read base+offset of table (PAddr) and get TTE descriptor
-       *    - Parse it, get the matching PA bits, and check if done
-       *    - Raise fault if need be (TODO)
-     */
-    if( aTranslation.currentLookupLevel == 0 ) {
-        PhysicalMemoryAddress tmp(API::QEMU_logical_to_physical(*this,API::QEMU_DI_Instruction,aTranslation.theVaddr));
-        DBG_(Tmp,( <<" QEMU Translated: " << std::hex << aTranslation.theVaddr << std::dec << ", to: " << std::hex << tmp << std::dec));
-    }
-    PhysicalMemoryAddress TTEDescriptor( aTranslation.TTAddressResolver->resolve(aTranslation.theVaddr) );
-    DBG_(Tmp,(<< "Current Translation Level: " << (unsigned int) aTranslation.currentLookupLevel
-             << ", Returned TTE Descriptor Address: " << std::hex <<  TTEDescriptor << std::dec ));
-    unsigned long long rawTTEValue = API::QEMU_read_phys_memory(  TTEDescriptor, 8 );
-    DBG_(Tmp,(<< "Current Translation Level: " << (unsigned int) aTranslation.currentLookupLevel
-             << ", Read Raw TTE Desc. from QEMU : " << std::hex << rawTTEValue << std::dec ));
-    /* Check Valid */
-    bool validBit = extractSingleBitAsBool(rawTTEValue,0);
-    DBG_Assert( validBit == true , ( << "Encountered INVALID entry in doTTEAccess: " << std::hex << rawTTEValue << std::dec << ", need to generate Page Fault."));
-    /* distinguish between block and table entries, could cut pwalk early!!! */
-    bool isNextLevelTableEntry = extractSingleBitAsBool(rawTTEValue,1);
-    if( aTranslation.currentLookupLevel == 3 ) { /* Last level for all granules */
-        PhysicalMemoryAddress shiftedRegionBits = PhysicalMemoryAddress(aTranslation.TTAddressResolver->getBlockOutputBits(rawTTEValue));
-        aTranslation.thePaddr = shiftedRegionBits;
-        aTranslation.BlockSizeFromTTs = 1 << 12; // 4KB
-        //FIXME: FIXME: other granule sizes
-
-        PhysicalMemoryAddress PageOffsetMask( aTranslation.granuleSize-1 );
-        PhysicalMemoryAddress maskedVAddr( aTranslation.theVaddr & PageOffsetMask );
-        aTranslation.thePaddr |= maskedVAddr;
-        return true; // pwalk done
-    } else { /* Intermediate level */
-        if( isNextLevelTableEntry ) {
-            /* Remake the next level resolver */
-            aTranslation.currentLookupLevel += 1;
-            setupTTResolver(aTranslation,rawTTEValue);
-            return false;
-        } else { // block entry - mem. mapped
-            /* Return size of mapped region, output address, and terminate PWalk */
-            PhysicalMemoryAddress shiftedRegionBits = PhysicalMemoryAddress(aTranslation.TTAddressResolver->getBlockOutputBits(rawTTEValue));
-            aTranslation.thePaddr = shiftedRegionBits;
-            switch( aTranslation.currentLookupLevel ) {
-                case 1:
-                    aTranslation.BlockSizeFromTTs = 1<<30; // 1GB block
-                    break;
-                case 2:
-                    aTranslation.BlockSizeFromTTs = 1<<21; // 2MB block
-                    break;
-                default:
-                    DBG_Assert( false , ( << "Encountered Non-standard BLOCK entry, in intermediate TT walk stage " << (unsigned int) aTranslation.currentLookupLevel << ", should have been a memory mapped region. TTE = " << std::hex << rawTTEValue << std::dec));
-            }
-            PhysicalMemoryAddress PageOffsetMask( aTranslation.granuleSize-1 );
-            PhysicalMemoryAddress maskedVAddr( aTranslation.theVaddr & PageOffsetMask );
-            aTranslation.thePaddr |= maskedVAddr;
-            return true; // p walk done
-        }
-    } // end intermediate level block
-}
-
 
 } //end Namespace Qemu 
 } //end namespace Flexus

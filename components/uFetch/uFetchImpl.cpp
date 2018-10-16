@@ -468,11 +468,11 @@ private:
 
       ++ (*theLastPrefetchVTagSet[anIndex]);
       VirtualMemoryAddress vprefetch = VirtualMemoryAddress( *theLastPrefetchVTagSet[anIndex] << theIndexShift );
-      Flexus::Qemu::Translation xlat;
+      Flexus::SharedTypes::Translation xlat;
       xlat.theVaddr = vprefetch;
 //      xlat.theTL = theCPUState[anIndex].theTL;
       xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
-      xlat.theType = Flexus::Qemu::Translation::eFetch;
+      xlat.theType = Flexus::SharedTypes::Translation::eFetch;
       cpu(anIndex)->translateInstruction(vprefetch); // msutherl
       if (! xlat.thePaddr ) {
         //Unable to translate for prefetch
@@ -508,11 +508,11 @@ private:
       }
     } else {
       DBG_(Tmp, (<<"Not in Flexus cache...Will look into Qemu now!"));
-      Flexus::Qemu::Translation xlat;
+      Flexus::SharedTypes::Translation xlat;
       xlat.theVaddr = vaddr;
 //      xlat.theTL = theCPUState[anIndex].theTL;
       xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
-      xlat.theType = Flexus::Qemu::Translation::eFetch;
+      xlat.theType = Flexus::SharedTypes::Translation::eFetch;
       cpu(anIndex)->translateInstruction(vaddr); // Msutherl
       paddr = xlat.thePaddr;
       if (paddr == 0) {
@@ -921,11 +921,11 @@ private:
   uint32_t fetchFromQemu(index_t anIndex, VirtualMemoryAddress const & anAddress) {
     FETCH_DBG("Address = " << anAddress);
     uint32_t op_code;
-    Flexus::Qemu::Translation xlat;
+    Flexus::SharedTypes::Translation xlat;
     xlat.theVaddr = anAddress;
 //    xlat.theTL = theCPUState[anIndex].theTL;
     xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
-    xlat.theType = Flexus::Qemu::Translation::eFetch;
+    xlat.theType = Flexus::SharedTypes::Translation::eFetch;
     xlat.theException = 0; // just for now
 
     TranslatedAddresses SendUsToTLB(new TranslationVecWrapper);
@@ -936,7 +936,7 @@ private:
 
     DBG_(Iface,( << "Starting magic translation after sending to TLB...."));
     PhysicalMemoryAddress magicTranslation = cpu(anIndex)->translateInstruction_QemuImpl(anAddress);
-    Flexus::Qemu::Translation tr = TranslationsFromTLB->internalContainer.front();
+    Flexus::SharedTypes::Translation tr = TranslationsFromTLB->internalContainer.front();
     DBG_Assert( tr.theVaddr == anAddress, ( << "In FetchFromQEMU, TranslationsFromTLB->vaddr = " << tr.theVaddr << ", fetchVaddr = " << anAddress ));
     if( tr.thePaddr == magicTranslation ) {
         DBG_(Tmp, ( << "Magic QEMU translation == MMU Translation. Vaddr = "
@@ -951,7 +951,8 @@ private:
                     << std::hex << magicTranslation << std::dec));
     }
 
-    op_code = cpu(anIndex)->fetchInstruction_QemuImpl( anAddress ); // magic QEMU
+    Flexus::SharedTypes::Translation gimme;
+    op_code = cpu(anIndex)->fetchInstruction(gimme); // magic QEMU
     if (xlat.theException == 0) {
       //DBG_(Tmp, (<<"FETCH UNIT: Not an exception"));
       DBG_(Tmp, Comp(*this) ( <<"\e[1;34m" << "FETCH UNIT: " << anAddress << " op: " << std::hex << std::setw(8) << op_code << std::dec<< "\e[0m" ) );//NOOSHIN

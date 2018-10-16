@@ -74,16 +74,24 @@ namespace Stat = Flexus::Stat;
 #include "coreModelTypes.hpp"
 #include <components/CommonQEMU/XactTimeBreakdown.hpp>
 #include <components/CommonQEMU/Slices/PredictorMessage.hpp> /* CMU-ONLY */
+#include <components/CommonQEMU/Transports/TranslationTransport.hpp>
+#include <components/CommonQEMU/Slices/Translation.hpp>
 #include "bbv.hpp" /* CMU-ONLY */
 
 #include "PSTATE.hpp"
 #include "SCTLR_EL.hpp"
 #include "../systemRegister.hpp"
 
+// Msutherl, Oct'18
+// FIXME: move this file but for now just directly include it
+#include <core/qemu/ARMmmu.hpp>
+#include <core/qemu/mai_api.hpp> // FIXME: might not need this
 
 namespace nuArchARM {
 
 using nXactTimeBreakdown::TimeBreakdown;
+
+using namespace MMU;
 
 class CoreImpl : public CoreModel {
   //CORE STATE
@@ -92,7 +100,9 @@ class CoreImpl : public CoreModel {
   std::string theName;
   uint32_t theNode;
 
-  std::function< void (Flexus::Qemu::Translation &) > translate;
+  // Msutherl - removed translate as a call to microArch,
+  // now internal to CoreModel
+  //std::function< void (Flexus::Qemu::Translation &) > translate;
   std::function<int()> advance_fn;
   std::function< void(eSquashCause)> squash_fn;
   std::function< void(VirtualMemoryAddress)> redirect_fn;
@@ -115,6 +125,14 @@ class CoreImpl : public CoreModel {
   uint32_t thePSTATE;
 
 
+  // MMU Internal State:
+  // ===================================================================
+private:
+  std::shared_ptr<mmu_t> theMMU;
+  bool mmuInitialized;
+  Flexus::Qemu::Processor theQEMUCPU;
+
+  // ===================================================================
 //  std::multimap<int, SysRegInfo*> * theSystemRegisters;
 
   uint32_t theDCZID_EL0;
@@ -488,7 +506,8 @@ private:
   //==========================================================================
 public:
   CoreImpl( uArchOptions_t options
-            , std::function< void (Flexus::Qemu::Translation &) > xlat
+            // Msutherl, removed
+            //, std::function< void (Flexus::Qemu::Translation &) > xlat
             , std::function< int() > advance
             , std::function< void(eSquashCause)> squash
             , std::function< void(VirtualMemoryAddress) > redirect
@@ -850,9 +869,22 @@ public:
   void finishMiss( boost::intrusive_ptr<TransactionTracker> tracker, bool matched_mshr );
   void processTable();
 
-  // MMU and Multi-stage translation
-  // - Msutherl: Aug'18
-  //==========================================================================
+  // MMU and Multi-stage translation, now in CoreModel, not QEMU MAI
+  // - Msutherl: Oct'18
+public:
+  bool IsTranslationEnabledAtEL(uint8_t & anEL);
+  void translate(Flexus::SharedTypes::Translation& aTr);
+  void intermediateTranslationStep(Flexus::SharedTypes::Translation& aTr); // TODO: this func, permissions check etc.
+
+  void InitMMU( std::shared_ptr<mmu_regs_t> regsFromQemu );
+
+private:
+  // Private MMU internal functionality
+  // - Msutherl: Oct'18
+  MMU::TTEDescriptor getNextTTDescriptor(Translation& aTr );
+  void InitialTranslationSetup( TranslationTransport& aTr );
+  bool doTTEAccess( TranslationTransport& aTr );
+  void setupTTResolver( TranslationTransport& aTr, uint64_t rawTTDescriptor) ;
 
   //Debugging
   //==========================================================================

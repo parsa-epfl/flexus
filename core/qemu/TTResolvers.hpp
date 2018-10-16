@@ -4,8 +4,8 @@
 
 #include <stdint.h>
 #include <memory>
-namespace Flexus {
-namespace Qemu {
+//namespace Flexus {
+//namespace Qemu {
 namespace MMU {
 
 typedef unsigned long long address_t;
@@ -64,7 +64,7 @@ class L3Resolver: public TTResolver {
 
 
 } // end MMU
-} // end Qemu
-} // end Flexus
+//} // end Qemu
+//} // end Flexus
 
 #endif // _ARM_TT_RESOLVERS_DEFINED_HPP_

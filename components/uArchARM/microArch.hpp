@@ -44,6 +44,7 @@
 
 #include <components/CommonQEMU/Slices/MemOp.hpp>
 #include <components/CommonQEMU/Slices/PredictorMessage.hpp> /* CMU-ONLY */
+#include <components/CommonQEMU/Slices/Translation.hpp>
 
 namespace Flexus {
 namespace SharedTypes {
@@ -93,9 +94,9 @@ struct microArch {
   virtual void writePermissionLost(PhysicalMemoryAddress anAddress) = 0;
 
   // Msutherl
-  virtual bool IsTranslationEnabledAtCurrentEL(uint8_t el) = 0;
-  virtual void translate(Flexus::Qemu::Translation& aTr) = 0;
-  virtual void intermediateTranslationStep(Flexus::Qemu::Translation& aTr) = 0; // TODO
+  virtual bool IsTranslationEnabledAtEL(uint8_t & el) = 0;
+  virtual void translate(Flexus::SharedTypes::Translation& aTr) = 0;
+  virtual void intermediateTranslationStep(Flexus::SharedTypes::Translation& aTr) = 0; // TODO
 
 };
 

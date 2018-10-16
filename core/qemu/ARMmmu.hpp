@@ -5,11 +5,18 @@
 #include "TTResolvers.hpp"
 #include "bitUtilities.hpp"
 
-namespace Flexus {
-namespace Qemu {
-struct Translation;
-namespace MMU {
+#include <core/types.hpp>
+#include <components/CommonQEMU/Slices/Translation.hpp>
+#include <components/CommonQEMU/Slices/TranslationState.hpp>
 #include "mmuRegisters.h"
+
+using Flexus::SharedTypes::Translation;
+using Flexus::SharedTypes::VirtualMemoryAddress;
+
+//namespace Flexus {
+//namespace Qemu {
+
+namespace MMU {
 
 #define VADDR_WIDTH 48
 
@@ -69,8 +76,8 @@ class mmu_t {
         unsigned parsePASizeFromRegs();
         unsigned getIAOffsetValue(bool isBRO);
 
-        int checkBR0RangeForVAddr(Translation& aTr) const ;
-        uint8_t getInitialLookupLevel( Translation& currentTr) const ;
+        int checkBR0RangeForVAddr(VirtualMemoryAddress& theVA) const ;
+        uint8_t getInitialLookupLevel( bool& isBR0 ) const ;
         uint8_t getIASize(bool isBR0) const ;
         uint8_t getPAWidth(bool isBR0) const ;
 
@@ -136,6 +143,7 @@ typedef struct mmu_access {
 } mmu_access_t;
 
 /* prototypes */
+/*
 bool mmu_is_cacheable(tte_data data);
 bool mmu_is_sideeffect(tte_data data);
 bool mmu_is_xendian(tte_data data);
@@ -172,22 +180,18 @@ address_t mmu_generate_tsb_ptr(address_t va,
 
 void mmu_access(mmu_t * mmu, mmu_access_t * access);
 
-void fm_print_mmu_regs(mmu_regs_t* mmu);
 int fm_compare_regs(mmu_regs_t* a, mmu_regs_t * b, const char * who);
 int fm_compare_mmus(mmu_t * a, mmu_t * b);
-
+*/
+void fm_print_mmu_regs(mmu_regs_t* mmu);
 } //end namespace MMU
 //#endif
-} //end Namespace Qemu
-} //end namespace Flexus
+//} //end Namespace Qemu
+//} //end namespace Flexus
 
 //#if FLEXUS_TARGET_IS(arm)
 #include <core/qemu/mai_api.hpp>
-namespace Flexus {
-namespace Qemu {
 namespace MMU {
-}
-}
 }
 
 #endif //FLEXUS_SIMICS_MAI_API_HPP_INCLUDED

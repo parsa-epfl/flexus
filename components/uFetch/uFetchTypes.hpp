@@ -45,6 +45,7 @@
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 #include <components/CommonQEMU/Slices/FillLevel.hpp>
+#include <components/CommonQEMU/Slices/Translation.hpp>
 #include <core/qemu/mai_api.hpp>
 
 namespace Flexus {
@@ -53,6 +54,7 @@ namespace SharedTypes {
 using boost::counted_base;
 using Flexus::SharedTypes::VirtualMemoryAddress;
 using Flexus::SharedTypes::TransactionTracker;
+using Flexus::SharedTypes::Translation;
 
 enum eBranchType {
   kNonBranch
@@ -134,9 +136,9 @@ struct FetchedOpcode {
 };
 
 struct TranslationVecWrapper : public boost::counted_base {
-    std::vector< Flexus::Qemu::Translation > internalContainer; // from mai_api
+    std::vector< Flexus::SharedTypes::Translation > internalContainer; // from mai_api
 
-    void addNewTranslation(Flexus::Qemu::Translation aTr) {
+    void addNewTranslation(Flexus::SharedTypes::Translation aTr) {
         internalContainer.push_back(aTr);
     }
 
