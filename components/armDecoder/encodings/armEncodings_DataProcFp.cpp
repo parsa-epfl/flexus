@@ -202,12 +202,13 @@ arminst disas_data_proc_fp(armcode const & aFetchedOpcode, uint32_t  aCPU, int64
                 /* Floating point data-processing (1 source) */
                 return disas_fp_1src(aFetchedOpcode, aCPU, aSequenceNo);
             case 3: /* [15:12] == 1000 */
-                unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-                break;
+                return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
             default: /* [15:12] == 0000 */
                 /* Floating point <-> integer conversions */
                 return disas_fp_int_conv(aFetchedOpcode, aCPU, aSequenceNo);
             }
+        default:
+            return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
         }
     }
 }
@@ -222,10 +223,11 @@ arminst disas_data_proc_simd(armcode const & aFetchedOpcode, uint32_t  aCPU, int
 arminst disas_data_proc_simd_fp(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
     if (extract32(aFetchedOpcode.thePC, 28, 1) == 1 && extract32(aFetchedOpcode.thePC, 30, 1) == 0) {
-        disas_data_proc_fp(aFetchedOpcode, aCPU, aSequenceNo);
+        return disas_data_proc_fp(aFetchedOpcode, aCPU, aSequenceNo);
     } else {
         /* SIMD, including crypto */
         return disas_data_proc_simd(aFetchedOpcode, aCPU, aSequenceNo);
-    }}
+    }
+}
 
 } // narmDecoder

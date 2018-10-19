@@ -1044,7 +1044,7 @@ public:
 
     block_set_t * block_set = &(theBlocks[get_block_set(tagset, 0)]);
 
-    way_iterator block = (block_set->template get<by_way>()).end();
+//    way_iterator block = (block_set->template get<by_way>()).end();
     int32_t way = block_set->size();
 
     // 1. Is the set full?

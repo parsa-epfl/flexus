@@ -274,11 +274,9 @@ bool NetSwitch::routingPolicy ( MessageState * msg ) {
 }
 
 bool NetSwitch::checkTopology ( void ) const {
-  int
-  i;
+  int i;
 
-  bool
-  foundErrors = false;
+//  bool foundErrors;
 
   for ( i = 0; i < numPorts; i++ ) {
     if ( !inputPorts[i]->isConnected() ||
@@ -287,7 +285,7 @@ bool NetSwitch::checkTopology ( void ) const {
       std::cerr << "WARNING: switch " << name
                 << " port " << i << " left unused (may be safe)"
                 << endl;
-      foundErrors = true;
+//      foundErrors = true;
     }
   }
 

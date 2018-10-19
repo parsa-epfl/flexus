@@ -249,6 +249,18 @@ public:
     return theCore->popMemOp();
   }
 
+  void markExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize){
+      return theCore->markExclusiveLocal(anAddress, aSize);
+  }
+
+  bool isExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize){
+      return theCore->isExclusiveLocal(anAddress, aSize);
+  }
+
+  void clearExclusiveLocal(){
+      return theCore->clearExclusiveLocal();
+  }
+
   boost::intrusive_ptr<MemOp> popSnoopOp() {
     return theCore->popSnoopOp();
   }
@@ -319,10 +331,10 @@ public:
         DBG_( Verb, ( << "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id() << "] Exception Raised: " << theExceptionRaised << ". Resynchronizing with Simics.") );
         ++theExceptions;
       } else if (e.expected) {
-        DBG_( Verb, ( << "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id() << "] Resynchronizing Instruction. Resynchronizing with Simics.") );
+        DBG_( Verb, ( << "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id() << "] Resynchronizing Instruction. Resynchronizing with Qemu.") );
         ++theResyncInstructions;
       } else {
-        DBG_( Verb, ( << "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id() << "] Flexus Implementation missing/wrong. Resynchronizing with Simics.") );
+        DBG_( Verb, ( << "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id() << "] Flexus Implementation missing/wrong. Resynchronizing with Qemu.") );
         ++theOtherResyncs;
       }
 
@@ -333,11 +345,7 @@ public:
       }
       theExceptionRaised = 0;
     }
-    if (0) {
-      if (theCore->pc() != static_cast<uint64_t>(theCPU->getPC())) {
-        DBG_( Crit, ( << theName << " PC mismatch expected: " << theCPU->getPC() << " actual: " << std::hex << theCore->pc() << std::dec )  );
-      }
-    }
+
     CORE_DBG("--------------FINISH MICROARCH------------------------");
 
 }
@@ -386,7 +394,7 @@ void resetArchitecturalState()
 {
     theCore->setPC( theCPU->getPC());
     resetRoundingMode();
-    //resetSpecialRegs(); // Mark removed until exceptions can be read from QEMU
+    resetSpecialRegs(); // Mark removed until exceptions can be read from QEMU
     fillXRegisters();
     fillVRegisters();
 }
@@ -396,6 +404,7 @@ void resetArchitecturalState()
     resetPSTATE();
     resetFPCR();
     resetFPSR();
+    resetSP_el();
 
   }
 
@@ -413,6 +422,13 @@ void resetArchitecturalState()
 //      theCore->setDCZID_EL0(theCPU->readDCZID_EL0());
 //  }
 
+
+  void resetSP_el(){
+      for (uint8_t i=0; i<4; i++){
+          theCore->setSP_el( i, theCPU->readSP_el(i) );
+      }
+  }
+
   void resetPSTATE() {
     uint64_t pstate = theCPU->readPSTATE();
     theCore->setPSTATE( pstate );
@@ -429,7 +445,9 @@ void resetArchitecturalState()
   }
 
   void resetSCTLR_EL() {
-    theCore->setSCTLR_EL(theCPU->readSCTLR());
+      for (int i = 0; i < 4; i++){
+            theCore->setSCTLR_EL(i, theCPU->readSCTLR(i));
+      }
   }
 
   // fills/re-sets the  to the state they are
@@ -524,7 +542,7 @@ void resetArchitecturalState()
   }
 
   void pregs() {
-    char const * reg_sets[] = { "normal   ", "alternate", "mmu      ", "interrupt" };
+//    char const * reg_sets[] = { "normal   ", "alternate", "mmu      ", "interrupt" };
     std::cout << "Flexus processor " << theName << std::endl;
     armState state;
     theCore->getARMState(state);

@@ -103,7 +103,9 @@ struct EffectChain {
 struct DependanceTarget {
   void invokeSatisfy( int32_t anArg ) {
     void (narmDecoder::DependanceTarget::* satisfy_pt)( int32_t ) = &narmDecoder::DependanceTarget::satisfy;
+    std::cerr<<std::hex<<"Satisfy: "<<satisfy_pt<<"\n";
     satisfy(anArg);
+    DBG_(Tmp, (<<"After satisfy"));
   }
   void invokeSquash( int32_t anArg ) {
     squash(anArg);
@@ -142,13 +144,13 @@ struct InternalDependance {
 Effect * mapSource( SemanticInstruction * inst, eOperandCode anInputCode, eOperandCode anOutputCode);
 Effect * freeMapping( SemanticInstruction * inst, eOperandCode aMapping);
 Effect * disconnectRegister( SemanticInstruction * inst, eOperandCode aMapping);
-Effect * mapDestination( SemanticInstruction * inst, eRegisterType aMapTable );
+Effect * mapDestination( SemanticInstruction * inst );
 Effect * mapRD1Destination(SemanticInstruction * inst);
-Effect * mapDestination_NoSquashEffects( SemanticInstruction * inst, eRegisterType aMapTable );
-Effect * unmapDestination( SemanticInstruction * inst, eRegisterType aMapTable );
+Effect * mapDestination_NoSquashEffects( SemanticInstruction * inst );
+Effect * unmapDestination( SemanticInstruction * inst );
 Effect * mapFDestination( SemanticInstruction * inst, int32_t anIndex );
 Effect * unmapFDestination( SemanticInstruction * inst, int32_t anIndex );
-Effect * restorePreviousDestination( SemanticInstruction * inst, eRegisterType aMapTable );
+Effect * restorePreviousDestination( SemanticInstruction * inst );
 Effect * satisfy( SemanticInstruction * inst, InternalDependance const & aDependance);
 Effect * squash( SemanticInstruction * inst, InternalDependance const & aDependance);
 Effect * annulNext(SemanticInstruction * inst);
@@ -175,20 +177,25 @@ Effect * updateUnconditional(SemanticInstruction * inst, VirtualMemoryAddress aT
 Effect * updateUnconditional(SemanticInstruction * inst, eOperandCode anOperandCode);
 Effect * updateCall(SemanticInstruction * inst, VirtualMemoryAddress aTarget);
 Effect * updateNonBranch(SemanticInstruction * inst);
-//Effect * readPR(SemanticInstruction * inst, uint32_t aPR);
-//Effect * writePR(SemanticInstruction * inst, uint32_t aPR);
+Effect * readPR(SemanticInstruction * inst, ePrivRegs aPR);
+Effect * writePR(SemanticInstruction * inst, ePrivRegs aPR);
+Effect * writePSTATE(SemanticInstruction * inst, uint8_t anOp1, uint8_t anOp2);
+Effect * writeNZCV(SemanticInstruction * inst);
+Effect*  clearExclusiveMonitor(SemanticInstruction * inst);
+Effect * SystemRegisterTrap(SemanticInstruction * inst);
+Effect * checkSystemAccess(SemanticInstruction * inst, uint8_t anOp0, uint8_t anOp1, uint8_t anOp2, uint8_t aCRn, uint8_t aCRm, uint8_t aRT, uint8_t aRead);
+Effect * exceptionEffect(SemanticInstruction * inst, eExceptionType aType);
+Effect * markExclusiveMonitor(SemanticInstruction * inst, eOperandCode anAddressCode, eSize aSize);
+Effect * exclusiveMonitorPass(SemanticInstruction * inst, eOperandCode anAddressCode, eSize aSize);
+
+Effect * checkDAIFAccess(SemanticInstruction * inst, uint8_t anOp1);
+Effect * checkSysRegAccess(SemanticInstruction * inst, ePrivRegs aPrivReg, uint8_t is_read);
+
+
 Effect * mapXTRA(SemanticInstruction * inst);
 Effect * forceResync(SemanticInstruction * inst);
 Effect * immuException(SemanticInstruction * inst);
 Effect * dmmuTranslationCheck(SemanticInstruction * inst);
-//Effect * tccEffect(SemanticInstruction * inst);
-//Effect * updateFPSR(SemanticInstruction * inst, uint32_t aDestReg);
-//Effect * writeFPCR(SemanticInstruction * inst);
-//Effect * recordFPCR(SemanticInstruction * inst);
-//Effect * readFPSR(SemanticInstruction * inst);
-//Effect * writeFPSR(SemanticInstruction * inst, eSize aSize);
-//Effect * storeFPSR(SemanticInstruction * inst, eSize aSize);
-
 
 } //narmDecoder
 

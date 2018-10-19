@@ -67,6 +67,8 @@ arminst disas_a64_insn( armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
         DBG_Assert(false, (<< "DECODER: unhandled decoding case!")); /* all 15 cases should be handled above */
         break;
     }
+    DBG_Assert(false, (<< "DECODER: unhandled decoding case!")); /* all 15 cases should be handled above */
+    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 } // narmDecoder

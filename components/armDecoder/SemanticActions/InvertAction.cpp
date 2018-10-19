@@ -43,6 +43,7 @@
 #include <boost/throw_exception.hpp>
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/lambda/bind.hpp>
 namespace ll = boost::lambda;
 
 #include <boost/none.hpp>
@@ -66,78 +67,51 @@ namespace ll = boost::lambda;
 namespace narmDecoder {
 
 using namespace nuArchARM;
-using nuArchARM::Instruction;
 
-struct UpdateAddressAction : public BaseSemanticAction {
+struct InvertRegisterAction : public BaseSemanticAction
+{
+  eOperandCode theRegisterCode;
+  bool the64;
 
-  eOperandCode theAddressCode, theAddressCode2;
-  bool thePair;
+  InvertRegisterAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, bool is64)
+    : BaseSemanticAction( anInstruction, 1 )
+    , theRegisterCode( aRegisterCode )
+    , the64(is64)
+  {}
 
-  UpdateAddressAction ( SemanticInstruction * anInstruction, eOperandCode anAddressCode )
-    : BaseSemanticAction ( anInstruction, 2 )
-    , theAddressCode (anAddressCode)
-  { }
+  void doEvaluate()
+  {
+    SEMANTICS_DBG(*this);
 
-  void squash(int32_t anOperand) {
-    if (! cancelled() ) {
-      DBG_( Tmp, ( << *this << " Squashing vaddr." ) );
-      core()->resolveVAddr( boost::intrusive_ptr<Instruction>(theInstruction), kUnresolved/*, 0x80*/);
+    if (! signalled() ) {
+      SEMANTICS_DBG("Signalling");
+
+      mapped_reg name = theInstruction->operand< mapped_reg > (theRegisterCode);
+      Operand aValue = core()->readRegister( name );
+
+      uint64_t val = boost::get<uint64_t>(aValue);
+      val = ~val;
+
+      if (!the64) {
+        val &= 0xffffffff;
+      }
+
+      theInstruction->setOperand(theRegisterCode, val);
+      satisfyDependants();
     }
-    BaseSemanticAction::squash(anOperand);
   }
 
-  void satisfy(int32_t anOperand) {
-    //updateAddress as soon as dependence is satisfied
-    BaseSemanticAction::satisfy(anOperand);
-    updateAddress();
-  }
-
-  void doEvaluate() {
-    //Address is now updated when satisfied.
-  }
-
-  void updateAddress() {
-    if (ready()) {
-          bits addr = theInstruction->operand< bits > (theAddressCode);
-          if (theInstruction->hasOperand( kUopAddressOffset ) ) {
-            uint64_t offset = theInstruction->operand< uint64_t > (kUopAddressOffset);
-            SEMANTICS_DBG("UpdateAddressAction: adding offset " << offset << " to address "<< addr);
-
-            addr = bits(addr.size(), (addr.to_ulong()) + offset);
-          }
-          VirtualMemoryAddress vaddr(addr.to_ulong());
-          core()->resolveVAddr( boost::intrusive_ptr<Instruction>(theInstruction), vaddr/*, asi*/);
-          SEMANTICS_DBG(*this << " updating vaddr = " << vaddr);
-          satisfyDependants();
-     }
-  }
-
-  void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " UpdateAddressAction";
+  void describe( std::ostream & anOstream) const
+  {
+    anOstream << theInstruction->identify() << " InvertRegisterAction " << theRegisterCode;
   }
 };
 
-
-
-multiply_dependant_action updateAddressAction
-( SemanticInstruction * anInstruction, eOperandCode aCode ) {
-  UpdateAddressAction * act(new(anInstruction->icb()) UpdateAddressAction( anInstruction, aCode ) );
-  std::vector<InternalDependance> dependances;
-  dependances.push_back( act->dependance(0) );
-  dependances.push_back( act->dependance(1) );
-
-  return multiply_dependant_action( act, dependances );
+simple_action invertRegisterAction ( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, bool is64)
+{
+  return new(anInstruction->icb()) InvertRegisterAction( anInstruction, aRegisterCode, is64);
 }
 
-multiply_dependant_action updateCASAddressAction
-( SemanticInstruction * anInstruction, eOperandCode aCode ) {
-  UpdateAddressAction * act(new(anInstruction->icb()) UpdateAddressAction( anInstruction, aCode) );
-  std::vector<InternalDependance> dependances;
-  dependances.push_back( act->dependance(0) );
-  dependances.push_back( act->dependance(1) );
-
-  return multiply_dependant_action( act, dependances );
-}
 
 
 } //narmDecoder

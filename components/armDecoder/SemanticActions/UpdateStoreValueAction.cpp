@@ -129,24 +129,44 @@ predicated_dependant_action updateRMWValueAction
 
 struct UpdateCASValueAction : public BaseSemanticAction {
 
+  eOperandCode theCompareCode, theCompareCode1, theNewCode, theNewCode1;
   bool thePair;
 
-  UpdateCASValueAction ( SemanticInstruction * anInstruction )
+  UpdateCASValueAction ( SemanticInstruction * anInstruction, eOperandCode aCompareCode, eOperandCode aNewCode )
     : BaseSemanticAction ( anInstruction, 3 )
+    , theCompareCode (aCompareCode)
+    , theNewCode (aNewCode)
   { }
 
-  UpdateCASValueAction ( SemanticInstruction * anInstruction, bool aPair )
+  UpdateCASValueAction ( SemanticInstruction * anInstruction, eOperandCode aCompareCode1, eOperandCode aCompareCode2, eOperandCode aNewCode1, eOperandCode aNewCode2, bool aPair )
     : BaseSemanticAction ( anInstruction, 5 )
-    , thePair(aPair)
+    , theCompareCode (aCompareCode1)
+    , theCompareCode1(aCompareCode2)
+    , theNewCode     (aNewCode1    )
+    , theNewCode1    (aNewCode2    )
+    , thePair        (aPair        )
   { }
 
   void doEvaluate() {
     if (ready()) {
-            bits store_value = theInstruction->operand< bits > (kOperand1);
-            bits cmp_value = theInstruction->operand< bits > (kOperand2);
+        if (! thePair) {
+            bits store_value = theInstruction->operand< bits > (theNewCode);
+            bits cmp_value = theInstruction->operand< bits > (theCompareCode);
             DBG_( Tmp, ( << *this << " updating CAS write=" << store_value << " cmp=" << cmp_value) );
             core()->updateCASValue( boost::intrusive_ptr<Instruction>(theInstruction), store_value, cmp_value);
             satisfyDependants();
+        } else {
+            bits store_value = theInstruction->operand< bits > (theNewCode);
+            bits store_value1 = theInstruction->operand< bits > (theNewCode1);
+            bits cmp_value = theInstruction->operand< bits > (theCompareCode);
+            bits cmp_value1 = theInstruction->operand< bits > (theCompareCode1);
+
+            bits store = concat_bits(store_value, store_value1);
+            bits cmp = concat_bits(cmp_value, cmp_value1);
+
+            core()->updateCASValue( boost::intrusive_ptr<Instruction>(theInstruction), store, cmp);
+            satisfyDependants();
+        }
     }
   }
 
@@ -159,8 +179,19 @@ struct UpdateCASValueAction : public BaseSemanticAction {
 
 
 multiply_dependant_action updateCASValueAction
-( SemanticInstruction * anInstruction ) {
-  UpdateCASValueAction  * act(new(anInstruction->icb()) UpdateCASValueAction( anInstruction ) );
+( SemanticInstruction * anInstruction, eOperandCode aCompareCode, eOperandCode aNewCode ) {
+  UpdateCASValueAction  * act(new(anInstruction->icb()) UpdateCASValueAction( anInstruction, aCompareCode, aNewCode ) );
+  std::vector<InternalDependance> dependances;
+  dependances.push_back( act->dependance(0) );
+  dependances.push_back( act->dependance(1) );
+  dependances.push_back( act->dependance(2) );
+
+  return multiply_dependant_action( act, dependances );
+}
+
+multiply_dependant_action updateCASPValueAction
+( SemanticInstruction * anInstruction, eOperandCode aCompareCode1, eOperandCode aCompareCode2, eOperandCode aNewCode1, eOperandCode aNewCode2 ) {
+  UpdateCASValueAction  * act(new(anInstruction->icb()) UpdateCASValueAction( anInstruction, aCompareCode1, aCompareCode2, aNewCode1, aNewCode2, true ) );
   std::vector<InternalDependance> dependances;
   dependances.push_back( act->dependance(0) );
   dependances.push_back( act->dependance(1) );

@@ -49,17 +49,19 @@ namespace nuArchARM {
 inline bits mask( eSize aSize) {
   switch (aSize) {
     case kByte:
-      return bits(8, 0xFFU);
+      return fillbits(8);
     case kHalfWord:
-      return bits(16, 0xFFFF);
+      return fillbits(16);
     case kWord:
-      return bits(32, 0xFFFFFFFF);
+      return fillbits(32);
     case kDoubleWord:
-      return bits(64, 0xFFFFFFFFFFFFFFFF);
+      return fillbits(64);
   case kQuadWord:
-    return bits(128, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF);
+    return fillbits(128);
+  default:
+      DBG_Assert( false );
+      return fillbits(0);
   }
-  DBG_Assert( false );
 }
 
 bits value( MemQueueEntry const & anEntry, bool aFlipEndian ) {

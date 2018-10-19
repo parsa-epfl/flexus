@@ -105,8 +105,8 @@ void MemQueueEntry::describe(std::ostream & anOstream) const {
     if (thePartialSnoop) {
       anOstream << " {partial-snoop}";
     }
-    if (theException > 0) {
-      anOstream << " {raise 0x" << std::hex << theException << std::dec << "}";
+    if (theException >= kException_None) {
+      anOstream << " {raise " << theException << " }";
     }
     if (theSideEffect) {
       anOstream << " {side-effect}";
@@ -119,7 +119,7 @@ void MemQueueEntry::describe(std::ostream & anOstream) const {
     }
 //    if (theMMU) {
 //      anOstream << " {mmu}";
-//    }
+//    }a
     if (theNonCacheable) {
       anOstream << " {non-cacheable}";
     }

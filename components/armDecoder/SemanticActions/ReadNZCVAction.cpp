@@ -43,6 +43,7 @@
 #include <boost/throw_exception.hpp>
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/lambda/bind.hpp>
 namespace ll = boost::lambda;
 
 #include <boost/none.hpp>
@@ -58,8 +59,6 @@ namespace ll = boost::lambda;
 #include "../SemanticInstruction.hpp"
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
-#include "RegisterValueExtractor.hpp"
-
 #include <components/uArchARM/systemRegister.hpp>
 
 #define DBG_DeclareCategories armDecoder
@@ -70,47 +69,56 @@ namespace narmDecoder {
 
 using namespace nuArchARM;
 
-struct WritePrivAction : public BaseSemanticAction {
-  uint8_t theOp0, theOp1, theOp2, theCRn, theCRm;
-  bool thehasCP;
+struct ReadNZCVAction : public BaseSemanticAction
+{
   eOperandCode theOperandCode;
+  eNZCV theBit;
 
-  WritePrivAction ( SemanticInstruction * anInstruction, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm, eOperandCode anOperandCode, bool hasCP )
-    : BaseSemanticAction ( anInstruction, 1 )
-    , theOp0( op0 )
-    , theOp1( op1 )
-    , theOp2( op2 )
-    , theCRn( crn )
-    , theCRm( crm )
-    , thehasCP (hasCP)
+  ReadNZCVAction(SemanticInstruction * anInstruction, eNZCV aBit, eOperandCode anOperandCode)
+    : BaseSemanticAction(anInstruction, 1)
     , theOperandCode(anOperandCode)
-  { }
-
-
-  void doEvaluate() {
-
-      // further access checks
-      SysRegInfo* ri = theInstruction->core()->getSysRegInfo(theOp0, theOp1, theOp2, theCRn, theCRm, thehasCP);
-      if (ri->accessfn(theInstruction->core()) == kACCESS_OK){
-          Operand val = theInstruction->operand(theOperandCode);
-          ri->writefn(theInstruction->core());
-      }
-    satisfyDependants();
+    , theBit(aBit)
+  {
   }
 
+  void doEvaluate()
+  {
 
-  void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " WritePrivAction";
+    SEMANTICS_DBG(*this);
+    uint64_t nzcv_bit;
+
+    switch (theBit) {
+      case kN:
+        nzcv_bit = theInstruction->core()->_PSTATE().N();
+        break;
+      case kZ:
+        nzcv_bit = theInstruction->core()->_PSTATE().Z();
+        break;
+      case kC:
+        nzcv_bit = theInstruction->core()->_PSTATE().C();
+        break;
+      case kV:
+        nzcv_bit = theInstruction->core()->_PSTATE().V();
+        break;
+    default:
+      DBG_Assert(false);
+    }
+
+
+
+    theInstruction->setOperand(theOperandCode, nzcv_bit);
+
+  }
+
+  void describe( std::ostream & anOstream) const
+  {
+    anOstream << theInstruction->identify() << " ReadNZCVAction ";
   }
 };
 
-dependant_action writePrivAction
-( SemanticInstruction * anInstruction
-  , uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm, eOperandCode anOperandCode, bool hasCP
-) {
-
-    WritePrivAction * act = new(anInstruction->icb()) WritePrivAction( anInstruction, op0, op1, op2, crn, crm, anOperandCode,  hasCP);
-    return dependant_action( act, act->dependance() );
+simple_action readNZCVAction ( SemanticInstruction * anInstruction, eNZCV aBit, eOperandCode anOperandCode)
+{
+  return new(anInstruction->icb()) ReadNZCVAction( anInstruction, aBit, anOperandCode);
 }
 
 

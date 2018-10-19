@@ -102,21 +102,14 @@ uint32_t armProcessorImpl::fetchInstruction(Translation & aTranslation) {
 static const int kTL = 46;
 static const int kTT1 = 78;
 
-int armProcessorImpl::getPendingException() const {
-//  int tl = readRegister( kTL );
-//  if (tl > 0) {
-//    return readRegister( kTT1 + tl - 1);
-//  } else {
-//    return 0;
-//  }
-}
-
-int armProcessorImpl::getPendingInterrupt() const {
-  if (thePendingInterrupt == API::QEMU_PE_No_Exception) {
-    return 0;
-  }
-  return thePendingInterrupt;
-}
+//int armProcessorImpl::getPendingException() const {
+////  int tl = readRegister( kTL );
+////  if (tl > 0) {
+////    return readRegister( kTT1 + tl - 1);
+////  } else {
+////    return 0;
+////  }
+//}
 
 int armProcessorImpl::advance() {
   int exception = 0;
@@ -243,8 +236,8 @@ ProcessorMapper::ProcessorMapper() {
     theNumVMs = 1;
   }
 
-  char *charThreads,*charManual;
-  int found,start,end,numThreads,manual;
+//  char *charThreads,*charManual;
+  int /*found,start,end,*/numThreads,manual;
 
 
   // Search for the number of threads and read the value of this parameter

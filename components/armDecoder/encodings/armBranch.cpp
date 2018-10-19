@@ -42,6 +42,15 @@ namespace narmDecoder {
 
 using namespace nuArchARM;
 
+static arminst generateException(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo, eExceptionType aType){
+    DECODER_TRACE;
+    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
+                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
+
+    inst->addRetirementEffect(exceptionEffect(inst, kException_AA64_SVC));
+    return inst;
+}
+
 void branch_always( SemanticInstruction * inst, bool immediate, VirtualMemoryAddress target) {
     DECODER_TRACE;
 
@@ -91,14 +100,13 @@ arminst B(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
 
     if (extract32(aFetchedOpcode.theOpcode, 31, 1)){ // BL
 
-        int rd = 30;
-        setRD( inst, rd);
+        setRD( inst, 30);
 
         predicated_action exec = constantAction( inst, aFetchedOpcode.thePC+4, kResult, kPD ) ;
         inst->addDispatchAction(exec);
 
-        addWriteback( inst, xRegisters, exec );
-        inst->addPostvalidation( validateXRegister( rd, kResult, inst  ) );
+        addWriteback( inst, kResult, kPD, exec, true, false);
+        inst->addPostvalidation( validateXRegister( 30, kResult, inst  ) );
 
     }
 
@@ -123,15 +131,13 @@ arminst BL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) 
 
     uint64_t addr = aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 0, 26) * 4 - 4;
     VirtualMemoryAddress target(addr);
-    std::vector< std::list<InternalDependance> > rs_deps(2);
-    inst->setOperand(kOperand1, aFetchedOpcode.thePC);
-    inst->setOperand(kOperand2, 4);
 
+    std::vector< std::list<InternalDependance> > rs_deps(1);
 
-    std::unique_ptr<Operation> ptr = operation(kADD_);
-    predicated_action exec = addExecute(inst, ptr,rs_deps);
+    addReadConstant(inst, 1, aFetchedOpcode.thePC+4, rs_deps[0]);
+    predicated_action exec = addExecute(inst, operation(kADD_),rs_deps);
 
-    addDestination(inst, 30, exec);
+    addDestination(inst, 30, exec, true);
     inst->addDispatchEffect( branch( inst, target ) );
     return inst;
 }
@@ -150,8 +156,8 @@ arminst CBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     DECODER_TRACE;
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
-    unsigned int sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-    unsigned int rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
+    uint32_t sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
+    uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
 
     std::vector<std::list<InternalDependance> > rs_deps(1);
     addReadXRegister(inst, 1, rt, rs_deps[0], sf);
@@ -177,8 +183,8 @@ arminst CBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     DECODER_TRACE;
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
-    unsigned int sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-    unsigned int rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
+    uint32_t sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
+    uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
 
     std::vector<std::list<InternalDependance> > rs_deps(1);
     addReadXRegister(inst, 1, rt, rs_deps[0], sf);
@@ -208,17 +214,18 @@ arminst TBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
-    unsigned int rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    unsigned int bit_pos = (extract32(aFetchedOpcode.theOpcode, 31, 1) << 5) | extract32(aFetchedOpcode.theOpcode, 19, 5);
+    uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
+    uint32_t bit_pos = (extract32(aFetchedOpcode.theOpcode, 31, 1) << 5) | extract32(aFetchedOpcode.theOpcode, 19, 5);
+    bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
 
     std::vector<std::list<InternalDependance> > rs_deps(1);
-    addReadXRegister(inst, 1, rt, rs_deps[0]);
+    addReadXRegister(inst, 1, rt, rs_deps[0], sf);
 
 
     uint64_t addr = aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 5, 14) * 4 - 4;
     VirtualMemoryAddress target(addr);
 
-    inst->setOperand(kOperand2, (1ULL << bit_pos));
+    addReadConstant(inst, 2, (1ULL << bit_pos), rs_deps[1]);
 
     branch_cc(inst,target, kTBZ_);
 
@@ -243,17 +250,18 @@ arminst TBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
-    unsigned int rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    unsigned int bit_pos = (extract32(aFetchedOpcode.theOpcode, 31, 1) << 5) | extract32(aFetchedOpcode.theOpcode, 19, 5);
+    uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
+    uint32_t bit_pos = (extract32(aFetchedOpcode.theOpcode, 31, 1) << 5) | extract32(aFetchedOpcode.theOpcode, 19, 5);
+    bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
 
     std::vector<std::list<InternalDependance> > rs_deps(1);
-    addReadXRegister(inst, 1, rt, rs_deps[0]);
+    addReadXRegister(inst, 1, rt, rs_deps[0], sf);
 
 
     uint64_t addr = aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 5, 14) * 4 - 4;
     VirtualMemoryAddress target(addr);
 
-    inst->setOperand(kOperand2, (1ULL << bit_pos));
+    addReadConstant(inst, 2, (1ULL << bit_pos), rs_deps[1]);
 
     branch_cc(inst,target, kTBNZ_);
 
@@ -273,7 +281,7 @@ arminst BCOND(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceN
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
-    unsigned int cond = extract32(aFetchedOpcode.theOpcode, 0, 4);
+    uint32_t cond = extract32(aFetchedOpcode.theOpcode, 0, 4);
     inst->setOperand(kOperand1, cond);
 
     uint64_t addr = aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 5, 19) * 4;
@@ -305,10 +313,10 @@ arminst BR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) 
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
-    unsigned int rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
+    uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
     std::vector<std::list<InternalDependance> > rs_deps(1);
 
-    addReadXRegister(inst, 1, rn, rs_deps[0]);
+    addReadXRegister(inst, 1, rn, rs_deps[0], true);
 
     simple_action target = calcAddressAction( inst, rs_deps);
     dependant_action br = branchToCalcAddressAction( inst );
@@ -341,7 +349,7 @@ DECODER_TRACE;
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
     std::vector<std::list<InternalDependance> > rs_deps(1);
-    addReadXRegister(inst, 1, rn, rs_deps[0]);
+    addReadXRegister(inst, 1, rn, rs_deps[0], true);
 
     simple_action target = calcAddressAction( inst, rs_deps);
     dependant_action br = branchToCalcAddressAction( inst );
@@ -354,8 +362,8 @@ DECODER_TRACE;
     addop->setOperands(aFetchedOpcode.thePC);
     addop->setOperands(4);
 
-    predicated_action exec = addExecute(inst, addop, rs_deps);
-    addDestination(inst, 30, exec);
+    predicated_action exec = addExecute(inst, std::move(addop), rs_deps);
+    addDestination(inst, 30, exec, true);
 
     return inst;
 }
@@ -367,17 +375,127 @@ arminst DPRS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 
 
 // System
-arminst HINT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE;return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
-arminst SYNC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
-arminst MSR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
-
-arminst SYS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
+arminst HINT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
     DECODER_TRACE;
+    uint32_t op1 = extract32(aFetchedOpcode.thePC, 16, 3);
+    uint32_t crm = extract32(aFetchedOpcode.thePC, 8, 4);
+    uint32_t op2 = extract32(aFetchedOpcode.thePC, 5, 3);
+    uint32_t selector = crm << 3 | op2;
+
+
+    if (op1 != 3) {
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
+
+    switch (selector) {
+        case 0: /* NOP */
+        case 3: /* WFI */
+        case 1: /* YIELD */
+        case 2: /* WFE */
+        case 4: /* SEV */
+        case 5: /* SEVL */
+        default:
+            return nop(aFetchedOpcode, aCPU, aSequenceNo);
+    }
+}
+arminst SYNC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
+    DECODER_TRACE;
+
+
+
+
+
+    uint32_t rt = extract32(aFetchedOpcode.thePC, 16, 3);
+    uint32_t crm = extract32(aFetchedOpcode.thePC, 8, 4);
+    uint32_t op2 = extract32(aFetchedOpcode.thePC, 5, 3);
+
+
+    if (op2 == 0x0 || op2 == 0x1 || op2 == 0x7 || op2 == 0x3 ) {
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
+
+    if (rt != 0x1F){
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
 
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
-    uint32_t l, op0, op1, crn, crm, op2, rt;
+    inst->setClass(clsSynchronizing, codeCLREX);
+
+    uint32_t bar = 0;
+
+    switch (op2) {
+    case 2: /* CLREX */
+        inst->setClass(clsSynchronizing, codeCLREX);
+        inst->addRetirementEffect(clearExclusiveMonitor(inst));
+        break;;
+    case 4: /* DSB */
+    case 5: /* DMB */
+        switch (crm & 3) {
+        case 1: /* MBReqTypes_Reads */
+            bar = kBAR_SC | kMO_LD_LD | kMO_LD_ST;
+            break;
+        case 2: /* MBReqTypes_Writes */
+            bar = kBAR_SC | kMO_ST_ST;
+            break;
+        default: /* MBReqTypes_All */
+            bar = kBAR_SC | kMO_ALL;
+            break;
+        }
+        MEMBAR(inst, bar);
+        break;
+    case 6: /* ISB */
+        /* We need to break the TB after this insn to execute
+         * a self-modified code correctly and also to take
+         * any pending interrupts immediately.
+         */
+        inst->setHaltDispatch();
+        delete inst;
+        return nop(aFetchedOpcode, aCPU, aSequenceNo);
+    default:
+        delete inst;
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
+
+    return inst;
+
+}
+
+
+arminst MSR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
+    DECODER_TRACE;
+
+    uint32_t op1, crm, op2;
+    op1 = extract32(aFetchedOpcode.thePC, 16, 3);
+    crm = extract32(aFetchedOpcode.thePC, 8, 4); //imm
+    op2 = extract32(aFetchedOpcode.thePC, 5, 3);
+
+
+    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
+                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
+
+
+    inst->setClass(clsComputation, codeWRPR);
+
+    // need to halt dispatch for writes
+    inst->setHaltDispatch();
+    inst->addCheckTrapEffect( checkSystemAccess(inst, 0, op1, op2, 0x4, crm, 0x1f, 0) );
+    inst->addCheckTrapEffect( checkDAIFAccess(inst,  op1) );
+    inst->setOperand(kResult, crm);
+
+    inst->addRetirementEffect( writePSTATE(inst, op1, op2) );
+//        inst->addPostvalidation( validateXRegister( rt, kResult, inst  ) );
+//        FIXME - validate PR
+
+    return inst;
+}
+
+arminst SYS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
+    DECODER_TRACE;
+
+    uint32_t op0, op1, crn, crm, op2, rt;
+    bool l;
     l = extract32(aFetchedOpcode.thePC, 21, 1);
     op0 = extract32(aFetchedOpcode.thePC, 19, 2);
     op1 = extract32(aFetchedOpcode.thePC, 16, 3);
@@ -386,30 +504,49 @@ arminst SYS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     op2 = extract32(aFetchedOpcode.thePC, 5, 3);
     rt = extract32(aFetchedOpcode.thePC, 0, 5);
 
-    if (l){
-//      inst->addPrevalidation(addCheckSystemAccess(inst, op0, op1, op2, crn, crm, l));
-        inst->addPrevalidation(SysReg_access(inst, op0, op1, op2, crn, crm, l));
-        predicated_action act = readPrivAction(inst, kResult, op0, op1, op2, crn, crm);
-        addDestination(inst, rt, act);
+    //Check for supported PR's
+    ePrivRegs pr = getPrivRegType(op0,op1,op2,crn,crm);
+    if (pr == kLastPrivReg ) {
+      return grayBox( aFetchedOpcode, aCPU, aSequenceNo, codeRDPRUnsupported); //resynchronize on all other PRs
+    }
 
+
+
+    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
+                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
+
+
+
+
+    if (l) {
+      inst->setClass(clsComputation, codeRDPR);
+
+      inst->addCheckTrapEffect( checkSystemAccess(inst, op0, op1, op2, crn, crm,rt, l) );
+      setRD( inst, rt);
+      inst->addDispatchEffect( mapDestination( inst ) );
+      inst->addRetirementEffect( readPR(inst, pr) );
+      inst->addPostvalidation( validateXRegister( rt, kResult, inst  ) );
     } else {
-        std::vector< std::list<InternalDependance> > rs_deps(1);
-        addReadXRegister(inst, 1, rt, rs_deps[0]);
+        inst->setClass(clsComputation, codeWRPR);
 
-        predicated_action act = addExecute(inst, Operation(kMOV_), rs_deps);
-        addPrivWriteback(inst, act, op0, op1, op2, crn, crm);
+        // need to halt dispatch for writes
+        inst->setHaltDispatch();
+        inst->addCheckTrapEffect( checkSystemAccess(inst, op0, op1, op2, crn, crm,rt, l) );
+        setRS(inst, kResult, rt);
+        inst->addRetirementEffect( writePR(inst, pr) );
+//        inst->addPostvalidation( validateXRegister( rt, kResult, inst  ) );
+//        FIXME - validate PR
     }
 
     return inst;
 }
 
 // Exception generation
-arminst SVC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
-arminst HVC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
-arminst SMC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
-arminst BRK(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
-arminst HLT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
-arminst DCPS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
-
+arminst SVC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){ DECODER_TRACE; return generateException(aFetchedOpcode, aCPU, aSequenceNo, kException_AA64_SVC);}
+arminst HVC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return generateException(aFetchedOpcode, aCPU, aSequenceNo, kException_AA64_HVC);}
+arminst SMC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return generateException(aFetchedOpcode, aCPU, aSequenceNo, kException_AA64_SMC);}
+arminst BRK(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return generateException(aFetchedOpcode, aCPU, aSequenceNo, kException_AA64_BKPT);}
+arminst HLT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return generateException(aFetchedOpcode, aCPU, aSequenceNo, kException_UNCATEGORIZED); } // not supported - do we care about semihosting exception? if yes, then raise it here
+arminst DCPS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return generateException(aFetchedOpcode, aCPU, aSequenceNo, kException_UNCATEGORIZED);} // not supported
 
 } // narmDecoder

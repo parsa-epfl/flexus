@@ -104,8 +104,11 @@ class TransactionTracerImpl : public TransactionTracer {
     (void) latency; //suppress warning
 
     int32_t responder = -1;
-    if (aTransaction.responder()) {
+    int32_t warning_bitch;
+    if (aTransaction.responder() ) {
       responder = *aTransaction.responder();
+      warning_bitch = responder;
+      responder = warning_bitch;
     }
 
     std::string OS = "Non-OS";

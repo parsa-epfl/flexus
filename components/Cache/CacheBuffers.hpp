@@ -364,7 +364,7 @@ public:
   virtual boost::intrusive_ptr<MemoryMessage> pop(uint32_t index) {
     DBG_Assert( theCurSize > index );
     typename evict_buf_t::iterator iter = theEvictions.begin();
-    typename evict_buf_t::iterator end = theEvictions.end();
+//    typename evict_buf_t::iterator end = theEvictions.end();
 
     int32_t anOffset = index;
     while (anOffset > 0) {

@@ -1,4 +1,4 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
@@ -58,6 +58,9 @@ namespace ll = boost::lambda;
 #include "../SemanticInstruction.hpp"
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
+#include "PredicatedSemanticAction.hpp"
+#include "RegisterValueExtractor.hpp"
+#include <components/uArchARM/systemRegister.hpp>
 
 #define DBG_DeclareCategories armDecoder
 #define DBG_SetDefaultOps AddCat(armDecoder)
@@ -66,78 +69,81 @@ namespace ll = boost::lambda;
 namespace narmDecoder {
 
 using namespace nuArchARM;
-using nuArchARM::Instruction;
 
-struct UpdateAddressAction : public BaseSemanticAction {
+struct BitFieldAction : public PredicatedSemanticAction {
+  eOperandCode theOperandCode1, theOperandCode2;
+  uint32_t theS, theR;
+  uint32_t thewmask, thetmask;
+  bool theExtend, the64;
 
-  eOperandCode theAddressCode, theAddressCode2;
-  bool thePair;
-
-  UpdateAddressAction ( SemanticInstruction * anInstruction, eOperandCode anAddressCode )
-    : BaseSemanticAction ( anInstruction, 2 )
-    , theAddressCode (anAddressCode)
-  { }
-
-  void squash(int32_t anOperand) {
-    if (! cancelled() ) {
-      DBG_( Tmp, ( << *this << " Squashing vaddr." ) );
-      core()->resolveVAddr( boost::intrusive_ptr<Instruction>(theInstruction), kUnresolved/*, 0x80*/);
-    }
-    BaseSemanticAction::squash(anOperand);
-  }
-
-  void satisfy(int32_t anOperand) {
-    //updateAddress as soon as dependence is satisfied
-    BaseSemanticAction::satisfy(anOperand);
-    updateAddress();
+  BitFieldAction ( SemanticInstruction * anInstruction
+                  , eOperandCode anOperandCode1, eOperandCode anOperandCode2
+                  , uint32_t imms, uint32_t immr
+                  , uint32_t wmask, uint32_t tmask, bool anExtend, bool a64)
+    : PredicatedSemanticAction( anInstruction, 1, true )
+    , theOperandCode1(anOperandCode1)
+    , theOperandCode2 (anOperandCode2)
+    , theS (imms)
+    , theR (immr)
+    , thewmask (wmask)
+    , thetmask (tmask)
+    , theExtend (anExtend)
+    , the64 (a64)
+  {
+    theInstruction->setExecuted(false);
   }
 
   void doEvaluate() {
-    //Address is now updated when satisfied.
-  }
 
-  void updateAddress() {
     if (ready()) {
-          bits addr = theInstruction->operand< bits > (theAddressCode);
-          if (theInstruction->hasOperand( kUopAddressOffset ) ) {
-            uint64_t offset = theInstruction->operand< uint64_t > (kUopAddressOffset);
-            SEMANTICS_DBG("UpdateAddressAction: adding offset " << offset << " to address "<< addr);
+      if (theInstruction->hasPredecessorExecuted()) {
 
-            addr = bits(addr.size(), (addr.to_ulong()) + offset);
-          }
-          VirtualMemoryAddress vaddr(addr.to_ulong());
-          core()->resolveVAddr( boost::intrusive_ptr<Instruction>(theInstruction), vaddr/*, asi*/);
-          SEMANTICS_DBG(*this << " updating vaddr = " << vaddr);
-          satisfyDependants();
-     }
+        uint64_t src =  boost::get<uint64_t>(theInstruction->operand(theOperandCode1));
+        uint64_t dst =  boost::get<uint64_t>(theInstruction->operand(theOperandCode2));
+
+        std::unique_ptr<Operation> ror = operation(kROR_);
+        std::vector<Operand> operands = {src, theR, the64};
+        uint64_t res =  boost::get<uint64_t>(ror->operator ()(operands));
+
+        // perform bitfield move on low bits
+        uint64_t bot = (dst & ~thewmask) | (res & thewmask);
+        // determine extension bits (sign, zero or dest register)
+        uint64_t top = theExtend ? src & (1 << theS) : dst;
+        // combine extension bits and result bits
+        theInstruction->setOperand(kResult, ((top & ~thetmask) | (bot & thetmask)));
+
+        satisfyDependants();
+        theInstruction->setExecuted(true);
+      } else {
+        DBG_( Tmp, ( << *this << " waiting for predecessor ") );
+        reschedule();
+      }
+    }
   }
 
   void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " UpdateAddressAction";
+    anOstream << theInstruction->identify() << " BitFieldAction ";
   }
 };
 
+predicated_action bitFieldAction
+(SemanticInstruction * anInstruction
+  , std::vector< std::list<InternalDependance> > & opDeps
+  , eOperandCode anOperandCode1, eOperandCode anOperandCode2
+  , uint32_t imms, uint32_t immr
+  , uint32_t wmask, uint32_t tmask, bool anExtend, bool a64
+ ){
+  BitFieldAction * act(new(anInstruction->icb()) BitFieldAction( anInstruction, anOperandCode1,
+                                                                 anOperandCode2, imms, immr, wmask, tmask, anExtend, a64) );
 
+  for (uint32_t i = 0; i < opDeps.size(); ++i) {
+    opDeps[i].push_back( act->dependance(i) );
+    return predicated_action( act, act->predicate() );
 
-multiply_dependant_action updateAddressAction
-( SemanticInstruction * anInstruction, eOperandCode aCode ) {
-  UpdateAddressAction * act(new(anInstruction->icb()) UpdateAddressAction( anInstruction, aCode ) );
-  std::vector<InternalDependance> dependances;
-  dependances.push_back( act->dependance(0) );
-  dependances.push_back( act->dependance(1) );
+  }
 
-  return multiply_dependant_action( act, dependances );
+  return predicated_action( act, act->predicate() );
+
 }
-
-multiply_dependant_action updateCASAddressAction
-( SemanticInstruction * anInstruction, eOperandCode aCode ) {
-  UpdateAddressAction * act(new(anInstruction->icb()) UpdateAddressAction( anInstruction, aCode) );
-  std::vector<InternalDependance> dependances;
-  dependances.push_back( act->dependance(0) );
-  dependances.push_back( act->dependance(1) );
-
-  return multiply_dependant_action( act, dependances );
-}
-
 
 } //narmDecoder

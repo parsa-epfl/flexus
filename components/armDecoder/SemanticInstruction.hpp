@@ -143,7 +143,8 @@ public:
 
   bool mayRetire() const ;
 
-  int32_t retryTranslation();
+  eExceptionType retryTranslation();
+  PhysicalMemoryAddress translate();
 
   nuArchARM::InstructionDependance makeInstructionDependance( InternalDependance const & aDependance);
 public:

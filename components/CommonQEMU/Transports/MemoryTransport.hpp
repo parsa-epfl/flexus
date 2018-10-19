@@ -56,6 +56,9 @@
 #include <components/CommonQEMU/Slices/NetworkMessage.hpp>
 #include <components/CommonQEMU/Slices/TaglessDirMsg.hpp>
 
+
+#pragma GCC diagnostic ignored "-Wunused-variable"
+
 namespace Flexus {
 namespace SharedTypes {
 

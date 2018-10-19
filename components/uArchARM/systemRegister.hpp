@@ -60,16 +60,18 @@ struct uArchARM;
  * Note that we rely on the values of these enums as we iterate through
  * the various states in some places.
  */
-enum eExecutionState{
+enum eRegExecutionState{
     kARM_STATE_AA32 = 0,
     kARM_STATE_AA64 = 1,
     kARM_STATE_BOTH = 2,
 };
 
 
+
+
+
 struct SysRegInfo {
 
-      ~SysRegInfo(){}
 
       /* Definition of an ARM system register */
       /* Name of register (useful mainly for debugging, need not be unique) */
@@ -93,8 +95,7 @@ struct SysRegInfo {
        * visible (to match KVM's encoding); cp==0 will be converted to
        * cp==0x13 when the ARMCPRegInfo is registered, for convenience.
        */
-      uint8_t cp;
-      uint8_t opc0;
+      uint8_t opc0; // or cp
       uint8_t opc1;
       uint8_t opc2;
       uint8_t crn;
@@ -106,7 +107,7 @@ struct SysRegInfo {
       int type;
 
       /* Security state: ARM_CP_SECSTATE_* bits/values */
-      int secure;
+//      int secure;
 
       /* Value of this register, if it is ARM_CP_CONST. Otherwise, if
        * fieldoffset is non-zero, the reset value of the register.
@@ -120,26 +121,26 @@ struct SysRegInfo {
        * checks required. The access check is performed at runtime, not at
        * translate time.
        */
-      virtual eAccessResult accessfn (uArchARM* aCore){}
+      virtual eAccessResult accessfn (uArchARM* aCore){DBG_Assert(false); return kACCESS_TRAP;}
 
       /* Function for handling reads of this register. If NULL, then reads
        * will be done by loading from the offset into CPUARMState specified
        * by fieldoffset.
        */
-      virtual narmDecoder::Operand readfn (uArchARM* aCore){}
+      virtual uint64_t readfn (uArchARM* aCore){DBG_Assert(false); return 0;}
 
       /* Function for handling writes of this register. If NULL, then writes
        * will be done by writing to the offset into CPUARMState specified
        * by fieldoffset.
        */
-      virtual void writefn (uArchARM* aCore, narmDecoder::Operand aVal){}
+      virtual void writefn (uArchARM* aCore, uint64_t aVal){DBG_Assert(false);}
       /* Function for doing a "raw" read; used when we need to copy
        * coprocessor state to the kernel for KVM or out for
        * migration. This only needs to be provided if there is also a
        * readfn and it has side effects (for instance clear-on-read bits).
        */
 
-      virtual narmDecoder::Operand raw_readfn (uArchARM* aCore){}
+      virtual uint64_t raw_readfn (uArchARM* aCore){DBG_Assert(false); return 0;}
       /* Function for doing a "raw" write; used when we need to copy KVM
        * kernel coprocessor state into userspace, or for inbound
        * migration. This only needs to be provided if there is also a
@@ -147,7 +148,7 @@ struct SysRegInfo {
        * or similar behaviour.
        */
 
-      virtual void raw_writefn (uArchARM* aCore){}
+      virtual void raw_writefn (uArchARM* aCore){DBG_Assert(false);}
       /* Function for resetting the register. If NULL, then reset will be done
        * by writing resetvalue to the field specified in fieldoffset. If
        * fieldoffset is 0 then no reset will be done.
@@ -157,10 +158,9 @@ struct SysRegInfo {
 };
 
 
-SysRegInfo* getRegInfo(std::array<uint8_t, 5> aCode);
-SysRegInfo* getRegInfo_cp(std::array<uint8_t, 5> aCode);
+SysRegInfo& getPriv(uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm);
+SysRegInfo& getPriv(ePrivRegs aCode);
 
-std::multimap<int, SysRegInfo*> * initSysRegs();
 
 } //nuArchARM
 

@@ -181,7 +181,7 @@ void CoreImpl::invalidate( PhysicalMemoryAddress anAddress) {
         ++theRaces;
         race_counted = true;
       }
-//      bool system = temp->theInstruction->isPriv();
+      bool system = temp->theInstruction->isPriv();
 
       //if its a completed load, and it has a higher sequence number than
       //first_incomplete, the load attempts forwarding.  If forwarding fails,
@@ -577,7 +577,7 @@ void CoreImpl::completeLSQ( memq_t::index<by_insn>::type::iterator lsq_entry, Me
 
       eraseLSQ( lsq_entry->theInstruction );
     } else {
-      DBG_Assert( ! lsq_entry->theQueue == kSSB );
+      DBG_Assert( ! (lsq_entry->theQueue == kSSB) );
       DBG_Assert( lsq_entry->theSideEffect, ( << *lsq_entry) );
     }
   }

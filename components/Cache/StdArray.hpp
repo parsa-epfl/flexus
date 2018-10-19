@@ -353,8 +353,8 @@ public:
 
     char paren;
     int32_t dummy;
-    int32_t load_state;
-    uint64_t load_tag;
+//    int32_t load_state;
+//    uint64_t load_tag;
     is >> paren; // {
     if ( paren != '{' ) {
       DBG_ ( Crit, ( << "Expected '{' when loading checkpoint, read '" << paren << "' instead" ) );

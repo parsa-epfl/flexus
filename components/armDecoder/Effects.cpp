@@ -58,6 +58,8 @@ namespace ll = boost::lambda;
 #include "SemanticInstruction.hpp"
 #include "Interactions.hpp"
 
+#include <components/uArchARM/systemRegister.hpp>
+
 #define DBG_DeclareCategories armDecoder
 #define DBG_SetDefaultOps AddCat(armDecoder)
 #include DBG_Control()
@@ -166,7 +168,6 @@ Effect * mapSource( SemanticInstruction * inst, eOperandCode anInputCode, eOpera
 //  return new(inst->icb()) DisconnectRegisterEffect( aMapping );
 //}
 
-
 struct FreeMappingEffect : public Effect {
   eOperandCode theMappingCode;
 
@@ -267,52 +268,24 @@ struct MapDestinationEffect : public Effect {
   }
 };
 
-Effect * mapDestination( SemanticInstruction * inst, eRegisterType aMapTable ) {
-  if ( aMapTable == ccBits ) {
-    return new(inst->icb()) MapDestinationEffect( kCCd, kCCpd, kPCCpd, true );
-  } else {
+Effect * mapDestination( SemanticInstruction * inst) {
     return new(inst->icb()) MapDestinationEffect( kRD, kPD, kPPD, true );
-  }
 }
 
-Effect * mapRD1Destination( SemanticInstruction * inst ) {
-  return new(inst->icb()) MapDestinationEffect( kRD1, kPD1, kPPD1, true );
-}
-
-Effect * mapXTRA(SemanticInstruction * inst ) {
-  return new(inst->icb()) MapDestinationEffect( eOperandCode(kXTRAr), eOperandCode(kXTRApd), eOperandCode(kXTRAppd), true);
-}
-
-Effect * mapFDestination( SemanticInstruction * inst, int32_t anIndex ) {
-  return new(inst->icb()) MapDestinationEffect( eOperandCode(kFD0 + anIndex), eOperandCode(kPFD0 + anIndex), eOperandCode(kPPFD0 + anIndex), true);
-}
-
-Effect * mapDestination_NoSquashEffects( SemanticInstruction * inst, eRegisterType aMapTable ) {
-  if ( aMapTable == ccBits ) {
-    return new(inst->icb()) MapDestinationEffect( kCCd, kCCpd, kPCCpd, false);
-  } else {
+Effect * mapDestination_NoSquashEffects( SemanticInstruction * inst) {
     return new(inst->icb()) MapDestinationEffect( kRD, kPD, kPPD, false );
-  }
 }
 
-Effect * unmapDestination( SemanticInstruction * inst, eRegisterType aMapTable ) {
-  if ( aMapTable == ccBits ) {
-    return new(inst->icb()) FreeMappingEffect( kCCpd );
-  } else {
+Effect * unmapDestination( SemanticInstruction * inst ) {
     return new(inst->icb()) FreeMappingEffect( kPD );
-  }
 }
 
 Effect * unmapFDestination( SemanticInstruction * inst, int32_t anIndex ) {
   return new(inst->icb()) FreeMappingEffect( eOperandCode(kPFD0 + anIndex) );
 }
 
-Effect * restorePreviousDestination(SemanticInstruction * inst,  eRegisterType aMapTable ) {
-  if ( aMapTable == ccBits ) {
-    return new(inst->icb()) RestoreMappingEffect( kCCd, kPCCpd );
-  } else {
+Effect * restorePreviousDestination(SemanticInstruction * inst ) {
     return new(inst->icb()) RestoreMappingEffect( kRD, kPPD );
-  }
 }
 
 struct SatisfyDependanceEffect : public Effect {
@@ -628,7 +601,9 @@ struct BranchConditionallyEffect: public Effect {
     feedback->theActualTarget = theTarget;
     feedback->theBPState = anInstruction.bpState();
 
-    bool result/* = theCondition(operands)*/;
+    std::vector<Operand> operands = {cc.to_ulong()};
+
+    bool result = theCondition(operands);
 
     if ( result ) {
       //Taken
@@ -816,6 +791,451 @@ Effect * retireMem(SemanticInstruction * inst) {
   return new(inst->icb()) RetireMemEffect( );
 }
 
+
+struct CheckSysRegAccess : public Effect {
+
+    ePrivRegs thePrivReg;
+    uint8_t theIsRead;
+
+    CheckSysRegAccess ( ePrivRegs aPrivReg, uint8_t is_read)
+            : thePrivReg (aPrivReg)
+            , theIsRead (is_read)
+          {}
+
+    void invoke(SemanticInstruction & anInstruction) {
+        if (! anInstruction.isAnnulled()) {
+        }
+
+        Effect::invoke(anInstruction);
+    }
+
+    void describe(std::ostream & anOstream) const {
+      anOstream << " CheckSysRegAccess ";
+      Effect::describe(anOstream);
+    }
+
+};
+
+Effect * checkSysRegAccess(SemanticInstruction * inst, ePrivRegs aPrivReg, uint8_t is_read) {
+  return new(inst->icb()) CheckSysRegAccess(aPrivReg, is_read);
+}
+
+
+
+
+struct CheckSystemAccess : public Effect {
+    uint8_t theOp0,theOp1,theOp2,theCRn,theCRm, theRT, theRead;
+    CheckSystemAccess(uint8_t anOp0, uint8_t anOp1, uint8_t anOp2, uint8_t aCRn, uint8_t aCRm, uint8_t aRT, uint8_t aRead)
+      : theOp0(anOp0), theOp1(anOp1), theOp2(anOp2), theCRn(aCRn), theCRm(aCRm), theRT(aRT), theRead(aRead)
+    {}
+
+    void invoke(SemanticInstruction & anInstruction) {
+      FLEXUS_PROFILE();
+      if (! anInstruction.isAnnulled()) {
+          // Perform the generic checks that an AArch64 MSR/MRS/SYS instruction is valid at the
+          // current exception level, based on the opcode's 'op1' field value.
+          // Further checks for enables/disables/traps specific to a particular system register
+          // or operation will be performed in System_Put(), System_Get(), SysOp_W(), or SysOp_R().
+          /* 64 bit registers have only CRm and Opc1 fields */
+
+          SysRegInfo& ri = anInstruction.core()->getSysRegInfo(theOp0,theOp1,theOp2,theCRn,theCRm);
+
+          DBG_Assert(!((ri.type & kARM_64BIT) && (ri.opc2 || ri.crn)));
+          /* op0 only exists in the AArch64 encodings */
+          DBG_Assert((ri.state != kARM_STATE_AA32) || (ri.opc0 == 0));
+          /* AArch64 regs are all 64 bit so ARM_CP_64BIT is meaningless */
+          DBG_Assert((ri.state != kARM_STATE_AA64) || !(ri.type & kARM_64BIT));
+          /* The AArch64 pseudocode CheckSystemAccess() specifies that op1
+           * encodes a minimum access level for the register. We roll this
+           * runtime check into our general permission check code, so check
+           * here that the reginfo's specified permissions are strict enough
+           * to encompass the generic architectural permission check.
+           */
+          if (ri.state != kARM_STATE_AA32) {
+              int mask = 0;
+              switch (ri.opc1) {
+              case 0: case 1: case 2:
+                  /* min_EL EL1 */
+                  mask = kPL1_RW;
+                  break;
+              case 3:
+                  /* min_EL EL0 */
+                  mask = kPL0_RW;
+                  break;
+              case 4:
+                  /* min_EL EL2 */
+                  mask = kPL2_RW;
+                  break;
+              case 5:
+                  /* unallocated encoding, so not possible */
+                  DBG_Assert(false);
+                  break;
+              case 6:
+                  /* min_EL EL3 */
+                  mask = kPL3_RW;
+                  break;
+              case 7:
+                  /* min_EL EL1, secure mode only (we don't check the latter) */
+                  mask = kPL1_RW;
+                  break;
+              default:
+                  /* broken reginfo with out-of-range opc1 */
+                  DBG_Assert(false);
+                  break;
+              }
+              /* assert our permissions are not too lax (stricter is fine) */
+              DBG_Assert((ri.access & ~mask) == 0);
+
+            // Check for traps on access to all other system registers
+            if (ri.accessfn(anInstruction.core()) != kACCESS_OK){
+                anInstruction.setWillRaise(kException_SYSTEMREGISTERTRAP);
+                anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction>(& anInstruction), anInstruction.willRaise());
+            }
+
+          }
+      }
+      Effect::invoke(anInstruction);
+    }
+
+    void describe(std::ostream & anOstream) const {
+      anOstream << " CheckSystemAccess ";
+      Effect::describe(anOstream);
+    }
+  };
+
+  Effect * checkSystemAccess(SemanticInstruction * inst, uint8_t anOp0, uint8_t anOp1, uint8_t anOp2, uint8_t aCRn, uint8_t aCRm, uint8_t aRT, uint8_t aRead) {
+    return new(inst->icb()) CheckSystemAccess(anOp0, anOp1, anOp2, aCRn, aCRm, aRT, aRead );
+  }
+
+
+
+  struct CheckDAIFAccess : public Effect {
+      uint8_t theOp1;
+      CheckDAIFAccess( uint8_t anOp1)
+        : theOp1(anOp1)
+      {}
+
+      void invoke(SemanticInstruction & anInstruction) {
+        FLEXUS_PROFILE();
+        if (! anInstruction.isAnnulled()) {
+            if (theOp1 == 0x3 /*011*/ && anInstruction.core()->_PSTATE().EL() == EL0 && anInstruction.core()->_SCTLR(EL0).UMA() == 0){
+                anInstruction.setWillRaise(kException_SYSTEMREGISTERTRAP);
+                anInstruction.core()->takeTrap(boost::intrusive_ptr<nuArchARM::Instruction> (& anInstruction), anInstruction.willRaise());
+            }
+        }
+        Effect::invoke(anInstruction);
+      }
+
+      void describe(std::ostream & anOstream) const {
+        anOstream << " CheckDAIFAccess";
+        Effect::describe(anOstream);
+      }
+    };
+
+    Effect * checkDAIFAccess(SemanticInstruction * inst, uint8_t anOp1) {
+      return new(inst->icb()) CheckDAIFAccess(anOp1);
+    }
+
+
+
+struct ReadPREffect: public Effect {
+  ePrivRegs thePR;
+  ReadPREffect( ePrivRegs aPR)
+    : thePR(aPR)
+  {}
+
+  void invoke(SemanticInstruction & anInstruction) {
+    FLEXUS_PROFILE();
+    if (! anInstruction.isAnnulled()) {
+
+      SysRegInfo& ri = getPriv(thePR);
+      DBG_( Verb, ( << anInstruction << " Read " << ri.name << " value= " << std::hex << rs << std::dec ) );
+
+      uint64_t prVal = ri.readfn(anInstruction.core());
+      anInstruction.setOperand(kResult, prVal);
+
+      mapped_reg name = anInstruction.operand< mapped_reg > (kOperand1);
+
+      anInstruction.core()->writeRegister( name, prVal );
+      anInstruction.core()->bypass( name, prVal);
+
+    }
+    Effect::invoke(anInstruction);
+  }
+
+  void describe(std::ostream & anOstream) const {
+    anOstream << " Read PR " << thePR;
+    Effect::describe(anOstream);
+  }
+};
+
+Effect * readPR(SemanticInstruction * inst, ePrivRegs aPR) {
+  return new(inst->icb()) ReadPREffect(aPR);
+}
+
+struct WritePREffect: public Effect {
+  ePrivRegs thePR;
+  WritePREffect( ePrivRegs aPR)
+    : thePR(aPR)
+  {}
+
+  void invoke(SemanticInstruction & anInstruction) {
+    FLEXUS_PROFILE();
+    if (! anInstruction.isAnnulled()) {
+      uint64_t rs  = 0;
+      SysRegInfo& ri = getPriv(thePR);
+      if (anInstruction.hasOperand(kResult)){
+          rs = anInstruction.operand< uint64_t > (kResult);
+      } else if (anInstruction.hasOperand(kResult1)){
+          rs = anInstruction.operand< uint64_t > (kResult1);
+      }
+      DBG_( Verb, ( << anInstruction << " Write " << ri.name << " value= " << std::hex << rs << std::dec ) );
+
+      ri.writefn(anInstruction.core(), rs);
+    }
+    Effect::invoke(anInstruction);
+  }
+
+  void describe(std::ostream & anOstream) const {
+    anOstream << " Write PR " << thePR;
+    Effect::describe(anOstream);
+  }
+};
+
+Effect * writePR(SemanticInstruction * inst, ePrivRegs aPR) {
+  return new(inst->icb()) WritePREffect(aPR);
+}
+
+struct WritePSTATE: public Effect {
+  uint8_t theOp1, theOp2;
+  WritePSTATE( uint8_t anOp1, uint8_t anOp2)
+    : theOp1(anOp1)
+    , theOp2(anOp2)
+  {}
+
+  void invoke(SemanticInstruction & anInstruction) {
+    FLEXUS_PROFILE();
+    if (! anInstruction.isAnnulled()) {
+
+      uint64_t val = anInstruction.operand< uint64_t > (kResult);
+      switch ( (theOp1 << 3) | theOp2) {
+      case 0x3: case 0x4:
+          anInstruction.setWillRaise(kException_SYSTEMREGISTERTRAP);
+          anInstruction.core()->takeTrap(boost::intrusive_ptr<nuArchARM::Instruction> (&anInstruction), anInstruction.willRaise());
+          break;
+      case 0x5: // sp
+      {
+          SysRegInfo& ri = getPriv(kSPSel);
+          ri.writefn(anInstruction.core(), (val & 1));
+        break;
+      }
+      case 0x1e: // daif set
+          anInstruction.core()->setDAIF(val | anInstruction.core()->_PSTATE().DAIF());
+        break;
+      case 0x1f:  // daif clr
+          anInstruction.core()->setDAIF(val ^ anInstruction.core()->_PSTATE().DAIF());
+        break;
+      default:
+          anInstruction.setWillRaise(kException_UNCATEGORIZED);
+          anInstruction.core()->takeTrap(boost::intrusive_ptr<nuArchARM::Instruction> (&anInstruction), anInstruction.willRaise());
+          break;
+      }
+    }
+    Effect::invoke(anInstruction);
+  }
+
+  void describe(std::ostream & anOstream) const {
+    anOstream << " Write PSTATE ";
+    Effect::describe(anOstream);
+  }
+};
+
+Effect * writePSTATE(SemanticInstruction * inst, uint8_t anOp1, uint8_t anOp2) {
+  return new(inst->icb()) WritePSTATE(anOp1, anOp2);
+}
+
+struct WriteNZCV: public Effect {
+  WriteNZCV()
+  {}
+
+  void invoke(SemanticInstruction & anInstruction) {
+    FLEXUS_PROFILE();
+    if (! anInstruction.isAnnulled()) {
+        SysRegInfo & ri = getPriv(kNZCV);
+
+        uint64_t res = anInstruction.operand< uint64_t > (kResult);
+        uint64_t val = 0;
+        val = PSTATE_N & res;
+        if (res == 0) val |= PSTATE_Z;
+
+        ri.writefn(anInstruction.core(), val);
+
+    }
+    Effect::invoke(anInstruction);
+  }
+
+  void describe(std::ostream & anOstream) const {
+    anOstream << " Write NZCV ";
+    Effect::describe(anOstream);
+  }
+};
+
+Effect * writeNZCV(SemanticInstruction * inst) {
+  return new(inst->icb()) WriteNZCV();
+}
+
+
+
+struct ClearExclusiveMonitor: public Effect {
+
+    ClearExclusiveMonitor(){}
+    void invoke(SemanticInstruction & anInstruction) {
+        FLEXUS_PROFILE();
+        if (! anInstruction.isAnnulled()) {
+            anInstruction.core()->clearExclusiveLocal();
+        }
+        Effect::invoke(anInstruction);
+    }
+    void describe(std::ostream & anOstream) const {
+        anOstream << " ClearExclusiveMonitor ";
+        Effect::describe(anOstream);
+    }
+};
+Effect * clearExclusiveMonitor(SemanticInstruction * inst) {
+  return new(inst->icb()) ClearExclusiveMonitor();
+}
+
+
+struct MarkExclusiveMonitor: public Effect {
+
+    eOperandCode theAddressCode;
+    eSize theSize;
+
+    MarkExclusiveMonitor(eOperandCode anAddressCode, eSize aSize)
+        : theAddressCode (anAddressCode)
+        , theSize (aSize)
+        {}
+    void invoke(SemanticInstruction & anInstruction) {
+        FLEXUS_PROFILE();
+        if (! anInstruction.isAnnulled()) {
+
+            uint64_t addr = anInstruction.operand< uint64_t > (theAddressCode);
+//            bool aligned = (bits(addr) == align(addr, theSize * 8));
+            PhysicalMemoryAddress pAddress = anInstruction.translate();
+
+//            FIXME -- waiting for mmu
+//            if (anInstruction.core()->transateAddress(addr, kAccType_ATOMIC/*acctype*/, /*iswrite*/false, aligned, theSize) != kNoFault)
+//                return;
+
+//            if (address is shareable)
+                    anInstruction.core()->markExclusiveGlobal(pAddress, theSize);
+
+            anInstruction.core()->markExclusiveLocal(pAddress, theSize);
+            anInstruction.core()->markExclusiveVA(VirtualMemoryAddress(addr), theSize);  // optional
+        }
+        Effect::invoke(anInstruction);
+    }
+    void describe(std::ostream & anOstream) const {
+        anOstream << " ClearExclusiveMonitor ";
+        Effect::describe(anOstream);
+    }
+};
+Effect * markExclusiveMonitor(SemanticInstruction * inst, eOperandCode anAddressCode, eSize aSize) {
+  return new(inst->icb()) MarkExclusiveMonitor(anAddressCode, aSize);
+}
+
+
+
+
+
+
+//It is IMPLEMENTATION DEFINED whether the detection of memory aborts happens
+//before or after the check on the local Exclusives monitor. As a result a failure
+//of the local monitor can occur on some implementations even if the memory
+//access would give an memory abort.
+struct ExclusiveMonitorPass: public Effect {
+
+    eOperandCode theAddressCode;
+    eSize theSize;
+
+    ExclusiveMonitorPass(eOperandCode anAddressCode, eSize aSize){}
+
+    void invoke(SemanticInstruction & anInstruction) {
+//        eAccType acctype = kAccType_ATOMIC;
+//        bool iswrite = true;
+        uint64_t status = 1;
+        uint64_t addr = anInstruction.operand< uint64_t > (theAddressCode);
+        bool aligned = (bits(addr) == align(addr, theSize * 8));
+
+        if (!aligned) {
+//            bool secondstage = false;
+//            AArch64.Abort(address, AArch64.AlignmentFault(acctype, iswrite, secondstage));
+            anInstruction.setWillRaise( kException_DATAABORT );
+            anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction>(& anInstruction), anInstruction.willRaise());
+          }
+
+        bool passed = anInstruction.core()->isExclusiveVA(VirtualMemoryAddress(addr), theSize);
+        if (!passed ) {
+            anInstruction.setWillRaise(kException_DATAABORT);
+            anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction> (&anInstruction), anInstruction.willRaise());
+        }
+        // pending MMY work - check for fault when transalting
+//        memaddrdesc = AArch64.TranslateAddress(address, acctype, iswrite, aligned, size);
+        // Check for aborts or debug exceptions
+//        if IsFault(memaddrdesc) then
+//            AArch64.Abort(address, memaddrdesc.fault);
+        PhysicalMemoryAddress pAddress = anInstruction.translate();
+
+        passed = anInstruction.core()->isExclusiveLocal(pAddress, theSize);
+        if (passed) {
+            anInstruction.core()->clearExclusiveLocal();
+//            if memaddrdesc.memattrs.shareable then
+                passed = anInstruction.core()->isExclusiveGlobal(pAddress, theSize);
+                status = 0;
+        } else {
+            anInstruction.annul();
+        }
+
+        mapped_reg name = anInstruction.operand< mapped_reg > (kStatus);
+        anInstruction.core()->writeRegister( name, status );
+
+
+        Effect::invoke(anInstruction);
+    }
+    void describe(std::ostream & anOstream) const {
+        anOstream << " ClearExclusiveMonitor ";
+        Effect::describe(anOstream);
+    }
+};
+Effect * exclusiveMonitorPass(SemanticInstruction * inst, eOperandCode anAddressCode, eSize aSize) {
+  return new(inst->icb()) ExclusiveMonitorPass(anAddressCode, aSize);
+}
+
+
+
+struct ExceptionEffect : public Effect {
+    eExceptionType theType;
+    ExceptionEffect(eExceptionType aType)
+        :   theType(aType)
+    {}
+    void invoke(SemanticInstruction & anInstruction) {
+        if (! anInstruction.isAnnulled()) {
+            anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction>(&anInstruction), theType);
+        }
+        Effect::invoke(anInstruction);
+    }
+
+    void describe(std::ostream & anOstream) const {
+        anOstream << " ExceptionEffect ";
+        Effect::describe(anOstream);
+    }
+};
+
+
+Effect * exceptionEffect(SemanticInstruction * inst, eExceptionType aType){
+    return new(inst->icb()) ExceptionEffect(aType);
+}
+
 struct CommitStoreEffect: public Effect {
   void invoke(SemanticInstruction & anInstruction) {
       DBG_( Tmp, ( << anInstruction.identify() << " CommitStoreEffect ") );
@@ -904,13 +1324,11 @@ struct IMMUExceptionEffect: public Effect {
 
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
-    DBG_( Tmp, ( << anInstruction << " retryTranslation " ) );//NOOSHIN
 
-    int32_t exception = anInstruction.retryTranslation();
+    eExceptionType exception = anInstruction.retryTranslation();
     if (exception != 0) {
       anInstruction.setWillRaise( exception );
-      DBG_( Tmp, ( << anInstruction << " IMMU Exception: " << anInstruction.willRaise()  ) );//NOOSHIN
-//      anInstruction.core()->takeTrap( boost::intrusive_ptr<Instruction>(& anInstruction), anInstruction.willRaise());
+      anInstruction.core()->takeTrap( boost::intrusive_ptr<Instruction>(& anInstruction), anInstruction.willRaise());
     }
 
     Effect::invoke(anInstruction);

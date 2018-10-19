@@ -103,8 +103,6 @@ public:
       while (! final_uop ) {          
         boost::tie( insn, final_uop ) = decode( *iter, flexusIndex(), ++theInsnSequenceNo, uop ++);
         if(insn){
-            AbstractInstruction* inn =
-            insn.get();
             insn->setFetchTransactionTracker(iter->theTransaction);
             // Set Fill Level for the insn
             insn->setSourceLevel(*fill_iter);

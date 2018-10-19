@@ -60,6 +60,8 @@ namespace ll = boost::lambda;
 #include "../SemanticActions.hpp"
 #include "RegisterValueExtractor.hpp"
 
+#include <components/uArchARM/systemRegister.hpp>
+
 #define DBG_DeclareCategories armDecoder
 #define DBG_SetDefaultOps AddCat(armDecoder)
 #include DBG_Control()
@@ -71,11 +73,14 @@ using namespace nuArchARM;
 struct WritebackAction : public BaseSemanticAction {
   eOperandCode theResult;
   eOperandCode theRd;
+  bool the64, theSetflags;
 
-  WritebackAction ( SemanticInstruction * anInstruction, eOperandCode aResult, eOperandCode anRd )
+  WritebackAction ( SemanticInstruction * anInstruction, eOperandCode aResult, eOperandCode anRd, bool a64, bool setflags = false )
     : BaseSemanticAction ( anInstruction, 1 )
     , theResult( aResult )
     , theRd( anRd )
+    , the64 (a64)
+    , theSetflags (setflags)
   { }
 
   void squash(int32_t anArg) {
@@ -91,11 +96,34 @@ struct WritebackAction : public BaseSemanticAction {
     if (ready()) {
       SEMANTICS_DBG("Writing " << theResult << " to " << theRd);
 
-      mapped_reg name = theInstruction->operand< mapped_reg > (theRd);
       register_value result = boost::apply_visitor( register_value_extractor(), theInstruction->operand( theResult ) );
-      core()->writeRegister( name, result );
-      DBG_( Tmp, ( << *this << " rd= " << name << " result=" << result ) );
-      core()->bypass( name, result );
+      uint64_t res = boost::get<uint64_t>(result);
+      if (theRd == 31 && !theSetflags){
+          // SP
+          SysRegInfo& ri = getPriv(kSPSel);
+
+          if (!the64){
+              uint64_t upper = ri.readfn(theInstruction->core()) & 0xffffffff00000000;
+              res &= 0xffffffff;
+              res |= upper;
+              ri.writefn(theInstruction->core(), upper | res);
+          } else {
+            ri.writefn(theInstruction->core(), res);
+          }
+      } else {
+          mapped_reg name = theInstruction->operand< mapped_reg > (theRd);
+
+          if (!the64){
+              uint64_t upper = boost::get<uint64_t>(core()->readRegister(name)) & 0xffffffff00000000;
+              uint64_t res = boost::get<uint64_t>(result) & 0xffffffff;
+              res |= upper;
+              result = res;
+          }
+
+          core()->writeRegister( name, result );
+          DBG_( Tmp, ( << *this << " rd= " << name << " result=" << result ) );
+          core()->bypass( name, result );
+      }
       satisfyDependants();
     }
   }
@@ -107,34 +135,14 @@ struct WritebackAction : public BaseSemanticAction {
 
 dependant_action writebackAction
 ( SemanticInstruction * anInstruction
-  , eRegisterType aType
+  , eOperandCode aRegisterCode
+  , eOperandCode aMappedRegisterCode
+  , bool is64
+  , bool setflags
 ) {
   WritebackAction * act;
-//  if (aType == ccBits) {
-//    act = new(anInstruction->icb()) WritebackAction( anInstruction, kResultCC, kCCpd);
-//  } else {
-    act = new(anInstruction->icb()) WritebackAction( anInstruction, kResult, kPD);
-//  }
-  return dependant_action( act, act->dependance() );
-}
-
-dependant_action writebackRD1Action ( SemanticInstruction * anInstruction ) {
-  WritebackAction * act = new(anInstruction->icb()) WritebackAction( anInstruction, kResult1, kPD1);
-  return dependant_action( act, act->dependance() );
-}
-
-dependant_action writeXTRA
-( SemanticInstruction * anInstruction ) {
-  WritebackAction  * act = new(anInstruction->icb()) WritebackAction( anInstruction, kXTRAout, kXTRApd);
-  return dependant_action( act, act->dependance() );
-}
-
-dependant_action floatingWritebackAction
-( SemanticInstruction * anInstruction
-  , int32_t anIndex
-) {
-  WritebackAction  * act(new(anInstruction->icb()) WritebackAction( anInstruction, eOperandCode(kfResult0 + anIndex), eOperandCode(kPFD0 + anIndex) ) );
-  return dependant_action( act, act->dependance() );
+    act = new(anInstruction->icb()) WritebackAction( anInstruction, aRegisterCode, aMappedRegisterCode, is64, setflags);
+    return dependant_action( act, act->dependance() );
 }
 
 } //narmDecoder

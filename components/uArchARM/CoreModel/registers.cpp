@@ -136,7 +136,6 @@ std::pair<mapped_reg, mapped_reg> CoreImpl::create( reg aReg ) {
   std::tie( mapped.first.theIndex, mapped.second.theIndex) = mapTable(reg.theType).create(reg.theIndex);
   mapRegister(mapped.first);
 
-  eResourceStatus s = theRegisters.status( mapped.first ) ;
   eResourceStatus status = theRegisters.status( mapped.second ) ;
   DBG_Assert( status != kUnmapped, ( << " aRegister=" << mapped.second << " status=" << status ));
   //This assertion is extremely slow - 15% of total execution time.  Enable

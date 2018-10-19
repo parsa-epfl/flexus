@@ -68,6 +68,15 @@ public:
     anOstream << (isVirtual ? "v:" : "p:" ) << std::hex << std::setw(9) << std::right << std::setfill('0') << aMemoryAddress.address << std::dec;
     return anOstream;
   }
+
+  friend underlying_type operator + ( MemoryAddress_ const & aMemoryAddress, const uint64_t aVal ) {
+        return aMemoryAddress.address + aVal;
+  }
+
+  friend underlying_type operator - ( MemoryAddress_ const & aMemoryAddress, const uint64_t aVal ) {
+        return aMemoryAddress.address - aVal;
+  }
+
 private:
   underlying_type address;
 
@@ -86,7 +95,7 @@ typedef boost::dynamic_bitset<> bits;
 bits fillbits(const int bitSize);
 bool anyBits(bits b);
 bits concat_bits (const bits & lhs, const bits & rhs);
-
+bits align(uint64_t x, int y);
 std::pair<bits,bits> splitBits(const bits & input);
 
 bits construct(uint8_t* bytes, int size);

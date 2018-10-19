@@ -6,6 +6,7 @@ namespace API{
 QEMU_GET_PHYS_MEMORY_PROC QEMU_get_phys_memory= nullptr;
 QEMU_GET_ETHERNET_PROC QEMU_get_ethernet= nullptr;
 QEMU_CLEAR_EXCEPTION_PROC QEMU_clear_exception= nullptr;
+QEMU_GET_PENDING_INTERRUPT_PROC QEMU_get_pending_interrupt = nullptr;
 
 QEMU_READ_REGISTER_PROC QEMU_read_register= nullptr;
 QEMU_READ_PSTATE_PROC QEMU_read_pstate = nullptr;
@@ -14,9 +15,8 @@ QEMU_READ_FPSR_PROC QEMU_read_fpsr = nullptr;
 QEMU_READ_EXCEPTION_PROC QEMU_read_exception = nullptr;
 QEMU_READ_SCTLR_PROC QEMU_read_sctlr = nullptr;
 QEMU_READ_HCR_EL2_PROC QEMU_read_hcr_el2 = nullptr;
-
-
-
+QEMU_CPU_HAS_WORK_PROC QEMU_cpu_has_work = nullptr;
+QEMU_READ_SP_EL_PROC QEMU_read_sp_el = nullptr;
 
 QEMU_READ_PHYS_MEMORY_PROC QEMU_read_phys_memory= nullptr;
 QEMU_GET_PHYS_MEM_PROC QEMU_get_phys_mem= nullptr;
@@ -57,12 +57,15 @@ void QFLEX_API_set_Interface_Hooks( const QFLEX_API_Interface_Hooks_t* hooks ) {
   QEMU_get_ethernet= hooks->QEMU_get_ethernet;
   QEMU_clear_exception= hooks->QEMU_clear_exception;
   QEMU_read_register= hooks->QEMU_read_register;
-
+  QEMU_cpu_has_work = hooks->QEMU_cpu_has_work;
 
   QEMU_read_fpcr = hooks->QEMU_read_fpcr;
   QEMU_read_fpsr = hooks->QEMU_read_fpsr;
   QEMU_read_pstate = hooks->QEMU_read_pstate;
   QEMU_read_hcr_el2 = hooks->QEMU_read_hcr_el2;
+  QEMU_get_pending_interrupt = hooks->QEMU_get_pending_interrupt;
+  QEMU_read_exception = hooks->QEMU_read_exception;
+  QEMU_read_sp_el = hooks->QEMU_read_sp_el;
 
   QEMU_read_phys_memory= hooks->QEMU_read_phys_memory;
   QEMU_get_phys_mem= hooks->QEMU_get_phys_mem;

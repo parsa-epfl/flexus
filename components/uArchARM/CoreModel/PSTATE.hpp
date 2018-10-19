@@ -38,7 +38,6 @@
 #ifndef FLEXUS_uARCHARM_PSTATE_HPP_INCLUDED
 #define FLEXUS_uARCHARM_PSTATE_HPP_INCLUDED
 
-#include "components/armDecoder/OperandMap.hpp"
 #include "components/armDecoder/armBitManip.hpp"
 
 /* Bit definitions for ARMv8 SPSR (PSTATE) format.
@@ -52,6 +51,7 @@
 #define PSTATE_I (1U << 7)
 #define PSTATE_A (1U << 8)
 #define PSTATE_D (1U << 9)
+#define PSTATE_EL ((1U << 2) | (1U << 3))
 #define PSTATE_IL (1U << 20)
 #define PSTATE_SS (1U << 21)
 #define PSTATE_V (1U << 28)
@@ -78,28 +78,41 @@ typedef struct PSTATE{
     PSTATE(uint64_t src){
         theVal = src;
     }
-    int N() const{
-        return theVal & PSTATE_N;
+    bool N() const{
+        return (theVal & PSTATE_N) != 0;
     }
-    int Z() const{
-        return theVal & PSTATE_Z;
+    bool Z() const{
+        return (theVal & PSTATE_Z) != 0;
     }
-    int C() const{
-        return theVal & PSTATE_C;
+    bool C() const{
+        return (theVal & PSTATE_C) != 0;
     }
-    int V() const{
-        return theVal & PSTATE_V;
+    bool V() const{
+        return (theVal & PSTATE_V) != 0;
     }
 
-
-
-
-    const uint32_t getVal() const{
+    const uint32_t d() const{
         return theVal;
     }
 
-    const uint32_t getEL() const {
-        return extract32(theVal, 2, 2);
+    const uint32_t EL() const {
+        return theVal & PSTATE_EL;
+    }
+
+    const uint32_t SP() const {
+        return theVal & PSTATE_SP;
+    }
+
+    const uint32_t M() const {
+        return extract32(theVal, 0, 5);
+    }
+
+    const uint32_t DAIF() const {
+        return theVal & PSTATE_DAIF;
+    }
+
+    const uint32_t NZCV() const {
+        return theVal & PSTATE_NZCV;
     }
 
 private:

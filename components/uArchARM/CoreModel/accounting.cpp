@@ -73,6 +73,9 @@ void CoreImpl::accountResyncReason( boost::intrusive_ptr< Instruction > anInstru
     case codeMEMBARSync:
       ++theResync_MEMBARSync;
       break;
+  case codeCLREX:
+    ++theResync_CLREX;
+    break;
     case codePOPCUnsupported:
       ++theResync_POPCUnsupported;
       break;
@@ -273,8 +276,8 @@ void CoreImpl::accountCommitMemOp( boost::intrusive_ptr< Instruction > inst) {
 void CoreImpl::accountCommit( boost::intrusive_ptr< Instruction > anInstruction, bool aRaised) {
   int32_t level = 0 /* user */;
   if (theIsIdle == true) level = 3 /* idle */;
-//  else if (anInstruction->isTrap()) level = 2 /* trap */;
-//  else if (anInstruction->isPriv()) level = 1 /* system */;
+  else if (anInstruction->isTrap()) level = 2 /* trap */;
+  else if (anInstruction->isPriv()) level = 1 /* system */;
   int32_t spin = ( theSpinning ) ? 4 : 0;
 
   //DBG_(Tmp, (<<"In accountCommit, aRaised: "<<aRaised));
@@ -328,8 +331,6 @@ void CoreImpl::accountCommit( boost::intrusive_ptr< Instruction > anInstruction,
   }
 
   //Count the instruction
-  int j = klass;
-  int i = code;
   ++(*theCommitsByCode[level][code]);
 
 }
@@ -483,36 +484,30 @@ void CoreImpl::chargeStoreStall( boost::intrusive_ptr<Instruction> inst, boost::
 void CoreImpl::accountRetire( boost::intrusive_ptr<Instruction> anInst) {
   FLEXUS_PROFILE();
   DBG_Assert(anInst);
-  //DBG_(Tmp, ( << " accountRetire: " << *anInst ));
+  DBG_(Tmp, ( << " accountRetire: " << *anInst ));
 
   if (theIsSpeculating) {
     ++theRetiresSinceCheckpoint;
   }
 
   //Determine cycle category (always based on last retire in cycle)
-  //bool system = theROB.front()->isPriv();
-  if ((theROB.front()->pc()>=0x1064650) && (theROB.front()->pc()<=0x1064894)) // this is the code segment of the disp_getwork() function
-    theIsIdle=true;
-  else {
-    if ((theROB.front()->pc()==0x1062f68) || (theROB.front()->pc()==0x1064ee4)) // these VAs are the beginning of the idle_enter() and generic_idle_cpu()  functions
-      theIsIdle=true;
-    else if (theROB.front()->pc()==0x1062fb0) // this VA is the beggining of the idle_exit() function
-      theIsIdle=false;
+  bool system = theROB.front()->isPriv();
+
+  theIsIdle = Flexus::Qemu::Processor::getProcessor(theNode)->hasWork() ? false : true;
+
+  if (theIsIdle) {
+    theCycleCategory = kTBIdle;
+  } else if (theROB.front()->isTrap()) {
+    DBG_Assert(system);
+    theCycleCategory = kTBTrap;
+  } else if (system) {
+    theCycleCategory = kTBSystem;
+  } else {
+    theCycleCategory = kTBUser;
   }
 
-//  if (theIsIdle) {
-//    theCycleCategory = kTBIdle;
-//  } else if (theROB.front()->isTrap()) {
-//    DBG_Assert(system);
-//    theCycleCategory = kTBTrap;
-//  } else if (system) {
-//    theCycleCategory = kTBSystem;
-//  } else {
-//    theCycleCategory = kTBUser;
-//  }
-
   if (isIdleLoop()) {
-//    DBG_Assert(system, ( << theName << " isIdleLoop in user code? " << *theROB.front()));
+    DBG_Assert(system, ( << theName << " isIdleLoop in user code? " << *theROB.front()));
     theLastStallCause = nXactTimeBreakdown::kIdle_Stall;
   } else {
     if (anInst->willRaise() ) {

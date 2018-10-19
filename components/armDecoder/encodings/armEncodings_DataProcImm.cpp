@@ -91,57 +91,47 @@ arminst disas_logic_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
     DECODER_TRACE;
 
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
-    uint32_t sf, opc, is_n, immr, imms, rn, rd;
-    uint64_t wmask;
-    bool is_and = false;
 
-    sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-    opc = extract32(aFetchedOpcode.theOpcode, 29, 2);
-    is_n = extract32(aFetchedOpcode.theOpcode, 22, 1);
-    immr = extract32(aFetchedOpcode.theOpcode, 16, 6);
-    imms = extract32(aFetchedOpcode.theOpcode, 10, 6);
-    rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
-
-    if (!logic_imm_decode_wmask(&wmask, is_n, imms, immr)) {
-        /* some immediate field values are reserved */
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-    }
-
-    if (!sf) {
-        wmask &= 0xffffffff;
-    }
-
-
+    uint32_t rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
+    uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
+    uint32_t imms = extract32(aFetchedOpcode.theOpcode, 10, 6);
+    uint32_t immr = extract32(aFetchedOpcode.theOpcode, 16, 6);
+    bool n = extract32(aFetchedOpcode.theOpcode, 22, 1);
+    uint32_t opc = extract32(aFetchedOpcode.theOpcode, 29, 2);
+    bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
+    std::unique_ptr<Operation> op;
+    uint64_t tmask = 0, wmask = 0;
+//    bool setflags;
 
     switch (opc) {
-    case 0x3: /* ANDS */
-        AND(inst, rd, rn, wmask, sf, true);
-    case 0x0: /* AND */
-        //    if sf == '0' && N != '0' then ReservedValue();
-        //    ReservedValue()
-        //    if UsingAArch32() && !AArch32.GeneralExceptionsToAArch64() then
-        //    AArch32.TakeUndefInstrException();
-        //    else
-        //    AArch64.UndefinedFault();
-            if (sf == 0 && is_n != 0 ){
-                return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-            }
-
-         AND(inst, rd, rn, wmask, sf, false);
-         break;
-    case 0x1: /* ORR */
-        ORR(inst, rd, rn, wmask, sf, false);
+    case 0:
+        op = operation(kAND_);
         break;
-    case 0x2: /* EOR */
-        XOR(inst, rd, rn, wmask, sf, false);
+    case 1:
+        op = operation(kORR_);
+        break;
+    case 2:
+        op = operation(kXOR_);
+        break;
+    case 3:
+//        setflags = true;
+        op = operation(kANDS_);
         break;
     default:
-        DBG_Assert(false); /* must handle all above */
         break;
     }
 
-    return arminst(inst);
+    decodeBitMasks(tmask, wmask, n, imms, immr, true, sf ? 64 : 32);
+
+    std::vector<std::list<InternalDependance>> rs_deps(2);
+
+    addReadXRegister(inst, 1, rn, rs_deps[0], sf);
+    addReadConstant(inst, 2, wmask, rs_deps[1]);
+
+    predicated_action exec = addExecute(inst, std::move(op), rs_deps);
+    addDestination(inst, rd, exec, sf);
+
+    return inst;
 }
 
 /*
@@ -163,7 +153,7 @@ arminst disas_movw_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t a
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
     uint32_t rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    uint64_t imm = extract32(aFetchedOpcode.theOpcode, 5, 16);
+    uint32_t imm = extract32(aFetchedOpcode.theOpcode, 5, 16);
     int sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
     int opc = extract32(aFetchedOpcode.theOpcode, 29, 2);
     int pos = extract32(aFetchedOpcode.theOpcode, 21, 2) << 4;
@@ -192,7 +182,7 @@ arminst disas_movw_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t a
         break;
     }
 
-    return arminst(inst);
+    return inst;
 }
 
 /* Bitfield
@@ -204,40 +194,7 @@ arminst disas_movw_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t a
 arminst disas_bitfield(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
-
-    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
-
-    uint32_t sf, n, opc, ri, si, rn, rd, bitsize, pos, len;
-
-    sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-    opc = extract32(aFetchedOpcode.theOpcode, 29, 2);
-    n = extract32(aFetchedOpcode.theOpcode, 22, 1);
-    ri = extract32(aFetchedOpcode.theOpcode, 16, 6); // immr
-    si = extract32(aFetchedOpcode.theOpcode, 10, 6); // imms
-    rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    bitsize = sf ? 64 : 32;
-
-    if (!sf && n != 1){
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo); // ReservedValue()
-    }
-    if (!sf && n != 0 || ri != 0 || si != 0){
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo); // ReservedValue()
-    }
-
-
-    switch (opc) {
-    case 0:
-        SBFM(inst, rd, rd, si, ri, sf);
-        break;
-    case 1:
-        break;
-    case 2:
-        break;
-    default:
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-    }
-
+    return BFM(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Extract
@@ -271,7 +228,7 @@ arminst disas_extract(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aS
         EXTR(inst, rd, rn, rm, imm, sf);
     }
 
-    return arminst(inst);
+    return inst;
 }
 
 /*
@@ -295,7 +252,7 @@ arminst disas_add_sub_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_
                                                       aFetchedOpcode.theBPState, aCPU,aSequenceNo));
     uint32_t rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
     uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    uint64_t imm = extract32(aFetchedOpcode.theOpcode, 10, 12);
+    uint32_t imm = extract32(aFetchedOpcode.theOpcode, 10, 12);
     int shift = extract32(aFetchedOpcode.theOpcode, 22, 2);
     bool S = extract32(aFetchedOpcode.theOpcode, 29, 1);
     bool op = extract32(aFetchedOpcode.theOpcode, 30, 1);
@@ -322,7 +279,7 @@ arminst disas_add_sub_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_
 
     }
 
-    return arminst(inst);
+    return inst;
 }
 
 /* Data processing - immediate */

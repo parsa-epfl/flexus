@@ -85,6 +85,18 @@ namespace nuArchARM {
 
 using nXactTimeBreakdown::TimeBreakdown;
 
+
+struct ExceptionRecord {
+        eExceptionType type; // Exception class
+        uint32_t syndrome;     // Syndrome record
+        uint64_t vaddress;     // Virtual fault address
+        bool ipavalid;      // Physical fault address is valid
+        uint64_t ipaddress;    // Physical fault address for second stage fault
+};
+
+
+static std::map<uint8_t, std::map<PhysicalMemoryAddress, uint8_t>> GLOBAL_EXCLUSIVE_MONITOR;
+
 class CoreImpl : public CoreModel {
   //CORE STATE
   //==========================================================================
@@ -110,12 +122,9 @@ class CoreImpl : public CoreModel {
   RegisterFile theRegisters;
   int32_t theRoundingMode;
 
-  uint32_t thePC;
+  uint64_t thePC;
   bool theAARCH64;
   uint32_t thePSTATE;
-
-
-  std::multimap<int, SysRegInfo*> * theSystemRegisters;
 
   uint32_t theDCZID_EL0;
   uint64_t theSCTLR_EL[4];
@@ -124,9 +133,15 @@ class CoreImpl : public CoreModel {
   uint32_t theFPCR;
   Flexus::Qemu::API::exception_t theEXP;
 
- // uint32_t thePendingTrap;
- // boost::intrusive_ptr<Instruction> theTrapInstruction;
- std::string theDumpState;
+  std::map<PhysicalMemoryAddress, eSize> theLocalExclusivePhysicalMonitor;
+  std::map<VirtualMemoryAddress, eSize> theLocalExclusiveVirtualMonitor;
+
+
+  uint64_t theSP_el[4];
+
+  eExceptionType thePendingTrap;
+  boost::intrusive_ptr<Instruction> theTrapInstruction;
+  std::string theDumpState;
 
   //Bypass Network
   BypassNetwork theBypassNetwork;
@@ -339,6 +354,7 @@ private:
   theResync_RDPRUnsupported,
   theResync_WRPRUnsupported,
   theResync_MEMBARSync,
+  theResync_CLREX,
   theResync_POPCUnsupported,
   theResync_UnexpectedException,
   theResync_Interrupt,
@@ -517,6 +533,17 @@ private:
   void satisfy( std::list<InstructionDependance > & dependances);
   void squash( std::list<InstructionDependance > & dependances);
 
+
+  void clearExclusiveLocal();
+  void clearExclusiveGlobal();
+  void markExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize);
+  void markExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize);
+  void markExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize);
+
+  bool isExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize);
+  bool isExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize);
+  bool isExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize);
+
   //Instruction completion
   //==========================================================================
 public:
@@ -579,7 +606,7 @@ public:
   void redirectFetch( VirtualMemoryAddress anAddress );
   void branchFeedback( boost::intrusive_ptr<BranchFeedback> feedback );
 
-  void takeTrap(boost::intrusive_ptr< Instruction > anInsn, int32_t aTrapNum);
+  void takeTrap(boost::intrusive_ptr< Instruction > anInsn, eExceptionType aTrapType);
   void handleTrap();
 
 private:
@@ -664,47 +691,35 @@ public:
   void compareARMState( armState & aLeft, armState & aRight);
   bool isIdleLoop();
   uint64_t pc() const;
-
-  bool isAARCH64() {return theAARCH64;}
-  void setAARCH64(bool aMode) {theAARCH64 = aMode;}
-
-
-
-  uint32_t getPSTATE() { return thePSTATE; }
-  void setPSTATE( uint32_t aPSTATE) { thePSTATE = aPSTATE; }
-  void setFPSR( uint32_t anFPSR) { theFPSR = anFPSR; }
-  uint32_t getFPSR() { return theFPSR; }
-  void setFPCR( uint32_t anFPCR) { theFPCR = anFPCR; }
-  uint32_t getFPCR() { return theFPCR; }
-
-//  uint32_t getDCZID_EL0() {return theDCZID_EL0;}
-//  void setDCZID_EL0(uint32_t aDCZID_EL0) {theDCZID_EL0 = aDCZID_EL0;}
-
-  void setSCTLR_EL( uint64_t* aSCTLR_EL) { memcpy(theSCTLR_EL, aSCTLR_EL, sizeof(uint64_t)*4 ); }
-  uint64_t* getSCTLR_EL() { return theSCTLR_EL; }
-
-  void setHCREL2( uint64_t aHCREL2) { theHCR_EL2 = aHCREL2; }
-  uint64_t getHCREL2() { return theHCR_EL2; }
-
-  void setException( Flexus::Qemu::API::exception_t anEXP) { theEXP = anEXP; }
-  Flexus::Qemu::API::exception_t getException() { return theEXP; }
-
-
+  bool isAARCH64();
+  void setAARCH64(bool aMode);
+  uint32_t getSPSel();
+  void setSPSel (uint32_t aVal);
+  void setSP_el (uint8_t anEL, uint64_t aVal);
+  uint64_t getSP_el (uint8_t anEL);
+  uint32_t getPSTATE();
+  void setPSTATE( uint32_t aPSTATE);
+  void setFPSR( uint32_t anFPSR);
+  uint32_t getFPSR();
+  void setFPCR( uint32_t anFPCR);
+  uint32_t getFPCR();
+  uint32_t getDCZID_EL0();
+  void setDCZID_EL0(uint32_t aDCZID_EL0);
+  void setSCTLR_EL( uint8_t anId, uint64_t aSCTLR_EL);
+  uint64_t getSCTLR_EL(uint8_t anId);
+  void setHCREL2( uint64_t aHCREL2);
+  uint64_t getHCREL2();
+  void setException( Flexus::Qemu::API::exception_t anEXP);
+  Flexus::Qemu::API::exception_t getException();
   void setRoundingMode( uint32_t aRoundingMode );
-  uint32_t getRoundingMode() {
-    return theRoundingMode;
-  }
+  uint32_t getRoundingMode();
   void writePR(uint32_t aPR, uint64_t aVal);
-  void updatePSTATEbits(uint64_t mask);
-  uint64_t readPR(uint32_t aPR);
-  std::string prName(uint32_t aPR);
-
+  uint64_t readPR(ePrivRegs aPR);
   void setXRegister(uint32_t aReg, uint64_t aVal);
   uint64_t getXRegister(uint32_t aReg);
+  void setPC( uint64_t aPC);
+  void setDAIF(uint32_t aDAIF);
 
-  void setPC( uint64_t aPC) {
-    thePC = aPC;
-  }
 
 
   //Interface to Memory Unit
@@ -729,8 +744,8 @@ public:
   boost::intrusive_ptr<MemOp> popSnoopOp();
 
   uint32_t currentEL();
-  uint32_t increaseEL();
-  uint32_t decreaseEL();
+  void increaseEL();
+  void decreaseEL();
 
   void invalidateCache(eCacheType aType, eShareableDomain aDomain, eCachePoint aPoint);
   void invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, eCachePoint aPoint);
@@ -739,13 +754,14 @@ public:
   eAccessResult accessZVA();
   uint32_t readDCZID_EL0();
 
-
+  bool _SECURE();
   SCTLR_EL _SCTLR(uint32_t anELn);
   PSTATE _PSTATE();
 
-  SysRegInfo* getSysRegInfo(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t CRn, uint8_t CRm, bool hasCP);
+  void SystemRegisterTrap(uint8_t target_el, uint8_t op0, uint8_t op2,uint8_t op1, uint8_t crn, uint8_t rt, uint8_t crm, uint8_t dir);
 
-  void initSystemRegisters(std::multimap<int, SysRegInfo*> * aMap);
+
+  SysRegInfo& getSysRegInfo(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn, uint8_t crm);
 
 private:
   bool hasSnoopBuffer() const {

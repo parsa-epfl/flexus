@@ -82,7 +82,7 @@ int32_t GlobalHasher::simple_hash(int32_t offset, const Address & addr) const {
 }
 
 int32_t GlobalHasher::xor_hash(int32_t offset, int32_t xor_shift, const Address & addr) const {
-  int32_t ret = (((addr >> theHashShift) ^ (addr >> xor_shift)) & theHashMask) + offset;
+//  int32_t ret = (((addr >> theHashShift) ^ (addr >> xor_shift)) & theHashMask) + offset;
   return (((addr >> theHashShift) ^ (addr >> xor_shift)) & theHashMask) + offset;
 }
 

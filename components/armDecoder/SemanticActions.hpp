@@ -65,6 +65,41 @@ enum eSignCode {
     kLastExt
 };
 
+
+typedef enum eIndex{
+    kPostIndex,
+    kPreIndex,
+    kSingedOffset,
+    kUnsingedOffset,
+    kNoOffset,
+    kRegOffset,
+}eIndex;
+
+enum eNZCV {
+    kN,
+    kZ,
+    kC,
+    kV,
+};
+
+enum eCountOp {
+  kCountOp_CLZ,
+  kCountOp_CLS,
+  kCountOp_CNT,
+};
+
+
+typedef enum eExtendType{
+    kExtendType_SXTB,
+    kExtendType_SXTH,
+    kExtendType_SXTW,
+    kExtendType_SXTX,
+    kExtendType_UXTB,
+    kExtendType_UXTH,
+    kExtendType_UXTW,
+    kExtendType_UXTX,
+}eExtendType;
+
 using nuArchARM::SemanticAction;
 using nuArchARM::eRegisterType;
 using nuArchARM::uArchARM;
@@ -80,7 +115,6 @@ struct Operation {
 
   void setOperands(Operand aValue){
         theOperands.push_back(aValue);
-
   }
 
 
@@ -110,8 +144,8 @@ struct Operation {
 };
 
 
-std::unique_ptr<Operation> operation( eOpType T );
-std::unique_ptr<Operation> operation2( eOpType T );
+std::unique_ptr<Operation> operation( eOpType aType );
+std::unique_ptr<Operation> shift( uint32_t aType );
 
 class BaseSemanticAction : public SemanticAction, public UncountedComponent {
 private:
@@ -245,178 +279,48 @@ struct multiply_dependant_action : virtual simple_action {
 void connectDependance( InternalDependance const & aDependant, simple_action  & aSource);
 void connect( std::list<InternalDependance > const & dependances, simple_action & aSource);
 
-simple_action readRegisterAction
-( SemanticInstruction * anInstruction
-  , eOperandCode aRegisterCode
-  , eOperandCode anOperandCode
-  , bool is64  = true
-);
+simple_action readRegisterAction ( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, eOperandCode anOperandCode, bool is64);
+simple_action readNZCVAction ( SemanticInstruction * anInstruction, eNZCV aBit, eOperandCode anOperandCode);
+simple_action readConstantAction( SemanticInstruction * anInstruction, uint64_t aVal, eOperandCode anOperandCode);
+simple_action calcAddressAction(SemanticInstruction * anInstruction, std::vector< std::list<InternalDependance> > & opDeps );
 
-simple_action readConstantAction
-( SemanticInstruction * anInstruction
-  , int aVal
-  , eOperandCode anOperandCode
-);
-
-predicated_action executeAction
-( SemanticInstruction * anInstruction
-  , std::unique_ptr<Operation> & anOperation
-  , std::vector< std::list<InternalDependance> > & opDeps
-  , eOperandCode aResult
-  , boost::optional<eOperandCode> aBypass
-);
-
-predicated_action executeAction_XTRA
-( SemanticInstruction * anInstruction
-  , std::unique_ptr<Operation> & anOperation
-  , std::vector< std::list<InternalDependance> > & opDeps
-  , boost::optional<eOperandCode> aBypass
-  , boost::optional<eOperandCode> aBypassY
-);
-
-predicated_action fpExecuteAction
-( SemanticInstruction * anInstruction
-  , std::unique_ptr<Operation> & anOperation
-  , int32_t num_ops
-  , eSize aDestSize
-  , eSize aSrcSize
-  , std::vector< std::list<InternalDependance> > & deps
-);
-
-predicated_action visOp
-( SemanticInstruction * anInstruction
-  , std::unique_ptr<Operation> & anOperation
-  , std::vector< std::list<InternalDependance> > & deps
-);
-
-simple_action calcAddressAction
-( SemanticInstruction * anInstruction
-  , std::vector< std::list<InternalDependance> > & opDeps
-);
-
-dependant_action writebackAction
-( SemanticInstruction * anInstruction
-  , eRegisterType aType
-);
-
-dependant_action writePrivAction
-( SemanticInstruction * anInstruction
-  , uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm, eOperandCode anOperandCode = kResult, bool hasCP = false
-);
-
-dependant_action writebackRD1Action ( SemanticInstruction * anInstruction );
-
-dependant_action writeXTRA
-( SemanticInstruction * anInstruction );
-
-dependant_action floatingWritebackAction
-( SemanticInstruction * anInstruction
-  , int32_t anIndex
-);
-
-predicated_action annulAction
-( SemanticInstruction * anInstruction
-  , eRegisterType aType
-);
-
-predicated_action annulRD1Action( SemanticInstruction * anInstruction );
-
-predicated_action annulXTRA
-( SemanticInstruction * anInstruction );
-
-predicated_action floatingAnnulAction
-( SemanticInstruction * anInstruction
-  , int32_t anIndex
-);
+predicated_action reverseAction ( SemanticInstruction * anInstruction, eOperandCode anInputCode, eOperandCode anOutputCode, bool is64);
+predicated_action reorderAction( SemanticInstruction * anInstruction, eOperandCode anInputCode, eOperandCode anOutputCode, uint8_t aContainerSize, bool is64);
+predicated_action crcAction(SemanticInstruction * anInstruction, uint32_t aPoly, eOperandCode anInputCode, eOperandCode anInputCode2,eOperandCode anOutputCode, bool is64);
+predicated_action countAction( SemanticInstruction * anInstruction, eOperandCode anInputCode, eOperandCode anOutputCode, eCountOp aCountOp, bool is64);
+predicated_action extendAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, std::unique_ptr<Operation> & anExtendOp, bool is64);
+predicated_action incrementAction ( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, bool is64);
+predicated_action shiftAction(SemanticInstruction * anInstruction, eOperandCode aRegisterCode, std::unique_ptr<Operation> & aShiftOp, uint64_t aShiftAmount, bool is64);
+predicated_action invertAction(SemanticInstruction * anInstruction, eOperandCode aRegisterCode, bool is64);
+predicated_action conditionSelectAction(SemanticInstruction * anInstruction, std::unique_ptr<Condition> & anOperation, uint32_t aCode, std::vector< std::list<InternalDependance> > & opDeps, eOperandCode aResult, bool anInvert, bool anIncrement, bool a64);
+predicated_action constantAction (SemanticInstruction * anInstruction, uint64_t aConstant, eOperandCode aResult, boost::optional<eOperandCode> aBypass );
+predicated_action operandAction(SemanticInstruction * anInstruction, eOperandCode anOperand, eOperandCode aResult, int anOffset, boost::optional<eOperandCode> aBypass);
+predicated_action conditionCompareAction(SemanticInstruction * anInstruction, std::unique_ptr<Condition> & anOperation, uint32_t aCode, std::vector< std::list<InternalDependance> > & opDeps, eOperandCode aResult, bool aSub_op, bool a64);
+predicated_action executeAction(SemanticInstruction * anInstruction, std::unique_ptr<Operation> & anOperation, std::vector< std::list<InternalDependance> > & opDeps, eOperandCode aResult, boost::optional<eOperandCode> aBypass);
+predicated_action annulAction(SemanticInstruction * anInstruction);
+predicated_action annulRD1Action(SemanticInstruction * anInstruction );
+predicated_action bitFieldAction(SemanticInstruction * anInstruction, std::vector< std::list<InternalDependance> > & opDeps, eOperandCode anOperandCode1, eOperandCode anOperandCode2, uint32_t imms, uint32_t immr, uint32_t wmask, uint32_t tmask, bool anExtend, bool sf);
+predicated_action extractAction(SemanticInstruction * anInstruction, std::vector< std::list<InternalDependance> > & opDeps, eOperandCode anOperandCode1, eOperandCode anOperandCode2, eOperandCode anOperandCode3, bool is64);
 
 
-multiply_dependant_action updateAddressAction
-( SemanticInstruction * anInstruction, eOperandCode aCode );
-
-multiply_dependant_action updateAddressAction
-( SemanticInstruction * anInstruction );
-
-multiply_dependant_action updateCASAddressAction
-( SemanticInstruction * anInstruction );
-
-predicated_dependant_action updateRMWValueAction
-( SemanticInstruction * anInstruction );
-
-predicated_dependant_action updateStoreValueAction
-( SemanticInstruction * anInstruction, eOperandCode data );
+dependant_action writebackAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, eOperandCode aMappedRegisterCode, bool is64, bool setflags);
+dependant_action branchCCAction(SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, std::unique_ptr<Condition> aCondition, bool floating);
+dependant_action branchRegAction(SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition);
+dependant_action branchToCalcAddressAction(SemanticInstruction * anInstruction);
 
 
-multiply_dependant_action updateSTDValueAction
-( SemanticInstruction * anInstruction );
+multiply_dependant_action updateAddressAction(SemanticInstruction * anInstruction, eOperandCode aCode = kAddress);
+multiply_dependant_action updateCASAddressAction(SemanticInstruction * anInstruction, eOperandCode aCode = kAddress);
+multiply_dependant_action updateCASValueAction(SemanticInstruction * anInstruction, eOperandCode aCompareCode, eOperandCode aNewCode );
+multiply_dependant_action updateCASPValueAction(SemanticInstruction * anInstruction, eOperandCode aCompareCode1, eOperandCode aCompareCode2, eOperandCode aNewCode1, eOperandCode aNewCode2 );
 
-multiply_dependant_action updateCASValueAction
-( SemanticInstruction * anInstruction );
-
-multiply_dependant_action updateFloatingStoreValueAction
-( SemanticInstruction * anInstruction, eSize aSize );
-
-predicated_dependant_action loadAction
-( SemanticInstruction * anInstruction, eSize aSize, eSignCode aSignExtend, boost::optional<eOperandCode> aBypass );
-
-predicated_dependant_action casAction
-( SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass );
-
-predicated_dependant_action caspAction
-( SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass );
+predicated_dependant_action updateStoreValueAction(SemanticInstruction * anInstruction, eOperandCode data );
+predicated_dependant_action loadAction(SemanticInstruction * anInstruction, eSize aSize, eSignCode aSignExtend, boost::optional<eOperandCode> aBypass );
+predicated_dependant_action casAction(SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass );
+predicated_dependant_action caspAction(SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass , boost::optional<eOperandCode> aBypass1 );
+predicated_dependant_action ldpAction(SemanticInstruction * anInstruction, eSize aSize, eSignCode aSignCode, boost::optional<eOperandCode> aBypass0, boost::optional<eOperandCode> aBypass1  );
 
 
-predicated_dependant_action rmwAction
-( SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass );
-
-predicated_dependant_action lddAction
-( SemanticInstruction * anInstruction, boost::optional<eOperandCode> aBypass0, boost::optional<eOperandCode> aBypass1  );
-
-predicated_dependant_action ldpAction
-( SemanticInstruction * anInstruction, eSize aSize, bool aSignCode, boost::optional<eOperandCode> aBypass0, boost::optional<eOperandCode> aBypass1  );
-
-
-predicated_dependant_action loadFloatingAction
-( SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass0, boost::optional<eOperandCode> aBypass1);
-
-predicated_action readPCAction
-( SemanticInstruction * anInstruction
-);
-
-predicated_action readPrivAction
-( SemanticInstruction * anInstruction, eOperandCode anOperandCode,
-  uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm, bool hasCP = false
-);
-
-predicated_action systemAction
-(SemanticInstruction * anInstruction,
- uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm, uint8_t rt, bool hasCP = false
-);
-
-
-
-predicated_action constantAction
-( SemanticInstruction * anInstruction
-  , uint64_t aConstant
-  , eOperandCode aResult
-  , boost::optional<eOperandCode> aBypass
-);
-
-predicated_action operandAction
-( SemanticInstruction * anInstruction
-  , eOperandCode anOperand
-  , eOperandCode aResult
-  , int anOffset
-  , boost::optional<eOperandCode> aBypass
-);
-
-dependant_action branchCCAction
-( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, std::unique_ptr<Condition> aCondition, bool floating);
-
-dependant_action branchRegAction
-( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition);
-
-dependant_action branchToCalcAddressAction
-( SemanticInstruction * anInstruction);
 
 } //narmDecoder
 

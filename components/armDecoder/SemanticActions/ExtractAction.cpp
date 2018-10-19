@@ -1,4 +1,4 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
@@ -59,7 +59,7 @@ namespace ll = boost::lambda;
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
 #include "PredicatedSemanticAction.hpp"
-
+#include "RegisterValueExtractor.hpp"
 #include <components/uArchARM/systemRegister.hpp>
 
 #define DBG_DeclareCategories armDecoder
@@ -70,57 +70,68 @@ namespace narmDecoder {
 
 using namespace nuArchARM;
 
-struct ReadPrivAction : public PredicatedSemanticAction {
-  eOperandCode theOperandCode;
-  uint8_t theOp0, theOp1, theOp2, theCRn, theCRm;
-  bool thehasCP;
+struct ExtractAction : public PredicatedSemanticAction {
+  eOperandCode theOperandCode1, theOperandCode2, theOperandCode3;
+  bool the64;
 
-  ReadPrivAction( SemanticInstruction * anInstruction,
-                  eOperandCode anOperandCode,
-                  uint8_t op0,
-                  uint8_t op1,
-                  uint8_t crn,
-                  uint8_t crm,
-                  uint8_t op2,
-                  bool hasCP )
+  ExtractAction ( SemanticInstruction * anInstruction
+                  , eOperandCode anOperandCode1, eOperandCode anOperandCode2
+                  , eOperandCode anOperandCode3, bool a64)
     : PredicatedSemanticAction( anInstruction, 1, true )
-    , theOperandCode( anOperandCode )
-    , theOp0( op0 )
-    , theOp1( op1 )
-    , theOp2( op2 )
-    , theCRn( crn )
-    , theCRm( crm )
-    , thehasCP (hasCP)
+    , theOperandCode1(anOperandCode1)
+    , theOperandCode2 (anOperandCode2)
+    , theOperandCode3 (anOperandCode3)
+    , the64 (a64)
   {
-    setReady( 0, true );
+    theInstruction->setExecuted(false);
   }
 
   void doEvaluate() {
 
-      // further access checks
-      SysRegInfo* ri = theInstruction->core()->getSysRegInfo(theOp0, theOp1, theOp2, theCRn, theCRm, thehasCP);
-      if (ri->accessfn(theInstruction->core()) == kACCESS_OK){
-          Operand val = ri->readfn(theInstruction->core());
-            theInstruction->setOperand(theOperandCode, val);
+    if (ready()) {
+      if (theInstruction->hasPredecessorExecuted()) {
+
+        uint64_t src =  boost::get<uint64_t>(theInstruction->operand(theOperandCode1));
+        uint64_t src2 =  boost::get<uint64_t>(theInstruction->operand(theOperandCode2));
+        uint64_t imm =  boost::get<uint64_t>(theInstruction->operand(theOperandCode2));
+
+        std::unique_ptr<Operation> op = operation(the64 ? kCONCAT64_ : kCONCAT32_);
+        std::vector<Operand> operands = {src, src2, the64};
+        bits res =  boost::get<bits>(op->operator ()(operands));
+
+        res >>= imm;
+
+        theInstruction->setOperand(kResult, res.to_ulong());
+
+        satisfyDependants();
+        theInstruction->setExecuted(true);
+      } else {
+        DBG_( Tmp, ( << *this << " waiting for predecessor ") );
+        reschedule();
       }
-    satisfyDependants();
+    }
   }
 
   void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " Read SYS store in " << theOperandCode;
+    anOstream << theInstruction->identify() << " BitFieldAction ";
   }
-
 };
 
-predicated_action readPrivAction
-( SemanticInstruction * anInstruction, eOperandCode anOperandCode,
-  uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm, bool hasCP
-) {
-  ReadPrivAction * act(new(anInstruction->icb()) ReadPrivAction( anInstruction, anOperandCode, op0, op1, op2, crn, crm, hasCP) );
+predicated_action extractAction
+(SemanticInstruction * anInstruction
+ , std::vector< std::list<InternalDependance> > & opDeps
+ , eOperandCode anOperandCode1, eOperandCode anOperandCode2
+ , eOperandCode anOperandCode3, bool a64
+){
+  ExtractAction * act(new(anInstruction->icb()) ExtractAction( anInstruction, anOperandCode1,
+                                                                 anOperandCode2, anOperandCode3, a64) );
+
+  for (uint32_t i = 0; i < opDeps.size(); ++i) {
+    opDeps[i].push_back( act->dependance(i) );
+  }
 
   return predicated_action( act, act->predicate() );
+
 }
-
-
 
 } //narmDecoder

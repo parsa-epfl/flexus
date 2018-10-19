@@ -62,59 +62,8 @@ struct validateXRegister {
 };
 
 
-struct SysReg_access{
-
-    SemanticInstruction * theInstruction;
-    uint8_t theOpc0;
-    uint8_t theOpc1;
-    uint8_t theOpc2;
-    uint8_t theCRn;
-    uint8_t theCRm;
-    uint8_t theIsRead;
-
-    SysReg_access ( SemanticInstruction * anInstruction,
-                    uint8_t opc0,
-                    uint8_t opc1,
-                    uint8_t opc2,
-                    uint8_t crn,
-                    uint8_t crm,
-                    uint8_t is_read)
-            : theInstruction(anInstruction)
-            , theOpc0 (opc0)
-            , theOpc1 (opc1)
-            , theOpc2 (opc2)
-            , theCRn (crn)
-            , theCRm (crm)
-            , theIsRead (is_read)
-          {}
-
-    bool operator () ();
-};
 
 
-struct checkSystemAccess {
-  SemanticInstruction * theInstruction;
-  uint8_t theOpc0;
-  uint8_t theOpc1;
-  uint8_t theOpc2;
-  uint8_t theCRn;
-  uint8_t theCRm;
-  checkSystemAccess( SemanticInstruction * anInstruction,
-                     uint8_t opc0,
-                     uint8_t opc1,
-                     uint8_t opc2,
-                     uint8_t crn,
-                     uint8_t crm)
-    : theInstruction(anInstruction)
-    , theOpc0 (opc0)
-    , theOpc1 (opc1)
-    , theOpc2 (opc2)
-    , theCRn (crn)
-    , theCRm (crm)
-  {}
-
-  bool operator () ();
-};
 
 struct validatePC {
   uint64_t theAddr;
@@ -165,27 +114,6 @@ struct validateMemory {
     , theInstruction(anInstruction)
   {}
 
-  bool operator () ();
-};
-
-
-struct validateLegalReturn {
-  SemanticInstruction * theInstruction;
-  validateLegalReturn( SemanticInstruction * anInstruction)
-    : theInstruction(anInstruction)
-  {}
-  bool operator () ();
-};
-
-struct AArch64ExclusiveMonitorsPass {
-  SemanticInstruction * theInstruction;
-  unsigned int theSize;
-  unsigned int theCPU;
-  AArch64ExclusiveMonitorsPass( SemanticInstruction * anInstruction, unsigned int size, unsigned int cpu)
-    : theInstruction(anInstruction)
-    , theSize(size)
-    , theCPU (cpu)
-  {}
   bool operator () ();
 };
 

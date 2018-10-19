@@ -55,7 +55,7 @@
 #include <components/CommonQEMU/Slices/MemOp.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 #include "CoreModel/SCTLR_EL.hpp"
-//#include "systemRegister.hpp"
+#include "CoreModel/PSTATE.hpp"
 
 #include <core/qemu/mai_api.hpp>
 
@@ -134,6 +134,94 @@ enum eConsistencyModel {
 };
 
 
+enum eMemoryAccess{
+    /* Used to indicate the type of accesses on which ordering
+       is to be ensured.  Modeled after SPARC barriers.
+
+       This is of the form MO_A_B where A is before B in program order.
+    */
+    kMO_LD_LD  = 0x01,
+    kMO_ST_LD  = 0x02,
+    kMO_LD_ST  = 0x04,
+    kMO_ST_ST  = 0x08,
+    kMO_ALL    = 0x0F,  /* OR of the above */
+
+    /* Used to indicate the kind of ordering which is to be ensured by the
+       instruction.  These types are derived from x86/aarch64 instructions.
+       It should be noted that these are different from C11 semantics.  */
+    kBAR_LDAQ  = 0x10,  /* Following ops will not come forward */
+    kBAR_STRL  = 0x20,  /* Previous ops will not be delayed */
+    kBAR_SC    = 0x30,  /* No ops cross barrier; OR of the above */
+};
+
+
+enum eExceptionType {
+    kException_UNCATEGORIZED          ,//= 0x00,
+    kException_WFX_TRAP               ,//= 0x01,
+    kException_CP15RTTRAP             ,//= 0x03,
+    kException_CP15RRTTRAP            ,//= 0x04,
+    kException_CP14RTTRAP             ,//= 0x05,
+    kException_CP14DTTRAP             ,//= 0x06,
+    kException_ADVSIMDFPACCESSTRAP    ,//= 0x07,
+    kException_FPIDTRAP               ,//= 0x08,
+    kException_CP14RRTTRAP            ,//= 0x0c,
+    kException_ILLEGALSTATE           ,//= 0x0e,
+    kException_AA32_SVC               ,//= 0x11,
+    kException_AA32_HVC               ,//= 0x12,
+    kException_AA32_SMC               ,//= 0x13,
+    kException_AA64_SVC               ,//= 0x15,
+    kException_AA64_HVC               ,//= 0x16,
+    kException_AA64_SMC               ,//= 0x17,
+    kException_SYSTEMREGISTERTRAP     ,//= 0x18,
+    kException_INSNABORT              ,//= 0x20,
+    kException_INSNABORT_SAME_EL      ,//= 0x21,
+    kException_PCALIGNMENT            ,//= 0x22,
+    kException_DATAABORT              ,//= 0x24,
+    kException_DATAABORT_SAME_EL      ,//= 0x25,
+    kException_SPALIGNMENT            ,//= 0x26,
+    kException_AA32_FPTRAP            ,//= 0x28,
+    kException_AA64_FPTRAP            ,//= 0x2c,
+    kException_SERROR                 ,//= 0x2f,
+    kException_BREAKPOINT             ,//= 0x30,
+    kException_BREAKPOINT_SAME_EL     ,//= 0x31,
+    kException_SOFTWARESTEP           ,//= 0x32,
+    kException_SOFTWARESTEP_SAME_EL   ,//= 0x33,
+    kException_WATCHPOINT             ,//= 0x34,
+    kException_WATCHPOINT_SAME_EL     ,//= 0x35,
+    kException_AA32_BKPT              ,//= 0x38,
+    kException_VECTORCATCH            ,//= 0x3a,
+    kException_AA64_BKPT              ,//= 0x3c,
+    kException_None                   ,//= 0xff,
+};
+
+std::ostream & operator << ( std::ostream & anOstream, eExceptionType aCode);
+
+
+enum ePrivRegs {
+  kPSTATE,
+  kSCTLR_EL,
+  kNZCV,
+  kDAIF ,
+  kFPCR ,
+  kFPSR ,
+  kDCZID_EL0 ,
+  kDC_ZVA ,
+  kCURRENT_EL,
+  kELR_EL1,
+  kSPSR_EL1,
+  kSP_EL0,
+  kSP_EL1,
+  kSPSel,
+  kSPSR_IRQ,
+  kSPSR_ABT,
+  kSPSR_UND,
+  kSPSR_FIQ,
+  kLastPrivReg
+};
+
+SysRegInfo& getPriv(ePrivRegs aCode);
+ePrivRegs getPrivRegType(uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm);
+
 enum eAccessResult {
         /* Access is permitted */
         kACCESS_OK = 0,
@@ -160,6 +248,8 @@ enum eAccessResult {
          */
        kACCESS_TRAP_FP_EL2 = 7,
        kACCESS_TRAP_FP_EL3 = 8,
+
+       kACCESS_LAST,
 };
 
 
@@ -236,6 +326,22 @@ enum eRegInfo {
     kARM_LAST_SPECIAL = kARM_DC_ZVA,
     /* Mask of only the flag bits in a type field */
     kARM_FLAG_MASK = 0xff,
+};
+
+
+// Mode_Bits
+// =========
+// AArch32 PSTATE.M mode bits
+enum ePSTATE_M {
+    kM32_User    = 10000,
+    kM32_FIQ     = 10001,
+    kM32_IRQ     = 10010,
+    kM32_Svc     = 10011,
+    kM32_Monitor = 10110,
+    kM32_Abort   = 10111,
+    kM32_Hyp     = 11010,
+    kM32_Undef   = 11011,
+    kM32_System  = 11111,
 };
 
 enum eCacheType {
@@ -326,6 +432,7 @@ enum eInstructionCode
   , codeMEMBARSync
   , codeMEMBARStLd
   , codeMEMBARStSt
+  , codeCLREX
   //Unsupported Instructions
   , codeRDPRUnsupported
   , codeWRPRUnsupported
@@ -462,7 +569,9 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction {
   virtual void changeInstCode(eInstructionCode ) = 0;
 
   virtual VirtualMemoryAddress pc() const = 0;
-
+  virtual bool isPriv() const = 0;
+  virtual void makePriv() = 0;
+  virtual bool isTrap() const = 0;
   virtual bool preValidate() = 0;
   virtual bool advancesSimics() const = 0;
   virtual bool postValidate() = 0;
@@ -476,9 +585,9 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction {
 
   virtual bool mayRetire() const = 0;
   virtual bool mayCommit() const = 0;
-  virtual void raise(int32_t anException)  = 0;
-  virtual int32_t willRaise() const = 0;
-  virtual void setWillRaise(int32_t anException) = 0;
+  virtual void raise(eExceptionType anException)  = 0;
+  virtual eExceptionType willRaise() const = 0;
+  virtual void setWillRaise(eExceptionType anException) = 0;
   virtual int64_t sequenceNo() const = 0;
   virtual bool isComplete() const = 0;
 
@@ -590,244 +699,106 @@ typedef boost::variant< uint64_t , bits > register_value;
 struct uArchARM {
 
     virtual ~uArchARM() {}
-    virtual mapped_reg map( reg aReg ) {
-    DBG_Assert( false );
-    return mapped_reg();
-    }
-    virtual std::pair<mapped_reg, mapped_reg> create( reg aReg ) {
-      DBG_Assert( false );
-      return std::make_pair(mapped_reg(), mapped_reg());
-    }
-    virtual void free( mapped_reg aReg ) {
-    DBG_Assert( false );
-    }
-    virtual void restore( reg aName, mapped_reg aReg ) {
-    DBG_Assert( false );
-    }
-    virtual void create( boost::intrusive_ptr<SemanticAction> anAction) {
-    DBG_Assert( false );
-    }
-    virtual void reschedule( boost::intrusive_ptr<SemanticAction> anAction) {
-    DBG_Assert( false );
-    }
-    virtual eResourceStatus requestRegister( mapped_reg aRegister, InstructionDependance const & aDependance) {
-    DBG_Assert( false );
-    return kNotReady;
-    }
-    virtual eResourceStatus requestRegister( mapped_reg aRegister) {
-    DBG_Assert( false );
-    return kNotReady;
-    }
-    virtual register_value readRegister( mapped_reg aRegister ) {
-    DBG_Assert( false );
-    return 0ULL;
-    }
-    virtual void squashRegister( mapped_reg aRegister) {
-    DBG_Assert( false );
-    }
-    virtual void writeRegister( mapped_reg aRegister, register_value aValue ) {
-    DBG_Assert( false );
-    }
-    virtual void copyRegValue( mapped_reg aSource, mapped_reg aDest ) {
-    DBG_Assert( false );
-    }
-    virtual void satisfy( InstructionDependance const & aDep) {
-    DBG_Assert(false);
-    }
-    virtual void squash( InstructionDependance const & aDep) {
-    DBG_Assert(false);
-    }
-    virtual void satisfy( std::list<InstructionDependance> & dependances) {
-    DBG_Assert(false);
-    }
-    virtual void squash( std::list<InstructionDependance> & dependances) {
-    DBG_Assert(false);
-    }
-    virtual void applyToNext( boost::intrusive_ptr< Instruction > anInsn, boost::intrusive_ptr<Interaction> anInteraction) {
-    DBG_Assert(false);
-    }
-    virtual void deferInteraction( boost::intrusive_ptr< Instruction > anInsn, boost::intrusive_ptr<Interaction> anInteraction) {
-    DBG_Assert(false);
-    }
-    virtual bool squashAfter( boost::intrusive_ptr< Instruction > anInsn) {
-    DBG_Assert(false);
-    return false;
-    }
-    virtual void redirectFetch( VirtualMemoryAddress anAddress ) {
-    DBG_Assert(false);
-    }
-    virtual void insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB, eAccType type ) {
-    DBG_Assert(false);
-    }
-    virtual void insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB, InstructionDependance const & aDependance , eAccType type) {
-    DBG_Assert(false);
-    }
-    virtual void eraseLSQ( boost::intrusive_ptr< Instruction > anInsn ) {
-    DBG_Assert(false);
-    }
-    virtual void resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, VirtualMemoryAddress theAddr ) {
-    DBG_Assert(false);
-    }
-    virtual void updateStoreValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, boost::optional<uint64_t> anExtendedValue = boost::none ) {
-    DBG_Assert(false);
-    }
-    virtual void annulStoreValue( boost::intrusive_ptr< Instruction > anInsn ) {
-    DBG_Assert(false);
-    }
-    virtual void updateCASValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, bits aCMPValue ) {
-    DBG_Assert(false);
-    }
-    virtual void retireMem( boost::intrusive_ptr<Instruction> aCorrespondingInstruction) {
-    DBG_Assert(false);
-    }
-    virtual void checkTranslation( boost::intrusive_ptr<Instruction> anInsn) {
-    DBG_Assert(false);
-    }
-    virtual void commitStore( boost::intrusive_ptr<Instruction> aCorrespondingInstruction) {
-    DBG_Assert(false);
-    }
+    virtual mapped_reg map( reg aReg ) { DBG_Assert( false ); return mapped_reg(); }
+    virtual std::pair<mapped_reg, mapped_reg> create( reg aReg ) { DBG_Assert( false ); return std::make_pair(mapped_reg(), mapped_reg()); }
+    virtual void free( mapped_reg aReg ) { DBG_Assert( false ); }
+    virtual void restore( reg aName, mapped_reg aReg ) { DBG_Assert( false );}
+    virtual void create( boost::intrusive_ptr<SemanticAction> anAction) { DBG_Assert( false ); }
+    virtual void reschedule( boost::intrusive_ptr<SemanticAction> anAction) { DBG_Assert( false ); }
+    virtual eResourceStatus requestRegister( mapped_reg aRegister, InstructionDependance const & aDependance) { DBG_Assert( false );  return kNotReady; }
+    virtual eResourceStatus requestRegister( mapped_reg aRegister) { DBG_Assert( false ); return kNotReady;}
+    virtual register_value readRegister( mapped_reg aRegister ) { DBG_Assert( false ); return 0ULL; }
+    virtual void squashRegister( mapped_reg aRegister) { DBG_Assert( false ); }
+    virtual void writeRegister( mapped_reg aRegister, register_value aValue ) { DBG_Assert( false ); }
+    virtual void copyRegValue( mapped_reg aSource, mapped_reg aDest ) { DBG_Assert( false ); }
+    virtual void satisfy( InstructionDependance const & aDep) { DBG_Assert(false); }
+    virtual void squash( InstructionDependance const & aDep) { DBG_Assert(false); }
+    virtual void satisfy( std::list<InstructionDependance> & dependances) { DBG_Assert(false); }
+    virtual void squash( std::list<InstructionDependance> & dependances) { DBG_Assert(false); }
+    virtual void applyToNext( boost::intrusive_ptr< Instruction > anInsn, boost::intrusive_ptr<Interaction> anInteraction) { DBG_Assert(false); }
+    virtual void deferInteraction( boost::intrusive_ptr< Instruction > anInsn, boost::intrusive_ptr<Interaction> anInteraction) { DBG_Assert(false); }
+    virtual bool squashAfter( boost::intrusive_ptr< Instruction > anInsn) { DBG_Assert(false); return false; }
+    virtual void redirectFetch( VirtualMemoryAddress anAddress ) { DBG_Assert(false); }
+    virtual void insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB, eAccType type ) { DBG_Assert(false); }
+    virtual void insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB, InstructionDependance const & aDependance , eAccType type) { DBG_Assert(false); }
+    virtual void eraseLSQ( boost::intrusive_ptr< Instruction > anInsn ) { DBG_Assert(false); }
+    virtual void resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, VirtualMemoryAddress theAddr ) { DBG_Assert(false); }
+    virtual void updateStoreValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, boost::optional<uint64_t> anExtendedValue = boost::none ) { DBG_Assert(false); }
+    virtual void annulStoreValue( boost::intrusive_ptr< Instruction > anInsn ) { DBG_Assert(false); }
+    virtual void updateCASValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, bits aCMPValue ) { DBG_Assert(false); }
+    virtual void retireMem( boost::intrusive_ptr<Instruction> aCorrespondingInstruction) { DBG_Assert(false); }
+    virtual void checkTranslation( boost::intrusive_ptr<Instruction> anInsn) { DBG_Assert(false); }
+    virtual void commitStore( boost::intrusive_ptr<Instruction> aCorrespondingInstruction) { DBG_Assert(false); }
+    virtual uint32_t currentEL() { DBG_Assert(false); return 0; }
+    virtual void invalidateCache(eCacheType aType, eShareableDomain aDomain, eCachePoint aPoint){ DBG_Assert(false); }
+    virtual void invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, eCachePoint aPoint){ DBG_Assert(false); }
+    virtual void invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, uint32_t aSize, eCachePoint aPoint){ DBG_Assert(false); }
+    virtual eAccessResult accessZVA(){ DBG_Assert(false); return kACCESS_OK; }
+    virtual uint32_t readDCZID_EL0(){ DBG_Assert(false); return 0; }
+    virtual void SystemRegisterTrap(uint8_t target_el, uint8_t op0, uint8_t op2,uint8_t op1, uint8_t crn, uint8_t rt, uint8_t crm, uint8_t dir){ DBG_Assert(false);}
+    virtual bool _SECURE(){ DBG_Assert(false); return false; }
+    virtual PSTATE _PSTATE(){ DBG_Assert(false); return PSTATE(0); }
+    virtual SCTLR_EL _SCTLR(uint32_t anELn){ DBG_Assert(false); return SCTLR_EL(0); }
+    virtual SysRegInfo& getSysRegInfo(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t CRn, uint8_t CRm){ DBG_Assert(false); return getPriv(kLastPrivReg);}
+    virtual void increaseEL(){ DBG_Assert(false); }
+    virtual void decreaseEL(){ DBG_Assert(false); }
+    virtual void accessMem( PhysicalMemoryAddress anAddress, boost::intrusive_ptr<Instruction> anInsn ) { DBG_Assert(false); }
+    virtual bits retrieveLoadValue( boost::intrusive_ptr<Instruction> aCorrespondingInstruction) { DBG_Assert(false); return bits(0); }
+    virtual bits retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction> aCorrespondingInstruction) { DBG_Assert(false); return bits(0); }
+    virtual bool checkStoreRetirement( boost::intrusive_ptr<Instruction> aStore) { DBG_Assert(false); return false; }
+    virtual uint32_t getRoundingMode() { DBG_Assert(false); return 0; }
 
-    virtual uint32_t currentEL() {
-        DBG_Assert(false);
-        return 0;
-    }
-
-    virtual void invalidateCache(eCacheType aType, eShareableDomain aDomain, eCachePoint aPoint){
-        DBG_Assert(false);
-    }
-
-    virtual void invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, eCachePoint aPoint){
-        DBG_Assert(false);
-    }
-
-    virtual void invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, uint32_t aSize, eCachePoint aPoint){
-        DBG_Assert(false);
-    }
-
-    virtual eAccessResult accessZVA(){
-        DBG_Assert(false);
-        return kACCESS_OK;
-    }
-
-
-    virtual uint32_t readDCZID_EL0(){
-        DBG_Assert(false);
-        return 0;
-    }
-
-    virtual SCTLR_EL _SCTLR(uint32_t anELn){
-        DBG_Assert(false);
-        return SCTLR_EL(0);
-    }
-
-    virtual SysRegInfo* getSysRegInfo(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t CRn, uint8_t CRm, bool hasCP = false){
-        DBG_Assert(false);
-        return nullptr;
-    }
-
-    virtual void initSystemRegisters(std::multimap<int, SysRegInfo*> * aMap){
-        DBG_Assert(false);
-    }
-
-
-    virtual uint32_t increaseEL(){
-        DBG_Assert(false);
-        return 0;
-    }
-
-    virtual uint32_t decreaseEL(){
-    DBG_Assert(false);
-    return 0;
-    }
-
-
-    virtual void accessMem( PhysicalMemoryAddress anAddress, boost::intrusive_ptr<Instruction> anInsn ) {
-    DBG_Assert(false);
-    }
-    virtual bits retrieveLoadValue( boost::intrusive_ptr<Instruction> aCorrespondingInstruction) {
-    DBG_Assert(false);
-    return bits(0);
-    }
-    virtual bits retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction> aCorrespondingInstruction) {
-    DBG_Assert(false);
-    return bits(0);
-    }
-    virtual bool checkStoreRetirement( boost::intrusive_ptr<Instruction> aStore) {
-    DBG_Assert(false);
-    return true;
-    }
-    virtual uint32_t getRoundingMode()              { DBG_Assert(false); return 0; }
-
-    virtual uint32_t getPSTATE()                    { DBG_Assert(false); return 0; }
-    virtual void setPSTATE(uint32_t aPSTATE)        { DBG_Assert(false); }
-
-    virtual uint32_t getFPSR()                      { DBG_Assert(false); return 0; }
-    virtual void setFPSR(uint32_t aValue)           { DBG_Assert(false); }
-    virtual uint32_t getFPCR()                      { DBG_Assert(false); return 0; }
-    virtual void setFPCR(uint32_t aValue)           { DBG_Assert(false); }
-    virtual uint32_t readFPCR()                     { DBG_Assert(false); return 0; }
-    virtual void writeFPCR(uint32_t aValue)         { DBG_Assert(false); }
-
-    virtual void setSCTLR_EL( uint64_t* aSCTLR)        { DBG_Assert(false); }
-    virtual uint64_t* getSCTLR_EL()                     { DBG_Assert(false); return nullptr; }
-
-    virtual void setHCREL2( uint64_t aSCTLR)        { DBG_Assert(false); }
-    virtual uint64_t getHCREL2()                     { DBG_Assert(false); return 0; }
-
-//    virtual uint32_t getDCZID_EL0();
-//    virtual void setDCZID_EL0(uint32_t aDCZID_EL0);
-
+    virtual void setSP_el (uint8_t anEL, uint64_t aVal){  DBG_Assert(false); }
+    virtual uint64_t getSP_el (uint8_t anEL){  DBG_Assert(false); return 0;}
+    virtual void setSPSel (uint32_t aVal){  DBG_Assert(false); }
+    virtual uint32_t getSPSel (){  DBG_Assert(false); return 0;}
+    virtual uint32_t getPSTATE() { DBG_Assert(false); return 0; }
+    virtual void setPSTATE(uint32_t aPSTATE) { DBG_Assert(false); }
+    virtual uint32_t getFPSR() { DBG_Assert(false); return 0; }
+    virtual void setFPSR(uint32_t aValue) { DBG_Assert(false); }
+    virtual uint32_t getFPCR() { DBG_Assert(false); return 0; }
+    virtual void setFPCR(uint32_t aValue) { DBG_Assert(false); }
+    virtual uint32_t readFPCR() { DBG_Assert(false); return 0; }
+    virtual void writeFPCR(uint32_t aValue) { DBG_Assert(false); }
+    virtual void setSCTLR_EL( uint8_t anId, uint64_t aSCTLR) { DBG_Assert(false); }
+    virtual uint64_t getSCTLR_EL(uint8_t anId) { DBG_Assert(false); return 0; }
+    virtual void setHCREL2( uint64_t aSCTLR) { DBG_Assert(false); }
+    virtual uint64_t getHCREL2() { DBG_Assert(false); return 0; }
+    virtual uint32_t getDCZID_EL0() { DBG_Assert(false); return 0; }
+    virtual void setDCZID_EL0(uint32_t aDCZID_EL0) { DBG_Assert(false); }
     virtual bool isAARCH64(){ DBG_Assert(false); return false; }
     virtual void setAARCH64(bool aMode){ DBG_Assert(false);}
-
     virtual void setException( Flexus::Qemu::API::exception_t anEXP)  { DBG_Assert(false); }
-    virtual Flexus::Qemu::API::exception_t getException()  { DBG_Assert(false); }
+    virtual void setDAIF(uint32_t aDAIF) { DBG_Assert(false); }
 
-    virtual uint64_t getSP()            { DBG_Assert(false); return 0; }
-
+    virtual Flexus::Qemu::API::exception_t getException()  { DBG_Assert(false); return Flexus::Qemu::API::exception_t(); }
+    virtual uint64_t getSP() { DBG_Assert(false); return 0; }
     virtual uint64_t getXRegister(uint32_t aReg) { DBG_Assert(false); return 0; }
     virtual void setXRegister(uint32_t aReg, uint64_t aVal) { DBG_Assert(false); }
-
     virtual void writePR(uint32_t aPR, uint64_t aVal) { DBG_Assert(false); }
-    virtual void updatePSTATEbits(uint64_t mask) { DBG_Assert(false); }
-    virtual uint64_t readPR(uint32_t aPR) { DBG_Assert(false); return 0; }
-    virtual std::string prName(uint32_t aPR) { DBG_Assert(false); return 0; }
+    virtual uint64_t readPR(ePrivRegs aPR) { DBG_Assert(false); return 0; }
     virtual void bypass(mapped_reg aReg, register_value aValue) { DBG_Assert(false); }
-    virtual void connectBypass(mapped_reg aReg, boost::intrusive_ptr<Instruction> inst, std::function<bool(register_value)> ) {
-    DBG_Assert(false);
-    }
-    virtual eConsistencyModel consistencyModel( ) const {
-    DBG_Assert(false);
-    return kSC;
-    }
-    virtual bool speculativeConsistency( ) const {
-    DBG_Assert(false);
-    return false;
-    }
-    virtual bool sbEmpty( ) const {
-    DBG_Assert(false);
-    return true;
-    }
-    virtual bool sbFull( ) const {
-    DBG_Assert(false);
-    return false;
-    }
-    virtual bool mayRetire_MEMBARStLd( ) const {
-    DBG_Assert(false);
-    return false;
-    }
-    virtual bool mayRetire_MEMBARStSt( ) const {
-    DBG_Assert(false);
-    return false;
-    }
-    virtual bool mayRetire_MEMBARSync( ) const {
-    DBG_Assert(false);
-    return false;
-    }
-    virtual void branchFeedback( boost::intrusive_ptr<BranchFeedback> feedback ) {
-    DBG_Assert(false);
-    }
+    virtual void connectBypass(mapped_reg aReg, boost::intrusive_ptr<Instruction> inst, std::function<bool(register_value)> ) { DBG_Assert(false); }
+    virtual eConsistencyModel consistencyModel( ) const { DBG_Assert(false); return kSC; }
+    virtual bool speculativeConsistency( ) const { DBG_Assert(false); return false; }
+    virtual bool sbEmpty( ) const { DBG_Assert(false); return false; }
+    virtual bool sbFull( ) const { DBG_Assert(false); return false; }
+    virtual bool mayRetire_MEMBARStLd( ) const { DBG_Assert(false); return false; }
+    virtual bool mayRetire_MEMBARStSt( ) const { DBG_Assert(false); return false; }
+    virtual bool mayRetire_MEMBARSync( ) const { DBG_Assert(false); return false; }
+    virtual void branchFeedback( boost::intrusive_ptr<BranchFeedback> feedback ) { DBG_Assert(false); }
+    virtual void takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExceptionType aTrapType) { DBG_Assert(false); }
 
+    virtual void clearExclusiveLocal(){ DBG_Assert(false); }
+    virtual void clearExclusiveGlobal(){ DBG_Assert(false); }
+
+    virtual void markExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize){ DBG_Assert(false); }
+    virtual void markExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize){ DBG_Assert(false); }
+    virtual void markExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize){ DBG_Assert(false); }
+
+    virtual bool isExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize){ DBG_Assert(false); return false; }
+    virtual bool isExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize){ DBG_Assert(false); return false; }
+    virtual bool isExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize){ DBG_Assert(false); return false; }
 };
 
 static const PhysicalMemoryAddress kInvalid(0);

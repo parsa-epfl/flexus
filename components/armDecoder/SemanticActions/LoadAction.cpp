@@ -99,11 +99,13 @@ struct LoadAction : public PredicatedSemanticAction {
   void doLoad() {
       SEMANTICS_DBG(*this);
     bits value;
+    
     if (theLoadExtended) {
       value = core()->retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
     } else {
       value = core()->retrieveLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
     }
+    
     switch (theSize) {
       case kByte:
         value &= bits(value.size(), 0xFFULL);
@@ -124,6 +126,11 @@ struct LoadAction : public PredicatedSemanticAction {
         }
         break;
       case kDoubleWord:
+        break;
+    case kQuadWord:
+      break;
+    default:
+        DBG_Assert(false);
         break;
     }
 
@@ -149,6 +156,7 @@ predicated_dependant_action loadAction
   LoadAction * act(new(anInstruction->icb()) LoadAction( anInstruction, aSize, aSignCode, aBypass, false ) );
   return predicated_dependant_action( act, act->dependance(), act->predicate() );
 }
+
 predicated_dependant_action casAction
 ( SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass ) {
   LoadAction * act(new(anInstruction->icb()) LoadAction( anInstruction, aSize, kNoExtention, aBypass, true) );

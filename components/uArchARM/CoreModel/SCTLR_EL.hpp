@@ -106,6 +106,10 @@ typedef struct SCTLR_EL{
         return theVal & SCTLR_DZE;
     }
 
+    uint32_t UMA() const{
+        return theVal & SCTLR_UMA;
+    }
+
 
 private:
     uint64_t theVal;

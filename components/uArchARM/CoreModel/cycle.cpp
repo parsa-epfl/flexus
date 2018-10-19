@@ -70,7 +70,7 @@ void CoreImpl::cycle(int32_t aPendingInterrupt) {
 
   if (aPendingInterrupt != thePendingInterrupt) {
 
-      DBG_( Verb, ( << "Interrupting..." ) );
+      CORE_DBG( "Interrupting..." );
 
     if (aPendingInterrupt == 0) {
       DBG_(Tmp, ( << theName << " Interrupt: " << std::hex << thePendingInterrupt << std::dec << " pending for " << (theFlexus->cycleCount() - theInterruptReceived) ) );
@@ -97,16 +97,6 @@ void CoreImpl::cycle(int32_t aPendingInterrupt) {
       throw ResynchronizeWithQemuException();
     }
   }
-
-  //DBG_( Tmp, ( << theName << " Core: Status" << theFlexus->cycleCount() << "}" << (theSpinning ? " <spinning>" : "" ) << (theIsSpeculating ? " <speculating>" : "" )) );
-
-  //Update TICK, STICK
-//  ++theTICK;
-//  --theSTICK_tillIncrement;
-//  if (theSTICK_tillIncrement <= 0) {
-//    ++theSTICK;
-//    theSTICK_tillIncrement = theSTICK_interval;
-//  }
 
   if (Flexus::Dbg::Debugger::theDebugger->theMinimumSeverity <= 3) {
 //      DBG_( Tmp, ( << "Dumping..." ) );
@@ -249,8 +239,8 @@ void CoreImpl::cycle(int32_t aPendingInterrupt) {
   //Commit instructions the SRB and compare to simics
   commit();
 
-  //handleTrap();
-  //handlePopTL();
+  handleTrap();
+//  handlePopTL();
 
   if (theRedirectRequested) {
     DBG_( Tmp, ( << " Core triggering Redirect to " << theRedirectPC ) );//NOOSHIN
@@ -441,8 +431,8 @@ void CoreImpl::checkTranslation( boost::intrusive_ptr<Instruction> anInsn) {
     xlat.thePSTATE = getPSTATE() ;
     xlat.theType = ( iter->isStore() ? Flexus::Qemu::Translation::eStore :  Flexus::Qemu::Translation::eLoad) ;
     translate(xlat);
-//    iter->theException = xlat.theException;
-    if (iter->theException != 0 ) {
+    iter->theException = kException_None;
+    if (iter->theException < kException_None ) {
       DBG_(Tmp, ( <<  theName << " Taking MMU exception: " << iter->theException << " "  << *iter ) );//NOOSHIN
       takeTrap(anInsn, iter->theException);
       anInsn->setAccessAddress(PhysicalMemoryAddress(0));
@@ -615,7 +605,7 @@ void CoreImpl::retireMem( boost::intrusive_ptr<Instruction> anInsn) {
 
       //TRACE TRACKER : Notify trace tracker of store
       //uint64_t logical_timestamp = theCommitNumber + theSRB.size();
-//      theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/, anInsn->isPriv(), 0 );
+      theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/, anInsn->isPriv(), 0 );
       /* CMU-ONLY-BLOCK-BEGIN */
 //      if (theTrackParallelAccesses ) {
 //        theTraceTracker.parallelList(theNode, eCore, iter->thePaddr, iter->theParallelAddresses);
@@ -725,7 +715,7 @@ void CoreImpl::retireMem( boost::intrusive_ptr<Instruction> anInsn) {
 
       //TRACE TRACKER : Notify trace tracker of load commit
       //uint64_t logical_timestamp = theCommitNumber + theSRB.size();
-//      theTraceTracker.access(theNode, eCore, iter->thePaddr, anInsn->pc(), false, false, false, anInsn->isPriv(), 0) ;
+      theTraceTracker.access(theNode, eCore, iter->thePaddr, anInsn->pc(), false, false, false, anInsn->isPriv(), 0) ;
       theTraceTracker.commit(theNode, eCore, iter->thePaddr, anInsn->pc(), 0 );
       /* CMU-ONLY-BLOCK-BEGIN */
 //      if (theTrackParallelAccesses ) {
@@ -771,22 +761,8 @@ void CoreImpl::retireMem( boost::intrusive_ptr<Instruction> anInsn) {
       }
 
       //TRACE TRACKER : Notify trace tracker of store
-      //uint64_t logical_timestamp = theCommitNumber + theSRB.size();
-//      theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/, anInsn->isPriv(), 0 );
-      /* CMU-ONLY-BLOCK-BEGIN */
-//      if (theTrackParallelAccesses ) {
-//        theTraceTracker.parallelList(theNode, eCore, iter->thePaddr, iter->theParallelAddresses);
-        /*
-                  DBG_( Dev,  ( << theName << " SR " << std::hex << iter->thePaddr << std::dec << " parallel set follows " ) );
-                  std::set< PhysicalMemoryAddress >::iterator pal_iter = iter->theParallelAddresses.begin();
-                  std::set< PhysicalMemoryAddress >::iterator pal_end = iter->theParallelAddresses.end();
-                  while (pal_iter != pal_end ) {
-                    DBG_ ( Dev, ( << "    " << std::hex << *pal_iter << std::dec ) );
-                    ++pal_iter;
-                  }
-        */
-//      }
-      /* CMU-ONLY-BLOCK-END */
+//      uint64_t logical_timestamp = theCommitNumber + theSRB.size();
+      theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/, anInsn->isPriv(), 0 );
 
       requireWritePermission( iter );
 
@@ -911,6 +887,79 @@ uint32_t CoreImpl::readDCZID_EL0(){
     return theDCZID_EL0 | dzp_bit;
 }
 
+bool CoreImpl::_SECURE(){
+    return true;
+}
+
+void CoreImpl::SystemRegisterTrap(uint8_t target_el, uint8_t op0, uint8_t op2,uint8_t op1, uint8_t crn, uint8_t rt, uint8_t crm, uint8_t dir){
+//    assert (target_el >= _PSTATE().EL());
+//    theException = ExceptionSyndrome(Exception_SystemRegisterTrap);
+//    exception.syndrome<21:20> = op0;
+//    exception.syndrome<19:17> = op2;
+//    exception.syndrome<16:14> = op1;
+//    exception.syndrome<13:10> = crn;
+//    exception.syndrome<9:5> = rt;
+//    exception.syndrome<4:1> = crm;
+//    exception.syndrome<0> = dir;vbar
+
+//    uint64_t preferred_exception_return = ThisInstrAddr();
+//    vect_offset = 0x0;
+
+//    if target_el == EL1 && AArch64.GeneralExceptionsToEL2() then
+//        AArch64.TakeException(EL2, exception, preferred_exception_return, vect_offset);
+//    else
+//        AArch64.TakeException(target_el, exception, preferred_exception_return, vect_offset);
+}
+
+std::ostream & operator << ( std::ostream & anOstream, eExceptionType aCode){
+    std::string exceptionTypes [] = {
+        "Exception_UNCATEGORIZED         ",
+        "Exception_WFX_TRAP              ",
+        "Exception_CP15RTTRAP            ",
+        "Exception_CP15RRTTRAP           ",
+        "Exception_CP14RTTRAP            ",
+        "Exception_CP14DTTRAP            ",
+        "Exception_ADVSIMDFPACCESSTRAP   ",
+        "Exception_FPIDTRAP              ",
+        "Exception_CP14RRTTRAP           ",
+        "Exception_ILLEGALSTATE          ",
+        "Exception_AA32_SVC              ",
+        "Exception_AA32_HVC              ",
+        "Exception_AA32_SMC              ",
+        "Exception_AA64_SVC              ",
+        "Exception_AA64_HVC              ",
+        "Exception_AA64_SMC              ",
+        "Exception_SYSTEMREGISTERTRAP    ",
+        "Exception_INSNABORT             ",
+        "Exception_INSNABORT_SAME_EL     ",
+        "Exception_PCALIGNMENT           ",
+        "Exception_DATAABORT             ",
+        "Exception_DATAABORT_SAME_EL     ",
+        "Exception_SPALIGNMENT           ",
+        "Exception_AA32_FPTRAP           ",
+        "Exception_AA64_FPTRAP           ",
+        "Exception_SERROR                ",
+        "Exception_BREAKPOINT            ",
+        "Exception_BREAKPOINT_SAME_EL    ",
+        "Exception_SOFTWARESTEP          ",
+        "Exception_SOFTWARESTEP_SAME_EL  ",
+        "Exception_WATCHPOINT            ",
+        "Exception_WATCHPOINT_SAME_EL    ",
+        "Exception_AA32_BKPT             ",
+        "Exception_VECTORCATCH           ",
+        "Exception_AA64_BKPT             ",
+        "Exception_None                  "
+    };
+
+    if (aCode >= kException_None) {
+      anOstream << "InvalidExceptionType(" << static_cast<int>(aCode) << ")";
+    } else {
+      anOstream << exceptionTypes[aCode];
+    }
+    return anOstream;
+
+
+}
 
 PSTATE CoreImpl::_PSTATE(){
     return PSTATE(thePSTATE);
@@ -921,21 +970,13 @@ SCTLR_EL CoreImpl::_SCTLR(uint32_t anELn){
     return SCTLR_EL(theSCTLR_EL[anELn]);
 }
 
-void CoreImpl::initSystemRegisters(std::multimap<int, SysRegInfo*> * aMap){
-    aMap = initSysRegs();
+
+SysRegInfo& CoreImpl::getSysRegInfo(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn, uint8_t crm){
+    return getPriv(opc0, opc1, opc2, crn, crm);
 }
 
 
-SysRegInfo* CoreImpl::getSysRegInfo(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t CRn, uint8_t CRm, bool hasCP){
-    std::array <uint8_t, 5> ar = {opc0, opc1, opc2, CRn, CRm};
-    if (hasCP){
-        return getRegInfo_cp(ar);
-    }
-    return getRegInfo(ar);
-}
-
-
-uint32_t CoreImpl::increaseEL() {
+void CoreImpl::increaseEL() {
     uint32_t el = extract32(thePSTATE, 2, 2);
     if (el < 0 || el >= 1)
         DBG_Assert(false);
@@ -946,7 +987,7 @@ uint32_t CoreImpl::increaseEL() {
     thePSTATE |= (el << 2);
 }
 
-uint32_t CoreImpl::decreaseEL() {
+void CoreImpl::decreaseEL() {
     uint32_t el = extract32(thePSTATE, 2, 2);
     if (el <= 0 || el > 1)
         DBG_Assert(false);
@@ -955,6 +996,53 @@ uint32_t CoreImpl::decreaseEL() {
     //update pstate
     thePSTATE &= 0xfffffff3;
     thePSTATE |= (el << 2);
+}
+
+void CoreImpl::clearExclusiveLocal(){
+    theLocalExclusivePhysicalMonitor.clear();
+    theLocalExclusiveVirtualMonitor.clear();
+}
+
+void CoreImpl::clearExclusiveGlobal(){
+    GLOBAL_EXCLUSIVE_MONITOR[theNode].clear();
+}
+
+
+void CoreImpl::markExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize){
+    if (theLocalExclusiveVirtualMonitor.size() > 1){
+        DBG_Assert(false, (<< "Only one local exclusive tag per core is allowed"));
+    }
+    theLocalExclusiveVirtualMonitor[anAddress] = aSize;
+}
+
+void CoreImpl::markExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize){
+
+    if (theLocalExclusivePhysicalMonitor.size() > 1){
+        DBG_Assert(false, (<< "Only one local exclusive tag per core is allowed"));
+    }
+
+    theLocalExclusivePhysicalMonitor[anAddress] = aSize;
+}
+
+void CoreImpl::markExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize){
+
+    GLOBAL_EXCLUSIVE_MONITOR[theNode][anAddress] = aSize;
+}
+
+bool CoreImpl::isExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize){
+    if (theLocalExclusivePhysicalMonitor.find(anAddress) == theLocalExclusivePhysicalMonitor.end())
+        return false;
+    return true;
+}
+bool CoreImpl::isExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize){
+    if (GLOBAL_EXCLUSIVE_MONITOR[theNode].find(anAddress) == GLOBAL_EXCLUSIVE_MONITOR[theNode].end())
+        return false;
+    return true;
+}
+bool CoreImpl::isExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize){
+    if (theLocalExclusiveVirtualMonitor.find(anAddress) == theLocalExclusiveVirtualMonitor.end())
+        return false;
+    return true;
 }
 
 void CoreImpl::commitStore( boost::intrusive_ptr<Instruction> anInsn) {
@@ -982,8 +1070,7 @@ void CoreImpl::commitStore( boost::intrusive_ptr<Instruction> anInsn) {
 
 void CoreImpl::retire() {
   FLEXUS_PROFILE();
-  bool stop_retire = false;
-  bool rob = theROB.empty();
+  bool stop_retire;
 
   theRetireCount = 0;
   while ( !theROB.empty() && !stop_retire ) {
@@ -1048,20 +1135,20 @@ void CoreImpl::retire() {
     CORE_DBG(theName << " Retire:" << *theROB.front() );
     if (!acceptInterrupt()) {
       theROB.front()->checkTraps();  // take traps only if we don't take interrupt
-      //DBG_( Tmp, ( << "take traps only if we don't take interrupts" ) );
+      DBG_( Tmp, ( << "take traps only if we don't take interrupts" ) );
     }
-    //if (thePendingTrap != 0) {
-    //  theROB.front()->changeInstCode(codeException);
-   //   DBG_( Verb, ( << theName << " Trap raised by " << *theROB.front() ));
-   //   stop_retire = true;
-   // } else {
-   //   theROB.front()->doRetirementEffects();
-   //   if (thePendingTrap != 0) {
-   //     theROB.front()->changeInstCode(codeException);
-    //    DBG_( Verb, ( << theName << " Trap raised by " << *theROB.front() ));
-    //    stop_retire = true;
-    //  }
-    //}
+    if (thePendingTrap >= kException_None) {
+      theROB.front()->changeInstCode(codeException);
+      DBG_( Verb, ( << theName << " Trap raised by " << *theROB.front() ));
+      stop_retire = true;
+    } else {
+      theROB.front()->doRetirementEffects();
+      if (thePendingTrap >= kException_None) {
+        theROB.front()->changeInstCode(codeException);
+        DBG_( Verb, ( << theName << " Trap raised by " << *theROB.front() ));
+        stop_retire = true;
+      }
+    }
 
 //    if (theValidateMMU) {
 //        DBG_( Tmp, ( << "Validate MMU " ));
@@ -1092,16 +1179,16 @@ void CoreImpl::retire() {
     //Value prediction enabled after forward progress is made
     theValuePredictInhibit = false;
 
-    //thePC = theROB.front()->npc();
+    thePC = theROB.front()->pc() + 4;
     //DBG_(Dev, ( << theName << " PC: " << std::hex << thePC << std::dec ) );
 
     CORE_DBG("instruction to the secondary retirement buffer " << *(theROB.front()));
     theSRB.push_back(theROB.front());
     //DBG_( Tmp, ( << "theSRB.push_back(theROB.front())" ));
 
- //   if ( thePendingTrap == 0) {
-  //    theROB.pop_front(); //Need to squash and retire instructions that cause traps
- //   }
+    if ( thePendingTrap == kException_None) {
+      theROB.pop_front(); //Need to squash and retire instructions that cause traps
+    }
   }
   if (theROB.size() == 0)
     CORE_DBG("ROB is empty! ->" << theROB.size());
@@ -1340,10 +1427,10 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
 
   bool validation_passed = true;
 
-  int32_t raised = 0;
+  int raised = 0;
   bool resync_accounted = false;
 
-  bool adv = anInstruction->advancesSimics();
+  anInstruction->advancesSimics();
 
   if (anInstruction->advancesSimics()) {
       CORE_DBG("Instruction is neither annuled nor is a micro-op");
@@ -1362,7 +1449,7 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
     raised = advance_fn();
 
     if ( raised != 0) {
-      if ( anInstruction->willRaise() != raised) {
+      if ( anInstruction->willRaise() != (raised == 0 ? kException_None : kException_UNCATEGORIZED)) { // FIXME get exception mapper
         DBG_( Tmp, ( << *anInstruction << " Core did not predict correct exception for this instruction raised=0x" << std::hex << raised << " will_raise=0x" << anInstruction->willRaise() << std::dec ) );
         if (anInstruction->instCode() != codeITLBMiss) {
           anInstruction->changeInstCode(codeExceptionUnsupported);
@@ -1377,7 +1464,7 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
       } else {
         DBG_( Tmp, ( << *anInstruction << " Core correctly identified raise=0x" << std::hex << raised << std::dec) );
       }
-      anInstruction->raise(raised);
+      anInstruction->raise(raised == 0 ? kException_None : kException_UNCATEGORIZED);
     } else if (anInstruction->willRaise()) {
       DBG_(Tmp, ( << *anInstruction << " DANGER:  Core predicted exception: " << std::hex << anInstruction->willRaise() << " but simics says no exception"));
     }
@@ -1487,9 +1574,62 @@ void CoreImpl::checkStopSpeculating() {
   }
 }
 
-void CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, int32_t aTrapNum) {
-  DBG_( Tmp,  ( << theName << " Take trap: " << std::hex << aTrapNum << std::dec ) );//NOOSHIN
 
+
+
+//// AArch64.TakeException()
+//// =======================
+//// Take an exception to an Exception Level using AArch64.
+//void CoreImpl::TakeException(uint8_t target_el, ExceptionRecord exception,
+//uint64_t preferred_exception_return, int vect_offset)
+////SynchronizeContext();
+////assert HaveEL(target_el) && !ELUsingAArch32(target_el) && UInt(target_el) >= UInt(PSTATE.EL);
+//// If coming from AArch32 state, the top parts of the X[] registers might be set to zero
+//from_32 = UsingAArch32();
+//if from_32 then AArch64.MaybeZeroRegisterUppers();
+//if UInt(target_el) > UInt(PSTATE.EL) then
+//boolean lower_32;
+//if target_el == EL3 then
+//if !IsSecure() && HaveEL(EL2) then
+//lower_32 = ELUsingAArch32(EL2);
+//else
+//lower_32 = ELUsingAArch32(EL1);
+//elsif IsInHost() && PSTATE.EL == EL0 && target_el == EL2 then
+//lower_32 = ELUsingAArch32(EL0);
+//else
+//lower_32 = ELUsingAArch32(target_el - 1);
+//vect_offset = vect_offset + (if lower_32 then 0x600 else 0x400);
+//elsif PSTATE.SP == '1' then
+//vect_offset = vect_offset + 0x200;
+//spsr = GetPSRFromPSTATE();
+//if HaveUAOExt() then PSTATE.UAO = '0';
+//if !(exception.type IN {Exception_IRQ, Exception_FIQ}) then
+//AArch64.ReportException(exception, target_el);
+//PSTATE.EL = target_el;
+//PSTATE.nRW = '0';
+//PSTATE.SP = '1';
+//SPSR[] = spsr;
+//ELR[] = preferred_exception_return;
+//PSTATE.SS = '0';
+//PSTATE.<D,A,I,F> = '1111';
+//PSTATE.IL = '0';
+//if from_32 then
+//// Coming from AArch32
+//PSTATE.IT = '00000000'; PSTATE.T = '0';
+//// PSTATE.J is RES0
+//if HavePANExt() && (PSTATE.EL == EL1 || (PSTATE.EL == EL2 && ELIsInHost(EL0))) && SCTLR[].SPAN ==
+//'0' then
+//PSTATE.PAN = '1';
+//BranchTo(VBAR[]<63:11>:vect_offset<10:0>, BranchType_EXCEPTION);
+//if HaveRASExt() && SCTLR[].IESB == '1' then
+//SynchronizeErrors();
+//iesb_req = TRUE;
+//TakeUnmaskedPhysicalSErrorInterrupts(iesb_req);
+//EndOfInstruction();
+
+void CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExceptionType aTrapType) {
+
+  CORE_DBG( theName << " Take trap: " << aTrapType);
 
   //Ensure ROB is not empty
   DBG_Assert ( ! theROB.empty() );
@@ -1504,11 +1644,11 @@ void CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, int32_t
   theSquashInclusive = true;
 
   //Record the pending trap
-  //thePendingTrap = aTrapNum;
-  //theTrapInstruction = anInstruction;
+  thePendingTrap = aTrapType;
+  theTrapInstruction = anInstruction;
 
-  anInstruction->setWillRaise( aTrapNum );
-  anInstruction->raise(aTrapNum);
+  anInstruction->setWillRaise( aTrapType );
+  anInstruction->raise(aTrapType);
 }
 
 bool CoreImpl::acceptInterrupt() {
@@ -1519,114 +1659,33 @@ bool CoreImpl::acceptInterrupt() {
           && ! theROB.front()->isSquashed()//Do not take interrupts on squashed instructions
           && ! theROB.front()->isMicroOp() //Do not take interrupts on squashed micro-ops
           && ! theIsSpeculating            //Do not take interrupts while speculating
-          &&   (getPSTATE() & 0x2)         //PSTATE.IE = 1
+//          &&   (getPSTATE() & 0x2)         //PSTATE.IE = 1
      ) {
     //Interrupt was signalled this cycle.  Clear the ROB
     theInterruptSignalled = true;
 
-    DBG_(Verb, ( << theName << " Accepting interrupt " << std::hex << thePendingInterrupt << std::dec << " on instruction " << *theROB.front()) );
+    theROB.front()->makePriv();
+
+    DBG_(Verb, ( << theName << " Accepting interrupt " << thePendingInterrupt << " on instruction " << *theROB.front()) );
     theInterruptInstruction = theROB.front();
-    takeTrap( theInterruptInstruction, thePendingInterrupt );
+    takeTrap( theInterruptInstruction, /*thePendingInterrupt*/kException_UNCATEGORIZED );
 
     return true;
   }
   return false;
 }
 
-//void CoreImpl::handleTrap() {
- // if (thePendingTrap == 0) {
- //   return;
-  //}
-  //DBG_( Verb,  ( << theName << " Handling trap: " << std::hex << thePendingTrap << std::dec << " raised by: " << *theTrapInstruction ) );
- // if (! theROB.empty()) {
- //   DBG_( Crit,  ( << theName << " ROB non-empty in handle trap.  Resynchronize instead.") );
- //   theEmptyROBCause = kResync;
- //   ++theResync_FailedHandleTrap;
- //   throw ResynchronizeWithQemuException();
- // }
 
-  //Increment trap level
-//  DBG_Assert( getTL() + 1 < 5, ( << theName << " Trap when TL == 5.  Processor enters RED_state.  Unsupported." ) );
-  //setTL( getTL() + 1);
-//  DBG_( Verb,  ( << theName << "    TL: " << std::hex << getTL() ) );
-
-  //Save state
-  //uint64_t ccr = getCCR();
-//  DBG_( Verb,  ( << theName << "    ccr: " << std::hex << ccr ) );
-//  uint64_t asi = getASI();
-//  uint64_t pstate = getPSTATE();
-  //uint64_t cwp = getCWP();
-  //uint64_t tstate = (ccr << 32) | (asi << 24) | (pstate << 8) | cwp;
-//  setTSTATE( tstate, getTL());
-//  DBG_( Verb,  ( << theName << "    TSTATE: " << std::hex << getTSTATE(getTL()) ) );
-//  setTPC( ( pstate & 8/*AM*/ ?  (theTrapInstruction->pc() & 0xFFFFFFFFULL) : theTrapInstruction->pc()) , getTL());
-//  DBG_( Verb,  ( << theName << "    TPC: " << std::hex << getTPC(getTL()) ) );
-//  setTNPC( ( pstate & 8/*AM*/ ?  (theTrapInstruction->npc() & 0xFFFFFFFFULL) : theTrapInstruction->npc()), getTL());
-//  DBG_( Verb,  ( << theName << "    TNPC: " << std::hex << getTNPC(getTL()) ) );
-
-  //Record Trap Type
-  //setTT(thePendingTrap, getTL());
-//  DBG_( Verb,  ( << theName << "    TT: " << std::hex << getTT(getTL()) ) );
-
-  //Update PSTATE
-  //Mask off PSTATE bits that are always turned off
-  //PSTATE.RED = 0
-  //PSTATE.AM = 0 (address masking is turned off)
-  //PSTATE.IE = 0 (interrupts are disabled)
-//  pstate &= ~0x2A;
-
-  //Turn on PSTATE bits that are always on
-  //PSTATE.PEF = 1 (FPU is present)
-  //PSTATE.PRIV = 1 (the processor enters privileged mode)
-//  pstate |= 0x14;
-
-  //PSTATE.CLE = PSTATE.TLE (set endian mode for traps)
-//  pstate |= ((pstate << 1) & 0x200ULL);
-
-  //if (TT[TL] one of ( fast_instruction_access_MMU_miss , fast_data_access_MMU_miss, and fast_data_access_protection - 0x64 to 0x6F )
-//  pstate &= ~0xC01; //Shut off all register sets
-//  if (thePendingTrap >= 0x64 && thePendingTrap <= 0x6F) {
-    //PSTATE.AG = 0 (global registers are replaced with alternate globals)
-//    pstate |= 0x400ULL;
-//  } else if ( thePendingTrap == 0x60 ) {
-//    //else if TT[TL] is (interrupt_vector 0x60 )
-//    pstate |= 0x800ULL;
-//  } else {
-//    pstate |= 1;
-//  }
-  //PSTATE.MM is unchanged
-  //PSTATE.TLE is unchanged
-//  setPSTATE(pstate);
-//  DBG_( Verb,  ( << theName << "    PSTATE: " << std::hex << getPSTATE() ) );
-
-  //Register window trap processing
-//  DBG_( Verb,  ( << theName << "    Previous CWP: " << std::hex << getCWP() ) );
-//  if (thePendingTrap == 0x24) {
-    //If TT[TL] = 0x24 //(a clean_window trap),
-    //CWP = CWP + 1.
- //   theWindowMap.incrementCWP();
-  //  theArchitecturalWindowMap.incrementCWP();
-  //} else if ( thePendingTrap >= 0x80 && thePendingTrap <= 0xBF) {
-    //If 0x80 <= TT[TL] <= 0xBF //(window spill trap)
-    //CWP = CWP + CANSAVE + 2.
-//    setCWP( (getCWP() + getCANSAVE() + 2) & 0x7 );
-//  } else if ( thePendingTrap >= 0xC0 && thePendingTrap <= 0xFF) {
-//    theWindowMap.decrementCWP();
-//    theArchitecturalWindowMap.decrementCWP();
-//  }
-  //DBG_( Verb,  ( << theName << "    CWP: " << std::hex << getCWP() ) );
-
-  //Redirect Execution
-  //PC  = TBA<63:15> | (TL > 0) | TT[TL] | 0 0000
-  //nPC = TBA<63:15> | (TL > 0) | TT[TL] | 0 0100
-  //uint64_t vector_address = getTBA() & 0xFFFFC000ULL;
-  //vector_address |= ( getTL() > 1 ? 0x4000 : 0) | ( (thePendingTrap ) << 5);
-  //redirectFetch( VirtualMemoryAddress(vector_address) );
-  //DBG_( Verb,  ( << theName << "    new PC: " << VirtualMemoryAddress(vector_address) ) );
-
-//  thePendingTrap = 0;
-//  theTrapInstruction = 0;
-//}
+void CoreImpl::handleTrap() {
+  if (thePendingTrap >= kException_None) {
+    return;
+  }
+  DBG_( Verb,  ( << theName << " Handling trap: " << thePendingTrap << " raised by: " << *theTrapInstruction ) );
+    DBG_( Crit,  ( << theName << " ROB non-empty in handle trap.  Resynchronize instead.") );
+    theEmptyROBCause = kRaisedException;
+    ++theResync_FailedHandleTrap;
+    throw ResynchronizeWithQemuException();
+}
 
 void CoreImpl::valuePredictAtomic() {
   FLEXUS_PROFILE();

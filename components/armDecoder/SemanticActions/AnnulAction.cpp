@@ -113,16 +113,11 @@ struct AnnulAction : public PredicatedSemanticAction {
 };
 
 predicated_action annulAction
-( SemanticInstruction * anInstruction
-  , eRegisterType aType
-) {
+( SemanticInstruction * anInstruction)
+{
   AnnulAction * act;
-//  if (aType == ccBits) {
-//    act = new(anInstruction->icb()) AnnulAction( anInstruction, kPCCpd, kResultCC);
-//  } else {
     act = new(anInstruction->icb()) AnnulAction( anInstruction, kPPD, kResult);
-//  }
-  return predicated_action( act, act->predicate() );
+    return predicated_action( act, act->predicate() );
 }
 
 predicated_action annulRD1Action( SemanticInstruction * anInstruction ) {

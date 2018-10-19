@@ -293,6 +293,9 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
     }
   }
 
+
+
+
   eOperation issue_op = lsq_entry->theOperation;
 
   switch ( lsq_entry->theOperation ) {
@@ -416,7 +419,7 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
   op->theSize = mshr.theSize = lsq_entry->theSize;
   mshr.theWaitingLSQs.push_back( lsq_entry );
   op->thePC = lsq_entry->theInstruction->pc();
-  //bool system = lsq_entry->theInstruction->isPriv();
+  bool system = lsq_entry->theInstruction->isPriv();
   if (lsq_entry->theValue) {
     op->theValue = *lsq_entry->theValue;
   } else {
@@ -856,7 +859,7 @@ void CoreImpl::checkExtraLatencyTimeout() {
           lsq_head->theExtendedValue = 0;
           DBG_( Verb, ( << theName << " MMU read: " << *lsq_head ) );
         }
-      } else */if (lsq_head->theException) {
+      } else */if (lsq_head->theException != kException_None) {
         DBG_( Verb, ( << theName << " Memory access raises exception.  Completing the operation: " << *lsq_head ) );
         lsq_head->theIssued = true;
         lsq_head->theValue->reset();

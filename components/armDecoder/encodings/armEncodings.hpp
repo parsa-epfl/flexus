@@ -51,13 +51,6 @@
 
 namespace narmDecoder{
 
-enum a64_shift_type {
-    A64_SHIFT_TYPE_LSL = 0,
-    A64_SHIFT_TYPE_LSR = 1,
-    A64_SHIFT_TYPE_ASR = 2,
-    A64_SHIFT_TYPE_ROR = 3
-};
-
 //<<--Data Processing -- Immediate
 arminst disas_add_sub_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 arminst disas_pc_rel_adr(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);

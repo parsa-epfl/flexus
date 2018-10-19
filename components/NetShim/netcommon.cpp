@@ -101,7 +101,7 @@ bool freeMessageStateList ( MessageStateList * msgl ) {
   assert ( msgl->usageCount == 0 );
 #endif
 
-  msgl->msg = (MessageState *)msgl->msg->serial;
+//  msgl->msg = (MessageState *)msgl->msg->serial;
   //  msgl->msg   = nullptr;
   msgl->prev  = nullptr;
   msgl->next  = mslFreeList;

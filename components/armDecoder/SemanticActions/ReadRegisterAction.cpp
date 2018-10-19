@@ -85,9 +85,7 @@ struct ReadRegisterAction : public BaseSemanticAction
 
   bool bypass(register_value aValue)
   {
-    if ( cancelled() || theInstruction->isRetired() || theInstruction->isSquashed() ) {
-      return true;
-    }
+    if ( cancelled() || theInstruction->isRetired() || theInstruction->isSquashed() ) { return true; }
 
     if ( !signalled() ) {
       theInstruction->setOperand(theOperandCode, aValue);
@@ -95,7 +93,7 @@ struct ReadRegisterAction : public BaseSemanticAction
       satisfyDependants();
       setReady(0, true);
     }
-    return false;
+      return false;
   }
 
   void doEvaluate()
@@ -103,31 +101,51 @@ struct ReadRegisterAction : public BaseSemanticAction
     SEMANTICS_DBG(*this);
 
     if (! theConnected) {
-        SEMANTICS_DBG("Connecting");
+      SEMANTICS_DBG("Connecting");
 
       mapped_reg name = theInstruction->operand< mapped_reg > (theRegisterCode);
       setReady( 0, core()->requestRegister( name, theInstruction->makeInstructionDependance(dependance()) ) == kReady );
-//      theInstruction->addSquashEffect( disconnectRegister( theInstruction, theRegisterCode ) );
-//      theInstruction->addRetirementEffect( disconnectRegister( theInstruction, theRegisterCode ) );
       core()->connectBypass( name, theInstruction, ll::bind( &ReadRegisterAction::bypass, this, ll::_1) );
       theConnected = true;
     }
     if (! signalled() ) {
-        SEMANTICS_DBG("Signalling");
+      SEMANTICS_DBG("Signalling");
 
       mapped_reg name = theInstruction->operand< mapped_reg > (theRegisterCode);
       eResourceStatus status = core()->requestRegister( name );
       if (status == kReady) {
-        mapped_reg name = theInstruction->operand< mapped_reg > (theRegisterCode);
-        Operand aValue = core()->readRegister( name );
-        uint64_t reg  = boost::get<uint64_t>(aValue);
-        if (!the64){ // reading w reg >> only the botom half
-            bits v = boost::get<bits>(aValue);
-            v &= bits(v.size(),0xffffffff);
-            aValue = v;
+        Operand aValue;
+        if (name.theIndex == 31) {
+            if (core()->_PSTATE().SP() == 0) {
+                core()->getSP_el(EL0);
+            } else {
+                switch (core()->_PSTATE().EL()) {
+                case EL0:
+                    core()->getSP_el(EL0);
+                    break;
+                case EL1:
+                    core()->getSP_el(EL1);
+                    break;
+                case EL2:
+                case EL3:
+                default:
+                    core()->takeTrap(boost::intrusive_ptr<Instruction>(theInstruction), kException_ILLEGALSTATE);
+                    return;
+                }
+            }
+        } else {
+            aValue = core()->readRegister( name );
         }
+
+        uint64_t val = boost::get<uint64_t>(aValue);
+
+        if (!the64){ // reading w reg >> only the botom half
+            val &= 0xffffffff;
+        }
+
+        aValue = val;
+
         theInstruction->setOperand(theOperandCode, aValue);
-//        DBG_( Tmp, ( << *this << " read " << theRegisterCode << "(" << name << ") = " << aValue << " written to " << theOperandCode ) );
         satisfyDependants();
       } else {
         setReady( 0, false );
@@ -145,8 +163,6 @@ simple_action readRegisterAction ( SemanticInstruction * anInstruction, eOperand
 {
   return new(anInstruction->icb()) ReadRegisterAction( anInstruction, aRegisterCode, anOperandCode, is64);
 }
-
-
 
 
 } //narmDecoder

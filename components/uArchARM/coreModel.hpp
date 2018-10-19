@@ -60,13 +60,11 @@ enum eLoseWritePermission {
 
 struct armState {
   uint64_t theGlobalRegs[32];
-  uint64_t theWindowRegs[128];
   uint64_t thePC;
   uint64_t theFPRegs[64];
-  uint64_t theFPSR;
-  uint64_t theFPCR;
-  uint64_t thePSTATE;
-//  uint64_t theASI;
+  uint32_t theFPSR;
+  uint32_t theFPCR;
+  uint32_t thePSTATE;
 };
 struct CoreModel : public uArchARM {
   static CoreModel * construct(uArchOptions_t options
@@ -108,6 +106,7 @@ struct CoreModel : public uArchARM {
   virtual bool canPushMemOp() = 0;
   virtual boost::intrusive_ptr<MemOp> popMemOp() = 0;
   virtual boost::intrusive_ptr<MemOp> popSnoopOp() = 0;
+
   virtual void printROB() = 0;
   virtual void printSRB() = 0;
   virtual void printMemQueue() = 0;

@@ -132,15 +132,19 @@ public:
   }
 
   uint64_t readXRegister(int anIndex) const {
-   return API::QEMU_read_register(*this, API::GENERAL, anIndex);
+   return API::QEMU_read_register(*this, API::kGENERAL, anIndex);
 }
 
   uint64_t readVRegister(int anIndex) const {
-   return API::QEMU_read_register(*this, API::FLOATING_POINT, anIndex);
+   return API::QEMU_read_register(*this, API::kFLOATING_POINT, anIndex);
 }
 
   uint32_t readPSTATE() const {
    return API::QEMU_read_pstate(*this);
+}
+
+  uint64_t readSP_el(uint8_t anId) const {
+   return API::QEMU_read_sp_el(anId, *this);
 }
 
   uint32_t readDCZID_EL0() const {
@@ -155,8 +159,13 @@ public:
    return API::QEMU_read_exception(*this, exp);
 }
 
-  uint64_t* readSCTLR() const {
-   return API::QEMU_read_sctlr(*this);
+   uint64_t getPendingInterrupt() const {
+     return API::QEMU_get_pending_interrupt(*this);
+   }
+
+
+  uint64_t readSCTLR(uint8_t id) const {
+   return API::QEMU_read_sctlr(id, *this);
 }
 
 uint64_t readHCREL2() const {
@@ -169,6 +178,10 @@ uint64_t readHCREL2() const {
 
   uint32_t readFPSR() const {
    return API::QEMU_read_fpsr(*this);
+}
+
+  bool hasWork() const {
+   return API::QEMU_cpu_has_work(*this);
 }
 
   uint64_t readPC() const {
@@ -287,7 +300,6 @@ public:
 
   int advance();
   int getPendingException() const;
-  int getPendingInterrupt() const;
 
   void breakSimulation() {
     API::QEMU_break_simulation("");

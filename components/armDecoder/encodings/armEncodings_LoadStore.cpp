@@ -69,8 +69,7 @@ namespace narmDecoder {
 arminst disas_ldst_single_struct(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
-
-    assert(false);
+    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* AdvSIMD load/store multiple structures
@@ -94,7 +93,7 @@ arminst disas_ldst_single_struct(armcode const & aFetchedOpcode, uint32_t  aCPU,
 arminst disas_ldst_multiple_struct(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
-    assert(false);
+    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /*
@@ -117,9 +116,9 @@ arminst disas_ldst_reg_imm9(armcode const & aFetchedOpcode, uint32_t  aCPU, int6
 {
      DECODER_TRACE;
 
-     int size = extract32(aFetchedOpcode.theOpcode, 30, 2);
+     uint32_t size = extract32(aFetchedOpcode.theOpcode, 30, 2);
      bool V = extract32(aFetchedOpcode.theOpcode, 26, 1);
-     int opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
+     uint32_t opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
      bool is_store = (opc == 0);
 
      if (((opc & 1) == 1)){
@@ -132,11 +131,12 @@ arminst disas_ldst_reg_imm9(armcode const & aFetchedOpcode, uint32_t  aCPU, int6
      }
 
      if (V) {
-         if (is_store){
-             return STRF(aFetchedOpcode, aCPU, aSequenceNo);
-         } else {
-             return LDRF(aFetchedOpcode, aCPU, aSequenceNo);
-         }
+         return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+//         if (is_store){
+//             return STRF(aFetchedOpcode, aCPU, aSequenceNo);
+//         } else {
+//             return LDRF(aFetchedOpcode, aCPU, aSequenceNo);
+//         }
      } else {
          if (is_store){
              return STR(aFetchedOpcode, aCPU, aSequenceNo);
@@ -171,10 +171,10 @@ arminst disas_ldst_reg_imm9(armcode const & aFetchedOpcode, uint32_t  aCPU, int6
 arminst disas_ldst_reg_roffset(armcode const & aFetchedOpcode,uint32_t  aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
-    int size = extract32(aFetchedOpcode.theOpcode, 30, 2);
-    int option = extract32(aFetchedOpcode.theOpcode, 13, 3);
-    int V = extract32(aFetchedOpcode.theOpcode, 26, 1);
-    int opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
+    uint32_t size = extract32(aFetchedOpcode.theOpcode, 30, 2);
+    uint32_t option = extract32(aFetchedOpcode.theOpcode, 13, 3);
+    bool V = extract32(aFetchedOpcode.theOpcode, 26, 1);
+    uint32_t opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
     bool is_store = (opc == 0);
 
     if (size != 0 || (option & 1) == 0){
@@ -182,11 +182,13 @@ arminst disas_ldst_reg_roffset(armcode const & aFetchedOpcode,uint32_t  aCPU, in
     }
 
     if (V) {
-        if (is_store){
-            return STRF(aFetchedOpcode, aCPU, aSequenceNo);
-        } else {
-            DBG_Assert(false);
-        }
+        return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+//        if (is_store){
+//            return STRF(aFetchedOpcode, aCPU, aSequenceNo);
+//        } else {
+//            DBG_Assert(false);
+//            return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+//        }
     } else {
         if (is_store){
             return STR(aFetchedOpcode, aCPU, aSequenceNo);
@@ -213,7 +215,7 @@ arminst disas_ldst_reg_roffset(armcode const & aFetchedOpcode,uint32_t  aCPU, in
 arminst disas_ldst_atomic(armcode const & aFetchedOpcode,uint32_t  aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
-    int o3_opc = extract32(aFetchedOpcode.thePC, 12, 4);
+    uint32_t o3_opc = extract32(aFetchedOpcode.thePC, 12, 4);
     bool V = extract32(aFetchedOpcode.thePC, 26, 1);
     if (V) {
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
@@ -262,9 +264,9 @@ arminst disas_ldst_atomic(armcode const & aFetchedOpcode,uint32_t  aCPU, int64_t
 arminst disas_ldst_reg_unsigned_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
-    int size = extract32(aFetchedOpcode.theOpcode, 30, 2);
-    int V = extract32(aFetchedOpcode.theOpcode, 26, 1);
-    int opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
+    uint32_t size = extract32(aFetchedOpcode.theOpcode, 30, 2);
+    uint32_t V = extract32(aFetchedOpcode.theOpcode, 26, 1);
+    uint32_t opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
     bool is_store = ((opc == 0) || ((opc == 2) && (size == 0)));
 
     if (size != 0 || size != 1){
@@ -272,11 +274,12 @@ arminst disas_ldst_reg_unsigned_imm(armcode const & aFetchedOpcode, uint32_t  aC
     }
 
     if (V) {
-        if (is_store){
-            return STRF(aFetchedOpcode, aCPU, aSequenceNo);
-        } else {
-            return LDRF(aFetchedOpcode, aCPU, aSequenceNo);
-        }
+        return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+//        if (is_store){
+//            return STRF(aFetchedOpcode, aCPU, aSequenceNo);
+//        } else {
+//            return LDRF(aFetchedOpcode, aCPU, aSequenceNo);
+//        }
     } else {
         if (is_store){
             return STR(aFetchedOpcode, aCPU, aSequenceNo);
@@ -352,11 +355,12 @@ arminst disas_ldst_pair(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
     bool is_load = extract32(aFetchedOpcode.thePC, 22, 1);
 
     if (is_vector) {
-        if (is_load) {
-            return LDFP(aFetchedOpcode, aCPU, aSequenceNo);
-        } else {
-            return STFP(aFetchedOpcode, aCPU, aSequenceNo);
-        }
+        return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+//        if (is_load) {
+//            return LDFP(aFetchedOpcode, aCPU, aSequenceNo);
+//        } else {
+//            return STFP(aFetchedOpcode, aCPU, aSequenceNo);
+//        }
     } else {
         if (is_load) {
             return LDP(aFetchedOpcode, aCPU, aSequenceNo);
@@ -387,16 +391,13 @@ arminst disas_ld_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSe
     unsigned int opc = extract32(aFetchedOpcode.theOpcode, 30, 2);
 
     switch (V+ (opc << 1)) {
-    case 0:case 2:
+    case 0:case 2:case 4: case 6:
         return LDR_lit(aFetchedOpcode, aCPU, aSequenceNo);
-    case 1: case 3: case 5:
-        return LDRF_lit(aFetchedOpcode, aCPU, aSequenceNo);
-    case 4:
-        return LDRSW(aFetchedOpcode, aCPU, aSequenceNo);
-    case 6:
-        return PRFM(aFetchedOpcode, aCPU, aSequenceNo);
+//    case 1: case 3: case 5:
+//        return LDRF_lit(aFetchedOpcode, aCPU, aSequenceNo);
     default:
-        break;
+        DBG_Assert(false);
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 }
 
@@ -410,11 +411,11 @@ arminst disas_ldst_excl(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
 {
     DECODER_TRACE;
 
-    unsigned int rt2 = extract32(aFetchedOpcode.theOpcode, 10, 5);
-    unsigned int o0 = extract32(aFetchedOpcode.theOpcode, 15, 1); // is_lasr
-    unsigned int o1 = extract32(aFetchedOpcode.theOpcode, 21, 1);  // is_pair
-    unsigned int L = extract32(aFetchedOpcode.theOpcode, 22, 1); // is_store
-    unsigned int o2 = extract32(aFetchedOpcode.theOpcode, 23, 1); // is_excl
+    uint32_t rt2 = extract32(aFetchedOpcode.theOpcode, 10, 5);
+    uint32_t o0 = extract32(aFetchedOpcode.theOpcode, 15, 1); // is_lasr
+    uint32_t o1 = extract32(aFetchedOpcode.theOpcode, 21, 1);  // is_pair
+    uint32_t L = extract32(aFetchedOpcode.theOpcode, 22, 1); // is_store
+    uint32_t o2 = extract32(aFetchedOpcode.theOpcode, 23, 1); // is_excl
 
     if ( ((o2 && o1) || (!o2 && o1)) && rt2 != 31) {
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
@@ -427,24 +428,21 @@ arminst disas_ldst_excl(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
         break;
     case 2:case 3:
     case 6:case 7:
-        return CASP(aFetchedOpcode, aCPU, aSequenceNo);
+    case 10:case 11:
+    case 14:case 15:
+        return CAS(aFetchedOpcode, aCPU, aSequenceNo);
         break;
     case 4:case 5:
         return LDXR(aFetchedOpcode, aCPU, aSequenceNo);
         break;
     case 8:case 9:
-        return STLR(aFetchedOpcode, aCPU, aSequenceNo);
-        break;
-    case 10:case 11:
-    case 14:case 15:
-        return CAS(aFetchedOpcode, aCPU, aSequenceNo);
+        return STRL(aFetchedOpcode, aCPU, aSequenceNo);
         break;
     case 12:case 13:
-        return LDAR(aFetchedOpcode, aCPU, aSequenceNo);
+        return LDAQ(aFetchedOpcode, aCPU, aSequenceNo);
         break;
     default:
-        DBG_Assert(false);
-        break;
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 }
 

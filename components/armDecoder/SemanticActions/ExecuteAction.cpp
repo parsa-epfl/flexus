@@ -1,4 +1,4 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
@@ -60,6 +60,7 @@ namespace ll = boost::lambda;
 #include "../SemanticActions.hpp"
 #include "PredicatedSemanticAction.hpp"
 #include "RegisterValueExtractor.hpp"
+#include <components/uArchARM/systemRegister.hpp>
 
 #define DBG_DeclareCategories armDecoder
 #define DBG_SetDefaultOps AddCat(armDecoder)
@@ -128,7 +129,8 @@ struct ExecuteAction : public ExecuteBase {
         Operand result = theOperation->operator()(operands );
         if (theOperation->hasNZCVFlags()){
             uint64_t nzcv = theOperation->getNZCVbits();
-            theInstruction->core()->updatePSTATEbits(nzcv);
+            SysRegInfo & ri = getPriv(kNZCV);
+            ri.writefn(theInstruction->core(), nzcv);
         }
 
         theInstruction->setOperand(theResult, result);

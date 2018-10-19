@@ -66,9 +66,9 @@ protected:
   uint32_t theCPU;
   int64_t theSequenceNo;
   uArchARM * theuArch;
-  int32_t theRaisedException;
+  eExceptionType theRaisedException;
   bool theResync;
-  int32_t theWillRaise;
+  eExceptionType theWillRaise;
   bool theAnnulled;
   bool theRetired;
   bool theSquashed;
@@ -97,6 +97,7 @@ protected:
   bool theUsesFpDiv;
   bool theUsesFpSqrt;
   tFillLevel theInsnSourceLevel;
+  bool thePriv;
 
 public:
 
@@ -153,14 +154,15 @@ public:
     return theMayCommit;
   }
 
-  virtual int32_t willRaise() const {
+  virtual eExceptionType willRaise() const {
     return theWillRaise ;
   }
-  virtual void setWillRaise(int32_t aSetting);
-  virtual int32_t raised() {
+  virtual void setWillRaise(eExceptionType aSetting);
+
+  virtual eExceptionType raised() {
     return theRaisedException;
   }
-  virtual void raise(int32_t anException) {
+  virtual void raise(eExceptionType anException) {
     theRaisedException = anException;
   }
   virtual bool resync() const {
@@ -219,26 +221,22 @@ public:
     {
     case clsLoad:
         return " {clsLoad} ";
-        break;
     case clsStore:
         return " {clsStore} ";
-        break;
     case clsAtomic:
         return " {clsAtomic} ";
-        break;
     case clsBranch:
         return " {clsBranch} ";
-        break;
     case clsMEMBAR:
         return " {clsMEMBAR} ";
-        break;
     case clsComputation:
         return " {clsComputation} ";
-        break;
     case clsSynchronizing:
         return "{clsSynchronizing}";
-        break;
+    default:
+        return "";
     }
+
   }
 
   virtual eInstructionClass instClass() const {
@@ -332,21 +330,17 @@ public:
   virtual VirtualMemoryAddress pc() const {
     return thePC;
   }
-//  virtual VirtualMemoryAddress npc() const {
-//    //return theNPC;
-//      return thePC;
-//  }
-//  virtual VirtualMemoryAddress npcReg() const {
-//    if (theNPCReg) return *theNPCReg;
-//    else return theNPC;
-//      return thePC;
-//  }
-//  virtual bool isPriv() const {
-//    return ((theuArch->getPSTATE() & 0x4 /* PSTATE.PRIV */) != 0);
-//  }
-//  virtual bool isTrap() const {
-//    return ((thePC >= 0x0000000001000000) && (thePC < (0x0000000001000000 + 2/*levels*/ * 512/*traps*/ * 32/*bytes each*/))); // see "The SPARC Architecture Manual" version 9 (sparcv9.pdf), section 7.5 (page 124)
-//  }
+
+  virtual bool isPriv() const {
+    return thePriv;
+  }
+  virtual void makePriv() {
+    thePriv = true;
+  }
+
+  virtual bool isTrap() const {
+    return theRaisedException != kException_None;
+  }
   virtual boost::intrusive_ptr<BPredState> bpState() const {
     return theBPState;
   }
@@ -415,9 +409,9 @@ protected:
     , theCPU(aCPU)
     , theSequenceNo(aSequenceNo)
     , theuArch(0)
-    , theRaisedException(0)
+    , theRaisedException(kException_None)
     , theResync(false)
-    , theWillRaise(0)
+    , theWillRaise(kException_None)
     , theAnnulled(false)
     , theRetired(false)
     , theSquashed(false)
@@ -427,7 +421,9 @@ protected:
     , theHasCheckpoint(false)
     , theRetireStallCycles(0)
     , theMayCommit(true)
-    , theInsnSourceLevel(eL1I) {
+    , theInsnSourceLevel(eL1I)
+    , thePriv(false)
+  {
   }
 
   // So that armDecoder can send opcodes out to PowerTracker

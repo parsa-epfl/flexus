@@ -51,21 +51,11 @@ namespace narmDecoder {
 arminst disas_uncond_b_reg( armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
-    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC,
-                                                        aFetchedOpcode.theOpcode,
-                                                        aFetchedOpcode.theBPState,
-                                                        aCPU,
-                                                        aSequenceNo) );
 
-    unsigned int opc, op2, op3, rn, op4;
-    std::vector<std::list<InternalDependance> > rs_deps(1);
-
-
-    opc = extract32(aFetchedOpcode.theOpcode, 21, 4);
-    op2 = extract32(aFetchedOpcode.theOpcode, 16, 5);
-    op3 = extract32(aFetchedOpcode.theOpcode, 10, 6);
-    rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    op4 = extract32(aFetchedOpcode.theOpcode, 0, 5);
+    uint32_t opc = extract32(aFetchedOpcode.theOpcode, 21, 4);
+    uint32_t op2 = extract32(aFetchedOpcode.theOpcode, 16, 5);
+    uint32_t op3 = extract32(aFetchedOpcode.theOpcode, 10, 6);
+    uint32_t op4 = extract32(aFetchedOpcode.theOpcode, 0, 5);
 
     if (op4 != 0x0 || op3 != 0x0 || op2 != 0x1f) {
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
@@ -84,7 +74,6 @@ arminst disas_uncond_b_reg( armcode const & aFetchedOpcode, uint32_t  aCPU, int6
 
         break;
     case 4: /* ERET */
-        inst->addPrevalidation( validateLegalReturn(inst) );
         return ERET(aFetchedOpcode, aCPU, aSequenceNo);
 
     case 5: /* DRPS */
@@ -144,16 +133,10 @@ arminst disas_system(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSe
 {
     DECODER_TRACE;
 
-    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
-    DECODER_TRACE;
-    unsigned int l, op0, op1, crn, crm, op2, rt;
-    l = extract32(aFetchedOpcode.thePC, 21, 1);
-    op0 = extract32(aFetchedOpcode.thePC, 19, 2);
-    op1 = extract32(aFetchedOpcode.thePC, 16, 3);
-    crn = extract32(aFetchedOpcode.thePC, 12, 4);
-    crm = extract32(aFetchedOpcode.thePC, 8, 4);
-    op2 = extract32(aFetchedOpcode.thePC, 5, 3);
-    rt = extract32(aFetchedOpcode.thePC, 0, 5);
+    bool l = extract32(aFetchedOpcode.thePC, 21, 1);
+    uint32_t op0 = extract32(aFetchedOpcode.thePC, 19, 2);
+    uint32_t crn = extract32(aFetchedOpcode.thePC, 12, 4);
+    uint32_t rt = extract32(aFetchedOpcode.thePC, 0, 5);
 
     if (op0 == 0) {
         if (l || rt != 31) {
@@ -210,9 +193,9 @@ arminst disas_cond_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t
 arminst disas_test_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
-    unsigned op = extract32(aFetchedOpcode.theOpcode, 24, 1); /* 0: TBZ; 1: TBNZ */
+    bool op = extract32(aFetchedOpcode.theOpcode, 24, 1); /* 0: TBZ; 1: TBNZ */
 
-    if (op == 0) {
+    if (! op) {
         return TBZ(aFetchedOpcode, aCPU, aSequenceNo);
     } else {
         return TBNZ(aFetchedOpcode, aCPU, aSequenceNo);

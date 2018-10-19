@@ -90,10 +90,10 @@ struct BranchCCAction : public BaseSemanticAction {
       if (theInstruction->hasPredecessorExecuted()) {
 
 
-      std::vector< Operand > operands;
-      for (int32_t i = 0; i < numOperands(); ++i) {
-        operands.push_back( op( kOperand1 + i ) );
-      }
+        std::vector<Operand> operands;
+        for (int32_t i = 0; i < numOperands(); ++i) {
+        operands.push_back( op(eOperandCode( kOperand1 + i)) );
+        }
 
         boost::intrusive_ptr<BranchFeedback> feedback( new BranchFeedback() );
         feedback->thePC = theInstruction->pc();
@@ -101,18 +101,7 @@ struct BranchCCAction : public BaseSemanticAction {
         feedback->theActualTarget = theTarget;
         feedback->theBPState = theInstruction->bpState();
 
-//        theCondition.setInstruction(theInstruction);
-
-        bool result/* = theCondition(operands)*/;
-
-//        if (isFloating) {
-//          FCondition cond = fcondition( theCondition );
-//          result = cond(cc);
-//          DBG_( Tmp, ( << *this << " Floating condition: " << theCondition << " cc: " << cc.to_ulong() << " result: " << result ) );
-//        } else {
-//          Condition cond = condition( theCondition );
-//          result = cond(cc);
-//        }
+        bool result = theCondition->operator ()(operands);
 
         if ( result ) {
           //Taken
@@ -128,7 +117,6 @@ struct BranchCCAction : public BaseSemanticAction {
 
         } else {
           //Not Taken
-//          DBG_( Tmp, ( << *this << " conditional branch CC: " << cc << " NOT TAKEN" ) );
           feedback->theActualDirection = kNotTaken;
 
           if (theAnnul) {

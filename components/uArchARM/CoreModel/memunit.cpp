@@ -524,8 +524,8 @@ void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry 
     lsq_entry->theInverseEndian = xlat.isXEndian();
 //    lsq_entry->theMMU = xlat.isMMU();
     lsq_entry->theNonCacheable = ! xlat.isCacheable();
-    //lsq_entry->theInstruction->setWillRaise(xlat.theException);
-    lsq_entry->theException = xlat.theException;
+    lsq_entry->theInstruction->setWillRaise(kException_None);
+//    lsq_entry->theException = xlat.theException;
 
     if (lsq_entry->thePaddr > 0x40000000000LL) {
       lsq_entry->theSideEffect  = true;

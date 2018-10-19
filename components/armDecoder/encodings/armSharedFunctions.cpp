@@ -37,87 +37,49 @@
 
 #include "armSharedFunctions.hpp"
 
+
 namespace narmDecoder {
 using namespace nuArchARM;
 
-eConstraint ConstrainUnpredictable(eUnpredictable which){
-    switch (which) {
-    case kUnpredictable_WBOVERLAPLD:
-        return kConstraint_WBSUPPRESS; // return loaded value
-    case kUnpredictable_WBOVERLAPST:
-        return kConstraint_NONE; // store pre-writeback value
-    case kUnpredictable_LDPOVERLAP:
-        return kConstraint_UNDEF; // instruction is case kUnDEFINED
-    case kUnpredictable_BASEOVERLAP:
-        return kConstraint_NONE; // use original address
-    case kUnpredictable_DATAOVERLAP:
-        return kConstraint_NONE; // store original value
-    case kUnpredictable_DEVPAGE2:
-        return kConstraint_FAULT; // take an alignment fault
-    case kUnpredictable_INSTRDEVICE:
-        return kConstraint_NONE; // Do not take a fault
-    case kUnpredictable_RESMAIR:
-        return kConstraint_UNKNOWN; // Map to case kUnKNOWN value
-    case kUnpredictable_RESTEXCB:
-        return kConstraint_UNKNOWN; // Map to case kUnKNOWN value
-    case kUnpredictable_RESDACR:
-        return kConstraint_UNKNOWN; // Map to case kUnKNOWN value
-    case kUnpredictable_RESPRRR:
-        return kConstraint_UNKNOWN; // Map to case kUnKNOWN value
-    case kUnpredictable_RESVTCRS:
-        return kConstraint_UNKNOWN; // Map to case kUnKNOWN value
-    case kUnpredictable_RESTnSZ:
-        return kConstraint_FORCE; // Map to the limit value
-    case kUnpredictable_LARGEIPA:
-        return kConstraint_FORCE;// Restrict the inputsize to the PAMax value
-    case kUnpredictable_ESRCONDPASS:
-        return kConstraint_FALSE; // Report as "AL"
-    case kUnpredictable_ILZEROIT:
-        return kConstraint_FALSE; // Do not zero PSTATE.IT
-    case kUnpredictable_ILZEROT:
-        return kConstraint_FALSE; // Do not zero PSTATE.T
-    case kUnpredictable_BPVECTORCATCHPRI:
-        return kConstraint_TRUE; // Debug Vector Catch: match on 2nd halfword
-    case kUnpredictable_VCMATCHHALF:
-        return kConstraint_FALSE; // No match
-    case kUnpredictable_VCMATCHDAPA:
-        return kConstraint_FALSE; // No match on Data Abort or Prefetch abort
-    case kUnpredictable_WPMASKANDBAS:
-        return kConstraint_FALSE; // Watchpoint disabled
-    case kUnpredictable_WPBASCONTIGUOUS:
-        return kConstraint_FALSE; // Watchpoint disabled
-    case kUnpredictable_RESWPMASK:
-        return kConstraint_DISABLED; // Watchpoint disabled
-    case kUnpredictable_WPMASKEDBITS:
-        return kConstraint_FALSE; // Watchpoint disabled
-    case kUnpredictable_RESBPWPCTRL:
-        return kConstraint_DISABLED; // Breakpoint/watchpoint disabled
-    case kUnpredictable_BPNOTIMPL:
-        return kConstraint_DISABLED; // Breakpoint disabled
-    case kUnpredictable_RESBPTYPE:
-        return kConstraint_DISABLED; // Breakpoint disabled
-    case kUnpredictable_BPNOTCTXCMP:
-        return kConstraint_DISABLED; // Breakpoint disabled
-    case kUnpredictable_BPMATCHHALF:
-        return kConstraint_FALSE; // No match
-    case kUnpredictable_BPMISMATCHHALF:
-        return kConstraint_FALSE; // No match
-    case kUnpredictable_RESTARTALIGNPC:
-        return kConstraint_FALSE; // Do not force alignment
-    case kUnpredictable_RESTARTZEROUPPERPC:
-        return kConstraint_TRUE; // Force zero extension
-    case kUnpredictable_ZEROUPPER:
-        return kConstraint_TRUE; // zero top halves of X registers
-    case kUnpredictable_ERETZEROUPPERPC:
-        return kConstraint_TRUE; // zero top half of PC
-    case kUnpredictable_A32FORCEALIGNPC:
-        return kConstraint_FALSE; // Do not force alignment
-    case kUnpredictable_SMD:
-        return kConstraint_UNDEF; // disabled SMC is case kUnallocated
-    case kUnpredictable_AFUPDATE: // AF update for alignment or permission fault
-        return kConstraint_TRUE;
-    case kUnpredictable_IESBinDebug: // Use SCTLR[].IESB in Debug state
-        return kConstraint_TRUE;
+eExtendType DecodeRegExtend(int anOption) {
+    switch (anOption) {
+    case 0:        return kExtendType_UXTB;
+    case 1:        return kExtendType_UXTH;
+    case 2:        return kExtendType_UXTW;
+    case 3:        return kExtendType_UXTX;
+    case 4:        return kExtendType_SXTB;
+    case 5:        return kExtendType_SXTH;
+    case 6:        return kExtendType_SXTW;
+    case 7:        return kExtendType_SXTX;
+    default:        assert(false); break;
+    }
+}
+
+eIndex getIndex ( unsigned int index) {
+    switch (index) {
+    case 0x1:
+        return kPostIndex;
+    case 0x2:
+        return kSingedOffset;
+    case 0x3:
+        return kPreIndex;
+    default:
+        return kNoOffset;
+        break;
+    }
+}
+
+std::unique_ptr<Operation> extend(eExtendType anExtend){
+    switch (anExtend) {
+    case kExtendType_SXTB:              return operation(kSextB_);
+    case kExtendType_SXTH:              return operation(kSextH_);
+    case kExtendType_SXTW:              return operation(kSextW_);
+    case kExtendType_SXTX:              return operation(kSextX_);
+    case kExtendType_UXTB:              return operation(kZextB_);
+    case kExtendType_UXTH:              return operation(kZextH_);
+    case kExtendType_UXTW:              return operation(kZextW_);
+    case kExtendType_UXTX:              return operation(kZextX_);
+    default:        assert(false); break;
     }
 }
 
@@ -158,80 +120,11 @@ static void setRD1( SemanticInstruction * inst, uint32_t rd1) {
   inst->setOperand( kRD1, regRD1 );
 }
 
-static void setRS( SemanticInstruction * inst, eOperandCode rs_code, uint32_t rs) {
+void setRS( SemanticInstruction * inst, eOperandCode rs_code, uint32_t rs) {
   reg regRS;
   regRS.theType = xRegisters;
   regRS.theIndex = rs;
   inst->setOperand(rs_code, regRS);
-}
-
-static void setCC( SemanticInstruction * inst, int32_t ccNum, eOperandCode rs_code) {
-  reg regICC;
-  regICC.theType = ccBits;
-  regICC.theIndex = ccNum;
-  inst->setOperand(rs_code, regICC);
-}
-
-static void setFD( SemanticInstruction * inst, eOperandCode fd_no, uint32_t fd) {
-  reg regFD;
-  regFD.theType = vRegisters;
-  regFD.theIndex = fd;
-  inst->setOperand( fd_no, regFD );
-}
-
-static void setFS( SemanticInstruction * inst, eOperandCode fs_no, uint32_t fs) {
-  reg regFS;
-  regFS.theType = vRegisters;
-  regFS.theIndex = fs;
-  inst->setOperand(fs_no, regFS);
-}
-
-static void setCCd( SemanticInstruction * inst) {
-  reg regCCd;
-  regCCd.theType = ccBits;
-  regCCd.theIndex = 0;
-  inst->setOperand( kCCd, regCCd );
-}
-
-static void setFCCd( int32_t fcc, SemanticInstruction * inst) {
-  reg regCCd;
-  regCCd.theType = ccBits;
-  regCCd.theIndex = 1 + fcc;
-  inst->setOperand( kCCd, regCCd );
-}
-
-//void addReadRD( SemanticInstruction * inst, uint32_t rd) {
-
-//    predicated_dependant_action update_value = updateStoreValueAction( inst );
-
-//    setRD( inst, rd);
-
-//    inst->addDispatchEffect( mapSource( inst, kRD, kPD ) );
-//    simple_action read_value = readRegisterAction( inst, kPD, kResult );
-//    inst->addDispatchAction( read_value );
-
-//    connectDependance( update_value.dependance, read_value );
-//    connectDependance( inst->retirementDependance(), update_value );
-
-//    inst->addAnnulmentEffect( squash( inst, update_value.predicate ) );
-//    inst->addReinstatementEffect( satisfy( inst, update_value.predicate ) );
-//}
-
-void addUpdateData( SemanticInstruction * inst, uint32_t data_reg, size_t size) {
-
-    predicated_dependant_action update_value = updateStoreValueAction( inst, kResult);
-
-//    setRD( inst, addr_reg);
-
-    inst->addDispatchEffect( mapSource( inst, kRD, kPD ) );
-    simple_action read_value = readRegisterAction( inst, kPD, kResult );
-    inst->addDispatchAction( read_value );
-
-    connectDependance( update_value.dependance, read_value );
-    connectDependance( inst->retirementDependance(), update_value );
-
-    inst->addAnnulmentEffect( squash( inst, update_value.predicate ) );
-    inst->addReinstatementEffect( satisfy( inst, update_value.predicate ) );
 }
 
 void satisfyAtDispatch( SemanticInstruction * inst, std::list<InternalDependance> & dependances) {
@@ -241,81 +134,6 @@ void satisfyAtDispatch( SemanticInstruction * inst, std::list<InternalDependance
   }
 }
 
-
-void addReadFDs( SemanticInstruction * inst, uint32_t fd, eSize aSize, std::vector<InternalDependance> & aValueDependance) {
-
-  switch ( aSize ) {
-    case kWord: {
-      setFD(inst, kFD0, fd);
-      inst->addDispatchEffect( mapSource( inst, kFD0, kPFD0 ) );
-      simple_action read_value = readRegisterAction( inst, kPFD0, kfResult0 );
-      inst->addDispatchAction( read_value );
-      inst->addPrevalidation( validateVRegister( fd, kfResult0, inst ) );
-
-      connectDependance( aValueDependance[0], read_value );
-      inst->addDispatchEffect( satisfy( inst, aValueDependance[1] ) );
-      inst->addPostvalidation( validateMemory( kAddress, kOperand3, kfResult0, kWord, inst ) );
-
-      break;
-    }
-    case kDoubleWord: {
-      //Move fd[0] to fd[5]
-      boost::dynamic_bitset<> fdb(6, fd);
-      fdb[5] = fdb[0];
-      fdb[0] = 0;
-      int32_t actual_fd = fdb.to_ulong();
-      setFD(inst, kFD0, actual_fd);
-      setFD(inst, kFD1, actual_fd | 1);
-
-      inst->addDispatchEffect( mapSource( inst, kFD0, kPFD0 ) );
-      simple_action read_value = readRegisterAction( inst, kPFD0, kfResult0 );
-      inst->addDispatchAction( read_value );
-      inst->addPrevalidation( validateVRegister( actual_fd, kfResult0, inst ) );
-
-      inst->addDispatchEffect( mapSource( inst, kFD1, kPFD1 ) );
-      simple_action read_value1 = readRegisterAction( inst, kPFD1, kfResult1 );
-      inst->addDispatchAction( read_value1 );
-      inst->addPrevalidation( validateVRegister( actual_fd | 1, kfResult1, inst ) );
-
-      connectDependance( aValueDependance[0], read_value );
-      connectDependance( aValueDependance[1], read_value1 );
-      inst->addPostvalidation( validateMemory( kAddress, kfResult0, kWord, inst ) );
-      inst->addPostvalidation( validateMemory( kAddress, kOperand3, kfResult1, kWord, inst ) );
-
-      break;
-    }
-    default:
-      DBG_Assert(false);
-  }
-}
-
-void addReadFValue( SemanticInstruction * inst, uint32_t fd, eSize aSize) {
-  //Set up the mapping and readRegister actions.  Make the execute action
-  //depend on reading the register value
-
-  multiply_dependant_action update_value = updateFloatingStoreValueAction( inst, aSize );
-
-  addReadFDs( inst, fd, aSize, update_value.dependances );
-
-  connectDependance( inst->retirementDependance(), update_value );
-}
-
-void addReadCC( SemanticInstruction * inst, int32_t ccNum, int32_t anOpNumber, std::list<InternalDependance> & dependances) {
-  //Calculate operand codes from anOpNumber
-  DBG_Assert( anOpNumber == 1 || anOpNumber == 2 || anOpNumber == 3);
-  eOperandCode cOperand = eOperandCode( kOperand1 + anOpNumber - 1);
-  eOperandCode cRS = eOperandCode( kRS1 + anOpNumber - 1);
-  eOperandCode cPS = eOperandCode( kPS1 + anOpNumber - 1);
-
-  //Set up the mapping and readRegister actions.  Make the execute action
-  //depend on reading the register value
-  setCC( inst, ccNum, cRS);
-
-  inst->addDispatchEffect( mapSource( inst, cRS, cPS ) );
-  simple_action act = readRegisterAction( inst, cPS, cOperand );
-  connect( dependances, act );
-  inst->addDispatchAction( act );
-}
 
 void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t rs, std::list<InternalDependance> & dependances, bool is_64) {
 
@@ -336,25 +154,6 @@ void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t 
 
 }
 
-
-void addReadVRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t rs, std::list<InternalDependance> & dependances) {
-
-    //Calculate operand codes from anOpNumber
-    DBG_Assert( anOpNumber == 1 || anOpNumber == 2 || anOpNumber == 3 || anOpNumber == 4 || anOpNumber == 5 );
-    eOperandCode cOperand = eOperandCode( kOperand1 + anOpNumber - 1);
-    eOperandCode cRS = eOperandCode( kRS1 + anOpNumber - 1);
-    eOperandCode cPS = eOperandCode( kPS1 + anOpNumber - 1);
-
-    DECODER_DBG("Reading v[" << rs << "] with opNumber " << cRS << " and storing it in " << cPS << "\e[0m");
-    setRS( inst, cRS , rs );
-    inst->addDispatchEffect( mapSource( inst, cRS, cPS ) );
-    simple_action act = readRegisterAction( inst, cPS, cOperand, true );
-    connect( dependances, act );
-    inst->addDispatchAction( act );
-    inst->addPrevalidation( validateVRegister( rs, cOperand, inst ) );
-
-}
-
 void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, int val, std::list<InternalDependance> & dependances){
 
     DBG_Assert( anOpNumber == 1 || anOpNumber == 2 || anOpNumber == 3 || anOpNumber == 4 || anOpNumber == 5 );
@@ -366,8 +165,8 @@ void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, int val, s
 
 }
 
-void addAnnulment( SemanticInstruction * inst, eRegisterType aType, predicated_action & exec, InternalDependance const & aWritebackDependance) {
-  predicated_action annul = annulAction( inst, aType );
+void addAnnulment( SemanticInstruction * inst, predicated_action & exec, InternalDependance const & aWritebackDependance) {
+  predicated_action annul = annulAction( inst );
   //inst->addDispatchAction( annul );
 
   connectDependance( aWritebackDependance, annul );
@@ -390,52 +189,18 @@ void addRD1Annulment( SemanticInstruction * inst, predicated_action & exec, Inte
   inst->addReinstatementEffect( satisfy ( inst, exec.predicate ) );
 }
 
-void addRD1Writeback( SemanticInstruction * inst, predicated_action & exec) {
-  inst->addDispatchEffect( mapRD1Destination(inst) );
-
-  //Create the writeback action
-  dependant_action wb = writebackRD1Action( inst );
-  //inst->addDispatchAction( wb );
-
-  addRD1Annulment( inst, exec, wb.dependance );
-
-  //Make writeback depend on execute, make retirement depend on writeback
-  connectDependance( wb.dependance, exec );
-  connectDependance( inst->retirementDependance(), wb );
-}
-
-void addWriteback( SemanticInstruction * inst, eRegisterType aType, bool addSquash) {
+void addWriteback( SemanticInstruction * inst, eOperandCode aRegisterCode,eOperandCode aMappedRegisterCode, predicated_action & exec, bool a64, bool setflags, bool addSquash) {
   if (addSquash) {
-    inst->addDispatchEffect( mapDestination( inst, aType ) );
+    inst->addDispatchEffect( mapDestination( inst ) );
   } else {
-    inst->addDispatchEffect( mapDestination_NoSquashEffects( inst, aType ) );
-  }
-
-  dependant_action wb = writebackAction( inst, aType );
-
-  connectDependance( inst->retirementDependance(), wb );
-}
-
-void addPrivWriteback( SemanticInstruction * inst, predicated_action & exec, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm ) {
-
-  dependant_action wb = writePrivAction( inst, op0, op1, op2, crn, crm );
-
-  //Make writeback depend on execute, make retirement depend on writeback
-  connectDependance( wb.dependance, exec );
-  connectDependance( inst->retirementDependance(), wb );}
-
-void addWriteback( SemanticInstruction * inst, eRegisterType aType, predicated_action & exec, bool addSquash) {
-  if (addSquash) {
-    inst->addDispatchEffect( mapDestination( inst, aType ) );
-  } else {
-    inst->addDispatchEffect( mapDestination_NoSquashEffects( inst, aType ) );
+    inst->addDispatchEffect( mapDestination_NoSquashEffects( inst ) );
   }
 
   //Create the writeback action
-  dependant_action wb = writebackAction( inst, aType );
+  dependant_action wb = writebackAction( inst, aRegisterCode, aMappedRegisterCode, a64, setflags );
 //  inst->addDispatchAction( wb );
 
-  addAnnulment( inst, aType, exec, wb.dependance );
+  addAnnulment( inst, exec, wb.dependance );
 
   //Make writeback depend on execute, make retirement depend on writeback
   connectDependance( wb.dependance, exec );
@@ -443,59 +208,27 @@ void addWriteback( SemanticInstruction * inst, eRegisterType aType, predicated_a
 }
 
 
-void addDestination( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool addSquash = true) {
+void addDestination( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool is64, bool setflags, bool addSquash) {
 
     setRD( inst, rd);
-    addWriteback( inst, xRegisters, exec, addSquash );
+    addWriteback( inst, kResult, kPD, exec, is64, setflags, addSquash );
     inst->addPostvalidation( validateXRegister( rd, kResult, inst  ) );
 //    inst->addOverride( overrideRegister( rd, kResult, inst ) );
 }
 
-void addPairDestination( SemanticInstruction * inst, uint32_t rd, uint32_t rd1, predicated_action & exec, bool addSquash = true) {
+void addPairDestination( SemanticInstruction * inst, uint32_t rd, uint32_t rd1, predicated_action & exec, bool is64, bool addSquash) {
 
     setRD( inst, rd);
-    addWriteback( inst, xRegisters, exec );
+    addWriteback( inst, kResult, kPD, exec, is64, false, addSquash);
     inst->addPostvalidation( validateXRegister( rd, kResult, inst  ) );
 //    inst->addOverride( overrideRegister( operands.rd(), kResult, inst ) );
     setRD1( inst, rd1);
-    addRD1Writeback( inst, exec );
+    addWriteback( inst, kResult1, kPD1, exec, is64, false, addSquash);
     inst->addPostvalidation( validateXRegister( rd1, kResult1, inst  ) );
 //    inst->addOverride( overrideRegister( operands.rd() + 1, kResult1, inst ) );
 }
 
-void addVDestination( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool addSquash) {
-
-    setFD( inst, kFD0, rd);
-    addWriteback( inst, vRegisters, exec, addSquash );
-    inst->addPostvalidation( validateVRegister( rd, kResult, inst  ) );
-//    inst->addOverride( overrideRegister( rd, kResult, inst ) );
-}
-
-
-void ArmFormatOperands( SemanticInstruction * inst, uint32_t reg,
-                      std::vector<std::list<InternalDependance> > & rs_deps)
-{
-    DBG_Assert( ! rs_deps[0].empty() , ( << "rs_deps empty in format3Operands - format3operands call must occur after execute action is constructed." ) );
-    addReadXRegister( inst, 1, reg, rs_deps[0] );
-//    if (operands.is_simm13()) {
-//      addSimm13( inst, operands.simm13(), kOperand2, rs_deps[1] );
-//    } else {
-//      addReadXRegister( inst, 2, operands.rs2(), rs_deps[1] );
-//    }
-}
-
-predicated_action addExecute_XTRA( SemanticInstruction * inst, std::unique_ptr<Operation> & anOperation, uint32_t rd, std::vector< std::list<InternalDependance> > & rs_deps, bool write_xtra) {
-  predicated_action exec;
-//  if (rd == 0) {
-//    exec = executeAction_XTRA( inst, anOperation, rs_deps, boost::none, (write_xtra ? boost::optional<eOperandCode>(kXTRApd) : boost::none));
-//  } else {
-    exec = executeAction_XTRA( inst, anOperation, rs_deps, kPD, (write_xtra ? boost::optional<eOperandCode>(kXTRApd) : boost::none ));
-//  }
-  //inst->addDispatchAction( exec );
-  return exec;
-}
-
-predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operation> & anOperation, std::vector< std::list<InternalDependance> > & rs_deps, eOperandCode aResult, boost::optional<eOperandCode> aBypass ) {
+predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operation> anOperation, std::vector< std::list<InternalDependance> > & rs_deps, eOperandCode aResult, boost::optional<eOperandCode> aBypass ) {
   predicated_action exec;
 
     exec = executeAction( inst, anOperation, rs_deps, aResult, aBypass );
@@ -503,105 +236,6 @@ predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operat
     return exec;
 }
 
-predicated_action addExecute2( SemanticInstruction * inst, std::unique_ptr<Operation> anOperation, std::vector< std::list<InternalDependance> > & rs_deps, eOperandCode aResult, boost::optional<eOperandCode> aBypass ) {
-  predicated_action exec;
-
-    exec = executeAction( inst, anOperation, rs_deps, aResult, aBypass );
-//    inst->addDispatchAction( exec );
-    return exec;
-}
-
-void addFloatingAnnulment( SemanticInstruction * inst, int32_t anIndex, predicated_action & exec, InternalDependance const & aWritebackDependance) {
-  predicated_action annul = floatingAnnulAction( inst, anIndex );
-  //inst->addDispatchAction( annul );
-
-  connectDependance( aWritebackDependance, annul );
-
-//  inst->addDispatchEffect( recordFPRS(inst));
-  inst->addAnnulmentEffect( satisfy( inst, annul.predicate ) );
-  inst->addAnnulmentEffect( squash( inst, exec.predicate ) );
-  inst->addReinstatementEffect( squash( inst, annul.predicate ) );
-  inst->addReinstatementEffect( satisfy ( inst, exec.predicate ) );
-}
-
-void addFloatingWriteback( SemanticInstruction * inst, int32_t anIndex, predicated_action & exec) {
-  inst->addDispatchEffect( mapFDestination( inst, anIndex) );
-
-  //Create the writeback action
-  dependant_action wb = floatingWritebackAction( inst, anIndex );
-  //inst->addDispatchAction( wb );
-
-  addFloatingAnnulment( inst, anIndex, exec, wb.dependance );
-
-  //Make writeback depend on execute, make retirement depend on writeback
-  connectDependance( wb.dependance, exec );
-  connectDependance( inst->retirementDependance(), wb );
-}
-
-void addDoubleFloatingWriteback( SemanticInstruction * inst, predicated_action & exec) {
-  inst->addDispatchEffect( mapFDestination( inst, 0) );
-  inst->addDispatchEffect( mapFDestination( inst, 1) );
-
-  //Create the writeback action
-  dependant_action wb0 = floatingWritebackAction( inst, 0 );
-  dependant_action wb1 = floatingWritebackAction( inst, 1 );
-
-  predicated_action annul0 = floatingAnnulAction( inst, 0 );
-  predicated_action annul1 = floatingAnnulAction( inst, 1 );
-
-  connectDependance( wb0.dependance, annul0 );
-  connectDependance( wb1.dependance, annul1 );
-
-//  inst->addDispatchEffect( recordFPRS(inst));
-  inst->addAnnulmentEffect( satisfy( inst, annul0.predicate ) );
-  inst->addAnnulmentEffect( satisfy( inst, annul1.predicate ) );
-  inst->addAnnulmentEffect( squash( inst, exec.predicate ) );
-
-  inst->addReinstatementEffect( squash( inst, annul0.predicate ) );
-  inst->addReinstatementEffect( squash( inst, annul1.predicate ) );
-  inst->addReinstatementEffect( satisfy ( inst, exec.predicate ) );
-
-  //Make writeback depend on execute, make retirement depend on writeback
-  connectDependance( wb0.dependance, exec );
-  connectDependance( wb1.dependance, exec );
-  connectDependance( inst->retirementDependance(), wb0 );
-  connectDependance( inst->retirementDependance(), wb1 );
-}
-
-void addFloatingDestination( SemanticInstruction * inst, uint32_t fd, eSize aSize, predicated_action & exec) {
-
-  switch ( aSize ) {
-    case kWord: {
-      setFD(inst, kFD0, fd);
-      addFloatingWriteback( inst, 0, exec );
-//      inst->addRetirementEffect( updateFPRS(inst, fd) );
-//      inst->addPostvalidation( validateFPRS(inst) );
-      inst->addPostvalidation( validateVRegister( fd, kfResult0, inst  ) );
-//      inst->addOverride( overrideFloatSingle( fd, kfResult0, inst ) );
-      break;
-    }
-    case kDoubleWord: {
-      //Move fd[0] to fd[5]
-      boost::dynamic_bitset<> fdb(6, fd);
-      fdb[5] = fdb[0];
-      fdb[0] = 0;
-      int32_t actual_fd = fdb.to_ulong();
-      setFD(inst, kFD0, actual_fd);
-      setFD(inst, kFD1, actual_fd | 1);
-//      inst->addRetirementEffect( updateFPRS(inst, actual_fd) );
-//      inst->addPostvalidation( validateFPRS(inst) );
-//      addFloatingWriteback( inst, 0, exec );
-//      addFloatingWriteback( inst, 1, exec );
-      addDoubleFloatingWriteback( inst, exec ); // Use specialized function to avoid squash->satisfy->squash deadlock problem with annulment/reinstatement
-      inst->addPostvalidation( validateVRegister( actual_fd, kfResult0, inst  ) );
-      inst->addPostvalidation( validateVRegister( actual_fd | 1, kfResult1, inst  ) );
-//      inst->addOverride( overrideFloatDouble( actual_fd, kfResult0, kfResult1, inst ) );
-      break;
-    }
-    default:
-      DBG_Assert(false);
-  }
-}
 
 void addAddressCompute( SemanticInstruction * inst, std::vector< std::list<InternalDependance> > & rs_deps) {
   DECODER_TRACE;
@@ -613,25 +247,21 @@ void addAddressCompute( SemanticInstruction * inst, std::vector< std::list<Inter
   connectDependance( inst->retirementDependance(), update_address );
 }
 
-void  MEMBAR( SemanticInstruction * inst, armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo, uint32_t i ) {
+void MEMBAR( SemanticInstruction * inst, uint32_t anAccess) {
+  DECODER_TRACE;
 
-  if (i) {
+  switch (anAccess & 0xf) {
+  case kMO_ST_ST:
     //MEMBAR #StoreStore
-
     inst->setClass(clsMEMBAR, codeMEMBARStSt);
     inst->addRetirementConstraint( membarStoreStoreConstraint(inst) );
-
-        return;
-  } else if ( (aFetchedOpcode.theOpcode & 0x70) != 0 ) {
+    break;
+  case kMO_ST_LD: case kMO_LD_LD:
     //Synchronizing MEMBARS.
     //Although this is not entirely to spec, we implement synchronizing MEMBARs
     //as StoreLoad MEMBERS.
-
     inst->setClass(clsMEMBAR, codeMEMBARSync);
-
     //#Sync implementation - waits for core to drain/synchronize
-    //inst->setHaltDispatch();
-    //inst->addRetirementConstraint( storeQueueEmptyConstraint(inst) );
 
     //ordering implementation - allows TSO++ speculation
     inst->addRetirementConstraint( membarSyncConstraint(inst) );
@@ -640,37 +270,10 @@ void  MEMBAR( SemanticInstruction * inst, armcode const & aFetchedOpcode, uint32
     inst->addRetirementEffect( retireMem(inst) );
     inst->addCommitEffect( eraseLSQ(inst) ); //The LSQ entry may already be gone if the MEMBAR retired non-speculatively (empty SB)
     inst->setMayCommit( false ) ; //Can't commit till memory-order speculation is resolved by the core
+    break;
 
-    return inst;
-
-  } else if ( (aFetchedOpcode.theOpcode & 2) != 0 ) {
-    //MEMBAR #StoreLoad
-
-    //The only ordering MEMBAR that matters is the #StoreLoad, as all the other
-    //constraints are implicit in TSO.  The #StoreLoad MEMBAR may not retire
-    //until the store buffer is empty.
-
-    inst->setClass(clsMEMBAR, codeMEMBARStLd);
-    inst->addRetirementConstraint( membarStoreLoadConstraint(inst) );
-    inst->addDispatchEffect( allocateMEMBAR( inst ) );
-    inst->addSquashEffect( eraseLSQ(inst) );
-    inst->addRetirementEffect( retireMem(inst) );
-    inst->addCommitEffect( eraseLSQ(inst) ); //The LSQ entry may already be gone if the MEMBAR retired non-speculatively (empty SB)
-    inst->setMayCommit( false ) ; //Can't commit till memory-order speculation is resolved by the core
-
+  default:
     return;
-
-  } else if ( (aFetchedOpcode.theOpcode & 8) != 0 ) {
-    //MEMBAR #StoreStore
-
-    inst->setClass(clsMEMBAR, codeMEMBARStSt);
-    inst->addRetirementConstraint( membarStoreStoreConstraint(inst) );
-
-    return;
-
-  } else {
-    //All other MEMBARs are NOPs under TSO
-//    return nop( aFetchedOpcode, aCPU, aSequenceNo );
   }
 }
 
@@ -679,7 +282,7 @@ void  MEMBAR( SemanticInstruction * inst, armcode const & aFetchedOpcode, uint32
  */
 bool disas_ldst_compute_iss_sf(int size, bool is_signed, int opc)
 {
-    int opc0 = extract32(opc, 0, 1);
+    uint32_t opc0 = extract32(opc, 0, 1);
     int regsize;
 
     if (is_signed) {
@@ -690,138 +293,91 @@ bool disas_ldst_compute_iss_sf(int size, bool is_signed, int opc)
     return regsize == 64;
 }
 
-/* Simplified variant of pseudocode DecodeBitMasks() for the case where we
- * only require the wmask. Returns false if the imms/immr/immn are a reserved
- * value (ie should cause a guest UNDEF exception), and true if they are
- * valid, in which case the decoded bit pattern is written to result.
- */
-static bool logic_imm_decode_wmask_tmask(uint64_t *wmask, uint64_t *tmask, unsigned int immn,
-                                   unsigned int imms, unsigned int immr)
-{
-    uint64_t mask, mask2;
-    unsigned e, levels, s, r, diff, d;
-    int len;
 
-    assert(immn < 2 && imms < 64 && immr < 64);
-
-    /* The bit patterns we create here are 64 bit patterns which
-     * are vectors of identical elements of size e = 2, 4, 8, 16, 32 or
-     * 64 bits each. Each element contains the same value: a run
-     * of between 1 and e-1 non-zero bits, rotated within the
-     * element by between 0 and e-1 bits.
-     *
-     * The element size and run length are encoded into immn (1 bit)
-     * and imms (6 bits) as follows:
-     * 64 bit elements: immn = 1, imms = <length of run - 1>
-     * 32 bit elements: immn = 0, imms = 0 : <length of run - 1>
-     * 16 bit elements: immn = 0, imms = 10 : <length of run - 1>
-     *  8 bit elements: immn = 0, imms = 110 : <length of run - 1>
-     *  4 bit elements: immn = 0, imms = 1110 : <length of run - 1>
-     *  2 bit elements: immn = 0, imms = 11110 : <length of run - 1>
-     * Notice that immn = 0, imms = 11111x is the only combination
-     * not covered by one of the above options; this is reserved.
-     * Further, <length of run - 1> all-ones is a reserved pattern.
-     *
-     * In all cases the rotation is by immr % e (and immr is 6 bits).
-     */
-
-    /* First determine the element size */
-    len = 31 - clz32((immn << 6) | (~imms & 0x3f));
-    if (len < 1) {
-        /* This is the immn == 0, imms == 0x11111x case */
-        return false;
+uint64_t highestSetBit(uint64_t val, uint64_t bitSize){
+    for (int i = bitSize -1; i >= 0; i--){
+        if ((val & (1 << i)) == 1){
+            return i;
+        }
     }
-    e = 1 << len;
-
-    levels = e - 1;
-    s = imms & levels;
-    r = immr & levels;
-    diff = s - r;
-    d = diff & (len-1 >> ~0);
-
-    if (s == levels) {
-        /* <length of run - 1> mustn't be all-ones. */
-        return false;
-    }
-
-    /* Create the value of one element: s+1 set bits rotated
-     * by r within the element (which is e bits wide)...
-     */
-
-    mask = bitmask64(s + 1);
-    *tmask = bitmask64(d + 1);
-    if (r) {
-        mask = (mask >> r) | (mask << (e - r));
-        mask &= bitmask64(e);
-    }
-    /* ...then replicate the element over the whole 64 bit value */
-    mask = bitfield_replicate(mask, e);
-    *wmask = mask;
-    return true;
+    return 0;
 }
 
-static bool logic_imm_decode_wmask(uint64_t *wmask, unsigned int immn,
-                                   unsigned int imms, unsigned int immr)
-{
-    uint64_t mask;
-    unsigned e, levels, s, r;
-    int len;
-
-    assert(immn < 2 && imms < 64 && immr < 64);
-
-    /* The bit patterns we create here are 64 bit patterns which
-     * are vectors of identical elements of size e = 2, 4, 8, 16, 32 or
-     * 64 bits each. Each element contains the same value: a run
-     * of between 1 and e-1 non-zero bits, rotated within the
-     * element by between 0 and e-1 bits.
-     *
-     * The element size and run length are encoded into immn (1 bit)
-     * and imms (6 bits) as follows:
-     * 64 bit elements: immn = 1, imms = <length of run - 1>
-     * 32 bit elements: immn = 0, imms = 0 : <length of run - 1>
-     * 16 bit elements: immn = 0, imms = 10 : <length of run - 1>
-     *  8 bit elements: immn = 0, imms = 110 : <length of run - 1>
-     *  4 bit elements: immn = 0, imms = 1110 : <length of run - 1>
-     *  2 bit elements: immn = 0, imms = 11110 : <length of run - 1>
-     * Notice that immn = 0, imms = 11111x is the only combination
-     * not covered by one of the above options; this is reserved.
-     * Further, <length of run - 1> all-ones is a reserved pattern.
-     *
-     * In all cases the rotation is by immr % e (and immr is 6 bits).
-     */
-
-    /* First determine the element size */
-    len = 31 - clz32((immn << 6) | (~imms & 0x3f));
-    if (len < 1) {
-        /* This is the immn == 0, imms == 0x11111x case */
-        return false;
+uint64_t ones(uint64_t length){
+    uint64_t tmp;
+    for (uint64_t i=0; i<length; i++){
+        tmp |= (1 << i);
     }
-    e = 1 << len;
-
-    levels = e - 1;
-    s = imms & levels;
-    r = immr & levels;
-
-    if (s == levels) {
-        /* <length of run - 1> mustn't be all-ones. */
-        return false;
-    }
-
-    /* Create the value of one element: s+1 set bits rotated
-     * by r within the element (which is e bits wide)...
-     */
-
-    mask = bitmask64(s + 1);
-    if (r) {
-        mask = (mask >> r) | (mask << (e - r));
-        mask &= bitmask64(e);
-    }
-    /* ...then replicate the element over the whole 64 bit value */
-    mask = bitfield_replicate(mask, e);
-    *wmask = mask;
-    return true;
+    return tmp;
 }
 
+uint64_t ror(uint64_t input, uint64_t input_size, uint64_t shift_size){
+    uint64_t mask = ones(shift_size);
+    uint64_t remaining_bits = input & mask;
+
+    input >>= shift_size;
+    remaining_bits <<= (input_size - shift_size);
+
+    uint64_t filter = ones(input_size);
+
+    return (remaining_bits | input) & filter;
+}
+
+uint64_t lsl(uint64_t input, uint64_t input_size, uint64_t shift_size){
+    input <<= shift_size;
+    uint64_t filter = ones(input_size);
+    return input & filter;
+}
+
+uint64_t lsr(uint64_t input, uint64_t input_size, uint64_t shift_size){
+    input >>= shift_size;
+    uint64_t filter = ones(input_size);
+    return input & filter;
+}
+
+uint64_t asr(uint64_t input, uint64_t input_size, uint64_t shift_size){
+    bool is_signed = ((input & (1 << input_size)) != 0) ? true : false;
+    input >>= shift_size;
+    if (is_signed){
+        input |= (ones(4) << (input_size - 4));
+    }
+    uint64_t filter = ones(input_size);
+    return input & filter;
+}
+
+bool decodeBitMasks(uint64_t & tmask, uint64_t & wmask, bool immN, char imms, char immr, bool immediate, uint32_t dataSize){
+
+    uint32_t levels;
+
+    // Compute log2 of element size
+    // 2^len must be in range [2, M]
+    uint32_t len = highestSetBit( ((immN << 6) | ~imms) , 7 );
+    if (len < 1 ) return false;
+    assert (dataSize >= ((uint32_t)(1 << len)));
+
+    // Determine S, R and S - R parameters
+    levels = ones(len);
+
+    // For logical immediates an all-ones value of S is reserved
+    // since it would generate a useless all-ones result (many times)
+    if (immediate && ((imms & levels) == levels)){
+        return false;
+    }
+
+    uint32_t S = (imms & levels);
+    uint32_t R = (immr & levels);
+
+    uint32_t diff = S - R; // 6-bit subtract with borrow
+
+    // From a software perspective, the remaining code is equivalant to:
+    uint32_t esize = 1 << len;
+    uint32_t d = diff & ones(len-1);
+    uint32_t welem = ones(S + 1);
+    uint32_t telem = ones(d + 1);
+    wmask = ror(welem, R, esize);
+    tmask = telem;
+    return true;
+}
 
 
 

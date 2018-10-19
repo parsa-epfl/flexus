@@ -43,6 +43,7 @@
 #include <boost/throw_exception.hpp>
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/lambda/bind.hpp>
 namespace ll = boost::lambda;
 
 #include <boost/none.hpp>
@@ -58,9 +59,6 @@ namespace ll = boost::lambda;
 #include "../SemanticInstruction.hpp"
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
-
-#include <components/uArchARM/CoreModel/SCTLR_EL.hpp>
-#include <components/uArchARM/systemRegister.hpp>
 #include "PredicatedSemanticAction.hpp"
 
 #define DBG_DeclareCategories armDecoder
@@ -71,45 +69,51 @@ namespace narmDecoder {
 
 using namespace nuArchARM;
 
-struct SystemAction : public PredicatedSemanticAction {
-  uint8_t theOp0, theOp1, theOp2, theCRn, theCRm, theRT;
-  bool thehasCP;
-  eOperandCode theOperandCode;
-  bool theRead;
+struct IncrementAction : public PredicatedSemanticAction
+{
+  eOperandCode theRegisterCode;
+  bool the64;
 
-  SystemAction( SemanticInstruction * anInstruction,
-                uint8_t op0,
-                uint8_t op1,
-                uint8_t op2,
-                uint8_t crn,
-                uint8_t crm,
-                uint8_t rt ,
-                bool hasCP)
-    : PredicatedSemanticAction( anInstruction, 1, true)
-    , theOp0( op0 )
-    , theOp1( op1 )
-    , theOp2( op2 )
-    , theCRn( crn )
-    , theCRm( crm )
-    , theRT( rt )
-    , thehasCP (hasCP)
+  IncrementAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, bool is64)
+    : PredicatedSemanticAction( anInstruction, 1, true )
+    , theRegisterCode( aRegisterCode )
+    , the64(is64)
   {}
 
-  void doEvaluate() {
+  void doEvaluate()
+  {
+    SEMANTICS_DBG(*this);
 
+    if (! signalled() ) {
+      SEMANTICS_DBG("Signalling");
+
+      mapped_reg name = theInstruction->operand< mapped_reg > (theRegisterCode);
+      Operand aValue = core()->readRegister( name );
+
+      uint64_t val = boost::get<uint64_t>(aValue);
+      val++;
+
+      if (!the64) {
+        val &= 0xffffffff;
+      }
+
+      theInstruction->setOperand(theRegisterCode, val);
+      satisfyDependants();
+    }
   }
 
-  void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " System Check ";
+  void describe( std::ostream & anOstream) const
+  {
+    anOstream << theInstruction->identify() << " IncrementAction " << theRegisterCode;
   }
 };
 
-
-predicated_action systemAction
-(SemanticInstruction * anInstruction, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm, uint8_t rt, bool hasCP) {
-  SystemAction * act(new (anInstruction->icb()) SystemAction(anInstruction, op0, op1, crn, crm, op2, rt, hasCP));
-
+predicated_action incrementAction ( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, bool is64)
+{
+  IncrementAction * act(new(anInstruction->icb()) IncrementAction( anInstruction, aRegisterCode, is64));
   return predicated_action( act, act->predicate() );
 }
+
+
 
 } //narmDecoder

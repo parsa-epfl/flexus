@@ -62,7 +62,7 @@ CoreImpl::CoreImpl( uArchOptions_t options
   , change_mode_fn(_change_mode)
   , feedback_fn(_feedback)
   , signalStoreForwardingHit_fn(_signalStoreForwardingHit)
- // , thePendingTrap(0)
+  , thePendingTrap(kException_None)
   , theBypassNetwork( kxRegs_Total + 2 * options.ROBSize, kvRegs + 4 * options.ROBSize, 5 + options.ROBSize)
   , theLastGarbageCollect(0)
   , thePreserveInteractions(false)
@@ -184,6 +184,7 @@ CoreImpl::CoreImpl( uArchOptions_t options
   , theResync_RDPRUnsupported ( theName + "-Resync:RDPRUnsupported" )
   , theResync_WRPRUnsupported ( theName + "-Resync:WRPRUnsupported" )
   , theResync_MEMBARSync ( theName + "-Resync:MEMBARSync" )
+  , theResync_CLREX ( theName + "-Resync:CLREX" )
   , theResync_POPCUnsupported ( theName + "-Resync:POPCUnsupported" )
   , theResync_UnexpectedException ( theName + "-Resync:UnexpectedException" )
   , theResync_Interrupt ( theName + "-Resync:Interrupt" )
@@ -299,9 +300,6 @@ CoreImpl::CoreImpl( uArchOptions_t options
 
   reset();
 
-  // create system operation mappings
-//  initSystemRegisters(theSystemRegisters);
-
   theCommitUSArray[0] = &theCommitCount_NonSpin_User;
   theCommitUSArray[1] = &theCommitCount_NonSpin_System;
   theCommitUSArray[2] = &theCommitCount_NonSpin_Trap;
@@ -348,8 +346,8 @@ void CoreImpl::resetARM() {
   theRoundingMode = 0;
   thePSTATE = 0;
 
-//  thePendingTrap = 0;
- // theTrapInstruction = 0;
+  thePendingTrap = kException_None;
+  theTrapInstruction = 0;
 
   theInterruptSignalled = false;
   thePendingInterrupt = 0;
@@ -428,11 +426,6 @@ void CoreImpl::reset() {
 
 }
 
-//update physical register
-void CoreImpl::updatePSTATEbits(uint64_t mask) {
-    setPSTATE(getPSTATE() & mask);
-}
-
 //write to physical register
 void CoreImpl::writePR(uint32_t aPR, uint64_t aVal) {
   switch (aPR) {
@@ -446,57 +439,33 @@ void CoreImpl::writePR(uint32_t aPR, uint64_t aVal) {
 
 }
 // read physical register
-uint64_t CoreImpl::readPR(uint32_t aPR) {
-  switch (aPR) {
-    case 6: //PSTATE
-      return getPSTATE();
-    default:
-      DBG_( Crit, ( << "Read of unimplemented PR: " << aPR ) );
-      return 0;
-  }
-  return 0;
-}
+uint64_t CoreImpl::readPR(ePrivRegs aPR) { return getPriv(aPR).readfn(this); }
+bool CoreImpl::isAARCH64() {return theAARCH64;}
+void CoreImpl::setAARCH64(bool aMode) {theAARCH64 = aMode;}
+uint32_t CoreImpl::getSPSel (){ return thePSTATE & PSTATE_SP; }
+void CoreImpl::setSPSel (uint32_t aVal){SysRegInfo& ri = getPriv(kSPSel); ri.writefn(this, aVal);}
+void CoreImpl::setSP_el (uint8_t anId, uint64_t aVal){DBG_Assert(anId >= 0 || anId < 4); theSP_el[anId] = aVal;}
+uint64_t CoreImpl::getSP_el (uint8_t anId){DBG_Assert(anId >= 0 || anId < 4); return theSP_el[anId];}
+uint32_t CoreImpl::getPSTATE() { return thePSTATE; }
+void CoreImpl::setPSTATE( uint32_t aPSTATE) { thePSTATE = aPSTATE; }
+void CoreImpl::setFPSR( uint32_t anFPSR) { theFPSR = anFPSR; }
+uint32_t CoreImpl::getFPSR() { return theFPSR; }
+void CoreImpl::setFPCR( uint32_t anFPCR) { theFPCR = anFPCR; }
+uint32_t CoreImpl::getFPCR() { return theFPCR; }
+uint32_t CoreImpl::getDCZID_EL0() {return theDCZID_EL0;}
+void CoreImpl::setDCZID_EL0(uint32_t aDCZID_EL0) {theDCZID_EL0 = aDCZID_EL0;}
+void CoreImpl::setSCTLR_EL( uint8_t anId, uint64_t aSCTLR_EL) { theSCTLR_EL[anId] =  aSCTLR_EL; }
+uint64_t CoreImpl::getSCTLR_EL(uint8_t anId) { return theSCTLR_EL[anId]; }
+void CoreImpl::setHCREL2( uint64_t aHCREL2) { theHCR_EL2 = aHCREL2; }
+uint64_t CoreImpl::getHCREL2() { return theHCR_EL2; }
+void CoreImpl::setException( Flexus::Qemu::API::exception_t anEXP) { theEXP = anEXP; }
+Flexus::Qemu::API::exception_t CoreImpl::getException() { return theEXP; }
+void CoreImpl::setRoundingMode(uint32_t aRoundingMode) {theRoundingMode = aRoundingMode; }
+uint32_t CoreImpl::getRoundingMode() { return theRoundingMode; }
+void CoreImpl::setDAIF(uint32_t aDAIF) {thePSTATE = ((thePSTATE & ~PSTATE_DAIF) | (aDAIF & PSTATE_DAIF)); }
+void CoreImpl::setPC( uint64_t aPC) { thePC = aPC; }
 
-std::string CoreImpl::prName(uint32_t aPR) {
-  switch (aPR) {
-//    case 0: //TPC
-//      return "%tpc";
-//    case 1: //NTPC
-//      return "%tnpc";
-//    case 2: //TSTATE
-//      return "%tstate";
-//    case 3: //TT
-//      return "%tt";
-//    case 5: //TBA
-//      return "%tba";
-//    case 6: //PSTATE
-//      return "%pstate";
-//    case 7: //TL
-//      return "%tl";
-//    case 8: //PIL
-//      return "%pil";
-//    case 9: //CWP
-//      return "%cwp";
-//    case 10: //CANSAVE
-//      return "%cansave";
-//    case 11: //CANRESTORE
-//      return "%canrestore";
-//    case 12: //CLEANWIN
-//      return "%cleanwin";
-//    case 13: //OTHERWIN
-//      return "%otherwin";
-//    case 14: //WSTATE
-//      return "%wstate";
-//    case 31: //VER
-//      return "%ver";
-    default:
-      return "UnimplementedPR";
-  }
-}
 
-void CoreImpl::setRoundingMode(uint32_t aRoundingMode) {
-  theRoundingMode = aRoundingMode;
-}
 
 CoreModel * CoreModel::construct( uArchOptions_t options
                                   , std::function< void (Flexus::Qemu::Translation &) > translate

@@ -101,8 +101,7 @@ std::string armInstruction::disassemble() const {
   return Flexus::Qemu::Processor::getProcessor(theCPU)->disassemble(thePC);
 }
 
-void armInstruction::setWillRaise(int32_t aSetting) {
-  DBG_( Tmp, ( << *this << " setWillRaise: 0x" << std::hex << aSetting << std::dec ) ) ;//NOOSHIN
+void armInstruction::setWillRaise(eExceptionType aSetting) {
   theWillRaise = aSetting;
 }
 

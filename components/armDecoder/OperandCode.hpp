@@ -42,26 +42,25 @@
 namespace narmDecoder {
 
 
-#define SIGNED_UPPER_BOUND_64 0xFFFFFFFF00000000ULL
+#define SIGNED_UPPER_BOUND_B 0x000000FF00000000ULL
+#define SIGNED_UPPER_BOUND_H 0x0000FFFF00000000ULL
+#define SIGNED_UPPER_BOUND_W 0x00FFFFFF00000000ULL
+#define SIGNED_UPPER_BOUND_X 0xFFFFFFFF00000000ULL
+
 
 
 enum eOpType {
     kADD_,
     kADDS_,
-
-    kCONCAT_,
     kCONCAT32_,
     kCONCAT64_,
-
     kAND_,
     kANDS_,
-
     kORR_,
     kXOR_,
 
     kSUB_,
     kSUBS_,
-
     kAndN_,
     kOrN_,
     kEoN_,
@@ -70,8 +69,10 @@ enum eOpType {
     kMulX_,
     kUMul_,
     kUMulH_,
+    kUMulL_,
     kSMul_,
     kSMulH_,
+    kSMulL_,
     kUDivX_,
     kUDiv_,
     kSDiv_,
@@ -80,8 +81,16 @@ enum eOpType {
     kMOV_,
     kMOVN_,
     kMOVK_,
-    kSext_,
-    kZext_,
+
+    kSextB_,
+    kSextH_,
+    kSextW_,
+    kSextX_,
+    kZextB_,
+    kZextH_,
+    kZextW_,
+    kZextX_,
+
     kNot_,
     kTCC_,
     kAlign_,
@@ -103,7 +112,7 @@ enum eArchState {
 };
 
 enum eOperandCode {
-    kRS1
+    kRS1 = 0
   , kRS2
   , kRS3
   , kRS4

@@ -99,8 +99,12 @@ inline uint64_t mask( eSize aSize) {
       return 0xFFFFFFFFULL;
     case kDoubleWord:
       return 0xFFFFFFFFFFFFFFFFULL;
+    case kQuadWord:
+      return 0xFFFFFFFFFFFFFFFFULL;
+  default:
+      DBG_Assert(false);
+      return 0;
   }
-  return 0xFFFFFFFFFFFFFFFFULL;
 }
 
 struct LocalValue {

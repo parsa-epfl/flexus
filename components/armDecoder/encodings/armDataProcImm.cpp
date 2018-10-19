@@ -36,71 +36,95 @@
 // DO-NOT-REMOVE end-copyright-block
 
 #include "armDataProcImm.hpp"
+#include "armUnallocated.hpp"
 
 namespace narmDecoder {
 using namespace nuArchARM;
+
+
 
 void ADR(SemanticInstruction* inst, uint64_t base, uint64_t offset, uint64_t rd)
 {
     DECODER_TRACE;
     std::vector<std::list<InternalDependance> > rs_deps(2);
 
-    std::unique_ptr<Operation> ptr = operation(kADD_);
-    predicated_action exec = addExecute(inst, ptr, rs_deps);
+    predicated_action exec = addExecute(inst, operation(kADD_), rs_deps);
 
     addReadConstant(inst, 1, base, rs_deps[0]);
     addReadConstant(inst, 2, offset, rs_deps[1]);
 
-    addDestination(inst, rd, exec);
+    addDestination(inst, rd, exec, true);
 }
 
 void EXTR(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint32_t rm  , uint64_t imm, bool sf)
 {
     DECODER_TRACE;
     std::vector<std::list<InternalDependance> > rs_deps(3);
-    addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
-    addReadXRegister(inst, 2, rm, rs_deps[1], sf ? true : false);
-    inst->setOperand(kOperand3, imm);
+    addReadXRegister(inst, 1, rn, rs_deps[0], sf);
+    addReadXRegister(inst, 2, rm, rs_deps[1], sf);
 
-    std::unique_ptr<Operation> ptr = operation(sf ? kCONCAT64_ : kCONCAT32_);
-    predicated_action exec = addExecute(inst, ptr ,rs_deps);
-    addDestination(inst, rd, exec);
+    addReadConstant(inst, 3, imm, rs_deps[2]);
+
+    predicated_action exec = extractAction(inst, rs_deps, kOperand1, kOperand2, kOperand3, sf);
+
+    addDestination(inst, rd, exec, sf);
 }
 
-void SBFM(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint32_t imms, uint64_t immr, bool sf)
+arminst BFM(armcode const & aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
 {
 
-//    if (sf){
-//        uint64_t *wmask, *tmask;
-//        if (!logic_imm_decode_wmask_tmask(&wmask, &tmask, n, imms, immr)) {
-//            return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-//        }
-//    }
+    DECODER_TRACE;
 
-//    bits(datasize) src = X[n];
-//    // perform bitfield move on low bits
-//    bits(datasize) bot = ROR(src, R) AND wmask;
-//    // determine extension bits (sign, zero or dest register)
-//    bits(datasize) top = Replicate(src<S>);
-//    // combine extension bits and result bits
-//    X[d] = (top AND NOT(tmask)) OR (bot AND tmask);
+    uint32_t rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
+    uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
+    uint32_t imms = extract32(aFetchedOpcode.theOpcode, 10, 6);
+    uint32_t immr = extract32(aFetchedOpcode.theOpcode, 16, 6);
+    bool n = extract32(aFetchedOpcode.theOpcode, 22, 1);
+    uint32_t opc = extract32(aFetchedOpcode.theOpcode, 29, 2);
+    bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
+    bool inzero, extend;
 
-//    std::vector<std::list<InternalDependance> > rs_deps(2);
-//    addReadXRegister(inst, 1, rn, rs_deps[0], sf);
-//    inst->setOperand(kOperand2, immr);
-//    predicated_action e1 = addExecute(inst, operation(kROR_),rs_deps);
-
-//    Operation * op = operation(kAND_);
-//    op->setOperands(kOperand1, wmask);
+    if ((!sf && n) || (sf && !n) || (opc == 2)){//FIXME ReservedValue();
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
+    if (!sf && (n || ((immr & (1 << 5)) != 0) || ((imms & (1 << 5)) != 0))) {//FIXME ReservedValue();
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
 
 
+    switch (opc) {
+    case 0: // SBFM
+        inzero = true;
+        extend = true;
+        break;
+    case 1: // BFM
+        break;
+    case 2: // SBFM
+        inzero = true;
+        break;
+    default:
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+        break;
+    }
 
-//    predicated_action e2 = addExecute(inst, operation(kAND_),rs_deps);
-//    uint64_t top = src & (1 << imms);
+    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
-//    (top & ~tmask) | (bot & tmask);
+    uint64_t wmask, tmask;
+    decodeBitMasks(tmask, wmask, n, imms, immr, false, sf ? 64 : 32);
+
+    std::vector<std::list<InternalDependance>> rs_deps(1);
+    addReadXRegister(inst, 1, rn, rs_deps[0], sf);
+    if (inzero){
+        addReadConstant(inst, 2, 0, rs_deps[1]);
+    } else {
+        addReadXRegister(inst, 2, rd, rs_deps[1], sf);
+    }
 
 
+    predicated_action exec = bitFieldAction(inst, rs_deps, kOperand1, kOperand2, imms, immr, wmask, tmask, extend, sf);
+    addDestination(inst, rd, exec, sf);
+
+    return inst;
 }
 
 void MOVK(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf)
@@ -108,11 +132,10 @@ void MOVK(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, boo
     DECODER_TRACE;
     std::vector<std::list<InternalDependance> > rs_deps(2);
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
-    inst->setOperand(kOperand2, imm);
+    addReadConstant(inst, 2, imm, rs_deps[1]);
 
-    std::unique_ptr<Operation> ptr = operation(kMOVK_);
-    predicated_action exec = addExecute(inst, ptr,rs_deps);
-    addDestination(inst, rd, exec);
+    predicated_action exec = addExecute(inst, operation(kMOVK_),rs_deps);
+    addDestination(inst, rd, exec, sf);
 }
 
 void MOV(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool is_not)
@@ -120,11 +143,10 @@ void MOV(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool
     DECODER_TRACE;
     std::vector<std::list<InternalDependance> > rs_deps(2);
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
-    inst->setOperand(kOperand2, imm);
+    addReadConstant(inst, 2, imm, rs_deps[1]);
 
-    std::unique_ptr<Operation> ptr = operation(is_not ? kMOVN_: kMOV_);
-    predicated_action exec = addExecute(inst,ptr,rs_deps);
-    addDestination(inst, rd, exec);
+    predicated_action exec = addExecute(inst,operation(is_not ? kMOVN_: kMOV_),rs_deps);
+    addDestination(inst, rd, exec, sf);
 }
 
 void XOR(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool S)
@@ -132,11 +154,11 @@ void XOR(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool
     DECODER_TRACE;
     std::vector<std::list<InternalDependance> > rs_deps(2);
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
-    inst->setOperand(kOperand2, imm);
+    addReadConstant(inst, 2, imm, rs_deps[1]);
+    addReadConstant(inst, 2, imm, rs_deps[1]);
 
-    std::unique_ptr<Operation> ptr = operation(kXOR_);
-    predicated_action exec = addExecute(inst, ptr ,rs_deps);
-    addDestination(inst, rd, exec);
+    predicated_action exec = addExecute(inst, operation(kXOR_) ,rs_deps);
+    addDestination(inst, rd, exec, sf);
 }
 
 void ORR(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool S)
@@ -144,11 +166,10 @@ void ORR(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool
     DECODER_TRACE;
     std::vector<std::list<InternalDependance> > rs_deps(2);
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
-    inst->setOperand(kOperand2, imm);
+    addReadConstant(inst, 2, imm, rs_deps[1]);
 
-    std::unique_ptr<Operation> ptr = operation(kORR_);
-    predicated_action exec = addExecute(inst, ptr ,rs_deps);
-    addDestination(inst, rd, exec);
+    predicated_action exec = addExecute(inst,  operation(kORR_) ,rs_deps);
+    addDestination(inst, rd, exec, sf);
 }
 
 void AND(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool S)
@@ -156,10 +177,14 @@ void AND(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool
     DECODER_TRACE;
     std::vector<std::list<InternalDependance> > rs_deps(2);
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
-    inst->setOperand(kOperand2, imm);
-    std::unique_ptr<Operation> ptr = operation(S ? kANDS_ : kAND_);
-    predicated_action exec = addExecute(inst, ptr, rs_deps);
-    addDestination(inst, rd, exec);
+    addReadConstant(inst, 2, imm, rs_deps[1]);
+    predicated_action exec = addExecute(inst, operation(S ? kANDS_ : kAND_), rs_deps);
+
+    if (rd == 31 && !S){
+        addDestination(inst, rd, exec, sf);
+    } else {
+        inst->addReinstatementEffect(writePR(inst, kSPSel));
+    }
 }
 
 void ADD(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool S)
@@ -167,29 +192,24 @@ void ADD(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool
     DECODER_TRACE;
     std::vector<std::list<InternalDependance> > rs_deps(2);
     addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
-    inst->setOperand(kOperand2, imm);
+    addReadConstant(inst, 2, imm, rs_deps[1]);
     if (S) { // ADDS
         inst->setOperand(kOperand3, 0); // carry in bit
     }
 
-    std::unique_ptr<Operation> ptr = operation(S ? kADDS_ : kADD_);
-    predicated_action exec = addExecute(inst, ptr ,rs_deps);
-    addDestination(inst, rd, exec);
+    predicated_action exec = addExecute(inst, operation(S ? kADDS_ : kADD_) ,rs_deps);
+    addDestination(inst, rd, exec, sf);
 }
 
 void SUB(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool S)
 {
     DECODER_TRACE;
     std::vector<std::list<InternalDependance> > rs_deps(2);
-    addReadXRegister(inst, 1, rn, rs_deps[0], sf ? true : false);
-    inst->setOperand(kOperand2, imm);
-    if (S) { // SUBS
-        inst->setOperand(kOperand3, 1); // carry in bit
-    }
+    addReadXRegister(inst, 1, rn, rs_deps[0], sf);
+    addReadConstant(inst, 2, imm, rs_deps[1]);
 
-//    std::unique_ptr<Operation> ptr = operation(S ? kSUBS_ : kSUB_);
-    predicated_action exec = addExecute2(inst, operation(S ? kSUBS_ : kSUB_) ,rs_deps);
-    addDestination(inst, rd, exec);
+    predicated_action exec = addExecute(inst, operation(S ? kSUBS_ : kSUB_) ,rs_deps);
+    addDestination(inst, rd, exec, sf);
 }
 
 }

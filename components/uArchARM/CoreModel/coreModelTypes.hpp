@@ -124,7 +124,7 @@ struct MemQueueEntry {
   mutable bool theInverseEndian;
 //  mutable bool theMMU;
   mutable bool theNonCacheable;
-  mutable int32_t theException;
+  mutable eExceptionType theException;
   mutable PhysicalMemoryAddress thePaddr;
   mutable eOperation theOperation;
   mutable eSize theSize;
@@ -151,7 +151,7 @@ struct MemQueueEntry {
     , theInverseEndian(false)
 //    , theMMU(false)
     , theNonCacheable(false)
-    , theException(0)
+    , theException(kException_None)
     , thePaddr(kUnresolved)
     , theOperation(anOperation)
     , theSize(aSize)
@@ -178,7 +178,7 @@ struct MemQueueEntry {
     return theOperation == kRMW || theOperation == kCAS || theOperation == kCASP ;
   }
   bool isAbnormalAccess() const {
-    return theSideEffect || /*theMMU ||*/ theException != 0 /*|| interruptASI(theASI)*/;
+    return theSideEffect || /*theMMU ||*/ theException >= kException_None /*|| interruptASI(theASI)*/;
   }
   bool isNAW() const {
     return theBypassSB;

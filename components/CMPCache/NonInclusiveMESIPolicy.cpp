@@ -307,12 +307,12 @@ void NonInclusiveMESIPolicy::doRequest( ProcessEntry_p process, bool has_maf ) {
 
   // Cache State is now present in c_lookup
 
-  bool is_cache_hit = false;
-  bool was_prefetched = false;
-  if (c_lookup->state() != CacheState::Invalid) {
-    is_cache_hit = true;
-    was_prefetched = c_lookup->state().prefetched();
-  }
+//  bool is_cache_hit = false;
+//  bool was_prefetched = false;
+//  if (c_lookup->state() != CacheState::Invalid) {
+//    is_cache_hit = true;
+//    was_prefetched = c_lookup->state().prefetched();
+//  }
 
   MemoryTransport rep_transport(process->transport());
 

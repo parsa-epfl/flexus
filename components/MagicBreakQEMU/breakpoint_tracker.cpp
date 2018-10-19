@@ -609,32 +609,24 @@ struct web_version1 {
 using Flexus::SharedTypes::VirtualMemoryAddress;
 //Helperfunction to read Vadddresses
 char readVAddr(Qemu::API::conf_object_t *cpu, VirtualMemoryAddress anAddr, int size){
-    return Qemu::API::QEMU_read_phys_memory(
+    return (char)(Qemu::API::QEMU_read_phys_memory(
             Qemu::API::QEMU_logical_to_physical(cpu, Qemu::API::QEMU_DI_Data
             ,anAddr)
-            ,size);
+            ,size)[0]);
 } 
 char readVAddr2(Qemu::API::conf_object_t *cpu, VirtualMemoryAddress anAddr, int asi, int size){
     //TODO implement correctly, currently doesn't do anything with ASI which is wrong
-    return Qemu::API::QEMU_read_phys_memory(
+    return (char)(Qemu::API::QEMU_read_phys_memory(
             Qemu::API::QEMU_logical_to_physical(cpu, Qemu::API::QEMU_DI_Data
             ,anAddr)
-            ,size);
+            ,size)[0]);
 }
 
 // FIXME: make a proper x86 variant
 uint64_t readG(Qemu::API::conf_object_t *cpu, int reg){
-#if FLEXUS_TARGET_IS(v9)
-  uint64_t reg_content;
-  Qemu::API::QEMU_read_register(cpu, reg, nullptr, &reg_content);
-#elif FLEXUS_TARGET_IS(ARM)
-  uint64_t reg_content = Qemu::API::QEMU_read_register(cpu, reg, Qemu::API::GENERAL);
-#elif FLEXUS_TARGET_IS(x86)
-  __uint128_t reg_content;
-  Qemu::API::QEMU_read_register(cpu, reg, nullptr, &reg_content);
-#endif
-  return uint64_t(reg_content);
+  return Qemu::API::QEMU_read_register(cpu, Qemu::API::kGENERAL, reg);
 }
+
 class SimPrintHandlerImpl : public SimPrintHandler {
 
   char const * marker(xact_version1 & xact) {

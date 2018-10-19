@@ -57,9 +57,12 @@ struct AbstractInstruction  : public boost::counted_base {
   boost::intrusive_ptr<TransactionTracker> theFetchTransaction;
 protected:
   tFillLevel theInsnSourceLevel;
+  bool theExclusive;
 
 public:
 
+  virtual bool isExclusive() const {return theExclusive;}
+  virtual void setExclusive() { theExclusive = true;}
   virtual void describe(std::ostream & anOstream) const;
   virtual bool haltDispatch() const;
   virtual void setFetchTransactionTracker(boost::intrusive_ptr<TransactionTracker> aTransaction) {
@@ -68,7 +71,7 @@ public:
   virtual boost::intrusive_ptr<TransactionTracker> getFetchTransactionTracker() const {
     return theFetchTransaction;
   }
-  AbstractInstruction() : theInsnSourceLevel(eL1I) {}
+  AbstractInstruction() : theInsnSourceLevel(eL1I) , theExclusive(false) {}
   virtual ~AbstractInstruction() {}
 
   virtual void setSourceLevel(tFillLevel aLevel) {

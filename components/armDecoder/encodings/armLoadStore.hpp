@@ -44,31 +44,23 @@ namespace narmDecoder {
 
 
 // Load/store exclusive
-arminst CASP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+//arminst CASP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 arminst CAS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 arminst STXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst STLR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst LDAR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst STRL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst LDAQ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 arminst LDXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 
 // Load register (literal)
 arminst LDR_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst LDRF_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst LDRSW(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst PRFM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 
 // Load/store pair (all forms)
-arminst LDFP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst STFP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst LDPSW(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 arminst LDP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 
 /* Load/store register (all forms) */
 arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst LDRF(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst STRF(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 
 /* atomic memory operations */ // TODO
 arminst LDADD(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);

@@ -231,7 +231,7 @@ void CoreImpl::dispatch( boost::intrusive_ptr< Instruction > anInsn) {
 
 void CoreImpl::applyToNext( boost::intrusive_ptr< Instruction > anInsn, boost::intrusive_ptr<Interaction> anInteraction) {
   FLEXUS_PROFILE();
-  typedef rob_t::index<by_insn>::type insn_index;
+//  typedef rob_t::index<by_insn>::type insn_index;
   rob_t::iterator insn = theROB.project<0>( theROB.get<by_insn>().find(anInsn) );
   rob_t::iterator end = theROB.end();
   DBG_Assert( insn != end );

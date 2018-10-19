@@ -708,8 +708,8 @@ void CacheController::scheduleNewProcesses() {
         bankCount < theBanks;
         i = ( i + 1 ) % theBanks, bankCount++ ) {
     bool scheduled = false;
-    bool evict_waiting_on_idle_work = false;
-    bool active_msg_waiting_on_evict = false;
+//    bool evict_waiting_on_idle_work;
+//    bool active_msg_waiting_on_evict;
 
     //First,  MAF entries that woke up are allocated into the MAF pipeline
     //A woken MAF process must reserve the same things as a request process
@@ -751,7 +751,7 @@ void CacheController::scheduleNewProcesses() {
 
       // If there's a full Evict Buffer, signal that we're waiting on it so Idle work gets scheduled even if we're quiescing.
       if (theCacheControllerImpl->fullEvictBuffer()) {
-        active_msg_waiting_on_evict = true;
+//        active_msg_waiting_on_evict = true;
       }
     }
 
@@ -826,12 +826,12 @@ void CacheController::scheduleNewProcesses() {
       DBG_(Trace, ( << "Failed to schedule Forced Evict: BSO_Snoop full " << std::boolalpha << BackSideOut_Snoop.full() << ", scheduled evicts " << theScheduledEvicts << ", freeEvictBuffer() = " << theCacheControllerImpl->freeEvictBuffer() << ", ports = " << thePorts << " evictableBlockExists? " << theCacheControllerImpl->evictableBlockExists(theScheduledEvicts) ));
       theCacheControllerImpl->dumpEvictBuffer();
       if (!theCacheControllerImpl->evictableBlockExists(theScheduledEvicts)) {
-        DBG_(Trace, ( << "evict_waiting_on_idle_work = true" ));
-        evict_waiting_on_idle_work = true;
+//        DBG_(Trace, ( << "evict_waiting_on_idle_work = true" ));
+//        evict_waiting_on_idle_work = true;
       }
     } else if ( theFlexus->quiescing() && !theCacheControllerImpl->evictableBlockExists(theScheduledEvicts) && (theCacheControllerImpl->freeEvictBuffer() + theScheduledEvicts <= thePorts)) {
       // Try to schedule more idle work to avoid waiting any longer while quiescing
-      evict_waiting_on_idle_work = true;
+//      evict_waiting_on_idle_work = true;
     }
 
     //Next, allocate back processes.  Back Reply processes reserve a FrontSideOut
@@ -911,7 +911,7 @@ void CacheController::scheduleNewProcesses() {
       DBG_(Trace, ( << "Failed to schedule Request: BSO_Req full " << std::boolalpha << BackSideOut_Request.full() << ", FSO Full " << isFrontSideOutFull() << ", MAF full " << theMaf.full() << ", EB full " << theCacheControllerImpl->fullEvictBuffer() << " older snoop avail: " << !(BankFrontSideIn_Snoop[i].empty() || BankFrontSideIn_Snoop[i].headTimestamp() > BankFrontSideIn_Request[i].headTimestamp()) << " canStartRequest(" << std::hex << BankFrontSideIn_Request[i].peek()[MemoryMessageTag]->address() << ") = " << theCacheControllerImpl->canStartRequest(BankFrontSideIn_Request[i].peek()[MemoryMessageTag]->address()) ));
       if (theCacheControllerImpl->fullEvictBuffer()) {
         theCacheControllerImpl->dumpEvictBuffer();
-        active_msg_waiting_on_evict = true;
+//        active_msg_waiting_on_evict = true;
       }
     }
 
@@ -1032,7 +1032,7 @@ void CacheController::doNewRequests(std::vector< MessageQueue<MemoryTransport> >
 
         uint32_t bank = getBank ( aMessageQueue[i].peek() );
 
-        if (  ( theTraceAddress > 0 ) && ( aMessageQueue[i].peek()[MemoryMessageTag]->address() & ~((int64_t) theBlockSize - 1)) == theTraceAddress ) {
+        if (  ( theTraceAddress > 0 ) && ( aMessageQueue[i].peek()[MemoryMessageTag]->address() & ~((int64_t) theBlockSize - 1)) == (uint64_t) theTraceAddress ) {
           if ( theTraceTimeout <= 0 ) {
             theTraceTimeout = theFlexus->cycleCount() + 1000;
             theFlexus->setDebug ( "iface" );

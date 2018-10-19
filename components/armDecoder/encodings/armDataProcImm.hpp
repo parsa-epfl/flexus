@@ -54,7 +54,7 @@ namespace narmDecoder {
 //TODO
 void ADR(SemanticInstruction* inst, uint64_t base, uint64_t offset, uint64_t rd);
 void EXTR(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint32_t rm  , uint64_t imm, bool sf);
-void SBFM(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint32_t imms, uint64_t immr, bool sf);
+arminst BFM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 void MOVK(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf);
 void MOV(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool is_not);
 void XOR(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool S);

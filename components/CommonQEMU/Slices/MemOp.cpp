@@ -51,8 +51,8 @@ namespace Flexus {
 namespace SharedTypes {
 
 
-eSize dbSize(int s){
-    switch (s) {
+eSize dbSize(uint32_t aSize){
+    switch (aSize) {
     case 8:
         return kByte;
     case 16:

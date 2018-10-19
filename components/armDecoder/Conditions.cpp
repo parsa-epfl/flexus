@@ -158,19 +158,25 @@ typedef struct BCOND : public Condition {
 
 
 std::unique_ptr<Condition> condition(eCondCode aCond) {
+
+    std::unique_ptr<Condition> ptr;
     switch(aCond)
     {
     case kCBZ_:
-        return std::make_unique<CBZ>();
+        ptr.reset(new CBZ());
     case kCBNZ_:
-        return std::make_unique<CBNZ>();
+        ptr.reset(new CBNZ());
     case kTBZ_:
-        return std::make_unique<TBZ>();
+        ptr.reset(new TBZ());
     case kTBNZ_:
-         return std::make_unique<TBNZ>();
+         ptr.reset(new TBNZ());
     case kBCOND_:
-         return std::make_unique<BCOND>();
+         ptr.reset(new BCOND());
+    default:
+        DBG_Assert(false);
+        return nullptr;
     }
+    return ptr;
 }
 
 

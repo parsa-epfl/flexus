@@ -42,6 +42,10 @@ bool anyBits(bits b){
     return b.any();
 }
 
+bits align(uint64_t x, int y){
+    return bits(y * (x / y));
+}
+
 bits concat_bits (const bits & lhs, const bits & rhs){
     bits result;
     std::string b1,b2,all;
@@ -63,6 +67,7 @@ bits construct(uint8_t* bytes, int size){
     populateBitSet(all, result);
     return result;
 }
+
 
 std::pair<bits,bits> splitBits(const bits & input){
 
