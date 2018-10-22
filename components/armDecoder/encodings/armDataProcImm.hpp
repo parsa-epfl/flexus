@@ -52,16 +52,14 @@ namespace narmDecoder {
 
 
 //TODO
-void ADR(SemanticInstruction* inst, uint64_t base, uint64_t offset, uint64_t rd);
-void EXTR(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint32_t rm  , uint64_t imm, bool sf);
+arminst ADR(armcode const & aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst EXTR(armcode const & aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 arminst BFM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-void MOVK(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf);
-void MOV(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool is_not);
-void XOR(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool S);
-void ORR(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool S);
-void AND(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool S);
-void ADD(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool S);
-void SUB(SemanticInstruction* inst, uint32_t rd, uint32_t rn, uint64_t imm, bool sf, bool S);
+arminst MOVE(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+
+
+arminst LOGICALIMM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst ALUIMM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 
 } // narmDecoder
 #endif // FLEXUS_armDECODER_armDATAPROCIMM_HPP_INCLUDED

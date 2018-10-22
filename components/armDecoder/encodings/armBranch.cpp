@@ -42,76 +42,29 @@ namespace narmDecoder {
 
 using namespace nuArchARM;
 
-static arminst generateException(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo, eExceptionType aType){
-    DECODER_TRACE;
-    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
-                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
-    inst->addRetirementEffect(exceptionEffect(inst, kException_AA64_SVC));
-    return inst;
-}
-
-void branch_always( SemanticInstruction * inst, bool immediate, VirtualMemoryAddress target) {
+static void branch_always( SemanticInstruction * inst, bool immediate, VirtualMemoryAddress target) {
     DECODER_TRACE;
 
     inst->setClass(clsBranch, codeBranchUnconditional);
-
     inst->addDispatchEffect( branch( inst, target ) );
     inst->addRetirementEffect( updateUnconditional( inst, target ) );
 }
-void branch_cc( SemanticInstruction * inst, VirtualMemoryAddress target, eCondCode aCode) {
+
+static void branch_cond( SemanticInstruction * inst, VirtualMemoryAddress target, eCondCode aCode, std::vector<std::list<InternalDependance>> & rs_deps) {
     DECODER_TRACE;
 
   inst->setClass(clsBranch, codeBranchConditional);
 
-  std::list<InternalDependance> rs_deps;
-
-  dependant_action br = branchCCAction( inst, target, false, condition(aCode), false) ;
+  dependant_action br = branchCondAction( inst, target, condition(aCode)) ;
   connectDependance( inst->retirementDependance(), br );
-  rs_deps.push_back( br.dependance );
+
+  for (size_t i = 0; i < rs_deps.size(); i++){
+    rs_deps[i].push_back( br.dependance );
+  }
 
   inst->addDispatchAction( br );
   inst->addRetirementEffect( updateConditional(inst) );
-}
-
-/*
-* Branch causes an unconditional branch to a label at a PC-relative offset,
-* with a hint that this is not a subroutine call or return.
-*
-* * Operation:
-* BranchTo(PC[] + offset, BranchType_JMP);
-*/
-arminst B(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
-    DECODER_TRACE;
-    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
-                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
-    inst->setClass(clsBranch, codeBranchUnconditional);
-
-    uint64_t pc = aFetchedOpcode.thePC;
-    int64_t offset = sextract32(aFetchedOpcode.theOpcode, 0, 26) * 4;
-    uint64_t addr = pc + offset;
-    VirtualMemoryAddress target(addr);
-    inst->addDispatchEffect( branch( inst, target ) );
-    inst->addRetirementEffect( updateUnconditional( inst, target ) );
-
-    inst->addPrevalidation(validatePC(pc, inst));
-
-    inst->addPostvalidation(validatePC(addr, inst));
-
-    if (extract32(aFetchedOpcode.theOpcode, 31, 1)){ // BL
-
-        setRD( inst, 30);
-
-        predicated_action exec = constantAction( inst, aFetchedOpcode.thePC+4, kResult, kPD ) ;
-        inst->addDispatchAction(exec);
-
-        addWriteback( inst, kResult, kPD, exec, true, false);
-        inst->addPostvalidation( validateXRegister( 30, kResult, inst  ) );
-
-    }
-
-    return inst;
-
 }
 
 /*
@@ -122,28 +75,30 @@ arminst B(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
 *  X[30] = PC[] + 4;
 *  BranchTo(PC[] + offset, BranchType_CALL);
 */
-arminst BL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+arminst UNCONDBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
     DECODER_TRACE;
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
+    bool op = extract32(aFetchedOpcode.thePC, 31, 1);
     inst->setClass(clsBranch, codeBranchUnconditional);
 
-    uint64_t addr = aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 0, 26) * 4 - 4;
-    VirtualMemoryAddress target(addr);
+    VirtualMemoryAddress target(aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 0, 26) * 4 - 4);
 
-    std::vector< std::list<InternalDependance> > rs_deps(1);
 
-    addReadConstant(inst, 1, aFetchedOpcode.thePC+4, rs_deps[0]);
-    predicated_action exec = addExecute(inst, operation(kADD_),rs_deps);
+    if (op){
+        std::vector< std::list<InternalDependance> > rs_deps(1);
+        addReadConstant(inst, 1, aFetchedOpcode.thePC+4, rs_deps[0]);
+        predicated_action exec = addExecute(inst, operation(kMOV_),rs_deps);
+        addDestination(inst, 30, exec, true);
+    }
 
-    addDestination(inst, 30, exec, true);
     inst->addDispatchEffect( branch( inst, target ) );
     return inst;
 }
 
 /*
-* Compare and Branch on Zero compares the value in a register with zero, and conditionally branches to a label
+* Compare and Branch on Zero/ Non-Zero compares the value in a register with zero, and conditionally branches to a label
 * at a PC-relative offset if the comparison is equal. It provides a hint that this is not a subroutine call
 * or return. This instruction does not affect condition flags.
 *
@@ -152,47 +107,19 @@ arminst BL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) 
 * if IsZero(operand1) == TRUE then
 * BranchTo(PC[] + offset, BranchType_JMP);
 */
-arminst CBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+arminst CMPBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
     DECODER_TRACE;
-    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
-                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
-    uint32_t sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-    uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
+    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
-    std::vector<std::list<InternalDependance> > rs_deps(1);
+    bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
+    uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
+    bool iszero = !(extract32(aFetchedOpcode.theOpcode, 24, 1));
+    VirtualMemoryAddress target = VirtualMemoryAddress(aFetchedOpcode.thePC + (sextract32(aFetchedOpcode.theOpcode, 5, 19) * 4) - 4);
+
+    std::vector<std::list<InternalDependance>>  rs_deps(1);
+    branch_cond(inst, target, iszero ? kCBZ_ : kCBNZ_, rs_deps);
     addReadXRegister(inst, 1, rt, rs_deps[0], sf);
 
-    uint64_t addr = aFetchedOpcode.thePC + (sextract32(aFetchedOpcode.theOpcode, 5, 19) * 4);
-    VirtualMemoryAddress target(addr);
-
-    branch_cc(inst, target, kCBZ_);
-    return inst;
-}
-
-/*
-* Compare and Branch on Nonzero compares the value in a register with zero, and conditionally branches to a label
-* at a PC-relative offset if the comparison is equal. It provides a hint that this is not a subroutine call
-* or return. This instruction does not affect condition flags.
-*
-* Operation:
-* bits(datasize) operand1 = X[t];
-* if IsZero(operand1) == FALSE then
-* BranchTo(PC[] + offset, BranchType_JMP);
-*/
-arminst CBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
-    DECODER_TRACE;
-    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
-                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
-    uint32_t sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-    uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
-
-    std::vector<std::list<InternalDependance> > rs_deps(1);
-    addReadXRegister(inst, 1, rt, rs_deps[0], sf);
-
-    uint64_t addr = aFetchedOpcode.thePC + (sextract32(aFetchedOpcode.theOpcode, 5, 19) * 4);
-    VirtualMemoryAddress target(addr);
-
-    branch_cc(inst, target, kCBNZ_);
     return inst;
 }
 
@@ -208,7 +135,7 @@ arminst CBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
  * BranchTo(PC[] + offset, BranchType_JMP);
  *
 */
-arminst TBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+arminst TSTBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
     DECODER_TRACE;
 
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
@@ -217,53 +144,15 @@ arminst TBZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
     uint32_t bit_pos = (extract32(aFetchedOpcode.theOpcode, 31, 1) << 5) | extract32(aFetchedOpcode.theOpcode, 19, 5);
     bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
+    bool bit_val = ! (extract32(aFetchedOpcode.theOpcode, 24, 1));
+    VirtualMemoryAddress target(aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 5, 14) * 4 - 4);
 
-    std::vector<std::list<InternalDependance> > rs_deps(1);
+
+    std::vector<std::list<InternalDependance> > rs_deps(2);
+    branch_cond(inst, target, bit_val ? kTBZ_ : kTBNZ_, rs_deps);
+
     addReadXRegister(inst, 1, rt, rs_deps[0], sf);
-
-
-    uint64_t addr = aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 5, 14) * 4 - 4;
-    VirtualMemoryAddress target(addr);
-
     addReadConstant(inst, 2, (1ULL << bit_pos), rs_deps[1]);
-
-    branch_cc(inst,target, kTBZ_);
-
-    return inst;
-}
-
-/*
- * Test bit and Branch if Nonzero compares the value of a test bit with zero,
- * and conditionally branches to a label at a PC-relative offset if the
- * comparison is equal. It provides a hint that this is not a subroutine call
- * or return. This instruction does not affect condition flags.
- *
- * Operation:
- * bits(datasize) operand = X[t];
- * if operand<bit_pos> == op then
- * BranchTo(PC[] + offset, BranchType_JMP);
- *
-*/
-arminst TBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
-    DECODER_TRACE;
-
-    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
-                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
-
-    uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    uint32_t bit_pos = (extract32(aFetchedOpcode.theOpcode, 31, 1) << 5) | extract32(aFetchedOpcode.theOpcode, 19, 5);
-    bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-
-    std::vector<std::list<InternalDependance> > rs_deps(1);
-    addReadXRegister(inst, 1, rt, rs_deps[0], sf);
-
-
-    uint64_t addr = aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 5, 14) * 4 - 4;
-    VirtualMemoryAddress target(addr);
-
-    addReadConstant(inst, 2, (1ULL << bit_pos), rs_deps[1]);
-
-    branch_cc(inst,target, kTBNZ_);
 
     return inst;
 }
@@ -276,26 +165,25 @@ arminst TBNZ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
  * if ConditionHolds(condition) then
  * BranchTo(PC[] + offset, BranchType_JMP);
  */
-arminst BCOND(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+arminst CONDBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
     DECODER_TRACE;
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
     uint32_t cond = extract32(aFetchedOpcode.theOpcode, 0, 4);
-    inst->setOperand(kOperand1, cond);
+    VirtualMemoryAddress target(aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 5, 19) * 4 -4);
 
-    uint64_t addr = aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 5, 19) * 4;
-    VirtualMemoryAddress target(addr);
 
     if (cond < 0x0e) {
         /* genuinely conditional branches */
-        branch_cc(inst, target, kBCOND_);
+        std::vector<std::list<InternalDependance>> rs_deps(1);
+        branch_cond(inst, target, kBCOND_, rs_deps);
+        addReadConstant(inst, 1, cond, rs_deps[0]);
 
     } else {
         /* 0xe and 0xf are both "always" conditions */
         branch_always(inst, false, target);
     }
-
 
     return inst;
 }
@@ -339,15 +227,35 @@ arminst BR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) 
 arminst BLR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
 DECODER_TRACE;
 
+    uint32_t rm = extract32(aFetchedOpcode.theOpcode, 0, 5);
     uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
+    bool pac = extract32(aFetchedOpcode.theOpcode, 11, 1);
     uint32_t op = extract32(aFetchedOpcode.theOpcode, 21, 2);
+    eBranchType branch_type;
 
-    if (op > 2) {
+    if (!pac && (rm != 0))
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    else if (pac) // armv8.3
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    switch (op) {
+    case 0:
+        branch_type = kUnconditional;
+        break;
+    case 1:
+        branch_type = kCall;
+        break;
+    case 2:
+        branch_type = kReturn;
+        break;
+    default:
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+        break;
     }
 
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
+
+
     std::vector<std::list<InternalDependance> > rs_deps(1);
     addReadXRegister(inst, 1, rn, rs_deps[0], true);
 
@@ -358,21 +266,18 @@ DECODER_TRACE;
     inst->addRetirementEffect( updateUnconditional( inst, kAddress ) );
 
     // Link
-    std::unique_ptr<Operation> addop = operation(kADD_);
-    addop->setOperands(aFetchedOpcode.thePC);
-    addop->setOperands(4);
-
-    predicated_action exec = addExecute(inst, std::move(addop), rs_deps);
-    addDestination(inst, 30, exec, true);
+    if (branch_type == kCall){
+        std::unique_ptr<Operation> addop = operation(kMOV_);
+        addop->setOperands(aFetchedOpcode.thePC + 4);
+        predicated_action exec = addExecute(inst, std::move(addop), rs_deps);
+        addDestination(inst, 30, exec, true);
+    }
 
     return inst;
 }
 
-
 arminst ERET(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
 arminst DPRS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo);}
-
-
 
 // System
 arminst HINT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
@@ -400,10 +305,6 @@ arminst HINT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 }
 arminst SYNC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
     DECODER_TRACE;
-
-
-
-
 
     uint32_t rt = extract32(aFetchedOpcode.thePC, 16, 3);
     uint32_t crm = extract32(aFetchedOpcode.thePC, 8, 4);

@@ -56,28 +56,7 @@ namespace narmDecoder {
 arminst disas_pc_rel_adr(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
-
-    SemanticInstruction* inst(new SemanticInstruction(aFetchedOpcode.thePC,aFetchedOpcode.theOpcode,
-                                                      aFetchedOpcode.theBPState, aCPU,aSequenceNo));
-
-
-    inst->setClass(clsBranch, codeBranchUnconditional);
-    uint32_t  rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    uint64_t offset = sextract64(aFetchedOpcode.theOpcode, 5, 19);
-    offset = offset << 2 | extract32(aFetchedOpcode.theOpcode, 29, 2);
-    uint32_t op = extract32(aFetchedOpcode.theOpcode, 31, 1);
-    uint64_t base = aFetchedOpcode.thePC;
-
-
-    if (op) {
-        /* ADRP (page based) */
-        base &= ~0xfff;
-        offset <<= 12;
-    }
-
-    ADR(inst, base, offset, rd);
-
-    return inst;
+    return ADR(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Logical (immediate)
@@ -89,49 +68,7 @@ arminst disas_pc_rel_adr(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t
 arminst disas_logic_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
-
-    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
-
-    uint32_t rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    uint32_t imms = extract32(aFetchedOpcode.theOpcode, 10, 6);
-    uint32_t immr = extract32(aFetchedOpcode.theOpcode, 16, 6);
-    bool n = extract32(aFetchedOpcode.theOpcode, 22, 1);
-    uint32_t opc = extract32(aFetchedOpcode.theOpcode, 29, 2);
-    bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-    std::unique_ptr<Operation> op;
-    uint64_t tmask = 0, wmask = 0;
-//    bool setflags;
-
-    switch (opc) {
-    case 0:
-        op = operation(kAND_);
-        break;
-    case 1:
-        op = operation(kORR_);
-        break;
-    case 2:
-        op = operation(kXOR_);
-        break;
-    case 3:
-//        setflags = true;
-        op = operation(kANDS_);
-        break;
-    default:
-        break;
-    }
-
-    decodeBitMasks(tmask, wmask, n, imms, immr, true, sf ? 64 : 32);
-
-    std::vector<std::list<InternalDependance>> rs_deps(2);
-
-    addReadXRegister(inst, 1, rn, rs_deps[0], sf);
-    addReadConstant(inst, 2, wmask, rs_deps[1]);
-
-    predicated_action exec = addExecute(inst, std::move(op), rs_deps);
-    addDestination(inst, rd, exec, sf);
-
-    return inst;
+    return LOGICALIMM(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /*
@@ -149,40 +86,7 @@ arminst disas_logic_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
 arminst disas_movw_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
-
-    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
-
-    uint32_t rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    uint32_t imm = extract32(aFetchedOpcode.theOpcode, 5, 16);
-    int sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-    int opc = extract32(aFetchedOpcode.theOpcode, 29, 2);
-    int pos = extract32(aFetchedOpcode.theOpcode, 21, 2) << 4;
-
-    if (!sf && (pos >= 32)) {
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-    }
-
-    switch (opc) {
-    case 0: /* MOVN */
-    case 2: /* MOVZ */
-        imm <<= pos;
-        if (opc == 0) { // MOVN
-            imm = ~imm;
-        }
-        if (!sf) {
-            imm &= 0xffffffffu;
-        }
-//        MOV(inst, rd, rn, imm, sf, (opc == 0) ? false : true);
-        break;
-    case 3: /* MOVK */
-        MOVK(inst, rd, rd, imm ,sf);
-        break;
-    default:
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-        break;
-    }
-
-    return inst;
+    return MOVE(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Bitfield
@@ -206,29 +110,7 @@ arminst disas_bitfield(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t a
 arminst disas_extract(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
-
-    SemanticInstruction* inst(new SemanticInstruction(aFetchedOpcode.thePC,aFetchedOpcode.theOpcode,
-                                                      aFetchedOpcode.theBPState, aCPU,aSequenceNo));
-
-    uint32_t sf, n, rm, imm, rn, rd, bitsize, op21, op0;
-
-    sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-    n = extract32(aFetchedOpcode.theOpcode, 22, 1);
-    rm = extract32(aFetchedOpcode.theOpcode, 16, 5);
-    imm = extract32(aFetchedOpcode.theOpcode, 10, 6);
-    rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    op21 = extract32(aFetchedOpcode.theOpcode, 29, 2);
-    op0 = extract32(aFetchedOpcode.theOpcode, 21, 1);
-    bitsize = sf ? 64 : 32;
-
-    if (sf != n || op21 || op0 || imm >= bitsize) {
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-    } else {
-        EXTR(inst, rd, rn, rm, imm, sf);
-    }
-
-    return inst;
+    return EXTR(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /*
@@ -247,39 +129,7 @@ arminst disas_extract(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aS
 arminst disas_add_sub_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
-
-    SemanticInstruction* inst(new SemanticInstruction(aFetchedOpcode.thePC,aFetchedOpcode.theOpcode,
-                                                      aFetchedOpcode.theBPState, aCPU,aSequenceNo));
-    uint32_t rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    uint32_t imm = extract32(aFetchedOpcode.theOpcode, 10, 12);
-    int shift = extract32(aFetchedOpcode.theOpcode, 22, 2);
-    bool S = extract32(aFetchedOpcode.theOpcode, 29, 1);
-    bool op = extract32(aFetchedOpcode.theOpcode, 30, 1);
-    bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-
-
-    switch (shift) {
-    case 0x0:
-        break;
-    case 0x1:
-        imm <<= 12;
-        break;
-    default:
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-    }
-
-
-    if (op) // sub
-    {
-        SUB(inst, rd, rn, imm, sf, S);
-    }
-    else { // add
-        ADD(inst, rd, rn, imm, sf, S);
-
-    }
-
-    return inst;
+    return ALUIMM(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Data processing - immediate */

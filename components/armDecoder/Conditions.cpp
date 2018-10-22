@@ -93,9 +93,9 @@ bool ConditionHolds(const PSTATE & pstate, int condcode )
 }
 
 
-typedef struct CBZ : public Condition {
-    CBZ(){}
-    virtual ~CBZ(){}
+typedef struct CMPBR : public Condition {
+    CMPBR(){}
+    virtual ~CMPBR(){}
   virtual bool operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 1);
     return boost::get<bits>(operands[0]).none();
@@ -103,7 +103,7 @@ typedef struct CBZ : public Condition {
   virtual char const * describe() const {
     return "Compare and Branch on Zero";
   }
-}CBZ;
+}CMPBR;
 
 typedef struct CBNZ : public Condition {
     CBNZ(){}
@@ -117,9 +117,9 @@ typedef struct CBNZ : public Condition {
   }
 }CBNZ;
 
-typedef struct TBZ : public Condition {
-    TBZ(){}
-    virtual ~TBZ(){}
+typedef struct TSTBR : public Condition {
+    TSTBR(){}
+    virtual ~TSTBR(){}
   virtual bool operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 2);
     return (boost::get<bits>(operands[0]) & boost::get<bits>(operands[0])).none();
@@ -127,7 +127,7 @@ typedef struct TBZ : public Condition {
   virtual char const * describe() const {
     return "Test and Branch on Zero";
   }
-}TBZ;
+}TSTBR;
 
 typedef struct TBNZ : public Condition {
     TBNZ(){}
@@ -163,11 +163,11 @@ std::unique_ptr<Condition> condition(eCondCode aCond) {
     switch(aCond)
     {
     case kCBZ_:
-        ptr.reset(new CBZ());
+        ptr.reset(new CMPBR());
     case kCBNZ_:
         ptr.reset(new CBNZ());
     case kTBZ_:
-        ptr.reset(new TBZ());
+        ptr.reset(new TSTBR());
     case kTBNZ_:
          ptr.reset(new TBNZ());
     case kBCOND_:

@@ -265,7 +265,7 @@ arminst disas_ldst_reg_unsigned_imm(armcode const & aFetchedOpcode, uint32_t  aC
 {
     DECODER_TRACE;
     uint32_t size = extract32(aFetchedOpcode.theOpcode, 30, 2);
-    uint32_t V = extract32(aFetchedOpcode.theOpcode, 26, 1);
+    bool V = extract32(aFetchedOpcode.theOpcode, 26, 1);
     uint32_t opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
     bool is_store = ((opc == 0) || ((opc == 2) && (size == 0)));
 
@@ -387,8 +387,8 @@ arminst disas_ld_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSe
 {
     DECODER_TRACE;
 
-    unsigned int V = extract32(aFetchedOpcode.theOpcode, 26, 1);
-    unsigned int opc = extract32(aFetchedOpcode.theOpcode, 30, 2);
+    bool V = extract32(aFetchedOpcode.theOpcode, 26, 1);
+    uint32_t opc = extract32(aFetchedOpcode.theOpcode, 30, 2);
 
     switch (V+ (opc << 1)) {
     case 0:case 2:case 4: case 6:
@@ -412,10 +412,10 @@ arminst disas_ldst_excl(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
     DECODER_TRACE;
 
     uint32_t rt2 = extract32(aFetchedOpcode.theOpcode, 10, 5);
-    uint32_t o0 = extract32(aFetchedOpcode.theOpcode, 15, 1); // is_lasr
-    uint32_t o1 = extract32(aFetchedOpcode.theOpcode, 21, 1);  // is_pair
-    uint32_t L = extract32(aFetchedOpcode.theOpcode, 22, 1); // is_store
-    uint32_t o2 = extract32(aFetchedOpcode.theOpcode, 23, 1); // is_excl
+    bool o0 = extract32(aFetchedOpcode.theOpcode, 15, 1); // is_lasr
+    bool o1 = extract32(aFetchedOpcode.theOpcode, 21, 1);  // is_pair
+    bool L = extract32(aFetchedOpcode.theOpcode, 22, 1); // is_store
+    bool o2 = extract32(aFetchedOpcode.theOpcode, 23, 1); // is_excl
 
     if ( ((o2 && o1) || (!o2 && o1)) && rt2 != 31) {
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);

@@ -66,13 +66,7 @@ arminst disas_uncond_b_reg( armcode const & aFetchedOpcode, uint32_t  aCPU, int6
     case 1: /* BLR */
     case 2: /* RET */
         DECODER_TRACE;
-        if (opc == 1 || op2 == 2) { // BLR and RET
-            return BLR(aFetchedOpcode, aCPU, aSequenceNo);
-        } else {
-            return BR(aFetchedOpcode, aCPU, aSequenceNo);
-        }
-
-        break;
+        return BLR(aFetchedOpcode, aCPU, aSequenceNo);
     case 4: /* ERET */
         return ERET(aFetchedOpcode, aCPU, aSequenceNo);
 
@@ -95,11 +89,10 @@ arminst disas_exc(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSeque
 {
     DECODER_TRACE;
 
-    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
-    int ll = extract32(aFetchedOpcode.thePC, 0, 2);
-    int opc = extract32(aFetchedOpcode.thePC, 21, 3) << 2;
+    uint32_t ll = extract32(aFetchedOpcode.thePC, 0, 2);
+    uint32_t opc = extract32(aFetchedOpcode.thePC, 21, 3) << 2;
 
-    int res = opc | ll;
+    uint32_t res = opc | ll;
 
     switch (res) {
     case 0x1:
@@ -116,11 +109,10 @@ arminst disas_exc(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSeque
     case 0x16:
         return DCPS(aFetchedOpcode, aCPU, aSequenceNo);
     default:
+        DBG_Assert(false);
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
         break;
     }
-
-
-
 }
 
 /* System
@@ -181,7 +173,7 @@ arminst disas_cond_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 
-    return BCOND(aFetchedOpcode, aCPU, aSequenceNo);
+    return CONDBR(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Test and branch (immediate)
@@ -193,14 +185,7 @@ arminst disas_cond_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t
 arminst disas_test_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
-    bool op = extract32(aFetchedOpcode.theOpcode, 24, 1); /* 0: TBZ; 1: TBNZ */
-
-    if (! op) {
-        return TBZ(aFetchedOpcode, aCPU, aSequenceNo);
-    } else {
-        return TBNZ(aFetchedOpcode, aCPU, aSequenceNo);
-    }
-
+    return TSTBR(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Compare and branch (immediate)
@@ -212,13 +197,7 @@ arminst disas_test_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t
 arminst disas_comp_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
-    unsigned op = extract32(aFetchedOpcode.theOpcode, 24, 1); /* 0: CBZ; 1: CBNZ */
-
-    if (op == 0) {
-        return CBZ(aFetchedOpcode, aCPU, aSequenceNo);
-    } else {
-        return CBNZ(aFetchedOpcode, aCPU, aSequenceNo);
-    }
+    return CMPBR(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Unconditional branch (immediate)
@@ -230,7 +209,7 @@ arminst disas_comp_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t
 arminst disas_uncond_b_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
-    return B(aFetchedOpcode, aCPU, aSequenceNo);
+    return UNCONDBR(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Branches, exception generating and system instructions
@@ -283,8 +262,6 @@ arminst disas_b_exc_sys(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
     default:
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
-
-    assert(false);
 }
 
 } // narmDecoder

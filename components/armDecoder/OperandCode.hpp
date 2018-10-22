@@ -103,6 +103,7 @@ enum eOpType {
     kASR_,
     kLSR_,
     kLSL_,
+    kOVERWRITE_,
 };
 
 enum eArchState {

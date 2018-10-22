@@ -776,6 +776,24 @@ typedef struct MOVK_ : public Operation {
   }
 } MOVK_;
 
+
+
+typedef struct OVERWRITE_ : public Operation {
+    OVERWRITE_(){}
+    virtual ~OVERWRITE_(){}
+    virtual Operand operator()( std::vector<Operand> const & operands  ) {
+      DBG_Assert( operands.size() == 3);
+      uint64_t lhs =  boost::get<uint64_t>(operands[0]);
+      uint64_t rhs =  boost::get<uint64_t>(operands[1]);
+      uint64_t mask =  boost::get<uint64_t>(operands[2]);
+
+      return ((lhs & mask) | rhs);
+    }
+  virtual char const * describe() const {
+    return "OVERWRITE_";
+  }
+} OVERWRITE_;
+
 std::unique_ptr<Operation> shift( uint32_t aType ) {
     std::unique_ptr<Operation> ptr;
 
@@ -876,6 +894,8 @@ std::unique_ptr<Operation> operation( eOpType aType ) {
         ptr.reset(new LSR_()); break;
     case kLSL_:
         ptr.reset(new LSL_()); break;
+  case kOVERWRITE_:
+        ptr.reset(new OVERWRITE_()); break;
     default:
         DBG_Assert( false, ( << "Unimplemented operation type: " << aType ) );
   }

@@ -154,7 +154,7 @@ void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t 
 
 }
 
-void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, int val, std::list<InternalDependance> & dependances){
+void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, uint64_t val, std::list<InternalDependance> & dependances){
 
     DBG_Assert( anOpNumber == 1 || anOpNumber == 2 || anOpNumber == 3 || anOpNumber == 4 || anOpNumber == 5 );
     eOperandCode cOperand = eOperandCode( kOperand1 + anOpNumber - 1);
@@ -377,6 +377,15 @@ bool decodeBitMasks(uint64_t & tmask, uint64_t & wmask, bool immN, char imms, ch
     wmask = ror(welem, R, esize);
     tmask = telem;
     return true;
+}
+
+arminst generateException(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo, eExceptionType aType){
+    DECODER_TRACE;
+    SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
+                                                        aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
+
+    inst->addRetirementEffect(exceptionEffect(inst, kException_AA64_SVC));
+    return inst;
 }
 
 

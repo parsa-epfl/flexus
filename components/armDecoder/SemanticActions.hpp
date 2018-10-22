@@ -56,8 +56,6 @@ struct uArchARM;
 
 namespace narmDecoder {
 
-
-
 enum eSignCode {
     kSignExtend,
     kZeroExtend,
@@ -304,7 +302,7 @@ predicated_action extractAction(SemanticInstruction * anInstruction, std::vector
 
 
 dependant_action writebackAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, eOperandCode aMappedRegisterCode, bool is64, bool setflags);
-dependant_action branchCCAction(SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, std::unique_ptr<Condition> aCondition, bool floating);
+dependant_action branchCondAction(SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, std::unique_ptr<Condition> aCondition);
 dependant_action branchRegAction(SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition);
 dependant_action branchToCalcAddressAction(SemanticInstruction * anInstruction);
 

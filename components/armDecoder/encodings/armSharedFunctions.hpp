@@ -73,7 +73,7 @@ eIndex getIndex ( unsigned int index);
 std::unique_ptr<Operation> extend(eExtendType anExtend);
 
 void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t rs, std::list<InternalDependance> & dependances, bool is_64);
-void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, int val, std::list<InternalDependance> & dependances);
+void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, uint64_t val, std::list<InternalDependance> & dependances);
 void addAnnulment( SemanticInstruction * inst, predicated_action & exec, InternalDependance const & aWritebackDependance);
 void addRD1Annulment( SemanticInstruction * inst, predicated_action & exec, InternalDependance const & aWritebackDependance);
 void addWriteback( SemanticInstruction * inst, eOperandCode aRegisterCode,eOperandCode aMappedRegisterCode, predicated_action & exec, bool a64, bool setflags, bool addSquash = true);
@@ -100,6 +100,9 @@ uint64_t ror(uint64_t input, uint64_t input_size, uint64_t shift_size);
 uint64_t lsl(uint64_t input, uint64_t input_size, uint64_t shift_size);
 uint64_t lsr(uint64_t input, uint64_t input_size, uint64_t shift_size);
 uint64_t asr(uint64_t input, uint64_t input_size, uint64_t shift_size);
+
+arminst generateException(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo, eExceptionType aType);
+
 bool decodeBitMasks(uint64_t & tmask, uint64_t & wmask, bool immN, char imms, char immr, bool immediate, uint32_t dataSize);
 bool disas_ldst_compute_iss_sf(int size, bool is_signed, int opc);
 } // narmDecoder

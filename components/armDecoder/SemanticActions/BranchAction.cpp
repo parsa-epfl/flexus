@@ -67,20 +67,16 @@ namespace narmDecoder {
 
 using namespace nuArchARM;
 
-struct BranchCCAction : public BaseSemanticAction {
+struct BranchCondAction : public BaseSemanticAction {
 
   VirtualMemoryAddress theTarget;
-  bool theAnnul;
   std::unique_ptr<Condition> theCondition;
-  bool isFloating;
   uint32_t theFeedbackCount;
 
-  BranchCCAction( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, std::unique_ptr<Condition> & aCondition, bool floating)
+  BranchCondAction( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, std::unique_ptr<Condition> & aCondition)
     : BaseSemanticAction ( anInstruction, 1 )
     , theTarget(aTarget)
-    , theAnnul(anAnnul)
     , theCondition(std::move(aCondition))
-    , isFloating(floating)
     , theFeedbackCount(0) {
     theInstruction->setExecuted(false);
   }
@@ -105,25 +101,11 @@ struct BranchCCAction : public BaseSemanticAction {
 
         if ( result ) {
           //Taken
-//          DBG_( Tmp, ( << *this << " conditional branch CC: " << cc << " TAKEN" ) );
           core()->applyToNext( theInstruction, branchInteraction(theTarget) );
           feedback->theActualDirection = kTaken;
 
-          if (theAnnul) {
-            DBG_( Tmp, ( << *this << " Reinstate Next Instruction") );
-            core()->applyToNext( theInstruction , reinstateInstructionInteraction() );
-//            theInstruction->redirectNPC( theInstruction->pc() + 4 );
-          }
-
         } else {
-          //Not Taken
           feedback->theActualDirection = kNotTaken;
-
-          if (theAnnul) {
-            DBG_( Tmp, ( << *this << " Annul Next Instruction") );
-            core()->applyToNext( theInstruction, annulInstructionInteraction() );
-//            theInstruction->redirectNPC( theInstruction->pc() + 8, theInstruction->pc() + 4);
-          }
           core()->applyToNext( theInstruction, branchInteraction( theInstruction->pc() + 8  ) );
 
         }
@@ -146,95 +128,10 @@ struct BranchCCAction : public BaseSemanticAction {
     return theInstruction->operand(aCode);
   }
 };
-
-struct BranchCondAction : public BaseSemanticAction {
-
-  VirtualMemoryAddress theTarget;
-  bool theAnnul;
-  uint32_t theCondition;
-  bool isFloating;
-  uint32_t theFeedbackCount;
-  bool theOnZero;
-
-  BranchCondAction( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool onZero)
-    : BaseSemanticAction ( anInstruction, 1 )
-    , theTarget(aTarget)
-    , theFeedbackCount(0)
-    , theOnZero(onZero)
-  {
-    theInstruction->setExecuted(false);
-  }
-
-  void doEvaluate() {
-    if (ready() ) {
-      if (theInstruction->hasPredecessorExecuted()) {
-
-        bits cond = theInstruction->operand< bits> (kOperand1);
-
-        boost::intrusive_ptr<BranchFeedback> feedback( new BranchFeedback() );
-        feedback->thePC = theInstruction->pc();
-        feedback->theActualType = kConditional;
-        feedback->theActualTarget = theTarget;
-        feedback->theBPState = theInstruction->bpState();
-
-
-//        Condition cond = condition( theCondition );
-
-
-        bool cc;
-//        if (theOnZero) {
-//            cc = cond == 0;
-//        }
-//        else
-//        {
-//            cc = cond != 0;
-//        }
-
-        if ( cc ) {
-          //Taken
-//          DBG_( Tmp, ( << *this << " conditional branch Cond: " << cc << " TAKEN" ) );
-          core()->applyToNext( theInstruction, branchInteraction(theTarget) );
-          feedback->theActualDirection = kTaken;
-
-          if (theAnnul) {
-//            DBG_( Tmp, ( << *this << " Reinstate Next Instruction") );
-            core()->applyToNext( theInstruction , reinstateInstructionInteraction() );
-//            theInstruction->redirectNPC( theInstruction->pc() + 4 );
-          }
-
-        } else {
-          //Not Taken
-//          DBG_( Tmp, ( << *this << " conditional branch CC: " << cc << " NOT TAKEN" ) );
-          feedback->theActualDirection = kNotTaken;
-
-          if (theAnnul) {
-//            DBG_( Tmp, ( << *this << " Annul Next Instruction") );
-            core()->applyToNext( theInstruction, annulInstructionInteraction() );
-//            theInstruction->redirectNPC( theInstruction->pc() + 8, theInstruction->pc() + 4);
-          }
-          core()->applyToNext( theInstruction, branchInteraction( theInstruction->pc() + 8  ) );
-
-        }
-        theInstruction->setBranchFeedback(feedback);
-
-        satisfyDependants();
-        theInstruction->setExecuted(true);
-      } else {
-        DBG_( Tmp, ( << *this << " waiting for predecessor ") );
-        reschedule();
-      }
-    }
-  }
-
-  void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " BranchCC Action";
-  }
-};
-
-dependant_action branchCCAction
-( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, std::unique_ptr<Condition> aCondition, bool floating)
+dependant_action branchCondAction
+( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, std::unique_ptr<Condition> aCondition)
 {
-  BranchCCAction * act(new(anInstruction->icb()) BranchCCAction ( anInstruction, aTarget, anAnnul, aCondition, floating ) );
+  BranchCondAction * act(new(anInstruction->icb()) BranchCondAction ( anInstruction, aTarget, aCondition ) );
 
   return dependant_action( act, act->dependance() );
 }
