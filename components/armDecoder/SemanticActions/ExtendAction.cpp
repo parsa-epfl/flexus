@@ -59,6 +59,7 @@ namespace ll = boost::lambda;
 #include "../SemanticInstruction.hpp"
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
+#include "PredicatedSemanticAction.hpp"
 
 #define DBG_DeclareCategories armDecoder
 #define DBG_SetDefaultOps AddCat(armDecoder)
@@ -68,14 +69,14 @@ namespace narmDecoder {
 
 using namespace nuArchARM;
 
-struct ExtendRegisterAction : public BaseSemanticAction
+struct ExtendAction : public PredicatedSemanticAction
 {
   eOperandCode theRegisterCode;
   bool the64;
   std::unique_ptr<Operation> theExtendOperation;
 
-  ExtendRegisterAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, std::unique_ptr<Operation> & anExtendOperation, bool is64)
-    : BaseSemanticAction( anInstruction, 1 )
+  ExtendAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, std::unique_ptr<Operation> & anExtendOperation, bool is64)
+      : PredicatedSemanticAction( anInstruction, 1, true )
     , theRegisterCode( aRegisterCode )
     , the64(is64)
     , theExtendOperation (std::move(anExtendOperation))
@@ -109,12 +110,13 @@ struct ExtendRegisterAction : public BaseSemanticAction
   }
 };
 
-simple_action extendRegisterAction ( SemanticInstruction * anInstruction, eOperandCode aRegisterCode,
-                                   std::unique_ptr<Operation> & anExtendOp, bool is64)
-{
-  return new(anInstruction->icb()) ExtendRegisterAction( anInstruction, aRegisterCode, anExtendOp, is64);
-}
 
+predicated_action extendAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, std::unique_ptr<Operation> & anExtendOp, bool is64)
+{
+
+  ExtendAction* act(new(anInstruction->icb()) ExtendAction (anInstruction, aRegisterCode, anExtendOp, is64));
+  return predicated_action( act, act->predicate() );
+}
 
 
 } //narmDecoder

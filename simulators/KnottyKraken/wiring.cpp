@@ -92,7 +92,7 @@ bool initializeParameters() {
   theuArchCfg.MemoryPorts.initialize(4);
   theuArchCfg.StorePrefetches.initialize(30);
   theuArchCfg.PrefetchEarly.initialize(false);
-  theuArchCfg.ConsistencyModel.initialize(1); //TSO
+  theuArchCfg.ConsistencyModel.initialize(2); //RMO
   theuArchCfg.CoherenceUnit.initialize(64);
   theuArchCfg.BreakOnResynchronize.initialize(false);
   theuArchCfg.SpinControl.initialize(true);

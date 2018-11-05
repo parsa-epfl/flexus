@@ -110,36 +110,34 @@ std::ostream & operator << ( std::ostream & anOstream, eInstructionCode aCode) {
       //Special cases
     {
       "BlackBox"
-      , "ITLBMiss"
       , "NOP"
       , "MAGIC"
       //ALU
-      , "SETHI"
       , "ALU"
       , "Mul"
       , "Div"
       , "RDPR"
       , "WRPR"
-      //Register Window Manipulation
-      , "Restore"
-      , "Save"
-      , "Restored"
-      , "Saved"
-      , "FLUSHW"
       //FP
       , "FP"
       , "ALIGN"
       //Memory
       , "Load"
+      , "LoadEX"
+      , "LoadAQ"
+      , "LDP"
       , "LoadFP"
       , "LDD"
+      , "LDALU"
       , "Store"
+      , "StoreEX"
+      , "STP"
+      , "STRL"
       , "StoreFP"
       , "STD"
       //Atomics
       , "CAS"
-      , "SWAP"
-      , "LDSTUB"
+      , "CASP"
       //Branches
       , "BranchUnconditional"
       , "BranchConditional"
@@ -150,19 +148,24 @@ std::ostream & operator << ( std::ostream & anOstream, eInstructionCode aCode) {
       , "MEMBARSync"
       , "MEMBARStLd"
       , "MEMBARStSt"
+      , "MEMBARLdSt"
+      , "MEMBARLdLd"
+
       //Unsupported Instructions
       , "RDPRUnsupported"
       , "WRPRUnsupported"
-      , "POPCUnsupported"
       , "RETRYorDONE"
+
       , "ExceptionUnsupported"
       , "Exception"
       , "SideEffectLoad"
       , "SideEffectStore"
       , "SideEffectAtomic"
+
       , "DeviceAccess"
       , "MMUAccess"
-      , "Tcc"
+      , "ITLBMiss"
+      , "CLREX"
     };
   if (aCode >= codeLastCode) {
     anOstream << "Invalid code(" << static_cast<int>(aCode) << ")";

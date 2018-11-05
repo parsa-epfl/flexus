@@ -113,31 +113,35 @@ struct ReadRegisterAction : public BaseSemanticAction
 
       mapped_reg name = theInstruction->operand< mapped_reg > (theRegisterCode);
       eResourceStatus status = core()->requestRegister( name );
+      uint64_t val;
       if (status == kReady) {
         Operand aValue;
         if (name.theIndex == 31) {
+            uint32_t sp = core()->_PSTATE().SP();
+            uint32_t el = core()->_PSTATE().EL();
             if (core()->_PSTATE().SP() == 0) {
                 core()->getSP_el(EL0);
             } else {
                 switch (core()->_PSTATE().EL()) {
                 case EL0:
-                    core()->getSP_el(EL0);
+                    val = core()->getSP_el(EL0);
                     break;
                 case EL1:
-                    core()->getSP_el(EL1);
+                    val = core()->getSP_el(EL1);
                     break;
                 case EL2:
                 case EL3:
                 default:
-                    core()->takeTrap(boost::intrusive_ptr<Instruction>(theInstruction), kException_ILLEGALSTATE);
-                    return;
+//                    theInstruction->setWillRaise(kException_ILLEGALSTATE);
+//                    core()->takeTrap(boost::intrusive_ptr<Instruction>(theInstruction), theInstruction->willRaise());
+                    break;
                 }
             }
         } else {
             aValue = core()->readRegister( name );
+            val = boost::get<uint64_t>(aValue);
         }
 
-        uint64_t val = boost::get<uint64_t>(aValue);
 
         if (!the64){ // reading w reg >> only the botom half
             val &= 0xffffffff;

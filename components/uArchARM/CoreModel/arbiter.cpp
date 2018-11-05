@@ -294,6 +294,18 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
   }
 
 
+  if (anInstruction->isExclusive()){
+      if (lsq_entry->theOperation == kLoad){
+        markExclusiveLocal(lsq_entry->thePaddr, lsq_entry->theSize);
+      } else if (lsq_entry->theOperation == kStore) {
+            if (! isExclusiveLocal(lsq_entry->thePaddr, lsq_entry->theSize)){
+                anInstruction->annul();
+            }
+
+            clearExclusiveLocal();
+        }
+  }
+
 
 
   eOperation issue_op = lsq_entry->theOperation;

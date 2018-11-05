@@ -185,7 +185,7 @@ arminst MOVE(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     DECODER_TRACE;
     uint32_t rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
     uint32_t imm = extract32(aFetchedOpcode.theOpcode, 5, 16);
-    uint32_t sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
+    bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
     uint32_t pos = extract32(aFetchedOpcode.theOpcode, 21, 2) << 4;
     uint32_t opc = extract32(aFetchedOpcode.theOpcode, 29, 2);
 

@@ -55,8 +55,6 @@ void CoreImpl::accountResyncReason( boost::intrusive_ptr< Instruction > anInstru
     case codeITLBMiss:
       ++theResync_ITLBMiss;
       break;
-   // case codeRestore:
-   // case codeSave:
     case codeRETURN:
       if (anInstruction->isAnnulled()) {
         ++theResync_UnimplementedAnnul;
@@ -73,27 +71,9 @@ void CoreImpl::accountResyncReason( boost::intrusive_ptr< Instruction > anInstru
     case codeMEMBARSync:
       ++theResync_MEMBARSync;
       break;
-  case codeCLREX:
-    ++theResync_CLREX;
-    break;
-    case codePOPCUnsupported:
-      ++theResync_POPCUnsupported;
-      break;
     case codeDeviceAccess:
       ++theResync_DeviceAccess;
       break;
-    case codeLoad:
-//    case codeLoadEX:
-    case codeLoadFP:
-    case codeLDD:
-        ++theResync_Unknown;
-        break;
-    case codeCAS:
-//    case codeCASP:
-    case codeSWAP:
-//    case codeLDREX:
-      ++theResync_Unknown;
-        break;
     case codeSideEffectLoad:
       ++theResync_SideEffectLoad;
       break;

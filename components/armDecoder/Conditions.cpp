@@ -164,14 +164,19 @@ std::unique_ptr<Condition> condition(eCondCode aCond) {
     {
     case kCBZ_:
         ptr.reset(new CMPBR());
+        break;
     case kCBNZ_:
         ptr.reset(new CBNZ());
+        break;
     case kTBZ_:
         ptr.reset(new TSTBR());
+        break;
     case kTBNZ_:
          ptr.reset(new TBNZ());
+         break;
     case kBCOND_:
          ptr.reset(new BCOND());
+         break;
     default:
         DBG_Assert(false);
         return nullptr;

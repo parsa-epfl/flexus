@@ -65,6 +65,7 @@ arminst CAS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 
 
     inst->setClass(clsAtomic, codeCAS);
+    inst->setExclusive();
 
     bool sf = (sz == 1) ? true : false;
     eSize dbsize = (sz == 1) ? kQuadWord : kDoubleWord;
@@ -143,7 +144,6 @@ arminst STXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
-
     bool o0 = extract32(aFetchedOpcode.theOpcode, 15, 1); // LA-SR
     uint32_t size = 8 << extract32(aFetchedOpcode.theOpcode, 30, 2);
     uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5); // data
@@ -152,7 +152,6 @@ arminst STXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 
     uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5); // address
     uint32_t rs = extract32(aFetchedOpcode.theOpcode, 16, 5); // memory status
-//    uint32_t o2 = extract32(aFetchedOpcode.theOpcode, 23, 1); // is_excl
     bool is_pair = extract32(aFetchedOpcode.theOpcode, 21, 1);
 
 
@@ -162,15 +161,13 @@ arminst STXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 
 
     inst->setClass(clsAtomic, codeStore);
+    inst->setExclusive();
 
     std::vector< std::list<InternalDependance> > rs_deps(1);
     addAddressCompute( inst, rs_deps ) ;
     addReadXRegister(inst, 1, rn, rs_deps[0], size == 64);
 
-
-
-
-    inst->addDispatchEffect(exclusiveMonitorPass(inst, kAddress, sz));
+    inst->addCommitEffect(exclusiveMonitorPass(inst, kAddress, sz));
 
     std::vector<std::list<InternalDependance> > status_deps(1);
 
@@ -255,6 +252,7 @@ arminst STRL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     eAccType acctype = o0 == 0 ? kAccType_LIMITEDORDERED : kAccType_ORDERED;
 
     inst->setClass(clsStore, codeStore);
+    inst->setExclusive();
 
     if (acctype == kAccType_ORDERED ) {
         MEMBAR(inst, /*kMO_ALL | */kBAR_STRL);
@@ -298,6 +296,8 @@ arminst LDAQ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
     inst->setClass(clsLoad, codeLoad);
+    inst->setExclusive();
+
     eAccType acctype = o0 == 0 ? kAccType_LIMITEDORDERED : kAccType_ORDERED;
 
     std::vector<std::list<InternalDependance>> rs_deps(1);
@@ -339,6 +339,7 @@ arminst LDXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 
     eAccType acctype = (o0 == 1) ? kAccType_ORDERED : kAccType_ATOMIC;
     inst->setClass(clsAtomic, codeLoad);
+    inst->setExclusive();
 
     std::vector< std::list<InternalDependance> > rs_deps(1);
     addAddressCompute( inst, rs_deps ) ;
@@ -749,6 +750,11 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 
     return inst;
 }
+
+
+// Atomic add on byte in memory atomically loads an 8-bit byte from memory,
+// adds the value held in a register to it, and stores the result back to
+// memory. The value initially loaded from memory is returned in the destination register.
 
 arminst LDADD(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo); DBG_Assert(false); }
 arminst LDCLR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {DECODER_TRACE; return blackBox(aFetchedOpcode, aCPU, aSequenceNo); DBG_Assert(false); }

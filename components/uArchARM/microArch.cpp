@@ -322,7 +322,8 @@ public:
         //Record free ROB space for next cycle
       theAvailableROB = theCore->availableROB();
 
-      theCore->cycle(theCPU->getPendingInterrupt());
+      eExceptionType interrupt = theCPU->getPendingInterrupt() == 0 ? kException_None : kException_IRQ;
+      theCore->cycle(interrupt);
 
     } catch ( ResynchronizeWithQemuException & e) {
       ++theResynchronizations;
@@ -337,6 +338,8 @@ public:
         DBG_( Verb, ( << "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id() << "] Flexus Implementation missing/wrong. Resynchronizing with Qemu.") );
         ++theOtherResyncs;
       }
+
+      advance();
 
       resynchronize();
       if ( theBreakOnResynchronize ) {
@@ -359,10 +362,7 @@ private:
   void resynchronize() {
     FLEXUS_PROFILE();
 
-    DBG_( Tmp, ( << "\e[1;35m"  << "Resynchronizing " << "\e[0m")  );
-
-
-//    DBG_( Tmp, ( << "CORE:  Resetting Core ")  );
+    CORE_DBG("Resynchronizing...");
 
     //Clear out all state in theCore
     theCore->reset();
@@ -376,6 +376,7 @@ private:
 
     //Obtain new state from simics
     VirtualMemoryAddress redirect_address(theCPU->getPC());
+    CORE_DBG("Redirecting... " << redirect_address);
 
     resetArchitecturalState();
 

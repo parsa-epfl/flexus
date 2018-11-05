@@ -408,7 +408,7 @@ arminst SYS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     //Check for supported PR's
     ePrivRegs pr = getPrivRegType(op0,op1,op2,crn,crm);
     if (pr == kLastPrivReg ) {
-      return grayBox( aFetchedOpcode, aCPU, aSequenceNo, codeRDPRUnsupported); //resynchronize on all other PRs
+      return blackBox( aFetchedOpcode, aCPU, aSequenceNo); //resynchronize on all other PRs
     }
 
 

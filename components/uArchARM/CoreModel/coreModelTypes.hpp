@@ -171,6 +171,9 @@ struct MemQueueEntry {
   bool isLoad() const {
     return theOperation == kLoad || theOperation == kRMW || theOperation == kCAS ;
   }
+  void annul() const {
+    theAnnulled = true;
+  }
   bool isMarker() const {
     return theOperation == kMEMBARMarker ;
   }
@@ -378,7 +381,6 @@ struct Checkpoint {
   Checkpoint()
     : theLostPermissionCount(0)
   {}
-  //v9State theState;
   armState theState;
   int32_t theLostPermissionCount;
   std::map< PhysicalMemoryAddress, boost::intrusive_ptr< Instruction > > theRequiredPermissions;

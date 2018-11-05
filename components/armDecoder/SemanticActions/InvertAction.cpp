@@ -59,6 +59,7 @@ namespace ll = boost::lambda;
 #include "../SemanticInstruction.hpp"
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
+#include "PredicatedSemanticAction.hpp"
 
 #define DBG_DeclareCategories armDecoder
 #define DBG_SetDefaultOps AddCat(armDecoder)
@@ -68,13 +69,13 @@ namespace narmDecoder {
 
 using namespace nuArchARM;
 
-struct InvertRegisterAction : public BaseSemanticAction
+struct InvertAction : public PredicatedSemanticAction
 {
   eOperandCode theRegisterCode;
   bool the64;
 
-  InvertRegisterAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, bool is64)
-    : BaseSemanticAction( anInstruction, 1 )
+  InvertAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, bool is64)
+      : PredicatedSemanticAction( anInstruction, 1, true )
     , theRegisterCode( aRegisterCode )
     , the64(is64)
   {}
@@ -107,9 +108,11 @@ struct InvertRegisterAction : public BaseSemanticAction
   }
 };
 
-simple_action invertRegisterAction ( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, bool is64)
+predicated_action invertAction ( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, bool is64)
 {
-  return new(anInstruction->icb()) InvertRegisterAction( anInstruction, aRegisterCode, is64);
+
+  InvertAction * act(new(anInstruction->icb()) InvertAction ( anInstruction, aRegisterCode, is64));
+  return predicated_action( act, act->predicate() );
 }
 
 

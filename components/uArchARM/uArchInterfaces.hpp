@@ -191,6 +191,7 @@ enum eExceptionType {
     kException_AA32_BKPT              ,//= 0x38,
     kException_VECTORCATCH            ,//= 0x3a,
     kException_AA64_BKPT              ,//= 0x3c,
+    kException_IRQ                    ,
     kException_None                   ,//= 0xff,
 };
 
@@ -392,36 +393,34 @@ enum eInstructionCode
 //Special cases
 {
   codeBlackBox
-  , codeITLBMiss
   , codeNOP
   , codeMAGIC
   //ALU
-  , codeSETHI
   , codeALU
   , codeMul
   , codeDiv
   , codeRDPR
   , codeWRPR
-  //Register Window Manipulation
-  , codeRestore
-  , codeSave
-  , codeRestored
-  , codeSaved
-  , codeFLUSHW
   //FP
   , codeFP
   , codeALIGN
   //Memory
   , codeLoad
+  , codeLDEX
+  , codeLDAQ
+  , codeLDP
   , codeLoadFP
   , codeLDD
+  , codeLDALU
   , codeStore
+  , codeSTEX
+  , codeSTP
+  , codeSTRL
   , codeStoreFP
   , codeSTD
   //Atomics
   , codeCAS
-  , codeSWAP
-  , codeLDSTUB
+  , codeCASP
   //Branches
   , codeBranchUnconditional
   , codeBranchConditional
@@ -432,13 +431,12 @@ enum eInstructionCode
   , codeMEMBARSync
   , codeMEMBARStLd
   , codeMEMBARStSt
-  , codeCLREX
+  , codeMEMBARLdSt
+  , codeMEMBARLdLd
   //Unsupported Instructions
   , codeRDPRUnsupported
   , codeWRPRUnsupported
-  , codePOPCUnsupported
   , codeRETRYorDONE
-
   //Codes that are not used by the decode component, but are used in
   //the instruction counter
   , codeExceptionUnsupported
@@ -449,7 +447,9 @@ enum eInstructionCode
 
   , codeDeviceAccess
   , codeMMUAccess
-  , codeTcc
+  , codeITLBMiss
+  , codeCLREX
+
 
   //End of Enum
   , codeLastCode

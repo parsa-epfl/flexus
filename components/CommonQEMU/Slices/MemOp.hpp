@@ -93,7 +93,7 @@ enum eSize {
   ,
 };
 
-eSize dbSize(int s);
+eSize dbSize(uint32_t s);
 
 
 struct MemOp : boost::counted_base {

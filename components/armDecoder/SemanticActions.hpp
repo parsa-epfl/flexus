@@ -315,6 +315,7 @@ multiply_dependant_action updateCASPValueAction(SemanticInstruction * anInstruct
 predicated_dependant_action updateStoreValueAction(SemanticInstruction * anInstruction, eOperandCode data );
 predicated_dependant_action loadAction(SemanticInstruction * anInstruction, eSize aSize, eSignCode aSignExtend, boost::optional<eOperandCode> aBypass );
 predicated_dependant_action casAction(SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass );
+predicated_dependant_action ldaluAction(SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass );
 predicated_dependant_action caspAction(SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass , boost::optional<eOperandCode> aBypass1 );
 predicated_dependant_action ldpAction(SemanticInstruction * anInstruction, eSize aSize, eSignCode aSignCode, boost::optional<eOperandCode> aBypass0, boost::optional<eOperandCode> aBypass1  );
 

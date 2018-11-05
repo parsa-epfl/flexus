@@ -84,12 +84,6 @@ void armProcessorImpl::handleInterrupt( long long aVector) {
 }
 
 
-//static aaa (uint8_t* code, size_t size ){
-//    for (int i = 0; i < size; i++){
-//        code[i]
-//    }
-//}
-
 uint32_t armProcessorImpl::fetchInstruction(Translation & aTranslation) {
   API::logical_address_t addr = aTranslation.theVaddr;
   API::physical_address_t phy_addr = API::QEMU_logical_to_physical(*this, API::QEMU_DI_Instruction, addr);

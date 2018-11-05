@@ -80,7 +80,7 @@ arminst grayBox( armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequen
 arminst nop( armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo ) {
   SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
   inst->setClass(clsComputation, codeNOP);
-  return arminst( inst );
+  return inst;
 }
 
 arminst unallocated_encoding(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)

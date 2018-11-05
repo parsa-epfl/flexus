@@ -70,7 +70,7 @@ CoreImpl::CoreImpl( uArchOptions_t options
   , theROBSize(options.ROBSize)
   , theRetireWidth(options.retireWidth)
   , theInterruptSignalled(false)
-  , thePendingInterrupt(0)
+  , thePendingInterrupt(kException_None)
   , theInterruptInstruction(0)
   , theMemorySequenceNum(0)
   , theLSQCount(0)
@@ -184,15 +184,11 @@ CoreImpl::CoreImpl( uArchOptions_t options
   , theResync_RDPRUnsupported ( theName + "-Resync:RDPRUnsupported" )
   , theResync_WRPRUnsupported ( theName + "-Resync:WRPRUnsupported" )
   , theResync_MEMBARSync ( theName + "-Resync:MEMBARSync" )
-  , theResync_CLREX ( theName + "-Resync:CLREX" )
-  , theResync_POPCUnsupported ( theName + "-Resync:POPCUnsupported" )
   , theResync_UnexpectedException ( theName + "-Resync:UnexpectedException" )
   , theResync_Interrupt ( theName + "-Resync:Interrupt" )
   , theResync_DeviceAccess ( theName + "-Resync:DeviceAccess" )
   , theResync_FailedValidation ( theName + "-Resync:FailedValidation" )
   , theResync_FailedHandleTrap ( theName + "-Resync:FailedHandleTrap" )
-  , theResync_UnsupportedLoadASI( theName + "-Resync:UnsupportedASI:Load" )
-  , theResync_UnsupportedAtomicASI( theName + "-Resync:UnsupportedASI:Atomic" )
   , theResync_SideEffectLoad( theName + "-Resync:SideEffectLoad" )
   , theResync_SideEffectStore( theName + "-Resync:SideEffectStore" )
   , theResync_Unknown ( theName + "-Resync:Unknown" )
@@ -350,7 +346,7 @@ void CoreImpl::resetARM() {
   theTrapInstruction = 0;
 
   theInterruptSignalled = false;
-  thePendingInterrupt = 0;
+  thePendingInterrupt = kException_None;
   theInterruptInstruction = 0;
 
   theBypassNetwork.reset();

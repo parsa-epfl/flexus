@@ -96,7 +96,7 @@ typedef struct PSTATE{
     }
 
     const uint32_t EL() const {
-        return theVal & PSTATE_EL;
+        return extract32(theVal, 2, 2);
     }
 
     const uint32_t SP() const {

@@ -100,7 +100,7 @@ struct CoreModel : public uArchARM {
   virtual void dispatch(boost::intrusive_ptr<Instruction>) = 0;
 
   virtual void skipCycle() = 0;
-  virtual void cycle(int32_t aPendingInterrupt) = 0;
+  virtual void cycle(eExceptionType aPendingInterrupt) = 0;
 
   virtual void pushMemOp(boost::intrusive_ptr< MemOp >) = 0;
   virtual bool canPushMemOp() = 0;

@@ -61,7 +61,7 @@ extern uint32_t theInsnCount;
 
 namespace nuArchARM {
 
-void CoreImpl::cycle(int32_t aPendingInterrupt) {
+void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
 
     CORE_DBG("--------------START CORE------------------------");
 
@@ -73,7 +73,7 @@ void CoreImpl::cycle(int32_t aPendingInterrupt) {
       CORE_DBG( "Interrupting..." );
 
     if (aPendingInterrupt == 0) {
-      DBG_(Tmp, ( << theName << " Interrupt: " << std::hex << thePendingInterrupt << std::dec << " pending for " << (theFlexus->cycleCount() - theInterruptReceived) ) );
+      DBG_(Tmp, ( << theName << " Interrupt: " << thePendingInterrupt << " pending for " << (theFlexus->cycleCount() - theInterruptReceived) ) );
     } else {
       theInterruptReceived = theFlexus->cycleCount();
     }
@@ -794,7 +794,9 @@ void CoreImpl::retireMem( boost::intrusive_ptr<Instruction> anInsn) {
         }
       } else if (theConsistencyModel == kTSO ) {
         createCheckpoint( iter->theInstruction );
-      }
+      } else if (theConsistencyModel == kRMO ) { // FIXME
+          createCheckpoint( iter->theInstruction );
+        }
 
     }
   } else {
@@ -1075,7 +1077,10 @@ void CoreImpl::retire() {
   theRetireCount = 0;
   while ( !theROB.empty() && !stop_retire ) {
 
-      CORE_DBG("ROB size "<< theROB.size());
+//  if (! theROB.front()->isAnnulled() ) {
+//        theROB.pop_front();
+//  }
+
 
   if (! theROB.front()->mayRetire() ) {
         CORE_DBG("Cant Retire due to pending retirement dependance " << *theROB.front());
@@ -1099,7 +1104,7 @@ void CoreImpl::retire() {
       break;
     }
 
-    if (thePendingInterrupt && theIsSpeculating) {
+    if ((thePendingInterrupt != kException_None) && theIsSpeculating) {
       // stop retiring so we can stop speculating and handle the interrupt
         DBG_(Tmp, ( <<" thePendingInterrupt && theIsSpeculating "));
 
@@ -1137,7 +1142,7 @@ void CoreImpl::retire() {
       theROB.front()->checkTraps();  // take traps only if we don't take interrupt
       DBG_( Tmp, ( << "take traps only if we don't take interrupts" ) );
     }
-    if (thePendingTrap >= kException_None) {
+    if (thePendingTrap != kException_None) {
       theROB.front()->changeInstCode(codeException);
       DBG_( Verb, ( << theName << " Trap raised by " << *theROB.front() ));
       stop_retire = true;
@@ -1186,7 +1191,7 @@ void CoreImpl::retire() {
     theSRB.push_back(theROB.front());
     //DBG_( Tmp, ( << "theSRB.push_back(theROB.front())" ));
 
-    if ( thePendingTrap == kException_None) {
+    if ( thePendingTrap != kException_None) {
       theROB.pop_front(); //Need to squash and retire instructions that cause traps
     }
   }
@@ -1652,7 +1657,7 @@ void CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExcept
 }
 
 bool CoreImpl::acceptInterrupt() {
-  if (    (thePendingInterrupt > 0)   //Interrupt is pending
+  if (    (thePendingInterrupt != kException_None)   //Interrupt is pending
           && ! theInterruptSignalled       //Already accepted the interrupt
           && ! theROB.empty()              //Need an instruction to take the interrupt on
           && ! theROB.front()->isAnnulled()//Do not take interrupts on annulled instructions
@@ -1677,7 +1682,7 @@ bool CoreImpl::acceptInterrupt() {
 
 
 void CoreImpl::handleTrap() {
-  if (thePendingTrap >= kException_None) {
+  if (thePendingTrap == kException_None) {
     return;
   }
   DBG_( Verb,  ( << theName << " Handling trap: " << thePendingTrap << " raised by: " << *theTrapInstruction ) );

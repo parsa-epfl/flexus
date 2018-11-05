@@ -214,6 +214,8 @@ arminst disas_ldst_reg_roffset(armcode const & aFetchedOpcode,uint32_t  aCPU, in
  */
 arminst disas_ldst_atomic(armcode const & aFetchedOpcode,uint32_t  aCPU, int64_t aSequenceNo)
 {
+
+    // QEMU doesnt model these and nor they get invoked when running flexus... will add them as soon as they're needed.
     DECODER_TRACE;
     uint32_t o3_opc = extract32(aFetchedOpcode.thePC, 12, 4);
     bool V = extract32(aFetchedOpcode.thePC, 26, 1);

@@ -109,7 +109,6 @@ arminst disas_exc(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSeque
     case 0x16:
         return DCPS(aFetchedOpcode, aCPU, aSequenceNo);
     default:
-        DBG_Assert(false);
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
         break;
     }

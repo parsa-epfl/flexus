@@ -170,7 +170,7 @@ class CoreImpl : public CoreModel {
 
   //Interrupt processing
   bool theInterruptSignalled;
-  int32_t thePendingInterrupt;
+  eExceptionType thePendingInterrupt;
   boost::intrusive_ptr< Instruction > theInterruptInstruction;
 
   //Branch Feedback
@@ -354,19 +354,14 @@ private:
   theResync_RDPRUnsupported,
   theResync_WRPRUnsupported,
   theResync_MEMBARSync,
-  theResync_CLREX,
-  theResync_POPCUnsupported,
   theResync_UnexpectedException,
   theResync_Interrupt,
   theResync_DeviceAccess,
   theResync_FailedValidation,
   theResync_FailedHandleTrap,
-  theResync_UnsupportedLoadASI,
-  theResync_UnsupportedAtomicASI,
   theResync_SideEffectLoad,
   theResync_SideEffectStore,
   theResync_Unknown,
-
   theFalseITLBMiss;
 
   MemOpCounter * theMemOpCounters [2][2][8];
@@ -519,7 +514,7 @@ public:
   //==========================================================================
 public:
   void skipCycle();
-  void cycle(int32_t aPendingInterrupt);
+  void cycle(eExceptionType aPendingInterrupt);
   std::string dumpState();
 
 
