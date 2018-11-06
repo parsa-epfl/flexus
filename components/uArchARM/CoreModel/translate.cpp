@@ -38,6 +38,7 @@
 #include "coreModelImpl.hpp"
 #include <core/qemu/ARMmmu.hpp>
 #include <components/CommonQEMU/Transports/TranslationTransport.hpp>
+#include <core/types.hpp>
 
 #define DBG_DeclareCategories uArchCat
 #define DBG_SetDefaultOps AddCat(uArchCat)
@@ -137,7 +138,7 @@ namespace nuArchARM {
         PhysicalMemoryAddress TTEDescriptor( statefulPointer->TTAddressResolver->resolve(basicPointer->theVaddr) );
         DBG_(Tmp,(<< "Current Translation Level: " << (unsigned int) statefulPointer->currentLookupLevel
                     << ", Returned TTE Descriptor Address: " << std::hex <<  TTEDescriptor << std::dec ));
-        unsigned long long rawTTEValue = QEMU_read_phys_memory(  TTEDescriptor, 8 );
+        unsigned long long rawTTEValue = Flexus::Core::construct(QEMU_read_phys_memory(  TTEDescriptor, 8 ), 8).to_ulong(); // TODO: check w mark
         DBG_(Tmp,(<< "Current Translation Level: " << (unsigned int) statefulPointer->currentLookupLevel
                     << ", Read Raw TTE Desc. from QEMU : " << std::hex << rawTTEValue << std::dec ));
         /* Check Valid */
@@ -224,6 +225,6 @@ namespace nuArchARM {
 
 
     //TODO??
-    MMU::TTEDescriptor getNextTTDescriptor(Translation& aTr ) { }
+    TTEDescriptor getNextTTDescriptor(Translation& aTr ) {DBG_Assert(false); }
 
 } // end namespace nuArchARM

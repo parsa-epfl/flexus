@@ -83,7 +83,7 @@ namespace Flexus {
             try {
                 API::arm_memory_transaction_t xact;
                 translate_QemuImpl( xact, anAddress , 0);
-                unsigned long long value = Qemu::API::QEMU_read_phys_memory(xact.s.physical_address, aSize);
+                unsigned long long value = construct(Qemu::API::QEMU_read_phys_memory(xact.s.physical_address, aSize),9).to_ulong();
                 checkException();
 
                 return value;
@@ -100,7 +100,7 @@ namespace Flexus {
 
                 DBG_(VVerb, ( << "Virtual: " << anAddress << " ASI: " << anASI << " Size: " << aSize << " Physical: " << xact.s.physical_address) );
 
-                unsigned long long value = Qemu::API::QEMU_read_phys_memory( xact.s.physical_address, aSize);
+                unsigned long long value = construct(Qemu::API::QEMU_read_phys_memory( xact.s.physical_address, aSize), 8).to_ulong();
                 checkException();
 
                 if (xact.s.inverse_endian) {
@@ -116,7 +116,7 @@ namespace Flexus {
                         API::logical_address_t addr(anAddress);
                         API::physical_address_t phy_addr = API::QEMU_logical_to_physical(*this, API::QEMU_DI_Data, addr);
                         checkException();
-                        unsigned long long value = Qemu::API::QEMU_read_phys_memory(  phy_addr, aSize);
+                        unsigned long long value = construct(Qemu::API::QEMU_read_phys_memory(  phy_addr, aSize),8).to_ulong();
                         checkException();
                         return value;
                     } catch (MemoryException & anError ) {}

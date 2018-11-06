@@ -117,8 +117,6 @@ struct ReadRegisterAction : public BaseSemanticAction
       if (status == kReady) {
         Operand aValue;
         if (name.theIndex == 31) {
-            uint32_t sp = core()->_PSTATE().SP();
-            uint32_t el = core()->_PSTATE().EL();
             if (core()->_PSTATE().SP() == 0) {
                 core()->getSP_el(EL0);
             } else {

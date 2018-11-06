@@ -316,11 +316,7 @@ public:
       DBG_(Dev, ( << "Timestamp: " << boost::posix_time::to_simple_string(now)));
     }
 
-//    if (theDriveClients) {
-//      driveClients();
-//    }
     try {
-
         //Record free ROB space for next cycle
       theAvailableROB = theCore->availableROB();
 
@@ -352,7 +348,7 @@ public:
     }
 
     CORE_DBG("--------------FINISH MICROARCH------------------------");
-}
+  }
 
   void translate(Flexus::SharedTypes::Translation & aTranslation) {
       // Msutherl, Oct'18, move to direct CoreModel call
@@ -382,6 +378,7 @@ private:
 
     //Obtain new state from simics
     VirtualMemoryAddress redirect_address(theCPU->getPC());
+    CORE_DBG("Redirecting... " << redirect_address);
 
     resetArchitecturalState();
 
@@ -400,7 +397,11 @@ void resetArchitecturalState()
 {
     theCore->setPC( theCPU->getPC());
     resetRoundingMode();
+<<<<<<< HEAD
     resetSpecialRegs(); // Mark removed until exceptions can be read from QEMU
+=======
+    // resetSpecialRegs(); FIXME: msutherl I removed this just to work on MMU
+>>>>>>> mmu_with_caches
     fillXRegisters();
     fillVRegisters();
 }

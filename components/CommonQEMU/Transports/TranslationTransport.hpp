@@ -48,6 +48,8 @@
 
 #include <core/transport.hpp>
 
+#pragma GCC diagnostic ignored "-Wunused-variable"
+
 namespace Flexus {
 namespace SharedTypes {
 
