@@ -27,10 +27,13 @@
 
 
 using namespace Flexus::Core;
+using Flexus::SharedTypes::Translation;
 
 #if FLEXUS_TARGET_IS(v9) || FLEXUS_TARGET_IS(ARM)// For now, we just disable that.
 
 #include <core/configuration.hpp>
+#include <core/MakeUniqueWrapper.hpp>
+#include <core/qemu/bitUtilities.hpp>
 
 namespace Flexus {
 namespace Qemu {
@@ -82,7 +85,6 @@ void armProcessorImpl::handleInterrupt( long long aVector) {
   DBG_( Tmp, ( << "CPU[" << Qemu::API::QEMU_get_cpu_index(*this) << "] Interrupt " << std::hex << aVector << std::dec ));
   thePendingInterrupt = aVector;
 }
-
 
 uint32_t armProcessorImpl::fetchInstruction(Translation & aTranslation) {
   API::logical_address_t addr = aTranslation.theVaddr;
@@ -425,7 +427,15 @@ int ProcessorMapper::numProcessors() {
   return (int)(theMapper->theProcMap.size());
 }
 
-} //end Namespace Qemu
+// Msutherl: Fetch MMU's registers
+std::shared_ptr<mmu_regs_t>
+armProcessorImpl::getMMURegsFromQEMU() {
+    API::mmu_api_obj_t* mmu_obj = API::QEMU_get_mmu_state(theQEMUProcessorNumber);
+    mmu_regs_t* regsFromQEMU = reinterpret_cast<mmu_regs_t*>( mmu_obj->object );
+    return std::make_shared<mmu_regs_t>(*regsFromQEMU);
+}
+
+} //end Namespace Qemu 
 } //end namespace Flexus
 
 #endif // IS_V9

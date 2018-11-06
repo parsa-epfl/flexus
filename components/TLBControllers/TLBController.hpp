@@ -34,74 +34,33 @@
 // CONTRACT, TORT OR OTHERWISE).
 //
 // DO-NOT-REMOVE end-copyright-block
+//
 
+/* Basic goals:
+ * - sub-class the CacheController with TLB specific functionality
+ * - adds a large interface to the MMU component in core/qemu
+ * - improve readability and usability
+ */
 
-#ifndef FLEXUS_armDECODER_INSTRUCTIONCOMPONENTBUFFER_HPP_INCLUDED
-#define FLEXUS_armDECODER_INSTRUCTIONCOMPONENTBUFFER_HPP_INCLUDED
+#ifndef FLEXUS_TLB_CONTROLLER_HPP_INCLUDED
+#define FLEXUS_TLB_CONTROLLER_HPP_INCLUDED
 
-#include <iostream>
-#include <core/boost_extensions/intrusive_ptr.hpp>
+#include <components/Cache/CacheController.hpp>
 
-#include <core/types.hpp>
-#include <core/stats.hpp>
+#define DBG_DeclareCategories TLBCtrl 
+#define DBG_SetDefaultOps AddCat(TLBCtrl)
+#include DBG_Control()
 
-static const size_t kICBSize = 2048;
+namespace nTLB {
 
-namespace narmDecoder {
-extern Flexus::Stat::StatCounter theICBs;
+using namespace nMessageQueues;
+using namespace nCache;
+typedef Flexus::SharedTypes::MemoryTransport Transport;
+typedef Flexus::SharedTypes::PhysicalMemoryAddress MemoryAddress;
 
-struct InstructionComponentBuffer {
+} // end namespace nTLB 
 
-  char theComponentBuffer[kICBSize];
-  char * theNextAlloc;
-  size_t theFreeSpace;
-  InstructionComponentBuffer * theExtensionBuffer;
+#define DBG_Reset
+#include DBG_Control()
 
-  InstructionComponentBuffer()
-    : theNextAlloc(theComponentBuffer)
-    , theFreeSpace(kICBSize)
-    , theExtensionBuffer(0) {
-    ++theICBs;
-  }
-
-  ~InstructionComponentBuffer() {
-    if (theExtensionBuffer) {
-      delete theExtensionBuffer;
-      theExtensionBuffer = 0;
-    }
-    --theICBs;
-  }
-
-  void * alloc(size_t aSize) {
-    DBG_Assert( aSize < kICBSize );
-    if ( theFreeSpace < aSize ) {
-      if (theExtensionBuffer == 0) {
-        theExtensionBuffer = new InstructionComponentBuffer();
-      }
-      return theExtensionBuffer->alloc( aSize );
-    }
-    void * tmp = theNextAlloc;
-    theNextAlloc += aSize;
-    theFreeSpace -= aSize;
-    DBG_Assert(theFreeSpace >= 0);
-    return tmp;
-  }
-};
-
-struct UncountedComponent {
-  void operator delete(void *) {
-    /*Nothing to do on delete*/ // FIXME: this leaks, since icb.alloc() calls new(...)
-  }
-  void * operator new( size_t aSize, InstructionComponentBuffer & aICB ) {
-    return aICB.alloc( aSize );
-  }
-
-private:
-  void * operator new( size_t ); //Not allowed
-
-};
-
-} //narmDecoder
-
-#endif //FLEXUS_armDECODER_INSTRUCTIONCOMPONENTBUFFER_HPP_INCLUDED
-
+#endif  // FLEXUS_TLB_CONTROLLER_HPP_INCLUDED

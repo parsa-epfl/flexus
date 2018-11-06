@@ -47,6 +47,8 @@
 #include <components/uArchARM/RegisterType.hpp>
 #include "components/uArchARM/CoreModel/PSTATE.hpp"
 
+#include <core/MakeUniqueWrapper.hpp>
+
 #include "SemanticActions.hpp"
 #include "OperandMap.hpp"
 #include "Conditions.hpp"

@@ -34,74 +34,25 @@
 // CONTRACT, TORT OR OTHERWISE).
 //
 // DO-NOT-REMOVE end-copyright-block
+//
 
+/* Basic goals:
+ * - sub-class the CacheController with TLB specific functionality
+ * - adds a large interface to the MMU component in core/qemu
+ * - improve readability and usability
+ */
+#include "TLBController.hpp"
 
-#ifndef FLEXUS_armDECODER_INSTRUCTIONCOMPONENTBUFFER_HPP_INCLUDED
-#define FLEXUS_armDECODER_INSTRUCTIONCOMPONENTBUFFER_HPP_INCLUDED
+using namespace Flexus;
 
-#include <iostream>
-#include <core/boost_extensions/intrusive_ptr.hpp>
+#define DBG_DeclareCategories TLBCtrl 
+#define DBG_SetDefaultOps AddCat(TLBCtrl) Set( (CompName) << theName ) Set( (CompIdx) << theNodeId )
+#include DBG_Control()
 
-#include <core/types.hpp>
-#include <core/stats.hpp>
+namespace nTLB {
 
-static const size_t kICBSize = 2048;
+} // end namespace nTLB
 
-namespace narmDecoder {
-extern Flexus::Stat::StatCounter theICBs;
-
-struct InstructionComponentBuffer {
-
-  char theComponentBuffer[kICBSize];
-  char * theNextAlloc;
-  size_t theFreeSpace;
-  InstructionComponentBuffer * theExtensionBuffer;
-
-  InstructionComponentBuffer()
-    : theNextAlloc(theComponentBuffer)
-    , theFreeSpace(kICBSize)
-    , theExtensionBuffer(0) {
-    ++theICBs;
-  }
-
-  ~InstructionComponentBuffer() {
-    if (theExtensionBuffer) {
-      delete theExtensionBuffer;
-      theExtensionBuffer = 0;
-    }
-    --theICBs;
-  }
-
-  void * alloc(size_t aSize) {
-    DBG_Assert( aSize < kICBSize );
-    if ( theFreeSpace < aSize ) {
-      if (theExtensionBuffer == 0) {
-        theExtensionBuffer = new InstructionComponentBuffer();
-      }
-      return theExtensionBuffer->alloc( aSize );
-    }
-    void * tmp = theNextAlloc;
-    theNextAlloc += aSize;
-    theFreeSpace -= aSize;
-    DBG_Assert(theFreeSpace >= 0);
-    return tmp;
-  }
-};
-
-struct UncountedComponent {
-  void operator delete(void *) {
-    /*Nothing to do on delete*/ // FIXME: this leaks, since icb.alloc() calls new(...)
-  }
-  void * operator new( size_t aSize, InstructionComponentBuffer & aICB ) {
-    return aICB.alloc( aSize );
-  }
-
-private:
-  void * operator new( size_t ); //Not allowed
-
-};
-
-} //narmDecoder
-
-#endif //FLEXUS_armDECODER_INSTRUCTIONCOMPONENTBUFFER_HPP_INCLUDED
-
+#define DBG_Reset
+#include DBG_Control()
+//EOF

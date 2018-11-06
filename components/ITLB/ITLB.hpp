@@ -35,73 +35,39 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
+// Changelog:
+//  - June'18: msutherl - basic TLB definition, no real timing info
 
-#ifndef FLEXUS_armDECODER_INSTRUCTIONCOMPONENTBUFFER_HPP_INCLUDED
-#define FLEXUS_armDECODER_INSTRUCTIONCOMPONENTBUFFER_HPP_INCLUDED
+#include <core/simulator_layout.hpp>
 
-#include <iostream>
-#include <core/boost_extensions/intrusive_ptr.hpp>
+#include <components/CommonQEMU/Transports/MemoryTransport.hpp>
+#include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 
-#include <core/types.hpp>
-#include <core/stats.hpp>
+#define FLEXUS_BEGIN_COMPONENT ITLB
+#include FLEXUS_BEGIN_COMPONENT_DECLARATION()
 
-static const size_t kICBSize = 2048;
+COMPONENT_PARAMETERS(
+  PARAMETER( Cores, int, "Number of cores", "cores", 1 )
+  PARAMETER( CacheLevel, Flexus::SharedTypes::tFillLevel, "CacheLevel", "level", Flexus::SharedTypes::eUnknown )
+  PARAMETER( ArrayConfiguration, std::string, "Configuration of cache array (STD:sets=1024:assoc=16:repl=LRU", "array_config", "STD:sets=1024:assoc=16:repl=LRU" )
+  PARAMETER( TextFlexpoints, bool, "Store flexpoints as text files (compatible with old FastCache component)", "text_flexpoints", false )
+  PARAMETER( GZipFlexpoints, bool, "Compress flexpoints with gzip", "gzip_flexpoints", true )
+);
 
-namespace narmDecoder {
-extern Flexus::Stat::StatCounter theICBs;
+COMPONENT_INTERFACE(
+  DYNAMIC_PORT_ARRAY(PushOutput, MemoryTransport, FrontSideOut_I )
+  DYNAMIC_PORT_ARRAY(PushInput, MemoryTransport, FrontSideIn_Request)
+  PORT(PushOutput, MemoryTransport, BackSideOut_Reply)
+  PORT(PushOutput, MemoryTransport, BackSideOut_Snoop)
+  PORT(PushOutput, MemoryTransport, BackSideOut_Request)
+  PORT(PushInput, MemoryTransport, BackSideIn_Request)
+  PORT(PushInput, MemoryTransport, BackSideIn_Reply)
 
-struct InstructionComponentBuffer {
+  PORT( PushInput, TranslatedAddresses, AddressesToTranslate )
+  PORT( PushOutput, TranslatedAddresses, TranslationsToReturn )
 
-  char theComponentBuffer[kICBSize];
-  char * theNextAlloc;
-  size_t theFreeSpace;
-  InstructionComponentBuffer * theExtensionBuffer;
+  DRIVE(CacheDrive)
+);
 
-  InstructionComponentBuffer()
-    : theNextAlloc(theComponentBuffer)
-    , theFreeSpace(kICBSize)
-    , theExtensionBuffer(0) {
-    ++theICBs;
-  }
-
-  ~InstructionComponentBuffer() {
-    if (theExtensionBuffer) {
-      delete theExtensionBuffer;
-      theExtensionBuffer = 0;
-    }
-    --theICBs;
-  }
-
-  void * alloc(size_t aSize) {
-    DBG_Assert( aSize < kICBSize );
-    if ( theFreeSpace < aSize ) {
-      if (theExtensionBuffer == 0) {
-        theExtensionBuffer = new InstructionComponentBuffer();
-      }
-      return theExtensionBuffer->alloc( aSize );
-    }
-    void * tmp = theNextAlloc;
-    theNextAlloc += aSize;
-    theFreeSpace -= aSize;
-    DBG_Assert(theFreeSpace >= 0);
-    return tmp;
-  }
-};
-
-struct UncountedComponent {
-  void operator delete(void *) {
-    /*Nothing to do on delete*/ // FIXME: this leaks, since icb.alloc() calls new(...)
-  }
-  void * operator new( size_t aSize, InstructionComponentBuffer & aICB ) {
-    return aICB.alloc( aSize );
-  }
-
-private:
-  void * operator new( size_t ); //Not allowed
-
-};
-
-} //narmDecoder
-
-#endif //FLEXUS_armDECODER_INSTRUCTIONCOMPONENTBUFFER_HPP_INCLUDED
-
+#include FLEXUS_END_COMPONENT_DECLARATION()
+#define FLEXUS_END_COMPONENT ITLB

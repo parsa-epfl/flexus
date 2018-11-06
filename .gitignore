@@ -11,5 +11,4 @@
 *.fresh
 *.so
 *.swp
-components/v9Decoder/
-components/uArch/
+tags

@@ -53,6 +53,10 @@ public:
     address = other.address;
     return *this;
   }
+  MemoryAddress_& operator |= (MemoryAddress_ const& other) {
+      address |= other.address;
+      return *this;
+  }
   MemoryAddress_& operator += (underlying_type const & addend) {
     address += addend;
     return *this;

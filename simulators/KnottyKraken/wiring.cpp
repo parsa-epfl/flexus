@@ -25,6 +25,7 @@ std::string theSimulatorName = "KnottyKraken v1.0";
 #include<components/armDecoder/armDecoder.hpp>
 #include<components/uArchARM/uArchARM.hpp>
 #include<components/SplitDestinationMapper/SplitDestinationMapper.hpp>
+//#include <components/ITLB/ITLB.hpp>
 
 
 #include FLEXUS_END_DECLARATION_SECTION()
@@ -32,6 +33,7 @@ std::string theSimulatorName = "KnottyKraken v1.0";
 
 #include FLEXUS_BEGIN_COMPONENT_CONFIGURATION_SECTION()
 
+//CREATE_CONFIGURATION( ITLB , "TEST_ITLB", theITLBCfg );
 
 CREATE_CONFIGURATION( FetchAddressGenerate, "fag", theFAGCfg );
 CREATE_CONFIGURATION( uFetch, "ufetch", theuFetchCfg );
@@ -205,7 +207,7 @@ bool initializeParameters() {
   theNicCfg.SendCapacity.initialize(1);
 
   //theNetworkCfg.NetworkTopologyFile.initialize("16node-torus.topology");
-  theNetworkCfg.NetworkTopologyFile.initialize("/home/hoss/qflex/flexus/simulators/KnottyKraken/1x3-mesh.topology");
+  theNetworkCfg.NetworkTopologyFile.initialize("/home/msutherl/qflex/flexus/simulators/KnottyKraken/1x3-mesh.topology");
   theNetworkCfg.NumNodes.initialize( 3 );
   theNetworkCfg.VChannels.initialize( 3 );
 
@@ -249,6 +251,14 @@ bool initializeParameters() {
   theMagicBreakCfg.TerminateOnMagicBreak.initialize(-1);
   theMagicBreakCfg.EnableIterationCounts.initialize(false);
 
+  /* Msutherl: put ITLB stuff here because I'm too lazy to make a postload
+  theITLBCfg.Cores.initialize(1);
+  theITLBCfg.CacheLevel.initialize(eL1);
+  theITLBCfg.ArrayConfiguration.initialize("STD:size=4096:assoc=4:repl=LRU");
+  theITLBCfg.TextFlexpoints.initialize(false);
+  theITLBCfg.GZipFlexpoints.initialize(false);
+  */
+
   return true; //true = Abort simulation if parameters are not initialized
 }
 
@@ -258,6 +268,8 @@ bool initializeParameters() {
 #include FLEXUS_BEGIN_COMPONENT_INSTANTIATION_SECTION()
 //All component Instances are created here.  This section
 //also creates handles for each component
+//
+//FLEXUS_INSTANTIATE_COMPONENT_ARRAY( ITLB , theITLBCfg, theITLB, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( FetchAddressGenerate, theFAGCfg, theFAG, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( uFetch, theuFetchCfg, theuFetch, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
@@ -290,6 +302,10 @@ WIRE( theuFetch, AvailableFIQ,          theDecoder, AvailableFIQOut       )
 WIRE( theuFetch, FetchBundleOut,        theDecoder, FetchBundleIn         )
 WIRE( theDecoder, SquashOut,            theuFetch, SquashIn               )
 WIRE( theuArch, ChangeCPUState,         theuFetch, ChangeCPUState         )
+
+// Fetch to Translate: MARK
+WIRE( theuFetch, TLBLookupOut,          theuArch, AddressesToTranslate     )
+WIRE( theuArch, TranslationsToReturn,    theuFetch, TLBReturnIn            )
 
 //Decoder to uArch
 WIRE( theDecoder, AvailableDispatchIn,  theuArch, AvailableDispatchOut    )

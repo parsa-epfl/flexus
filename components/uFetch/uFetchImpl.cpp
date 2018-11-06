@@ -271,6 +271,9 @@ class FLEXUS_COMPONENT(uFetch) {
 
   std::vector<CPUState> theCPUState;
 
+  // Magic for checking TLB walk.
+  TranslatedAddresses TranslationsFromTLB;
+
 private:
   //I-Cache manipulation functions
   //=================================================================
@@ -371,6 +374,13 @@ public:
     theI.loadState(fname);
   }
 
+  // Msutherl: TLB in-out functions
+  FLEXUS_PORT_ALWAYS_AVAILABLE(TLBReturnIn);
+  void push( interface::TLBReturnIn const &, TranslatedAddresses& retdTranslations ) {
+      TranslationsFromTLB = retdTranslations;
+      DBG_(Iface,( << "Set TranslationsFromTLB component...."));
+  }
+
   //FetchAddressIn
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(FetchAddressIn);
   void push( interface::FetchAddressIn const &, index_t anIndex, boost::intrusive_ptr<FetchCommand> & aCommand) {
@@ -458,12 +468,12 @@ private:
 
       ++ (*theLastPrefetchVTagSet[anIndex]);
       VirtualMemoryAddress vprefetch = VirtualMemoryAddress( *theLastPrefetchVTagSet[anIndex] << theIndexShift );
-      Flexus::Qemu::Translation xlat;
+      Flexus::SharedTypes::Translation xlat;
       xlat.theVaddr = vprefetch;
 //      xlat.theTL = theCPUState[anIndex].theTL;
       xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
-      xlat.theType = Flexus::Qemu::Translation::eFetch;
-      cpu(anIndex)->translate(xlat);
+      xlat.theType = Flexus::SharedTypes::Translation::eFetch;
+      cpu(anIndex)->translateInstruction(vprefetch); // msutherl
       if (! xlat.thePaddr ) {
         //Unable to translate for prefetch
         theLastPrefetchVTagSet[anIndex] = boost::none;
@@ -498,12 +508,12 @@ private:
       }
     } else {
       DBG_(Tmp, (<<"Not in Flexus cache...Will look into Qemu now!"));
-      Flexus::Qemu::Translation xlat;
+      Flexus::SharedTypes::Translation xlat;
       xlat.theVaddr = vaddr;
 //      xlat.theTL = theCPUState[anIndex].theTL;
       xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
-      xlat.theType = Flexus::Qemu::Translation::eFetch;
-      cpu(anIndex)->translate(xlat);
+      xlat.theType = Flexus::SharedTypes::Translation::eFetch;
+      cpu(anIndex)->translateInstruction(vaddr); // Msutherl
       paddr = xlat.thePaddr;
       if (paddr == 0) {
           assert(false);
@@ -833,38 +843,37 @@ private:
       FETCH_DBG("starting to process the fetches..." << remaining_fetch);
 
       while ( remaining_fetch > 0 && ( theFAQ[anIndex].size() > 0 || theFlexus->quiescing())) {
-        bool from_icache(false);
+          bool from_icache(false);
 
-        FetchAddr fetch_addr = theFAQ[anIndex].front();
-        VirtualMemoryAddress block_addr( fetch_addr.theAddress & theBlockMask);
+          FetchAddr fetch_addr = theFAQ[anIndex].front();
+          VirtualMemoryAddress block_addr( fetch_addr.theAddress & theBlockMask);
 
-        if ( available_lines.count( block_addr ) == 0) {
-          //Line needs to be fetched from I-cache
-          if (available_lines.size() >= cfg.MaxFetchLines) {
-            //Reached limit of I-cache reads per cycle
-            break;
+          if ( available_lines.count( block_addr ) == 0) {
+              //Line needs to be fetched from I-cache
+              if (available_lines.size() >= cfg.MaxFetchLines) {
+                  //Reached limit of I-cache reads per cycle
+                  break;
+              }
+
+              // Notify the PowerTracker of Icache access
+              bool garbage = true;
+              FLEXUS_CHANNEL(InstructionFetchSeen) << garbage;
+
+              if ( ! cfg.PerfectICache ) {
+                  //Do I-cache access here.
+                  if (! icacheLookup( anIndex, block_addr ) ) {
+                      break;
+                  }
+                  from_icache = true;
+              }
+              else
+              {
+                  DBG_(Verb, (<<"FETCH UNIT: Instruction Cache disabled!"));
+              }
+              available_lines.insert( block_addr );
           }
 
-          // Notify the PowerTracker of Icache access
-          bool garbage = true;
-          FLEXUS_CHANNEL(InstructionFetchSeen) << garbage;
-
-          if ( ! cfg.PerfectICache ) {
-            //Do I-cache access here.
-            if (! icacheLookup( anIndex, block_addr ) ) {
-              break;
-            }
-            from_icache = true;
-          }
-          else
-          {
-              DBG_(Verb, (<<"FETCH UNIT: Instruction Cache disabled!"));
-          }
-
-          available_lines.insert( block_addr );
-        }
-
-        uint32_t op_code = fetchFromQemu( anIndex, fetch_addr.theAddress );
+        int64_t op_code = fetchFromQemu( anIndex, fetch_addr.theAddress );
         
         theFAQ[anIndex].pop_front();
         //DBG_(Tmp, ( << "\e[1;34m" << "FETCH UNIT: Fetched " << fetch_addr.theAddress << " and poping it out of FAQ" << "\e[0m" ) );
@@ -873,7 +882,7 @@ private:
                                       , op_code
                                       , fetch_addr.theBPState
                                       , theFetchReplyTransactionTracker[anIndex]
-                                                   )
+                                      )
                                     );
         if (from_icache && theLastMiss[anIndex] && theLastPhysical == theLastMiss[anIndex]->first) {
           bundle->theFillLevels.push_back(theLastMiss[anIndex]->second);
@@ -912,19 +921,42 @@ private:
   uint32_t fetchFromQemu(index_t anIndex, VirtualMemoryAddress const & anAddress) {
     FETCH_DBG("Address = " << anAddress);
     uint32_t op_code;
-    Flexus::Qemu::Translation xlat;
+    Flexus::SharedTypes::Translation xlat;
     xlat.theVaddr = anAddress;
 //    xlat.theTL = theCPUState[anIndex].theTL;
     xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
-    xlat.theType = Flexus::Qemu::Translation::eFetch;
-//    xlat.theException = 0; // just for now
+    xlat.theType = Flexus::SharedTypes::Translation::eFetch;
+    xlat.theException = 0; // just for now
 
-    op_code = cpu(anIndex)->fetchInstruction(xlat);
-    if (true /*xlat.theException == 0*/) {
-        FETCH_DBG(anAddress << " op: " << "  end: " << __builtin_bswap32 ((uint32_t)op_code) << "  dec:" << op_code << "  hex:" << std::hex << op_code << std::dec );
-        FETCH_DBG("This is from Qemu: " << cpu(anIndex)->disassemble(anAddress) );
+    TranslatedAddresses SendUsToTLB(new TranslationVecWrapper);
+    SendUsToTLB->addNewTranslation( xlat );
+    DBG_Assert( FLEXUS_CHANNEL(TLBLookupOut).available() );
+    FLEXUS_CHANNEL(TLBLookupOut) << SendUsToTLB;
+    // push-push should always mean TranslationsFromTLB is filled
 
-        return op_code;
+    DBG_(Iface,( << "Starting magic translation after sending to TLB...."));
+    PhysicalMemoryAddress magicTranslation = cpu(anIndex)->translateInstruction_QemuImpl(anAddress);
+    Flexus::SharedTypes::Translation tr = TranslationsFromTLB->internalContainer.front();
+    DBG_Assert( tr.theVaddr == anAddress, ( << "In FetchFromQEMU, TranslationsFromTLB->vaddr = " << tr.theVaddr << ", fetchVaddr = " << anAddress ));
+    if( tr.thePaddr == magicTranslation ) {
+        DBG_(Tmp, ( << "Magic QEMU translation == MMU Translation. Vaddr = "
+                    << std::hex << anAddress 
+                    << std::dec << ", Paddr = " 
+                    << std::hex << tr.thePaddr << std::dec));
+    } else {
+        DBG_Assert(false, ( << "ERROR: Magic QEMU translation NOT EQUAL TO MMU Translation. Vaddr = " << std::hex << anAddress 
+                    << std::dec << ", PADDR_MMU = " 
+                    << std::hex << tr.thePaddr 
+                    << std::dec << ", PADDR_QEMU = "
+                    << std::hex << magicTranslation << std::dec));
+    }
+
+    Flexus::SharedTypes::Translation gimme;
+    op_code = cpu(anIndex)->fetchInstruction(gimme); // magic QEMU
+    if (xlat.theException == 0) {
+      //DBG_(Tmp, (<<"FETCH UNIT: Not an exception"));
+      DBG_(Tmp, Comp(*this) ( <<"\e[1;34m" << "FETCH UNIT: " << anAddress << " op: " << std::hex << std::setw(8) << op_code << std::dec<< "\e[0m" ) );//NOOSHIN
+      return op_code;
     } else {
 //      FETCH_DBG("Hit an exception");
 //      FETCH_DBG("No translation for " << anAddress << " TL: " << std::hex << theCPUState[anIndex].theTL <<

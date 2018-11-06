@@ -391,20 +391,20 @@ void SemanticInstruction::describe(std::ostream & anOstream) const {
 }
 
 eExceptionType SemanticInstruction::retryTranslation() {
-  Flexus::Qemu::Translation xlat;
+  Flexus::SharedTypes::Translation xlat;
   xlat.theVaddr = pc();
   //xlat.theTL = core()->getTL();
   xlat.thePSTATE = core()->getPSTATE();
-  xlat.theType = Flexus::Qemu::Translation::eFetch;
+  xlat.theType = Flexus::SharedTypes::Translation::eFetch;
   Flexus::Qemu::Processor::getProcessor(theCPU)->translate(xlat);
-  return kException_None; // FIXME - MMU exceptions need to be raised here;
+  return kException_None/*xlat.theException*/;
 }
 
 PhysicalMemoryAddress SemanticInstruction::translate() {
-  Flexus::Qemu::Translation xlat;
+  Flexus::SharedTypes::Translation xlat;
   xlat.theVaddr = pc();
   xlat.thePSTATE = core()->getPSTATE();
-  xlat.theType = Flexus::Qemu::Translation::eFetch;
+  xlat.theType = Flexus::SharedTypes::Translation::eFetch;
   Flexus::Qemu::Processor::getProcessor(theCPU)->translate(xlat);
   return xlat.thePaddr;
 }

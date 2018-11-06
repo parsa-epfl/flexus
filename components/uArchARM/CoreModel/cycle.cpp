@@ -43,6 +43,7 @@
 #include "../ValueTracker.hpp"
 
 #include <components/CommonQEMU/Slices/FillLevel.hpp>
+#include <components/CommonQEMU/Slices/Translation.hpp>
 #include <components/CommonQEMU/TraceTracker.hpp>
 
 //#include <components/WhiteBox/WhiteBoxIface.hpp>
@@ -424,12 +425,12 @@ void CoreImpl::checkTranslation( boost::intrusive_ptr<Instruction> anInsn) {
   DBG_(Tmp, ( << " in checkTranslation!! " ) );//NOOSHIN
   if (!anInsn->isAnnulled() && !anInsn->isSquashed()) {
     DBG_(Tmp, ( << " is not Annulled " ) );//NOOSHIN
-    Flexus::Qemu::Translation xlat;
+    Flexus::SharedTypes::Translation xlat;
     xlat.theVaddr = iter->theVaddr;
 //    xlat.theASI = iter->theASI;
     //xlat.theTL = getTL();
     xlat.thePSTATE = getPSTATE() ;
-    xlat.theType = ( iter->isStore() ? Flexus::Qemu::Translation::eStore :  Flexus::Qemu::Translation::eLoad) ;
+    xlat.theType = ( iter->isStore() ? Flexus::SharedTypes::Translation::eStore :  Flexus::SharedTypes::Translation::eLoad) ;
     translate(xlat);
     iter->theException = kException_None;
     if (iter->theException < kException_None ) {

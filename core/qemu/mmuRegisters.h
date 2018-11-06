@@ -47,18 +47,33 @@ typedef struct mmu_bit_configs {
     uint8_t TGn_SZ_NumBits;
 } bit_configs_t; 
 
-typedef struct mmu_regs {
+#define NUM_AARCH64_ELS 4
+
+class mmu_regs_t {
+public:
     /* Msutherl - june'18
      * Defined all registers, will only code MMU for stage 1 tablewalk (no monitor or hypervisor)
      */
+    mmu_reg_t SCTLR[NUM_AARCH64_ELS];
+    mmu_reg_t TCR[NUM_AARCH64_ELS];
 
-    mmu_reg_t SCTLR[4];
-    mmu_reg_t TCR[4];
-
-    mmu_reg_t TTBR0[4];
-    mmu_reg_t TTBR1[3]; // only EL1/EL2
+    mmu_reg_t TTBR0[NUM_AARCH64_ELS];
+    mmu_reg_t TTBR1[2+1]; // only EL1/EL2 (indexes 1 and 2)
 
     mmu_reg_t ID_AA64MMFR0_EL1; // only implemented in EL1 as far as I know.
+
+    mmu_regs_t( mmu_regs_t& copyMe ) {
+        for(unsigned i = 0; i < NUM_AARCH64_ELS; i++ ){
+            SCTLR[i] = copyMe.SCTLR[i];
+            TCR[i] = copyMe.TCR[i];
+            TTBR0[i] = copyMe.TTBR0[i];
+        }
+        TTBR1[EL1] = copyMe.TTBR1[EL1];
+        TTBR1[EL2] = copyMe.TTBR1[EL2];
+        ID_AA64MMFR0_EL1 = copyMe.ID_AA64MMFR0_EL1; // only implemented in EL1 as far as I know.
+    }
+
+    mmu_regs_t ( ) { }
 
     /* type      -      ARM_NAME            - funct.
      * ----DO NOT REMOVE---- PEOPLE WILL NEED TO KNOW THIS *
@@ -77,6 +92,6 @@ typedef struct mmu_regs {
     mmu_reg_t           TTBR0_EL2;          // controls lower address range for EL2 (default 0x0 - 0xffff ffff ffff), config. as above
     mmu_reg_t           TTBR1_EL2;          // upper address range for EL2
      * ----DO NOT REMOVE---- PEOPLE WILL NEED TO KNOW THIS */
-} mmu_regs_t;
+};
 
 #endif // FLEXUS_ARM_MMU_REGISTERS_HPP_INCLUDED

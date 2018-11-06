@@ -45,6 +45,8 @@
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 #include <components/CommonQEMU/Slices/FillLevel.hpp>
+#include <components/CommonQEMU/Slices/Translation.hpp>
+#include <core/qemu/mai_api.hpp>
 
 namespace Flexus {
 namespace SharedTypes {
@@ -52,6 +54,7 @@ namespace SharedTypes {
 using boost::counted_base;
 using Flexus::SharedTypes::VirtualMemoryAddress;
 using Flexus::SharedTypes::TransactionTracker;
+using Flexus::SharedTypes::Translation;
 
 enum eBranchType {
   kNonBranch
@@ -132,12 +135,30 @@ struct FetchedOpcode {
   { }
 };
 
+struct TranslationVecWrapper : public boost::counted_base {
+    std::vector< Flexus::SharedTypes::Translation > internalContainer; // from mai_api
+
+    void addNewTranslation(Flexus::SharedTypes::Translation aTr) {
+        internalContainer.push_back(aTr);
+    }
+
+    void updateExistingTranslation(VirtualMemoryAddress aVAddr, PhysicalMemoryAddress translatedAddress) {
+        for( auto& translation : internalContainer ) {
+            if( translation.theVaddr == aVAddr ) {
+                translation.thePaddr = translatedAddress;
+                return;
+            }
+        }
+    }
+};
+
 struct FetchBundle : public boost::counted_base {
   std::list< FetchedOpcode > theOpcodes;
   std::list< tFillLevel > theFillLevels;
 };
 
 typedef boost::intrusive_ptr<FetchBundle> pFetchBundle;
+typedef boost::intrusive_ptr<TranslationVecWrapper> TranslatedAddresses;
 
 struct CPUState {
   int32_t theTL;

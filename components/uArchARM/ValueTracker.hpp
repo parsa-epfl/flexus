@@ -85,9 +85,9 @@ namespace API = Flexus::Qemu::API;
 
 #define DBG_DeclareCategories Special
 #include DBG_Control()
+using namespace Flexus::SharedTypes;
 
 namespace nuArchARM {
-using namespace Flexus::SharedTypes;
 
 inline uint64_t mask( eSize aSize) {
   switch (aSize) {

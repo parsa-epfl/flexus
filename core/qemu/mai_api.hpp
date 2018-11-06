@@ -7,11 +7,14 @@
 #include <core/exception.hpp>
 #include <core/qemu/configuration_api.hpp>
 #include <core/types.hpp>
+
+
 using namespace Flexus::Core;
+#include <components/CommonQEMU/Slices/Translation.hpp>
+#include <core/qemu/mmuRegisters.h>
 
 namespace Flexus {
 namespace Qemu {
-
 
 void onInterrupt (void * aPtr, void* anObj, long long aVector);
 
@@ -235,6 +238,12 @@ uint64_t readHCREL2() const {
 
 };
 
+
+
+////////// Msutherl
+/* - from here down
+
+using namespace MMU;
 struct Translation {
   VirtualMemoryAddress theVaddr;
   int thePSTATE;
@@ -251,7 +260,17 @@ struct Translation {
   bool isXEndian();
   bool isInterrupt();
   bool isTranslating();
+
+  // Msutherl: additional stuff....
+  uint8_t ELRegime;
+  uint8_t requiredTableLookups;
+  uint8_t currentLookupLevel;
+  bool isBR0;
+  uint32_t granuleSize;
+  std::shared_ptr<MMU::TTResolver> TTAddressResolver;
+  uint64_t BlockSizeFromTTs;
 };
+*/
 
 class armProcessorImpl :  public BaseProcessorImpl {
 private:
@@ -259,44 +278,55 @@ private:
   mutable API::armInterface_t * theARMAPI;
   int thePendingInterrupt;
   bool theInterruptsConnected;
-
   void initialize();
-  void handleInterrupt( long long aVector);
+  void handleInterrupt( long long aVector );
 
 public:
   explicit armProcessorImpl(API::conf_object_t * aProcessor)
     : BaseProcessorImpl(aProcessor)
+    , theARMAPI(nullptr)
     , thePendingInterrupt( API::QEMU_PE_No_Exception )
-    , theInterruptsConnected(false) {
-    theARMAPI = 0;
-  }
+    , theInterruptsConnected(false) { }
+
   API::armInterface_t * arm() const {
     if (theARMAPI == 0) {
-      assert(false);
+      assert(false); //FIXME
     }
     return theARMAPI;
   }
+
+
+public:
+  uint8_t getQEMUExceptionLevel( ) const { 
+      return API::QEMU_get_current_el(*this);
+  }
+
   unsigned long long interruptRead(VirtualMemoryAddress anAddress, int anASI) const;
 
   long long getSystemTickInterval() const {
     return (long long)API::QEMU_get_tick_frequency(*this);
   }
 
-  //Public MMU API
-  void translate(Translation & aTranslation) const;
-  uint32_t fetchInstruction(Translation & aTranslation);
+    // Msutherl - june'18
+  // - added smaller MMU interface (resolving walks + memory accesses resolved in Flexus components)
+  std::shared_ptr<mmu_regs_t> getMMURegsFromQEMU();
 
   bits readVAddr(VirtualMemoryAddress anAddress, int aSize) const;
-  bits readVAddrXendian(Translation & aTranslation, int aSize) const;
+  bits readVAddrXendian(Flexus::SharedTypes::Translation & aTranslation, int aSize) const;
 
-
-
+  //QemuImpl MMU API
   PhysicalMemoryAddress translateInstruction_QemuImpl(VirtualMemoryAddress anAddress) const;
-  long fetchInstruction_QemuImpl(VirtualMemoryAddress const & anAddress);
+  uint32_t fetchInstruction(Flexus::SharedTypes::Translation& aTr );
 
-  unsigned long long readVAddr_QemuImpl(VirtualMemoryAddress anAddress, int anASI, int aSize) const;
+  unsigned long long readVAddr_QemuImpl(VirtualMemoryAddress anAddress, int aSize) const;
   unsigned long long readVAddrXendian_QemuImpl(VirtualMemoryAddress anAddress, int anASI, int aSize) const;
   void translate_QemuImpl(  API::arm_memory_transaction_t & xact, VirtualMemoryAddress anAddress, int anASI ) const;
+
+
+  // TODO: remove me when it's time
+  void translate(Flexus::SharedTypes::Translation & aTranslation) const {
+      DBG_Assert( false, ( << "DIDN'T WANT TO EVER GET HERE........"));
+  }
 
   int advance();
   int getPendingException() const;
@@ -318,10 +348,13 @@ public:
 
   explicit Processor(API::conf_object_t * aProcessor):
     base( PROCESSOR_IMPL (aProcessor) ) {}
-
-  operator API::conf_object_t * () {
-    return theImpl;
+ 
+  /*
+  operator API::conf_object_t* () {
+    return *this ;
   }
+  */
+  
 
   static Processor getProcessor(int aProcessorNumber) {
     return Processor(API::QEMU_get_cpu_by_index(ProcessorMapper::mapFlexusIndex2ProcNum(aProcessorNumber)));

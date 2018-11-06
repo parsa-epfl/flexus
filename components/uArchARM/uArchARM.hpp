@@ -122,6 +122,9 @@ COMPONENT_INTERFACE(
 
   PORT( PushOutput, bool, StoreForwardingHitSeen) // Signal a store forwarding hit in the LSQ to the PowerTracker
 
+  PORT( PushInput, TranslatedAddresses, AddressesToTranslate )
+  PORT( PushOutput, TranslatedAddresses, TranslationsToReturn )
+
   DRIVE( uArchDrive )
 );
 

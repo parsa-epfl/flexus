@@ -512,12 +512,12 @@ void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry 
   } else {
     //Map logical to physical
     DBG_(Tmp,(<<"in else of updateVaddr"));//NOOOSHIN
-    Flexus::Qemu::Translation xlat;
+    Flexus::SharedTypes::Translation xlat;
     xlat.theVaddr = anAddr ;
 //    xlat.theASI = lsq_entry->theASI;
     //xlat.theTL = getTL();
     xlat.thePSTATE = getPSTATE() ;
-    xlat.theType = ( lsq_entry->isStore() ? Flexus::Qemu::Translation::eStore :  Flexus::Qemu::Translation::eLoad) ;
+    xlat.theType = ( lsq_entry->isStore() ? Flexus::SharedTypes::Translation::eStore :  Flexus::SharedTypes::Translation::eLoad) ;
     translate(xlat);
     lsq_entry->thePaddr = xlat.thePaddr;
     lsq_entry->theSideEffect = xlat.isSideEffect() || ( ! xlat.isTranslating() /*&& ! xlat.isMMU() */);

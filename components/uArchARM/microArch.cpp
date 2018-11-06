@@ -112,7 +112,7 @@ public:
     : theName(options.name)
     , theCore(CoreModel::construct(
                 options
-                , ll::bind( &microArchImpl::translate, this, ll::_1)
+                //, ll::bind( &microArchImpl::translate, this, ll::_1)
                 , ll::bind( &microArchImpl::advance, this )
                 , _squash
                 , _redirect
@@ -143,7 +143,9 @@ public:
         setupDriveClients();
       }
 
-      DBG_( Crit, ( << theName << " connected to " << (static_cast<Flexus::Qemu::API::conf_object_t *>(theCPU))->name ));
+      DBG_( Crit, ( << theName << " connected to " << (static_cast<Flexus::Qemu::API::conf_object_t *>(*theCPU))->name ));
+    DBG_( Tmp, ( << "CORE:  Initializing MMU ")  );
+    theCore->InitMMU( theCPU->getMMURegsFromQEMU() );
 
       theAvailableROB = theCore->availableROB();
 
@@ -202,12 +204,12 @@ public:
         DBG_Assert(false);
         DBG_( Verb, ( << "Performing side-effect load to " << op->theVAddr));
 	ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).access(theCPU->id(), op->thePAddr);
-        Flexus::Qemu::Translation xlat;
+        Flexus::SharedTypes::Translation xlat;
         xlat.theVaddr = op->theVAddr;
 //        xlat.theASI = op->theASI;
         //xlat.theTL = theCore->getTL();
         xlat.thePSTATE = theCore->getPSTATE();
-        xlat.theType = Flexus::Qemu::Translation::eLoad;
+        xlat.theType = Flexus::SharedTypes::Translation::eLoad;
         op->theValue = theCPU->readVAddr( xlat.theVaddr, op->theSize );
 
       } else {
@@ -228,10 +230,10 @@ public:
     } else if ( op->theOperation == kRMWReply || op->theOperation == kCASReply ) {
       //RMW operations load int32_t theExtendedValue
       ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).access( theCPU->id(), op->thePAddr);
-      Flexus::Qemu::Translation xlat;
+      Flexus::SharedTypes::Translation xlat;
       xlat.theVaddr = op->theVAddr;
       xlat.thePSTATE = theCore->getPSTATE();
-      xlat.theType = Flexus::Qemu::Translation::eStore;
+      xlat.theType = Flexus::SharedTypes::Translation::eStore;
       op->theExtendedValue = theCPU->readVAddr( xlat.theVaddr, op->theSize );
     } else if ( op->theOperation == kStoreReply && !op->theSideEffect && ! op->theAtomic ) {
       //Need to inform ValueTracker that this store is complete
@@ -351,11 +353,14 @@ public:
 
     CORE_DBG("--------------FINISH MICROARCH------------------------");
 
-}
-
-  void translate(Flexus::Qemu::Translation & aTranslation) const {
-    theCPU->translate(aTranslation);
+  void translate(Flexus::SharedTypes::Translation & aTranslation) {
+      // Msutherl, Oct'18, move to direct CoreModel call
+      theCore->translate(aTranslation);
   }
+
+  void intermediateTranslationStep(Flexus::SharedTypes::Translation& aTranslation) {
+      theCore->intermediateTranslationStep(aTranslation);
+  } 
 
 private:
 
@@ -376,7 +381,6 @@ private:
 
     //Obtain new state from simics
     VirtualMemoryAddress redirect_address(theCPU->getPC());
-    CORE_DBG("Redirecting... " << redirect_address);
 
     resetArchitecturalState();
 
@@ -556,6 +560,9 @@ void resetArchitecturalState()
     pregsSys(state);
   }
 
+    bool IsTranslationEnabledAtEL(uint8_t & anEL) {
+        return theCore->IsTranslationEnabledAtEL(anEL);
+    }
 };
 
 std::shared_ptr<microArch> microArch::construct( uArchOptions_t options
