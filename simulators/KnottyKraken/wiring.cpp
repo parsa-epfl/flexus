@@ -207,7 +207,7 @@ bool initializeParameters() {
   theNicCfg.SendCapacity.initialize(1);
 
   //theNetworkCfg.NetworkTopologyFile.initialize("16node-torus.topology");
-  theNetworkCfg.NetworkTopologyFile.initialize("/home/msutherl/qflex/flexus/simulators/KnottyKraken/1x3-mesh.topology");
+  theNetworkCfg.NetworkTopologyFile.initialize("/home/hoss/qflex/flexus/simulators/KnottyKraken/1x3-mesh.topology");
   theNetworkCfg.NumNodes.initialize( 3 );
   theNetworkCfg.VChannels.initialize( 3 );
 

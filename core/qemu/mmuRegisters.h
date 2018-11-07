@@ -49,8 +49,8 @@ typedef struct mmu_bit_configs {
 
 #define NUM_AARCH64_ELS 4
 
-class mmu_regs_t {
-public:
+struct mmu_regs_t {
+
     /* Msutherl - june'18
      * Defined all registers, will only code MMU for stage 1 tablewalk (no monitor or hypervisor)
      */

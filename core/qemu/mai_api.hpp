@@ -274,8 +274,8 @@ struct Translation {
 
 class armProcessorImpl :  public BaseProcessorImpl {
 private:
-  static const int kReg_npc = 102;
-  mutable API::armInterface_t * theARMAPI;
+//  static const int kReg_npc = 102;
+//  mutable API::armInterface_t * theARMAPI;
   int thePendingInterrupt;
   bool theInterruptsConnected;
   void initialize();
@@ -284,16 +284,16 @@ private:
 public:
   explicit armProcessorImpl(API::conf_object_t * aProcessor)
     : BaseProcessorImpl(aProcessor)
-    , theARMAPI(nullptr)
+//    , theARMAPI(nullptr)
     , thePendingInterrupt( API::QEMU_PE_No_Exception )
     , theInterruptsConnected(false) { }
 
-  API::armInterface_t * arm() const {
-    if (theARMAPI == 0) {
-      assert(false); //FIXME
-    }
-    return theARMAPI;
-  }
+//  API::armInterface_t * arm() const {
+//    if (theARMAPI == 0) {
+//      assert(false); //FIXME
+//    }
+//    return theARMAPI;
+//  }
 
 
 public:
