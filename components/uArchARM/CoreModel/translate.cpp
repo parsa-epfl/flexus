@@ -105,6 +105,8 @@ namespace nuArchARM {
         statefulPointer->requiredTableLookups = 4 - initialLevel;
         statefulPointer->currentLookupLevel = initialLevel;
         statefulPointer->granuleSize = theMMU->getGranuleSize(statefulPointer->isBR0);
+        statefulPointer->ELRegime = currentEL();
+
 
         uint8_t EL = statefulPointer->ELRegime;
         uint64_t initialTTBR;
@@ -113,7 +115,7 @@ namespace nuArchARM {
         setupTTResolver(aTranslation, initialTTBR);
     }
 
-    bool CoreImpl::doTTEAccess( TranslationTransport& aTranslation ) {
+    bool CoreImpl::doTTEAccess( TranslationTransport&  aTranslation ) {
         /* 
          * 1) Entire phys addr comes from the TTAddressResolver object
          * 2) Do access (right now, with magic QEMU)
@@ -194,8 +196,7 @@ namespace nuArchARM {
             case 0:
                 statefulPointer->TTAddressResolver = ( statefulPointer->isBR0 ?
                         std::make_shared<MMU::L0Resolver>(statefulPointer->isBR0,theMMU->Gran0, TTDescriptor,PAWidth) :
-                        std::make_shared<MMU::L0Resolver>(statefulPointer->isBR0,
-                            theMMU->Gran1,TTDescriptor,PAWidth) );
+                        std::make_shared<MMU::L0Resolver>(statefulPointer->isBR0,theMMU->Gran1,TTDescriptor,PAWidth) );
                 break;
             case 1:
                 statefulPointer->TTAddressResolver = ( statefulPointer->isBR0 ?

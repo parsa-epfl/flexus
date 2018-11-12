@@ -928,6 +928,7 @@ private:
     xlat.theType = Flexus::SharedTypes::Translation::eFetch;
     xlat.theException = 0; // just for now
 
+
     TranslatedAddresses SendUsToTLB(new TranslationVecWrapper);
     SendUsToTLB->addNewTranslation( xlat );
     DBG_Assert( FLEXUS_CHANNEL(TLBLookupOut).available() );

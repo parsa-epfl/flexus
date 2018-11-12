@@ -413,8 +413,7 @@ mmu_t::setupBitConfigs() {
 }
 
     void
-mmu_t::initRegsFromQEMUObject(mmu_regs_t* qemuRegs)
-{
+mmu_t::initRegsFromQEMUObject(mmu_regs_t* qemuRegs) {
     setupBitConfigs(); // initialize AARCH64 bit locations for masking
 
     mmu_regs.SCTLR[EL1] = qemuRegs->SCTLR[EL1];

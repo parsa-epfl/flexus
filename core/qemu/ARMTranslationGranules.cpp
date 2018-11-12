@@ -1,5 +1,7 @@
 #include "ARMTranslationGranules.hpp"
 #include <cmath>
+#include <core/debug/debug.hpp>
+
 
 namespace MMU {
 
@@ -84,10 +86,12 @@ TranslationGranule::getInitialLookupLevel() const
 // should never use this, should always be a specific lower level class
 uint64_t
 TranslationGranule::GetLowerAddressRangeLimit() const {
+    DBG_Assert(false);
     return 0;
 }
 uint64_t
 TranslationGranule::GetUpperAddressRangeLimit() const {
+    DBG_Assert(false);
     return 0;
 }
 

@@ -430,24 +430,26 @@ int ProcessorMapper::numProcessors() {
 // Msutherl: Fetch MMU's registers
 std::shared_ptr<mmu_regs_t>
 armProcessorImpl::getMMURegsFromQEMU() {
-     std::shared_ptr<mmu_regs_t> mmu_obj (new mmu_regs_t());
+    std::shared_ptr<mmu_regs_t> mmu_obj (new mmu_regs_t());
 
+    mmu_obj->SCTLR[EL0] = readSCTLR(EL0);
+    mmu_obj->SCTLR[EL1] = readSCTLR(EL1);
+    mmu_obj->SCTLR[EL2] = readSCTLR(EL2);
+    mmu_obj->SCTLR[EL3] = readSCTLR(EL3);
 
-     uint64_t i = readSCTLR(1);
-
-
-    mmu_obj->SCTLR[EL1] = readSCTLR(1);
-    mmu_obj->SCTLR[EL2] = readSCTLR(2);
-    mmu_obj->SCTLR[EL3] = readSCTLR(3);
-
+    mmu_obj->TCR[EL0] =   Qemu::API::QEMU_read_register(*this,API::kMMU_TCR, EL0);
     mmu_obj->TCR[EL1] =   Qemu::API::QEMU_read_register(*this,API::kMMU_TCR, EL1);
     mmu_obj->TCR[EL2] =   Qemu::API::QEMU_read_register(*this,API::kMMU_TCR, EL2);
     mmu_obj->TCR[EL3] =   Qemu::API::QEMU_read_register(*this,API::kMMU_TCR, EL3);
+
+    mmu_obj->TTBR1[EL0] = Qemu::API::QEMU_read_register(*this,API::kMMU_TTBR1,EL0);
     mmu_obj->TTBR0[EL1] = Qemu::API::QEMU_read_register(*this,API::kMMU_TTBR0,EL1);
     mmu_obj->TTBR1[EL1] = Qemu::API::QEMU_read_register(*this,API::kMMU_TTBR1,EL1);
     mmu_obj->TTBR0[EL2] = Qemu::API::QEMU_read_register(*this,API::kMMU_TTBR0,EL2);
     mmu_obj->TTBR1[EL2] = Qemu::API::QEMU_read_register(*this,API::kMMU_TTBR1,EL2);
     mmu_obj->TTBR0[EL3] = Qemu::API::QEMU_read_register(*this,API::kMMU_TTBR0,EL3);
+    mmu_obj->TTBR1[EL3] = Qemu::API::QEMU_read_register(*this,API::kMMU_TTBR1,EL3);
+
     mmu_obj->ID_AA64MMFR0_EL1 = Qemu::API::QEMU_read_register(*this,API::kMMU_ID_AA64MMFR0_EL1, 0);
 
     return mmu_obj;

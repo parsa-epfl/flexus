@@ -143,13 +143,15 @@ public:
         setupDriveClients();
       }
 
-      DBG_( Crit, ( << theName << " connected to " << (static_cast<Flexus::Qemu::API::conf_object_t *>(*theCPU))->name ));
-    DBG_( Tmp, ( << "CORE:  Initializing MMU ")  );
-    theCore->InitMMU( theCPU->getMMURegsFromQEMU() );
+
 
       theAvailableROB = theCore->availableROB();
 
       resetArchitecturalState();
+
+      DBG_( Crit, ( << theName << " connected to " << (static_cast<Flexus::Qemu::API::conf_object_t *>(*theCPU))->name ));
+    DBG_( Tmp, ( << "CORE:  Initializing MMU ")  );
+//    theCore->InitMMU( theCPU->getMMURegsFromQEMU() );
 
       if (theBreakOnResynchronize && (theNode == 0)) {
         DBG_( Crit, ( << "Simulation will stop on unexpected synchronizations" ) );
@@ -403,6 +405,9 @@ void resetArchitecturalState()
     resetSpecialRegs(); // Mark removed until exceptions can be read from QEMU
     fillXRegisters();
     fillVRegisters();
+
+    theCore->InitMMU( theCPU->getMMURegsFromQEMU() );
+
 }
 
   void resetSpecialRegs() {

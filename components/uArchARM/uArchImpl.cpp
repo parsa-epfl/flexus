@@ -274,7 +274,7 @@ public:
               DBG_(Tmp,(<<" ---- STARTING NEW TRANSLATION ---- "
                           << std::hex << translation.theVaddr << std::dec ));
               // FIXME: This is now a different slice. Re-enable it.
-              //translation.ELRegime = flexusCurrentELRegime;
+//              translation.ELRegime = flexusCurrentELRegime;
               theMicroArch->translate( translation );
           } else {
               DBG_Assert( false, ( << "SORRY, translation is not enabled at EL " << flexusCurrentELRegime ) );
