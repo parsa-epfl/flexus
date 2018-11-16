@@ -65,11 +65,11 @@ namespace nuArchARM {
         return theMMU->IsExcLevelEnabled(anEL);
     }
 
-    void CoreImpl::translate(Flexus::SharedTypes::Translation& aTranslation) {
+    void CoreImpl::translate(boost::intrusive_ptr<Translation>& aTranslation) {
 
         TranslationTransport newTransport;
         boost::intrusive_ptr<TranslationState> statefulTranslation( new TranslationState() );
-        boost::intrusive_ptr<Translation> basicTranslation( &aTranslation );
+        boost::intrusive_ptr<Translation> basicTranslation = aTranslation;
         newTransport.set(TranslationBasicTag, basicTranslation);
         newTransport.set(TranslationStatefulTag, statefulTranslation);
         /* Translation looks like this:
@@ -85,7 +85,7 @@ namespace nuArchARM {
         // once we get here, output address is in the PhysicalAddress field of aTranslation, done
     }
 
-    void CoreImpl::intermediateTranslationStep(Flexus::SharedTypes::Translation& aTr) { } 
+    void CoreImpl::intermediateTranslationStep(boost::intrusive_ptr<Translation>& aTr) { }
     // TODO: this func, permissions check etc. // TODO: will need to change to TranslationTransport at some point
 
     // Private MMU internal functionality

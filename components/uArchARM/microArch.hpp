@@ -98,8 +98,8 @@ struct microArch {
 
   // Msutherl
   virtual bool IsTranslationEnabledAtEL(uint8_t & el) = 0;
-  virtual void translate(Flexus::SharedTypes::Translation& aTr) = 0;
-  virtual void intermediateTranslationStep(Flexus::SharedTypes::Translation& aTr) = 0; // TODO
+  virtual void translate(boost::intrusive_ptr<Translation>& aTr) = 0;
+  virtual void intermediateTranslationStep(boost::intrusive_ptr<Translation>& aTr) = 0; // TODO
 
 };
 

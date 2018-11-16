@@ -136,16 +136,16 @@ struct FetchedOpcode {
 };
 
 struct TranslationVecWrapper : public boost::counted_base {
-    std::vector< Flexus::SharedTypes::Translation > internalContainer; // from mai_api
+    std::vector< boost::intrusive_ptr<Translation> > internalContainer; // from mai_api
 
-    void addNewTranslation(Flexus::SharedTypes::Translation aTr) {
+    void addNewTranslation(boost::intrusive_ptr<Translation>& aTr) {
         internalContainer.push_back(aTr);
     }
 
     void updateExistingTranslation(VirtualMemoryAddress aVAddr, PhysicalMemoryAddress translatedAddress) {
         for( auto& translation : internalContainer ) {
-            if( translation.theVaddr == aVAddr ) {
-                translation.thePaddr = translatedAddress;
+            if( translation->theVaddr == aVAddr ) {
+                translation->thePaddr = translatedAddress;
                 return;
             }
         }

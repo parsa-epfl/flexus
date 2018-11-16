@@ -425,12 +425,12 @@ void CoreImpl::checkTranslation( boost::intrusive_ptr<Instruction> anInsn) {
   DBG_(Tmp, ( << " in checkTranslation!! " ) );//NOOSHIN
   if (!anInsn->isAnnulled() && !anInsn->isSquashed()) {
     DBG_(Tmp, ( << " is not Annulled " ) );//NOOSHIN
-    Flexus::SharedTypes::Translation xlat;
-    xlat.theVaddr = iter->theVaddr;
+    boost::intrusive_ptr<Flexus::SharedTypes::Translation> xlat(new Flexus::SharedTypes::Translation());
+    xlat->theVaddr = iter->theVaddr;
 //    xlat.theASI = iter->theASI;
     //xlat.theTL = getTL();
-    xlat.thePSTATE = getPSTATE() ;
-    xlat.theType = ( iter->isStore() ? Flexus::SharedTypes::Translation::eStore :  Flexus::SharedTypes::Translation::eLoad) ;
+    xlat->thePSTATE = getPSTATE() ;
+    xlat->theType = ( iter->isStore() ? Flexus::SharedTypes::Translation::eStore :  Flexus::SharedTypes::Translation::eLoad) ;
     translate(xlat);
     iter->theException = kException_None;
     if (iter->theException < kException_None ) {

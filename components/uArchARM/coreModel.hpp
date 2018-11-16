@@ -120,8 +120,8 @@ struct CoreModel : public uArchARM {
   // MMU and Multi-stage translation, now in CoreModel, not QEMU MAI
   // - Msutherl: Oct'18
   virtual bool IsTranslationEnabledAtEL(uint8_t & anEL) = 0;
-  virtual void translate(Flexus::SharedTypes::Translation& aTr) = 0;
-  virtual void intermediateTranslationStep(Flexus::SharedTypes::Translation& aTr) = 0; // TODO: this func, permissions check etc.
+  virtual void translate(boost::intrusive_ptr<Translation>& aTr) = 0;
+  virtual void intermediateTranslationStep(boost::intrusive_ptr<Translation>& aTr) = 0; // TODO: this func, permissions check etc.
   virtual void InitMMU( std::shared_ptr<mmu_regs_t> regsFromQemu ) = 0;
 
 };

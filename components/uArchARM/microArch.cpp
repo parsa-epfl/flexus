@@ -356,12 +356,12 @@ public:
     CORE_DBG("--------------FINISH MICROARCH------------------------");
 }
 
-  void translate(Flexus::SharedTypes::Translation & aTranslation) {
+  void translate(boost::intrusive_ptr<Translation>& aTranslation) {
       // Msutherl, Oct'18, move to direct CoreModel call
       theCore->translate(aTranslation);
   }
 
-  void intermediateTranslationStep(Flexus::SharedTypes::Translation& aTranslation) {
+  void intermediateTranslationStep(boost::intrusive_ptr<Translation>& aTranslation) {
       theCore->intermediateTranslationStep(aTranslation);
   } 
 

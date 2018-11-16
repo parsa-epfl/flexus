@@ -884,8 +884,8 @@ public:
   // - Msutherl: Oct'18
 public:
   bool IsTranslationEnabledAtEL(uint8_t & anEL);
-  void translate(Flexus::SharedTypes::Translation& aTr);
-  void intermediateTranslationStep(Flexus::SharedTypes::Translation& aTr); // TODO: this func, permissions check etc.
+  void translate(boost::intrusive_ptr<Translation>& aTr);
+  void intermediateTranslationStep(boost::intrusive_ptr<Translation>& aTr); // TODO: this func, permissions check etc.
 
   void InitMMU( std::shared_ptr<mmu_regs_t> regsFromQemu );
 

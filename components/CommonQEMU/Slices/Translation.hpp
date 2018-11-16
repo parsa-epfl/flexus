@@ -44,11 +44,34 @@
 #ifndef FLEXUS_SLICES__TRANSLATION_HPP_INCLUDED
 #define FLEXUS_SLICES__TRANSLATION_HPP_INCLUDED
 #include <core/boost_extensions/intrusive_ptr.hpp>
+#include <core/debug/debug.hpp>
 namespace Flexus {
 namespace SharedTypes {
 
 
 struct Translation : public boost::counted_base {
+
+    Translation(){}
+    ~Translation(){CORE_DBG("deleting translate");}
+
+    Translation (const Translation& aTr){
+        theVaddr       = aTr.theVaddr;
+        thePSTATE      = aTr.thePSTATE;
+        theType        = aTr.theType;
+        thePaddr       = aTr.thePaddr;
+        theException   = aTr.theException;
+        theTTEEntry    = aTr.theTTEEntry;
+    }
+
+  Translation& operator= (Translation& rhs) {
+      theVaddr = rhs.theVaddr;
+      thePSTATE = rhs.thePSTATE;
+      theType = rhs.theType;
+      thePaddr = rhs.thePaddr;
+      theException = rhs.theException;
+      theTTEEntry = rhs.theTTEEntry;
+      return *this;
+  }
   VirtualMemoryAddress theVaddr;
   int thePSTATE;
   enum eTranslationType {
@@ -65,6 +88,9 @@ struct Translation : public boost::counted_base {
   bool isInterrupt();
   bool isTranslating();
 };
+
+
+
 
 } //SharedTypes
 } //Flexus

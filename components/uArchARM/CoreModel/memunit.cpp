@@ -512,18 +512,19 @@ void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry 
   } else {
     //Map logical to physical
     DBG_(Tmp,(<<"in else of updateVaddr"));//NOOOSHIN
-    Flexus::SharedTypes::Translation xlat;
-    xlat.theVaddr = anAddr ;
+
+    boost::intrusive_ptr<Flexus::SharedTypes::Translation> xlat (new Flexus::SharedTypes::Translation());
+    xlat->theVaddr = anAddr ;
 //    xlat.theASI = lsq_entry->theASI;
     //xlat.theTL = getTL();
-    xlat.thePSTATE = getPSTATE() ;
-    xlat.theType = ( lsq_entry->isStore() ? Flexus::SharedTypes::Translation::eStore :  Flexus::SharedTypes::Translation::eLoad) ;
+    xlat->thePSTATE = getPSTATE() ;
+    xlat->theType = ( lsq_entry->isStore() ? Flexus::SharedTypes::Translation::eStore :  Flexus::SharedTypes::Translation::eLoad) ;
     translate(xlat);
-    lsq_entry->thePaddr = xlat.thePaddr;
-    lsq_entry->theSideEffect = xlat.isSideEffect() || ( ! xlat.isTranslating() /*&& ! xlat.isMMU() */);
-    lsq_entry->theInverseEndian = xlat.isXEndian();
+    lsq_entry->thePaddr = xlat->thePaddr;
+    lsq_entry->theSideEffect = xlat->isSideEffect() || ( ! xlat->isTranslating() /*&& ! xlat.isMMU() */);
+    lsq_entry->theInverseEndian = xlat->isXEndian();
 //    lsq_entry->theMMU = xlat.isMMU();
-    lsq_entry->theNonCacheable = ! xlat.isCacheable();
+    lsq_entry->theNonCacheable = ! xlat->isCacheable();
     lsq_entry->theInstruction->setWillRaise(kException_None);
 //    lsq_entry->theException = xlat.theException;
 
@@ -531,7 +532,7 @@ void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry 
       lsq_entry->theSideEffect  = true;
     }
 
-    if ( lsq_entry->theSideEffect && /*!xlat.isMMU() &&*/ !xlat.isInterrupt()  ) {
+    if ( lsq_entry->theSideEffect && /*!xlat.isMMU() &&*/ !xlat->isInterrupt()  ) {
       DBG_( Verb, ( << theName << " SideEffect access: " << *lsq_entry ) );
       if (lsq_entry->theOperation == kLoad) {
         lsq_entry->theInstruction->changeInstCode(codeSideEffectLoad);
@@ -582,7 +583,7 @@ void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry 
     theMemQueue.get<by_insn>().modify( lsq_entry, ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = addr_aligned);
 
     /* CMU-ONLY-BLOCK-BEGIN */
-    if (theTrackParallelAccesses && !xlat.isSideEffect() && xlat.isCacheable() && lsq_entry->thePaddr != kInvalid && lsq_entry->thePaddr != PhysicalMemoryAddress(kUnresolved)) {
+    if (theTrackParallelAccesses && !xlat->isSideEffect() && xlat->isCacheable() && lsq_entry->thePaddr != kInvalid && lsq_entry->thePaddr != PhysicalMemoryAddress(kUnresolved)) {
       //Add this address to parallel accesses and accumulate all accesses parallel with this one
       memq_t::index< by_seq >::type::iterator lsq_iter = theMemQueue.get<by_seq>().begin();
       memq_t::index< by_seq >::type::iterator lsq_end = theMemQueue.get<by_seq>().end();

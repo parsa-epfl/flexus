@@ -272,7 +272,7 @@ public:
           uint8_t flexusCurrentELRegime = 1; // FIXME: should return tr. regime for addr
           if ( theMicroArch->IsTranslationEnabledAtEL( flexusCurrentELRegime ) ) {
               DBG_(Tmp,(<<" ---- STARTING NEW TRANSLATION ---- "
-                          << std::hex << translation.theVaddr << std::dec ));
+                          << std::hex << translation->theVaddr << std::dec ));
               // FIXME: This is now a different slice. Re-enable it.
 //              translation.ELRegime = flexusCurrentELRegime;
               theMicroArch->translate( translation );
