@@ -139,7 +139,7 @@ namespace nuArchARM {
         }
         PhysicalMemoryAddress TTEDescriptor( statefulPointer->TTAddressResolver->resolve(basicPointer->theVaddr) );
         DBG_(Tmp,(<< "Current Translation Level: " << (unsigned int) statefulPointer->currentLookupLevel
-                    << ", Returned TTE Descriptor Address: " << std::hex <<  TTEDescriptor << std::dec ));
+                    << ", Returned TTE Descriptor Address: " << TTEDescriptor << std::dec ));
         unsigned long long rawTTEValue = Flexus::Core::construct(QEMU_read_phys_memory(  TTEDescriptor, 8 ), 8).to_ulong(); // TODO: check w mark
         DBG_(Tmp,(<< "Current Translation Level: " << (unsigned int) statefulPointer->currentLookupLevel
                     << ", Read Raw TTE Desc. from QEMU : " << std::hex << rawTTEValue << std::dec ));
@@ -181,6 +181,19 @@ namespace nuArchARM {
                 PhysicalMemoryAddress PageOffsetMask( statefulPointer->granuleSize-1 );
                 PhysicalMemoryAddress maskedVAddr( basicPointer->theVaddr & PageOffsetMask );
                 basicPointer->thePaddr |= maskedVAddr;
+
+
+                // hoss
+                uint8_t stride = 9; // for 4k pages
+                uint64_t indexmask_grainsize = (1ULL << (stride + 3)) - 1;
+                uint64_t descaddrmask = ((1ull << ( 48 )) - 1) & ~indexmask_grainsize;
+                uint64_t descaddr = rawTTEValue & descaddrmask;
+                uint64_t page_size = (1ULL << ((stride * (4 - statefulPointer->currentLookupLevel)) + 3));
+                descaddr |= (basicPointer->theVaddr  & (page_size - 1));
+                basicPointer->thePaddr = PhysicalMemoryAddress(descaddr);
+                // ~hoss
+
+
                 return true; // p walk done
             }
         } // end intermediate level block

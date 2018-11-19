@@ -52,7 +52,7 @@ namespace SharedTypes {
 struct Translation : public boost::counted_base {
 
     Translation(){}
-    ~Translation(){CORE_DBG("deleting translate");}
+    ~Translation(){}
 
     Translation (const Translation& aTr){
         theVaddr       = aTr.theVaddr;

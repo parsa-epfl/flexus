@@ -136,6 +136,10 @@ struct FetchedOpcode {
 };
 
 struct TranslationVecWrapper : public boost::counted_base {
+
+    TranslationVecWrapper(){}
+    ~TranslationVecWrapper(){}
+
     std::vector< boost::intrusive_ptr<Translation> > internalContainer; // from mai_api
 
     void addNewTranslation(boost::intrusive_ptr<Translation>& aTr) {
