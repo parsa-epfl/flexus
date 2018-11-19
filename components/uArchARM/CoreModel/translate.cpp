@@ -168,6 +168,7 @@ namespace nuArchARM {
                 /* Return size of mapped region, output address, and terminate PWalk */
                 PhysicalMemoryAddress shiftedRegionBits = PhysicalMemoryAddress(statefulPointer->TTAddressResolver->getBlockOutputBits(rawTTEValue));
                 basicPointer->thePaddr = shiftedRegionBits;
+                DBG_( Dev, ( << "Encountered BLOCK ENTRY in TT level [" << (unsigned int) statefulPointer->currentLookupLevel << "], TTE = " << std::hex << rawTTEValue << std::dec << ", ShiftedRegionBits = " << std::hex << shiftedRegionBits << std::dec));
                 switch( statefulPointer->currentLookupLevel ) {
                     case 1:
                         statefulPointer->BlockSizeFromTTs = 1<<30; // 1GB block
@@ -178,12 +179,15 @@ namespace nuArchARM {
                     default:
                         DBG_Assert( false , ( << "Encountered Non-standard BLOCK entry, in intermediate TT walk stage " << (unsigned int) statefulPointer->currentLookupLevel << ", should have been a memory mapped region. TTE = " << std::hex << rawTTEValue << std::dec));
                 }
-                PhysicalMemoryAddress PageOffsetMask( statefulPointer->granuleSize-1 );
+                //PhysicalMemoryAddress PageOffsetMask( statefulPointer->granuleSize-1 );
+                PhysicalMemoryAddress PageOffsetMask( statefulPointer->BlockSizeFromTTs -1 );
                 PhysicalMemoryAddress maskedVAddr( basicPointer->theVaddr & PageOffsetMask );
                 basicPointer->thePaddr |= maskedVAddr;
 
+                DBG_( Dev, ( << " PageOffsetMask = " << std::hex << PageOffsetMask << std::dec << ", maskedVaddr = " << std::hex << maskedVAddr << std::dec << "PAddr to Return = " << std::hex << basicPointer->thePaddr << std::dec ));
 
                 // hoss
+                /*
                 uint8_t stride = 9; // for 4k pages
                 uint64_t indexmask_grainsize = (1ULL << (stride + 3)) - 1;
                 uint64_t descaddrmask = ((1ull << ( 48 )) - 1) & ~indexmask_grainsize;
@@ -192,8 +196,7 @@ namespace nuArchARM {
                 descaddr |= (basicPointer->theVaddr  & (page_size - 1));
                 basicPointer->thePaddr = PhysicalMemoryAddress(descaddr);
                 // ~hoss
-
-
+                */
                 return true; // p walk done
             }
         } // end intermediate level block

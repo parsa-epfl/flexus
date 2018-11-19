@@ -108,7 +108,7 @@ address_t
 L1Resolver::getBlockOutputBits(address_t rawTTEFromPhysMemory)
 {
     unsigned int blockLSB = 30, blockMSB = 47;
-    address_t output = extractBitsWithBounds(rawTTEFromPhysMemory,blockLSB,blockMSB);
+    address_t output = extractBitsWithBounds(rawTTEFromPhysMemory,blockMSB,blockLSB);
     return (output << blockLSB);
 }
 
@@ -132,7 +132,7 @@ address_t
 L2Resolver::getBlockOutputBits(address_t rawTTEFromPhysMemory)
 {
     unsigned int blockLSB = 21, blockMSB = 47;
-    address_t output = extractBitsWithBounds(rawTTEFromPhysMemory,blockLSB,blockMSB);
+    address_t output = extractBitsWithBounds(rawTTEFromPhysMemory,blockMSB,blockLSB);
     return (output << blockLSB);
 }
 
