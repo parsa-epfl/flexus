@@ -223,6 +223,7 @@ class FLEXUS_COMPONENT(uFetch) {
   FLEXUS_COMPONENT_IMPL(uFetch);
 
   std::vector< std::list< FetchAddr > > theFAQ;
+  pFetchBundle theBundle
 
   //This opcode is used to signal an ITLB miss to the core, to force
   //a resync with Qemu 
@@ -330,7 +331,7 @@ public:
     theI.init( cfg.Size, cfg.Associativity, cfg.ICacheLineSize, statName() );
     theIndexShift = LOG2( cfg.ICacheLineSize );
     theBlockMask = ~ (cfg.ICacheLineSize - 1);
-
+    theBundle(new FetchBundle);
     theFAQ.resize(cfg.Threads);
     theIcacheMiss.resize(cfg.Threads);
     theIcacheVMiss.resize(cfg.Threads);
@@ -379,6 +380,7 @@ public:
   void push( interface::TLBReturnIn const &, TranslatedAddresses& retdTranslations ) {
       TranslationsFromTLB.reset();
       TranslationsFromTLB = retdTranslations;
+      getFetchResponse();
       DBG_(Iface,( << "Set TranslationsFromTLB component...."));
   }
 
@@ -834,8 +836,6 @@ private:
 
 
     if (available_fiq > 0 && ( theFAQ[anIndex].size() > 0 || theFlexus->quiescing()) ) {
-      pFetchBundle bundle(new FetchBundle);
-
       std::set< VirtualMemoryAddress> available_lines;
       int32_t remaining_fetch = cfg.MaxFetchInstructions;
       if (available_fiq < remaining_fetch) {
@@ -874,52 +874,56 @@ private:
               available_lines.insert( block_addr );
           }
 
-        int64_t op_code = fetchFromQemu( anIndex, fetch_addr.theAddress );
+        sendFetchRequest( anIndex, fetch_addr.theAddress );
         
         theFAQ[anIndex].pop_front();
         //DBG_(Tmp, ( << "\e[1;34m" << "FETCH UNIT: Fetched " << fetch_addr.theAddress << " and poping it out of FAQ" << "\e[0m" ) );
-        bundle->theOpcodes.push_back( FetchedOpcode( fetch_addr.theAddress
-//                                      , theFAQ[anIndex].empty() ?  VirtualMemoryAddress(0) : theFAQ[anIndex].front().theAddress
-                                      , op_code
+        theBundle->theOpcodes.emplace( FetchedOpcode( fetch_addr.theAddress
+                                      , 0 //op_code not resolved yet - waiting for translation
                                       , fetch_addr.theBPState
                                       , theFetchReplyTransactionTracker[anIndex]
                                       )
                                     );
-        if (from_icache && theLastMiss[anIndex] && theLastPhysical == theLastMiss[anIndex]->first) {
-          bundle->theFillLevels.push_back(theLastMiss[anIndex]->second);
-          theLastMiss[anIndex] = boost::none;
-        } else {
-          bundle->theFillLevels.push_back(eL1I);
-        }
+//        if (from_icache && theLastMiss[anIndex] && theLastPhysical == theLastMiss[anIndex]->first) {
+//          bundle->theFillLevels.push_back(theLastMiss[anIndex]->second);
+//          theLastMiss[anIndex] = boost::none;
+//        } else {
+          theBundle->theFillLevels.push_back(eL1I);
+//        }
 
         ++theFetches;
-        if (op_code == kITLBMiss) {
-          //stop fetch on an MMU exception
-          break;
-        }
         --remaining_fetch;
       }
 
-      if (bundle->theOpcodes.size() > 0) {
-          FETCH_DBG("Sending Fetches out ... ");
+    }
+    FETCH_DBG("--------------FINISH FETCHING------------------------");
+
+  }
+
+    void processBundle()  {
+
+
+      pFetchBundle bundle(new FetchBundle);
+
+      while (theBundle->theOpcodes.size() > 0 && theBundle->theOpcodes.front() != 0) {
+           bundle->emplace(theBundle->pop());
+      }
+
+      if (bundle->theOpcodes.size() > 0 ) {
 
         FLEXUS_CHANNEL_ARRAY( FetchBundleOut, anIndex ) << bundle;
-      }
-    }
-    else
-    {
-        FETCH_DBG( "Not processing the fetches if any" );
-        FETCH_DBG("available_fiq: " << available_fiq
+      } else {
+            FETCH_DBG( "Not processing the fetches if any" );
+            FETCH_DBG("available_fiq: " << available_fiq
                    << " fetch address queue size: "<< theFAQ[anIndex].size()
                    << " Flexus quiescing: " << theFlexus->quiescing());
-    }
+        }
 
-    FETCH_DBG("--------------FINISH FETCHING------------------------");
 
 
   }
 
-  uint32_t fetchFromQemu(index_t anIndex, VirtualMemoryAddress const & anAddress) {
+  void sendFetchRequest(index_t anIndex, VirtualMemoryAddress const & anAddress) {
     FETCH_DBG("Address = " << anAddress);
     uint32_t op_code;
     boost::intrusive_ptr<Flexus::SharedTypes::Translation> xlat (new Flexus::SharedTypes::Translation());
@@ -928,43 +932,39 @@ private:
     xlat->thePSTATE = theCPUState[anIndex].thePSTATE;
     xlat->theType = Flexus::SharedTypes::Translation::eFetch;
     xlat->theException = 0; // just for now
-
+    xlat->theIndex = anIndex;
 
     TranslatedAddresses SendUsToTLB(new TranslationVecWrapper);
     SendUsToTLB->addNewTranslation( xlat );
     DBG_Assert( FLEXUS_CHANNEL(TLBLookupOut).available() );
     FLEXUS_CHANNEL(TLBLookupOut) << SendUsToTLB;
     // push-push should always mean TranslationsFromTLB is filled
+  }
+
+  void getFetchResponse() {
 
     DBG_(Iface,( << "Starting magic translation after sending to TLB...."));
-    PhysicalMemoryAddress magicTranslation = cpu(anIndex)->translateInstruction_QemuImpl(anAddress);
     boost::intrusive_ptr<Flexus::SharedTypes::Translation> tr = TranslationsFromTLB->internalContainer.front();
-    DBG_Assert( tr->theVaddr == anAddress, ( << "In FetchFromQEMU, TranslationsFromTLB->vaddr = " << tr->theVaddr << ", fetchVaddr = " << anAddress ));
+
+    PhysicalMemoryAddress magicTranslation = cpu(tr->theIndex)->translateInstruction_QemuImpl(tr->theVaddr);
+//    DBG_Assert( tr->theVaddr == anAddress, ( << "In FetchFromQEMU, TranslationsFromTLB->vaddr = " << tr->theVaddr << ", fetchVaddr = " << anAddress ));
     if( tr->thePaddr == magicTranslation ) {
         DBG_(Tmp, ( << "Magic QEMU translation == MMU Translation. Vaddr = "
-                    << std::hex << anAddress 
+                    << std::hex << tr->theVaddr
                     << std::dec << ", Paddr = " 
                     << std::hex << tr->thePaddr << std::dec));
     } else {
-        DBG_Assert(false, ( << "ERROR: Magic QEMU translation NOT EQUAL TO MMU Translation. Vaddr = " << std::hex << anAddress 
+        DBG_Assert(false, ( << "ERROR: Magic QEMU translation NOT EQUAL TO MMU Translation. Vaddr = " << std::hex << tr->theVaddr
                     << std::dec << ", PADDR_MMU = " 
                     << std::hex << tr->thePaddr
                     << std::dec << ", PADDR_QEMU = "
                     << std::hex << magicTranslation << std::dec));
     }
 
+    DBG_Assert(theBundle->theOpcodes.front().thePC == tr->theVaddr, (<< "virtual addresses comparison failure"));
     Flexus::SharedTypes::Translation gimme;
-    op_code = cpu(anIndex)->fetchInstruction(gimme); // magic QEMU
-    if (xlat->theException == 0) {
-      //DBG_(Tmp, (<<"FETCH UNIT: Not an exception"));
-      DBG_(Tmp, Comp(*this) ( <<"\e[1;34m" << "FETCH UNIT: " << anAddress << " op: " << std::hex << std::setw(8) << op_code << std::dec<< "\e[0m" ) );//NOOSHIN
-      return op_code;
-    } else {
-//      FETCH_DBG("Hit an exception");
-//      FETCH_DBG("No translation for " << anAddress << " TL: " << std::hex << theCPUState[anIndex].theTL <<
-//                              " PSTATE: " << theCPUState[anIndex].thePSTATE << " MMU exception: " << xlat.theException << std::dec<< "\e[0m" );
-      return kITLBMiss /* or other exception - OoO will figure it out */;
-    }
+    theBundle->theOpcodes.front().theOpcode =  cpu(tr->theIndex)->fetchInstruction(tr->thePaddr); // magic QEMU
+//    op_code = cpu(anIndex)->fetchInstruction(gimme); // magic QEMU
   }
 };
 

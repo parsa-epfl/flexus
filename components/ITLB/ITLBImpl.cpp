@@ -47,8 +47,12 @@
 #include <core/qemu/configuration_api.hpp>
 
 #include "components/TLBControllers/TLBController.hpp"
+#include <components/CommonQEMU/Slices/Translation.hpp>
 
 #include <core/qemu/mai_api.hpp>
+
+#include <unordered_map>
+#include <queue>
 
 #define DBG_DefineCategories ITLB
 #include DBG_Control()
@@ -77,6 +81,11 @@ private:
   std::unique_ptr<CacheController> theController; //Deleted automagically when the cache goes away
 
   Flexus::Stat::StatCounter theBusDeadlocks;
+
+  std::unordered_map<VirtualMemoryAddress, PhysicalMemoryAddress> theInstrTLB;
+  std::unordered_map<VirtualMemoryAddress, PhysicalMemoryAddress> theDataTLB;
+
+  TranslatedAddresses theRequests;
 
 public:
   FLEXUS_COMPONENT_CONSTRUCTOR(ITLB)
@@ -155,66 +164,6 @@ public:
 
   void finalize() {}
 
-  // Ports
-  //======
-
-  //FrontSideIn_Request
-  //-------------------
-  bool available( interface::FrontSideIn_Request const &,
-                  index_t anIndex) {
-    return ! theController->FrontSideIn_Request[0].full();
-  }
-  void push( interface::FrontSideIn_Request const &,
-             index_t           anIndex,
-             MemoryTransport & aMessage) {
-    DBG_Assert(! theController->FrontSideIn_Request[0].full(), ( << statName() ) );
-    aMessage[MemoryMessageTag]->coreIdx() = anIndex;
-    DBG_(Trace, Comp(*this) ( << "Received on Port FrontSideIn(Request) [" << anIndex << "]: " << *(aMessage[MemoryMessageTag]) ) Addr(aMessage[MemoryMessageTag]->address()) );
-    if (aMessage[TransactionTrackerTag]) {
-      aMessage[TransactionTrackerTag]->setDelayCause(name(), "Front Rx");
-    }
-
-    theController->FrontSideIn_Request[0].enqueue(aMessage);
-  }
-
-  //BackeSideIn_Reply
-  //-----------
-  bool available( interface::BackSideIn_Reply const &) {
-    return ! theBackSideIn_ReplyBuffer;
-  }
-  void push( interface::BackSideIn_Reply const &, MemoryTransport & aMessage) {
-    //if (cfg.NoBus) {
-    if (true) { // msutherl: FIXME
-      aMessage[MemoryMessageTag]->coreIdx() = 0;
-      theBackSideIn_ReplyInfiniteQueue.push_back(aMessage);
-      return;
-    }
-    DBG_Assert(! theBackSideIn_ReplyBuffer);
-    // In non-piranha caches, the core index should always be zero, since
-    // things above (such as the processor) do not want to know about core numbers
-    aMessage[MemoryMessageTag]->coreIdx() = 0;
-    theBackSideIn_ReplyBuffer = aMessage;
-  }
-
-  //BackeSideIn_Request
-  //-----------
-  bool available( interface::BackSideIn_Request const &) {
-    return ! theBackSideIn_RequestBuffer;
-  }
-  void push( interface::BackSideIn_Request const &, MemoryTransport & aMessage) {
-    //if (cfg.NoBus) {
-    if (true) { // msutherl: FIXME
-      aMessage[MemoryMessageTag]->coreIdx() = 0;
-      theBackSideIn_RequestInfiniteQueue.push_back(aMessage);
-      return;
-    }
-    DBG_Assert(! theBackSideIn_RequestBuffer);
-    // In non-piranha caches, the core index should always be zero, since
-    // things above (such as the processor) do not want to know about core numbers
-    aMessage[MemoryMessageTag]->coreIdx() = 0;
-    theBackSideIn_RequestBuffer = aMessage;
-  }
-
   //CacheDrive
   //----------
   void drive(interface::CacheDrive const &) {
@@ -233,234 +182,63 @@ public:
   }
 
   void busCycle() {
-    FLEXUS_PROFILE(); // msutherl - FIXME
-    DBG_(VVerb, Comp(*this) ( << "bus cycle" ) );
 
-    for ( int32_t i = 0; i < cfg.Cores; i++ ) {
-      //Send as much on FrontSideOut as possible
-      /*
-      while (! theController->FrontSideOut_D[i].empty() && FLEXUS_CHANNEL_ARRAY(FrontSideOut_D, i).available()) {
-        MemoryTransport transport = theController->FrontSideOut_D[i].dequeue();
-        DBG_(Trace, Comp(*this) ( << "Sent on Port FrontSideOut_D [" << i << "]: " << *(transport[MemoryMessageTag]) ) Addr(transport[MemoryMessageTag]->address()) );
-        FLEXUS_CHANNEL_ARRAY(FrontSideOut_D, i) << transport;
-      }
-      */
-      while (! theController->FrontSideOut_I[i].empty() && FLEXUS_CHANNEL_ARRAY(FrontSideOut_I, i).available()) {
-        MemoryTransport transport = theController->FrontSideOut_I[i].dequeue();
-        DBG_(Trace, Comp(*this) ( << "Sent on Port FrontSideOut_I [" << i << "]: " << *(transport[MemoryMessageTag]) ) Addr(transport[MemoryMessageTag]->address()) );
-        FLEXUS_CHANNEL_ARRAY(FrontSideOut_I, i) << transport;
-      }
-    }
+      DBG_Assert(theRequests->internalContainer.size() != 0)
+      boost::intrusive_ptr<Translation> item = theRequests->internalContainer.front();
 
-    //if (cfg.NoBus) {
-    if (true) { // msutherl: FIXME
-      while ( !theController->BackSideIn_Reply[0].full() && !theBackSideIn_ReplyInfiniteQueue.empty() ) {
-        theController->BackSideIn_Reply[0].enqueue( theBackSideIn_ReplyInfiniteQueue.front() );
-        theBackSideIn_ReplyInfiniteQueue.pop_front();
-      }
-      while ( !theController->BackSideIn_Request[0].full() && !theBackSideIn_RequestInfiniteQueue.empty() ) {
-        theController->BackSideIn_Request[0].enqueue( theBackSideIn_RequestInfiniteQueue.front() );
-        theBackSideIn_RequestInfiniteQueue.pop_front();
-      }
-      while ( !theController->BackSideOut_Request.empty() && FLEXUS_CHANNEL(BackSideOut_Request).available()
-              && (theController->BackSideOut_Snoop.empty()
-                  || theController->BackSideOut_Snoop.headTimestamp() > theController->BackSideOut_Request.headTimestamp())
-              && (theController->BackSideOut_Reply.empty()
-                  || theController->BackSideOut_Reply.headTimestamp() > theController->BackSideOut_Request.headTimestamp()) ) {
-        MemoryTransport transport = theController->BackSideOut_Request.dequeue();
-        transport[MemoryMessageTag]->coreIdx()=flexusIndex();
-        FLEXUS_CHANNEL(BackSideOut_Request) << transport;
-      }
-      /*
-      while ( !theController->BackSideOut_Prefetch.empty() && FLEXUS_CHANNEL(BackSideOut_Prefetch).available()
-              && (theController->BackSideOut_Snoop.empty()
-                  || theController->BackSideOut_Snoop.headTimestamp() > theController->BackSideOut_Prefetch.headTimestamp())
-              && (theController->BackSideOut_Reply.empty()
-                  || theController->BackSideOut_Reply.headTimestamp() > theController->BackSideOut_Prefetch.headTimestamp()) ) {
-        MemoryTransport transport = theController->BackSideOut_Prefetch.dequeue();
-        FLEXUS_CHANNEL(BackSideOut_Prefetch) << transport;
-      }
-      */
-      while ( !theController->BackSideOut_Snoop.empty() && FLEXUS_CHANNEL(BackSideOut_Snoop).available()
-              && (theController->BackSideOut_Reply.empty()
-                  || theController->BackSideOut_Reply.headTimestamp() > theController->BackSideOut_Snoop.headTimestamp()) ) {
-        MemoryTransport transport = theController->BackSideOut_Snoop.dequeue();
-        transport[MemoryMessageTag]->coreIdx()=flexusIndex();
-        FLEXUS_CHANNEL(BackSideOut_Snoop) << transport;
-      }
-      while ( !theController->BackSideOut_Reply.empty() && FLEXUS_CHANNEL(BackSideOut_Reply).available() ) {
-        MemoryTransport transport = theController->BackSideOut_Snoop.dequeue();
-        transport[MemoryMessageTag]->coreIdx()=flexusIndex();
-        FLEXUS_CHANNEL(BackSideOut_Snoop) << transport;
-      }
-      return;
-    }
 
-    //If we want fast clean evicts, propagate as many CleanEvicts as possible
-    //regardless of bus state.  We use this hack with SimplePrefetchController
-    //because it uses clean evict messages to maintain duplicate tags, but the
-    //CleanEvicts would not be propagated over the bus in the real system
-    //if (cfg.FastEvictClean) {
-    if ( false ) { // FIXME: FastEvictClaen for TLB equivalent?
-      if (theBusDirection == kIdle) {
-        if ( !theController->BackSideOut_Snoop.empty() && FLEXUS_CHANNEL(BackSideOut_Snoop).available()) {
-          MemoryMessage::MemoryMessageType type = theController->BackSideOut_Snoop.peek()[MemoryMessageTag]->type();
-          if (type == MemoryMessage::EvictClean || type == MemoryMessage::EvictWritable ) {
-            MemoryTransport transport = theController->BackSideOut_Snoop.dequeue();
-            transport[MemoryMessageTag]->coreIdx()=flexusIndex();
-            DBG_(Trace, Comp(*this) ( << "Fast Transmit evict on port BackSideOut(Snoop): " << *(transport[MemoryMessageTag]) ) Addr(transport[MemoryMessageTag]->address()) );
-            FLEXUS_CHANNEL(BackSideOut_Snoop) << transport;
-          }
-        }
-      }
-    }
-
-    //If a bus transfer is in process, continue it
-    if (theBusTxCountdown > 0) {
-      DBG_Assert( theBusDirection != kIdle );
-      --theBusTxCountdown;
-    } else if (theBusDirection == kIdle) {
-      //The bus is available, initiate a transfer, if there are any to start
-
-      if (  //Back side buffer gets max priority if it can transfer
-        theBackSideIn_ReplyBuffer
-        && !theController->BackSideIn_Reply[0].full()
-      ) {
-        theBusContents = *theBackSideIn_ReplyBuffer;
-        theBackSideIn_ReplyBuffer = boost::none;
-        theBusDirection = kToBackSideIn_Reply;
-        theBusTxCountdown = transferTime( theBusContents );
-      } else if (  //Back side buffer gets max priority if it can transfer
-        theBackSideIn_RequestBuffer
-        && !theController->BackSideIn_Request[0].full()
-      ) {
-        theBusContents = *theBackSideIn_RequestBuffer;
-        theBackSideIn_RequestBuffer = boost::none;
-        theBusDirection = kToBackSideIn_Request;
-        theBusTxCountdown = transferTime( theBusContents );
-      } else if ( //Prefer a request message if it is older than any snoop messages
-        !theController->BackSideOut_Request.empty()
-        && FLEXUS_CHANNEL(BackSideOut_Request).available()
-        && (theController->BackSideOut_Snoop.empty() || theController->BackSideOut_Snoop.headTimestamp() > theController->BackSideOut_Request.headTimestamp() )
-        && (theController->BackSideOut_Reply.empty() || theController->BackSideOut_Reply.headTimestamp() > theController->BackSideOut_Request.headTimestamp() )
-      ) {
-        theBusDirection = kToBackSideOut_Request;
-        theBusTxCountdown = transferTime( theController->BackSideOut_Request.peek() );
-      } else if ( //Take any snoop message
-        !theController->BackSideOut_Snoop.empty()
-        && FLEXUS_CHANNEL(BackSideOut_Snoop).available()
-        && (theController->BackSideOut_Reply.empty() || theController->BackSideOut_Reply.headTimestamp() > theController->BackSideOut_Snoop.headTimestamp() )
-      ) {
-        theBusDirection = kToBackSideOut_Snoop;
-        theBusTxCountdown = transferTime( theController->BackSideOut_Snoop.peek() );
-      } else if ( //Take any snoop message
-        !theController->BackSideOut_Reply.empty()
-        && FLEXUS_CHANNEL(BackSideOut_Reply).available()
-      ) {
-        theBusDirection = kToBackSideOut_Reply;
-        theBusTxCountdown = transferTime( theController->BackSideOut_Reply.peek() );
-      }
-    }
-
-    if ( theBusTxCountdown == 0 ) {
-      switch (theBusDirection) {
-        case kIdle:
-          break; //Nothing to do
-        case kToBackSideIn_Reply:
-          if ( ! theController->BackSideIn_Reply[0].full()) {
-            DBG_(Trace, Comp(*this) ( << "Received on Port BackSideIn_Reply: " << *(theBusContents[MemoryMessageTag]) ) Addr(theBusContents[MemoryMessageTag]->address()) );
-            theController->BackSideIn_Reply[0].enqueue( theBusContents );
-            theBusDirection = kIdle;
-          }
-          break;
-        case kToBackSideIn_Request:
-          if ( ! theController->BackSideIn_Request[0].full()) {
-            DBG_(Trace, Comp(*this) ( << "Received on Port BackSideIn_Request: " << *(theBusContents[MemoryMessageTag]) ) Addr(theBusContents[MemoryMessageTag]->address()) );
-            theController->BackSideIn_Request[0].enqueue( theBusContents );
-            theBusDirection = kIdle;
-          }
-          break;
-        case kToBackSideOut_Snoop:
-          if ( FLEXUS_CHANNEL(BackSideOut_Snoop).available() ) {
-            DBG_Assert( !theController->BackSideOut_Snoop.empty() );
-            theBusContents = theController->BackSideOut_Snoop.dequeue();
-            theBusContents[MemoryMessageTag]->coreIdx()=flexusIndex();
-            DBG_(Trace, Comp(*this) ( << "Sent on Port BackSideOut(Snoop): " << *(theBusContents[MemoryMessageTag]) ) Addr(theBusContents[MemoryMessageTag]->address()) );
-            FLEXUS_CHANNEL(BackSideOut_Snoop) << theBusContents;
-            theBusDirection = kIdle;
+      if (item->type() == kINST) {
+          if (theInstrTLB.find(item->theVaddr) != theInstrTLB.end()) {
+                // item exists so mark hit
+            item->theTLBstatus = kTLBhit;
           } else {
-            //Bus is deadlocked - need to retry
-            ++theBusDeadlocks;
-            theBusDirection = kIdle;
+              // mark miss
+              item->theTLBstatus = kTLBmiss;
           }
-          break;
-        case kToBackSideOut_Reply:
-          if ( FLEXUS_CHANNEL(BackSideOut_Reply).available() ) {
-            DBG_Assert( !theController->BackSideOut_Reply.empty() );
-            theBusContents = theController->BackSideOut_Reply.dequeue();
-            theBusContents[MemoryMessageTag]->coreIdx()=flexusIndex();
-            DBG_(Trace, Comp(*this) ( << "Sent on Port BackSideOut(Reply): " << *(theBusContents[MemoryMessageTag]) ) Addr(theBusContents[MemoryMessageTag]->address()) );
-            FLEXUS_CHANNEL(BackSideOut_Reply) << theBusContents;
-            theBusDirection = kIdle;
-          } else {
-            //Bus is deadlocked - need to retry
-            ++theBusDeadlocks;
-            theBusDirection = kIdle;
-          }
-          break;
-        case kToBackSideOut_Request:
-          if ( FLEXUS_CHANNEL(BackSideOut_Request).available() ) {
-            DBG_Assert( !theController->BackSideOut_Request.empty() );
-            theBusContents = theController->BackSideOut_Request.dequeue();
-            theBusContents[MemoryMessageTag]->coreIdx()=flexusIndex();
-            DBG_(Trace, Comp(*this) ( << "Sent on Port BackSideOut(Request): " << *(theBusContents[MemoryMessageTag]) ) Addr(theBusContents[MemoryMessageTag]->address()) );
-            FLEXUS_CHANNEL(BackSideOut_Request) << theBusContents;
-            theBusDirection = kIdle;
-          } else {
-            //Bus is deadlocked - need to retry
-            ++theBusDeadlocks;
-            theBusDirection = kIdle;
-          }
-          break;
-          /* // REMOVED - msutherl
-        case kToBackSideOut_Prefetch:
-          if ( FLEXUS_CHANNEL(BackSideOut_Prefetch).available() ) {
-            DBG_Assert( !theController->BackSideOut_Prefetch.empty() );
-            theBusContents = theController->BackSideOut_Prefetch.dequeue();
-            DBG_(Trace, Comp(*this) ( << "Sent on Port BackSideOut(Prefetch): " << *(theBusContents[MemoryMessageTag]) ) Addr(theBusContents[MemoryMessageTag]->address()) );
-            FLEXUS_CHANNEL(BackSideOut_Prefetch) << theBusContents;
-            theBusDirection = kIdle;
-          } else {
-            //Bus is deadlocked - need to retry
-            ++theBusDeadlocks;
-            theBusDirection = kIdle;
-          }
-          break;
-          */
       }
-    }
+      else if (item->type() == kDATA) {
+          if (theDataTLB.find(item->theVaddr) != theDataTLB.end()) {
+                // item exists so mark hit
+              item->theTLBstatus = kTLBhit;
+
+          } else {
+              // mark miss
+              item->theTLBstatus = kTLBmiss;
+
+          }
+      }
+
+      FLEXUS_CHANNEL(ReplyOut) << theRequests;
+
 
   }
 
   // Msutherl
-  FLEXUS_PORT_ALWAYS_AVAILABLE(AddressesToTranslate);
-  void push( interface::AddressesToTranslate const &,
+  FLEXUS_PORT_ALWAYS_AVAILABLE(RequestIn);
+  void push( interface::RequestIn const &,
              TranslatedAddresses& translateUs ) {
-      /* TODO: add requests to the cache controller to actually place the TTE descr.
-       * requests into the flexus memory hierarchy.
-       * - for now, just does the translation walk
-       */
-      // commence
-      for( auto& iter : translateUs->internalContainer ) {
-          if( true ) {
-              // TODO: TLB structure lookup & return hit/miss
-          }
-          uint8_t flexusCurrentELRegime = 1; // FIXME: should return tr. regime for addr
-      }
 
-      // fin
-      FLEXUS_CHANNEL(TranslationsToReturn) << translateUs;
+      theRequests = translateUs;
+
   }
+
+  FLEXUS_PORT_ALWAYS_AVAILABLE(PopulateTLB);
+  void push( interface::PopulateTLB const &,
+             TranslatedAddresses& translateUs ) {
+
+      while(translateUs->internalContainer.size() > 0){
+          boost::intrusive_ptr<Translation> tr = translateUs->internalContainer.pop();
+
+          DBG_Assert(tr->status() == kunresolved)
+          if (tr->type() == kINST) {
+              theInstrTLB[tr->theVaddr] = tr->thePaddr;
+          } else if (tr->type() == kDATA) {
+                  theDataTLB[tr->theVaddr] = tr->thePaddr;
+          }
+      }
+  }
+
+
 
 };
 
