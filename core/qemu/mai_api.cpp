@@ -86,8 +86,8 @@ void armProcessorImpl::handleInterrupt( long long aVector) {
   thePendingInterrupt = aVector;
 }
 
-uint32_t armProcessorImpl::fetchInstruction(Translation & aTranslation) {
-  API::logical_address_t addr = aTranslation.theVaddr;
+uint32_t armProcessorImpl::fetchInstruction(boost::intrusive_ptr<Flexus::SharedTypes::Translation> aTranslation) {
+  API::logical_address_t addr = aTranslation->theVaddr;
   API::physical_address_t phy_addr = API::QEMU_logical_to_physical(*this, API::QEMU_DI_Instruction, addr);
 
   bits a = construct(Qemu::API::QEMU_read_phys_memory( phy_addr, 4), 4);

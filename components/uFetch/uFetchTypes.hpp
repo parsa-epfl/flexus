@@ -118,8 +118,6 @@ struct FetchedOpcode {
   boost::intrusive_ptr<TransactionTracker> theTransaction;
 
   FetchedOpcode( VirtualMemoryAddress anAddr
-                 //, uint32_t aConvertedInstruction
-//                 , VirtualMemoryAddress aNextAddr
                  , Opcode anOpcode
                  , boost::intrusive_ptr<BPredState> aBPState
                  , boost::intrusive_ptr<TransactionTracker> aTransaction
@@ -140,24 +138,24 @@ struct TranslationVecWrapper : public boost::counted_base {
     TranslationVecWrapper(){}
     ~TranslationVecWrapper(){}
 
-    std::vector< boost::intrusive_ptr<Translation> > internalContainer; // from mai_api
+    std::queue< boost::intrusive_ptr<Translation> > internalContainer; // from mai_api
 
     void addNewTranslation(boost::intrusive_ptr<Translation>& aTr) {
-        internalContainer.push_back(aTr);
+        internalContainer.push(aTr);
     }
 
-    void updateExistingTranslation(VirtualMemoryAddress aVAddr, PhysicalMemoryAddress translatedAddress) {
-        for( auto& translation : internalContainer ) {
-            if( translation->theVaddr == aVAddr ) {
-                translation->thePaddr = translatedAddress;
-                return;
-            }
-        }
-    }
+//    void updateExistingTranslation(VirtualMemoryAddress aVAddr, PhysicalMemoryAddress translatedAddress) {
+//        for( auto& translation : internalContainer ) {
+//            if( translation->theVaddr == aVAddr ) {
+//                translation->thePaddr = translatedAddress;
+//                return;
+//            }
+//        }
+//    }
 };
 
 struct FetchBundle : public boost::counted_base {
-  std::list< FetchedOpcode > theOpcodes;
+  std::queue< FetchedOpcode > theOpcodes;
   std::list< tFillLevel > theFillLevels;
 };
 

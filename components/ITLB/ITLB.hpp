@@ -55,16 +55,20 @@ COMPONENT_PARAMETERS(
 );
 
 COMPONENT_INTERFACE(
+        /*
   DYNAMIC_PORT_ARRAY(PushOutput, MemoryTransport, FrontSideOut_I )
   DYNAMIC_PORT_ARRAY(PushInput, MemoryTransport, FrontSideIn_Request)
-  PORT(PushOutput, MemoryTransport, BackSideOut_Reply)
-  PORT(PushOutput, MemoryTransport, BackSideOut_Snoop)
-  PORT(PushOutput, MemoryTransport, BackSideOut_Request)
-  PORT(PushInput, MemoryTransport, BackSideIn_Request)
-  PORT(PushInput, MemoryTransport, BackSideIn_Reply)
-
-  PORT( PushInput, TranslatedAddresses, AddressesToTranslate )
-  PORT( PushOutput, TranslatedAddresses, TranslationsToReturn )
+                                      PORT(PushOutput, MemoryTransport, BackSideOut_Reply)
+                                      PORT(PushOutput, MemoryTransport, BackSideOut_Snoop)
+                                      PORT(PushOutput, MemoryTransport, BackSideOut_Request)
+                                      PORT(PushInput, MemoryTransport, BackSideIn_Request)
+                                      PORT(PushInput, MemoryTransport, BackSideIn_Reply)
+                              PORT( PushInput, TranslatedAddresses, AddressesToTranslate )
+                              PORT( PushOutput, TranslatedAddresses, TranslationsToReturn )
+*/
+                                PORT( PushInput, TranslatedAddresses, RequestIn )
+                                PORT( PushOutput, TranslatedAddresses, ReplyOut )
+                                PORT( PushInput, TranslatedAddresses, PopulateTLB )
 
   DRIVE(CacheDrive)
 );

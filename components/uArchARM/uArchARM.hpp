@@ -125,6 +125,10 @@ COMPONENT_INTERFACE(
   PORT( PushInput, TranslatedAddresses, AddressesToTranslate )
   PORT( PushOutput, TranslatedAddresses, TranslationsToReturn )
 
+    PORT( PushOutput, TranslatedAddresses, TLBRequestOut )
+    PORT( PushInput, TranslatedAddresses, TLBIn )
+    PORT( PushOutput, TranslatedAddresses, TLBfill )
+
   DRIVE( uArchDrive )
 );
 

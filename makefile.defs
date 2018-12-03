@@ -47,8 +47,8 @@ GCC_BINARY=g++ --std=c++11
 GCC_VERSION_NOCHECK=false
 
 # Boost 1.59.0 path
-BOOST_PATH=/usr/local/include
-BOOST_BINARIES=/usr/local/lib
+BOOST_PATH=/home/parsacom/tools/boost-qflex/include
+BOOST_BINARIES=/home/parsacom/tools/boost-qflex/lib
 BOOST_VERSION_NOCHECK=true
 
 ###############################################################################
