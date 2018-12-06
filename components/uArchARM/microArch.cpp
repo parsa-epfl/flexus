@@ -151,7 +151,6 @@ public:
 
       DBG_( Crit, ( << theName << " connected to " << (static_cast<Flexus::Qemu::API::conf_object_t *>(*theCPU))->name ));
     DBG_( Tmp, ( << "CORE:  Initializing MMU ")  );
-//    theCore->InitMMU( theCPU->getMMURegsFromQEMU() );
 
       if (theBreakOnResynchronize && (theNode == 0)) {
         DBG_( Crit, ( << "Simulation will stop on unexpected synchronizations" ) );
@@ -566,9 +565,7 @@ void resetArchitecturalState()
     pregsSys(state);
   }
 
-    bool IsTranslationEnabledAtEL(uint8_t & anEL) {
-        return theCore->IsTranslationEnabledAtEL(anEL);
-    }
+
 };
 
 std::shared_ptr<microArch> microArch::construct( uArchOptions_t options

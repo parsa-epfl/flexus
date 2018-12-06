@@ -883,11 +883,7 @@ public:
   // MMU and Multi-stage translation, now in CoreModel, not QEMU MAI
   // - Msutherl: Oct'18
 public:
-  bool IsTranslationEnabledAtEL(uint8_t & anEL);
   void translate(boost::intrusive_ptr<Translation>& aTr);
-  void intermediateTranslationStep(boost::intrusive_ptr<Translation>& aTr); // TODO: this func, permissions check etc.
-
-  void InitMMU( std::shared_ptr<mmu_regs_t> regsFromQemu );
 
 private:
   // Private MMU internal functionality
@@ -895,6 +891,7 @@ private:
   MMU::TTEDescriptor getNextTTDescriptor(Translation& aTr );
   void InitialTranslationSetup( TranslationTransport& aTr );
   bool doTTEAccess( TranslationTransport& aTr );
+  void translationMemoryRequest(boost::inPhysicalMemoryAddress aTTEDescriptor);
   void setupTTResolver( TranslationTransport& aTr, uint64_t rawTTDescriptor) ;
 
   //Debugging

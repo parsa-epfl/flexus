@@ -223,9 +223,9 @@ class FLEXUS_COMPONENT(uFetch) {
   FLEXUS_COMPONENT_IMPL(uFetch);
 
   std::vector< std::list< FetchAddr > > theFAQ;
-  pFetchBundle theBundle
+  pFetchBundle theBundle;
 
-  //This opcode is used to signal an ITLB miss to the core, to force
+  //This opcode is used to signal an MMU miss to the core, to force
   //a resync with Qemu 
   static const int32_t kITLBMiss = 0UL; //illtrap
 
@@ -331,7 +331,7 @@ public:
     theI.init( cfg.Size, cfg.Associativity, cfg.ICacheLineSize, statName() );
     theIndexShift = LOG2( cfg.ICacheLineSize );
     theBlockMask = ~ (cfg.ICacheLineSize - 1);
-    theBundle(new FetchBundle);
+    theBundle = new FetchBundle();
     theFAQ.resize(cfg.Threads);
     theIcacheMiss.resize(cfg.Threads);
     theIcacheVMiss.resize(cfg.Threads);
@@ -507,7 +507,7 @@ private:
       if (paddr == 0) {
           DBG_(Tmp, (<<"Last Physical translation lookup failed!"));
         ++theFailedTranslations;
-        return true; //Failed translations are treated as hits - they will cause an ITLB miss in the pipe.
+        return true; //Failed translations are treated as hits - they will cause an MMU miss in the pipe.
       }
     } else {
       DBG_(Tmp, (<<"Not in Flexus cache...Will look into Qemu now!"));
@@ -522,7 +522,7 @@ private:
           assert(false);
         DBG_(Tmp, (<<"Translation failed!"));
         ++theFailedTranslations;
-        return true; //Failed translations are treated as hits - they will cause an ITLB miss in the pipe.
+        return true; //Failed translations are treated as hits - they will cause an MMU miss in the pipe.
       }
       else
       {
@@ -905,22 +905,15 @@ private:
 
       pFetchBundle bundle(new FetchBundle);
 
-      while (theBundle->theOpcodes.size() > 0 && theBundle->theOpcodes.front() != 0) {
-           bundle->emplace(theBundle->pop());
+      while (theBundle->theOpcodes.size() > 0 && theBundle->theOpcodes.front().theOpcode != 0) {
+           bundle->theOpcodes.push(theBundle->theOpcodes.front());
+           theBundle->theOpcodes.pop();
       }
 
       if (bundle->theOpcodes.size() > 0 ) {
 
-        FLEXUS_CHANNEL_ARRAY( FetchBundleOut, anIndex ) << bundle;
-      } else {
-            FETCH_DBG( "Not processing the fetches if any" );
-            FETCH_DBG("available_fiq: " << available_fiq
-                   << " fetch address queue size: "<< theFAQ[anIndex].size()
-                   << " Flexus quiescing: " << theFlexus->quiescing());
-        }
-
-
-
+        FLEXUS_CHANNEL_ARRAY( FetchBundleOut, 0 ) << bundle;
+      }
   }
 
   void sendFetchRequest(index_t anIndex, VirtualMemoryAddress const & anAddress) {
@@ -963,7 +956,8 @@ private:
 
     DBG_Assert(theBundle->theOpcodes.front().thePC == tr->theVaddr, (<< "virtual addresses comparison failure"));
     Flexus::SharedTypes::Translation gimme;
-    theBundle->theOpcodes.front().theOpcode =  cpu(tr->theIndex)->fetchInstruction(tr->thePaddr); // magic QEMU
+
+    theBundle->theOpcodes.front().theOpcode =  cpu(tr->theIndex)->fetchInstruction(tr); // magic QEMU
 //    op_code = cpu(anIndex)->fetchInstruction(gimme); // magic QEMU
   }
 };

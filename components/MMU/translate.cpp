@@ -35,35 +35,24 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-#include "coreModelImpl.hpp"
+#include <components/uArchARM/CoreModel/coreModelImpl.hpp>
 #include <core/qemu/ARMmmu.hpp>
 #include <components/CommonQEMU/Transports/TranslationTransport.hpp>
 #include <core/types.hpp>
+#include <components/MMU/MMU.hpp>
 
 #define DBG_DeclareCategories uArchCat
 #define DBG_SetDefaultOps AddCat(uArchCat)
 #include DBG_Control()
 
-namespace nuArchARM {
+namespace nMMU {
     using namespace MMU;
     using namespace Flexus::Qemu::API;
     using Flexus::SharedTypes::Translation;
     using Flexus::SharedTypes::TranslationState;
     using Flexus::SharedTypes::TranslationTransport;
 
-    void CoreImpl::InitMMU( std::shared_ptr<mmu_regs_t> regsFromQemu ) {
-      this->theMMU = std::make_shared<mmu_t>();
-      mmu_regs_t* rawRegs = reinterpret_cast<mmu_regs_t*>( regsFromQemu.get() );
 
-      theMMU->initRegsFromQEMUObject( rawRegs );
-      theMMU->setupAddressSpaceSizesAndGranules();
-      this->mmuInitialized = true;
-      DBG_(Tmp,( << "MMU object init'd, " << std::hex << theMMU << std::dec ));
-    }
-
-    bool CoreImpl::IsTranslationEnabledAtEL(uint8_t & anEL) {
-        return theMMU->IsExcLevelEnabled(anEL);
-    }
 
     void CoreImpl::translate(boost::intrusive_ptr<Translation>& aTranslation) {
 
@@ -115,6 +104,35 @@ namespace nuArchARM {
         setupTTResolver(aTranslation, initialTTBR);
     }
 
+    bool CoreImpl::translationMemoryRequest(boost::inPhysicalMemoryAddress aTTEDescriptor){
+
+
+          eOperation issue_op = kLoad;
+
+          //Fill in an MSHR and memory port
+          boost::intrusive_ptr<MemOp> op(new MemOp());
+          op->theInstruction = boost::none;
+          MSHR mshr;
+          op->theOperation = mshr.theOperation = issue_op;
+          DBG_Assert( op->theVAddr != kUnresolved);
+
+          op->thePAddr = mshr.thePaddr = aTTEDescriptor;
+
+          op->theSize = mshr.theSize = 8;
+
+          boost::intrusive_ptr<TransactionTracker> tracker = new TransactionTracker;
+          tracker->setAddress( op->thePAddr );
+          tracker->setInitiator(theNode);
+
+          tracker->setSource("uArchARM");
+          tracker->setOS(system);
+          op->theTracker = tracker;
+          mshr.theTracker = tracker;
+
+          theMSHRs.insert( std::make_pair(mshr.thePaddr, mshr) );
+          theMemoryPorts.push_back( op);
+    }
+
     bool CoreImpl::doTTEAccess( TranslationTransport&  aTranslation ) {
         /* 
          * 1) Entire phys addr comes from the TTAddressResolver object
@@ -140,7 +158,10 @@ namespace nuArchARM {
         PhysicalMemoryAddress TTEDescriptor( statefulPointer->TTAddressResolver->resolve(basicPointer->theVaddr) );
         DBG_(Tmp,(<< "Current Translation Level: " << (unsigned int) statefulPointer->currentLookupLevel
                     << ", Returned TTE Descriptor Address: " << TTEDescriptor << std::dec ));
-        unsigned long long rawTTEValue = Flexus::Core::construct(QEMU_read_phys_memory(  TTEDescriptor, 8 ), 8).to_ulong(); // TODO: check w mark
+
+        //        unsigned long long rawTTEValue = Flexus::Core::construct(QEMU_read_phys_memory(  TTEDescriptor, 8 ), 8).to_ulong(); // TODO: check w mark
+        translationMemoryRequest(TTEDescriptor);
+
         DBG_(Tmp,(<< "Current Translation Level: " << (unsigned int) statefulPointer->currentLookupLevel
                     << ", Read Raw TTE Desc. from QEMU : " << std::hex << rawTTEValue << std::dec ));
         /* Check Valid */
@@ -244,4 +265,4 @@ namespace nuArchARM {
     //TODO??
     TTEDescriptor getNextTTDescriptor(Translation& aTr ) {DBG_Assert(false); }
 
-} // end namespace nuArchARM
+} // end namespace nMMU

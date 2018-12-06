@@ -41,7 +41,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 
-#include <components/ITLB/ITLB.hpp>
+#include <components/MMU/MMU.hpp>
 
 #include <core/performance/profile.hpp>
 #include <core/qemu/configuration_api.hpp>
@@ -51,20 +51,21 @@
 
 #include <core/qemu/mai_api.hpp>
 
-#include <unordered_map>
+#include <map>
 #include <queue>
+#include <vector>
 
-#define DBG_DefineCategories ITLB
+#define DBG_DefineCategories MMU
 #include DBG_Control()
 #define DBG_DefineCategories TLBMissTracking
 #include DBG_Control()
-#define DBG_SetDefaultOps AddCat(ITLB)
+#define DBG_SetDefaultOps AddCat(MMU)
 #include DBG_Control()
 
-#define FLEXUS_BEGIN_COMPONENT ITLB 
+#define FLEXUS_BEGIN_COMPONENT MMU 
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
 
-namespace nTLB {
+namespace nMMU {
 
 using namespace Flexus;
 using namespace Core;
@@ -73,8 +74,8 @@ using namespace nCache;
 
 using std::unique_ptr;
 
-class FLEXUS_COMPONENT(ITLB) {
-  FLEXUS_COMPONENT_IMPL(ITLB);
+class FLEXUS_COMPONENT(MMU) {
+  FLEXUS_COMPONENT_IMPL(MMU);
 
 private:
 
@@ -82,13 +83,18 @@ private:
 
   Flexus::Stat::StatCounter theBusDeadlocks;
 
-  std::unordered_map<VirtualMemoryAddress, PhysicalMemoryAddress> theInstrTLB;
-  std::unordered_map<VirtualMemoryAddress, PhysicalMemoryAddress> theDataTLB;
 
-  TranslatedAddresses theRequests;
+  typedef std::map<VirtualMemoryAddress, PhysicalMemoryAddress> TLBentry;
+  TLBentry theInstrTLB;
+  TLBentry theDataTLB;
+
+  std::vector<boost::intrusive_ptr<Translation>> thePageWalkEntries;
+  std::vector<boost::intrusive_ptr<Translation>> theiLookUpEntries, thedLookUpEntries;
+
+  Flexus::Qemu::Processor theCPU;
 
 public:
-  FLEXUS_COMPONENT_CONSTRUCTOR(ITLB)
+  FLEXUS_COMPONENT_CONSTRUCTOR(MMU)
     : base ( FLEXUS_PASS_CONSTRUCTOR_ARGS )
     , theBusDeadlocks( statName() + "-BusDeadlocks" )
     , theBusDirection(kIdle)
@@ -160,14 +166,17 @@ public:
             false,//cfg.EvictOnSnoop,
             false//cfg.UseReplyChannel
             );
+
+    theCPU = Flexus::Qemu::Processor::getProcessor(theNodeId);
+
   }
 
   void finalize() {}
 
-  //CacheDrive
+  //MMUDrive
   //----------
-  void drive(interface::CacheDrive const &) {
-    DBG_(VVerb, Comp(*this) ( << "CacheDrive" ) ) ;
+  void drive(interface::MMUDrive const &) {
+    DBG_(VVerb, Comp(*this) ( << "MMUDrive" ) ) ;
     theController->processMessages();
     busCycle();
   }
@@ -183,27 +192,35 @@ public:
 
   void busCycle() {
 
-      DBG_Assert(theRequests->internalContainer.size() != 0)
+
+      DBG_Assert(theRequests->internalContainer.size() != 0);
       boost::intrusive_ptr<Translation> item = theRequests->internalContainer.front();
 
 
-      if (item->type() == kINST) {
+      if (item->isInstr()) {
           if (theInstrTLB.find(item->theVaddr) != theInstrTLB.end()) {
                 // item exists so mark hit
-            item->theTLBstatus = kTLBhit;
+            item->setHit();
           } else {
               // mark miss
-              item->theTLBstatus = kTLBmiss;
+              item->setMiss();
+              thePageWalkEntries.push_back(item);
           }
-      }
-      else if (item->type() == kDATA) {
+      } else if (item->isData()) {
           if (theDataTLB.find(item->theVaddr) != theDataTLB.end()) {
                 // item exists so mark hit
-              item->theTLBstatus = kTLBhit;
+              item->setHit();
 
           } else {
               // mark miss
-              item->theTLBstatus = kTLBmiss;
+              item->setMiss();
+              thePageWalkEntries.push_back(item);
+          }
+      }
+
+      if (thePageWalkEntries.size() > 0){
+          for (auto& i : thePageWalkEntries) {
+              FLEXUS_CHANNEL(TranslateOut) << i;
 
           }
       }
@@ -213,47 +230,118 @@ public:
 
   }
 
+  void initMMU( std::shared_ptr<mmu_regs_t> regsFromQemu ) {
+    this->theMMU = std::make_shared<mmu_t>();
+    mmu_regs_t* rawRegs = reinterpret_cast<mmu_regs_t*>( regsFromQemu.get() );
+
+    theMMU->initRegsFromQEMUObject( rawRegs );
+    theMMU->setupAddressSpaceSizesAndGranules();
+    this->mmuInitialized = true;
+    DBG_(Tmp,( << "MMU object init'd, " << std::hex << theMMU << std::dec ));
+  }
+
+  bool IsTranslationEnabledAtEL(uint8_t & anEL) {
+      return theCore->IsTranslationEnabledAtEL(anEL);
+      theNodeId
+
+  }
+
   // Msutherl
-  FLEXUS_PORT_ALWAYS_AVAILABLE(RequestIn);
+  FLEXUS_PORT_ALWAYS_AVAILABLE(iRequestIn);
   void push( interface::RequestIn const &,
-             TranslatedAddresses& translateUs ) {
-
-      theRequests = translateUs;
-
+             TranslationPtr& aTranslate ) {
+      theiLookUpEntries.push_back( aTranslate );
+  }
+  FLEXUS_PORT_ALWAYS_AVAILABLE(dRequestIn);
+  void push( interface::RequestIn const &,
+             TranslationPtr& aTranslate ) {
+      thedLookUpEntries.push_back( aTranslate );
   }
 
-  FLEXUS_PORT_ALWAYS_AVAILABLE(PopulateTLB);
-  void push( interface::PopulateTLB const &,
-             TranslatedAddresses& translateUs ) {
 
-      while(translateUs->internalContainer.size() > 0){
-          boost::intrusive_ptr<Translation> tr = translateUs->internalContainer.pop();
+  void sendTLBresponse(TranslationPtr aTranslation) {
+    aTranslation->isInstr()
+    ?   FLEXUS_CHANNEL(iTranslationOut) << aTranslation
+    :   FLEXUS_CHANNEL(dTranslationOut) << aTranslation;
+  }
 
-          DBG_Assert(tr->status() == kunresolved)
-          if (tr->type() == kINST) {
-              theInstrTLB[tr->theVaddr] = tr->thePaddr;
-          } else if (tr->type() == kDATA) {
-                  theDataTLB[tr->theVaddr] = tr->thePaddr;
-          }
+/*
+  //FrontSideIn_Request
+    //-------------------
+    bool available( interface::FrontSideIn_Request const &,
+                    index_t anIndex) {
+      return ! theController->FrontSideIn_Request[0].full();
+    }
+    void push( interface::FrontSideIn_Request const &,
+               index_t           anIndex,
+               MemoryTransport & aMessage) {
+      DBG_Assert(! theController->FrontSideIn_Request[0].full(), ( << statName() ) );
+      aMessage[MemoryMessageTag]->coreIdx() = anIndex;
+      DBG_(Trace, Comp(*this) ( << "Received on Port FrontSideIn(Request) [" << anIndex << "]: " << *(aMessage[MemoryMessageTag]) ) Addr(aMessage[MemoryMessageTag]->address()) );
+      if (aMessage[TransactionTrackerTag]) {
+        aMessage[TransactionTrackerTag]->setDelayCause(name(), "Front Rx");
       }
-  }
+
+      theController->FrontSideIn_Request[0].enqueue(aMessage);
+    }
+
+    //BackeSideIn_Reply
+    //-----------
+    bool available( interface::BackSideIn_Reply const &) {
+      return ! theBackSideIn_ReplyBuffer;
+    }
+    void push( interface::BackSideIn_Reply const &, MemoryTransport & aMessage) {
+      if (cfg.NoBus) {
+        aMessage[MemoryMessageTag]->coreIdx() = 0;
+        theBackSideIn_ReplyInfiniteQueue.push_back(aMessage);
+        return;
+      }
+      DBG_Assert(! theBackSideIn_ReplyBuffer);
+      // In non-piranha caches, the core index should always be zero, since
+      // things above (such as the processor) do not want to know about core numbers
+      aMessage[MemoryMessageTag]->coreIdx() = 0;
+      theBackSideIn_ReplyBuffer = aMessage;
+    }
+
+    //BackeSideIn_Request
+    //-----------
+    bool available( interface::BackSideIn_Request const &) {
+      return ! theBackSideIn_RequestBuffer;
+    }
+    void push( interface::BackSideIn_Request const &, MemoryTransport & aMessage) {
+      if (cfg.NoBus) {
+        aMessage[MemoryMessageTag]->coreIdx() = 0;
+        theBackSideIn_RequestInfiniteQueue.push_back(aMessage);
+        return;
+      }
+      DBG_Assert(! theBackSideIn_RequestBuffer);
+      // In non-piranha caches, the core index should always be zero, since
+      // things above (such as the processor) do not want to know about core numbers
+      aMessage[MemoryMessageTag]->coreIdx() = 0;
+      theBackSideIn_RequestBuffer = aMessage;
+    }
+*/
+
+
+
+
 
 
 
 };
 
-} //End Namespace nTLB
+} //End Namespace nMMU
 
-FLEXUS_COMPONENT_INSTANTIATOR( ITLB , nTLB );
-FLEXUS_PORT_ARRAY_WIDTH( ITLB , FrontSideOut_I )           {
-  return (cfg.Cores);
-}
-FLEXUS_PORT_ARRAY_WIDTH( ITLB , FrontSideIn_Request )    {
-  return (cfg.Cores);
-}
+FLEXUS_COMPONENT_INSTANTIATOR( MMU , nMMU );
+//FLEXUS_PORT_ARRAY_WIDTH( MMU , FrontSideOut_I )           {
+//  return (cfg.Cores);
+//}
+//FLEXUS_PORT_ARRAY_WIDTH( MMU , FrontSideIn_Request )    {
+//  return (cfg.Cores);
+//}
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
-#define FLEXUS_END_COMPONENT ITLB
+#define FLEXUS_END_COMPONENT MMU
 
 #define DBG_Reset
 #include DBG_Control()

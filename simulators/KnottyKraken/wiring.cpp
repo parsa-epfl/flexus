@@ -25,7 +25,7 @@ std::string theSimulatorName = "KnottyKraken v1.0";
 #include<components/armDecoder/armDecoder.hpp>
 #include<components/uArchARM/uArchARM.hpp>
 #include<components/SplitDestinationMapper/SplitDestinationMapper.hpp>
-//#include <components/ITLB/ITLB.hpp>
+#include <components/MMU/MMU.hpp>
 
 
 #include FLEXUS_END_DECLARATION_SECTION()
@@ -33,8 +33,7 @@ std::string theSimulatorName = "KnottyKraken v1.0";
 
 #include FLEXUS_BEGIN_COMPONENT_CONFIGURATION_SECTION()
 
-CREATE_CONFIGURATION( ITLB , "TLB", theITLBCfg );
-
+CREATE_CONFIGURATION( MMU , "MMU", theMMUCfg );
 CREATE_CONFIGURATION( FetchAddressGenerate, "fag", theFAGCfg );
 CREATE_CONFIGURATION( uFetch, "ufetch", theuFetchCfg );
 CREATE_CONFIGURATION( PortCombiner, "combiner", theCombinerCfg );
@@ -251,12 +250,12 @@ bool initializeParameters() {
   theMagicBreakCfg.TerminateOnMagicBreak.initialize(-1);
   theMagicBreakCfg.EnableIterationCounts.initialize(false);
 
-  // Msutherl: put ITLB stuff here because I'm too lazy to make a postload
-  theITLBCfg.Cores.initialize(1);
-  theITLBCfg.CacheLevel.initialize(eL1);
-  theITLBCfg.ArrayConfiguration.initialize("STD:size=4096:assoc=4:repl=LRU");
-  theITLBCfg.TextFlexpoints.initialize(false);
-  theITLBCfg.GZipFlexpoints.initialize(false);
+  // Msutherl: put MMU stuff here because I'm too lazy to make a postload
+  theMMUCfg.Cores.initialize(1);
+  theMMUCfg.CacheLevel.initialize(eL1);
+  theMMUCfg.ArrayConfiguration.initialize("STD:size=4096:assoc=4:repl=LRU");
+  theMMUCfg.TextFlexpoints.initialize(false);
+  theMMUCfg.GZipFlexpoints.initialize(false);
 
 
   return true; //true = Abort simulation if parameters are not initialized
@@ -269,7 +268,7 @@ bool initializeParameters() {
 //All component Instances are created here.  This section
 //also creates handles for each component
 //
-FLEXUS_INSTANTIATE_COMPONENT_ARRAY( ITLB , theITLBCfg, theITLB, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
+FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MMU , theMMUCfg, theMMU, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( FetchAddressGenerate, theFAGCfg, theFAG, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( uFetch, theuFetchCfg, theuFetch, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
@@ -303,14 +302,16 @@ WIRE( theuFetch, FetchBundleOut,        theDecoder, FetchBundleIn         )
 WIRE( theDecoder, SquashOut,            theuFetch, SquashIn               )
 WIRE( theuArch, ChangeCPUState,         theuFetch, ChangeCPUState         )
 
-// Fetch to Translate: MARK
-WIRE( theuFetch, TLBLookupOut,          theuArch, AddressesToTranslate     )
-WIRE( theuArch, TranslationsToReturn,    theuFetch, TLBReturnIn            )
+// Fetch to MMU
+WIRE( theuFetch, iTranslationOut,       theMMU, iRequestIn                )
+WIRE( theMMU, iTranslationReply,        theuFetch, iTranslationIn         )
 
-//uArch to TLB
-WIRE( theuArch, TLBRequestOut,          theITLB, RequestIn                 )
-WIRE( theITLB, ReplyOut,                theuArch, TLBIn                    )
-WIRE( theuArch, TLBfill,                theITLB, PopulateTLB                    )
+// uArch to MMU
+WIRE( theuArch, dTranslationOut,        theMMU, dRequestIn                )
+WIRE( theMMU, dTranslationReply,        theuArch, dTranslationIn          )
+WIRE( theMMU, MemoryRequestOut,         theuArch, MemoryRequestIn         )
+WIRE(theuArch, resyncOut,               theMMU,   resyncIn                )
+
 
 
 //Decoder to uArch
@@ -330,37 +331,37 @@ WIRE( theuFetch, FetchReplyOut,         theNetMapper, ICacheReplyIn       )
 //uArch to L1 D cache
 WIRE( theuArch, MemoryOut_Request,      theL1d, FrontSideIn_Request       )
 WIRE( theuArch, MemoryOut_Snoop,        theL1d, FrontSideIn_Snoop         )
-WIRE( theL1d, FrontSideOut_D,           theuArch, MemoryIn               )
+WIRE( theL1d, FrontSideOut_D,           theuArch, MemoryIn                )
 
-WIRE( theNetMapper, ICacheSnoopOut,     theuFetchCombiner, SnoopIn         )
-WIRE( theNetMapper, ICacheReplyOut,     theuFetchCombiner, ReplyIn         )
+WIRE( theNetMapper, ICacheSnoopOut,     theuFetchCombiner, SnoopIn        )
+WIRE( theNetMapper, ICacheReplyOut,     theuFetchCombiner, ReplyIn        )
 
-WIRE( theuFetchCombiner, FetchMissOut,  theuFetch, FetchMissIn             )
+WIRE( theuFetchCombiner, FetchMissOut,  theuFetch, FetchMissIn            )
 
 //L1d to NetMapper
-WIRE( theL1d, BackSideOut_Request,       theNetMapper, CacheRequestIn      )
-WIRE( theL1d, BackSideOut_Snoop,         theNetMapper, CacheSnoopIn        )
-WIRE( theL1d, BackSideOut_Reply,         theNetMapper, CacheReplyIn        )
-WIRE( theNetMapper, CacheSnoopOut,      theL1d, BackSideIn_Request         )
-WIRE( theNetMapper, CacheReplyOut,      theL1d, BackSideIn_Reply           )
+WIRE( theL1d, BackSideOut_Request,       theNetMapper, CacheRequestIn     )
+WIRE( theL1d, BackSideOut_Snoop,         theNetMapper, CacheSnoopIn       )
+WIRE( theL1d, BackSideOut_Reply,         theNetMapper, CacheReplyIn       )
+WIRE( theNetMapper, CacheSnoopOut,      theL1d, BackSideIn_Request        )
+WIRE( theNetMapper, CacheReplyOut,      theL1d, BackSideIn_Reply          )
 
 //Memory to NetMapper
 WIRE( theNetMapper, MemoryOut,          theMemory, LoopbackIn             )
 WIRE( theMemory, LoopbackOut,           theNetMapper, MemoryIn            )
 
 //Directory to NetMapper
-WIRE( theNetMapper, DirReplyOut,        theL2, Reply_In            )
-WIRE( theNetMapper, DirSnoopOut,        theL2, Snoop_In            )
-WIRE( theNetMapper, DirRequestOut,      theL2, Request_In          )
-WIRE( theL2, Reply_Out,          theNetMapper, DirReplyIn          )
-WIRE( theL2, Snoop_Out,          theNetMapper, DirSnoopIn          )
-WIRE( theL2, Request_Out,        theNetMapper, DirRequestIn        )
+WIRE( theNetMapper, DirReplyOut,        theL2, Reply_In                   )
+WIRE( theNetMapper, DirSnoopOut,        theL2, Snoop_In                   )
+WIRE( theNetMapper, DirRequestOut,      theL2, Request_In                 )
+WIRE( theL2, Reply_Out,                 theNetMapper, DirReplyIn          )
+WIRE( theL2, Snoop_Out,                 theNetMapper, DirSnoopIn          )
+WIRE( theL2, Request_Out,               theNetMapper, DirRequestIn        )
 
 //NetMapper to Nic
-WIRE( theNetMapper, ToNIC0,             theNic, FromNode0          )
-WIRE( theNic, ToNode0,                  theNetMapper, FromNIC0     )
-WIRE( theNetMapper, ToNIC1,             theNic, FromNode1          )
-WIRE( theNic, ToNode1,                  theNetMapper, FromNIC1     )
+WIRE( theNetMapper, ToNIC0,             theNic, FromNode0                 )
+WIRE( theNic, ToNode0,                  theNetMapper, FromNIC0            )
+WIRE( theNetMapper, ToNIC1,             theNic, FromNode1                 )
+WIRE( theNic, ToNode1,                  theNetMapper, FromNIC1            )
 
 //Nodes to Network
 WIRE( theNic, ToNetwork,                theNetwork, FromNode              )
@@ -374,7 +375,7 @@ WIRE( theNetwork, ToNode,               theNic, FromNetwork               )
 DRIVE( theuFetch, uFetchDrive )
 , DRIVE( theFAG, FAGDrive )
 , DRIVE( theuArch, uArchDrive )
-, DRIVE( theITLB, CacheDrive  )
+, DRIVE( theMMU, MMUDrive  )
 , DRIVE( theDecoder, DecoderDrive )
 , DRIVE( theNic, MultiNicDrive )
 , DRIVE( theNetwork, NetworkDrive )

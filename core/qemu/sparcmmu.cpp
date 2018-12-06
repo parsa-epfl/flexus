@@ -1236,7 +1236,7 @@ mmu_access(mmu_t * mmu, mmu_access_t * access) {
         //TWENISCH - I am temporarily assuming that PgSz0 is always 0, even though this isn't true.
         //I can't figure out where PgSz0 really comes from.
         int fa_idx = mmu_fa_choose(mmu);
-        DBG_( Verb, ( << "ITLB fa replacement in " << fa_idx ) );
+        DBG_( Verb, ( << "MMU fa replacement in " << fa_idx ) );
         mmu->it16_tag[fa_idx] = ( mmu->i_regs.tag_access & ( ~page_mask[size] | CTXT_MASK) ) ;
         mmu->it16_data[fa_idx] = access->val;
 

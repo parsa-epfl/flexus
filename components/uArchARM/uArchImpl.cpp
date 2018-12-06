@@ -259,56 +259,6 @@ public:
     theMicroArch->writePermissionLost(anAddress);
   }
 
-  // Msutherl
-  FLEXUS_PORT_ALWAYS_AVAILABLE(AddressesToTranslate);
-  void push( interface::AddressesToTranslate const &,
-             TranslatedAddresses& translateUs ) {
-
-      FLEXUS_CHANNEL(TLBRequestOut) << translateUs;
-
-      /* TODO: add requests to the cache controller to actually place the TTE descr.
-       * requests into the flexus memory hierarchy.
-       * - for now, just does the translation walk in theMicroArch 
-       */
-      // commence
-//      for( auto& translation : translateUs->internalContainer ) {
-//          uint8_t flexusCurrentELRegime = 1; // FIXME: should return tr. regime for addr
-//          if ( theMicroArch->IsTranslationEnabledAtEL( flexusCurrentELRegime ) ) {
-//              DBG_(Tmp,(<<" ---- STARTING NEW TRANSLATION ---- "
-//                          << std::hex << translation->theVaddr << std::dec ));
-              // FIXME: This is now a different slice. Re-enable it.
-//              translation.ELRegime = flexusCurrentELRegime;
-//              theMicroArch->translate( translation );
-//          } else {
-//              DBG_Assert( false, ( << "SORRY, translation is not enabled at EL " << flexusCurrentELRegime ) );
-//          }
-      }
-
-      // fin
-//      FLEXUS_CHANNEL(TranslationsToReturn) << translateUs;
-  }
-
-  // Msutherl
-  FLEXUS_PORT_ALWAYS_AVAILABLE(TLBIn);
-  void push( interface::TLBIn const &,
-             TranslatedAddresses& translateUs ) {
-
-    boost::intrusive_ptr<Translation> tr = translateUs->internalContainer.front();
-
-      if (tr->status() == kTLBmiss) {
-          // FIXME
-      } else {
-          theMicroArch->translate( tr );
-      }
-
-      // populate TLB : FIXME
-      FLEXUS_CHANNEL(TLBfill) << translateUs;
-
-
-      FLEXUS_CHANNEL(TranslationsToReturn) << translateUs;
-
-  }
-
 
 
 public:

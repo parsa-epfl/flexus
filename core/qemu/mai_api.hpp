@@ -316,7 +316,7 @@ public:
 
   //QemuImpl MMU API
   PhysicalMemoryAddress translateInstruction_QemuImpl(VirtualMemoryAddress anAddress) const;
-  uint32_t fetchInstruction(Flexus::SharedTypes::Translation& aTr );
+  uint32_t fetchInstruction(boost::intrusive_ptr<Flexus::SharedTypes::Translation> aTr );
 
   unsigned long long readVAddr_QemuImpl(VirtualMemoryAddress anAddress, int aSize) const;
   unsigned long long readVAddrXendian_QemuImpl(VirtualMemoryAddress anAddress, int anASI, int aSize) const;

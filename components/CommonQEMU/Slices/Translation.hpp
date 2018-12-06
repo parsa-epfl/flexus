@@ -51,7 +51,8 @@ namespace SharedTypes {
 
 struct Translation : public boost::counted_base {
 
-    Translation():theTLBstatus(kTLBunresolved), theTLBtype(kINST){}
+
+    Translation():theTLBtype(kINST), theTLBstatus(kTLBunresolved) {}
     ~Translation(){}
 
     Translation (const Translation& aTr){
@@ -94,6 +95,11 @@ struct Translation : public boost::counted_base {
       return theTLBtype;
   }
 
+  bool isInstr(){return type() == kINST;}
+  bool isData(){return type() == kDATA;}
+
+
+
   enum eTLBstatus {
       kTLBunresolved,
       kTLBmiss,
@@ -103,6 +109,10 @@ struct Translation : public boost::counted_base {
   eTLBstatus status (){
       return theTLBstatus;
   }
+  bool isMiss(){ return status() == kTLBmiss; }
+  bool isUnresuloved(){return status() == kTLBunresolved;}
+  void setHit() {theTLBstatus = kTLBhit; }
+  void setMiss() {theTLBstatus = kTLBmiss; }
 
   PhysicalMemoryAddress thePaddr;
   int theException;
@@ -112,6 +122,14 @@ struct Translation : public boost::counted_base {
   bool isXEndian();
   bool isInterrupt();
   bool isTranslating();
+};
+
+
+struct iTranslation {
+    iTranslation(){}
+    ~iTranslation(){}
+
+
 };
 
 

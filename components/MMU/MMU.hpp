@@ -43,7 +43,7 @@
 #include <components/CommonQEMU/Transports/MemoryTransport.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 
-#define FLEXUS_BEGIN_COMPONENT ITLB
+#define FLEXUS_BEGIN_COMPONENT MMU
 #include FLEXUS_BEGIN_COMPONENT_DECLARATION()
 
 COMPONENT_PARAMETERS(
@@ -56,15 +56,33 @@ COMPONENT_PARAMETERS(
 
 COMPONENT_INTERFACE(
 
-  PORT( PushInput, TranslatedAddresses, AddressesToTranslate )
-  PORT( PushOutput, TranslatedAddresses, TranslationsToReturn )
+PORT( PushInput,  TranslationPtr, iRequestIn )
+PORT( PushOutput, TranslationPtr, iTranslationsOut )
+PORT( PushInput,  TranslationPtr, dequestIn )
+PORT( PushOutput, TranslationPtr, dTranslationsOut )
+PORT( PushInput,  void,           resyncIn)
 
-    PORT( PushInput, TranslatedAddresses, RequestIn )
-    PORT( PushOutput, TranslatedAddresses, ReplyOut )
-    PORT( PushInput, TranslatedAddresses, PopulateTLB )
+PORT( PushInput,  void,           resyncIn)
+WIRE( theMMU, MemoryRequestOut,         theuArch, MemoryRequestIn         )
+WIRE(theuArch, resyncOut,               theMMU,   resyncIn                )
 
-  DRIVE(CacheDrive)
+
+/*
+DYNAMIC_PORT_ARRAY(PushOutput, MemoryTransport, FrontSideOut_I )
+DYNAMIC_PORT_ARRAY(PushInput, MemoryTransport, FrontSideIn_Request)
+PORT(PushOutput, MemoryTransport, BackSideOut_Reply)
+PORT(PushOutput, MemoryTransport, BackSideOut_Snoop)
+PORT(PushOutput, MemoryTransport, BackSideOut_Request)
+PORT(PushInput, MemoryTransport, BackSideIn_Request)
+PORT(PushInput, MemoryTransport, BackSideIn_Reply)
+PORT( PushInput, TranslatedAddresses, AddressesToTranslate )
+PORT( PushOutput, TranslatedAddresses, TranslationsToReturn )
+*/
+
+
+
+  DRIVE(MMUDrive)
 );
 
 #include FLEXUS_END_COMPONENT_DECLARATION()
-#define FLEXUS_END_COMPONENT ITLB
+#define FLEXUS_END_COMPONENT MMU

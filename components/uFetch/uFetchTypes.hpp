@@ -144,14 +144,14 @@ struct TranslationVecWrapper : public boost::counted_base {
         internalContainer.push(aTr);
     }
 
-    void updateExistingTranslation(VirtualMemoryAddress aVAddr, PhysicalMemoryAddress translatedAddress) {
-        for( auto& translation : internalContainer ) {
-            if( translation->theVaddr == aVAddr ) {
-                translation->thePaddr = translatedAddress;
-                return;
-            }
-        }
-    }
+//    void updateExistingTranslation(VirtualMemoryAddress aVAddr, PhysicalMemoryAddress translatedAddress) {
+//        for( auto& translation : internalContainer ) {
+//            if( translation->theVaddr == aVAddr ) {
+//                translation->thePaddr = translatedAddress;
+//                return;
+//            }
+//        }
+//    }
 };
 
 struct FetchBundle : public boost::counted_base {
@@ -161,7 +161,7 @@ struct FetchBundle : public boost::counted_base {
 
 typedef boost::intrusive_ptr<FetchBundle> pFetchBundle;
 typedef boost::intrusive_ptr<TranslationVecWrapper> TranslatedAddresses;
-
+typedef boost::intrusive_ptr<Translation> TranslationPtr;
 struct CPUState {
   int32_t theTL;
   int32_t thePSTATE;
