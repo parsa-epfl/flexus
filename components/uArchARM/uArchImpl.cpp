@@ -259,6 +259,17 @@ public:
     theMicroArch->writePermissionLost(anAddress);
   }
 
+  FLEXUS_PORT_ALWAYS_AVAILABLE(dTranslationOut);
+  void push( interface::dTranslationOut const &,
+               TranslationPtr& aTranslate ) {
+  }
+
+    FLEXUS_PORT_ALWAYS_AVAILABLE(MemoryRequestIn);
+   void push( interface::MemoryRequestIn const &,
+              TranslationPtr& aTranslate ) {
+   }
+
+
 
 
 public:

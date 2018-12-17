@@ -261,8 +261,8 @@ public:
 
   void sendTLBresponse(TranslationPtr aTranslation) {
     aTranslation->isInstr()
-    ?   FLEXUS_CHANNEL(iTranslationOut) << aTranslation
-    :   FLEXUS_CHANNEL(dTranslationOut) << aTranslation;
+    ?   FLEXUS_CHANNEL(iTranslationReply) << aTranslation
+    :   FLEXUS_CHANNEL(dTranslationReply) << aTranslation;
   }
 
 /*

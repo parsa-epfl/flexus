@@ -376,9 +376,8 @@ public:
   }
 
   // Msutherl: TLB in-out functions
-  FLEXUS_PORT_ALWAYS_AVAILABLE(TLBReturnIn);
-  void push( interface::TLBReturnIn const &, TranslatedAddresses& retdTranslations ) {
-      TranslationsFromTLB.reset();
+  FLEXUS_PORT_ALWAYS_AVAILABLE(iTranslationIn);
+  void push( interface::iTranslationIn const &, TranslationPtr & retdTranslations ) {
       TranslationsFromTLB = retdTranslations;
       getFetchResponse();
       DBG_(Iface,( << "Set TranslationsFromTLB component...."));
