@@ -33,7 +33,7 @@ std::string theSimulatorName = "KnottyKraken v1.0";
 
 #include FLEXUS_BEGIN_COMPONENT_CONFIGURATION_SECTION()
 
-CREATE_CONFIGURATION( MMU , "MMU", theMMUCfg );
+CREATE_CONFIGURATION( MMU , "mmu", theMMUCfg );
 CREATE_CONFIGURATION( FetchAddressGenerate, "fag", theFAGCfg );
 CREATE_CONFIGURATION( uFetch, "ufetch", theuFetchCfg );
 CREATE_CONFIGURATION( PortCombiner, "combiner", theCombinerCfg );
@@ -109,7 +109,7 @@ bool initializeParameters() {
 
   theuArchCfg.EarlySGP.initialize(false); // CMU-ONLY
   theuArchCfg.TrackParallelAccesses.initialize(false); // CMU-ONLY
-  theuArchCfg.ValidateMMU.initialize(false);
+//  theuArchCfg.ValidateMMU.initialize(false);
 
   theuArchCfg.FpAddOpLatency.initialize(true);
   theuArchCfg.FpAddOpPipelineResetTime.initialize(true);
@@ -268,14 +268,13 @@ bool initializeParameters() {
 //All component Instances are created here.  This section
 //also creates handles for each component
 //
-FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MMU , theMMUCfg, theMMU, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
-
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( FetchAddressGenerate, theFAGCfg, theFAG, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( uFetch, theuFetchCfg, theuFetch, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( PortCombiner, theCombinerCfg, theuFetchCombiner, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( armDecoder, theDecoderCfg, theDecoder, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( uArchARM, theuArchCfg, theuArch, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( Cache, theL1dCfg, theL1d, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
+FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MMU , theMMUCfg, theMMU, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( CMPCache, theL2Cfg, theL2, SCALE_WITH_SYSTEM_WIDTH, DIVIDE, 1 );
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MemoryLoopback, theMemoryCfg, theMemory, SCALE_WITH_SYSTEM_WIDTH, DIVIDE, 1 );
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MultiNic2, theNicCfg, theNic, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 3 );
@@ -295,6 +294,7 @@ FLEXUS_INSTANTIATE_COMPONENT( SplitDestinationMapper, theNetMapperCfg, theNetMap
 //FAG to Fetch
 WIRE( theFAG, FetchAddrOut,             theuFetch, FetchAddressIn         )
 WIRE( theFAG, AvailableFAQ,             theuFetch, AvailableFAQOut        )
+WIRE( theuFetch, EnableOut,             theFAG, EnableIn        )
 
 //Fetch to Decoder
 WIRE( theuFetch, AvailableFIQ,          theDecoder, AvailableFIQOut       )
@@ -310,7 +310,7 @@ WIRE( theMMU, iTranslationReply,        theuFetch, iTranslationIn         )
 WIRE( theuArch, dTranslationOut,        theMMU, dRequestIn                )
 WIRE( theMMU, dTranslationReply,        theuArch, dTranslationIn          )
 WIRE( theMMU, MemoryRequestOut,         theuArch, MemoryRequestIn         )
-WIRE(theuArch, resyncOut,               theMMU,   resyncIn                )
+WIRE(theuArch, ResyncOut,               theMMU,   ResyncIn                )
 
 
 

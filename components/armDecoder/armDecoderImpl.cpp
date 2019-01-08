@@ -88,22 +88,17 @@ public:
 
   FLEXUS_PORT_ALWAYS_AVAILABLE(FetchBundleIn);
   void push(interface::FetchBundleIn const &, pFetchBundle & aBundle) {
-    //std::list< FetchedOpcode >::iterator iter = aBundle->theOpcodes.begin();
-    //std::list< FetchedOpcode >::iterator end = aBundle->theOpcodes.end();
-
     std::list< tFillLevel >::iterator fill_iter = aBundle->theFillLevels.begin();
-
-    while (aBundle->theOpcodes.size() > 0) {
+    for (auto it = aBundle->theOpcodes.begin(); it != aBundle->theOpcodes.end(); it++) {
       int32_t uop = 0;
       boost::intrusive_ptr<AbstractInstruction> insn;
       bool final_uop = false;
-
       //Note that multi-uop instructions can cause theFIQ to fill beyond its
       //configured size.
       while (! final_uop ) {          
-        boost::tie( insn, final_uop ) = decode( aBundle->theOpcodes.front(), flexusIndex(), ++theInsnSequenceNo, uop ++);
+        boost::tie( insn, final_uop ) = decode( *it, flexusIndex(), ++theInsnSequenceNo, uop ++);
         if(insn){
-            insn->setFetchTransactionTracker(aBundle->theOpcodes.front().theTransaction);
+            insn->setFetchTransactionTracker(it->theTransaction);
             // Set Fill Level for the insn
             insn->setSourceLevel(*fill_iter);
             theFIQ.push_back(insn);
@@ -111,8 +106,6 @@ public:
         else
             DBG_( Tmp,(<<"No INSTRUCTION"));
       }
-//      ++iter;
-      aBundle->theOpcodes.pop();
       ++fill_iter;
     }
   }

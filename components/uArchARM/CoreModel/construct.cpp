@@ -38,6 +38,7 @@
 
 #include "coreModelImpl.hpp"
 
+
 #define DBG_DeclareCategories uArchCat
 #define DBG_SetDefaultOps AddCat(uArchCat)
 #include DBG_Control()
@@ -52,6 +53,7 @@ CoreImpl::CoreImpl( uArchOptions_t options
                     , std::function< void(int, int)> _change_mode
                     , std::function< void( boost::intrusive_ptr<BranchFeedback> )> _feedback
                     , std::function< void( bool )> _signalStoreForwardingHit
+                    , std::function< void(int32_t)> _mmuResync
                   )
   : theName(options.name)
   , theNode(options.node)
@@ -62,6 +64,7 @@ CoreImpl::CoreImpl( uArchOptions_t options
   , change_mode_fn(_change_mode)
   , feedback_fn(_feedback)
   , signalStoreForwardingHit_fn(_signalStoreForwardingHit)
+  , mmuResync_fn(_mmuResync)
   , thePendingTrap(kException_None)
   , theBypassNetwork( kxRegs_Total + 2 * options.ROBSize, kvRegs + 4 * options.ROBSize, 5 + options.ROBSize)
   , theLastGarbageCollect(0)
@@ -474,6 +477,7 @@ CoreModel * CoreModel::construct( uArchOptions_t options
                                   , std::function< void(int, int)> change_mode
                                   , std::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback
                                   , std::function< void( bool )> signalStoreForwardingHit
+                                  , std::function<void(int32_t)> mmuResync
                                 ) {
 
   return new CoreImpl( options
@@ -484,6 +488,7 @@ CoreModel * CoreModel::construct( uArchOptions_t options
                        , change_mode
                        , feedback
                        , signalStoreForwardingHit
+                       , mmuResync
                      );
 }
 

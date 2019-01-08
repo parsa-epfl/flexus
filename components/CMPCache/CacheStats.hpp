@@ -63,6 +63,11 @@ struct CacheStats {
   Flexus::Stat::StatCounter	EvictWritableBypass;
   Flexus::Stat::StatCounter	EvictDirtyWrite;
   Flexus::Stat::StatCounter	EvictDirtyBypass;
+  Flexus::Stat::StatCounter PageWalkMissMemory;
+  Flexus::Stat::StatCounter PageWalkMissPeer;
+  Flexus::Stat::StatCounter PageWalkHit;
+
+
 
   CacheStats(const std::string & aName) : WriteHit(aName + "-WriteHit")
     , WriteMissInvalidatesOnly(aName + "-WriteMissInvalidatesOnly")
@@ -84,6 +89,10 @@ struct CacheStats {
     , EvictWritableBypass(aName + "-EvictWritableBypass")
     , EvictDirtyWrite(aName + "-EvictDirtyWrite")
     , EvictDirtyBypass(aName + "-EvictDirtyBypass")
+    , PageWalkMissMemory(aName + "-PageWalkMissMemory")
+    , PageWalkMissPeer(aName + "-PageWalkMissPeer")
+    , PageWalkHit(aName + "-PageWalkHit")
+
   {}
 
 }; // struct CacheStats

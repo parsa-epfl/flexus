@@ -472,6 +472,39 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
   DBG_( Verb, ( << theName << " " << *lsq_entry << " issuing operation " << *op) );
 }
 
+
+void CoreImpl::issueMMU(TranslationPtr aTranslation){
+    boost::intrusive_ptr<MemOp> op(new MemOp());
+    eOperation issue_op = kPageWalkRequest;
+
+    op->theInstruction.reset();
+    MSHR mshr;
+    op->theOperation = mshr.theOperation = issue_op;
+    DBG_Assert( op->theVAddr != kUnresolved);
+    op->theVAddr = aTranslation->theVaddr;
+
+    op->thePAddr = mshr.thePaddr = aTranslation->thePaddr;
+    op->theSize = mshr.theSize = kDoubleWord/*aTranslate->theSize*/;
+    op->thePC = VirtualMemoryAddress(0);
+    bool system = true;
+
+    boost::intrusive_ptr<TransactionTracker> tracker = new TransactionTracker;
+    tracker->setAddress( op->thePAddr );
+    tracker->setInitiator(theNode);
+
+    tracker->setSource("MMU");
+    tracker->setOS(system);
+    op->theTracker = tracker;
+    mshr.theTracker = tracker;
+
+    bool ignored;
+    /*std::tie(lsq_entry->theMSHR, ignored) = */theMSHRs.insert( std::make_pair(mshr.thePaddr, mshr) );
+    theMemoryPorts.push_back( op);
+    DBG_( Tmp, ( << theName << " " << " issuing operation " << *op) );
+
+    thePageWalkRequests.emplace(std::make_pair(aTranslation->theVaddr, aTranslation));
+}
+
 bool CoreImpl::scanAndAttachMSHR( memq_t::index< by_insn >::type::iterator anLSQEntry ) {
   FLEXUS_PROFILE();
   //Check for an existing MSHR for the same address (issued this cycle)
@@ -558,11 +591,11 @@ void CoreImpl::issueStore() {
           theMemQueue.front().theIssued = true;
           //Need to inform ValueTracker that this store is complete
           bits value = op.theValue;
-          if (op.theReverseEndian) {
-            value = bits(Flexus::Qemu::endianFlip(value.to_ulong(), op.theSize));
-            DBG_(Verb, ( << "Performing inverse endian store for addr " << std::hex << op.thePAddr << " val: " << op.theValue << " inv: " << value << std::dec ));
-          }
-	  ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theNode)).commitStore( theNode, op.thePAddr, op.theSize, value);
+//          if (op.theReverseEndian) {
+//            value = bits(Flexus::Qemu::endianFlip(value.to_ulong(), op.theSize));
+//            DBG_(Verb, ( << "Performing inverse endian store for addr " << std::hex << op.thePAddr << " val: " << op.theValue << " inv: " << value << std::dec ));
+//          }
+      ValueTracker::valueTracker(theNode).commitStore( theNode, op.thePAddr, op.theSize, value);
           completeLSQ( theMemQueue.project<by_insn>(theMemQueue.begin()), op);
           return;
         }

@@ -3,7 +3,7 @@
 #include <core/debug/debug.hpp>
 
 
-namespace MMU {
+namespace nMMU {
 
     /*
      * Parent class
@@ -29,8 +29,7 @@ void TranslationGranule::setPAddrWidth(uint8_t aSize) { PAddrWidth = aSize; }
 uint8_t TranslationGranule::getIAddrOffset() const { return IAddrOffset; }
 void TranslationGranule::setIAddrOffset(uint8_t aSize) { IAddrOffset = aSize; }
 
-uint8_t 
-TranslationGranule::NumBitsResolvedPerTTAccess() const 
+uint8_t TranslationGranule::NumBitsResolvedPerTTAccess() const
 {
     return (logKBSize-3);
 }

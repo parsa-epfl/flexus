@@ -42,7 +42,6 @@
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
 
 #include <components/CommonQEMU/Slices/MemoryMessage.hpp>
-#include <components/CommonQEMU/Slices/Translation.hpp>
 #include <components/CommonQEMU/Slices/ExecuteState.hpp>
 #include <components/MTManager/MTManager.hpp>
 
@@ -171,7 +170,7 @@ public:
     options.consistencyModel     = (nuArchARM::eConsistencyModel)cfg.ConsistencyModel;
     options.coherenceUnit        = cfg.CoherenceUnit;
     options.breakOnResynchronize = cfg.BreakOnResynchronize;
-    options.validateMMU          = cfg.ValidateMMU;
+//    options.validateMMU          = cfg.ValidateMMU;
     options.speculativeOrder     = cfg.SpeculativeOrder;
     options.speculateOnAtomicValue   = cfg.SpeculateOnAtomicValue;
     options.speculateOnAtomicValuePerfect   = cfg.SpeculateOnAtomicValuePerfect;
@@ -218,6 +217,7 @@ public:
                                             , ll::bind( &uArchARMComponent::changeState, this, ll::_1, ll::_2)
                                             , ll::bind( &uArchARMComponent::feedback, this, ll::_1)
                                             , ll::bind( &uArchARMComponent::signalStoreForwardingHit, this, ll::_1)
+                                            , ll::bind( &uArchARMComponent::resyncMMU, this, ll::_1)
                                         );
 
     theuArchObject = theuArchQemuFactory.create( (std::string("uarcharm-") + boost::padded_string_cast < 2, '0' > (flexusIndex())).c_str() );
@@ -259,15 +259,17 @@ public:
     theMicroArch->writePermissionLost(anAddress);
   }
 
-  FLEXUS_PORT_ALWAYS_AVAILABLE(dTranslationOut);
-  void push( interface::dTranslationOut const &,
+  FLEXUS_PORT_ALWAYS_AVAILABLE(dTranslationIn);
+  void push( interface::dTranslationIn const &,
                TranslationPtr& aTranslate ) {
   }
 
     FLEXUS_PORT_ALWAYS_AVAILABLE(MemoryRequestIn);
    void push( interface::MemoryRequestIn const &,
-              TranslationPtr& aTranslate ) {
-   }
+              TranslationPtr& aTranslation ) {
+
+     theMicroArch->issueMMU(aTranslation);
+}
 
 
 
@@ -284,6 +286,10 @@ private:
 
   void squash(eSquashCause aSquashReason) {
     FLEXUS_CHANNEL( SquashOut ) << aSquashReason;
+  }
+  void resyncMMU(int32_t aNode) {
+      bool value = true;
+      FLEXUS_CHANNEL(ResyncOut) << value;
   }
 
   void changeState(int32_t aTL, int32_t aPSTATE) {
@@ -328,7 +334,7 @@ private:
 //      DBG_Assert( Tmp, ( << "Send Request: " << *op) );
       CORE_DBG( "Send Request: " << *op);
 
-
+    if ( op->theOperation != kPageWalkRequest){
       if (op->theInstruction->isExclusive() && op->theOperation == kLoad) {
           theMicroArch->markExclusiveLocal(op->thePAddr, op->theSize);
       } else if (op->theInstruction->isExclusive() && op->theOperation == kStore) {
@@ -338,6 +344,7 @@ private:
               theMicroArch->clearExclusiveLocal();
           }
       }
+    }
 
 
       MemoryTransport transport;
@@ -378,13 +385,17 @@ private:
             //pc = Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
             operation = MemoryMessage::newCAS(op->thePAddr, op->thePC, op->theValue);
             break;
-
+        case kPageWalkRequest:
+            operation = MemoryMessage::newPWRequest(op->thePAddr);
+            operation->setPageWalk();
+            break;
           default:
             DBG_Assert( false,  ( << "Unknown memory operation type: " << op->theOperation ) );
         }
 
       }
-      operation->theInstruction = op->theInstruction;
+      if (op->theOperation != kPageWalkRequest)
+        operation->theInstruction = op->theInstruction;
 
       operation->reqSize() = op->theSize;
       if (op->theTracker) {
@@ -469,6 +480,9 @@ private:
 
     // For Invalidates and Downgrades, the uArchState isn't for us, it's for the original requester
     // So in those cases we always want to construct a new MemOp based on the MemoryMesage
+    if (msg->isPageWalk()){
+
+    }
     if (aTransport[uArchStateTag] && msg->type() != MemoryMessage::Invalidate && msg->type() != MemoryMessage::Downgrade) {
       op = aTransport[uArchStateTag];
     } else {

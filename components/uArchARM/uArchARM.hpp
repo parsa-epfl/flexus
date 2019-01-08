@@ -100,7 +100,7 @@ COMPONENT_PARAMETERS(
   PARAMETER( FpDivOpPipelineResetTime, uint32_t, "Number of cycles required between subsequent FP DIV operations", "fpDivOpPipelineResetTime", 1)
   PARAMETER( FpSqrtOpLatency, uint32_t, "End-to-end latency of an FP SQRT operation", "fpSqrtOpLatency", 1)
   PARAMETER( FpSqrtOpPipelineResetTime, uint32_t, "Number of cycles required between subsequent FP SQRT operations", "fpSqrtOpPipelineResetTime", 1)
-  PARAMETER( ValidateMMU, bool, "Validate MMU after each instruction", "validate-mmu", false )
+//  PARAMETER( ValidateMMU, bool, "Validate MMU after each instruction", "validate-mmu", false )
 );
 
 typedef std::pair<int, bool> dispatch_status;
@@ -119,12 +119,12 @@ COMPONENT_INTERFACE(
   PORT( PushOutput, MemoryTransport, MemoryOut_Snoop )
   PORT( PushInput, MemoryTransport, MemoryIn )
   PORT( PushInput, PhysicalMemoryAddress, WritePermissionLost )
-
   PORT( PushOutput, bool, StoreForwardingHitSeen) // Signal a store forwarding hit in the LSQ to the PowerTracker
 
+  PORT( PushOutput, bool, ResyncOut )
   PORT( PushOutput, TranslationPtr, dTranslationOut )
-  PORT( PushInput, TranslationPtr, dTranslationIn )
-  PORT( PushInput, TranslationPtr, MemoryRequestIn )
+  PORT( PushInput, TranslationPtr,  dTranslationIn )
+  PORT( PushInput, TranslationPtr,  MemoryRequestIn )
 
   DRIVE( uArchDrive )
 );

@@ -71,7 +71,8 @@ eSize dbSize(uint32_t aSize){
 
 std::ostream & operator <<( std::ostream & anOstream, eOperation op) {
   const char * map_tables[] = {
-    "Load"
+    "PageWalkRequest"
+    , "Load"
     , "AtomicPreload"
     , "RMW"
     , "CAS"

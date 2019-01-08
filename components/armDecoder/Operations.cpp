@@ -90,9 +90,14 @@ typedef struct ADD : public Operation {
         SEMANTICS_DBG( "ADDING with " << operands.size() << " the: " << theOperands.size() );
         DBG_Assert( checkNumOperands({1,2}), (<< *theInstruction << "num operands: " << operands.size()) );
 
+        if (theOperands.size()>1){
         return
                 boost::get<uint64_t>(hasOwnOperands() ? theOperands[0] : operands[0]) +
                 boost::get<uint64_t>(hasOwnOperands() ? theOperands[1] : operands[1]);
+        } else {
+            return
+                    boost::get<uint64_t>(hasOwnOperands() ? theOperands[0] : operands[0]);
+        }
   }
   virtual char const * describe() const {
     return "Add";

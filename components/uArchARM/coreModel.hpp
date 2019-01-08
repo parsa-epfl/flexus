@@ -43,8 +43,6 @@
 
 #include <components/uFetch/uFetchTypes.hpp>
 #include <components/CommonQEMU/Slices/PredictorMessage.hpp> /* CMU-ONLY */
-#include <components/CommonQEMU/Slices/Translation.hpp>
-#include <core/qemu/mmuRegisters.h>
 
 namespace nuArchARM {
 
@@ -72,6 +70,7 @@ struct CoreModel : public uArchARM {
                                , std::function< void(int, int) > change_mode
                                , std::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback
                                , std::function< void( bool )> signalStoreForwardingHit
+                               , std::function<void(int32_t)> mmuResync
                               );
 
   //Interface to mircoArch
@@ -98,6 +97,7 @@ struct CoreModel : public uArchARM {
 
   virtual void skipCycle() = 0;
   virtual void cycle(eExceptionType aPendingInterrupt) = 0;
+  virtual void issueMMU(TranslationPtr aTranslation) = 0;
 
   virtual void pushMemOp(boost::intrusive_ptr< MemOp >) = 0;
   virtual bool canPushMemOp() = 0;
@@ -119,7 +119,7 @@ struct CoreModel : public uArchARM {
 
   // MMU and Multi-stage translation, now in CoreModel, not QEMU MAI
   // - Msutherl: Oct'18
-  virtual void translate(boost::intrusive_ptr<Translation>& aTr) = 0;
+//  virtual void translate(boost::intrusive_ptr<Translation>& aTr) = 0;
 
 };
 

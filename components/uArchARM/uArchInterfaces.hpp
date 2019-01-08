@@ -501,10 +501,8 @@ struct uArchOptions_t {
   eConsistencyModel
   consistencyModel;
   uint32_t  coherenceUnit;
-  std::function< std::tuple< PhysicalMemoryAddress, bool, bool> ( VirtualMemoryAddress, int32_t ) >
-  translate;
-  std::function< PhysicalMemoryAddress ( VirtualMemoryAddress ) >
-  translatePC;
+  std::function< std::tuple< PhysicalMemoryAddress, bool, bool> ( VirtualMemoryAddress, int32_t ) > translate;
+  std::function< PhysicalMemoryAddress ( VirtualMemoryAddress ) > translatePC;
   bool          speculativeOrder;
   bool          speculateOnAtomicValue;
   bool          speculateOnAtomicValuePerfect;

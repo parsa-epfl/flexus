@@ -43,8 +43,8 @@
 // DO-NOT-REMOVE end-copyright-block   
 #ifndef FLEXUS_TRANSPORTS__TRANSLATION_TRANSPORT_HPP_INCLUDED
 #define FLEXUS_TRANSPORTS__TRANSLATION_TRANSPORT_HPP_INCLUDED
-#include <components/CommonQEMU/Slices/Translation.hpp>
-#include <components/CommonQEMU/Slices/TranslationState.hpp>
+#include <components/CommonQEMU/Translation.hpp>
+#include <components/MMU/TranslationState.hpp>
 
 #include <core/transport.hpp>
 
@@ -73,7 +73,7 @@ TranslationStatefulTag_t TranslationStatefulTag;
 typedef Transport
 < mpl::vector
 < transport_entry< TranslationBasicTag_t, Translation >
-, transport_entry< TranslationStatefulTag_t, TranslationState >
+, transport_entry< TranslationStatefulTag_t, nMMU::TranslationState >
 >
 > TranslationTransport;
 

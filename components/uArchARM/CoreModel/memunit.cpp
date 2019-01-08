@@ -285,7 +285,7 @@ void CoreImpl::accessMem( PhysicalMemoryAddress anAddress, boost::intrusive_ptr<
   if (anAddress != 0) {
     //Ensure that the correct memory value for this node is in Simics' memory
     //image before we advance Simics
-    ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theNode)).access(theNode, anAddress);
+    ValueTracker::valueTracker(theNode).access(theNode, anAddress);
   }
   PhysicalMemoryAddress block_addr( static_cast<uint64_t>(anAddress) & ~( theCoherenceUnit - 1) );
   if (block_addr != 0) {
@@ -296,7 +296,7 @@ void CoreImpl::accessMem( PhysicalMemoryAddress anAddress, boost::intrusive_ptr<
   if (iter != theMemQueue.get<by_insn>().end() && iter->isAtomic() && iter->theQueue == kSSB) {
     DBG_(Dev, ( << theName << " atomic committing in body of checkpoint " << *iter ) );
     //theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
-    ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theNode)).access(theNode, anAddress);
+    ValueTracker::valueTracker(theNode).access(theNode, anAddress);
   }
 }
 
@@ -519,12 +519,12 @@ void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry 
     //xlat.theTL = getTL();
     xlat->thePSTATE = getPSTATE() ;
     xlat->theType = ( lsq_entry->isStore() ? Flexus::SharedTypes::Translation::eStore :  Flexus::SharedTypes::Translation::eLoad) ;
-    translate(xlat);
+//    translate(xlat);
     lsq_entry->thePaddr = xlat->thePaddr;
-    lsq_entry->theSideEffect = xlat->isSideEffect() || ( ! xlat->isTranslating() /*&& ! xlat.isMMU() */);
-    lsq_entry->theInverseEndian = xlat->isXEndian();
+//    lsq_entry->theSideEffect = xlat->isSideEffect() || ( ! xlat->isTranslating() /*&& ! xlat.isMMU() */);
+//    lsq_entry->theInverseEndian = xlat->isXEndian();
 //    lsq_entry->theMMU = xlat.isMMU();
-    lsq_entry->theNonCacheable = ! xlat->isCacheable();
+//    lsq_entry->theNonCacheable = ! xlat->isCacheable();
     lsq_entry->theInstruction->setWillRaise(kException_None);
 //    lsq_entry->theException = xlat.theException;
 
@@ -532,19 +532,19 @@ void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry 
       lsq_entry->theSideEffect  = true;
     }
 
-    if ( lsq_entry->theSideEffect && /*!xlat.isMMU() &&*/ !xlat->isInterrupt()  ) {
-      DBG_( Verb, ( << theName << " SideEffect access: " << *lsq_entry ) );
-      if (lsq_entry->theOperation == kLoad) {
-        lsq_entry->theInstruction->changeInstCode(codeSideEffectLoad);
-        lsq_entry->theInstruction->forceResync();
-      } else if (lsq_entry->theOperation == kStore) {
-        lsq_entry->theInstruction->changeInstCode(codeSideEffectStore);
-        lsq_entry->theInstruction->forceResync();
-      } else {
-        lsq_entry->theInstruction->changeInstCode(codeSideEffectAtomic);
-        lsq_entry->theInstruction->forceResync();
-      }
-    } /*else if ( lsq_entry->theMMU ) {
+//    if ( lsq_entry->theSideEffect && /*!xlat.isMMU() &&*/ !xlat->isInterrupt()  ) {
+//      DBG_( Verb, ( << theName << " SideEffect access: " << *lsq_entry ) );
+//      if (lsq_entry->theOperation == kLoad) {
+//        lsq_entry->theInstruction->changeInstCode(codeSideEffectLoad);
+//        lsq_entry->theInstruction->forceResync();
+//      } else if (lsq_entry->theOperation == kStore) {
+//        lsq_entry->theInstruction->changeInstCode(codeSideEffectStore);
+//        lsq_entry->theInstruction->forceResync();
+//      } else {
+//        lsq_entry->theInstruction->changeInstCode(codeSideEffectAtomic);
+//        lsq_entry->theInstruction->forceResync();
+//      }
+    /* } else if ( lsq_entry->theMMU ) {
       DBG_( Verb, ( << theName << " MMU access: " << *lsq_entry ) );
       lsq_entry->theInstruction->changeInstCode(codeMMUAccess);
     }*/ else {
@@ -583,7 +583,7 @@ void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry 
     theMemQueue.get<by_insn>().modify( lsq_entry, ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = addr_aligned);
 
     /* CMU-ONLY-BLOCK-BEGIN */
-    if (theTrackParallelAccesses && !xlat->isSideEffect() && xlat->isCacheable() && lsq_entry->thePaddr != kInvalid && lsq_entry->thePaddr != PhysicalMemoryAddress(kUnresolved)) {
+    if (theTrackParallelAccesses && /*!xlat->isSideEffect() && xlat->isCacheable() &&*/ lsq_entry->thePaddr != kInvalid && lsq_entry->thePaddr != PhysicalMemoryAddress(kUnresolved)) {
       //Add this address to parallel accesses and accumulate all accesses parallel with this one
       memq_t::index< by_seq >::type::iterator lsq_iter = theMemQueue.get<by_seq>().begin();
       memq_t::index< by_seq >::type::iterator lsq_end = theMemQueue.get<by_seq>().end();

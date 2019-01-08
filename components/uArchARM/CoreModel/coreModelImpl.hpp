@@ -75,7 +75,6 @@ namespace Stat = Flexus::Stat;
 #include <components/CommonQEMU/XactTimeBreakdown.hpp>
 #include <components/CommonQEMU/Slices/PredictorMessage.hpp> /* CMU-ONLY */
 #include <components/CommonQEMU/Transports/TranslationTransport.hpp>
-#include <components/CommonQEMU/Slices/Translation.hpp>
 #include "bbv.hpp" /* CMU-ONLY */
 
 #include "PSTATE.hpp"
@@ -84,14 +83,11 @@ namespace Stat = Flexus::Stat;
 
 // Msutherl, Oct'18
 // FIXME: move this file but for now just directly include it
-#include <core/qemu/ARMmmu.hpp>
 #include <core/qemu/mai_api.hpp> // FIXME: might not need this
 
 namespace nuArchARM {
 
 using nXactTimeBreakdown::TimeBreakdown;
-
-using namespace MMU;
 
 struct ExceptionRecord {
         eExceptionType type; // Exception class
@@ -120,6 +116,7 @@ class CoreImpl : public CoreModel {
   std::function< void(int, int)> change_mode_fn;
   std::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback_fn;
   std::function< void( bool )> signalStoreForwardingHit_fn;
+  std::function< void(int32_t)> mmuResync_fn;
 
   // register renaming  architectural -> physical
   //Map Tables
@@ -139,8 +136,8 @@ class CoreImpl : public CoreModel {
   // MMU Internal State:
   // ===================================================================
 private:
-  std::shared_ptr<mmu_t> theMMU;
-  bool mmuInitialized;
+//  std::shared_ptr<mmu_t> theMMU;
+//  bool mmuInitialized;
   Flexus::Qemu::Processor theQEMUCPU;
 
   // ===================================================================
@@ -217,6 +214,7 @@ private:
   bool theNAWBypassSB;
   bool theNAWWaitAtSync;
   MSHRs_t theMSHRs;
+  std::map<VirtualMemoryAddress, TranslationPtr> thePageWalkRequests;
   eConsistencyModel theConsistencyModel;
   uint64_t theCoherenceUnit;
   uint32_t thePartialSnoopersOutstanding;
@@ -527,6 +525,7 @@ public:
             , std::function< void(int, int) > change_mode
             , std::function< void( boost::intrusive_ptr<BranchFeedback> ) > feedback
             , std::function< void( bool )> signalStoreForwardingHit
+            , std::function<void(int32_t)> mmuResync
           );
 
   virtual ~CoreImpl() {}
@@ -859,6 +858,7 @@ public:
   void requestPort(memq_t::index< by_insn >::type::iterator anLSQEntry);
   void requestPort(boost::intrusive_ptr<Instruction> anInstruction );
   void issue(boost::intrusive_ptr<Instruction> anInstruction );
+  void issueMMU(TranslationPtr aTranslation);
   void issueStorePrefetch( boost::intrusive_ptr<Instruction> anInstruction );
   void requestStorePrefetch( boost::intrusive_ptr<Instruction> anInstruction);
   void requestStorePrefetch( memq_t::index< by_insn >::type::iterator lsq_entry);
@@ -879,20 +879,6 @@ public:
   void startMiss( boost::intrusive_ptr<TransactionTracker> tracker);
   void finishMiss( boost::intrusive_ptr<TransactionTracker> tracker, bool matched_mshr );
   void processTable();
-
-  // MMU and Multi-stage translation, now in CoreModel, not QEMU MAI
-  // - Msutherl: Oct'18
-public:
-  void translate(boost::intrusive_ptr<Translation>& aTr);
-
-private:
-  // Private MMU internal functionality
-  // - Msutherl: Oct'18
-  MMU::TTEDescriptor getNextTTDescriptor(Translation& aTr );
-  void InitialTranslationSetup( TranslationTransport& aTr );
-  bool doTTEAccess( TranslationTransport& aTr );
-  void translationMemoryRequest(boost::inPhysicalMemoryAddress aTTEDescriptor);
-  void setupTTResolver( TranslationTransport& aTr, uint64_t rawTTDescriptor) ;
 
   //Debugging
   //==========================================================================

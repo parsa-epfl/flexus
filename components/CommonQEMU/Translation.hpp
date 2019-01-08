@@ -48,11 +48,40 @@
 namespace Flexus {
 namespace SharedTypes {
 
+static uint64_t translationID;
+
 
 struct Translation : public boost::counted_base {
 
+    enum eTranslationType {
+      eStore,
+      eLoad,
+      eFetch
+    };
 
-    Translation():theTLBtype(kINST), theTLBstatus(kTLBunresolved) {}
+    enum eTLBstatus {
+        kTLBunresolved,
+        kTLBmiss,
+        kTLBhit
+    };
+
+    enum eTLBtype{
+        kINST,
+        kDATA,
+        kNONE
+    };
+
+    Translation()
+        : theTLBstatus(kTLBunresolved)
+        , theTLBtype(kNONE)
+        , theReady(false)
+        , theWaiting(false)
+        , theDone(false)
+        , theCurrentTranslationLevel(0)
+        , rawTTEValue(0)
+        , theID(translationID++)
+
+    {}
     ~Translation(){}
 
     Translation (const Translation& aTr){
@@ -77,62 +106,50 @@ struct Translation : public boost::counted_base {
       theTLBtype     = rhs.theTLBtype;
       return *this;
   }
+
   VirtualMemoryAddress theVaddr;
+  PhysicalMemoryAddress thePaddr;
+
   int thePSTATE;
   uint32_t theIndex;
-  enum eTranslationType {
-    eStore,
-    eLoad,
-    eFetch
-  } theType;
+  eTranslationType theType;
+  eTLBstatus theTLBstatus;
+  eTLBtype theTLBtype;
+  int theException;
+  uint64_t theTTEEntry;
 
-  enum eTLBtype{
-      kINST,
-      kDATA
-  } theTLBtype;
+  bool theReady; // ready for translation - step i
+  bool theWaiting; // in memory - step ii
+  bool theDone; // all done step iii
+  uint8_t theCurrentTranslationLevel;
+  uint64_t rawTTEValue;
+  uint64_t theID;
 
-  eTLBtype type (){
-      return theTLBtype;
-  }
-
+  void setData(){theTLBtype = kDATA;}
+  void setInstr(){theTLBtype = kINST;}
+  eTLBtype type (){return theTLBtype;}
   bool isInstr(){return type() == kINST;}
   bool isData(){return type() == kDATA;}
-
-
-
-  enum eTLBstatus {
-      kTLBunresolved,
-      kTLBmiss,
-      kTLBhit
-  }theTLBstatus;
-
-  eTLBstatus status (){
-      return theTLBstatus;
-  }
+  eTLBstatus status (){return theTLBstatus;}
   bool isMiss(){ return status() == kTLBmiss; }
   bool isUnresuloved(){return status() == kTLBunresolved;}
-  void setHit() {theTLBstatus = kTLBhit; }
-  void setMiss() {theTLBstatus = kTLBmiss; }
-
-  PhysicalMemoryAddress thePaddr;
-  int theException;
-  unsigned long long theTTEEntry;
-  bool isCacheable();
-  bool isSideEffect();
-  bool isXEndian();
-  bool isInterrupt();
-  bool isTranslating();
-};
+  void setHit() {theTLBstatus = kTLBhit;}
+  void setMiss() {theTLBstatus = kTLBmiss;}
 
 
-struct iTranslation {
-    iTranslation(){}
-    ~iTranslation(){}
+  bool isWaiting(){return theWaiting;}
+  void toggleWaiting() {theWaiting = !theWaiting;}
+
+  bool isReady() {return theReady;}
+  void toggleReady() {theReady = !theReady;}
+
+  bool isDone() {return theDone;}
+  void setDone() {theDone = true;}
 
 
 };
 
-
+typedef boost::intrusive_ptr<Translation> TranslationPtr;
 
 
 } //SharedTypes

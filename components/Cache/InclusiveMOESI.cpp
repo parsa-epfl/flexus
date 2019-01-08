@@ -961,7 +961,7 @@ std::tuple<bool, bool, Action> InclusiveMOESI::doRequest( MemoryTransport      t
         action.theFrontToICache = true;
         break;
       }
-      case MemoryMessage::ReadReq: {
+      case MemoryMessage::ReadReq:{
         DBG_Assert( state == State::Invalid, ( << "Received reply to read req but block not invalid - " << state << " : " << (*msg) ));
 
         // We need to allocate the block in the data array

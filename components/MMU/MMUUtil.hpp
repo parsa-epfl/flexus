@@ -1,28 +1,63 @@
-#ifndef FLEXUS_SIMICS_ARM_MMU_HPP_INCLUDED
-#define FLEXUS_SIMICS_ARM_MMU_HPP_INCLUDED
+// DO-NOT-REMOVE begin-copyright-block
+//
+// Redistributions of any form whatsoever must retain and/or include the
+// following acknowledgment, notices and disclaimer:
+//
+// This product includes software developed by Carnegie Mellon University.
+//
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+//
+// For more information, see the SimFlex project website at:
+//   http://www.ece.cmu.edu/~simflex
+//
+// You may not use the name "Carnegie Mellon University" or derivations
+// thereof to endorse or promote products derived from this software.
+//
+// If you modify the software you must place a notice on or within any
+// modified version provided or made available to any third party stating
+// that you have modified the software.  The notice shall include at least
+// your name, address, phone number, email address and the date and purpose
+// of the modification.
+//
+// THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
+// EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
+// THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
+// IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+// TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
+// BE LIABLE FOR ANY DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
+// SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
+// ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
+// CONTRACT, TORT OR OTHERWISE).
+//
+// DO-NOT-REMOVE end-copyright-block
 
-#include "ARMTranslationGranules.hpp"
-#include "TTResolvers.hpp"
-#include "bitUtilities.hpp"
+#ifndef FLEXUS_MMU_UTIL_HPP_INCLUDED
+#define FLEXUS_MMU_UTIL_HPP_INCLUDED
 
 #include <core/types.hpp>
-#include <components/CommonQEMU/Slices/Translation.hpp>
-#include <components/CommonQEMU/Slices/TranslationState.hpp>
-#include "mmuRegisters.h"
+#include <components/CommonQEMU/Translation.hpp>
+#include "TranslationState.hpp"
+#include "mmuRegisters.hpp"
+#include "ARMTranslationGranules.hpp"
+#include "TTResolvers.hpp"
+#include <core/qemu/bitUtilities.hpp>
 
 using Flexus::SharedTypes::Translation;
 using Flexus::SharedTypes::VirtualMemoryAddress;
 
-//namespace Flexus {
-//namespace Qemu {
+typedef uint64_t address_t;
+typedef unsigned char asi_t;
+typedef unsigned long long tte_raw_t;
 
-namespace MMU {
+
+namespace nMMU {
 
 #define VADDR_WIDTH 48
 
-typedef unsigned long long address_t;
-typedef unsigned char asi_t;
-typedef unsigned long long tte_raw_t;
 
 class TTEDescriptor
 {
@@ -36,9 +71,9 @@ class TTEDescriptor
         tte_raw_t rawDescriptor;
 };
 
-/* RAW DESCRIPTOR FORMATS ON AARCH64 REFERENCE MANUAL - SECTION D4.3 - D4-2061 */
-// INVALID ENTRY bit[0] = 0
-/* VALID BLOCK ENTRY: For level 1, n = 42, level 2, n = 29.
+/* RAW DESCRIPTOR FORMATS ON AARCH64 REFERENCE MANUAL - SECTION D4.3 - D4-2061
+ * INVALID ENTRY bit[0] = 0
+ * VALID BLOCK ENTRY: For level 1, n = 42, level 2, n = 29.
  * [ 63:51 | ---- | 50:48 | 47:n     | n-1:16 | 15:12  -- | 11:2 ----- | 1 | 0 ] 
  * [ upper attrs. | res0  | OA[47:n] |  res0  | OA[51:48] | low. attrs | 0 | 1 ]
  *
@@ -49,8 +84,8 @@ class TTEDescriptor
  */
 
 // Msutherl - antiquated + orphaned, needs to go soon
-typedef unsigned long long tte_tag;
-typedef unsigned long long tte_data;
+typedef uint64_t tte_tag;
+typedef uint64_t tte_data;
 
 class mmu_t {
     public:
@@ -72,9 +107,9 @@ class mmu_t {
         bool is4KGranuleSupported();
         bool is16KGranuleSupported();
         bool is64KGranuleSupported();
-        unsigned getGranuleSize(unsigned granuleNum);
-        unsigned parsePASizeFromRegs();
-        unsigned getIAOffsetValue(bool isBRO);
+        uint32_t getGranuleSize(uint32_t granuleNum);
+        uint32_t parsePASizeFromRegs();
+        uint32_t getIAOffsetValue(bool isBRO);
 
         int checkBR0RangeForVAddr(VirtualMemoryAddress& theVA) const ;
         uint8_t getInitialLookupLevel( bool& isBR0 ) const ;
@@ -82,20 +117,13 @@ class mmu_t {
         uint8_t getPAWidth(bool isBR0) const ;
 
     public: /* Functions that are called externally from TLBs, uArch, etc.... */
-        void initRegsFromQEMUObject(mmu_regs_t* qemuRegs);
+        void initRegsFromQEMUObject(std::shared_ptr<mmu_regs_t> qemuRegs);
         bool IsExcLevelEnabled(uint8_t elToValidate) const ;
         void setupAddressSpaceSizesAndGranules(void);
 
     private:
         void setupBitConfigs();
 };
-
-typedef enum {
-  CLASS_ASI_PRIMARY        = 0,
-  CLASS_ASI_SECONDARY      = 1,
-  CLASS_ASI_NUCLEUS        = 2,
-  CLASS_ASI_NONTRANSLATING = 4
-} asi_class_t;
 
 typedef enum {
   MMU_TRANSLATE = 0,  /* for 'normal' translations */
@@ -142,56 +170,12 @@ typedef struct mmu_access {
   mmu_reg_t val;  /* store value or load result */
 } mmu_access_t;
 
-/* prototypes */
-/*
-bool mmu_is_cacheable(tte_data data);
-bool mmu_is_sideeffect(tte_data data);
-bool mmu_is_xendian(tte_data data);
-address_t mmu_make_paddr(tte_data data, address_t va);
+// Msutherl - june'18
+// - added smaller MMU interface (resolving walks + memory accesses resolved in Flexus components)
+std::shared_ptr<mmu_regs_t> getMMURegsFromQEMU();
 
-address_t mmu_translate(mmu_t * mmu,
-                        unsigned int is_fetch,
-                        address_t va,
-                        unsigned int asi_class,
-                        unsigned int asi,
-                        unsigned int nofault,
-                        unsigned int priv,
-                        unsigned int access_type,
-                        mmu_exception_t * except,
-                        mmu_translation_type_t trans_type);
-
-tte_data mmu_lookup(mmu_t * mmu,
-                    unsigned int is_fetch,
-                    address_t va,
-                    unsigned int asi_class,
-                    unsigned int asi,
-                    unsigned int nofault,
-                    unsigned int priv,
-                    unsigned int access_type,
-                    mmu_exception_t * except,
-                    mmu_translation_type_t trans_type);
-
-address_t mmu_generate_tsb_ptr(address_t va,
-                               mmu_ptr_type_t type,
-                               address_t tsb_base_in,
-                               unsigned int tsb_split,
-                               unsigned int tsb_size,
-                               mmu_reg_t tsb_ext);
-
-void mmu_access(mmu_t * mmu, mmu_access_t * access);
-
-int fm_compare_regs(mmu_regs_t* a, mmu_regs_t * b, const char * who);
-int fm_compare_mmus(mmu_t * a, mmu_t * b);
-*/
 void fm_print_mmu_regs(mmu_regs_t* mmu);
-} //end namespace MMU
-//#endif
-//} //end Namespace Qemu
-//} //end namespace Flexus
+} //end namespace nMMU
 
-//#if FLEXUS_TARGET_IS(arm)
-#include <core/qemu/mai_api.hpp>
-namespace MMU {
-}
 
-#endif //FLEXUS_SIMICS_MAI_API_HPP_INCLUDED
+#endif //FLEXUS_MMU_UTIL_HPP_INCLUDED

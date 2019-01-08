@@ -1339,7 +1339,7 @@ std::tuple<bool, bool, Action> InclusiveMESI::doRequest( MemoryTransport      tr
         DBG_( Trace, (  << " Allocated Block, State = " << result->state() << ", isHit? " << std::boolalpha << result->hit() ));
         break;
       }
-      case MemoryMessage::ReadReq: {
+      case MemoryMessage::ReadReq:{
         DBG_Assert( state == State::Invalid, ( << "Received reply to read req but block not invalid - " << state << " : " << (*msg) ));
 
         // We need to allocate the block in the data array

@@ -117,7 +117,7 @@ public:
   }
 
   void push(interface::LoopbackIn const &, MemoryTransport & aMessageTransport) {
-    DBG_(Trace, Comp(*this) ( << "request received: " << *aMessageTransport[MemoryMessageTag]) Addr(aMessageTransport[MemoryMessageTag]->address()) );
+    DBG_(Tmp, Comp(*this) ( << "request received: " << *aMessageTransport[MemoryMessageTag]) Addr(aMessageTransport[MemoryMessageTag]->address()) );
     intrusive_ptr<MemoryMessage> reply;
     switch (aMessageTransport[MemoryMessageTag]->type()) {
       case MemoryMessage::LoadReq:
@@ -219,6 +219,7 @@ public:
         // should never happen
         DBG_Assert(false, Component(*this) ( << "MemoryLoopback received PrefetchInsertWritable request") );
         break;
+
       default:
         DBG_Assert(false, Component(*this) ( << "Don't know how to handle message: " << aMessageTransport[MemoryMessageTag]->type() << "  No reply sent." ) );
         return;

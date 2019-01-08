@@ -35,39 +35,45 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-// Changelog:
-//  - June'18: msutherl - basic TLB definition, no real timing info
+#ifndef FLEXUS_PAGEWALK_HPP_INCLUDED
+#define FLEXUS_PAGEWALK_HPP_INCLUDED
 
-#include <core/simulator_layout.hpp>
-#include <components/CommonQEMU/Translation.hpp>
-#include <components/CommonQEMU/Slices/TransactionTracker.hpp>
-#include <core/qemu/mai_api.hpp>
+#include <components/uArchARM/CoreModel/coreModelImpl.hpp>
+#include <components/CommonQEMU/Transports/TranslationTransport.hpp>
+#include <core/types.hpp>
+#include "MMUUtil.hpp"
+namespace nMMU {
+
+class PageWalk {
+    std::shared_ptr<mmu_t> theMMU;
+    std::vector<TranslationTransport> theTranlationTransports;
+    std::queue<boost::intrusive_ptr<Translation>> theDoneTranlations;
+    std::queue<boost::intrusive_ptr<Translation>> theMemoryTranlations;
 
 
-#define FLEXUS_BEGIN_COMPONENT MMU
-#include FLEXUS_BEGIN_COMPONENT_DECLARATION()
+public:
+    PageWalk(uint32_t aNode) : theNode(aNode){}
+    ~PageWalk(){}
+    void setMMU(std::shared_ptr<mmu_t> aMMU){theMMU = aMMU;}
+    void translate(TranslationTransport & aTransport);
+    void preTranslate(TranslationTransport & aTransport);
+    void cycle();
+    void push_back(boost::intrusive_ptr<Translation> aTranslation);
+    TranslationPtr popMemoryRequest();
+    bool hasMemoryRequest();
+private:
+    void preWalk( TranslationTransport &  aTranslation );
+    bool walk( TranslationTransport &  aTranslation );
+    void setupTTResolver( TranslationTransport & aTr, uint64_t TTDescriptor );
+    void InitialTranslationSetup( TranslationTransport & aTranslation );
+    void pushMemoryRequest(TranslationPtr aTranslation);
+
+    TTEDescriptor getNextTTDescriptor(TranslationTransport & aTranslation );
+
+    uint32_t theNode;
+};
+
+}// end namespace nMMU
 
 
-
-COMPONENT_PARAMETERS(
-    PARAMETER( Cores, int, "Number of cores", "cores", 1 )
-    PARAMETER( CacheLevel, Flexus::SharedTypes::tFillLevel, "CacheLevel", "level", Flexus::SharedTypes::eUnknown )
-    PARAMETER( ArrayConfiguration, std::string, "Configuration of cache array (STD:sets=1024:assoc=16:repl=LRU", "array_config", "STD:sets=1024:assoc=16:repl=LRU" )
-    PARAMETER( TextFlexpoints, bool, "Store flexpoints as text files (compatible with old FastCache component)", "text_flexpoints", false )
-    PARAMETER( GZipFlexpoints, bool, "Compress flexpoints with gzip", "gzip_flexpoints", true )
-);
-
-COMPONENT_INTERFACE(
-    DYNAMIC_PORT_ARRAY( PushInput,  TranslationPtr, iRequestIn )
-    DYNAMIC_PORT_ARRAY( PushInput,  TranslationPtr, dRequestIn )
-    DYNAMIC_PORT_ARRAY( PushInput,  bool, ResyncIn)
-
-    DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, iTranslationReply )
-    DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, dTranslationReply )
-    DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, MemoryRequestOut )
-
-    DRIVE(MMUDrive)
-);
-
-#include FLEXUS_END_COMPONENT_DECLARATION()
-#define FLEXUS_END_COMPONENT MMU
+#endif // FLEXUS_PAGEWALK_HPP_INCLUDED

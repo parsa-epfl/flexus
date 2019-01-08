@@ -351,7 +351,6 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
 
     EvictAck,
     WriteRetry,
-
     NumMemoryMessageTypes
   };
 
@@ -392,6 +391,7 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     , theEvictHasData(false)
     , theBranchType(kNonBranch)
     , theBranchAnnul(false)
+    , thePageWalk(false)
   {}
   explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC)
     : theType(aType)
@@ -431,6 +431,7 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     , theBranchType(kNonBranch)
     , theBranchAnnul(false)
   {}
+
   explicit MemoryMessage(MemoryMessage & aMsg)
     : theType(aMsg.theType)
     , theAddress(aMsg.theAddress)
@@ -462,6 +463,10 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
 
   static intrusive_ptr<MemoryMessage> newRMW(MemoryAddress anAddress, VirtualMemoryAddress aPC, bits aData) {
     intrusive_ptr<MemoryMessage> msg = new MemoryMessage(RMWReq, anAddress, aPC, aData);
+    return msg;
+  }
+  static intrusive_ptr<MemoryMessage> newPWRequest(MemoryAddress anAddress) {
+    intrusive_ptr<MemoryMessage> msg = new MemoryMessage(LoadReq, anAddress);
     return msg;
   }
   static intrusive_ptr<MemoryMessage> newCAS(MemoryAddress anAddress, VirtualMemoryAddress aPC, bits aData) {
@@ -537,6 +542,13 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
   }
   bool anyInvs() {
     return theAnyInvs;
+  }
+  void setPageWalk(){
+      assert(!thePageWalk);
+      thePageWalk = true;
+  }
+  bool isPageWalk(){
+      return thePageWalk;
   }
   void setInvs() {
     theAnyInvs = true;
@@ -1071,6 +1083,7 @@ private:
   bool theEvictHasData;
   eBranchType theBranchType;
   bool theBranchAnnul;
+  bool thePageWalk;
 
 };
 

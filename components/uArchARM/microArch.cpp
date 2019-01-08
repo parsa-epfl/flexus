@@ -100,6 +100,8 @@ class microArchImpl : public microArch {
   std::function< void(int, int)> changeState;
   std::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback;
   std::function< void( bool )> signalStoreForwardingHit;
+  std::function<void(int32_t)> mmuResync;
+
 
 public:
   microArchImpl( uArchOptions_t options
@@ -108,6 +110,8 @@ public:
                  , std::function< void(int, int)> _changeState
                  , std::function< void( boost::intrusive_ptr<BranchFeedback> )> _feedback
                  , std::function< void(bool) > _signalStoreForwardingHit
+                 , std::function<void(int32_t)> _mmuResync
+
                )
     : theName(options.name)
     , theCore(CoreModel::construct(
@@ -119,6 +123,7 @@ public:
                 , _changeState
                 , _feedback
                 , _signalStoreForwardingHit
+                , _mmuResync
               )
              )
     , theAvailableROB ( 0 )
@@ -136,6 +141,8 @@ public:
     , changeState(_changeState)
     , feedback(_feedback)
     , signalStoreForwardingHit(_signalStoreForwardingHit)
+    , mmuResync(_mmuResync)
+
   {
       theCPU = Flexus::Qemu::Processor::getProcessor(theNode);
 
@@ -148,6 +155,7 @@ public:
       theAvailableROB = theCore->availableROB();
 
       resetArchitecturalState();
+
 
       DBG_( Crit, ( << theName << " connected to " << (static_cast<Flexus::Qemu::API::conf_object_t *>(*theCPU))->name ));
     DBG_( Tmp, ( << "CORE:  Initializing MMU ")  );
@@ -204,46 +212,35 @@ public:
         //Need to get load value from simics
         DBG_Assert(false);
         DBG_( Verb, ( << "Performing side-effect load to " << op->theVAddr));
-	ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).access(theCPU->id(), op->thePAddr);
+    ValueTracker::valueTracker(theCPU->id()).access(theCPU->id(), op->thePAddr);
         Flexus::SharedTypes::Translation xlat;
         xlat.theVaddr = op->theVAddr;
-//        xlat.theASI = op->theASI;
-        //xlat.theTL = theCore->getTL();
         xlat.thePSTATE = theCore->getPSTATE();
         xlat.theType = Flexus::SharedTypes::Translation::eLoad;
-        op->theValue = theCPU->readVAddr( xlat.theVaddr, op->theSize );
-
+        op->theValue = theCPU->readVirtualAddress( xlat.theVaddr, op->theSize );
       } else {
         //Need to get load value from the ValueTracker
-    bits val = ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).load(theCPU->id(),op->thePAddr,op->theSize);
-//        if (op->theReverseEndian) {
-//          op->theValue = bits(Flexus::Qemu::endianFlip( val.to_ulong(), op->theSize ));
-//        } else {
-          op->theValue = bits(val);
-//        }
-//        if (op->theASI == 0x24 || op->theASI == 0x34 ) {
-//          //Quad LDD
-//          op->theExtendedValue = bits(ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).load( theCPU->id(), PhysicalMemoryAddress(op->thePAddr + 8), op->theSize));
-//          DBG_( Verb, ( << "Performing quad LDD for addr " << op->thePAddr << " val: " << op->theValue << " ext: " << op->theExtendedValue) );
-//          DBG_Assert( ! op->theReverseEndian, ( << "FIXME: inverse endian QUAD_LDD is not implemented. ") );
-//        }
+        bits val = ValueTracker::valueTracker(theCPU->id()).load(theCPU->id(),op->thePAddr,op->theSize);
+        op->theValue = bits(val);
       }
     } else if ( op->theOperation == kRMWReply || op->theOperation == kCASReply ) {
       //RMW operations load int32_t theExtendedValue
-      ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).access( theCPU->id(), op->thePAddr);
+      ValueTracker::valueTracker(theCPU->id()).access( theCPU->id(), op->thePAddr);
       Flexus::SharedTypes::Translation xlat;
       xlat.theVaddr = op->theVAddr;
       xlat.thePSTATE = theCore->getPSTATE();
       xlat.theType = Flexus::SharedTypes::Translation::eStore;
-      op->theExtendedValue = theCPU->readVAddr( xlat.theVaddr, op->theSize );
+      op->theExtendedValue = theCPU->readVirtualAddress( xlat.theVaddr, op->theSize );
     } else if ( op->theOperation == kStoreReply && !op->theSideEffect && ! op->theAtomic ) {
       //Need to inform ValueTracker that this store is complete
       bits value = op->theValue;
+      DBG_(Tmp, (<< "u is " << op->theValue));
+
 //      if (op->theReverseEndian) {
 //        value = bits(Flexus::Qemu::endianFlip(value.to_ulong(), op->theSize));
 //        DBG_(Verb, ( << "Performing inverse endian store for addr " << std::hex << op->thePAddr << " val: " << op->theValue << " inv: " << value << std::dec ));
 //      }
-      ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theCPU->id())).commitStore( theCPU->id(), op->thePAddr, op->theSize, value);
+      ValueTracker::valueTracker(theCPU->id()).commitStore( theCPU->id(), op->thePAddr, op->theSize, value);
     }
     theCore->pushMemOp( op );
   }
@@ -308,14 +305,18 @@ public:
     theCore->skipCycle();
   }
 
+  virtual void issueMMU(TranslationPtr aTranslation){
+      theCore->issueMMU(aTranslation);
+  }
+
   void cycle() {
       CORE_DBG("--------------START MICROARCH------------------------");
 
-      FLEXUS_PROFILE();
-    if ((theCPU->id() == 0) && ( (theFlexus->cycleCount() % 10000) == 0) ) {
-      boost::posix_time::ptime now(boost::posix_time::second_clock::local_time());
-      DBG_(Dev, ( << "Timestamp: " << boost::posix_time::to_simple_string(now)));
-    }
+//      FLEXUS_PROFILE();
+//    if ((theCPU->id() == 0) && ( (theFlexus->cycleCount() % 10000) == 0) ) {
+//      boost::posix_time::ptime now(boost::posix_time::second_clock::local_time());
+//      DBG_(Dev, ( << "Timestamp: " << boost::posix_time::to_simple_string(now)));
+//    }
 
 //    if (theDriveClients) {
 //      driveClients();
@@ -355,14 +356,14 @@ public:
     CORE_DBG("--------------FINISH MICROARCH------------------------");
 }
 
-  void translate(boost::intrusive_ptr<Translation>& aTranslation) {
+//  void translate(boost::intrusive_ptr<Translation> aTranslation) {
       // Msutherl, Oct'18, move to direct CoreModel call
-      theCore->translate(aTranslation);
-  }
+//      theCore->translate(aTranslation);
+//  }
 
-  void intermediateTranslationStep(boost::intrusive_ptr<Translation>& aTranslation) {
-      theCore->intermediateTranslationStep(aTranslation);
-  } 
+//  void intermediateTranslationStep(boost::intrusive_ptr<Translation>& aTranslation) {
+//      theCore->intermediateTranslationStep(aTranslation);
+//  }
 
 private:
 
@@ -405,8 +406,8 @@ void resetArchitecturalState()
     fillXRegisters();
     fillVRegisters();
 
-    theCore->InitMMU( theCPU->getMMURegsFromQEMU() );
 
+    mmuResync(theNode);
 }
 
   void resetSpecialRegs() {
@@ -574,6 +575,8 @@ std::shared_ptr<microArch> microArch::construct( uArchOptions_t options
     , std::function< void(int, int) > changeState
     , std::function< void( boost::intrusive_ptr<BranchFeedback> ) > feedback
     , std::function< void( bool )> signalStoreForwardingHit
+    , std::function<void(int32_t)> mmuResync
+
                                                  ) {
   return std::make_shared<microArchImpl>(options
                                       , squash
@@ -581,6 +584,7 @@ std::shared_ptr<microArch> microArch::construct( uArchOptions_t options
                                       , changeState
                                       , feedback
                                       , signalStoreForwardingHit
+                                      , mmuResync
                                      );
 }
 

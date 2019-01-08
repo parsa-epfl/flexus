@@ -74,6 +74,8 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)  {
   std::unique_ptr<BranchPredictor> theBranchPredictor;
   uint32_t theCurrentThread;
 
+  std::vector<bool> theEnable;
+
 public:
   FLEXUS_COMPONENT_CONSTRUCTOR(FetchAddressGenerate)
     : base( FLEXUS_PASS_CONSTRUCTOR_ARGS )
@@ -105,6 +107,11 @@ public:
     }
     theCurrentThread = cfg.Threads;
     theBranchPredictor.reset( BranchPredictor::combining(statName(), flexusIndex()) );
+
+    theEnable.resize(cfg.Threads);
+    for (auto i : theEnable) {
+        i = true;
+    }
   }
 
   void finalize() {}
@@ -148,6 +155,11 @@ FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(RedirectIn);
     theBranchPredictor->feedback(*aFeedback);
   }
 
+  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(EnableIn);
+  void push(interface::EnableIn const &, index_t anIndex, bool& v) {
+    theEnable[anIndex] = true;
+  }
+
   //Drive Interfaces
   //----------------
   //The FetchDrive drive interface sends a commands to the Feeder and then fetches instructions,
@@ -164,6 +176,7 @@ private:
   //Implementation of the FetchDrive drive interface
   void doAddressGen(index_t anIndex) {
 
+    if (!theEnable[flexusIndex()]) return;
     AGU_DBG("--------------START ADDRESS GEN------------------------");
 
     if (theFlexus->quiescing()) {
@@ -247,11 +260,13 @@ private:
     if (fetch->theFetches.size() > 0) {
       AGU_DBG("Sending total fetches: " << fetch->theFetches.size());
 
+      theEnable[flexusIndex()] = false;
+
       //Send it to FetchOut
       FLEXUS_CHANNEL_ARRAY(FetchAddrOut, anIndex) << fetch;
     } else {
         AGU_DBG("No fetches to send");
-      }
+    }
 
     AGU_DBG("--------------FINISH ADDRESS GEN------------------------");
 
@@ -286,6 +301,10 @@ FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, AvailableFAQ )   {
 FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, Stalled )   {
   return (cfg.Threads);
 }
+FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, EnableIn )   {
+  return (cfg.Threads);
+}
+
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
 #define FLEXUS_END_COMPONENT FetchAddressGenerate

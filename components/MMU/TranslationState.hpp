@@ -45,10 +45,11 @@
 #define FLEXUS_SLICES__TRANS_STATE_HPP_INCLUDED
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <memory> // for shared_ptr
-#include <core/qemu/TTResolvers.hpp>
+#include "TTResolvers.hpp"
 
-namespace Flexus {
-namespace SharedTypes {
+namespace nMMU {
+
+class TTResolver;
 
 struct TranslationState : public boost::counted_base {
   // Stuff that carries MMU-internal state.
@@ -57,10 +58,9 @@ struct TranslationState : public boost::counted_base {
   uint8_t currentLookupLevel;
   bool isBR0;
   uint32_t granuleSize;
-  std::shared_ptr<MMU::TTResolver> TTAddressResolver;
+  std::shared_ptr<TTResolver> TTAddressResolver;
   uint64_t BlockSizeFromTTs;
 };
 
-} //SharedTypes
-} //Flexus
+} // nMMU
 #endif // FLEXUS_SLICES__TRANS_STATE_HPP_INCLUDED

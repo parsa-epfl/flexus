@@ -608,7 +608,7 @@ struct web_version1 {
 
 using Flexus::SharedTypes::VirtualMemoryAddress;
 //Helperfunction to read Vadddresses
-char readVAddr(Qemu::API::conf_object_t *cpu, VirtualMemoryAddress anAddr, int size){
+char readVirtualAddress(Qemu::API::conf_object_t *cpu, VirtualMemoryAddress anAddr, int size){
     return (char)(Qemu::API::QEMU_read_phys_memory(
             Qemu::API::QEMU_logical_to_physical(cpu, Qemu::API::QEMU_DI_Data
             ,anAddr)
@@ -765,8 +765,8 @@ class SimPrintHandlerImpl : public SimPrintHandler {
 
   void readString(Qemu::API::conf_object_t * cpu, VirtualMemoryAddress anAddr, char * aDest, int32_t aMax) {
     for (int32_t i = 0; i < aMax; ++i) {
-        //need to make cpu.readVAddr(shouldn't it already have been ->cpu? adn readG 
-      char c =readVAddr(cpu, anAddr + i, 1);
+        //need to make cpu.readVirtualAddress(shouldn't it already have been ->cpu? adn readG 
+      char c =readVirtualAddress(cpu, anAddr + i, 1);
       aDest[i] = c;
       if (c == 0) {
         break;

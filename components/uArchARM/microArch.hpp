@@ -43,8 +43,8 @@
 #include <memory>
 
 #include <components/CommonQEMU/Slices/MemOp.hpp>
+#include <components/CommonQEMU/Translation.hpp>
 #include <components/CommonQEMU/Slices/PredictorMessage.hpp> /* CMU-ONLY */
-#include <components/CommonQEMU/Slices/Translation.hpp>
 
 namespace Flexus {
 namespace SharedTypes {
@@ -64,6 +64,7 @@ struct microArch {
              , std::function< void(int, int)> changeState
              , std::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback
              , std::function< void(bool) > aStoreForwardingHitFunction
+             , std::function<void(int32_t)> mmuResyncFunction
            );
 
   virtual int32_t availableROB() = 0;
@@ -74,6 +75,7 @@ struct microArch {
   virtual void dispatch(boost::intrusive_ptr< AbstractInstruction >) = 0;
   virtual void skipCycle() = 0;
   virtual void cycle() = 0;
+  virtual void issueMMU(TranslationPtr aTranslation) = 0;
   virtual void pushMemOp(boost::intrusive_ptr< MemOp >) = 0;
   virtual bool canPushMemOp() = 0;
   virtual boost::intrusive_ptr<MemOp> popMemOp() = 0;
@@ -95,12 +97,6 @@ struct microArch {
   virtual void printRegReverseMappings(std::string) = 0;
   virtual void printAssignments(std::string) = 0;
   virtual void writePermissionLost(PhysicalMemoryAddress anAddress) = 0;
-
-  // Msutherl
-  virtual bool IsTranslationEnabledAtEL(uint8_t & el) = 0;
-  virtual void translate(boost::intrusive_ptr<Translation>& aTr) = 0;
-  virtual void intermediateTranslationStep(boost::intrusive_ptr<Translation>& aTr) = 0; // TODO
-
 };
 
 } //nuArchARM

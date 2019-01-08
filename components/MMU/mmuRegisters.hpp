@@ -1,5 +1,9 @@
 #ifndef FLEXUS_ARM_MMU_REGISTERS_H_INCLUDED
 #define FLEXUS_ARM_MMU_REGISTERS_H_INCLUDED
+
+#include <components/uArchARM/uArchInterfaces.hpp>
+
+
 typedef unsigned long long mmu_reg_t;
 
 typedef struct mmu_bit_configs {
@@ -93,5 +97,7 @@ struct mmu_regs_t {
     mmu_reg_t           TTBR1_EL2;          // upper address range for EL2
      * ----DO NOT REMOVE---- PEOPLE WILL NEED TO KNOW THIS */
 };
+
+
 
 #endif // FLEXUS_ARM_MMU_REGISTERS_HPP_INCLUDED

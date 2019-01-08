@@ -1,4 +1,4 @@
-// DO-NOT-REMOVE begin-copyright-block 
+﻿// DO-NOT-REMOVE begin-copyright-block 
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
@@ -46,129 +46,73 @@
 #include <core/performance/profile.hpp>
 #include <core/qemu/configuration_api.hpp>
 
-#include "components/TLBControllers/TLBController.hpp"
-#include <components/CommonQEMU/Slices/Translation.hpp>
-
-#include <core/qemu/mai_api.hpp>
+#include <components/CommonQEMU/Translation.hpp>
+#include "MMUUtil.hpp"
+#include "pageWalk.hpp"
 
 #include <map>
 #include <queue>
 #include <vector>
 
 #define DBG_DefineCategories MMU
+#define DBG_SetDefaultOps AddCat(MMU)
 #include DBG_Control()
 #define DBG_DefineCategories TLBMissTracking
 #include DBG_Control()
-#define DBG_SetDefaultOps AddCat(MMU)
-#include DBG_Control()
 
-#define FLEXUS_BEGIN_COMPONENT MMU 
+#define FLEXUS_BEGIN_COMPONENT MMU
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
+
+
 
 namespace nMMU {
 
 using namespace Flexus;
 using namespace Core;
 using namespace SharedTypes;
-using namespace nCache;
-
-using std::unique_ptr;
 
 class FLEXUS_COMPONENT(MMU) {
   FLEXUS_COMPONENT_IMPL(MMU);
 
 private:
 
-  std::unique_ptr<CacheController> theController; //Deleted automagically when the cache goes away
 
-  Flexus::Stat::StatCounter theBusDeadlocks;
-
-
+  std::unique_ptr<PageWalk> thePageWalker;
   typedef std::map<VirtualMemoryAddress, PhysicalMemoryAddress> TLBentry;
   TLBentry theInstrTLB;
   TLBentry theDataTLB;
 
-  std::vector<boost::intrusive_ptr<Translation>> thePageWalkEntries;
-  std::vector<boost::intrusive_ptr<Translation>> theiLookUpEntries, thedLookUpEntries;
+  std::queue<boost::intrusive_ptr<Translation>> theLookUpEntries;
+  std::queue<boost::intrusive_ptr<Translation>> thePageWalkEntries;
 
-  Flexus::Qemu::Processor theCPU;
+  std::shared_ptr<Flexus::Qemu::Processor> theCPU;
+  std::shared_ptr<mmu_t> theMMU;
+
+  bool theMMUInitialized;
 
 public:
   FLEXUS_COMPONENT_CONSTRUCTOR(MMU)
     : base ( FLEXUS_PASS_CONSTRUCTOR_ARGS )
-    , theBusDeadlocks( statName() + "-BusDeadlocks" )
-    , theBusDirection(kIdle)
   {}
 
-  enum eDirection {
-    kIdle
-    , kToBackSideIn_Request
-    , kToBackSideIn_Reply
-    , kToBackSideOut_Request
-    , kToBackSideOut_Snoop
-    , kToBackSideOut_Reply
-  };
-
-  uint32_t theBusTxCountdown;
-  eDirection theBusDirection;
-  MemoryTransport theBusContents;
-  boost::optional< MemoryTransport> theBackSideIn_RequestBuffer;
-  boost::optional< MemoryTransport> theBackSideIn_ReplyBuffer;
-  std::list<MemoryTransport> theBackSideIn_ReplyInfiniteQueue;
-  std::list<MemoryTransport> theBackSideIn_RequestInfiniteQueue;
 
   bool isQuiesced() const {
-    return theBusDirection == kIdle
-           && !theBackSideIn_ReplyBuffer
-           && !theBackSideIn_RequestBuffer
-           && (theController.get() ? theController->isQuiesced() : true )
-           ;
+      return false;
   }
 
   void saveState(std::string const & aDirName) {
-    theController->saveState( aDirName );
+    // TODO
   }
 
   void loadState(std::string const & aDirName) {
-    theController->loadState( aDirName, cfg.TextFlexpoints, cfg.GZipFlexpoints );
+//    TODO
   }
 
   // Initialization
   void initialize() {
-    theBusTxCountdown = 0;
-    theBusDirection = kIdle;
-
-    //theController.reset();/*new CacheController(statName(),
-    new CacheController(statName(),
-            cfg.Cores,
-            cfg.ArrayConfiguration,
-            64,//cfg.BlockSize,
-            1,//cfg.Banks,
-            1,//cfg.Ports,
-            1,//cfg.TagLatency,
-            1,//cfg.TagIssueLatency,
-            1,//cfg.DataLatency,
-            1,//cfg.DataIssueLatency,
-            (int)flexusIndex(),
-            cfg.CacheLevel,
-            0,//cfg.QueueSizes,
-            0,//cfg.PreQueueSizes,
-            0,//cfg.MAFSize,
-            0,//cfg.MAFTargetsPerRequest,
-            1,//cfg.EvictBufferSize,
-            1,//cfg.SnoopBufferSize,
-            false,//cfg.ProbeFetchMiss,
-            false,//cfg.EvictClean,
-            false,//cfg.EvictWritableHasData,
-            "InclusiveMESI",//cfg.CacheType,
-            0,//cfg.TraceAddress,
-            false, // cfg.AllowOffChipStreamFetch
-            false,//cfg.EvictOnSnoop,
-            false//cfg.UseReplyChannel
-            );
-
-    theCPU = Flexus::Qemu::Processor::getProcessor(theNodeId);
-
+      theCPU = std::make_shared<Flexus::Qemu::Processor>(Flexus::Qemu::Processor::getProcessor((int)flexusIndex()));
+      thePageWalker.reset(new PageWalk(flexusIndex()));
+      thePageWalker->setMMU(theMMU);
   }
 
   void finalize() {}
@@ -177,168 +121,182 @@ public:
   //----------
   void drive(interface::MMUDrive const &) {
     DBG_(VVerb, Comp(*this) ( << "MMUDrive" ) ) ;
-    theController->processMessages();
     busCycle();
+    thePageWalker->cycle();
+    processMemoryRequests();
+
   }
 
-  uint32_t transferTime(const MemoryTransport & trans) {
-    if (theFlexus->isFastMode()) {
-      return 0;
-    }
-    DBG_Assert(trans[MemoryMessageTag] != nullptr);
-    return 1; // FIXME: instantaneous transfer
-    //return ( (trans[MemoryMessageTag]->reqSize() > 0) ? cfg.BusTime_Data : cfg.BusTime_NoData) - 1;
-  }
 
   void busCycle() {
 
+      while (!theLookUpEntries.empty()){
 
-      DBG_Assert(theRequests->internalContainer.size() != 0);
-      boost::intrusive_ptr<Translation> item = theRequests->internalContainer.front();
+          boost::intrusive_ptr<Translation> item = theLookUpEntries.front();
+          theLookUpEntries.pop();
 
-
-      if (item->isInstr()) {
-          if (theInstrTLB.find(item->theVaddr) != theInstrTLB.end()) {
-                // item exists so mark hit
-            item->setHit();
+          if (item->isInstr()) {
+              if (theInstrTLB.find(item->theVaddr) != theInstrTLB.end()) {
+                    // item exists so mark hit
+                item->setHit();
+                FLEXUS_CHANNEL(iTranslationReply) << item;
+              } else {
+                  // mark miss
+                  item->setMiss();
+                  thePageWalkEntries.push(item);
+                  thePageWalker->push_back(item);
+              }
+          } else if (item->isData()) {
+              if (theDataTLB.find(item->theVaddr) != theDataTLB.end()) {
+                    // item exists so mark hit
+                  item->setHit();
+                  FLEXUS_CHANNEL(dTranslationReply) << item;
+              } else {
+                  // mark miss
+                  item->setMiss();
+                  thePageWalkEntries.push(std::move(item));
+                  thePageWalker->push_back(item);
+              }
           } else {
-              // mark miss
-              item->setMiss();
-              thePageWalkEntries.push_back(item);
-          }
-      } else if (item->isData()) {
-          if (theDataTLB.find(item->theVaddr) != theDataTLB.end()) {
-                // item exists so mark hit
-              item->setHit();
-
-          } else {
-              // mark miss
-              item->setMiss();
-              thePageWalkEntries.push_back(item);
+              assert(false);
           }
       }
 
-      if (thePageWalkEntries.size() > 0){
-          for (auto& i : thePageWalkEntries) {
-              FLEXUS_CHANNEL(TranslateOut) << i;
+      while (!thePageWalkEntries.empty()){
+          boost::intrusive_ptr<Translation> item = thePageWalkEntries.front();
 
+          if (item->isDone()){
+              thePageWalkEntries.pop();
+
+              if (item->isInstr()){
+                theInstrTLB[item->theVaddr] = item->thePaddr;
+                FLEXUS_CHANNEL(iTranslationReply) << item;
+              } else if (item->isData()){
+                  theDataTLB[item->theVaddr] = item->thePaddr;
+                  FLEXUS_CHANNEL(dTranslationReply) << item;
+              } else {
+                  DBG_Assert(false);
+              }
+          }
+          else {
+              break;
           }
       }
-
-      FLEXUS_CHANNEL(ReplyOut) << theRequests;
-
-
   }
 
-  void initMMU( std::shared_ptr<mmu_regs_t> regsFromQemu ) {
-    this->theMMU = std::make_shared<mmu_t>();
-    mmu_regs_t* rawRegs = reinterpret_cast<mmu_regs_t*>( regsFromQemu.get() );
 
-    theMMU->initRegsFromQEMUObject( rawRegs );
+  void processMemoryRequests(){
+      while (thePageWalker->hasMemoryRequest()){
+          TranslationPtr tmp = thePageWalker->popMemoryRequest();
+          FLEXUS_CHANNEL(MemoryRequestOut) << tmp;
+      }
+  }
+
+
+  void initMMU(uint8_t anIndex) {
+
+    if (!theMMUInitialized){
+        theMMU.reset(new mmu_t());
+        theMMUInitialized = true;
+    }
+    theMMU->initRegsFromQEMUObject( getMMURegsFromQEMU(anIndex) );
     theMMU->setupAddressSpaceSizesAndGranules();
-    this->mmuInitialized = true;
+
     DBG_(Tmp,( << "MMU object init'd, " << std::hex << theMMU << std::dec ));
   }
 
+  // Msutherl: Fetch MMU's registers
+  std::shared_ptr<mmu_regs_t> getMMURegsFromQEMU(uint8_t anIndex) {
+      std::shared_ptr<mmu_regs_t> mmu_obj (new mmu_regs_t());
+
+      mmu_obj->SCTLR[EL0] = Flexus::Qemu::Processor::getProcessor(anIndex)->readSCTLR(EL0);
+      mmu_obj->SCTLR[EL1] = Flexus::Qemu::Processor::getProcessor(anIndex)->readSCTLR(EL1);
+      mmu_obj->SCTLR[EL2] = Flexus::Qemu::Processor::getProcessor(anIndex)->readSCTLR(EL2);
+      mmu_obj->SCTLR[EL3] = Flexus::Qemu::Processor::getProcessor(anIndex)->readSCTLR(EL3);
+
+      mmu_obj->TCR[EL0] =   Qemu::API::QEMU_read_register(* Flexus::Qemu::Processor::getProcessor(anIndex),Qemu::API::kMMU_TCR, EL0);
+      mmu_obj->TCR[EL1] =   Qemu::API::QEMU_read_register(* Flexus::Qemu::Processor::getProcessor(anIndex),Qemu::API::kMMU_TCR, EL1);
+      mmu_obj->TCR[EL2] =   Qemu::API::QEMU_read_register(* Flexus::Qemu::Processor::getProcessor(anIndex),Qemu::API::kMMU_TCR, EL2);
+      mmu_obj->TCR[EL3] =   Qemu::API::QEMU_read_register(* Flexus::Qemu::Processor::getProcessor(anIndex),Qemu::API::kMMU_TCR, EL3);
+      mmu_obj->TTBR1[EL0] = Qemu::API::QEMU_read_register(* Flexus::Qemu::Processor::getProcessor(anIndex),Qemu::API::kMMU_TTBR1,EL0);
+      mmu_obj->TTBR0[EL1] = Qemu::API::QEMU_read_register(* Flexus::Qemu::Processor::getProcessor(anIndex),Qemu::API::kMMU_TTBR0,EL1);
+      mmu_obj->TTBR1[EL1] = Qemu::API::QEMU_read_register(* Flexus::Qemu::Processor::getProcessor(anIndex),Qemu::API::kMMU_TTBR1,EL1);
+      mmu_obj->TTBR0[EL2] = Qemu::API::QEMU_read_register(* Flexus::Qemu::Processor::getProcessor(anIndex),Qemu::API::kMMU_TTBR0,EL2);
+      mmu_obj->TTBR1[EL2] = Qemu::API::QEMU_read_register(* Flexus::Qemu::Processor::getProcessor(anIndex),Qemu::API::kMMU_TTBR1,EL2);
+      mmu_obj->TTBR0[EL3] = Qemu::API::QEMU_read_register(* Flexus::Qemu::Processor::getProcessor(anIndex),Qemu::API::kMMU_TTBR0,EL3);
+      mmu_obj->TTBR1[EL3] = Qemu::API::QEMU_read_register(* Flexus::Qemu::Processor::getProcessor(anIndex),Qemu::API::kMMU_TTBR1,EL3);
+
+      mmu_obj->ID_AA64MMFR0_EL1 = Qemu::API::QEMU_read_register(* Flexus::Qemu::Processor::getProcessor(anIndex),Qemu::API::kMMU_ID_AA64MMFR0_EL1, 0);
+
+      return mmu_obj;
+  }
+
   bool IsTranslationEnabledAtEL(uint8_t & anEL) {
-      return theCore->IsTranslationEnabledAtEL(anEL);
-      theNodeId
-
+      return true; // theCore->IsTranslationEnabledAtEL(anEL);
   }
 
-  // Msutherl
-  FLEXUS_PORT_ALWAYS_AVAILABLE(iRequestIn);
-  void push( interface::RequestIn const &,
-             TranslationPtr& aTranslate ) {
-      theiLookUpEntries.push_back( aTranslate );
+  bool available( interface::ResyncIn const &,
+                  index_t anIndex) {
+    return true;
   }
-  FLEXUS_PORT_ALWAYS_AVAILABLE(dRequestIn);
-  void push( interface::RequestIn const &,
+  void push( interface::ResyncIn const &,
+             index_t           anIndex,
+             bool & aResync ) {
+      initMMU(anIndex);
+  }
+
+  bool available( interface::iRequestIn const &,
+                  index_t anIndex) {
+    return true;
+  }
+  void push( interface::iRequestIn const &,
+             index_t           anIndex,
              TranslationPtr& aTranslate ) {
-      thedLookUpEntries.push_back( aTranslate );
+      aTranslate->toggleReady();
+      theLookUpEntries.push( aTranslate );
+  }
+
+  bool available( interface::dRequestIn const &,
+                  index_t anIndex) {
+    return true;
+  }
+  void push( interface::dRequestIn const &,
+             index_t           anIndex,
+             TranslationPtr& aTranslate ) {
+      theLookUpEntries.push( aTranslate );
   }
 
 
   void sendTLBresponse(TranslationPtr aTranslation) {
-    aTranslation->isInstr()
-    ?   FLEXUS_CHANNEL(iTranslationReply) << aTranslation
-    :   FLEXUS_CHANNEL(dTranslationReply) << aTranslation;
+    if (aTranslation->isInstr())
+        FLEXUS_CHANNEL(iTranslationReply) << aTranslation;
+    else
+        FLEXUS_CHANNEL(dTranslationReply) << aTranslation;
   }
-
-/*
-  //FrontSideIn_Request
-    //-------------------
-    bool available( interface::FrontSideIn_Request const &,
-                    index_t anIndex) {
-      return ! theController->FrontSideIn_Request[0].full();
-    }
-    void push( interface::FrontSideIn_Request const &,
-               index_t           anIndex,
-               MemoryTransport & aMessage) {
-      DBG_Assert(! theController->FrontSideIn_Request[0].full(), ( << statName() ) );
-      aMessage[MemoryMessageTag]->coreIdx() = anIndex;
-      DBG_(Trace, Comp(*this) ( << "Received on Port FrontSideIn(Request) [" << anIndex << "]: " << *(aMessage[MemoryMessageTag]) ) Addr(aMessage[MemoryMessageTag]->address()) );
-      if (aMessage[TransactionTrackerTag]) {
-        aMessage[TransactionTrackerTag]->setDelayCause(name(), "Front Rx");
-      }
-
-      theController->FrontSideIn_Request[0].enqueue(aMessage);
-    }
-
-    //BackeSideIn_Reply
-    //-----------
-    bool available( interface::BackSideIn_Reply const &) {
-      return ! theBackSideIn_ReplyBuffer;
-    }
-    void push( interface::BackSideIn_Reply const &, MemoryTransport & aMessage) {
-      if (cfg.NoBus) {
-        aMessage[MemoryMessageTag]->coreIdx() = 0;
-        theBackSideIn_ReplyInfiniteQueue.push_back(aMessage);
-        return;
-      }
-      DBG_Assert(! theBackSideIn_ReplyBuffer);
-      // In non-piranha caches, the core index should always be zero, since
-      // things above (such as the processor) do not want to know about core numbers
-      aMessage[MemoryMessageTag]->coreIdx() = 0;
-      theBackSideIn_ReplyBuffer = aMessage;
-    }
-
-    //BackeSideIn_Request
-    //-----------
-    bool available( interface::BackSideIn_Request const &) {
-      return ! theBackSideIn_RequestBuffer;
-    }
-    void push( interface::BackSideIn_Request const &, MemoryTransport & aMessage) {
-      if (cfg.NoBus) {
-        aMessage[MemoryMessageTag]->coreIdx() = 0;
-        theBackSideIn_RequestInfiniteQueue.push_back(aMessage);
-        return;
-      }
-      DBG_Assert(! theBackSideIn_RequestBuffer);
-      // In non-piranha caches, the core index should always be zero, since
-      // things above (such as the processor) do not want to know about core numbers
-      aMessage[MemoryMessageTag]->coreIdx() = 0;
-      theBackSideIn_RequestBuffer = aMessage;
-    }
-*/
-
-
-
-
-
-
-
 };
 
 } //End Namespace nMMU
 
 FLEXUS_COMPONENT_INSTANTIATOR( MMU , nMMU );
-//FLEXUS_PORT_ARRAY_WIDTH( MMU , FrontSideOut_I )           {
-//  return (cfg.Cores);
-//}
-//FLEXUS_PORT_ARRAY_WIDTH( MMU , FrontSideIn_Request )    {
-//  return (cfg.Cores);
-//}
+FLEXUS_PORT_ARRAY_WIDTH( MMU , dRequestIn )           {
+  return (cfg.Cores);
+}
+FLEXUS_PORT_ARRAY_WIDTH( MMU , iRequestIn )    {
+  return (cfg.Cores);
+}
+FLEXUS_PORT_ARRAY_WIDTH( MMU , ResyncIn )           {
+  return (cfg.Cores);
+}
+FLEXUS_PORT_ARRAY_WIDTH( MMU , iTranslationReply )    {
+  return (cfg.Cores);
+}
+FLEXUS_PORT_ARRAY_WIDTH( MMU , dTranslationReply )    {
+  return (cfg.Cores);
+}
+
+FLEXUS_PORT_ARRAY_WIDTH( MMU , MemoryRequestOut )    {
+  return (cfg.Cores);
+}
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
 #define FLEXUS_END_COMPONENT MMU

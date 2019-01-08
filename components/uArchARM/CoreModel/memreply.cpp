@@ -244,7 +244,8 @@ void CoreImpl::invalidate( PhysicalMemoryAddress anAddress) {
 void CoreImpl::processMemoryReplies() {
   FLEXUS_PROFILE();
   while (! theMemoryReplies.empty() ) {
-    if ( processReply( *theMemoryReplies.front() ) ) {
+      MemOp const & anOperation = *theMemoryReplies.front();
+    if ( processReply( anOperation ) ) {
       theMemoryReplies.pop_front();
     } else {
       break;
@@ -291,7 +292,6 @@ void CoreImpl::ackReturn ( MemOp const & aReturn ) {
 
 bool CoreImpl::processReply( MemOp const & anOperation ) {
   FLEXUS_PROFILE();
-  DBG_( Iface, ( << "Processing memory reply: " << anOperation ) );
   std::set<boost::intrusive_ptr<Instruction> > ::iterator iter, end;
   PhysicalMemoryAddress addr( static_cast<uint64_t>(anOperation.thePAddr) & ~( theCoherenceUnit - 1));
 
@@ -354,7 +354,7 @@ bool CoreImpl::processReply( MemOp const & anOperation ) {
 
 bool CoreImpl::satisfies(eOperation aResponse, eOperation anOperation) {
   switch ( anOperation ) {
-    case kLoad:
+    case kLoad: case kPageWalkRequest:
       return aResponse == kLoadReply;
     case kStore:
       return aResponse == kStoreReply;
@@ -390,6 +390,12 @@ void CoreImpl::complete ( MemOp const & anOperation ) {
       std::list< boost::intrusive_ptr<Instruction> > pf_list;
       pf_list.swap( match->second.theBlockedPrefetches);
 
+      if (match->second.theOperation == kPageWalkRequest){
+            std::map<VirtualMemoryAddress, TranslationPtr>::iterator item = thePageWalkRequests.find(anOperation.theVAddr);
+            DBG_Assert(item != thePageWalkRequests.end());
+            item->second->rawTTEValue = anOperation.theValue.to_ulong();
+            item->second->toggleReady();
+      }
       theMSHRs.erase( match );
 
       //The MSHR has to be erased before we can call either of these

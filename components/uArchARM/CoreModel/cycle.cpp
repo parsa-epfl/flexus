@@ -43,7 +43,7 @@
 #include "../ValueTracker.hpp"
 
 #include <components/CommonQEMU/Slices/FillLevel.hpp>
-#include <components/CommonQEMU/Slices/Translation.hpp>
+#include <components/CommonQEMU/Translation.hpp>
 #include <components/CommonQEMU/TraceTracker.hpp>
 
 //#include <components/WhiteBox/WhiteBoxIface.hpp>
@@ -425,13 +425,13 @@ void CoreImpl::checkTranslation( boost::intrusive_ptr<Instruction> anInsn) {
   DBG_(Tmp, ( << " in checkTranslation!! " ) );//NOOSHIN
   if (!anInsn->isAnnulled() && !anInsn->isSquashed()) {
     DBG_(Tmp, ( << " is not Annulled " ) );//NOOSHIN
-    boost::intrusive_ptr<Flexus::SharedTypes::Translation> xlat(new Flexus::SharedTypes::Translation());
+    boost::intrusive_ptr<Flexus::SharedTypes::Translation> xlat/*(new Flexus::SharedTypes::Translation())*/;
     xlat->theVaddr = iter->theVaddr;
 //    xlat.theASI = iter->theASI;
     //xlat.theTL = getTL();
     xlat->thePSTATE = getPSTATE() ;
     xlat->theType = ( iter->isStore() ? Flexus::SharedTypes::Translation::eStore :  Flexus::SharedTypes::Translation::eLoad) ;
-    translate(xlat);
+//    translate(xlat);
     iter->theException = kException_None;
     if (iter->theException < kException_None ) {
       DBG_(Tmp, ( <<  theName << " Taking MMU exception: " << iter->theException << " "  << *iter ) );//NOOSHIN
@@ -1065,7 +1065,7 @@ void CoreImpl::commitStore( boost::intrusive_ptr<Instruction> anInsn) {
 //      value = Flexus::Qemu::endianFlip(value, iter->theSize);
 //      DBG_(Verb, ( << theName << " Inverse endian store: " << *iter << " inverted value: " <<  std::hex << value << std::dec ) );
 //    }
-    ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theNode)).store( theNode, iter->thePaddr, iter->theSize, value);
+    ValueTracker::valueTracker(theNode).store( theNode, iter->thePaddr, iter->theSize, value);
     //theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
     theMemQueue.get<by_insn>().modify( iter, ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
   }
@@ -1710,7 +1710,7 @@ void CoreImpl::valuePredictAtomic() {
       ++theValuePredictions;
 
       if (theSpeculateOnAtomicValuePerfect) {
-          lsq_head->theExtendedValue = ValueTracker::valueTracker(Flexus::Qemu::ProcessorMapper::mapFlexusIndex2VM(theNode)).load( theNode, lsq_head->thePaddr, lsq_head->theSize);
+          lsq_head->theExtendedValue = ValueTracker::valueTracker(theNode).load( theNode, lsq_head->thePaddr, lsq_head->theSize);
       } else {
         if (lsq_head->theOperation == kCAS) {
           lsq_head->theExtendedValue = lsq_head->theCompareValue;

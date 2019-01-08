@@ -56,7 +56,8 @@ namespace Flexus {
 namespace SharedTypes {
 
 enum eOperation { //Sorted by priority for requesting memory ports
-  kLoad
+  kPageWalkRequest
+  , kLoad
   , kLDP
   , kAtomicPreload
   , kRMW

@@ -45,8 +45,8 @@
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 #include <components/CommonQEMU/Slices/FillLevel.hpp>
-#include <components/CommonQEMU/Slices/Translation.hpp>
 #include <core/qemu/mai_api.hpp>
+#include <components/CommonQEMU/Translation.hpp>
 
 namespace Flexus {
 namespace SharedTypes {
@@ -117,6 +117,8 @@ struct FetchedOpcode {
   boost::intrusive_ptr<BPredState> theBPState;
   boost::intrusive_ptr<TransactionTracker> theTransaction;
 
+  FetchedOpcode(Opcode anOpcode):  theOpcode(anOpcode)
+  {}
   FetchedOpcode( VirtualMemoryAddress anAddr
                  , Opcode anOpcode
                  , boost::intrusive_ptr<BPredState> aBPState
@@ -133,12 +135,37 @@ struct FetchedOpcode {
   { }
 };
 
+struct FetchBundle : public boost::counted_base {
+  std::list< FetchedOpcode > theOpcodes;
+  std::list< tFillLevel > theFillLevels; 
+
+  void updateOpcode(VirtualMemoryAddress anAddress, Opcode anOpcode){
+      for (FetchedOpcode& i : theOpcodes){
+          if (i.thePC == anAddress){
+              i.theOpcode = anOpcode;
+              return;
+          }
+      }
+      DBG_Assert(false);
+
+  }
+};
+
+
+struct CPUState {
+  int32_t theTL;
+  int32_t thePSTATE;
+};
+
+typedef boost::intrusive_ptr<FetchBundle> pFetchBundle;
+
+
 struct TranslationVecWrapper : public boost::counted_base {
 
     TranslationVecWrapper(){}
     ~TranslationVecWrapper(){}
 
-    std::queue< boost::intrusive_ptr<Translation> > internalContainer; // from mai_api
+    std::queue< TranslationPtr > internalContainer; // from mai_api
 
     void addNewTranslation(boost::intrusive_ptr<Translation>& aTr) {
         internalContainer.push(aTr);
@@ -154,18 +181,8 @@ struct TranslationVecWrapper : public boost::counted_base {
 //    }
 };
 
-struct FetchBundle : public boost::counted_base {
-  std::queue< FetchedOpcode > theOpcodes;
-  std::list< tFillLevel > theFillLevels;
-};
 
-typedef boost::intrusive_ptr<FetchBundle> pFetchBundle;
 typedef boost::intrusive_ptr<TranslationVecWrapper> TranslatedAddresses;
-typedef boost::intrusive_ptr<Translation> TranslationPtr;
-struct CPUState {
-  int32_t theTL;
-  int32_t thePSTATE;
-};
 
 } // end namespace SharedTypes
 } // end namespace Flexus
