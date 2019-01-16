@@ -88,7 +88,7 @@ struct ReadPCAction : public PredicatedSemanticAction {
 //    } else {
       theInstruction->setOperand(theResult, static_cast<uint64_t>(theInstruction->pc()));
 //    }
-    DBG_( Tmp, ( << *this << " read PC") );
+    DBG_( VVerb, ( << *this << " read PC") );
     satisfyDependants();
   }
 

@@ -180,18 +180,18 @@ private:
     AGU_DBG("--------------START ADDRESS GEN------------------------");
 
     if (theFlexus->quiescing()) {
-        DBG_(Tmp,(<<"FGU: Flexus is quiescing!.. come back later" ) );
+        DBG_(VVerb,(<<"FGU: Flexus is quiescing!.. come back later" ) );
       return;
     }
 
     if (theRedirect[anIndex]) {
-        DBG_(Tmp,(<<"FGU: Redirecting PC..." ) );
+        DBG_(VVerb,(<<"FGU: Redirecting PC..." ) );
       thePC[anIndex] = theRedirectPC[anIndex];
 #if FLEXUS_TARGET_IS(v9)
       theNextPC[anIndex] = theRedirectNextPC[anIndex];
 #endif
       theRedirect[anIndex] = false;
-      DBG_(Tmp, Comp(*this) ( << "FGU:  Redirect core[" << anIndex << "] " << thePC[anIndex]) );
+      DBG_(VVerb, Comp(*this) ( << "FGU:  Redirect core[" << anIndex << "] " << thePC[anIndex]) );
     }
     DBG_Assert( FLEXUS_CHANNEL_ARRAY( FetchAddrOut, anIndex).available() );
     DBG_Assert( FLEXUS_CHANNEL_ARRAY( AvailableFAQ, anIndex).available() );
@@ -200,13 +200,13 @@ private:
 
     int32_t max_addrs = cfg.MaxFetchAddress;
     if (max_addrs > available_faq) {
-         DBG_(Tmp,(<<"FGU: max address: " <<max_addrs << " is greater than available queue: " << available_faq  ) );
+         DBG_(VVerb,(<<"FGU: max address: " <<max_addrs << " is greater than available queue: " << available_faq  ) );
       max_addrs = available_faq;
     }
     int32_t max_predicts = cfg.MaxBPred;
 
     if (available_faq == 0)
-        DBG_(Tmp,(<<"FGU: available FAQ is empty"  ) );
+        DBG_(VVerb,(<<"FGU: available FAQ is empty"  ) );
 
 
     boost::intrusive_ptr<FetchCommand> fetch(new FetchCommand());

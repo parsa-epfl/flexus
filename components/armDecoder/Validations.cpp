@@ -71,14 +71,14 @@ bool validateXRegister::operator () () {
     return true; //Don't check
   }
   if (theInstruction->raised()) {
-    DBG_( Tmp, ( << " Not performing register validation for " << theReg << " because of exception. " << *theInstruction ) );
+    DBG_( VVerb, ( << " Not performing register validation for " << theReg << " because of exception. " << *theInstruction ) );
     return true;
   }
 
   uint64_t flexus = theInstruction->operand< uint64_t > (theOperandCode);
   uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readXRegister( theReg );
 
-  DBG_( Tmp, ( << "Validating mapped_reg " << theReg << " flexus=" << std::hex << flexus << " qemu=" << qemu << std::dec << "\n" << std::internal << *theInstruction ) );
+  DBG_( VVerb, ( << "Validating mapped_reg " << theReg << " flexus=" << std::hex << flexus << " qemu=" << qemu << std::dec << "\n" << std::internal << *theInstruction ) );
 
   return (flexus == qemu);
 }
@@ -89,14 +89,14 @@ bool validatePC::operator () () {
     return true; //Don't check
   }
   if (theInstruction->raised()) {
-    DBG_( Tmp, ( << " Not performing  validation because of exception. " << *theInstruction ) );
+    DBG_( VVerb, ( << " Not performing  validation because of exception. " << *theInstruction ) );
     return true;
   }
 
   uint64_t flexus = theAddr;
   uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPC();
 
-  DBG_( Tmp, ( << "Validating flexus PC=" << std::hex << flexus << " qemu PC=" << qemu << std::dec << "\n" << std::internal << *theInstruction ) );
+  DBG_( VVerb, ( << "Validating flexus PC=" << std::hex << flexus << " qemu PC=" << qemu << std::dec << "\n" << std::internal << *theInstruction ) );
 
   return (flexus == qemu);
 }
@@ -161,14 +161,14 @@ bool validateMemory::operator () () {
 //    //}
 //    return true;
 //  } else if (xlat.thePaddr > 0x400000000LL) {
-//    DBG_( Tmp, ( << "Non-memory store " << std::hex << asi << " flexus=" << flexus_value << " Insn: " << *theInstruction ) );
+//    DBG_( VVerb, ( << "Non-memory store " << std::hex << asi << " flexus=" << flexus_value << " Insn: " << *theInstruction ) );
 //    return true;
 //  } else if (xlat.isTranslating() && !xlat.isSideEffect()) {
 //    //uint64_t simics_value = c->readVAddrXendian_QemuImpl( xlat.theVaddr, xlat.theASI, static_cast<int>(theSize) );
 //    //DBG_( Dev, Condition( flexus_value != simics_value) ( << "Validation Mismatch for address " << flexus_addr << " flexus=" << std::hex << flexus_value << " simics=" << simics_value << std::dec << "\n" << std::internal << *theInstruction ) );
 //    return 1; //(1 || flexus_value == simics_value);
 //  } else {
-//    DBG_( Tmp, ( << "No validation available for ASI 0x" << std::hex << asi << " flexus=" << flexus_value << " Insn: " << *theInstruction ) );
+//    DBG_( VVerb, ( << "No validation available for ASI 0x" << std::hex << asi << " flexus=" << flexus_value << " Insn: " << *theInstruction ) );
 //    return true;
 //  }
     return true;

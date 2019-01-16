@@ -87,7 +87,7 @@ struct WritebackAction : public BaseSemanticAction {
     if (!cancelled()) {
       mapped_reg name = theInstruction->operand< mapped_reg > (theRd);
       core()->squashRegister( name );
-      DBG_( Tmp, ( << *this << " squashing register rd=" << name) );
+      DBG_( VVerb, ( << *this << " squashing register rd=" << name) );
     }
     BaseSemanticAction::squash(anArg);
   }
@@ -121,7 +121,7 @@ struct WritebackAction : public BaseSemanticAction {
           }
 
           core()->writeRegister( name, result );
-          DBG_( Tmp, ( << *this << " rd= " << name << " result=" << result ) );
+          DBG_( VVerb, ( << *this << " rd= " << name << " result=" << result ) );
           core()->bypass( name, result );
       }
       satisfyDependants();

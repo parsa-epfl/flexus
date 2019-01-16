@@ -39,7 +39,7 @@
 
 #include <core/stats.hpp>
 
-#define debug(AAA) DBG_(Tmp, ( <<"TRACING  "<< AAA << std::dec) );
+#define debug(AAA) DBG_(VVerb, ( <<"TRACING  "<< AAA << std::dec) );
 
 namespace nFastMemoryLoopback {
 

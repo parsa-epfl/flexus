@@ -197,16 +197,16 @@ void SemanticInstruction::overrideSimics() {
 bool SemanticInstruction::postValidate() {
   FLEXUS_PROFILE();
   if ( theRaisedException != willRaise() ) {
-    DBG_( Tmp, ( << *this << " PostValidation failed: Exception mismatch flexus=" << std::hex << willRaise() << " simics=" << theRaisedException << std::dec ) );
+    DBG_( VVerb, ( << *this << " PostValidation failed: Exception mismatch flexus=" << std::hex << willRaise() << " simics=" << theRaisedException << std::dec ) );
     return false;
   }
 //  if ( Flexus::Qemu::Processor::getProcessor(theCPU)->getPC()  != theNPC && ! theRaisedException ) {//NOOSHIN, getNPC instead of getPC
-//    DBG_( Tmp, ( << *this << " PostValidation failed: NPC mismatch flexus=" << theNPC << " simics=" << Flexus::Qemu::Processor::getProcessor(theCPU)->getPC() ) );
+//    DBG_( VVerb, ( << *this << " PostValidation failed: NPC mismatch flexus=" << theNPC << " simics=" << Flexus::Qemu::Processor::getProcessor(theCPU)->getPC() ) );
 //    return false;
 //  }
 
   if (thePrevalidationsPassed && theOverrideSimics && ! theOverrideFns.empty() && !theRaisedException && ! theAnnulled) {
-    DBG_( Tmp, ( << *this << " overrideSimics flag set and override conditions passed.") );
+    DBG_( VVerb, ( << *this << " overrideSimics flag set and override conditions passed.") );
     while (!theOverrideFns.empty()) {
       theOverrideFns.front() ();
       theOverrideFns.pop_front();
@@ -291,7 +291,7 @@ void SemanticInstruction::doCommitEffects() {
 
 void SemanticInstruction::squash() {
   FLEXUS_PROFILE();
-  DBG_( Tmp, ( <<  *this << " squashed" ) );
+  DBG_( VVerb, ( <<  *this << " squashed" ) );
   theSquashed = true;
   theSquashEffects.invoke(*this);
   //Clear predecessor to avoid leaking instructions

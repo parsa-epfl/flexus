@@ -317,7 +317,7 @@ public:
     return id.str();
   }
   virtual ~armInstruction() {
-    DBG_( Tmp, ( << identify() << " destroyed") );
+    DBG_( VVerb, ( << identify() << " destroyed") );
   }
 
   virtual bool redirectPC(VirtualMemoryAddress anPC, boost::optional<VirtualMemoryAddress> anPCReg = boost::none) {

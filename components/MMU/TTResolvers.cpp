@@ -58,13 +58,13 @@ TTResolver::TTResolver(bool abro, _TTResolver_Shptr_T aGranule,address_t aTTBR,u
 address_t
 TTResolver::resolve(address_t inputAddress)
 {
-    std::cout << "TTBR RAW: " << std::hex << RawTTBRReg << std::dec << std::endl;
+    DBG_(VVerb,( << "TTBR RAW: " << std::hex << RawTTBRReg << std::dec ));
     address_t output = extractBitsWithBounds(RawTTBRReg,TTBR_MSB,TTBR_LSB);
-    std::cout << "TTBR EXTRACT: " << std::hex << output << std::dec << std::endl;
+    DBG_(VVerb,( << "TTBR EXTRACT: " << std::hex << output << std::dec ));
     output = output << TTBR_LSB;
-    std::cout << "TTBR SHIFT : " << std::hex << output << std::dec << std::endl;
+    DBG_(VVerb,( << "TTBR SHIFT : " << std::hex << output << std::dec ));
     output |= maskAndShiftInputAddress(inputAddress);
-    std::cout << "TTE Indexed: " << std::hex << output << std::dec << std::endl;
+    DBG_(VVerb,( << "TTE Indexed: " << std::hex << output << std::dec ));
     return output;
 }
 
@@ -110,10 +110,10 @@ L0Resolver::L0Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t aTTBR,u
     TTBR_MSB = PAddressWidth - 1;
     offset_LSB = 39; // Least significant bit of index
     offset_MSB = y; 
-    std::cout << std::dec << "Setting TTBR_LSB: " << (int) TTBR_LSB
+    DBG_(VVerb,( std::dec << "Setting TTBR_LSB: " << (int) TTBR_LSB
               << ", TTBR_MSB: " << (int) TTBR_MSB
               << ", offset_LSB: " << (int) offset_LSB
-              << ", offset_MSB: " << (int) offset_MSB << std::endl;
+              << ", offset_MSB: " << (int) offset_MSB ));
 }
 
 /* Return: Shifted and Masked bits of output address (physical or intermediate)

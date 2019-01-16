@@ -48,13 +48,13 @@ namespace Qemu {
 //  int max_vm = -1;
 
 
-//  DBG_(Tmp, ( << "Searching " << proc_count << " cpus." ));
-//  DBG_(Tmp, ( << "WARNING: Need to fix this to distinguish between different cpu types (server, client, etc.).")); //For now, all the cpus are considered to be server cpus
+//  DBG_(VVerb, ( << "Searching " << proc_count << " cpus." ));
+//  DBG_(VVerb, ( << "WARNING: Need to fix this to distinguish between different cpu types (server, client, etc.).")); //For now, all the cpus are considered to be server cpus
 
 //  for (int i = 0; i < proc_count; i++) {
 //    API::conf_object_t * cpu = &(proc_list[i]);
 //    int qemu_id = API::QEMU_get_cpu_index(cpu);
-//    DBG_(Tmp, ( << "Processor " << i << ": " << cpu->name << " - CPU " << qemu_id ));
+//    DBG_(VVerb, ( << "Processor " << i << ": " << cpu->name << " - CPU " << qemu_id ));
 
 //    bool is_client = false;
 //    num_flexus_cpus++;
@@ -62,7 +62,7 @@ namespace Qemu {
 //    cpu_list.push_back(cpu_desc_t(vm, proc_count, qemu_id, is_client)); //ALEX: Not sure about 2nd parameter
 //  }
 
-//  DBG_(Tmp  , ( << "Found " << num_flexus_cpus << " Flexus CPUs and " << num_client_cpus << " Client CPUs and " << num_besim_cpus << " Besim CPUs in " << (max_vm + 1) << " VMs"));
+//  DBG_(VVerb  , ( << "Found " << num_flexus_cpus << " Flexus CPUs and " << num_client_cpus << " Client CPUs and " << num_besim_cpus << " Besim CPUs in " << (max_vm + 1) << " VMs"));
 //  theProcMap.resize(num_flexus_cpus, std::make_pair(0, 0));
 //  theClientMap.resize(num_client_cpus + num_besim_cpus, 0);
 //  theReverseMap.resize(proc_count, std::make_pair(0, false));

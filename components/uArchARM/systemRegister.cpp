@@ -58,6 +58,16 @@ struct NZCV : public SysRegInfo {
     eAccessRight access = kPL0_RW;
     eRegInfo type = kARM_NZCV;
     uint64_t resetvalue = -1;
+    virtual void writefn (uArchARM * aCore, uint64_t aVal) override {
+        std::bitset<8> a(aCore->_PSTATE().d());
+        std::bitset<8> b(aVal);
+
+        CORE_DBG("PSTATE VALUE BEFORE NZCV UPDATE: "  << a <<  " -- NZCV: " << b);
+        aCore->setPSTATE(deposit32(aCore->_PSTATE().d(), 28, 4, aVal));
+        CORE_DBG( "PSTATE VALUE AFTER NZCV UPDATE: " << std::bitset<8>(aCore->_PSTATE().d()) );
+
+    }// FIXME
+    
 }NZCV_;
 
 

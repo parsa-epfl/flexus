@@ -106,7 +106,7 @@ public:
   }
 
   void initialize(void) {
-      DBG_(Tmp, ( << "Inititializing Decoupled feeder..." ));
+      DBG_(VVerb, ( << "Inititializing Decoupled feeder..." ));
 
     //Disable cycle-callback
     //Flexus::Qemu::theQemuInterface->disableCycleHook();

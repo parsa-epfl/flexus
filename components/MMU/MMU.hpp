@@ -55,6 +55,8 @@ COMPONENT_PARAMETERS(
     PARAMETER( ArrayConfiguration, std::string, "Configuration of cache array (STD:sets=1024:assoc=16:repl=LRU", "array_config", "STD:sets=1024:assoc=16:repl=LRU" )
     PARAMETER( TextFlexpoints, bool, "Store flexpoints as text files (compatible with old FastCache component)", "text_flexpoints", false )
     PARAMETER( GZipFlexpoints, bool, "Compress flexpoints with gzip", "gzip_flexpoints", true )
+    PARAMETER( iTLBSize, size_t, "Size of the Instruction TLB", "itlbsize", 64 )
+    PARAMETER( dTLBSize, size_t, "Size of the Data TLB", "dtlbsize", 64 )
 );
 
 COMPONENT_INTERFACE(

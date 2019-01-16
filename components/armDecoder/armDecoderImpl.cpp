@@ -104,7 +104,7 @@ public:
             theFIQ.push_back(insn);
         }
         else
-            DBG_( Tmp,(<<"No INSTRUCTION"));
+            DBG_( VVerb,(<<"No INSTRUCTION"));
       }
       ++fill_iter;
     }
@@ -137,7 +137,7 @@ public:
 
   FLEXUS_PORT_ALWAYS_AVAILABLE(SquashIn);
   void push(interface::SquashIn const &, eSquashCause & aReason) {
-    DBG_( Tmp, Comp(*this) ( << "DISPATCH SQUASH: " << aReason << " FIQ discarding: " << theFIQ.size() << " instructions" ));
+    DBG_( VVerb, Comp(*this) ( << "DISPATCH SQUASH: " << aReason << " FIQ discarding: " << theFIQ.size() << " instructions" ));
     theFIQ.clear();
 
     FLEXUS_CHANNEL( SquashOut ) << aReason;

@@ -230,7 +230,7 @@ public:
 public:
   FLEXUS_PORT_ALWAYS_AVAILABLE(DispatchIn);
   void push( interface::DispatchIn const &, boost::intrusive_ptr< AbstractInstruction > & anInstruction ) {
-    DBG_(Tmp, (<<"Get the inst in uArchARM: "));
+    DBG_(VVerb, (<<"Get the inst in uArchARM: "));
     theMicroArch->dispatch(anInstruction);
   }
 
@@ -331,7 +331,7 @@ private:
       boost::intrusive_ptr< MemOp > op(theMicroArch->popMemOp());
       if (! op ) break;
 
-//      DBG_Assert( Tmp, ( << "Send Request: " << *op) );
+//      DBG_Assert( VVerb, ( << "Send Request: " << *op) );
       CORE_DBG( "Send Request: " << *op);
 
     if ( op->theOperation != kPageWalkRequest){

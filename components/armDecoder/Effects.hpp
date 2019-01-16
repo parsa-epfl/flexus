@@ -105,7 +105,7 @@ struct DependanceTarget {
     void (narmDecoder::DependanceTarget::* satisfy_pt)( int32_t ) = &narmDecoder::DependanceTarget::satisfy;
     std::cerr<<std::hex<<"Satisfy: "<<satisfy_pt<<"\n";
     satisfy(anArg);
-    DBG_(Tmp, (<<"After satisfy"));
+    DBG_(VVerb, (<<"After satisfy"));
   }
   void invokeSquash( int32_t anArg ) {
     squash(anArg);

@@ -74,7 +74,7 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
       CORE_DBG( "Interrupting..." );
 
     if (aPendingInterrupt == 0) {
-      DBG_(Tmp, ( << theName << " Interrupt: " << thePendingInterrupt << " pending for " << (theFlexus->cycleCount() - theInterruptReceived) ) );
+      DBG_(VVerb, ( << theName << " Interrupt: " << thePendingInterrupt << " pending for " << (theFlexus->cycleCount() - theInterruptReceived) ) );
     } else {
       theInterruptReceived = theFlexus->cycleCount();
     }
@@ -82,25 +82,25 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
   }
 
   if (narmDecoder::theInsnCount > 10000ULL && ( static_cast<uint64_t>(theFlexus->cycleCount() - theLastGarbageCollect) > 1000ULL - narmDecoder::theInsnCount / 100))  {
-      DBG_( Tmp, ( << theName << "Garbage-collect count before clean:  " << narmDecoder::theInsnCount ) );
+      DBG_( VVerb, ( << theName << "Garbage-collect count before clean:  " << narmDecoder::theInsnCount ) );
 
       FLEXUS_PROFILE_N("CoreImpl::cycle() collect-dead-dependencies");
-    DBG_( Tmp, ( << theName << "Garbage-collect count before clean:  " << narmDecoder::theInsnCount ) );
+    DBG_( VVerb, ( << theName << "Garbage-collect count before clean:  " << narmDecoder::theInsnCount ) );
     theBypassNetwork.collectAll();
-    DBG_( Tmp, ( << theName << "Garbage-collect between bypass and registers:  " << narmDecoder::theInsnCount ) );
+    DBG_( VVerb, ( << theName << "Garbage-collect between bypass and registers:  " << narmDecoder::theInsnCount ) );
     theRegisters.collectAll();
-    DBG_( Tmp, ( << theName << "Garbage-collect count after clean:  " << narmDecoder::theInsnCount ) );
+    DBG_( VVerb, ( << theName << "Garbage-collect count after clean:  " << narmDecoder::theInsnCount ) );
     theLastGarbageCollect = theFlexus->cycleCount();
 
     if ( narmDecoder::theInsnCount > 1000000 ) {
-      DBG_( Tmp, ( << theName << "Garbage-collect detects too many live instructions.  Forcing resynchronize.") );
+      DBG_( VVerb, ( << theName << "Garbage-collect detects too many live instructions.  Forcing resynchronize.") );
       ++theResync_GarbageCollect;
       throw ResynchronizeWithQemuException();
     }
   }
 
   if (Flexus::Dbg::Debugger::theDebugger->theMinimumSeverity <= 3) {
-//      DBG_( Tmp, ( << "Dumping..." ) );
+//      DBG_( VVerb, ( << "Dumping..." ) );
 
     dumpROB();
     dumpSRB();
@@ -109,7 +109,7 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
     dumpCheckpoints();
     dumpSBPermissions();
 //    dumpActions();
-//    DBG_( Tmp, ( << "Dumping done" ) );
+//    DBG_( VVerb, ( << "Dumping done" ) );
 
   }
 
@@ -186,15 +186,15 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
   DBG_Assert((theSBCount + theSBNAWCount) >= 0);
   DBG_Assert((static_cast<int> (theSBLines_Permission.size())) <= theSBCount + theSBNAWCount );
 
-//  DBG_( Tmp, ( << "*** Prepare *** " ) );
+//  DBG_( VVerb, ( << "*** Prepare *** " ) );
 
   processMemoryReplies();
   prepareCycle();
 
-//  DBG_( Tmp, ( << "*** Eval *** " ) );
+//  DBG_( VVerb, ( << "*** Eval *** " ) );
   evaluate();
 
-//  DBG_( Tmp, ( << "*** Issue Mem *** " ) );
+//  DBG_( VVerb, ( << "*** Issue Mem *** " ) );
 
   issuePartialSnoop();
   issueStore();
@@ -244,7 +244,7 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
 //  handlePopTL();
 
   if (theRedirectRequested) {
-    DBG_( Tmp, ( << " Core triggering Redirect to " << theRedirectPC ) );//NOOSHIN
+    DBG_( VVerb, ( << " Core triggering Redirect to " << theRedirectPC ) );//NOOSHIN
     redirect_fn(theRedirectPC);
     thePC = theRedirectPC;
     theRedirectRequested = false;
@@ -422,9 +422,9 @@ void CoreImpl::checkTranslation( boost::intrusive_ptr<Instruction> anInsn) {
   memq_t::index<by_insn>::type::iterator iter = theMemQueue.get<by_insn>().find(anInsn);
   DBG_Assert(  iter != theMemQueue.get<by_insn>().end());
 
-  DBG_(Tmp, ( << " in checkTranslation!! " ) );//NOOSHIN
+  DBG_(VVerb, ( << " in checkTranslation!! " ) );//NOOSHIN
   if (!anInsn->isAnnulled() && !anInsn->isSquashed()) {
-    DBG_(Tmp, ( << " is not Annulled " ) );//NOOSHIN
+    DBG_(VVerb, ( << " is not Annulled " ) );//NOOSHIN
     boost::intrusive_ptr<Flexus::SharedTypes::Translation> xlat/*(new Flexus::SharedTypes::Translation())*/;
     xlat->theVaddr = iter->theVaddr;
 //    xlat.theASI = iter->theASI;
@@ -434,7 +434,7 @@ void CoreImpl::checkTranslation( boost::intrusive_ptr<Instruction> anInsn) {
 //    translate(xlat);
     iter->theException = kException_None;
     if (iter->theException < kException_None ) {
-      DBG_(Tmp, ( <<  theName << " Taking MMU exception: " << iter->theException << " "  << *iter ) );//NOOSHIN
+      DBG_(VVerb, ( <<  theName << " Taking MMU exception: " << iter->theException << " "  << *iter ) );//NOOSHIN
       takeTrap(anInsn, iter->theException);
       anInsn->setAccessAddress(PhysicalMemoryAddress(0));
     }
@@ -1080,6 +1080,7 @@ void CoreImpl::retire() {
 
 //  if (! theROB.front()->isAnnulled() ) {
 //        theROB.pop_front();
+//        continue;
 //  }
 
 
@@ -1100,20 +1101,20 @@ void CoreImpl::retire() {
             && !theROB.front()->isAnnulled()
             && (static_cast<int> (theCheckpoints.size())) >= theAllowedSpeculativeCheckpoints
        ) {
-        DBG_(Tmp, ( <<" theROB.front()->instClass() == clsAtomic "));
+        DBG_(VVerb, ( <<" theROB.front()->instClass() == clsAtomic "));
 
       break;
     }
 
     if ((thePendingInterrupt != kException_None) && theIsSpeculating) {
       // stop retiring so we can stop speculating and handle the interrupt
-        DBG_(Tmp, ( <<" thePendingInterrupt && theIsSpeculating "));
+        DBG_(VVerb, ( <<" thePendingInterrupt && theIsSpeculating "));
 
       break;
     }
 
     if ( ( theROB.front()->resync() || (theROB.front() == theInterruptInstruction) ) && theIsSpeculating ) {
-        DBG_(Tmp, ( <<" Do not retire sync instructions or interrupts while speculating "));
+        DBG_(VVerb, ( <<" Do not retire sync instructions or interrupts while speculating "));
 
       //Do not retire sync instructions or interrupts while speculating
       break;
@@ -1122,7 +1123,7 @@ void CoreImpl::retire() {
     //Stop retirement for the cycle if we retire an instruction that
     //requires resynchronization
     if ( theROB.front()->resync()) {
-        DBG_(Tmp, ( <<" resync requested "));
+        DBG_(VVerb, ( <<" resync requested "));
 
       stop_retire = true;
     }
@@ -1141,7 +1142,7 @@ void CoreImpl::retire() {
     CORE_DBG(theName << " Retire:" << *theROB.front() );
     if (!acceptInterrupt()) {
       theROB.front()->checkTraps();  // take traps only if we don't take interrupt
-      DBG_( Tmp, ( << "take traps only if we don't take interrupts" ) );
+      DBG_( VVerb, ( << "take traps only if we don't take interrupts" ) );
     }
     if (thePendingTrap != kException_None) {
       theROB.front()->changeInstCode(codeException);
@@ -1157,7 +1158,7 @@ void CoreImpl::retire() {
     }
 
 //    if (theValidateMMU) {
-//        DBG_( Tmp, ( << "Validate MMU " ));
+//        DBG_( VVerb, ( << "Validate MMU " ));
 
 //      // save MMU with this instruction so we can check at commit
 //      theROB.front()->setMMU( Flexus::Qemu::Processor::getProcessor( theNode )->getMMU() );
@@ -1169,10 +1170,10 @@ void CoreImpl::retire() {
       if (!theSquashInclusive) {
         ++theSquashInstruction;
         theSquashInclusive = true;
-        DBG_( Tmp, ( << "!theSquashInclusive" ));
+        DBG_( VVerb, ( << "!theSquashInclusive" ));
 
       }
-      DBG_( Tmp, ( << "!theSquashRequested && (theROB.begin() == theSquashInstruction" ));
+      DBG_( VVerb, ( << "!theSquashRequested && (theROB.begin() == theSquashInstruction" ));
 
       stop_retire = true;
     }
@@ -1190,9 +1191,9 @@ void CoreImpl::retire() {
 
     CORE_DBG("instruction to the secondary retirement buffer " << *(theROB.front()));
     theSRB.push_back(theROB.front());
-    //DBG_( Tmp, ( << "theSRB.push_back(theROB.front())" ));
+    //DBG_( VVerb, ( << "theSRB.push_back(theROB.front())" ));
 
-    if ( thePendingTrap != kException_None) {
+    if ( thePendingTrap == kException_None) {
       theROB.pop_front(); //Need to squash and retire instructions that cause traps
     }
   }
@@ -1387,18 +1388,18 @@ void CoreImpl::commit() {
       freeCheckpoint( theSRB.front() );
     }
 
-    DBG_( Tmp, ( << theName << " FinalCommit:" << *theSRB.front()) );
+    DBG_( VVerb, ( << theName << " FinalCommit:" << *theSRB.front()) );
     if (! theSRB.front()->willRaise()) {
       theSRB.front()->doCommitEffects();
-      DBG_( Tmp, ( <<  theName << " commit effects complete" ) );
+      DBG_( VVerb, ( <<  theName << " commit effects complete" ) );
     }
 
     commit( theSRB.front() );
-    DBG_( Tmp, ( <<  theName << " committed in Qemu" ) );
+    DBG_( VVerb, ( <<  theName << " committed in Qemu" ) );
 
 //    if (theValidateMMU) {
 //      DBG_Assert(theSRB.front()->getMMU(), ( << theName << " instruction does not have MMU: " << *theSRB.front()));
-//      DBG_(Tmp, ( << theName << " comparing MMU state after: " << *theSRB.front()));
+//      DBG_(VVerb, ( << theName << " comparing MMU state after: " << *theSRB.front()));
 //      Flexus::Qemu::MMU::mmu_t mmu = *(theSRB.front()->getMMU());
 //      if (! Flexus::Qemu::Processor::getProcessor( theNode )->validateMMU(&mmu)) {
 //        DBG_(Crit, ( << theName << " MMU mismatch after FinalCommit of: " << *theSRB.front()));
@@ -1436,8 +1437,6 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
   int raised = 0;
   bool resync_accounted = false;
 
-  anInstruction->advancesSimics();
-
   if (anInstruction->advancesSimics()) {
       CORE_DBG("Instruction is neither annuled nor is a micro-op");
 
@@ -1445,7 +1444,7 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
 
 
 
-    DBG_( Tmp, Condition(!validation_passed) ( << *anInstruction << "Prevalidation failure." ) );
+    DBG_( VVerb, Condition(!validation_passed) ( << *anInstruction << "Prevalidation failure." ) );
 //    bool take_interrupt = theInterruptSignalled && (anInstruction == theInterruptInstruction);
 //    theInterruptSignalled = false;
 //    theInterruptInstruction = 0;
@@ -1456,7 +1455,7 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
 
     if ( raised != 0) {
       if ( anInstruction->willRaise() != (raised == 0 ? kException_None : kException_UNCATEGORIZED)) { // FIXME get exception mapper
-        DBG_( Tmp, ( << *anInstruction << " Core did not predict correct exception for this instruction raised=0x" << std::hex << raised << " will_raise=0x" << anInstruction->willRaise() << std::dec ) );
+        DBG_( VVerb, ( << *anInstruction << " Core did not predict correct exception for this instruction raised=0x" << std::hex << raised << " will_raise=0x" << anInstruction->willRaise() << std::dec ) );
         if (anInstruction->instCode() != codeITLBMiss) {
           anInstruction->changeInstCode(codeExceptionUnsupported);
         }
@@ -1468,11 +1467,11 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
           ++theResync_Interrupt;
         }
       } else {
-        DBG_( Tmp, ( << *anInstruction << " Core correctly identified raise=0x" << std::hex << raised << std::dec) );
+        DBG_( VVerb, ( << *anInstruction << " Core correctly identified raise=0x" << std::hex << raised << std::dec) );
       }
       anInstruction->raise(raised == 0 ? kException_None : kException_UNCATEGORIZED);
     } else if (anInstruction->willRaise()) {
-      DBG_(Tmp, ( << *anInstruction << " DANGER:  Core predicted exception: " << std::hex << anInstruction->willRaise() << " but simics says no exception"));
+      DBG_(VVerb, ( << *anInstruction << " DANGER:  Core predicted exception: " << std::hex << anInstruction->willRaise() << " but simics says no exception"));
     }
   }
 
@@ -1516,7 +1515,7 @@ bool CoreImpl::squashAfter( boost::intrusive_ptr< Instruction > anInsn) {
 }
 
 void CoreImpl::redirectFetch( VirtualMemoryAddress anAddress ) {
-  DBG_(Tmp, (<<"redirectFetch anAddress: "<<anAddress));
+  DBG_(VVerb, (<<"redirectFetch anAddress: "<<anAddress));
   theRedirectRequested = true;
   theRedirectPC = anAddress;
 }
@@ -1754,14 +1753,14 @@ uint64_t CoreImpl::pc() const {
 //uint64_t CoreImpl::npc() const {
 //  if (! theROB.empty()) {
 //    if (theROB.front()->isAnnulled() || theROB.front()->isMicroOp() ) {
-//      DBG_(Tmp, ( << "NPC= front->npc + 4" ) );
+//      DBG_(VVerb, ( << "NPC= front->npc + 4" ) );
 //      return theROB.front()->npc() + 4;
 //    } else {
-//      DBG_(Tmp, ( << "NPC= front->npcReg" ) );
+//      DBG_(VVerb, ( << "NPC= front->npcReg" ) );
 //      return theROB.front()->npcReg();
 //    }
 //  } else if (theNPC) {
-//    DBG_(Tmp, ( << "NPC= *NPC" ) );
+//    DBG_(VVerb, ( << "NPC= *NPC" ) );
 //    return *theNPC;
 //  } else {
 //    if (!theDispatchInteractions.empty()) {
@@ -1771,7 +1770,7 @@ uint64_t CoreImpl::pc() const {
 //      uint64_t npc = 0;
 //      bool found = false;
 //      while (iter != end)  {
-//        DBG_(Tmp, ( << "interaction: " << **iter) );
+//        DBG_(VVerb, ( << "interaction: " << **iter) );
 //        if ((*iter)->npc()) {
 //          npc = *((*iter)->npc());
 //          found = true;
@@ -1782,12 +1781,12 @@ uint64_t CoreImpl::pc() const {
 //        ++iter;
 //      }
 //      if (found) {
-//        DBG_(Tmp, ( << "NPC= from interaction " ) );
+//        DBG_(VVerb, ( << "NPC= from interaction " ) );
 //        return npc;
 //      }
 //    }
 //  }
-//  DBG_(Tmp, ( << "NPC= PC + 4" ) );
+//  DBG_(VVerb, ( << "NPC= PC + 4" ) );
 //  return thePC + 4;
 //}
 

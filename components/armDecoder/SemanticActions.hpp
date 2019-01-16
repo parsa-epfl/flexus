@@ -104,6 +104,7 @@ using nuArchARM::uArchARM;
 using nuArchARM::eSize;
 
 struct Operation {
+    Operation() : theNZCVFlags{false} {}
   virtual ~Operation() {}
   virtual Operand operator()( std::vector< Operand > const & operands ) = 0;
   virtual Operand evalExtra( std::vector< Operand > const & operands ) {
@@ -132,10 +133,10 @@ struct Operation {
     return false;
   }
 
-  virtual uint64_t getNZCVbits() { return theNZCV; }
+  virtual uint32_t getNZCVbits() { return theNZCV; }
   virtual bool hasNZCVFlags() { return theNZCVFlags; }
   bool theNZCVFlags;
-  uint64_t theNZCV;
+  uint32_t theNZCV;
   std::vector< Operand > theOperands;
   SemanticInstruction * theInstruction;
 
@@ -307,7 +308,7 @@ dependant_action branchRegAction(SemanticInstruction * anInstruction, VirtualMem
 dependant_action branchToCalcAddressAction(SemanticInstruction * anInstruction);
 
 
-multiply_dependant_action updateAddressAction(SemanticInstruction * anInstruction, eOperandCode aCode = kAddress);
+multiply_dependant_action updateAddressAction(SemanticInstruction * anInstruction, uint32_t aNumDependent, eOperandCode aCode = kAddress);
 multiply_dependant_action updateCASAddressAction(SemanticInstruction * anInstruction, eOperandCode aCode = kAddress);
 multiply_dependant_action updateCASValueAction(SemanticInstruction * anInstruction, eOperandCode aCompareCode, eOperandCode aNewCode );
 multiply_dependant_action updateCASPValueAction(SemanticInstruction * anInstruction, eOperandCode aCompareCode1, eOperandCode aCompareCode2, eOperandCode aNewCode1, eOperandCode aNewCode2 );

@@ -256,7 +256,8 @@ bool initializeParameters() {
   theMMUCfg.ArrayConfiguration.initialize("STD:size=4096:assoc=4:repl=LRU");
   theMMUCfg.TextFlexpoints.initialize(false);
   theMMUCfg.GZipFlexpoints.initialize(false);
-
+  theMMUCfg.iTLBSize.initialize(64);
+  theMMUCfg.dTLBSize.initialize(64);
 
   return true; //true = Abort simulation if parameters are not initialized
 }

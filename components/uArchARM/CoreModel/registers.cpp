@@ -55,7 +55,7 @@ void CoreImpl::connectBypass(mapped_reg aReg, boost::intrusive_ptr<Instruction> 
 
 void CoreImpl::mapRegister( mapped_reg aRegister ) {
   FLEXUS_PROFILE();
-  //DBG_( Tmp, ( << theName << " Mapping " << aRegister ) );
+  //DBG_( VVerb, ( << theName << " Mapping " << aRegister ) );
   eResourceStatus status = theRegisters.status( aRegister ) ;
   DBG_Assert( status == kUnmapped, ( << " aRegister=" << aRegister << " status=" << status ));
   theRegisters.map( aRegister );

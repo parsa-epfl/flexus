@@ -79,7 +79,7 @@ void CoreImpl::dispatch( boost::intrusive_ptr< Instruction > anInsn) {
 
   if (static_cast<int>(theNode) == Flexus::Core::theFlexus->breakCPU()) {
     if (anInsn->sequenceNo() == Flexus::Core::theFlexus->breakInsn()) {
-      DBG_( Tmp, ( << theName << " Encounted break instruction: " << *anInsn ) );
+      DBG_( VVerb, ( << theName << " Encounted break instruction: " << *anInsn ) );
       Flexus::Core::theFlexus->setDebug("verb");
     }
   }
@@ -222,7 +222,7 @@ void CoreImpl::dispatch( boost::intrusive_ptr< Instruction > anInsn) {
    anInsn->doDispatchEffects();
 
   while (  ! dispatch_interactions.empty()) {
-    DBG_( Tmp, ( << theName << " applying deferred interation " << (* dispatch_interactions.front() ) << " to " << *anInsn ) );
+    DBG_( VVerb, ( << theName << " applying deferred interation " << (* dispatch_interactions.front() ) << " to " << *anInsn ) );
     (* dispatch_interactions.front() )(anInsn, *this);
     dispatch_interactions.pop_front();
   }

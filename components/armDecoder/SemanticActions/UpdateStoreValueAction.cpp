@@ -80,9 +80,9 @@ struct UpdateStoreValueAction : public PredicatedSemanticAction {
 
   void predicate_off(int) {
     if ( !cancelled() && thePredicate ) {
-      DBG_( Tmp, ( << *this << " predicated off. ") );
+      DBG_( VVerb, ( << *this << " predicated off. ") );
       DBG_Assert(core());
-      DBG_( Tmp, ( << *this << " anulling store" ) );
+      DBG_( VVerb, ( << *this << " anulling store" ) );
       core()->annulStoreValue( boost::intrusive_ptr<Instruction>(theInstruction));
       thePredicate = false;
       satisfyDependants();
@@ -91,7 +91,7 @@ struct UpdateStoreValueAction : public PredicatedSemanticAction {
 
   void predicate_on(int) {
     if (!cancelled() && ! thePredicate ) {
-      DBG_( Tmp, ( << *this << " predicated on. ") );
+      DBG_( VVerb, ( << *this << " predicated on. ") );
       reschedule();
       thePredicate = true;
       squashDependants();
@@ -103,7 +103,7 @@ struct UpdateStoreValueAction : public PredicatedSemanticAction {
     if (! cancelled() ) {
       if ( thePredicate && ready() ) {
             bits value = theInstruction->operand< bits > (theOperandCode);
-            DBG_( Tmp, ( << *this << " updating store value=" << value) );
+            DBG_( VVerb, ( << *this << " updating store value=" << value) );
             core()->updateStoreValue( boost::intrusive_ptr<Instruction>(theInstruction), value);
             satisfyDependants();
       }
@@ -152,7 +152,7 @@ struct UpdateCASValueAction : public BaseSemanticAction {
         if (! thePair) {
             bits store_value = theInstruction->operand< bits > (theNewCode);
             bits cmp_value = theInstruction->operand< bits > (theCompareCode);
-            DBG_( Tmp, ( << *this << " updating CAS write=" << store_value << " cmp=" << cmp_value) );
+            DBG_( VVerb, ( << *this << " updating CAS write=" << store_value << " cmp=" << cmp_value) );
             core()->updateCASValue( boost::intrusive_ptr<Instruction>(theInstruction), store_value, cmp_value);
             satisfyDependants();
         } else {
@@ -209,7 +209,7 @@ struct UpdateSTDValueAction : public BaseSemanticAction {
   void doEvaluate() {
     if (ready()) {
       bits value = (theInstruction->operand< bits > (kResult) << 32) | (theInstruction->operand< bits > (kResult1) & bits(0xFFFFFFFFULL));
-      DBG_( Tmp, ( << *this << " updating store value=" << value) );
+      DBG_( VVerb, ( << *this << " updating store value=" << value) );
       core()->updateStoreValue( boost::intrusive_ptr<Instruction>(theInstruction), value);
       satisfyDependants();
     }

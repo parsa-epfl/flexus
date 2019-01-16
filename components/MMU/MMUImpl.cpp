@@ -41,6 +41,12 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 
+
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/unordered_map.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+
 #include <components/MMU/MMU.hpp>
 
 #include <core/performance/profile.hpp>
@@ -51,8 +57,13 @@
 #include "pageWalk.hpp"
 
 #include <map>
+#include <unordered_map>
+#include <functional>
+#include <sstream>
 #include <queue>
 #include <vector>
+#include <iostream>
+#include <fstream>
 
 #define DBG_DefineCategories MMU
 #define DBG_SetDefaultOps AddCat(MMU)
@@ -64,6 +75,15 @@
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
 
 
+namespace std
+{
+    template<>
+    struct hash<VirtualMemoryAddress> {
+        std::size_t operator()(const VirtualMemoryAddress &anAddress) const {
+            return ((hash<uint64_t >()(uint64_t(anAddress))));
+        }
+    };
+}
 
 namespace nMMU {
 
@@ -71,16 +91,103 @@ using namespace Flexus;
 using namespace Core;
 using namespace SharedTypes;
 
+
+
 class FLEXUS_COMPONENT(MMU) {
   FLEXUS_COMPONENT_IMPL(MMU);
 
 private:
 
+  private:
+
+
+  struct TLBentry {
+
+  friend class boost::serialization::access;
+
+  template <class Archive> void serialize(Archive &ar, const unsigned int version) {
+    ar &theRate;
+    ar &theVaddr;
+    ar &thePaddr;
+  }
+
+  TLBentry(){}
+
+  TLBentry(VirtualMemoryAddress anAddress) : theRate(0), theVaddr(anAddress){}
+  uint64_t theRate;
+  VirtualMemoryAddress theVaddr;
+  PhysicalMemoryAddress thePaddr;
+
+  bool operator==(const TLBentry &other) const
+  { return (theVaddr == other.theVaddr ); }
+
+  TLBentry& operator=(const PhysicalMemoryAddress &other)
+  { thePaddr = other; return *this; }
+
+  };
+
+  struct TLB
+  {
+
+    friend class boost::serialization::access;
+
+    template <class Archive> void serialize(Archive &ar, const unsigned int version) {
+      ar &theTLB;
+      ar &theSize;
+    }
+
+    bool lookUp(const VirtualMemoryAddress & anAddress) {
+      bool res = false;
+      for (auto iter = theTLB.begin(); iter != theTLB.end(); ++iter){
+          iter->second.theRate++;
+          if (iter->second.theVaddr == anAddress){
+              iter->second.theRate = 0;
+              res = true;
+          }
+      }
+      return res;
+    }
+
+
+    TLBentry& operator[](VirtualMemoryAddress anAddress) {
+        auto iter = theTLB.find(anAddress);
+        if (iter == theTLB.end()) {
+            size_t s = theTLB.size();
+            if (s == theSize){
+                evict();
+            }
+            std::pair< tlbIterator , bool> result;
+            result = theTLB.insert({anAddress,TLBentry(anAddress)});
+            assert(result.second);
+            iter = result.first;
+        }
+        return iter->second;
+    }
+
+    void resize(size_t aSize){
+        theTLB.reserve(aSize);
+        theSize = aSize;
+    }
+
+  private:
+    void evict(){
+        auto res = theTLB.begin();
+        for (auto iter = theTLB.begin(); iter != theTLB.end(); ++iter){
+            if(iter->second.theRate > res->second.theRate){
+                res = iter;
+            }
+        }
+        theTLB.erase(res);
+    }
+
+    size_t theSize;
+    std::unordered_map<VirtualMemoryAddress, TLBentry> theTLB;
+    typedef std::unordered_map<VirtualMemoryAddress, TLBentry>::iterator tlbIterator;
+  };
 
   std::unique_ptr<PageWalk> thePageWalker;
-  typedef std::map<VirtualMemoryAddress, PhysicalMemoryAddress> TLBentry;
-  TLBentry theInstrTLB;
-  TLBentry theDataTLB;
+  TLB theInstrTLB;
+  TLB theDataTLB;
 
   std::queue<boost::intrusive_ptr<Translation>> theLookUpEntries;
   std::queue<boost::intrusive_ptr<Translation>> thePageWalkEntries;
@@ -101,18 +208,44 @@ public:
   }
 
   void saveState(std::string const & aDirName) {
-    // TODO
+      std::ofstream iFile, dFile;
+      iFile.open(aDirName + "/iTLBout", std::ofstream::out | std::ofstream::app);
+      dFile.open(aDirName + "/dTLBout", std::ofstream::out | std::ofstream::app);
+
+      boost::archive::text_oarchive ioarch(iFile);
+      boost::archive::text_oarchive doarch(dFile);
+
+      ioarch << theInstrTLB;
+      doarch << theDataTLB;
+
+      iFile.close();
+      dFile.close();
+
+
   }
 
   void loadState(std::string const & aDirName) {
-//    TODO
-  }
+      std::ifstream iFile, dFile;
+      iFile.open(aDirName + "/iTLBout", std::ifstream::in);
+      dFile.open(aDirName + "/dTLBout", std::ifstream::in);
+
+      boost::archive::text_iarchive iiarch(iFile);
+      boost::archive::text_iarchive diarch(dFile);
+
+      iiarch >> theInstrTLB;
+      diarch >> theDataTLB;
+
+      iFile.close();
+      dFile.close();  }
 
   // Initialization
   void initialize() {
       theCPU = std::make_shared<Flexus::Qemu::Processor>(Flexus::Qemu::Processor::getProcessor((int)flexusIndex()));
       thePageWalker.reset(new PageWalk(flexusIndex()));
       thePageWalker->setMMU(theMMU);
+
+      theInstrTLB.resize(cfg.iTLBSize);
+      theDataTLB.resize(cfg.dTLBSize);
   }
 
   void finalize() {}
@@ -132,11 +265,11 @@ public:
 
       while (!theLookUpEntries.empty()){
 
-          boost::intrusive_ptr<Translation> item = theLookUpEntries.front();
+          TranslationPtr item = theLookUpEntries.front();
           theLookUpEntries.pop();
 
           if (item->isInstr()) {
-              if (theInstrTLB.find(item->theVaddr) != theInstrTLB.end()) {
+              if (theInstrTLB.lookUp(item->theVaddr)){
                     // item exists so mark hit
                 item->setHit();
                 FLEXUS_CHANNEL(iTranslationReply) << item;
@@ -147,8 +280,8 @@ public:
                   thePageWalker->push_back(item);
               }
           } else if (item->isData()) {
-              if (theDataTLB.find(item->theVaddr) != theDataTLB.end()) {
-                    // item exists so mark hit
+              if (theDataTLB.lookUp(item->theVaddr)){
+                  // item exists so mark hit
                   item->setHit();
                   FLEXUS_CHANNEL(dTranslationReply) << item;
               } else {
@@ -158,14 +291,17 @@ public:
                   thePageWalker->push_back(item);
               }
           } else {
-              assert(false);
+              DBG_Assert(false);
           }
       }
 
       while (!thePageWalkEntries.empty()){
-          boost::intrusive_ptr<Translation> item = thePageWalkEntries.front();
+          TranslationPtr item = thePageWalkEntries.front();
 
-          if (item->isDone()){
+          if (item->isAnnul()){
+              thePageWalkEntries.pop();
+          }
+          else if (item->isDone()){
               thePageWalkEntries.pop();
 
               if (item->isInstr()){
@@ -193,7 +329,7 @@ public:
   }
 
 
-  void initMMU(uint8_t anIndex) {
+  void resyncMMU(uint8_t anIndex) {
 
     if (!theMMUInitialized){
         theMMU.reset(new mmu_t());
@@ -201,8 +337,10 @@ public:
     }
     theMMU->initRegsFromQEMUObject( getMMURegsFromQEMU(anIndex) );
     theMMU->setupAddressSpaceSizesAndGranules();
+    if (thePageWalker)
+        thePageWalker->annulAll();
 
-    DBG_(Tmp,( << "MMU object init'd, " << std::hex << theMMU << std::dec ));
+    DBG_(VVerb,( << "MMU object init'd, " << std::hex << theMMU << std::dec ));
   }
 
   // Msutherl: Fetch MMU's registers
@@ -242,7 +380,7 @@ public:
   void push( interface::ResyncIn const &,
              index_t           anIndex,
              bool & aResync ) {
-      initMMU(anIndex);
+      resyncMMU(anIndex);
   }
 
   bool available( interface::iRequestIn const &,

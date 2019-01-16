@@ -128,13 +128,13 @@ struct ExecuteAction : public ExecuteBase {
         theOperation->theInstruction = theInstruction;
         Operand result = theOperation->operator()(operands );
         if (theOperation->hasNZCVFlags()){
-            uint64_t nzcv = theOperation->getNZCVbits();
+            uint32_t nzcv = theOperation->getNZCVbits();
             SysRegInfo & ri = getPriv(kNZCV);
             ri.writefn(theInstruction->core(), nzcv);
         }
 
         theInstruction->setOperand(theResult, result);
-        DBG_( Tmp, ( << *this << " operands: " << OperandPrintHelper(operands) << " result=" << result ) );
+        DBG_( VVerb, ( << *this << " operands: " << OperandPrintHelper(operands) << " result=" << result ) );
         if (theBypass) {
           mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass);
           register_value val = boost::apply_visitor( register_value_extractor(), result);
@@ -143,7 +143,7 @@ struct ExecuteAction : public ExecuteBase {
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {
-        DBG_( Tmp, ( << *this << " waiting for predecessor ") );
+        DBG_( VVerb, ( << *this << " waiting for predecessor ") );
         reschedule();
       }
     }
@@ -179,7 +179,7 @@ struct ExecuteAction_WithXTRA : public ExecuteBase {
         Operand xtra = theOperation->evalExtra( operands );
         theInstruction->setOperand(theResult, result);
         theInstruction->setOperand(theXTRA, xtra);
-        DBG_( Tmp, ( << *this << " operands: " << OperandPrintHelper(operands) << " result=" << result << " xtra=" << xtra) );
+        DBG_( VVerb, ( << *this << " operands: " << OperandPrintHelper(operands) << " result=" << result << " xtra=" << xtra) );
         if (theBypass) {
           mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass);
           register_value val = boost::apply_visitor( register_value_extractor(), result);
@@ -193,7 +193,7 @@ struct ExecuteAction_WithXTRA : public ExecuteBase {
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {
-        DBG_( Tmp, ( << *this << " waiting for predecessor ") );
+        DBG_( VVerb, ( << *this << " waiting for predecessor ") );
         reschedule();
       }
     }
@@ -243,7 +243,7 @@ struct FPExecuteAction : public ExecuteBase {
           mapped_reg name = theInstruction->operand< mapped_reg > (kCCpd);
           core()->bypass( name, boost::apply_visitor( register_value_extractor(), result));
         }
-        DBG_( Tmp, ( << *this << " operands: " << OperandPrintHelper(operands) << " val=" << result << " theResult=" << theResult) );
+        DBG_( VVerb, ( << *this << " operands: " << OperandPrintHelper(operands) << " val=" << result << " theResult=" << theResult) );
 
 //        uint64_t fpsr = core()->readFPSR();
 //        if (fpsr & 0xf) {
@@ -253,7 +253,7 @@ struct FPExecuteAction : public ExecuteBase {
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {
-        DBG_( Tmp, ( << *this << " waiting for predecessor ") );
+        DBG_( VVerb, ( << *this << " waiting for predecessor ") );
         reschedule();
       }
     }

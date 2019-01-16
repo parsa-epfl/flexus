@@ -106,7 +106,7 @@ struct ExtractAction : public PredicatedSemanticAction {
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {
-        DBG_( Tmp, ( << *this << " waiting for predecessor ") );
+        DBG_( VVerb, ( << *this << " waiting for predecessor ") );
         reschedule();
       }
     }

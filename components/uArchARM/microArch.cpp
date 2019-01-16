@@ -158,7 +158,7 @@ public:
 
 
       DBG_( Crit, ( << theName << " connected to " << (static_cast<Flexus::Qemu::API::conf_object_t *>(*theCPU))->name ));
-    DBG_( Tmp, ( << "CORE:  Initializing MMU ")  );
+    DBG_( VVerb, ( << "CORE:  Initializing MMU ")  );
 
       if (theBreakOnResynchronize && (theNode == 0)) {
         DBG_( Crit, ( << "Simulation will stop on unexpected synchronizations" ) );
@@ -194,7 +194,7 @@ public:
     FLEXUS_PROFILE();
     try {
       boost::intrusive_ptr< Instruction > insn(dynamic_cast< Instruction *>( anInstruction.get() ));
-//      DBG_(Tmp,(<< "\e[1;35m" <<"DISPATCH: instruction class: "<<insn->instClassName()<< "\e[0m"));
+//      DBG_(VVerb,(<< "\e[1;35m" <<"DISPATCH: instruction class: "<<insn->instClassName()<< "\e[0m"));
       theCore->dispatch(insn);
     } catch (...) {
       DBG_( Crit, ( << "Unable to cast from AbstractInstruction to Instruction") );
@@ -234,7 +234,7 @@ public:
     } else if ( op->theOperation == kStoreReply && !op->theSideEffect && ! op->theAtomic ) {
       //Need to inform ValueTracker that this store is complete
       bits value = op->theValue;
-      DBG_(Tmp, (<< "u is " << op->theValue));
+      DBG_(VVerb, (<< "u is " << op->theValue));
 
 //      if (op->theReverseEndian) {
 //        value = bits(Flexus::Qemu::endianFlip(value.to_ulong(), op->theSize));
@@ -343,8 +343,6 @@ public:
         ++theOtherResyncs;
       }
 
-      advance();
-
       resynchronize();
       if ( theBreakOnResynchronize ) {
         DBG_( Dev, ( << "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id() << "] Resynchronize complete\n========================================================\n" ) );
@@ -382,11 +380,10 @@ private:
       squash(kResynchronize);
     }
 
-    //Obtain new state from simics
-    VirtualMemoryAddress redirect_address(theCPU->getPC());
-
     resetArchitecturalState();
 
+    //Obtain new state from simics
+    VirtualMemoryAddress redirect_address(theCPU->getPC());
     redirect(redirect_address);
   }
 

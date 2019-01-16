@@ -108,7 +108,7 @@ void MemoryPortArbiter::arbitrate() {
     return;
   }
   while (! empty() && theCore.hasMemPort() ) {
-    DBG_( Tmp, ( << "Arbiter granting request" ) );
+    DBG_( VVerb, ( << "Arbiter granting request" ) );
 
     //Always issue a store or RMW if there is one ready to go.
     if (! thePriorityRequests.empty()) {
@@ -500,7 +500,7 @@ void CoreImpl::issueMMU(TranslationPtr aTranslation){
     bool ignored;
     /*std::tie(lsq_entry->theMSHR, ignored) = */theMSHRs.insert( std::make_pair(mshr.thePaddr, mshr) );
     theMemoryPorts.push_back( op);
-    DBG_( Tmp, ( << theName << " " << " issuing operation " << *op) );
+    DBG_( VVerb, ( << theName << " " << " issuing operation " << *op) );
 
     thePageWalkRequests.emplace(std::make_pair(aTranslation->theVaddr, aTranslation));
 }

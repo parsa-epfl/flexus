@@ -80,7 +80,7 @@ struct UpdateAddressAction : public BaseSemanticAction {
 
   void squash(int32_t anOperand) {
     if (! cancelled() ) {
-      DBG_( Tmp, ( << *this << " Squashing vaddr." ) );
+      DBG_( VVerb, ( << *this << " Squashing vaddr." ) );
       core()->resolveVAddr( boost::intrusive_ptr<Instruction>(theInstruction), kUnresolved/*, 0x80*/);
     }
     BaseSemanticAction::squash(anOperand);
@@ -98,15 +98,16 @@ struct UpdateAddressAction : public BaseSemanticAction {
 
   void updateAddress() {
     if (ready()) {
-          bits addr = theInstruction->operand< bits > (theAddressCode);
+          DBG_Assert(theInstruction->hasOperand( theAddressCode ) );
+
+          uint64_t addr = theInstruction->operand< uint64_t > (theAddressCode);
           if (theInstruction->hasOperand( kUopAddressOffset ) ) {
             uint64_t offset = theInstruction->operand< uint64_t > (kUopAddressOffset);
             SEMANTICS_DBG("UpdateAddressAction: adding offset " << offset << " to address "<< addr);
-
-            addr = bits(addr.size(), (addr.to_ulong()) + offset);
+            addr +=  offset;
           }
-          VirtualMemoryAddress vaddr(addr.to_ulong());
-          core()->resolveVAddr( boost::intrusive_ptr<Instruction>(theInstruction), vaddr/*, asi*/);
+          VirtualMemoryAddress vaddr(addr);
+          core()->resolveVAddr( boost::intrusive_ptr<Instruction>(theInstruction), vaddr );
           SEMANTICS_DBG(*this << " updating vaddr = " << vaddr);
           satisfyDependants();
      }
@@ -120,11 +121,12 @@ struct UpdateAddressAction : public BaseSemanticAction {
 
 
 multiply_dependant_action updateAddressAction
-( SemanticInstruction * anInstruction, eOperandCode aCode ) {
+( SemanticInstruction * anInstruction, uint32_t aNumDependent, eOperandCode aCode ) {
   UpdateAddressAction * act(new(anInstruction->icb()) UpdateAddressAction( anInstruction, aCode ) );
   std::vector<InternalDependance> dependances;
-  dependances.push_back( act->dependance(0) );
-  dependances.push_back( act->dependance(1) );
+  for (int i = 0; i < aNumDependent; i++)
+    dependances.push_back( act->dependance(i) );
+//  dependances.push_back( act->dependance(1) );
 
   return multiply_dependant_action( act, dependances );
 }

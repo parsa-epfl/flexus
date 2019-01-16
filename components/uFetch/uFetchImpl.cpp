@@ -290,11 +290,11 @@ private:
   */
   bool lookup( PhysicalMemoryAddress const & anAddress ) {
     if (theI.lookup(anAddress)) {
-        DBG_( Tmp, Comp(*this) ( << "Core[" << std::setfill('0') << std::setw(2) << flexusIndex() << "] I-Lookup hit: " << anAddress ));
+        DBG_( VVerb, Comp(*this) ( << "Core[" << std::setfill('0') << std::setw(2) << flexusIndex() << "] I-Lookup hit: " << anAddress ));
         DBG_( Verb, Comp(*this) ( << "Core[" << std::setfill('0') << std::setw(2) << flexusIndex() << "] I-Lookup hit: " << anAddress ));
       return true;
     }
-    DBG_( Tmp, Comp(*this) ( << "Core[" << std::setfill('0') << std::setw(2) << flexusIndex() << "] I-Lookup Miss addr: " << anAddress ));
+    DBG_( VVerb, Comp(*this) ( << "Core[" << std::setfill('0') << std::setw(2) << flexusIndex() << "] I-Lookup Miss addr: " << anAddress ));
     DBG_( Verb, Comp(*this) ( << "Core[" << std::setfill('0') << std::setw(2) << flexusIndex() << "] I-Lookup Miss addr: " << anAddress ));
     return false;
   }
@@ -377,7 +377,7 @@ public:
     } else {
       fname += "/" + boost::padded_string_cast < 2, '0' > (flexusIndex()) + "-L1i";
     }
-    DBG_( Tmp, (<< "file for sys-L1i "<<fname));
+    DBG_( VVerb, (<< "file for sys-L1i "<<fname));
     theI.loadState(fname);
   }
 
@@ -503,18 +503,18 @@ private:
     //Translate virtual address to physical.
     //First, see if it is our cached translation
 
-    DBG_(Tmp, (<<"Looking up instruction in cache"));//NOOSHIN
+    DBG_(VVerb, (<<"Looking up instruction in cache"));//NOOSHIN
     PhysicalMemoryAddress paddr;
     uint64_t tagset = vaddr >> theIndexShift;
     if ( tagset == theLastVTagSet ) {
       paddr = theLastPhysical;
       if (paddr == 0) {
-          DBG_(Tmp, (<<"Last Physical translation lookup failed!"));
+          DBG_(VVerb, (<<"Last Physical translation lookup failed!"));
         ++theFailedTranslations;
         return true; //Failed translations are treated as hits - they will cause an MMU miss in the pipe.
       }
     } else {
-      DBG_(Tmp, (<<"Not in Flexus cache...Will look into Qemu now!"));
+      DBG_(VVerb, (<<"Not in Flexus cache...Will look into Qemu now!"));
       Flexus::SharedTypes::Translation xlat;
       xlat.theVaddr = vaddr;
 //      xlat.theTL = theCPUState[anIndex].theTL;
@@ -524,13 +524,13 @@ private:
       paddr = xlat.thePaddr;
       if (paddr == 0) {
           assert(false);
-        DBG_(Tmp, (<<"Translation failed!"));
+        DBG_(VVerb, (<<"Translation failed!"));
         ++theFailedTranslations;
         return true; //Failed translations are treated as hits - they will cause an MMU miss in the pipe.
       }
       else
       {
-          DBG_(Tmp, (<<"Translation success!"));
+          DBG_(VVerb, (<<"Translation success!"));
       }
       //Cache translation
       theLastPhysical = paddr;
@@ -556,7 +556,7 @@ private:
     theIcacheVMiss[anIndex] = vaddr;
     theFetchReplyTransactionTracker[anIndex] = nullptr;
 
-    DBG_( Tmp, Comp(*this) ( << "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << anIndex << "] L1I MISS " << vaddr << " " << *theIcacheMiss[anIndex]));
+    DBG_( VVerb, Comp(*this) ( << "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << anIndex << "] L1I MISS " << vaddr << " " << *theIcacheMiss[anIndex]));
 
     if ( theIcachePrefetch[anIndex] && *theIcacheMiss[anIndex] == *theIcachePrefetch[anIndex] ) {
       theIcachePrefetch[anIndex] = boost::none;
@@ -573,7 +573,7 @@ private:
       theLastPrefetchVTagSet[anIndex] = tagset;
       prefetchNext(anIndex);
     }
-    DBG_(Tmp, (<<"in icacheLookup before return false"));//NOOSHIN
+    DBG_(VVerb, (<<"in icacheLookup before return false"));//NOOSHIN
     return false;
   }
 
@@ -830,7 +830,7 @@ private:
 
     if (theIcacheMiss[anIndex]) {
       ++theMissCycles;
-      DBG_(Tmp, (<<"FETCH UNIT: in theIcacheMiss" << theMissCycles.theRefCount << "cycles missed so far"));
+      DBG_(VVerb, (<<"FETCH UNIT: in theIcacheMiss" << theMissCycles.theRefCount << "cycles missed so far"));
       return;
     }
 
@@ -882,7 +882,7 @@ private:
         sendFetchRequest( anIndex, fetch_addr.theAddress );
         
         theFAQ[anIndex].pop_front();
-        //DBG_(Tmp, ( << "\e[1;34m" << "FETCH UNIT: Fetched " << fetch_addr.theAddress << " and poping it out of FAQ" << "\e[0m" ) );
+        //DBG_(VVerb, ( << "\e[1;34m" << "FETCH UNIT: Fetched " << fetch_addr.theAddress << " and poping it out of FAQ" << "\e[0m" ) );
         theBundle->theOpcodes.emplace_back( FetchedOpcode( fetch_addr.theAddress
                                       , 0 //op_code not resolved yet - waiting for translation
                                       , fetch_addr.theBPState
@@ -956,7 +956,7 @@ private:
         PhysicalMemoryAddress magicTranslation = cpu(tr->theIndex)->translateVirtualAddress(tr->theVaddr);
 
         if( tr->thePaddr == magicTranslation ) {
-            DBG_(Tmp, ( << "Magic QEMU translation == MMU Translation. Vaddr = "
+            DBG_(VVerb, ( << "Magic QEMU translation == MMU Translation. Vaddr = "
                         << std::hex << tr->theVaddr
                         << std::dec << ", Paddr = "
                         << std::hex << tr->thePaddr << std::dec));

@@ -109,7 +109,7 @@ void armInstruction::doDispatchEffects(  ) {
   if (bpState() && ! isBranch()) {
     //Branch predictor identified an instruction that is not a branch as a
     //branch.
-    DBG_( Tmp, ( << *this << " predicted as a branch, but is a non-branch.  Fixing" ) );
+    DBG_( VVerb, ( << *this << " predicted as a branch, but is a non-branch.  Fixing" ) );
 
     boost::intrusive_ptr<BranchFeedback> feedback( new BranchFeedback() );
     feedback->thePC = pc();
@@ -162,7 +162,7 @@ bool armInstruction::usesFpSqrt() const {
 
 std::pair< boost::intrusive_ptr<AbstractInstruction>, bool> decode( Flexus::SharedTypes::FetchedOpcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo, int32_t aUop )
 {
-    DBG_(Tmp,(<< "\033[1;31m DECODER: Decoding " << std::hex << aFetchedOpcode.theOpcode << std::dec << "\033[0m"));
+    DBG_(VVerb,(<< "\033[1;31m DECODER: Decoding " << std::hex << aFetchedOpcode.theOpcode << std::dec << "\033[0m"));
 
     bool last_uop = true;
     boost::intrusive_ptr<AbstractInstruction> ret_val = disas_a64_insn(aFetchedOpcode, aCPU, aSequenceNo, aUop);

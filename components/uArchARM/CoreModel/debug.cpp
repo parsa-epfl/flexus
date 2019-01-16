@@ -147,51 +147,51 @@ std::ostream & operator << ( std::ostream & anOstream, MSHR const & anMSHR) {
 
 void CoreImpl::dumpROB() {
   if ( ! theROB.empty() ) {
-    DBG_( Tmp, ( << theName << "*** ROB Contents ***" ) );
+    DBG_( VVerb, ( << theName << "*** ROB Contents ***" ) );
     rob_t::iterator iter, end;
     for ( iter = theROB.begin(), end = theROB.end(); iter != end; ++iter) {
-      DBG_( Tmp, ( /*<< std::internal*/ << **iter ) );
+      DBG_( VVerb, ( /*<< std::internal*/ << **iter ) );
     }
   }
 }
 
 void CoreImpl::dumpSRB() {
   if ( ! theSRB.empty() ) {
-    DBG_( Tmp, ( << theName << "*** SRB Contents ***" ) );
+    DBG_( VVerb, ( << theName << "*** SRB Contents ***" ) );
     rob_t::iterator iter, end;
     for ( iter = theSRB.begin(), end = theSRB.end(); iter != end; ++iter) {
-      DBG_( Tmp, ( /*<< std::internal*/ << **iter ) );
+      DBG_( VVerb, ( /*<< std::internal*/ << **iter ) );
     }
   }
 }
 
 void CoreImpl::dumpMemQueue() {
   if ( ! theMemQueue.empty() ) {
-    DBG_( Tmp, ( << theName << "*** MemQueue Contents ***" ) );
+    DBG_( VVerb, ( << theName << "*** MemQueue Contents ***" ) );
     memq_t::iterator iter, end;
     for ( iter = theMemQueue.begin(), end = theMemQueue.end(); iter != end; ++iter) {
-      DBG_( Tmp, ( << *iter ) );
+      DBG_( VVerb, ( << *iter ) );
     }
   }
 }
 
 void CoreImpl::dumpCheckpoints() {
   if ( ! theCheckpoints.empty() ) {
-    DBG_( Tmp, ( << theName << "*** Checkpoints ***" ) );
+    DBG_( VVerb, ( << theName << "*** Checkpoints ***" ) );
     std::map< boost::intrusive_ptr< Instruction >, Checkpoint>::iterator iter, end;
     for ( iter = theCheckpoints.begin(), end = theCheckpoints.end(); iter != end; ++iter) {
-      DBG_( Tmp, ( << "   " << *iter->first ));
-      DBG_( Tmp, ( << "   Lost Permissions: " << iter->second.theLostPermissionCount ));
-      DBG_( Tmp, ( << "   Required Addresses" ));
+      DBG_( VVerb, ( << "   " << *iter->first ));
+      DBG_( VVerb, ( << "   Lost Permissions: " << iter->second.theLostPermissionCount ));
+      DBG_( VVerb, ( << "   Required Addresses" ));
       std::map< PhysicalMemoryAddress, boost::intrusive_ptr< Instruction > >::iterator req = iter->second.theRequiredPermissions.begin();
       while (req != iter->second.theRequiredPermissions.end()) {
-        DBG_( Tmp, ( << "        " << req->first << "\t" << *req->second ));
+        DBG_( VVerb, ( << "        " << req->first << "\t" << *req->second ));
         ++req;
       }
-      DBG_( Tmp, ( << "  Held Addresses " ));
+      DBG_( VVerb, ( << "  Held Addresses " ));
       std::set< PhysicalMemoryAddress>::iterator held = iter->second.theHeldPermissions.begin();
       while (held != iter->second.theHeldPermissions.end()) {
-        DBG_( Tmp, ( << "        " << *held ));
+        DBG_( VVerb, ( << "        " << *held ));
         ++held;
       }
     }
@@ -200,20 +200,20 @@ void CoreImpl::dumpCheckpoints() {
 
 void CoreImpl::dumpSBPermissions() {
   if ( ! theSBLines_Permission.empty() ) {
-    DBG_( Tmp, ( << theName << "*** SB Line Tracker ***" ) );
+    DBG_( VVerb, ( << theName << "*** SB Line Tracker ***" ) );
     std::map<PhysicalMemoryAddress, std::pair<int, bool> >::iterator iter, end;
     for ( iter = theSBLines_Permission.begin(), end = theSBLines_Permission.end(); iter != end; ++iter) {
-      DBG_( Tmp, ( << "   " << iter->first << " SB: " << iter->second.first  << " onchip: " << iter->second.second ));
+      DBG_( VVerb, ( << "   " << iter->first << " SB: " << iter->second.first  << " onchip: " << iter->second.second ));
     }
   }
 }
 
 void CoreImpl::dumpMSHR() {
   if ( ! theMSHRs.empty() ) {
-    DBG_( Tmp, ( << theName << "*** MSHR Contents *** " << theMSHRs.size()) );
+    DBG_( VVerb, ( << theName << "*** MSHR Contents *** " << theMSHRs.size()) );
     MSHRs_t::iterator iter, end;
     for ( iter = theMSHRs.begin(), end = theMSHRs.end(); iter != end; ++iter) {
-      DBG_( Tmp, ( << " " << iter->second ) );
+      DBG_( VVerb, ( << " " << iter->second ) );
     }
   }
 }

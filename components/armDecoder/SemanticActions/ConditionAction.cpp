@@ -116,7 +116,7 @@ struct ConditionSelectAction : public PredicatedSemanticAction {
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {
-        DBG_( Tmp, ( << *this << " waiting for predecessor ") );
+        DBG_( VVerb, ( << *this << " waiting for predecessor ") );
         reschedule();
       }
     }
@@ -173,7 +173,7 @@ struct ConditionCompareAction : public PredicatedSemanticAction {
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {
-        DBG_( Tmp, ( << *this << " waiting for predecessor ") );
+        DBG_( VVerb, ( << *this << " waiting for predecessor ") );
         reschedule();
       }
     }

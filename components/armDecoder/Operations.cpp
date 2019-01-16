@@ -123,10 +123,10 @@ typedef struct ADDS : public Operation {
     uint64_t result =  0;
     result &= uresult;
 
-    uint64_t N = (1ul << 63) & result;
-    uint64_t Z = ((result == 0) ? 1ul << 62 : 0);
-    uint64_t C = ((result - uresult == 0) ? 1ul << 61 : 0);
-    uint64_t V = ((result - sresult == 0) ? 1ul << 60 : 0);
+    uint32_t N = (1ul << 31) & result;
+    uint32_t Z = ((result == 0) ? 1ul << 30 : 0);
+    uint32_t C = ((result - uresult == 0) ? 1ul << 29 : 0);
+    uint32_t V = ((result - sresult == 0) ? 1ul << 28 : 0);
 
     theNZCV = N | Z | C | V;
 
@@ -170,10 +170,10 @@ typedef struct SUBS : public Operation {
     uint64_t result =  0;
     result &= uresult;
 
-    uint64_t N = ((1ul << 63)) & result;
-    uint64_t Z = ((result == 0) ? 1ul << 62 : 0);
-    uint64_t C = ((result - uresult == 0) ? 1ul << 61 : 0);
-    uint64_t V = ((result - sresult == 0) ? 1ul << 60 : 0);
+    uint32_t N = ((1ul << 31)) & result;
+    uint32_t Z = ((result == 0) ? 1ul << 30 : 0);
+    uint32_t C = ((result - uresult == 0) ? 1ul << 29 : 0);
+    uint32_t V = ((result - sresult == 0) ? 1ul << 28 : 0);
 
     theNZCV = N | Z | C | V;
 
@@ -239,10 +239,10 @@ typedef struct ANDS : public Operation {
     DBG_Assert( operands.size() == 2);
     uint64_t result = boost::get<uint64_t>(operands[0]) & boost::get<uint64_t>(operands[1]);
 
-    uint64_t N = ((1ul << 63)) & result;
-    uint64_t Z = ((result == 0) ? 1ul << 62 : 0);
-    uint64_t C = 0;
-    uint64_t V = 0;
+    uint32_t N = ((1ul << 31)) & result;
+    uint32_t Z = ((result == 0) ? 1ul << 30 : 0);
+    uint32_t C = 0;
+    uint32_t V = 0;
 
     theNZCV = N | Z | C | V;
 

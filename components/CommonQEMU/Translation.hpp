@@ -80,6 +80,7 @@ struct Translation : public boost::counted_base {
         , theCurrentTranslationLevel(0)
         , rawTTEValue(0)
         , theID(translationID++)
+        , theAnnul(false)
 
     {}
     ~Translation(){}
@@ -124,6 +125,7 @@ struct Translation : public boost::counted_base {
   uint8_t theCurrentTranslationLevel;
   uint64_t rawTTEValue;
   uint64_t theID;
+  bool theAnnul;
 
   void setData(){theTLBtype = kDATA;}
   void setInstr(){theTLBtype = kINST;}
@@ -146,6 +148,8 @@ struct Translation : public boost::counted_base {
   bool isDone() {return theDone;}
   void setDone() {theDone = true;}
 
+  bool isAnnul() {return theAnnul;}
+  void setAnnul() {theAnnul = true;}
 
 };
 

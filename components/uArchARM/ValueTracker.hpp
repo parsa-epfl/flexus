@@ -220,7 +220,7 @@ struct ValueTracker {
   DMATracer theDMATracer;
 
   void register_mem_iface(int vm) {
-    DBG_(Tmp, ( << "Registering DMA tracker " << vm));
+    DBG_(VVerb, ( << "Registering DMA tracker " << vm));
 
     API::conf_object_t * dma_map_object = API::QEMU_get_object_by_name( "dma_mem" );
 //    API::QEMU_clear_exception();
@@ -296,7 +296,7 @@ struct ValueTracker {
     DBG_( Crit, ( << "Connecting to DMA memory map" ) );
     theDMATracer->init(dma_map_object,vm);
 
-    DBG_(Tmp, ( << "Done registering DMA tracker"));
+    DBG_(VVerb, ( << "Done registering DMA tracker"));
 */
   }
 
@@ -547,7 +547,7 @@ struct ValueTracker {
     tracker::iterator iter = theTracker.find( aligned );
     if ( iter == theTracker.end() ) {
       uint64_t val = cpu->readPhysicalAddress( anAddress, aSize ).to_ulong();
-      DBG_( Tmp, ( << "CPU[" << aCPU << "] Load.NoOutstandingValues " << anAddress << "[" << aSize << "] = " << std::hex << val << std::dec ) );
+      DBG_( VVerb, ( << "CPU[" << aCPU << "] Load.NoOutstandingValues " << anAddress << "[" << aSize << "] = " << std::hex << val << std::dec ) );
       return bits(64, val);
     }
 

@@ -152,7 +152,7 @@ void CoreImpl::insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation
 void CoreImpl::insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB , eAccType type) {
   FLEXUS_PROFILE();
   theMemQueue.push_back( MemQueueEntry(anInsn, ++theMemorySequenceNum, anOperation, aSize, aBypassSB && theNAWBypassSB ) );
-  DBG_( Tmp, ( << "Pushed LSQEntry: " << theMemQueue.back() ) );
+  DBG_( VVerb, ( << "Pushed LSQEntry: " << theMemQueue.back() ) );
   ++theLSQCount;
 //  DBG_Assert( theLSQCount + theSBCount + theSBNAWCount == static_cast<long>(theMemQueue.size()) );
 }
@@ -504,14 +504,14 @@ bits CoreImpl::retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction> anIn
 void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry , VirtualMemoryAddress anAddr ) {
   FLEXUS_PROFILE();
   lsq_entry->theVaddr = anAddr;
-  DBG_(Tmp,(<<"in updateVaddr"));//NOOOSHIN
+  DBG_(VVerb,(<<"in updateVaddr"));//NOOOSHIN
   if (anAddr == kUnresolved) {
     lsq_entry->thePaddr = PhysicalMemoryAddress(kUnresolved);
     //theMemQueue.get<by_insn>().modify( lsq_entry, [](auto& x){ x.thePaddr_aligned = PhysicalMemoryAddress(kUnresolved);});//ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = PhysicalMemoryAddress(kUnresolved));
     theMemQueue.get<by_insn>().modify( lsq_entry, ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = PhysicalMemoryAddress(kUnresolved));
   } else {
     //Map logical to physical
-    DBG_(Tmp,(<<"in else of updateVaddr"));//NOOOSHIN
+    DBG_(VVerb,(<<"in else of updateVaddr"));//NOOOSHIN
 
     boost::intrusive_ptr<Flexus::SharedTypes::Translation> xlat (new Flexus::SharedTypes::Translation());
     xlat->theVaddr = anAddr ;

@@ -114,7 +114,7 @@ struct BranchCondAction : public BaseSemanticAction {
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {
-        DBG_( Tmp, ( << *this << " waiting for predecessor ") );
+        DBG_( VVerb, ( << *this << " waiting for predecessor ") );
         reschedule();
       }
     }
@@ -167,24 +167,24 @@ struct BranchRegAction : public BaseSemanticAction {
 
 //        if ( cond(val) ) {
 //          //Taken
-//          DBG_( Tmp, ( << *this << " conditional branch val: " << val << " TAKEN" ) );
+//          DBG_( VVerb, ( << *this << " conditional branch val: " << val << " TAKEN" ) );
 //          core()->applyToNext( theInstruction, branchInteraction(theTarget) );
 //          feedback->theActualDirection = kTaken;
 
 //          if (theAnnul) {
-//            DBG_( Tmp, ( << *this << " Annul Next Instruction") );
+//            DBG_( VVerb, ( << *this << " Annul Next Instruction") );
 //            core()->applyToNext( theInstruction , reinstateInstructionInteraction() );
 //  //          theInstruction->redirectNPC( theInstruction->pc() + 4 );
 //          }
 
 //        } else {
 //          //Not Taken
-//          DBG_( Tmp, ( << *this << " conditional branch val: " << val << " NOT TAKEN" ) );
+//          DBG_( VVerb, ( << *this << " conditional branch val: " << val << " NOT TAKEN" ) );
 //          core()->applyToNext( theInstruction, branchInteraction( VirtualMemoryAddress(0) ) );
 //          feedback->theActualDirection = kNotTaken;
 
 //          if (theAnnul) {
-//            DBG_( Tmp, ( << *this << " Annul Next Instruction") );
+//            DBG_( VVerb, ( << *this << " Annul Next Instruction") );
 //            core()->applyToNext( theInstruction, annulInstructionInteraction() );
 // //           theInstruction->redirectNPC( theInstruction->pc() + 8, theInstruction->pc() + 4);
 //          }
@@ -194,7 +194,7 @@ struct BranchRegAction : public BaseSemanticAction {
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {
-        DBG_( Tmp, ( << *this << " waiting for predecessor ") );
+        DBG_( VVerb, ( << *this << " waiting for predecessor ") );
         reschedule();
       }
     }
@@ -230,13 +230,13 @@ struct BranchToCalcAddressAction : public BaseSemanticAction {
         //Feedback is taken care of by the updateUncoditional effect at retirement
         bits target = theInstruction->operand< bits > (theTarget);
         VirtualMemoryAddress target_addr(target.to_ulong());
-        DBG_( Tmp, ( << *this << " branc to mapped_reg target: " << target_addr ) );
+        DBG_( VVerb, ( << *this << " branc to mapped_reg target: " << target_addr ) );
         core()->applyToNext( theInstruction, branchInteraction(target_addr) );
 
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {
-        DBG_( Tmp, ( << *this << " waiting for predecessor ") );
+        DBG_( VVerb, ( << *this << " waiting for predecessor ") );
         reschedule();
       }
     }

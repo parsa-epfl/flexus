@@ -260,7 +260,7 @@ void CoreImpl::accountCommit( boost::intrusive_ptr< Instruction > anInstruction,
   else if (anInstruction->isPriv()) level = 1 /* system */;
   int32_t spin = ( theSpinning ) ? 4 : 0;
 
-  //DBG_(Tmp, (<<"In accountCommit, aRaised: "<<aRaised));
+  //DBG_(VVerb, (<<"In accountCommit, aRaised: "<<aRaised));
   theTimeBreakdown.applyTransactions(anInstruction->sequenceNo());
 
   ++theCommitNumber;
@@ -273,38 +273,38 @@ void CoreImpl::accountCommit( boost::intrusive_ptr< Instruction > anInstruction,
   //Account for the type of instruction committed
   ++theMix_Total;
   if (aRaised) {
-    //DBG_(Tmp, (<<"A raised happend!"));
+    //DBG_(VVerb, (<<"A raised happend!"));
     ++theMix_Exception;
   } else {
     switch (klass) {
       case clsLoad:
-        DBG_(Tmp,(<<"Get a LOAD.........."));
+        DBG_(VVerb,(<<"Get a LOAD.........."));
         accountCommitMemOp(anInstruction);
         ++theMix_Load;
         break;
       case clsStore:
-        DBG_(Tmp,(<<"Get a Store.........."));
+        DBG_(VVerb,(<<"Get a Store.........."));
         ++theMix_Store;
         break;
       case clsAtomic:
-        DBG_(Tmp,(<<"Get an Atomic.........."));
+        DBG_(VVerb,(<<"Get an Atomic.........."));
         accountCommitMemOp(anInstruction);
         ++theMix_Atomic;
         break;
       case clsBranch:
-        DBG_(Tmp,(<<"Get a BRANCH.........."));
+        DBG_(VVerb,(<<"Get a BRANCH.........."));
         ++theMix_Branch;
         break;
       case clsMEMBAR:
-        DBG_(Tmp,(<<"Get a Membar.........."));
+        DBG_(VVerb,(<<"Get a Membar.........."));
         ++theMix_MEMBAR;
         break;
       case clsComputation:
-        DBG_(Tmp,(<<"Get a Computation.........."));
+        DBG_(VVerb,(<<"Get a Computation.........."));
         ++theMix_Computation;
         break;
       case clsSynchronizing:
-        DBG_(Tmp,(<<"Get a Synchronization.........."));
+        DBG_(VVerb,(<<"Get a Synchronization.........."));
         ++theMix_Synchronizing;
         break;
     }
@@ -464,7 +464,7 @@ void CoreImpl::chargeStoreStall( boost::intrusive_ptr<Instruction> inst, boost::
 void CoreImpl::accountRetire( boost::intrusive_ptr<Instruction> anInst) {
   FLEXUS_PROFILE();
   DBG_Assert(anInst);
-  DBG_(Tmp, ( << " accountRetire: " << *anInst ));
+  DBG_(VVerb, ( << " accountRetire: " << *anInst ));
 
   if (theIsSpeculating) {
     ++theRetiresSinceCheckpoint;
@@ -502,7 +502,7 @@ void CoreImpl::accountRetire( boost::intrusive_ptr<Instruction> anInst) {
           theLastStallCause = nXactTimeBreakdown::kWillRaise_Atomic;
           break;
         case clsBranch:
-          DBG_(Tmp,(<<"Get a Branch................."));
+          DBG_(VVerb,(<<"Get a Branch................."));
           theLastStallCause = nXactTimeBreakdown::kWillRaise_Branch;
           break;
         case clsMEMBAR:
@@ -805,7 +805,7 @@ void CoreImpl::accountRetire( boost::intrusive_ptr<Instruction> anInst) {
           break;
         } //clsAtomic
         case clsBranch:
-//          DBG_(Tmp, (<<"Get a Branch........."));
+//          DBG_(VVerb, (<<"Get a Branch........."));
           theLastStallCause = nXactTimeBreakdown::kBranch;
           break;
         case clsMEMBAR:

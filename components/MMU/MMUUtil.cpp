@@ -71,7 +71,7 @@ using namespace Flexus;
         }
 
     void fm_print_mmu_regs(mmu_regs_t* r) {
-        std::cout << "SCTLR_EL1: " << std::hex << r->SCTLR[EL1] << std::dec << std::endl
+        DBG_(VVerb,( << "SCTLR_EL1: " << std::hex << r->SCTLR[EL1] << std::dec << std::endl
             << "SCTLR_EL2: " << std::hex << r->SCTLR[EL2] << std::dec << std::endl
             << "SCTLR_EL3: " << std::hex << r->SCTLR[EL3] << std::dec << std::endl
             << "TCR_EL1: " << std::hex << r->TCR[EL1] << std::dec << std::endl
@@ -82,7 +82,7 @@ using namespace Flexus;
             << "TTBR0_EL2: " << std::hex << r->TTBR0[EL2] << std::dec << std::endl
             << "TTBR1_EL2: " << std::hex << r->TTBR1[EL2] << std::dec << std::endl
             << "TTBR0_EL3: " << std::hex << r->TTBR0[EL3] << std::dec << std::endl
-            << "ID_AA64MMFR0_EL1: " << std::hex << r->ID_AA64MMFR0_EL1 << std::dec << std::endl;
+            << "ID_AA64MMFR0_EL1: " << std::hex << r->ID_AA64MMFR0_EL1 << std::dec));
         ;
     }
     void mmu_t::setupBitConfigs() {
@@ -141,8 +141,8 @@ using namespace Flexus;
         mmu_regs.TTBR1[EL2] = qemuRegs->TTBR1[EL2];
         mmu_regs.TTBR0[EL3] = qemuRegs->TTBR0[EL3];
         mmu_regs.ID_AA64MMFR0_EL1 = qemuRegs->ID_AA64MMFR0_EL1;
-        DBG_(Tmp , ( << "Initializing mmu registers from QEMU...."));
-        fm_print_mmu_regs(&(this->mmu_regs));
+        DBG_(VVerb , ( << "Initializing mmu registers from QEMU...."));
+//        fm_print_mmu_regs(&(this->mmu_regs));
     }
     bool mmu_t::IsExcLevelEnabled(uint8_t EL) const {
         DBG_Assert( EL > 0 && EL <= 3,

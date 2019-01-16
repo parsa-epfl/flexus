@@ -83,7 +83,7 @@ struct ConstantAction : public PredicatedSemanticAction {
 
   void doEvaluate() {
     theInstruction->setOperand(theResult, static_cast<uint64_t>(theConstant));
-    DBG_( Tmp, ( << *this << " applied") );
+    DBG_( VVerb, ( << *this << " applied") );
     if (theBypass) {
       mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass);
       core()->bypass( name, theConstant );

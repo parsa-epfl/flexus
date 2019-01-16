@@ -92,7 +92,7 @@ struct AnnulAction : public PredicatedSemanticAction {
         theMOVConnected = true;
       } else {
         status = core()->requestRegister( name );
-        DBG_( Tmp, ( << *this << " scheduled. " <<  theRegisterCode << "(" << name << ")" << " is " << status ) );
+        DBG_( VVerb, ( << *this << " scheduled. " <<  theRegisterCode << "(" << name << ")" << " is " << status ) );
       }
       if (kReady == status) {
         setReady(0, true);
@@ -100,7 +100,7 @@ struct AnnulAction : public PredicatedSemanticAction {
       if (ready()) {
         Operand aValue = core()->readRegister( name );
         theInstruction->setOperand(theOutputCode, aValue);
-        DBG_( Tmp, ( << *this << " read " << theRegisterCode << "(" << name << ") = " << aValue << " written to " << theOutputCode ) );
+        DBG_( VVerb, ( << *this << " read " << theRegisterCode << "(" << name << ") = " << aValue << " written to " << theOutputCode ) );
         theInstruction->setExecuted(true);
         satisfyDependants();
       }

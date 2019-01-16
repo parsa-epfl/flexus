@@ -89,7 +89,7 @@ struct ReadRegisterAction : public BaseSemanticAction
 
     if ( !signalled() ) {
       theInstruction->setOperand(theOperandCode, aValue);
-      DBG_( Tmp, ( << *this << " bypassed " << theRegisterCode << " = " << aValue << " written to " << theOperandCode ) );
+      DBG_( VVerb, ( << *this << " bypassed " << theRegisterCode << " = " << aValue << " written to " << theOperandCode ) );
       satisfyDependants();
       setReady(0, true);
     }

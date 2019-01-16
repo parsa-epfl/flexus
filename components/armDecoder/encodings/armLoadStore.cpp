@@ -526,8 +526,8 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     std::vector< std::list<InternalDependance> > addr_deps(1), data_deps(2);
 
     // calculate the address from rn
-    std::vector<std::list<InternalDependance> > rs_deps(1);
-    addAddressCompute( inst, rs_deps) ;
+//    std::vector<std::list<InternalDependance> > rs_deps(1);
+    addAddressCompute( inst, addr_deps) ;
 
     if (index != kSingedOffset){
         predicated_action act = operandAction(inst, kAddress, kResult, (index==kPostIndex) ? imm7 : 0, kPD);
@@ -546,7 +546,7 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     simple_action act = addExecute(inst, operation(size/2 == 64 ? kCONCAT64_ : kCONCAT32_),data_deps);
     inst->addDispatchAction(act);
 
-    inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
+//    inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
     inst->addRetirementEffect( retireMem(inst) );
     inst->addSquashEffect( eraseLSQ(inst) );
 

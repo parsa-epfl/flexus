@@ -55,7 +55,7 @@ struct MAGIC : public armInstruction {
   virtual bool preValidate() {
     Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(theCPU);
     if ( cpu->getPC()  != thePC ) {
-      DBG_( Tmp, ( << *this << " PreValidation failed: PC mismatch flexus=" << thePC << " qemu=" << cpu->getPC() ) );
+      DBG_( VVerb, ( << *this << " PreValidation failed: PC mismatch flexus=" << thePC << " qemu=" << cpu->getPC() ) );
     }
     return
       cpu->getPC()== thePC;
@@ -64,7 +64,7 @@ struct MAGIC : public armInstruction {
   virtual bool postValidate() {
 //    Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(theCPU);
 //    if ( cpu->getPC()  != theNPC ) {
-//      DBG_( Tmp, ( << *this << " PostValidation failed: PC mismatch flexus=" << theNPC << " simics=" << cpu->getPC() ) );
+//      DBG_( VVerb, ( << *this << " PostValidation failed: PC mismatch flexus=" << theNPC << " simics=" << cpu->getPC() ) );
 //    }
 //    return ( cpu->getPC()  == theNPC ) ;
       return true;

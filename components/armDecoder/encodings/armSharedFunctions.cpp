@@ -239,7 +239,7 @@ predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operat
 
 void addAddressCompute( SemanticInstruction * inst, std::vector< std::list<InternalDependance> > & rs_deps) {
   DECODER_TRACE;
-  multiply_dependant_action update_address = updateAddressAction( inst );
+  multiply_dependant_action update_address = updateAddressAction( inst, rs_deps.size() );
   inst->addDispatchEffect( satisfy( inst, update_address.dependances[1] ) );
   simple_action exec = calcAddressAction( inst, rs_deps);
   inst->addDispatchAction( exec );

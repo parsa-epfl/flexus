@@ -48,6 +48,13 @@ namespace nMMU {
     using Flexus::SharedTypes::TranslationTransport;
 
 
+void PageWalk::annulAll(){
+    if (TheInitialized && theTranlationTransports.size() > 0)
+        for (auto&i : theTranlationTransports){
+            boost::intrusive_ptr<Translation> basicPointer(i[TranslationBasicTag]);
+            basicPointer->setAnnul();
+        }
+}
 
 
 void PageWalk::preWalk( TranslationTransport &  aTranslation ) {
@@ -70,10 +77,10 @@ void PageWalk::preWalk( TranslationTransport &  aTranslation ) {
 
     if( statefulPointer->currentLookupLevel == 0 ) {
         PhysicalMemoryAddress magicPaddr(QEMU_logical_to_physical(*Flexus::Qemu::Processor::getProcessor( theNode ),QEMU_DI_Instruction,basicPointer->theVaddr));
-        DBG_(Tmp,( <<" QEMU Translated: " << std::hex << basicPointer->theVaddr << std::dec << ", to: " << std::hex << magicPaddr << std::dec));
+        DBG_(VVerb,( <<" QEMU Translated: " << std::hex << basicPointer->theVaddr << std::dec << ", to: " << std::hex << magicPaddr << std::dec));
     }
     PhysicalMemoryAddress TTEDescriptor( statefulPointer->TTAddressResolver->resolve(basicPointer->theVaddr) );
-    DBG_(Tmp,(<< "Current Translation Level: " << (unsigned int) statefulPointer->currentLookupLevel
+    DBG_(VVerb,(<< "Current Translation Level: " << (unsigned int) statefulPointer->currentLookupLevel
                 << ", Returned TTE Descriptor Address: " << TTEDescriptor << std::dec ));
 
     basicPointer->thePaddr = TTEDescriptor;
@@ -85,7 +92,7 @@ bool PageWalk::walk( TranslationTransport &  aTranslation ) {
     boost::intrusive_ptr<TranslationState> statefulPointer(aTranslation[TranslationStatefulTag]);
     boost::intrusive_ptr<Translation> basicPointer(aTranslation[TranslationBasicTag]);
 
-    DBG_(Tmp,(<< "Current Translation Level: " << (unsigned int) statefulPointer->currentLookupLevel
+    DBG_(VVerb,(<< "Current Translation Level: " << (unsigned int) statefulPointer->currentLookupLevel
                 << ", Read Raw TTE Desc. from QEMU : " << std::hex << basicPointer->rawTTEValue << std::dec ));
     /* Check Valid */
     bool validBit = extractSingleBitAsBool(basicPointer->rawTTEValue,0);
@@ -174,11 +181,11 @@ void PageWalk::setupTTResolver( TranslationTransport & aTranslation, uint64_t TT
     }
 }
 
-    void PageWalk::push_back(boost::intrusive_ptr<Translation> aTranslation){
+    void PageWalk::push_back(TranslationPtr aTranslation){
 
         TranslationTransport newTransport;
         boost::intrusive_ptr<TranslationState> statefulTranslation( new TranslationState());
-        boost::intrusive_ptr<Translation> basicTranslation = aTranslation;
+        TranslationPtr basicTranslation = aTranslation;
 
         newTransport.set(TranslationBasicTag, basicTranslation);
         newTransport.set(TranslationStatefulTag, statefulTranslation);
@@ -188,6 +195,8 @@ void PageWalk::setupTTResolver( TranslationTransport & aTranslation, uint64_t TT
          */
         InitialTranslationSetup(newTransport);
         theTranlationTransports.push_back(newTransport);
+        if (!TheInitialized)
+            TheInitialized = true;
     }
 
     // Private nMMU internal functionality
@@ -240,29 +249,27 @@ void PageWalk::setupTTResolver( TranslationTransport & aTranslation, uint64_t TT
 
     void PageWalk::cycle(){
 
-//        for (auto i = theTranlationTransports.begin(); i < theTranlationTransports.end(); i++) {
-            auto i = theTranlationTransports.begin();
-            if (i == theTranlationTransports.end()) return;
-            TranslationTransport& item = *i;
-            boost::intrusive_ptr<Translation> basicPointer(item[TranslationBasicTag]);
+        for (auto i = theTranlationTransports.begin(); i != theTranlationTransports.end() && theTranlationTransports.size() > 0; ++i) {
 
+            TranslationTransport& item = *i;
+            TranslationPtr basicPointer(item[TranslationBasicTag]);
+
+
+            if ((theTranlationTransports.begin() == i) && basicPointer->isDone()){
+                theDoneTranlations.push(basicPointer);
+                theTranlationTransports.erase(i);
+                continue;
+            }
 
             if (basicPointer->isReady()) {
                 if (! basicPointer->isWaiting()){
-
                     preTranslate(item);
                     basicPointer->toggleReady();
-
-                    if ((theTranlationTransports.begin() == i) && basicPointer->isDone()){
-                        theDoneTranlations.push(basicPointer);
-                        theTranlationTransports.erase(i);
-                    }
                 } else
                     translate(item);
-
                 basicPointer->toggleWaiting();
             }
-//        }
+        }
     }
 
     void PageWalk::pushMemoryRequest(TranslationPtr aTranslation){

@@ -80,7 +80,7 @@ struct UpdateFloatingStoreValueAction : public BaseSemanticAction {
     switch (theSize) {
       case kWord: {
         bits value = theInstruction->operand< bits > (kfResult0);
-        DBG_( Tmp, ( << *this << " updating store value=" << value) );
+        DBG_( VVerb, ( << *this << " updating store value=" << value) );
         core()->updateStoreValue( boost::intrusive_ptr<Instruction>(theInstruction), value);
         break;
       }
@@ -88,7 +88,7 @@ struct UpdateFloatingStoreValueAction : public BaseSemanticAction {
         bits value = theInstruction->operand< bits > (kfResult0);
         value <<= 32;
         value |= theInstruction->operand< bits > (kfResult1);
-        DBG_( Tmp, ( << *this << " updating store value=" << value) );
+        DBG_( VVerb, ( << *this << " updating store value=" << value) );
         core()->updateStoreValue( boost::intrusive_ptr<Instruction>(theInstruction), value);
         break;
       }

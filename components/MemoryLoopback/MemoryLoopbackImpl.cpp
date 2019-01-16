@@ -117,7 +117,7 @@ public:
   }
 
   void push(interface::LoopbackIn const &, MemoryTransport & aMessageTransport) {
-    DBG_(Tmp, Comp(*this) ( << "request received: " << *aMessageTransport[MemoryMessageTag]) Addr(aMessageTransport[MemoryMessageTag]->address()) );
+    DBG_(VVerb, Comp(*this) ( << "request received: " << *aMessageTransport[MemoryMessageTag]) Addr(aMessageTransport[MemoryMessageTag]->address()) );
     intrusive_ptr<MemoryMessage> reply;
     switch (aMessageTransport[MemoryMessageTag]->type()) {
       case MemoryMessage::LoadReq:

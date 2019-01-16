@@ -497,13 +497,13 @@ public:
     API::physical_address_t pc = API::QEMU_logical_to_physical(theCPU, API::QEMU_DI_Instruction, pc_logical);
 	unsigned opcode = 0;
 
-    DBG_(Tmp, SetNumeric( (ScaffoldIdx) theIndex)
+    DBG_(VVerb, SetNumeric( (ScaffoldIdx) theIndex)
          ( << "Mem Hier Instr: " << opcode << " logical pc: " << &std::hex << pc_logical << " pc: " << pc)
         );
 
     if (API::QEMU_mem_op_is_data(&mem_trans->s)) {
       if (API::QEMU_mem_op_is_write(&mem_trans->s)) {
-        DBG_(Tmp, SetNumeric( (ScaffoldIdx) theIndex)
+        DBG_(VVerb, SetNumeric( (ScaffoldIdx) theIndex)
              ( << "  Write v@" << &std::hex << mem_trans->s.logical_address << " p@" << mem_trans->s.physical_address << &std::dec << " size=" << mem_trans->s.size
                << " type=" << mem_trans->s.type
                << (  mem_trans->s.atomic ? " atomic" : "" )
@@ -516,7 +516,7 @@ public:
             );
       } else {
         if ( mem_trans->s.type == API::QEMU_Trans_Prefetch) {
-          DBG_(Tmp, SetNumeric( (ScaffoldIdx) theIndex)
+          DBG_(VVerb, SetNumeric( (ScaffoldIdx) theIndex)
                ( << "  Prefetch v@" << &std::hex << mem_trans->s.logical_address << " p@" << mem_trans->s.physical_address << &std::dec << " size=" << mem_trans->s.size
                  << " type=" << mem_trans->s.type
                  << (  mem_trans->s.atomic ? " atomic" : "" )
@@ -528,7 +528,7 @@ public:
                )
               );
         } else {
-          DBG_(Tmp, SetNumeric( (ScaffoldIdx) theIndex)
+          DBG_(VVerb, SetNumeric( (ScaffoldIdx) theIndex)
                ( << "  Read v@" << &std::hex << mem_trans->s.logical_address << " p@" << mem_trans->s.physical_address << &std::dec << " size=" << mem_trans->s.size
                  << " type=" << mem_trans->s.type
                  << (  mem_trans->s.atomic ? " atomic" : "" )

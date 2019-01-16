@@ -275,7 +275,7 @@ void FlexusImpl::printMMU( int32_t aCPU ) {
 #endif
 
 void FlexusImpl::initializeComponents() {
-  DBG_(Tmp, ( << "Inititializing Flexus components..." ));
+  DBG_(VVerb, ( << "Inititializing Flexus components..." ));
   Stat::getStatManager()->initialize();
   theCurrentStatRegion = 0;
   theCurrentStatRegionName = std::string("Region ") + boost::padded_string_cast < 3, '0' > (theCurrentStatRegion++);
@@ -1145,7 +1145,7 @@ void initFlexus(){
 }
 
 void deinitFlexus(){
-    DBG_(Tmp, (<< "Cleaning up Flexus"));
+    DBG_(VVerb, (<< "Cleaning up Flexus"));
     if(theFlexusFactory)
         delete theFlexusFactory;
 }

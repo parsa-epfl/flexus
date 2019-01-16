@@ -150,7 +150,7 @@ Effect * mapSource( SemanticInstruction * inst, eOperandCode anInputCode, eOpera
 //  void invoke(SemanticInstruction & anInstruction) {
 //    FLEXUS_PROFILE();
 //    mapped_reg mapping ( anInstruction.operand< mapped_reg > (theMappingCode) );
-//    DBG_( Tmp, ( << anInstruction.identify() << " Disconnect Register " << theMappingCode << "(" << mapping << ")" ) );
+//    DBG_( VVerb, ( << anInstruction.identify() << " Disconnect Register " << theMappingCode << "(" << mapping << ")" ) );
 //    anInstruction.core()->disconnectRegister( mapping, &anInstruction );
 //    //We no longer disconnect from bypass - we just wait for the register to
 //    //get unmapped, even though this extends the life of the instruction object
@@ -178,7 +178,7 @@ struct FreeMappingEffect : public Effect {
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
     mapped_reg mapping ( anInstruction.operand< mapped_reg > (theMappingCode) );
-    DBG_( Tmp, ( << anInstruction.identify() << " MapEffect free mapping for " << theMappingCode << "(" << mapping << ")" ) );
+    DBG_( VVerb, ( << anInstruction.identify() << " MapEffect free mapping for " << theMappingCode << "(" << mapping << ")" ) );
     anInstruction.core()->free( mapping );
     Effect::invoke(anInstruction);
   }
@@ -207,7 +207,7 @@ struct RestoreMappingEffect : public Effect {
     reg name ( anInstruction.operand< reg > (theNameCode) );
     mapped_reg mapping ( anInstruction.operand< mapped_reg > (theMappingCode) );
 
-    DBG_( Tmp, ( << anInstruction.identify() << " MapEffect restore mapping for " << theNameCode << "(" << name << ") to " << theMappingCode << "( " << mapping << ")" ) );
+    DBG_( VVerb, ( << anInstruction.identify() << " MapEffect restore mapping for " << theNameCode << "(" << name << ") to " << theMappingCode << "( " << mapping << ")" ) );
     anInstruction.core()->restore( name, mapping );
     Effect::invoke(anInstruction);
   }
@@ -318,7 +318,7 @@ struct SquashDependanceEffect : public Effect {
 
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
-    DBG_( Tmp, ( << anInstruction.identify() << " SquashDependanceEffect ") );
+    DBG_( VVerb, ( << anInstruction.identify() << " SquashDependanceEffect ") );
 
     theDependance.squash();
     Effect::invoke(anInstruction);
@@ -340,7 +340,7 @@ Effect  * squash( SemanticInstruction * inst, InternalDependance const & aDepend
 
 struct AnnulInstruction : public Interaction {
   void operator() (boost::intrusive_ptr<nuArchARM::Instruction> anInstruction, nuArchARM::uArchARM & aCore) {
-    DBG_( Tmp, ( << *anInstruction << " Annulled") );
+    DBG_( VVerb, ( << *anInstruction << " Annulled") );
     anInstruction->annul();
   }
   bool annuls() {
@@ -357,7 +357,7 @@ nuArchARM::Interaction * annulInstructionInteraction() {
 
 struct ReinstateInstruction : public Interaction {
   void operator() (boost::intrusive_ptr<nuArchARM::Instruction> anInstruction, nuArchARM::uArchARM & aCore) {
-    DBG_( Tmp, ( << *anInstruction << " Reinstated") );
+    DBG_( VVerb, ( << *anInstruction << " Reinstated") );
     anInstruction->reinstate();
   }
   void describe(std::ostream & anOstream) const {
@@ -372,7 +372,7 @@ nuArchARM::Interaction * reinstateInstructionInteraction() {
 struct AnnulNextEffect : public Effect {
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
-    DBG_( Tmp, ( << anInstruction.identify() << " Annul Next Instruction") );
+    DBG_( VVerb, ( << anInstruction.identify() << " Annul Next Instruction") );
     anInstruction.core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , new AnnulInstruction() );
     Effect::invoke(anInstruction);
   }
@@ -392,7 +392,7 @@ BranchInteraction::BranchInteraction( VirtualMemoryAddress aTarget)
 {}
 
 void BranchInteraction::operator() (boost::intrusive_ptr<nuArchARM::Instruction> anInstruction, nuArchARM::uArchARM & aCore) {
-  DBG_( Tmp, ( << *anInstruction << " " << *this) );
+  DBG_( VVerb, ( << *anInstruction << " " << *this) );
   if (theTarget == 0) {
     theTarget = anInstruction->pc() + 4;
   }
@@ -411,10 +411,10 @@ struct BranchFeedbackEffect: public Effect {
   {}
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
-    DBG_( Tmp, ( << anInstruction << " BranchFeedbackEffect " ) );//NOOSHIN
+    DBG_( VVerb, ( << anInstruction << " BranchFeedbackEffect " ) );//NOOSHIN
 
     if ( anInstruction.branchFeedback() ) {
-      DBG_( Tmp, ( << anInstruction << " Update Branch predictor: " << anInstruction.branchFeedback()->theActualType << " " << anInstruction.branchFeedback()->theActualDirection << " to " << anInstruction.branchFeedback()->theActualTarget ) );
+      DBG_( VVerb, ( << anInstruction << " Update Branch predictor: " << anInstruction.branchFeedback()->theActualType << " " << anInstruction.branchFeedback()->theActualDirection << " to " << anInstruction.branchFeedback()->theActualTarget ) );
       anInstruction.core()->branchFeedback(anInstruction.branchFeedback());
     }
     Effect::invoke(anInstruction);
@@ -441,7 +441,7 @@ struct BranchFeedbackWithOperandEffect: public Effect {
     feedback->theActualType = theType;
     feedback->theActualDirection = theDirection;
     VirtualMemoryAddress target(anInstruction.operand< uint64_t > (theOperandCode));
-    DBG_( Tmp, ( << anInstruction << " Update Branch predictor: " << theType << " " << theDirection << " to " << target) );
+    DBG_( VVerb, ( << anInstruction << " Update Branch predictor: " << theType << " " << theDirection << " to " << target) );
     feedback->theActualTarget = target;
     feedback->theBPState = anInstruction.bpState();
     anInstruction.core()->branchFeedback(feedback);
@@ -506,13 +506,13 @@ struct BranchEffect: public Effect {
   {}
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
-    DBG_( Tmp, ( << anInstruction << " BranchEffect " ) );//NOOSHIN
+    DBG_( VVerb, ( << anInstruction << " BranchEffect " ) );//NOOSHIN
 
 //    if (!theHasTarget)
 //        theTarget = anInstruction.operand(kAddress);
 
     if ( anInstruction.redirectPC(theTarget, anInstruction.pc() + 4 ) ) {
-      DBG_( Tmp, ( << anInstruction << " BRANCH:  Must redirect.") );
+      DBG_( VVerb, ( << anInstruction << " BRANCH:  Must redirect.") );
       if ( anInstruction.core()->squashAfter(boost::intrusive_ptr<nuArchARM::Instruction> (&anInstruction)) ) {
         anInstruction.core()->redirectFetch(theTarget);
       }
@@ -533,7 +533,7 @@ struct BranchAfterNext : public Effect {
 
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
-    DBG_( Tmp, ( << anInstruction.identify() << " Branch after next instruction to " << theTarget ) );
+    DBG_( VVerb, ( << anInstruction.identify() << " Branch after next instruction to " << theTarget ) );
     anInstruction.core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , new BranchInteraction(theTarget) );
     Effect::invoke(anInstruction);
   }
@@ -553,7 +553,7 @@ struct BranchAfterNextWithOperand : public Effect {
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
     VirtualMemoryAddress target(anInstruction.operand< bits > (theOperandCode).to_ulong());
-    DBG_( Tmp, ( << anInstruction.identify() << " Branch after next instruction to " << theOperandCode << "(" << target << ")" ) );
+    DBG_( VVerb, ( << anInstruction.identify() << " Branch after next instruction to " << theOperandCode << "(" << target << ")" ) );
     anInstruction.core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , new BranchInteraction(target) );
     Effect::invoke(anInstruction);
   }
@@ -589,7 +589,7 @@ struct BranchConditionallyEffect: public Effect {
     , theCCRCode(aCCRCode)
   {}
   void invoke(SemanticInstruction & anInstruction) {
-      DBG_( Tmp, ( << anInstruction << " BranchConditionallyEffect " ) );//NOOSHIN
+      DBG_( VVerb, ( << anInstruction << " BranchConditionallyEffect " ) );//NOOSHIN
 
     FLEXUS_PROFILE();
     mapped_reg name = anInstruction.operand< mapped_reg > (theCCRCode);
@@ -607,16 +607,16 @@ struct BranchConditionallyEffect: public Effect {
 
     if ( result ) {
       //Taken
-      DBG_( Tmp, ( << anInstruction << " conditional branch CC: " << cc << " TAKEN" ) );
+      DBG_( VVerb, ( << anInstruction << " conditional branch CC: " << cc << " TAKEN" ) );
       anInstruction.core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , new BranchInteraction(theTarget) );
 
       feedback->theActualDirection = kTaken;
 
     } else {
       //Not Taken
-      DBG_( Tmp, ( << anInstruction << " conditional branch CC: " << cc << " NOT TAKEN" ) );
+      DBG_( VVerb, ( << anInstruction << " conditional branch CC: " << cc << " NOT TAKEN" ) );
       if (theAnnul) {
-        DBG_( Tmp, ( << anInstruction.identify() << " Annul Next Instruction") );
+        DBG_( VVerb, ( << anInstruction.identify() << " Annul Next Instruction") );
         anInstruction.core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , new AnnulInstruction() );
 //        anInstruction.redirectNPC( anInstruction.pc() + 8 );
       }
@@ -648,7 +648,7 @@ struct BranchRegConditionallyEffect: public Effect {
     , theValueCode(aValueCode)
   {}
   void invoke(SemanticInstruction & anInstruction) {
-      DBG_( Tmp, ( << anInstruction << " BranchRegConditionallyEffect " ) );//NOOSHIN
+      DBG_( VVerb, ( << anInstruction << " BranchRegConditionallyEffect " ) );//NOOSHIN
 
     FLEXUS_PROFILE();
     bits val = anInstruction.operand< bits > (theValueCode);
@@ -663,14 +663,14 @@ struct BranchRegConditionallyEffect: public Effect {
 
 //    if ( cond( val ) ) {
 //      //Taken
-//      DBG_( Tmp, ( << anInstruction << " register conditional branch TAKEN" ) );
+//      DBG_( VVerb, ( << anInstruction << " register conditional branch TAKEN" ) );
 //      anInstruction.core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , new BranchInteraction(theTarget) );
 //      feedback->theActualDirection = kTaken;
 //    } else {
 //      //Not Taken
-//      DBG_( Tmp, ( << anInstruction << " register conditional branch  NOT TAKEN" ) );
+//      DBG_( VVerb, ( << anInstruction << " register conditional branch  NOT TAKEN" ) );
 //      if (theAnnul) {
-//        DBG_( Tmp, ( << anInstruction.identify() << " Annul Next Instruction") );
+//        DBG_( VVerb, ( << anInstruction.identify() << " Annul Next Instruction") );
 //        anInstruction.core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , new AnnulInstruction() );
 ////        anInstruction.redirectNPC( anInstruction.pc() + 8 );
 //      }
@@ -753,10 +753,10 @@ Effect * allocateRMW(SemanticInstruction * inst, eSize aSize, InternalDependance
 
 struct EraseLSQEffect : public Effect {
   void invoke(SemanticInstruction & anInstruction) {
-      DBG_( Tmp, ( << anInstruction.identify() << " EraseLSQEffect ") );
+      DBG_( VVerb, ( << anInstruction.identify() << " EraseLSQEffect ") );
 
     FLEXUS_PROFILE();
-    DBG_( Tmp, ( << anInstruction.identify() << " Free LSQ Entry") );
+    DBG_( VVerb, ( << anInstruction.identify() << " Free LSQ Entry") );
     anInstruction.core()->eraseLSQ( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction));
     Effect::invoke(anInstruction);
   }
@@ -773,11 +773,11 @@ Effect * eraseLSQ(SemanticInstruction * inst) {
 
 struct RetireMemEffect: public Effect {
   void invoke(SemanticInstruction & anInstruction) {
-      DBG_( Tmp, ( << anInstruction.identify() << " RetireMemEffect ") );
+      DBG_( VVerb, ( << anInstruction.identify() << " RetireMemEffect ") );
 
     FLEXUS_PROFILE();
     anInstruction.core()->retireMem( boost::intrusive_ptr<nuArchARM::Instruction> (&anInstruction) );
-    DBG_( Tmp, ( << anInstruction << " Retiring memory instruction" ) );
+    DBG_( VVerb, ( << anInstruction << " Retiring memory instruction" ) );
     Effect::invoke(anInstruction);
   }
 
@@ -1238,11 +1238,11 @@ Effect * exceptionEffect(SemanticInstruction * inst, eExceptionType aType){
 
 struct CommitStoreEffect: public Effect {
   void invoke(SemanticInstruction & anInstruction) {
-      DBG_( Tmp, ( << anInstruction.identify() << " CommitStoreEffect ") );
+      DBG_( VVerb, ( << anInstruction.identify() << " CommitStoreEffect ") );
 
     FLEXUS_PROFILE();
     anInstruction.core()->commitStore( boost::intrusive_ptr<nuArchARM::Instruction> (&anInstruction) );
-    DBG_( Tmp, ( << anInstruction << " Commit store instruction" ) );
+    DBG_( VVerb, ( << anInstruction << " Commit store instruction" ) );
     Effect::invoke(anInstruction);
   }
 
@@ -1259,10 +1259,10 @@ Effect * commitStore(SemanticInstruction * inst) {
 struct AccessMemEffect: public Effect {
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
-    DBG_( Tmp, ( << anInstruction.identify() ) );
+    DBG_( VVerb, ( << anInstruction.identify() ) );
 
     anInstruction.core()->accessMem( anInstruction.getAccessAddress(), boost::intrusive_ptr<nuArchARM::Instruction> (&anInstruction)  );
-    DBG_( Tmp, ( << anInstruction << " Access memory: " << anInstruction.getAccessAddress()) );
+    DBG_( VVerb, ( << anInstruction << " Access memory: " << anInstruction.getAccessAddress()) );
     Effect::invoke(anInstruction);
   }
 
@@ -1279,7 +1279,7 @@ Effect * accessMem(SemanticInstruction * inst) {
 struct ForceResyncEffect: public Effect {
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
-    DBG_( Tmp, ( << anInstruction.identify() << " ForceResyncEffect ") );
+    DBG_( VVerb, ( << anInstruction.identify() << " ForceResyncEffect ") );
 
     anInstruction.forceResync();
     Effect::invoke(anInstruction);
@@ -1301,7 +1301,7 @@ struct DMMUTranslationCheckEffect: public Effect {
 
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
-    DBG_( Tmp, ( << anInstruction << " DMMUTranslationCheckEffect " ) );//NOOSHIN
+    DBG_( VVerb, ( << anInstruction << " DMMUTranslationCheckEffect " ) );//NOOSHIN
 
     anInstruction.core()->checkTranslation( boost::intrusive_ptr<Instruction>(& anInstruction));
 
