@@ -42,9 +42,9 @@
 
 
 # GCC Compiler Settings
-GCC_PATH=
+#GCC_PATH=
 GCC_BINARY=g++ --std=c++11
-GCC_VERSION_NOCHECK=false
+GCC_VERSION_NOCHECK=true
 
 # Boost 1.59.0 path
 BOOST_PATH=/usr/local/include
@@ -76,7 +76,7 @@ BOOST_INCLUDE=$(BOOST_PATH)
 export TARGET_EMULATOR=qemu
 
 INCLUDES=-DBOOST_MPL_CFG_NO_PREPROCESSED_HEADERS -DBOOST_MPL_LIMIT_VECTOR_SIZE=50 -isystem $(BOOST_INCLUDE) -I$(FLEXUS_INCLUDE) -IDRAMSim2
-BOOST_LIBRARIES=-Wl,--no-whole-archive -L$(BOOST_BINARIES) -lboost_regex -lboost_serialization -lboost_iostreams -lz
+BOOST_LIBRARIES=-Wl,--no-whole-archive -L$(BOOST_BINARIES) -lboost_system -lboost_regex -lboost_serialization -lboost_iostreams -lz
 
 # other constants
 # List of "special" cpp files in components that are not part of a components library
@@ -93,9 +93,9 @@ GCC=$(GCC_BINARY)
 endif
 
 GCC_LIB_PATH=$(GCC_PATH)/lib
-GCC_OPTFLAGS=-g #-O2 #-O3 -funroll-loops -fno-strict-aliasing
+GCC_OPTFLAGS=-g -O2 #-O3 -funroll-loops -fno-strict-aliasing
 #UNCOMMENT FOR GCC
-GCC_LANGFLAGS=-Wall -fmessage-length=160 -fpermissive -x c++ -fPIC -DNO_STORAGE -DBOOST_SYSTEM_NO_DEPRECATED 
+GCC_LANGFLAGS=-Wall -fmessage-length=160 -fpermissive -x c++ -fPIC #-Werror -Wno-unused -Wno-maybe-uninitialized -Wno-parentheses -Wno-int-to-pointer-cast -Wno-logical-not-parentheses -DNO_STORAGE -DBOOST_SYSTEM_NO_DEPRECATED 
 #UNCOMMENT FOR CLANG
 #GCC_LANGFLAGS=-Wall -fmessage-length=160 -x c++ -fPIC -fpermissive -Werror -Wno-unused -Wno-uninitialized -Wno-parentheses -Wno-int-to-pointer-cast -Wno-logical-not-parentheses -Wno-write-strings -Wno-string-plus-int -Wno-mismatched-tags -Wno-overloaded-virtual -Wno-redeclared-class-member -Wno-null-dereference -Wno-tautological-constant-out-of-range-compare -Wno-constant-logical-operand -Wno-unknown-pragmas -Wno-mismatched-new-delete -Wno-tautological-undefined-compare -DNO_STORAGE -DBOOST_SYSTEM_NO_DEPRECATED 
 ARCH_FLAGS=

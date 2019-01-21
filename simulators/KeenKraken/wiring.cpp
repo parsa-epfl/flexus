@@ -64,7 +64,7 @@ std::string theSimulatorName = "Keen Kraken v1.0";
 #include <components/FastMemoryLoopback/FastMemoryLoopback.hpp>
 #include <components/MagicBreakQEMU/MagicBreak.hpp>
 #include <components/BPWarm/BPWarm.hpp>
-//#include <components/WhiteBox/WhiteBox.hpp>
+#include <components/MMU/MMU.hpp>
 
 #include FLEXUS_END_DECLARATION_SECTION()
 
@@ -77,7 +77,7 @@ CREATE_CONFIGURATION( FastCMPCache, "L2", theL2Cfg );
 CREATE_CONFIGURATION( FastMemoryLoopback, "memory", theMemoryCfg );
 CREATE_CONFIGURATION( MagicBreak, "magic-break", theMagicBreakCfg );
 CREATE_CONFIGURATION( BPWarm, "bpwarm", theBPWarmCfg );
-//CREATE_CONFIGURATION( WhiteBox, "white-box", theWhiteBoxCfg );
+CREATE_CONFIGURATION( MMU , "mmu", theMMUCfg );
 
 //You may optionally initialize configuration parameters from within this
 //function.  This initialization occur before the command line is processed,
@@ -143,6 +143,14 @@ bool initializeParameters() {
   theMagicBreakCfg.TerminateOnMagicBreak.initialize(-1);
   theMagicBreakCfg.EnableIterationCounts.initialize(false);
 
+  theMMUCfg.Cores.initialize(1);
+  theMMUCfg.CacheLevel.initialize(eL1);
+  theMMUCfg.ArrayConfiguration.initialize("STD:size=4096:assoc=4:repl=LRU");
+  theMMUCfg.TextFlexpoints.initialize(false);
+  theMMUCfg.GZipFlexpoints.initialize(false);
+  theMMUCfg.iTLBSize.initialize(64);
+  theMMUCfg.dTLBSize.initialize(64);
+
   theFlexus->setStatInterval( "10000000" );     //10M
   theFlexus->setProfileInterval( "10000000" );  //10M
   theFlexus->setTimestampInterval( "1000000" ); //1M
@@ -165,6 +173,8 @@ FLEXUS_INSTANTIATE_COMPONENT_ARRAY( FastCache, theL1ICfg, theL1I, SCALE_WITH_SYS
 FLEXUS_INSTANTIATE_COMPONENT( FastCMPCache, theL2Cfg, theL2 );
 FLEXUS_INSTANTIATE_COMPONENT( FastMemoryLoopback, theMemoryCfg, theMemory );
 FLEXUS_INSTANTIATE_COMPONENT( MagicBreak, theMagicBreakCfg, theMagicBreak );
+FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MMU , theMMUCfg, theMMU, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
+
 //FLEXUS_INSTANTIATE_COMPONENT( WhiteBox, theWhiteBoxCfg, theWhiteBox );
 
 #include FLEXUS_END_COMPONENT_INSTANTIATION_SECTION()
@@ -179,6 +189,7 @@ WIRE(theFeeder, ToL1D,                  theL1D, RequestIn)
 WIRE(theFeeder, ToL1I,                  theL1I, FetchRequestIn)
 WIRE(theFeeder, ToBPred,                theBPWarm, ITraceInModern)
 WIRE(theFeeder, ToDMA,                  theMemory, DMA)
+WIRE(theFeeder, ToMMU,                  theMMU, TLBReqIn)
 
 WIRE(theL1D, RequestOut,                theL2, RequestIn)
 WIRE(theL1I, RequestOut,                theL2, FetchRequestIn)

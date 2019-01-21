@@ -443,11 +443,7 @@ public:
 
 private:
   void readBlockValue(address_t block, uint64_t * array) {
-    int32_t ii;
-    for (ii = 0; ii < theNumChunks; ii++) {
-      array[ii] = Qemu::API::QEMU_read_phys_memory(block, 8);
-      block += 8;
-    }
+    *array = Qemu::API::readPhysicalAddress(block, theNumChunks).to_ulong();
   }
   uint64_t * readBlockValue(address_t block) {
     uint64_t * array = (uint64_t *) theBlockValuePool.malloc();

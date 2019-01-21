@@ -596,7 +596,7 @@ void FlexusImpl::doSave(std::string const & aDirName, bool justFlexus) {
   if (justFlexus) {
     DBG_( Crit, ( << "Saving Flexus state in subdirectory " << aDirName ) );
   } else {
-    DBG_( Crit, ( << "Saving Flexus and Simics state in subdirectory " << aDirName ) );
+    DBG_( Crit, ( << "Saving Flexus and Qemu state in subdirectory " << aDirName ) );
   }
 #ifndef CONFIG_QEMU
   mkdir(aDirName.c_str(), 0777);

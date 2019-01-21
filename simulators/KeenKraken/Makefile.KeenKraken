@@ -41,11 +41,11 @@
 # DO-NOT-REMOVE end-copyright-block   
 # Siren Simulator build description
 #Currently WhiteBox is removed from wiring, and DecoupledFeederQEMU
-REQUIRED_COMPONENTS = CommonQEMU DecoupledFeederQEMU FastCache FastCMPCache FastMemoryLoopback MagicBreakQEMU BPWarm TraceTrackerQEMU 
+REQUIRED_COMPONENTS = CommonQEMU DecoupledFeederQEMU FastCache FastCMPCache FastMemoryLoopback MagicBreakQEMU BPWarm TraceTrackerQEMU MMU
 
 SUPPORTS_QEMU = true
 DEFAULT_TARGET = qemu
-SUPPORTS_X86 = true
-SUPPORTS_V9 = true
+SUPPORTS_X86 = false
+SUPPORTS_V9 = false
 SUPPORTS_ARM = true
-DEFAULT_PLATFORM = x86
+DEFAULT_PLATFORM = arm

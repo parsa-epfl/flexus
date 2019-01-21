@@ -41,6 +41,7 @@
 
 #include "CacheStats.hpp"
 #include "LookupResult.hpp"
+#include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 
 #include <iostream>
 
@@ -64,8 +65,8 @@ public:
   virtual std::string Short2Req(access_t r) {
     switch (r) {
       case kReadAccess:
-        return "Read";
-        break;
+//        return "Read";
+//        break;
       case kWriteAccess:
         return "Write";
         break;

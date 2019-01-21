@@ -411,6 +411,22 @@ public:
     else
         FLEXUS_CHANNEL(dTranslationReply) << aTranslation;
   }
+
+  bool available( interface::TLBReqIn const &,
+                  index_t anIndex) {
+    return true;
+  }
+  void push( interface::TLBReqIn const &,
+             index_t           anIndex,
+             TranslationPtr& aTranslate ) {
+      if (aTranslate->isInstr()){
+        theInstrTLB[aTranslate->theVaddr] = aTranslate->thePaddr;
+      } else if (aTranslate->isData()){
+          theDataTLB[aTranslate->theVaddr] = aTranslate->thePaddr;
+          } else {
+              DBG_Assert(false);  // should never happen
+          }
+  }
 };
 
 } //End Namespace nMMU
@@ -433,6 +449,10 @@ FLEXUS_PORT_ARRAY_WIDTH( MMU , dTranslationReply )    {
 }
 
 FLEXUS_PORT_ARRAY_WIDTH( MMU , MemoryRequestOut )    {
+  return (cfg.Cores);
+}
+
+FLEXUS_PORT_ARRAY_WIDTH( MMU , TLBReqIn )    {
   return (cfg.Cores);
 }
 

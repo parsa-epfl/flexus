@@ -659,7 +659,7 @@ public:
     theNumCPUs = aNumCPUs;
 
     //Dump translation caches
-    Qemu::API::QEMU_flush_all_caches();
+//    Qemu::API::QEMU_flush_all_caches();
     
     //Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
     //toL1D((int32_t) 0, msg); 

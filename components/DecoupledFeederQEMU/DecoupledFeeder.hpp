@@ -72,6 +72,8 @@ COMPONENT_INTERFACE(
   DYNAMIC_PORT_ARRAY( PushOutput, pc_type_annul_triplet, ToBPred )
   DYNAMIC_PORT_ARRAY( PushOutput, MemoryMessage, ToNAW )
 
+  DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, ToMMU )
+
   PORT( PushOutput, MemoryMessage, ToDMA )
 );
 

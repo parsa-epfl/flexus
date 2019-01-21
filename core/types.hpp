@@ -7,6 +7,9 @@
 #include <boost/serialization/serialization.hpp>
 #include <boost/dynamic_bitset.hpp>
 #include <boost/operators.hpp>
+#include <boost/intrusive_ptr.hpp>
+#include <boost/smart_ptr/intrusive_ref_counter.hpp>
+
 #if __cplusplus > 199711L
   #include <cstdint>
 #else
@@ -96,6 +99,67 @@ public:
   }
 
 }; // class MemoryAddress_
+
+//class dataType : public boost::intrusive_ref_counter<
+//        dataType,
+//        boost::thread_unsafe_counter>
+//{
+//public:
+//    virtual ~dataType(){}
+//    virtual std::size_t size() const  = 0;
+//    template <typename T>
+//        void write(T val);
+
+//};
+
+//template<typename T>
+//class data : public dataType {
+//public:
+//    data() {}
+//    data(T aVal): theVal(aVal) {}
+//    virtual ~data(){}
+//    T theVal;
+//    virtual std::size_t size() const override  {return sizeof(T);}
+
+//};
+
+//template <typename T>
+//void dataType::write(T val){
+//    data<T>* i = dynamic_cast<data<T>*>(this);
+//    i->write(val);
+//}
+
+
+//typedef boost::intrusive_ptr<dataType> bits;
+
+//enum eDataType{
+//    kuint8_t = 8,
+//    kuint16_t = 16,
+//    kuint32_t = 32,
+//    kuint64_t = 64,
+//    kuint128_t = 128,
+//};
+
+//struct dataFactory{
+//    static bits create(eDataType aDataType){
+//        switch (aDataType) {
+//        case kuint8_t:
+//            return bits(new data<uint8_t>());
+//        case kuint16_t:
+//            return bits(new data<uint16_t>());
+//        case kuint32_t:
+//            return bits(new data<uint32_t>());
+//        case kuint64_t:
+//            return bits(new data<uint64_t>());
+//        case kuint128_t:
+//            return bits(new data<__uint128_t>());
+//        default:
+//            assert(false);
+//            break;
+//        }
+//    }
+
+//};
 
 typedef boost::dynamic_bitset<> bits;
 

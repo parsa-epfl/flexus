@@ -68,6 +68,10 @@ COMPONENT_INTERFACE(
     DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, dTranslationReply )
     DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, MemoryRequestOut )
 
+    DYNAMIC_PORT_ARRAY( PushInput, TranslationPtr, TLBReqIn )
+
+
+
     DRIVE(MMUDrive)
 );
 

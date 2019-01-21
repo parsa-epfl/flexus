@@ -145,6 +145,14 @@ public:
   void toL1D(int32_t anIndex, MemoryMessage & aMessage) {
   //  printf("toL1D interface entry!\n");
     FLEXUS_CHANNEL_ARRAY( ToL1D, anIndex ) << aMessage;
+
+    TranslationPtr tr(new Translation);
+    tr->setData();
+    tr->theVaddr = aMessage.pc();
+    tr->thePaddr = aMessage.address();
+
+    FLEXUS_CHANNEL_ARRAY( ToMMU, anIndex ) << tr;
+
   }
 
   void toNAW(int32_t anIndex, MemoryMessage & aMessage) {
@@ -175,6 +183,14 @@ public:
     thePCTypeAndAnnulTriplet.second = theTypeAndAnnulPair;
 
     FLEXUS_CHANNEL_ARRAY( ToBPred, anIndex ) << thePCTypeAndAnnulTriplet;
+
+    TranslationPtr tr(new Translation);
+    tr->setInstr();
+    tr->theVaddr = aMessage.pc();
+    tr->thePaddr = aMessage.address();
+
+    FLEXUS_CHANNEL_ARRAY( ToMMU, anIndex ) << tr;
+
   }
   void updateInstructionCounts() {
     //Count instructions
@@ -229,6 +245,11 @@ FLEXUS_PORT_ARRAY_WIDTH( DecoupledFeeder, ToBPred ) {
   return Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 FLEXUS_PORT_ARRAY_WIDTH( DecoupledFeeder, ToNAW ) {
+ //   printf("DecoupldFeeder 4\n");
+  return Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+}
+
+FLEXUS_PORT_ARRAY_WIDTH( DecoupledFeeder, ToMMU ) {
  //   printf("DecoupldFeeder 4\n");
   return Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }

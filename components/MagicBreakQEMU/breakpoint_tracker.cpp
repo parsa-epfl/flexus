@@ -114,14 +114,16 @@ class IterationTrackerImpl : public IterationTracker {
   std::string theCurrentStatIteration;
   bool theCkptFlag;
     public:
-  void OnMagicBreakpoint( Qemu::API::conf_object_t * aCpu, long long aBreakpoint) {
+  void OnMagicBreakpoint( Qemu::API::conf_object_t * aCpu, uint64_t aBreakpoint) {
     uint32_t cpu_no = Qemu::API::QEMU_get_cpu_index(aCpu);
 
 #if FLEXUS_TARGET_IS(x86)
-    Qemu::API::processor_t * cpu = reinterpret_cast<Qemu::API::processor_t *>(aCpu);
-    int64_t pc = Qemu::API::QEMU_get_program_counter(cpu);
-    int64_t addr = Qemu::API::QEMU_logical_to_physical(cpu, Qemu::API::QEMU_DI_Instruction, pc) + 5;
-    aBreakpoint = Qemu::API::QEMU_read_phys_memory(cpu, addr, 4);
+    int64_t pc = Qemu::API::QEMU_get_program_counter(aCpu);
+    Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor(aCpu);
+
+    int64_t addr = int64_t(cpu->translateVirtualAddress(VirtualMemoryAddress(pc)) + 5);
+    aBreakpoint = (cpu->readPhysicalAddress( PhysicalMemoryAddress(addr), 8 ).to_ulong());
+
     if ( (aBreakpoint & 0xFFFF0000LL) != 0xDEAD0000 ) {
       DBG_(Iface, ( << "Breakpoint does not have a marker" ) );
       return;
@@ -253,13 +255,15 @@ class TransactionTrackerImpl : public BreakpointTracker {
   bool theToggle;
   uint64_t theCycleMinimum;
     public:
-  void OnMagicBreakpoint( Qemu::API::conf_object_t * aCpu, long long aBreakpoint) {
+  void OnMagicBreakpoint( Qemu::API::conf_object_t * aCpu, uint64_t aBreakpoint) {
 
 #if FLEXUS_TARGET_IS(x86)
-    Qemu::API::processor_t * cpu = reinterpret_cast<Qemu::API::processor_t *>(aCpu);
-    int64_t pc = Qemu::API::QEMU_get_program_counter(cpu);
-    int64_t addr = Qemu::API::QEMU_logical_to_physical(cpu, Qemu::API::QEMU_DI_Instruction, pc) + 5;
-    aBreakpoint = Qemu::API::QEMU_read_phys_memory(cpu, addr, 4);
+    int64_t pc = Qemu::API::QEMU_get_program_counter(aCpu);
+    Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor(aCpu);
+
+    int64_t addr = int64_t(cpu->translateVirtualAddress(VirtualMemoryAddress(pc)) + 5);
+    aBreakpoint = (cpu->readPhysicalAddress( PhysicalMemoryAddress(addr), 8 ).to_ulong());
+
     if ( (aBreakpoint & 0xFFFF0000LL) != 0xDEAD0000 ) {
       ++statJBB_Other;
       DBG_(Iface, ( << "Breakpoint does not have a marker" ) );
@@ -467,15 +471,19 @@ class TerminateOnMagicBreakTracker : public BreakpointTracker {
   void OnMagicBreakpoint( Qemu::API::conf_object_t * aCpu, long long aBreakpoint) {
 
 #if FLEXUS_TARGET_IS(x86)
-    Qemu::API::processor_t * cpu = reinterpret_cast<Qemu::API::processor_t *>(aCpu);
-    int64_t pc = Qemu::API::QEMU_get_program_counter(cpu);
-    int64_t addr = Qemu::API::QEMU_logical_to_physical(cpu, Qemu::API::QEMU_DI_Instruction, pc) + 5;
-    aBreakpoint = Qemu::API::QEMU_read_phys_memory(cpu, addr, 4);
-    if ( (aBreakpoint & 0xFFFF0000LL) != 0xDEAD0000 )
-      return;
+    int64_t pc = Qemu::API::QEMU_get_program_counter(aCpu);
+    Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor(aCpu);
 
+    int64_t addr = int64_t(cpu->translateVirtualAddress(VirtualMemoryAddress(pc)) + 5);
+    aBreakpoint = (cpu->readPhysicalAddress( PhysicalMemoryAddress(addr), 8 ).to_ulong());
+
+    if ( (aBreakpoint & 0xFFFF0000LL) != 0xDEAD0000 ) {
+      DBG_(Iface, ( << "Breakpoint does not have a marker" ) );
+      return;
+    }
     aBreakpoint &= 0x0FFL;
 #endif
+
 
     if (aBreakpoint == theMagicBreakpoint) {
       DBG_(Dev, AddCat(Termination) ( << "Simulation terminated because magic breakpont " << aBreakpoint << " reached." ) );
@@ -613,7 +621,7 @@ char readVirtualAddress(Qemu::API::conf_object_t *cpu, VirtualMemoryAddress anAd
             Qemu::API::QEMU_logical_to_physical(cpu, Qemu::API::QEMU_DI_Data
             ,anAddr)
             ,size)[0]);
-} 
+}
 char readVAddr2(Qemu::API::conf_object_t *cpu, VirtualMemoryAddress anAddr, int asi, int size){
     //TODO implement correctly, currently doesn't do anything with ASI which is wrong
     return (char)(Qemu::API::QEMU_read_phys_memory(
