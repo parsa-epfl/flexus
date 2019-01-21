@@ -12,3 +12,15 @@
 *.so
 *.swp
 tags
+
+NetshimStatOut
+
+qemu-dump-temp\.txt
+
+page_map\.out
+
+flexus-dump-state\.txt
+
+configuration\.out
+
+transactions\.out
