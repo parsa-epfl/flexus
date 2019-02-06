@@ -224,7 +224,7 @@ class FLEXUS_COMPONENT(uFetch) {
 
   std::vector< std::list< FetchAddr > > theFAQ;
   pFetchBundle theBundle;
-  std::vector<bool> theEnable;
+  bool theEnable;
 
   //This opcode is used to signal an MMU miss to the core, to force
   //a resync with Qemu 
@@ -274,7 +274,7 @@ class FLEXUS_COMPONENT(uFetch) {
   std::vector<CPUState> theCPUState;
 
   // Magic for checking TLB walk.
-  std::vector<std::queue< TranslationPtr >> TranslationsFromTLB;
+  std::queue< TranslationPtr > TranslationsFromTLB;
 
 private:
   //I-Cache manipulation functions
@@ -343,9 +343,10 @@ public:
     theCPUState.resize(cfg.Threads);
 
     theMissQueueSize = cfg.MissQueueSize;
-    theEnable.resize(cfg.Threads);
-    TranslationsFromTLB.resize(cfg.Threads);
-    for (auto i : theEnable) i = true;
+//    theEnable.resize(cfg.Threads);
+//    TranslationsFromTLB.resize(cfg.Threads);
+//    for (auto i : theEnable) i = true;
+      theEnable = true;
 
 
   }
@@ -825,7 +826,7 @@ private:
   //Implementation of the FetchDrive drive interface
   void doFetch(index_t anIndex) {
 
-    if (!theEnable[anIndex]) return;
+    if (!theEnable) return;
     FETCH_DBG("--------------START FETCHING------------------------");
 
     if (theIcacheMiss[anIndex]) {
@@ -935,24 +936,42 @@ private:
     xlat->theIndex = anIndex;
     xlat->setInstr();
 
-    TranslationsFromTLB[flexusIndex()].push(xlat);
+    TranslationsFromTLB.push(xlat);
 
     DBG_Assert( FLEXUS_CHANNEL(iTranslationOut).available() );
-    theEnable[flexusIndex()] = false;
+    theEnable = false;
     FLEXUS_CHANNEL(iTranslationOut) << xlat;
 //     push-push should always mean TranslationsFromTLB is filled
+  }
+
+  bool available( interface::ResyncIn const &,
+                  index_t anIndex) {
+    return true;
+  }
+  void push( interface::ResyncIn const &,
+             index_t           anIndex,
+             bool& aResync ) {
+      while (!TranslationsFromTLB.empty()){
+          TranslationsFromTLB.pop();
+      }
+
+      theBundle->clear();
+      theEnable = true;
+      bool temp = true;
+      FLEXUS_CHANNEL(EnableOut) << temp;
+
   }
 
   void getFetchResponse() {
 
 
-    if (TranslationsFromTLB[flexusIndex()].front()->isDone()){
-        theEnable[flexusIndex()] = true;
+    if (TranslationsFromTLB.front()->isDone()){
+        theEnable = true;
 
         DBG_(Iface,( << "Starting magic translation after sending to TLB...."));
-        TranslationPtr tr = TranslationsFromTLB[flexusIndex()].front();
+        TranslationPtr tr = TranslationsFromTLB.front();
         if (tr->isDone())
-        TranslationsFromTLB[flexusIndex()].pop();
+        TranslationsFromTLB.pop();
         PhysicalMemoryAddress magicTranslation = cpu(tr->theIndex)->translateVirtualAddress(tr->theVaddr);
 
         if( tr->thePaddr == magicTranslation ) {
@@ -970,10 +989,15 @@ private:
 
 //        Flexus::SharedTypes::Translation gimme;
 
-        theBundle->updateOpcode(tr->theVaddr, cpu(tr->theIndex)->fetchInstruction(tr->theVaddr)); // magic QEMU
+        uint64_t pc = cpu(tr->theIndex)->readPC();
+        PhysicalMemoryAddress ph = cpu(tr->theIndex)->translateVirtualAddress(VirtualMemoryAddress(pc));
+        uint64_t data = cpu(tr->theIndex)->readPhysicalAddress(ph, 4).to_ulong();
+        uint32_t op = cpu(tr->theIndex)->fetchInstruction(tr->theVaddr);
+
+        theBundle->updateOpcode(tr->theVaddr, op);
     }
 
-    if (TranslationsFromTLB[flexusIndex()].empty()){
+    if (TranslationsFromTLB.empty()){
         bool temp;
         FLEXUS_CHANNEL(EnableOut) << temp;
     }
@@ -1009,6 +1033,9 @@ FLEXUS_PORT_ARRAY_WIDTH( uFetch, Stalled )   {
   return (cfg.Threads);
 }
 FLEXUS_PORT_ARRAY_WIDTH( uFetch, EnableOut ){
+  return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH( uFetch , ResyncIn )    {
   return (cfg.Threads);
 }
 

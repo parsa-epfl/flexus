@@ -70,7 +70,7 @@ bool validateXRegister::operator () () {
   if (theInstruction->isSquashed() || theInstruction->isAnnulled()) {
     return true; //Don't check
   }
-  if (theInstruction->raised()) {
+  if (theInstruction->raised() != kException_None) {
     DBG_( VVerb, ( << " Not performing register validation for " << theReg << " because of exception. " << *theInstruction ) );
     return true;
   }
@@ -88,7 +88,7 @@ bool validatePC::operator () () {
   if (theInstruction->isSquashed() || theInstruction->isAnnulled()) {
     return true; //Don't check
   }
-  if (theInstruction->raised()) {
+  if (theInstruction->raised() != kException_None) {
     DBG_( VVerb, ( << " Not performing  validation because of exception. " << *theInstruction ) );
     return true;
   }

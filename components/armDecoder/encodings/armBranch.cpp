@@ -56,7 +56,7 @@ static void branch_cond( SemanticInstruction * inst, VirtualMemoryAddress target
 
   inst->setClass(clsBranch, codeBranchConditional);
 
-  dependant_action br = branchCondAction( inst, target, condition(aCode)) ;
+  dependant_action br = branchCondAction( inst, target, condition(aCode), rs_deps.size()) ;
   connectDependance( inst->retirementDependance(), br );
 
   for (size_t i = 0; i < rs_deps.size(); i++){
@@ -149,10 +149,13 @@ arminst TSTBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceN
 
 
     std::vector<std::list<InternalDependance> > rs_deps(2);
-    branch_cond(inst, target, bit_val ? kTBZ_ : kTBNZ_, rs_deps);
-
     addReadXRegister(inst, 1, rt, rs_deps[0], sf);
     addReadConstant(inst, 2, (1ULL << bit_pos), rs_deps[1]);
+
+
+    branch_cond(inst, target, bit_val ? kTBZ_ : kTBNZ_, rs_deps);
+
+
 
     return inst;
 }

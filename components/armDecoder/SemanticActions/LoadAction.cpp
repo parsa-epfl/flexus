@@ -134,12 +134,12 @@ struct LoadAction : public PredicatedSemanticAction {
         break;
     }
 
-    theInstruction->setOperand(kResult, value);
+    theInstruction->setOperand(kResult, value.to_ulong());
     SEMANTICS_DBG(*this << " received load value=" << value);
     if (theBypass) {
       mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass);
       SEMANTICS_DBG(*this << " bypassing value=" << value << " to " << name);
-      core()->bypass( name, value );
+      core()->bypass( name, value.to_ulong() );
     }
     satisfyDependants();
   }

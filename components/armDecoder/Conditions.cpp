@@ -65,21 +65,21 @@ bool ConditionHolds(const PSTATE & pstate, int condcode )
     bool result;
     switch (condcode) {
     case 0: // EQ or NE
-        result =  pstate.Z();
+        result =  pstate.Z();break;
     case 1: // CS or CC
-        result =  pstate.C();
+        result =  pstate.C();break;
     case 2: // MI or PL
-        result =  pstate.N();
+        result =  pstate.N();break;
     case 3: // VS or VC
-        result =  pstate.V();
+        result =  pstate.V();break;
     case 4: // HI or LS
-        result =  (pstate.C() && pstate.Z() == 0);
+        result =  (pstate.C() && pstate.Z() == 0);break;
     case 5: // GE or LT
-        result =  (pstate.N() == pstate.V());
+        result =  (pstate.N() == pstate.V());break;
     case 6: // GT or LE
-        result =  ((pstate.N() == pstate.V()) && (pstate.Z() == 0));
+        result =  ((pstate.N() == pstate.V()) && (pstate.Z() == 0));break;
     case 7: // AL
-        result =  true;
+        result =  true;break;
     default:
         DBG_Assert(false);
         break;
@@ -100,7 +100,7 @@ typedef struct CMPBR : public Condition {
     virtual ~CMPBR(){}
   virtual bool operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 1);
-    return boost::get<bits>(operands[0]).none();
+    return boost::get<uint64_t>(operands[0]) == 0;
   }
   virtual char const * describe() const {
     return "Compare and Branch on Zero";
@@ -112,7 +112,7 @@ typedef struct CBNZ : public Condition {
     virtual ~CBNZ(){}
   virtual bool operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 1);
-    return boost::get<bits>(operands[0]).any();
+    return boost::get<uint64_t>(operands[0]) != 0;
   }
   virtual char const * describe() const {
     return "Compare and Branch on Non Zero";
@@ -151,7 +151,8 @@ typedef struct BCOND : public Condition {
     DBG_Assert( operands.size() == 1);
 
     PSTATE p (theInstruction->core()->getPSTATE());
-    return ConditionHolds(p, boost::get<uint64_t>(operands[0]) );
+    uint64_t test = boost::get<uint64_t>(operands[0]);
+    return ConditionHolds(p, test);
   }
   virtual char const * describe() const {
     return "Branch COnditionally";

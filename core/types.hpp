@@ -169,7 +169,7 @@ bits concat_bits (const bits & lhs, const bits & rhs);
 bits align(uint64_t x, int y);
 std::pair<bits,bits> splitBits(const bits & input);
 
-bits construct(uint8_t* bytes, int size);
+bits construct(uint8_t* bytes, size_t size);
 
 
 typedef uint32_t Word32Bit;

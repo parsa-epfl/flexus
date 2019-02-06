@@ -262,6 +262,8 @@ public:
   FLEXUS_PORT_ALWAYS_AVAILABLE(dTranslationIn);
   void push( interface::dTranslationIn const &,
                TranslationPtr& aTranslate ) {
+
+      theMicroArch->pushTranslation(aTranslate);
   }
 
     FLEXUS_PORT_ALWAYS_AVAILABLE(MemoryRequestIn);
@@ -324,6 +326,17 @@ private:
       theMicroArch->cycle();
     }
     sendMemoryMessages();
+    requestTranslations();
+  }
+
+  void requestTranslations() {
+      while (FLEXUS_CHANNEL( dTranslationOut ).available()) {
+          TranslationPtr op(theMicroArch->popTranslation());
+          if (! op ) break;
+
+          FLEXUS_CHANNEL(dTranslationOut) << op;
+      }
+
   }
 
   void sendMemoryMessages() {
@@ -349,6 +362,8 @@ private:
 
       MemoryTransport transport;
       boost::intrusive_ptr<MemoryMessage> operation;
+
+      DBG_(Dev, (<< "Sending Memory Request: " <<  op->theOperation ));
 
       if (op->theNAW) {
         DBG_Assert( op->theOperation == kStore );

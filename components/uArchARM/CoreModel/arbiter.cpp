@@ -293,6 +293,8 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
     }
   }
 
+  DBG_(Tmp, (<< "Attempting to issue a memory requst for " << lsq_entry->thePaddr));
+  DBG_Assert(lsq_entry->thePaddr != 0);
 
   if (anInstruction->isExclusive()){
       if (lsq_entry->theOperation == kLoad){
@@ -360,11 +362,13 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
       }
       break;
     case kLoad:
-      if ( ! lsq_entry->thePaddr ) {
+      if ( lsq_entry->thePaddr == kUnresolved ) {
         DBG_( Verb, ( << "Cache read to invalid address for " << *lsq_entry ) );
         //Unable to map virtual address to physical address for load.  Load is
         //speculative or TLB miss.
+        if (lsq_entry->theValue)
         lsq_entry->theValue->reset();
+        if (lsq_entry->theExtendedValue)
         lsq_entry->theExtendedValue->reset();
         DBG_Assert(lsq_entry->theDependance);
         lsq_entry->theDependance->satisfy();
@@ -922,7 +926,9 @@ void CoreImpl::checkExtraLatencyTimeout() {
 
         DBG_( Verb, ( << theName << " SideEffect access to unknown Paddr.  Completing the operation: " << *lsq_head ) );
         lsq_head->theIssued = true;
+        if (lsq_head->theValue)
         lsq_head->theValue->reset();
+        if (lsq_head->theExtendedValue)
         lsq_head->theExtendedValue->reset();
        if (lsq_head->isLoad()) {
           lsq_head->theInstruction->forceResync();

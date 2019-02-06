@@ -40,6 +40,7 @@
 #include "../ValueTracker.hpp"
 #include <boost/optional/optional_io.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
+#include <boost/polymorphic_pointer_cast.hpp>
 
 #define DBG_DeclareCategories uArchCat
 #define DBG_SetDefaultOps AddCat(uArchCat)
@@ -473,6 +474,31 @@ boost::intrusive_ptr<MemOp> CoreImpl::popMemOp() {
   return ret_val;
 }
 
+TranslationPtr CoreImpl::popTranslation() {
+    TranslationPtr ret_val;
+    if (! theTranlationQueue.empty()) {
+        ret_val = theTranlationQueue.front();
+        theTranlationQueue.pop();
+    }
+    return ret_val;
+}
+
+void CoreImpl::pushTranslation(TranslationPtr aTranslation) {
+
+    boost::intrusive_ptr<Instruction> insn = boost::polymorphic_pointer_downcast<Instruction>(aTranslation->getInstruction());
+    memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( insn);
+    DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end(), ( << *insn) );
+
+    lsq_entry->thePaddr = aTranslation->thePaddr;
+
+    resolvePAddr(insn);
+
+    DBG_Assert(lsq_entry->thePaddr != 0);
+    DBG_(Dev, (<< "Attempting to issue a memory requst for " << lsq_entry->thePaddr));
+
+//    insn->setMayCommit(true);
+}
+
 boost::intrusive_ptr<MemOp> CoreImpl::popSnoopOp() {
   boost::intrusive_ptr<MemOp> ret_val;
   if (! theSnoopPorts.empty()) {
@@ -527,7 +553,7 @@ void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry 
 //    lsq_entry->theNonCacheable = ! xlat->isCacheable();
     lsq_entry->theInstruction->setWillRaise(kException_None);
 //    lsq_entry->theException = xlat.theException;
-
+//     translate(xlat, false);
     if (lsq_entry->thePaddr > 0x40000000000LL) {
       lsq_entry->theSideEffect  = true;
     }
@@ -583,21 +609,21 @@ void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry 
     theMemQueue.get<by_insn>().modify( lsq_entry, ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = addr_aligned);
 
     /* CMU-ONLY-BLOCK-BEGIN */
-    if (theTrackParallelAccesses && /*!xlat->isSideEffect() && xlat->isCacheable() &&*/ lsq_entry->thePaddr != kInvalid && lsq_entry->thePaddr != PhysicalMemoryAddress(kUnresolved)) {
-      //Add this address to parallel accesses and accumulate all accesses parallel with this one
-      memq_t::index< by_seq >::type::iterator lsq_iter = theMemQueue.get<by_seq>().begin();
-      memq_t::index< by_seq >::type::iterator lsq_end = theMemQueue.get<by_seq>().end();
-      uint64_t block_addr(lsq_entry->thePaddr & 0xFFFFFFFFFFFFFFC0ULL);
-      lsq_entry->theParallelAddresses.clear();
-      lsq_entry->theParallelAddresses.insert( block_addr );
-      while (lsq_iter != lsq_end && lsq_iter->theSequenceNum != lsq_entry->theSequenceNum ) {
-        if (!lsq_iter->isMarker() && ( lsq_iter->status() == kAwaitingPort ||  lsq_iter->status() == kAwaitingIssue || lsq_iter->status() == kIssuedToMemory || lsq_iter->status() == kAwaitingValue ) ) {
-          lsq_entry->theParallelAddresses.insert( lsq_iter->theParallelAddresses.begin(), lsq_iter->theParallelAddresses.end());
-          lsq_iter->theParallelAddresses.insert( block_addr );
-        }
-        ++lsq_iter;
-      }
-    }
+//    if (theTrackParallelAccesses && /*!xlat->isSideEffect() && xlat->isCacheable() &&*/ lsq_entry->thePaddr != kInvalid && lsq_entry->thePaddr != PhysicalMemoryAddress(kUnresolved)) {
+//      //Add this address to parallel accesses and accumulate all accesses parallel with this one
+//      memq_t::index< by_seq >::type::iterator lsq_iter = theMemQueue.get<by_seq>().begin();
+//      memq_t::index< by_seq >::type::iterator lsq_end = theMemQueue.get<by_seq>().end();
+//      uint64_t block_addr(lsq_entry->thePaddr & 0xFFFFFFFFFFFFFFC0ULL);
+//      lsq_entry->theParallelAddresses.clear();
+//      lsq_entry->theParallelAddresses.insert( block_addr );
+//      while (lsq_iter != lsq_end && lsq_iter->theSequenceNum != lsq_entry->theSequenceNum ) {
+//        if (!lsq_iter->isMarker() && ( lsq_iter->status() == kAwaitingPort ||  lsq_iter->status() == kAwaitingIssue || lsq_iter->status() == kIssuedToMemory || lsq_iter->status() == kAwaitingValue ) ) {
+//          lsq_entry->theParallelAddresses.insert( lsq_iter->theParallelAddresses.begin(), lsq_iter->theParallelAddresses.end());
+//          lsq_iter->theParallelAddresses.insert( block_addr );
+//        }
+//        ++lsq_iter;
+//      }
+//    }
     /* CMU-ONLY-BLOCK-END */
 
     if (thePrefetchEarly && lsq_entry->isStore() && lsq_entry->thePaddr != kUnresolved && lsq_entry->thePaddr != 0 && !lsq_entry->isAbnormalAccess()) {
@@ -628,6 +654,22 @@ void CoreImpl::removeSLATEntry( PhysicalMemoryAddress anAddress, boost::intrusiv
     ++iter;
   }
   DBG_Assert(found, ( << "No SLAT entry matching " << anAddress << " for " << *anInstruction));
+}
+
+
+void CoreImpl::translate(boost::intrusive_ptr< Instruction > anInsn){
+
+    memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( anInsn );
+    DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end());
+    DBG_Assert( lsq_entry->theVaddr != 0);
+
+    TranslationPtr tr(new Translation());
+    tr->theVaddr = lsq_entry->theVaddr;
+    tr->setData();
+    tr->setInstruction(anInsn);
+
+
+    theTranlationQueue.push(tr);
 }
 
 void CoreImpl::resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, VirtualMemoryAddress anAddr) {
@@ -662,6 +704,13 @@ void CoreImpl::resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, Virtual
   }
 
   updateVaddr( lsq_entry, anAddr);
+}
+
+void CoreImpl::resolvePAddr( boost::intrusive_ptr< Instruction > anInsn) {
+
+    memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( anInsn );
+    DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end());
+    DBG_Assert( lsq_entry->thePaddr != 0);
 
   switch (lsq_entry->status()) {
     case kComplete:

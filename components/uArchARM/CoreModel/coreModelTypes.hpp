@@ -181,7 +181,7 @@ struct MemQueueEntry {
     return theOperation == kRMW || theOperation == kCAS || theOperation == kCASP ;
   }
   bool isAbnormalAccess() const {
-    return theSideEffect || /*theMMU ||*/ theException >= kException_None /*|| interruptASI(theASI)*/;
+    return theSideEffect || /*theMMU ||*/ theException != kException_None /*|| interruptASI(theASI)*/;
   }
   bool isNAW() const {
     return theBypassSB;

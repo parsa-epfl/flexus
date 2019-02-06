@@ -79,6 +79,8 @@ struct microArch {
   virtual void pushMemOp(boost::intrusive_ptr< MemOp >) = 0;
   virtual bool canPushMemOp() = 0;
   virtual boost::intrusive_ptr<MemOp> popMemOp() = 0;
+  virtual TranslationPtr popTranslation() = 0;
+  virtual void pushTranslation(TranslationPtr aTranslation)  = 0;
   virtual boost::intrusive_ptr<MemOp> popSnoopOp() = 0;
   virtual void markExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize) = 0;
   virtual bool isExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize) = 0;

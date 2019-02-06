@@ -617,18 +617,21 @@ struct web_version1 {
 using Flexus::SharedTypes::VirtualMemoryAddress;
 //Helperfunction to read Vadddresses
 char readVirtualAddress(Qemu::API::conf_object_t *cpu, VirtualMemoryAddress anAddr, int size){
-    return (char)(Qemu::API::QEMU_read_phys_memory(
-            Qemu::API::QEMU_logical_to_physical(cpu, Qemu::API::QEMU_DI_Data
-            ,anAddr)
-            ,size)[0]);
+    uint64_t addr = Qemu::API::QEMU_logical_to_physical(cpu, Qemu::API::QEMU_DI_Data ,anAddr);
+    uint8_t* buf = new uint8_t[size];
+    Qemu::API::QEMU_read_phys_memory(buf, addr, size);
+    char ret = buf[0];
+    delete [] buf;
+    return ret;
 }
-char readVAddr2(Qemu::API::conf_object_t *cpu, VirtualMemoryAddress anAddr, int asi, int size){
-    //TODO implement correctly, currently doesn't do anything with ASI which is wrong
-    return (char)(Qemu::API::QEMU_read_phys_memory(
-            Qemu::API::QEMU_logical_to_physical(cpu, Qemu::API::QEMU_DI_Data
-            ,anAddr)
-            ,size)[0]);
-}
+
+//char readVAddr2(Qemu::API::conf_object_t *cpu, VirtualMemoryAddress anAddr, int asi, int size){
+//    //TODO implement correctly, currently doesn't do anything with ASI which is wrong
+//    return (char)(Qemu::API::QEMU_read_phys_memory(
+//            Qemu::API::QEMU_logical_to_physical(cpu, Qemu::API::QEMU_DI_Data
+//            ,anAddr)
+//            ,size)[0]);
+//}
 
 // FIXME: make a proper x86 variant
 uint64_t readG(Qemu::API::conf_object_t *cpu, int reg){

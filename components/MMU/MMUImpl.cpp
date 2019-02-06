@@ -243,7 +243,7 @@ public:
       theCPU = std::make_shared<Flexus::Qemu::Processor>(Flexus::Qemu::Processor::getProcessor((int)flexusIndex()));
       thePageWalker.reset(new PageWalk(flexusIndex()));
       thePageWalker->setMMU(theMMU);
-
+      theMMUInitialized = false;
       theInstrTLB.resize(cfg.iTLBSize);
       theDataTLB.resize(cfg.dTLBSize);
   }
@@ -287,7 +287,7 @@ public:
               } else {
                   // mark miss
                   item->setMiss();
-                  thePageWalkEntries.push(std::move(item));
+                  thePageWalkEntries.push(item);
                   thePageWalker->push_back(item);
               }
           } else {
@@ -339,6 +339,19 @@ public:
     theMMU->setupAddressSpaceSizesAndGranules();
     if (thePageWalker)
         thePageWalker->annulAll();
+    if (thePageWalkEntries.size() > 0){
+        while(! thePageWalkEntries.empty()){
+            thePageWalkEntries.pop();
+        }
+    }
+
+    if (theLookUpEntries.size() > 0){
+        while(! theLookUpEntries.empty()){
+            theLookUpEntries.pop();
+        }
+    }
+    bool temp = true;
+    FLEXUS_CHANNEL(ResyncOut) << temp;
 
     DBG_(VVerb,( << "MMU object init'd, " << std::hex << theMMU << std::dec ));
   }
@@ -401,6 +414,7 @@ public:
   void push( interface::dRequestIn const &,
              index_t           anIndex,
              TranslationPtr& aTranslate ) {
+      aTranslate->toggleReady();
       theLookUpEntries.push( aTranslate );
   }
 

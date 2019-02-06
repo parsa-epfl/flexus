@@ -716,13 +716,13 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     if (extract32(aFetchedOpcode.theOpcode, 24, 1)) {  // Unsigned offset
         index = kUnsingedOffset;
         imm = extract32(aFetchedOpcode.theOpcode, 10, 12);
+        imm = lsl(imm, size == 64 ? 64 : 32, size);
     } else {
         index = (extract32(aFetchedOpcode.theOpcode, 11, 1) == 1) ? kPreIndex : kPostIndex;
         imm = sextract32(aFetchedOpcode.theOpcode, 12, 9);
-        predicated_action act = operandAction(inst, kAddress, kResult, (index==kPostIndex) ? imm : 0, kPD);
-        addDestination( inst, rt, act, size == 64);
     }
 
+    inst->setOperand(kUopAddressOffset, imm);
 
 
 
@@ -730,6 +730,8 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     inst->setClass(clsLoad, codeLoad);
 
     std::vector< std::list<InternalDependance> > rs_deps(1);
+
+
     addAddressCompute( inst, rs_deps ) ;
     if (index != kPostIndex) {
         inst->setOperand(kUopAddressOffset, imm);
@@ -738,7 +740,8 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     addReadXRegister(inst, 1, rn, rs_deps[0], regsize == 64);
 
 
-    inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
+
+//    inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
     inst->addRetirementEffect( retireMem(inst) );
     inst->addSquashEffect( eraseLSQ(inst) );
 
@@ -747,6 +750,11 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     inst->addDispatchEffect( allocateLoad( inst, sz, load.dependance, acctype ) );
     inst->addCommitEffect( accessMem(inst) );
     inst->addRetirementConstraint( loadMemoryConstraint(inst) );
+
+//    predicated_action act = operandAction(inst, kAddress, kResult, (index==kPostIndex) ? imm : 0, kPD);
+    addDestination( inst, rt, load, size == 64);
+
+
 
     return inst;
 }

@@ -115,16 +115,26 @@ extern bool Stats_debug_enabled;
 
 #define __TRACE_W(COLOR, WORD) \
     do { \
+    DBG_(VVerb,(<< COLOR <<__func__ << " " << WORD << RESET)); \
+    } while(0)
+
+#define __TRACE_W2(COLOR, WORD) \
+    do { \
     DBG_(Dev,(<< COLOR <<__func__ << " " << WORD << RESET)); \
     } while(0)
 
 #define __TRACE(COLOR) \
     do { \
+    DBG_(VVerb,(<< COLOR <<__func__ << RESET)); \
+    } while(0)
+
+#define __TRACE2(COLOR) \
+    do { \
     DBG_(Dev,(<< COLOR <<__func__ << RESET)); \
     } while(0)
 
 #define DECODER_TRACE \
-    __TRACE (RED)
+    __TRACE2 (RED)
 #define SEMANTICS_TRACE \
     __TRACE (CYAN)
 #define DISPATCH_TRACE \
@@ -136,7 +146,7 @@ extern bool Stats_debug_enabled;
 #define SEMANTICS_DBG(WORD) \
     __TRACE_W (CYAN, WORD)
 #define DECODER_DBG(WORD) \
-    __TRACE_W (RED, WORD)
+    __TRACE_W2 (RED, WORD)
 #define DISPATCH_DBG(WORD) \
     __TRACE_W (YELLOW, WORD)
 #define CORE_DBG(WORD) \

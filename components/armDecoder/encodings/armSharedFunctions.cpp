@@ -236,15 +236,29 @@ predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operat
     return exec;
 }
 
-
 void addAddressCompute( SemanticInstruction * inst, std::vector< std::list<InternalDependance> > & rs_deps) {
   DECODER_TRACE;
-  multiply_dependant_action update_address = updateAddressAction( inst, rs_deps.size() );
+
+//  multiply_dependant_action update_paddress = updatePhysicalAddressAction( inst, rs_deps.size() );
+//  inst->addDispatchEffect( satisfy( inst, update_paddress.dependances[1] ) );
+  simple_action tr = translationAction(inst);
+
+
+  multiply_dependant_action update_address = updateVirtualAddressAction( inst, rs_deps.size() );
   inst->addDispatchEffect( satisfy( inst, update_address.dependances[1] ) );
   simple_action exec = calcAddressAction( inst, rs_deps);
-  inst->addDispatchAction( exec );
+
+//  inst->setMayCommit(false);
+  //inst->makeInstructionDependance(update_paddress.dependances[1]);
+
   connectDependance( update_address.dependances[0], exec);
+//  connectDependance( update_paddress.dependances[0], exec);
+  connectDependance(tr.action->dependance(0), exec);
+
+//  connectDependance( update_paddress.dependances[1], tr);
+
   connectDependance( inst->retirementDependance(), update_address );
+
 }
 
 void MEMBAR( SemanticInstruction * inst, uint32_t anAccess) {

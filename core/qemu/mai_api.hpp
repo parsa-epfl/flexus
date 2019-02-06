@@ -158,7 +158,11 @@ public:
   }
 
   bits readPhysicalAddress(PhysicalMemoryAddress anAddress, size_t aSize) const {
-      return construct(API::QEMU_read_phys_memory( API::physical_address_t(anAddress), aSize), aSize);
+      uint8_t* buf = new uint8_t[aSize];
+      API::QEMU_read_phys_memory( buf, API::physical_address_t(anAddress), aSize);
+      bits tmp = construct(buf, aSize);
+      delete [] buf;
+      return tmp;
   }
 
   bits readVirtualAddress(VirtualMemoryAddress anAddress, size_t size) {

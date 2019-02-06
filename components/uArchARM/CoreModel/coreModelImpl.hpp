@@ -158,7 +158,7 @@ private:
 
   eExceptionType thePendingTrap;
   boost::intrusive_ptr<Instruction> theTrapInstruction;
-  std::string theDumpState;
+  std::string theFlexusDumpState, theQemuDumpState;
 
   //Bypass Network
   BypassNetwork theBypassNetwork;
@@ -289,6 +289,8 @@ public:
   uint32_t theNumMemoryPorts;
   std::list< boost::intrusive_ptr< MemOp > > theSnoopPorts;
   uint32_t theNumSnoopPorts;
+
+  std::queue<TranslationPtr> theTranlationQueue;
 private:
   std::list< boost::intrusive_ptr< MemOp > > theMemoryReplies;
 
@@ -755,7 +757,8 @@ public:
   bool canPushMemOp();
   boost::intrusive_ptr<MemOp> popMemOp();
   boost::intrusive_ptr<MemOp> popSnoopOp();
-
+  TranslationPtr popTranslation();
+  void pushTranslation(TranslationPtr aTranslation);
   uint32_t currentEL();
   void increaseEL();
   void decreaseEL();
@@ -821,6 +824,8 @@ public:
   bits retrieveLoadValue( boost::intrusive_ptr<Instruction> anInsn);
   bits retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction> anInsn);
   void resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, VirtualMemoryAddress anAddr);
+  void translate(boost::intrusive_ptr< Instruction > anInsn);
+  void resolvePAddr( boost::intrusive_ptr< Instruction > anInsn);
   void updateStoreValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, boost::optional<bits> anExtendedValue = boost::none);
   void annulStoreValue( boost::intrusive_ptr< Instruction > anInsn );
   void updateCASValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, bits aCMPValue );

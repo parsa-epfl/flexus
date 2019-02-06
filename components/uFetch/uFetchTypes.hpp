@@ -105,7 +105,7 @@ struct BranchFeedback : boost::counted_base {
   boost::intrusive_ptr<BPredState> theBPState;
 };
 
-typedef int64_t Opcode;
+typedef uint32_t Opcode;
 
 struct FetchedOpcode {
   VirtualMemoryAddress thePC;
@@ -148,6 +148,11 @@ struct FetchBundle : public boost::counted_base {
       }
       DBG_Assert(false);
 
+  }
+
+  void clear(){
+      theOpcodes.clear();
+      theFillLevels.clear();
   }
 };
 

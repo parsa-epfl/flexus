@@ -70,6 +70,7 @@ COMPONENT_INTERFACE(
 
     DYNAMIC_PORT_ARRAY( PushInput, TranslationPtr, TLBReqIn )
 
+    DYNAMIC_PORT_ARRAY( PushOutput, bool, ResyncOut )
 
 
     DRIVE(MMUDrive)

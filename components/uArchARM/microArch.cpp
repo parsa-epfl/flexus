@@ -249,6 +249,14 @@ public:
     return theCore->popMemOp();
   }
 
+  TranslationPtr popTranslation() {
+      return theCore->popTranslation();
+  }
+
+  void pushTranslation(TranslationPtr aTranslation)  {
+      return theCore->pushTranslation(aTranslation);
+  }
+
   void markExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize){
       return theCore->markExclusiveLocal(anAddress, aSize);
   }
@@ -383,6 +391,7 @@ private:
     resetArchitecturalState();
 
     //Obtain new state from simics
+    uint64_t pc = theCPU->getPC();
     VirtualMemoryAddress redirect_address(theCPU->getPC());
     redirect(redirect_address);
   }

@@ -33,4 +33,78 @@
 // ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
 // CONTRACT, TORT OR OTHERWISE).
 //
-// DO-NOT-REMOVE end-copyright-block   
+// DO-NOT-REMOVE end-copyright-block
+
+
+#include <iostream>
+#include <iomanip>
+
+#include <core/boost_extensions/intrusive_ptr.hpp>
+#include <boost/throw_exception.hpp>
+#include <boost/function.hpp>
+#include <boost/lambda/lambda.hpp>
+#include <boost/lambda/bind.hpp>
+namespace ll = boost::lambda;
+
+#include <boost/none.hpp>
+
+#include <boost/dynamic_bitset.hpp>
+
+#include <core/target.hpp>
+#include <core/debug/debug.hpp>
+#include <core/types.hpp>
+
+#include <components/uArchARM/uArchInterfaces.hpp>
+
+#include "../SemanticInstruction.hpp"
+#include "../Effects.hpp"
+#include "../SemanticActions.hpp"
+
+#define DBG_DeclareCategories armDecoder
+#define DBG_SetDefaultOps AddCat(armDecoder)
+#include DBG_Control()
+
+namespace narmDecoder {
+
+using namespace nuArchARM;
+
+struct TranslationAction : public BaseSemanticAction
+{
+
+  TranslationAction( SemanticInstruction * anInstruction)
+    : BaseSemanticAction( anInstruction, 1 )
+  {}
+
+
+  void doEvaluate()
+  {
+    SEMANTICS_DBG(*this);
+
+    if (ready())
+    {
+        DBG_Assert(theInstruction->hasOperand( kAddress ) );
+        VirtualMemoryAddress addr( theInstruction->operand< uint64_t > (kAddress));
+
+        theInstruction->core()->translate(boost::intrusive_ptr<Instruction>(theInstruction));
+
+
+
+        satisfyDependants();
+    } else {
+        reschedule();
+    }
+  }
+
+  void describe( std::ostream & anOstream) const
+  {
+    anOstream << theInstruction->identify();
+  }
+};
+
+simple_action translationAction ( SemanticInstruction * anInstruction)
+{
+  return new(anInstruction->icb()) TranslationAction( anInstruction);
+}
+
+
+} //narmDecoder

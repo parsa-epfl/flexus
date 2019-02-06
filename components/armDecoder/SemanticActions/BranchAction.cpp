@@ -73,8 +73,8 @@ struct BranchCondAction : public BaseSemanticAction {
   std::unique_ptr<Condition> theCondition;
   uint32_t theFeedbackCount;
 
-  BranchCondAction( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, std::unique_ptr<Condition> & aCondition)
-    : BaseSemanticAction ( anInstruction, 1 )
+  BranchCondAction( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, std::unique_ptr<Condition> & aCondition, size_t numOperands)
+    : BaseSemanticAction ( anInstruction, numOperands )
     , theTarget(aTarget)
     , theCondition(std::move(aCondition))
     , theFeedbackCount(0) {
@@ -96,6 +96,8 @@ struct BranchCondAction : public BaseSemanticAction {
         feedback->theActualType = kConditional;
         feedback->theActualTarget = theTarget;
         feedback->theBPState = theInstruction->bpState();
+
+        theCondition->setInstruction(theInstruction);
 
         bool result = theCondition->operator ()(operands);
 
@@ -129,9 +131,9 @@ struct BranchCondAction : public BaseSemanticAction {
   }
 };
 dependant_action branchCondAction
-( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, std::unique_ptr<Condition> aCondition)
+( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, std::unique_ptr<Condition> aCondition, size_t numOperands)
 {
-  BranchCondAction * act(new(anInstruction->icb()) BranchCondAction ( anInstruction, aTarget, aCondition ) );
+  BranchCondAction * act(new(anInstruction->icb()) BranchCondAction ( anInstruction, aTarget, aCondition, numOperands ) );
 
   return dependant_action( act, act->dependance() );
 }

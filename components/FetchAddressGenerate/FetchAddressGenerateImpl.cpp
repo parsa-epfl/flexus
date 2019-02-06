@@ -112,6 +112,7 @@ public:
     for (auto i : theEnable) {
         i = true;
     }
+
   }
 
   void finalize() {}
@@ -176,7 +177,7 @@ private:
   //Implementation of the FetchDrive drive interface
   void doAddressGen(index_t anIndex) {
 
-    if (!theEnable[flexusIndex()]) return;
+    if (!theEnable[anIndex]) return;
     AGU_DBG("--------------START ADDRESS GEN------------------------");
 
     if (theFlexus->quiescing()) {
@@ -185,7 +186,7 @@ private:
     }
 
     if (theRedirect[anIndex]) {
-        DBG_(VVerb,(<<"FGU: Redirecting PC..." ) );
+        DBG_(Dev,(<<"FGU: Redirecting PC..." ) );
       thePC[anIndex] = theRedirectPC[anIndex];
 #if FLEXUS_TARGET_IS(v9)
       theNextPC[anIndex] = theRedirectNextPC[anIndex];
@@ -208,9 +209,9 @@ private:
     if (available_faq == 0)
         DBG_(VVerb,(<<"FGU: available FAQ is empty"  ) );
 
-
+//    static int test;
     boost::intrusive_ptr<FetchCommand> fetch(new FetchCommand());
-    while ( max_addrs > 0 ) {
+    while ( max_addrs > 0 /*&& test == 0*/) {
       AGU_DBG("Getting addresses: " << max_addrs << " remaining");
 
       FetchAddr faddr(thePC[anIndex]);
@@ -255,12 +256,13 @@ private:
       }
 
       --max_addrs;
+//      test = 1;
     }
 
     if (fetch->theFetches.size() > 0) {
       AGU_DBG("Sending total fetches: " << fetch->theFetches.size());
 
-      theEnable[flexusIndex()] = false;
+      theEnable[anIndex] = false;
 
       //Send it to FetchOut
       FLEXUS_CHANNEL_ARRAY(FetchAddrOut, anIndex) << fetch;

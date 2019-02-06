@@ -37,6 +37,7 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <regex>
 
 #include "coreModelImpl.hpp"
 #include <core/debug/severity.hpp>
@@ -79,6 +80,7 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
       theInterruptReceived = theFlexus->cycleCount();
     }
     thePendingInterrupt = aPendingInterrupt;
+
   }
 
   if (narmDecoder::theInsnCount > 10000ULL && ( static_cast<uint64_t>(theFlexus->cycleCount() - theLastGarbageCollect) > 1000ULL - narmDecoder::theInsnCount / 100))  {
@@ -186,15 +188,15 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
   DBG_Assert((theSBCount + theSBNAWCount) >= 0);
   DBG_Assert((static_cast<int> (theSBLines_Permission.size())) <= theSBCount + theSBNAWCount );
 
-//  DBG_( VVerb, ( << "*** Prepare *** " ) );
+  DBG_( VVerb, ( << "*** Prepare *** " ) );
 
   processMemoryReplies();
   prepareCycle();
 
-//  DBG_( VVerb, ( << "*** Eval *** " ) );
+  DBG_( VVerb, ( << "*** Eval *** " ) );
   evaluate();
 
-//  DBG_( VVerb, ( << "*** Issue Mem *** " ) );
+  DBG_( VVerb, ( << "*** Issue Mem *** " ) );
 
   issuePartialSnoop();
   issueStore();
@@ -202,7 +204,7 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
   issueAtomicSpecWrite();
   issueSpecial();
   valuePredictAtomic();
-  checkExtraLatencyTimeout();
+//  checkExtraLatencyTimeout();
   resolveCheckpoint();
 
   DBG_( Verb, ( << "*** Arb *** " ) );
@@ -1075,6 +1077,10 @@ void CoreImpl::retire() {
   FLEXUS_PROFILE();
   bool stop_retire;
 
+  if (theROB.empty()){
+      return;
+  }
+
   theRetireCount = 0;
   while ( !theROB.empty() && !stop_retire ) {
 
@@ -1428,9 +1434,7 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
 //    }
 //  }
 
-  Flexus::Qemu::Processor::getProcessor( theNode )->dump_state();
 
-  theDumpState = dumpState();
 
   bool validation_passed = true;
 
@@ -1451,7 +1455,14 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
 
     CORE_DBG("Instruction is neither annuled nor is a micro-op");
 
+    theQemuDumpState = Flexus::Qemu::Processor::getProcessor( theNode )->dump_state();
+    theFlexusDumpState = dumpState();
+
+    uint64_t pc1 = Flexus::Qemu::Processor::getProcessor( theNode )->getPC();
     raised = advance_fn();
+    uint64_t pc2 = Flexus::Qemu::Processor::getProcessor( theNode )->getPC();
+
+
 
     if ( raised != 0) {
       if ( anInstruction->willRaise() != (raised == 0 ? kException_None : kException_UNCATEGORIZED)) { // FIXME get exception mapper
@@ -1488,17 +1499,31 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
     }
     throw ResynchronizeWithQemuException(true);
   }
+
+
+  theFlexusDumpState = dumpState();
+  theQemuDumpState = Flexus::Qemu::Processor::getProcessor( theNode )->dump_state();
+
+  const std::regex txt_regex("(^[^\s]+)");
+  std::smatch m;
+
+  DBG_(Dev, (<< std::regex_search(theFlexusDumpState, txt_regex)));
+  DBG_(Dev, (<< std::regex_search(theQemuDumpState, txt_regex)));
+
+
+  int a = theFlexusDumpState.compare(theQemuDumpState);
+
   validation_passed &= anInstruction->postValidate();
-//  if (! validation_passed ) {
-//    CORE_DBG("Failed Validation " << std::internal << *anInstruction << std::left);
+  if (! validation_passed ) {
+    CORE_DBG("Failed Validation " << std::internal << *anInstruction << std::left);
 
-//    //Subsequent Empty ROB stalls (until next dispatch) are the result of a
-//    //modelling error resynchronization instruction.
-//    theEmptyROBCause = kResync;
-//    ++theResync_FailedValidation;
+    //Subsequent Empty ROB stalls (until next dispatch) are the result of a
+    //modelling error resynchronization instruction.
+    theEmptyROBCause = kResync;
+    ++theResync_FailedValidation;
 
-//    throw ResynchronizeWithQemuException();
-//  }
+    throw ResynchronizeWithQemuException();
+  }
   CORE_DBG("uARCH Validated " << std::internal << *anInstruction << std::left);
 }
 
@@ -1685,7 +1710,7 @@ void CoreImpl::handleTrap() {
   if (thePendingTrap == kException_None) {
     return;
   }
-  DBG_( Verb,  ( << theName << " Handling trap: " << thePendingTrap << " raised by: " << *theTrapInstruction ) );
+  DBG_( Dev,  ( << theName << " Handling trap: " << thePendingTrap << " raised by: " << *theTrapInstruction ) );
     DBG_( Crit,  ( << theName << " ROB non-empty in handle trap.  Resynchronize instead.") );
     theEmptyROBCause = kRaisedException;
     ++theResync_FailedHandleTrap;

@@ -45,6 +45,9 @@
 #define FLEXUS_SLICES__TRANSLATION_HPP_INCLUDED
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <core/debug/debug.hpp>
+#include <components/CommonQEMU/Slices/AbstractInstruction.hpp>
+
+
 namespace Flexus {
 namespace SharedTypes {
 
@@ -127,6 +130,8 @@ struct Translation : public boost::counted_base {
   uint64_t theID;
   bool theAnnul;
 
+  boost::intrusive_ptr<AbstractInstruction> theInstruction;
+
   void setData(){theTLBtype = kDATA;}
   void setInstr(){theTLBtype = kINST;}
   eTLBtype type (){return theTLBtype;}
@@ -138,6 +143,9 @@ struct Translation : public boost::counted_base {
   void setHit() {theTLBstatus = kTLBhit;}
   void setMiss() {theTLBstatus = kTLBmiss;}
 
+
+  void setInstruction(boost::intrusive_ptr<AbstractInstruction> anInstruction) {theInstruction = anInstruction;}
+  boost::intrusive_ptr<AbstractInstruction> getInstruction() {return theInstruction;}
 
   bool isWaiting(){return theWaiting;}
   void toggleWaiting() {theWaiting = !theWaiting;}

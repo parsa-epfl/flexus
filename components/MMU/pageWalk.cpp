@@ -50,9 +50,8 @@ namespace nMMU {
 
 void PageWalk::annulAll(){
     if (TheInitialized && theTranlationTransports.size() > 0)
-        for (auto&i : theTranlationTransports){
-            boost::intrusive_ptr<Translation> basicPointer(i[TranslationBasicTag]);
-            basicPointer->setAnnul();
+        while (theTranlationTransports.size() > 0){
+            theTranlationTransports.pop_back();
         }
 }
 
@@ -84,7 +83,7 @@ void PageWalk::preWalk( TranslationTransport &  aTranslation ) {
                 << ", Returned TTE Descriptor Address: " << TTEDescriptor << std::dec ));
 
     basicPointer->thePaddr = TTEDescriptor;
-    uint64_t rawTTEValue = Flexus::Core::construct(QEMU_read_phys_memory(  TTEDescriptor, 8 ), 8).to_ulong();
+//    uint64_t rawTTEValue = Flexus::Core::construct(QEMU_read_phys_memory(  TTEDescriptor, 8 ), 8).to_ulong();
     pushMemoryRequest(basicPointer);
 }
 
@@ -249,16 +248,19 @@ void PageWalk::setupTTResolver( TranslationTransport & aTranslation, uint64_t TT
 
     void PageWalk::cycle(){
 
-        for (auto i = theTranlationTransports.begin(); i != theTranlationTransports.end() && theTranlationTransports.size() > 0; ++i) {
+//        for (auto i = theTranlationTransports.begin(); i != theTranlationTransports.end() && theTranlationTransports.size() > 0; ++i) {
+
+        if (theTranlationTransports.size() > 0){
+            auto i = theTranlationTransports.begin();
 
             TranslationTransport& item = *i;
             TranslationPtr basicPointer(item[TranslationBasicTag]);
 
 
             if ((theTranlationTransports.begin() == i) && basicPointer->isDone()){
-                theDoneTranlations.push(basicPointer);
+//                theDoneTranlations.push(basicPointer);
                 theTranlationTransports.erase(i);
-                continue;
+                return;
             }
 
             if (basicPointer->isReady()) {

@@ -56,7 +56,7 @@ bits concat_bits (const bits & lhs, const bits & rhs){
     return result;
 }
 
-bits construct(uint8_t* bytes, int size){
+bits construct(uint8_t* bytes, size_t size){
     bits result;
     std::string b, all;
     for (int i = (size-1); i >= 0; i--){

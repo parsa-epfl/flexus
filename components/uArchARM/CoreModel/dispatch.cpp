@@ -219,7 +219,8 @@ void CoreImpl::dispatch( boost::intrusive_ptr< Instruction > anInsn) {
   std::list< boost::intrusive_ptr< Interaction > > dispatch_interactions;
   std::swap( dispatch_interactions, theDispatchInteractions );
 
-   anInsn->doDispatchEffects();
+  DBG_(Dev,(<<*anInsn));
+  anInsn->doDispatchEffects();
 
   while (  ! dispatch_interactions.empty()) {
     DBG_( VVerb, ( << theName << " applying deferred interation " << (* dispatch_interactions.front() ) << " to " << *anInsn ) );

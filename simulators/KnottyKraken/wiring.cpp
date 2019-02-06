@@ -312,6 +312,8 @@ WIRE( theuArch, dTranslationOut,        theMMU, dRequestIn                )
 WIRE( theMMU, dTranslationReply,        theuArch, dTranslationIn          )
 WIRE( theMMU, MemoryRequestOut,         theuArch, MemoryRequestIn         )
 WIRE(theuArch, ResyncOut,               theMMU,   ResyncIn                )
+WIRE(theMMU, ResyncOut,                 theuFetch,   ResyncIn             )
+
 
 
 

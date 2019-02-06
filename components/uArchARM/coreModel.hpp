@@ -103,7 +103,8 @@ struct CoreModel : public uArchARM {
   virtual bool canPushMemOp() = 0;
   virtual boost::intrusive_ptr<MemOp> popMemOp() = 0;
   virtual boost::intrusive_ptr<MemOp> popSnoopOp() = 0;
-
+  virtual TranslationPtr popTranslation() = 0;
+  virtual void pushTranslation (TranslationPtr aTranslation) = 0;
   virtual void printROB() = 0;
   virtual void printSRB() = 0;
   virtual void printMemQueue() = 0;

@@ -282,6 +282,8 @@ simple_action readRegisterAction ( SemanticInstruction * anInstruction, eOperand
 simple_action readNZCVAction ( SemanticInstruction * anInstruction, eNZCV aBit, eOperandCode anOperandCode);
 simple_action readConstantAction( SemanticInstruction * anInstruction, uint64_t aVal, eOperandCode anOperandCode);
 simple_action calcAddressAction(SemanticInstruction * anInstruction, std::vector< std::list<InternalDependance> > & opDeps );
+simple_action translationAction(SemanticInstruction *anInstruction);
+
 
 predicated_action reverseAction ( SemanticInstruction * anInstruction, eOperandCode anInputCode, eOperandCode anOutputCode, bool is64);
 predicated_action reorderAction( SemanticInstruction * anInstruction, eOperandCode anInputCode, eOperandCode anOutputCode, uint8_t aContainerSize, bool is64);
@@ -303,12 +305,13 @@ predicated_action extractAction(SemanticInstruction * anInstruction, std::vector
 
 
 dependant_action writebackAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, eOperandCode aMappedRegisterCode, bool is64, bool setflags);
-dependant_action branchCondAction(SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, std::unique_ptr<Condition> aCondition);
+dependant_action branchCondAction(SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, std::unique_ptr<Condition> aCondition, size_t numOperands = 1);
 dependant_action branchRegAction(SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition);
 dependant_action branchToCalcAddressAction(SemanticInstruction * anInstruction);
 
 
-multiply_dependant_action updateAddressAction(SemanticInstruction * anInstruction, uint32_t aNumDependent, eOperandCode aCode = kAddress);
+multiply_dependant_action updateVirtualAddressAction(SemanticInstruction * anInstruction, uint32_t aNumDependent, eOperandCode aCode = kAddress);
+multiply_dependant_action updatePhysicalAddressAction(SemanticInstruction * anInstruction, uint32_t aNumDependent, eOperandCode aCode = kAddress);
 multiply_dependant_action updateCASAddressAction(SemanticInstruction * anInstruction, eOperandCode aCode = kAddress);
 multiply_dependant_action updateCASValueAction(SemanticInstruction * anInstruction, eOperandCode aCompareCode, eOperandCode aNewCode );
 multiply_dependant_action updateCASPValueAction(SemanticInstruction * anInstruction, eOperandCode aCompareCode1, eOperandCode aCompareCode2, eOperandCode aNewCode1, eOperandCode aNewCode2 );
