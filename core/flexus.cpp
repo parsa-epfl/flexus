@@ -1146,6 +1146,7 @@ void initFlexus(){
 
 void deinitFlexus(){
     DBG_(VVerb, (<< "Cleaning up Flexus"));
+
     if(theFlexusFactory)
         delete theFlexusFactory;
 }
