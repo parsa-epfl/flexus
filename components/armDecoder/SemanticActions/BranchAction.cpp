@@ -91,6 +91,10 @@ struct BranchCondAction : public BaseSemanticAction {
         operands.push_back( op(eOperandCode( kOperand1 + i)) );
         }
 
+        if (theInstruction->hasOperand(kCondition)){
+            operands.push_back(theInstruction->operand(kCondition));
+        }
+
         boost::intrusive_ptr<BranchFeedback> feedback( new BranchFeedback() );
         feedback->thePC = theInstruction->pc();
         feedback->theActualType = kConditional;
@@ -230,7 +234,7 @@ struct BranchToCalcAddressAction : public BaseSemanticAction {
       if (theInstruction->hasPredecessorExecuted()) {
 
         //Feedback is taken care of by the updateUncoditional effect at retirement
-        bits target = theInstruction->operand< bits > (theTarget);
+        uint64_t target = theInstruction->operand< uint64_t > (theTarget);
         VirtualMemoryAddress target_addr(target);
         DBG_( VVerb, ( << *this << " branc to mapped_reg target: " << target_addr ) );
         core()->applyToNext( theInstruction, branchInteraction(target_addr) );

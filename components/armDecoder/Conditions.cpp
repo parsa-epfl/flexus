@@ -124,7 +124,7 @@ typedef struct TSTBR : public Condition {
     virtual ~TSTBR(){}
   virtual bool operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 2);
-    return (boost::get<bits>(operands[0]) & boost::get<bits>(operands[0])) == 0;
+    return (boost::get<uint64_t>(operands[0]) & boost::get<uint64_t>(operands[0])) == 0;
   }
   virtual char const * describe() const {
     return "Test and Branch on Zero";
@@ -136,7 +136,7 @@ typedef struct TBNZ : public Condition {
     virtual ~TBNZ(){}
   virtual bool operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 2);
-    return (boost::get<bits>(operands[0]) & boost::get<bits>(operands[0])) != 0;
+    return (boost::get<uint64_t>(operands[0]) & boost::get<uint64_t>(operands[0])) != 0;
   }
   virtual char const * describe() const {
     return "Test and Branch on Non Zero";

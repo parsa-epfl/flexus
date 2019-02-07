@@ -296,19 +296,6 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
   DBG_(Tmp, (<< "Attempting to issue a memory requst for " << lsq_entry->thePaddr));
   DBG_Assert(lsq_entry->thePaddr != 0);
 
-  if (anInstruction->isExclusive()){
-      if (lsq_entry->theOperation == kLoad){
-        markExclusiveLocal(lsq_entry->thePaddr, lsq_entry->theSize);
-      } else if (lsq_entry->theOperation == kStore) {
-            if (! isExclusiveLocal(lsq_entry->thePaddr, lsq_entry->theSize)){
-                anInstruction->annul();
-            }
-
-            clearExclusiveLocal();
-        }
-  }
-
-
 
   eOperation issue_op = lsq_entry->theOperation;
 
@@ -852,7 +839,7 @@ void CoreImpl::issueSpecial() {
               &&   ( ! lsq_head->theExtraLatencyTimeout )  // Make sure we only see the side effect once
        ) {
 
-      if (lsq_head->theException != 0) {
+      if (lsq_head->theException != kException_None) {
         //No extra latency for instructions that raise exceptions
         lsq_head->theExtraLatencyTimeout = theFlexus->cycleCount();
       } else if (lsq_head->theBypassSB) {

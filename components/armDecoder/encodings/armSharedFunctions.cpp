@@ -165,8 +165,11 @@ void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t 
     eOperandCode cRS = eOperandCode( kRS1 + anOpNumber - 1);
     eOperandCode cPS = eOperandCode( kPS1 + anOpNumber - 1);
 
+    if (is_64){
     DECODER_DBG("Reading x[" << rs << "] and mapping it [ " << cRS << " -> " << cPS << " ]");
-
+    } else {
+        DECODER_DBG("Reading w[" << rs << "] and mapping it [ " << cRS << " -> " << cPS << " ]");
+    }
     setRS( inst, cRS , rs );
     inst->addDispatchEffect( mapSource( inst, cRS, cPS ) );
     simple_action act = readRegisterAction( inst, cPS, cOperand, rs==31,  is_64 );
@@ -394,7 +397,7 @@ bool decodeBitMasks(uint64_t & tmask, uint64_t & wmask, bool immN, char imms, ch
 
     // Compute log2 of element size
     // 2^len must be in range [2, M]
-    uint32_t len = highestSetBit( ((immN << 6) | ~imms) , 7 );
+    uint32_t len = highestSetBit( (((immN << 6) | ~imms)) & 0x7f);
     if (len < 1 ) return false;
     assert (dataSize >= ((uint32_t)(1 << len)));
 

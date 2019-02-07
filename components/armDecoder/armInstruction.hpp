@@ -73,6 +73,7 @@ protected:
   bool theRetired;
   bool theSquashed;
   bool theExecuted;
+  bool thePageFault;
   eInstructionClass theInstructionClass;
   eInstructionCode theInstructionCode;
   eInstructionCode theOriginalInstructionCode;
@@ -120,6 +121,8 @@ public:
 
   virtual void doDispatchEffects();
   virtual void squash() {}
+  virtual void pageFault() {thePageFault = true;}
+  virtual bool isPageFault() {return thePageFault;}
   virtual void doRescheduleEffects() {}
   virtual void doRetirementEffects() {}
   virtual void checkTraps() {}
@@ -177,7 +180,7 @@ public:
   virtual bool resync() const {
     return theResync;
   }
-  void forceResync() {
+  virtual void forceResync() {
     theResync = true;
   }
 
@@ -425,6 +428,7 @@ protected:
     , theRetired(false)
     , theSquashed(false)
     , theExecuted(true)
+    , thePageFault(false)
     , theInstructionClass(clsSynchronizing)
     , theHaltDispatch(false)
     , theHasCheckpoint(false)

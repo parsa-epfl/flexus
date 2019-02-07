@@ -104,7 +104,7 @@ using nuArchARM::uArchARM;
 using nuArchARM::eSize;
 
 struct Operation {
-    Operation() : theNZCVFlags{false} {}
+    Operation() : theNZCVFlags{false}, the128 {false} {}
   virtual ~Operation() {}
   virtual Operand operator()( std::vector< Operand > const & operands ) = 0;
   virtual Operand evalExtra( std::vector< Operand > const & operands ) {
@@ -133,12 +133,15 @@ struct Operation {
     return false;
   }
 
+  virtual bool is128() const {return the128;}
+
   virtual uint32_t getNZCVbits() { return theNZCV; }
   virtual bool hasNZCVFlags() { return theNZCVFlags; }
   bool theNZCVFlags;
   uint32_t theNZCV;
   std::vector< Operand > theOperands;
   SemanticInstruction * theInstruction;
+  bool the128;
 
 };
 
@@ -280,7 +283,7 @@ void connect( std::list<InternalDependance > const & dependances, simple_action 
 
 simple_action readRegisterAction ( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, eOperandCode anOperandCode, bool aSP, bool is64);
 simple_action readNZCVAction ( SemanticInstruction * anInstruction, eNZCV aBit, eOperandCode anOperandCode);
-simple_action readConstantAction( SemanticInstruction * anInstruction, bits aVal, eOperandCode anOperandCode);
+simple_action readConstantAction( SemanticInstruction * anInstruction, uint64_t aVal, eOperandCode anOperandCode);
 simple_action calcAddressAction(SemanticInstruction * anInstruction, std::vector< std::list<InternalDependance> > & opDeps );
 simple_action translationAction(SemanticInstruction *anInstruction);
 
@@ -294,7 +297,7 @@ predicated_action incrementAction ( SemanticInstruction * anInstruction, eOperan
 predicated_action shiftAction(SemanticInstruction * anInstruction, eOperandCode aRegisterCode, std::unique_ptr<Operation> & aShiftOp, uint64_t aShiftAmount, bool is64);
 predicated_action invertAction(SemanticInstruction * anInstruction, eOperandCode aRegisterCode, bool is64);
 predicated_action conditionSelectAction(SemanticInstruction * anInstruction, std::unique_ptr<Condition> & anOperation, uint32_t aCode, std::vector< std::list<InternalDependance> > & opDeps, eOperandCode aResult, bool anInvert, bool anIncrement, bool a64);
-predicated_action constantAction (SemanticInstruction * anInstruction, bits aConstant, eOperandCode aResult, boost::optional<eOperandCode> aBypass );
+predicated_action constantAction (SemanticInstruction * anInstruction, uint64_t aConstant, eOperandCode aResult, boost::optional<eOperandCode> aBypass );
 predicated_action operandAction(SemanticInstruction * anInstruction, eOperandCode anOperand, eOperandCode aResult, int anOffset, boost::optional<eOperandCode> aBypass);
 predicated_action conditionCompareAction(SemanticInstruction * anInstruction, std::unique_ptr<Condition> & anOperation, uint32_t aCode, std::vector< std::list<InternalDependance> > & opDeps, eOperandCode aResult, bool aSub_op, bool a64);
 predicated_action executeAction(SemanticInstruction * anInstruction, std::unique_ptr<Operation> & anOperation, std::vector< std::list<InternalDependance> > & opDeps, eOperandCode aResult, boost::optional<eOperandCode> aBypass);

@@ -195,7 +195,7 @@ Effect * checkSysRegAccess(SemanticInstruction * inst, ePrivRegs aPrivReg, uint8
 Effect * mapXTRA(SemanticInstruction * inst);
 Effect * forceResync(SemanticInstruction * inst);
 Effect * immuException(SemanticInstruction * inst);
-Effect * dmmuTranslationCheck(SemanticInstruction * inst);
+Effect * mmuPageFaultCheck(SemanticInstruction * inst);
 
 } //narmDecoder
 

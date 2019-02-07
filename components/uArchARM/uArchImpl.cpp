@@ -348,22 +348,6 @@ private:
       boost::intrusive_ptr< MemOp > op(theMicroArch->popMemOp());
       if (! op ) break;
 
-//      DBG_Assert( VVerb, ( << "Send Request: " << *op) );
-      CORE_DBG( "Send Request: " << *op);
-
-    if ( op->theOperation != kPageWalkRequest){
-      if (op->theInstruction->isExclusive() && op->theOperation == kLoad) {
-          theMicroArch->markExclusiveLocal(op->thePAddr, op->theSize);
-      } else if (op->theInstruction->isExclusive() && op->theOperation == kStore) {
-          if (! theMicroArch->isExclusiveLocal(op->thePAddr, op->theSize)){
-              break;
-          } else {
-              theMicroArch->clearExclusiveLocal();
-          }
-      }
-    }
-
-
       MemoryTransport transport;
       boost::intrusive_ptr<MemoryMessage> operation;
 

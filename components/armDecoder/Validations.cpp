@@ -75,10 +75,13 @@ bool validateXRegister::operator () () {
     return true;
   }
 
-  bits flexus = theInstruction->operand< bits > (theOperandCode);
-  bits qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readXRegister( theReg );
+  uint64_t flexus = theInstruction->operand< uint64_t > (theOperandCode);
+  uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readXRegister( theReg );
 
-  DBG_( VVerb, ( << "Validating mapped_reg " << theReg << " flexus=" << std::hex << flexus << " qemu=" << qemu << std::dec << "\n" << std::internal << *theInstruction ) );
+  DBG_(Dev,(<< "flexus value: " << flexus ));
+  DBG_(Dev,(<< "qemu value:   " << qemu   ));
+
+  DBG_( Dev, ( << "Validating mapped_reg " << theReg << " flexus=" << std::hex << flexus << " qemu=" << qemu << std::dec << "\n" << std::internal << *theInstruction ) );
 
   return (flexus == qemu);
 }
@@ -126,7 +129,7 @@ bool validateMemory::operator () () {
 
   Flexus::Qemu::Processor c = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu());
 
-  VirtualMemoryAddress vaddr(theInstruction->operand< bits > (theAddressCode));
+  VirtualMemoryAddress vaddr(theInstruction->operand< uint64_t > (theAddressCode));
   PhysicalMemoryAddress paddr = c->translateVirtualAddress(vaddr);
 
 

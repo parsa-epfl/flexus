@@ -145,6 +145,7 @@ void SemanticInstruction::setMayRetire(int32_t aBit, bool aFlag) {
 
 bool SemanticInstruction::mayRetire() const {
   FLEXUS_PROFILE();
+  if (isPageFault()) return true;
   bool ok = theRetirementDepends[0] && theRetirementDepends[1] && theRetirementDepends[2] && theRetirementDepends[3];
   for (
     std::list< std::function< bool()> >::const_iterator iter = theRetirementConstraints.begin(),
@@ -288,6 +289,14 @@ void SemanticInstruction::doCommitEffects() {
   //Clear predecessor to avoid leaking instructions
   thePredecessor = 0;
 };
+
+void SemanticInstruction::pageFault(){
+    thePageFault = true;
+}
+
+bool SemanticInstruction::isPageFault(){
+    return thePageFault;
+}
 
 void SemanticInstruction::squash() {
   FLEXUS_PROFILE();

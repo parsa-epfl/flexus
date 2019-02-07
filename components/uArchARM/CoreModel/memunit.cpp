@@ -491,12 +491,21 @@ void CoreImpl::pushTranslation(TranslationPtr aTranslation) {
 
     lsq_entry->thePaddr = aTranslation->thePaddr;
 
+    if (! insn->resync()){
+        resolvePAddr(insn);
 
-    resolvePAddr(insn);
+        DBG_(Dev, (<< "Resolved.. vaddr: " << lsq_entry->theVaddr
+                   << " to paddr " << lsq_entry->thePaddr ));
+    }
+    else {
+        DBG_(Dev, (<< "Not Resolved.. vaddr: " << lsq_entry->theVaddr << " due to resync." ));
 
-    DBG_(Dev, (<< "Resolved.. vaddr: " << lsq_entry->theVaddr
-               << " to paddr " << lsq_entry->thePaddr ));
+        lsq_entry->theException = kException_UNCATEGORIZED;
+//        lsq_entry->theDependance->squash();
+//        insn->squash();
+        insn->pageFault();
 
+    }
 
     DBG_Assert(lsq_entry->thePaddr != 0);
 
@@ -719,6 +728,8 @@ void CoreImpl::resolvePAddr( boost::intrusive_ptr< Instruction > anInsn) {
     memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( anInsn );
     DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end());
     DBG_Assert( lsq_entry->thePaddr != 0);
+
+
 
   switch (lsq_entry->status()) {
     case kComplete:

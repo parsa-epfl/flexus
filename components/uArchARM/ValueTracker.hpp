@@ -400,7 +400,7 @@ struct ValueTracker {
       //this processor
       //cpu->writePAddr( aligned, 8, updated_value );
 
-      DBG_( Iface, ( << "CPU[" << aCPU << "] Store.New " << anAddress << " no prior outstanding values. Now: "  << iter->second ) );
+      DBG_( Dev, ( << "CPU[" << aCPU << "] Store.New " << anAddress << " no prior outstanding values. Now: "  << iter->second ) );
 
     } else {
       if (iter->second.theSimicsReflectsCPU == kPoisonedByDMA) {

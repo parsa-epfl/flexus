@@ -97,7 +97,7 @@ void satisfyAtDispatch( SemanticInstruction * inst, std::list<InternalDependance
 uint64_t bitmask64(unsigned int length);
 uint64_t bitfield_replicate(uint64_t mask, unsigned int e);
 
-uint64_t highestSetBit(uint64_t val, uint64_t bitSize);
+uint32_t highestSetBit(bits val);
 uint64_t ones(uint64_t length);
 uint64_t ror(uint64_t input, uint64_t input_size, uint64_t shift_size);
 uint64_t lsl(uint64_t input, uint64_t input_size, uint64_t shift_size);

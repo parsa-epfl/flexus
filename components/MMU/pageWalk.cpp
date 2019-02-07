@@ -95,9 +95,16 @@ bool PageWalk::walk( TranslationTransport &  aTranslation ) {
                 << ", Read Raw TTE Desc. from QEMU : " << std::hex << basicPointer->rawTTEValue << std::dec ));
     /* Check Valid */
     bool validBit = extractSingleBitAsBool(basicPointer->rawTTEValue,0);
-    if (basicPointer->theInstruction )
-        DBG_(VVerb, (<< "Walking " << *basicPointer->theInstruction ));
-    DBG_Assert( validBit == true , ( << "Encountered INVALID entry in doTTEAccess: " << std::hex << basicPointer->rawTTEValue << std::dec << ", need to generate Page Fault."));
+    if (basicPointer->theInstruction ){
+        DBG_(Dev, (<< "Walking " << *basicPointer->theInstruction ));
+    }
+    if (validBit != true) {
+        DBG_Assert(basicPointer->isData());
+        basicPointer->theInstruction->forceResync();
+        basicPointer->setDone();
+        return;
+    }
+//    DBG_Assert( validBit == true , ( << "Encountered INVALID entry in doTTEAccess: " << std::hex << basicPointer->rawTTEValue << std::dec << ", need to generate Page Fault."));
     /* distinguish between block and table entries, could cut pwalk early!!! */
     bool isNextLevelTableEntry = extractSingleBitAsBool(basicPointer->rawTTEValue,1);
     if( statefulPointer->currentLookupLevel == 3 ) { /* Last level for all granules */
@@ -269,6 +276,9 @@ void PageWalk::setupTTResolver( TranslationTransport & aTranslation, uint64_t TT
                 if (! basicPointer->isWaiting()){
                     preTranslate(item);
                     basicPointer->toggleReady();
+                    if (basicPointer->isDone()){
+                        return;
+                    }
                 } else
                     translate(item);
                 basicPointer->toggleWaiting();

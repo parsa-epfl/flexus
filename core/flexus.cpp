@@ -1151,13 +1151,7 @@ void deinitFlexus(){
         delete theFlexusFactory;
 }
 void startTimingFlexus(){
-//   int skipcount = 0;
-//   while (skipcount++ < 100) {
-//           DBG_(Dev, (<< "Skipping Cycle: " << skipcount));
-//           for (int i=0; i < QEMU_get_num_cores(); i++){
-//                QEMU_cpu_execute(QEMU_get_cpu_by_index(i));
-//    }
-   while (theFlexus->cycleCount() <= Qemu::API::QEMU_getSimulationTime()) {
+   while (Qemu::API::QEMU_getSimulationTime() > 1) {
          theFlexus->doCycle();
     }
 

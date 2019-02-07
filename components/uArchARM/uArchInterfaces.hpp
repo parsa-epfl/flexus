@@ -548,6 +548,8 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction {
   virtual void connectuArch(uArchARM & uArchARM) = 0;
   virtual void doDispatchEffects() = 0;     //used
   virtual void squash() = 0;
+  virtual void pageFault() = 0;
+  virtual bool isPageFault() = 0;
   virtual void doRescheduleEffects() = 0;
   virtual void doRetirementEffects() = 0;       //used
   virtual void checkTraps() = 0;       //used
@@ -729,7 +731,7 @@ struct uArchARM {
     virtual void annulStoreValue( boost::intrusive_ptr< Instruction > anInsn ) { DBG_Assert(false); }
     virtual void updateCASValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, bits aCMPValue ) { DBG_Assert(false); }
     virtual void retireMem( boost::intrusive_ptr<Instruction> aCorrespondingInstruction) { DBG_Assert(false); }
-    virtual void checkTranslation( boost::intrusive_ptr<Instruction> anInsn) { DBG_Assert(false); }
+    virtual void checkPageFault( boost::intrusive_ptr<Instruction> anInsn) { DBG_Assert(false); }
     virtual void commitStore( boost::intrusive_ptr<Instruction> aCorrespondingInstruction) { DBG_Assert(false); }
     virtual uint32_t currentEL() { DBG_Assert(false); return 0; }
     virtual void invalidateCache(eCacheType aType, eShareableDomain aDomain, eCachePoint aPoint){ DBG_Assert(false); }

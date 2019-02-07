@@ -471,7 +471,8 @@ void CoreImpl::accountRetire( boost::intrusive_ptr<Instruction> anInst) {
   }
 
   //Determine cycle category (always based on last retire in cycle)
-  bool system = theROB.front()->isPriv();
+  bool system = (currentEL() == 1); /*theROB.front()->isPriv();*/
+
 
   theIsIdle = Flexus::Qemu::Processor::getProcessor(theNode)->hasWork() ? false : true;
 

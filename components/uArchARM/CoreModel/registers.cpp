@@ -273,7 +273,7 @@ void CoreImpl::getARMState( armState & aState) {
 void CoreImpl::restoreARMState( armState & aState) {
   //Note - assumes that resetv9 has been called to clear core state
 
-  for (int32_t i = 0; i < 31; ++i) {
+  for (int32_t i = 0; i < 32; ++i) {
     initializeRegister( xReg(i), aState.theGlobalRegs[i]);
   }
 //  for (int32_t i = 0 ; i < 64; ++i) {

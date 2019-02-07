@@ -246,7 +246,7 @@ void SemanticInstruction::doCommitEffects() {
 
 void SemanticInstruction::squash() {
   FLEXUS_PROFILE();
-  DBG_( Verb, ( <<  *this << " squashed" ) );
+  DBG_( Dev, ( <<  *this << " squashed" ) );
   theSquashed = true;
   theSquashEffects.invoke(*this);
   //Clear predecessor to avoid leaking instructions

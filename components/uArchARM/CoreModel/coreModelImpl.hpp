@@ -540,6 +540,7 @@ public:
   void skipCycle();
   void cycle(eExceptionType aPendingInterrupt);
   std::string dumpState();
+  bool checkValidatation();
 
 
 private:
@@ -585,7 +586,7 @@ public:
 
   void spinDetect( memq_t::index<by_insn>::type::iterator );
   void retireMem( boost::intrusive_ptr<Instruction> aCorrespondingInstruction);
-  void checkTranslation( boost::intrusive_ptr<Instruction> anInsn);
+  void checkPageFault( boost::intrusive_ptr<Instruction> anInsn);
   void commitStore( boost::intrusive_ptr<Instruction> aCorrespondingInstruction);
   bool checkStoreRetirement( boost::intrusive_ptr<Instruction> aStore);
   void accessMem( PhysicalMemoryAddress anAddress, boost::intrusive_ptr<Instruction> anInsn);

@@ -87,6 +87,8 @@ struct ReadRegisterAction : public BaseSemanticAction
 
   bool bypass(register_value aValue)
   {
+      theSP = false;
+
       if (!theSP) {
         if ( cancelled() || theInstruction->isRetired() || theInstruction->isSquashed() ) { return true; }
 
@@ -105,7 +107,9 @@ struct ReadRegisterAction : public BaseSemanticAction
   {
     DBG_(Dev, (<<*this));
 
-        Operand aValue;
+    theSP = false;
+
+        register_value aValue;
         uint64_t val;
         if (theSP) {
             if (core()->_PSTATE().SP() == 0) {
@@ -160,8 +164,7 @@ struct ReadRegisterAction : public BaseSemanticAction
 
         DBG_(Dev,(<< "Reading register " << theRegisterCode << "with a value " << aValue));
 
-        bits final(val);
-        theInstruction->setOperand(theOperandCode, final);
+        theInstruction->setOperand(theOperandCode, val);
         satisfyDependants();
   }
 

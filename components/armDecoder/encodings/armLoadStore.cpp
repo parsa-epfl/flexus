@@ -89,7 +89,7 @@ arminst CAS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     multiply_dependant_action update_address = updateCASAddressAction( inst );
     inst->addDispatchEffect( satisfy( inst, update_address.dependances[1] ) );
 
-    inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
+    inst->addCheckTrapEffect( mmuPageFaultCheck(inst) );
     inst->addRetirementEffect( retireMem(inst) );
     inst->addSquashEffect( eraseLSQ(inst) );
     inst->addCommitEffect( accessMem(inst) );
@@ -175,7 +175,7 @@ arminst STXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     addDestination(inst, rs, act, size == 64);
 
 
-    inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
+    inst->addCheckTrapEffect( mmuPageFaultCheck(inst) );
     inst->addRetirementEffect( retireMem(inst) );
     inst->addSquashEffect( eraseLSQ(inst) );
 
@@ -264,7 +264,7 @@ arminst STRL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     addReadXRegister(inst, 1, rn, rs_deps[0], size == 64 ? true : false);
     addReadXRegister(inst, 2, rt, rs_deps[1], size == 64 ? true : false);
 
-    inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
+    inst->addCheckTrapEffect( mmuPageFaultCheck(inst) );
     inst->addRetirementEffect( retireMem(inst) );
     inst->addSquashEffect( eraseLSQ(inst) );
 
@@ -304,7 +304,7 @@ arminst LDAQ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     addAddressCompute( inst, rs_deps ) ;
 
     addReadXRegister(inst, 1, rn, rs_deps[0], false);
-    inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
+    inst->addCheckTrapEffect( mmuPageFaultCheck(inst) );
     inst->addRetirementEffect( retireMem(inst) );
     inst->addSquashEffect( eraseLSQ(inst) );
 
@@ -347,7 +347,7 @@ arminst LDXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 
     inst->addDispatchEffect(markExclusiveMonitor(inst, kRS1, sz));
 
-    inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
+    inst->addCheckTrapEffect( mmuPageFaultCheck(inst) );
     inst->addRetirementEffect( retireMem(inst) );
     inst->addSquashEffect( eraseLSQ(inst) );
 
@@ -385,7 +385,7 @@ arminst LDR_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenc
     uint32_t size = 2;
 
 
-    int64_t offset = (int64_t)aFetchedOpcode.thePC + imm - 4;
+    uint64_t offset = (uint64_t)aFetchedOpcode.thePC + imm - 4;
 
 
     eMemOp memop = kMemOp_LOAD;
@@ -428,7 +428,7 @@ arminst LDR_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenc
     addAddressCompute(inst, rs_deps);
     inst->setOperand(kUopAddressOffset, offset);
 
-    inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
+    inst->addCheckTrapEffect( mmuPageFaultCheck(inst) );
     inst->addRetirementEffect( retireMem(inst) );
     inst->addSquashEffect( eraseLSQ(inst) );
 
@@ -483,7 +483,7 @@ arminst LDP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 
     addReadXRegister(inst, 1, rn, addr_deps[0], size/2 == 64);
     if (index != kPostIndex) {
-        inst->setOperand(kUopAddressOffset, imm7);
+        inst->setOperand(kUopAddressOffset, (uint64_t)imm7);
     }
 
     predicated_dependant_action load;
@@ -540,7 +540,7 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     }
 
     if (index != kPostIndex) {
-        inst->setOperand(kUopAddressOffset, (bits)imm7);
+        inst->setOperand(kUopAddressOffset, (uint64_t)imm7);
     }
 
 
@@ -653,7 +653,7 @@ arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 
     addAddressCompute( inst, rs_deps ) ;
     if (index != kPostIndex) {
-        inst->setOperand(kUopAddressOffset, imm);
+        inst->setOperand(kUopAddressOffset, (uint64_t)imm);
     }
     addReadXRegister(inst, 1, rn, rs_deps[0], regsize == 64);
 
@@ -673,7 +673,7 @@ arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     }
 
 
-    inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
+    inst->addCheckTrapEffect( mmuPageFaultCheck(inst) );
     inst->addRetirementEffect( retireMem(inst) );
     inst->addSquashEffect( eraseLSQ(inst) );
 
@@ -728,7 +728,8 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
         imm = sextract32(aFetchedOpcode.theOpcode, 12, 9);
     }
 
-    inst->setOperand(kUopAddressOffset, imm);
+    inst->setOperand(kUopAddressOffset, (uint64_t)imm);
+    DECODER_DBG("Address offset " << imm );
 
 
 
@@ -740,14 +741,14 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 
     addAddressCompute( inst, rs_deps ) ;
     if (index != kPostIndex) {
-        inst->setOperand(kUopAddressOffset, imm);
+        inst->setOperand(kUopAddressOffset, (uint64_t)imm);
     }
 
     addReadXRegister(inst, 1, rn, rs_deps[0], regsize == 64);
 
 
 
-//    inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
+    inst->addCheckTrapEffect( mmuPageFaultCheck(inst) );
     inst->addRetirementEffect( retireMem(inst) );
     inst->addSquashEffect( eraseLSQ(inst) );
 

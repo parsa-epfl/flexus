@@ -141,9 +141,14 @@ struct ExecuteAction : public ExecuteBase {
 
         DBG_(Dev, (<< "Writing results " << result << " in " << theResult ));
 
+        if (theOperation->is128()){
         bits res = boost::get<bits>(result);
-        theInstruction->setOperand(theResult, result);
-        DBG_( VVerb, ( << *this << " operands: " << OperandPrintHelper(operands) << " result=" << result ) );
+        theInstruction->setOperand(theResult,res );
+        } else {
+            uint64_t res = boost::get<uint64_t>(result);
+            theInstruction->setOperand(theResult, res);
+        }
+        DBG_( Dev, ( << *this << " operands: " << OperandPrintHelper(operands) << " result=" << result ) );
         if (theBypass) {
           mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass);
           register_value val = boost::apply_visitor( register_value_extractor(), result);

@@ -99,7 +99,7 @@ struct ConstantAction : public PredicatedSemanticAction {
 
 predicated_action constantAction
 ( SemanticInstruction * anInstruction
-  , bits aConstant
+  , uint64_t aConstant
   , eOperandCode aResult
   , boost::optional<eOperandCode> aBypass
 ) {

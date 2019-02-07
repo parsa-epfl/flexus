@@ -105,9 +105,9 @@ struct UpdateAddressAction : public BaseSemanticAction {
         if (theVirtual){
           DBG_Assert(theInstruction->hasOperand( theAddressCode ) );
 
-          bits addr = theInstruction->operand< bits > (theAddressCode);
+          uint64_t addr = theInstruction->operand< uint64_t > (theAddressCode);
           if (theInstruction->hasOperand( kUopAddressOffset ) ) {
-            bits offset = theInstruction->operand< bits > (kUopAddressOffset);
+            uint64_t offset = theInstruction->operand< uint64_t > (kUopAddressOffset);
             SEMANTICS_DBG("UpdateAddressAction: adding offset " << offset << " to address "<< addr);
             addr +=  offset;
             theInstruction->setOperand(theAddressCode, addr);

@@ -123,7 +123,7 @@ struct MapSourceEffect : public Effect {
     mapped_reg  mapped_name = anInstruction.core()->map( name );
     anInstruction.setOperand(theOutputCode, mapped_name);
 
-    SEMANTICS_DBG(anInstruction.identify() <<  theInputCode << " (" << name << ")" <<
+    DECODER_DBG(anInstruction.identify() <<  theInputCode << " (" << name << ")" <<
                                               " mapped to " << theOutputCode << "(" << mapped_name << ")");
 
     Effect::invoke(anInstruction);
@@ -256,7 +256,7 @@ struct MapDestinationEffect : public Effect {
       anInstruction.addSquashEffect( new(anInstruction.icb())  FreeMappingEffect( theOutputCode ) );
     }
 
-    SEMANTICS_DBG(anInstruction.identify() << " Mapping " << theInputCode <<"(" << name << ")" <<
+    DECODER_DBG(anInstruction.identify() << " Mapping " << theInputCode <<"(" << name << ")" <<
                                               " to " << theOutputCode <<"(" << mapped_name << ")" <<
                                               " previous mapping " << thePreviousMappingCode <<"(" <<  previous_mapping << ")" );
     Effect::invoke(anInstruction);
@@ -440,7 +440,7 @@ struct BranchFeedbackWithOperandEffect: public Effect {
     feedback->thePC = anInstruction.pc();
     feedback->theActualType = theType;
     feedback->theActualDirection = theDirection;
-    VirtualMemoryAddress target(anInstruction.operand< bits > (theOperandCode));
+    VirtualMemoryAddress target(anInstruction.operand< uint64_t > (theOperandCode));
     DBG_( VVerb, ( << anInstruction << " Update Branch predictor: " << theType << " " << theDirection << " to " << target) );
     feedback->theActualTarget = target;
     feedback->theBPState = anInstruction.bpState();
@@ -552,7 +552,7 @@ struct BranchAfterNextWithOperand : public Effect {
 
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
-    VirtualMemoryAddress target(anInstruction.operand< bits > (theOperandCode));
+    VirtualMemoryAddress target(anInstruction.operand< uint64_t > (theOperandCode));
     DBG_( VVerb, ( << anInstruction.identify() << " Branch after next instruction to " << theOperandCode << "(" << target << ")" ) );
     anInstruction.core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , new BranchInteraction(target) );
     Effect::invoke(anInstruction);
@@ -593,7 +593,7 @@ struct BranchConditionallyEffect: public Effect {
 
     FLEXUS_PROFILE();
     mapped_reg name = anInstruction.operand< mapped_reg > (theCCRCode);
-    bits cc = boost::get< bits >( anInstruction.core()->readRegister( name ) );
+    uint64_t cc = boost::get< uint64_t >( anInstruction.core()->readRegister( name ) );
 
     boost::intrusive_ptr<BranchFeedback> feedback( new BranchFeedback() );
     feedback->thePC = anInstruction.pc();
@@ -651,7 +651,7 @@ struct BranchRegConditionallyEffect: public Effect {
       DBG_( VVerb, ( << anInstruction << " BranchRegConditionallyEffect " ) );//NOOSHIN
 
     FLEXUS_PROFILE();
-    bits val = anInstruction.operand< bits > (theValueCode);
+    uint64_t val = anInstruction.operand< uint64_t > (theValueCode);
 
     boost::intrusive_ptr<BranchFeedback> feedback( new BranchFeedback() );
     feedback->thePC = anInstruction.pc();
@@ -951,7 +951,7 @@ struct ReadPREffect: public Effect {
       SysRegInfo& ri = getPriv(thePR);
       DBG_( Verb, ( << anInstruction << " Read " << ri.name << " value= " << std::hex << rs << std::dec ) );
 
-      bits prVal = ri.readfn(anInstruction.core());
+      uint64_t prVal = ri.readfn(anInstruction.core());
       anInstruction.setOperand(kResult, prVal);
 
       mapped_reg name = anInstruction.operand< mapped_reg > (kOperand1);
@@ -982,12 +982,12 @@ struct WritePREffect: public Effect {
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
     if (! anInstruction.isAnnulled()) {
-      bits rs  = 0;
+      uint64_t rs  = 0;
       SysRegInfo& ri = getPriv(thePR);
       if (anInstruction.hasOperand(kResult)){
-          rs = anInstruction.operand< bits > (kResult);
+          rs = anInstruction.operand< uint64_t > (kResult);
       } else if (anInstruction.hasOperand(kResult1)){
-          rs = anInstruction.operand< bits > (kResult1);
+          rs = anInstruction.operand< uint64_t > (kResult1);
       }
       DBG_( Verb, ( << anInstruction << " Write " << ri.name << " value= " << std::hex << rs << std::dec ) );
 
@@ -1017,7 +1017,7 @@ struct WritePSTATE: public Effect {
     FLEXUS_PROFILE();
     if (! anInstruction.isAnnulled()) {
 
-      bits val = anInstruction.operand< bits > (kResult);
+      uint64_t val = anInstruction.operand< uint64_t > (kResult);
       switch ( (theOp1 << 3) | theOp2) {
       case 0x3: case 0x4:
           anInstruction.setWillRaise(kException_SYSTEMREGISTERTRAP);
@@ -1063,8 +1063,8 @@ struct WriteNZCV: public Effect {
     if (! anInstruction.isAnnulled()) {
         SysRegInfo & ri = getPriv(kNZCV);
 
-        bits res = anInstruction.operand< bits > (kResult);
-        bits val = 0;
+        uint64_t res = anInstruction.operand< uint64_t > (kResult);
+        uint64_t val = 0;
         val = PSTATE_N & res;
         if (res == 0) val |= PSTATE_Z;
 
@@ -1119,7 +1119,7 @@ struct MarkExclusiveMonitor: public Effect {
         FLEXUS_PROFILE();
         if (! anInstruction.isAnnulled()) {
 
-            bits addr = anInstruction.operand< bits > (theAddressCode);
+            uint64_t addr = anInstruction.operand< uint64_t > (theAddressCode);
 //            bool aligned = (bits(addr) == align(addr, theSize * 8));
             PhysicalMemoryAddress pAddress = anInstruction.translate();
 
@@ -1163,9 +1163,9 @@ struct ExclusiveMonitorPass: public Effect {
     void invoke(SemanticInstruction & anInstruction) {
 //        eAccType acctype = kAccType_ATOMIC;
 //        bool iswrite = true;
-        bits status = 1;
-        bits addr = anInstruction.operand< bits > (theAddressCode);
-        bool aligned = (bits(addr) == align((uint64_t)addr, theSize * 8));
+        uint64_t status = 1;
+        uint64_t addr = anInstruction.operand< uint64_t > (theAddressCode);
+        bool aligned = (uint64_t(addr) == align((uint64_t)addr, theSize * 8));
 
         if (!aligned) {
 //            bool secondstage = false;
@@ -1295,15 +1295,15 @@ Effect * forceResync(SemanticInstruction * inst) {
   return new(inst->icb()) ForceResyncEffect();
 }
 
-struct DMMUTranslationCheckEffect: public Effect {
-  DMMUTranslationCheckEffect( )
+struct MMUpageFaultCheckEffect: public Effect {
+  MMUpageFaultCheckEffect( )
   {}
 
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
-    DBG_( VVerb, ( << anInstruction << " DMMUTranslationCheckEffect " ) );//NOOSHIN
+    DBG_( VVerb, ( << anInstruction << " MMUpageFaultCheckEffect " ) );//NOOSHIN
 
-    anInstruction.core()->checkTranslation( boost::intrusive_ptr<Instruction>(& anInstruction));
+    anInstruction.core()->checkPageFault( boost::intrusive_ptr<Instruction>(& anInstruction));
 
     Effect::invoke(anInstruction);
   }
@@ -1314,8 +1314,8 @@ struct DMMUTranslationCheckEffect: public Effect {
   }
 };
 
-Effect * dmmuTranslationCheck(SemanticInstruction * inst) {
-  return new(inst->icb()) DMMUTranslationCheckEffect();
+Effect * mmuPageFaultCheck(SemanticInstruction * inst) {
+  return new(inst->icb()) MMUpageFaultCheckEffect();
 }
 
 struct IMMUExceptionEffect: public Effect {

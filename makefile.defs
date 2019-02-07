@@ -93,7 +93,7 @@ GCC=$(GCC_BINARY)
 endif
 
 GCC_LIB_PATH=$(GCC_PATH)/lib
-GCC_OPTFLAGS=-g -ggdb #-O2 -O3 -funroll-loops -fno-strict-aliasing
+GCC_OPTFLAGS=-g3 #-O2 -O3 -funroll-loops -fno-strict-aliasing
 #UNCOMMENT FOR GCC
 GCC_LANGFLAGS=-Wall -fmessage-length=160 -fpermissive -x c++ -fPIC #-Werror -Wno-unused -Wno-maybe-uninitialized -Wno-parentheses -Wno-int-to-pointer-cast -Wno-logical-not-parentheses -DNO_STORAGE -DBOOST_SYSTEM_NO_DEPRECATED 
 #UNCOMMENT FOR CLANG

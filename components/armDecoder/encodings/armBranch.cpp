@@ -51,19 +51,17 @@ static void branch_always( SemanticInstruction * inst, bool immediate, VirtualMe
     inst->addRetirementEffect( updateUnconditional( inst, target ) );
 }
 
-static void branch_cond( SemanticInstruction * inst, VirtualMemoryAddress target, eCondCode aCode, std::vector<std::list<InternalDependance>> & rs_deps) {
+static void branch_cond( SemanticInstruction * inst, VirtualMemoryAddress target, eCondCode aCode, std::list<InternalDependance> & rs_deps) {
     DECODER_TRACE;
 
   inst->setClass(clsBranch, codeBranchConditional);
 
-  dependant_action br = branchCondAction( inst, target, condition(aCode), rs_deps.size()) ;
+  dependant_action br = branchCondAction( inst, target, condition(aCode), 1) ;
   connectDependance( inst->retirementDependance(), br );
 
-  for (size_t i = 0; i < rs_deps.size(); i++){
-    rs_deps[i].push_back( br.dependance );
-  }
+    rs_deps.push_back( br.dependance );
 
-  inst->addDispatchAction( br );
+//  inst->addDispatchAction( br );
   inst->addRetirementEffect( updateConditional(inst) );
 }
 
@@ -117,7 +115,7 @@ arminst CMPBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceN
     VirtualMemoryAddress target = VirtualMemoryAddress(aFetchedOpcode.thePC + (sextract32(aFetchedOpcode.theOpcode, 5, 19) * 4) - 4);
 
     std::vector<std::list<InternalDependance>>  rs_deps(1);
-    branch_cond(inst, target, iszero ? kCBZ_ : kCBNZ_, rs_deps);
+    branch_cond(inst, target, iszero ? kCBZ_ : kCBNZ_, rs_deps[0]);
     addReadXRegister(inst, 1, rt, rs_deps[0], sf);
 
     return inst;
@@ -147,13 +145,11 @@ arminst TSTBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceN
     bool bit_val = ! (extract32(aFetchedOpcode.theOpcode, 24, 1));
     VirtualMemoryAddress target(aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 5, 14) * 4 - 4);
 
+    std::vector<std::list<InternalDependance> > rs_deps(1);
+    branch_cond(inst, target, bit_val ? kTBZ_ : kTBNZ_, rs_deps[0]);
 
-    std::vector<std::list<InternalDependance> > rs_deps(2);
     addReadXRegister(inst, 1, rt, rs_deps[0], sf);
-    addReadConstant(inst, 2, (1ULL << bit_pos), rs_deps[1]);
-
-
-    branch_cond(inst, target, bit_val ? kTBZ_ : kTBNZ_, rs_deps);
+    inst->setOperand(kCondition, (1ULL << bit_pos));
 
 
 
@@ -180,7 +176,7 @@ arminst CONDBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequence
     if (cond < 0x0e) {
         /* genuinely conditional branches */
         std::vector<std::list<InternalDependance>> rs_deps(1);
-        branch_cond(inst, target, kBCOND_, rs_deps);
+        branch_cond(inst, target, kBCOND_, rs_deps[0]);
         addReadConstant(inst, 1, cond, rs_deps[0]);
 
     } else {
@@ -260,7 +256,6 @@ DECODER_TRACE;
 
 
     std::vector<std::list<InternalDependance> > rs_deps(1);
-    addReadXRegister(inst, 1, rn, rs_deps[0], true);
 
     simple_action target = calcAddressAction( inst, rs_deps);
     dependant_action br = branchToCalcAddressAction( inst );
@@ -271,10 +266,13 @@ DECODER_TRACE;
     // Link
     if (branch_type == kCall){
         std::unique_ptr<Operation> addop = operation(kMOV_);
-        addop->setOperands(aFetchedOpcode.thePC + 4);
+        addop->setOperands((uint64_t)aFetchedOpcode.thePC + 4);
         predicated_action exec = addExecute(inst, std::move(addop), rs_deps);
         addDestination(inst, 30, exec, true);
     }
+
+    addReadXRegister(inst, 1, rn, rs_deps[0], true);
+
 
     return inst;
 }

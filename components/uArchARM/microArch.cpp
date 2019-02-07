@@ -355,6 +355,7 @@ public:
       }
 
       resynchronize();
+
       if ( theBreakOnResynchronize ) {
         DBG_( Dev, ( << "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id() << "] Resynchronize complete\n========================================================\n" ) );
         theCPU->breakSimulation();
@@ -379,7 +380,7 @@ private:
   void resynchronize() {
     FLEXUS_PROFILE();
 
-    CORE_DBG("Resynchronizing...");
+    DBG_(Dev, (<<"Resynchronizing..."));
 
     //Clear out all state in theCore
     theCore->reset();
@@ -411,7 +412,7 @@ void resetArchitecturalState()
 {
     theCore->setPC( theCPU->getPC());
     resetRoundingMode();
-    resetSpecialRegs(); // Mark removed until exceptions can be read from QEMU
+    resetSpecialRegs();
     fillXRegisters();
     fillVRegisters();
 
@@ -445,7 +446,9 @@ void resetArchitecturalState()
 
   void resetSP_el(){
       for (uint8_t i=0; i<4; i++){
-          theCore->setSP_el( i, theCPU->readSP_el(i) );
+          uint64_t sp = theCPU->readSP_el(i);
+          DBG_(Dev, (<<  "SP = " <<std::hex << sp << std::dec));
+          theCore->setSP_el( i, sp );
       }
   }
 

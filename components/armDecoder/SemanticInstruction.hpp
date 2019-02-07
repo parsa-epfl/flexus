@@ -131,6 +131,8 @@ public:
   bool postValidate();
   void doDispatchEffects();
   void squash();
+  void pageFault();
+  bool isPageFault();
   void doRetirementEffects();
   void checkTraps();
   void doCommitEffects();

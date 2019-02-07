@@ -63,6 +63,18 @@ extern uint32_t theInsnCount;
 
 namespace nuArchARM {
 
+bool CoreImpl::checkValidatation(){
+    theFlexusDumpState = theQemuDumpState = "";
+
+    theFlexusDumpState = dumpState();
+    theQemuDumpState = Flexus::Qemu::Processor::getProcessor( theNode )->dump_state();
+
+    DBG_(Dev,(<<"Flexus:\n" <<theFlexusDumpState));
+    DBG_(Dev,(<<"Qemu:\n" <<theQemuDumpState));
+
+    return (theFlexusDumpState.compare(theQemuDumpState) == 0);
+}
+
 void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
 
     if (theEnable) theEnable = false;
@@ -432,27 +444,15 @@ void CoreImpl::spinDetect( memq_t::index<by_insn>::type::iterator iter) {
   }
 }
 
-void CoreImpl::checkTranslation( boost::intrusive_ptr<Instruction> anInsn) {
+void CoreImpl::checkPageFault( boost::intrusive_ptr<Instruction> anInsn) {
   memq_t::index<by_insn>::type::iterator iter = theMemQueue.get<by_insn>().find(anInsn);
   DBG_Assert(  iter != theMemQueue.get<by_insn>().end());
 
-  DBG_(VVerb, ( << " in checkTranslation!! " ) );//NOOSHIN
-  if (!anInsn->isAnnulled() && !anInsn->isSquashed()) {
-    DBG_(VVerb, ( << " is not Annulled " ) );//NOOSHIN
-    boost::intrusive_ptr<Flexus::SharedTypes::Translation> xlat/*(new Flexus::SharedTypes::Translation())*/;
-    xlat->theVaddr = iter->theVaddr;
-//    xlat.theASI = iter->theASI;
-    //xlat.theTL = getTL();
-    xlat->thePSTATE = getPSTATE() ;
-    xlat->theType = ( iter->isStore() ? Flexus::SharedTypes::Translation::eStore :  Flexus::SharedTypes::Translation::eLoad) ;
-//    translate(xlat);
-    iter->theException = kException_None;
-    if (iter->theException < kException_None ) {
-      DBG_(VVerb, ( <<  theName << " Taking MMU exception: " << iter->theException << " "  << *iter ) );//NOOSHIN
+    if (iter->theException != kException_None ) {
+      DBG_(Dev, ( <<  theName << " Taking MMU exception: " << iter->theException << " "  << *iter ) );
       takeTrap(anInsn, iter->theException);
       anInsn->setAccessAddress(PhysicalMemoryAddress(0));
     }
-  }
 }
 
 void CoreImpl::createCheckpoint( boost::intrusive_ptr<Instruction> anInsn) {
@@ -492,7 +492,7 @@ void CoreImpl::requireWritePermission( memq_t::index<by_insn>::type::iterator aW
   if (aWrite->thePaddr > 0) {
     std::map<PhysicalMemoryAddress, std::pair<int, bool> >::iterator sbline;
     bool is_new;
-    DBG_( Iface, ( << theName << "requireWritePermission : " << *aWrite ) );
+    DBG_( Dev, ( << theName << "requireWritePermission : " << *aWrite ) );
     std::tie(sbline, is_new) = theSBLines_Permission.insert( std::make_pair( addr, std::make_pair(1, false) ) );
     if ( is_new ) {
       ++theSBLines_Permission_falsecount;
@@ -1372,7 +1372,7 @@ std::string CoreImpl::dumpState(){
     sp.theType = xRegisters;
     sp.theIndex=31;
 
-    ss << std::hex << "PC=" << std::setw(16)<< std::setfill('0') << thePC << "  " << "SP=" << std::setw(16)<< std::setfill('0') << theSP_el[_PSTATE().EL()] << std::dec << std::endl;
+    ss << std::hex << "PC=" << std::setw(16)<< std::setfill('0') << thePC << "  " << "SP=" << std::setw(16)<< std::setfill('0') << boost::get<uint64_t>(theRegisters.peek(sp))/*theSP_el[_PSTATE().EL()]*/ << std::dec << std::endl;
 
     for (int i = 0; i < 31; i++) {
         mapped_reg mreg;
@@ -1506,8 +1506,10 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
 
   accountCommit(anInstruction, raised);
 
+  theEnable = true;
+
   if (anInstruction->resync()) {
-    CORE_DBG("Forced Resync:" << *anInstruction);
+    DBG_(Dev,(<<"Forced Resync:" << *anInstruction));
 
     //Subsequent Empty ROB stalls (until next dispatch) are the result of a
     //synchronizing instruction.
@@ -1518,15 +1520,10 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
     throw ResynchronizeWithQemuException(true);
   }
 
-  theFlexusDumpState = theQemuDumpState = "";
 
-  theFlexusDumpState = dumpState();
-  theQemuDumpState = Flexus::Qemu::Processor::getProcessor( theNode )->dump_state();
+//  bool f = checkValidatation();
+//  validation_passed &= f;
 
-  int a = theFlexusDumpState.compare(theQemuDumpState);
-  validation_passed &= (theFlexusDumpState.compare(theQemuDumpState) == 0);
-
-  theEnable = true;
 
   validation_passed &= anInstruction->postValidate();
   if (! validation_passed ) {
