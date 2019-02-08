@@ -91,9 +91,9 @@ struct ExtractAction : public PredicatedSemanticAction {
     if (ready()) {
       if (theInstruction->hasPredecessorExecuted()) {
 
-        uint64_t src =  boost::get<uint64_t>(theInstruction->operand(theOperandCode1));
-        uint64_t src2 =  boost::get<uint64_t>(theInstruction->operand(theOperandCode2));
-        uint64_t imm =  boost::get<uint64_t>(theInstruction->operand(theOperandCode2));
+        bits src =  boost::get<bits>(theInstruction->operand(theOperandCode1));
+        bits src2 =  boost::get<bits>(theInstruction->operand(theOperandCode2));
+        bits imm =  boost::get<bits>(theInstruction->operand(theOperandCode2));
 
         std::unique_ptr<Operation> op = operation(the64 ? kCONCAT64_ : kCONCAT32_);
         std::vector<Operand> operands = {src, src2, the64};
@@ -101,7 +101,7 @@ struct ExtractAction : public PredicatedSemanticAction {
 
         res >>= imm;
 
-        theInstruction->setOperand(kResult, res.to_ulong());
+        theInstruction->setOperand(kResult, res);
 
         satisfyDependants();
         theInstruction->setExecuted(true);

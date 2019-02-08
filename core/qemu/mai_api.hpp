@@ -174,7 +174,7 @@ public:
   }
 
   uint32_t fetchInstruction(VirtualMemoryAddress anAddress) {
-    return (uint32_t) readVirtualAddress(anAddress, 4).to_ulong();
+    return (uint32_t) readVirtualAddress(anAddress, 4);
   }
 
   int id() const { return theProcessorNumber; }

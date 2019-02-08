@@ -68,7 +68,7 @@ namespace narmDecoder {
 
 using namespace nuArchARM;
 
-static const uint64_t kAM = 0x8;
+static const bits kAM = 0x8;
 
 struct ReadPCAction : public PredicatedSemanticAction {
   eOperandCode theResult;
@@ -80,13 +80,13 @@ struct ReadPCAction : public PredicatedSemanticAction {
   }
 
   void doEvaluate() {
-//    uint64_t pstate = theInstruction->core()->getPSTATE() ;
+//    bits pstate = theInstruction->core()->getPSTATE() ;
 //    if (pstate & kAM ) {
 //      //Need to mask upper 32 bits when AM is set
-//      theInstruction->setOperand(theResult, static_cast<uint64_t>(theInstruction->pc()) & 0xFFFFFFFFULL);
+//      theInstruction->setOperand(theResult, static_cast<bits>(theInstruction->pc()) & 0xFFFFFFFFULL);
 
 //    } else {
-      theInstruction->setOperand(theResult, static_cast<uint64_t>(theInstruction->pc()));
+      theInstruction->setOperand(theResult, static_cast<bits>(theInstruction->pc()));
 //    }
     DBG_( VVerb, ( << *this << " read PC") );
     satisfyDependants();

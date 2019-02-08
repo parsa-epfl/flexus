@@ -162,10 +162,10 @@ public:
 
 //};
 
-typedef boost::dynamic_bitset<> bits;
-//typedef boost::multiprecision::int128_t bits;
+//typedef boost::dynamic_bitset<> bits;
+typedef boost::multiprecision::uint128_t bits;
 
-bits fillbits(const int bitSize);
+//bits fillbits(const int bitSize);
 bool anyBits(bits b);
 bits concat_bits (const bits & lhs, const bits & rhs);
 bits align(uint64_t x, int y);

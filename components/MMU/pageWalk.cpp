@@ -83,7 +83,7 @@ void PageWalk::preWalk( TranslationTransport &  aTranslation ) {
                 << ", Returned TTE Descriptor Address: " << TTEDescriptor << std::dec ));
 
     basicPointer->thePaddr = TTEDescriptor;
-//    uint64_t rawTTEValue = Flexus::Core::construct(QEMU_read_phys_memory(  TTEDescriptor, 8 ), 8).to_ulong();
+//    uint64_t rawTTEValue = Flexus::Core::construct(QEMU_read_phys_memory(  TTEDescriptor, 8 ), 8);
     pushMemoryRequest(basicPointer);
 }
 

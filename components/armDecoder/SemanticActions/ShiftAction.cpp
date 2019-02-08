@@ -73,9 +73,9 @@ struct ShiftRegisterAction : public BaseSemanticAction
   eOperandCode theRegisterCode;
   bool the64;
   std::unique_ptr<Operation> theShiftOperation;
-  uint64_t theShiftAmount;
+  bits theShiftAmount;
 
-  ShiftRegisterAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, std::unique_ptr<Operation> & aShiftOperation, uint64_t aShiftAmount, bool is64)
+  ShiftRegisterAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, std::unique_ptr<Operation> & aShiftOperation, bits aShiftAmount, bool is64)
     : BaseSemanticAction( anInstruction, 1 )
     , theRegisterCode( aRegisterCode )
     , the64(is64)
@@ -94,7 +94,7 @@ struct ShiftRegisterAction : public BaseSemanticAction
 
       aValue = theShiftOperation->operator ()({aValue, theShiftAmount});
 
-      uint64_t val = boost::get<uint64_t>(aValue);
+      bits val = boost::get<bits>(aValue);
 
       if (!the64) {
         val &= 0xffffffff;
@@ -112,7 +112,7 @@ struct ShiftRegisterAction : public BaseSemanticAction
 };
 
 simple_action shiftRegisterAction ( SemanticInstruction * anInstruction, eOperandCode aRegisterCode,
-                                   std::unique_ptr<Operation> & aShiftOp, uint64_t aShiftAmount, bool is64)
+                                   std::unique_ptr<Operation> & aShiftOp, bits aShiftAmount, bool is64)
 {
   return new(anInstruction->icb()) ShiftRegisterAction( anInstruction, aRegisterCode, aShiftOp, aShiftAmount, is64);
 }

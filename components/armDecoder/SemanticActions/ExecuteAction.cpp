@@ -250,7 +250,7 @@ struct FPExecuteAction : public ExecuteBase {
         }
         DBG_( VVerb, ( << *this << " operands: " << OperandPrintHelper(operands) << " val=" << result << " theResult=" << theResult) );
 
-//        uint64_t fpsr = core()->readFPSR();
+//        bits fpsr = core()->readFPSR();
 //        if (fpsr & 0xf) {
 //          core()->writeFPSR(fpsr & ~0xf);
 //        }

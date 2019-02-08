@@ -83,7 +83,7 @@ struct TranslationAction : public BaseSemanticAction
     if (ready())
     {
         DBG_Assert(theInstruction->hasOperand( kAddress ) );
-        VirtualMemoryAddress addr( theInstruction->operand< uint64_t > (kAddress));
+        VirtualMemoryAddress addr( theInstruction->operand< bits > (kAddress));
 
         theInstruction->core()->translate(boost::intrusive_ptr<Instruction>(theInstruction));
 

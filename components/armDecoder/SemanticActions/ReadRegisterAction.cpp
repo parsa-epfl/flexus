@@ -113,7 +113,7 @@ struct ReadRegisterAction : public BaseSemanticAction
 
       mapped_reg name = theInstruction->operand< mapped_reg > (theRegisterCode);
       eResourceStatus status = core()->requestRegister( name );
-      uint64_t val;
+      bits val;
       if (status == kReady) {
         Operand aValue;
         if (name.theIndex == 31) {
@@ -137,7 +137,7 @@ struct ReadRegisterAction : public BaseSemanticAction
             }
         } else {
             aValue = core()->readRegister( name );
-            val = boost::get<uint64_t>(aValue);
+            val = boost::get<bits>(aValue);
         }
 
 

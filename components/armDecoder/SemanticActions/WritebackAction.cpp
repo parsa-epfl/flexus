@@ -97,13 +97,13 @@ struct WritebackAction : public BaseSemanticAction {
       SEMANTICS_DBG("Writing " << theResult << " to " << theRd);
 
       register_value result = boost::apply_visitor( register_value_extractor(), theInstruction->operand( theResult ) );
-      uint64_t res = boost::get<uint64_t>(result);
+      bits res = boost::get<bits>(result);
       if (theRd == 31 && !theSetflags){
           // SP
           SysRegInfo& ri = getPriv(kSPSel);
 
           if (!the64){
-              uint64_t upper = ri.readfn(theInstruction->core()) & 0xffffffff00000000;
+              bits upper = ri.readfn(theInstruction->core()) & 0xffffffff00000000;
               res &= 0xffffffff;
               res |= upper;
               ri.writefn(theInstruction->core(), upper | res);
@@ -114,8 +114,8 @@ struct WritebackAction : public BaseSemanticAction {
           mapped_reg name = theInstruction->operand< mapped_reg > (theRd);
 
           if (!the64){
-              uint64_t upper = boost::get<uint64_t>(core()->readRegister(name)) & 0xffffffff00000000;
-              uint64_t res = boost::get<uint64_t>(result) & 0xffffffff;
+              bits upper = boost::get<bits>(core()->readRegister(name)) & 0xffffffff00000000;
+              bits res = boost::get<bits>(result) & 0xffffffff;
               res |= upper;
               result = res;
           }

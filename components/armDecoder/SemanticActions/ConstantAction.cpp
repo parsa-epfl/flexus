@@ -69,11 +69,11 @@ namespace narmDecoder {
 using namespace nuArchARM;
 
 struct ConstantAction : public PredicatedSemanticAction {
-  uint64_t theConstant;
+  bits theConstant;
   eOperandCode theResult;
   boost::optional<eOperandCode> theBypass;
 
-  ConstantAction( SemanticInstruction * anInstruction, uint64_t aConstant, eOperandCode aResult, boost::optional<eOperandCode> aBypass )
+  ConstantAction( SemanticInstruction * anInstruction, bits aConstant, eOperandCode aResult, boost::optional<eOperandCode> aBypass )
     : PredicatedSemanticAction( anInstruction, 1, true )
     , theConstant(aConstant)
     , theResult( aResult )
@@ -82,7 +82,7 @@ struct ConstantAction : public PredicatedSemanticAction {
   }
 
   void doEvaluate() {
-    theInstruction->setOperand(theResult, static_cast<uint64_t>(theConstant));
+    theInstruction->setOperand(theResult, static_cast<bits>(theConstant));
     DBG_( VVerb, ( << *this << " applied") );
     if (theBypass) {
       mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass);
@@ -99,7 +99,7 @@ struct ConstantAction : public PredicatedSemanticAction {
 
 predicated_action constantAction
 ( SemanticInstruction * anInstruction
-  , uint64_t aConstant
+  , bits aConstant
   , eOperandCode aResult
   , boost::optional<eOperandCode> aBypass
 ) {

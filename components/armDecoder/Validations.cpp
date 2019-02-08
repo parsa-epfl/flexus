@@ -75,8 +75,8 @@ bool validateXRegister::operator () () {
     return true;
   }
 
-  uint64_t flexus = theInstruction->operand< uint64_t > (theOperandCode);
-  uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readXRegister( theReg );
+  bits flexus = theInstruction->operand< bits > (theOperandCode);
+  bits qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readXRegister( theReg );
 
   DBG_( VVerb, ( << "Validating mapped_reg " << theReg << " flexus=" << std::hex << flexus << " qemu=" << qemu << std::dec << "\n" << std::internal << *theInstruction ) );
 
@@ -93,8 +93,8 @@ bool validatePC::operator () () {
     return true;
   }
 
-  uint64_t flexus = theAddr;
-  uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPC();
+  bits flexus = theAddr;
+  bits qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPC();
 
   DBG_( VVerb, ( << "Validating flexus PC=" << std::hex << flexus << " qemu PC=" << qemu << std::dec << "\n" << std::internal << *theInstruction ) );
 
@@ -108,8 +108,8 @@ bool validateVRegister::operator () () {
 //    return true; //Don't check
 //  }
 
-//  uint64_t flexus = theInstruction->operand< uint64_t > (theOperandCode);
-//  uint64_t simics = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readX( theReg & (~1) );
+//  bits flexus = theInstruction->operand< bits > (theOperandCode);
+//  bits simics = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readX( theReg & (~1) );
 //  if (theReg & 1) {
 //    simics &= 0xFFFFFFFFULL;
 //  } else {
@@ -124,14 +124,14 @@ bool validateMemory::operator () () {
 //    return true; //Don't check
 //  }
 
-//  VirtualMemoryAddress flexus_addr(theInstruction->operand< uint64_t > (theAddressCode));
+//  VirtualMemoryAddress flexus_addr(theInstruction->operand< bits > (theAddressCode));
 //  if (theInstruction->hasOperand( kUopAddressOffset ) ) {
-//    uint64_t offset = theInstruction->operand< uint64_t > (kUopAddressOffset);
+//    bits offset = theInstruction->operand< bits > (kUopAddressOffset);
 //    flexus_addr += offset;
 //  }
 
 //  flexus_addr += theAddrOffset;
-//  uint64_t flexus_value = theInstruction->operand< uint64_t > (theValueCode);
+//  bits flexus_value = theInstruction->operand< bits > (theValueCode);
 //  switch (theSize) {
 //    case kByte:
 //      flexus_value &= 0xFFULL;
@@ -164,7 +164,7 @@ bool validateMemory::operator () () {
 //    DBG_( VVerb, ( << "Non-memory store " << std::hex << asi << " flexus=" << flexus_value << " Insn: " << *theInstruction ) );
 //    return true;
 //  } else if (xlat.isTranslating() && !xlat.isSideEffect()) {
-//    //uint64_t simics_value = c->readVAddrXendian_QemuImpl( xlat.theVaddr, xlat.theASI, static_cast<int>(theSize) );
+//    //bits simics_value = c->readVAddrXendian_QemuImpl( xlat.theVaddr, xlat.theASI, static_cast<int>(theSize) );
 //    //DBG_( Dev, Condition( flexus_value != simics_value) ( << "Validation Mismatch for address " << flexus_addr << " flexus=" << std::hex << flexus_value << " simics=" << simics_value << std::dec << "\n" << std::internal << *theInstruction ) );
 //    return 1; //(1 || flexus_value == simics_value);
 //  } else {

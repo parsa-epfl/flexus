@@ -93,7 +93,7 @@ struct ExtendAction : public PredicatedSemanticAction
 
       aValue = theExtendOperation->operator ()({aValue});
 
-      uint64_t val = boost::get<uint64_t>(aValue);
+      bits val = boost::get<bits>(aValue);
 
       if (!the64) {
         val &= 0xffffffff;

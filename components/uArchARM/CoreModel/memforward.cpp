@@ -49,18 +49,18 @@ namespace nuArchARM {
 inline bits mask( eSize aSize) {
   switch (aSize) {
     case kByte:
-      return fillbits(8);
+      return 0xff;
     case kHalfWord:
-      return fillbits(16);
+      return 0xffff;
     case kWord:
-      return fillbits(32);
+      return 0xffffffff;
     case kDoubleWord:
-      return fillbits(64);
+      return 0xffffffffffffffff;
   case kQuadWord:
-    return fillbits(128);
+    return bits(0xffffffffffffffffffffffffffffffff);
   default:
       DBG_Assert( false );
-      return fillbits(0);
+      return 0;
   }
 }
 
@@ -136,7 +136,7 @@ void CoreImpl::forwardValue( MemQueueEntry const & aStore, memq_t::index< by_ins
         aLoad->loadValue() = aStore.theValue;
       } else {
           assert(false);
-//        aLoad->loadValue() = bits(Flexus::Qemu::endianFlip( (*aStore.theValue).to_ulong(), aStore.theSize));
+//        aLoad->loadValue() = bits(Flexus::Qemu::endianFlip( (*aStore.theValue), aStore.theSize));
         DBG_(Dev, ( << "Inverse endian forwarding of " << *aStore.theValue << " from " << aStore << " to " << *aLoad  << " load value: " << aLoad->loadValue() ));
       }
       signalStoreForwardingHit_fn(true);

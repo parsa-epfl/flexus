@@ -991,7 +991,7 @@ private:
 
         uint64_t pc = cpu(tr->theIndex)->readPC();
         PhysicalMemoryAddress ph = cpu(tr->theIndex)->translateVirtualAddress(VirtualMemoryAddress(pc));
-        uint64_t data = cpu(tr->theIndex)->readPhysicalAddress(ph, 4).to_ulong();
+        bits data = cpu(tr->theIndex)->readPhysicalAddress(ph, 4);
         uint32_t op = cpu(tr->theIndex)->fetchInstruction(tr->theVaddr);
 
         theBundle->updateOpcode(tr->theVaddr, op);

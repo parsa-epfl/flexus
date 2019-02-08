@@ -440,7 +440,7 @@ struct BranchFeedbackWithOperandEffect: public Effect {
     feedback->thePC = anInstruction.pc();
     feedback->theActualType = theType;
     feedback->theActualDirection = theDirection;
-    VirtualMemoryAddress target(anInstruction.operand< uint64_t > (theOperandCode));
+    VirtualMemoryAddress target(anInstruction.operand< bits > (theOperandCode));
     DBG_( VVerb, ( << anInstruction << " Update Branch predictor: " << theType << " " << theDirection << " to " << target) );
     feedback->theActualTarget = target;
     feedback->theBPState = anInstruction.bpState();
@@ -552,7 +552,7 @@ struct BranchAfterNextWithOperand : public Effect {
 
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
-    VirtualMemoryAddress target(anInstruction.operand< bits > (theOperandCode).to_ulong());
+    VirtualMemoryAddress target(anInstruction.operand< bits > (theOperandCode));
     DBG_( VVerb, ( << anInstruction.identify() << " Branch after next instruction to " << theOperandCode << "(" << target << ")" ) );
     anInstruction.core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , new BranchInteraction(target) );
     Effect::invoke(anInstruction);
@@ -601,7 +601,7 @@ struct BranchConditionallyEffect: public Effect {
     feedback->theActualTarget = theTarget;
     feedback->theBPState = anInstruction.bpState();
 
-    std::vector<Operand> operands = {cc.to_ulong()};
+    std::vector<Operand> operands = {cc};
 
     bool result = theCondition(operands);
 
@@ -951,7 +951,7 @@ struct ReadPREffect: public Effect {
       SysRegInfo& ri = getPriv(thePR);
       DBG_( Verb, ( << anInstruction << " Read " << ri.name << " value= " << std::hex << rs << std::dec ) );
 
-      uint64_t prVal = ri.readfn(anInstruction.core());
+      bits prVal = ri.readfn(anInstruction.core());
       anInstruction.setOperand(kResult, prVal);
 
       mapped_reg name = anInstruction.operand< mapped_reg > (kOperand1);
@@ -982,12 +982,12 @@ struct WritePREffect: public Effect {
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
     if (! anInstruction.isAnnulled()) {
-      uint64_t rs  = 0;
+      bits rs  = 0;
       SysRegInfo& ri = getPriv(thePR);
       if (anInstruction.hasOperand(kResult)){
-          rs = anInstruction.operand< uint64_t > (kResult);
+          rs = anInstruction.operand< bits > (kResult);
       } else if (anInstruction.hasOperand(kResult1)){
-          rs = anInstruction.operand< uint64_t > (kResult1);
+          rs = anInstruction.operand< bits > (kResult1);
       }
       DBG_( Verb, ( << anInstruction << " Write " << ri.name << " value= " << std::hex << rs << std::dec ) );
 
@@ -1017,7 +1017,7 @@ struct WritePSTATE: public Effect {
     FLEXUS_PROFILE();
     if (! anInstruction.isAnnulled()) {
 
-      uint64_t val = anInstruction.operand< uint64_t > (kResult);
+      bits val = anInstruction.operand< bits > (kResult);
       switch ( (theOp1 << 3) | theOp2) {
       case 0x3: case 0x4:
           anInstruction.setWillRaise(kException_SYSTEMREGISTERTRAP);
@@ -1063,8 +1063,8 @@ struct WriteNZCV: public Effect {
     if (! anInstruction.isAnnulled()) {
         SysRegInfo & ri = getPriv(kNZCV);
 
-        uint64_t res = anInstruction.operand< uint64_t > (kResult);
-        uint64_t val = 0;
+        bits res = anInstruction.operand< bits > (kResult);
+        bits val = 0;
         val = PSTATE_N & res;
         if (res == 0) val |= PSTATE_Z;
 
@@ -1119,7 +1119,7 @@ struct MarkExclusiveMonitor: public Effect {
         FLEXUS_PROFILE();
         if (! anInstruction.isAnnulled()) {
 
-            uint64_t addr = anInstruction.operand< uint64_t > (theAddressCode);
+            bits addr = anInstruction.operand< bits > (theAddressCode);
 //            bool aligned = (bits(addr) == align(addr, theSize * 8));
             PhysicalMemoryAddress pAddress = anInstruction.translate();
 
@@ -1163,8 +1163,8 @@ struct ExclusiveMonitorPass: public Effect {
     void invoke(SemanticInstruction & anInstruction) {
 //        eAccType acctype = kAccType_ATOMIC;
 //        bool iswrite = true;
-        uint64_t status = 1;
-        uint64_t addr = anInstruction.operand< uint64_t > (theAddressCode);
+        bits status = 1;
+        bits addr = anInstruction.operand< bits > (theAddressCode);
         bool aligned = (bits(addr) == align(addr, theSize * 8));
 
         if (!aligned) {

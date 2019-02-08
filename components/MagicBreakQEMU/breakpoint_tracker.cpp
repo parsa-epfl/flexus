@@ -122,7 +122,7 @@ class IterationTrackerImpl : public IterationTracker {
     Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor(aCpu);
 
     int64_t addr = int64_t(cpu->translateVirtualAddress(VirtualMemoryAddress(pc)) + 5);
-    aBreakpoint = (cpu->readPhysicalAddress( PhysicalMemoryAddress(addr), 8 ).to_ulong());
+    aBreakpoint = (cpu->readPhysicalAddress( PhysicalMemoryAddress(addr), 8 ));
 
     if ( (aBreakpoint & 0xFFFF0000LL) != 0xDEAD0000 ) {
       DBG_(Iface, ( << "Breakpoint does not have a marker" ) );
@@ -262,7 +262,7 @@ class TransactionTrackerImpl : public BreakpointTracker {
     Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor(aCpu);
 
     int64_t addr = int64_t(cpu->translateVirtualAddress(VirtualMemoryAddress(pc)) + 5);
-    aBreakpoint = (cpu->readPhysicalAddress( PhysicalMemoryAddress(addr), 8 ).to_ulong());
+    aBreakpoint = (cpu->readPhysicalAddress( PhysicalMemoryAddress(addr), 8 ));
 
     if ( (aBreakpoint & 0xFFFF0000LL) != 0xDEAD0000 ) {
       ++statJBB_Other;
@@ -475,7 +475,7 @@ class TerminateOnMagicBreakTracker : public BreakpointTracker {
     Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor(aCpu);
 
     int64_t addr = int64_t(cpu->translateVirtualAddress(VirtualMemoryAddress(pc)) + 5);
-    aBreakpoint = (cpu->readPhysicalAddress( PhysicalMemoryAddress(addr), 8 ).to_ulong());
+    aBreakpoint = (cpu->readPhysicalAddress( PhysicalMemoryAddress(addr), 8 ));
 
     if ( (aBreakpoint & 0xFFFF0000LL) != 0xDEAD0000 ) {
       DBG_(Iface, ( << "Breakpoint does not have a marker" ) );

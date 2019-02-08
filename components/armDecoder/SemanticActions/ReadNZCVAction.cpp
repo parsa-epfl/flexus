@@ -85,7 +85,7 @@ struct ReadNZCVAction : public BaseSemanticAction
   {
 
     SEMANTICS_DBG(*this);
-    uint64_t nzcv_bit;
+    bits nzcv_bit;
 
     switch (theBit) {
       case kN:

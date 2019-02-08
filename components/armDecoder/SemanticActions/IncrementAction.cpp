@@ -92,7 +92,7 @@ struct IncrementAction : public PredicatedSemanticAction
       mapped_reg name = theInstruction->operand< mapped_reg > (theRegisterCode);
       Operand aValue = core()->readRegister( name );
 
-      uint64_t val = boost::get<uint64_t>(aValue);
+      bits val = boost::get<bits>(aValue);
       val++;
 
       if (!the64) {

@@ -120,10 +120,10 @@ std::ostream & operator << ( std::ostream & anOstream, eOperandCode aCode) {
 std::ostream & operator << ( std::ostream & anOstream, Flexus::Core::bits const & aCC) {
   anOstream
       << " x{ "
-      << ( aCC[N] ? "" : "!" ) << "N "
-      << ( aCC[Z] ? "" : "!" ) << "Z "
-      << ( aCC[C] ? "" : "!" ) << "V "
-      << ( aCC[V] ? "" : "!" ) << "C "
+      << ( aCC & N ? "" : "!" ) << "N "
+      << ( aCC & Z ? "" : "!" ) << "Z "
+      << ( aCC & C ? "" : "!" ) << "V "
+      << ( aCC & V ? "" : "!" ) << "C "
       << "}";
   return anOstream;
 }

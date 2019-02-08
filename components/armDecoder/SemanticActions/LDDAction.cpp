@@ -100,8 +100,8 @@ struct LDDAction : public PredicatedSemanticAction {
 //    int32_t asi = theInstruction->operand< bits > (kOperand3);
 //    if (asi == 0x24 || asi == 0x34) {
 //      //Quad LDD
-//      uint64_t value = core()->retrieveLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
-//      uint64_t value1 = core()->retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
+//      bits value = core()->retrieveLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
+//      bits value1 = core()->retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
 //      theInstruction->setOperand(kResult, value );
 //      theInstruction->setOperand(kResult1, value1 );
 

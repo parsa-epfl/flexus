@@ -90,9 +90,9 @@ struct ReverseAction : public PredicatedSemanticAction
     SEMANTICS_DBG(*this);
 
     Operand in = theInstruction->operand(theInputCode);
-    uint64_t in_val = boost::get<uint64_t> (in);
+    bits in_val = boost::get<bits> (in);
     uint8_t dbsize = the64 ? 64 : 32;
-    uint64_t out_val = 0;
+    bits out_val = 0;
     for (int i =0; i < dbsize; i++){
       if ((in_val & 1 << i) == 1){
         out_val |= (1 << (dbsize - i));
@@ -130,20 +130,20 @@ struct ReorderAction : public PredicatedSemanticAction
     SEMANTICS_DBG(*this);
 
     Operand in = theInstruction->operand(theInputCode);
-    uint64_t in_val = boost::get<uint64_t> (in);
-    uint64_t out_val = 0;
+    bits in_val = boost::get<bits> (in);
+    bits out_val = 0;
 
     switch (theContainerSize) {
     case 16:
-        out_val = ((uint64_t)(__builtin_bswap16(in_val))) | (((uint64_t)(__builtin_bswap16(in_val >> 16))) << 16);
-        if (the64) out_val |= (((uint64_t)(__builtin_bswap16(in_val >> 32))) << 32) | (((uint64_t)(__builtin_bswap16(in_val >> 48))) << 48);
+        out_val = ((bits)(__builtin_bswap16((uint16_t)in_val))) | (((bits)(__builtin_bswap16((uint16_t)in_val >> 16))) << 16);
+        if (the64) out_val |= (((bits)(__builtin_bswap16((uint16_t)in_val >> 32))) << 32) | (((bits)(__builtin_bswap16((uint16_t)in_val >> 48))) << 48);
         break;
     case 32:
-        out_val = ((uint64_t)(__builtin_bswap32(in_val)));
-        if (the64) out_val |= (((uint64_t)(__builtin_bswap32(in_val >> 32))) << 32);
+        out_val = ((bits)(__builtin_bswap32((uint32_t)in_val)));
+        if (the64) out_val |= (((bits)(__builtin_bswap32((uint32_t)in_val >> 32))) << 32);
         break;
     case 64:
-        out_val = (__builtin_bswap64(in_val));
+        out_val = (__builtin_bswap64((uint64_t)in_val));
         break;
     }
 
@@ -178,8 +178,8 @@ struct CountAction : public PredicatedSemanticAction
     SEMANTICS_DBG(*this);
 
     Operand in = theInstruction->operand(theInputCode);
-    uint64_t in_val = boost::get<uint64_t> (in);
-    uint64_t out_val = 0;
+    bits in_val = boost::get<bits> (in);
+    bits out_val = 0;
 
     switch (theCountOp) {
         case kCountOp_CLZ:
@@ -187,13 +187,13 @@ struct CountAction : public PredicatedSemanticAction
             break;
         case kCountOp_CLS:
         {
-            uint64_t mask;
+            bits mask;
             if (the64){
                 mask = 0x7FFFFFFFFFFFFFFFULL;
             } else {
                 mask = 0x000000007FFFFFFFULL;
             }
-            uint64_t i = (in_val >> 1) ^ (in_val & mask);
+            bits i = (in_val >> 1) ^ (in_val & mask);
             out_val = the64 ? ((clz32(i >> 32) == 0) ? (31 + clz32(i)) : (clz32(i >> 32) + clz32(i)) ) : (clz32(i));
             break;
         }
@@ -243,11 +243,11 @@ struct CRCAction : public PredicatedSemanticAction
 
     Operand in = theInstruction->operand(theInputCode);
     Operand in2 = theInstruction->operand(theInputCode2);
-    uint32_t acc = static_cast<uint32_t> (boost::get<uint64_t> (in));
-    uint64_t val = boost::get<uint64_t> (in2);
+    uint32_t acc = static_cast<uint32_t> (boost::get<bits> (in));
+    bits val = boost::get<bits> (in2);
 
-    bits tempacc = bits ( (32+(the64?64:32)) ,  ((uint64_t)(bitReverse(acc))) << (the64 ? 64 : 32));
-    bits tempval = bits ( (32+(the64?64:32)) ,  ((uint64_t)(bitReverse(val))) << 32 );
+    bits tempacc = bits ( (32+(the64?64:32)) ,  ((bits)(bitReverse(acc))) << (the64 ? 64 : 32));
+    bits tempval = bits ( (32+(the64?64:32)) ,  ((bits)(bitReverse(val))) << 32 );
 
     // Poly32Mod2 on a bitstring does a polynomial Modulus over {0,1} operation;
 
@@ -265,7 +265,7 @@ struct CRCAction : public PredicatedSemanticAction
     data.resize(32);
 
 
-    theInstruction->setOperand(theOutputCode, data.to_ulong());
+    theInstruction->setOperand(theOutputCode, data);
   }
 
   void describe( std::ostream & anOstream) const

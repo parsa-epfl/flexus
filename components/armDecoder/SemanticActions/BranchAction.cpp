@@ -231,7 +231,7 @@ struct BranchToCalcAddressAction : public BaseSemanticAction {
 
         //Feedback is taken care of by the updateUncoditional effect at retirement
         bits target = theInstruction->operand< bits > (theTarget);
-        VirtualMemoryAddress target_addr(target.to_ulong());
+        VirtualMemoryAddress target_addr(target);
         DBG_( VVerb, ( << *this << " branc to mapped_reg target: " << target_addr ) );
         core()->applyToNext( theInstruction, branchInteraction(target_addr) );
 

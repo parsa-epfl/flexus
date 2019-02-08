@@ -108,19 +108,19 @@ struct LoadAction : public PredicatedSemanticAction {
     
     switch (theSize) {
       case kByte:
-        value &= bits(value.size(), 0xFFULL);
+        value &= 0xFFULL;
         if ((theSignExtend != kNoExtention) && anyBits(value & bits(value.size(),0x80ULL))) {
           value |= theSignExtend == kSignExtend ? bits(value.size(),0xFFFFFFFFFFFFFF00ULL) : bits(value.size(),0ULL);
         }
         break;
       case kHalfWord:
-        value &= bits(value.size(),0xFFFFULL);
+        value &= value;
         if ((theSignExtend != kNoExtention) && anyBits(value & bits(value.size(),0x8000ULL))) {
             value |= theSignExtend == kSignExtend ? bits(value.size(),0xFFFFFFFFFFFFFF00ULL) : bits(value.size(),0ULL);
         }
         break;
       case kWord:
-        value &= bits(value.size(),0xFFFFFFFFULL);
+        value &= value;
         if ((theSignExtend != kNoExtention) && anyBits(value & bits(value.size(),0x80000000ULL))) {
             value |= theSignExtend == kSignExtend ? bits(value.size(),0xFFFFFFFFFFFFFF00ULL) : bits(value.size(),0ULL);
         }
@@ -134,12 +134,12 @@ struct LoadAction : public PredicatedSemanticAction {
         break;
     }
 
-    theInstruction->setOperand(kResult, value.to_ulong());
+    theInstruction->setOperand(kResult, value);
     SEMANTICS_DBG(*this << " received load value=" << value);
     if (theBypass) {
       mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass);
       SEMANTICS_DBG(*this << " bypassing value=" << value << " to " << name);
-      core()->bypass( name, value.to_ulong() );
+      core()->bypass( name, value );
     }
     satisfyDependants();
   }

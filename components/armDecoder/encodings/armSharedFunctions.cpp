@@ -87,7 +87,7 @@ std::unique_ptr<Operation> extend(eExtendType anExtend){
  * bits zero); returns that value replicated into every element
  * of size e in a 64 bit integer.
  */
-uint64_t bitfield_replicate(uint64_t mask, unsigned int e)
+uint64_t bitfield_replicate(bits mask, unsigned int e)
 {
     assert(e != 0);
     while (e < 64) {
@@ -176,7 +176,7 @@ void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t 
 
 }
 
-void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, uint64_t val, std::list<InternalDependance> & dependances){
+void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, bits val, std::list<InternalDependance> & dependances){
 
     DBG_Assert( anOpNumber == 1 || anOpNumber == 2 || anOpNumber == 3 || anOpNumber == 4 || anOpNumber == 5 );
     eOperandCode cOperand = eOperandCode( kOperand1 + anOpNumber - 1);
@@ -327,7 +327,7 @@ bool disas_ldst_compute_iss_sf(int size, bool is_signed, int opc)
 }
 
 
-uint64_t highestSetBit(uint64_t val, uint64_t bitSize){
+bits highestSetBit(bits val, bits bitSize){
     for (int i = bitSize -1; i >= 0; i--){
         if ((val & (1 << i)) == 1){
             return i;
@@ -336,49 +336,49 @@ uint64_t highestSetBit(uint64_t val, uint64_t bitSize){
     return 0;
 }
 
-uint64_t ones(uint64_t length){
-    uint64_t tmp;
-    for (uint64_t i=0; i<length; i++){
+bits ones(bits length){
+    bits tmp;
+    for (bits i=0; i<length; i++){
         tmp |= (1 << i);
     }
     return tmp;
 }
 
-uint64_t ror(uint64_t input, uint64_t input_size, uint64_t shift_size){
-    uint64_t mask = ones(shift_size);
-    uint64_t remaining_bits = input & mask;
+bits ror(bits input, bits input_size, bits shift_size){
+    bits mask = ones(shift_size);
+    bits remaining_bits = input & mask;
 
     input >>= shift_size;
     remaining_bits <<= (input_size - shift_size);
 
-    uint64_t filter = ones(input_size);
+    bits filter = ones(input_size);
 
     return (remaining_bits | input) & filter;
 }
 
-uint64_t lsl(uint64_t input, uint64_t input_size, uint64_t shift_size){
+bits lsl(bits input, bits input_size, bits shift_size){
     input <<= shift_size;
-    uint64_t filter = ones(input_size);
+    bits filter = ones(input_size);
     return input & filter;
 }
 
-uint64_t lsr(uint64_t input, uint64_t input_size, uint64_t shift_size){
+bits lsr(bits input, bits input_size, bits shift_size){
     input >>= shift_size;
-    uint64_t filter = ones(input_size);
+    bits filter = ones(input_size);
     return input & filter;
 }
 
-uint64_t asr(uint64_t input, uint64_t input_size, uint64_t shift_size){
+bits asr(bits input, bits input_size, bits shift_size){
     bool is_signed = ((input & (1 << input_size)) != 0) ? true : false;
     input >>= shift_size;
     if (is_signed){
         input |= (ones(4) << (input_size - 4));
     }
-    uint64_t filter = ones(input_size);
+    bits filter = ones(input_size);
     return input & filter;
 }
 
-bool decodeBitMasks(uint64_t & tmask, uint64_t & wmask, bool immN, char imms, char immr, bool immediate, uint32_t dataSize){
+bool decodeBitMasks(bits & tmask, bits & wmask, bool immN, char imms, char immr, bool immediate, uint32_t dataSize){
 
     uint32_t levels;
 
