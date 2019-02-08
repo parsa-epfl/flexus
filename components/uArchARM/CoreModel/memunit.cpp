@@ -971,7 +971,7 @@ void CoreImpl::updateStoreValue( boost::intrusive_ptr< Instruction > anInsn, bit
   DBG_Assert( lsq_entry->theOperation != kLoad );
   DBG_( Verb, ( << "Updated store value for " << *lsq_entry << " to " << aValue << "[:" << anExtendedValue << "]" ));
 
-  bits previous_value(lsq_entry->theValue);
+  boost::optional<bits> previous_value(lsq_entry->theValue);
 
   lsq_entry->theAnnulled = false;
   lsq_entry->theValue = aValue;

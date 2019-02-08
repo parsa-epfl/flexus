@@ -233,9 +233,9 @@ struct FPExecuteAction : public ExecuteBase {
           theInstruction->setOperand(theResult, val >> 32);
           mapped_reg name0 = theInstruction->operand< mapped_reg > (kPFD0);
           core()->bypass( name0,  val >> 32);
-          theInstruction->setOperand(eOperandCode(theResult + 1), val & bits(val.size(),0xFFFFFFFFULL));
+          theInstruction->setOperand(eOperandCode(theResult + 1), val & (bits)0xFFFFFFFFULL);
           mapped_reg name1 = theInstruction->operand< mapped_reg > (kPFD1);
-          core()->bypass( name1,  val & bits(val.size(),0xFFFFFFFFULL));
+          core()->bypass( name1,  val & (bits)0xFFFFFFFFULL);
 
         } else if (theSize == kWord) {
           //Word

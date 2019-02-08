@@ -106,9 +106,9 @@ struct WritebackAction : public BaseSemanticAction {
               bits upper = ri.readfn(theInstruction->core()) & 0xffffffff00000000;
               res &= 0xffffffff;
               res |= upper;
-              ri.writefn(theInstruction->core(), upper | res);
+              ri.writefn(theInstruction->core(), (uint64_t)(upper | res));
           } else {
-            ri.writefn(theInstruction->core(), res);
+            ri.writefn(theInstruction->core(), (uint64_t)res);
           }
       } else {
           mapped_reg name = theInstruction->operand< mapped_reg > (theRd);

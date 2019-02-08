@@ -76,10 +76,10 @@ void PageWalk::preWalk( TranslationTransport &  aTranslation ) {
 
     if( statefulPointer->currentLookupLevel == 0 ) {
         PhysicalMemoryAddress magicPaddr(QEMU_logical_to_physical(*Flexus::Qemu::Processor::getProcessor( theNode ),QEMU_DI_Instruction,basicPointer->theVaddr));
-        DBG_(VVerb,( <<" QEMU Translated: " << std::hex << basicPointer->theVaddr << std::dec << ", to: " << std::hex << magicPaddr << std::dec));
+        DBG_(Dev,( <<" QEMU Translated: " << std::hex << basicPointer->theVaddr << std::dec << ", to: " << std::hex << magicPaddr << std::dec));
     }
     PhysicalMemoryAddress TTEDescriptor( statefulPointer->TTAddressResolver->resolve(basicPointer->theVaddr) );
-    DBG_(VVerb,(<< "Current Translation Level: " << (unsigned int) statefulPointer->currentLookupLevel
+    DBG_(Dev,(<< "Current Translation Level: " << (unsigned int) statefulPointer->currentLookupLevel
                 << ", Returned TTE Descriptor Address: " << TTEDescriptor << std::dec ));
 
     basicPointer->thePaddr = TTEDescriptor;
@@ -91,7 +91,7 @@ bool PageWalk::walk( TranslationTransport &  aTranslation ) {
     boost::intrusive_ptr<TranslationState> statefulPointer(aTranslation[TranslationStatefulTag]);
     boost::intrusive_ptr<Translation> basicPointer(aTranslation[TranslationBasicTag]);
 
-    DBG_(VVerb,(<< "Current Translation Level: " << (unsigned int) statefulPointer->currentLookupLevel
+    DBG_(Dev,(<< "Current Translation Level: " << (unsigned int) statefulPointer->currentLookupLevel
                 << ", Read Raw TTE Desc. from QEMU : " << std::hex << basicPointer->rawTTEValue << std::dec ));
     /* Check Valid */
     bool validBit = extractSingleBitAsBool(basicPointer->rawTTEValue,0);

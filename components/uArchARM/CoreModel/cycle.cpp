@@ -640,7 +640,7 @@ void CoreImpl::retireMem( boost::intrusive_ptr<Instruction> anInsn) {
     if (iter->theOperation == kRMW) {
       ++theAtomicVal_RMWs;
       DBG_Assert(iter->theExtendedValue);
-      if ((*iter->theExtendedValue).none()) {
+      if (*iter->theExtendedValue == 0) {
         ++theAtomicVal_RMWs_Zero;
       } else {
         ++theAtomicVal_RMWs_NonZero;
@@ -649,7 +649,7 @@ void CoreImpl::retireMem( boost::intrusive_ptr<Instruction> anInsn) {
       ++theAtomicVal_CASs;
       DBG_Assert(iter->theExtendedValue, ( << *iter ) );
       DBG_Assert(iter->theCompareValue, ( << *iter ) );
-      if ((*iter->theExtendedValue).any()) {
+      if (*iter->theExtendedValue == 0) {
         ++theAtomicVal_CASs_Zero;
       } else {
         ++theAtomicVal_CASs_NonZero;
@@ -1750,7 +1750,7 @@ void CoreImpl::valuePredictAtomic() {
         if (lsq_head->theOperation == kCAS) {
           lsq_head->theExtendedValue = lsq_head->theCompareValue;
         } else {
-          lsq_head->theExtendedValue->reset();
+          lsq_head->theExtendedValue = 0;
         }
       }
       if (lsq_head->theDependance) {

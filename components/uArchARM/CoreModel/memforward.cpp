@@ -97,7 +97,7 @@ bool covers( MemQueueEntry const & aStore, MemQueueEntry const & aLoad) {
 bool intersects( MemQueueEntry const & aStore, MemQueueEntry const & aLoad) {
   bits required = makeMask(aLoad);
   bits available = makeMask(aStore) ;
-  return ( (required & available).any() );
+  return ((required & available) != 0);
 }
 
 bits align( MemQueueEntry const & anEntry, bool flipEndian ) {

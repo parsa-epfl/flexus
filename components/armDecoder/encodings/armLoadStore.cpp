@@ -385,7 +385,7 @@ arminst LDR_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenc
     uint32_t size = 2;
 
 
-    int64_t offset = aFetchedOpcode.thePC + (bits) imm - 4;
+    int64_t offset = (int64_t)aFetchedOpcode.thePC + imm - 4;
 
 
     eMemOp memop = kMemOp_LOAD;
@@ -449,7 +449,7 @@ arminst LDP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     uint32_t opc = extract32(aFetchedOpcode.theOpcode, 30, 2);
     bool L = extract32(aFetchedOpcode.theOpcode, 22, 1);
     eIndex index = getIndex(extract32(aFetchedOpcode.theOpcode, 23, 3));
-    bits imm7 = (bits)sextract32(aFetchedOpcode.theOpcode, 15, 7);
+    uint32_t imm7 = sextract32(aFetchedOpcode.theOpcode, 15, 7);
     uint32_t rt2 = extract32(aFetchedOpcode.theOpcode, 10, 5);
     uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
     uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
@@ -502,7 +502,7 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     uint32_t opc = extract32(aFetchedOpcode.theOpcode, 30, 2);
     uint32_t L = extract32(aFetchedOpcode.theOpcode, 22, 1);
     eIndex index = getIndex(extract32(aFetchedOpcode.theOpcode, 23, 3));
-    bits imm7 = (bits)sextract32(aFetchedOpcode.theOpcode, 15, 7);
+    uint32_t imm7 = sextract32(aFetchedOpcode.theOpcode, 15, 7);
     uint32_t rt2 = extract32(aFetchedOpcode.theOpcode, 10, 5);
     uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
     uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);

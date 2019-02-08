@@ -93,11 +93,11 @@ struct ExtractAction : public PredicatedSemanticAction {
 
         bits src =  boost::get<bits>(theInstruction->operand(theOperandCode1));
         bits src2 =  boost::get<bits>(theInstruction->operand(theOperandCode2));
-        bits imm =  boost::get<bits>(theInstruction->operand(theOperandCode2));
+        uint64_t imm =  (uint64_t)boost::get<bits>(theInstruction->operand(theOperandCode2));
 
         std::unique_ptr<Operation> op = operation(the64 ? kCONCAT64_ : kCONCAT32_);
         std::vector<Operand> operands = {src, src2, the64};
-        bits res =  boost::get<bits>(op->operator ()(operands));
+        uint64_t res =  (uint64_t)boost::get<bits>(op->operator ()(operands));
 
         res >>= imm;
 

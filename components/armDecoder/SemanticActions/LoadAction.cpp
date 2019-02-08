@@ -109,20 +109,20 @@ struct LoadAction : public PredicatedSemanticAction {
     switch (theSize) {
       case kByte:
         value &= 0xFFULL;
-        if ((theSignExtend != kNoExtention) && anyBits(value & bits(value.size(),0x80ULL))) {
-          value |= theSignExtend == kSignExtend ? bits(value.size(),0xFFFFFFFFFFFFFF00ULL) : bits(value.size(),0ULL);
+        if ((theSignExtend != kNoExtention) && anyBits(value & (bits)0x80ULL)) {
+          value |= theSignExtend == kSignExtend ? (bits)0xFFFFFFFFFFFFFF00ULL : 0ULL;
         }
         break;
       case kHalfWord:
         value &= value;
-        if ((theSignExtend != kNoExtention) && anyBits(value & bits(value.size(),0x8000ULL))) {
-            value |= theSignExtend == kSignExtend ? bits(value.size(),0xFFFFFFFFFFFFFF00ULL) : bits(value.size(),0ULL);
+        if ((theSignExtend != kNoExtention) && anyBits(value & (bits)0x8000ULL)) {
+            value |= theSignExtend == kSignExtend ? (bits)0xFFFFFFFFFFFFFF00ULL : 0ULL;
         }
         break;
       case kWord:
         value &= value;
-        if ((theSignExtend != kNoExtention) && anyBits(value & bits(value.size(),0x80000000ULL))) {
-            value |= theSignExtend == kSignExtend ? bits(value.size(),0xFFFFFFFFFFFFFF00ULL) : bits(value.size(),0ULL);
+        if ((theSignExtend != kNoExtention) && anyBits(value & (bits)0x80000000ULL)) {
+            value |= theSignExtend == kSignExtend ? (bits)0xFFFFFFFFFFFFFF00ULL : 0ULL;
         }
         break;
       case kDoubleWord:

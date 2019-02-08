@@ -62,7 +62,7 @@ arminst ADR(armcode const & aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     int64_t offset = sextract64(aFetchedOpcode.theOpcode, 5, 19);
     offset = (offset << 2) | extract32(aFetchedOpcode.theOpcode, 29, 2);
     bool op = extract32(aFetchedOpcode.theOpcode, 31, 1);
-    bits base = aFetchedOpcode.thePC;
+    uint64_t base = aFetchedOpcode.thePC;
 
     if (op) {
         /* ADRP (page based) */
@@ -156,7 +156,7 @@ arminst BFM(armcode const & aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
 
 
 
-    bits wmask, tmask;
+    uint64_t wmask, tmask;
     if (! decodeBitMasks(tmask, wmask, n, imms, immr, false, sf ? 64 : 32) ){
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
@@ -219,7 +219,7 @@ arminst MOVE(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     else
         addReadConstant(inst, 1, 0, rs_deps[0]);
 
-    bits val = 0;
+    uint64_t val = 0;
     for (uint8_t i = pos; i <= pos+15; i++){
         val |= (1ULL << i);
     }
@@ -255,7 +255,7 @@ arminst LOGICALIMM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequ
     uint32_t opc = extract32(aFetchedOpcode.theOpcode, 29, 2);
     bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
     std::unique_ptr<Operation> op;
-    bits tmask = 0, wmask = 0;
+    uint64_t tmask = 0, wmask = 0;
     bool setflags;
 
     switch (opc) {
@@ -301,7 +301,7 @@ arminst ALUIMM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequence
     DECODER_TRACE;
     uint32_t rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
     uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    bits imm = extract32(aFetchedOpcode.theOpcode, 10, 12);
+    uint32_t imm = extract32(aFetchedOpcode.theOpcode, 10, 12);
     uint32_t shift = extract32(aFetchedOpcode.theOpcode, 22, 2);
     bool setflags = extract32(aFetchedOpcode.theOpcode, 29, 1);
     bool sub_op = extract32(aFetchedOpcode.theOpcode, 30, 1);

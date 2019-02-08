@@ -7,6 +7,9 @@
 #include <core/exception.hpp>
 #include <core/qemu/configuration_api.hpp>
 #include <core/types.hpp>
+#include<string>
+#include <sstream>
+#include <iomanip>
 
 
 using namespace Flexus::Core;
@@ -159,10 +162,31 @@ public:
 
   bits readPhysicalAddress(PhysicalMemoryAddress anAddress, size_t aSize) const {
       uint8_t* buf = new uint8_t[aSize];
+      for (int i=0; i<aSize; i++) buf[i] = 0;
       API::QEMU_read_phys_memory( buf, API::physical_address_t(anAddress), aSize);
-      bits tmp = construct(buf, aSize);
+      bits tmp = 0;//construct(buf, aSize);
+      int64_t t2 = 0;
+      std::string String = "";
+      for (size_t i = 0; i < aSize; i++){
+
+//          ostringstream convert;   // stream used for the conversion
+//          convert << Number;      // insert the textual representation of 'Number' in the characters in the stream
+//          Result = convert.str(); // set 'Result' to the contents of the stream
+
+          t2 |= (uint64_t)(buf[i] << ((i*8)));
+      }
+      uint64_t t3;
+      for (int i = (aSize-1); i >= 0; i--){
+          String += std::to_string(buf[i]);
+
+          tmp |= (uint64_t)(buf[i] << ((aSize-1-i)*8));
+      }
+      std::stringstream(String) >>t3;
+
       delete [] buf;
-      return tmp;
+      DBG_(Dev,(<< std::hex << "reading physical address: " << t3 << std::dec));
+      DBG_(Dev,(<< std::hex << "reading physical address: " << t2 << std::dec));
+      return t2;
   }
 
   bits readVirtualAddress(VirtualMemoryAddress anAddress, size_t size) {

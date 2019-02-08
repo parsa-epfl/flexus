@@ -183,7 +183,9 @@ struct CountAction : public PredicatedSemanticAction
 
     switch (theCountOp) {
         case kCountOp_CLZ:
-            out_val = the64 ? ((clz32(in_val >> 32) == 0) ? (32 + clz32(in_val)) : (clz32(in_val >> 32) + clz32(in_val)) ) : (clz32(in_val));
+            out_val = the64 ? ((clz32((uint32_t)in_val >> 32) == 0) ? (32 + clz32((uint32_t)in_val))
+                                                                      : (clz32((uint32_t)in_val >> 32) + clz32((uint32_t)in_val)) )
+                                                                      : (clz32((uint32_t)in_val));
             break;
         case kCountOp_CLS:
         {
@@ -194,7 +196,9 @@ struct CountAction : public PredicatedSemanticAction
                 mask = 0x000000007FFFFFFFULL;
             }
             bits i = (in_val >> 1) ^ (in_val & mask);
-            out_val = the64 ? ((clz32(i >> 32) == 0) ? (31 + clz32(i)) : (clz32(i >> 32) + clz32(i)) ) : (clz32(i));
+            out_val = the64 ? ((clz32((uint32_t)i >> 32) == 0) ? (31 + clz32((uint32_t)i))
+                                                               : (clz32((uint32_t)i >> 32) + clz32((uint32_t)i)) )
+                                                               : (clz32((uint32_t)i));
             break;
         }
         default:
@@ -243,26 +247,26 @@ struct CRCAction : public PredicatedSemanticAction
 
     Operand in = theInstruction->operand(theInputCode);
     Operand in2 = theInstruction->operand(theInputCode2);
-    uint32_t acc = static_cast<uint32_t> (boost::get<bits> (in));
+    uint32_t acc = (uint32_t) (boost::get<bits> (in));
     bits val = boost::get<bits> (in2);
 
-    bits tempacc = bits ( (32+(the64?64:32)) ,  ((bits)(bitReverse(acc))) << (the64 ? 64 : 32));
-    bits tempval = bits ( (32+(the64?64:32)) ,  ((bits)(bitReverse(val))) << 32 );
+    bits tempacc = (bits)((bitReverse(acc)) << (the64 ? 64 : 32));
+    bits tempval = 0; //(bits)((bitReverse(val)) << 32) ;
 
     // Poly32Mod2 on a bitstring does a polynomial Modulus over {0,1} operation;
 
     tempacc ^= tempval;
     bits data = tempacc;
 
-    for (int i = data.size() -1; i >= 32; i--){
-        if (data[i] == 1){
-            data.resize(32 + (i-32));
-            data ^= bits(32 + (i-32), thePoly << (i-32));
-            break;
-        }
-    }
+//    for (int i = data.size() -1; i >= 32; i--){
+//        if (data[i] == 1){
+//            data.resize(32 + (i-32));
+//            data ^= thePoly << (i-32);
+//            break;
+//        }
+//    }
 
-    data.resize(32);
+    data &= 0xffffffff;
 
 
     theInstruction->setOperand(theOutputCode, data);

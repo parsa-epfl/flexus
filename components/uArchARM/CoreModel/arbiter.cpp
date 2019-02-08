@@ -348,8 +348,8 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
         DBG_( Verb, ( << "Cache atomic preload to invalid address for " << *lsq_entry ) );
         //Unable to map virtual address to physical address for load.  Load is
         //speculative or TLB miss.
-        lsq_entry->theValue->reset();
-        lsq_entry->theExtendedValue->reset();
+        lsq_entry->theValue= 0;
+        lsq_entry->theExtendedValue= 0;
         DBG_Assert(lsq_entry->theDependance);
         lsq_entry->theDependance->satisfy();
         return;
@@ -367,10 +367,8 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
         //Unable to map virtual address to physical address for load.  Load is
         //speculative or TLB miss.
         if (lsq_entry->theValue)
-        lsq_entry->theValue->reset();
-        if (lsq_entry->theExtendedValue)
-        lsq_entry->theExtendedValue->reset();
-        DBG_Assert(lsq_entry->theDependance);
+        lsq_entry->theValue= 0;
+        lsq_entry->theExtendedValue= 0;
         lsq_entry->theDependance->satisfy();
         return;
       }
@@ -439,7 +437,7 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
   if (lsq_entry->theValue) {
     op->theValue = *lsq_entry->theValue;
   } else {
-    op->theValue.reset();
+    op->theValue = 0;
   }
 
   boost::intrusive_ptr<TransactionTracker> tracker = new TransactionTracker;
@@ -592,7 +590,7 @@ void CoreImpl::issueStore() {
           if (theMemQueue.front().theValue) {
             op.theValue = *theMemQueue.front().theValue;
           } else {
-            op.theValue.reset();
+            op.theValue = 0;
           }
           theMemQueue.front().theIssued = true;
           //Need to inform ValueTracker that this store is complete
@@ -729,7 +727,7 @@ void CoreImpl::issueStorePrefetch( boost::intrusive_ptr<Instruction> anInstructi
   op->thePAddr = lsq_entry->thePaddr;
   op->thePC = lsq_entry->theInstruction->pc();
   op->theSize = lsq_entry->theSize;
-  op->theValue.clear();
+  op->theValue = 0;
   if (lsq_entry->theBypassSB) {
     DBG_(Dev, ( << "NAW store prefetch: " << *lsq_entry ) );
     op->theNAW = true;
@@ -771,7 +769,7 @@ void CoreImpl::issueAtomic() {
     if (theMemQueue.front().thePaddr == kInvalid) {
       //CAS to unsupported ASI.  Pretend the operation is done.
       theMemQueue.front().theIssued = true;
-      theMemQueue.front().theExtendedValue->reset();
+      theMemQueue.front().theExtendedValue= 0;
       theMemQueue.front().theStoreComplete = true;
       theMemQueue.front().theInstruction->resolveSpeculation();
       DBG_Assert(theMemQueue.front().theDependance);
@@ -913,8 +911,8 @@ void CoreImpl::checkExtraLatencyTimeout() {
       } else */if (lsq_head->theException != kException_None) {
         DBG_( Verb, ( << theName << " Memory access raises exception.  Completing the operation: " << *lsq_head ) );
         lsq_head->theIssued = true;
-        lsq_head->theValue->reset();
-        lsq_head->theExtendedValue->reset();
+        lsq_head->theValue= 0;
+        lsq_head->theExtendedValue= 0;
 
       } /*else if (interruptASI(lsq_head->theASI)) {
         if (lsq_head->isLoad()) {
@@ -928,10 +926,8 @@ void CoreImpl::checkExtraLatencyTimeout() {
 
         DBG_( Verb, ( << theName << " SideEffect access to unknown Paddr.  Completing the operation: " << *lsq_head ) );
         lsq_head->theIssued = true;
-        if (lsq_head->theValue)
-        lsq_head->theValue->reset();
-        if (lsq_head->theExtendedValue)
-        lsq_head->theExtendedValue->reset();
+        lsq_head->theValue= 0;
+        lsq_head->theExtendedValue= 0;
        if (lsq_head->isLoad()) {
           lsq_head->theInstruction->forceResync();
         }

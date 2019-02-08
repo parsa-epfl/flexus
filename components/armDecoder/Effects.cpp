@@ -991,7 +991,7 @@ struct WritePREffect: public Effect {
       }
       DBG_( Verb, ( << anInstruction << " Write " << ri.name << " value= " << std::hex << rs << std::dec ) );
 
-      ri.writefn(anInstruction.core(), rs);
+      ri.writefn(anInstruction.core(), (uint64_t)rs);
     }
     Effect::invoke(anInstruction);
   }
@@ -1026,14 +1026,14 @@ struct WritePSTATE: public Effect {
       case 0x5: // sp
       {
           SysRegInfo& ri = getPriv(kSPSel);
-          ri.writefn(anInstruction.core(), (val & 1));
+          ri.writefn(anInstruction.core(), (uint64_t)(val & 1));
         break;
       }
       case 0x1e: // daif set
-          anInstruction.core()->setDAIF(val | anInstruction.core()->_PSTATE().DAIF());
+          anInstruction.core()->setDAIF((uint32_t)val | anInstruction.core()->_PSTATE().DAIF());
         break;
       case 0x1f:  // daif clr
-          anInstruction.core()->setDAIF(val ^ anInstruction.core()->_PSTATE().DAIF());
+          anInstruction.core()->setDAIF((uint32_t)val ^ anInstruction.core()->_PSTATE().DAIF());
         break;
       default:
           anInstruction.setWillRaise(kException_UNCATEGORIZED);
@@ -1068,7 +1068,7 @@ struct WriteNZCV: public Effect {
         val = PSTATE_N & res;
         if (res == 0) val |= PSTATE_Z;
 
-        ri.writefn(anInstruction.core(), val);
+        ri.writefn(anInstruction.core(), (uint64_t)val);
 
     }
     Effect::invoke(anInstruction);
@@ -1165,7 +1165,7 @@ struct ExclusiveMonitorPass: public Effect {
 //        bool iswrite = true;
         bits status = 1;
         bits addr = anInstruction.operand< bits > (theAddressCode);
-        bool aligned = (bits(addr) == align(addr, theSize * 8));
+        bool aligned = (bits(addr) == align((uint64_t)addr, theSize * 8));
 
         if (!aligned) {
 //            bool secondstage = false;
