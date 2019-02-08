@@ -1,48 +1,10 @@
-// DO-NOT-REMOVE begin-copyright-block 
-//
-// Redistributions of any form whatsoever must retain and/or include the
-// following acknowledgment, notices and disclaimer:
-//
-// This product includes software developed by Carnegie Mellon University.
-//
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
-//
-// For more information, see the SimFlex project website at:
-//   http://www.ece.cmu.edu/~simflex
-//
-// You may not use the name "Carnegie Mellon University" or derivations
-// thereof to endorse or promote products derived from this software.
-//
-// If you modify the software you must place a notice on or within any
-// modified version provided or made available to any third party stating
-// that you have modified the software.  The notice shall include at least
-// your name, address, phone number, email address and the date and purpose
-// of the modification.
-//
-// THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
-// EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
-// THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
-// IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-// TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
-// BE LIABLE FOR ANY DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
-// SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
-// ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
-// CONTRACT, TORT OR OTHERWISE).
-//
-// DO-NOT-REMOVE end-copyright-block
+#include <components/uArch/uArch.hpp>
 
-
-#include <components/uArchARM/uArchARM.hpp>
-
-#define FLEXUS_BEGIN_COMPONENT uArchARM
+#define FLEXUS_BEGIN_COMPONENT uArch
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
 
-#include <components/CommonQEMU/Slices/MemoryMessage.hpp>
-#include <components/CommonQEMU/Slices/ExecuteState.hpp>
+#include <components/Common/Slices/MemoryMessage.hpp>
+#include <components/Common/Slices/ExecuteState.hpp>
 #include <components/MTManager/MTManager.hpp>
 
 #include "uArchInterfaces.hpp"
@@ -50,27 +12,31 @@
 #include <core/debug/debug.hpp>
 #include "microArch.hpp"
 
-#include <core/qemu/mai_api.hpp>
+#include <core/simics/mai_api.hpp>
 
 #define DBG_DefineCategories uArchCat, Special
 #define DBG_SetDefaultOps AddCat(uArchCat)
 #include DBG_Control()
 
-namespace nuArchARM {
+namespace nuArch {
 
 using namespace Flexus;
 using namespace Core;
 using namespace SharedTypes;
 
-class uArch_QemuObject_Impl  {
-  std::shared_ptr<microArch> theMicroArch;
+class uArch_SimicsObject_Impl  {
+  boost::shared_ptr<microArch> theMicroArch;
 public:
-  uArch_QemuObject_Impl(Flexus::Qemu::API::conf_object_t * /*ignored*/ ) {}
+  uArch_SimicsObject_Impl(Flexus::Simics::API::conf_object_t * /*ignored*/ ) {}
 
-  void setMicroArch(std::shared_ptr<microArch> aMicroArch) {
+  void setMicroArch(boost::shared_ptr<microArch> aMicroArch) {
     theMicroArch = aMicroArch;
   }
 
+  void testCkptRestore() {
+    DBG_Assert(theMicroArch);
+    theMicroArch->testCkptRestore();
+  }
   void printROB() {
     DBG_Assert(theMicroArch);
     theMicroArch->printROB();
@@ -118,34 +84,116 @@ public:
 
 };
 
-class uArch_QemuObject : public Qemu::AddInObject <uArch_QemuObject_Impl> {
-
-  typedef Qemu::AddInObject<uArch_QemuObject_Impl> base;
+class uArch_SimicsObject : public Simics::AddInObject <uArch_SimicsObject_Impl> {
+  typedef Simics::AddInObject<uArch_SimicsObject_Impl> base;
 public:
-  static const Qemu::Persistence  class_persistence = Qemu::Session;
+  static const Simics::Persistence  class_persistence = Simics::Session;
   //These constants are defined in Simics/simics.cpp
   static std::string className() {
-    return "uArchARM";
+    return "uArch";
   }
   static std::string classDescription() {
-    return "uArchARM object";
+    return "uArch object";
   }
 
-  uArch_QemuObject() : base() { }
-  uArch_QemuObject(Qemu::API::conf_object_t * aQemuObject) : base(aQemuObject) {}
-  uArch_QemuObject(uArch_QemuObject_Impl * anImpl) : base(anImpl) {}
+  uArch_SimicsObject() : base() { }
+  uArch_SimicsObject(Simics::API::conf_object_t * aSimicsObject) : base(aSimicsObject) {}
+  uArch_SimicsObject(uArch_SimicsObject_Impl * anImpl) : base(anImpl) {}
+
+  template <class Class>
+  static void defineClass(Class & aClass) {
+
+    aClass.addCommand
+    ( & uArch_SimicsObject_Impl::printROB
+      , "print-rob"
+      , "Print out ROB contents"
+    );
+
+    aClass.addCommand
+    ( & uArch_SimicsObject_Impl::printSRB
+      , "print-srb"
+      , "Print out SRB contents"
+    );
+
+    aClass.addCommand
+    ( & uArch_SimicsObject_Impl::printMemQueue
+      , "print-memqueue"
+      , "Print out MemQueue contents"
+    );
+
+    aClass.addCommand
+    ( & uArch_SimicsObject_Impl::printMSHR
+      , "print-mshr"
+      , "Print out MSHR contents"
+    );
+
+    aClass.addCommand
+    ( & uArch_SimicsObject_Impl::printRegMappings
+      , "print-reg-mappings"
+      , "Print out current register map table"
+      , "regset"
+    );
+
+    aClass.addCommand
+    ( & uArch_SimicsObject_Impl::printRegFreeList
+      , "print-reg-freelist"
+      , "Print out current register free list"
+      , "regset"
+    );
+
+    aClass.addCommand
+    ( & uArch_SimicsObject_Impl::printRegReverseMappings
+      , "print-reg-reversemappings"
+      , "Print out reverse register mappings"
+      , "regset"
+    );
+
+    aClass.addCommand
+
+    ( & uArch_SimicsObject_Impl::printRegAssignments
+      , "print-reg-assignment"
+      , "Print out ordered list of physical registers for each name"
+      , "regset"
+    );
+
+    aClass.addCommand
+    ( & uArch_SimicsObject_Impl::resynchronize
+      , "resynchronize"
+      , "Resynchronize with Simics"
+    );
+
+    aClass.addCommand
+    ( & uArch_SimicsObject_Impl::pregs
+      , "pregs"
+      , "Print architectural register contents"
+    );
+
+    aClass.addCommand
+    ( & uArch_SimicsObject_Impl::pregsAll
+      , "pregs-all"
+      , "Print architectural register contents"
+    );
+
+    aClass.addCommand
+    ( & uArch_SimicsObject_Impl::testCkptRestore
+      , "test-ckpt-restore"
+      , "Test checkpoint/restore implementation"
+    );
+
+  }
+
 };
 
-Qemu::Factory<uArch_QemuObject> theuArchQemuFactory;
+Simics::Factory<uArch_SimicsObject> theuArchSimicsFactory;
 
-class FLEXUS_COMPONENT(uArchARM) {
-  FLEXUS_COMPONENT_IMPL(uArchARM);
+class FLEXUS_COMPONENT(uArch) {
+  FLEXUS_COMPONENT_IMPL(uArch);
 
-  std::shared_ptr<microArch> theMicroArch;
-  uArch_QemuObject theuArchObject;
+  boost::shared_ptr<microArch> theMicroArch;
+  uArch_SimicsObject theuArchObject;
 
 public:
-  FLEXUS_COMPONENT_CONSTRUCTOR(uArchARM)
+  FLEXUS_COMPONENT_CONSTRUCTOR(uArch)
     : base( FLEXUS_PASS_CONSTRUCTOR_ARGS )
   {}
 
@@ -167,10 +215,10 @@ public:
     options.numStorePrefetches   = cfg.StorePrefetches;
     options.prefetchEarly        = cfg.PrefetchEarly;
     options.spinControlEnabled   = cfg.SpinControl;
-    options.consistencyModel     = (nuArchARM::eConsistencyModel)cfg.ConsistencyModel;
+    options.consistencyModel     = (nuArch::eConsistencyModel)cfg.ConsistencyModel;
     options.coherenceUnit        = cfg.CoherenceUnit;
     options.breakOnResynchronize = cfg.BreakOnResynchronize;
-//    options.validateMMU          = cfg.ValidateMMU;
+    options.validateMMU          = cfg.ValidateMMU;
     options.speculativeOrder     = cfg.SpeculativeOrder;
     options.speculateOnAtomicValue   = cfg.SpeculateOnAtomicValue;
     options.speculateOnAtomicValuePerfect   = cfg.SpeculateOnAtomicValuePerfect;
@@ -212,15 +260,15 @@ public:
     options.fpSqrtOpPipelineResetTime = cfg.FpSqrtOpPipelineResetTime;
 
     theMicroArch = microArch::construct ( options
-                                            , ll::bind( &uArchARMComponent::squash, this, ll::_1)
-                                            , ll::bind( &uArchARMComponent::redirect, this, ll::_1)
-                                            , ll::bind( &uArchARMComponent::changeState, this, ll::_1, ll::_2)
-                                            , ll::bind( &uArchARMComponent::feedback, this, ll::_1)
-                                            , ll::bind( &uArchARMComponent::signalStoreForwardingHit, this, ll::_1)
-                                            , ll::bind( &uArchARMComponent::resyncMMU, this, ll::_1)
+                                          , ll::bind( &uArchComponent::squash, this, ll::_1)
+                                          , ll::bind( &uArchComponent::redirect, this, ll::_1, ll::_2)
+                                          , ll::bind( &uArchComponent::changeState, this, ll::_1, ll::_2)
+                                          , ll::bind( &uArchComponent::feedback, this, ll::_1)
+                                          , ll::bind( &uArchComponent::notifyTMS, this, ll::_1, ll::_2, ll::_3) /* CMU-ONLY */
+                                          , ll::bind( &uArchComponent::signalStoreForwardingHit, this, ll::_1)
                                         );
 
-    theuArchObject = theuArchQemuFactory.create( (std::string("uarcharm-") + boost::padded_string_cast < 2, '0' > (flexusIndex())).c_str() );
+    theuArchObject = theuArchSimicsFactory.create( (std::string("uarch-") + boost::padded_string_cast < 2, '0' > (flexusIndex())).c_str() );
     theuArchObject->setMicroArch(theMicroArch);
 
   }
@@ -230,7 +278,6 @@ public:
 public:
   FLEXUS_PORT_ALWAYS_AVAILABLE(DispatchIn);
   void push( interface::DispatchIn const &, boost::intrusive_ptr< AbstractInstruction > & anInstruction ) {
-    DBG_(VVerb, (<<"Get the inst in uArchARM: "));
     theMicroArch->dispatch(anInstruction);
   }
 
@@ -259,43 +306,18 @@ public:
     theMicroArch->writePermissionLost(anAddress);
   }
 
-  FLEXUS_PORT_ALWAYS_AVAILABLE(dTranslationIn);
-  void push( interface::dTranslationIn const &,
-               TranslationPtr& aTranslate ) {
-
-      theMicroArch->pushTranslation(aTranslate);
-  }
-
-    FLEXUS_PORT_ALWAYS_AVAILABLE(MemoryRequestIn);
-   void push( interface::MemoryRequestIn const &,
-              TranslationPtr& aTranslation ) {
-
-     theMicroArch->issueMMU(aTranslation);
-}
-
-
-
-
 public:
   //The FetchDrive drive interface sends a commands to the Feeder and then fetches instructions,
   //passing each instruction to its FetchOut port.
   void drive(interface::uArchDrive const &) {
     doCycle();
-    if (theMicroArch->isEnable()){
-        bool tmp = true;
-        FLEXUS_CHANNEL(EnableOutFGU) << tmp;
-    }
   }
 
 private:
-  struct ResynchronizeWithQemuException {};
+  struct ResynchronizeWithSimicsException {};
 
   void squash(eSquashCause aSquashReason) {
     FLEXUS_CHANNEL( SquashOut ) << aSquashReason;
-  }
-  void resyncMMU(int32_t aNode) {
-      bool value = true;
-      FLEXUS_CHANNEL(ResyncOut) << value;
   }
 
   void changeState(int32_t aTL, int32_t aPSTATE) {
@@ -305,8 +327,8 @@ private:
     FLEXUS_CHANNEL( ChangeCPUState ) << state;
   }
 
-  void redirect(VirtualMemoryAddress aPC) {
-    VirtualMemoryAddress redirect_addr = aPC;
+  void redirect(VirtualMemoryAddress aPC, VirtualMemoryAddress aNextPC) {
+    std::pair< VirtualMemoryAddress, VirtualMemoryAddress> redirect_addr = std::make_pair( aPC, aNextPC);
     FLEXUS_CHANNEL( RedirectOut ) << redirect_addr;
   }
 
@@ -319,6 +341,17 @@ private:
     FLEXUS_CHANNEL( StoreForwardingHitSeen ) << value;
   }
 
+  /* CMU-ONLY-BLOCK-BEGIN */
+  void notifyTMS(PredictorMessage::tPredictorMessageType aType, PhysicalMemoryAddress anAddress, boost::intrusive_ptr<TransactionTracker> aTracker) {
+    //Inform TMS that we are completing read
+    boost::intrusive_ptr<PredictorMessage> pmsg (new PredictorMessage(aType, flexusIndex(), anAddress));
+    PredictorTransport pt;
+    pt.set(PredictorMessageTag, pmsg);
+    pt.set(TransactionTrackerTag, aTracker);
+    FLEXUS_CHANNEL(NotifyTMS) << pt;
+  }
+  /* CMU-ONLY-BLOCK-END */
+
   void doCycle() {
     if (cfg.Multithread) {
       if (nMTManager::MTManager::get()->runThisEX(flexusIndex())) {
@@ -330,17 +363,6 @@ private:
       theMicroArch->cycle();
     }
     sendMemoryMessages();
-    requestTranslations();
-  }
-
-  void requestTranslations() {
-      while (FLEXUS_CHANNEL( dTranslationOut ).available()) {
-          TranslationPtr op(theMicroArch->popTranslation());
-          if (! op ) break;
-
-          FLEXUS_CHANNEL(dTranslationOut) << op;
-      }
-
   }
 
   void sendMemoryMessages() {
@@ -348,27 +370,10 @@ private:
       boost::intrusive_ptr< MemOp > op(theMicroArch->popMemOp());
       if (! op ) break;
 
-//      DBG_Assert( VVerb, ( << "Send Request: " << *op) );
-      CORE_DBG( "Send Request: " << *op);
-
-    if ( op->theOperation != kPageWalkRequest){
-      if (op->theInstruction->isExclusive() && op->theOperation == kLoad) {
-          theMicroArch->markExclusiveLocal(op->thePAddr, op->theSize);
-      } else if (op->theInstruction->isExclusive() && op->theOperation == kStore) {
-          if (! theMicroArch->isExclusiveLocal(op->thePAddr, op->theSize)){
-              break;
-          } else {
-              theMicroArch->clearExclusiveLocal();
-          }
-      }
-    }
-
+      DBG_( Iface, ( << "Send Request: " << *op) );
 
       MemoryTransport transport;
       boost::intrusive_ptr<MemoryMessage> operation;
-
-      DBG_(Dev, (<< "Sending Memory Request: " <<  op->theOperation ));
-      DBG_(Dev, (<< "PW Instruction Memory Request: " <<  op->theInstruction << op->thePC ));
 
       if (op->theNAW) {
         DBG_Assert( op->theOperation == kStore );
@@ -388,35 +393,28 @@ private:
 
           case kStorePrefetch:
             //pc = Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
-            operation = MemoryMessage::newStorePrefetch(op->thePAddr, op->thePC, op->theValue);
+            operation = MemoryMessage::newStorePrefetch(op->thePAddr, op->thePC, DataWord(op->theValue));
             break;
 
           case kStore:
             //pc = Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
-            operation = MemoryMessage::newStore(op->thePAddr, op->thePC, op->theValue);
+            operation = MemoryMessage::newStore(op->thePAddr, op->thePC, DataWord(op->theValue));
             break;
 
           case kRMW:
             //pc = Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
-            operation = MemoryMessage::newRMW(op->thePAddr, op->thePC, op->theValue);
+            operation = MemoryMessage::newRMW(op->thePAddr, op->thePC, DataWord(op->theValue));
             break;
 
           case kCAS:
             //pc = Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
-            operation = MemoryMessage::newCAS(op->thePAddr, op->thePC, op->theValue);
+            operation = MemoryMessage::newCAS(op->thePAddr, op->thePC, DataWord(op->theValue));
             break;
-        case kPageWalkRequest:
-            operation = MemoryMessage::newPWRequest(op->thePAddr);
-            operation->setPageWalk();
-            break;
+
           default:
             DBG_Assert( false,  ( << "Unknown memory operation type: " << op->theOperation ) );
         }
-
       }
-      if (op->theOperation != kPageWalkRequest)
-        operation->theInstruction = op->theInstruction;
-
       operation->reqSize() = op->theSize;
       if (op->theTracker) {
         transport.set(TransactionTrackerTag, op->theTracker);
@@ -424,7 +422,7 @@ private:
         boost::intrusive_ptr<TransactionTracker> tracker = new TransactionTracker;
         tracker->setAddress( op->thePAddr );
         tracker->setInitiator(flexusIndex());
-        tracker->setSource("uArchARM");
+        tracker->setSource("uArch");
         tracker->setOS(false); //TWENISCH - need to set this properly
         transport.set(TransactionTrackerTag, tracker);
         op->theTracker = tracker;
@@ -483,7 +481,7 @@ private:
         boost::intrusive_ptr<TransactionTracker> tracker = new TransactionTracker;
         tracker->setAddress( op->thePAddr );
         tracker->setInitiator(flexusIndex());
-        tracker->setSource("uArchARM");
+        tracker->setSource("uArch");
         transport.set(TransactionTrackerTag, tracker);
       }
 
@@ -500,9 +498,6 @@ private:
 
     // For Invalidates and Downgrades, the uArchState isn't for us, it's for the original requester
     // So in those cases we always want to construct a new MemOp based on the MemoryMesage
-    if (msg->isPageWalk()){
-
-    }
     if (aTransport[uArchStateTag] && msg->type() != MemoryMessage::Invalidate && msg->type() != MemoryMessage::Downgrade) {
       op = aTransport[uArchStateTag];
     } else {
@@ -565,12 +560,12 @@ private:
   }
 };
 
-}//End namespace nuArchARM
+}//End namespace nuArch
 
-FLEXUS_COMPONENT_INSTANTIATOR(uArchARM, nuArchARM);
+FLEXUS_COMPONENT_INSTANTIATOR(uArch, nuArch);
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
-#define FLEXUS_END_COMPONENT uArchARM
+#define FLEXUS_END_COMPONENT uArch
 
 #define DBG_Reset
 #include DBG_Control()

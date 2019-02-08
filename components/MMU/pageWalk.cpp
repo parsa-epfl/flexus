@@ -95,6 +95,8 @@ bool PageWalk::walk( TranslationTransport &  aTranslation ) {
                 << ", Read Raw TTE Desc. from QEMU : " << std::hex << basicPointer->rawTTEValue << std::dec ));
     /* Check Valid */
     bool validBit = extractSingleBitAsBool(basicPointer->rawTTEValue,0);
+    if (basicPointer->theInstruction )
+        DBG_(Dev, (<< "Walking " << *basicPointer->theInstruction ));
     DBG_Assert( validBit == true , ( << "Encountered INVALID entry in doTTEAccess: " << std::hex << basicPointer->rawTTEValue << std::dec << ", need to generate Page Fault."));
     /* distinguish between block and table entries, could cut pwalk early!!! */
     bool isNextLevelTableEntry = extractSingleBitAsBool(basicPointer->rawTTEValue,1);

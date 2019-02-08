@@ -1,50 +1,12 @@
-// DO-NOT-REMOVE begin-copyright-block 
-//
-// Redistributions of any form whatsoever must retain and/or include the
-// following acknowledgment, notices and disclaimer:
-//
-// This product includes software developed by Carnegie Mellon University.
-//
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
-//
-// For more information, see the SimFlex project website at:
-//   http://www.ece.cmu.edu/~simflex
-//
-// You may not use the name "Carnegie Mellon University" or derivations
-// thereof to endorse or promote products derived from this software.
-//
-// If you modify the software you must place a notice on or within any
-// modified version provided or made available to any third party stating
-// that you have modified the software.  The notice shall include at least
-// your name, address, phone number, email address and the date and purpose
-// of the modification.
-//
-// THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
-// EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
-// THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
-// IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-// TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
-// BE LIABLE FOR ANY DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
-// SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
-// ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
-// CONTRACT, TORT OR OTHERWISE).
-//
-// DO-NOT-REMOVE end-copyright-block
-
-
 #include <list>
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
 #include <vector>
-#include <memory>
 
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <boost/throw_exception.hpp>
+#include <boost/shared_ptr.hpp>
 #include <core/metaprogram.hpp>
 #include <boost/variant/get.hpp>
 #include <boost/optional.hpp>
@@ -72,33 +34,13 @@ namespace Stat = Flexus::Stat;
 #include "../RegisterFile.hpp"
 #include "../BypassNetwork.hpp"
 #include "coreModelTypes.hpp"
-#include <components/CommonQEMU/XactTimeBreakdown.hpp>
-#include <components/CommonQEMU/Slices/PredictorMessage.hpp> /* CMU-ONLY */
-#include <components/CommonQEMU/Transports/TranslationTransport.hpp>
+#include <components/Common/XactTimeBreakdown.hpp>
+#include <components/Common/Slices/PredictorMessage.hpp> /* CMU-ONLY */
 #include "bbv.hpp" /* CMU-ONLY */
 
-#include "PSTATE.hpp"
-#include "SCTLR_EL.hpp"
-#include "../systemRegister.hpp"
-
-// Msutherl, Oct'18
-// FIXME: move this file but for now just directly include it
-#include <core/qemu/mai_api.hpp> // FIXME: might not need this
-
-namespace nuArchARM {
+namespace nuArch {
 
 using nXactTimeBreakdown::TimeBreakdown;
-
-struct ExceptionRecord {
-        eExceptionType type; // Exception class
-        uint32_t syndrome;     // Syndrome record
-        uint64_t vaddress;     // Virtual fault address
-        bool ipavalid;      // Physical fault address is valid
-        uint64_t ipaddress;    // Physical fault address for second stage fault
-};
-
-
-static std::map<uint8_t, std::map<PhysicalMemoryAddress, uint8_t>> GLOBAL_EXCLUSIVE_MONITOR;
 
 class CoreImpl : public CoreModel {
   //CORE STATE
@@ -106,61 +48,55 @@ class CoreImpl : public CoreModel {
   //Simulation
   std::string theName;
   uint32_t theNode;
+  boost::function< void (Flexus::Simics::Translation &, bool) > translate;
+  boost::function<int(bool)> advance_fn;
+  boost::function< void(eSquashCause)> squash_fn;
+  boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress)> redirect_fn;
+  boost::function< void(int, int)> change_mode_fn;
+  boost::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback_fn;
+  boost::function< void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> ) > notifyTMS_fn; /* CMU-ONLY */
+  boost::function< void( bool )> signalStoreForwardingHit_fn;
 
-    // Msutherl - removed translate as a call to microArch,
-  // now internal to CoreModel
-  //std::function< void (Flexus::Qemu::Translation &) > translate;
-  std::function<int()> advance_fn;
-  std::function< void(eSquashCause)> squash_fn;
-  std::function< void(VirtualMemoryAddress)> redirect_fn;
-  std::function< void(int, int)> change_mode_fn;
-  std::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback_fn;
-  std::function< void( bool )> signalStoreForwardingHit_fn;
-  std::function< void(int32_t)> mmuResync_fn;
-
-  // register renaming  architectural -> physical
   //Map Tables
   RegisterWindowMap theWindowMap;
-  std::vector< std::shared_ptr<PhysicalMap> > theMapTables;
+  std::vector< boost::shared_ptr<PhysicalMap> > theMapTables;
+
   RegisterWindowMap theArchitecturalWindowMap;
 
   //Register Files
   RegisterFile theRegisters;
   int32_t theRoundingMode;
+  uint64_t theTPC[5];      //0
+  uint64_t theTNPC[5];     //1
+  uint64_t theTSTATE[5];   //2
+  uint32_t theTT[5];       //3
+  //TICK                        //4
+  uint64_t theTBA;         //5
+  uint64_t thePSTATE;      //6
+  uint32_t theTL;          //7
+  uint32_t thePIL;         //8
+  //CWP                        //9
+  uint32_t theCANSAVE;     //10
+  uint32_t theCANRESTORE;  //11
+  uint32_t theCLEANWIN;    //12
+  uint32_t theOTHERWIN;    //13
+  uint32_t theWSTATE;      //14
+  uint64_t theVER;         //31
+
+  uint64_t theFPRS;         //6
+  uint64_t theFSR;          //37
+
+  uint64_t theTICK;         //39
+  uint64_t theSTICK;        //43
+  int64_t theSTICK_interval; //Number of cycles between STICK updates
+  int64_t theSTICK_tillIncrement; //Number of cycles remaining till next STICK increment
 
   uint64_t thePC;
-  bool theAARCH64;
-  uint32_t thePSTATE;
+  boost::optional<uint64_t> theNPC;
 
-  bool theEnable;
-
-
-  // MMU Internal State:
-  // ===================================================================
-private:
-//  std::shared_ptr<mmu_t> theMMU;
-//  bool mmuInitialized;
-  Flexus::Qemu::Processor theQEMUCPU;
-
-  // ===================================================================
-//  std::multimap<int, SysRegInfo*> * theSystemRegisters;
-
-  uint32_t theDCZID_EL0;
-  uint64_t theSCTLR_EL[4];
-  uint64_t theHCR_EL2;
-  uint32_t theFPSR;
-  uint32_t theFPCR;
-  Flexus::Qemu::API::exception_t theEXP;
-
-  std::map<PhysicalMemoryAddress, eSize> theLocalExclusivePhysicalMonitor;
-  std::map<VirtualMemoryAddress, eSize> theLocalExclusiveVirtualMonitor;
-
-
-  uint64_t theSP_el[4];
-
-  eExceptionType thePendingTrap;
+  uint32_t thePendingTrap;
+  bool thePopTLRequested;
   boost::intrusive_ptr<Instruction> theTrapInstruction;
-  std::string theFlexusDumpState, theQemuDumpState;
 
   //Bypass Network
   BypassNetwork theBypassNetwork;
@@ -189,7 +125,7 @@ private:
 
   //Interrupt processing
   bool theInterruptSignalled;
-  eExceptionType thePendingInterrupt;
+  int32_t thePendingInterrupt;
   boost::intrusive_ptr< Instruction > theInterruptInstruction;
 
   //Branch Feedback
@@ -203,6 +139,7 @@ private:
 
   bool theRedirectRequested;
   VirtualMemoryAddress theRedirectPC;
+  VirtualMemoryAddress theRedirectNPC;
 
   //Load Store Queue and associated memory control
   uint64_t theMemorySequenceNum;
@@ -216,7 +153,6 @@ private:
   bool theNAWBypassSB;
   bool theNAWWaitAtSync;
   MSHRs_t theMSHRs;
-  std::map<VirtualMemoryAddress, TranslationPtr> thePageWalkRequests;
   eConsistencyModel theConsistencyModel;
   uint64_t theCoherenceUnit;
   uint32_t thePartialSnoopersOutstanding;
@@ -284,15 +220,13 @@ private:
   BBVTracker * theBBVTracker; /* CMU-ONLY */
   uint32_t theOnChipLatency;
   uint32_t theOffChipLatency;
-//  bool theValidateMMU;
+  bool theValidateMMU;
 
 public:
   std::list< boost::intrusive_ptr< MemOp > > theMemoryPorts;
   uint32_t theNumMemoryPorts;
   std::list< boost::intrusive_ptr< MemOp > > theSnoopPorts;
   uint32_t theNumSnoopPorts;
-
-  std::queue<TranslationPtr> theTranlationQueue;
 private:
   std::list< boost::intrusive_ptr< MemOp > > theMemoryReplies;
 
@@ -376,14 +310,18 @@ private:
   theResync_RDPRUnsupported,
   theResync_WRPRUnsupported,
   theResync_MEMBARSync,
+  theResync_POPCUnsupported,
   theResync_UnexpectedException,
   theResync_Interrupt,
   theResync_DeviceAccess,
   theResync_FailedValidation,
   theResync_FailedHandleTrap,
+  theResync_UnsupportedLoadASI,
+  theResync_UnsupportedAtomicASI,
   theResync_SideEffectLoad,
   theResync_SideEffectStore,
   theResync_Unknown,
+
   theFalseITLBMiss;
 
   MemOpCounter * theMemOpCounters [2][2][8];
@@ -521,15 +459,14 @@ private:
   //==========================================================================
 public:
   CoreImpl( uArchOptions_t options
-            // Msutherl, removed
-            //, std::function< void (Flexus::Qemu::Translation &) > xlat
-            , std::function< int() > advance
-            , std::function< void(eSquashCause)> squash
-            , std::function< void(VirtualMemoryAddress) > redirect
-            , std::function< void(int, int) > change_mode
-            , std::function< void( boost::intrusive_ptr<BranchFeedback> ) > feedback
-            , std::function< void( bool )> signalStoreForwardingHit
-            , std::function<void(int32_t)> mmuResync
+            , boost::function< void (Flexus::Simics::Translation &, bool) > xlat
+            , boost::function< int(bool) > advance
+            , boost::function< void(eSquashCause)> squash
+            , boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress) > redirect
+            , boost::function< void(int, int) > change_mode
+            , boost::function< void( boost::intrusive_ptr<BranchFeedback> ) > feedback
+            , boost::function< void ( PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> ) > notifyTMS /* CMU-ONLY */
+            , boost::function< void( bool )> signalStoreForwardingHit
           );
 
   virtual ~CoreImpl() {}
@@ -538,9 +475,7 @@ public:
   //==========================================================================
 public:
   void skipCycle();
-  void cycle(eExceptionType aPendingInterrupt);
-  std::string dumpState();
-
+  void cycle(int32_t aPendingInterrupt);
 
 private:
   void prepareCycle();
@@ -551,17 +486,6 @@ private:
   void squash( InstructionDependance  const & aDep);
   void satisfy( std::list<InstructionDependance > & dependances);
   void squash( std::list<InstructionDependance > & dependances);
-
-
-  void clearExclusiveLocal();
-  void clearExclusiveGlobal();
-  void markExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize);
-  void markExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize);
-  void markExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize);
-
-  bool isExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize);
-  bool isExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize);
-  bool isExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize);
 
   //Instruction completion
   //==========================================================================
@@ -625,8 +549,10 @@ public:
   void redirectFetch( VirtualMemoryAddress anAddress );
   void branchFeedback( boost::intrusive_ptr<BranchFeedback> feedback );
 
-  void takeTrap(boost::intrusive_ptr< Instruction > anInsn, eExceptionType aTrapType);
+  void takeTrap(boost::intrusive_ptr< Instruction > anInsn, int32_t aTrapNum);
+  void popTL();
   void handleTrap();
+  void handlePopTL();
 
 private:
   void doSquash();
@@ -673,7 +599,7 @@ public:
   //Bypass Network Interface
   //==========================================================================
   void bypass(mapped_reg aReg, register_value aValue);
-  void connectBypass(mapped_reg aReg, boost::intrusive_ptr<Instruction> inst, std::function<bool(register_value)> fn);
+  void connectBypass(mapped_reg aReg, boost::intrusive_ptr<Instruction> inst, boost::function<bool(register_value)> fn);
 
   //Register File Interface
   //==========================================================================
@@ -684,7 +610,7 @@ public:
   eResourceStatus requestRegister( mapped_reg aRegister );
   void squashRegister( mapped_reg aRegister);
   register_value readRegister( mapped_reg aRegister );
-  register_value readArchitecturalRegister( reg aRegister, bool aRotate );
+  register_value readArchitecturalRegister( unmapped_reg aRegister, bool aRotate );
   void writeRegister( mapped_reg aRegister, register_value aValue );
   void disconnectRegister( mapped_reg aReg, boost::intrusive_ptr< Instruction > inst);
   void initializeRegister(mapped_reg aRegister, register_value aValue);
@@ -695,49 +621,232 @@ public:
 private:
   PhysicalMap & mapTable( eRegisterType aMapTable );
 public:
-  mapped_reg map( reg aReg );
-  std::pair<mapped_reg, mapped_reg> create( reg aReg );
+  mapped_reg map( unmapped_reg aReg );
+  std::pair<mapped_reg, mapped_reg> create( unmapped_reg aReg );
   void free( mapped_reg aReg );
-  void restore( reg aName, mapped_reg aReg );
+  void restore( unmapped_reg aName, mapped_reg aReg );
+  uint32_t saveWindow();
+  void saveWindowPriv();
+  void saved();
+  uint32_t restoreWindow();
+  void restoreWindowPriv();
+  void restored();
+  int32_t selectedRegisterSet() const;
 
-  //Synchronization with Qemu
+  //Synchronization with Simics
   //==========================================================================
 public:
   void reset();
-  void resetARM();
-  void getARMState( armState & aState);
-  void restoreARMState( armState & aState);
-  void compareARMState( armState & aLeft, armState & aRight);
+  void resetv9();
+
+  void getv9State( v9State & aState);
+  void restorev9State( v9State & aState);
+  void comparev9State( v9State & aLeft, v9State & aRight);
+
   bool isIdleLoop();
+
   uint64_t pc() const;
-  bool isAARCH64();
-  void setAARCH64(bool aMode);
-  uint32_t getSPSel();
-  void setSPSel (uint32_t aVal);
-  void setSP_el (uint8_t anEL, uint64_t aVal);
-  uint64_t getSP_el (uint8_t anEL);
-  uint32_t getPSTATE();
-  void setPSTATE( uint32_t aPSTATE);
-  void setFPSR( uint32_t anFPSR);
-  uint32_t getFPSR();
-  void setFPCR( uint32_t anFPCR);
-  uint32_t getFPCR();
-  uint32_t getDCZID_EL0();
-  void setDCZID_EL0(uint32_t aDCZID_EL0);
-  void setSCTLR_EL( uint8_t anId, uint64_t aSCTLR_EL);
-  uint64_t getSCTLR_EL(uint8_t anId);
-  void setHCREL2( uint64_t aHCREL2);
-  uint64_t getHCREL2();
-  void setException( Flexus::Qemu::API::exception_t anEXP);
-  Flexus::Qemu::API::exception_t getException();
+  uint64_t npc() const;
+
+  void setAG( bool anAG) {
+    if (anAG) {
+      setPSTATE( getPSTATE() | 1ULL );
+    } else {
+      setPSTATE( getPSTATE() & ~1ULL );
+    }
+  }
+  void setIG( bool anIG) {
+    if (anIG) {
+      setPSTATE (getPSTATE() | 0x800ULL);
+    } else {
+      setPSTATE (getPSTATE() & ~0x800ULL);
+    }
+  }
+  void setMG( bool anMG) {
+    if (anMG) {
+      setPSTATE (getPSTATE() | 0x400ULL);
+    } else {
+      setPSTATE (getPSTATE() & ~0x400ULL);
+    }
+  }
+  void setCWP( uint32_t aCWP ) {
+    theWindowMap.setCWP( aCWP );
+    theArchitecturalWindowMap.setCWP( aCWP );
+  }
+
+  uint64_t getTPC(uint32_t aTL) {
+    if (aTL == 0 || aTL > 5) return 0;
+    return theTPC[aTL - 1];
+  }
+  void setTPC( uint64_t aTPC, uint32_t aTL) {
+    if (aTL == 0 || aTL > 5) return;
+    theTPC[aTL - 1] = aTPC;
+  }
+  uint64_t getTNPC(uint32_t aTL) {
+    if (aTL == 0 || aTL > 5) return 0;
+    return theTNPC[aTL - 1];
+  }
+  void setTNPC( uint64_t aTNPC, uint32_t aTL) {
+    if (aTL == 0 || aTL > 5) return;
+    theTNPC[aTL - 1] = aTNPC;
+  }
+  uint64_t getTSTATE(uint32_t aTL) {
+    if (aTL == 0 || aTL > 5) return 0;
+    return theTSTATE[aTL - 1];
+  }
+  void setTSTATE( uint64_t aTSTATE, uint32_t aTL) {
+    if (aTL == 0 || aTL > 5) return;
+    theTSTATE[aTL - 1] = aTSTATE;
+  }
+  uint32_t getTT(uint32_t aTL) {
+    if (aTL == 0 || aTL > 5) return 0;
+    return theTT[aTL - 1];
+  }
+  void setTT( uint32_t aTT, uint32_t aTL) {
+    if (aTL == 0 || aTL > 5) return;
+    theTT[aTL - 1] = aTT;
+  }
+
+  uint64_t getTBA() {
+    return theTBA;
+  }
+  void setTBA( uint64_t aTBA) {
+    theTBA = aTBA;
+  }
+  uint64_t getPSTATE() {
+    return thePSTATE;
+  }
+  void setPSTATE( uint64_t aPSTATE) {
+    //Change AG
+    if ((aPSTATE & 0x1ULL) != (thePSTATE & 0x1ULL)) {
+      theWindowMap.setAG( (aPSTATE & 0x1ULL) );
+      theArchitecturalWindowMap.setAG( (aPSTATE & 0x1ULL)  );
+    }
+    if ((aPSTATE & 0x800ULL) != (thePSTATE & 0x800ULL)) {
+      theWindowMap.setIG( (aPSTATE & 0x800ULL));
+      theArchitecturalWindowMap.setIG( (aPSTATE & 0x800ULL) );
+    }
+    if ((aPSTATE & 0x400ULL) != (thePSTATE & 0x400ULL)) {
+      theWindowMap.setMG( (aPSTATE & 0x400ULL));
+      theArchitecturalWindowMap.setMG( (aPSTATE & 0x400ULL) );
+    }
+    //Change priviledge mode
+    if (aPSTATE != thePSTATE) {
+      thePSTATE = aPSTATE;
+      change_mode_fn( getTL(),  thePSTATE);
+    }
+  }
+  uint32_t getTL() {
+    return theTL;
+  }
+  void setTL( uint32_t aTL) {
+    if (aTL != theTL) {
+      theTL = aTL;
+      change_mode_fn( theTL,  getPSTATE());
+    }
+  }
+  uint32_t getPIL() {
+    return thePIL;
+  }
+  void setPIL( uint32_t aPIL) {
+    thePIL = aPIL;
+  }
+
+  uint32_t getCWP();
+  void setCLEANWIN( uint32_t aCLEANWIN ) {
+    theCLEANWIN = aCLEANWIN;
+  }
+  uint32_t getCLEANWIN() {
+    return theCLEANWIN;
+  }
+  void setCANSAVE( uint32_t aCANSAVE ) {
+    theCANSAVE = aCANSAVE;
+  }
+  uint32_t getCANSAVE() {
+    return theCANSAVE;
+  }
+  void setCANRESTORE( uint32_t aCANRESTORE) {
+    theCANRESTORE = aCANRESTORE;
+  }
+  uint32_t getCANRESTORE() {
+    return theCANRESTORE;
+  }
+  void setOTHERWIN( uint32_t aOTHERWIN) {
+    theOTHERWIN = aOTHERWIN;
+  }
+  uint32_t getOTHERWIN() {
+    return theOTHERWIN;
+  }
+  void setWSTATE( uint32_t aWSTATE) {
+    theWSTATE = aWSTATE;
+  }
+  uint32_t getWSTATE() {
+    return theWSTATE;
+  }
+
+  void setVER( uint64_t aVER) {
+    theVER = aVER;
+  }
+  uint64_t getVER() {
+    return theVER;
+  }
+
+  void setFPRS( uint64_t anFPRS) {
+    theFPRS = anFPRS;
+  }
+  uint64_t getFPRS() {
+    return theFPRS;
+  }
+
+  void setFSR( uint64_t anFSR) {
+    theFSR = anFSR;
+  }
+  void writeFSR( uint64_t anFSR);
+  uint64_t getFSR() {
+    return theFSR;
+  }
+  uint64_t readFSR();
+
+  void setTICK( uint64_t aTICK ) {
+    theTICK = aTICK;
+  }
+  uint64_t getTICK() {
+    return theTICK;
+  }
+
+  void setSTICK( uint64_t aSTICK ) {
+    theSTICK = aSTICK;
+  }
+  uint64_t getSTICK() {
+    return theSTICK;
+  }
+  void setSTICKInterval( uint64_t aSTICK_interval ) {
+    theSTICK_interval = aSTICK_interval;
+    theSTICK_tillIncrement = theSTICK_interval;
+  }
+
   void setRoundingMode( uint32_t aRoundingMode );
-  uint32_t getRoundingMode();
+  uint32_t getRoundingMode() {
+    return theRoundingMode;
+  }
   void writePR(uint32_t aPR, uint64_t aVal);
-  uint64_t readPR(ePrivRegs aPR);
-  void setXRegister(uint32_t aReg, uint64_t aVal);
-  uint64_t getXRegister(uint32_t aReg);
-  void setPC( uint64_t aPC);
-  void setDAIF(uint32_t aDAIF);
+  uint64_t readPR(uint32_t aPR);
+  std::string prName(uint32_t aPR);
+
+  void setASI(uint64_t);
+  uint64_t getASI();
+  void setCCR(uint32_t);
+  uint32_t getCCR();
+  uint32_t getCCRArchitectural();
+  void setRRegister(uint32_t aReg, uint64_t aVal);
+  uint64_t getRRegister(uint32_t aReg);
+
+  void setPC( uint64_t aPC) {
+    thePC = aPC;
+  }
+  void setNPC( uint64_t anNPC) {
+    theNPC = anNPC;
+  }
 
   //Interface to Memory Unit
   //==========================================================================
@@ -748,8 +857,8 @@ public:
   bool speculativeConsistency( ) const {
     return theSpeculativeOrder;
   }
-  void insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB, eAccType type);
-  void insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB, InstructionDependance  const & aDependance , eAccType type );
+  void insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB);
+  void insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB, InstructionDependance  const & aDependance  );
   void eraseLSQ( boost::intrusive_ptr< Instruction > anInsn );
   void cleanMSHRS( uint64_t aDiscardAfterSequenceNum );
   void clearLSQ();
@@ -759,28 +868,6 @@ public:
   bool canPushMemOp();
   boost::intrusive_ptr<MemOp> popMemOp();
   boost::intrusive_ptr<MemOp> popSnoopOp();
-  TranslationPtr popTranslation();
-  void pushTranslation(TranslationPtr aTranslation);
-  uint32_t currentEL();
-  void increaseEL();
-  void decreaseEL();
-
-  void invalidateCache(eCacheType aType, eShareableDomain aDomain, eCachePoint aPoint);
-  void invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, eCachePoint aPoint);
-  void invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, uint32_t aSize, eCachePoint aPoint);
-
-  eAccessResult accessZVA();
-  uint32_t readDCZID_EL0();
-
-  bool _SECURE();
-  SCTLR_EL _SCTLR(uint32_t anELn);
-  PSTATE _PSTATE();
-
-  void SystemRegisterTrap(uint8_t target_el, uint8_t op0, uint8_t op2,uint8_t op1, uint8_t crn, uint8_t rt, uint8_t crm, uint8_t dir);
-
-
-  SysRegInfo& getSysRegInfo(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn, uint8_t crm);
-
 private:
   bool hasSnoopBuffer() const {
     return theSnoopPorts.size() < theNumSnoopPorts;
@@ -823,14 +910,12 @@ public:
   //Address and Value resolution for Loads and Stores
   //==========================================================================
 public:
-  bits retrieveLoadValue( boost::intrusive_ptr<Instruction> anInsn);
-  bits retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction> anInsn);
-  void resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, VirtualMemoryAddress anAddr);
-  void translate(boost::intrusive_ptr< Instruction > anInsn);
-  void resolvePAddr( boost::intrusive_ptr< Instruction > anInsn);
-  void updateStoreValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, boost::optional<bits> anExtendedValue = boost::none);
+  uint64_t retrieveLoadValue( boost::intrusive_ptr<Instruction> anInsn);
+  uint64_t retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction> anInsn);
+  void resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, VirtualMemoryAddress anAddr, int32_t anASI );
+  void updateStoreValue( boost::intrusive_ptr< Instruction > anInsn, uint64_t aValue, boost::optional<uint64_t> anExtendedValue = boost::none);
   void annulStoreValue( boost::intrusive_ptr< Instruction > anInsn );
-  void updateCASValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, bits aCMPValue );
+  void updateCASValue( boost::intrusive_ptr< Instruction > anInsn, uint64_t aValue, uint64_t aCMPValue );
 
   //Value forwarding
   //==========================================================================
@@ -854,7 +939,7 @@ public:
   void doStore( memq_t::index< by_insn >::type::iterator lsq_entry);
   void resnoopDependantLoads( memq_t::index< by_insn >::type::iterator lsq_entry);
   boost::optional< memq_t::index< by_insn >::type::iterator >  doLoad( memq_t::index< by_insn >::type::iterator lsq_entry, boost::optional< memq_t::index< by_insn >::type::iterator > aCachedSnoopState );
-  void updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry , VirtualMemoryAddress anAddr/*, int32_t anASI */ );
+  void updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry , VirtualMemoryAddress anAddr, int32_t anASI  );
 
   //MSHR Management
   //===========================================================================
@@ -865,8 +950,6 @@ public:
   void requestPort(memq_t::index< by_insn >::type::iterator anLSQEntry);
   void requestPort(boost::intrusive_ptr<Instruction> anInstruction );
   void issue(boost::intrusive_ptr<Instruction> anInstruction );
-  void issueMMU(TranslationPtr aTranslation);
-  bool isEnable();
   void issueStorePrefetch( boost::intrusive_ptr<Instruction> anInstruction );
   void requestStorePrefetch( boost::intrusive_ptr<Instruction> anInstruction);
   void requestStorePrefetch( memq_t::index< by_insn >::type::iterator lsq_entry);
@@ -910,4 +993,4 @@ private:
 
 };
 
-} //nuArchARM
+} //nuArch

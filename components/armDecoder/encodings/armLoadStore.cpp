@@ -525,39 +525,42 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     eAccType acctype = kAccType_STREAM;
     std::vector< std::list<InternalDependance> > addr_deps(1), data_deps(2);
 
-    // calculate the address from rn
-//    std::vector<std::list<InternalDependance> > rs_deps(1);
+    // calculate the address from rn 
     addAddressCompute( inst, addr_deps) ;
+    addReadXRegister(inst, 1, rn, addr_deps[0], size/2 == 64);
+
 
     if (index != kSingedOffset){
         predicated_action act = operandAction(inst, kAddress, kResult, (index==kPostIndex) ? imm7 : 0, kPD);
         addDestination(inst,rn,act, size/2 == 64);
     }
 
-    addReadXRegister(inst, 1, rn, addr_deps[0], size/2 == 64);
     if (index != kPostIndex) {
         inst->setOperand(kUopAddressOffset, imm7);
     }
 
+
     // read data registers
-    addReadXRegister(inst, 1, rt, data_deps[1], size/2 == 64);
-    addReadXRegister(inst, 2, rt2, data_deps[1], size/2 == 64);
+//    addReadRDs(inst, rd, rd1);
+    simple_action act = addExecute(inst, operation(size/2 == 64 ? kCONCAT64_ : kCONCAT32_), kOperand2, kOperand3, data_deps);
+    addReadXRegister(inst, 2, rt, data_deps[0], size/2 == 64);
+    addReadXRegister(inst, 3, rt2, data_deps[1], size/2 == 64);
 
-    simple_action act = addExecute(inst, operation(size/2 == 64 ? kCONCAT64_ : kCONCAT32_),data_deps);
-    inst->addDispatchAction(act);
 
-//    inst->addCheckTrapEffect( dmmuTranslationCheck(inst) );
-    inst->addRetirementEffect( retireMem(inst) );
     inst->addSquashEffect( eraseLSQ(inst) );
-
     inst->addDispatchEffect( allocateStore( inst, sz, false, acctype ) );
     inst->addRetirementConstraint( storeQueueAvailableConstraint(inst) );
     inst->addRetirementConstraint( sideEffectStoreConstraint(inst) );
 
-    predicated_dependant_action update_value = updateStoreValueAction( inst, kResult );
+    multiply_dependant_action update_value = updateSTDValueAction( inst, kResult );
+    inst->addDispatchEffect( satisfy( inst, update_value.dependances[1]) );
+    connectDependance( update_value.dependances[0], act );
     connectDependance( inst->retirementDependance(), update_value );
-    inst->addAnnulmentEffect( squash( inst, update_value.predicate ) );
-    inst->addReinstatementEffect( satisfy( inst, update_value.predicate ) );
+
+
+    inst->addRetirementEffect( retireMem(inst) );
+    inst->addCommitEffect( commitStore(inst) );
+    inst->addSquashEffect( eraseLSQ(inst) );
 
     inst->addPostvalidation( validateMemory( kAddress, kOperand3, kResult, sz, inst ) );
     inst->addCommitEffect( commitStore(inst) );

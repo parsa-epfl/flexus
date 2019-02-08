@@ -119,6 +119,9 @@ struct ExecuteAction : public ExecuteBase {
   void doEvaluate() {
 
     if (ready()) {
+
+        DBG_(Dev, (<< "Executing " << *this ));
+
       if (theInstruction->hasPredecessorExecuted()) {
         std::vector< Operand > operands;
         for (int32_t i = 0; i < numOperands(); ++i) {
@@ -132,6 +135,8 @@ struct ExecuteAction : public ExecuteBase {
             SysRegInfo & ri = getPriv(kNZCV);
             ri.writefn(theInstruction->core(), nzcv);
         }
+
+        DBG_(Dev, (<< "Writing results " << result << " in " << theResult ));
 
         theInstruction->setOperand(theResult, result);
         DBG_( VVerb, ( << *this << " operands: " << OperandPrintHelper(operands) << " result=" << result ) );
@@ -275,6 +280,25 @@ predicated_action executeAction
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
     operands.push_back( eOperandCode( kOperand1 + i) );
   }
+  ExecuteAction * act(new(anInstruction->icb()) ExecuteAction( anInstruction, operands, aResult, anOperation, aBypass) );
+  for (uint32_t i = 0; i < opDeps.size(); ++i) {
+    opDeps[i].push_back( act->dependance(i) );
+  }
+  return predicated_action( act, act->predicate() );
+}
+
+predicated_action executeAction
+( SemanticInstruction * anInstruction
+  , std::unique_ptr<Operation> & anOperation
+  , eOperandCode anOperand1 , eOperandCode anOperand2
+  , std::vector< std::list<InternalDependance> > & opDeps
+  , eOperandCode aResult
+  , boost::optional<eOperandCode> aBypass
+) {
+  std::vector<eOperandCode> operands;
+  operands.push_back(  anOperand1 );
+  operands.push_back(  anOperand2 );
+
   ExecuteAction * act(new(anInstruction->icb()) ExecuteAction( anInstruction, operands, aResult, anOperation, aBypass) );
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
     opDeps[i].push_back( act->dependance(i) );

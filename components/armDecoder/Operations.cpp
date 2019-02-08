@@ -208,7 +208,7 @@ typedef struct CONCAT64 : public Operation {
     CONCAT64(){}
     virtual ~CONCAT64(){}
   virtual Operand operator()( std::vector<Operand> const & operands  ) {
-    DBG_Assert( operands.size() == 3);
+    DBG_Assert( operands.size() == 2);
     bits op1 (64, boost::get<uint64_t>(operands[0]));
     bits op2 (64, boost::get<uint64_t>(operands[1]));
 

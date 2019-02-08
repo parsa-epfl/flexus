@@ -314,6 +314,7 @@ WIRE( theMMU, MemoryRequestOut,         theuArch, MemoryRequestIn         )
 WIRE(theuArch, ResyncOut,               theMMU,   ResyncIn                )
 WIRE(theMMU, ResyncOut,                 theuFetch,   ResyncIn             )
 
+WIRE( theuArch, EnableOutFGU,             theFAG, EnableUARCHIn        )
 
 
 

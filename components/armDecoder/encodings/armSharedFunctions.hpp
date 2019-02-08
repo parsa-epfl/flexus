@@ -73,6 +73,7 @@ eIndex getIndex ( unsigned int index);
 std::unique_ptr<Operation> extend(eExtendType anExtend);
 
 void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t rs, std::list<InternalDependance> & dependances, bool is_64);
+//void addReadRDs(SemanticInstruction * inst, uint32_t rd, uint32_t rd1 );
 void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, uint64_t val, std::list<InternalDependance> & dependances);
 void addAnnulment( SemanticInstruction * inst, predicated_action & exec, InternalDependance const & aWritebackDependance);
 void addRD1Annulment( SemanticInstruction * inst, predicated_action & exec, InternalDependance const & aWritebackDependance);
@@ -83,10 +84,12 @@ void addDestination( SemanticInstruction * inst, uint32_t rd, predicated_action 
 void addPairDestination( SemanticInstruction * inst, uint32_t rd, uint32_t rd1, predicated_action & exec, bool is64, bool addSquash = true);
 void addAddressCompute( SemanticInstruction * inst, std::vector< std::list<InternalDependance> > & rs_deps);
 void setRD( SemanticInstruction * inst, uint32_t rd);
+void setRD1( SemanticInstruction * inst, uint32_t rd);
 void setRS( SemanticInstruction * inst, eOperandCode rs_code, uint32_t rs);
 
 // aux
 predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operation> anOperation, std::vector< std::list<InternalDependance> > & rs_deps, eOperandCode aResult = kResult, boost::optional<eOperandCode> aBypass = boost::optional<eOperandCode>(boost::none));
+predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operation> anOperation, eOperandCode anOperand1, eOperandCode anOperand2, std::vector< std::list<InternalDependance> > & rs_deps, eOperandCode aResult = kResult, boost::optional<eOperandCode> aBypass = boost::optional<eOperandCode>(boost::none));
 
 void MEMBAR( SemanticInstruction * inst, uint32_t anAccess);
 void satisfyAtDispatch( SemanticInstruction * inst, std::list<InternalDependance> & dependances);

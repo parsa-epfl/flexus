@@ -101,12 +101,12 @@ struct ReadRegisterAction : public BaseSemanticAction
     SEMANTICS_DBG(*this);
 
     if (! theConnected) {
-      SEMANTICS_DBG("Connecting");
 
       mapped_reg name = theInstruction->operand< mapped_reg > (theRegisterCode);
       setReady( 0, core()->requestRegister( name, theInstruction->makeInstructionDependance(dependance()) ) == kReady );
       core()->connectBypass( name, theInstruction, ll::bind( &ReadRegisterAction::bypass, this, ll::_1) );
       theConnected = true;
+
     }
     if (! signalled() ) {
       SEMANTICS_DBG("Signalling");
@@ -146,6 +146,8 @@ struct ReadRegisterAction : public BaseSemanticAction
         }
 
         aValue = val;
+
+        DBG_(Dev,(<< "Reading register " << theRegisterCode << "with a value " << aValue));
 
         theInstruction->setOperand(theOperandCode, aValue);
         satisfyDependants();

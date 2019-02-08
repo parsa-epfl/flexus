@@ -167,7 +167,7 @@ void BaseSemanticAction::addDependance( InternalDependance const & aDependance) 
 
 void BaseSemanticAction::reschedule() {
   if (!theScheduled && core()) {
-    SEMANTICS_DBG(*this << " rescheduled");
+    DBG_(Dev, (<< *this << " rescheduled"));
     theScheduled = true;
     core()->reschedule(this);
   }

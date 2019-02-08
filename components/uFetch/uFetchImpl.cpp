@@ -224,7 +224,7 @@ class FLEXUS_COMPONENT(uFetch) {
 
   std::vector< std::list< FetchAddr > > theFAQ;
   pFetchBundle theBundle;
-  bool theEnable;
+//  bool theEnable;
 
   //This opcode is used to signal an MMU miss to the core, to force
   //a resync with Qemu 
@@ -346,7 +346,7 @@ public:
 //    theEnable.resize(cfg.Threads);
 //    TranslationsFromTLB.resize(cfg.Threads);
 //    for (auto i : theEnable) i = true;
-      theEnable = true;
+//      theEnable = true;
 
 
   }
@@ -826,7 +826,7 @@ private:
   //Implementation of the FetchDrive drive interface
   void doFetch(index_t anIndex) {
 
-    if (!theEnable) return;
+//    if (!theEnable) return;
     FETCH_DBG("--------------START FETCHING------------------------");
 
     if (theIcacheMiss[anIndex]) {
@@ -939,7 +939,7 @@ private:
     TranslationsFromTLB.push(xlat);
 
     DBG_Assert( FLEXUS_CHANNEL(iTranslationOut).available() );
-    theEnable = false;
+//    theEnable = false;
     FLEXUS_CHANNEL(iTranslationOut) << xlat;
 //     push-push should always mean TranslationsFromTLB is filled
   }
@@ -956,7 +956,7 @@ private:
       }
 
       theBundle->clear();
-      theEnable = true;
+//      theEnable = true;
       bool temp = true;
       FLEXUS_CHANNEL(EnableOut) << temp;
 
@@ -966,7 +966,7 @@ private:
 
 
     if (TranslationsFromTLB.front()->isDone()){
-        theEnable = true;
+//        theEnable = true;
 
         DBG_(Iface,( << "Starting magic translation after sending to TLB...."));
         TranslationPtr tr = TranslationsFromTLB.front();
@@ -999,7 +999,7 @@ private:
 
     if (TranslationsFromTLB.empty()){
         bool temp;
-        FLEXUS_CHANNEL(EnableOut) << temp;
+//        FLEXUS_CHANNEL(EnableOut) << temp;
     }
   }
 };

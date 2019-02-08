@@ -323,10 +323,12 @@ arminst ALUIMM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequence
     inst->setClass(clsComputation, codeALU);
 
     std::vector<std::list<InternalDependance> > rs_deps(2);
+    predicated_action exec = addExecute(inst, operation(setflags ? (sub_op ? kSUBS_ : kADDS_) : (sub_op ? kSUB_ : kADD_)) ,rs_deps);
+
     addReadXRegister(inst, 1, rn, rs_deps[0], sf);
     addReadConstant(inst, 2, imm, rs_deps[1]);
 
-    predicated_action exec = addExecute(inst, operation(setflags ? (sub_op ? kSUBS_ : kADDS_) : (sub_op ? kSUB_ : kADD_)) ,rs_deps);
+
     addDestination(inst, rd, exec, sf, setflags);
 
     return inst;

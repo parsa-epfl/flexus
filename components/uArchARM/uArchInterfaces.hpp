@@ -723,7 +723,7 @@ struct uArchARM {
     virtual void resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, VirtualMemoryAddress theAddr ) { DBG_Assert(false); }
     virtual void translate(boost::intrusive_ptr< Instruction > anInsn){ DBG_Assert(false); }
     virtual void resolvePAddr( boost::intrusive_ptr< Instruction > anInsn){ DBG_Assert(false); }
-    virtual void updateStoreValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, boost::optional<uint64_t> anExtendedValue = boost::none ) { DBG_Assert(false); }
+    virtual void updateStoreValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, boost::optional<bits> anExtendedValue = boost::none ) { DBG_Assert(false); }
     virtual void annulStoreValue( boost::intrusive_ptr< Instruction > anInsn ) { DBG_Assert(false); }
     virtual void updateCASValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, bits aCMPValue ) { DBG_Assert(false); }
     virtual void retireMem( boost::intrusive_ptr<Instruction> aCorrespondingInstruction) { DBG_Assert(false); }

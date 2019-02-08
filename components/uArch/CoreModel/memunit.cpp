@@ -1,52 +1,11 @@
-// DO-NOT-REMOVE begin-copyright-block 
-//
-// Redistributions of any form whatsoever must retain and/or include the
-// following acknowledgment, notices and disclaimer:
-//
-// This product includes software developed by Carnegie Mellon University.
-//
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
-//
-// For more information, see the SimFlex project website at:
-//   http://www.ece.cmu.edu/~simflex
-//
-// You may not use the name "Carnegie Mellon University" or derivations
-// thereof to endorse or promote products derived from this software.
-//
-// If you modify the software you must place a notice on or within any
-// modified version provided or made available to any third party stating
-// that you have modified the software.  The notice shall include at least
-// your name, address, phone number, email address and the date and purpose
-// of the modification.
-//
-// THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
-// EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
-// THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
-// IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-// TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
-// BE LIABLE FOR ANY DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
-// SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
-// ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
-// CONTRACT, TORT OR OTHERWISE).
-//
-// DO-NOT-REMOVE end-copyright-block
-
-
 #include "coreModelImpl.hpp"
 #include "../ValueTracker.hpp"
-#include <boost/optional/optional_io.hpp>
-#include <boost/multiprecision/cpp_int.hpp>
-#include <boost/polymorphic_pointer_cast.hpp>
 
 #define DBG_DeclareCategories uArchCat
 #define DBG_SetDefaultOps AddCat(uArchCat)
 #include DBG_Control()
 
-namespace nuArchARM {
+namespace nuArch {
 
 bool mmuASI(int32_t asi) {
   switch (asi) {
@@ -142,20 +101,20 @@ void CoreImpl::breakMSHRLink( memq_t::index<by_insn>::type::iterator iter ) {
 
 }
 
-void CoreImpl::insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB, InstructionDependance  const & aDependance , eAccType type ) {
+void CoreImpl::insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB, InstructionDependance  const & aDependance  ) {
   FLEXUS_PROFILE();
   theMemQueue.push_back( MemQueueEntry(anInsn, ++theMemorySequenceNum, anOperation, aSize, aBypassSB && theNAWBypassSB, aDependance) );
   DBG_( Verb, ( << "Pushed LSQEntry: " << theMemQueue.back() ) );
   ++theLSQCount;
-//  DBG_Assert( theLSQCount + theSBCount + theSBNAWCount == static_cast<long>(theMemQueue.size()) );
+  DBG_Assert( theLSQCount + theSBCount + theSBNAWCount == static_cast<long>(theMemQueue.size()) );
 }
 
-void CoreImpl::insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB , eAccType type) {
+void CoreImpl::insertLSQ( boost::intrusive_ptr< Instruction > anInsn, eOperation anOperation, eSize aSize, bool aBypassSB ) {
   FLEXUS_PROFILE();
   theMemQueue.push_back( MemQueueEntry(anInsn, ++theMemorySequenceNum, anOperation, aSize, aBypassSB && theNAWBypassSB ) );
-  DBG_( VVerb, ( << "Pushed LSQEntry: " << theMemQueue.back() ) );
+  DBG_( Verb, ( << "Pushed LSQEntry: " << theMemQueue.back() ) );
   ++theLSQCount;
-//  DBG_Assert( theLSQCount + theSBCount + theSBNAWCount == static_cast<long>(theMemQueue.size()) );
+  DBG_Assert( theLSQCount + theSBCount + theSBNAWCount == static_cast<long>(theMemQueue.size()) );
 }
 
 void CoreImpl::eraseLSQ( boost::intrusive_ptr< Instruction > anInsn ) {
@@ -176,6 +135,18 @@ void CoreImpl::eraseLSQ( boost::intrusive_ptr< Instruction > anInsn ) {
     case kLSQ:
       --theLSQCount;
       DBG_Assert( theLSQCount >= 0);
+
+      /* CMU-ONLY-BLOCK-BEGIN */
+      //When we retire loads, if they were satisfied by the memory system
+      //(they have a transaction tracker object), inform the Consort component
+      if (iter->theOperation == kLoad && !anInsn->isAnnulled() && !anInsn->isComplete() && anInsn->getTransactionTracker()) {
+        if (anInsn->getTransactionTracker()->fillLevel() && *anInsn->getTransactionTracker()->fillLevel() == ePrefetchBuffer) {
+          notifyTMS_fn( PredictorMessage::eReadPredicted, iter->thePaddr,  anInsn->getTransactionTracker());
+        } else {
+          notifyTMS_fn( PredictorMessage::eReadNonPredicted, iter->thePaddr,  anInsn->getTransactionTracker());
+        }
+      }
+      /* CMU-ONLY-BLOCK-END */
       break;
     case kSSB:
     case kSB:
@@ -286,7 +257,7 @@ void CoreImpl::accessMem( PhysicalMemoryAddress anAddress, boost::intrusive_ptr<
   if (anAddress != 0) {
     //Ensure that the correct memory value for this node is in Simics' memory
     //image before we advance Simics
-    ValueTracker::valueTracker(theNode).access(theNode, anAddress);
+    ValueTracker::valueTracker(Flexus::Simics::ProcessorMapper::mapFlexusIndex2VM(theNode)).access(theNode, anAddress);
   }
   PhysicalMemoryAddress block_addr( static_cast<uint64_t>(anAddress) & ~( theCoherenceUnit - 1) );
   if (block_addr != 0) {
@@ -296,8 +267,7 @@ void CoreImpl::accessMem( PhysicalMemoryAddress anAddress, boost::intrusive_ptr<
   memq_t::index<by_insn>::type::iterator iter = theMemQueue.get<by_insn>().find( anInsn );
   if (iter != theMemQueue.get<by_insn>().end() && iter->isAtomic() && iter->theQueue == kSSB) {
     DBG_(Dev, ( << theName << " atomic committing in body of checkpoint " << *iter ) );
-    //theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
-    ValueTracker::valueTracker(theNode).access(theNode, anAddress);
+    theMemQueue.get<by_insn>().modify( iter, ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
   }
 }
 
@@ -370,8 +340,8 @@ void CoreImpl::cleanMSHRS( uint64_t aDiscardAfterSequenceNum ) {
 
 void CoreImpl::clearLSQ( ) {
   theMemQueue.get<by_queue>().erase
-  ( theMemQueue.get<by_queue>().lower_bound( std::make_tuple( kLSQ ) )
-    , theMemQueue.get<by_queue>().upper_bound( std::make_tuple( kLSQ ) )
+  ( theMemQueue.get<by_queue>().lower_bound( boost::make_tuple( kLSQ ) )
+    , theMemQueue.get<by_queue>().upper_bound( boost::make_tuple( kLSQ ) )
   );
   theLSQCount = 0;
   DBG_Assert( theLSQCount + theSBCount + theSBNAWCount == static_cast<long>(theMemQueue.size()) );
@@ -381,7 +351,7 @@ void CoreImpl::clearSSB( ) {
   int32_t sb_count  = 0;
   int32_t sbnaw_count  = 0;
   memq_t::index<by_queue>::type::iterator lb, iter, ub;
-  std::tie( lb, ub) = theMemQueue.get<by_queue>().equal_range( std::make_tuple( kSSB ) );
+  boost::tie( lb, ub) = theMemQueue.get<by_queue>().equal_range( boost::make_tuple( kSSB ) );
   iter = lb;
   while (iter != ub) {
     DBG_(Iface, ( << theName << " unrequire " << *iter ) );
@@ -414,7 +384,7 @@ int32_t CoreImpl::clearSSB( uint64_t aLowestInsnSeq ) {
   int32_t sbnaw_count  = 0;
   int32_t remaining_ssb_count = 0;
   memq_t::index<by_queue>::type::iterator lb, iter, ub;
-  std::tie( lb, ub) = theMemQueue.get<by_queue>().equal_range( std::make_tuple( kSSB ) );
+  boost::tie( lb, ub) = theMemQueue.get<by_queue>().equal_range( boost::make_tuple( kSSB ) );
   iter = lb;
   bool first_found = false;
   while (iter != ub ) {
@@ -474,31 +444,6 @@ boost::intrusive_ptr<MemOp> CoreImpl::popMemOp() {
   return ret_val;
 }
 
-TranslationPtr CoreImpl::popTranslation() {
-    TranslationPtr ret_val;
-    if (! theTranlationQueue.empty()) {
-        ret_val = theTranlationQueue.front();
-        theTranlationQueue.pop();
-    }
-    return ret_val;
-}
-
-void CoreImpl::pushTranslation(TranslationPtr aTranslation) {
-
-    boost::intrusive_ptr<Instruction> insn = boost::polymorphic_pointer_downcast<Instruction>(aTranslation->getInstruction());
-    memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( insn);
-    DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end(), ( << *insn) );
-
-    lsq_entry->thePaddr = aTranslation->thePaddr;
-
-    resolvePAddr(insn);
-
-    DBG_Assert(lsq_entry->thePaddr != 0);
-    DBG_(Dev, (<< "Attempting to issue a memory requst for " << lsq_entry->thePaddr));
-
-//    insn->setMayCommit(true);
-}
-
 boost::intrusive_ptr<MemOp> CoreImpl::popSnoopOp() {
   boost::intrusive_ptr<MemOp> ret_val;
   if (! theSnoopPorts.empty()) {
@@ -509,7 +454,7 @@ boost::intrusive_ptr<MemOp> CoreImpl::popSnoopOp() {
   return ret_val;
 }
 
-bits CoreImpl::retrieveLoadValue( boost::intrusive_ptr<Instruction> anInsn) {
+uint64_t CoreImpl::retrieveLoadValue( boost::intrusive_ptr<Instruction> anInsn) {
   FLEXUS_PROFILE();
   memq_t::index< by_insn >::type::iterator lsq_entry = theMemQueue.get<by_insn>().find( anInsn );
 
@@ -518,7 +463,7 @@ bits CoreImpl::retrieveLoadValue( boost::intrusive_ptr<Instruction> anInsn) {
   return * lsq_entry->theValue;
 }
 
-bits CoreImpl::retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction> anInsn) {
+uint64_t CoreImpl::retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction> anInsn) {
   FLEXUS_PROFILE();
   memq_t::index< by_insn >::type::iterator lsq_entry = theMemQueue.get<by_insn>().find( anInsn );
 
@@ -527,53 +472,50 @@ bits CoreImpl::retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction> anIn
   return * lsq_entry->theExtendedValue;
 }
 
-void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry , VirtualMemoryAddress anAddr ) {
+void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry , VirtualMemoryAddress anAddr, int32_t anASI  ) {
   FLEXUS_PROFILE();
   lsq_entry->theVaddr = anAddr;
-  DBG_(VVerb,(<<"in updateVaddr"));//NOOOSHIN
+  lsq_entry->theASI = anASI;
   if (anAddr == kUnresolved) {
     lsq_entry->thePaddr = PhysicalMemoryAddress(kUnresolved);
-    //theMemQueue.get<by_insn>().modify( lsq_entry, [](auto& x){ x.thePaddr_aligned = PhysicalMemoryAddress(kUnresolved);});//ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = PhysicalMemoryAddress(kUnresolved));
     theMemQueue.get<by_insn>().modify( lsq_entry, ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = PhysicalMemoryAddress(kUnresolved));
   } else {
     //Map logical to physical
-    DBG_(VVerb,(<<"in else of updateVaddr"));//NOOOSHIN
+    Flexus::Simics::Translation xlat;
+    xlat.theVaddr = anAddr ;
+    xlat.theASI = lsq_entry->theASI;
+    xlat.theTL = getTL();
+    xlat.thePSTATE = getPSTATE() ;
+    xlat.theType = ( lsq_entry->isStore() ? Flexus::Simics::Translation::eStore :  Flexus::Simics::Translation::eLoad) ;
+    translate(xlat, false);
+    lsq_entry->thePaddr = xlat.thePaddr;
+    lsq_entry->theSideEffect = xlat.isSideEffect() || ( ! xlat.isTranslating() && ! xlat.isMMU() );
+    lsq_entry->theInverseEndian = xlat.isXEndian();
+    lsq_entry->theMMU = xlat.isMMU();
+    lsq_entry->theNonCacheable = ! xlat.isCacheable();
+    //lsq_entry->theInstruction->setWillRaise(xlat.theException);
+    lsq_entry->theException = xlat.theException;
 
-    boost::intrusive_ptr<Flexus::SharedTypes::Translation> xlat (new Flexus::SharedTypes::Translation());
-    xlat->theVaddr = anAddr ;
-//    xlat.theASI = lsq_entry->theASI;
-    //xlat.theTL = getTL();
-    xlat->thePSTATE = getPSTATE() ;
-    xlat->theType = ( lsq_entry->isStore() ? Flexus::SharedTypes::Translation::eStore :  Flexus::SharedTypes::Translation::eLoad) ;
-//    translate(xlat);
-    lsq_entry->thePaddr = xlat->thePaddr;
-//    lsq_entry->theSideEffect = xlat->isSideEffect() || ( ! xlat->isTranslating() /*&& ! xlat.isMMU() */);
-//    lsq_entry->theInverseEndian = xlat->isXEndian();
-//    lsq_entry->theMMU = xlat.isMMU();
-//    lsq_entry->theNonCacheable = ! xlat->isCacheable();
-    lsq_entry->theInstruction->setWillRaise(kException_None);
-//    lsq_entry->theException = xlat.theException;
-//     translate(xlat, false);
     if (lsq_entry->thePaddr > 0x40000000000LL) {
       lsq_entry->theSideEffect  = true;
     }
 
-//    if ( lsq_entry->theSideEffect && /*!xlat.isMMU() &&*/ !xlat->isInterrupt()  ) {
-//      DBG_( Verb, ( << theName << " SideEffect access: " << *lsq_entry ) );
-//      if (lsq_entry->theOperation == kLoad) {
-//        lsq_entry->theInstruction->changeInstCode(codeSideEffectLoad);
-//        lsq_entry->theInstruction->forceResync();
-//      } else if (lsq_entry->theOperation == kStore) {
-//        lsq_entry->theInstruction->changeInstCode(codeSideEffectStore);
-//        lsq_entry->theInstruction->forceResync();
-//      } else {
-//        lsq_entry->theInstruction->changeInstCode(codeSideEffectAtomic);
-//        lsq_entry->theInstruction->forceResync();
-//      }
-    /* } else if ( lsq_entry->theMMU ) {
+    if ( lsq_entry->theSideEffect && !xlat.isMMU() && !xlat.isInterrupt()  ) {
+      DBG_( Verb, ( << theName << " SideEffect access: " << *lsq_entry ) );
+      if (lsq_entry->theOperation == kLoad) {
+        lsq_entry->theInstruction->changeInstCode(codeSideEffectLoad);
+        lsq_entry->theInstruction->forceResync();
+      } else if (lsq_entry->theOperation == kStore) {
+        lsq_entry->theInstruction->changeInstCode(codeSideEffectStore);
+        lsq_entry->theInstruction->forceResync();
+      } else {
+        lsq_entry->theInstruction->changeInstCode(codeSideEffectAtomic);
+        lsq_entry->theInstruction->forceResync();
+      }
+    } else if ( lsq_entry->theMMU ) {
       DBG_( Verb, ( << theName << " MMU access: " << *lsq_entry ) );
       lsq_entry->theInstruction->changeInstCode(codeMMUAccess);
-    }*/ else {
+    } else {
       // Restore the original instruction code
       if ( lsq_entry->theInstruction->instCode() == codeSideEffectLoad  ||
            lsq_entry->theInstruction->instCode() == codeSideEffectStore ||
@@ -605,25 +547,24 @@ void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry 
           }
     */
     PhysicalMemoryAddress addr_aligned(lsq_entry->thePaddr & 0xFFFFFFFFFFFFFFF8ULL);
-    //theMemQueue.get<by_insn>().modify( lsq_entry, [&addr_aligned](auto& x){ x.thePaddr_aligned = addr_aligned; });//ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = addr_aligned);
     theMemQueue.get<by_insn>().modify( lsq_entry, ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = addr_aligned);
 
     /* CMU-ONLY-BLOCK-BEGIN */
-//    if (theTrackParallelAccesses && /*!xlat->isSideEffect() && xlat->isCacheable() &&*/ lsq_entry->thePaddr != kInvalid && lsq_entry->thePaddr != PhysicalMemoryAddress(kUnresolved)) {
-//      //Add this address to parallel accesses and accumulate all accesses parallel with this one
-//      memq_t::index< by_seq >::type::iterator lsq_iter = theMemQueue.get<by_seq>().begin();
-//      memq_t::index< by_seq >::type::iterator lsq_end = theMemQueue.get<by_seq>().end();
-//      uint64_t block_addr(lsq_entry->thePaddr & 0xFFFFFFFFFFFFFFC0ULL);
-//      lsq_entry->theParallelAddresses.clear();
-//      lsq_entry->theParallelAddresses.insert( block_addr );
-//      while (lsq_iter != lsq_end && lsq_iter->theSequenceNum != lsq_entry->theSequenceNum ) {
-//        if (!lsq_iter->isMarker() && ( lsq_iter->status() == kAwaitingPort ||  lsq_iter->status() == kAwaitingIssue || lsq_iter->status() == kIssuedToMemory || lsq_iter->status() == kAwaitingValue ) ) {
-//          lsq_entry->theParallelAddresses.insert( lsq_iter->theParallelAddresses.begin(), lsq_iter->theParallelAddresses.end());
-//          lsq_iter->theParallelAddresses.insert( block_addr );
-//        }
-//        ++lsq_iter;
-//      }
-//    }
+    if (theTrackParallelAccesses && !xlat.isSideEffect() && xlat.isCacheable() && lsq_entry->thePaddr != kInvalid && lsq_entry->thePaddr != PhysicalMemoryAddress(kUnresolved)) {
+      //Add this address to parallel accesses and accumulate all accesses parallel with this one
+      memq_t::index< by_seq >::type::iterator lsq_iter = theMemQueue.get<by_seq>().begin();
+      memq_t::index< by_seq >::type::iterator lsq_end = theMemQueue.get<by_seq>().end();
+      uint64_t block_addr(lsq_entry->thePaddr & 0xFFFFFFFFFFFFFFC0ULL);
+      lsq_entry->theParallelAddresses.clear();
+      lsq_entry->theParallelAddresses.insert( block_addr );
+      while (lsq_iter != lsq_end && lsq_iter->theSequenceNum != lsq_entry->theSequenceNum ) {
+        if (!lsq_iter->isMarker() && ( lsq_iter->status() == kAwaitingPort ||  lsq_iter->status() == kAwaitingIssue || lsq_iter->status() == kIssuedToMemory || lsq_iter->status() == kAwaitingValue ) ) {
+          lsq_entry->theParallelAddresses.insert( lsq_iter->theParallelAddresses.begin(), lsq_iter->theParallelAddresses.end());
+          lsq_iter->theParallelAddresses.insert( block_addr );
+        }
+        ++lsq_iter;
+      }
+    }
     /* CMU-ONLY-BLOCK-END */
 
     if (thePrefetchEarly && lsq_entry->isStore() && lsq_entry->thePaddr != kUnresolved && lsq_entry->thePaddr != 0 && !lsq_entry->isAbnormalAccess()) {
@@ -641,7 +582,7 @@ void CoreImpl::addSLATEntry( PhysicalMemoryAddress anAddress, boost::intrusive_p
 void CoreImpl::removeSLATEntry( PhysicalMemoryAddress anAddress, boost::intrusive_ptr<Instruction> anInstruction ) {
   DBG_Assert( anAddress != 0 );
   SpeculativeLoadAddressTracker::iterator iter, end;
-  std::tie(iter, end) = theSLAT.equal_range(anAddress);
+  boost::tie(iter, end) = theSLAT.equal_range(anAddress);
   DBG_Assert(iter != end);
   bool found = false;
   while (iter != end) {
@@ -656,63 +597,32 @@ void CoreImpl::removeSLATEntry( PhysicalMemoryAddress anAddress, boost::intrusiv
   DBG_Assert(found, ( << "No SLAT entry matching " << anAddress << " for " << *anInstruction));
 }
 
-
-void CoreImpl::translate(boost::intrusive_ptr< Instruction > anInsn){
-
-    memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( anInsn );
-    DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end());
-    DBG_Assert( lsq_entry->theVaddr != 0);
-
-    TranslationPtr tr(new Translation());
-    tr->theVaddr = lsq_entry->theVaddr;
-    tr->setData();
-    tr->setInstruction(anInsn);
-
-    DBG_(Dev, (<< "Sending Translation Request to MMU: " << *anInsn));
-
-
-    theTranlationQueue.push(tr);
-}
-
-void CoreImpl::resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, VirtualMemoryAddress anAddr) {
+void CoreImpl::resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, VirtualMemoryAddress anAddr, int32_t anASI ) {
   FLEXUS_PROFILE();
   memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( anInsn );
   DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end());
   if ( lsq_entry->theVaddr == anAddr  ) {
-      CORE_DBG("no update neccessary for "<< anAddr);
     return;  //No change
   }
   DBG_( Verb, ( << "Resolved VAddr for " << *lsq_entry << " to " << anAddr) );
-  CORE_DBG("Resolved VAddr for " << *lsq_entry << " to " << anAddr);
 
   if ( lsq_entry->isStore() && lsq_entry->theValue ) {
-    CORE_DBG("lsq_entry->isStore() && lsq_entry->theValue");
     resnoopDependantLoads(lsq_entry);
   }
 
   if (anAddr == kUnresolved) {
-      CORE_DBG("anAddr == kUnresolved");
     if (lsq_entry->isLoad() && lsq_entry->loadValue()) {
-        CORE_DBG("lsq_entry->isLoad() && lsq_entry->loadValue()");
       DBG_Assert( lsq_entry->theDependance );
       lsq_entry->theDependance->squash();
       lsq_entry->loadValue() = boost::none;
     }
     if (lsq_entry->theMSHR) {
-        CORE_DBG("lsq_entry->theMSHR");
       breakMSHRLink( lsq_entry );
     }
     lsq_entry->theIssued = false;
   }
 
-  updateVaddr( lsq_entry, anAddr);
-}
-
-void CoreImpl::resolvePAddr( boost::intrusive_ptr< Instruction > anInsn) {
-
-    memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( anInsn );
-    DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end());
-    DBG_Assert( lsq_entry->thePaddr != 0);
+  updateVaddr( lsq_entry, anAddr, anASI );
 
   switch (lsq_entry->status()) {
     case kComplete:
@@ -780,16 +690,12 @@ void CoreImpl::resolvePAddr( boost::intrusive_ptr< Instruction > anInsn) {
 boost::optional< memq_t::index< by_insn >::type::iterator >  CoreImpl::doLoad( memq_t::index< by_insn >::type::iterator lsq_entry, boost::optional< memq_t::index< by_insn >::type::iterator > aCachedSnoopState ) {
   DBG_Assert( lsq_entry->isLoad() ) ;
 
-  CORE_DBG(theName << " doLoad: " << *lsq_entry);
   DBG_( Verb, ( << theName << " doLoad: " << *lsq_entry ) );
 
   if (lsq_entry->isAtomic() && lsq_entry->thePartialSnoop) {
-      CORE_DBG("lsq_entry->isAtomic() && lsq_entry->thePartialSnoop");
-
     //Partial-snoop atomics must wait for the SB to drain and issue
     //non-speculatively
     if (lsq_entry->loadValue() && lsq_entry->theDependance) {
-        CORE_DBG("lsq_entry->loadValue() && lsq_entry->theDependance");
       lsq_entry->theDependance->squash();
     }
     lsq_entry->loadValue() = boost::none;
@@ -797,7 +703,7 @@ boost::optional< memq_t::index< by_insn >::type::iterator >  CoreImpl::doLoad( m
     return aCachedSnoopState;
   }
 
-  boost::optional< bits > previous_value;
+  boost::optional< uint64_t > previous_value( boost::none );
   //First, deal with cleaning up the previous status of this load instruction
   switch ( lsq_entry->status()) {
     case kAwaitingValue:
@@ -926,21 +832,18 @@ void CoreImpl::resnoopDependantLoads( memq_t::index< by_insn >::type::iterator l
 void CoreImpl::doStore( memq_t::index< by_insn >::type::iterator lsq_entry) {
   FLEXUS_PROFILE();
   DBG_Assert( lsq_entry->isStore());
-  CORE_TRACE;
+
   //Also used by atomics when their value or address changes
   updateDependantLoads( lsq_entry );
 }
 
-
-
-
-void CoreImpl::updateCASValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, bits aCompareValue ) {
+void CoreImpl::updateCASValue( boost::intrusive_ptr< Instruction > anInsn, uint64_t aValue, uint64_t aCompareValue ) {
   FLEXUS_PROFILE();
   memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( anInsn );
   DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end());
   DBG_Assert( lsq_entry->theOperation == kCAS );
 
-  boost::optional< bits > previous_value( lsq_entry->theValue );
+  boost::optional< uint64_t > previous_value( lsq_entry->theValue );
 
   lsq_entry->theAnnulled = false;
   lsq_entry->theCompareValue = aCompareValue;
@@ -964,14 +867,14 @@ void CoreImpl::updateCASValue( boost::intrusive_ptr< Instruction > anInsn, bits 
   }
 }
 
-void CoreImpl::updateStoreValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, boost::optional<bits> anExtendedValue) {
+void CoreImpl::updateStoreValue( boost::intrusive_ptr< Instruction > anInsn, uint64_t aValue, boost::optional<uint64_t> anExtendedValue) {
   FLEXUS_PROFILE();
   memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( anInsn );
   DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end());
   DBG_Assert( lsq_entry->theOperation != kLoad );
   DBG_( Verb, ( << "Updated store value for " << *lsq_entry << " to " << aValue << "[:" << anExtendedValue << "]" ));
 
-  bits previous_value(lsq_entry->theValue);
+  boost::optional< uint64_t > previous_value( lsq_entry->theValue );
 
   lsq_entry->theAnnulled = false;
   lsq_entry->theValue = aValue;
@@ -997,4 +900,4 @@ void CoreImpl::annulStoreValue( boost::intrusive_ptr< Instruction > anInsn) {
   }
 }
 
-} //nuArchARM
+} //nuArch

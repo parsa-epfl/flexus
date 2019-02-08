@@ -1,79 +1,41 @@
-// DO-NOT-REMOVE begin-copyright-block 
-//
-// Redistributions of any form whatsoever must retain and/or include the
-// following acknowledgment, notices and disclaimer:
-//
-// This product includes software developed by Carnegie Mellon University.
-//
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
-//
-// For more information, see the SimFlex project website at:
-//   http://www.ece.cmu.edu/~simflex
-//
-// You may not use the name "Carnegie Mellon University" or derivations
-// thereof to endorse or promote products derived from this software.
-//
-// If you modify the software you must place a notice on or within any
-// modified version provided or made available to any third party stating
-// that you have modified the software.  The notice shall include at least
-// your name, address, phone number, email address and the date and purpose
-// of the modification.
-//
-// THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
-// EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
-// THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
-// IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-// TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
-// BE LIABLE FOR ANY DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
-// SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
-// ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
-// CONTRACT, TORT OR OTHERWISE).
-//
-// DO-NOT-REMOVE end-copyright-block
-
-
 #include "coreModelImpl.hpp"
-
 
 #define DBG_DeclareCategories uArchCat
 #define DBG_SetDefaultOps AddCat(uArchCat)
 #include DBG_Control()
 
-namespace nuArchARM {
+namespace nuArch {
 
 CoreImpl::CoreImpl( uArchOptions_t options
-                    //, std::function< void (Flexus::Qemu::Translation &) > xlat
-                    , std::function<int()> _advance
-                    , std::function< void(eSquashCause)> _squash
-                    , std::function< void(VirtualMemoryAddress)> _redirect
-                    , std::function< void(int, int)> _change_mode
-                    , std::function< void( boost::intrusive_ptr<BranchFeedback> )> _feedback
-                    , std::function< void( bool )> _signalStoreForwardingHit
-                    , std::function< void(int32_t)> _mmuResync
+                    , boost::function< void (Flexus::Simics::Translation &, bool) > xlat
+                    , boost::function<int(bool)> _advance
+                    , boost::function< void(eSquashCause)> _squash
+                    , boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress)> _redirect
+                    , boost::function< void(int, int)> _change_mode
+                    , boost::function< void( boost::intrusive_ptr<BranchFeedback> )> _feedback
+                    , boost::function< void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> ) > _notifyTMS /* CMU-ONLY */
+                    , boost::function< void( bool )> _signalStoreForwardingHit
                   )
   : theName(options.name)
   , theNode(options.node)
-  //, translate(xlat)
+  , translate(xlat)
   , advance_fn(_advance)
   , squash_fn(_squash)
   , redirect_fn(_redirect)
   , change_mode_fn(_change_mode)
   , feedback_fn(_feedback)
+  , notifyTMS_fn(_notifyTMS) /* CMU-ONLY */
   , signalStoreForwardingHit_fn(_signalStoreForwardingHit)
-  , mmuResync_fn(_mmuResync)
-  , thePendingTrap(kException_None)
-  , theBypassNetwork( kxRegs_Total + 2 * options.ROBSize, kvRegs + 4 * options.ROBSize, 5 + options.ROBSize)
+  , thePendingTrap(0)
+  , thePopTLRequested(false)
+  , theBypassNetwork( krRegs_Total + 2 * options.ROBSize, kfRegs + 4 * options.ROBSize, 5 + options.ROBSize)
   , theLastGarbageCollect(0)
   , thePreserveInteractions(false)
   , theMemoryPortArbiter(*this, options.numMemoryPorts, options.numStorePrefetches)
   , theROBSize(options.ROBSize)
   , theRetireWidth(options.retireWidth)
   , theInterruptSignalled(false)
-  , thePendingInterrupt(kException_None)
+  , thePendingInterrupt(0)
   , theInterruptInstruction(0)
   , theMemorySequenceNum(0)
   , theLSQCount(0)
@@ -122,7 +84,7 @@ CoreImpl::CoreImpl( uArchOptions_t options
   , theBBVTracker( /*BBVTracker::createBBVTracker(aNode)*/ 0 )  /* CMU-ONLY */
   , theOnChipLatency(options.onChipLatency)
   , theOffChipLatency(options.offChipLatency)
-//  , theValidateMMU(options.validateMMU)
+  , theValidateMMU(options.validateMMU)
   , theNumMemoryPorts(options.numMemoryPorts)
   , theNumSnoopPorts(options.numSnoopPorts)
   , theMispredictCycles ( 0 ) // for IStall and mispredict stats
@@ -187,11 +149,14 @@ CoreImpl::CoreImpl( uArchOptions_t options
   , theResync_RDPRUnsupported ( theName + "-Resync:RDPRUnsupported" )
   , theResync_WRPRUnsupported ( theName + "-Resync:WRPRUnsupported" )
   , theResync_MEMBARSync ( theName + "-Resync:MEMBARSync" )
+  , theResync_POPCUnsupported ( theName + "-Resync:POPCUnsupported" )
   , theResync_UnexpectedException ( theName + "-Resync:UnexpectedException" )
   , theResync_Interrupt ( theName + "-Resync:Interrupt" )
   , theResync_DeviceAccess ( theName + "-Resync:DeviceAccess" )
   , theResync_FailedValidation ( theName + "-Resync:FailedValidation" )
   , theResync_FailedHandleTrap ( theName + "-Resync:FailedHandleTrap" )
+  , theResync_UnsupportedLoadASI( theName + "-Resync:UnsupportedASI:Load" )
+  , theResync_UnsupportedAtomicASI( theName + "-Resync:UnsupportedASI:Atomic" )
   , theResync_SideEffectLoad( theName + "-Resync:SideEffectLoad" )
   , theResync_SideEffectStore( theName + "-Resync:SideEffectStore" )
   , theResync_Unknown ( theName + "-Resync:Unknown" )
@@ -269,37 +234,35 @@ CoreImpl::CoreImpl( uArchOptions_t options
   , intAluCyclesToReady(options.numIntAlu, 0)
   , intMultCyclesToReady(options.numIntMult, 0)
   , fpAluCyclesToReady(options.numFpAlu, 0)
-  , fpMultCyclesToReady(options.numFpMult, 0)
-  , theEnable(false)
-{
+  , fpMultCyclesToReady(options.numFpMult, 0) {
 
-    // Msutherl - for MMU verification. Remove when done
-    theQEMUCPU = Flexus::Qemu::Processor::getProcessor(theNode);
+  // original constructor continues here...
+  prepareMemOpAccounting();
 
-    // original constructor continues here...
-    prepareMemOpAccounting();
+  std::vector<uint32_t> reg_file_sizes;
+  reg_file_sizes.resize(kLastMapTableCode + 2);
+  reg_file_sizes[rRegisters] = krRegs_Total + 2 * theROBSize;
+  reg_file_sizes[fRegisters] = kfRegs + 4 * theROBSize;
+  reg_file_sizes[ccBits] = 5 + theROBSize;
+  theRegisters.initialize(reg_file_sizes);
 
-    std::vector<uint32_t> reg_file_sizes;
-    reg_file_sizes.resize(kLastMapTableCode + 2);
-    reg_file_sizes[xRegisters] = kxRegs_Total + 2 * theROBSize;
-    reg_file_sizes[vRegisters] = kvRegs + 4 * theROBSize;
-    reg_file_sizes[ccBits] = 5 + theROBSize;
-    theRegisters.initialize(reg_file_sizes);
+  //Map table for rRegisters
+  theMapTables.push_back
+  ( boost::shared_ptr<PhysicalMap>
+    ( new PhysicalMap( krRegs_Total , reg_file_sizes[rRegisters]) )
+  );
 
-    //Map table for xRegisters
-    theMapTables.push_back
-    ( std::make_shared<PhysicalMap>( kxRegs_Total , reg_file_sizes[xRegisters])
-    );
+  //Map table for fRegisters
+  theMapTables.push_back
+  ( boost::shared_ptr<PhysicalMap>
+    ( new PhysicalMap( kfRegs, reg_file_sizes[fRegisters]) )
+  );
 
-    //Map table for vRegisters
-    theMapTables.push_back
-    ( std::make_shared<PhysicalMap>( kvRegs, reg_file_sizes[vRegisters])
-    );
-
-    //Map table for ccBits
-    theMapTables.push_back
-    ( std::make_shared<PhysicalMap>( 5, reg_file_sizes[ccBits])
-    );
+  //Map table for ccBits
+  theMapTables.push_back
+  ( boost::shared_ptr<PhysicalMap>
+    ( new PhysicalMap( 5, reg_file_sizes[ccBits]) )
+  );
 
   reset();
 
@@ -337,23 +300,39 @@ CoreImpl::CoreImpl( uArchOptions_t options
   theCycleCategory = kTBUser;
 }
 
-void CoreImpl::resetARM() {
+void CoreImpl::resetv9() {
 
   theWindowMap.reset();
   theArchitecturalWindowMap.reset();
-  mapTable(xRegisters).reset();
-  mapTable(vRegisters).reset();
+  mapTable(rRegisters).reset();
+  mapTable(fRegisters).reset();
   mapTable(ccBits).reset();
   theRegisters.reset();
 
   theRoundingMode = 0;
+  theTBA = 0;
   thePSTATE = 0;
+  theTL = 0;
+  thePIL = 0;
+  theCANSAVE = 0;
+  theCANRESTORE = 0;
+  theCLEANWIN = 0;
+  theOTHERWIN = 0;
+  theWSTATE = 0;
+  theVER = 0;
+  for (int32_t i = 0; i < 5; ++i) {
+    theTPC[i] = 0;
+    theTNPC[i] = 0;
+    theTSTATE[i] = 0;
+    theTT[i] = 0;
+  }
 
-  thePendingTrap = kException_None;
+  thePendingTrap = 0;
+  thePopTLRequested = false;
   theTrapInstruction = 0;
 
   theInterruptSignalled = false;
-  thePendingInterrupt = kException_None;
+  thePendingInterrupt = 0;
   theInterruptInstruction = 0;
 
   theBypassNetwork.reset();
@@ -372,10 +351,12 @@ void CoreImpl::resetARM() {
 
   theRedirectRequested = false;
   theRedirectPC = VirtualMemoryAddress(0);
+  theRedirectNPC = VirtualMemoryAddress(0);
 
   clearLSQ();
 
   thePartialSnoopersOutstanding = 0;
+
 }
 
 void CoreImpl::reset() {
@@ -383,7 +364,7 @@ void CoreImpl::reset() {
 
   cleanMSHRS(0);
 
-  resetARM();
+  resetv9();
 
   theSRB.clear();
 
@@ -427,17 +408,51 @@ void CoreImpl::reset() {
   theIdleCycleCount = 0;
   theIdleThisCycle = false;
 
-  while (!theTranlationQueue.empty()){
-      theTranlationQueue.pop();
-  }
-
 }
 
-//write to physical register
 void CoreImpl::writePR(uint32_t aPR, uint64_t aVal) {
   switch (aPR) {
+    case 0: //TPC
+      setTPC( aVal, theTL );
+      break;
+    case 1: //NTPC
+      setTNPC( aVal, theTL );
+      break;
+    case 2: //TSTATE
+      setTSTATE( aVal, theTL );
+      break;
+    case 3: //TT
+      setTT( aVal, theTL );
+      break;
+    case 5: //TBA
+      setTBA( aVal );
+      break;
     case 6: //PSTATE
       setPSTATE( aVal );
+      break;
+    case 7: //TL
+      setTL( aVal );
+      break;
+    case 8: //PIL
+      setPIL( aVal );
+      break;
+    case 9: //CWP
+      setCWP(aVal);
+      break;
+    case 10: //CANSAVE
+      setCANSAVE(aVal);
+      break;
+    case 11: //CANRESTORE
+      setCANRESTORE(aVal);
+      break;
+    case 12: //CLEANWIN
+      setCLEANWIN(aVal);
+      break;
+    case 13: //OTHERWIN
+      setOTHERWIN(aVal);
+      break;
+    case 14: //WSTATE
+      setWSTATE(aVal);
       break;
     default:
       DBG_( Crit, ( << "Write of unimplemented PR: " << aPR ) );
@@ -445,56 +460,108 @@ void CoreImpl::writePR(uint32_t aPR, uint64_t aVal) {
   }
 
 }
-// read physical register
-uint64_t CoreImpl::readPR(ePrivRegs aPR) { return getPriv(aPR).readfn(this); }
-bool CoreImpl::isAARCH64() {return theAARCH64;}
-void CoreImpl::setAARCH64(bool aMode) {theAARCH64 = aMode;}
-uint32_t CoreImpl::getSPSel (){ return thePSTATE & PSTATE_SP; }
-void CoreImpl::setSPSel (uint32_t aVal){SysRegInfo& ri = getPriv(kSPSel); ri.writefn(this, aVal);}
-void CoreImpl::setSP_el (uint8_t anId, uint64_t aVal){DBG_Assert(anId >= 0 || anId < 4); theSP_el[anId] = aVal;}
-uint64_t CoreImpl::getSP_el (uint8_t anId){DBG_Assert(anId >= 0 || anId < 4); return theSP_el[anId];}
-uint32_t CoreImpl::getPSTATE() { return thePSTATE; }
-void CoreImpl::setPSTATE( uint32_t aPSTATE) { thePSTATE = aPSTATE; }
-void CoreImpl::setFPSR( uint32_t anFPSR) { theFPSR = anFPSR; }
-uint32_t CoreImpl::getFPSR() { return theFPSR; }
-void CoreImpl::setFPCR( uint32_t anFPCR) { theFPCR = anFPCR; }
-uint32_t CoreImpl::getFPCR() { return theFPCR; }
-uint32_t CoreImpl::getDCZID_EL0() {return theDCZID_EL0;}
-void CoreImpl::setDCZID_EL0(uint32_t aDCZID_EL0) {theDCZID_EL0 = aDCZID_EL0;}
-void CoreImpl::setSCTLR_EL( uint8_t anId, uint64_t aSCTLR_EL) { theSCTLR_EL[anId] =  aSCTLR_EL; }
-uint64_t CoreImpl::getSCTLR_EL(uint8_t anId) { return theSCTLR_EL[anId]; }
-void CoreImpl::setHCREL2( uint64_t aHCREL2) { theHCR_EL2 = aHCREL2; }
-uint64_t CoreImpl::getHCREL2() { return theHCR_EL2; }
-void CoreImpl::setException( Flexus::Qemu::API::exception_t anEXP) { theEXP = anEXP; }
-Flexus::Qemu::API::exception_t CoreImpl::getException() { return theEXP; }
-void CoreImpl::setRoundingMode(uint32_t aRoundingMode) {theRoundingMode = aRoundingMode; }
-uint32_t CoreImpl::getRoundingMode() { return theRoundingMode; }
-void CoreImpl::setDAIF(uint32_t aDAIF) {thePSTATE = ((thePSTATE & ~PSTATE_DAIF) | (aDAIF & PSTATE_DAIF)); }
-void CoreImpl::setPC( uint64_t aPC) { thePC = aPC; }
 
+uint64_t CoreImpl::readPR(uint32_t aPR) {
+  switch (aPR) {
+    case 0: //TPC
+      return getTPC( theTL );
+    case 1: //NTPC
+      return getTNPC( theTL );
+    case 2: //TSTATE
+      return getTSTATE( theTL );
+    case 3: //TT
+      return getTT( theTL );
+    case 5: //TBA
+      return getTBA();
+    case 6: //PSTATE
+      return getPSTATE();
+    case 7: //TL
+      return getTL();
+    case 8: //PIL
+      return getPIL();
+    case 9: //CWP
+      return getCWP();
+    case 10: //CANSAVE
+      return getCANSAVE();
+    case 11: //CANRESTORE
+      return getCANRESTORE();
+    case 12: //CLEANWIN
+      return getCLEANWIN();
+    case 13: //OTHERWIN
+      return getOTHERWIN();
+    case 14: //WSTATE
+      return getWSTATE();
+    case 31: //VER
+      return getVER();
+    default:
+      DBG_( Crit, ( << "Read of unimplemented PR: " << aPR ) );
+      return 0;
+  }
+  return 0;
+}
 
+std::string CoreImpl::prName(uint32_t aPR) {
+  switch (aPR) {
+    case 0: //TPC
+      return "%tpc";
+    case 1: //NTPC
+      return "%tnpc";
+    case 2: //TSTATE
+      return "%tstate";
+    case 3: //TT
+      return "%tt";
+    case 5: //TBA
+      return "%tba";
+    case 6: //PSTATE
+      return "%pstate";
+    case 7: //TL
+      return "%tl";
+    case 8: //PIL
+      return "%pil";
+    case 9: //CWP
+      return "%cwp";
+    case 10: //CANSAVE
+      return "%cansave";
+    case 11: //CANRESTORE
+      return "%canrestore";
+    case 12: //CLEANWIN
+      return "%cleanwin";
+    case 13: //OTHERWIN
+      return "%otherwin";
+    case 14: //WSTATE
+      return "%wstate";
+    case 31: //VER
+      return "%ver";
+    default:
+      return "UnimplementedPR";
+  }
+}
+
+void CoreImpl::setRoundingMode(uint32_t aRoundingMode) {
+  theRoundingMode = aRoundingMode;
+}
 
 CoreModel * CoreModel::construct( uArchOptions_t options
-                                  //, std::function< void (Flexus::Qemu::Translation &) > translate
-                                  , std::function<int()> advance
-                                  , std::function< void(eSquashCause)> squash
-                                  , std::function< void(VirtualMemoryAddress)> redirect
-                                  , std::function< void(int, int)> change_mode
-                                  , std::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback
-                                  , std::function< void( bool )> signalStoreForwardingHit
-                                  , std::function<void(int32_t)> mmuResync
+                                  , boost::function< void (Flexus::Simics::Translation &, bool) > translate
+                                  , boost::function<int(bool)> advance
+                                  , boost::function< void(eSquashCause)> squash
+                                  , boost::function< void(VirtualMemoryAddress, VirtualMemoryAddress)> redirect
+                                  , boost::function< void(int, int)> change_mode
+                                  , boost::function< void( boost::intrusive_ptr<BranchFeedback> )> feedback
+                                  , boost::function<void (PredictorMessage::tPredictorMessageType, PhysicalMemoryAddress, boost::intrusive_ptr<TransactionTracker> )> notifyTMS /* CMU-ONLY */
+                                  , boost::function< void( bool )> signalStoreForwardingHit
                                 ) {
 
   return new CoreImpl( options
-                       //, translate
+                       , translate
                        , advance
                        , squash
                        , redirect
                        , change_mode
                        , feedback
+                       , notifyTMS /* CMU-ONLY */
                        , signalStoreForwardingHit
-                       , mmuResync
                      );
 }
 
-} //nuArchARM
+} //nuArch

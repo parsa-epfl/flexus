@@ -113,7 +113,7 @@ void setRD( SemanticInstruction * inst, uint32_t rd) {
 
 }
 
-static void setRD1( SemanticInstruction * inst, uint32_t rd1) {
+void setRD1( SemanticInstruction * inst, uint32_t rd1) {
   reg regRD1;
   regRD1.theType = xRegisters;
   regRD1.theIndex = rd1;
@@ -133,6 +133,28 @@ void satisfyAtDispatch( SemanticInstruction * inst, std::list<InternalDependance
     inst->addDispatchEffect( satisfy( inst, *iter ) );
   }
 }
+
+//addReadRDs(SemanticInstruction * inst, uint32_t rd, uint32_t rd1 ) {
+
+//    setRD( inst, rd);
+//    setRD1( inst, rd1);
+
+//    inst->addDispatchEffect( mapSource( inst, kRD, kPD ) );
+//    inst->addDispatchEffect( mapSource( inst, kRD1, kPD1 ) );
+
+//    simple_action read_value = readRegisterAction( inst, kPD, kResult );
+//    inst->addDispatchAction( read_value );
+
+//    connectDependance( update_value.dependance, read_value );
+//    connectDependance( inst->retirementDependance(), update_value );
+
+//    inst->addPrevalidation( validateRegister( rd, kResult, inst ) );
+
+//    inst->addAnnulmentEffect( squash( inst, update_value.predicate ) );
+//    inst->addReinstatementEffect( satisfy( inst, update_value.predicate ) );
+
+
+//}
 
 
 void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t rs, std::list<InternalDependance> & dependances, bool is_64) {
@@ -200,7 +222,7 @@ void addWriteback( SemanticInstruction * inst, eOperandCode aRegisterCode,eOpera
   dependant_action wb = writebackAction( inst, aRegisterCode, aMappedRegisterCode, a64, setflags );
 //  inst->addDispatchAction( wb );
 
-  addAnnulment( inst, exec, wb.dependance );
+//  addAnnulment( inst, exec, wb.dependance );
 
   //Make writeback depend on execute, make retirement depend on writeback
   connectDependance( wb.dependance, exec );
@@ -236,27 +258,24 @@ predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operat
     return exec;
 }
 
+predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operation> anOperation, eOperandCode anOperand1,  eOperandCode anOperand2, std::vector< std::list<InternalDependance> > & rs_deps ,eOperandCode aResult, boost::optional<eOperandCode> aBypass ) {
+  predicated_action exec;
+
+    exec = executeAction( inst, anOperation, anOperand1, anOperand2, rs_deps, aResult, aBypass );
+//    inst->addDispatchAction( exec );
+    return exec;
+}
+
 void addAddressCompute( SemanticInstruction * inst, std::vector< std::list<InternalDependance> > & rs_deps) {
   DECODER_TRACE;
 
-//  multiply_dependant_action update_paddress = updatePhysicalAddressAction( inst, rs_deps.size() );
-//  inst->addDispatchEffect( satisfy( inst, update_paddress.dependances[1] ) );
   simple_action tr = translationAction(inst);
-
-
   multiply_dependant_action update_address = updateVirtualAddressAction( inst, rs_deps.size() );
   inst->addDispatchEffect( satisfy( inst, update_address.dependances[1] ) );
   simple_action exec = calcAddressAction( inst, rs_deps);
 
-//  inst->setMayCommit(false);
-  //inst->makeInstructionDependance(update_paddress.dependances[1]);
-
   connectDependance( update_address.dependances[0], exec);
-//  connectDependance( update_paddress.dependances[0], exec);
   connectDependance(tr.action->dependance(0), exec);
-
-//  connectDependance( update_paddress.dependances[1], tr);
-
   connectDependance( inst->retirementDependance(), update_address );
 
 }

@@ -82,10 +82,9 @@ struct ReadConstantAction : public BaseSemanticAction
 
   void doEvaluate()
   {
-    theInstruction->setOperand(theOperandCode, theVal);
+       theInstruction->setOperand(theOperandCode, theVal);
 
-    satisfyDependants();
-
+       satisfyDependants();
   }
 
   void describe( std::ostream & anOstream) const

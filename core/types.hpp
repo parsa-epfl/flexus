@@ -9,6 +9,7 @@
 #include <boost/operators.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/smart_ptr/intrusive_ref_counter.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 
 #if __cplusplus > 199711L
   #include <cstdint>
@@ -162,6 +163,7 @@ public:
 //};
 
 typedef boost::dynamic_bitset<> bits;
+//typedef boost::multiprecision::int128_t bits;
 
 bits fillbits(const int bitSize);
 bool anyBits(bits b);

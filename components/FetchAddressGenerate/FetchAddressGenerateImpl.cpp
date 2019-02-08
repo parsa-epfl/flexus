@@ -74,7 +74,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)  {
   std::unique_ptr<BranchPredictor> theBranchPredictor;
   uint32_t theCurrentThread;
 
-  std::vector<bool> theEnable;
+  bool theEnable;
 
 public:
   FLEXUS_COMPONENT_CONSTRUCTOR(FetchAddressGenerate)
@@ -108,11 +108,7 @@ public:
     theCurrentThread = cfg.Threads;
     theBranchPredictor.reset( BranchPredictor::combining(statName(), flexusIndex()) );
 
-    theEnable.resize(cfg.Threads);
-    for (auto i : theEnable) {
-        i = true;
-    }
-
+    theEnable = true;
   }
 
   void finalize() {}
@@ -158,8 +154,14 @@ FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(RedirectIn);
 
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(EnableIn);
   void push(interface::EnableIn const &, index_t anIndex, bool& v) {
-    theEnable[anIndex] = true;
+    theEnable = true;
   }
+
+  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(EnableUARCHIn);
+  void push(interface::EnableUARCHIn const &, index_t anIndex, bool& v) {
+    theEnable = true;
+  }
+
 
   //Drive Interfaces
   //----------------
@@ -177,7 +179,7 @@ private:
   //Implementation of the FetchDrive drive interface
   void doAddressGen(index_t anIndex) {
 
-    if (!theEnable[anIndex]) return;
+    if (!theEnable) return;
     AGU_DBG("--------------START ADDRESS GEN------------------------");
 
     if (theFlexus->quiescing()) {
@@ -209,7 +211,7 @@ private:
     if (available_faq == 0)
         DBG_(VVerb,(<<"FGU: available FAQ is empty"  ) );
 
-//    static int test;
+    static int test;
     boost::intrusive_ptr<FetchCommand> fetch(new FetchCommand());
     while ( max_addrs > 0 /*&& test == 0*/) {
       AGU_DBG("Getting addresses: " << max_addrs << " remaining");
@@ -262,7 +264,7 @@ private:
     if (fetch->theFetches.size() > 0) {
       AGU_DBG("Sending total fetches: " << fetch->theFetches.size());
 
-      theEnable[anIndex] = false;
+      theEnable = false;
 
       //Send it to FetchOut
       FLEXUS_CHANNEL_ARRAY(FetchAddrOut, anIndex) << fetch;
@@ -306,7 +308,9 @@ FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, Stalled )   {
 FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, EnableIn )   {
   return (cfg.Threads);
 }
-
+FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, EnableUARCHIn )   {
+  return (cfg.Threads);
+}
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
 #define FLEXUS_END_COMPONENT FetchAddressGenerate

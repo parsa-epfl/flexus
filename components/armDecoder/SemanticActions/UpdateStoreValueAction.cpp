@@ -202,13 +202,15 @@ multiply_dependant_action updateCASPValueAction
 
 struct UpdateSTDValueAction : public BaseSemanticAction {
 
-  UpdateSTDValueAction ( SemanticInstruction * anInstruction )
+    eOperandCode theOperand;
+  UpdateSTDValueAction ( SemanticInstruction * anInstruction, eOperandCode anOperandCode )
     : BaseSemanticAction ( anInstruction, 2 )
+    , theOperand(anOperandCode)
   { }
 
   void doEvaluate() {
     if (ready()) {
-      bits value = (theInstruction->operand< bits > (kResult) << 32) | (theInstruction->operand< bits > (kResult1) & bits(0xFFFFFFFFULL));
+      bits value = theInstruction->operand< bits > (theOperand);
       DBG_( VVerb, ( << *this << " updating store value=" << value) );
       core()->updateStoreValue( boost::intrusive_ptr<Instruction>(theInstruction), value);
       satisfyDependants();
@@ -221,8 +223,8 @@ struct UpdateSTDValueAction : public BaseSemanticAction {
 };
 
 multiply_dependant_action updateSTDValueAction
-( SemanticInstruction * anInstruction ) {
-  UpdateSTDValueAction * act(new(anInstruction->icb()) UpdateSTDValueAction( anInstruction ) );
+( SemanticInstruction * anInstruction, eOperandCode data ) {
+  UpdateSTDValueAction * act(new(anInstruction->icb()) UpdateSTDValueAction( anInstruction, data ) );
   std::vector<InternalDependance> dependances;
   dependances.push_back( act->dependance(0) );
   dependances.push_back( act->dependance(1) );

@@ -1,44 +1,6 @@
-// DO-NOT-REMOVE begin-copyright-block 
-//
-// Redistributions of any form whatsoever must retain and/or include the
-// following acknowledgment, notices and disclaimer:
-//
-// This product includes software developed by Carnegie Mellon University.
-//
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
-//
-// For more information, see the SimFlex project website at:
-//   http://www.ece.cmu.edu/~simflex
-//
-// You may not use the name "Carnegie Mellon University" or derivations
-// thereof to endorse or promote products derived from this software.
-//
-// If you modify the software you must place a notice on or within any
-// modified version provided or made available to any third party stating
-// that you have modified the software.  The notice shall include at least
-// your name, address, phone number, email address and the date and purpose
-// of the modification.
-//
-// THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
-// EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
-// THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
-// IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-// TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
-// BE LIABLE FOR ANY DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
-// SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
-// ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
-// CONTRACT, TORT OR OTHERWISE).
-//
-// DO-NOT-REMOVE end-copyright-block
-
-
 #include "coreModelImpl.hpp"
 
-#include <core/qemu/mai_api.hpp>
+#include <core/simics/mai_api.hpp>
 
 #include "../ValueTracker.hpp"
 
@@ -46,7 +8,7 @@
 #define DBG_SetDefaultOps AddCat(uArchCat)
 #include DBG_Control()
 
-namespace nuArchARM {
+namespace nuArch {
 
 MemoryPortArbiter::MemoryPortArbiter( CoreImpl & aCore, int32_t aNumPorts, int32_t aMaxStorePrefetches)
   : theNumPorts(aNumPorts)
@@ -72,7 +34,7 @@ MemoryPortArbiter::MemoryPortArbiter( CoreImpl & aCore, int32_t aNumPorts, int32
 void MemoryPortArbiter::inOrderArbitrate() {
   //load at LSQ head gets to go first
   memq_t::index<by_queue>::type::iterator iter, end;
-  std::tie(iter, end) = theCore.theMemQueue.get<by_queue>().equal_range( std::make_tuple( kLSQ ) );
+  boost::tie(iter, end) = theCore.theMemQueue.get<by_queue>().equal_range( boost::make_tuple( kLSQ ) );
   while (iter != end) {
     if (iter->status() == kComplete) {
       ++iter;
@@ -85,7 +47,7 @@ void MemoryPortArbiter::inOrderArbitrate() {
   }
 
   //Now try SB head
-  std::tie(iter, end) = theCore.theMemQueue.get<by_queue>().equal_range( std::make_tuple( kSB ) );
+  boost::tie(iter, end) = theCore.theMemQueue.get<by_queue>().equal_range( boost::make_tuple( kSB ) );
   if (iter != end) {
     DBG_Assert(iter->theOperation == kStore);
     if ( theCore.hasMemPort() && iter->status() == kAwaitingPort ) {
@@ -108,7 +70,7 @@ void MemoryPortArbiter::arbitrate() {
     return;
   }
   while (! empty() && theCore.hasMemPort() ) {
-    DBG_( VVerb, ( << "Arbiter granting request" ) );
+    DBG_( Verb, ( << "Arbiter granting request" ) );
 
     //Always issue a store or RMW if there is one ready to go.
     if (! thePriorityRequests.empty()) {
@@ -252,7 +214,7 @@ void CoreImpl::requestPort(memq_t::index< by_insn >::type::iterator lsq_entry) {
     }
   }
   if (lsq_entry->thePartialSnoop ) {
-    memq_t::index<by_queue>::type::iterator lsq_head = theMemQueue.get<by_queue>().lower_bound( std::make_tuple( kLSQ ) );
+    memq_t::index<by_queue>::type::iterator lsq_head = theMemQueue.get<by_queue>().lower_bound( boost::make_tuple( kLSQ ) );
     if (lsq_entry->theInstruction != lsq_head->theInstruction) {
       DBG_( Verb, ( << theName << " Memory Port request by " << *lsq_entry << " ignored because it is a partial snoop and not the LSQ head" ));
       return;
@@ -293,23 +255,6 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
     }
   }
 
-  DBG_(Tmp, (<< "Attempting to issue a memory requst for " << lsq_entry->thePaddr));
-  DBG_Assert(lsq_entry->thePaddr != 0);
-
-  if (anInstruction->isExclusive()){
-      if (lsq_entry->theOperation == kLoad){
-        markExclusiveLocal(lsq_entry->thePaddr, lsq_entry->theSize);
-      } else if (lsq_entry->theOperation == kStore) {
-            if (! isExclusiveLocal(lsq_entry->thePaddr, lsq_entry->theSize)){
-                anInstruction->annul();
-            }
-
-            clearExclusiveLocal();
-        }
-  }
-
-
-
   eOperation issue_op = lsq_entry->theOperation;
 
   switch ( lsq_entry->theOperation ) {
@@ -348,8 +293,8 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
         DBG_( Verb, ( << "Cache atomic preload to invalid address for " << *lsq_entry ) );
         //Unable to map virtual address to physical address for load.  Load is
         //speculative or TLB miss.
-        lsq_entry->theValue->reset();
-        lsq_entry->theExtendedValue->reset();
+        lsq_entry->theValue = 0;
+        lsq_entry->theExtendedValue = 0;
         DBG_Assert(lsq_entry->theDependance);
         lsq_entry->theDependance->satisfy();
         return;
@@ -362,14 +307,12 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
       }
       break;
     case kLoad:
-      if ( lsq_entry->thePaddr == kUnresolved ) {
+      if ( ! lsq_entry->thePaddr ) {
         DBG_( Verb, ( << "Cache read to invalid address for " << *lsq_entry ) );
         //Unable to map virtual address to physical address for load.  Load is
         //speculative or TLB miss.
-        if (lsq_entry->theValue)
-        lsq_entry->theValue->reset();
-        if (lsq_entry->theExtendedValue)
-        lsq_entry->theExtendedValue->reset();
+        lsq_entry->theValue = 0;
+        lsq_entry->theExtendedValue = 0;
         DBG_Assert(lsq_entry->theDependance);
         lsq_entry->theDependance->satisfy();
         return;
@@ -416,11 +359,11 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
 
   //Fill in an MSHR and memory port
   boost::intrusive_ptr<MemOp> op(new MemOp());
-  op->theInstruction = anInstruction;
   MSHR mshr;
   op->theOperation = mshr.theOperation = issue_op;
   DBG_Assert( op->theVAddr != kUnresolved);
   op->theVAddr = lsq_entry->theVaddr;
+  op->theASI = lsq_entry->theASI;
   op->theSideEffect = lsq_entry->theSideEffect;
   op->theReverseEndian = lsq_entry->theInverseEndian;
   op->theNonCacheable = lsq_entry->theNonCacheable;
@@ -439,7 +382,7 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
   if (lsq_entry->theValue) {
     op->theValue = *lsq_entry->theValue;
   } else {
-    op->theValue.reset();
+    op->theValue = 0;
   }
 
   boost::intrusive_ptr<TransactionTracker> tracker = new TransactionTracker;
@@ -462,7 +405,7 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
   }
   /* CMU-ONLY-BLOCK-END */
 
-  tracker->setSource("uArchARM");
+  tracker->setSource("uArch");
   tracker->setOS(system);
   op->theTracker = tracker;
   mshr.theTracker = tracker;
@@ -471,44 +414,9 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
   }
 
   bool ignored;
-  std::tie(lsq_entry->theMSHR, ignored) = theMSHRs.insert( std::make_pair(mshr.thePaddr, mshr) );
+  boost::tie(lsq_entry->theMSHR, ignored) = theMSHRs.insert( std::make_pair(mshr.thePaddr, mshr) );
   theMemoryPorts.push_back( op);
   DBG_( Verb, ( << theName << " " << *lsq_entry << " issuing operation " << *op) );
-}
-
-bool CoreImpl::isEnable(){
-    return theEnable;
-}
-void CoreImpl::issueMMU(TranslationPtr aTranslation){
-    boost::intrusive_ptr<MemOp> op(new MemOp());
-    eOperation issue_op = kPageWalkRequest;
-
-    op->theInstruction.reset();
-    MSHR mshr;
-    op->theOperation = mshr.theOperation = issue_op;
-    DBG_Assert( op->theVAddr != kUnresolved);
-    op->theVAddr = aTranslation->theVaddr;
-
-    op->thePAddr = mshr.thePaddr = aTranslation->thePaddr;
-    op->theSize = mshr.theSize = kDoubleWord/*aTranslate->theSize*/;
-    op->thePC = VirtualMemoryAddress(0);
-    bool system = true;
-
-    boost::intrusive_ptr<TransactionTracker> tracker = new TransactionTracker;
-    tracker->setAddress( op->thePAddr );
-    tracker->setInitiator(theNode);
-
-    tracker->setSource("MMU");
-    tracker->setOS(system);
-    op->theTracker = tracker;
-    mshr.theTracker = tracker;
-
-    bool ignored;
-    /*std::tie(lsq_entry->theMSHR, ignored) = */theMSHRs.insert( std::make_pair(mshr.thePaddr, mshr) );
-    theMemoryPorts.push_back( op);
-    DBG_( VVerb, ( << theName << " " << " issuing operation " << *op) );
-
-    thePageWalkRequests.emplace(std::make_pair(aTranslation->theVaddr, aTranslation));
 }
 
 bool CoreImpl::scanAndAttachMSHR( memq_t::index< by_insn >::type::iterator anLSQEntry ) {
@@ -583,6 +491,7 @@ void CoreImpl::issueStore() {
           MemOp op;
           op.theOperation = kStoreReply;
           op.theVAddr = theMemQueue.front().theVaddr;
+          op.theASI = theMemQueue.front().theASI;
           op.theSideEffect = theMemQueue.front().theSideEffect;
           op.theReverseEndian = theMemQueue.front().theInverseEndian;
           op.theNonCacheable = theMemQueue.front().theNonCacheable;
@@ -592,16 +501,16 @@ void CoreImpl::issueStore() {
           if (theMemQueue.front().theValue) {
             op.theValue = *theMemQueue.front().theValue;
           } else {
-            op.theValue.reset();
+            op.theValue = 0;
           }
           theMemQueue.front().theIssued = true;
           //Need to inform ValueTracker that this store is complete
-          bits value = op.theValue;
-//          if (op.theReverseEndian) {
-//            value = bits(Flexus::Qemu::endianFlip(value.to_ulong(), op.theSize));
-//            DBG_(Verb, ( << "Performing inverse endian store for addr " << std::hex << op.thePAddr << " val: " << op.theValue << " inv: " << value << std::dec ));
-//          }
-      ValueTracker::valueTracker(theNode).commitStore( theNode, op.thePAddr, op.theSize, value);
+          uint64_t value = op.theValue;
+          if (op.theReverseEndian) {
+            value = Flexus::Simics::endianFlip(value, op.theSize);
+            DBG_(Verb, ( << "Performing inverse endian store for addr " << std::hex << op.thePAddr << " val: " << op.theValue << " inv: " << value << std::dec ));
+          }
+	  ValueTracker::valueTracker(Flexus::Simics::ProcessorMapper::mapFlexusIndex2VM(theNode)).commitStore( theNode, op.thePAddr, op.theSize, value);
           completeLSQ( theMemQueue.project<by_insn>(theMemQueue.begin()), op);
           return;
         }
@@ -634,9 +543,8 @@ void CoreImpl::issueAtomicSpecWrite() {
 void CoreImpl::issuePartialSnoop() {
   FLEXUS_PROFILE();
   if ( thePartialSnoopersOutstanding > 0 ) {
-    memq_t::index<by_queue>::type::iterator lsq_head = theMemQueue.get<by_queue>().lower_bound( std::make_tuple( kLSQ ) );
-    DBG_(Crit, (<< "lsq_head:  "<< lsq_head->status() ));
-    DBG_Assert(lsq_head != theMemQueue.get<by_queue>().end() );
+    memq_t::index<by_queue>::type::iterator lsq_head = theMemQueue.get<by_queue>().lower_bound( boost::make_tuple( kLSQ ) );
+    DBG_Assert( lsq_head != theMemQueue.get<by_queue>().end() );
     if (lsq_head->thePartialSnoop &&
         ( lsq_head->status() == kAwaitingIssue || lsq_head->status() == kAwaitingPort ) ) {
       DBG_(Verb, ( << theName << " Port request from here: " <<  *lsq_head ) );
@@ -714,7 +622,7 @@ void CoreImpl::issueStorePrefetch( boost::intrusive_ptr<Instruction> anInstructi
   }
 
   bool is_new = false;
-  std::tie(iter, is_new) = theOutstandingStorePrefetches.insert( std::make_pair( aligned,  std::set<boost::intrusive_ptr<Instruction> >() ));
+  boost::tie(iter, is_new) = theOutstandingStorePrefetches.insert( std::make_pair( aligned,  std::set<boost::intrusive_ptr<Instruction> >() ));
   iter->second.insert(anInstruction);
   if ( ! is_new) {
     DBG_( Verb, ( << theName << " Store prefetch request by " << *lsq_entry << " ignored because prefetch already outstanding." ) );
@@ -726,10 +634,11 @@ void CoreImpl::issueStorePrefetch( boost::intrusive_ptr<Instruction> anInstructi
   boost::intrusive_ptr<MemOp> op(new MemOp());
   op->theOperation = kStorePrefetch;
   op->theVAddr = lsq_entry->theVaddr;
+  op->theASI = lsq_entry->theASI;
   op->thePAddr = lsq_entry->thePaddr;
   op->thePC = lsq_entry->theInstruction->pc();
   op->theSize = lsq_entry->theSize;
-  op->theValue.clear();
+  op->theValue = 0;
   if (lsq_entry->theBypassSB) {
     DBG_(Dev, ( << "NAW store prefetch: " << *lsq_entry ) );
     op->theNAW = true;
@@ -739,7 +648,7 @@ void CoreImpl::issueStorePrefetch( boost::intrusive_ptr<Instruction> anInstructi
   tracker->setAddress( op->thePAddr );
   tracker->setInitiator(theNode);
   op->theTracker = tracker;
-  op->theInstruction = anInstruction;
+
   theMemoryPorts.push_back(op);
   if (lsq_entry->theOperation == kStore) {
     ++theStorePrefetches;
@@ -771,7 +680,7 @@ void CoreImpl::issueAtomic() {
     if (theMemQueue.front().thePaddr == kInvalid) {
       //CAS to unsupported ASI.  Pretend the operation is done.
       theMemQueue.front().theIssued = true;
-      theMemQueue.front().theExtendedValue->reset();
+      theMemQueue.front().theExtendedValue = 0;
       theMemQueue.front().theStoreComplete = true;
       theMemQueue.front().theInstruction->resolveSpeculation();
       DBG_Assert(theMemQueue.front().theDependance);
@@ -797,7 +706,6 @@ void CoreImpl::resolveCheckpoint() {
       DBG_(Verb, ( << theName << " Resolving speculation: " << theMemQueue.front()) );
       theMemQueue.front().theInstruction->resolveSpeculation();
       if (theMemQueue.front().isAtomic()) {
-        //theMemQueue.modify( theMemQueue.begin(), [](auto& x){ x.theQueue = kSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
         theMemQueue.modify( theMemQueue.begin(), ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
       } else if (theMemQueue.front().isLoad()) {
         eraseLSQ( theMemQueue.front().theInstruction );
@@ -831,7 +739,7 @@ bool CoreImpl::checkStoreRetirement( boost::intrusive_ptr<Instruction> aStore) {
     return true;
   } else if (iter->isAbnormalAccess()) {
     if (iter->theExtraLatencyTimeout && theFlexus->cycleCount() > *iter->theExtraLatencyTimeout) {
-      if (iter->theSideEffect && ! iter->theException  /*&& ! interruptASI(iter->theASI) && ! mmuASI(iter->theASI)*/ ) {
+      if (iter->theSideEffect && ! iter->theException  && ! interruptASI(iter->theASI) && ! mmuASI(iter->theASI) ) {
         return sbEmpty();
       } else {
         return true;
@@ -846,7 +754,7 @@ bool CoreImpl::checkStoreRetirement( boost::intrusive_ptr<Instruction> aStore) {
 void CoreImpl::issueSpecial() {
   FLEXUS_PROFILE();
   if (theLSQCount > 0) {
-    memq_t::index<by_queue>::type::iterator lsq_head = theMemQueue.get<by_queue>().lower_bound( std::make_tuple( kLSQ ) );
+    memq_t::index<by_queue>::type::iterator lsq_head = theMemQueue.get<by_queue>().lower_bound( boost::make_tuple( kLSQ ) );
     if (      (lsq_head->isAbnormalAccess())
               &&    lsq_head->status() == kAwaitingIssue
               &&   ( ! lsq_head->isMarker() )
@@ -860,31 +768,31 @@ void CoreImpl::issueSpecial() {
       } else if (lsq_head->theBypassSB) {
         DBG_(Dev, ( << "NAW store completed on the sly: " << *lsq_head ) );
         lsq_head->theExtraLatencyTimeout = theFlexus->cycleCount();
-      } /*else if (lsq_head->theMMU) {
+      } else if (lsq_head->theMMU) {
         lsq_head->theExtraLatencyTimeout = theFlexus->cycleCount() + theOnChipLatency;
-      }*/ else {
-        DBG_Assert( lsq_head->theSideEffect /*|| interruptASI(lsq_head->theASI)*/);
+      } else {
+        DBG_Assert( lsq_head->theSideEffect || interruptASI(lsq_head->theASI));
 
         //Can't issue side-effect accesses while speculating
         if (! theIsSpeculating ) {
           //SideEffect access to unsupported ASI
           uint32_t latency = 0;
-//          switch (lsq_head->theASI) {
-//              // see UltraSPARC III cu manual for details
-//            case 0x15: // ASI_PHYS_BYPASS_EC_WITH_EBIT
-//            case 0x1D: // ASI_PHYS_BYPASS_EC_WITH_EBIT_LITTLE
-//            case 0x4A: // ASI_FIREPLANE_CONFIG_REG or ASI_FIREPLANE_ADDRESS_REG
-//              latency = theOffChipLatency;
-//              ++theSideEffectOffChip;
-//              DBG_( Verb, ( << theName << " Set SideEffect access time to " << latency << " " << *lsq_head) );
-//              break;
-//            default:
-//              // everything else is on-chip
-//              latency = theOnChipLatency;
-//              ++theSideEffectOnChip;
-//              DBG_( Verb, ( << theName << " Set SideEffect access time to " << latency << " " << *lsq_head) );
-//              break;
-//          }
+          switch (lsq_head->theASI) {
+              // see UltraSPARC III cu manual for details
+            case 0x15: // ASI_PHYS_BYPASS_EC_WITH_EBIT
+            case 0x1D: // ASI_PHYS_BYPASS_EC_WITH_EBIT_LITTLE
+            case 0x4A: // ASI_FIREPLANE_CONFIG_REG or ASI_FIREPLANE_ADDRESS_REG
+              latency = theOffChipLatency;
+              ++theSideEffectOffChip;
+              DBG_( Verb, ( << theName << " Set SideEffect access time to " << latency << " " << *lsq_head) );
+              break;
+            default:
+              // everything else is on-chip
+              latency = theOnChipLatency;
+              ++theSideEffectOnChip;
+              DBG_( Verb, ( << theName << " Set SideEffect access time to " << latency << " " << *lsq_head) );
+              break;
+          }
           lsq_head->theExtraLatencyTimeout = theFlexus->cycleCount() + latency;
         }
       }
@@ -897,42 +805,40 @@ void CoreImpl::checkExtraLatencyTimeout() {
   FLEXUS_PROFILE();
 
   if (theLSQCount > 0) {
-    memq_t::index<by_queue>::type::iterator lsq_head = theMemQueue.get<by_queue>().lower_bound( std::make_tuple( kLSQ ) );
+    memq_t::index<by_queue>::type::iterator lsq_head = theMemQueue.get<by_queue>().lower_bound( boost::make_tuple( kLSQ ) );
     if ( lsq_head->theExtraLatencyTimeout
          && lsq_head->theExtraLatencyTimeout.get() <= theFlexus->cycleCount()
          && lsq_head->status() == kAwaitingIssue
        ) {
 
-      /*if ( mmuASI(lsq_head->theASI)) {
+      if ( mmuASI(lsq_head->theASI)) {
         if (lsq_head->isLoad()) {
           //Perform MMU access for loads.  Stores are done in retireMem()
-          lsq_head->theValue = Flexus::Qemu::Processor::getProcessor( theNode )->mmuRead(lsq_head->theVaddr, lsq_head->theASI);
+          lsq_head->theValue = Flexus::Simics::Processor::getProcessor( theNode )->mmuRead(lsq_head->theVaddr, lsq_head->theASI);
           lsq_head->theExtendedValue = 0;
           DBG_( Verb, ( << theName << " MMU read: " << *lsq_head ) );
         }
-      } else */if (lsq_head->theException != kException_None) {
+      } else if (lsq_head->theException) {
         DBG_( Verb, ( << theName << " Memory access raises exception.  Completing the operation: " << *lsq_head ) );
         lsq_head->theIssued = true;
-        lsq_head->theValue->reset();
-        lsq_head->theExtendedValue->reset();
+        lsq_head->theValue = 0;
+        lsq_head->theExtendedValue = 0;
 
-      } /*else if (interruptASI(lsq_head->theASI)) {
+      } else if (interruptASI(lsq_head->theASI)) {
         if (lsq_head->isLoad()) {
           //Perform Interrupt access for loads.  We let Simics worry about stores
-          lsq_head->theValue = Flexus::Qemu::Processor::getProcessor( theNode )->interruptRead(lsq_head->theVaddr, lsq_head->theASI);
+          lsq_head->theValue = Flexus::Simics::Processor::getProcessor( theNode )->interruptRead(lsq_head->theVaddr, lsq_head->theASI);
           lsq_head->theExtendedValue = 0;
           DBG_( Verb, ( << theName << " Interrupt read: " << *lsq_head ) );
         }
 
-      } */else {
+      } else {
 
         DBG_( Verb, ( << theName << " SideEffect access to unknown Paddr.  Completing the operation: " << *lsq_head ) );
         lsq_head->theIssued = true;
-        if (lsq_head->theValue)
-        lsq_head->theValue->reset();
-        if (lsq_head->theExtendedValue)
-        lsq_head->theExtendedValue->reset();
-       if (lsq_head->isLoad()) {
+        lsq_head->theValue = 0;
+        lsq_head->theExtendedValue = 0;
+        if (lsq_head->isLoad()) {
           lsq_head->theInstruction->forceResync();
         }
       }
@@ -950,4 +856,4 @@ void CoreImpl::checkExtraLatencyTimeout() {
   }
 }
 
-} //nuArchARM
+} //nuArch

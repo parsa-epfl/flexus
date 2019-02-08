@@ -313,6 +313,9 @@ public:
     theCore->skipCycle();
   }
 
+  virtual bool isEnable(){
+      return theCore->isEnable();
+  }
   virtual void issueMMU(TranslationPtr aTranslation){
       theCore->issueMMU(aTranslation);
   }
