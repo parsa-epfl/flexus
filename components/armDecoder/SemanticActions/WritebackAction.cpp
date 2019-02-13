@@ -73,14 +73,16 @@ using namespace nuArchARM;
 struct WritebackAction : public BaseSemanticAction {
   eOperandCode theResult;
   eOperandCode theRd;
-  bool the64, theSetflags;
+  bool the64, theSetflags, theSP;
 
-  WritebackAction ( SemanticInstruction * anInstruction, eOperandCode aResult, eOperandCode anRd, bool a64, bool setflags = false )
+
+  WritebackAction ( SemanticInstruction * anInstruction, eOperandCode aResult, eOperandCode anRd, bool a64, bool aSP, bool setflags = false )
     : BaseSemanticAction ( anInstruction, 1 )
     , theResult( aResult )
     , theRd( anRd )
     , the64 (a64)
     , theSetflags (setflags)
+    , theSP (aSP)
   { }
 
   void squash(int32_t anArg) {
@@ -94,14 +96,14 @@ struct WritebackAction : public BaseSemanticAction {
 
   void doEvaluate() {
     if (ready()) {
-      SEMANTICS_DBG("Writing " << theResult << " to " << theRd);
+      DBG_(Dev, (<< "Writing " << theResult << " to " << theRd));
+
 
       register_value result = boost::apply_visitor( register_value_extractor(), theInstruction->operand( theResult ) );
       bits res = boost::get<bits>(result);
-      if (theRd == 31 && !theSetflags){
+      if (theSP && !theSetflags){
           // SP
           SysRegInfo& ri = getPriv(kSPSel);
-
           if (!the64){
               bits upper = ri.readfn(theInstruction->core()) & 0xffffffff00000000;
               res &= 0xffffffff;
@@ -138,10 +140,11 @@ dependant_action writebackAction
   , eOperandCode aRegisterCode
   , eOperandCode aMappedRegisterCode
   , bool is64
+  , bool aSP
   , bool setflags
 ) {
   WritebackAction * act;
-    act = new(anInstruction->icb()) WritebackAction( anInstruction, aRegisterCode, aMappedRegisterCode, is64, setflags);
+    act = new(anInstruction->icb()) WritebackAction( anInstruction, aRegisterCode, aMappedRegisterCode, is64, aSP, setflags);
     return dependant_action( act, act->dependance() );
 }
 

@@ -367,8 +367,7 @@ private:
       MemoryTransport transport;
       boost::intrusive_ptr<MemoryMessage> operation;
 
-      DBG_(Dev, (<< "Sending Memory Request: " <<  op->theOperation ));
-      DBG_(Dev, (<< "PW Instruction Memory Request: " <<  op->theInstruction << op->thePC ));
+      DBG_(Dev, (<< "Sending Memory Request: " <<  op->theOperation  << "  -- vaddr: " << op->theVAddr << "  -- paddr: " << op->thePAddr << "  --  Instruction: " <<  op->theInstruction << " --  PC: " << op->thePC));
 
       if (op->theNAW) {
         DBG_Assert( op->theOperation == kStore );

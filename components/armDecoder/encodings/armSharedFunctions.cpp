@@ -165,21 +165,25 @@ void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t 
     eOperandCode cRS = eOperandCode( kRS1 + anOpNumber - 1);
     eOperandCode cPS = eOperandCode( kPS1 + anOpNumber - 1);
 
-    DECODER_DBG("Reading x[" << rs << "] and mapping it [" << cRS << " -> " << cPS << "]");
+    DECODER_DBG("Reading x[" << rs << "] and mapping it [ " << cRS << " -> " << cPS << " ]");
 
     setRS( inst, cRS , rs );
     inst->addDispatchEffect( mapSource( inst, cRS, cPS ) );
-    simple_action act = readRegisterAction( inst, cPS, cOperand, is_64 );
+    simple_action act = readRegisterAction( inst, cPS, cOperand, rs==31,  is_64 );
     connect( dependances, act );
     inst->addDispatchAction( act );
     inst->addPrevalidation( validateXRegister( rs, cOperand, inst ) );
 
 }
 
-void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, bits val, std::list<InternalDependance> & dependances){
+void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, uint64_t val, std::list<InternalDependance> & dependances){
+
 
     DBG_Assert( anOpNumber == 1 || anOpNumber == 2 || anOpNumber == 3 || anOpNumber == 4 || anOpNumber == 5 );
     eOperandCode cOperand = eOperandCode( kOperand1 + anOpNumber - 1);
+
+    DECODER_DBG("Reading constant " << val << " to " << cOperand );
+
 
     simple_action act = readConstantAction( inst, val, cOperand );
     connect( dependances, act );
@@ -219,7 +223,9 @@ void addWriteback( SemanticInstruction * inst, eOperandCode aRegisterCode,eOpera
   }
 
   //Create the writeback action
-  dependant_action wb = writebackAction( inst, aRegisterCode, aMappedRegisterCode, a64, setflags );
+  reg name( inst->operand< reg > (kRD) );
+
+  dependant_action wb = writebackAction( inst, aRegisterCode, aMappedRegisterCode, a64, name.theIndex == 31, setflags );
 //  inst->addDispatchAction( wb );
 
 //  addAnnulment( inst, exec, wb.dependance );
@@ -278,6 +284,9 @@ void addAddressCompute( SemanticInstruction * inst, std::vector< std::list<Inter
   connectDependance(tr.action->dependance(0), exec);
   connectDependance( inst->retirementDependance(), update_address );
 
+  inst->addRetirementConstraint( paddrResolutionConstraint(inst) );
+
+
 }
 
 void MEMBAR( SemanticInstruction * inst, uint32_t anAccess) {
@@ -328,8 +337,9 @@ bool disas_ldst_compute_iss_sf(int size, bool is_signed, int opc)
 
 
 uint32_t highestSetBit(bits val){
-    for (int i = 127; i >= 0; i--){
-        if ((val & (bits)(1 << i)) == 1){
+    size_t s = sizeof(val)*8;
+    for (int i = (s-1); i >= 0; i--){
+        if ((val & (((bits)1) << i)) == 1){
             return i;
         }
     }

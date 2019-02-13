@@ -194,7 +194,7 @@ arminst STXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     if (! is_pair) {
         setRD( inst, rt);
         inst->addDispatchEffect( mapSource( inst, kRD, kPD ) );
-        simple_action read_value = readRegisterAction( inst, kPD, kResult, size == 64);
+        simple_action read_value = readRegisterAction( inst, kPD, kResult, rt==31, size == 64);
         inst->addDispatchAction( read_value );
         connectDependance( update_value.dependance, read_value );
         connectDependance( inst->retirementDependance(), update_value );
@@ -206,13 +206,13 @@ arminst STXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 
         setRS( inst, kRS1 , rt );
         inst->addDispatchEffect( mapSource( inst, kRS1, kPS1 ) );
-        simple_action act = readRegisterAction( inst, kPS1, kOperand1, is_pair ? size/2 == 64 : size == 64 );
+        simple_action act = readRegisterAction( inst, kPS1, kOperand1, rt==31, is_pair ? size/2 == 64 : size == 64 );
         connect( concat_deps[0], act );
         inst->addDispatchAction( act );
     //    connectDependance( update_value.dependance, act );
         setRS( inst, kRS2 , rt2 );
         inst->addDispatchEffect( mapSource( inst, kRS2, kPS2 ) );
-        simple_action act2 = readRegisterAction( inst, kPS2, kOperand2, is_pair ? size/2 == 64: size == 64 );
+        simple_action act2 = readRegisterAction( inst, kPS2, kOperand2, rt==31, is_pair ? size/2 == 64: size == 64 );
         connect( concat_deps[1], act2 );
         inst->addDispatchAction( act2 );
 
@@ -225,7 +225,7 @@ arminst STXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
         inst->addDispatchAction( res );
     }
 
-    inst->addPostvalidation( validateMemory( kAddress, kOperand3, kResult, sz, inst ) );
+    inst->addPostvalidation( validateMemory( kAddress, kResult, sz, inst ) );
     inst->addCommitEffect( commitStore(inst) );
 
 
@@ -273,7 +273,7 @@ arminst STRL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     inst->addRetirementConstraint( sideEffectStoreConstraint(inst) );
 
 //    addUpdateData(inst, rt, rn );
-    inst->addPostvalidation( validateMemory( kAddress, kOperand3, kResult, sz, inst ) );
+    inst->addPostvalidation( validateMemory( kAddress, kResult, sz, inst ) );
     inst->addCommitEffect( commitStore(inst) );
 
     return inst;
@@ -502,13 +502,13 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     uint32_t opc = extract32(aFetchedOpcode.theOpcode, 30, 2);
     uint32_t L = extract32(aFetchedOpcode.theOpcode, 22, 1);
     eIndex index = getIndex(extract32(aFetchedOpcode.theOpcode, 23, 3));
-    uint32_t imm7 = sextract32(aFetchedOpcode.theOpcode, 15, 7);
+    int64_t imm7 = (int64_t)sextract32(aFetchedOpcode.theOpcode, 15, 7);
     uint32_t rt2 = extract32(aFetchedOpcode.theOpcode, 10, 5);
     uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
     uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    uint32_t scale = 2 + (opc & 0x2);
+    uint32_t scale = 2 +  extract32(opc, 1, 1);
 //    bool is_signed = ( opc & 1 ) != 0;
-    int size = 8 << scale;
+    int size = 8 << (scale+1);
     eSize sz = dbSize(size);
 
 
@@ -525,9 +525,13 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     eAccType acctype = kAccType_STREAM;
     std::vector< std::list<InternalDependance> > addr_deps(1), data_deps(2);
 
-    // calculate the address from rn 
+    inst->setClass(clsStore, codeStore);
     addAddressCompute( inst, addr_deps) ;
+
+
+    // calculate the address from rn 
     addReadXRegister(inst, 1, rn, addr_deps[0], size/2 == 64);
+
 
 
     if (index != kSingedOffset){
@@ -536,15 +540,15 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     }
 
     if (index != kPostIndex) {
-        inst->setOperand(kUopAddressOffset, imm7);
+        inst->setOperand(kUopAddressOffset, (bits)imm7);
     }
 
 
     // read data registers
 //    addReadRDs(inst, rd, rd1);
     simple_action act = addExecute(inst, operation(size/2 == 64 ? kCONCAT64_ : kCONCAT32_), kOperand2, kOperand3, data_deps);
-    addReadXRegister(inst, 2, rt, data_deps[0], size/2 == 64);
-    addReadXRegister(inst, 3, rt2, data_deps[1], size/2 == 64);
+    addReadXRegister(inst, 2, rt2, data_deps[0], size/2 == 64);
+    addReadXRegister(inst, 3, rt, data_deps[1], size/2 == 64);
 
 
     inst->addSquashEffect( eraseLSQ(inst) );
@@ -562,8 +566,7 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     inst->addCommitEffect( commitStore(inst) );
     inst->addSquashEffect( eraseLSQ(inst) );
 
-    inst->addPostvalidation( validateMemory( kAddress, kOperand3, kResult, sz, inst ) );
-    inst->addCommitEffect( commitStore(inst) );
+    inst->addPostvalidation( validateMemory( kAddress, kResult, sz, inst ) );
 
     return inst;
 }

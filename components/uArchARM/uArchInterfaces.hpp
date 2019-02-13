@@ -583,6 +583,8 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction {
 
   virtual bool mayRetire() const = 0;
   virtual bool mayCommit() const = 0;
+  virtual bool isResolved() const = 0;
+  virtual void setResolved() = 0;
   virtual void raise(eExceptionType anException)  = 0;
   virtual eExceptionType willRaise() const = 0;
   virtual void setWillRaise(eExceptionType anException) = 0;

@@ -249,28 +249,30 @@ struct SPSel : public SysRegInfo {
         /* Update PSTATE SPSel bit; this requires us to update the
          * working stack pointer in xregs[31].
          */
-        if (!((aVal ^ aCore->_PSTATE().d()) & PSTATE_SP)) {
-            return;
-        }
+//        if (!((aVal ^ aCore->_PSTATE().d()) & PSTATE_SP)) {
+//            return;
+//        }
 
-        if (aCore->_PSTATE().d() & PSTATE_SP) {
-            aCore->setSP_el(cur_el, aCore->getXRegister(31));
-        } else {
-            aCore->setSP_el(0, aCore->getXRegister(31));
-        }
+//        if (aCore->_PSTATE().d() & PSTATE_SP) {
+//            aCore->setSP_el(cur_el, aCore->getXRegister(31));
+//        } else {
+//            aCore->setSP_el(0, aCore->getXRegister(31));
+//        }
 
-        aCore->setPSTATE(deposit32(aCore->_PSTATE().d(), 0, 1, aVal));
+//        aCore->setPSTATE(deposit32(aCore->_PSTATE().d(), 0, 1, aVal));
 
-        /* We rely on illegal updates to SPsel from EL0 to get trapped
-         * at translation time.
-         */
-        assert(cur_el >= 1 && cur_el <= 3);
+//        /* We rely on illegal updates to SPsel from EL0 to get trapped
+//         * at translation time.
+//         */
+//        assert(cur_el >= 1 && cur_el <= 3);
 
-        if (aCore->_PSTATE().d() & PSTATE_SP) {
-            aCore->setXRegister(31, aCore->getSP_el(cur_el));
-        } else {
-            aCore->setXRegister(31, aCore->getSP_el(0));
-        }
+//        if (aCore->_PSTATE().d() & PSTATE_SP) {
+//            aCore->setXRegister(31, aCore->getSP_el(cur_el));
+//        } else {
+//            aCore->setXRegister(31, aCore->getSP_el(0));
+//        }
+
+        aCore->setSP_el(cur_el, aVal);
 
     }
 }SPSel_;

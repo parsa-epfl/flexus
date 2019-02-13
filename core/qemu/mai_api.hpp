@@ -10,11 +10,15 @@
 #include<string>
 #include <sstream>
 #include <iomanip>
+#include <bitset>
 
 
 using namespace Flexus::Core;
 namespace Flexus {
 namespace Qemu {
+
+
+
 
 void onInterrupt (void * aPtr, void* anObj, long long aVector);
 
@@ -92,7 +96,11 @@ public:
 
 
   std::string dump_state() const {
-      return API::QEMU_dump_state(*this);
+      char* buf = new char[716];
+      API::QEMU_dump_state(*this, &buf);
+      std::string s(buf);
+      delete buf;
+      return s;
   }
 
   std::string describeException(int anException) const {
@@ -162,31 +170,18 @@ public:
 
   bits readPhysicalAddress(PhysicalMemoryAddress anAddress, size_t aSize) const {
       uint8_t* buf = new uint8_t[aSize];
-      for (int i=0; i<aSize; i++) buf[i] = 0;
+      for (size_t i=0; i<aSize; i++) buf[i] = 0;
       API::QEMU_read_phys_memory( buf, API::physical_address_t(anAddress), aSize);
-      bits tmp = 0;//construct(buf, aSize);
-      int64_t t2 = 0;
-      std::string String = "";
+
+      bits tmp;
       for (size_t i = 0; i < aSize; i++){
+          const size_t s = i*8;
+          bits val = (((bits)buf[i] << s) & ((bits)0xff << s));
+          tmp |= val;
 
-//          ostringstream convert;   // stream used for the conversion
-//          convert << Number;      // insert the textual representation of 'Number' in the characters in the stream
-//          Result = convert.str(); // set 'Result' to the contents of the stream
-
-          t2 |= (uint64_t)(buf[i] << ((i*8)));
       }
-      uint64_t t3;
-      for (int i = (aSize-1); i >= 0; i--){
-          String += std::to_string(buf[i]);
-
-          tmp |= (uint64_t)(buf[i] << ((aSize-1-i)*8));
-      }
-      std::stringstream(String) >>t3;
-
       delete [] buf;
-      DBG_(Dev,(<< std::hex << "reading physical address: " << t3 << std::dec));
-      DBG_(Dev,(<< std::hex << "reading physical address: " << t2 << std::dec));
-      return t2;
+      return tmp;
   }
 
   bits readVirtualAddress(VirtualMemoryAddress anAddress, size_t size) {

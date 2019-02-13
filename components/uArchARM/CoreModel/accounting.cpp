@@ -490,7 +490,7 @@ void CoreImpl::accountRetire( boost::intrusive_ptr<Instruction> anInst) {
     DBG_Assert(system, ( << theName << " isIdleLoop in user code? " << *theROB.front()));
     theLastStallCause = nXactTimeBreakdown::kIdle_Stall;
   } else {
-    if (anInst->willRaise() ) {
+    if (anInst->willRaise() != kException_None) {
       switch (anInst->instClass()) {
         case clsLoad:
           theLastStallCause = nXactTimeBreakdown::kWillRaise_Load;

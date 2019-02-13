@@ -120,58 +120,27 @@ bool validateVRegister::operator () () {
 }
 
 bool validateMemory::operator () () {
-//  if (theInstruction->isSquashed() || theInstruction->isAnnulled()) {
-//    return true; //Don't check
-//  }
+  if (theInstruction->isSquashed() || theInstruction->isAnnulled()) {
+    return true; //Don't check
+  }
 
-//  VirtualMemoryAddress flexus_addr(theInstruction->operand< bits > (theAddressCode));
-//  if (theInstruction->hasOperand( kUopAddressOffset ) ) {
-//    bits offset = theInstruction->operand< bits > (kUopAddressOffset);
-//    flexus_addr += offset;
-//  }
+  Flexus::Qemu::Processor c = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu());
 
-//  flexus_addr += theAddrOffset;
-//  bits flexus_value = theInstruction->operand< bits > (theValueCode);
-//  switch (theSize) {
-//    case kByte:
-//      flexus_value &= 0xFFULL;
-//      break;
-//    case kHalfWord:
-//      flexus_value &= 0xFFFFULL;
-//      break;
-//    case kWord:
-//      flexus_value &= 0xFFFFFFFFULL;
-//      break;
-//    case kDoubleWord:
-//    default:
-//      break;
-//  }
+  VirtualMemoryAddress vaddr(theInstruction->operand< bits > (theAddressCode));
+  PhysicalMemoryAddress paddr = c->translateVirtualAddress(vaddr);
 
-//  Flexus::Qemu::Processor c = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu());
-//  Flexus::Qemu::Translation xlat;
-//  xlat.theVaddr = flexus_addr;
-//  xlat.theType = Flexus::Qemu::Translation::eLoad;
-//  xlat.thePSTATE = c->readRegister( kPSTATE );
-//  c->translate(xlat, false);
-//  if (xlat.isMMU()) {
-//    //bool mmu_ok = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->validateMMU();
-//    //if (! mmu_ok) {
-//    //DBG_( Dev, Condition( ! mmu_ok) ( << "Validation Mismatch for MMUs\n" << std::internal << *theInstruction ) );
-//    //Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->dumpMMU();
-//    //}
-//    return true;
-//  } else if (xlat.thePaddr > 0x400000000LL) {
-//    DBG_( VVerb, ( << "Non-memory store " << std::hex << asi << " flexus=" << flexus_value << " Insn: " << *theInstruction ) );
-//    return true;
-//  } else if (xlat.isTranslating() && !xlat.isSideEffect()) {
-//    //bits simics_value = c->readVAddrXendian_QemuImpl( xlat.theVaddr, xlat.theASI, static_cast<int>(theSize) );
-//    //DBG_( Dev, Condition( flexus_value != simics_value) ( << "Validation Mismatch for address " << flexus_addr << " flexus=" << std::hex << flexus_value << " simics=" << simics_value << std::dec << "\n" << std::internal << *theInstruction ) );
-//    return 1; //(1 || flexus_value == simics_value);
-//  } else {
-//    DBG_( VVerb, ( << "No validation available for ASI 0x" << std::hex << asi << " flexus=" << flexus_value << " Insn: " << *theInstruction ) );
-//    return true;
-//  }
-    return true;
+
+
+  bits flexus_val = theInstruction->operand< bits > (theValueCode);
+  bits qemu_val = c->readPhysicalAddress(paddr, theSize);
+
+  DBG_(Dev,(<< "flexus value: " << flexus_val ));
+  DBG_(Dev,(<< "qemu value:   " << qemu_val   ));
+
+
+  bool b = (flexus_val == qemu_val);
+
+  return (flexus_val == qemu_val);
 }
 
 

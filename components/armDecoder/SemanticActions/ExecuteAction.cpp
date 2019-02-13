@@ -118,6 +118,9 @@ struct ExecuteAction : public ExecuteBase {
 
   void doEvaluate() {
 
+      DBG_(Dev, (<< "Trying to Execute " << *this ));
+
+
     if (ready()) {
 
         DBG_(Dev, (<< "Executing " << *this ));
@@ -138,6 +141,7 @@ struct ExecuteAction : public ExecuteBase {
 
         DBG_(Dev, (<< "Writing results " << result << " in " << theResult ));
 
+        bits res = boost::get<bits>(result);
         theInstruction->setOperand(theResult, result);
         DBG_( VVerb, ( << *this << " operands: " << OperandPrintHelper(operands) << " result=" << result ) );
         if (theBypass) {
@@ -148,9 +152,11 @@ struct ExecuteAction : public ExecuteBase {
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {
-        DBG_( VVerb, ( << *this << " waiting for predecessor ") );
+        DBG_( Dev, ( << *this << " waiting for predecessor ") );
         reschedule();
       }
+    } else {
+        DBG_(Dev, (<< "cant Execute " << *this << " yet" ));
     }
   }
 

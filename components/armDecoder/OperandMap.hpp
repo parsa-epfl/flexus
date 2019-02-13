@@ -53,7 +53,7 @@ using nuArchARM::register_value;
 using nuArchARM::mapped_reg;
 using nuArchARM::reg;
 
-std::ostream & operator << ( std::ostream &, Flexus::Core::bits const & );
+//std::ostream & operator << ( std::ostream &, Flexus::Core::bits const & );
 
 
 typedef

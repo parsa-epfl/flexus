@@ -58,13 +58,13 @@ TTResolver::TTResolver(bool abro, _TTResolver_Shptr_T aGranule,address_t aTTBR,u
 address_t
 TTResolver::resolve(address_t inputAddress)
 {
-    DBG_(Dev,( << "TTBR RAW: " << std::hex << RawTTBRReg << std::dec ));
+    DBG_(VVerb,( << "TTBR RAW: " << std::hex << RawTTBRReg << std::dec ));
     address_t output = extractBitsWithBounds(RawTTBRReg,TTBR_MSB,TTBR_LSB);
-    DBG_(Dev,( << "TTBR EXTRACT: " << std::hex << output << std::dec ));
+    DBG_(VVerb,( << "TTBR EXTRACT: " << std::hex << output << std::dec ));
     output = output << TTBR_LSB;
-    DBG_(Dev,( << "TTBR SHIFT : " << std::hex << output << std::dec ));
+    DBG_(VVerb,( << "TTBR SHIFT : " << std::hex << output << std::dec ));
     output |= maskAndShiftInputAddress(inputAddress);
-    DBG_(Dev,( << "TTE Indexed: " << std::hex << output << std::dec ));
+    DBG_(VVerb,( << "TTE Indexed: " << std::hex << output << std::dec ));
     return output;
 }
 

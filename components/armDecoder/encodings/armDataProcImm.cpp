@@ -227,7 +227,7 @@ arminst MOVE(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     addReadConstant(inst, 2, val, rs_deps[1]);
     addReadConstant(inst, 3, (imm << pos), rs_deps[2]);
 
-    dependant_action wb = writebackAction(inst, kResult, kRD, sf, false);
+    dependant_action wb = writebackAction(inst, kResult, kRD, sf, rd == 31, false);
 
     predicated_action ow = addExecute(inst, operation(kOVERWRITE_), rs_deps, kResult);
     connectDependance( wb.dependance, ow );

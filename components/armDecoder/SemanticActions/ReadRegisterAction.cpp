@@ -74,51 +74,42 @@ struct ReadRegisterAction : public BaseSemanticAction
   eOperandCode theOperandCode;
   bool theConnected;
   bool the64;
+  bool theSP;
 
-  ReadRegisterAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, eOperandCode anOperandCode, bool is64)
+  ReadRegisterAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, eOperandCode anOperandCode, bool aSP, bool is64)
     : BaseSemanticAction( anInstruction, 1 )
     , theRegisterCode( aRegisterCode )
     , theOperandCode( anOperandCode )
     , theConnected(false)
     , the64(is64)
+    , theSP (aSP)
   {}
 
   bool bypass(register_value aValue)
   {
-    if ( cancelled() || theInstruction->isRetired() || theInstruction->isSquashed() ) { return true; }
+      if (!theSP) {
+        if ( cancelled() || theInstruction->isRetired() || theInstruction->isSquashed() ) { return true; }
 
-    if ( !signalled() ) {
-      theInstruction->setOperand(theOperandCode, aValue);
-      DBG_( VVerb, ( << *this << " bypassed " << theRegisterCode << " = " << aValue << " written to " << theOperandCode ) );
-      satisfyDependants();
-      setReady(0, true);
-    }
-      return false;
+        if ( !signalled() ) {
+          theInstruction->setOperand(theOperandCode, aValue);
+          DBG_( VVerb, ( << *this << " bypassed " << theRegisterCode << " = " << aValue << " written to " << theOperandCode ) );
+          satisfyDependants();
+          setReady(0, true);
+        }
+        return false;
+      }
+      return true;
   }
 
   void doEvaluate()
   {
-    SEMANTICS_DBG(*this);
+    DBG_(Dev, (<<*this));
 
-    if (! theConnected) {
-
-      mapped_reg name = theInstruction->operand< mapped_reg > (theRegisterCode);
-      setReady( 0, core()->requestRegister( name, theInstruction->makeInstructionDependance(dependance()) ) == kReady );
-      core()->connectBypass( name, theInstruction, ll::bind( &ReadRegisterAction::bypass, this, ll::_1) );
-      theConnected = true;
-
-    }
-    if (! signalled() ) {
-      SEMANTICS_DBG("Signalling");
-
-      mapped_reg name = theInstruction->operand< mapped_reg > (theRegisterCode);
-      eResourceStatus status = core()->requestRegister( name );
-      bits val;
-      if (status == kReady) {
         Operand aValue;
-        if (name.theIndex == 31) {
+        uint64_t val;
+        if (theSP) {
             if (core()->_PSTATE().SP() == 0) {
-                core()->getSP_el(EL0);
+                val = core()->getSP_el(EL0);
             } else {
                 switch (core()->_PSTATE().EL()) {
                 case EL0:
@@ -130,16 +121,36 @@ struct ReadRegisterAction : public BaseSemanticAction
                 case EL2:
                 case EL3:
                 default:
+                    DBG_Assert(false);
 //                    theInstruction->setWillRaise(kException_ILLEGALSTATE);
 //                    core()->takeTrap(boost::intrusive_ptr<Instruction>(theInstruction), theInstruction->willRaise());
                     break;
                 }
             }
         } else {
-            aValue = core()->readRegister( name );
-            val = boost::get<bits>(aValue);
-        }
+            if (! theConnected) {
 
+              mapped_reg name = theInstruction->operand< mapped_reg > (theRegisterCode);
+              setReady( 0, core()->requestRegister( name, theInstruction->makeInstructionDependance(dependance()) ) == kReady );
+              core()->connectBypass( name, theInstruction, ll::bind( &ReadRegisterAction::bypass, this, ll::_1) );
+              theConnected = true;
+
+            }
+            if (! signalled() ) {
+              SEMANTICS_DBG("Signalling");
+
+              mapped_reg name = theInstruction->operand< mapped_reg > (theRegisterCode);
+              eResourceStatus status = core()->requestRegister( name );
+
+              if (status == kReady) {
+                aValue = core()->readRegister( name );
+                val = boost::get<uint64_t>(aValue);
+              } else {
+                  setReady( 0, false );
+                  return;
+                }
+            }
+        }
 
         if (!the64){ // reading w reg >> only the botom half
             val &= 0xffffffff;
@@ -149,12 +160,9 @@ struct ReadRegisterAction : public BaseSemanticAction
 
         DBG_(Dev,(<< "Reading register " << theRegisterCode << "with a value " << aValue));
 
-        theInstruction->setOperand(theOperandCode, aValue);
+        bits final(val);
+        theInstruction->setOperand(theOperandCode, final);
         satisfyDependants();
-      } else {
-        setReady( 0, false );
-      }
-    }
   }
 
   void describe( std::ostream & anOstream) const
@@ -163,9 +171,9 @@ struct ReadRegisterAction : public BaseSemanticAction
   }
 };
 
-simple_action readRegisterAction ( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, eOperandCode anOperandCode, bool is64)
+simple_action readRegisterAction ( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, eOperandCode anOperandCode, bool aSP, bool is64)
 {
-  return new(anInstruction->icb()) ReadRegisterAction( anInstruction, aRegisterCode, anOperandCode, is64);
+  return new(anInstruction->icb()) ReadRegisterAction( anInstruction, aRegisterCode, anOperandCode, aSP, is64);
 }
 
 

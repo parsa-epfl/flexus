@@ -1364,15 +1364,15 @@ void CoreImpl::doAbortSpeculation() {
 
 std::string CoreImpl::dumpState(){
 
-    std::ofstream fp;
-    fp.open("flexus-dump-state.txt");
+//    std::ofstream fp;
+//    fp.open("flexus-dump-state.txt");
 
     std::stringstream ss;
     mapped_reg sp;
     sp.theType = xRegisters;
     sp.theIndex=31;
 
-    ss << std::hex << "PC=" << std::setw(16)<< std::setfill('0') << thePC << "  " << "SP=" << std::setw(16)<< std::setfill('0') << boost::get<uint64_t>(theRegisters.peek(sp)) << std::dec << std::endl;
+    ss << std::hex << "PC=" << std::setw(16)<< std::setfill('0') << thePC << "  " << "SP=" << std::setw(16)<< std::setfill('0') << theSP_el[_PSTATE().EL()] << std::dec << std::endl;
 
     for (int i = 0; i < 31; i++) {
         mapped_reg mreg;
@@ -1386,9 +1386,21 @@ std::string CoreImpl::dumpState(){
             ss << " ";
         }
     }
+    uint32_t psr = _PSTATE().d();
+    ss << std::endl
+    << "PSTATE=" << std::hex << std::setw(8)<< std::setfill('0') << psr << std::dec << " "
+    << (psr & PSTATE_N ? 'N' : '-')
+    << (psr & PSTATE_Z ? 'Z' : '-')
+    << (psr & PSTATE_C ? 'C' : '-')
+    << (psr & PSTATE_V ? 'V' : '-')
+    << ""
+    << " " << "EL"  <<_PSTATE().EL()
+    <<  (psr & PSTATE_SP ? 'h' : 't') << std::endl ;
 
-    fp << ss.rdbuf();
-    fp.close();
+
+
+//    fp << ss.rdbuf();
+//    fp.close();
 
     return ss.str();
 }
@@ -1406,8 +1418,8 @@ void CoreImpl::commit() {
       freeCheckpoint( theSRB.front() );
     }
 
-    DBG_( VVerb, ( << theName << " FinalCommit:" << *theSRB.front()) );
-    if (! theSRB.front()->willRaise()) {
+    DBG_( Dev, ( << theName << " FinalCommit:" << *theSRB.front()) );
+    if (theSRB.front()->willRaise() == kException_None) {
       theSRB.front()->doCommitEffects();
       DBG_( VVerb, ( <<  theName << " commit effects complete" ) );
     }
@@ -1466,12 +1478,7 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
 
     CORE_DBG("Instruction is neither annuled nor is a micro-op");
 
-    theQemuDumpState = Flexus::Qemu::Processor::getProcessor( theNode )->dump_state();
-    theFlexusDumpState = dumpState();
-
-    uint64_t pc1 = Flexus::Qemu::Processor::getProcessor( theNode )->getPC();
     raised = advance_fn();
-    uint64_t pc2 = Flexus::Qemu::Processor::getProcessor( theNode )->getPC();
 
 
 
@@ -1492,7 +1499,7 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
         DBG_( VVerb, ( << *anInstruction << " Core correctly identified raise=0x" << std::hex << raised << std::dec) );
       }
       anInstruction->raise(raised == 0 ? kException_None : kException_UNCATEGORIZED);
-    } else if (anInstruction->willRaise()) {
+    } else if (anInstruction->willRaise() != kException_None) {
       DBG_(VVerb, ( << *anInstruction << " DANGER:  Core predicted exception: " << std::hex << anInstruction->willRaise() << " but simics says no exception"));
     }
   }
@@ -1511,13 +1518,13 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
     throw ResynchronizeWithQemuException(true);
   }
 
+  theFlexusDumpState = theQemuDumpState = "";
 
   theFlexusDumpState = dumpState();
   theQemuDumpState = Flexus::Qemu::Processor::getProcessor( theNode )->dump_state();
 
-  const std::regex txt_regex("(^[^\s]+)");
-  std::smatch m;
-
+  int a = theFlexusDumpState.compare(theQemuDumpState);
+  validation_passed &= (theFlexusDumpState.compare(theQemuDumpState) == 0);
 
   theEnable = true;
 

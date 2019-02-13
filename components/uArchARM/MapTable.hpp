@@ -195,6 +195,8 @@ struct PhysicalMap {
     return theMappings[aRegisterName];
   }
 
+
+
   pRegister mapArchitectural( regName aRegisterName ) {
     FLEXUS_PROFILE();
     DBG_Assert( aRegisterName < theAssignedRegisters.size(), ( << "Name: " << aRegisterName << " number of names: " << theAssignedRegisters.size() ));

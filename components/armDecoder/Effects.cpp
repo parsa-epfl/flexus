@@ -1238,11 +1238,11 @@ Effect * exceptionEffect(SemanticInstruction * inst, eExceptionType aType){
 
 struct CommitStoreEffect: public Effect {
   void invoke(SemanticInstruction & anInstruction) {
-      DBG_( VVerb, ( << anInstruction.identify() << " CommitStoreEffect ") );
+      DBG_( Dev, ( << anInstruction.identify() << " CommitStoreEffect ") );
 
     FLEXUS_PROFILE();
     anInstruction.core()->commitStore( boost::intrusive_ptr<nuArchARM::Instruction> (&anInstruction) );
-    DBG_( VVerb, ( << anInstruction << " Commit store instruction" ) );
+    DBG_( Dev   , ( << anInstruction << " Commit store instruction" ) );
     Effect::invoke(anInstruction);
   }
 

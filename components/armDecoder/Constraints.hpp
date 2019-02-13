@@ -57,7 +57,7 @@ std::function<bool()> storeQueueEmptyConstraint( SemanticInstruction * anInstruc
 std::function<void()> saveWillRaiseCondition( SemanticInstruction * anInstruction );
 std::function<void()> restoreWillRaiseCondition( SemanticInstruction * anInstruction );
 std::function<bool()> sideEffectStoreConstraint( SemanticInstruction * anInstruction );
-
+std::function<bool()> paddrResolutionConstraint( SemanticInstruction * anInstruction );
 } //armDecoder
 
 #endif //FLEXUS_ARMDECODER_CONSTRAINTS_HPP_INCLUDED

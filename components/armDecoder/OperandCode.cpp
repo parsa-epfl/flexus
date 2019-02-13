@@ -40,6 +40,7 @@
 #include <iostream>
 #include <components/uArchARM/RegisterType.hpp>
 #include "OperandCode.hpp"
+#include <core/types.hpp>
 
 namespace narmDecoder {
 
@@ -117,16 +118,11 @@ std::ostream & operator << ( std::ostream & anOstream, eOperandCode aCode) {
   return anOstream;
 }
 
-std::ostream & operator << ( std::ostream & anOstream, Flexus::Core::bits const & aCC) {
-  anOstream
-      << " x{ "
-      << ( aCC & N ? "" : "!" ) << "N "
-      << ( aCC & Z ? "" : "!" ) << "Z "
-      << ( aCC & C ? "" : "!" ) << "V "
-      << ( aCC & V ? "" : "!" ) << "C "
-      << "}";
-  return anOstream;
-}
+//std::ostream & operator << ( std::ostream & anOstream, Flexus::Core::bits const & aCC) {
+//  anOstream
+//      << aCC;
+//  return anOstream;
+//}
 
 } //narmDecoder
 

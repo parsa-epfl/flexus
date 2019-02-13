@@ -491,12 +491,18 @@ void CoreImpl::pushTranslation(TranslationPtr aTranslation) {
 
     lsq_entry->thePaddr = aTranslation->thePaddr;
 
+
     resolvePAddr(insn);
 
-    DBG_Assert(lsq_entry->thePaddr != 0);
-    DBG_(Dev, (<< "Attempting to issue a memory requst for " << lsq_entry->thePaddr));
+    DBG_(Dev, (<< "Resolved.. vaddr: " << lsq_entry->theVaddr
+               << " to paddr " << lsq_entry->thePaddr ));
 
-//    insn->setMayCommit(true);
+
+    DBG_Assert(lsq_entry->thePaddr != 0);
+
+    insn->setResolved();
+
+
 }
 
 boost::intrusive_ptr<MemOp> CoreImpl::popSnoopOp() {
@@ -969,7 +975,7 @@ void CoreImpl::updateStoreValue( boost::intrusive_ptr< Instruction > anInsn, bit
   memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( anInsn );
   DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end());
   DBG_Assert( lsq_entry->theOperation != kLoad );
-  DBG_( Verb, ( << "Updated store value for " << *lsq_entry << " to " << aValue << "[:" << anExtendedValue << "]" ));
+  DBG_( Dev, ( << "Updated store value for " << *lsq_entry << " to " << aValue << "[:" << anExtendedValue << "]" ));
 
   boost::optional<bits> previous_value(lsq_entry->theValue);
 

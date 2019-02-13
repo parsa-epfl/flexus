@@ -278,7 +278,7 @@ struct multiply_dependant_action : virtual simple_action {
 void connectDependance( InternalDependance const & aDependant, simple_action  & aSource);
 void connect( std::list<InternalDependance > const & dependances, simple_action & aSource);
 
-simple_action readRegisterAction ( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, eOperandCode anOperandCode, bool is64);
+simple_action readRegisterAction ( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, eOperandCode anOperandCode, bool aSP, bool is64);
 simple_action readNZCVAction ( SemanticInstruction * anInstruction, eNZCV aBit, eOperandCode anOperandCode);
 simple_action readConstantAction( SemanticInstruction * anInstruction, bits aVal, eOperandCode anOperandCode);
 simple_action calcAddressAction(SemanticInstruction * anInstruction, std::vector< std::list<InternalDependance> > & opDeps );
@@ -305,7 +305,7 @@ predicated_action bitFieldAction(SemanticInstruction * anInstruction, std::vecto
 predicated_action extractAction(SemanticInstruction * anInstruction, std::vector< std::list<InternalDependance> > & opDeps, eOperandCode anOperandCode1, eOperandCode anOperandCode2, eOperandCode anOperandCode3, bool is64);
 
 
-dependant_action writebackAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, eOperandCode aMappedRegisterCode, bool is64, bool setflags);
+dependant_action writebackAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, eOperandCode aMappedRegisterCode, bool is64, bool aSP, bool setflags);
 dependant_action branchCondAction(SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, std::unique_ptr<Condition> aCondition, size_t numOperands = 1);
 dependant_action branchRegAction(SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition);
 dependant_action branchToCalcAddressAction(SemanticInstruction * anInstruction);

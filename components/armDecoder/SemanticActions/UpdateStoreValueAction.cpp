@@ -48,6 +48,7 @@ namespace ll = boost::lambda;
 #include <boost/none.hpp>
 
 #include <boost/dynamic_bitset.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 
 #include <core/target.hpp>
 #include <core/debug/debug.hpp>
@@ -211,7 +212,7 @@ struct UpdateSTDValueAction : public BaseSemanticAction {
   void doEvaluate() {
     if (ready()) {
       bits value = theInstruction->operand< bits > (theOperand);
-      DBG_( VVerb, ( << *this << " updating store value=" << value) );
+      DBG_( Dev, ( << *this << " updating store value " << value << " from operand " << theOperand) );
       core()->updateStoreValue( boost::intrusive_ptr<Instruction>(theInstruction), value);
       satisfyDependants();
     }

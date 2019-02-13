@@ -84,7 +84,7 @@ protected:
   bool theHasCheckpoint;
   uint64_t theRetireStallCycles;
   bool theMayCommit;
-
+  bool theResolved;
 //  boost::optional<Flexus::Qemu::MMU::mmu_t> theMMU;
 
   bool theUsesIntAlu;
@@ -154,8 +154,17 @@ public:
     return theMayCommit;
   }
 
+  virtual bool isResolved() const{
+      return theResolved;
+  }
+
+  virtual void setResolved(){
+      DBG_Assert(!theResolved);
+      theResolved = true;
+  }
+
   virtual eExceptionType willRaise() const {
-    return theWillRaise ;
+    return theWillRaise;
   }
   virtual void setWillRaise(eExceptionType aSetting);
 
@@ -421,6 +430,7 @@ protected:
     , theHasCheckpoint(false)
     , theRetireStallCycles(0)
     , theMayCommit(true)
+    , theResolved(false)
     , theInsnSourceLevel(eL1I)
     , thePriv(false)
   {

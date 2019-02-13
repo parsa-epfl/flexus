@@ -191,7 +191,7 @@ typedef struct CONCAT32 : public Operation {
     CONCAT32(){}
     virtual ~CONCAT32(){}
   virtual Operand operator()( std::vector<Operand> const & operands  ) {
-    DBG_Assert( operands.size() == 3);
+    DBG_Assert( operands.size() == 2);
     bits op1 = boost::get<bits>(operands[0]);
     bits op2 = boost::get<bits>(operands[1]);
 

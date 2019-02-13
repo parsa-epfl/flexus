@@ -164,4 +164,11 @@ std::function<bool()> sideEffectStoreConstraint( SemanticInstruction * anInstruc
   return [anInstruction](){ return checkSideEffectStoreConstraint(anInstruction); };
 }
 
+bool checkpaddrResolutionConstraint(SemanticInstruction * anInstruction){
+    return anInstruction->isResolved();
+}
+std::function<bool()> paddrResolutionConstraint( SemanticInstruction * anInstruction ) {
+    return [anInstruction](){ return checkpaddrResolutionConstraint(anInstruction); };
+}
+
 } //armDecoder

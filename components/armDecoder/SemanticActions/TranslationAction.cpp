@@ -36,77 +36,76 @@
 // DO-NOT-REMOVE end-copyright-block
 
 
-#ifndef FLEXUS_armDECODER_VALIDATIONS_HPP_INCLUDED
-#define FLEXUS_armDECODER_VALIDATIONS_HPP_INCLUDED
+#include <iostream>
+#include <iomanip>
 
-#include <components/CommonQEMU/Slices/MemOp.hpp>
-#include "OperandCode.hpp"
-#include "SemanticInstruction.hpp"
+#include <core/boost_extensions/intrusive_ptr.hpp>
+#include <boost/throw_exception.hpp>
+#include <boost/function.hpp>
+#include <boost/lambda/lambda.hpp>
+#include <boost/lambda/bind.hpp>
+namespace ll = boost::lambda;
+
+#include <boost/none.hpp>
+
+#include <boost/dynamic_bitset.hpp>
+
+#include <core/target.hpp>
+#include <core/debug/debug.hpp>
+#include <core/types.hpp>
+
+#include <components/uArchARM/uArchInterfaces.hpp>
+
+#include "../SemanticInstruction.hpp"
+#include "../Effects.hpp"
+#include "../SemanticActions.hpp"
+
+#define DBG_DeclareCategories armDecoder
+#define DBG_SetDefaultOps AddCat(armDecoder)
+#include DBG_Control()
 
 namespace narmDecoder {
 
-struct SemanticInstruction;
+using namespace nuArchARM;
 
-struct validateXRegister {
-  uint32_t theReg;
-  eOperandCode theOperandCode;
-  SemanticInstruction * theInstruction;
+struct TranslationAction : public BaseSemanticAction
+{
 
-  validateXRegister( uint32_t aReg, eOperandCode anOperand, SemanticInstruction * anInstruction )
-    : theReg(aReg)
-    , theOperandCode(anOperand)
-    , theInstruction(anInstruction)
-  { }
-
-  bool operator () ();
-};
-
-
-
-
-
-struct validatePC {
-  uint64_t theAddr;
-  SemanticInstruction * theInstruction;
-
-  validatePC( uint64_t anAddr, SemanticInstruction * anInstruction )
-    : theAddr(anAddr)
-    , theInstruction(anInstruction)
-  { }
-
-  bool operator () ();
-};
-
-struct validateVRegister {
-  uint32_t theReg;
-  eOperandCode theOperandCode;
-  SemanticInstruction * theInstruction;
-
-  validateVRegister( uint32_t aReg, eOperandCode anOperand, SemanticInstruction * anInstruction )
-    : theReg(aReg)
-    , theOperandCode(anOperand)
-    , theInstruction(anInstruction)
-  { }
-
-  bool operator () ();
-};
-
-struct validateMemory {
-  eOperandCode theAddressCode;
-  eOperandCode theValueCode;
-  nuArchARM::eSize theSize;
-  SemanticInstruction * theInstruction;
-
-  validateMemory( eOperandCode anAddressCode, eOperandCode aValueCode, nuArchARM::eSize aSize, SemanticInstruction * anInstruction )
-    : theAddressCode(anAddressCode)
-    , theValueCode(aValueCode)
-    , theSize(aSize)
-    , theInstruction(anInstruction)
+  TranslationAction( SemanticInstruction * anInstruction)
+    : BaseSemanticAction( anInstruction, 1 )
   {}
 
-  bool operator () ();
+
+  void doEvaluate()
+  {
+    SEMANTICS_DBG(*this);
+
+    if (ready())
+    {
+        DBG_Assert(theInstruction->hasOperand( kAddress ) );
+        VirtualMemoryAddress addr( theInstruction->operand< bits > (kAddress));
+
+        theInstruction->core()->translate(boost::intrusive_ptr<Instruction>(theInstruction));
+
+
+
+        satisfyDependants();
+    } else {
+        reschedule();
+    }
+  }
+
+  void describe( std::ostream & anOstream) const
+  {
+    anOstream << theInstruction->identify();
+  }
 };
+
+simple_action translationAction ( SemanticInstruction * anInstruction)
+{
+  return new(anInstruction->icb()) TranslationAction( anInstruction);
+}
+
 
 } //narmDecoder
 
-#endif //FLEXUS_armDECODER_VALIDATIONS_HPP_INCLUDED

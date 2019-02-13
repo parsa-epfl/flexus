@@ -92,15 +92,15 @@ namespace nuArchARM {
 inline bits mask( eSize aSize) {
   switch (aSize) {
     case kByte:
-      return 0xFFULL;
+      return (bits)0xFFULL;
     case kHalfWord:
-      return 0xFFFFULL;
+      return (bits)0xFFFFULL;
     case kWord:
-      return 0xFFFFFFFFULL;
+      return (bits)0xFFFFFFFFULL;
     case kDoubleWord:
-      return 0xFFFFFFFFFFFFFFFFULL;
+      return (bits)0xFFFFFFFFFFFFFFFFULL;
     case kQuadWord:
-      return 0xFFFFFFFFFFFFFFFFULL;
+      return (bits)0xFFFFFFFFFFFFFFFFULL;
   default:
       DBG_Assert(false);
       return 0;
@@ -380,7 +380,7 @@ struct ValueTracker {
     FLEXUS_PROFILE();
     DBG_Assert( anAddress != 0 );
     DBG_Assert( anAddress < 0x40000000000LL );
-    DBG_( Iface, ( << "CPU[" << aCPU << "] Store " << anAddress << "[" << aSize << "] = " << std::hex << aStoreValue << std::dec ) );
+    DBG_( Dev, ( << "CPU[" << aCPU << "] Store " << anAddress << "[" << aSize << "] = " << std::hex << aStoreValue << std::dec ) );
 
     //Align the address
     PhysicalMemoryAddress aligned = dwAddr( anAddress );
@@ -389,7 +389,7 @@ struct ValueTracker {
     tracker::iterator iter = theTracker.find( aligned );
     if ( iter == theTracker.end() ) {
       Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(aCPU);
-      bits simics_value = cpu->readPhysicalAddress( aligned, 8 );
+      bits simics_value = cpu->readPhysicalAddress( aligned, aSize );
       //New tracker
       bits updated_value = overlay( simics_value, anAddress, aSize, aStoreValue);
 
@@ -618,7 +618,7 @@ private:
   }
 
   int32_t offset (PhysicalMemoryAddress anAddress, eSize aSize) {
-    return ( 8 - aSize ) - (static_cast<uint64_t>( anAddress ) - dwAddr(anAddress) );
+    return ( 16 - aSize ) - (static_cast<uint64_t>( anAddress ) - dwAddr(anAddress) );
   }
 
   bits makeMask(PhysicalMemoryAddress anAddress, eSize aSize) {

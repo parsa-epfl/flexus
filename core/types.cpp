@@ -48,7 +48,7 @@ bits align(uint64_t x, int y){
 
 bits concat_bits (const bits & lhs, const bits & rhs){
 
-    return lhs << 64 | rhs;
+    return ((lhs << 64) | rhs);
 }
 
 bits construct(uint8_t* bytes, size_t size){

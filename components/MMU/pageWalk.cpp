@@ -76,10 +76,10 @@ void PageWalk::preWalk( TranslationTransport &  aTranslation ) {
 
     if( statefulPointer->currentLookupLevel == 0 ) {
         PhysicalMemoryAddress magicPaddr(QEMU_logical_to_physical(*Flexus::Qemu::Processor::getProcessor( theNode ),QEMU_DI_Instruction,basicPointer->theVaddr));
-        DBG_(Dev,( <<" QEMU Translated: " << std::hex << basicPointer->theVaddr << std::dec << ", to: " << std::hex << magicPaddr << std::dec));
+        DBG_(VVerb,( <<" QEMU Translated: " << std::hex << basicPointer->theVaddr << std::dec << ", to: " << std::hex << magicPaddr << std::dec));
     }
     PhysicalMemoryAddress TTEDescriptor( statefulPointer->TTAddressResolver->resolve(basicPointer->theVaddr) );
-    DBG_(Dev,(<< "Current Translation Level: " << (unsigned int) statefulPointer->currentLookupLevel
+    DBG_(VVerb,(<< "Current Translation Level: " << (unsigned int) statefulPointer->currentLookupLevel
                 << ", Returned TTE Descriptor Address: " << TTEDescriptor << std::dec ));
 
     basicPointer->thePaddr = TTEDescriptor;
@@ -91,12 +91,12 @@ bool PageWalk::walk( TranslationTransport &  aTranslation ) {
     boost::intrusive_ptr<TranslationState> statefulPointer(aTranslation[TranslationStatefulTag]);
     boost::intrusive_ptr<Translation> basicPointer(aTranslation[TranslationBasicTag]);
 
-    DBG_(Dev,(<< "Current Translation Level: " << (unsigned int) statefulPointer->currentLookupLevel
+    DBG_(VVerb,(<< "Current Translation Level: " << (unsigned int) statefulPointer->currentLookupLevel
                 << ", Read Raw TTE Desc. from QEMU : " << std::hex << basicPointer->rawTTEValue << std::dec ));
     /* Check Valid */
     bool validBit = extractSingleBitAsBool(basicPointer->rawTTEValue,0);
     if (basicPointer->theInstruction )
-        DBG_(Dev, (<< "Walking " << *basicPointer->theInstruction ));
+        DBG_(VVerb, (<< "Walking " << *basicPointer->theInstruction ));
     DBG_Assert( validBit == true , ( << "Encountered INVALID entry in doTTEAccess: " << std::hex << basicPointer->rawTTEValue << std::dec << ", need to generate Page Fault."));
     /* distinguish between block and table entries, could cut pwalk early!!! */
     bool isNextLevelTableEntry = extractSingleBitAsBool(basicPointer->rawTTEValue,1);
@@ -121,7 +121,7 @@ bool PageWalk::walk( TranslationTransport &  aTranslation ) {
             /* Return size of mapped region, output address, and terminate PWalk */
             PhysicalMemoryAddress shiftedRegionBits = PhysicalMemoryAddress(statefulPointer->TTAddressResolver->getBlockOutputBits(basicPointer->rawTTEValue));
             basicPointer->thePaddr = shiftedRegionBits;
-            DBG_( Dev, ( << "Encountered BLOCK ENTRY in TT level [" << (unsigned int) statefulPointer->currentLookupLevel << "], TTE = " << std::hex << basicPointer->rawTTEValue << std::dec << ", ShiftedRegionBits = " << std::hex << shiftedRegionBits << std::dec));
+            DBG_( VVerb, ( << "Encountered BLOCK ENTRY in TT level [" << (unsigned int) statefulPointer->currentLookupLevel << "], TTE = " << std::hex << basicPointer->rawTTEValue << std::dec << ", ShiftedRegionBits = " << std::hex << shiftedRegionBits << std::dec));
             switch( statefulPointer->currentLookupLevel ) {
                 case 1:
                     statefulPointer->BlockSizeFromTTs = 1<<30; // 1GB block
@@ -137,7 +137,7 @@ bool PageWalk::walk( TranslationTransport &  aTranslation ) {
             PhysicalMemoryAddress maskedVAddr( basicPointer->theVaddr & PageOffsetMask );
             basicPointer->thePaddr |= maskedVAddr;
 
-            DBG_( Dev, ( << " PageOffsetMask = " << std::hex << PageOffsetMask << std::dec << ", maskedVaddr = " << std::hex << maskedVAddr << std::dec << "PAddr to Return = " << std::hex << basicPointer->thePaddr << std::dec ));
+            DBG_( VVerb, ( << " PageOffsetMask = " << std::hex << PageOffsetMask << std::dec << ", maskedVaddr = " << std::hex << maskedVAddr << std::dec << "PAddr to Return = " << std::hex << basicPointer->thePaddr << std::dec ));
             basicPointer->setDone();
             return true; // p walk done
         }
