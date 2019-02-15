@@ -255,6 +255,7 @@ DECODER_TRACE;
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
 
+    inst->setClass(clsBranch, codeBranchUnconditional);
     std::vector<std::list<InternalDependance> > rs_deps(1);
 
     simple_action target = calcAddressAction( inst, rs_deps);
