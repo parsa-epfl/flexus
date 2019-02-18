@@ -711,7 +711,7 @@ struct uArchARM {
     virtual eResourceStatus requestRegister( mapped_reg aRegister) { DBG_Assert( false ); return kNotReady;}
     virtual register_value readRegister( mapped_reg aRegister ) { DBG_Assert( false ); return (uint64_t)0ULL; }
     virtual void squashRegister( mapped_reg aRegister) { DBG_Assert( false ); }
-    virtual void writeRegister( mapped_reg aRegister, register_value aValue ) { DBG_Assert( false ); }
+    virtual void writeRegister( mapped_reg aRegister, register_value aValue, bool isW = false) { DBG_Assert( false ); }
     virtual void copyRegValue( mapped_reg aSource, mapped_reg aDest ) { DBG_Assert( false ); }
     virtual void satisfy( InstructionDependance const & aDep) { DBG_Assert(false); }
     virtual void squash( InstructionDependance const & aDep) { DBG_Assert(false); }

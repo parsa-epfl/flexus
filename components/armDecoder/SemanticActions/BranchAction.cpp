@@ -236,9 +236,15 @@ struct BranchToCalcAddressAction : public BaseSemanticAction {
         //Feedback is taken care of by the updateUncoditional effect at retirement
         uint64_t target = theInstruction->operand< uint64_t > (theTarget);
         VirtualMemoryAddress target_addr(target);
-        DBG_( VVerb, ( << *this << " branc to mapped_reg target: " << target_addr ) );
-        core()->applyToNext( theInstruction, branchInteraction(target_addr) );
+        DBG_( Dev, ( << *this << " branc to mapped_reg target: " << target_addr ) );
 
+        core()->applyToNext( theInstruction, branchInteraction(target_addr) );
+//        if ( theInstruction->redirectPC(theTarget, theInstruction->pc() + 4 ) ) {
+//          DBG_( VVerb, ( << theInstruction << " BRANCH:  Must redirect.") );
+//          if ( theInstruction->core()->squashAfter(boost::intrusive_ptr<nuArchARM::Instruction> (&theInstruction)) ) {
+//            theInstruction->core()->redirectFetch(theTarget);
+//          }
+//        }
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {

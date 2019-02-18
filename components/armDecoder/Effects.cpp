@@ -178,7 +178,7 @@ struct FreeMappingEffect : public Effect {
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
     mapped_reg mapping ( anInstruction.operand< mapped_reg > (theMappingCode) );
-    DBG_( VVerb, ( << anInstruction.identify() << " MapEffect free mapping for " << theMappingCode << "(" << mapping << ")" ) );
+    DBG_( Dev, ( << anInstruction.identify() << " MapEffect free mapping for " << theMappingCode << "(" << mapping << ")" ) );
     anInstruction.core()->free( mapping );
     Effect::invoke(anInstruction);
   }
@@ -441,7 +441,7 @@ struct BranchFeedbackWithOperandEffect: public Effect {
     feedback->theActualType = theType;
     feedback->theActualDirection = theDirection;
     VirtualMemoryAddress target(anInstruction.operand< uint64_t > (theOperandCode));
-    DBG_( VVerb, ( << anInstruction << " Update Branch predictor: " << theType << " " << theDirection << " to " << target) );
+    DBG_( Dev, ( << anInstruction << " Update Branch predictor: " << theType << " " << theDirection << " to " << target) );
     feedback->theActualTarget = target;
     feedback->theBPState = anInstruction.bpState();
     anInstruction.core()->branchFeedback(feedback);
@@ -506,13 +506,15 @@ struct BranchEffect: public Effect {
   {}
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
-    DBG_( VVerb, ( << anInstruction << " BranchEffect " ) );//NOOSHIN
+    DBG_( Dev, ( << anInstruction << " BranchEffect " ) );
 
-//    if (!theHasTarget)
-//        theTarget = anInstruction.operand(kAddress);
+    if (!theHasTarget){
+        Operand address = anInstruction.operand(kAddress);
+        theTarget = VirtualMemoryAddress(boost::get<uint64_t>(address));
+    }
 
     if ( anInstruction.redirectPC(theTarget, anInstruction.pc() + 4 ) ) {
-      DBG_( VVerb, ( << anInstruction << " BRANCH:  Must redirect.") );
+      DBG_( Dev, ( << anInstruction << " BRANCH:  Must redirect.") );
       if ( anInstruction.core()->squashAfter(boost::intrusive_ptr<nuArchARM::Instruction> (&anInstruction)) ) {
         anInstruction.core()->redirectFetch(theTarget);
       }

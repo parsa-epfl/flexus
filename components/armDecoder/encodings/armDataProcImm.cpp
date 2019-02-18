@@ -192,6 +192,7 @@ arminst BFM(armcode const & aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     uint32_t opc = extract32(aFetchedOpcode.theOpcode, 29, 2);
     bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
     bool inzero, extend;
+    uint64_t wmask = 0, tmask = 0;
 
     if ((!sf && n) || (sf && !n) || (opc == 2)){//FIXME ReservedValue();
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
@@ -216,16 +217,12 @@ arminst BFM(armcode const & aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         break;
     }
 
-    uint64_t wmask2;
-
-    bool a = logic_imm_decode_wmask(&wmask2, n, imms, immr);
-
-
-    uint64_t wmask, tmask;
-    bool b = decodeBitMasks(tmask, wmask, n, imms, immr, false, sf ? 64 : 32);
-
-    if (! decodeBitMasks(tmask, wmask, n, imms, immr, false, sf ? 64 : 32) ){
+    if (! logic_imm_decode_wmask(&wmask, n, imms, immr)){
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
+
+    if (!sf) {
+        wmask &= 0xffffffff;
     }
 
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
@@ -245,6 +242,12 @@ arminst BFM(armcode const & aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     addDestination(inst, rd, exec, sf);
 
     return inst;
+}
+
+static uint64_t mask(uint32_t rpos, uint32_t lpos){
+    uint64_t rmask = ones(rpos);
+    uint64_t lmask = ~ones(lpos);
+    return rpos | lpos;
 }
 
 arminst MOVE(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
@@ -273,40 +276,32 @@ arminst MOVE(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
         break;
     default:
         return unallocated_encoding(aFetchedOpcode, aCPU,aSequenceNo);
-        break;
     }
 
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
-
     inst->setClass(clsComputation, codeALU);
+    std::vector<std::list<InternalDependance>> rs_deps(1);
 
-    std::vector<std::list<InternalDependance>> rs_deps(3);
-    if (opcode == kMoveWideOp_K)
-        addReadXRegister(inst, 1, rd, rs_deps[0], sf);
-    else
-        addReadConstant(inst, 1, 0, rs_deps[0]);
+    predicated_action act;
+    inst->setOperand(kOperand2, imm << pos);
+    inst->setOperand(kOperand3, mask(pos+15 ,pos));
 
-    uint64_t val = 0;
-    for (uint8_t i = pos; i <= pos+15; i++){
-        val |= (1ULL << i);
+    if (opcode == kMoveWideOp_K){
+        act = addExecute(inst, operation(kMOVK_), rs_deps);
+    }else {
+        if (opcode == kMoveWideOp_N){
+            act = addExecute(inst, operation(kMOVN_), rs_deps);
+        } else {
+            act = addExecute(inst, operation(kMOV_), rs_deps);
+        }
+
     }
 
-    addReadConstant(inst, 2, val, rs_deps[1]);
-    addReadConstant(inst, 3, (imm << pos), rs_deps[2]);
-
-    dependant_action wb = writebackAction(inst, kResult, kRD, sf, rd == 31, false);
-
-    predicated_action ow = addExecute(inst, operation(kOVERWRITE_), rs_deps, kResult);
-    connectDependance( wb.dependance, ow );
+    addReadConstant(inst, 1, imm, rs_deps[0]);
 
 
-    if (opcode == kMoveWideOp_N){
-        predicated_action inv = invertAction(inst, kResult, sf);
-        connectDependance( inv.predicate, ow );
-        connectDependance( wb.dependance, inv );
-    }
 
-    connectDependance( inst->retirementDependance(), wb );
+
     return inst;
 }
 
@@ -322,7 +317,7 @@ arminst LOGICALIMM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequ
     uint32_t opc = extract32(aFetchedOpcode.theOpcode, 29, 2);
     bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
     std::unique_ptr<Operation> op;
-    uint64_t tmask = 0, wmask = 0;
+    uint64_t wmask = 0;
     bool setflags;
 
     switch (opc) {
@@ -343,8 +338,11 @@ arminst LOGICALIMM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequ
         break;
     }
 
-    if (! decodeBitMasks(tmask, wmask, n, imms, immr, true, sf ? 64 : 32)){
+    if (! logic_imm_decode_wmask(&wmask, n, imms, immr) ){
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
+    if (!sf) {
+        wmask &= 0xffffffff;
     }
 
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
@@ -354,10 +352,11 @@ arminst LOGICALIMM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequ
 
     std::vector<std::list<InternalDependance>> rs_deps(2);
 
+    predicated_action exec = addExecute(inst, std::move(op), rs_deps);
+
     addReadXRegister(inst, 1, rn, rs_deps[0], sf);
     addReadConstant(inst, 2, wmask, rs_deps[1]);
 
-    predicated_action exec = addExecute(inst, std::move(op), rs_deps);
     addDestination(inst, rd, exec, sf, setflags);
 
     return inst;
@@ -394,7 +393,6 @@ arminst ALUIMM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequence
 
     addReadXRegister(inst, 1, rn, rs_deps[0], sf);
     addReadConstant(inst, 2, imm, rs_deps[1]);
-
 
     addDestination(inst, rd, exec, sf, setflags);
 

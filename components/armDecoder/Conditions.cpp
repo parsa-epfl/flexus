@@ -63,7 +63,7 @@ using namespace nuArchARM;
 bool ConditionHolds(const PSTATE & pstate, int condcode )
 {
     bool result;
-    switch (condcode) {
+    switch (condcode >> 1) {
     case 0: // EQ or NE
         result =  pstate.Z();break;
     case 1: // CS or CC
@@ -88,10 +88,10 @@ bool ConditionHolds(const PSTATE & pstate, int condcode )
     // Condition flag values in the set '111x' indicate always true
     // Otherwise, invert condition if necessary.
 
-    if (((condcode & 1) == 0) && (condcode != 15 /*1111*/))
+    if (((condcode & 1) == 1) && (condcode != 0xf /*1111*/))
         return !result;
-    else
-        return result;
+
+    return result;
 }
 
 

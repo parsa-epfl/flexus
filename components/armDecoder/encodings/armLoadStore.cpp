@@ -525,8 +525,18 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     eAccType acctype = kAccType_STREAM;
     std::vector< std::list<InternalDependance> > addr_deps(1), data_deps(2);
 
+//    if (index != kSingedOffset){
+//        int64_t wback_value = (index==kPostIndex) ? imm7 : 0;
+//        std::vector< std::list<InternalDependance> > wb_deps(1);
+//        predicated_action wback = addExecute(inst, operation(kADD_), kAddress, kOperand4, wb_deps, kResult1);
+//        inst->setOperand(kOperand4, wback_value);
+
+//        addDestination(inst,rn,wback, size/2 == 64);
+//    }
+
     inst->setClass(clsStore, codeStore);
     addAddressCompute( inst, addr_deps) ;
+
 
 
     // calculate the address from rn 
@@ -534,13 +544,17 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 
 
 
-    if (index != kSingedOffset){
-        predicated_action act = operandAction(inst, kAddress, kResult, (index==kPostIndex) ? imm7 : 0, kPD);
-        addDestination(inst,rn,act, size/2 == 64);
-    }
+
 
     if (index != kPostIndex) {
-        inst->setOperand(index == kUnsingedOffset ? kUopAddressOffset : kSopAddressOffset, index == kUnsingedOffset ? (uint64_t)imm7 : (int64_t)imm7);
+        if (index == kUnsingedOffset){
+            inst->setOperand(kUopAddressOffset, (uint64_t)imm7 );
+            DBG_(Dev, (<<"setting unsigned offset " << (uint64_t)imm7));
+
+        } else {
+            inst->setOperand(kSopAddressOffset, imm7 );
+            DBG_(Dev, (<<"setting signed offset " << imm7));
+        }
     }
 
 

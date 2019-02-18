@@ -447,7 +447,6 @@ void resetArchitecturalState()
   void resetSP_el(){
       for (uint8_t i=0; i<4; i++){
           uint64_t sp = theCPU->readSP_el(i);
-          DBG_(Dev, (<<  "SP = " <<std::hex << sp << std::dec));
           theCore->setSP_el( i, sp );
       }
   }

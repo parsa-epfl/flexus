@@ -78,10 +78,10 @@ bool validateXRegister::operator () () {
   uint64_t flexus = theInstruction->operand< uint64_t > (theOperandCode);
   uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readXRegister( theReg );
 
-  DBG_(Dev,(<< "flexus value: " << flexus ));
-  DBG_(Dev,(<< "qemu value:   " << qemu   ));
+  DBG_(Dev,(<< "flexus value in " << theOperandCode << "  " << flexus ));
+  DBG_(Dev,(<< "qemu value in " << theReg << "  " << qemu   ));
 
-  DBG_( Dev, ( << "Validating mapped_reg " << theReg << " flexus=" << std::hex << flexus << " qemu=" << qemu << std::dec << "\n" << std::internal << *theInstruction ) );
+  DBG_( Dev, ( << "Validating mapped_reg " << theReg << " flexus=" << std::hex << flexus << " qemu=" << qemu << std::dec << "\n" ) );
 
   return (flexus == qemu);
 }

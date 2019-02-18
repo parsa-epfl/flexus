@@ -270,7 +270,7 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
 //  handlePopTL();
 
   if (theRedirectRequested) {
-    DBG_( VVerb, ( << " Core triggering Redirect to " << theRedirectPC ) );//NOOSHIN
+    DBG_( Dev, ( << " Core triggering Redirect to " << theRedirectPC ) );
     redirect_fn(theRedirectPC);
     thePC = theRedirectPC;
     theRedirectRequested = false;
@@ -452,6 +452,7 @@ void CoreImpl::checkPageFault( boost::intrusive_ptr<Instruction> anInsn) {
       DBG_(Dev, ( <<  theName << " Taking MMU exception: " << iter->theException << " "  << *iter ) );
       takeTrap(anInsn, iter->theException);
       anInsn->setAccessAddress(PhysicalMemoryAddress(0));
+//      anInsn->squash();
     }
 }
 
@@ -1418,7 +1419,7 @@ void CoreImpl::commit() {
       freeCheckpoint( theSRB.front() );
     }
 
-    DBG_( Dev, ( << theName << " FinalCommit:" << *theSRB.front()) );
+    DBG_( VVerb, ( << theName << " FinalCommit:" << *theSRB.front()) );
     if (theSRB.front()->willRaise() == kException_None) {
       theSRB.front()->doCommitEffects();
       DBG_( VVerb, ( <<  theName << " commit effects complete" ) );
@@ -1468,6 +1469,7 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
       CORE_DBG("Instruction is neither annuled nor is a micro-op");
 
     validation_passed &= anInstruction->preValidate();
+    DBG_(Dev, (<<"Pre Validating... " << validation_passed));
 
 
 
@@ -1526,8 +1528,11 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
 
 
   validation_passed &= anInstruction->postValidate();
+  DBG_(Dev, (<<"Post Validating... "<< validation_passed));
+
   if (! validation_passed ) {
-    DBG_(Dev, (<<"Failed Validation " << std::internal << *anInstruction << std::left));
+    DBG_(Dev, (<<"Failed Validated " ));
+    DBG_(VVerb, (<< std::internal << *anInstruction << std::left));
 
     //Subsequent Empty ROB stalls (until next dispatch) are the result of a
     //modelling error resynchronization instruction.
@@ -1536,7 +1541,9 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
 
     throw ResynchronizeWithQemuException();
   }
-  DBG_(Dev, (<<"uARCH Validated " << std::internal << *anInstruction << std::left));
+  DBG_(Dev, (<<"uARCH Validated " ));
+  DBG_(VVerb, (<< std::internal << *anInstruction << std::left));
+
 }
 
 bool CoreImpl::squashAfter( boost::intrusive_ptr< Instruction > anInsn) {
@@ -1552,7 +1559,7 @@ bool CoreImpl::squashAfter( boost::intrusive_ptr< Instruction > anInsn) {
 }
 
 void CoreImpl::redirectFetch( VirtualMemoryAddress anAddress ) {
-  DBG_(VVerb, (<<"redirectFetch anAddress: "<<anAddress));
+  DBG_(Dev, (<<"redirectFetch anAddress: "<<anAddress));
   theRedirectRequested = true;
   theRedirectPC = anAddress;
 }

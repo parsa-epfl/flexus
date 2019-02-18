@@ -219,7 +219,7 @@ void CoreImpl::dispatch( boost::intrusive_ptr< Instruction > anInsn) {
   std::list< boost::intrusive_ptr< Interaction > > dispatch_interactions;
   std::swap( dispatch_interactions, theDispatchInteractions );
 
-  DBG_(Dev,(<<*anInsn));
+  DBG_(VVerb,(<<*anInsn));
   anInsn->doDispatchEffects();
 
   while (  ! dispatch_interactions.empty()) {

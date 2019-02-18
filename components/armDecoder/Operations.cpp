@@ -164,16 +164,19 @@ typedef struct SUBS : public Operation {
         carry = (uint64_t)boost::get<uint64_t >(operands[2]);
     }
 
+    uint64_t op1 = boost::get<uint64_t>(operands[0]);
+    uint64_t op2 = ~boost::get<uint64_t>(operands[1]);
 
-    int64_t sresult =  (int64_t)boost::get<uint64_t>(operands[0]) + (~(int64_t)boost::get<uint64_t>(operands[1])) + carry;
-    uint64_t uresult =  boost::get<uint64_t>(operands[0]) + (~boost::get<uint64_t>(operands[1])) + carry;
-    uint64_t result =  0;
-    result &= uresult;
+    int64_t sresult =  (int64_t)op1 + (int64_t)op2 + carry;
+    uint64_t uresult =  op1 + op2 + carry;
+    uint64_t result =  uresult;
+//    result &= uresult;
+    int64_t i = 11 - 1004;
 
-    uint32_t N = PSTATE_N & (uint32_t)result;
-    uint32_t Z = ((result == 0) ? PSTATE_Z : 0);
-    uint32_t C = ((result - uresult == 0) ? PSTATE_C : 0);
-    uint32_t V = ((result - sresult == 0) ? PSTATE_V : 0);
+    uint32_t N = PSTATE_N & (result >> 32);
+    uint32_t Z = (((result >> 32) == 0) ? PSTATE_Z : 0);
+    uint32_t C = (((result >> 32) - uresult == 0) ? PSTATE_C : 0);
+    uint32_t V = (((result >> 32) - sresult == 0) ? PSTATE_V : 0);
 
     theNZCV = N | Z | C | V;
 
@@ -747,8 +750,14 @@ typedef struct MOV_ : public Operation {
     MOV_(){}
     virtual ~MOV_(){}
   virtual Operand operator()( std::vector<Operand> const & operands  ) {
-    DBG_Assert( operands.size() == 1);
-    return boost::get<uint64_t>(operands[0]);
+        if(hasOwnOperands()){
+            DBG_Assert( theOperands.size() == 1);
+            return boost::get<uint64_t>(theOperands[0]);
+
+        }else {
+            DBG_Assert( operands.size() == 1);
+            return boost::get<uint64_t>(operands[0]);
+        }
   }
   virtual char const * describe() const {
     return "MOV";

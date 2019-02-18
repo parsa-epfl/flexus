@@ -118,16 +118,27 @@ struct WritebackAction : public BaseSemanticAction {
 
           mapped_reg name = theInstruction->operand< mapped_reg > (theRd);
 
-          if (!the64){
-              uint64_t upper = boost::get<uint64_t>(core()->readRegister(name)) & 0xffffffff00000000;
-              uint64_t res = boost::get<uint64_t>(result) & 0xffffffff;
-              res |= upper;
-              result = res;
-          }
+//          if (!the64){
+//              eResourceStatus status = core()->requestRegister( name );
+//              Operand value;
+//              uint64_t upper;
+//              if (status == kReady) {
+//                value = core()->readRegister( name );
+//                upper = (boost::get<uint64_t>(value)& 0xffffffff00000000ULL);
+//              } else {
+//                  setReady( 0, false );
+//                  return;
+//              }
+
+//              uint64_t res = boost::get<uint64_t>(result) & 0xffffffffULL;
+//              res |= upper;
+//              result = res;
+//          }
+
           DBG_(Dev, (<< "Writing " << result << " to " << name));
 
 
-          core()->writeRegister( name, result );
+          core()->writeRegister( name, result, the64 );
           DBG_( VVerb, ( << *this << " rd= " << name << " result=" << result ) );
           core()->bypass( name, result );
       }

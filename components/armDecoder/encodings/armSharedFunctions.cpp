@@ -185,7 +185,7 @@ void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, uint64_t v
     DBG_Assert( anOpNumber == 1 || anOpNumber == 2 || anOpNumber == 3 || anOpNumber == 4 || anOpNumber == 5 );
     eOperandCode cOperand = eOperandCode( kOperand1 + anOpNumber - 1);
 
-    DECODER_DBG("Reading constant " << val << " to " << cOperand );
+    DECODER_DBG("Reading constant " << std::hex << val <<  std::dec <<" to " << cOperand );
 
 
     simple_action act = readConstantAction( inst, val, cOperand );

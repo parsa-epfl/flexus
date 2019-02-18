@@ -686,7 +686,7 @@ public:
   void squashRegister( mapped_reg aRegister);
   register_value readRegister( mapped_reg aRegister );
   register_value readArchitecturalRegister( reg aRegister, bool aRotate );
-  void writeRegister( mapped_reg aRegister, register_value aValue );
+  void writeRegister( mapped_reg aRegister, register_value aValue, bool isW = false );
   void disconnectRegister( mapped_reg aReg, boost::intrusive_ptr< Instruction > inst);
   void initializeRegister(mapped_reg aRegister, register_value aValue);
   void copyRegValue(mapped_reg aSource, mapped_reg aDest);

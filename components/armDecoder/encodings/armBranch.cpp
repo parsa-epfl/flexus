@@ -59,7 +59,7 @@ static void branch_cond( SemanticInstruction * inst, VirtualMemoryAddress target
   dependant_action br = branchCondAction( inst, target, condition(aCode), 1) ;
   connectDependance( inst->retirementDependance(), br );
 
-    rs_deps.push_back( br.dependance );
+  rs_deps.push_back( br.dependance );
 
 //  inst->addDispatchAction( br );
   inst->addRetirementEffect( updateConditional(inst) );
@@ -81,13 +81,17 @@ arminst UNCONDBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequen
     bool op = extract32(aFetchedOpcode.thePC, 31, 1);
     inst->setClass(clsBranch, codeBranchUnconditional);
 
-    VirtualMemoryAddress target(aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 0, 26) * 4 - 4);
+    int64_t offset = sextract32(aFetchedOpcode.theOpcode, 0, 26) << 2;
+    uint64_t addr = (uint64_t)aFetchedOpcode.thePC + offset;
+
+    VirtualMemoryAddress target(addr);
 
 
     if (op){
         std::vector< std::list<InternalDependance> > rs_deps(1);
-        addReadConstant(inst, 1, aFetchedOpcode.thePC+4, rs_deps[0]);
         predicated_action exec = addExecute(inst, operation(kMOV_),rs_deps);
+
+        addReadConstant(inst, 1, (uint64_t)(aFetchedOpcode.thePC)+4, rs_deps[0]);
         addDestination(inst, 30, exec, true);
     }
 
@@ -170,8 +174,11 @@ arminst CONDBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequence
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
     uint32_t cond = extract32(aFetchedOpcode.theOpcode, 0, 4);
-    VirtualMemoryAddress target(aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 5, 19) * 4 -4);
 
+    int64_t offset = sextract32(aFetchedOpcode.theOpcode, 5, 19) << 2;
+    uint64_t addr = (uint64_t)aFetchedOpcode.thePC + offset;
+
+    VirtualMemoryAddress target(addr);
 
     if (cond < 0x0e) {
         /* genuinely conditional branches */
@@ -258,6 +265,8 @@ DECODER_TRACE;
     inst->setClass(clsBranch, codeBranchUnconditional);
     std::vector<std::list<InternalDependance> > rs_deps(1);
 
+
+
     simple_action target = calcAddressAction( inst, rs_deps);
     dependant_action br = branchToCalcAddressAction( inst );
     connectDependance( br.dependance, target );
@@ -273,7 +282,6 @@ DECODER_TRACE;
     }
 
     addReadXRegister(inst, 1, rn, rs_deps[0], true);
-
 
     return inst;
 }

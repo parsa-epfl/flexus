@@ -161,8 +161,16 @@ public:
   }
 
   //Write a value into the register file without side-effects
-  void poke( mapped_reg aReg, register_value aValue ) {
-    theRegs[aReg.theType][aReg.theIndex] = aValue;
+  void poke( mapped_reg aReg, register_value aValue, bool isW = false ) {
+      if (isW){
+          register_value val = theRegs[aReg.theType][aReg.theIndex];
+          uint64_t res = boost::get<uint64_t>(val) & 0xffffffff00000000;
+          res |= (boost::get<uint64_t>(aValue) & 0xffffffff);
+          register_value final = res;
+          theRegs[aReg.theType][aReg.theIndex] = final;
+      } else {
+          theRegs[aReg.theType][aReg.theIndex] = aValue;
+      }
   }
 
   register_value peek( mapped_reg aReg ) {
@@ -174,9 +182,9 @@ public:
     return peek(aReg);
   }
 
-  void write( mapped_reg aReg, register_value aValue, uArchARM & aCore ) {
+  void write( mapped_reg aReg, register_value aValue, uArchARM & aCore, bool isW = false ) {
     FLEXUS_PROFILE();
-    poke(aReg, aValue);
+    poke(aReg, aValue, isW);
     theStatus[aReg.theType][aReg.theIndex] = kReady;
 
     std::list< InstructionDependance >::iterator iter = theDependances[aReg.theType][aReg.theIndex].begin();
@@ -192,6 +200,7 @@ public:
       }
     }
   }
+
 
 };
 
