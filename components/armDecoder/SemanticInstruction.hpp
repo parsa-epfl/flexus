@@ -227,6 +227,10 @@ template <> inline uint64_t & SemanticInstruction::operand< uint64_t >( eOperand
   //DBG_Assert( theOperands.hasOperand(anOperand), ( << "Request for unavailable operand " << anOperand << "(" << static_cast<int>(anOperand) << ") by\n" << std::internal << *this << std::left ) );
   return theOperands.operand< uint64_t >( anOperand );
 }
+template <> inline int64_t & SemanticInstruction::operand< int64_t >( eOperandCode anOperand ) {
+  //DBG_Assert( theOperands.hasOperand(anOperand), ( << "Request for unavailable operand " << anOperand << "(" << static_cast<int>(anOperand) << ") by\n" << std::internal << *this << std::left ) );
+  return theOperands.operand< int64_t >( anOperand );
+}
 
 } //narmDecoder
 

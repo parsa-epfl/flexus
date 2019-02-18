@@ -149,7 +149,7 @@ arminst TSTBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceN
     branch_cond(inst, target, bit_val ? kTBZ_ : kTBNZ_, rs_deps[0]);
 
     addReadXRegister(inst, 1, rt, rs_deps[0], sf);
-    inst->setOperand(kCondition, (1ULL << bit_pos));
+    inst->setOperand(kCondition, uint64_t(1ULL << bit_pos));
 
 
 
@@ -385,7 +385,7 @@ arminst MSR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     inst->setHaltDispatch();
     inst->addCheckTrapEffect( checkSystemAccess(inst, 0, op1, op2, 0x4, crm, 0x1f, 0) );
     inst->addCheckTrapEffect( checkDAIFAccess(inst,  op1) );
-    inst->setOperand(kResult, crm);
+    inst->setOperand(kResult, uint64_t(crm));
 
     inst->addRetirementEffect( writePSTATE(inst, op1, op2) );
 //        inst->addPostvalidation( validateXRegister( rt, kResult, inst  ) );

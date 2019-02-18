@@ -109,6 +109,7 @@ std::ostream & operator << ( std::ostream & anOstream, eOperandCode aCode) {
     , "fpsr"
     , "fpcr"
     , "uop_address_offset"
+    , "sop_address_offset"
   };
   if (aCode >= kLastOperandCode) {
     anOstream << "InvalidOperandCode(" << static_cast<int>(aCode) << ")";

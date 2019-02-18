@@ -86,7 +86,7 @@ public:
         aStatus = kUnmapped;
       }
       for(auto& aReg: theRegs[i]){
-        aReg = 0ULL;
+        aReg = (uint64_t)0ULL;
       }
     }
   }

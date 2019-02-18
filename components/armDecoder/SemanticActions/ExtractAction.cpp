@@ -96,7 +96,7 @@ struct ExtractAction : public PredicatedSemanticAction {
         uint64_t imm =  (uint64_t)boost::get<bits>(theInstruction->operand(theOperandCode2));
 
         std::unique_ptr<Operation> op = operation(the64 ? kCONCAT64_ : kCONCAT32_);
-        std::vector<Operand> operands = {src, src2, the64};
+        std::vector<Operand> operands = {src, src2, (uint64_t)the64};
         uint64_t res =  (uint64_t)boost::get<bits>(op->operator ()(operands));
 
         res >>= imm;

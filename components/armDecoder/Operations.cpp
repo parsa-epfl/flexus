@@ -405,7 +405,7 @@ typedef struct SextB : public Operation  {
     virtual ~SextB(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 1);
-    return boost::get<uint64_t>(operands[0])  | SIGNED_UPPER_BOUND_B;
+    return (int64_t)(boost::get<uint64_t>(operands[0])  | SIGNED_UPPER_BOUND_B);
   }
   virtual char const * describe() const {
     return "singned extend Byte";
@@ -417,7 +417,7 @@ typedef struct SextH : public Operation  {
     virtual ~SextH(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 1);
-    return boost::get<uint64_t>(operands[0])  | SIGNED_UPPER_BOUND_H;
+    return (int64_t)(boost::get<uint64_t>(operands[0])  | SIGNED_UPPER_BOUND_H);
   }
   virtual char const * describe() const {
     return "singned extend Half Word";
@@ -429,7 +429,7 @@ typedef struct SextW : public Operation  {
     virtual ~SextW(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 1);
-    return boost::get<uint64_t>(operands[0])  | SIGNED_UPPER_BOUND_W;
+    return uint64_t(boost::get<uint64_t>(operands[0])  | SIGNED_UPPER_BOUND_W);
   }
   virtual char const * describe() const {
     return "singned extend Word";
@@ -441,7 +441,7 @@ typedef struct SextX : public Operation  {
     virtual ~SextX(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 1);
-    return boost::get<uint64_t>(operands[0])  | SIGNED_UPPER_BOUND_X;
+    return (uint64_t)(boost::get<uint64_t>(operands[0])  | SIGNED_UPPER_BOUND_X);
   }
   virtual char const * describe() const {
     return "singned extend Double Word";
@@ -717,7 +717,7 @@ typedef struct UDivX : public Operation  {
     if (boost::get<uint64_t>(operands[1]) != 0) {
       return boost::get<uint64_t>(operands[0]) / boost::get<uint64_t>(operands[1]);
     } else {
-      return 0ULL; //Will result in an exception, so it doesn't matter what we return
+      return uint64_t(0ULL); //Will result in an exception, so it doesn't matter what we return
     }
   }
   virtual char const * describe() const {
@@ -735,7 +735,7 @@ typedef struct SDivX : public Operation  {
     if (op1_s != 0) {
       return op0_s / op1_s;
     } else {
-      return 0ULL; //Will result in an exception, so it doesn't matter what we return
+      return uint64_t(0ULL); //Will result in an exception, so it doesn't matter what we return
     }
   }
   virtual char const * describe() const {

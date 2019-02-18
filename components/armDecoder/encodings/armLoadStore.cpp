@@ -426,7 +426,7 @@ arminst LDR_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenc
 
     std::vector<std::list<InternalDependance> > rs_deps(1);
     addAddressCompute(inst, rs_deps);
-    inst->setOperand(kUopAddressOffset, offset);
+    inst->setOperand(kSopAddressOffset, (int64_t)offset );
 
     inst->addCheckTrapEffect( mmuPageFaultCheck(inst) );
     inst->addRetirementEffect( retireMem(inst) );
@@ -483,7 +483,7 @@ arminst LDP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 
     addReadXRegister(inst, 1, rn, addr_deps[0], size/2 == 64);
     if (index != kPostIndex) {
-        inst->setOperand(kUopAddressOffset, (uint64_t)imm7);
+        inst->setOperand(index == kUnsingedOffset ? kUopAddressOffset : kSopAddressOffset, index == kUnsingedOffset ? (uint64_t)imm7 : (int64_t)imm7);
     }
 
     predicated_dependant_action load;
@@ -502,7 +502,7 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     uint32_t opc = extract32(aFetchedOpcode.theOpcode, 30, 2);
     uint32_t L = extract32(aFetchedOpcode.theOpcode, 22, 1);
     eIndex index = getIndex(extract32(aFetchedOpcode.theOpcode, 23, 3));
-    int64_t imm7 = (int64_t)sextract32(aFetchedOpcode.theOpcode, 15, 7);
+    int64_t imm7 = sextract32(aFetchedOpcode.theOpcode, 15, 7);
     uint32_t rt2 = extract32(aFetchedOpcode.theOpcode, 10, 5);
     uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
     uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
@@ -540,7 +540,7 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     }
 
     if (index != kPostIndex) {
-        inst->setOperand(kUopAddressOffset, (uint64_t)imm7);
+        inst->setOperand(index == kUnsingedOffset ? kUopAddressOffset : kSopAddressOffset, index == kUnsingedOffset ? (uint64_t)imm7 : (int64_t)imm7);
     }
 
 
@@ -653,7 +653,7 @@ arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 
     addAddressCompute( inst, rs_deps ) ;
     if (index != kPostIndex) {
-        inst->setOperand(kUopAddressOffset, (uint64_t)imm);
+        inst->setOperand(index == kUnsingedOffset ? kUopAddressOffset : kSopAddressOffset, index == kUnsingedOffset ? (uint64_t)imm : (int64_t)imm);
     }
     addReadXRegister(inst, 1, rn, rs_deps[0], regsize == 64);
 
@@ -696,7 +696,7 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     uint32_t imm;
     uint32_t regsize;
     eIndex index = kNoOffset;
-//    bool is_signed;
+    bool is_signed;
 
     if ((opc & 0x2) == 0) {
         regsize = (size == 0x4) ? 64 : 32;
@@ -708,7 +708,7 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
                 return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
             }
             regsize = ((opc & 1) == 0x1) ? 32 : 64;
-//            is_signed = true;
+            is_signed = true;
         }
     }
 
@@ -728,7 +728,7 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
         imm = sextract32(aFetchedOpcode.theOpcode, 12, 9);
     }
 
-    inst->setOperand(kUopAddressOffset, (uint64_t)imm);
+    inst->setOperand(index == kUnsingedOffset ? kUopAddressOffset : kSopAddressOffset, index == kUnsingedOffset ? (uint64_t)imm : (int64_t)imm);
     DECODER_DBG("Address offset " << imm );
 
 
@@ -741,7 +741,7 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 
     addAddressCompute( inst, rs_deps ) ;
     if (index != kPostIndex) {
-        inst->setOperand(kUopAddressOffset, (uint64_t)imm);
+        inst->setOperand(index == kUnsingedOffset ? kUopAddressOffset : kSopAddressOffset, index == kUnsingedOffset ? (uint64_t)imm : (int64_t)imm);
     }
 
     addReadXRegister(inst, 1, rn, rs_deps[0], regsize == 64);

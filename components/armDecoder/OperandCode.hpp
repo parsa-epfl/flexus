@@ -174,6 +174,7 @@ enum eOperandCode {
   , kocFPSR
   , kocFPCR
   , kUopAddressOffset
+  , kSopAddressOffset
   , kLastOperandCode
 };
 

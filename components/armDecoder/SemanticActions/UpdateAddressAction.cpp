@@ -108,10 +108,15 @@ struct UpdateAddressAction : public BaseSemanticAction {
           uint64_t addr = theInstruction->operand< uint64_t > (theAddressCode);
           if (theInstruction->hasOperand( kUopAddressOffset ) ) {
             uint64_t offset = theInstruction->operand< uint64_t > (kUopAddressOffset);
-            SEMANTICS_DBG("UpdateAddressAction: adding offset " << offset << " to address "<< addr);
+            DECODER_DBG("UpdateAddressAction: adding offset " << offset << " to address "<< addr);
             addr +=  offset;
             theInstruction->setOperand(theAddressCode, addr);
-          }
+          } else if (theInstruction->hasOperand( kSopAddressOffset ) ) {
+              int64_t offset = theInstruction->operand< int64_t > (kSopAddressOffset);
+              DECODER_DBG("UpdateAddressAction: adding offset " << offset << " to address "<< addr);
+              addr +=  offset;
+              theInstruction->setOperand(theAddressCode, addr);
+            }
           VirtualMemoryAddress vaddr(addr);
           core()->resolveVAddr( boost::intrusive_ptr<Instruction>(theInstruction), vaddr );
           SEMANTICS_DBG(*this << " updating vaddr = " << vaddr);

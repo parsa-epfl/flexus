@@ -72,7 +72,7 @@ using namespace nuArchARM;
 
 struct BitFieldAction : public PredicatedSemanticAction {
   eOperandCode theOperandCode1, theOperandCode2;
-  uint32_t theS, theR;
+  uint64_t theS, theR;
   uint32_t thewmask, thetmask;
   bool theExtend, the64;
 
@@ -102,7 +102,7 @@ struct BitFieldAction : public PredicatedSemanticAction {
         bits dst =  boost::get<bits>(theInstruction->operand(theOperandCode2));
 
         std::unique_ptr<Operation> ror = operation(kROR_);
-        std::vector<Operand> operands = {src, theR, the64};
+        std::vector<Operand> operands = {src, theR, uint64_t(the64)};
         bits res =  boost::get<bits>(ror->operator ()(operands));
 
         // perform bitfield move on low bits

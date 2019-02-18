@@ -696,7 +696,7 @@ inline mapped_reg ccReg(uint32_t anIndex) {
   return ret_val;
 }
 
-typedef boost::variant< uint64_t , bits > register_value;
+typedef boost::variant< int64_t, uint64_t , bits > register_value;
 
 struct uArchARM {
 
@@ -709,7 +709,7 @@ struct uArchARM {
     virtual void reschedule( boost::intrusive_ptr<SemanticAction> anAction) { DBG_Assert( false ); }
     virtual eResourceStatus requestRegister( mapped_reg aRegister, InstructionDependance const & aDependance) { DBG_Assert( false );  return kNotReady; }
     virtual eResourceStatus requestRegister( mapped_reg aRegister) { DBG_Assert( false ); return kNotReady;}
-    virtual register_value readRegister( mapped_reg aRegister ) { DBG_Assert( false ); return 0ULL; }
+    virtual register_value readRegister( mapped_reg aRegister ) { DBG_Assert( false ); return (uint64_t)0ULL; }
     virtual void squashRegister( mapped_reg aRegister) { DBG_Assert( false ); }
     virtual void writeRegister( mapped_reg aRegister, register_value aValue ) { DBG_Assert( false ); }
     virtual void copyRegValue( mapped_reg aSource, mapped_reg aDest ) { DBG_Assert( false ); }

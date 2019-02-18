@@ -251,7 +251,7 @@ arminst CCMP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     SemanticInstruction * inst(new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo));
 
 
-    uint32_t flags = extract32(aFetchedOpcode.thePC, 0, 4);
+    uint64_t flags = extract32(aFetchedOpcode.thePC, 0, 4);
     uint32_t rn = extract32(aFetchedOpcode.thePC, 5, 5);
     uint32_t rm = extract32(aFetchedOpcode.thePC, 5, 5);
     uint32_t cond = extract32(aFetchedOpcode.thePC, 12, 4);
