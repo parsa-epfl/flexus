@@ -162,7 +162,7 @@ struct ReadRegisterAction : public BaseSemanticAction
 
         aValue = val;
 
-        DBG_(Dev,(<< "Reading register " << theRegisterCode << "with a value " << aValue));
+        DBG_(Dev,(<< "Reading register " << theRegisterCode << " with a value " << aValue));
 
         theInstruction->setOperand(theOperandCode, val);
         satisfyDependants();

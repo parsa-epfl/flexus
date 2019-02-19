@@ -59,6 +59,7 @@ namespace ll = boost::lambda;
 #include "../SemanticInstruction.hpp"
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
+#include "PredicatedSemanticAction.hpp"
 
 #define DBG_DeclareCategories armDecoder
 #define DBG_SetDefaultOps AddCat(armDecoder)
@@ -68,15 +69,15 @@ namespace narmDecoder {
 
 using namespace nuArchARM;
 
-struct ShiftRegisterAction : public BaseSemanticAction
+struct ShiftRegisterAction : public PredicatedSemanticAction
 {
   eOperandCode theRegisterCode;
   bool the64;
   std::unique_ptr<Operation> theShiftOperation;
-  bits theShiftAmount;
+  uint64_t theShiftAmount;
 
-  ShiftRegisterAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, std::unique_ptr<Operation> & aShiftOperation, bits aShiftAmount, bool is64)
-    : BaseSemanticAction( anInstruction, 1 )
+  ShiftRegisterAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, std::unique_ptr<Operation> & aShiftOperation, uint64_t aShiftAmount, bool is64)
+      : PredicatedSemanticAction( anInstruction, 1, true )
     , theRegisterCode( aRegisterCode )
     , the64(is64)
     , theShiftOperation (std::move(aShiftOperation))
@@ -87,14 +88,12 @@ struct ShiftRegisterAction : public BaseSemanticAction
   {
     SEMANTICS_DBG(*this);
 
-    if (! signalled() ) {
-      SEMANTICS_DBG("Signalling");
-
+    if (ready()){
       Operand aValue = theInstruction->operand(theRegisterCode);
 
       aValue = theShiftOperation->operator ()({aValue, theShiftAmount});
 
-      bits val = boost::get<bits>(aValue);
+      uint64_t val = boost::get<uint64_t>(aValue);
 
       if (!the64) {
         val &= 0xffffffff;
@@ -111,10 +110,11 @@ struct ShiftRegisterAction : public BaseSemanticAction
   }
 };
 
-simple_action shiftRegisterAction ( SemanticInstruction * anInstruction, eOperandCode aRegisterCode,
-                                   std::unique_ptr<Operation> & aShiftOp, bits aShiftAmount, bool is64)
+predicated_action shiftAction ( SemanticInstruction * anInstruction, eOperandCode aRegisterCode,
+                                   std::unique_ptr<Operation> & aShiftOp, uint64_t aShiftAmount, bool is64)
 {
-  return new(anInstruction->icb()) ShiftRegisterAction( anInstruction, aRegisterCode, aShiftOp, aShiftAmount, is64);
+  ShiftRegisterAction * act(new(anInstruction->icb()) ShiftRegisterAction( anInstruction, aRegisterCode, aShiftOp, aShiftAmount, is64));
+  return predicated_action( act, act->predicate() );
 }
 
 

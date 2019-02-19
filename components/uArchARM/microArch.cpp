@@ -42,6 +42,7 @@
 #include <iomanip>
 #include <chrono>
 #include <core/boost_extensions/intrusive_ptr.hpp>
+#include <boost/polymorphic_pointer_cast.hpp>
 #include <boost/throw_exception.hpp>
 #define __STDC_CONSTANT_MACROS
  #include <boost/date_time/posix_time/posix_time.hpp>
@@ -193,11 +194,10 @@ public:
   void dispatch(boost::intrusive_ptr< AbstractInstruction > anInstruction) {
     FLEXUS_PROFILE();
     try {
-      boost::intrusive_ptr< Instruction > insn(dynamic_cast< Instruction *>( anInstruction.get() ));
-//      DBG_(VVerb,(<< "\e[1;35m" <<"DISPATCH: instruction class: "<<insn->instClassName()<< "\e[0m"));
-      theCore->dispatch(insn);
+        boost::intrusive_ptr<Instruction> insn = boost::polymorphic_pointer_downcast<Instruction>(anInstruction);
+        theCore->dispatch(insn);
     } catch (...) {
-      DBG_( Crit, ( << "Unable to cast from AbstractInstruction to Instruction") );
+        DBG_( Crit, ( << "Unable to cast from AbstractInstruction to Instruction") );
     }
   }
 

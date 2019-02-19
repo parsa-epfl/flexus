@@ -136,16 +136,17 @@ private:
       ar &theSize;
     }
 
-    bool lookUp(const VirtualMemoryAddress & anAddress) {
-      bool res = false;
+    std::pair<bool, PhysicalMemoryAddress> lookUp(const VirtualMemoryAddress & anAddress) {
+      std::pair<bool, PhysicalMemoryAddress> ret {false, PhysicalMemoryAddress(0)};
       for (auto iter = theTLB.begin(); iter != theTLB.end(); ++iter){
           iter->second.theRate++;
           if (iter->second.theVaddr == anAddress){
               iter->second.theRate = 0;
-              res = true;
+              ret.first = true;
+              ret.second = iter->second.thePaddr;
           }
       }
-      return res;
+      return ret;
     }
 
 
@@ -269,9 +270,12 @@ public:
           theLookUpEntries.pop();
 
           if (item->isInstr()) {
-              if (theInstrTLB.lookUp(item->theVaddr)){
+              std::pair<bool,PhysicalMemoryAddress> entry = theInstrTLB.lookUp(item->theVaddr);
+              if (entry.first){
                     // item exists so mark hit
                 item->setHit();
+                item->thePaddr = entry.second;
+
                 FLEXUS_CHANNEL(iTranslationReply) << item;
               } else {
                   // mark miss
@@ -280,9 +284,11 @@ public:
                   thePageWalker->push_back(item);
               }
           } else if (item->isData()) {
-              if (theDataTLB.lookUp(item->theVaddr)){
+              std::pair<bool,PhysicalMemoryAddress> entry = theDataTLB.lookUp(item->theVaddr);
+              if (entry.first){
                   // item exists so mark hit
                   item->setHit();
+                  item->thePaddr = entry.second;
                   FLEXUS_CHANNEL(dTranslationReply) << item;
               } else {
                   // mark miss

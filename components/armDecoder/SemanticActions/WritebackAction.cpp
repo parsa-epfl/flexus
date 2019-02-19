@@ -99,55 +99,20 @@ struct WritebackAction : public BaseSemanticAction {
     if (ready()) {
       DBG_(Dev, (<< "Writing " << theResult << " to " << theRd));
 
-      theSP = false;
-
       register_value result = boost::apply_visitor( register_value_extractor(), theInstruction->operand( theResult ) );
       uint64_t res = boost::get<uint64_t>(result);
-      if (theSP && !theSetflags){
-          // SP
-          SysRegInfo& ri = getPriv(kSPSel);
-          if (!the64){
-              uint64_t upper = ri.readfn(theInstruction->core()) & 0xffffffff00000000;
-              res &= 0xffffffff;
-              res |= upper;
-              ri.writefn(theInstruction->core(), (uint64_t)(upper | res));
-          } else {
-            ri.writefn(theInstruction->core(), (uint64_t)res);
-          }
-      } else {
 
-          mapped_reg name = theInstruction->operand< mapped_reg > (theRd);
-
-//          if (!the64){
-//              eResourceStatus status = core()->requestRegister( name );
-//              Operand value;
-//              uint64_t upper;
-//              if (status == kReady) {
-//                value = core()->readRegister( name );
-//                upper = (boost::get<uint64_t>(value)& 0xffffffff00000000ULL);
-//              } else {
-//                  setReady( 0, false );
-//                  return;
-//              }
-
-//              uint64_t res = boost::get<uint64_t>(result) & 0xffffffffULL;
-//              res |= upper;
-//              result = res;
-//          }
-
-          DBG_(Dev, (<< "Writing " << result << " to " << name));
-
-
-          core()->writeRegister( name, result, the64 );
-          DBG_( VVerb, ( << *this << " rd= " << name << " result=" << result ) );
-          core()->bypass( name, result );
-      }
+      mapped_reg name = theInstruction->operand< mapped_reg > (theRd);
+      DBG_(Dev, (<< "Writing " << result << " to " << name));
+      core()->writeRegister( name, result, the64 );
+      DBG_( VVerb, ( << *this << " rd= " << name << " result=" << result ) );
+      core()->bypass( name, result );
       satisfyDependants();
     }
   }
 
   void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " WritebackAction";
+    anOstream << theInstruction->identify() << " WritebackAction to" << theRd;
   }
 };
 

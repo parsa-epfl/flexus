@@ -169,7 +169,7 @@ typedef boost::multiprecision::uint128_t bits;
 bool anyBits(bits b);
 bits concat_bits (const bits & lhs, const bits & rhs);
 bits align(uint64_t x, int y);
-std::pair<bits,bits> splitBits(const bits & input);
+std::pair<uint64_t,uint64_t> splitBits(const bits & input);
 
 bits construct(uint8_t* bytes, size_t size);
 

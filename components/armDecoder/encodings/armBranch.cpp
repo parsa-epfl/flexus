@@ -78,7 +78,7 @@ arminst UNCONDBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequen
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
-    bool op = extract32(aFetchedOpcode.thePC, 31, 1);
+    bool op = extract32(aFetchedOpcode.theOpcode, 31, 1);
     inst->setClass(clsBranch, codeBranchUnconditional);
 
     int64_t offset = sextract32(aFetchedOpcode.theOpcode, 0, 26) << 2;
@@ -292,9 +292,9 @@ arminst DPRS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 // System
 arminst HINT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
     DECODER_TRACE;
-    uint32_t op1 = extract32(aFetchedOpcode.thePC, 16, 3);
-    uint32_t crm = extract32(aFetchedOpcode.thePC, 8, 4);
-    uint32_t op2 = extract32(aFetchedOpcode.thePC, 5, 3);
+    uint32_t op1 = extract32(aFetchedOpcode.theOpcode, 16, 3);
+    uint32_t crm = extract32(aFetchedOpcode.theOpcode, 8, 4);
+    uint32_t op2 = extract32(aFetchedOpcode.theOpcode, 5, 3);
     uint32_t selector = crm << 3 | op2;
 
 
@@ -316,9 +316,9 @@ arminst HINT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 arminst SYNC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
     DECODER_TRACE;
 
-    uint32_t rt = extract32(aFetchedOpcode.thePC, 16, 3);
-    uint32_t crm = extract32(aFetchedOpcode.thePC, 8, 4);
-    uint32_t op2 = extract32(aFetchedOpcode.thePC, 5, 3);
+    uint32_t rt = extract32(aFetchedOpcode.theOpcode, 16, 3);
+    uint32_t crm = extract32(aFetchedOpcode.theOpcode, 8, 4);
+    uint32_t op2 = extract32(aFetchedOpcode.theOpcode, 5, 3);
 
 
     if (op2 == 0x0 || op2 == 0x1 || op2 == 0x7 || op2 == 0x3 ) {
@@ -378,9 +378,9 @@ arminst MSR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     DECODER_TRACE;
 
     uint32_t op1, crm, op2;
-    op1 = extract32(aFetchedOpcode.thePC, 16, 3);
-    crm = extract32(aFetchedOpcode.thePC, 8, 4); //imm
-    op2 = extract32(aFetchedOpcode.thePC, 5, 3);
+    op1 = extract32(aFetchedOpcode.theOpcode, 16, 3);
+    crm = extract32(aFetchedOpcode.theOpcode, 8, 4); //imm
+    op2 = extract32(aFetchedOpcode.theOpcode, 5, 3);
 
 
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
@@ -388,6 +388,12 @@ arminst MSR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 
 
     inst->setClass(clsComputation, codeWRPR);
+
+    //Check for supported PR's
+    ePrivRegs pr = getPrivRegType(0,op1,op2,0x4,crm);
+    if (pr == kLastPrivReg ) {
+      return blackBox( aFetchedOpcode, aCPU, aSequenceNo); //resynchronize on all other PRs
+    }
 
     // need to halt dispatch for writes
     inst->setHaltDispatch();
@@ -407,13 +413,13 @@ arminst SYS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 
     uint32_t op0, op1, crn, crm, op2, rt;
     bool l;
-    l = extract32(aFetchedOpcode.thePC, 21, 1);
-    op0 = extract32(aFetchedOpcode.thePC, 19, 2);
-    op1 = extract32(aFetchedOpcode.thePC, 16, 3);
-    crn = extract32(aFetchedOpcode.thePC, 12, 4);
-    crm = extract32(aFetchedOpcode.thePC, 8, 4);
-    op2 = extract32(aFetchedOpcode.thePC, 5, 3);
-    rt = extract32(aFetchedOpcode.thePC, 0, 5);
+    l = extract32(aFetchedOpcode.theOpcode, 21, 1);
+    op0 = extract32(aFetchedOpcode.theOpcode, 19, 2);
+    op1 = extract32(aFetchedOpcode.theOpcode, 16, 3);
+    crn = extract32(aFetchedOpcode.theOpcode, 12, 4);
+    crm = extract32(aFetchedOpcode.theOpcode, 8, 4);
+    op2 = extract32(aFetchedOpcode.theOpcode, 5, 3);
+    rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
 
     //Check for supported PR's
     ePrivRegs pr = getPrivRegType(op0,op1,op2,crn,crm);
@@ -434,16 +440,18 @@ arminst SYS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 
       inst->addCheckTrapEffect( checkSystemAccess(inst, op0, op1, op2, crn, crm,rt, l) );
       setRD( inst, rt);
-      inst->addDispatchEffect( mapDestination( inst ) );
       inst->addRetirementEffect( readPR(inst, pr) );
+      inst->addDispatchEffect( mapDestination( inst ) );
       inst->addPostvalidation( validateXRegister( rt, kResult, inst  ) );
     } else {
         inst->setClass(clsComputation, codeWRPR);
 
+        std::vector<std::list<InternalDependance>> rs_dep(1);
         // need to halt dispatch for writes
         inst->setHaltDispatch();
         inst->addCheckTrapEffect( checkSystemAccess(inst, op0, op1, op2, crn, crm,rt, l) );
-        setRS(inst, kResult, rt);
+        addReadXRegister(inst, 1, rt, rs_dep[0],true);
+        addExecute(inst, operation(kMOV_), rs_dep);
         inst->addRetirementEffect( writePR(inst, pr) );
 //        inst->addPostvalidation( validateXRegister( rt, kResult, inst  ) );
 //        FIXME - validate PR

@@ -271,9 +271,24 @@ struct MapDestinationEffect : public Effect {
 Effect * mapDestination( SemanticInstruction * inst) {
     return new(inst->icb()) MapDestinationEffect( kRD, kPD, kPPD, true );
 }
+Effect * mapRD1Destination( SemanticInstruction * inst ) {
+  return new(inst->icb()) MapDestinationEffect( kRD1, kPD1, kPPD1, true );
+}
+
+Effect * mapRD2Destination( SemanticInstruction * inst ) {
+  return new(inst->icb()) MapDestinationEffect( kRD2, kPD2, kPPD2, true );
+}
 
 Effect * mapDestination_NoSquashEffects( SemanticInstruction * inst) {
     return new(inst->icb()) MapDestinationEffect( kRD, kPD, kPPD, false );
+}
+
+Effect * mapRD1Destination_NoSquashEffects( SemanticInstruction * inst ) {
+    return new(inst->icb()) MapDestinationEffect( kRD1, kPD1, kPPD1, false );
+}
+
+Effect * mapRD2Destination_NoSquashEffects( SemanticInstruction * inst ) {
+    return new(inst->icb()) MapDestinationEffect( kRD2, kPD2, kPPD2, false );
 }
 
 Effect * unmapDestination( SemanticInstruction * inst ) {
@@ -956,7 +971,7 @@ struct ReadPREffect: public Effect {
       uint64_t prVal = ri.readfn(anInstruction.core());
       anInstruction.setOperand(kResult, prVal);
 
-      mapped_reg name = anInstruction.operand< mapped_reg > (kOperand1);
+      mapped_reg name = anInstruction.operand< mapped_reg > (kPD);
 
       anInstruction.core()->writeRegister( name, prVal );
       anInstruction.core()->bypass( name, prVal);

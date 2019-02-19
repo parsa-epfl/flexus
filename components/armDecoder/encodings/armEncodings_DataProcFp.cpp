@@ -173,14 +173,14 @@ arminst disas_fp_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSe
  */
 arminst disas_data_proc_fp(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    if (extract32(aFetchedOpcode.thePC, 24, 1)) {
+    if (extract32(aFetchedOpcode.theOpcode, 24, 1)) {
         /* Floating point data-processing (3 source) */
         return disas_fp_3src(aFetchedOpcode, aCPU, aSequenceNo);
-    } else if (!extract32(aFetchedOpcode.thePC, 21, 1)) {
+    } else if (!extract32(aFetchedOpcode.theOpcode, 21, 1)) {
         /* Floating point to fixed point conversions */
         return disas_fp_fixed_conv(aFetchedOpcode, aCPU, aSequenceNo);
     } else {
-        switch (extract32(aFetchedOpcode.thePC, 10, 2)) {
+        switch (extract32(aFetchedOpcode.theOpcode, 10, 2)) {
         case 1:
             /* Floating point conditional compare */
             return disas_fp_ccomp(aFetchedOpcode, aCPU, aSequenceNo);
@@ -191,7 +191,7 @@ arminst disas_data_proc_fp(armcode const & aFetchedOpcode, uint32_t  aCPU, int64
             /* Floating point conditional select */
             return disas_fp_csel(aFetchedOpcode, aCPU, aSequenceNo);
         case 0:
-            switch (ctz32(extract32(aFetchedOpcode.thePC, 12, 4))) {
+            switch (ctz32(extract32(aFetchedOpcode.theOpcode, 12, 4))) {
             case 0: /* [15:12] == xxx1 */
                 /* Floating point immediate */
                 return disas_fp_imm(aFetchedOpcode, aCPU, aSequenceNo);
@@ -222,7 +222,7 @@ arminst disas_data_proc_simd(armcode const & aFetchedOpcode, uint32_t  aCPU, int
 /* C3.6 Data processing - SIMD and floating point */
 arminst disas_data_proc_simd_fp(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    if (extract32(aFetchedOpcode.thePC, 28, 1) == 1 && extract32(aFetchedOpcode.thePC, 30, 1) == 0) {
+    if (extract32(aFetchedOpcode.theOpcode, 28, 1) == 1 && extract32(aFetchedOpcode.theOpcode, 30, 1) == 0) {
         return disas_data_proc_fp(aFetchedOpcode, aCPU, aSequenceNo);
     } else {
         /* SIMD, including crypto */

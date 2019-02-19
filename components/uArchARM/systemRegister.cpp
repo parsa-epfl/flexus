@@ -84,8 +84,11 @@ struct DAIF : public SysRegInfo {
     uint64_t resetvalue = -1;
 
     virtual eAccessResult accessfn (uArchARM* aCore) {DBG_Assert(false); return kACCESS_TRAP; }// FIXME /*aa64_daif_access*/
-    virtual void writefn (uArchARM * aCore, uint64_t aVal) override {DBG_Assert(false); }// FIXME
+    virtual void writefn (uArchARM * aCore, uint64_t aVal) override { aCore->setDAIF(aVal); }// FIXME
     virtual void reset (uArchARM * aCore) override {DBG_Assert(false);  }// FIXME /*arm_cp_reset_ignore*/
+    virtual uint64_t readfn (uArchARM * aCore) override {
+       return aCore->_PSTATE().DAIF();
+   }
 }DAIF_;
 
 
@@ -192,6 +195,10 @@ struct SPSR_EL1 : public SysRegInfo {
     eAccessRight access = kPL1_RW;
     eRegInfo type = kARM_ALIAS;
     uint64_t resetvalue = -1;
+
+    virtual uint64_t readfn (uArchARM * aCore) override {
+       return aCore->getSP_el(1);
+   }
 }SPSR_EL1_;
 
 
@@ -212,6 +219,9 @@ struct SP_EL0 : public SysRegInfo {
     uint64_t resetvalue = -1;
 
 
+    virtual uint64_t readfn (uArchARM * aCore) override {
+       return aCore->getSP_el(0);
+   }
      virtual eAccessResult accessfn (uArchARM* aCore) {DBG_Assert(false); return kACCESS_TRAP; }// FIXME /*sp_el0_access*/
 
 
@@ -243,7 +253,12 @@ struct SPSel : public SysRegInfo {
     eRegInfo type = kARM_NO_RAW;
     uint64_t resetvalue = -1;
 
-     virtual uint64_t readfn (uArchARM * aCore) override {DBG_Assert(false); return 0;} /*spsel_read*/
+    /*spsel_read*/
+     virtual uint64_t readfn (uArchARM * aCore) override {
+        unsigned int cur_el = aCore->_PSTATE().EL();
+        return aCore->getSP_el(cur_el);
+
+    }
      virtual void writefn (uArchARM * aCore, uint64_t aVal) override {
         unsigned int cur_el = aCore->_PSTATE().EL();
         /* Update PSTATE SPSel bit; this requires us to update the
@@ -359,7 +374,7 @@ static std::vector<std::pair<std::array<uint8_t, 5>, ePrivRegs>>  supported_sysR
 };
 
 
-ePrivRegs getPrivRegType(uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm){
+ePrivRegs getPrivRegType(const uint8_t op0, const uint8_t op1, const uint8_t op2, const uint8_t crn, const uint8_t crm){
 
     std::array<uint8_t, 5> op = {op0,op1,op2,crn,crm};
     for (std::pair<std::array<uint8_t, 5>, ePrivRegs>& e : supported_sysRegs){

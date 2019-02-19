@@ -114,6 +114,7 @@ arminst disas_ldst_multiple_struct(armcode const & aFetchedOpcode, uint32_t  aCP
  */
 arminst disas_ldst_reg_imm9(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
      DECODER_TRACE;
 
      uint32_t size = extract32(aFetchedOpcode.theOpcode, 30, 2);
@@ -217,8 +218,8 @@ arminst disas_ldst_atomic(armcode const & aFetchedOpcode,uint32_t  aCPU, int64_t
 
     // QEMU doesnt model these and nor they get invoked when running flexus... will add them as soon as they're needed.
     DECODER_TRACE;
-    uint32_t o3_opc = extract32(aFetchedOpcode.thePC, 12, 4);
-    bool V = extract32(aFetchedOpcode.thePC, 26, 1);
+    uint32_t o3_opc = extract32(aFetchedOpcode.theOpcode, 12, 4);
+    bool V = extract32(aFetchedOpcode.theOpcode, 26, 1);
     if (V) {
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
@@ -271,11 +272,12 @@ arminst disas_ldst_reg_unsigned_imm(armcode const & aFetchedOpcode, uint32_t  aC
     uint32_t opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
     bool is_store = ((opc == 0) || ((opc == 2) && (size == 0)));
 
-    if (size != 0 || size != 1){
+    if (size > 1){
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 
     if (V) {
+        DECODER_DBG("Vector ops are not supported at the moment!");
         return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
 //        if (is_store){
 //            return STRF(aFetchedOpcode, aCPU, aSequenceNo);
@@ -297,26 +299,22 @@ arminst disas_ldst_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t a
 {
     DECODER_TRACE;
 
-    switch (extract32(aFetchedOpcode.thePC, 24, 2)) {
+    switch (extract32(aFetchedOpcode.theOpcode, 24, 2)) {
     case 0:
-        if (extract32(aFetchedOpcode.thePC, 21, 1) == 0) {
+        if (extract32(aFetchedOpcode.theOpcode, 21, 1) == 1 && extract32(aFetchedOpcode.theOpcode, 10, 2) == 2) {
+            return disas_ldst_reg_roffset(aFetchedOpcode, aCPU, aSequenceNo);
+        } else {
             /* Load/store register (unscaled immediate)
              * Load/store immediate pre/post-indexed
              * Load/store register unprivileged
              */
             return disas_ldst_reg_imm9(aFetchedOpcode, aCPU, aSequenceNo);
         }
-        switch (extract32(aFetchedOpcode.thePC, 10, 2)) {
-        case 0:
-            return disas_ldst_atomic(aFetchedOpcode, aCPU, aSequenceNo);
-        case 2:
-            return disas_ldst_reg_roffset(aFetchedOpcode, aCPU, aSequenceNo);
-        }
-        break;
     case 1:
         return disas_ldst_reg_unsigned_imm(aFetchedOpcode, aCPU, aSequenceNo);
+    default:
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
-    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 
@@ -353,8 +351,12 @@ arminst disas_ldst_pair(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
 {   
     DECODER_TRACE;
 
-    bool is_vector = extract32(aFetchedOpcode.thePC, 26, 1);
-    bool is_load = extract32(aFetchedOpcode.thePC, 22, 1);
+    bool is_vector = extract32(aFetchedOpcode.theOpcode, 26, 1);
+    bool is_load = extract32(aFetchedOpcode.theOpcode, 22, 1);
+
+    if (extract32(aFetchedOpcode.theOpcode, 30, 2) == 3) {
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
 
     if (is_vector) {
         return blackBox(aFetchedOpcode, aCPU, aSequenceNo);

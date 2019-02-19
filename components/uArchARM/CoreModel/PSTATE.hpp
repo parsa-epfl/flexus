@@ -111,6 +111,11 @@ typedef struct PSTATE{
         return theVal & PSTATE_DAIF;
     }
 
+    const void setDAIF(const uint32_t aVal) {
+        uint32_t mask =  theVal & ~PSTATE_DAIF;
+        theVal = mask | (aVal & PSTATE_DAIF);
+    }
+
     const uint32_t NZCV() const {
         return theVal & PSTATE_NZCV;
     }

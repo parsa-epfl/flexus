@@ -125,6 +125,7 @@ enum eOperandCode {
   , kCCs
   , kRD
   , kRD1
+  , kRD2
   , kXTRAr
   , kFD0
   , kFD1
@@ -141,12 +142,14 @@ enum eOperandCode {
   , kCCps
   , kPD
   , kPD1
+  , kPD2
   , kXTRApd
   , kPFD0
   , kPFD1
   , kCCpd
   , kPPD
   , kPPD1
+  , kPPD2
   , kXTRAppd
   , kPPFD0
   , kPPFD1
@@ -163,6 +166,7 @@ enum eOperandCode {
   , kCC
   , kResult
   , kResult1
+  , kResult2
   , kfResult0
   , kfResult1
   , kXTRAout

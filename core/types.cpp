@@ -60,8 +60,8 @@ bits construct(uint8_t* bytes, size_t size){
 }
 
 
-std::pair<bits,bits> splitBits(const bits & input){
-    return std::make_pair<bits,bits> ((input >> 64), ((uint64_t)input));
+std::pair<uint64_t,uint64_t> splitBits(const bits & input){
+    return std::make_pair<uint64_t,uint64_t> ((uint64_t)(input >> 64), ((uint64_t)input));
 }
 
 }

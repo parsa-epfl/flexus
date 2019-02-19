@@ -250,6 +250,14 @@ Effect * mapDestination_NoSquashEffects( SemanticInstruction * inst, eRegisterTy
   }
 }
 
+Effect * mapRD1Destination_NoSquashEffects( SemanticInstruction * inst, eRegisterType aMapTable ) {
+  if ( aMapTable == ccBits ) {
+    return new(inst->icb()) MapDestinationEffect( kCCd, kCCpd, kPCCpd, false);
+  } else {
+    return new(inst->icb()) MapDestinationEffect( kRD1, kPD1, kPPD1, false );
+  }
+}
+
 Effect * unmapDestination( SemanticInstruction * inst, eRegisterType aMapTable ) {
   if ( aMapTable == ccBits ) {
     return new(inst->icb()) FreeMappingEffect( kCCpd );

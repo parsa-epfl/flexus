@@ -89,8 +89,8 @@ arminst disas_exc(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSeque
 {
     DECODER_TRACE;
 
-    uint32_t ll = extract32(aFetchedOpcode.thePC, 0, 2);
-    uint32_t opc = extract32(aFetchedOpcode.thePC, 21, 3) << 2;
+    uint32_t ll = extract32(aFetchedOpcode.theOpcode, 0, 2);
+    uint32_t opc = extract32(aFetchedOpcode.theOpcode, 21, 3) << 2;
 
     uint32_t res = opc | ll;
 
@@ -124,10 +124,10 @@ arminst disas_system(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSe
 {
     DECODER_TRACE;
 
-    bool l = extract32(aFetchedOpcode.thePC, 21, 1);
-    uint32_t op0 = extract32(aFetchedOpcode.thePC, 19, 2);
-    uint32_t crn = extract32(aFetchedOpcode.thePC, 12, 4);
-    uint32_t rt = extract32(aFetchedOpcode.thePC, 0, 5);
+    bool l = extract32(aFetchedOpcode.theOpcode, 21, 1);
+    uint32_t op0 = extract32(aFetchedOpcode.theOpcode, 19, 2);
+    uint32_t crn = extract32(aFetchedOpcode.theOpcode, 12, 4);
+    uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
 
     if (op0 == 0) {
         if (l || rt != 31) {

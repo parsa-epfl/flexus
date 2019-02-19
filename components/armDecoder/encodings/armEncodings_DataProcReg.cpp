@@ -53,6 +53,8 @@ namespace narmDecoder {
  */
 arminst disas_data_proc_2src(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
+
     if (extract32(aFetchedOpcode.theOpcode, 29, 1)) {
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
@@ -90,6 +92,8 @@ arminst disas_data_proc_2src(armcode const & aFetchedOpcode, uint32_t  aCPU, int
  */
 arminst disas_data_proc_1src(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
+
     if (extract32(aFetchedOpcode.theOpcode, 29, 1) || extract32(aFetchedOpcode.theOpcode, 16, 5)) {
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
@@ -200,6 +204,8 @@ arminst disas_add_sub_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_
  */
 arminst disas_add_sub_ext_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
+
     return ADDSUB_EXTENDED(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
@@ -212,13 +218,17 @@ arminst disas_add_sub_ext_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, in
  */
 arminst disas_logic_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
+    DECODER_TRACE;
+
     return LOGICAL(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Data processing - register */
 arminst disas_data_proc_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    switch (extract32(aFetchedOpcode.thePC, 24, 5)) {
+    DECODER_TRACE;
+
+    switch (extract32(aFetchedOpcode.theOpcode, 24, 5)) {
         case 0x0a: /* Logical (shifted register) */
             return disas_logic_reg(aFetchedOpcode, aCPU, aSequenceNo);
         case 0x0b: /* Add/subtract */
@@ -230,7 +240,7 @@ arminst disas_data_proc_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int6
         case 0x1b: /* Data-processing (3 source) */
             return disas_data_proc_3src(aFetchedOpcode, aCPU, aSequenceNo);
         case 0x1a:
-            switch (extract32(aFetchedOpcode.thePC, 21, 3)) {
+            switch (extract32(aFetchedOpcode.theOpcode, 21, 3)) {
             case 0x0: /* Add/subtract (with carry) */
                 return disas_adc_sbc(aFetchedOpcode, aCPU, aSequenceNo);
             case 0x2: /* Conditional compare */

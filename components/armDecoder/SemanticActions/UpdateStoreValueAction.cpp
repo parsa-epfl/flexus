@@ -103,8 +103,8 @@ struct UpdateStoreValueAction : public PredicatedSemanticAction {
     //Should ensure that we got execution units here
     if (! cancelled() ) {
       if ( thePredicate && ready() ) {
-            bits value = theInstruction->operand< bits > (theOperandCode);
-            DBG_( VVerb, ( << *this << " updating store value=" << value) );
+            uint64_t value = theInstruction->operand< uint64_t > (theOperandCode);
+            DBG_( Dev, ( << *this << " updating store value=" << value) );
             core()->updateStoreValue( boost::intrusive_ptr<Instruction>(theInstruction), value);
             satisfyDependants();
       }
@@ -151,8 +151,8 @@ struct UpdateCASValueAction : public BaseSemanticAction {
   void doEvaluate() {
     if (ready()) {
         if (! thePair) {
-            bits store_value = theInstruction->operand< bits > (theNewCode);
-            bits cmp_value = theInstruction->operand< bits > (theCompareCode);
+            uint64_t store_value = theInstruction->operand< uint64_t > (theNewCode);
+            uint64_t cmp_value = theInstruction->operand< uint64_t > (theCompareCode);
             DBG_( VVerb, ( << *this << " updating CAS write=" << store_value << " cmp=" << cmp_value) );
             core()->updateCASValue( boost::intrusive_ptr<Instruction>(theInstruction), store_value, cmp_value);
             satisfyDependants();

@@ -103,13 +103,13 @@ struct LDPAction : public PredicatedSemanticAction {
     bits value;
     value = core()->retrieveLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
 
-    std::pair<bits,bits> pairValues = splitBits(value);
+    std::pair<uint64_t,uint64_t> pairValues = splitBits(value);
 
 
     theInstruction->setOperand(kResult, pairValues.first);
     theInstruction->setOperand(kResult1, pairValues.second);
 
-    SEMANTICS_DBG(*this << " received load values = "  << pairValues.first << " and " << pairValues.second);
+    DBG_(Dev,(<<*this << " received load values = "  << pairValues.first << " and " << pairValues.second));
 
 
     if (theBypass0) {

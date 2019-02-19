@@ -534,7 +534,7 @@ struct ValueTracker {
   bits load( uint32_t aCPU, PhysicalMemoryAddress anAddress, eSize aSize) {
     FLEXUS_PROFILE();
     DBG_Assert( anAddress != 0 );
-    DBG_Assert( aSize <= 8 );
+    DBG_Assert( aSize <= 16 );
     DBG_Assert( anAddress < 0x40000000000LL );
     DBG_( Iface, ( << "CPU[" << aCPU << "] Load " << anAddress << "[" << aSize << "]" ) );
 

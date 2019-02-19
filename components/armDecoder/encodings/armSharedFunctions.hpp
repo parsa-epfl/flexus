@@ -73,18 +73,24 @@ eIndex getIndex ( unsigned int index);
 std::unique_ptr<Operation> extend(eExtendType anExtend);
 
 void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t rs, std::list<InternalDependance> & dependances, bool is_64);
+void readRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t rs, std::list<InternalDependance> & dependances, bool is_64);
 //void addReadRDs(SemanticInstruction * inst, uint32_t rd, uint32_t rd1 );
 void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, uint64_t val, std::list<InternalDependance> & dependances);
 void addAnnulment( SemanticInstruction * inst, predicated_action & exec, InternalDependance const & aWritebackDependance);
 void addRD1Annulment( SemanticInstruction * inst, predicated_action & exec, InternalDependance const & aWritebackDependance);
 void addWriteback( SemanticInstruction * inst, eOperandCode aRegisterCode,eOperandCode aMappedRegisterCode, predicated_action & exec, bool a64, bool setflags, bool addSquash = true);
+void addWriteback1( SemanticInstruction * inst, eOperandCode aRegisterCode,eOperandCode aMappedRegisterCode, predicated_action & exec, bool a64, bool setflags, bool addSquash = true);
+void addWriteback2( SemanticInstruction * inst, eOperandCode aRegisterCode,eOperandCode aMappedRegisterCode, predicated_action & exec, bool a64, bool setflags, bool addSquash = true);
 
 // Destination
 void addDestination( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool is64, bool setflags = false, bool addSquash = true);
+void addDestination1( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool is64, bool setflags = false, bool addSquash = true);
+void addDestination2( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool is64, bool setflags = false, bool addSquash = true);
 void addPairDestination( SemanticInstruction * inst, uint32_t rd, uint32_t rd1, predicated_action & exec, bool is64, bool addSquash = true);
-void addAddressCompute( SemanticInstruction * inst, std::vector< std::list<InternalDependance> > & rs_deps);
+simple_action addAddressCompute( SemanticInstruction * inst, std::vector< std::list<InternalDependance> > & rs_deps);
 void setRD( SemanticInstruction * inst, uint32_t rd);
-void setRD1( SemanticInstruction * inst, uint32_t rd);
+void setRD1( SemanticInstruction * inst, uint32_t rd1);
+void setRD2( SemanticInstruction * inst, uint32_t rd2);
 void setRS( SemanticInstruction * inst, eOperandCode rs_code, uint32_t rs);
 
 // aux

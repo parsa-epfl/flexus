@@ -139,14 +139,15 @@ struct ExecuteAction : public ExecuteBase {
             ri.writefn(theInstruction->core(), nzcv);
         }
 
-        DBG_(Dev, (<< "Writing results " << result << " in " << theResult ));
 
         if (theOperation->is128()){
-        bits res = boost::get<bits>(result);
-        theInstruction->setOperand(theResult,res );
+            bits res = boost::get<bits>(result);
+            theInstruction->setOperand(theResult,res );
+            DBG_(Dev, (<< "Writing " << res << " in [ " << result << " -> " << theResult << " ]" ));
         } else {
             uint64_t res = boost::get<uint64_t>(result);
             theInstruction->setOperand(theResult, res);
+            DBG_(Dev, (<< "Writing " << res << " in " << theResult ));
         }
         DBG_( Dev, ( << *this << " operands: " << OperandPrintHelper(operands) << " result=" << result ) );
         if (theBypass) {

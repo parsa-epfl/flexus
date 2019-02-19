@@ -120,6 +120,13 @@ void setRD1( SemanticInstruction * inst, uint32_t rd1) {
   inst->setOperand( kRD1, regRD1 );
 }
 
+void setRD2( SemanticInstruction * inst, uint32_t rd2) {
+  reg regRD2;
+  regRD2.theType = xRegisters;
+  regRD2.theIndex = rd2;
+  inst->setOperand( kRD2, regRD2 );
+}
+
 void setRS( SemanticInstruction * inst, eOperandCode rs_code, uint32_t rs) {
   reg regRS;
   regRS.theType = xRegisters;
@@ -179,6 +186,14 @@ void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t 
 
 }
 
+void readRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t rs, std::list<InternalDependance> & dependances, bool is_64){
+    if (rs == 31){
+        addReadConstant(inst, anOpNumber, 0, dependances);
+    } else {
+        addReadXRegister(inst, anOpNumber, rs, dependances, is_64);
+    }
+}
+
 void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, uint64_t val, std::list<InternalDependance> & dependances){
 
 
@@ -229,34 +244,74 @@ void addWriteback( SemanticInstruction * inst, eOperandCode aRegisterCode,eOpera
   reg name( inst->operand< reg > (kRD) );
 
   dependant_action wb = writebackAction( inst, aRegisterCode, aMappedRegisterCode, a64, name.theIndex == 31, setflags );
-//  inst->addDispatchAction( wb );
-
-//  addAnnulment( inst, exec, wb.dependance );
+  addAnnulment( inst, exec, wb.dependance );
 
   //Make writeback depend on execute, make retirement depend on writeback
   connectDependance( wb.dependance, exec );
   connectDependance( inst->retirementDependance(), wb );
 }
 
+void addWriteback1( SemanticInstruction * inst, eOperandCode aRegisterCode,eOperandCode aMappedRegisterCode, predicated_action & exec, bool a64, bool setflags, bool addSquash) {
+  if (addSquash) {
+    inst->addDispatchEffect( mapRD1Destination( inst ) );
+  } else {
+    inst->addDispatchEffect( mapRD1Destination_NoSquashEffects( inst ) );
+  }
+
+  //Create the writeback action
+  reg name( inst->operand< reg > (kRD1) );
+
+  dependant_action wb = writebackAction( inst, aRegisterCode, aMappedRegisterCode, a64, name.theIndex == 31, setflags );
+  addAnnulment( inst, exec, wb.dependance );
+
+  //Make writeback depend on execute, make retirement depend on writeback
+  connectDependance( wb.dependance, exec );
+  connectDependance( inst->retirementDependance(), wb );
+}
+
+void addWriteback2( SemanticInstruction * inst, eOperandCode aRegisterCode,eOperandCode aMappedRegisterCode, predicated_action & exec, bool a64, bool setflags, bool addSquash) {
+  if (addSquash) {
+    inst->addDispatchEffect( mapRD2Destination( inst ) );
+  } else {
+    inst->addDispatchEffect( mapRD2Destination_NoSquashEffects( inst ) );
+  }
+
+  //Create the writeback action
+  reg name( inst->operand< reg > (kRD2) );
+
+  dependant_action wb = writebackAction( inst, aRegisterCode, aMappedRegisterCode, a64, name.theIndex == 31, setflags );
+  addAnnulment( inst, exec, wb.dependance );
+
+  //Make writeback depend on execute, make retirement depend on writeback
+  connectDependance( wb.dependance, exec );
+  connectDependance( inst->retirementDependance(), wb );
+}
 
 void addDestination( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool is64, bool setflags, bool addSquash) {
 
     setRD( inst, rd);
     addWriteback( inst, kResult, kPD, exec, is64, setflags, addSquash );
     inst->addPostvalidation( validateXRegister( rd, kResult, inst  ) );
-//    inst->addOverride( overrideRegister( rd, kResult, inst ) );
+}
+
+void addDestination1( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool is64, bool setflags, bool addSquash) {
+
+    setRD1( inst, rd);
+    addWriteback1( inst, kResult1, kPD1, exec, is64, setflags, addSquash );
+    inst->addPostvalidation( validateXRegister( rd, kResult1, inst  ) );
+}
+
+void addDestination2( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool is64, bool setflags, bool addSquash) {
+
+    setRD2( inst, rd);
+    addWriteback2( inst, kResult2, kPD2, exec, is64, setflags, addSquash );
+    inst->addPostvalidation( validateXRegister( rd, kResult2, inst  ) );
 }
 
 void addPairDestination( SemanticInstruction * inst, uint32_t rd, uint32_t rd1, predicated_action & exec, bool is64, bool addSquash) {
 
-    setRD( inst, rd);
-    addWriteback( inst, kResult, kPD, exec, is64, false, addSquash);
-    inst->addPostvalidation( validateXRegister( rd, kResult, inst  ) );
-//    inst->addOverride( overrideRegister( operands.rd(), kResult, inst ) );
-    setRD1( inst, rd1);
-    addWriteback( inst, kResult1, kPD1, exec, is64, false, addSquash);
-    inst->addPostvalidation( validateXRegister( rd1, kResult1, inst  ) );
-//    inst->addOverride( overrideRegister( operands.rd() + 1, kResult1, inst ) );
+    addDestination(inst, rd, exec, is64, false, addSquash);
+    addDestination1(inst, rd1, exec, is64, false, addSquash);
 }
 
 predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operation> anOperation, std::vector< std::list<InternalDependance> > & rs_deps, eOperandCode aResult, boost::optional<eOperandCode> aBypass ) {
@@ -275,7 +330,7 @@ predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operat
     return exec;
 }
 
-void addAddressCompute( SemanticInstruction * inst, std::vector< std::list<InternalDependance> > & rs_deps) {
+simple_action addAddressCompute( SemanticInstruction * inst, std::vector< std::list<InternalDependance> > & rs_deps) {
   DECODER_TRACE;
 
   simple_action tr = translationAction(inst);
@@ -288,6 +343,8 @@ void addAddressCompute( SemanticInstruction * inst, std::vector< std::list<Inter
   connectDependance( inst->retirementDependance(), update_address );
 
   inst->addRetirementConstraint( paddrResolutionConstraint(inst) );
+
+  return exec;
 
 
 }
@@ -358,37 +415,43 @@ uint64_t ones(uint64_t length){
 }
 
 uint64_t ror(uint64_t input, uint64_t input_size, uint64_t shift_size){
+    uint64_t filter = (input_size == 32) ? 0xffffffff : -1;
+    DBG_Assert(input_size == 64 || input_size == 32 );
+
     uint64_t mask = ones(shift_size);
     uint64_t remaining_bits = input & mask;
 
     input >>= shift_size;
     remaining_bits <<= (input_size - shift_size);
 
-    uint64_t filter = ones(input_size);
-
     return (remaining_bits | input) & filter;
 }
 
 uint64_t lsl(uint64_t input, uint64_t input_size, uint64_t shift_size){
+    uint64_t mask = (input_size == 32) ? 0xffffffff : -1;
+    DBG_Assert(input_size == 64 || input_size == 32 );
     input <<= shift_size;
-    uint64_t filter = ones(input_size);
-    return input & filter;
+    return input & mask;
 }
 
 uint64_t lsr(uint64_t input, uint64_t input_size, uint64_t shift_size){
+    uint64_t mask = (input_size == 32) ? 0xffffffff : -1;
+    DBG_Assert(input_size == 64 || input_size == 32 );
+
     input >>= shift_size;
-    uint64_t filter = ones(input_size);
-    return input & filter;
+    return input & mask;
 }
 
 uint64_t asr(uint64_t input, uint64_t input_size, uint64_t shift_size){
+    uint64_t mask = (input_size == 32) ? 0xffffffff : -1;
+    DBG_Assert(input_size == 64 || input_size == 32 );
+
     bool is_signed = ((input & (1 << input_size)) != 0) ? true : false;
     input >>= shift_size;
     if (is_signed){
         input |= (ones(4) << (input_size - 4));
     }
-    uint64_t filter = ones(input_size);
-    return input & filter;
+    return input & mask;
 }
 
 bool decodeBitMasks(uint64_t & tmask, uint64_t & wmask, bool immN, char imms, char immr, bool immediate, uint32_t dataSize){

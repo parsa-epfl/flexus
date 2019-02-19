@@ -221,7 +221,7 @@ enum ePrivRegs {
 };
 
 SysRegInfo& getPriv(ePrivRegs aCode);
-ePrivRegs getPrivRegType(uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm);
+ePrivRegs getPrivRegType(const uint8_t op0, const uint8_t op1, const uint8_t op2, const uint8_t crn, const uint8_t crm);
 
 enum eAccessResult {
         /* Access is permitted */
