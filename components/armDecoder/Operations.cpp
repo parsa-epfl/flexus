@@ -768,8 +768,8 @@ typedef struct MOVN_ : public Operation {
     MOVN_(){}
     virtual ~MOVN_(){}
     virtual Operand operator()( std::vector<Operand> const & operands  ) {
-      DBG_Assert( operands.size() == 1);
-      return ~boost::get<uint64_t>(operands[0]);
+        DBG_Assert( operands.size() == 3);
+        return ~boost::get<uint64_t>(operands[0]);
     }
   virtual char const * describe() const {
     return "MOVN";
@@ -780,11 +780,15 @@ typedef struct MOVK_ : public Operation {
     MOVK_(){}
     virtual ~MOVK_(){}
     virtual Operand operator()( std::vector<Operand> const & operands  ) {
-      DBG_Assert( operands.size() == 2);
-      uint64_t rd =  boost::get<uint64_t>(operands[0]);
-      uint64_t imm =  boost::get<uint64_t>(operands[1]);
+      DBG_Assert( operands.size() == 3);
+      uint64_t imm =  boost::get<uint64_t>(operands[0]);
+      uint64_t rd =  boost::get<uint64_t>(operands[1]);
+      uint64_t mask =  boost::get<uint64_t>(operands[2]);
 
-      return (rd & imm) | imm;
+      rd &= mask;
+      rd |= imm;
+
+      return rd;
     }
   virtual char const * describe() const {
     return "MOVK";

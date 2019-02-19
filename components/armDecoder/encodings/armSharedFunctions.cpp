@@ -267,10 +267,10 @@ predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operat
     return exec;
 }
 
-predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operation> anOperation, eOperandCode anOperand1,  eOperandCode anOperand2, std::vector< std::list<InternalDependance> > & rs_deps ,eOperandCode aResult, boost::optional<eOperandCode> aBypass ) {
+predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operation> anOperation, std::vector<eOperandCode>  anOperands, std::vector< std::list<InternalDependance> > & rs_deps ,eOperandCode aResult, boost::optional<eOperandCode> aBypass ) {
   predicated_action exec;
 
-    exec = executeAction( inst, anOperation, anOperand1, anOperand2, rs_deps, aResult, aBypass );
+    exec = executeAction( inst, anOperation, anOperands, rs_deps, aResult, aBypass );
 //    inst->addDispatchAction( exec );
     return exec;
 }

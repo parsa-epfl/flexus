@@ -89,7 +89,7 @@ void setRS( SemanticInstruction * inst, eOperandCode rs_code, uint32_t rs);
 
 // aux
 predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operation> anOperation, std::vector< std::list<InternalDependance> > & rs_deps, eOperandCode aResult = kResult, boost::optional<eOperandCode> aBypass = boost::optional<eOperandCode>(boost::none));
-predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operation> anOperation, eOperandCode anOperand1, eOperandCode anOperand2, std::vector< std::list<InternalDependance> > & rs_deps, eOperandCode aResult = kResult, boost::optional<eOperandCode> aBypass = boost::optional<eOperandCode>(boost::none));
+predicated_action addExecute( SemanticInstruction * inst, std::unique_ptr<Operation> anOperation, std::vector<eOperandCode> anOperands, std::vector< std::list<InternalDependance> > & rs_deps, eOperandCode aResult = kResult, boost::optional<eOperandCode> aBypass = boost::optional<eOperandCode>(boost::none));
 
 void MEMBAR( SemanticInstruction * inst, uint32_t anAccess);
 void satisfyAtDispatch( SemanticInstruction * inst, std::list<InternalDependance> & dependances);

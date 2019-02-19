@@ -560,7 +560,7 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 
     // read data registers
 //    addReadRDs(inst, rd, rd1);
-    simple_action act = addExecute(inst, operation(size/2 == 64 ? kCONCAT64_ : kCONCAT32_), kOperand2, kOperand3, data_deps);
+    simple_action act = addExecute(inst, operation(size/2 == 64 ? kCONCAT64_ : kCONCAT32_), {kOperand2, kOperand3}, data_deps);
     addReadXRegister(inst, 2, rt2, data_deps[0], size/2 == 64);
     addReadXRegister(inst, 3, rt, data_deps[1], size/2 == 64);
 

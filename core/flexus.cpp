@@ -242,7 +242,7 @@ public:
     , theNumWatchdogs(0)
     , theInitialized(false)
     , theCycleCount(0)
-    , theStatInterval(1000000)
+    , theStatInterval(100)
     , theRegionInterval(100000000)
     , theProfileInterval(1000000)
     , theTimestampInterval(100000)
@@ -1154,6 +1154,7 @@ void startTimingFlexus(){
    while (Qemu::API::QEMU_getSimulationTime() > 1) {
          theFlexus->doCycle();
     }
+   theFlexus->terminateSimulation();
 
    QEMU_break_simulation("End of the simulation.");
 

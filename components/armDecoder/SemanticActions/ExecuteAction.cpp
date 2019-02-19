@@ -301,16 +301,13 @@ predicated_action executeAction
 predicated_action executeAction
 ( SemanticInstruction * anInstruction
   , std::unique_ptr<Operation> & anOperation
-  , eOperandCode anOperand1 , eOperandCode anOperand2
+  , std::vector<eOperandCode> & anOperands
   , std::vector< std::list<InternalDependance> > & opDeps
   , eOperandCode aResult
   , boost::optional<eOperandCode> aBypass
 ) {
-  std::vector<eOperandCode> operands;
-  operands.push_back(  anOperand1 );
-  operands.push_back(  anOperand2 );
 
-  ExecuteAction * act(new(anInstruction->icb()) ExecuteAction( anInstruction, operands, aResult, anOperation, aBypass) );
+  ExecuteAction * act(new(anInstruction->icb()) ExecuteAction( anInstruction, anOperands, aResult, anOperation, aBypass) );
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
     opDeps[i].push_back( act->dependance(i) );
   }

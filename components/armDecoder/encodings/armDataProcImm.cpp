@@ -244,12 +244,6 @@ arminst BFM(armcode const & aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     return inst;
 }
 
-static uint64_t mask(uint32_t rpos, uint32_t lpos){
-    uint64_t rmask = ones(rpos);
-    uint64_t lmask = ~ones(lpos);
-    return rpos | lpos;
-}
-
 arminst MOVE(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
@@ -283,25 +277,26 @@ arminst MOVE(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     std::vector<std::list<InternalDependance>> rs_deps(1);
 
     predicated_action act;
-    inst->setOperand(kOperand2, imm << pos);
-    inst->setOperand(kOperand3, mask(pos+15 ,pos));
+    uint64_t mask = ~((uint64_t)0xff << pos);
+    inst->setOperand(kOperand3, mask);
 
     if (opcode == kMoveWideOp_K){
-        act = addExecute(inst, operation(kMOVK_), rs_deps);
+        DECODER_DBG("Wide Move K");
+        rs_deps.resize(2);
+        act = addExecute(inst, operation(kMOVK_), {kOperand1, kOperand2, kOperand3}, rs_deps);
+        addReadXRegister(inst, 2, rd, rs_deps[1], sf);
     }else {
         if (opcode == kMoveWideOp_N){
+            DECODER_DBG("Wide Move Neg");
             act = addExecute(inst, operation(kMOVN_), rs_deps);
         } else {
+            DECODER_DBG("Wide Move");
             act = addExecute(inst, operation(kMOV_), rs_deps);
         }
-
     }
 
-    addReadConstant(inst, 1, imm, rs_deps[0]);
-
-
-
-
+    addReadConstant(inst, 1, (imm << pos), rs_deps[0]);
+    addDestination(inst, rd, act, sf);
     return inst;
 }
 
