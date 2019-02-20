@@ -63,7 +63,17 @@ struct validateXRegister {
 
 
 
+struct validatePC_HARD {
+  uint64_t theAddr;
+  SemanticInstruction * theInstruction;
 
+  validatePC_HARD( uint64_t anAddr, SemanticInstruction * anInstruction )
+    : theAddr(anAddr)
+    , theInstruction(anInstruction)
+  { }
+
+  bool operator () ();
+};
 
 struct validatePC {
   uint64_t theAddr;

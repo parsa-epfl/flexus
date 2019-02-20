@@ -57,6 +57,7 @@
 #include "OperandMap.hpp"
 #include "Effects.hpp"
 #include "SemanticActions.hpp"
+#include "Validations.hpp"
 
 #define DBG_DeclareCategories armDecoder
 #define DBG_SetDefaultOps AddCat(armDecoder)
@@ -85,6 +86,8 @@ SemanticInstruction::SemanticInstruction(VirtualMemoryAddress aPC, Opcode anOpco
   thePeakInsns << theInsnCount;
   for (int32_t i = 0; i < 4; ++i) {
     theRetirementDepends[i] = true;
+
+    addPrevalidation(validatePC_HARD(aPC, this));
   }
 
 #ifdef TRACK_INSNS
@@ -294,7 +297,7 @@ void SemanticInstruction::pageFault(){
     thePageFault = true;
 }
 
-bool SemanticInstruction::isPageFault(){
+bool SemanticInstruction::isPageFault() const{
     return thePageFault;
 }
 

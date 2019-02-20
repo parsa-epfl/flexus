@@ -411,6 +411,12 @@ void BranchInteraction::operator() (boost::intrusive_ptr<nuArchARM::Instruction>
   if (theTarget == 0) {
     theTarget = anInstruction->pc() + 4;
   }
+  if (anInstruction->redirectPC(theTarget) ) {
+    DBG_( Verb, ( << *anInstruction << " Branch Redirection.") );
+    if ( aCore.squashAfter(anInstruction) ) {
+      aCore.redirectFetch(theTarget);
+    }
+  }
 }
 
 void BranchInteraction::describe(std::ostream & anOstream) const {

@@ -549,7 +549,7 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction {
   virtual void doDispatchEffects() = 0;     //used
   virtual void squash() = 0;
   virtual void pageFault() = 0;
-  virtual bool isPageFault() = 0;
+  virtual bool isPageFault() const = 0;
   virtual void doRescheduleEffects() = 0;
   virtual void doRetirementEffects() = 0;       //used
   virtual void checkTraps() = 0;       //used
@@ -567,6 +567,8 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction {
   virtual std::string instClassName() const = 0;
   virtual eInstructionCode instCode() const = 0;
   virtual void changeInstCode(eInstructionCode ) = 0;
+
+  virtual bool redirectPC(VirtualMemoryAddress aPC, boost::optional<VirtualMemoryAddress> aPCReg = boost::none) = 0;
 
   virtual VirtualMemoryAddress pc() const = 0;
   virtual bool isPriv() const = 0;

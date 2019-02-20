@@ -604,7 +604,7 @@ typedef struct SMulH : public Operation  {
     DBG_Assert( operands.size() == 2);
     uint64_t op0 = boost::get<uint64_t>(operands[0]);
     uint64_t op1 = boost::get<uint64_t>(operands[1]);
-    uint64_t prod = (((uint64_t)op0 * (uint64_t)op1) >> 64);
+    uint64_t prod = (((uint64_t)op0 * (uint64_t)op1) >> 63);
     return prod;
   }
   virtual Operand operator()( std::vector<Operand> const & operands) {

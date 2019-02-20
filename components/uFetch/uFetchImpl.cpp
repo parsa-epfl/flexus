@@ -831,7 +831,7 @@ private:
 
     if (theIcacheMiss[anIndex]) {
       ++theMissCycles;
-      DBG_(VVerb, (<<"FETCH UNIT: in theIcacheMiss" << theMissCycles.theRefCount << "cycles missed so far"));
+      DBG_(Dev, (<<"FETCH UNIT: in theIcacheMiss" << theMissCycles.theRefCount << "cycles missed so far"));
       return;
     }
 

@@ -73,11 +73,10 @@ struct ReadConstantAction : public BaseSemanticAction
   uint64_t theVal;
   eOperandCode theOperandCode;
 
-  ReadConstantAction( SemanticInstruction * anInstruction, uint64_t aVal, eOperandCode anOperandCode)
+  ReadConstantAction( SemanticInstruction * anInstruction, int64_t aVal, eOperandCode anOperandCode)
     : BaseSemanticAction( anInstruction, 1 )
-    , theVal( aVal )
     , theOperandCode( anOperandCode )
-
+    , theVal ((aVal < 0) ? ~aVal : aVal)
   {}
 
   void doEvaluate()
@@ -94,7 +93,7 @@ struct ReadConstantAction : public BaseSemanticAction
   }
 };
 
-simple_action readConstantAction ( SemanticInstruction * anInstruction, uint64_t aVal, eOperandCode anOperandCode)
+simple_action readConstantAction ( SemanticInstruction * anInstruction, int64_t aVal, eOperandCode anOperandCode)
 {
   return new(anInstruction->icb()) ReadConstantAction( anInstruction, aVal, anOperandCode);
 }

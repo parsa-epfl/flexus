@@ -132,7 +132,7 @@ public:
   void doDispatchEffects();
   void squash();
   void pageFault();
-  bool isPageFault();
+  bool isPageFault() const;
   void doRetirementEffects();
   void checkTraps();
   void doCommitEffects();

@@ -122,7 +122,7 @@ public:
   virtual void doDispatchEffects();
   virtual void squash() {}
   virtual void pageFault() {thePageFault = true;}
-  virtual bool isPageFault() {return thePageFault;}
+  virtual bool isPageFault() const {return thePageFault;}
   virtual void doRescheduleEffects() {}
   virtual void doRetirementEffects() {}
   virtual void checkTraps() {}

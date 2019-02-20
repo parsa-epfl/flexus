@@ -81,8 +81,9 @@ arminst UNCONDBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequen
     bool op = extract32(aFetchedOpcode.theOpcode, 31, 1);
     inst->setClass(clsBranch, codeBranchUnconditional);
 
-    int64_t offset = sextract32(aFetchedOpcode.theOpcode, 0, 26) << 2;
+    int64_t offset = (sextract32(aFetchedOpcode.theOpcode, 0, 26) * 4);
     uint64_t addr = (uint64_t)aFetchedOpcode.thePC + offset;
+
 
     VirtualMemoryAddress target(addr);
 
@@ -175,7 +176,9 @@ arminst CONDBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequence
 
     uint32_t cond = extract32(aFetchedOpcode.theOpcode, 0, 4);
 
-    int64_t offset = sextract32(aFetchedOpcode.theOpcode, 5, 19) << 2;
+    //    program label to be conditionally branched to. Its offset from the address of this instruction,
+    // in the range +/-1MB, is encoded as "imm19" times 4.
+    int64_t offset = (sextract32(aFetchedOpcode.theOpcode, 5, 19) * 4) - 4 ;
     uint64_t addr = (uint64_t)aFetchedOpcode.thePC + offset;
 
     VirtualMemoryAddress target(addr);
@@ -268,7 +271,7 @@ DECODER_TRACE;
 
 
     simple_action target = calcAddressAction( inst, rs_deps);
-    dependant_action br = branchToCalcAddressAction( inst );
+    dependant_action br = branchRegAction( inst, kAddress );
     connectDependance( br.dependance, target );
     connectDependance( inst->retirementDependance(), br );
     inst->addRetirementEffect( updateUnconditional( inst, kAddress ) );

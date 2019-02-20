@@ -115,7 +115,7 @@ extern bool Stats_debug_enabled;
 
 #define __TRACE_W(COLOR, WORD) \
     do { \
-    DBG_(VVerb,(<< COLOR <<__func__ << " " << WORD << RESET)); \
+    DBG_(Dev,(<< COLOR <<__func__ << " " << WORD << RESET)); \
     } while(0)
 
 #define __TRACE_W2(COLOR, WORD) \
@@ -125,7 +125,7 @@ extern bool Stats_debug_enabled;
 
 #define __TRACE(COLOR) \
     do { \
-    DBG_(VVerb,(<< COLOR <<__func__ << RESET)); \
+    DBG_(Dev,(<< COLOR <<__func__ << RESET)); \
     } while(0)
 
 #define __TRACE2(COLOR) \

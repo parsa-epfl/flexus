@@ -1,48 +1,10 @@
-// DO-NOT-REMOVE begin-copyright-block 
-//
-// Redistributions of any form whatsoever must retain and/or include the
-// following acknowledgment, notices and disclaimer:
-//
-// This product includes software developed by Carnegie Mellon University.
-//
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
-//
-// For more information, see the SimFlex project website at:
-//   http://www.ece.cmu.edu/~simflex
-//
-// You may not use the name "Carnegie Mellon University" or derivations
-// thereof to endorse or promote products derived from this software.
-//
-// If you modify the software you must place a notice on or within any
-// modified version provided or made available to any third party stating
-// that you have modified the software.  The notice shall include at least
-// your name, address, phone number, email address and the date and purpose
-// of the modification.
-//
-// THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
-// EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
-// THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
-// IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-// TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
-// BE LIABLE FOR ANY DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
-// SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
-// ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
-// CONTRACT, TORT OR OTHERWISE).
-//
-// DO-NOT-REMOVE end-copyright-block
-
-
 #include "coreModelImpl.hpp"
 
 #define DBG_DeclareCategories uArchCat
 #define DBG_SetDefaultOps AddCat(uArchCat)
 #include DBG_Control()
 
-namespace nuArchARM {
+namespace nuArch {
 
 int32_t CoreImpl::availableROB() const {
   if (theInterruptSignalled) {
@@ -79,7 +41,7 @@ void CoreImpl::dispatch( boost::intrusive_ptr< Instruction > anInsn) {
 
   if (static_cast<int>(theNode) == Flexus::Core::theFlexus->breakCPU()) {
     if (anInsn->sequenceNo() == Flexus::Core::theFlexus->breakInsn()) {
-      DBG_( VVerb, ( << theName << " Encounted break instruction: " << *anInsn ) );
+      DBG_( Crit, ( << theName << " Encounted break instruction: " << *anInsn ) );
       Flexus::Core::theFlexus->setDebug("verb");
     }
   }
@@ -190,8 +152,7 @@ void CoreImpl::dispatch( boost::intrusive_ptr< Instruction > anInsn) {
     anInsn->setPreceedingInstruction(theROB.back());
   }
   theROB.push_back(anInsn);
-  //theNPC = boost::none;
-
+  theNPC = boost::none;
 
   // Due to OoO, we don't know what instruction will be sent to a functional unit when it becomes available and thus
   // cannot track their ready times. Thus if we want to never overestimate the amount of time to execute
@@ -219,24 +180,22 @@ void CoreImpl::dispatch( boost::intrusive_ptr< Instruction > anInsn) {
   std::list< boost::intrusive_ptr< Interaction > > dispatch_interactions;
   std::swap( dispatch_interactions, theDispatchInteractions );
 
-  DBG_(VVerb,(<<*anInsn));
   anInsn->doDispatchEffects();
 
   while (  ! dispatch_interactions.empty()) {
-    DBG_( VVerb, ( << theName << " applying deferred interation " << (* dispatch_interactions.front() ) << " to " << *anInsn ) );
+    DBG_( Verb, ( << theName << " applying deferred interation " << (* dispatch_interactions.front() ) << " to " << *anInsn ) );
     (* dispatch_interactions.front() )(anInsn, *this);
     dispatch_interactions.pop_front();
   }
-  DISPATCH_DBG("Done");
+
+  DBG_( VVerb, ( << theName << " Done Dispatch" ) );
 }
 
 void CoreImpl::applyToNext( boost::intrusive_ptr< Instruction > anInsn, boost::intrusive_ptr<Interaction> anInteraction) {
   FLEXUS_PROFILE();
-//  typedef rob_t::index<by_insn>::type insn_index;
+  typedef rob_t::index<by_insn>::type insn_index;
   rob_t::iterator insn = theROB.project<0>( theROB.get<by_insn>().find(anInsn) );
   rob_t::iterator end = theROB.end();
-
-  DBG_Assert(theROB.size() > 1);
   DBG_Assert( insn != end );
   rob_t::iterator next = ++insn;
 
@@ -257,4 +216,4 @@ void CoreImpl::deferInteraction( boost::intrusive_ptr< Instruction > anInsn, boo
   theDispatchInteractions.push_back(anInteraction);
 }
 
-} //nuArchARM
+} //nuArch

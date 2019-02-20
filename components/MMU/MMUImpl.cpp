@@ -308,6 +308,8 @@ public:
               thePageWalkEntries.pop();
           }
           else if (item->isDone()){
+              CORE_DBG("MMU: Translation is Done " << item->theVaddr << " -- "<< item->thePaddr);
+
               thePageWalkEntries.pop();
 
               if (item->isInstr()){
@@ -328,14 +330,18 @@ public:
 
 
   void processMemoryRequests(){
+      CORE_TRACE;
       while (thePageWalker->hasMemoryRequest()){
           TranslationPtr tmp = thePageWalker->popMemoryRequest();
+          CORE_DBG("Sending a Memory Translation request to Core " << tmp->theVaddr << " -- " << tmp->thePaddr);
+
           FLEXUS_CHANNEL(MemoryRequestOut) << tmp;
       }
   }
 
 
   void resyncMMU(uint8_t anIndex) {
+      CORE_TRACE;
 
     if (!theMMUInitialized){
         theMMU.reset(new mmu_t());
@@ -343,15 +349,21 @@ public:
     }
     theMMU->initRegsFromQEMUObject( getMMURegsFromQEMU(anIndex) );
     theMMU->setupAddressSpaceSizesAndGranules();
-    if (thePageWalker)
+    if (thePageWalker){
         thePageWalker->annulAll();
+        CORE_DBG("reseting Page Walker");
+    }
     if (thePageWalkEntries.size() > 0){
+        CORE_DBG("deleting PageWalk Entries");
+
         while(! thePageWalkEntries.empty()){
             thePageWalkEntries.pop();
         }
     }
 
     if (theLookUpEntries.size() > 0){
+        CORE_DBG("deleting Lookup Entries");
+
         while(! theLookUpEntries.empty()){
             theLookUpEntries.pop();
         }
@@ -409,6 +421,8 @@ public:
   void push( interface::iRequestIn const &,
              index_t           anIndex,
              TranslationPtr& aTranslate ) {
+      CORE_DBG("MMU: Instruction RequestIn");
+
       aTranslate->toggleReady();
       theLookUpEntries.push( aTranslate );
   }
@@ -420,16 +434,19 @@ public:
   void push( interface::dRequestIn const &,
              index_t           anIndex,
              TranslationPtr& aTranslate ) {
+      CORE_DBG("MMU: Data RequestIn");
+
       aTranslate->toggleReady();
       theLookUpEntries.push( aTranslate );
   }
 
 
   void sendTLBresponse(TranslationPtr aTranslation) {
-    if (aTranslation->isInstr())
-        FLEXUS_CHANNEL(iTranslationReply) << aTranslation;
-    else
-        FLEXUS_CHANNEL(dTranslationReply) << aTranslation;
+      if (aTranslation->isInstr()){
+          FLEXUS_CHANNEL(iTranslationReply) << aTranslation;
+      } else {
+          FLEXUS_CHANNEL(dTranslationReply) << aTranslation;
+      }
   }
 
   bool available( interface::TLBReqIn const &,

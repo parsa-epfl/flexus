@@ -283,7 +283,7 @@ void connect( std::list<InternalDependance > const & dependances, simple_action 
 
 simple_action readRegisterAction ( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, eOperandCode anOperandCode, bool aSP, bool is64);
 simple_action readNZCVAction ( SemanticInstruction * anInstruction, eNZCV aBit, eOperandCode anOperandCode);
-simple_action readConstantAction( SemanticInstruction * anInstruction, uint64_t aVal, eOperandCode anOperandCode);
+simple_action readConstantAction( SemanticInstruction * anInstruction, int64_t aVal, eOperandCode anOperandCode);
 simple_action calcAddressAction(SemanticInstruction * anInstruction, std::vector< std::list<InternalDependance> > & opDeps );
 simple_action translationAction(SemanticInstruction *anInstruction);
 
@@ -310,7 +310,7 @@ predicated_action extractAction(SemanticInstruction * anInstruction, std::vector
 
 dependant_action writebackAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, eOperandCode aMappedRegisterCode, bool is64, bool aSP, bool setflags);
 dependant_action branchCondAction(SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, std::unique_ptr<Condition> aCondition, size_t numOperands = 1);
-dependant_action branchRegAction(SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition);
+dependant_action branchRegAction( SemanticInstruction * anInstruction, eOperandCode aRegOperand);
 dependant_action branchToCalcAddressAction(SemanticInstruction * anInstruction);
 
 

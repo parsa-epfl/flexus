@@ -96,12 +96,30 @@ bool validatePC::operator () () {
     return true;
   }
 
-  bits flexus = theAddr;
-  bits qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPC();
+  uint64_t flexus = theAddr;
+  uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPC();
 
-  DBG_( VVerb, ( << "Validating flexus PC=" << std::hex << flexus << " qemu PC=" << qemu << std::dec << "\n" << std::internal << *theInstruction ) );
+  DBG_( Dev, ( << "Validating flexus PC=" << std::hex << flexus << " qemu PC=" << qemu << std::dec) );
 
   return (flexus == qemu);
+}
+
+bool validatePC_HARD::operator () () {
+  if (theInstruction->isSquashed() || theInstruction->isAnnulled()) {
+    return true; //Don't check
+  }
+  if (theInstruction->raised() != kException_None) {
+    DBG_( VVerb, ( << " Not performing  validation because of exception. " << *theInstruction ) );
+    return true;
+  }
+
+  uint64_t flexus = theAddr;
+  uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPC();
+
+  DBG_( Dev, ( << "Validating flexus PC=" << std::hex << flexus << " qemu PC=" << qemu << std::dec) );
+
+  DBG_Assert((flexus == qemu), (<< std::hex << "flexus [ " << flexus << " ] " << " != " << " QEMU [ " << qemu << " ] " << std::dec));
+  return true;
 }
 
 bool validateVRegister::operator () () {
