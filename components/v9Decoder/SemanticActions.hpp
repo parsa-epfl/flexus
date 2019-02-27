@@ -257,7 +257,7 @@ predicated_dependant_action updateRMWValueAction
 predicated_dependant_action updateStoreValueAction
 ( SemanticInstruction * anInstruction );
 
-multiply_dependant_action updateSTDValueAction
+multiply_dependant_action updateSTPValueAction
 ( SemanticInstruction * anInstruction );
 
 multiply_dependant_action updateCASValueAction
@@ -274,9 +274,6 @@ predicated_dependant_action translationAction
 
 
 predicated_dependant_action casAction
-( SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass );
-
-predicated_dependant_action rmwAction
 ( SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass );
 
 predicated_dependant_action lddAction

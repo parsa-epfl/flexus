@@ -292,6 +292,8 @@ arminst disas_ldst_reg_unsigned_imm(armcode const & aFetchedOpcode, uint32_t  aC
         }
     }
 
+    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+
 }
 
 /* Load/store register (all forms) */

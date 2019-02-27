@@ -100,7 +100,7 @@ struct OperandPrintHelper {
     std::for_each
     ( aHelper.theOperands.begin()
       , aHelper.theOperands.end()
-      , ll::var(anOstream) << " op" << ++ ll::var(i) << "=" << ll::_1
+      , ll::var(anOstream) << " op" << ++ ll::var(i) << "=" << std::hex << ll::_1 << std::dec
     );
     return anOstream;
   }
@@ -147,9 +147,9 @@ struct ExecuteAction : public ExecuteBase {
         } else {
             uint64_t res = boost::get<uint64_t>(result);
             theInstruction->setOperand(theResult, res);
-            DBG_(Dev, (<< "Writing " << res << " in " << theResult ));
+            DBG_(Dev, (<< "Writing " << std::hex << res << std::dec << " in " << theResult ));
         }
-        DBG_( Dev, ( << *this << " operands: " << OperandPrintHelper(operands) << " result=" << result ) );
+        DBG_( Dev, ( << *this << " operands: " << OperandPrintHelper(operands) << std::hex << " result=" <<  result << std::dec ) );
         if (theBypass) {
           mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass);
           register_value val = boost::apply_visitor( register_value_extractor(), result);

@@ -221,8 +221,11 @@ struct SP_EL0 : public SysRegInfo {
 
     virtual uint64_t readfn (uArchARM * aCore) override {
        return aCore->getSP_el(0);
-   }
+    }
      virtual eAccessResult accessfn (uArchARM* aCore) {DBG_Assert(false); return kACCESS_TRAP; }// FIXME /*sp_el0_access*/
+
+     virtual void writefn (uArchARM * aCore, uint64_t aVal) override { aCore->setSP_el(0, aVal); }
+
 
 
 }SP_EL0_;
@@ -238,6 +241,9 @@ struct SP_EL1 : public SysRegInfo {
     eAccessRight access = kPL2_RW;
     eRegInfo type = kARM_ALIAS;
     uint64_t resetvalue = -1;
+
+    virtual void writefn (uArchARM * aCore, uint64_t aVal) override { aCore->setSP_el(1, aVal); }
+
 
 }SP_EL1_;
 
@@ -363,14 +369,14 @@ static std::vector<std::pair<std::array<uint8_t, 5>, ePrivRegs>>  supported_sysR
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {DC_ZVA_.opc0, DC_ZVA_.opc1, DC_ZVA_.opc2, DC_ZVA_.crn, DC_ZVA_.crm},  kDC_ZVA),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {CURRENT_EL_.opc0, CURRENT_EL_.opc1, CURRENT_EL_.opc2, CURRENT_EL_.crn, CURRENT_EL_.crm},  kCURRENT_EL),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {ELR_EL1_.opc1, ELR_EL1_.opc1, ELR_EL1_.opc2, ELR_EL1_.crn, ELR_EL1_.crm},  kELR_EL1),
-    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {SPSR_EL1_.opc0, SPSR_EL1_.opc1, SPSR_EL1_.opc2, SPSR_EL1_.crn, SPSR_EL1_.crm},  kSPSR_EL1),
+//    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {SPSR_EL1_.opc0, SPSR_EL1_.opc1, SPSR_EL1_.opc2, SPSR_EL1_.crn, SPSR_EL1_.crm},  kSPSR_EL1),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {SP_EL0_.opc0, SP_EL0_.opc1, SP_EL0_.opc2, SP_EL0_.crn, SP_EL0_.crm},  kSP_EL0),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {SP_EL1_.opc0, SP_EL1_.opc1, SP_EL1_.opc2, SP_EL1_.crn, SP_EL1_.crm},  kSP_EL1),
-    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {SPSel_.opc0, SPSel_.opc1, SPSel_.opc2, SPSel_.crn, SPSel_.crm},  kSPSel),
-    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {SPSR_IRQ_.opc0, SPSR_IRQ_.opc1, SPSR_IRQ_.opc2, SPSR_IRQ_.crn, SPSR_IRQ_.crm},  kSPSR_IRQ),
-    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {SPSR_ABT_.opc0, SPSR_ABT_.opc1, SPSR_ABT_.opc2, SPSR_ABT_.crn, SPSR_ABT_.crm},  kSPSR_ABT),
-    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {SPSR_UND_.opc0, SPSR_UND_.opc1, SPSR_UND_.opc2, SPSR_UND_.crn, SPSR_UND_.crm},  kSPSR_UND),
-    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {SPSR_FIQ_.opc0, SPSR_FIQ_.opc1, SPSR_FIQ_.opc2, SPSR_FIQ_.crn, SPSR_FIQ_.crm},  kSPSR_FIQ)
+    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {SPSel_.opc0, SPSel_.opc1, SPSel_.opc2, SPSel_.crn, SPSel_.crm},  kSPSel)
+//    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {SPSR_IRQ_.opc0, SPSR_IRQ_.opc1, SPSR_IRQ_.opc2, SPSR_IRQ_.crn, SPSR_IRQ_.crm},  kSPSR_IRQ),
+//    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {SPSR_ABT_.opc0, SPSR_ABT_.opc1, SPSR_ABT_.opc2, SPSR_ABT_.crn, SPSR_ABT_.crm},  kSPSR_ABT),
+//    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {SPSR_UND_.opc0, SPSR_UND_.opc1, SPSR_UND_.opc2, SPSR_UND_.crn, SPSR_UND_.crm},  kSPSR_UND),
+//    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {SPSR_FIQ_.opc0, SPSR_FIQ_.opc1, SPSR_FIQ_.opc2, SPSR_FIQ_.crn, SPSR_FIQ_.crm},  kSPSR_FIQ)
 };
 
 

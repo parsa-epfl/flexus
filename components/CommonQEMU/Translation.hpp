@@ -84,6 +84,8 @@ struct Translation : public boost::counted_base {
         , rawTTEValue(0)
         , theID(translationID++)
         , theAnnul(false)
+        , theTimeoutCounter(0)
+        , thePageFault(false)
 
     {}
     ~Translation(){}
@@ -97,6 +99,13 @@ struct Translation : public boost::counted_base {
         theTTEEntry    = aTr.theTTEEntry;
         theTLBstatus   = aTr.theTLBstatus;
         theTLBtype     = aTr.theTLBtype;
+        theTimeoutCounter = aTr.theTimeoutCounter;
+        theReady = aTr.theReady;
+        theID  = aTr.theReady;
+        theWaiting = aTr.theReady;
+        thePageFault = aTr.thePageFault;
+
+
     }
 
   Translation& operator= (Translation& rhs) {
@@ -108,6 +117,12 @@ struct Translation : public boost::counted_base {
       theTTEEntry = rhs.theTTEEntry;
       theTLBstatus   = rhs.theTLBstatus;
       theTLBtype     = rhs.theTLBtype;
+      theTimeoutCounter = rhs.theTimeoutCounter;
+      theReady = rhs.theReady;
+      theID = rhs.theID;
+      theWaiting = rhs.theReady;
+      thePageFault = rhs.thePageFault;
+
       return *this;
   }
 
@@ -129,35 +144,52 @@ struct Translation : public boost::counted_base {
   uint64_t rawTTEValue;
   uint64_t theID;
   bool theAnnul;
+  uint64_t theTimeoutCounter;
+  bool thePageFault;
 
   boost::intrusive_ptr<AbstractInstruction> theInstruction;
 
   void setData(){theTLBtype = kDATA;}
   void setInstr(){theTLBtype = kINST;}
-  eTLBtype type (){return theTLBtype;}
-  bool isInstr(){return type() == kINST;}
-  bool isData(){return type() == kDATA;}
-  eTLBstatus status (){return theTLBstatus;}
-  bool isMiss(){ return status() == kTLBmiss; }
+  eTLBtype type () const{return theTLBtype;}
+  bool isInstr() const{return type() == kINST;}
+  bool isData() const{return type() == kDATA;}
+  eTLBstatus status () const{return theTLBstatus;}
+  bool isMiss()const { return status() == kTLBmiss; }
   bool isUnresuloved(){return status() == kTLBunresolved;}
   void setHit() {theTLBstatus = kTLBhit;}
   void setMiss() {theTLBstatus = kTLBmiss;}
-
+  bool isHit() const {return theTLBstatus == kTLBhit; }
+  bool isPagefault(){return thePageFault;}
+  void setPagefault(){DBG_Assert(!thePageFault); thePageFault = true;}
 
   void setInstruction(boost::intrusive_ptr<AbstractInstruction> anInstruction) {theInstruction = anInstruction;}
-  boost::intrusive_ptr<AbstractInstruction> getInstruction() {return theInstruction;}
+  boost::intrusive_ptr<AbstractInstruction> getInstruction() const {return theInstruction;}
 
-  bool isWaiting(){return theWaiting;}
+  bool isWaiting() const {return theWaiting;}
   void toggleWaiting() {theWaiting = !theWaiting;}
 
-  bool isReady() {return theReady;}
-  void toggleReady() {theReady = !theReady;}
+  bool isReady() const {return theReady;}
+  void toggleReady()
+  {
+      theReady = !theReady;
+      DBG_(VVerb, (<< "toggling translation readiness (" << theReady << ") for " << theVaddr << " -- translation ID: " << theID));
+  }
 
-  bool isDone() {return theDone;}
-  void setDone() {theDone = true;}
+  bool isDone() const {return theDone;}
+  void setDone() {DBG_Assert(!theDone); theDone = true;}
 
-  bool isAnnul() {return theAnnul;}
+  bool isAnnul() const { return theAnnul;}
   void setAnnul() {theAnnul = true;}
+
+  Translation& operator ++ (int){
+      if (++theTimeoutCounter > 1000){
+          DBG_Assert(false);
+      }
+      return *this;
+  }
+
+
 
 };
 

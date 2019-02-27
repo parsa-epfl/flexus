@@ -129,25 +129,28 @@ struct ReorderAction : public PredicatedSemanticAction
   {
     SEMANTICS_DBG(*this);
 
-    Operand in = theInstruction->operand(theInputCode);
-    bits in_val = boost::get<bits> (in);
-    bits out_val = 0;
+    if (ready()){
+        Operand in = theInstruction->operand(theInputCode);
+        uint64_t in_val = boost::get<uint64_t> (in);
+        uint64_t out_val = 0;
 
-    switch (theContainerSize) {
-    case 16:
-        out_val = ((bits)(__builtin_bswap16((uint16_t)in_val))) | (((bits)(__builtin_bswap16((uint16_t)in_val >> 16))) << 16);
-        if (the64) out_val |= (((bits)(__builtin_bswap16((uint16_t)in_val >> 32))) << 32) | (((bits)(__builtin_bswap16((uint16_t)in_val >> 48))) << 48);
-        break;
-    case 32:
-        out_val = ((bits)(__builtin_bswap32((uint32_t)in_val)));
-        if (the64) out_val |= (((bits)(__builtin_bswap32((uint32_t)in_val >> 32))) << 32);
-        break;
-    case 64:
-        out_val = (__builtin_bswap64((uint64_t)in_val));
-        break;
+        switch (theContainerSize) {
+        case 16:
+            out_val = ((uint64_t)(__builtin_bswap16((uint16_t)in_val))) | (((uint64_t)(__builtin_bswap16((uint16_t)(in_val >> 16)))) << 16);
+            if (the64) out_val |= (((uint64_t)(__builtin_bswap16((uint16_t)(in_val >> 32)))) << 32) | (((uint64_t)(__builtin_bswap16((uint16_t)(in_val >> 48)))) << 48);
+            break;
+        case 32:
+            out_val = ((uint64_t)(__builtin_bswap32((uint32_t)in_val)));
+            if (the64) out_val |= (((uint64_t)(__builtin_bswap32((uint32_t)(in_val >> 32)))) << 32);
+            break;
+        case 64:
+            out_val = (__builtin_bswap64((uint64_t)in_val));
+            break;
+        }
+
+        theInstruction->setOperand(theOutputCode, out_val);
+        satisfyDependants();
     }
-
-    theInstruction->setOperand(theOutputCode, out_val);
   }
 
   void describe( std::ostream & anOstream) const
@@ -175,38 +178,42 @@ struct CountAction : public PredicatedSemanticAction
 
   void doEvaluate()
   {
-    SEMANTICS_DBG(*this);
+      if (ready()){
+            SEMANTICS_DBG(*this);
 
-    Operand in = theInstruction->operand(theInputCode);
-    bits in_val = boost::get<bits> (in);
-    bits out_val = 0;
+            Operand in = theInstruction->operand(theInputCode);
+            uint64_t in_val = boost::get<uint64_t> (in);
+            uint64_t out_val = 0;
 
-    switch (theCountOp) {
-        case kCountOp_CLZ:
-            out_val = the64 ? ((clz32((uint32_t)in_val >> 32) == 0) ? (32 + clz32((uint32_t)in_val))
-                                                                      : (clz32((uint32_t)in_val >> 32) + clz32((uint32_t)in_val)) )
-                                                                      : (clz32((uint32_t)in_val));
-            break;
-        case kCountOp_CLS:
-        {
-            bits mask;
-            if (the64){
-                mask = 0x7FFFFFFFFFFFFFFFULL;
-            } else {
-                mask = 0x000000007FFFFFFFULL;
+            switch (theCountOp) {
+                case kCountOp_CLZ:
+                    out_val = the64 ? ((clz32((uint32_t)in_val >> 32) == 0) ? (32 + clz32((uint32_t)in_val))
+                                                                              : (clz32((uint32_t)in_val >> 32) + clz32((uint32_t)in_val)) )
+                                                                              : (clz32((uint32_t)in_val));
+                    break;
+                case kCountOp_CLS:
+                {
+                    bits mask;
+                    if (the64){
+                        mask = 0x7FFFFFFFFFFFFFFFULL;
+                    } else {
+                        mask = 0x000000007FFFFFFFULL;
+                    }
+                    bits i = (in_val >> 1) ^ (in_val & mask);
+                    out_val = the64 ? ((clz32((uint32_t)i >> 32) == 0) ? (31 + clz32((uint32_t)i))
+                                                                       : (clz32((uint32_t)i >> 32) + clz32((uint32_t)i)) )
+                                                                       : (clz32((uint32_t)i));
+                    break;
+                }
+                default:
+                    DBG_Assert(false);
+                    break;
             }
-            bits i = (in_val >> 1) ^ (in_val & mask);
-            out_val = the64 ? ((clz32((uint32_t)i >> 32) == 0) ? (31 + clz32((uint32_t)i))
-                                                               : (clz32((uint32_t)i >> 32) + clz32((uint32_t)i)) )
-                                                               : (clz32((uint32_t)i));
-            break;
-        }
-        default:
-            DBG_Assert(false);
-            break;
-    }
 
-    theInstruction->setOperand(theOutputCode, out_val);
+            DBG_(Dev,(<< "writing " << out_val << " into " << theOutputCode));
+            theInstruction->setOperand(theOutputCode, out_val);
+            satisfyDependants();
+      }
   }
 
   void describe( std::ostream & anOstream) const
@@ -284,15 +291,22 @@ predicated_action reverseAction ( SemanticInstruction * anInstruction, eOperandC
     return predicated_action( act, act->predicate() );
 }
 
-predicated_action reorderAction ( SemanticInstruction * anInstruction, eOperandCode anInputCode, eOperandCode anOutputCode, uint8_t aContainerSize, bool is64)
+predicated_action reorderAction ( SemanticInstruction * anInstruction, eOperandCode anInputCode, eOperandCode anOutputCode, uint8_t aContainerSize, std::vector<std::list<InternalDependance>> & rs_deps, bool is64)
 {
   ReorderAction * act(new(anInstruction->icb()) ReorderAction( anInstruction, anInputCode, anOutputCode, aContainerSize, is64));
+  for (uint32_t i = 0; i < rs_deps.size(); ++i) {
+    rs_deps[i].push_back( act->dependance(i) );
+  }
   return predicated_action( act, act->predicate() );
 }
 
-predicated_action countAction ( SemanticInstruction * anInstruction, eOperandCode anInputCode, eOperandCode anOutputCode, eCountOp aCountOp, bool is64)
+predicated_action countAction ( SemanticInstruction * anInstruction, eOperandCode anInputCode, eOperandCode anOutputCode, eCountOp aCountOp,std::vector< std::list<InternalDependance> > & rs_deps, bool is64)
 {
     CountAction * act(new(anInstruction->icb()) CountAction( anInstruction, anInputCode, anOutputCode, aCountOp, is64));
+    for (uint32_t i = 0; i < rs_deps.size(); ++i) {
+      rs_deps[i].push_back( act->dependance(i) );
+    }
+
     return predicated_action( act, act->predicate() );
 }
 predicated_action crcAction(SemanticInstruction * anInstruction, uint32_t aPoly, eOperandCode anInputCode, eOperandCode anInputCode2,eOperandCode anOutputCode, bool is64)

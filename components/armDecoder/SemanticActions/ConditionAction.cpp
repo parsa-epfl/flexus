@@ -130,7 +130,7 @@ struct ConditionSelectAction : public PredicatedSemanticAction {
 struct ConditionCompareAction : public PredicatedSemanticAction {
   std::unique_ptr<Condition> theOperation;
   eOperandCode theResult;
-  uint32_t theCondCode;
+  uint64_t theCondCode;
   bool theSub_op;
   bool the64;
 
@@ -140,7 +140,7 @@ struct ConditionCompareAction : public PredicatedSemanticAction {
   }
 
   ConditionCompareAction ( SemanticInstruction * anInstruction, uint32_t aCode, eOperandCode aResult, std::unique_ptr<Condition> & anOperation, bool sub_op, bool a64)
-    : PredicatedSemanticAction( anInstruction, 1, true )
+    : PredicatedSemanticAction( anInstruction, 2, true )
     , theOperation( std::move(anOperation) )
     , theResult( aResult )
     , theCondCode(aCode)
@@ -155,7 +155,8 @@ struct ConditionCompareAction : public PredicatedSemanticAction {
     if (ready()) {
       if (theInstruction->hasPredecessorExecuted()) {
 
-        bool result = theOperation->operator()(std::vector<Operand> (theCondCode));
+        theOperation->setInstruction(theInstruction);
+        bool result = theOperation->operator()({theCondCode});
         std::unique_ptr<Operation> op;
         if (result) {
           if (theSub_op){
@@ -187,7 +188,7 @@ struct ConditionCompareAction : public PredicatedSemanticAction {
 predicated_action conditionSelectAction
 ( SemanticInstruction * anInstruction
   , std::unique_ptr<Condition> & anOperation
-  , uint32_t aCode
+  , uint64_t aCode
   , std::vector< std::list<InternalDependance> > & opDeps
   , eOperandCode aResult
   , bool anInvert

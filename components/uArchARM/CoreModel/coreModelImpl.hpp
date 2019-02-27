@@ -132,7 +132,6 @@ class CoreImpl : public CoreModel {
   bool theAARCH64;
   uint32_t thePSTATE;
 
-  bool theEnable;
 
 
   // MMU Internal State:
@@ -203,6 +202,8 @@ private:
 
   bool theRedirectRequested;
   VirtualMemoryAddress theRedirectPC;
+  VirtualMemoryAddress theDumpPC;
+
 
   //Load Store Queue and associated memory control
   uint64_t theMemorySequenceNum;
@@ -517,6 +518,8 @@ private:
   std::vector<uint32_t> fpAluCyclesToReady;
   std::vector<uint32_t> fpMultCyclesToReady;
 
+  bool theEnable;
+
   //CONSTRUCTION
   //==========================================================================
 public:
@@ -637,6 +640,7 @@ private:
   //==========================================================================
 public:
   int32_t availableROB() const;
+  const uint32_t core() const;
   bool isSynchronized() const {
     return theROB.empty();
   }
@@ -686,7 +690,7 @@ public:
   void squashRegister( mapped_reg aRegister);
   register_value readRegister( mapped_reg aRegister );
   register_value readArchitecturalRegister( reg aRegister, bool aRotate );
-  void writeRegister( mapped_reg aRegister, register_value aValue, bool isW = false );
+  void writeRegister( mapped_reg aRegister, register_value aValue, bool isW );
   void disconnectRegister( mapped_reg aReg, boost::intrusive_ptr< Instruction > inst);
   void initializeRegister(mapped_reg aRegister, register_value aValue);
   void copyRegValue(mapped_reg aSource, mapped_reg aDest);

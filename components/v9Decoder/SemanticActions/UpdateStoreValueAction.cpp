@@ -120,9 +120,9 @@ multiply_dependant_action updateCASValueAction
   return multiply_dependant_action( act, dependances );
 }
 
-struct UpdateSTDValueAction : public BaseSemanticAction {
+struct updateSTPValueAction : public BaseSemanticAction {
 
-  UpdateSTDValueAction ( SemanticInstruction * anInstruction )
+  updateSTPValueAction ( SemanticInstruction * anInstruction )
     : BaseSemanticAction ( anInstruction, 2 )
   { }
 
@@ -140,9 +140,9 @@ struct UpdateSTDValueAction : public BaseSemanticAction {
   }
 };
 
-multiply_dependant_action updateSTDValueAction
+multiply_dependant_action updateSTPValueAction
 ( SemanticInstruction * anInstruction ) {
-  UpdateSTDValueAction * act(new(anInstruction->icb()) UpdateSTDValueAction( anInstruction ) );
+  updateSTPValueAction * act(new(anInstruction->icb()) updateSTPValueAction( anInstruction ) );
   std::vector<InternalDependance> dependances;
   dependances.push_back( act->dependance(0) );
   dependances.push_back( act->dependance(1) );

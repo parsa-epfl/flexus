@@ -1,5 +1,6 @@
 #include "types.hpp"
 
+
 namespace Flexus {
 namespace Core{
 
@@ -61,7 +62,14 @@ bits construct(uint8_t* bytes, size_t size){
 
 
 std::pair<uint64_t,uint64_t> splitBits(const bits & input){
-    return std::make_pair<uint64_t,uint64_t> ((uint64_t)(input >> 64), ((uint64_t)input));
+    bits a, b = -1 ;
+    a = b >>= 64;
+    a <<= 64;
+    std::pair<uint64_t,uint64_t> ret;
+    ret.first = static_cast<uint64_t>((a & input) >> 64);
+    ret.second =  static_cast<uint64_t>(b & input);
+
+    return ret;
 }
 
 }

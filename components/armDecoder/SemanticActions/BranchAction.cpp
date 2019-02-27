@@ -58,6 +58,7 @@ namespace ll = boost::lambda;
 #include "../SemanticInstruction.hpp"
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
+#include "../Validations.hpp"
 
 #define DBG_DeclareCategories armDecoder
 #define DBG_SetDefaultOps AddCat(armDecoder)
@@ -110,16 +111,16 @@ struct BranchCondAction : public BaseSemanticAction {
             if (theInstruction->redirectPC(theInstruction->pc() + 4, theTarget)){
                 if ( theInstruction->core()->squashAfter(theInstruction) ) {
                   theInstruction->core()->redirectFetch(theTarget);
+                  theInstruction->addPostvalidation(validatePC((uint64_t)theTarget, theInstruction));
                 }
             }
 //          core()->applyToNext( theInstruction, branchInteraction(theTarget) );
           feedback->theActualDirection = kTaken;
 
-        }/* else {
+        } else {
           feedback->theActualDirection = kNotTaken;
-          core()->applyToNext( theInstruction, branchInteraction( theInstruction->pc() + 8  ) );
-
-        }*/
+          DBG_(Dev, (<< "Branching Not taken! "));
+        }
         theInstruction->setBranchFeedback(feedback);
 
         satisfyDependants();
@@ -183,6 +184,7 @@ struct BranchRegAction : public BaseSemanticAction {
             // must redirect
             if ( theInstruction->core()->squashAfter(theInstruction) ) {
               theInstruction->core()->redirectFetch(theTarget);
+              theInstruction->addPostvalidation(validatePC((uint64_t)theTarget, theInstruction));
             }
         }
 

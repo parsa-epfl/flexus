@@ -69,6 +69,32 @@ eSize dbSize(uint32_t aSize){
     }
 }
 
+std::ostream & operator << ( std::ostream & anOstream, eSize op){
+    std::string str;
+    switch (op) {
+    case kByte:
+        str = "Byte";
+        break;
+    case kHalfWord:
+        str = "HalfWord";
+        break;
+    case kWord:
+        str = "Word";
+        break;
+    case kDoubleWord:
+        str = "DoubleWord";
+        break;
+    case kQuadWord:
+        str = "QuadWord";
+        break;
+    case kIllegalSize: default:
+        str = "Invalid size";
+        break;
+    }
+    anOstream << str;
+    return anOstream;
+}
+
 std::ostream & operator <<( std::ostream & anOstream, eOperation op) {
   const char * map_tables[] = {
     "PageWalkRequest"

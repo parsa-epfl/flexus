@@ -78,10 +78,9 @@ bool validateXRegister::operator () () {
   uint64_t flexus = theInstruction->operand< uint64_t > (theOperandCode);
   uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readXRegister( theReg );
 
-  DBG_(Dev,(<< "flexus value in " << theOperandCode << "  " << flexus ));
-  DBG_(Dev,(<< "qemu value in " << theReg << "  " << qemu   ));
+  DBG_(Dev,(<< "flexus value in " << std::setw(10) << theOperandCode << "  = " << std::hex << flexus << std::dec  ));
+  DBG_(Dev,(<< "qemu value in   " << std::setw(10) << theReg         << "  = " << std::hex << qemu   << std::dec  ));
 
-  DBG_( Dev, ( << "Validating mapped_reg " << theReg << " flexus=" << std::hex << flexus << " qemu=" << qemu << std::dec << "\n" ) );
 
   return (flexus == qemu);
 }
@@ -99,9 +98,10 @@ bool validatePC::operator () () {
   uint64_t flexus = theAddr;
   uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPC();
 
-  DBG_( Dev, ( << "Validating flexus PC=" << std::hex << flexus << " qemu PC=" << qemu << std::dec) );
+  DBG_(Dev,(<< "flexus PC value " << std::hex << flexus << std::dec ));
+  DBG_(Dev,(<< "qemu PC value   " << std::hex << qemu   << std::dec ));
 
-  return (flexus == qemu);
+  return flexus == qemu;
 }
 
 bool validatePC_HARD::operator () () {
@@ -116,10 +116,11 @@ bool validatePC_HARD::operator () () {
   uint64_t flexus = theAddr;
   uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPC();
 
-  DBG_( Dev, ( << "Validating flexus PC=" << std::hex << flexus << " qemu PC=" << qemu << std::dec) );
+//  DBG_(Dev,(<< "flexus PC value " << std::hex << flexus << std::dec ));
+//  DBG_(Dev,(<< "qemu PC value   " << std::hex << qemu   << std::dec ));
 
-  DBG_Assert((flexus == qemu), (<< std::hex << "flexus [ " << flexus << " ] " << " != " << " QEMU [ " << qemu << " ] " << std::dec));
-  return true;
+//  DBG_Assert((flexus == qemu), (<< "PCs dont match"));
+  return flexus == qemu;
 }
 
 bool validateVRegister::operator () () {
@@ -157,9 +158,6 @@ bool validateMemory::operator () () {
 
   DBG_(Dev,(<< "flexus value: " << flexus_val ));
   DBG_(Dev,(<< "qemu value:   " << qemu_val   ));
-
-
-  bool b = (flexus_val == qemu_val);
 
   return (flexus_val == qemu_val);
 }

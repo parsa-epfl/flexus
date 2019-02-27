@@ -111,10 +111,13 @@ struct ExtendAction : public PredicatedSemanticAction
 };
 
 
-predicated_action extendAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, std::unique_ptr<Operation> & anExtendOp, bool is64)
+predicated_action extendAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, std::unique_ptr<Operation> & anExtendOp, std::vector< std::list<InternalDependance> > & opDeps, bool is64)
 {
 
   ExtendAction* act(new(anInstruction->icb()) ExtendAction (anInstruction, aRegisterCode, anExtendOp, is64));
+  for (uint32_t i = 0; i < opDeps.size(); ++i) {
+    opDeps[i].push_back( act->dependance(i) );
+  }
   return predicated_action( act, act->predicate() );
 }
 

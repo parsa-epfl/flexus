@@ -76,12 +76,12 @@ struct ReadConstantAction : public BaseSemanticAction
   ReadConstantAction( SemanticInstruction * anInstruction, int64_t aVal, eOperandCode anOperandCode)
     : BaseSemanticAction( anInstruction, 1 )
     , theOperandCode( anOperandCode )
-    , theVal ((aVal < 0) ? ~aVal : aVal)
+    , theVal (aVal)
   {}
 
   void doEvaluate()
   {
-      DBG_(Dev, (<< "Reading constant: " << theVal << " into " << theOperandCode ));
+      DBG_(Dev, (<< "Reading constant: 0x" << std::hex << theVal << std::dec <<" into " << theOperandCode ));
        theInstruction->setOperand(theOperandCode, theVal);
 
        satisfyDependants();
@@ -93,7 +93,7 @@ struct ReadConstantAction : public BaseSemanticAction
   }
 };
 
-simple_action readConstantAction ( SemanticInstruction * anInstruction, int64_t aVal, eOperandCode anOperandCode)
+simple_action readConstantAction ( SemanticInstruction * anInstruction, uint64_t aVal, eOperandCode anOperandCode)
 {
   return new(anInstruction->icb()) ReadConstantAction( anInstruction, aVal, anOperandCode);
 }

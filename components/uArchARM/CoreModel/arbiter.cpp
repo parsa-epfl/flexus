@@ -491,7 +491,7 @@ void CoreImpl::issueMMU(TranslationPtr aTranslation){
     bool ignored;
     /*std::tie(lsq_entry->theMSHR, ignored) = */theMSHRs.insert( std::make_pair(mshr.thePaddr, mshr) );
     theMemoryPorts.push_back( op);
-    DBG_( VVerb, ( << theName << " " << " issuing operation " << *op) );
+    DBG_( Dev, ( << theName << " " << " issuing translation operation " << *op << "  -- ID " << aTranslation->theID) );
 
     thePageWalkRequests.emplace(std::make_pair(aTranslation->theVaddr, aTranslation));
 }

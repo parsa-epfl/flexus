@@ -114,10 +114,5 @@ predicated_dependant_action casAction
   LoadAction * act(new(anInstruction->icb()) LoadAction( anInstruction, aSize, false, aBypass, true) );
   return predicated_dependant_action( act, act->dependance(), act->predicate() );
 }
-predicated_dependant_action rmwAction
-( SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass ) {
-  LoadAction * act(new(anInstruction->icb()) LoadAction( anInstruction, aSize, false, aBypass, true) );
-  return predicated_dependant_action( act, act->dependance(), act->predicate() );
-}
 
 } //nv9Decoder

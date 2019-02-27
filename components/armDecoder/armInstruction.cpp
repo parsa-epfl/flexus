@@ -118,7 +118,7 @@ void armInstruction::doDispatchEffects(  ) {
     feedback->theActualTarget = VirtualMemoryAddress(0);
     feedback->theBPState = bpState();
     core()->branchFeedback(feedback);
-    core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( this ) , new BranchInteraction(VirtualMemoryAddress(0)) );
+//    core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( this ) , new BranchInteraction(VirtualMemoryAddress(0)) );
 
   }
 }

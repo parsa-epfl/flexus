@@ -196,9 +196,11 @@ typedef struct CONCAT32 : public Operation {
     uint64_t op1 = boost::get<uint64_t>(operands[0]);
     uint64_t op2 = boost::get<uint64_t>(operands[1]);
 
+    the128 = true;
+
     op1 &= 0xffffffff;
     op2 &= 0xffffffff;
-    return (op1 << 32) | op2;
+    return bits((op1 << 32) | op2);
   }
   virtual char const * describe() const {
     return "CONCAT32";
@@ -227,7 +229,8 @@ typedef struct AND : public Operation {
     virtual ~AND(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 2);
-    return boost::get<uint64_t>(operands[0]) & boost::get<uint64_t>(operands[1]);
+    DBG_(Dev, (<< "ANDING " << std::hex << boost::get<uint64_t>(operands[0]) << " & " << boost::get<uint64_t>(operands[1]) << std::dec ));
+    return (boost::get<uint64_t>(operands[0]) & boost::get<uint64_t>(operands[1]));
   }
   virtual char const * describe() const {
     return "AND";
@@ -408,7 +411,7 @@ typedef struct SextB : public Operation  {
     virtual ~SextB(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 1);
-    return (int64_t)(boost::get<uint64_t>(operands[0])  | SIGNED_UPPER_BOUND_B);
+    return (uint64_t)(boost::get<uint64_t>(operands[0])  | SIGNED_UPPER_BOUND_B);
   }
   virtual char const * describe() const {
     return "singned extend Byte";
@@ -420,7 +423,7 @@ typedef struct SextH : public Operation  {
     virtual ~SextH(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 1);
-    return (int64_t)(boost::get<uint64_t>(operands[0])  | SIGNED_UPPER_BOUND_H);
+    return (uint64_t)(boost::get<uint64_t>(operands[0])  | SIGNED_UPPER_BOUND_H);
   }
   virtual char const * describe() const {
     return "singned extend Half Word";
@@ -432,7 +435,7 @@ typedef struct SextW : public Operation  {
     virtual ~SextW(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 1);
-    return uint64_t(boost::get<uint64_t>(operands[0])  | SIGNED_UPPER_BOUND_W);
+    return (uint64_t)(boost::get<uint64_t>(operands[0])  | SIGNED_UPPER_BOUND_W);
   }
   virtual char const * describe() const {
     return "singned extend Word";
@@ -643,19 +646,13 @@ typedef struct UDiv : public Operation  {
     UDiv(){}
     virtual ~UDiv(){}
   uint64_t calc( std::vector<Operand> const & operands) {
-    DBG_Assert( operands.size() == 3);
-    uint64_t op0 = boost::get<uint64_t>(operands[0]) & 0xFFFFFFFF;
-    uint64_t op1 = boost::get<uint64_t>(operands[1]) & 0xFFFFFFFF;
-    uint64_t y = boost::get<uint64_t>(operands[2]) & 0xFFFFFFFF;
-    uint64_t dividend = op0 | (y << 32 );
-    if (op1 == 0) {
-      return 0ULL; //ret_val is irrelevant when divide by zero
-    }
-    uint64_t prod = dividend / op1;
-    if (prod > 0xFFFFFFFFULL) {
-      prod = 0xFFFFFFFFULL;
-    }
-    return prod;
+      DBG_Assert( operands.size() == 2);
+      uint64_t op0 = boost::get<uint64_t>(operands[0]);
+      uint64_t op1 = boost::get<uint64_t>(operands[1]);
+
+      if (op1 == 0) return uint64_t(0);
+
+      return op0 / op1;
   }
   virtual Operand operator()( std::vector<Operand> const & operands) {
     return calc(operands);
@@ -672,22 +669,13 @@ typedef struct SDiv : public Operation  {
     SDiv(){}
     virtual ~SDiv(){}
   uint64_t calc( std::vector<Operand> const & operands) {
-    DBG_Assert( operands.size() == 3);
-    uint64_t op0 = boost::get<uint64_t>(operands[0]) & 0xFFFFFFFF;
-    uint64_t op1 = boost::get<uint64_t>(operands[1]) & 0xFFFFFFFF;
-    uint64_t y = boost::get<uint64_t>(operands[2]) & 0xFFFFFFFF;
-    uint64_t dividend = op0 | (y << 32 );
-    uint64_t divisor = op1 | (op1 & 0x80000000ULL ? 0xFFFFFFFF00000000ULL : 0ULL);
-    if (divisor == 0) {
-      return 0ULL; //ret_val is irrelevant when divide by zero
-    }
-    uint64_t prod = dividend / divisor;
-    if (prod > 0x7FFFFFFF) {
-      prod = 0x7FFFFFFFLL;
-    } else if (prod < (-1 * 0x7FFFFFFFLL) ) {
-      prod = 0xFFFFFFFF80000000LL;
-    }
-    return prod;
+    DBG_Assert( operands.size() == 2);
+    uint64_t op0 = boost::get<uint64_t>(operands[0]);
+    uint64_t op1 = boost::get<uint64_t>(operands[1]);
+
+    if (op1 == 0) return uint64_t(0);
+
+    return op0 / op1;
   }
   virtual Operand operator()( std::vector<Operand> const & operands) {
     return calc(operands);

@@ -283,20 +283,20 @@ void connect( std::list<InternalDependance > const & dependances, simple_action 
 
 simple_action readRegisterAction ( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, eOperandCode anOperandCode, bool aSP, bool is64);
 simple_action readNZCVAction ( SemanticInstruction * anInstruction, eNZCV aBit, eOperandCode anOperandCode);
-simple_action readConstantAction( SemanticInstruction * anInstruction, int64_t aVal, eOperandCode anOperandCode);
+simple_action readConstantAction( SemanticInstruction * anInstruction, uint64_t aVal, eOperandCode anOperandCode);
 simple_action calcAddressAction(SemanticInstruction * anInstruction, std::vector< std::list<InternalDependance> > & opDeps );
 simple_action translationAction(SemanticInstruction *anInstruction);
 
 
 predicated_action reverseAction ( SemanticInstruction * anInstruction, eOperandCode anInputCode, eOperandCode anOutputCode, bool is64);
-predicated_action reorderAction( SemanticInstruction * anInstruction, eOperandCode anInputCode, eOperandCode anOutputCode, uint8_t aContainerSize, bool is64);
+predicated_action reorderAction( SemanticInstruction * anInstruction, eOperandCode anInputCode, eOperandCode anOutputCode, uint8_t aContainerSize, std::vector<std::list<InternalDependance>> & rs_deps, bool is64);
 predicated_action crcAction(SemanticInstruction * anInstruction, uint32_t aPoly, eOperandCode anInputCode, eOperandCode anInputCode2,eOperandCode anOutputCode, bool is64);
-predicated_action countAction( SemanticInstruction * anInstruction, eOperandCode anInputCode, eOperandCode anOutputCode, eCountOp aCountOp, bool is64);
-predicated_action extendAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, std::unique_ptr<Operation> & anExtendOp, bool is64);
+predicated_action countAction( SemanticInstruction * anInstruction, eOperandCode anInputCode, eOperandCode anOutputCode, eCountOp aCountOp, std::vector< std::list<InternalDependance> > & rs_deps, bool is64);
+predicated_action extendAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, std::unique_ptr<Operation> & anExtendOp, std::vector< std::list<InternalDependance> > & opDeps, bool is64);
 predicated_action incrementAction ( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, bool is64);
 predicated_action shiftAction(SemanticInstruction * anInstruction, eOperandCode aRegisterCode, std::unique_ptr<Operation> & aShiftOp, uint64_t aShiftAmount, bool is64);
 predicated_action invertAction(SemanticInstruction * anInstruction, eOperandCode aRegisterCode, bool is64);
-predicated_action conditionSelectAction(SemanticInstruction * anInstruction, std::unique_ptr<Condition> & anOperation, uint32_t aCode, std::vector< std::list<InternalDependance> > & opDeps, eOperandCode aResult, bool anInvert, bool anIncrement, bool a64);
+predicated_action conditionSelectAction(SemanticInstruction * anInstruction, std::unique_ptr<Condition> & anOperation, uint64_t aCode, std::vector< std::list<InternalDependance> > & opDeps, eOperandCode aResult, bool anInvert, bool anIncrement, bool a64);
 predicated_action constantAction (SemanticInstruction * anInstruction, uint64_t aConstant, eOperandCode aResult, boost::optional<eOperandCode> aBypass );
 predicated_action operandAction(SemanticInstruction * anInstruction, eOperandCode anOperand, eOperandCode aResult, int anOffset, boost::optional<eOperandCode> aBypass);
 predicated_action conditionCompareAction(SemanticInstruction * anInstruction, std::unique_ptr<Condition> & anOperation, uint32_t aCode, std::vector< std::list<InternalDependance> > & opDeps, eOperandCode aResult, bool aSub_op, bool a64);
@@ -314,18 +314,18 @@ dependant_action branchRegAction( SemanticInstruction * anInstruction, eOperandC
 dependant_action branchToCalcAddressAction(SemanticInstruction * anInstruction);
 
 
-multiply_dependant_action updateVirtualAddressAction(SemanticInstruction * anInstruction, uint32_t aNumDependent, eOperandCode aCode = kAddress);
-multiply_dependant_action updatePhysicalAddressAction(SemanticInstruction * anInstruction, uint32_t aNumDependent, eOperandCode aCode = kAddress);
-multiply_dependant_action updateCASAddressAction(SemanticInstruction * anInstruction, eOperandCode aCode = kAddress);
+multiply_dependant_action updateVirtualAddressAction(SemanticInstruction * anInstruction, eOperandCode aCode = kAddress);
+
 multiply_dependant_action updateCASValueAction(SemanticInstruction * anInstruction, eOperandCode aCompareCode, eOperandCode aNewCode );
 multiply_dependant_action updateCASPValueAction(SemanticInstruction * anInstruction, eOperandCode aCompareCode1, eOperandCode aCompareCode2, eOperandCode aNewCode1, eOperandCode aNewCode2 );
-multiply_dependant_action updateSTDValueAction(SemanticInstruction * anInstruction, eOperandCode data );
 
+multiply_dependant_action updateSTPValueAction(SemanticInstruction * anInstruction, eOperandCode data );
 predicated_dependant_action updateStoreValueAction(SemanticInstruction * anInstruction, eOperandCode data );
+
 predicated_dependant_action loadAction(SemanticInstruction * anInstruction, eSize aSize, eSignCode aSignExtend, boost::optional<eOperandCode> aBypass );
-predicated_dependant_action casAction(SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass );
-predicated_dependant_action ldaluAction(SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass );
-predicated_dependant_action caspAction(SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass , boost::optional<eOperandCode> aBypass1 );
+predicated_dependant_action casAction(SemanticInstruction * anInstruction, eSize aSize, eSignCode aSignExtend, boost::optional<eOperandCode> aBypass );
+
+predicated_dependant_action caspAction(SemanticInstruction * anInstruction, eSize aSize, eSignCode aSignCode, boost::optional<eOperandCode> aBypass0, boost::optional<eOperandCode> aBypass1  );
 predicated_dependant_action ldpAction(SemanticInstruction * anInstruction, eSize aSize, eSignCode aSignCode, boost::optional<eOperandCode> aBypass0, boost::optional<eOperandCode> aBypass1  );
 
 

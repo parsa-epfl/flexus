@@ -81,12 +81,14 @@ arminst UNCONDBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequen
     bool op = extract32(aFetchedOpcode.theOpcode, 31, 1);
     inst->setClass(clsBranch, codeBranchUnconditional);
 
-    int64_t offset = (sextract32(aFetchedOpcode.theOpcode, 0, 26) * 4);
+    int64_t offset = sextract32(aFetchedOpcode.theOpcode, 0, 26) << 2;
     uint64_t addr = (uint64_t)aFetchedOpcode.thePC + offset;
-
-
     VirtualMemoryAddress target(addr);
 
+
+    DBG_(Dev,(<< "branching to " << std::hex << target << " with an offset of 0x"<< std::hex << offset << std::dec));
+
+    inst->addPostvalidation(validatePC(addr, inst));
 
     if (op){
         std::vector< std::list<InternalDependance> > rs_deps(1);
@@ -117,7 +119,11 @@ arminst CMPBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceN
     bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
     uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
     bool iszero = !(extract32(aFetchedOpcode.theOpcode, 24, 1));
-    VirtualMemoryAddress target = VirtualMemoryAddress(aFetchedOpcode.thePC + (sextract32(aFetchedOpcode.theOpcode, 5, 19) * 4) - 4);
+    int64_t offset = sextract32(aFetchedOpcode.theOpcode, 5, 19) << 2;
+    uint64_t addr = (uint64_t)aFetchedOpcode.thePC + offset;
+    VirtualMemoryAddress target(addr);
+
+    DBG_(Dev,(<< "cmp/br to " << std::hex << target << " with an offset of 0x"<< std::hex << offset << std::dec));
 
     std::vector<std::list<InternalDependance>>  rs_deps(1);
     branch_cond(inst, target, iszero ? kCBZ_ : kCBNZ_, rs_deps[0]);
@@ -145,13 +151,20 @@ arminst TSTBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceN
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
     uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    uint32_t bit_pos = (extract32(aFetchedOpcode.theOpcode, 31, 1) << 5) | extract32(aFetchedOpcode.theOpcode, 19, 5);
+    uint32_t bit_pos = ((extract32(aFetchedOpcode.theOpcode, 31, 1) << 5) | extract32(aFetchedOpcode.theOpcode, 19, 5));
     bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-    bool bit_val = ! (extract32(aFetchedOpcode.theOpcode, 24, 1));
-    VirtualMemoryAddress target(aFetchedOpcode.thePC + sextract32(aFetchedOpcode.theOpcode, 5, 14) * 4 - 4);
+    bool bit_val = extract32(aFetchedOpcode.theOpcode, 24, 1);
+    int64_t offset = sextract32(aFetchedOpcode.theOpcode, 5, 14) << 2;
+    VirtualMemoryAddress target((uint64_t)aFetchedOpcode.thePC + offset);
+
+    DBG_(Dev, (<< "offest is set to #" << offset));
+    DBG_(Dev, (<< "Branch address is set to " << target));
+
+    DBG_(Dev, (<< "Testing bit value (" << bit_val <<") and bit pos ("<< bit_pos <<")  -- " <<
+    "Branching to address " << std::hex<< (uint64_t)aFetchedOpcode.thePC << " with an offset of 0x" << offset << std::dec << " -->> " << target));
 
     std::vector<std::list<InternalDependance> > rs_deps(1);
-    branch_cond(inst, target, bit_val ? kTBZ_ : kTBNZ_, rs_deps[0]);
+    branch_cond(inst, target, bit_val ? kTBNZ_ : kTBZ_, rs_deps[0]);
 
     addReadXRegister(inst, 1, rt, rs_deps[0], sf);
     inst->setOperand(kCondition, uint64_t(1ULL << bit_pos));
@@ -178,18 +191,25 @@ arminst CONDBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequence
 
     //    program label to be conditionally branched to. Its offset from the address of this instruction,
     // in the range +/-1MB, is encoded as "imm19" times 4.
-    int64_t offset = (sextract32(aFetchedOpcode.theOpcode, 5, 19) * 4) - 4 ;
+    int64_t offset = sextract32(aFetchedOpcode.theOpcode, 5, 19) << 2 ;
     uint64_t addr = (uint64_t)aFetchedOpcode.thePC + offset;
 
     VirtualMemoryAddress target(addr);
 
+
+
     if (cond < 0x0e) {
+        DBG_(Dev,(<< "conditionally branching to " << std::hex << target << " with an offset of 0x"<< std::hex << offset << std::dec));
+
         /* genuinely conditional branches */
         std::vector<std::list<InternalDependance>> rs_deps(1);
         branch_cond(inst, target, kBCOND_, rs_deps[0]);
         addReadConstant(inst, 1, cond, rs_deps[0]);
 
     } else {
+        DBG_(Dev,(<< "unconditionally branching to " << std::hex << target << " with an offset of 0x"<< std::hex << offset << std::dec));
+        inst->addPostvalidation(validatePC_HARD(addr, inst));
+
         /* 0xe and 0xf are both "always" conditions */
         branch_always(inst, false, target);
     }
@@ -294,6 +314,7 @@ arminst DPRS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 
 // System
 arminst HINT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
+    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
     DECODER_TRACE;
     uint32_t op1 = extract32(aFetchedOpcode.theOpcode, 16, 3);
     uint32_t crm = extract32(aFetchedOpcode.theOpcode, 8, 4);
@@ -439,12 +460,11 @@ arminst SYS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 
 
     if (l) {
-      inst->setClass(clsComputation, codeRDPR);
-
+      inst->setClass(clsComputation, codeRDPR);   
       inst->addCheckTrapEffect( checkSystemAccess(inst, op0, op1, op2, crn, crm,rt, l) );
       setRD( inst, rt);
-      inst->addRetirementEffect( readPR(inst, pr) );
       inst->addDispatchEffect( mapDestination( inst ) );
+      inst->addRetirementEffect( readPR(inst, pr) );
       inst->addPostvalidation( validateXRegister( rt, kResult, inst  ) );
     } else {
         inst->setClass(clsComputation, codeWRPR);

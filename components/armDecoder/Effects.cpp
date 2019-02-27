@@ -527,7 +527,7 @@ struct BranchEffect: public Effect {
   {}
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
-    DBG_( Dev, ( << anInstruction << " BranchEffect " ) );
+    DBG_( VVerb, ( << anInstruction << " BranchEffect " ) );
 
     if (!theHasTarget){
         Operand address = anInstruction.operand(kAddress);
@@ -535,7 +535,7 @@ struct BranchEffect: public Effect {
     }
 
     if ( anInstruction.redirectPC(theTarget, anInstruction.pc() + 4 ) ) {
-      DBG_( Dev, ( << anInstruction << " BRANCH:  Must redirect.") );
+      DBG_( Dev, ( << "BRANCH:  Must redirect to " << theTarget) );
       if ( anInstruction.core()->squashAfter(boost::intrusive_ptr<nuArchARM::Instruction> (&anInstruction)) ) {
         anInstruction.core()->redirectFetch(theTarget);
       }
@@ -970,18 +970,23 @@ struct ReadPREffect: public Effect {
   void invoke(SemanticInstruction & anInstruction) {
     FLEXUS_PROFILE();
     if (! anInstruction.isAnnulled()) {
-
+      uint64_t pr = anInstruction.core()->readPR(thePR);
+      mapped_reg name = anInstruction.operand< mapped_reg > (kPD);
       SysRegInfo& ri = getPriv(thePR);
-      DBG_( Verb, ( << anInstruction << " Read " << ri.name << " value= " << std::hex << rs << std::dec ) );
+      DBG_( Dev, ( << anInstruction << " Read " << ri.name << " value= " << std::hex << pr << std::dec ) );
 
       uint64_t prVal = ri.readfn(anInstruction.core());
       anInstruction.setOperand(kResult, prVal);
 
-      mapped_reg name = anInstruction.operand< mapped_reg > (kPD);
-
-      anInstruction.core()->writeRegister( name, prVal );
-      anInstruction.core()->bypass( name, prVal);
-
+      anInstruction.core()->writeRegister( name, pr );
+      anInstruction.core()->bypass( name, pr);
+    } else {
+      //ReadPR was annulled.  Copy PPD to PD
+      mapped_reg dest = anInstruction.operand< mapped_reg > (kPD);
+      mapped_reg prev = anInstruction.operand< mapped_reg > (kPPD);
+      register_value val = anInstruction.core()->readRegister( prev );
+      anInstruction.core()->writeRegister( dest, val);
+      anInstruction.setOperand(kResult, val );
     }
     Effect::invoke(anInstruction);
   }
@@ -1012,7 +1017,7 @@ struct WritePREffect: public Effect {
       } else if (anInstruction.hasOperand(kResult1)){
           rs = anInstruction.operand< uint64_t > (kResult1);
       }
-      DBG_( Verb, ( << anInstruction << " Write " << ri.name << " value= " << std::hex << rs << std::dec ) );
+      DBG_( Dev, ( << anInstruction << " Write " << ri.name << " value= " << std::hex << rs << std::dec ) );
 
       ri.writefn(anInstruction.core(), (uint64_t)rs);
     }

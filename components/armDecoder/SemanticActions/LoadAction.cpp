@@ -133,18 +133,17 @@ struct LoadAction : public PredicatedSemanticAction {
       case kDoubleWord:
         break;
     case kQuadWord:
-      break;
     default:
         DBG_Assert(false);
         break;
     }
 
-    theInstruction->setOperand(kResult, value);
+    theInstruction->setOperand(kResult, (uint64_t)value);
     SEMANTICS_DBG(*this << " received load value=" << value);
     if (theBypass) {
       mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass);
       SEMANTICS_DBG(*this << " bypassing value=" << value << " to " << name);
-      core()->bypass( name, value );
+      core()->bypass( name, (uint64_t)value );
     }
     satisfyDependants();
   }
@@ -163,20 +162,8 @@ predicated_dependant_action loadAction
 }
 
 predicated_dependant_action casAction
-( SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass ) {
-  LoadAction * act(new(anInstruction->icb()) LoadAction( anInstruction, aSize, kNoExtention, aBypass, true) );
-  return predicated_dependant_action( act, act->dependance(), act->predicate() );
-}
-
-predicated_dependant_action ldaluAction
-( SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass ) {
-  LoadAction * act(new(anInstruction->icb()) LoadAction( anInstruction, aSize, kNoExtention, aBypass, true) );
-  return predicated_dependant_action( act, act->dependance(), act->predicate() );
-}
-
-predicated_dependant_action rmwAction
-( SemanticInstruction * anInstruction, eSize aSize, boost::optional<eOperandCode> aBypass ) {
-  LoadAction * act(new(anInstruction->icb()) LoadAction( anInstruction, aSize, kNoExtention, aBypass, true) );
+( SemanticInstruction * anInstruction, eSize aSize, eSignCode aSignCode, boost::optional<eOperandCode> aBypass ) {
+  LoadAction * act(new(anInstruction->icb()) LoadAction( anInstruction, aSize, aSignCode, aBypass, false ) );
   return predicated_dependant_action( act, act->dependance(), act->predicate() );
 }
 

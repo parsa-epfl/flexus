@@ -91,8 +91,13 @@ enum eSize {
   , kWord = 4
   , kDoubleWord = 8
   , kQuadWord = 16
-  ,
+  , kIllegalSize
 };
+
+std::ostream & operator << ( std::ostream & anOstream, eSize op);
+
+
+
 
 eSize dbSize(uint32_t s);
 

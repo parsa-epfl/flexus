@@ -120,15 +120,15 @@ struct SimCache {
 
   void loadState(std::string const & aDirName) {
     std::string fname(aDirName);
-    DBG_(Dev, ( << "Loading state: " << fname << " for ufetch order L1i cache" ) );
+    DBG_(VVerb, ( << "Loading state: " << fname << " for ufetch order L1i cache" ) );
     std::ifstream ifs(fname.c_str());
     if (! ifs.good()) {
-      DBG_( Dev, ( << " saved checkpoint state " << fname << " not found.  Resetting to empty cache. " )  );
+      DBG_( VVerb, ( << " saved checkpoint state " << fname << " not found.  Resetting to empty cache. " )  );
     } else {
       ifs >> std::skipws;
 
       if ( ! loadArray( ifs ) ) {
-        DBG_ ( Dev, ( << "Error loading checkpoint state from file: " << fname <<
+        DBG_ ( VVerb, ( << "Error loading checkpoint state from file: " << fname <<
                       ".  Make sure your checkpoints match your current cache configuration." ) );
         DBG_Assert ( false );
       }
@@ -661,7 +661,7 @@ private:
             if (aTransport[TransactionTrackerTag] && aTransport[TransactionTrackerTag]->fillLevel()) {
               theLastMiss[i] = std::make_pair(PhysicalMemoryAddress(reply->address() & theBlockMask), *aTransport[TransactionTrackerTag]->fillLevel());
             } else {
-              DBG_(Dev, ( << "Received Fetch Reply with no TransactionTrackerTag" ));
+              DBG_(VVerb, ( << "Received Fetch Reply with no TransactionTrackerTag" ));
             }
           }
 
@@ -831,7 +831,7 @@ private:
 
     if (theIcacheMiss[anIndex]) {
       ++theMissCycles;
-      DBG_(Dev, (<<"FETCH UNIT: in theIcacheMiss" << theMissCycles.theRefCount << "cycles missed so far"));
+      DBG_(VVerb, (<<"FETCH UNIT: in theIcacheMiss" << theMissCycles.theRefCount << "cycles missed so far"));
       return;
     }
 
@@ -890,6 +890,8 @@ private:
                                       , theFetchReplyTransactionTracker[anIndex]
                                       )
                                     );
+        DBG_(VVerb, (<< "adding entry in the fetch bundle " << fetch_addr.theAddress));
+
 //        if (from_icache && theLastMiss[anIndex] && theLastPhysical == theLastMiss[anIndex]->first) {
 //          bundle->theFillLevels.push_back(theLastMiss[anIndex]->second);
 //          theLastMiss[anIndex] = boost::none;
@@ -909,19 +911,26 @@ private:
 
     void processBundle()  {
 
-      if(theBundle->theOpcodes.size() == 0 || theBundle->theOpcodes.begin()->theOpcode == 0) return;
+      if(theBundle->theOpcodes.size() == 0 ) return;
+      if (theBundle->theOpcodes.begin()->theOpcode == 0) return;
 
       pFetchBundle bundle(new FetchBundle);
 
-      while (theBundle->theOpcodes.size() > 0 && theBundle->theOpcodes.begin()->theOpcode != 0){
-           bundle->theOpcodes.push_back(*theBundle->theOpcodes.begin());
-           theBundle->theOpcodes.erase(theBundle->theOpcodes.begin());
+      while (theBundle->theOpcodes.size() > 0 ){
+          auto i = theBundle->theOpcodes.begin();
+          if (i->theOpcode != 0){
+               bundle->theOpcodes.push_back(*i);
+               theBundle->theOpcodes.erase(i);
+               DBG_(VVerb, (<< "poping entry out of the fetch bundle " << i->thePC));
+          } else {
+               break;
+          }
       }
-
 
       if (bundle->theOpcodes.size() > 0 ) {
         FLEXUS_CHANNEL_ARRAY( FetchBundleOut, 0 ) << bundle;
       }
+
   }
 
   void sendFetchRequest(index_t anIndex, VirtualMemoryAddress const & anAddress) {
@@ -936,6 +945,7 @@ private:
     xlat->theIndex = anIndex;
     xlat->setInstr();
 
+    DBG_(VVerb,(<< "adding entry for " << xlat->theVaddr));
     TranslationsFromTLB.push(xlat);
 
     DBG_Assert( FLEXUS_CHANNEL(iTranslationOut).available() );
@@ -952,6 +962,7 @@ private:
              index_t           anIndex,
              bool& aResync ) {
       while (!TranslationsFromTLB.empty()){
+          DBG_(VVerb,(<< "deleting uFetch bundle entry " << TranslationsFromTLB.front()));
           TranslationsFromTLB.pop();
       }
 
@@ -965,16 +976,15 @@ private:
   void getFetchResponse() {
 
 
-    if (TranslationsFromTLB.front()->isDone()){
-//        theEnable = true;
+        DBG_Assert(TranslationsFromTLB.front()->isDone() || TranslationsFromTLB.front()->isHit());
 
-        DBG_(Iface,( << "Starting magic translation after sending to TLB...."));
+        DBG_(VVerb,( << "Starting magic translation after sending to TLB...."));
         TranslationPtr tr = TranslationsFromTLB.front();
-        if (tr->isDone())
         TranslationsFromTLB.pop();
+        DBG_(VVerb,(<< "poping entry out of fetch translation requests " << tr->theVaddr));
         PhysicalMemoryAddress magicTranslation = cpu(tr->theIndex)->translateVirtualAddress(tr->theVaddr);
 
-        if( tr->thePaddr == magicTranslation ) {
+        if( tr->thePaddr == magicTranslation  || tr->isPagefault()) {
             DBG_(VVerb, ( << "Magic QEMU translation == MMU Translation. Vaddr = "
                         << std::hex << tr->theVaddr
                         << std::dec << ", Paddr = "
@@ -986,21 +996,19 @@ private:
                         << std::dec << ", PADDR_QEMU = "
                         << std::hex << magicTranslation << std::dec));
         }
+        uint32_t opcode = 1;
+        if (! tr->isPagefault()){
+            opcode = cpu(tr->theIndex)->fetchInstruction(tr->theVaddr);
+            theBundle->updateOpcode(tr->theVaddr, opcode);
+        } else {
+            theBundle->updateOpcode(tr->theVaddr, opcode);
+        }
 
-//        Flexus::SharedTypes::Translation gimme;
 
-        uint64_t pc = cpu(tr->theIndex)->readPC();
-        PhysicalMemoryAddress ph = cpu(tr->theIndex)->translateVirtualAddress(VirtualMemoryAddress(pc));
-        bits data = cpu(tr->theIndex)->readPhysicalAddress(ph, 4);
-        uint32_t op = cpu(tr->theIndex)->fetchInstruction(tr->theVaddr);
-
-        theBundle->updateOpcode(tr->theVaddr, op);
-    }
-
-    if (TranslationsFromTLB.empty()){
-        bool temp;
+//    if (TranslationsFromTLB.empty()){
+//        bool temp;
 //        FLEXUS_CHANNEL(EnableOut) << temp;
-    }
+//    }
   }
 };
 

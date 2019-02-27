@@ -62,6 +62,7 @@ using namespace nuArchARM;
 
 bool ConditionHolds(const PSTATE & pstate, int condcode )
 {
+
     bool result;
     switch (condcode >> 1) {
     case 0: // EQ or NE
@@ -119,17 +120,22 @@ typedef struct CBNZ : public Condition {
   }
 }CBNZ;
 
-typedef struct TSTBR : public Condition {
-    TSTBR(){}
-    virtual ~TSTBR(){}
+typedef struct TBZ : public Condition {
+    TBZ(){}
+    virtual ~TBZ(){}
   virtual bool operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 2);
-    return (boost::get<uint64_t>(operands[0]) & boost::get<uint64_t>(operands[0])) == 0;
+    uint64_t op1 = boost::get<uint64_t>(operands[0]);
+    uint64_t op2 = boost::get<uint64_t>(operands[1]);
+
+    bool ret = ((op1 & op2) == op2);
+
+    return !ret;
   }
   virtual char const * describe() const {
     return "Test and Branch on Zero";
   }
-}TSTBR;
+}TBZ;
 
 typedef struct TBNZ : public Condition {
     TBNZ(){}
@@ -150,8 +156,15 @@ typedef struct BCOND : public Condition {
   virtual bool operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 1);
 
-    PSTATE p (theInstruction->core()->getPSTATE());
+    PSTATE p (Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPSTATE());
     uint64_t test = boost::get<uint64_t>(operands[0]);
+
+    // hacking  --- update pstate
+//    uint32_t pstate = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPSTATE();
+
+//    DBG_(Dev, (<< "Flexus pstate = " << theInstruction->core()->getPSTATE()));
+//    DBG_(Dev, (<< "qemu pstate = " << pstate));
+
     return ConditionHolds(p, test);
   }
   virtual char const * describe() const {
@@ -166,18 +179,23 @@ std::unique_ptr<Condition> condition(eCondCode aCond) {
     switch(aCond)
     {
     case kCBZ_:
+        DBG_(Dev, (<< "CBZ"));
         ptr.reset(new CMPBR());
         break;
     case kCBNZ_:
+        DBG_(Dev, (<< "CBNZ"));
         ptr.reset(new CBNZ());
         break;
     case kTBZ_:
-        ptr.reset(new TSTBR());
+        DBG_(Dev, (<< "kTBZ_"));
+        ptr.reset(new TBZ());
         break;
     case kTBNZ_:
+        DBG_(Dev, (<< "TBNZ"));
          ptr.reset(new TBNZ());
          break;
     case kBCOND_:
+        DBG_(Dev, (<< "BCOND"));
          ptr.reset(new BCOND());
          break;
     default:

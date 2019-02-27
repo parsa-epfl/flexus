@@ -767,7 +767,7 @@ void addReadRD( SemanticInstruction * inst, uint32_t rd) {
 
 void addReadRDs( SemanticInstruction * inst, uint32_t rd) {
 
-  multiply_dependant_action update_value = updateSTDValueAction( inst );
+  multiply_dependant_action update_value = updateSTPValueAction( inst );
   connectDependance( inst->retirementDependance(), update_value );
 
   if ( rd == 0 )  {

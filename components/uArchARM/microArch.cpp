@@ -221,7 +221,7 @@ public:
 //      } else {
         //Need to get load value from the ValueTracker
         bits val = ValueTracker::valueTracker(theCPU->id()).load(theCPU->id(),op->thePAddr,op->theSize);
-        op->theValue = bits(val);
+        op->theValue = val;
 //      }
     } else if ( op->theOperation == kRMWReply || op->theOperation == kCASReply ) {
       //RMW operations load int32_t theExtendedValue
@@ -275,6 +275,10 @@ public:
 
   int32_t availableROB() {
     return theAvailableROB;
+  }
+
+  const uint32_t core() const {
+      return theNode;
   }
 
   bool isSynchronized() {
@@ -395,8 +399,8 @@ private:
     resetArchitecturalState();
 
     //Obtain new state from simics
-    uint64_t pc = theCPU->getPC();
     VirtualMemoryAddress redirect_address(theCPU->getPC());
+    DBG_(Dev, (<< "redirecting to address "<< redirect_address));
     redirect(redirect_address);
   }
 
@@ -411,6 +415,7 @@ private:
 void resetArchitecturalState()
 {
     theCore->setPC( theCPU->getPC());
+    DBG_(Dev, (<< "setting PC to " << std::hex << theCore->pc() << std::dec));
     resetRoundingMode();
     resetSpecialRegs();
     fillXRegisters();

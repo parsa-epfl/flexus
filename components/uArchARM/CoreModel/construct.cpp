@@ -372,6 +372,7 @@ void CoreImpl::resetARM() {
 
   theRedirectRequested = false;
   theRedirectPC = VirtualMemoryAddress(0);
+  theDumpPC = VirtualMemoryAddress(0);
 
   clearLSQ();
 
@@ -454,7 +455,7 @@ void CoreImpl::setSPSel (uint32_t aVal){SysRegInfo& ri = getPriv(kSPSel); ri.wri
 void CoreImpl::setSP_el (uint8_t anId, uint64_t aVal){DBG_Assert(anId >= 0 || anId < 4); theSP_el[anId] = aVal;}
 uint64_t CoreImpl::getSP_el (uint8_t anId){DBG_Assert(anId >= 0 || anId < 4); return theSP_el[anId];}
 uint32_t CoreImpl::getPSTATE() { return thePSTATE; }
-void CoreImpl::setPSTATE( uint32_t aPSTATE) { thePSTATE = aPSTATE; }
+void CoreImpl::setPSTATE( uint32_t aPSTATE) { thePSTATE = aPSTATE; DBG_(Dev,(<< "setting PSTATE: " << thePSTATE));}
 void CoreImpl::setFPSR( uint32_t anFPSR) { theFPSR = anFPSR; }
 uint32_t CoreImpl::getFPSR() { return theFPSR; }
 void CoreImpl::setFPCR( uint32_t anFPCR) { theFPCR = anFPCR; }
@@ -469,7 +470,7 @@ void CoreImpl::setException( Flexus::Qemu::API::exception_t anEXP) { theEXP = an
 Flexus::Qemu::API::exception_t CoreImpl::getException() { return theEXP; }
 void CoreImpl::setRoundingMode(uint32_t aRoundingMode) {theRoundingMode = aRoundingMode; }
 uint32_t CoreImpl::getRoundingMode() { return theRoundingMode; }
-void CoreImpl::setDAIF(uint32_t aDAIF) {thePSTATE = ((thePSTATE & ~PSTATE_DAIF) | (aDAIF & PSTATE_DAIF)); }
+void CoreImpl::setDAIF(uint32_t aDAIF) {if (aDAIF == 0) {return;} thePSTATE = ((thePSTATE & ~PSTATE_DAIF) | (aDAIF & PSTATE_DAIF)); DBG_(Dev,(<< "PSATE after DAIF: " << thePSTATE)); }
 void CoreImpl::setPC( uint64_t aPC) { thePC = aPC; }
 
 

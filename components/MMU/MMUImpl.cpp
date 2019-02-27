@@ -268,29 +268,43 @@ public:
 
           TranslationPtr item = theLookUpEntries.front();
           theLookUpEntries.pop();
+          DBG_(VVerb,(<< "Processing lookup entry for " << item->theVaddr));
+
 
           if (item->isInstr()) {
+              DBG_(VVerb,(<< "Item is an Instruction entry " << item->theVaddr));
+
               std::pair<bool,PhysicalMemoryAddress> entry = theInstrTLB.lookUp(item->theVaddr);
               if (entry.first){
+                  DBG_(VVerb,(<< "Item is a Hit " << item->theVaddr));
+
                     // item exists so mark hit
                 item->setHit();
                 item->thePaddr = entry.second;
 
                 FLEXUS_CHANNEL(iTranslationReply) << item;
               } else {
+                  DBG_(VVerb,(<< "Item is a miss " << item->theVaddr));
+
                   // mark miss
                   item->setMiss();
                   thePageWalkEntries.push(item);
                   thePageWalker->push_back(item);
               }
           } else if (item->isData()) {
+              DBG_(VVerb,(<< "Item is an Data entry " << item->theVaddr));
+
               std::pair<bool,PhysicalMemoryAddress> entry = theDataTLB.lookUp(item->theVaddr);
               if (entry.first){
+                  DBG_(VVerb,(<< "Item is a Hit " << item->theVaddr));
+
                   // item exists so mark hit
                   item->setHit();
                   item->thePaddr = entry.second;
                   FLEXUS_CHANNEL(dTranslationReply) << item;
               } else {
+                  DBG_(Dev,(<< "Item is a Miss " << item->theVaddr));
+
                   // mark miss
                   item->setMiss();
                   thePageWalkEntries.push(item);
@@ -302,20 +316,27 @@ public:
       }
 
       while (!thePageWalkEntries.empty()){
+
           TranslationPtr item = thePageWalkEntries.front();
+          DBG_(VVerb,(<< "Processing PW entry for " << item->theVaddr));
 
           if (item->isAnnul()){
+              DBG_(VVerb,(<< "Item was annulled " << item->theVaddr));
               thePageWalkEntries.pop();
           }
           else if (item->isDone()){
+              DBG_(VVerb,(<< "Item was Done translationg " << item->theVaddr));
+
               CORE_DBG("MMU: Translation is Done " << item->theVaddr << " -- "<< item->thePaddr);
 
               thePageWalkEntries.pop();
 
               if (item->isInstr()){
+                  DBG_(VVerb,(<< "Item is an Instruction entry " << item->theVaddr));
                 theInstrTLB[item->theVaddr] = item->thePaddr;
                 FLEXUS_CHANNEL(iTranslationReply) << item;
               } else if (item->isData()){
+                  DBG_(VVerb,(<< "Item is an Data entry " << item->theVaddr));
                   theDataTLB[item->theVaddr] = item->thePaddr;
                   FLEXUS_CHANNEL(dTranslationReply) << item;
               } else {
@@ -333,8 +354,7 @@ public:
       CORE_TRACE;
       while (thePageWalker->hasMemoryRequest()){
           TranslationPtr tmp = thePageWalker->popMemoryRequest();
-          CORE_DBG("Sending a Memory Translation request to Core " << tmp->theVaddr << " -- " << tmp->thePaddr);
-
+          DBG_(VVerb,(<< "Sending a Memory Translation request to Core ready(" << tmp->isReady() << ")  " << tmp->theVaddr << " -- " << tmp->thePaddr << "  -- ID " << tmp->theID));
           FLEXUS_CHANNEL(MemoryRequestOut) << tmp;
       }
   }
@@ -342,6 +362,10 @@ public:
 
   void resyncMMU(uint8_t anIndex) {
       CORE_TRACE;
+      DBG_(VVerb,(<< "Resynchronizing MMU"));
+
+      static bool optimize = false;
+      theMMUInitialized = optimize;
 
     if (!theMMUInitialized){
         theMMU.reset(new mmu_t());
@@ -350,28 +374,25 @@ public:
     theMMU->initRegsFromQEMUObject( getMMURegsFromQEMU(anIndex) );
     theMMU->setupAddressSpaceSizesAndGranules();
     if (thePageWalker){
+        DBG_(VVerb,(<< "Annulling all PW entries"));
         thePageWalker->annulAll();
-        CORE_DBG("reseting Page Walker");
     }
     if (thePageWalkEntries.size() > 0){
-        CORE_DBG("deleting PageWalk Entries");
-
+        DBG_(VVerb,(<< "deleting PageWalk Entries"));
         while(! thePageWalkEntries.empty()){
+            DBG_(VVerb,(<< "deleting MMU PageWalk Entrie " << thePageWalkEntries.front()));
             thePageWalkEntries.pop();
         }
     }
 
     if (theLookUpEntries.size() > 0){
-        CORE_DBG("deleting Lookup Entries");
-
         while(! theLookUpEntries.empty()){
+            DBG_(VVerb,(<< "deleting MMU Lookup Entrie " << theLookUpEntries.front()));
             theLookUpEntries.pop();
         }
     }
     bool temp = true;
     FLEXUS_CHANNEL(ResyncOut) << temp;
-
-    DBG_(VVerb,( << "MMU object init'd, " << std::hex << theMMU << std::dec ));
   }
 
   // Msutherl: Fetch MMU's registers
@@ -423,6 +444,7 @@ public:
              TranslationPtr& aTranslate ) {
       CORE_DBG("MMU: Instruction RequestIn");
 
+      aTranslate->theIndex = anIndex;
       aTranslate->toggleReady();
       theLookUpEntries.push( aTranslate );
   }
@@ -435,6 +457,8 @@ public:
              index_t           anIndex,
              TranslationPtr& aTranslate ) {
       CORE_DBG("MMU: Data RequestIn");
+
+      aTranslate->theIndex = anIndex;
 
       aTranslate->toggleReady();
       theLookUpEntries.push( aTranslate );

@@ -37,6 +37,7 @@
 
 
 #include "pageWalk.hpp"
+#include <core/debug/debug.hpp>
 
 #define DBG_DeclareCategories MMU
 #define DBG_SetDefaultOps AddCat(MMU)
@@ -51,6 +52,8 @@ namespace nMMU {
 void PageWalk::annulAll(){
     if (TheInitialized && theTranlationTransports.size() > 0)
         while (theTranlationTransports.size() > 0){
+            boost::intrusive_ptr<Translation> basicPointer(theTranlationTransports.front()[TranslationBasicTag]);
+            DBG_(VVerb,(<< "Annulling PW entry " << basicPointer->theVaddr));
             theTranlationTransports.pop_back();
         }
 }
@@ -71,8 +74,11 @@ void PageWalk::preWalk( TranslationTransport &  aTranslation ) {
      *    - Parse it, get the matching PA bits, and check if done
      *    - Raise fault if need be (TODO)
      */
+
+
     boost::intrusive_ptr<TranslationState> statefulPointer(aTranslation[TranslationStatefulTag]);
     boost::intrusive_ptr<Translation> basicPointer(aTranslation[TranslationBasicTag]);
+    DBG_(VVerb,(<< "preWalking " << basicPointer->theVaddr));
 
     if( statefulPointer->currentLookupLevel == 0 ) {
         PhysicalMemoryAddress magicPaddr(QEMU_logical_to_physical(*Flexus::Qemu::Processor::getProcessor( theNode ),QEMU_DI_Instruction,basicPointer->theVaddr));
@@ -90,19 +96,23 @@ void PageWalk::preWalk( TranslationTransport &  aTranslation ) {
 bool PageWalk::walk( TranslationTransport &  aTranslation ) {
     boost::intrusive_ptr<TranslationState> statefulPointer(aTranslation[TranslationStatefulTag]);
     boost::intrusive_ptr<Translation> basicPointer(aTranslation[TranslationBasicTag]);
+    DBG_(VVerb,(<< "preWalking " << basicPointer->theVaddr));
 
     DBG_(VVerb,(<< "Current Translation Level: " << (unsigned int) statefulPointer->currentLookupLevel
                 << ", Read Raw TTE Desc. from QEMU : " << std::hex << basicPointer->rawTTEValue << std::dec ));
     /* Check Valid */
     bool validBit = extractSingleBitAsBool(basicPointer->rawTTEValue,0);
     if (basicPointer->theInstruction ){
-        DBG_(Dev, (<< "Walking " << *basicPointer->theInstruction ));
+        DBG_(VVerb, (<< "Walking " << *basicPointer->theInstruction ));
     }
     if (validBit != true) {
-        DBG_Assert(basicPointer->isData());
-        basicPointer->theInstruction->forceResync();
+        if (basicPointer->isData()){
+            basicPointer->theInstruction->forceResync();
+        } else {
+            basicPointer->setPagefault();
+        }
         basicPointer->setDone();
-        return;
+        return false;
     }
 //    DBG_Assert( validBit == true , ( << "Encountered INVALID entry in doTTEAccess: " << std::hex << basicPointer->rawTTEValue << std::dec << ", need to generate Page Fault."));
     /* distinguish between block and table entries, could cut pwalk early!!! */
@@ -236,14 +246,18 @@ void PageWalk::setupTTResolver( TranslationTransport & aTranslation, uint64_t TT
 
     void PageWalk::preTranslate(TranslationTransport & aTransport) {
 
+
         boost::intrusive_ptr<TranslationState> statefulPointer(aTransport[TranslationStatefulTag]);
         boost::intrusive_ptr<Translation> basicPointer(aTransport[TranslationBasicTag]);
 
+        DBG_(VVerb,(<< "preTranslating " << basicPointer->theVaddr));
         // getting here only happens on a NEW translation req.
         if(basicPointer->theCurrentTranslationLevel < statefulPointer->requiredTableLookups) {
             ++basicPointer->theCurrentTranslationLevel;
             preWalk(aTransport);
 
+        } else {
+            DBG_(VVerb,(<< "theCurrentTranslationLevel >= statefulPointer->requiredTableLookups " << basicPointer->theVaddr));
         }
         // once we get here, output address is in the PhysicalAddress field of aTranslation, done
     }
@@ -260,27 +274,37 @@ void PageWalk::setupTTResolver( TranslationTransport & aTranslation, uint64_t TT
 //        for (auto i = theTranlationTransports.begin(); i != theTranlationTransports.end() && theTranlationTransports.size() > 0; ++i) {
 
         if (theTranlationTransports.size() > 0){
+
             auto i = theTranlationTransports.begin();
 
             TranslationTransport& item = *i;
             TranslationPtr basicPointer(item[TranslationBasicTag]);
+            (*basicPointer)++;
+            DBG_(VVerb,(<< "processing translation entry " << basicPointer->theVaddr));
 
 
             if ((theTranlationTransports.begin() == i) && basicPointer->isDone()){
+                DBG_(VVerb,(<< "translation is done for " << basicPointer->theVaddr));
+
 //                theDoneTranlations.push(basicPointer);
                 theTranlationTransports.erase(i);
                 return;
             }
 
             if (basicPointer->isReady()) {
+                DBG_(VVerb,(<< "translation entry is ready " << basicPointer->theVaddr));
+
                 if (! basicPointer->isWaiting()){
+                    DBG_(VVerb,(<< "translation entry is not waiting " << basicPointer->theVaddr));
+
                     preTranslate(item);
                     basicPointer->toggleReady();
                     if (basicPointer->isDone()){
                         return;
                     }
-                } else
+                } else {
                     translate(item);
+                }
                 basicPointer->toggleWaiting();
             }
         }
@@ -306,6 +330,6 @@ void PageWalk::setupTTResolver( TranslationTransport & aTranslation, uint64_t TT
 
 
     //TODO??
-    TTEDescriptor PageWalk::getNextTTDescriptor(TranslationTransport & aTr ) { DBG_Assert(false); }
+//    TTEDescriptor PageWalk::getNextTTDescriptor(TranslationTransport & aTr ) { DBG_Assert(false); }
 
 } // end namespace nMMU

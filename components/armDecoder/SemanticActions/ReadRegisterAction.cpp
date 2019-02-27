@@ -156,13 +156,12 @@ struct ReadRegisterAction : public BaseSemanticAction
             }
         }
 
-        if (!the64){ // reading w reg >> only the botom half
-            val &= 0xffffffff;
+        if (!the64){
+            val &=0xffffffff;
         }
-
         aValue = val;
 
-        DBG_(Dev,(<< "Reading register " << theRegisterCode << " with a value " << aValue));
+        DBG_(Dev,(<< "Reading register " << theRegisterCode << " with a value " << std::hex << aValue << std::dec ));
 
         theInstruction->setOperand(theOperandCode, val);
         satisfyDependants();

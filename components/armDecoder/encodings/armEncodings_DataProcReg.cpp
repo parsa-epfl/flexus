@@ -232,7 +232,7 @@ arminst disas_data_proc_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int6
         case 0x0a: /* Logical (shifted register) */
             return disas_logic_reg(aFetchedOpcode, aCPU, aSequenceNo);
         case 0x0b: /* Add/subtract */
-            if (aFetchedOpcode.thePC & (1 << 21)) { /* (extended register) */
+            if (aFetchedOpcode.theOpcode & (1 << 21)) { /* (extended register) */
                 return disas_add_sub_ext_reg(aFetchedOpcode, aCPU, aSequenceNo);
             } else {
                 return disas_add_sub_reg(aFetchedOpcode, aCPU, aSequenceNo);
@@ -248,7 +248,7 @@ arminst disas_data_proc_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int6
             case 0x4: /* Conditional select */
                 return disas_cond_select(aFetchedOpcode, aCPU, aSequenceNo);
             case 0x6: /* Data-processing */
-                if (aFetchedOpcode.thePC & (1 << 30)) { /* (1 source) */
+                if (aFetchedOpcode.theOpcode & (1 << 30)) { /* (1 source) */
                     return disas_data_proc_1src(aFetchedOpcode, aCPU, aSequenceNo);
                 } else {            /* (2 source) */
                     return disas_data_proc_2src(aFetchedOpcode, aCPU, aSequenceNo);

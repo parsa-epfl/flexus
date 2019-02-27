@@ -392,9 +392,15 @@ void CoreImpl::complete ( MemOp const & anOperation ) {
 
       if (match->second.theOperation == kPageWalkRequest){
             std::map<VirtualMemoryAddress, TranslationPtr>::iterator item = thePageWalkRequests.find(anOperation.theVAddr);
+
             DBG_Assert(item != thePageWalkRequests.end());
             item->second->rawTTEValue = (uint64_t)anOperation.theValue;
             item->second->toggleReady();
+            DBG_(Dev, (<< "Process Memory Reply for ID( " << item->second->theID << ") ready(" << item->second->isReady() <<  ")  -- vaddr: " << anOperation.theVAddr << "  -- paddr: " << anOperation.thePAddr
+                       << "  --  Instruction: " <<  anOperation.theInstruction << " --  PC: " << anOperation.thePC));
+
+            thePageWalkRequests.erase(item);
+
       }
       theMSHRs.erase( match );
 

@@ -64,15 +64,53 @@ extern uint32_t theInsnCount;
 namespace nuArchARM {
 
 bool CoreImpl::checkValidatation(){
-    theFlexusDumpState = theQemuDumpState = "";
-
     theFlexusDumpState = dumpState();
-    theQemuDumpState = Flexus::Qemu::Processor::getProcessor( theNode )->dump_state();
+    theQemuDumpState = Flexus::Qemu::Processor::getProcessor(theNode)->dump_state();
 
-    DBG_(Dev,(<<"Flexus:\n" <<theFlexusDumpState));
-    DBG_(Dev,(<<"Qemu:\n" <<theQemuDumpState));
+    bool ret = (theFlexusDumpState.compare(theQemuDumpState) == 0);
+    if (!ret){
 
-    return (theFlexusDumpState.compare(theQemuDumpState) == 0);
+        // Vector of string to save tokens
+        std::vector <std::string> flex_diff,qemu_diff, diff;
+
+        std::replace( theFlexusDumpState.begin(), theFlexusDumpState.end(), '\n', ' ');
+        std::replace( theQemuDumpState.begin(), theQemuDumpState.end(), '\n', ' ');
+
+        // stringstream class check1
+        std::stringstream flex_check(theFlexusDumpState);
+        std::stringstream qemu_check(theQemuDumpState);
+
+        std::string iflex, iqemu;
+
+
+
+        // Tokenizing w.r.t. space ' '
+        while (std::getline(flex_check, iflex, ' ')){
+            flex_diff.push_back(iflex);
+        }
+        while (std::getline(qemu_check, iqemu, ' ')){
+            qemu_diff.push_back(iqemu);
+        }
+
+        for (int i = 0; i < flex_diff.size() && i < qemu_diff.size(); i++){
+            if (flex_diff[i].compare(qemu_diff[i]) != 0){
+                diff.push_back("flexus: "+flex_diff[i]);
+                diff.push_back("qemu:   "+qemu_diff[i]);
+            }
+
+        }
+
+
+      if (diff.size() > 0) {
+        DBG_(Dev, (<< "state mismatch: "));
+        for (auto &i : diff){
+            DBG_(Dev, (<< i));
+        }
+      }
+
+    }
+
+    return ret;
 }
 
 void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
@@ -95,7 +133,7 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
 
       DBG_(Dev, (<< "Interrupting..." ));
 
-    if (aPendingInterrupt == 0) {
+    if (aPendingInterrupt == kException_None) {
       DBG_(Dev, ( << theName << " Interrupt: " << thePendingInterrupt << " pending for " << (theFlexus->cycleCount() - theInterruptReceived) ) );
     } else {
       theInterruptReceived = theFlexus->cycleCount();
@@ -1371,14 +1409,23 @@ std::string CoreImpl::dumpState(){
     std::stringstream ss;
     mapped_reg sp;
     sp.theType = xRegisters;
-    sp.theIndex=31;
+    sp.theIndex=theMapTables[0]->theMappings[31];
+    uint64_t pc = 0;
 
-    ss << std::hex << "PC=" << std::setw(16)<< std::setfill('0') << thePC << "  " << "SP=" << std::setw(16)<< std::setfill('0') << boost::get<uint64_t>(theRegisters.peek(sp))/*theSP_el[_PSTATE().EL()]*/ << std::dec << std::endl;
+    if ( theDumpPC != VirtualMemoryAddress(0) ){
+        pc = theDumpPC;
+        theDumpPC = VirtualMemoryAddress(0);
+    }
+
+
+    ss << std::hex << "PC=" << std::setw(16)<< std::setfill('0') << ((pc == 0) ? thePC : pc) << "  " << "SP=" << std::setw(16)<< std::setfill('0') << boost::get<uint64_t>(theRegisters.peek(sp))/*theSP_el[_PSTATE().EL()]*/ << std::dec << std::endl;
 
     for (int i = 0; i < 31; i++) {
         mapped_reg mreg;
         mreg.theType = xRegisters;
-        mreg.theIndex=i;
+        mreg.theIndex= theMapTables[0]->theMappings[i];
+
+
 
         ss << "X" << std::setw(2) << std::setfill('0') << i << "="<< std::hex << std::setw(16)<< std::setfill('0') << boost::get<uint64_t>(theRegisters.peek(mreg)) << std::dec;
         if ((i % 4) == 3) {
@@ -1387,7 +1434,8 @@ std::string CoreImpl::dumpState(){
             ss << " ";
         }
     }
-    uint32_t psr = _PSTATE().d();
+
+    uint32_t psr = Flexus::Qemu::Processor::getProcessor(theNode)->readPSTATE(); //_PSTATE().d();
     ss << std::endl
     << "PSTATE=" << std::hex << std::setw(8)<< std::setfill('0') << psr << std::dec << " "
     << (psr & PSTATE_N ? 'N' : '-')
@@ -1522,6 +1570,8 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
     throw ResynchronizeWithQemuException(true);
   }
 
+  validation_passed &= checkValidatation();
+
   validation_passed &= anInstruction->postValidate();
   DBG_(Dev, (<<"Post Validating... "<< validation_passed));
 
@@ -1557,6 +1607,7 @@ void CoreImpl::redirectFetch( VirtualMemoryAddress anAddress ) {
   DBG_(Dev, (<<"redirectFetch anAddress: "<<anAddress));
   theRedirectRequested = true;
   theRedirectPC = anAddress;
+  theDumpPC = anAddress;
 }
 
 void CoreImpl::branchFeedback( boost::intrusive_ptr<BranchFeedback> feedback ) {
@@ -1713,7 +1764,7 @@ bool CoreImpl::acceptInterrupt() {
 
     theROB.front()->makePriv();
 
-    DBG_(Verb, ( << theName << " Accepting interrupt " << thePendingInterrupt << " on instruction " << *theROB.front()) );
+    DBG_(Dev, ( << theName << " Accepting interrupt " << thePendingInterrupt << " on instruction " << *theROB.front()) );
     theInterruptInstruction = theROB.front();
     takeTrap( theInterruptInstruction, /*thePendingInterrupt*/kException_UNCATEGORIZED );
 

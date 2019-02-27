@@ -193,7 +193,7 @@ private:
       theNextPC[anIndex] = theRedirectNextPC[anIndex];
 #endif
       theRedirect[anIndex] = false;
-      DBG_(Dev, Comp(*this) ( << "FGU:  Redirect core[" << anIndex << "] " << thePC[anIndex]) );
+      DBG_(VVerb, Comp(*this) ( << "FGU:  Redirect core[" << anIndex << "] " << thePC[anIndex]) );
     }
     DBG_Assert( FLEXUS_CHANNEL_ARRAY( FetchAddrOut, anIndex).available() );
     DBG_Assert( FLEXUS_CHANNEL_ARRAY( AvailableFAQ, anIndex).available() );
@@ -202,15 +202,15 @@ private:
 
     int32_t max_addrs = cfg.MaxFetchAddress;
     if (max_addrs > available_faq) {
-         DBG_(Dev,(<<"FGU: max address: " <<max_addrs << " is greater than available queue: " << available_faq  ) );
+         DBG_(VVerb,(<<"FGU: max address: " <<max_addrs << " is greater than available queue: " << available_faq  ) );
       max_addrs = available_faq;
     }
     int32_t max_predicts = cfg.MaxBPred;
 
     if (available_faq == 0)
-        DBG_(Dev,(<<"FGU: available FAQ is empty"  ) );
+        DBG_(VVerb,(<<"FGU: available FAQ is empty"  ) );
 
-    static int test;
+//    static int test;
     boost::intrusive_ptr<FetchCommand> fetch(new FetchCommand());
     while ( max_addrs > 0 /*&& test == 0*/) {
       AGU_DBG("Getting addresses: " << max_addrs << " remaining");
@@ -248,11 +248,13 @@ private:
         thePC[anIndex] = theNextPC[anIndex];
         theNextPC[anIndex] = thePC[anIndex] + 4;
 #else
+       DBG_(VVerb, (<< "Before Advancing PC to: " << thePC[anIndex] << " for core: " << anIndex));
+
        thePC[anIndex] += 4;
 #endif
 
-       DBG_(Dev, (<< "Advancing PC to: " << thePC[anIndex] << " for core: " << anIndex));
-       DBG_(Dev, (<< "Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress));
+       DBG_(VVerb, (<< "Advancing PC to: " << thePC[anIndex] << " for core: " << anIndex));
+       DBG_(VVerb, (<< "Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress));
         fetch->theFetches.push_back( faddr );
       }
 
@@ -261,14 +263,14 @@ private:
     }
 
     if (fetch->theFetches.size() > 0) {
-      DBG_(Dev, (<< "Sending total fetches: " << fetch->theFetches.size()));
+      DBG_(VVerb, (<< "Sending total fetches: " << fetch->theFetches.size()));
 
       theEnable = false;
 
       //Send it to FetchOut
       FLEXUS_CHANNEL_ARRAY(FetchAddrOut, anIndex) << fetch;
     } else {
-        DBG_(Dev, (<< "No fetches to send"));
+        DBG_(VVerb, (<< "No fetches to send"));
     }
 
     AGU_DBG("--------------FINISH ADDRESS GEN------------------------");

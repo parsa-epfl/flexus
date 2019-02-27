@@ -108,15 +108,16 @@ struct UpdateAddressAction : public BaseSemanticAction {
           uint64_t addr = theInstruction->operand< uint64_t > (theAddressCode);
           if (theInstruction->hasOperand( kUopAddressOffset ) ) {
             uint64_t offset = theInstruction->operand< uint64_t > (kUopAddressOffset);
-            DECODER_DBG("UpdateAddressAction: adding offset " << offset << " to address "<< addr);
+            DECODER_DBG("adding offset 0x" << std::hex << offset << std::dec << " to address "<< std::hex << addr << std::dec );
             addr +=  offset;
             theInstruction->setOperand(theAddressCode, addr);
+            DECODER_DBG("final address is "<< std::hex << addr << std::dec );
           } else if (theInstruction->hasOperand( kSopAddressOffset ) ) {
               int64_t offset = theInstruction->operand< int64_t > (kSopAddressOffset);
-              DECODER_DBG("adding offset " << offset << " to address "<< addr);
+              DECODER_DBG("adding offset 0x" << std::hex << offset << std::dec << " to address "<< std::hex << addr << std::dec );
               addr +=  offset;
               theInstruction->setOperand(theAddressCode, addr);
-              DECODER_DBG("address is "<< addr);
+              DECODER_DBG("final address is "<< std::hex << addr << std::dec );
 
             }
           VirtualMemoryAddress vaddr(addr);
@@ -139,30 +140,11 @@ struct UpdateAddressAction : public BaseSemanticAction {
 
 
 multiply_dependant_action updateVirtualAddressAction
-( SemanticInstruction * anInstruction, uint32_t aNumDependent, eOperandCode aCode ) {
+( SemanticInstruction * anInstruction, eOperandCode aCode ) {
   UpdateAddressAction * act(new(anInstruction->icb()) UpdateAddressAction( anInstruction, aCode, true ) );
   std::vector<InternalDependance> dependances;
   dependances.push_back( act->dependance(0) );
   dependances.push_back( act->dependance(1) );
-  return multiply_dependant_action( act, dependances );
-}
-
-multiply_dependant_action updatePhysicalAddressAction
-( SemanticInstruction * anInstruction, uint32_t aNumDependent, eOperandCode aCode ) {
-  UpdateAddressAction * act(new(anInstruction->icb()) UpdateAddressAction( anInstruction, aCode, false ) );
-  std::vector<InternalDependance> dependances;
-  dependances.push_back( act->dependance(0) );
-  dependances.push_back( act->dependance(1) );
-  return multiply_dependant_action( act, dependances );
-}
-
-multiply_dependant_action updateCASAddressAction
-( SemanticInstruction * anInstruction, eOperandCode aCode ) {
-  UpdateAddressAction * act(new(anInstruction->icb()) UpdateAddressAction( anInstruction, aCode, true) );
-  std::vector<InternalDependance> dependances;
-  dependances.push_back( act->dependance(0) );
-  dependances.push_back( act->dependance(1) );
-
   return multiply_dependant_action( act, dependances );
 }
 

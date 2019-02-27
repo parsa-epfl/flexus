@@ -459,7 +459,7 @@ bool CoreImpl::canPushMemOp() {
 
 void CoreImpl::pushMemOp(boost::intrusive_ptr< MemOp > anOp) {
   theMemoryReplies.push_back(anOp);
-  DBG_( Iface, ( << " Received: " << *anOp ) );
+  DBG_( Dev, ( << " Received: " << *anOp ) );
 }
 
 boost::intrusive_ptr<MemOp> CoreImpl::popMemOp() {
@@ -692,6 +692,8 @@ void CoreImpl::translate(boost::intrusive_ptr< Instruction > anInsn){
 
 void CoreImpl::resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, VirtualMemoryAddress anAddr) {
   FLEXUS_PROFILE();
+  DBG_Assert(anAddr != VirtualMemoryAddress(0));
+
   memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( anInsn );
   DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end());
   if ( lsq_entry->theVaddr == anAddr  ) {

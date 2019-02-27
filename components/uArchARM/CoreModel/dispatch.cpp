@@ -55,6 +55,7 @@ int32_t CoreImpl::availableROB() const {
   }
 }
 
+
 bool CoreImpl::isStalled() const {
   return
     (   theMemoryReplies.empty()

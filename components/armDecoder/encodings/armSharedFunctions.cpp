@@ -70,6 +70,7 @@ eIndex getIndex ( unsigned int index) {
 }
 
 std::unique_ptr<Operation> extend(eExtendType anExtend){
+
     switch (anExtend) {
     case kExtendType_SXTB:              return operation(kSextB_);
     case kExtendType_SXTH:              return operation(kSextH_);
@@ -109,7 +110,7 @@ void setRD( SemanticInstruction * inst, uint32_t rd) {
   regRD.theType = xRegisters;
   regRD.theIndex = rd;
   inst->setOperand( kRD, regRD );
-  DECODER_DBG( "Writing to x[" << rd << "]"<<"\e[0m");
+  DECODER_DBG( "Writing to x|w[" << rd << "]"<<"\e[0m");
 
 }
 
@@ -118,6 +119,8 @@ void setRD1( SemanticInstruction * inst, uint32_t rd1) {
   regRD1.theType = xRegisters;
   regRD1.theIndex = rd1;
   inst->setOperand( kRD1, regRD1 );
+  DECODER_DBG( "Writing to x|w[" << rd1 << "]"<<"\e[0m");
+
 }
 
 void setRD2( SemanticInstruction * inst, uint32_t rd2) {
@@ -125,6 +128,8 @@ void setRD2( SemanticInstruction * inst, uint32_t rd2) {
   regRD2.theType = xRegisters;
   regRD2.theIndex = rd2;
   inst->setOperand( kRD2, regRD2 );
+  DECODER_DBG( "Writing to x|w[" << rd2 << "]"<<"\e[0m");
+
 }
 
 void setRS( SemanticInstruction * inst, eOperandCode rs_code, uint32_t rs) {
@@ -200,7 +205,7 @@ void addReadConstant (SemanticInstruction * inst, int32_t anOpNumber, uint64_t v
     DBG_Assert( anOpNumber == 1 || anOpNumber == 2 || anOpNumber == 3 || anOpNumber == 4 || anOpNumber == 5 );
     eOperandCode cOperand = eOperandCode( kOperand1 + anOpNumber - 1);
 
-    DECODER_DBG("Reading constant " << std::hex << val <<  std::dec <<" to " << cOperand );
+    DECODER_DBG("Reading constant " << "0x" << std::hex  << val <<  std::dec <<" to " << cOperand );
 
 
     simple_action act = readConstantAction( inst, val, cOperand );
@@ -334,7 +339,7 @@ simple_action addAddressCompute( SemanticInstruction * inst, std::vector< std::l
   DECODER_TRACE;
 
   simple_action tr = translationAction(inst);
-  multiply_dependant_action update_address = updateVirtualAddressAction( inst, rs_deps.size() );
+  multiply_dependant_action update_address = updateVirtualAddressAction( inst );
   inst->addDispatchEffect( satisfy( inst, update_address.dependances[1] ) );
   simple_action exec = calcAddressAction( inst, rs_deps);
 

@@ -58,8 +58,6 @@ arminst CAS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     uint32_t rs = extract32(aFetchedOpcode.theOpcode, 16, 5);  // ignored by all loads and store-release
     uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
     uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-
-
     bool is_pair = ! extract32(aFetchedOpcode.theOpcode, 23, 1);
 
 
@@ -67,28 +65,24 @@ arminst CAS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     inst->setClass(clsAtomic, codeCAS);
     inst->setExclusive();
 
-    bool sf = (sz == 1) ? true : false;
+    bool sf = sz;
     eSize dbsize = (sz == 1) ? kQuadWord : kDoubleWord;
-
 
 //    eAccType stacctype = o0 == 1 ? kAccType_ORDEREDRW : kAccType_ATOMICRW;
     eAccType ldacctype = L == 1 ? kAccType_ORDEREDRW : kAccType_ATOMICRW;
 
     //obtain the loaded values
     std::vector<std::list<InternalDependance>> rs_deps(1);
-    addReadXRegister(inst, 3, rn, rs_deps[0], sz);
     addAddressCompute(inst, rs_deps);
+    addReadXRegister(inst, 3, rn, rs_deps[0], true);
 
     predicated_dependant_action cas;
     if (! is_pair){
-        cas = casAction( inst, dbsize, kPD );
+        cas = casAction( inst, dbsize, kNoExtention, kPD );
     } else {
-        cas = caspAction( inst, dbsize, kPD, kPD1 );
+        cas = caspAction( inst, dbsize, kNoExtention, kPD, kPD1 );
     }
     inst->addDispatchEffect( allocateCAS( inst, dbsize, cas.dependance, ldacctype) );
-    multiply_dependant_action update_address = updateCASAddressAction( inst );
-    inst->addDispatchEffect( satisfy( inst, update_address.dependances[1] ) );
-
     inst->addCheckTrapEffect( mmuPageFaultCheck(inst) );
     inst->addRetirementEffect( retireMem(inst) );
     inst->addSquashEffect( eraseLSQ(inst) );
@@ -98,18 +92,20 @@ arminst CAS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 
     if (! is_pair){
         multiply_dependant_action update_value = updateCASValueAction( inst, kOperand1, kOperand2);
+
         InternalDependance dep( inst->retirementDependance() );
         connectDependance( dep, update_value );
 
         //Read the value which will be stored
-        std::vector<std::list<InternalDependance>> uv_dep(1);
-        uv_dep[0].push_back( update_value.dependances[0]  );
-        addReadXRegister( inst, 2, rt, uv_dep[0] , sf);
+        std::vector<std::list<InternalDependance>> str_dep(1);
+        str_dep[0].push_back( update_value.dependances[0]  );
+        addReadXRegister( inst, 2, rt, str_dep[0] , sf);
 
         //Read the comparison value
         std::vector<std::list<InternalDependance>> cmp_dep(1);
         cmp_dep[0].push_back( update_value.dependances[1]  );
         addReadXRegister( inst, 1, rs, cmp_dep[0], sf );
+
     } else {
         multiply_dependant_action update_value = updateCASPValueAction( inst, kOperand1, kOperand2, kOperand3, kOperand4);
         InternalDependance dep( inst->retirementDependance() );
@@ -118,14 +114,14 @@ arminst CAS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
         //Read the value which will be stored
         std::vector<std::list<InternalDependance>> uv_dep(2);
         uv_dep[0].push_back( update_value.dependances[0]  );
-        uv_dep[1].push_back( update_value.dependances[0]  );
+        uv_dep[1].push_back( update_value.dependances[1]  );
         addReadXRegister( inst, 3, rt, uv_dep[0] , sf);
         addReadXRegister( inst, 4, rt, uv_dep[1] , sf);
 
         //Read the comparison value
         std::vector<std::list<InternalDependance>> cmp_dep(2);
-        cmp_dep[0].push_back( update_value.dependances[1]  );
-        cmp_dep[1].push_back( update_value.dependances[1]  );
+        cmp_dep[0].push_back( update_value.dependances[2]  );
+        cmp_dep[1].push_back( update_value.dependances[3]  );
         addReadXRegister( inst, 1, rs, cmp_dep[0], sf );
         addReadXRegister( inst, 2, rs, cmp_dep[1], sf );
     }
@@ -161,7 +157,7 @@ arminst STXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     eAccType acctype = o0 == 1 ? kAccType_ORDERED : kAccType_ATOMIC;
     std::vector< std::list<InternalDependance> > rs_deps(1);
     addAddressCompute( inst, rs_deps ) ;
-    addReadXRegister(inst, 1, rn, rs_deps[0], size == 64);
+    addReadXRegister(inst, 1, rn, rs_deps[0], true);
 
 
 //    std::vector<std::list<InternalDependance> > status_deps(1);
@@ -201,7 +197,7 @@ arminst STXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
         addReadXRegister(inst, 2, rt2, data_deps[0], size/2 == 64);
         addReadXRegister(inst, 3, rt, data_deps[1], size/2 == 64);
 
-        multiply_dependant_action update_value = updateSTDValueAction( inst, kResult );
+        multiply_dependant_action update_value = updateSTPValueAction( inst, kResult );
         inst->addDispatchEffect( satisfy( inst, update_value.dependances[1]) );
         connectDependance( update_value.dependances[0], act );
         connectDependance( inst->retirementDependance(), update_value );
@@ -237,23 +233,26 @@ arminst STRL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
         MEMBAR(inst, /*kMO_ALL | */kBAR_STRL);
     }
 
-    std::vector< std::list<InternalDependance> > rs_deps(2);
+    std::vector< std::list<InternalDependance> > rs_deps(1), data_deps(1);
     addAddressCompute( inst, rs_deps ) ;
+    addReadXRegister(inst, 1, rn, rs_deps[0], true);
 
-    addReadXRegister(inst, 1, rn, rs_deps[0], size == 64 ? true : false);
-    addReadXRegister(inst, 2, rt, rs_deps[1], size == 64 ? true : false);
-
-    inst->addCheckTrapEffect( mmuPageFaultCheck(inst) );
-    inst->addRetirementEffect( retireMem(inst) );
-    inst->addSquashEffect( eraseLSQ(inst) );
+    simple_action act = addExecute(inst, operation(kMOV_), data_deps);
+    addReadXRegister(inst, 2, rt, data_deps[0], size == 64);
 
     inst->addDispatchEffect( allocateStore( inst, sz, false, acctype ) );
     inst->addRetirementConstraint( storeQueueAvailableConstraint(inst) );
     inst->addRetirementConstraint( sideEffectStoreConstraint(inst) );
 
-//    addUpdateData(inst, rt, rn );
-    inst->addPostvalidation( validateMemory( kAddress, kResult, sz, inst ) );
+    predicated_dependant_action update_value = updateStoreValueAction(inst, kResult );
+    connectDependance( update_value.dependance, act );
+    connectDependance( inst->retirementDependance(), update_value );
+
+    inst->addRetirementEffect( retireMem(inst) );
     inst->addCommitEffect( commitStore(inst) );
+    inst->addSquashEffect( eraseLSQ(inst) );
+
+    inst->addPostvalidation( validateMemory( kAddress, kResult, sz, inst ) );
 
     return inst;
 
@@ -266,7 +265,8 @@ arminst STRL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 arminst LDAQ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
     DECODER_TRACE;
     uint32_t o0 = extract32(aFetchedOpcode.theOpcode, 15, 1);
-    uint32_t size = 8 << extract32(aFetchedOpcode.theOpcode, 30, 1);
+    uint32_t s = extract32(aFetchedOpcode.theOpcode, 30, 2);
+    uint32_t size = 8 << extract32(aFetchedOpcode.theOpcode, 30, 2);
     uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
     uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
     eSize sz = dbSize(size);
@@ -282,10 +282,12 @@ arminst LDAQ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     std::vector<std::list<InternalDependance>> rs_deps(1);
     addAddressCompute( inst, rs_deps ) ;
 
-    addReadXRegister(inst, 1, rn, rs_deps[0], false);
+    addReadXRegister(inst, 1, rn, rs_deps[0], true);
     inst->addCheckTrapEffect( mmuPageFaultCheck(inst) );
     inst->addRetirementEffect( retireMem(inst) );
     inst->addSquashEffect( eraseLSQ(inst) );
+
+    DBG_(Dev, (<< "Loading with size " << sz));
 
     predicated_dependant_action load;
     load = loadAction( inst, sz, kZeroExtend, kPD );
@@ -304,6 +306,7 @@ arminst LDAQ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
  * modes.
  */
 arminst LDXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
+    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
     DECODER_TRACE;
     uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
     uint32_t rt2 = extract32(aFetchedOpcode.theOpcode, 10, 5);
@@ -312,6 +315,9 @@ arminst LDXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     uint32_t size = 8 << extract32(aFetchedOpcode.theOpcode, 30, 2);
     bool is_pair = extract32(aFetchedOpcode.theOpcode, 21, 1);
     eSize sz = dbSize(size);
+
+
+    DECODER_DBG("Loading a " << sz << " " << ((is_pair) ? "as pair" : " ") );
 
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
@@ -322,7 +328,7 @@ arminst LDXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 
     std::vector< std::list<InternalDependance> > rs_deps(1);
     addAddressCompute( inst, rs_deps ) ;
-    addReadXRegister(inst, 1, rn, rs_deps[0], size == 64);
+    addReadXRegister(inst, 1, rn, rs_deps[0], true);
 
 
 
@@ -342,11 +348,11 @@ arminst LDXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 
 //    inst->addDispatchEffect(markExclusiveMonitor(inst, kRS1, sz));
 
-//    if (!is_pair){
-//        addDestination( inst, rt, load, size == 64);
-//    } else {
-//        addPairDestination( inst, rt, rt2, load, size == 64);
-//    }
+    if (!is_pair){
+        addDestination( inst, rt, load, size == 64);
+    } else {
+        addPairDestination( inst, rt, rt2, load, size == 64);
+    }
     
     return inst;
 }
@@ -366,7 +372,7 @@ arminst LDR_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenc
     uint32_t size = 2;
 
 
-    uint64_t offset = (uint64_t)aFetchedOpcode.thePC + imm - 4;
+    int64_t offset = (uint64_t)aFetchedOpcode.thePC + imm - 4;
 
 
     eMemOp memop = kMemOp_LOAD;
@@ -407,7 +413,8 @@ arminst LDR_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenc
 
     std::vector<std::list<InternalDependance> > rs_deps(1);
     addAddressCompute(inst, rs_deps);
-    inst->setOperand(kSopAddressOffset, (int64_t)offset );
+    addReadConstant(inst, 1, 0, rs_deps[0]);
+    inst->setOperand(kSopAddressOffset, offset );
 
     inst->addCheckTrapEffect( mmuPageFaultCheck(inst) );
     inst->addRetirementEffect( retireMem(inst) );
@@ -434,11 +441,10 @@ arminst LDP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     uint32_t rt2 = extract32(aFetchedOpcode.theOpcode, 10, 5);
     uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
     uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    uint32_t scale = 2 + (opc & 0x2);
+    uint32_t scale = 2 +  extract32(opc, 1, 1);
     bool is_signed = ( opc & 1 ) != 0;
-    uint32_t size = 8 << scale;
+    uint32_t size = 8 << (scale+1);
     eSize sz = dbSize(size);
-
 
     if (( ((opc & 1) == 1) && L == 0) || opc == 3 ) {
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
@@ -456,7 +462,7 @@ arminst LDP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 
     // calculate the address from rn
     simple_action act = addAddressCompute( inst, addr_deps ) ;
-    addReadXRegister(inst, 1, rn, addr_deps[0], size/2 == 64);
+    addReadXRegister(inst, 1, rn, addr_deps[0], true);
 
     if (index != kSingedOffset){
         std::vector< std::list<InternalDependance> > wb_deps(1);
@@ -475,11 +481,11 @@ arminst LDP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     if (index != kPostIndex) {
         if (index == kUnsingedOffset){
             inst->setOperand(kUopAddressOffset, (uint64_t)imm7 );
-            DBG_(Dev, (<<"setting unsigned offset " << (uint64_t)imm7));
+            DBG_(Dev, (<<"setting unsigned offset #" << (uint64_t)imm7 ));
 
         } else {
             inst->setOperand(kSopAddressOffset, imm7 );
-            DBG_(Dev, (<<"setting signed offset " << imm7));
+            DBG_(Dev, (<<"setting signed offset #" << imm7 ));
         }
     }
 
@@ -529,7 +535,7 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     std::vector< std::list<InternalDependance> > addr_deps(1), data_deps(2);
     addAddressCompute( inst, addr_deps );
 
-    addReadXRegister(inst, 1, rn, addr_deps[0], size/2 == 64);
+    addReadXRegister(inst, 1, rn, addr_deps[0], true);
 
 
     if (index != kSingedOffset){
@@ -543,11 +549,11 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     if (index != kPostIndex) {
         if (index == kUnsingedOffset){
             inst->setOperand(kUopAddressOffset, (uint64_t)imm7 );
-            DBG_(Dev, (<<"setting unsigned offset " << (uint64_t)imm7));
+            DBG_(Dev, (<<"setting unsigned offset #" << (uint64_t)imm7 ));
 
         } else {
             inst->setOperand(kSopAddressOffset, imm7 );
-            DBG_(Dev, (<<"setting signed offset " << imm7));
+            DBG_(Dev, (<<"setting signed offset #" << imm7 ));
         }
     }
 
@@ -562,7 +568,7 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     inst->addRetirementConstraint( storeQueueAvailableConstraint(inst) );
     inst->addRetirementConstraint( sideEffectStoreConstraint(inst) );
 
-    multiply_dependant_action update_value = updateSTDValueAction( inst, kResult );
+    multiply_dependant_action update_value = updateSTPValueAction( inst, kResult );
     inst->addDispatchEffect( satisfy( inst, update_value.dependances[1]) );
     connectDependance( update_value.dependances[0], act );
     connectDependance( inst->retirementDependance(), update_value );
@@ -585,7 +591,7 @@ arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     uint32_t rm = extract32(aFetchedOpcode.theOpcode, 16, 5);
     uint32_t option = extract32(aFetchedOpcode.theOpcode, 13, 3);
     uint32_t size = extract32(aFetchedOpcode.theOpcode, 30, 2);
-    uint32_t imm = 0;
+    int64_t imm = 0;
     uint32_t regsize;
     bool S = extract32(aFetchedOpcode.theOpcode, 12, 1);
     int shift = (S==1) ? size : 0;
@@ -655,13 +661,19 @@ arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     inst->setClass(clsLoad, codeLoad);
 
     std::vector< std::list<InternalDependance> > rs_deps(1);
-
-
     addAddressCompute( inst, rs_deps ) ;
     if (index != kPostIndex) {
-        inst->setOperand(index == kUnsingedOffset ? kUopAddressOffset : kSopAddressOffset, index == kUnsingedOffset ? (uint64_t)imm : (int64_t)imm);
+        if (index == kUnsingedOffset){
+            inst->setOperand(kUopAddressOffset, (uint64_t)imm );
+            DBG_(Dev, (<<"setting unsigned offset " << (uint64_t)imm));
+
+        } else {
+            inst->setOperand(kSopAddressOffset, imm );
+            DBG_(Dev, (<<"setting signed offset " << imm));
+        }
     }
-    addReadXRegister(inst, 1, rn, rs_deps[0], regsize == 64);
+
+    addReadXRegister(inst, 1, rn, rs_deps[0], true);
 
 
     if (index == kRegOffset){
@@ -706,7 +718,6 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     int64_t imm;
     uint32_t regsize;
     eIndex index = kNoOffset;
-//    bool is_signed;
 
     if ((opc & 0x2) == 0) {
         regsize = (size == 0x4) ? 64 : 32;
@@ -718,52 +729,65 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
                 return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
             }
             regsize = ((opc & 1) == 0x1) ? 32 : 64;
-//            is_signed = true;
         }
     }
 
-    size = 8 << size;
-    eSize sz = dbSize(size);
+    uint32_t scale = 8 << size;
+    eSize sz = dbSize(scale);
+    DBG_(Dev, (<<"Size " << sz));
 
 
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
+    inst->setClass(clsLoad, codeLoad);
+
     if (extract32(aFetchedOpcode.theOpcode, 24, 1)) {  // Unsigned offset
         index = kUnsingedOffset;
-        imm = extract32(aFetchedOpcode.theOpcode, 10, 12);
-        imm = lsl(imm, size == 64 ? 64 : 32, size);
+        imm = extract32(aFetchedOpcode.theOpcode, 10, 12) & 0xfff;
+        DBG_(Dev, (<<"setting offset #" << imm));
+        imm <<= size;
+        DBG_(Dev, (<<"setting offset #" << imm));
     } else {
         index = (extract32(aFetchedOpcode.theOpcode, 11, 1) == 1) ? kPreIndex : kPostIndex;
         imm = sextract32(aFetchedOpcode.theOpcode, 12, 9);
+        DBG_(Dev, (<<"setting signed offset #" << imm));
     }
 
-    if (index == kUnsingedOffset){
-        inst->setOperand(kUopAddressOffset, (uint64_t)imm );
-        DBG_(Dev, (<<"setting unsigned offset " << (uint64_t)imm));
+    if (index != kPostIndex){
+        if (index == kUnsingedOffset){
+            inst->setOperand(kUopAddressOffset, (uint64_t)imm );
+            DBG_(Dev, (<<"setting unsigned offset #" << (uint64_t)imm));
 
-    } else {
-        inst->setOperand(kSopAddressOffset, imm );
-        DBG_(Dev, (<<"setting signed offset " << imm));
+        } else {
+            inst->setOperand(kSopAddressOffset, imm );
+            DBG_(Dev, (<<"setting signed offset #" << imm));
+        }
     }
 
+    // write-back to x[n]
+
+
+    std::vector< std::list<InternalDependance> > rs_deps(1);
+    addAddressCompute( inst, rs_deps ) ;
+
+//    if (index != kUnsingedOffset){
+//        if (index == kPostIndex){
+//            uint64_t offset = ((imm < 0) ? uint64_t(~imm) : uint64_t(imm));
+//            rs_deps.resize(2);
+//            predicated_action wb = addExecute(inst, operation(kADD_), {kOperand1, kOperand3}, rs_deps, kResult1);
+//            addReadConstant(inst, 2, offset, rs_deps[1]);
+//            addDestination1(inst, rn, wb, true);
+//        } else {
+//            predicated_action wb = addExecute(inst, operation(kMOV_), rs_deps, kResult1);
+//            addDestination1(inst, rn, wb, true);
+//        }
+//    }
+
+    addReadXRegister(inst, 1, rn, rs_deps[0], true);
 
 
     eAccType acctype = kAccType_NORMAL;
-    inst->setClass(clsLoad, codeLoad);
-
-    std::vector< std::list<InternalDependance> > rs_deps(1);
-
-
-    addAddressCompute( inst, rs_deps ) ;
-    if (index != kPostIndex) {
-        inst->setOperand(index == kUnsingedOffset ? kUopAddressOffset : kSopAddressOffset, index == kUnsingedOffset ? (uint64_t)imm : (int64_t)imm);
-    }
-
-    addReadXRegister(inst, 1, rn, rs_deps[0], regsize == 64);
-
-
-
     inst->addCheckTrapEffect( mmuPageFaultCheck(inst) );
     inst->addRetirementEffect( retireMem(inst) );
     inst->addSquashEffect( eraseLSQ(inst) );
@@ -774,7 +798,6 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     inst->addCommitEffect( accessMem(inst) );
     inst->addRetirementConstraint( loadMemoryConstraint(inst) );
 
-//    predicated_action act = operandAction(inst, kAddress, kResult, (index==kPostIndex) ? imm : 0, kPD);
     addDestination( inst, rt, load, size == 64);
 
 

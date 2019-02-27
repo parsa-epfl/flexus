@@ -43,6 +43,9 @@ namespace narmDecoder {
 /* C3.1 A64 instruction index by encoding */
 arminst disas_a64_insn( armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo, int32_t aUop )
 {
+    if (aFetchedOpcode.theOpcode == 1){ // instruction fetch page fault
+        return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+    }
     DECODER_DBG(   "#" << aSequenceNo << ": opcode = " << std::hex << aFetchedOpcode.theOpcode << std::dec);
 
     switch (extract32(aFetchedOpcode.theOpcode, 25, 4)) {

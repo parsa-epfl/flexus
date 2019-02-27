@@ -141,16 +141,22 @@ struct FetchBundle : public boost::counted_base {
 
   void updateOpcode(VirtualMemoryAddress anAddress, Opcode anOpcode){
       for (FetchedOpcode& i : theOpcodes){
+          DBG_(Dev,(<< "comapring entries " << anAddress << " with " << i.thePC));
+
           if (i.thePC == anAddress){
               i.theOpcode = anOpcode;
               return;
           }
       }
+      DBG_(Dev,(<< "didnt find opcode entry for " << anAddress));
       DBG_Assert(false);
 
   }
 
   void clear(){
+      for (auto& i : theOpcodes){
+          DBG_(Dev,(<< "deleting opcode entry for " << i.thePC));
+      }
       theOpcodes.clear();
       theFillLevels.clear();
   }

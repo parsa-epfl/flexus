@@ -96,7 +96,7 @@ register_value CoreImpl::readArchitecturalRegister( reg aRegister, bool aRotate 
   return theRegisters.peek( mreg );
 }
 
-void CoreImpl::writeRegister( mapped_reg aRegister, register_value aValue, bool isW ) {
+void CoreImpl::writeRegister( mapped_reg aRegister, register_value aValue, bool isW = false ) {
   return theRegisters.write( aRegister, aValue, *this, isW );
 }
 
@@ -140,7 +140,7 @@ std::pair<mapped_reg, mapped_reg> CoreImpl::create( reg aReg ) {
   DBG_Assert( status != kUnmapped, ( << " aRegister=" << mapped.second << " status=" << status ));
   //This assertion is extremely slow - 15% of total execution time.  Enable
   //at your own risk.
-  DBG_Assert( mapTable(aReg.theType).checkInvariants(), ( << "MapTable Invariant check failed after freeing " << aReg ) );
+//  DBG_Assert( mapTable(aReg.theType).checkInvariants(), ( << "MapTable Invariant check failed after freeing " << aReg ) );
   return mapped;
 }
 

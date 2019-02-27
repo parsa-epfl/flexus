@@ -364,7 +364,7 @@ struct ValueTracker {
         } else {
           Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(aCPU);
 
-          bits current_value = iter->second.theGloballyVisibleValue;
+//          bits current_value = iter->second.theGloballyVisibleValue;
           //Change simics' value to reflect what this CPU believes memory
           //looks like
 //          //cpu->writePAddr( aligned, 8, current_value );
@@ -534,7 +534,7 @@ struct ValueTracker {
   bits load( uint32_t aCPU, PhysicalMemoryAddress anAddress, eSize aSize) {
     FLEXUS_PROFILE();
     DBG_Assert( anAddress != 0 );
-    DBG_Assert( aSize <= 16 );
+    DBG_Assert( aSize <= 16 && aSize >= 1 );
     DBG_Assert( anAddress < 0x40000000000LL );
     DBG_( Iface, ( << "CPU[" << aCPU << "] Load " << anAddress << "[" << aSize << "]" ) );
 
@@ -547,7 +547,7 @@ struct ValueTracker {
     tracker::iterator iter = theTracker.find( aligned );
     if ( iter == theTracker.end() ) {
       bits val = cpu->readPhysicalAddress( anAddress, aSize );
-      DBG_( VVerb, ( << "CPU[" << aCPU << "] Load.NoOutstandingValues " << anAddress << "[" << aSize << "] = " << std::hex << val << std::dec ) );
+      DBG_( Dev, ( << "CPU[" << aCPU << "] Load.NoOutstandingValues " << anAddress << "[" << aSize << "] = " << std::hex << val << std::dec ) );
       return val;
     }
 
@@ -617,7 +617,7 @@ private:
     return PhysicalMemoryAddress( anAddress & ~7 );
   }
 
-  int32_t offset (PhysicalMemoryAddress anAddress, eSize aSize) {
+  uint32_t offset (PhysicalMemoryAddress anAddress, eSize aSize) {
     return ( 16 - aSize ) - (static_cast<uint64_t>( anAddress ) - dwAddr(anAddress) );
   }
 

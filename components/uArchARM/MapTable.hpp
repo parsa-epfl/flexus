@@ -167,6 +167,10 @@ struct PhysicalMap {
   void reset() {
     std::fill(theReverseMappings.begin(), theReverseMappings.end(), -1);
 
+    if (theReverseMappings[20] == 19){
+        int a = 0;
+
+    }
     //Fill in initial mappings
     std::copy
     ( boost::counting_iterator<int>(0)
@@ -176,6 +180,10 @@ struct PhysicalMap {
     for (int32_t i = 0; i < theNameCount; ++i) {
       theMappings[i] = i;
       theReverseMappings[i] = i;
+      if (theReverseMappings[20] == 19){
+          int a = 0;
+
+      }
       theAssignedRegisters[i].clear();
       theAssignedRegisters[i].push_back(i);
     }
@@ -214,7 +222,15 @@ struct PhysicalMap {
     DISPATCH_DBG("Mapping archReg[" << aRegisterName << "] -> pReg[" <<  new_reg << "] - previous pReg[" << previous_reg << "]");
     theAssignedRegisters[aRegisterName].push_back(new_reg);
     DBG_Assert( theReverseMappings[new_reg] == -1);
+
+    DBG_Assert(theReverseMappings[20] != 19);
     theReverseMappings[new_reg] = aRegisterName;
+    DBG_Assert(theReverseMappings[20] != 19);
+
+    if (new_reg == 20){
+        int a = 0;
+
+    }
     return std::make_pair( new_reg, previous_reg );
   }
 
@@ -222,6 +238,8 @@ struct PhysicalMap {
     FLEXUS_PROFILE();
     theFreeList.push_back(aRegisterName);
     std::list<pRegister>::iterator iter, end;
+    DBG_Assert(theReverseMappings[20] != 19);
+
     int32_t arch_name = theReverseMappings[aRegisterName];
     DBG_Assert( arch_name >= 0 && arch_name < static_cast<int>(theAssignedRegisters.size()));
     theReverseMappings[aRegisterName] = -1;
@@ -237,6 +255,8 @@ struct PhysicalMap {
       ++iter;
     }
     DBG_Assert(found);
+    DBG_Assert(theReverseMappings[20] != 19);
+
   }
 
   void restore( regName aRegisterName, pRegister aReg) {

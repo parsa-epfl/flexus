@@ -116,17 +116,6 @@ struct UpdateStoreValueAction : public PredicatedSemanticAction {
   }
 };
 
-predicated_dependant_action updateStoreValueAction
-( SemanticInstruction * anInstruction , eOperandCode data) {
-  UpdateStoreValueAction * act(new(anInstruction->icb()) UpdateStoreValueAction( anInstruction, data ) );
-  return predicated_dependant_action( act, act->dependance(), act->predicate() );
-}
-
-predicated_dependant_action updateRMWValueAction
-( SemanticInstruction * anInstruction ) {
-  UpdateStoreValueAction * act(new(anInstruction->icb()) UpdateStoreValueAction( anInstruction, kOperand4 ) );
-  return predicated_dependant_action( act, act->dependance(), act->predicate() );
-}
 
 struct UpdateCASValueAction : public BaseSemanticAction {
 
@@ -176,8 +165,49 @@ struct UpdateCASValueAction : public BaseSemanticAction {
   }
 };
 
+struct UpdateSTPValueAction : public BaseSemanticAction {
+
+    eOperandCode theOperand;
+  UpdateSTPValueAction ( SemanticInstruction * anInstruction, eOperandCode anOperandCode )
+    : BaseSemanticAction ( anInstruction, 2 )
+    , theOperand(anOperandCode)
+  { }
+
+  void doEvaluate() {
+    if (ready()) {
+        if (theInstruction->hasOperand(theOperand)){
+            bits value = theInstruction->operand< bits > (theOperand);
+            DBG_( Dev, ( << *this << " updating store value " << value << " from operand " << theOperand) );
+            core()->updateStoreValue( boost::intrusive_ptr<Instruction>(theInstruction), value);
+            satisfyDependants();
+        } else {
+            reschedule();
+        }
+    }
+  }
+
+  void describe( std::ostream & anOstream) const {
+    anOstream << theInstruction->identify() << " UpdateSTPValueAction";
+  }
+};
 
 
+predicated_dependant_action updateStoreValueAction
+( SemanticInstruction * anInstruction , eOperandCode data) {
+  UpdateStoreValueAction * act(new(anInstruction->icb()) UpdateStoreValueAction( anInstruction, data ) );
+  return predicated_dependant_action( act, act->dependance(), act->predicate() );
+}
+
+
+multiply_dependant_action updateSTPValueAction
+( SemanticInstruction * anInstruction, eOperandCode data ) {
+  UpdateSTPValueAction * act(new(anInstruction->icb()) UpdateSTPValueAction( anInstruction, data ) );
+  std::vector<InternalDependance> dependances;
+  dependances.push_back( act->dependance(0) );
+  dependances.push_back( act->dependance(1) );
+
+  return multiply_dependant_action( act, dependances );
+}
 
 multiply_dependant_action updateCASValueAction
 ( SemanticInstruction * anInstruction, eOperandCode aCompareCode, eOperandCode aNewCode ) {
@@ -197,38 +227,8 @@ multiply_dependant_action updateCASPValueAction
   dependances.push_back( act->dependance(0) );
   dependances.push_back( act->dependance(1) );
   dependances.push_back( act->dependance(2) );
-
-  return multiply_dependant_action( act, dependances );
-}
-
-struct UpdateSTDValueAction : public BaseSemanticAction {
-
-    eOperandCode theOperand;
-  UpdateSTDValueAction ( SemanticInstruction * anInstruction, eOperandCode anOperandCode )
-    : BaseSemanticAction ( anInstruction, 2 )
-    , theOperand(anOperandCode)
-  { }
-
-  void doEvaluate() {
-    if (ready()) {
-      bits value = theInstruction->operand< bits > (theOperand);
-      DBG_( Dev, ( << *this << " updating store value " << value << " from operand " << theOperand) );
-      core()->updateStoreValue( boost::intrusive_ptr<Instruction>(theInstruction), value);
-      satisfyDependants();
-    }
-  }
-
-  void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " UpdateStoreValue";
-  }
-};
-
-multiply_dependant_action updateSTDValueAction
-( SemanticInstruction * anInstruction, eOperandCode data ) {
-  UpdateSTDValueAction * act(new(anInstruction->icb()) UpdateSTDValueAction( anInstruction, data ) );
-  std::vector<InternalDependance> dependances;
-  dependances.push_back( act->dependance(0) );
-  dependances.push_back( act->dependance(1) );
+  dependances.push_back( act->dependance(3) );
+  dependances.push_back( act->dependance(4) );
 
   return multiply_dependant_action( act, dependances );
 }
