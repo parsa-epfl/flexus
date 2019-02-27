@@ -51,10 +51,6 @@
 
 COMPONENT_PARAMETERS(
     PARAMETER( Cores, int, "Number of cores", "cores", 1 )
-    PARAMETER( CacheLevel, Flexus::SharedTypes::tFillLevel, "CacheLevel", "level", Flexus::SharedTypes::eUnknown )
-    PARAMETER( ArrayConfiguration, std::string, "Configuration of cache array (STD:sets=1024:assoc=16:repl=LRU", "array_config", "STD:sets=1024:assoc=16:repl=LRU" )
-    PARAMETER( TextFlexpoints, bool, "Store flexpoints as text files (compatible with old FastCache component)", "text_flexpoints", false )
-    PARAMETER( GZipFlexpoints, bool, "Compress flexpoints with gzip", "gzip_flexpoints", true )
     PARAMETER( iTLBSize, size_t, "Size of the Instruction TLB", "itlbsize", 64 )
     PARAMETER( dTLBSize, size_t, "Size of the Data TLB", "dtlbsize", 64 )
 );
@@ -68,7 +64,7 @@ COMPONENT_INTERFACE(
     DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, dTranslationReply )
     DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, MemoryRequestOut )
 
-    DYNAMIC_PORT_ARRAY( PushInput, TranslationPtr, TLBReqIn )
+    DYNAMIC_PORT_ARRAY( PushInput, TranslationPtr, TLBReqIn ) // this is for trace
 
     DYNAMIC_PORT_ARRAY( PushOutput, bool, ResyncOut )
 

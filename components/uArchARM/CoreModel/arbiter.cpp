@@ -461,6 +461,7 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction ) {
   DBG_( Verb, ( << theName << " " << *lsq_entry << " issuing operation " << *op) );
 }
 
+// remove me for OoO
 bool CoreImpl::isEnable(){
     return theEnable;
 }

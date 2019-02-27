@@ -57,8 +57,8 @@ COMPONENT_PARAMETERS(
 COMPONENT_INTERFACE(
   DYNAMIC_PORT_ARRAY( PushInput, vaddr_pair, RedirectIn )
   DYNAMIC_PORT_ARRAY( PushInput, boost::intrusive_ptr<BranchFeedback>, BranchFeedbackIn )
-  DYNAMIC_PORT_ARRAY( PushInput, bool, EnableIn )
-        DYNAMIC_PORT_ARRAY( PushInput, bool, EnableUARCHIn )
+  DYNAMIC_PORT_ARRAY( PushInput, bool, EnableIn ) // remove for OoO
+  DYNAMIC_PORT_ARRAY( PushInput, bool, EnableUARCHIn ) // remove for OoO
 
   DYNAMIC_PORT_ARRAY( PushOutput, boost::intrusive_ptr<FetchCommand>, FetchAddrOut )
   DYNAMIC_PORT_ARRAY( PullInput, int, AvailableFAQ )

@@ -252,10 +252,6 @@ bool initializeParameters() {
 
   // Msutherl: put MMU stuff here because I'm too lazy to make a postload
   theMMUCfg.Cores.initialize(1);
-  theMMUCfg.CacheLevel.initialize(eL1);
-  theMMUCfg.ArrayConfiguration.initialize("STD:size=4096:assoc=4:repl=LRU");
-  theMMUCfg.TextFlexpoints.initialize(false);
-  theMMUCfg.GZipFlexpoints.initialize(false);
   theMMUCfg.iTLBSize.initialize(64);
   theMMUCfg.dTLBSize.initialize(64);
 
@@ -295,7 +291,7 @@ FLEXUS_INSTANTIATE_COMPONENT( SplitDestinationMapper, theNetMapperCfg, theNetMap
 //FAG to Fetch
 WIRE( theFAG, FetchAddrOut,             theuFetch, FetchAddressIn         )
 WIRE( theFAG, AvailableFAQ,             theuFetch, AvailableFAQOut        )
-WIRE( theuFetch, EnableOut,             theFAG, EnableIn        )
+WIRE( theuFetch, EnableOut,             theFAG, EnableIn        ) // remove for OoO
 
 //Fetch to Decoder
 WIRE( theuFetch, AvailableFIQ,          theDecoder, AvailableFIQOut       )
@@ -314,7 +310,7 @@ WIRE( theMMU, MemoryRequestOut,         theuArch, MemoryRequestIn         )
 WIRE(theuArch, ResyncOut,               theMMU,   ResyncIn                )
 WIRE(theMMU, ResyncOut,                 theuFetch,   ResyncIn             )
 
-WIRE( theuArch, EnableOutFGU,             theFAG, EnableUARCHIn        )
+WIRE( theuArch, EnableOutFGU,             theFAG, EnableUARCHIn        ) // remove me for OoO
 
 
 

@@ -115,6 +115,7 @@ bool CoreImpl::checkValidatation(){
 
 void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
 
+    // remove me for OoO
     if (theEnable) theEnable = false;
 
     // qemu warmup
@@ -1521,16 +1522,12 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
 
 
 
-    DBG_( VVerb, Condition(!validation_passed) ( << *anInstruction << "Prevalidation failure." ) );
+//    DBG_( VVerb, Condition(!validation_passed) ( << *anInstruction << "Prevalidation failure." ) );
 //    bool take_interrupt = theInterruptSignalled && (anInstruction == theInterruptInstruction);
-//    theInterruptSignalled = false;
-//    theInterruptInstruction = 0;
-
-    CORE_DBG("Instruction is neither annuled nor is a micro-op");
+    theInterruptSignalled = false;
+    theInterruptInstruction = 0;
 
     raised = advance_fn();
-
-
 
     if ( raised != 0) {
       if ( anInstruction->willRaise() != (raised == 0 ? kException_None : kException_UNCATEGORIZED)) { // FIXME get exception mapper
@@ -1556,6 +1553,7 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
 
   accountCommit(anInstruction, raised);
 
+  // remove me for OoO
   theEnable = true;
 
   if (anInstruction->resync()) {

@@ -121,12 +121,12 @@ COMPONENT_INTERFACE(
   PORT( PushInput, PhysicalMemoryAddress, WritePermissionLost )
   PORT( PushOutput, bool, StoreForwardingHitSeen) // Signal a store forwarding hit in the LSQ to the PowerTracker
 
-  PORT( PushOutput, bool, ResyncOut )
-  PORT( PushOutput, bool, EnableOutFGU )
+  PORT( PushOutput, bool, ResyncOut ) // make me dynamic for SMP
+  PORT( PushOutput, bool, EnableOutFGU ) // remove me for OoO
 
-  PORT( PushOutput, TranslationPtr, dTranslationOut )
-  PORT( PushInput, TranslationPtr,  dTranslationIn )
-  PORT( PushInput, TranslationPtr,  MemoryRequestIn )
+  PORT( PushOutput, TranslationPtr, dTranslationOut ) // make me dynamic for SMP
+  PORT( PushInput, TranslationPtr,  dTranslationIn ) // make me dynamic for SMP
+  PORT( PushInput, TranslationPtr,  MemoryRequestIn ) // make me dynamic for SMP
 
 
 

@@ -297,7 +297,7 @@ public:
   //passing each instruction to its FetchOut port.
   void drive(interface::uArchDrive const &) {
     doCycle();
-    if (theMicroArch->isEnable()){
+    if (theMicroArch->isEnable()){ // remove me for OoO
         bool tmp = true;
         FLEXUS_CHANNEL(EnableOutFGU) << tmp;
     }

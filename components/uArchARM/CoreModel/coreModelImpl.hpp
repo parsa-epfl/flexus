@@ -518,6 +518,7 @@ private:
   std::vector<uint32_t> fpAluCyclesToReady;
   std::vector<uint32_t> fpMultCyclesToReady;
 
+  // remove me for OoO
   bool theEnable;
 
   //CONSTRUCTION
@@ -871,7 +872,7 @@ public:
   void requestPort(boost::intrusive_ptr<Instruction> anInstruction );
   void issue(boost::intrusive_ptr<Instruction> anInstruction );
   void issueMMU(TranslationPtr aTranslation);
-  bool isEnable();
+  bool isEnable(); // remove me for OoO
   void issueStorePrefetch( boost::intrusive_ptr<Instruction> anInstruction );
   void requestStorePrefetch( boost::intrusive_ptr<Instruction> anInstruction);
   void requestStorePrefetch( memq_t::index< by_insn >::type::iterator lsq_entry);
