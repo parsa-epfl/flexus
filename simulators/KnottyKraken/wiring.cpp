@@ -254,6 +254,7 @@ bool initializeParameters() {
   theMMUCfg.Cores.initialize(1);
   theMMUCfg.iTLBSize.initialize(64);
   theMMUCfg.dTLBSize.initialize(64);
+  theMMUCfg.PerfectTLB.initialize(true);
 
   return true; //true = Abort simulation if parameters are not initialized
 }

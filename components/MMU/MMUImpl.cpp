@@ -275,6 +275,11 @@ public:
               DBG_(VVerb,(<< "Item is an Instruction entry " << item->theVaddr));
 
               std::pair<bool,PhysicalMemoryAddress> entry = theInstrTLB.lookUp(item->theVaddr);
+              if(cfg.PerfectTLB){
+                PhysicalMemoryAddress perfectPaddr(Qemu::API::QEMU_logical_to_physical(*Flexus::Qemu::Processor::getProcessor(flexusIndex()),Qemu::API::QEMU_DI_Instruction,item->theVaddr));
+                entry.first = true;
+                entry.second = perfectPaddr;
+              }
               if (entry.first){
                   DBG_(VVerb,(<< "Item is a Hit " << item->theVaddr));
 
@@ -295,6 +300,11 @@ public:
               DBG_(VVerb,(<< "Item is an Data entry " << item->theVaddr));
 
               std::pair<bool,PhysicalMemoryAddress> entry = theDataTLB.lookUp(item->theVaddr);
+              if(cfg.PerfectTLB){
+                PhysicalMemoryAddress perfectPaddr(Qemu::API::QEMU_logical_to_physical(*Flexus::Qemu::Processor::getProcessor(flexusIndex()),Qemu::API::QEMU_DI_Data,item->theVaddr));
+                entry.first = true;
+                entry.second = perfectPaddr;
+              }
               if (entry.first){
                   DBG_(VVerb,(<< "Item is a Hit " << item->theVaddr));
 
