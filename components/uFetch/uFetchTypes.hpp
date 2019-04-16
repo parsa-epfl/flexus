@@ -141,7 +141,7 @@ struct FetchBundle : public boost::counted_base {
 
   void updateOpcode(VirtualMemoryAddress anAddress, Opcode anOpcode){
       for (FetchedOpcode& i : theOpcodes){
-          DBG_(Dev,(<< "comapring entries " << anAddress << " with " << i.thePC));
+          DBG_(Dev,(<< "comparing entries " << anAddress << " with " << i.thePC));
 
           if (i.thePC == anAddress){
               i.theOpcode = anOpcode;

@@ -262,10 +262,10 @@ arminst MOVE(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     case 0:
         opcode = kMoveWideOp_N;
         break;
-    case 1:
+    case 2:
         opcode = kMoveWideOp_Z;
         break;
-    case 2:
+    case 3:
         opcode = kMoveWideOp_K;
         break;
     default:

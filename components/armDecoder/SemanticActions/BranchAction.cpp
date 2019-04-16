@@ -118,6 +118,7 @@ struct BranchCondAction : public BaseSemanticAction {
           feedback->theActualDirection = kTaken;
 
         } else {
+          theInstruction->core()->redirectFetch(theInstruction->pc() + 4);
           feedback->theActualDirection = kNotTaken;
           DBG_(Dev, (<< "Branching Not taken! "));
         }

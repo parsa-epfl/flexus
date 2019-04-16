@@ -403,13 +403,12 @@ arminst ADDSUB_SHIFTED(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t a
     inst->setClass(clsComputation, codeALU);
     std::vector<std::list<InternalDependance>> rs_deps(2);
 
-    if (shift_amount > 0){
-        std::unique_ptr<Operation> shift_op = shift(shift_type);
-        predicated_action sh = shiftAction(inst, kOperand2, shift_op, shift_amount, sf);
-        connect(rs_deps[1], sh);
-    }
+    inst->setOperand(kOperand4, (uint64_t) shift_amount);
+    inst->setOperand(kOperand5, sf ? (uint64_t)64 : (uint64_t)32);
+    predicated_action sh = addExecute(inst, shift(shift_type),{kOperand2, kOperand4, kOperand5}, rs_deps, kOperand3 );
+    inst->addDispatchEffect( satisfy( inst, sh.action->dependance(2)) );
 
-    predicated_action res = addExecute(inst, operation( (sub_op ? (setflags ? kSUBS_ : kSUB_) : (setflags ? kADDS_ : kADD_) ) ), rs_deps);
+    predicated_action res = addExecute(inst, operation( (sub_op ? (setflags ? kSUBS_ : kSUB_) : (setflags ? kADDS_ : kADD_) ) ), {kOperand1, kOperand3}, rs_deps);
 
     readRegister(inst, 1, rn, rs_deps[0], sf);
     readRegister(inst, 2, rm, rs_deps[1], sf);
@@ -433,7 +432,7 @@ arminst ADDSUB_EXTENDED(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
     bool sub_op = extract32(aFetchedOpcode.theOpcode, 30, 1);
     bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
     eExtendType extend_type = DecodeRegExtend(option);
-    uint64_t shift_amount = extract32(aFetchedOpcode.theOpcode, 10, 3);
+    uint32_t shift_amount = extract32(aFetchedOpcode.theOpcode, 10, 3);
 
 
     SemanticInstruction * inst = new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo);
@@ -447,18 +446,20 @@ arminst ADDSUB_EXTENDED(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 
-    predicated_action ex = addExecute(inst, extend(extend_type),{kOperand2}, rs_deps, kOperand2 );
-    if (shift_amount > 0){
-        inst->setOperand(kOperand4, shift_amount);
-        inst->setOperand(kOperand5, sf ? (uint64_t)64 : (uint64_t)32);
-        predicated_action sh = addExecute(inst, shift(0/*kLSL_*/),{kOperand2, kOperand4, kOperand5}, rs_deps, kOperand2 );
-    }
+    predicated_action ex = addExecute(inst, extend(extend_type),{kOperand2}, rs_deps, kOperand3 );
     rs_deps.resize(2);
+    inst->setOperand(kOperand4, (uint64_t) shift_amount);
+    inst->setOperand(kOperand5, sf ? (uint64_t)64 : (uint64_t)32);
+    predicated_action sh = addExecute(inst, shift(0/*kLSL_*/),{kOperand3, kOperand4, kOperand5}, rs_deps, kOperand3 );
+    inst->addDispatchEffect( satisfy( inst, sh.action->dependance(2)) );
 
-    predicated_action res = addExecute(inst, operation( (sub_op ? (setflags ? kSUBS_ : kSUB_) : (setflags ? kADDS_ : kADD_) ) ), rs_deps);
+    predicated_action res = addExecute(inst, operation( (sub_op ? (setflags ? kSUBS_ : kSUB_) : (setflags ? kADDS_ : kADD_) ) ), {kOperand1, kOperand3}, rs_deps);
 
 
-    readRegister(inst, 1, rn, rs_deps[0], sf);
+    if(rn == 31)
+        addReadXRegister(inst, 1, rn, rs_deps[0], sf);
+    else
+        readRegister(inst, 1, rn, rs_deps[0], sf);
     readRegister(inst, 2, rm, rs_deps[1], sf);
 
 
@@ -491,11 +492,10 @@ arminst LOGICAL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenc
     }
 
     std::vector<std::list<InternalDependance>> rs_deps(2);
-    if (shift_amount > 0){
-        std::unique_ptr<Operation> shift_op = shift(shift_type);
-        predicated_action shift_act = shiftAction(inst, kOperand2, shift_op, shift_amount, sf);
-        connect(rs_deps[1], shift_act);
-    }
+    inst->setOperand(kOperand4, (uint64_t) shift_amount);
+    inst->setOperand(kOperand5, sf ? (uint64_t)64 : (uint64_t)32);
+    predicated_action sh = addExecute(inst, shift(shift_type),{kOperand2, kOperand4, kOperand5}, rs_deps, kOperand3 );
+    inst->addDispatchEffect( satisfy( inst, sh.action->dependance(2)) );
 
 
     eOpType op;
@@ -516,7 +516,7 @@ arminst LOGICAL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenc
         break;
     }
 
-    predicated_action act = addExecute(inst, operation(op), rs_deps);
+    predicated_action act = addExecute(inst, operation(op), {kOperand1, kOperand3}, rs_deps);
 
     if (setflags){
      inst->addRetirementEffect(writeNZCV(inst));

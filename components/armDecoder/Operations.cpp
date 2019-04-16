@@ -365,7 +365,7 @@ typedef struct LSL : public Operation  {
     uint64_t op2 = boost::get<uint64_t>(operands[1]);
     uint64_t data_size = boost::get<uint64_t>(operands[2]);
 
-    uint64_t mask = (data_size == 32) ? 0xffffffff : -1;
+    uint64_t mask = (data_size == 32) ? 0xffffffff : 0xffffffffffffffff;
     return (op1 << (op2 % data_size) & mask);
     }
   virtual char const * describe() const {
@@ -398,7 +398,7 @@ typedef struct LSR : public Operation  {
         uint64_t op2 = boost::get<uint64_t>(operands[1]);
         uint64_t data_size = boost::get<uint64_t>(operands[2]);
 
-        uint64_t mask = (data_size == 32) ? 0xffffffff : -1;
+        uint64_t mask = (data_size == 32) ? 0xffffffff : 0xffffffffffffffff;
         return (op1 >> (op2 % data_size) & mask);
     }
   virtual char const * describe() const {
@@ -411,10 +411,13 @@ typedef struct SextB : public Operation  {
     virtual ~SextB(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 1);
-    return (uint64_t)(boost::get<uint64_t>(operands[0])  | SIGNED_UPPER_BOUND_B);
+    uint64_t op1 = (uint64_t)(boost::get<uint64_t>(operands[0]));
+    if(op1 & (1 << (8 - 1)))
+      op1 |= SIGNED_UPPER_BOUND_B;
+    return op1;
   }
   virtual char const * describe() const {
-    return "singned extend Byte";
+    return "signed extend Byte";
   }
 } SextB_;
 
@@ -423,10 +426,13 @@ typedef struct SextH : public Operation  {
     virtual ~SextH(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 1);
-    return (uint64_t)(boost::get<uint64_t>(operands[0])  | SIGNED_UPPER_BOUND_H);
+    uint64_t op1 = (uint64_t)(boost::get<uint64_t>(operands[0]));
+    if(op1 & (1 << (16 - 1)))
+      op1 |= SIGNED_UPPER_BOUND_H;
+    return op1;
   }
   virtual char const * describe() const {
-    return "singned extend Half Word";
+    return "signed extend Half Word";
   }
 } SextH_;
 
@@ -435,10 +441,13 @@ typedef struct SextW : public Operation  {
     virtual ~SextW(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
     DBG_Assert( operands.size() == 1);
-    return (uint64_t)(boost::get<uint64_t>(operands[0])  | SIGNED_UPPER_BOUND_W);
+    uint64_t op1 = (uint64_t)(boost::get<uint64_t>(operands[0]));
+    if(op1 & (1 << (32 - 1)))
+      op1 |= SIGNED_UPPER_BOUND_W;
+    return op1;
   }
   virtual char const * describe() const {
-    return "singned extend Word";
+    return "signed extend Word";
   }
 } SextW_;
 
@@ -450,7 +459,7 @@ typedef struct SextX : public Operation  {
     return (uint64_t)(boost::get<uint64_t>(operands[0])  | SIGNED_UPPER_BOUND_X);
   }
   virtual char const * describe() const {
-    return "singned extend Double Word";
+    return "signed extend Double Word";
   }
 } SextX_;
 
