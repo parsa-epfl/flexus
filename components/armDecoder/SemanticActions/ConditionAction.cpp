@@ -74,7 +74,7 @@ using namespace nuArchARM;
 struct ConditionSelectAction : public PredicatedSemanticAction {
   std::unique_ptr<Condition> theOperation;
   eOperandCode theResult;
-  uint32_t theCondCode;
+  uint64_t theCondCode;
   bool theInvert, theIncrement, the64;
 
 
@@ -99,7 +99,8 @@ struct ConditionSelectAction : public PredicatedSemanticAction {
     if (ready()) {
       if (theInstruction->hasPredecessorExecuted()) {
 
-        bool result = theOperation->operator()( std::vector<Operand>(theCondCode));
+        theOperation->setInstruction(theInstruction);
+        bool result = theOperation->operator()({theCondCode});
 
         if (result) {
           theInstruction->setOperand(theResult, op(kOperand1));
@@ -107,10 +108,16 @@ struct ConditionSelectAction : public PredicatedSemanticAction {
           theInstruction->setOperand(theResult, op(kOperand2));
 
           if (theInvert) {
-            theInstruction->addDispatchAction(invertAction(theInstruction, kResult, the64));
+            std::unique_ptr<Operation> op = operation(kNot_);
+            std::vector<Operand> operands = {theInstruction->operand(kResult)};
+            Operand res = op->operator ()(operands);
+            theInstruction->setOperand(theResult, res);
           }
           if (theIncrement) {
-            theInstruction->addDispatchAction(incrementAction(theInstruction, kResult, the64));
+            std::unique_ptr<Operation> op = operation(kADD_);
+            std::vector<Operand> operands = {theInstruction->operand(kResult), theInstruction->operand(kOperand5)};
+            Operand res = op->operator ()(operands);
+            theInstruction->setOperand(theResult, res);
           }
         }
         satisfyDependants();

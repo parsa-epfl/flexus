@@ -214,7 +214,6 @@ arminst CRC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 // Conditional select
 arminst CSEL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
     if (extract32(aFetchedOpcode.theOpcode, 29, 1) || extract32(aFetchedOpcode.theOpcode, 11, 1)) {
         /* S == 1 or op2<1> == 1 */
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
@@ -225,21 +224,20 @@ arminst CSEL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 
     inst->setClass(clsComputation, codeALU);
 
-    uint32_t rn = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    uint32_t rm = extract32(aFetchedOpcode.theOpcode, 5, 5);
+    uint32_t rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
+    uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
     uint32_t cond = extract32(aFetchedOpcode.theOpcode, 12, 4);
-    uint32_t rd = extract32(aFetchedOpcode.theOpcode, 16, 5);
-    bool op = extract32(aFetchedOpcode.theOpcode, 30, 1);
+    uint32_t rm = extract32(aFetchedOpcode.theOpcode, 16, 5);
+    bool inv = extract32(aFetchedOpcode.theOpcode, 30, 1);
     bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-    bool o2 = extract32(aFetchedOpcode.theOpcode, 10, 1);
-    bool inv = (op == 1);
-    bool inc = (o2 == 1);
+    bool inc = extract32(aFetchedOpcode.theOpcode, 10, 1);
 
-    std::vector<std::list<InternalDependance>> rs_deps(2);
+    std::vector<std::list<InternalDependance>> rs_deps(1);
+    inst->setOperand(kOperand5, (uint64_t)1);
 
     std::unique_ptr<Condition> ptr = condition(kBCOND_);
     predicated_action act = conditionSelectAction(inst, ptr, cond, rs_deps, kResult, inv, inc, sf);
-
+    rs_deps.resize(2);
 
     readRegister(inst, 1, rn, rs_deps[0], sf );
     readRegister(inst, 2, rm, rs_deps[1], sf );

@@ -67,8 +67,8 @@ enum eSignCode {
 typedef enum eIndex{
     kPostIndex,
     kPreIndex,
-    kSingedOffset,
-    kUnsingedOffset,
+    kSignedOffset,
+    kUnsignedOffset,
     kNoOffset,
     kRegOffset,
 }eIndex;

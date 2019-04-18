@@ -223,13 +223,15 @@ struct PhysicalMap {
     std::list<pRegister>::iterator iter, end;
     int32_t arch_name = theReverseMappings[aRegisterName];
     DBG_Assert( arch_name >= 0 && arch_name < static_cast<int>(theAssignedRegisters.size()));
+    DBG_Assert( theMappings[arch_name] != aRegisterName);
+    DBG_Assert( theAssignedRegisters[arch_name].size());
     theReverseMappings[aRegisterName] = -1;
     iter = theAssignedRegisters[arch_name].begin();
     end = theAssignedRegisters[arch_name].end();
     bool found = false;
     while (iter != end) {
       if (*iter == aRegisterName) {
-        theAssignedRegisters[aRegisterName].erase(iter);
+        theAssignedRegisters[arch_name].erase(iter);
         found = true;
         break;
       }

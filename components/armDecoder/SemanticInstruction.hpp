@@ -156,7 +156,7 @@ public:
   }
 
   void setOperand( eOperandCode anOperand, Operand const & aT ) {
-    SEMANTICS_DBG(identify() << ": [ " << anOperand << "->" << aT << " ]");
+    SEMANTICS_DBG(identify() << ": [ " << anOperand << "->" << std::hex << aT << " ]");
     theOperands.set( anOperand, aT );
   }
 

@@ -165,7 +165,7 @@ public:
       if (isW){
           register_value val = theRegs[aReg.theType][aReg.theIndex];
           uint64_t res = boost::get<uint64_t>(val) & 0xffffffff00000000;
-          res |= (boost::get<uint64_t>(aValue) & 0xffffffff);
+          res = (boost::get<uint64_t>(aValue) & 0xffffffff);
           register_value final = res;
           theRegs[aReg.theType][aReg.theIndex] = final;
       } else {

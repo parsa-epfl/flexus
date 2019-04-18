@@ -60,7 +60,7 @@ eIndex getIndex ( unsigned int index) {
     case 0x1:
         return kPostIndex;
     case 0x2:
-        return kSingedOffset;
+        return kSignedOffset;
     case 0x3:
         return kPreIndex;
     default:

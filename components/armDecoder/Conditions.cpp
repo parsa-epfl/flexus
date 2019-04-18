@@ -168,7 +168,7 @@ typedef struct BCOND : public Condition {
     return ConditionHolds(p, test);
   }
   virtual char const * describe() const {
-    return "Branch COnditionally";
+    return "Branch Conditionally";
   }
 }BCOND;
 

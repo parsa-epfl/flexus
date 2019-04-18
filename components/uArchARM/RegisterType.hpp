@@ -73,7 +73,7 @@ enum eRegisterType {
 enum condBits {
     N  // negative
   , Z  // zero
-  , C  // carry - for unsinged overflow
+  , C  // carry - for unsigned overflow
   , V  // signed overflow
   , kLastcondBit
 };
