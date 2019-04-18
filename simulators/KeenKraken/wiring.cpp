@@ -144,10 +144,6 @@ bool initializeParameters() {
   theMagicBreakCfg.EnableIterationCounts.initialize(false);
 
   theMMUCfg.Cores.initialize(1);
-  theMMUCfg.CacheLevel.initialize(eL1);
-  theMMUCfg.ArrayConfiguration.initialize("STD:size=4096:assoc=4:repl=LRU");
-  theMMUCfg.TextFlexpoints.initialize(false);
-  theMMUCfg.GZipFlexpoints.initialize(false);
   theMMUCfg.iTLBSize.initialize(64);
   theMMUCfg.dTLBSize.initialize(64);
 
