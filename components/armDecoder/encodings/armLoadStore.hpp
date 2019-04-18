@@ -61,6 +61,8 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 /* Load/store register (all forms) */
 arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst LDR_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst STR_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
 
 /* atomic memory operations */ // TODO
 arminst LDADD(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);

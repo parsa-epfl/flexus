@@ -178,7 +178,11 @@ arminst disas_ldst_reg_roffset(armcode const & aFetchedOpcode,uint32_t  aCPU, in
     uint32_t opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
     bool is_store = (opc == 0);
 
-    if (size != 0 || (option & 1) == 0){
+    if (extract32(option, 1, 1) == 0) {
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
+
+    if (!V && opc == 3 && size > 1) {
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 
@@ -192,9 +196,9 @@ arminst disas_ldst_reg_roffset(armcode const & aFetchedOpcode,uint32_t  aCPU, in
 //        }
     } else {
         if (is_store){
-            return STR(aFetchedOpcode, aCPU, aSequenceNo);
+            return STR_reg(aFetchedOpcode, aCPU, aSequenceNo);
         } else {
-            return LDR(aFetchedOpcode, aCPU, aSequenceNo);
+            return LDR_reg(aFetchedOpcode, aCPU, aSequenceNo);
         }
     }
 }
@@ -272,7 +276,7 @@ arminst disas_ldst_reg_unsigned_imm(armcode const & aFetchedOpcode, uint32_t  aC
     uint32_t opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
     bool is_store = ((opc == 0) || ((opc == 2) && (size == 0)));
 
-    if (size > 1){
+    if (size < 2){
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 

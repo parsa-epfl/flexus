@@ -139,10 +139,10 @@ struct LoadAction : public PredicatedSemanticAction {
     }
 
     theInstruction->setOperand(kResult, (uint64_t)value);
-    SEMANTICS_DBG(*this << " received load value=" << value);
+    SEMANTICS_DBG(*this << " received load value=" << std::hex << value);
     if (theBypass) {
       mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass);
-      SEMANTICS_DBG(*this << " bypassing value=" << value << " to " << name);
+      SEMANTICS_DBG(*this << " bypassing value=" << std::hex << value << " to " << name);
       core()->bypass( name, (uint64_t)value );
     }
     satisfyDependants();
