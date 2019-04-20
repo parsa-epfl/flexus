@@ -98,17 +98,17 @@ struct BitFieldAction : public PredicatedSemanticAction {
     if (ready()) {
       if (theInstruction->hasPredecessorExecuted()) {
 
-        bits src =  boost::get<bits>(theInstruction->operand(theOperandCode1));
-        bits dst =  boost::get<bits>(theInstruction->operand(theOperandCode2));
+        uint64_t src =  boost::get<uint64_t>(theInstruction->operand(theOperandCode1));
+        uint64_t dst =  boost::get<uint64_t>(theInstruction->operand(theOperandCode2));
 
         std::unique_ptr<Operation> ror = operation(kROR_);
         std::vector<Operand> operands = {src, theR, uint64_t(the64)};
-        bits res =  boost::get<bits>(ror->operator ()(operands));
+        uint64_t res =  boost::get<uint64_t>(ror->operator ()(operands));
 
         // perform bitfield move on low bits
-        bits bot = (dst & ~thewmask) | (res & thewmask);
+        uint64_t bot = (dst & ~thewmask) | (res & thewmask);
         // determine extension bits (sign, zero or dest register)
-        bits top = theExtend ? src & (1 << theS) : dst;
+        uint64_t top = theExtend ? src & (1 << theS) : dst;
         // combine extension bits and result bits
         theInstruction->setOperand(kResult, ((top & ~thetmask) | (bot & thetmask)));
 

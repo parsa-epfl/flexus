@@ -118,11 +118,11 @@ arminst EXTR(armcode const & aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     return inst;
 }
 
-static bool logic_imm_decode_wmask(uint64_t *result, unsigned int immn,
-                                   unsigned int imms, unsigned int immr)
+static bool logic_imm_decode_wmask(uint64_t *result, uint64_t *result2, unsigned int immn,
+                                   unsigned int imms, unsigned int immr, bool immediate)
 {
-    uint64_t mask;
-    unsigned e, levels, s, r;
+    uint64_t mask, mask2;
+    unsigned e, levels, s, r, d;
     int len;
 
     assert(immn < 2 && imms < 64 && immr < 64);
@@ -159,8 +159,10 @@ static bool logic_imm_decode_wmask(uint64_t *result, unsigned int immn,
     levels = e - 1;
     s = imms & levels;
     r = immr & levels;
+    d = s - r;
+    d &= levels; 
 
-    if (s == levels) {
+    if (immediate && s == levels) {
         /* <length of run - 1> mustn't be all-ones. */
         return false;
     }
@@ -169,13 +171,16 @@ static bool logic_imm_decode_wmask(uint64_t *result, unsigned int immn,
      * by r within the element (which is e bits wide)...
      */
     mask = bitmask64(s + 1);
+    mask2 = bitmask64(d + 1);
     if (r) {
         mask = (mask >> r) | (mask << (e - r));
         mask &= bitmask64(e);
     }
     /* ...then replicate the element over the whole 64 bit value */
     mask = bitfield_replicate(mask, e);
+    mask2 = bitfield_replicate(mask2, e);
     *result = mask;
+    *result2 = mask2;
     return true;
 }
 
@@ -191,16 +196,13 @@ arminst BFM(armcode const & aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     bool n = extract32(aFetchedOpcode.theOpcode, 22, 1);
     uint32_t opc = extract32(aFetchedOpcode.theOpcode, 29, 2);
     bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-    bool inzero, extend;
+    bool inzero = false, extend = false;
     uint64_t wmask = 0, tmask = 0;
 
-    if ((!sf && n) || (sf && !n) || (opc == 2)){//FIXME ReservedValue();
+    uint64_t bitsize = sf ? 64 : 32;
+    if (sf != n || immr >= bitsize || imms >= bitsize || opc > 2) {
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
-    if (!sf && (n || ((immr & (1 << 5)) != 0) || ((imms & (1 << 5)) != 0))) {//FIXME ReservedValue();
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-    }
-
 
     switch (opc) {
     case 0: // SBFM
@@ -209,7 +211,7 @@ arminst BFM(armcode const & aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         break;
     case 1: // BFM
         break;
-    case 2: // SBFM
+    case 2: // UBFM
         inzero = true;
         break;
     default:
@@ -217,7 +219,7 @@ arminst BFM(armcode const & aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         break;
     }
 
-    if (! logic_imm_decode_wmask(&wmask, n, imms, immr)){
+    if (! logic_imm_decode_wmask(&wmask, &tmask, n, imms, immr, false)){
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 
@@ -230,15 +232,14 @@ arminst BFM(armcode const & aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     inst->setClass(clsComputation, codeALU);
 
     std::vector<std::list<InternalDependance>> rs_deps(1);
+    predicated_action exec = bitFieldAction(inst, rs_deps, kOperand1, kOperand2, imms, immr, wmask, tmask, extend, sf);
+    rs_deps.resize(2);
     readRegister(inst, 1, rn, rs_deps[0], sf);
     if (inzero){
         addReadConstant(inst, 2, 0, rs_deps[1]);
     } else {
         readRegister(inst, 2, rd, rs_deps[1], sf);
     }
-
-
-    predicated_action exec = bitFieldAction(inst, rs_deps, kOperand1, kOperand2, imms, immr, wmask, tmask, extend, sf);
     addDestination(inst, rd, exec, sf);
 
     return inst;
@@ -314,7 +315,7 @@ arminst LOGICALIMM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequ
     uint32_t opc = extract32(aFetchedOpcode.theOpcode, 29, 2);
     bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
     std::unique_ptr<Operation> op;
-    uint64_t wmask = 0;
+    uint64_t wmask = 0, tmask = 0;
     bool setflags;
 
     switch (opc) {
@@ -335,7 +336,7 @@ arminst LOGICALIMM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequ
         break;
     }
 
-    if (! logic_imm_decode_wmask(&wmask, n, imms, immr) ){
+    if (! logic_imm_decode_wmask(&wmask, &tmask, n, imms, immr, true) ){
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
     if (!sf) {

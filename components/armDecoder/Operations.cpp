@@ -342,7 +342,7 @@ typedef struct ROR : public Operation  {
     ROR(){}
     virtual ~ROR(){}
   virtual Operand operator()( std::vector<Operand> const & operands) {
-    DBG_Assert( operands.size() == 1);
+    DBG_Assert( operands.size() == 3);
     uint64_t input = boost::get<uint64_t>(operands[0]);
     uint64_t shift_size = boost::get<uint64_t>(operands[1]);
     uint64_t input_size = boost::get<uint64_t>(operands[2]);

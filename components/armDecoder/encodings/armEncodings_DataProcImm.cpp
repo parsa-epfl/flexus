@@ -97,7 +97,6 @@ arminst disas_movw_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t a
  */
 arminst disas_bitfield(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
     DECODER_TRACE;
     return BFM(aFetchedOpcode, aCPU, aSequenceNo);
 }
