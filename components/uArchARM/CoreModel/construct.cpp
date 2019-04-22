@@ -429,8 +429,8 @@ void CoreImpl::reset() {
   theIdleCycleCount = 0;
   theIdleThisCycle = false;
 
-  while (!theTranlationQueue.empty()){
-      theTranlationQueue.pop();
+  while (!theTranslationQueue.empty()){
+      theTranslationQueue.pop();
   }
 
 }

@@ -92,6 +92,8 @@ public:
     std::vector<std::string> strs;
     while( std::getline(anIstream, line) ) {
         boost::split(strs, line, boost::is_any_of(" \t\""), boost::token_compress_on);
+        if(strs[0] == "" || line.c_str()[0] == '#')
+          continue;
 
         std::string param_name, value, comment;
         param_name = strs[1];

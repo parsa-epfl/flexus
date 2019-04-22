@@ -19,12 +19,12 @@ std::string theSimulatorName = "KnottyKraken v1.0";
 #include <components/NetShim/MemoryNetwork.hpp>
 #include <components/MultiNic/MultiNic2.hpp>
 #include <components/CMPCache/CMPCache.hpp>
-#include<components/FetchAddressGenerate/FetchAddressGenerate.hpp>
-#include<components/uFetch/uFetch.hpp>
-#include<components/uFetch/PortCombiner.hpp>
-#include<components/armDecoder/armDecoder.hpp>
-#include<components/uArchARM/uArchARM.hpp>
-#include<components/SplitDestinationMapper/SplitDestinationMapper.hpp>
+#include <components/FetchAddressGenerate/FetchAddressGenerate.hpp>
+#include <components/uFetch/uFetch.hpp>
+#include <components/uFetch/PortCombiner.hpp>
+#include <components/armDecoder/armDecoder.hpp>
+#include <components/uArchARM/uArchARM.hpp>
+#include <components/SplitDestinationMapper/SplitDestinationMapper.hpp>
 #include <components/MMU/MMU.hpp>
 
 
@@ -109,7 +109,6 @@ bool initializeParameters() {
 
   theuArchCfg.EarlySGP.initialize(false); // CMU-ONLY
   theuArchCfg.TrackParallelAccesses.initialize(false); // CMU-ONLY
-//  theuArchCfg.ValidateMMU.initialize(false);
 
   theuArchCfg.FpAddOpLatency.initialize(true);
   theuArchCfg.FpAddOpPipelineResetTime.initialize(true);
@@ -205,8 +204,7 @@ bool initializeParameters() {
   theNicCfg.RecvCapacity.initialize(4);
   theNicCfg.SendCapacity.initialize(1);
 
-  //theNetworkCfg.NetworkTopologyFile.initialize("16node-torus.topology");
-  theNetworkCfg.NetworkTopologyFile.initialize("/home/hoss/qflex/flexus/simulators/KnottyKraken/1x3-mesh.topology");
+  theNetworkCfg.NetworkTopologyFile.initialize("1x3-mesh.topology");
   theNetworkCfg.NumNodes.initialize( 3 );
   theNetworkCfg.VChannels.initialize( 3 );
 
@@ -250,7 +248,6 @@ bool initializeParameters() {
   theMagicBreakCfg.TerminateOnMagicBreak.initialize(-1);
   theMagicBreakCfg.EnableIterationCounts.initialize(false);
 
-  // Msutherl: put MMU stuff here because I'm too lazy to make a postload
   theMMUCfg.Cores.initialize(1);
   theMMUCfg.iTLBSize.initialize(64);
   theMMUCfg.dTLBSize.initialize(64);

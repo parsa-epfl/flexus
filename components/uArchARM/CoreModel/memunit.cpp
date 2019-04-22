@@ -476,9 +476,9 @@ boost::intrusive_ptr<MemOp> CoreImpl::popMemOp() {
 
 TranslationPtr CoreImpl::popTranslation() {
     TranslationPtr ret_val;
-    if (! theTranlationQueue.empty()) {
-        ret_val = theTranlationQueue.front();
-        theTranlationQueue.pop();
+    if (! theTranslationQueue.empty()) {
+        ret_val = theTranslationQueue.front();
+        theTranslationQueue.pop();
     }
     return ret_val;
 }
@@ -687,7 +687,7 @@ void CoreImpl::translate(boost::intrusive_ptr< Instruction > anInsn){
     DBG_(Dev, (<< "Sending Translation Request to MMU: " << *anInsn));
 
 
-    theTranlationQueue.push(tr);
+    theTranslationQueue.push(tr);
 }
 
 void CoreImpl::resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, VirtualMemoryAddress anAddr) {

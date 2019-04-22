@@ -293,7 +293,7 @@ public:
   std::list< boost::intrusive_ptr< MemOp > > theSnoopPorts;
   uint32_t theNumSnoopPorts;
 
-  std::queue<TranslationPtr> theTranlationQueue;
+  std::queue<TranslationPtr> theTranslationQueue;
 private:
   std::list< boost::intrusive_ptr< MemOp > > theMemoryReplies;
 

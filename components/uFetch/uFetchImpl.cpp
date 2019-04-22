@@ -521,7 +521,7 @@ private:
 //      xlat.theTL = theCPUState[anIndex].theTL;
       xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
       xlat.theType = Flexus::SharedTypes::Translation::eFetch;
-      cpu(anIndex)->fetchInstruction(xlat.theVaddr); // Msutherl
+      xlat.thePaddr = cpu(anIndex)->translateVirtualAddress(xlat.theVaddr);
       paddr = xlat.thePaddr;
       if (paddr == 0) {
           assert(false);

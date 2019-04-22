@@ -118,8 +118,7 @@ struct UpdateAddressAction : public BaseSemanticAction {
               addr +=  offset;
               theInstruction->setOperand(theAddressCode, addr);
               DECODER_DBG("final address is "<< std::hex << addr << std::dec );
-
-            }
+          }
           VirtualMemoryAddress vaddr(addr);
           core()->resolveVAddr( boost::intrusive_ptr<Instruction>(theInstruction), vaddr );
           SEMANTICS_DBG(*this << " updating vaddr = " << vaddr);

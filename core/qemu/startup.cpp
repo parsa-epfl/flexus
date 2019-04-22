@@ -98,7 +98,7 @@ void CreateFlexus() {
 
   if ( !ifs.good() ) {
       DBG_( Crit, ( << "Warning! Components instantiation failed due "
-                    "to the system width is not defined!" << " Defulting to 1 cpu"<< "Report this error to the QFlex team on GitHub." ) );
+                    "to the system width is not defined!" << " Defaulting to 1 cpu" ) );
       system_width = 1;
 
 //      exit(1);

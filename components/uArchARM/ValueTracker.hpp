@@ -379,7 +379,7 @@ struct ValueTracker {
   void store( uint32_t aCPU, PhysicalMemoryAddress anAddress, eSize aSize, bits aStoreValue) {
     FLEXUS_PROFILE();
     DBG_Assert( anAddress != 0 );
-    DBG_Assert( anAddress < 0x40000000000LL );
+    // DBG_Assert( anAddress < 0x40000000000LL );
     DBG_( Dev, ( << "CPU[" << aCPU << "] Store " << anAddress << "[" << aSize << "] = " << std::hex << aStoreValue << std::dec ) );
 
     //Align the address
