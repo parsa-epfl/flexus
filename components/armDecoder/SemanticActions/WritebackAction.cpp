@@ -102,12 +102,12 @@ struct WritebackAction : public BaseSemanticAction {
       register_value result = boost::apply_visitor( register_value_extractor(), theInstruction->operand( theResult ) );
       uint64_t res = boost::get<uint64_t>(result);
 
-      if (res == 0){
-          int a = 0;
-      }
-
       mapped_reg name = theInstruction->operand< mapped_reg > (theRd);
       char r = the64 ? 'X' : 'W';
+      if(!the64){
+        res &= 0xFFFFFFFF;
+        theInstruction->setOperand(theResult,res );
+      }
       DBG_(Dev, (<< "Writing " << std::hex << result << std::dec << " to " << r << "-REG ->"<< name));
       core()->writeRegister( name, result, !the64 );
       DBG_( VVerb, ( << *this << " rd= " << name << " result=" << result ) );

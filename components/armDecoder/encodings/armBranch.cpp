@@ -166,7 +166,7 @@ arminst TSTBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceN
     std::vector<std::list<InternalDependance> > rs_deps(1);
     branch_cond(inst, target, bit_val ? kTBNZ_ : kTBZ_, rs_deps[0]);
 
-    addReadXRegister(inst, 1, rt, rs_deps[0], sf);
+    readRegister(inst, 1, rt, rs_deps[0], sf);
     inst->setOperand(kCondition, uint64_t(1ULL << bit_pos));
 
 
