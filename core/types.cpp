@@ -61,12 +61,13 @@ bits construct(uint8_t* bytes, size_t size){
 }
 
 
-std::pair<uint64_t,uint64_t> splitBits(const bits & input){
+std::pair<uint64_t,uint64_t> splitBits(const bits & input, uint64_t size){
+    size /= 2;
     bits a, b = -1 ;
-    a = b >>= 64;
-    a <<= 64;
+    a = b <<= size;
+    b = ~a;
     std::pair<uint64_t,uint64_t> ret;
-    ret.first = static_cast<uint64_t>((a & input) >> 64);
+    ret.first = static_cast<uint64_t>((a & input) >> size);
     ret.second =  static_cast<uint64_t>(b & input);
 
     return ret;

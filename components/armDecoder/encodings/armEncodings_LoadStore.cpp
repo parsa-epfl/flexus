@@ -114,7 +114,6 @@ arminst disas_ldst_multiple_struct(armcode const & aFetchedOpcode, uint32_t  aCP
  */
 arminst disas_ldst_reg_imm9(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 {
-    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
      DECODER_TRACE;
 
      uint32_t size = extract32(aFetchedOpcode.theOpcode, 30, 2);
@@ -122,14 +121,12 @@ arminst disas_ldst_reg_imm9(armcode const & aFetchedOpcode, uint32_t  aCPU, int6
      uint32_t opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
      bool is_store = (opc == 0);
 
-     if (((opc & 1) == 1)){
-         if (V && size != 0){
-             return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-         }
-         else if (((size & 0) == 1) && (opc == 0x3)) {
-             return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-         }
-     }
+    if (size == 3 && opc == 2) {
+        return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+    }
+    if (opc == 3 && size > 1) {
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
 
      if (V) {
          return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
@@ -196,9 +193,9 @@ arminst disas_ldst_reg_roffset(armcode const & aFetchedOpcode,uint32_t  aCPU, in
 //        }
     } else {
         if (is_store){
-            return STR_reg(aFetchedOpcode, aCPU, aSequenceNo);
+            return STR(aFetchedOpcode, aCPU, aSequenceNo);
         } else {
-            return LDR_reg(aFetchedOpcode, aCPU, aSequenceNo);
+            return LDR(aFetchedOpcode, aCPU, aSequenceNo);
         }
     }
 }
@@ -276,12 +273,14 @@ arminst disas_ldst_reg_unsigned_imm(armcode const & aFetchedOpcode, uint32_t  aC
     uint32_t opc = extract32(aFetchedOpcode.theOpcode, 22, 2);
     bool is_store = ((opc == 0) || ((opc == 2) && (size == 0)));
 
-    if (size < 2){
+    if (size == 3 && opc == 2) {
+        return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+    }
+    if (opc == 3 && size > 1) {
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 
     if (V) {
-        DECODER_DBG("Vector ops are not supported at the moment!");
         return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
 //        if (is_store){
 //            return STRF(aFetchedOpcode, aCPU, aSequenceNo);
@@ -295,9 +294,6 @@ arminst disas_ldst_reg_unsigned_imm(armcode const & aFetchedOpcode, uint32_t  aC
             return LDR(aFetchedOpcode, aCPU, aSequenceNo);
         }
     }
-
-    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
-
 }
 
 /* Load/store register (all forms) */

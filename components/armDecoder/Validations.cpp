@@ -151,9 +151,12 @@ bool validateMemory::operator () () {
   VirtualMemoryAddress vaddr(theInstruction->operand< uint64_t > (theAddressCode));
   PhysicalMemoryAddress paddr = c->translateVirtualAddress(vaddr);
 
-
-
-  bits flexus_val = theInstruction->operand< bits > (theValueCode);
+  bits flexus_val;
+  if(theValueCode == kResult){
+    flexus_val = theInstruction->operand< bits > (theValueCode);
+  } else {
+    flexus_val = theInstruction->operand< uint64_t > (theValueCode);
+  }
   bits qemu_val = c->readPhysicalAddress(paddr, theSize);
 
   DBG_(Dev,(<< "flexus value: " << flexus_val ));

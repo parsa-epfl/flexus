@@ -101,9 +101,17 @@ struct LDPAction : public PredicatedSemanticAction {
   void doLoad() {
     SEMANTICS_DBG(*this);
     bits value;
+    uint64_t size;
     value = core()->retrieveLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
-
-    std::pair<uint64_t,uint64_t> pairValues = splitBits(value);
+    switch(theSize){
+      case kQuadWord:
+        size = 128;
+        break;
+      default:
+        size = 64;
+        break;
+    }
+    std::pair<uint64_t,uint64_t> pairValues = splitBits(value, size);
 
 
     theInstruction->setOperand(kResult, pairValues.second);
