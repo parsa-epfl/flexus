@@ -270,8 +270,6 @@ CoreImpl::CoreImpl( uArchOptions_t options
   , intMultCyclesToReady(options.numIntMult, 0)
   , fpAluCyclesToReady(options.numFpAlu, 0)
   , fpMultCyclesToReady(options.numFpMult, 0)
-  , theEnable(false)   // remove me for OoO
-
 {
 
     // Msutherl - for MMU verification. Remove when done

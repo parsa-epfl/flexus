@@ -5,8 +5,7 @@
 //This section contains the name of the simulator
 #include <core/simulator_name.hpp>
 namespace Flexus {
-//Simulator Name
-std::string theSimulatorName = "KnottyKraken v1.0";
+  std::string theSimulatorName = "KnottyKraken v1.0";
 }
 
 
@@ -289,7 +288,6 @@ FLEXUS_INSTANTIATE_COMPONENT( SplitDestinationMapper, theNetMapperCfg, theNetMap
 //FAG to Fetch
 WIRE( theFAG, FetchAddrOut,             theuFetch, FetchAddressIn         )
 WIRE( theFAG, AvailableFAQ,             theuFetch, AvailableFAQOut        )
-WIRE( theuFetch, EnableOut,             theFAG, EnableIn        ) // remove for OoO
 
 //Fetch to Decoder
 WIRE( theuFetch, AvailableFIQ,          theDecoder, AvailableFIQOut       )
@@ -307,10 +305,6 @@ WIRE( theMMU, dTranslationReply,        theuArch, dTranslationIn          )
 WIRE( theMMU, MemoryRequestOut,         theuArch, MemoryRequestIn         )
 WIRE(theuArch, ResyncOut,               theMMU,   ResyncIn                )
 WIRE(theMMU, ResyncOut,                 theuFetch,   ResyncIn             )
-
-WIRE( theuArch, EnableOutFGU,             theFAG, EnableUARCHIn        ) // remove me for OoO
-
-
 
 //Decoder to uArch
 WIRE( theDecoder, AvailableDispatchIn,  theuArch, AvailableDispatchOut    )

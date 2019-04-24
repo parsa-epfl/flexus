@@ -115,9 +115,6 @@ bool CoreImpl::checkValidatation(){
 
 void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
 
-    // remove me for OoO
-    if (theEnable) theEnable = false;
-
     // qemu warmup
     if (theFlexus->cycleCount() == 1) {
         advance_fn();
@@ -1552,9 +1549,6 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
   }
 
   accountCommit(anInstruction, raised);
-
-  // remove me for OoO
-  theEnable = true;
 
   if (anInstruction->resync()) {
     DBG_(Dev,(<<"Forced Resync:" << *anInstruction));

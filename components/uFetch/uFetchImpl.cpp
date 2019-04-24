@@ -224,7 +224,6 @@ class FLEXUS_COMPONENT(uFetch) {
 
   std::vector< std::list< FetchAddr > > theFAQ;
   pFetchBundle theBundle;
-//  bool theEnable;
 
   //This opcode is used to signal an MMU miss to the core, to force
   //a resync with Qemu 
@@ -343,12 +342,6 @@ public:
     theCPUState.resize(cfg.Threads);
 
     theMissQueueSize = cfg.MissQueueSize;
-//    theEnable.resize(cfg.Threads);
-//    TranslationsFromTLB.resize(cfg.Threads);
-//    for (auto i : theEnable) i = true;
-//      theEnable = true;
-
-
   }
 
   void finalize() {}
@@ -826,7 +819,6 @@ private:
   //Implementation of the FetchDrive drive interface
   void doFetch(index_t anIndex) {
 
-//    if (!theEnable) return;
     FETCH_DBG("--------------START FETCHING------------------------");
 
     if (theIcacheMiss[anIndex]) {
@@ -967,10 +959,6 @@ private:
       }
 
       theBundle->clear();
-//      theEnable = true;
-      bool temp = true;
-      FLEXUS_CHANNEL(EnableOut) << temp;
-
   }
 
   void getFetchResponse() {
@@ -1004,11 +992,7 @@ private:
             theBundle->updateOpcode(tr->theVaddr, opcode);
         }
 
-
-//    if (TranslationsFromTLB.empty()){
-//        bool temp;
-//        FLEXUS_CHANNEL(EnableOut) << temp;
-//    }
+        
   }
 };
 
@@ -1038,9 +1022,6 @@ FLEXUS_PORT_ARRAY_WIDTH( uFetch, ICount )   {
   return (cfg.Threads);
 }
 FLEXUS_PORT_ARRAY_WIDTH( uFetch, Stalled )   {
-  return (cfg.Threads);
-}
-FLEXUS_PORT_ARRAY_WIDTH( uFetch, EnableOut ){
   return (cfg.Threads);
 }
 FLEXUS_PORT_ARRAY_WIDTH( uFetch , ResyncIn )    {

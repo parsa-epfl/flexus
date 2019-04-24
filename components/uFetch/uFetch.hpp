@@ -74,13 +74,12 @@ COMPONENT_INTERFACE(
   DYNAMIC_PORT_ARRAY( PullOutput, bool, Stalled)
   DYNAMIC_PORT_ARRAY( PushOutput, pFetchBundle, FetchBundleOut )
 
-  DYNAMIC_PORT_ARRAY( PushOutput, bool, EnableOut ) // remove for OoO
   PORT( PushOutput, MemoryTransport, FetchMissOut )
   PORT( PushOutput, MemoryTransport, FetchSnoopOut )
   PORT( PushOutput, MemoryTransport, FetchReplyOut )
 
-  PORT( PushOutput, TranslationPtr , iTranslationOut ) // make me dynamic for SMP
-  PORT( PushInput,  TranslationPtr , iTranslationIn ) // make me dynamic for SMP
+  PORT( PushOutput, TranslationPtr , iTranslationOut )
+  PORT( PushInput,  TranslationPtr , iTranslationIn )
 
   PORT( PushOutput, bool, InstructionFetchSeen ) // Notify PowerTracker when an instruction is fetched.
   PORT( PushOutput, bool, ClockTickSeen )        // Notify PowerTracker when the clock in this core ticks. This goes here just because uFetch is driven first and it's convenient.

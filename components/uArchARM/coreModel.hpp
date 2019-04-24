@@ -100,7 +100,6 @@ struct CoreModel : public uArchARM {
   virtual void issueMMU(TranslationPtr aTranslation) = 0;
 
   virtual bool checkValidatation() = 0;
-  virtual bool isEnable() = 0; // remove me for OoO
   virtual void pushMemOp(boost::intrusive_ptr< MemOp >) = 0;
   virtual bool canPushMemOp() = 0;
   virtual boost::intrusive_ptr<MemOp> popMemOp() = 0;

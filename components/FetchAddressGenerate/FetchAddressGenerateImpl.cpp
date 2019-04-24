@@ -74,7 +74,6 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)  {
   std::unique_ptr<BranchPredictor> theBranchPredictor;
   uint32_t theCurrentThread;
 
-  bool theEnable;
 
 public:
   FLEXUS_COMPONENT_CONSTRUCTOR(FetchAddressGenerate)
@@ -108,7 +107,6 @@ public:
     theCurrentThread = cfg.Threads;
     theBranchPredictor.reset( BranchPredictor::combining(statName(), flexusIndex()) );
 
-    theEnable = true;
   }
 
   void finalize() {}
@@ -152,17 +150,6 @@ FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(RedirectIn);
     theBranchPredictor->feedback(*aFeedback);
   }
 
-  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(EnableIn);
-  void push(interface::EnableIn const &, index_t anIndex, bool& v) {
-    theEnable = true;
-  }
-
-  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(EnableUARCHIn);
-  void push(interface::EnableUARCHIn const &, index_t anIndex, bool& v) {
-    theEnable = true;
-  }
-
-
   //Drive Interfaces
   //----------------
   //The FetchDrive drive interface sends a commands to the Feeder and then fetches instructions,
@@ -179,7 +166,6 @@ private:
   //Implementation of the FetchDrive drive interface
   void doAddressGen(index_t anIndex) {
 
-    if (!theEnable) return;
     AGU_DBG("--------------START ADDRESS GEN------------------------");
 
     if (theFlexus->quiescing()) {
@@ -265,8 +251,6 @@ private:
     if (fetch->theFetches.size() > 0) {
       DBG_(VVerb, (<< "Sending total fetches: " << fetch->theFetches.size()));
 
-      theEnable = false;
-
       //Send it to FetchOut
       FLEXUS_CHANNEL_ARRAY(FetchAddrOut, anIndex) << fetch;
     } else {
@@ -304,12 +288,6 @@ FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, AvailableFAQ )   {
   return (cfg.Threads);
 }
 FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, Stalled )   {
-  return (cfg.Threads);
-}
-FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, EnableIn )   {
-  return (cfg.Threads);
-}
-FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, EnableUARCHIn )   {
   return (cfg.Threads);
 }
 
