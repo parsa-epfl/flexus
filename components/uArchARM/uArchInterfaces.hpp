@@ -568,9 +568,10 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction {
   virtual eInstructionCode instCode() const = 0;
   virtual void changeInstCode(eInstructionCode ) = 0;
 
-  virtual bool redirectPC(VirtualMemoryAddress aPC, boost::optional<VirtualMemoryAddress> aPCReg = boost::none) = 0;
+  virtual bool redirectPC(VirtualMemoryAddress aPC) = 0;
 
   virtual VirtualMemoryAddress pc() const = 0;
+  virtual VirtualMemoryAddress pcOrig() const = 0;
   virtual bool isPriv() const = 0;
   virtual void makePriv() = 0;
   virtual bool isTrap() const = 0;

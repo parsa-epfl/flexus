@@ -60,7 +60,7 @@ class armInstruction : public nuArchARM::Instruction {
 protected:
   VirtualMemoryAddress thePC;
   std::vector<uint32_t> theInstruction;
-  boost::optional<VirtualMemoryAddress> thePCReg;
+  VirtualMemoryAddress thePCReg;
   Opcode theOpcode;
   boost::intrusive_ptr<BPredState> theBPState;
   uint32_t theCPU;
@@ -332,15 +332,18 @@ public:
     DBG_( VVerb, ( << identify() << " destroyed") );
   }
 
-  virtual bool redirectPC(VirtualMemoryAddress anPC, boost::optional<VirtualMemoryAddress> anPCReg = boost::none) {
-    bool ret_val = (anPC != thePC);
-    thePC = anPC;
+  virtual bool redirectPC(VirtualMemoryAddress anPCReg) {
+    bool ret_val = (anPCReg != thePCReg);
     thePCReg = anPCReg;
     return ret_val;
   }
 
   virtual VirtualMemoryAddress pc() const {
     return thePC;
+  }
+
+  virtual VirtualMemoryAddress pcOrig() const {
+    return (thePCReg == thePC) ? (thePC + 4) : thePCReg;
   }
 
   virtual bool isPriv() const {
@@ -416,6 +419,7 @@ public:
 protected:
   armInstruction(VirtualMemoryAddress aPC, Opcode anOpcode, boost::intrusive_ptr<BPredState> bp_state, uint32_t aCPU, int64_t aSequenceNo)
     : thePC(aPC)
+    , thePCReg(aPC)
     , theOpcode(anOpcode)
     , theBPState(bp_state)
     , theCPU(aCPU)

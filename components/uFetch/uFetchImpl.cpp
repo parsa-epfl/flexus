@@ -410,6 +410,9 @@ public:
     theLastMiss[anIndex] = boost::none;
     theIcachePrefetch[anIndex] = boost::none;
     theLastPrefetchVTagSet[anIndex] = 0;
+    theBundle->clear();
+    while(!TranslationsFromTLB.empty())
+        TranslationsFromTLB.pop();
   }
 
   //ChangeCPUState
@@ -963,7 +966,7 @@ private:
 
   void getFetchResponse() {
 
-
+        if(TranslationsFromTLB.size() == 0) return;
         DBG_Assert(TranslationsFromTLB.front()->isDone() || TranslationsFromTLB.front()->isHit());
 
         DBG_(VVerb,( << "Starting magic translation after sending to TLB...."));

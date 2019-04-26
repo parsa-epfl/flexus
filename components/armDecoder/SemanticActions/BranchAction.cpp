@@ -108,17 +108,13 @@ struct BranchCondAction : public BaseSemanticAction {
 
         if ( result ) {
           //Taken
-            if (theInstruction->redirectPC(theInstruction->pc() + 4, theTarget)){
-                if ( theInstruction->core()->squashAfter(theInstruction) ) {
-                  theInstruction->core()->redirectFetch(theTarget);
-                  theInstruction->addPostvalidation(validatePC((uint64_t)theTarget, theInstruction));
-                }
-            }
-//          core()->applyToNext( theInstruction, branchInteraction(theTarget) );
+          theInstruction->redirectPC(theTarget);
+          core()->applyToNext( theInstruction, branchInteraction(theTarget) );
+          theInstruction->addPostvalidation(validatePC((uint64_t)theTarget, theInstruction));
           feedback->theActualDirection = kTaken;
 
         } else {
-          theInstruction->core()->redirectFetch(theInstruction->pc() + 4);
+          core()->applyToNext( theInstruction, branchInteraction(theInstruction->pc() + 4));
           feedback->theActualDirection = kNotTaken;
           DBG_(Dev, (<< "Branching Not taken! "));
         }
@@ -181,13 +177,9 @@ struct BranchRegAction : public BaseSemanticAction {
 
         DBG_( Dev, ( << *this << " Checking for redirection PC= " << theInstruction->pc() << " target= " << theTarget) );
 
-        if (theInstruction->redirectPC(theInstruction->pc() + 4, theTarget)){
-            // must redirect
-            if ( theInstruction->core()->squashAfter(theInstruction) ) {
-              theInstruction->core()->redirectFetch(theTarget);
-              theInstruction->addPostvalidation(validatePC((uint64_t)theTarget, theInstruction));
-            }
-        }
+        theInstruction->redirectPC(theTarget);
+        core()->applyToNext( theInstruction, branchInteraction(theTarget) );
+        theInstruction->addPostvalidation(validatePC((uint64_t)theTarget, theInstruction));
 
         satisfyDependants();
         theInstruction->setExecuted(true);
@@ -230,6 +222,7 @@ struct BranchToCalcAddressAction : public BaseSemanticAction {
         VirtualMemoryAddress target_addr(target);
         DBG_( Dev, ( << *this << " branc to mapped_reg target: " << target_addr ) );
 
+        theInstruction->redirectPC(target_addr);
         core()->applyToNext( theInstruction, branchInteraction(target_addr) );
 
         satisfyDependants();

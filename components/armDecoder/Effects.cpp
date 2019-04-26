@@ -534,12 +534,9 @@ struct BranchEffect: public Effect {
         theTarget = VirtualMemoryAddress(boost::get<uint64_t>(address));
     }
 
-    if ( anInstruction.redirectPC(theTarget, anInstruction.pc() + 4 ) ) {
-      DBG_( Dev, ( << "BRANCH:  Must redirect to " << theTarget) );
-      if ( anInstruction.core()->squashAfter(boost::intrusive_ptr<nuArchARM::Instruction> (&anInstruction)) ) {
-        anInstruction.core()->redirectFetch(theTarget);
-      }
-    }
+    anInstruction.redirectPC(theTarget);
+    anInstruction.core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( & anInstruction) , branchInteraction(theTarget) );
+    DBG_( Dev, ( << "BRANCH:  Must redirect to " << theTarget) );
     Effect::invoke(anInstruction);
   }
   void describe(std::ostream & anOstream) const {

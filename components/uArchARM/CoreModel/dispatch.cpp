@@ -237,7 +237,6 @@ void CoreImpl::applyToNext( boost::intrusive_ptr< Instruction > anInsn, boost::i
   rob_t::iterator insn = theROB.project<0>( theROB.get<by_insn>().find(anInsn) );
   rob_t::iterator end = theROB.end();
 
-  DBG_Assert(theROB.size() > 1);
   DBG_Assert( insn != end );
   rob_t::iterator next = ++insn;
 
