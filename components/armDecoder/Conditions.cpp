@@ -125,12 +125,7 @@ typedef struct TBZ : public Condition {
     virtual ~TBZ(){}
   virtual bool operator()( std::vector<Operand> const & operands  ) {
     DBG_Assert( operands.size() == 2);
-    uint64_t op1 = boost::get<uint64_t>(operands[0]);
-    uint64_t op2 = boost::get<uint64_t>(operands[1]);
-
-    bool ret = ((op1 & op2) == op2);
-
-    return !ret;
+    return (boost::get<uint64_t>(operands[0]) & boost::get<uint64_t>(operands[1])) == 0;
   }
   virtual char const * describe() const {
     return "Test and Branch on Zero";

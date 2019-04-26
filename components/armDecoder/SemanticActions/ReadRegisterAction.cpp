@@ -153,6 +153,8 @@ struct ReadRegisterAction : public BaseSemanticAction
                   setReady( 0, false );
                   return;
                 }
+            } else {
+              return;
             }
         }
 

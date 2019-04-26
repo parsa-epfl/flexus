@@ -539,17 +539,17 @@ arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     // calculate the address from rn
     eAccType acctype = kAccType_STREAM;
     std::vector< std::list<InternalDependance> > addr_deps(1), data_deps(2);
-    addAddressCompute( inst, addr_deps );
+    simple_action addr = addAddressCompute( inst, addr_deps );
 
     addReadXRegister(inst, 1, rn, addr_deps[0], true);
 
 
     if (index != kSignedOffset){
-        std::vector< std::list<InternalDependance> > wb_deps(1);
+        std::vector< std::list<InternalDependance> > wb_deps(2);
         predicated_action wback = addExecute(inst, operation(kADD_), {kAddress, kOperand4}, wb_deps, kResult1);
+        connect(wb_deps[1], addr);
         addReadConstant(inst, 4, ((index==kPostIndex) ? imm7 : 0), wb_deps[0]);
         addDestination1(inst, rn, wback, size/2 == 64);
-        inst->addDispatchEffect( satisfy( inst, wback.action->dependance(1) ) );
     }
 
     if (index != kPostIndex) {
@@ -642,21 +642,30 @@ arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
         }
     }
 
-    std::vector< std::list<InternalDependance> > rs_deps(1);
+    std::vector< std::list<InternalDependance> > rs_deps(1), rs2_deps(1), rs3_deps(1);
+    predicated_action ex, sh, wb;
 
     if (index == kRegOffset){
-        predicated_action ex = addExecute(inst, extend(DecodeRegExtend(option)), {kOperand3}, rs_deps, kOperand2 );
+        ex = addExecute(inst, extend(DecodeRegExtend(option)), {kOperand3}, rs_deps, kOperand2 );
         rs_deps.resize(2);
+        rs2_deps.resize(2);
         if(shift_amount){
             inst->setOperand(kResult2, (uint64_t) shift_amount);
             inst->setOperand(kOperand4, (uint64_t) regsize);
-            predicated_action sh = addExecute(inst, operation(kLSL_), {kOperand2, kResult2, kOperand4}, rs_deps, kOperand2 );
+            sh = addExecute(inst, operation(kLSL_), {kOperand2, kResult2, kOperand4}, rs_deps, kOperand2 );
+            connect(rs_deps[1], ex);
             inst->addDispatchEffect( satisfy( inst, sh.action->dependance(2)) );
         }
     }
 
-    simple_action act = addAddressCompute( inst, rs_deps ) ;
-    predicated_action wb;
+    simple_action act = addAddressCompute( inst, rs2_deps );
+    if (index == kRegOffset){
+        if(shift_amount)
+            connect(rs2_deps[1], sh);
+        else
+            connect(rs2_deps[1], ex);
+    }
+
     if (index == kUnsignedOffset){
         inst->setOperand(kUopAddressOffset, imm );
         DBG_(Dev, (<<"setting unsigned offset " << std::hex << imm));
@@ -670,18 +679,18 @@ arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     } else if (index == kPostIndex){
         inst->setOperand(kOperand3, imm );
         DBG_(Dev, (<<"setting signed offset postindex " << std::hex << imm));
-        wb = addExecute(inst, operation(kADD_), {kOperand1, kOperand3}, rs_deps, kResult1);
+        wb = addExecute(inst, operation(kADD_), {kOperand1, kOperand3}, rs2_deps, kResult1);
         inst->addDispatchEffect( satisfy( inst, wb.action->dependance(1)) );
     }
 
     if(rn == 31)
-        addReadXRegister(inst, 1, rn, rs_deps[0], true);
+        addReadXRegister(inst, 1, rn, rs2_deps[0], true);
     else
-        readRegister(inst, 1, rn, rs_deps[0], true);
-    readRegister(inst, 5, rt, rs_deps[0], true);
+        readRegister(inst, 1, rn, rs2_deps[0], true);
+    readRegister(inst, 5, rt, rs3_deps[0], true);
 
     if(index == kRegOffset)
-        readRegister(inst, 3, rm, rs_deps[1], true);
+        readRegister(inst, 3, rm, rs_deps[0], true);
 
     if (index == kPostIndex || index == kPreIndex){
         addDestination1(inst, rn, wb, true);
@@ -762,21 +771,30 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
         }
     }
 
-    std::vector< std::list<InternalDependance> > rs_deps(1);
+    std::vector< std::list<InternalDependance> > rs_deps(1), rs2_deps(1);
+    predicated_action ex, sh, wb;
 
     if (index == kRegOffset){
-        predicated_action ex = addExecute(inst, extend(DecodeRegExtend(option)), {kOperand3}, rs_deps, kOperand2 );
+        ex = addExecute(inst, extend(DecodeRegExtend(option)), {kOperand3}, rs_deps, kOperand2 );
         rs_deps.resize(2);
+        rs2_deps.resize(2);
         if(shift_amount){
             inst->setOperand(kResult2, (uint64_t) shift_amount);
             inst->setOperand(kOperand4, (uint64_t) regsize);
-            predicated_action sh = addExecute(inst, operation(kLSL_), {kOperand2, kResult2, kOperand4}, rs_deps, kOperand2 );
+            sh = addExecute(inst, operation(kLSL_), {kOperand2, kResult2, kOperand4}, rs_deps, kOperand2 );
+            connect(rs_deps[1], ex);
             inst->addDispatchEffect( satisfy( inst, sh.action->dependance(2)) );
         }
     }
 
-    simple_action act = addAddressCompute( inst, rs_deps ) ;
-    predicated_action wb;
+    simple_action act = addAddressCompute( inst, rs2_deps );
+    if (index == kRegOffset){
+        if(shift_amount)
+            connect(rs2_deps[1], sh);
+        else
+            connect(rs2_deps[1], ex);
+    }
+
     if (index == kUnsignedOffset){
         inst->setOperand(kUopAddressOffset, imm );
         DBG_(Dev, (<<"setting unsigned offset " << std::hex << imm));
@@ -790,17 +808,17 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     } else if (index == kPostIndex){
         inst->setOperand(kOperand3, imm );
         DBG_(Dev, (<<"setting signed offset postindex " << std::hex << imm));
-        wb = addExecute(inst, operation(kADD_), {kOperand1, kOperand3}, rs_deps, kResult1);
+        wb = addExecute(inst, operation(kADD_), {kOperand1, kOperand3}, rs2_deps, kResult1);
         inst->addDispatchEffect( satisfy( inst, wb.action->dependance(1)) );
     }
 
     if(rn == 31)
-        addReadXRegister(inst, 1, rn, rs_deps[0], true);
+        addReadXRegister(inst, 1, rn, rs2_deps[0], true);
     else
-        readRegister(inst, 1, rn, rs_deps[0], true);
+        readRegister(inst, 1, rn, rs2_deps[0], true);
 
     if(index == kRegOffset)
-        readRegister(inst, 3, rm, rs_deps[1], true);
+        readRegister(inst, 3, rm, rs_deps[0], true);
 
     if (index == kPostIndex || index == kPreIndex){
         addDestination1(inst, rn, wb, true);
