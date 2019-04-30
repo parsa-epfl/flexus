@@ -990,6 +990,7 @@ private:
         uint32_t opcode = 1;
         if (! tr->isPagefault()){
             opcode = cpu(tr->theIndex)->fetchInstruction(tr->theVaddr);
+            opcode += opcode ? 0 : 1;
             theBundle->updateOpcode(tr->theVaddr, opcode);
         } else {
             theBundle->updateOpcode(tr->theVaddr, opcode);

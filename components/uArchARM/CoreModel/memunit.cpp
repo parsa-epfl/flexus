@@ -487,7 +487,9 @@ void CoreImpl::pushTranslation(TranslationPtr aTranslation) {
 
     boost::intrusive_ptr<Instruction> insn = boost::polymorphic_pointer_downcast<Instruction>(aTranslation->getInstruction());
     memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( insn);
-    DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end(), ( << *insn) );
+    // DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end(), ( << *insn) );
+    if(lsq_entry == theMemQueue.get<by_insn>().end())
+      return;
 
     lsq_entry->thePaddr = aTranslation->thePaddr;
 

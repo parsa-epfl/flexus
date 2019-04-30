@@ -1227,10 +1227,11 @@ void CoreImpl::retire() {
         theSquashInclusive = true;
         DBG_( VVerb, ( << "!theSquashInclusive" ));
 
-      }
+      } else {
       DBG_( VVerb, ( << "!theSquashRequested && (theROB.begin() == theSquashInstruction" ));
-
       stop_retire = true;
+        continue;
+    }
     }
 
     ++theRetireCount;
@@ -1407,23 +1408,14 @@ std::string CoreImpl::dumpState(){
     std::stringstream ss;
     mapped_reg sp;
     sp.theType = xRegisters;
-    sp.theIndex=theMapTables[0]->theMappings[31];
-    uint64_t pc = 0;
+    sp.theIndex=theMapTables[0]->mapArchitectural(31);
 
-    if ( theDumpPC != VirtualMemoryAddress(0) ){
-        pc = theDumpPC;
-        theDumpPC = VirtualMemoryAddress(0);
-    }
-
-
-    ss << std::hex << "PC=" << std::setw(16)<< std::setfill('0') << ((pc == 0) ? thePC : pc) << "  " << "SP=" << std::setw(16)<< std::setfill('0') << boost::get<uint64_t>(theRegisters.peek(sp))/*theSP_el[_PSTATE().EL()]*/ << std::dec << std::endl;
+    ss << std::hex << "PC=" << std::setw(16)<< std::setfill('0') << (uint64_t) theDumpPC << "  " << "SP=" << std::setw(16)<< std::setfill('0') << boost::get<uint64_t>(theRegisters.peek(sp))/*theSP_el[_PSTATE().EL()]*/ << std::dec << std::endl;
 
     for (int i = 0; i < 31; i++) {
         mapped_reg mreg;
         mreg.theType = xRegisters;
-        mreg.theIndex= theMapTables[0]->theMappings[i];
-
-
+        mreg.theIndex= theMapTables[0]->mapArchitectural(i);
 
         ss << "X" << std::setw(2) << std::setfill('0') << i << "="<< std::hex << std::setw(16)<< std::setfill('0') << boost::get<uint64_t>(theRegisters.peek(mreg)) << std::dec;
         if ((i % 4) == 3) {
@@ -1433,7 +1425,11 @@ std::string CoreImpl::dumpState(){
         }
     }
 
-    uint32_t psr = Flexus::Qemu::Processor::getProcessor(theNode)->readPSTATE(); //_PSTATE().d();
+    mapped_reg ccreg;
+    ccreg.theType = ccBits;
+    ccreg.theIndex= theMapTables[2]->mapArchitectural(0);
+    uint64_t psr = boost::get<uint64_t>(theRegisters.peek(ccreg));
+
     ss << std::endl
     << "PSTATE=" << std::hex << std::setw(8)<< std::setfill('0') << psr << std::dec << " "
     << (psr & PSTATE_N ? 'N' : '-')
@@ -1443,11 +1439,6 @@ std::string CoreImpl::dumpState(){
     << ""
     << " " << "EL"  <<_PSTATE().EL()
     <<  (psr & PSTATE_SP ? 'h' : 't') << std::endl ;
-
-
-
-//    fp << ss.rdbuf();
-//    fp.close();
 
     return ss.str();
 }
@@ -1550,6 +1541,7 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
 
   accountCommit(anInstruction, raised);
 
+  theDumpPC = anInstruction->pcOrig();
   if (anInstruction->resync()) {
     DBG_(Dev,(<<"Forced Resync:" << *anInstruction));
 
@@ -1589,7 +1581,7 @@ bool CoreImpl::squashAfter( boost::intrusive_ptr< Instruction > anInsn) {
     theSquashReason = kBranchMispredict;
     theEmptyROBCause = kMispredict;
     theSquashInstruction = theROB.project<0>( theROB.get<by_insn>().find(anInsn) );
-    theSquashInclusive = false;
+    theSquashInclusive = true;
     return true;
   }
   return false;
@@ -1599,7 +1591,6 @@ void CoreImpl::redirectFetch( VirtualMemoryAddress anAddress ) {
   DBG_(Dev, (<<"redirectFetch anAddress: "<<anAddress));
   theRedirectRequested = true;
   theRedirectPC = anAddress;
-  theDumpPC = anAddress;
 }
 
 void CoreImpl::branchFeedback( boost::intrusive_ptr<BranchFeedback> feedback ) {

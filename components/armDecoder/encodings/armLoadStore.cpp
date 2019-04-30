@@ -683,6 +683,10 @@ arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
         inst->addDispatchEffect( satisfy( inst, wb.action->dependance(1)) );
     }
 
+    predicated_dependant_action update_value = updateStoreValueAction( inst, kOperand5);
+    rs3_deps[0].push_back( update_value.dependance );
+    connectDependance( inst->retirementDependance(), update_value );
+
     if(rn == 31)
         addReadXRegister(inst, 1, rn, rs2_deps[0], true);
     else
@@ -695,10 +699,6 @@ arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     if (index == kPostIndex || index == kPreIndex){
         addDestination1(inst, rn, wb, true);
     }
-
-    predicated_dependant_action update_value = updateStoreValueAction( inst, kOperand5);
-    connectDependance( update_value.dependance, act );
-    connectDependance( inst->retirementDependance(), update_value );
 
     inst->addCheckTrapEffect( mmuPageFaultCheck(inst) );
     inst->addRetirementEffect( retireMem(inst) );

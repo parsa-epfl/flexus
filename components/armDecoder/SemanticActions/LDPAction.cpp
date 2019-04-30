@@ -123,11 +123,11 @@ struct LDPAction : public PredicatedSemanticAction {
 
     if (theBypass0) {
       mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass0);
-      core()->bypass( name, pairValues.first );
+      core()->bypass( name, pairValues.second );
     }
     if (theBypass1) {
       mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass1);
-      core()->bypass( name, pairValues.second );
+      core()->bypass( name, pairValues.first );
     }
     satisfyDependants();
   }
