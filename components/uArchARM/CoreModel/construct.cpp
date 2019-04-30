@@ -66,7 +66,7 @@ CoreImpl::CoreImpl( uArchOptions_t options
   , signalStoreForwardingHit_fn(_signalStoreForwardingHit)
   , mmuResync_fn(_mmuResync)
   , thePendingTrap(kException_None)
-  , theBypassNetwork( kxRegs_Total + 2 * options.ROBSize, kvRegs + 4 * options.ROBSize, 5 + options.ROBSize)
+  , theBypassNetwork( kxRegs_Total + 3 * options.ROBSize, kvRegs + 4 * options.ROBSize, kccRegs + 2 * options.ROBSize)
   , theLastGarbageCollect(0)
   , thePreserveInteractions(false)
   , theMemoryPortArbiter(*this, options.numMemoryPorts, options.numStorePrefetches)
@@ -280,9 +280,9 @@ CoreImpl::CoreImpl( uArchOptions_t options
 
     std::vector<uint32_t> reg_file_sizes;
     reg_file_sizes.resize(kLastMapTableCode + 2);
-    reg_file_sizes[xRegisters] = kxRegs_Total + 2 * theROBSize;
+    reg_file_sizes[xRegisters] = kxRegs_Total + 3 * theROBSize;
     reg_file_sizes[vRegisters] = kvRegs + 4 * theROBSize;
-    reg_file_sizes[ccBits] = 5 + theROBSize;
+    reg_file_sizes[ccBits] = kccRegs + 2 * theROBSize;
     theRegisters.initialize(reg_file_sizes);
 
     //Map table for xRegisters
@@ -297,7 +297,7 @@ CoreImpl::CoreImpl( uArchOptions_t options
 
     //Map table for ccBits
     theMapTables.push_back
-    ( std::make_shared<PhysicalMap>( 5, reg_file_sizes[ccBits])
+    ( std::make_shared<PhysicalMap>( kccRegs, reg_file_sizes[ccBits])
     );
 
   reset();

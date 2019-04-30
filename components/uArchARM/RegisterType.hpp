@@ -44,18 +44,12 @@
 
 namespace nuArchARM {
 
-//static const uint32_t kRegASI = 1;
-//static const uint32_t kGlobalRegSets = 31;
-//static const uint32_t kGlobalRegCount = 31;
-//static const uint32_t kFirstSpecialReg = kGlobalRegSets;
-//static const uint32_t kTotalRegs = kGlobalRegSets;
-
 static const uint32_t kGlobalRegCount = 32;
-static const uint32_t kGlobalRegSets = 4;
+static const uint32_t kGlobalRegSets = 1;
 
-static const uint32_t kNumWindows = 8;
-static const uint32_t kRegistersPerWindow = 16;
-static const uint32_t kWindowRegCount = 16 * kNumWindows;
+static const uint32_t kNumWindows = 0;
+static const uint32_t kRegistersPerWindow = 0;
+static const uint32_t kWindowRegCount = kRegistersPerWindow * kNumWindows;
 static const uint32_t kSpecialRegCount = 3;
 static const uint32_t kTotalRegs = kGlobalRegSets * kGlobalRegCount + kWindowRegCount + kSpecialRegCount;
 static const uint32_t kFirstSpecialReg = kGlobalRegSets * kGlobalRegCount + kWindowRegCount;

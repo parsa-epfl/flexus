@@ -187,7 +187,7 @@ arminst CONDBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequence
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
-    uint32_t cond = extract32(aFetchedOpcode.theOpcode, 0, 4);
+    uint64_t cond = extract32(aFetchedOpcode.theOpcode, 0, 4);
 
     //    program label to be conditionally branched to. Its offset from the address of this instruction,
     // in the range +/-1MB, is encoded as "imm19" times 4.
@@ -204,8 +204,8 @@ arminst CONDBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequence
         /* genuinely conditional branches */
         std::vector<std::list<InternalDependance>> rs_deps(1);
         branch_cond(inst, target, kBCOND_, rs_deps[0]);
-        addReadConstant(inst, 1, cond, rs_deps[0]);
-
+        inst->setOperand(kCondition, cond);
+        addReadCC(inst, 1, rs_deps[0], true);
     } else {
         DBG_(Dev,(<< "unconditionally branching to " << std::hex << target << " with an offset of 0x"<< std::hex << offset << std::dec));
         inst->addPostvalidation(validatePC_HARD(addr, inst));

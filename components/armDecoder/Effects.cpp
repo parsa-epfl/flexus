@@ -268,6 +268,9 @@ struct MapDestinationEffect : public Effect {
   }
 };
 
+Effect * mapCCDestination( SemanticInstruction * inst) {
+    return new(inst->icb()) MapDestinationEffect( kCCd, kCCpd, kPCCpd, true );
+}
 Effect * mapDestination( SemanticInstruction * inst) {
     return new(inst->icb()) MapDestinationEffect( kRD, kPD, kPPD, true );
 }

@@ -121,6 +121,51 @@ struct WritebackAction : public BaseSemanticAction {
   }
 };
 
+struct WriteccAction : public BaseSemanticAction {
+  eOperandCode theCC;
+  bool the64;
+
+  WriteccAction ( SemanticInstruction * anInstruction, eOperandCode anCC, bool an64 )
+    : BaseSemanticAction ( anInstruction, 1 )
+    , theCC( anCC )
+    , the64( an64 )
+  { }
+
+  void squash(int32_t anArg) {
+    if (!cancelled()) {
+      mapped_reg name = theInstruction->operand< mapped_reg > (theCC);
+      core()->squashRegister( name );
+      DBG_( VVerb, ( << *this << " squashing register cc=" << name) );
+    }
+    BaseSemanticAction::squash(anArg);
+  }
+
+  void doEvaluate() {
+
+    if (ready()) {
+      mapped_reg name = theInstruction->operand< mapped_reg > (theCC);
+      uint64_t ccresult = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPSTATE();
+      uint64_t flags = boost::get<uint64_t>(boost::apply_visitor( register_value_extractor(), theInstruction->operand( kResultCC ) ));
+      if(the64){
+        uint64_t result = boost::get<uint64_t>(boost::apply_visitor( register_value_extractor(), theInstruction->operand( kResult ) ));
+        result >>= 32;
+        flags &= ~PSTATE_N;
+        flags |= PSTATE_N & result;
+      }
+      ccresult &= ~(0xF << 28);
+      ccresult |= flags;
+      DBG_(Dev, (<< "Writing to CC: " << std::hex << ccresult << ", " << *theInstruction));
+      core()->writeRegister( name, ccresult, false );
+      core()->bypass( name, ccresult );
+      satisfyDependants();
+    }
+  }
+
+  void describe( std::ostream & anOstream) const {
+    anOstream << theInstruction->identify() << " WriteCCAction to" << theCC;
+  }
+};
+
 dependant_action writebackAction
 ( SemanticInstruction * anInstruction
   , eOperandCode aRegisterCode
@@ -131,6 +176,16 @@ dependant_action writebackAction
 ) {
   WritebackAction * act;
     act = new(anInstruction->icb()) WritebackAction( anInstruction, aRegisterCode, aMappedRegisterCode, is64, aSP, setflags);
+    return dependant_action( act, act->dependance() );
+}
+
+dependant_action writeccAction
+( SemanticInstruction * anInstruction
+  , eOperandCode aMappedRegisterCode
+  , bool is64
+) {
+  WriteccAction * act;
+    act = new(anInstruction->icb()) WriteccAction( anInstruction, aMappedRegisterCode, is64);
     return dependant_action( act, act->dependance() );
 }
 

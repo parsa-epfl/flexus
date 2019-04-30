@@ -105,6 +105,21 @@ uint64_t bitmask64(unsigned int length)
 }
 
 
+void setCCD( SemanticInstruction * inst, uint32_t cc) {
+  reg regCCD;
+  regCCD.theType = ccBits;
+  regCCD.theIndex = cc;
+  inst->setOperand( kCCd, regCCD );
+  DECODER_DBG( "Writing to cc[" << cc << "]"<<"\e[0m");
+}
+
+void setCCS( SemanticInstruction * inst, eOperandCode rs_code, uint32_t cc) {
+  reg regCCS;
+  regCCS.theType = ccBits;
+  regCCS.theIndex = cc;
+  inst->setOperand( rs_code, regCCS );
+}
+
 void setRD( SemanticInstruction * inst, uint32_t rd) {
   reg regRD;
   regRD.theType = xRegisters;
@@ -168,6 +183,29 @@ void satisfyAtDispatch( SemanticInstruction * inst, std::list<InternalDependance
 
 //}
 
+
+void addReadCC( SemanticInstruction * inst, int32_t anOpNumber, std::list<InternalDependance> & dependances, bool is_64) {
+    DBG_Assert( anOpNumber == 1 || anOpNumber == 2 || anOpNumber == 3 || anOpNumber == 4 || anOpNumber == 5 );
+    eOperandCode cOperand = eOperandCode( kOperand1 + anOpNumber - 1);
+    eOperandCode cRS = eOperandCode( kCCs );
+    eOperandCode cPS = eOperandCode( kCCps );
+
+    DECODER_DBG("Reading CC and mapping it [ " << cRS << " -> " << cPS << " ]");
+    setCCS( inst, cRS , 0 );
+    inst->addDispatchEffect( mapSource( inst, cRS, cPS ) );
+    simple_action act = readRegisterAction( inst, cPS, cOperand, false,  is_64 );
+    connect( dependances, act );
+    inst->addDispatchAction( act );
+}
+
+void addSetCC( SemanticInstruction * inst, predicated_action & exec, bool is64) {
+    setCCD( inst, 0);
+    inst->addDispatchEffect( mapCCDestination( inst ) );
+    dependant_action cc = writeccAction( inst, kCCpd, is64);
+    addAnnulment( inst, exec, cc.dependance );
+    connectDependance( cc.dependance, exec );
+    connectDependance( inst->retirementDependance(), cc );
+}
 
 void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t rs, std::list<InternalDependance> & dependances, bool is_64) {
 
@@ -297,6 +335,9 @@ void addDestination( SemanticInstruction * inst, uint32_t rd, predicated_action 
     setRD( inst, rd);
     addWriteback( inst, kResult, kPD, exec, is64, setflags, addSquash );
     inst->addPostvalidation( validateXRegister( rd, kResult, inst  ) );
+    if(setflags){
+      addSetCC(inst, exec, is64);
+    }
 }
 
 void addDestination1( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool is64, bool setflags, bool addSquash) {

@@ -316,7 +316,7 @@ arminst LOGICALIMM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequ
     bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
     std::unique_ptr<Operation> op;
     uint64_t wmask = 0, tmask = 0;
-    bool setflags;
+    bool setflags = false;
 
     switch (opc) {
     case 0:
@@ -386,21 +386,15 @@ arminst ALUIMM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequence
 
     inst->setClass(clsComputation, codeALU);
 
-    std::vector<std::list<InternalDependance> > rs_deps(1);
-    predicated_action exec;
-    if (imm != 0){
-         rs_deps.resize(2);
-         exec = addExecute(inst, operation(setflags ? (sub_op ? kSUBS_ : kADDS_) : (sub_op ? kSUB_ : kADD_)) ,rs_deps);
-         addReadConstant(inst, 2, imm, rs_deps[1]);
-    } else {
-         exec = addExecute(inst, operation(kMOV_), rs_deps);
-    }
+    std::vector<std::list<InternalDependance> > rs_deps(2);
+    predicated_action exec = addExecute(inst, operation(setflags ? (sub_op ? kSUBS_ : kADDS_) : (sub_op ? kSUB_ : kADD_)) ,rs_deps);
+    addReadConstant(inst, 2, imm, rs_deps[1]);
 
     addReadXRegister(inst, 1, rn, rs_deps[0], sf);
     if (!(setflags && sub_op)){
         addDestination(inst, rd, exec, sf, setflags);
     } else {
-        DECODER_DBG("CMP op - not writing back to register");
+        addSetCC(inst, exec, sf);
     }
 
     return inst;

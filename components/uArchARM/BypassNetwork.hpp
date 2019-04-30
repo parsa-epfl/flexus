@@ -66,9 +66,10 @@ protected:
   collect_counter theCCCounts;
 
 public:
-  BypassNetwork( uint32_t anXRegs, uint32_t anVRegs, uint32_t aCCRegs)
+  BypassNetwork( uint32_t anXRegs, uint32_t anVRegs, uint32_t anCCRegs)
     : theXRegs(anXRegs)
-    , theVRegs(anVRegs){
+    , theVRegs(anVRegs)
+    , theCCRegs(anCCRegs){
     reset();
   }
 
@@ -149,12 +150,16 @@ public:
     FLEXUS_PROFILE();
     theXDeps.clear();
     theVDeps.clear();
+    theCCDeps.clear();
     theXDeps.resize(theXRegs);
     theVDeps.resize(theVRegs);
+    theCCDeps.resize(theCCRegs);
     theXCounts.clear();
     theVCounts.clear();
+    theCCCounts.clear();
     theXCounts.resize(theXRegs, 10);
     theVCounts.resize(theVRegs, 10);
+    theCCCounts.resize(theCCRegs, 10);
   }
 
   void connect( mapped_reg anIndex, boost::intrusive_ptr<Instruction> inst, bypass_fn fn) {

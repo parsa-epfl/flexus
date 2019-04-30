@@ -456,6 +456,7 @@ void resetArchitecturalState()
   void resetPSTATE() {
     uint64_t pstate = theCPU->readPSTATE();
     theCore->setPSTATE( pstate );
+    theCore->initializeRegister( ccReg(0), pstate);
   }
 
   void resetException() {

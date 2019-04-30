@@ -83,7 +83,7 @@ struct ConditionSelectAction : public PredicatedSemanticAction {
   }
 
   ConditionSelectAction ( SemanticInstruction * anInstruction, uint32_t aCode, eOperandCode aResult, std::unique_ptr<Condition> & anOperation, bool anInvert, bool anIncrement, bool a64)
-    : PredicatedSemanticAction( anInstruction, 1, true )
+    : PredicatedSemanticAction( anInstruction, 3, true )
     , theOperation( std::move(anOperation) )
     , theResult( aResult )
     , theCondCode(aCode)
@@ -100,7 +100,10 @@ struct ConditionSelectAction : public PredicatedSemanticAction {
       if (theInstruction->hasPredecessorExecuted()) {
 
         theOperation->setInstruction(theInstruction);
-        bool result = theOperation->operator()({theCondCode});
+        std::vector< Operand > operands;
+        operands.push_back( op( kOperand3 ) );
+        operands.push_back( op( kCondition ) );
+        bool result = theOperation->operator()(operands);
 
         if (result) {
           theInstruction->setOperand(theResult, op(kOperand1));
@@ -147,7 +150,7 @@ struct ConditionCompareAction : public PredicatedSemanticAction {
   }
 
   ConditionCompareAction ( SemanticInstruction * anInstruction, uint32_t aCode, eOperandCode aResult, std::unique_ptr<Condition> & anOperation, bool sub_op, bool a64)
-    : PredicatedSemanticAction( anInstruction, 2, true )
+    : PredicatedSemanticAction( anInstruction, 3, true )
     , theOperation( std::move(anOperation) )
     , theResult( aResult )
     , theCondCode(aCode)
@@ -163,8 +166,13 @@ struct ConditionCompareAction : public PredicatedSemanticAction {
       if (theInstruction->hasPredecessorExecuted()) {
 
         theOperation->setInstruction(theInstruction);
-        bool result = theOperation->operator()({theCondCode});
+        std::vector< Operand > operands;
+        operands.push_back( op( kOperand3 ) );
+        operands.push_back( op( kCondition ) );
+        bool result = theOperation->operator()(operands);
         std::unique_ptr<Operation> op;
+        uint64_t nzcv = boost::get<uint64_t>(theInstruction->operand( kOperand4 )) << 28;
+        Operand res = (nzcv & (8 << 28)) ? 0xFFFFFFFFFFFFFFFF : 0;
         if (result) {
           if (theSub_op){
               op = operation(kSUBS_);
@@ -173,11 +181,11 @@ struct ConditionCompareAction : public PredicatedSemanticAction {
           }
 
           std::vector<Operand> operands = {theInstruction->operand(kOperand1), theInstruction->operand(kOperand2)};
-          Operand res = op->operator ()(operands);
-
-
-          theInstruction->setOperand(theResult, res);
+          res = op->operator ()(operands);
+          nzcv = op->getNZCVbits();
         }
+        theInstruction->setOperand(theResult, res);
+        theInstruction->setOperand(kResultCC, nzcv);
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {

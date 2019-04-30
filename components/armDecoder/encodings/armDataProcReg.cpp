@@ -232,17 +232,16 @@ arminst CSEL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
     bool inc = extract32(aFetchedOpcode.theOpcode, 10, 1);
 
-    std::vector<std::list<InternalDependance>> rs_deps(1);
+    std::vector<std::list<InternalDependance>> rs_deps(3);
     inst->setOperand(kOperand5, (uint64_t)1);
 
     std::unique_ptr<Condition> ptr = condition(kBCOND_);
     predicated_action act = conditionSelectAction(inst, ptr, cond, rs_deps, kResult, inv, inc, sf);
-    rs_deps.resize(2);
+    inst->setOperand(kCondition, (uint64_t) cond);
 
     readRegister(inst, 1, rn, rs_deps[0], sf );
     readRegister(inst, 2, rm, rs_deps[1], sf );
-
-
+    addReadCC(inst, 3, rs_deps[2], true);
 
     addDestination(inst, rd, act, sf);
 
@@ -265,21 +264,26 @@ arminst CCMP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     inst->setClass(clsComputation, codeALU);
     uint64_t flags = extract32(aFetchedOpcode.theOpcode, 0, 4);
     uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    uint32_t rm = extract32(aFetchedOpcode.theOpcode, 5, 5);
+    uint32_t rm = extract32(aFetchedOpcode.theOpcode, 16, 5);
     uint32_t cond = extract32(aFetchedOpcode.theOpcode, 12, 4);
     bool sub_op = extract32(aFetchedOpcode.theOpcode, 30, 1);
     bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
+    bool imm_provided = extract32(aFetchedOpcode.theOpcode, 11, 1);
 
-//    inst->setOperand(kResult1, flags);
-
-    std::vector<std::list<InternalDependance>> rs_deps(2);
+    std::vector<std::list<InternalDependance>> rs_deps(3);
     std::unique_ptr<Condition> condOp = condition(kBCOND_);
     predicated_action act = conditionCompareAction(inst, condOp, cond, rs_deps, kResult, sub_op, sf);
+    inst->setOperand(kCondition, (uint64_t) cond);
+    inst->setOperand(kOperand4, flags);
 
     readRegister(inst, 1, rn, rs_deps[0], sf);
-    readRegister(inst, 2, rm, rs_deps[1], sf);
+    if(imm_provided)
+        addReadConstant(inst, 2, (uint64_t) rm, rs_deps[1]);
+    else
+        readRegister(inst, 2, rm, rs_deps[1], sf);
+    addReadCC(inst, 3, rs_deps[2], true);
 
-//    inst->addRetirementEffect(writePR(inst, kNZCV));
+    addSetCC(inst, act, sf);
 
     return inst;
 
@@ -300,7 +304,6 @@ arminst ADDSUB_CARRY(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSe
     std::vector<std::list<InternalDependance>> rs_deps(3);
     predicated_action exec = addExecute(inst, operation(setflags ? (sub_op ? kSUBS_ : kADDS_) : (sub_op ? kSUB_ : kADD_)), rs_deps);
 
-
     readRegister(inst, 1, rn, rs_deps[0], sf);
     readRegister(inst, 2, rm, rs_deps[1], sf);
 
@@ -308,8 +311,10 @@ arminst ADDSUB_CARRY(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSe
     connect(rs_deps[2], nzcv);
     inst->addDispatchAction(nzcv);
 
-
-    addDestination(inst, rd, exec, sf);
+    if(rd != 31)
+        addDestination(inst, rd, exec, sf, setflags);
+    else if(setflags)
+        addSetCC(inst, exec, sf);
     return inst;
 }
 
@@ -409,7 +414,9 @@ arminst ADDSUB_SHIFTED(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t a
     readRegister(inst, 3, rm, rs_deps[0], sf);
 
     if (rd != 31)
-        addDestination(inst, rd, res, sf);
+        addDestination(inst, rd, res, sf, setflags);
+    else if(setflags)
+        addSetCC(inst, res, sf);
 
     return inst;
 }
@@ -457,7 +464,10 @@ arminst ADDSUB_EXTENDED(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
     readRegister(inst, 3, rm, rs_deps[0], sf);
 
 
-    addDestination(inst, rd, res, sf);
+    if(rd != 31)
+        addDestination(inst, rd, res, sf, setflags);
+    else if(setflags)
+        addSetCC(inst, res, sf);
 
     return inst;
 }
@@ -476,7 +486,7 @@ arminst LOGICAL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenc
     uint32_t shift_amount = extract32(aFetchedOpcode.theOpcode, 10, 6);
     uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
     uint32_t rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    bool setflags;
+    bool setflags = false;
     uint32_t n = extract32(aFetchedOpcode.theOpcode, 21, 1);
 
 
@@ -506,7 +516,7 @@ arminst LOGICAL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenc
         op = n ? kXnor_ : kXOR_;
         break;
     case 3:
-        op = kAND_;
+        op = kANDS_;
         setflags = true;
         break;
     }
@@ -514,14 +524,13 @@ arminst LOGICAL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenc
     predicated_action act = addExecute(inst, operation(op), rs2_deps);
     connect(rs2_deps[1], sh);
 
-    if (setflags){
-     inst->addRetirementEffect(writeNZCV(inst));
-    }
-
     readRegister(inst, 1, rn, rs2_deps[0], sf);
     readRegister(inst, 3, rm, rs_deps[0], sf);
 
-    addDestination(inst, rd, act, sf);
+    if(rd != 31)
+        addDestination(inst, rd, act, sf, setflags);
+    else if(setflags)
+        addSetCC(inst, act, sf);
 
     return inst;
 }

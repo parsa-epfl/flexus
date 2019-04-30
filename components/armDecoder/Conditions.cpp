@@ -149,10 +149,10 @@ typedef struct BCOND : public Condition {
     BCOND(){}
     virtual ~BCOND(){}
   virtual bool operator()( std::vector<Operand> const & operands  ) {
-    DBG_Assert( operands.size() == 1);
+    DBG_Assert( operands.size() == 2);
 
-    PSTATE p (Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPSTATE());
-    uint64_t test = boost::get<uint64_t>(operands[0]);
+    PSTATE p = boost::get<uint64_t>(operands[0]);
+    uint64_t test = boost::get<uint64_t>(operands[1]);
 
     // hacking  --- update pstate
 //    uint32_t pstate = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPSTATE();

@@ -144,6 +144,7 @@ struct InternalDependance {
 Effect * mapSource( SemanticInstruction * inst, eOperandCode anInputCode, eOperandCode anOutputCode);
 Effect * freeMapping( SemanticInstruction * inst, eOperandCode aMapping);
 Effect * disconnectRegister( SemanticInstruction * inst, eOperandCode aMapping);
+Effect * mapCCDestination( SemanticInstruction * inst );
 Effect * mapDestination( SemanticInstruction * inst );
 Effect * mapRD1Destination(SemanticInstruction * inst);
 Effect * mapRD2Destination(SemanticInstruction * inst);

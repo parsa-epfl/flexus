@@ -308,6 +308,7 @@ predicated_action bitFieldAction(SemanticInstruction * anInstruction, std::vecto
 predicated_action extractAction(SemanticInstruction * anInstruction, std::vector< std::list<InternalDependance> > & opDeps, eOperandCode anOperandCode1, eOperandCode anOperandCode2, eOperandCode anOperandCode3, bool is64);
 
 
+dependant_action writeccAction( SemanticInstruction * anInstruction, eOperandCode aMappedRegisterCode, bool is64);
 dependant_action writebackAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, eOperandCode aMappedRegisterCode, bool is64, bool aSP, bool setflags);
 dependant_action branchCondAction(SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, std::unique_ptr<Condition> aCondition, size_t numOperands = 1);
 dependant_action branchRegAction( SemanticInstruction * anInstruction, eOperandCode aRegOperand);

@@ -78,6 +78,7 @@ static const int32_t kxRegs_Global = kGlobalRegCount ;
 static const int32_t kvRegs = 64;
 static const int32_t kSpecialRegs = kSpecialRegCount;
 static const int32_t kxRegs_Total = kTotalRegs;
+static const int32_t kccRegs = 5;
 
 struct by_insn {};
 typedef multi_index_container <boost::intrusive_ptr<Instruction>
