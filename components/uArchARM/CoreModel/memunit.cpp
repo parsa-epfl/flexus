@@ -491,10 +491,8 @@ void CoreImpl::pushTranslation(TranslationPtr aTranslation) {
     if(lsq_entry == theMemQueue.get<by_insn>().end())
       return;
 
-    lsq_entry->thePaddr = aTranslation->thePaddr;
-
     if (! insn->resync()){
-        resolvePAddr(insn);
+        resolvePAddr(insn, aTranslation->thePaddr);
 
         DBG_(Dev, (<< "Resolved.. vaddr: " << lsq_entry->theVaddr
                    << " to paddr " << lsq_entry->thePaddr ));
@@ -549,104 +547,32 @@ void CoreImpl::updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry 
   FLEXUS_PROFILE();
   lsq_entry->theVaddr = anAddr;
   DBG_(VVerb,(<<"in updateVaddr"));//NOOOSHIN
-  if (anAddr == kUnresolved) {
     lsq_entry->thePaddr = PhysicalMemoryAddress(kUnresolved);
     //theMemQueue.get<by_insn>().modify( lsq_entry, [](auto& x){ x.thePaddr_aligned = PhysicalMemoryAddress(kUnresolved);});//ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = PhysicalMemoryAddress(kUnresolved));
     theMemQueue.get<by_insn>().modify( lsq_entry, ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = PhysicalMemoryAddress(kUnresolved));
-  } else {
-    //Map logical to physical
-    DBG_(VVerb,(<<"in else of updateVaddr"));//NOOOSHIN
+}
 
-    boost::intrusive_ptr<Flexus::SharedTypes::Translation> xlat (new Flexus::SharedTypes::Translation());
-    xlat->theVaddr = anAddr ;
-//    xlat.theASI = lsq_entry->theASI;
-    //xlat.theTL = getTL();
-    xlat->thePSTATE = getPSTATE() ;
-    xlat->theType = ( lsq_entry->isStore() ? Flexus::SharedTypes::Translation::eStore :  Flexus::SharedTypes::Translation::eLoad) ;
-//    translate(xlat);
-    lsq_entry->thePaddr = xlat->thePaddr;
-//    lsq_entry->theSideEffect = xlat->isSideEffect() || ( ! xlat->isTranslating() /*&& ! xlat.isMMU() */);
-//    lsq_entry->theInverseEndian = xlat->isXEndian();
-//    lsq_entry->theMMU = xlat.isMMU();
-//    lsq_entry->theNonCacheable = ! xlat->isCacheable();
-    lsq_entry->theInstruction->setWillRaise(kException_None);
-//    lsq_entry->theException = xlat.theException;
-//     translate(xlat, false);
-    if (lsq_entry->thePaddr > 0x40000000000LL) {
-      lsq_entry->theSideEffect  = true;
-    }
+void CoreImpl::updatePaddr( memq_t::index< by_insn >::type::iterator  lsq_entry , PhysicalMemoryAddress anAddr ) {
+  FLEXUS_PROFILE();
+  lsq_entry->thePaddr = anAddr;
+  DBG_(VVerb,(<<"in updatePaddr"));//NOOOSHIN
+  //Map logical to physical
 
-//    if ( lsq_entry->theSideEffect && /*!xlat.isMMU() &&*/ !xlat->isInterrupt()  ) {
-//      DBG_( Verb, ( << theName << " SideEffect access: " << *lsq_entry ) );
-//      if (lsq_entry->theOperation == kLoad) {
-//        lsq_entry->theInstruction->changeInstCode(codeSideEffectLoad);
-//        lsq_entry->theInstruction->forceResync();
-//      } else if (lsq_entry->theOperation == kStore) {
-//        lsq_entry->theInstruction->changeInstCode(codeSideEffectStore);
-//        lsq_entry->theInstruction->forceResync();
-//      } else {
-//        lsq_entry->theInstruction->changeInstCode(codeSideEffectAtomic);
-//        lsq_entry->theInstruction->forceResync();
-//      }
-    /* } else if ( lsq_entry->theMMU ) {
-      DBG_( Verb, ( << theName << " MMU access: " << *lsq_entry ) );
-      lsq_entry->theInstruction->changeInstCode(codeMMUAccess);
-    }*/ else {
-      // Restore the original instruction code
-      if ( lsq_entry->theInstruction->instCode() == codeSideEffectLoad  ||
-           lsq_entry->theInstruction->instCode() == codeSideEffectStore ||
-           lsq_entry->theInstruction->instCode() == codeSideEffectAtomic ) {
-        DBG_ ( Verb, ( << theName << " no longer SideEffect access: " << *lsq_entry ) );
-        lsq_entry->theInstruction->restoreOriginalInstCode();
-      }
-    }
+  lsq_entry->theInstruction->setWillRaise(kException_None);
 
-    /*
-          if (lsq_entry->isLoad()) {
-            switch (lsq_entry->theASI) {
-              case 0x70: //ASI_BLK_AIUP
-              case 0x71: //ASI_BLK_AIUS
-              case 0x78: //ASI_BLK_AIUPL
-              case 0x79: //ASI_BLK_AIUSL
-              case 0xF0: //ASI_BLK_P
-              case 0xF1: //ASI_BLK_S
-              case 0xF8: //ASI_BLK_PL
-              case 0xF9: //ASI_BLK_SL
-              case 0xE0: //ASI_BLK_COMMIT_P
-              case 0xE1: //ASI_BLK_COMMIT_S
-                //Force resync on all block loads and stores
-                lsq_entry->theInstruction->forceResync();
-                break;
-              default:
-                break;
-            }
-          }
-    */
-    PhysicalMemoryAddress addr_aligned(lsq_entry->thePaddr & 0xFFFFFFFFFFFFFFF8ULL);
-    //theMemQueue.get<by_insn>().modify( lsq_entry, [&addr_aligned](auto& x){ x.thePaddr_aligned = addr_aligned; });//ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = addr_aligned);
-    theMemQueue.get<by_insn>().modify( lsq_entry, ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = addr_aligned);
+  if ( lsq_entry->theInstruction->instCode() == codeSideEffectLoad  ||
+        lsq_entry->theInstruction->instCode() == codeSideEffectStore ||
+        lsq_entry->theInstruction->instCode() == codeSideEffectAtomic ) {
+    DBG_ ( Verb, ( << theName << " no longer SideEffect access: " << *lsq_entry ) );
+    lsq_entry->theInstruction->restoreOriginalInstCode();
+  }
 
-    /* CMU-ONLY-BLOCK-BEGIN */
-//    if (theTrackParallelAccesses && /*!xlat->isSideEffect() && xlat->isCacheable() &&*/ lsq_entry->thePaddr != kInvalid && lsq_entry->thePaddr != PhysicalMemoryAddress(kUnresolved)) {
-//      //Add this address to parallel accesses and accumulate all accesses parallel with this one
-//      memq_t::index< by_seq >::type::iterator lsq_iter = theMemQueue.get<by_seq>().begin();
-//      memq_t::index< by_seq >::type::iterator lsq_end = theMemQueue.get<by_seq>().end();
-//      uint64_t block_addr(lsq_entry->thePaddr & 0xFFFFFFFFFFFFFFC0ULL);
-//      lsq_entry->theParallelAddresses.clear();
-//      lsq_entry->theParallelAddresses.insert( block_addr );
-//      while (lsq_iter != lsq_end && lsq_iter->theSequenceNum != lsq_entry->theSequenceNum ) {
-//        if (!lsq_iter->isMarker() && ( lsq_iter->status() == kAwaitingPort ||  lsq_iter->status() == kAwaitingIssue || lsq_iter->status() == kIssuedToMemory || lsq_iter->status() == kAwaitingValue ) ) {
-//          lsq_entry->theParallelAddresses.insert( lsq_iter->theParallelAddresses.begin(), lsq_iter->theParallelAddresses.end());
-//          lsq_iter->theParallelAddresses.insert( block_addr );
-//        }
-//        ++lsq_iter;
-//      }
-//    }
-    /* CMU-ONLY-BLOCK-END */
+  PhysicalMemoryAddress addr_aligned(lsq_entry->thePaddr & 0xFFFFFFFFFFFFFFF8ULL);
+  //theMemQueue.get<by_insn>().modify( lsq_entry, [&addr_aligned](auto& x){ x.thePaddr_aligned = addr_aligned; });//ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = addr_aligned);
+  theMemQueue.get<by_insn>().modify( lsq_entry, ll::bind( &MemQueueEntry::thePaddr_aligned, ll::_1 ) = addr_aligned);
 
-    if (thePrefetchEarly && lsq_entry->isStore() && lsq_entry->thePaddr != kUnresolved && lsq_entry->thePaddr != 0 && !lsq_entry->isAbnormalAccess()) {
-      requestStorePrefetch(lsq_entry);
-    }
+  if (thePrefetchEarly && lsq_entry->isStore() && lsq_entry->thePaddr != kUnresolved && lsq_entry->thePaddr != 0 && !lsq_entry->isAbnormalAccess()) {
+    requestStorePrefetch(lsq_entry);
   }
 }
 
@@ -694,7 +620,6 @@ void CoreImpl::translate(boost::intrusive_ptr< Instruction > anInsn){
 
 void CoreImpl::resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, VirtualMemoryAddress anAddr) {
   FLEXUS_PROFILE();
-  DBG_Assert(anAddr != VirtualMemoryAddress(0));
 
   memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( anInsn );
   DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end());
@@ -728,13 +653,13 @@ void CoreImpl::resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, Virtual
   updateVaddr( lsq_entry, anAddr);
 }
 
-void CoreImpl::resolvePAddr( boost::intrusive_ptr< Instruction > anInsn) {
+void CoreImpl::resolvePAddr( boost::intrusive_ptr< Instruction > anInsn, PhysicalMemoryAddress theAddr ) {
 
     memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( anInsn );
     DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end());
     DBG_Assert( lsq_entry->thePaddr != 0);
 
-
+  updatePaddr( lsq_entry, theAddr);
 
   switch (lsq_entry->status()) {
     case kComplete:

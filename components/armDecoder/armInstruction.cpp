@@ -85,7 +85,7 @@ void armInstruction::describe(std::ostream & anOstream) const {
   anOstream <<
             "#" << theSequenceNo << "[" << std::setfill('0') << std::right << std::setw(2) << cpu->id() <<  "] "
             << printInstClass() << " PC: @" << thePC  << " OPC: | " << std::hex << theOpcode << std::dec << " | "
-            << std::endl << "QEMU disas: " << std::setfill(' ') << cpu->disassemble(thePC);
+            << "QEMU disas: " << std::setfill(' ') << cpu->disassemble(thePC);
   if ( theRaisedException) {
     anOstream << " {raised " /*<< cpu->describeException(theRaisedException) << "(" << theRaisedException*/ << ")} ";
   }

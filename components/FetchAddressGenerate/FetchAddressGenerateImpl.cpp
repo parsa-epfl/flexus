@@ -219,10 +219,11 @@ private:
           theNextPC[anIndex] = thePC[anIndex] + 4;
         }
 #else
-          thePC[anIndex] = theBranchPredictor->predict( faddr );
-          if (thePC[anIndex] == 0) {
-            thePC[anIndex] = thePC[anIndex] + 4;
-          }
+          VirtualMemoryAddress prediction = theBranchPredictor->predict( faddr );
+          if (prediction == 0)
+            thePC[anIndex] += 4;
+          else
+            thePC[anIndex] = prediction;
 #endif
         AGU_DBG("Advancing PC to: " << thePC[anIndex] << " for core: " << anIndex);
         AGU_DBG("Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress);

@@ -124,8 +124,7 @@ struct UpdateAddressAction : public BaseSemanticAction {
           SEMANTICS_DBG(*this << " updating vaddr = " << vaddr);
 
         } else {
-            DBG_Assert(theInstruction->hasOperand( theAddressCode ) );
-            core()->resolvePAddr( boost::intrusive_ptr<Instruction>(theInstruction));
+            DBG_Assert(false);
         }
         satisfyDependants();
      }

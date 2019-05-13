@@ -150,7 +150,7 @@ std::ostream & operator << ( std::ostream & anOstream, MemOp const & aMemOp) {
   if (aMemOp.theNAW) {
     anOstream << " {non-allocate-write}";
   }
-  anOstream << " =" << aMemOp.theValue;
+  anOstream << " =" << std::hex << aMemOp.theValue;
   return anOstream;
 }
 

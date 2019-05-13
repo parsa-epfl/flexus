@@ -830,7 +830,7 @@ public:
   bits retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction> anInsn);
   void resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, VirtualMemoryAddress anAddr);
   void translate(boost::intrusive_ptr< Instruction > anInsn);
-  void resolvePAddr( boost::intrusive_ptr< Instruction > anInsn);
+  void resolvePAddr( boost::intrusive_ptr< Instruction > anInsn, PhysicalMemoryAddress anAddr);
   void updateStoreValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, boost::optional<bits> anExtendedValue = boost::none);
   void annulStoreValue( boost::intrusive_ptr< Instruction > anInsn );
   void updateCASValue( boost::intrusive_ptr< Instruction > anInsn, bits aValue, bits aCMPValue );
@@ -858,6 +858,7 @@ public:
   void resnoopDependantLoads( memq_t::index< by_insn >::type::iterator lsq_entry);
   boost::optional< memq_t::index< by_insn >::type::iterator >  doLoad( memq_t::index< by_insn >::type::iterator lsq_entry, boost::optional< memq_t::index< by_insn >::type::iterator > aCachedSnoopState );
   void updateVaddr( memq_t::index< by_insn >::type::iterator  lsq_entry , VirtualMemoryAddress anAddr/*, int32_t anASI */ );
+  void updatePaddr( memq_t::index< by_insn >::type::iterator  lsq_entry , PhysicalMemoryAddress anAddr);
 
   //MSHR Management
   //===========================================================================

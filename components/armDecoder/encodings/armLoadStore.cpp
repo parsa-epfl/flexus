@@ -461,7 +461,7 @@ arminst LDP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
-    inst->setClass(clsStore, codeLDP);
+    inst->setClass(clsLoad, codeLDP);
 
     eAccType acctype = kAccType_NORMAL;
     std::vector< std::list<InternalDependance> > addr_deps(1);

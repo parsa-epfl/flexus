@@ -249,7 +249,7 @@ arminst MOVE(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 {
     DECODER_TRACE;
     uint32_t rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    uint32_t imm = extract32(aFetchedOpcode.theOpcode, 5, 16);
+    uint64_t imm = extract32(aFetchedOpcode.theOpcode, 5, 16);
     bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
     uint32_t pos = extract32(aFetchedOpcode.theOpcode, 21, 2) << 4;
     uint32_t opc = extract32(aFetchedOpcode.theOpcode, 29, 2);
@@ -278,7 +278,7 @@ arminst MOVE(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     std::vector<std::list<InternalDependance>> rs_deps(1);
 
     predicated_action act;
-    uint64_t mask = ~((uint64_t)0xff << pos);
+    uint64_t mask = ~((uint64_t)0xffff << pos);
     inst->setOperand(kOperand3, mask);
 
     if (opcode == kMoveWideOp_K){
