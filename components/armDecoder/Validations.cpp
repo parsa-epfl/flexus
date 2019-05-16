@@ -146,18 +146,30 @@ bool validateMemory::operator () () {
     return true; //Don't check
   }
 
-  Flexus::Qemu::Processor c = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu());
-
-  VirtualMemoryAddress vaddr(theInstruction->operand< uint64_t > (theAddressCode));
-  PhysicalMemoryAddress paddr = c->translateVirtualAddress(vaddr);
-
   bits flexus_val;
   if(theValueCode == kResult){
     flexus_val = theInstruction->operand< bits > (theValueCode);
   } else {
     flexus_val = theInstruction->operand< uint64_t > (theValueCode);
   }
-  bits qemu_val = c->readPhysicalAddress(paddr, theSize);
+
+  Flexus::Qemu::Processor c = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu());
+  VirtualMemoryAddress vaddr(theInstruction->operand< uint64_t > (theAddressCode));
+  int theSize_orig = theSize, theSize_extra = 0;
+  VirtualMemoryAddress vaddr_final = vaddr + theSize_orig - 1;
+  if((vaddr & 0x1000) != (vaddr_final & 0x1000)){
+    theSize_extra = (vaddr_final & 0xFFF) + 1;
+    DBG_Assert(theSize_extra < 16);
+    theSize_orig -= theSize_extra;
+    vaddr_final = (VirtualMemoryAddress) (vaddr_final & ~0xFFFULL);
+  }
+  PhysicalMemoryAddress paddr = c->translateVirtualAddress(vaddr);
+  bits qemu_val = c->readPhysicalAddress(paddr, theSize_orig);
+  if(theSize_extra){
+    DBG_Assert((qemu_val >> (theSize_orig * 8)) == 0);
+    PhysicalMemoryAddress paddr_spill = c->translateVirtualAddress(vaddr_final);
+    qemu_val |= c->readPhysicalAddress(paddr_spill, theSize_extra) << (theSize_orig * 8);
+  }
 
   DBG_(Dev,(<< "flexus value: " << flexus_val ));
   DBG_(Dev,(<< "qemu value:   " << qemu_val   ));

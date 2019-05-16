@@ -106,6 +106,7 @@ struct WritebackAction : public BaseSemanticAction {
       char r = the64 ? 'X' : 'W';
       if(!the64){
         res &= 0xFFFFFFFF;
+        result = res;
         theInstruction->setOperand(theResult,res );
       }
       DBG_(Dev, (<< "Writing " << std::hex << result << std::dec << " to " << r << "-REG ->"<< name));
@@ -146,15 +147,16 @@ struct WriteccAction : public BaseSemanticAction {
       mapped_reg name = theInstruction->operand< mapped_reg > (theCC);
       uint64_t ccresult = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPSTATE();
       uint64_t flags = boost::get<uint64_t>(boost::apply_visitor( register_value_extractor(), theInstruction->operand( kResultCC ) ));
-      if(the64){
+      if(!the64){
         uint64_t result = boost::get<uint64_t>(boost::apply_visitor( register_value_extractor(), theInstruction->operand( kResult ) ));
-        result >>= 32;
         flags &= ~PSTATE_N;
-        flags |= PSTATE_N & result;
+        flags |= (result & ((uint64_t)1 << 31)) ? PSTATE_N : 0;
+        flags |= !(result & 0xFFFFFFFF) ? PSTATE_Z : 0;
+        flags |= ((result >> 32) == 1) ? PSTATE_C : 0;
       }
       ccresult &= ~(0xF << 28);
       ccresult |= flags;
-      DBG_(Dev, (<< "Writing to CC: " << std::hex << ccresult << ", " << *theInstruction));
+      DBG_(Dev, (<< "Writing to CC: " << std::hex << ccresult << ", " << std::dec << *theInstruction));
       core()->writeRegister( name, ccresult, false );
       core()->bypass( name, ccresult );
       satisfyDependants();

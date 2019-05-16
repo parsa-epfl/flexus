@@ -605,14 +605,13 @@ void CoreImpl::translate(boost::intrusive_ptr< Instruction > anInsn){
 
     memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( anInsn );
     DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end());
-    DBG_Assert( lsq_entry->theVaddr != 0);
 
     TranslationPtr tr(new Translation());
     tr->theVaddr = lsq_entry->theVaddr;
     tr->setData();
     tr->setInstruction(anInsn);
 
-    DBG_(Dev, (<< "Sending Translation Request to MMU: " << *anInsn));
+    DBG_(Dev, (<< "Sending Translation Request to MMU: " << *anInsn << ", VAddr: " << tr->theVaddr));
 
 
     theTranslationQueue.push(tr);

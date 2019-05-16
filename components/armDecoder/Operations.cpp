@@ -126,9 +126,9 @@ typedef struct ADDS : public Operation {
     uint64_t result =  uresult;
     bool overflow = (uresult < op1) || (uresult < op2);
 
-    uint32_t N = PSTATE_N & (uint32_t)result;
+    uint32_t N = ((result & ((uint64_t)1 << 63)) ? PSTATE_N : 0);
     uint32_t Z = ((result == 0) ? PSTATE_Z : 0);
-    uint32_t C = (!overflow ? 0 : PSTATE_C);
+    uint32_t C = (overflow ? PSTATE_C : 0);
     uint32_t V = ((((int64_t) result) == sresult) ? 0 : PSTATE_V);
 
     theNZCV = N | Z | C | V;
@@ -175,9 +175,9 @@ typedef struct SUBS : public Operation {
     uint64_t result =  uresult;
     bool overflow = (uresult < op1) || (uresult < op2);
 
-    uint32_t N = PSTATE_N & (uint32_t)result;
+    uint32_t N = ((result & ((uint64_t)1 << 63)) ? PSTATE_N : 0);
     uint32_t Z = ((result == 0) ? PSTATE_Z : 0);
-    uint32_t C = (!overflow ? 0 : PSTATE_C);
+    uint32_t C = (overflow ? PSTATE_C : 0);
     uint32_t V = ((((int64_t) result) == sresult) ? 0 : PSTATE_V);
 
     theNZCV = N | Z | C | V;
@@ -248,7 +248,7 @@ typedef struct ANDS : public Operation {
     DBG_Assert( operands.size() == 2);
     uint64_t result = boost::get<uint64_t>(operands[0]) & boost::get<uint64_t>(operands[1]);
 
-    uint32_t N = PSTATE_N & (uint32_t)result;
+    uint32_t N = ((result & ((uint64_t)1 << 63)) ? PSTATE_N : 0);
     uint32_t Z = ((result == 0) ? PSTATE_Z : 0);
     uint32_t C = 0;
     uint32_t V = 0;

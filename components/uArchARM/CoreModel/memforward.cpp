@@ -66,25 +66,21 @@ inline bits mask( eSize aSize) {
 
 bits value( MemQueueEntry const & anEntry, bool aFlipEndian ) {
   DBG_Assert( anEntry.theValue );
-//  if (aFlipEndian) {
-//    return bits(Flexus::Qemu::endianFlip( *anEntry.theValue, anEntry.theSize ));
-//  } else {
-    return *anEntry.theValue;
-//  }
+  return *anEntry.theValue << (16 - anEntry.theSize)*8;
 }
 
 bits loadValue( MemQueueEntry const & anEntry ) {
   DBG_Assert( anEntry.loadValue());
-  return *anEntry.loadValue();
+  return *anEntry.loadValue() << (16 - anEntry.theSize)*8;
 }
 
 uint64_t offset (MemQueueEntry const & anEntry) {
-  return ( 8 - static_cast<int>(anEntry.theSize) ) - (static_cast<uint64_t>( anEntry.thePaddr ) - anEntry.thePaddr_aligned);
+  return ( 16 - static_cast<int>(anEntry.theSize) ) - (static_cast<uint64_t>( anEntry.thePaddr ) - anEntry.thePaddr_aligned);
 }
 
 bits makeMask(MemQueueEntry const & anEntry) {
-  bits mask = nuArchARM::mask(anEntry.theSize);
-  mask = mask << ( offset(anEntry) * 8 );
+  bits mask = nuArchARM::mask(anEntry.theSize) << (16 - anEntry.theSize)*8;
+  mask = mask >> ( offset(anEntry) * 8 );
   return mask;
 }
 
@@ -101,16 +97,17 @@ bool intersects( MemQueueEntry const & aStore, MemQueueEntry const & aLoad) {
 }
 
 bits align( MemQueueEntry const & anEntry, bool flipEndian ) {
-  return ( value(anEntry, flipEndian) << ( offset(anEntry) * 8) );
+  return ( value(anEntry, flipEndian) >> ( offset(anEntry) * 8) );
 }
 
 bits alignLoad( MemQueueEntry const & anEntry ) {
-  return ( loadValue(anEntry) << ( offset(anEntry) * 8) );
+  return ( loadValue(anEntry) >> ( offset(anEntry) * 8) );
 }
 
 void writeAligned( MemQueueEntry const & anEntry, bits anAlignedValue, bool use_ext = false ) {
   bits masked_value = anAlignedValue & makeMask(anEntry);
-  masked_value = masked_value >> ( offset(anEntry) * 8);
+  masked_value <<= ( offset(anEntry) * 8);
+  masked_value >>= (16 - anEntry.theSize)*8;
   if (!use_ext) {
     anEntry.loadValue() = masked_value;
   } else {

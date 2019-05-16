@@ -304,7 +304,7 @@ predicated_action executeAction(SemanticInstruction * anInstruction, std::unique
 predicated_action executeAction(SemanticInstruction * anInstruction, std::unique_ptr<Operation> & anOperation, std::vector<eOperandCode> & anOperands, std::vector< std::list<InternalDependance> > & opDeps, eOperandCode aResult, boost::optional<eOperandCode> aBypass);
 predicated_action annulAction(SemanticInstruction * anInstruction);
 predicated_action annulRD1Action(SemanticInstruction * anInstruction );
-predicated_action bitFieldAction(SemanticInstruction * anInstruction, std::vector< std::list<InternalDependance> > & opDeps, eOperandCode anOperandCode1, eOperandCode anOperandCode2, uint32_t imms, uint32_t immr, uint32_t wmask, uint32_t tmask, bool anExtend, bool sf);
+predicated_action bitFieldAction(SemanticInstruction * anInstruction, std::vector< std::list<InternalDependance> > & opDeps, eOperandCode anOperandCode1, eOperandCode anOperandCode2, uint64_t imms, uint64_t immr, uint64_t wmask, uint64_t tmask, bool anExtend, bool sf);
 predicated_action extractAction(SemanticInstruction * anInstruction, std::vector< std::list<InternalDependance> > & opDeps, eOperandCode anOperandCode1, eOperandCode anOperandCode2, eOperandCode anOperandCode3, bool is64);
 
 

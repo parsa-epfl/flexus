@@ -453,7 +453,7 @@ uint32_t highestSetBit(bits val){
 }
 
 uint64_t ones(uint64_t length){
-    uint64_t tmp;
+    uint64_t tmp = 0;
     for (uint32_t i=0; i<length; i++){
         tmp |= (1 << i);
     }
@@ -461,7 +461,7 @@ uint64_t ones(uint64_t length){
 }
 
 uint64_t ror(uint64_t input, uint64_t input_size, uint64_t shift_size){
-    uint64_t filter = (input_size == 32) ? 0xffffffff : -1;
+    uint64_t filter = (input_size == 32) ? 0xffffffff : (uint64_t) -1;
     DBG_Assert(input_size == 64 || input_size == 32 );
 
     uint64_t mask = ones(shift_size);
@@ -474,14 +474,14 @@ uint64_t ror(uint64_t input, uint64_t input_size, uint64_t shift_size){
 }
 
 uint64_t lsl(uint64_t input, uint64_t input_size, uint64_t shift_size){
-    uint64_t mask = (input_size == 32) ? 0xffffffff : -1;
+    uint64_t mask = (input_size == 32) ? 0xffffffff : (uint64_t) -1;
     DBG_Assert(input_size == 64 || input_size == 32 );
     input <<= shift_size;
     return input & mask;
 }
 
 uint64_t lsr(uint64_t input, uint64_t input_size, uint64_t shift_size){
-    uint64_t mask = (input_size == 32) ? 0xffffffff : -1;
+    uint64_t mask = (input_size == 32) ? 0xffffffff : (uint64_t) -1;
     DBG_Assert(input_size == 64 || input_size == 32 );
 
     input >>= shift_size;
@@ -489,14 +489,14 @@ uint64_t lsr(uint64_t input, uint64_t input_size, uint64_t shift_size){
 }
 
 uint64_t asr(uint64_t input, uint64_t input_size, uint64_t shift_size){
-    uint64_t mask = (input_size == 32) ? 0xffffffff : -1;
+    uint64_t mask = (input_size == 32) ? 0xffffffff : (uint64_t) -1;
     DBG_Assert(input_size == 64 || input_size == 32 );
 
-    bool is_signed = ((input & (1 << input_size)) != 0) ? true : false;
-    input >>= shift_size;
+    bool is_signed = input & (1 << (input_size-1));
     if (is_signed){
-        input |= (ones(4) << (input_size - 4));
+        input |= (ones(shift_size) << input_size);
     }
+    input >>= shift_size;
     return input & mask;
 }
 

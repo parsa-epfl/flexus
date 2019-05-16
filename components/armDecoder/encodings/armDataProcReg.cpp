@@ -283,7 +283,7 @@ arminst CCMP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
         readRegister(inst, 2, rm, rs_deps[1], sf);
     addReadCC(inst, 3, rs_deps[2], true);
 
-    addSetCC(inst, act, sf);
+    addSetCC(inst, act, true);
 
     return inst;
 

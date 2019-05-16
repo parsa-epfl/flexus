@@ -73,13 +73,13 @@ using namespace nuArchARM;
 struct BitFieldAction : public PredicatedSemanticAction {
   eOperandCode theOperandCode1, theOperandCode2;
   uint64_t theS, theR;
-  uint32_t thewmask, thetmask;
+  uint64_t thewmask, thetmask;
   bool theExtend, the64;
 
   BitFieldAction ( SemanticInstruction * anInstruction
                   , eOperandCode anOperandCode1, eOperandCode anOperandCode2
-                  , uint32_t imms, uint32_t immr
-                  , uint32_t wmask, uint32_t tmask, bool anExtend, bool a64)
+                  , uint64_t imms, uint64_t immr
+                  , uint64_t wmask, uint64_t tmask, bool anExtend, bool a64)
     : PredicatedSemanticAction( anInstruction, 1, true )
     , theOperandCode1(anOperandCode1)
     , theOperandCode2 (anOperandCode2)
@@ -108,9 +108,11 @@ struct BitFieldAction : public PredicatedSemanticAction {
         // perform bitfield move on low bits
         uint64_t bot = (dst & ~thewmask) | (res & thewmask);
         // determine extension bits (sign, zero or dest register)
-        uint64_t top = theExtend ? src & (1 << theS) : dst;
+        uint64_t top_mask = the64 ? (uint64_t) -1 : 0xFFFFFFFF;
+        uint64_t top = theExtend ? ((src & ((uint64_t)1 << theS)) ? top_mask : 0) : dst;
         // combine extension bits and result bits
-        theInstruction->setOperand(kResult, ((top & ~thetmask) | (bot & thetmask)));
+        uint64_t result = ((top & ~thetmask) | (bot & thetmask));
+        theInstruction->setOperand(kResult, result);
 
         satisfyDependants();
         theInstruction->setExecuted(true);
@@ -130,8 +132,8 @@ predicated_action bitFieldAction
 (SemanticInstruction * anInstruction
   , std::vector< std::list<InternalDependance> > & opDeps
   , eOperandCode anOperandCode1, eOperandCode anOperandCode2
-  , uint32_t imms, uint32_t immr
-  , uint32_t wmask, uint32_t tmask, bool anExtend, bool a64
+  , uint64_t imms, uint64_t immr
+  , uint64_t wmask, uint64_t tmask, bool anExtend, bool a64
  ){
   BitFieldAction * act(new(anInstruction->icb()) BitFieldAction( anInstruction, anOperandCode1,
                                                                  anOperandCode2, imms, immr, wmask, tmask, anExtend, a64) );

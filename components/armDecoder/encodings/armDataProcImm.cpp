@@ -355,7 +355,10 @@ arminst LOGICALIMM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequ
     addReadXRegister(inst, 1, rn, rs_deps[0], sf);
     addReadConstant(inst, 2, static_cast<int64_t>(wmask), rs_deps[1]);
 
-    addDestination(inst, rd, exec, sf, setflags);
+    if (rd != 31)
+        addDestination(inst, rd, exec, sf, setflags);
+    else if (setflags)
+        addSetCC(inst, exec, sf);
 
     return inst;
 }
@@ -391,11 +394,10 @@ arminst ALUIMM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequence
     addReadConstant(inst, 2, imm, rs_deps[1]);
 
     addReadXRegister(inst, 1, rn, rs_deps[0], sf);
-    if (!(setflags && sub_op)){
+    if(!setflags || rd != 31)
         addDestination(inst, rd, exec, sf, setflags);
-    } else {
+    else if (setflags)
         addSetCC(inst, exec, sf);
-    }
 
     return inst;
 

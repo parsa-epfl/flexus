@@ -172,7 +172,7 @@ struct ConditionCompareAction : public PredicatedSemanticAction {
         bool result = theOperation->operator()(operands);
         std::unique_ptr<Operation> op;
         uint64_t nzcv = boost::get<uint64_t>(theInstruction->operand( kOperand4 )) << 28;
-        Operand res = (nzcv & (8 << 28)) ? 0xFFFFFFFFFFFFFFFF : 0;
+        Operand res = (nzcv & PSTATE_N) ? 0xFFFFFFFFFFFFFFFF : 0;
         if (result) {
           if (theSub_op){
               op = operation(kSUBS_);
@@ -183,6 +183,13 @@ struct ConditionCompareAction : public PredicatedSemanticAction {
           std::vector<Operand> operands = {theInstruction->operand(kOperand1), theInstruction->operand(kOperand2)};
           res = op->operator ()(operands);
           nzcv = op->getNZCVbits();
+          if(!the64){
+            uint64_t result = boost::get<uint64_t>(res);
+            nzcv &= ~PSTATE_N;
+            nzcv |= (result & ((uint64_t)1 << 31)) ? PSTATE_N : 0;
+            nzcv |= !(result & 0xFFFFFFFF) ? PSTATE_Z : 0;
+            nzcv |= ((result >> 32) == 1) ? PSTATE_C : 0;
+          }
         }
         theInstruction->setOperand(theResult, res);
         theInstruction->setOperand(kResultCC, nzcv);
