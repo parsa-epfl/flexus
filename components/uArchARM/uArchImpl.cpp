@@ -364,7 +364,7 @@ private:
       boost::intrusive_ptr<MemoryMessage> operation;
 
       DBG_(Dev, (<< "Sending Memory Request: " <<  op->theOperation  << "  -- vaddr: " << op->theVAddr
-                 << "  -- paddr: " << op->thePAddr << "  --  Instruction: " <<  op->theInstruction
+                 << "  -- paddr: " << op->thePAddr << "  --  Instruction: " <<  *(op->theInstruction)
                  << " --  PC: " << op->thePC << " -- size: " << op->theSize));
 
       if (op->theNAW) {

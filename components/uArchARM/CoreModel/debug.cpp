@@ -87,7 +87,7 @@ void MemQueueEntry::describe(std::ostream & anOstream) const {
         << " " << thePaddr;
 
     if (theValue) {
-      anOstream << " =" << *theValue;
+      anOstream << " =" << std::hex << *theValue;
     }
     if (theExtendedValue) {
       anOstream << " x=" << *theExtendedValue;

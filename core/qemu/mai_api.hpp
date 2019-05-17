@@ -91,7 +91,12 @@ public:
 
   std::string disassemble(VirtualMemoryAddress const & anAddress) const {
       API::logical_address_t addr(anAddress);
-      return API::QEMU_disassemble(*this, addr);
+      const char *buffer = API::QEMU_disassemble(*this, addr);
+      char *buffer_dup = (char *) buffer;
+      while(buffer_dup[0] != '\n')
+        buffer_dup++;
+      buffer_dup[0] = '\0';
+      return buffer;
   }
 
 

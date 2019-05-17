@@ -84,10 +84,10 @@ void armInstruction::describe(std::ostream & anOstream) const {
   Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(theCPU);
   anOstream <<
             "#" << theSequenceNo << "[" << std::setfill('0') << std::right << std::setw(2) << cpu->id() <<  "] "
-            << printInstClass() << " PC: @" << thePC  << " OPC: | " << std::hex << theOpcode << std::dec << " | "
-            << "QEMU disas: " << std::setfill(' ') << cpu->disassemble(thePC);
-  if ( theRaisedException) {
-    anOstream << " {raised " /*<< cpu->describeException(theRaisedException) << "(" << theRaisedException*/ << ")} ";
+            // << " PC: @" << thePC  << " OPC: | " << std::hex << theOpcode << std::dec << " | "
+            << printInstClass() << " QEMU disas: " << cpu->disassemble(thePC);
+  if (theRaisedException) {
+    anOstream << " {raised}"/* << cpu->describeException(theRaisedException) << "(" << theRaisedException << ")"*/;
   }
   if (theResync) {
     anOstream << " {force-resync}";

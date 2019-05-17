@@ -146,7 +146,7 @@ extern bool Stats_debug_enabled;
 #define SEMANTICS_DBG(WORD) \
     __TRACE_W (CYAN, WORD)
 #define DECODER_DBG(WORD) \
-    __TRACE_W2 (RED, WORD)
+    __TRACE_W (RED, WORD)
 #define DISPATCH_DBG(WORD) \
     __TRACE_W (YELLOW, WORD)
 #define CORE_DBG(WORD) \

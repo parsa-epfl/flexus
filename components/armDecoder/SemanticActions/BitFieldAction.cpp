@@ -80,7 +80,7 @@ struct BitFieldAction : public PredicatedSemanticAction {
                   , eOperandCode anOperandCode1, eOperandCode anOperandCode2
                   , uint64_t imms, uint64_t immr
                   , uint64_t wmask, uint64_t tmask, bool anExtend, bool a64)
-    : PredicatedSemanticAction( anInstruction, 1, true )
+    : PredicatedSemanticAction( anInstruction, 2, true )
     , theOperandCode1(anOperandCode1)
     , theOperandCode2 (anOperandCode2)
     , theS (imms)
@@ -140,8 +140,6 @@ predicated_action bitFieldAction
 
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
     opDeps[i].push_back( act->dependance(i) );
-    return predicated_action( act, act->predicate() );
-
   }
 
   return predicated_action( act, act->predicate() );

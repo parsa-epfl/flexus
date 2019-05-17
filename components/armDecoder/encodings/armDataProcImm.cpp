@@ -231,9 +231,8 @@ arminst BFM(armcode const & aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
 
     inst->setClass(clsComputation, codeALU);
 
-    std::vector<std::list<InternalDependance>> rs_deps(1);
+    std::vector<std::list<InternalDependance>> rs_deps(2);
     predicated_action exec = bitFieldAction(inst, rs_deps, kOperand1, kOperand2, imms, immr, wmask, tmask, extend, sf);
-    rs_deps.resize(2);
     readRegister(inst, 1, rn, rs_deps[0], sf);
     if (inzero){
         addReadConstant(inst, 2, 0, rs_deps[1]);

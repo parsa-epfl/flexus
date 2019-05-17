@@ -441,6 +441,15 @@ protected:
     , theResolved(false)
     , theInsnSourceLevel(eL1I)
     , thePriv(false)
+    , theUsesIntAlu(true)
+    , theUsesIntMult(false)
+    , theUsesIntDiv(false)
+    , theUsesFpAdd(false)
+    , theUsesFpCmp(false)
+    , theUsesFpCvt(false)
+    , theUsesFpMult(false)
+    , theUsesFpDiv(false)
+    , theUsesFpSqrt(false)
   {
   }
 
