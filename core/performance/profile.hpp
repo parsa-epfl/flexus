@@ -8,12 +8,26 @@
 
 namespace nProfile {
 
-#ifndef X86_64
+    /* These rdtsc functions are buggy:
+     * - they do not include mem barriers before/after as needed
+     *   in the Intel Arch opt manual to prevent reordering
+     * - FIXME: add memory barriers or rdcpuid instrs to prevent
+     */
+#ifndef __x86_64__
+#ifdef __i386
 inline int64_t rdtsc() {
   int64_t tsc;
   __asm__ __volatile__ ( "rdtsc" : "=A" (tsc));
   return tsc;
 }
+#endif
+#ifdef __aarch64__
+//TODO: in arm64, accessing the perf counters from usermode needs
+//a kernel module to enable it.
+inline int64_t rdtsc() {
+    return 0;
+}
+#endif
 #else
 inline int64_t rdtsc() {
   int64_t tsca, tscd;
