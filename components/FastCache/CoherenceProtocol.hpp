@@ -325,6 +325,18 @@ protected:
   }
 };
 
+// Msutherl: Undefined symbol fix
+const CoherenceProtocol::access_t CoherenceProtocol::kReadAccess;
+const CoherenceProtocol::access_t CoherenceProtocol::kWriteAccess;
+const CoherenceProtocol::access_t CoherenceProtocol::kFetchAccess;
+const CoherenceProtocol::access_t CoherenceProtocol::kUpgrade;
+const CoherenceProtocol::access_t CoherenceProtocol::kEvictClean;
+const CoherenceProtocol::access_t CoherenceProtocol::kEvictWritable;
+const CoherenceProtocol::access_t CoherenceProtocol::kEvictDirty;
+const CoherenceProtocol::access_t CoherenceProtocol::kStoreAccess;
+const CoherenceProtocol::access_t CoherenceProtocol::kNAWAccess;
+const CoherenceProtocol::access_t CoherenceProtocol::kUnknownAccess;
+ 
 #define CP CoherenceProtocol
 
 // Required specializations
