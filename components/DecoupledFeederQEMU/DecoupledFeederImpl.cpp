@@ -122,7 +122,7 @@ public:
     theICounts = new Stat::StatCounter * [theNumCPUs];
     for (int32_t i = 0; i < theNumCPUs; ++i) {
       theICounts[i] = new Stat::StatCounter( boost::padded_string_cast < 2, '0' > (i) + "-feeder-ICount" );
-      theLastICounts[i] = Qemu::API::QEMU_get_instruction_count(i,BOTH_INSTR);
+      theLastICounts[i] = Qemu::API::QEMU_get_instruction_count(i);
     }
 
 	//TODO fix this with actual QEMU_insert_callback.
@@ -178,7 +178,7 @@ public:
     //Count instructions
     //FIXME Currently Does nothing since step_count ha not been implemented
     for (int32_t i = 0; i < theNumCPUs; ++i) {
-	  int64_t temp = Qemu::API::QEMU_get_instruction_count(i,BOTH_INSTR);
+	  int64_t temp = Qemu::API::QEMU_get_instruction_count(i);
       *(theICounts[i]) += temp - theLastICounts[i];
       theLastICounts[i] = temp;
     }
