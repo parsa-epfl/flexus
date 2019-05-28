@@ -295,7 +295,7 @@ public:
   API::cycles_t trace_mem_hier_operate(
 				       API::conf_object_t * space,
 				       API::memory_transaction_t * mem_trans ) {
-    int mn = API::QEMU_get_cpu_index(theCPU);
+    //int mn = API::QEMU_get_cpu_index(theCPU);
     //debugTransaction(mem_trans); // ustiugov: uncomment to track every memory op
     //Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
     //toL1D((int32_t) 0, msg); 
@@ -493,6 +493,7 @@ public:
 
   //Useful debugging stuff for tracing every instruction
   void debugTransaction(Qemu::API::memory_transaction_t * mem_trans) {
+#if 0
     API::logical_address_t pc_logical = API::QEMU_get_program_counter(theCPU);
     API::physical_address_t pc = API::QEMU_logical_to_physical(theCPU, API::QEMU_DI_Instruction, pc_logical);
 	unsigned opcode = 0;
@@ -500,6 +501,7 @@ public:
     DBG_(VVerb, SetNumeric( (ScaffoldIdx) theIndex)
          ( << "Mem Hier Instr: " << opcode << " logical pc: " << &std::hex << pc_logical << " pc: " << pc)
         );
+#endif
 
     if (API::QEMU_mem_op_is_data(&mem_trans->s)) {
       if (API::QEMU_mem_op_is_write(&mem_trans->s)) {
@@ -733,10 +735,10 @@ private:
   }
 
 	void createDMATracer(void) {
-		bool client_server = false;
+		//bool client_server = false;
 		//Create QemuTracer Factory
 		Qemu::Factory<DMATracer> tracer_factory;
-		API::conf_class_t * trace_class = tracer_factory.getQemuClass();
+		//API::conf_class_t * trace_class = tracer_factory.getQemuClass();
 
 		std::string tracer_name("dma-tracer");
 		theDMATracer = tracer_factory.create(tracer_name);

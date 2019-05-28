@@ -90,13 +90,7 @@ public:
                 //, cfg.WhiteBoxPeriod
                 , cfg.SendNonAllocatingStores
 			  );
-//    printf("Is the FLEXUS_COMPONENT_CONSTRUCTOR(DecoupledFeeder) run?\n");
-    size_t i;
     Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
-//    DecoupledFeederComponent::toL1D((int32_t) 0, msg); 
-    
-  //  printf("toL1D %p\n", DecoupledFeederComponent::toL1D);
-
   }
 
   //InstructionOutputPort
