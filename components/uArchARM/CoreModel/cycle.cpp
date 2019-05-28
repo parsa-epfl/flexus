@@ -1560,8 +1560,7 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
   DBG_(Dev, (<<"Post Validating... "<< validation_passed));
 
   if (! validation_passed ) {
-    DBG_(Dev, (<<"Failed Validated " ));
-    DBG_(VVerb, (<< std::internal << *anInstruction << std::left));
+    DBG_(Dev, (<<"Failed Validated " << std::internal << *anInstruction << std::left));
 
     //Subsequent Empty ROB stalls (until next dispatch) are the result of a
     //modelling error resynchronization instruction.

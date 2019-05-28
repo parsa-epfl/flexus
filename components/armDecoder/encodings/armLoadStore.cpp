@@ -136,6 +136,7 @@ arminst CAS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
  * For information about memory accesses see Load/Store addressing modes.
  */
 arminst STXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
+    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
     DECODER_TRACE;
 
     bool o0 = extract32(aFetchedOpcode.theOpcode, 15, 1); // LA-SR

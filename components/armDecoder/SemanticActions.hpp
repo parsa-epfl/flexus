@@ -116,23 +116,6 @@ struct Operation {
         theOperands.push_back(aValue);
   }
 
-
-  bool hasOwnOperands(){
-      return theOperands.size() != 0;
-  }
-
-  void make_local(std::vector< Operand > const & operands){
-      if (!hasOwnOperands())
-          theOperands = operands;
-  }
-
-  bool checkNumOperands(std::vector<unsigned> aNum){
-      for (unsigned i=0; i < aNum.size(); i++)
-        if (theOperands.size() == aNum[i])
-            return true;
-    return false;
-  }
-
   virtual bool is128() const {return the128;}
 
   virtual uint32_t getNZCVbits() { return theNZCV; }

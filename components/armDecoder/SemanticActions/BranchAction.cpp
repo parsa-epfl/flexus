@@ -110,13 +110,13 @@ struct BranchCondAction : public BaseSemanticAction {
           //Taken
           theInstruction->redirectPC(theTarget);
           core()->applyToNext( theInstruction, branchInteraction(theTarget) );
-          theInstruction->addPostvalidation(validatePC((uint64_t)theTarget, theInstruction));
           feedback->theActualDirection = kTaken;
-
+          DBG_(Dev, (<< "Branch taken! " << *theInstruction));
         } else {
+          theInstruction->redirectPC(theInstruction->pc() + 4);
           core()->applyToNext( theInstruction, branchInteraction(theInstruction->pc() + 4));
           feedback->theActualDirection = kNotTaken;
-          DBG_(Dev, (<< "Branching Not taken! "));
+          DBG_(Dev, (<< "Branch Not taken! " << *theInstruction));
         }
         theInstruction->setBranchFeedback(feedback);
 
@@ -179,7 +179,6 @@ struct BranchRegAction : public BaseSemanticAction {
 
         theInstruction->redirectPC(theTarget);
         core()->applyToNext( theInstruction, branchInteraction(theTarget) );
-        theInstruction->addPostvalidation(validatePC((uint64_t)theTarget, theInstruction));
 
         satisfyDependants();
         theInstruction->setExecuted(true);

@@ -88,7 +88,7 @@ arminst UNCONDBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequen
 
     DBG_(Dev,(<< "branching to " << std::hex << target << " with an offset of 0x"<< std::hex << offset << std::dec));
 
-    inst->addPostvalidation(validatePC(addr, inst));
+    inst->addPostvalidation(validatePC(inst));
 
     if (op){
         std::vector< std::list<InternalDependance> > rs_deps(1);
@@ -208,7 +208,7 @@ arminst CONDBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequence
         addReadCC(inst, 1, rs_deps[0], true);
     } else {
         DBG_(Dev,(<< "unconditionally branching to " << std::hex << target << " with an offset of 0x"<< std::hex << offset << std::dec));
-        inst->addPostvalidation(validatePC_HARD(addr, inst));
+        inst->addPostvalidation(validatePC(inst));
 
         /* 0xe and 0xf are both "always" conditions */
         branch_always(inst, false, target);
@@ -314,7 +314,6 @@ arminst DPRS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 
 // System
 arminst HINT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
-    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
     DECODER_TRACE;
     uint32_t op1 = extract32(aFetchedOpcode.theOpcode, 16, 3);
     uint32_t crm = extract32(aFetchedOpcode.theOpcode, 8, 4);

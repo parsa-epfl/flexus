@@ -100,7 +100,7 @@ inline bits mask( eSize aSize) {
     case kDoubleWord:
       return (bits)0xFFFFFFFFFFFFFFFFULL;
     case kQuadWord:
-      return (bits)0xFFFFFFFFFFFFFFFFULL;
+      return (bits)-1;
   default:
       DBG_Assert(false);
       return 0;

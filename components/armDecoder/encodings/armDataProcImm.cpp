@@ -351,7 +351,7 @@ arminst LOGICALIMM(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequ
 
     predicated_action exec = addExecute(inst, std::move(op), rs_deps);
 
-    addReadXRegister(inst, 1, rn, rs_deps[0], sf);
+    readRegister(inst, 1, rn, rs_deps[0], sf);
     addReadConstant(inst, 2, static_cast<int64_t>(wmask), rs_deps[1]);
 
     if (rd != 31)

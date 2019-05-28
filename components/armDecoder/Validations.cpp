@@ -95,31 +95,12 @@ bool validatePC::operator () () {
     return true;
   }
 
-  uint64_t flexus = theAddr;
+  uint64_t flexus = thePreValidation ? theInstruction->pc() : theInstruction->pcOrig();
   uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPC();
 
   DBG_(Dev,(<< "flexus PC value " << std::hex << flexus << std::dec ));
   DBG_(Dev,(<< "qemu PC value   " << std::hex << qemu   << std::dec ));
 
-  return flexus == qemu;
-}
-
-bool validatePC_HARD::operator () () {
-  if (theInstruction->isSquashed() || theInstruction->isAnnulled()) {
-    return true; //Don't check
-  }
-  if (theInstruction->raised() != kException_None) {
-    DBG_( VVerb, ( << " Not performing  validation because of exception. " << *theInstruction ) );
-    return true;
-  }
-
-  uint64_t flexus = theAddr;
-  uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPC();
-
-//  DBG_(Dev,(<< "flexus PC value " << std::hex << flexus << std::dec ));
-//  DBG_(Dev,(<< "qemu PC value   " << std::hex << qemu   << std::dec ));
-
-//  DBG_Assert((flexus == qemu), (<< "PCs dont match"));
   return flexus == qemu;
 }
 

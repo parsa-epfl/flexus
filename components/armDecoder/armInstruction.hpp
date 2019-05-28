@@ -161,9 +161,9 @@ public:
       return theResolved;
   }
 
-  virtual void setResolved(){
-      DBG_Assert(!theResolved);
-      theResolved = true;
+  virtual void setResolved(bool value = true){
+    if(value) DBG_Assert(!theResolved);
+    theResolved = value;
   }
 
   virtual eExceptionType willRaise() const {

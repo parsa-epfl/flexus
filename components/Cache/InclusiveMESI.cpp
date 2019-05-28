@@ -740,7 +740,7 @@ std::tuple<bool, bool, Action> InclusiveMESI::doRequest( MemoryTransport      tr
           // If no snoop buffer entry, then we need to send snoops
           // otherwise, we just wait for the other snoop to return
           if (!theSnoopBuffer.hasEntry(msg->address())) {
-//            SnoopBuffer::snoop_iter snp = theSnoopBuffer.allocEntry(transport);
+            SnoopBuffer::snoop_iter snp = theSnoopBuffer.allocEntry(transport);
             Action act(kSend, tracker, false);
             intrusive_ptr<MemoryMessage> request(new MemoryMessage(MemoryMessage::Downgrade, msg->address(), msg->pc()));
             // make sure size is 0 so we don't get un-necessary update

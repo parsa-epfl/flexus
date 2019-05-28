@@ -75,6 +75,14 @@ struct TranslationAction : public BaseSemanticAction
     : BaseSemanticAction( anInstruction, 1 )
   {}
 
+  void squash(int32_t anOperand) {
+    if (! cancelled() ) {
+      DBG_( VVerb, ( << *this << " Squashing paddr." ) );
+      core()->resolvePAddr( boost::intrusive_ptr<Instruction>(theInstruction), (PhysicalMemoryAddress) kUnresolved);
+    }
+    boost::intrusive_ptr<Instruction>(theInstruction)->setResolved(false);
+    BaseSemanticAction::squash(anOperand);
+  }
 
   void doEvaluate()
   {
@@ -95,9 +103,8 @@ struct TranslationAction : public BaseSemanticAction
     }
   }
 
-  void describe( std::ostream & anOstream) const
-  {
-    anOstream << theInstruction->identify();
+  void describe( std::ostream & anOstream) const {
+    anOstream << theInstruction->identify() << " TranslationAction";
   }
 };
 

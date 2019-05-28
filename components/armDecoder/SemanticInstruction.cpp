@@ -86,8 +86,7 @@ SemanticInstruction::SemanticInstruction(VirtualMemoryAddress aPC, Opcode anOpco
   thePeakInsns << theInsnCount;
   for (int32_t i = 0; i < 4; ++i) {
     theRetirementDepends[i] = true;
-
-    addPrevalidation(validatePC_HARD(aPC, this));
+    addPrevalidation(validatePC(this, true));
   }
 
 #ifdef TRACK_INSNS

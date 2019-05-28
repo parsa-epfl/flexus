@@ -49,17 +49,17 @@ namespace nuArchARM {
 inline bits mask( eSize aSize) {
   switch (aSize) {
     case kByte:
-      return 0xff;
+      return (bits)0xFFULL;
     case kHalfWord:
-      return 0xffff;
+      return (bits)0xFFFFULL;
     case kWord:
-      return 0xffffffff;
+      return (bits)0xFFFFFFFFULL;
     case kDoubleWord:
-      return 0xffffffffffffffff;
-  case kQuadWord:
-    return bits(-1);
+      return (bits)0xFFFFFFFFFFFFFFFFULL;
+    case kQuadWord:
+      return (bits)-1;
   default:
-      DBG_Assert( false );
+      DBG_Assert(false);
       return 0;
   }
 }

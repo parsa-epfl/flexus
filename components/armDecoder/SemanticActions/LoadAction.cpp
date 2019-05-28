@@ -88,11 +88,6 @@ struct LoadAction : public PredicatedSemanticAction {
       doLoad();
     }
   }
-  void squash(int32_t anArg) {
-      BaseSemanticAction::squash(anArg);
-      satisfyDependants();
-
-  }
 
   void predicate_on(int32_t anArg) {
     PredicatedSemanticAction::predicate_on(anArg);

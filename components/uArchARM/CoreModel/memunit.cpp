@@ -490,6 +490,8 @@ void CoreImpl::pushTranslation(TranslationPtr aTranslation) {
     // DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end(), ( << *insn) );
     if(lsq_entry == theMemQueue.get<by_insn>().end())
       return;
+    if(lsq_entry->theVaddr != aTranslation->theVaddr)
+      return;
 
     if (! insn->resync()){
         resolvePAddr(insn, aTranslation->thePaddr);
@@ -652,13 +654,21 @@ void CoreImpl::resolveVAddr( boost::intrusive_ptr< Instruction > anInsn, Virtual
   updateVaddr( lsq_entry, anAddr);
 }
 
-void CoreImpl::resolvePAddr( boost::intrusive_ptr< Instruction > anInsn, PhysicalMemoryAddress theAddr ) {
+void CoreImpl::resolvePAddr( boost::intrusive_ptr< Instruction > anInsn, PhysicalMemoryAddress anAddr ) {
 
     memq_t::index< by_insn >::type::iterator  lsq_entry =  theMemQueue.get<by_insn>().find( anInsn );
     DBG_Assert( lsq_entry != theMemQueue.get<by_insn>().end());
     DBG_Assert( lsq_entry->thePaddr != 0);
 
-  updatePaddr( lsq_entry, theAddr);
+  if ( lsq_entry->thePaddr == anAddr  ) {
+      CORE_DBG("no update neccessary for "<< anAddr);
+    return;  //No change
+  }
+
+  updatePaddr( lsq_entry, anAddr);
+
+  if(anAddr == (PhysicalMemoryAddress) kUnresolved)
+    return;
 
   switch (lsq_entry->status()) {
     case kComplete:
