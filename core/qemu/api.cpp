@@ -78,7 +78,15 @@ void QFLEX_API_set_Interface_Hooks( const QFLEX_API_Interface_Hooks_t* hooks ) {
   QEMU_get_num_sockets= hooks->QEMU_get_num_sockets;
   QEMU_get_num_cores= hooks->QEMU_get_num_cores;
   QEMU_get_num_threads_per_core= hooks->QEMU_get_num_threads_per_core;
+<<<<<<< HEAD
   QEMU_get_all_cpus= hooks->QEMU_get_all_cpus;
+=======
+  QEMU_cpu_get_socket_id= hooks->QEMU_cpu_get_socket_id;
+  QEMU_cpu_get_core_id= hooks->QEMU_cpu_get_core_id;
+  QEMU_cpu_get_thread_id= hooks->QEMU_cpu_get_thread_id;
+  //QEMU_cpu_set_quantum= hooks->QEMU_cpu_set_quantum;
+  QEMU_get_all_processors= hooks->QEMU_get_all_processors;
+>>>>>>> trace-hotfix
   QEMU_set_tick_frequency= hooks->QEMU_set_tick_frequency;
   QEMU_get_tick_frequency= hooks->QEMU_get_tick_frequency;
   QEMU_get_program_counter= hooks->QEMU_get_program_counter;
