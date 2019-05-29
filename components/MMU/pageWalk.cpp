@@ -50,11 +50,11 @@ namespace nMMU {
 
 
 void PageWalk::annulAll(){
-    if (TheInitialized && theTranlationTransports.size() > 0)
-        while (theTranlationTransports.size() > 0){
-            boost::intrusive_ptr<Translation> basicPointer(theTranlationTransports.front()[TranslationBasicTag]);
+    if (TheInitialized && theTranslationTransports.size() > 0)
+        while (theTranslationTransports.size() > 0){
+            boost::intrusive_ptr<Translation> basicPointer(theTranslationTransports.front()[TranslationBasicTag]);
             DBG_(VVerb,(<< "Annulling PW entry " << basicPointer->theVaddr));
-            theTranlationTransports.pop_back();
+            theTranslationTransports.pop_back();
         }
 }
 
@@ -199,7 +199,7 @@ void PageWalk::setupTTResolver( TranslationTransport & aTranslation, uint64_t TT
     }
 }
 
-    void PageWalk::push_back(TranslationPtr aTranslation){
+    bool PageWalk::push_back(TranslationPtr aTranslation){
 
         TranslationTransport newTransport;
         boost::intrusive_ptr<TranslationState> statefulTranslation( new TranslationState());
@@ -211,15 +211,17 @@ void PageWalk::setupTTResolver( TranslationTransport & aTranslation, uint64_t TT
          * - Call into nMMU to setup the translation parameter
          * - For each level, decode and create the TTE Access
          */
-        InitialTranslationSetup(newTransport);
-        theTranlationTransports.push_back(newTransport);
+        if(!InitialTranslationSetup(newTransport))
+            return false;
+        theTranslationTransports.push_back(newTransport);
         if (!TheInitialized)
             TheInitialized = true;
+        return true;
     }
 
     // Private nMMU internal functionality
     // - Msutherl: Oct'18
-    void PageWalk::InitialTranslationSetup( TranslationTransport & aTranslation ) {
+    bool PageWalk::InitialTranslationSetup( TranslationTransport & aTranslation ) {
         // setup stateful API that gets passed along with the tr.
         boost::intrusive_ptr<TranslationState> statefulPointer(aTranslation[TranslationStatefulTag]);
         boost::intrusive_ptr<Translation> basicPointer(aTranslation[TranslationBasicTag]);
@@ -229,7 +231,10 @@ void PageWalk::setupTTResolver( TranslationTransport & aTranslation, uint64_t TT
                 statefulPointer->isBR0 = true;
             } else statefulPointer->isBR0 = false;
         }
-        else DBG_Assert(false, ( << "FAULTING Vaddr, neither in BR0 or BR1: " << std::hex << basicPointer->theVaddr << std::dec ));
+        else{
+            DBG_(Dev, ( << "FAULTING Vaddr, neither in BR0 or BR1: " << std::hex << basicPointer->theVaddr << std::dec << ", Dropping Request" ));
+            return false;
+        }
         uint8_t initialLevel = theMMU->getInitialLookupLevel(statefulPointer->isBR0);
         statefulPointer->requiredTableLookups = 4 - initialLevel;
         statefulPointer->currentLookupLevel = initialLevel;
@@ -242,6 +247,7 @@ void PageWalk::setupTTResolver( TranslationTransport & aTranslation, uint64_t TT
         if(statefulPointer->isBR0) initialTTBR = theMMU->mmu_regs.TTBR0[EL];
         else initialTTBR = theMMU->mmu_regs.TTBR1[EL];
         setupTTResolver(aTranslation, initialTTBR);
+        return true;
     }
 
     void PageWalk::preTranslate(TranslationTransport & aTransport) {
@@ -271,11 +277,11 @@ void PageWalk::setupTTResolver( TranslationTransport & aTranslation, uint64_t TT
 
     void PageWalk::cycle(){
 
-//        for (auto i = theTranlationTransports.begin(); i != theTranlationTransports.end() && theTranlationTransports.size() > 0; ++i) {
+//        for (auto i = theTranslationTransports.begin(); i != theTranslationTransports.end() && theTranslationTransports.size() > 0; ++i) {
 
-        if (theTranlationTransports.size() > 0){
+        if (theTranslationTransports.size() > 0){
 
-            auto i = theTranlationTransports.begin();
+            auto i = theTranslationTransports.begin();
 
             TranslationTransport& item = *i;
             TranslationPtr basicPointer(item[TranslationBasicTag]);
@@ -283,11 +289,11 @@ void PageWalk::setupTTResolver( TranslationTransport & aTranslation, uint64_t TT
             DBG_(VVerb,(<< "processing translation entry " << basicPointer->theVaddr));
 
 
-            if ((theTranlationTransports.begin() == i) && basicPointer->isDone()){
+            if ((theTranslationTransports.begin() == i) && basicPointer->isDone()){
                 DBG_(VVerb,(<< "translation is done for " << basicPointer->theVaddr));
 
-//                theDoneTranlations.push(basicPointer);
-                theTranlationTransports.erase(i);
+//                theDoneTranslations.push(basicPointer);
+                theTranslationTransports.erase(i);
                 return;
             }
 
@@ -311,19 +317,19 @@ void PageWalk::setupTTResolver( TranslationTransport & aTranslation, uint64_t TT
     }
 
     void PageWalk::pushMemoryRequest(TranslationPtr aTranslation){
-        theMemoryTranlations.push(aTranslation);
+        theMemoryTranslations.push(aTranslation);
     }
 
     TranslationPtr PageWalk::popMemoryRequest(){
-        assert(!theMemoryTranlations.empty());
-        TranslationPtr tmp = theMemoryTranlations.front();
-        theMemoryTranlations.pop();
+        assert(!theMemoryTranslations.empty());
+        TranslationPtr tmp = theMemoryTranslations.front();
+        theMemoryTranslations.pop();
         return tmp;
     }
 
 
     bool PageWalk::hasMemoryRequest(){
-        return !theMemoryTranlations.empty();
+        return !theMemoryTranslations.empty();
     }
 
 

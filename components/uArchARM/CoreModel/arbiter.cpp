@@ -489,8 +489,12 @@ void CoreImpl::issueMMU(TranslationPtr aTranslation){
     /*std::tie(lsq_entry->theMSHR, ignored) = */theMSHRs.insert( std::make_pair(mshr.thePaddr, mshr) );
     theMemoryPorts.push_back( op);
     DBG_( Dev, ( << theName << " " << " issuing translation operation " << *op << "  -- ID " << aTranslation->theID) );
-
-    thePageWalkRequests.emplace(std::make_pair(aTranslation->theVaddr, aTranslation));
+    bool inserted = thePageWalkRequests.emplace(std::make_pair(aTranslation->theVaddr, aTranslation)).second;
+    while(!inserted){
+      std::map<VirtualMemoryAddress, TranslationPtr>::iterator item = thePageWalkRequests.find(aTranslation->theVaddr);
+      thePageWalkRequests.erase(item);
+      inserted = thePageWalkRequests.emplace(std::make_pair(aTranslation->theVaddr, aTranslation)).second;
+    }
 }
 
 bool CoreImpl::scanAndAttachMSHR( memq_t::index< by_insn >::type::iterator anLSQEntry ) {

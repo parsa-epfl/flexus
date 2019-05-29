@@ -46,9 +46,9 @@ namespace nMMU {
 
 class PageWalk {
     std::shared_ptr<mmu_t> theMMU;
-    std::list<TranslationTransport> theTranlationTransports;
-    std::queue<boost::intrusive_ptr<Translation>> theDoneTranlations;
-    std::queue<boost::intrusive_ptr<Translation>> theMemoryTranlations;
+    std::list<TranslationTransport> theTranslationTransports;
+    std::queue<boost::intrusive_ptr<Translation>> theDoneTranslations;
+    std::queue<boost::intrusive_ptr<Translation>> theMemoryTranslations;
     bool TheInitialized;
 
 
@@ -59,7 +59,7 @@ public:
     void translate(TranslationTransport & aTransport);
     void preTranslate(TranslationTransport & aTransport);
     void cycle();
-    void push_back(boost::intrusive_ptr<Translation> aTranslation);
+    bool push_back(boost::intrusive_ptr<Translation> aTranslation);
     TranslationPtr popMemoryRequest();
     bool hasMemoryRequest();
     void annulAll();
@@ -67,7 +67,7 @@ private:
     void preWalk( TranslationTransport &  aTranslation );
     bool walk( TranslationTransport &  aTranslation );
     void setupTTResolver( TranslationTransport & aTr, uint64_t TTDescriptor );
-    void InitialTranslationSetup( TranslationTransport & aTranslation );
+    bool InitialTranslationSetup( TranslationTransport & aTranslation );
     void pushMemoryRequest(TranslationPtr aTranslation);
 
     TTEDescriptor getNextTTDescriptor(TranslationTransport & aTranslation );

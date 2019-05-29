@@ -273,7 +273,7 @@ class FLEXUS_COMPONENT(uFetch) {
   std::vector<CPUState> theCPUState;
 
   // Magic for checking TLB walk.
-  std::queue< TranslationPtr > TranslationsFromTLB;
+  std::vector< TranslationPtr > TranslationsFromTLB;
 
 private:
   //I-Cache manipulation functions
@@ -378,8 +378,14 @@ public:
 //   Msutherl: TLB in-out functions
   FLEXUS_PORT_ALWAYS_AVAILABLE(iTranslationIn);
   void push( interface::iTranslationIn const &, TranslationPtr & retdTranslations ) {
-//      TranslationsFromTLB.push(retdTranslations);
-      getFetchResponse();
+      for (std::vector< TranslationPtr >::iterator it = TranslationsFromTLB.begin() ; it != TranslationsFromTLB.end(); ++it){
+        if((*it)->theID == retdTranslations->theID){
+          TranslationsFromTLB.erase(it);
+          TranslationsFromTLB.push_back(retdTranslations);
+          getFetchResponse();
+          break;
+        }
+      }
       DBG_(Iface,( << "Set TranslationsFromTLB component...."));
   }
 
@@ -411,8 +417,7 @@ public:
     theIcachePrefetch[anIndex] = boost::none;
     theLastPrefetchVTagSet[anIndex] = 0;
     theBundle->clear();
-    while(!TranslationsFromTLB.empty())
-        TranslationsFromTLB.pop();
+    TranslationsFromTLB.clear();
   }
 
   //ChangeCPUState
@@ -836,7 +841,7 @@ private:
     FLEXUS_CHANNEL_ARRAY( AvailableFIQ, anIndex ) >> available_fiq;
 
 
-    if (available_fiq > 0 && ( theFAQ[anIndex].size() > 0 || theFlexus->quiescing()) ) {
+    if (theBundle->theOpcodes.size() < theMissQueueSize && available_fiq > 0 && ( theFAQ[anIndex].size() > 0 || theFlexus->quiescing()) ) {
       std::set< VirtualMemoryAddress> available_lines;
       int32_t remaining_fetch = cfg.MaxFetchInstructions;
       if (available_fiq < remaining_fetch) {
@@ -941,7 +946,7 @@ private:
     xlat->setInstr();
 
     DBG_(VVerb,(<< "adding entry for " << xlat->theVaddr));
-    TranslationsFromTLB.push(xlat);
+    TranslationsFromTLB.push_back(xlat);
 
     DBG_Assert( FLEXUS_CHANNEL(iTranslationOut).available() );
 //    theEnable = false;
@@ -956,22 +961,17 @@ private:
   void push( interface::ResyncIn const &,
              index_t           anIndex,
              bool& aResync ) {
-      while (!TranslationsFromTLB.empty()){
-          DBG_(VVerb,(<< "deleting uFetch bundle entry " << TranslationsFromTLB.front()));
-          TranslationsFromTLB.pop();
-      }
-
+      TranslationsFromTLB.clear();
       theBundle->clear();
   }
 
   void getFetchResponse() {
 
-        if(TranslationsFromTLB.size() == 0) return;
-        DBG_Assert(TranslationsFromTLB.front()->isDone() || TranslationsFromTLB.front()->isHit());
+        DBG_Assert(TranslationsFromTLB.back()->isDone() || TranslationsFromTLB.back()->isHit());
 
         DBG_(VVerb,( << "Starting magic translation after sending to TLB...."));
-        TranslationPtr tr = TranslationsFromTLB.front();
-        TranslationsFromTLB.pop();
+        TranslationPtr tr = TranslationsFromTLB.back();
+        TranslationsFromTLB.pop_back();
         DBG_(VVerb,(<< "poping entry out of fetch translation requests " << tr->theVaddr));
         PhysicalMemoryAddress magicTranslation = cpu(tr->theIndex)->translateVirtualAddress(tr->theVaddr);
 

@@ -265,11 +265,11 @@ public:
 
       PhysicalMemoryAddress magicTranslation = Flexus::Qemu::Processor::getProcessor(theMicroArch->core())->translateVirtualAddress(aTranslate->theVaddr);
 
-      if( aTranslate->thePaddr == magicTranslation ) {
+      if( aTranslate->thePaddr == magicTranslation || magicTranslation == 0xffffffffffffffff) {
           DBG_(Dev, ( << "Magic QEMU translation == MMU Translation. Vaddr = "
                       << std::hex << aTranslate->theVaddr
                       << std::dec << ", Paddr = "
-                      << std::hex << aTranslate->thePaddr << std::dec));
+                      << std::hex << magicTranslation << std::dec));
       } else {
           DBG_Assert(false, ( << "ERROR: Magic QEMU translation NOT EQUAL TO MMU Translation. Vaddr = " << std::hex << aTranslate->theVaddr
                       << std::dec << ", PADDR_MMU = "
@@ -278,7 +278,7 @@ public:
                       << std::hex << magicTranslation << std::dec));
       }
 
-
+      aTranslate->thePaddr = magicTranslation;
       theMicroArch->pushTranslation(aTranslate);
   }
 
@@ -364,7 +364,8 @@ private:
       boost::intrusive_ptr<MemoryMessage> operation;
 
       DBG_(Dev, (<< "Sending Memory Request: " <<  op->theOperation  << "  -- vaddr: " << op->theVAddr
-                 << "  -- paddr: " << op->thePAddr << "  --  Instruction: " <<  *(op->theInstruction)
+                 << "  -- paddr: " << op->thePAddr
+                //  << "  --  Instruction: " <<  *(op->theInstruction)
                  << " --  PC: " << op->thePC << " -- size: " << op->theSize));
 
       if (op->theNAW) {

@@ -90,7 +90,7 @@ namespace nMMU {
 using namespace Flexus;
 using namespace Core;
 using namespace SharedTypes;
-
+#define PAGEMASK ~0xFFFULL
 
 
 class FLEXUS_COMPONENT(MMU) {
@@ -192,6 +192,8 @@ private:
 
   std::queue<boost::intrusive_ptr<Translation>> theLookUpEntries;
   std::queue<boost::intrusive_ptr<Translation>> thePageWalkEntries;
+  std::set<VirtualMemoryAddress> alreadyPW;
+  std::vector<boost::intrusive_ptr<Translation>> standingEntries;
 
   std::shared_ptr<Flexus::Qemu::Processor> theCPU;
   std::shared_ptr<mmu_t> theMMU;
@@ -269,59 +271,51 @@ public:
           TranslationPtr item = theLookUpEntries.front();
           theLookUpEntries.pop();
           DBG_(VVerb,(<< "Processing lookup entry for " << item->theVaddr));
+          DBG_Assert(item->isInstr() != item->isData());
 
+          DBG_(VVerb,(<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry " << item->theVaddr));
 
-          if (item->isInstr()) {
-              DBG_(VVerb,(<< "Item is an Instruction entry " << item->theVaddr));
+          std::pair<bool,PhysicalMemoryAddress> entry = (item->isInstr() ? theInstrTLB : theDataTLB).lookUp((VirtualMemoryAddress)(item->theVaddr & PAGEMASK));
+          if(cfg.PerfectTLB){
+            PhysicalMemoryAddress perfectPaddr(Qemu::API::QEMU_logical_to_physical(*Flexus::Qemu::Processor::getProcessor(flexusIndex()),
+                                  item->isInstr() ? Qemu::API::QEMU_DI_Instruction : Qemu::API::QEMU_DI_Data, item->theVaddr));
+            entry.first = true;
+            entry.second = perfectPaddr;
+          }
+          if (entry.first){
+              DBG_(VVerb,(<< "Item is a Hit " << item->theVaddr));
 
-              std::pair<bool,PhysicalMemoryAddress> entry = theInstrTLB.lookUp(item->theVaddr);
-              if(cfg.PerfectTLB){
-                PhysicalMemoryAddress perfectPaddr(Qemu::API::QEMU_logical_to_physical(*Flexus::Qemu::Processor::getProcessor(flexusIndex()),Qemu::API::QEMU_DI_Instruction,item->theVaddr));
-                entry.first = true;
-                entry.second = perfectPaddr;
-              }
-              if (entry.first){
-                  DBG_(VVerb,(<< "Item is a Hit " << item->theVaddr));
+                // item exists so mark hit
+            item->setHit();
+            item->thePaddr = (PhysicalMemoryAddress) (entry.second | (item->theVaddr & ~(PAGEMASK)));
 
-                    // item exists so mark hit
-                item->setHit();
-                item->thePaddr = entry.second;
-
-                FLEXUS_CHANNEL(iTranslationReply) << item;
-              } else {
-                  DBG_(VVerb,(<< "Item is a miss " << item->theVaddr));
-
-                  // mark miss
-                  item->setMiss();
-                  thePageWalkEntries.push(item);
-                  thePageWalker->push_back(item);
-              }
-          } else if (item->isData()) {
-              DBG_(VVerb,(<< "Item is an Data entry " << item->theVaddr));
-
-              std::pair<bool,PhysicalMemoryAddress> entry = theDataTLB.lookUp(item->theVaddr);
-              if(cfg.PerfectTLB){
-                PhysicalMemoryAddress perfectPaddr(Qemu::API::QEMU_logical_to_physical(*Flexus::Qemu::Processor::getProcessor(flexusIndex()),Qemu::API::QEMU_DI_Data,item->theVaddr));
-                entry.first = true;
-                entry.second = perfectPaddr;
-              }
-              if (entry.first){
-                  DBG_(VVerb,(<< "Item is a Hit " << item->theVaddr));
-
-                  // item exists so mark hit
-                  item->setHit();
-                  item->thePaddr = entry.second;
-                  FLEXUS_CHANNEL(dTranslationReply) << item;
-              } else {
-                  DBG_(Dev,(<< "Item is a Miss " << item->theVaddr));
-
-                  // mark miss
-                  item->setMiss();
-                  thePageWalkEntries.push(item);
-                  thePageWalker->push_back(item);
-              }
+            if(item->isInstr())
+              FLEXUS_CHANNEL(iTranslationReply) << item;
+            else
+              FLEXUS_CHANNEL(dTranslationReply) << item;
           } else {
-              DBG_Assert(false);
+              DBG_(VVerb,(<< "Item is a miss " << item->theVaddr));
+
+              VirtualMemoryAddress pageAddr(item->theVaddr & PAGEMASK);
+              if(alreadyPW.find(pageAddr) == alreadyPW.end()){
+                // mark miss
+                item->setMiss();
+                if(thePageWalker->push_back(item)){
+                  alreadyPW.insert(pageAddr);
+                  thePageWalkEntries.push(item);
+                } else {
+                  PhysicalMemoryAddress perfectPaddr(Qemu::API::QEMU_logical_to_physical(*Flexus::Qemu::Processor::getProcessor(flexusIndex()),
+                                        item->isInstr() ? Qemu::API::QEMU_DI_Instruction : Qemu::API::QEMU_DI_Data, item->theVaddr));
+                  item->setHit();
+                  item->thePaddr = perfectPaddr;
+                  if(item->isInstr())
+                    FLEXUS_CHANNEL(iTranslationReply) << item;
+                  else
+                    FLEXUS_CHANNEL(dTranslationReply) << item;
+                }
+              } else{
+                standingEntries.push_back(item);
+              }
           }
       }
 
@@ -341,17 +335,25 @@ public:
 
               thePageWalkEntries.pop();
 
-              if (item->isInstr()){
-                  DBG_(VVerb,(<< "Item is an Instruction entry " << item->theVaddr));
-                theInstrTLB[item->theVaddr] = item->thePaddr;
-                FLEXUS_CHANNEL(iTranslationReply) << item;
-              } else if (item->isData()){
-                  DBG_(VVerb,(<< "Item is an Data entry " << item->theVaddr));
-                  theDataTLB[item->theVaddr] = item->thePaddr;
-                  FLEXUS_CHANNEL(dTranslationReply) << item;
-              } else {
-                  DBG_Assert(false);
+              VirtualMemoryAddress pageAddr(item->theVaddr & PAGEMASK);
+              if(alreadyPW.find(pageAddr) != alreadyPW.end()){
+                alreadyPW.erase(pageAddr);
+                for (auto it = standingEntries.begin() ; it != standingEntries.end();){
+                  if(((*it)->theVaddr & pageAddr) == pageAddr && item->isInstr() == (*it)->isInstr()){
+                    theLookUpEntries.push(*it);
+                    standingEntries.erase(it);
+                  } else {
+                    ++it;
+                  }
+                }
               }
+              DBG_Assert(item->isInstr() != item->isData());
+              DBG_(Dev,(<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry " << item->theVaddr));
+              (item->isInstr() ? theInstrTLB : theDataTLB)[(VirtualMemoryAddress)(item->theVaddr & PAGEMASK)] = (PhysicalMemoryAddress) (item->thePaddr & PAGEMASK);
+              if(item->isInstr())
+                FLEXUS_CHANNEL(iTranslationReply) << item;
+              else
+                FLEXUS_CHANNEL(dTranslationReply) << item;
           }
           else {
               break;
@@ -394,6 +396,8 @@ public:
             thePageWalkEntries.pop();
         }
     }
+    alreadyPW.clear();
+    standingEntries.clear();
 
     if (theLookUpEntries.size() > 0){
         while(! theLookUpEntries.empty()){
