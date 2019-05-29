@@ -102,7 +102,6 @@ enum eStatus {
   , kAwaitingAddress
   , kAwaitingValue
 };
-std::ostream & operator <<( std::ostream & anOstream, eStatus aCode);
 
 enum eQueue {
   kLSQ

@@ -424,9 +424,9 @@ arminst MSR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     inst->addCheckTrapEffect( checkDAIFAccess(inst,  op1) );
     inst->setOperand(kResult, uint64_t(crm));
 
-    inst->addRetirementEffect( writePSTATE(inst, op1, op2) );
-//        inst->addPostvalidation( validateXRegister( rt, kResult, inst  ) );
-//        FIXME - validate PR
+    // inst->addRetirementEffect( writePSTATE(inst, op1, op2) );
+    // inst->addPostvalidation( validateXRegister( rt, kResult, inst  ) );
+    // FIXME - validate PR
 
     return inst;
 }
@@ -448,6 +448,8 @@ arminst SYS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     ePrivRegs pr = getPrivRegType(op0,op1,op2,crn,crm);
     if (pr == kLastPrivReg ) {
       return blackBox( aFetchedOpcode, aCPU, aSequenceNo); //resynchronize on all other PRs
+    } else if (pr == kDC_ZVA ){
+        return nop( aFetchedOpcode, aCPU, aSequenceNo);
     }
 
 

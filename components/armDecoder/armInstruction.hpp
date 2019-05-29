@@ -162,7 +162,7 @@ public:
   }
 
   virtual void setResolved(bool value = true){
-    if(value) DBG_Assert(!theResolved);
+    if(value) DBG_Assert(!theResolved, ( << *this));
     theResolved = value;
   }
 

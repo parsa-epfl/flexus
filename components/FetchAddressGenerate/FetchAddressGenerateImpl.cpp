@@ -202,7 +202,6 @@ private:
       AGU_DBG("Getting addresses: " << max_addrs << " remaining");
 
       FetchAddr faddr(thePC[anIndex]);
-      Qemu::Processor cpu = Qemu::Processor::getProcessor(0);
 
       //Advance the PC
       if ( theBranchPredictor->isBranch( faddr.theAddress ) ) {

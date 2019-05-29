@@ -135,8 +135,6 @@ struct ExecuteAction : public ExecuteBase {
         Operand result = theOperation->operator()(operands );
         if (theOperation->hasNZCVFlags()){
             uint64_t nzcv = theOperation->getNZCVbits();
-            SysRegInfo & ri = getPriv(kNZCV);
-            ri.writefn(theInstruction->core(), nzcv);
             theInstruction->setOperand(kResultCC, nzcv);
         }
 

@@ -136,7 +136,6 @@ arminst CAS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
  * For information about memory accesses see Load/Store addressing modes.
  */
 arminst STXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo) {
-    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
     DECODER_TRACE;
 
     bool o0 = extract32(aFetchedOpcode.theOpcode, 15, 1); // LA-SR
@@ -161,9 +160,10 @@ arminst STXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     addReadXRegister(inst, 1, rn, rs_deps[0], true);
 
 
-//    std::vector<std::list<InternalDependance> > status_deps(1);
-//    predicated_action act = addExecute(inst, operation(kMOV_), status_deps );
-//    addDestination(inst, rs, act, size == 64);
+    std::vector<std::list<InternalDependance> > status_deps(1);
+    predicated_action act = addExecute(inst, operation(kMOV_), {kOperand4}, status_deps );
+    addDestination(inst, rs, act, size == 64);
+    addReadConstant(inst, 4, 0, status_deps[0]);
 
     inst->addSquashEffect( eraseLSQ(inst) );
     inst->addDispatchEffect( allocateStore( inst, sz, false, acctype ) );
@@ -173,36 +173,32 @@ arminst STXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     inst->addRetirementEffect( retireMem(inst) );
     inst->addCommitEffect( commitStore(inst) );
 
-//    inst->addCommitEffect(exclusiveMonitorPass(inst, kAddress, sz));
-
-
-
-
+    // inst->addCommitEffect(exclusiveMonitorPass(inst, kAddress, sz));
 
     if (! is_pair) {
         std::vector< std::list<InternalDependance> > data_deps(1);
         // read data registers
-        simple_action act = addExecute(inst, operation(kMOV_), {kOperand2}, data_deps);
-        addReadXRegister(inst, 2, rt, data_deps[0], size/2 == 64);
+        simple_action act = addExecute(inst, operation(kMOV_), {kOperand2}, data_deps, kOperand5);
+        readRegister(inst, 2, rt, data_deps[0], size == 64);
 
-        predicated_dependant_action update_value = updateStoreValueAction( inst, kResult);
+        predicated_dependant_action update_value = updateStoreValueAction( inst, kOperand5);
         connectDependance( update_value.dependance, act );
         connectDependance( inst->retirementDependance(), update_value );
-//        inst->addPostvalidation( validateMemory( kAddress, kResult, sz, inst ) );
+        inst->addPostvalidation( validateMemory( kAddress, kOperand5, sz, inst ) );
 
     } else {
         std::vector< std::list<InternalDependance> > data_deps(2);
 
         // read data registers
-        simple_action act = addExecute(inst, operation(size/2 == 64 ? kCONCAT64_ : kCONCAT32_), {kOperand2, kOperand3}, data_deps);
-        addReadXRegister(inst, 2, rt2, data_deps[0], size/2 == 64);
-        addReadXRegister(inst, 3, rt, data_deps[1], size/2 == 64);
+        simple_action act = addExecute(inst, operation(size == 64 ? kCONCAT64_ : kCONCAT32_), {kOperand2, kOperand3}, data_deps);
+        readRegister(inst, 2, rt2, data_deps[0], size == 64);
+        readRegister(inst, 3, rt, data_deps[1], size == 64);
 
         multiply_dependant_action update_value = updateSTPValueAction( inst, kResult );
         inst->addDispatchEffect( satisfy( inst, update_value.dependances[1]) );
         connectDependance( update_value.dependances[0], act );
         connectDependance( inst->retirementDependance(), update_value );
-//        inst->addPostvalidation( validateMemory( kAddress, kResult, sz, inst ) );
+        inst->addPostvalidation( validateMemory( kAddress, kResult, sz, inst ) );
     }
 
     return inst;
@@ -311,7 +307,6 @@ arminst LDAQ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
  * modes.
  */
 arminst LDXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
-    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
     DECODER_TRACE;
     uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
     uint32_t rt2 = extract32(aFetchedOpcode.theOpcode, 10, 5);
@@ -319,8 +314,6 @@ arminst LDXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
     uint32_t size = 8 << extract32(aFetchedOpcode.theOpcode, 30, 2);
     bool is_pair = extract32(aFetchedOpcode.theOpcode, 21, 1);
-    uint32_t regsize;
-    regsize = (size == 0x3) ? 64 : 32;
     eSize sz = dbSize(size);
 
 
@@ -356,9 +349,9 @@ arminst LDXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 //    inst->addDispatchEffect(markExclusiveMonitor(inst, kRS1, sz));
 
     if (!is_pair){
-        addDestination( inst, rt, load, regsize == 64);
+        addDestination( inst, rt, load, size == 64);
     } else {
-        addPairDestination( inst, rt, rt2, load, regsize == 64);
+        addPairDestination( inst, rt, rt2, load, size == 64);
     }
     
     return inst;

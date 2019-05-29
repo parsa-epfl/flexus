@@ -184,11 +184,8 @@ private:
                && !theFIQ.empty()
                && !theSyncInsnInProgress
           )) {
-        DISPATCH_DBG("Cant dispatch" <<
-                                 "available_dispatch     " <<   available_dispatch    << "\n" <<
-                                 "dispatched < cfg.DispatchWidth             " <<   int(dispatched < cfg.DispatchWidth)            <<"\n"<<
-                                 "theFIQ is empty         " <<   int(theFIQ.empty())        <<"\n"<<
-                                 "no Sync Insn In Progress  " <<   int(!theSyncInsnInProgress) );
+        DISPATCH_DBG("Can't dispatch " << "available_dispatch " << available_dispatch << ", dispatched < cfg.DispatchWidth " <<   int(dispatched < cfg.DispatchWidth)
+                                 ", theFIQ is empty " << int(theFIQ.empty()) << ", no Sync Insn In Progress " << int(!theSyncInsnInProgress));
 
     }
     while (    available_dispatch > 0

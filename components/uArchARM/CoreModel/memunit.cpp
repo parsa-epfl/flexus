@@ -510,11 +510,7 @@ void CoreImpl::pushTranslation(TranslationPtr aTranslation) {
 
     }
 
-    DBG_Assert(lsq_entry->thePaddr != 0);
-
-    insn->setResolved();
-
-
+    DBG_Assert(lsq_entry->thePaddr != kInvalid);
 }
 
 boost::intrusive_ptr<MemOp> CoreImpl::popSnoopOp() {
@@ -613,7 +609,7 @@ void CoreImpl::translate(boost::intrusive_ptr< Instruction > anInsn){
     tr->setData();
     tr->setInstruction(anInsn);
 
-    DBG_(Dev, (<< "Sending Translation Request to MMU: " << *anInsn << ", VAddr: " << tr->theVaddr));
+    DBG_(Dev, (<< "Sending Translation Request to MMU: " << *anInsn << ", VAddr: " << tr->theVaddr << ", ID: " << tr->theID));
 
 
     theTranslationQueue.push(tr);
@@ -666,6 +662,7 @@ void CoreImpl::resolvePAddr( boost::intrusive_ptr< Instruction > anInsn, Physica
   }
 
   updatePaddr( lsq_entry, anAddr);
+  anInsn->setResolved();
 
   if(anAddr == (PhysicalMemoryAddress) kUnresolved)
     return;

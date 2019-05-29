@@ -269,7 +269,8 @@ public:
           DBG_(Dev, ( << "Magic QEMU translation == MMU Translation. Vaddr = "
                       << std::hex << aTranslate->theVaddr
                       << std::dec << ", Paddr = "
-                      << std::hex << magicTranslation << std::dec));
+                      << std::hex << magicTranslation << std::dec
+                      << ", ID: " << aTranslate->theID));
       } else {
           DBG_Assert(false, ( << "ERROR: Magic QEMU translation NOT EQUAL TO MMU Translation. Vaddr = " << std::hex << aTranslate->theVaddr
                       << std::dec << ", PADDR_MMU = "

@@ -146,9 +146,9 @@ struct DC_ZVA : public SysRegInfo {
     eRegExecutionState state;
     uint8_t opc0 = 1;
     uint8_t opc1 = 3;
-    uint8_t opc2 = 7;
-    uint8_t crn = 4;
-    uint8_t crm = 1;
+    uint8_t opc2 = 1;
+    uint8_t crn = 7;
+    uint8_t crm = 4;
     eAccessRight access = kPL0_W;
     eRegInfo type = kARM_DC_ZVA;
     uint64_t resetvalue = -1;

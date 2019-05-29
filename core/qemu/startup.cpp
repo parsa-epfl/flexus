@@ -100,8 +100,7 @@ void CreateFlexus() {
       DBG_( Crit, ( << "Warning! Components instantiation failed due "
                     "to the system width is not defined!" << " Defaulting to 1 cpu" ) );
       system_width = 1;
-
-//      exit(1);
+      exit(1);
   } else {
       ifs >> system_width;
   }
