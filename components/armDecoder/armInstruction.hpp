@@ -220,6 +220,36 @@ public:
     return isRetired() || isSquashed();
   }
 
+  virtual void setUsesFpAdd(){
+    theUsesFpAdd = true;
+    theUsesIntAlu = false; 
+  }
+
+  virtual void setUsesFpCmp(){
+    theUsesFpCmp = true;
+    theUsesIntAlu = false;
+  } 
+
+  virtual void setUsesFpCvt(){
+    theUsesFpCvt = true; 
+    theUsesIntAlu = false;
+  }  
+
+  virtual void setUsesFpMult(){
+    theUsesFpMult = true; 
+    theUsesIntAlu = false;
+  } 
+
+  virtual void setUsesFpDiv(){
+    theUsesFpDiv = true; 
+    theUsesIntAlu = false;
+  } 
+
+  virtual void setUsesFpSqrt(){
+    theUsesFpSqrt = true; 
+    theUsesIntAlu = false;
+  }
+  
 //  virtual void setMMU(Flexus::Qemu::MMU::mmu_t m) {
 //    theMMU = m;
 //  }

@@ -632,6 +632,13 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction {
   virtual bool usesFpDiv() const = 0;
   virtual bool usesFpSqrt() const = 0;
 
+  virtual void setUsesFpAdd() = 0; 
+  virtual void setUsesFpCmp() = 0; 
+  virtual void setUsesFpCvt() = 0; 
+  virtual void setUsesFpMult() = 0; 
+  virtual void setUsesFpDiv() = 0; 
+  virtual void setUsesFpSqrt() = 0; 
+
 };
 
 struct InstructionDependance {
