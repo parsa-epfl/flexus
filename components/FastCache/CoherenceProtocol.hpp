@@ -61,12 +61,18 @@ public:
   static const access_t kEvictDirty = 0x6;
   static const access_t kStoreAccess = 0x7;
   static const access_t kNAWAccess = 0x8;
+  //ALEX - soNUMA
+  static const access_t kLoadData = 0x9;
+  static const access_t kStoreData = 0xA;
+  static const access_t kLoadDataInLLC = 0xB;
+  static const access_t kStoreDataInLLC = 0xC;
+  //ALEX - end
   static const access_t kUnknownAccess = 0xFFFF;
   virtual std::string Short2Req(access_t r) {
     switch (r) {
       case kReadAccess:
-//        return "Read";
-//        break;
+        return "Read";
+        break;
       case kWriteAccess:
         return "Write";
         break;
@@ -91,6 +97,20 @@ public:
       case kNAWAccess:
         return "NonAllocateWrite";
         break;
+        // RMC Messages
+      case kLoadData:
+		return "RMCDataLoad";
+		break;
+      case kStoreData:
+		return "RMCDataStore";
+		break;
+	  case kLoadDataInLLC:
+		return "RMCDataLoadInLLC";
+		break;
+      case kStoreDataInLLC:
+		return "RMCDataStoreInLLC";
+		break;
+        //END RMC Messages
       default:
         return "Unknown";
         break;
@@ -99,6 +119,20 @@ public:
 
   static access_t message2access(MemoryMessage::MemoryMessageType type) {
     switch (type) {
+	  //ALEX - soNUMA
+	  case MemoryMessage::LoadData:
+		return kLoadData;
+		break;
+	  case MemoryMessage::StoreData:
+		return kStoreData;
+		break;	 
+	  case MemoryMessage::LoadDataInLLC:
+		return kLoadDataInLLC;
+		break;
+	  case MemoryMessage::StoreDataInLLC:
+		return kStoreDataInLLC;
+		break;	
+	  //ALEX - end		
       case MemoryMessage::ReadReq:
         return kReadAccess;
         break;
@@ -337,11 +371,31 @@ const CoherenceProtocol::access_t CoherenceProtocol::kEvictDirty;
 const CoherenceProtocol::access_t CoherenceProtocol::kStoreAccess;
 const CoherenceProtocol::access_t CoherenceProtocol::kNAWAccess;
 const CoherenceProtocol::access_t CoherenceProtocol::kUnknownAccess;
- 
+// RMC Types
+const CoherenceProtocol::access_t CoherenceProtocol::kLoadData;
+const CoherenceProtocol::access_t CoherenceProtocol::kStoreData;
+const CoherenceProtocol::access_t CoherenceProtocol::kLoadDataInLLC;
+const CoherenceProtocol::access_t CoherenceProtocol::kStoreDataInLLC;
+// end RMC types 
 #define CP CoherenceProtocol
 
 // Required specializations
 // Only a few actual cases
+//ALEX - soNUMA
+template<>
+void CP::doCoherenceAction< CP::SendRead, CP::NoAllocate, CP::SameState, CP::NoUpdateLRU, CP::FillValid>(LookupResult_p lookup, MemoryMessage & message) {
+	DBG_Assert(message.type() == MemoryMessage::LoadData || message.type() == MemoryMessage::LoadDataInLLC);
+	forwardMessage(message);
+	message.type() = MemoryMessage::MissReply;
+}
+
+template<>
+void CP::doCoherenceAction< CP::SendWrite, CP::NoAllocate, CP::SameState, CP::NoUpdateLRU, CP::FillValid>(LookupResult_p lookup, MemoryMessage & message) {
+	DBG_Assert(message.type() == MemoryMessage::StoreData || message.type() == MemoryMessage::StoreDataInLLC);
+	forwardMessage(message);
+	message.type() = MemoryMessage::MissReply;
+}
+//ALEX - end
 template<>
 void CP::doCoherenceAction< CP::SendNone, CP::NoAllocate, CP::SameState, CP::NoUpdateLRU, CP::NoResponse>(LookupResult_p lookup, MemoryMessage & message) {
 }

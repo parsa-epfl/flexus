@@ -47,6 +47,7 @@
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
 
 #include <fstream>
+#include <functional>
 
 #include <components/MagicBreakQEMU/breakpoint_tracker.hpp>
 #include <core/qemu/configuration_api.hpp>
@@ -324,6 +325,16 @@ public:
     }
     theTrackers.push_back(BreakpointTracker::newSimPrintHandler());
     theTrackers.push_back(BreakpointTracker::newPacketTracker(8083 /*SpecWEB port*/, 0x24 /*Server MAC byte*/, 0x25 /*Client MAC byte*/));
+    DBG_(Dev, ( << "Enabling RMC Breakpoint Tracker"));
+
+    // Msutherl: Merge RMC
+    theTrackers.push_back(BreakpointTracker::newRMCTracker(std::bind( &MagicBreakComponent::toTraceRMC, this, std::placeholders::_1)));
+    if (cfg.RMCTimingMode) {
+        DBG_(Dev, (<< "NOTE: Running in RMC Timing Mode"));
+    } else {
+        DBG_(Dev, ( << "NOTE: Running in RMC Trace Mode"));
+    }
+    // Msutherl: Merge RMC 
   }
 
   void finalize() {}
@@ -334,11 +345,43 @@ public:
     }
   }
 
+  // Msutherl: Merged RMC
+  void toTraceRMC(RMCEntry & aRMCEntry) {
+      if (aRMCEntry.getType() == 101) {
+          //DBG_(Tmp, ( <<" Forwarding through the ToTraceLBA interface"));
+          FLEXUS_CHANNEL(ToTraceLBA) << aRMCEntry;
+          return;
+      }
+
+      uint64_t i;
+      //Forward breakpoint to ALL possible RMCs (max, one per tile). The RMC code will filter these
+      //messages accordingly.
+      if (cfg.RMCTimingMode || cfg.RMCSharedL1) {
+          for (i = 0; i < Flexus::Core::ComponentManager::getComponentManager().systemWidth(); i++) {
+              DBG_(Iface, ( << "Forwarding breakpoint to RMC " << i));
+              FLEXUS_CHANNEL_ARRAY(ToTraceRMC, i) << aRMCEntry;
+          }
+      } else {
+          for (i = Flexus::Core::ComponentManager::getComponentManager().systemWidth(); i < Flexus::Core::ComponentManager::getComponentManager().systemWidth()*2; i++) {
+              DBG_(Iface, ( << "Forwarding breakpoint to RMC " << i));
+              FLEXUS_CHANNEL_ARRAY(ToTraceRMC, i) << aRMCEntry;
+          }
+          for (i = 0; i<cfg.MachineCount; i++)
+              FLEXUS_CHANNEL_ARRAY(ToTraceRMC, i) << aRMCEntry;		//RMC-i handles everything for node i when running Trace in Single RMC Flexpoint mode
+      }
+  }
+  // END Msutherl: Merged RMC
+
 };
 
 }//End namespace nMagicBreak
 
 FLEXUS_COMPONENT_INSTANTIATOR( MagicBreak, nMagicBreak);
+
+// Msutherl: merged RMC
+FLEXUS_PORT_ARRAY_WIDTH( MagicBreak, ToTraceRMC ) {
+  return Flexus::Core::ComponentManager::getComponentManager().systemWidth()*2;
+}
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
 #define FLEXUS_END_COMPONENT MagicBreak

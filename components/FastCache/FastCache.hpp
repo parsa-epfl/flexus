@@ -76,6 +76,9 @@ COMPONENT_PARAMETERS(
   PARAMETER( DowngradeLRU, bool, "Move block to LRU position when a Downgrade is recieved for a block in Modified or Exclusive state", "downgrade_lru", false )
   PARAMETER( SnoopLRU, bool, "Move block to LRU position when a Snoop (ReturnReq) is recieved for a block in Modified or Exclusive state", "snoop_lru", false )
 
+  PARAMETER( RMCCacheSize, int, "RMC Cache size in bytes", "RMC_cache_size", 8192 )
+  PARAMETER( RMCCacheAssoc, int, "RMC Cache Set associativity", "RMC_cache_assoc", 2 )
+
 );
 
 COMPONENT_INTERFACE(
@@ -92,6 +95,8 @@ COMPONENT_INTERFACE(
 
   PORT( PushInput, RegionScoutMessage, RegionProbe )
   PORT( PushOutput, RegionScoutMessage, RegionNotify )
+
+  PORT( PushInput, MemoryMessage, RequestInRMC)
 
   DRIVE( UpdateStatsDrive )
 );

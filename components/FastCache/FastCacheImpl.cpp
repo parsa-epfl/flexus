@@ -180,6 +180,19 @@ public:
 
     theEvictMessage.coreIdx() = theIndex;
 
+    //RMC CODE - begin
+    int cacheSize, assoc;
+    if ((uint32_t)theIndex >= (uint32_t)Flexus::Core::ComponentManager::getComponentManager().systemWidth()) {		
+		cacheSize = cfg.RMCCacheSize;
+		assoc  = cfg.RMCCacheAssoc;
+		DBG_( Dev, ( << "This is an RMC cache. Setting size to " << cacheSize << " and associativity to " << assoc ) );
+	} else {
+		cacheSize = cfg.Size;
+		assoc = cfg.Associativity;
+		DBG_( Dev, ( << "This is normal cache. Setting size to " << cacheSize << " and associativity to " << assoc) );
+	}
+    //RMC CODE - end
+
     //Confirm that BlockSize is a power of 2
     DBG_Assert( (cfg.BlockSize & (cfg.BlockSize - 1)) == 0);
     DBG_Assert( cfg.BlockSize  >= 4);
@@ -274,6 +287,19 @@ public:
     // Perform Cache Lookup
     lookup = theCache->lookup(tagset);
 
+    // BEGIN RMC CODE
+	switch (access_type) {
+		case CoherenceProtocol::kLoadData:
+		case CoherenceProtocol::kStoreData:
+		case CoherenceProtocol::kLoadDataInLLC:
+		case CoherenceProtocol::kStoreDataInLLC:
+			DBG_Assert(false, ( << "This is not an RMC Cache. Should never receive such a request"));
+			break;
+		default:
+			;
+	}
+    // END RMC CODE
+
     DBG_( Iface, Addr(aMessage.address()) ( << flexusIndex() << ": Request[" << anIndex << "]: " << aMessage << " Initial State: " << std::hex << lookup->getState() << std::dec ));
 
     // Determine Actions based on state and request
@@ -343,6 +369,11 @@ public:
     snp_lookup = theCache->lookup(tagset);
     DBG_( Iface, Addr(aMessage.address()) ( << "Snoop Found tagset: " << std::hex << tagset << " in state " << state2String(snp_lookup->getState()) << std::dec ));
 
+//ALEX
+	bool wasInvalid = false;
+	if (snp_lookup->getState() == kInvalid) wasInvalid = true;
+//ALEX
+
     CoherenceProtocol::BaseSnoopAction * fn_ptr;
     CoherenceProtocol::StatMemberPtr stat_ptr;
 
@@ -357,6 +388,9 @@ public:
 
     snp_lookup = theCache->lookup(tagset);
     DBG_( Iface, Addr(aMessage.address()) ( << "Snoop Left tagset: " << std::hex << tagset << " in state " << state2String(snp_lookup->getState()) << std::dec ));
+	//ALEX
+	if (wasInvalid && snp_lookup->getState() != kInvalid) DBG_Assert(false, ( << "A snoop message turned a block from Invalid to " << snp_lookup->getState()));
+	//ALEX
   }
 
   bool sendInvalidate(uint64_t addr, bool icache, bool dcache) {
@@ -449,8 +483,74 @@ public:
   }
 
   void drive( interface::UpdateStatsDrive const &) {
-    theStats->update();
+    if (Flexus::Core::theFlexus->cycleCount() % 100000 == 0) {
+      theStats->update();
+    }
   }
+
+  FLEXUS_PORT_ALWAYS_AVAILABLE(RequestInRMC);
+  void push( interface::RequestInRMC const &, MemoryMessage & aMessage) {
+	FLEXUS_PROFILE();
+	DBG_Assert(aMessage.isFromRMC());
+    MemoryMessage orig_message(aMessage);
+    orig_message.coreIdx() = aMessage.coreIdx();
+
+    //Create a set and tag from the message's address
+    uint64_t tagset = aMessage.address() & theBlockMask;
+    DBG_( Iface, Addr(aMessage.address()) ( << "Request: " << aMessage << " tagset: " << std::hex << tagset << std::dec 
+											<< "\tFROM RMC. isData = " << aMessage.RMCext.isData));
+
+    // Map memory message type to protocol request types
+    CoherenceProtocol::access_t access_type = CoherenceProtocol::message2access(aMessage.type());
+    CoherenceProtocol::CoherenceActionPtr fn_ptr;
+    CoherenceProtocol::StatMemberPtr stat_ptr;
+
+    // Perform Cache Lookup
+    lookup = theCache->lookup(tagset);
+
+	switch (access_type) {
+		case CoherenceProtocol::kLoadData:
+		case CoherenceProtocol::kStoreData:
+		case CoherenceProtocol::kLoadDataInLLC:
+		case CoherenceProtocol::kStoreDataInLLC:
+			if (lookup->getState() != kInvalid) {
+				DBG_(Crit, ( << "WARNING: Found data in RMC cache in : " << lookup->getState() << " state." 
+					<<" This shouldn't have happened, but couldn't figure out how it occurs..."));
+				 lookup->changeState(kInvalid, false, false);
+			}
+			break;
+		default:
+			;
+	}
+
+    DBG_( Iface, Addr(aMessage.address()) ( << flexusIndex() << ": Request: " << aMessage << " Initial State: " << std::hex << lookup->getState() << std::dec ));
+
+    // Determine Actions based on state and request
+    tie(fn_ptr, stat_ptr) = theProtocol->getCoherenceAction(lookup->getState(), access_type);
+
+    // Perform Actions this includes setting reply type
+    (theProtocol->*fn_ptr)(lookup, aMessage);
+
+    // Increment stat counter
+    (theStats->*stat_ptr)++;
+
+    DBG_( Iface, Addr(aMessage.address()) ( << "Done, reply: " << aMessage ));
+    DBG_( Iface, Addr(aMessage.address()) ( << "Request Left Lookup tagset: " << std::hex << lookup->address() << " in state " << state2String(lookup->getState()) << std::dec ));
+    if (snp_lookup != NULL) {
+      DBG_( Iface, Addr(aMessage.address()) ( << "Request Left Snoop Lookup tagset: " << std::hex << snp_lookup->address() << " in state " << state2String(snp_lookup->getState()) << std::dec ));
+    }
+    switch (access_type) {
+		case CoherenceProtocol::kLoadData:
+		case CoherenceProtocol::kStoreData:
+		case CoherenceProtocol::kLoadDataInLLC:
+		case CoherenceProtocol::kStoreDataInLLC:
+			lookup = theCache->lookup(tagset);
+			DBG_Assert(lookup->getState() == kInvalid, ( << "Why did data get allocated in RMC cache?"));
+			break;
+		default:
+			;
+	}
+   }
 
 };  // end class FastCache
 

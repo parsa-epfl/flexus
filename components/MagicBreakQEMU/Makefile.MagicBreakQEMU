@@ -1,0 +1,4 @@
+#### Adds system includes to resolve sonuma software path
+#SON_SW_PATH=/path/to/sonuma-software
+SON_SW_PATH=/home/msutherl/qflex
+INCLUDES+=-isystem $(SON_SW_PATH)

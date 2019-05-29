@@ -42,6 +42,7 @@
 //THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // DO-NOT-REMOVE end-copyright-block   
 #include <core/simulator_layout.hpp>
+#include <components/CommonQEMU/RMCEntry.hpp>
 
 #define FLEXUS_BEGIN_COMPONENT MagicBreak
 #include FLEXUS_BEGIN_COMPONENT_DECLARATION()
@@ -63,12 +64,18 @@ COMPONENT_PARAMETERS(
   PARAMETER( StopCycle, uint64_t, "Cycle on which to halt simulation.", "stop_cycle", 0 )
   PARAMETER( CkptCycleInterval, uint64_t, "# of cycles between checkpoints.", "ckpt_cycle", 0 )
   PARAMETER( CkptCycleName, uint32_t, "Base cycle # from which to build checkpoint names.", "ckpt_cycle_name", 0 )
+  PARAMETER( EnableRMCTracking, bool, "Enable RMC breakpoint tracker", "rmc_tracking", true )
+  PARAMETER( RMCTimingMode, bool, "Running in timing mode", "rmc_timing_mode", false )
+  PARAMETER( RMCSharedL1, bool, "Using L1s shared among RMCs and cores", "RMCSharedL1", false )
+  PARAMETER( MachineCount, uint32_t, "Number of machines", "MachineCount", 1 )
 );
 
 COMPONENT_INTERFACE(
+  DYNAMIC_PORT_ARRAY( PushOutput, RMCEntry, ToTraceRMC )	//width set to System width, assuming an RMC per core
+  PORT( PushOutput, RMCEntry, ToTraceLBA )
+
   DRIVE( TickDrive )
 );
 
 #include FLEXUS_END_COMPONENT_DECLARATION()
 #define FLEXUS_END_COMPONENT MagicBreak
-

@@ -54,7 +54,12 @@
 #include <core/flexus.hpp>
 #include <core/boost_extensions/padded_string_cast.hpp>
 
+// Msutherl: Merged RMC
+#include <boost/shared_ptr.hpp>
 #include <components/MagicBreakQEMU/breakpoint_tracker.hpp>
+#include <components/CommonQEMU/rmc_breakpoints.hpp>
+#include <components/CommonQEMU/RMCEntry.hpp>
+// END Merged RMC
 
 #define DBG_DefineCategories MagicBreak, IterationCount, Termination, IterationTrace, DBTransactionTrace, SimPrint
 #define DBG_SetDefaultOps AddCat(MagicBreak)
@@ -67,6 +72,10 @@ using namespace Flexus::Qemu;
 namespace nMagicBreak {
 
 namespace Stat = Flexus::Stat;
+
+namespace RMCTypes = Flexus::SharedTypes::RMCTypes;
+using Flexus::SharedTypes::RMCEntry;
+
 //declare functions here
 extern "C" {
 	void IterationTrackerMagicBreakpoint(
@@ -105,6 +114,18 @@ extern "C" {
 			, Qemu::API::conf_object_t *ignored
 			, char *aString
 			);
+    /* Msutherl: Merge/update RMC Magic breakpoints */
+    void RMCMagicBreakpoint(
+			  void *obj
+			, Qemu::API::conf_object_t *aCpu
+			, long long aBreakpoint
+		    );
+    void LBAMagicBreakpoint(
+			  void *obj
+			, Qemu::API::conf_object_t *aCpu
+			, long long aBreakpoint
+		    );
+    /* End merge RMC */
 }
 
 class IterationTrackerImpl : public IterationTracker {
@@ -115,46 +136,46 @@ class IterationTrackerImpl : public IterationTracker {
   bool theCkptFlag;
     public:
   void OnMagicBreakpoint( Qemu::API::conf_object_t * aCpu, uint64_t aBreakpoint) {
-    uint32_t cpu_no = Qemu::API::QEMU_get_cpu_index(aCpu);
+      uint32_t cpu_no = Qemu::API::QEMU_get_cpu_index(aCpu);
 
 #if FLEXUS_TARGET_IS(x86)
-    int64_t pc = Qemu::API::QEMU_get_program_counter(aCpu);
-    Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor(aCpu);
+      int64_t pc = Qemu::API::QEMU_get_program_counter(aCpu);
+      Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor(aCpu);
 
-    int64_t addr = int64_t(cpu->translateVirtualAddress(VirtualMemoryAddress(pc)) + 5);
-    aBreakpoint = (cpu->readPhysicalAddress( PhysicalMemoryAddress(addr), 8 ));
+      int64_t addr = int64_t(cpu->translateVirtualAddress(VirtualMemoryAddress(pc)) + 5);
+      aBreakpoint = (cpu->readPhysicalAddress( PhysicalMemoryAddress(addr), 8 ));
 
-    if ( (aBreakpoint & 0xFFFF0000LL) != 0xDEAD0000 ) {
-      DBG_(Iface, ( << "Breakpoint does not have a marker" ) );
-      return;
-    }
-    aBreakpoint &= 0x0FFL;
+      if ( (aBreakpoint & 0xFFFF0000LL) != 0xDEAD0000 ) {
+          DBG_(Iface, ( << "Breakpoint does not have a marker" ) );
+          return;
+      }
+      aBreakpoint &= 0x0FFL;
 #endif
 
-    if (aBreakpoint == kIterationCountBreakpoint) {
-      if (cpu_no >= theIterationCounts.size() ) {
-        theIterationCounts.resize(cpu_no + 1, 0);
+      if (aBreakpoint == kIterationCountBreakpoint) {
+          if (cpu_no >= theIterationCounts.size() ) {
+              theIterationCounts.resize(cpu_no + 1, 0);
+          }
+          ++ theIterationCounts[cpu_no];
+          DBG_(Dev, AddCat(IterationCount) ( << "CPU[" << cpu_no << "] has reached iteration " << theIterationCounts[cpu_no] ) );
+          DBG_(Trace, Cat(IterationTrace) SetNumeric( (Node) cpu_no) SetNumeric( (Iteration) theIterationCounts[cpu_no])  );
+
+          if (cpu_no == 0) {
+              Stat::getStatManager()->closeMeasurement(theCurrentStatIteration);
+              theCurrentStatIteration = std::string("Iteration ") + boost::padded_string_cast < 3, '0' > (theIterationCounts[0]);
+              Stat::getStatManager()->openMeasurement(theCurrentStatIteration);
+
+              if (theEndIteration >= 0 && theIterationCounts[0] >= theEndIteration) {
+                  DBG_(Dev, AddCat(Termination) ( << "Simulation terminated because target iteration " << theIterationCounts[0] << " reached." ) );
+                  Flexus::Core::theFlexus->terminateSimulation();
+                  return;
+              }
+
+              if (theCkptFlag) {
+                  Flexus::Core::theFlexus->quiesceAndSave(theIterationCounts[0]);
+              }
+          }
       }
-      ++ theIterationCounts[cpu_no];
-      DBG_(Dev, AddCat(IterationCount) ( << "CPU[" << cpu_no << "] has reached iteration " << theIterationCounts[cpu_no] ) );
-      DBG_(Trace, Cat(IterationTrace) SetNumeric( (Node) cpu_no) SetNumeric( (Iteration) theIterationCounts[cpu_no])  );
-
-      if (cpu_no == 0) {
-        Stat::getStatManager()->closeMeasurement(theCurrentStatIteration);
-        theCurrentStatIteration = std::string("Iteration ") + boost::padded_string_cast < 3, '0' > (theIterationCounts[0]);
-        Stat::getStatManager()->openMeasurement(theCurrentStatIteration);
-
-        if (theEndIteration >= 0 && theIterationCounts[0] >= theEndIteration) {
-          DBG_(Dev, AddCat(Termination) ( << "Simulation terminated because target iteration " << theIterationCounts[0] << " reached." ) );
-          Flexus::Core::theFlexus->terminateSimulation();
-          return;
-        }
-
-        if (theCkptFlag) {
-          Flexus::Core::theFlexus->quiesceAndSave(theIterationCounts[0]);
-        }
-      }
-    }
   }
 //Not sure if this goes here-- seems like wrong place
   //Qemu::API::QEMU_insert_callback(
@@ -585,6 +606,213 @@ public:
   }
 
 };
+
+// MSutherl: Merged/updated RMC
+class RMCTrackerImpl : public BreakpointTracker {
+    public:
+	void doRMCBreakpoint(Qemu::API::processor_t * aCPU, uint64_t l0, uint64_t l1, uint64_t l2 ){
+
+		int cpu_id = Qemu::API::QEMU_get_cpu_index(aCPU);
+		uint64_t address = l0, PC;
+		bool forwardToRMC;
+
+		RMCEntry rmcEntry(l1, l0, l2, cpu_id);
+		forwardToRMC = true;
+		switch (l1) {
+      case CONTROL_FLOW:
+        //if (l2 == 101) DBG_(Tmp, ( <<" Magic break from core " << cpu_id << " to tamper with control flow "));
+        toTraceRMC(rmcEntry);
+        return;
+			case WQUEUE:
+				DBG_(Iface, ( <<" Magic break for RMC to register WQUEUE from CPU " << cpu_id));
+				break;
+			case CQUEUE:
+				DBG_(Iface, ( <<" Magic break for RMC to register CQUEUE from CPU " << cpu_id));
+				break;
+			case BUFFER:
+				DBG_(Iface, ( <<" Magic break for RMC to register BUFFER from CPU " << cpu_id));
+				break;
+			case PTENTRY:
+				//DBG_(Iface, ( <<" Magic break for RMC to register PTENTRY "));
+				break;
+			case WQENTRYDONE:
+				DBG_(Iface, ( <<" Magic break for RMC: app's WQ entry was serviced for CPU " << cpu_id));
+				break;
+      case SENDREQRECEIVED:
+        DBG_(Iface, ( <<" Magic break for RMC: new SEND request received by CPU " << cpu_id));
+        break;
+      case SENDENQUEUED:
+        DBG_(Iface, ( <<" Magic break for RMC: new SEND request enqueued at index " << l0 << " by CPU " << cpu_id));
+        break;
+			case NEWWQENTRY:
+				DBG_(Iface, ( <<" Magic break for RMC: new WQ entry enqueued by CPU " << cpu_id));
+				break;
+			case NEWWQENTRY_START:
+				DBG_(Iface, ( <<" Magic break for RMC: CPU " << cpu_id << " started enqueueing new WQ entry"));
+				break;
+			case NETPIPE_START:
+				DBG_(Iface, ( <<" Magic break for RMC: NETPIPE_START by CPU " << cpu_id));
+				break;
+			case NETPIPE_END:
+				DBG_(Iface, ( <<" Magic break for RMC: NETPIPE_END by CPU " << cpu_id));
+				break;
+			case CONTEXT:
+			case CONTEXTMAP:
+			case WQHEAD:
+			case WQTAIL:
+			case CQHEAD:
+			case CQTAIL:
+				break;
+			case BENCHMARK_END:
+				DBG_(Tmp, ( <<" Magic break for RMC: PAGERANK_END by CPU " << cpu_id));
+				break;
+			case ALL_SET:
+				DBG_(Tmp, ( <<"CPU " << cpu_id << " says: All set to start execution (WQ, CQ, Buffers) "));
+				//Flexus::Core::theFlexus->quiesceAndSave();
+				break;
+			case SIM_BREAK:
+				DBG_(Tmp, (<< "Got a breakpoint to stop the simulation"));
+				Qemu::API::QEMU_break_simulation("Please checkpoint me!");
+			break;
+			case RMC_DEBUG_BP:
+				DBG_(Tmp, (<< "Got a DEBUG breakpoint with args " << std::hex << l0 << ", "  << l2));
+				break;
+			case 42:
+				PC = (uint64_t) Qemu::API::QEMU_get_program_counter( aCPU );
+				DBG_(Tmp, ( <<"Got RMC MAGIC CALL #42 at PC 0x" << std::hex << PC << " on core " << cpu_id ));
+				break;
+			case BUFFER_SIZE:
+				DBG_(Tmp, ( <<"Got BUFFER_SIZE breakpoint with args " << std::hex << l0 << ", "  << l2));
+				break;
+			case CONTEXT_SIZE:
+				DBG_(Tmp, ( <<"Got CONTEXT_SIZE breakpoint with args " << std::hex << l0 << ", "  << l2));
+				break;
+			case SABRE_SUCCESS:
+                DBG_(Iface, ( <<" Magic break for RMC: CPU " << cpu_id << " confirms the successful completion of a SABRe."));
+                break;
+            case SABRE_ABORT:
+                DBG_(Iface, ( <<" Magic break for RMC: CPU " << cpu_id << " got notified of an unsuccessful SABRe."));
+                break;
+            case OBJECT_WRITE:
+                DBG_(Iface, ( <<" Magic break for RMC: CPU " << cpu_id << " got notified of new object write."));
+                break;
+            case LOCK_SPINNING:
+                DBG_(Iface, ( <<" Magic break for RMC: CPU " << cpu_id << " is spinning on lock (" << l0 << ", " << l2 << ")"));
+                break;
+            case CS_START:
+                DBG_(Iface, ( <<" Magic break for RMC: CPU " << cpu_id << " entered a critical section."));
+                break;
+            case 29:
+            case 30:
+                DBG_(Iface, ( << "Received bp#" << l1 << " on core " << cpu_id << " with args " << l0 << ", " << l2 ) );
+                break;
+            case MEASUREMENT:
+                DBG_(Iface, ( << " Magic break for RMC: CPU " << cpu_id << " - measurement breakpoint." ) );
+                break;
+            default:
+                PC = (uint64_t) Qemu::API::QEMU_get_program_counter( aCPU );
+                DBG_(Tmp, ( <<"Unknown RMC MAGIC CALL #" << l1 << " at PC 0x" << std::hex << PC << " on core " << cpu_id ));
+                //DBG_(Tmp, ( <<"Available calls are: WQUEUE-" << WQUEUE << ", CQUEUE-" << CQUEUE << ", BUFFER-" << BUFFER
+                //			<< ", PTENTRY-" << PTENTRY));
+                forwardToRMC = false;
+                break;
+                }
+
+		if (forwardToRMC) toTraceRMC(rmcEntry);
+	}
+
+	void OnMagicBreakpoint( Qemu::API::conf_object_t * aCpu, long long aBreakpoint) {
+		DBG_(VVerb, ( <<" Got a breakpoint from the app: "));
+		if(aBreakpoint == 42){
+			#if FLEXUS_TARGET_IS(v9)
+			uint64_t reg_l0 = Simics::API::SIM_read_register( aCpu, Simics::API::SIM_get_register_number(aCpu, "l0") );
+			uint64_t reg_l1 = Simics::API::SIM_read_register( aCpu, Simics::API::SIM_get_register_number(aCpu, "l1") );
+			uint64_t reg_l2 = Simics::API::SIM_read_register( aCpu, Simics::API::SIM_get_register_number(aCpu, "l2") );
+			if (reg_l1 != 4) DBG_(Iface, ( <<"Got a breakpoint from the app: Code 42, l0=" << reg_l0 << ", l1="
+											<< reg_l1 <<", l2=" << reg_l2 << " (0x" << std::hex<< reg_l2 << ")"));
+			doRMCBreakpoint(aCpu, reg_l0, reg_l1, reg_l2);
+			#endif
+            #if FLEXUS_TARGET_IS(ARM) // Msutherl: QFlex port to magic breakpoints
+            /* TODO */
+            #endif
+		}	else if (aBreakpoint == 101 || aBreakpoint == 102) {
+        DBG_(Iface, ( <<"Got a " << aBreakpoint << " breakpoint from the app: App is asking for a value. The LBAProducer component will produce that."));
+    } else {
+			int64_t pc = Qemu::API::QEMU_get_program_counter(aCpu);
+			DBG_(Crit, ( << "Received breakpoint " << aBreakpoint << ", from CPU " << Qemu::API::QEMU_get_cpu_index(aCpu) << ", pc " << std::hex << pc
+						<< ". This is not a soNUMA breakpoint - ignoring!"));
+		}
+	}
+
+	//Simics::HapToMemFnBinding<Simics::HAPs::Core_Magic_Instruction, RMCTrackerImpl, &RMCTrackerImpl::OnMagicBreakpoint> theMagicBreakpointHap;
+
+	public:
+	RMCTrackerImpl (std::function< void(RMCEntry &) > atoTraceRMC)
+		: toTraceRMC(atoTraceRMC) {
+            // Inserts new API to RMC callback
+            Qemu::API::QEMU_insert_callback(
+                    QEMUFLEX_GENERIC_CALLBACK,
+                    Qemu::API::QEMU_rmc_callback,
+                    (void*) this,
+                    (void*)&RMCMagicBreakpoint
+                    );
+        }
+
+private:
+	std::function< void(RMCEntry &) > toTraceRMC;
+};
+
+class LBATrackerImpl : public BreakpointTracker {
+
+    public:
+	void doLBABreakpoint(Qemu::API::processor_t * aCPU, uint64_t l0, uint64_t l1, uint64_t l2 ){
+		int cpu_id = Qemu::API::QEMU_get_cpu_index(aCPU);
+		uint64_t address = l0, PC;
+
+        RMCEntry rmcEntry(l1, l0, l2, cpu_id);
+        toTraceLBA(rmcEntry);
+	}
+
+	void OnMagicBreakpoint( Qemu::API::conf_object_t * aCpu, long long aBreakpoint) {
+		DBG_(VVerb, ( <<" Got a breakpoint from the app: "));
+		if (aBreakpoint == 101 || aBreakpoint == 102) {
+			#if FLEXUS_TARGET_IS(v9)
+			//uint64_t reg_l0 = Simics::API::SIM_read_register( aCpu, Simics::API::SIM_get_register_number(aCpu, "l0") );
+			//uint64_t reg_l1 = Simics::API::SIM_read_register( aCpu, Simics::API::SIM_get_register_number(aCpu, "l1") );
+			//uint64_t reg_l2 = Simics::API::SIM_read_register( aCpu, Simics::API::SIM_get_register_number(aCpu, "l2") );
+			DBG_(Tmp, ( <<"Got a breakpoint from the app: Code " << aBreakpoint ));  //, l0=" << reg_l0 << ", l1="	<< reg_l1 <<", l2=" << reg_l2 << " (0x" << std::hex<< reg_l2 << ")"));
+			doLBABreakpoint(aCpu, 0, 0, 0);
+			#endif
+            #if FLEXUS_TARGET_IS(ARM) // Msutherl: QFlex port to magic breakpoints
+			DBG_(Tmp, ( <<"Got a breakpoint from the app: Code " << aBreakpoint ));
+            /* TODO */
+            #endif
+		}
+		else {
+            int64_t pc = Qemu::API::QEMU_get_program_counter(aCpu);
+			DBG_(Crit, ( << "Received breakpoint " << aBreakpoint << ", from CPU " << Qemu::API::QEMU_get_cpu_index(aCpu) << ", pc " << std::hex << pc
+						<< ". This is not a soNUMA breakpoing - ignoring!"));
+		}
+	}
+
+	//Simics::HapToMemFnBinding<Simics::HAPs::Core_Magic_Instruction, LBATrackerImpl, &LBATrackerImpl::OnMagicBreakpoint> theMagicBreakpointHap;
+
+	public:
+	LBATrackerImpl (std::function< void(RMCEntry &) > atoTraceLBA)
+		: toTraceLBA(atoTraceLBA) {
+            // Inserts new API to RMC callback
+            Qemu::API::QEMU_insert_callback(
+                    QEMUFLEX_GENERIC_CALLBACK,
+                    Qemu::API::QEMU_rmc_callback,
+                    (void*) this,
+                    (void*)&LBAMagicBreakpoint
+                    );
+        }
+
+private:
+	std::function< void(RMCEntry &) > toTraceLBA;
+};
+// END MERGED RMC
 
 #if FLEXUS_TARGET_IS(v9)
 static char simprint_buffer[1024];
@@ -1156,6 +1384,23 @@ extern "C" {
 		static_cast<PacketTrackerImpl *>(obj)->OnPacket(aNetworkID, aFrameType, aTimestamp);
 	}
 
+    // Msutherl: Merged RMC
+    void RMCMagicBreakpoint(
+            void *obj
+            , Qemu::API::conf_object_t *aCpu
+            , long long aBreakpoint
+            ) 
+    {
+		static_cast<RMCTrackerImpl*>(obj)->OnMagicBreakpoint(aCpu,aBreakpoint);
+    }
+    void LBAMagicBreakpoint(
+			  void *obj
+			, Qemu::API::conf_object_t *aCpu
+			, long long aBreakpoint
+		    ) {
+		static_cast<LBATrackerImpl*>(obj)->OnMagicBreakpoint(aCpu,aBreakpoint);
+    }
+    // END Merged RMC
 
 }
 

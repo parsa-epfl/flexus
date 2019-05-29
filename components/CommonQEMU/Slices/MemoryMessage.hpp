@@ -70,11 +70,40 @@ uint32_t memoryMessageSerial ( void );
 
 #define HEADER_SIZE 8
 
+typedef struct RMCextensions {
+	bool isData;
+	bool inLLC;
+} RMCext_t;
+
 struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
   typedef PhysicalMemoryAddress MemoryAddress;
 
   // enumerated message type
   enum MemoryMessageType {
+	//ALEX - additional messages types for RMC (soNUMA)
+	LoadData,		//Only initiated by RMC: a block-sized load that bypasses the L1 cache and does not get allocated in the LLC if there isn't already an on-chip data copy
+	LoadDataInLLC,
+	LoadDataInLLCReply,
+	StoreData,		//Only initiated by RMC: a block-sized store that bypasses the L1 cache and does not get allocated in the LLC if there isn't already an on-chip data copy
+	StoreDataInLLC,
+	StoreDataInLLCReply,
+	LoadDataReply,	//Same as MissReply, only the directory knows not to add a sharer
+	StoreDataReply,
+	StoreDataACK,
+	LoadDataACK,
+	LoadDataFwd,
+	StoreDataFwd,
+
+	//FOR SPLIT RMC!
+	WQMessage,		//a message from an RGP frontend to an RGP backend
+	CQMessage,		//a message from an RCP frontend to an RCP backend
+	RRPPFwd,			//a message from an RRPP to another
+//	AllocateSendEntryReq,	//a message from an RGP backend to other RGP backends for sunchronization (used for messaging)
+//	AllocateSendEntryRep, //inter-RGP synchronization msg reply
+	//ALEX - end
+    
+    
+    
     // CPU-initiated requests
     LoadReq,
     // This is a request to read a word of data (really, it can be any
@@ -372,6 +401,8 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     , theEvictHasData(false)
     , theBranchType(kNonBranch)
     , theBranchAnnul(false)
+    , fromRMC(false)
+    , fromRRPP(false)
   {}
   explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress)
     : theType(aType)
@@ -392,6 +423,8 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     , theBranchType(kNonBranch)
     , theBranchAnnul(false)
     , thePageWalk(false)
+    , fromRMC(false)
+    , fromRRPP(false)
   {}
   explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC)
     : theType(aType)
@@ -411,6 +444,8 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     , theEvictHasData(false)
     , theBranchType(kNonBranch)
     , theBranchAnnul(false)
+    , fromRMC(false)
+    , fromRRPP(false)
   {}
   explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC, bits aData)
     : theType(aType)
@@ -430,6 +465,8 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     , theEvictHasData(false)
     , theBranchType(kNonBranch)
     , theBranchAnnul(false)
+    , fromRMC(false)
+    , fromRRPP(false)
   {}
 
   explicit MemoryMessage(MemoryMessage & aMsg)
@@ -450,7 +487,11 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     , theEvictHasData(aMsg.theEvictHasData)
     , theBranchType(aMsg.theBranchType)
     , theBranchAnnul(aMsg.theBranchAnnul)
-  {}
+    , fromRMC(aMsg.fromRMC)
+    , fromRRPP(aMsg.fromRRPP)
+  {
+      DBG_Assert(!(fromRRPP && !fromRMC));    //if a message is from an RRPP, it cannot not be from an RMC, since an RRPP is an RMC
+  }
 
   static intrusive_ptr<MemoryMessage> newLoad(MemoryAddress anAddress, VirtualMemoryAddress aPC) {
     intrusive_ptr<MemoryMessage> msg = new MemoryMessage(LoadReq, anAddress, aPC);
@@ -616,6 +657,13 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
 
   bool isRequest() const {
     switch (theType) {
+        // Msutherl: RMC messages
+	  case StoreData:
+	  case StoreDataInLLC:
+	  case LoadData:
+	  case LoadDataInLLC:
+	  case WQMessage:
+        // END Msutherl: RMC messages
       case LoadReq:
       case StoreReq:
       case StorePrefetchReq:
@@ -646,6 +694,16 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
       case PrefetchInsert:
       case PrefetchInsertWritable:
         return true;
+
+        // Msutherl: RMC messages
+      case StoreDataReply:
+      case LoadDataReply:
+      case StoreDataInLLCReply:
+      case LoadDataInLLCReply:
+      case CQMessage:
+      case RRPPFwd:
+        // END Msutherl: RMC messages
+
       case LoadReply:
       case StoreReply:
       case StorePrefetchReply:
@@ -659,7 +717,7 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
       case UpgradeReply:
       case NonAllocatingStoreReply:
       case InvalidateAck:
-      case InvalidateNAck:
+      case InvalidateNAck: // Msutherl: This is commented out in simflex, discovered during RMC merge
       case InvUpdateAck:
       case DowngradeAck:
       case DownUpdateAck:
@@ -685,6 +743,14 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
 
   bool isWrite() const {
     switch (theType) {
+        // Msutherl: RMC messages
+	  case StoreData:
+	  case StoreDataInLLC:
+	  case WQMessage:
+      case CQMessage:
+      case RRPPFwd:
+        // END Msutherl: RMC messages
+        
       case StoreReq:
       case StorePrefetchReq:
       case NonAllocatingStoreReq:
@@ -695,6 +761,16 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
       case UpgradeReq:
       case UpgradeAllocate:
         return true;
+
+        // Msutherl: RMC messages
+      case LoadData:
+      case LoadDataInLLC:
+      case StoreDataReply:
+      case LoadDataReply:
+      case StoreDataInLLCReply:
+      case LoadDataInLLCReply:
+        // END Msutherl: RMC messages
+      
       case Flush:
       case EvictDirty:
       case EvictWritable:
@@ -773,6 +849,10 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
       case WriteAck:
       case UpgradeAck:
       case NASAck:
+        // Msutherl: RMC messages
+      case StoreDataACK:
+      case LoadDataACK:
+        // END Msutherl: RMC messages
         return true;
       default:
         return false;
@@ -848,7 +928,7 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
       case EvictWritable:
       case EvictClean:
       case SVBClean:
-      case InvalidateNAck:
+      case InvalidateNAck: // Mark: Also removed in Simflex
       case InvalidateAck:
       case InvUpdateAck:
       case DowngradeAck:
@@ -861,7 +941,17 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
       case PrefetchInsertWritable:
       case DownProbe:
       case ReturnReply:
+        // Msutherl: RMC messages
+      case CQMessage:
+      case RRPPFwd:
+        // END Msutherl: RMC messages
         return true;
+        // Msutherl: RMC messages
+      case StoreData:
+      case StoreDataInLLC:
+      case LoadData:
+      case LoadDataInLLC:
+        // END Msutherl: RMC messages
       case LoadReq:
       case AtomicPreloadReq:
       case StoreReq:
@@ -880,6 +970,13 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
       case PrefetchReadAllocReq:
         return false;
         //The rest go up the heirarchy, thus the question doesn't apply
+        // Msutherl: RMC messages
+      case StoreDataReply:
+      case LoadDataReply:
+      case StoreDataInLLCReply:
+      case LoadDataInLLCReply:
+      case WQMessage:
+        // END Msutherl: RMC messages
       case Invalidate:
       case Downgrade:
       case Probe:
@@ -913,6 +1010,12 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
 
   bool directionToBack() const {
     switch (theType) {
+        // Msutherl: RMC messages
+	  case StoreData:
+	  case StoreDataInLLC:
+	  case LoadData:
+	  case LoadDataInLLC:
+        // END Msutherl: RMC messages
       case LoadReq:
       case AtomicPreloadReq:
       case StoreReq:
@@ -948,6 +1051,12 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
       case DownProbe: //
       case ReturnReply:
         return true;
+        // Msutherl: RMC messages
+      case StoreDataReply:
+      case LoadDataReply:
+      case StoreDataInLLCReply:
+      case LoadDataInLLCReply:
+        // END Msutherl: RMC messages
       case Invalidate:
       case Downgrade:
       case Probe:
@@ -981,6 +1090,16 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
 
   int32_t messageSize() {
     switch (theType) {
+        // Msutherl: RMC messages
+	  case LoadData:
+	  case LoadDataInLLC:
+	  case StoreDataReply:
+	  case StoreDataInLLCReply:
+	  case StoreDataACK:
+	  case LoadDataACK:
+	  case LoadDataFwd:
+	  case StoreDataFwd:
+        // END Msutherl: RMC messages
       case FetchReq:
       case ReadReq:
       case WriteReq:
@@ -1035,12 +1154,63 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
       case EvictDirty:
         return HEADER_SIZE + theReqSize;
         break;
+        // Msutherl: RMC messages
+      case StoreData:
+      case StoreDataInLLC:
+      case LoadDataReply:
+      case LoadDataInLLCReply:
+		return HEADER_SIZE + 64;
+		break;
+	  case WQMessage:
+		return HEADER_SIZE + 18;		//carries a WQ entry + QP id + WQ index
+		break;
+		case RRPPFwd:
+			return HEADER_SIZE + 8;	//carries a buffer address
+			break;
+      case CQMessage:
+		return HEADER_SIZE + 2;		//only carries a QP_id and the WQ_index
+		break;
+        // END Msutherl: RMC messages
       default:
         //throw FlexusException("No size for message type: " + theType);
         return -1;
         break;
     }
   }
+
+//ALEX
+  bool doesBypassL1Cache() const{
+	switch (theType) {
+		case LoadData:
+		case LoadDataInLLC:
+		case LoadDataInLLCReply:
+		case StoreData:
+		case StoreDataInLLC:
+		case StoreDataInLLCReply:
+		case LoadDataReply:
+		case StoreDataReply:
+			return true;
+		default:
+			return false;
+	}
+  }
+
+  bool isFromRMC() const{
+     return (fromRMC);
+  }
+
+  void setFromRMC() {
+      fromRMC = true;
+  }
+
+  bool isFromRRPP() const{
+     return (fromRRPP);
+  }
+
+  void setFromRRPP() {
+      fromRRPP = true;
+  }
+// END ALEX
 
   bool directionToFront() const {
     return !directionToBack();
@@ -1059,6 +1229,19 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     return ProbedNotPresent;
   }
 
+  // Msutherl: RMC messages
+  RMCext_t RMCext;
+  //only for WQMessage
+  uint8_t op;
+  uint8_t nid;
+  uint8_t cid;
+  uint64_t offset;
+  uint64_t length;
+  uint64_t buf_addr;
+  uint16_t QP_id, WQ_idx;	//only for WQMessage and CQMessage
+  bool success;				//only for WQMessage and CQMessage + SABRes
+  int16_t target_backend;  //used to steer WQMessages from RGP FEs to BEs
+  // END Msutherl: RMC messages
 
 public:
   boost::intrusive_ptr<AbstractInstruction> theInstruction;
@@ -1084,6 +1267,12 @@ private:
   eBranchType theBranchType;
   bool theBranchAnnul;
   bool thePageWalk;
+
+
+  // Msutherl: RMC messages
+  bool fromRMC;             //Set by RMC's load requests. The directory should not give the block in exclusive state, because the RMC will never write this.
+  bool fromRRPP;            //Set by RRPP's. Used by L1 cache to allocate entry in stream buffer, when this feature is enabled.
+  // END Msutherl: RMC messages
 
 };
 

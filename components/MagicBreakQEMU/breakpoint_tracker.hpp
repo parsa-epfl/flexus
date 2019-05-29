@@ -42,7 +42,13 @@
 //THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // DO-NOT-REMOVE end-copyright-block   
 #include <iostream>
+#include <functional>
 #include <core/boost_extensions/intrusive_ptr.hpp>
+
+// MSutherl: Merged RMC
+#include <components/CommonQEMU/RMCEntry.hpp>
+using Flexus::SharedTypes::RMCEntry;
+// END Merged RMC
 
 namespace nMagicBreak {
 
@@ -61,6 +67,8 @@ public:
   static boost::intrusive_ptr<CycleTracker> newCycleTracker( uint64_t aStopCycle, uint64_t aCkptInterval, uint32_t aCkptNameStart );
   static boost::intrusive_ptr<BreakpointTracker> newPacketTracker( int32_t aSrcPortNumber, char aServerMACCode, char aClientMACCode );
   static boost::intrusive_ptr<ConsoleStringTracker> newConsoleStringTracker();
+  static boost::intrusive_ptr<BreakpointTracker> newRMCTracker(std::function< void(RMCEntry &) > toTraceRMC);
+  static boost::intrusive_ptr<BreakpointTracker> newLBATracker(std::function< void(RMCEntry &) > toTraceLBA);
   virtual ~BreakpointTracker() {};
 };
 
