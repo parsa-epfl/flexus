@@ -24,3 +24,4 @@ flexus-dump-state\.txt
 configuration\.out
 
 transactions\.out
+Makefile.depend*
