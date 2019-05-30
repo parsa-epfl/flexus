@@ -19,6 +19,7 @@ QEMU_CPU_HAS_WORK_PROC QEMU_cpu_has_work = nullptr;
 QEMU_READ_SP_EL_PROC QEMU_read_sp_el = nullptr;
 
 QEMU_READ_PHYS_MEMORY_PROC QEMU_read_phys_memory= nullptr;
+QEMU_WRITE_PHYS_MEMORY_PROC QEMU_write_phys_memory= nullptr;
 QEMU_GET_PHYS_MEM_PROC QEMU_get_phys_mem= nullptr;
 QEMU_GET_CPU_BY_INDEX_PROC QEMU_get_cpu_by_index= nullptr;
 QEMU_GET_CPU_INDEX_PROC QEMU_get_cpu_index= nullptr;
@@ -70,6 +71,7 @@ void QFLEX_API_set_Interface_Hooks( const QFLEX_API_Interface_Hooks_t* hooks ) {
   QEMU_read_sp_el = hooks->QEMU_read_sp_el;
 
   QEMU_read_phys_memory= hooks->QEMU_read_phys_memory;
+  QEMU_write_phys_memory= hooks->QEMU_write_phys_memory;
   QEMU_get_phys_mem= hooks->QEMU_get_phys_mem;
   QEMU_get_cpu_by_index= hooks->QEMU_get_cpu_by_index;
   QEMU_get_cpu_index= hooks->QEMU_get_cpu_index;

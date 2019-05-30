@@ -1431,6 +1431,12 @@ boost::intrusive_ptr<ConsoleStringTracker> BreakpointTracker::newConsoleStringTr
   return new ConsoleStringTrackerImpl();
 }
 
+// Msutherl: RMCTracker Merge
+boost::intrusive_ptr<BreakpointTracker> BreakpointTracker::newRMCTracker( std::function<void(RMCEntry&)> aToTraceRMC ) {
+  return new RMCTrackerImpl(aToTraceRMC);
+}
+// END RMC Merge
+
 //#endif
 } //namespace nMagicBreak
 

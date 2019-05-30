@@ -42,14 +42,17 @@
 
 
 # GCC Compiler Settings
-#GCC_PATH=
+GCC_PATH=/home/parsacom/tools/gcc-qflex
 GCC_BINARY=g++ --std=c++11
 GCC_VERSION_NOCHECK=true
 
 # Boost 1.59.0 path
-BOOST_PATH=/usr/local/include
-BOOST_BINARIES=/usr/local/lib
+BOOST_PATH=/home/msutherl/include
+BOOST_BINARIES=/home/msutherl/lib
 BOOST_VERSION_NOCHECK=true
+
+# soNUMA software path
+SON_SW_PATH=/home/msutherl/qflex
 
 ###############################################################################
 # You are unlikely to have to modify variables below here
@@ -75,8 +78,8 @@ BOOST_INCLUDE=$(BOOST_PATH)
 # Target Emulator
 export TARGET_EMULATOR=qemu
 
-INCLUDES=-DBOOST_MPL_CFG_NO_PREPROCESSED_HEADERS -DBOOST_MPL_LIMIT_VECTOR_SIZE=50 -isystem $(BOOST_INCLUDE) -I$(FLEXUS_INCLUDE) -IDRAMSim2
-BOOST_LIBRARIES=-Wl,--no-whole-archive -L$(BOOST_BINARIES) -lboost_system -lboost_regex -lboost_serialization -lboost_iostreams -lz
+INCLUDES=-DBOOST_MPL_CFG_NO_PREPROCESSED_HEADERS -DBOOST_MPL_LIMIT_VECTOR_SIZE=50 -isystem $(BOOST_INCLUDE) -I$(FLEXUS_INCLUDE) -IDRAMSim2 -isystem $(SON_SW_PATH)
+BOOST_LIBRARIES=-Wl,--no-whole-archive,-rpath=$(BOOST_BINARIES) -L$(BOOST_BINARIES) -lboost_system -lboost_regex -lboost_serialization -lboost_iostreams -lz
 
 # other constants
 # List of "special" cpp files in components that are not part of a components library
