@@ -255,7 +255,7 @@ struct CRCAction : public PredicatedSemanticAction
     Operand in = theInstruction->operand(theInputCode);
     Operand in2 = theInstruction->operand(theInputCode2);
     uint32_t acc = (uint32_t) (boost::get<bits> (in));
-    bits val = boost::get<bits> (in2);
+    // bits val = boost::get<bits> (in2);
 
     bits tempacc = (bits)((bitReverse(acc)) << (the64 ? 64 : 32));
     bits tempval = 0; //(bits)((bitReverse(val)) << 32) ;
@@ -274,7 +274,6 @@ struct CRCAction : public PredicatedSemanticAction
 //    }
 
     data &= 0xffffffff;
-
 
     theInstruction->setOperand(theOutputCode, data);
   }

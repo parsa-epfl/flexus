@@ -62,8 +62,8 @@ struct validateXRegister {
 };
 
 struct validatePC {
-  bool thePreValidation;
   SemanticInstruction * theInstruction;
+  bool thePreValidation;
 
   validatePC( SemanticInstruction * anInstruction, bool prevalidation = false)
     : theInstruction(anInstruction)

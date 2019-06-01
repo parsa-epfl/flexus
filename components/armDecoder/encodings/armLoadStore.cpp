@@ -264,7 +264,6 @@ arminst STRL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
 arminst LDAQ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){
     DECODER_TRACE;
     uint32_t o0 = extract32(aFetchedOpcode.theOpcode, 15, 1);
-    uint32_t s = extract32(aFetchedOpcode.theOpcode, 30, 2);
     uint32_t size = 8 << extract32(aFetchedOpcode.theOpcode, 30, 2);
     uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
     uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
@@ -652,7 +651,7 @@ arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
         }
     }
 
-    simple_action act = addAddressCompute( inst, rs2_deps );
+    addAddressCompute( inst, rs2_deps );
     if (index == kRegOffset){
         if(shift_amount)
             connect(rs2_deps[1], sh);
@@ -781,7 +780,7 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
         }
     }
 
-    simple_action act = addAddressCompute( inst, rs2_deps );
+    addAddressCompute( inst, rs2_deps );
     if (index == kRegOffset){
         if(shift_amount)
             connect(rs2_deps[1], sh);

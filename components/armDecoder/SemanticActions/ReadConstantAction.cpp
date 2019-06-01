@@ -70,8 +70,8 @@ using namespace nuArchARM;
 
 struct ReadConstantAction : public BaseSemanticAction
 {
-  uint64_t theVal;
   eOperandCode theOperandCode;
+  uint64_t theVal;
 
   ReadConstantAction( SemanticInstruction * anInstruction, int64_t aVal, eOperandCode anOperandCode)
     : BaseSemanticAction( anInstruction, 1 )

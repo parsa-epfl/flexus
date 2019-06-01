@@ -469,8 +469,6 @@ protected:
     , theRetireStallCycles(0)
     , theMayCommit(true)
     , theResolved(false)
-    , theInsnSourceLevel(eL1I)
-    , thePriv(false)
     , theUsesIntAlu(true)
     , theUsesIntMult(false)
     , theUsesIntDiv(false)
@@ -480,6 +478,8 @@ protected:
     , theUsesFpMult(false)
     , theUsesFpDiv(false)
     , theUsesFpSqrt(false)
+    , theInsnSourceLevel(eL1I)
+    , thePriv(false)
   {
   }
 

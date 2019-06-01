@@ -110,7 +110,7 @@ arminst disas_fp_1src(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aS
 {
     DECODER_TRACE;
     arminst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
-    uint32_t type = extract32(aFetchedOpcode.theOpcode, 22, 2); 
+    // uint32_t type = extract32(aFetchedOpcode.theOpcode, 22, 2); 
     uint32_t opcode = extract32(aFetchedOpcode.theOpcode, 15, 6); 
     switch (opcode) {
     /* FCVT between half, single and double precision */

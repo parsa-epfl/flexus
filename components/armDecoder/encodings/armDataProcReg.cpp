@@ -349,7 +349,6 @@ arminst DP_3_SRC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequen
     uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
     uint32_t rm = extract32(aFetchedOpcode.theOpcode, 16, 5);
     uint32_t ra = extract32(aFetchedOpcode.theOpcode, 10, 5);
-    bool sub_op = extract32(aFetchedOpcode.theOpcode, 15, 1);
     bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
     bool is_long = extract32(aFetchedOpcode.theOpcode, 21, 1);
     bool is_sub = extract32(op_id, 0, 1);
@@ -366,7 +365,7 @@ arminst DP_3_SRC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequen
     readRegister(inst, 2, rm, rs_deps[1], is_long ? false : sf);
 
     if (!is_high){
-        predicated_action act = addExecute(inst, operation(sub_op ? kSUB_ : kADD_), {kOperand3, kResult}, rs2_deps);
+        predicated_action act = addExecute(inst, operation(is_sub ? kSUB_ : kADD_), {kOperand3, kResult}, rs2_deps);
         readRegister(inst, 3, ra, rs2_deps[0], sf);
         connect(rs2_deps[1], mul);
         addDestination(inst, rd, act, sf);

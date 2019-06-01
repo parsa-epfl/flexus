@@ -674,7 +674,7 @@ struct BranchRegConditionallyEffect: public Effect {
       DBG_( VVerb, ( << anInstruction << " BranchRegConditionallyEffect " ) );//NOOSHIN
 
     FLEXUS_PROFILE();
-    uint64_t val = anInstruction.operand< uint64_t > (theValueCode);
+    // uint64_t val = anInstruction.operand< uint64_t > (theValueCode);
 
     boost::intrusive_ptr<BranchFeedback> feedback( new BranchFeedback() );
     feedback->thePC = anInstruction.pc();

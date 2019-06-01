@@ -92,7 +92,7 @@ bool CoreImpl::checkValidatation(){
             qemu_diff.push_back(iqemu);
         }
 
-        for (int i = 0; i < flex_diff.size() && i < qemu_diff.size(); i++){
+        for (size_t i = 0; i < flex_diff.size() && i < qemu_diff.size(); i++){
             if (flex_diff[i].compare(qemu_diff[i]) != 0){
                 diff.push_back("flexus: "+flex_diff[i]);
                 diff.push_back("qemu:   "+qemu_diff[i]);

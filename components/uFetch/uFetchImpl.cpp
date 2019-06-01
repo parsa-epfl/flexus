@@ -850,8 +850,6 @@ private:
       FETCH_DBG("starting to process the fetches..." << remaining_fetch);
 
       while ( remaining_fetch > 0 && ( theFAQ[anIndex].size() > 0 || theFlexus->quiescing())) {
-          bool from_icache(false);
-
           FetchAddr fetch_addr = theFAQ[anIndex].front();
           VirtualMemoryAddress block_addr( fetch_addr.theAddress & theBlockMask);
 
@@ -871,7 +869,6 @@ private:
                   if (! icacheLookup( anIndex, block_addr ) ) {
                       break;
                   }
-                  from_icache = true;
               }
               else
               {
@@ -892,13 +889,7 @@ private:
                                     );
         DBG_(VVerb, (<< "adding entry in the fetch bundle " << fetch_addr.theAddress));
 
-//        if (from_icache && theLastMiss[anIndex] && theLastPhysical == theLastMiss[anIndex]->first) {
-//          bundle->theFillLevels.push_back(theLastMiss[anIndex]->second);
-//          theLastMiss[anIndex] = boost::none;
-//        } else {
-          theBundle->theFillLevels.push_back(eL1I);
-//        }
-
+        theBundle->theFillLevels.push_back(eL1I);
         ++theFetches;
         --remaining_fetch;
       }
