@@ -97,7 +97,7 @@ public:
                          cfg.MAFSize, cfg.DirEvictBufferSize, cfg.CacheEvictBufferSize,
                          cfg.EvictClean, cfg.CacheLevel, cfg.DirLatency, cfg.DirIssueLatency,
                          cfg.TagLatency, cfg.TagIssueLatency, cfg.DataLatency, cfg.DataIssueLatency,
-                         cfg.QueueSize);
+                         cfg.QueueSize,cfg.MachineCount);
 
     //	theController.reset(new CMPCacheController(theInfo));
     theController.reset(AbstractFactory<AbstractCacheController, CMPCacheInfo>::createInstance(cfg.ControllerType, theInfo));

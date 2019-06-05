@@ -54,6 +54,9 @@ using nCommonUtil::log_base2;
 using nCommonUtil::AddressHash;
 using nCommonSerializers::StdDirEntryExtendedSerializer;
 
+// Msutherl: RMC port
+#define MACHINE_BITS 8
+
 namespace nCMPCache {
 
 
@@ -176,6 +179,9 @@ private:
   int32_t theGroupMask;
   int32_t theSkewShift;
 
+  // Msutherl: RMC Port
+  uint32_t theNumMachines, tilesPerMachine, theBankMaskMultinode;
+
   bool theSameSetReturnValue;
 
   std::string theName;
@@ -194,6 +200,23 @@ private:
       return (addr >> theGroupShift) & theGroupMask;
     }
   }
+
+  // BEGIN Msutherl: RMC port
+  int32_t getSetLocation( uint64_t anAddress ) {	//Only used for multinode, instead of getBank()
+      uint32_t machine_id = (anAddress >> (64 - MACHINE_BITS));
+      DBG_Assert(machine_id < theNumMachines, ( << "Loading address 0x" << std::hex << anAddress 
+                  << ". The machine id was found to be " << machine_id << ", but only got " << theNumMachines
+                  << " machines." ));
+      uint32_t bank_base = (anAddress >> (64 - MACHINE_BITS)) * tilesPerMachine;
+      uint32_t bank_offset = (anAddress >> theBankShift) & theBankMaskMultinode;
+      DBG_Assert(bank_offset < tilesPerMachine, ( << "Loading block address 0x" << std::hex << anAddress 	
+                  << ". Tiles per Machine: " << tilesPerMachine << ", bank_base: " << bank_base << ", bank offset: "
+                  << bank_offset));		
+      uint32_t target_bank = bank_base + bank_offset;
+      DBG_Assert((int)target_bank < theBanks); 	
+      return (int32_t)target_bank;
+  }
+  // END Msutherl: RMC port
 
 public:
   typedef InfiniteLookupResult LookupResult;
@@ -221,6 +244,12 @@ public:
     theGroupMask = theGroups - 1;
 
     theSkewShift = -1;
+
+    // BEGIN Msutherl: RMC port
+    theNumMachines = theInfo.theNumMachines;
+    tilesPerMachine = Flexus::Core::ComponentManager::getComponentManager().systemWidth() / theNumMachines;   
+    theBankMaskMultinode = (theInfo.theNumBanks / theNumMachines) - 1;
+    // END Msutherl: RMC port
 
     std::list< std::pair< std::string, std::string> >::const_iterator iter = args.begin();
     for (; iter != args.end(); iter++) {
@@ -277,12 +306,21 @@ public:
     StdDirEntryExtendedSerializer serializer;
     DBG_(Dev, ( << theName << " - Directory loading " << count << " entries." ));
     for (; count > 0; count--) {
-      ia >> serializer;
-      // only store entries for this bank to save memory
-      if ((getBank(serializer.tag) == theLocalBankIndex) && (getGroup(serializer.tag) == theGroupIndex)) {
-        DBG_(Trace, ( << theName << " - Directory loading block " << serializer));
-        theDirectory.insert( InfDirEntry(serializer, theNumSharers) );
-      }
+        ia >> serializer;
+        // only store entries for this bank to save memory
+        //BEGIN Msutherl: RMC port
+        if (theNumMachines > 1) {		//multinode
+            if ((getSetLocation(serializer.tag) == theLocalBankIndex) ) {
+                DBG_(Trace, ( << theName << " - Directory loading block " << serializer));
+                theDirectory.insert( InfDirEntry(serializer, theNumSharers) );
+            }
+        } else {		//single node
+            if ((getBank(serializer.tag) == theLocalBankIndex) && (getGroup(serializer.tag) == theGroupIndex)) {
+                DBG_(Trace, ( << theName << " - Directory loading block " << serializer));
+                theDirectory.insert( InfDirEntry(serializer, theNumSharers) );
+            }
+        }
+        // END Msutherl: RMC port
     }
     return true;
   }

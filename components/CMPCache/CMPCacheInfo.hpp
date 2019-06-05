@@ -68,6 +68,8 @@ struct CMPCacheInfo {
   int32_t theDataLatency;
   int32_t theDataIssueLatency;
   int32_t theQueueSize;
+  // Msutherl: RMC port
+  uint32_t theNumMachines;
 
   CMPCacheInfo( int32_t aNodeId,
                 const std::string & aName,
@@ -92,7 +94,9 @@ struct CMPCacheInfo {
                 int32_t	aTagIssueLatency,
                 int32_t	aDataLatency,
                 int32_t	aDataIssueLatency,
-                int32_t	aQueueSize
+                int32_t	aQueueSize,
+                // msutherl: RMC port
+                uint32_t aNumMachines
               )
     : theNodeId(aNodeId)
     , theName(aName)
@@ -118,6 +122,8 @@ struct CMPCacheInfo {
     , theDataLatency(aDataLatency)
     , theDataIssueLatency(aDataIssueLatency)
     , theQueueSize(aQueueSize)
+    // msutherl: RMC port
+    , theNumMachines(aNumMachines)
   { }
 
   CMPCacheInfo( const CMPCacheInfo & info)
@@ -145,6 +151,8 @@ struct CMPCacheInfo {
     , theDataLatency(info.theDataLatency)
     , theDataIssueLatency(info.theDataIssueLatency)
     , theQueueSize(info.theQueueSize)
+    // msutherl: RMC port
+    , theNumMachines(info.theNumMachines)
   { }
 
 };

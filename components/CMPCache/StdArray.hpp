@@ -58,6 +58,9 @@
 
 #include <components/CMPCache/CMPCacheInfo.hpp>
 
+// MSutherl: RMC port
+#define MACHINE_BITS 8
+
 using nCommonUtil::log_base2;
 using nCommonSerializers::BlockSerializer;
 
@@ -67,6 +70,9 @@ typedef Flexus::SharedTypes::PhysicalMemoryAddress MemoryAddress;
 
 typedef int32_t SetIndex;
 typedef uint32_t BlockOffset;
+
+// Msutherl: RMC port
+uint32_t theMachines;
 
 enum ReplacementPolicy {
   REPLACEMENT_LRU,
@@ -436,6 +442,9 @@ public:
 
       DBG_(Trace, NoDefaultOps() ( << theIndex << "-L3: Loading block " << std::hex << bs.tag << " in state " << temp_state << " in set " << theSet ));
 
+      // Msutherl: RMC port
+      DBG_Assert(bs.tag == 0 || theIndex / (Flexus::Core::ComponentManager::getComponentManager().systemWidth() / theMachines) == (bs.tag >> (64 - MACHINE_BITS))); 
+
     }
     return true;
   }
@@ -562,7 +571,10 @@ protected:
   uint64_t setMidMask;
   uint64_t setHighMask;
 
-  int32_t theBankMask, theBankShift;
+  // BEGIN Msutherl: RMC port
+  int32_t theBankMask, theBankShift, theBankMaskMultinode;
+  uint32_t theNumMachines, tilesPerMachine, setsPerMachine;
+  // END RMC port
   int32_t theGroupMask, theGroupShift;
 
   Set<_State, _DefaultState> ** theSets;
@@ -582,6 +594,11 @@ public:
     theGlobalBankIndex = theInfo.theNodeId;
     theLocalBankIndex = theInfo.theNodeId % theBanks;
     theGroupIndex = theInfo.theNodeId / theBanks;
+    // BEGIN Msutherl: RMC port
+    theNumMachines = theInfo.theNumMachines;
+    theMachines = theNumMachines;
+    DBG_(Dev, ( << "theNumMachines = " << theNumMachines ));
+    // END RMC port
 
     theTotalBanks = theBanks * theGroups;
 
@@ -609,6 +626,14 @@ public:
         DBG_Assert( false, ( << "Unknown configuration parameter '" << iter->first << "' while creating StdArray. Valid params are: sets, total_sets, assoc, repl" ));
       }
     }
+
+    // BEGIN MSutherl: RMC Port
+    tilesPerMachine = Flexus::Core::ComponentManager::getComponentManager().systemWidth() / theNumMachines;
+    setsPerMachine = theNumSets * tilesPerMachine;	// / theNumMachines;    
+    DBG_Assert(tilesPerMachine * theNumMachines == Flexus::Core::ComponentManager::getComponentManager().systemWidth() );
+    DBG_Assert(theNumSets%theNumMachines == 0);
+    DBG_(Dev, ( << "theNumSets (per Bank) = " << theNumSets << ", Sets per machine = " << setsPerMachine));
+    // END RMC Port
 
     init();
   }
@@ -641,7 +666,9 @@ public:
 
     int32_t blockOffsetBits = log_base2(theBlockSize);
     int32_t indexBits = log_base2(theNumSets);
-    int32_t bankBits = log_base2(theBanks);
+    // BEGIN Msutherl: RMC Port
+    int32_t bankBits = log_base2(theBanks/theNumMachines);
+    // END RMC Port
     int32_t bankInterleavingBits = log_base2(theBankInterleaving);
 
     int32_t groupBits = log_base2(theGroups);
@@ -664,6 +691,9 @@ public:
     setHighShift = groupBits + bankBits + blockOffsetBits;
 
     theBankMask = theBanks - 1;
+    // BEGIN Msutherl: RMC Port
+    theBankMaskMultinode = (theBanks / theNumMachines) - 1;
+    // END RMC Port
     theBankShift = bankInterleavingBits;
     theGroupMask = theGroups - 1;
     theGroupShift = groupInterleavingBits;
@@ -686,7 +716,10 @@ public:
                 << ", theBankMask = " << std::hex << theBankMask
                 << ", theBankShift = " << std::dec << theBankShift
                 << ", theGroupMask = " << std::hex << theGroupMask
-                << ", theGroupShift = " << std::dec << theGroupShift ));
+                // BEGIN Msutherl: RMC Port
+                << ", theGroupShift = " << std::dec << theGroupShift
+                << ", theNumMachines = " << std::dec << theNumMachines ));
+                // END RMC port
 
     tagMask = MemoryAddress(~0ULL & ~((uint64_t)(theBlockSize - 1)));
 
@@ -754,44 +787,62 @@ public:
   }
 
   virtual bool loadState ( std::istream & s, int32_t theIndex ) {
+      boost::archive::binary_iarchive ia(s);
+      BlockSerializer serializer;
+      MemoryAddress addr(0);
+      int32_t theTotalSets = theNumSets * theBanks * theGroups;
+      DBG_(Trace, ( << "theTotalSets:" << theTotalSets << " = product of: theNumSets:" << theNumSets << " theBanks:" << theBanks << " theGroups:" << theGroups));
+      int32_t local_set = 0;
+      int32_t global_set = 0;
 
-    boost::archive::binary_iarchive ia(s);
+      uint64_t set_count = 0;
+      uint32_t associativity = 0;
 
-    BlockSerializer serializer;
+      ia >> set_count;
+      ia >> associativity;
 
-    MemoryAddress addr(0);
-    int32_t theTotalSets = theNumSets * theBanks * theGroups;
-    DBG_(Trace, ( << "theTotalSets:" << theTotalSets << " = product of: theNumSets:" << theNumSets << " theBanks:" << theBanks << " theGroups:" << theGroups));
-    int32_t local_set = 0;
-    int32_t global_set = 0;
+      DBG_Assert( set_count == (uint64_t)theTotalSets, ( << "Error loading cache state. Flexpoint contains " << set_count << " sets but simulator configured for " << theTotalSets << " total sets." ));
+      DBG_Assert( associativity == (uint64_t)theAssociativity, ( << "Error loading cache state. Flexpoint contains " << associativity << "-way sets but simulator configured for " << theAssociativity << "-way sets." ));
 
-    uint64_t set_count = 0;
-    uint32_t associativity = 0;
-
-    ia >> set_count;
-    ia >> associativity;
-
-    DBG_Assert( set_count == (uint64_t)theTotalSets, ( << "Error loading cache state. Flexpoint contains " << set_count << " sets but simulator configured for " << theTotalSets << " total sets." ));
-    DBG_Assert( associativity == (uint64_t)theAssociativity, ( << "Error loading cache state. Flexpoint contains " << associativity << "-way sets but simulator configured for " << theAssociativity << "-way sets." ));
-
-    for (; global_set < theTotalSets; global_set++, addr += theBlockSize) {
-      if ((getBank(addr) == theLocalBankIndex) && (getGroup(addr) == theGroupIndex)) {
-        DBG_(Trace, ( << "Attempting to load local_set " << local_set << "(group = " << theGroupIndex << ", bank = " << theLocalBankIndex << ", gset = " << global_set ));
-        if (!theSets[local_set]->loadState(ia, theIndex, local_set)) {
-          DBG_Assert(false, ( << "failed to load cache set " << local_set ));
-          return true;
-        }
-        local_set++;
-      } else {
-        DBG_(Trace, ( << "Skipping " << theAssociativity << " ways from gset " << global_set ));
-        for (int32_t way = 0; way < theAssociativity; way++) {
-          // Skip over entries that belong to other banks
-          ia >> serializer;
-        }
+      for (; global_set < theTotalSets; global_set++, addr += theBlockSize) {
+          // BEGIN Msutherl: RMC port
+          if( theNumMachines > 1 ) {
+              if (getSetLocation(global_set) == theLocalBankIndex ) { 
+                  //if (local_set >= theNumSets) continue;		//REMOVE ME!			 
+                  DBG_(Trace, ( << "Bank " << theLocalBankIndex << " attempting to load local_set " << local_set << "(group = " << theGroupIndex << ", bank = " << theLocalBankIndex 
+                              << ", gset = " << global_set <<"). The total number of sets for this bank is " << theNumSets ));
+                  if (!theSets[local_set]->loadState(ia, theIndex, local_set)) {
+                      DBG_Assert(false, ( << "failed to load cache set " << local_set ));
+                      return true;
+                  }
+                  local_set++;
+              } else {
+                  DBG_(Trace, ( << "Bank " << theLocalBankIndex << " skipping " << theAssociativity << " ways from gset " << global_set ));
+                  for (int32_t way = 0; way < theAssociativity; way++) {
+                      // Skip over entries that belong to other banks
+                      ia >> serializer;
+                  }
+              }
+          } else {
+              if ((getBank(addr) == theLocalBankIndex) && (getGroup(addr) == theGroupIndex)) {
+                  DBG_(Trace, ( << "Attempting to load local_set " << local_set << "(group = " << theGroupIndex << ", bank = " << theLocalBankIndex << ", gset = " << global_set ));
+                  if (!theSets[local_set]->loadState(ia, theIndex, local_set)) {
+                      DBG_Assert(false, ( << "failed to load cache set " << local_set ));
+                      return true;
+                  }
+                  local_set++;
+              } else {
+                  DBG_(Trace, ( << "Skipping " << theAssociativity << " ways from gset " << global_set ));
+                  for (int32_t way = 0; way < theAssociativity; way++) {
+                      // Skip over entries that belong to other banks
+                      ia >> serializer;
+                  }
+              }
+          }
+          // END RMC port
       }
-    }
 
-    return true; // true == no errors
+      return true; // true == no errors
   }
 
   // Addressing helper functions
@@ -799,13 +850,33 @@ public:
     return MemoryAddress ( anAddress & tagMask );
   }
 
+// BEGIN Msutherl: RMC port
   SetIndex makeSet ( const MemoryAddress & anAddress ) const {
-    return ((anAddress >> setLowShift) & setLowMask) | ((anAddress >> setMidShift) & setMidMask) | ((anAddress >> setHighShift) & setHighMask);
+      if (theNumMachines == 1) {
+          return ((anAddress >> setLowShift) & setLowMask) | ((anAddress >> setMidShift) & setMidMask) | ((anAddress >> setHighShift) & setHighMask);
+      } else {	//multinode! SAME?
+          return ((anAddress >> setLowShift) & setLowMask) | ((anAddress >> setMidShift) & setMidMask) | ((anAddress >> setHighShift) & setHighMask);
+      }
+
+      uint64_t theIndexMask = (1ULL << log_base2(theNumSets)) -1;
+      return ((anAddress >> setLowShift) & theIndexMask);
   }
 
-  int32_t getBank( const MemoryAddress & anAddress) const {
-    return ((anAddress >> theBankShift) & theBankMask);
+  int32_t getSetLocation( int32_t aSet ) {	//Only used for multinode, instead of getBank()
+      uint32_t bank_base = (aSet / setsPerMachine) * tilesPerMachine;
+      DBG_Assert(aSet / setsPerMachine < theNumMachines);
+      DBG_Assert(bank_base < theNumMachines * tilesPerMachine);
+      uint32_t bank_offset = aSet % tilesPerMachine;
+      uint32_t target_bank = bank_base + bank_offset;
+      DBG_(Verb, ( << "Checking set " << aSet << "'s location. Target bank is " << target_bank ));
+      return (int32_t)target_bank;
   }
+
+  int32_t getBank( const MemoryAddress & anAddress) const {	
+      if (theNumMachines > 1) DBG_Assert(false, ( << "This function should not be called in multinode mode"));
+      return ((anAddress >> theBankShift) & theBankMask);     
+  }
+// END RMC Port
 
   int32_t getGroup( const MemoryAddress & anAddress) const {
     return ((anAddress >> theGroupShift) & theGroupMask);

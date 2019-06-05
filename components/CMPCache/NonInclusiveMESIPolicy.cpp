@@ -69,6 +69,8 @@ using namespace Flexus;
 #include <components/CMPCache/NonInclusiveMESIPolicy.hpp>
 #include <components/CMPCache/CacheState.hpp>
 
+#define RMC_ACCESSES Iface // RMC port
+
 namespace nCMPCache {
 
 REGISTER_CMP_CACHE_POLICY(NonInclusiveMESIPolicy, "NonInclusiveMESI");
@@ -123,6 +125,10 @@ void NonInclusiveMESIPolicy::doRequest( ProcessEntry_p process, bool has_maf ) {
   MemoryAddress address = theCache->blockAddress(process->transport()[MemoryMessageTag]->address());
   MemoryMessage::MemoryMessageType req_type = process->transport()[MemoryMessageTag]->type();
   int32_t requester = process->transport()[DestinationTag]->requester;
+
+  // BEGIN Msutherl: RMC Port
+  if (msg->isFromRMC()) DBG_(RMC_ACCESSES, ( << "Received ReadReq from an RMC for address " << address << "."));
+  // END Msutherl: RMC port
 
   // By default assume we'll stall and take no action
   process->setAction(eStall);
@@ -306,13 +312,18 @@ void NonInclusiveMESIPolicy::doRequest( ProcessEntry_p process, bool has_maf ) {
   }
 
   // Cache State is now present in c_lookup
-
-//  bool is_cache_hit = false;
-//  bool was_prefetched = false;
-//  if (c_lookup->state() != CacheState::Invalid) {
-//    is_cache_hit = true;
-//    was_prefetched = c_lookup->state().prefetched();
-//  }
+  
+  // BEGIN Msutherl: RMC port
+  /*
+  bool is_cache_hit = false;
+  bool was_prefetched = false;
+  if (c_lookup->state() != CacheState::Invalid) {
+      //if (req_type == MemoryMessage::ReadReq && msg->isFromRMC()) DBG_Assert(false, (<< "Shouldn't have hit in LLC"));  //REMOVE - for soNUMA uBenchmarks that are supposed to always go to memory
+      is_cache_hit = true;
+      was_prefetched = c_lookup->state().prefetched();
+  }
+  */
+  // END Msutherl: RMC port
 
   MemoryTransport rep_transport(process->transport());
 
@@ -379,6 +390,7 @@ void NonInclusiveMESIPolicy::doRequest( ProcessEntry_p process, bool has_maf ) {
 
   // If the data is not on-chip, we need to go to memory.
   if (dir_lookup->state().noSharers() && c_lookup->state() == CacheState::Invalid) {
+      if (msg->isFromRMC()) DBG_(RMC_ACCESSES, ( << "Received ReadReq from an RMC. Block is not on chip, will get it from memory!")); // Msutherl: RMC port
     if (maf_waiting) {
       // If we found a waiting MAF entry then we wait for it to complete first, then do an on-chip transfer
       // This avoids a number of complications, reduces off-chip bandwidth, and will likely be faster in the int64_t rung
@@ -443,12 +455,18 @@ void NonInclusiveMESIPolicy::doRequest( ProcessEntry_p process, bool has_maf ) {
   switch (req_type) {
     case MemoryMessage::ReadReq:
     case MemoryMessage::FetchReq: {
+      // BEGIN Msutherl: RMC port
+      if (msg->isFromRMC()) DBG_(RMC_ACCESSES, ( << "\tblock requested from RMC is somewhere on the chip."));
+      // END RMC port
       // If the block is not in the cache, or if there might be a modified copy higher up, forward the request to a sharer
       if ((c_lookup->state() == CacheState::Invalid)
           || (dir_lookup->state().oneSharer() && (c_lookup->state() == CacheState::Exclusive))) {
 
         // If there's one sharer in Excl/Modified state then make sure it's received the data before Fwding our request.
         if (dir_lookup->state().oneSharer() && maf_waiting) {
+            // BEGIN Msutherl: RMC port
+          if (msg->isFromRMC()) DBG_(RMC_ACCESSES, ( << "\tBlock requested by RMC is Exclusive/Modified in a peer L1 cache. Forwarding request..."));
+            // END RMC port
           if (has_maf) {
             theMAF.setState(process->maf(), eWaitRequest);
           } else {
@@ -457,6 +475,9 @@ void NonInclusiveMESIPolicy::doRequest( ProcessEntry_p process, bool has_maf ) {
           return;
         }
 
+        // BEGIN Msutherl: RMC port
+        if (msg->isFromRMC()) DBG_(RMC_ACCESSES, ( << "\tBlock requested by RMC is not present in LLC but is located in a peer L1 cache. Forwarding request..."));   //ALEX
+        // END RMC port
         // Select a sharer, forward the message to them
         MemoryMessage_p msg(new MemoryMessage(MemoryMessage::ReadFwd, address));
         if (req_type == MemoryMessage::FetchReq) {
@@ -511,13 +532,16 @@ void NonInclusiveMESIPolicy::doRequest( ProcessEntry_p process, bool has_maf ) {
           rep_msg->type() = MemoryMessage::MissReplyWritable;
 
           if (c_lookup->state() == CacheState::Modified) {
-            rep_msg->type() = MemoryMessage::MissReplyDirty;
-	    c_lookup->setState(CacheState::Invalid);    
-            theCache->invalidateBlock(c_lookup);
+              // BEGIN Msutherl: RMC port
+              if (msg->isFromRMC()) DBG_(RMC_ACCESSES, ( << "\tBlock requested by RMC is dirty in LLC ReadReq from an RMC. Supplying dirty data..."));
+              // END RMC port
+              rep_msg->type() = MemoryMessage::MissReplyDirty;
+              c_lookup->setState(CacheState::Invalid);    
+              theCache->invalidateBlock(c_lookup);
           }
 
           // If there's a previous active request, then it's going to get exclusive state
-          // Wait until that request completes and then do a Fwd to remove Exlcusive state
+          // Wait until that request completes and then do a Fwd to remove Exclusive state
           if (maf_waiting) {
             if (has_maf) {
               theMAF.setState(process->maf(), eWaitRequest);
@@ -534,7 +558,12 @@ void NonInclusiveMESIPolicy::doRequest( ProcessEntry_p process, bool has_maf ) {
         rep_msg->reqSize() = theCMPCacheInfo.theBlockSize;
         rep_msg->ackRequired() = true;
         rep_msg->ackRequiresData() = false;
-        dir_lookup->addSharer( requester );
+        // BEGIN Msutherl: RMC port
+        if (msg->isFromRMC()) DBG_(RMC_ACCESSES, ( << "\t block requested by RMC has sharers. LLC will supply the data."));   //ALEX
+        dir_lookup->addSharer( requester ); //ALEX - was thinking of not adding RMC as a sharer, but this would result in incoherence in the rare occasion
+                                            //the RMC happens to access again same block in its RMCCache and some writer on the chip updates that block...
+                                            //could avoid this by modifying the RMCCache to not allocate the read block (RMC not expected to benefit from reuse)
+        // END Msutherl: RMC port
 
         rep_transport.set(MemoryMessageTag, rep_msg);
         rep_transport.set(DestinationTag, DestinationMessage_p(new DestinationMessage(process->transport()[DestinationTag])));
@@ -544,7 +573,7 @@ void NonInclusiveMESIPolicy::doRequest( ProcessEntry_p process, bool has_maf ) {
         process->setRequiresData(true);
 
         // record the access
-        	theCache->recordAccess(c_lookup);
+        theCache->recordAccess(c_lookup);
         if (c_lookup->state().prefetched()) {
           c_lookup->setPrefetched(false);
         }
@@ -1506,12 +1535,22 @@ void NonInclusiveMESIPolicy::handleReply( ProcessEntry_p process ) {
     }
     case MemoryMessage::EvictAck: {
       CacheEvictBuffer<CacheState>::iterator c_eb = theCacheEvictBuffer.find(req->address());
-      DBG_Assert(c_eb != theCacheEvictBuffer.end());
-      DBG_Assert(c_eb->pending());
-
-      // Remove the block from the evict buffer
-      theCacheEvictBuffer.remove(c_eb);
-
+      // BEGIN Msutherl: RMC port
+      //DBG_Assert(c_eb != theCacheEvictBuffer.end());
+      //ALEX - WARNING! It seems that there is a cornercase where if an L1 and the LLC evict the same block concurrently, the L1
+      //evict msg arriving to the LLC removes the entry in the LLC EB, and thus when the Evict ACK returns from the memory, the
+      //EB entry is not found and we get the above assertion.
+      //Commented out the above assertion to just ignore such cases with a warning message and see if it causes problems. (I put the next two LOC under an if)
+      if (c_eb != theCacheEvictBuffer.end()) {
+          DBG_Assert(c_eb->pending());
+ 
+          // Remove the block from the evict buffer
+          theCacheEvictBuffer.remove(c_eb);
+      } else {
+          DBG_(Crit, ( << "ALEX - WARNING! Received Evict Ack, but no corresponding entry found in LLC"));
+      }
+      // END RMC port
+      
       process->setAction(eNoAction);
 
       maf_iter_t waiting_maf = theMAF.findFirst(req->address(), eWaitEvict);
