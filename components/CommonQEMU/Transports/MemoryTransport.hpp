@@ -55,6 +55,7 @@
 #include <components/CommonQEMU/Slices/DestinationMessage.hpp>
 #include <components/CommonQEMU/Slices/NetworkMessage.hpp>
 #include <components/CommonQEMU/Slices/TaglessDirMsg.hpp>
+#include <components/CommonQEMU/Slices/RMCPacket.hpp>
 
 
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -144,6 +145,18 @@ TaglessDirMsgTag_t TaglessDirMsgTag;
 }
 #endif //FLEXUS_TAG_TaglessDirMsgTag
 
+// Msutherl: RMC port
+#ifndef FLEXUS_TAG_RMCPacketTag
+#define FLEXUS_TAG_RMCPacketTag
+struct RMCPacketTag_t {};
+struct RMCPacket;
+namespace {
+RMCPacketTag_t RMCPacketTag;
+}
+#endif //FLEXUS_TAG_RMCPacketTag
+// END Msutherl RMC port
+
+
 typedef Transport
 < mpl::vector
 < transport_entry< MemoryMessageTag_t, MemoryMessage >
@@ -156,6 +169,7 @@ typedef Transport
 , transport_entry< DestinationTag_t, DestinationMessage >
 , transport_entry< NetworkMessageTag_t, NetworkMessage >
 , transport_entry< TaglessDirMsgTag_t, TaglessDirMsg >
+, transport_entry< RMCPacketTag_t, RMCPacket >
 >
 > MemoryTransport;
 

@@ -49,6 +49,11 @@
 #include <components/CommonQEMU/Slices/NetworkMessage.hpp>
 #include <components/CommonQEMU/Slices/ProtocolMessage.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
+// Msutherl - RMC Port
+#include <components/CommonQEMU/Slices/MRCMessage.hpp>
+#include <components/CommonQEMU/Slices/PrefetchCommand.hpp>
+#include <components/CommonQEMU/Slices/RMCPacket.hpp>
+// END Msutherl - RMC Port
 
 namespace Flexus {
 namespace SharedTypes {
@@ -61,6 +66,26 @@ namespace {
 NetworkMessageTag_t NetworkMessageTag;
 }
 #endif //FLEXUS_TAG_NetworkMessageTag
+
+// Msutherl - RMC Port
+#ifndef FLEXUS_TAG_PrefetchCommandTag
+#define FLEXUS_TAG_PrefetchCommandTag
+struct PrefetchCommandTag_t {};
+struct PrefetchCommand;
+namespace {
+PrefetchCommandTag_t PrefetchCommandTag;
+}
+#endif //FLEXUS_TAG_PrefetchCommandTag
+
+#ifndef FLEXUS_TAG_MRCMessageTag
+#define FLEXUS_TAG_MRCMessageTag
+struct MRCMessageTag_t {};
+struct MRCMessage;
+namespace {
+MRCMessageTag_t MRCMessageTag;
+}
+#endif //FLEXUS_TAG_PrefetchCommandTag
+// END Msutherl - RMC Port
 
 #ifndef FLEXUS_TAG_ProtocolMessageTag
 #define FLEXUS_TAG_ProtocolMessageTag
@@ -81,11 +106,28 @@ TransactionTrackerTag_t TransactionTrackerTag;
 }
 #endif //FLEXUS_TAG_TransactionTrackerTag
 
+// Msutherl - begin RMC port
+#ifndef FLEXUS_TAG_RMCPacketTag
+#define FLEXUS_TAG_RMCPacketTag
+struct RMCPacketTag_t {};
+struct RMCPacket;
+namespace {
+RMCPacketTag_t RMCPacketTag;
+}
+#endif //FLEXUS_TAG_RMCPacketTag
+// END Msutherl - RMC port
+
+
 typedef Transport
 < mpl::vector
 < transport_entry< NetworkMessageTag_t, NetworkMessage >
 , transport_entry< ProtocolMessageTag_t, ProtocolMessage >
 , transport_entry< TransactionTrackerTag_t, TransactionTracker >
+// Msutherl - begin RMC port
+, transport_entry< PrefetchCommandTag_t, PrefetchCommand >
+, transport_entry< MRCMessageTag_t, MRCMessage >
+, transport_entry< RMCPacketTag_t, RMCPacket >
+// END Msutherl - RMC port
 >
 > NetworkTransport;
 

@@ -61,6 +61,7 @@ struct NetworkMessage : public boost::counted_base {
   int32_t size;    // message (i.e. payload) size
   int32_t src_port;
   int32_t dst_port;
+  bool routeYX;	//ALEX
 
   NetworkMessage()
     : src(-1)
@@ -69,11 +70,12 @@ struct NetworkMessage : public boost::counted_base {
     , size(-1)
     , src_port(-1)
     , dst_port(-1)
+    , routeYX(false)
   {}
 };
 
 inline std::ostream & operator<<(std::ostream & os, const NetworkMessage & msg) {
-  os << "Src: " << msg.src << ", Dest: " << msg.dest << ", VC: " << msg.vc << ", Size: " << msg.size;
+  os << "Src: " << msg.src << ", Dest: " << msg.dest << ", VC: " << msg.vc << ", Size: " << msg.size << ", routeYX: " << msg.routeYX;
   return os;
 }
 
