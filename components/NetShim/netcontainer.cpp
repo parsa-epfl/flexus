@@ -1,45 +1,10 @@
-// DO-NOT-REMOVE begin-copyright-block 
-//
-// Redistributions of any form whatsoever must retain and/or include the
-// following acknowledgment, notices and disclaimer:
-//
-// This product includes software developed by Carnegie Mellon University.
-//
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
-//
-// For more information, see the SimFlex project website at:
-//   http://www.ece.cmu.edu/~simflex
-//
-// You may not use the name "Carnegie Mellon University" or derivations
-// thereof to endorse or promote products derived from this software.
-//
-// If you modify the software you must place a notice on or within any
-// modified version provided or made available to any third party stating
-// that you have modified the software.  The notice shall include at least
-// your name, address, phone number, email address and the date and purpose
-// of the modification.
-//
-// THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
-// EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
-// THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
-// IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-// TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
-// BE LIABLE FOR ANY DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
-// SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
-// ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
-// CONTRACT, TORT OR OTHERWISE).
-//
-// DO-NOT-REMOVE end-copyright-block
-
-
 #include "netcontainer.hpp"
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <string.h>
+#include <math.h>
+#include <list>
 
 namespace nNetShim {
 
@@ -79,6 +44,13 @@ const char STR_TO[]         = "->";
 const char STR_SWITCH[]     = "SWITCH";
 const char STR_OPENCURLY[]  = "{";
 const char STR_CLOSECURLY[] = "}";
+
+#ifdef DUMP_LINK_USAGE
+ofstream link_usage;
+int numMachines = 2; //WARNING - hard-wired!
+int switchID, machineID = 0, switchesPerMachine, switchesPerDim;
+int **linkUtils;
+#endif
 
 #define TOP_TOKEN_COUNT ( sizeof(topTokens)/sizeof(TokenMap) )
 
@@ -143,17 +115,27 @@ bool NetContainer::buildNetwork ( const char * filename ) {
 
   }
 
+  #ifdef DUMP_LINK_USAGE
+  link_usage.open("NOClinkUsage.txt");
+  link_usage << "#WARNING: The connections below assume that the modeled network comprises of 2 machines, each featuring a " << switchesPerDim 
+            << "x" << switchesPerDim << " mesh with 3 nodes per switch." << std::endl; 
+  switchesPerMachine = numSwitches / numMachines;
+  switchesPerDim = (uint32_t)sqrt((float)switchesPerMachine);
+  linkUtils = (int **)malloc(numSwitches * sizeof(int*));
+  int i,j;
+  for (i=0; i < numSwitches; i++) {
+    linkUtils[i] = (int *)malloc(numSwitches * sizeof(int));
+    for (j=0; j<numSwitches; j++) {
+        linkUtils[i][j] = -1;
+    }
+  }
+  #endif
+
   return false;
 }
 
 bool NetContainer::validateParameters ( void ) {
   bool foundError = false;
-
-#define CHECK_PARAM_GT(VAR,VAL)  \
-   if ( ! ( (VAR) > VAL )  ) {\
-      std::cerr << "NetShim: parameter error: "#VAR" must be > "#VAL << endl; \
-      foundError = true; \
-   }
 
   // We only do this once
   if ( numChannels > 0 )
@@ -384,8 +366,110 @@ bool NetContainer::drive ( void ) {
   for ( i = 0; i < numNodes; i++ ) {
     if ( nodes[i]->drive() ) return true;
   }
+ 
+#ifdef DUMP_LINK_USAGE
+ /* if (currTime%PRINT_PERIOD == 0) {		//ALEX
+    link_usage << "Cycle Count: " << currTime << ". Dumping NOC link info..." << endl;
+    for ( i = 0; i < maxChannelIndex; i++ ) {
+        if ( channels[i]->drive() ) return true;
+        link_usage << "Channel[" << i << "] packetCount = " <<  channels[i]->packetCounter << ", packetBytes = " << (channels[i]->ByteCounter*16) 
+                << ", Channel busy (cycles): " <<  channels[i]->channelBusy << ", busy percentage: " << (int)(((float)channels[i]->channelBusy*100/PRINT_PERIOD)) << "%" <<std::endl;
+        //channels[i]->packetCounter = 0;
+        //channels[i]->ByteCounter = 0;
+        //channels[i]->channelBusy = 0;
+    }
+    link_usage << std::endl; 
+  } 
+*/    
+  if (currTime%PRINT_PERIOD == 0) {		//ALEX
+    link_usage << "#Cycle Count: " << currTime << ". Dumping NOC link info..." << endl;
+      uint32_t currLink = numNodes * 2;
+      int linkUtil; 
+      for (machineID = 0; machineID < numMachines; machineID++) {
+        for (switchID = machineID * switchesPerMachine; switchID < (machineID + 1) * switchesPerMachine; switchID++) {
+            if ((switchID+1) % switchesPerDim != 0 ) { //node has peer to the right
+                linkUtil = (int)(((float)channels[currLink]->channelBusy*100/PRINT_PERIOD));
+                linkUtils[switchID][switchID+1] = linkUtil; 
+                //link_usage << switchID << ", " << (switchID+1) << ", " << linkUtil << "% " << std::endl;
+                clearLinkStats(currLink++);
+                linkUtil = (int)(((float)channels[currLink]->channelBusy*100/PRINT_PERIOD));
+                linkUtils[switchID+1][switchID] = linkUtil; 
+                //link_usage << switchID+1 << ", " << switchID << ", " << linkUtil << "% " << std::endl;
+                clearLinkStats(currLink++);
+            }
+            if ((switchID+switchesPerDim) / switchesPerDim < (machineID+1) * switchesPerDim) { //node has peer below
+                linkUtil = (int)(((float)channels[currLink]->channelBusy*100/PRINT_PERIOD));
+                linkUtils[switchID][switchID+switchesPerDim] = linkUtil; 
+                //link_usage << switchID << ", " << (switchID+switchesPerDim) << ", " << linkUtil << "% " << std::endl;
+                clearLinkStats(currLink++);
+                linkUtil = (int)(((float)channels[currLink]->channelBusy*100/PRINT_PERIOD));
+                linkUtils[switchID+switchesPerDim][switchID] = linkUtil; 
+                //link_usage << switchID+switchesPerDim << ", " << switchID << ", " << linkUtil << "% " << std::endl;
+                clearLinkStats(currLink++);
+            }
+        }
+      }
+      link_usage << std::endl; 
+      
+      //print linkUtils array
+      int row, i,j;
+      for (row = 0; row < switchesPerDim*4; row++) {
+        if (row%4 == 0) {
+            link_usage << "\n\t";
+            for (i=0; i<numSwitches; i++) {
+                for (j=0; j<numSwitches; j++) {
+                    if (linkUtils[i][j] != -1 && j > i && j-i < switchesPerDim && (i % switchesPerMachine) / switchesPerDim == row/4) {
+                        link_usage << ">" << setw(3) << linkUtils[i][j] << "%\t\t";
+                        //link_usage << i << "->" << j << "\t\t";
+                        if (j % switchesPerDim == switchesPerDim -1 && j < switchesPerMachine)  link_usage << "\t\t\t|\t\t\t";
+                    }
+                }
+            }
+        } else if (row%4 == 1) {
+            link_usage << "\t";
+            for (i=0; i<numSwitches; i++) {
+                for (j=0; j<numSwitches; j++) {
+                    if (linkUtils[i][j] != -1 && j < i && i-j < switchesPerDim && (j % switchesPerMachine) / switchesPerDim == row/4) {
+                        link_usage << "<" << setw(3) << linkUtils[i][j] << "%\t\t";
+                        //link_usage << i << "->" << j << "\t\t";
+                        if (i % switchesPerDim == switchesPerDim -1 && i < switchesPerMachine)  link_usage << "\t\t\t|\t\t\t";
+                    }
+                }
+            }
+        } else if (row%4 == 3) {
+            for (i=0; i<numSwitches; i++) {
+                for (j=0; j<numSwitches; j++) {
+                    if (linkUtils[i][j] != -1 && j>i && j-i >= switchesPerDim && (i % switchesPerMachine) / switchesPerDim == row/4) {
+                        link_usage << " " << setw(3) << linkUtils[i][j] << "%\t\t";
+                        //link_usage << i << "->" << j << "\t\t";
+                        if (j % switchesPerDim == switchesPerDim -1 && j < switchesPerMachine)  link_usage << "\t|\t\t";
+                    }
+                }
+            }
+        } else if (row%4 == 2) {
+            link_usage << "\n";
+            for (i=0; i<numSwitches; i++) {
+                for (j=0; j<numSwitches; j++) {
+                    if (linkUtils[i][j] != -1 && j<i && i-j >= switchesPerDim && (j % switchesPerMachine) / switchesPerDim == row/4) {
+                        link_usage << "^" << setw(3) << linkUtils[i][j] << "%\t\t";
+                        //link_usage << i << "->" << j << "\t\t";
+                        if (i % switchesPerDim == switchesPerDim -1 && i < switchesPerMachine)  link_usage << "\t|\t\t";
+                    }
+                }
+            }
+        }
+        link_usage << std::endl;
+      }
+  }
+#endif
 
   return false;
+}
+
+void inline NetContainer::clearLinkStats(uint32_t i) {
+    channels[i]->packetCounter = 0;
+    channels[i]->ByteCounter = 0;
+    channels[i]->channelBusy = 0;
 }
 
 bool NetContainer::handleInclude ( istream & infile, NetContainer * nc ) {
@@ -554,8 +638,9 @@ bool NetContainer::handleTopology ( istream & infile, NetContainer * nc ) {
       assert ( !toSwitch );
       cerr << "Attaching node ";
       if ( attachNodeChannels ( nc, node[1] ) ) return true;
-      cerr << " to switch ";
+      cerr << " to switch ";      
       if ( attachSwitchChannels ( nc, sw[0], port[0], true ) ) return true;
+      cerr << " (Channels " << nc->maxChannelIndex << ", " << nc->maxChannelIndex+1 << ")";	//ALEX
       cerr << endl;
 
       if ( nc->switches[sw[0]]->setLocalDelayOnly ( port[0] ) ) return true;
@@ -564,8 +649,9 @@ bool NetContainer::handleTopology ( istream & infile, NetContainer * nc ) {
       assert ( toSwitch );
       cerr << "Attaching node ";
       if ( attachNodeChannels ( nc, node[0] ) ) return true;
-      cerr << " to switch ";
+      cerr << " to switch ";      
       if ( attachSwitchChannels ( nc, sw[1], port[1], true ) ) return true;
+      cerr << " (Channels " << nc->maxChannelIndex << ", " << nc->maxChannelIndex+1 << ")";	//ALEX
       cerr << endl;
 
       if ( nc->switches[sw[1]]->setLocalDelayOnly ( port[1] ) ) return true;
@@ -577,6 +663,7 @@ bool NetContainer::handleTopology ( istream & infile, NetContainer * nc ) {
     if ( attachSwitchChannels ( nc, sw[0], port[0], false ) ) return true;
     cerr << " to switch ";
     if ( attachSwitchChannels ( nc, sw[1], port[1], true  ) ) return true;
+    cerr << " (Channels " << nc->maxChannelIndex << ", " << nc->maxChannelIndex+1 << ")";	//ALEX
     cerr << endl;
   }
 
@@ -703,7 +790,7 @@ bool NetContainer::handleRoute ( istream & infile, NetContainer * nc ) {
     }
 
 #if 0
-    std::cout << " Adding routing table entry: sw " << sw << " -> " << node
+    std::cerr << " Adding routing table entry: sw " << sw << " -> " << node
               << " thru port " << port << endl;
 #endif
 

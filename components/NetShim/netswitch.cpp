@@ -1,41 +1,3 @@
-// DO-NOT-REMOVE begin-copyright-block 
-//
-// Redistributions of any form whatsoever must retain and/or include the
-// following acknowledgment, notices and disclaimer:
-//
-// This product includes software developed by Carnegie Mellon University.
-//
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
-//
-// For more information, see the SimFlex project website at:
-//   http://www.ece.cmu.edu/~simflex
-//
-// You may not use the name "Carnegie Mellon University" or derivations
-// thereof to endorse or promote products derived from this software.
-//
-// If you modify the software you must place a notice on or within any
-// modified version provided or made available to any third party stating
-// that you have modified the software.  The notice shall include at least
-// your name, address, phone number, email address and the date and purpose
-// of the modification.
-//
-// THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
-// EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
-// THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
-// IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-// TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
-// BE LIABLE FOR ANY DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
-// SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
-// ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
-// CONTRACT, TORT OR OTHERWISE).
-//
-// DO-NOT-REMOVE end-copyright-block
-
-
 #include "netswitch.hpp"
 
 #include <core/flexus.hpp>
@@ -160,6 +122,7 @@ bool NetSwitch::drive ( void ) {
 
     // Look at the internal buffers
     internalBuffer->gotoFirstMessage ( vc );
+    if (vc == 0 || vc == 1) DBG_Assert(internalBuffer->getMessage ( msg )); //ALEX - sanity check
     while ( !internalBuffer->getMessage ( msg ) && bandwidthRemaining > 0 ) {
 
       if ( !routingPolicy ( msg ) ) {
@@ -221,7 +184,7 @@ bool NetSwitch::sendMessageToOutput ( MessageState * msg ) {
   msg->networkVC = msg->nextVC;
   msg->nextVC    = -1;
   msg->hopCount++;
-
+//cout << " SW" << name << " routing message to output port " << msg->nextHop << " with priority " << msg->priority << " on VC " << msg->networkVC << endl;
   // Send the message to its output port
   if ( outputPorts[msg->nextHop]->insertMessage ( msg ) ) {
     cerr << "ERROR: sending message from internal buffer to output buffer" << endl;
@@ -240,6 +203,58 @@ bool NetSwitch::driveInputPorts ( void ) {
 
   return false;
 }
+/*
+bool NetSwitch::routingPolicy ( MessageState * msg ) {		//ALEX - replaced function, old one is below
+  int32_t
+  i,
+  routingPort,
+  routingVC;
+
+  // Search for an available and acceptable output port, if any
+  for ( i = 0; i < numPorts * MAX_NET_VC; i++ ) {
+	
+	if (i == 0 && msg->networkVC == 0) {
+		if ( routingTable[msg->destNode][i] >= 0 ) {
+		  routingPort = routingTable[msg->destNode][i];
+		  routingVC   = vcTable[msg->destNode][i];
+
+		  // If there is buffer space, send the message this way
+		  if ( outputPorts[routingPort]->hasBufferSpace ( BUILD_VC ( msg->priority, routingVC ) ) ) {
+			msg->nextHop = routingPort;
+			msg->nextVC  = BUILD_VC ( msg->priority, routingVC );
+			TRACE ( msg, " SW" << name << " routing destination " << msg->destNode
+					<< " to port " << routingPort << ":" << routingVC << " (priority = " << msg->priority << ", srcIsDir = " << msg->srcIsDir << ")");
+			return false;
+		  } else {
+			break;
+		  }
+		} else {
+		  break;
+		}
+	} else {		
+		 if ( routingTable[msg->destNode][i] >= 0 ) {
+			 DBG_Assert(i <= 1, ( << "i = " << i ));
+			 DBG_Assert(!msg->srcIsDir, ( << "msg->srcIsDir = " << msg->srcIsDir << ", msg->networkVC = " << msg->networkVC));
+			routingPort = routingTable[msg->destNode][i];
+			routingVC   = vcTable[msg->destNode][i];
+
+			// If there is buffer space, send the message this way
+			if ( outputPorts[routingPort]->hasBufferSpace ( BUILD_VC ( msg->priority, routingVC ) ) ) {
+				msg->nextHop = routingPort;
+				msg->nextVC  = BUILD_VC ( msg->priority, routingVC );
+				TRACE ( msg, " SW" << name << " routing destination " << msg->destNode
+					<< " to port " << routingPort << ":" << routingVC << " (priority = " << msg->priority << ", srcIsDir = " << msg->srcIsDir << ")");
+				return false;
+			}
+		} else {
+		  break;
+		}		
+	}   
+ }
+ // No alternative routes
+  return true;
+}*/
+
 
 bool NetSwitch::routingPolicy ( MessageState * msg ) {
   int32_t
@@ -249,34 +264,48 @@ bool NetSwitch::routingPolicy ( MessageState * msg ) {
 
   // Search for an available and acceptable output port, if any
   for ( i = 0; i < numPorts * MAX_NET_VC; i++ ) {
-
-    if ( routingTable[msg->destNode][i] >= 0 ) {
-
+	if (i>1) DBG_Assert(routingTable[msg->destNode][i] == -1); //ALEX - sanity check
+    if ( routingTable[msg->destNode][i] >= 0 
+		&& i!= 1) {	//ALEX
       routingPort = routingTable[msg->destNode][i];
       routingVC   = vcTable[msg->destNode][i];
-
-      // If there is buffer space, send the message this way
+      if (msg->routeYX) {
+		  routingPort = routingTable[msg->destNode][1];
+		  routingVC   = vcTable[msg->destNode][1];
+		  DBG_Assert(i==0);
+		  //cout << "This packet's source was a directory. Instead of routing it through port " << routingTable[msg->destNode][i] 
+		  //	<< ", we do Y-X and route it through port " << routingPort << endl;
+	  }
+	  
+	  // If there is buffer space, send the message this way
       if ( outputPorts[routingPort]->hasBufferSpace ( BUILD_VC ( msg->priority, routingVC ) ) ) {
         msg->nextHop = routingPort;
         msg->nextVC  = BUILD_VC ( msg->priority, routingVC );
         TRACE ( msg, " SW" << name << " routing destination " << msg->destNode
-                << " to port " << routingPort << ":" << routingVC << " (priority = " << msg->priority );
+                << " to port " << routingPort << ":" << routingVC << " (priority = " << msg->priority << ", routeYX = " << msg->routeYX << ")");
+        if (msg->routeYX) {
+			DBG_Assert(routingVC == 1);
+        } else {
+			DBG_Assert(routingVC == 0);
+        }
         return false;
       }
 
     } else {
       break;
-    }
+    }    
   }
-
+	
   // No alternative routes
   return true;
 }
 
 bool NetSwitch::checkTopology ( void ) const {
-  int i;
+  int
+  i;
 
-//  bool foundErrors;
+  bool
+  foundErrors = false;
 
   for ( i = 0; i < numPorts; i++ ) {
     if ( !inputPorts[i]->isConnected() ||
@@ -285,7 +314,7 @@ bool NetSwitch::checkTopology ( void ) const {
       std::cerr << "WARNING: switch " << name
                 << " port " << i << " left unused (may be safe)"
                 << endl;
-//      foundErrors = true;
+      foundErrors = true;
     }
   }
 
@@ -310,10 +339,10 @@ bool NetSwitch::checkRoutingTable ( void ) const {
   for ( i = 0; i < numNodes; i++ ) {
 
     if ( routingTable[i][0] == -1 ) {
-      std::cerr << "ERROR: partitioned network possible: Switch " << name
+      std::cerr << "WARNING: partitioned network possible: Switch " << name
                 << " has no routing table entries for node "
-                << i << endl;
-      foundErrors = true;
+                << i << " (Ignore if done on purpose)" << endl;
+      //foundErrors = true;	//ALEX
     }
 
     for ( j = 0; j < numPorts * MAX_NET_VC; j++ ) {
@@ -343,6 +372,8 @@ bool NetSwitch::addRoutingEntry ( const int32_t node,
   assert ( port < numPorts && port >= 0 );
   assert ( vc   < MAX_NET_VC && vc >= 0 );
 
+//std::cout << "Adding routing entry. (node, port, vc) = (" << node << ", " << port << ", " << vc << ") - MAX_NET_VC = " << MAX_NET_VC <<  endl;
+
   for ( i = 0; i < numPorts * MAX_NET_VC; i++ ) {
     if ( routingTable[node][i] == port && vcTable[node][i] == vc ) {
       std::cerr << "WARNING: duplicate routing entry for switch " << name
@@ -353,6 +384,7 @@ bool NetSwitch::addRoutingEntry ( const int32_t node,
     if ( routingTable[node][i] < 0 ) {
       routingTable[node][i] = port;
       vcTable[node][i]      = vc;
+//std::cout << "routingTable["<<node<<"]["<<i<<"]= " << port << ", vcTable["<<node<<"]["<<i<<"]= " << i << endl;
       return false;
     }
   }

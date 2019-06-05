@@ -1,41 +1,3 @@
-// DO-NOT-REMOVE begin-copyright-block 
-//
-// Redistributions of any form whatsoever must retain and/or include the
-// following acknowledgment, notices and disclaimer:
-//
-// This product includes software developed by Carnegie Mellon University.
-//
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
-//
-// For more information, see the SimFlex project website at:
-//   http://www.ece.cmu.edu/~simflex
-//
-// You may not use the name "Carnegie Mellon University" or derivations
-// thereof to endorse or promote products derived from this software.
-//
-// If you modify the software you must place a notice on or within any
-// modified version provided or made available to any third party stating
-// that you have modified the software.  The notice shall include at least
-// your name, address, phone number, email address and the date and purpose
-// of the modification.
-//
-// THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
-// EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
-// THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
-// IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-// TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
-// BE LIABLE FOR ANY DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
-// SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
-// ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
-// CONTRACT, TORT OR OTHERWISE).
-//
-// DO-NOT-REMOVE end-copyright-block
-
-
 #include <fstream>
 
 #include <components/NetShim/MemoryNetwork.hpp>
@@ -117,6 +79,9 @@ long PacketCount;
     if ( nc->buildNetwork ( cfg.NetworkTopologyFile.c_str() ) ) {
       throw Flexus::Core::FlexusException ( "Error building the network" );
     }
+    if (cfg.randomDirection) {
+		DBG_(Dev, ( << "NOTE: NetShim enabled XY-YX (O1) routing!"));
+	}
   }
 
   void finalize() {}
@@ -187,10 +152,11 @@ public:
   bool isNodeAvailable ( const int32_t node, const int32_t vc ) const {
     int32_t real_net_vc = MAX_PROT_VC - vc - 1;
     index_t pdest = (node) * cfg.VChannels + real_net_vc;
-    DBG_(Iface,  ( << "netmessage: available? "
+    DBG_(Trace,  ( << "netmessage: available? "
                    << "node: " << node
                    << " vc: " << real_net_vc
                    << " pdest: " << pdest
+                   << ". NEED TO MAP BACK TO FLEXUS VC!"	//ALEX
                  ));
     return FLEXUS_CHANNEL_ARRAY ( ToNode, pdest ).available();
   }
@@ -271,9 +237,27 @@ private:
 
     msg->srcNode         = transport[NetworkMessageTag]->src;
     msg->destNode        = transport[NetworkMessageTag]->dest;
-    msg->priority        = MAX_PROT_VC - transport[NetworkMessageTag]->vc - 1; // Note, this field really needs to be added to the NetworkMessage
-    msg->networkVC       = 0;
-#if 0
+    msg->priority        = MAX_PROT_VC - transport[NetworkMessageTag]->vc - 1; // Note, this field really needs to be added to the NetworkMessage	//ALEX - I think this mapping is broken, gives the inverse priorities
+    msg->networkVC       = 0;    
+    if (cfg.DirYXRouting) {	//ALEX
+		msg->routeYX		= transport[NetworkMessageTag]->routeYX;	//ALEX
+		if (msg->routeYX) {
+            msg->networkVC = 1;    
+        }
+	} else {
+		msg->routeYX = false;
+	}
+	if (cfg.randomDirection) {//ALEX
+		int direction = rand()%2;
+		if (direction) {
+			msg->routeYX = true;
+			msg->networkVC = 1;
+		} else {
+			msg->routeYX = false;
+			msg->networkVC = 0;
+		}
+	}
+#if 0	
     // Size is a boolean (!control/data), which is translated into a
     // real latency inside the network simulator
     if (transport[MemoryMessageTag]) {
@@ -322,8 +306,12 @@ private:
          Comp(*this)
         );
 
-    DBG_(Trace, ( << "Network Received msg From " << msg->srcNode << " to " << msg->destNode << ", on vc " << msg->networkVC << ", serial: " << msg->serial << " Message =  " << *(transport[MemoryMessageTag]) ));
-
+    DBG_(Trace, ( << "Network Received msg From " << msg->srcNode << " to " << msg->destNode << ", on vc " << msg->networkVC 
+					<< ", serial: " << msg->serial << " Message =  " << *(transport[MemoryMessageTag]) 
+					<< "priority given: " << msg->priority));
+	//if (transport[MemoryMessageTag]->isRequest()) DBG_Assert(msg->priority == 3);
+	//if (transport[MemoryMessageTag]->isSnoopType()) DBG_Assert(msg->priority == 1);
+	
     if ( nc->insertMessage ( msg ) ) {
       throw Flexus::Core::FlexusException ( "MemoryNetwork: error inserting message to network" );
     }
