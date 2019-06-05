@@ -1,41 +1,3 @@
-// DO-NOT-REMOVE begin-copyright-block 
-//
-// Redistributions of any form whatsoever must retain and/or include the
-// following acknowledgment, notices and disclaimer:
-//
-// This product includes software developed by Carnegie Mellon University.
-//
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
-//
-// For more information, see the SimFlex project website at:
-//   http://www.ece.cmu.edu/~simflex
-//
-// You may not use the name "Carnegie Mellon University" or derivations
-// thereof to endorse or promote products derived from this software.
-//
-// If you modify the software you must place a notice on or within any
-// modified version provided or made available to any third party stating
-// that you have modified the software.  The notice shall include at least
-// your name, address, phone number, email address and the date and purpose
-// of the modification.
-//
-// THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
-// EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
-// THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
-// IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-// TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
-// BE LIABLE FOR ANY DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
-// SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
-// ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
-// CONTRACT, TORT OR OTHERWISE).
-//
-// DO-NOT-REMOVE end-copyright-block
-
-
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 
@@ -120,10 +82,11 @@ InclusiveMESI::InclusiveMESI ( CacheController * aController,
   , theEvictAcksRequired(anEvictAcksRequired & !a2LevelPrivate)
   , the2LevelPrivate(a2LevelPrivate)
   , thePendingEvicts(0)
-  , theEvictThreshold(4) {
-  // We need to fix this to make it use a template and our state
-  theArray = constructArray<State, State::Invalid>(anInit->theArrayConfiguration, anInit->theName, anInit->theNodeId, anInit->theBlockSize);
-}
+  , theEvictThreshold(16) {	//ALEX
+      DBG_(Tmp, ( << "InclusiveMESI initialization - evict_acks_required: " << theEvictAcksRequired << ", alwaysNAck: " << theNAckAlways));
+      // We need to fix this to make it use a template and our state
+      theArray = constructArray<State, State::Invalid>(anInit->theArrayConfiguration, anInit->theName, anInit->theNodeId, anInit->theBlockSize);
+  }
 
 // Perform lookup, select action and update cache state if necessary
 std::tuple<bool, bool, Action> InclusiveMESI::doRequest( MemoryTransport      transport,
@@ -142,7 +105,12 @@ std::tuple<bool, bool, Action> InclusiveMESI::doRequest( MemoryTransport      tr
   MemoryMessage_p request;
   MemoryAddress block_addr = getBlockAddress(msg->address());
 
-  LookupResult_p lookup = (*theArray)[block_addr];
+  LookupResult_p lookup;
+  if (msg->isFromRRPP() && theController->streamBuffersEnabled()) {
+      lookup = (*theArray)[(MemoryAddress)((uint64_t)block_addr | STR_BUF_MASK)];
+  } else {
+      lookup = (*theArray)[block_addr];
+  }
 
   DBG_( Iface, ( << " Do Request: " << *msg ) );
 
@@ -305,6 +273,8 @@ std::tuple<bool, bool, Action> InclusiveMESI::doRequest( MemoryTransport      tr
         if (lookup->state() == State::Invalid) {
 
           MemoryMessage_p request(new MemoryMessage(MemoryMessage::ReadReq, getBlockAddress(msg->address()), msg->pc()));
+          if (msg->isFromRMC()) request->setFromRMC();    //ALEX
+          if (msg->isFromRRPP()) request->setFromRRPP();   //ALEX
           request->reqSize() = theBlockSize;
           request->coreIdx() = msg->coreIdx();
           request->address() = getBlockAddress(msg->address());
@@ -632,7 +602,7 @@ std::tuple<bool, bool, Action> InclusiveMESI::doRequest( MemoryTransport      tr
     theTraceTracker.eviction(theNodeId, theCacheLevel, victim->blockAddress(), false);
 
     DBG_(Trace, ( << " Adding " << std::hex << victim->blockAddress() << " to the EvictBuffer." ));
-
+//DBG_(Tmp, ( << " Evicting block " << std::hex << victim->blockAddress() << " in state " << victim->state()));
     return (evict_type == MemoryMessage::EvictDirty);
   }
 
@@ -657,6 +627,9 @@ std::tuple<bool, bool, Action> InclusiveMESI::doRequest( MemoryTransport      tr
     TransactionTracker_p tracker = transport[TransactionTrackerTag];
 
     DBG_( Trace, (  << " Handle BackProcess: " << *msg) );
+    if (msg->isFromRRPP() && theController->streamBuffersEnabled()) {
+      DBG_(RRPP_STREAM_BUFFERS, ( << "Received a reply for a request originating from an RRPP: " << *msg));
+    }
 
     accesses++;
     if (tracker && tracker->isFetch() && *tracker->isFetch()) {
@@ -740,7 +713,7 @@ std::tuple<bool, bool, Action> InclusiveMESI::doRequest( MemoryTransport      tr
           // If no snoop buffer entry, then we need to send snoops
           // otherwise, we just wait for the other snoop to return
           if (!theSnoopBuffer.hasEntry(msg->address())) {
-//            SnoopBuffer::snoop_iter snp = theSnoopBuffer.allocEntry(transport);
+            SnoopBuffer::snoop_iter snp = theSnoopBuffer.allocEntry(transport);
             Action act(kSend, tracker, false);
             intrusive_ptr<MemoryMessage> request(new MemoryMessage(MemoryMessage::Downgrade, msg->address(), msg->pc()));
             // make sure size is 0 so we don't get un-necessary update
@@ -1290,7 +1263,11 @@ std::tuple<bool, bool, Action> InclusiveMESI::doRequest( MemoryTransport      tr
         DBG_Assert( state == State::Invalid, ( << "Received reply to read req but block not invalid - " << state << " : " << (*msg) ));
 
         // We need to allocate the block in the data array
-        allocateBlock(result, msg->address());
+        if (msg->isFromRRPP() && theController->streamBuffersEnabled()) {
+          allocateBlock(result, (MemoryAddress)((uint64_t)msg->address() | STR_BUF_MASK));
+        } else {
+          allocateBlock(result, msg->address());
+        }
         bool dirty_data = false;
 
         switch (msg->type()) {
@@ -1343,7 +1320,11 @@ std::tuple<bool, bool, Action> InclusiveMESI::doRequest( MemoryTransport      tr
         DBG_Assert( state == State::Invalid, ( << "Received reply to read req but block not invalid - " << state << " : " << (*msg) ));
 
         // We need to allocate the block in the data array
-        allocateBlock(result, msg->address());
+        if (msg->isFromRRPP() && theController->streamBuffersEnabled()) {
+            allocateBlock(result, (MemoryAddress)((uint64_t)msg->address() | STR_BUF_MASK));
+        } else {
+            allocateBlock(result, msg->address());
+        }
         bool dirty_data = false;
 
         switch (msg->type()) {
@@ -2288,5 +2269,44 @@ std::tuple<bool, bool, Action> InclusiveMESI::doRequest( MemoryTransport      tr
       DBG_(VVerb, ( << " EB[" << i << "] = " << *iter ));
     }
   }
+
+//ALEX
+bool InclusiveMESI::myInternalStupidFunction(MemoryTransport       transport) {
+  MemoryMessage_p msg = transport[MemoryMessageTag];
+  MemoryAddress block_addr = getBlockAddress(msg->address());
+
+  LookupResult_p lookup = (*theArray)[block_addr];
+
+  if (lookup->state() == State::Invalid) {
+    EvictBuffer<State>::iterator evictee = theEvictBuffer.find(getBlockAddress(msg->address()));
+    bool evictee_write = false;
+    if (evictee == theEvictBuffer.end()) {
+		   return false;
+    } else {
+  	   return true;
+  	}
+  }
+  return true;
+}
+
+bool InclusiveMESI::streamBufferAvailable() {
+  return theArray->streamBufferAvailable();
+}
+
+void InclusiveMESI::allocateStreamBuffer(uint32_t anATTidx, uint64_t anAddress, uint32_t aLength) {
+  theArray->allocateStreamBuffer(anATTidx, anAddress, aLength);
+}
+
+void InclusiveMESI::freeStreamBuffer(uint32_t anATTidx) {
+  theArray->freeStreamBuffer(anATTidx);
+}
+
+bool InclusiveMESI::allocateStreamBufferSlot(uint32_t anATTidx) {
+  return theArray->allocateStreamBufferSlot(anATTidx);
+}
+
+std::list<uint32_t> InclusiveMESI::SABReAtomicityCheck() {
+  return theArray->SABReAtomicityCheck();
+}
 
 }  // end namespace nCache

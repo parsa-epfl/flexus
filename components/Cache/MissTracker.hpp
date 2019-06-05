@@ -44,8 +44,6 @@
 #ifndef _MISSTRACKER_HPP
 #define _MISSTRACKER_HPP
 
-#include <core/performance/profile.hpp>
-
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>

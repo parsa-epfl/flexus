@@ -61,14 +61,14 @@ using namespace Flexus;
 using namespace Core;
 using namespace SharedTypes;
 
-using std::unique_ptr;
+using boost::scoped_ptr;
 
 class FLEXUS_COMPONENT(Cache) {
   FLEXUS_COMPONENT_IMPL(Cache);
 
 private:
 
-  std::unique_ptr<CacheController> theController; //Deleted automagically when the cache goes away
+  std::auto_ptr<CacheController> theController; //Deleted automagically when the cache goes away
 
   Stat::StatCounter theBusDeadlocks;
 
@@ -143,11 +143,15 @@ public:
                                             cfg.TraceAddress,
                                             false, /* cfg.AllowOffChipStreamFetch */
                                             cfg.EvictOnSnoop,
-                                            cfg.UseReplyChannel
+                                            cfg.UseReplyChannel,
+                                            cfg.hasStreamBuffers
                                            ));
 
     DBG_Assert( cfg.BusTime_Data > 0);
     DBG_Assert( cfg.BusTime_NoData > 0);
+    if (cfg.hasStreamBuffers) { //ALEX
+      DBG_Assert(cfg.isRMCCache, ( << "Only RMC caches support RRPP stream buffers."));
+    }
   }
 
   void finalize() {}
@@ -164,6 +168,17 @@ public:
   void push( interface::FrontSideIn_Snoop const &,
              index_t           anIndex,
              MemoryTransport & aMessage ) {
+	//ALEX - begin
+	if (!cfg.isRMCCache) {
+		DBG_Assert(aMessage[MemoryMessageTag]->type() != MemoryMessage::CQMessage && aMessage[MemoryMessageTag]->type() != MemoryMessage::RRPPFwd);
+	} else if (aMessage[MemoryMessageTag]->type() == MemoryMessage::CQMessage || aMessage[MemoryMessageTag]->type() == MemoryMessage::RRPPFwd) {
+		DBG_Assert(FLEXUS_CHANNEL(BackSideOut_Snoop).available());		//For now, gonna optimistically assume that this would never backpressure
+		FLEXUS_CHANNEL(BackSideOut_Snoop) << aMessage;
+		return;
+	}
+	DBG_Assert(aMessage[MemoryMessageTag]->type() != MemoryMessage::WQMessage);
+	//ALEX - end
+
     DBG_Assert(! theController->FrontSideIn_Snoop[0].full());
     aMessage[MemoryMessageTag]->coreIdx() = anIndex;
     DBG_(Trace, Comp(*this) ( << "Received on Port FrontSideIn(Snoop) [" << anIndex << "]: " << *(aMessage[MemoryMessageTag]) ) Addr(aMessage[MemoryMessageTag]->address()) );
@@ -202,6 +217,17 @@ public:
   void push( interface::FrontSideIn_Request const &,
              index_t           anIndex,
              MemoryTransport & aMessage) {
+	//ALEX - begin
+	if (!cfg.isRMCCache) {
+		DBG_Assert(aMessage[MemoryMessageTag]->type() != MemoryMessage::WQMessage);
+	} else if (aMessage[MemoryMessageTag]->type() == MemoryMessage::WQMessage) {
+		DBG_Assert(FLEXUS_CHANNEL(BackSideOut_Request).available());		//For now, gonna optimistically assume that this would never backpressure
+		FLEXUS_CHANNEL(BackSideOut_Request) << aMessage;
+		return;
+	}
+	DBG_Assert(aMessage[MemoryMessageTag]->type() != MemoryMessage::CQMessage && aMessage[MemoryMessageTag]->type() != MemoryMessage::RRPPFwd);
+	//ALEX - end
+
     DBG_Assert(! theController->FrontSideIn_Request[0].full(), ( << statName() ) );
     aMessage[MemoryMessageTag]->coreIdx() = anIndex;
     DBG_(Trace, Comp(*this) ( << "Received on Port FrontSideIn(Request) [" << anIndex << "]: " << *(aMessage[MemoryMessageTag]) ) Addr(aMessage[MemoryMessageTag]->address()) );
@@ -236,6 +262,16 @@ public:
     return ! theBackSideIn_RequestBuffer;
   }
   void push( interface::BackSideIn_Request const &, MemoryTransport & aMessage) {
+	//ALEX - begin			 ....this might not be the best option
+	if (!cfg.isRMCCache) {
+		DBG_Assert(aMessage[MemoryMessageTag]->type() != MemoryMessage::WQMessage && aMessage[MemoryMessageTag]->type() != MemoryMessage::CQMessage && aMessage[MemoryMessageTag]->type() != MemoryMessage::RRPPFwd);
+	} else if (aMessage[MemoryMessageTag]->type() == MemoryMessage::WQMessage || aMessage[MemoryMessageTag]->type() == MemoryMessage::CQMessage || aMessage[MemoryMessageTag]->type() == MemoryMessage::RRPPFwd) {
+		DBG_Assert(FLEXUS_CHANNEL(FrontSideOut_D).available());		//For now, gonna optimistically assume that this would never backpressure
+		FLEXUS_CHANNEL(FrontSideOut_D) << aMessage;
+		return;
+	}
+	//ALEX - end
+
     if (cfg.NoBus) {
       aMessage[MemoryMessageTag]->coreIdx() = 0;
       theBackSideIn_RequestInfiniteQueue.push_back(aMessage);
@@ -248,12 +284,50 @@ public:
     theBackSideIn_RequestBuffer = aMessage;
   }
 
+//ALEX - magic interface to RMCs
+  FLEXUS_PORT_ALWAYS_AVAILABLE(MagicRMCAccess);
+  void push( interface::MagicRMCAccess const &, MemoryTransport & aMessage) {
+    //DBG_(Tmp, Comp(*this) ( << "... RMC checking for block's state in this cache ") );
+
+	bool isHit = theController->myStupidFunction(aMessage);
+	if (isHit) {
+	//TODO: Create table to keep recent accesses
+	}
+	FLEXUS_CHANNEL(MagicRMCAccessReply) << isHit;	//if hit, true. Else false.
+  }
+
+  bool available( interface::AllocateStrBuf const &) {
+    return (theController->streamBufferAvailable());
+  }
+  void push( interface::AllocateStrBuf const &, SABReEntry & aSABReEntry) {
+    theController->allocateStreamBuffer(aSABReEntry.getATTidx(), aSABReEntry.getAddress(), aSABReEntry.getSABReLength());
+  }
+
+  FLEXUS_PORT_ALWAYS_AVAILABLE(FreeStrBuf);
+  void push( interface::FreeStrBuf const &, uint32_t & anATTidx) {
+    theController->freeStreamBuffer(anATTidx);
+  }
+
+  FLEXUS_PORT_ALWAYS_AVAILABLE(AllocateStrBufEntry);
+  void push( interface::AllocateStrBufEntry const &, uint32_t & anATTidx) {
+    bool hasAvailability = theController->allocateStreamBufferSlot(anATTidx);
+    FLEXUS_CHANNEL(StrBufEntryAvail) << hasAvailability;
+  }
+
   //CacheDrive
   //----------
   void drive(interface::CacheDrive const &) {
     DBG_(VVerb, Comp(*this) ( << "CacheDrive" ) ) ;
     theController->processMessages();
     busCycle();
+
+    //ALEX
+    std::list<uint32_t> canceledSABRes = theController->SABReAtomicityCheck();
+    while (!canceledSABRes.empty()) {
+      DBG_(Crit, ( << "Atomicity violation for SABRe with ATTidx " << canceledSABRes.front() << "!"));
+      FLEXUS_CHANNEL( SABReInval ) << canceledSABRes.front();
+      canceledSABRes.pop_front();
+    }
   }
 
   uint32_t transferTime(const MemoryTransport & trans) {

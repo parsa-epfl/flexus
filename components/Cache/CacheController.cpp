@@ -1,41 +1,3 @@
-// DO-NOT-REMOVE begin-copyright-block 
-//
-// Redistributions of any form whatsoever must retain and/or include the
-// following acknowledgment, notices and disclaimer:
-//
-// This product includes software developed by Carnegie Mellon University.
-//
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
-//
-// For more information, see the SimFlex project website at:
-//   http://www.ece.cmu.edu/~simflex
-//
-// You may not use the name "Carnegie Mellon University" or derivations
-// thereof to endorse or promote products derived from this software.
-//
-// If you modify the software you must place a notice on or within any
-// modified version provided or made available to any third party stating
-// that you have modified the software.  The notice shall include at least
-// your name, address, phone number, email address and the date and purpose
-// of the modification.
-//
-// THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
-// EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
-// THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
-// IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-// TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
-// BE LIABLE FOR ANY DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
-// SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
-// ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
-// CONTRACT, TORT OR OTHERWISE).
-//
-// DO-NOT-REMOVE end-copyright-block
-
-
 /*! \file CacheController.hpp
  * \brief
  *
@@ -59,6 +21,9 @@
 #include <core/performance/profile.hpp>
 #include <core/metaprogram.hpp>
 
+#include <boost/lambda/lambda.hpp>
+#include <boost/lambda/bind.hpp>
+namespace ll = boost::lambda;
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
@@ -306,6 +271,7 @@ CacheController::CacheController
   , bool anAllowOffChipStreamFetch
   , bool anEvictOnSnoop
   , bool anUseReplyChannel
+  , bool aHasStreamBuffers
 ) : theName(aName)
   , theCacheInitInfo ( aName,
                        aCores,
@@ -318,7 +284,8 @@ CacheController::CacheController
                        aProbeOnIfetchMiss,
                        aDoCleanEvictions,
                        aWritableEvictsHaveData,
-                       anAllowOffChipStreamFetch
+                       anAllowOffChipStreamFetch,
+                       aHasStreamBuffers
                      )
   , theCacheControllerImpl(
     BaseCacheControllerImpl::construct ( this,
@@ -331,6 +298,7 @@ CacheController::CacheController
   , theBlockSize ( aBlockSize )
   , theEvictOnSnoop(anEvictOnSnoop)
   , theUseReplyChannel(anUseReplyChannel)
+  , hasStreamBuffers(aHasStreamBuffers)
   , theMaf(aName, aMAFSize, aMAFTargetsPerRequest)
   , theScheduledEvicts(0)
   , theFrontSideOutReserve(0)
@@ -566,6 +534,33 @@ void CacheController::unreserveBSO ( ProcessEntry_p aProcess ) {
   }
 }
 
+//ALEX - begin
+bool CacheController::streamBuffersEnabled() {
+  return hasStreamBuffers;
+}
+
+bool CacheController::streamBufferAvailable() {     //check if there's a free stream buffer
+  return theCacheControllerImpl->streamBufferAvailable();
+}
+
+void CacheController::allocateStreamBuffer(uint32_t anATTidx, uint64_t anAddress, uint32_t aLength) { //allocate a stream buffer for ATT anATTidx
+  theCacheControllerImpl->allocateStreamBuffer(anATTidx, anAddress, aLength);
+}
+
+void CacheController::freeStreamBuffer(uint32_t anATTidx) { //free a stream buffer allocated for ATT anATTidx
+  theCacheControllerImpl->freeStreamBuffer(anATTidx);
+}
+
+bool CacheController::allocateStreamBufferSlot(uint32_t anATTidx) { //check if there are free remaining slots in anATTidx's stream buffer
+  return theCacheControllerImpl->allocateStreamBufferSlot(anATTidx);
+}
+
+std::list<uint32_t> CacheController::SABReAtomicityCheck() {  //check which of the registered SABRes (in the stream buffers) have been violated since last time checked - should be called every cycle
+  return theCacheControllerImpl->SABReAtomicityCheck();
+}
+
+//ALEX - end
+
 // Enqueue requests in the appropriate tag pipelines
 void CacheController::enqueueTagPipeline ( Action         action,
     ProcessEntry_p aProcess ) {
@@ -708,8 +703,8 @@ void CacheController::scheduleNewProcesses() {
         bankCount < theBanks;
         i = ( i + 1 ) % theBanks, bankCount++ ) {
     bool scheduled = false;
-//    bool evict_waiting_on_idle_work;
-//    bool active_msg_waiting_on_evict;
+    bool evict_waiting_on_idle_work = false;
+    bool active_msg_waiting_on_evict = false;
 
     //First,  MAF entries that woke up are allocated into the MAF pipeline
     //A woken MAF process must reserve the same things as a request process
@@ -751,7 +746,7 @@ void CacheController::scheduleNewProcesses() {
 
       // If there's a full Evict Buffer, signal that we're waiting on it so Idle work gets scheduled even if we're quiescing.
       if (theCacheControllerImpl->fullEvictBuffer()) {
-//        active_msg_waiting_on_evict = true;
+        active_msg_waiting_on_evict = true;
       }
     }
 
@@ -826,18 +821,57 @@ void CacheController::scheduleNewProcesses() {
       DBG_(Trace, ( << "Failed to schedule Forced Evict: BSO_Snoop full " << std::boolalpha << BackSideOut_Snoop.full() << ", scheduled evicts " << theScheduledEvicts << ", freeEvictBuffer() = " << theCacheControllerImpl->freeEvictBuffer() << ", ports = " << thePorts << " evictableBlockExists? " << theCacheControllerImpl->evictableBlockExists(theScheduledEvicts) ));
       theCacheControllerImpl->dumpEvictBuffer();
       if (!theCacheControllerImpl->evictableBlockExists(theScheduledEvicts)) {
-//        DBG_(Trace, ( << "evict_waiting_on_idle_work = true" ));
-//        evict_waiting_on_idle_work = true;
+        DBG_(Trace, ( << "evict_waiting_on_idle_work = true" ));
+        evict_waiting_on_idle_work = true;
       }
     } else if ( theFlexus->quiescing() && !theCacheControllerImpl->evictableBlockExists(theScheduledEvicts) && (theCacheControllerImpl->freeEvictBuffer() + theScheduledEvicts <= thePorts)) {
       // Try to schedule more idle work to avoid waiting any longer while quiescing
-//      evict_waiting_on_idle_work = true;
+      evict_waiting_on_idle_work = true;
     }
 
+//ALEX - begin
+//RMC caches are constantly streaming data. We need to overlap evictions with normal requests, to avoid eventually stalling everything.
+//So need to gradually empty the EB
+    if (!theName.compare(3,3,"RMC")) {
+        while ( theMAFPipeline[i].serverAvail()
+            && theCacheControllerImpl->evictableBlockExists(theScheduledEvicts)
+            //&& (theCacheControllerImpl->freeEvictBuffer() + theScheduledEvicts <= thePorts)	//don't push it to the limit
+            && (theEvictOnSnoop ? !BackSideOut_Snoop.full() : !BackSideOut_Request.full())
+          ) {
+              //DBG_(Trace, ( << " schedule Evict" ) );
+              DBG_(Trace, ( << " Proactively scheduling an Eviction" ) );
+
+              theCacheControllerImpl->dumpEvictBuffer();
+
+              ProcessEntry_p aProcess = new ProcessEntry ( eProcEviction );
+              reserveBackSideOut_Evict( aProcess );
+              //reserveBackSideOut_Snoop( aProcess );
+              reserveScheduledEvict( aProcess );
+              theMAFPipeline[i].enqueue( aProcess );
+              scheduled = true;
+         }
+         if (!scheduled && theCacheControllerImpl->evictableBlockExists(theScheduledEvicts)) {
+              DBG_(Trace, ( << "Failed to schedule Forced Evict: BSO_Snoop full " << std::boolalpha << BackSideOut_Snoop.full() ));
+         } else if (theCacheControllerImpl->fullEvictBuffer()) {
+             DBG_(Trace, ( << "Failed to schedule Forced Evict: BSO_Snoop full " << std::boolalpha << BackSideOut_Snoop.full() << ", scheduled evicts " << theScheduledEvicts
+                       << ", freeEvictBuffer() = " << theCacheControllerImpl->freeEvictBuffer() << ", ports = " << thePorts << " evictableBlockExists? " << theCacheControllerImpl->evictableBlockExists(theScheduledEvicts) ));
+             theCacheControllerImpl->dumpEvictBuffer();
+             if (!theCacheControllerImpl->evictableBlockExists(theScheduledEvicts)) {
+                 DBG_(Trace, ( << "evict_waiting_on_idle_work = true" ));
+                 evict_waiting_on_idle_work = true;
+             }
+         } else if ( theFlexus->quiescing() && !theCacheControllerImpl->evictableBlockExists(theScheduledEvicts) ) {
+             // Try to schedule more idle work to avoid waiting any longer while quiescing
+             evict_waiting_on_idle_work = true;
+         }
+    }
+//ALEX - end
+//
     //Next, allocate back processes.  Back Reply processes reserve a FrontSideOut
     //buffer, and a BackSideOut_Snoop buffer
     // We don't allocate an evict buffer entry, but instead relying on having one from
     // an earlier request
+
     while (      theMAFPipeline[i].serverAvail()
                  && ! BankBackSideIn_Reply[i].empty()
                  && ! isFrontSideOutFull()
@@ -911,7 +945,7 @@ void CacheController::scheduleNewProcesses() {
       DBG_(Trace, ( << "Failed to schedule Request: BSO_Req full " << std::boolalpha << BackSideOut_Request.full() << ", FSO Full " << isFrontSideOutFull() << ", MAF full " << theMaf.full() << ", EB full " << theCacheControllerImpl->fullEvictBuffer() << " older snoop avail: " << !(BankFrontSideIn_Snoop[i].empty() || BankFrontSideIn_Snoop[i].headTimestamp() > BankFrontSideIn_Request[i].headTimestamp()) << " canStartRequest(" << std::hex << BankFrontSideIn_Request[i].peek()[MemoryMessageTag]->address() << ") = " << theCacheControllerImpl->canStartRequest(BankFrontSideIn_Request[i].peek()[MemoryMessageTag]->address()) ));
       if (theCacheControllerImpl->fullEvictBuffer()) {
         theCacheControllerImpl->dumpEvictBuffer();
-//        active_msg_waiting_on_evict = true;
+        active_msg_waiting_on_evict = true;
       }
     }
 
@@ -1871,6 +1905,11 @@ void CacheController::sendBack_Evict(MemoryTransport & transport) {
   } else {
     BackSideOut_Request.enqueue(transport);
   }
+}
+
+//ALEX
+bool CacheController::myStupidFunction(MemoryTransport & transport) {
+	return theCacheControllerImpl->myStupidFunction(transport);
 }
 
 } // namespace nCache
