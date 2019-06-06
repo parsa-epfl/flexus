@@ -845,7 +845,7 @@ private:
       FETCH_DBG("starting to process the fetches..." << remaining_fetch);
 
       while ( remaining_fetch > 0 && ( theFAQ[anIndex].size() > 0 || theFlexus->quiescing())) {
-          bool from_icache(false);
+          //bool from_icache(false);
 
           FetchAddr fetch_addr = theFAQ[anIndex].front();
           VirtualMemoryAddress block_addr( fetch_addr.theAddress & theBlockMask);
@@ -866,7 +866,7 @@ private:
                   if (! icacheLookup( anIndex, block_addr ) ) {
                       break;
                   }
-                  from_icache = true;
+                  //from_icache = true;
               }
               else
               {

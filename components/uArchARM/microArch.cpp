@@ -82,6 +82,7 @@ static const int32_t kClientIPC = 1;
 class microArchImpl : public microArch {
 
   std::string theName;
+  bool isFakeuArch; //ALEX
 
   std::unique_ptr<CoreModel> theCore;
   int32_t theAvailableROB;
@@ -146,18 +147,20 @@ public:
 
   {
       theCPU = Flexus::Qemu::Processor::getProcessor(theNode);
-
       if (theNode == 0) {
         setupDriveClients();
       }
-
-
-
+      //NASTY STUFF FOR RMC - BEGIN	 
+      Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(theNode);
+      if (options.isRMC) {
+          DBG_( Dev, ( << "This microArch is fake (theNode=" << theNode << ")" ) );
+          isFakeuArch = true;
+          return;
+      }
+      isFakeuArch = false;
+      //NASTY STUFF FOR RMC - END  
       theAvailableROB = theCore->availableROB();
-
       resetArchitecturalState();
-
-
       DBG_( Crit, ( << theName << " connected to " << (static_cast<Flexus::Qemu::API::conf_object_t *>(*theCPU))->name ));
     DBG_( VVerb, ( << "CORE:  Initializing MMU ")  );
 

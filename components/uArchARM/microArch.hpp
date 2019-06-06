@@ -45,6 +45,7 @@
 #include <components/CommonQEMU/Slices/MemOp.hpp>
 #include <components/CommonQEMU/Translation.hpp>
 #include <components/CommonQEMU/Slices/PredictorMessage.hpp> /* CMU-ONLY */
+#include "uArchInterfaces.hpp"
 
 namespace Flexus {
 namespace SharedTypes {
