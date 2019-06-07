@@ -597,11 +597,11 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction {
   virtual bool usesFpSqrt() const = 0;
 
   // Msutherl: RMC PORT these were used for LBATracker
-  virtual void setLBA_LG(uint32_t) = 0;
+  /*virtual void setLBA_LG(uint32_t) = 0;
   virtual uint32_t getLBA_LG() const = 0;
   virtual void setValueToLG(uint64_t aValue) = 0;
   virtual uint64_t getValueToLG() const = 0;
-
+  */
 };
 
 struct InstructionDependance {

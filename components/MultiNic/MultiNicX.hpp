@@ -57,6 +57,8 @@ COMPONENT_PARAMETERS(
   FLEXUS_PARAMETER( VChannels, int, "Virtual channels", "vc", 3 )
   FLEXUS_PARAMETER( RecvCapacity, uint32_t, "Recv Queue Capacity", "recv-capacity", 1)
   FLEXUS_PARAMETER( SendCapacity, uint32_t, "Send Queue Capacity", "send-capacity", 1)
+  // Msutherl: RMC port for fake multinode
+  FLEXUS_PARAMETER( MachineCount, uint32_t, "Number of machines on the same \"node\"", "MachineCount", 1)
 );
 
 COMPONENT_INTERFACE(
