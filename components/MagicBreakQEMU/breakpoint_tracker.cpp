@@ -56,6 +56,7 @@
 #include <core/qemu/configuration_api.hpp>
 
 #include <components/MagicBreakQEMU/breakpoint_tracker.hpp>
+#include <core/component.hpp>
 
 #define DBG_DefineCategories                                                                       \
   MagicBreak, IterationCount, Termination, IterationTrace, DBTransactionTrace, SimPrint
@@ -467,8 +468,12 @@ public:
 };
 
 class RegressionTrackerImpl : public RegressionTracker {
-public:
-  void OnMagicBreakpoint(Qemu::API::conf_object_t *aCpu, long long aBreakpoint) {
+    private:
+        int system_width;
+        std::vector<int> struct_id;
+    public:
+  void OnMagicBreakpoint( Qemu::API::conf_object_t * aCpu, long long aBreakpoint) {
+    DBG_(Dev, ( << "Regression Testing Breakpoint: " << aBreakpoint) );
     if (aBreakpoint == theStopBreakpoint) {
       DBG_(Dev, (<< "Stop breakpoint.  Terminating Simulation."));
       Flexus::Core::theFlexus->terminateSimulation();
@@ -476,21 +481,30 @@ public:
     theLastBreakpoint = aBreakpoint;
   }
 
-  // does not go here
-  //  Qemu::API::QEMU_insert_callback(
-  //		    Qemu::API::QEMU_magic_instruction
-  //		  , (void*) this
-  //		  , RegressionTrackerMagicBreakpoint
-  //		  );
-
   int64_t theLastBreakpoint;
   int64_t theStopBreakpoint;
 
 public:
-  RegressionTrackerImpl() : theLastBreakpoint(0), theStopBreakpoint(1) {
-    // I think goes here? Possibly it should go in enable()
-    Qemu::API::QEMU_insert_callback(QEMUFLEX_GENERIC_CALLBACK, Qemu::API::QEMU_magic_instruction,
-                                    (void *)this, (void *)&RegressionTrackerMagicBreakpoint);
+  RegressionTrackerImpl() 
+    : system_width(ComponentManager::getComponentManager().systemWidth())
+    , struct_id(system_width)
+    , theLastBreakpoint(0)
+    , theStopBreakpoint(1)
+  {
+      for(int i = 0; i < system_width; i++) { // init a callback for each cpu
+          int r = Qemu::API::QEMU_insert_callback(
+                  i, // cpu-idx
+                  Qemu::API::QEMU_magic_instruction,
+                  (void*) this,
+                  (void *) &RegressionTrackerMagicBreakpoint
+                  );
+          if( r == -1 ) {
+              DBG_Assert(false,(<<"Failed to register RegressionTrackerImpl structure with QEMU, cpu_id = " << i));
+          } else {
+              struct_id.at(i) = r; // will throw if out of range
+              DBG_(Dev,(<<"Successfully registered RegressionTrackerMagicBreakpoint with QEMU, cpu_id = " << i << ", struct id = " << r));
+          }
+      }
   }
 
   void enable() {
