@@ -520,9 +520,9 @@ class RegressionTrackerImpl : public RegressionTracker {
         std::vector<int> struct_id;
     public:
   void OnMagicBreakpoint( Qemu::API::conf_object_t * aCpu, long long aBreakpoint) {
-    DBG_(Dev, ( << "Regression Testing Breakpoint: " << aBreakpoint) );
+    DBG_(Tmp, ( << "Regression Testing Breakpoint: " << aBreakpoint) );
     if (aBreakpoint == theStopBreakpoint) {
-      DBG_(Dev, ( << "Stop breakpoint.  Terminating Simulation.") );
+      DBG_(Tmp, ( << "Stop breakpoint.  Terminating Simulation.") );
       Flexus::Core::theFlexus->terminateSimulation();
     }
     theLastBreakpoint = aBreakpoint;
