@@ -51,11 +51,13 @@ struct validateXRegister {
   uint32_t theReg;
   eOperandCode theOperandCode;
   SemanticInstruction * theInstruction;
+  bool the_64;
 
-  validateXRegister( uint32_t aReg, eOperandCode anOperand, SemanticInstruction * anInstruction )
+  validateXRegister( uint32_t aReg, eOperandCode anOperand, SemanticInstruction * anInstruction, bool is_64 )
     : theReg(aReg)
     , theOperandCode(anOperand)
     , theInstruction(anInstruction)
+    , the_64(is_64)
   { }
 
   bool operator () ();

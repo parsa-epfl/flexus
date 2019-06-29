@@ -153,6 +153,10 @@ public:
    return API::QEMU_read_sctlr(id, *this);
   }
 
+  uint64_t readTPIDR(uint8_t id) const {
+   return API::QEMU_read_tpidr(id, *this);
+  }
+
   uint64_t readHCREL2() const {
     return API::QEMU_read_hcr_el2(*this);
   }

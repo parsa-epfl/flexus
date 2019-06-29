@@ -455,6 +455,7 @@ void CoreImpl::setSP_el (uint8_t anId, uint64_t aVal){DBG_Assert(anId >= 0 || an
 uint64_t CoreImpl::getSP_el (uint8_t anId){DBG_Assert(anId >= 0 || anId < 4); return theSP_el[anId];}
 uint32_t CoreImpl::getPSTATE() { return thePSTATE; }
 void CoreImpl::setPSTATE( uint32_t aPSTATE) { thePSTATE = aPSTATE; DBG_(Dev,(<< "setting PSTATE: " << thePSTATE));}
+uint64_t CoreImpl::getTPIDR(uint8_t anEL) { return Flexus::Qemu::Processor::getProcessor(theNode)->readTPIDR(anEL); }
 void CoreImpl::setFPSR( uint32_t anFPSR) { theFPSR = anFPSR; }
 uint32_t CoreImpl::getFPSR() { return theFPSR; }
 void CoreImpl::setFPCR( uint32_t anFPCR) { theFPCR = anFPCR; }

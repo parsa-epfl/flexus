@@ -92,6 +92,27 @@ struct DAIF : public SysRegInfo {
 }DAIF_;
 
 
+struct TPIDR_EL0 : public SysRegInfo {
+    std::string name = "TPIDR_EL0";
+    eRegExecutionState state = kARM_STATE_AA64;
+    uint8_t opc0 = 3;
+    uint8_t opc1 = 3;
+    uint8_t opc2 = 2;
+    uint8_t crn = 13;
+    uint8_t crm = 0;
+    eAccessRight access = kPL0_RW;
+    eRegInfo type = kARM_NO_RAW;
+    uint64_t resetvalue = -1;
+
+    virtual eAccessResult accessfn (uArchARM* aCore) {DBG_Assert(false); return kACCESS_TRAP; }// FIXME /*aa64_daif_access*/
+    virtual void writefn (uArchARM * aCore, uint64_t aVal) override { aCore->setDAIF(aVal); }// FIXME
+    virtual void reset (uArchARM * aCore) override {DBG_Assert(false);  }// FIXME /*arm_cp_reset_ignore*/
+    virtual uint64_t readfn (uArchARM * aCore) override {
+       return aCore->getTPIDR(0);
+   }
+}TPIDR_EL0_;
+
+
 struct FPCR : public SysRegInfo {
     std::string name = "FPCR";
     eRegExecutionState state = kARM_STATE_AA64;
@@ -363,6 +384,7 @@ struct INVALID_PRIV : public SysRegInfo {
 static std::vector<std::pair<std::array<uint8_t, 5>, ePrivRegs>>  supported_sysRegs = {
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {NZCV_.opc0, NZCV_.opc1, NZCV_.opc2, NZCV_.crn, NZCV_.crm},  kNZCV) ,
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {DAIF_.opc0, DAIF_.opc1, DAIF_.opc2, DAIF_.crn, DAIF_.crm},  kDAIF) ,
+    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {TPIDR_EL0_.opc0, TPIDR_EL0_.opc1, TPIDR_EL0_.opc2, TPIDR_EL0_.crn, TPIDR_EL0_.crm},  kTPIDR_EL0),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {FPCR_.opc0, FPCR_.opc1, FPCR_.opc2, FPCR_.crn, FPCR_.crm},  kFPCR) ,
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {FPSR_.opc0, FPSR_.opc1, FPSR_.opc2, FPSR_.crn, FPSR_.crm},  kFPSR) ,
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {DCZID_EL0_.opc0, DCZID_EL0_.opc1, DCZID_EL0_.opc2, DCZID_EL0_.crn, DCZID_EL0_.crm},  kDCZID_EL0) ,
@@ -424,6 +446,8 @@ SysRegInfo& getPriv(ePrivRegs aCode){
         return SPSR_UND_;
     case kSPSR_FIQ:
         return SPSR_FIQ_;
+    case kTPIDR_EL0:
+        return TPIDR_EL0_;
     default:
         DBG_Assert( false, ( << "Unimplemented SysReg Code" << aCode ) );
         return INVALID_PRIV_;

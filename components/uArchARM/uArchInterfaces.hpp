@@ -217,6 +217,7 @@ enum ePrivRegs {
   kSPSR_ABT,
   kSPSR_UND,
   kSPSR_FIQ,
+  kTPIDR_EL0,
   kLastPrivReg
 };
 
@@ -768,6 +769,7 @@ struct uArchARM {
     virtual uint32_t getSPSel (){  DBG_Assert(false); return 0;}
     virtual uint32_t getPSTATE() { DBG_Assert(false); return 0; }
     virtual void setPSTATE(uint32_t aPSTATE) { DBG_Assert(false); }
+    virtual uint64_t getTPIDR(uint8_t anEL) { DBG_Assert(false); return 0; }
     virtual uint32_t getFPSR() { DBG_Assert(false); return 0; }
     virtual void setFPSR(uint32_t aValue) { DBG_Assert(false); }
     virtual uint32_t getFPCR() { DBG_Assert(false); return 0; }

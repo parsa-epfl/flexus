@@ -14,6 +14,7 @@ QEMU_READ_FPCR_PROC QEMU_read_fpcr = nullptr;
 QEMU_READ_FPSR_PROC QEMU_read_fpsr = nullptr;
 QEMU_READ_EXCEPTION_PROC QEMU_read_exception = nullptr;
 QEMU_READ_SCTLR_PROC QEMU_read_sctlr = nullptr;
+QEMU_READ_TPIDR_PROC QEMU_read_tpidr = nullptr;
 QEMU_READ_HCR_EL2_PROC QEMU_read_hcr_el2 = nullptr;
 QEMU_CPU_HAS_WORK_PROC QEMU_cpu_has_work = nullptr;
 QEMU_READ_SP_EL_PROC QEMU_read_sp_el = nullptr;
@@ -102,6 +103,7 @@ void QFLEX_API_set_Interface_Hooks( const QFLEX_API_Interface_Hooks_t* hooks ) {
   QEMU_disassemble = hooks->QEMU_disassemble;
   QEMU_dump_state = hooks->QEMU_dump_state;
   QEMU_read_sctlr =  hooks->QEMU_read_sctlr;
+  QEMU_read_tpidr =  hooks->QEMU_read_tpidr;
 
   // Msutherl: MMU hooks
 //  QEMU_get_mmu_state= hooks->QEMU_get_mmu_state;

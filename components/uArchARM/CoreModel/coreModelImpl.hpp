@@ -721,6 +721,7 @@ public:
   uint64_t getSP_el (uint8_t anEL);
   uint32_t getPSTATE();
   void setPSTATE( uint32_t aPSTATE);
+  uint64_t getTPIDR(uint8_t anEL);
   void setFPSR( uint32_t anFPSR);
   uint32_t getFPSR();
   void setFPCR( uint32_t anFPCR);

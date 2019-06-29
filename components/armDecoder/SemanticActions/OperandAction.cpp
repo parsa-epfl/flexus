@@ -80,15 +80,13 @@ struct OperandAction : public PredicatedSemanticAction {
     , theResult( aResult )
     , theBypass( aBypass )
     , theOffset(anOffset)
-  {
-    setReady( 0, true );
-  }
+  {}
 
   void doEvaluate() {
-    DBG_( VVerb, ( << *this << " applied") );
+    DBG_( Dev, ( << *this << " evaluated") );
     if (theBypass) {
       mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass);
-      bits value = theInstruction->operand<bits>(theOperand);
+      uint64_t value = theInstruction->operand<uint64_t>(theOperand);
       theInstruction->setOperand(theResult, value);
 
       core()->bypass( name, value );

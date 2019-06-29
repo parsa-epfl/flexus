@@ -236,14 +236,14 @@ arminst STRL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     addAddressCompute( inst, rs_deps ) ;
     addReadXRegister(inst, 1, rn, rs_deps[0], true);
 
-    simple_action act = addExecute(inst, operation(kMOV_), data_deps);
+    simple_action act = addExecute(inst, operation(kMOV_), data_deps, {kOperand2}, kOperand5);
     addReadXRegister(inst, 2, rt, data_deps[0], regsize == 64);
 
     inst->addDispatchEffect( allocateStore( inst, sz, false, acctype ) );
     inst->addRetirementConstraint( storeQueueAvailableConstraint(inst) );
     inst->addRetirementConstraint( sideEffectStoreConstraint(inst) );
 
-    predicated_dependant_action update_value = updateStoreValueAction(inst, kResult );
+    predicated_dependant_action update_value = updateStoreValueAction(inst, kOperand5 );
     connectDependance( update_value.dependance, act );
     connectDependance( inst->retirementDependance(), update_value );
 
@@ -251,7 +251,7 @@ arminst STRL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
     inst->addCommitEffect( commitStore(inst) );
     inst->addSquashEffect( eraseLSQ(inst) );
 
-    inst->addPostvalidation( validateMemory( kAddress, kResult, sz, inst ) );
+    inst->addPostvalidation( validateMemory( kAddress, kOperand5, sz, inst ) );
 
     return inst;
 
@@ -651,7 +651,7 @@ arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
         }
     }
 
-    addAddressCompute( inst, rs2_deps );
+    simple_action act = addAddressCompute( inst, rs2_deps );
     if (index == kRegOffset){
         if(shift_amount)
             connect(rs2_deps[1], sh);
@@ -668,7 +668,8 @@ arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     } else if (index == kPreIndex) {
         inst->setOperand(kSopAddressOffset, (int64_t) imm );
         DBG_(Dev, (<<"setting signed offset preindex " << std::hex << imm));
-        wb = operandAction(inst, kAddress, kResult1, imm, kPD);
+        wb = operandAction(inst, kAddress, kResult1, imm, kPD1);
+        connectDependance(wb.action->dependance(0), act);
     } else if (index == kPostIndex){
         inst->setOperand(kOperand3, imm );
         DBG_(Dev, (<<"setting signed offset postindex " << std::hex << imm));
@@ -780,7 +781,7 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
         }
     }
 
-    addAddressCompute( inst, rs2_deps );
+    simple_action act = addAddressCompute( inst, rs2_deps );
     if (index == kRegOffset){
         if(shift_amount)
             connect(rs2_deps[1], sh);
@@ -797,7 +798,8 @@ arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
     } else if (index == kPreIndex) {
         inst->setOperand(kSopAddressOffset, (int64_t) imm );
         DBG_(Dev, (<<"setting signed offset preindex " << std::hex << imm));
-        wb = operandAction(inst, kAddress, kResult1, imm, kPD);
+        wb = operandAction(inst, kAddress, kResult1, imm, kPD1);
+        connectDependance(wb.action->dependance(0), act);
     } else if (index == kPostIndex){
         inst->setOperand(kOperand3, imm );
         DBG_(Dev, (<<"setting signed offset postindex " << std::hex << imm));

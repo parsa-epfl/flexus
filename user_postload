@@ -10,7 +10,7 @@ flexus.set "-bpwarm:cores"                                      "1" # "Number of
 flexus.set "-feeder:stick"                                    "0.0" # "CPU System tick frequency. 0.0 leaves frequency unchanged" (SystemTickFrequency)
 flexus.set "-feeder:housekeeping_period"                     "1000" # "Simics cycles between housekeeping events" (HousekeepingPeriod)
 flexus.set "-feeder:ifetch"                                     "1" # "Track and report instruction fetches" (TrackIFetch)
-flexus.set "-feeder:CMPwidth"                                   "4" # "Number of cores per CMP chip (0 = sys width)" (CMPWidth)
+flexus.set "-feeder:CMPwidth"                                   "1" # "Number of cores per CMP chip (0 = sys width)" (CMPWidth)
 flexus.set "-feeder:send_non_allocating_stores"                 "0" # "Send NonAllocatingStores on/off" (SendNonAllocatingStores)
 
 
@@ -66,7 +66,7 @@ flexus.set "-L1i:downgrade_lru"                                 "0" # "Move bloc
 flexus.set "-L1i:snoop_lru"                                     "0" # "Move block to LRU position when a Snoop (ReturnReq) is recieved for a block in Modified or Exclusive state" (SnoopLRU)
 ### L2
 # FastCMPCache [trace]
-flexus.set "-L2:CMPWidth"                                       "4" # "Number of cores per CMP chip (0 = sys width)" (CMPWidth)
+flexus.set "-L2:CMPWidth"                                       "1" # "Number of cores per CMP chip (0 = sys width)" (CMPWidth)
 flexus.set "-L2:size"                                     "2097152" # "Cache size in bytes" (Size)
 flexus.set "-L2:assoc"                                         "16" # "Set associativity" (Associativity)
 flexus.set "-L2:bsize"                                         "64" # "Block size" (BlockSize)
@@ -214,9 +214,9 @@ flexus.set "-L1d:gzip_flexpoints"                               "1" # "Compress 
 
 ### L2
 # CMPCache [timing]
-flexus.set "-L2:cores"                                         "32" # "Number of cores" (Cores)
+flexus.set "-L2:cores"                                          "2" # "Number of cores" (Cores)
 flexus.set "-L2:bsize"                                         "64" # "Block size" (BlockSize)
-flexus.set "-L2:banks"                                         "16" # "number of directory banks in each group" (Banks)
+flexus.set "-L2:banks"                                          "1" # "number of directory banks in each group" (Banks)
 flexus.set "-L2:bank_interleaving"                             "64" # "interleaving between directory banks (64 bytes)" (BankInterleaving)
 flexus.set "-L2:groups"                                         "1" # "number of directory bank groups" (Groups)
 flexus.set "-L2:group_interleaving"                          "4096" # "interleaving between directory bank groups (1024 bytes)" (GroupInterleaving)
@@ -233,7 +233,7 @@ flexus.set "-L2:cache_eb_size"                                "256" # "Number of
 flexus.set "-L2:policy"                          "NonInclusiveMESI" # "Coherence policy for higher caches (NonInclusiveMESI)" (Policy)
 flexus.set "-L2:controller"                               "Default" # "Type of controller (Default or Detailed)" (ControllerType)
 flexus.set "-L2:dir_type"                                     "inf" # "Type of directory (infinite, std, region, etc.)" (DirectoryType)
-flexus.set "-L2:dir_config"                    "skew_shift=0" # "Configuration of directory array (sets=1024:assoc=16)" (DirectoryConfig)
+flexus.set "-L2:dir_config"                          "skew_shift=0" # "Configuration of directory array (sets=1024:assoc=16)" (DirectoryConfig)
 flexus.set "-L2:level"                                        "eL2" # "CacheLevel" (CacheLevel)
 flexus.set "-L2:allow_evict_clean"                              "0" # "Cause the cache to evict clean blocks" (EvictClean)
 flexus.set "-L2:array_config"                       "STD:total_sets=2048:assoc=16:repl=LRU" # "Configuration of cache array (STD:sets=1024:assoc=16:repl=LRU" (ArrayConfiguration)
@@ -248,23 +248,23 @@ flexus.set "-nic:send-capacity"                                 "4" # "Send Queu
 
 ### network
 # MemoryNetwork [timing]
-flexus.set "-network:topology-file"            "16x3-mesh.topology" # "Network topology file" (NetworkTopologyFile)
-flexus.set "-network:nodes"                                    "48" # "Number of Nodes" (NumNodes)
+flexus.set "-network:topology-file"             "1x3-mesh.topology" # "Network topology file" (NetworkTopologyFile)
+flexus.set "-network:nodes"                                     "3" # "Number of Nodes" (NumNodes)
 flexus.set "-network:virtual-channels"                          "3" # "Number of virtual channels" (VChannels)
 
 
 ### net-mapper
 # SplitDestinationMapper [timing]
-flexus.set "-net-mapper:Cores"                                 "16" # "Number of cores" (Cores)
-flexus.set "-net-mapper:MemControllers"                         "4" # "Number of memory controllers" (MemControllers)
-flexus.set "-net-mapper:Directories"                           "16" # "Number of directories" (Directories)
-flexus.set "-net-mapper:Banks"                                 "16" # "Number of banks" (Banks)
+flexus.set "-net-mapper:Cores"                                  "1" # "Number of cores" (Cores)
+flexus.set "-net-mapper:MemControllers"                         "1" # "Number of memory controllers" (MemControllers)
+flexus.set "-net-mapper:Directories"                            "1" # "Number of directories" (Directories)
+flexus.set "-net-mapper:Banks"                                  "1" # "Number of banks" (Banks)
 flexus.set "-net-mapper:DirInterleaving"                       "64" # "Interleaving between directories (in bytes)" (DirInterleaving)
 flexus.set "-net-mapper:MemInterleaving"                       "64" # "Interleaving between memory controllers (in bytes)" (MemInterleaving)
 flexus.set "-net-mapper:DirXORShift"                           "-1" # "XOR high order bits after shifting this many bits when calculating directory index" (DirXORShift)
 flexus.set "-net-mapper:MemXORShift"                           "-1" # "XOR high order bits after shifting this many bits when calculating memory index" (MemXORShift)
 flexus.set "-net-mapper:DirLocation"                  "Distributed" # "Directory location (Distributed|AtMemory)" (DirLocation)
-flexus.set "-net-mapper:MemLocation"                    "0,3,12,15" # "Memory controller locations (ex: '8,15,24,31,32,39,48,55')" (MemLocation)
+flexus.set "-net-mapper:MemLocation"                            "0" # "Memory controller locations (ex: '8,15,24,31,32,39,48,55')" (MemLocation)
 flexus.set "-net-mapper:MemReplyToDir"                          "1" # "Send memory replies to the directory (instead of original requester)" (MemReplyToDir)
 flexus.set "-net-mapper:MemAcksNeedData"                        "1" # "When memory replies directly to requester, require data with final ack" (MemAcksNeedData)
 flexus.set "-net-mapper:TwoPhaseWB"                             "0" # "2 Phase Write-Back sends NAcks to requester, not directory" (TwoPhaseWB)
@@ -280,8 +280,8 @@ flexus.set "-memory:UseFetchReply"                              "1" # "Send Fetc
 
 ### memory-map
 # MemoryMap [timing]
-flexus.set "-memory-map:pagesize"                            "8192" # "Page size in bytes (used by statistics only)" (PageSize)
-flexus.set "-memory-map:nodes"                                 "16" # "Number of Nodes" (NumNodes)
+flexus.set "-memory-map:pagesize"                            "4096" # "Page size in bytes (used by statistics only)" (PageSize)
+flexus.set "-memory-map:nodes"                                  "1" # "Number of Nodes" (NumNodes)
 flexus.set "-memory-map:round_robin"                            "1" # "Use static round-robin page allocation" (RoundRobin)
 flexus.set "-memory-map:write_page_map"                         "1" # "Write page map as pages are created" (CreatePageMap)
 flexus.set "-memory-map:page_map"                               "0" # "Load Page Map on start" (ReadPageMap)
@@ -304,27 +304,6 @@ flexus.set "-magic-break:stop_cycle"                            "0" # "Cycle on 
 flexus.set "-magic-break:ckpt_cycle"                            "0" # "# of cycles between checkpoints." (CkptCycleInterval)
 flexus.set "-magic-break:ckpt_cycle_name"                       "0" # "Base cycle # from which to build checkpoint names." (CkptCycleName)
 
-
-### Custom
-flexus.set "-mmu:perfecttlb"                                 "true" #
-flexus.set "-L1d:array_config"                      "STD:size=32768:assoc=2:repl=LRU" #
-flexus.set "-L1d:size"                                      "32768" #
-flexus.set "-L2:array_config"                           "STD:total_sets=2048:assoc=16:repl=LRU" #
-flexus.set "-L2:size"                                     "2097152" #
-flexus.set "-L2:banks"                                          "1" #
-flexus.set "-L2:cores"                                          "2" #
-flexus.set "-L2:CMPWidth"                                       "1" #
-flexus.set "-L2:assoc"                                         "16" #
-flexus.set "-network:nodes"                                     "3" #
-flexus.set "-network:topology-file"             "/home/sgupta/qflex/flexus/simulators/KnottyKraken/1x3-mesh.topology" #
-flexus.set "-net-mapper:Cores"                                  "1" #
-flexus.set "-net-mapper:Directories"                            "1" #
-flexus.set "-net-mapper:Banks"                                  "1" #
-flexus.set "-net-mapper:MemControllers"                         "1" #
-flexus.set "-net-mapper:MemLocation"                            "0" #
-flexus.set "-memory-map:nodes"                                  "1" #
-flexus.set "-feeder:CMPwidth"                                   "1" #
-
 ### DRAMSim [timing]
 flexus.set "-memory:device-file"   "/home/sgupta/asplos19/simflex/components/DRAMController/DRAMSim2/ini/DDR4_micron_16M_8B_x8_sg15.ini"
 flexus.set "-memory:memory-system-file"                "/home/sgupta/asplos19/simflex/components/DRAMController/DRAMSim2/system.ini"
@@ -335,3 +314,25 @@ flexus.set "-memory:size"                                    "8192" # "Total mem
 flexus.set "-memory:max_replies"                               "32" # "Maximum replies queued in loopback" (MaxReplies)
 flexus.set "-memory:max_requests"                              "32" # "Maximum requests queued in loopback" (MaxRequests)
 flexus.set "-memory:InterconnectDelay"                         "20" # Circuitry delay in nanoseconds
+
+### Custom
+flexus.set "-mmu:perfecttlb"                                 "true" #
+flexus.set "-L1d:array_config"                      "STD:size=32768:assoc=2:repl=LRU" #
+flexus.set "-L1d:size"                                      "32768" #
+flexus.set "-L2:array_config"                           "STD:total_sets=2048:assoc=16:repl=LRU" #
+flexus.set "-L2:size"                                     "2097152" #
+flexus.set "-L2:assoc"                                         "16" #
+
+### Adjust according to the system width
+flexus.set "-L2:banks"                                          "1" #
+flexus.set "-L2:cores"                                          "2" #
+flexus.set "-L2:CMPWidth"                                       "1" #
+flexus.set "-network:nodes"                                     "3" #
+flexus.set "-network:topology-file"             "/home/sgupta/qflex/flexus/simulators/KnottyKraken/1x3-mesh.topology" #
+flexus.set "-net-mapper:Cores"                                  "1" #
+flexus.set "-net-mapper:Directories"                            "1" #
+flexus.set "-net-mapper:Banks"                                  "1" #
+flexus.set "-net-mapper:MemControllers"                         "1" #
+flexus.set "-net-mapper:MemLocation"                            "0" #
+flexus.set "-memory-map:nodes"                                  "1" #
+flexus.set "-feeder:CMPwidth"                                   "1" #

@@ -225,7 +225,7 @@ void addReadXRegister( SemanticInstruction * inst, int32_t anOpNumber, uint32_t 
     simple_action act = readRegisterAction( inst, cPS, cOperand, rs==31,  is_64 );
     connect( dependances, act );
     inst->addDispatchAction( act );
-    inst->addPrevalidation( validateXRegister( rs, cOperand, inst ) );
+    inst->addPrevalidation( validateXRegister( rs, cOperand, inst, is_64 ) );
 
 }
 
@@ -334,7 +334,7 @@ void addDestination( SemanticInstruction * inst, uint32_t rd, predicated_action 
 
     setRD( inst, rd);
     addWriteback( inst, kResult, kPD, exec, is64, setflags, addSquash );
-    inst->addPostvalidation( validateXRegister( rd, kResult, inst  ) );
+    inst->addPostvalidation( validateXRegister( rd, kResult, inst, is64  ) );
     if(setflags){
       addSetCC(inst, exec, is64);
     }
@@ -344,14 +344,14 @@ void addDestination1( SemanticInstruction * inst, uint32_t rd, predicated_action
 
     setRD1( inst, rd);
     addWriteback1( inst, kResult1, kPD1, exec, is64, setflags, addSquash );
-    inst->addPostvalidation( validateXRegister( rd, kResult1, inst  ) );
+    inst->addPostvalidation( validateXRegister( rd, kResult1, inst, is64  ) );
 }
 
 void addDestination2( SemanticInstruction * inst, uint32_t rd, predicated_action & exec, bool is64, bool setflags, bool addSquash) {
 
     setRD2( inst, rd);
     addWriteback2( inst, kResult2, kPD2, exec, is64, setflags, addSquash );
-    inst->addPostvalidation( validateXRegister( rd, kResult2, inst  ) );
+    inst->addPostvalidation( validateXRegister( rd, kResult2, inst, is64  ) );
 }
 
 void addPairDestination( SemanticInstruction * inst, uint32_t rd, uint32_t rd1, predicated_action & exec, bool is64, bool addSquash) {

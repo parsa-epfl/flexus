@@ -93,6 +93,7 @@ struct ReadRegisterAction : public BaseSemanticAction
         if ( cancelled() || theInstruction->isRetired() || theInstruction->isSquashed() ) { return true; }
 
         if ( !signalled() ) {
+          aValue = (uint64_t) (boost::get<uint64_t>(aValue) & (the64 ? -1LL : 0xFFFFFFFF));
           theInstruction->setOperand(theOperandCode, aValue);
           DBG_( VVerb, ( << *this << " bypassed " << theRegisterCode << " = " << aValue << " written to " << theOperandCode ) );
           satisfyDependants();

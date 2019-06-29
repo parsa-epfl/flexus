@@ -348,10 +348,6 @@ arminst SYNC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 
-    if (rt != 0x1F){
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-    }
-
     SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
 
@@ -466,7 +462,7 @@ arminst SYS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
       setRD( inst, rt);
       inst->addDispatchEffect( mapDestination( inst ) );
       inst->addRetirementEffect( readPR(inst, pr) );
-      inst->addPostvalidation( validateXRegister( rt, kResult, inst  ) );
+      inst->addPostvalidation( validateXRegister( rt, kResult, inst, true  ) );
     } else {
         inst->setClass(clsComputation, codeWRPR);
 
@@ -485,7 +481,7 @@ arminst SYS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
 }
 
 // Exception generation
-arminst SVC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){ DECODER_TRACE; return generateException(aFetchedOpcode, aCPU, aSequenceNo, kException_AA64_SVC);}
+arminst SVC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){ DECODER_TRACE; return blackBox( aFetchedOpcode, aCPU, aSequenceNo); return generateException(aFetchedOpcode, aCPU, aSequenceNo, kException_AA64_SVC);}
 arminst HVC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return generateException(aFetchedOpcode, aCPU, aSequenceNo, kException_AA64_HVC);}
 arminst SMC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return generateException(aFetchedOpcode, aCPU, aSequenceNo, kException_AA64_SMC);}
 arminst BRK(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo){DECODER_TRACE; return generateException(aFetchedOpcode, aCPU, aSequenceNo, kException_AA64_BKPT);}

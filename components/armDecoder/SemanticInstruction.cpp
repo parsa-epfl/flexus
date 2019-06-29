@@ -86,8 +86,8 @@ SemanticInstruction::SemanticInstruction(VirtualMemoryAddress aPC, Opcode anOpco
   thePeakInsns << theInsnCount;
   for (int32_t i = 0; i < 4; ++i) {
     theRetirementDepends[i] = true;
-    addPrevalidation(validatePC(this, true));
   }
+  addPrevalidation(validatePC(this, true));
 
 #ifdef TRACK_INSNS
   if (theLastPrintCount >= 10000) {
@@ -136,7 +136,7 @@ void SemanticInstruction::setMayRetire(int32_t aBit, bool aFlag) {
   SEMANTICS_TRACE;
   DBG_Assert( aBit < theRetireDepCount, ( << "setMayRetire setting a bit that is out of range: " << aBit << "\n" << std::internal << *this ) );
   bool may_retire = mayRetire();
-  SEMANTICS_DBG("aBit = " << aBit);
+  SEMANTICS_DBG("aBit = " << aBit << ", aFlag = " << aFlag << ", " << *this);
   theRetirementDepends[aBit] = aFlag;
   if (mayRetire() && ! may_retire ) {
       DBG_(Dev, (<< identify() << " may retire"));
