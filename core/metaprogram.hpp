@@ -31,10 +31,15 @@ namespace mpl = boost::mpl;
     sizeof( LookupFn( static_cast< __VA_ARGS__ *>(0) ) )
 
   #define FLEXUS_DECLARE_MEMBER_TYPE_TEST( MemberType ) \
-    template <typename T> boost::type_traits::yes_type BOOST_PP_CAT(member_type_test_,MemberType) ( typename T::MemberType const *); \
-    template <typename T> boost::type_traits::no_type BOOST_PP_CAT(member_type_test_,MemberType) (...); \
-    template <class T> struct BOOST_PP_CAT(check_class_has_member_type_,MemberType) { \
-          static const bool value = (sizeof( BOOST_PP_CAT(member_type_test_,MemberType)<T>(0)) == sizeof(boost::type_traits::yes_type)); \
+    template <typename T> boost::type_traits::yes_type
+BOOST_PP_CAT(member_type_test_,MemberType) ( typename T::MemberType const *); \
+    template <typename T> boost::type_traits::no_type
+BOOST_PP_CAT(member_type_test_,MemberType) (...); \
+    template <class T> struct
+BOOST_PP_CAT(check_class_has_member_type_,MemberType) { \
+          static const bool value = (sizeof(
+BOOST_PP_CAT(member_type_test_,MemberType)<T>(0)) ==
+sizeof(boost::type_traits::yes_type)); \
     }
 
   #define FLEXUS_CLASS_HAS_MEMBER_TYPE(MemberType,Type) \
@@ -59,5 +64,4 @@ namespace Core {
 } //Core
 */
 
-#endif //FLEXUS_METAPROGRAM_HPP_INCLUDED
-
+#endif // FLEXUS_METAPROGRAM_HPP_INCLUDED

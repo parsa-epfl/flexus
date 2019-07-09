@@ -9,7 +9,8 @@
 // Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
 // Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
 // Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,42 +36,38 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #ifndef FLEXUS_ARMDECODER_CONDITIONS_HPP_INCLUDED
 #define FLEXUS_ARMDECODER_CONDITIONS_HPP_INCLUDED
 
-#include "SemanticInstruction.hpp"
 #include "OperandMap.hpp"
-
+#include "SemanticInstruction.hpp"
 
 namespace narmDecoder {
 using namespace nuArchARM;
 
 enum eCondCode {
-    kCBZ_,
-    kCBNZ_,
-    kTBZ_,
-    kTBNZ_,
-    kBCOND_,
+  kCBZ_,
+  kCBNZ_,
+  kTBZ_,
+  kTBNZ_,
+  kBCOND_,
 };
 
-
-
 struct Condition {
-    virtual ~Condition(){}
-  virtual bool operator()( std::vector< Operand > const & operands ) = 0;
-  virtual char const * describe() const = 0;
-  void setInstruction(SemanticInstruction * anInstruction){
-      theInstruction = anInstruction;
+  virtual ~Condition() {
+  }
+  virtual bool operator()(std::vector<Operand> const &operands) = 0;
+  virtual char const *describe() const = 0;
+  void setInstruction(SemanticInstruction *anInstruction) {
+    theInstruction = anInstruction;
   }
 
 protected:
-  SemanticInstruction * theInstruction;
+  SemanticInstruction *theInstruction;
 };
 
-std::unique_ptr<Condition> condition (eCondCode aCond);
+std::unique_ptr<Condition> condition(eCondCode aCond);
 
+} // namespace narmDecoder
 
-} //armDecoder
-
-#endif //FLEXUS_ARMDECODER_CONDITIONS_HPP_INCLUDED
+#endif // FLEXUS_ARMDECODER_CONDITIONS_HPP_INCLUDED

@@ -9,7 +9,8 @@
 // Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
 // Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
 // Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -38,12 +39,12 @@
 // Changelog:
 //  - June'18: msutherl - basic TLB definition, no real timing info
 
-#include <core/simulator_layout.hpp>
-#include <components/CommonQEMU/Translation.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
+#include <components/CommonQEMU/Translation.hpp>
 #include <core/qemu/mai_api.hpp>
+#include <core/simulator_layout.hpp>
 
-
+// clang-format off
 #define FLEXUS_BEGIN_COMPONENT MMU
 #include FLEXUS_BEGIN_COMPONENT_DECLARATION()
 
@@ -75,3 +76,4 @@ COMPONENT_INTERFACE(
 
 #include FLEXUS_END_COMPONENT_DECLARATION()
 #define FLEXUS_END_COMPONENT MMU
+// clang-format on

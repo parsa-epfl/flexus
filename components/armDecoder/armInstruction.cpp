@@ -5,11 +5,12 @@
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,36 +36,34 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
-#include <list>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
+#include <list>
 
-#include <core/boost_extensions/intrusive_ptr.hpp>
-#include <boost/throw_exception.hpp>
 #include <boost/none.hpp>
+#include <boost/throw_exception.hpp>
+#include <core/boost_extensions/intrusive_ptr.hpp>
 
-#include <core/target.hpp>
-#include <core/debug/debug.hpp>
-#include <core/types.hpp>
 #include <components/uArchARM/uArchInterfaces.hpp>
 #include <components/uFetch/uFetchTypes.hpp>
+#include <core/debug/debug.hpp>
 #include <core/qemu/mai_api.hpp>
 #include <core/stats.hpp>
+#include <core/target.hpp>
+#include <core/types.hpp>
 
-#include "armInstruction.hpp"
-#include "SemanticInstruction.hpp"
-#include "SemanticActions.hpp"
-#include "Effects.hpp"
-#include "Validations.hpp"
 #include "Constraints.hpp"
+#include "Effects.hpp"
 #include "Interactions.hpp"
+#include "SemanticActions.hpp"
+#include "SemanticInstruction.hpp"
+#include "Validations.hpp"
 #include "armBitManip.hpp"
+#include "armInstruction.hpp"
 
-#include <bitset>         // std::bitset
+#include <bitset> // std::bitset
 
 #include "encodings/armEncodings.hpp"
-
 
 #define DBG_DeclareCategories armDecoder
 #define DBG_SetDefaultOps AddCat(armDecoder)
@@ -74,20 +73,24 @@ namespace narmDecoder {
 
 namespace Stat = Flexus::Stat;
 
-using nuArchARM::xRegisters;
-using nuArchARM::vRegisters;
 using nuArchARM::ccBits;
+using nuArchARM::vRegisters;
+using nuArchARM::xRegisters;
 
 using namespace nuArchARM;
 
-void armInstruction::describe(std::ostream & anOstream) const {
+void armInstruction::describe(std::ostream &anOstream) const {
   Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(theCPU);
-  anOstream <<
-            "#" << std::dec << theSequenceNo << "[" << std::setfill('0') << std::right << std::setw(2) << cpu->id() <<  "] "
-            // << " PC: @" << thePC  << " OPC: | " << std::hex << theOpcode << std::dec << " | "
+  anOstream << "#" << std::dec << theSequenceNo << "[" << std::setfill('0') << std::right
+            << std::setw(2) << cpu->id()
+            << "] "
+            // << " PC: @" << thePC  << " OPC: | " << std::hex << theOpcode <<
+            // std::dec << " | "
             << printInstClass() << " QEMU disas: " << cpu->disassemble(thePC);
   if (theRaisedException) {
-    anOstream << " {raised}"/* << cpu->describeException(theRaisedException) << "(" << theRaisedException << ")"*/;
+    anOstream << " {raised}" /* << cpu->describeException(theRaisedException) <<
+                                "(" << theRaisedException << ")"*/
+        ;
   }
   if (theResync) {
     anOstream << " {force-resync}";
@@ -105,21 +108,21 @@ void armInstruction::setWillRaise(eExceptionType aSetting) {
   theWillRaise = aSetting;
 }
 
-void armInstruction::doDispatchEffects(  ) {
-  if (bpState() && ! isBranch()) {
-    //Branch predictor identified an instruction that is not a branch as a
-    //branch.
-    DBG_( VVerb, ( << *this << " predicted as a branch, but is a non-branch.  Fixing" ) );
+void armInstruction::doDispatchEffects() {
+  if (bpState() && !isBranch()) {
+    // Branch predictor identified an instruction that is not a branch as a
+    // branch.
+    DBG_(VVerb, (<< *this << " predicted as a branch, but is a non-branch.  Fixing"));
 
-    boost::intrusive_ptr<BranchFeedback> feedback( new BranchFeedback() );
+    boost::intrusive_ptr<BranchFeedback> feedback(new BranchFeedback());
     feedback->thePC = pc();
     feedback->theActualType = kNonBranch;
     feedback->theActualDirection = kNotTaken;
     feedback->theActualTarget = VirtualMemoryAddress(0);
     feedback->theBPState = bpState();
     core()->branchFeedback(feedback);
-//    core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >( this ) , new BranchInteraction(VirtualMemoryAddress(0)) );
-
+    //    core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >(
+    //    this ) , new BranchInteraction(VirtualMemoryAddress(0)) );
   }
 }
 
@@ -159,17 +162,16 @@ bool armInstruction::usesFpSqrt() const {
   return theUsesFpSqrt;
 }
 
+std::pair<boost::intrusive_ptr<AbstractInstruction>, bool>
+decode(Flexus::SharedTypes::FetchedOpcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo,
+       int32_t aUop) {
+  DBG_(VVerb, (<< "\033[1;31m DECODER: Decoding " << std::hex << aFetchedOpcode.theOpcode
+               << std::dec << "\033[0m"));
 
-std::pair< boost::intrusive_ptr<AbstractInstruction>, bool> decode( Flexus::SharedTypes::FetchedOpcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo, int32_t aUop )
-{
-    DBG_(VVerb,(<< "\033[1;31m DECODER: Decoding " << std::hex << aFetchedOpcode.theOpcode << std::dec << "\033[0m"));
-
-    bool last_uop = true;
-    boost::intrusive_ptr<AbstractInstruction> ret_val = disas_a64_insn(aFetchedOpcode, aCPU, aSequenceNo, aUop);
-    return std::make_pair(ret_val, last_uop);
+  bool last_uop = true;
+  boost::intrusive_ptr<AbstractInstruction> ret_val =
+      disas_a64_insn(aFetchedOpcode, aCPU, aSequenceNo, aUop);
+  return std::make_pair(ret_val, last_uop);
 }
 
-
-
-
-} //narmDecoder
+} // namespace narmDecoder

@@ -17,6 +17,6 @@ namespace Flexus {
 
 extern std::string theSimulatorName;
 
-} //namespace Flexus
+} // namespace Flexus
 
-#endif //FLEXUS_SIMULATOR_NAME_HPP_INCLUDED
+#endif // FLEXUS_SIMULATOR_NAME_HPP_INCLUDED

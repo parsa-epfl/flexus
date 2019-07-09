@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,7 +36,6 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #include <components/uFetch/PortCombiner.hpp>
 
 #define FLEXUS_BEGIN_COMPONENT PortCombiner
@@ -49,44 +49,43 @@ using namespace SharedTypes;
 using boost::intrusive_ptr;
 
 class FLEXUS_COMPONENT(PortCombiner) {
-  FLEXUS_COMPONENT_IMPL( PortCombiner );
+  FLEXUS_COMPONENT_IMPL(PortCombiner);
 
 public:
-  FLEXUS_COMPONENT_CONSTRUCTOR(PortCombiner)
-    : base( FLEXUS_PASS_CONSTRUCTOR_ARGS )
-  {}
+  FLEXUS_COMPONENT_CONSTRUCTOR(PortCombiner) : base(FLEXUS_PASS_CONSTRUCTOR_ARGS) {
+  }
 
 public:
   // Initialization
   void initialize() {
   }
 
-  void finalize() {}
+  void finalize() {
+  }
 
   bool isQuiesced() const {
-    return true; //Mux is always quiesced
+    return true; // Mux is always quiesced
   }
 
   // Ports
-  bool available( interface::ReplyIn const &) {
-    return FLEXUS_CHANNEL( FetchMissOut ).available();
+  bool available(interface::ReplyIn const &) {
+    return FLEXUS_CHANNEL(FetchMissOut).available();
   }
-  void push( interface::ReplyIn const &, MemoryTransport & aMemTransport) {
-    FLEXUS_CHANNEL( FetchMissOut ) << aMemTransport;
-  }
-
-  bool available( interface::SnoopIn const &) {
-    return FLEXUS_CHANNEL( FetchMissOut ).available();
-  }
-  void push( interface::SnoopIn const &, MemoryTransport & aMemTransport) {
-    FLEXUS_CHANNEL( FetchMissOut ) << aMemTransport;
+  void push(interface::ReplyIn const &, MemoryTransport &aMemTransport) {
+    FLEXUS_CHANNEL(FetchMissOut) << aMemTransport;
   }
 
+  bool available(interface::SnoopIn const &) {
+    return FLEXUS_CHANNEL(FetchMissOut).available();
+  }
+  void push(interface::SnoopIn const &, MemoryTransport &aMemTransport) {
+    FLEXUS_CHANNEL(FetchMissOut) << aMemTransport;
+  }
 };
 
-} //End Namespace nPortCombiner
+} // End Namespace nPortCombiner
 
-FLEXUS_COMPONENT_INSTANTIATOR( PortCombiner, nPortCombiner );
+FLEXUS_COMPONENT_INSTANTIATOR(PortCombiner, nPortCombiner);
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
 #define FLEXUS_END_COMPONENT PortCombiner

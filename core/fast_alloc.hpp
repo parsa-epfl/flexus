@@ -35,16 +35,15 @@
 #pragma interface
 #endif
 
-#include <cstddef>
 #include <core/debug/debug.hpp>
+#include <cstddef>
 
 class FastAlloc {
 public:
-
-  static void * allocate(size_t);
+  static void *allocate(size_t);
   static void deallocate(void *, size_t);
 
-  void * operator new(size_t);
+  void *operator new(size_t);
   // inline void operator delete(void *, size_t);
   inline void operator delete(void *, size_t);
 
@@ -52,11 +51,11 @@ public:
   FastAlloc();
   virtual ~FastAlloc();
 #else
-  virtual ~FastAlloc() {}
+  virtual ~FastAlloc() {
+  }
 #endif
 
 private:
-
   // Max_Alloc_Size is the largest object that can be allocated with
   // this class.  There's no fundamental limit, but this limits the
   // size of the freeLists array.  Let's not make this really huge
@@ -69,15 +68,16 @@ private:
   static const int32_t Alloc_Quantum = (1 << Log2_Alloc_Quantum);
 
   // Num_Buckets = bucketFor(Max_Alloc_Size) + 1
-  static const int32_t Num_Buckets = ((Max_Alloc_Size + Alloc_Quantum - 1) >> Log2_Alloc_Quantum) + 1;
+  static const int32_t Num_Buckets =
+      ((Max_Alloc_Size + Alloc_Quantum - 1) >> Log2_Alloc_Quantum) + 1;
 
   // when we call new() for more structures, how many should we get?
   static const int32_t Num_Structs_Per_New = 20;
 
   static int32_t bucketFor(size_t);
-  static void * moreStructs(int32_t bucket);
+  static void *moreStructs(int32_t bucket);
 
-  static void * freeLists[Num_Buckets];
+  static void *freeLists[Num_Buckets];
 
 #ifdef FAST_ALLOC_STATS
   static unsigned newCount[Num_Buckets];
@@ -86,21 +86,19 @@ private:
 #endif
 
 #ifdef FAST_ALLOC_DEBUG
-  static FastAlloc * inUseList;
-  FastAlloc * inUsePrev;
-  FastAlloc * inUseNext;
+  static FastAlloc *inUseList;
+  FastAlloc *inUsePrev;
+  FastAlloc *inUseNext;
 #endif
 };
 
-inline
-int32_t FastAlloc::bucketFor(size_t sz) {
+inline int32_t FastAlloc::bucketFor(size_t sz) {
   return (sz + Alloc_Quantum - 1) >> Log2_Alloc_Quantum;
 }
 
-inline
-void * FastAlloc::allocate(size_t sz) {
+inline void *FastAlloc::allocate(size_t sz) {
   int32_t b;
-  void * p;
+  void *p;
 
   if (sz > Max_Alloc_Size)
     return (void *)::new char[sz];
@@ -120,19 +118,17 @@ void * FastAlloc::allocate(size_t sz) {
   return p;
 }
 
-inline
-void * FastAlloc::operator new(size_t sz) {
+inline void *FastAlloc::operator new(size_t sz) {
   return allocate(sz);
 }
 
-inline
-void FastAlloc::deallocate(void * p, size_t sz) {
+inline void FastAlloc::deallocate(void *p, size_t sz) {
   int32_t b;
 
   DBG_Assert(p != nullptr);
 
   if (sz > Max_Alloc_Size) {
-    ::delete [] ((char *) p);
+    ::delete[]((char *)p);
     return;
   }
 
@@ -144,8 +140,7 @@ void FastAlloc::deallocate(void * p, size_t sz) {
 #endif
 }
 
-inline
-void FastAlloc::operator delete(void * p, size_t sz) {
+inline void FastAlloc::operator delete(void *p, size_t sz) {
   deallocate(p, sz);
 }
 

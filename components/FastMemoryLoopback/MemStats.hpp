@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -33,13 +34,13 @@
 // ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
 // CONTRACT, TORT OR OTHERWISE).
 //
-// DO-NOT-REMOVE end-copyright-block   
+// DO-NOT-REMOVE end-copyright-block
 #ifndef FLEXUS_FASTMEMORYLOOPBACK_MEMSTATS_HPP_INCLUDED
 #define FLEXUS_FASTMEMORYLOOPBACK_MEMSTATS_HPP_INCLUDED
 
 #include <core/stats.hpp>
 
-#define debug(AAA) DBG_(VVerb, ( <<"TRACING  "<< AAA << std::dec) );
+#define debug(AAA) DBG_(VVerb, (<< "TRACING  " << AAA << std::dec));
 
 namespace nFastMemoryLoopback {
 
@@ -55,22 +56,19 @@ struct MemStats {
   Stat::StatCounter theUpgradeRequest_stat;
   Stat::StatCounter theWriteDMA_stat;
   Stat::StatCounter theReadDMA_stat;
-  
- MemStats(std::string const & theName)
-    : theReadRequests_stat(theName + "-Reads")
-    , theWriteRequests_stat(theName + "-Writes")
-    , theEvictDirtys_stat(theName + "-Evict:Dirty")
-    , theEvictCleans_stat(theName + "-Evict:Clean")
-    , theEvictWritables_stat(theName + "-Evict:Writable")
-    , theNonAllocatingStoreReq_stat(theName + "-NonAllocStore")
-    , theUpgradeRequest_stat(theName + "-Upgrade")
-    , theWriteDMA_stat(theName + "-DMA:Write")
-    , theReadDMA_stat(theName + "-DMA:Read")
-  {
+
+  MemStats(std::string const &theName)
+      : theReadRequests_stat(theName + "-Reads"), theWriteRequests_stat(theName + "-Writes"),
+        theEvictDirtys_stat(theName + "-Evict:Dirty"),
+        theEvictCleans_stat(theName + "-Evict:Clean"),
+        theEvictWritables_stat(theName + "-Evict:Writable"),
+        theNonAllocatingStoreReq_stat(theName + "-NonAllocStore"),
+        theUpgradeRequest_stat(theName + "-Upgrade"), theWriteDMA_stat(theName + "-DMA:Write"),
+        theReadDMA_stat(theName + "-DMA:Read") {
   }
   void update() {
   }
 };
 
-}  // namespace nFastMemoryLoopback
+} // namespace nFastMemoryLoopback
 #endif /* FLEXUS_FASTMEMORYLOOPBACK_MEMSTATS_HPP_INCLUDED */

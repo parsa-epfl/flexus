@@ -20,10 +20,9 @@ namespace boost {
 #define BOOST_CB_DEFAULT_ALLOCATOR(T) BOOST_DEDUCED_TYPENAME std::vector<T>::allocator_type
 #endif
 
-template < class T, class Alloc = BOOST_CB_DEFAULT_ALLOCATOR(T) >
-class circular_buffer;
+template <class T, class Alloc = BOOST_CB_DEFAULT_ALLOCATOR(T)> class circular_buffer;
 
-template < class T, class Alloc = BOOST_CB_DEFAULT_ALLOCATOR(T) >
+template <class T, class Alloc = BOOST_CB_DEFAULT_ALLOCATOR(T)>
 class circular_buffer_space_optimized;
 
 #undef BOOST_CB_DEFAULT_ALLOCATOR

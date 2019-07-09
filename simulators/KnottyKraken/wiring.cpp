@@ -1,63 +1,59 @@
 #define FLEXUS_WIRING_FILE
 #include <core/simulator_layout.hpp>
 
-
-//This section contains the name of the simulator
+// This section contains the name of the simulator
 #include <core/simulator_name.hpp>
 namespace Flexus {
-  std::string theSimulatorName = "KnottyKraken v1.0";
+std::string theSimulatorName = "KnottyKraken v1.0";
 }
-
 
 #include FLEXUS_BEGIN_DECLARATION_SECTION()
 
+#include <components/CMPCache/CMPCache.hpp>
+#include <components/Cache/Cache.hpp>
+#include <components/FetchAddressGenerate/FetchAddressGenerate.hpp>
+#include <components/MMU/MMU.hpp>
+#include <components/MagicBreakQEMU/MagicBreak.hpp>
 #include <components/MemoryLoopback/MemoryLoopback.hpp>
 #include <components/MemoryMap/MemoryMap.hpp>
-#include <components/MagicBreakQEMU/MagicBreak.hpp>
-#include <components/Cache/Cache.hpp>
-#include <components/NetShim/MemoryNetwork.hpp>
 #include <components/MultiNic/MultiNic2.hpp>
-#include <components/CMPCache/CMPCache.hpp>
-#include <components/FetchAddressGenerate/FetchAddressGenerate.hpp>
-#include <components/uFetch/uFetch.hpp>
-#include <components/uFetch/PortCombiner.hpp>
+#include <components/NetShim/MemoryNetwork.hpp>
+#include <components/SplitDestinationMapper/SplitDestinationMapper.hpp>
 #include <components/armDecoder/armDecoder.hpp>
 #include <components/uArchARM/uArchARM.hpp>
-#include <components/SplitDestinationMapper/SplitDestinationMapper.hpp>
-#include <components/MMU/MMU.hpp>
-
+#include <components/uFetch/PortCombiner.hpp>
+#include <components/uFetch/uFetch.hpp>
 
 #include FLEXUS_END_DECLARATION_SECTION()
 
-
 #include FLEXUS_BEGIN_COMPONENT_CONFIGURATION_SECTION()
 
-CREATE_CONFIGURATION( MMU , "mmu", theMMUCfg );
-CREATE_CONFIGURATION( FetchAddressGenerate, "fag", theFAGCfg );
-CREATE_CONFIGURATION( uFetch, "ufetch", theuFetchCfg );
-CREATE_CONFIGURATION( PortCombiner, "combiner", theCombinerCfg );
-CREATE_CONFIGURATION( armDecoder, "decoder", theDecoderCfg );
-CREATE_CONFIGURATION( uArchARM, "uarcharm", theuArchCfg );
+CREATE_CONFIGURATION(MMU, "mmu", theMMUCfg);
+CREATE_CONFIGURATION(FetchAddressGenerate, "fag", theFAGCfg);
+CREATE_CONFIGURATION(uFetch, "ufetch", theuFetchCfg);
+CREATE_CONFIGURATION(PortCombiner, "combiner", theCombinerCfg);
+CREATE_CONFIGURATION(armDecoder, "decoder", theDecoderCfg);
+CREATE_CONFIGURATION(uArchARM, "uarcharm", theuArchCfg);
 
-CREATE_CONFIGURATION( Cache, "L1d", theL1dCfg );
-CREATE_CONFIGURATION( CMPCache, "L2", theL2Cfg );
-CREATE_CONFIGURATION( MultiNic2, "nic", theNicCfg );
-CREATE_CONFIGURATION( MemoryNetwork, "network", theNetworkCfg );
+CREATE_CONFIGURATION(Cache, "L1d", theL1dCfg);
+CREATE_CONFIGURATION(CMPCache, "L2", theL2Cfg);
+CREATE_CONFIGURATION(MultiNic2, "nic", theNicCfg);
+CREATE_CONFIGURATION(MemoryNetwork, "network", theNetworkCfg);
 
-CREATE_CONFIGURATION( SplitDestinationMapper, "net-mapper", theNetMapperCfg );
+CREATE_CONFIGURATION(SplitDestinationMapper, "net-mapper", theNetMapperCfg);
 
-CREATE_CONFIGURATION( MemoryLoopback, "memory", theMemoryCfg );
-CREATE_CONFIGURATION( MemoryMap, "memory-map", theMemoryMapCfg );
-CREATE_CONFIGURATION( MagicBreak, "magic-break", theMagicBreakCfg );
+CREATE_CONFIGURATION(MemoryLoopback, "memory", theMemoryCfg);
+CREATE_CONFIGURATION(MemoryMap, "memory-map", theMemoryMapCfg);
+CREATE_CONFIGURATION(MagicBreak, "magic-break", theMagicBreakCfg);
 
-//You may optionally initialize configuration parameters from within this
-//function.  This initialization occur before the command line is processed,
-//so they will be overridden from the command line.
+// You may optionally initialize configuration parameters from within this
+// function.  This initialization occur before the command line is processed,
+// so they will be overridden from the command line.
 //
-//Return value indicates whether simulation should abort if any parameters
-//are left at their default values;
+// Return value indicates whether simulation should abort if any parameters
+// are left at their default values;
 bool initializeParameters() {
-  DBG_( Dev, ( << " initializing Parameters..." ) );
+  DBG_(Dev, (<< " initializing Parameters..."));
 
   theFAGCfg.Threads.initialize(1);
   theFAGCfg.MaxFetchAddress.initialize(1);
@@ -92,7 +88,7 @@ bool initializeParameters() {
   theuArchCfg.MemoryPorts.initialize(4);
   theuArchCfg.StorePrefetches.initialize(30);
   theuArchCfg.PrefetchEarly.initialize(false);
-  theuArchCfg.ConsistencyModel.initialize(1); //TSO
+  theuArchCfg.ConsistencyModel.initialize(1); // TSO
   theuArchCfg.CoherenceUnit.initialize(64);
   theuArchCfg.BreakOnResynchronize.initialize(false);
   theuArchCfg.SpinControl.initialize(true);
@@ -106,7 +102,7 @@ bool initializeParameters() {
   theuArchCfg.OffChipLatency.initialize(320);
   theuArchCfg.OnChipLatency.initialize(3);
 
-  theuArchCfg.EarlySGP.initialize(false); // CMU-ONLY
+  theuArchCfg.EarlySGP.initialize(false);              // CMU-ONLY
   theuArchCfg.TrackParallelAccesses.initialize(false); // CMU-ONLY
 
   theuArchCfg.FpAddOpLatency.initialize(true);
@@ -137,11 +133,9 @@ bool initializeParameters() {
   theuArchCfg.NumIntAlu.initialize(true);
   theuArchCfg.NumIntMult.initialize(true);
 
-
-
   static const int K = 1024;
 
-  theL1dCfg.Cores.initialize( 1 );
+  theL1dCfg.Cores.initialize(1);
   theL1dCfg.BlockSize.initialize(64);
   theL1dCfg.Ports.initialize(2);
   theL1dCfg.PreQueueSizes.initialize(4);
@@ -171,8 +165,6 @@ bool initializeParameters() {
   theL1dCfg.GZipFlexpoints.initialize(false);
   theL1dCfg.TextFlexpoints.initialize(false);
   theL1dCfg.EvictWritableHasData.initialize(false);
-
-
 
   theL2Cfg.Cores.initialize(2);
   theL2Cfg.BlockSize.initialize(64);
@@ -204,8 +196,8 @@ bool initializeParameters() {
   theNicCfg.SendCapacity.initialize(1);
 
   theNetworkCfg.NetworkTopologyFile.initialize("1x3-mesh.topology");
-  theNetworkCfg.NumNodes.initialize( 3 );
-  theNetworkCfg.VChannels.initialize( 3 );
+  theNetworkCfg.NumNodes.initialize(3);
+  theNetworkCfg.VChannels.initialize(3);
 
   theNetMapperCfg.Cores.initialize(1);
   theNetMapperCfg.Directories.initialize(1);
@@ -227,7 +219,7 @@ bool initializeParameters() {
   theMemoryCfg.UseFetchReply.initialize(true);
 
   theMemoryMapCfg.PageSize.initialize(8 * K);
-  theMemoryMapCfg.NumNodes.initialize( 1 );
+  theMemoryMapCfg.NumNodes.initialize(1);
   theMemoryMapCfg.RoundRobin.initialize(true);
   theMemoryMapCfg.CreatePageMap.initialize(true);
   theMemoryMapCfg.ReadPageMap.initialize(true);
@@ -252,15 +244,15 @@ bool initializeParameters() {
   theMMUCfg.dTLBSize.initialize(64);
   theMMUCfg.PerfectTLB.initialize(true);
 
-  return true; //true = Abort simulation if parameters are not initialized
+  return true; // true = Abort simulation if parameters are not initialized
 }
 
 #include FLEXUS_END_COMPONENT_CONFIGURATION_SECTION()
 
-
+// clang-format off
 #include FLEXUS_BEGIN_COMPONENT_INSTANTIATION_SECTION()
-//All component Instances are created here.  This section
-//also creates handles for each component
+// All component Instances are created here.  This section
+// also creates handles for each component
 //
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( FetchAddressGenerate, theFAGCfg, theFAG, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( uFetch, theuFetchCfg, theuFetch, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
@@ -278,8 +270,6 @@ FLEXUS_INSTANTIATE_COMPONENT( MagicBreak, theMagicBreakCfg, theMagicBreak );
 FLEXUS_INSTANTIATE_COMPONENT( SplitDestinationMapper, theNetMapperCfg, theNetMapper );
 
 #include FLEXUS_END_COMPONENT_INSTANTIATION_SECTION()
-
-
 
 #include FLEXUS_BEGIN_COMPONENT_WIRING_SECTION()
 
@@ -361,7 +351,6 @@ WIRE( theNetwork, ToNode,               theNic, FromNetwork               )
 
 #include FLEXUS_END_COMPONENT_WIRING_SECTION()
 
-
 #include FLEXUS_BEGIN_DRIVE_ORDER_SECTION()
 
 DRIVE( theuFetch, uFetchDrive )
@@ -377,3 +366,4 @@ DRIVE( theuFetch, uFetchDrive )
 , DRIVE( theMagicBreak, TickDrive )
 
 #include FLEXUS_END_DRIVE_ORDER_SECTION()
+    // clang-format on

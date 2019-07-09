@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,15 +36,14 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #ifndef __CMPCACHE_CMP_CACHE_CONTROLLER_HPP__
 #define __CMPCACHE_CMP_CACHE_CONTROLLER_HPP__
 
-#include <list>
-#include <components/CommonQEMU/MessageQueues.hpp>
-#include <components/CMPCache/ProcessEntry.hpp>
-#include <components/CMPCache/AbstractPolicy.hpp>
 #include <components/CMPCache/AbstractCacheController.hpp>
+#include <components/CMPCache/AbstractPolicy.hpp>
+#include <components/CMPCache/ProcessEntry.hpp>
+#include <components/CommonQEMU/MessageQueues.hpp>
+#include <list>
 
 namespace nCMPCache {
 
@@ -53,14 +53,13 @@ using namespace nMessageQueues;
 class CMPCacheController : public AbstractCacheController {
 
 private:
-
   typedef boost::intrusive_ptr<ProcessEntry> ProcessEntry_p;
   typedef PipelineFifo<ProcessEntry_p> Pipeline;
 
   Pipeline theMAFPipeline;
   Pipeline theDirTagPipeline;
   Pipeline theDataPipeline;
-  
+
   Stat::StatInstanceCounter<int64_t> theRequestInUtilization;
   Stat::StatInstanceCounter<int64_t> theMafUtilization;
   Stat::StatInstanceCounter<int64_t> theDirTagUtilization;
@@ -69,7 +68,7 @@ private:
   int32_t theMaxSnoopsPerRequest;
 
 public:
-  CMPCacheController(const CMPCacheInfo & anInfo);
+  CMPCacheController(const CMPCacheInfo &anInfo);
 
   ~CMPCacheController();
 
@@ -77,18 +76,18 @@ public:
 
   virtual bool isQuiesced() const;
 
-  virtual void saveState(std::string const & aDirName);
+  virtual void saveState(std::string const &aDirName);
 
-  virtual void loadState(std::string const & aDirName);
+  virtual void loadState(std::string const &aDirName);
 
   virtual void processMessages();
 
   // static memembers to work with AbstractFactory
-  static AbstractCacheController * createInstance(std::list<std::pair<std::string, std::string> > & args, const CMPCacheInfo & params);
+  static AbstractCacheController *
+  createInstance(std::list<std::pair<std::string, std::string>> &args, const CMPCacheInfo &params);
   static const std::string name;
 
 protected:
-
   void scheduleNewProcesses();
   void advanceMAFPipeline();
   void advancePipeline();
@@ -108,6 +107,6 @@ protected:
 
 }; // CMPCacheController
 
-};
+}; // namespace nCMPCache
 
 #endif // !__CMPCACHE_CMP_CACHE_CONTROLLER_HPP__

@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,7 +36,6 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #ifndef __ABSTRACT_DIRECTORY_HPP__
 #define __ABSTRACT_DIRECTORY_HPP__
 
@@ -43,48 +43,47 @@
 
 namespace nCMPCache {
 
-template<typename _State>
-class AbstractLookupResult : public boost::counted_base {
+template <typename _State> class AbstractLookupResult : public boost::counted_base {
 public:
-  virtual ~AbstractLookupResult() {}
+  virtual ~AbstractLookupResult() {
+  }
   virtual bool found() = 0;
-  virtual bool	isProtected() = 0;
+  virtual bool isProtected() = 0;
   virtual void setProtected(bool val) = 0;
-  virtual const _State & state() const = 0;
+  virtual const _State &state() const = 0;
 
   virtual void addSharer(int32_t sharer) = 0;
   virtual void removeSharer(int32_t sharer) = 0;
   virtual void setSharer(int32_t sharer) = 0;
-  virtual void setState(const _State & state) = 0;
+  virtual void setState(const _State &state) = 0;
 };
 
-
-template<typename _State, typename _EState = _State>
-class AbstractDirectory {
+template <typename _State, typename _EState = _State> class AbstractDirectory {
 public:
-  virtual ~AbstractDirectory() {}
+  virtual ~AbstractDirectory() {
+  }
 
   typedef AbstractLookupResult<_State> LookupResult;
   typedef typename boost::intrusive_ptr<LookupResult> LookupResult_p;
 
-  virtual bool allocate(LookupResult_p lookup, MemoryAddress address, const _State & state) = 0;
+  virtual bool allocate(LookupResult_p lookup, MemoryAddress address, const _State &state) = 0;
   virtual LookupResult_p lookup(MemoryAddress address) = 0;
   virtual bool sameSet(MemoryAddress a, MemoryAddress b) = 0;
-  virtual DirEvictBuffer<_EState> * getEvictBuffer() = 0;
+  virtual DirEvictBuffer<_EState> *getEvictBuffer() = 0;
 
   virtual bool idleWorkReady() const {
     return false;
   }
 
   // Return number of dir lookups required.
-  virtual int  doIdleWork() const {
+  virtual int doIdleWork() const {
     return 0;
   }
 
-  virtual bool loadState(std::istream & is) = 0;
+  virtual bool loadState(std::istream &is) = 0;
 };
 
-}; // nCMPCache
+}; // namespace nCMPCache
 
 #include <components/CMPCache/CMPCacheInfo.hpp>
 #include <components/CMPCache/InfiniteDirectory.hpp>
@@ -93,8 +92,8 @@ public:
 
 namespace nCMPCache {
 
-template<typename _State, typename _EState>
-AbstractDirectory<_State, _EState>* constructDirectory(const CMPCacheInfo & params) {
+template <typename _State, typename _EState>
+AbstractDirectory<_State, _EState> *constructDirectory(const CMPCacheInfo &params) {
   std::string args = params.theDirParams;
 
   // First, extract the Name of the type of array to consruct
@@ -102,7 +101,7 @@ AbstractDirectory<_State, _EState>* constructDirectory(const CMPCacheInfo & para
   std::string name = args.substr(0, loc);
 
   // Now create a list of key,value pairs
-  std::list< std::pair<std::string, std::string> > arg_list;
+  std::list<std::pair<std::string, std::string>> arg_list;
   std::string key;
   std::string value;
   std::string::size_type pos = 0;
@@ -125,27 +124,26 @@ AbstractDirectory<_State, _EState>* constructDirectory(const CMPCacheInfo & para
     }
   } while (pos != std::string::npos);
 
-  const std::string & type = params.theDirType;
+  const std::string &type = params.theDirType;
   if (strcasecmp(type.c_str(), "std") == 0 || strcasecmp(type.c_str(), "standard") == 0) {
     return new StdDirectory<_State, _EState>(params, arg_list);
   } else if (strcasecmp(type.c_str(), "infinite") == 0 || strcasecmp(type.c_str(), "inf") == 0) {
-    return new InfiniteDirectory<_State, _EState>( params, arg_list);
+    return new InfiniteDirectory<_State, _EState>(params, arg_list);
   } else if (strcasecmp(type.c_str(), "tagless") == 0) {
-    return new TaglessDirectory<_State, _EState>( params, arg_list);
-  /*} else if (strcasecmp(type.c_str(), "rt") == 0) {
-    return new RTDirectory<_State, _EState>( params, arg_list);
-  } else if (strcasecmp(type.c_str(), "region") == 0) {
-    return new RegionDirectory<_State, _EState>( params, arg_list);
-  } else if ((strcasecmp(type.c_str(), "infinite_region") == 0)
-             || (strcasecmp(type.c_str(), "infiniteregion") == 0)) {
-    return new InfiniteRegionDir<_State, _EState>( params, arg_list);*/
+    return new TaglessDirectory<_State, _EState>(params, arg_list);
+    /*} else if (strcasecmp(type.c_str(), "rt") == 0) {
+      return new RTDirectory<_State, _EState>( params, arg_list);
+    } else if (strcasecmp(type.c_str(), "region") == 0) {
+      return new RegionDirectory<_State, _EState>( params, arg_list);
+    } else if ((strcasecmp(type.c_str(), "infinite_region") == 0)
+               || (strcasecmp(type.c_str(), "infiniteregion") == 0)) {
+      return new InfiniteRegionDir<_State, _EState>( params, arg_list);*/
   }
 
-  DBG_Assert(false, ( << "Failed to create instance of '" << type << "' directory. Type unknown." ));
+  DBG_Assert(false, (<< "Failed to create instance of '" << type << "' directory. Type unknown."));
   return nullptr;
 }
 
-}; // nCMPCache
+}; // namespace nCMPCache
 
 #endif // __ABSTRACT_DIRECTORY_HPP__
-

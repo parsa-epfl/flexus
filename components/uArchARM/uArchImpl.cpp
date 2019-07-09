@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,20 +36,19 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #include <components/uArchARM/uArchARM.hpp>
 
 #define FLEXUS_BEGIN_COMPONENT uArchARM
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
 
-#include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 #include <components/CommonQEMU/Slices/ExecuteState.hpp>
+#include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 #include <components/MTManager/MTManager.hpp>
 
 #include "uArchInterfaces.hpp"
 
-#include <core/debug/debug.hpp>
 #include "microArch.hpp"
+#include <core/debug/debug.hpp>
 
 #include <core/qemu/mai_api.hpp>
 
@@ -62,10 +62,12 @@ using namespace Flexus;
 using namespace Core;
 using namespace SharedTypes;
 
-class uArch_QemuObject_Impl  {
+class uArch_QemuObject_Impl {
   std::shared_ptr<microArch> theMicroArch;
+
 public:
-  uArch_QemuObject_Impl(Flexus::Qemu::API::conf_object_t * /*ignored*/ ) {}
+  uArch_QemuObject_Impl(Flexus::Qemu::API::conf_object_t * /*ignored*/) {
+  }
 
   void setMicroArch(std::shared_ptr<microArch> aMicroArch) {
     theMicroArch = aMicroArch;
@@ -115,15 +117,15 @@ public:
     DBG_Assert(theMicroArch);
     theMicroArch->printAssignments(aRegSet);
   }
-
 };
 
-class uArch_QemuObject : public Qemu::AddInObject <uArch_QemuObject_Impl> {
+class uArch_QemuObject : public Qemu::AddInObject<uArch_QemuObject_Impl> {
 
   typedef Qemu::AddInObject<uArch_QemuObject_Impl> base;
+
 public:
-  static const Qemu::Persistence  class_persistence = Qemu::Session;
-  //These constants are defined in Simics/simics.cpp
+  static const Qemu::Persistence class_persistence = Qemu::Session;
+  // These constants are defined in Simics/simics.cpp
   static std::string className() {
     return "uArchARM";
   }
@@ -131,9 +133,12 @@ public:
     return "uArchARM object";
   }
 
-  uArch_QemuObject() : base() { }
-  uArch_QemuObject(Qemu::API::conf_object_t * aQemuObject) : base(aQemuObject) {}
-  uArch_QemuObject(uArch_QemuObject_Impl * anImpl) : base(anImpl) {}
+  uArch_QemuObject() : base() {
+  }
+  uArch_QemuObject(Qemu::API::conf_object_t *aQemuObject) : base(aQemuObject) {
+  }
+  uArch_QemuObject(uArch_QemuObject_Impl *anImpl) : base(anImpl) {
+  }
 };
 
 Qemu::Factory<uArch_QemuObject> theuArchQemuFactory;
@@ -145,45 +150,43 @@ class FLEXUS_COMPONENT(uArchARM) {
   uArch_QemuObject theuArchObject;
 
 public:
-  FLEXUS_COMPONENT_CONSTRUCTOR(uArchARM)
-    : base( FLEXUS_PASS_CONSTRUCTOR_ARGS )
-  {}
+  FLEXUS_COMPONENT_CONSTRUCTOR(uArchARM) : base(FLEXUS_PASS_CONSTRUCTOR_ARGS) {
+  }
 
   bool isQuiesced() const {
     return !theMicroArch || theMicroArch->isQuiesced();
   }
 
   void initialize() {
-    uArchOptions_t
-    options;
+    uArchOptions_t options;
 
-    options.ROBSize              = cfg.ROBSize;
-    options.SBSize               = cfg.SBSize;
-    options.NAWBypassSB          = cfg.NAWBypassSB;
-    options.NAWWaitAtSync        = cfg.NAWWaitAtSync;
-    options.retireWidth          = cfg.RetireWidth;
-    options.numMemoryPorts       = cfg.MemoryPorts;
-    options.numSnoopPorts        = cfg.SnoopPorts;
-    options.numStorePrefetches   = cfg.StorePrefetches;
-    options.prefetchEarly        = cfg.PrefetchEarly;
-    options.spinControlEnabled   = cfg.SpinControl;
-    options.consistencyModel     = (nuArchARM::eConsistencyModel)cfg.ConsistencyModel;
-    options.coherenceUnit        = cfg.CoherenceUnit;
+    options.ROBSize = cfg.ROBSize;
+    options.SBSize = cfg.SBSize;
+    options.NAWBypassSB = cfg.NAWBypassSB;
+    options.NAWWaitAtSync = cfg.NAWWaitAtSync;
+    options.retireWidth = cfg.RetireWidth;
+    options.numMemoryPorts = cfg.MemoryPorts;
+    options.numSnoopPorts = cfg.SnoopPorts;
+    options.numStorePrefetches = cfg.StorePrefetches;
+    options.prefetchEarly = cfg.PrefetchEarly;
+    options.spinControlEnabled = cfg.SpinControl;
+    options.consistencyModel = (nuArchARM::eConsistencyModel)cfg.ConsistencyModel;
+    options.coherenceUnit = cfg.CoherenceUnit;
     options.breakOnResynchronize = cfg.BreakOnResynchronize;
-//    options.validateMMU          = cfg.ValidateMMU;
-    options.speculativeOrder     = cfg.SpeculativeOrder;
-    options.speculateOnAtomicValue   = cfg.SpeculateOnAtomicValue;
-    options.speculateOnAtomicValuePerfect   = cfg.SpeculateOnAtomicValuePerfect;
+    //    options.validateMMU          = cfg.ValidateMMU;
+    options.speculativeOrder = cfg.SpeculativeOrder;
+    options.speculateOnAtomicValue = cfg.SpeculateOnAtomicValue;
+    options.speculateOnAtomicValuePerfect = cfg.SpeculateOnAtomicValuePerfect;
     options.speculativeCheckpoints = cfg.SpeculativeCheckpoints;
-    options.checkpointThreshold   = cfg.CheckpointThreshold;
-    options.earlySGP             = cfg.EarlySGP;    /* CMU-ONLY */
+    options.checkpointThreshold = cfg.CheckpointThreshold;
+    options.earlySGP = cfg.EarlySGP;                           /* CMU-ONLY */
     options.trackParallelAccesses = cfg.TrackParallelAccesses; /* CMU-ONLY */
-    options.inOrderMemory        = cfg.InOrderMemory;
-    options.inOrderExecute       = cfg.InOrderExecute;
-    options.onChipLatency        = cfg.OnChipLatency;
-    options.offChipLatency       = cfg.OffChipLatency;
-    options.name                 = statName();
-    options.node                 = flexusIndex();
+    options.inOrderMemory = cfg.InOrderMemory;
+    options.inOrderExecute = cfg.InOrderExecute;
+    options.onChipLatency = cfg.OnChipLatency;
+    options.offChipLatency = cfg.OffChipLatency;
+    options.name = statName();
+    options.node = flexusIndex();
 
     options.numIntAlu = cfg.NumIntAlu;
     options.intAluOpLatency = cfg.IntAluOpLatency;
@@ -211,32 +214,33 @@ public:
     options.fpSqrtOpLatency = cfg.FpSqrtOpLatency;
     options.fpSqrtOpPipelineResetTime = cfg.FpSqrtOpPipelineResetTime;
 
-    theMicroArch = microArch::construct ( options
-                                            , ll::bind( &uArchARMComponent::squash, this, ll::_1)
-                                            , ll::bind( &uArchARMComponent::redirect, this, ll::_1)
-                                            , ll::bind( &uArchARMComponent::changeState, this, ll::_1, ll::_2)
-                                            , ll::bind( &uArchARMComponent::feedback, this, ll::_1)
-                                            , ll::bind( &uArchARMComponent::signalStoreForwardingHit, this, ll::_1)
-                                            , ll::bind( &uArchARMComponent::resyncMMU, this, ll::_1)
-                                        );
+    theMicroArch =
+        microArch::construct(options, ll::bind(&uArchARMComponent::squash, this, ll::_1),
+                             ll::bind(&uArchARMComponent::redirect, this, ll::_1),
+                             ll::bind(&uArchARMComponent::changeState, this, ll::_1, ll::_2),
+                             ll::bind(&uArchARMComponent::feedback, this, ll::_1),
+                             ll::bind(&uArchARMComponent::signalStoreForwardingHit, this, ll::_1),
+                             ll::bind(&uArchARMComponent::resyncMMU, this, ll::_1));
 
-    theuArchObject = theuArchQemuFactory.create( (std::string("uarcharm-") + boost::padded_string_cast < 2, '0' > (flexusIndex())).c_str() );
+    theuArchObject = theuArchQemuFactory.create(
+        (std::string("uarcharm-") + boost::padded_string_cast<2, '0'>(flexusIndex())).c_str());
     theuArchObject->setMicroArch(theMicroArch);
-
   }
 
-  void finalize() {}
+  void finalize() {
+  }
 
 public:
   FLEXUS_PORT_ALWAYS_AVAILABLE(DispatchIn);
-  void push( interface::DispatchIn const &, boost::intrusive_ptr< AbstractInstruction > & anInstruction ) {
-    DBG_(VVerb, (<<"Get the inst in uArchARM: "));
+  void push(interface::DispatchIn const &,
+            boost::intrusive_ptr<AbstractInstruction> &anInstruction) {
+    DBG_(VVerb, (<< "Get the inst in uArchARM: "));
     theMicroArch->dispatch(anInstruction);
   }
 
   FLEXUS_PORT_ALWAYS_AVAILABLE(AvailableDispatchOut);
   std::pair<int, bool> pull(AvailableDispatchOut const &) {
-    return std::make_pair( theMicroArch->availableROB(), theMicroArch->isSynchronized() );
+    return std::make_pair(theMicroArch->availableROB(), theMicroArch->isSynchronized());
   }
 
   FLEXUS_PORT_ALWAYS_AVAILABLE(Stalled);
@@ -250,52 +254,47 @@ public:
   }
 
   FLEXUS_PORT_ALWAYS_AVAILABLE(MemoryIn);
-  void push( interface::MemoryIn const &, MemoryTransport & aTransport) {
+  void push(interface::MemoryIn const &, MemoryTransport &aTransport) {
     handleMemoryMessage(aTransport);
   }
 
-  FLEXUS_PORT_ALWAYS_AVAILABLE( WritePermissionLost );
-  void push( interface::WritePermissionLost const &, PhysicalMemoryAddress & anAddress) {
+  FLEXUS_PORT_ALWAYS_AVAILABLE(WritePermissionLost);
+  void push(interface::WritePermissionLost const &, PhysicalMemoryAddress &anAddress) {
     theMicroArch->writePermissionLost(anAddress);
   }
 
   FLEXUS_PORT_ALWAYS_AVAILABLE(dTranslationIn);
-  void push( interface::dTranslationIn const &,
-               TranslationPtr& aTranslate ) {
+  void push(interface::dTranslationIn const &, TranslationPtr &aTranslate) {
 
-      PhysicalMemoryAddress magicTranslation = Flexus::Qemu::Processor::getProcessor(theMicroArch->core())->translateVirtualAddress(aTranslate->theVaddr);
+    PhysicalMemoryAddress magicTranslation =
+        Flexus::Qemu::Processor::getProcessor(theMicroArch->core())
+            ->translateVirtualAddress(aTranslate->theVaddr);
 
-      if( aTranslate->thePaddr == magicTranslation || magicTranslation == 0xffffffffffffffff) {
-          DBG_(Dev, ( << "Magic QEMU translation == MMU Translation. Vaddr = "
-                      << std::hex << aTranslate->theVaddr
-                      << std::dec << ", Paddr = "
-                      << std::hex << magicTranslation << std::dec
-                      << ", ID: " << aTranslate->theID));
-      } else {
-          DBG_Assert(false, ( << "ERROR: Magic QEMU translation NOT EQUAL TO MMU Translation. Vaddr = " << std::hex << aTranslate->theVaddr
-                      << std::dec << ", PADDR_MMU = "
-                      << std::hex << aTranslate->thePaddr
-                      << std::dec << ", PADDR_QEMU = "
-                      << std::hex << magicTranslation << std::dec));
-      }
+    if (aTranslate->thePaddr == magicTranslation || magicTranslation == 0xffffffffffffffff) {
+      DBG_(Dev, (<< "Magic QEMU translation == MMU Translation. Vaddr = " << std::hex
+                 << aTranslate->theVaddr << std::dec << ", Paddr = " << std::hex << magicTranslation
+                 << std::dec << ", ID: " << aTranslate->theID));
+    } else {
+      DBG_Assert(false, (<< "ERROR: Magic QEMU translation NOT EQUAL TO MMU "
+                            "Translation. Vaddr = "
+                         << std::hex << aTranslate->theVaddr << std::dec
+                         << ", PADDR_MMU = " << std::hex << aTranslate->thePaddr << std::dec
+                         << ", PADDR_QEMU = " << std::hex << magicTranslation << std::dec));
+    }
 
-      aTranslate->thePaddr = magicTranslation;
-      theMicroArch->pushTranslation(aTranslate);
+    aTranslate->thePaddr = magicTranslation;
+    theMicroArch->pushTranslation(aTranslate);
   }
 
-    FLEXUS_PORT_ALWAYS_AVAILABLE(MemoryRequestIn);
-   void push( interface::MemoryRequestIn const &,
-              TranslationPtr& aTranslation ) {
+  FLEXUS_PORT_ALWAYS_AVAILABLE(MemoryRequestIn);
+  void push(interface::MemoryRequestIn const &, TranslationPtr &aTranslation) {
 
-     theMicroArch->issueMMU(aTranslation);
-}
-
-
-
+    theMicroArch->issueMMU(aTranslation);
+  }
 
 public:
-  //The FetchDrive drive interface sends a commands to the Feeder and then fetches instructions,
-  //passing each instruction to its FetchOut port.
+  // The FetchDrive drive interface sends a commands to the Feeder and then
+  // fetches instructions, passing each instruction to its FetchOut port.
   void drive(interface::uArchDrive const &) {
     doCycle();
   }
@@ -304,32 +303,32 @@ private:
   struct ResynchronizeWithQemuException {};
 
   void squash(eSquashCause aSquashReason) {
-    FLEXUS_CHANNEL( SquashOut ) << aSquashReason;
+    FLEXUS_CHANNEL(SquashOut) << aSquashReason;
   }
   void resyncMMU(int32_t aNode) {
-      bool value = true;
-      FLEXUS_CHANNEL(ResyncOut) << value;
+    bool value = true;
+    FLEXUS_CHANNEL(ResyncOut) << value;
   }
 
   void changeState(int32_t aTL, int32_t aPSTATE) {
     CPUState state;
     state.theTL = aTL;
     state.thePSTATE = aPSTATE;
-    FLEXUS_CHANNEL( ChangeCPUState ) << state;
+    FLEXUS_CHANNEL(ChangeCPUState) << state;
   }
 
   void redirect(VirtualMemoryAddress aPC) {
     VirtualMemoryAddress redirect_addr = aPC;
-    FLEXUS_CHANNEL( RedirectOut ) << redirect_addr;
+    FLEXUS_CHANNEL(RedirectOut) << redirect_addr;
   }
 
   void feedback(boost::intrusive_ptr<BranchFeedback> aFeedback) {
-    FLEXUS_CHANNEL( BranchFeedbackOut ) << aFeedback;
+    FLEXUS_CHANNEL(BranchFeedbackOut) << aFeedback;
   }
 
   void signalStoreForwardingHit(bool garbage) {
     bool value = true;
-    FLEXUS_CHANNEL( StoreForwardingHitSeen ) << value;
+    FLEXUS_CHANNEL(StoreForwardingHitSeen) << value;
   }
 
   void doCycle() {
@@ -347,71 +346,79 @@ private:
   }
 
   void requestTranslations() {
-      while (FLEXUS_CHANNEL( dTranslationOut ).available()) {
-          TranslationPtr op(theMicroArch->popTranslation());
-          if (! op ) break;
+    while (FLEXUS_CHANNEL(dTranslationOut).available()) {
+      TranslationPtr op(theMicroArch->popTranslation());
+      if (!op)
+        break;
 
-          FLEXUS_CHANNEL(dTranslationOut) << op;
-      }
-
+      FLEXUS_CHANNEL(dTranslationOut) << op;
+    }
   }
 
   void sendMemoryMessages() {
-    while (FLEXUS_CHANNEL( MemoryOut_Request ).available()) {
-      boost::intrusive_ptr< MemOp > op(theMicroArch->popMemOp());
-      if (! op ) break;
+    while (FLEXUS_CHANNEL(MemoryOut_Request).available()) {
+      boost::intrusive_ptr<MemOp> op(theMicroArch->popMemOp());
+      if (!op)
+        break;
 
       MemoryTransport transport;
       boost::intrusive_ptr<MemoryMessage> operation;
 
-      DBG_(Dev, (<< "Sending Memory Request: " <<  op->theOperation  << "  -- vaddr: " << op->theVAddr
-                 << "  -- paddr: " << op->thePAddr
-                //  << "  --  Instruction: " <<  *(op->theInstruction)
+      DBG_(Dev, (<< "Sending Memory Request: " << op->theOperation << "  -- vaddr: " << op->theVAddr
+                 << "  -- paddr: "
+                 << op->thePAddr
+                 //  << "  --  Instruction: " <<  *(op->theInstruction)
                  << " --  PC: " << op->thePC << " -- size: " << op->theSize));
 
       if (op->theNAW) {
-        DBG_Assert( op->theOperation == kStore );
-        operation = new MemoryMessage(MemoryMessage::NonAllocatingStoreReq, op->thePAddr, op->thePC);
+        DBG_Assert(op->theOperation == kStore);
+        operation =
+            new MemoryMessage(MemoryMessage::NonAllocatingStoreReq, op->thePAddr, op->thePC);
       } else {
 
-        switch ( op->theOperation ) {
-          case kLoad:
-            //pc = Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
-            operation = MemoryMessage::newLoad(op->thePAddr, op->thePC);
-            break;
+        switch (op->theOperation) {
+        case kLoad:
+          // pc =
+          // Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
+          operation = MemoryMessage::newLoad(op->thePAddr, op->thePC);
+          break;
 
-          case kAtomicPreload:
-            //pc = Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
-            operation = MemoryMessage::newAtomicPreload(op->thePAddr, op->thePC);
-            break;
+        case kAtomicPreload:
+          // pc =
+          // Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
+          operation = MemoryMessage::newAtomicPreload(op->thePAddr, op->thePC);
+          break;
 
-          case kStorePrefetch:
-            //pc = Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
-            operation = MemoryMessage::newStorePrefetch(op->thePAddr, op->thePC, op->theValue);
-            break;
+        case kStorePrefetch:
+          // pc =
+          // Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
+          operation = MemoryMessage::newStorePrefetch(op->thePAddr, op->thePC, op->theValue);
+          break;
 
-          case kStore:
-            //pc = Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
-            operation = MemoryMessage::newStore(op->thePAddr, op->thePC, op->theValue);
-            break;
+        case kStore:
+          // pc =
+          // Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
+          operation = MemoryMessage::newStore(op->thePAddr, op->thePC, op->theValue);
+          break;
 
-          case kRMW:
-            //pc = Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
-            operation = MemoryMessage::newRMW(op->thePAddr, op->thePC, op->theValue);
-            break;
+        case kRMW:
+          // pc =
+          // Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
+          operation = MemoryMessage::newRMW(op->thePAddr, op->thePC, op->theValue);
+          break;
 
-          case kCAS:
-            //pc = Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
-            operation = MemoryMessage::newCAS(op->thePAddr, op->thePC, op->theValue);
-            break;
+        case kCAS:
+          // pc =
+          // Simics::Processor::getProcessor(flexusIndex())->translateInstruction(op->thePC);
+          operation = MemoryMessage::newCAS(op->thePAddr, op->thePC, op->theValue);
+          break;
         case kPageWalkRequest:
-            operation = MemoryMessage::newPWRequest(op->thePAddr);
-            operation->setPageWalk();
-            break;
-          default:
-            DBG_Assert( false,  ( << "Unknown memory operation type: " << op->theOperation ) );
+          operation = MemoryMessage::newPWRequest(op->thePAddr);
+          operation->setPageWalk();
+          break;
+        default:
+          DBG_Assert(false, (<< "Unknown memory operation type: " << op->theOperation));
         }
-
       }
       if (op->theOperation != kPageWalkRequest)
         operation->theInstruction = op->theInstruction;
@@ -421,10 +428,10 @@ private:
         transport.set(TransactionTrackerTag, op->theTracker);
       } else {
         boost::intrusive_ptr<TransactionTracker> tracker = new TransactionTracker;
-        tracker->setAddress( op->thePAddr );
+        tracker->setAddress(op->thePAddr);
         tracker->setInitiator(flexusIndex());
         tracker->setSource("uArchARM");
-        tracker->setOS(false); //TWENISCH - need to set this properly
+        tracker->setOS(false); // TWENISCH - need to set this properly
         transport.set(TransactionTrackerTag, tracker);
         op->theTracker = tracker;
       }
@@ -433,46 +440,47 @@ private:
       transport.set(uArchStateTag, op);
 
       if (op->theNAW && (op->thePAddr & 63) != 0) {
-        //Auto-reply to the unaligned parts of NAW
+        // Auto-reply to the unaligned parts of NAW
         transport[MemoryMessageTag]->type() = MemoryMessage::NonAllocatingStoreReply;
-        handleMemoryMessage( transport );
+        handleMemoryMessage(transport);
       } else {
-        FLEXUS_CHANNEL( MemoryOut_Request) << transport;
+        FLEXUS_CHANNEL(MemoryOut_Request) << transport;
       }
     }
 
-    while (FLEXUS_CHANNEL( MemoryOut_Snoop).available()) {
-      boost::intrusive_ptr< MemOp > op(theMicroArch->popSnoopOp());
-      if (! op ) break;
+    while (FLEXUS_CHANNEL(MemoryOut_Snoop).available()) {
+      boost::intrusive_ptr<MemOp> op(theMicroArch->popSnoopOp());
+      if (!op)
+        break;
 
-      DBG_( Iface, ( << "Send Snoop: " << *op) );
+      DBG_(Iface, (<< "Send Snoop: " << *op));
 
       MemoryTransport transport;
       boost::intrusive_ptr<MemoryMessage> operation;
 
       PhysicalMemoryAddress pc;
 
-      switch ( op->theOperation ) {
-        case kInvAck:
-          DBG_( Verb, ( << "Send InvAck.") );
-          operation = new MemoryMessage(MemoryMessage::InvalidateAck, op->thePAddr);
-          break;
+      switch (op->theOperation) {
+      case kInvAck:
+        DBG_(Verb, (<< "Send InvAck."));
+        operation = new MemoryMessage(MemoryMessage::InvalidateAck, op->thePAddr);
+        break;
 
-        case kDowngradeAck:
-          DBG_( Verb, ( << "Send DowngradeAck.") );
-          operation = new MemoryMessage(MemoryMessage::DowngradeAck, op->thePAddr);
-          break;
+      case kDowngradeAck:
+        DBG_(Verb, (<< "Send DowngradeAck."));
+        operation = new MemoryMessage(MemoryMessage::DowngradeAck, op->thePAddr);
+        break;
 
-        case kProbeAck:
-          operation = new MemoryMessage(MemoryMessage::ProbedNotPresent, op->thePAddr);
-          break;
+      case kProbeAck:
+        operation = new MemoryMessage(MemoryMessage::ProbedNotPresent, op->thePAddr);
+        break;
 
-        case kReturnReply:
-          operation = new MemoryMessage(MemoryMessage::ReturnReply, op->thePAddr );
-          break;
+      case kReturnReply:
+        operation = new MemoryMessage(MemoryMessage::ReturnReply, op->thePAddr);
+        break;
 
-        default:
-          DBG_Assert( false,  ( << "Unknown memory operation type: " << op->theOperation ) );
+      default:
+        DBG_Assert(false, (<< "Unknown memory operation type: " << op->theOperation));
       }
 
       operation->reqSize() = op->theSize;
@@ -480,7 +488,7 @@ private:
         transport.set(TransactionTrackerTag, op->theTracker);
       } else {
         boost::intrusive_ptr<TransactionTracker> tracker = new TransactionTracker;
-        tracker->setAddress( op->thePAddr );
+        tracker->setAddress(op->thePAddr);
         tracker->setInitiator(flexusIndex());
         tracker->setSource("uArchARM");
         transport.set(TransactionTrackerTag, tracker);
@@ -488,21 +496,21 @@ private:
 
       transport.set(MemoryMessageTag, operation);
 
-      FLEXUS_CHANNEL( MemoryOut_Snoop) << transport;
+      FLEXUS_CHANNEL(MemoryOut_Snoop) << transport;
     }
-
   }
 
-  void handleMemoryMessage( MemoryTransport & aTransport) {
-    boost::intrusive_ptr< MemOp > op;
-    boost::intrusive_ptr<MemoryMessage> msg (aTransport[MemoryMessageTag]);
+  void handleMemoryMessage(MemoryTransport &aTransport) {
+    boost::intrusive_ptr<MemOp> op;
+    boost::intrusive_ptr<MemoryMessage> msg(aTransport[MemoryMessageTag]);
 
-    // For Invalidates and Downgrades, the uArchState isn't for us, it's for the original requester
-    // So in those cases we always want to construct a new MemOp based on the MemoryMesage
-    if (msg->isPageWalk()){
-
+    // For Invalidates and Downgrades, the uArchState isn't for us, it's for the
+    // original requester So in those cases we always want to construct a new
+    // MemOp based on the MemoryMesage
+    if (msg->isPageWalk()) {
     }
-    if (aTransport[uArchStateTag] && msg->type() != MemoryMessage::Invalidate && msg->type() != MemoryMessage::Downgrade) {
+    if (aTransport[uArchStateTag] && msg->type() != MemoryMessage::Invalidate &&
+        msg->type() != MemoryMessage::Downgrade) {
       op = aTransport[uArchStateTag];
     } else {
       op = new MemOp();
@@ -512,59 +520,59 @@ private:
     }
 
     switch (msg->type()) {
-      case MemoryMessage::LoadReply:
-        op->theOperation = kLoadReply;
-        break;
+    case MemoryMessage::LoadReply:
+      op->theOperation = kLoadReply;
+      break;
 
-      case MemoryMessage::AtomicPreloadReply:
-        op->theOperation = kAtomicPreloadReply;
-        break;
+    case MemoryMessage::AtomicPreloadReply:
+      op->theOperation = kAtomicPreloadReply;
+      break;
 
-      case MemoryMessage::StoreReply:
-        op->theOperation = kStoreReply;
-        break;
+    case MemoryMessage::StoreReply:
+      op->theOperation = kStoreReply;
+      break;
 
-      case MemoryMessage::NonAllocatingStoreReply:
-        op->theOperation = kStoreReply;
-        break;
+    case MemoryMessage::NonAllocatingStoreReply:
+      op->theOperation = kStoreReply;
+      break;
 
-      case MemoryMessage::StorePrefetchReply:
-        op->theOperation = kStorePrefetchReply;
-        break;
+    case MemoryMessage::StorePrefetchReply:
+      op->theOperation = kStorePrefetchReply;
+      break;
 
-      case MemoryMessage::Invalidate:
-        op->theOperation = kInvalidate;
-        break;
+    case MemoryMessage::Invalidate:
+      op->theOperation = kInvalidate;
+      break;
 
-      case MemoryMessage::Downgrade:
-        op->theOperation = kDowngrade;
-        break;
+    case MemoryMessage::Downgrade:
+      op->theOperation = kDowngrade;
+      break;
 
-      case MemoryMessage::Probe:
-        op->theOperation = kProbe;
-        break;
+    case MemoryMessage::Probe:
+      op->theOperation = kProbe;
+      break;
 
-      case MemoryMessage::RMWReply:
-        op->theOperation = kRMWReply;
-        break;
+    case MemoryMessage::RMWReply:
+      op->theOperation = kRMWReply;
+      break;
 
-      case MemoryMessage::CmpxReply:
-        op->theOperation = kCASReply;
-        break;
+    case MemoryMessage::CmpxReply:
+      op->theOperation = kCASReply;
+      break;
 
-      case MemoryMessage::ReturnReq:
-        op->theOperation = kReturnReq;
-        break;
+    case MemoryMessage::ReturnReq:
+      op->theOperation = kReturnReq;
+      break;
 
-      default:
-        DBG_Assert( false,  ( << "Unhandled Memory Message type: " << msg->type() ) );
+    default:
+      DBG_Assert(false, (<< "Unhandled Memory Message type: " << msg->type()));
     }
 
     theMicroArch->pushMemOp(op);
   }
 };
 
-}//End namespace nuArchARM
+} // End namespace nuArchARM
 
 FLEXUS_COMPONENT_INSTANTIATOR(uArchARM, nuArchARM);
 

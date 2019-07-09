@@ -11,13 +11,13 @@ namespace nProfile {
 #ifndef X86_64
 inline int64_t rdtsc() {
   int64_t tsc;
-  __asm__ __volatile__ ( "rdtsc" : "=A" (tsc));
+  __asm__ __volatile__("rdtsc" : "=A"(tsc));
   return tsc;
 }
 #else
 inline int64_t rdtsc() {
   int64_t tsca, tscd;
-  __asm__ __volatile__ ( "rdtsc" : "=A" (tsca), "=D" (tscd));
+  __asm__ __volatile__("rdtsc" : "=A"(tsca), "=D"(tscd));
   return (tscd << 32) | (tsca & 0xffffffff);
 }
 #endif
@@ -35,24 +35,25 @@ class ManualTimer;
 class Profiler;
 
 class ProfileManager {
-  std::vector< Profiler *> theProfilers;
+  std::vector<Profiler *> theProfilers;
   int64_t theStartTime;
+
 public:
   ProfileManager() {
     theStartTime = rdtsc();
   }
-  void addProfiler( Profiler * aProfiler) {
+  void addProfiler(Profiler *aProfiler) {
     theProfilers.push_back(aProfiler);
   }
   inline int64_t programTime() {
-    return ( rdtsc() - theStartTime) / 1000;
+    return (rdtsc() - theStartTime) / 1000;
   }
   void report(std::ostream &);
   void reset();
-  static ProfileManager * profileManager();
+  static ProfileManager *profileManager();
 };
 
-extern Profiler * theProfileTOS;
+extern Profiler *theProfileTOS;
 
 class Profiler {
   std::string theFn;
@@ -63,11 +64,12 @@ class Profiler {
   int64_t theTimeAccumChildren;
   friend class Timer;
   friend class ManualTimer;
+
 public:
-  std::string const & name() const {
+  std::string const &name() const {
     return theFn;
   }
-  std::string const & file() const {
+  std::string const &file() const {
     return theFile;
   }
   int64_t line() const {
@@ -80,13 +82,9 @@ public:
     return (theTimeAccum - theTimeAccumChildren) / 1000;
   }
 
-  Profiler( std::string const & aFn, std::string const & aFile, int64_t aLine )
-    : theFn(aFn)
-    , theFile(aFile)
-    , theLine(aLine)
-    , theTimeIn(0)
-    , theTimeAccum(0)
-    , theTimeAccumChildren(0) {
+  Profiler(std::string const &aFn, std::string const &aFile, int64_t aLine)
+      : theFn(aFn), theFile(aFile), theLine(aLine), theTimeIn(0), theTimeAccum(0),
+        theTimeAccumChildren(0) {
     ProfileManager::profileManager()->addProfiler(this);
   }
 
@@ -98,11 +96,11 @@ public:
 };
 
 class Timer {
-  Profiler & theProfiler;
-  Profiler * theParent;
+  Profiler &theProfiler;
+  Profiler *theParent;
+
 public:
-  inline Timer(Profiler & aProfiler)
-    : theProfiler(aProfiler) {
+  inline Timer(Profiler &aProfiler) : theProfiler(aProfiler) {
     theParent = theProfileTOS;
     theProfileTOS = &theProfiler;
     theProfiler.theTimeIn = rdtsc();
@@ -123,11 +121,11 @@ public:
 };
 
 class ManualTimer {
-  Profiler & theProfiler;
+  Profiler &theProfiler;
+
 public:
-  inline ManualTimer(Profiler & aProfiler)
-    : theProfiler(aProfiler)
-  { }
+  inline ManualTimer(Profiler &aProfiler) : theProfiler(aProfiler) {
+  }
 
   inline void start() {
     theProfiler.theTimeIn = rdtsc();
@@ -147,13 +145,13 @@ public:
 #undef PROFILING_ENABLED
 #ifdef PROFILING_ENABLED
 
-#define FLEXUS_PROFILE()                                                                 \
-  static nProfile::Profiler BOOST_PP_CAT( profiler,__LINE__) ( __FUNCTION__, __FILE__, __LINE__ ) ;  \
-  nProfile::Timer BOOST_PP_CAT( timer,__LINE__)( BOOST_PP_CAT( profiler,__LINE__) )                           /**/
+#define FLEXUS_PROFILE()                                                                           \
+  static nProfile::Profiler BOOST_PP_CAT(profiler, __LINE__)(__FUNCTION__, __FILE__, __LINE__);    \
+  nProfile::Timer BOOST_PP_CAT(timer, __LINE__)(BOOST_PP_CAT(profiler, __LINE__)) /**/
 
-#define FLEXUS_PROFILE_N(name)                                                           \
-  static nProfile::Profiler BOOST_PP_CAT( profiler,__LINE__) ( name, __FILE__, __LINE__ ) ;          \
-  nProfile::Timer BOOST_PP_CAT( timer,__LINE__)( BOOST_PP_CAT( profiler,__LINE__) )                           /**/
+#define FLEXUS_PROFILE_N(name)                                                                     \
+  static nProfile::Profiler BOOST_PP_CAT(profiler, __LINE__)(name, __FILE__, __LINE__);            \
+  nProfile::Timer BOOST_PP_CAT(timer, __LINE__)(BOOST_PP_CAT(profiler, __LINE__)) /**/
 
 #else
 
@@ -162,6 +160,6 @@ public:
 
 #endif
 
-} //End nProfile
+} // namespace nProfile
 
-#endif //FLEXUS_PROFILE_HPP_INCLUDED
+#endif // FLEXUS_PROFILE_HPP_INCLUDED

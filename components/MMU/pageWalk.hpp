@@ -9,7 +9,8 @@
 // Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
 // Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
 // Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -38,44 +39,47 @@
 #ifndef FLEXUS_PAGEWALK_HPP_INCLUDED
 #define FLEXUS_PAGEWALK_HPP_INCLUDED
 
-#include <components/uArchARM/CoreModel/coreModelImpl.hpp>
-#include <components/CommonQEMU/Transports/TranslationTransport.hpp>
-#include <core/types.hpp>
 #include "MMUUtil.hpp"
+#include <components/CommonQEMU/Transports/TranslationTransport.hpp>
+#include <components/uArchARM/CoreModel/coreModelImpl.hpp>
+#include <core/types.hpp>
 namespace nMMU {
 
 class PageWalk {
-    std::shared_ptr<mmu_t> theMMU;
-    std::list<TranslationTransport> theTranslationTransports;
-    std::queue<boost::intrusive_ptr<Translation>> theDoneTranslations;
-    std::queue<boost::intrusive_ptr<Translation>> theMemoryTranslations;
-    bool TheInitialized;
-
+  std::shared_ptr<mmu_t> theMMU;
+  std::list<TranslationTransport> theTranslationTransports;
+  std::queue<boost::intrusive_ptr<Translation>> theDoneTranslations;
+  std::queue<boost::intrusive_ptr<Translation>> theMemoryTranslations;
+  bool TheInitialized;
 
 public:
-    PageWalk(uint32_t aNode) : TheInitialized(false), theNode(aNode){}
-    ~PageWalk(){}
-    void setMMU(std::shared_ptr<mmu_t> aMMU){theMMU = aMMU;}
-    void translate(TranslationTransport & aTransport);
-    void preTranslate(TranslationTransport & aTransport);
-    void cycle();
-    bool push_back(boost::intrusive_ptr<Translation> aTranslation);
-    TranslationPtr popMemoryRequest();
-    bool hasMemoryRequest();
-    void annulAll();
+  PageWalk(uint32_t aNode) : TheInitialized(false), theNode(aNode) {
+  }
+  ~PageWalk() {
+  }
+  void setMMU(std::shared_ptr<mmu_t> aMMU) {
+    theMMU = aMMU;
+  }
+  void translate(TranslationTransport &aTransport);
+  void preTranslate(TranslationTransport &aTransport);
+  void cycle();
+  bool push_back(boost::intrusive_ptr<Translation> aTranslation);
+  TranslationPtr popMemoryRequest();
+  bool hasMemoryRequest();
+  void annulAll();
+
 private:
-    void preWalk( TranslationTransport &  aTranslation );
-    bool walk( TranslationTransport &  aTranslation );
-    void setupTTResolver( TranslationTransport & aTr, uint64_t TTDescriptor );
-    bool InitialTranslationSetup( TranslationTransport & aTranslation );
-    void pushMemoryRequest(TranslationPtr aTranslation);
+  void preWalk(TranslationTransport &aTranslation);
+  bool walk(TranslationTransport &aTranslation);
+  void setupTTResolver(TranslationTransport &aTr, uint64_t TTDescriptor);
+  bool InitialTranslationSetup(TranslationTransport &aTranslation);
+  void pushMemoryRequest(TranslationPtr aTranslation);
 
-    TTEDescriptor getNextTTDescriptor(TranslationTransport & aTranslation );
+  TTEDescriptor getNextTTDescriptor(TranslationTransport &aTranslation);
 
-    uint32_t theNode;
+  uint32_t theNode;
 };
 
-}// end namespace nMMU
-
+} // end namespace nMMU
 
 #endif // FLEXUS_PAGEWALK_HPP_INCLUDED

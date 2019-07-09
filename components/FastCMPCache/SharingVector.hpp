@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -33,7 +34,7 @@
 // ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
 // CONTRACT, TORT OR OTHERWISE).
 //
-// DO-NOT-REMOVE end-copyright-block   
+// DO-NOT-REMOVE end-copyright-block
 #ifndef __FASTCMPCACHE_SHARINGVECTOR_HPP__
 #define __FASTCMPCACHE_SHARINGVECTOR_HPP__
 
@@ -48,22 +49,24 @@ class SharingVector {
 protected:
   std::bitset<MAX_NUM_SHARERS> sharers;
 
-  SharingVector(const std::bitset<MAX_NUM_SHARERS> &s) : sharers(s) {}
+  SharingVector(const std::bitset<MAX_NUM_SHARERS> &s) : sharers(s) {
+  }
 
 public:
-  virtual ~SharingVector() {}
+  virtual ~SharingVector() {
+  }
 
   SharingVector() {
     sharers.reset();
   }
 
   virtual void addSharer(int32_t index) {
-    DBG_Assert( (index >= 0) && (index < MAX_NUM_SHARERS), ( << "Invalid index " << index ));
+    DBG_Assert((index >= 0) && (index < MAX_NUM_SHARERS), (<< "Invalid index " << index));
     sharers[index] = true;
   }
 
   virtual void removeSharer(int32_t index) {
-    DBG_Assert( (index >= 0) && (index < MAX_NUM_SHARERS), ( << "Invalid index " << index ));
+    DBG_Assert((index >= 0) && (index < MAX_NUM_SHARERS), (<< "Invalid index " << index));
     sharers[index] = false;
   }
 
@@ -72,7 +75,7 @@ public:
   }
 
   virtual bool isSharer(int32_t index) const {
-    DBG_Assert( (index >= 0) && (index < MAX_NUM_SHARERS), ( << "Invalid index " << index ));
+    DBG_Assert((index >= 0) && (index < MAX_NUM_SHARERS), (<< "Invalid index " << index));
     return sharers[index];
   }
 
@@ -89,10 +92,12 @@ public:
     int32_t lhs = index + 1;
     int32_t rhs = index - 1;
     for (; lhs < MAX_NUM_SHARERS; lhs++) {
-      if (sharers[lhs]) break;
+      if (sharers[lhs])
+        break;
     }
     for (; rhs >= 0; rhs--) {
-      if (sharers[rhs]) break;
+      if (sharers[rhs])
+        break;
     }
     if (rhs >= 0) {
       if (lhs < MAX_NUM_SHARERS) {
@@ -122,33 +127,33 @@ public:
     return l;
   }
 
-  virtual const std::bitset<MAX_NUM_SHARERS>& getSharers() const {
+  virtual const std::bitset<MAX_NUM_SHARERS> &getSharers() const {
     return sharers;
   }
 
-  virtual const bool operator==(const SharingVector & a) const {
+  virtual const bool operator==(const SharingVector &a) const {
     return (sharers == a.sharers);
   }
 
-  virtual const bool operator!=(const SharingVector & a) const {
+  virtual const bool operator!=(const SharingVector &a) const {
     return (sharers != a.sharers);
   }
 
-  virtual const SharingVector operator&(const SharingVector & a) const {
+  virtual const SharingVector operator&(const SharingVector &a) const {
     return SharingVector(sharers & a.sharers);
   }
 
-  virtual SharingVector & operator=(const SharingVector & a) {
+  virtual SharingVector &operator=(const SharingVector &a) {
     sharers = a.sharers;
     return *this;
   }
 
-  virtual SharingVector & operator&=(const SharingVector & a) {
+  virtual SharingVector &operator&=(const SharingVector &a) {
     sharers &= a.sharers;
     return *this;
   }
 
-  virtual SharingVector & operator|=(const SharingVector & a) {
+  virtual SharingVector &operator|=(const SharingVector &a) {
     sharers |= a.sharers;
     return *this;
   }
@@ -174,26 +179,26 @@ public:
     return ret;
   }
 
-  virtual void setSharers(std::bitset<MAX_NUM_SHARERS> s){
-    for (int32_t i=0; i< MAX_NUM_SHARERS; i++)
-      sharers[i]=s[i]; 
+  virtual void setSharers(std::bitset<MAX_NUM_SHARERS> s) {
+    for (int32_t i = 0; i < MAX_NUM_SHARERS; i++)
+      sharers[i] = s[i];
   }
 
-//  virtual void setSharers(uint64_t s) {
-//#if MAX_NUM_SHARERS > 64
-//#error "MAX_NUM_SHARERS must be less than or equal to 64, or you just re-write some functions
-//#endif
-//    for (int32_t i = 0; i < 64; i++, s >>= 1) {
-//      sharers[i] = (s & 1);
-//    }
-//  }
+  //  virtual void setSharers(uint64_t s) {
+  //#if MAX_NUM_SHARERS > 64
+  //#error "MAX_NUM_SHARERS must be less than or equal to 64, or you just
+  // re-write some functions #endif
+  //    for (int32_t i = 0; i < 64; i++, s >>= 1) {
+  //      sharers[i] = (s & 1);
+  //    }
+  //  }
 };
 
-inline std::ostream & operator<<(std::ostream & os, const SharingVector & sharers) {
+inline std::ostream &operator<<(std::ostream &os, const SharingVector &sharers) {
   os << sharers.getSharers();
   return os;
 }
 
-}; // namespace
+}; // namespace nFastCMPCache
 
 #endif // __FASTCMPCACHE_SHARINGVECTOR_HPP__

@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,7 +36,6 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #include <components/Cache/IDCacheMux.hpp>
 
 #define FLEXUS_BEGIN_COMPONENT IDCacheMux
@@ -49,91 +49,91 @@ using namespace SharedTypes;
 using boost::intrusive_ptr;
 
 class FLEXUS_COMPONENT(IDCacheMux) {
-  FLEXUS_COMPONENT_IMPL( IDCacheMux );
+  FLEXUS_COMPONENT_IMPL(IDCacheMux);
 
 public:
-  FLEXUS_COMPONENT_CONSTRUCTOR(IDCacheMux)
-    : base( FLEXUS_PASS_CONSTRUCTOR_ARGS )
-  {}
+  FLEXUS_COMPONENT_CONSTRUCTOR(IDCacheMux) : base(FLEXUS_PASS_CONSTRUCTOR_ARGS) {
+  }
 
 public:
   // Initialization
   void initialize() {
   }
 
-  void finalize() {}
+  void finalize() {
+  }
 
   bool isQuiesced() const {
-    return true; //Mux is always quiesced
+    return true; // Mux is always quiesced
   }
 
   // Ports
   // From the instruction cache
-  bool available( interface::TopInI const &) {
-    return FLEXUS_CHANNEL( BottomOut).available();
+  bool available(interface::TopInI const &) {
+    return FLEXUS_CHANNEL(BottomOut).available();
   }
-  void push( interface::TopInI const &, MemoryTransport & aMemTransport) {
-    intrusive_ptr<Mux> arb( new Mux('i') );
+  void push(interface::TopInI const &, MemoryTransport &aMemTransport) {
+    intrusive_ptr<Mux> arb(new Mux('i'));
     aMemTransport.set(MuxTag, arb);
-    FLEXUS_CHANNEL( BottomOut) << aMemTransport;
+    FLEXUS_CHANNEL(BottomOut) << aMemTransport;
   }
 
   // From the data cache
-  bool available( interface::TopInD const &) {
-    return FLEXUS_CHANNEL( BottomOut).available();
+  bool available(interface::TopInD const &) {
+    return FLEXUS_CHANNEL(BottomOut).available();
   }
-  void push( interface::TopInD const &, MemoryTransport & aMemTransport) {
-    intrusive_ptr<Mux> arb( new Mux('d') );
+  void push(interface::TopInD const &, MemoryTransport &aMemTransport) {
+    intrusive_ptr<Mux> arb(new Mux('d'));
     aMemTransport.set(MuxTag, arb);
-    FLEXUS_CHANNEL( BottomOut) << aMemTransport;
+    FLEXUS_CHANNEL(BottomOut) << aMemTransport;
   }
 
-  bool available( interface::BottomIn const &) {
+  bool available(interface::BottomIn const &) {
     return FLEXUS_CHANNEL(TopOutI).available() && FLEXUS_CHANNEL(TopOutD).available();
   }
-  void push( interface::BottomIn const &, MemoryTransport & aMemTransport) {
+  void push(interface::BottomIn const &, MemoryTransport &aMemTransport) {
     if (aMemTransport[MuxTag] == 0) {
       // slice doesn't exist in the transport - forward to the data cache
       FLEXUS_CHANNEL(TopOutD) << aMemTransport;
     } else {
       switch (aMemTransport[MuxTag]->source) {
-        case 'i':
-          FLEXUS_CHANNEL(TopOutI) << aMemTransport;
-          break;
-        case 'd':
-          FLEXUS_CHANNEL(TopOutD) << aMemTransport;
-          break;
-        default:
-          DBG_Assert(false, ( << "Invalid source"));
+      case 'i':
+        FLEXUS_CHANNEL(TopOutI) << aMemTransport;
+        break;
+      case 'd':
+        FLEXUS_CHANNEL(TopOutD) << aMemTransport;
+        break;
+      default:
+        DBG_Assert(false, (<< "Invalid source"));
       }
     }
   }
 
-  bool available( interface::TopIn_SnoopI const &) {
-    return FLEXUS_CHANNEL( BottomOut_Snoop).available();
+  bool available(interface::TopIn_SnoopI const &) {
+    return FLEXUS_CHANNEL(BottomOut_Snoop).available();
   }
-  void push( interface::TopIn_SnoopI const &, MemoryTransport & aMemTransport) {
-    intrusive_ptr<Mux> arb( new Mux('i') );
+  void push(interface::TopIn_SnoopI const &, MemoryTransport &aMemTransport) {
+    intrusive_ptr<Mux> arb(new Mux('i'));
     aMemTransport.set(MuxTag, arb);
     aMemTransport[MemoryMessageTag]->dstream() = false;
-    FLEXUS_CHANNEL( BottomOut_Snoop) << aMemTransport;
+    FLEXUS_CHANNEL(BottomOut_Snoop) << aMemTransport;
   }
 
   // From the data cache
-  bool available( interface::TopIn_SnoopD const &) {
-    return FLEXUS_CHANNEL( BottomOut_Snoop).available();
+  bool available(interface::TopIn_SnoopD const &) {
+    return FLEXUS_CHANNEL(BottomOut_Snoop).available();
   }
-  void push( interface::TopIn_SnoopD const &, MemoryTransport & aMemTransport) {
-    intrusive_ptr<Mux> arb( new Mux('d') );
+  void push(interface::TopIn_SnoopD const &, MemoryTransport &aMemTransport) {
+    intrusive_ptr<Mux> arb(new Mux('d'));
     aMemTransport.set(MuxTag, arb);
     aMemTransport[MemoryMessageTag]->dstream() = true;
-    FLEXUS_CHANNEL( BottomOut_Snoop) << aMemTransport;
+    FLEXUS_CHANNEL(BottomOut_Snoop) << aMemTransport;
   }
 };
 
-} //End Namespace nIDCacheMux
+} // End Namespace nIDCacheMux
 
-FLEXUS_COMPONENT_INSTANTIATOR( IDCacheMux, nIDCacheMux );
+FLEXUS_COMPONENT_INSTANTIATOR(IDCacheMux, nIDCacheMux);
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
 #define FLEXUS_END_COMPONENT IDCacheMux

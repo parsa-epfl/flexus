@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,24 +36,23 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
-#include <iostream>
-#include <iomanip>
 #include <bitset>
+#include <iomanip>
+#include <iostream>
 
-#include <core/boost_extensions/intrusive_ptr.hpp>
 #include <boost/throw_exception.hpp>
+#include <core/boost_extensions/intrusive_ptr.hpp>
 #include <functional>
 
-#include <core/target.hpp>
 #include <core/debug/debug.hpp>
+#include <core/target.hpp>
 #include <core/types.hpp>
 
 #include <components/uArchARM/uArchInterfaces.hpp>
 
-#include "SemanticInstruction.hpp"
-#include "Effects.hpp"
 #include "Constraints.hpp"
+#include "Effects.hpp"
+#include "SemanticInstruction.hpp"
 
 #define DBG_DeclareCategories armDecoder
 #define DBG_SetDefaultOps AddCat(armDecoder)
@@ -60,115 +60,118 @@
 
 namespace narmDecoder {
 
-using nuArchARM::SemanticAction;
 using nuArchARM::eResourceStatus;
 using nuArchARM::kReady;
+using nuArchARM::SemanticAction;
 
 using nuArchARM::kSC;
 using nuArchARM::kTSO;
 
-bool checkStoreQueueAvailable( SemanticInstruction * anInstruction ) {
-  if (! anInstruction->core()) {
+bool checkStoreQueueAvailable(SemanticInstruction *anInstruction) {
+  if (!anInstruction->core()) {
     return false;
   }
-  if ( anInstruction->core()->sbFull()) {
+  if (anInstruction->core()->sbFull()) {
     return false;
   }
   return true;
 }
 
-std::function<bool()> storeQueueAvailableConstraint( SemanticInstruction * anInstruction ) {
-  return [anInstruction](){ return checkStoreQueueAvailable(anInstruction); };
+std::function<bool()> storeQueueAvailableConstraint(SemanticInstruction *anInstruction) {
+  return [anInstruction]() { return checkStoreQueueAvailable(anInstruction); };
 }
 
-bool checkMembarStoreStoreConstraint( SemanticInstruction * anInstruction ) {
-  if (! anInstruction->core()) {
+bool checkMembarStoreStoreConstraint(SemanticInstruction *anInstruction) {
+  if (!anInstruction->core()) {
     return false;
   }
   return anInstruction->core()->mayRetire_MEMBARStSt();
 }
 
-std::function<bool()> membarStoreStoreConstraint( SemanticInstruction * anInstruction ) {
-  return [anInstruction](){ return checkMembarStoreStoreConstraint(anInstruction); };
+std::function<bool()> membarStoreStoreConstraint(SemanticInstruction *anInstruction) {
+  return [anInstruction]() { return checkMembarStoreStoreConstraint(anInstruction); };
 }
 
-bool checkMembarStoreLoadConstraint( SemanticInstruction * anInstruction ) {
-  if (! anInstruction->core()) {
+bool checkMembarStoreLoadConstraint(SemanticInstruction *anInstruction) {
+  if (!anInstruction->core()) {
     return false;
   }
   return anInstruction->core()->mayRetire_MEMBARStLd();
 }
 
-std::function<bool()> membarStoreLoadConstraint( SemanticInstruction * anInstruction ) {
-  return [anInstruction](){ return checkMembarStoreLoadConstraint(anInstruction); };
+std::function<bool()> membarStoreLoadConstraint(SemanticInstruction *anInstruction) {
+  return [anInstruction]() { return checkMembarStoreLoadConstraint(anInstruction); };
 }
 
-bool checkMembarSyncConstraint( SemanticInstruction * anInstruction ) {
-  if (! anInstruction->core()) {
+bool checkMembarSyncConstraint(SemanticInstruction *anInstruction) {
+  if (!anInstruction->core()) {
     return false;
   }
   return anInstruction->core()->mayRetire_MEMBARSync();
 }
 
-std::function<bool()> membarSyncConstraint( SemanticInstruction * anInstruction ) {
-  return [anInstruction](){ return checkMembarSyncConstraint(anInstruction); };
+std::function<bool()> membarSyncConstraint(SemanticInstruction *anInstruction) {
+  return [anInstruction]() { return checkMembarSyncConstraint(anInstruction); };
 }
 
-bool checkMemoryConstraint( SemanticInstruction * anInstruction ) {
-  if (! anInstruction->core()) {
+bool checkMemoryConstraint(SemanticInstruction *anInstruction) {
+  if (!anInstruction->core()) {
     return false;
   }
-  switch (anInstruction->core()->consistencyModel() ) {
-    case kSC:
-      if (! anInstruction->core()->speculativeConsistency()) {
-        //Under nonspeculative SC, a load instruction may only retire when no stores are outstanding.
-        if ( ! anInstruction->core()->sbEmpty()) {
-          return false;
-        }
+  switch (anInstruction->core()->consistencyModel()) {
+  case kSC:
+    if (!anInstruction->core()->speculativeConsistency()) {
+      // Under nonspeculative SC, a load instruction may only retire when no
+      // stores are outstanding.
+      if (!anInstruction->core()->sbEmpty()) {
+        return false;
       }
-      break;
-    case kTSO:
-    case kRMO:
-      //Under TSO and RMO, a load may always retire when it reaches the
-      //head of the re-order buffer.
-      break;
-    default:
-      DBG_Assert( false, ( << "Load Memory Instruction does not support consistency model " << anInstruction->core()->consistencyModel() ) );
+    }
+    break;
+  case kTSO:
+  case kRMO:
+    // Under TSO and RMO, a load may always retire when it reaches the
+    // head of the re-order buffer.
+    break;
+  default:
+    DBG_Assert(false, (<< "Load Memory Instruction does not support consistency model "
+                       << anInstruction->core()->consistencyModel()));
   }
   return true;
 }
 
-std::function<bool()> loadMemoryConstraint( SemanticInstruction * anInstruction ) {
-  return [anInstruction](){ return checkMemoryConstraint(anInstruction); };
+std::function<bool()> loadMemoryConstraint(SemanticInstruction *anInstruction) {
+  return [anInstruction]() { return checkMemoryConstraint(anInstruction); };
 }
 
-bool checkStoreQueueEmpty( SemanticInstruction * anInstruction ) {
-  if (! anInstruction->core()) {
+bool checkStoreQueueEmpty(SemanticInstruction *anInstruction) {
+  if (!anInstruction->core()) {
     return false;
   }
   return anInstruction->core()->sbEmpty();
 }
 
-std::function<bool()> storeQueueEmptyConstraint( SemanticInstruction * anInstruction ) {
-  return [anInstruction](){ return checkStoreQueueEmpty; };
+std::function<bool()> storeQueueEmptyConstraint(SemanticInstruction *anInstruction) {
+  return [anInstruction]() { return checkStoreQueueEmpty; };
 }
 
-bool checkSideEffectStoreConstraint( SemanticInstruction * anInstruction ) {
-  if (! anInstruction->core()) {
+bool checkSideEffectStoreConstraint(SemanticInstruction *anInstruction) {
+  if (!anInstruction->core()) {
     return false;
   }
-  return anInstruction->core()->checkStoreRetirement(boost::intrusive_ptr<nuArchARM::Instruction>(anInstruction));
+  return anInstruction->core()->checkStoreRetirement(
+      boost::intrusive_ptr<nuArchARM::Instruction>(anInstruction));
 }
 
-std::function<bool()> sideEffectStoreConstraint( SemanticInstruction * anInstruction ) {
-  return [anInstruction](){ return checkSideEffectStoreConstraint(anInstruction); };
+std::function<bool()> sideEffectStoreConstraint(SemanticInstruction *anInstruction) {
+  return [anInstruction]() { return checkSideEffectStoreConstraint(anInstruction); };
 }
 
-bool checkpaddrResolutionConstraint(SemanticInstruction * anInstruction){
-    return anInstruction->isResolved();
+bool checkpaddrResolutionConstraint(SemanticInstruction *anInstruction) {
+  return anInstruction->isResolved();
 }
-std::function<bool()> paddrResolutionConstraint( SemanticInstruction * anInstruction ) {
-    return [anInstruction](){ return checkpaddrResolutionConstraint(anInstruction); };
+std::function<bool()> paddrResolutionConstraint(SemanticInstruction *anInstruction) {
+  return [anInstruction]() { return checkpaddrResolutionConstraint(anInstruction); };
 }
 
-} //armDecoder
+} // namespace narmDecoder

@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -34,7 +35,6 @@
 // CONTRACT, TORT OR OTHERWISE).
 //
 // DO-NOT-REMOVE end-copyright-block
-
 
 #ifndef __LIMITED_DIRECTORY_STATE_HPP__
 #define __LIMITED_DIRECTORY_STATE_HPP__
@@ -61,7 +61,7 @@ private:
   typedef boost::dynamic_bitset<>::size_type size_type;
 
 public:
-  boost::dynamic_bitset<> & getSharers() {
+  boost::dynamic_bitset<> &getSharers() {
     return theSharers;
   }
 
@@ -77,11 +77,11 @@ public:
   inline bool manySharers() const {
     return (theSharers.count() > 1);
   }
-  inline int32_t countSharers()const  {
+  inline int32_t countSharers() const {
     return theSharers.count();
   }
 
-  void getOtherSharers(std::list<int> & list, int32_t exclude) const {
+  void getOtherSharers(std::list<int> &list, int32_t exclude) const {
     size_type n = theSharers.find_first();
     const size_type end = boost::dynamic_bitset<>::npos;
     for (; n != end; n = theSharers.find_next(n)) {
@@ -91,7 +91,7 @@ public:
     }
   }
 
-  void getSharerList(std::list<int> & list) const {
+  void getSharerList(std::list<int> &list) const {
     size_type n = theSharers.find_first();
     const size_type end = boost::dynamic_bitset<>::npos;
     for (; n != end; n = theSharers.find_next(n)) {
@@ -110,13 +110,13 @@ public:
   }
 
   inline void removeSharer(int32_t sharer) {
-    DBG_Assert(sharer < (int)theSharers.size(), ( << sharer << " >= " << theSharers.size()));
+    DBG_Assert(sharer < (int)theSharers.size(), (<< sharer << " >= " << theSharers.size()));
     if (!coarse_vector) {
       theSharers.set(sharer, false);
     }
   }
   inline void addSharer(int32_t sharer) {
-    DBG_Assert(sharer < (int)theSharers.size(), ( << sharer << " >= " << theSharers.size()));
+    DBG_Assert(sharer < (int)theSharers.size(), (<< sharer << " >= " << theSharers.size()));
     if (!coarse_vector) {
       theSharers.set(sharer, true);
       if ((int)theSharers.count() > theNumPointers) {
@@ -156,7 +156,7 @@ public:
     coarse_vector = false;
   }
 
-  LimitedDirectoryState & operator=(uint64_t s) {
+  LimitedDirectoryState &operator=(uint64_t s) {
     for (int32_t i = 0; i < theNumSharers; i++, s >>= 1) {
       theSharers[i] = (s & 1 ? true : false);
     }
@@ -180,7 +180,7 @@ public:
     return *this;
   }
 
-  LimitedDirectoryState & operator|=(uint64_t s) {
+  LimitedDirectoryState &operator|=(uint64_t s) {
     for (int32_t i = 0; i < theNumSharers; i++, s >>= 1) {
       theSharers[i] = theSharers[i] || (s & 1 ? true : false);
     }
@@ -204,7 +204,7 @@ public:
     return *this;
   }
 
-  LimitedDirectoryState & operator=(SimpleDirectoryState & s) {
+  LimitedDirectoryState &operator=(SimpleDirectoryState &s) {
     if ((int)s.getSharers().count() > theNumPointers) {
       theSharers.reset();
       size_type n = s.getSharers().find_first();
@@ -225,7 +225,7 @@ public:
     return *this;
   }
 
-  LimitedDirectoryState & operator&=(LimitedDirectoryState & s) {
+  LimitedDirectoryState &operator&=(LimitedDirectoryState &s) {
     theSharers &= s.theSharers;
     if ((int)theSharers.count() > theNumPointers) {
       boost::dynamic_bitset<> temp_sharers(theSharers);
@@ -251,30 +251,23 @@ public:
     return SimpleDirectoryState(theNumSharers, theSharers);
   }
 
-  LimitedDirectoryState(const LimitedDirectoryState & s)
-    : theSharers(s.theSharers)
-    , theNumSharers(s.theNumSharers)
-    , theNumPointers(s.theNumPointers)
-    , theGranularity(s.theGranularity)
-    , coarse_vector(s.coarse_vector)
-  {}
-
-  LimitedDirectoryState(int32_t aNumSharers = 64, int32_t aNumPointers = 1, int32_t aGranularity = 1)
-    : theSharers(aNumSharers)
-    , theNumSharers(aNumSharers)
-    , theNumPointers(aNumPointers)
-    , theGranularity(aGranularity)
-    , coarse_vector(false) {
-    DBG_Assert( aNumPointers > 0 );
+  LimitedDirectoryState(const LimitedDirectoryState &s)
+      : theSharers(s.theSharers), theNumSharers(s.theNumSharers), theNumPointers(s.theNumPointers),
+        theGranularity(s.theGranularity), coarse_vector(s.coarse_vector) {
   }
 
-  LimitedDirectoryState(const SimpleDirectoryState & aState, int32_t aNumPointers, int32_t aGranularity)
-    : theSharers(aState.getSharers())
-    , theNumSharers(aState.getNumSharers())
-    , theNumPointers(aNumPointers)
-    , theGranularity(aGranularity)
-    , coarse_vector(false) {
-    DBG_Assert( aNumPointers > 0 );
+  LimitedDirectoryState(int32_t aNumSharers = 64, int32_t aNumPointers = 1,
+                        int32_t aGranularity = 1)
+      : theSharers(aNumSharers), theNumSharers(aNumSharers), theNumPointers(aNumPointers),
+        theGranularity(aGranularity), coarse_vector(false) {
+    DBG_Assert(aNumPointers > 0);
+  }
+
+  LimitedDirectoryState(const SimpleDirectoryState &aState, int32_t aNumPointers,
+                        int32_t aGranularity)
+      : theSharers(aState.getSharers()), theNumSharers(aState.getNumSharers()),
+        theNumPointers(aNumPointers), theGranularity(aGranularity), coarse_vector(false) {
+    DBG_Assert(aNumPointers > 0);
     if ((int)theSharers.count() > theNumPointers) {
       theSharers.reset();
       size_type n = aState.getSharers().find_first();
@@ -292,7 +285,9 @@ public:
   }
 };
 
-inline void setPresence(int32_t sharer, const boost::dynamic_bitset<> & presence, const boost::dynamic_bitset<> & exclusive, std::vector<LimitedDirectoryState> & state) {
+inline void setPresence(int32_t sharer, const boost::dynamic_bitset<> &presence,
+                        const boost::dynamic_bitset<> &exclusive,
+                        std::vector<LimitedDirectoryState> &state) {
   for (uint32_t i = 0; i < presence.size(); i++) {
     if (presence[i]) {
       if (exclusive[i]) {

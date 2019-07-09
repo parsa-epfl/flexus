@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,7 +36,6 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #include <components/Cache/BasicCacheState.hpp>
 
 namespace nCache {
@@ -46,7 +46,7 @@ const BasicCacheState BasicCacheState::Exclusive("Exclusive");
 const BasicCacheState BasicCacheState::Shared("Shared");
 const BasicCacheState BasicCacheState::Invalid("Invalid");
 
-std::ostream & operator<<( std::ostream & os, const BasicCacheState & state) {
+std::ostream &operator<<(std::ostream &os, const BasicCacheState &state) {
   os << state.name();
   if (state.isProtected()) {
     os << "_X";
@@ -57,4 +57,4 @@ std::ostream & operator<<( std::ostream & os, const BasicCacheState & state) {
   return os;
 }
 
-};
+}; // namespace nCache

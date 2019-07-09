@@ -1,10 +1,10 @@
 #ifndef FLEXUS_CORE_DEBUG_CATEGORY_HPP_INCLUDED
 #define FLEXUS_CORE_DEBUG_CATEGORY_HPP_INCLUDED
 
+#include <map>
+#include <string>
 #include <utility>
 #include <vector>
-#include <string>
-#include <map>
 
 namespace Flexus {
 namespace Dbg {
@@ -16,22 +16,24 @@ class Category;
 class CategoryHolder {
 private:
   std::vector<Category const *> theCategories;
+
 public:
-  CategoryHolder(Category const & aCategory) {
+  CategoryHolder(Category const &aCategory) {
     theCategories.push_back(&aCategory);
   }
 
-  CategoryHolder(Category const & aFirstCategory, Category const & aSecondCategory) {
+  CategoryHolder(Category const &aFirstCategory, Category const &aSecondCategory) {
     theCategories.push_back(&aFirstCategory);
     theCategories.push_back(&aSecondCategory);
   }
 
-  CategoryHolder & operator | (CategoryHolder const & aHolder) {
-    theCategories.insert(theCategories.end(), aHolder.theCategories.begin(), aHolder.theCategories.end());
+  CategoryHolder &operator|(CategoryHolder const &aHolder) {
+    theCategories.insert(theCategories.end(), aHolder.theCategories.begin(),
+                         aHolder.theCategories.end());
     return *this;
   }
 
-  CategoryHolder & operator | (Category const & aCategory) {
+  CategoryHolder &operator|(Category const &aCategory) {
     theCategories.push_back(&aCategory);
     return *this;
   }
@@ -53,9 +55,9 @@ private:
   bool theIsDynamic;
 
 public:
-  Category(std::string const & aName, bool * aSwitch, bool aIsDynamic = false);
+  Category(std::string const &aName, bool *aSwitch, bool aIsDynamic = false);
 
-  std::string const & name() const {
+  std::string const &name() const {
     return theName;
   }
 
@@ -67,28 +69,28 @@ public:
     return theIsDynamic;
   }
 
-  bool operator ==(Category const & aCategory) {
+  bool operator==(Category const &aCategory) {
     return (theNumber == aCategory.theNumber);
   }
 
-  bool operator <(Category const & aCategory) {
+  bool operator<(Category const &aCategory) {
     return (theNumber < aCategory.theNumber);
   }
 
-  CategoryHolder operator | (Category const & aCategory) {
+  CategoryHolder operator|(Category const &aCategory) {
     return CategoryHolder(*this, aCategory);
   }
 };
 
 class CategoryMgr {
-  std::map<std::string, Category * > theCategories;
+  std::map<std::string, Category *> theCategories;
   int32_t theCatCount;
+
 public:
-  CategoryMgr()
-    : theCatCount(0)
-  {}
+  CategoryMgr() : theCatCount(0) {
+  }
   ~CategoryMgr() {
-    std::map<std::string, Category * >::iterator iter = theCategories.begin();
+    std::map<std::string, Category *>::iterator iter = theCategories.begin();
     while (iter != theCategories.end()) {
       if ((*iter).second->isDynamic()) {
         delete (*iter).second;
@@ -97,35 +99,33 @@ public:
     }
   }
 
-  static CategoryMgr & categoryMgr() {
+  static CategoryMgr &categoryMgr() {
     static CategoryMgr theStaticCategoryMgr;
     return theStaticCategoryMgr;
   }
 
-  Category const & category(std::string const & aCategory) {
-    Category * & cat = theCategories[aCategory];
+  Category const &category(std::string const &aCategory) {
+    Category *&cat = theCategories[aCategory];
     if (cat == 0) {
       cat = new Category(aCategory, 0, true);
     }
     return *cat;
   }
 
-  int32_t addCategory(Category & aCategory) {
+  int32_t addCategory(Category &aCategory) {
     int32_t cat_num = 0;
-    Category * & cat = theCategories[aCategory.name()];
+    Category *&cat = theCategories[aCategory.name()];
     if (cat != 0) {
       cat_num = cat->number();
     } else {
       cat_num = ++theCatCount;
-      cat = & aCategory;
+      cat = &aCategory;
     }
     return cat_num;
   }
-
 };
 
-} //Dbg
-} //Flexus
+} // namespace Dbg
+} // namespace Flexus
 
-#endif //FLEXUS_CORE_DEBUG_CATEGORY_HPP_INCLUDED
-
+#endif // FLEXUS_CORE_DEBUG_CATEGORY_HPP_INCLUDED

@@ -9,7 +9,8 @@
 // Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
 // Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
 // Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,17 +36,16 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-#include "armEncodings.hpp"
+#include "armBranch.hpp"
 #include "armDataProcFp.hpp"
 #include "armDataProcImm.hpp"
 #include "armDataProcReg.hpp"
-#include "armBranch.hpp"
+#include "armEncodings.hpp"
 #include "armLoadStore.hpp"
-#include "armUnallocated.hpp"
 #include "armMagic.hpp"
+#include "armUnallocated.hpp"
 
 namespace narmDecoder {
-
 
 /* PC-rel. addressing
  *   31  30   29 28       24 23                5 4    0
@@ -53,10 +53,9 @@ namespace narmDecoder {
  * | op | immlo | 1 0 0 0 0 |       immhi       |  Rd  |
  * +----+-------+-----------+-------------------+------+
  */
-arminst disas_pc_rel_adr(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
-    DECODER_TRACE;
-    return ADR(aFetchedOpcode, aCPU, aSequenceNo);
+arminst disas_pc_rel_adr(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  DECODER_TRACE;
+  return ADR(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Logical (immediate)
@@ -65,10 +64,9 @@ arminst disas_pc_rel_adr(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t
  * | sf | opc | 1 0 0 1 0 0 | N | immr | imms |  Rn  |  Rd  |
  * +----+-----+-------------+---+------+------+------+------+
  */
-arminst disas_logic_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
-    DECODER_TRACE;
-    return LOGICALIMM(aFetchedOpcode, aCPU, aSequenceNo);
+arminst disas_logic_imm(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  DECODER_TRACE;
+  return LOGICALIMM(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /*
@@ -76,17 +74,16 @@ arminst disas_logic_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t 
  *
  *  31 30 29 28         23 22 21 20             5 4    0
  * +--+-----+-------------+-----+----------------+------+
-     * |sf| opc | 1 0 0 1 0 1 |  hw |  imm16         |  Rd  |
+ * |sf| opc | 1 0 0 1 0 1 |  hw |  imm16         |  Rd  |
  * +--+-----+-------------+-----+----------------+------+
  *
  * sf: 0 -> 32 bit, 1 -> 64 bit
  * opc: 00 -> N, 10 -> Z, 11 -> K
  * hw: shift/16 (0,16, and sf only 32, 48)
  */
-arminst disas_movw_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
-    DECODER_TRACE;
-    return MOVE(aFetchedOpcode, aCPU, aSequenceNo);
+arminst disas_movw_imm(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  DECODER_TRACE;
+  return MOVE(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Bitfield
@@ -95,10 +92,9 @@ arminst disas_movw_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t a
  * | sf | opc | 1 0 0 1 1 0 | N | immr | imms |  Rn  |  Rd  |
  * +----+-----+-------------+---+------+------+------+------+
  */
-arminst disas_bitfield(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
-    DECODER_TRACE;
-    return BFM(aFetchedOpcode, aCPU, aSequenceNo);
+arminst disas_bitfield(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  DECODER_TRACE;
+  return BFM(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Extract
@@ -107,10 +103,9 @@ arminst disas_bitfield(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t a
  * | sf | op21 | 1 0 0 1 1 1 | N | o0 |  Rm  |  imms  |  Rn  |  Rd  |
  * +----+------+-------------+---+----+------+--------+------+------+
  */
-arminst disas_extract(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
-    DECODER_TRACE;
-    return EXTR(aFetchedOpcode, aCPU, aSequenceNo);
+arminst disas_extract(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  DECODER_TRACE;
+  return EXTR(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /*
@@ -126,33 +121,33 @@ arminst disas_extract(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aS
  *     S: 1 -> set flags
  * shift: 00 -> LSL imm by 0, 01 -> LSL imm by 12
  */
-arminst disas_add_sub_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
-    DECODER_TRACE;
-    return ALUIMM(aFetchedOpcode, aCPU, aSequenceNo);
+arminst disas_add_sub_imm(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  DECODER_TRACE;
+  return ALUIMM(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Data processing - immediate */
-arminst disas_data_proc_imm(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
-    switch (extract32(aFetchedOpcode.theOpcode, 23, 6)) {
-    case 0x20: case 0x21: /* PC-rel. addressing */
-        return disas_pc_rel_adr(aFetchedOpcode,  aCPU, aSequenceNo);
-    case 0x22: case 0x23: /* Add/subtract (immediate) */
-        return disas_add_sub_imm(aFetchedOpcode,  aCPU, aSequenceNo);
-    case 0x24: /* Logical (immediate) */
-        return disas_logic_imm(aFetchedOpcode,  aCPU, aSequenceNo);
-    case 0x25: /* Move wide (immediate) */
-        return disas_movw_imm(aFetchedOpcode,  aCPU, aSequenceNo);
-    case 0x26: /* Bitfield */
-        return disas_bitfield(aFetchedOpcode,  aCPU, aSequenceNo);
-    case 0x27: /* Extract */
-        return disas_extract(aFetchedOpcode,  aCPU, aSequenceNo);
-    default:
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-    }
+arminst disas_data_proc_imm(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  switch (extract32(aFetchedOpcode.theOpcode, 23, 6)) {
+  case 0x20:
+  case 0x21: /* PC-rel. addressing */
+    return disas_pc_rel_adr(aFetchedOpcode, aCPU, aSequenceNo);
+  case 0x22:
+  case 0x23: /* Add/subtract (immediate) */
+    return disas_add_sub_imm(aFetchedOpcode, aCPU, aSequenceNo);
+  case 0x24: /* Logical (immediate) */
+    return disas_logic_imm(aFetchedOpcode, aCPU, aSequenceNo);
+  case 0x25: /* Move wide (immediate) */
+    return disas_movw_imm(aFetchedOpcode, aCPU, aSequenceNo);
+  case 0x26: /* Bitfield */
+    return disas_bitfield(aFetchedOpcode, aCPU, aSequenceNo);
+  case 0x27: /* Extract */
+    return disas_extract(aFetchedOpcode, aCPU, aSequenceNo);
+  default:
+    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+  }
 
-    DBG_Assert(false);
+  DBG_Assert(false);
 }
 
-} // narmDecoder
+} // namespace narmDecoder

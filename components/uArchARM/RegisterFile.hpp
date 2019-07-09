@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,7 +36,6 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #ifndef FLEXUS_uARCH_REGISTERFILE_HPP_INCLUDED
 #define FLEXUS_uARCH_REGISTERFILE_HPP_INCLUDED
 
@@ -43,8 +43,8 @@
 #include <list>
 #include <vector>
 
-#include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
+#include <boost/lambda/lambda.hpp>
 
 #include "uArchInterfaces.hpp"
 
@@ -54,13 +54,13 @@ namespace nuArchARM {
 
 class RegisterFile {
 protected:
-  std::vector< std::vector< std::list< InstructionDependance > > > theDependances;
-  std::vector< std::vector< eResourceStatus > > theStatus;
-  std::vector< std::vector< register_value > > theRegs;
-  std::vector< std::vector< int32_t > > theCollectCounts;
-public:
+  std::vector<std::vector<std::list<InstructionDependance>>> theDependances;
+  std::vector<std::vector<eResourceStatus>> theStatus;
+  std::vector<std::vector<register_value>> theRegs;
+  std::vector<std::vector<int32_t>> theCollectCounts;
 
-  void initialize( std::vector< uint32_t > const & aSizes) {
+public:
+  void initialize(std::vector<uint32_t> const &aSizes) {
     theDependances.resize(aSizes.size());
     theStatus.resize(aSizes.size());
     theRegs.resize(aSizes.size());
@@ -79,13 +79,13 @@ public:
   void reset() {
     FLEXUS_PROFILE();
     for (uint32_t i = 0; i < theDependances.size(); ++i) {
-      for(auto& aDependance: theDependances[i]){
+      for (auto &aDependance : theDependances[i]) {
         aDependance.clear();
       }
-      for(auto& aStatus: theStatus[i]){
+      for (auto &aStatus : theStatus[i]) {
         aStatus = kUnmapped;
       }
-      for(auto& aReg: theRegs[i]){
+      for (auto &aReg : theRegs[i]) {
         aReg = (uint64_t)0ULL;
       }
     }
@@ -97,10 +97,10 @@ public:
       for (uint32_t j = 0; j < theDependances[i].size(); ++j) {
         theCollectCounts[i][j] = 10;
 
-        std::list< InstructionDependance >::iterator iter, temp, end;
+        std::list<InstructionDependance>::iterator iter, temp, end;
         iter = theDependances[i][j].begin();
         end = theDependances[i][j].end();
-        while ( iter != end ) {
+        while (iter != end) {
           temp = iter;
           ++iter;
           if (temp->instruction->isComplete()) {
@@ -113,13 +113,13 @@ public:
 
   void collect(mapped_reg aReg) {
     FLEXUS_PROFILE();
-    if ( --theCollectCounts[aReg.theType][aReg.theIndex] <= 0) {
+    if (--theCollectCounts[aReg.theType][aReg.theIndex] <= 0) {
       theCollectCounts[aReg.theType][aReg.theIndex] = 10;
 
-      std::list< InstructionDependance >::iterator iter, temp, end;
+      std::list<InstructionDependance>::iterator iter, temp, end;
       iter = theDependances[aReg.theType][aReg.theIndex].begin();
       end = theDependances[aReg.theType][aReg.theIndex].end();
-      while ( iter != end ) {
+      while (iter != end) {
         temp = iter;
         ++iter;
         if (temp->instruction->isComplete()) {
@@ -128,82 +128,82 @@ public:
       }
     }
   }
-  void map( mapped_reg aReg ) {
+  void map(mapped_reg aReg) {
     FLEXUS_PROFILE();
     theStatus[aReg.theType][aReg.theIndex] = kNotReady;
-    DBG_Assert( theDependances[aReg.theType][aReg.theIndex] .empty() );
+    DBG_Assert(theDependances[aReg.theType][aReg.theIndex].empty());
   }
-  void squash( mapped_reg aReg, uArchARM & aCore  ) {
+  void squash(mapped_reg aReg, uArchARM &aCore) {
     FLEXUS_PROFILE();
-    if ( theStatus[aReg.theType][aReg.theIndex] != kUnmapped) {
+    if (theStatus[aReg.theType][aReg.theIndex] != kUnmapped) {
       theStatus[aReg.theType][aReg.theIndex] = kNotReady;
     }
-    aCore.squash( theDependances[aReg.theType][aReg.theIndex] );
+    aCore.squash(theDependances[aReg.theType][aReg.theIndex]);
   }
-  void unmap( mapped_reg aReg ) {
+  void unmap(mapped_reg aReg) {
     FLEXUS_PROFILE();
     theStatus[aReg.theType][aReg.theIndex] = kUnmapped;
     theDependances[aReg.theType][aReg.theIndex].clear();
   }
-  eResourceStatus status( mapped_reg aReg ) {
+  eResourceStatus status(mapped_reg aReg) {
     return theStatus[aReg.theType][aReg.theIndex];
   }
 
-  void setStatus( mapped_reg aReg, eResourceStatus aStatus) {
+  void setStatus(mapped_reg aReg, eResourceStatus aStatus) {
     theStatus[aReg.theType][aReg.theIndex] = aStatus;
   }
 
-  eResourceStatus request( mapped_reg aReg, InstructionDependance const & aDependance) {
+  eResourceStatus request(mapped_reg aReg, InstructionDependance const &aDependance) {
     FLEXUS_PROFILE();
-    collect( aReg );
+    collect(aReg);
     theDependances[aReg.theType][aReg.theIndex].push_back(aDependance);
     return theStatus[aReg.theType][aReg.theIndex];
   }
 
-  //Write a value into the register file without side-effects
-  void poke( mapped_reg aReg, register_value aValue, bool isW = false ) {
-      if (isW){
-          register_value val = theRegs[aReg.theType][aReg.theIndex];
-          uint64_t res = boost::get<uint64_t>(val) & 0xffffffff00000000;
-          res = (boost::get<uint64_t>(aValue) & 0xffffffff);
-          register_value final = res;
-          theRegs[aReg.theType][aReg.theIndex] = final;
-      } else {
-          theRegs[aReg.theType][aReg.theIndex] = aValue;
-      }
+  // Write a value into the register file without side-effects
+  void poke(mapped_reg aReg, register_value aValue, bool isW = false) {
+    if (isW) {
+      register_value val = theRegs[aReg.theType][aReg.theIndex];
+      uint64_t res = boost::get<uint64_t>(val) & 0xffffffff00000000;
+      res = (boost::get<uint64_t>(aValue) & 0xffffffff);
+      register_value final = res;
+      theRegs[aReg.theType][aReg.theIndex] = final;
+    } else {
+      theRegs[aReg.theType][aReg.theIndex] = aValue;
+    }
   }
 
-  register_value peek( mapped_reg aReg ) {
+  register_value peek(mapped_reg aReg) {
     return theRegs[aReg.theType][aReg.theIndex];
   }
 
-  register_value read( mapped_reg aReg ) {
-    DBG_Assert( theStatus[aReg.theType][aReg.theIndex] == kReady );
+  register_value read(mapped_reg aReg) {
+    DBG_Assert(theStatus[aReg.theType][aReg.theIndex] == kReady);
     return peek(aReg);
   }
 
-  void write( mapped_reg aReg, register_value aValue, uArchARM & aCore, bool isW ) {
+  void write(mapped_reg aReg, register_value aValue, uArchARM &aCore, bool isW) {
     FLEXUS_PROFILE();
     poke(aReg, aValue, isW);
     theStatus[aReg.theType][aReg.theIndex] = kReady;
 
-    std::list< InstructionDependance >::iterator iter = theDependances[aReg.theType][aReg.theIndex].begin();
-    std::list< InstructionDependance >::iterator end = theDependances[aReg.theType][aReg.theIndex].end();
-    std::list< InstructionDependance >::iterator tmp;
+    std::list<InstructionDependance>::iterator iter =
+        theDependances[aReg.theType][aReg.theIndex].begin();
+    std::list<InstructionDependance>::iterator end =
+        theDependances[aReg.theType][aReg.theIndex].end();
+    std::list<InstructionDependance>::iterator tmp;
     while (iter != end) {
       tmp = iter;
       ++iter;
-      if (tmp->instruction->isComplete() ) {
+      if (tmp->instruction->isComplete()) {
         theDependances[aReg.theType][aReg.theIndex].erase(tmp);
       } else {
         tmp->satisfy();
       }
     }
   }
-
-
 };
 
-} //nuArchARM
+} // namespace nuArchARM
 
-#endif //FLEXUS_uARCH_REGISTERFILE_HPP_INCLUDED
+#endif // FLEXUS_uARCH_REGISTERFILE_HPP_INCLUDED

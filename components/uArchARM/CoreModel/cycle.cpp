@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -34,18 +35,18 @@
 // CONTRACT, TORT OR OTHERWISE).
 //
 // DO-NOT-REMOVE end-copyright-block
-#include <iostream>
-#include <sstream>
 #include <fstream>
+#include <iostream>
 #include <regex>
+#include <sstream>
 
+#include "../ValueTracker.hpp"
 #include "coreModelImpl.hpp"
 #include <core/debug/severity.hpp>
-#include "../ValueTracker.hpp"
 
 #include <components/CommonQEMU/Slices/FillLevel.hpp>
-#include <components/CommonQEMU/Translation.hpp>
 #include <components/CommonQEMU/TraceTracker.hpp>
+#include <components/CommonQEMU/Translation.hpp>
 
 //#include <components/WhiteBox/WhiteBoxIface.hpp>
 
@@ -63,106 +64,104 @@ extern uint32_t theInsnCount;
 
 namespace nuArchARM {
 
-bool CoreImpl::checkValidatation(){
-    theFlexusDumpState = dumpState();
-    theQemuDumpState = Flexus::Qemu::Processor::getProcessor(theNode)->dump_state();
+bool CoreImpl::checkValidatation() {
+  theFlexusDumpState = dumpState();
+  theQemuDumpState = Flexus::Qemu::Processor::getProcessor(theNode)->dump_state();
 
-    bool ret = (theFlexusDumpState.compare(theQemuDumpState) == 0);
-    if (!ret){
+  bool ret = (theFlexusDumpState.compare(theQemuDumpState) == 0);
+  if (!ret) {
 
-        // Vector of string to save tokens
-        std::vector <std::string> flex_diff,qemu_diff, diff;
+    // Vector of string to save tokens
+    std::vector<std::string> flex_diff, qemu_diff, diff;
 
-        std::replace( theFlexusDumpState.begin(), theFlexusDumpState.end(), '\n', ' ');
-        std::replace( theQemuDumpState.begin(), theQemuDumpState.end(), '\n', ' ');
+    std::replace(theFlexusDumpState.begin(), theFlexusDumpState.end(), '\n', ' ');
+    std::replace(theQemuDumpState.begin(), theQemuDumpState.end(), '\n', ' ');
 
-        // stringstream class check1
-        std::stringstream flex_check(theFlexusDumpState);
-        std::stringstream qemu_check(theQemuDumpState);
+    // stringstream class check1
+    std::stringstream flex_check(theFlexusDumpState);
+    std::stringstream qemu_check(theQemuDumpState);
 
-        std::string iflex, iqemu;
+    std::string iflex, iqemu;
 
-
-
-        // Tokenizing w.r.t. space ' '
-        while (std::getline(flex_check, iflex, ' ')){
-            flex_diff.push_back(iflex);
-        }
-        while (std::getline(qemu_check, iqemu, ' ')){
-            qemu_diff.push_back(iqemu);
-        }
-
-        for (size_t i = 0; i < flex_diff.size() && i < qemu_diff.size(); i++){
-            if (flex_diff[i].compare(qemu_diff[i]) != 0){
-                diff.push_back("flexus: "+flex_diff[i]);
-                diff.push_back("qemu:   "+qemu_diff[i]);
-            }
-
-        }
-
-
-      if (diff.size() > 0) {
-        DBG_(Dev, (<< "state mismatch: "));
-        for (auto &i : diff){
-            DBG_(Dev, (<< i));
-        }
-      }
-
+    // Tokenizing w.r.t. space ' '
+    while (std::getline(flex_check, iflex, ' ')) {
+      flex_diff.push_back(iflex);
+    }
+    while (std::getline(qemu_check, iqemu, ' ')) {
+      qemu_diff.push_back(iqemu);
     }
 
-    return ret;
+    for (size_t i = 0; i < flex_diff.size() && i < qemu_diff.size(); i++) {
+      if (flex_diff[i].compare(qemu_diff[i]) != 0) {
+        diff.push_back("flexus: " + flex_diff[i]);
+        diff.push_back("qemu:   " + qemu_diff[i]);
+      }
+    }
+
+    if (diff.size() > 0) {
+      DBG_(Dev, (<< "state mismatch: "));
+      for (auto &i : diff) {
+        DBG_(Dev, (<< i));
+      }
+    }
+  }
+
+  return ret;
 }
 
 void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
 
-    // qemu warmup
-    if (theFlexus->cycleCount() == 1) {
-        advance_fn();
-        throw ResynchronizeWithQemuException();
-    }
+  // qemu warmup
+  if (theFlexus->cycleCount() == 1) {
+    advance_fn();
+    throw ResynchronizeWithQemuException();
+  }
 
-
-    CORE_DBG("--------------START CORE------------------------");
-
+  CORE_DBG("--------------START CORE------------------------");
 
   FLEXUS_PROFILE();
 
   if (aPendingInterrupt != thePendingInterrupt) {
 
-      DBG_(Dev, (<< "Interrupting..." ));
+    DBG_(Dev, (<< "Interrupting..."));
 
     if (aPendingInterrupt == kException_None) {
-      DBG_(Dev, ( << theName << " Interrupt: " << thePendingInterrupt << " pending for " << (theFlexus->cycleCount() - theInterruptReceived) ) );
+      DBG_(Dev, (<< theName << " Interrupt: " << thePendingInterrupt << " pending for "
+                 << (theFlexus->cycleCount() - theInterruptReceived)));
     } else {
       theInterruptReceived = theFlexus->cycleCount();
     }
     thePendingInterrupt = aPendingInterrupt;
-
-
-
-
   }
 
-  if (narmDecoder::theInsnCount > 10000ULL && ( static_cast<uint64_t>(theFlexus->cycleCount() - theLastGarbageCollect) > 1000ULL - narmDecoder::theInsnCount / 100))  {
-      DBG_( VVerb, ( << theName << "Garbage-collect count before clean:  " << narmDecoder::theInsnCount ) );
+  if (narmDecoder::theInsnCount > 10000ULL &&
+      (static_cast<uint64_t>(theFlexus->cycleCount() - theLastGarbageCollect) >
+       1000ULL - narmDecoder::theInsnCount / 100)) {
+    DBG_(VVerb,
+         (<< theName << "Garbage-collect count before clean:  " << narmDecoder::theInsnCount));
 
-      FLEXUS_PROFILE_N("CoreImpl::cycle() collect-dead-dependencies");
-    DBG_( VVerb, ( << theName << "Garbage-collect count before clean:  " << narmDecoder::theInsnCount ) );
+    FLEXUS_PROFILE_N("CoreImpl::cycle() collect-dead-dependencies");
+    DBG_(VVerb,
+         (<< theName << "Garbage-collect count before clean:  " << narmDecoder::theInsnCount));
     theBypassNetwork.collectAll();
-    DBG_( VVerb, ( << theName << "Garbage-collect between bypass and registers:  " << narmDecoder::theInsnCount ) );
+    DBG_(VVerb, (<< theName << "Garbage-collect between bypass and registers:  "
+                 << narmDecoder::theInsnCount));
     theRegisters.collectAll();
-    DBG_( VVerb, ( << theName << "Garbage-collect count after clean:  " << narmDecoder::theInsnCount ) );
+    DBG_(VVerb,
+         (<< theName << "Garbage-collect count after clean:  " << narmDecoder::theInsnCount));
     theLastGarbageCollect = theFlexus->cycleCount();
 
-    if ( narmDecoder::theInsnCount > 1000000 ) {
-      DBG_( VVerb, ( << theName << "Garbage-collect detects too many live instructions.  Forcing resynchronize.") );
+    if (narmDecoder::theInsnCount > 1000000) {
+      DBG_(VVerb, (<< theName
+                   << "Garbage-collect detects too many live instructions.  "
+                      "Forcing resynchronize."));
       ++theResync_GarbageCollect;
       throw ResynchronizeWithQemuException();
     }
   }
 
   if (Flexus::Dbg::Debugger::theDebugger->theMinimumSeverity <= 3) {
-//      DBG_( VVerb, ( << "Dumping..." ) );
+    //      DBG_( VVerb, ( << "Dumping..." ) );
 
     dumpROB();
     dumpSRB();
@@ -170,64 +169,67 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
     dumpMSHR();
     dumpCheckpoints();
     dumpSBPermissions();
-//    dumpActions();
-//    DBG_( VVerb, ( << "Dumping done" ) );
-
+    //    dumpActions();
+    //    DBG_( VVerb, ( << "Dumping done" ) );
   }
 
   if (theIsSpeculating) {
-    CORE_DBG("Speculating" );
-    DBG_Assert( theCheckpoints.size() > 0);
-    DBG_Assert( ! theSRB.empty() );
-    DBG_Assert( theSBCount + theSBNAWCount > 0 );
-    DBG_Assert( theOpenCheckpoint != 0);
-    DBG_Assert( theCheckpoints.find( theOpenCheckpoint ) != theCheckpoints.end() );
+    CORE_DBG("Speculating");
+    DBG_Assert(theCheckpoints.size() > 0);
+    DBG_Assert(!theSRB.empty());
+    DBG_Assert(theSBCount + theSBNAWCount > 0);
+    DBG_Assert(theOpenCheckpoint != 0);
+    DBG_Assert(theCheckpoints.find(theOpenCheckpoint) != theCheckpoints.end());
 
 #ifdef VALIDATE_STORE_PREFETCHING
-    //Ensure that the required blocks are somewhere
-    std::map< boost::intrusive_ptr< Instruction >, Checkpoint >::iterator ckpt = theCheckpoints.begin();
+    // Ensure that the required blocks are somewhere
+    std::map<boost::intrusive_ptr<Instruction>, Checkpoint>::iterator ckpt = theCheckpoints.begin();
     while (ckpt != theCheckpoints.end()) {
-      //Walk through the required permissions, make sure the block is somewhere
-      std::map< PhysicalMemoryAddress, boost::intrusive_ptr< Instruction > >::iterator iter, end;
+      // Walk through the required permissions, make sure the block is somewhere
+      std::map<PhysicalMemoryAddress, boost::intrusive_ptr<Instruction>>::iterator iter, end;
       iter = ckpt->second.theRequiredPermissions.begin();
       end = ckpt->second.theRequiredPermissions.end();
       while (iter != end) {
-        if (! ckpt->second.theHeldPermissions.count( iter->first ) > 0) {
-          //permission not held
-          if (! theOutstandingStorePrefetches.count( iter->first ) > 0 ) {
-            if (! theWaitingStorePrefetches.count( iter->first ) > 0 ) {
-              if (! theBlockedStorePrefetches.count( iter->first ) > 0 ) {
+        if (!ckpt->second.theHeldPermissions.count(iter->first) > 0) {
+          // permission not held
+          if (!theOutstandingStorePrefetches.count(iter->first) > 0) {
+            if (!theWaitingStorePrefetches.count(iter->first) > 0) {
+              if (!theBlockedStorePrefetches.count(iter->first) > 0) {
                 Flexus::Core::theFlexus->setDebug("verb");
                 dumpCheckpoints();
                 dumpMSHR();
                 dumpSBPermissions();
-                DBG_Assert( false, ( << theName << " required store address is lost: " << iter->first << " required by " << *iter->second ) );
+                DBG_Assert(false, (<< theName << " required store address is lost: " << iter->first
+                                   << " required by " << *iter->second));
               } else {
                 bool found = false;
                 MSHRs_t::iterator miter, mend;
-                for ( miter = theMSHRs.begin(), mend = theMSHRs.end(); miter != mend; ++miter) {
+                for (miter = theMSHRs.begin(), mend = theMSHRs.end(); miter != mend; ++miter) {
                   if ((miter->first & ~63) == iter->first) {
                     found = true;
                     break;
                   }
                 }
-                if (! found) {
+                if (!found) {
                   Flexus::Core::theFlexus->setDebug("verb");
                   dumpCheckpoints();
                   dumpMSHR();
                   dumpSBPermissions();
-                  DBG_Assert( false, ( << theName << " blocked prefetch for: " << iter->first << " has no obvious blocking MSHR. ") );
+                  DBG_Assert(false, (<< theName << " blocked prefetch for: " << iter->first
+                                     << " has no obvious blocking MSHR. "));
                 }
               }
             } else {
-              DBG_Assert( ! theWaitingStorePrefetches[iter->first].empty() );
-              if ( theMemoryPortArbiter.theStorePrefetchRequests.get<by_insn>().find( *theWaitingStorePrefetches[iter->first].begin()) == theMemoryPortArbiter.theStorePrefetchRequests.get<by_insn>().end() ) {
+              DBG_Assert(!theWaitingStorePrefetches[iter->first].empty());
+              if (theMemoryPortArbiter.theStorePrefetchRequests.get<by_insn>().find(
+                      *theWaitingStorePrefetches[iter->first].begin()) ==
+                  theMemoryPortArbiter.theStorePrefetchRequests.get<by_insn>().end()) {
                 Flexus::Core::theFlexus->setDebug("verb");
                 dumpCheckpoints();
                 dumpMSHR();
                 dumpSBPermissions();
-                DBG_Assert( false, ( << theName << " no queued prefetch request for: " << **theWaitingStorePrefetches[iter->first].begin()) );
-
+                DBG_Assert(false, (<< theName << " no queued prefetch request for: "
+                                   << **theWaitingStorePrefetches[iter->first].begin()));
               }
             }
           }
@@ -236,27 +238,27 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
       }
       ++ckpt;
     }
-#endif //VALIDATE STORE PREFETCHING
+#endif // VALIDATE STORE PREFETCHING
   } else {
-      CORE_DBG("Not Speculating" );
+    CORE_DBG("Not Speculating");
 
-    DBG_Assert( theCheckpoints.size() == 0);
-    DBG_Assert( theSRB.empty() );
-    DBG_Assert( theOpenCheckpoint == 0);
+    DBG_Assert(theCheckpoints.size() == 0);
+    DBG_Assert(theSRB.empty());
+    DBG_Assert(theOpenCheckpoint == 0);
   }
 
   DBG_Assert((theSBCount + theSBNAWCount) >= 0);
-  DBG_Assert((static_cast<int> (theSBLines_Permission.size())) <= theSBCount + theSBNAWCount );
+  DBG_Assert((static_cast<int>(theSBLines_Permission.size())) <= theSBCount + theSBNAWCount);
 
-  DBG_( VVerb, ( << "*** Prepare *** " ) );
+  DBG_(VVerb, (<< "*** Prepare *** "));
 
   processMemoryReplies();
   prepareCycle();
 
-  DBG_( VVerb, ( << "*** Eval *** " ) );
+  DBG_(VVerb, (<< "*** Eval *** "));
   evaluate();
 
-  DBG_( VVerb, ( << "*** Issue Mem *** " ) );
+  DBG_(VVerb, (<< "*** Issue Mem *** "));
 
   issuePartialSnoop();
   issueStore();
@@ -264,49 +266,49 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
   issueAtomicSpecWrite();
   issueSpecial();
   valuePredictAtomic();
-//  checkExtraLatencyTimeout();
+  //  checkExtraLatencyTimeout();
   resolveCheckpoint();
 
-  DBG_( Verb, ( << "*** Arb *** " ) );
+  DBG_(Verb, (<< "*** Arb *** "));
   arbitrate();
 
-  //Retire instruction from the ROB to the SRB
+  // Retire instruction from the ROB to the SRB
   retire();
 
   if (theRetireCount > 0) {
     theIdleThisCycle = false;
   }
 
-  //Do cycle accounting
+  // Do cycle accounting
   completeAccounting();
 
   if (theTSOBReplayStalls > 0) {
-    -- theTSOBReplayStalls;
+    --theTSOBReplayStalls;
   }
 
-  while (! theBranchFeedback.empty()) {
+  while (!theBranchFeedback.empty()) {
     feedback_fn(theBranchFeedback.front());
-    DBG_( Verb, ( << " Sent Branch Feedback") );
+    DBG_(Verb, (<< " Sent Branch Feedback"));
     theBranchFeedback.pop_front();
     theIdleThisCycle = false;
   }
 
   if (theSquashRequested) {
-    DBG_( Verb, ( << " Core triggering Squash: " << theSquashReason) );
+    DBG_(Verb, (<< " Core triggering Squash: " << theSquashReason));
     doSquash();
     squash_fn(theSquashReason);
     theSquashRequested = false;
     theIdleThisCycle = false;
   }
 
-  //Commit instructions the SRB and compare to simics
+  // Commit instructions the SRB and compare to simics
   commit();
 
   handleTrap();
-//  handlePopTL();
+  //  handlePopTL();
 
   if (theRedirectRequested) {
-    DBG_( Dev, ( << " Core triggering Redirect to " << theRedirectPC ) );
+    DBG_(Dev, (<< " Core triggering Redirect to " << theRedirectPC));
     redirect_fn(theRedirectPC);
     thePC = theRedirectPC;
     theRedirectRequested = false;
@@ -316,7 +318,7 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
     ++theIdleCycleCount;
   } else {
     theIdleCycleCount = 0;
-//    CORE_DBG(theName << " Non-Idle" );
+    //    CORE_DBG(theName << " Non-Idle" );
   }
   theIdleThisCycle = true;
 
@@ -326,30 +328,27 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
   }
 
   CORE_DBG("--------------FINISH CORE------------------------");
-
-
 }
 
 void CoreImpl::prepareCycle() {
   FLEXUS_PROFILE();
   thePreserveInteractions = false;
-  if (! theRescheduledActions.empty() || ! theActiveActions.empty()) {
+  if (!theRescheduledActions.empty() || !theActiveActions.empty()) {
     theIdleThisCycle = false;
   }
 
-  std::swap( theRescheduledActions, theActiveActions );
+  std::swap(theRescheduledActions, theActiveActions);
 }
 
 void CoreImpl::evaluate() {
   FLEXUS_PROFILE();
   CORE_DBG("--------------START EVALUATING------------------------");
 
-  while (! theActiveActions.empty()) {
+  while (!theActiveActions.empty()) {
     theActiveActions.top()->evaluate();
     theActiveActions.pop();
   }
   CORE_DBG("--------------FINISH EVALUATING------------------------");
-
 }
 
 void CoreImpl::arbitrate() {
@@ -357,32 +356,32 @@ void CoreImpl::arbitrate() {
   theMemoryPortArbiter.arbitrate();
 }
 
-void CoreImpl::satisfy( InstructionDependance  const & aDep) {
+void CoreImpl::satisfy(InstructionDependance const &aDep) {
   aDep.satisfy();
 }
-void CoreImpl::squash( InstructionDependance  const & aDep) {
+void CoreImpl::squash(InstructionDependance const &aDep) {
   aDep.squash();
 }
-void CoreImpl::satisfy( std::list<InstructionDependance > & dependances) {
-  std::list<InstructionDependance >::iterator iter = dependances.begin();
-  std::list<InstructionDependance >::iterator end = dependances.end();
-  while ( iter != end) {
+void CoreImpl::satisfy(std::list<InstructionDependance> &dependances) {
+  std::list<InstructionDependance>::iterator iter = dependances.begin();
+  std::list<InstructionDependance>::iterator end = dependances.end();
+  while (iter != end) {
     iter->satisfy();
     ++iter;
   }
 }
-void CoreImpl::squash( std::list<InstructionDependance > & dependances) {
-  std::list<InstructionDependance >::iterator iter = dependances.begin();
-  std::list<InstructionDependance >::iterator end = dependances.end();
-  while ( iter != end) {
+void CoreImpl::squash(std::list<InstructionDependance> &dependances) {
+  std::list<InstructionDependance>::iterator iter = dependances.begin();
+  std::list<InstructionDependance>::iterator end = dependances.end();
+  while (iter != end) {
     iter->squash();
     ++iter;
   }
 }
 
-void CoreImpl::spinDetect( memq_t::index<by_insn>::type::iterator iter) {
+void CoreImpl::spinDetect(memq_t::index<by_insn>::type::iterator iter) {
   if (theSpinning) {
-    //Check leave conditions
+    // Check leave conditions
     bool leave = false;
 
     if (!leave && iter->theOperation != kLoad) {
@@ -417,7 +416,7 @@ void CoreImpl::spinDetect( memq_t::index<by_insn>::type::iterator iter) {
         ++va_iter;
       }
       spin_string += "}";
-      DBG_( Iface, ( << theName << " leaving spin mode. " << spin_string ) );
+      DBG_(Iface, (<< theName << " leaving spin mode. " << spin_string));
 
       theSpinning = false;
       theSpinCount += theSpinDetectCount;
@@ -428,7 +427,7 @@ void CoreImpl::spinDetect( memq_t::index<by_insn>::type::iterator iter) {
       theSpinPCs.clear();
     }
   } else {
-    //Check all reset conditions
+    // Check all reset conditions
     bool reset = false;
 
     if (!reset && iter->theOperation != kLoad) {
@@ -456,7 +455,7 @@ void CoreImpl::spinDetect( memq_t::index<by_insn>::type::iterator iter) {
       theSpinMemoryAddresses.clear();
       theSpinPCs.clear();
     } else {
-      //Check condition for entering spin mode
+      // Check condition for entering spin mode
       if (theSpinDetectCount > 24 || theSpinRetireSinceReset > 99) {
         std::string spin_string = "Addrs {";
         std::set<PhysicalMemoryAddress>::iterator ma_iter = theSpinMemoryAddresses.begin();
@@ -471,7 +470,7 @@ void CoreImpl::spinDetect( memq_t::index<by_insn>::type::iterator iter) {
           ++va_iter;
         }
         spin_string += "}";
-        DBG_( Iface, ( << theName << " entering spin mode. " << spin_string ) );
+        DBG_(Iface, (<< theName << " entering spin mode. " << spin_string));
 
         theSpinning = true;
         theSpinStartCycle = theFlexus->cycleCount();
@@ -480,89 +479,95 @@ void CoreImpl::spinDetect( memq_t::index<by_insn>::type::iterator iter) {
   }
 }
 
-void CoreImpl::checkPageFault( boost::intrusive_ptr<Instruction> anInsn) {
+void CoreImpl::checkPageFault(boost::intrusive_ptr<Instruction> anInsn) {
   memq_t::index<by_insn>::type::iterator iter = theMemQueue.get<by_insn>().find(anInsn);
-  DBG_Assert(  iter != theMemQueue.get<by_insn>().end());
+  DBG_Assert(iter != theMemQueue.get<by_insn>().end());
 
-    if (iter->theException != kException_None ) {
-      DBG_(Dev, ( <<  theName << " Taking MMU exception: " << iter->theException << " "  << *iter ) );
-      takeTrap(anInsn, iter->theException);
-      anInsn->setAccessAddress(PhysicalMemoryAddress(0));
-//      anInsn->squash();
-    }
+  if (iter->theException != kException_None) {
+    DBG_(Dev, (<< theName << " Taking MMU exception: " << iter->theException << " " << *iter));
+    takeTrap(anInsn, iter->theException);
+    anInsn->setAccessAddress(PhysicalMemoryAddress(0));
+    //      anInsn->squash();
+  }
 }
 
-void CoreImpl::createCheckpoint( boost::intrusive_ptr<Instruction> anInsn) {
-  std::map< boost::intrusive_ptr< Instruction >, Checkpoint>::iterator ckpt;
+void CoreImpl::createCheckpoint(boost::intrusive_ptr<Instruction> anInsn) {
+  std::map<boost::intrusive_ptr<Instruction>, Checkpoint>::iterator ckpt;
   bool is_new;
-  std::tie(ckpt, is_new) = theCheckpoints.insert( std::make_pair( anInsn, Checkpoint() ) );
+  std::tie(ckpt, is_new) = theCheckpoints.insert(std::make_pair(anInsn, Checkpoint()));
   anInsn->setHasCheckpoint(true);
-  //getv9State( ckpt->second.theState );
-  getARMState( ckpt->second.theState );
-//  Flexus::Qemu::Processor::getProcessor( theNode )->ckptMMU();
-  DBG_(Verb, ( << theName << "Collecting checkpoint for " << *anInsn) );
+  // getv9State( ckpt->second.theState );
+  getARMState(ckpt->second.theState);
+  //  Flexus::Qemu::Processor::getProcessor( theNode )->ckptMMU();
+  DBG_(Verb, (<< theName << "Collecting checkpoint for " << *anInsn));
   DBG_Assert(is_new);
 
   theMaxSpeculativeCheckpoints << theCheckpoints.size();
-  DBG_Assert( theAllowedSpeculativeCheckpoints >= 0);
-  DBG_Assert( theAllowedSpeculativeCheckpoints == 0 || (static_cast<int> ( theCheckpoints.size())) <= theAllowedSpeculativeCheckpoints );
+  DBG_Assert(theAllowedSpeculativeCheckpoints >= 0);
+  DBG_Assert(theAllowedSpeculativeCheckpoints == 0 ||
+             (static_cast<int>(theCheckpoints.size())) <= theAllowedSpeculativeCheckpoints);
   theOpenCheckpoint = anInsn;
   theRetiresSinceCheckpoint = 0;
 
   startSpeculating();
 }
 
-void CoreImpl::freeCheckpoint( boost::intrusive_ptr<Instruction> anInsn) {
-  std::map< boost::intrusive_ptr< Instruction >, Checkpoint>::iterator ckpt = theCheckpoints.find( anInsn );
-  DBG_Assert( ckpt != theCheckpoints.end() );
+void CoreImpl::freeCheckpoint(boost::intrusive_ptr<Instruction> anInsn) {
+  std::map<boost::intrusive_ptr<Instruction>, Checkpoint>::iterator ckpt =
+      theCheckpoints.find(anInsn);
+  DBG_Assert(ckpt != theCheckpoints.end());
   theCheckpoints.erase(ckpt);
   anInsn->setHasCheckpoint(false);
-//  Flexus::Qemu::Processor::getProcessor( theNode )->releaseMMUCkpt();
+  //  Flexus::Qemu::Processor::getProcessor( theNode )->releaseMMUCkpt();
   if (theOpenCheckpoint == anInsn) {
     theOpenCheckpoint = 0;
   }
   checkStopSpeculating();
 }
 
-void CoreImpl::requireWritePermission( memq_t::index<by_insn>::type::iterator aWrite) {
-  PhysicalMemoryAddress addr( aWrite->thePaddr & ~( theCoherenceUnit - 1) );
+void CoreImpl::requireWritePermission(memq_t::index<by_insn>::type::iterator aWrite) {
+  PhysicalMemoryAddress addr(aWrite->thePaddr & ~(theCoherenceUnit - 1));
   if (aWrite->thePaddr > 0) {
-    std::map<PhysicalMemoryAddress, std::pair<int, bool> >::iterator sbline;
+    std::map<PhysicalMemoryAddress, std::pair<int, bool>>::iterator sbline;
     bool is_new;
-    DBG_( Dev, ( << theName << "requireWritePermission : " << *aWrite ) );
-    std::tie(sbline, is_new) = theSBLines_Permission.insert( std::make_pair( addr, std::make_pair(1, false) ) );
-    if ( is_new ) {
+    DBG_(Dev, (<< theName << "requireWritePermission : " << *aWrite));
+    std::tie(sbline, is_new) =
+        theSBLines_Permission.insert(std::make_pair(addr, std::make_pair(1, false)));
+    if (is_new) {
       ++theSBLines_Permission_falsecount;
-      DBG_Assert( theSBLines_Permission_falsecount >= 0);
-      DBG_Assert( theSBLines_Permission_falsecount <= (static_cast<int> (theSBLines_Permission.size())) );
+      DBG_Assert(theSBLines_Permission_falsecount >= 0);
+      DBG_Assert(theSBLines_Permission_falsecount <=
+                 (static_cast<int>(theSBLines_Permission.size())));
     } else {
       sbline->second.first++;
     }
-    if (! sbline->second.second) {
+    if (!sbline->second.second) {
       requestStorePrefetch(aWrite);
     }
     if (theOpenCheckpoint) {
       if (theConsistencyModel == kSC || aWrite->isAtomic()) {
-        theCheckpoints[theOpenCheckpoint].theRequiredPermissions.insert( std::make_pair(addr, aWrite->theInstruction) );
+        theCheckpoints[theOpenCheckpoint].theRequiredPermissions.insert(
+            std::make_pair(addr, aWrite->theInstruction));
         if (sbline->second.second) {
-          theCheckpoints[theOpenCheckpoint].theHeldPermissions.insert( addr );
+          theCheckpoints[theOpenCheckpoint].theHeldPermissions.insert(addr);
         }
       }
     }
   }
 }
 
-void CoreImpl::unrequireWritePermission( PhysicalMemoryAddress anAddress) {
-  PhysicalMemoryAddress addr( static_cast<uint64_t>(anAddress) & ~( theCoherenceUnit - 1));
-  std::map<PhysicalMemoryAddress, std::pair<int, bool> >::iterator sbline = theSBLines_Permission.find( addr );
-  if ( sbline != theSBLines_Permission.end()) {
+void CoreImpl::unrequireWritePermission(PhysicalMemoryAddress anAddress) {
+  PhysicalMemoryAddress addr(static_cast<uint64_t>(anAddress) & ~(theCoherenceUnit - 1));
+  std::map<PhysicalMemoryAddress, std::pair<int, bool>>::iterator sbline =
+      theSBLines_Permission.find(addr);
+  if (sbline != theSBLines_Permission.end()) {
     --sbline->second.first;
     DBG_Assert(sbline->second.first >= 0);
     if (sbline->second.first == 0) {
-      DBG_(Iface, ( << theName << " Stop tracking: " << anAddress ) );
-      if (! sbline->second.second) {
+      DBG_(Iface, (<< theName << " Stop tracking: " << anAddress));
+      if (!sbline->second.second) {
         --theSBLines_Permission_falsecount;
-        DBG_Assert( theSBLines_Permission_falsecount >= 0 );
+        DBG_Assert(theSBLines_Permission_falsecount >= 0);
       }
 
       theSBLines_Permission.erase(sbline);
@@ -570,66 +575,76 @@ void CoreImpl::unrequireWritePermission( PhysicalMemoryAddress anAddress) {
   }
 }
 
-void CoreImpl::acquireWritePermission( PhysicalMemoryAddress anAddress) {
-  PhysicalMemoryAddress addr( static_cast<uint64_t>(anAddress) & ~( theCoherenceUnit - 1));
-  std::map<PhysicalMemoryAddress, std::pair<int, bool> >::iterator sbline = theSBLines_Permission.find( addr );
-  if ( sbline != theSBLines_Permission.end()) {
-    if (! sbline->second.second) {
-      DBG_( VVerb, ( << theName << " Acquired write permission for address in SB: " << addr ));
+void CoreImpl::acquireWritePermission(PhysicalMemoryAddress anAddress) {
+  PhysicalMemoryAddress addr(static_cast<uint64_t>(anAddress) & ~(theCoherenceUnit - 1));
+  std::map<PhysicalMemoryAddress, std::pair<int, bool>>::iterator sbline =
+      theSBLines_Permission.find(addr);
+  if (sbline != theSBLines_Permission.end()) {
+    if (!sbline->second.second) {
+      DBG_(VVerb, (<< theName << " Acquired write permission for address in SB: " << addr));
       --theSBLines_Permission_falsecount;
-      DBG_Assert( theSBLines_Permission_falsecount >= 0 );
+      DBG_Assert(theSBLines_Permission_falsecount >= 0);
     }
     sbline->second.second = true;
-    std::map< boost::intrusive_ptr< Instruction >, Checkpoint >::iterator ckpt = theCheckpoints.begin();
+    std::map<boost::intrusive_ptr<Instruction>, Checkpoint>::iterator ckpt = theCheckpoints.begin();
     while (ckpt != theCheckpoints.end()) {
-      if (ckpt->second.theRequiredPermissions.find( addr ) != ckpt->second.theRequiredPermissions.end() ) {
-        ckpt->second.theHeldPermissions.insert( addr );
+      if (ckpt->second.theRequiredPermissions.find(addr) !=
+          ckpt->second.theRequiredPermissions.end()) {
+        ckpt->second.theHeldPermissions.insert(addr);
       }
       ++ckpt;
     }
   }
 }
 
-void CoreImpl::loseWritePermission( eLoseWritePermission aReason, PhysicalMemoryAddress anAddress) {
-  PhysicalMemoryAddress addr( anAddress & ~( theCoherenceUnit - 1) );
-  std::map<PhysicalMemoryAddress, std::pair<int, bool> >::iterator sbline = theSBLines_Permission.find( addr );
-  if ( sbline != theSBLines_Permission.end()) {
+void CoreImpl::loseWritePermission(eLoseWritePermission aReason, PhysicalMemoryAddress anAddress) {
+  PhysicalMemoryAddress addr(anAddress & ~(theCoherenceUnit - 1));
+  std::map<PhysicalMemoryAddress, std::pair<int, bool>>::iterator sbline =
+      theSBLines_Permission.find(addr);
+  if (sbline != theSBLines_Permission.end()) {
     if (sbline->second.second) {
-      switch ( aReason) {
-        case eLosePerm_Invalidate:
-          DBG_( Verb, ( << theName << " Invalidate removed write permission for line in store buffer:" << addr ));
-          ++theInv_HitSB;
-          break;
-        case eLosePerm_Downgrade:
-          DBG_( Verb, ( << theName << " Downgrade removed write permission for line in store buffer: " << addr));
-          ++theDG_HitSB;
-          break;
-        case eLosePerm_Replacement:
-          DBG_( Verb, ( << theName << " Replacement removed write permission for line in store buffer:" << addr ));
-          ++theRepl_HitSB;
-          break;
+      switch (aReason) {
+      case eLosePerm_Invalidate:
+        DBG_(Verb, (<< theName
+                    << " Invalidate removed write permission for line in store buffer:" << addr));
+        ++theInv_HitSB;
+        break;
+      case eLosePerm_Downgrade:
+        DBG_(Verb, (<< theName
+                    << " Downgrade removed write permission for line in store buffer: " << addr));
+        ++theDG_HitSB;
+        break;
+      case eLosePerm_Replacement:
+        DBG_(Verb, (<< theName
+                    << " Replacement removed write permission for line in "
+                       "store buffer:"
+                    << addr));
+        ++theRepl_HitSB;
+        break;
       }
       ++theSBLines_Permission_falsecount;
-      DBG_Assert( theSBLines_Permission_falsecount >= 0);
-      DBG_Assert( theSBLines_Permission_falsecount <= (static_cast<int> (theSBLines_Permission.size())) );
+      DBG_Assert(theSBLines_Permission_falsecount >= 0);
+      DBG_Assert(theSBLines_Permission_falsecount <=
+                 (static_cast<int>(theSBLines_Permission.size())));
     }
     sbline->second.second = false;
 
-    std::map< boost::intrusive_ptr< Instruction >, Checkpoint >::iterator ckpt = theCheckpoints.begin();
+    std::map<boost::intrusive_ptr<Instruction>, Checkpoint>::iterator ckpt = theCheckpoints.begin();
     bool requested = false;
     while (ckpt != theCheckpoints.end()) {
-      if (ckpt->second.theHeldPermissions.count( addr ) > 0) {
-        ckpt->second.theHeldPermissions.erase( addr );
+      if (ckpt->second.theHeldPermissions.count(addr) > 0) {
+        ckpt->second.theHeldPermissions.erase(addr);
         ckpt->second.theLostPermissionCount++;
 
         if (ckpt->second.theLostPermissionCount > 5) {
-          //Abort if lost permission count exceeds threshold
-          if (! theAbortSpeculation || theViolatingInstruction->sequenceNo() > ckpt->second.theRequiredPermissions[addr]->sequenceNo()) {
+          // Abort if lost permission count exceeds threshold
+          if (!theAbortSpeculation || theViolatingInstruction->sequenceNo() >
+                                          ckpt->second.theRequiredPermissions[addr]->sequenceNo()) {
             theAbortSpeculation = true;
             theViolatingInstruction = ckpt->second.theRequiredPermissions[addr];
           }
-        } else if (! requested) {
-          //otherwise, re-request permission
+        } else if (!requested) {
+          // otherwise, re-request permission
           requestStorePrefetch(ckpt->second.theRequiredPermissions[addr]);
         }
       }
@@ -638,39 +653,44 @@ void CoreImpl::loseWritePermission( eLoseWritePermission aReason, PhysicalMemory
   }
 }
 
-void CoreImpl::retireMem( boost::intrusive_ptr<Instruction> anInsn) {
+void CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn) {
   FLEXUS_PROFILE();
   memq_t::index<by_insn>::type::iterator iter = theMemQueue.get<by_insn>().find(anInsn);
-  DBG_Assert(  iter != theMemQueue.get<by_insn>().end());
+  DBG_Assert(iter != theMemQueue.get<by_insn>().end());
 
-  //Spin detection / control
-  if (! anInsn->isAnnulled() ) {
+  // Spin detection / control
+  if (!anInsn->isAnnulled()) {
     spinDetect(iter);
   }
 
-  DBG_Assert(  iter->theQueue == kLSQ );
+  DBG_Assert(iter->theQueue == kLSQ);
 
-  if (iter->theOperation == kCAS || iter->theOperation == kRMW ) {
+  if (iter->theOperation == kCAS || iter->theOperation == kRMW) {
     if (!iter->isAbnormalAccess() && iter->thePaddr != 0) {
-      PhysicalMemoryAddress block_addr( static_cast<uint64_t>(iter->thePaddr) & ~( theCoherenceUnit - 1) );
-      addSLATEntry( block_addr, anInsn );
+      PhysicalMemoryAddress block_addr(static_cast<uint64_t>(iter->thePaddr) &
+                                       ~(theCoherenceUnit - 1));
+      addSLATEntry(block_addr, anInsn);
 
-      //TRACE TRACKER : Notify trace tracker of store
-      //uint64_t logical_timestamp = theCommitNumber + theSRB.size();
-      theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/, anInsn->isPriv(), 0 );
+      // TRACE TRACKER : Notify trace tracker of store
+      // uint64_t logical_timestamp = theCommitNumber + theSRB.size();
+      theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/,
+                            anInsn->isPriv(), 0);
       /* CMU-ONLY-BLOCK-BEGIN */
-//      if (theTrackParallelAccesses ) {
-//        theTraceTracker.parallelList(theNode, eCore, iter->thePaddr, iter->theParallelAddresses);
-        /*
-                  DBG_( Dev,  ( << theName << " CAS/RMW " << std::hex << iter->thePaddr << std::dec << " parallel set follows " ) );
-                  std::set< PhysicalMemoryAddress >::iterator pal_iter = iter->theParallelAddresses.begin();
-                  std::set< PhysicalMemoryAddress >::iterator pal_end = iter->theParallelAddresses.end();
-                  while (pal_iter != pal_end ) {
-                    DBG_ ( Dev, ( << "    " << std::hex << *pal_iter << std::dec ) );
-                    ++pal_iter;
-                  }
-         */
-//      }
+      //      if (theTrackParallelAccesses ) {
+      //        theTraceTracker.parallelList(theNode, eCore, iter->thePaddr,
+      //        iter->theParallelAddresses);
+      /*
+                DBG_( Dev,  ( << theName << " CAS/RMW " << std::hex <<
+         iter->thePaddr << std::dec << " parallel set follows " ) ); std::set<
+         PhysicalMemoryAddress >::iterator pal_iter =
+         iter->theParallelAddresses.begin(); std::set< PhysicalMemoryAddress
+         >::iterator pal_end = iter->theParallelAddresses.end(); while (pal_iter
+         != pal_end ) { DBG_ ( Dev, ( << "    " << std::hex << *pal_iter <<
+         std::dec ) );
+                  ++pal_iter;
+                }
+       */
+      //      }
       /* CMU-ONLY-BLOCK-END */
     }
 
@@ -684,8 +704,8 @@ void CoreImpl::retireMem( boost::intrusive_ptr<Instruction> anInsn) {
       }
     } else { /* CAS */
       ++theAtomicVal_CASs;
-      DBG_Assert(iter->theExtendedValue, ( << *iter ) );
-      DBG_Assert(iter->theCompareValue, ( << *iter ) );
+      DBG_Assert(iter->theExtendedValue, (<< *iter));
+      DBG_Assert(iter->theCompareValue, (<< *iter));
       if (*iter->theExtendedValue == 0) {
         ++theAtomicVal_CASs_Zero;
       } else {
@@ -706,105 +726,111 @@ void CoreImpl::retireMem( boost::intrusive_ptr<Instruction> anInsn) {
       }
     }
 
-    if ( iter->theStoreComplete == true) {
-      //Completed non-speculatively
-      eraseLSQ( anInsn ); //Will setAccessAddress
+    if (iter->theStoreComplete == true) {
+      // Completed non-speculatively
+      eraseLSQ(anInsn); // Will setAccessAddress
     } else {
-      //Speculatively retiring an atomic
-      DBG_Assert( theSpeculativeOrder );
-      DBG_(Trace, ( << theName << " Spec-Retire Atomic: " << *iter ) );
+      // Speculatively retiring an atomic
+      DBG_Assert(theSpeculativeOrder);
+      DBG_(Trace, (<< theName << " Spec-Retire Atomic: " << *iter));
 
-      //theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
-      theMemQueue.get<by_insn>().modify( iter, ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
+      // theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue =
+      // kSSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
+      theMemQueue.get<by_insn>().modify(iter, ll::bind(&MemQueueEntry::theQueue, ll::_1) = kSSB);
       --theLSQCount;
-      DBG_Assert( theLSQCount >= 0);
+      DBG_Assert(theLSQCount >= 0);
       ++theSBCount;
 
       iter->theIssued = false;
 
-      DBG_Assert( iter->thePaddr != kUnresolved );
-      DBG_Assert( ! iter->isAbnormalAccess() );
-      iter->theInstruction->setAccessAddress( iter->thePaddr );
+      DBG_Assert(iter->thePaddr != kUnresolved);
+      DBG_Assert(!iter->isAbnormalAccess());
+      iter->theInstruction->setAccessAddress(iter->thePaddr);
 
-      createCheckpoint( iter->theInstruction );
-      requireWritePermission( iter );
-
+      createCheckpoint(iter->theInstruction);
+      requireWritePermission(iter);
     }
-  } else if (iter->theOperation == kLoad ) {
+  } else if (iter->theOperation == kLoad) {
     DBG_Assert(theAllowedSpeculativeCheckpoints >= 0);
     bool speculate = false;
-    if (!iter->isAbnormalAccess() && ( (iter->thePaddr & ~(theCoherenceUnit - 1)) != 0 ) ) {
-      if ( consistencyModel() == kSC && theSpeculativeOrder) {
-        if (    (!isSpeculating() && !sbEmpty()) //mandatory checkpoint
-                || (  isSpeculating()  //optional checkpoint
-                      && theCheckpointThreshold > 0
-                      && theRetiresSinceCheckpoint > theCheckpointThreshold
-                      && ( theAllowedSpeculativeCheckpoints == 0 || (static_cast<int> (theCheckpoints.size())) < theAllowedSpeculativeCheckpoints)
-                   )
-                || (  isSpeculating()  //Checkpoint may not require more than 15 stores
-                      && theCheckpoints[theOpenCheckpoint].theRequiredPermissions.size() > 15
-                      && ( theAllowedSpeculativeCheckpoints == 0 || (static_cast<int> (theCheckpoints.size())) < theAllowedSpeculativeCheckpoints)
-                   )
-           ) {
+    if (!iter->isAbnormalAccess() && ((iter->thePaddr & ~(theCoherenceUnit - 1)) != 0)) {
+      if (consistencyModel() == kSC && theSpeculativeOrder) {
+        if ((!isSpeculating() && !sbEmpty()) // mandatory checkpoint
+            ||
+            (isSpeculating() // optional checkpoint
+             && theCheckpointThreshold > 0 && theRetiresSinceCheckpoint > theCheckpointThreshold &&
+             (theAllowedSpeculativeCheckpoints == 0 ||
+              (static_cast<int>(theCheckpoints.size())) < theAllowedSpeculativeCheckpoints)) ||
+            (isSpeculating() // Checkpoint may not require more than 15 stores
+             && theCheckpoints[theOpenCheckpoint].theRequiredPermissions.size() > 15 &&
+             (theAllowedSpeculativeCheckpoints == 0 ||
+              (static_cast<int>(theCheckpoints.size())) < theAllowedSpeculativeCheckpoints))) {
           speculate = true;
-          //Must enter speculation mode to retire load past store
-          DBG_(Verb, ( << theName << " Entering SC speculation on: " << *iter ) );
+          // Must enter speculation mode to retire load past store
+          DBG_(Verb, (<< theName << " Entering SC speculation on: " << *iter));
           iter->theInstruction->setMayCommit(false);
 
-          //Move the MEMBAR to the SSB and update counts
-          //theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
-          theMemQueue.get<by_insn>().modify( iter, ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
+          // Move the MEMBAR to the SSB and update counts
+          // theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue =
+          // kSSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
+          theMemQueue.get<by_insn>().modify(iter,
+                                            ll::bind(&MemQueueEntry::theQueue, ll::_1) = kSSB);
           --theLSQCount;
-          DBG_Assert( theLSQCount >= 0);
+          DBG_Assert(theLSQCount >= 0);
           ++theSBNAWCount;
           iter->theBypassSB = true;
-          createCheckpoint( iter->theInstruction );
+          createCheckpoint(iter->theInstruction);
         }
       }
 
-      PhysicalMemoryAddress block_addr( static_cast<uint64_t>(iter->thePaddr) & ~( theCoherenceUnit - 1) );
-      addSLATEntry( block_addr, anInsn );
+      PhysicalMemoryAddress block_addr(static_cast<uint64_t>(iter->thePaddr) &
+                                       ~(theCoherenceUnit - 1));
+      addSLATEntry(block_addr, anInsn);
 
-      //TRACE TRACKER : Notify trace tracker of load commit
-      //uint64_t logical_timestamp = theCommitNumber + theSRB.size();
-      theTraceTracker.access(theNode, eCore, iter->thePaddr, anInsn->pc(), false, false, false, anInsn->isPriv(), 0) ;
-      theTraceTracker.commit(theNode, eCore, iter->thePaddr, anInsn->pc(), 0 );
+      // TRACE TRACKER : Notify trace tracker of load commit
+      // uint64_t logical_timestamp = theCommitNumber + theSRB.size();
+      theTraceTracker.access(theNode, eCore, iter->thePaddr, anInsn->pc(), false, false, false,
+                             anInsn->isPriv(), 0);
+      theTraceTracker.commit(theNode, eCore, iter->thePaddr, anInsn->pc(), 0);
       /* CMU-ONLY-BLOCK-BEGIN */
-//      if (theTrackParallelAccesses ) {
-//        theTraceTracker.parallelList(theNode, eCore, iter->thePaddr, iter->theParallelAddresses);
-//      }
+      //      if (theTrackParallelAccesses ) {
+      //        theTraceTracker.parallelList(theNode, eCore, iter->thePaddr,
+      //        iter->theParallelAddresses);
+      //      }
       /* CMU-ONLY-BLOCK-END */
     }
-    if (! speculate) {
-      eraseLSQ( anInsn ); //Will setAccessAddress
+    if (!speculate) {
+      eraseLSQ(anInsn); // Will setAccessAddress
     }
   } else if (iter->theOperation == kStore) {
     if (anInsn->isAnnulled() || iter->isAbnormalAccess()) {
-//      if (! anInsn->isAnnulled()  && iter->theMMU) {
-////        DBG_Assert(mmuASI(iter->theASI));
-//        DBG_( Verb, ( << theName << " MMU write: " << *iter ) );
-////        Flexus::Qemu::Processor::getProcessor( theNode )->mmuWrite(iter->theVaddr/*, iter->theASI*/, *iter->theValue );
-//      }
-      eraseLSQ( anInsn );
+      //      if (! anInsn->isAnnulled()  && iter->theMMU) {
+      ////        DBG_Assert(mmuASI(iter->theASI));
+      //        DBG_( Verb, ( << theName << " MMU write: " << *iter ) );
+      ////        Flexus::Qemu::Processor::getProcessor( theNode
+      ///)->mmuWrite(iter->theVaddr/*, iter->theASI*/, *iter->theValue );
+      //      }
+      eraseLSQ(anInsn);
     } else {
-      //See if this store is to the same cache block as the preceding store
+      // See if this store is to the same cache block as the preceding store
       memq_t::index<by_seq>::type::iterator pred = theMemQueue.project<by_seq>(iter);
       if (pred != theMemQueue.begin()) {
         --pred;
-        DBG_Assert( pred->theQueue != kLSQ );
-        PhysicalMemoryAddress pred_aligned( pred->thePaddr & ~( theCoherenceUnit - 1) );
-        PhysicalMemoryAddress iter_aligned( iter->thePaddr & ~( theCoherenceUnit - 1) );
-        if (iter_aligned != 0 && pred_aligned == iter_aligned && pred->theOperation == kStore ) {
-          //Can coalesce this with preceding SB enry
+        DBG_Assert(pred->theQueue != kLSQ);
+        PhysicalMemoryAddress pred_aligned(pred->thePaddr & ~(theCoherenceUnit - 1));
+        PhysicalMemoryAddress iter_aligned(iter->thePaddr & ~(theCoherenceUnit - 1));
+        if (iter_aligned != 0 && pred_aligned == iter_aligned && pred->theOperation == kStore) {
+          // Can coalesce this with preceding SB enry
           ++theCoalescedStores;
           iter->theBypassSB;
         }
       }
 
-      //theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
-      theMemQueue.get<by_insn>().modify( iter, ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
+      // theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue =
+      // kSSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
+      theMemQueue.get<by_insn>().modify(iter, ll::bind(&MemQueueEntry::theQueue, ll::_1) = kSSB);
       --theLSQCount;
-      DBG_Assert( theLSQCount >= 0);
+      DBG_Assert(theLSQCount >= 0);
 
       if (iter->theBypassSB) {
         ++theSBNAWCount;
@@ -812,51 +838,51 @@ void CoreImpl::retireMem( boost::intrusive_ptr<Instruction> anInsn) {
         ++theSBCount;
       }
 
-      //TRACE TRACKER : Notify trace tracker of store
-//      uint64_t logical_timestamp = theCommitNumber + theSRB.size();
-      theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/, anInsn->isPriv(), 0 );
+      // TRACE TRACKER : Notify trace tracker of store
+      //      uint64_t logical_timestamp = theCommitNumber + theSRB.size();
+      theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/,
+                            anInsn->isPriv(), 0);
 
-      requireWritePermission( iter );
-
+      requireWritePermission(iter);
     }
   } else if (iter->theOperation == kMEMBARMarker) {
-    //Retiring a MEMBAR Marker
+    // Retiring a MEMBAR Marker
     if (sbEmpty()) {
-      DBG_( Verb, ( << theName << " Non-Spec-Retire MEMBAR: " << *iter) );
+      DBG_(Verb, (<< theName << " Non-Spec-Retire MEMBAR: " << *iter));
       iter->theInstruction->resolveSpeculation();
-      eraseLSQ( anInsn );
+      eraseLSQ(anInsn);
     } else {
-      DBG_(Verb, ( << theName << " Spec-Retire MEMBAR: " << *iter ) );
+      DBG_(Verb, (<< theName << " Spec-Retire MEMBAR: " << *iter));
 
-      //!sbFull() should be in the retirement constraint for MEMBARs
-      DBG_Assert( ! sbFull() );
+      //! sbFull() should be in the retirement constraint for MEMBARs
+      DBG_Assert(!sbFull());
 
-      //Move the MEMBAR to the SSB and update counts
-      //theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
-      theMemQueue.get<by_insn>().modify( iter, ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
+      // Move the MEMBAR to the SSB and update counts
+      // theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue =
+      // kSSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
+      theMemQueue.get<by_insn>().modify(iter, ll::bind(&MemQueueEntry::theQueue, ll::_1) = kSSB);
       --theLSQCount;
-      DBG_Assert( theLSQCount >= 0);
+      DBG_Assert(theLSQCount >= 0);
       ++theSBCount;
 
       if (theConsistencyModel == kSC) {
-        if (! isSpeculating()) {
-          createCheckpoint( iter->theInstruction );
+        if (!isSpeculating()) {
+          createCheckpoint(iter->theInstruction);
         } else {
-          iter->theInstruction->resolveSpeculation(); //Will commit with its atomic sequence
+          iter->theInstruction->resolveSpeculation(); // Will commit with its atomic sequence
         }
-      } else if (theConsistencyModel == kTSO ) {
-        createCheckpoint( iter->theInstruction );
-      } else if (theConsistencyModel == kRMO ) { // FIXME
-          createCheckpoint( iter->theInstruction );
-        }
-
+      } else if (theConsistencyModel == kTSO) {
+        createCheckpoint(iter->theInstruction);
+      } else if (theConsistencyModel == kRMO) { // FIXME
+        createCheckpoint(iter->theInstruction);
+      }
     }
   } else {
-    DBG_Assert( false, ( << "Tried to retire non-load or non-store: " << *iter ) );
+    DBG_Assert(false, (<< "Tried to retire non-load or non-store: " << *iter));
   }
 }
 
-bool CoreImpl::mayRetire_MEMBARStSt( ) const {
+bool CoreImpl::mayRetire_MEMBARStSt() const {
   if (consistencyModel() != kRMO) {
     return true;
   } else {
@@ -864,34 +890,40 @@ bool CoreImpl::mayRetire_MEMBARStSt( ) const {
   }
 }
 
-bool CoreImpl::mayRetire_MEMBARStLd( ) const {
+bool CoreImpl::mayRetire_MEMBARStLd() const {
   switch (consistencyModel()) {
-    case kSC:
-      if (theSpeculativeOrder) {
-        return ! sbFull();
-      } else {
-        return sbEmpty();
-      }
-    case kTSO:
-      DBG_Assert( theAllowedSpeculativeCheckpoints >= 0);
-      if (theSpeculativeOrder) {
-        return ! sbFull() && ( theAllowedSpeculativeCheckpoints == 0 ? true : (static_cast<int> (theCheckpoints.size())) < theAllowedSpeculativeCheckpoints );
-      } else {
-        return sbEmpty();
-      }
-    case kRMO:
-      DBG_Assert( theAllowedSpeculativeCheckpoints >= 0);
-      if (theSpeculativeOrder) {
-        return ! sbFull() && ( theAllowedSpeculativeCheckpoints == 0 ? true : (static_cast<int> (theCheckpoints.size())) < theAllowedSpeculativeCheckpoints );
-      } else {
-        return sbEmpty();
-      }
+  case kSC:
+    if (theSpeculativeOrder) {
+      return !sbFull();
+    } else {
+      return sbEmpty();
+    }
+  case kTSO:
+    DBG_Assert(theAllowedSpeculativeCheckpoints >= 0);
+    if (theSpeculativeOrder) {
+      return !sbFull() &&
+             (theAllowedSpeculativeCheckpoints == 0
+                  ? true
+                  : (static_cast<int>(theCheckpoints.size())) < theAllowedSpeculativeCheckpoints);
+    } else {
+      return sbEmpty();
+    }
+  case kRMO:
+    DBG_Assert(theAllowedSpeculativeCheckpoints >= 0);
+    if (theSpeculativeOrder) {
+      return !sbFull() &&
+             (theAllowedSpeculativeCheckpoints == 0
+                  ? true
+                  : (static_cast<int>(theCheckpoints.size())) < theAllowedSpeculativeCheckpoints);
+    } else {
+      return sbEmpty();
+    }
   }
 
   return true;
 }
 
-bool CoreImpl::mayRetire_MEMBARSync( ) const {
+bool CoreImpl::mayRetire_MEMBARSync() const {
   if (theSBNAWCount > 0 && theNAWWaitAtSync) {
     return false;
   }
@@ -899,226 +931,204 @@ bool CoreImpl::mayRetire_MEMBARSync( ) const {
 }
 
 uint32_t CoreImpl::currentEL() {
-    return extract32(thePSTATE, 2, 2);
+  return extract32(thePSTATE, 2, 2);
 }
 
-void CoreImpl::invalidateCache(eCacheType aType, eShareableDomain aDomain, eCachePoint aPoint){
-    // TODO
+void CoreImpl::invalidateCache(eCacheType aType, eShareableDomain aDomain, eCachePoint aPoint) {
+  // TODO
 }
 
-
-void CoreImpl::invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, eCachePoint aPoint){
-    // TODO
+void CoreImpl::invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress,
+                               eCachePoint aPoint) {
+  // TODO
 }
 
-
-void CoreImpl::invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, uint32_t aSize, eCachePoint aPoint){
-    // TODO
+void CoreImpl::invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, uint32_t aSize,
+                               eCachePoint aPoint) {
+  // TODO
 }
 
-
-eAccessResult CoreImpl::accessZVA()
-{
-    /* We don't implement EL2, so the only control on DC ZVA is the
-     * bit in the SCTLR which can prohibit access for EL0.
-     */
-    if (currentEL() == EL0 && !(_SCTLR(1).DZE())) {
-        return kACCESS_TRAP;
-    }
-    return kACCESS_OK;
+eAccessResult CoreImpl::accessZVA() {
+  /* We don't implement EL2, so the only control on DC ZVA is the
+   * bit in the SCTLR which can prohibit access for EL0.
+   */
+  if (currentEL() == EL0 && !(_SCTLR(1).DZE())) {
+    return kACCESS_TRAP;
+  }
+  return kACCESS_OK;
 }
 
+uint32_t CoreImpl::readDCZID_EL0() {
 
+  int dzp_bit = 1 << 4;
 
-uint32_t CoreImpl::readDCZID_EL0(){
-
-    int dzp_bit = 1 << 4;
-
-    /* DZP indicates whether DC ZVA access is allowed */
-    if (accessZVA() == kACCESS_OK) {
-        dzp_bit = 0;
-    }
-    return theDCZID_EL0 | dzp_bit;
+  /* DZP indicates whether DC ZVA access is allowed */
+  if (accessZVA() == kACCESS_OK) {
+    dzp_bit = 0;
+  }
+  return theDCZID_EL0 | dzp_bit;
 }
 
-bool CoreImpl::_SECURE(){
-    return true;
+bool CoreImpl::_SECURE() {
+  return true;
 }
 
-void CoreImpl::SystemRegisterTrap(uint8_t target_el, uint8_t op0, uint8_t op2,uint8_t op1, uint8_t crn, uint8_t rt, uint8_t crm, uint8_t dir){
-//    assert (target_el >= _PSTATE().EL());
-//    theException = ExceptionSyndrome(Exception_SystemRegisterTrap);
-//    exception.syndrome<21:20> = op0;
-//    exception.syndrome<19:17> = op2;
-//    exception.syndrome<16:14> = op1;
-//    exception.syndrome<13:10> = crn;
-//    exception.syndrome<9:5> = rt;
-//    exception.syndrome<4:1> = crm;
-//    exception.syndrome<0> = dir;vbar
+void CoreImpl::SystemRegisterTrap(uint8_t target_el, uint8_t op0, uint8_t op2, uint8_t op1,
+                                  uint8_t crn, uint8_t rt, uint8_t crm, uint8_t dir) {
+  //    assert (target_el >= _PSTATE().EL());
+  //    theException = ExceptionSyndrome(Exception_SystemRegisterTrap);
+  //    exception.syndrome<21:20> = op0;
+  //    exception.syndrome<19:17> = op2;
+  //    exception.syndrome<16:14> = op1;
+  //    exception.syndrome<13:10> = crn;
+  //    exception.syndrome<9:5> = rt;
+  //    exception.syndrome<4:1> = crm;
+  //    exception.syndrome<0> = dir;vbar
 
-//    uint64_t preferred_exception_return = ThisInstrAddr();
-//    vect_offset = 0x0;
+  //    uint64_t preferred_exception_return = ThisInstrAddr();
+  //    vect_offset = 0x0;
 
-//    if target_el == EL1 && AArch64.GeneralExceptionsToEL2() then
-//        AArch64.TakeException(EL2, exception, preferred_exception_return, vect_offset);
-//    else
-//        AArch64.TakeException(target_el, exception, preferred_exception_return, vect_offset);
+  //    if target_el == EL1 && AArch64.GeneralExceptionsToEL2() then
+  //        AArch64.TakeException(EL2, exception, preferred_exception_return,
+  //        vect_offset);
+  //    else
+  //        AArch64.TakeException(target_el, exception,
+  //        preferred_exception_return, vect_offset);
 }
 
-std::ostream & operator << ( std::ostream & anOstream, eExceptionType aCode){
-    std::string exceptionTypes [] = {
-        "Exception_UNCATEGORIZED         ",
-        "Exception_WFX_TRAP              ",
-        "Exception_CP15RTTRAP            ",
-        "Exception_CP15RRTTRAP           ",
-        "Exception_CP14RTTRAP            ",
-        "Exception_CP14DTTRAP            ",
-        "Exception_ADVSIMDFPACCESSTRAP   ",
-        "Exception_FPIDTRAP              ",
-        "Exception_CP14RRTTRAP           ",
-        "Exception_ILLEGALSTATE          ",
-        "Exception_AA32_SVC              ",
-        "Exception_AA32_HVC              ",
-        "Exception_AA32_SMC              ",
-        "Exception_AA64_SVC              ",
-        "Exception_AA64_HVC              ",
-        "Exception_AA64_SMC              ",
-        "Exception_SYSTEMREGISTERTRAP    ",
-        "Exception_INSNABORT             ",
-        "Exception_INSNABORT_SAME_EL     ",
-        "Exception_PCALIGNMENT           ",
-        "Exception_DATAABORT             ",
-        "Exception_DATAABORT_SAME_EL     ",
-        "Exception_SPALIGNMENT           ",
-        "Exception_AA32_FPTRAP           ",
-        "Exception_AA64_FPTRAP           ",
-        "Exception_SERROR                ",
-        "Exception_BREAKPOINT            ",
-        "Exception_BREAKPOINT_SAME_EL    ",
-        "Exception_SOFTWARESTEP          ",
-        "Exception_SOFTWARESTEP_SAME_EL  ",
-        "Exception_WATCHPOINT            ",
-        "Exception_WATCHPOINT_SAME_EL    ",
-        "Exception_AA32_BKPT             ",
-        "Exception_VECTORCATCH           ",
-        "Exception_AA64_BKPT             ",
-        "Exception_None                  "
-    };
+std::ostream &operator<<(std::ostream &anOstream, eExceptionType aCode) {
+  std::string exceptionTypes[] = {
+      "Exception_UNCATEGORIZED         ", "Exception_WFX_TRAP              ",
+      "Exception_CP15RTTRAP            ", "Exception_CP15RRTTRAP           ",
+      "Exception_CP14RTTRAP            ", "Exception_CP14DTTRAP            ",
+      "Exception_ADVSIMDFPACCESSTRAP   ", "Exception_FPIDTRAP              ",
+      "Exception_CP14RRTTRAP           ", "Exception_ILLEGALSTATE          ",
+      "Exception_AA32_SVC              ", "Exception_AA32_HVC              ",
+      "Exception_AA32_SMC              ", "Exception_AA64_SVC              ",
+      "Exception_AA64_HVC              ", "Exception_AA64_SMC              ",
+      "Exception_SYSTEMREGISTERTRAP    ", "Exception_INSNABORT             ",
+      "Exception_INSNABORT_SAME_EL     ", "Exception_PCALIGNMENT           ",
+      "Exception_DATAABORT             ", "Exception_DATAABORT_SAME_EL     ",
+      "Exception_SPALIGNMENT           ", "Exception_AA32_FPTRAP           ",
+      "Exception_AA64_FPTRAP           ", "Exception_SERROR                ",
+      "Exception_BREAKPOINT            ", "Exception_BREAKPOINT_SAME_EL    ",
+      "Exception_SOFTWARESTEP          ", "Exception_SOFTWARESTEP_SAME_EL  ",
+      "Exception_WATCHPOINT            ", "Exception_WATCHPOINT_SAME_EL    ",
+      "Exception_AA32_BKPT             ", "Exception_VECTORCATCH           ",
+      "Exception_AA64_BKPT             ", "Exception_None                  "};
 
-    if (aCode >= kException_None) {
-      anOstream << "InvalidExceptionType(" << static_cast<int>(aCode) << ")";
-    } else {
-      anOstream << exceptionTypes[aCode];
-    }
-    return anOstream;
-
-
+  if (aCode >= kException_None) {
+    anOstream << "InvalidExceptionType(" << static_cast<int>(aCode) << ")";
+  } else {
+    anOstream << exceptionTypes[aCode];
+  }
+  return anOstream;
 }
 
-PSTATE CoreImpl::_PSTATE(){
-    return PSTATE(thePSTATE);
+PSTATE CoreImpl::_PSTATE() {
+  return PSTATE(thePSTATE);
 }
 
-SCTLR_EL CoreImpl::_SCTLR(uint32_t anELn){
-    DBG_Assert(anELn >= 0 || anELn <= 3);
-    return SCTLR_EL(theSCTLR_EL[anELn]);
+SCTLR_EL CoreImpl::_SCTLR(uint32_t anELn) {
+  DBG_Assert(anELn >= 0 || anELn <= 3);
+  return SCTLR_EL(theSCTLR_EL[anELn]);
 }
 
-
-SysRegInfo& CoreImpl::getSysRegInfo(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn, uint8_t crm){
-    return getPriv(opc0, opc1, opc2, crn, crm);
+SysRegInfo &CoreImpl::getSysRegInfo(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn,
+                                    uint8_t crm) {
+  return getPriv(opc0, opc1, opc2, crn, crm);
 }
-
 
 void CoreImpl::increaseEL() {
-    uint32_t el = extract32(thePSTATE, 2, 2);
-    if (el < 0 || el >= 1)
-        DBG_Assert(false);
+  uint32_t el = extract32(thePSTATE, 2, 2);
+  if (el < 0 || el >= 1)
+    DBG_Assert(false);
 
-    el++;
-    //update pstate
-    thePSTATE &= 0xfffffff3;
-    thePSTATE |= (el << 2);
+  el++;
+  // update pstate
+  thePSTATE &= 0xfffffff3;
+  thePSTATE |= (el << 2);
 }
 
 void CoreImpl::decreaseEL() {
-    uint32_t el = extract32(thePSTATE, 2, 2);
-    if (el <= 0 || el > 1)
-        DBG_Assert(false);
+  uint32_t el = extract32(thePSTATE, 2, 2);
+  if (el <= 0 || el > 1)
+    DBG_Assert(false);
 
-    el--;
-    //update pstate
-    thePSTATE &= 0xfffffff3;
-    thePSTATE |= (el << 2);
+  el--;
+  // update pstate
+  thePSTATE &= 0xfffffff3;
+  thePSTATE |= (el << 2);
 }
 
-void CoreImpl::clearExclusiveLocal(){
-    theLocalExclusivePhysicalMonitor.clear();
-    theLocalExclusiveVirtualMonitor.clear();
+void CoreImpl::clearExclusiveLocal() {
+  theLocalExclusivePhysicalMonitor.clear();
+  theLocalExclusiveVirtualMonitor.clear();
 }
 
-void CoreImpl::clearExclusiveGlobal(){
-    GLOBAL_EXCLUSIVE_MONITOR[theNode].clear();
+void CoreImpl::clearExclusiveGlobal() {
+  GLOBAL_EXCLUSIVE_MONITOR[theNode].clear();
 }
 
-
-void CoreImpl::markExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize){
-    if (theLocalExclusiveVirtualMonitor.size() > 1){
-        DBG_Assert(false, (<< "Only one local exclusive tag per core is allowed"));
-    }
-    theLocalExclusiveVirtualMonitor[anAddress] = aSize;
+void CoreImpl::markExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize) {
+  if (theLocalExclusiveVirtualMonitor.size() > 1) {
+    DBG_Assert(false, (<< "Only one local exclusive tag per core is allowed"));
+  }
+  theLocalExclusiveVirtualMonitor[anAddress] = aSize;
 }
 
-void CoreImpl::markExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize){
+void CoreImpl::markExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize) {
 
-    if (theLocalExclusivePhysicalMonitor.size() > 1){
-        DBG_Assert(false, (<< "Only one local exclusive tag per core is allowed"));
-    }
+  if (theLocalExclusivePhysicalMonitor.size() > 1) {
+    DBG_Assert(false, (<< "Only one local exclusive tag per core is allowed"));
+  }
 
-    theLocalExclusivePhysicalMonitor[anAddress] = aSize;
+  theLocalExclusivePhysicalMonitor[anAddress] = aSize;
 }
 
-void CoreImpl::markExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize){
+void CoreImpl::markExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize) {
 
-    GLOBAL_EXCLUSIVE_MONITOR[theNode][anAddress] = aSize;
-}
-
-bool CoreImpl::isExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize){
-    if (theLocalExclusivePhysicalMonitor.find(anAddress) == theLocalExclusivePhysicalMonitor.end())
-        return false;
-    return true;
-}
-bool CoreImpl::isExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize){
-    if (GLOBAL_EXCLUSIVE_MONITOR[theNode].find(anAddress) == GLOBAL_EXCLUSIVE_MONITOR[theNode].end())
-        return false;
-    return true;
-}
-bool CoreImpl::isExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize){
-    if (theLocalExclusiveVirtualMonitor.find(anAddress) == theLocalExclusiveVirtualMonitor.end())
-        return false;
-    return true;
+  GLOBAL_EXCLUSIVE_MONITOR[theNode][anAddress] = aSize;
 }
 
-void CoreImpl::commitStore( boost::intrusive_ptr<Instruction> anInsn) {
+bool CoreImpl::isExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize) {
+  if (theLocalExclusivePhysicalMonitor.find(anAddress) == theLocalExclusivePhysicalMonitor.end())
+    return false;
+  return true;
+}
+bool CoreImpl::isExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize) {
+  if (GLOBAL_EXCLUSIVE_MONITOR[theNode].find(anAddress) == GLOBAL_EXCLUSIVE_MONITOR[theNode].end())
+    return false;
+  return true;
+}
+bool CoreImpl::isExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize) {
+  if (theLocalExclusiveVirtualMonitor.find(anAddress) == theLocalExclusiveVirtualMonitor.end())
+    return false;
+  return true;
+}
+
+void CoreImpl::commitStore(boost::intrusive_ptr<Instruction> anInsn) {
   FLEXUS_PROFILE();
   memq_t::index<by_insn>::type::iterator iter = theMemQueue.get<by_insn>().find(anInsn);
-  if ( iter != theMemQueue.get<by_insn>().end()) {
-    DBG_Assert( iter->theOperation == kStore );
-    DBG_Assert( iter->theQueue == kSSB );
-    DBG_Assert ( ! anInsn->isAnnulled() );
-    DBG_Assert ( ! anInsn->isSquashed() );
-    DBG_Assert( ! iter->isAbnormalAccess() );
-    DBG_Assert( iter->theValue );
-    DBG_Assert( iter->thePaddr != 0 );
+  if (iter != theMemQueue.get<by_insn>().end()) {
+    DBG_Assert(iter->theOperation == kStore);
+    DBG_Assert(iter->theQueue == kSSB);
+    DBG_Assert(!anInsn->isAnnulled());
+    DBG_Assert(!anInsn->isSquashed());
+    DBG_Assert(!iter->isAbnormalAccess());
+    DBG_Assert(iter->theValue);
+    DBG_Assert(iter->thePaddr != 0);
 
     bits value = *iter->theValue;
-//    if (iter->theInverseEndian) {
-//      value = Flexus::Qemu::endianFlip(value, iter->theSize);
-//      DBG_(Verb, ( << theName << " Inverse endian store: " << *iter << " inverted value: " <<  std::hex << value << std::dec ) );
-//    }
-    ValueTracker::valueTracker(theNode).store( theNode, iter->thePaddr, iter->theSize, value);
-    //theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
-    theMemQueue.get<by_insn>().modify( iter, ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
+    //    if (iter->theInverseEndian) {
+    //      value = Flexus::Qemu::endianFlip(value, iter->theSize);
+    //      DBG_(Verb, ( << theName << " Inverse endian store: " << *iter << "
+    //      inverted value: " <<  std::hex << value << std::dec ) );
+    //    }
+    ValueTracker::valueTracker(theNode).store(theNode, iter->thePaddr, iter->theSize, value);
+    // theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSB;
+    // });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
+    theMemQueue.get<by_insn>().modify(iter, ll::bind(&MemQueueEntry::theQueue, ll::_1) = kSB);
   }
 }
 
@@ -1126,21 +1136,20 @@ void CoreImpl::retire() {
   FLEXUS_PROFILE();
   bool stop_retire;
 
-  if (theROB.empty()){
-      return;
+  if (theROB.empty()) {
+    return;
   }
 
   theRetireCount = 0;
-  while ( !theROB.empty() && !stop_retire ) {
+  while (!theROB.empty() && !stop_retire) {
 
-//  if (! theROB.front()->isAnnulled() ) {
-//        theROB.pop_front();
-//        continue;
-//  }
+    //  if (! theROB.front()->isAnnulled() ) {
+    //        theROB.pop_front();
+    //        continue;
+    //  }
 
-
-  if (! theROB.front()->mayRetire() ) {
-        CORE_DBG("Cant Retire due to pending retirement dependance " << *theROB.front());
+    if (!theROB.front()->mayRetire()) {
+      CORE_DBG("Cant Retire due to pending retirement dependance " << *theROB.front());
       break;
     }
 
@@ -1148,90 +1157,92 @@ void CoreImpl::retire() {
       break;
     }
 
-    //Check for sufficient speculative checkpoints
-    DBG_Assert( theAllowedSpeculativeCheckpoints >= 0);
-    if (    theIsSpeculating
-            && theAllowedSpeculativeCheckpoints > 0
-            && theROB.front()->instClass() == clsAtomic
-            && !theROB.front()->isAnnulled()
-            && (static_cast<int> (theCheckpoints.size())) >= theAllowedSpeculativeCheckpoints
-       ) {
-        DBG_(VVerb, ( <<" theROB.front()->instClass() == clsAtomic "));
+    // Check for sufficient speculative checkpoints
+    DBG_Assert(theAllowedSpeculativeCheckpoints >= 0);
+    if (theIsSpeculating && theAllowedSpeculativeCheckpoints > 0 &&
+        theROB.front()->instClass() == clsAtomic && !theROB.front()->isAnnulled() &&
+        (static_cast<int>(theCheckpoints.size())) >= theAllowedSpeculativeCheckpoints) {
+      DBG_(VVerb, (<< " theROB.front()->instClass() == clsAtomic "));
 
       break;
     }
 
     if ((thePendingInterrupt != kException_None) && theIsSpeculating) {
       // stop retiring so we can stop speculating and handle the interrupt
-        DBG_(VVerb, ( <<" thePendingInterrupt && theIsSpeculating "));
+      DBG_(VVerb, (<< " thePendingInterrupt && theIsSpeculating "));
 
       break;
     }
 
-    if ( ( theROB.front()->resync() || (theROB.front() == theInterruptInstruction) ) && theIsSpeculating ) {
-        DBG_(VVerb, ( <<" Do not retire sync instructions or interrupts while speculating "));
+    if ((theROB.front()->resync() || (theROB.front() == theInterruptInstruction)) &&
+        theIsSpeculating) {
+      DBG_(VVerb, (<< " Do not retire sync instructions or interrupts while "
+                      "speculating "));
 
-      //Do not retire sync instructions or interrupts while speculating
+      // Do not retire sync instructions or interrupts while speculating
       break;
     }
 
-    //Stop retirement for the cycle if we retire an instruction that
-    //requires resynchronization
-    if ( theROB.front()->resync()) {
-        DBG_(VVerb, ( <<" resync requested "));
+    // Stop retirement for the cycle if we retire an instruction that
+    // requires resynchronization
+    if (theROB.front()->resync()) {
+      DBG_(VVerb, (<< " resync requested "));
 
       stop_retire = true;
     }
 
-    //FOR in-order SMS Experiments only - not normal in-order
-    //Under theInOrderMemory, we do not allow stores or atomics to retire
-    //unless the OoO core is fully idle.  This is not neccessary for loads -
-    //they will only issue when they reach the MemQueue head and the core is
-    //fully stalled
-    //if ( theInOrderMemory && (theROB.front()->instClass() == clsStore || theROB.front()->instClass() == clsAtomic ) && ( !isFullyStalled() || theRetireCount > 0)) {
-    //break;
+    // FOR in-order SMS Experiments only - not normal in-order
+    // Under theInOrderMemory, we do not allow stores or atomics to retire
+    // unless the OoO core is fully idle.  This is not neccessary for loads -
+    // they will only issue when they reach the MemQueue head and the core is
+    // fully stalled
+    // if ( theInOrderMemory && (theROB.front()->instClass() == clsStore ||
+    // theROB.front()->instClass() == clsAtomic ) && ( !isFullyStalled() ||
+    // theRetireCount > 0)) { break;
     //}
 
     theSpinRetireSinceReset++;
 
-    CORE_DBG(theName << " Retire:" << *theROB.front() );
+    CORE_DBG(theName << " Retire:" << *theROB.front());
     if (!acceptInterrupt()) {
-      theROB.front()->checkTraps();  // take traps only if we don't take interrupt
-      DBG_( VVerb, ( << "take traps only if we don't take interrupts" ) );
+      theROB.front()->checkTraps(); // take traps only if we don't take interrupt
+      DBG_(VVerb, (<< "take traps only if we don't take interrupts"));
     }
     if (thePendingTrap != kException_None) {
       theROB.front()->changeInstCode(codeException);
-      DBG_( Verb, ( << theName << " Trap raised by " << *theROB.front() ));
+      DBG_(Verb, (<< theName << " Trap raised by " << *theROB.front()));
       stop_retire = true;
     } else {
       theROB.front()->doRetirementEffects();
       if (thePendingTrap != kException_None) {
         theROB.front()->changeInstCode(codeException);
-        DBG_( Verb, ( << theName << " Trap raised by " << *theROB.front() ));
+        DBG_(Verb, (<< theName << " Trap raised by " << *theROB.front()));
         stop_retire = true;
       }
     }
 
-//    if (theValidateMMU) {
-//        DBG_( VVerb, ( << "Validate MMU " ));
+    //    if (theValidateMMU) {
+    //        DBG_( VVerb, ( << "Validate MMU " ));
 
-//      // save MMU with this instruction so we can check at commit
-//      theROB.front()->setMMU( Flexus::Qemu::Processor::getProcessor( theNode )->getMMU() );
-//    }
+    //      // save MMU with this instruction so we can check at commit
+    //      theROB.front()->setMMU( Flexus::Qemu::Processor::getProcessor(
+    //      theNode )->getMMU() );
+    //    }
 
-    accountRetire( theROB.front() );
+    accountRetire(theROB.front());
 
-    if ( theSquashRequested && (theROB.begin() == theSquashInstruction) ) {
+    if (theSquashRequested && (theROB.begin() == theSquashInstruction)) {
       if (!theSquashInclusive) {
         ++theSquashInstruction;
         theSquashInclusive = true;
-        DBG_( VVerb, ( << "!theSquashInclusive" ));
+        DBG_(VVerb, (<< "!theSquashInclusive"));
 
       } else {
-      DBG_( VVerb, ( << "!theSquashRequested && (theROB.begin() == theSquashInstruction" ));
-      stop_retire = true;
+        DBG_(VVerb, (<< "!theSquashRequested && (theROB.begin() == "
+                        "theSquashInstruction"));
+        stop_retire = true;
         continue;
-    }
+      }
     }
 
     ++theRetireCount;
@@ -1239,43 +1250,43 @@ void CoreImpl::retire() {
       stop_retire = true;
     }
 
-    //Value prediction enabled after forward progress is made
+    // Value prediction enabled after forward progress is made
     theValuePredictInhibit = false;
 
     thePC = theROB.front()->pc() + 4;
-    //DBG_(Dev, ( << theName << " PC: " << std::hex << thePC << std::dec ) );
+    // DBG_(Dev, ( << theName << " PC: " << std::hex << thePC << std::dec ) );
 
     CORE_DBG("instruction to the secondary retirement buffer " << *(theROB.front()));
     theSRB.push_back(theROB.front());
-    //DBG_( VVerb, ( << "theSRB.push_back(theROB.front())" ));
+    // DBG_( VVerb, ( << "theSRB.push_back(theROB.front())" ));
 
-    if ( thePendingTrap == kException_None) {
-      theROB.pop_front(); //Need to squash and retire instructions that cause traps
+    if (thePendingTrap == kException_None) {
+      theROB.pop_front(); // Need to squash and retire instructions that cause
+                          // traps
     }
   }
   if (theROB.size() == 0)
     CORE_DBG("ROB is empty! ->" << theROB.size());
-
 }
 
 void CoreImpl::doAbortSpeculation() {
-  DBG_Assert( theIsSpeculating );
+  DBG_Assert(theIsSpeculating);
 
-  //Need to treat ROB head as if it retired to account for stall cycles
-  //properly
-  if (! theROB.empty() ) {
-    accountRetire( theROB.front() );
+  // Need to treat ROB head as if it retired to account for stall cycles
+  // properly
+  if (!theROB.empty()) {
+    accountRetire(theROB.front());
   }
 
-  //Ensure that the violating instruction is in the SRB.
-  DBG_Assert(! theSRB.empty());
-  rob_t::index<by_insn>::type::iterator iter = theSRB.get<by_insn>().find( theViolatingInstruction );
-  if (iter == theSRB.get<by_insn>().end() ) {
-    DBG_Assert( false, ( << " Violating instruction is not in SRB: " << *theViolatingInstruction ) );
+  // Ensure that the violating instruction is in the SRB.
+  DBG_Assert(!theSRB.empty());
+  rob_t::index<by_insn>::type::iterator iter = theSRB.get<by_insn>().find(theViolatingInstruction);
+  if (iter == theSRB.get<by_insn>().end()) {
+    DBG_Assert(false, (<< " Violating instruction is not in SRB: " << *theViolatingInstruction));
   }
 
-  //Locate the instruction that caused the violation and the nearest
-  //preceding checkpoint
+  // Locate the instruction that caused the violation and the nearest
+  // preceding checkpoint
   rob_t::iterator srb_iter = theSRB.project<0>(iter);
   rob_t::iterator srb_begin = theSRB.begin();
   rob_t::iterator srb_ckpt = srb_begin;
@@ -1283,9 +1294,9 @@ void CoreImpl::doAbortSpeculation() {
   int32_t ckpt_discard_count = 0;
   int32_t remaining_checkpoints = 0;
   bool checkpoint_found = false;
-  bool done  = false;
+  bool done = false;
   do {
-    if (! checkpoint_found) {
+    if (!checkpoint_found) {
       if ((*srb_iter)->hasCheckpoint()) {
         srb_ckpt = srb_iter;
         checkpoint_found = true;
@@ -1303,11 +1314,11 @@ void CoreImpl::doAbortSpeculation() {
     } else {
       --srb_iter;
     }
-  } while (! done);
+  } while (!done);
 
-  //Account for location of checkpoint, track discarded instructions
+  // Account for location of checkpoint, track discarded instructions
   int32_t required = (theSRB.size() - saved_discard_count - ckpt_discard_count);
-  DBG_Assert( required >= 0);
+  DBG_Assert(required >= 0);
   theSavedDiscards += saved_discard_count;
   theSavedDiscards_Histogram << saved_discard_count;
   theRequiredDiscards += required;
@@ -1315,47 +1326,50 @@ void CoreImpl::doAbortSpeculation() {
   theNearestCkptDiscards += ckpt_discard_count;
   theNearestCkptDiscards_Histogram << ckpt_discard_count;
 
-  //Determine which checkpoint we rolled back to.  1 is the eldest,
-  //2 is the next, and so on
-  theRollbackToCheckpoint << std::make_pair( remaining_checkpoints + 1LL, 1LL);
+  // Determine which checkpoint we rolled back to.  1 is the eldest,
+  // 2 is the next, and so on
+  theRollbackToCheckpoint << std::make_pair(remaining_checkpoints + 1LL, 1LL);
 
-  //Determine how many checkpoints were crossed.  Minimum is 1 (rolling back
-  //to the most recently created checkpoint.
+  // Determine how many checkpoints were crossed.  Minimum is 1 (rolling back
+  // to the most recently created checkpoint.
   int32_t num_ckpts_discarded = theCheckpoints.size() - remaining_checkpoints;
-  theCheckpointsDiscarded << std::make_pair( static_cast<int64_t>(num_ckpts_discarded), 1LL);
+  theCheckpointsDiscarded << std::make_pair(static_cast<int64_t>(num_ckpts_discarded), 1LL);
 
-  //Find the checkpoint corresponding to srb_ckpt
-  std::map< boost::intrusive_ptr< Instruction >, Checkpoint>::iterator ckpt;
-  ckpt = theCheckpoints.find( *srb_ckpt );
+  // Find the checkpoint corresponding to srb_ckpt
+  std::map<boost::intrusive_ptr<Instruction>, Checkpoint>::iterator ckpt;
+  ckpt = theCheckpoints.find(*srb_ckpt);
   int64_t ckpt_seq_num = (*srb_ckpt)->sequenceNo();
-  DBG_Assert( ckpt != theCheckpoints.end() );
+  DBG_Assert(ckpt != theCheckpoints.end());
 
-  DBG_(Dev, ( << theName << " Aborting Speculation.  Violating Instruction: " <<  *theViolatingInstruction << " Roll back to: " << **srb_ckpt << " Required: " << required << " Ckpt: " << ckpt_discard_count << " Saved: " << saved_discard_count ));
+  DBG_(Dev, (<< theName << " Aborting Speculation.  Violating Instruction: "
+             << *theViolatingInstruction << " Roll back to: " << **srb_ckpt << " Required: "
+             << required << " Ckpt: " << ckpt_discard_count << " Saved: " << saved_discard_count));
 
-  //Wipe uArchARM and LSQ
-  //resetv9();
+  // Wipe uArchARM and LSQ
+  // resetv9();
   resetARM();
 
-  cleanMSHRS( ckpt_seq_num );
+  cleanMSHRS(ckpt_seq_num);
 
-  //Restore checkpoint
-  //restorev9State( ckpt->second.theState);
-  restoreARMState( ckpt->second.theState);
+  // Restore checkpoint
+  // restorev9State( ckpt->second.theState);
+  restoreARMState(ckpt->second.theState);
 
   // restore MMU
-//  Flexus::Qemu::Processor::getProcessor( theNode )->rollbackMMUCkpts(num_ckpts_discarded - 1);
+  //  Flexus::Qemu::Processor::getProcessor( theNode
+  //  )->rollbackMMUCkpts(num_ckpts_discarded - 1);
 
-  //Clean up SRB and SSB.
-  theSRB.erase( srb_ckpt, theSRB.end());
-  srb_ckpt = theSRB.end(); //srb_ckpt is no longer valid;
-  int32_t remaining_ssb = clearSSB( ckpt_seq_num );
+  // Clean up SRB and SSB.
+  theSRB.erase(srb_ckpt, theSRB.end());
+  srb_ckpt = theSRB.end(); // srb_ckpt is no longer valid;
+  int32_t remaining_ssb = clearSSB(ckpt_seq_num);
 
-  //redirect fetch
+  // redirect fetch
   squash_fn(kFailedSpec);
   theRedirectRequested = true;
   theRedirectPC = VirtualMemoryAddress(ckpt->second.theState.thePC);
 
-  //Clean up SLAT
+  // Clean up SLAT
   SpeculativeLoadAddressTracker::iterator slat_iter = theSLAT.begin();
   SpeculativeLoadAddressTracker::iterator slat_item;
   SpeculativeLoadAddressTracker::iterator slat_end = theSLAT.end();
@@ -1367,10 +1381,11 @@ void CoreImpl::doAbortSpeculation() {
     }
   }
 
-  //Clean up checkpoints
-  std::map< boost::intrusive_ptr< Instruction >, Checkpoint>::iterator ck_iter = theCheckpoints.begin();
-  std::map< boost::intrusive_ptr< Instruction >, Checkpoint>::iterator ck_item;
-  std::map< boost::intrusive_ptr< Instruction >, Checkpoint>::iterator ck_end = theCheckpoints.end();
+  // Clean up checkpoints
+  std::map<boost::intrusive_ptr<Instruction>, Checkpoint>::iterator ck_iter =
+      theCheckpoints.begin();
+  std::map<boost::intrusive_ptr<Instruction>, Checkpoint>::iterator ck_item;
+  std::map<boost::intrusive_ptr<Instruction>, Checkpoint>::iterator ck_end = theCheckpoints.end();
   theOpenCheckpoint = 0;
   while (ck_iter != ck_end) {
     ck_item = ck_iter;
@@ -1378,69 +1393,68 @@ void CoreImpl::doAbortSpeculation() {
     if (ck_item->first->sequenceNo() >= ckpt_seq_num) {
       theCheckpoints.erase(ck_item);
     } else {
-      if (! theOpenCheckpoint || theOpenCheckpoint->sequenceNo() < ck_item->first->sequenceNo() ) {
+      if (!theOpenCheckpoint || theOpenCheckpoint->sequenceNo() < ck_item->first->sequenceNo()) {
         theOpenCheckpoint = ck_item->first;
       }
     }
   }
   theRetiresSinceCheckpoint = 0;
 
-  //Stop speculating
+  // Stop speculating
   theAbortSpeculation = false;
 
   theEmptyROBCause = kFailedSpeculation;
-  theIsSpeculating = ! theCheckpoints.empty();
+  theIsSpeculating = !theCheckpoints.empty();
   accountAbortSpeculation(ckpt_seq_num);
 
-  //Charge stall cycles for TSOB replay
+  // Charge stall cycles for TSOB replay
   if (remaining_ssb > 0) {
     theTSOBReplayStalls = remaining_ssb / theNumMemoryPorts;
   }
-
 }
 
+std::string CoreImpl::dumpState() {
 
-std::string CoreImpl::dumpState(){
+  //    std::ofstream fp;
+  //    fp.open("flexus-dump-state.txt");
 
-//    std::ofstream fp;
-//    fp.open("flexus-dump-state.txt");
+  std::stringstream ss;
+  mapped_reg sp;
+  sp.theType = xRegisters;
+  sp.theIndex = theMapTables[0]->mapArchitectural(31);
 
-    std::stringstream ss;
-    mapped_reg sp;
-    sp.theType = xRegisters;
-    sp.theIndex=theMapTables[0]->mapArchitectural(31);
+  ss << std::hex << "PC=" << std::setw(16) << std::setfill('0') << (uint64_t)theDumpPC << "  "
+     << "SP=" << std::setw(16) << std::setfill('0')
+     << boost::get<uint64_t>(theRegisters.peek(sp)) /*theSP_el[_PSTATE().EL()]*/
+     << std::dec << std::endl;
 
-    ss << std::hex << "PC=" << std::setw(16)<< std::setfill('0') << (uint64_t) theDumpPC << "  " << "SP=" << std::setw(16)<< std::setfill('0') << boost::get<uint64_t>(theRegisters.peek(sp))/*theSP_el[_PSTATE().EL()]*/ << std::dec << std::endl;
+  for (int i = 0; i < 31; i++) {
+    mapped_reg mreg;
+    mreg.theType = xRegisters;
+    mreg.theIndex = theMapTables[0]->mapArchitectural(i);
 
-    for (int i = 0; i < 31; i++) {
-        mapped_reg mreg;
-        mreg.theType = xRegisters;
-        mreg.theIndex= theMapTables[0]->mapArchitectural(i);
-
-        ss << "X" << std::setw(2) << std::setfill('0') << i << "="<< std::hex << std::setw(16)<< std::setfill('0') << boost::get<uint64_t>(theRegisters.peek(mreg)) << std::dec;
-        if ((i % 4) == 3) {
-            ss << std::endl;
-        } else {
-            ss << " ";
-        }
+    ss << "X" << std::setw(2) << std::setfill('0') << i << "=" << std::hex << std::setw(16)
+       << std::setfill('0') << boost::get<uint64_t>(theRegisters.peek(mreg)) << std::dec;
+    if ((i % 4) == 3) {
+      ss << std::endl;
+    } else {
+      ss << " ";
     }
+  }
 
-    mapped_reg ccreg;
-    ccreg.theType = ccBits;
-    ccreg.theIndex= theMapTables[2]->mapArchitectural(0);
-    uint64_t psr = boost::get<uint64_t>(theRegisters.peek(ccreg));
+  mapped_reg ccreg;
+  ccreg.theType = ccBits;
+  ccreg.theIndex = theMapTables[2]->mapArchitectural(0);
+  uint64_t psr = boost::get<uint64_t>(theRegisters.peek(ccreg));
 
-    ss << std::endl
-    << "PSTATE=" << std::hex << std::setw(8)<< std::setfill('0') << psr << std::dec << " "
-    << (psr & PSTATE_N ? 'N' : '-')
-    << (psr & PSTATE_Z ? 'Z' : '-')
-    << (psr & PSTATE_C ? 'C' : '-')
-    << (psr & PSTATE_V ? 'V' : '-')
-    << ""
-    << " " << "EL"  <<_PSTATE().EL()
-    <<  (psr & PSTATE_SP ? 'h' : 't') << std::endl ;
+  ss << std::endl
+     << "PSTATE=" << std::hex << std::setw(8) << std::setfill('0') << psr << std::dec << " "
+     << (psr & PSTATE_N ? 'N' : '-') << (psr & PSTATE_Z ? 'Z' : '-') << (psr & PSTATE_C ? 'C' : '-')
+     << (psr & PSTATE_V ? 'V' : '-') << ""
+     << " "
+     << "EL" << _PSTATE().EL() << (psr & PSTATE_SP ? 'h' : 't') << std::endl;
 
-    return ss.str();
+  return ss.str();
 }
 
 void CoreImpl::commit() {
@@ -1450,30 +1464,33 @@ void CoreImpl::commit() {
     doAbortSpeculation();
   }
 
-  while (! theSRB.empty() && (theSRB.front()->mayCommit() || theSRB.front()->isSquashed()) ) {
+  while (!theSRB.empty() && (theSRB.front()->mayCommit() || theSRB.front()->isSquashed())) {
 
     if (theSRB.front()->hasCheckpoint()) {
-      freeCheckpoint( theSRB.front() );
+      freeCheckpoint(theSRB.front());
     }
 
-    DBG_( VVerb, ( << theName << " FinalCommit:" << *theSRB.front()) );
+    DBG_(VVerb, (<< theName << " FinalCommit:" << *theSRB.front()));
     if (theSRB.front()->willRaise() == kException_None) {
       theSRB.front()->doCommitEffects();
-      DBG_( VVerb, ( <<  theName << " commit effects complete" ) );
+      DBG_(VVerb, (<< theName << " commit effects complete"));
     }
 
-    commit( theSRB.front() );
-    DBG_( VVerb, ( <<  theName << " committed in Qemu" ) );
+    commit(theSRB.front());
+    DBG_(VVerb, (<< theName << " committed in Qemu"));
 
-//    if (theValidateMMU) {
-//      DBG_Assert(theSRB.front()->getMMU(), ( << theName << " instruction does not have MMU: " << *theSRB.front()));
-//      DBG_(VVerb, ( << theName << " comparing MMU state after: " << *theSRB.front()));
-//      Flexus::Qemu::MMU::mmu_t mmu = *(theSRB.front()->getMMU());
-//      if (! Flexus::Qemu::Processor::getProcessor( theNode )->validateMMU(&mmu)) {
-//        DBG_(Crit, ( << theName << " MMU mismatch after FinalCommit of: " << *theSRB.front()));
-//        Flexus::Qemu::Processor::getProcessor( theNode )->dumpMMU(&mmu);
-//      }
-//    }
+    //    if (theValidateMMU) {
+    //      DBG_Assert(theSRB.front()->getMMU(), ( << theName << " instruction
+    //      does not have MMU: " << *theSRB.front())); DBG_(VVerb, ( << theName
+    //      << " comparing MMU state after: " << *theSRB.front()));
+    //      Flexus::Qemu::MMU::mmu_t mmu = *(theSRB.front()->getMMU());
+    //      if (! Flexus::Qemu::Processor::getProcessor( theNode
+    //      )->validateMMU(&mmu)) {
+    //        DBG_(Crit, ( << theName << " MMU mismatch after FinalCommit of: "
+    //        << *theSRB.front())); Flexus::Qemu::Processor::getProcessor(
+    //        theNode )->dumpMMU(&mmu);
+    //      }
+    //    }
 
     theSRB.pop_front();
   }
@@ -1482,20 +1499,20 @@ void CoreImpl::commit() {
 int s_validation = 0;
 int f_validation = 0;
 
-void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
+void CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction) {
   FLEXUS_PROFILE();
   CORE_DBG(*anInstruction);
 
-//  Detect kernel-panic
-//  if (  ( anInstruction->pc() == 0x1000d31c )
-//        && ( anInstruction->instClass() == clsBranch )
-//     ) {
-//    ++theKernelPanicCount;
-//    if ( theKernelPanicCount == 100) {
-//      DBG_Assert(false, ( << theName << " Appears to be in the kernel panic loop at v:0x1000d31c" ) );
-//    }
-//  }
-
+  //  Detect kernel-panic
+  //  if (  ( anInstruction->pc() == 0x1000d31c )
+  //        && ( anInstruction->instClass() == clsBranch )
+  //     ) {
+  //    ++theKernelPanicCount;
+  //    if ( theKernelPanicCount == 100) {
+  //      DBG_Assert(false, ( << theName << " Appears to be in the kernel panic
+  //      loop at v:0x1000d31c" ) );
+  //    }
+  //  }
 
   bool validation_passed = true;
 
@@ -1503,23 +1520,28 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
   bool resync_accounted = false;
 
   if (anInstruction->advancesSimics()) {
-      CORE_DBG("Instruction is neither annuled nor is a micro-op");
+    CORE_DBG("Instruction is neither annuled nor is a micro-op");
 
     validation_passed &= anInstruction->preValidate();
-    DBG_(Dev, (<<"Pre Validating... " << validation_passed));
+    DBG_(Dev, (<< "Pre Validating... " << validation_passed));
 
-
-
-//    DBG_( VVerb, Condition(!validation_passed) ( << *anInstruction << "Prevalidation failure." ) );
-//    bool take_interrupt = theInterruptSignalled && (anInstruction == theInterruptInstruction);
+    //    DBG_( VVerb, Condition(!validation_passed) ( << *anInstruction <<
+    //    "Prevalidation failure." ) ); bool take_interrupt =
+    //    theInterruptSignalled && (anInstruction == theInterruptInstruction);
     theInterruptSignalled = false;
     theInterruptInstruction = 0;
 
     raised = advance_fn();
 
-    if ( raised != 0) {
-      if ( anInstruction->willRaise() != (raised == 0 ? kException_None : kException_UNCATEGORIZED)) { // FIXME get exception mapper
-        DBG_( VVerb, ( << *anInstruction << " Core did not predict correct exception for this instruction raised=0x" << std::hex << raised << " will_raise=0x" << anInstruction->willRaise() << std::dec ) );
+    if (raised != 0) {
+      if (anInstruction->willRaise() !=
+          (raised == 0 ? kException_None
+                       : kException_UNCATEGORIZED)) { // FIXME get exception mapper
+        DBG_(VVerb,
+             (<< *anInstruction
+              << " Core did not predict correct exception for this "
+                 "instruction raised=0x"
+              << std::hex << raised << " will_raise=0x" << anInstruction->willRaise() << std::dec));
         if (anInstruction->instCode() != codeITLBMiss) {
           anInstruction->changeInstCode(codeExceptionUnsupported);
         }
@@ -1531,11 +1553,13 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
           ++theResync_Interrupt;
         }
       } else {
-        DBG_( VVerb, ( << *anInstruction << " Core correctly identified raise=0x" << std::hex << raised << std::dec) );
+        DBG_(VVerb, (<< *anInstruction << " Core correctly identified raise=0x" << std::hex
+                     << raised << std::dec));
       }
       anInstruction->raise(raised == 0 ? kException_None : kException_UNCATEGORIZED);
     } else if (anInstruction->willRaise() != kException_None) {
-      DBG_(VVerb, ( << *anInstruction << " DANGER:  Core predicted exception: " << std::hex << anInstruction->willRaise() << " but simics says no exception"));
+      DBG_(VVerb, (<< *anInstruction << " DANGER:  Core predicted exception: " << std::hex
+                   << anInstruction->willRaise() << " but simics says no exception"));
     }
   }
 
@@ -1543,12 +1567,12 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
 
   theDumpPC = anInstruction->pcOrig();
   if (anInstruction->resync()) {
-    DBG_(Dev,(<<"Forced Resync:" << *anInstruction));
+    DBG_(Dev, (<< "Forced Resync:" << *anInstruction));
 
-    //Subsequent Empty ROB stalls (until next dispatch) are the result of a
-    //synchronizing instruction.
+    // Subsequent Empty ROB stalls (until next dispatch) are the result of a
+    // synchronizing instruction.
     theEmptyROBCause = kSync;
-    if (! resync_accounted) {
+    if (!resync_accounted) {
       accountResyncReason(anInstruction);
     }
     throw ResynchronizeWithQemuException(true);
@@ -1557,50 +1581,49 @@ void CoreImpl::commit( boost::intrusive_ptr< Instruction > anInstruction ) {
   validation_passed &= checkValidatation();
 
   validation_passed &= anInstruction->postValidate();
-  DBG_(Dev, (<<"Post Validating... "<< validation_passed));
+  DBG_(Dev, (<< "Post Validating... " << validation_passed));
 
-  if (! validation_passed ) {
-    DBG_(Dev, (<<"Failed Validated " << std::internal << *anInstruction << std::left));
+  if (!validation_passed) {
+    DBG_(Dev, (<< "Failed Validated " << std::internal << *anInstruction << std::left));
 
-    //Subsequent Empty ROB stalls (until next dispatch) are the result of a
-    //modelling error resynchronization instruction.
+    // Subsequent Empty ROB stalls (until next dispatch) are the result of a
+    // modelling error resynchronization instruction.
     theEmptyROBCause = kResync;
     ++theResync_FailedValidation;
 
     throw ResynchronizeWithQemuException();
   }
-  DBG_(Dev, (<<"uARCH Validated " ));
+  DBG_(Dev, (<< "uARCH Validated "));
   DBG_(VVerb, (<< std::internal << *anInstruction << std::left));
-
 }
 
-bool CoreImpl::squashAfter( boost::intrusive_ptr< Instruction > anInsn) {
-  if ( !theSquashRequested || (anInsn->sequenceNo() <= (*theSquashInstruction)->sequenceNo()) ) {
+bool CoreImpl::squashAfter(boost::intrusive_ptr<Instruction> anInsn) {
+  if (!theSquashRequested || (anInsn->sequenceNo() <= (*theSquashInstruction)->sequenceNo())) {
     theSquashRequested = true;
     theSquashReason = kBranchMispredict;
     theEmptyROBCause = kMispredict;
-    theSquashInstruction = theROB.project<0>( theROB.get<by_insn>().find(anInsn) );
+    theSquashInstruction = theROB.project<0>(theROB.get<by_insn>().find(anInsn));
     theSquashInclusive = true;
     return true;
   }
   return false;
 }
 
-void CoreImpl::redirectFetch( VirtualMemoryAddress anAddress ) {
-  DBG_(Dev, (<<"redirectFetch anAddress: "<<anAddress));
+void CoreImpl::redirectFetch(VirtualMemoryAddress anAddress) {
+  DBG_(Dev, (<< "redirectFetch anAddress: " << anAddress));
   theRedirectRequested = true;
   theRedirectPC = anAddress;
 }
 
-void CoreImpl::branchFeedback( boost::intrusive_ptr<BranchFeedback> feedback ) {
-  theBranchFeedback.push_back( feedback );
+void CoreImpl::branchFeedback(boost::intrusive_ptr<BranchFeedback> feedback) {
+  theBranchFeedback.push_back(feedback);
 }
 
 void CoreImpl::doSquash() {
   FLEXUS_PROFILE();
   if (theSquashInstruction != theROB.end()) {
 
-    //There is at least one instruction in the ROB
+    // There is at least one instruction in the ROB
     rob_t::iterator erase_iter = theSquashInstruction;
     if (!theSquashInclusive) {
       ++erase_iter;
@@ -1609,29 +1632,29 @@ void CoreImpl::doSquash() {
     {
       FLEXUS_PROFILE_N("CoreImpl::doSquash() squash");
       rob_t::reverse_iterator iter = theROB.rbegin();
-      rob_t::reverse_iterator end = boost::make_reverse_iterator( erase_iter );
-      while ( iter != end) {
+      rob_t::reverse_iterator end = boost::make_reverse_iterator(erase_iter);
+      while (iter != end) {
         (*iter)->squash();
         ++iter;
       }
     }
 
-    if ( ! thePreserveInteractions ) {
+    if (!thePreserveInteractions) {
       FLEXUS_PROFILE_N("CoreImpl::doSquash() clean-interactions");
-      //Discard any defferred interactions
+      // Discard any defferred interactions
       theDispatchInteractions.clear();
     }
 
     {
       FLEXUS_PROFILE_N("CoreImpl::doSquash() ROB-clear");
-      theROB.erase( erase_iter, theROB.end());
+      theROB.erase(erase_iter, theROB.end());
     }
   }
 }
 
 void CoreImpl::startSpeculating() {
-  if ( ! isSpeculating() ) {
-    DBG_( Iface, ( << theName << " Starting Speculation" ) );
+  if (!isSpeculating()) {
+    DBG_(Iface, (<< theName << " Starting Speculation"));
     theIsSpeculating = true;
     theAbortSpeculation = false;
     accountStartSpeculation();
@@ -1639,152 +1662,149 @@ void CoreImpl::startSpeculating() {
 }
 
 void CoreImpl::checkStopSpeculating() {
-  if (      isSpeculating()
-            && ! theAbortSpeculation
-            &&   theCheckpoints.size() == 0
-     ) {
-    DBG_( Iface, ( << theName << " Ending Successful Speculation" ) );
+  if (isSpeculating() && !theAbortSpeculation && theCheckpoints.size() == 0) {
+    DBG_(Iface, (<< theName << " Ending Successful Speculation"));
     theIsSpeculating = false;
     accountEndSpeculation();
   } else {
-    DBG_( Iface, ( << theName << " continuing speculation checkpoints: " << theCheckpoints.size() << " Abort pending? " <<  theAbortSpeculation  ) );
+    DBG_(Iface, (<< theName << " continuing speculation checkpoints: " << theCheckpoints.size()
+                 << " Abort pending? " << theAbortSpeculation));
   }
 }
-
-
-
 
 //// AArch64.TakeException()
 //// =======================
 //// Take an exception to an Exception Level using AArch64.
-//void CoreImpl::TakeException(uint8_t target_el, ExceptionRecord exception,
-//uint64_t preferred_exception_return, int vect_offset)
+// void CoreImpl::TakeException(uint8_t target_el, ExceptionRecord exception,
+// uint64_t preferred_exception_return, int vect_offset)
 ////SynchronizeContext();
-////assert HaveEL(target_el) && !ELUsingAArch32(target_el) && UInt(target_el) >= UInt(PSTATE.EL);
-//// If coming from AArch32 state, the top parts of the X[] registers might be set to zero
-//from_32 = UsingAArch32();
-//if from_32 then AArch64.MaybeZeroRegisterUppers();
-//if UInt(target_el) > UInt(PSTATE.EL) then
-//boolean lower_32;
-//if target_el == EL3 then
-//if !IsSecure() && HaveEL(EL2) then
-//lower_32 = ELUsingAArch32(EL2);
-//else
-//lower_32 = ELUsingAArch32(EL1);
-//elsif IsInHost() && PSTATE.EL == EL0 && target_el == EL2 then
-//lower_32 = ELUsingAArch32(EL0);
-//else
-//lower_32 = ELUsingAArch32(target_el - 1);
-//vect_offset = vect_offset + (if lower_32 then 0x600 else 0x400);
-//elsif PSTATE.SP == '1' then
-//vect_offset = vect_offset + 0x200;
-//spsr = GetPSRFromPSTATE();
-//if HaveUAOExt() then PSTATE.UAO = '0';
-//if !(exception.type IN {Exception_IRQ, Exception_FIQ}) then
-//AArch64.ReportException(exception, target_el);
-//PSTATE.EL = target_el;
-//PSTATE.nRW = '0';
-//PSTATE.SP = '1';
-//SPSR[] = spsr;
-//ELR[] = preferred_exception_return;
-//PSTATE.SS = '0';
-//PSTATE.<D,A,I,F> = '1111';
-//PSTATE.IL = '0';
-//if from_32 then
+////assert HaveEL(target_el) && !ELUsingAArch32(target_el) && UInt(target_el) >=
+/// UInt(PSTATE.EL); / If coming from AArch32 state, the top parts of the X[]
+/// registers might be set to zero
+// from_32 = UsingAArch32();
+// if from_32 then AArch64.MaybeZeroRegisterUppers();
+// if UInt(target_el) > UInt(PSTATE.EL) then
+// boolean lower_32;
+// if target_el == EL3 then
+// if !IsSecure() && HaveEL(EL2) then
+// lower_32 = ELUsingAArch32(EL2);
+// else
+// lower_32 = ELUsingAArch32(EL1);
+// elsif IsInHost() && PSTATE.EL == EL0 && target_el == EL2 then
+// lower_32 = ELUsingAArch32(EL0);
+// else
+// lower_32 = ELUsingAArch32(target_el - 1);
+// vect_offset = vect_offset + (if lower_32 then 0x600 else 0x400);
+// elsif PSTATE.SP == '1' then
+// vect_offset = vect_offset + 0x200;
+// spsr = GetPSRFromPSTATE();
+// if HaveUAOExt() then PSTATE.UAO = '0';
+// if !(exception.type IN {Exception_IRQ, Exception_FIQ}) then
+// AArch64.ReportException(exception, target_el);
+// PSTATE.EL = target_el;
+// PSTATE.nRW = '0';
+// PSTATE.SP = '1';
+// SPSR[] = spsr;
+// ELR[] = preferred_exception_return;
+// PSTATE.SS = '0';
+// PSTATE.<D,A,I,F> = '1111';
+// PSTATE.IL = '0';
+// if from_32 then
 //// Coming from AArch32
-//PSTATE.IT = '00000000'; PSTATE.T = '0';
+// PSTATE.IT = '00000000'; PSTATE.T = '0';
 //// PSTATE.J is RES0
-//if HavePANExt() && (PSTATE.EL == EL1 || (PSTATE.EL == EL2 && ELIsInHost(EL0))) && SCTLR[].SPAN ==
-//'0' then
-//PSTATE.PAN = '1';
-//BranchTo(VBAR[]<63:11>:vect_offset<10:0>, BranchType_EXCEPTION);
-//if HaveRASExt() && SCTLR[].IESB == '1' then
-//SynchronizeErrors();
-//iesb_req = TRUE;
-//TakeUnmaskedPhysicalSErrorInterrupts(iesb_req);
-//EndOfInstruction();
+// if HavePANExt() && (PSTATE.EL == EL1 || (PSTATE.EL == EL2 &&
+// ELIsInHost(EL0))) && SCTLR[].SPAN == '0' then PSTATE.PAN = '1';
+// BranchTo(VBAR[]<63:11>:vect_offset<10:0>, BranchType_EXCEPTION);
+// if HaveRASExt() && SCTLR[].IESB == '1' then
+// SynchronizeErrors();
+// iesb_req = TRUE;
+// TakeUnmaskedPhysicalSErrorInterrupts(iesb_req);
+// EndOfInstruction();
 
 void CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExceptionType aTrapType) {
 
-  CORE_DBG( theName << " Take trap: " << aTrapType);
+  CORE_DBG(theName << " Take trap: " << aTrapType);
 
-  //Ensure ROB is not empty
-  DBG_Assert ( ! theROB.empty() );
-  //Only ROB head should raise
-  DBG_Assert ( anInstruction == theROB.front() );
+  // Ensure ROB is not empty
+  DBG_Assert(!theROB.empty());
+  // Only ROB head should raise
+  DBG_Assert(anInstruction == theROB.front());
 
-  //Clear ROB
+  // Clear ROB
   theSquashRequested = true;
   theSquashReason = kException;
   theEmptyROBCause = kRaisedException;
   theSquashInstruction = theROB.begin();
   theSquashInclusive = true;
 
-  //Record the pending trap
+  // Record the pending trap
   thePendingTrap = aTrapType;
   theTrapInstruction = anInstruction;
 
-  anInstruction->setWillRaise( aTrapType );
+  anInstruction->setWillRaise(aTrapType);
   anInstruction->raise(aTrapType);
 }
 
 bool CoreImpl::acceptInterrupt() {
-    if ( (thePendingInterrupt != kException_None)){
-        DBG_(Dev, (<< "IRQ is pending..."));
-    }
-  if (    (thePendingInterrupt != kException_None)   //Interrupt is pending
-          && ! theInterruptSignalled       //Already accepted the interrupt
-          && ! theROB.empty()              //Need an instruction to take the interrupt on
-          && ! theROB.front()->isAnnulled()//Do not take interrupts on annulled instructions
-          && ! theROB.front()->isSquashed()//Do not take interrupts on squashed instructions
-          && ! theROB.front()->isMicroOp() //Do not take interrupts on squashed micro-ops
-          && ! theIsSpeculating            //Do not take interrupts while speculating
-//          &&   (getPSTATE() & 0x2)         //PSTATE.IE = 1
-     ) {
-    //Interrupt was signalled this cycle.  Clear the ROB
+  if ((thePendingInterrupt != kException_None)) {
+    DBG_(Dev, (<< "IRQ is pending..."));
+  }
+  if ((thePendingInterrupt != kException_None) // Interrupt is pending
+      && !theInterruptSignalled                // Already accepted the interrupt
+      && !theROB.empty()                       // Need an instruction to take the interrupt on
+      && !theROB.front()->isAnnulled()         // Do not take interrupts on annulled instructions
+      && !theROB.front()->isSquashed()         // Do not take interrupts on squashed instructions
+      && !theROB.front()->isMicroOp()          // Do not take interrupts on squashed micro-ops
+      && !theIsSpeculating                     // Do not take interrupts while speculating
+      //          &&   (getPSTATE() & 0x2)         //PSTATE.IE = 1
+  ) {
+    // Interrupt was signalled this cycle.  Clear the ROB
     theInterruptSignalled = true;
 
     theROB.front()->makePriv();
 
-    DBG_(Dev, ( << theName << " Accepting interrupt " << thePendingInterrupt << " on instruction " << *theROB.front()) );
+    DBG_(Dev, (<< theName << " Accepting interrupt " << thePendingInterrupt << " on instruction "
+               << *theROB.front()));
     theInterruptInstruction = theROB.front();
-    takeTrap( theInterruptInstruction, /*thePendingInterrupt*/kException_UNCATEGORIZED );
+    takeTrap(theInterruptInstruction,
+             /*thePendingInterrupt*/ kException_UNCATEGORIZED);
 
     return true;
   }
   return false;
 }
 
-
 void CoreImpl::handleTrap() {
   if (thePendingTrap == kException_None) {
     return;
   }
-  DBG_( Dev,  ( << theName << " Handling trap: " << thePendingTrap << " raised by: " << *theTrapInstruction ) );
-    DBG_( Crit,  ( << theName << " ROB non-empty in handle trap.  Resynchronize instead.") );
-    theEmptyROBCause = kRaisedException;
-    ++theResync_FailedHandleTrap;
-    throw ResynchronizeWithQemuException();
+  DBG_(Dev, (<< theName << " Handling trap: " << thePendingTrap
+             << " raised by: " << *theTrapInstruction));
+  DBG_(Crit, (<< theName << " ROB non-empty in handle trap.  Resynchronize instead."));
+  theEmptyROBCause = kRaisedException;
+  ++theResync_FailedHandleTrap;
+  throw ResynchronizeWithQemuException();
 }
 
 void CoreImpl::valuePredictAtomic() {
   FLEXUS_PROFILE();
   if (theSpeculateOnAtomicValue && theLSQCount > 0) {
-    memq_t::index<by_queue>::type::iterator lsq_head = theMemQueue.get<by_queue>().lower_bound( std::make_tuple( kLSQ ) );
-    if (     (   lsq_head->isAtomic() )
-             &&   ( ! lsq_head->isAbnormalAccess() )
-             &&   ( ! lsq_head->theExtendedValue )
-             &&   ( ! lsq_head->thePartialSnoop )
-             &&   (   (lsq_head->theOperation == kCAS) ? (!! lsq_head->theCompareValue) : true )
-             &&   (   lsq_head->theInstruction == theROB.front() )
-             &&   ( ! theValuePredictInhibit )  //Disables value prediction for one instruction after a rollback
-             &&   ( lsq_head->status() == kIssuedToMemory )
-       ) {
-      DBG_(Iface, ( << theName  << " Value-predicting " << *lsq_head ) );
+    memq_t::index<by_queue>::type::iterator lsq_head =
+        theMemQueue.get<by_queue>().lower_bound(std::make_tuple(kLSQ));
+    if ((lsq_head->isAtomic()) && (!lsq_head->isAbnormalAccess()) &&
+        (!lsq_head->theExtendedValue) && (!lsq_head->thePartialSnoop) &&
+        ((lsq_head->theOperation == kCAS) ? (!!lsq_head->theCompareValue) : true) &&
+        (lsq_head->theInstruction == theROB.front()) &&
+        (!theValuePredictInhibit) // Disables value prediction for one
+                                  // instruction after a rollback
+        && (lsq_head->status() == kIssuedToMemory)) {
+      DBG_(Iface, (<< theName << " Value-predicting " << *lsq_head));
       ++theValuePredictions;
 
       if (theSpeculateOnAtomicValuePerfect) {
-          lsq_head->theExtendedValue = ValueTracker::valueTracker(theNode).load( theNode, lsq_head->thePaddr, lsq_head->theSize);
+        lsq_head->theExtendedValue = ValueTracker::valueTracker(theNode).load(
+            theNode, lsq_head->thePaddr, lsq_head->theSize);
       } else {
         if (lsq_head->theOperation == kCAS) {
           lsq_head->theExtendedValue = lsq_head->theCompareValue;
@@ -1801,31 +1821,34 @@ void CoreImpl::valuePredictAtomic() {
 }
 
 bool CoreImpl::isIdleLoop() {
-// /   assert(false);
-  return false;		//ALEX - we don't currently have WhiteBox in QEMU
- // /*uint64_t idle = nWhiteBox::WhiteBox::getWhiteBox()->get_idle_thread_t(theNode);
-//  mapped_reg mapped_reg;
- // mapped_reg.theType = xRegisters;
- // mapped_reg.theIndex = 7;  // %g7 holds current thread
- // uint64_t ct = boost::get<uint64_t>(readArchitecturalRegister(mapped_reg, false));
+  // /   assert(false);
+  return false; // ALEX - we don't currently have WhiteBox in QEMU
+  // /*uint64_t idle =
+  // nWhiteBox::WhiteBox::getWhiteBox()->get_idle_thread_t(theNode);
+  //  mapped_reg mapped_reg;
+  // mapped_reg.theType = xRegisters;
+  // mapped_reg.theIndex = 7;  // %g7 holds current thread
+  // uint64_t ct = boost::get<uint64_t>(readArchitecturalRegister(mapped_reg,
+  // false));
 
-//  DBG_(Verb, ( << theName << " isIdleLoop: idle=0x" << std::hex << idle << "== ct=0x" << ct << " : " << (ct == idle)));
+  //  DBG_(Verb, ( << theName << " isIdleLoop: idle=0x" << std::hex << idle <<
+  //  "== ct=0x" << ct << " : " << (ct == idle)));
 
-//  return ((idle != 0) && (ct == idle));
+  //  return ((idle != 0) && (ct == idle));
 }
 
 uint64_t CoreImpl::pc() const {
- // if (! theROB.empty()) {
- //   if (theROB.front()->isAnnulled() || theROB.front()->isMicroOp() ) {
+  // if (! theROB.empty()) {
+  //   if (theROB.front()->isAnnulled() || theROB.front()->isMicroOp() ) {
   //    return theROB.front()->npc();
   //  } else {
   //    return theROB.front()->pc();
   //  }
-//  } else {
-    return thePC;
+  //  } else {
+  return thePC;
   //}
 }
-//uint64_t CoreImpl::npc() const {
+// uint64_t CoreImpl::npc() const {
 //  if (! theROB.empty()) {
 //    if (theROB.front()->isAnnulled() || theROB.front()->isMicroOp() ) {
 //      DBG_(VVerb, ( << "NPC= front->npc + 4" ) );
@@ -1839,11 +1862,9 @@ uint64_t CoreImpl::pc() const {
 //    return *theNPC;
 //  } else {
 //    if (!theDispatchInteractions.empty()) {
-//      std::list< boost::intrusive_ptr< Interaction > >::const_iterator iter, end;
-//      iter = theDispatchInteractions.begin();
-//      end = theDispatchInteractions.end();
-//      uint64_t npc = 0;
-//      bool found = false;
+//      std::list< boost::intrusive_ptr< Interaction > >::const_iterator iter,
+//      end; iter = theDispatchInteractions.begin(); end =
+//      theDispatchInteractions.end(); uint64_t npc = 0; bool found = false;
 //      while (iter != end)  {
 //        DBG_(VVerb, ( << "interaction: " << **iter) );
 //        if ((*iter)->npc()) {
@@ -1865,5 +1886,4 @@ uint64_t CoreImpl::pc() const {
 //  return thePC + 4;
 //}
 
-
-} //nuArchARM
+} // namespace nuArchARM

@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -33,7 +34,7 @@
 // ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
 // CONTRACT, TORT OR OTHERWISE).
 //
-// DO-NOT-REMOVE end-copyright-block   
+// DO-NOT-REMOVE end-copyright-block
 #ifndef FLEXUS_FASTCMPCACHE_DIRECTORYSTATS_HPP_INCLUDED
 #define FLEXUS_FASTCMPCACHE_DIRECTORYSTATS_HPP_INCLUDED
 
@@ -78,47 +79,43 @@ struct DirectoryStats {
   Stat::StatCounter theFetchesOffChipLatency;
   Stat::StatCounter theOtherOffChipLatency;
 
-  DirectoryStats(std::string const & theName)
-    : theReadsOnChip(theName + "-Reads:OnChip")
-    , theFetchesOnChip(theName + "-Fetches:OnChip")
-    , theWritesOnChip(theName + "-Writes:OnChip")
-    , theUpgradesOnChip(theName + "-Upgrades:OnChip")
-    , theReadsOffChip(theName + "-Reads:OffChip")
-    , theFetchesOffChip(theName + "-Fetches:OffChip")
-    , theWritesOffChip(theName + "-Writes:OffChip")
-
-    , theReadsOffChip_PSharers(theName + "-Reads:Off:PotentialSharers")
-    , theReadsOnChip_PSharers(theName + "-Reads:On:PotentialSharers")
-    , theReadsOnChip_FSharers(theName + "-Reads:On:WrongSharers")
-    , theReadsOnChip_ASharers(theName + "-Reads:On:AdditionalSharers")
-    , theWritesOffChip_PSharers(theName + "-Writes:Off:PotentialSharers")
-    , theWritesOnChip_PSharers(theName + "-Writes:On:PotentialSharers")
-    , theWritesOnChip_FSharers(theName + "-Writes:On:WrongSharers")
-    , theWritesOnChip_ASharers(theName + "-Writes:On:AdditionalSharers")
-    , theFetchesOffChip_PSharers(theName + "-Fetches:Off:PotentialSharers")
-    , theFetchesOnChip_PSharers(theName + "-Fetches:On:PotentialSharers")
-    , theFetchesOnChip_FSharers(theName + "-Fetches:On:WrongSharers")
-    , theFetchesOnChip_ASharers(theName + "-Fetches:On:AdditionalSharers")
-    , theUpgradesOnChip_PSharers(theName + "-Upgrades:On:PotentialSharers")
-    , theUpgradesOnChip_FSharers(theName + "-Upgrades:On:WrongSharers")
-    , theUpgradesOnChip_ASharers(theName + "-Upgrades:On:AdditionalSharers")
-
-    , theReadsOnChipLatency(theName + "Reads:On:Latency")
-    , theWritesOnChipLatency(theName + "Writes:On:Latency")
-    , theFetchesOnChipLatency(theName + "Fetches:On:Latency")
-    , theUpgradesOnChipLatency(theName + "Upgrades:On:Latency")
-    , theOtherOnChipLatency(theName + "Other:On:Latency")
-    , theReadsOffChipLatency(theName + "Reads:Off:Latency")
-    , theWritesOffChipLatency(theName + "Writes:Off:Latency")
-    , theFetchesOffChipLatency(theName + "Fetches:Off:Latency")
-    , theOtherOffChipLatency(theName + "Other:Off:Latency") {
+  DirectoryStats(std::string const &theName)
+      : theReadsOnChip(theName + "-Reads:OnChip"), theFetchesOnChip(theName + "-Fetches:OnChip"),
+        theWritesOnChip(theName + "-Writes:OnChip"),
+        theUpgradesOnChip(theName + "-Upgrades:OnChip"),
+        theReadsOffChip(theName + "-Reads:OffChip"),
+        theFetchesOffChip(theName + "-Fetches:OffChip"),
+        theWritesOffChip(theName + "-Writes:OffChip"),
+        theReadsOffChip_PSharers(theName + "-Reads:Off:PotentialSharers"),
+        theReadsOnChip_PSharers(theName + "-Reads:On:PotentialSharers"),
+        theReadsOnChip_FSharers(theName + "-Reads:On:WrongSharers"),
+        theReadsOnChip_ASharers(theName + "-Reads:On:AdditionalSharers"),
+        theWritesOffChip_PSharers(theName + "-Writes:Off:PotentialSharers"),
+        theWritesOnChip_PSharers(theName + "-Writes:On:PotentialSharers"),
+        theWritesOnChip_FSharers(theName + "-Writes:On:WrongSharers"),
+        theWritesOnChip_ASharers(theName + "-Writes:On:AdditionalSharers"),
+        theFetchesOffChip_PSharers(theName + "-Fetches:Off:PotentialSharers"),
+        theFetchesOnChip_PSharers(theName + "-Fetches:On:PotentialSharers"),
+        theFetchesOnChip_FSharers(theName + "-Fetches:On:WrongSharers"),
+        theFetchesOnChip_ASharers(theName + "-Fetches:On:AdditionalSharers"),
+        theUpgradesOnChip_PSharers(theName + "-Upgrades:On:PotentialSharers"),
+        theUpgradesOnChip_FSharers(theName + "-Upgrades:On:WrongSharers"),
+        theUpgradesOnChip_ASharers(theName + "-Upgrades:On:AdditionalSharers"),
+        theReadsOnChipLatency(theName + "Reads:On:Latency"),
+        theWritesOnChipLatency(theName + "Writes:On:Latency"),
+        theFetchesOnChipLatency(theName + "Fetches:On:Latency"),
+        theUpgradesOnChipLatency(theName + "Upgrades:On:Latency"),
+        theOtherOnChipLatency(theName + "Other:On:Latency"),
+        theReadsOffChipLatency(theName + "Reads:Off:Latency"),
+        theWritesOffChipLatency(theName + "Writes:Off:Latency"),
+        theFetchesOffChipLatency(theName + "Fetches:Off:Latency"),
+        theOtherOffChipLatency(theName + "Other:Off:Latency") {
   }
 
   void update() {
   }
 };
 
-}  // namespace nFastCMPCache
+} // namespace nFastCMPCache
 
 #endif /* FLEXUS_FASTCMPCACHE_DIRECTORYSTATS_HPP_INCLUDED */
-

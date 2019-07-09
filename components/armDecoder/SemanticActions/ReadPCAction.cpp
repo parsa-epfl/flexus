@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,29 +36,28 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
-#include <core/boost_extensions/intrusive_ptr.hpp>
-#include <boost/throw_exception.hpp>
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/throw_exception.hpp>
+#include <core/boost_extensions/intrusive_ptr.hpp>
 namespace ll = boost::lambda;
 
 #include <boost/none.hpp>
 
 #include <boost/dynamic_bitset.hpp>
 
-#include <core/target.hpp>
 #include <core/debug/debug.hpp>
+#include <core/target.hpp>
 #include <core/types.hpp>
 
 #include <components/uArchARM/uArchInterfaces.hpp>
 
-#include "../SemanticInstruction.hpp"
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
+#include "../SemanticInstruction.hpp"
 #include "PredicatedSemanticAction.hpp"
 
 #define DBG_DeclareCategories armDecoder
@@ -73,38 +73,35 @@ static const bits kAM = 0x8;
 struct ReadPCAction : public PredicatedSemanticAction {
   eOperandCode theResult;
 
-  ReadPCAction( SemanticInstruction * anInstruction, eOperandCode aResult )
-    : PredicatedSemanticAction( anInstruction, 1, true )
-    , theResult( aResult ) {
-    setReady( 0, true );
+  ReadPCAction(SemanticInstruction *anInstruction, eOperandCode aResult)
+      : PredicatedSemanticAction(anInstruction, 1, true), theResult(aResult) {
+    setReady(0, true);
   }
 
   void doEvaluate() {
-//    bits pstate = theInstruction->core()->getPSTATE() ;
-//    if (pstate & kAM ) {
-//      //Need to mask upper 32 bits when AM is set
-//      theInstruction->setOperand(theResult, static_cast<bits>(theInstruction->pc()) & 0xFFFFFFFFULL);
+    //    bits pstate = theInstruction->core()->getPSTATE() ;
+    //    if (pstate & kAM ) {
+    //      //Need to mask upper 32 bits when AM is set
+    //      theInstruction->setOperand(theResult,
+    //      static_cast<bits>(theInstruction->pc()) & 0xFFFFFFFFULL);
 
-//    } else {
-      uint64_t pc = theInstruction->pc();
-      theInstruction->setOperand(theResult, (bits)pc);
-//    }
-    DBG_( VVerb, ( << *this << " read PC") );
+    //    } else {
+    uint64_t pc = theInstruction->pc();
+    theInstruction->setOperand(theResult, (bits)pc);
+    //    }
+    DBG_(VVerb, (<< *this << " read PC"));
     satisfyDependants();
   }
 
-  void describe( std::ostream & anOstream) const {
+  void describe(std::ostream &anOstream) const {
     anOstream << theInstruction->identify() << " Read PC store in " << theResult;
   }
-
 };
 
-predicated_action readPCAction
-( SemanticInstruction * anInstruction
-) {
-  ReadPCAction * act(new(anInstruction->icb()) ReadPCAction( anInstruction, kResult) );
+predicated_action readPCAction(SemanticInstruction *anInstruction) {
+  ReadPCAction *act(new (anInstruction->icb()) ReadPCAction(anInstruction, kResult));
 
-  return predicated_action( act, act->predicate() );
+  return predicated_action(act, act->predicate());
 }
 
-} //narmDecoder
+} // namespace narmDecoder

@@ -9,7 +9,8 @@
 // Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
 // Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
 // Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,15 +36,13 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-#include "armEncodings.hpp"
 #include "armDataProcReg.hpp"
-#include "armUnallocated.hpp"
+#include "armEncodings.hpp"
 #include "armMagic.hpp"
 #include "armSharedFunctions.hpp"
+#include "armUnallocated.hpp"
 
 namespace narmDecoder {
-
-
 
 /* Data-processing (2 source)
  *   31   30  29 28             21 20  16 15    10 9    5 4    0
@@ -51,37 +50,36 @@ namespace narmDecoder {
  * | sf | 0 | S | 1 1 0 1 0 1 1 0 |  Rm  | opcode |  Rn  |  Rd  |
  * +----+---+---+-----------------+------+--------+------+------+
  */
-arminst disas_data_proc_2src(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
-    DECODER_TRACE;
+arminst disas_data_proc_2src(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  DECODER_TRACE;
 
-    if (extract32(aFetchedOpcode.theOpcode, 29, 1)) {
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-    }
+  if (extract32(aFetchedOpcode.theOpcode, 29, 1)) {
+    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+  }
 
-    switch (extract32(aFetchedOpcode.theOpcode, 10, 6)) {
-    case 2: /* UDIV */
-    case 3: /* SDIV */
-        return DIV(aFetchedOpcode, aCPU, aSequenceNo);
+  switch (extract32(aFetchedOpcode.theOpcode, 10, 6)) {
+  case 2: /* UDIV */
+  case 3: /* SDIV */
+    return DIV(aFetchedOpcode, aCPU, aSequenceNo);
 
-    case 8: /* LSLV */
-    case 9: /* LSRV */
-    case 10: /* ASRV */
-    case 11: /* RORV */
-        return SHIFT(aFetchedOpcode, aCPU, aSequenceNo);
+  case 8:  /* LSLV */
+  case 9:  /* LSRV */
+  case 10: /* ASRV */
+  case 11: /* RORV */
+    return SHIFT(aFetchedOpcode, aCPU, aSequenceNo);
 
-    case 16:
-    case 17:
-    case 18:
-    case 19:
-    case 20:
-    case 21:
-    case 22:
-    case 23: /* CRC32 */
-        return CRC(aFetchedOpcode, aCPU, aSequenceNo);
-    default:
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-    }
+  case 16:
+  case 17:
+  case 18:
+  case 19:
+  case 20:
+  case 21:
+  case 22:
+  case 23: /* CRC32 */
+    return CRC(aFetchedOpcode, aCPU, aSequenceNo);
+  default:
+    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+  }
 }
 
 /* Data-processing (1 source)
@@ -90,28 +88,27 @@ arminst disas_data_proc_2src(armcode const & aFetchedOpcode, uint32_t  aCPU, int
  * | sf | 1 | S | 1 1 0 1 0 1 1 0 | opcode2 | opcode |  Rn  |  Rd  |
  * +----+---+---+-----------------+---------+--------+------+------+
  */
-arminst disas_data_proc_1src(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
-    DECODER_TRACE;
+arminst disas_data_proc_1src(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  DECODER_TRACE;
 
-    if (extract32(aFetchedOpcode.theOpcode, 29, 1) || extract32(aFetchedOpcode.theOpcode, 16, 5)) {
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-    }
+  if (extract32(aFetchedOpcode.theOpcode, 29, 1) || extract32(aFetchedOpcode.theOpcode, 16, 5)) {
+    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+  }
 
-    switch (extract32(aFetchedOpcode.theOpcode, 10, 6)) {
-    case 0: /* RBIT */
-        return RBIT(aFetchedOpcode, aCPU, aSequenceNo);
-    case 1: /* REV16 */
-    case 2: /* REV32 */
-    case 3: /* REV64 */
-        return REV(aFetchedOpcode, aCPU, aSequenceNo);
-    case 4: /* CLZ */
-    case 5: /* CLS */
-        return CL(aFetchedOpcode, aCPU, aSequenceNo);
-    default:
-        DBG_Assert(false);
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-    }
+  switch (extract32(aFetchedOpcode.theOpcode, 10, 6)) {
+  case 0: /* RBIT */
+    return RBIT(aFetchedOpcode, aCPU, aSequenceNo);
+  case 1: /* REV16 */
+  case 2: /* REV32 */
+  case 3: /* REV64 */
+    return REV(aFetchedOpcode, aCPU, aSequenceNo);
+  case 4: /* CLZ */
+  case 5: /* CLS */
+    return CL(aFetchedOpcode, aCPU, aSequenceNo);
+  default:
+    DBG_Assert(false);
+    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+  }
 }
 
 /* Conditional select
@@ -120,10 +117,9 @@ arminst disas_data_proc_1src(armcode const & aFetchedOpcode, uint32_t  aCPU, int
  * | sf | op | S | 1 1 0 1 0 1 0 0 |  Rm  | cond | op2 |  Rn  |  Rd  |
  * +----+----+---+-----------------+------+------+-----+------+------+
  */
-arminst disas_cond_select(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
-    DECODER_TRACE;
-    return CSEL(aFetchedOpcode, aCPU, aSequenceNo);
+arminst disas_cond_select(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  DECODER_TRACE;
+  return CSEL(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Conditional compare (immediate / register)
@@ -133,10 +129,9 @@ arminst disas_cond_select(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_
  * +--+--+--+------------------------+--------+------+----+--+------+--+-----+
  *        [1]                             y                [0]       [0]
  */
-arminst disas_cc(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
-    DECODER_TRACE;
-    return CCMP(aFetchedOpcode, aCPU, aSequenceNo);
+arminst disas_cc(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  DECODER_TRACE;
+  return CCMP(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Add/subtract (with carry)
@@ -146,10 +141,9 @@ arminst disas_cc(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequen
  * +--+--+--+------------------------+------+---------+------+-----+
  *                                            [000000]
  */
-arminst disas_adc_sbc(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
-    DECODER_TRACE;
-    return ADDSUB_CARRY(aFetchedOpcode, aCPU, aSequenceNo);
+arminst disas_adc_sbc(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  DECODER_TRACE;
+  return ADDSUB_CARRY(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Data-processing (3 source)
@@ -159,10 +153,9 @@ arminst disas_adc_sbc(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aS
  *  |sf| op54 | 1 1 0 1 1 | op31 |  Rm  | o0 |  Ra  |  Rn  |  Rd  |
  *  +--+------+-----------+------+------+----+------+------+------+
  */
-arminst disas_data_proc_3src(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
-    DECODER_TRACE;
-    return DP_3_SRC(aFetchedOpcode, aCPU, aSequenceNo);
+arminst disas_data_proc_3src(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  DECODER_TRACE;
+  return DP_3_SRC(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /*
@@ -179,10 +172,9 @@ arminst disas_data_proc_3src(armcode const & aFetchedOpcode, uint32_t  aCPU, int
  * shift: 00 -> LSL, 01 -> LSR, 10 -> ASR, 11 -> RESERVED
  *  imm6: Shift amount to apply to Rm before the add/sub
  */
-arminst disas_add_sub_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
-    DECODER_TRACE;
-    return ADDSUB_SHIFTED(aFetchedOpcode, aCPU, aSequenceNo);
+arminst disas_add_sub_reg(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  DECODER_TRACE;
+  return ADDSUB_SHIFTED(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /*
@@ -202,13 +194,11 @@ arminst disas_add_sub_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_
  *
  * Rd = Rn + LSL(extend(Rm), amount)
  */
-arminst disas_add_sub_ext_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
-    DECODER_TRACE;
+arminst disas_add_sub_ext_reg(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  DECODER_TRACE;
 
-    return ADDSUB_EXTENDED(aFetchedOpcode, aCPU, aSequenceNo);
+  return ADDSUB_EXTENDED(aFetchedOpcode, aCPU, aSequenceNo);
 }
-
 
 /* Logical (shifted register)
  *   31  30 29 28       24 23   22 21  20  16 15    10 9    5 4    0
@@ -216,51 +206,49 @@ arminst disas_add_sub_ext_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, in
  * | sf | opc | 0 1 0 1 0 | shift | N |  Rm  |  imm6  |  Rn  |  Rd  |
  * +----+-----+-----------+-------+---+------+--------+------+------+
  */
-arminst disas_logic_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
-    DECODER_TRACE;
+arminst disas_logic_reg(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  DECODER_TRACE;
 
-    return LOGICAL(aFetchedOpcode, aCPU, aSequenceNo);
+  return LOGICAL(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Data processing - register */
-arminst disas_data_proc_reg(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
-    DECODER_TRACE;
+arminst disas_data_proc_reg(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  DECODER_TRACE;
 
-    switch (extract32(aFetchedOpcode.theOpcode, 24, 5)) {
-        case 0x0a: /* Logical (shifted register) */
-            return disas_logic_reg(aFetchedOpcode, aCPU, aSequenceNo);
-        case 0x0b: /* Add/subtract */
-            if (aFetchedOpcode.theOpcode & (1 << 21)) { /* (extended register) */
-                return disas_add_sub_ext_reg(aFetchedOpcode, aCPU, aSequenceNo);
-            } else {
-                return disas_add_sub_reg(aFetchedOpcode, aCPU, aSequenceNo);
-            }
-        case 0x1b: /* Data-processing (3 source) */
-            return disas_data_proc_3src(aFetchedOpcode, aCPU, aSequenceNo);
-        case 0x1a:
-            switch (extract32(aFetchedOpcode.theOpcode, 21, 3)) {
-            case 0x0: /* Add/subtract (with carry) */
-                return disas_adc_sbc(aFetchedOpcode, aCPU, aSequenceNo);
-            case 0x2: /* Conditional compare */
-                return disas_cc(aFetchedOpcode, aCPU, aSequenceNo); /* both imm and reg forms */
-            case 0x4: /* Conditional select */
-                return disas_cond_select(aFetchedOpcode, aCPU, aSequenceNo);
-            case 0x6: /* Data-processing */
-                if (aFetchedOpcode.theOpcode & (1 << 30)) { /* (1 source) */
-                    return disas_data_proc_1src(aFetchedOpcode, aCPU, aSequenceNo);
-                } else {            /* (2 source) */
-                    return disas_data_proc_2src(aFetchedOpcode, aCPU, aSequenceNo);
-                }
-                break;
-            default:
-                return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-            }
-            break;
-        default:
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-        }
+  switch (extract32(aFetchedOpcode.theOpcode, 24, 5)) {
+  case 0x0a: /* Logical (shifted register) */
+    return disas_logic_reg(aFetchedOpcode, aCPU, aSequenceNo);
+  case 0x0b:                                    /* Add/subtract */
+    if (aFetchedOpcode.theOpcode & (1 << 21)) { /* (extended register) */
+      return disas_add_sub_ext_reg(aFetchedOpcode, aCPU, aSequenceNo);
+    } else {
+      return disas_add_sub_reg(aFetchedOpcode, aCPU, aSequenceNo);
+    }
+  case 0x1b: /* Data-processing (3 source) */
+    return disas_data_proc_3src(aFetchedOpcode, aCPU, aSequenceNo);
+  case 0x1a:
+    switch (extract32(aFetchedOpcode.theOpcode, 21, 3)) {
+    case 0x0: /* Add/subtract (with carry) */
+      return disas_adc_sbc(aFetchedOpcode, aCPU, aSequenceNo);
+    case 0x2:                                             /* Conditional compare */
+      return disas_cc(aFetchedOpcode, aCPU, aSequenceNo); /* both imm and reg forms */
+    case 0x4:                                             /* Conditional select */
+      return disas_cond_select(aFetchedOpcode, aCPU, aSequenceNo);
+    case 0x6:                                     /* Data-processing */
+      if (aFetchedOpcode.theOpcode & (1 << 30)) { /* (1 source) */
+        return disas_data_proc_1src(aFetchedOpcode, aCPU, aSequenceNo);
+      } else { /* (2 source) */
+        return disas_data_proc_2src(aFetchedOpcode, aCPU, aSequenceNo);
+      }
+      break;
+    default:
+      return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
+    break;
+  default:
+    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+  }
 }
 
-} // narmDecoder
+} // namespace narmDecoder

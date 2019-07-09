@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,20 +36,19 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #ifndef __SIMPLE_DIRECTORY_STATE_HPP__
 #define __SIMPLE_DIRECTORY_STATE_HPP__
 #include <bitset>
 #include <boost/dynamic_bitset.hpp>
 #define MAX_NUM_SHARERS 512
 
-
 namespace nCMPCache {
 
 class SimpleDirectoryState {
 private:
   // no one ever calls this, so we always have a size
-  SimpleDirectoryState() : theSharers(), theNumSharers(0) {}
+  SimpleDirectoryState() : theSharers(), theNumSharers(0) {
+  }
 
   boost::dynamic_bitset<uint64_t> theSharers;
   int theNumSharers;
@@ -56,7 +56,7 @@ private:
   typedef boost::dynamic_bitset<uint64_t>::size_type size_type;
 
 public:
-  const boost::dynamic_bitset<uint64_t>& getSharers() const {
+  const boost::dynamic_bitset<uint64_t> &getSharers() const {
     return theSharers;
   }
   int32_t getNumSharers() const {
@@ -117,11 +117,11 @@ public:
   }
 
   inline void removeSharer(int32_t sharer) {
-    DBG_Assert(sharer < (int)theSharers.size(), ( << sharer << " >= " << theSharers.size()));
+    DBG_Assert(sharer < (int)theSharers.size(), (<< sharer << " >= " << theSharers.size()));
     theSharers.set(sharer, false);
   }
   inline void addSharer(int32_t sharer) {
-    DBG_Assert(sharer < (int)theSharers.size(), ( << sharer << " >= " << theSharers.size()));
+    DBG_Assert(sharer < (int)theSharers.size(), (<< sharer << " >= " << theSharers.size()));
     theSharers.set(sharer, true);
   }
   inline void setSharer(int32_t sharer) {
@@ -137,46 +137,50 @@ public:
     theNumSharers = numSharers;
   }
 
-  SimpleDirectoryState & operator=(uint64_t s) {
+  SimpleDirectoryState &operator=(uint64_t s) {
     for (int32_t i = 0; i < theNumSharers; i++, s >>= 1) {
       theSharers[i] = (((s & 1) == 1) ? true : false);
     }
     return *this;
   }
 
-  SimpleDirectoryState & operator=(std::bitset<MAX_NUM_SHARERS> s) {
+  SimpleDirectoryState &operator=(std::bitset<MAX_NUM_SHARERS> s) {
     for (int32_t i = 0; i < theNumSharers; i++) {
       theSharers[i] = s[i];
     }
     return *this;
   }
 
-
-  SimpleDirectoryState & operator|=(std::bitset<MAX_NUM_SHARERS> s) {
+  SimpleDirectoryState &operator|=(std::bitset<MAX_NUM_SHARERS> s) {
     for (int32_t i = 0; i < theNumSharers; i++) {
       theSharers[i] |= s[i];
     }
     return *this;
   }
 
-
-  SimpleDirectoryState & operator|=(uint64_t s) {
+  SimpleDirectoryState &operator|=(uint64_t s) {
     for (int32_t i = 0; i < theNumSharers; i++, s >>= 1) {
       theSharers[i] = theSharers[i] || (((s & 1) == 1) ? true : false);
-   }
+    }
     return *this;
   }
 
-  SimpleDirectoryState(const boost::dynamic_bitset<uint64_t>& sharers, const SimpleDirectoryState & s)
-    : theSharers(sharers), theNumSharers(s.theNumSharers) {}
+  SimpleDirectoryState(const boost::dynamic_bitset<uint64_t> &sharers,
+                       const SimpleDirectoryState &s)
+      : theSharers(sharers), theNumSharers(s.theNumSharers) {
+  }
 
-  SimpleDirectoryState(const SimpleDirectoryState & s)
-    : theSharers(s.theSharers), theNumSharers(s.theNumSharers) {}
+  SimpleDirectoryState(const SimpleDirectoryState &s)
+      : theSharers(s.theSharers), theNumSharers(s.theNumSharers) {
+  }
 
-  SimpleDirectoryState(int32_t aNumSharers) : theSharers(aNumSharers), theNumSharers(aNumSharers) {}
-  SimpleDirectoryState(int32_t aNumSharers, const boost::dynamic_bitset<uint64_t>& aSharers) : theSharers(aSharers), theNumSharers(aNumSharers) {}
+  SimpleDirectoryState(int32_t aNumSharers) : theSharers(aNumSharers), theNumSharers(aNumSharers) {
+  }
+  SimpleDirectoryState(int32_t aNumSharers, const boost::dynamic_bitset<uint64_t> &aSharers)
+      : theSharers(aSharers), theNumSharers(aNumSharers) {
+  }
 
-  SimpleDirectoryState & operator&=(SimpleDirectoryState & a) {
+  SimpleDirectoryState &operator&=(SimpleDirectoryState &a) {
     theSharers &= a.theSharers;
     return *this;
   }
@@ -194,11 +198,12 @@ inline bool isNonShared(const std::vector<SimpleDirectoryState> &state, int32_t 
   return (sharers.none() || (sharers[requester] && (sharers.count() == 1)));
 }
 
-inline bool isNonShared(const std::vector<boost::dynamic_bitset<uint64_t> > &state, int32_t requester) {
+inline bool isNonShared(const std::vector<boost::dynamic_bitset<uint64_t>> &state,
+                        int32_t requester) {
   if (state.empty()) {
     return true;
   }
-  std::vector<boost::dynamic_bitset<uint64_t> >::const_iterator iter = state.begin();
+  std::vector<boost::dynamic_bitset<uint64_t>>::const_iterator iter = state.begin();
   boost::dynamic_bitset<uint64_t> sharers(*iter);
   for (iter++; iter != state.end(); iter++) {
     sharers |= *iter;
@@ -206,15 +211,18 @@ inline bool isNonShared(const std::vector<boost::dynamic_bitset<uint64_t> > &sta
   return (sharers.none() || (sharers[requester] && (sharers.count() == 1)));
 }
 
-inline boost::dynamic_bitset<uint64_t> getPresenceVector(const std::vector<SimpleDirectoryState> &state) {
+inline boost::dynamic_bitset<uint64_t>
+getPresenceVector(const std::vector<SimpleDirectoryState> &state) {
   boost::dynamic_bitset<uint64_t> present(state.size(), 0);
   for (uint32_t i = 0; i < state.size(); i++) {
-    present[i] = ! state[i].noSharers();
+    present[i] = !state[i].noSharers();
   }
   return present;
 }
 
-inline void presence2State(const boost::dynamic_bitset<uint64_t> &presence, std::vector<SimpleDirectoryState> &state, const SimpleDirectoryState & defaultState, int32_t sharer) {
+inline void presence2State(const boost::dynamic_bitset<uint64_t> &presence,
+                           std::vector<SimpleDirectoryState> &state,
+                           const SimpleDirectoryState &defaultState, int32_t sharer) {
   state.clear();
   state.resize(presence.size(), defaultState);
   for (uint32_t i = 0; i < presence.size(); i++) {
@@ -224,21 +232,31 @@ inline void presence2State(const boost::dynamic_bitset<uint64_t> &presence, std:
   }
 }
 
-inline SimpleDirectoryState bits2State(const boost::dynamic_bitset<uint64_t>& aState, const SimpleDirectoryState & aDefaultState) {
+inline SimpleDirectoryState bits2State(const boost::dynamic_bitset<uint64_t> &aState,
+                                       const SimpleDirectoryState &aDefaultState) {
   return SimpleDirectoryState(aState, aDefaultState);
 }
 
-inline void copyState(const std::vector<SimpleDirectoryState> &orig, std::vector<boost::dynamic_bitset<uint64_t> >& copy) {
-  //transform(orig.begin(), orig.end(), copy.begin(), [](auto& x){ return x.getSharers(); });//(&SimpleDirectoryState::getSharers, _1));
-  transform(orig.begin(), orig.end(), copy.begin(), boost::bind(&SimpleDirectoryState::getSharers, _1));
+inline void copyState(const std::vector<SimpleDirectoryState> &orig,
+                      std::vector<boost::dynamic_bitset<uint64_t>> &copy) {
+  // transform(orig.begin(), orig.end(), copy.begin(), [](auto& x){ return
+  // x.getSharers(); });//(&SimpleDirectoryState::getSharers, _1));
+  transform(orig.begin(), orig.end(), copy.begin(),
+            boost::bind(&SimpleDirectoryState::getSharers, _1));
 }
 
-inline void copyState(const std::vector<boost::dynamic_bitset<uint64_t> >& orig, std::vector<SimpleDirectoryState> &copy, const SimpleDirectoryState & aDefaultState) {
-  //transform(orig.begin(), orig.end(), copy.begin(), [&aDefaultState](auto& x){ return bits2State(x, aDefaultState); });//std::bind(&bits2State, _1, aDefaultState));
+inline void copyState(const std::vector<boost::dynamic_bitset<uint64_t>> &orig,
+                      std::vector<SimpleDirectoryState> &copy,
+                      const SimpleDirectoryState &aDefaultState) {
+  // transform(orig.begin(), orig.end(), copy.begin(), [&aDefaultState](auto&
+  // x){ return bits2State(x, aDefaultState); });//std::bind(&bits2State, _1,
+  // aDefaultState));
   transform(orig.begin(), orig.end(), copy.begin(), boost::bind(&bits2State, _1, aDefaultState));
 }
 
-inline void setPresence(int32_t sharer, const boost::dynamic_bitset<uint64_t> &presence, const boost::dynamic_bitset<uint64_t> &exclusive, std::vector<SimpleDirectoryState> &state) {
+inline void setPresence(int32_t sharer, const boost::dynamic_bitset<uint64_t> &presence,
+                        const boost::dynamic_bitset<uint64_t> &exclusive,
+                        std::vector<SimpleDirectoryState> &state) {
   for (uint32_t i = 0; i < presence.size(); i++) {
     if (presence[i]) {
       if (exclusive[i]) {

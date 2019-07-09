@@ -5,9 +5,9 @@
 
 #include <core/debug/debug.hpp>
 
-#include <core/metaprogram.hpp>
 #include <boost/mpl/eval_if.hpp>
 #include <boost/mpl/for_each.hpp>
+#include <core/metaprogram.hpp>
 namespace mpl = boost::mpl;
 
 #include <core/exception.hpp>
@@ -17,16 +17,16 @@ namespace Flexus {
 namespace Qemu {
 
 namespace aux_ {
-//Forward declare AttributeFriend for the friend declaration in AttributeValue
+// Forward declare AttributeFriend for the friend declaration in AttributeValue
 class AttributeFriend;
 struct Object {};
 struct BuiltIn {};
 struct construct_tag {};
-} //namespace aux_
+} // namespace aux_
 
 struct Nil {};
 
-} //namespace Simics
-} //namespace Flexus
+} // namespace Qemu
+} // namespace Flexus
 
-#endif //FLEXUS_SIMICS_ATTRIBUTE_VALUE_HPP_INCLUDED
+#endif // FLEXUS_SIMICS_ATTRIBUTE_VALUE_HPP_INCLUDED

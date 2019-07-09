@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -33,44 +34,46 @@
 // ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
 // CONTRACT, TORT OR OTHERWISE).
 //
-// DO-NOT-REMOVE end-copyright-block   
+// DO-NOT-REMOVE end-copyright-block
 #ifndef ABSTRACT_FACTORY_HPP
 #define ABSTRACT_FACTORY_HPP
 
 #include <iostream>
 
-#include <map>
-#include <list>
 #include <functional>
+#include <list>
+#include <map>
 
 class Dummy {
 public:
   Dummy(int32_t x) {
-    DBG_( Dev, ( << "Dummy constructor " << x << "." ));
+    DBG_(Dev, (<< "Dummy constructor " << x << "."));
   }
 };
 
-template<class _AbstractType>
-class AbstractFactory {
+template <class _AbstractType> class AbstractFactory {
 public:
-  //typedef _AbstractType *(cons_func_t)(std::list< std:pair<std::string, std::string> >&);
-  typedef std::function<_AbstractType* ( std::list< std::pair<std::string, std::string> >& )> cons_func_t;
+  // typedef _AbstractType *(cons_func_t)(std::list< std:pair<std::string,
+  // std::string> >&);
+  typedef std::function<_AbstractType *(std::list<std::pair<std::string, std::string>> &)>
+      cons_func_t;
 
 private:
   typedef std::map<std::string, cons_func_t> factory_map_t;
 
-  static factory_map_t & factory_map() {
+  static factory_map_t &factory_map() {
     static factory_map_t my_map;
     return my_map;
   };
 
 public:
-  static void registerConstructor(const std::string & name, cons_func_t fn) {
-    std::pair<typename factory_map_t::iterator, bool> ret = factory_map().insert( std::make_pair(name, fn) );
-    DBG_Assert(ret.second, ( << "Failed to register Constructor with name '" << name << "'" ) );
+  static void registerConstructor(const std::string &name, cons_func_t fn) {
+    std::pair<typename factory_map_t::iterator, bool> ret =
+        factory_map().insert(std::make_pair(name, fn));
+    DBG_Assert(ret.second, (<< "Failed to register Constructor with name '" << name << "'"));
   }
 
-  static _AbstractType * createInstance(std::string args) {
+  static _AbstractType *createInstance(std::string args) {
     std::string::size_type loc = args.find(':', 0);
     std::string name = args.substr(0, loc);
     if (loc != std::string::npos) {
@@ -80,7 +83,7 @@ public:
     }
     typename factory_map_t::iterator iter = factory_map().find(name);
     if (iter != factory_map().end()) {
-      std::list< std::pair<std::string, std::string> > arg_list;
+      std::list<std::pair<std::string, std::string>> arg_list;
       std::string key;
       std::string value;
       std::string::size_type pos = 0;
@@ -110,17 +113,16 @@ public:
     for (; iter != factory_map().end(); iter++) {
       std::cout << "FactoryMap contains: " << iter->first << std::endl;
     }
-    DBG_Assert(false, ( << "Failed to create Instance of '" << name << "'" ) );
+    DBG_Assert(false, (<< "Failed to create Instance of '" << name << "'"));
     return nullptr;
   }
-
 };
 
-template<typename _AbstractType, typename _ConcreteType>
-class ConcreteFactory {
+template <typename _AbstractType, typename _ConcreteType> class ConcreteFactory {
 public:
   ConcreteFactory() {
-    AbstractFactory<_AbstractType>::registerConstructor(_ConcreteType::name, &_ConcreteType::createInstance);
+    AbstractFactory<_AbstractType>::registerConstructor(_ConcreteType::name,
+                                                        &_ConcreteType::createInstance);
   };
 };
 

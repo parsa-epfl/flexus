@@ -1,12 +1,12 @@
 #ifndef FLEXUS_CORE_TARGET_HPP_INCLUDED
 #define FLEXUS_CORE_TARGET_HPP_INCLUDED
 
-#define FLEXUS_TARGET_ID_x86()                                    <core/targets/x86.hpp>
-#define FLEXUS_TARGET_ID_v9()                                     <core/targets/v9.hpp>
-#define FLEXUS_TARGET_ID_ARM()                                    <core/targets/ARM.hpp>
+#define FLEXUS_TARGET_ID_x86() <core/targets/x86.hpp>
+#define FLEXUS_TARGET_ID_v9() <core/targets/v9.hpp>
+#define FLEXUS_TARGET_ID_ARM() <core/targets/ARM.hpp>
 
-#define CAT(x,y) CAT_D(x,y)
-#define CAT_D(x,y) x##y
+#define CAT(x, y) CAT_D(x, y)
+#define CAT_D(x, y) x##y
 
 #ifdef TARGET_PLATFORM
 #define TARGET_PLATFORM_x86 0
@@ -40,4 +40,4 @@ struct StaticPrint {
 };
 */
 
-#endif //FLEXUS_CORE_TARGET_HPP_INCLUDED
+#endif // FLEXUS_CORE_TARGET_HPP_INCLUDED

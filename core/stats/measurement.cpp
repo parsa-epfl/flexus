@@ -1,16 +1,16 @@
 #include <algorithm>
-#include <iomanip>
-#include <queue>
-#include <list>
 #include <fstream>
+#include <iomanip>
+#include <list>
+#include <queue>
 
-#include <boost/throw_exception.hpp>
-#include <boost/serialization/split_free.hpp>
-#include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
-#include <functional>
-#include <boost/regex.hpp>
+#include <boost/archive/binary_oarchive.hpp>
 #include <boost/optional.hpp>
+#include <boost/regex.hpp>
+#include <boost/serialization/split_free.hpp>
+#include <boost/throw_exception.hpp>
+#include <functional>
 
 #include <core/stats.hpp>
 
@@ -18,53 +18,57 @@ namespace Flexus {
 namespace Stat {
 namespace aux_ {
 
-template<class Archive>
-void save(Archive & ar, ::boost::intrusive_ptr<Flexus::Stat::aux_::Measurement> const & ptr, uint32_t version) {
-  Measurement * msmt = ptr.get();
-  ar & msmt;
+template <class Archive>
+void save(Archive &ar, ::boost::intrusive_ptr<Flexus::Stat::aux_::Measurement> const &ptr,
+          uint32_t version) {
+  Measurement *msmt = ptr.get();
+  ar &msmt;
 }
 
-template<class Archive>
-void load(Archive & ar, ::boost::intrusive_ptr<Flexus::Stat::aux_::Measurement> & ptr, uint32_t version) {
-  Measurement * msmt;
-  ar & msmt;
-  ptr = boost::intrusive_ptr<Flexus::Stat::aux_::Measurement> (msmt);
+template <class Archive>
+void load(Archive &ar, ::boost::intrusive_ptr<Flexus::Stat::aux_::Measurement> &ptr,
+          uint32_t version) {
+  Measurement *msmt;
+  ar &msmt;
+  ptr = boost::intrusive_ptr<Flexus::Stat::aux_::Measurement>(msmt);
 }
 
-} //aux_
-} //Stat
-} //Flexus
+} // namespace aux_
+} // namespace Stat
+} // namespace Flexus
 
 namespace boost {
 namespace serialization {
-template<class Archive>
-inline void serialize( Archive & ar, ::boost::intrusive_ptr<Flexus::Stat::aux_::Measurement> & t, const uint32_t file_version ) {
+template <class Archive>
+inline void serialize(Archive &ar, ::boost::intrusive_ptr<Flexus::Stat::aux_::Measurement> &t,
+                      const uint32_t file_version) {
   split_free(ar, t, file_version);
 }
-}
-}
+} // namespace serialization
+} // namespace boost
 
 namespace Flexus {
 namespace Stat {
 
 namespace aux_ {
 
-void fold( StatValueBase & anAccumulator, StatValueBase const & anRHS, void ( StatValueBase::* aReduction)( StatValueBase const & ) ) {
-  (anAccumulator .* aReduction) (anRHS);
+void fold(StatValueBase &anAccumulator, StatValueBase const &anRHS,
+          void (StatValueBase::*aReduction)(StatValueBase const &)) {
+  (anAccumulator.*aReduction)(anRHS);
 }
 
-bool Measurement::includeStat( Stat * aStat ) {
+bool Measurement::includeStat(Stat *aStat) {
   return boost::regex_match(aStat->name(), theStatExpression);
 }
 
-void SimpleMeasurement :: addToMeasurement( Stat * aStat ) {
-  //Check if the stat should be included in this measurement
+void SimpleMeasurement ::addToMeasurement(Stat *aStat) {
+  // Check if the stat should be included in this measurement
   if (includeStat(aStat)) {
-    theStats[ aStat->name() ] = aStat->createValue();
+    theStats[aStat->name()] = aStat->createValue();
   }
 }
 
-void SimpleMeasurement :: close() {
+void SimpleMeasurement ::close() {
   stat_handle_map::iterator iter = theStats.begin();
   stat_handle_map::iterator end = theStats.end();
   while (iter != end) {
@@ -73,7 +77,7 @@ void SimpleMeasurement :: close() {
   }
 }
 
-void SimpleMeasurement :: print(std::ostream & anOstream, std::string const & options) {
+void SimpleMeasurement ::print(std::ostream &anOstream, std::string const &options) {
   stat_handle_map::iterator iter = theStats.begin();
   stat_handle_map::iterator end = theStats.end();
   anOstream << *this << std::endl;
@@ -83,7 +87,8 @@ void SimpleMeasurement :: print(std::ostream & anOstream, std::string const & op
   }
 }
 
-void SimpleMeasurement :: format(std::ostream & anOstream, std::string const & aField, std::string const & options) {
+void SimpleMeasurement ::format(std::ostream &anOstream, std::string const &aField,
+                                std::string const &options) {
   stat_handle_map::iterator iter = theStats.find(aField);
   if (iter != theStats.end()) {
     iter->second.print(anOstream, options);
@@ -92,25 +97,26 @@ void SimpleMeasurement :: format(std::ostream & anOstream, std::string const & a
   }
 }
 
-void SimpleMeasurement :: doOp(std::ostream & anOstream, std::string const & anOp, std::string const & options) {
+void SimpleMeasurement ::doOp(std::ostream &anOstream, std::string const &anOp,
+                              std::string const &options) {
   if (anOp == "SUM") {
-    doSUM( anOstream, options );
+    doSUM(anOstream, options);
   } else if (anOp == "CSV") {
-    doCSV( anOstream, options );
+    doCSV(anOstream, options);
   } else if (anOp == "HISTSUM") {
-    doHISTSUM( anOstream, options );
+    doHISTSUM(anOstream, options);
   } else if (anOp == "INSTSUM") {
-    doINSTSUM( anOstream, options );
+    doINSTSUM(anOstream, options);
   } else if (anOp == "INST2HIST") {
-    doINST2HIST( anOstream, options );
+    doINST2HIST(anOstream, options);
   } else if (anOp == "EXPR") {
-    DBG_Assert( false );
+    DBG_Assert(false);
   } else {
     Measurement::doOp(anOstream, anOp, options);
   }
 }
 
-int64_t SimpleMeasurement :: asLongLong(std::string const & aFieldSpec) {
+int64_t SimpleMeasurement ::asLongLong(std::string const &aFieldSpec) {
   stat_handle_map::iterator iter = theStats.find(aFieldSpec);
   if (iter != theStats.end()) {
     return iter->second.asLongLong();
@@ -118,8 +124,8 @@ int64_t SimpleMeasurement :: asLongLong(std::string const & aFieldSpec) {
     // look for options
     size_t loc = aFieldSpec.find(';');
     if (loc != std::string::npos) {
-      std::string field( aFieldSpec.substr(0, loc) );
-      std::string options( aFieldSpec.substr(loc + 1) );
+      std::string field(aFieldSpec.substr(0, loc));
+      std::string options(aFieldSpec.substr(loc + 1));
       iter = theStats.find(field);
       if (iter != theStats.end()) {
         return iter->second.asLongLong(options);
@@ -129,7 +135,7 @@ int64_t SimpleMeasurement :: asLongLong(std::string const & aFieldSpec) {
   }
 }
 
-double SimpleMeasurement :: asDouble(std::string const & aFieldSpec) {
+double SimpleMeasurement ::asDouble(std::string const &aFieldSpec) {
   stat_handle_map::iterator iter = theStats.find(aFieldSpec);
   if (iter != theStats.end()) {
     return iter->second.asDouble();
@@ -137,8 +143,8 @@ double SimpleMeasurement :: asDouble(std::string const & aFieldSpec) {
     // look for options
     size_t loc = aFieldSpec.find(';');
     if (loc != std::string::npos) {
-      std::string field( aFieldSpec.substr(0, loc) );
-      std::string options( aFieldSpec.substr(loc + 1) );
+      std::string field(aFieldSpec.substr(0, loc));
+      std::string options(aFieldSpec.substr(loc + 1));
       iter = theStats.find(field);
       if (iter != theStats.end()) {
         return iter->second.asDouble(options);
@@ -148,7 +154,7 @@ double SimpleMeasurement :: asDouble(std::string const & aFieldSpec) {
   }
 }
 
-int64_t SimpleMeasurement :: sumAsLongLong(std::string const & aFieldSpec) {
+int64_t SimpleMeasurement ::sumAsLongLong(std::string const &aFieldSpec) {
   try {
     boost::regex field_filter(aFieldSpec);
     int64_t sum = 0;
@@ -163,12 +169,12 @@ int64_t SimpleMeasurement :: sumAsLongLong(std::string const & aFieldSpec) {
     }
 
     return sum;
-  } catch (boost::regex_error & anExcept) {
+  } catch (boost::regex_error &anExcept) {
     throw CalcException(std::string("{ERR:Bad Field Filter: ") + aFieldSpec + " }");
   }
 }
 
-int64_t SimpleMeasurement :: minAsLongLong(std::string const & aFieldSpec) {
+int64_t SimpleMeasurement ::minAsLongLong(std::string const &aFieldSpec) {
   try {
     boost::regex field_filter(aFieldSpec);
     boost::optional<int64_t> min;
@@ -177,8 +183,8 @@ int64_t SimpleMeasurement :: minAsLongLong(std::string const & aFieldSpec) {
 
     while (iter != end) {
       if (boost::regex_match(iter->first, field_filter)) {
-        if (! min ||  iter->second.asLongLong() < *min) {
-          min.reset( iter->second.asLongLong() );
+        if (!min || iter->second.asLongLong() < *min) {
+          min.reset(iter->second.asLongLong());
         }
       }
       ++iter;
@@ -188,12 +194,12 @@ int64_t SimpleMeasurement :: minAsLongLong(std::string const & aFieldSpec) {
     }
 
     return *min;
-  } catch (boost::regex_error & anExcept) {
+  } catch (boost::regex_error &anExcept) {
     throw CalcException(std::string("{ERR:Bad Field Filter: ") + aFieldSpec + " }");
   }
 }
 
-int64_t SimpleMeasurement :: maxAsLongLong(std::string const & aFieldSpec) {
+int64_t SimpleMeasurement ::maxAsLongLong(std::string const &aFieldSpec) {
   try {
     boost::regex field_filter(aFieldSpec);
     int64_t max = 0;
@@ -210,12 +216,12 @@ int64_t SimpleMeasurement :: maxAsLongLong(std::string const & aFieldSpec) {
     }
 
     return max;
-  } catch (boost::regex_error & anExcept) {
+  } catch (boost::regex_error &anExcept) {
     throw CalcException(std::string("{ERR:Bad Field Filter: ") + aFieldSpec + " }");
   }
 }
 
-double SimpleMeasurement :: avgAsDouble(std::string const & aFieldSpec) {
+double SimpleMeasurement ::avgAsDouble(std::string const &aFieldSpec) {
   try {
     boost::regex field_filter(aFieldSpec);
     double sum = 0.0;
@@ -232,22 +238,21 @@ double SimpleMeasurement :: avgAsDouble(std::string const & aFieldSpec) {
     }
 
     return sum / count;
-  } catch (boost::regex_error & anExcept) {
+  } catch (boost::regex_error &anExcept) {
     throw CalcException(std::string("{ERR:Bad Field Filter: ") + aFieldSpec + " }");
   }
 }
 
-void SimpleMeasurement :: doSUM(std::ostream & anOstream, std::string const & options) {
+void SimpleMeasurement ::doSUM(std::ostream &anOstream, std::string const &options) {
 
   try {
     anOstream << sumAsLongLong(options);
-  } catch (CalcException & anException) {
+  } catch (CalcException &anException) {
     anOstream << anException.theReason;
   }
-
 }
 
-void accumBuckets( std::vector<int64_t> & buckets, std::vector<int64_t> const & hist) {
+void accumBuckets(std::vector<int64_t> &buckets, std::vector<int64_t> const &hist) {
   if (buckets.size() < hist.size()) {
     buckets.resize(hist.size(), 0);
   }
@@ -256,8 +261,8 @@ void accumBuckets( std::vector<int64_t> & buckets, std::vector<int64_t> const & 
   }
 }
 
-void printBuckets( std::ostream & anOstream, std::vector<int64_t> const & buckets) {
-  if (buckets.size() > 0 ) {
+void printBuckets(std::ostream &anOstream, std::vector<int64_t> const &buckets) {
+  if (buckets.size() > 0) {
     int64_t sum = 0;
     for (uint32_t i = 0; i < buckets.size(); ++i) {
       sum += buckets[i];
@@ -266,27 +271,32 @@ void printBuckets( std::ostream & anOstream, std::vector<int64_t> const & bucket
     int64_t running_sum = 0;
     float pct;
     anOstream << "\n\tBucket\tSize\tPct\tCum Pct.\n";
-    anOstream << "\t" << 0 << ":" << "\t" << buckets[0];
+    anOstream << "\t" << 0 << ":"
+              << "\t" << buckets[0];
     running_sum += buckets[0];
     pct = static_cast<float>(buckets[0]) / sum * 100;
-    anOstream << "\t" << std::right << std::setprecision(2) << std::fixed << std::setw(6) << pct << "% ";
+    anOstream << "\t" << std::right << std::setprecision(2) << std::fixed << std::setw(6) << pct
+              << "% ";
     anOstream << std::setw(6) << pct << "% \n";
     int32_t label = 1;
     for (uint32_t i = 1; i < buckets.size(); ++i) {
       running_sum += buckets[i];
-      anOstream << std::left << "\t" << label << ":" << "\t" << buckets[i];
+      anOstream << std::left << "\t" << label << ":"
+                << "\t" << buckets[i];
       pct = static_cast<float>(buckets[i]) / sum * 100;
-      anOstream << "\t" << std::right << std::setprecision(2) << std::fixed << std::setw(6) << pct << "% ";
+      anOstream << "\t" << std::right << std::setprecision(2) << std::fixed << std::setw(6) << pct
+                << "% ";
       pct = static_cast<float>(running_sum) / sum * 100;
       anOstream << std::setw(6) << pct << "% \n";
       label *= 2;
     }
     anOstream << "      --------- ------- ------- -------" << std::endl;
-    anOstream << std::left << "\tTotal:" << "\t" << sum << "\t100.00%\t100.00%\n";
+    anOstream << std::left << "\tTotal:"
+              << "\t" << sum << "\t100.00%\t100.00%\n";
   }
 }
 
-void SimpleMeasurement :: doHISTSUM(std::ostream & anOstream, std::string const & options) {
+void SimpleMeasurement ::doHISTSUM(std::ostream &anOstream, std::string const &options) {
 
   try {
     boost::regex field_filter(options);
@@ -296,15 +306,16 @@ void SimpleMeasurement :: doHISTSUM(std::ostream & anOstream, std::string const 
 
     while (iter != end) {
       if (boost::regex_match(iter->first, field_filter)) {
-        boost::intrusive_ptr< StatValueBase > val = iter->second.getValue();
-        StatValueBase * val_ptr = val.get();
-        StatValue_Log2Histogram * hist = dynamic_cast<StatValue_Log2Histogram *>(val_ptr);
+        boost::intrusive_ptr<StatValueBase> val = iter->second.getValue();
+        StatValueBase *val_ptr = val.get();
+        StatValue_Log2Histogram *hist = dynamic_cast<StatValue_Log2Histogram *>(val_ptr);
         if (hist) {
-          accumBuckets( buckets, hist->theBuckets);
+          accumBuckets(buckets, hist->theBuckets);
         } else {
-          StatValue_WeightedLog2Histogram * whist = dynamic_cast<StatValue_WeightedLog2Histogram *>(val_ptr);
+          StatValue_WeightedLog2Histogram *whist =
+              dynamic_cast<StatValue_WeightedLog2Histogram *>(val_ptr);
           if (whist) {
-            accumBuckets( buckets, whist->theBuckets);
+            accumBuckets(buckets, whist->theBuckets);
           } else {
             anOstream << "{ERR: Don't know how to process histogram: " << iter->first << "}";
           }
@@ -313,17 +324,17 @@ void SimpleMeasurement :: doHISTSUM(std::ostream & anOstream, std::string const 
       ++iter;
     }
 
-    printBuckets( anOstream, buckets );
+    printBuckets(anOstream, buckets);
 
-  } catch (boost::regex_error & anExcept) {
-    anOstream <<  "{ERR:Bad Field Filter: " << options << " }";
+  } catch (boost::regex_error &anExcept) {
+    anOstream << "{ERR:Bad Field Filter: " << options << " }";
   } catch (...) {
-    anOstream << "{ERR:Unable to construct HISTSUM.  Stat is probably not a Log2Histogram}";
+    anOstream << "{ERR:Unable to construct HISTSUM.  Stat is probably not a "
+                 "Log2Histogram}";
   }
-
 }
 
-void accumInst( std::map<int64_t, int64_t> & buckets, std::map<int64_t, int64_t> const & inst) {
+void accumInst(std::map<int64_t, int64_t> &buckets, std::map<int64_t, int64_t> const &inst) {
   std::map<int64_t, int64_t>::const_iterator iter = inst.begin();
   std::map<int64_t, int64_t>::const_iterator end = inst.end();
   while (iter != end) {
@@ -335,24 +346,23 @@ void accumInst( std::map<int64_t, int64_t> & buckets, std::map<int64_t, int64_t>
 struct sort_helper {
   int64_t value;
   int64_t count;
-  sort_helper() {}
-  sort_helper(int64_t const & v, int64_t c)
-    : value(v)
-    , count(c)
-  {}
-  bool operator < (sort_helper const & other) const {
+  sort_helper() {
+  }
+  sort_helper(int64_t const &v, int64_t c) : value(v), count(c) {
+  }
+  bool operator<(sort_helper const &other) const {
     return count > other.count;
   }
 };
 
-void printInst( std::ostream & anOstream, std::map<int64_t, int64_t> const  & buckets) {
+void printInst(std::ostream &anOstream, std::map<int64_t, int64_t> const &buckets) {
 
-  //Enroll all the counts and elements in a vector for sorting
+  // Enroll all the counts and elements in a vector for sorting
   std::vector<sort_helper> elements;
   std::map<int64_t, int64_t>::const_iterator iter = buckets.begin();
   std::map<int64_t, int64_t>::const_iterator end = buckets.end();
   while (iter != end) {
-    elements.push_back( sort_helper(iter->first, iter->second));
+    elements.push_back(sort_helper(iter->first, iter->second));
     ++iter;
   }
 
@@ -361,18 +371,20 @@ void printInst( std::ostream & anOstream, std::map<int64_t, int64_t> const  & bu
   int64_t sum = 0;
   int64_t count = elements.size();
 
-  for(auto& bucket: buckets){
+  for (auto &bucket : buckets) {
     sum += bucket.second;
   }
   // std::for_each
   // ( buckets.begin()
   //   , buckets.end()
-  //   , ll::var(sum) += ll::bind( &std::map<int64_t, int64_t>::value_type::second, ll::_1 )
+  //   , ll::var(sum) += ll::bind( &std::map<int64_t,
+  //   int64_t>::value_type::second, ll::_1 )
   // );
 
-  //Print implementation here
+  // Print implementation here
   anOstream << std::endl;
-  anOstream << "      " << std::setw(10) << "Count" << std::setw(8) << "Pct" << "Value" << std::endl;
+  anOstream << "      " << std::setw(10) << "Count" << std::setw(8) << "Pct"
+            << "Value" << std::endl;
 
   float sum_f = sum;
   int64_t displayed_count = 0;
@@ -381,7 +393,8 @@ void printInst( std::ostream & anOstream, std::map<int64_t, int64_t> const  & bu
 
   for (uint32_t i = 0; i < elements.size(); ++i) {
     float pct = static_cast<float>(elements[i].count) / sum_f * 100.0;
-    if (displayed_count > 100) break;
+    if (displayed_count > 100)
+      break;
     ++displayed_count;
     displayed_sum += elements[i].count;
     overall_sum += elements[i].count * elements[i].value;
@@ -391,7 +404,7 @@ void printInst( std::ostream & anOstream, std::map<int64_t, int64_t> const  & bu
     anOstream << elements[i].value;
     anOstream << std::endl;
   }
-  if ( displayed_count != count ) {
+  if (displayed_count != count) {
     float pct = static_cast<float>(sum - displayed_sum) / sum_f * 100.0;
     anOstream << "      ";
     anOstream << std::left << std::setw(10) << std::setfill(' ') << sum - displayed_sum;
@@ -413,12 +426,11 @@ void printInst( std::ostream & anOstream, std::map<int64_t, int64_t> const  & bu
 struct sort_value_helper {
   int64_t value;
   int64_t count;
-  sort_value_helper() {}
-  sort_value_helper(int64_t const & v, int64_t c)
-    : value(v)
-    , count(c)
-  {}
-  bool operator < (sort_value_helper const & other) const {
+  sort_value_helper() {
+  }
+  sort_value_helper(int64_t const &v, int64_t c) : value(v), count(c) {
+  }
+  bool operator<(sort_value_helper const &other) const {
     return value < other.value;
   }
   int64_t product() const {
@@ -429,14 +441,15 @@ struct sort_value_helper {
   }
 };
 
-void printInst2Hist( std::ostream & anOstream, std::map<int64_t, int64_t> const  & buckets, std::string options) {
+void printInst2Hist(std::ostream &anOstream, std::map<int64_t, int64_t> const &buckets,
+                    std::string options) {
 
-  //Enroll all the counts and elements in a vector for sorting
+  // Enroll all the counts and elements in a vector for sorting
   std::vector<sort_value_helper> elements;
   std::map<int64_t, int64_t>::const_iterator iter = buckets.begin();
   std::map<int64_t, int64_t>::const_iterator end = buckets.end();
   while (iter != end) {
-    elements.push_back( sort_value_helper(iter->first, iter->second));
+    elements.push_back(sort_value_helper(iter->first, iter->second));
     ++iter;
   }
 
@@ -448,12 +461,12 @@ void printInst2Hist( std::ostream & anOstream, std::map<int64_t, int64_t> const 
 
   if (options.substr(0, 11) == "balance_no0") {
     if (elements[0].value == 0) {
-      //Remove the zero bucket
+      // Remove the zero bucket
       elements.erase(elements.begin());
     }
   }
 
-  for(auto& element: elements){
+  for (auto &element : elements) {
     total_count += element.count;
     weighted_total += element.product();
     square_sum += element.sqsum();
@@ -468,7 +481,8 @@ void printInst2Hist( std::ostream & anOstream, std::map<int64_t, int64_t> const 
   // std::for_each
   // ( elements.begin()
   //   , elements.end()
-  //   , ll::var(weighted_total) += ll::bind( &sort_value_helper::product, ll::_1 )
+  //   , ll::var(weighted_total) += ll::bind( &sort_value_helper::product,
+  //   ll::_1 )
   // );
 
   // std::for_each
@@ -477,25 +491,28 @@ void printInst2Hist( std::ostream & anOstream, std::map<int64_t, int64_t> const 
   //   , ll::var(square_sum) += ll::bind( &sort_value_helper::sqsum, ll::_1 )
   // );
 
-  double stdev = std::sqrt( square_sum / total_count - ( weighted_total / total_count ) * ( weighted_total / total_count ) );
+  double stdev = std::sqrt(square_sum / total_count -
+                           (weighted_total / total_count) * (weighted_total / total_count));
 
-  //Print implementation here
+  // Print implementation here
   anOstream << std::endl;
-  anOstream << "      " << std::setw(10) << std::left << "Count" << std::setw(8) << "Pct" << std::setw(8) << "CumPct" << std::setw(8) << "Mean" << "  Range" << std::endl;
+  anOstream << "      " << std::setw(10) << std::left << "Count" << std::setw(8) << "Pct"
+            << std::setw(8) << "CumPct" << std::setw(8) << "Mean"
+            << "  Range" << std::endl;
 
   float total_count_f = total_count;
   float cum_pct = 0;
 
   if (options.substr(0, 7) == "balance") {
     uint32_t i = 0;
-    while (i < elements.size() ) {
-      float tgt_pct = std::floor( cum_pct + 1 );
+    while (i < elements.size()) {
+      float tgt_pct = std::floor(cum_pct + 1);
       int64_t min = elements[i].value;
       int64_t step_count = 0;
       int64_t weighted_sum = 0;
       int64_t max = 0;
       float pct = 0;
-      while (i < elements.size() && cum_pct + pct < tgt_pct ) {
+      while (i < elements.size() && cum_pct + pct < tgt_pct) {
         weighted_sum += elements[i].count * elements[i].value;
         step_count += elements[i].count;
         pct = static_cast<float>(step_count) / total_count_f * 100.0;
@@ -506,8 +523,10 @@ void printInst2Hist( std::ostream & anOstream, std::map<int64_t, int64_t> const 
       anOstream << "      ";
       anOstream << std::left << std::setw(10) << std::setfill(' ') << step_count;
       anOstream << std::right << std::setprecision(2) << std::fixed << std::setw(6) << pct << "% ";
-      anOstream << std::right << std::setprecision(2) << std::fixed << std::setw(6) << cum_pct << "%   ";
-      anOstream << std::right << std::setprecision(1) << std::fixed << std::setw(6) << ((float)weighted_sum / step_count) << "  ";
+      anOstream << std::right << std::setprecision(2) << std::fixed << std::setw(6) << cum_pct
+                << "%   ";
+      anOstream << std::right << std::setprecision(1) << std::fixed << std::setw(6)
+                << ((float)weighted_sum / step_count) << "  ";
       anOstream << min << '-' << max;
       anOstream << std::endl;
     }
@@ -522,7 +541,7 @@ void printInst2Hist( std::ostream & anOstream, std::map<int64_t, int64_t> const 
 
     int32_t next_step = min + step;
     uint32_t i = 0;
-    while (i < elements.size() ) {
+    while (i < elements.size()) {
       int64_t step_count = 0;
       while (i < elements.size() && elements[i].value < next_step) {
         step_count += elements[i].count;
@@ -533,13 +552,14 @@ void printInst2Hist( std::ostream & anOstream, std::map<int64_t, int64_t> const 
       anOstream << "      ";
       anOstream << std::left << std::setw(10) << std::setfill(' ') << step_count;
       anOstream << std::right << std::setprecision(2) << std::fixed << std::setw(6) << pct << "% ";
-      anOstream << std::right << std::setprecision(2) << std::fixed << std::setw(6) << cum_pct << "%   ";
-      anOstream << std::right << std::setprecision(1) << std::fixed << std::setw(6) << (next_step - ((float)step) / 2) << "  ";
+      anOstream << std::right << std::setprecision(2) << std::fixed << std::setw(6) << cum_pct
+                << "%   ";
+      anOstream << std::right << std::setprecision(1) << std::fixed << std::setw(6)
+                << (next_step - ((float)step) / 2) << "  ";
       anOstream << next_step - step << '-' << next_step;
       anOstream << std::endl;
       next_step += step;
     }
-
   }
 
   anOstream << "      --------- ------- ----------" << std::endl;
@@ -552,11 +572,11 @@ void printInst2Hist( std::ostream & anOstream, std::map<int64_t, int64_t> const 
 
   anOstream << "     Average value: " << std::left << std::setw(10) << std::setfill(' ')
             << (double)weighted_total / (double)total_count;
-  anOstream << "     Stdev: " << std::left << std::setw(10) << std::setfill(' ')
-            << stdev << std::endl;
+  anOstream << "     Stdev: " << std::left << std::setw(10) << std::setfill(' ') << stdev
+            << std::endl;
 }
 
-void SimpleMeasurement :: doINSTSUM(std::ostream & anOstream, std::string const & options) {
+void SimpleMeasurement ::doINSTSUM(std::ostream &anOstream, std::string const &options) {
 
   try {
     boost::regex field_filter(options);
@@ -566,11 +586,12 @@ void SimpleMeasurement :: doINSTSUM(std::ostream & anOstream, std::string const 
 
     while (iter != end) {
       if (boost::regex_match(iter->first, field_filter)) {
-        boost::intrusive_ptr< StatValueBase > val = iter->second.getValue();
-        StatValueBase * val_ptr = val.get();
-        StatValue_InstanceCounter<int64_t> * inst = dynamic_cast<StatValue_InstanceCounter<int64_t> *>(val_ptr);
+        boost::intrusive_ptr<StatValueBase> val = iter->second.getValue();
+        StatValueBase *val_ptr = val.get();
+        StatValue_InstanceCounter<int64_t> *inst =
+            dynamic_cast<StatValue_InstanceCounter<int64_t> *>(val_ptr);
         if (inst) {
-          accumInst( instances, inst->theMap);
+          accumInst(instances, inst->theMap);
         } else {
           anOstream << "{ERR: Don't know how to process instance counter: " << iter->first << "}";
         }
@@ -578,17 +599,17 @@ void SimpleMeasurement :: doINSTSUM(std::ostream & anOstream, std::string const 
       ++iter;
     }
 
-    printInst( anOstream, instances);
+    printInst(anOstream, instances);
 
-  } catch (boost::regex_error & anExcept) {
-    anOstream <<  "{ERR:Bad Field Filter: " << options << " }";
+  } catch (boost::regex_error &anExcept) {
+    anOstream << "{ERR:Bad Field Filter: " << options << " }";
   } catch (...) {
-    anOstream << "{ERR:Unable to construct INSTSUM.  Stat is probably not an InstanceCounter}";
+    anOstream << "{ERR:Unable to construct INSTSUM.  Stat is probably not an "
+                 "InstanceCounter}";
   }
-
 }
 
-void SimpleMeasurement :: doINST2HIST(std::ostream & anOstream, std::string const & options) {
+void SimpleMeasurement ::doINST2HIST(std::ostream &anOstream, std::string const &options) {
 
   try {
     std::string field = options;
@@ -606,11 +627,12 @@ void SimpleMeasurement :: doINST2HIST(std::ostream & anOstream, std::string cons
 
     while (iter != end) {
       if (boost::regex_match(iter->first, field_filter)) {
-        boost::intrusive_ptr< StatValueBase > val = iter->second.getValue();
-        StatValueBase * val_ptr = val.get();
-        StatValue_InstanceCounter<int64_t> * inst = dynamic_cast<StatValue_InstanceCounter<int64_t> *>(val_ptr);
+        boost::intrusive_ptr<StatValueBase> val = iter->second.getValue();
+        StatValueBase *val_ptr = val.get();
+        StatValue_InstanceCounter<int64_t> *inst =
+            dynamic_cast<StatValue_InstanceCounter<int64_t> *>(val_ptr);
         if (inst) {
-          accumInst( instances, inst->theMap);
+          accumInst(instances, inst->theMap);
         } else {
           anOstream << "{ERR: Don't know how to process instance counter: " << iter->first << "}";
         }
@@ -618,22 +640,22 @@ void SimpleMeasurement :: doINST2HIST(std::ostream & anOstream, std::string cons
       ++iter;
     }
 
-    printInst2Hist( anOstream, instances, parameters);
+    printInst2Hist(anOstream, instances, parameters);
 
-  } catch (boost::regex_error & anExcept) {
-    anOstream <<  "{ERR:Bad Field Filter: " << options << " }";
+  } catch (boost::regex_error &anExcept) {
+    anOstream << "{ERR:Bad Field Filter: " << options << " }";
   } catch (...) {
-    anOstream << "{ERR:Unable to construct INSTSUM.  Stat is probably not an InstanceCounter}";
+    anOstream << "{ERR:Unable to construct INSTSUM.  Stat is probably not an "
+                 "InstanceCounter}";
   }
-
 }
 
-void SimpleMeasurement :: doCSV(std::ostream & anOstream, std::string const & options) {
+void SimpleMeasurement ::doCSV(std::ostream &anOstream, std::string const &options) {
 
   try {
     boost::regex options_parser("\\(([^\\)]*)\\)(:)?(.*)?");
     boost::smatch results;
-    if ( boost::regex_match(options, results, options_parser )) {
+    if (boost::regex_match(options, results, options_parser)) {
 
       boost::regex field_filter(results.str(1));
       std::string field_options;
@@ -656,86 +678,86 @@ void SimpleMeasurement :: doCSV(std::ostream & anOstream, std::string const & op
         ++iter;
       }
     } else {
-
     }
 
-  } catch (boost::regex_error & anExcept) {
+  } catch (boost::regex_error &anExcept) {
     anOstream << "{ERR:Bad Field Filter}";
   }
-
 }
 
-void SimpleMeasurement :: reduce(eReduction aReduction, Measurement * aMeasurement) {
-  SimpleMeasurement * simple = dynamic_cast<SimpleMeasurement *>(aMeasurement);
+void SimpleMeasurement ::reduce(eReduction aReduction, Measurement *aMeasurement) {
+  SimpleMeasurement *simple = dynamic_cast<SimpleMeasurement *>(aMeasurement);
   if (!simple) {
-    std::cerr << "{ERR: Cannot collapse measurement " << aMeasurement->name() << " (not a SimpleMeasurement)}" << std::endl;
+    std::cerr << "{ERR: Cannot collapse measurement " << aMeasurement->name()
+              << " (not a SimpleMeasurement)}" << std::endl;
     return;
   }
-  //std::cerr << "Collapsing measurement: " << aMeasurement->name() << std::endl;
+  // std::cerr << "Collapsing measurement: " << aMeasurement->name() <<
+  // std::endl;
 
-  for(auto& aStat: simple->theStats){
+  for (auto &aStat : simple->theStats) {
     if (theStats.find(aStat.first) == theStats.end()) {
       try {
-        switch ( aReduction) {
-          case eReduction::eSum: {
-            auto accumulator = aStat.second.sumAccumulator();
-            theStats[aStat.first] = StatValueHandle(aStat.first, accumulator);
-            break;
-          }
-          case eReduction::eAverage: {
-            auto accumulator = aStat.second.avgAccumulator();
-            theStats[aStat.first] = StatValueHandle(aStat.first, accumulator);
-            break;
-          }
-          case eReduction::eStdDev: {
-            auto accumulator = aStat.second.stdevAccumulator();
-            theStats[aStat.first] = StatValueHandle(aStat.first, accumulator);
-            break;
-          }
-          case eReduction::eCount: {
-            auto accumulator = aStat.second.countAccumulator();
-            theStats[aStat.first] = StatValueHandle(aStat.first, accumulator);
-            break;
-          }
-          default:
-            DBG_Assert(false);
+        switch (aReduction) {
+        case eReduction::eSum: {
+          auto accumulator = aStat.second.sumAccumulator();
+          theStats[aStat.first] = StatValueHandle(aStat.first, accumulator);
+          break;
         }
-      } catch ( ... ) {
-        //std::cerr  << "Can't accumulate stat " << iter->first << std::endl;
+        case eReduction::eAverage: {
+          auto accumulator = aStat.second.avgAccumulator();
+          theStats[aStat.first] = StatValueHandle(aStat.first, accumulator);
+          break;
+        }
+        case eReduction::eStdDev: {
+          auto accumulator = aStat.second.stdevAccumulator();
+          theStats[aStat.first] = StatValueHandle(aStat.first, accumulator);
+          break;
+        }
+        case eReduction::eCount: {
+          auto accumulator = aStat.second.countAccumulator();
+          theStats[aStat.first] = StatValueHandle(aStat.first, accumulator);
+          break;
+        }
+        default:
+          DBG_Assert(false);
+        }
+      } catch (...) {
+        // std::cerr  << "Can't accumulate stat " << iter->first << std::endl;
         theStats.erase(aStat.first);
       }
     } else {
       try {
-        switch ( aReduction) {
-          case eReduction::eSum: {
-            auto accumulator = theStats[aStat.first].getValue();
-            fold( *accumulator, * (aStat.second.getValue()), & StatValueBase::reduceSum );
-            theStats[aStat.first].setValue(accumulator);
-            break;
-          }
-          case eReduction::eAverage: {
-            auto accumulator = theStats[aStat.first].getValue();
-            fold( *accumulator, * (aStat.second.getValue()), & StatValueBase::reduceAvg );
-            theStats[aStat.first].setValue(accumulator);
-            break;
-          }
-          case eReduction::eStdDev: {
-            auto accumulator = theStats[aStat.first].getValue();
-            fold( *accumulator, * (aStat.second.getValue()), & StatValueBase::reduceStdDev );
-            theStats[aStat.first].setValue(accumulator);
-            break;
-          }
-          case eReduction::eCount: {
-            auto accumulator = theStats[aStat.first].getValue();
-            fold( *accumulator, * (aStat.second.getValue()), & StatValueBase::reduceCount );
-            theStats[aStat.first].setValue(accumulator);
-            break;
-          }
-          default:
-            DBG_Assert(false);
+        switch (aReduction) {
+        case eReduction::eSum: {
+          auto accumulator = theStats[aStat.first].getValue();
+          fold(*accumulator, *(aStat.second.getValue()), &StatValueBase::reduceSum);
+          theStats[aStat.first].setValue(accumulator);
+          break;
         }
-      } catch ( ... ) {
-        //std::cerr  << "Can't accumulate stat " << iter->first << std::endl;
+        case eReduction::eAverage: {
+          auto accumulator = theStats[aStat.first].getValue();
+          fold(*accumulator, *(aStat.second.getValue()), &StatValueBase::reduceAvg);
+          theStats[aStat.first].setValue(accumulator);
+          break;
+        }
+        case eReduction::eStdDev: {
+          auto accumulator = theStats[aStat.first].getValue();
+          fold(*accumulator, *(aStat.second.getValue()), &StatValueBase::reduceStdDev);
+          theStats[aStat.first].setValue(accumulator);
+          break;
+        }
+        case eReduction::eCount: {
+          auto accumulator = theStats[aStat.first].getValue();
+          fold(*accumulator, *(aStat.second.getValue()), &StatValueBase::reduceCount);
+          theStats[aStat.first].setValue(accumulator);
+          break;
+        }
+        default:
+          DBG_Assert(false);
+        }
+      } catch (...) {
+        // std::cerr  << "Can't accumulate stat " << iter->first << std::endl;
         theStats.erase(aStat.first);
       }
     }
@@ -747,24 +769,24 @@ void SimpleMeasurement :: reduce(eReduction aReduction, Measurement * aMeasureme
   //     try {
   //       switch ( aReduction) {
   //         case eReduction::eSum: {
-  //           boost::intrusive_ptr<StatValueBase> accumulator = iter->second.sumAccumulator();
-  //           theStats[iter->first] = StatValueHandle(iter->first, accumulator);
-  //           break;
+  //           boost::intrusive_ptr<StatValueBase> accumulator =
+  //           iter->second.sumAccumulator(); theStats[iter->first] =
+  //           StatValueHandle(iter->first, accumulator); break;
   //         }
   //         case eReduction::eAverage: {
-  //           boost::intrusive_ptr<StatValueBase> accumulator = iter->second.avgAccumulator();
-  //           theStats[iter->first] = StatValueHandle(iter->first, accumulator);
-  //           break;
+  //           boost::intrusive_ptr<StatValueBase> accumulator =
+  //           iter->second.avgAccumulator(); theStats[iter->first] =
+  //           StatValueHandle(iter->first, accumulator); break;
   //         }
   //         case eReduction::eStdDev: {
-  //           boost::intrusive_ptr<StatValueBase> accumulator = iter->second.stdevAccumulator();
-  //           theStats[iter->first] = StatValueHandle(iter->first, accumulator);
-  //           break;
+  //           boost::intrusive_ptr<StatValueBase> accumulator =
+  //           iter->second.stdevAccumulator(); theStats[iter->first] =
+  //           StatValueHandle(iter->first, accumulator); break;
   //         }
   //         case eReduction::eCount: {
-  //           boost::intrusive_ptr<StatValueBase> accumulator = iter->second.countAccumulator();
-  //           theStats[iter->first] = StatValueHandle(iter->first, accumulator);
-  //           break;
+  //           boost::intrusive_ptr<StatValueBase> accumulator =
+  //           iter->second.countAccumulator(); theStats[iter->first] =
+  //           StatValueHandle(iter->first, accumulator); break;
   //         }
   //         default:
   //           DBG_Assert(false);
@@ -777,26 +799,30 @@ void SimpleMeasurement :: reduce(eReduction aReduction, Measurement * aMeasureme
   //     try {
   //       switch ( aReduction) {
   //         case eReduction::eSum: {
-  //           boost::intrusive_ptr<StatValueBase> accumulator = theStats[iter->first].getValue();
-  //           fold( *accumulator, * (iter->second.getValue()), & StatValueBase::reduceSum );
+  //           boost::intrusive_ptr<StatValueBase> accumulator =
+  //           theStats[iter->first].getValue(); fold( *accumulator, *
+  //           (iter->second.getValue()), & StatValueBase::reduceSum );
   //           theStats[iter->first].setValue(accumulator);
   //           break;
   //         }
   //         case eReduction::eAverage: {
-  //           boost::intrusive_ptr<StatValueBase> accumulator = theStats[iter->first].getValue();
-  //           fold( *accumulator, * (iter->second.getValue()), & StatValueBase::reduceAvg );
+  //           boost::intrusive_ptr<StatValueBase> accumulator =
+  //           theStats[iter->first].getValue(); fold( *accumulator, *
+  //           (iter->second.getValue()), & StatValueBase::reduceAvg );
   //           theStats[iter->first].setValue(accumulator);
   //           break;
   //         }
   //         case eReduction::eStdDev: {
-  //           boost::intrusive_ptr<StatValueBase> accumulator = theStats[iter->first].getValue();
-  //           fold( *accumulator, * (iter->second.getValue()), & StatValueBase::reduceStdDev );
+  //           boost::intrusive_ptr<StatValueBase> accumulator =
+  //           theStats[iter->first].getValue(); fold( *accumulator, *
+  //           (iter->second.getValue()), & StatValueBase::reduceStdDev );
   //           theStats[iter->first].setValue(accumulator);
   //           break;
   //         }
   //         case eReduction::eCount: {
-  //           boost::intrusive_ptr<StatValueBase> accumulator = theStats[iter->first].getValue();
-  //           fold( *accumulator, * (iter->second.getValue()), & StatValueBase::reduceCount );
+  //           boost::intrusive_ptr<StatValueBase> accumulator =
+  //           theStats[iter->first].getValue(); fold( *accumulator, *
+  //           (iter->second.getValue()), & StatValueBase::reduceCount );
   //           theStats[iter->first].setValue(accumulator);
   //           break;
   //         }
@@ -812,14 +838,14 @@ void SimpleMeasurement :: reduce(eReduction aReduction, Measurement * aMeasureme
   // }
 }
 
-void SimpleMeasurement :: reduceNodes() {
+void SimpleMeasurement ::reduceNodes() {
   boost::regex perNodeFilter("\\d+-(.*)");
   std::string extractStatExp("\\1");
   std::deque<std::string> toDelete;
   std::deque<std::string>::iterator delIter;
 
   stat_handle_map::iterator iter = theStats.begin();
-  //stat_handle_map::iterator end = theStats.end();
+  // stat_handle_map::iterator end = theStats.end();
   while (iter != theStats.end()) {
     boost::smatch pieces;
     if (boost::regex_match(iter->first, pieces, perNodeFilter)) {
@@ -830,7 +856,8 @@ void SimpleMeasurement :: reduceNodes() {
       } else {
         try {
           theStats[nodeStatName] += (iter->second);
-        } catch (...) { }
+        } catch (...) {
+        }
       }
       toDelete.push_back(iter->first);
     }
@@ -840,29 +867,29 @@ void SimpleMeasurement :: reduceNodes() {
   for (delIter = toDelete.begin(); delIter != toDelete.end(); ++delIter) {
     theStats.erase(*delIter);
   }
-
 }
 
-PeriodicMeasurement::PeriodicMeasurement( std::string const & aName, std::string const & aStatExpression, int64_t aPeriod, accumulation_type anAccumulationType)
-  : Measurement(aName, aStatExpression)
-  , thePeriod(aPeriod)
-  , theCurrentPeriod(0)
-  , theCancelled(false)
-  , theAccumulationType(anAccumulationType) {
-  //Period of zero is not allowed.
+PeriodicMeasurement::PeriodicMeasurement(std::string const &aName,
+                                         std::string const &aStatExpression, int64_t aPeriod,
+                                         accumulation_type anAccumulationType)
+    : Measurement(aName, aStatExpression), thePeriod(aPeriod), theCurrentPeriod(0),
+      theCancelled(false), theAccumulationType(anAccumulationType) {
+  // Period of zero is not allowed.
   if (aPeriod > 0) {
-    getStatManager()->addEvent(getStatManager()->ticks() + aPeriod, [this](){ return this->fire(); }); //ll::bind( &PeriodicMeasurement::fire, this) );
+    getStatManager()->addEvent(getStatManager()->ticks() + aPeriod, [this]() {
+      return this->fire();
+    }); // ll::bind( &PeriodicMeasurement::fire, this) );
   }
 }
 
-void PeriodicMeasurement :: addToMeasurement( Stat * aStat ) {
-  //Check if the stat should be included in this measurement
+void PeriodicMeasurement ::addToMeasurement(Stat *aStat) {
+  // Check if the stat should be included in this measurement
   if (includeStat(aStat)) {
-    theStats[ aStat->name() ] = aStat->createValueArray();
+    theStats[aStat->name()] = aStat->createValueArray();
   }
 }
 
-void PeriodicMeasurement :: close() {
+void PeriodicMeasurement ::close() {
   theCancelled = true;
   stat_handle_map::iterator iter = theStats.begin();
   stat_handle_map::iterator end = theStats.end();
@@ -872,7 +899,7 @@ void PeriodicMeasurement :: close() {
   }
 }
 
-void PeriodicMeasurement :: print(std::ostream & anOstream, std::string const & options) {
+void PeriodicMeasurement ::print(std::ostream &anOstream, std::string const &options) {
   stat_handle_map::iterator iter = theStats.begin();
   stat_handle_map::iterator end = theStats.end();
   anOstream << *this << std::endl;
@@ -882,7 +909,8 @@ void PeriodicMeasurement :: print(std::ostream & anOstream, std::string const & 
   }
 }
 
-void PeriodicMeasurement :: format(std::ostream & anOstream, std::string const & aField, std::string const & options) {
+void PeriodicMeasurement ::format(std::ostream &anOstream, std::string const &aField,
+                                  std::string const &options) {
   stat_handle_map::iterator iter = theStats.find(aField);
   if (iter != theStats.end()) {
     iter->second.print(anOstream, options);
@@ -891,8 +919,8 @@ void PeriodicMeasurement :: format(std::ostream & anOstream, std::string const &
   }
 }
 
-void PeriodicMeasurement :: fire () {
-  if (! theCancelled) {
+void PeriodicMeasurement ::fire() {
+  if (!theCancelled) {
     stat_handle_map::iterator iter = theStats.begin();
     stat_handle_map::iterator end = theStats.end();
     while (iter != end) {
@@ -900,32 +928,36 @@ void PeriodicMeasurement :: fire () {
       ++iter;
     }
 
-    getStatManager()->addEvent(getStatManager()->ticks() + thePeriod, [this](){ return this->fire(); }); //ll::bind( &PeriodicMeasurement::fire, this) );
+    getStatManager()->addEvent(getStatManager()->ticks() + thePeriod, [this]() {
+      return this->fire();
+    }); // ll::bind( &PeriodicMeasurement::fire, this) );
   }
 }
 
-LoggedPeriodicMeasurement::LoggedPeriodicMeasurement( std::string const & aName, std::string const & aStatExpression, int64_t aPeriod, accumulation_type anAccumulationType, std::ostream & anOstream)
-  : Measurement(aName, aStatExpression)
-  , thePeriod(aPeriod)
-  , theCurrentPeriod(0)
-  , theCancelled(false)
-  , theFirst(true)
-  , theAccumulationType(anAccumulationType)
-  , theOstream(anOstream) {
-  //Period of zero is not allowed.
+LoggedPeriodicMeasurement::LoggedPeriodicMeasurement(std::string const &aName,
+                                                     std::string const &aStatExpression,
+                                                     int64_t aPeriod,
+                                                     accumulation_type anAccumulationType,
+                                                     std::ostream &anOstream)
+    : Measurement(aName, aStatExpression), thePeriod(aPeriod), theCurrentPeriod(0),
+      theCancelled(false), theFirst(true), theAccumulationType(anAccumulationType),
+      theOstream(anOstream) {
+  // Period of zero is not allowed.
   if (aPeriod > 0) {
-    getStatManager()->addEvent(getStatManager()->ticks() + aPeriod, [this](){ return this->fire(); }); //ll::bind( &LoggedPeriodicMeasurement::fire, this) );
+    getStatManager()->addEvent(getStatManager()->ticks() + aPeriod, [this]() {
+      return this->fire();
+    }); // ll::bind( &LoggedPeriodicMeasurement::fire, this) );
   }
 }
 
-void LoggedPeriodicMeasurement :: addToMeasurement( Stat * aStat ) {
-  //Check if the stat should be included in this measurement
+void LoggedPeriodicMeasurement ::addToMeasurement(Stat *aStat) {
+  // Check if the stat should be included in this measurement
   if (includeStat(aStat)) {
-    theStats[ aStat->name() ] = aStat->createValue();
+    theStats[aStat->name()] = aStat->createValue();
   }
 }
 
-void LoggedPeriodicMeasurement :: close() {
+void LoggedPeriodicMeasurement ::close() {
   theCancelled = true;
   stat_handle_map::iterator iter = theStats.begin();
   stat_handle_map::iterator end = theStats.end();
@@ -935,7 +967,7 @@ void LoggedPeriodicMeasurement :: close() {
   }
 }
 
-void LoggedPeriodicMeasurement :: print(std::ostream & anOstream, std::string const & options) {
+void LoggedPeriodicMeasurement ::print(std::ostream &anOstream, std::string const &options) {
   stat_handle_map::iterator iter = theStats.begin();
   stat_handle_map::iterator end = theStats.end();
   anOstream << getStatManager()->ticks();
@@ -947,7 +979,8 @@ void LoggedPeriodicMeasurement :: print(std::ostream & anOstream, std::string co
   anOstream << std::endl;
 }
 
-void LoggedPeriodicMeasurement :: format(std::ostream & anOstream, std::string const & aField, std::string const & options) {
+void LoggedPeriodicMeasurement ::format(std::ostream &anOstream, std::string const &aField,
+                                        std::string const &options) {
   stat_handle_map::iterator iter = theStats.find(aField);
   if (iter != theStats.end()) {
     iter->second.print(anOstream, options);
@@ -956,8 +989,8 @@ void LoggedPeriodicMeasurement :: format(std::ostream & anOstream, std::string c
   }
 }
 
-void LoggedPeriodicMeasurement  :: fire () {
-  if (! theCancelled) {
+void LoggedPeriodicMeasurement ::fire() {
+  if (!theCancelled) {
     if (theFirst) {
       stat_handle_map::iterator iter = theStats.begin();
       stat_handle_map::iterator end = theStats.end();
@@ -974,7 +1007,7 @@ void LoggedPeriodicMeasurement  :: fire () {
     theOstream.flush();
 
     if (theAccumulationType == accumulation_type::Reset) {
-      for(auto& aStat:theStats)
+      for (auto &aStat : theStats)
         aStat.second.reset();
       // stat_handle_map::iterator iter = theStats.begin();
       // stat_handle_map::iterator end = theStats.end();
@@ -984,12 +1017,13 @@ void LoggedPeriodicMeasurement  :: fire () {
       // }
     }
 
-    getStatManager()->addEvent(getStatManager()->ticks() + thePeriod, [this](){ return this->fire(); }); //ll::bind( &LoggedPeriodicMeasurement::fire, this) );
+    getStatManager()->addEvent(getStatManager()->ticks() + thePeriod, [this]() {
+      return this->fire();
+    }); // ll::bind( &LoggedPeriodicMeasurement::fire, this) );
   }
 }
 
-}
+} // namespace aux_
 
-} // end Stat
-} // end Flexus
-
+} // namespace Stat
+} // namespace Flexus

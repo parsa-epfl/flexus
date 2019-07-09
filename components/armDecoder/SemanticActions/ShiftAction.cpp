@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,30 +36,29 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
-#include <core/boost_extensions/intrusive_ptr.hpp>
-#include <boost/throw_exception.hpp>
 #include <boost/function.hpp>
-#include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
+#include <boost/lambda/lambda.hpp>
+#include <boost/throw_exception.hpp>
+#include <core/boost_extensions/intrusive_ptr.hpp>
 namespace ll = boost::lambda;
 
 #include <boost/none.hpp>
 
 #include <boost/dynamic_bitset.hpp>
 
-#include <core/target.hpp>
 #include <core/debug/debug.hpp>
+#include <core/target.hpp>
 #include <core/types.hpp>
 
 #include <components/uArchARM/uArchInterfaces.hpp>
 
-#include "../SemanticInstruction.hpp"
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
+#include "../SemanticInstruction.hpp"
 #include "PredicatedSemanticAction.hpp"
 
 #define DBG_DeclareCategories armDecoder
@@ -69,29 +69,25 @@ namespace narmDecoder {
 
 using namespace nuArchARM;
 
-struct ShiftRegisterAction : public PredicatedSemanticAction
-{
+struct ShiftRegisterAction : public PredicatedSemanticAction {
   eOperandCode theRegisterCode;
   bool the64;
   std::unique_ptr<Operation> theShiftOperation;
   uint64_t theShiftAmount;
 
-  ShiftRegisterAction( SemanticInstruction * anInstruction, eOperandCode aRegisterCode, std::unique_ptr<Operation> & aShiftOperation, uint64_t aShiftAmount, bool is64)
-      : PredicatedSemanticAction( anInstruction, 1, true )
-    , theRegisterCode( aRegisterCode )
-    , the64(is64)
-    , theShiftOperation (std::move(aShiftOperation))
-    , theShiftAmount (aShiftAmount)
-  {}
+  ShiftRegisterAction(SemanticInstruction *anInstruction, eOperandCode aRegisterCode,
+                      std::unique_ptr<Operation> &aShiftOperation, uint64_t aShiftAmount, bool is64)
+      : PredicatedSemanticAction(anInstruction, 1, true), theRegisterCode(aRegisterCode),
+        the64(is64), theShiftOperation(std::move(aShiftOperation)), theShiftAmount(aShiftAmount) {
+  }
 
-  void doEvaluate()
-  {
+  void doEvaluate() {
     SEMANTICS_DBG(*this);
 
-    if (ready()){
+    if (ready()) {
       Operand aValue = theInstruction->operand(theRegisterCode);
 
-      aValue = theShiftOperation->operator ()({aValue, theShiftAmount});
+      aValue = theShiftOperation->operator()({aValue, theShiftAmount});
 
       uint64_t val = boost::get<uint64_t>(aValue);
 
@@ -104,19 +100,17 @@ struct ShiftRegisterAction : public PredicatedSemanticAction
     }
   }
 
-  void describe( std::ostream & anOstream) const
-  {
+  void describe(std::ostream &anOstream) const {
     anOstream << theInstruction->identify() << " ShiftRegisterAction " << theRegisterCode;
   }
 };
 
-predicated_action shiftAction ( SemanticInstruction * anInstruction, eOperandCode aRegisterCode,
-                                   std::unique_ptr<Operation> & aShiftOp, uint64_t aShiftAmount, bool is64)
-{
-  ShiftRegisterAction * act(new(anInstruction->icb()) ShiftRegisterAction( anInstruction, aRegisterCode, aShiftOp, aShiftAmount, is64));
-  return predicated_action( act, act->predicate() );
+predicated_action shiftAction(SemanticInstruction *anInstruction, eOperandCode aRegisterCode,
+                              std::unique_ptr<Operation> &aShiftOp, uint64_t aShiftAmount,
+                              bool is64) {
+  ShiftRegisterAction *act(new (anInstruction->icb()) ShiftRegisterAction(
+      anInstruction, aRegisterCode, aShiftOp, aShiftAmount, is64));
+  return predicated_action(act, act->predicate());
 }
 
-
-
-} //narmDecoder
+} // namespace narmDecoder

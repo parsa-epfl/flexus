@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,7 +36,6 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #include <iostream>
 
 #include "RegisterType.hpp"
@@ -47,26 +47,18 @@
 
 namespace nuArchARM {
 
-std::ostream & operator <<( std::ostream & anOstream, eRegisterType aCode) {
-  const char * map_tables[] = {
-    "x-Registers"
-    , "v-Registers"
-    , "cc-Bits"
-  };
-//  if (aCode >= kLastMapTableCode) {
-//    anOstream << "Invalid Map Table(" << static_cast<int>(aCode) << ")";
-//  } else {
-    anOstream << map_tables[aCode];
-//  }
+std::ostream &operator<<(std::ostream &anOstream, eRegisterType aCode) {
+  const char *map_tables[] = {"x-Registers", "v-Registers", "cc-Bits"};
+  //  if (aCode >= kLastMapTableCode) {
+  //    anOstream << "Invalid Map Table(" << static_cast<int>(aCode) << ")";
+  //  } else {
+  anOstream << map_tables[aCode];
+  //  }
   return anOstream;
 }
 
-std::ostream & operator << ( std::ostream & anOstream, eResourceStatus aCode) {
-  const char * statuses[] = {
-    "Ready"
-    , "Unmapped"
-    , "NotReady"
-  };
+std::ostream &operator<<(std::ostream &anOstream, eResourceStatus aCode) {
+  const char *statuses[] = {"Ready", "Unmapped", "NotReady"};
   if (aCode >= kLastStatus) {
     anOstream << "Invalid Status(" << static_cast<int>(aCode) << ")";
   } else {
@@ -75,13 +67,8 @@ std::ostream & operator << ( std::ostream & anOstream, eResourceStatus aCode) {
   return anOstream;
 }
 
-std::ostream & operator << ( std::ostream & anOstream, condBits aBit) {
-  const char * cc_bits[] = {
-      "N"
-    , "Z"
-    , "V"
-    , "C"
-  };
+std::ostream &operator<<(std::ostream &anOstream, condBits aBit) {
+  const char *cc_bits[] = {"N", "Z", "V", "C"};
   if (aBit >= kLastcondBit) {
     anOstream << "Invalid condBit(" << static_cast<int>(aBit) << ")";
   } else {
@@ -90,13 +77,8 @@ std::ostream & operator << ( std::ostream & anOstream, condBits aBit) {
   return anOstream;
 }
 
-std::ostream & operator << ( std::ostream & anOstream, fccVals aVal) {
-  const char * fcc_vals[] = {
-    "fccE"
-    , "fccL"
-    , "fccG"
-    , "fccU"
-  };
+std::ostream &operator<<(std::ostream &anOstream, fccVals aVal) {
+  const char *fcc_vals[] = {"fccE", "fccL", "fccG", "fccU"};
   if (aVal >= kLastfccVal) {
     anOstream << "Invalid fccVal(" << static_cast<int>(aVal) << ")";
   } else {
@@ -105,75 +87,33 @@ std::ostream & operator << ( std::ostream & anOstream, fccVals aVal) {
   return anOstream;
 }
 
-std::ostream & operator << ( std::ostream & anOstream, eInstructionCode aCode) {
-    const char * insn_codes[] =
-      //Special cases
-    {
-      "BlackBox"
-      , "NOP"
-      , "MAGIC"
-      //ALU
-      , "ALU"
-      , "Mul"
-      , "Div"
-      , "RDPR"
-      , "WRPR"
-      //FP
-      , "FP"
-      , "ALIGN"
-      //Memory
-      , "Load"
-      , "LoadEX"
-      , "LoadAQ"
-      , "LDP"
-      , "LoadFP"
-      , "LDD"
-      , "LDALU"
-      , "Store"
-      , "StoreEX"
-      , "STP"
-      , "STRL"
-      , "StoreFP"
-      , "STD"
-      //Atomics
-      , "CAS"
-      , "CASP"
-      //Branches
-      , "BranchUnconditional"
-      , "BranchConditional"
-      , "BranchFPConditional"
-      , "CALL"
-      , "RETURN"
-      //MEMBARs
-      , "MEMBARSync"
-      , "MEMBARStLd"
-      , "MEMBARStSt"
-      , "MEMBARLdSt"
-      , "MEMBARLdLd"
-
-      //Unsupported Instructions
-      , "RDPRUnsupported"
-      , "WRPRUnsupported"
-      , "RETRYorDONE"
-
-      , "ExceptionUnsupported"
-      , "Exception"
-      , "SideEffectLoad"
-      , "SideEffectStore"
-      , "SideEffectAtomic"
-
-      , "DeviceAccess"
-      , "MMUAccess"
-      , "ITLBMiss"
-      , "CLREX"
-    };
+std::ostream &operator<<(std::ostream &anOstream, eInstructionCode aCode) {
+  const char *insn_codes[] =
+      // Special cases
+      {"BlackBox", "NOP", "MAGIC",
+       // ALU
+       "ALU", "Mul", "Div", "RDPR", "WRPR",
+       // FP
+       "FP", "ALIGN",
+       // Memory
+       "Load", "LoadEX", "LoadAQ", "LDP", "LoadFP", "LDD", "LDALU", "Store", "StoreEX", "STP",
+       "STRL", "StoreFP", "STD",
+       // Atomics
+       "CAS", "CASP",
+       // Branches
+       "BranchUnconditional", "BranchConditional", "BranchFPConditional", "CALL", "RETURN",
+       // MEMBARs
+       "MEMBARSync", "MEMBARStLd", "MEMBARStSt", "MEMBARLdSt", "MEMBARLdLd",
+       // Unsupported Instructions
+       "RDPRUnsupported", "WRPRUnsupported", "RETRYorDONE", "ExceptionUnsupported", "Exception",
+       "SideEffectLoad", "SideEffectStore", "SideEffectAtomic", "DeviceAccess", "MMUAccess",
+       "ITLBMiss", "CLREX"};
   if (aCode >= codeLastCode) {
     anOstream << "Invalid code(" << static_cast<int>(aCode) << ")";
   } else {
     anOstream << insn_codes[aCode];
   }
   return anOstream;
-
 }
 
-} //nuArchARM
+} // namespace nuArchARM

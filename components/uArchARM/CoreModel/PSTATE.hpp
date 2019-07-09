@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -72,59 +73,56 @@
 
 using namespace nuArchARM;
 
-typedef struct PSTATE{
+typedef struct PSTATE {
 
+  PSTATE(uint64_t src) {
+    theVal = src;
+  }
+  bool N() const {
+    return (theVal & PSTATE_N) != 0;
+  }
+  bool Z() const {
+    return (theVal & PSTATE_Z) != 0;
+  }
+  bool C() const {
+    return (theVal & PSTATE_C) != 0;
+  }
+  bool V() const {
+    return (theVal & PSTATE_V) != 0;
+  }
 
-    PSTATE(uint64_t src){
-        theVal = src;
-    }
-    bool N() const{
-        return (theVal & PSTATE_N) != 0;
-    }
-    bool Z() const{
-        return (theVal & PSTATE_Z) != 0;
-    }
-    bool C() const{
-        return (theVal & PSTATE_C) != 0;
-    }
-    bool V() const{
-        return (theVal & PSTATE_V) != 0;
-    }
+  const uint32_t d() const {
+    return theVal;
+  }
 
-    const uint32_t d() const{
-        return theVal;
-    }
+  const uint32_t EL() const {
+    return extract32(theVal, 2, 2);
+  }
 
-    const uint32_t EL() const {
-        return extract32(theVal, 2, 2);
-    }
+  const uint32_t SP() const {
+    return theVal & PSTATE_SP;
+  }
 
-    const uint32_t SP() const {
-        return theVal & PSTATE_SP;
-    }
+  const uint32_t M() const {
+    return extract32(theVal, 0, 5);
+  }
 
-    const uint32_t M() const {
-        return extract32(theVal, 0, 5);
-    }
+  const uint32_t DAIF() const {
+    return theVal & PSTATE_DAIF;
+  }
 
-    const uint32_t DAIF() const {
-        return theVal & PSTATE_DAIF;
-    }
+  const void setDAIF(const uint32_t aVal) {
+    uint32_t mask = theVal & ~PSTATE_DAIF;
+    theVal = mask | (aVal & PSTATE_DAIF);
+  }
 
-    const void setDAIF(const uint32_t aVal) {
-        uint32_t mask =  theVal & ~PSTATE_DAIF;
-        theVal = mask | (aVal & PSTATE_DAIF);
-    }
-
-    const uint32_t NZCV() const {
-        return theVal & PSTATE_NZCV;
-    }
+  const uint32_t NZCV() const {
+    return theVal & PSTATE_NZCV;
+  }
 
 private:
-    uint32_t theVal;
+  uint32_t theVal;
 
-}PSTATE;
-
-
+} PSTATE;
 
 #endif // FLEXUS_uARCHARM_PSTATE_HPP_INCLUDED

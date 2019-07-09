@@ -1,74 +1,74 @@
 #ifndef FLEXUS_CORE_AUX__STATS_HISTOGRAMS__HPP__INCLUDED
 #define FLEXUS_CORE_AUX__STATS_HISTOGRAMS__HPP__INCLUDED
 
-#include <string>
-#include <map>
-#include <set>
-#include <vector>
-#include <iostream>
-#include <iomanip>
-#include <cmath>
-#include <numeric>
-#include <functional>
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/set.hpp>
-#include <boost/serialization/serialization.hpp>
 #include <boost/serialization/export.hpp>
+#include <boost/serialization/map.hpp>
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/set.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/vector.hpp>
+#include <cmath>
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <core/boost_extensions/lexical_cast.hpp>
+#include <functional>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <numeric>
+#include <set>
+#include <string>
+#include <vector>
 
 namespace Flexus {
 namespace Stat {
 namespace aux_ {
 
 struct HistogramPrint {
-  virtual ~HistogramPrint() {};
+  virtual ~HistogramPrint(){};
   virtual int32_t buckets() const = 0;
   virtual int64_t bucketVal(int32_t i) const = 0;
   virtual int64_t sum() const = 0;
 
-  void doPrint(std::ostream & anOstream, std::string const & options = std::string("")) const;
+  void doPrint(std::ostream &anOstream, std::string const &options = std::string("")) const;
 };
 
 struct InstanceCounterPrint {
   struct sort_helper {
     int64_t value;
     int64_t count;
-    sort_helper() {}
-    sort_helper(int64_t v, int64_t c)
-      : value(v)
-      , count(c)
-    {}
-    bool operator < (sort_helper const & other) const {
+    sort_helper() {
+    }
+    sort_helper(int64_t v, int64_t c) : value(v), count(c) {
+    }
+    bool operator<(sort_helper const &other) const {
       return count > other.count;
     }
   };
 
-  virtual ~InstanceCounterPrint() {};
-  virtual void fillVector(std::vector<sort_helper> & aVector) const = 0;
+  virtual ~InstanceCounterPrint(){};
+  virtual void fillVector(std::vector<sort_helper> &aVector) const = 0;
   virtual int64_t count(int64_t aKey) const = 0;
   virtual int64_t sum() const = 0;
   virtual int64_t weightedSum() const = 0;
   virtual int64_t buckets() const = 0;
-  void doPrint(std::ostream & anOstream, std::string const & options = std::string("")) const;
+  void doPrint(std::ostream &anOstream, std::string const &options = std::string("")) const;
 };
 
 class StatValue_Log2Histogram : public StatValueBase, private HistogramPrint {
 private:
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, uint32_t version) {
-    ar & boost::serialization::base_object<StatValueBase>(*this);
-    ar & theBuckets;
+  template <class Archive> void serialize(Archive &ar, uint32_t version) {
+    ar &boost::serialization::base_object<StatValueBase>(*this);
+    ar &theBuckets;
   }
-  StatValue_Log2Histogram() {}
+  StatValue_Log2Histogram() {
+  }
 
 public:
   typedef int64_t update_type;
   typedef int64_t value_type;
   std::vector<value_type> theBuckets;
+
 private:
   int64_t log2(int64_t aVal) const {
     uint32_t ii = 0;
@@ -78,14 +78,15 @@ private:
     }
     return ii;
   }
+
 public:
-  StatValue_Log2Histogram(value_type /*ignored*/)
-  {}
-  void reduceSum( const StatValueBase & aBase) {
-    const StatValue_Log2Histogram & ptr = dynamic_cast<const StatValue_Log2Histogram &>(aBase);
+  StatValue_Log2Histogram(value_type /*ignored*/) {
+  }
+  void reduceSum(const StatValueBase &aBase) {
+    const StatValue_Log2Histogram &ptr = dynamic_cast<const StatValue_Log2Histogram &>(aBase);
     reduceSum(ptr);
   }
-  void reduceSum( const StatValue_Log2Histogram & aHistogram ) {
+  void reduceSum(const StatValue_Log2Histogram &aHistogram) {
     if (theBuckets.size() < aHistogram.theBuckets.size()) {
       theBuckets.resize(aHistogram.theBuckets.size(), 0);
     }
@@ -96,7 +97,7 @@ public:
   boost::intrusive_ptr<StatValueBase> sumAccumulator() {
     return new StatValue_Log2Histogram(*this);
   }
-  void update( update_type anUpdate ) {
+  void update(update_type anUpdate) {
     if (anUpdate == 0) {
       if (theBuckets.size() == 0) {
         theBuckets.resize(1, 0);
@@ -107,13 +108,13 @@ public:
       if (theBuckets.size() < unsigned(log + 2)) {
         theBuckets.resize(log + 2, 0);
       }
-      theBuckets[log+1]++;
+      theBuckets[log + 1]++;
     }
   }
-  void reset( value_type /*ignored*/) {
+  void reset(value_type /*ignored*/) {
     theBuckets.clear();
   }
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     doPrint(anOstream, options);
   }
   int32_t buckets() const {
@@ -129,7 +130,7 @@ public:
     }
     return ret;
   }
-  virtual int64_t asLongLong(std::string const & options) const {
+  virtual int64_t asLongLong(std::string const &options) const {
     if (options.size() > 0) {
       if (options == "buckets") {
         return buckets();
@@ -154,20 +155,21 @@ public:
   }
 };
 
-class StatValue_WeightedLog2Histogram : public StatValueBase, private HistogramPrint  {
+class StatValue_WeightedLog2Histogram : public StatValueBase, private HistogramPrint {
 private:
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, uint32_t version) {
-    ar & boost::serialization::base_object<StatValueBase>(*this);
-    ar & theBuckets;
+  template <class Archive> void serialize(Archive &ar, uint32_t version) {
+    ar &boost::serialization::base_object<StatValueBase>(*this);
+    ar &theBuckets;
   }
-  StatValue_WeightedLog2Histogram() {}
+  StatValue_WeightedLog2Histogram() {
+  }
 
 public:
   typedef std::pair<int64_t, int64_t> update_type;
   typedef int64_t value_type;
   std::vector<value_type> theBuckets;
+
 private:
   int64_t log2(int64_t aVal) const {
     uint32_t ii = 0;
@@ -177,14 +179,16 @@ private:
     }
     return ii;
   }
+
 public:
-  StatValue_WeightedLog2Histogram(value_type /*ignored*/)
-  {}
-  void reduceSum( const StatValueBase & aBase) {
-    const StatValue_WeightedLog2Histogram & ptr = dynamic_cast<const StatValue_WeightedLog2Histogram &>(aBase);
+  StatValue_WeightedLog2Histogram(value_type /*ignored*/) {
+  }
+  void reduceSum(const StatValueBase &aBase) {
+    const StatValue_WeightedLog2Histogram &ptr =
+        dynamic_cast<const StatValue_WeightedLog2Histogram &>(aBase);
     reduceSum(ptr);
   }
-  void reduceSum( const StatValue_WeightedLog2Histogram & aHistogram ) {
+  void reduceSum(const StatValue_WeightedLog2Histogram &aHistogram) {
     if (theBuckets.size() < aHistogram.theBuckets.size()) {
       theBuckets.resize(aHistogram.theBuckets.size(), 0);
     }
@@ -196,7 +200,7 @@ public:
     return new StatValue_WeightedLog2Histogram(*this);
   }
 
-  void update( update_type anUpdate ) {
+  void update(update_type anUpdate) {
     if (anUpdate.first == 0) {
       if (theBuckets.size() == 0) {
         theBuckets.resize(1, 0);
@@ -207,10 +211,10 @@ public:
       if (theBuckets.size() < unsigned(log + 2)) {
         theBuckets.resize(log + 2, 0);
       }
-      theBuckets[log+1] += anUpdate.second;
+      theBuckets[log + 1] += anUpdate.second;
     }
   }
-  void reset( value_type /*ignored*/) {
+  void reset(value_type /*ignored*/) {
     theBuckets.clear();
   }
   int32_t buckets() const {
@@ -226,10 +230,10 @@ public:
     }
     return ret;
   }
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     doPrint(anOstream, options);
   }
-  int64_t asLongLong(std::string const & options) const {
+  int64_t asLongLong(std::string const &options) const {
     if (options.size() > 0) {
       if (options == "buckets") {
         return buckets();
@@ -254,22 +258,23 @@ public:
   }
 };
 
-class StatValue_StdDevLog2Histogram : public StatValueBase, private HistogramPrint  {
+class StatValue_StdDevLog2Histogram : public StatValueBase, private HistogramPrint {
 private:
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, uint32_t version) {
-    ar & boost::serialization::base_object<StatValueBase>(*this);
-    ar & theBuckets;
-    ar & theBucketCounts;
+  template <class Archive> void serialize(Archive &ar, uint32_t version) {
+    ar &boost::serialization::base_object<StatValueBase>(*this);
+    ar &theBuckets;
+    ar &theBucketCounts;
   }
-  StatValue_StdDevLog2Histogram() {}
+  StatValue_StdDevLog2Histogram() {
+  }
 
 public:
-  typedef std::pair < int64_t /*mean*/, int64_t /*stdd*/ > update_type;
+  typedef std::pair<int64_t /*mean*/, int64_t /*stdd*/> update_type;
   typedef int64_t value_type;
   std::vector<value_type> theBuckets;
   std::vector<value_type> theBucketCounts;
+
 private:
   int64_t log2(int64_t aVal) const {
     uint32_t ii = 0;
@@ -279,54 +284,60 @@ private:
     }
     return ii;
   }
-  int64_t calculate(int64_t oldStdDev, int64_t oldPopulation, int64_t newStdDev, int64_t newPopulation) {
-    return static_cast<int64_t>(sqrt(  (oldPopulation * oldStdDev * oldStdDev + newPopulation * newStdDev * newStdDev)
-                                       / static_cast<double>(oldPopulation + newPopulation)));
+  int64_t calculate(int64_t oldStdDev, int64_t oldPopulation, int64_t newStdDev,
+                    int64_t newPopulation) {
+    return static_cast<int64_t>(
+        sqrt((oldPopulation * oldStdDev * oldStdDev + newPopulation * newStdDev * newStdDev) /
+             static_cast<double>(oldPopulation + newPopulation)));
   }
+
 public:
-  StatValue_StdDevLog2Histogram(value_type /*ignored*/)
-  {}
-  void collapse( const StatValueBase * aBase) {
-    const StatValue_StdDevLog2Histogram * ptr = dynamic_cast<const StatValue_StdDevLog2Histogram *>(aBase);
+  StatValue_StdDevLog2Histogram(value_type /*ignored*/) {
+  }
+  void collapse(const StatValueBase *aBase) {
+    const StatValue_StdDevLog2Histogram *ptr =
+        dynamic_cast<const StatValue_StdDevLog2Histogram *>(aBase);
     if (ptr) {
       collapse(*ptr);
     } else {
       std::cerr << "Collapse cannot cast (StatValue_StdDevLog2Histogram)" << std::endl;
     }
   }
-  void collapse( const StatValue_StdDevLog2Histogram & aHistogram ) {
+  void collapse(const StatValue_StdDevLog2Histogram &aHistogram) {
     if (theBuckets.size() < aHistogram.theBuckets.size()) {
       theBuckets.resize(aHistogram.theBuckets.size(), 0);
       theBucketCounts.resize(aHistogram.theBucketCounts.size(), 0);
     }
     for (int32_t i = 0; i < static_cast<int>(aHistogram.theBuckets.size()); ++i) {
-      theBuckets[i] = calculate(theBuckets[i], theBucketCounts[i], aHistogram.theBuckets[i], aHistogram.theBucketCounts[i]);
+      theBuckets[i] = calculate(theBuckets[i], theBucketCounts[i], aHistogram.theBuckets[i],
+                                aHistogram.theBucketCounts[i]);
       theBucketCounts[i] += aHistogram.theBucketCounts[i];
     }
   }
-  void update( update_type anUpdate ) {
+  void update(update_type anUpdate) {
     if (anUpdate.first == 0) {
       if (theBuckets.size() == 0) {
         theBuckets.resize(1, 0);
         theBucketCounts.resize(1, 0);
       }
       theBuckets[0] = calculate(theBuckets[0], theBucketCounts[0], anUpdate.second, 1);
-      theBucketCounts[0] ++;
+      theBucketCounts[0]++;
     } else {
       value_type log = log2(anUpdate.first);
       if (theBuckets.size() < unsigned(log + 2)) {
         theBuckets.resize(log + 2, 0);
         theBucketCounts.resize(log + 2, 0);
       }
-      theBuckets[log+1] = calculate(theBuckets[log+1], theBucketCounts[log+1], anUpdate.second, 1);
-      theBucketCounts[log+1] ++;
+      theBuckets[log + 1] =
+          calculate(theBuckets[log + 1], theBucketCounts[log + 1], anUpdate.second, 1);
+      theBucketCounts[log + 1]++;
     }
   }
-  void reset( value_type /*ignored*/) {
+  void reset(value_type /*ignored*/) {
     theBuckets.clear();
     theBucketCounts.clear();
   }
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     doPrint(anOstream, options);
   }
   int32_t buckets() const {
@@ -342,7 +353,7 @@ public:
     }
     return ret;
   }
-  int64_t asLongLong(std::string const & options) const {
+  int64_t asLongLong(std::string const &options) const {
     if (options.size() > 0) {
       if (options == "buckets") {
         return buckets();
@@ -367,41 +378,42 @@ public:
   }
 };
 
-template <class CountedValueType>
-class StatValue_UniqueCounter : public StatValueBase {
+template <class CountedValueType> class StatValue_UniqueCounter : public StatValueBase {
 
 public:
   virtual boost::intrusive_ptr<const StatValueBase> serialForm() const {
-    boost::intrusive_ptr<const StatValueBase> ret_val( new StatValue_Counter(theSet.size()));
+    boost::intrusive_ptr<const StatValueBase> ret_val(new StatValue_Counter(theSet.size()));
     return ret_val;
   };
 
 public:
   typedef CountedValueType update_type;
   typedef int64_t value_type;
+
 private:
   std::set<CountedValueType> theSet;
+
 public:
-  StatValue_UniqueCounter()
-  {}
-  void reduceSum( const StatValueBase & aBase) {
-    const StatValue_UniqueCounter & ptr = dynamic_cast<const StatValue_UniqueCounter &>(aBase);
+  StatValue_UniqueCounter() {
+  }
+  void reduceSum(const StatValueBase &aBase) {
+    const StatValue_UniqueCounter &ptr = dynamic_cast<const StatValue_UniqueCounter &>(aBase);
     reduceSum(ptr);
   }
-  void reduceSum( const StatValue_UniqueCounter & anUnique ) {
-    theSet.insert( anUnique.theSet.begin(), anUnique.theSet.end() );
+  void reduceSum(const StatValue_UniqueCounter &anUnique) {
+    theSet.insert(anUnique.theSet.begin(), anUnique.theSet.end());
   }
   boost::intrusive_ptr<StatValueBase> sumAccumulator() {
     return new StatValue_UniqueCounter(*this);
   }
 
-  void update( update_type anUpdate ) {
-    theSet.insert( anUpdate );
+  void update(update_type anUpdate) {
+    theSet.insert(anUpdate);
   }
-  void reset( value_type /*ignored*/) {
+  void reset(value_type /*ignored*/) {
     theSet.clear();
   }
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     anOstream << theSet.size();
   }
   int64_t asLongLong() const {
@@ -409,15 +421,13 @@ public:
   };
 };
 
-template <>
-class StatValue_UniqueCounter<uint32_t> : public StatValueBase {
+template <> class StatValue_UniqueCounter<uint32_t> : public StatValueBase {
 
 public:
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, uint32_t version) {
-    ar & boost::serialization::base_object<StatValueBase>(*this);
-    ar & theSet;
+  template <class Archive> void serialize(Archive &ar, uint32_t version) {
+    ar &boost::serialization::base_object<StatValueBase>(*this);
+    ar &theSet;
   }
 
   virtual boost::intrusive_ptr<StatValueBase> serialForm() {
@@ -427,29 +437,31 @@ public:
 public:
   typedef uint32_t update_type;
   typedef int64_t value_type;
+
 private:
   std::set<uint32_t> theSet;
+
 public:
-  StatValue_UniqueCounter()
-  {}
-  void reduceSum( const StatValueBase & aBase) {
-    const StatValue_UniqueCounter & ptr = dynamic_cast<const StatValue_UniqueCounter &>(aBase);
+  StatValue_UniqueCounter() {
+  }
+  void reduceSum(const StatValueBase &aBase) {
+    const StatValue_UniqueCounter &ptr = dynamic_cast<const StatValue_UniqueCounter &>(aBase);
     reduceSum(ptr);
   }
-  void reduceSum( const StatValue_UniqueCounter & anUnique ) {
-    theSet.insert( anUnique.theSet.begin(), anUnique.theSet.end() );
+  void reduceSum(const StatValue_UniqueCounter &anUnique) {
+    theSet.insert(anUnique.theSet.begin(), anUnique.theSet.end());
   }
   boost::intrusive_ptr<StatValueBase> sumAccumulator() {
     return new StatValue_UniqueCounter(*this);
   }
 
-  void update( update_type anUpdate ) {
-    theSet.insert( anUpdate );
+  void update(update_type anUpdate) {
+    theSet.insert(anUpdate);
   }
-  void reset( value_type /*ignored*/) {
+  void reset(value_type /*ignored*/) {
     theSet.clear();
   }
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     anOstream << theSet.size();
   }
   int64_t asLongLong() const {
@@ -457,12 +469,12 @@ public:
   };
 };
 
-template <class CountedValueType>
-class StatValueArray_UniqueCounter : public StatValueArrayBase {
+template <class CountedValueType> class StatValueArray_UniqueCounter : public StatValueArrayBase {
 
 public:
   virtual boost::intrusive_ptr<const StatValueBase> serialForm() const {
-    boost::intrusive_ptr<const StatValueBase> ret_val( new StatValueArray_Counter(theValues, theSet.size()));
+    boost::intrusive_ptr<const StatValueBase> ret_val(
+        new StatValueArray_Counter(theValues, theSet.size()));
     return ret_val;
   };
 
@@ -474,40 +486,43 @@ public:
 private:
   std::vector<simple_type> theValues;
   std::set<CountedValueType> theSet;
+
 public:
-  StatValueArray_UniqueCounter() {}
-  void reduceSum( const StatValueBase & aBase) {
-    const StatValueArray_UniqueCounter & ptr = dynamic_cast<const StatValueArray_UniqueCounter &>(aBase);
+  StatValueArray_UniqueCounter() {
+  }
+  void reduceSum(const StatValueBase &aBase) {
+    const StatValueArray_UniqueCounter &ptr =
+        dynamic_cast<const StatValueArray_UniqueCounter &>(aBase);
     reduceSum(ptr);
   }
-  void reduceSum( const StatValueArray_UniqueCounter & anUniqueArray ) {
+  void reduceSum(const StatValueArray_UniqueCounter &anUniqueArray) {
     for (int32_t i = 0; i < static_cast<int>(anUniqueArray.theValues.size()); ++i) {
-      theValues[i].reduceSum( anUniqueArray.theValues[i] );
+      theValues[i].reduceSum(anUniqueArray.theValues[i]);
     }
-    theSet.insert( anUniqueArray.theSet.begin(), anUniqueArray.theSet.end() );
+    theSet.insert(anUniqueArray.theSet.begin(), anUniqueArray.theSet.end());
   }
   boost::intrusive_ptr<StatValueBase> sumAccumulator() {
     return new StatValueArray_UniqueCounter(*this);
   }
-  void update( update_type anUpdate ) {
+  void update(update_type anUpdate) {
     theSet.insert(anUpdate);
   }
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     for (int32_t i = 0; i < static_cast<int>(theValues.size()); ++i) {
       anOstream << theValues[i] << ", ";
     }
     anOstream << theSet.size();
   }
   void newValue(accumulation_type aValueType) {
-    theValues.push_back( simple_type(theSet.size()) ) ;
+    theValues.push_back(simple_type(theSet.size()));
     if (aValueType == accumulation_type::Reset) {
       theSet.clear();
     }
   }
-  void reset( value_type /*ignored*/ ) {
+  void reset(value_type /*ignored*/) {
     theSet.clear();
   }
-  StatValueBase & operator[](int32_t anIndex) {
+  StatValueBase &operator[](int32_t anIndex) {
     return theValues[anIndex];
   }
   std::size_t size() {
@@ -515,17 +530,15 @@ public:
   }
 };
 
-template <class CountedValueType>
-class StatValue_InstanceCounter;
+template <class CountedValueType> class StatValue_InstanceCounter;
 
 template <>
-class StatValue_InstanceCounter<std::string> : public StatValueBase, private InstanceCounterPrint   {
+class StatValue_InstanceCounter<std::string> : public StatValueBase, private InstanceCounterPrint {
 private:
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, uint32_t version) {
-    ar & boost::serialization::base_object<StatValueBase>(*this);
-    ar & theMap;
+  template <class Archive> void serialize(Archive &ar, uint32_t version) {
+    ar &boost::serialization::base_object<StatValueBase>(*this);
+    ar &theMap;
   }
 
   virtual boost::intrusive_ptr<const StatValueBase> serialForm() const {
@@ -535,18 +548,19 @@ private:
 public:
   typedef std::pair<std::string, int> update_type;
   typedef int64_t value_type;
+
 private:
   typedef std::map<std::string, int64_t> instance_map;
   instance_map theMap;
 
 public:
-  StatValue_InstanceCounter()
-  {}
-  void reduceSum( const StatValueBase & aBase) {
-    const StatValue_InstanceCounter & ptr = dynamic_cast<const StatValue_InstanceCounter &>(aBase);
+  StatValue_InstanceCounter() {
+  }
+  void reduceSum(const StatValueBase &aBase) {
+    const StatValue_InstanceCounter &ptr = dynamic_cast<const StatValue_InstanceCounter &>(aBase);
     reduceSum(ptr);
   }
-  void reduceSum( const StatValue_InstanceCounter & anInstance ) {
+  void reduceSum(const StatValue_InstanceCounter &anInstance) {
     instance_map::const_iterator iter = anInstance.theMap.begin();
     instance_map::const_iterator end = anInstance.theMap.end();
     while (iter != end) {
@@ -557,20 +571,20 @@ public:
   boost::intrusive_ptr<StatValueBase> sumAccumulator() {
     return new StatValue_InstanceCounter(*this);
   }
-  void update( update_type anUpdate ) {
+  void update(update_type anUpdate) {
     theMap[anUpdate.first] += anUpdate.second;
   }
-  void set( std::string anUpdate, value_type aValue ) {
+  void set(std::string anUpdate, value_type aValue) {
     theMap[anUpdate] = aValue;
   }
-  void reset( value_type /*ignored*/) {
+  void reset(value_type /*ignored*/) {
     theMap.clear();
   }
-  void fillVector(std::vector<sort_helper> & aVector) const {
+  void fillVector(std::vector<sort_helper> &aVector) const {
     instance_map::const_iterator iter = theMap.begin();
     instance_map::const_iterator end = theMap.end();
     while (iter != end) {
-      aVector.push_back( sort_helper(boost::lexical_cast<int64_t>(iter->first), iter->second));
+      aVector.push_back(sort_helper(boost::lexical_cast<int64_t>(iter->first), iter->second));
       ++iter;
     }
   }
@@ -578,7 +592,7 @@ public:
     return theMap.size();
   }
   int64_t count(int64_t aKey) const {
-    std::string key = std::to_string( aKey );
+    std::string key = std::to_string(aKey);
     instance_map::const_iterator iter = theMap.find(key);
     if (iter != theMap.end()) {
       return iter->second;
@@ -601,26 +615,25 @@ public:
     instance_map::const_iterator iter = theMap.begin();
     instance_map::const_iterator end = theMap.end();
     while (iter != end) {
-      int64_t weight = boost::lexical_cast<int64_t >( iter->first );
+      int64_t weight = boost::lexical_cast<int64_t>(iter->first);
       ret_val += weight * iter->second;
       ++iter;
     }
     return ret_val;
   }
 
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     doPrint(anOstream, options);
   }
 };
 
 template <>
-class StatValue_InstanceCounter<int64_t> : public StatValueBase, private InstanceCounterPrint   {
+class StatValue_InstanceCounter<int64_t> : public StatValueBase, private InstanceCounterPrint {
 private:
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, uint32_t version) {
-    ar & boost::serialization::base_object<StatValueBase>(*this);
-    ar & theMap;
+  template <class Archive> void serialize(Archive &ar, uint32_t version) {
+    ar &boost::serialization::base_object<StatValueBase>(*this);
+    ar &theMap;
   }
 
   virtual boost::intrusive_ptr<const StatValueBase> serialForm() const {
@@ -635,13 +648,13 @@ public:
   instance_map theMap;
 
 public:
-  StatValue_InstanceCounter()
-  {}
-  void reduceSum( const StatValueBase & aBase) {
-    const StatValue_InstanceCounter & ptr = dynamic_cast<const StatValue_InstanceCounter &>(aBase);
+  StatValue_InstanceCounter() {
+  }
+  void reduceSum(const StatValueBase &aBase) {
+    const StatValue_InstanceCounter &ptr = dynamic_cast<const StatValue_InstanceCounter &>(aBase);
     reduceSum(ptr);
   }
-  void reduceSum( const StatValue_InstanceCounter & anInstance ) {
+  void reduceSum(const StatValue_InstanceCounter &anInstance) {
     instance_map::const_iterator iter = anInstance.theMap.begin();
     instance_map::const_iterator end = anInstance.theMap.end();
     while (iter != end) {
@@ -652,20 +665,20 @@ public:
   boost::intrusive_ptr<StatValueBase> sumAccumulator() {
     return new StatValue_InstanceCounter(*this);
   }
-  void update( update_type anUpdate ) {
+  void update(update_type anUpdate) {
     theMap[anUpdate.first] += anUpdate.second;
   }
-  void set( int64_t anUpdate, value_type aValue ) {
+  void set(int64_t anUpdate, value_type aValue) {
     theMap[anUpdate] = aValue;
   }
-  void reset( value_type /*ignored*/) {
+  void reset(value_type /*ignored*/) {
     theMap.clear();
   }
-  void fillVector(std::vector<sort_helper> & aVector) const {
+  void fillVector(std::vector<sort_helper> &aVector) const {
     instance_map::const_iterator iter = theMap.begin();
     instance_map::const_iterator end = theMap.end();
     while (iter != end) {
-      aVector.push_back( sort_helper(iter->first, iter->second));
+      aVector.push_back(sort_helper(iter->first, iter->second));
       ++iter;
     }
   }
@@ -695,13 +708,13 @@ public:
     instance_map::const_iterator iter = theMap.begin();
     instance_map::const_iterator end = theMap.end();
     while (iter != end) {
-      int64_t weight = boost::lexical_cast<int64_t >( iter->first );
+      int64_t weight = boost::lexical_cast<int64_t>(iter->first);
       ret_val += weight * iter->second;
       ++iter;
     }
     return ret_val;
   }
-  int64_t asLongLong(std::string const & options) const {
+  int64_t asLongLong(std::string const &options) const {
     bool calcPercentile = false;
     float percentile = 0.5;
     bool pct100 = false;
@@ -723,12 +736,12 @@ public:
           std::vector<sort_helper> elements;
           fillVector(elements);
           int32_t begin = elements[0].value;
-          int32_t end = elements[elements.size()-1].value;
+          int32_t end = elements[elements.size() - 1].value;
           try {
             std::string range = options.substr(4);
             size_t dash = range.find("-");
             if (dash == std::string::npos) {
-              //No dash
+              // No dash
               begin = end = boost::lexical_cast<int>(range);
             } else {
               std::string begin_str = range.substr(0, dash);
@@ -753,15 +766,17 @@ public:
           for (int32_t i = 0; i < (int)elements.size(); i++) {
             int64_t val = elements[i].value;
             int64_t cnt = elements[i].count;
-            if (val >= begin && val <= end) sum += cnt;
+            if (val >= begin && val <= end)
+              sum += cnt;
           }
           return sum;
         } else if (options.substr(0, 7) == "pctile:") {
           float pct = boost::lexical_cast<float>(options.substr(7));
-          if (! (pct > 0.0 && pct <= 100.0) ) {
+          if (!(pct > 0.0 && pct <= 100.0)) {
             throw CalcException(std::string("{Percentile must be between 1 and 100}"));
           }
-          if (pct == 100.0) pct100 = true;
+          if (pct == 100.0)
+            pct100 = true;
           calcPercentile = true;
           percentile = ((float)pct) / 100.0;
         } else {
@@ -775,7 +790,7 @@ public:
       std::vector<sort_helper> elements;
       fillVector(elements);
       if (pct100) {
-        return elements[elements.size()-1].value;
+        return elements[elements.size() - 1].value;
       } else {
         float sum_f = sum();
         float cum_pct = 0.0;
@@ -791,14 +806,14 @@ public:
 
     return 0;
   }
-  //double asDouble(std::string const & options) const {
+  // double asDouble(std::string const & options) const {
   // return 0;
   //}
-  double asDouble(std::string const & options) const {
+  double asDouble(std::string const &options) const {
     if (options.size() > 0) {
       try {
         if (options.substr(0, 3) == "avg") {
-          return static_cast<double>(weightedSum()) / sum() ;
+          return static_cast<double>(weightedSum()) / sum();
         } else if (options.substr(0, 3) == "mlp") {
           return static_cast<double>(weightedSum()) / (sum() - count(0));
         } else {
@@ -811,20 +826,18 @@ public:
     return 0;
   }
 
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     doPrint(anOstream, options);
   }
-
 };
 
-template <class CountedValueType>
-class StatValueArray_InstanceCounter : public StatValueArrayBase {
-  //NOT YET IMPLEMENTED
+template <class CountedValueType> class StatValueArray_InstanceCounter : public StatValueArrayBase {
+  // NOT YET IMPLEMENTED
 
 public:
   virtual boost::intrusive_ptr<const StatValueBase> serialForm() const {
-    //NOT YET IMPLEMENTED
-    boost::intrusive_ptr<const StatValueBase> ret_val( new StatValue_Counter(0));
+    // NOT YET IMPLEMENTED
+    boost::intrusive_ptr<const StatValueBase> ret_val(new StatValue_Counter(0));
     return ret_val;
   };
 
@@ -836,23 +849,24 @@ public:
   instance_map theMap;
 
 public:
-  StatValueArray_InstanceCounter() {}
-  void reduceSum( const StatValueBase * aBase) {
+  StatValueArray_InstanceCounter() {
+  }
+  void reduceSum(const StatValueBase *aBase) {
     std::cerr << "Reductions not supported (StatValueArray_InstanceCounter)" << std::endl;
   }
-  void update( update_type anUpdate ) {
+  void update(update_type anUpdate) {
     theMap[anUpdate.first] += anUpdate.second;
   }
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     //???
   }
   void newValue(accumulation_type aValueType) {
     //???
   }
-  void reset( value_type /*ignored*/ ) {
+  void reset(value_type /*ignored*/) {
     theMap.clear();
   }
-  StatValueBase & operator[](int32_t anIndex) {
+  StatValueBase &operator[](int32_t anIndex) {
     return *this;
   }
   std::size_t size() {
@@ -860,8 +874,8 @@ public:
   }
 };
 
-} // end aux_
-} // end Stat
-} // end Flexus
+} // namespace aux_
+} // namespace Stat
+} // namespace Flexus
 
-#endif //FLEXUS_CORE_AUX__STATS_HISTOGRAMS__HPP__INCLUDED
+#endif // FLEXUS_CORE_AUX__STATS_HISTOGRAMS__HPP__INCLUDED

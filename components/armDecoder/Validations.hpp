@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,13 +36,12 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #ifndef FLEXUS_armDECODER_VALIDATIONS_HPP_INCLUDED
 #define FLEXUS_armDECODER_VALIDATIONS_HPP_INCLUDED
 
-#include <components/CommonQEMU/Slices/MemOp.hpp>
 #include "OperandCode.hpp"
 #include "SemanticInstruction.hpp"
+#include <components/CommonQEMU/Slices/MemOp.hpp>
 
 namespace narmDecoder {
 
@@ -50,61 +50,55 @@ struct SemanticInstruction;
 struct validateXRegister {
   uint32_t theReg;
   eOperandCode theOperandCode;
-  SemanticInstruction * theInstruction;
+  SemanticInstruction *theInstruction;
   bool the_64;
 
-  validateXRegister( uint32_t aReg, eOperandCode anOperand, SemanticInstruction * anInstruction, bool is_64 )
-    : theReg(aReg)
-    , theOperandCode(anOperand)
-    , theInstruction(anInstruction)
-    , the_64(is_64)
-  { }
+  validateXRegister(uint32_t aReg, eOperandCode anOperand, SemanticInstruction *anInstruction,
+                    bool is_64)
+      : theReg(aReg), theOperandCode(anOperand), theInstruction(anInstruction), the_64(is_64) {
+  }
 
-  bool operator () ();
+  bool operator()();
 };
 
 struct validatePC {
-  SemanticInstruction * theInstruction;
+  SemanticInstruction *theInstruction;
   bool thePreValidation;
 
-  validatePC( SemanticInstruction * anInstruction, bool prevalidation = false)
-    : theInstruction(anInstruction)
-    , thePreValidation(prevalidation)
-  { }
+  validatePC(SemanticInstruction *anInstruction, bool prevalidation = false)
+      : theInstruction(anInstruction), thePreValidation(prevalidation) {
+  }
 
-  bool operator () ();
+  bool operator()();
 };
 
 struct validateVRegister {
   uint32_t theReg;
   eOperandCode theOperandCode;
-  SemanticInstruction * theInstruction;
+  SemanticInstruction *theInstruction;
 
-  validateVRegister( uint32_t aReg, eOperandCode anOperand, SemanticInstruction * anInstruction )
-    : theReg(aReg)
-    , theOperandCode(anOperand)
-    , theInstruction(anInstruction)
-  { }
+  validateVRegister(uint32_t aReg, eOperandCode anOperand, SemanticInstruction *anInstruction)
+      : theReg(aReg), theOperandCode(anOperand), theInstruction(anInstruction) {
+  }
 
-  bool operator () ();
+  bool operator()();
 };
 
 struct validateMemory {
   eOperandCode theAddressCode;
   eOperandCode theValueCode;
   nuArchARM::eSize theSize;
-  SemanticInstruction * theInstruction;
+  SemanticInstruction *theInstruction;
 
-  validateMemory( eOperandCode anAddressCode, eOperandCode aValueCode, nuArchARM::eSize aSize, SemanticInstruction * anInstruction )
-    : theAddressCode(anAddressCode)
-    , theValueCode(aValueCode)
-    , theSize(aSize)
-    , theInstruction(anInstruction)
-  {}
+  validateMemory(eOperandCode anAddressCode, eOperandCode aValueCode, nuArchARM::eSize aSize,
+                 SemanticInstruction *anInstruction)
+      : theAddressCode(anAddressCode), theValueCode(aValueCode), theSize(aSize),
+        theInstruction(anInstruction) {
+  }
 
-  bool operator () ();
+  bool operator()();
 };
 
-} //narmDecoder
+} // namespace narmDecoder
 
-#endif //FLEXUS_armDECODER_VALIDATIONS_HPP_INCLUDED
+#endif // FLEXUS_armDECODER_VALIDATIONS_HPP_INCLUDED

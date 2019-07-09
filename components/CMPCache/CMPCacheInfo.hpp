@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,7 +36,6 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #ifndef __CMP_CACHE_INFO_HPP__
 #define __CMP_CACHE_INFO_HPP__
 
@@ -43,7 +43,7 @@ namespace nCMPCache {
 
 struct CMPCacheInfo {
 
-  int   theNodeId;
+  int theNodeId;
   std::string theName;
   std::string theDirType;
   std::string theDirParams;
@@ -69,87 +69,39 @@ struct CMPCacheInfo {
   int32_t theDataIssueLatency;
   int32_t theQueueSize;
 
-  CMPCacheInfo( int32_t aNodeId,
-                const std::string & aName,
-                std::string & aPolicyType,
-                std::string & aDirType,
-                std::string & aDirParams,
-                std::string & aCacheParams,
-                int32_t aNumCores,
-                int32_t aBlockSize,
-                int32_t aNumBanks,
-                int32_t aBankInterleaving,
-                int32_t aNumGroups,
-                int32_t aGroupInterleaving,
-                int32_t aMAFSize,
-                int32_t aDirEBSize,
-                int32_t aCacheEBSize,
-                bool anEvictClean,
-                tFillLevel	aCacheLevel,
-                int32_t	aDirLatency,
-                int32_t	aDirIssueLatency,
-                int32_t	aTagLatency,
-                int32_t	aTagIssueLatency,
-                int32_t	aDataLatency,
-                int32_t	aDataIssueLatency,
-                int32_t	aQueueSize
-              )
-    : theNodeId(aNodeId)
-    , theName(aName)
-    , theDirType(aDirType)
-    , theDirParams(aDirParams)
-    , theCacheParams(aCacheParams)
-    , thePolicyType(aPolicyType)
-    , theCacheLevel(aCacheLevel)
-    , theCores(aNumCores)
-    , theBlockSize(aBlockSize)
-    , theNumBanks(aNumBanks)
-    , theBankInterleaving(aBankInterleaving)
-    , theNumGroups(aNumGroups)
-    , theGroupInterleaving(aGroupInterleaving)
-    , theMAFSize(aMAFSize)
-    , theDirEBSize(aDirEBSize)
-    , theCacheEBSize(aCacheEBSize)
-    , theEvictClean(anEvictClean)
-    , theDirLatency(aDirLatency)
-    , theDirIssueLatency(aDirIssueLatency)
-    , theTagLatency(aTagLatency)
-    , theTagIssueLatency(aTagIssueLatency)
-    , theDataLatency(aDataLatency)
-    , theDataIssueLatency(aDataIssueLatency)
-    , theQueueSize(aQueueSize)
-  { }
+  CMPCacheInfo(int32_t aNodeId, const std::string &aName, std::string &aPolicyType,
+               std::string &aDirType, std::string &aDirParams, std::string &aCacheParams,
+               int32_t aNumCores, int32_t aBlockSize, int32_t aNumBanks, int32_t aBankInterleaving,
+               int32_t aNumGroups, int32_t aGroupInterleaving, int32_t aMAFSize, int32_t aDirEBSize,
+               int32_t aCacheEBSize, bool anEvictClean, tFillLevel aCacheLevel, int32_t aDirLatency,
+               int32_t aDirIssueLatency, int32_t aTagLatency, int32_t aTagIssueLatency,
+               int32_t aDataLatency, int32_t aDataIssueLatency, int32_t aQueueSize)
+      : theNodeId(aNodeId), theName(aName), theDirType(aDirType), theDirParams(aDirParams),
+        theCacheParams(aCacheParams), thePolicyType(aPolicyType), theCacheLevel(aCacheLevel),
+        theCores(aNumCores), theBlockSize(aBlockSize), theNumBanks(aNumBanks),
+        theBankInterleaving(aBankInterleaving), theNumGroups(aNumGroups),
+        theGroupInterleaving(aGroupInterleaving), theMAFSize(aMAFSize), theDirEBSize(aDirEBSize),
+        theCacheEBSize(aCacheEBSize), theEvictClean(anEvictClean), theDirLatency(aDirLatency),
+        theDirIssueLatency(aDirIssueLatency), theTagLatency(aTagLatency),
+        theTagIssueLatency(aTagIssueLatency), theDataLatency(aDataLatency),
+        theDataIssueLatency(aDataIssueLatency), theQueueSize(aQueueSize) {
+  }
 
-  CMPCacheInfo( const CMPCacheInfo & info)
-    : theNodeId(info.theNodeId)
-    , theName(info.theName)
-    , theDirType(info.theDirType)
-    , theDirParams(info.theDirParams)
-    , theCacheParams(info.theCacheParams)
-    , thePolicyType(info.thePolicyType)
-    , theCacheLevel(info.theCacheLevel)
-    , theCores(info.theCores)
-    , theBlockSize(info.theBlockSize)
-    , theNumBanks(info.theNumBanks)
-    , theBankInterleaving(info.theBankInterleaving)
-    , theNumGroups(info.theNumGroups)
-    , theGroupInterleaving(info.theGroupInterleaving)
-    , theMAFSize(info.theMAFSize)
-    , theDirEBSize(info.theDirEBSize)
-    , theCacheEBSize(info.theCacheEBSize)
-    , theEvictClean(info.theEvictClean)
-    , theDirLatency(info.theDirLatency)
-    , theDirIssueLatency(info.theDirIssueLatency)
-    , theTagLatency(info.theTagLatency)
-    , theTagIssueLatency(info.theTagIssueLatency)
-    , theDataLatency(info.theDataLatency)
-    , theDataIssueLatency(info.theDataIssueLatency)
-    , theQueueSize(info.theQueueSize)
-  { }
-
+  CMPCacheInfo(const CMPCacheInfo &info)
+      : theNodeId(info.theNodeId), theName(info.theName), theDirType(info.theDirType),
+        theDirParams(info.theDirParams), theCacheParams(info.theCacheParams),
+        thePolicyType(info.thePolicyType), theCacheLevel(info.theCacheLevel),
+        theCores(info.theCores), theBlockSize(info.theBlockSize), theNumBanks(info.theNumBanks),
+        theBankInterleaving(info.theBankInterleaving), theNumGroups(info.theNumGroups),
+        theGroupInterleaving(info.theGroupInterleaving), theMAFSize(info.theMAFSize),
+        theDirEBSize(info.theDirEBSize), theCacheEBSize(info.theCacheEBSize),
+        theEvictClean(info.theEvictClean), theDirLatency(info.theDirLatency),
+        theDirIssueLatency(info.theDirIssueLatency), theTagLatency(info.theTagLatency),
+        theTagIssueLatency(info.theTagIssueLatency), theDataLatency(info.theDataLatency),
+        theDataIssueLatency(info.theDataIssueLatency), theQueueSize(info.theQueueSize) {
+  }
 };
 
-};
+}; // namespace nCMPCache
 
 #endif // ! __CMP_CACHE_INFO_HPP__
-

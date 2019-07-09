@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,28 +36,27 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #include <list>
 
-#include <core/boost_extensions/intrusive_ptr.hpp>
-#include <boost/throw_exception.hpp>
-#include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/lambda/lambda.hpp>
 #include <boost/bind.hpp>
-#include <core/target.hpp>
-#include <core/debug/debug.hpp>
-#include <core/types.hpp>
-#include <core/stats.hpp>
-#include <core/performance/profile.hpp>
-#include <core/qemu/mai_api.hpp>
+#include <boost/function.hpp>
+#include <boost/lambda/lambda.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/throw_exception.hpp>
 #include <components/uArchARM/uArchInterfaces.hpp>
 #include <components/uFetch/uFetchTypes.hpp>
+#include <core/boost_extensions/intrusive_ptr.hpp>
+#include <core/debug/debug.hpp>
+#include <core/performance/profile.hpp>
+#include <core/qemu/mai_api.hpp>
+#include <core/stats.hpp>
+#include <core/target.hpp>
+#include <core/types.hpp>
 
-#include "SemanticInstruction.hpp"
-#include "OperandMap.hpp"
 #include "Effects.hpp"
+#include "OperandMap.hpp"
 #include "SemanticActions.hpp"
+#include "SemanticInstruction.hpp"
 #include "Validations.hpp"
 
 #define DBG_DeclareCategories armDecoder
@@ -70,18 +70,16 @@ Flexus::Stat::StatCounter theICBs("sys-ICBs");
 Flexus::Stat::StatMax thePeakInsns("sys-PeakSemanticInsns");
 
 #ifdef TRACK_INSNS
-std::set< SemanticInstruction *> theGlobalLiveInsns;
+std::set<SemanticInstruction *> theGlobalLiveInsns;
 int64_t theLastPrintCount = 0;
-#endif //TRACK_INSNS
+#endif // TRACK_INSNS
 
-SemanticInstruction::SemanticInstruction(VirtualMemoryAddress aPC, Opcode anOpcode, boost::intrusive_ptr<BPredState> aBPState, uint32_t aCPU, int64_t aSequenceNo)
-  : armInstruction( aPC, anOpcode, aBPState, aCPU, aSequenceNo)
-  , theOverrideSimics(false)
-  , thePrevalidationsPassed(false)
-  , theRetireDepCount(0)
-  , theIsMicroOp(false)
-  , theRetirementTarget( *this )
-  , theCanRetireCounter(0) {
+SemanticInstruction::SemanticInstruction(VirtualMemoryAddress aPC, Opcode anOpcode,
+                                         boost::intrusive_ptr<BPredState> aBPState, uint32_t aCPU,
+                                         int64_t aSequenceNo)
+    : armInstruction(aPC, anOpcode, aBPState, aCPU, aSequenceNo), theOverrideSimics(false),
+      thePrevalidationsPassed(false), theRetireDepCount(0), theIsMicroOp(false),
+      theRetirementTarget(*this), theCanRetireCounter(0) {
   ++theInsnCount;
   thePeakInsns << theInsnCount;
   for (int32_t i = 0; i < 4; ++i) {
@@ -91,12 +89,12 @@ SemanticInstruction::SemanticInstruction(VirtualMemoryAddress aPC, Opcode anOpco
 
 #ifdef TRACK_INSNS
   if (theLastPrintCount >= 10000) {
-    DBG_( Dev, ( << "Live Insn Count: " << theInsnCount) );
+    DBG_(Dev, (<< "Live Insn Count: " << theInsnCount));
     theLastPrintCount = 0;
     if (theInsnCount > 10000) {
-      DBG_( Dev, ( << "Identifying oldest live instruction.") );
-      DBG_Assert( ! theGlobalLiveInsns.empty() );
-      SemanticInstruction * oldest = *theGlobalLiveInsns.begin();
+      DBG_(Dev, (<< "Identifying oldest live instruction."));
+      DBG_Assert(!theGlobalLiveInsns.empty());
+      SemanticInstruction *oldest = *theGlobalLiveInsns.begin();
       std::set<SemanticInstruction *>::iterator iter = theGlobalLiveInsns.begin();
       while (iter != theGlobalLiveInsns.end()) {
         if ((*iter)->sequenceNo() < oldest->sequenceNo()) {
@@ -104,14 +102,14 @@ SemanticInstruction::SemanticInstruction(VirtualMemoryAddress aPC, Opcode anOpco
         }
         ++iter;
       }
-      DBG_( Dev, ( << "Oldest live insn: " << *oldest) );
-      DBG_( Dev, ( << "   Ref count: " << oldest->theRefCount) );
-      DBG_( Dev, ( << "Oldest live insn internals: " << std::internal << *oldest) );
+      DBG_(Dev, (<< "Oldest live insn: " << *oldest));
+      DBG_(Dev, (<< "   Ref count: " << oldest->theRefCount));
+      DBG_(Dev, (<< "Oldest live insn internals: " << std::internal << *oldest));
     }
   }
   ++theLastPrintCount;
   theGlobalLiveInsns.insert(this);
-#endif //TRACK_INSNS
+#endif // TRACK_INSNS
 }
 
 SemanticInstruction::~SemanticInstruction() {
@@ -119,47 +117,51 @@ SemanticInstruction::~SemanticInstruction() {
 
 #ifdef TRACK_INSNS
   theGlobalLiveInsns.erase(this);
-#endif //TRACK_INSNS
-
+#endif // TRACK_INSNS
 }
 
-nuArchARM::InstructionDependance SemanticInstruction::makeInstructionDependance( InternalDependance const & aDependance) {
-  DBG_Assert( reinterpret_cast<long>(aDependance.theTarget) != 0x1 );
+nuArchARM::InstructionDependance
+SemanticInstruction::makeInstructionDependance(InternalDependance const &aDependance) {
+  DBG_Assert(reinterpret_cast<long>(aDependance.theTarget) != 0x1);
   nuArchARM::InstructionDependance ret_val;
   ret_val.instruction = boost::intrusive_ptr<nuArchARM::Instruction>(this);
-  ret_val.satisfy = boost::bind( &DependanceTarget::invokeSatisfy, aDependance.theTarget, aDependance.theArg);
-  ret_val.squash = boost::bind( &DependanceTarget::invokeSquash, aDependance.theTarget, aDependance.theArg);
+  ret_val.satisfy =
+      boost::bind(&DependanceTarget::invokeSatisfy, aDependance.theTarget, aDependance.theArg);
+  ret_val.squash =
+      boost::bind(&DependanceTarget::invokeSquash, aDependance.theTarget, aDependance.theArg);
   return ret_val;
 }
 
 void SemanticInstruction::setMayRetire(int32_t aBit, bool aFlag) {
   SEMANTICS_TRACE;
-  DBG_Assert( aBit < theRetireDepCount, ( << "setMayRetire setting a bit that is out of range: " << aBit << "\n" << std::internal << *this ) );
+  DBG_Assert(aBit < theRetireDepCount,
+             (<< "setMayRetire setting a bit that is out of range: " << aBit << "\n"
+              << std::internal << *this));
   bool may_retire = mayRetire();
   SEMANTICS_DBG("aBit = " << aBit << ", aFlag = " << aFlag << ", " << *this);
   theRetirementDepends[aBit] = aFlag;
-  if (mayRetire() && ! may_retire ) {
-      DBG_(Dev, (<< identify() << " may retire"));
-  } else if ( ! mayRetire() && may_retire ) {
-      DBG_(Dev, (<< identify() << " may not retire"));
+  if (mayRetire() && !may_retire) {
+    DBG_(Dev, (<< identify() << " may retire"));
+  } else if (!mayRetire() && may_retire) {
+    DBG_(Dev, (<< identify() << " may not retire"));
   }
 }
 
 bool SemanticInstruction::mayRetire() const {
   FLEXUS_PROFILE();
-  if (isPageFault()) return true;
-  bool ok = theRetirementDepends[0] && theRetirementDepends[1] && theRetirementDepends[2] && theRetirementDepends[3];
-  for (
-    std::list< std::function< bool()> >::const_iterator iter = theRetirementConstraints.begin(),
-    end = theRetirementConstraints.end();
-    ok && (iter != end) ;
-    ++iter) {
+  if (isPageFault())
+    return true;
+  bool ok = theRetirementDepends[0] && theRetirementDepends[1] && theRetirementDepends[2] &&
+            theRetirementDepends[3];
+  for (std::list<std::function<bool()>>::const_iterator iter = theRetirementConstraints.begin(),
+                                                        end = theRetirementConstraints.end();
+       ok && (iter != end); ++iter) {
     ok &= (*iter)();
   }
 
   ok &= (theCanRetireCounter == 0);
 
-  return ok; //May retire if no dependence bit is clear
+  return ok; // May retire if no dependence bit is clear
 }
 
 void SemanticInstruction::setCanRetireCounter(const uint32_t numCycles) {
@@ -173,9 +175,9 @@ void SemanticInstruction::decrementCanRetireCounter() {
 }
 
 InternalDependance SemanticInstruction::retirementDependance() {
-  DBG_Assert( theRetireDepCount < 5 );
+  DBG_Assert(theRetireDepCount < 5);
   theRetirementDepends[theRetireDepCount] = false;
-  return InternalDependance( &theRetirementTarget, theRetireDepCount++);
+  return InternalDependance(&theRetirementTarget, theRetireDepCount++);
 }
 
 bool SemanticInstruction::preValidate() {
@@ -190,7 +192,7 @@ bool SemanticInstruction::preValidate() {
 }
 
 bool SemanticInstruction::advancesSimics() const {
-  return (! theAnnulled && !theIsMicroOp);
+  return (!theAnnulled && !theIsMicroOp);
 }
 
 void SemanticInstruction::overrideSimics() {
@@ -199,19 +201,24 @@ void SemanticInstruction::overrideSimics() {
 
 bool SemanticInstruction::postValidate() {
   FLEXUS_PROFILE();
-  if ( theRaisedException != willRaise() ) {
-    DBG_( VVerb, ( << *this << " PostValidation failed: Exception mismatch flexus=" << std::hex << willRaise() << " simics=" << theRaisedException << std::dec ) );
+  if (theRaisedException != willRaise()) {
+    DBG_(VVerb, (<< *this << " PostValidation failed: Exception mismatch flexus=" << std::hex
+                 << willRaise() << " simics=" << theRaisedException << std::dec));
     return false;
   }
-//  if ( Flexus::Qemu::Processor::getProcessor(theCPU)->getPC()  != theNPC && ! theRaisedException ) {//NOOSHIN, getNPC instead of getPC
-//    DBG_( VVerb, ( << *this << " PostValidation failed: NPC mismatch flexus=" << theNPC << " simics=" << Flexus::Qemu::Processor::getProcessor(theCPU)->getPC() ) );
-//    return false;
-//  }
+  //  if ( Flexus::Qemu::Processor::getProcessor(theCPU)->getPC()  != theNPC &&
+  //  ! theRaisedException ) {//NOOSHIN, getNPC instead of getPC
+  //    DBG_( VVerb, ( << *this << " PostValidation failed: NPC mismatch
+  //    flexus=" << theNPC << " simics=" <<
+  //    Flexus::Qemu::Processor::getProcessor(theCPU)->getPC() ) ); return
+  //    false;
+  //  }
 
-  if (thePrevalidationsPassed && theOverrideSimics && ! theOverrideFns.empty() && !theRaisedException && ! theAnnulled) {
-    DBG_( VVerb, ( << *this << " overrideSimics flag set and override conditions passed.") );
+  if (thePrevalidationsPassed && theOverrideSimics && !theOverrideFns.empty() &&
+      !theRaisedException && !theAnnulled) {
+    DBG_(VVerb, (<< *this << " overrideSimics flag set and override conditions passed."));
     while (!theOverrideFns.empty()) {
-      theOverrideFns.front() ();
+      theOverrideFns.front()();
       theOverrideFns.pop_front();
     }
   }
@@ -223,25 +230,25 @@ bool SemanticInstruction::postValidate() {
   return ok;
 }
 
-void SemanticInstruction::addPrevalidation( std::function< bool() > aValidation) {
+void SemanticInstruction::addPrevalidation(std::function<bool()> aValidation) {
   thePreValidations.push_back(aValidation);
 }
 
-void SemanticInstruction::addPostvalidation( std::function< bool() > aValidation) {
+void SemanticInstruction::addPostvalidation(std::function<bool()> aValidation) {
   thePostValidations.push_back(aValidation);
 }
 
-void SemanticInstruction::addOverride( std::function< void() > anOverride) {
+void SemanticInstruction::addOverride(std::function<void()> anOverride) {
   theOverrideFns.push_back(anOverride);
 }
 
-void SemanticInstruction::addRetirementConstraint( std::function< bool() > aConstraint) {
+void SemanticInstruction::addRetirementConstraint(std::function<bool()> aConstraint) {
   theRetirementConstraints.push_back(aConstraint);
 }
 
 void SemanticInstruction::annul() {
   FLEXUS_PROFILE();
-  if ( ! theAnnulled ) {
+  if (!theAnnulled) {
     armInstruction::annul();
     theAnnulmentEffects.invoke(*this);
   }
@@ -249,7 +256,7 @@ void SemanticInstruction::annul() {
 
 void SemanticInstruction::reinstate() {
   FLEXUS_PROFILE();
-  if ( theAnnulled ) {
+  if (theAnnulled) {
     armInstruction::reinstate();
     theReinstatementEffects.invoke(*this);
   }
@@ -259,24 +266,22 @@ void SemanticInstruction::doDispatchEffects() {
   DISPATCH_DBG("START DISPATCHING ACTIONS");
   FLEXUS_PROFILE();
   armInstruction::doDispatchEffects();
-  while (! theDispatchActions.empty()) {
-    core()->create( theDispatchActions.front() );
+  while (!theDispatchActions.empty()) {
+    core()->create(theDispatchActions.front());
     theDispatchActions.pop_front();
-
   }
   DISPATCH_DBG("FINISH DISPATCHING ACTIONS");
 
   DISPATCH_DBG("START DISPATCHING EFFECTS");
   theDispatchEffects.invoke(*this);
   DISPATCH_DBG("FINISH DISPATCHING EFFECTS");
-
 };
 
 void SemanticInstruction::doRetirementEffects() {
   FLEXUS_PROFILE();
   theRetirementEffects.invoke(*this);
   theRetired = true;
-  //Clear predecessor to avoid leaking instructions
+  // Clear predecessor to avoid leaking instructions
   thePredecessor = 0;
 };
 
@@ -288,60 +293,60 @@ void SemanticInstruction::checkTraps() {
 void SemanticInstruction::doCommitEffects() {
   FLEXUS_PROFILE();
   theCommitEffects.invoke(*this);
-  //Clear predecessor to avoid leaking instructions
+  // Clear predecessor to avoid leaking instructions
   thePredecessor = 0;
 };
 
-void SemanticInstruction::pageFault(){
-    thePageFault = true;
+void SemanticInstruction::pageFault() {
+  thePageFault = true;
 }
 
-bool SemanticInstruction::isPageFault() const{
-    return thePageFault;
+bool SemanticInstruction::isPageFault() const {
+  return thePageFault;
 }
 
 void SemanticInstruction::squash() {
   FLEXUS_PROFILE();
-  DBG_( VVerb, ( <<  *this << " squashed" ) );
+  DBG_(VVerb, (<< *this << " squashed"));
   theSquashed = true;
   theSquashEffects.invoke(*this);
-  //Clear predecessor to avoid leaking instructions
+  // Clear predecessor to avoid leaking instructions
   thePredecessor = 0;
 };
 
-void SemanticInstruction::addDispatchEffect( Effect * anEffect) {
-  theDispatchEffects.append( anEffect );
+void SemanticInstruction::addDispatchEffect(Effect *anEffect) {
+  theDispatchEffects.append(anEffect);
 }
 
-void SemanticInstruction::addDispatchAction( simple_action const & anAction) {
-  theDispatchActions.push_back( anAction.action );
+void SemanticInstruction::addDispatchAction(simple_action const &anAction) {
+  theDispatchActions.push_back(anAction.action);
 }
 
-void SemanticInstruction::addRetirementEffect( Effect * anEffect) {
-  theRetirementEffects.append( anEffect );
+void SemanticInstruction::addRetirementEffect(Effect *anEffect) {
+  theRetirementEffects.append(anEffect);
 }
 
-void SemanticInstruction::addCheckTrapEffect( Effect * anEffect) {
-  theCheckTrapEffects.append( anEffect );
+void SemanticInstruction::addCheckTrapEffect(Effect *anEffect) {
+  theCheckTrapEffects.append(anEffect);
 }
 
-void SemanticInstruction::addCommitEffect( Effect * anEffect) {
-  theCommitEffects.append( anEffect );
+void SemanticInstruction::addCommitEffect(Effect *anEffect) {
+  theCommitEffects.append(anEffect);
 }
 
-void SemanticInstruction::addSquashEffect( Effect * anEffect) {
-  theSquashEffects.append( anEffect );
+void SemanticInstruction::addSquashEffect(Effect *anEffect) {
+  theSquashEffects.append(anEffect);
 }
 
-void SemanticInstruction::addAnnulmentEffect( Effect * anEffect) {
-  theAnnulmentEffects.append( anEffect );
+void SemanticInstruction::addAnnulmentEffect(Effect *anEffect) {
+  theAnnulmentEffects.append(anEffect);
 }
 
-void SemanticInstruction::addReinstatementEffect( Effect * anEffect) {
-  theReinstatementEffects.append( anEffect );
+void SemanticInstruction::addReinstatementEffect(Effect *anEffect) {
+  theReinstatementEffects.append(anEffect);
 }
 
-void SemanticInstruction::describe(std::ostream & anOstream) const {
+void SemanticInstruction::describe(std::ostream &anOstream) const {
   bool internals = false;
   if (anOstream.flags() & std::ios_base::internal) {
     anOstream << std::left;
@@ -366,42 +371,42 @@ void SemanticInstruction::describe(std::ostream & anOstream) const {
 
   if (internals) {
     anOstream << std::endl;
-    anOstream << "\tOperandMap:\n" ;
+    anOstream << "\tOperandMap:\n";
     theOperands.dump(anOstream);
 
-    if (! theDispatchEffects.empty() ) {
+    if (!theDispatchEffects.empty()) {
       anOstream << "\tDispatchEffects:\n";
       theDispatchEffects.describe(anOstream);
     }
 
-    if (! theAnnulmentEffects.empty() ) {
-      anOstream << "\tAnnulmentEffects:\n" ;
+    if (!theAnnulmentEffects.empty()) {
+      anOstream << "\tAnnulmentEffects:\n";
       theAnnulmentEffects.describe(anOstream);
     }
 
-    if (! theReinstatementEffects.empty() ) {
-      anOstream << "\tReinstatementEffects:\n" ;
+    if (!theReinstatementEffects.empty()) {
+      anOstream << "\tReinstatementEffects:\n";
       theReinstatementEffects.describe(anOstream);
     }
 
-    if (! theSquashEffects.empty() ) {
-      anOstream << "\tSquashEffects:\n" ;
+    if (!theSquashEffects.empty()) {
+      anOstream << "\tSquashEffects:\n";
       theSquashEffects.describe(anOstream);
     }
 
-    if (! theRetirementEffects.empty() ) {
-      anOstream << "\tRetirementEffects:\n" ;
+    if (!theRetirementEffects.empty()) {
+      anOstream << "\tRetirementEffects:\n";
       theRetirementEffects.describe(anOstream);
     }
 
-    if (! theCommitEffects.empty() ) {
-      anOstream << "\tCommitEffects:\n" ;
+    if (!theCommitEffects.empty()) {
+      anOstream << "\tCommitEffects:\n";
       theCommitEffects.describe(anOstream);
     }
   }
 }
 
-//eExceptionType SemanticInstruction::retryTranslation() {
+// eExceptionType SemanticInstruction::retryTranslation() {
 //  Flexus::SharedTypes::Translation xlat;
 //  xlat.theVaddr = pc();
 //  //xlat.theTL = core()->getTL();
@@ -411,7 +416,7 @@ void SemanticInstruction::describe(std::ostream & anOstream) const {
 //  return kException_None/*xlat.theException*/;
 //}
 
-//PhysicalMemoryAddress SemanticInstruction::translate() {
+// PhysicalMemoryAddress SemanticInstruction::translate() {
 //  Flexus::SharedTypes::Translation xlat;
 //  xlat.theVaddr = pc();
 //  xlat.thePSTATE = core()->getPSTATE();
@@ -420,5 +425,4 @@ void SemanticInstruction::describe(std::ostream & anOstream) const {
 //  return xlat.thePaddr;
 //}
 
-
-} //narmDecoder
+} // namespace narmDecoder

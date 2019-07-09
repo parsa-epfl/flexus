@@ -22,37 +22,38 @@ class cb_iterator_base;
 class cb_iterator_registry {
 
   //! Pointer to the chain of valid iterators.
-  mutable const cb_iterator_base * m_iterators;
+  mutable const cb_iterator_base *m_iterators;
 
 public:
-
   //! Default constructor.
-  cb_iterator_registry() : m_iterators(0) {}
+  cb_iterator_registry() : m_iterators(0) {
+  }
 
   //! Register an iterator into the list of valid iterators.
   /*!
-      \note The method is const in order to register iterators into const containers, too.
+      \note The method is const in order to register iterators into const
+     containers, too.
   */
-  void register_iterator(const cb_iterator_base * it) const; // the implementation is below
+  void register_iterator(const cb_iterator_base *it) const; // the implementation is below
 
   //! Unregister an iterator from the list of valid iterators.
   /*!
-      \note The method is const in order to unregister iterators from const containers, too.
+      \note The method is const in order to unregister iterators from const
+     containers, too.
   */
-  void unregister_iterator(const cb_iterator_base * it) const; // the implementation is below
+  void unregister_iterator(const cb_iterator_base *it) const; // the implementation is below
 
   //! Invalidate all iterators.
   void invalidate_all_iterators(); // the implementation is below
 
   //! Invalidate every iterator conforming to the condition.
-  template<class Condition>
-  void invalidate_iterators(const Condition & condition); //twenisch: moved implementation below
+  template <class Condition>
+  void invalidate_iterators(const Condition &condition); // twenisch: moved implementation below
 
 private:
-
   //! Remove the current iterator from the iterator chain.
-  void remove(const cb_iterator_base * current,
-              const cb_iterator_base * previous) const; // the implementation is below
+  void remove(const cb_iterator_base *current,
+              const cb_iterator_base *previous) const; // the implementation is below
 };
 
 /*!
@@ -64,27 +65,24 @@ private:
 class cb_iterator_base {
 
 private:
-
   //! Iterator registry.
-  mutable const cb_iterator_registry * m_registry;
+  mutable const cb_iterator_registry *m_registry;
 
   //! Next iterator in the iterator chain.
-  mutable const cb_iterator_base * m_next;
+  mutable const cb_iterator_base *m_next;
 
 public:
-
   //! Default constructor.
-  cb_iterator_base() : m_registry(0), m_next(0) {}
+  cb_iterator_base() : m_registry(0), m_next(0) {
+  }
 
   //! Constructor taking the iterator registry as a parameter.
-  cb_iterator_base(const cb_iterator_registry * registry)
-    : m_registry(registry), m_next(0) {
+  cb_iterator_base(const cb_iterator_registry *registry) : m_registry(registry), m_next(0) {
     register_self();
   }
 
   //! Copy constructor.
-  cb_iterator_base(const cb_iterator_base & rhs)
-    : m_registry(rhs.m_registry), m_next(0) {
+  cb_iterator_base(const cb_iterator_base &rhs) : m_registry(rhs.m_registry), m_next(0) {
     register_self();
   }
 
@@ -94,7 +92,7 @@ public:
   }
 
   //! Assign operator.
-  cb_iterator_base & operator = (const cb_iterator_base & rhs) {
+  cb_iterator_base &operator=(const cb_iterator_base &rhs) {
     if (m_registry == rhs.m_registry)
       return *this;
     unregister_self();
@@ -117,20 +115,20 @@ public:
   }
 
   //! Return the next iterator in the iterator chain.
-  const cb_iterator_base * next() const {
+  const cb_iterator_base *next() const {
     return m_next;
   }
 
   //! Set the next iterator in the iterator chain.
   /*!
-      \note The method is const in order to set a next iterator to a const iterator, too.
+      \note The method is const in order to set a next iterator to a const
+     iterator, too.
   */
-  void set_next(const cb_iterator_base * it) const {
+  void set_next(const cb_iterator_base *it) const {
     m_next = it;
   }
 
 private:
-
   //! Register self as a valid iterator.
   void register_self() {
     if (m_registry != 0)
@@ -144,35 +142,36 @@ private:
   }
 };
 
-inline void cb_iterator_registry::register_iterator(const cb_iterator_base * it) const {
+inline void cb_iterator_registry::register_iterator(const cb_iterator_base *it) const {
   it->set_next(m_iterators);
   m_iterators = it;
 }
 
-inline void cb_iterator_registry::unregister_iterator(const cb_iterator_base * it) const {
-  const cb_iterator_base * previous = 0;
-  for (const cb_iterator_base * p = m_iterators; p != it; previous = p, p = p->next());
+inline void cb_iterator_registry::unregister_iterator(const cb_iterator_base *it) const {
+  const cb_iterator_base *previous = 0;
+  for (const cb_iterator_base *p = m_iterators; p != it; previous = p, p = p->next())
+    ;
   remove(it, previous);
 }
 
 inline void cb_iterator_registry::invalidate_all_iterators() {
-  for (const cb_iterator_base * p = m_iterators; p != 0; p = p->next())
+  for (const cb_iterator_base *p = m_iterators; p != 0; p = p->next())
     p->invalidate();
   m_iterators = 0;
 }
 
-inline void cb_iterator_registry::remove(const cb_iterator_base * current,
-    const cb_iterator_base * previous) const {
+inline void cb_iterator_registry::remove(const cb_iterator_base *current,
+                                         const cb_iterator_base *previous) const {
   if (previous == 0)
     m_iterators = m_iterators->next();
   else
     previous->set_next(current->next());
 }
 
-template<class Condition>
-inline void cb_iterator_registry::invalidate_iterators(const Condition & condition) {
-  const cb_iterator_base * previous = 0;
-  for (const cb_iterator_base * p = m_iterators; p != 0; p = p->next()) {
+template <class Condition>
+inline void cb_iterator_registry::invalidate_iterators(const Condition &condition) {
+  const cb_iterator_base *previous = 0;
+  for (const cb_iterator_base *p = m_iterators; p != 0; p = p->next()) {
     if (condition(p)) {
       p->invalidate();
       remove(p, previous);
@@ -196,8 +195,10 @@ class cb_iterator_base {
 #endif
 
 public:
-  cb_iterator_base() {}
-  cb_iterator_base(const cb_iterator_registry *) {}
+  cb_iterator_base() {
+  }
+  cb_iterator_base(const cb_iterator_registry *) {
+  }
 };
 
 #endif // #if BOOST_CB_ENABLE_DEBUG

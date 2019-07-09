@@ -1,6 +1,6 @@
 #ifndef FLEXUS__LAYOUT_IN_COMPONENT_DECLARATION
 #error "Found end of component declaration without a corresponding begin"
-#endif //FLEXUS__LAYOUT_IN_COMPONENT_DECLARATION
+#endif // FLEXUS__LAYOUT_IN_COMPONENT_DECLARATION
 
 #undef FLEXUS__LAYOUT_IN_COMPONENT_DECLARATION
 
@@ -14,4 +14,3 @@
 
 #undef FLEXUS_BEGIN_COMPONENT
 #undef FLEXUS_END_COMPONENT
-

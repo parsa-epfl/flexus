@@ -1,16 +1,16 @@
-#include <vector>
-#include <string>
 #include <memory>
 #include <queue>
+#include <string>
+#include <vector>
 
 #include <boost/optional.hpp>
 
 #include <core/boost_extensions/lexical_cast.hpp>
 
-#include <core/debug/severity.hpp>
 #include <core/debug/category.hpp>
-#include <core/debug/field.hpp>
 #include <core/debug/entry.hpp>
+#include <core/debug/field.hpp>
+#include <core/debug/severity.hpp>
 #include <core/debug/target.hpp>
 
 #ifndef FLEXUS_CORE_DEBUG_DEBUGGER_HPP_INCLUDED
@@ -21,36 +21,31 @@ namespace Dbg {
 
 struct At {
   int64_t theCycle;
-  Action * theAction;
+  Action *theAction;
 
-  At( int64_t aCycle, Action * anAction)
-    : theCycle(aCycle)
-    , theAction(anAction)
-  {}
+  At(int64_t aCycle, Action *anAction) : theCycle(aCycle), theAction(anAction) {
+  }
 
-  friend bool operator < (At const & aLeft, At const & aRight) {
+  friend bool operator<(At const &aLeft, At const &aRight) {
     return aLeft.theCycle > aRight.theCycle;
   }
 };
 
 class Debugger {
-  std::vector<Target *> theTargets; //Owns all targets
+  std::vector<Target *> theTargets; // Owns all targets
   std::map<std::string, bool *> theCategories;
-  std::map<std::string, std::vector< bool *> > theComponents;
+  std::map<std::string, std::vector<bool *>> theComponents;
 
   int64_t theCount;
-  uint64_t * theCycleCount;
+  uint64_t *theCycleCount;
 
-  std::priority_queue<At> theAts; //Owns all targets
+  std::priority_queue<At> theAts; // Owns all targets
 
 public:
-  static Debugger * theDebugger;
+  static Debugger *theDebugger;
   Severity theMinimumSeverity;
 
-  Debugger()
-    : theCount(0)
-    , theCycleCount(0)
-    , theMinimumSeverity(SevDev) {
+  Debugger() : theCount(0), theCycleCount(0), theMinimumSeverity(SevDev) {
   }
 
   ~Debugger();
@@ -69,22 +64,22 @@ public:
       return 0;
   }
 
-  void connectCycleCount(uint64_t * aCount) {
+  void connectCycleCount(uint64_t *aCount) {
     theCycleCount = aCount;
   }
 
-  void process(Entry const & anEntry);
-  void printConfiguration(std::ostream & anOstream);
-  void add(Target * aTarget);
-  void registerCategory(std::string const & aCategory, bool * aSwitch);
+  void process(Entry const &anEntry);
+  void printConfiguration(std::ostream &anOstream);
+  void add(Target *aTarget);
+  void registerCategory(std::string const &aCategory, bool *aSwitch);
   bool setAllCategories(bool aValue);
-  bool setCategory(std::string const & aCategory, bool aValue);
-  void listCategories(std::ostream & anOstream);
-  void registerComponent(std::string const & aComponent, uint32_t anIndex, bool * aSwitch);
+  bool setCategory(std::string const &aCategory, bool aValue);
+  void listCategories(std::ostream &anOstream);
+  void registerComponent(std::string const &aComponent, uint32_t anIndex, bool *aSwitch);
   bool setAllComponents(int32_t anIndex, bool aValue);
-  bool setComponent(std::string const & aCategory, int32_t anIndex, bool aValue);
-  void listComponents(std::ostream & anOstream);
-  void addAt(int64_t aCycle, Action * anAction);
+  bool setComponent(std::string const &aCategory, int32_t anIndex, bool aValue);
+  void listComponents(std::ostream &anOstream);
+  void addAt(int64_t aCycle, Action *anAction);
   void checkAt();
   void doNextAt();
   void reset();
@@ -100,12 +95,11 @@ struct DebuggerConstructor {
   }
 };
 
-} //Dbg
-} //Flexus
+} // namespace Dbg
+} // namespace Flexus
 
 namespace {
 Flexus::Dbg::DebuggerConstructor construct_debugger;
 }
 
-#endif //FLEXUS_CORE_DEBUG_DEBUGGER_HPP_INCLUDED
-
+#endif // FLEXUS_CORE_DEBUG_DEBUGGER_HPP_INCLUDED

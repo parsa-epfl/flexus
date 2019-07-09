@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,7 +36,6 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #include "netcommon.hpp"
 #include <string.h>
 
@@ -47,29 +47,27 @@ namespace nNetShim {
 
 int64_t currTime;
 
-MessageStateList * mslFreeList = nullptr;
-MessageStateList * msFreeList  = nullptr;
+MessageStateList *mslFreeList = nullptr;
+MessageStateList *msFreeList = nullptr;
 
-#define ALLOCATION_BLOCK_SIZE  (512)
+#define ALLOCATION_BLOCK_SIZE (512)
 
-int32_t  msSerial = 0;
+int32_t msSerial = 0;
 
-MessageStateList * allocMessageStateList ( void ) {
-  MessageStateList
-  * newNode;
+MessageStateList *allocMessageStateList(void) {
+  MessageStateList *newNode;
 
-  if ( mslFreeList == nullptr ) {
-    int
-    i;
+  if (mslFreeList == nullptr) {
+    int i;
 
     // Allocate more nodes
     mslFreeList = new MessageStateList[ALLOCATION_BLOCK_SIZE];
 
-    assert ( mslFreeList != nullptr );
+    assert(mslFreeList != nullptr);
 
     // Set up next pointers
-    for ( i = 0; i < ALLOCATION_BLOCK_SIZE - 1; i++ )
-      mslFreeList[i].next = &mslFreeList[i+1];
+    for (i = 0; i < ALLOCATION_BLOCK_SIZE - 1; i++)
+      mslFreeList[i].next = &mslFreeList[i + 1];
   }
 
   newNode = mslFreeList;
@@ -80,92 +78,87 @@ MessageStateList * allocMessageStateList ( void ) {
   newNode->delay = 0;
 
 #ifdef NS_DEBUG
-  assert ( newNode->usageCount == 0 );
+  assert(newNode->usageCount == 0);
   newNode->usageCount++;
 #endif
 
   return newNode;
 }
 
-MessageStateList * allocMessageStateList ( MessageState * msg ) {
-  MessageStateList
-  * newNode = allocMessageStateList();
+MessageStateList *allocMessageStateList(MessageState *msg) {
+  MessageStateList *newNode = allocMessageStateList();
 
   newNode->msg = msg;
   return newNode;
 }
 
-bool freeMessageStateList ( MessageStateList * msgl ) {
+bool freeMessageStateList(MessageStateList *msgl) {
 #ifdef NS_DEBUG
   msgl->usageCount--;
-  assert ( msgl->usageCount == 0 );
+  assert(msgl->usageCount == 0);
 #endif
 
-//  msgl->msg = (MessageState *)msgl->msg->serial;
+  //  msgl->msg = (MessageState *)msgl->msg->serial;
   //  msgl->msg   = nullptr;
-  msgl->prev  = nullptr;
-  msgl->next  = mslFreeList;
+  msgl->prev = nullptr;
+  msgl->next = mslFreeList;
   mslFreeList = msgl;
 
   return false;
 }
 
-MessageState * allocMessageState ( void ) {
-  MessageState
-  * newState;
+MessageState *allocMessageState(void) {
+  MessageState *newState;
 
-  MessageStateList
-  * msl;
+  MessageStateList *msl;
 
-  if ( msFreeList == nullptr ) {
-    int32_t
-    i;
+  if (msFreeList == nullptr) {
+    int32_t i;
 
     newState = new MessageState[ALLOCATION_BLOCK_SIZE];
-    assert ( newState != nullptr );
+    assert(newState != nullptr);
 
-    memset ( newState, 0, sizeof(MessageState[ALLOCATION_BLOCK_SIZE]) );
+    memset(newState, 0, sizeof(MessageState[ALLOCATION_BLOCK_SIZE]));
 
-    for ( i = 0; i < ALLOCATION_BLOCK_SIZE; i++ )
-      freeMessageState ( &newState[i] );
+    for (i = 0; i < ALLOCATION_BLOCK_SIZE; i++)
+      freeMessageState(&newState[i]);
   }
 
-  assert ( msFreeList != nullptr );
+  assert(msFreeList != nullptr);
 
   msl = msFreeList;
   msFreeList = msl->next;
 
   newState = msl->msg;
 
-  freeMessageStateList ( msl );
+  freeMessageStateList(msl);
 
   newState->reinit();
   newState->serial = msSerial++;
 
-  TRACE ( newState, " allocating message with new serial " << newState->serial );
+  TRACE(newState, " allocating message with new serial " << newState->serial);
 
   return newState;
 }
 
-bool freeMessageState  ( MessageState * msg ) {
-  MessageStateList
-  * newNode;
+bool freeMessageState(MessageState *msg) {
+  MessageStateList *newNode;
 
-  TRACE ( msg, " deallocating message" );
+  TRACE(msg, " deallocating message");
 
   msg->myList = nullptr;
   msg->serial = -msg->serial;
 
-  newNode       = allocMessageStateList ( msg );
+  newNode = allocMessageStateList(msg);
   newNode->next = msFreeList;
-  msFreeList    = newNode;
+  msFreeList = newNode;
 
   return false;
 }
 
-bool resetMessageStateSerial ( void ) {
+bool resetMessageStateSerial(void) {
   msSerial = 0;
   return false;
 }
 
-} // nNetShim
+} // namespace nNetShim

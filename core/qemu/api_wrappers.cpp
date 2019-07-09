@@ -1,14 +1,14 @@
-#include <core/target.hpp>
 #include <core/qemu/api_wrappers.hpp>
+#include <core/target.hpp>
 
-namespace Flexus{
-namespace Qemu{
-namespace API{
-void QEMU_write_configuration_to_file(const char * aFilename) {
+namespace Flexus {
+namespace Qemu {
+namespace API {
+void QEMU_write_configuration_to_file(const char *aFilename) {
   /*Qemu::API::SIM_write_configuration_to_file(aFilename);*/
-	// XXX: Does nothing.
+  // XXX: Does nothing.
 }
 
 } // namespace API
-} // namespace QEMU
+} // namespace Qemu
 } // namespace Flexus

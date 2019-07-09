@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,23 +36,22 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #ifndef _ABSTRACT_ARRAY_HPP
 #define _ABSTRACT_ARRAY_HPP
 
 #include <exception>
 #include <iostream>
-#include <stdlib.h>
 #include <limits.h>
+#include <stdlib.h>
 
 #include <boost/throw_exception.hpp>
 
+#include <core/debug/debug.hpp>
 #include <core/target.hpp>
 #include <core/types.hpp>
-#include <core/debug/debug.hpp>
 
-#include <components/CMPCache/CacheState.hpp>
 #include <components/CMPCache/CMPCacheInfo.hpp>
+#include <components/CMPCache/CacheState.hpp>
 
 namespace nCMPCache {
 
@@ -63,56 +63,57 @@ class InvalidCacheAccessException : public std::exception {};
 
 // The output of a cache lookup
 // derived from counted_base so we work with intrusive_ptr
-template<typename _State>
-class AbstractArrayLookupResult : public boost::counted_base {
+template <typename _State> class AbstractArrayLookupResult : public boost::counted_base {
 public:
-  virtual ~AbstractArrayLookupResult () {}
-  AbstractArrayLookupResult() {}
+  virtual ~AbstractArrayLookupResult() {
+  }
+  AbstractArrayLookupResult() {
+  }
 
-  virtual const _State & state( void ) const = 0;
-  virtual bool setState( const _State & aNewState) = 0;
-  virtual void setProtected( bool val) = 0;
+  virtual const _State &state(void) const = 0;
+  virtual bool setState(const _State &aNewState) = 0;
+  virtual void setProtected(bool val) = 0;
   virtual bool isProtected() const = 0;
-  virtual void setPrefetched( bool val) = 0;
-  virtual void setLocked( bool val) = 0;
+  virtual void setPrefetched(bool val) = 0;
+  virtual void setLocked(bool val) = 0;
 
-  virtual bool hit  ( void ) const = 0;
-  virtual bool miss ( void ) const = 0;
-  virtual bool found( void ) const = 0;
-  virtual bool valid( void ) const = 0;
+  virtual bool hit(void) const = 0;
+  virtual bool miss(void) const = 0;
+  virtual bool found(void) const = 0;
+  virtual bool valid(void) const = 0;
 
-  virtual MemoryAddress blockAddress ( void ) const = 0;
+  virtual MemoryAddress blockAddress(void) const = 0;
 
 }; // class AbstractArrayLookupResult
 
-template<typename _State>
-class AbstractArray {
+template <typename _State> class AbstractArray {
 public:
-
-  virtual ~AbstractArray () {}
-  AbstractArray() {}
-
-  typedef boost::intrusive_ptr<AbstractArrayLookupResult<_State> > LookupResult_p;
-
-  // Main array lookup function
-  virtual LookupResult_p operator[] ( const MemoryAddress & anAddress ) = 0;
-
-  virtual LookupResult_p allocate ( LookupResult_p lookup, const MemoryAddress & anAddress ) = 0;
-
-  virtual bool recordAccess ( LookupResult_p lookup) = 0;
-  virtual void invalidateBlock ( LookupResult_p lookup) = 0;
-
-  // Checkpoint reading/writing functions
-  virtual bool saveState ( std::ostream & s ) = 0;
-  virtual bool loadState ( std::istream & s, int32_t anIndex ) = 0;
-
-  // Addressing helper functions
-  MemoryAddress blockAddress ( MemoryAddress const & anAddress ) const {
-    return MemoryAddress ( anAddress & ~(blockOffsetMask) );
+  virtual ~AbstractArray() {
+  }
+  AbstractArray() {
   }
 
-  BlockOffset blockOffset ( MemoryAddress const & anAddress ) const {
-    return BlockOffset ( anAddress & blockOffsetMask );
+  typedef boost::intrusive_ptr<AbstractArrayLookupResult<_State>> LookupResult_p;
+
+  // Main array lookup function
+  virtual LookupResult_p operator[](const MemoryAddress &anAddress) = 0;
+
+  virtual LookupResult_p allocate(LookupResult_p lookup, const MemoryAddress &anAddress) = 0;
+
+  virtual bool recordAccess(LookupResult_p lookup) = 0;
+  virtual void invalidateBlock(LookupResult_p lookup) = 0;
+
+  // Checkpoint reading/writing functions
+  virtual bool saveState(std::ostream &s) = 0;
+  virtual bool loadState(std::istream &s, int32_t anIndex) = 0;
+
+  // Addressing helper functions
+  MemoryAddress blockAddress(MemoryAddress const &anAddress) const {
+    return MemoryAddress(anAddress & ~(blockOffsetMask));
+  }
+
+  BlockOffset blockOffset(MemoryAddress const &anAddress) const {
+    return BlockOffset(anAddress & blockOffsetMask);
   }
 
   virtual uint32_t freeEvictionResources() const {
@@ -127,32 +128,37 @@ public:
   virtual bool evictionResourcesEmpty() const {
     return true;
   }
-  virtual void reserveEvictionResource(int32_t n) { }
-  virtual void unreserveEvictionResource(int32_t n) { }
+  virtual void reserveEvictionResource(int32_t n) {
+  }
+  virtual void unreserveEvictionResource(int32_t n) {
+  }
   virtual std::pair<_State, MemoryAddress> getPreemptiveEviction() = 0;
 
   virtual bool sameSet(MemoryAddress a, MemoryAddress b) {
     return false;
   }
-  virtual std::list<MemoryAddress>  getSetTags(MemoryAddress addr) {
-    DBG_Assert(false, ( << "Derived class does not implement getSetTags() function." ));
+  virtual std::list<MemoryAddress> getSetTags(MemoryAddress addr) {
+    DBG_Assert(false, (<< "Derived class does not implement getSetTags() function."));
     return std::list<MemoryAddress>();
   }
 
-  virtual bool setAlmostFull(LookupResult_p lookup, MemoryAddress const & anAddress ) const {
-    return true;	// Default always returns true. Proper behaviour can be definied in derived classes when required
+  virtual bool setAlmostFull(LookupResult_p lookup, MemoryAddress const &anAddress) const {
+    return true; // Default always returns true. Proper behaviour can be
+                 // definied in derived classes when required
   }
 
-  virtual bool lockedVictimAvailable(LookupResult_p lookup, MemoryAddress const & anAddress ) const {
-    return false;	// Default always returns false. Proper behaviour can be definied in derived classes when required
+  virtual bool lockedVictimAvailable(LookupResult_p lookup, MemoryAddress const &anAddress) const {
+    return false; // Default always returns false. Proper behaviour can be
+                  // definied in derived classes when required
   }
 
-  virtual bool victimAvailable(LookupResult_p lookup, MemoryAddress const & anAddress ) const {
-    return false;	// Default always returns false. Proper behaviour can be definied in derived classes when required
+  virtual bool victimAvailable(LookupResult_p lookup, MemoryAddress const &anAddress) const {
+    return false; // Default always returns false. Proper behaviour can be
+                  // definied in derived classes when required
   }
 
-  virtual LookupResult_p replaceLockedBlock(LookupResult_p lookup, MemoryAddress const & anAddress ) {
-    DBG_Assert(false, ( << "Derived class does not implement replaceLockedBlock() function." ));
+  virtual LookupResult_p replaceLockedBlock(LookupResult_p lookup, MemoryAddress const &anAddress) {
+    DBG_Assert(false, (<< "Derived class does not implement replaceLockedBlock() function."));
     return nullptr;
   }
 
@@ -162,21 +168,20 @@ public:
   }
 
   virtual uint32_t globalCacheSets() {
-    DBG_Assert(false, ( << "Derived class does not implement globalCacheSets() function." ));
+    DBG_Assert(false, (<< "Derived class does not implement globalCacheSets() function."));
     return 0;
   }
 
 protected:
-
   MemoryAddress blockOffsetMask;
-  int32_t	theLockedThreshold;
+  int32_t theLockedThreshold;
 
 }; // class AbstractArray
 
-};  // namespace nCMPCache
+}; // namespace nCMPCache
 
-#include <components/CMPCache/StdArray.hpp>
 #include <components/CMPCache/RTArray.hpp>
+#include <components/CMPCache/StdArray.hpp>
 
 namespace nCMPCache {
 
@@ -192,9 +197,10 @@ namespace nCMPCache {
  * that describe a configuration appropriate for that type
  *
  */
-template<typename _State, const _State & _Default>
-AbstractArray<_State> * constructArray(std::string & anArrayConfiguration, CMPCacheInfo & theInfo, int32_t theBlockSize) {
-  std::string & args = anArrayConfiguration;
+template <typename _State, const _State &_Default>
+AbstractArray<_State> *constructArray(std::string &anArrayConfiguration, CMPCacheInfo &theInfo,
+                                      int32_t theBlockSize) {
+  std::string &args = anArrayConfiguration;
 
   // First, extract the Name of the type of array to consruct
   std::string::size_type loc = args.find(':', 0);
@@ -206,7 +212,7 @@ AbstractArray<_State> * constructArray(std::string & anArrayConfiguration, CMPCa
   }
 
   // Now create a list of key,value pairs
-  std::list< std::pair<std::string, std::string> > arg_list;
+  std::list<std::pair<std::string, std::string>> arg_list;
   std::string key;
   std::string value;
   std::string::size_type pos = 0;
@@ -236,10 +242,10 @@ AbstractArray<_State> * constructArray(std::string & anArrayConfiguration, CMPCa
     return new RTArray<_State, _Default>(theInfo, theBlockSize, arg_list);
   }
 
-  DBG_Assert(false, ( << "Failed to create Instance of '" << name << "'" ) );
+  DBG_Assert(false, (<< "Failed to create Instance of '" << name << "'"));
   return nullptr;
 }
 
-};  // namespace nCMPCache
+}; // namespace nCMPCache
 
 #endif /* _ABSTRACT_ARRAY_HPP */

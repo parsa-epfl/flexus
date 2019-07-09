@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,41 +36,36 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
-#include <stdlib.h>
-#include <math.h>
 #include "regress.hpp"
+#include <math.h>
+#include <stdlib.h>
 
 using namespace nNetShim;
 using namespace std;
 
-NetContainer
-* nc = nullptr;
+NetContainer *nc = nullptr;
 
-int32_t
-numNodes = 0,
-numMasters = 0;
+int32_t numNodes = 0, numMasters = 0;
 
 #define MAX_MASTER_Q (1)
-#define MS_DELAY     (1)
-#define LATENCY      (32)
+#define MS_DELAY (1)
+#define LATENCY (32)
 
-int32_t        *        masterListSize;
-MessageStateList ** masterReplListTail;
-MessageStateList ** masterReplListHead;
-MessageState   **   slaveInput;
+int32_t *masterListSize;
+MessageStateList **masterReplListTail;
+MessageStateList **masterReplListHead;
+MessageState **slaveInput;
 
-bool trussIsNodeAvailable ( const int32_t node,
-                            const int32_t vc );
+bool trussIsNodeAvailable(const int32_t node, const int32_t vc);
 
-bool trussDeliverMessage ( const MessageState * msg );
+bool trussDeliverMessage(const MessageState *msg);
 
-bool initializeTruss ( void );
-bool runTrussSuite ( void );
-bool trussTimeStep ( void );
+bool initializeTruss(void);
+bool runTrussSuite(void);
+bool trussTimeStep(void);
 
-int32_t main ( int32_t argc, char ** argv ) {
-  if ( argc != 2 ) {
+int32_t main(int32_t argc, char **argv) {
+  if (argc != 2) {
     cerr << "usage: " << argv[0] << " config_file" << endl;
     return 1;
   }
@@ -78,7 +74,7 @@ int32_t main ( int32_t argc, char ** argv ) {
   nc = new NetContainer();
 
   cerr << "Building network from " << argv[1] << endl;
-  if ( nc->buildNetwork ( argv[1] ) ) {
+  if (nc->buildNetwork(argv[1])) {
     cerr << "Error building network. " << endl;
     return 1;
   }
@@ -92,37 +88,31 @@ int32_t main ( int32_t argc, char ** argv ) {
   return 0;
 }
 
-inline bool isMaster ( const int32_t node ) {
+inline bool isMaster(const int32_t node) {
   return (node < numMasters);
 }
 
-bool trussDeliverMessage ( const MessageState * msg ) {
-  assert ( trussIsNodeAvailable ( msg->destNode, 0 ) );
-  TRACE ( msg, "Delivered message from network" );
-  if ( isMaster ( msg->destNode ) ) {
+bool trussDeliverMessage(const MessageState *msg) {
+  assert(trussIsNodeAvailable(msg->destNode, 0));
+  TRACE(msg, "Delivered message from network");
+  if (isMaster(msg->destNode)) {
 
     // Replicate the message and place in the master's input queue
-    MessageState
-    * newMsg  = allocMessageState();
+    MessageState *newMsg = allocMessageState();
 
-    MessageStateList
-    * newNode = allocMessageStateList ( newMsg );
+    MessageStateList *newNode = allocMessageStateList(newMsg);
 
-    deliverMessage ( msg );
+    deliverMessage(msg);
 
-    newMsg->reinit ( msg->destNode, // src is now the original destination node
-                     msg->destNode + numMasters,
-                     0,
-                     LATENCY,
-                     false,
-                     currTime );
+    newMsg->reinit(msg->destNode, // src is now the original destination node
+                   msg->destNode + numMasters, 0, LATENCY, false, currTime);
 
     // Replicated the message at this time
     newMsg->replTS = currTime + MS_DELAY;
 
-    TRACE ( newMsg, "Message in master output queue" );
+    TRACE(newMsg, "Message in master output queue");
 
-    if ( masterReplListTail[msg->destNode] ) {
+    if (masterReplListTail[msg->destNode]) {
       masterReplListTail[msg->destNode]->next = newNode;
       masterReplListTail[msg->destNode] = newNode;
     } else {
@@ -133,66 +123,57 @@ bool trussDeliverMessage ( const MessageState * msg ) {
     localPendingMsgs++;
 
   } else {
-    MessageState *
-    newMsg = allocMessageState();
+    MessageState *newMsg = allocMessageState();
 
-    newMsg->reinit ( msg->srcNode,
-                     msg->destNode,
-                     0,
-                     LATENCY,
-                     false,
-                     msg->startTS );
+    newMsg->reinit(msg->srcNode, msg->destNode, 0, LATENCY, false, msg->startTS);
 
     newMsg->replTS = msg->replTS;
 
-    slaveInput[msg->destNode-numMasters] = newMsg;
+    slaveInput[msg->destNode - numMasters] = newMsg;
     localPendingMsgs++;
 
-    TRACE ( newMsg, "Message allocated in slave input queue" );
+    TRACE(newMsg, "Message allocated in slave input queue");
   }
 
   return false;
 }
 
-bool trussIsNodeAvailable ( const int32_t node,
-                            const int32_t vc ) {
+bool trussIsNodeAvailable(const int32_t node, const int32_t vc) {
 
-  if ( isMaster ( node ) ) {
+  if (isMaster(node)) {
 
     // The master can buffer a few messages
-    return ( masterListSize[node] < MAX_MASTER_Q );
+    return (masterListSize[node] < MAX_MASTER_Q);
 
   } else {
     // If the slave has no message waiting in the delay buffer,
     // it's free to receive a message.
-    return ( slaveInput[node-numMasters] == nullptr );
+    return (slaveInput[node - numMasters] == nullptr);
   }
 }
 
-bool deliverMasterMessages ( void ) {
-  int
-  i;
+bool deliverMasterMessages(void) {
+  int i;
 
-  MessageStateList
-  * msl;
+  MessageStateList *msl;
 
-  for ( i = 0; i < numMasters; i++ ) {
+  for (i = 0; i < numMasters; i++) {
 
-    if ( masterReplListHead[i] &&
-         nc->isNodeOutputAvailable ( i, masterReplListHead[i]->msg->priority ) ) {
-      assert ( masterListSize > 0 );
+    if (masterReplListHead[i] &&
+        nc->isNodeOutputAvailable(i, masterReplListHead[i]->msg->priority)) {
+      assert(masterListSize > 0);
 
       msl = masterReplListHead[i];
 
-      TRACE(msl->msg, "Master sending message on vc: " << msl->msg->priority  );
-      INSERT ( msl->msg );
+      TRACE(msl->msg, "Master sending message on vc: " << msl->msg->priority);
+      INSERT(msl->msg);
 
       masterReplListHead[i] = msl->next;
 
-      if ( msl->next == nullptr )
+      if (msl->next == nullptr)
         masterReplListTail[i] = nullptr;
 
-      freeMessageStateList ( msl );
+      freeMessageStateList(msl);
       masterListSize[i]--;
       localPendingMsgs--;
     }
@@ -201,20 +182,18 @@ bool deliverMasterMessages ( void ) {
   return false;
 }
 
-bool deliverSlaveMessages ( void ) {
-  int
-  i;
+bool deliverSlaveMessages(void) {
+  int i;
 
-  for ( i = 0; i < numMasters; i++ ) {
-    if ( slaveInput[i] &&
-         slaveInput[i]->replTS <= currTime ) {
+  for (i = 0; i < numMasters; i++) {
+    if (slaveInput[i] && slaveInput[i]->replTS <= currTime) {
 
-      deliverMessage ( slaveInput[i] );
+      deliverMessage(slaveInput[i]);
 
-      TRACE ( slaveInput[i], "Slave finally delivered message: deadline: "
-              << slaveInput[i]->replTS << " @ " << currTime );
+      TRACE(slaveInput[i], "Slave finally delivered message: deadline: " << slaveInput[i]->replTS
+                                                                         << " @ " << currTime);
 
-      freeMessageState ( slaveInput[i] );
+      freeMessageState(slaveInput[i]);
       slaveInput[i] = nullptr;
       localPendingMsgs--;
     }
@@ -223,34 +202,30 @@ bool deliverSlaveMessages ( void ) {
   return false;
 }
 
-bool trussTimeStep ( void ) {
-  return ( timeStepDefault() ||
-           deliverMasterMessages() ||
-           deliverSlaveMessages()  );
+bool trussTimeStep(void) {
+  return (timeStepDefault() || deliverMasterMessages() || deliverSlaveMessages());
 }
 
-bool initializeTruss ( void ) {
-  int
-  i;
+bool initializeTruss(void) {
+  int i;
 
   cerr << "Initializing TRUSS" << endl;
   timeStep = trussTimeStep;
 
-  nc->setCallbacks ( trussDeliverMessage,
-                     trussIsNodeAvailable );
+  nc->setCallbacks(trussDeliverMessage, trussIsNodeAvailable);
 
-  numNodes   = nc->getNumNodes();
+  numNodes = nc->getNumNodes();
   numMasters = numNodes / 2;
 
   masterListSize = new int[numMasters];
-  masterReplListHead = new MessageStateList*[numMasters];
-  masterReplListTail = new MessageStateList*[numMasters];
-  slaveInput         = new MessageState*[numMasters];
+  masterReplListHead = new MessageStateList *[numMasters];
+  masterReplListTail = new MessageStateList *[numMasters];
+  slaveInput = new MessageState *[numMasters];
 
-  for ( i = 0; i < numMasters; i++ ) {
+  for (i = 0; i < numMasters; i++) {
     masterListSize[i] = 0;
     masterReplListHead[i] = masterReplListTail[i] = nullptr;
-    slaveInput[i]         = nullptr;
+    slaveInput[i] = nullptr;
   }
 
   reinitNetwork();
@@ -260,16 +235,13 @@ bool initializeTruss ( void ) {
   return false;
 }
 
-bool runTrussSuite ( void ) {
-  int
-  i,
-  j;
+bool runTrussSuite(void) {
+  int i, j;
 
-  float
-  f;
+  float f;
 
 #ifdef LOG_RESULTS
-  outFile.open ( "output-truss.csv" );
+  outFile.open("output-truss.csv");
 #endif
 
 #if 0
@@ -287,8 +259,8 @@ bool runTrussSuite ( void ) {
 #endif
 
 #if 1
-  for ( f = 0.05; f <= 1.5; f = f + .05 ) {
-    TRY_TEST ( poissonRandomTraffic ( 400000, numMasters, LATENCY, f, false ) );
+  for (f = 0.05; f <= 1.5; f = f + .05) {
+    TRY_TEST(poissonRandomTraffic(400000, numMasters, LATENCY, f, false));
   }
 #endif
 

@@ -1,6 +1,7 @@
 namespace Flexus {
 namespace Dbg {
 
+// clang-format off
 char const * built_in_debug_cfg =
   "target \"debug-comp\" {                                                                                                                                                      "
   "  filter {                                                                                                                                                                     "
@@ -62,3 +63,4 @@ char const * built_in_debug_cfg =
   ;
 }
 }
+// clang-format on

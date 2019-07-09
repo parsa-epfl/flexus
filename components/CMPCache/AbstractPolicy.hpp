@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,16 +36,15 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #ifndef __ABSTRACT_POLICY_HPP
 #define __ABSTRACT_POLICY_HPP
 
 #include <components/CommonQEMU/AbstractFactory.hpp>
 
 #include <components/CMPCache/CMPCacheInfo.hpp>
-#include <components/CMPCache/ProcessEntry.hpp>
-#include <components/CMPCache/EvictBuffer.hpp>
 #include <components/CMPCache/CacheBuffers.hpp>
+#include <components/CMPCache/EvictBuffer.hpp>
+#include <components/CMPCache/ProcessEntry.hpp>
 
 #include <iostream>
 
@@ -54,22 +54,23 @@ using namespace Flexus::SharedTypes;
 
 class AbstractPolicy {
 public:
-  virtual ~AbstractPolicy() {}
+  virtual ~AbstractPolicy() {
+  }
 
-  virtual void handleRequest ( ProcessEntry_p process ) = 0;
-  virtual void handleSnoop ( ProcessEntry_p process ) = 0;
-  virtual void handleReply ( ProcessEntry_p process ) = 0;
-  virtual void handleWakeMAF ( ProcessEntry_p process ) = 0;
-  virtual void handleCacheEvict ( ProcessEntry_p process ) = 0;
-  virtual void handleDirEvict ( ProcessEntry_p process ) = 0;
-  virtual void handleIdleWork ( ProcessEntry_p process ) = 0;
+  virtual void handleRequest(ProcessEntry_p process) = 0;
+  virtual void handleSnoop(ProcessEntry_p process) = 0;
+  virtual void handleReply(ProcessEntry_p process) = 0;
+  virtual void handleWakeMAF(ProcessEntry_p process) = 0;
+  virtual void handleCacheEvict(ProcessEntry_p process) = 0;
+  virtual void handleDirEvict(ProcessEntry_p process) = 0;
+  virtual void handleIdleWork(ProcessEntry_p process) = 0;
 
   virtual bool isQuiesced() const = 0;
 
-  virtual AbstractDirEvictBuffer & DirEB() = 0;
-  virtual AbstractEvictBuffer & CacheEB() = 0;
-  virtual const AbstractEvictBuffer & CacheEB() const = 0;
-  virtual MissAddressFile & MAF() = 0;
+  virtual AbstractDirEvictBuffer &DirEB() = 0;
+  virtual AbstractEvictBuffer &CacheEB() = 0;
+  virtual const AbstractEvictBuffer &CacheEB() const = 0;
+  virtual MissAddressFile &MAF() = 0;
 
   virtual bool hasIdleWorkAvailable() {
     return false;
@@ -77,7 +78,8 @@ public:
   virtual MemoryTransport getIdleWorkTransport() = 0;
   virtual MemoryTransport getCacheEvictTransport() = 0;
   virtual MemoryTransport getDirEvictTransport() = 0;
-  virtual void getIdleWorkReservations( ProcessEntry_p process ) {}
+  virtual void getIdleWorkReservations(ProcessEntry_p process) {
+  }
 
   virtual bool freeCacheEBPending() {
     return CacheEB().freeSlotsPending();
@@ -90,7 +92,7 @@ public:
     return (DirEB().full() || !CacheEBHasSpace());
   }
 
-  virtual int32_t getEBRequirements(const MemoryTransport & transport) {
+  virtual int32_t getEBRequirements(const MemoryTransport &transport) {
     return 1;
   }
 
@@ -98,7 +100,7 @@ public:
   virtual bool CacheEBHasSpace() const {
     return (!CacheEB().full() && arrayEvictResourcesAvailable());
   }
-  virtual bool EBHasSpace(const MemoryTransport & transport) {
+  virtual bool EBHasSpace(const MemoryTransport &transport) {
     return (!DirEB().full() && CacheEBHasSpace());
   }
 
@@ -108,8 +110,8 @@ public:
 
   virtual void wakeMAFs(MemoryAddress anAddress) = 0;
 
-  virtual bool loadDirState( std::istream & is) = 0;
-  virtual bool loadCacheState( std::istream & is) = 0;
+  virtual bool loadDirState(std::istream &is) = 0;
+  virtual bool loadCacheState(std::istream &is) = 0;
 
   virtual void reserveArrayEvictResource(int32_t n) = 0;
   virtual void unreserveArrayEvictResource(int32_t n) = 0;
@@ -135,9 +137,10 @@ public:
 
 }; // AbstractPolicy
 
-#define REGISTER_CMP_CACHE_POLICY(type, n) const std::string type::name = n; static ConcreteFactory<AbstractPolicy,type,CMPCacheInfo> type ## _Factory
+#define REGISTER_CMP_CACHE_POLICY(type, n)                                                         \
+  const std::string type::name = n;                                                                \
+  static ConcreteFactory<AbstractPolicy, type, CMPCacheInfo> type##_Factory
 
 }; // namespace nCMPCache
 
 #endif // ! __ABSTRACT_POLICY_HPP
-

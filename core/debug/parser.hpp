@@ -9,15 +9,14 @@ namespace Dbg {
 class ParserImpl;
 
 struct Parser {
-  static Parser & parser();
+  static Parser &parser();
 
-  virtual ~Parser() {};
-  virtual void parse(std::string const & aConfiguration) = 0;
-  virtual void parseFile(std::string const & aConfigFile) = 0;
+  virtual ~Parser(){};
+  virtual void parse(std::string const &aConfiguration) = 0;
+  virtual void parseFile(std::string const &aConfigFile) = 0;
 };
 
-} //Dbg
-} //Flexus
+} // namespace Dbg
+} // namespace Flexus
 
-#endif //FLEXUS_CORE_DEBUG_PARSER_HPP_INCLUDED
-
+#endif // FLEXUS_CORE_DEBUG_PARSER_HPP_INCLUDED

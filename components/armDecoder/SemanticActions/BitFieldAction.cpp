@@ -5,11 +5,12 @@
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,29 +36,28 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
-#include <core/boost_extensions/intrusive_ptr.hpp>
-#include <boost/throw_exception.hpp>
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/throw_exception.hpp>
+#include <core/boost_extensions/intrusive_ptr.hpp>
 namespace ll = boost::lambda;
 
 #include <boost/none.hpp>
 
 #include <boost/dynamic_bitset.hpp>
 
-#include <core/target.hpp>
 #include <core/debug/debug.hpp>
+#include <core/target.hpp>
 #include <core/types.hpp>
 
 #include <components/uArchARM/uArchInterfaces.hpp>
 
-#include "../SemanticInstruction.hpp"
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
+#include "../SemanticInstruction.hpp"
 #include "PredicatedSemanticAction.hpp"
 #include "RegisterValueExtractor.hpp"
 #include <components/uArchARM/systemRegister.hpp>
@@ -76,20 +76,12 @@ struct BitFieldAction : public PredicatedSemanticAction {
   uint64_t thewmask, thetmask;
   bool theExtend, the64;
 
-  BitFieldAction ( SemanticInstruction * anInstruction
-                  , eOperandCode anOperandCode1, eOperandCode anOperandCode2
-                  , uint64_t imms, uint64_t immr
-                  , uint64_t wmask, uint64_t tmask, bool anExtend, bool a64)
-    : PredicatedSemanticAction( anInstruction, 2, true )
-    , theOperandCode1(anOperandCode1)
-    , theOperandCode2 (anOperandCode2)
-    , theS (imms)
-    , theR (immr)
-    , thewmask (wmask)
-    , thetmask (tmask)
-    , theExtend (anExtend)
-    , the64 (a64)
-  {
+  BitFieldAction(SemanticInstruction *anInstruction, eOperandCode anOperandCode1,
+                 eOperandCode anOperandCode2, uint64_t imms, uint64_t immr, uint64_t wmask,
+                 uint64_t tmask, bool anExtend, bool a64)
+      : PredicatedSemanticAction(anInstruction, 2, true), theOperandCode1(anOperandCode1),
+        theOperandCode2(anOperandCode2), theS(imms), theR(immr), thewmask(wmask), thetmask(tmask),
+        theExtend(anExtend), the64(a64) {
     theInstruction->setExecuted(false);
   }
 
@@ -98,17 +90,17 @@ struct BitFieldAction : public PredicatedSemanticAction {
     if (ready()) {
       if (theInstruction->hasPredecessorExecuted()) {
 
-        uint64_t src =  boost::get<uint64_t>(theInstruction->operand(theOperandCode1));
-        uint64_t dst =  boost::get<uint64_t>(theInstruction->operand(theOperandCode2));
+        uint64_t src = boost::get<uint64_t>(theInstruction->operand(theOperandCode1));
+        uint64_t dst = boost::get<uint64_t>(theInstruction->operand(theOperandCode2));
 
         std::unique_ptr<Operation> ror = operation(kROR_);
         std::vector<Operand> operands = {src, theR, uint64_t(the64)};
-        uint64_t res =  boost::get<uint64_t>(ror->operator ()(operands));
+        uint64_t res = boost::get<uint64_t>(ror->operator()(operands));
 
         // perform bitfield move on low bits
         uint64_t bot = (dst & ~thewmask) | (res & thewmask);
         // determine extension bits (sign, zero or dest register)
-        uint64_t top_mask = the64 ? (uint64_t) -1 : 0xFFFFFFFF;
+        uint64_t top_mask = the64 ? (uint64_t)-1 : 0xFFFFFFFF;
         uint64_t top = theExtend ? ((src & ((uint64_t)1 << theS)) ? top_mask : 0) : dst;
         // combine extension bits and result bits
         uint64_t result = ((top & ~thetmask) | (bot & thetmask));
@@ -117,33 +109,30 @@ struct BitFieldAction : public PredicatedSemanticAction {
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {
-        DBG_( VVerb, ( << *this << " waiting for predecessor ") );
+        DBG_(VVerb, (<< *this << " waiting for predecessor "));
         reschedule();
       }
     }
   }
 
-  void describe( std::ostream & anOstream) const {
+  void describe(std::ostream &anOstream) const {
     anOstream << theInstruction->identify() << " BitFieldAction ";
   }
 };
 
-predicated_action bitFieldAction
-(SemanticInstruction * anInstruction
-  , std::vector< std::list<InternalDependance> > & opDeps
-  , eOperandCode anOperandCode1, eOperandCode anOperandCode2
-  , uint64_t imms, uint64_t immr
-  , uint64_t wmask, uint64_t tmask, bool anExtend, bool a64
- ){
-  BitFieldAction * act(new(anInstruction->icb()) BitFieldAction( anInstruction, anOperandCode1,
-                                                                 anOperandCode2, imms, immr, wmask, tmask, anExtend, a64) );
+predicated_action bitFieldAction(SemanticInstruction *anInstruction,
+                                 std::vector<std::list<InternalDependance>> &opDeps,
+                                 eOperandCode anOperandCode1, eOperandCode anOperandCode2,
+                                 uint64_t imms, uint64_t immr, uint64_t wmask, uint64_t tmask,
+                                 bool anExtend, bool a64) {
+  BitFieldAction *act(new (anInstruction->icb()) BitFieldAction(
+      anInstruction, anOperandCode1, anOperandCode2, imms, immr, wmask, tmask, anExtend, a64));
 
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
-    opDeps[i].push_back( act->dependance(i) );
+    opDeps[i].push_back(act->dependance(i));
   }
 
-  return predicated_action( act, act->predicate() );
-
+  return predicated_action(act, act->predicate());
 }
 
-} //narmDecoder
+} // namespace narmDecoder

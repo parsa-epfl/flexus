@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,27 +36,26 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
-#include <core/boost_extensions/intrusive_ptr.hpp>
-#include <boost/throw_exception.hpp>
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/throw_exception.hpp>
+#include <core/boost_extensions/intrusive_ptr.hpp>
 namespace ll = boost::lambda;
 
 #include <boost/none.hpp>
 
-#include <core/target.hpp>
 #include <core/debug/debug.hpp>
+#include <core/target.hpp>
 #include <core/types.hpp>
 
 #include <components/uArchARM/uArchInterfaces.hpp>
 
-#include "../SemanticInstruction.hpp"
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
+#include "../SemanticInstruction.hpp"
 #include "PredicatedSemanticAction.hpp"
 
 #define DBG_DeclareCategories armDecoder
@@ -73,93 +73,94 @@ struct LoadAction : public PredicatedSemanticAction {
   boost::optional<eOperandCode> theBypass;
   bool theLoadExtended;
 
-  LoadAction( SemanticInstruction * anInstruction, eSize aSize, eSignCode aSigncode,  boost::optional<eOperandCode> aBypass, bool aLoadExtended)
-    : PredicatedSemanticAction ( anInstruction, 1, true )
-    , theSize(aSize)
-    , theSignExtend(aSigncode)
-    , theBypass(aBypass)
-    , theLoadExtended(aLoadExtended)
-  { }
+  LoadAction(SemanticInstruction *anInstruction, eSize aSize, eSignCode aSigncode,
+             boost::optional<eOperandCode> aBypass, bool aLoadExtended)
+      : PredicatedSemanticAction(anInstruction, 1, true), theSize(aSize), theSignExtend(aSigncode),
+        theBypass(aBypass), theLoadExtended(aLoadExtended) {
+  }
 
   void satisfy(int32_t anArg) {
     BaseSemanticAction::satisfy(anArg);
     SEMANTICS_DBG(*this);
-    if ( !cancelled() && ready() && thePredicate ) {
+    if (!cancelled() && ready() && thePredicate) {
       doLoad();
     }
   }
 
   void predicate_on(int32_t anArg) {
     PredicatedSemanticAction::predicate_on(anArg);
-    if (!cancelled() && ready() && thePredicate ) {
+    if (!cancelled() && ready() && thePredicate) {
       doLoad();
     }
   }
 
   void doLoad() {
-      SEMANTICS_DBG(*this);
+    SEMANTICS_DBG(*this);
     bits value;
-    
+
     if (theLoadExtended) {
-      value = core()->retrieveExtendedLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
+      value = core()->retrieveExtendedLoadValue(boost::intrusive_ptr<Instruction>(theInstruction));
     } else {
-      value = core()->retrieveLoadValue( boost::intrusive_ptr<Instruction>(theInstruction) );
+      value = core()->retrieveLoadValue(boost::intrusive_ptr<Instruction>(theInstruction));
     }
-    
+
     switch (theSize) {
-      case kByte:
-        value &= 0xFFULL;
-        if ((theSignExtend != kNoExtention) && anyBits(value & (bits)0x80ULL)) {
-          value |= theSignExtend == kSignExtend ? (bits)0xFFFFFFFFFFFFFF00ULL : 0ULL;
-        }
-        break;
-      case kHalfWord:
-        value &= value;
-        if ((theSignExtend != kNoExtention) && anyBits(value & (bits)0x8000ULL)) {
-            value |= theSignExtend == kSignExtend ? (bits)0xFFFFFFFFFFFFFF00ULL : 0ULL;
-        }
-        break;
-      case kWord:
-        value &= value;
-        if ((theSignExtend != kNoExtention) && anyBits(value & (bits)0x80000000ULL)) {
-            value |= theSignExtend == kSignExtend ? (bits)0xFFFFFFFFFFFFFF00ULL : 0ULL;
-        }
-        break;
-      case kDoubleWord:
-        break;
+    case kByte:
+      value &= 0xFFULL;
+      if ((theSignExtend != kNoExtention) && anyBits(value & (bits)0x80ULL)) {
+        value |= theSignExtend == kSignExtend ? (bits)0xFFFFFFFFFFFFFF00ULL : 0ULL;
+      }
+      break;
+    case kHalfWord:
+      value &= value;
+      if ((theSignExtend != kNoExtention) && anyBits(value & (bits)0x8000ULL)) {
+        value |= theSignExtend == kSignExtend ? (bits)0xFFFFFFFFFFFFFF00ULL : 0ULL;
+      }
+      break;
+    case kWord:
+      value &= value;
+      if ((theSignExtend != kNoExtention) && anyBits(value & (bits)0x80000000ULL)) {
+        value |= theSignExtend == kSignExtend ? (bits)0xFFFFFFFFFFFFFF00ULL : 0ULL;
+      }
+      break;
+    case kDoubleWord:
+      break;
     case kQuadWord:
     default:
-        DBG_Assert(false);
-        break;
+      DBG_Assert(false);
+      break;
     }
 
     theInstruction->setOperand(kResult, (uint64_t)value);
     SEMANTICS_DBG(*this << " received load value=" << std::hex << value);
     if (theBypass) {
-      mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass);
+      mapped_reg name = theInstruction->operand<mapped_reg>(*theBypass);
       SEMANTICS_DBG(*this << " bypassing value=" << std::hex << value << " to " << name);
-      core()->bypass( name, (uint64_t)value );
+      core()->bypass(name, (uint64_t)value);
     }
     satisfyDependants();
   }
 
-  void doEvaluate() {}
+  void doEvaluate() {
+  }
 
-  void describe( std::ostream & anOstream) const {
+  void describe(std::ostream &anOstream) const {
     anOstream << theInstruction->identify() << " LoadAction";
   }
 };
 
-predicated_dependant_action loadAction
-( SemanticInstruction * anInstruction, eSize aSize, eSignCode aSignCode, boost::optional<eOperandCode> aBypass ) {
-  LoadAction * act(new(anInstruction->icb()) LoadAction( anInstruction, aSize, aSignCode, aBypass, false ) );
-  return predicated_dependant_action( act, act->dependance(), act->predicate() );
+predicated_dependant_action loadAction(SemanticInstruction *anInstruction, eSize aSize,
+                                       eSignCode aSignCode, boost::optional<eOperandCode> aBypass) {
+  LoadAction *act(new (anInstruction->icb())
+                      LoadAction(anInstruction, aSize, aSignCode, aBypass, false));
+  return predicated_dependant_action(act, act->dependance(), act->predicate());
 }
 
-predicated_dependant_action casAction
-( SemanticInstruction * anInstruction, eSize aSize, eSignCode aSignCode, boost::optional<eOperandCode> aBypass ) {
-  LoadAction * act(new(anInstruction->icb()) LoadAction( anInstruction, aSize, aSignCode, aBypass, false ) );
-  return predicated_dependant_action( act, act->dependance(), act->predicate() );
+predicated_dependant_action casAction(SemanticInstruction *anInstruction, eSize aSize,
+                                      eSignCode aSignCode, boost::optional<eOperandCode> aBypass) {
+  LoadAction *act(new (anInstruction->icb())
+                      LoadAction(anInstruction, aSize, aSignCode, aBypass, false));
+  return predicated_dependant_action(act, act->dependance(), act->predicate());
 }
 
-} //narmDecoder
+} // namespace narmDecoder

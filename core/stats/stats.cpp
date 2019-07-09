@@ -1,21 +1,21 @@
-#include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
 
 #include <algorithm>
-#include <iomanip>
-#include <queue>
-#include <list>
-#include <fstream>
 #include <boost/regex.hpp>
+#include <fstream>
+#include <iomanip>
+#include <list>
+#include <queue>
 
-#include <boost/throw_exception.hpp>
-#include <boost/serialization/split_free.hpp>
-#include <functional>
-#include <boost/spirit/include/classic_file_iterator.hpp>
 #include <boost/optional.hpp>
+#include <boost/serialization/split_free.hpp>
+#include <boost/spirit/include/classic_file_iterator.hpp>
+#include <boost/throw_exception.hpp>
+#include <functional>
 
-#include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
 
 #include <core/stats.hpp>
 
@@ -23,28 +23,24 @@ namespace Flexus {
 namespace Stat {
 namespace aux_ {
 
-StatValueHandle_Base::StatValueHandle_Base()
-  : theStatName(0)
-  , theUpdater(0)
-{}
-StatValueHandle_Base::StatValueHandle_Base(Stat * aStat, boost::intrusive_ptr<StatUpdaterBase> anUpdater)
-  : theStatName(aStat->namePtr())
-  , theUpdater(anUpdater)
-{}
-StatValueHandle_Base::StatValueHandle_Base(std::string const & aStat)
-  : theStatName(new std::string(aStat))
-  , theUpdater(0)
-{}
-StatValueHandle_Base::StatValueHandle_Base(const StatValueHandle_Base & aHandle)
-  : theStatName(aHandle.theStatName)
-  , theUpdater(aHandle.theUpdater)
-{ }
-StatValueHandle_Base & StatValueHandle_Base::operator =(const StatValueHandle_Base & aHandle) {
+StatValueHandle_Base::StatValueHandle_Base() : theStatName(0), theUpdater(0) {
+}
+StatValueHandle_Base::StatValueHandle_Base(Stat *aStat,
+                                           boost::intrusive_ptr<StatUpdaterBase> anUpdater)
+    : theStatName(aStat->namePtr()), theUpdater(anUpdater) {
+}
+StatValueHandle_Base::StatValueHandle_Base(std::string const &aStat)
+    : theStatName(new std::string(aStat)), theUpdater(0) {
+}
+StatValueHandle_Base::StatValueHandle_Base(const StatValueHandle_Base &aHandle)
+    : theStatName(aHandle.theStatName), theUpdater(aHandle.theUpdater) {
+}
+StatValueHandle_Base &StatValueHandle_Base::operator=(const StatValueHandle_Base &aHandle) {
   theStatName = aHandle.theStatName;
   theUpdater = aHandle.theUpdater;
   return *this;
 }
-StatValueHandle_Base & StatValueHandle_Base::operator +=(const StatValueHandle_Base & aHandle) {
+StatValueHandle_Base &StatValueHandle_Base::operator+=(const StatValueHandle_Base &aHandle) {
   return *this;
 }
 
@@ -73,39 +69,41 @@ void StatValueHandle_Base::rename(std::string aName) {
   theStatName = new std::string(aName);
 }
 
-std::ostream & operator << (std::ostream & anOstream, StatValueHandle const & aValueHandle) {
+std::ostream &operator<<(std::ostream &anOstream, StatValueHandle const &aValueHandle) {
   if (aValueHandle.theStatName && aValueHandle.theValue) {
-    anOstream << std::setw(40) << std::left << * aValueHandle.theStatName << " " << *aValueHandle.theValue;
+    anOstream << std::setw(40) << std::left << *aValueHandle.theStatName << " "
+              << *aValueHandle.theValue;
   }
   return anOstream;
 }
-std::ostream & operator << (std::ostream & anOstream, StatValueArrayHandle const & aValueHandle) {
+std::ostream &operator<<(std::ostream &anOstream, StatValueArrayHandle const &aValueHandle) {
   if (aValueHandle.theStatName && aValueHandle.theValue) {
-    anOstream << std::setw(40) << std::left << *aValueHandle.theStatName << " " << *aValueHandle.theValue;
+    anOstream << std::setw(40) << std::left << *aValueHandle.theStatName << " "
+              << *aValueHandle.theValue;
   }
   return anOstream;
 }
 
-StatValueHandle::StatValueHandle() {}
-StatValueHandle::StatValueHandle(Stat * aStat, boost::intrusive_ptr< StatValueBase > aValue,  boost::intrusive_ptr<StatUpdaterBase> anUpdater)
-  : StatValueHandle_Base(aStat, anUpdater)
-  , theValue(aValue)
-{}
-StatValueHandle::StatValueHandle(std::string const & aStat, boost::intrusive_ptr< StatValueBase > aValue)
-  : StatValueHandle_Base(aStat)
-  , theValue(aValue)
-{}
-StatValueHandle::StatValueHandle(const StatValueHandle & aHandle)
-  : StatValueHandle_Base(aHandle)
-  , theValue(aHandle.theValue)
-{}
-StatValueHandle & StatValueHandle::operator =(const StatValueHandle & aHandle) {
-  this->StatValueHandle_Base::operator =(aHandle);
+StatValueHandle::StatValueHandle() {
+}
+StatValueHandle::StatValueHandle(Stat *aStat, boost::intrusive_ptr<StatValueBase> aValue,
+                                 boost::intrusive_ptr<StatUpdaterBase> anUpdater)
+    : StatValueHandle_Base(aStat, anUpdater), theValue(aValue) {
+}
+StatValueHandle::StatValueHandle(std::string const &aStat,
+                                 boost::intrusive_ptr<StatValueBase> aValue)
+    : StatValueHandle_Base(aStat), theValue(aValue) {
+}
+StatValueHandle::StatValueHandle(const StatValueHandle &aHandle)
+    : StatValueHandle_Base(aHandle), theValue(aHandle.theValue) {
+}
+StatValueHandle &StatValueHandle::operator=(const StatValueHandle &aHandle) {
+  this->StatValueHandle_Base::operator=(aHandle);
   theValue = aHandle.theValue;
   return *this;
 }
-StatValueHandle & StatValueHandle::operator +=(const StatValueHandle & aHandle) {
-  this->StatValueHandle_Base::operator +=(aHandle);
+StatValueHandle &StatValueHandle::operator+=(const StatValueHandle &aHandle) {
+  this->StatValueHandle_Base::operator+=(aHandle);
   theValue->reduceSum(*aHandle.theValue);
   return *this;
 }
@@ -123,7 +121,7 @@ boost::intrusive_ptr<StatValueBase> StatValueHandle::countAccumulator() {
   return theValue->countAccumulator();
 }
 
-void StatValueHandle::print(std::ostream & anOstream, std::string const & options) {
+void StatValueHandle::print(std::ostream &anOstream, std::string const &options) {
   if (theValue) {
     if (options == "name") {
       anOstream << name();
@@ -139,7 +137,7 @@ int64_t StatValueHandle::asLongLong() {
     return 0;
   }
 }
-int64_t StatValueHandle::asLongLong(std::string const & options) {
+int64_t StatValueHandle::asLongLong(std::string const &options) {
   if (theValue) {
     return theValue->asLongLong(options);
   } else {
@@ -153,7 +151,7 @@ double StatValueHandle::asDouble() {
     return 0;
   }
 }
-double StatValueHandle::asDouble(std::string const & options) {
+double StatValueHandle::asDouble(std::string const &options) {
   if (theValue) {
     return theValue->asDouble(options);
   } else {
@@ -161,17 +159,18 @@ double StatValueHandle::asDouble(std::string const & options) {
   }
 }
 
-StatValueArrayHandle::StatValueArrayHandle() {}
-StatValueArrayHandle::StatValueArrayHandle(Stat * aStat, boost::intrusive_ptr< StatValueArrayBase > aValue,  boost::intrusive_ptr<StatUpdaterBase> anUpdater)
-  : StatValueHandle_Base(aStat, anUpdater)
-  , theValue(aValue)
-{}
-StatValueArrayHandle::StatValueArrayHandle(const StatValueArrayHandle & aHandle)
-  : StatValueHandle_Base(aHandle)
-  , theValue(aHandle.theValue)
-{}
-StatValueArrayHandle & StatValueArrayHandle::operator =(const StatValueArrayHandle & aHandle) {
-  this->StatValueHandle_Base::operator =(aHandle);
+StatValueArrayHandle::StatValueArrayHandle() {
+}
+StatValueArrayHandle::StatValueArrayHandle(Stat *aStat,
+                                           boost::intrusive_ptr<StatValueArrayBase> aValue,
+                                           boost::intrusive_ptr<StatUpdaterBase> anUpdater)
+    : StatValueHandle_Base(aStat, anUpdater), theValue(aValue) {
+}
+StatValueArrayHandle::StatValueArrayHandle(const StatValueArrayHandle &aHandle)
+    : StatValueHandle_Base(aHandle), theValue(aHandle.theValue) {
+}
+StatValueArrayHandle &StatValueArrayHandle::operator=(const StatValueArrayHandle &aHandle) {
+  this->StatValueHandle_Base::operator=(aHandle);
   theValue = aHandle.theValue;
   return *this;
 }
@@ -179,7 +178,7 @@ StatValueArrayHandle & StatValueArrayHandle::operator =(const StatValueArrayHand
 void StatValueArrayHandle::newValue(accumulation_type aType) {
   theValue->newValue(aType);
 }
-void StatValueArrayHandle::print(std::ostream & anOstream, std::string const & options) {
+void StatValueArrayHandle::print(std::ostream &anOstream, std::string const &options) {
   if (theValue) {
     if (options == "name") {
       anOstream << name();
@@ -195,7 +194,7 @@ int64_t StatValueArrayHandle::asLongLong() {
     return 0;
   }
 }
-int64_t StatValueArrayHandle::asLongLong(std::string const & options) {
+int64_t StatValueArrayHandle::asLongLong(std::string const &options) {
   if (theValue) {
     return theValue->asLongLong(options);
   } else {
@@ -203,25 +202,25 @@ int64_t StatValueArrayHandle::asLongLong(std::string const & options) {
   }
 }
 
-}
+} // namespace aux_
 
-Prediction::Prediction(int64_t anUpdate)
-  : theUpdate(anUpdate)
-{}
+Prediction::Prediction(int64_t anUpdate) : theUpdate(anUpdate) {
+}
 
 Prediction::~Prediction() {
   dismiss();
 }
 
-void Prediction::connectCounter( boost::intrusive_ptr< aux_::StatValue_PredictionCounter > aCounter) {
-  theCounters.push_back( aCounter );
+void Prediction::connectCounter(boost::intrusive_ptr<aux_::StatValue_PredictionCounter> aCounter) {
+  theCounters.push_back(aCounter);
 }
 
 void Prediction::confirm() {
-  for(auto& aCounter: theCounters)
+  for (auto &aCounter : theCounters)
     aCounter->confirm(theUpdate);
-  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
-  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter >
+  // >::iterator iter = theCounters.begin(); std::vector< boost::intrusive_ptr<
+  // aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
   // while (iter != end) {
   //   (*iter)->confirm(theUpdate);
   //   ++iter;
@@ -230,10 +229,11 @@ void Prediction::confirm() {
 }
 
 void Prediction::confirm(int64_t anOverride) {
-  for(auto& aCounter: theCounters)
+  for (auto &aCounter : theCounters)
     aCounter->confirm(anOverride);
-  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
-  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter >
+  // >::iterator iter = theCounters.begin(); std::vector< boost::intrusive_ptr<
+  // aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
   // while (iter != end) {
   //   (*iter)->confirm(anOverride);
   //   ++iter;
@@ -241,10 +241,11 @@ void Prediction::confirm(int64_t anOverride) {
 }
 
 void Prediction::dismiss() {
-  for(auto& aCounter: theCounters)
+  for (auto &aCounter : theCounters)
     aCounter->dismiss();
-  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
-  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter >
+  // >::iterator iter = theCounters.begin(); std::vector< boost::intrusive_ptr<
+  // aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
   // while (iter != end) {
   //   (*iter)->dismiss();
   //   ++iter;
@@ -253,10 +254,11 @@ void Prediction::dismiss() {
 }
 
 void Prediction::guess() {
-  for(auto& aCounter: theCounters)
+  for (auto &aCounter : theCounters)
     aCounter->guess(theUpdate);
-  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
-  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter >
+  // >::iterator iter = theCounters.begin(); std::vector< boost::intrusive_ptr<
+  // aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
   // while (iter != end) {
   //   (*iter)->guess(theUpdate);
   //   ++iter;
@@ -264,10 +266,11 @@ void Prediction::guess() {
 }
 
 void Prediction::guess(int64_t anOverride) {
-  for(auto& aCounter: theCounters)
+  for (auto &aCounter : theCounters)
     aCounter->guess(anOverride);
-  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
-  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter >
+  // >::iterator iter = theCounters.begin(); std::vector< boost::intrusive_ptr<
+  // aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
   // while (iter != end) {
   //   (*iter)->guess(anOverride);
   //   ++iter;
@@ -275,10 +278,11 @@ void Prediction::guess(int64_t anOverride) {
 }
 
 void Prediction::goodGuess() {
-  for(auto& aCounter: theCounters)
+  for (auto &aCounter : theCounters)
     aCounter->goodGuess();
-  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
-  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter >
+  // >::iterator iter = theCounters.begin(); std::vector< boost::intrusive_ptr<
+  // aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
   // while (iter != end) {
   //   (*iter)->goodGuess();
   //   ++iter;
@@ -286,10 +290,11 @@ void Prediction::goodGuess() {
 }
 
 void Prediction::reject() {
-  for(auto& aCounter: theCounters)
+  for (auto &aCounter : theCounters)
     aCounter->reject(theUpdate);
-  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
-  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter >
+  // >::iterator iter = theCounters.begin(); std::vector< boost::intrusive_ptr<
+  // aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
   // while (iter != end) {
   //   (*iter)->reject(theUpdate);
   //   ++iter;
@@ -297,10 +302,11 @@ void Prediction::reject() {
 }
 
 void Prediction::reject(int64_t anOverride) {
-  for(auto& aCounter: theCounters)
+  for (auto &aCounter : theCounters)
     aCounter->reject(anOverride);
-  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator iter = theCounters.begin();
-  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
+  // std::vector< boost::intrusive_ptr< aux_::StatValue_PredictionCounter >
+  // >::iterator iter = theCounters.begin(); std::vector< boost::intrusive_ptr<
+  // aux_::StatValue_PredictionCounter > >::iterator end = theCounters.end();
   // while (iter != end) {
   //   (*iter)->reject(anOverride);
   //   ++iter;
@@ -309,36 +315,38 @@ void Prediction::reject(int64_t anOverride) {
 
 namespace aux_ {
 
-void doEXPR( std::ostream & anOstream, std::string const & options, std::map<std::string, Measurement *> & measurements,  std::string const & default_measurement );
+void doEXPR(std::ostream &anOstream, std::string const &options,
+            std::map<std::string, Measurement *> &measurements,
+            std::string const &default_measurement);
 
-template <class BiDirIter>
-class LineFormatter {
+template <class BiDirIter> class LineFormatter {
 public:
   typedef std::map<std::string, Measurement *> measurement_map;
+
 private:
-  measurement_map & theMeasurements;
-  std::ostream & theOut;
+  measurement_map &theMeasurements;
+  std::ostream &theOut;
   boost::regex theFieldRegex;
   boost::regex theFieldDetailsRegex;
   boost::regex theOperationDetailsRegex;
   std::string theDefaultMeasurement;
-public:
-  LineFormatter( measurement_map & aMeasurementSet, std::ostream & anOut)
-    : theMeasurements(aMeasurementSet)
-    , theOut(anOut)
-    , theFieldRegex("([^\\{<]*)(\\{[^\\}]*\\})?(<[^>]*>)?")
-    , theFieldDetailsRegex("\\{([^;@]*)(;[^@]+)?(@.+)?\\}")
-    , theOperationDetailsRegex("<([^:]*)(:.+)?>")
-    , theDefaultMeasurement(theMeasurements.begin()->first)
-  { }
 
-  bool operator()(const boost::match_results< BiDirIter >& aMatch) {
+public:
+  LineFormatter(measurement_map &aMeasurementSet, std::ostream &anOut)
+      : theMeasurements(aMeasurementSet), theOut(anOut),
+        theFieldRegex("([^\\{<]*)(\\{[^\\}]*\\})?(<[^>]*>)?"),
+        theFieldDetailsRegex("\\{([^;@]*)(;[^@]+)?(@.+)?\\}"),
+        theOperationDetailsRegex("<([^:]*)(:.+)?>"),
+        theDefaultMeasurement(theMeasurements.begin()->first) {
+  }
+
+  bool operator()(const boost::match_results<BiDirIter> &aMatch) {
     if (aMatch[1].matched) {
       theOut << aMatch.str(1);
     }
     if (aMatch[2].matched) {
       boost::match_results<BiDirIter> details;
-      if ( boost::regex_match(aMatch[2].first, aMatch[2].second, details, theFieldDetailsRegex)) {
+      if (boost::regex_match(aMatch[2].first, aMatch[2].second, details, theFieldDetailsRegex)) {
         std::string field(details[1].first, details[1].second);
         std::string options;
         std::string measurement(theDefaultMeasurement);
@@ -365,7 +373,8 @@ public:
     }
     if (aMatch[3].matched) {
       boost::match_results<BiDirIter> details;
-      if ( boost::regex_match(aMatch[3].first, aMatch[3].second, details, theOperationDetailsRegex)) {
+      if (boost::regex_match(aMatch[3].first, aMatch[3].second, details,
+                             theOperationDetailsRegex)) {
         std::string operation(details[1].first, details[1].second);
         std::string options;
         std::string measurement(theDefaultMeasurement);
@@ -392,29 +401,29 @@ public:
     return true;
   }
 
-  void format( BiDirIter aFirst, BiDirIter aSecond) {
+  void format(BiDirIter aFirst, BiDirIter aSecond) {
     boost::regex_iterator<BiDirIter> iter(aFirst, aSecond, theFieldRegex), end{};
     std::for_each(iter, end, *this);
     if (aFirst != aSecond && iter != end) {
-    //if (aFirst != aSecond && boost::regex_grep(*this, aFirst, aSecond, theFieldRegex)  > 0) {
+      // if (aFirst != aSecond && boost::regex_grep(*this, aFirst, aSecond,
+      // theFieldRegex)  > 0) {
       theOut << std::endl;
     }
   }
 
-  void setDefaultMeasurement(std::string const & aMeasurement) {
+  void setDefaultMeasurement(std::string const &aMeasurement) {
     theDefaultMeasurement = aMeasurement;
   }
 
-  measurement_map & measurements() {
+  measurement_map &measurements() {
     return theMeasurements;
   }
-  std::ostream & out() {
+  std::ostream &out() {
     return theOut;
   }
 };
 
-template <class BiDirIter>
-struct Directive : public boost::counted_base {
+template <class BiDirIter> struct Directive : public boost::counted_base {
   virtual bool ready() = 0;
   virtual void addLine(BiDirIter aStart, BiDirIter anEnd) = 0;
   virtual void addDirective(boost::intrusive_ptr<Directive> aDirective) = 0;
@@ -422,16 +431,18 @@ struct Directive : public boost::counted_base {
   virtual bool isEnd() {
     return false;
   }
-  virtual ~Directive() {}
+  virtual ~Directive() {
+  }
 };
 
-template <class BiDirIter>
-struct EndDirective : public Directive<BiDirIter> {
+template <class BiDirIter> struct EndDirective : public Directive<BiDirIter> {
   bool ready() {
     return true;
   }
-  void addLine(BiDirIter aStart, BiDirIter anEnd) { }
-  void addDirective(boost::intrusive_ptr<Directive<BiDirIter> > aDirective) { }
+  void addLine(BiDirIter aStart, BiDirIter anEnd) {
+  }
+  void addDirective(boost::intrusive_ptr<Directive<BiDirIter>> aDirective) {
+  }
   bool process() {
     return true;
   }
@@ -440,16 +451,16 @@ struct EndDirective : public Directive<BiDirIter> {
   }
 };
 
-template <class BiDirIter>
-class RootDirective {
-  boost::intrusive_ptr< Directive<BiDirIter> > theSubDirective;
-  std::pair< BiDirIter, BiDirIter > theLine;
-  LineFormatter<BiDirIter> & theFormatter;
+template <class BiDirIter> class RootDirective {
+  boost::intrusive_ptr<Directive<BiDirIter>> theSubDirective;
+  std::pair<BiDirIter, BiDirIter> theLine;
+  LineFormatter<BiDirIter> &theFormatter;
+
 public:
-  RootDirective( LineFormatter<BiDirIter> & aFormatter)
-    : theFormatter(aFormatter)
-  {}
-  bool ready() { return theSubDirective ? theSubDirective->ready(): true;
+  RootDirective(LineFormatter<BiDirIter> &aFormatter) : theFormatter(aFormatter) {
+  }
+  bool ready() {
+    return theSubDirective ? theSubDirective->ready() : true;
     // if (theSubDirective) {
     //   return theSubDirective->ready();
     // }
@@ -462,7 +473,7 @@ public:
       theLine = std::make_pair(aStart, anEnd);
     }
   }
-  void addDirective(boost::intrusive_ptr<Directive<BiDirIter> > aDirective) {
+  void addDirective(boost::intrusive_ptr<Directive<BiDirIter>> aDirective) {
     if (theSubDirective) {
       theSubDirective->addDirective(aDirective);
     } else {
@@ -481,33 +492,31 @@ public:
   }
 };
 
-template <class BiDirIter>
-class ForEachMeasurementDirective : public Directive<BiDirIter> {
+template <class BiDirIter> class ForEachMeasurementDirective : public Directive<BiDirIter> {
   struct LineEntry {
-    boost::intrusive_ptr< Directive<BiDirIter> > theDirective;
-    boost::optional< std::pair< BiDirIter, BiDirIter > > theLine;
-    LineEntry() {}
-    LineEntry(boost::intrusive_ptr< Directive<BiDirIter> > aDirective)
-      : theDirective(aDirective)
-    {}
-    LineEntry(std::pair< BiDirIter, BiDirIter > aLine)
-      : theLine(aLine)
-    {}
+    boost::intrusive_ptr<Directive<BiDirIter>> theDirective;
+    boost::optional<std::pair<BiDirIter, BiDirIter>> theLine;
+    LineEntry() {
+    }
+    LineEntry(boost::intrusive_ptr<Directive<BiDirIter>> aDirective) : theDirective(aDirective) {
+    }
+    LineEntry(std::pair<BiDirIter, BiDirIter> aLine) : theLine(aLine) {
+    }
   };
 
-  boost::intrusive_ptr< Directive<BiDirIter> > theSubDirective;
-  typedef std::vector< LineEntry > line_vector;
+  boost::intrusive_ptr<Directive<BiDirIter>> theSubDirective;
+  typedef std::vector<LineEntry> line_vector;
   line_vector theLines;
-  LineFormatter<BiDirIter> & theFormatter;
+  LineFormatter<BiDirIter> &theFormatter;
   typedef typename LineFormatter<BiDirIter>::measurement_map measurement_map;
   std::string theMeasurementSpec;
   bool isReady;
+
 public:
-  ForEachMeasurementDirective( LineFormatter<BiDirIter> & aFormatter, std::string const & aMeasurementSpec)
-    : theFormatter(aFormatter)
-    , theMeasurementSpec(aMeasurementSpec)
-    , isReady(false)
-  {}
+  ForEachMeasurementDirective(LineFormatter<BiDirIter> &aFormatter,
+                              std::string const &aMeasurementSpec)
+      : theFormatter(aFormatter), theMeasurementSpec(aMeasurementSpec), isReady(false) {
+  }
   bool ready() {
     if (theSubDirective) {
       return false;
@@ -521,40 +530,41 @@ public:
         theSubDirective = 0;
       }
     } else {
-      theLines.push_back( LineEntry( std::make_pair(aStart, anEnd) ) );
+      theLines.push_back(LineEntry(std::make_pair(aStart, anEnd)));
     }
   }
-  void addDirective(boost::intrusive_ptr<Directive<BiDirIter> > aDirective) {
+  void addDirective(boost::intrusive_ptr<Directive<BiDirIter>> aDirective) {
     if (theSubDirective) {
       theSubDirective->addDirective(aDirective);
       if (theSubDirective->ready()) {
         theSubDirective = 0;
       }
-    } else if ( aDirective->isEnd() ) {
+    } else if (aDirective->isEnd()) {
       isReady = true;
     } else {
       theSubDirective = aDirective;
-      theLines.push_back( LineEntry( aDirective) );
+      theLines.push_back(LineEntry(aDirective));
     }
   }
   bool process() {
 
     try {
       boost::regex measurement_filter(theMeasurementSpec);
-      for(auto& aMeasurement: theFormatter.measurements()){
+      for (auto &aMeasurement : theFormatter.measurements()) {
         if (boost::regex_match(aMeasurement.first, measurement_filter)) {
           theFormatter.setDefaultMeasurement(aMeasurement.first);
 
-          for(auto& aLine: theLines){
-            if(aLine.theDirective)
+          for (auto &aLine : theLines) {
+            if (aLine.theDirective)
               aLine.theDirective->process();
             else
               theFormatter.format(aLine.theLine->first, aLine.theLine->second);
           }
         }
       }
-      // typename measurement_map::iterator iter = theFormatter.measurements().begin();
-      // typename measurement_map::iterator end = theFormatter.measurements().end();
+      // typename measurement_map::iterator iter =
+      // theFormatter.measurements().begin(); typename measurement_map::iterator
+      // end = theFormatter.measurements().end();
 
       // while (iter != end) {
       //   if (std::regex_match(iter->first, measurement_filter)) {
@@ -564,7 +574,8 @@ public:
       //       if(aLine.theDirective)
       //         aLine.theDirective->process();
       //       else
-      //         theFormatter.format(aLine.theLine->first, aLine.theLine->second);
+      //         theFormatter.format(aLine.theLine->first,
+      //         aLine.theLine->second);
       //     }
       //     // typename line_vector::iterator l_iter = theLines.begin();
       //     // typename line_vector::iterator l_end = theLines.end();
@@ -574,7 +585,8 @@ public:
       //     //     l_iter->theDirective->process();
       //     //   }
       //     //   if (l_iter->theLine) {
-      //     //     theFormatter.format(l_iter->theLine->first, l_iter->theLine->second);
+      //     //     theFormatter.format(l_iter->theLine->first,
+      //     l_iter->theLine->second);
       //     //   }
       //     //   ++l_iter;
       //     // }
@@ -582,7 +594,7 @@ public:
       //   ++iter;
       // }
 
-    } catch (boost::regex_error & anExcept) {
+    } catch (boost::regex_error &anExcept) {
       theFormatter.out() << "{ERR:Bad Measurement Spec: " << theMeasurementSpec << "}";
     }
 
@@ -590,40 +602,38 @@ public:
   }
 };
 
-template <class BiDirIter>
-class LineProcessor {
-  std::map<std::string, Measurement *> & theMeasurements;
-  std::ostream & theOut;
+template <class BiDirIter> class LineProcessor {
+  std::map<std::string, Measurement *> &theMeasurements;
+  std::ostream &theOut;
   boost::regex theCommentRegex;
   boost::regex theDirectiveRegex;
   LineFormatter<BiDirIter> theLineFormatter;
   RootDirective<BiDirIter> theDirectiveStack;
 
 public:
-  LineProcessor( std::map<std::string, Measurement *> & aMeasurementSet, std::ostream & anOut)
-    : theMeasurements(aMeasurementSet)
-    , theOut(anOut)
-    , theCommentRegex("^[[:space:]]*//.*")
-    , theDirectiveRegex("^#([^[:space:]]*)[:space:]?(.+)?")
-    , theLineFormatter(aMeasurementSet, anOut)
-    , theDirectiveStack(theLineFormatter)
-  { }
+  LineProcessor(std::map<std::string, Measurement *> &aMeasurementSet, std::ostream &anOut)
+      : theMeasurements(aMeasurementSet), theOut(anOut), theCommentRegex("^[[:space:]]*//.*"),
+        theDirectiveRegex("^#([^[:space:]]*)[:space:]?(.+)?"),
+        theLineFormatter(aMeasurementSet, anOut), theDirectiveStack(theLineFormatter) {
+  }
 
-  bool operator()(const boost::match_results<BiDirIter> & aMatch) {
-    //See what kind of line we have
-    boost::match_results< BiDirIter > directive_match;
+  bool operator()(const boost::match_results<BiDirIter> &aMatch) {
+    // See what kind of line we have
+    boost::match_results<BiDirIter> directive_match;
     if (boost::regex_match(aMatch[0].first, aMatch[0].second, theCommentRegex)) {
-      //Comments are removed from the output
+      // Comments are removed from the output
       return true;
-    } else if (boost::regex_match(aMatch[0].first, aMatch[0].second, directive_match, theDirectiveRegex)) {
+    } else if (boost::regex_match(aMatch[0].first, aMatch[0].second, directive_match,
+                                  theDirectiveRegex)) {
       if (directive_match.str(1) == "FOR-MEASUREMENTS") {
         std::string measurements(".*");
         if (directive_match[2].matched) {
           measurements = directive_match.str(2);
         }
-        theDirectiveStack.addDirective( new ForEachMeasurementDirective<BiDirIter>(theLineFormatter, measurements));
+        theDirectiveStack.addDirective(
+            new ForEachMeasurementDirective<BiDirIter>(theLineFormatter, measurements));
       } else if (directive_match.str(1) == "END") {
-        theDirectiveStack.addDirective( new EndDirective<BiDirIter>() ) ;
+        theDirectiveStack.addDirective(new EndDirective<BiDirIter>());
       } else {
         theOut << "{ERR:Unknown Directive}";
       }
@@ -635,34 +645,33 @@ public:
     }
     return true;
   }
-
 };
 
-template <class BiDirIter>
-class StatFormatter {
+template <class BiDirIter> class StatFormatter {
   boost::regex theLineRegex;
   LineProcessor<BiDirIter> theLineProcessor;
+
 public:
-  StatFormatter( std::map<std::string, Measurement *> & aMeasurementSet, std::ostream & anOut)
-    : theLineRegex(".*$")
-    , theLineProcessor(aMeasurementSet, anOut)
-  {}
+  StatFormatter(std::map<std::string, Measurement *> &aMeasurementSet, std::ostream &anOut)
+      : theLineRegex(".*$"), theLineProcessor(aMeasurementSet, anOut) {
+  }
 
   void format(BiDirIter aBegin, BiDirIter anEnd) {
     boost::regex_iterator<BiDirIter> iter(aBegin, anEnd, theLineRegex);
     boost::regex_iterator<BiDirIter> end{};
     std::for_each(iter, end, theLineProcessor);
-    //boost::regex_grep(theLineProcessor, aBegin, anEnd, theLineRegex, std::match_not_dot_newline);
+    // boost::regex_grep(theLineProcessor, aBegin, anEnd, theLineRegex,
+    // std::match_not_dot_newline);
   }
 };
 
-}
+} // namespace aux_
 
 namespace aux_ {
 class StatManagerImpl : public StatManager {
-  typedef std::vector< Stat *> stat_collection;
-  typedef std::vector< std::string > stat_names;
-  typedef std::map< std::string, boost::intrusive_ptr<Measurement> > measurement_collection;
+  typedef std::vector<Stat *> stat_collection;
+  typedef std::vector<std::string> stat_names;
+  typedef std::map<std::string, boost::intrusive_ptr<Measurement>> measurement_collection;
 
   bool theInitialized;
   stat_collection theStats;
@@ -670,25 +679,22 @@ class StatManagerImpl : public StatManager {
   measurement_collection theMeasurements;
   int64_t theTick;
   boost::intrusive_ptr<Measurement> theAllMeasurement;
-  std::list< std::function< void() > > theFinalizers;
+  std::list<std::function<void()>> theFinalizers;
   bool theLoaded;
 
   struct event {
     int64_t theDeadline;
-    std::function< void() > theEvent;
-    friend bool operator < (event const & aLeft, event const & aRight) {
-      return aLeft.theDeadline > aRight.theDeadline; //Lower time means higher priority.
+    std::function<void()> theEvent;
+    friend bool operator<(event const &aLeft, event const &aRight) {
+      return aLeft.theDeadline > aRight.theDeadline; // Lower time means higher priority.
     }
   };
 
   std::priority_queue<event> theEventQueue;
 
 public:
-  StatManagerImpl()
-    : theInitialized(false)
-    , theTick(0)
-    , theLoaded(false)
-  {}
+  StatManagerImpl() : theInitialized(false), theTick(0), theLoaded(false) {
+  }
   ~StatManagerImpl() {
     // Note: This destructor is never called, the StatManagerImpl is
     // intentionally leaked to allow inclusion of global Stat objects
@@ -703,12 +709,12 @@ public:
     theAllMeasurement = openMeasurement("all");
   }
 
-  void registerStat(Stat * aStat) {
+  void registerStat(Stat *aStat) {
     theStats.push_back(aStat);
     theStatNames.push_back(aStat->name());
 
-    for(auto& aMeasurement: theMeasurements)
-      if(aMeasurement.second.get() != nullptr)
+    for (auto &aMeasurement : theMeasurements)
+      if (aMeasurement.second.get() != nullptr)
         aMeasurement.second->addToMeasurement(aStat);
 
     // measurement_collection::iterator iter = theMeasurements.begin();
@@ -721,11 +727,12 @@ public:
     // }
   }
 
-  boost::intrusive_ptr<Measurement> openMeasurement(std::string const & aName, std::string const & aStatSpec = std::string(".*")) {
+  boost::intrusive_ptr<Measurement>
+  openMeasurement(std::string const &aName, std::string const &aStatSpec = std::string(".*")) {
     if (theMeasurements.find(aName) == theMeasurements.end()) {
       boost::intrusive_ptr<SimpleMeasurement> measurement(new SimpleMeasurement(aName, aStatSpec));
 
-      for(auto* aStat: theStats)
+      for (auto *aStat : theStats)
         measurement->addToMeasurement(aStat);
       // stat_collection::iterator iter = theStats.begin();
       // stat_collection::iterator end = theStats.end();
@@ -737,15 +744,18 @@ public:
       theMeasurements[aName] = measurement;
       return measurement;
     } else {
-      //Need to implement re-opening
+      // Need to implement re-opening
       return theMeasurements[aName];
     }
   }
 
-  void openPeriodicMeasurement(std::string const & aName, int64_t aPeriod, accumulation_type anAccumulation, std::string const & aStatSpec = std::string(".*")) {
+  void openPeriodicMeasurement(std::string const &aName, int64_t aPeriod,
+                               accumulation_type anAccumulation,
+                               std::string const &aStatSpec = std::string(".*")) {
     if (theMeasurements.find(aName) == theMeasurements.end()) {
-      boost::intrusive_ptr<PeriodicMeasurement> measurement(new PeriodicMeasurement(aName, aStatSpec, aPeriod, anAccumulation));
-      for(auto* aStat: theStats)
+      boost::intrusive_ptr<PeriodicMeasurement> measurement(
+          new PeriodicMeasurement(aName, aStatSpec, aPeriod, anAccumulation));
+      for (auto *aStat : theStats)
         measurement->addToMeasurement(aStat);
       // stat_collection::iterator iter = theStats.begin();
       // stat_collection::iterator end = theStats.end();
@@ -756,14 +766,17 @@ public:
 
       theMeasurements[aName] = measurement;
     } else {
-      //Need to implement re-opening
+      // Need to implement re-opening
     }
   }
 
-  void openLoggedPeriodicMeasurement(std::string const & aName, int64_t aPeriod, accumulation_type anAccumulation, std::ostream & anOstream, std::string const & aStatSpec = std::string(".*")) {
+  void openLoggedPeriodicMeasurement(std::string const &aName, int64_t aPeriod,
+                                     accumulation_type anAccumulation, std::ostream &anOstream,
+                                     std::string const &aStatSpec = std::string(".*")) {
     if (theMeasurements.find(aName) == theMeasurements.end()) {
-      boost::intrusive_ptr<LoggedPeriodicMeasurement> measurement(new LoggedPeriodicMeasurement(aName, aStatSpec, aPeriod, anAccumulation, anOstream));
-      for(auto* aStat: theStats)
+      boost::intrusive_ptr<LoggedPeriodicMeasurement> measurement(
+          new LoggedPeriodicMeasurement(aName, aStatSpec, aPeriod, anAccumulation, anOstream));
+      for (auto *aStat : theStats)
         measurement->addToMeasurement(aStat);
       // stat_collection::iterator iter = theStats.begin();
       // stat_collection::iterator end = theStats.end();
@@ -774,14 +787,14 @@ public:
 
       theMeasurements[aName] = measurement;
     } else {
-      //Need to implement re-opening
+      // Need to implement re-opening
     }
   }
 
-  void reduceNodes(std::string const & aMeasurementSpec) {
+  void reduceNodes(std::string const &aMeasurementSpec) {
     boost::regex spec(aMeasurementSpec);
     measurement_collection selected_measurements;
-    for(auto& aMeasurement: theMeasurements)
+    for (auto &aMeasurement : theMeasurements)
       if (boost::regex_match(aMeasurement.first, spec))
         selected_measurements.insert(aMeasurement);
     // measurement_collection::iterator iter = theMeasurements.begin();
@@ -793,15 +806,16 @@ public:
     //   ++iter;
     // }
 
-    for(auto& aMeasurement: selected_measurements) {
-      auto* msmt = dynamic_cast<SimpleMeasurement *>(aMeasurement.second.get());
-      if (msmt) msmt->reduceNodes();
+    for (auto &aMeasurement : selected_measurements) {
+      auto *msmt = dynamic_cast<SimpleMeasurement *>(aMeasurement.second.get());
+      if (msmt)
+        msmt->reduceNodes();
     }
-    // measurement_collection::iterator sel_iter = selected_measurements.begin();
-    // measurement_collection::iterator sel_end = selected_measurements.end();
-    // while (sel_iter != sel_end) {
-    //   SimpleMeasurement * msmt = dynamic_cast<SimpleMeasurement *>(sel_iter->second.get());
-    //   if (msmt) {
+    // measurement_collection::iterator sel_iter =
+    // selected_measurements.begin(); measurement_collection::iterator sel_end =
+    // selected_measurements.end(); while (sel_iter != sel_end) {
+    //   SimpleMeasurement * msmt = dynamic_cast<SimpleMeasurement
+    //   *>(sel_iter->second.get()); if (msmt) {
     //     msmt->reduceNodes();
     //   }
     //   ++sel_iter;
@@ -809,12 +823,12 @@ public:
   }
 
   void finalize() {
-    while (! theFinalizers.empty() ) {
+    while (!theFinalizers.empty()) {
       theFinalizers.front()();
       theFinalizers.pop_front();
     }
 
-    for(auto& aMeasurement: theMeasurements)
+    for (auto &aMeasurement : theMeasurements)
       aMeasurement.second->close();
     // measurement_collection::iterator iter = theMeasurements.begin();
     // measurement_collection::iterator end = theMeasurements.end();
@@ -824,18 +838,18 @@ public:
     // }
   }
 
-  void closeMeasurement(std::string const & aName) {
+  void closeMeasurement(std::string const &aName) {
     measurement_collection::iterator iter = theMeasurements.find(aName);
     if (iter == theMeasurements.end()) {
-      //Trying to close a measurment that doesn't exist
+      // Trying to close a measurment that doesn't exist
       return;
     }
-    Measurement & meas = *iter->second;
+    Measurement &meas = *iter->second;
     meas.close();
   }
 
-  void listStats(std::ostream & anOstream) {
-    for(auto& aStatName: theStatNames)
+  void listStats(std::ostream &anOstream) {
+    for (auto &aStatName : theStatNames)
       anOstream << aStatName << std::endl;
     // stat_names::iterator iter = theStatNames.begin();
     // stat_names::iterator end = theStatNames.end();
@@ -845,8 +859,8 @@ public:
     // }
   }
 
-  void listMeasurements(std::ostream & anOstream) {
-    for(auto& aMeasurement: theMeasurements)
+  void listMeasurements(std::ostream &anOstream) {
+    for (auto &aMeasurement : theMeasurements)
       anOstream << *aMeasurement.second << std::endl;
     // measurement_collection::iterator iter = theMeasurements.begin();
     // measurement_collection::iterator end = theMeasurements.end();
@@ -856,13 +870,14 @@ public:
     // }
   }
 
-  boost::intrusive_ptr<Measurement> doReduce(eReduction aReduction, std::string aName, std::map< std::string, Measurement * > & aMatches) {
-    boost::intrusive_ptr<Measurement> collapsedMeasurement( openMeasurement(aName) );
+  boost::intrusive_ptr<Measurement> doReduce(eReduction aReduction, std::string aName,
+                                             std::map<std::string, Measurement *> &aMatches) {
+    boost::intrusive_ptr<Measurement> collapsedMeasurement(openMeasurement(aName));
 
-    for(auto& aMatch: aMatches)
+    for (auto &aMatch : aMatches)
       collapsedMeasurement->reduce(aReduction, aMatch.second);
-    // std::map< std::string, Measurement * >::iterator matchIter = aMatches.begin();
-    // while (matchIter != aMatches.end()) {
+    // std::map< std::string, Measurement * >::iterator matchIter =
+    // aMatches.begin(); while (matchIter != aMatches.end()) {
     //   collapsedMeasurement->reduce(aReduction, matchIter->second);
     //   ++matchIter;
     // }
@@ -871,10 +886,10 @@ public:
     return collapsedMeasurement;
   }
 
-  void printMeasurement(std::string const & aMeasurementSpec, std::ostream & anOstream) {
+  void printMeasurement(std::string const &aMeasurementSpec, std::ostream &anOstream) {
     boost::regex spec(aMeasurementSpec);
-    std::map< std::string, Measurement * > matches;
-    for(auto& pair: theMeasurements)
+    std::map<std::string, Measurement *> matches;
+    for (auto &pair : theMeasurements)
       if (boost::regex_match(pair.first, spec))
         matches[pair.first] = pair.second.get();
     // measurement_collection::iterator iter = theMeasurements.begin();
@@ -888,20 +903,22 @@ public:
     if (matches.size() == 0) {
       std::cout << "No measurement matches " << aMeasurementSpec << std::endl;
     } else if (matches.size() == 1) {
-      std::map< std::string, Measurement * >::iterator matchIter = matches.begin();
+      std::map<std::string, Measurement *>::iterator matchIter = matches.begin();
       matchIter->second->print(anOstream);
     } else {
       std::cout << "Collapsing all matching measurements:" << std::endl;
-      boost::intrusive_ptr<Measurement> collapsedMeasurement( doReduce(eReduction::eSum, "Collapsed", matches) );
+      boost::intrusive_ptr<Measurement> collapsedMeasurement(
+          doReduce(eReduction::eSum, "Collapsed", matches));
       collapsedMeasurement->print(anOstream);
     }
   }
 
-  void format(std::string const & aMeasurementSpec, std::string const & aFormat, std::ostream & anOstream) {
+  void format(std::string const &aMeasurementSpec, std::string const &aFormat,
+              std::ostream &anOstream) {
     boost::regex spec(aMeasurementSpec);
 
-    std::map< std::string, Measurement * > matches;
-    for(auto& pair: theMeasurements)
+    std::map<std::string, Measurement *> matches;
+    for (auto &pair : theMeasurements)
       if (boost::regex_match(pair.first, spec))
         matches[pair.first] = pair.second.get();
     // measurement_collection::iterator iter = theMeasurements.begin();
@@ -920,10 +937,11 @@ public:
     }
   }
 
-  void formatFile(std::string const & aMeasurementSpec, std::string const & aFile, std::ostream & anOstream) {
+  void formatFile(std::string const &aMeasurementSpec, std::string const &aFile,
+                  std::ostream &anOstream) {
     boost::regex spec(aMeasurementSpec);
-    std::map< std::string, Measurement * > matches;
-    for(auto& pair: theMeasurements)
+    std::map<std::string, Measurement *> matches;
+    for (auto &pair : theMeasurements)
       if (boost::regex_match(pair.first, spec))
         matches[pair.first] = pair.second.get();
     // measurement_collection::iterator iter = theMeasurements.begin();
@@ -941,20 +959,20 @@ public:
 
       if (first) {
         boost::spirit::classic::file_iterator<> last = first.make_end();
-        StatFormatter< boost::spirit::classic::file_iterator<> > formatter(matches, anOstream);
+        StatFormatter<boost::spirit::classic::file_iterator<>> formatter(matches, anOstream);
         formatter.format(first, last);
 
       } else {
-        anOstream << "Format file \""  << aFile <<  "\" not found" << std::endl;
+        anOstream << "Format file \"" << aFile << "\" not found" << std::endl;
       }
-
     }
   }
 
-  void collapse(std::string const & aMeasurementSpec, std::string const & aFormat, std::ostream & anOstream) {
+  void collapse(std::string const &aMeasurementSpec, std::string const &aFormat,
+                std::ostream &anOstream) {
     boost::regex spec(aMeasurementSpec);
-    std::map< std::string, Measurement * > matches;
-    for(auto& pair: theMeasurements)
+    std::map<std::string, Measurement *> matches;
+    for (auto &pair : theMeasurements)
       if (boost::regex_match(pair.first, spec))
         matches[pair.first] = pair.second.get();
     // measurement_collection::iterator iter = theMeasurements.begin();
@@ -969,8 +987,9 @@ public:
       std::cout << "No measurement matches " << aMeasurementSpec << std::endl;
     } else {
       std::string collapsedMeasurementName("Collapsed");
-      std::map< std::string, Measurement * > toCollapse;
-      boost::intrusive_ptr<Measurement> collapsedMeasurement( doReduce(eReduction::eSum, collapsedMeasurementName, matches) );
+      std::map<std::string, Measurement *> toCollapse;
+      boost::intrusive_ptr<Measurement> collapsedMeasurement(
+          doReduce(eReduction::eSum, collapsedMeasurementName, matches));
       toCollapse[collapsedMeasurementName] = collapsedMeasurement.get();
 
       StatFormatter<std::string::const_iterator> formatter(toCollapse, anOstream);
@@ -978,10 +997,11 @@ public:
     }
   }
 
-  void reduce(eReduction aReduction, std::string const & aMeasurementSpec, std::string const & aDestMeasurement, std::ostream & anOstream) {
+  void reduce(eReduction aReduction, std::string const &aMeasurementSpec,
+              std::string const &aDestMeasurement, std::ostream &anOstream) {
     boost::regex spec(aMeasurementSpec);
-    std::map< std::string, Measurement * > matches;
-    for(auto& pair: theMeasurements)
+    std::map<std::string, Measurement *> matches;
+    for (auto &pair : theMeasurements)
       if (boost::regex_match(pair.first, spec))
         matches[pair.first] = pair.second.get();
     // measurement_collection::iterator iter = theMeasurements.begin();
@@ -995,16 +1015,18 @@ public:
     if (matches.size() == 0) {
       std::cout << "No measurement matches " << aMeasurementSpec << std::endl;
     } else {
-      std::map< std::string, Measurement * > toCollapse;
-      boost::intrusive_ptr<Measurement> collapsedMeasurement( doReduce(aReduction, aDestMeasurement, matches) );
+      std::map<std::string, Measurement *> toCollapse;
+      boost::intrusive_ptr<Measurement> collapsedMeasurement(
+          doReduce(aReduction, aDestMeasurement, matches));
       theMeasurements[aDestMeasurement] = collapsedMeasurement.get();
     }
   }
 
-  void collapseFile(std::string const & aMeasurementSpec, std::string const & aFile, std::ostream & anOstream) {
+  void collapseFile(std::string const &aMeasurementSpec, std::string const &aFile,
+                    std::ostream &anOstream) {
     boost::regex spec(aMeasurementSpec);
-    std::map< std::string, Measurement * > matches;
-    for(auto& pair: theMeasurements)
+    std::map<std::string, Measurement *> matches;
+    for (auto &pair : theMeasurements)
       if (boost::regex_match(pair.first, spec))
         matches[pair.first] = pair.second.get();
     // measurement_collection::iterator iter = theMeasurements.begin();
@@ -1022,25 +1044,25 @@ public:
 
       if (first) {
         std::string collapsedMeasurementName("Collapsed");
-        std::map< std::string, Measurement * > toCollapse;
-        boost::intrusive_ptr<Measurement> collapsedMeasurement( doReduce(eReduction::eSum, collapsedMeasurementName, matches) );
+        std::map<std::string, Measurement *> toCollapse;
+        boost::intrusive_ptr<Measurement> collapsedMeasurement(
+            doReduce(eReduction::eSum, collapsedMeasurementName, matches));
         toCollapse[collapsedMeasurementName] = collapsedMeasurement.get();
 
         boost::spirit::classic::file_iterator<> last = first.make_end();
-        StatFormatter< boost::spirit::classic::file_iterator<> > formatter(toCollapse, anOstream);
+        StatFormatter<boost::spirit::classic::file_iterator<>> formatter(toCollapse, anOstream);
         formatter.format(first, last);
 
       } else {
-        anOstream << "Format file \""  << aFile <<  "\" not found" << std::endl;
+        anOstream << "Format file \"" << aFile << "\" not found" << std::endl;
       }
-
     }
   }
 
-  void saveMeasurements(std::string const & aMeasurementSpec, std::string const & aFile) const {
+  void saveMeasurements(std::string const &aMeasurementSpec, std::string const &aFile) const {
     boost::regex spec(aMeasurementSpec);
     measurement_collection selected_measurements;
-    for(auto& pair: theMeasurements)
+    for (auto &pair : theMeasurements)
       if (boost::regex_match(pair.first, spec))
         selected_measurements.insert(pair);
     // measurement_collection::const_iterator iter = theMeasurements.begin();
@@ -1066,10 +1088,9 @@ public:
       }
 
       {
-        boost::archive::binary_oarchive oa( (loc == std::string::npos)
-                                            ? dynamic_cast<std::ostream &>(anOstream)
-                                            : dynamic_cast<std::ostream &>(aCompressed)
-                                          );
+        boost::archive::binary_oarchive oa((loc == std::string::npos)
+                                               ? dynamic_cast<std::ostream &>(anOstream)
+                                               : dynamic_cast<std::ostream &>(aCompressed));
 
         register_types(oa);
 
@@ -1083,7 +1104,6 @@ public:
       } else {
         aCompressed.reset();
       }
-
     }
   }
 
@@ -1092,7 +1112,7 @@ public:
   }
   void tick(int64_t anAdvance = 1) {
     theTick += anAdvance;
-    while (! theEventQueue.empty() && ticks() >= theEventQueue.top().theDeadline) {
+    while (!theEventQueue.empty() && ticks() >= theEventQueue.top().theDeadline) {
       theEventQueue.top().theEvent();
       theEventQueue.pop();
     }
@@ -1109,9 +1129,8 @@ public:
     theEventQueue.push(evt);
   }
 
-  template <class Archive>
-  void register_types(Archive & ar) const {
-    //Only add to the bottom of this list of types
+  template <class Archive> void register_types(Archive &ar) const {
+    // Only add to the bottom of this list of types
     ar.template register_type<SimpleMeasurement>();
     ar.template register_type<PeriodicMeasurement>();
     ar.template register_type<LoggedPeriodicMeasurement>();
@@ -1121,7 +1140,7 @@ public:
     ar.template register_type<StatValueArray_Counter>();
     ar.template register_type<StatValue_Max>();
     ar.template register_type<StatValueArray_Max>();
-    ar.template register_type<StatValue_InstanceCounter<std::string> >();
+    ar.template register_type<StatValue_InstanceCounter<std::string>>();
     ar.template register_type<StatValue_Average>();
     ar.template register_type<StatValueArray_Average>();
     ar.template register_type<StatValue_StdDev>();
@@ -1129,16 +1148,16 @@ public:
     ar.template register_type<StatValue_Log2Histogram>();
     ar.template register_type<StatValue_Annotation>();
     ar.template register_type<StatValue_PredictionCounter>();
-    ar.template register_type<StatValue_InstanceCounter<int64_t> >();
+    ar.template register_type<StatValue_InstanceCounter<int64_t>>();
     ar.template register_type<StatValue_WeightedLog2Histogram>();
     ar.template register_type<StatValue_AvgAccumulator>();
     ar.template register_type<StatValue_StdDevAccumulator>();
     ar.template register_type<StatValue_CountAccumulator>();
     ar.template register_type<StatValue_StdDevLog2Histogram>();
-    ar.template register_type<StatValue_UniqueCounter<uint32_t> >();
+    ar.template register_type<StatValue_UniqueCounter<uint32_t>>();
   }
 
-  void save(std::ostream & anOstream) const {
+  void save(std::ostream &anOstream) const {
     boost::archive::binary_oarchive oa(anOstream);
 
     register_types(oa);
@@ -1148,7 +1167,7 @@ public:
     oa << theTick;
   }
 
-  void load(std::istream & anIstream) {
+  void load(std::istream &anIstream) {
     boost::archive::binary_iarchive ia(anIstream);
 
     register_types(ia);
@@ -1158,7 +1177,7 @@ public:
     ia >> theTick;
   }
 
-  void loadMore(std::istream & anIstream, std::string const & aPrefix) {
+  void loadMore(std::istream &anIstream, std::string const &aPrefix) {
     boost::archive::binary_iarchive ia(anIstream);
 
     register_types(ia);
@@ -1170,9 +1189,9 @@ public:
     ia >> measurements;
     ia >> tick;
 
-    for(auto& aMeasurement: measurements){
+    for (auto &aMeasurement : measurements) {
       auto name = aPrefix + aMeasurement.second->name();
-      aMeasurement.second->resetName( name );
+      aMeasurement.second->resetName(name);
       theMeasurements[name] = aMeasurement.second;
     }
 
@@ -1185,15 +1204,13 @@ public:
     //   theMeasurements[name] = iter->second;
     //   ++iter;
     // }
-
   }
-
 };
-}
+} // namespace aux_
 
-aux_::StatManagerImpl * theStatManagerImpl;
+aux_::StatManagerImpl *theStatManagerImpl;
 
-StatManager * getStatManager() {
+StatManager *getStatManager() {
   if (theStatManagerImpl == nullptr) {
     theStatManagerImpl = new aux_::StatManagerImpl();
   }
@@ -1202,8 +1219,8 @@ StatManager * getStatManager() {
 
 namespace aux_ {
 
-void HistogramPrint::doPrint(std::ostream & anOstream, std::string const & options) const {
-  if (buckets() > 0 ) {
+void HistogramPrint::doPrint(std::ostream &anOstream, std::string const &options) const {
+  if (buckets() > 0) {
     if (options.size() > 0) {
       if (options == "buckets") {
         anOstream << buckets();
@@ -1231,7 +1248,7 @@ void HistogramPrint::doPrint(std::ostream & anOstream, std::string const & optio
           std::string range = options.substr(4);
           size_t dash = range.find("-");
           if (dash == std::string::npos) {
-            //No dash
+            // No dash
             begin = end = boost::lexical_cast<int>(range);
           } else {
             std::string begin_str = range.substr(0, dash);
@@ -1266,16 +1283,18 @@ void HistogramPrint::doPrint(std::ostream & anOstream, std::string const & optio
     }
 
     anOstream << "\n\tBucket\tSize\n";
-    anOstream << "\t" << 0 << ":" << "\t" << bucketVal(0) << "\n";
+    anOstream << "\t" << 0 << ":"
+              << "\t" << bucketVal(0) << "\n";
     int32_t label = 1;
     for (int32_t i = 1; i < buckets(); ++i) {
-      anOstream << "\t" << label << ":" << "\t" << bucketVal(i) << "\n";
+      anOstream << "\t" << label << ":"
+                << "\t" << bucketVal(i) << "\n";
       label *= 2;
     }
   }
 }
 
-void InstanceCounterPrint::doPrint(std::ostream & anOstream, std::string const & options ) const {
+void InstanceCounterPrint::doPrint(std::ostream &anOstream, std::string const &options) const {
   int32_t valuePrintWidth = -1;
   bool valuePrintHex = false;
   bool printAll = false;
@@ -1309,11 +1328,12 @@ void InstanceCounterPrint::doPrint(std::ostream & anOstream, std::string const &
         percentile = 0.5;
       } else if (options.substr(0, 7) == "pctile:") {
         float pct = boost::lexical_cast<float>(options.substr(7));
-        if (! (pct > 0.0 && pct <= 100.0) ) {
+        if (!(pct > 0.0 && pct <= 100.0)) {
           anOstream << "{Percentile must be between (0,100]}";
           return;
         }
-        if (pct == 100.0) pct100 = true;
+        if (pct == 100.0)
+          pct100 = true;
         countSort = false;
         done = false;
         calcPercentile = true;
@@ -1350,12 +1370,12 @@ void InstanceCounterPrint::doPrint(std::ostream & anOstream, std::string const &
         std::vector<sort_helper> elements;
         fillVector(elements);
         int32_t begin = elements[0].value;
-        int32_t end = elements[elements.size()-1].value;
+        int32_t end = elements[elements.size() - 1].value;
         try {
           std::string range = options.substr(4);
           size_t dash = range.find("-");
           if (dash == std::string::npos) {
-            //No dash
+            // No dash
             begin = end = boost::lexical_cast<int>(range);
           } else {
             std::string begin_str = range.substr(0, dash);
@@ -1381,7 +1401,8 @@ void InstanceCounterPrint::doPrint(std::ostream & anOstream, std::string const &
         for (int32_t i = 0; i < (int)elements.size(); i++) {
           int64_t val = elements[i].value;
           int64_t cnt = elements[i].count;
-          if (val >= begin && val <= end) sum += cnt;
+          if (val >= begin && val <= end)
+            sum += cnt;
         }
         anOstream << sum;
         done = true;
@@ -1396,7 +1417,7 @@ void InstanceCounterPrint::doPrint(std::ostream & anOstream, std::string const &
     }
   }
 
-  //Enroll all the counts and elements in a vector for sorting
+  // Enroll all the counts and elements in a vector for sorting
   std::vector<sort_helper> elements;
 
   fillVector(elements);
@@ -1408,7 +1429,7 @@ void InstanceCounterPrint::doPrint(std::ostream & anOstream, std::string const &
   int64_t sum = 0;
   int64_t count = elements.size();
 
-  for(auto& element: elements){
+  for (auto &element : elements) {
     sum += element.count;
   }
 
@@ -1416,7 +1437,7 @@ void InstanceCounterPrint::doPrint(std::ostream & anOstream, std::string const &
 
   if (calcPercentile) {
     if (pct100) {
-      anOstream << elements[elements.size()-1].value << " (100%)";
+      anOstream << elements[elements.size() - 1].value << " (100%)";
       return;
     } else {
       float cum_pct = 0.0;
@@ -1431,15 +1452,17 @@ void InstanceCounterPrint::doPrint(std::ostream & anOstream, std::string const &
     }
   }
 
-  //Print implementation here
+  // Print implementation here
   anOstream << std::endl;
   if (exclude) {
     anOstream << "Excluding bucket " << std::dec << excludeBucket << std::endl;
   }
   if (printCDF) {
-    anOstream << "     " << std::setw(10) << "Count" << std::setw(8) << "Cum" << " Value" << std::endl;
+    anOstream << "     " << std::setw(10) << "Count" << std::setw(8) << "Cum"
+              << " Value" << std::endl;
   } else {
-    anOstream << "     " << std::setw(10) << "Count" << std::setw(8) << "Pct" << " Value" << std::endl;
+    anOstream << "     " << std::setw(10) << "Count" << std::setw(8) << "Pct"
+              << " Value" << std::endl;
   }
 
   if (exclude) {
@@ -1457,22 +1480,25 @@ void InstanceCounterPrint::doPrint(std::ostream & anOstream, std::string const &
   int64_t displayed_sum = 0;
   int64_t overall_sum = 0;
   float cdf_pct = 0;
-  for(auto& element: elements){
+  for (auto &element : elements) {
     auto value = element.value;
     auto count = element.count;
-    
-    if (exclude && (value == excludeBucket)) continue;
+
+    if (exclude && (value == excludeBucket))
+      continue;
 
     float pct = static_cast<float>(count) / sum_f * 100.0;
     cdf_pct += pct;
-    if (!printAll && count <= 1) break;
+    if (!printAll && count <= 1)
+      break;
     ++displayed_count;
     displayed_sum += count;
     overall_sum += count * value;
     anOstream << "      ";
     anOstream << std::left << std::setw(10) << std::setfill(' ') << count;
     if (printCDF) {
-      anOstream << std::right << std::setprecision(2) << std::fixed << std::setw(6) << cdf_pct << "% ";
+      anOstream << std::right << std::setprecision(2) << std::fixed << std::setw(6) << cdf_pct
+                << "% ";
     } else {
       anOstream << std::right << std::setprecision(2) << std::fixed << std::setw(6) << pct << "% ";
     }
@@ -1498,23 +1524,26 @@ void InstanceCounterPrint::doPrint(std::ostream & anOstream, std::string const &
   //   displayed_sum += elements[i].count;
   //   overall_sum += elements[i].count * elements[i].value;
   //   anOstream << "      ";
-  //   anOstream << std::left << std::setw(10) << std::setfill(' ') << elements[i].count;
-  //   if (printCDF) {
-  //     anOstream << std::right << std::setprecision(2) << std::fixed << std::setw(6) << cdf_pct << "% ";
+  //   anOstream << std::left << std::setw(10) << std::setfill(' ') <<
+  //   elements[i].count; if (printCDF) {
+  //     anOstream << std::right << std::setprecision(2) << std::fixed <<
+  //     std::setw(6) << cdf_pct << "% ";
   //   } else {
-  //     anOstream << std::right << std::setprecision(2) << std::fixed << std::setw(6) << pct << "% ";
+  //     anOstream << std::right << std::setprecision(2) << std::fixed <<
+  //     std::setw(6) << pct << "% ";
   //   }
   //   if (valuePrintWidth >= 0) {
   //     anOstream << std::setw(valuePrintWidth);
   //   }
-  //   if (valuePrintHex || ((elements[i].value > 100000) && ((elements[i].value & 63) == 0))) {
+  //   if (valuePrintHex || ((elements[i].value > 100000) && ((elements[i].value
+  //   & 63) == 0))) {
   //     anOstream << "0x" << std::hex << elements[i].value << std::dec;
   //   } else {
   //     anOstream << elements[i].value;
   //   }
   //   anOstream << std::endl;
   // }
-  if ( displayed_count != count ) {
+  if (displayed_count != count) {
     float pct = static_cast<float>(sum - displayed_sum) / sum_f * 100.0;
     anOstream << "      ";
     anOstream << std::left << std::setw(10) << std::setfill(' ') << sum - displayed_sum;
@@ -1531,11 +1560,9 @@ void InstanceCounterPrint::doPrint(std::ostream & anOstream, std::string const &
 
   anOstream << "     Average value: " << std::left << std::setw(10) << std::setfill(' ')
             << (double)overall_sum / (double)displayed_sum << std::endl;
-
 }
 
-} // end aux_
+} // namespace aux_
 
-} // end Stat
-} // end Flexus
-
+} // namespace Stat
+} // namespace Flexus

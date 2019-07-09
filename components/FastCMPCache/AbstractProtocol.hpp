@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -33,15 +34,15 @@
 // ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
 // CONTRACT, TORT OR OTHERWISE).
 //
-// DO-NOT-REMOVE end-copyright-block   
+// DO-NOT-REMOVE end-copyright-block
 #ifndef FASTCMPCACHE_PROTOCOL_HPP
 #define FASTCMPCACHE_PROTOCOL_HPP
 
 #include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 #include <components/FastCMPCache/AbstractFactory.hpp>
 
-#include <components/FastCMPCache/CoherenceStates.hpp>
 #include <components/FastCMPCache/CacheStats.hpp>
+#include <components/FastCMPCache/CoherenceStates.hpp>
 
 #include <core/types.hpp>
 
@@ -51,33 +52,30 @@ using namespace Flexus::SharedTypes;
 
 #define NoRequest NumMemoryMessageTypes
 
-enum SharingState {
-  ZeroSharers = 0,
-  OneSharer = 1,
-  ManySharers = 2
-};
+enum SharingState { ZeroSharers = 0, OneSharer = 1, ManySharers = 2 };
 
 struct SharingStatePrinter {
-  SharingStatePrinter(const SharingState & s) : state(s) {}
-  const SharingState & state;
+  SharingStatePrinter(const SharingState &s) : state(s) {
+  }
+  const SharingState &state;
 };
 
-inline std::ostream & operator<<(std::ostream & os, const SharingStatePrinter & state) {
+inline std::ostream &operator<<(std::ostream &os, const SharingStatePrinter &state) {
   switch (state.state) {
-    case ZeroSharers:
-      os << "ZeroSharers";
-      break;
-    case OneSharer:
-      os << "OneSharer";
-      break;
-    case ManySharers:
-      os << "ManySharers";
-      break;
+  case ZeroSharers:
+    os << "ZeroSharers";
+    break;
+  case OneSharer:
+    os << "OneSharer";
+    break;
+  case ManySharers:
+    os << "ManySharers";
+    break;
   }
   return os;
 }
 
-typedef Flexus::Stat::StatCounter CacheStats::* StatMemberPtr;
+typedef Flexus::Stat::StatCounter CacheStats::*StatMemberPtr;
 
 struct PrimaryAction {
   MemoryMessage::MemoryMessageType snoop_type;
@@ -91,9 +89,12 @@ struct PrimaryAction {
   StatMemberPtr stat;
   bool poison;
 
-  PrimaryAction(MemoryMessage::MemoryMessageType s, MemoryMessage::MemoryMessageType t1, MemoryMessage::MemoryMessageType t2, MemoryMessage::MemoryMessageType r1, MemoryMessage::MemoryMessageType r2, CoherenceState_t ns1, CoherenceState_t ns2, bool m, bool fwd, bool a, bool u, StatMemberPtr s_ptr, bool p) :
-    snoop_type(s), forward_request(fwd),
-    multicast(m), allocate(a), update(u), stat(s_ptr), poison(p) {
+  PrimaryAction(MemoryMessage::MemoryMessageType s, MemoryMessage::MemoryMessageType t1,
+                MemoryMessage::MemoryMessageType t2, MemoryMessage::MemoryMessageType r1,
+                MemoryMessage::MemoryMessageType r2, CoherenceState_t ns1, CoherenceState_t ns2,
+                bool m, bool fwd, bool a, bool u, StatMemberPtr s_ptr, bool p)
+      : snoop_type(s), forward_request(fwd), multicast(m), allocate(a), update(u), stat(s_ptr),
+        poison(p) {
     terminal_response[0] = t1;
     terminal_response[1] = t2;
     response[0] = r1;
@@ -102,24 +103,28 @@ struct PrimaryAction {
     next_state[1] = ns2;
   };
 
-  PrimaryAction() : poison(true) {};
+  PrimaryAction() : poison(true){};
 };
 
 class AbstractProtocol {
 public:
+  virtual ~AbstractProtocol() {
+  }
 
-  virtual ~AbstractProtocol() {}
-
-  // Given a SharingState and message type, return the appropriate protocol action to take
-  virtual const PrimaryAction & getAction(CoherenceState_t cache_state, SharingState dir_state, MemoryMessage::MemoryMessageType type, PhysicalMemoryAddress address) = 0;
+  // Given a SharingState and message type, return the appropriate protocol
+  // action to take
+  virtual const PrimaryAction &getAction(CoherenceState_t cache_state, SharingState dir_state,
+                                         MemoryMessage::MemoryMessageType type,
+                                         PhysicalMemoryAddress address) = 0;
 
   virtual MemoryMessage::MemoryMessageType evict(uint64_t tagset, CoherenceState_t state) = 0;
 };
 
-#define REGISTER_PROTOCOL_TYPE(type,n) const std::string type::name = n; static ConcreteFactory<AbstractProtocol,type> type ## _Factory
-#define CREATE_PROTOCOL(args)   AbstractFactory<AbstractProtocol>::createInstance(args)
+#define REGISTER_PROTOCOL_TYPE(type, n)                                                            \
+  const std::string type::name = n;                                                                \
+  static ConcreteFactory<AbstractProtocol, type> type##_Factory
+#define CREATE_PROTOCOL(args) AbstractFactory<AbstractProtocol>::createInstance(args)
 
-}; // namespace
+}; // namespace nFastCMPCache
 
 #endif // FASTCMPCACHE_PROTOCOL_HPP
-

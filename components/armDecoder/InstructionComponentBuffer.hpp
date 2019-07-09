@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,15 +36,14 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #ifndef FLEXUS_armDECODER_INSTRUCTIONCOMPONENTBUFFER_HPP_INCLUDED
 #define FLEXUS_armDECODER_INSTRUCTIONCOMPONENTBUFFER_HPP_INCLUDED
 
-#include <iostream>
 #include <core/boost_extensions/intrusive_ptr.hpp>
+#include <iostream>
 
-#include <core/types.hpp>
 #include <core/stats.hpp>
+#include <core/types.hpp>
 
 static const size_t kICBSize = 2048;
 
@@ -53,14 +53,12 @@ extern Flexus::Stat::StatCounter theICBs;
 struct InstructionComponentBuffer {
 
   char theComponentBuffer[kICBSize];
-  char * theNextAlloc;
+  char *theNextAlloc;
   size_t theFreeSpace;
-  InstructionComponentBuffer * theExtensionBuffer;
+  InstructionComponentBuffer *theExtensionBuffer;
 
   InstructionComponentBuffer()
-    : theNextAlloc(theComponentBuffer)
-    , theFreeSpace(kICBSize)
-    , theExtensionBuffer(0) {
+      : theNextAlloc(theComponentBuffer), theFreeSpace(kICBSize), theExtensionBuffer(0) {
     ++theICBs;
   }
 
@@ -72,15 +70,15 @@ struct InstructionComponentBuffer {
     --theICBs;
   }
 
-  void * alloc(size_t aSize) {
-    DBG_Assert( aSize < kICBSize );
-    if ( theFreeSpace < aSize ) {
+  void *alloc(size_t aSize) {
+    DBG_Assert(aSize < kICBSize);
+    if (theFreeSpace < aSize) {
       if (theExtensionBuffer == 0) {
         theExtensionBuffer = new InstructionComponentBuffer();
       }
-      return theExtensionBuffer->alloc( aSize );
+      return theExtensionBuffer->alloc(aSize);
     }
-    void * tmp = theNextAlloc;
+    void *tmp = theNextAlloc;
     theNextAlloc += aSize;
     theFreeSpace -= aSize;
     DBG_Assert(theFreeSpace >= 0);
@@ -90,18 +88,17 @@ struct InstructionComponentBuffer {
 
 struct UncountedComponent {
   void operator delete(void *) {
-    /*Nothing to do on delete*/ // FIXME: this leaks, since icb.alloc() calls new(...)
+    /*Nothing to do on delete*/ // FIXME: this leaks, since icb.alloc() calls
+                                // new(...)
   }
-  void * operator new( size_t aSize, InstructionComponentBuffer & aICB ) {
-    return aICB.alloc( aSize );
+  void *operator new(size_t aSize, InstructionComponentBuffer &aICB) {
+    return aICB.alloc(aSize);
   }
 
 private:
-  void * operator new( size_t ); //Not allowed
-
+  void *operator new(size_t); // Not allowed
 };
 
-} //narmDecoder
+} // namespace narmDecoder
 
-#endif //FLEXUS_armDECODER_INSTRUCTIONCOMPONENTBUFFER_HPP_INCLUDED
-
+#endif // FLEXUS_armDECODER_INSTRUCTIONCOMPONENTBUFFER_HPP_INCLUDED

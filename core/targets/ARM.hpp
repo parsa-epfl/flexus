@@ -1,6 +1,6 @@
 #if defined(FLEXUS_TARGET) && (FLEXUS_TARGET == 0)
 #error "Only a single target may be defined in a simulator"
-#endif //FLEXUS_TARGET
+#endif // FLEXUS_TARGET
 
 #define FLEXUS_LITTLE_ENDIAN 1
 #define FLEXUS_BIG_ENDIAN 0
@@ -15,7 +15,7 @@
 #define FLEXUS_TARGET_PA_BITS 64
 #define FLEXUS_TARGET_ENDIAN FLEXUS_LITTLE_ENDIAN
 
-#define FLEXUS_TARGET_IS(target) ( FLEXUS_TARGET == FLEXUS_TARGET_ ## target )
+#define FLEXUS_TARGET_IS(target) (FLEXUS_TARGET == FLEXUS_TARGET_##target)
 
 #define TARGET_VA_BITS 64
 #define TARGET_PA_BITS 64

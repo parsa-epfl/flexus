@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,7 +36,6 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #include "regress.hpp"
 #include "histogram.h"
 
@@ -48,38 +48,38 @@ using namespace std;
 ofstream outFile;
 #endif
 
-#define LATENCY  (32)
+#define LATENCY (32)
 
 int64_t messagesDelivered = 0;
 int64_t totalLatency = 0;
-int64_t messagesDeliveredPrio[NUM_PRIORITIES] = { 0 };
-int64_t totalLatencyPrio[NUM_PRIORITIES] = { 0 };
+int64_t messagesDeliveredPrio[NUM_PRIORITIES] = {0};
+int64_t totalLatencyPrio[NUM_PRIORITIES] = {0};
 
 int64_t bufferTime = 0;
 int64_t atHeadTime = 0;
 int64_t acceptTime = 0;
 
-int64_t atHeadTimePrio[NUM_PRIORITIES] = { 0 };
-int64_t bufferTimePrio[NUM_PRIORITIES] = { 0 };
+int64_t atHeadTimePrio[NUM_PRIORITIES] = {0};
+int64_t bufferTimePrio[NUM_PRIORITIES] = {0};
 int64_t totalPopulation = 0;
 
 int64_t valveSwitchTime = 0;
 int32_t errorCount = 0;
 int32_t localPendingMsgs = 0;
 
-bool ( * timeStep ) ( void ) = timeStepDefault;
+bool (*timeStep)(void) = timeStepDefault;
 
-bool timeStepDefault ( void ) {
+bool timeStepDefault(void) {
   currTime++;
   return nc->drive();
 }
 
-bool deliverMessage ( const MessageState * msg ) {
+bool deliverMessage(const MessageState *msg) {
 
   messagesDelivered++;
   messagesDeliveredPrio[msg->priority]++;
-  totalLatency += ( currTime - msg->startTS );
-  totalLatencyPrio[msg->priority] += ( currTime - msg->startTS );
+  totalLatency += (currTime - msg->startTS);
+  totalLatencyPrio[msg->priority] += (currTime - msg->startTS);
 
   bufferTime += msg->bufferTime;
   atHeadTime += msg->atHeadTime;
@@ -91,7 +91,7 @@ bool deliverMessage ( const MessageState * msg ) {
   return false;
 }
 
-bool isNodeAvailable( const int32_t node, const int32_t vc ) {
+bool isNodeAvailable(const int32_t node, const int32_t vc) {
   if (currTime < valveSwitchTime) {
     return false;
   } else {
@@ -99,44 +99,40 @@ bool isNodeAvailable( const int32_t node, const int32_t vc ) {
   }
 }
 
-bool dumpStats ( void ) {
-  int
-  i;
+bool dumpStats(void) {
+  int i;
 
   cout << " total cycles: " << currTime
        << "\n ave latency: " << (float)totalLatency / (float)messagesDelivered;
 
-  for ( i = 0; i < NUM_PRIORITIES; i++ )
+  for (i = 0; i < NUM_PRIORITIES; i++)
     cout << "  P[" << i << "]: " << (float)totalLatencyPrio[i] / (float)messagesDeliveredPrio[i];
 
   cout << "\n ave pop:     " << (float)totalPopulation / (float)currTime
-       << "\n buffer time: " << (float)  bufferTime / (float)messagesDelivered;
+       << "\n buffer time: " << (float)bufferTime / (float)messagesDelivered;
 
-  for ( i = 0; i < NUM_PRIORITIES; i++ )
-    cout << "  P[" << i << "]: " << (float)  bufferTimePrio[i] / (float)messagesDeliveredPrio[i];
+  for (i = 0; i < NUM_PRIORITIES; i++)
+    cout << "  P[" << i << "]: " << (float)bufferTimePrio[i] / (float)messagesDeliveredPrio[i];
 
-  cout << "\n ave at head: " << (float)  atHeadTime / (float)messagesDelivered;
+  cout << "\n ave at head: " << (float)atHeadTime / (float)messagesDelivered;
 
-  for ( i = 0; i < NUM_PRIORITIES; i++ )
-    cout << "  P[" << i << "]: " << (float)  atHeadTimePrio[i] / (float)messagesDeliveredPrio[i];
+  for (i = 0; i < NUM_PRIORITIES; i++)
+    cout << "  P[" << i << "]: " << (float)atHeadTimePrio[i] / (float)messagesDeliveredPrio[i];
 
-  cout << "\n ave wait:    " << (float)  acceptTime / (float)messagesDelivered
-       << "\n Bandwidth:   " << (float)messagesDelivered / (float)currTime
-       << endl;
+  cout << "\n ave wait:    " << (float)acceptTime / (float)messagesDelivered
+       << "\n Bandwidth:   " << (float)messagesDelivered / (float)currTime << endl;
   return false;
 }
 
-bool dumpCSVStats ( void ) {
+bool dumpCSVStats(void) {
 #ifdef LOG_RESULTS
 
-  int
-  i;
+  int i;
 
-  outFile << ", " << currTime
-          << ", " << (float)totalLatency / (float)messagesDelivered
-          << ", " << (float)messagesDelivered / (float)currTime;
+  outFile << ", " << currTime << ", " << (float)totalLatency / (float)messagesDelivered << ", "
+          << (float)messagesDelivered / (float)currTime;
 
-  for ( i = 0; i < NUM_PRIORITIES; i++ )
+  for (i = 0; i < NUM_PRIORITIES; i++)
     outFile << ", " << (float)totalLatencyPrio[i] / (float)messagesDeliveredPrio[i];
 
   outFile << endl;
@@ -145,23 +141,21 @@ bool dumpCSVStats ( void ) {
   return false;
 }
 
-bool waitUntilEmpty ( void ) {
-  int
-  timeout = 131072,
-  active;
+bool waitUntilEmpty(void) {
+  int timeout = 131072, active;
 
   active = nc->getActiveMessages();
 
-  while ( !nc->networkEmpty() || localPendingMsgs ) {
-    if ( timeStep() )
+  while (!nc->networkEmpty() || localPendingMsgs) {
+    if (timeStep())
       return true;
 
     timeout--;
 
-    if ( timeout < 0 ) {
-      if ( (active == nc->getActiveMessages()) ) {
-        nc->dumpState ( cerr, NS_DUMP_METAINFO | NS_DUMP_SWITCHES | NS_DUMP_NODES | NS_DUMP_CHANNELS );
-        REGRESS_ERROR ( "timeout when emptying network" );
+    if (timeout < 0) {
+      if ((active == nc->getActiveMessages())) {
+        nc->dumpState(cerr, NS_DUMP_METAINFO | NS_DUMP_SWITCHES | NS_DUMP_NODES | NS_DUMP_CHANNELS);
+        REGRESS_ERROR("timeout when emptying network");
       } else {
         active = nc->getActiveMessages();
         timeout = 131072;
@@ -169,7 +163,6 @@ bool waitUntilEmpty ( void ) {
         cout.flush();
       }
     }
-
   }
 
   cout << endl;
@@ -177,13 +170,14 @@ bool waitUntilEmpty ( void ) {
   return false;
 }
 
-bool reinitNetwork ( void ) {
-  int
-  i;
+bool reinitNetwork(void) {
+  int i;
 
-  if ( waitUntilEmpty() ) return true;
+  if (waitUntilEmpty())
+    return true;
 
-  if ( idleNetwork ( 1000 ) ) return true;
+  if (idleNetwork(1000))
+    return true;
 
   resetMessageStateSerial();
 
@@ -196,27 +190,22 @@ bool reinitNetwork ( void ) {
   acceptTime = 0;
   localPendingMsgs = 0;
 
-  for ( i = 0; i < NUM_PRIORITIES; i++ )
+  for (i = 0; i < NUM_PRIORITIES; i++)
     messagesDeliveredPrio[i] = totalLatencyPrio[i] = atHeadTimePrio[i] = bufferTimePrio[i] = 0;
 
   return false;
 }
 
-bool runRegressSuite ( void ) {
-  int32_t
-  totalTests = 0,
-  i,
-  j,
-  numNodes;
+bool runRegressSuite(void) {
+  int32_t totalTests = 0, i, j, numNodes;
 
-  float
-  f;
+  float f;
 
-  nc->setCallbacks ( deliverMessage, isNodeAvailable );
+  nc->setCallbacks(deliverMessage, isNodeAvailable);
   numNodes = nc->getNumNodes();
 
 #ifdef LOG_RESULTS
-  outFile.open ( "output-regress.csv" );
+  outFile.open("output-regress.csv");
 #endif
 
   // Basic idle network test
@@ -262,8 +251,8 @@ bool runRegressSuite ( void ) {
 #endif
 
 #if 1
-  for ( f = 0.1; f <= 1.3; f = f + .05 ) {
-    TRY_TEST ( poissonRandomTraffic ( 400000, numNodes, LATENCY, f ) );
+  for (f = 0.1; f <= 1.3; f = f + .05) {
+    TRY_TEST(poissonRandomTraffic(400000, numNodes, LATENCY, f));
   }
 #endif
 
@@ -278,64 +267,61 @@ bool runRegressSuite ( void ) {
   outFile.close();
 #endif
 
-  return ( errorCount > 0 );
+  return (errorCount > 0);
 }
 
-bool idleNetwork ( int32_t length ) {
-  int32_t
-  i;
+bool idleNetwork(int32_t length) {
+  int32_t i;
 
-  for ( i = 0; i < length; i++ )
-    if ( timeStep() ) {
-      REGRESS_ERROR ( "Idle network" );
+  for (i = 0; i < length; i++)
+    if (timeStep()) {
+      REGRESS_ERROR("Idle network");
     }
 
   return false;
 }
 
-bool singlePacket1 ( int32_t src, int32_t dest ) {
-  MessageState
-  * msg = allocMessageState();
+bool singlePacket1(int32_t src, int32_t dest) {
+  MessageState *msg = allocMessageState();
 
   cout << "Single packet from " << src << " to " << dest << endl;
 
-  msg->reinit ( src, dest, 0, LATENCY, false, currTime );
+  msg->reinit(src, dest, 0, LATENCY, false, currTime);
 
-  INSERT ( msg );
-  if ( waitUntilEmpty() ) return true;
+  INSERT(msg);
+  if (waitUntilEmpty())
+    return true;
 
   return false;
 }
 
-bool floodNode ( int32_t numNodes, int32_t numMessages, int32_t targetNode ) {
-  MessageState
-  * msg;
+bool floodNode(int32_t numNodes, int32_t numMessages, int32_t targetNode) {
+  MessageState *msg;
 
-  int
-  i,
-  j;
+  int i, j;
 
-  cout << "Target node: " << targetNode << ", messages sent = "
-       << numMessages << " * " << numNodes << " nodes" << endl;
+  cout << "Target node: " << targetNode << ", messages sent = " << numMessages << " * " << numNodes
+       << " nodes" << endl;
 
-  for ( i = 0; i < numNodes; i++ ) {
+  for (i = 0; i < numNodes; i++) {
 
-    for ( j = 0; j < numMessages; j++ ) {
+    for (j = 0; j < numMessages; j++) {
 
       msg = allocMessageState();
-      msg->reinit ( i, targetNode, 0, LATENCY, false, currTime );
+      msg->reinit(i, targetNode, 0, LATENCY, false, currTime);
 
-      INSERT ( msg );
+      INSERT(msg);
     }
   }
 
-  if ( waitUntilEmpty() ) return true;
+  if (waitUntilEmpty())
+    return true;
 
   return false;
 }
 
-bool worstCaseLatency ( int32_t srcNode, int32_t destNode ) {
-  MessageState * msg;
+bool worstCaseLatency(int32_t srcNode, int32_t destNode) {
+  MessageState *msg;
   int32_t i;
 
   cout << "Source node: " << srcNode << " target node: " << destNode << endl;
@@ -343,26 +329,29 @@ bool worstCaseLatency ( int32_t srcNode, int32_t destNode ) {
   // set the time at which the dest node will report 'available'
   valveSwitchTime = 10000;
 
-  for (i = 0; i < 100 && currTime < valveSwitchTime; ) {
-    if ( nc->isNodeOutputAvailable(srcNode, 0) ) {
+  for (i = 0; i < 100 && currTime < valveSwitchTime;) {
+    if (nc->isNodeOutputAvailable(srcNode, 0)) {
       i++;
       msg = allocMessageState();
-      msg->reinit( srcNode, destNode, 0, 1 /* 1 = data packets */ , currTime);
-      INSERT( msg );
+      msg->reinit(srcNode, destNode, 0, 1 /* 1 = data packets */, currTime);
+      INSERT(msg);
     }
-    if (timeStep()) return true;
+    if (timeStep())
+      return true;
   }
 
   while (!nc->isNodeOutputAvailable(srcNode, 0))
-    if (timeStep()) return true;
+    if (timeStep())
+      return true;
 
   msg = allocMessageState();
-  msg->reinit( srcNode, destNode, 0, 1, currTime);
-  INSERT( msg );
+  msg->reinit(srcNode, destNode, 0, 1, currTime);
+  INSERT(msg);
 
-  int32_t drainStart =  currTime;
+  int32_t drainStart = currTime;
 
-  if ( waitUntilEmpty() ) return true;
+  if (waitUntilEmpty())
+    return true;
 
   cout << "INSERTED " << i << " PACKETS" << endl;
   cout << "DRAIN COMPLETED IN " << currTime - drainStart + 1 << " CYCLES" << endl;
@@ -370,82 +359,74 @@ bool worstCaseLatency ( int32_t srcNode, int32_t destNode ) {
   return false;
 }
 
-bool uniformRandomTraffic ( int32_t numNodes, int32_t totalMessages, float intensity ) {
-  int
-  messagesSent,
-  messagesThisCycle;
+bool uniformRandomTraffic(int32_t numNodes, int32_t totalMessages, float intensity) {
+  int messagesSent, messagesThisCycle;
 
-  MessageState
-  * msg;
+  MessageState *msg;
 
-  if ( intensity > 1.0 )
+  if (intensity > 1.0)
     intensity = 1.0;
 
   cout << "Randomly sending " << totalMessages << " messages to " << numNodes
-       << " nodes with intensity of an average " << intensity
-       << " messages per node per cycle " << endl;
+       << " nodes with intensity of an average " << intensity << " messages per node per cycle "
+       << endl;
 
   messagesSent = 0;
 
-  while ( messagesSent < totalMessages ) {
+  while (messagesSent < totalMessages) {
 
-    messagesThisCycle = numNodes * ( ( ( (double)random() / RAND_MAX ) <= intensity ) ? random() % numNodes : 0 );
+    messagesThisCycle =
+        numNodes * ((((double)random() / RAND_MAX) <= intensity) ? random() % numNodes : 0);
 
-    while ( messagesThisCycle > 0 ) {
+    while (messagesThisCycle > 0) {
 
       msg = allocMessageState();
-      msg->reinit ( random() % numNodes, random() % numNodes, 0 * random() % NUM_PRIORITIES, LATENCY, false, currTime );
+      msg->reinit(random() % numNodes, random() % numNodes, 0 * random() % NUM_PRIORITIES, LATENCY,
+                  false, currTime);
 
-      INSERT ( msg );
+      INSERT(msg);
 
       messagesSent++;
       messagesThisCycle--;
-      if ( ( messagesSent % 1024 ) == 0 ) {
+      if ((messagesSent % 1024) == 0) {
         cout << "\rSent " << messagesSent << " of " << totalMessages << "    ";
         cout.flush();
       }
     }
 
-    if ( timeStep() ) {
-      REGRESS_ERROR ( " driving network" );
+    if (timeStep()) {
+      REGRESS_ERROR(" driving network");
     }
-
   }
 
   cout << endl;
 
-  if ( waitUntilEmpty() ) return true;
+  if (waitUntilEmpty())
+    return true;
 
   return false;
 }
 
-bool uniformRandomTraffic2 ( int32_t numNodes, int32_t totalMessages, int32_t hopLatency, float intensity ) {
+bool uniformRandomTraffic2(int32_t numNodes, int32_t totalMessages, int32_t hopLatency,
+                           float intensity) {
   // For a 2D torus with bidirectional links, the number of channels in the
   // bisection = 2*sqrt(numNodes)
   //
   // Each channel can handle 1/hopLatency = B messages per cycle
   //
-  // Each node can inject 4 * sqrt ( numNodes ) / ( numNodes * hopLatency ) messages/cycle.
-  // Intensity is a fraction of this
+  // Each node can inject 4 * sqrt ( numNodes ) / ( numNodes * hopLatency )
+  // messages/cycle. Intensity is a fraction of this
 
-  float
-  messageIntensity;
+  float messageIntensity;
 
-  int32_t
-  messagesSent = 1,
-  priority,
-  srcNode,
-  i;
+  int32_t messagesSent = 1, priority, srcNode, i;
 
-  MessageState
-  * msg;
+  MessageState *msg;
 
-  messageIntensity =
-    intensity * ( 4.0 * sqrt ( (double)numNodes ) ) /
-    (float)( numNodes * hopLatency );
+  messageIntensity = intensity * (4.0 * sqrt((double)numNodes)) / (float)(numNodes * hopLatency);
 
-  if ( messageIntensity > 1.0 || messageIntensity <= 0.0 ) {
-    REGRESS_ERROR ( "message intensity " << messageIntensity << " is out of whack" );
+  if (messageIntensity > 1.0 || messageIntensity <= 0.0) {
+    REGRESS_ERROR("message intensity " << messageIntensity << " is out of whack");
   }
 
   cout << "Randomly sending " << totalMessages << " messages to " << numNodes
@@ -454,42 +435,36 @@ bool uniformRandomTraffic2 ( int32_t numNodes, int32_t totalMessages, int32_t ho
 
   cout << "Messages/cycle " << messageIntensity * (float)numNodes << endl;
 
-  while ( messagesSent < totalMessages ) {
+  while (messagesSent < totalMessages) {
 
-    for ( i = 0; i < numNodes; i++ ) {
+    for (i = 0; i < numNodes; i++) {
 
-      if ( ( (float)random() / (float)RAND_MAX ) < messageIntensity ) {
+      if (((float)random() / (float)RAND_MAX) < messageIntensity) {
 
         srcNode = random() % numNodes;
         priority = random() % NUM_PRIORITIES;
-        if ( nc->isNodeOutputAvailable ( srcNode, priority ) ) {
+        if (nc->isNodeOutputAvailable(srcNode, priority)) {
           msg = allocMessageState();
-          msg->reinit ( srcNode,
-                        random() % numNodes,
-                        priority,
-                        LATENCY,
-                        false,
-                        currTime );
-          INSERT ( msg );
+          msg->reinit(srcNode, random() % numNodes, priority, LATENCY, false, currTime);
+          INSERT(msg);
           messagesSent++;
         }
-
       }
     }
 
-    if ( ( messagesSent % 131072 ) == 0 ) {
+    if ((messagesSent % 131072) == 0) {
       cout << "\rSent " << messagesSent << " of " << totalMessages << ", "
            << nc->getActiveMessages() << " messages active           ";
       cout.flush();
     }
 
-    if ( timeStep() ) {
-      REGRESS_ERROR ( " driving network" );
+    if (timeStep()) {
+      REGRESS_ERROR(" driving network");
     }
   }
 
 #ifdef LOG_RESULTS
-  outFile << "UR2, " << intensity << "%, "  << messageIntensity * numNodes;
+  outFile << "UR2, " << intensity << "%, " << messageIntensity * numNodes;
 #endif
 
   cout << endl;
@@ -497,69 +472,58 @@ bool uniformRandomTraffic2 ( int32_t numNodes, int32_t totalMessages, int32_t ho
   return waitUntilEmpty();
 }
 
-bool poissonRandomTraffic ( int64_t totalCycles, int32_t numNodes, int32_t hopLatency, float intensity, bool usePriority0 ) {
-  float
-  messageIntensity;
+bool poissonRandomTraffic(int64_t totalCycles, int32_t numNodes, int32_t hopLatency,
+                          float intensity, bool usePriority0) {
+  float messageIntensity;
 
-  int32_t
-  messagesSent = 1,
-  priority,
-  srcNode,
-  i,
-  j;
+  int32_t messagesSent = 1, priority, srcNode, i, j;
 
-  MessageState
-  * msg;
+  MessageState *msg;
 
-  int
-  * messageDeficit,
-  numToSend = 0;
+  int *messageDeficit, numToSend = 0;
 
 #define POISSON_LIMIT (5)
 
-  float
-  prob[POISSON_LIMIT];
+  float prob[POISSON_LIMIT];
 
-  messageIntensity =
-    intensity * ( 4.0 * sqrt ( (double)numNodes ) ) /
-    (float)( numNodes * hopLatency );
+  messageIntensity = intensity * (4.0 * sqrt((double)numNodes)) / (float)(numNodes * hopLatency);
 
-  if ( messageIntensity > 1.0 || messageIntensity <= 0.0 ) {
-    REGRESS_ERROR ( "message intensity " << messageIntensity << " is out of whack" );
+  if (messageIntensity > 1.0 || messageIntensity <= 0.0) {
+    REGRESS_ERROR("message intensity " << messageIntensity << " is out of whack");
   }
 
   cout << "Poisson randomly sending for " << totalCycles << " cycles to " << numNodes
        << " nodes with intensity of an average " << intensity
        << " fraction of the network throughput" << endl;
 
-  cout << "Messages/cycle " << messageIntensity*(float)numNodes << endl;
+  cout << "Messages/cycle " << messageIntensity * (float)numNodes << endl;
 
 #ifdef LOG_RESULTS
-  outFile << "Poisson, " << intensity << ", "  << messageIntensity * numNodes;
+  outFile << "Poisson, " << intensity << ", " << messageIntensity * numNodes;
 #endif
 
-  float
-  f = exp ( -messageIntensity );
+  float f = exp(-messageIntensity);
 
   // Calculate the poisson CDF
   prob[0] = f;
-  for ( i = 1; i < POISSON_LIMIT; i++ ) {
+  for (i = 1; i < POISSON_LIMIT; i++) {
     f = prob[i] = f * messageIntensity / (float)i;
-    prob[i] += prob[i-1];
+    prob[i] += prob[i - 1];
   }
 
   messageDeficit = new int[numNodes];
-  for ( i = 0; i < numNodes; i++ )
+  for (i = 0; i < numNodes; i++)
     messageDeficit[i] = 0;
 
-  while ( currTime < totalCycles ) {
+  while (currTime < totalCycles) {
 
-    for ( i = 0; i < numNodes; i++ ) {
-      // Determine the number of messages to send based upon a poisson distribution
+    for (i = 0; i < numNodes; i++) {
+      // Determine the number of messages to send based upon a poisson
+      // distribution
       numToSend = 0;
       f = (float)random() / (float)RAND_MAX;
-      for ( j = 0; j < POISSON_LIMIT; j++ ) {
-        if ( f >= prob[j] ) {
+      for (j = 0; j < POISSON_LIMIT; j++) {
+        if (f >= prob[j]) {
           numToSend = j + 1;
           break;
         }
@@ -567,23 +531,18 @@ bool poissonRandomTraffic ( int64_t totalCycles, int32_t numNodes, int32_t hopLa
 
       messageDeficit[i] += numToSend;
 
-      while ( messageDeficit[i] > 0 ) {
+      while (messageDeficit[i] > 0) {
         srcNode = random() % numNodes;
 
-        if ( usePriority0 )
+        if (usePriority0)
           priority = random() % NUM_PRIORITIES;
         else
-          priority = ( random() % (NUM_PRIORITIES - 1)) + 1;
+          priority = (random() % (NUM_PRIORITIES - 1)) + 1;
 
-        if ( nc->isNodeOutputAvailable ( srcNode, priority ) ) {
+        if (nc->isNodeOutputAvailable(srcNode, priority)) {
           msg = allocMessageState();
-          msg->reinit ( srcNode,
-                        random() % numNodes,
-                        priority,
-                        LATENCY,
-                        false,
-                        currTime );
-          INSERT ( msg );
+          msg->reinit(srcNode, random() % numNodes, priority, LATENCY, false, currTime);
+          INSERT(msg);
           messagesSent++;
           messageDeficit[i]--;
         } else {
@@ -592,21 +551,20 @@ bool poissonRandomTraffic ( int64_t totalCycles, int32_t numNodes, int32_t hopLa
       }
     }
 
-    if ( ( messagesSent % 131072 ) == 0 ) {
-      cout << "\rSent " << messagesSent << ", "
-           << nc->getActiveMessages() << " messages active, "
+    if ((messagesSent % 131072) == 0) {
+      cout << "\rSent " << messagesSent << ", " << nc->getActiveMessages() << " messages active, "
            << currTime << " / " << totalCycles << " cycles        ";
       cout.flush();
     }
 
-    if ( timeStep() ) {
-      REGRESS_ERROR ( " driving network" );
+    if (timeStep()) {
+      REGRESS_ERROR(" driving network");
     }
   }
 
   cout << endl;
 
-  delete []messageDeficit;
+  delete[] messageDeficit;
 
   return false;
 }

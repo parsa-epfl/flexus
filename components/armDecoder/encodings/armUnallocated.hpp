@@ -9,7 +9,8 @@
 // Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
 // Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
 // Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -40,17 +41,16 @@
 
 #include "armSharedFunctions.hpp"
 
-namespace narmDecoder{
+namespace narmDecoder {
 
-arminst blackBox( armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo );
-arminst grayBox( armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo, eInstructionCode aCode );
-arminst nop( armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo );
+arminst blackBox(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst grayBox(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo,
+                eInstructionCode aCode);
+arminst nop(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
-arminst unallocated_encoding(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst unsupported_encoding(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst unallocated_encoding(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst unsupported_encoding(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
-
-} // narmDecoder
-
+} // namespace narmDecoder
 
 #endif // FLEXUS_armDECODER_armUNALLOCATED_HPP_INCLUDED

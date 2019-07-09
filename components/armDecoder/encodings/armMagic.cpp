@@ -9,7 +9,8 @@
 // Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
 // Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
 // Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,18 +36,18 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-#include "armUnallocated.hpp"
 #include "../armInstruction.hpp"
+#include "armUnallocated.hpp"
 
 namespace narmDecoder {
 using namespace nuArchARM;
 
 struct MAGIC : public armInstruction {
-  MAGIC(VirtualMemoryAddress aPC, Opcode anOpcode, boost::intrusive_ptr<BPredState> aBPState, uint32_t aCPU, int64_t aSequenceNo)
-    : armInstruction(aPC, anOpcode, aBPState, aCPU, aSequenceNo) {
+  MAGIC(VirtualMemoryAddress aPC, Opcode anOpcode, boost::intrusive_ptr<BPredState> aBPState,
+        uint32_t aCPU, int64_t aSequenceNo)
+      : armInstruction(aPC, anOpcode, aBPState, aCPU, aSequenceNo) {
     DECODER_TRACE;
     setClass(clsSynchronizing, codeMAGIC);
-
   }
 
   virtual bool mayRetire() const {
@@ -54,32 +55,33 @@ struct MAGIC : public armInstruction {
   }
   virtual bool preValidate() {
     Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(theCPU);
-    if ( cpu->getPC()  != thePC ) {
-      DBG_( VVerb, ( << *this << " PreValidation failed: PC mismatch flexus=" << thePC << " qemu=" << cpu->getPC() ) );
+    if (cpu->getPC() != thePC) {
+      DBG_(VVerb, (<< *this << " PreValidation failed: PC mismatch flexus=" << thePC
+                   << " qemu=" << cpu->getPC()));
     }
-    return
-      cpu->getPC()== thePC;
+    return cpu->getPC() == thePC;
   }
 
   virtual bool postValidate() {
-//    Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(theCPU);
-//    if ( cpu->getPC()  != theNPC ) {
-//      DBG_( VVerb, ( << *this << " PostValidation failed: PC mismatch flexus=" << theNPC << " simics=" << cpu->getPC() ) );
-//    }
-//    return ( cpu->getPC()  == theNPC ) ;
-      return true;
+    //    Flexus::Qemu::Processor cpu =
+    //    Flexus::Qemu::Processor::getProcessor(theCPU); if ( cpu->getPC()  !=
+    //    theNPC ) {
+    //      DBG_( VVerb, ( << *this << " PostValidation failed: PC mismatch
+    //      flexus=" << theNPC << " simics=" << cpu->getPC() ) );
+    //    }
+    //    return ( cpu->getPC()  == theNPC ) ;
+    return true;
   }
 
-  virtual void describe(std::ostream & anOstream) const {
+  virtual void describe(std::ostream &anOstream) const {
     armInstruction::describe(anOstream);
     anOstream << "MAGIC";
   }
 };
 
-arminst magic( armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo ) {
-  return arminst( new MAGIC(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo));
+arminst magic(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  return arminst(new MAGIC(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
+                           aFetchedOpcode.theBPState, aCPU, aSequenceNo));
 }
 
-} // narmDecoder
-
-
+} // namespace narmDecoder

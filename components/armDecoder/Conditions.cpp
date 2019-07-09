@@ -9,7 +9,8 @@
 // Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
 // Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
 // Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,23 +36,23 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
-#include <core/boost_extensions/intrusive_ptr.hpp>
 #include <boost/throw_exception.hpp>
+#include <core/boost_extensions/intrusive_ptr.hpp>
 
-#include <core/target.hpp>
 #include <core/debug/debug.hpp>
+#include <core/target.hpp>
 #include <core/types.hpp>
 
-#include <components/uArchARM/uArchInterfaces.hpp>
 #include <components/uArchARM/RegisterType.hpp>
+#include <components/uArchARM/uArchInterfaces.hpp>
+
 #include "components/uArchARM/CoreModel/PSTATE.hpp"
 
 #include <core/MakeUniqueWrapper.hpp>
 
-#include "SemanticActions.hpp"
-#include "OperandMap.hpp"
 #include "Conditions.hpp"
+#include "OperandMap.hpp"
+#include "SemanticActions.hpp"
 
 #define DBG_DeclareCategories armDecoder
 #define DBG_SetDefaultOps AddCat(armDecoder)
@@ -60,148 +61,159 @@
 namespace narmDecoder {
 using namespace nuArchARM;
 
-bool ConditionHolds(const PSTATE & pstate, int condcode )
-{
+bool ConditionHolds(const PSTATE &pstate, int condcode) {
 
-    bool result;
-    switch (condcode >> 1) {
-    case 0: // EQ or NE
-        result =  pstate.Z();break;
-    case 1: // CS or CC
-        result =  pstate.C();break;
-    case 2: // MI or PL
-        result =  pstate.N();break;
-    case 3: // VS or VC
-        result =  pstate.V();break;
-    case 4: // HI or LS
-        result =  (pstate.C() && pstate.Z() == 0);break;
-    case 5: // GE or LT
-        result =  (pstate.N() == pstate.V());break;
-    case 6: // GT or LE
-        result =  ((pstate.N() == pstate.V()) && (pstate.Z() == 0));break;
-    case 7: // AL
-        result =  true;break;
-    default:
-        DBG_Assert(false);
-        break;
-    }
+  bool result;
+  switch (condcode >> 1) {
+  case 0: // EQ or NE
+    result = pstate.Z();
+    break;
+  case 1: // CS or CC
+    result = pstate.C();
+    break;
+  case 2: // MI or PL
+    result = pstate.N();
+    break;
+  case 3: // VS or VC
+    result = pstate.V();
+    break;
+  case 4: // HI or LS
+    result = (pstate.C() && pstate.Z() == 0);
+    break;
+  case 5: // GE or LT
+    result = (pstate.N() == pstate.V());
+    break;
+  case 6: // GT or LE
+    result = ((pstate.N() == pstate.V()) && (pstate.Z() == 0));
+    break;
+  case 7: // AL
+    result = true;
+    break;
+  default:
+    DBG_Assert(false);
+    break;
+  }
 
-    // Condition flag values in the set '111x' indicate always true
-    // Otherwise, invert condition if necessary.
+  // Condition flag values in the set '111x' indicate always true
+  // Otherwise, invert condition if necessary.
 
-    if (((condcode & 1) == 1) && (condcode != 0xf /*1111*/))
-        return !result;
+  if (((condcode & 1) == 1) && (condcode != 0xf /*1111*/))
+    return !result;
 
-    return result;
+  return result;
 }
 
-
 typedef struct CMPBR : public Condition {
-    CMPBR(){}
-    virtual ~CMPBR(){}
-  virtual bool operator()( std::vector<Operand> const & operands  ) {
-    DBG_Assert( operands.size() == 1);
+  CMPBR() {
+  }
+  virtual ~CMPBR() {
+  }
+  virtual bool operator()(std::vector<Operand> const &operands) {
+    DBG_Assert(operands.size() == 1);
     return boost::get<uint64_t>(operands[0]) == 0;
   }
-  virtual char const * describe() const {
+  virtual char const *describe() const {
     return "Compare and Branch on Zero";
   }
-}CMPBR;
+} CMPBR;
 
 typedef struct CBNZ : public Condition {
-    CBNZ(){}
-    virtual ~CBNZ(){}
-  virtual bool operator()( std::vector<Operand> const & operands  ) {
-    DBG_Assert( operands.size() == 1);
+  CBNZ() {
+  }
+  virtual ~CBNZ() {
+  }
+  virtual bool operator()(std::vector<Operand> const &operands) {
+    DBG_Assert(operands.size() == 1);
     return boost::get<uint64_t>(operands[0]) != 0;
   }
-  virtual char const * describe() const {
+  virtual char const *describe() const {
     return "Compare and Branch on Non Zero";
   }
-}CBNZ;
+} CBNZ;
 
 typedef struct TBZ : public Condition {
-    TBZ(){}
-    virtual ~TBZ(){}
-  virtual bool operator()( std::vector<Operand> const & operands  ) {
-    DBG_Assert( operands.size() == 2);
+  TBZ() {
+  }
+  virtual ~TBZ() {
+  }
+  virtual bool operator()(std::vector<Operand> const &operands) {
+    DBG_Assert(operands.size() == 2);
     return (boost::get<uint64_t>(operands[0]) & boost::get<uint64_t>(operands[1])) == 0;
   }
-  virtual char const * describe() const {
+  virtual char const *describe() const {
     return "Test and Branch on Zero";
   }
-}TBZ;
+} TBZ;
 
 typedef struct TBNZ : public Condition {
-    TBNZ(){}
-    virtual ~TBNZ(){}
-  virtual bool operator()( std::vector<Operand> const & operands  ) {
-    DBG_Assert( operands.size() == 2);
+  TBNZ() {
+  }
+  virtual ~TBNZ() {
+  }
+  virtual bool operator()(std::vector<Operand> const &operands) {
+    DBG_Assert(operands.size() == 2);
     return (boost::get<uint64_t>(operands[0]) & boost::get<uint64_t>(operands[1])) != 0;
   }
-  virtual char const * describe() const {
+  virtual char const *describe() const {
     return "Test and Branch on Non Zero";
   }
-}TBNZ;
-
+} TBNZ;
 
 typedef struct BCOND : public Condition {
-    BCOND(){}
-    virtual ~BCOND(){}
-  virtual bool operator()( std::vector<Operand> const & operands  ) {
-    DBG_Assert( operands.size() == 2);
+  BCOND() {
+  }
+  virtual ~BCOND() {
+  }
+  virtual bool operator()(std::vector<Operand> const &operands) {
+    DBG_Assert(operands.size() == 2);
 
     PSTATE p = boost::get<uint64_t>(operands[0]);
     uint64_t test = boost::get<uint64_t>(operands[1]);
 
     // hacking  --- update pstate
-//    uint32_t pstate = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPSTATE();
+    //    uint32_t pstate =
+    //    Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPSTATE();
 
-//    DBG_(Dev, (<< "Flexus pstate = " << theInstruction->core()->getPSTATE()));
-//    DBG_(Dev, (<< "qemu pstate = " << pstate));
+    //    DBG_(Dev, (<< "Flexus pstate = " <<
+    //    theInstruction->core()->getPSTATE())); DBG_(Dev, (<< "qemu pstate = "
+    //    << pstate));
 
     return ConditionHolds(p, test);
   }
-  virtual char const * describe() const {
+  virtual char const *describe() const {
     return "Branch Conditionally";
   }
-}BCOND;
-
+} BCOND;
 
 std::unique_ptr<Condition> condition(eCondCode aCond) {
 
-    std::unique_ptr<Condition> ptr;
-    switch(aCond)
-    {
-    case kCBZ_:
-        DBG_(Dev, (<< "CBZ"));
-        ptr.reset(new CMPBR());
-        break;
-    case kCBNZ_:
-        DBG_(Dev, (<< "CBNZ"));
-        ptr.reset(new CBNZ());
-        break;
-    case kTBZ_:
-        DBG_(Dev, (<< "kTBZ_"));
-        ptr.reset(new TBZ());
-        break;
-    case kTBNZ_:
-        DBG_(Dev, (<< "TBNZ"));
-         ptr.reset(new TBNZ());
-         break;
-    case kBCOND_:
-        DBG_(Dev, (<< "BCOND"));
-         ptr.reset(new BCOND());
-         break;
-    default:
-        DBG_Assert(false);
-        return nullptr;
-    }
-    return ptr;
+  std::unique_ptr<Condition> ptr;
+  switch (aCond) {
+  case kCBZ_:
+    DBG_(Dev, (<< "CBZ"));
+    ptr.reset(new CMPBR());
+    break;
+  case kCBNZ_:
+    DBG_(Dev, (<< "CBNZ"));
+    ptr.reset(new CBNZ());
+    break;
+  case kTBZ_:
+    DBG_(Dev, (<< "kTBZ_"));
+    ptr.reset(new TBZ());
+    break;
+  case kTBNZ_:
+    DBG_(Dev, (<< "TBNZ"));
+    ptr.reset(new TBNZ());
+    break;
+  case kBCOND_:
+    DBG_(Dev, (<< "BCOND"));
+    ptr.reset(new BCOND());
+    break;
+  default:
+    DBG_Assert(false);
+    return nullptr;
+  }
+  return ptr;
 }
 
-
-
-
-
-} //armDecoder
+} // namespace narmDecoder

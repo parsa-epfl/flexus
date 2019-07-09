@@ -1,17 +1,17 @@
 #include <algorithm>
-#include <iostream>
-#include <fstream>
 #include <cstdlib>
-#include <string>
+#include <fstream>
+#include <iostream>
 #include <map>
 #include <set>
+#include <string>
 
 #include <boost/optional.hpp>
 #include <core/boost_extensions/lexical_cast.hpp>
 
 #include <core/target.hpp>
 
-//FIXME need to make sure that CONFIG_QEMU actually works
+// FIXME need to make sure that CONFIG_QEMU actually works
 #ifndef CONFIG_QEMU
 #define CONFIG_QEMU
 #endif
@@ -32,38 +32,35 @@ void Break();
 
 namespace Dbg {
 
-void CompoundAction::printConfiguration(std::ostream & anOstream, std::string const & anIndent) {
-	for(auto* anAction: theActions)
-	{
-		anAction->printConfiguration(anOstream, anIndent);
-	}
+void CompoundAction::printConfiguration(std::ostream &anOstream, std::string const &anIndent) {
+  for (auto *anAction : theActions) {
+    anAction->printConfiguration(anOstream, anIndent);
+  }
 }
 
-void CompoundAction::process(Entry const & anEntry) {
-	for (auto* anAction : theActions)
-	{
-		anAction->process(anEntry);
-	}
+void CompoundAction::process(Entry const &anEntry) {
+  for (auto *anAction : theActions) {
+    anAction->process(anEntry);
+  }
 }
 
 CompoundAction::~CompoundAction() {
-	for (auto* anAction : theActions)
-	{
-		delete anAction;
-	}
+  for (auto *anAction : theActions) {
+    delete anAction;
+  }
 }
 
 void CompoundAction::add(std::unique_ptr<Action> anAction) {
-  theActions.push_back(anAction.release()); //Ownership assumed by theActions
+  theActions.push_back(anAction.release()); // Ownership assumed by theActions
 }
 
-void ConsoleLogAction::printConfiguration(std::ostream & anOstream, std::string const & anIndent) {
+void ConsoleLogAction::printConfiguration(std::ostream &anOstream, std::string const &anIndent) {
   anOstream << anIndent << "log console";
   theFormat->printConfiguration(anOstream, "");
   anOstream << ";\n";
 }
 
-void ConsoleLogAction::process(Entry const & anEntry) {
+void ConsoleLogAction::process(Entry const &anEntry) {
   theFormat->format(std::cerr, anEntry);
   std::cerr.flush();
 }
@@ -71,11 +68,12 @@ void ConsoleLogAction::process(Entry const & anEntry) {
 class StreamManager {
   typedef std::map<std::string, std::ofstream *> stream_map;
   stream_map theStreams;
+
 public:
-  std::ostream & getStream(std::string const & aFile) {
+  std::ostream &getStream(std::string const &aFile) {
     std::pair<stream_map::iterator, bool> insert_result;
-    insert_result = theStreams.insert( std::make_pair( aFile, static_cast<std::ofstream *>(0) ));
-    if ( insert_result.second ) {
+    insert_result = theStreams.insert(std::make_pair(aFile, static_cast<std::ofstream *>(0)));
+    if (insert_result.second) {
       (*insert_result.first).second = new std::ofstream(aFile.c_str());
       std::cout << "Opening debug output file: " << aFile << "\n";
     }
@@ -92,68 +90,64 @@ public:
   }
 };
 
-//The StreamManager instance
+// The StreamManager instance
 std::unique_ptr<StreamManager> theStreamManager;
 
-//StreamManager accessor
-inline StreamManager & streamManager() {
+// StreamManager accessor
+inline StreamManager &streamManager() {
   if (theStreamManager.get() == 0) {
     theStreamManager.reset(new StreamManager());
   }
   return *theStreamManager;
 }
 
-FileLogAction::FileLogAction(std::string aFilename, Format * aFormat)
-  : theFilename(aFilename)
-  , theOstream(streamManager().getStream(aFilename) )
-  , theFormat(aFormat)
-{};
+FileLogAction::FileLogAction(std::string aFilename, Format *aFormat)
+    : theFilename(aFilename), theOstream(streamManager().getStream(aFilename)),
+      theFormat(aFormat){};
 
-void FileLogAction::printConfiguration(std::ostream & anOstream, std::string const & anIndent) {
+void FileLogAction::printConfiguration(std::ostream &anOstream, std::string const &anIndent) {
   anOstream << anIndent << "log " << theFilename;
   theFormat->printConfiguration(anOstream, "");
   anOstream << ";\n";
 }
 
-void FileLogAction::process(Entry const & anEntry) {
+void FileLogAction::process(Entry const &anEntry) {
   theFormat->format(theOstream, anEntry);
   theOstream.flush();
 }
 
-void AbortAction::printConfiguration(std::ostream & anOstream, std::string const & anIndent) {
+void AbortAction::printConfiguration(std::ostream &anOstream, std::string const &anIndent) {
   anOstream << anIndent << "abort ;";
 }
 
-void AbortAction::process(Entry const & anEntry) {
+void AbortAction::process(Entry const &anEntry) {
   std::abort();
 }
 
-void BreakAction::printConfiguration(std::ostream & anOstream, std::string const & anIndent) {
+void BreakAction::printConfiguration(std::ostream &anOstream, std::string const &anIndent) {
   anOstream << anIndent << "break ;";
 }
 
-void BreakAction::process(Entry const & anEntry) {
+void BreakAction::process(Entry const &anEntry) {
   Flexus::Core::Break();
 }
 
-void PrintStatsAction::printConfiguration(std::ostream & anOstream, std::string const & anIndent) {
+void PrintStatsAction::printConfiguration(std::ostream &anOstream, std::string const &anIndent) {
   anOstream << anIndent << "print-stats ;";
 }
 
-void PrintStatsAction::process(Entry const & anEntry) {
+void PrintStatsAction::process(Entry const &anEntry) {
   Flexus::Stat::getStatManager()->printMeasurement("all", std::cout);
 }
 
-SeverityAction::SeverityAction(uint32_t aSeverity)
-  : theSeverity(aSeverity)
-{};
+SeverityAction::SeverityAction(uint32_t aSeverity) : theSeverity(aSeverity){};
 
-void SeverityAction::printConfiguration(std::ostream & anOstream, std::string const & anIndent) {
+void SeverityAction::printConfiguration(std::ostream &anOstream, std::string const &anIndent) {
   anOstream << anIndent << "set-global-severity " << toString(Severity(theSeverity)) << " ;";
 }
 
-void SeverityAction::process(Entry const & anEntry) {
-  Flexus::Dbg::Debugger::theDebugger->setMinSev( Severity(theSeverity) );
+void SeverityAction::process(Entry const &anEntry) {
+  Flexus::Dbg::Debugger::theDebugger->setMinSev(Severity(theSeverity));
 }
 
 #if 0
@@ -244,6 +238,5 @@ void ConsoleSpillAction::process(Entry const & anEntry) {
 }
 #endif
 
-} //Dbg
-} //Flexus
-
+} // namespace Dbg
+} // namespace Flexus

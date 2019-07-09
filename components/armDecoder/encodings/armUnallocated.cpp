@@ -9,7 +9,8 @@
 // Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
 // Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
 // Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -40,11 +41,11 @@
 namespace narmDecoder {
 using namespace nuArchARM;
 
-
 struct BlackBoxInstruction : public armInstruction {
 
-  BlackBoxInstruction(VirtualMemoryAddress aPC, Opcode anOpcode, boost::intrusive_ptr<BPredState> aBPState, uint32_t  aCPU, int64_t aSequenceNo)
-    : armInstruction(aPC, anOpcode, aBPState, aCPU, aSequenceNo) {
+  BlackBoxInstruction(VirtualMemoryAddress aPC, Opcode anOpcode,
+                      boost::intrusive_ptr<BPredState> aBPState, uint32_t aCPU, int64_t aSequenceNo)
+      : armInstruction(aPC, anOpcode, aBPState, aCPU, aSequenceNo) {
     setClass(clsSynchronizing, codeBlackBox);
     forceResync();
   }
@@ -57,46 +58,45 @@ struct BlackBoxInstruction : public armInstruction {
     return false;
   }
 
-  virtual void describe(std::ostream & anOstream) const {
+  virtual void describe(std::ostream &anOstream) const {
     armInstruction::describe(anOstream);
     anOstream << instCode();
   }
 };
 
-arminst blackBox( armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo )
-{
+arminst blackBox(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   DECODER_TRACE;
-  return arminst( new BlackBoxInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo));
+  return arminst(new BlackBoxInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
+                                         aFetchedOpcode.theBPState, aCPU, aSequenceNo));
 }
 
-arminst grayBox( armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo, eInstructionCode aCode )
-{
-  arminst inst( new BlackBoxInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo));
+arminst grayBox(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo,
+                eInstructionCode aCode) {
+  arminst inst(new BlackBoxInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
+                                       aFetchedOpcode.theBPState, aCPU, aSequenceNo));
   inst->forceResync();
   inst->setClass(clsSynchronizing, aCode);
   return inst;
 }
 
-arminst nop( armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo ) {
-  SemanticInstruction * inst( new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo) );
+arminst nop(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  SemanticInstruction *inst(new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
+                                                    aFetchedOpcode.theBPState, aCPU, aSequenceNo));
   inst->setClass(clsComputation, codeNOP);
   return inst;
 }
 
-arminst unallocated_encoding(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
-    DECODER_TRACE;
-    return blackBox( aFetchedOpcode, aCPU, aSequenceNo);
-    /* Unallocated and reserved encodings are uncategorized */
+arminst unallocated_encoding(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  DECODER_TRACE;
+  return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+  /* Unallocated and reserved encodings are uncategorized */
 }
 
-arminst unsupported_encoding(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo)
-{
-    DECODER_TRACE;
-    /* Unallocated and reserved encodings are uncategorized */
-    return blackBox( aFetchedOpcode, aCPU, aSequenceNo);
-    //throw Exception;
+arminst unsupported_encoding(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
+  DECODER_TRACE;
+  /* Unallocated and reserved encodings are uncategorized */
+  return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+  // throw Exception;
 }
 
-
-} // narmDecoder
+} // namespace narmDecoder

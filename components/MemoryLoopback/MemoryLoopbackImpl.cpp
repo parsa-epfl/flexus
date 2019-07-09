@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,7 +36,6 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #include <components/MemoryLoopback/MemoryLoopback.hpp>
 
 #include <components/CommonQEMU/MessageQueues.hpp>
@@ -48,9 +48,9 @@
 #include DBG_Control()
 
 #include <components/CommonQEMU/MemoryMap.hpp>
+#include <components/CommonQEMU/Slices/ExecuteState.hpp>
 #include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
-#include <components/CommonQEMU/Slices/ExecuteState.hpp>
 
 namespace nMemoryLoopback {
 
@@ -63,20 +63,19 @@ using Flexus::SharedTypes::MemoryMap;
 using boost::intrusive_ptr;
 
 class FLEXUS_COMPONENT(MemoryLoopback) {
-  FLEXUS_COMPONENT_IMPL(MemoryLoopback );
+  FLEXUS_COMPONENT_IMPL(MemoryLoopback);
 
   boost::intrusive_ptr<MemoryMap> theMemoryMap;
 
   MemoryMessage::MemoryMessageType theFetchReplyType;
 
 public:
-  FLEXUS_COMPONENT_CONSTRUCTOR( MemoryLoopback )
-    : base( FLEXUS_PASS_CONSTRUCTOR_ARGS )
-  {}
+  FLEXUS_COMPONENT_CONSTRUCTOR(MemoryLoopback) : base(FLEXUS_PASS_CONSTRUCTOR_ARGS) {
+  }
 
   bool isQuiesced() const {
-    if (! outQueue) {
-      return true; //Quiesced before initialization
+    if (!outQueue) {
+      return true; // Quiesced before initialization
     }
     return outQueue->empty();
   }
@@ -88,7 +87,7 @@ public:
       throw FlexusException();
     }
     theMemoryMap = MemoryMap::getMemoryMap(flexusIndex());
-    outQueue.reset( new nMessageQueues::DelayFifo< MemoryTransport >(cfg.MaxRequests));
+    outQueue.reset(new nMessageQueues::DelayFifo<MemoryTransport>(cfg.MaxRequests));
 
     if (cfg.UseFetchReply) {
       theFetchReplyType = MemoryMessage::FetchReply;
@@ -97,12 +96,13 @@ public:
     }
   }
 
-  void finalize() {}
+  void finalize() {
+  }
 
-  void fillTracker(MemoryTransport & aMessageTransport) {
+  void fillTracker(MemoryTransport &aMessageTransport) {
     if (aMessageTransport[TransactionTrackerTag]) {
       aMessageTransport[TransactionTrackerTag]->setFillLevel(eLocalMem);
-      if (!aMessageTransport[TransactionTrackerTag]->fillType() ) {
+      if (!aMessageTransport[TransactionTrackerTag]->fillType()) {
         aMessageTransport[TransactionTrackerTag]->setFillType(eReplacement);
       }
       aMessageTransport[TransactionTrackerTag]->setResponder(flexusIndex());
@@ -110,121 +110,137 @@ public:
     }
   }
 
-  //LoopBackIn PushInput Port
+  // LoopBackIn PushInput Port
   //=========================
   bool available(interface::LoopbackIn const &) {
-    return ! outQueue->full() ;
+    return !outQueue->full();
   }
 
-  void push(interface::LoopbackIn const &, MemoryTransport & aMessageTransport) {
-    DBG_(VVerb, Comp(*this) ( << "request received: " << *aMessageTransport[MemoryMessageTag]) Addr(aMessageTransport[MemoryMessageTag]->address()) );
+  void push(interface::LoopbackIn const &, MemoryTransport &aMessageTransport) {
+    DBG_(VVerb, Comp(*this)(<< "request received: " << *aMessageTransport[MemoryMessageTag])
+                    Addr(aMessageTransport[MemoryMessageTag]->address()));
     intrusive_ptr<MemoryMessage> reply;
     switch (aMessageTransport[MemoryMessageTag]->type()) {
-      case MemoryMessage::LoadReq:
-        theMemoryMap->recordAccess( aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Read);
-        reply = new MemoryMessage(MemoryMessage::LoadReply, aMessageTransport[MemoryMessageTag]->address());
-        reply->reqSize() = 64;
-        fillTracker(aMessageTransport);
-        break;
-      case MemoryMessage::FetchReq:
-        theMemoryMap->recordAccess( aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Read);
-        reply = new MemoryMessage(theFetchReplyType, aMessageTransport[MemoryMessageTag]->address());
-        reply->reqSize() = 64;
-        fillTracker(aMessageTransport);
-        break;
-      case MemoryMessage::StoreReq:
-        theMemoryMap->recordAccess( aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Write);
-        reply = new MemoryMessage(MemoryMessage::StoreReply, aMessageTransport[MemoryMessageTag]->address());
-        reply->reqSize() = 0;
-        fillTracker(aMessageTransport);
-        break;
-      case MemoryMessage::StorePrefetchReq:
-        theMemoryMap->recordAccess( aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Write);
-        reply = new MemoryMessage(MemoryMessage::StorePrefetchReply, aMessageTransport[MemoryMessageTag]->address());
-        reply->reqSize() = 0;
-        fillTracker(aMessageTransport);
-        break;
-      case MemoryMessage::CmpxReq:
-        theMemoryMap->recordAccess( aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Write);
-        reply = new MemoryMessage(MemoryMessage::CmpxReply, aMessageTransport[MemoryMessageTag]->address());
-        reply->reqSize() = 64;
-        fillTracker(aMessageTransport);
-        break;
+    case MemoryMessage::LoadReq:
+      theMemoryMap->recordAccess(aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Read);
+      reply = new MemoryMessage(MemoryMessage::LoadReply,
+                                aMessageTransport[MemoryMessageTag]->address());
+      reply->reqSize() = 64;
+      fillTracker(aMessageTransport);
+      break;
+    case MemoryMessage::FetchReq:
+      theMemoryMap->recordAccess(aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Read);
+      reply = new MemoryMessage(theFetchReplyType, aMessageTransport[MemoryMessageTag]->address());
+      reply->reqSize() = 64;
+      fillTracker(aMessageTransport);
+      break;
+    case MemoryMessage::StoreReq:
+      theMemoryMap->recordAccess(aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Write);
+      reply = new MemoryMessage(MemoryMessage::StoreReply,
+                                aMessageTransport[MemoryMessageTag]->address());
+      reply->reqSize() = 0;
+      fillTracker(aMessageTransport);
+      break;
+    case MemoryMessage::StorePrefetchReq:
+      theMemoryMap->recordAccess(aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Write);
+      reply = new MemoryMessage(MemoryMessage::StorePrefetchReply,
+                                aMessageTransport[MemoryMessageTag]->address());
+      reply->reqSize() = 0;
+      fillTracker(aMessageTransport);
+      break;
+    case MemoryMessage::CmpxReq:
+      theMemoryMap->recordAccess(aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Write);
+      reply = new MemoryMessage(MemoryMessage::CmpxReply,
+                                aMessageTransport[MemoryMessageTag]->address());
+      reply->reqSize() = 64;
+      fillTracker(aMessageTransport);
+      break;
 
-      case MemoryMessage::ReadReq:
-        theMemoryMap->recordAccess( aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Read);
-        reply = new MemoryMessage(MemoryMessage::MissReplyWritable, aMessageTransport[MemoryMessageTag]->address());
-        reply->reqSize() = 64;
-        fillTracker(aMessageTransport);
-        break;
-      case MemoryMessage::WriteReq:
-      case MemoryMessage::WriteAllocate:
-        theMemoryMap->recordAccess( aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Write);
-        reply = new MemoryMessage(MemoryMessage::MissReplyWritable, aMessageTransport[MemoryMessageTag]->address());
-        reply->reqSize() = 64;
-        fillTracker(aMessageTransport);
-        break;
-      case MemoryMessage::NonAllocatingStoreReq:
-        theMemoryMap->recordAccess( aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Write);
-        //reply = aMessageTransport[MemoryMessageTag];
-        // reply->type() = MemoryMessage::NonAllocatingStoreReply;
-        // make a new msg just loks ALL the other msg types
-        reply = new MemoryMessage(MemoryMessage::NonAllocatingStoreReply, aMessageTransport[MemoryMessageTag]->address());
-        reply->reqSize() = aMessageTransport[MemoryMessageTag]->reqSize();
-        fillTracker(aMessageTransport);
-        break;
+    case MemoryMessage::ReadReq:
+      theMemoryMap->recordAccess(aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Read);
+      reply = new MemoryMessage(MemoryMessage::MissReplyWritable,
+                                aMessageTransport[MemoryMessageTag]->address());
+      reply->reqSize() = 64;
+      fillTracker(aMessageTransport);
+      break;
+    case MemoryMessage::WriteReq:
+    case MemoryMessage::WriteAllocate:
+      theMemoryMap->recordAccess(aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Write);
+      reply = new MemoryMessage(MemoryMessage::MissReplyWritable,
+                                aMessageTransport[MemoryMessageTag]->address());
+      reply->reqSize() = 64;
+      fillTracker(aMessageTransport);
+      break;
+    case MemoryMessage::NonAllocatingStoreReq:
+      theMemoryMap->recordAccess(aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Write);
+      // reply = aMessageTransport[MemoryMessageTag];
+      // reply->type() = MemoryMessage::NonAllocatingStoreReply;
+      // make a new msg just loks ALL the other msg types
+      reply = new MemoryMessage(MemoryMessage::NonAllocatingStoreReply,
+                                aMessageTransport[MemoryMessageTag]->address());
+      reply->reqSize() = aMessageTransport[MemoryMessageTag]->reqSize();
+      fillTracker(aMessageTransport);
+      break;
 
-      case MemoryMessage::UpgradeReq:
-      case MemoryMessage::UpgradeAllocate:
-        theMemoryMap->recordAccess( aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Write);
-        reply = new MemoryMessage(MemoryMessage::UpgradeReply, aMessageTransport[MemoryMessageTag]->address());
+    case MemoryMessage::UpgradeReq:
+    case MemoryMessage::UpgradeAllocate:
+      theMemoryMap->recordAccess(aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Write);
+      reply = new MemoryMessage(MemoryMessage::UpgradeReply,
+                                aMessageTransport[MemoryMessageTag]->address());
+      reply->reqSize() = 0;
+      fillTracker(aMessageTransport);
+      break;
+    case MemoryMessage::FlushReq:
+    case MemoryMessage::Flush:
+    case MemoryMessage::EvictDirty:
+    case MemoryMessage::EvictWritable:
+    case MemoryMessage::EvictClean:
+      if (aMessageTransport[TransactionTrackerTag]) {
+        aMessageTransport[TransactionTrackerTag]->setFillLevel(eLocalMem);
+        aMessageTransport[TransactionTrackerTag]->setFillType(eReplacement);
+        aMessageTransport[TransactionTrackerTag]->complete();
+      }
+      if (aMessageTransport[MemoryMessageTag]->ackRequired()) {
+        reply = new MemoryMessage(MemoryMessage::EvictAck,
+                                  aMessageTransport[MemoryMessageTag]->address());
         reply->reqSize() = 0;
-        fillTracker(aMessageTransport);
-        break;
-      case MemoryMessage::FlushReq:
-      case MemoryMessage::Flush:
-      case MemoryMessage::EvictDirty:
-      case MemoryMessage::EvictWritable:
-      case MemoryMessage::EvictClean:
-        if (aMessageTransport[TransactionTrackerTag]) {
-          aMessageTransport[TransactionTrackerTag]->setFillLevel(eLocalMem);
-          aMessageTransport[TransactionTrackerTag]->setFillType(eReplacement);
-          aMessageTransport[TransactionTrackerTag]->complete();
-        }
-        if (aMessageTransport[MemoryMessageTag]->ackRequired()) {
-          reply = new MemoryMessage(MemoryMessage::EvictAck, aMessageTransport[MemoryMessageTag]->address());
-          reply->reqSize() = 0;
-        } else {
-			return;
-		}
-		break;
-      case MemoryMessage::PrefetchReadAllocReq:
-      case MemoryMessage::PrefetchReadNoAllocReq:
-        theMemoryMap->recordAccess( aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Read);
-        reply = new MemoryMessage(MemoryMessage::PrefetchWritableReply, aMessageTransport[MemoryMessageTag]->address());
-        reply->reqSize() = 64;
-        fillTracker(aMessageTransport);
-        break;
-      case MemoryMessage::StreamFetch:
-        theMemoryMap->recordAccess( aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Read);
-        reply = new MemoryMessage(MemoryMessage::StreamFetchWritableReply, aMessageTransport[MemoryMessageTag]->address());
-        reply->reqSize() = 64;
-        fillTracker(aMessageTransport);
-        break;
-      case MemoryMessage::PrefetchInsert:
-        // should never happen
-        DBG_Assert(false, Component(*this) ( << "MemoryLoopback received PrefetchInsert request") );
-        break;
-      case MemoryMessage::PrefetchInsertWritable:
-        // should never happen
-        DBG_Assert(false, Component(*this) ( << "MemoryLoopback received PrefetchInsertWritable request") );
-        break;
-
-      default:
-        DBG_Assert(false, Component(*this) ( << "Don't know how to handle message: " << aMessageTransport[MemoryMessageTag]->type() << "  No reply sent." ) );
+      } else {
         return;
+      }
+      break;
+    case MemoryMessage::PrefetchReadAllocReq:
+    case MemoryMessage::PrefetchReadNoAllocReq:
+      theMemoryMap->recordAccess(aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Read);
+      reply = new MemoryMessage(MemoryMessage::PrefetchWritableReply,
+                                aMessageTransport[MemoryMessageTag]->address());
+      reply->reqSize() = 64;
+      fillTracker(aMessageTransport);
+      break;
+    case MemoryMessage::StreamFetch:
+      theMemoryMap->recordAccess(aMessageTransport[MemoryMessageTag]->address(), MemoryMap::Read);
+      reply = new MemoryMessage(MemoryMessage::StreamFetchWritableReply,
+                                aMessageTransport[MemoryMessageTag]->address());
+      reply->reqSize() = 64;
+      fillTracker(aMessageTransport);
+      break;
+    case MemoryMessage::PrefetchInsert:
+      // should never happen
+      DBG_Assert(false, Component(*this)(<< "MemoryLoopback received PrefetchInsert request"));
+      break;
+    case MemoryMessage::PrefetchInsertWritable:
+      // should never happen
+      DBG_Assert(false,
+                 Component(*this)(<< "MemoryLoopback received PrefetchInsertWritable request"));
+      break;
+
+    default:
+      DBG_Assert(false, Component(*this)(<< "Don't know how to handle message: "
+                                         << aMessageTransport[MemoryMessageTag]->type()
+                                         << "  No reply sent."));
+      return;
     }
-    DBG_(VVerb, Comp(*this) ( << "Queing reply: " << *reply) Addr(aMessageTransport[MemoryMessageTag]->address()) );
+    DBG_(VVerb, Comp(*this)(<< "Queing reply: " << *reply)
+                    Addr(aMessageTransport[MemoryMessageTag]->address()));
     aMessageTransport.set(MemoryMessageTag, reply);
 
     // account for the one cycle delay inherent from Flexus when sending a
@@ -233,30 +249,29 @@ public:
     outQueue->enqueue(aMessageTransport, cfg.Delay - 1);
   }
 
-  //Drive Interfaces
+  // Drive Interfaces
   void drive(interface::LoopbackDrive const &) {
     if (outQueue->ready() && !FLEXUS_CHANNEL(LoopbackOut).available()) {
-      DBG_(Trace, Comp(*this) ( << "Faile to send reply, channel not available." ));
+      DBG_(Trace, Comp(*this)(<< "Faile to send reply, channel not available."));
     }
     while (FLEXUS_CHANNEL(LoopbackOut).available() && outQueue->ready()) {
-      MemoryTransport trans( outQueue->dequeue());
-      DBG_(Trace, Comp(*this) ( << "Sending reply: " << *(trans[MemoryMessageTag]) ) Addr(trans[MemoryMessageTag]->address()) );
+      MemoryTransport trans(outQueue->dequeue());
+      DBG_(Trace, Comp(*this)(<< "Sending reply: " << *(trans[MemoryMessageTag]))
+                      Addr(trans[MemoryMessageTag]->address()));
       FLEXUS_CHANNEL(LoopbackOut) << trans;
     }
   }
 
 private:
-  std::unique_ptr< nMessageQueues::DelayFifo< MemoryTransport > > outQueue;
-
+  std::unique_ptr<nMessageQueues::DelayFifo<MemoryTransport>> outQueue;
 };
 
-} //End Namespace nMemoryLoopback
+} // End Namespace nMemoryLoopback
 
-FLEXUS_COMPONENT_INSTANTIATOR( MemoryLoopback, nMemoryLoopback );
+FLEXUS_COMPONENT_INSTANTIATOR(MemoryLoopback, nMemoryLoopback);
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
 #define FLEXUS_END_COMPONENT MemoryLoopback
 
 #define DBG_Reset
 #include DBG_Control()
-

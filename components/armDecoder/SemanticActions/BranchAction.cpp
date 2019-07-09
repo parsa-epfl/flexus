@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,29 +36,28 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
-#include <core/boost_extensions/intrusive_ptr.hpp>
-#include <boost/throw_exception.hpp>
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/throw_exception.hpp>
+#include <core/boost_extensions/intrusive_ptr.hpp>
 namespace ll = boost::lambda;
 
 #include <boost/none.hpp>
 
 #include <boost/dynamic_bitset.hpp>
 
-#include <core/target.hpp>
 #include <core/debug/debug.hpp>
+#include <core/target.hpp>
 #include <core/types.hpp>
 
 #include <components/uArchARM/uArchInterfaces.hpp>
 
-#include "../SemanticInstruction.hpp"
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
+#include "../SemanticInstruction.hpp"
 #include "../Validations.hpp"
 
 #define DBG_DeclareCategories armDecoder
@@ -74,29 +74,27 @@ struct BranchCondAction : public BaseSemanticAction {
   std::unique_ptr<Condition> theCondition;
   uint32_t theFeedbackCount;
 
-  BranchCondAction( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, std::unique_ptr<Condition> & aCondition, size_t numOperands)
-    : BaseSemanticAction ( anInstruction, numOperands )
-    , theTarget(aTarget)
-    , theCondition(std::move(aCondition))
-    , theFeedbackCount(0) {
+  BranchCondAction(SemanticInstruction *anInstruction, VirtualMemoryAddress aTarget,
+                   std::unique_ptr<Condition> &aCondition, size_t numOperands)
+      : BaseSemanticAction(anInstruction, numOperands), theTarget(aTarget),
+        theCondition(std::move(aCondition)), theFeedbackCount(0) {
     theInstruction->setExecuted(false);
   }
 
   void doEvaluate() {
-    if (ready() ) {
+    if (ready()) {
       if (theInstruction->hasPredecessorExecuted()) {
-
 
         std::vector<Operand> operands;
         for (int32_t i = 0; i < numOperands(); ++i) {
-        operands.push_back( op(eOperandCode( kOperand1 + i)) );
+          operands.push_back(op(eOperandCode(kOperand1 + i)));
         }
 
-        if (theInstruction->hasOperand(kCondition)){
-            operands.push_back(theInstruction->operand(kCondition));
+        if (theInstruction->hasOperand(kCondition)) {
+          operands.push_back(theInstruction->operand(kCondition));
         }
 
-        boost::intrusive_ptr<BranchFeedback> feedback( new BranchFeedback() );
+        boost::intrusive_ptr<BranchFeedback> feedback(new BranchFeedback());
         feedback->thePC = theInstruction->pc();
         feedback->theActualType = kConditional;
         feedback->theActualTarget = theTarget;
@@ -104,17 +102,17 @@ struct BranchCondAction : public BaseSemanticAction {
 
         theCondition->setInstruction(theInstruction);
 
-        bool result = theCondition->operator ()(operands);
+        bool result = theCondition->operator()(operands);
 
-        if ( result ) {
-          //Taken
+        if (result) {
+          // Taken
           theInstruction->redirectPC(theTarget);
-          core()->applyToNext( theInstruction, branchInteraction(theTarget) );
+          core()->applyToNext(theInstruction, branchInteraction(theTarget));
           feedback->theActualDirection = kTaken;
           DBG_(Dev, (<< "Branch taken! " << *theInstruction));
         } else {
           theInstruction->redirectPC(theInstruction->pc() + 4);
-          core()->applyToNext( theInstruction, branchInteraction(theInstruction->pc() + 4));
+          core()->applyToNext(theInstruction, branchInteraction(theInstruction->pc() + 4));
           feedback->theActualDirection = kNotTaken;
           DBG_(Dev, (<< "Branch Not taken! " << *theInstruction));
         }
@@ -123,26 +121,26 @@ struct BranchCondAction : public BaseSemanticAction {
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {
-        DBG_( VVerb, ( << *this << " waiting for predecessor ") );
+        DBG_(VVerb, (<< *this << " waiting for predecessor "));
         reschedule();
       }
     }
   }
 
-  void describe( std::ostream & anOstream) const {
+  void describe(std::ostream &anOstream) const {
     anOstream << theInstruction->identify() << " BranchCC Action";
   }
 
-  Operand op( eOperandCode aCode) {
+  Operand op(eOperandCode aCode) {
     return theInstruction->operand(aCode);
   }
 };
-dependant_action branchCondAction
-( SemanticInstruction * anInstruction, VirtualMemoryAddress aTarget, std::unique_ptr<Condition> aCondition, size_t numOperands)
-{
-  BranchCondAction * act(new(anInstruction->icb()) BranchCondAction ( anInstruction, aTarget, aCondition, numOperands ) );
+dependant_action branchCondAction(SemanticInstruction *anInstruction, VirtualMemoryAddress aTarget,
+                                  std::unique_ptr<Condition> aCondition, size_t numOperands) {
+  BranchCondAction *act(new (anInstruction->icb())
+                            BranchCondAction(anInstruction, aTarget, aCondition, numOperands));
 
-  return dependant_action( act, act->dependance() );
+  return dependant_action(act, act->dependance());
 }
 
 struct BranchRegAction : public BaseSemanticAction {
@@ -150,99 +148,96 @@ struct BranchRegAction : public BaseSemanticAction {
   VirtualMemoryAddress theTarget;
   eOperandCode theRegOperand;
 
-
-  BranchRegAction( SemanticInstruction * anInstruction, eOperandCode aRegOperand)
-    : BaseSemanticAction ( anInstruction, 1 )
-    , theRegOperand(aRegOperand) {
+  BranchRegAction(SemanticInstruction *anInstruction, eOperandCode aRegOperand)
+      : BaseSemanticAction(anInstruction, 1), theRegOperand(aRegOperand) {
     theInstruction->setExecuted(false);
   }
 
   void doEvaluate() {
-    if (ready() ) {
+    if (ready()) {
 
       if (theInstruction->hasPredecessorExecuted()) {
 
-        DBG_( Dev, ( << *this << " Branching to an address held in register " << theRegOperand) );
+        DBG_(Dev, (<< *this << " Branching to an address held in register " << theRegOperand));
 
-        uint64_t target = boost::get<uint64_t>(theInstruction->operand< uint64_t > (kOperand1));
+        uint64_t target = boost::get<uint64_t>(theInstruction->operand<uint64_t>(kOperand1));
 
         theTarget = VirtualMemoryAddress(target);
 
-        boost::intrusive_ptr<BranchFeedback> feedback( new BranchFeedback() );
+        boost::intrusive_ptr<BranchFeedback> feedback(new BranchFeedback());
         feedback->thePC = theInstruction->pc();
         feedback->theActualType = kUnconditional;
         feedback->theActualTarget = theTarget;
         feedback->theBPState = theInstruction->bpState();
         theInstruction->setBranchFeedback(feedback);
 
-        DBG_( Dev, ( << *this << " Checking for redirection PC= " << theInstruction->pc() << " target= " << theTarget) );
+        DBG_(Dev, (<< *this << " Checking for redirection PC= " << theInstruction->pc()
+                   << " target= " << theTarget));
 
         theInstruction->redirectPC(theTarget);
-        core()->applyToNext( theInstruction, branchInteraction(theTarget) );
+        core()->applyToNext(theInstruction, branchInteraction(theTarget));
 
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {
-        DBG_( VVerb, ( << *this << " waiting for predecessor ") );
+        DBG_(VVerb, (<< *this << " waiting for predecessor "));
         reschedule();
       }
     }
   }
 
-  void describe( std::ostream & anOstream) const {
+  void describe(std::ostream &anOstream) const {
     anOstream << theInstruction->identify() << " BranchCC Action";
   }
 };
 
-dependant_action branchRegAction
-( SemanticInstruction * anInstruction, eOperandCode aRegOperand) {
-  BranchRegAction * act(new(anInstruction->icb()) BranchRegAction ( anInstruction, aRegOperand) );
+dependant_action branchRegAction(SemanticInstruction *anInstruction, eOperandCode aRegOperand) {
+  BranchRegAction *act(new (anInstruction->icb()) BranchRegAction(anInstruction, aRegOperand));
 
-  return dependant_action( act, act->dependance() );
+  return dependant_action(act, act->dependance());
 }
 
 struct BranchToCalcAddressAction : public BaseSemanticAction {
   eOperandCode theTarget;
   uint32_t theFeedbackCount;
 
-  BranchToCalcAddressAction( SemanticInstruction * anInstruction, eOperandCode aTarget)
-    : BaseSemanticAction ( anInstruction, 1 )
-    , theTarget(aTarget)
-    , theFeedbackCount(0) {
+  BranchToCalcAddressAction(SemanticInstruction *anInstruction, eOperandCode aTarget)
+      : BaseSemanticAction(anInstruction, 1), theTarget(aTarget), theFeedbackCount(0) {
     theInstruction->setExecuted(false);
   }
 
   void doEvaluate() {
-    if (ready() ) {
+    if (ready()) {
       if (theInstruction->hasPredecessorExecuted()) {
 
-        //Feedback is taken care of by the updateUncoditional effect at retirement
-        uint64_t target = theInstruction->operand< uint64_t > (theTarget);
+        // Feedback is taken care of by the updateUncoditional effect at
+        // retirement
+        uint64_t target = theInstruction->operand<uint64_t>(theTarget);
         VirtualMemoryAddress target_addr(target);
-        DBG_( Dev, ( << *this << " branc to mapped_reg target: " << target_addr ) );
+        DBG_(Dev, (<< *this << " branc to mapped_reg target: " << target_addr));
 
         theInstruction->redirectPC(target_addr);
-        core()->applyToNext( theInstruction, branchInteraction(target_addr) );
+        core()->applyToNext(theInstruction, branchInteraction(target_addr));
 
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {
-        DBG_( VVerb, ( << *this << " waiting for predecessor ") );
+        DBG_(VVerb, (<< *this << " waiting for predecessor "));
         reschedule();
       }
     }
   }
 
-  void describe( std::ostream & anOstream) const {
+  void describe(std::ostream &anOstream) const {
     anOstream << theInstruction->identify() << " BranchToCalcAddress Action";
   }
 };
 
-dependant_action branchToCalcAddressAction
-( SemanticInstruction * anInstruction) {
-  BranchToCalcAddressAction * act(new(anInstruction->icb()) BranchToCalcAddressAction ( anInstruction, kAddress ) );
+dependant_action branchToCalcAddressAction(SemanticInstruction *anInstruction) {
+  BranchToCalcAddressAction *act(new (anInstruction->icb())
+                                     BranchToCalcAddressAction(anInstruction, kAddress));
 
-  return dependant_action( act, act->dependance() );
+  return dependant_action(act, act->dependance());
 }
 
-} //narmDecoder
+} // namespace narmDecoder

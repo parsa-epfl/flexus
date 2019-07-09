@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -33,38 +34,40 @@
 // ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
 // CONTRACT, TORT OR OTHERWISE).
 //
-// DO-NOT-REMOVE end-copyright-block   
+// DO-NOT-REMOVE end-copyright-block
+#include <cstdlib>
+#include <deque>
+#include <fstream>
 #include <iostream>
 #include <sstream>
-#include <fstream>
-#include <deque>
-#include <cstdlib>
 
 #include <functional>
 
-#include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
 
 #include <core/stats.hpp>
 
 namespace Flexus {
 namespace Core {
-void Break() {}
-} }
+void Break() {
+}
+} // namespace Core
+} // namespace Flexus
 
 using namespace Flexus::Stat;
 
-std::deque< std::function< void () > > theCommands;
+std::deque<std::function<void()>> theCommands;
 
 void usage() {
   std::cout << "Usage: stat-sample <output stat file> <input stat files>* " << std::endl;
 }
 
-void help(std::string const & command) {
+void help(std::string const &command) {
   usage();
 }
 
-void loadDatabaseFile( std::istream & anIstream, std::string const & aPrefix, bool aFirst) {
+void loadDatabaseFile(std::istream &anIstream, std::string const &aPrefix, bool aFirst) {
   if (aFirst) {
     getStatManager()->load(anIstream);
   } else {
@@ -72,7 +75,7 @@ void loadDatabaseFile( std::istream & anIstream, std::string const & aPrefix, bo
   }
 }
 
-void loadDatabase( std::string const & aName, std::string const & aPrefix, bool aFirst) {
+void loadDatabase(std::string const &aName, std::string const &aPrefix, bool aFirst) {
   size_t loc = aName.rfind(".gz");
 
   try {
@@ -106,7 +109,7 @@ void reduceAvg() {
   getStatManager()->reduce(eReduction::eAverage, ".*selection", "avg", std::cout);
 }
 
-void reduceStdev(std::string const & aMsmt) {
+void reduceStdev(std::string const &aMsmt) {
   getStatManager()->reduce(eReduction::eStdDev, ".*selection", aMsmt, std::cout);
 }
 
@@ -118,13 +121,13 @@ void reduceNodes() {
   getStatManager()->reduceNodes(".*selection");
 }
 
-void save(std::string const & aFilename, std::string const & aMeasurementRestriction) {
+void save(std::string const &aFilename, std::string const &aMeasurementRestriction) {
   getStatManager()->saveMeasurements(aMeasurementRestriction, aFilename);
 }
 
 std::string region_string;
 
-void processCmdLine(int32_t aCount, char ** anArgList) {
+void processCmdLine(int32_t aCount, char **anArgList) {
 
   if (aCount < 2) {
     usage();
@@ -134,31 +137,40 @@ void processCmdLine(int32_t aCount, char ** anArgList) {
   std::string output_file = anArgList[1];
   std::string first_file = anArgList[2];
 
-  theCommands.push_back( [&first_file](){ return loadDatabase(first_file, "", true); }); //ll::bind( &loadDatabase, first_file, std::string(""), true ) );
+  theCommands.push_back([&first_file]() {
+    return loadDatabase(first_file, "", true);
+  }); // ll::bind( &loadDatabase, first_file, std::string(""), true ) );
   for (int32_t i = 3; i < aCount; ++i) {
     std::stringstream prefix;
     prefix << std::setw(2) << std::setfill('0') << (i - 1) << '-';
-    theCommands.push_back( [i, &anArgList, &prefix](){ return loadDatabase(std::string(anArgList[i]), prefix.str(), false); }); //ll::bind( &loadDatabase, std::string(anArgList[i]), prefix.str(), false) );
+    theCommands.push_back([i, &anArgList, &prefix]() {
+      return loadDatabase(std::string(anArgList[i]), prefix.str(), false);
+    }); // ll::bind( &loadDatabase, std::string(anArgList[i]), prefix.str(),
+        // false) );
   }
-  theCommands.push_back( [](){ return reduceSum(); }); //ll::bind( &reduceSum ) );
-  theCommands.push_back( [](){ return reduceAvg(); }); //ll::bind( &reduceAvg ) );
-  theCommands.push_back( [](){ return reduceStdev("pernode-stdev"); }); //ll::bind( &reduceStdev, "pernode-stdev"  ) );
-  theCommands.push_back( [](){ return reduceCount(); }); // ll::bind( &reduceCount) );
-  theCommands.push_back( [](){ return reduceNodes(); }); // ll::bind( &reduceNodes ) );
-  theCommands.push_back( [](){ return reduceStdev("stdev"); }); // ll::bind( &reduceStdev, "stdev" ) );
-  theCommands.push_back( [&output_file](){ return save(output_file, "(sum|count|avg|stdev|pernode-stdev)"); }); // ll::bind( &save, output_file, "(sum|count|avg|stdev|pernode-stdev)" ) );
-
+  theCommands.push_back([]() { return reduceSum(); }); // ll::bind( &reduceSum ) );
+  theCommands.push_back([]() { return reduceAvg(); }); // ll::bind( &reduceAvg ) );
+  theCommands.push_back([]() {
+    return reduceStdev("pernode-stdev");
+  }); // ll::bind( &reduceStdev, "pernode-stdev"  ) );
+  theCommands.push_back([]() { return reduceCount(); }); // ll::bind( &reduceCount) );
+  theCommands.push_back([]() { return reduceNodes(); }); // ll::bind( &reduceNodes ) );
+  theCommands.push_back(
+      []() { return reduceStdev("stdev"); }); // ll::bind( &reduceStdev, "stdev" ) );
+  theCommands.push_back([&output_file]() {
+    return save(output_file, "(sum|count|avg|stdev|pernode-stdev)");
+  }); // ll::bind( &save, output_file, "(sum|count|avg|stdev|pernode-stdev)" )
+      // );
 }
 
-int32_t main(int32_t argc, char ** argv) {
+int32_t main(int32_t argc, char **argv) {
 
   getStatManager()->initialize();
 
   processCmdLine(argc, argv);
 
-  while (! theCommands.empty() ) {
+  while (!theCommands.empty()) {
     theCommands.front()();
     theCommands.pop_front();
   }
-
 }

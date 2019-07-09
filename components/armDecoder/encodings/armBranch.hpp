@@ -9,7 +9,8 @@
 // Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
 // Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
 // Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -40,41 +41,42 @@
 
 #include "armSharedFunctions.hpp"
 
-
 namespace narmDecoder {
 
 // Unconditional branch (immediate)
-arminst UNCONDBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst UNCONDBR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
 // Unconditional branch (register)
-arminst BR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst BLR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst RET(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst ERET(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo); // TODO
-arminst DPRS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo); // TODO
+arminst BR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst BLR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst RET(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst ERET(armcode const &aFetchedOpcode, uint32_t aCPU,
+             int64_t aSequenceNo); // TODO
+arminst DPRS(armcode const &aFetchedOpcode, uint32_t aCPU,
+             int64_t aSequenceNo); // TODO
 
 // Compare and branch (immediate)
-arminst CMPBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst CMPBR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
 // Test and branch (immediate)
-arminst TSTBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst TSTBR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
 // Conditional branch (immediate)
-arminst CONDBR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst CONDBR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
 // System TODO
-arminst HINT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst SYNC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst MSR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst SYS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst HINT(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst SYNC(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst MSR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst SYS(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
 // Exception generation TODO
-arminst SVC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst HVC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst SMC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst BRK(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst HLT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst DCPS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst SVC(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst HVC(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst SMC(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst BRK(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst HLT(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst DCPS(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
-} // narmDecoder
+} // namespace narmDecoder
 #endif // FLEXUS_armDECODER_armBRANCH_HPP_INCLUDED

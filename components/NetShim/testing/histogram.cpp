@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,7 +36,6 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 /*  Filename:    histogram.cpp
  *  Description:
  *
@@ -58,32 +58,30 @@
  *   Author          Date      Description
  *   --------------- --------  ----------------------------------------
  */
-Histogram::Histogram ( const COUNTER * bucketList,
-                       const COUNTER   _bucketCount,
-                       const bool dontInitialize ) {
+Histogram::Histogram(const COUNTER *bucketList, const COUNTER _bucketCount,
+                     const bool dontInitialize) {
 
   /* Do basic consistency checks on the histogram buckets */
-  if ( bucketList == nullptr ) {
-    exit ( 1 );
+  if (bucketList == nullptr) {
+    exit(1);
   }
 
-  if ( _bucketCount <= 1 ) {
-    exit ( 1 );
+  if (_bucketCount <= 1) {
+    exit(1);
   }
 
-  bucketCount     = _bucketCount;
-  buckets         = new COUNTER[(int)bucketCount];
-  bucketValues    = new COUNTER[(int)bucketCount];
+  bucketCount = _bucketCount;
+  buckets = new COUNTER[(int)bucketCount];
+  bucketValues = new COUNTER[(int)bucketCount];
 
   /* Copy in the buckets array and ensure that the values are
    *  monotonically increasing and not constant
    */
-  if ( !dontInitialize ) {
-    initializeBucketList ( bucketList );
+  if (!dontInitialize) {
+    initializeBucketList(bucketList);
 
     clearBuckets();
   }
-
 }
 
 /************************************
@@ -97,16 +95,15 @@ Histogram::Histogram ( const COUNTER * bucketList,
  */
 Histogram::~Histogram() {
 
-  if ( buckets != nullptr ) {
+  if (buckets != nullptr) {
     delete[] buckets;
     buckets = nullptr;
   }
 
-  if ( bucketValues != nullptr ) {
+  if (bucketValues != nullptr) {
     delete[] bucketValues;
     bucketValues = nullptr;
   }
-
 }
 
 /************************************
@@ -121,13 +118,13 @@ Histogram::~Histogram() {
  *   Author          Date      Description
  *   --------------- --------  ----------------------------------------
  */
-bool Histogram::increment ( const COUNTER dataPoint ) {
+bool Histogram::increment(const COUNTER dataPoint) {
 
   int32_t pos;
 
-  pos = findBucketPosition ( dataPoint );
+  pos = findBucketPosition(dataPoint);
 
-  if ( pos == NO_BUCKET ) {
+  if (pos == NO_BUCKET) {
     return true;
   }
 
@@ -135,7 +132,6 @@ bool Histogram::increment ( const COUNTER dataPoint ) {
   accumulation += dataPoint;
 
   return false;
-
 }
 
 /************************************
@@ -149,15 +145,11 @@ bool Histogram::increment ( const COUNTER dataPoint ) {
  *   Author          Date      Description
  *   --------------- --------  ----------------------------------------
  */
-int32_t Histogram::findBucketPosition ( const COUNTER dataPoint ) {
-  int
-  mid,
-  min,
-  max;
+int32_t Histogram::findBucketPosition(const COUNTER dataPoint) {
+  int mid, min, max;
 
   /* Check the boundaries first */
-  if ( dataPoint < buckets[0] ||
-       dataPoint > buckets[bucketCount-1] )
+  if (dataPoint < buckets[0] || dataPoint > buckets[bucketCount - 1])
     return NO_BUCKET;
 
   /* Otherwise, the point must lie somewhere inside the bucket range.
@@ -168,19 +160,17 @@ int32_t Histogram::findBucketPosition ( const COUNTER dataPoint ) {
   min = 0;
   max = (int)bucketCount - 1;
 
-  while ( 1 ) {
-    if ( dataPoint >= buckets[mid] &&
-         dataPoint <  buckets[mid+1] ) {
+  while (1) {
+    if (dataPoint >= buckets[mid] && dataPoint < buckets[mid + 1]) {
       return mid;
-    } else if ( dataPoint < buckets[mid] ) {
+    } else if (dataPoint < buckets[mid]) {
       max = mid;
-      mid = mid - ( max - min + 1 ) / 2;
+      mid = mid - (max - min + 1) / 2;
     } else {
       min = mid;
-      mid = mid + ( max - min + 1 ) / 2;
+      mid = mid + (max - min + 1) / 2;
     }
   }
-
 }
 
 /************************************
@@ -189,21 +179,20 @@ int32_t Histogram::findBucketPosition ( const COUNTER dataPoint ) {
  *  datapoint.
  * Arguments:     const int32_t dataPoint - the dataValue which should fall
  *  under one of the bucket positions
- *                const int32_t value - the increment value (positive or negative)
- * Return value:  bool - false if there was a bucket position to hold
+ *                const int32_t value - the increment value (positive or
+ * negative) Return value:  bool - false if there was a bucket position to hold
  *  the value.  True if no such bucket exists.
  * ChangeLog:
  *   Author          Date      Description
  *   --------------- --------  ----------------------------------------
  */
-bool Histogram::add ( const COUNTER dataPoint,
-                      const COUNTER value ) {
+bool Histogram::add(const COUNTER dataPoint, const COUNTER value) {
 
   int32_t pos;
 
-  pos = findBucketPosition ( dataPoint );
+  pos = findBucketPosition(dataPoint);
 
-  if ( pos == NO_BUCKET ) {
+  if (pos == NO_BUCKET) {
     return true;
   }
 
@@ -211,7 +200,6 @@ bool Histogram::add ( const COUNTER dataPoint,
   accumulation += dataPoint * value;
 
   return false;
-
 }
 
 /************************************
@@ -219,24 +207,19 @@ bool Histogram::add ( const COUNTER dataPoint,
  * Description:   Returns the minimum datapoint value that will fall within
  *  this bucket
  * Arguments:     const int32_t  bucket - the bucket index
- *                int32_t       &minValue - the variable to be set by this function
- * Return value:  bool - false on no error, true if the bucket index is out
- *  of range
- * ChangeLog:
- *   Author          Date      Description
+ *                int32_t       &minValue - the variable to be set by this
+ * function Return value:  bool - false on no error, true if the bucket index is
+ * out of range ChangeLog: Author          Date      Description
  *   --------------- --------  ----------------------------------------
  */
-bool Histogram::getBucketMinValue ( const COUNTER  bucket,
-                                    COUNTER    &   minValue ) {
+bool Histogram::getBucketMinValue(const COUNTER bucket, COUNTER &minValue) {
 
-  if ( bucket < 0 ||
-       bucket >= bucketCount - 1 )
+  if (bucket < 0 || bucket >= bucketCount - 1)
     return true;
 
   minValue = buckets[bucket];
 
   return false;
-
 }
 
 /************************************
@@ -244,24 +227,19 @@ bool Histogram::getBucketMinValue ( const COUNTER  bucket,
  * Description:   Returns the maxmimum datapoint value that will fall within
  *  this bucket
  * Arguments:     const int32_t  bucket - the bucket index
- *                int32_t       &maxValue - the variable to be set by this function
- * Return value:  bool - false on no error, true if the bucket index is out
- *  of range
- * ChangeLog:
- *   Author          Date      Description
+ *                int32_t       &maxValue - the variable to be set by this
+ * function Return value:  bool - false on no error, true if the bucket index is
+ * out of range ChangeLog: Author          Date      Description
  *   --------------- --------  ----------------------------------------
  */
-bool Histogram::getBucketMaxValue ( const COUNTER  bucket,
-                                    COUNTER    &   maxValue ) {
+bool Histogram::getBucketMaxValue(const COUNTER bucket, COUNTER &maxValue) {
 
-  if ( bucket < 0 ||
-       bucket >= bucketCount - 1 )
+  if (bucket < 0 || bucket >= bucketCount - 1)
     return true;
 
-  maxValue = buckets[bucket+1];
+  maxValue = buckets[bucket + 1];
 
   return false;
-
 }
 
 /************************************
@@ -273,9 +251,9 @@ bool Histogram::getBucketMaxValue ( const COUNTER  bucket,
  *   Author          Date      Description
  *   --------------- --------  ----------------------------------------
  */
-bool Histogram::clearBuckets ( void ) {
+bool Histogram::clearBuckets(void) {
 
-  for ( int32_t i = 0; i < bucketCount; i++ )
+  for (int32_t i = 0; i < bucketCount; i++)
     bucketValues[i] = 0;
 
   accumulation = 0;
@@ -293,10 +271,8 @@ bool Histogram::clearBuckets ( void ) {
  *   Author          Date      Description
  *   --------------- --------  ----------------------------------------
  */
-bool Histogram::getBucketValue ( const int32_t  bucket,
-                                 COUNTER    &   value ) {
-  if ( bucket < 0 ||
-       bucket >= bucketCount )
+bool Histogram::getBucketValue(const int32_t bucket, COUNTER &value) {
+  if (bucket < 0 || bucket >= bucketCount)
     return true;
 
   value = bucketValues[bucket];
@@ -307,13 +283,12 @@ bool Histogram::getBucketValue ( const int32_t  bucket,
 /************************************
  * Function name: Histogram::getNumBuckets
  * Description:   Returns the number of buckets
- * Arguments:     int32_t &num - the variable which will hold the number of buckets
- * Return value:  bool - false on no error
- * ChangeLog:
- *   Author          Date      Description
+ * Arguments:     int32_t &num - the variable which will hold the number of
+ * buckets Return value:  bool - false on no error ChangeLog: Author Date
+ * Description
  *   --------------- --------  ----------------------------------------
  */
-bool Histogram::getNumBuckets ( int32_t & num ) {
+bool Histogram::getNumBuckets(int32_t &num) {
   num = (int)bucketCount - 1;
   return false;
 }
@@ -325,11 +300,10 @@ bool Histogram::getNumBuckets ( int32_t & num ) {
  * Arguments:     ostream & out - the output stream
  * Return value:  bool - false on no error
  */
-bool Histogram::outputCSVStats ( ostream & out ) {
-  int
-  i;
+bool Histogram::outputCSVStats(ostream &out) {
+  int i;
 
-  for ( i = 0; i < bucketCount; i++ )
+  for (i = 0; i < bucketCount; i++)
     out << bucketValues[i] << COMMA;
 
   return false;
@@ -342,26 +316,23 @@ bool Histogram::outputCSVStats ( ostream & out ) {
  * Arguments:     ostream & out - the output stream
  * Return value:  bool - false on no error
  */
-bool Histogram::outputCSVFractionalStats ( ostream & out ) {
-  int
-  i;
+bool Histogram::outputCSVFractionalStats(ostream &out) {
+  int i;
 
-  double
-  sum = 0.0;
+  double sum = 0.0;
 
-  for ( i = 0; i < bucketCount; i++ )
+  for (i = 0; i < bucketCount; i++)
     sum += bucketValues[i];
 
-  if ( sum > 0.0 ) {
+  if (sum > 0.0) {
 
-    for ( i = 0; i < bucketCount; i++ )
+    for (i = 0; i < bucketCount; i++)
       out << (double)bucketValues[i] / sum << COMMA;
 
   } else {
 
-    for ( i = 0; i < bucketCount; i++ )
+    for (i = 0; i < bucketCount; i++)
       out << "0.0" << COMMA;
-
   }
 
   return false;
@@ -374,8 +345,8 @@ bool Histogram::outputCSVFractionalStats ( ostream & out ) {
  * Arguments:     ostream & out - the output stream
  * Return value:  bool - false on no error
  */
-bool Histogram::outputCSVHeader ( ostream & out ) {
-  for ( int32_t i = 0; i < bucketCount; i++ )
+bool Histogram::outputCSVHeader(ostream &out) {
+  for (int32_t i = 0; i < bucketCount; i++)
     out << buckets[i] << COMMA;
 
   return false;
@@ -387,16 +358,15 @@ bool Histogram::outputCSVHeader ( ostream & out ) {
  * Arguments:     const int32_t * bucketList - the list of new bucket boundaries
  * Return value:  bool - false on no error
  */
-bool Histogram::initializeBucketList ( const COUNTER * bucketList ) {
-  int
-  i;
+bool Histogram::initializeBucketList(const COUNTER *bucketList) {
+  int i;
 
   buckets[0] = bucketList[0];
 
-  for ( i = 1; i < bucketCount; i++ ) {
+  for (i = 1; i < bucketCount; i++) {
     buckets[i] = bucketList[i];
 
-    if ( buckets[i-1] >= buckets[i] ) {
+    if (buckets[i - 1] >= buckets[i]) {
       return true;
     }
   }
@@ -412,7 +382,7 @@ bool Histogram::initializeBucketList ( const COUNTER * bucketList ) {
  * Arguments:     int32_t & accum - the accumulator output value
  * Return value:  bool
  */
-bool Histogram::getAccumulation ( COUNTER & accum ) {
+bool Histogram::getAccumulation(COUNTER &accum) {
   accum = accumulation;
   return false;
 }
@@ -424,20 +394,18 @@ bool Histogram::getAccumulation ( COUNTER & accum ) {
  * Arguments:     int32_t & ptCount - return value of the count
  * Return value:  bool
  */
-bool Histogram::getPointCount ( COUNTER & ptCount,
-                                const bool onlyAboveZero ) {
-  int
-  i;
+bool Histogram::getPointCount(COUNTER &ptCount, const bool onlyAboveZero) {
+  int i;
 
   ptCount = 0;
 
   i = 0;
-  if ( onlyAboveZero ) {
-    while ( buckets[i] <= 0 )
+  if (onlyAboveZero) {
+    while (buckets[i] <= 0)
       i++;
   }
 
-  for ( ; i < bucketCount; i++ )
+  for (; i < bucketCount; i++)
     ptCount += bucketValues[i];
 
   return false;
@@ -451,14 +419,13 @@ bool Histogram::getPointCount ( COUNTER & ptCount,
  *  assumes accumulation/increment value has never been negative
  * Return value:  bool
  */
-bool Histogram::getMean ( double & mean,
-                          const bool onlyAboveZero ) {
+bool Histogram::getMean(double &mean, const bool onlyAboveZero) {
   COUNTER
   ptCount;
 
-  getPointCount ( ptCount, onlyAboveZero );
+  getPointCount(ptCount, onlyAboveZero);
 
-  if ( ptCount == 0 )
+  if (ptCount == 0)
     mean = 0;
   else
     mean = (double)accumulation / (double)ptCount;
@@ -473,12 +440,9 @@ bool Histogram::getMean ( double & mean,
  * Arguments:
  * Return value:  bool
  */
-CategoryHistogram::CategoryHistogram ( const COUNTER * bucketList,
-                                       const COUNTER   bucketCount_ )
-  : Histogram ( bucketList,
-                bucketCount_,
-                true ) {
-  initializeBucketList ( bucketList );
+CategoryHistogram::CategoryHistogram(const COUNTER *bucketList, const COUNTER bucketCount_)
+    : Histogram(bucketList, bucketCount_, true) {
+  initializeBucketList(bucketList);
   clearBuckets();
 }
 
@@ -489,12 +453,11 @@ CategoryHistogram::CategoryHistogram ( const COUNTER * bucketList,
  * Arguments:
  * Return value:  bool
  */
-int32_t CategoryHistogram::findBucketPosition ( const COUNTER dataPoint ) {
-  int32_t
-  i;
+int32_t CategoryHistogram::findBucketPosition(const COUNTER dataPoint) {
+  int32_t i;
 
-  for ( i = 0; i < bucketCount; i++ )
-    if ( buckets[i] == dataPoint )
+  for (i = 0; i < bucketCount; i++)
+    if (buckets[i] == dataPoint)
       return i;
 
   return NO_BUCKET;
@@ -510,11 +473,10 @@ int32_t CategoryHistogram::findBucketPosition ( const COUNTER dataPoint ) {
  *   Author          Date      Description
  *   --------------- --------  ----------------------------------------
  */
-bool CategoryHistogram::initializeBucketList ( const COUNTER * bucketList ) {
-  int
-  i;
+bool CategoryHistogram::initializeBucketList(const COUNTER *bucketList) {
+  int i;
 
-  for ( i = 0; i < bucketCount; i++ )
+  for (i = 0; i < bucketCount; i++)
     buckets[i] = bucketList[i];
 
   return false;
@@ -529,8 +491,7 @@ bool CategoryHistogram::initializeBucketList ( const COUNTER * bucketList ) {
  *   Author          Date      Description
  *   --------------- --------  ----------------------------------------
  */
-CategoryHistogram::~CategoryHistogram ( void ) {
-  /* Nothing to do */
+CategoryHistogram::~CategoryHistogram(void) { /* Nothing to do */
 }
 
 /************************************
@@ -542,26 +503,22 @@ CategoryHistogram::~CategoryHistogram ( void ) {
  *   Author          Date      Description
  *   --------------- --------  ----------------------------------------
  */
-bool Histogram::buildLinearBucketList ( const COUNTER   interval,
-                                        const COUNTER   low,
-                                        const COUNTER   high,
-                                        COUNTER       *& buckets,
-                                        COUNTER     &    bucketCount ) {
-  int
-  i;
+bool Histogram::buildLinearBucketList(const COUNTER interval, const COUNTER low, const COUNTER high,
+                                      COUNTER *&buckets, COUNTER &bucketCount) {
+  int i;
 
-  if ( low >= high || interval <= 0 ) {
+  if (low >= high || interval <= 0) {
     return true;
   }
 
-  bucketCount = ( high - low ) / interval + 2;
+  bucketCount = (high - low) / interval + 2;
 
   buckets = new COUNTER[bucketCount];
 
-  for ( i = 0; i < (bucketCount - 1); i++ )
+  for (i = 0; i < (bucketCount - 1); i++)
     buckets[i] = low + i * interval;
 
-  buckets[bucketCount-1] = HISTOGRAM_POSITIVE_INFINITY;
+  buckets[bucketCount - 1] = HISTOGRAM_POSITIVE_INFINITY;
 
   return false;
 }
@@ -575,28 +532,24 @@ bool Histogram::buildLinearBucketList ( const COUNTER   interval,
  *   Author          Date      Description
  *   --------------- --------  ----------------------------------------
  */
-bool Histogram::buildLogBucketList ( const double theBase,
-                                     const COUNTER low,
-                                     const COUNTER high,
-                                     COUNTER *& buckets,
-                                     COUNTER & bucketCount ) {
-  int
-  i;
+bool Histogram::buildLogBucketList(const double theBase, const COUNTER low, const COUNTER high,
+                                   COUNTER *&buckets, COUNTER &bucketCount) {
+  int i;
 
-  if ( low >= high || theBase <= 0.0 ) {
+  if (low >= high || theBase <= 0.0) {
     return true;
   }
 
-  bucketCount = (COUNTER) (logf ( ( (float)( high - low ) ) ) / logf ( (float)theBase ) ) + 2;
+  bucketCount = (COUNTER)(logf(((float)(high - low))) / logf((float)theBase)) + 2;
 
   buckets = new COUNTER[bucketCount];
 
   buckets[0] = low;
-  for ( i = 1; i < (bucketCount - 1); i++ ) {
-    buckets[i] = (COUNTER)(low + pow ( theBase, (double)i ));
+  for (i = 1; i < (bucketCount - 1); i++) {
+    buckets[i] = (COUNTER)(low + pow(theBase, (double)i));
   }
 
-  buckets[bucketCount-1] = HISTOGRAM_POSITIVE_INFINITY;
+  buckets[bucketCount - 1] = HISTOGRAM_POSITIVE_INFINITY;
 
   return false;
 }
@@ -612,17 +565,6 @@ bool Histogram::buildLogBucketList ( const double theBase,
  */
 
 const COUNTER HIST_BUCKETS_POWERS_OF_2[] = {
-  0,
-  1,
-  8,
-  64,
-  512,
-  2048,
-  16384,
-  131072,
-  2097152,
-  HISTOGRAM_POSITIVE_INFINITY
-};
+    0, 1, 8, 64, 512, 2048, 16384, 131072, 2097152, HISTOGRAM_POSITIVE_INFINITY};
 
 const int32_t HIST_BUCKETS_POWERS_OF_2_COUNT = 10;
-

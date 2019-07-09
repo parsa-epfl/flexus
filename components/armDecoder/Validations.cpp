@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,25 +36,24 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
-#include <iostream>
-#include <iomanip>
 #include <bitset>
+#include <iomanip>
+#include <iostream>
 
-#include <core/boost_extensions/intrusive_ptr.hpp>
 #include <boost/throw_exception.hpp>
+#include <core/boost_extensions/intrusive_ptr.hpp>
 #include <functional>
 
-#include <core/target.hpp>
 #include <core/debug/debug.hpp>
+#include <core/target.hpp>
 #include <core/types.hpp>
 
 #include <components/uArchARM/uArchInterfaces.hpp>
 #include <core/qemu/mai_api.hpp>
 
-#include "SemanticInstruction.hpp"
 #include "Effects.hpp"
 #include "SemanticActions.hpp"
+#include "SemanticInstruction.hpp"
 #include "Validations.hpp"
 #include <components/uArchARM/systemRegister.hpp>
 
@@ -65,99 +65,102 @@ namespace narmDecoder {
 
 using namespace nuArchARM;
 
-
-bool validateXRegister::operator () () {
+bool validateXRegister::operator()() {
   if (theInstruction->isSquashed() || theInstruction->isAnnulled()) {
-    return true; //Don't check
+    return true; // Don't check
   }
   if (theInstruction->raised() != kException_None) {
-    DBG_( VVerb, ( << " Not performing register validation for " << theReg << " because of exception. " << *theInstruction ) );
+    DBG_(VVerb, (<< " Not performing register validation for " << theReg
+                 << " because of exception. " << *theInstruction));
     return true;
   }
 
-  uint64_t flexus = theInstruction->operand< uint64_t > (theOperandCode);
-  uint64_t qemu = (Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readXRegister( theReg )) & (the_64 ? -1LL : 0xFFFFFFFF);
+  uint64_t flexus = theInstruction->operand<uint64_t>(theOperandCode);
+  uint64_t qemu =
+      (Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readXRegister(theReg)) &
+      (the_64 ? -1LL : 0xFFFFFFFF);
 
-  DBG_(Dev,(<< "flexus value in " << std::setw(10) << theOperandCode << "  = " << std::hex << flexus << std::dec  ));
-  DBG_(Dev,(<< "qemu value in   " << std::setw(10) << theReg         << "  = " << std::hex << qemu   << std::dec  ));
-
+  DBG_(Dev, (<< "flexus value in " << std::setw(10) << theOperandCode << "  = " << std::hex
+             << flexus << std::dec));
+  DBG_(Dev, (<< "qemu value in   " << std::setw(10) << theReg << "  = " << std::hex << qemu
+             << std::dec));
 
   return (flexus == qemu);
 }
 
-
-bool validatePC::operator () () {
+bool validatePC::operator()() {
   if (theInstruction->isSquashed() || theInstruction->isAnnulled()) {
-    return true; //Don't check
+    return true; // Don't check
   }
   if (theInstruction->raised() != kException_None) {
-    DBG_( VVerb, ( << " Not performing  validation because of exception. " << *theInstruction ) );
+    DBG_(VVerb, (<< " Not performing  validation because of exception. " << *theInstruction));
     return true;
   }
 
   uint64_t flexus = thePreValidation ? theInstruction->pc() : theInstruction->pcOrig();
   uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPC();
 
-  DBG_(Dev,(<< "flexus PC value " << std::hex << flexus << std::dec ));
-  DBG_(Dev,(<< "qemu PC value   " << std::hex << qemu   << std::dec ));
+  DBG_(Dev, (<< "flexus PC value " << std::hex << flexus << std::dec));
+  DBG_(Dev, (<< "qemu PC value   " << std::hex << qemu << std::dec));
 
   return flexus == qemu;
 }
 
-bool validateVRegister::operator () () {
+bool validateVRegister::operator()() {
 
-    return true;
-//  if (theInstruction->isSquashed() || theInstruction->isAnnulled()) {
-//    return true; //Don't check
-//  }
+  return true;
+  //  if (theInstruction->isSquashed() || theInstruction->isAnnulled()) {
+  //    return true; //Don't check
+  //  }
 
-//  bits flexus = theInstruction->operand< bits > (theOperandCode);
-//  bits simics = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readX( theReg & (~1) );
-//  if (theReg & 1) {
-//    simics &= 0xFFFFFFFFULL;
-//  } else {
-//    simics >>= 32;
-//  }
-//  DBG_( Dev, Condition( flexus != simics) ( << "Validation Mismatch for mapped_reg " << theReg << " flexus=" << std::hex << flexus << " simics=" << simics << std::dec << "\n" << std::internal << *theInstruction ) );
-//  return (flexus == simics);
+  //  bits flexus = theInstruction->operand< bits > (theOperandCode);
+  //  bits simics =
+  //  Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readX(
+  //  theReg & (~1) ); if (theReg & 1) {
+  //    simics &= 0xFFFFFFFFULL;
+  //  } else {
+  //    simics >>= 32;
+  //  }
+  //  DBG_( Dev, Condition( flexus != simics) ( << "Validation Mismatch for
+  //  mapped_reg " << theReg << " flexus=" << std::hex << flexus << " simics="
+  //  << simics << std::dec << "\n" << std::internal << *theInstruction ) );
+  //  return (flexus == simics);
 }
 
-bool validateMemory::operator () () {
+bool validateMemory::operator()() {
   if (theInstruction->isSquashed() || theInstruction->isAnnulled()) {
-    return true; //Don't check
+    return true; // Don't check
   }
 
   bits flexus_val;
-  if(theValueCode == kResult){
-    flexus_val = theInstruction->operand< bits > (theValueCode);
+  if (theValueCode == kResult) {
+    flexus_val = theInstruction->operand<bits>(theValueCode);
   } else {
-    flexus_val = theInstruction->operand< uint64_t > (theValueCode);
+    flexus_val = theInstruction->operand<uint64_t>(theValueCode);
   }
 
   Flexus::Qemu::Processor c = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu());
-  VirtualMemoryAddress vaddr(theInstruction->operand< uint64_t > (theAddressCode));
+  VirtualMemoryAddress vaddr(theInstruction->operand<uint64_t>(theAddressCode));
   int theSize_orig = theSize, theSize_extra = 0;
   VirtualMemoryAddress vaddr_final = vaddr + theSize_orig - 1;
-  if((vaddr & 0x1000) != (vaddr_final & 0x1000)){
+  if ((vaddr & 0x1000) != (vaddr_final & 0x1000)) {
     theSize_extra = (vaddr_final & 0xFFF) + 1;
     DBG_Assert(theSize_extra < 16);
     theSize_orig -= theSize_extra;
-    vaddr_final = (VirtualMemoryAddress) (vaddr_final & ~0xFFFULL);
+    vaddr_final = (VirtualMemoryAddress)(vaddr_final & ~0xFFFULL);
   }
   PhysicalMemoryAddress paddr = c->translateVirtualAddress(vaddr);
   bits qemu_val = c->readPhysicalAddress(paddr, theSize_orig);
-  if(theSize_extra){
+  if (theSize_extra) {
     DBG_Assert((qemu_val >> (theSize_orig * 8)) == 0);
     PhysicalMemoryAddress paddr_spill = c->translateVirtualAddress(vaddr_final);
     qemu_val |= c->readPhysicalAddress(paddr_spill, theSize_extra) << (theSize_orig * 8);
   }
 
-  DBG_(Dev,(<< "flexus value: " << flexus_val ));
-  DBG_(Dev,(<< "qemu value:   " << qemu_val   ));
+  DBG_(Dev, (<< "flexus value: " << flexus_val));
+  DBG_(Dev, (<< "qemu value:   " << qemu_val));
 
   return (flexus_val == qemu_val);
 }
 
-
-
-} //narmDecoder
+} // namespace narmDecoder

@@ -1,0 +1,9 @@
+sudo: required
+dist: bionic
+language: cpp
+
+install:
+  sudo apt-get install clang-format-6.0
+
+script:
+  - sh clang_format_test.sh

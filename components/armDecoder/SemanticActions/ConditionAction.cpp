@@ -5,11 +5,12 @@
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,29 +36,28 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
-#include <core/boost_extensions/intrusive_ptr.hpp>
-#include <boost/throw_exception.hpp>
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/throw_exception.hpp>
+#include <core/boost_extensions/intrusive_ptr.hpp>
 namespace ll = boost::lambda;
 
 #include <boost/none.hpp>
 
 #include <boost/dynamic_bitset.hpp>
 
-#include <core/target.hpp>
 #include <core/debug/debug.hpp>
+#include <core/target.hpp>
 #include <core/types.hpp>
 
 #include <components/uArchARM/uArchInterfaces.hpp>
 
-#include "../SemanticInstruction.hpp"
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
+#include "../SemanticInstruction.hpp"
 #include "PredicatedSemanticAction.hpp"
 #include "RegisterValueExtractor.hpp"
 #include <components/uArchARM/systemRegister.hpp>
@@ -70,27 +70,22 @@ namespace narmDecoder {
 
 using namespace nuArchARM;
 
-
 struct ConditionSelectAction : public PredicatedSemanticAction {
   std::unique_ptr<Condition> theOperation;
   eOperandCode theResult;
   uint64_t theCondCode;
   bool theInvert, theIncrement, the64;
 
-
-  Operand op( eOperandCode aCode) {
+  Operand op(eOperandCode aCode) {
     return theInstruction->operand(aCode);
   }
 
-  ConditionSelectAction ( SemanticInstruction * anInstruction, uint32_t aCode, eOperandCode aResult, std::unique_ptr<Condition> & anOperation, bool anInvert, bool anIncrement, bool a64)
-    : PredicatedSemanticAction( anInstruction, 3, true )
-    , theOperation( std::move(anOperation) )
-    , theResult( aResult )
-    , theCondCode(aCode)
-    , theInvert (anInvert)
-    , theIncrement (anIncrement)
-    , the64 (a64)
-  {
+  ConditionSelectAction(SemanticInstruction *anInstruction, uint32_t aCode, eOperandCode aResult,
+                        std::unique_ptr<Condition> &anOperation, bool anInvert, bool anIncrement,
+                        bool a64)
+      : PredicatedSemanticAction(anInstruction, 3, true), theOperation(std::move(anOperation)),
+        theResult(aResult), theCondCode(aCode), theInvert(anInvert), theIncrement(anIncrement),
+        the64(a64) {
     theInstruction->setExecuted(false);
   }
 
@@ -100,9 +95,9 @@ struct ConditionSelectAction : public PredicatedSemanticAction {
       if (theInstruction->hasPredecessorExecuted()) {
 
         theOperation->setInstruction(theInstruction);
-        std::vector< Operand > operands;
-        operands.push_back( op( kOperand3 ) );
-        operands.push_back( op( kCondition ) );
+        std::vector<Operand> operands;
+        operands.push_back(op(kOperand3));
+        operands.push_back(op(kCondition));
         bool result = theOperation->operator()(operands);
 
         if (result) {
@@ -113,27 +108,29 @@ struct ConditionSelectAction : public PredicatedSemanticAction {
           if (theInvert) {
             std::unique_ptr<Operation> op = operation(kNot_);
             std::vector<Operand> operands = {theInstruction->operand(kResult)};
-            Operand res = op->operator ()(operands);
+            Operand res = op->operator()(operands);
             theInstruction->setOperand(theResult, res);
           }
           if (theIncrement) {
             std::unique_ptr<Operation> op = operation(kADD_);
-            std::vector<Operand> operands = {theInstruction->operand(kResult), theInstruction->operand(kOperand5)};
-            Operand res = op->operator ()(operands);
+            std::vector<Operand> operands = {theInstruction->operand(kResult),
+                                             theInstruction->operand(kOperand5)};
+            Operand res = op->operator()(operands);
             theInstruction->setOperand(theResult, res);
           }
         }
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {
-        DBG_( VVerb, ( << *this << " waiting for predecessor ") );
+        DBG_(VVerb, (<< *this << " waiting for predecessor "));
         reschedule();
       }
     }
   }
 
-  void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " ConditionSelectAction " << theOperation->describe();
+  void describe(std::ostream &anOstream) const {
+    anOstream << theInstruction->identify() << " ConditionSelectAction "
+              << theOperation->describe();
   }
 };
 
@@ -144,19 +141,14 @@ struct ConditionCompareAction : public PredicatedSemanticAction {
   bool theSub_op;
   bool the64;
 
-
-  Operand op( eOperandCode aCode) {
+  Operand op(eOperandCode aCode) {
     return theInstruction->operand(aCode);
   }
 
-  ConditionCompareAction ( SemanticInstruction * anInstruction, uint32_t aCode, eOperandCode aResult, std::unique_ptr<Condition> & anOperation, bool sub_op, bool a64)
-    : PredicatedSemanticAction( anInstruction, 3, true )
-    , theOperation( std::move(anOperation) )
-    , theResult( aResult )
-    , theCondCode(aCode)
-    , theSub_op (sub_op)
-    , the64 (a64)
-  {
+  ConditionCompareAction(SemanticInstruction *anInstruction, uint32_t aCode, eOperandCode aResult,
+                         std::unique_ptr<Condition> &anOperation, bool sub_op, bool a64)
+      : PredicatedSemanticAction(anInstruction, 3, true), theOperation(std::move(anOperation)),
+        theResult(aResult), theCondCode(aCode), theSub_op(sub_op), the64(a64) {
     theInstruction->setExecuted(false);
   }
 
@@ -166,24 +158,25 @@ struct ConditionCompareAction : public PredicatedSemanticAction {
       if (theInstruction->hasPredecessorExecuted()) {
 
         theOperation->setInstruction(theInstruction);
-        std::vector< Operand > operands;
-        operands.push_back( op( kOperand3 ) );
-        operands.push_back( op( kCondition ) );
+        std::vector<Operand> operands;
+        operands.push_back(op(kOperand3));
+        operands.push_back(op(kCondition));
         bool result = theOperation->operator()(operands);
         std::unique_ptr<Operation> op;
-        uint64_t nzcv = boost::get<uint64_t>(theInstruction->operand( kOperand4 )) << 28;
+        uint64_t nzcv = boost::get<uint64_t>(theInstruction->operand(kOperand4)) << 28;
         Operand res = (nzcv & PSTATE_N) ? 0xFFFFFFFFFFFFFFFF : 0;
         if (result) {
-          if (theSub_op){
-              op = operation(kSUBS_);
+          if (theSub_op) {
+            op = operation(kSUBS_);
           } else {
-              op = operation(kADDS_);
+            op = operation(kADDS_);
           }
 
-          std::vector<Operand> operands = {theInstruction->operand(kOperand1), theInstruction->operand(kOperand2)};
-          res = op->operator ()(operands);
+          std::vector<Operand> operands = {theInstruction->operand(kOperand1),
+                                           theInstruction->operand(kOperand2)};
+          res = op->operator()(operands);
           nzcv = op->getNZCVbits();
-          if(!the64){
+          if (!the64) {
             uint64_t result = boost::get<uint64_t>(res);
             nzcv &= ~PSTATE_N;
             nzcv |= (result & ((uint64_t)1 << 31)) ? PSTATE_N : 0;
@@ -196,48 +189,41 @@ struct ConditionCompareAction : public PredicatedSemanticAction {
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {
-        DBG_( VVerb, ( << *this << " waiting for predecessor ") );
+        DBG_(VVerb, (<< *this << " waiting for predecessor "));
         reschedule();
       }
     }
   }
 
-  void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " ConditionCompareAction " << theOperation->describe();
+  void describe(std::ostream &anOstream) const {
+    anOstream << theInstruction->identify() << " ConditionCompareAction "
+              << theOperation->describe();
   }
 };
 
-predicated_action conditionSelectAction
-( SemanticInstruction * anInstruction
-  , std::unique_ptr<Condition> & anOperation
-  , uint64_t aCode
-  , std::vector< std::list<InternalDependance> > & opDeps
-  , eOperandCode aResult
-  , bool anInvert
-  , bool anIncrement
-  , bool a64
-) {
-  ConditionSelectAction * act(new(anInstruction->icb()) ConditionSelectAction( anInstruction, aCode, aResult, anOperation, anInvert, anIncrement, a64) );
+predicated_action conditionSelectAction(SemanticInstruction *anInstruction,
+                                        std::unique_ptr<Condition> &anOperation, uint64_t aCode,
+                                        std::vector<std::list<InternalDependance>> &opDeps,
+                                        eOperandCode aResult, bool anInvert, bool anIncrement,
+                                        bool a64) {
+  ConditionSelectAction *act(new (anInstruction->icb()) ConditionSelectAction(
+      anInstruction, aCode, aResult, anOperation, anInvert, anIncrement, a64));
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
-    opDeps[i].push_back( act->dependance(i) );
+    opDeps[i].push_back(act->dependance(i));
   }
-  return predicated_action( act, act->predicate() );
+  return predicated_action(act, act->predicate());
 }
 
-predicated_action conditionCompareAction
-( SemanticInstruction * anInstruction
-  , std::unique_ptr<Condition> & anOperation
-  , uint32_t aCode
-  , std::vector< std::list<InternalDependance> > & opDeps
-  , eOperandCode aResult
-  , bool aSub_op
-  , bool a64
-) {
-  ConditionCompareAction * act(new(anInstruction->icb()) ConditionCompareAction( anInstruction, aCode, aResult, anOperation, aSub_op, a64) );
+predicated_action conditionCompareAction(SemanticInstruction *anInstruction,
+                                         std::unique_ptr<Condition> &anOperation, uint32_t aCode,
+                                         std::vector<std::list<InternalDependance>> &opDeps,
+                                         eOperandCode aResult, bool aSub_op, bool a64) {
+  ConditionCompareAction *act(new (anInstruction->icb()) ConditionCompareAction(
+      anInstruction, aCode, aResult, anOperation, aSub_op, a64));
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
-    opDeps[i].push_back( act->dependance(i) );
+    opDeps[i].push_back(act->dependance(i));
   }
-  return predicated_action( act, act->predicate() );
+  return predicated_action(act, act->predicate());
 }
 
-} //narmDecoder
+} // namespace narmDecoder

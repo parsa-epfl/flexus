@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,20 +36,19 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #ifndef FLEXUS_armDECODER_SEMANTICINSTRUCTION_HPP_INCLUDED
 #define FLEXUS_armDECODER_SEMANTICINSTRUCTION_HPP_INCLUDED
 
-#include <memory>
 #include <boost/dynamic_bitset.hpp>
+#include <memory>
 //#include "components/armDecoder/Conditions.hpp"
 
 #include "Effects.hpp"
 
-#include <components/uArchARM/uArchInterfaces.hpp>
-#include "armInstruction.hpp"
-#include "OperandMap.hpp"
 #include "InstructionComponentBuffer.hpp"
+#include "OperandMap.hpp"
+#include "armInstruction.hpp"
+#include <components/uArchARM/uArchInterfaces.hpp>
 
 namespace narmDecoder {
 
@@ -62,7 +62,7 @@ private:
   mutable InstructionComponentBuffer theICB;
 
   EffectChain theDispatchEffects;
-  std::list< BaseSemanticAction * > theDispatchActions;
+  std::list<BaseSemanticAction *> theDispatchActions;
   EffectChain theSquashEffects;
   EffectChain theRetirementEffects;
   EffectChain theCheckTrapEffects;
@@ -70,13 +70,13 @@ private:
   EffectChain theAnnulmentEffects;
   EffectChain theReinstatementEffects;
 
-  boost::intrusive_ptr< BranchFeedback > theBranchFeedback;
+  boost::intrusive_ptr<BranchFeedback> theBranchFeedback;
 
-  std::list< std::function< bool() > > theRetirementConstraints;
+  std::list<std::function<bool()>> theRetirementConstraints;
 
-  std::list< std::function< bool() > > thePreValidations;
-  std::list< std::function< bool() > > thePostValidations;
-  std::list< std::function< void() > > theOverrideFns;
+  std::list<std::function<bool()>> thePreValidations;
+  std::list<std::function<bool()>> thePostValidations;
+  std::list<std::function<void()>> theOverrideFns;
 
   bool theOverrideSimics;
   bool thePrevalidationsPassed;
@@ -85,10 +85,9 @@ private:
   bool theIsMicroOp;
 
   struct Dep : public DependanceTarget {
-    SemanticInstruction & theInstruction;
-    Dep( SemanticInstruction & anInstruction)
-      : theInstruction(anInstruction)
-    {}
+    SemanticInstruction &theInstruction;
+    Dep(SemanticInstruction &anInstruction) : theInstruction(anInstruction) {
+    }
     void satisfy(int32_t anArg) {
       theInstruction.setMayRetire(anArg, true);
     }
@@ -99,23 +98,23 @@ private:
 
   boost::optional<PhysicalMemoryAddress> theAccessAddress;
 
-  // This is a better-than-nothing way of accounting for the time taken by non-memory istructions
-  // When an instruction dispatches, this counter is set to the earliest possible cycle it could retire
-  // Right now this is just current cycle + functional unit latency
-  // The uarch decrements this counter by 1 every cycle; the instruction can retire when it is 0
+  // This is a better-than-nothing way of accounting for the time taken by
+  // non-memory istructions When an instruction dispatches, this counter is set
+  // to the earliest possible cycle it could retire Right now this is just
+  // current cycle + functional unit latency The uarch decrements this counter
+  // by 1 every cycle; the instruction can retire when it is 0
   uint32_t theCanRetireCounter;
 
 public:
-
-
-
   void setCanRetireCounter(const uint32_t numCycles);
   void decrementCanRetireCounter();
 
-  SemanticInstruction(VirtualMemoryAddress aPC, Opcode anOpcode, boost::intrusive_ptr<BPredState> bp_state, uint32_t aCPU, int64_t aSequenceNo);
+  SemanticInstruction(VirtualMemoryAddress aPC, Opcode anOpcode,
+                      boost::intrusive_ptr<BPredState> bp_state, uint32_t aCPU,
+                      int64_t aSequenceNo);
   virtual ~SemanticInstruction();
 
-  InstructionComponentBuffer & icb() const {
+  InstructionComponentBuffer &icb() const {
     return theICB;
   }
 
@@ -143,52 +142,54 @@ public:
     return theOverrideSimics;
   }
 
-  bool mayRetire() const ;
+  bool mayRetire() const;
 
   eExceptionType retryTranslation();
   PhysicalMemoryAddress translate();
 
-  nuArchARM::InstructionDependance makeInstructionDependance( InternalDependance const & aDependance);
+  nuArchARM::InstructionDependance makeInstructionDependance(InternalDependance const &aDependance);
+
 public:
-  template <class T>
-  void setOperand( eOperandCode anOperand, T aT ) {
-    theOperands.set<T>( anOperand, aT );
+  template <class T> void setOperand(eOperandCode anOperand, T aT) {
+    theOperands.set<T>(anOperand, aT);
   }
 
-  void setOperand( eOperandCode anOperand, Operand const & aT ) {
+  void setOperand(eOperandCode anOperand, Operand const &aT) {
     SEMANTICS_DBG(identify() << ": [ " << anOperand << "->" << std::hex << aT << " ]");
-    theOperands.set( anOperand, aT );
+    theOperands.set(anOperand, aT);
   }
 
-  template <class T>
-  T  & operand( eOperandCode anOperand );
+  template <class T> T &operand(eOperandCode anOperand);
 
-  Operand & operand( eOperandCode anOperand )  {
-    DBG_Assert( theOperands.hasOperand(anOperand), ( << "Request for unavailable operand " << anOperand << "(" << static_cast<int>(anOperand) << ") by\n" << std::internal << *this << std::left ) );
+  Operand &operand(eOperandCode anOperand) {
+    DBG_Assert(theOperands.hasOperand(anOperand),
+               (<< "Request for unavailable operand " << anOperand << "("
+                << static_cast<int>(anOperand) << ") by\n"
+                << std::internal << *this << std::left));
     SEMANTICS_DBG(identify() << "requesting " << anOperand);
-    return theOperands.operand( anOperand );
+    return theOperands.operand(anOperand);
   }
 
-  bool hasOperand( eOperandCode anOperand )  {
-    return theOperands.hasOperand( anOperand );
+  bool hasOperand(eOperandCode anOperand) {
+    return theOperands.hasOperand(anOperand);
   }
 
-  void addDispatchEffect( Effect * );
-  void addDispatchAction( simple_action const & );
-  void addRetirementEffect( Effect * );
-  void addCheckTrapEffect( Effect * );
-  void addCommitEffect( Effect * );
-  void addSquashEffect( Effect * );
-  void addAnnulmentEffect( Effect * );
-  void addReinstatementEffect( Effect * );
+  void addDispatchEffect(Effect *);
+  void addDispatchAction(simple_action const &);
+  void addRetirementEffect(Effect *);
+  void addCheckTrapEffect(Effect *);
+  void addCommitEffect(Effect *);
+  void addSquashEffect(Effect *);
+  void addAnnulmentEffect(Effect *);
+  void addReinstatementEffect(Effect *);
 
-  void addRetirementConstraint( std::function< bool()> );
+  void addRetirementConstraint(std::function<bool()>);
 
-  void addOverride( std::function< void()> anOverrideFn);
-  void addPrevalidation( std::function< bool() > aValidation);
-  void addPostvalidation( std::function< bool() > aValidation);
+  void addOverride(std::function<void()> anOverrideFn);
+  void addPrevalidation(std::function<bool()> aValidation);
+  void addPostvalidation(std::function<bool()> aValidation);
 
-  void describe(std::ostream & anOstream) const;
+  void describe(std::ostream &anOstream) const;
 
   void setMayRetire(int32_t aBit, bool aFlag);
 
@@ -204,34 +205,46 @@ public:
     theAccessAddress = anAddress;
   }
   PhysicalMemoryAddress getAccessAddress() const {
-    return theAccessAddress ? *theAccessAddress : PhysicalMemoryAddress(0) ;
+    return theAccessAddress ? *theAccessAddress : PhysicalMemoryAddress(0);
   }
-
 };
 
-template<> inline nuArchARM::mapped_reg  & SemanticInstruction::operand< nuArchARM::mapped_reg >( eOperandCode anOperand ) {
-  DBG_Assert( theOperands.hasOperand(anOperand), ( << "Request for unavailable operand " << anOperand << "(" << static_cast<int>(anOperand) << ") by\n" << std::internal << *this << std::left ) );
-  return theOperands.operand<mapped_reg>( anOperand );
+template <>
+inline nuArchARM::mapped_reg &
+SemanticInstruction::operand<nuArchARM::mapped_reg>(eOperandCode anOperand) {
+  DBG_Assert(theOperands.hasOperand(anOperand), (<< "Request for unavailable operand " << anOperand
+                                                 << "(" << static_cast<int>(anOperand) << ") by\n"
+                                                 << std::internal << *this << std::left));
+  return theOperands.operand<mapped_reg>(anOperand);
 }
-template<> inline nuArchARM::reg  & SemanticInstruction::operand< nuArchARM::reg >( eOperandCode anOperand ) {
-  //DBG_Assert( theOperands.hasOperand(anOperand), ( << "Request for unavailable operand " << anOperand << "(" << static_cast<int>(anOperand) << ") by\n" << std::internal << *this << std::left ) );
-  return theOperands.operand<reg>( anOperand );
-}
-
-template<> inline bits  & SemanticInstruction::operand< bits >( eOperandCode anOperand ) {
-  //DBG_Assert( theOperands.hasOperand(anOperand), ( << "Request for unavailable operand " << anOperand << "(" << static_cast<int>(anOperand) << ") by\n" << std::internal << *this << std::left ) );
-  return theOperands.operand< bits >( anOperand );
-}
-
-template <> inline uint64_t & SemanticInstruction::operand< uint64_t >( eOperandCode anOperand ) {
-  //DBG_Assert( theOperands.hasOperand(anOperand), ( << "Request for unavailable operand " << anOperand << "(" << static_cast<int>(anOperand) << ") by\n" << std::internal << *this << std::left ) );
-  return theOperands.operand< uint64_t >( anOperand );
-}
-template <> inline int64_t & SemanticInstruction::operand< int64_t >( eOperandCode anOperand ) {
-  //DBG_Assert( theOperands.hasOperand(anOperand), ( << "Request for unavailable operand " << anOperand << "(" << static_cast<int>(anOperand) << ") by\n" << std::internal << *this << std::left ) );
-  return theOperands.operand< int64_t >( anOperand );
+template <>
+inline nuArchARM::reg &SemanticInstruction::operand<nuArchARM::reg>(eOperandCode anOperand) {
+  // DBG_Assert( theOperands.hasOperand(anOperand), ( << "Request for
+  // unavailable operand " << anOperand << "(" << static_cast<int>(anOperand) <<
+  // ") by\n" << std::internal << *this << std::left ) );
+  return theOperands.operand<reg>(anOperand);
 }
 
-} //narmDecoder
+template <> inline bits &SemanticInstruction::operand<bits>(eOperandCode anOperand) {
+  // DBG_Assert( theOperands.hasOperand(anOperand), ( << "Request for
+  // unavailable operand " << anOperand << "(" << static_cast<int>(anOperand) <<
+  // ") by\n" << std::internal << *this << std::left ) );
+  return theOperands.operand<bits>(anOperand);
+}
 
-#endif //FLEXUS_armDECODER_SEMANTICINSTRUCTION_HPP_INCLUDED
+template <> inline uint64_t &SemanticInstruction::operand<uint64_t>(eOperandCode anOperand) {
+  // DBG_Assert( theOperands.hasOperand(anOperand), ( << "Request for
+  // unavailable operand " << anOperand << "(" << static_cast<int>(anOperand) <<
+  // ") by\n" << std::internal << *this << std::left ) );
+  return theOperands.operand<uint64_t>(anOperand);
+}
+template <> inline int64_t &SemanticInstruction::operand<int64_t>(eOperandCode anOperand) {
+  // DBG_Assert( theOperands.hasOperand(anOperand), ( << "Request for
+  // unavailable operand " << anOperand << "(" << static_cast<int>(anOperand) <<
+  // ") by\n" << std::internal << *this << std::left ) );
+  return theOperands.operand<int64_t>(anOperand);
+}
+
+} // namespace narmDecoder
+
+#endif // FLEXUS_armDECODER_SEMANTICINSTRUCTION_HPP_INCLUDED

@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,7 +36,6 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #ifndef __CACHE_STATE_HPP__
 #define __CACHE_STATE_HPP__
 
@@ -44,15 +44,16 @@
 
 namespace nCMPCache {
 
-#define MAX_NUM_STATES  16
-#define STATE_MASK      0xF
-#define PREFETCH_MASK   0x10
-#define PROTECT_MASK    0x20
-#define LOCKED_MASK    	0x40
+#define MAX_NUM_STATES 16
+#define STATE_MASK 0xF
+#define PREFETCH_MASK 0x10
+#define PROTECT_MASK 0x20
+#define LOCKED_MASK 0x40
 
 class CacheState {
 public:
-  CacheState(const CacheState & s) : val(s.val) {}
+  CacheState(const CacheState &s) : val(s.val) {
+  }
 
   // Standard Cache states
   // Individual policies can use any combination of these states
@@ -68,15 +69,15 @@ public:
     return names()[val & STATE_MASK];
   }
 
-  inline const bool operator==(const CacheState & a) const {
-    return ( ((a.val ^ val) & STATE_MASK) == 0);
+  inline const bool operator==(const CacheState &a) const {
+    return (((a.val ^ val) & STATE_MASK) == 0);
   }
 
-  inline const bool operator!=(const CacheState & a) const {
-    return ( ((a.val ^ val) & STATE_MASK) != 0);
+  inline const bool operator!=(const CacheState &a) const {
+    return (((a.val ^ val) & STATE_MASK) != 0);
   }
 
-  inline CacheState & operator=(const CacheState & a) {
+  inline CacheState &operator=(const CacheState &a) {
     val = (val & ~STATE_MASK) | (a.val & STATE_MASK);
     return *this;
   }
@@ -121,50 +122,49 @@ public:
     }
   }
 
-  template<class Archive>
-  void serialize(Archive & ar, const uint32_t version) {
-    ar & val;
+  template <class Archive> void serialize(Archive &ar, const uint32_t version) {
+    ar &val;
   }
 
-  static const CacheState & char2State(uint8_t c) {
+  static const CacheState &char2State(uint8_t c) {
     switch (c) {
-      case 'M':
-        return Modified;
-        break;
-      case 'O':
-        return Owned;
-        break;
-      case 'E':
-        return Exclusive;
-        break;
-      case 'S':
-        return Shared;
-        break;
-      case 'I':
-        return Invalid;
-        break;
-      case 'P':
-        return InvalidPresent;
-        break;
-      case 'F':
-        return Forward;
-        break;
-      default:
-        DBG_Assert(false, ( << "Unknown state '" << c << "'"));
-        break;
+    case 'M':
+      return Modified;
+      break;
+    case 'O':
+      return Owned;
+      break;
+    case 'E':
+      return Exclusive;
+      break;
+    case 'S':
+      return Shared;
+      break;
+    case 'I':
+      return Invalid;
+      break;
+    case 'P':
+      return InvalidPresent;
+      break;
+    case 'F':
+      return Forward;
+      break;
+    default:
+      DBG_Assert(false, (<< "Unknown state '" << c << "'"));
+      break;
     }
     return Invalid;
   }
 
 private:
-  explicit CacheState() : val(Invalid.val) {
-    /* Never called */ *(int *)0 = 0;
+  explicit CacheState() : val(Invalid.val) { /* Never called */
+    *(int *)0 = 0;
   }
-  CacheState(const std::string & name) : val(names().size()) {
+  CacheState(const std::string &name) : val(names().size()) {
     names().push_back(name);
     DBG_Assert(names().size() <= MAX_NUM_STATES);
   }
-  static std::vector<std::string> & names() {
+  static std::vector<std::string> &names() {
     static std::vector<std::string> theNames;
     return theNames;
   }
@@ -172,8 +172,8 @@ private:
   char val;
 };
 
-std::ostream & operator<<(std::ostream & os, const CacheState & state);
+std::ostream &operator<<(std::ostream &os, const CacheState &state);
 
-};
+}; // namespace nCMPCache
 
 #endif // ! __CACHE_STATE_HPP__

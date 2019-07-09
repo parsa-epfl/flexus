@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,7 +36,6 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #ifndef FLEXUS_armDECODER_INTERACTIONS_HPP_INCLUDED
 #define FLEXUS_armDECODER_INTERACTIONS_HPP_INCLUDED
 
@@ -45,18 +45,19 @@ using Flexus::SharedTypes::VirtualMemoryAddress;
 
 struct BranchInteraction : public nuArchARM::Interaction {
   VirtualMemoryAddress theTarget;
-  BranchInteraction( VirtualMemoryAddress aTarget);
-  void operator() (boost::intrusive_ptr<nuArchARM::Instruction> anInstruction, nuArchARM::uArchARM & aCore);
-  void describe(std::ostream & anOstream) const;
-//  boost::optional< uint64_t> npc() {
-//    return boost::optional<uint64_t>(theTarget);
-//  }
+  BranchInteraction(VirtualMemoryAddress aTarget);
+  void operator()(boost::intrusive_ptr<nuArchARM::Instruction> anInstruction,
+                  nuArchARM::uArchARM &aCore);
+  void describe(std::ostream &anOstream) const;
+  //  boost::optional< uint64_t> npc() {
+  //    return boost::optional<uint64_t>(theTarget);
+  //  }
 };
 
-nuArchARM::Interaction * reinstateInstructionInteraction();
-nuArchARM::Interaction * annulInstructionInteraction();
-nuArchARM::Interaction * branchInteraction( VirtualMemoryAddress aTarget );
+nuArchARM::Interaction *reinstateInstructionInteraction();
+nuArchARM::Interaction *annulInstructionInteraction();
+nuArchARM::Interaction *branchInteraction(VirtualMemoryAddress aTarget);
 
-} //narmDecoder
+} // namespace narmDecoder
 
-#endif //FLEXUS_armDECODER_INTERACTIONS_HPP_INCLUDED
+#endif // FLEXUS_armDECODER_INTERACTIONS_HPP_INCLUDED

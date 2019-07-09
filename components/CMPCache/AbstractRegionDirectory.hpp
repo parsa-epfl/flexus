@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,7 +36,6 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #ifndef __ABSTRACT_REGION_DIRECTORY_HPP__
 #define __ABSTRACT_REGION_DIRECTORY_HPP__
 
@@ -45,47 +45,49 @@
 
 namespace nCMPCache {
 
-template<typename _State>
-class AbstractRegionLookupResult : public AbstractLookupResult<_State> {
+template <typename _State> class AbstractRegionLookupResult : public AbstractLookupResult<_State> {
 public:
-  virtual ~AbstractRegionLookupResult() {}
+  virtual ~AbstractRegionLookupResult() {
+  }
   virtual int32_t owner() const = 0;
 
-  virtual const _State & regionState(int32_t i) const = 0;
-  virtual const std::vector<_State> & regionState() const = 0;
+  virtual const _State &regionState(int32_t i) const = 0;
+  virtual const std::vector<_State> &regionState() const = 0;
 
   virtual MemoryAddress regionTag() const = 0;
 
   virtual void setRegionOwner(int32_t new_owner) = 0;
-  virtual void setRegionState(const std::vector<_State> & new_state) = 0;
-  virtual void setRegionSharerState(int32_t sharer, boost::dynamic_bitset<uint64_t> & presence, boost::dynamic_bitset<uint64_t> & exclusive) = 0;
+  virtual void setRegionState(const std::vector<_State> &new_state) = 0;
+  virtual void setRegionSharerState(int32_t sharer, boost::dynamic_bitset<uint64_t> &presence,
+                                    boost::dynamic_bitset<uint64_t> &exclusive) = 0;
 
   virtual bool emptyRegion() = 0;
 };
 
-template<typename _State>
-class AbstractRegionEvictBuffer : public DirEvictBuffer<_State> {
+template <typename _State> class AbstractRegionEvictBuffer : public DirEvictBuffer<_State> {
 public:
-  AbstractRegionEvictBuffer(int32_t size) : DirEvictBuffer<_State>(size) {}
-  virtual ~AbstractRegionEvictBuffer() {}
+  AbstractRegionEvictBuffer(int32_t size) : DirEvictBuffer<_State>(size) {
+  }
+  virtual ~AbstractRegionEvictBuffer() {
+  }
 };
 
-template<typename _State, typename _EState = _State>
+template <typename _State, typename _EState = _State>
 class AbstractRegionDirectory : public AbstractDirectory<_State, _EState> {
 public:
-  virtual ~AbstractRegionDirectory() {}
+  virtual ~AbstractRegionDirectory() {
+  }
 
   typedef AbstractRegionLookupResult<_State> RegLookupResult;
   typedef typename boost::intrusive_ptr<RegLookupResult> RegLookupResult_p;
 
   virtual RegLookupResult_p nativeLookup(MemoryAddress address) = 0;
-  virtual AbstractRegionEvictBuffer<_EState> * getRegionEvictBuffer() = 0;
+  virtual AbstractRegionEvictBuffer<_EState> *getRegionEvictBuffer() = 0;
 
   virtual int32_t blocksPerRegion() = 0;
   virtual MemoryAddress getRegion(MemoryAddress addr) = 0;
 };
 
-}; // nCMPCache
+}; // namespace nCMPCache
 
 #endif // __ABSTRACT_REGION_DIRECTORY_HPP__
-

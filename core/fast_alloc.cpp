@@ -34,7 +34,7 @@
 
 #include <core/fast_alloc.hpp>
 
-void * FastAlloc::freeLists[Num_Buckets];
+void *FastAlloc::freeLists[Num_Buckets];
 
 #ifdef FAST_ALLOC_STATS
 unsigned FastAlloc::newCount[Num_Buckets];
@@ -42,12 +42,12 @@ unsigned FastAlloc::deleteCount[Num_Buckets];
 unsigned FastAlloc::allocCount[Num_Buckets];
 #endif
 
-void * FastAlloc::moreStructs(int32_t bucket) {
+void *FastAlloc::moreStructs(int32_t bucket) {
   assert(bucket > 0 && bucket < Num_Buckets);
 
   int32_t sz = bucket * Alloc_Quantum;
   const int32_t nstructs = Num_Structs_Per_New; // how many to allocate?
-  char * p = (char *)::new char[nstructs * sz];
+  char *p = (char *)::new char[nstructs * sz];
 
 #ifdef FAST_ALLOC_STATS
   ++allocCount[bucket];
@@ -55,7 +55,7 @@ void * FastAlloc::moreStructs(int32_t bucket) {
 
   freeLists[bucket] = p;
   for (int32_t i = 0; i < (nstructs - 2); ++i, p += sz)
-    * (void **)p = p + sz;
+    *(void **)p = p + sz;
   *(void **)p = 0;
 
   return (p + sz);
@@ -63,7 +63,7 @@ void * FastAlloc::moreStructs(int32_t bucket) {
 
 #ifdef FAST_ALLOC_DEBUG
 
-FastAlloc * FastAlloc::inUseList;
+FastAlloc *FastAlloc::inUseList;
 
 FastAlloc::FastAlloc() {
   inUsePrev = nullptr;

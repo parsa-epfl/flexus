@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,23 +36,22 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #include <boost/archive/binary_oarchive.hpp>
-#include <list>
-#include <iostream>
-#include <iomanip>
 #include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <list>
 
-#include <core/metaprogram.hpp>
 #include <boost/serialization/map.hpp>
+#include <core/metaprogram.hpp>
 
 #include <core/boost_extensions/lexical_cast.hpp>
 #include <core/boost_extensions/padded_string_cast.hpp>
 
-#include <core/target.hpp>
 #include <core/debug/debug.hpp>
-#include <core/types.hpp>
 #include <core/flexus.hpp>
+#include <core/target.hpp>
+#include <core/types.hpp>
 
 #include "bbv.hpp"
 
@@ -70,7 +70,6 @@ bbindex_t theBBIndex;
 int32_t theNextBBIndex = 0;
 bool theMapChanged = false;
 
-
 struct BBVTrackerImpl : public BBVTracker {
   int32_t theIndex;
   int32_t theDumpNo;
@@ -83,31 +82,28 @@ struct BBVTrackerImpl : public BBVTracker {
   std::map<uint64_t, long> theBBV;
 
   BBVTrackerImpl(int32_t anIndex)
-    : theIndex(anIndex)
-    , theDumpNo(0)
-    , theCountSinceDump(0)
-    , theLastPC(PhysicalMemoryAddress(0))
-    , theLastWasBranch(false)
-    , theLastWasBranchDelay(false) {
+      : theIndex(anIndex), theDumpNo(0), theCountSinceDump(0), theLastPC(PhysicalMemoryAddress(0)),
+        theLastWasBranch(false), theLastWasBranchDelay(false) {
   }
 
-  virtual ~BBVTrackerImpl() {}
+  virtual ~BBVTrackerImpl() {
+  }
 
-  virtual void commitInsn( PhysicalMemoryAddress aPC, bool isBranch ) {
-    //Only process if we just processed a branch delay, or we had a
-    //discontinuous fetch.
+  virtual void commitInsn(PhysicalMemoryAddress aPC, bool isBranch) {
+    // Only process if we just processed a branch delay, or we had a
+    // discontinuous fetch.
 
-    bool same_basic_block = ((aPC == theLastPC + 4 && !theLastWasBranchDelay) || aPC == 0 );
+    bool same_basic_block = ((aPC == theLastPC + 4 && !theLastWasBranchDelay) || aPC == 0);
     theLastPC = aPC;
     theLastWasBranchDelay = theLastWasBranch;
     theLastWasBranch = isBranch;
 
     if (!same_basic_block) {
-      //We have a new basic block. See if it has an index
-      ++ theBBV[aPC];
+      // We have a new basic block. See if it has an index
+      ++theBBV[aPC];
     }
 
-    //See if it is time to dump stats
+    // See if it is time to dump stats
     ++theCountSinceDump;
     if (theCountSinceDump >= kCountThreshold) {
       dump();
@@ -117,18 +113,19 @@ struct BBVTrackerImpl : public BBVTracker {
   }
 
   void dump() {
-    if (theDumpNo > 100) return; //Don't bother dumping past 100
-    //Write out and then clear the current BBV vector
+    if (theDumpNo > 100)
+      return; // Don't bother dumping past 100
+    // Write out and then clear the current BBV vector
     std::string name("bbv.cpu");
-    name += boost::padded_string_cast < 2, '0' > ( theIndex );
+    name += boost::padded_string_cast<2, '0'>(theIndex);
     name += ".";
-    name += boost::padded_string_cast < 3, '0' > ( theDumpNo );
+    name += boost::padded_string_cast<3, '0'>(theDumpNo);
     name += ".out";
-    std::ofstream bbv(name.c_str() );
+    std::ofstream bbv(name.c_str());
 
     boost::archive::binary_oarchive oa(bbv);
 
-    oa << const_cast< std::map<uint64_t, long> const &>(theBBV);
+    oa << const_cast<std::map<uint64_t, long> const &>(theBBV);
 
     // close archive
     bbv.close();
@@ -136,14 +133,15 @@ struct BBVTrackerImpl : public BBVTracker {
     if (theDumpNo == 51) {
       ++done_count;
       if (done_count == 16) {
-        DBG_Assert( false, ( << "Halting simulation - all CPUs have executed 2.5M instructions" ) );
+        DBG_Assert(false, (<< "Halting simulation - all CPUs have executed "
+                              "2.5M instructions"));
       }
     }
   }
 };
 
-BBVTracker * BBVTracker::createBBVTracker(int32_t aCPUIndex) {
+BBVTracker *BBVTracker::createBBVTracker(int32_t aCPUIndex) {
   return new BBVTrackerImpl(aCPUIndex);
 }
 
-} //nuArchARM
+} // namespace nuArchARM

@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,44 +36,38 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #ifndef FLEXUS_uFETCH_TYPES_HPP_INCLUDED
 #define FLEXUS_uFETCH_TYPES_HPP_INCLUDED
 
-#include <list>
 #include <iostream>
+#include <list>
 
-#include <core/boost_extensions/intrusive_ptr.hpp>
-#include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 #include <components/CommonQEMU/Slices/FillLevel.hpp>
-#include <core/qemu/mai_api.hpp>
+#include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 #include <components/CommonQEMU/Translation.hpp>
+#include <core/boost_extensions/intrusive_ptr.hpp>
+#include <core/qemu/mai_api.hpp>
 
 namespace Flexus {
 namespace SharedTypes {
 
 using boost::counted_base;
-using Flexus::SharedTypes::VirtualMemoryAddress;
 using Flexus::SharedTypes::TransactionTracker;
 using Flexus::SharedTypes::Translation;
+using Flexus::SharedTypes::VirtualMemoryAddress;
 
-enum eBranchType {
-  kNonBranch
-  , kConditional
-  , kUnconditional
-  , kCall
-  , kReturn
-  , kLastBranchType
-};
-std::ostream & operator << (std::ostream & anOstream, eBranchType aType);
+enum eBranchType { kNonBranch, kConditional, kUnconditional, kCall, kReturn, kLastBranchType };
+std::ostream &operator<<(std::ostream &anOstream, eBranchType aType);
 
 enum eDirection {
-  kStronglyTaken
-  , kTaken                //Bimodal
-  , kNotTaken             //gShare
-  , kStronglyNotTaken
+  kStronglyTaken,
+  kTaken // Bimodal
+  ,
+  kNotTaken // gShare
+  ,
+  kStronglyNotTaken
 };
-std::ostream & operator << (std::ostream & anOstream, eDirection aDir);
+std::ostream &operator<<(std::ostream &anOstream, eDirection aDir);
 
 struct BPredState : boost::counted_base {
   eBranchType thePredictedType;
@@ -88,13 +83,12 @@ struct BPredState : boost::counted_base {
 struct FetchAddr {
   Flexus::SharedTypes::VirtualMemoryAddress theAddress;
   boost::intrusive_ptr<BPredState> theBPState;
-  FetchAddr(Flexus::SharedTypes::VirtualMemoryAddress anAddress)
-    : theAddress(anAddress)
-  { }
+  FetchAddr(Flexus::SharedTypes::VirtualMemoryAddress anAddress) : theAddress(anAddress) {
+  }
 };
 
 struct FetchCommand : boost::counted_base {
-  std::list< FetchAddr > theFetches;
+  std::list<FetchAddr> theFetches;
 };
 
 struct BranchFeedback : boost::counted_base {
@@ -117,51 +111,47 @@ struct FetchedOpcode {
   boost::intrusive_ptr<BPredState> theBPState;
   boost::intrusive_ptr<TransactionTracker> theTransaction;
 
-  FetchedOpcode(Opcode anOpcode):  theOpcode(anOpcode)
-  {}
-  FetchedOpcode( VirtualMemoryAddress anAddr
-                 , Opcode anOpcode
-                 , boost::intrusive_ptr<BPredState> aBPState
-                 , boost::intrusive_ptr<TransactionTracker> aTransaction
-               )
-    : thePC(anAddr)
+  FetchedOpcode(Opcode anOpcode) : theOpcode(anOpcode) {
+  }
+  FetchedOpcode(VirtualMemoryAddress anAddr, Opcode anOpcode,
+                boost::intrusive_ptr<BPredState> aBPState,
+                boost::intrusive_ptr<TransactionTracker> aTransaction)
+      : thePC(anAddr)
 //    ,theConvertedInstruction(aConvertedInstruction)
 #if FLEXUS_TARGET_IS(v9)
-    , theNextPC(aNextAddr)
+        ,
+        theNextPC(aNextAddr)
 #endif
-    , theOpcode(anOpcode)
-    , theBPState(aBPState)
-    , theTransaction(aTransaction)
-  { }
+        ,
+        theOpcode(anOpcode), theBPState(aBPState), theTransaction(aTransaction) {
+  }
 };
 
 struct FetchBundle : public boost::counted_base {
-  std::list< FetchedOpcode > theOpcodes;
-  std::list< tFillLevel > theFillLevels; 
+  std::list<FetchedOpcode> theOpcodes;
+  std::list<tFillLevel> theFillLevels;
 
-  void updateOpcode(VirtualMemoryAddress anAddress, Opcode anOpcode){
-      for (FetchedOpcode& i : theOpcodes){
-          DBG_(Dev,(<< "comparing entries " << anAddress << " with " << i.thePC));
+  void updateOpcode(VirtualMemoryAddress anAddress, Opcode anOpcode) {
+    for (FetchedOpcode &i : theOpcodes) {
+      DBG_(Dev, (<< "comparing entries " << anAddress << " with " << i.thePC));
 
-          if (i.thePC == anAddress){
-              i.theOpcode = anOpcode;
-              return;
-          }
+      if (i.thePC == anAddress) {
+        i.theOpcode = anOpcode;
+        return;
       }
-      DBG_(Dev,(<< "didnt find opcode entry for " << anAddress));
-      DBG_Assert(false);
-
+    }
+    DBG_(Dev, (<< "didnt find opcode entry for " << anAddress));
+    DBG_Assert(false);
   }
 
-  void clear(){
-      for (auto& i : theOpcodes){
-          DBG_(Dev,(<< "deleting opcode entry for " << i.thePC));
-      }
-      theOpcodes.clear();
-      theFillLevels.clear();
+  void clear() {
+    for (auto &i : theOpcodes) {
+      DBG_(Dev, (<< "deleting opcode entry for " << i.thePC));
+    }
+    theOpcodes.clear();
+    theFillLevels.clear();
   }
 };
-
 
 struct CPUState {
   int32_t theTL;
@@ -170,33 +160,33 @@ struct CPUState {
 
 typedef boost::intrusive_ptr<FetchBundle> pFetchBundle;
 
-
 struct TranslationVecWrapper : public boost::counted_base {
 
-    TranslationVecWrapper(){}
-    ~TranslationVecWrapper(){}
+  TranslationVecWrapper() {
+  }
+  ~TranslationVecWrapper() {
+  }
 
-    std::queue< TranslationPtr > internalContainer; // from mai_api
+  std::queue<TranslationPtr> internalContainer; // from mai_api
 
-    void addNewTranslation(boost::intrusive_ptr<Translation>& aTr) {
-        internalContainer.push(aTr);
-    }
+  void addNewTranslation(boost::intrusive_ptr<Translation> &aTr) {
+    internalContainer.push(aTr);
+  }
 
-//    void updateExistingTranslation(VirtualMemoryAddress aVAddr, PhysicalMemoryAddress translatedAddress) {
-//        for( auto& translation : internalContainer ) {
-//            if( translation->theVaddr == aVAddr ) {
-//                translation->thePaddr = translatedAddress;
-//                return;
-//            }
-//        }
-//    }
+  //    void updateExistingTranslation(VirtualMemoryAddress aVAddr,
+  //    PhysicalMemoryAddress translatedAddress) {
+  //        for( auto& translation : internalContainer ) {
+  //            if( translation->theVaddr == aVAddr ) {
+  //                translation->thePaddr = translatedAddress;
+  //                return;
+  //            }
+  //        }
+  //    }
 };
-
 
 typedef boost::intrusive_ptr<TranslationVecWrapper> TranslatedAddresses;
 
 } // end namespace SharedTypes
 } // end namespace Flexus
 
-#endif //FLEXUS_uFETCH_TYPES_HPP_INCLUDED
-
+#endif // FLEXUS_uFETCH_TYPES_HPP_INCLUDED

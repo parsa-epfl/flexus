@@ -9,7 +9,8 @@
 // Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
 // Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
 // Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -42,37 +43,37 @@
 
 namespace narmDecoder {
 
-
 // Load/store exclusive
-//arminst CASP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst CAS(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst STXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst STRL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst LDAQ(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst LDXR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+// arminst CASP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t
+// aSequenceNo);
+arminst CAS(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst STXR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst STRL(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst LDAQ(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst LDXR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
 // Load register (literal)
-arminst LDR_lit(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst LDR_lit(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
 // Load/store pair (all forms)
-arminst LDP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst STP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst LDP(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst STP(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
 /* Load/store register (all forms) */
-arminst LDR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst STR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst LDR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst STR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
 /* atomic memory operations */ // TODO
-arminst LDADD(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst LDCLR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst LDEOR(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst LDSET(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst LDSMAX(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst LDSMIN(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst LDUMAX(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst LDUMIN(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst SWP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst LDADD(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst LDCLR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst LDEOR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst LDSET(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst LDSMAX(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst LDSMIN(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst LDUMAX(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst LDUMIN(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst SWP(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
-} // narmDecoder
+} // namespace narmDecoder
 
 #endif // FLEXUS_armDECODER_armLOADSTORE_HPP_INCLUDED

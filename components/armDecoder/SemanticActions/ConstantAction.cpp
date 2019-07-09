@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,29 +36,28 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
-#include <core/boost_extensions/intrusive_ptr.hpp>
-#include <boost/throw_exception.hpp>
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/throw_exception.hpp>
+#include <core/boost_extensions/intrusive_ptr.hpp>
 namespace ll = boost::lambda;
 
 #include <boost/none.hpp>
 
 #include <boost/dynamic_bitset.hpp>
 
-#include <core/target.hpp>
 #include <core/debug/debug.hpp>
+#include <core/target.hpp>
 #include <core/types.hpp>
 
 #include <components/uArchARM/uArchInterfaces.hpp>
 
-#include "../SemanticInstruction.hpp"
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
+#include "../SemanticInstruction.hpp"
 #include "PredicatedSemanticAction.hpp"
 
 #define DBG_DeclareCategories armDecoder
@@ -73,38 +73,34 @@ struct ConstantAction : public PredicatedSemanticAction {
   eOperandCode theResult;
   boost::optional<eOperandCode> theBypass;
 
-  ConstantAction( SemanticInstruction * anInstruction, bits aConstant, eOperandCode aResult, boost::optional<eOperandCode> aBypass )
-    : PredicatedSemanticAction( anInstruction, 1, true )
-    , theConstant(aConstant)
-    , theResult( aResult )
-    , theBypass( aBypass ) {
-    setReady( 0, true );
+  ConstantAction(SemanticInstruction *anInstruction, bits aConstant, eOperandCode aResult,
+                 boost::optional<eOperandCode> aBypass)
+      : PredicatedSemanticAction(anInstruction, 1, true), theConstant(aConstant),
+        theResult(aResult), theBypass(aBypass) {
+    setReady(0, true);
   }
 
   void doEvaluate() {
     theInstruction->setOperand(theResult, static_cast<bits>(theConstant));
-    DBG_( VVerb, ( << *this << " applied") );
+    DBG_(VVerb, (<< *this << " applied"));
     if (theBypass) {
-      mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass);
-      core()->bypass( name, theConstant );
+      mapped_reg name = theInstruction->operand<mapped_reg>(*theBypass);
+      core()->bypass(name, theConstant);
     }
     satisfyDependants();
   }
 
-  void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " store constant " << theConstant << " in " << theResult;
+  void describe(std::ostream &anOstream) const {
+    anOstream << theInstruction->identify() << " store constant " << theConstant << " in "
+              << theResult;
   }
-
 };
 
-predicated_action constantAction
-( SemanticInstruction * anInstruction
-  , uint64_t aConstant
-  , eOperandCode aResult
-  , boost::optional<eOperandCode> aBypass
-) {
-  ConstantAction * act(new(anInstruction->icb()) ConstantAction( anInstruction, aConstant, aResult, aBypass) );
-  return predicated_action( act, act->predicate() );
+predicated_action constantAction(SemanticInstruction *anInstruction, uint64_t aConstant,
+                                 eOperandCode aResult, boost::optional<eOperandCode> aBypass) {
+  ConstantAction *act(new (anInstruction->icb())
+                          ConstantAction(anInstruction, aConstant, aResult, aBypass));
+  return predicated_action(act, act->predicate());
 }
 
-} //narmDecoder
+} // namespace narmDecoder

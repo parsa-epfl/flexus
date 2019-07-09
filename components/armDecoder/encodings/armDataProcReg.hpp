@@ -9,7 +9,8 @@
 // Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
 // Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
 // Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -42,38 +43,36 @@
 namespace narmDecoder {
 
 // Logical (shifted register)
-arminst LOGICAL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-
+arminst LOGICAL(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
 // Add/subtract (shifted register / extended register)
-arminst ADDSUB_SHIFTED(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst ADDSUB_EXTENDED(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-
+arminst ADDSUB_SHIFTED(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst ADDSUB_EXTENDED(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
 // Data-processing (3 source)
-arminst DP_1_SRC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst DP_2_SRC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst DP_3_SRC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst DP_1_SRC(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst DP_2_SRC(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst DP_3_SRC(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
 // Add/subtract (with carry)
-arminst ADDSUB_CARRY(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst ADDSUB_CARRY(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
 // Conditional compare (immediate / register)
-arminst CCMP(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst CCMP(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
 // Conditional select
-arminst CSEL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst CSEL(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
 // Data-processing (1 source)
-arminst RBIT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst REV(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst CL(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst RBIT(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst REV(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst CL(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
 // Data-processing (2 sources)
-arminst DIV(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst SHIFT(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
-arminst CRC(armcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo);
+arminst DIV(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst SHIFT(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+arminst CRC(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
-} // namrDecoder
+} // namespace narmDecoder
 
 #endif // FLEXUS_armDECODER_armDATAPROCREG_HPP_INCLUDED

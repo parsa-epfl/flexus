@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,7 +36,6 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #ifndef FLEXUS_uARCH_COREMODEL_BBV__INCLUDED
 #define FLEXUS_uARCH_COREMODEL_BBV__INCLUDED
 
@@ -43,11 +43,12 @@ namespace nuArchARM {
 using Flexus::SharedTypes::PhysicalMemoryAddress;
 
 struct BBVTracker {
-  static BBVTracker * createBBVTracker(int32_t aCPUIndex);
-  virtual void commitInsn( PhysicalMemoryAddress aPC, bool isBranch ) = 0;
-  virtual ~BBVTracker() {}
+  static BBVTracker *createBBVTracker(int32_t aCPUIndex);
+  virtual void commitInsn(PhysicalMemoryAddress aPC, bool isBranch) = 0;
+  virtual ~BBVTracker() {
+  }
 };
 
-} //nuArchARM
+} // namespace nuArchARM
 
-#endif //FLEXUS_uARCH_COREMODEL_BBV__INCLUDED
+#endif // FLEXUS_uARCH_COREMODEL_BBV__INCLUDED

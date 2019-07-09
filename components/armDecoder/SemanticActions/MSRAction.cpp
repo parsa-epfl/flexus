@@ -9,7 +9,8 @@
 //// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
 //// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
 //// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
-//// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+//// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+/// University.
 ////
 //// For more information, see the SimFlex project website at:
 ////   http://www.ece.cmu.edu/~simflex
@@ -35,7 +36,6 @@
 ////
 //// DO-NOT-REMOVE end-copyright-block
 
-
 //#include <iostream>
 //#include <iomanip>
 
@@ -43,7 +43,7 @@
 //#include <boost/throw_exception.hpp>
 //#include <boost/function.hpp>
 //#include <boost/lambda/lambda.hpp>
-//namespace ll = boost::lambda;
+// namespace ll = boost::lambda;
 
 //#include <boost/none.hpp>
 
@@ -66,11 +66,11 @@
 //#define DBG_SetDefaultOps AddCat(armDecoder)
 //#include DBG_Control()
 
-//namespace narmDecoder {
+// namespace narmDecoder {
 
-//using namespace nuArchARM;
+// using namespace nuArchARM;
 
-//struct MSRAction : public PredicatedSemanticAction {
+// struct MSRAction : public PredicatedSemanticAction {
 //  uint8_t theOp1, theOp2, theCRm;
 
 //  MSRAction( SemanticInstruction * anInstruction,
@@ -102,8 +102,9 @@
 //    }
 
 //      // further access checks
-//      SysRegInfo& ri = theInstruction->core()->getSysRegInfo(theOp0, theOp1, theOp2, theCRn, theCRm, thehasCP);
-//      if (ri->accessfn(theInstruction->core()) == kACCESS_OK){
+//      SysRegInfo& ri = theInstruction->core()->getSysRegInfo(theOp0, theOp1,
+//      theOp2, theCRn, theCRm, thehasCP); if
+//      (ri->accessfn(theInstruction->core()) == kACCESS_OK){
 //          Operand val = ri->readfn(theInstruction->core());
 //            theInstruction->setOperand(theOperandCode, val);
 //      }
@@ -111,19 +112,19 @@
 //  }
 
 //  void describe( std::ostream & anOstream) const {
-//    anOstream << theInstruction->identify() << " Read SYS store in " << theOperandCode;
+//    anOstream << theInstruction->identify() << " Read SYS store in " <<
+//    theOperandCode;
 //  }
 
 //};
 
-//predicated_action MSRAction
+// predicated_action MSRAction
 //( SemanticInstruction * anInstruction, uint8_t op1, uint8_t op2, uint8_t crm
 //) {
-//  MSRAction * act(new(anInstruction->icb()) MSRAction( anInstruction, op1, op2, crm) );
+//  MSRAction * act(new(anInstruction->icb()) MSRAction( anInstruction, op1,
+//  op2, crm) );
 
 //  return predicated_action( act, act->predicate() );
 //}
-
-
 
 //} //narmDecoder

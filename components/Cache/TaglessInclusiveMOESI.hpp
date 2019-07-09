@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,12 +36,11 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 /*! \file TaglessInclusiveMOESIControllerImpl.hpp
  * \brief
  *
- * Defines the interfaces that the CacheController and the TaglessInclusiveMOESIControllerImpl
- * use to talk to one another
+ * Defines the interfaces that the CacheController and the
+ * TaglessInclusiveMOESIControllerImpl use to talk to one another
  *
  * Revision History:
  *     twenisch    03 Sep 04 - Split implementation out to compile separately
@@ -51,8 +51,8 @@
 
 #include "BaseCacheControllerImpl.hpp"
 
-#include <list>
 #include <boost/intrusive_ptr.hpp>
+#include <list>
 
 #include <components/Cache/BasicCacheState.hpp>
 
@@ -60,7 +60,6 @@ namespace nCache {
 
 class TaglessInclusiveMOESIControllerImpl : public BaseCacheControllerImpl {
 private:
-
   typedef BasicCacheState State;
 
   AbstractArray<State> *theArray;
@@ -73,41 +72,41 @@ private:
   int32_t theEvictThreshold;
 
 public:
-  static BaseCacheControllerImpl * createInstance( std::list<std::pair<std::string, std::string> > &args, const ControllerParams & params);
+  static BaseCacheControllerImpl *
+  createInstance(std::list<std::pair<std::string, std::string>> &args,
+                 const ControllerParams &params);
 
   static const std::string name;
 
   // These are used for simple translations to various address types
-  virtual MemoryAddress getBlockAddress (MemoryAddress const & anAddress) const {
+  virtual MemoryAddress getBlockAddress(MemoryAddress const &anAddress) const {
     return theArray->blockAddress(anAddress);
   }
 
-  virtual BlockOffset getBlockOffset(MemoryAddress const & anAddress) const {
+  virtual BlockOffset getBlockOffset(MemoryAddress const &anAddress) const {
     return theArray->blockOffset(anAddress);
   }
 
-  virtual std::function<bool (MemoryAddress a, MemoryAddress b)> setCompareFn() const {
+  virtual std::function<bool(MemoryAddress a, MemoryAddress b)> setCompareFn() const {
     return theArray->setCompareFn();
   }
 
 private:
-  TaglessInclusiveMOESIControllerImpl( CacheController * aController,
-                                       CacheInitInfo  * aInit,
-                                       bool    anAlwaysNAck );
+  TaglessInclusiveMOESIControllerImpl(CacheController *aController, CacheInitInfo *aInit,
+                                      bool anAlwaysNAck);
 
 protected:
-
-  virtual void saveArrayState(std::ostream & os) {
+  virtual void saveArrayState(std::ostream &os) {
     theArray->saveState(os);
   }
 
-  virtual bool loadArrayState(std::istream & is, bool aTextFlexpoint) {
+  virtual bool loadArrayState(std::istream &is, bool aTextFlexpoint) {
     return theArray->loadState(is, theNodeId, aTextFlexpoint);
   }
 
-  virtual void setProtectedBlock(MemoryAddress addr, bool flag){
+  virtual void setProtectedBlock(MemoryAddress addr, bool flag) {
     LookupResult_p lookup = (*theArray)[addr];
-    if (lookup->state() != State::Invalid )
+    if (lookup->state() != State::Invalid)
       lookup->setProtected(flag);
   }
 
@@ -124,17 +123,17 @@ protected:
     theArray->unreserveEvictionResource();
   }
 
-  virtual AbstractEvictBuffer & evictBuffer() {
+  virtual AbstractEvictBuffer &evictBuffer() {
     return theEvictBuffer;
   }
-  virtual const AbstractEvictBuffer & const_EvictBuffer() const {
+  virtual const AbstractEvictBuffer &const_EvictBuffer() const {
     return theEvictBuffer;
   }
 
   // Perform lookup, select action and update cache state if necessary
-  virtual std::tuple<bool, bool, Action> doRequest ( MemoryTransport        transport,
-      bool                   has_maf_entry,
-      TransactionTracker_p aWakingTracker =  TransactionTracker_p() );
+  virtual std::tuple<bool, bool, Action>
+  doRequest(MemoryTransport transport, bool has_maf_entry,
+            TransactionTracker_p aWakingTracker = TransactionTracker_p());
 #if 0
   virtual std::tuple<bool, bool, Action> doRequest ( MemoryMessage_p        msg,
       TransactionTracker_p   tracker,
@@ -142,15 +141,13 @@ protected:
       TransactionTracker_p aWakingTracker =  TransactionTracker_p() );
 #endif
 
-  virtual Action handleBackMessage ( MemoryTransport transport );
+  virtual Action handleBackMessage(MemoryTransport transport);
 
-  virtual Action handleSnoopMessage ( MemoryTransport transport );
+  virtual Action handleSnoopMessage(MemoryTransport transport);
 
-  virtual Action handleIprobe ( bool                 aHit,
-                                MemoryTransport    transport );
+  virtual Action handleIprobe(bool aHit, MemoryTransport transport);
 
 public:
-
   virtual void dumpEvictBuffer() const;
 
   /////////////////////////////////////////
@@ -164,43 +161,43 @@ public:
   // also reserve any necessary controller resources
   virtual MemoryMessage_p getIdleWorkMessage(ProcessEntry_p process);
 
-  virtual void removeIdleWorkReservations(ProcessEntry_p process, Action & action);
+  virtual void removeIdleWorkReservations(ProcessEntry_p process, Action &action);
 
   // take any necessary actions to start the idle work
-  virtual Action handleIdleWork( MemoryTransport transport);
+  virtual Action handleIdleWork(MemoryTransport transport);
 
-  virtual Action handleWakeSnoop ( MemoryTransport transport );
+  virtual Action handleWakeSnoop(MemoryTransport transport);
 
-  virtual Action doEviction ();
+  virtual Action doEviction();
   virtual uint32_t freeEvictBuffer() const;
   virtual bool evictableBlockExists(int32_t anIndex) const;
 
-  virtual bool canStartRequest( MemoryAddress const & anAddress) const {
-    return (theRequestTracker.getActiveRequests(theArray->getSet(anAddress)) < theArray->requestsPerSet());
+  virtual bool canStartRequest(MemoryAddress const &anAddress) const {
+    return (theRequestTracker.getActiveRequests(theArray->getSet(anAddress)) <
+            theArray->requestsPerSet());
   }
-  virtual void addPendingRequest( MemoryAddress const & anAddress) {
+  virtual void addPendingRequest(MemoryAddress const &anAddress) {
     theRequestTracker.startRequest(theArray->getSet(anAddress));
   }
-  virtual void removePendingRequest( MemoryAddress const & anAddress) {
+  virtual void removePendingRequest(MemoryAddress const &anAddress) {
     theRequestTracker.endRequest(theArray->getSet(anAddress));
   }
 
 private:
-
-  typedef boost::intrusive_ptr<AbstractLookupResult<State> > LookupResult_p;
+  typedef boost::intrusive_ptr<AbstractLookupResult<State>> LookupResult_p;
 
   // we use a specialized version of this
-  virtual Action finalizeSnoop (  MemoryTransport transport,
-                                  LookupResult_p  lookup );
+  virtual Action finalizeSnoop(MemoryTransport transport, LookupResult_p lookup);
 
   bool evictBlock(LookupResult_p victim);
 
   void allocateBlock(LookupResult_p result, MemoryAddress aBlockAddress);
 
-  friend std::ostream & operator<<( std::ostream & os, const TaglessInclusiveMOESIControllerImpl::State & state);
+  friend std::ostream &operator<<(std::ostream &os,
+                                  const TaglessInclusiveMOESIControllerImpl::State &state);
 
 }; // class TaglessInclusiveMOESIControllerImpl
 
-}  // end namespace nCache
+} // end namespace nCache
 
 #endif // _TAGLESS_INCLUSIVE_MOESI_HPP__

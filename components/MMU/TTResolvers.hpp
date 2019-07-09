@@ -9,7 +9,8 @@
 // Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
 // Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
 // Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -40,65 +41,64 @@
 #include "ARMTranslationGranules.hpp"
 #include "MMUUtil.hpp"
 
-#include <stdint.h>
 #include <memory>
+#include <stdint.h>
 
 namespace nMMU {
 
-typedef std::shared_ptr<TranslationGranule> _TTResolver_Shptr_T ;
+typedef std::shared_ptr<TranslationGranule> _TTResolver_Shptr_T;
 typedef uint64_t address_t;
 
 /* Used for dealing with all varying address widths and granules, figures out
- * which bits to get and index and discard. 
+ * which bits to get and index and discard.
  */
-class TTResolver
-{
-    public:
-        TTResolver(bool abro, _TTResolver_Shptr_T aGranule,address_t aTTBR,uint8_t PAddrWidth);
-        virtual address_t resolve(address_t inputAddress);
-        virtual address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
-        void updateRawBaseRegister(address_t newTTBR);
-    protected:
-        // for going through the TT
-        bool isBR0;
-        address_t RawTTBRReg;
-        uint8_t TTBR_LSB;
-        uint8_t TTBR_MSB;
-        uint8_t offset_LSB;
-        uint8_t offset_MSB;
-        uint8_t IAddressWidth;
-        uint8_t PAddressWidth;
-        uint8_t TnSz;
-        address_t descriptorIndex;
+class TTResolver {
+public:
+  TTResolver(bool abro, _TTResolver_Shptr_T aGranule, address_t aTTBR, uint8_t PAddrWidth);
+  virtual address_t resolve(address_t inputAddress);
+  virtual address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
+  void updateRawBaseRegister(address_t newTTBR);
 
-        // for setting input-output bits dependent on TG size
-        _TTResolver_Shptr_T regimeTG;
+protected:
+  // for going through the TT
+  bool isBR0;
+  address_t RawTTBRReg;
+  uint8_t TTBR_LSB;
+  uint8_t TTBR_MSB;
+  uint8_t offset_LSB;
+  uint8_t offset_MSB;
+  uint8_t IAddressWidth;
+  uint8_t PAddressWidth;
+  uint8_t TnSz;
+  address_t descriptorIndex;
 
-        // utility
-        address_t maskAndShiftInputAddress(address_t anAddr);
+  // for setting input-output bits dependent on TG size
+  _TTResolver_Shptr_T regimeTG;
+
+  // utility
+  address_t maskAndShiftInputAddress(address_t anAddr);
 };
 
 class L0Resolver : public TTResolver {
-    public:
-        L0Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t tbr,uint8_t aPAW); 
-        address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
+public:
+  L0Resolver(bool abro, _TTResolver_Shptr_T aGranule, address_t tbr, uint8_t aPAW);
+  address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
 };
-class L1Resolver: public TTResolver {
-    public:
-        L1Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t attbr,uint8_t aPAW); 
-        address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
+class L1Resolver : public TTResolver {
+public:
+  L1Resolver(bool abro, _TTResolver_Shptr_T aGranule, address_t attbr, uint8_t aPAW);
+  address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
 };
-class L2Resolver: public TTResolver {
-    public:
-        L2Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t attbr,uint8_t aPAW); 
-        address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
+class L2Resolver : public TTResolver {
+public:
+  L2Resolver(bool abro, _TTResolver_Shptr_T aGranule, address_t attbr, uint8_t aPAW);
+  address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
 };
-class L3Resolver: public TTResolver {
-    public:
-        L3Resolver(bool abro, _TTResolver_Shptr_T aGranule,address_t attbr,uint8_t aPAW); 
-        address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
+class L3Resolver : public TTResolver {
+public:
+  L3Resolver(bool abro, _TTResolver_Shptr_T aGranule, address_t attbr, uint8_t aPAW);
+  address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
 };
 
-
-} // end nMMU
+} // namespace nMMU
 #endif // _ARM_TT_RESOLVERS_DEFINED_HPP_

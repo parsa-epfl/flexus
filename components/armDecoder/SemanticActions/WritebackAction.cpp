@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,29 +36,28 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
-#include <core/boost_extensions/intrusive_ptr.hpp>
-#include <boost/throw_exception.hpp>
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/throw_exception.hpp>
+#include <core/boost_extensions/intrusive_ptr.hpp>
 namespace ll = boost::lambda;
 
 #include <boost/none.hpp>
 
 #include <boost/dynamic_bitset.hpp>
 
-#include <core/target.hpp>
 #include <core/debug/debug.hpp>
+#include <core/target.hpp>
 #include <core/types.hpp>
 
 #include <components/uArchARM/uArchInterfaces.hpp>
 
-#include "../SemanticInstruction.hpp"
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
+#include "../SemanticInstruction.hpp"
 #include "RegisterValueExtractor.hpp"
 
 #include <components/uArchARM/systemRegister.hpp>
@@ -75,21 +75,17 @@ struct WritebackAction : public BaseSemanticAction {
   eOperandCode theRd;
   bool the64, theSetflags, theSP;
 
-
-  WritebackAction ( SemanticInstruction * anInstruction, eOperandCode aResult, eOperandCode anRd, bool a64, bool aSP, bool setflags = false )
-    : BaseSemanticAction ( anInstruction, 1 )
-    , theResult( aResult )
-    , theRd( anRd )
-    , the64 (a64)
-    , theSetflags (setflags)
-    , theSP (aSP)
-  { }
+  WritebackAction(SemanticInstruction *anInstruction, eOperandCode aResult, eOperandCode anRd,
+                  bool a64, bool aSP, bool setflags = false)
+      : BaseSemanticAction(anInstruction, 1), theResult(aResult), theRd(anRd), the64(a64),
+        theSetflags(setflags), theSP(aSP) {
+  }
 
   void squash(int32_t anArg) {
     if (!cancelled()) {
-      mapped_reg name = theInstruction->operand< mapped_reg > (theRd);
-      core()->squashRegister( name );
-      DBG_( VVerb, ( << *this << " squashing register rd=" << name) );
+      mapped_reg name = theInstruction->operand<mapped_reg>(theRd);
+      core()->squashRegister(name);
+      DBG_(VVerb, (<< *this << " squashing register rd=" << name));
     }
     BaseSemanticAction::squash(anArg);
   }
@@ -99,25 +95,27 @@ struct WritebackAction : public BaseSemanticAction {
     if (ready()) {
       DBG_(Dev, (<< "Writing " << theResult << " to " << theRd));
 
-      register_value result = boost::apply_visitor( register_value_extractor(), theInstruction->operand( theResult ) );
+      register_value result =
+          boost::apply_visitor(register_value_extractor(), theInstruction->operand(theResult));
       uint64_t res = boost::get<uint64_t>(result);
 
-      mapped_reg name = theInstruction->operand< mapped_reg > (theRd);
+      mapped_reg name = theInstruction->operand<mapped_reg>(theRd);
       char r = the64 ? 'X' : 'W';
-      if(!the64){
+      if (!the64) {
         res &= 0xFFFFFFFF;
         result = res;
-        theInstruction->setOperand(theResult,res );
+        theInstruction->setOperand(theResult, res);
       }
-      DBG_(Dev, (<< "Writing " << std::hex << result << std::dec << " to " << r << "-REG ->"<< name));
-      core()->writeRegister( name, result, !the64 );
-      DBG_( VVerb, ( << *this << " rd= " << name << " result=" << result ) );
-      core()->bypass( name, result );
+      DBG_(Dev,
+           (<< "Writing " << std::hex << result << std::dec << " to " << r << "-REG ->" << name));
+      core()->writeRegister(name, result, !the64);
+      DBG_(VVerb, (<< *this << " rd= " << name << " result=" << result));
+      core()->bypass(name, result);
       satisfyDependants();
     }
   }
 
-  void describe( std::ostream & anOstream) const {
+  void describe(std::ostream &anOstream) const {
     anOstream << theInstruction->identify() << " WritebackAction to" << theRd;
   }
 };
@@ -126,17 +124,15 @@ struct WriteccAction : public BaseSemanticAction {
   eOperandCode theCC;
   bool the64;
 
-  WriteccAction ( SemanticInstruction * anInstruction, eOperandCode anCC, bool an64 )
-    : BaseSemanticAction ( anInstruction, 1 )
-    , theCC( anCC )
-    , the64( an64 )
-  { }
+  WriteccAction(SemanticInstruction *anInstruction, eOperandCode anCC, bool an64)
+      : BaseSemanticAction(anInstruction, 1), theCC(anCC), the64(an64) {
+  }
 
   void squash(int32_t anArg) {
     if (!cancelled()) {
-      mapped_reg name = theInstruction->operand< mapped_reg > (theCC);
-      core()->squashRegister( name );
-      DBG_( VVerb, ( << *this << " squashing register cc=" << name) );
+      mapped_reg name = theInstruction->operand<mapped_reg>(theCC);
+      core()->squashRegister(name);
+      DBG_(VVerb, (<< *this << " squashing register cc=" << name));
     }
     BaseSemanticAction::squash(anArg);
   }
@@ -144,11 +140,14 @@ struct WriteccAction : public BaseSemanticAction {
   void doEvaluate() {
 
     if (ready()) {
-      mapped_reg name = theInstruction->operand< mapped_reg > (theCC);
-      uint64_t ccresult = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPSTATE();
-      uint64_t flags = boost::get<uint64_t>(boost::apply_visitor( register_value_extractor(), theInstruction->operand( kResultCC ) ));
-      if(!the64){
-        uint64_t result = boost::get<uint64_t>(boost::apply_visitor( register_value_extractor(), theInstruction->operand( kResult ) ));
+      mapped_reg name = theInstruction->operand<mapped_reg>(theCC);
+      uint64_t ccresult =
+          Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPSTATE();
+      uint64_t flags = boost::get<uint64_t>(
+          boost::apply_visitor(register_value_extractor(), theInstruction->operand(kResultCC)));
+      if (!the64) {
+        uint64_t result = boost::get<uint64_t>(
+            boost::apply_visitor(register_value_extractor(), theInstruction->operand(kResult)));
         flags &= ~PSTATE_N;
         flags |= (result & ((uint64_t)1 << 31)) ? PSTATE_N : 0;
         flags |= !(result & 0xFFFFFFFF) ? PSTATE_Z : 0;
@@ -156,39 +155,33 @@ struct WriteccAction : public BaseSemanticAction {
       }
       ccresult &= ~(0xF << 28);
       ccresult |= flags;
-      DBG_(Dev, (<< "Writing to CC: " << std::hex << ccresult << ", " << std::dec << *theInstruction));
-      core()->writeRegister( name, ccresult, false );
-      core()->bypass( name, ccresult );
+      DBG_(Dev,
+           (<< "Writing to CC: " << std::hex << ccresult << ", " << std::dec << *theInstruction));
+      core()->writeRegister(name, ccresult, false);
+      core()->bypass(name, ccresult);
       satisfyDependants();
     }
   }
 
-  void describe( std::ostream & anOstream) const {
+  void describe(std::ostream &anOstream) const {
     anOstream << theInstruction->identify() << " WriteCCAction to" << theCC;
   }
 };
 
-dependant_action writebackAction
-( SemanticInstruction * anInstruction
-  , eOperandCode aRegisterCode
-  , eOperandCode aMappedRegisterCode
-  , bool is64
-  , bool aSP
-  , bool setflags
-) {
-  WritebackAction * act;
-    act = new(anInstruction->icb()) WritebackAction( anInstruction, aRegisterCode, aMappedRegisterCode, is64, aSP, setflags);
-    return dependant_action( act, act->dependance() );
+dependant_action writebackAction(SemanticInstruction *anInstruction, eOperandCode aRegisterCode,
+                                 eOperandCode aMappedRegisterCode, bool is64, bool aSP,
+                                 bool setflags) {
+  WritebackAction *act;
+  act = new (anInstruction->icb())
+      WritebackAction(anInstruction, aRegisterCode, aMappedRegisterCode, is64, aSP, setflags);
+  return dependant_action(act, act->dependance());
 }
 
-dependant_action writeccAction
-( SemanticInstruction * anInstruction
-  , eOperandCode aMappedRegisterCode
-  , bool is64
-) {
-  WriteccAction * act;
-    act = new(anInstruction->icb()) WriteccAction( anInstruction, aMappedRegisterCode, is64);
-    return dependant_action( act, act->dependance() );
+dependant_action writeccAction(SemanticInstruction *anInstruction, eOperandCode aMappedRegisterCode,
+                               bool is64) {
+  WriteccAction *act;
+  act = new (anInstruction->icb()) WriteccAction(anInstruction, aMappedRegisterCode, is64);
+  return dependant_action(act, act->dependance());
 }
 
-} //narmDecoder
+} // namespace narmDecoder

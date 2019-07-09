@@ -1,23 +1,23 @@
 #ifndef FLEXUS_CORE_AUX__STATS_VALUES__HPP__INCLUDED
 #define FLEXUS_CORE_AUX__STATS_VALUES__HPP__INCLUDED
 
-#include <string>
-#include <map>
-#include <set>
-#include <vector>
-#include <iostream>
-#include <iomanip>
-#include <cmath>
-#include <numeric>
-#include <functional>
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/set.hpp>
-#include <boost/serialization/serialization.hpp>
 #include <boost/serialization/export.hpp>
+#include <boost/serialization/map.hpp>
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/set.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/vector.hpp>
+#include <cmath>
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <core/boost_extensions/lexical_cast.hpp>
+#include <functional>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <numeric>
+#include <set>
+#include <string>
+#include <vector>
 
 namespace Flexus {
 namespace Stat {
@@ -29,31 +29,34 @@ class StatValue_StdDevAccumulator;
 class StatValue_Counter : public StatValueBase {
 private:
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, uint32_t version) {
-    ar & boost::serialization::base_object<StatValueBase>(*this);
-    ar & theValue;
+  template <class Archive> void serialize(Archive &ar, uint32_t version) {
+    ar &boost::serialization::base_object<StatValueBase>(*this);
+    ar &theValue;
   }
+
 public:
-  StatValue_Counter() {}
+  StatValue_Counter() {
+  }
 
   friend class StatValue_AvgAccumulator;
   friend class StatValue_StdDevAccumulator;
+
 public:
   typedef int64_t update_type;
   typedef int64_t value_type;
+
 private:
   value_type theValue;
-public:
-  StatValue_Counter(value_type aValue)
-    : theValue(aValue)
-  {}
 
-  void reduceSum( StatValueBase const & aBase) {
-    StatValue_Counter const & ctr = dynamic_cast<StatValue_Counter const &>(aBase);
+public:
+  StatValue_Counter(value_type aValue) : theValue(aValue) {
+  }
+
+  void reduceSum(StatValueBase const &aBase) {
+    StatValue_Counter const &ctr = dynamic_cast<StatValue_Counter const &>(aBase);
     reduceSum(ctr);
   }
-  void reduceSum( StatValue_Counter const & aCounter) {
+  void reduceSum(StatValue_Counter const &aCounter) {
     theValue += aCounter.theValue;
   }
 
@@ -63,13 +66,13 @@ public:
   boost::intrusive_ptr<StatValueBase> avgAccumulator();
   boost::intrusive_ptr<StatValueBase> stdevAccumulator();
 
-  void update( update_type anUpdate ) {
+  void update(update_type anUpdate) {
     theValue += anUpdate;
   }
-  void reset( value_type aValue) {
+  void reset(value_type aValue) {
     theValue = aValue;
   }
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     anOstream << theValue;
   }
   int64_t asLongLong() const {
@@ -101,16 +104,16 @@ public:
         {}
 
       void reduceSum( StatValueBase const & aBase) {
-        StatValue_DoubleCounter const & ctr = dynamic_cast<StatValue_DoubleCounter const &>(aBase);
-        reduceSum(ctr);
+        StatValue_DoubleCounter const & ctr =
+  dynamic_cast<StatValue_DoubleCounter const &>(aBase); reduceSum(ctr);
       }
       void reduceSum( StatValue_DoubleCounter const & aCounter) {
         theValue += aCounter.theValue;
       }
 
-      boost::intrusive_ptr<StatValueBase> sumAccumulator() { return new StatValue_DoubleCounter(*this); }
-      boost::intrusive_ptr<StatValueBase> avgAccumulator();
-      boost::intrusive_ptr<StatValueBase> stdevAccumulator();
+      boost::intrusive_ptr<StatValueBase> sumAccumulator() { return new
+  StatValue_DoubleCounter(*this); } boost::intrusive_ptr<StatValueBase>
+  avgAccumulator(); boost::intrusive_ptr<StatValueBase> stdevAccumulator();
 
       void update( update_type anUpdate ) {
         theValue += anUpdate;
@@ -118,8 +121,8 @@ public:
       void reset( value_type aValue) {
         theValue = aValue;
       }
-      void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
-        anOstream << theValue;
+      void print(std::ostream & anOstream, std::string const & options =
+  std::string("")) const { anOstream << theValue;
       }
       int64_t asLongLong() const { return static_cast<int64_t>( theValue ); };
   };
@@ -128,59 +131,61 @@ public:
 class StatValue_PredictionCounter : public StatValueBase {
 private:
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, uint32_t version) {
-    ar & boost::serialization::base_object<StatValueBase>(*this);
-    ar & theValue;
-    ar & thePending;
+  template <class Archive> void serialize(Archive &ar, uint32_t version) {
+    ar &boost::serialization::base_object<StatValueBase>(*this);
+    ar &theValue;
+    ar &thePending;
   }
-  StatValue_PredictionCounter() {}
+  StatValue_PredictionCounter() {
+  }
 
 public:
-  typedef Prediction & update_type;
+  typedef Prediction &update_type;
   typedef int64_t value_type;
+
 private:
   value_type theValue;
   value_type thePending;
+
 public:
-  StatValue_PredictionCounter(value_type aValue)
-    : theValue(aValue)
-  {}
+  StatValue_PredictionCounter(value_type aValue) : theValue(aValue) {
+  }
   boost::intrusive_ptr<StatValueBase> sumAccumulator() {
     return new StatValue_PredictionCounter(*this);
   }
-  void reduceSum( StatValueBase const & aBase) {
-    const StatValue_PredictionCounter & ptr = dynamic_cast<const StatValue_PredictionCounter &>(aBase);
+  void reduceSum(StatValueBase const &aBase) {
+    const StatValue_PredictionCounter &ptr =
+        dynamic_cast<const StatValue_PredictionCounter &>(aBase);
     reduceSum(ptr);
   }
-  void reduceSum( const StatValue_PredictionCounter & aCounter) {
+  void reduceSum(const StatValue_PredictionCounter &aCounter) {
     theValue += aCounter.theValue;
     thePending += aCounter.thePending;
   }
-  void update( update_type anUpdate ) {
+  void update(update_type anUpdate) {
     anUpdate.connectCounter(this);
     thePending++;
   }
-  void confirm( value_type anUpdate ) {
+  void confirm(value_type anUpdate) {
     theValue += anUpdate;
     thePending--;
   }
-  void dismiss( ) {
+  void dismiss() {
     thePending--;
   }
-  void reset( value_type aValue) {
+  void reset(value_type aValue) {
     theValue = aValue;
   }
-  void guess( value_type anUpdate ) {
+  void guess(value_type anUpdate) {
     theValue += anUpdate;
   }
-  void goodGuess( ) {
+  void goodGuess() {
     thePending--;
   }
-  void reject( value_type anUpdate ) {
+  void reject(value_type anUpdate) {
     theValue -= anUpdate;
   }
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     if (options == "pending") {
       anOstream << thePending;
     }
@@ -194,32 +199,33 @@ public:
 class StatValue_Annotation : public StatValueBase {
 private:
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, uint32_t version) {
-    ar & boost::serialization::base_object<StatValueBase>(*this);
-    ar & theValue;
+  template <class Archive> void serialize(Archive &ar, uint32_t version) {
+    ar &boost::serialization::base_object<StatValueBase>(*this);
+    ar &theValue;
   }
-  StatValue_Annotation() {}
+  StatValue_Annotation() {
+  }
 
 public:
   typedef std::string update_type;
   typedef std::string value_type;
+
 private:
   value_type theValue;
-public:
-  StatValue_Annotation(value_type aValue)
-    : theValue(aValue)
-  {}
 
-  void reduceSum( StatValueBase const & aBase) {
-    const StatValue_Annotation & ptr = dynamic_cast<const StatValue_Annotation &>(aBase);
+public:
+  StatValue_Annotation(value_type aValue) : theValue(aValue) {
+  }
+
+  void reduceSum(StatValueBase const &aBase) {
+    const StatValue_Annotation &ptr = dynamic_cast<const StatValue_Annotation &>(aBase);
     reduceSum(ptr);
   }
-  void reduceAvg( StatValueBase const & aBase) {
-    const StatValue_Annotation & ptr = dynamic_cast<const StatValue_Annotation &>(aBase);
-    reduceSum(ptr); //Same as sum for annotations
+  void reduceAvg(StatValueBase const &aBase) {
+    const StatValue_Annotation &ptr = dynamic_cast<const StatValue_Annotation &>(aBase);
+    reduceSum(ptr); // Same as sum for annotations
   }
-  void reduceSum( const StatValue_Annotation & other) {
+  void reduceSum(const StatValue_Annotation &other) {
     if (other.theValue.length() > theValue.length()) {
       theValue = other.theValue;
     }
@@ -232,13 +238,13 @@ public:
     return new StatValue_Annotation(*this);
   }
 
-  void update( update_type anUpdate ) {
+  void update(update_type anUpdate) {
     theValue = anUpdate;
   }
-  void reset( value_type aValue) {
+  void reset(value_type aValue) {
     theValue = aValue;
   }
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     anOstream << theValue;
   }
   int64_t asLongLong() const {
@@ -249,34 +255,36 @@ public:
 class StatValue_Max : public StatValueBase {
 private:
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, uint32_t version) {
-    ar & boost::serialization::base_object<StatValueBase>(*this);
-    ar & theValue;
-    ar & theIsValid;
+  template <class Archive> void serialize(Archive &ar, uint32_t version) {
+    ar &boost::serialization::base_object<StatValueBase>(*this);
+    ar &theValue;
+    ar &theIsValid;
   }
+
 public:
-  StatValue_Max() {}
+  StatValue_Max() {
+  }
 
 public:
   typedef int64_t update_type;
   typedef int64_t value_type;
+
 private:
   value_type theValue;
   bool theIsValid;
+
 public:
-  StatValue_Max(value_type /*ignored*/)
-    : theIsValid(false)
-  {}
-  void reduceSum( const StatValueBase & aBase) {
-    const StatValue_Max & ptr = dynamic_cast<const StatValue_Max &>(aBase);
+  StatValue_Max(value_type /*ignored*/) : theIsValid(false) {
+  }
+  void reduceSum(const StatValueBase &aBase) {
+    const StatValue_Max &ptr = dynamic_cast<const StatValue_Max &>(aBase);
     reduceSum(ptr);
   }
-  void reduceSum( const StatValue_Max & aMax ) {
-    if (! aMax.theIsValid) {
+  void reduceSum(const StatValue_Max &aMax) {
+    if (!aMax.theIsValid) {
       return;
     }
-    if (! theIsValid) {
+    if (!theIsValid) {
       theIsValid = true;
       theValue = aMax.theValue;
       return;
@@ -290,8 +298,8 @@ public:
     return new StatValue_Max(*this);
   }
 
-  void update( update_type anUpdate ) {
-    if (! theIsValid) {
+  void update(update_type anUpdate) {
+    if (!theIsValid) {
       theIsValid = true;
       theValue = anUpdate;
       return;
@@ -300,10 +308,10 @@ public:
       theValue = anUpdate;
     }
   }
-  void reset( value_type /*ignored*/) {
+  void reset(value_type /*ignored*/) {
     theIsValid = false;
   }
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     if (theIsValid) {
       anOstream << theValue;
     } else {
@@ -319,37 +327,39 @@ public:
   };
 };
 
-class StatValue_Average: public StatValueBase {
+class StatValue_Average : public StatValueBase {
 private:
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, uint32_t version) {
-    ar & boost::serialization::base_object<StatValueBase>(*this);
-    ar & theTotal;
-    ar & theCount;
+  template <class Archive> void serialize(Archive &ar, uint32_t version) {
+    ar &boost::serialization::base_object<StatValueBase>(*this);
+    ar &theTotal;
+    ar &theCount;
   }
+
 public:
-  StatValue_Average() {}
+  StatValue_Average() {
+  }
 
   friend class StatValue_AvgAccumulator;
   friend class StatValue_StdDevAccumulator;
+
 public:
   typedef std::pair<int64_t, int64_t> update_type;
   typedef int64_t value_type;
+
 private:
   value_type theTotal;
   value_type theCount;
-public:
-  StatValue_Average(value_type /*ignored*/)
-    : theTotal(0)
-    , theCount(0)
-  {}
 
-  void reduceSum( const StatValueBase & aBase) {
-    const StatValue_Average & ptr = dynamic_cast<const StatValue_Average &>(aBase);
+public:
+  StatValue_Average(value_type /*ignored*/) : theTotal(0), theCount(0) {
+  }
+
+  void reduceSum(const StatValueBase &aBase) {
+    const StatValue_Average &ptr = dynamic_cast<const StatValue_Average &>(aBase);
     reduceSum(ptr);
   }
-  void reduceSum( const StatValue_Average & anAverage ) {
+  void reduceSum(const StatValue_Average &anAverage) {
     theTotal += anAverage.theTotal;
     theCount += anAverage.theCount;
   }
@@ -359,15 +369,15 @@ public:
   boost::intrusive_ptr<StatValueBase> avgAccumulator();
   boost::intrusive_ptr<StatValueBase> stdevAccumulator();
 
-  void update( update_type anUpdate ) {
+  void update(update_type anUpdate) {
     theTotal += anUpdate.first * anUpdate.second;
     theCount += anUpdate.second;
   }
-  void reset( value_type /*ignored*/) {
+  void reset(value_type /*ignored*/) {
     theTotal = 0;
     theCount = 0;
   }
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     if (theCount > 0) {
       anOstream << static_cast<double>(theTotal) / theCount;
     } else {
@@ -390,27 +400,29 @@ public:
   };
 };
 
-//Despite the fact that this implementation is wacked and wastes storage,
-//we will keep it for compatability with previous stat files.
-//A better implementation is available at:
-//http://www.answers.com/topic/algorithms-for-calculating-variance
+// Despite the fact that this implementation is wacked and wastes storage,
+// we will keep it for compatability with previous stat files.
+// A better implementation is available at:
+// http://www.answers.com/topic/algorithms-for-calculating-variance
 class StatValue_StdDev : public StatValueBase {
 private:
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, uint32_t version) {
-    ar & boost::serialization::base_object<StatValueBase>(*this);
-    ar & k;
-    ar & Sum;
-    ar & SumSq;
-    ar & SigmaSqSum;
+  template <class Archive> void serialize(Archive &ar, uint32_t version) {
+    ar &boost::serialization::base_object<StatValueBase>(*this);
+    ar &k;
+    ar &Sum;
+    ar &SumSq;
+    ar &SigmaSqSum;
   }
+
 public:
-  StatValue_StdDev() {}
+  StatValue_StdDev() {
+  }
 
 public:
   typedef int64_t update_type;
   typedef double value_type;
+
 private:
   uint64_t k;
   double Sum;
@@ -418,23 +430,19 @@ private:
   double SigmaSqSum;
 
 public:
-  StatValue_StdDev(value_type /*ignored*/)
-    : k(0)
-    , Sum(0.0)
-    , SumSq(0.0)
-    , SigmaSqSum(0.0)
-  {}
-  void reduceSum( const StatValueBase & aBase) {
-    const StatValue_StdDev & ptr = dynamic_cast<const StatValue_StdDev &>(aBase);
+  StatValue_StdDev(value_type /*ignored*/) : k(0), Sum(0.0), SumSq(0.0), SigmaSqSum(0.0) {
+  }
+  void reduceSum(const StatValueBase &aBase) {
+    const StatValue_StdDev &ptr = dynamic_cast<const StatValue_StdDev &>(aBase);
     reduceSum(ptr);
   }
-  void reduceSum( const StatValue_StdDev & aStdDev ) {
-    //First, compute the variance that results from summing the two
+  void reduceSum(const StatValue_StdDev &aStdDev) {
+    // First, compute the variance that results from summing the two
     Sum = Sum + aStdDev.Sum;
     SumSq = SumSq + aStdDev.SumSq;
     k = k + aStdDev.k;
 
-    double variance = SumSq / k - ( Sum / k ) * ( Sum / k );
+    double variance = SumSq / k - (Sum / k) * (Sum / k);
     SigmaSqSum = variance * k * k;
   }
 
@@ -442,7 +450,7 @@ public:
     return new StatValue_StdDev(*this);
   }
 
-  void update( update_type anUpdate ) {
+  void update(update_type anUpdate) {
     const double Xsq = anUpdate * anUpdate;
 
     SigmaSqSum += SumSq + k * Xsq - 2 * anUpdate * Sum;
@@ -451,13 +459,13 @@ public:
     Sum += anUpdate;
     SumSq += Xsq;
   }
-  void reset( value_type /*ignored*/) {
+  void reset(value_type /*ignored*/) {
     k = 0;
     Sum = 0;
     SumSq = 0;
     SigmaSqSum = 0;
   }
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     if (k == 0) {
       anOstream << "{nan}";
     } else {
@@ -468,7 +476,7 @@ public:
     if (k == 0) {
       return 0;
     } else {
-      return static_cast<int64_t>( sqrt(SigmaSqSum) / static_cast<double>(k) );
+      return static_cast<int64_t>(sqrt(SigmaSqSum) / static_cast<double>(k));
     }
   }
   double asDouble() const {
@@ -480,8 +488,8 @@ public:
   }
 };
 
-} // end aux_
-} // end Stat
-} // end Flexus
+} // namespace aux_
+} // namespace Stat
+} // namespace Flexus
 
-#endif //FLEXUS_CORE_AUX__STATS_VALUES__HPP__INCLUDED
+#endif // FLEXUS_CORE_AUX__STATS_VALUES__HPP__INCLUDED

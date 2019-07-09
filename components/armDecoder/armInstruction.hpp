@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,16 +36,15 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #ifndef FLEXUS_armDECODER_armINSTRUCTION_HPP_INCLUDED
 #define FLEXUS_armDECODER_armINSTRUCTION_HPP_INCLUDED
 
-#include <sstream>
 #include <list>
+#include <sstream>
 
 #include <components/CommonQEMU/Slices/FillLevel.hpp>
-#include <components/uFetch/uFetchTypes.hpp>
 #include <components/uArchARM/coreModel.hpp>
+#include <components/uFetch/uFetchTypes.hpp>
 
 namespace narmDecoder {
 
@@ -53,8 +53,9 @@ using Flexus::SharedTypes::VirtualMemoryAddress;
 
 using namespace nuArchARM;
 
-std::pair< boost::intrusive_ptr<AbstractInstruction>, bool> decode( Flexus::SharedTypes::FetchedOpcode const & aFetchedOpcode, uint32_t  aCPU, int64_t aSequenceNo, int32_t aUop );
-
+std::pair<boost::intrusive_ptr<AbstractInstruction>, bool>
+decode(Flexus::SharedTypes::FetchedOpcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo,
+       int32_t aUop);
 
 class armInstruction : public nuArchARM::Instruction {
 protected:
@@ -65,7 +66,7 @@ protected:
   boost::intrusive_ptr<BPredState> theBPState;
   uint32_t theCPU;
   int64_t theSequenceNo;
-  uArchARM * theuArch;
+  uArchARM *theuArch;
   eExceptionType theRaisedException;
   bool theResync;
   eExceptionType theWillRaise;
@@ -79,14 +80,14 @@ protected:
   eInstructionCode theOriginalInstructionCode;
   boost::intrusive_ptr<TransactionTracker> theTransaction;
   boost::intrusive_ptr<TransactionTracker> thePrefetchTransaction;
-  boost::intrusive_ptr< nuArchARM::Instruction >  thePredecessor;
-//  int32_t theASI;
+  boost::intrusive_ptr<nuArchARM::Instruction> thePredecessor;
+  //  int32_t theASI;
   bool theHaltDispatch;
   bool theHasCheckpoint;
   uint64_t theRetireStallCycles;
   bool theMayCommit;
   bool theResolved;
-//  boost::optional<Flexus::Qemu::MMU::mmu_t> theMMU;
+  //  boost::optional<Flexus::Qemu::MMU::mmu_t> theMMU;
 
   bool theUsesIntAlu;
   bool theUsesIntMult;
@@ -101,7 +102,6 @@ protected:
   bool thePriv;
 
 public:
-
   virtual bool usesIntAlu() const;
   virtual bool usesIntMult() const;
   virtual bool usesIntDiv() const;
@@ -112,21 +112,32 @@ public:
   virtual bool usesFpDiv() const;
   virtual bool usesFpSqrt() const;
 
-  virtual void setCanRetireCounter(const uint32_t numCycles) {}
-  virtual void decrementCanRetireCounter() {}
+  virtual void setCanRetireCounter(const uint32_t numCycles) {
+  }
+  virtual void decrementCanRetireCounter() {
+  }
 
-  virtual void connectuArch(uArchARM & auArch) {
+  virtual void connectuArch(uArchARM &auArch) {
     theuArch = &auArch;
   };
 
   virtual void doDispatchEffects();
-  virtual void squash() {}
-  virtual void pageFault() {thePageFault = true;}
-  virtual bool isPageFault() const {return thePageFault;}
-  virtual void doRescheduleEffects() {}
-  virtual void doRetirementEffects() {}
-  virtual void checkTraps() {}
-  virtual void doCommitEffects() {}
+  virtual void squash() {
+  }
+  virtual void pageFault() {
+    thePageFault = true;
+  }
+  virtual bool isPageFault() const {
+    return thePageFault;
+  }
+  virtual void doRescheduleEffects() {
+  }
+  virtual void doRetirementEffects() {
+  }
+  virtual void checkTraps() {
+  }
+  virtual void doCommitEffects() {
+  }
   virtual void annul() {
     theAnnulled = true;
   }
@@ -157,12 +168,13 @@ public:
     return theMayCommit;
   }
 
-  virtual bool isResolved() const{
-      return theResolved;
+  virtual bool isResolved() const {
+    return theResolved;
   }
 
-  virtual void setResolved(bool value = true){
-    if(value) DBG_Assert(!theResolved, ( << *this));
+  virtual void setResolved(bool value = true) {
+    if (value)
+      DBG_Assert(!theResolved, (<< *this));
     theResolved = value;
   }
 
@@ -201,9 +213,10 @@ public:
     return false;
   }
 
-  virtual void describe(std::ostream & anOstream) const;
+  virtual void describe(std::ostream &anOstream) const;
   virtual std::string disassemble() const;
-  virtual void overrideSimics() {}
+  virtual void overrideSimics() {
+  }
   virtual int64_t sequenceNo() const {
     return theSequenceNo;
   }
@@ -220,65 +233,62 @@ public:
     return isRetired() || isSquashed();
   }
 
-  virtual void setUsesFpAdd(){
+  virtual void setUsesFpAdd() {
     theUsesFpAdd = true;
-    theUsesIntAlu = false; 
+    theUsesIntAlu = false;
   }
 
-  virtual void setUsesFpCmp(){
+  virtual void setUsesFpCmp() {
     theUsesFpCmp = true;
     theUsesIntAlu = false;
-  } 
+  }
 
-  virtual void setUsesFpCvt(){
-    theUsesFpCvt = true; 
-    theUsesIntAlu = false;
-  }  
-
-  virtual void setUsesFpMult(){
-    theUsesFpMult = true; 
-    theUsesIntAlu = false;
-  } 
-
-  virtual void setUsesFpDiv(){
-    theUsesFpDiv = true; 
-    theUsesIntAlu = false;
-  } 
-
-  virtual void setUsesFpSqrt(){
-    theUsesFpSqrt = true; 
+  virtual void setUsesFpCvt() {
+    theUsesFpCvt = true;
     theUsesIntAlu = false;
   }
-  
-//  virtual void setMMU(Flexus::Qemu::MMU::mmu_t m) {
-//    theMMU = m;
-//  }
-//  virtual boost::optional<Flexus::Qemu::MMU::mmu_t> getMMU() const {
-//    return theMMU;
-//  }
 
+  virtual void setUsesFpMult() {
+    theUsesFpMult = true;
+    theUsesIntAlu = false;
+  }
+
+  virtual void setUsesFpDiv() {
+    theUsesFpDiv = true;
+    theUsesIntAlu = false;
+  }
+
+  virtual void setUsesFpSqrt() {
+    theUsesFpSqrt = true;
+    theUsesIntAlu = false;
+  }
+
+  //  virtual void setMMU(Flexus::Qemu::MMU::mmu_t m) {
+  //    theMMU = m;
+  //  }
+  //  virtual boost::optional<Flexus::Qemu::MMU::mmu_t> getMMU() const {
+  //    return theMMU;
+  //  }
 
   std::string printInstClass() const {
-    switch (theInstructionClass)
-    {
+    switch (theInstructionClass) {
     case clsLoad:
-        return " {clsLoad} ";
+      return " {clsLoad} ";
     case clsStore:
-        return " {clsStore} ";
+      return " {clsStore} ";
     case clsAtomic:
-        return " {clsAtomic} ";
+      return " {clsAtomic} ";
     case clsBranch:
-        return " {clsBranch} ";
+      return " {clsBranch} ";
     case clsMEMBAR:
-        return " {clsMEMBAR} ";
+      return " {clsMEMBAR} ";
     case clsComputation:
-        return " {clsComputation} ";
+      return " {clsComputation} ";
     case clsSynchronizing:
-        return "{clsSynchronizing}";
+      return "{clsSynchronizing}";
     default:
-        return "";
+      return "";
     }
-
   }
 
   virtual eInstructionClass instClass() const {
@@ -286,32 +296,32 @@ public:
   }
 
   virtual std::string instClassName() const {
-      switch (theInstructionClass) {
-      case clsLoad:
-          return "clsLoad";
+    switch (theInstructionClass) {
+    case clsLoad:
+      return "clsLoad";
 
-      case clsStore:
-          return "clsStore";
+    case clsStore:
+      return "clsStore";
 
-      case clsAtomic:
-          return "clsAtomic";
+    case clsAtomic:
+      return "clsAtomic";
 
-      case clsBranch:
-          return "clsBranch";
+    case clsBranch:
+      return "clsBranch";
 
-      case clsMEMBAR:
-          return "clsMEMBAR";
+    case clsMEMBAR:
+      return "clsMEMBAR";
 
-      case clsComputation:
-          return "clsComputation";
+    case clsComputation:
+      return "clsComputation";
 
-      case clsSynchronizing:
-          return "clsSynchronizing";
+    case clsSynchronizing:
+      return "clsSynchronizing";
 
-      default:
-          assert(false);
-          break;
-      }
+    default:
+      assert(false);
+      break;
+    }
   }
 
   virtual eInstructionCode instCode() const {
@@ -322,29 +332,28 @@ public:
   }
 
   virtual void restoreOriginalInstCode() {
-    DBG_ ( Trace, ( << "Restoring instruction code from " << theInstructionCode
-                    << " to " << theOriginalInstructionCode << ": " << *this ) );
+    DBG_(Trace, (<< "Restoring instruction code from " << theInstructionCode << " to "
+                 << theOriginalInstructionCode << ": " << *this));
     theInstructionCode = theOriginalInstructionCode;
   }
 
   virtual void changeInstCode(eInstructionCode aCode) {
-    theInstructionCode = aCode ;
+    theInstructionCode = aCode;
   }
 
-  void setClass( eInstructionClass anInstructionClass, eInstructionCode aCode) {
+  void setClass(eInstructionClass anInstructionClass, eInstructionCode aCode) {
     theInstructionClass = anInstructionClass;
     theOriginalInstructionCode = theInstructionCode = aCode;
     DECODER_DBG(*this);
-
   }
 
-//  Opcode opcode() const ;
-//  void setASI( int32_t anASI) {
-//    theASI = anASI;
-//  }
-//  int32_t getASI() const {
-//    return theASI;
-//  }
+  //  Opcode opcode() const ;
+  //  void setASI( int32_t anASI) {
+  //    theASI = anASI;
+  //  }
+  //  int32_t getASI() const {
+  //    return theASI;
+  //  }
 
   uint32_t cpu() {
     return theCPU;
@@ -359,7 +368,7 @@ public:
     return id.str();
   }
   virtual ~armInstruction() {
-    DBG_( VVerb, ( << identify() << " destroyed") );
+    DBG_(VVerb, (<< identify() << " destroyed"));
   }
 
   virtual bool redirectPC(VirtualMemoryAddress anPCReg) {
@@ -392,12 +401,13 @@ public:
   bool isBranch() const {
     return theInstructionClass == clsBranch;
   }
-  virtual void setAccessAddress(PhysicalMemoryAddress anAddress) { }
+  virtual void setAccessAddress(PhysicalMemoryAddress anAddress) {
+  }
   virtual PhysicalMemoryAddress getAccessAddress() const {
-    return PhysicalMemoryAddress(0) ;
+    return PhysicalMemoryAddress(0);
   }
 
-  virtual void setPreceedingInstruction(boost::intrusive_ptr< Instruction > aPredecessor) {
+  virtual void setPreceedingInstruction(boost::intrusive_ptr<Instruction> aPredecessor) {
     thePredecessor = aPredecessor;
   }
   virtual bool hasExecuted() const {
@@ -414,7 +424,7 @@ public:
     }
   }
 
-  uArchARM * core() {
+  uArchARM *core() {
     return theuArch;
   }
 
@@ -447,40 +457,17 @@ public:
   }
 
 protected:
-  armInstruction(VirtualMemoryAddress aPC, Opcode anOpcode, boost::intrusive_ptr<BPredState> bp_state, uint32_t aCPU, int64_t aSequenceNo)
-    : thePC(aPC)
-    , thePCReg(aPC)
-    , theOpcode(anOpcode)
-    , theBPState(bp_state)
-    , theCPU(aCPU)
-    , theSequenceNo(aSequenceNo)
-    , theuArch(0)
-    , theRaisedException(kException_None)
-    , theResync(false)
-    , theWillRaise(kException_None)
-    , theAnnulled(false)
-    , theRetired(false)
-    , theSquashed(false)
-    , theExecuted(true)
-    , thePageFault(false)
-    , theInstructionClass(clsSynchronizing)
-    , theHaltDispatch(false)
-    , theHasCheckpoint(false)
-    , theRetireStallCycles(0)
-    , theMayCommit(true)
-    , theResolved(false)
-    , theUsesIntAlu(true)
-    , theUsesIntMult(false)
-    , theUsesIntDiv(false)
-    , theUsesFpAdd(false)
-    , theUsesFpCmp(false)
-    , theUsesFpCvt(false)
-    , theUsesFpMult(false)
-    , theUsesFpDiv(false)
-    , theUsesFpSqrt(false)
-    , theInsnSourceLevel(eL1I)
-    , thePriv(false)
-  {
+  armInstruction(VirtualMemoryAddress aPC, Opcode anOpcode,
+                 boost::intrusive_ptr<BPredState> bp_state, uint32_t aCPU, int64_t aSequenceNo)
+      : thePC(aPC), thePCReg(aPC), theOpcode(anOpcode), theBPState(bp_state), theCPU(aCPU),
+        theSequenceNo(aSequenceNo), theuArch(0), theRaisedException(kException_None),
+        theResync(false), theWillRaise(kException_None), theAnnulled(false), theRetired(false),
+        theSquashed(false), theExecuted(true), thePageFault(false),
+        theInstructionClass(clsSynchronizing), theHaltDispatch(false), theHasCheckpoint(false),
+        theRetireStallCycles(0), theMayCommit(true), theResolved(false), theUsesIntAlu(true),
+        theUsesIntMult(false), theUsesIntDiv(false), theUsesFpAdd(false), theUsesFpCmp(false),
+        theUsesFpCvt(false), theUsesFpMult(false), theUsesFpDiv(false), theUsesFpSqrt(false),
+        theInsnSourceLevel(eL1I), thePriv(false) {
   }
 
   // So that armDecoder can send opcodes out to PowerTracker
@@ -490,9 +477,9 @@ public:
   }
 };
 
-typedef boost::intrusive_ptr<armInstruction>  arminst;
+typedef boost::intrusive_ptr<armInstruction> arminst;
 typedef Flexus::SharedTypes::FetchedOpcode armcode;
 
-} //armDecoder
+} // namespace narmDecoder
 
-#endif //FLEXUS_armDECODER_armINSTRUCTION_HPP_INCLUDED
+#endif // FLEXUS_armDECODER_armINSTRUCTION_HPP_INCLUDED

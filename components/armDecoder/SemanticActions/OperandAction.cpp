@@ -5,11 +5,12 @@
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,29 +36,28 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
-#include <core/boost_extensions/intrusive_ptr.hpp>
-#include <boost/throw_exception.hpp>
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/throw_exception.hpp>
+#include <core/boost_extensions/intrusive_ptr.hpp>
 namespace ll = boost::lambda;
 
 #include <boost/none.hpp>
 
 #include <boost/dynamic_bitset.hpp>
 
-#include <core/target.hpp>
 #include <core/debug/debug.hpp>
+#include <core/target.hpp>
 #include <core/types.hpp>
 
 #include <components/uArchARM/uArchInterfaces.hpp>
 
-#include "../SemanticInstruction.hpp"
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
+#include "../SemanticInstruction.hpp"
 #include "PredicatedSemanticAction.hpp"
 
 #define DBG_DeclareCategories armDecoder
@@ -74,41 +74,36 @@ struct OperandAction : public PredicatedSemanticAction {
   boost::optional<eOperandCode> theBypass;
   int theOffset;
 
-  OperandAction( SemanticInstruction * anInstruction, eOperandCode anOperand, eOperandCode aResult, int anOffset, boost::optional<eOperandCode> aBypass )
-    : PredicatedSemanticAction( anInstruction, 1, true )
-    , theOperand(anOperand)
-    , theResult( aResult )
-    , theBypass( aBypass )
-    , theOffset(anOffset)
-  {}
+  OperandAction(SemanticInstruction *anInstruction, eOperandCode anOperand, eOperandCode aResult,
+                int anOffset, boost::optional<eOperandCode> aBypass)
+      : PredicatedSemanticAction(anInstruction, 1, true), theOperand(anOperand), theResult(aResult),
+        theBypass(aBypass), theOffset(anOffset) {
+  }
 
   void doEvaluate() {
-    DBG_( Dev, ( << *this << " evaluated") );
+    DBG_(Dev, (<< *this << " evaluated"));
     if (theBypass) {
-      mapped_reg name = theInstruction->operand< mapped_reg > (*theBypass);
+      mapped_reg name = theInstruction->operand<mapped_reg>(*theBypass);
       uint64_t value = theInstruction->operand<uint64_t>(theOperand);
       theInstruction->setOperand(theResult, value);
 
-      core()->bypass( name, value );
+      core()->bypass(name, value);
     }
     satisfyDependants();
   }
 
-  void describe( std::ostream & anOstream) const {
-    anOstream << theInstruction->identify() << " store constant " << theOperand << " in " << theResult;
+  void describe(std::ostream &anOstream) const {
+    anOstream << theInstruction->identify() << " store constant " << theOperand << " in "
+              << theResult;
   }
-
 };
 
-predicated_action operandAction
-( SemanticInstruction * anInstruction
-  , eOperandCode anOperand
-  , eOperandCode aResult
-  , int anOffset
-  , boost::optional<eOperandCode> aBypass
-) {
-  OperandAction * act(new(anInstruction->icb()) OperandAction( anInstruction, anOperand, aResult, anOffset, aBypass) );
-  return predicated_action( act, act->predicate() );
+predicated_action operandAction(SemanticInstruction *anInstruction, eOperandCode anOperand,
+                                eOperandCode aResult, int anOffset,
+                                boost::optional<eOperandCode> aBypass) {
+  OperandAction *act(new (anInstruction->icb())
+                         OperandAction(anInstruction, anOperand, aResult, anOffset, aBypass));
+  return predicated_action(act, act->predicate());
 }
 
-} //narmDecoder
+} // namespace narmDecoder

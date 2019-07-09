@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -33,7 +34,7 @@
 // ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
 // CONTRACT, TORT OR OTHERWISE).
 //
-// DO-NOT-REMOVE end-copyright-block   
+// DO-NOT-REMOVE end-copyright-block
 #ifndef __BLOCK_DIRECTORY_ENTRY_HPP__
 #define __BLOCK_DIRECTORY_ENTRY_HPP__
 
@@ -50,17 +51,20 @@ private:
   SharingState theState;
 
 public:
-  BlockDirectoryEntry(PhysicalMemoryAddress addr) : theAddress(addr), theState(ZeroSharers) {}
-  BlockDirectoryEntry() : theAddress(0), theState(ZeroSharers) {}
-  virtual ~BlockDirectoryEntry() {}
+  BlockDirectoryEntry(PhysicalMemoryAddress addr) : theAddress(addr), theState(ZeroSharers) {
+  }
+  BlockDirectoryEntry() : theAddress(0), theState(ZeroSharers) {
+  }
+  virtual ~BlockDirectoryEntry() {
+  }
 
-  const SharingVector & sharers() const {
+  const SharingVector &sharers() const {
     return theSharers;
   }
-  const SharingState & state() const {
+  const SharingState &state() const {
     return theState;
   }
-  const PhysicalMemoryAddress & tag() const {
+  const PhysicalMemoryAddress &tag() const {
     return theAddress;
   }
 
@@ -74,8 +78,10 @@ public:
   }
 
   inline void makeExclusive(int32_t index) {
-    DBG_Assert(theSharers.isSharer(index), ( << "Core " << index << " is not a sharer " << theSharers.getSharers() ) );
-    DBG_Assert(theSharers.countSharers() == 1, ( << "Cannot make xclusive, sharers = " << theSharers ));
+    DBG_Assert(theSharers.isSharer(index),
+               (<< "Core " << index << " is not a sharer " << theSharers.getSharers()));
+    DBG_Assert(theSharers.countSharers() == 1,
+               (<< "Cannot make xclusive, sharers = " << theSharers));
     theState = OneSharer;
   }
 
@@ -87,7 +93,7 @@ public:
       theState = OneSharer;
     }
   }
-  void setSharers(const SharingVector & new_sharers) {
+  void setSharers(const SharingVector &new_sharers) {
     theSharers = new_sharers;
     int32_t count = theSharers.countSharers();
     if (count == 1) {
@@ -121,7 +127,7 @@ public:
     theState = ZeroSharers;
   }
 
-  BlockDirectoryEntry & operator&=(const BlockDirectoryEntry & entry) {
+  BlockDirectoryEntry &operator&=(const BlockDirectoryEntry &entry) {
     theSharers &= entry.theSharers;
     int32_t count = theSharers.countSharers();
     if (count == 1) {
@@ -138,7 +144,7 @@ public:
     return StdDirEntrySerializer((uint64_t)theAddress, theSharers.getUInt64());
   }
 
-  void operator=(const StdDirEntrySerializer & serializer) {
+  void operator=(const StdDirEntrySerializer &serializer) {
     theAddress = PhysicalMemoryAddress(serializer.tag);
     theSharers.setSharers(serializer.state);
     int32_t count = theSharers.countSharers();
@@ -150,25 +156,25 @@ public:
       theState = ManySharers;
     }
   }
-
 };
 
 typedef boost::intrusive_ptr<BlockDirectoryEntry> BlockDirectoryEntry_p;
 
 struct BlockEntryWrapper : public AbstractDirectoryEntry {
-  BlockEntryWrapper(BlockDirectoryEntry & block) : block(block) {}
-  BlockDirectoryEntry & block;
+  BlockEntryWrapper(BlockDirectoryEntry &block) : block(block) {
+  }
+  BlockDirectoryEntry &block;
 
-  BlockDirectoryEntry * operator->() const {
+  BlockDirectoryEntry *operator->() const {
     return &block;
   }
-  BlockDirectoryEntry & operator*() const {
+  BlockDirectoryEntry &operator*() const {
     return block;
   }
 };
 
 typedef boost::intrusive_ptr<BlockEntryWrapper> BlockEntryWrapper_p;
 
-};
+}; // namespace nFastCMPCache
 
 #endif //! __BLOCK_DIRECTORY_ENTRY_HPP__

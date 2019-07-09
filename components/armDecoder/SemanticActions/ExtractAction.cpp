@@ -5,11 +5,12 @@
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,29 +36,28 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
-#include <core/boost_extensions/intrusive_ptr.hpp>
-#include <boost/throw_exception.hpp>
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/throw_exception.hpp>
+#include <core/boost_extensions/intrusive_ptr.hpp>
 namespace ll = boost::lambda;
 
 #include <boost/none.hpp>
 
 #include <boost/dynamic_bitset.hpp>
 
-#include <core/target.hpp>
 #include <core/debug/debug.hpp>
+#include <core/target.hpp>
 #include <core/types.hpp>
 
 #include <components/uArchARM/uArchInterfaces.hpp>
 
-#include "../SemanticInstruction.hpp"
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
+#include "../SemanticInstruction.hpp"
 #include "PredicatedSemanticAction.hpp"
 #include "RegisterValueExtractor.hpp"
 #include <components/uArchARM/systemRegister.hpp>
@@ -74,15 +74,10 @@ struct ExtractAction : public PredicatedSemanticAction {
   eOperandCode theOperandCode1, theOperandCode2, theOperandCode3;
   bool the64;
 
-  ExtractAction ( SemanticInstruction * anInstruction
-                  , eOperandCode anOperandCode1, eOperandCode anOperandCode2
-                  , eOperandCode anOperandCode3, bool a64)
-    : PredicatedSemanticAction( anInstruction, 1, true )
-    , theOperandCode1(anOperandCode1)
-    , theOperandCode2 (anOperandCode2)
-    , theOperandCode3 (anOperandCode3)
-    , the64 (a64)
-  {
+  ExtractAction(SemanticInstruction *anInstruction, eOperandCode anOperandCode1,
+                eOperandCode anOperandCode2, eOperandCode anOperandCode3, bool a64)
+      : PredicatedSemanticAction(anInstruction, 1, true), theOperandCode1(anOperandCode1),
+        theOperandCode2(anOperandCode2), theOperandCode3(anOperandCode3), the64(a64) {
     theInstruction->setExecuted(false);
   }
 
@@ -91,13 +86,13 @@ struct ExtractAction : public PredicatedSemanticAction {
     if (ready()) {
       if (theInstruction->hasPredecessorExecuted()) {
 
-        bits src =  boost::get<bits>(theInstruction->operand(theOperandCode1));
-        bits src2 =  boost::get<bits>(theInstruction->operand(theOperandCode2));
-        uint64_t imm =  (uint64_t)boost::get<bits>(theInstruction->operand(theOperandCode2));
+        bits src = boost::get<bits>(theInstruction->operand(theOperandCode1));
+        bits src2 = boost::get<bits>(theInstruction->operand(theOperandCode2));
+        uint64_t imm = (uint64_t)boost::get<bits>(theInstruction->operand(theOperandCode2));
 
         std::unique_ptr<Operation> op = operation(the64 ? kCONCAT64_ : kCONCAT32_);
         std::vector<Operand> operands = {src, src2, (uint64_t)the64};
-        uint64_t res =  (uint64_t)boost::get<bits>(op->operator ()(operands));
+        uint64_t res = (uint64_t)boost::get<bits>(op->operator()(operands));
 
         res >>= imm;
 
@@ -106,32 +101,29 @@ struct ExtractAction : public PredicatedSemanticAction {
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {
-        DBG_( VVerb, ( << *this << " waiting for predecessor ") );
+        DBG_(VVerb, (<< *this << " waiting for predecessor "));
         reschedule();
       }
     }
   }
 
-  void describe( std::ostream & anOstream) const {
+  void describe(std::ostream &anOstream) const {
     anOstream << theInstruction->identify() << " BitFieldAction ";
   }
 };
 
-predicated_action extractAction
-(SemanticInstruction * anInstruction
- , std::vector< std::list<InternalDependance> > & opDeps
- , eOperandCode anOperandCode1, eOperandCode anOperandCode2
- , eOperandCode anOperandCode3, bool a64
-){
-  ExtractAction * act(new(anInstruction->icb()) ExtractAction( anInstruction, anOperandCode1,
-                                                                 anOperandCode2, anOperandCode3, a64) );
+predicated_action extractAction(SemanticInstruction *anInstruction,
+                                std::vector<std::list<InternalDependance>> &opDeps,
+                                eOperandCode anOperandCode1, eOperandCode anOperandCode2,
+                                eOperandCode anOperandCode3, bool a64) {
+  ExtractAction *act(new (anInstruction->icb()) ExtractAction(anInstruction, anOperandCode1,
+                                                              anOperandCode2, anOperandCode3, a64));
 
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
-    opDeps[i].push_back( act->dependance(i) );
+    opDeps[i].push_back(act->dependance(i));
   }
 
-  return predicated_action( act, act->predicate() );
-
+  return predicated_action(act, act->predicate());
 }
 
-} //narmDecoder
+} // namespace narmDecoder

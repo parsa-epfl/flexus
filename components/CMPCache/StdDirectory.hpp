@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -35,7 +36,6 @@
 //
 // DO-NOT-REMOVE end-copyright-block
 
-
 #ifndef __STD_DIRECTORY_HPP__
 #define __STD_DIRECTORY_HPP__
 
@@ -45,8 +45,8 @@
 
 #include <components/CommonQEMU/Serializers.hpp>
 
-using nCommonUtil::log_base2;
 using nCommonSerializers::StdDirEntrySerializer;
+using nCommonUtil::log_base2;
 
 namespace nCMPCache {
 
@@ -54,17 +54,17 @@ typedef uint64_t Tag;
 
 typedef Flexus::SharedTypes::PhysicalMemoryAddress MemoryAddress;
 
-template<typename _State, typename _EState = _State>
+template <typename _State, typename _EState = _State>
 class StdDirectory : public AbstractDirectory<_State, _EState> {
 private:
-
   class Block {
   public:
-    Block() : theTag(0), theState(0) {}
+    Block() : theTag(0), theState(0) {
+    }
     Tag tag() const {
       return (theTag & ~1ULL);
     }
-    _State & state() {
+    _State &state() {
       return theState;
     }
 
@@ -72,7 +72,7 @@ private:
       theTag = (theTag & 1ULL) | (aTag & ~1ULL);
     }
 
-    void setState(const _State & aState) {
+    void setState(const _State &aState) {
       theState = aState;
     }
 
@@ -84,7 +84,7 @@ private:
       }
     }
 
-    Block & operator=(const StdDirEntrySerializer & serializer) {
+    Block &operator=(const StdDirEntrySerializer &serializer) {
       setTag(serializer.tag);
       theState = serializer.state;
       return *this;
@@ -103,16 +103,11 @@ private:
 
   class StdLookupResult : public AbstractLookupResult<_State> {
   public:
-    virtual ~StdLookupResult() {}
-    StdLookupResult(Set  *  aSet,
-                    Block  * aBlock,
-                    MemoryAddress anAddress,
-                    bool   anIsValid)
-      : theSet(aSet)
-      , theBlock(aBlock)
-      , theAddress(anAddress)
-      , isValid(anIsValid)
-    { }
+    virtual ~StdLookupResult() {
+    }
+    StdLookupResult(Set *aSet, Block *aBlock, MemoryAddress anAddress, bool anIsValid)
+        : theSet(aSet), theBlock(aBlock), theAddress(anAddress), isValid(anIsValid) {
+    }
 
     virtual bool found() {
       return isValid;
@@ -123,7 +118,7 @@ private:
     virtual void setProtected(bool val) {
       theBlock->setProtected(val);
     }
-    virtual const _State & state() const {
+    virtual const _State &state() const {
       return theBlock->state();
     }
     virtual void addSharer(int32_t sharer) {
@@ -135,15 +130,15 @@ private:
     virtual void setSharer(int32_t sharer) {
       theBlock->state().setSharer(sharer);
     }
-    virtual void setState(const _State & state) {
+    virtual void setState(const _State &state) {
       theBlock->state() = state;
     }
 
   private:
-    Set  *  theSet;
-    Block  * theBlock;
+    Set *theSet;
+    Block *theBlock;
     MemoryAddress theAddress;
-    bool   isValid;
+    bool isValid;
 
     friend class Set;
     friend class StdDirectory;
@@ -151,8 +146,8 @@ private:
 
   class Set {
   private:
-    Block  * theBlocks;
-    int    theAssociativity;
+    Block *theBlocks;
+    int theAssociativity;
 
     friend class StdDirectory;
 
@@ -163,7 +158,8 @@ private:
         theBlocks[way].state().reset(aNumSharers);
       }
     }
-    virtual ~Set() {}
+    virtual ~Set() {
+    }
 
     typedef StdLookupResult LookupResult;
     typedef typename boost::intrusive_ptr<LookupResult> LookupResult_p;
@@ -178,7 +174,8 @@ private:
       return LookupResult_p(new LookupResult(this, nullptr, anAddress, false));
     }
 
-    virtual std::tuple<bool, bool, MemoryAddress, _State> allocate(LookupResult_p lookup, MemoryAddress anAddress, const _State & aState) {
+    virtual std::tuple<bool, bool, MemoryAddress, _State>
+    allocate(LookupResult_p lookup, MemoryAddress anAddress, const _State &aState) {
       int32_t i = pickVictim();
       if (i < 0) {
         return std::make_tuple(false, false, anAddress, aState);
@@ -205,12 +202,12 @@ private:
       }
       return best;
     }
-    bool loadState(boost::archive::binary_iarchive & ia, const std::string & aName) {
+    bool loadState(boost::archive::binary_iarchive &ia, const std::string &aName) {
       StdDirEntrySerializer serializer;
       for (int32_t way = 0; way < theAssociativity; way++) {
         ia >> serializer;
         theBlocks[way] = serializer;
-        DBG_(Trace, Addr(serializer.tag) ( << aName << " Directory loading block " << serializer ));
+        DBG_(Trace, Addr(serializer.tag)(<< aName << " Directory loading block " << serializer));
       }
       return true;
     }
@@ -244,7 +241,7 @@ private:
   int32_t theBankShift, theBankMask;
   int32_t theGroupShift, theGroupMask;
 
-  Set ** theSets;
+  Set **theSets;
 
   DirEvictBuffer<_EState> theEvictBuffer;
 
@@ -257,9 +254,11 @@ private:
   int32_t makeSet(MemoryAddress addr) {
     if (theSkewSet) {
       uint64_t a = (uint64_t)addr ^ ((uint64_t)addr >> skewShift);
-      return ((a >> setLowShift) & setLowMask) | ((a >> setMidShift) & setMidMask) | ((a >> setHighShift) & setHighMask);
+      return ((a >> setLowShift) & setLowMask) | ((a >> setMidShift) & setMidMask) |
+             ((a >> setHighShift) & setHighMask);
     } else {
-      return ((addr >> setLowShift) & setLowMask) | ((addr >> setMidShift) & setMidMask) | ((addr >> setHighShift) & setHighMask);
+      return ((addr >> setLowShift) & setLowMask) | ((addr >> setMidShift) & setMidMask) |
+             ((addr >> setHighShift) & setHighMask);
     }
   }
 
@@ -288,9 +287,9 @@ public:
     delete[] theSets;
   }
 
-  StdDirectory(const CMPCacheInfo & theInfo, const std::list< std::pair< std::string, std::string> > &theConfiguration)
-    : theEvictBuffer(theInfo.theDirEBSize)
-    , theName(theInfo.theName) {
+  StdDirectory(const CMPCacheInfo &theInfo,
+               const std::list<std::pair<std::string, std::string>> &theConfiguration)
+      : theEvictBuffer(theInfo.theDirEBSize), theName(theInfo.theName) {
     theBlockSize = theInfo.theBlockSize;
     theBanks = theInfo.theNumBanks;
     theBankInterleaving = theInfo.theBankInterleaving;
@@ -302,21 +301,23 @@ public:
     theNumSharers = theInfo.theCores;
     theTotalBanks = theBanks * theGroups;
 
-    std::list< std::pair< std::string, std::string> >::const_iterator iter = theConfiguration.begin();
+    std::list<std::pair<std::string, std::string>>::const_iterator iter = theConfiguration.begin();
     for (; iter != theConfiguration.end(); iter++) {
       if (iter->first == "sets") {
         theNumSets = strtoll(iter->second.c_str(), nullptr, 0);
       } else if (iter->first == "total_sets" || iter->first == "global_sets") {
         int32_t global_sets = strtol(iter->second.c_str(), nullptr, 0);
         theNumSets = global_sets / theTotalBanks;
-        DBG_Assert( (theNumSets * theTotalBanks) == global_sets, ( << "global_sets (" << global_sets
-                    << ") is not divisible by number of banks (" << theTotalBanks << ")" ));
+        DBG_Assert((theNumSets * theTotalBanks) == global_sets,
+                   (<< "global_sets (" << global_sets << ") is not divisible by number of banks ("
+                    << theTotalBanks << ")"));
       } else if (iter->first == "assoc" || iter->first == "associativity") {
         theAssociativity = strtol(iter->second.c_str(), nullptr, 0);
       } else if (iter->first == "skew" || iter->first == "skew_set") {
         theSkewSet = (strcasecmp(iter->second.c_str(), "true") == 0);
       } else {
-        DBG_Assert( false, ( << "Unknown configuration parameter '" << iter->first << "' while creating StdArray" ));
+        DBG_Assert(false, (<< "Unknown configuration parameter '" << iter->first
+                           << "' while creating StdArray"));
       }
     }
 
@@ -324,25 +325,29 @@ public:
   }
 
   void init() {
-    DBG_Assert ( theNumSets > 0 );
-    DBG_Assert ( theAssociativity > 0 );
-    DBG_Assert ( theBlockSize     > 0 );
+    DBG_Assert(theNumSets > 0);
+    DBG_Assert(theAssociativity > 0);
+    DBG_Assert(theBlockSize > 0);
 
     //  Physical address layout:
     //
     //  +---------+------------+-------+-----+------+-----------+-----------------+
-    //  | Tag     | Index High | Group | Mid | Bank | Index Low |  BlockOffset    |
+    //  | Tag     | Index High | Group | Mid | Bank | Index Low |  BlockOffset |
     //  +---------+------------+-------+-----+------+-----------+-----------------+
-    //                                                          |<- setLowShift ->|
-    //                                       |<-------- setMidShift ------------->|
-    //                         |<---------------- setHighShift ------------------>|
+    //                                                          |<- setLowShift
+    //                                                          ->|
+    //                                       |<-------- setMidShift
+    //                                       ------------->|
+    //                         |<---------------- setHighShift
+    //                         ------------------>|
 
-    DBG_Assert( ((theBlockSize - 1) & theBlockSize) == 0);
-    DBG_Assert( ((theBankInterleaving - 1) & theBankInterleaving) == 0);
-    DBG_Assert( ((theGroupInterleaving - 1) & theGroupInterleaving) == 0);
+    DBG_Assert(((theBlockSize - 1) & theBlockSize) == 0);
+    DBG_Assert(((theBankInterleaving - 1) & theBankInterleaving) == 0);
+    DBG_Assert(((theGroupInterleaving - 1) & theGroupInterleaving) == 0);
 
-    DBG_Assert( (theBankInterleaving * theBanks) <= theGroupInterleaving, ( << "Invalid interleaving: BI = "
-                << theBankInterleaving << ", Banks = " << theBanks << ", GI = " << theGroupInterleaving << ", Groups = " << theGroups ));
+    DBG_Assert((theBankInterleaving * theBanks) <= theGroupInterleaving,
+               (<< "Invalid interleaving: BI = " << theBankInterleaving << ", Banks = " << theBanks
+                << ", GI = " << theGroupInterleaving << ", Groups = " << theGroups));
 
     int32_t blockOffsetBits = log_base2(theBlockSize);
     int32_t indexBits = log_base2(theNumSets);
@@ -376,25 +381,29 @@ public:
 
     tagMask = ~0ULL & ~((uint64_t)(theBlockSize - 1));
 
-    theSets = new Set*[theNumSets];
-    DBG_Assert( theSets);
+    theSets = new Set *[theNumSets];
+    DBG_Assert(theSets);
 
     for (int32_t i = 0; i < theNumSets; i++) {
       theSets[i] = new Set(theAssociativity, theNumSharers);
-      DBG_Assert( theSets[i] );
+      DBG_Assert(theSets[i]);
     }
 
-    DBG_(Dev, ( << "Created directory " << theGlobalBankIndex << ": Lshift " << setLowShift << ", Hshift " << setHighShift << ", Sshift " << skewShift << ", Lmask 0x" << std::hex << setLowMask << ", Hmask 0x" << setHighMask << ", NumSharers = " << theNumSharers ));
+    DBG_(Dev,
+         (<< "Created directory " << theGlobalBankIndex << ": Lshift " << setLowShift << ", Hshift "
+          << setHighShift << ", Sshift " << skewShift << ", Lmask 0x" << std::hex << setLowMask
+          << ", Hmask 0x" << setHighMask << ", NumSharers = " << theNumSharers));
   }
 
-  virtual bool allocate(boost::intrusive_ptr<AbstractLookupResult<_State> > lookup, MemoryAddress address, const _State & state) {
-    StdLookupResult * std_lookup = dynamic_cast<StdLookupResult *>(lookup.get());
-    DBG_Assert(std_lookup != nullptr, ( << "allocate() was not passed a valid StdLookupResult"));
+  virtual bool allocate(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup,
+                        MemoryAddress address, const _State &state) {
+    StdLookupResult *std_lookup = dynamic_cast<StdLookupResult *>(lookup.get());
+    DBG_Assert(std_lookup != nullptr, (<< "allocate() was not passed a valid StdLookupResult"));
     bool success, has_victim;
     _State v_state(0);
     MemoryAddress v_addr;
     std::tie(success, has_victim, v_addr, v_state) =
-      std_lookup->theSet->allocate(std_lookup, address, state);
+        std_lookup->theSet->allocate(std_lookup, address, state);
 
     if (has_victim) {
       theEvictBuffer.insert(v_addr, v_state);
@@ -403,8 +412,9 @@ public:
     return success;
   }
 
-  virtual boost::intrusive_ptr<AbstractLookupResult<_State> > lookup(MemoryAddress address) {
-    DBG_(Trace, ( << "StdDirectory::lookup(0x" << std::hex << (uint64_t)address << ") in set 0x" << std::hex << makeSet(address) ));
+  virtual boost::intrusive_ptr<AbstractLookupResult<_State>> lookup(MemoryAddress address) {
+    DBG_(Trace, (<< "StdDirectory::lookup(0x" << std::hex << (uint64_t)address << ") in set 0x"
+                 << std::hex << makeSet(address)));
     return theSets[makeSet(address)]->lookup(makeTag(address));
   }
 
@@ -412,11 +422,11 @@ public:
     return (makeSet(a) == makeSet(b));
   }
 
-  virtual DirEvictBuffer<_EState>* getEvictBuffer() {
+  virtual DirEvictBuffer<_EState> *getEvictBuffer() {
     return &theEvictBuffer;
   }
 
-  virtual bool loadState(std::istream & is) {
+  virtual bool loadState(std::istream &is) {
     boost::archive::binary_iarchive ia(is);
 
     // Loop through ALL of the sets and select the ones that belong to this set
@@ -432,15 +442,21 @@ public:
     ia >> set_count;
     ia >> associativity;
 
-    DBG_Assert( set_count == (uint64_t)theTotalSets, ( << "Error loading directory state. Flexpoint contains " << set_count << " sets but simulator configured for " << theTotalSets << " sets." ));
-    DBG_Assert( associativity == (uint64_t)theAssociativity, ( << "Error loading directory state. Flexpoint contains " << associativity << "-way sets but simulator configured for " << theAssociativity << "-way sets." ));
+    DBG_Assert(set_count == (uint64_t)theTotalSets,
+               (<< "Error loading directory state. Flexpoint contains " << set_count
+                << " sets but simulator configured for " << theTotalSets << " sets."));
+    DBG_Assert(associativity == (uint64_t)theAssociativity,
+               (<< "Error loading directory state. Flexpoint contains " << associativity
+                << "-way sets but simulator configured for " << theAssociativity << "-way sets."));
 
     StdDirEntrySerializer serializer;
     for (; global_set < theTotalSets; global_set++, addr += theBlockSize) {
-      DBG_(Trace, ( << theName << ": Loading global set " << global_set << ", bank = " << getBank(addr) << ", local bank = " << theLocalBankIndex << ", group = " << getGroup(addr) << ", local group = " << theGroupIndex ));
+      DBG_(Trace, (<< theName << ": Loading global set " << global_set
+                   << ", bank = " << getBank(addr) << ", local bank = " << theLocalBankIndex
+                   << ", group = " << getGroup(addr) << ", local group = " << theGroupIndex));
       if ((getBank(addr) == theLocalBankIndex) && (getGroup(addr) == theGroupIndex)) {
         if (!theSets[local_set]->loadState(ia, theName)) {
-          DBG_Assert(false, ( << "failed to load dir state for set " << local_set ));
+          DBG_Assert(false, (<< "failed to load dir state for set " << local_set));
           return false;
         }
         local_set++;
@@ -454,10 +470,8 @@ public:
 
     return true;
   }
-
 };
 
 }; // namespace nCMPCache
 
 #endif // __STD_DIRECTORY_HPP__
-

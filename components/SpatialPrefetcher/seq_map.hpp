@@ -1,15 +1,16 @@
-// DO-NOT-REMOVE begin-copyright-block 
+// DO-NOT-REMOVE begin-copyright-block
 //
 // Redistributions of any form whatsoever must retain and/or include the
 // following acknowledgment, notices and disclaimer:
 //
 // This product includes software developed by Carnegie Mellon University.
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
+// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
+// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
+// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
+// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
+// University.
 //
 // For more information, see the SimFlex project website at:
 //   http://www.ece.cmu.edu/~simflex
@@ -33,48 +34,39 @@
 // ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
 // CONTRACT, TORT OR OTHERWISE).
 //
-// DO-NOT-REMOVE end-copyright-block   
+// DO-NOT-REMOVE end-copyright-block
 #ifndef SEQ_MAP__
 #define SEQ_MAP__
 
 #include <deque>
 #include <map>
 
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/ordered_index.hpp>
-#include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/member.hpp>
+#include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/sequenced_index.hpp>
+#include <boost/multi_index_container.hpp>
 
 using namespace boost::multi_index;
 
 struct by_LRU {};
 struct by_index {};
 
-template <class T_key, class T_val>
-struct MapEntry_T {
-  MapEntry_T(const std::pair<T_key, T_val> & apair)
-    : first(apair.first)
-    , second(apair.second)
-  {}
+template <class T_key, class T_val> struct MapEntry_T {
+  MapEntry_T(const std::pair<T_key, T_val> &apair) : first(apair.first), second(apair.second) {
+  }
   T_key first;
   mutable T_val second;
 };
 
-template <class T_key, class T_val>
-class flexus_boost_seq_map {
+template <class T_key, class T_val> class flexus_boost_seq_map {
   typedef MapEntry_T<T_key, T_val> MapEntry;
 
-  typedef multi_index_container
-  < MapEntry
-  , indexed_by
-  < sequenced< tag<by_LRU> >
-  , ordered_unique
-  < tag<by_index>
-  , member<MapEntry, T_key, &MapEntry::first>
-  >
-  >
-  > MapTable;
+  typedef multi_index_container<
+      MapEntry,
+      indexed_by<sequenced<tag<by_LRU>>,
+                 ordered_unique<tag<by_index>, member<MapEntry, T_key, &MapEntry::first>>>>
+      MapTable;
   typedef typename MapTable::template index<by_LRU>::type::iterator LruIter;
   typedef typename MapTable::template index<by_index>::type::iterator IndexIter;
 
@@ -103,26 +95,26 @@ public:
     return theMap.size();
   }
 
-  const T_val & front() const {
+  const T_val &front() const {
     return (theMap.template get<by_LRU>()).front().second;
   }
 
-  const T_key & front_key() const {
+  const T_key &front_key() const {
     return (theMap.template get<by_LRU>()).front().first;
   }
 
-  std::pair<iterator, bool> insert( const std::pair<T_key, T_val> & apair ) {
+  std::pair<iterator, bool> insert(const std::pair<T_key, T_val> &apair) {
     std::pair<LruIter, bool> inspair = (theMap.template get<by_LRU>()).push_back(apair);
     IndexIter iter = theMap.template project<by_index>(inspair.first);
     return std::make_pair(iter, inspair.second);
   }
 
-  iterator find(const T_key & key) const {
+  iterator find(const T_key &key) const {
     return (theMap.template get<by_index>()).find(key);
   }
 
-  seq_iter findSeq(const T_key & key) const {
-    return theMap.template project<by_LRU>( (theMap.template get<by_index>()).find(key) );
+  seq_iter findSeq(const T_key &key) const {
+    return theMap.template project<by_LRU>((theMap.template get<by_index>()).find(key));
   }
 
   void erase(iterator iter) {
@@ -133,7 +125,7 @@ public:
     (theMap.template get<by_LRU>()).erase(iter);
   }
 
-  void push_back( const std::pair<T_key, T_val> & apair ) {
+  void push_back(const std::pair<T_key, T_val> &apair) {
     (theMap.template get<by_LRU>()).push_back(apair);
   }
 
@@ -141,11 +133,11 @@ public:
     (theMap.template get<by_LRU>()).pop_front();
   }
 
-  void move_back(iterator const & iter) {
-    theMap.relocate( (theMap.template get<by_LRU>()).end(), theMap.template project<by_LRU>(iter) );
+  void move_back(iterator const &iter) {
+    theMap.relocate((theMap.template get<by_LRU>()).end(), theMap.template project<by_LRU>(iter));
   }
 
-  unsigned dist_back(iterator const & iter) const {
+  unsigned dist_back(iterator const &iter) const {
     LruIter pos = theMap.template project<by_LRU>(iter);
     unsigned dist = 0;
     while (pos != (theMap.template get<by_LRU>()).end()) {
@@ -158,8 +150,7 @@ public:
 
 #define FLEXUS_BOOST_SET_ASSOC_STATS 0
 
-template <class T_key, class T_val>
-class flexus_boost_set_assoc {
+template <class T_key, class T_val> class flexus_boost_set_assoc {
   typedef flexus_boost_seq_map<T_key, T_val> MapTable;
   typedef std::vector<MapTable> SetAssocTable;
 
@@ -213,14 +204,14 @@ public:
     index_adv(iter);
     return iter;
   }
-  void index_next(iterator & iter) {
+  void index_next(iterator &iter) {
     ++iter;
     index_adv(iter);
   }
-  void index_adv(iterator & iter) {
+  void index_adv(iterator &iter) {
     while (iter == theTable[theCurrIndex].end()) {
       // check if there is another set
-      if ( (theCurrIndex + 1) == makeIndex(theCurrIndex + 1) ) {
+      if ((theCurrIndex + 1) == makeIndex(theCurrIndex + 1)) {
         theCurrIndex++;
         iter = theTable[theCurrIndex].begin();
       } else {
@@ -238,14 +229,14 @@ public:
     seq_adv(iter);
     return iter;
   }
-  void seq_next(seq_iter & iter) {
+  void seq_next(seq_iter &iter) {
     ++iter;
     seq_adv(iter);
   }
-  void seq_adv(seq_iter & iter) {
+  void seq_adv(seq_iter &iter) {
     while (iter == theTable[theCurrIndex].endSeq()) {
       // check if there is another set
-      if ( (theCurrIndex + 1) == makeIndex(theCurrIndex + 1) ) {
+      if ((theCurrIndex + 1) == makeIndex(theCurrIndex + 1)) {
         theCurrIndex++;
         iter = theTable[theCurrIndex].beginSeq();
       } else {
@@ -261,15 +252,15 @@ public:
     return theTable[theCurrIndex].size();
   }
 
-  const T_val & front() const {
+  const T_val &front() const {
     return theTable[theCurrIndex].front();
   }
 
-  const T_key & front_key() const {
+  const T_key &front_key() const {
     return theTable[theCurrIndex].front_key();
   }
 
-  std::pair<iterator, bool> insert( const std::pair<T_key, T_val> & apair ) {
+  std::pair<iterator, bool> insert(const std::pair<T_key, T_val> &apair) {
     theCurrIndex = makeIndex(apair.first);
 #ifdef FLEXUS_BOOST_SET_ASSOC_STATS
     theSetCounts[theCurrIndex]++;
@@ -277,7 +268,7 @@ public:
     return theTable[theCurrIndex].insert(apair);
   }
 
-  iterator find(const T_key & key) {
+  iterator find(const T_key &key) {
     theCurrIndex = makeIndex(key);
     return theTable[theCurrIndex].find(key);
   }
@@ -286,7 +277,7 @@ public:
     theTable[theCurrIndex].erase(iter);
   }
 
-  void push_back( const std::pair<T_key, T_val> & apair ) {
+  void push_back(const std::pair<T_key, T_val> &apair) {
     theCurrIndex = makeIndex(apair.first);
 #ifdef FLEXUS_BOOST_SET_ASSOC_STATS
     theSetCounts[theCurrIndex]++;
@@ -298,12 +289,12 @@ public:
     theTable[theCurrIndex].pop_front();
   }
 
-  void move_back(iterator const & iter) {
+  void move_back(iterator const &iter) {
     theTable[theCurrIndex].move_back(iter);
   }
 
 #ifdef FLEXUS_BOOST_SET_ASSOC_STATS
-  std::vector<int> & get_counts() {
+  std::vector<int> &get_counts() {
     return theSetCounts;
   }
 #endif
