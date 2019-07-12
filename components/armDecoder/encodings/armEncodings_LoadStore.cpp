@@ -271,7 +271,7 @@ arminst disas_ldst_reg_unsigned_imm(armcode const &aFetchedOpcode, uint32_t aCPU
   bool is_store = ((opc == 0) || ((opc == 2) && (size == 0)));
 
   if (size == 3 && opc == 2) {
-    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+    return nop(aFetchedOpcode, aCPU, aSequenceNo); // PRFM
   }
   if (opc == 3 && size > 1) {
     return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);

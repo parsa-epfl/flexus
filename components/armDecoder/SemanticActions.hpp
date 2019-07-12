@@ -56,7 +56,7 @@ struct uArchARM;
 
 namespace narmDecoder {
 
-enum eSignCode { kSignExtend, kZeroExtend, kNoExtention, kLastExt };
+enum eSignCode { kSignExtend, kZeroExtend, kNoExtension, kLastExt };
 
 typedef enum eIndex {
   kPostIndex,

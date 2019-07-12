@@ -516,7 +516,7 @@ arminst LOGICAL(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceN
   std::unique_ptr<Operation> ptr;
   switch (opc) {
   case 0:
-    op = kAND_;
+    op = n ? kAndN_ : kAND_;
     break;
   case 1:
     op = n ? kOrN_ : kORR_;

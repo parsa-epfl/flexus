@@ -1730,6 +1730,8 @@ void CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExcept
   DBG_Assert(!theROB.empty());
   // Only ROB head should raise
   DBG_Assert(anInstruction == theROB.front());
+  anInstruction->forceResync();
+  return;
 
   // Clear ROB
   theSquashRequested = true;
@@ -1760,9 +1762,9 @@ bool CoreImpl::acceptInterrupt() {
       //          &&   (getPSTATE() & 0x2)         //PSTATE.IE = 1
   ) {
     // Interrupt was signalled this cycle.  Clear the ROB
-    theInterruptSignalled = true;
+    theInterruptSignalled = false;
 
-    theROB.front()->makePriv();
+    // theROB.front()->makePriv();
 
     DBG_(Dev, (<< theName << " Accepting interrupt " << thePendingInterrupt << " on instruction "
                << *theROB.front()));

@@ -465,7 +465,7 @@ arminst SYS(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
     inst->addPostvalidation(validateXRegister(rt, kResult, inst, true));
   } else {
     inst->setClass(clsComputation, codeWRPR);
-
+    return inst;
     std::vector<std::list<InternalDependance>> rs_dep(1);
     // need to halt dispatch for writes
     inst->setHaltDispatch();

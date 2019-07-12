@@ -510,7 +510,7 @@ void CoreImpl::pushTranslation(TranslationPtr aTranslation) {
   if (lsq_entry->theVaddr != aTranslation->theVaddr)
     return;
 
-  if (!insn->resync()) {
+  if (!insn->resync() && !(aTranslation->isPagefault())) {
     resolvePAddr(insn, aTranslation->thePaddr);
 
     DBG_(Dev,

@@ -72,18 +72,6 @@ struct validatePC {
   bool operator()();
 };
 
-struct validateVRegister {
-  uint32_t theReg;
-  eOperandCode theOperandCode;
-  SemanticInstruction *theInstruction;
-
-  validateVRegister(uint32_t aReg, eOperandCode anOperand, SemanticInstruction *anInstruction)
-      : theReg(aReg), theOperandCode(anOperand), theInstruction(anInstruction) {
-  }
-
-  bool operator()();
-};
-
 struct validateMemory {
   eOperandCode theAddressCode;
   eOperandCode theValueCode;

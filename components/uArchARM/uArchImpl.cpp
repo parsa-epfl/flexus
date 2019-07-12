@@ -271,15 +271,15 @@ public:
             ->translateVirtualAddress(aTranslate->theVaddr);
 
     if (aTranslate->thePaddr == magicTranslation || magicTranslation == 0xffffffffffffffff) {
-      DBG_(Dev, (<< "Magic QEMU translation == MMU Translation. Vaddr = " << std::hex
-                 << aTranslate->theVaddr << std::dec << ", Paddr = " << std::hex << magicTranslation
-                 << std::dec << ", ID: " << aTranslate->theID));
+      DBG_(Dev,
+           (<< "Magic QEMU translation == MMU Translation. Vaddr = " << std::hex
+            << aTranslate->theVaddr << ", PADDR_MMU = " << aTranslate->thePaddr
+            << ", PADDR_QEMU = " << magicTranslation << std::dec << ", ID: " << aTranslate->theID));
     } else {
-      DBG_Assert(false, (<< "ERROR: Magic QEMU translation NOT EQUAL TO MMU "
-                            "Translation. Vaddr = "
-                         << std::hex << aTranslate->theVaddr << std::dec
-                         << ", PADDR_MMU = " << std::hex << aTranslate->thePaddr << std::dec
-                         << ", PADDR_QEMU = " << std::hex << magicTranslation << std::dec));
+      DBG_Assert(false,
+                 (<< "ERROR: Magic QEMU translation NOT EQUAL TO MMU Translation. Vaddr = "
+                  << std::hex << aTranslate->theVaddr << ", PADDR_MMU = " << aTranslate->thePaddr
+                  << ", PADDR_QEMU = " << magicTranslation << std::dec));
     }
 
     aTranslate->thePaddr = magicTranslation;

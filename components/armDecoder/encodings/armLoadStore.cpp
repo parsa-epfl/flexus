@@ -81,9 +81,9 @@ arminst CAS(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
 
   predicated_dependant_action cas;
   if (!is_pair) {
-    cas = casAction(inst, dbsize, kNoExtention, kPD);
+    cas = casAction(inst, dbsize, kNoExtension, kPD);
   } else {
-    cas = caspAction(inst, dbsize, kNoExtention, kPD, kPD1);
+    cas = caspAction(inst, dbsize, kNoExtension, kPD, kPD1);
   }
   inst->addDispatchEffect(allocateCAS(inst, dbsize, cas.dependance, ldacctype));
   inst->addCheckTrapEffect(mmuPageFaultCheck(inst));
@@ -218,18 +218,12 @@ arminst STRL(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
   SemanticInstruction *inst(new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                     aFetchedOpcode.theBPState, aCPU, aSequenceNo));
   bool o0 = extract32(aFetchedOpcode.theOpcode, 15, 1);
-  //    uint32_t L = extract32(aFetchedOpcode.theOpcode, 22, 1);
-  uint32_t size = 8 << extract32(aFetchedOpcode.theOpcode, 30, 2);
-  //    uint32_t rs = extract32(aFetchedOpcode.theOpcode, 16, 5);  // ignored by
-  //    all loads and store-release
+  uint32_t size = extract32(aFetchedOpcode.theOpcode, 30, 2);
   uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
-  //    uint32_t rt2 = extract32(aFetchedOpcode.theOpcode, 10, 5); // ignored by
-  //    load/store single register
   uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
-  uint32_t regsize;
-  regsize = (size == 0x3) ? 64 : 32;
+  uint32_t regsize = (size == 0x3) ? 64 : 32;
 
-  eSize sz = dbSize(size);
+  eSize sz = dbSize(8 << size);
 
   eAccType acctype = o0 == 0 ? kAccType_LIMITEDORDERED : kAccType_ORDERED;
 
@@ -244,7 +238,7 @@ arminst STRL(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
   addAddressCompute(inst, rs_deps);
   addReadXRegister(inst, 1, rn, rs_deps[0], true);
 
-  simple_action act = addExecute(inst, operation(kMOV_), data_deps, {kOperand2}, kOperand5);
+  simple_action act = addExecute(inst, operation(kMOV_), {kOperand2}, data_deps, kOperand5);
   addReadXRegister(inst, 2, rt, data_deps[0], regsize == 64);
 
   inst->addDispatchEffect(allocateStore(inst, sz, false, acctype));
@@ -423,7 +417,7 @@ arminst LDR_lit(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceN
   inst->addSquashEffect(eraseLSQ(inst));
 
   predicated_dependant_action load;
-  load = loadAction(inst, sz, is_signed ? kSignExtend : kNoExtention, kPD);
+  load = loadAction(inst, sz, is_signed ? kSignExtend : kNoExtension, kPD);
   inst->addDispatchEffect(allocateLoad(inst, sz, load.dependance, kAccType_NORMAL));
   inst->addCommitEffect(accessMem(inst));
   inst->addRetirementConstraint(loadMemoryConstraint(inst));
@@ -492,7 +486,7 @@ arminst LDP(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   }
 
   predicated_dependant_action load;
-  load = ldpAction(inst, sz, is_signed ? kSignExtend : kNoExtention, kPD, kPD1);
+  load = ldpAction(inst, sz, is_signed ? kSignExtend : kNoExtension, kPD, kPD1);
 
   inst->addDispatchEffect(allocateLoad(inst, sz, load.dependance, acctype));
   inst->addCheckTrapEffect(mmuPageFaultCheck(inst));
@@ -601,8 +595,7 @@ arminst STR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
     regsize = (opc & 1) ? 32 : 64;
   }
 
-  uint32_t scale = 8 << size;
-  eSize sz = dbSize(scale);
+  eSize sz = dbSize(8 << size);
   DBG_(Dev, (<< "Size " << sz));
 
   SemanticInstruction *inst(new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
@@ -734,8 +727,7 @@ arminst LDR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
     regsize = (opc & 1) ? 32 : 64;
   }
 
-  uint32_t scale = 8 << size;
-  eSize sz = dbSize(scale);
+  eSize sz = dbSize(8 << size);
   DBG_(Dev, (<< "Size " << sz));
 
   SemanticInstruction *inst(new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
@@ -826,7 +818,7 @@ arminst LDR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   inst->addSquashEffect(eraseLSQ(inst));
 
   predicated_dependant_action load;
-  load = loadAction(inst, sz, kZeroExtend, kPD);
+  load = loadAction(inst, sz, extract32(opc, 1, 1) ? kSignExtend : kZeroExtend, kPD);
   inst->addDispatchEffect(allocateLoad(inst, sz, load.dependance, acctype));
   inst->addCommitEffect(accessMem(inst));
   inst->addRetirementConstraint(loadMemoryConstraint(inst));

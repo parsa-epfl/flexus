@@ -106,27 +106,6 @@ bool validatePC::operator()() {
   return flexus == qemu;
 }
 
-bool validateVRegister::operator()() {
-
-  return true;
-  //  if (theInstruction->isSquashed() || theInstruction->isAnnulled()) {
-  //    return true; //Don't check
-  //  }
-
-  //  bits flexus = theInstruction->operand< bits > (theOperandCode);
-  //  bits simics =
-  //  Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readX(
-  //  theReg & (~1) ); if (theReg & 1) {
-  //    simics &= 0xFFFFFFFFULL;
-  //  } else {
-  //    simics >>= 32;
-  //  }
-  //  DBG_( Dev, Condition( flexus != simics) ( << "Validation Mismatch for
-  //  mapped_reg " << theReg << " flexus=" << std::hex << flexus << " simics="
-  //  << simics << std::dec << "\n" << std::internal << *theInstruction ) );
-  //  return (flexus == simics);
-}
-
 bool validateMemory::operator()() {
   if (theInstruction->isSquashed() || theInstruction->isAnnulled()) {
     return true; // Don't check
@@ -142,6 +121,8 @@ bool validateMemory::operator()() {
   Flexus::Qemu::Processor c = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu());
   VirtualMemoryAddress vaddr(theInstruction->operand<uint64_t>(theAddressCode));
   int theSize_orig = theSize, theSize_extra = 0;
+  if (theSize < 8)
+    flexus_val &= 0xFFFFFFFF >> (32 - theSize * 8);
   VirtualMemoryAddress vaddr_final = vaddr + theSize_orig - 1;
   if ((vaddr & 0x1000) != (vaddr_final & 0x1000)) {
     theSize_extra = (vaddr_final & 0xFFF) + 1;
@@ -157,8 +138,8 @@ bool validateMemory::operator()() {
     qemu_val |= c->readPhysicalAddress(paddr_spill, theSize_extra) << (theSize_orig * 8);
   }
 
-  DBG_(Dev, (<< "flexus value: " << flexus_val));
-  DBG_(Dev, (<< "qemu value:   " << qemu_val));
+  DBG_(Dev, (<< "flexus value: " << std::hex << flexus_val));
+  DBG_(Dev, (<< "qemu value:   " << std::hex << qemu_val));
 
   return (flexus_val == qemu_val);
 }
