@@ -104,8 +104,8 @@ L0Resolver::L0Resolver(bool abro, _TTResolver_Shptr_T aGranule, address_t aTTBR,
   offset_LSB = 39; // Least significant bit of index
   offset_MSB = y;
   DBG_(VVerb,
-       (std::dec << "Setting TTBR_LSB: " << (int)TTBR_LSB << ", TTBR_MSB: " << (int)TTBR_MSB
-                 << ", offset_LSB: " << (int)offset_LSB << ", offset_MSB: " << (int)offset_MSB));
+       (<< std::dec << "Setting TTBR_LSB: " << (int)TTBR_LSB << ", TTBR_MSB: " << (int)TTBR_MSB
+        << ", offset_LSB: " << (int)offset_LSB << ", offset_MSB: " << (int)offset_MSB));
 }
 
 /* Return: Shifted and Masked bits of output address (physical or intermediate)

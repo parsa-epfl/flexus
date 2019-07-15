@@ -162,7 +162,7 @@ template <class ParamStruct, class ParamTag> struct DynamicParameter : public Pa
     try {
       theConfig.*(param_def::member()) = boost::lexical_cast<typename param_def::type>(aValue);
       theOverridden = true;
-    } catch (bad_lexical_cast e) {
+    } catch (bad_lexical_cast &e) {
       DBG_(Crit, (<< "Bad Lexical Cast attempting to set dynamic parameter."));
       std::cout << "WARNING: Unable to set parameter " << param_def::name() << " to " << aValue
                 << std::endl;

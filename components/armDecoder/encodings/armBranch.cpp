@@ -346,7 +346,7 @@ arminst HINT(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
 arminst SYNC(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   DECODER_TRACE;
 
-  uint32_t rt = extract32(aFetchedOpcode.theOpcode, 16, 3);
+  // uint32_t rt = extract32(aFetchedOpcode.theOpcode, 16, 3);
   uint32_t crm = extract32(aFetchedOpcode.theOpcode, 8, 4);
   uint32_t op2 = extract32(aFetchedOpcode.theOpcode, 5, 3);
 

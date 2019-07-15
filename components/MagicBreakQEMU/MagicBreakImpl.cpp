@@ -282,7 +282,7 @@ public:
       theTrackers.push_back(con_tracker);
       theConsoleStringObject = theConBreakFactory.create("console-tracker");
       theConsoleStringObject->setConsoleStringTracker(con_tracker);
-    } catch (QemuException e) {
+    } catch (QemuException &e) {
       DBG_(Crit, (<< "Cannot support graphical console. Need to switch to "
                      "string-based terminal"));
       exit(1);

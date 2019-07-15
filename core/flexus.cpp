@@ -970,7 +970,7 @@ void callQMP(Flexus::Qemu::API::qmp_flexus_cmd_t aCMD, const char *anArgs) {
     } else {
       q.execute("");
     }
-  } catch (qmp_not_implemented) {
+  } catch (qmp_not_implemented &e) {
     DBG_(Crit, (<< "QMP call not implemented!"));
   }
 }

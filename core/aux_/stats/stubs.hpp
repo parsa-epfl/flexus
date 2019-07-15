@@ -75,7 +75,7 @@ protected:
     theNextUpdater = 0;
   }
 
-  void getNextUpdater() {
+  StatUpdater *getNextUpdater() {
     return theNextUpdater;
   }
   virtual void setNextUpdater(StatUpdater *aLink) {

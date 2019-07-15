@@ -89,7 +89,7 @@ arminst EXTR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
   uint32_t rd = extract32(aFetchedOpcode.theOpcode, 0, 5);
   uint32_t op21 = extract32(aFetchedOpcode.theOpcode, 29, 2);
   bool op0 = extract32(aFetchedOpcode.theOpcode, 21, 1);
-  bool bitsize = sf ? 64 : 32;
+  uint32_t bitsize = sf ? 64 : 32;
 
   if (sf != n || op21 || op0 || imm >= bitsize) {
     return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);

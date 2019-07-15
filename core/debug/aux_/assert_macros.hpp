@@ -5,7 +5,7 @@
 
 #undef DBG__internal_Assert
 #define DBG__internal_Assert(sev, condition, operations)                                           \
-  DBG__internal_PROCESS_DBG(sev, Assert() Condition((!(condition))) operations) /**/
+  DBG__internal_PROCESS_DBG(sev, Assert() Condition(!(condition)) operations) /**/
 
 #else // DBG_SetAssertions
 

@@ -900,7 +900,7 @@ Action InclusiveMOESI::handleBackMessage(MemoryTransport transport) {
     if (maf_entry->outstanding_msgs == 0) {
       bool sent_upgrade = (original_miss->type() == MemoryMessage::UpgradeReq);
       if (!maf_entry->data_received && result->state() != State::Invalid) {
-        DBG_Assert(MemoryMessage::WriteReq);
+        // DBG_Assert(MemoryMessage::WriteReq); //TODO FIXME
         tracker->setNetworkTrafficRequired(true);
         tracker->setResponder(theNodeId);
         if (!tracker->fillLevel()) {
