@@ -39,6 +39,7 @@
 #include <chrono>
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <core/types.hpp>
+#include <ctime>
 #include <iomanip>
 #include <iostream>
 #include <list>
@@ -46,7 +47,7 @@
 #include <boost/polymorphic_pointer_cast.hpp>
 #include <boost/throw_exception.hpp>
 #define __STDC_CONSTANT_MACROS
-#include <boost/date_time/posix_time/posix_time.hpp>
+// #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
 namespace ll = boost::lambda;
@@ -294,8 +295,8 @@ public:
   void skipCycle() {
     FLEXUS_PROFILE();
     if ((theCPU->id() == 0) && ((theFlexus->cycleCount() % 10000) == 0)) {
-      boost::posix_time::ptime now(boost::posix_time::second_clock::local_time());
-      DBG_(Dev, (<< "Timestamp: " << boost::posix_time::to_simple_string(now)));
+      time_t now = time(0);
+      DBG_(Dev, (<< "Timestamp: " << ctime(&now)));
     }
 
     //    if (theDriveClients) {

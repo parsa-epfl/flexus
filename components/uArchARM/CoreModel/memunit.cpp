@@ -522,7 +522,7 @@ void CoreImpl::pushTranslation(TranslationPtr aTranslation) {
     //        lsq_entry->theDependance->squash();
     //        insn->squash();
     insn->pageFault();
-    //        squashAfter(insn);
+    //        squashFrom(insn);
   }
 
   DBG_Assert(lsq_entry->thePaddr != kInvalid);

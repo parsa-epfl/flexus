@@ -419,7 +419,7 @@ void BranchInteraction::operator()(boost::intrusive_ptr<nuArchARM::Instruction> 
   }
   if (anInstruction->redirectPC(theTarget)) {
     DBG_(Verb, (<< *anInstruction << " Branch Redirection."));
-    if (aCore.squashAfter(anInstruction)) {
+    if (aCore.squashFrom(anInstruction)) {
       aCore.redirectFetch(theTarget);
     }
   }

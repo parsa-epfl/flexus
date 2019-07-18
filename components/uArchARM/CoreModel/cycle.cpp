@@ -1134,9 +1134,10 @@ void CoreImpl::commitStore(boost::intrusive_ptr<Instruction> anInsn) {
 
 void CoreImpl::retire() {
   FLEXUS_PROFILE();
-  bool stop_retire;
+  bool stop_retire = false;
 
   if (theROB.empty()) {
+    CORE_DBG("ROB is empty! ->" << theROB.size());
     return;
   }
 
@@ -1163,22 +1164,17 @@ void CoreImpl::retire() {
         theROB.front()->instClass() == clsAtomic && !theROB.front()->isAnnulled() &&
         (static_cast<int>(theCheckpoints.size())) >= theAllowedSpeculativeCheckpoints) {
       DBG_(VVerb, (<< " theROB.front()->instClass() == clsAtomic "));
-
       break;
     }
 
     if ((thePendingInterrupt != kException_None) && theIsSpeculating) {
       // stop retiring so we can stop speculating and handle the interrupt
       DBG_(VVerb, (<< " thePendingInterrupt && theIsSpeculating "));
-
       break;
     }
 
     if ((theROB.front()->resync() || (theROB.front() == theInterruptInstruction)) &&
         theIsSpeculating) {
-      DBG_(VVerb, (<< " Do not retire sync instructions or interrupts while "
-                      "speculating "));
-
       // Do not retire sync instructions or interrupts while speculating
       break;
     }
@@ -1186,9 +1182,16 @@ void CoreImpl::retire() {
     // Stop retirement for the cycle if we retire an instruction that
     // requires resynchronization
     if (theROB.front()->resync()) {
-      DBG_(VVerb, (<< " resync requested "));
-
       stop_retire = true;
+    }
+
+    if (theSquashRequested && (theROB.begin() == theSquashInstruction)) {
+      if (!theSquashInclusive) {
+        ++theSquashInstruction;
+        theSquashInclusive = true;
+      } else {
+        break;
+      }
     }
 
     // FOR in-order SMS Experiments only - not normal in-order
@@ -1206,7 +1209,6 @@ void CoreImpl::retire() {
     CORE_DBG(theName << " Retire:" << *theROB.front());
     if (!acceptInterrupt()) {
       theROB.front()->checkTraps(); // take traps only if we don't take interrupt
-      DBG_(VVerb, (<< "take traps only if we don't take interrupts"));
     }
     if (thePendingTrap != kException_None) {
       theROB.front()->changeInstCode(codeException);
@@ -1231,20 +1233,6 @@ void CoreImpl::retire() {
 
     accountRetire(theROB.front());
 
-    if (theSquashRequested && (theROB.begin() == theSquashInstruction)) {
-      if (!theSquashInclusive) {
-        ++theSquashInstruction;
-        theSquashInclusive = true;
-        DBG_(VVerb, (<< "!theSquashInclusive"));
-
-      } else {
-        DBG_(VVerb, (<< "!theSquashRequested && (theROB.begin() == "
-                        "theSquashInstruction"));
-        stop_retire = true;
-        continue;
-      }
-    }
-
     ++theRetireCount;
     if (theRetireCount >= theRetireWidth) {
       stop_retire = true;
@@ -1256,17 +1244,14 @@ void CoreImpl::retire() {
     thePC = theROB.front()->pc() + 4;
     // DBG_(Dev, ( << theName << " PC: " << std::hex << thePC << std::dec ) );
 
-    CORE_DBG("instruction to the secondary retirement buffer " << *(theROB.front()));
+    CORE_DBG("Move instruction to the secondary retirement buffer " << *(theROB.front()));
     theSRB.push_back(theROB.front());
-    // DBG_( VVerb, ( << "theSRB.push_back(theROB.front())" ));
 
     if (thePendingTrap == kException_None) {
-      theROB.pop_front(); // Need to squash and retire instructions that cause
-                          // traps
+      theROB.pop_front();
+      // Need to squash and retire instructions that cause traps
     }
   }
-  if (theROB.size() == 0)
-    CORE_DBG("ROB is empty! ->" << theROB.size());
 }
 
 void CoreImpl::doAbortSpeculation() {
@@ -1597,7 +1582,7 @@ void CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction) {
   DBG_(VVerb, (<< std::internal << *anInstruction << std::left));
 }
 
-bool CoreImpl::squashAfter(boost::intrusive_ptr<Instruction> anInsn) {
+bool CoreImpl::squashFrom(boost::intrusive_ptr<Instruction> anInsn) {
   if (!theSquashRequested || (anInsn->sequenceNo() <= (*theSquashInstruction)->sequenceNo())) {
     theSquashRequested = true;
     theSquashReason = kBranchMispredict;

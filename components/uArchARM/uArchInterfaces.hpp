@@ -782,7 +782,7 @@ struct uArchARM {
                                 boost::intrusive_ptr<Interaction> anInteraction) {
     DBG_Assert(false);
   }
-  virtual bool squashAfter(boost::intrusive_ptr<Instruction> anInsn) {
+  virtual bool squashFrom(boost::intrusive_ptr<Instruction> anInsn) {
     DBG_Assert(false);
     return false;
   }

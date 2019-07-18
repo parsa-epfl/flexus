@@ -181,7 +181,7 @@ Effect *allocateRMW(SemanticInstruction *inst, eSize aSize, InternalDependance c
 Effect *eraseLSQ(SemanticInstruction *inst);
 Effect *allocateStore(SemanticInstruction *inst, eSize aSize, bool aBypassSB,
                       nuArchARM::eAccType type);
-Effect *allocateMEMBAR(SemanticInstruction *inst);
+Effect *allocateMEMBAR(SemanticInstruction *inst, eAccType type);
 Effect *retireMem(SemanticInstruction *inst);
 Effect *commitStore(SemanticInstruction *inst);
 Effect *accessMem(SemanticInstruction *inst);

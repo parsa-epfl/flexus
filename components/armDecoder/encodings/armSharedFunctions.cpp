@@ -453,7 +453,7 @@ void MEMBAR(SemanticInstruction *inst, uint32_t anAccess) {
 
     // ordering implementation - allows TSO++ speculation
     inst->addRetirementConstraint(membarSyncConstraint(inst));
-    inst->addDispatchEffect(allocateMEMBAR(inst));
+    inst->addDispatchEffect(allocateMEMBAR(inst, kAccType_ATOMIC));
     inst->addSquashEffect(eraseLSQ(inst));
     inst->addRetirementEffect(retireMem(inst));
     inst->addCommitEffect(eraseLSQ(inst)); // The LSQ entry may already be gone if the MEMBAR

@@ -406,23 +406,27 @@ void SemanticInstruction::describe(std::ostream &anOstream) const {
   }
 }
 
-// eExceptionType SemanticInstruction::retryTranslation() {
-//  Flexus::SharedTypes::Translation xlat;
-//  xlat.theVaddr = pc();
-//  //xlat.theTL = core()->getTL();
-//  xlat.thePSTATE = core()->getPSTATE();
-//  xlat.theType = Flexus::SharedTypes::Translation::eFetch;
-//  Flexus::Qemu::Processor::getProcessor(theCPU)->translate(xlat);
-//  return kException_None/*xlat.theException*/;
-//}
+eExceptionType SemanticInstruction::retryTranslation() {
+  DBG_Assert(false);
+  return eExceptionType(NULL);
+  //  Flexus::SharedTypes::Translation xlat;
+  //  xlat.theVaddr = pc();
+  //  //xlat.theTL = core()->getTL();
+  //  xlat.thePSTATE = core()->getPSTATE();
+  //  xlat.theType = Flexus::SharedTypes::Translation::eFetch;
+  //  Flexus::Qemu::Processor::getProcessor(theCPU)->translate(xlat);
+  //  return kException_None/*xlat.theException*/;
+}
 
-// PhysicalMemoryAddress SemanticInstruction::translate() {
-//  Flexus::SharedTypes::Translation xlat;
-//  xlat.theVaddr = pc();
-//  xlat.thePSTATE = core()->getPSTATE();
-//  xlat.theType = Flexus::SharedTypes::Translation::eFetch;
-//  Flexus::Qemu::Processor::getProcessor(theCPU)->translate(xlat);
-//  return xlat.thePaddr;
-//}
+PhysicalMemoryAddress SemanticInstruction::translate() {
+  DBG_Assert(false);
+  return PhysicalMemoryAddress(0);
+  //  Flexus::SharedTypes::Translation xlat;
+  //  xlat.theVaddr = pc();
+  //  xlat.thePSTATE = core()->getPSTATE();
+  //  xlat.theType = Flexus::SharedTypes::Translation::eFetch;
+  //  Flexus::Qemu::Processor::getProcessor(theCPU)->translate(xlat);
+  //  return xlat.thePaddr;
+}
 
 } // namespace narmDecoder
