@@ -70,12 +70,12 @@ void CoreImpl::invalidate(PhysicalMemoryAddress anAddress) {
           DBG_Assert(violator_memq != theMemQueue.get<by_insn>().end());
           if (!violator_memq->theSpeculatedValue) {
             // must roll back
-            DBG_(Dev, (<< theName << " SLAT hit required " << anAddress
-                       << " for: " << *violator_memq << " because value is no longer speculative"));
+            DBG_(Iface, (<< theName << " SLAT hit required " << anAddress << " for: "
+                         << *violator_memq << " because value is no longer speculative"));
             violator = iter->second;
           } else {
-            DBG_(Dev, (<< theName << " avoided SLAT hit on " << anAddress
-                       << " for: " << *violator_memq << " because value is still speculative"));
+            DBG_(Iface, (<< theName << " avoided SLAT hit on " << anAddress
+                         << " for: " << *violator_memq << " because value is still speculative"));
             ++theSLATHits_AtomicAvoided;
           }
         } else {
@@ -414,10 +414,10 @@ void CoreImpl::complete(MemOp const &anOperation) {
         DBG_Assert(item != thePageWalkRequests.end());
         item->second->rawTTEValue = (uint64_t)anOperation.theValue;
         item->second->toggleReady();
-        DBG_(Dev, (<< "Process Memory Reply for ID( " << item->second->theID << ") ready("
-                   << item->second->isReady() << ")  -- vaddr: " << anOperation.theVAddr
-                   << "  -- paddr: " << anOperation.thePAddr << "  --  Instruction: "
-                   << anOperation.theInstruction << " --  PC: " << anOperation.thePC));
+        DBG_(Iface, (<< "Process Memory Reply for ID( " << item->second->theID << ") ready("
+                     << item->second->isReady() << ")  -- vaddr: " << anOperation.theVAddr
+                     << "  -- paddr: " << anOperation.thePAddr << "  --  Instruction: "
+                     << anOperation.theInstruction << " --  PC: " << anOperation.thePC));
 
         thePageWalkRequests.erase(item);
       }
@@ -506,8 +506,8 @@ void CoreImpl::completeLSQ(memq_t::index<by_insn>::type::iterator lsq_entry,
       DBG_Assert(theIsSpeculating);
       if (anOperation.theValue != *lsq_entry->theExtendedValue) {
         // Speculation was wrong.
-        DBG_(Dev, (<< theName << " Value mispredict Predicted: " << *lsq_entry->theExtendedValue
-                   << " actual: " << anOperation.theValue << " LSQ entry: " << *lsq_entry));
+        DBG_(Iface, (<< theName << " Value mispredict Predicted: " << *lsq_entry->theExtendedValue
+                     << " actual: " << anOperation.theValue << " LSQ entry: " << *lsq_entry));
         theViolatingInstruction = lsq_entry->theInstruction;
         theAbortSpeculation = true;
         ++theValuePredictions_Failed;

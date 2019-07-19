@@ -141,9 +141,9 @@ void SemanticInstruction::setMayRetire(int32_t aBit, bool aFlag) {
   SEMANTICS_DBG("aBit = " << aBit << ", aFlag = " << aFlag << ", " << *this);
   theRetirementDepends[aBit] = aFlag;
   if (mayRetire() && !may_retire) {
-    DBG_(Dev, (<< identify() << " may retire"));
+    DBG_(Iface, (<< identify() << " may retire"));
   } else if (!mayRetire() && may_retire) {
-    DBG_(Dev, (<< identify() << " may not retire"));
+    DBG_(Iface, (<< identify() << " may not retire"));
   }
 }
 

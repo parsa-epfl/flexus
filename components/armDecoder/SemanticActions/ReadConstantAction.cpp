@@ -77,8 +77,8 @@ struct ReadConstantAction : public BaseSemanticAction {
   }
 
   void doEvaluate() {
-    DBG_(Dev, (<< "Reading constant: 0x" << std::hex << theVal << std::dec << " into "
-               << theOperandCode));
+    DBG_(Iface, (<< "Reading constant: 0x" << std::hex << theVal << std::dec << " into "
+                 << theOperandCode));
     theInstruction->setOperand(theOperandCode, theVal);
 
     satisfyDependants();

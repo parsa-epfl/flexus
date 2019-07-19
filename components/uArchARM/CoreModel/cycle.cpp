@@ -308,7 +308,7 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
   //  handlePopTL();
 
   if (theRedirectRequested) {
-    DBG_(Dev, (<< " Core triggering Redirect to " << theRedirectPC));
+    DBG_(Iface, (<< " Core triggering Redirect to " << theRedirectPC));
     redirect_fn(theRedirectPC);
     thePC = theRedirectPC;
     theRedirectRequested = false;
@@ -530,7 +530,7 @@ void CoreImpl::requireWritePermission(memq_t::index<by_insn>::type::iterator aWr
   if (aWrite->thePaddr > 0) {
     std::map<PhysicalMemoryAddress, std::pair<int, bool>>::iterator sbline;
     bool is_new;
-    DBG_(Dev, (<< theName << "requireWritePermission : " << *aWrite));
+    DBG_(Iface, (<< theName << "requireWritePermission : " << *aWrite));
     std::tie(sbline, is_new) =
         theSBLines_Permission.insert(std::make_pair(addr, std::make_pair(1, false)));
     if (is_new) {
@@ -1242,7 +1242,6 @@ void CoreImpl::retire() {
     theValuePredictInhibit = false;
 
     thePC = theROB.front()->pc() + 4;
-    // DBG_(Dev, ( << theName << " PC: " << std::hex << thePC << std::dec ) );
 
     CORE_DBG("Move instruction to the secondary retirement buffer " << *(theROB.front()));
     theSRB.push_back(theROB.front());
@@ -1508,7 +1507,7 @@ void CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction) {
     CORE_DBG("Instruction is neither annuled nor is a micro-op");
 
     validation_passed &= anInstruction->preValidate();
-    DBG_(Dev, (<< "Pre Validating... " << validation_passed));
+    DBG_(Iface, (<< "Pre Validating... " << validation_passed));
 
     //    DBG_( VVerb, Condition(!validation_passed) ( << *anInstruction <<
     //    "Prevalidation failure." ) ); bool take_interrupt =
@@ -1563,10 +1562,10 @@ void CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction) {
     throw ResynchronizeWithQemuException(true);
   }
 
-  validation_passed &= checkValidatation();
+  // validation_passed &= checkValidatation();
 
   validation_passed &= anInstruction->postValidate();
-  DBG_(Dev, (<< "Post Validating... " << validation_passed));
+  DBG_(Iface, (<< "Post Validating... " << validation_passed));
 
   if (!validation_passed) {
     DBG_(Dev, (<< "Failed Validated " << std::internal << *anInstruction << std::left));
@@ -1578,7 +1577,7 @@ void CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction) {
 
     throw ResynchronizeWithQemuException();
   }
-  DBG_(Dev, (<< "uARCH Validated "));
+  DBG_(Iface, (<< "uARCH Validated "));
   DBG_(VVerb, (<< std::internal << *anInstruction << std::left));
 }
 
@@ -1595,7 +1594,7 @@ bool CoreImpl::squashFrom(boost::intrusive_ptr<Instruction> anInsn) {
 }
 
 void CoreImpl::redirectFetch(VirtualMemoryAddress anAddress) {
-  DBG_(Dev, (<< "redirectFetch anAddress: " << anAddress));
+  DBG_(Iface, (<< "redirectFetch anAddress: " << anAddress));
   theRedirectRequested = true;
   theRedirectPC = anAddress;
 }

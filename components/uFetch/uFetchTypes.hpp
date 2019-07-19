@@ -133,20 +133,20 @@ struct FetchBundle : public boost::counted_base {
 
   void updateOpcode(VirtualMemoryAddress anAddress, Opcode anOpcode) {
     for (FetchedOpcode &i : theOpcodes) {
-      DBG_(Dev, (<< "comparing entries " << anAddress << " with " << i.thePC));
+      DBG_(Iface, (<< "comparing entries " << anAddress << " with " << i.thePC));
 
       if (i.thePC == anAddress) {
         i.theOpcode = anOpcode;
         return;
       }
     }
-    DBG_(Dev, (<< "didnt find opcode entry for " << anAddress));
+    DBG_(Iface, (<< "didnt find opcode entry for " << anAddress));
     DBG_Assert(false);
   }
 
   void clear() {
     for (auto &i : theOpcodes) {
-      DBG_(Dev, (<< "deleting opcode entry for " << i.thePC));
+      DBG_(Iface, (<< "deleting opcode entry for " << i.thePC));
     }
     theOpcodes.clear();
     theFillLevels.clear();

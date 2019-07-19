@@ -93,7 +93,7 @@ struct WritebackAction : public BaseSemanticAction {
   void doEvaluate() {
 
     if (ready()) {
-      DBG_(Dev, (<< "Writing " << theResult << " to " << theRd));
+      DBG_(Iface, (<< "Writing " << theResult << " to " << theRd));
 
       register_value result =
           boost::apply_visitor(register_value_extractor(), theInstruction->operand(theResult));
@@ -106,7 +106,7 @@ struct WritebackAction : public BaseSemanticAction {
         result = res;
         theInstruction->setOperand(theResult, res);
       }
-      DBG_(Dev,
+      DBG_(Iface,
            (<< "Writing " << std::hex << result << std::dec << " to " << r << "-REG ->" << name));
       core()->writeRegister(name, result, !the64);
       DBG_(VVerb, (<< *this << " rd= " << name << " result=" << result));
@@ -155,7 +155,7 @@ struct WriteccAction : public BaseSemanticAction {
       }
       ccresult &= ~(0xF << 28);
       ccresult |= flags;
-      DBG_(Dev,
+      DBG_(Iface,
            (<< "Writing to CC: " << std::hex << ccresult << ", " << std::dec << *theInstruction));
       core()->writeRegister(name, ccresult, false);
       core()->bypass(name, ccresult);

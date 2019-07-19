@@ -244,8 +244,8 @@ typedef struct AND : public Operation {
   }
   virtual Operand operator()(std::vector<Operand> const &operands) {
     DBG_Assert(operands.size() == 2);
-    DBG_(Dev, (<< "ANDING " << std::hex << boost::get<uint64_t>(operands[0]) << " & "
-               << boost::get<uint64_t>(operands[1]) << std::dec));
+    DBG_(Iface, (<< "ANDING " << std::hex << boost::get<uint64_t>(operands[0]) << " & "
+                 << boost::get<uint64_t>(operands[1]) << std::dec));
     return (boost::get<uint64_t>(operands[0]) & boost::get<uint64_t>(operands[1]));
   }
   virtual char const *describe() const {

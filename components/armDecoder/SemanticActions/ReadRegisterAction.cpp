@@ -103,7 +103,7 @@ struct ReadRegisterAction : public BaseSemanticAction {
   }
 
   void doEvaluate() {
-    DBG_(Dev, (<< *this));
+    DBG_(Iface, (<< *this));
 
     theSP = false;
 
@@ -163,8 +163,8 @@ struct ReadRegisterAction : public BaseSemanticAction {
     }
     aValue = val;
 
-    DBG_(Dev, (<< "Reading register " << theRegisterCode << " with a value " << std::hex << aValue
-               << std::dec));
+    DBG_(Iface, (<< "Reading register " << theRegisterCode << " with a value " << std::hex << aValue
+                 << std::dec));
 
     theInstruction->setOperand(theOperandCode, val);
     satisfyDependants();

@@ -103,7 +103,7 @@ struct UpdateStoreValueAction : public PredicatedSemanticAction {
     if (!cancelled()) {
       if (thePredicate && ready()) {
         uint64_t value = theInstruction->operand<uint64_t>(theOperandCode);
-        DBG_(Dev, (<< *this << " updating store value=" << value));
+        DBG_(Iface, (<< *this << " updating store value=" << value));
         core()->updateStoreValue(boost::intrusive_ptr<Instruction>(theInstruction), value);
         satisfyDependants();
       }
@@ -173,7 +173,7 @@ struct UpdateSTPValueAction : public BaseSemanticAction {
     if (ready()) {
       if (theInstruction->hasOperand(theOperand)) {
         bits value = theInstruction->operand<bits>(theOperand);
-        DBG_(Dev,
+        DBG_(Iface,
              (<< *this << " updating store value " << value << " from operand " << theOperand));
         core()->updateStoreValue(boost::intrusive_ptr<Instruction>(theInstruction), value);
         satisfyDependants();

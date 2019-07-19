@@ -176,8 +176,8 @@ struct FreeMappingEffect : public Effect {
   void invoke(SemanticInstruction &anInstruction) {
     FLEXUS_PROFILE();
     mapped_reg mapping(anInstruction.operand<mapped_reg>(theMappingCode));
-    DBG_(Dev, (<< anInstruction.identify() << " MapEffect free mapping for " << theMappingCode
-               << "(" << mapping << ")"));
+    DBG_(Iface, (<< anInstruction.identify() << " MapEffect free mapping for " << theMappingCode
+                 << "(" << mapping << ")"));
     anInstruction.core()->free(mapping);
     Effect::invoke(anInstruction);
   }
@@ -470,8 +470,8 @@ struct BranchFeedbackWithOperandEffect : public Effect {
     feedback->theActualType = theType;
     feedback->theActualDirection = theDirection;
     VirtualMemoryAddress target(anInstruction.operand<uint64_t>(theOperandCode));
-    DBG_(Dev, (<< anInstruction << " Update Branch predictor: " << theType << " " << theDirection
-               << " to " << target));
+    DBG_(Iface, (<< anInstruction << " Update Branch predictor: " << theType << " " << theDirection
+                 << " to " << target));
     feedback->theActualTarget = target;
     feedback->theBPState = anInstruction.bpState();
     anInstruction.core()->branchFeedback(feedback);
@@ -543,7 +543,7 @@ struct BranchEffect : public Effect {
     anInstruction.redirectPC(theTarget);
     anInstruction.core()->applyToNext(boost::intrusive_ptr<nuArchARM::Instruction>(&anInstruction),
                                       branchInteraction(theTarget));
-    DBG_(Dev, (<< "BRANCH:  Must redirect to " << theTarget));
+    DBG_(Iface, (<< "BRANCH:  Must redirect to " << theTarget));
     Effect::invoke(anInstruction);
   }
   void describe(std::ostream &anOstream) const {
@@ -985,7 +985,7 @@ struct ReadPREffect : public Effect {
       uint64_t pr = anInstruction.core()->readPR(thePR);
       mapped_reg name = anInstruction.operand<mapped_reg>(kPD);
       SysRegInfo &ri = getPriv(thePR);
-      DBG_(Dev,
+      DBG_(Iface,
            (<< anInstruction << " Read " << ri.name << " value= " << std::hex << pr << std::dec));
 
       uint64_t prVal = ri.readfn(anInstruction.core());
@@ -1029,7 +1029,7 @@ struct WritePREffect : public Effect {
       } else if (anInstruction.hasOperand(kResult1)) {
         rs = anInstruction.operand<uint64_t>(kResult1);
       }
-      DBG_(Dev,
+      DBG_(Iface,
            (<< anInstruction << " Write " << ri.name << " value= " << std::hex << rs << std::dec));
 
       ri.writefn(anInstruction.core(), (uint64_t)rs);
@@ -1275,11 +1275,11 @@ Effect *exceptionEffect(SemanticInstruction *inst, eExceptionType aType) {
 
 struct CommitStoreEffect : public Effect {
   void invoke(SemanticInstruction &anInstruction) {
-    DBG_(Dev, (<< anInstruction.identify() << " CommitStoreEffect "));
+    DBG_(Iface, (<< anInstruction.identify() << " CommitStoreEffect "));
 
     FLEXUS_PROFILE();
     anInstruction.core()->commitStore(boost::intrusive_ptr<nuArchARM::Instruction>(&anInstruction));
-    DBG_(Dev, (<< anInstruction << " Commit store instruction"));
+    DBG_(Iface, (<< anInstruction << " Commit store instruction"));
     Effect::invoke(anInstruction);
   }
 

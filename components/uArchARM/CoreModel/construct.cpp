@@ -416,7 +416,6 @@ uint32_t CoreImpl::getPSTATE() {
 }
 void CoreImpl::setPSTATE(uint32_t aPSTATE) {
   thePSTATE = aPSTATE;
-  DBG_(Dev, (<< "setting PSTATE: " << thePSTATE));
 }
 uint64_t CoreImpl::getTPIDR(uint8_t anEL) {
   return Flexus::Qemu::Processor::getProcessor(theNode)->readTPIDR(anEL);
@@ -468,7 +467,6 @@ void CoreImpl::setDAIF(uint32_t aDAIF) {
     return;
   }
   thePSTATE = ((thePSTATE & ~PSTATE_DAIF) | (aDAIF & PSTATE_DAIF));
-  DBG_(Dev, (<< "PSATE after DAIF: " << thePSTATE));
 }
 void CoreImpl::setPC(uint64_t aPC) {
   thePC = aPC;

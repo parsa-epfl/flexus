@@ -346,8 +346,8 @@ public:
           }
         }
         DBG_Assert(item->isInstr() != item->isData());
-        DBG_(Dev, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry "
-                   << item->theVaddr));
+        DBG_(Iface, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry "
+                     << item->theVaddr));
         (item->isInstr() ? theInstrTLB
                          : theDataTLB)[(VirtualMemoryAddress)(item->theVaddr & PAGEMASK)] =
             (PhysicalMemoryAddress)(item->thePaddr & PAGEMASK);

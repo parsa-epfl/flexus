@@ -146,8 +146,8 @@ void CoreImpl::forwardValue(MemQueueEntry const &aStore,
         assert(false);
         //        aLoad->loadValue() = bits(Flexus::Qemu::endianFlip(
         //        (*aStore.theValue), aStore.theSize));
-        DBG_(Dev, (<< "Inverse endian forwarding of " << *aStore.theValue << " from " << aStore
-                   << " to " << *aLoad << " load value: " << aLoad->loadValue()));
+        DBG_(Iface, (<< "Inverse endian forwarding of " << *aStore.theValue << " from " << aStore
+                     << " to " << *aLoad << " load value: " << aLoad->loadValue()));
       }
       signalStoreForwardingHit_fn(true);
     } else {
@@ -158,8 +158,8 @@ void CoreImpl::forwardValue(MemQueueEntry const &aStore,
                       << aStore));
         } else {
           writeAligned(*aLoad, align(aStore, true));
-          DBG_(Dev, (<< "Inverse endian forwarding of " << *aStore.theValue << " from " << aStore
-                     << " to " << *aLoad << " load value: " << aLoad->loadValue()));
+          DBG_(Iface, (<< "Inverse endian forwarding of " << *aStore.theValue << " from " << aStore
+                       << " to " << *aLoad << " load value: " << aLoad->loadValue()));
         }
         signalStoreForwardingHit_fn(true);
       } else {

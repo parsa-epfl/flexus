@@ -316,7 +316,6 @@ flexus.set "-memory:max_requests"                              "32" # "Maximum r
 flexus.set "-memory:InterconnectDelay"                         "20" # Circuitry delay in nanoseconds
 
 ### Custom
-flexus.set "-mmu:perfecttlb"                                 "true" #
 flexus.set "-L1d:array_config"                      "STD:size=32768:assoc=2:repl=LRU" #
 flexus.set "-L1d:size"                                      "32768" #
 flexus.set "-L2:array_config"                           "STD:total_sets=2048:assoc=16:repl=LRU" #

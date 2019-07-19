@@ -298,7 +298,7 @@ void CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction) {
     }
   }
 
-  DBG_(Tmp, (<< "Attempting to issue a memory requst for " << lsq_entry->thePaddr));
+  DBG_(Iface, (<< "Attempting to issue a memory requst for " << lsq_entry->thePaddr));
   DBG_Assert(lsq_entry->thePaddr != 0);
 
   eOperation issue_op = lsq_entry->theOperation;
@@ -493,8 +493,8 @@ void CoreImpl::issueMMU(TranslationPtr aTranslation) {
   bool ignored;
   /*std::tie(lsq_entry->theMSHR, ignored) = */ theMSHRs.insert(std::make_pair(mshr.thePaddr, mshr));
   theMemoryPorts.push_back(op);
-  DBG_(Dev, (<< theName << " "
-             << " issuing translation operation " << *op << "  -- ID " << aTranslation->theID));
+  DBG_(Iface, (<< theName << " "
+               << " issuing translation operation " << *op << "  -- ID " << aTranslation->theID));
   bool inserted =
       thePageWalkRequests.emplace(std::make_pair(aTranslation->theVaddr, aTranslation)).second;
   while (!inserted) {

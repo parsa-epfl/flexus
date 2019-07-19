@@ -109,12 +109,12 @@ struct BranchCondAction : public BaseSemanticAction {
           theInstruction->redirectPC(theTarget);
           core()->applyToNext(theInstruction, branchInteraction(theTarget));
           feedback->theActualDirection = kTaken;
-          DBG_(Dev, (<< "Branch taken! " << *theInstruction));
+          DBG_(Iface, (<< "Branch taken! " << *theInstruction));
         } else {
           theInstruction->redirectPC(theInstruction->pc() + 4);
           core()->applyToNext(theInstruction, branchInteraction(theInstruction->pc() + 4));
           feedback->theActualDirection = kNotTaken;
-          DBG_(Dev, (<< "Branch Not taken! " << *theInstruction));
+          DBG_(Iface, (<< "Branch Not taken! " << *theInstruction));
         }
         theInstruction->setBranchFeedback(feedback);
 
@@ -158,7 +158,7 @@ struct BranchRegAction : public BaseSemanticAction {
 
       if (theInstruction->hasPredecessorExecuted()) {
 
-        DBG_(Dev, (<< *this << " Branching to an address held in register " << theRegOperand));
+        DBG_(Iface, (<< *this << " Branching to an address held in register " << theRegOperand));
 
         uint64_t target = boost::get<uint64_t>(theInstruction->operand<uint64_t>(kOperand1));
 
@@ -171,8 +171,8 @@ struct BranchRegAction : public BaseSemanticAction {
         feedback->theBPState = theInstruction->bpState();
         theInstruction->setBranchFeedback(feedback);
 
-        DBG_(Dev, (<< *this << " Checking for redirection PC= " << theInstruction->pc()
-                   << " target= " << theTarget));
+        DBG_(Iface, (<< *this << " Checking for redirection PC= " << theInstruction->pc()
+                     << " target= " << theTarget));
 
         theInstruction->redirectPC(theTarget);
         core()->applyToNext(theInstruction, branchInteraction(theTarget));
@@ -214,7 +214,7 @@ struct BranchToCalcAddressAction : public BaseSemanticAction {
         // retirement
         uint64_t target = theInstruction->operand<uint64_t>(theTarget);
         VirtualMemoryAddress target_addr(target);
-        DBG_(Dev, (<< *this << " branc to mapped_reg target: " << target_addr));
+        DBG_(Iface, (<< *this << " branc to mapped_reg target: " << target_addr));
 
         theInstruction->redirectPC(target_addr);
         core()->applyToNext(theInstruction, branchInteraction(target_addr));

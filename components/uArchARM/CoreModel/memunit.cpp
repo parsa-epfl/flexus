@@ -308,7 +308,7 @@ void CoreImpl::accessMem(PhysicalMemoryAddress anAddress,
   }
   memq_t::index<by_insn>::type::iterator iter = theMemQueue.get<by_insn>().find(anInsn);
   if (iter != theMemQueue.get<by_insn>().end() && iter->isAtomic() && iter->theQueue == kSSB) {
-    DBG_(Dev, (<< theName << " atomic committing in body of checkpoint " << *iter));
+    DBG_(Iface, (<< theName << " atomic committing in body of checkpoint " << *iter));
     // theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSB;
     // });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
     ValueTracker::valueTracker(theNode).access(theNode, anAddress);
@@ -475,7 +475,7 @@ bool CoreImpl::canPushMemOp() {
 
 void CoreImpl::pushMemOp(boost::intrusive_ptr<MemOp> anOp) {
   theMemoryReplies.push_back(anOp);
-  DBG_(Dev, (<< " Received: " << *anOp));
+  DBG_(Iface, (<< " Received: " << *anOp));
 }
 
 boost::intrusive_ptr<MemOp> CoreImpl::popMemOp() {
@@ -513,10 +513,10 @@ void CoreImpl::pushTranslation(TranslationPtr aTranslation) {
   if (!insn->resync() && !(aTranslation->isPagefault())) {
     resolvePAddr(insn, aTranslation->thePaddr);
 
-    DBG_(Dev,
+    DBG_(Iface,
          (<< "Resolved.. vaddr: " << lsq_entry->theVaddr << " to paddr " << lsq_entry->thePaddr));
   } else {
-    DBG_(Dev, (<< "Not Resolved.. vaddr: " << lsq_entry->theVaddr << " due to resync."));
+    DBG_(Iface, (<< "Not Resolved.. vaddr: " << lsq_entry->theVaddr << " due to resync."));
 
     lsq_entry->theException = kException_UNCATEGORIZED;
     //        lsq_entry->theDependance->squash();
@@ -635,8 +635,8 @@ void CoreImpl::translate(boost::intrusive_ptr<Instruction> anInsn) {
   tr->setData();
   tr->setInstruction(anInsn);
 
-  DBG_(Dev, (<< "Sending Translation Request to MMU: " << *anInsn << ", VAddr: " << tr->theVaddr
-             << ", ID: " << tr->theID));
+  DBG_(Iface, (<< "Sending Translation Request to MMU: " << *anInsn << ", VAddr: " << tr->theVaddr
+               << ", ID: " << tr->theID));
 
   theTranslationQueue.push(tr);
 }
@@ -964,8 +964,8 @@ void CoreImpl::updateStoreValue(boost::intrusive_ptr<Instruction> anInsn, bits a
   memq_t::index<by_insn>::type::iterator lsq_entry = theMemQueue.get<by_insn>().find(anInsn);
   DBG_Assert(lsq_entry != theMemQueue.get<by_insn>().end());
   DBG_Assert(lsq_entry->theOperation != kLoad);
-  DBG_(Dev, (<< "Updated store value for " << *lsq_entry << " to " << aValue
-             << "[:" << anExtendedValue << "]"));
+  DBG_(Iface, (<< "Updated store value for " << *lsq_entry << " to " << aValue
+               << "[:" << anExtendedValue << "]"));
 
   boost::optional<bits> previous_value(lsq_entry->theValue);
 

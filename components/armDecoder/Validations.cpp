@@ -80,6 +80,8 @@ bool validateXRegister::operator()() {
       (Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readXRegister(theReg)) &
       (the_64 ? -1LL : 0xFFFFFFFF);
 
+  if (flexus == qemu)
+    return true;
   DBG_(Dev, (<< "flexus value in " << std::setw(10) << theOperandCode << "  = " << std::hex
              << flexus << std::dec));
   DBG_(Dev, (<< "qemu value in   " << std::setw(10) << theReg << "  = " << std::hex << qemu
@@ -100,6 +102,8 @@ bool validatePC::operator()() {
   uint64_t flexus = thePreValidation ? theInstruction->pc() : theInstruction->pcOrig();
   uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPC();
 
+  if (flexus == qemu)
+    return true;
   DBG_(Dev, (<< "flexus PC value " << std::hex << flexus << std::dec));
   DBG_(Dev, (<< "qemu PC value   " << std::hex << qemu << std::dec));
 
@@ -138,6 +142,8 @@ bool validateMemory::operator()() {
     qemu_val |= c->readPhysicalAddress(paddr_spill, theSize_extra) << (theSize_orig * 8);
   }
 
+  if (flexus_val == qemu_val)
+    return true;
   DBG_(Dev, (<< "flexus value: " << std::hex << flexus_val));
   DBG_(Dev, (<< "qemu value:   " << std::hex << qemu_val));
 

@@ -81,7 +81,7 @@ struct OperandAction : public PredicatedSemanticAction {
   }
 
   void doEvaluate() {
-    DBG_(Dev, (<< *this << " evaluated"));
+    DBG_(Iface, (<< *this << " evaluated"));
     if (theBypass) {
       mapped_reg name = theInstruction->operand<mapped_reg>(*theBypass);
       uint64_t value = theInstruction->operand<uint64_t>(theOperand);

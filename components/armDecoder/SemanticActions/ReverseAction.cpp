@@ -195,7 +195,7 @@ struct CountAction : public PredicatedSemanticAction {
         break;
       }
 
-      DBG_(Dev, (<< "writing " << out_val << " into " << theOutputCode));
+      DBG_(Iface, (<< "writing " << out_val << " into " << theOutputCode));
       theInstruction->setOperand(theOutputCode, out_val);
       satisfyDependants();
     }

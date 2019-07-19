@@ -174,8 +174,8 @@ typedef struct BCOND : public Condition {
     //    uint32_t pstate =
     //    Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPSTATE();
 
-    //    DBG_(Dev, (<< "Flexus pstate = " <<
-    //    theInstruction->core()->getPSTATE())); DBG_(Dev, (<< "qemu pstate = "
+    //    DBG_(Iface, (<< "Flexus pstate = " <<
+    //    theInstruction->core()->getPSTATE())); DBG_(Iface, (<< "qemu pstate = "
     //    << pstate));
 
     return ConditionHolds(p, test);
@@ -190,23 +190,23 @@ std::unique_ptr<Condition> condition(eCondCode aCond) {
   std::unique_ptr<Condition> ptr;
   switch (aCond) {
   case kCBZ_:
-    DBG_(Dev, (<< "CBZ"));
+    DBG_(Iface, (<< "CBZ"));
     ptr.reset(new CMPBR());
     break;
   case kCBNZ_:
-    DBG_(Dev, (<< "CBNZ"));
+    DBG_(Iface, (<< "CBNZ"));
     ptr.reset(new CBNZ());
     break;
   case kTBZ_:
-    DBG_(Dev, (<< "kTBZ_"));
+    DBG_(Iface, (<< "kTBZ_"));
     ptr.reset(new TBZ());
     break;
   case kTBNZ_:
-    DBG_(Dev, (<< "TBNZ"));
+    DBG_(Iface, (<< "TBNZ"));
     ptr.reset(new TBNZ());
     break;
   case kBCOND_:
-    DBG_(Dev, (<< "BCOND"));
+    DBG_(Iface, (<< "BCOND"));
     ptr.reset(new BCOND());
     break;
   default:

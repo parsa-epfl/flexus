@@ -290,7 +290,7 @@ arminst LDAQ(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
   inst->addRetirementEffect(retireMem(inst));
   inst->addSquashEffect(eraseLSQ(inst));
 
-  DBG_(Dev, (<< "Loading with size " << sz));
+  DBG_(VVerb, (<< "Loading with size " << sz));
 
   predicated_dependant_action load;
   load = loadAction(inst, sz, kZeroExtend, kPD);
@@ -477,11 +477,11 @@ arminst LDP(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   if (index != kPostIndex) {
     if (index == kUnsignedOffset) {
       inst->setOperand(kUopAddressOffset, (uint64_t)imm7);
-      DBG_(Dev, (<< "setting unsigned offset #" << (uint64_t)imm7));
+      DBG_(VVerb, (<< "setting unsigned offset #" << (uint64_t)imm7));
 
     } else {
       inst->setOperand(kSopAddressOffset, imm7);
-      DBG_(Dev, (<< "setting signed offset #" << imm7));
+      DBG_(VVerb, (<< "setting signed offset #" << imm7));
     }
   }
 
@@ -543,11 +543,11 @@ arminst STP(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   if (index != kPostIndex) {
     if (index == kUnsignedOffset) {
       inst->setOperand(kUopAddressOffset, (uint64_t)imm7);
-      DBG_(Dev, (<< "setting unsigned offset #" << (uint64_t)imm7));
+      DBG_(VVerb, (<< "setting unsigned offset #" << (uint64_t)imm7));
 
     } else {
       inst->setOperand(kSopAddressOffset, imm7);
-      DBG_(Dev, (<< "setting signed offset #" << imm7));
+      DBG_(VVerb, (<< "setting signed offset #" << imm7));
     }
   }
 
@@ -596,7 +596,7 @@ arminst STR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   }
 
   eSize sz = dbSize(8 << size);
-  DBG_(Dev, (<< "Size " << sz));
+  DBG_(VVerb, (<< "Size " << sz));
 
   SemanticInstruction *inst(new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                     aFetchedOpcode.theBPState, aCPU, aSequenceNo));
@@ -653,18 +653,18 @@ arminst STR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
 
   if (index == kUnsignedOffset) {
     inst->setOperand(kUopAddressOffset, imm);
-    DBG_(Dev, (<< "setting unsigned offset " << std::hex << imm));
+    DBG_(VVerb, (<< "setting unsigned offset " << std::hex << imm));
   } else if (index == kNoOffset) {
     inst->setOperand(kSopAddressOffset, (int64_t)imm);
-    DBG_(Dev, (<< "setting signed offset no offset " << std::hex << imm));
+    DBG_(VVerb, (<< "setting signed offset no offset " << std::hex << imm));
   } else if (index == kPreIndex) {
     inst->setOperand(kSopAddressOffset, (int64_t)imm);
-    DBG_(Dev, (<< "setting signed offset preindex " << std::hex << imm));
+    DBG_(VVerb, (<< "setting signed offset preindex " << std::hex << imm));
     wb = operandAction(inst, kAddress, kResult1, imm, kPD1);
     connectDependance(wb.action->dependance(0), act);
   } else if (index == kPostIndex) {
     inst->setOperand(kOperand3, imm);
-    DBG_(Dev, (<< "setting signed offset postindex " << std::hex << imm));
+    DBG_(VVerb, (<< "setting signed offset postindex " << std::hex << imm));
     wb = addExecute(inst, operation(kADD_), {kOperand1, kOperand3}, rs2_deps, kResult1);
     inst->addDispatchEffect(satisfy(inst, wb.action->dependance(1)));
   }
@@ -728,7 +728,7 @@ arminst LDR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   }
 
   eSize sz = dbSize(8 << size);
-  DBG_(Dev, (<< "Size " << sz));
+  DBG_(VVerb, (<< "Size " << sz));
 
   SemanticInstruction *inst(new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                     aFetchedOpcode.theBPState, aCPU, aSequenceNo));
@@ -785,18 +785,18 @@ arminst LDR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
 
   if (index == kUnsignedOffset) {
     inst->setOperand(kUopAddressOffset, imm);
-    DBG_(Dev, (<< "setting unsigned offset " << std::hex << imm));
+    DBG_(VVerb, (<< "setting unsigned offset " << std::hex << imm));
   } else if (index == kNoOffset) {
     inst->setOperand(kSopAddressOffset, (int64_t)imm);
-    DBG_(Dev, (<< "setting signed offset no offset " << std::hex << imm));
+    DBG_(VVerb, (<< "setting signed offset no offset " << std::hex << imm));
   } else if (index == kPreIndex) {
     inst->setOperand(kSopAddressOffset, (int64_t)imm);
-    DBG_(Dev, (<< "setting signed offset preindex " << std::hex << imm));
+    DBG_(VVerb, (<< "setting signed offset preindex " << std::hex << imm));
     wb = operandAction(inst, kAddress, kResult1, imm, kPD1);
     connectDependance(wb.action->dependance(0), act);
   } else if (index == kPostIndex) {
     inst->setOperand(kOperand3, imm);
-    DBG_(Dev, (<< "setting signed offset postindex " << std::hex << imm));
+    DBG_(VVerb, (<< "setting signed offset postindex " << std::hex << imm));
     wb = addExecute(inst, operation(kADD_), {kOperand1, kOperand3}, rs2_deps, kResult1);
     inst->addDispatchEffect(satisfy(inst, wb.action->dependance(1)));
   }

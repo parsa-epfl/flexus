@@ -116,11 +116,11 @@ struct ExecuteAction : public ExecuteBase {
 
   void doEvaluate() {
 
-    DBG_(Dev, (<< "Trying to Execute " << *this));
+    DBG_(Iface, (<< "Trying to Execute " << *this));
 
     if (ready()) {
 
-      DBG_(Dev, (<< "Executing " << *this));
+      DBG_(Iface, (<< "Executing " << *this));
 
       if (theInstruction->hasPredecessorExecuted()) {
         std::vector<Operand> operands;
@@ -138,14 +138,14 @@ struct ExecuteAction : public ExecuteBase {
         if (theOperation->is128()) {
           bits res = boost::get<bits>(result);
           theInstruction->setOperand(theResult, res);
-          DBG_(Dev, (<< "Writing " << res << " in [ " << result << " -> " << theResult << " ]"));
+          DBG_(Iface, (<< "Writing " << res << " in [ " << result << " -> " << theResult << " ]"));
         } else {
           uint64_t res = boost::get<uint64_t>(result);
           theInstruction->setOperand(theResult, res);
-          DBG_(Dev, (<< "Writing " << std::hex << res << std::dec << " in " << theResult));
+          DBG_(Iface, (<< "Writing " << std::hex << res << std::dec << " in " << theResult));
         }
-        DBG_(Dev, (<< *this << " operands: " << OperandPrintHelper(operands) << std::hex
-                   << " result=" << result << std::dec));
+        DBG_(Iface, (<< *this << " operands: " << OperandPrintHelper(operands) << std::hex
+                     << " result=" << result << std::dec));
         if (theBypass) {
           mapped_reg name = theInstruction->operand<mapped_reg>(*theBypass);
           register_value val = boost::apply_visitor(register_value_extractor(), result);
@@ -154,11 +154,11 @@ struct ExecuteAction : public ExecuteBase {
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {
-        DBG_(Dev, (<< *this << " waiting for predecessor "));
+        DBG_(Iface, (<< *this << " waiting for predecessor "));
         reschedule();
       }
     } else {
-      DBG_(Dev, (<< "cant Execute " << *this << " yet"));
+      DBG_(Iface, (<< "cant Execute " << *this << " yet"));
     }
   }
 

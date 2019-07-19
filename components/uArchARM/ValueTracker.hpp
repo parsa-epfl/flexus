@@ -397,8 +397,8 @@ struct ValueTracker {
     FLEXUS_PROFILE();
     DBG_Assert(anAddress != 0);
     // DBG_Assert( anAddress < 0x40000000000LL );
-    DBG_(Dev, (<< "CPU[" << aCPU << "] Store " << anAddress << "[" << aSize << "] = " << std::hex
-               << aStoreValue << std::dec));
+    DBG_(Iface, (<< "CPU[" << aCPU << "] Store " << anAddress << "[" << aSize << "] = " << std::hex
+                 << aStoreValue << std::dec));
 
     // Align the address
     PhysicalMemoryAddress aligned = dwAddr(anAddress);
@@ -419,8 +419,8 @@ struct ValueTracker {
       // this processor
       // cpu->writePAddr( aligned, 8, updated_value );
 
-      DBG_(Dev, (<< "CPU[" << aCPU << "] Store.New " << anAddress
-                 << " no prior outstanding values. Now: " << iter->second));
+      DBG_(Iface, (<< "CPU[" << aCPU << "] Store.New " << anAddress
+                   << " no prior outstanding values. Now: " << iter->second));
 
     } else {
       if (iter->second.theSimicsReflectsCPU == kPoisonedByDMA) {
@@ -540,7 +540,7 @@ struct ValueTracker {
     // appear here as mismatches, even under SC.
     bits simics_value = cpu->readPhysicalAddress( aligned, 8);
     if(simics_value != updated_value) {
-      DBG_(Dev, ( << "CPU[" << aCPU << "] memory mismatch: Simics: " << std::hex
+      DBG_(Iface, ( << "CPU[" << aCPU << "] memory mismatch: Simics: " << std::hex
     << simics_value << "  Flexus: " << updated_value ) );
     }
     */
@@ -583,8 +583,8 @@ struct ValueTracker {
     tracker::iterator iter = theTracker.find(aligned);
     if (iter == theTracker.end()) {
       bits val = cpu->readPhysicalAddress(anAddress, aSize);
-      DBG_(Dev, (<< "CPU[" << aCPU << "] Load.NoOutstandingValues " << anAddress << "[" << aSize
-                 << "] = " << std::hex << val << std::dec));
+      DBG_(Iface, (<< "CPU[" << aCPU << "] Load.NoOutstandingValues " << anAddress << "[" << aSize
+                   << "] = " << std::hex << val << std::dec));
       return val;
     }
 

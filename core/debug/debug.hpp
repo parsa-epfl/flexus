@@ -131,7 +131,7 @@ extern bool Stats_debug_enabled;
     DBG_(Dev, (<< COLOR << __func__ << RESET));                                                    \
   } while (0)
 
-#define DECODER_TRACE __TRACE2(RED)
+#define DECODER_TRACE __TRACE(RED)
 #define SEMANTICS_TRACE __TRACE(CYAN)
 #define DISPATCH_TRACE __TRACE(YELLOW)
 #define CORE_TRACE __TRACE(GREEN)

@@ -113,9 +113,9 @@ struct LDPAction : public PredicatedSemanticAction {
     theInstruction->setOperand(kResult, pairValues.second);
     theInstruction->setOperand(kResult1, pairValues.first);
 
-    DBG_(Dev, (<< *this << " received pair load value = " << std::hex << value << std::dec));
-    DBG_(Dev, (<< *this << " received load values = " << std::hex << pairValues.first << " and "
-               << pairValues.second << std::dec));
+    DBG_(Iface, (<< *this << " received pair load value = " << std::hex << value << std::dec));
+    DBG_(Iface, (<< *this << " received load values = " << std::hex << pairValues.first << " and "
+                 << pairValues.second << std::dec));
 
     if (theBypass0) {
       mapped_reg name = theInstruction->operand<mapped_reg>(*theBypass0);

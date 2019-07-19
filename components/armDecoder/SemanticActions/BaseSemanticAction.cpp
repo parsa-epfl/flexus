@@ -80,7 +80,7 @@ void BaseSemanticAction::addRef() {
   ++theSemanticActionImbalance;
   if (theSemanticActionImbalance > theMaxSemanticActionImbalance  + 50) {
     theMaxSemanticActionImbalance = theSemanticActionImbalance;
-    DBG_(Dev, ( << "Max outstanding semantic actions: " <<
+    DBG_(Iface, ( << "Max outstanding semantic actions: " <<
   theSemanticActionImbalance) );
   }
   */
@@ -162,7 +162,7 @@ void BaseSemanticAction::addDependance(InternalDependance const &aDependance) {
 
 void BaseSemanticAction::reschedule() {
   if (!theScheduled && core()) {
-    DBG_(Dev, (<< *this << " rescheduled"));
+    DBG_(Iface, (<< *this << " rescheduled"));
     theScheduled = true;
     core()->reschedule(this);
   }

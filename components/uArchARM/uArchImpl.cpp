@@ -271,7 +271,7 @@ public:
             ->translateVirtualAddress(aTranslate->theVaddr);
 
     if (aTranslate->thePaddr == magicTranslation || magicTranslation == 0xffffffffffffffff) {
-      DBG_(Dev,
+      DBG_(Iface,
            (<< "Magic QEMU translation == MMU Translation. Vaddr = " << std::hex
             << aTranslate->theVaddr << ", PADDR_MMU = " << aTranslate->thePaddr
             << ", PADDR_QEMU = " << magicTranslation << std::dec << ", ID: " << aTranslate->theID));
@@ -364,11 +364,11 @@ private:
       MemoryTransport transport;
       boost::intrusive_ptr<MemoryMessage> operation;
 
-      DBG_(Dev, (<< "Sending Memory Request: " << op->theOperation << "  -- vaddr: " << op->theVAddr
-                 << "  -- paddr: "
-                 << op->thePAddr
-                 //  << "  --  Instruction: " <<  *(op->theInstruction)
-                 << " --  PC: " << op->thePC << " -- size: " << op->theSize));
+      DBG_(Iface, (<< "Sending Memory Request: " << op->theOperation
+                   << "  -- vaddr: " << op->theVAddr << "  -- paddr: "
+                   << op->thePAddr
+                   //  << "  --  Instruction: " <<  *(op->theInstruction)
+                   << " --  PC: " << op->thePC << " -- size: " << op->theSize));
 
       if (op->theNAW) {
         DBG_Assert(op->theOperation == kStore);
