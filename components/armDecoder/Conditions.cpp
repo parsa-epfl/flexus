@@ -63,7 +63,7 @@ using namespace nuArchARM;
 
 bool ConditionHolds(const PSTATE &pstate, int condcode) {
 
-  bool result;
+  bool result = false;
   switch (condcode >> 1) {
   case 0: // EQ or NE
     result = pstate.Z();

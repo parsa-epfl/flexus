@@ -118,7 +118,8 @@ MessageState *allocMessageState(void) {
     newState = new MessageState[ALLOCATION_BLOCK_SIZE];
     assert(newState != nullptr);
 
-    memset(newState, 0, sizeof(MessageState[ALLOCATION_BLOCK_SIZE]));
+    // TODO: Value initialization is done in the constructor
+    // memset(newState, 0, sizeof(MessageState[ALLOCATION_BLOCK_SIZE]));
 
     for (i = 0; i < ALLOCATION_BLOCK_SIZE; i++)
       freeMessageState(&newState[i]);

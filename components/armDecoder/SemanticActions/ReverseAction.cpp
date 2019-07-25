@@ -171,10 +171,10 @@ struct CountAction : public PredicatedSemanticAction {
 
       switch (theCountOp) {
       case kCountOp_CLZ:
-        out_val = the64 ? ((clz32((uint32_t)in_val >> 32) == 0)
-                               ? (32 + clz32((uint32_t)in_val))
-                               : (clz32((uint32_t)in_val >> 32) + clz32((uint32_t)in_val)))
-                        : (clz32((uint32_t)in_val));
+        out_val = the64 ? ((clz32((uint64_t)in_val >> 32) == 0)
+                               ? (32 + clz32((uint64_t)in_val))
+                               : (clz32((uint64_t)in_val >> 32) + clz32((uint64_t)in_val)))
+                        : (clz32((uint64_t)in_val));
         break;
       case kCountOp_CLS: {
         bits mask;
@@ -184,9 +184,9 @@ struct CountAction : public PredicatedSemanticAction {
           mask = 0x000000007FFFFFFFULL;
         }
         bits i = (in_val >> 1) ^ (in_val & mask);
-        out_val = the64 ? ((clz32((uint32_t)i >> 32) == 0)
+        out_val = the64 ? ((clz32((uint64_t)i >> 32) == 0)
                                ? (31 + clz32((uint32_t)i))
-                               : (clz32((uint32_t)i >> 32) + clz32((uint32_t)i)))
+                               : (clz32((uint64_t)i >> 32) + clz32((uint32_t)i)))
                         : (clz32((uint32_t)i));
         break;
       }

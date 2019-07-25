@@ -586,7 +586,7 @@ arminst STR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   bool S = extract32(aFetchedOpcode.theOpcode, 12, 1);
   uint32_t shift_amount = (S) ? size : 0;
   bool is_unsigned = extract32(aFetchedOpcode.theOpcode, 24, 1);
-  uint64_t imm = 0, regsize;
+  uint64_t imm = 0, regsize = 0;
   eIndex index = kNoOffset;
 
   if ((opc & 0x2) == 0) {
@@ -718,7 +718,7 @@ arminst LDR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   bool S = extract32(aFetchedOpcode.theOpcode, 12, 1);
   uint32_t shift_amount = (S) ? size : 0;
   bool is_unsigned = extract32(aFetchedOpcode.theOpcode, 24, 1);
-  uint64_t imm = 0, regsize;
+  uint64_t imm = 0, regsize = 0;
   eIndex index = kNoOffset;
 
   if ((opc & 0x2) == 0) {

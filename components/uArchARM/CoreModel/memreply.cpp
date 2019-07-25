@@ -59,7 +59,7 @@ void CoreImpl::invalidate(PhysicalMemoryAddress anAddress) {
   if (isSpeculating()) {
     SpeculativeLoadAddressTracker::iterator iter, end;
     std::tie(iter, end) = theSLAT.equal_range(anAddress);
-    boost::optional<boost::intrusive_ptr<Instruction>> violator;
+    boost::optional<boost::intrusive_ptr<Instruction>> violator(nullptr);
     while (iter != end) {
       if (!violator || iter->second->sequenceNo() < (*violator)->sequenceNo()) {
         if (iter->second->instClass() == clsAtomic) {
@@ -133,7 +133,7 @@ void CoreImpl::invalidate(PhysicalMemoryAddress anAddress) {
 
   // Step 1 determine the sequence number of the first incomplete memory
   // operation.
-  boost::optional<uint64_t> first_incomplete;
+  boost::optional<uint64_t> first_incomplete = 0;
   if (isSpeculating()) {
     // When speculating, the entire LSQ is after the first incomplete op
     // We use the sequence number of theMemQueue head as "first incomplete"

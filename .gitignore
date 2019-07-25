@@ -7,3 +7,7 @@ Makefile.depend*
 stat-manager/stat-manager
 stat-manager/stat-sample
 stat-manager/stat-collapse
+CMakeFiles/
+CMakeCache.txt
+Makefile
+cmake_install.cmake

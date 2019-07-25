@@ -75,7 +75,7 @@ arminst REV(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
 
   std::vector<std::list<InternalDependance>> rs_deps(1);
 
-  uint8_t container_size;
+  uint8_t container_size = 0;
   switch (opc) {
   case 0x0:
     DBG_Assert(false);

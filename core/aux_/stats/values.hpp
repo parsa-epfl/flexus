@@ -274,7 +274,7 @@ private:
   bool theIsValid;
 
 public:
-  StatValue_Max(value_type /*ignored*/) : theIsValid(false) {
+  StatValue_Max(value_type /*ignored*/) : theValue(0), theIsValid(false) {
   }
   void reduceSum(const StatValueBase &aBase) {
     const StatValue_Max &ptr = dynamic_cast<const StatValue_Max &>(aBase);

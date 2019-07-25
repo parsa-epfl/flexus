@@ -354,6 +354,7 @@ struct MemOpCounter {
 
 struct Checkpoint {
   Checkpoint() : theLostPermissionCount(0) {
+    theState = {0};
   }
   armState theState;
   int32_t theLostPermissionCount;

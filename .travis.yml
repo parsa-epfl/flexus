@@ -3,7 +3,9 @@ dist: bionic
 language: cpp
 
 install:
-  sudo apt-get install clang-format-6.0
+  - sudo apt-get install clang-format-6.0
+  - sudo apt-get install libboost-all-dev
 
 script:
-  - sh clang_format_test.sh
+  - sh scripts/clang_format_test.sh
+  - sh scripts/cmake_test.sh 

@@ -177,7 +177,7 @@ int64_t SimpleMeasurement ::sumAsLongLong(std::string const &aFieldSpec) {
 int64_t SimpleMeasurement ::minAsLongLong(std::string const &aFieldSpec) {
   try {
     boost::regex field_filter(aFieldSpec);
-    boost::optional<int64_t> min;
+    boost::optional<int64_t> min = 0;
     stat_handle_map::iterator iter = theStats.begin();
     stat_handle_map::iterator end = theStats.end();
 
