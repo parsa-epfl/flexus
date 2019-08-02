@@ -372,7 +372,7 @@ arminst LDR_lit(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceN
   bool is_signed = false;
   uint32_t size = 2;
 
-  int64_t offset = (uint64_t)aFetchedOpcode.thePC + imm - 4;
+  int64_t offset = (uint64_t)aFetchedOpcode.thePC + imm;
 
   eMemOp memop = kMemOp_LOAD;
 

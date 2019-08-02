@@ -635,7 +635,7 @@ void CoreImpl::issuePartialSnoop() {
   if (thePartialSnoopersOutstanding > 0) {
     memq_t::index<by_queue>::type::iterator lsq_head =
         theMemQueue.get<by_queue>().lower_bound(std::make_tuple(kLSQ));
-    DBG_(Crit, (<< "lsq_head:  " << lsq_head->status()));
+    DBG_(VVerb, (<< "lsq_head:  " << lsq_head->status()));
     DBG_Assert(lsq_head != theMemQueue.get<by_queue>().end());
     if (lsq_head->thePartialSnoop &&
         (lsq_head->status() == kAwaitingIssue || lsq_head->status() == kAwaitingPort)) {

@@ -53,6 +53,7 @@ enum eOpType {
   kCONCAT64_,
   kAND_,
   kANDS_,
+  kANDSN_,
   kORR_,
   kXOR_,
 

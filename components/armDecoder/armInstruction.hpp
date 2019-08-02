@@ -371,18 +371,16 @@ public:
     DBG_(VVerb, (<< identify() << " destroyed"));
   }
 
-  virtual bool redirectPC(VirtualMemoryAddress anPCReg) {
-    bool ret_val = (anPCReg != thePCReg);
+  virtual void redirectPC(VirtualMemoryAddress anPCReg) {
     thePCReg = anPCReg;
-    return ret_val;
   }
 
   virtual VirtualMemoryAddress pc() const {
     return thePC;
   }
 
-  virtual VirtualMemoryAddress pcOrig() const {
-    return (thePCReg == thePC) ? (thePC + 4) : thePCReg;
+  virtual VirtualMemoryAddress pcNext() const {
+    return thePCReg;
   }
 
   virtual bool isPriv() const {
@@ -459,7 +457,7 @@ public:
 protected:
   armInstruction(VirtualMemoryAddress aPC, Opcode anOpcode,
                  boost::intrusive_ptr<BPredState> bp_state, uint32_t aCPU, int64_t aSequenceNo)
-      : thePC(aPC), thePCReg(aPC), theOpcode(anOpcode), theBPState(bp_state), theCPU(aCPU),
+      : thePC(aPC), thePCReg(aPC + 4), theOpcode(anOpcode), theBPState(bp_state), theCPU(aCPU),
         theSequenceNo(aSequenceNo), theuArch(0), theRaisedException(kException_None),
         theResync(false), theWillRaise(kException_None), theAnnulled(false), theRetired(false),
         theSquashed(false), theExecuted(true), thePageFault(false),

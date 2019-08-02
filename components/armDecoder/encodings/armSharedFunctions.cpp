@@ -445,6 +445,8 @@ void MEMBAR(SemanticInstruction *inst, uint32_t anAccess) {
     break;
   case kMO_ST_LD:
   case kMO_LD_LD:
+  case kMO_LD_ST:
+  case kMO_ALL:
     // Synchronizing MEMBARS.
     // Although this is not entirely to spec, we implement synchronizing MEMBARs
     // as StoreLoad MEMBERS.

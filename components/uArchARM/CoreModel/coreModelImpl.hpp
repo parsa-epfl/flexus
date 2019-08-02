@@ -812,6 +812,7 @@ public:
   //==========================================================================
 public:
   bits retrieveLoadValue(boost::intrusive_ptr<Instruction> anInsn);
+  void setLoadValue(boost::intrusive_ptr<Instruction> anInsn, bits aValue);
   bits retrieveExtendedLoadValue(boost::intrusive_ptr<Instruction> anInsn);
   void resolveVAddr(boost::intrusive_ptr<Instruction> anInsn, VirtualMemoryAddress anAddr);
   void translate(boost::intrusive_ptr<Instruction> anInsn);

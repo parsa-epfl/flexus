@@ -575,10 +575,10 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction {
   virtual eInstructionCode instCode() const = 0;
   virtual void changeInstCode(eInstructionCode) = 0;
 
-  virtual bool redirectPC(VirtualMemoryAddress aPC) = 0;
+  virtual void redirectPC(VirtualMemoryAddress aPC) = 0;
 
   virtual VirtualMemoryAddress pc() const = 0;
-  virtual VirtualMemoryAddress pcOrig() const = 0;
+  virtual VirtualMemoryAddress pcNext() const = 0;
   virtual bool isPriv() const = 0;
   virtual void makePriv() = 0;
   virtual bool isTrap() const = 0;
@@ -889,6 +889,10 @@ struct uArchARM {
   virtual bits retrieveLoadValue(boost::intrusive_ptr<Instruction> aCorrespondingInstruction) {
     DBG_Assert(false);
     return bits(0);
+  }
+  virtual void setLoadValue(boost::intrusive_ptr<Instruction> aCorrespondingInstruction,
+                            bits aCorrespondingValue) {
+    DBG_Assert(false);
   }
   virtual bits
   retrieveExtendedLoadValue(boost::intrusive_ptr<Instruction> aCorrespondingInstruction) {

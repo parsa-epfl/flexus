@@ -108,6 +108,18 @@ struct LDPAction : public PredicatedSemanticAction {
       size = 64;
       break;
     }
+
+    Flexus::Qemu::Processor c = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu());
+    uint64_t addr = theInstruction->operand<uint64_t>(kAddress);
+    uint64_t addr_final = addr + (size >> 3) - 1;
+    bits value_new = c->readVirtualAddress(VirtualMemoryAddress(addr), size >> 3);
+    if (((addr & 0x1000) != (addr_final & 0x1000)) && value != value_new) {
+      DBG_(Iface, (<< theInstruction->identify()
+                   << " Correcting LDP access across pages at address: " << std::hex << addr
+                   << ", size: " << size << ", original: " << value << ", final: " << value_new));
+      core()->setLoadValue(boost::intrusive_ptr<Instruction>(theInstruction), value_new);
+      value = value_new;
+    }
     std::pair<uint64_t, uint64_t> pairValues = splitBits(value, size);
 
     theInstruction->setOperand(kResult, pairValues.second);

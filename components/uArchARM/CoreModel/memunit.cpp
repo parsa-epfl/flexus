@@ -547,6 +547,14 @@ bits CoreImpl::retrieveLoadValue(boost::intrusive_ptr<Instruction> anInsn) {
   return *lsq_entry->theValue;
 }
 
+void CoreImpl::setLoadValue(boost::intrusive_ptr<Instruction> anInsn, bits aValue) {
+  FLEXUS_PROFILE();
+  memq_t::index<by_insn>::type::iterator lsq_entry = theMemQueue.get<by_insn>().find(anInsn);
+  DBG_Assert(lsq_entry != theMemQueue.get<by_insn>().end(), (<< *anInsn));
+  DBG_Assert(lsq_entry->status() == kComplete, (<< *lsq_entry));
+  lsq_entry->theValue = aValue;
+}
+
 bits CoreImpl::retrieveExtendedLoadValue(boost::intrusive_ptr<Instruction> anInsn) {
   FLEXUS_PROFILE();
   memq_t::index<by_insn>::type::iterator lsq_entry = theMemQueue.get<by_insn>().find(anInsn);

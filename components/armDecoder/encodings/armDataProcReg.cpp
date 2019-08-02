@@ -112,7 +112,7 @@ arminst CL(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
   bool op = extract32(aFetchedOpcode.theOpcode, 10, 1);
   bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
-  eCountOp opcode = op ? kCountOp_CLZ : kCountOp_CLS;
+  eCountOp opcode = op ? kCountOp_CLS : kCountOp_CLZ;
   SemanticInstruction *inst(new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                     aFetchedOpcode.theBPState, aCPU, aSequenceNo));
   std::vector<std::list<InternalDependance>> rs_deps(1);
@@ -525,7 +525,7 @@ arminst LOGICAL(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceN
     op = n ? kXnor_ : kXOR_;
     break;
   case 3:
-    op = kANDS_;
+    op = n ? kANDSN_ : kANDS_;
     setflags = true;
     break;
   }

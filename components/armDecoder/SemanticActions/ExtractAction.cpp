@@ -76,7 +76,7 @@ struct ExtractAction : public PredicatedSemanticAction {
 
   ExtractAction(SemanticInstruction *anInstruction, eOperandCode anOperandCode1,
                 eOperandCode anOperandCode2, eOperandCode anOperandCode3, bool a64)
-      : PredicatedSemanticAction(anInstruction, 1, true), theOperandCode1(anOperandCode1),
+      : PredicatedSemanticAction(anInstruction, 3, true), theOperandCode1(anOperandCode1),
         theOperandCode2(anOperandCode2), theOperandCode3(anOperandCode3), the64(a64) {
     theInstruction->setExecuted(false);
   }

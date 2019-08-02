@@ -398,8 +398,7 @@ arminst disas_ld_lit(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequ
     //    case 1: case 3: case 5:
     //        return LDRF_lit(aFetchedOpcode, aCPU, aSequenceNo);
   default:
-    DBG_Assert(false);
-    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
   }
 }
 

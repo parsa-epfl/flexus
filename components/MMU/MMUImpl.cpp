@@ -278,6 +278,8 @@ public:
             item->theVaddr));
         entry.first = true;
         entry.second = perfectPaddr;
+        if (perfectPaddr == 0xFFFFFFFFFFFFFFFF)
+          item->setPagefault();
       }
       if (entry.first) {
         DBG_(VVerb, (<< "Item is a Hit " << item->theVaddr));

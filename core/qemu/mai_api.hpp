@@ -195,6 +195,21 @@ public:
   }
 
   bits readVirtualAddress(VirtualMemoryAddress anAddress, size_t size) {
+    VirtualMemoryAddress finalAddress((anAddress + size - 1) & ~0xFFF);
+    if ((finalAddress & 0x1000) != (anAddress & 0x1000)) {
+      bits value1, value2;
+      size_t partial = finalAddress - anAddress;
+      value1 = readPhysicalAddress(
+          PhysicalMemoryAddress(API::QEMU_logical_to_physical(*this, API::QEMU_DI_Instruction,
+                                                              API::logical_address_t(anAddress))),
+          partial);
+      value2 = readPhysicalAddress(
+          PhysicalMemoryAddress(API::QEMU_logical_to_physical(
+              *this, API::QEMU_DI_Instruction, API::logical_address_t(finalAddress))),
+          size - partial);
+      value2 = (value2 << (partial << 3)) | value1;
+      return value2;
+    }
     return readPhysicalAddress(
         PhysicalMemoryAddress(API::QEMU_logical_to_physical(*this, API::QEMU_DI_Instruction,
                                                             API::logical_address_t(anAddress))),

@@ -1549,7 +1549,7 @@ void CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction) {
 
   accountCommit(anInstruction, raised);
 
-  theDumpPC = anInstruction->pcOrig();
+  theDumpPC = anInstruction->pcNext();
   if (anInstruction->resync()) {
     DBG_(Dev, (<< "Forced Resync:" << *anInstruction));
 

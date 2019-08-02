@@ -278,6 +278,31 @@ typedef struct ANDS : public Operation {
   }
 } ANDS_;
 
+typedef struct ANDSN : public Operation {
+  ANDSN() {
+  }
+  virtual ~ANDSN() {
+  }
+  virtual Operand operator()(std::vector<Operand> const &operands) {
+    DBG_Assert(operands.size() == 2);
+    uint64_t result = boost::get<uint64_t>(operands[0]) & ~boost::get<uint64_t>(operands[1]);
+
+    uint32_t N = ((result & ((uint64_t)1 << 63)) ? PSTATE_N : 0);
+    uint32_t Z = ((result == 0) ? PSTATE_Z : 0);
+    uint32_t C = 0;
+    uint32_t V = 0;
+
+    theNZCV = N | Z | C | V;
+
+    theNZCVFlags = true;
+
+    return result;
+  }
+  virtual char const *describe() const {
+    return "ANDSN";
+  }
+} ANDSN_;
+
 typedef struct ORR : public Operation {
   ORR() {
   }
@@ -585,9 +610,9 @@ typedef struct UMul : public Operation {
   }
   uint64_t calc(std::vector<Operand> const &operands) {
     DBG_Assert(operands.size() == 2);
-    uint64_t op0 = boost::get<uint64_t>(operands[0]);
-    uint64_t op1 = boost::get<uint64_t>(operands[1]);
-    uint64_t prod = op0 * op1;
+    bits op0 = boost::get<uint64_t>(operands[0]);
+    bits op1 = boost::get<uint64_t>(operands[1]);
+    uint64_t prod = (uint64_t)((op0 * op1) >> 64);
     return prod;
   }
   virtual Operand operator()(std::vector<Operand> const &operands) {
@@ -936,6 +961,9 @@ std::unique_ptr<Operation> operation(eOpType aType) {
     break;
   case kANDS_:
     ptr.reset(new ANDS_());
+    break;
+  case kANDSN_:
+    ptr.reset(new ANDSN_());
     break;
   case kORR_:
     ptr.reset(new ORR_());

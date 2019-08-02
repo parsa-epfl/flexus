@@ -80,12 +80,10 @@ bool validateXRegister::operator()() {
       (Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readXRegister(theReg)) &
       (the_64 ? -1LL : 0xFFFFFFFF);
 
-  if (flexus == qemu)
-    return true;
-  DBG_(Dev, (<< "flexus value in " << std::setw(10) << theOperandCode << "  = " << std::hex
-             << flexus << std::dec));
-  DBG_(Dev, (<< "qemu value in   " << std::setw(10) << theReg << "  = " << std::hex << qemu
-             << std::dec));
+  DBG_(Dev, Condition(flexus != qemu)(<< "flexus value in " << std::setw(10) << theOperandCode
+                                      << "  = " << std::hex << flexus << std::dec));
+  DBG_(Dev, Condition(flexus != qemu)(<< "qemu value in   " << std::setw(10) << theReg << "  = "
+                                      << std::hex << qemu << std::dec));
 
   return (flexus == qemu);
 }
@@ -99,13 +97,11 @@ bool validatePC::operator()() {
     return true;
   }
 
-  uint64_t flexus = thePreValidation ? theInstruction->pc() : theInstruction->pcOrig();
+  uint64_t flexus = thePreValidation ? theInstruction->pc() : theInstruction->pcNext();
   uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPC();
 
-  if (flexus == qemu)
-    return true;
-  DBG_(Dev, (<< "flexus PC value " << std::hex << flexus << std::dec));
-  DBG_(Dev, (<< "qemu PC value   " << std::hex << qemu << std::dec));
+  DBG_(Dev, Condition(flexus != qemu)(<< "flexus PC value " << std::hex << flexus << std::dec));
+  DBG_(Dev, Condition(flexus != qemu)(<< "qemu PC value   " << std::hex << qemu << std::dec));
 
   return flexus == qemu;
 }
@@ -115,18 +111,18 @@ bool validateMemory::operator()() {
     return true; // Don't check
   }
 
-  bits flexus_val;
+  bits flexus;
   if (theValueCode == kResult) {
-    flexus_val = theInstruction->operand<bits>(theValueCode);
+    flexus = theInstruction->operand<bits>(theValueCode);
   } else {
-    flexus_val = theInstruction->operand<uint64_t>(theValueCode);
+    flexus = theInstruction->operand<uint64_t>(theValueCode);
   }
 
   Flexus::Qemu::Processor c = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu());
   VirtualMemoryAddress vaddr(theInstruction->operand<uint64_t>(theAddressCode));
   int theSize_orig = theSize, theSize_extra = 0;
   if (theSize < 8)
-    flexus_val &= 0xFFFFFFFF >> (32 - theSize * 8);
+    flexus &= 0xFFFFFFFF >> (32 - theSize * 8);
   VirtualMemoryAddress vaddr_final = vaddr + theSize_orig - 1;
   if ((vaddr & 0x1000) != (vaddr_final & 0x1000)) {
     theSize_extra = (vaddr_final & 0xFFF) + 1;
@@ -135,19 +131,19 @@ bool validateMemory::operator()() {
     vaddr_final = (VirtualMemoryAddress)(vaddr_final & ~0xFFFULL);
   }
   PhysicalMemoryAddress paddr = c->translateVirtualAddress(vaddr);
-  bits qemu_val = c->readPhysicalAddress(paddr, theSize_orig);
+  bits qemu = c->readPhysicalAddress(paddr, theSize_orig);
   if (theSize_extra) {
-    DBG_Assert((qemu_val >> (theSize_orig * 8)) == 0);
+    DBG_Assert((qemu >> (theSize_orig * 8)) == 0);
     PhysicalMemoryAddress paddr_spill = c->translateVirtualAddress(vaddr_final);
-    qemu_val |= c->readPhysicalAddress(paddr_spill, theSize_extra) << (theSize_orig * 8);
+    qemu |= c->readPhysicalAddress(paddr_spill, theSize_extra) << (theSize_orig * 8);
   }
 
-  if (flexus_val == qemu_val)
+  if (flexus == qemu)
     return true;
-  DBG_(Dev, (<< "flexus value: " << std::hex << flexus_val));
-  DBG_(Dev, (<< "qemu value:   " << std::hex << qemu_val));
+  DBG_(Dev, Condition(flexus != qemu)(<< "flexus value: " << std::hex << flexus));
+  DBG_(Dev, Condition(flexus != qemu)(<< "qemu value:   " << std::hex << qemu));
 
-  return (flexus_val == qemu_val);
+  return (flexus == qemu);
 }
 
 } // namespace narmDecoder
