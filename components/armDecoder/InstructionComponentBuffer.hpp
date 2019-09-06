@@ -44,59 +44,56 @@
 
 #include <core/stats.hpp>
 #include <core/types.hpp>
+// MARK
+#include <exception>
+#include <vector>
 
 static const size_t kICBSize = 2048;
 
 namespace narmDecoder {
 extern Flexus::Stat::StatCounter theICBs;
 
+struct UncountedComponent {
+  virtual ~UncountedComponent() {
+  } // MARK: for calling effect/action destructors
+};
+
+// MARK: rewrite this to explicitly track components being added to an instruction
 struct InstructionComponentBuffer {
+  /*
+char theComponentBuffer[kICBSize];
+char *theNextAlloc;
+size_t theFreeSpace;
+InstructionComponentBuffer *theExtensionBuffer;
+  */
+  size_t theComponentCount;
+  std::vector<UncountedComponent *> theComponents;
 
-  char theComponentBuffer[kICBSize];
-  char *theNextAlloc;
-  size_t theFreeSpace;
-  InstructionComponentBuffer *theExtensionBuffer;
-
-  InstructionComponentBuffer()
-      : theNextAlloc(theComponentBuffer), theFreeSpace(kICBSize), theExtensionBuffer(0) {
-    ++theICBs;
+  InstructionComponentBuffer() : theComponentCount(0) {
+    theComponents.reserve(kICBSize);
   }
 
   ~InstructionComponentBuffer() {
-    if (theExtensionBuffer) {
-      delete theExtensionBuffer;
-      theExtensionBuffer = 0;
+    for (auto aComp : theComponents) {
+      delete aComp;
     }
-    --theICBs;
   }
 
-  void *alloc(size_t aSize) {
-    DBG_Assert(aSize < kICBSize);
-    if (theFreeSpace < aSize) {
-      if (theExtensionBuffer == 0) {
-        theExtensionBuffer = new InstructionComponentBuffer();
+  size_t addNewComponent(UncountedComponent *aComponent) {
+    try {
+      if (++theComponentCount >= theComponents.capacity()) {
+        theComponents.reserve(theComponents.size() * 2);
       }
-      return theExtensionBuffer->alloc(aSize);
+      theComponents.emplace_back(aComponent);
+      return theComponentCount;
+    } catch (std::exception &e) {
+      DBG_Assert(false, (<< "Could not add component " << aComponent
+                         << " to ICB. Number of components stored: " << theComponentCount
+                         << ", vector capacity: " << theComponents.capacity()
+                         << ", threw exception type: " << e.what()));
+      return 0; // dodge compiler error
     }
-    void *tmp = theNextAlloc;
-    theNextAlloc += aSize;
-    theFreeSpace -= aSize;
-    DBG_Assert(theFreeSpace >= 0);
-    return tmp;
   }
-};
-
-struct UncountedComponent {
-  void operator delete(void *) {
-    /*Nothing to do on delete*/ // FIXME: this leaks, since icb.alloc() calls
-                                // new(...)
-  }
-  void *operator new(size_t aSize, InstructionComponentBuffer &aICB) {
-    return aICB.alloc(aSize);
-  }
-
-private:
-  void *operator new(size_t); // Not allowed
 };
 
 } // namespace narmDecoder

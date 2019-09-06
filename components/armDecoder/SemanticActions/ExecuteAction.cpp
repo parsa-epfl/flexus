@@ -291,8 +291,8 @@ predicated_action executeAction(SemanticInstruction *anInstruction,
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
     operands.push_back(eOperandCode(kOperand1 + i));
   }
-  ExecuteAction *act(new (anInstruction->icb())
-                         ExecuteAction(anInstruction, operands, aResult, anOperation, aBypass));
+  ExecuteAction *act = new ExecuteAction(anInstruction, operands, aResult, anOperation, aBypass);
+  anInstruction->addNewComponent(act);
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
     opDeps[i].push_back(act->dependance(i));
   }
@@ -305,8 +305,8 @@ predicated_action executeAction(SemanticInstruction *anInstruction,
                                 std::vector<std::list<InternalDependance>> &opDeps,
                                 eOperandCode aResult, boost::optional<eOperandCode> aBypass) {
 
-  ExecuteAction *act(new (anInstruction->icb())
-                         ExecuteAction(anInstruction, anOperands, aResult, anOperation, aBypass));
+  ExecuteAction *act = new ExecuteAction(anInstruction, anOperands, aResult, anOperation, aBypass);
+  anInstruction->addNewComponent(act);
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
     opDeps[i].push_back(act->dependance(i));
   }
@@ -322,8 +322,9 @@ predicated_action executeAction_XTRA(SemanticInstruction *anInstruction,
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
     operands.push_back(eOperandCode(kOperand1 + i));
   }
-  ExecuteAction_WithXTRA *act(new (anInstruction->icb()) ExecuteAction_WithXTRA(
-      anInstruction, operands, kResult, kXTRAout, anOperation, aBypass, aBypassXTRA));
+  ExecuteAction_WithXTRA *act = new ExecuteAction_WithXTRA(
+      anInstruction, operands, kResult, kXTRAout, anOperation, aBypass, aBypassXTRA);
+  anInstruction->addNewComponent(act);
 
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
     opDeps[i].push_back(act->dependance(i));
@@ -350,8 +351,8 @@ predicated_action fpExecuteAction(SemanticInstruction *anInstruction,
       operands.push_back(kFOperand2_1);
     }
   }
-  FPExecuteAction *act(new (anInstruction->icb())
-                           FPExecuteAction(anInstruction, operands, anOperation, aDestSize));
+  FPExecuteAction *act = new FPExecuteAction(anInstruction, operands, anOperation, aDestSize);
+  anInstruction->addNewComponent(act);
 
   if (aSrcSize == kWord) {
     deps.resize(2);
@@ -380,8 +381,8 @@ simple_action calcAddressAction(SemanticInstruction *anInstruction,
     operands.push_back(eOperandCode(kOperand1 + i));
   }
   std::unique_ptr<Operation> add = operation(kADD_);
-  ExecuteAction *act(new (anInstruction->icb())
-                         ExecuteAction(anInstruction, operands, kAddress, add, boost::none));
+  ExecuteAction *act = new ExecuteAction(anInstruction, operands, kAddress, add, boost::none);
+  anInstruction->addNewComponent(act);
 
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
     opDeps[i].push_back(act->dependance(i));
@@ -399,8 +400,8 @@ predicated_action visOp(SemanticInstruction *anInstruction, std::unique_ptr<Oper
   operands.push_back(kFOperand2_1);
   operands.push_back(kOperand5);
 
-  FPExecuteAction *act(new (anInstruction->icb())
-                           FPExecuteAction(anInstruction, operands, anOperation, kDoubleWord));
+  FPExecuteAction *act = new FPExecuteAction(anInstruction, operands, anOperation, kDoubleWord);
+  anInstruction->addNewComponent(act);
 
   // DoubleWord
   deps.resize(5);

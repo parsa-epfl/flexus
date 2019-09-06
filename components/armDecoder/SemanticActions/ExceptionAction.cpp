@@ -82,7 +82,9 @@ struct ExceptionAction : public BaseSemanticAction {
 };
 
 simple_action exceptionAction(SemanticInstruction *anInstruction) {
-  return new (anInstruction->icb()) ExceptionAction(anInstruction);
+  ExceptionAction *act = new ExceptionAction(anInstruction);
+  anInstruction->addNewComponent(act);
+  return simple_action(act);
 }
 
 } // namespace narmDecoder

@@ -138,8 +138,8 @@ struct UpdateAddressAction : public BaseSemanticAction {
 
 multiply_dependant_action updateVirtualAddressAction(SemanticInstruction *anInstruction,
                                                      eOperandCode aCode) {
-  UpdateAddressAction *act(new (anInstruction->icb())
-                               UpdateAddressAction(anInstruction, aCode, true));
+  UpdateAddressAction *act = new UpdateAddressAction(anInstruction, aCode, true);
+  anInstruction->addNewComponent(act);
   std::vector<InternalDependance> dependances;
   dependances.push_back(act->dependance(0));
   dependances.push_back(act->dependance(1));

@@ -171,16 +171,16 @@ struct WriteccAction : public BaseSemanticAction {
 dependant_action writebackAction(SemanticInstruction *anInstruction, eOperandCode aRegisterCode,
                                  eOperandCode aMappedRegisterCode, bool is64, bool aSP,
                                  bool setflags) {
-  WritebackAction *act;
-  act = new (anInstruction->icb())
-      WritebackAction(anInstruction, aRegisterCode, aMappedRegisterCode, is64, aSP, setflags);
+  WritebackAction *act =
+      new WritebackAction(anInstruction, aRegisterCode, aMappedRegisterCode, is64, aSP, setflags);
+  anInstruction->addNewComponent(act);
   return dependant_action(act, act->dependance());
 }
 
 dependant_action writeccAction(SemanticInstruction *anInstruction, eOperandCode aMappedRegisterCode,
                                bool is64) {
-  WriteccAction *act;
-  act = new (anInstruction->icb()) WriteccAction(anInstruction, aMappedRegisterCode, is64);
+  WriteccAction *act = new WriteccAction(anInstruction, aMappedRegisterCode, is64);
+  anInstruction->addNewComponent(act);
   return dependant_action(act, act->dependance());
 }
 

@@ -98,8 +98,8 @@ struct ConstantAction : public PredicatedSemanticAction {
 
 predicated_action constantAction(SemanticInstruction *anInstruction, uint64_t aConstant,
                                  eOperandCode aResult, boost::optional<eOperandCode> aBypass) {
-  ConstantAction *act(new (anInstruction->icb())
-                          ConstantAction(anInstruction, aConstant, aResult, aBypass));
+  ConstantAction *act = new ConstantAction(anInstruction, aConstant, aResult, aBypass);
+  anInstruction->addNewComponent(act);
   return predicated_action(act, act->predicate());
 }
 

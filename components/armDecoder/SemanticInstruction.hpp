@@ -114,9 +114,7 @@ public:
                       int64_t aSequenceNo);
   virtual ~SemanticInstruction();
 
-  InstructionComponentBuffer &icb() const {
-    return theICB;
-  }
+  size_t addNewComponent(UncountedComponent *aComponent);
 
   bool advancesSimics() const;
   void setIsMicroOp(bool isUop) {

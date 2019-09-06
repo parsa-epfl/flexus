@@ -429,4 +429,8 @@ PhysicalMemoryAddress SemanticInstruction::translate() {
   //  return xlat.thePaddr;
 }
 
+size_t SemanticInstruction::addNewComponent(UncountedComponent *aComponent) {
+  return theICB.addNewComponent(aComponent);
+}
+
 } // namespace narmDecoder

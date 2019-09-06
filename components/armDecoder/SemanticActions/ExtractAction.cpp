@@ -116,8 +116,9 @@ predicated_action extractAction(SemanticInstruction *anInstruction,
                                 std::vector<std::list<InternalDependance>> &opDeps,
                                 eOperandCode anOperandCode1, eOperandCode anOperandCode2,
                                 eOperandCode anOperandCode3, bool a64) {
-  ExtractAction *act(new (anInstruction->icb()) ExtractAction(anInstruction, anOperandCode1,
-                                                              anOperandCode2, anOperandCode3, a64));
+  ExtractAction *act =
+      new ExtractAction(anInstruction, anOperandCode1, anOperandCode2, anOperandCode3, a64);
+  anInstruction->addNewComponent(act);
 
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
     opDeps[i].push_back(act->dependance(i));

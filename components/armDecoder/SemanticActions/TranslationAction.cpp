@@ -104,7 +104,9 @@ struct TranslationAction : public BaseSemanticAction {
 };
 
 simple_action translationAction(SemanticInstruction *anInstruction) {
-  return new (anInstruction->icb()) TranslationAction(anInstruction);
+  TranslationAction *act = new TranslationAction(anInstruction);
+  anInstruction->addNewComponent(act);
+  return simple_action(act);
 }
 
 } // namespace narmDecoder

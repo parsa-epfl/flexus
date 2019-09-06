@@ -151,15 +151,15 @@ struct LoadAction : public PredicatedSemanticAction {
 
 predicated_dependant_action loadAction(SemanticInstruction *anInstruction, eSize aSize,
                                        eSignCode aSignCode, boost::optional<eOperandCode> aBypass) {
-  LoadAction *act(new (anInstruction->icb())
-                      LoadAction(anInstruction, aSize, aSignCode, aBypass, false));
+  LoadAction *act = new LoadAction(anInstruction, aSize, aSignCode, aBypass, false);
+  anInstruction->addNewComponent(act);
   return predicated_dependant_action(act, act->dependance(), act->predicate());
 }
 
 predicated_dependant_action casAction(SemanticInstruction *anInstruction, eSize aSize,
                                       eSignCode aSignCode, boost::optional<eOperandCode> aBypass) {
-  LoadAction *act(new (anInstruction->icb())
-                      LoadAction(anInstruction, aSize, aSignCode, aBypass, false));
+  LoadAction *act = new LoadAction(anInstruction, aSize, aSignCode, aBypass, false);
+  anInstruction->addNewComponent(act);
   return predicated_dependant_action(act, act->dependance(), act->predicate());
 }
 

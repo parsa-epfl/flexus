@@ -206,8 +206,9 @@ predicated_action conditionSelectAction(SemanticInstruction *anInstruction,
                                         std::vector<std::list<InternalDependance>> &opDeps,
                                         eOperandCode aResult, bool anInvert, bool anIncrement,
                                         bool a64) {
-  ConditionSelectAction *act(new (anInstruction->icb()) ConditionSelectAction(
-      anInstruction, aCode, aResult, anOperation, anInvert, anIncrement, a64));
+  ConditionSelectAction *act = new ConditionSelectAction(anInstruction, aCode, aResult, anOperation,
+                                                         anInvert, anIncrement, a64);
+  anInstruction->addNewComponent(act);
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
     opDeps[i].push_back(act->dependance(i));
   }
@@ -218,8 +219,9 @@ predicated_action conditionCompareAction(SemanticInstruction *anInstruction,
                                          std::unique_ptr<Condition> &anOperation, uint32_t aCode,
                                          std::vector<std::list<InternalDependance>> &opDeps,
                                          eOperandCode aResult, bool aSub_op, bool a64) {
-  ConditionCompareAction *act(new (anInstruction->icb()) ConditionCompareAction(
-      anInstruction, aCode, aResult, anOperation, aSub_op, a64));
+  ConditionCompareAction *act =
+      new ConditionCompareAction(anInstruction, aCode, aResult, anOperation, aSub_op, a64);
+  anInstruction->addNewComponent(act);
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
     opDeps[i].push_back(act->dependance(i));
   }

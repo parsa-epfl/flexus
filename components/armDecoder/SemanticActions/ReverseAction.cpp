@@ -262,16 +262,17 @@ struct CRCAction : public PredicatedSemanticAction {
 
 predicated_action reverseAction(SemanticInstruction *anInstruction, eOperandCode anInputCode,
                                 eOperandCode anOutputCode, bool is64) {
-  ReverseAction *act(new (anInstruction->icb())
-                         ReverseAction(anInstruction, anInputCode, anOutputCode, is64));
+  ReverseAction *act = new ReverseAction(anInstruction, anInputCode, anOutputCode, is64);
+  anInstruction->addNewComponent(act);
   return predicated_action(act, act->predicate());
 }
 
 predicated_action reorderAction(SemanticInstruction *anInstruction, eOperandCode anInputCode,
                                 eOperandCode anOutputCode, uint8_t aContainerSize,
                                 std::vector<std::list<InternalDependance>> &rs_deps, bool is64) {
-  ReorderAction *act(new (anInstruction->icb()) ReorderAction(anInstruction, anInputCode,
-                                                              anOutputCode, aContainerSize, is64));
+  ReorderAction *act =
+      new ReorderAction(anInstruction, anInputCode, anOutputCode, aContainerSize, is64);
+  anInstruction->addNewComponent(act);
   for (uint32_t i = 0; i < rs_deps.size(); ++i) {
     rs_deps[i].push_back(act->dependance(i));
   }
@@ -281,8 +282,8 @@ predicated_action reorderAction(SemanticInstruction *anInstruction, eOperandCode
 predicated_action countAction(SemanticInstruction *anInstruction, eOperandCode anInputCode,
                               eOperandCode anOutputCode, eCountOp aCountOp,
                               std::vector<std::list<InternalDependance>> &rs_deps, bool is64) {
-  CountAction *act(new (anInstruction->icb())
-                       CountAction(anInstruction, anInputCode, anOutputCode, aCountOp, is64));
+  CountAction *act = new CountAction(anInstruction, anInputCode, anOutputCode, aCountOp, is64);
+  anInstruction->addNewComponent(act);
   for (uint32_t i = 0; i < rs_deps.size(); ++i) {
     rs_deps[i].push_back(act->dependance(i));
   }
@@ -292,8 +293,9 @@ predicated_action countAction(SemanticInstruction *anInstruction, eOperandCode a
 predicated_action crcAction(SemanticInstruction *anInstruction, uint32_t aPoly,
                             eOperandCode anInputCode, eOperandCode anInputCode2,
                             eOperandCode anOutputCode, bool is64) {
-  CRCAction *act(new (anInstruction->icb()) CRCAction(anInstruction, aPoly, anInputCode,
-                                                      anInputCode2, anOutputCode, is64));
+  CRCAction *act =
+      new CRCAction(anInstruction, aPoly, anInputCode, anInputCode2, anOutputCode, is64);
+  anInstruction->addNewComponent(act);
   return predicated_action(act, act->predicate());
 }
 

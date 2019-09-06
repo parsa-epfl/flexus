@@ -469,7 +469,6 @@ public:
 class RegressionTrackerImpl : public RegressionTracker {
 public:
   void OnMagicBreakpoint(Qemu::API::conf_object_t *aCpu, long long aBreakpoint) {
-    DBG_(Dev, (<< "Regression Testing Breakpoint: " << aBreakpoint));
     if (aBreakpoint == theStopBreakpoint) {
       DBG_(Dev, (<< "Stop breakpoint.  Terminating Simulation."));
       Flexus::Core::theFlexus->terminateSimulation();

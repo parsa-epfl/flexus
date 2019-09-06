@@ -137,8 +137,8 @@ struct BranchCondAction : public BaseSemanticAction {
 };
 dependant_action branchCondAction(SemanticInstruction *anInstruction, VirtualMemoryAddress aTarget,
                                   std::unique_ptr<Condition> aCondition, size_t numOperands) {
-  BranchCondAction *act(new (anInstruction->icb())
-                            BranchCondAction(anInstruction, aTarget, aCondition, numOperands));
+  BranchCondAction *act = new BranchCondAction(anInstruction, aTarget, aCondition, numOperands);
+  anInstruction->addNewComponent(act);
 
   return dependant_action(act, act->dependance());
 }
@@ -192,8 +192,8 @@ struct BranchRegAction : public BaseSemanticAction {
 };
 
 dependant_action branchRegAction(SemanticInstruction *anInstruction, eOperandCode aRegOperand) {
-  BranchRegAction *act(new (anInstruction->icb()) BranchRegAction(anInstruction, aRegOperand));
-
+  BranchRegAction *act = new BranchRegAction(anInstruction, aRegOperand);
+  anInstruction->addNewComponent(act);
   return dependant_action(act, act->dependance());
 }
 
@@ -234,8 +234,8 @@ struct BranchToCalcAddressAction : public BaseSemanticAction {
 };
 
 dependant_action branchToCalcAddressAction(SemanticInstruction *anInstruction) {
-  BranchToCalcAddressAction *act(new (anInstruction->icb())
-                                     BranchToCalcAddressAction(anInstruction, kAddress));
+  BranchToCalcAddressAction *act = new BranchToCalcAddressAction(anInstruction, kAddress);
+  anInstruction->addNewComponent(act);
 
   return dependant_action(act, act->dependance());
 }

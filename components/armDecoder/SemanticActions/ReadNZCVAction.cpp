@@ -109,7 +109,9 @@ struct ReadNZCVAction : public BaseSemanticAction {
 
 simple_action readNZCVAction(SemanticInstruction *anInstruction, eNZCV aBit,
                              eOperandCode anOperandCode) {
-  return new (anInstruction->icb()) ReadNZCVAction(anInstruction, aBit, anOperandCode);
+  ReadNZCVAction *act = new ReadNZCVAction(anInstruction, aBit, anOperandCode);
+  anInstruction->addNewComponent(act);
+  return simple_action(act);
 }
 
 } // namespace narmDecoder

@@ -104,13 +104,7 @@ struct EffectChain {
 };
 
 struct DependanceTarget {
-  void invokeSatisfy(int32_t anArg) {
-    void (narmDecoder::DependanceTarget::*satisfy_pt)(int32_t) =
-        &narmDecoder::DependanceTarget::satisfy;
-    DBG_(VVerb, (<< std::hex << "Satisfy: " << satisfy_pt << "\n"));
-    satisfy(anArg);
-    DBG_(VVerb, (<< "After satisfy"));
-  }
+  void invokeSatisfy(int32_t anArg);
   void invokeSquash(int32_t anArg) {
     squash(anArg);
   }

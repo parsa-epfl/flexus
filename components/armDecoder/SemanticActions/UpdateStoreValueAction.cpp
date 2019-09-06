@@ -190,14 +190,15 @@ struct UpdateSTPValueAction : public BaseSemanticAction {
 
 predicated_dependant_action updateStoreValueAction(SemanticInstruction *anInstruction,
                                                    eOperandCode data) {
-  UpdateStoreValueAction *act(new (anInstruction->icb())
-                                  UpdateStoreValueAction(anInstruction, data));
+  UpdateStoreValueAction *act = new UpdateStoreValueAction(anInstruction, data);
+  anInstruction->addNewComponent(act);
   return predicated_dependant_action(act, act->dependance(), act->predicate());
 }
 
 multiply_dependant_action updateSTPValueAction(SemanticInstruction *anInstruction,
                                                eOperandCode data) {
-  UpdateSTPValueAction *act(new (anInstruction->icb()) UpdateSTPValueAction(anInstruction, data));
+  UpdateSTPValueAction *act = new UpdateSTPValueAction(anInstruction, data);
+  anInstruction->addNewComponent(act);
   std::vector<InternalDependance> dependances;
   dependances.push_back(act->dependance(0));
   dependances.push_back(act->dependance(1));
@@ -207,8 +208,8 @@ multiply_dependant_action updateSTPValueAction(SemanticInstruction *anInstructio
 
 multiply_dependant_action updateCASValueAction(SemanticInstruction *anInstruction,
                                                eOperandCode aCompareCode, eOperandCode aNewCode) {
-  UpdateCASValueAction *act(new (anInstruction->icb())
-                                UpdateCASValueAction(anInstruction, aCompareCode, aNewCode));
+  UpdateCASValueAction *act = new UpdateCASValueAction(anInstruction, aCompareCode, aNewCode);
+  anInstruction->addNewComponent(act);
   std::vector<InternalDependance> dependances;
   dependances.push_back(act->dependance(0));
   dependances.push_back(act->dependance(1));
@@ -221,8 +222,9 @@ multiply_dependant_action updateCASPValueAction(SemanticInstruction *anInstructi
                                                 eOperandCode aCompareCode1,
                                                 eOperandCode aCompareCode2, eOperandCode aNewCode1,
                                                 eOperandCode aNewCode2) {
-  UpdateCASValueAction *act(new (anInstruction->icb()) UpdateCASValueAction(
-      anInstruction, aCompareCode1, aCompareCode2, aNewCode1, aNewCode2, true));
+  UpdateCASValueAction *act = new UpdateCASValueAction(anInstruction, aCompareCode1, aCompareCode2,
+                                                       aNewCode1, aNewCode2, true);
+  anInstruction->addNewComponent(act);
   std::vector<InternalDependance> dependances;
   dependances.push_back(act->dependance(0));
   dependances.push_back(act->dependance(1));

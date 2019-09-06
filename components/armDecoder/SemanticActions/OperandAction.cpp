@@ -101,8 +101,8 @@ struct OperandAction : public PredicatedSemanticAction {
 predicated_action operandAction(SemanticInstruction *anInstruction, eOperandCode anOperand,
                                 eOperandCode aResult, int anOffset,
                                 boost::optional<eOperandCode> aBypass) {
-  OperandAction *act(new (anInstruction->icb())
-                         OperandAction(anInstruction, anOperand, aResult, anOffset, aBypass));
+  OperandAction *act = new OperandAction(anInstruction, anOperand, aResult, anOffset, aBypass);
+  anInstruction->addNewComponent(act);
   return predicated_action(act, act->predicate());
 }
 

@@ -107,8 +107,8 @@ struct IncrementAction : public PredicatedSemanticAction {
 
 predicated_action incrementAction(SemanticInstruction *anInstruction, eOperandCode aRegisterCode,
                                   bool is64) {
-  IncrementAction *act(new (anInstruction->icb())
-                           IncrementAction(anInstruction, aRegisterCode, is64));
+  IncrementAction *act = new IncrementAction(anInstruction, aRegisterCode, is64);
+  anInstruction->addNewComponent(act);
   return predicated_action(act, act->predicate());
 }
 

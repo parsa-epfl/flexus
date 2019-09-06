@@ -178,8 +178,10 @@ struct ReadRegisterAction : public BaseSemanticAction {
 
 simple_action readRegisterAction(SemanticInstruction *anInstruction, eOperandCode aRegisterCode,
                                  eOperandCode anOperandCode, bool aSP, bool is64) {
-  return new (anInstruction->icb())
-      ReadRegisterAction(anInstruction, aRegisterCode, anOperandCode, aSP, is64);
+  ReadRegisterAction *act =
+      new ReadRegisterAction(anInstruction, aRegisterCode, anOperandCode, aSP, is64);
+  anInstruction->addNewComponent(act);
+  return simple_action(act);
 }
 
 } // namespace narmDecoder

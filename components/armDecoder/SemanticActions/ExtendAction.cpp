@@ -110,8 +110,8 @@ predicated_action extendAction(SemanticInstruction *anInstruction, eOperandCode 
                                std::unique_ptr<Operation> &anExtendOp,
                                std::vector<std::list<InternalDependance>> &opDeps, bool is64) {
 
-  ExtendAction *act(new (anInstruction->icb())
-                        ExtendAction(anInstruction, aRegisterCode, anExtendOp, is64));
+  ExtendAction *act = new ExtendAction(anInstruction, aRegisterCode, anExtendOp, is64);
+  anInstruction->addNewComponent(act);
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
     opDeps[i].push_back(act->dependance(i));
   }

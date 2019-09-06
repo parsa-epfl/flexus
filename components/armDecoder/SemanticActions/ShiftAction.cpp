@@ -108,8 +108,9 @@ struct ShiftRegisterAction : public PredicatedSemanticAction {
 predicated_action shiftAction(SemanticInstruction *anInstruction, eOperandCode aRegisterCode,
                               std::unique_ptr<Operation> &aShiftOp, uint64_t aShiftAmount,
                               bool is64) {
-  ShiftRegisterAction *act(new (anInstruction->icb()) ShiftRegisterAction(
-      anInstruction, aRegisterCode, aShiftOp, aShiftAmount, is64));
+  ShiftRegisterAction *act =
+      new ShiftRegisterAction(anInstruction, aRegisterCode, aShiftOp, aShiftAmount, is64);
+  anInstruction->addNewComponent(act);
   return predicated_action(act, act->predicate());
 }
 

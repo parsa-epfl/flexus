@@ -141,8 +141,8 @@ struct LoadFloatingAction : public PredicatedSemanticAction {
 predicated_dependant_action loadFloatingAction(SemanticInstruction *anInstruction, eSize aSize,
                                                boost::optional<eOperandCode> aBypass0,
                                                boost::optional<eOperandCode> aBypass1) {
-  LoadFloatingAction *act(new (anInstruction->icb())
-                              LoadFloatingAction(anInstruction, aSize, aBypass0, aBypass1));
+  LoadFloatingAction *act = new LoadFloatingAction(anInstruction, aSize, aBypass0, aBypass1);
+  anInstruction->addNewComponent(act);
   return predicated_dependant_action(act, act->dependance(), act->predicate());
 }
 

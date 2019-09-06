@@ -82,6 +82,16 @@ using nuArchARM::kLoad;
 using nuArchARM::kRMW;
 using nuArchARM::kStore;
 
+#pragma GCC diagnostic ignored "-Wunused-variable"
+// MARK: Moved here to use pragma and ignore unused variable
+void DependanceTarget::invokeSatisfy(int32_t anArg) {
+  void (narmDecoder::DependanceTarget::*satisfy_pt)(int32_t) =
+      &narmDecoder::DependanceTarget::satisfy;
+  DBG_(VVerb, (<< std::hex << "Satisfy: " << satisfy_pt << "\n"));
+  satisfy(anArg);
+  DBG_(VVerb, (<< "After satisfy"));
+}
+
 void EffectChain::invoke(SemanticInstruction &anInstruction) {
   if (theFirst) {
     theFirst->invoke(anInstruction);
@@ -134,7 +144,9 @@ struct MapSourceEffect : public Effect {
 };
 
 Effect *mapSource(SemanticInstruction *inst, eOperandCode anInputCode, eOperandCode anOutputCode) {
-  return new (inst->icb()) MapSourceEffect(anInputCode, anOutputCode);
+  MapSourceEffect *r = new MapSourceEffect(anInputCode, anOutputCode);
+  inst->addNewComponent(r);
+  return r;
 }
 
 // struct DisconnectRegisterEffect : public Effect {
@@ -162,9 +174,8 @@ Effect *mapSource(SemanticInstruction *inst, eOperandCode anInputCode, eOperandC
 //  }
 //};
 
-// Effect * disconnectRegister( SemanticInstruction * inst, eOperandCode
-// aMapping) {
-//  return new(inst->icb()) DisconnectRegisterEffect( aMapping );
+// Effect * disconnectRegister( SemanticInstruction * inst, eOperandCode aMapping) {
+//  return new DisconnectRegisterEffect( aMapping );
 //}
 
 struct FreeMappingEffect : public Effect {
@@ -189,7 +200,9 @@ struct FreeMappingEffect : public Effect {
 };
 
 Effect *freeMapping(SemanticInstruction *inst, eOperandCode aMapping) {
-  return new (inst->icb()) FreeMappingEffect(aMapping);
+  FreeMappingEffect *fme = new FreeMappingEffect(aMapping);
+  inst->addNewComponent(fme);
+  return fme;
 }
 
 struct RestoreMappingEffect : public Effect {
@@ -218,7 +231,9 @@ struct RestoreMappingEffect : public Effect {
 };
 
 Effect *restoreMapping(SemanticInstruction *inst, eOperandCode aName, eOperandCode aMapping) {
-  return new (inst->icb()) RestoreMappingEffect(aName, aMapping);
+  RestoreMappingEffect *rme = new RestoreMappingEffect(aName, aMapping);
+  inst->addNewComponent(rme);
+  return rme;
 }
 
 struct MapDestinationEffect : public Effect {
@@ -246,15 +261,19 @@ struct MapDestinationEffect : public Effect {
     }
 
     // Add effect to free previous mapping upon retirement
-    anInstruction.addRetirementEffect(new (anInstruction.icb())
-                                          FreeMappingEffect(thePreviousMappingCode));
+    Effect *e = new FreeMappingEffect(thePreviousMappingCode);
+    anInstruction.addNewComponent(e);
+    anInstruction.addRetirementEffect(e);
 
     // Add effect to deallocate new register and restore previous mapping upon
     // squash
     if (theSquashEffects) {
-      anInstruction.addSquashEffect(new (anInstruction.icb())
-                                        RestoreMappingEffect(theInputCode, thePreviousMappingCode));
-      anInstruction.addSquashEffect(new (anInstruction.icb()) FreeMappingEffect(theOutputCode));
+      Effect *e = new RestoreMappingEffect(theInputCode, thePreviousMappingCode);
+      anInstruction.addNewComponent(e);
+      anInstruction.addSquashEffect(e);
+      Effect *f = new FreeMappingEffect(theOutputCode);
+      anInstruction.addNewComponent(f);
+      anInstruction.addSquashEffect(f);
     }
 
     DECODER_DBG(anInstruction.identify() << " Mapping " << theInputCode << "(" << name << ")"
@@ -271,41 +290,61 @@ struct MapDestinationEffect : public Effect {
 };
 
 Effect *mapCCDestination(SemanticInstruction *inst) {
-  return new (inst->icb()) MapDestinationEffect(kCCd, kCCpd, kPCCpd, true);
+  MapDestinationEffect *mde = new MapDestinationEffect(kCCd, kCCpd, kPCCpd, true);
+  inst->addNewComponent(mde);
+  return mde;
 }
 Effect *mapDestination(SemanticInstruction *inst) {
-  return new (inst->icb()) MapDestinationEffect(kRD, kPD, kPPD, true);
+  MapDestinationEffect *mde = new MapDestinationEffect(kRD, kPD, kPPD, true);
+  inst->addNewComponent(mde);
+  return mde;
 }
 Effect *mapRD1Destination(SemanticInstruction *inst) {
-  return new (inst->icb()) MapDestinationEffect(kRD1, kPD1, kPPD1, true);
+  MapDestinationEffect *mde = new MapDestinationEffect(kRD1, kPD1, kPPD1, true);
+  inst->addNewComponent(mde);
+  return mde;
 }
 
 Effect *mapRD2Destination(SemanticInstruction *inst) {
-  return new (inst->icb()) MapDestinationEffect(kRD2, kPD2, kPPD2, true);
+  MapDestinationEffect *mde = new MapDestinationEffect(kRD2, kPD2, kPPD2, true);
+  inst->addNewComponent(mde);
+  return mde;
 }
 
 Effect *mapDestination_NoSquashEffects(SemanticInstruction *inst) {
-  return new (inst->icb()) MapDestinationEffect(kRD, kPD, kPPD, false);
+  MapDestinationEffect *mde = new MapDestinationEffect(kRD, kPD, kPPD, false);
+  inst->addNewComponent(mde);
+  return mde;
 }
 
 Effect *mapRD1Destination_NoSquashEffects(SemanticInstruction *inst) {
-  return new (inst->icb()) MapDestinationEffect(kRD1, kPD1, kPPD1, false);
+  MapDestinationEffect *mde = new MapDestinationEffect(kRD1, kPD1, kPPD1, false);
+  inst->addNewComponent(mde);
+  return mde;
 }
 
 Effect *mapRD2Destination_NoSquashEffects(SemanticInstruction *inst) {
-  return new (inst->icb()) MapDestinationEffect(kRD2, kPD2, kPPD2, false);
+  MapDestinationEffect *mde = new MapDestinationEffect(kRD2, kPD2, kPPD2, false);
+  inst->addNewComponent(mde);
+  return mde;
 }
 
 Effect *unmapDestination(SemanticInstruction *inst) {
-  return new (inst->icb()) FreeMappingEffect(kPD);
+  FreeMappingEffect *mde = new FreeMappingEffect(kPD);
+  inst->addNewComponent(mde);
+  return mde;
 }
 
 Effect *unmapFDestination(SemanticInstruction *inst, int32_t anIndex) {
-  return new (inst->icb()) FreeMappingEffect(eOperandCode(kPFD0 + anIndex));
+  FreeMappingEffect *mde = new FreeMappingEffect(eOperandCode(kPFD0 + anIndex));
+  inst->addNewComponent(mde);
+  return mde;
 }
 
 Effect *restorePreviousDestination(SemanticInstruction *inst) {
-  return new (inst->icb()) RestoreMappingEffect(kRD, kPPD);
+  RestoreMappingEffect *rme = new RestoreMappingEffect(kRD, kPPD);
+  inst->addNewComponent(rme);
+  return rme;
 }
 
 struct SatisfyDependanceEffect : public Effect {
@@ -349,11 +388,15 @@ struct SquashDependanceEffect : public Effect {
 };
 
 Effect *satisfy(SemanticInstruction *inst, InternalDependance const &aDependance) {
-  return new (inst->icb()) SatisfyDependanceEffect(aDependance);
+  SatisfyDependanceEffect *s = new SatisfyDependanceEffect(aDependance);
+  inst->addNewComponent(s);
+  return s;
 }
 
 Effect *squash(SemanticInstruction *inst, InternalDependance const &aDependance) {
-  return new (inst->icb()) SquashDependanceEffect(aDependance);
+  SquashDependanceEffect *s = new SquashDependanceEffect(aDependance);
+  inst->addNewComponent(s);
+  return s;
 }
 
 struct AnnulInstruction : public Interaction {
@@ -405,7 +448,9 @@ struct AnnulNextEffect : public Effect {
 };
 
 Effect *annulNext(SemanticInstruction *inst) {
-  return new (inst->icb()) AnnulNextEffect();
+  AnnulNextEffect *a = new AnnulNextEffect();
+  inst->addNewComponent(a);
+  return a;
 }
 
 BranchInteraction::BranchInteraction(VirtualMemoryAddress aTarget) : theTarget(aTarget) {
@@ -484,7 +529,9 @@ struct BranchFeedbackWithOperandEffect : public Effect {
 };
 
 Effect *updateConditional(SemanticInstruction *inst) {
-  return new (inst->icb()) BranchFeedbackEffect();
+  BranchFeedbackEffect *b = new BranchFeedbackEffect();
+  inst->addNewComponent(b);
+  return b;
 }
 
 Effect *updateUnconditional(SemanticInstruction *inst, VirtualMemoryAddress aTarget) {
@@ -495,7 +542,9 @@ Effect *updateUnconditional(SemanticInstruction *inst, VirtualMemoryAddress aTar
   feedback->theActualTarget = aTarget;
   feedback->theBPState = inst->bpState();
   inst->setBranchFeedback(feedback);
-  return new (inst->icb()) BranchFeedbackEffect();
+  BranchFeedbackEffect *b = new BranchFeedbackEffect();
+  inst->addNewComponent(b);
+  return b;
 }
 
 Effect *updateNonBranch(SemanticInstruction *inst) {
@@ -506,11 +555,16 @@ Effect *updateNonBranch(SemanticInstruction *inst) {
   feedback->theActualTarget = VirtualMemoryAddress(0);
   feedback->theBPState = inst->bpState();
   inst->setBranchFeedback(feedback);
-  return new (inst->icb()) BranchFeedbackEffect();
+  BranchFeedbackEffect *b = new BranchFeedbackEffect();
+  inst->addNewComponent(b);
+  return b;
 }
 
 Effect *updateUnconditional(SemanticInstruction *inst, eOperandCode anOperandCode) {
-  return new (inst->icb()) BranchFeedbackWithOperandEffect(kUnconditional, kTaken, anOperandCode);
+  BranchFeedbackWithOperandEffect *b =
+      new BranchFeedbackWithOperandEffect(kUnconditional, kTaken, anOperandCode);
+  inst->addNewComponent(b);
+  return b;
 }
 
 Effect *updateCall(SemanticInstruction *inst, VirtualMemoryAddress aTarget) {
@@ -521,7 +575,9 @@ Effect *updateCall(SemanticInstruction *inst, VirtualMemoryAddress aTarget) {
   feedback->theActualTarget = aTarget;
   feedback->theBPState = inst->bpState();
   inst->setBranchFeedback(feedback);
-  return new (inst->icb()) BranchFeedbackEffect();
+  BranchFeedbackEffect *b = new BranchFeedbackEffect();
+  inst->addNewComponent(b);
+  return b;
 }
 
 struct BranchEffect : public Effect {
@@ -593,14 +649,20 @@ struct BranchAfterNextWithOperand : public Effect {
 };
 
 Effect *branch(SemanticInstruction *inst, VirtualMemoryAddress aTarget) {
-  return new (inst->icb()) BranchEffect(aTarget);
+  BranchEffect *b = new BranchEffect(aTarget);
+  inst->addNewComponent(b);
+  return b;
 }
 Effect *branchAfterNext(SemanticInstruction *inst, VirtualMemoryAddress aTarget) {
-  return new (inst->icb()) BranchAfterNext(aTarget);
+  BranchAfterNext *b = new BranchAfterNext(aTarget);
+  inst->addNewComponent(b);
+  return b;
 }
 
 Effect *branchAfterNext(SemanticInstruction *inst, eOperandCode anOperandCode) {
-  return new (inst->icb()) BranchAfterNextWithOperand(anOperandCode);
+  BranchAfterNextWithOperand *b = new BranchAfterNextWithOperand(anOperandCode);
+  inst->addNewComponent(b);
+  return b;
 }
 
 struct BranchConditionallyEffect : public Effect {
@@ -665,8 +727,10 @@ struct BranchConditionallyEffect : public Effect {
 
 Effect *branchConditionally(SemanticInstruction *inst, VirtualMemoryAddress aTarget, bool anAnnul,
                             Condition &aCondition, bool isFloating) {
-  return new (inst->icb())
-      BranchConditionallyEffect(aTarget, anAnnul, aCondition, isFloating, kCCps);
+  BranchConditionallyEffect *be =
+      new BranchConditionallyEffect(aTarget, anAnnul, aCondition, isFloating, kCCps);
+  inst->addNewComponent(be);
+  return be;
 }
 
 struct BranchRegConditionallyEffect : public Effect {
@@ -726,7 +790,10 @@ struct BranchRegConditionallyEffect : public Effect {
 
 Effect *branchRegConditionally(SemanticInstruction *inst, VirtualMemoryAddress aTarget,
                                bool anAnnul, Condition &aCondition) {
-  return new (inst->icb()) BranchRegConditionallyEffect(aTarget, anAnnul, aCondition, kOperand1);
+  BranchRegConditionallyEffect *bre =
+      new BranchRegConditionallyEffect(aTarget, anAnnul, aCondition, kOperand1);
+  inst->addNewComponent(bre);
+  return bre;
 }
 
 struct AllocateLSQEffect : public Effect {
@@ -768,26 +835,36 @@ struct AllocateLSQEffect : public Effect {
 };
 
 Effect *allocateStore(SemanticInstruction *inst, eSize aSize, bool aBypassSB, eAccType type) {
-  return new (inst->icb()) AllocateLSQEffect(kStore, aSize, aBypassSB, type);
+  AllocateLSQEffect *ae = new AllocateLSQEffect(kStore, aSize, aBypassSB, type);
+  inst->addNewComponent(ae);
+  return ae;
 }
 
 Effect *allocateMEMBAR(SemanticInstruction *inst, eAccType type) {
-  return new (inst->icb()) AllocateLSQEffect(kMEMBARMarker, kWord, false, type);
+  AllocateLSQEffect *ae = new AllocateLSQEffect(kMEMBARMarker, kWord, false, type);
+  inst->addNewComponent(ae);
+  return ae;
 }
 
 Effect *allocateLoad(SemanticInstruction *inst, eSize aSize, InternalDependance const &aDependance,
                      eAccType type) {
-  return new (inst->icb()) AllocateLSQEffect(kLoad, aSize, false, aDependance, type);
+  AllocateLSQEffect *ae = new AllocateLSQEffect(kLoad, aSize, false, aDependance, type);
+  inst->addNewComponent(ae);
+  return ae;
 }
 
 Effect *allocateCAS(SemanticInstruction *inst, eSize aSize, InternalDependance const &aDependance,
                     eAccType type) {
-  return new (inst->icb()) AllocateLSQEffect(kCAS, aSize, false, aDependance, type);
+  AllocateLSQEffect *ae = new AllocateLSQEffect(kCAS, aSize, false, aDependance, type);
+  inst->addNewComponent(ae);
+  return ae;
 }
 
 Effect *allocateRMW(SemanticInstruction *inst, eSize aSize, InternalDependance const &aDependance,
                     eAccType type) {
-  return new (inst->icb()) AllocateLSQEffect(kRMW, aSize, false, aDependance, type);
+  AllocateLSQEffect *ae = new AllocateLSQEffect(kRMW, aSize, false, aDependance, type);
+  inst->addNewComponent(ae);
+  return ae;
 }
 
 struct EraseLSQEffect : public Effect {
@@ -807,7 +884,9 @@ struct EraseLSQEffect : public Effect {
 };
 
 Effect *eraseLSQ(SemanticInstruction *inst) {
-  return new (inst->icb()) EraseLSQEffect();
+  EraseLSQEffect *e = new EraseLSQEffect();
+  inst->addNewComponent(e);
+  return e;
 }
 
 struct RetireMemEffect : public Effect {
@@ -827,7 +906,9 @@ struct RetireMemEffect : public Effect {
 };
 
 Effect *retireMem(SemanticInstruction *inst) {
-  return new (inst->icb()) RetireMemEffect();
+  RetireMemEffect *e = new RetireMemEffect();
+  inst->addNewComponent(e);
+  return e;
 }
 
 struct CheckSysRegAccess : public Effect {
@@ -853,7 +934,9 @@ struct CheckSysRegAccess : public Effect {
 };
 
 Effect *checkSysRegAccess(SemanticInstruction *inst, ePrivRegs aPrivReg, uint8_t is_read) {
-  return new (inst->icb()) CheckSysRegAccess(aPrivReg, is_read);
+  CheckSysRegAccess *e = new CheckSysRegAccess(aPrivReg, is_read);
+  inst->addNewComponent(e);
+  return e;
 }
 
 struct CheckSystemAccess : public Effect {
@@ -867,11 +950,10 @@ struct CheckSystemAccess : public Effect {
   void invoke(SemanticInstruction &anInstruction) {
     FLEXUS_PROFILE();
     if (!anInstruction.isAnnulled()) {
-      // Perform the generic checks that an AArch64 MSR/MRS/SYS instruction is
-      // valid at the current exception level, based on the opcode's 'op1' field
-      // value. Further checks for enables/disables/traps specific to a
-      // particular system register or operation will be performed in
-      // System_Put(), System_Get(), SysOp_W(), or SysOp_R().
+      // Perform the generic checks that an AArch64 MSR/MRS/SYS instruction is valid at the
+      // current exception level, based on the opcode's 'op1' field value.
+      // Further checks for enables/disables/traps specific to a particular system register
+      // or operation will be performed in System_Put(), System_Get(), SysOp_W(), or SysOp_R().
       /* 64 bit registers have only CRm and Opc1 fields */
 
       SysRegInfo &ri = anInstruction.core()->getSysRegInfo(theOp0, theOp1, theOp2, theCRn, theCRm);
@@ -932,7 +1014,6 @@ struct CheckSystemAccess : public Effect {
         }
       }
     }
-    Effect::invoke(anInstruction);
   }
 
   void describe(std::ostream &anOstream) const {
@@ -943,7 +1024,9 @@ struct CheckSystemAccess : public Effect {
 
 Effect *checkSystemAccess(SemanticInstruction *inst, uint8_t anOp0, uint8_t anOp1, uint8_t anOp2,
                           uint8_t aCRn, uint8_t aCRm, uint8_t aRT, uint8_t aRead) {
-  return new (inst->icb()) CheckSystemAccess(anOp0, anOp1, anOp2, aCRn, aCRm, aRT, aRead);
+  CheckSystemAccess *e = new CheckSystemAccess(anOp0, anOp1, anOp2, aCRn, aCRm, aRT, aRead);
+  inst->addNewComponent(e);
+  return e;
 }
 
 struct CheckDAIFAccess : public Effect {
@@ -963,15 +1046,15 @@ struct CheckDAIFAccess : public Effect {
     }
     Effect::invoke(anInstruction);
   }
-
   void describe(std::ostream &anOstream) const {
     anOstream << " CheckDAIFAccess";
     Effect::describe(anOstream);
   }
 };
-
 Effect *checkDAIFAccess(SemanticInstruction *inst, uint8_t anOp1) {
-  return new (inst->icb()) CheckDAIFAccess(anOp1);
+  CheckDAIFAccess *e = new CheckDAIFAccess(anOp1);
+  inst->addNewComponent(e);
+  return e;
 }
 
 struct ReadPREffect : public Effect {
@@ -1011,7 +1094,9 @@ struct ReadPREffect : public Effect {
 };
 
 Effect *readPR(SemanticInstruction *inst, ePrivRegs aPR) {
-  return new (inst->icb()) ReadPREffect(aPR);
+  ReadPREffect *e = new ReadPREffect(aPR);
+  inst->addNewComponent(e);
+  return e;
 }
 
 struct WritePREffect : public Effect {
@@ -1044,7 +1129,9 @@ struct WritePREffect : public Effect {
 };
 
 Effect *writePR(SemanticInstruction *inst, ePrivRegs aPR) {
-  return new (inst->icb()) WritePREffect(aPR);
+  WritePREffect *e = new WritePREffect(aPR);
+  inst->addNewComponent(e);
+  return e;
 }
 
 struct WritePSTATE : public Effect {
@@ -1093,7 +1180,9 @@ struct WritePSTATE : public Effect {
 };
 
 Effect *writePSTATE(SemanticInstruction *inst, uint8_t anOp1, uint8_t anOp2) {
-  return new (inst->icb()) WritePSTATE(anOp1, anOp2);
+  Effect *e = new WritePSTATE(anOp1, anOp2);
+  inst->addNewComponent(e);
+  return e;
 }
 
 struct WriteNZCV : public Effect {
@@ -1123,7 +1212,9 @@ struct WriteNZCV : public Effect {
 };
 
 Effect *writeNZCV(SemanticInstruction *inst) {
-  return new (inst->icb()) WriteNZCV();
+  WriteNZCV *e = new WriteNZCV();
+  inst->addNewComponent(e);
+  return e;
 }
 
 struct ClearExclusiveMonitor : public Effect {
@@ -1143,7 +1234,9 @@ struct ClearExclusiveMonitor : public Effect {
   }
 };
 Effect *clearExclusiveMonitor(SemanticInstruction *inst) {
-  return new (inst->icb()) ClearExclusiveMonitor();
+  ClearExclusiveMonitor *e = new ClearExclusiveMonitor();
+  inst->addNewComponent(e);
+  return e;
 }
 
 struct MarkExclusiveMonitor : public Effect {
@@ -1183,13 +1276,15 @@ struct MarkExclusiveMonitor : public Effect {
   }
 };
 Effect *markExclusiveMonitor(SemanticInstruction *inst, eOperandCode anAddressCode, eSize aSize) {
-  return new (inst->icb()) MarkExclusiveMonitor(anAddressCode, aSize);
+  MarkExclusiveMonitor *e = new MarkExclusiveMonitor(anAddressCode, aSize);
+  inst->addNewComponent(e);
+  return e;
 }
 
 // It is IMPLEMENTATION DEFINED whether the detection of memory aborts happens
-// before or after the check on the local Exclusives monitor. As a result a
-// failure of the local monitor can occur on some implementations even if the
-// memory access would give an memory abort.
+// before or after the check on the local Exclusives monitor. As a result a failure
+// of the local monitor can occur on some implementations even if the memory
+// access would give an memory abort.
 struct ExclusiveMonitorPass : public Effect {
 
   eOperandCode theAddressCode;
@@ -1207,8 +1302,7 @@ struct ExclusiveMonitorPass : public Effect {
 
     if (!aligned) {
       //            bool secondstage = false;
-      //            AArch64.Abort(address, AArch64.AlignmentFault(acctype,
-      //            iswrite, secondstage));
+      //            AArch64.Abort(address, AArch64.AlignmentFault(acctype, iswrite, secondstage));
       anInstruction.setWillRaise(kException_DATAABORT);
       anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction>(&anInstruction),
                                      anInstruction.willRaise());
@@ -1221,8 +1315,7 @@ struct ExclusiveMonitorPass : public Effect {
                                      anInstruction.willRaise());
     }
     // pending MMY work - check for fault when transalting
-    //        memaddrdesc = AArch64.TranslateAddress(address, acctype, iswrite,
-    //        aligned, size);
+    //        memaddrdesc = AArch64.TranslateAddress(address, acctype, iswrite, aligned, size);
     // Check for aborts or debug exceptions
     //        if IsFault(memaddrdesc) then
     //            AArch64.Abort(address, memaddrdesc.fault);
@@ -1248,8 +1341,11 @@ struct ExclusiveMonitorPass : public Effect {
     Effect::describe(anOstream);
   }
 };
+
 Effect *exclusiveMonitorPass(SemanticInstruction *inst, eOperandCode anAddressCode, eSize aSize) {
-  return new (inst->icb()) ExclusiveMonitorPass(anAddressCode, aSize);
+  ExclusiveMonitorPass *e = new ExclusiveMonitorPass(anAddressCode, aSize);
+  inst->addNewComponent(e);
+  return e;
 }
 
 struct ExceptionEffect : public Effect {
@@ -1270,7 +1366,9 @@ struct ExceptionEffect : public Effect {
 };
 
 Effect *exceptionEffect(SemanticInstruction *inst, eExceptionType aType) {
-  return new (inst->icb()) ExceptionEffect(aType);
+  ExceptionEffect *e = new ExceptionEffect(aType);
+  inst->addNewComponent(e);
+  return e;
 }
 
 struct CommitStoreEffect : public Effect {
@@ -1290,7 +1388,9 @@ struct CommitStoreEffect : public Effect {
 };
 
 Effect *commitStore(SemanticInstruction *inst) {
-  return new (inst->icb()) CommitStoreEffect();
+  CommitStoreEffect *e = new CommitStoreEffect();
+  inst->addNewComponent(e);
+  return e;
 }
 
 struct AccessMemEffect : public Effect {
@@ -1311,7 +1411,9 @@ struct AccessMemEffect : public Effect {
 };
 
 Effect *accessMem(SemanticInstruction *inst) {
-  return new (inst->icb()) AccessMemEffect();
+  AccessMemEffect *e = new AccessMemEffect();
+  inst->addNewComponent(e);
+  return e;
 }
 
 struct ForceResyncEffect : public Effect {
@@ -1330,7 +1432,9 @@ struct ForceResyncEffect : public Effect {
 };
 
 Effect *forceResync(SemanticInstruction *inst) {
-  return new (inst->icb()) ForceResyncEffect();
+  ForceResyncEffect *e = new ForceResyncEffect();
+  inst->addNewComponent(e);
+  return e;
 }
 
 struct MMUpageFaultCheckEffect : public Effect {
@@ -1353,7 +1457,9 @@ struct MMUpageFaultCheckEffect : public Effect {
 };
 
 Effect *mmuPageFaultCheck(SemanticInstruction *inst) {
-  return new (inst->icb()) MMUpageFaultCheckEffect();
+  Effect *e = new MMUpageFaultCheckEffect();
+  inst->addNewComponent(e);
+  return e;
 }
 
 struct IMMUExceptionEffect : public Effect {
@@ -1380,7 +1486,9 @@ struct IMMUExceptionEffect : public Effect {
 };
 
 Effect *immuException(SemanticInstruction *inst) {
-  return new (inst->icb()) IMMUExceptionEffect();
+  Effect *e = new IMMUExceptionEffect();
+  inst->addNewComponent(e);
+  return e;
 }
 
 } // namespace narmDecoder

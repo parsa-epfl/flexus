@@ -151,15 +151,15 @@ struct LDPAction : public PredicatedSemanticAction {
 predicated_dependant_action ldpAction(SemanticInstruction *anInstruction, eSize aSize,
                                       eSignCode aSignCode, boost::optional<eOperandCode> aBypass0,
                                       boost::optional<eOperandCode> aBypass1) {
-  LDPAction *act(new (anInstruction->icb())
-                     LDPAction(anInstruction, aSize, aSignCode, aBypass0, aBypass1));
+  LDPAction *act = new LDPAction(anInstruction, aSize, aSignCode, aBypass0, aBypass1);
+  anInstruction->addNewComponent(act);
   return predicated_dependant_action(act, act->dependance(), act->predicate());
 }
 predicated_dependant_action caspAction(SemanticInstruction *anInstruction, eSize aSize,
                                        eSignCode aSignCode, boost::optional<eOperandCode> aBypass0,
                                        boost::optional<eOperandCode> aBypass1) {
-  LDPAction *act(new (anInstruction->icb())
-                     LDPAction(anInstruction, aSize, aSignCode, aBypass0, aBypass1));
+  LDPAction *act = new LDPAction(anInstruction, aSize, aSignCode, aBypass0, aBypass1);
+  anInstruction->addNewComponent(act);
   return predicated_dependant_action(act, act->dependance(), act->predicate());
 }
 } // namespace narmDecoder

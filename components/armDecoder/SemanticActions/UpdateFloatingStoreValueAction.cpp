@@ -104,8 +104,8 @@ struct UpdateFloatingStoreValueAction : public BaseSemanticAction {
 
 multiply_dependant_action updateFloatingStoreValueAction(SemanticInstruction *anInstruction,
                                                          eSize aSize) {
-  UpdateFloatingStoreValueAction *act(new (anInstruction->icb())
-                                          UpdateFloatingStoreValueAction(anInstruction, aSize));
+  BaseSemanticAction *act = new UpdateFloatingStoreValueAction(anInstruction, aSize);
+  anInstruction->addNewComponent(act);
   std::vector<InternalDependance> dependances;
   dependances.push_back(act->dependance(0));
   dependances.push_back(act->dependance(1));

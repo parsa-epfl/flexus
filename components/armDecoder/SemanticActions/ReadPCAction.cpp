@@ -99,7 +99,8 @@ struct ReadPCAction : public PredicatedSemanticAction {
 };
 
 predicated_action readPCAction(SemanticInstruction *anInstruction) {
-  ReadPCAction *act(new (anInstruction->icb()) ReadPCAction(anInstruction, kResult));
+  ReadPCAction *act = new ReadPCAction(anInstruction, kResult);
+  anInstruction->addNewComponent(act);
 
   return predicated_action(act, act->predicate());
 }

@@ -125,8 +125,9 @@ predicated_action bitFieldAction(SemanticInstruction *anInstruction,
                                  eOperandCode anOperandCode1, eOperandCode anOperandCode2,
                                  uint64_t imms, uint64_t immr, uint64_t wmask, uint64_t tmask,
                                  bool anExtend, bool a64) {
-  BitFieldAction *act(new (anInstruction->icb()) BitFieldAction(
-      anInstruction, anOperandCode1, anOperandCode2, imms, immr, wmask, tmask, anExtend, a64));
+  BitFieldAction *act = new BitFieldAction(anInstruction, anOperandCode1, anOperandCode2, imms,
+                                           immr, wmask, tmask, anExtend, a64);
+  anInstruction->addNewComponent(act);
 
   for (uint32_t i = 0; i < opDeps.size(); ++i) {
     opDeps[i].push_back(act->dependance(i));

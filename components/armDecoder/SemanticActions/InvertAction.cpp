@@ -107,7 +107,8 @@ struct InvertAction : public PredicatedSemanticAction {
 predicated_action invertAction(SemanticInstruction *anInstruction, eOperandCode aRegisterCode,
                                bool is64) {
 
-  InvertAction *act(new (anInstruction->icb()) InvertAction(anInstruction, aRegisterCode, is64));
+  InvertAction *act = new InvertAction(anInstruction, aRegisterCode, is64);
+  anInstruction->addNewComponent(act);
   return predicated_action(act, act->predicate());
 }
 

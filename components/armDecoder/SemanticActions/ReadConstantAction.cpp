@@ -92,7 +92,9 @@ struct ReadConstantAction : public BaseSemanticAction {
 
 simple_action readConstantAction(SemanticInstruction *anInstruction, uint64_t aVal,
                                  eOperandCode anOperandCode) {
-  return new (anInstruction->icb()) ReadConstantAction(anInstruction, aVal, anOperandCode);
+  ReadConstantAction *act = new ReadConstantAction(anInstruction, aVal, anOperandCode);
+  anInstruction->addNewComponent(act);
+  return simple_action(act);
 }
 
 } // namespace narmDecoder

@@ -117,24 +117,27 @@ struct AnnulAction : public PredicatedSemanticAction {
 };
 
 predicated_action annulAction(SemanticInstruction *anInstruction) {
-  AnnulAction *act;
-  act = new (anInstruction->icb()) AnnulAction(anInstruction, kPPD, kResult);
+  AnnulAction *act = new AnnulAction(anInstruction, kPPD, kResult);
+  anInstruction->addNewComponent(act);
   return predicated_action(act, act->predicate());
 }
 
 predicated_action annulRD1Action(SemanticInstruction *anInstruction) {
-  AnnulAction *act = new (anInstruction->icb()) AnnulAction(anInstruction, kPPD1, kResult1);
+  AnnulAction *act = new AnnulAction(anInstruction, kPPD1, kResult1);
+  anInstruction->addNewComponent(act);
   return predicated_action(act, act->predicate());
 }
 
 predicated_action annulXTRA(SemanticInstruction *anInstruction) {
-  AnnulAction *act = new (anInstruction->icb()) AnnulAction(anInstruction, kXTRAppd, kXTRAout);
+  AnnulAction *act = new AnnulAction(anInstruction, kXTRAppd, kXTRAout);
+  anInstruction->addNewComponent(act);
   return predicated_action(act, act->predicate());
 }
 
 predicated_action floatingAnnulAction(SemanticInstruction *anInstruction, int32_t anIndex) {
-  AnnulAction *act = new (anInstruction->icb())
-      AnnulAction(anInstruction, eOperandCode(kPPFD0 + anIndex), eOperandCode(kfResult0 + anIndex));
+  AnnulAction *act = new AnnulAction(anInstruction, eOperandCode(kPPFD0 + anIndex),
+                                     eOperandCode(kfResult0 + anIndex));
+  anInstruction->addNewComponent(act);
   return predicated_action(act, act->predicate());
 }
 

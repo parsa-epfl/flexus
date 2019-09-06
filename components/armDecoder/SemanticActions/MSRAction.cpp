@@ -121,8 +121,9 @@
 // predicated_action MSRAction
 //( SemanticInstruction * anInstruction, uint8_t op1, uint8_t op2, uint8_t crm
 //) {
-//  MSRAction * act(new(anInstruction->icb()) MSRAction( anInstruction, op1,
-//  op2, crm) );
+//  MSRAction * act = new MSRAction( anInstruction, op1,
+//  op2, crm);
+//  anInstruction->addNewComponent(act);
 
 //  return predicated_action( act, act->predicate() );
 //}

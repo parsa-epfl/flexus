@@ -144,7 +144,8 @@ struct LDDAction : public PredicatedSemanticAction {
 predicated_dependant_action lddAction(SemanticInstruction *anInstruction,
                                       boost::optional<eOperandCode> aBypass0,
                                       boost::optional<eOperandCode> aBypass1) {
-  LDDAction *act(new (anInstruction->icb()) LDDAction(anInstruction, aBypass0, aBypass1));
+  LDDAction *act = new LDDAction(anInstruction, aBypass0, aBypass1);
+  anInstruction->addNewComponent(act);
   return predicated_dependant_action(act, act->dependance(), act->predicate());
 }
 
