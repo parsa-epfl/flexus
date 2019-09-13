@@ -59,7 +59,7 @@ void CoreImpl::invalidate(PhysicalMemoryAddress anAddress) {
   if (isSpeculating()) {
     SpeculativeLoadAddressTracker::iterator iter, end;
     std::tie(iter, end) = theSLAT.equal_range(anAddress);
-    boost::optional<boost::intrusive_ptr<Instruction>> violator(nullptr);
+    boost::optional<boost::intrusive_ptr<Instruction>> violator = boost::make_optional(false, boost::intrusive_ptr<Instruction>());
     while (iter != end) {
       if (!violator || iter->second->sequenceNo() < (*violator)->sequenceNo()) {
         if (iter->second->instClass() == clsAtomic) {

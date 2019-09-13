@@ -257,7 +257,7 @@ void CoreImpl::updateDependantLoads(memq_t::index<by_insn>::type::iterator anUpd
 
   // Loads with higher sequence numbers than anUpdatedStore must be squashed and
   // obtain their new value
-  boost::optional<memq_t::index<by_insn>::type::iterator> cached_search(nullptr);
+  boost::optional<memq_t::index<by_insn>::type::iterator> cached_search = boost::make_optional(false, memq_t::index<by_insn>::type::iterator());
   iter = updated_store;
   ++iter;
   while (iter != last_match) {
