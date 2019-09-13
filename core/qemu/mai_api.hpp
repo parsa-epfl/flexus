@@ -94,12 +94,15 @@ public:
 
   std::string disassemble(VirtualMemoryAddress const &anAddress) const {
     API::logical_address_t addr(anAddress);
-    const char *buffer = API::QEMU_disassemble(*this, addr);
+    char *buffer = API::QEMU_disassemble(*this, addr);
     char *buffer_dup = (char *)buffer;
-    while (buffer_dup[0] != '\n')
+    while (buffer_dup[0] != '\n') {
       buffer_dup++;
+    }
     buffer_dup[0] = '\0';
-    return buffer;
+    std::string s(buffer);
+    free(buffer); // qemu called "malloc" for this area
+    return s;
   }
 
   std::string dump_state() const {
