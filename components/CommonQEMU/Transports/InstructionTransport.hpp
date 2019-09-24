@@ -47,6 +47,9 @@
 
 #include <core/transport.hpp>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+
 namespace Flexus {
 namespace SharedTypes {
 
@@ -75,5 +78,7 @@ typedef Transport<
 
 } // namespace SharedTypes
 } // namespace Flexus
+
+#pragma GCC diagnostic pop
 
 #endif // FLEXUS_TRANSPORTS__INSTRUCTION_TRANSPORT_HPP_INCLUDED

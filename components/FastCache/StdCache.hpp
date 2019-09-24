@@ -62,7 +62,7 @@ class StdCache : public AbstractCache {
 private:
   // Structur to mimic traditional tag array (BST like structure)
   struct BlockEntry {
-    int64_t tag;
+    uint64_t tag;
     CoherenceState_t state;
     uint16_t way;
 
@@ -114,7 +114,7 @@ private:
       BlockEntry,
       indexed_by<
           sequenced<tag<by_order>>,
-          hashed_unique<tag<by_tag>, member<BlockEntry, int64_t, &BlockEntry::tag>, Int64Hash>,
+          hashed_unique<tag<by_tag>, member<BlockEntry, uint64_t, &BlockEntry::tag>, Int64Hash>,
           hashed_unique<tag<by_way>, member<BlockEntry, uint16_t, &BlockEntry::way>>>>
       block_set_t;
 
@@ -193,7 +193,7 @@ private:
     return (addr >> blockShift) & blockSetMask;
   }
 
-  int64_t get_tag(uint64_t addr) {
+  uint64_t get_tag(uint64_t addr) {
     return (addr & blockTagMask);
   }
 
@@ -244,7 +244,7 @@ public:
   }
 
   void allocate(PhysicalMemoryAddress addr, CoherenceState_t new_state, StdLookupResult &lookup) {
-    int64_t new_tag = get_tag(addr);
+    uint64_t new_tag = get_tag(addr);
 
     theAllocateInProgress = true;
     theAllocateAddr = new_tag;
@@ -393,7 +393,6 @@ public:
     static const int32_t kSave_ValidBit = 1;
     static const int32_t kSave_DirtyBit = 2;
     static const int32_t kSave_ModifiableBit = 4;
-    static const int32_t kSave_PrefetchedBit = 8;
 
     if (theTextFlexpoints) {
       int32_t shift = blockShift + log_base2(theNumSets);
@@ -497,7 +496,6 @@ public:
     static const int32_t kSave_ValidBit = 1;
     static const int32_t kSave_DirtyBit = 2;
     static const int32_t kSave_ModifiableBit = 4;
-    static const int32_t kSave_PrefetchedBit = 8;
 
     if (theTextFlexpoints) {
       int32_t shift = blockShift + log_base2(theNumSets);

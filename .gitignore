@@ -6,6 +6,7 @@ Makefile.depend*
 *.a
 *.a.fresh
 *.so
+*stats_o
 stat-manager/stat-manager
 stat-manager/stat-sample
 stat-manager/stat-collapse
