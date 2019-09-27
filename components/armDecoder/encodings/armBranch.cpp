@@ -424,6 +424,8 @@ arminst MSR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   inst->addCheckTrapEffect(checkDAIFAccess(inst, op1));
   inst->setOperand(kResult, uint64_t(crm));
 
+  // FIXME: This code never actually writes the register.
+
   // inst->addRetirementEffect( writePSTATE(inst, op1, op2) );
   // inst->addPostvalidation( validateXRegister( rt, kResult, inst  ) );
   // FIXME - validate PR
@@ -465,7 +467,8 @@ arminst SYS(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
     inst->addPostvalidation(validateXRegister(rt, kResult, inst, true));
   } else {
     inst->setClass(clsComputation, codeWRPR);
-    return inst;
+    return inst; // FIXME: This will never actually write the register
+
     std::vector<std::list<InternalDependance>> rs_dep(1);
     // need to halt dispatch for writes
     inst->setHaltDispatch();

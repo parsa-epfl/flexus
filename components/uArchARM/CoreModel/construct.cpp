@@ -420,17 +420,17 @@ void CoreImpl::setPSTATE(uint32_t aPSTATE) {
 uint64_t CoreImpl::getTPIDR(uint8_t anEL) {
   return Flexus::Qemu::Processor::getProcessor(theNode)->readTPIDR(anEL);
 }
-void CoreImpl::setFPSR(uint32_t anFPSR) {
-  theFPSR = anFPSR;
+void CoreImpl::setFPSR(uint64_t anFPSR) {
+  theFPSR.set(anFPSR);
 }
-uint32_t CoreImpl::getFPSR() {
-  return theFPSR;
+uint64_t CoreImpl::getFPSR() {
+  return theFPSR.get();
 }
-void CoreImpl::setFPCR(uint32_t anFPCR) {
-  theFPCR = anFPCR;
+void CoreImpl::setFPCR(uint64_t anFPCR) {
+    theFPCR.set(anFPCR);
 }
-uint32_t CoreImpl::getFPCR() {
-  return theFPCR;
+uint64_t CoreImpl::getFPCR() {
+  return theFPCR.get();
 }
 uint32_t CoreImpl::getDCZID_EL0() {
   return theDCZID_EL0;

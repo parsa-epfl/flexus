@@ -80,10 +80,10 @@ namespace Stat = Flexus::Stat;
 #include "../systemRegister.hpp"
 #include "PSTATE.hpp"
 #include "SCTLR_EL.hpp"
+#include "FPStatRegisters.hpp" // Msutherl
 
 // Msutherl, Oct'18
-// FIXME: move this file but for now just directly include it
-#include <core/qemu/mai_api.hpp> // FIXME: might not need this
+#include <core/qemu/mai_api.hpp>
 
 namespace nuArchARM {
 
@@ -144,8 +144,10 @@ private:
   uint32_t theDCZID_EL0;
   uint64_t theSCTLR_EL[4];
   uint64_t theHCR_EL2;
-  uint32_t theFPSR;
-  uint32_t theFPCR;
+
+  // MARK: Change these to structs with overloads
+  CImpl_FPSR theFPSR; 
+  CImpl_FPCR theFPCR; 
   Flexus::Qemu::API::exception_t theEXP;
 
   std::map<PhysicalMemoryAddress, eSize> theLocalExclusivePhysicalMonitor;
@@ -702,10 +704,10 @@ public:
   uint32_t getPSTATE();
   void setPSTATE(uint32_t aPSTATE);
   uint64_t getTPIDR(uint8_t anEL);
-  void setFPSR(uint32_t anFPSR);
-  uint32_t getFPSR();
-  void setFPCR(uint32_t anFPCR);
-  uint32_t getFPCR();
+  void setFPSR(uint64_t anFPSR);
+  uint64_t getFPSR();
+  void setFPCR(uint64_t anFPCR);
+  uint64_t getFPCR();
   uint32_t getDCZID_EL0();
   void setDCZID_EL0(uint32_t aDCZID_EL0);
   void setSCTLR_EL(uint8_t anId, uint64_t aSCTLR_EL);

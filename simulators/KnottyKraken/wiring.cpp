@@ -244,6 +244,10 @@ bool initializeParameters() {
   theMMUCfg.dTLBSize.initialize(64);
   theMMUCfg.PerfectTLB.initialize(true);
 
+  theFlexus->setStatInterval("100000");
+  theFlexus->setProfileInterval("10000000");
+  theFlexus->setTimestampInterval("50000");
+
   return true; // true = Abort simulation if parameters are not initialized
 }
 

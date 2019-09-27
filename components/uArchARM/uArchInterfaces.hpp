@@ -57,6 +57,7 @@
 
 #include "CoreModel/PSTATE.hpp"
 #include "CoreModel/SCTLR_EL.hpp"
+#include "CoreModel/FPStatRegisters.hpp" // MARK
 
 #include <core/qemu/mai_api.hpp>
 
@@ -933,21 +934,21 @@ struct uArchARM {
     DBG_Assert(false);
     return 0;
   }
-  virtual uint32_t getFPSR() {
+  virtual uint64_t getFPSR() {
     DBG_Assert(false);
     return 0;
   }
-  virtual void setFPSR(uint32_t aValue) {
+  virtual void setFPSR(uint64_t aValue) {
     DBG_Assert(false);
   }
-  virtual uint32_t getFPCR() {
+  virtual uint64_t getFPCR() {
     DBG_Assert(false);
     return 0;
   }
-  virtual void setFPCR(uint32_t aValue) {
+  virtual void setFPCR(uint64_t aValue) {
     DBG_Assert(false);
   }
-  virtual uint32_t readFPCR() {
+  virtual uint64_t readFPCR() {
     DBG_Assert(false);
     return 0;
   }
