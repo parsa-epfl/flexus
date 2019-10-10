@@ -55,11 +55,9 @@ arminst RBIT(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
                                                     aFetchedOpcode.theBPState, aCPU, aSequenceNo));
 
   std::vector<std::list<InternalDependance>> rs_deps(1);
-  predicated_action act = reverseAction(inst, kOperand1, kResult, sf);
+  predicated_action act = reverseAction(inst, kOperand1, kResult, rs_deps, sf);
 
   readRegister(inst, 1, rn, rs_deps[0], sf);
-
-  connect(rs_deps[0], act);
 
   addDestination(inst, rd, act, sf);
 

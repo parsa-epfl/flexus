@@ -272,7 +272,7 @@ simple_action calcAddressAction(SemanticInstruction *anInstruction,
 simple_action translationAction(SemanticInstruction *anInstruction);
 
 predicated_action reverseAction(SemanticInstruction *anInstruction, eOperandCode anInputCode,
-                                eOperandCode anOutputCode, bool is64);
+                                eOperandCode anOutputCode, std::vector<std::list<InternalDependance>> &rs_deps, bool is64);
 predicated_action reorderAction(SemanticInstruction *anInstruction, eOperandCode anInputCode,
                                 eOperandCode anOutputCode, uint8_t aContainerSize,
                                 std::vector<std::list<InternalDependance>> &rs_deps, bool is64);

@@ -84,16 +84,18 @@ struct ReverseAction : public PredicatedSemanticAction {
     SEMANTICS_DBG(*this);
 
     Operand in = theInstruction->operand(theInputCode);
-    bits in_val = boost::get<bits>(in);
-    uint8_t dbsize = the64 ? 64 : 32;
-    bits out_val = 0;
+    uint64_t in_val = boost::get<uint64_t>(in);
+    int dbsize = the64 ? 64 : 32;
+    uint64_t out_val = 0;
     for (int i = 0; i < dbsize; i++) {
-      if ((in_val & 1 << i) == 1) {
-        out_val |= (1 << (dbsize - i));
+      if (in_val & ((uint64_t)1 << i)) {
+        out_val |= ((uint64_t)1 << (dbsize - i - 1));
       }
     }
 
     theInstruction->setOperand(theOutputCode, out_val);
+    satisfyDependants();
+    DBG_(Dev, ( << "SID"));
   }
 
   void describe(std::ostream &anOstream) const {
@@ -261,9 +263,12 @@ struct CRCAction : public PredicatedSemanticAction {
 };
 
 predicated_action reverseAction(SemanticInstruction *anInstruction, eOperandCode anInputCode,
-                                eOperandCode anOutputCode, bool is64) {
+                                eOperandCode anOutputCode, std::vector<std::list<InternalDependance>> &rs_deps, bool is64) {
   ReverseAction *act = new ReverseAction(anInstruction, anInputCode, anOutputCode, is64);
   anInstruction->addNewComponent(act);
+  for (uint32_t i = 0; i < rs_deps.size(); ++i) {
+    rs_deps[i].push_back(act->dependance(i));
+  }
   return predicated_action(act, act->predicate());
 }
 
