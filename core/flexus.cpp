@@ -991,8 +991,6 @@ void startTimingFlexus() {
     theFlexus->doCycle();
   }
   theFlexus->terminateSimulation();
-
-  QEMU_break_simulation("End of the simulation.");
 }
 
 void PrepareFlexusObject() {
