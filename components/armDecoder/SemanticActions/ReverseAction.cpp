@@ -95,7 +95,6 @@ struct ReverseAction : public PredicatedSemanticAction {
 
     theInstruction->setOperand(theOutputCode, out_val);
     satisfyDependants();
-    DBG_(Dev, ( << "SID"));
   }
 
   void describe(std::ostream &anOstream) const {
@@ -147,7 +146,7 @@ struct ReorderAction : public PredicatedSemanticAction {
   }
 
   void describe(std::ostream &anOstream) const {
-    anOstream << theInstruction->identify() << " ReverseAction ";
+    anOstream << theInstruction->identify() << " ReorderAction ";
   }
 };
 
@@ -202,7 +201,7 @@ struct CountAction : public PredicatedSemanticAction {
   }
 
   void describe(std::ostream &anOstream) const {
-    anOstream << theInstruction->identify() << " ReverseAction ";
+    anOstream << theInstruction->identify() << " CountAction ";
   }
 };
 
@@ -258,7 +257,7 @@ struct CRCAction : public PredicatedSemanticAction {
   }
 
   void describe(std::ostream &anOstream) const {
-    anOstream << theInstruction->identify() << " ReverseAction ";
+    anOstream << theInstruction->identify() << " CRCAction ";
   }
 };
 
