@@ -468,6 +468,11 @@ protected:
         theInsnSourceLevel(eL1I), thePriv(false) {
   }
 
+  /* Added constructor with explicit instruction class/code to simplify/improve accounting */
+  armInstruction(VirtualMemoryAddress aPC, Opcode anOpcode,
+                 boost::intrusive_ptr<BPredState> bp_state, uint32_t aCPU, int64_t aSequenceNo,
+                 eInstructionClass aClass, eInstructionCode aCode);
+
   // So that armDecoder can send opcodes out to PowerTracker
 public:
   Opcode getOpcode() {

@@ -105,6 +105,9 @@ private:
   // by 1 every cycle; the instruction can retire when it is 0
   uint32_t theCanRetireCounter;
 
+  void constructorInitValidations();
+  void constructorTrackLiveInsns();
+
 public:
   void setCanRetireCounter(const uint32_t numCycles);
   void decrementCanRetireCounter();
@@ -112,6 +115,11 @@ public:
   SemanticInstruction(VirtualMemoryAddress aPC, Opcode anOpcode,
                       boost::intrusive_ptr<BPredState> bp_state, uint32_t aCPU,
                       int64_t aSequenceNo);
+
+  /* Constructor w. explicit armClass & armCode */
+  SemanticInstruction(VirtualMemoryAddress aPC, Opcode anOpcode,
+                      boost::intrusive_ptr<BPredState> bp_state, uint32_t aCPU,
+                      int64_t aSequenceNo, eInstructionClass aClass, eInstructionCode aCode);
   virtual ~SemanticInstruction();
 
   size_t addNewComponent(UncountedComponent *aComponent);

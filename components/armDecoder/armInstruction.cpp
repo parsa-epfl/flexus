@@ -79,6 +79,21 @@ using nuArchARM::xRegisters;
 
 using namespace nuArchARM;
 
+/* MARK: Added constructor with explicit instruction class/code to simplify/improve accounting */
+armInstruction::armInstruction(VirtualMemoryAddress aPC, Opcode anOpcode,
+    boost::intrusive_ptr<BPredState> bp_state, uint32_t aCPU, int64_t aSequenceNo,
+    eInstructionClass aClass, eInstructionCode aCode)
+  : thePC(aPC), thePCReg(aPC + 4), theOpcode(anOpcode), theBPState(bp_state), theCPU(aCPU),
+  theSequenceNo(aSequenceNo), theuArch(0), theRaisedException(kException_None),
+  theResync(false), theWillRaise(kException_None), theAnnulled(false), theRetired(false),
+  theSquashed(false), theExecuted(true), thePageFault(false),
+  theInstructionClass(aClass), theInstructionCode(aCode), theHaltDispatch(false), theHasCheckpoint(false),
+  theRetireStallCycles(0), theMayCommit(true), theResolved(false), theUsesIntAlu(true),
+  theUsesIntMult(false), theUsesIntDiv(false), theUsesFpAdd(false), theUsesFpCmp(false),
+  theUsesFpCvt(false), theUsesFpMult(false), theUsesFpDiv(false), theUsesFpSqrt(false),
+  theInsnSourceLevel(eL1I), thePriv(false) {
+  }
+
 void armInstruction::describe(std::ostream &anOstream) const {
   Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(theCPU);
   anOstream << "#" << std::dec << theSequenceNo << "[" << std::setfill('0') << std::right

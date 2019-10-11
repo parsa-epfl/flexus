@@ -39,6 +39,7 @@
 #include "armDataProcReg.hpp"
 #include "armSharedFunctions.hpp"
 #include "armUnallocated.hpp"
+#include <components/uArchARM/uArchInterfaces.hpp>
 
 namespace narmDecoder {
 using namespace nuArchARM;
@@ -52,7 +53,8 @@ arminst RBIT(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
   bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
 
   SemanticInstruction *inst(new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
-                                                    aFetchedOpcode.theBPState, aCPU, aSequenceNo));
+                                                    aFetchedOpcode.theBPState, aCPU, aSequenceNo,
+                                                    clsComputation,codeRev));
 
   std::vector<std::list<InternalDependance>> rs_deps(1);
   predicated_action act = reverseAction(inst, kOperand1, kResult, rs_deps, sf);

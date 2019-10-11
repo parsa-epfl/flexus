@@ -407,6 +407,7 @@ enum eInstructionCode
   codeMAGIC,
   // ALU
   codeALU,
+  codeRev,
   codeMul,
   codeDiv,
   codeRDPR,

@@ -92,7 +92,7 @@ std::ostream &operator<<(std::ostream &anOstream, eInstructionCode aCode) {
       // Special cases
       {"BlackBox", "NOP", "MAGIC",
        // ALU
-       "ALU", "Mul", "Div", "RDPR", "WRPR",
+       "ALU", "Reverse", "Mul", "Div", "RDPR", "WRPR",
        // FP
        "FP", "ALIGN",
        // Memory

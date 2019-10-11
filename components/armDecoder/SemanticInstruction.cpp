@@ -69,25 +69,10 @@ uint32_t theInsnCount;
 Flexus::Stat::StatCounter theICBs("sys-ICBs");
 Flexus::Stat::StatMax thePeakInsns("sys-PeakSemanticInsns");
 
-#ifdef TRACK_INSNS
 std::set<SemanticInstruction *> theGlobalLiveInsns;
 int64_t theLastPrintCount = 0;
-#endif // TRACK_INSNS
 
-SemanticInstruction::SemanticInstruction(VirtualMemoryAddress aPC, Opcode anOpcode,
-                                         boost::intrusive_ptr<BPredState> aBPState, uint32_t aCPU,
-                                         int64_t aSequenceNo)
-    : armInstruction(aPC, anOpcode, aBPState, aCPU, aSequenceNo), theOverrideSimics(false),
-      thePrevalidationsPassed(false), theRetireDepCount(0), theIsMicroOp(false),
-      theRetirementTarget(*this), theCanRetireCounter(0) {
-  ++theInsnCount;
-  thePeakInsns << theInsnCount;
-  for (int32_t i = 0; i < 4; ++i) {
-    theRetirementDepends[i] = true;
-  }
-  addPrevalidation(validatePC(this, true));
-
-#ifdef TRACK_INSNS
+void SemanticInstruction::constructorTrackLiveInsns() {
   if (theLastPrintCount >= 10000) {
     DBG_(Dev, (<< "Live Insn Count: " << theInsnCount));
     theLastPrintCount = 0;
@@ -109,8 +94,40 @@ SemanticInstruction::SemanticInstruction(VirtualMemoryAddress aPC, Opcode anOpco
   }
   ++theLastPrintCount;
   theGlobalLiveInsns.insert(this);
-#endif // TRACK_INSNS
 }
+
+void SemanticInstruction::constructorInitValidations() {
+  ++theInsnCount;
+  thePeakInsns << theInsnCount;
+  for (int32_t i = 0; i < 4; ++i) {
+    theRetirementDepends[i] = true;
+  }
+  addPrevalidation(validatePC(this, true));
+}
+
+SemanticInstruction::SemanticInstruction(VirtualMemoryAddress aPC, Opcode anOpcode,
+    boost::intrusive_ptr<BPredState> aBPState, uint32_t aCPU,
+    int64_t aSequenceNo, eInstructionClass aClass, eInstructionCode aCode)
+  : armInstruction(aPC, anOpcode, aBPState, aCPU, aSequenceNo, aClass, aCode),
+  theOverrideSimics(false), thePrevalidationsPassed(false), theRetireDepCount(0),
+  theIsMicroOp(false), theRetirementTarget(*this), theCanRetireCounter(0) {
+    constructorInitValidations();
+#ifdef TRACK_INSNS
+    constructorTrackLiveInsns();
+#endif // TRACK_INSNS
+  }
+
+SemanticInstruction::SemanticInstruction(VirtualMemoryAddress aPC, Opcode anOpcode,
+    boost::intrusive_ptr<BPredState> aBPState, uint32_t aCPU,
+    int64_t aSequenceNo)
+  : armInstruction(aPC, anOpcode, aBPState, aCPU, aSequenceNo), theOverrideSimics(false),
+  thePrevalidationsPassed(false), theRetireDepCount(0), theIsMicroOp(false),
+  theRetirementTarget(*this), theCanRetireCounter(0) {
+    constructorInitValidations();
+#ifdef TRACK_INSNS
+    constructorTrackLiveInsns();
+#endif // TRACK_INSNS
+  }
 
 SemanticInstruction::~SemanticInstruction() {
   --theInsnCount;
