@@ -96,20 +96,29 @@ arminst EXTR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
   }
 
   SemanticInstruction *inst(new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
-                                                    aFetchedOpcode.theBPState, aCPU, aSequenceNo));
+                                                    aFetchedOpcode.theBPState, aCPU, aSequenceNo,
+                                                    clsComputation,codeALU));
 
-  inst->setClass(clsComputation, codeALU);
+  /* MARK: Refactored to deal with the case where there are 2 sources
+   * (explicit use of EXTR) or only one (where it should disassemble as ROR)
+   */
+  if (rn == rm) {
+    std::vector<std::list<InternalDependance>> rs_deps(2);
+    readRegister(inst, 1, rn, rs_deps[0], sf);
+    addReadConstant(inst, 2, imm, rs_deps[1]);
+    predicated_action exec = rorAction(inst, rs_deps, kOperand1, kOperand2, sf);
+    addDestination(inst, rd, exec, sf);
+  } else {
+    /* Explicit EXTR with rn != rm, and both must be read */
+    std::vector<std::list<InternalDependance>> rs_deps(3);
+    predicated_action exec = extractAction(inst, rs_deps, kOperand1, kOperand2, kOperand3, sf);
 
-  std::vector<std::list<InternalDependance>> rs_deps(3);
-  readRegister(inst, 1, rn, rs_deps[0], sf);
-  readRegister(inst, 2, rm, rs_deps[1], sf);
+    readRegister(inst, 1, rn, rs_deps[0], sf);
+    readRegister(inst, 2, rm, rs_deps[1], sf);
+    addReadConstant(inst, 3, imm, rs_deps[2]);
 
-  addReadConstant(inst, 3, imm, rs_deps[2]);
-
-  predicated_action exec = extractAction(inst, rs_deps, kOperand1, kOperand2, kOperand3, sf);
-
-  addDestination(inst, rd, exec, sf);
-
+    addDestination(inst, rd, exec, sf);
+  }
   return inst;
 }
 

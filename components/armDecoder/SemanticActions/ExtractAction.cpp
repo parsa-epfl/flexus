@@ -85,19 +85,15 @@ struct ExtractAction : public PredicatedSemanticAction {
 
     if (ready()) {
       if (theInstruction->hasPredecessorExecuted()) {
-
-        bits src = boost::get<bits>(theInstruction->operand(theOperandCode1));
-        bits src2 = boost::get<bits>(theInstruction->operand(theOperandCode2));
-        uint64_t imm = (uint64_t)boost::get<bits>(theInstruction->operand(theOperandCode2));
+        uint64_t src = boost::get<uint64_t>(theInstruction->operand(theOperandCode1));
+        uint64_t src2 = boost::get<uint64_t>(theInstruction->operand(theOperandCode2));
+        uint64_t imm = (uint64_t)boost::get<uint64_t>(theInstruction->operand(theOperandCode3));
 
         std::unique_ptr<Operation> op = operation(the64 ? kCONCAT64_ : kCONCAT32_);
-        std::vector<Operand> operands = {src, src2, (uint64_t)the64};
-        uint64_t res = (uint64_t)boost::get<bits>(op->operator()(operands));
-
+        std::vector<Operand> operands = {src, src2};
+        bits res = boost::get<bits>(op->operator()(operands));
         res >>= imm;
-
-        theInstruction->setOperand(kResult, res);
-
+        theInstruction->setOperand(kResult, (uint64_t)res);
         satisfyDependants();
         theInstruction->setExecuted(true);
       } else {
@@ -108,7 +104,7 @@ struct ExtractAction : public PredicatedSemanticAction {
   }
 
   void describe(std::ostream &anOstream) const {
-    anOstream << theInstruction->identify() << " BitFieldAction ";
+    anOstream << theInstruction->identify() << " ExtractAction ";
   }
 };
 
