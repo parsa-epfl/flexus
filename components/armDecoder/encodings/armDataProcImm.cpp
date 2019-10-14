@@ -104,9 +104,9 @@ arminst EXTR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
    */
   if (rn == rm) {
     std::vector<std::list<InternalDependance>> rs_deps(2);
+    predicated_action exec = rorAction(inst, rs_deps, kOperand1, kOperand2, sf);
     readRegister(inst, 1, rn, rs_deps[0], sf);
     addReadConstant(inst, 2, imm, rs_deps[1]);
-    predicated_action exec = rorAction(inst, rs_deps, kOperand1, kOperand2, sf);
     addDestination(inst, rd, exec, sf);
   } else {
     /* Explicit EXTR with rn != rm, and both must be read */
