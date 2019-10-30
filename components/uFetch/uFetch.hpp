@@ -86,7 +86,7 @@ COMPONENT_INTERFACE(
   PORT( PushOutput, bool, ClockTickSeen )        // Notify PowerTracker when the clock in this core ticks. This goes here just because uFetch is driven first and it's convenient.
 
 
-  DYNAMIC_PORT_ARRAY( PushInput, bool, ResyncIn )
+  DYNAMIC_PORT_ARRAY( PushInput, int, ResyncIn )
 
   DRIVE( uFetchDrive )
 );

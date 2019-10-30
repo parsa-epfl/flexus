@@ -306,8 +306,7 @@ private:
     FLEXUS_CHANNEL(SquashOut) << aSquashReason;
   }
   void resyncMMU(int32_t aNode) {
-    bool value = true;
-    FLEXUS_CHANNEL(ResyncOut) << value;
+    FLEXUS_CHANNEL(ResyncOut) << aNode;
   }
 
   void changeState(int32_t aTL, int32_t aPSTATE) {

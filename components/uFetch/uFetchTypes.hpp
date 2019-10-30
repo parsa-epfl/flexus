@@ -130,6 +130,7 @@ struct FetchedOpcode {
 struct FetchBundle : public boost::counted_base {
   std::list<FetchedOpcode> theOpcodes;
   std::list<tFillLevel> theFillLevels;
+  int32_t coreID;
 
   void updateOpcode(VirtualMemoryAddress anAddress, Opcode anOpcode) {
     for (FetchedOpcode &i : theOpcodes) {

@@ -60,7 +60,7 @@ COMPONENT_PARAMETERS(
 COMPONENT_INTERFACE(
     DYNAMIC_PORT_ARRAY( PushInput,  TranslationPtr, iRequestIn )
     DYNAMIC_PORT_ARRAY( PushInput,  TranslationPtr, dRequestIn )
-    DYNAMIC_PORT_ARRAY( PushInput,  bool, ResyncIn)
+    DYNAMIC_PORT_ARRAY( PushInput,  int, ResyncIn)
 
     DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, iTranslationReply )
     DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, dTranslationReply )
@@ -68,7 +68,7 @@ COMPONENT_INTERFACE(
 
     DYNAMIC_PORT_ARRAY( PushInput, TranslationPtr, TLBReqIn ) // this is for trace
 
-    DYNAMIC_PORT_ARRAY( PushOutput, bool, ResyncOut )
+    DYNAMIC_PORT_ARRAY( PushOutput, int, ResyncOut )
 
 
     DRIVE(MMUDrive)

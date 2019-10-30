@@ -97,7 +97,7 @@ public:
       // Note that multi-uop instructions can cause theFIQ to fill beyond its
       // configured size.
       while (!final_uop) {
-        boost::tie(insn, final_uop) = decode(*it, flexusIndex(), ++theInsnSequenceNo, uop++);
+        boost::tie(insn, final_uop) = decode(*it, aBundle->coreID, ++theInsnSequenceNo, uop++);
         if (insn) {
           insn->setFetchTransactionTracker(it->theTransaction);
           // Set Fill Level for the insn

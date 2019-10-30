@@ -121,7 +121,7 @@ COMPONENT_INTERFACE(
   PORT( PushInput, PhysicalMemoryAddress, WritePermissionLost )
   PORT( PushOutput, bool, StoreForwardingHitSeen) // Signal a store forwarding hit in the LSQ to the PowerTracker
 
-  PORT( PushOutput, bool, ResyncOut )
+  PORT( PushOutput, int, ResyncOut )
 
   PORT( PushOutput, TranslationPtr, dTranslationOut )
   PORT( PushInput, TranslationPtr,  dTranslationIn )

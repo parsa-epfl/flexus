@@ -374,7 +374,7 @@ public:
     }
   }
 
-  void resyncMMU(uint8_t anIndex) {
+  void resyncMMU(int anIndex) {
     CORE_TRACE;
     DBG_(VVerb, (<< "Resynchronizing MMU"));
 
@@ -407,8 +407,7 @@ public:
         theLookUpEntries.pop();
       }
     }
-    bool temp = true;
-    FLEXUS_CHANNEL(ResyncOut) << temp;
+    FLEXUS_CHANNEL(ResyncOut) << anIndex;
   }
 
   // Msutherl: Fetch MMU's registers
@@ -456,8 +455,8 @@ public:
   bool available(interface::ResyncIn const &, index_t anIndex) {
     return true;
   }
-  void push(interface::ResyncIn const &, index_t anIndex, bool &aResync) {
-    resyncMMU(anIndex);
+  void push(interface::ResyncIn const &, index_t anIndex, int &aResync) {
+    resyncMMU(aResync);
   }
 
   bool available(interface::iRequestIn const &, index_t anIndex) {

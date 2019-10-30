@@ -260,6 +260,7 @@ class FLEXUS_COMPONENT(uFetch) {
   uint32_t theIndexShift;
   uint64_t theBlockMask;
   uint32_t theMissQueueSize;
+  int32_t theBundleCoreID;
 
   std::list<MemoryTransport> theMissQueue;
   std::list<MemoryTransport> theSnoopQueue;
@@ -325,7 +326,9 @@ public:
     theI.init(cfg.Size, cfg.Associativity, cfg.ICacheLineSize, statName());
     theIndexShift = LOG2(cfg.ICacheLineSize);
     theBlockMask = ~(cfg.ICacheLineSize - 1);
+    theBundleCoreID = flexusIndex();
     theBundle = new FetchBundle();
+    theBundle->coreID = theBundleCoreID;
     theFAQ.resize(cfg.Threads);
     theIcacheMiss.resize(cfg.Threads);
     theIcacheVMiss.resize(cfg.Threads);
@@ -923,6 +926,7 @@ private:
       return;
 
     pFetchBundle bundle(new FetchBundle);
+    bundle->coreID = theBundleCoreID;
 
     while (theBundle->theOpcodes.size() > 0) {
       auto i = theBundle->theOpcodes.begin();
@@ -964,9 +968,11 @@ private:
   bool available(interface::ResyncIn const &, index_t anIndex) {
     return true;
   }
-  void push(interface::ResyncIn const &, index_t anIndex, bool &aResync) {
+  void push(interface::ResyncIn const &, index_t anIndex, int &aResync) {
     TranslationsFromTLB.clear();
     theBundle->clear();
+    theBundleCoreID = aResync;
+    theBundle->coreID = theBundleCoreID;
   }
 
   void getFetchResponse() {
