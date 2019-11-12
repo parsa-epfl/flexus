@@ -313,7 +313,7 @@ arminst ADDSUB_CARRY(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequ
   connect(rs_deps[2], nzcv);
   inst->addDispatchAction(nzcv);
 
-  if (rd != 31)
+  if (!setflags || rd != 31)
     addDestination(inst, rd, exec, sf, setflags);
   else if (setflags)
     addSetCC(inst, exec, sf);
@@ -422,7 +422,7 @@ arminst ADDSUB_SHIFTED(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSe
   readRegister(inst, 1, rn, rs2_deps[0], sf);
   readRegister(inst, 3, rm, rs_deps[0], sf);
 
-  if (rd != 31)
+  if (!setflags || rd != 31)
     addDestination(inst, rd, res, sf, setflags);
   else if (setflags)
     addSetCC(inst, res, sf);
@@ -474,7 +474,7 @@ arminst ADDSUB_EXTENDED(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aS
     readRegister(inst, 1, rn, rs2_deps[0], sf);
   readRegister(inst, 3, rm, rs_deps[0], sf);
 
-  if (rd != 31)
+  if (!setflags || rd != 31)
     addDestination(inst, rd, res, sf, setflags);
   else if (setflags)
     addSetCC(inst, res, sf);
@@ -536,7 +536,7 @@ arminst LOGICAL(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceN
   readRegister(inst, 1, rn, rs2_deps[0], sf);
   readRegister(inst, 3, rm, rs_deps[0], sf);
 
-  if (rd != 31)
+  if (!setflags || rd != 31)
     addDestination(inst, rd, act, sf, setflags);
   else if (setflags)
     addSetCC(inst, act, sf);

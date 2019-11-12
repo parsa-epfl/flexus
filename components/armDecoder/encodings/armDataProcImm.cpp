@@ -357,7 +357,7 @@ arminst LOGICALIMM(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequen
   readRegister(inst, 1, rn, rs_deps[0], sf);
   addReadConstant(inst, 2, static_cast<int64_t>(wmask), rs_deps[1]);
 
-  if (rd != 31)
+  if (!setflags || rd != 31)
     addDestination(inst, rd, exec, sf, setflags);
   else if (setflags)
     addSetCC(inst, exec, sf);

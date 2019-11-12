@@ -656,8 +656,8 @@ typedef struct UMulL : public Operation {
   }
   uint64_t calc(std::vector<Operand> const &operands) {
     DBG_Assert(operands.size() == 2);
-    uint32_t op0 = (uint32_t)boost::get<uint64_t>(operands[0]) & 0xffffffff;
-    uint32_t op1 = (uint32_t)boost::get<uint64_t>(operands[1]) & 0xffffffff;
+    uint64_t op0 = (uint32_t)boost::get<uint64_t>(operands[0]);
+    uint64_t op1 = (uint32_t)boost::get<uint64_t>(operands[1]);
     uint64_t prod = op0 * op1;
     return prod;
   }
@@ -729,8 +729,8 @@ typedef struct SMulL : public Operation {
   }
   uint64_t calc(std::vector<Operand> const &operands) {
     DBG_Assert(operands.size() == 2);
-    uint64_t op0 = boost::get<uint64_t>(operands[0]) & 0xffffffff;
-    uint64_t op1 = boost::get<uint64_t>(operands[1]) & 0xffffffff;
+    uint64_t op0 = (int64_t)(int32_t)(boost::get<uint64_t>(operands[0]));
+    uint64_t op1 = (int64_t)(int32_t)(boost::get<uint64_t>(operands[1]));
     uint64_t prod = op0 * op1;
     return prod;
   }
