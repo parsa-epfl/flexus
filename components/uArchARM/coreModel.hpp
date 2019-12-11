@@ -49,6 +49,7 @@ namespace nuArchARM {
 enum eLoseWritePermission { eLosePerm_Invalidate, eLosePerm_Downgrade, eLosePerm_Replacement };
 
 struct armState {
+  uint64_t theCCRegs;
   uint64_t theGlobalRegs[32];
   uint64_t thePC;
   uint64_t theFPRegs[64];

@@ -271,6 +271,9 @@ void CoreImpl::getARMState(armState &aState) {
     r.theIndex = i;
     aState.theGlobalRegs[i] = boost::get<uint64_t>(readArchitecturalRegister(r, false));
   }
+  r.theType = ccBits;
+  r.theIndex = 0;
+  aState.theCCRegs = boost::get<uint64_t>(readArchitecturalRegister(r, false));
 
   aState.thePC = pc();
   aState.theFPSR = getFPSR();
@@ -284,6 +287,8 @@ void CoreImpl::restoreARMState(armState &aState) {
   for (int32_t i = 0; i < 32; ++i) {
     initializeRegister(xReg(i), aState.theGlobalRegs[i]);
   }
+
+  initializeRegister(ccReg(0), aState.theCCRegs);
   //  for (int32_t i = 0 ; i < 64; ++i) {
   //    initializeRegister( wReg(i), aState.theFPRegs[i]);
   //  }
