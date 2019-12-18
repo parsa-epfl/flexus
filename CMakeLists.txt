@@ -44,3 +44,6 @@ add_custom_target(clean_cmake
     COMMAND rm -rf Makefile
     COMMAND echo "All cleared."
     )
+
+# Add subdirectory for stat manager
+add_subdirectory(stat-manager)
