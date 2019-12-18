@@ -9,11 +9,11 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${FLEXUS_ROOT}/CMakeFiles)
 
 # compile core
 file(GLOB_RECURSE CORE_SOURCE ${FLEXUS_ROOT}/core/*.cpp)
-file(GLOB_RECURSE QEMU_SOUECE ${FLEXUS_ROOT}/core/qemu/*.cpp)
+file(GLOB_RECURSE QEMU_SOURCE ${FLEXUS_ROOT}/core/qemu/*.cpp)
 list(FILTER CORE_SOURCE EXCLUDE REGEX "^${FLEXUS_ROOT}/core/test")
 list(FILTER CORE_SOURCE EXCLUDE REGEX "^${FLEXUS_ROOT}/core/qemu")
 add_library(core STATIC ${CORE_SOURCE})
-add_library(qemu STATIC ${QEMU_SOUECE})
+add_library(qemu STATIC ${QEMU_SOURCE})
 target_compile_options(core PRIVATE -c ${GCC_FLAGS})
 target_compile_options(qemu PRIVATE -c ${GCC_FLAGS})
 
@@ -31,9 +31,9 @@ endforeach()
 add_library(wiring OBJECT ${FLEXUS_ROOT}/simulators/${SIMULATOR}/wiring.cpp)
 target_compile_options(wiring PRIVATE -c ${GCC_FLAGS})
 add_library(${SIMULATOR} SHARED $<TARGET_OBJECTS:wiring>)
-target_link_libraries(${SIMULATOR} "-Wl,--whole-archive" "-Wl,-export-dynamic" ${${SIMULATOR}_REQUIRED_COMPONENTS})
-target_link_libraries(${SIMULATOR} "-Wl,--whole-archive" core qemu "-Wl,--no-whole-archive")
-target_link_libraries(${SIMULATOR} "-L${BOOST_LIBRARYDIR}" boost_system boost_regex boost_serialization boost_iostreams z)
+target_link_libraries(${SIMULATOR} ${GCC_LDFLAGS} "-Wl,--whole-archive" "-Wl,-export-dynamic" ${${SIMULATOR}_REQUIRED_COMPONENTS})
+target_link_libraries(${SIMULATOR} ${GCC_LDFLAGS} "-Wl,--whole-archive" core qemu "-Wl,--no-whole-archive")
+target_link_libraries(${SIMULATOR} ${GCC_LDFLAGS} "-L${BOOST_LIBRARYDIR}" boost_system boost_regex boost_serialization boost_iostreams z)
 
 # clean for cmake
 add_custom_target(clean_cmake
@@ -43,4 +43,4 @@ add_custom_target(clean_cmake
     COMMAND rm -rf CMakeCache.txt
     COMMAND rm -rf Makefile
     COMMAND echo "All cleared."
-)
+    )
