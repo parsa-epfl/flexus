@@ -42,67 +42,37 @@
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. DO-NOT-REMOVE end-copyright-block
+cmake_minimum_required(VERSION 3.10.2)
 
-set(FLEXUS_ROOT ${CMAKE_SOURCE_DIR})
-# add option -fPIC
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-# add option --std=c++11
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-if(NOT TARGET_PLATFORM)
-  message( STATUS "TARGET_PLATFORM was not specified; using default TARGET_PLATFORM=arm" )
-  set(TARGET_PLATFORM arm)
-endif()
-
-if(NOT SELECTED_DEBUG)
-  message( STATUS "SELECTED_DEBUG was not specified; using default SELECTED_DEBUG=vverb" )
-  set(SELECTED_DEBUG vverb)
-endif()
-
-if(NOT SIMULATOR)
-  message( STATUS "SIMULATOR was not specified; using default SIMULATOR=KnottyKraken" )
-  set(SIMULATOR KnottyKraken)
-endif()
-
-if(NOT BOOST_INCLUDEDIR)
-  message( STATUS "BOOST_INCLUDEDIR was not specified; using default BOOST_INCLUDEDIR=/usr/local/include" )
-  set(BOOST_INCLUDEDIR /usr/local/include)
-endif()
-
-if(CMAKE_C_COMPILER)
-  message( STATUS "CMAKE_C_COMPILER was not specified; using default CMAKE_C_COMPILER=/usr/bin/gcc" )
-  set(CMAKE_C_COMPILER /usr/bin/gcc)
-endif()
-
-if(CMAKE_CXX_COMPILER)
-  message( STATUS "CMAKE_CXX_COMPILER was not specified; using default CMAKE_CXX_COMPILER=/usr/bin/g++" )
-  set(CMAKE_CXX_COMPILER /usr/bin/g++)
-endif()
-
-if(NOT BOOST_LIBRARYDIR)
-  message( STATUS "BOOST_LIBRARYDIR was not specified; using default BOOST_LIBRARYDIR=/usr/local/lib" )
-  set(BOOST_LIBRARYDIR /usr/local/lib)
-endif()
-
-if(NOT BUILD_DEBUG)
-    message( STATUS "Building in default optimized configuration" )
-    if(NOT GCC_FLAGS)
-        message( STATUS "GCC_FLAGS was not specified; using default" )
-        set(GCC_FLAGS -O3 -funroll-loops -fno-omit-frame-pointer -g3 -Wall -Werror -fmessage-length=160 -x c++)
-    endif()
+# Check if top level or invoked from the parent
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    # Top level, invoked only here
+    # TODO
 else()
-    message( STATUS "Building in slow debugging configuration (ASAN enabled)" )
-    set(GCC_FLAGS -O0 -g3 -fsanitize=address -Wall -Werror -fmessage-length=160 -x c++) 
-    set(GCC_LDFLAGS -fsanitize=address)
+    # Called from parent (e.g., during a flexus build)
+    set(REL_PATH ${CMAKE_SOURCE_DIR}/build)
+    set(STAT_MANAGER_PATH ${FLEXUS_ROOT}/stat-manager)
 endif()
 
-add_definitions(
-  -DTARGET_PLATFORM=${TARGET_PLATFORM}
-  -DSELECTED_DEBUG=${SELECTED_DEBUG}
-  -DSIMULATOR=${SIMULATOR}
-  -DBOOST_MPL_LIMIT_VECTOR_SIZE=50
-  -DBOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
-  -DCONFIG_QEMU
-)
+# Get sources from Flexus core
+set(CORE_STATS_SRCS
+    ${FLEXUS_ROOT}/core/stats/stats.cpp
+    ${FLEXUS_ROOT}/core/stats/stats_calc.cpp
+    ${FLEXUS_ROOT}/core/stats/measurement.cpp
+    )
+file(GLOB_RECURSE CORE_DEBUG_SRCS ${FLEXUS_ROOT}/core/debug/*.cpp)
+
+# Add a static library for the core stats srcs and core dbg srcs
+add_library(stats_flexcore STATIC ${CORE_STATS_SRCS}
+    ${CORE_DEBUG_SRCS})
+target_compile_options(stats_flexcore PRIVATE -c ${GCC_FLAGS})
+target_link_libraries(stats_flexcore ${GCC_LDFLAGS} "-L${BOOST_LIBRARYDIR}" boost_system boost_regex boost_serialization boost_iostreams z)
+
+# Add 3 executable targets:
+# stat manager, stat sample, stat collapse
+add_executable(stat-manager ${STAT_MANAGER_PATH}/stat-manager.cpp)
+target_link_libraries(stat-manager pthread stats_flexcore)
+add_executable(stat-sample ${STAT_MANAGER_PATH}/stat-sample.cpp)
+target_link_libraries(stat-sample pthread stats_flexcore)
+add_executable(stat-collapse ${STAT_MANAGER_PATH}/stat-collapse.cpp)
+target_link_libraries(stat-collapse pthread stats_flexcore)
