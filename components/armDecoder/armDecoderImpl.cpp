@@ -112,7 +112,7 @@ public:
 
   FLEXUS_PORT_ALWAYS_AVAILABLE(AvailableFIQOut);
   int32_t pull(interface::AvailableFIQOut const &) {
-    int32_t avail = 1; // cfg.FIQSize - theFIQ.size() FIXME;
+    int32_t avail = cfg.FIQSize - theFIQ.size();
     if (avail < 0) {
       avail = 0;
     }

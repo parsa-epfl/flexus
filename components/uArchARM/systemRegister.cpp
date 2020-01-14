@@ -67,7 +67,9 @@ struct NZCV : public SysRegInfo {
     CORE_DBG("PSTATE VALUE AFTER NZCV UPDATE: " << std::bitset<8>(aCore->_PSTATE().d()));
 
   } // FIXME
-
+  virtual uint64_t readfn(uArchARM *aCore) override {
+    return aCore->_PSTATE().NZCV();
+  }
 } NZCV_;
 
 struct DAIF : public SysRegInfo {
