@@ -1070,41 +1070,54 @@ void CoreImpl::clearExclusiveGlobal() {
   GLOBAL_EXCLUSIVE_MONITOR[theNode].clear();
 }
 
-void CoreImpl::markExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize) {
-  if (theLocalExclusiveVirtualMonitor.size() > 1) {
-    DBG_Assert(false, (<< "Only one local exclusive tag per core is allowed"));
+void CoreImpl::markExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize, uint64_t marker) {
+  if(theLocalExclusiveVirtualMonitor.find(anAddress) != theLocalExclusiveVirtualMonitor.end()){
+    theLocalExclusiveVirtualMonitor[anAddress] = (marker << 8) | aSize;
+    return;
   }
-  theLocalExclusiveVirtualMonitor[anAddress] = aSize;
+  if(theLocalExclusiveVirtualMonitor.size() > 0) {
+    // for(auto it = theLocalExclusiveVirtualMonitor.cbegin(); it != theLocalExclusiveVirtualMonitor.cend(); ++it){
+    //     DBG_(Dev, ( << "theLocalExclusiveVirtualMonitor " << it->first << " " << it->second));
+    // }
+    DBG_Assert(false, (<< "Only one local exclusive tag per core is allowed " << anAddress << ", " << marker));
+}
+  theLocalExclusiveVirtualMonitor[anAddress] = (marker << 8) | aSize;
 }
 
-void CoreImpl::markExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize) {
+void CoreImpl::markExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize, uint64_t marker) {
+  if(theLocalExclusivePhysicalMonitor.find(anAddress) != theLocalExclusivePhysicalMonitor.end()){
+    theLocalExclusivePhysicalMonitor[anAddress] = (marker << 8) | aSize;
+    return;
+  }
+  if(theLocalExclusivePhysicalMonitor.size() > 0) {
+    // for(auto it = theLocalExclusivePhysicalMonitor.cbegin(); it != theLocalExclusivePhysicalMonitor.cend(); ++it){
+    //     DBG_(Dev, ( << "theLocalExclusivePhysicalMonitor " << it->first << " " << it->second));
+    // }
+    DBG_Assert(false, (<< "Only one local exclusive tag per core is allowed " << anAddress << ", " << marker));
+  }
+  theLocalExclusivePhysicalMonitor[anAddress] = (marker << 8) | aSize;
+}
 
-  if (theLocalExclusivePhysicalMonitor.size() > 1) {
-    DBG_Assert(false, (<< "Only one local exclusive tag per core is allowed"));
+void CoreImpl::markExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize, uint64_t marker) {
+  GLOBAL_EXCLUSIVE_MONITOR[theNode][anAddress] = (marker << 8) | aSize;
   }
 
-  theLocalExclusivePhysicalMonitor[anAddress] = aSize;
+int CoreImpl::isExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize) {
+  if(theLocalExclusivePhysicalMonitor.find(anAddress) == theLocalExclusivePhysicalMonitor.end())
+    return kMonitorDoesntExist;
+  return int(theLocalExclusivePhysicalMonitor[anAddress] >> 8);
 }
 
-void CoreImpl::markExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize) {
-
-  GLOBAL_EXCLUSIVE_MONITOR[theNode][anAddress] = aSize;
+int CoreImpl::isExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize) {
+  if(GLOBAL_EXCLUSIVE_MONITOR[theNode].find(anAddress) == GLOBAL_EXCLUSIVE_MONITOR[theNode].end())
+    return kMonitorDoesntExist;
+  return int(GLOBAL_EXCLUSIVE_MONITOR[theNode][anAddress] >> 8);
 }
 
-bool CoreImpl::isExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize) {
-  if (theLocalExclusivePhysicalMonitor.find(anAddress) == theLocalExclusivePhysicalMonitor.end())
-    return false;
-  return true;
-}
-bool CoreImpl::isExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize) {
-  if (GLOBAL_EXCLUSIVE_MONITOR[theNode].find(anAddress) == GLOBAL_EXCLUSIVE_MONITOR[theNode].end())
-    return false;
-  return true;
-}
-bool CoreImpl::isExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize) {
-  if (theLocalExclusiveVirtualMonitor.find(anAddress) == theLocalExclusiveVirtualMonitor.end())
-    return false;
-  return true;
+int CoreImpl::isExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize) {
+  if(theLocalExclusiveVirtualMonitor.find(anAddress) == theLocalExclusiveVirtualMonitor.end())
+    return kMonitorDoesntExist;
+  return int(theLocalExclusiveVirtualMonitor[anAddress] >> 8);
 }
 
 void CoreImpl::commitStore(boost::intrusive_ptr<Instruction> anInsn) {

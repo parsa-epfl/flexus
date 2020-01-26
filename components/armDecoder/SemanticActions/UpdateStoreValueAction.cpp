@@ -122,7 +122,7 @@ struct UpdateCASValueAction : public BaseSemanticAction {
 
   UpdateCASValueAction(SemanticInstruction *anInstruction, eOperandCode aCompareCode,
                        eOperandCode aNewCode)
-      : BaseSemanticAction(anInstruction, 3), theCompareCode(aCompareCode), theNewCode(aNewCode) {
+      : BaseSemanticAction(anInstruction, 3), theCompareCode(aCompareCode), theNewCode(aNewCode), thePair(false) {
   }
 
   UpdateCASValueAction(SemanticInstruction *anInstruction, eOperandCode aCompareCode1,
@@ -138,7 +138,12 @@ struct UpdateCASValueAction : public BaseSemanticAction {
       if (!thePair) {
         uint64_t store_value = theInstruction->operand<uint64_t>(theNewCode);
         uint64_t cmp_value = theInstruction->operand<uint64_t>(theCompareCode);
-        DBG_(VVerb, (<< *this << " updating CAS write=" << store_value << " cmp=" << cmp_value));
+        if((cmp_value & (uint64_t)kMaxStore) == (uint64_t)kCheckAndStore){
+          uint64_t result = theInstruction->operand<uint64_t>(kResult);
+          DBG_(Iface, (<< *this << " Read result as " << std::hex << result));
+          cmp_value = (result << 32) | kAlwaysStore;
+        }
+        DBG_(Iface, (<< *this << " updating CAS write=" << std::hex << store_value << " cmp=" << cmp_value));
         core()->updateCASValue(boost::intrusive_ptr<Instruction>(theInstruction), store_value,
                                cmp_value);
         satisfyDependants();

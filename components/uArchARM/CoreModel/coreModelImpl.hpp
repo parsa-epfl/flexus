@@ -97,7 +97,7 @@ struct ExceptionRecord {
   uint64_t ipaddress;  // Physical fault address for second stage fault
 };
 
-static std::map<uint8_t, std::map<PhysicalMemoryAddress, uint8_t>> GLOBAL_EXCLUSIVE_MONITOR;
+static std::map<uint8_t, std::map<PhysicalMemoryAddress, uint64_t>> GLOBAL_EXCLUSIVE_MONITOR;
 
 class CoreImpl : public CoreModel {
   // CORE STATE
@@ -150,8 +150,8 @@ private:
   CImpl_FPCR theFPCR; 
   Flexus::Qemu::API::exception_t theEXP;
 
-  std::map<PhysicalMemoryAddress, eSize> theLocalExclusivePhysicalMonitor;
-  std::map<VirtualMemoryAddress, eSize> theLocalExclusiveVirtualMonitor;
+  std::map<PhysicalMemoryAddress, uint64_t> theLocalExclusivePhysicalMonitor;
+  std::map<VirtualMemoryAddress, uint64_t> theLocalExclusiveVirtualMonitor;
 
   uint64_t theSP_el[4];
 
@@ -539,13 +539,13 @@ private:
 
   void clearExclusiveLocal();
   void clearExclusiveGlobal();
-  void markExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize);
-  void markExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize);
-  void markExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize);
+  void markExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize, uint64_t marker);
+  void markExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize, uint64_t marker);
+  void markExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize, uint64_t marker);
 
-  bool isExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize);
-  bool isExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize);
-  bool isExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize);
+  int isExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize);
+  int isExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize);
+  int isExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize);
 
   // Instruction completion
   //==========================================================================

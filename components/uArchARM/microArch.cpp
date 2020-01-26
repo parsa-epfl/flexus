@@ -248,11 +248,11 @@ public:
     return theCore->pushTranslation(aTranslation);
   }
 
-  void markExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize) {
-    return theCore->markExclusiveLocal(anAddress, aSize);
+  void markExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize, uint64_t marker) {
+    return theCore->markExclusiveLocal(anAddress, aSize, marker);
   }
 
-  bool isExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize) {
+  int isExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize) {
     return theCore->isExclusiveLocal(anAddress, aSize);
   }
 

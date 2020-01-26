@@ -56,6 +56,13 @@ void CoreImpl::invalidate(PhysicalMemoryAddress anAddress) {
   // If the processor is speculating, check the SLAT.  On a match, we will
   // abort the speculation, and we can save ourselves the trouble of looking
   // at the rest of theMemQueue
+  DBG_(Iface, ( << "Checking invalidation for " << anAddress << ", " << theNode));
+  if(isExclusiveLocal(anAddress, kWord) != 2){
+    DBG_(Iface, ( << "Clearing Local " << theNode));
+    markExclusiveGlobal(anAddress, kWord, kMonitorUnset);
+    markExclusiveLocal(anAddress, kWord, kMonitorUnset);
+    markExclusiveVA(VirtualMemoryAddress(anAddress), kWord, kMonitorUnset);
+  }
   if (isSpeculating()) {
     SpeculativeLoadAddressTracker::iterator iter, end;
     std::tie(iter, end) = theSLAT.equal_range(anAddress);
@@ -563,6 +570,9 @@ void CoreImpl::completeLSQ(memq_t::index<by_insn>::type::iterator lsq_entry,
     // the returned load
     lsq_entry->theExtendedValue = anOperation.theExtendedValue;
     DBG_Assert(lsq_entry->theCompareValue);
+    if(lsq_entry->theCompareValue == (bits)kAlwaysStore){
+      lsq_entry->theExtendedValue = lsq_entry->theCompareValue;
+    }
     if (lsq_entry->theCompareValue != lsq_entry->theExtendedValue) {
       // Compare failed, write did not occur.  Put the read value in the
       // LSQ for forwarding.

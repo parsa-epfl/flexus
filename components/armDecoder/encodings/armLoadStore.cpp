@@ -154,29 +154,29 @@ arminst STXR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
   SemanticInstruction *inst(new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                     aFetchedOpcode.theBPState, aCPU, aSequenceNo));
 
-  inst->setClass(clsAtomic, codeStore);
+  inst->setClass(clsAtomic, codeCAS);
   inst->setExclusive();
 
   // calculate the address from rn
   eAccType acctype = o0 == 1 ? kAccType_ORDERED : kAccType_ATOMIC;
+
   std::vector<std::list<InternalDependance>> rs_deps(1);
-  addAddressCompute(inst, rs_deps);
+  simple_action addr = addAddressCompute(inst, rs_deps);
   addReadXRegister(inst, 1, rn, rs_deps[0], true);
 
-  std::vector<std::list<InternalDependance>> status_deps(1);
-  predicated_action act = addExecute(inst, operation(kMOV_), {kOperand4}, status_deps);
-  addDestination(inst, rs, act, size == 64);
-  addReadConstant(inst, 4, 0, status_deps[0]);
+  predicated_action monitor = exclusiveMonitorAction(inst, kAddress, sz, kPD);
+  connectDependance(monitor.action->dependance(0), addr);
+  addDestination(inst, rs, monitor, size == 64);
 
   inst->addSquashEffect(eraseLSQ(inst));
-  inst->addDispatchEffect(allocateStore(inst, sz, false, acctype));
-  inst->addRetirementConstraint(storeQueueAvailableConstraint(inst));
-  inst->addRetirementConstraint(sideEffectStoreConstraint(inst));
+  // inst->addDispatchEffect(allocateStore(inst, sz, false, acctype));
+  inst->addDispatchEffect(allocateCAS(inst, sz, inst->retirementDependance(), acctype));
+  // inst->addRetirementConstraint(storeQueueAvailableConstraint(inst));
+  // inst->addRetirementConstraint(sideEffectStoreConstraint(inst));
   inst->addCheckTrapEffect(mmuPageFaultCheck(inst));
   inst->addRetirementEffect(retireMem(inst));
   inst->addCommitEffect(commitStore(inst));
-
-  // inst->addCommitEffect(exclusiveMonitorPass(inst, kAddress, sz));
+  inst->addCommitEffect(clearExclusiveMonitor(inst));
 
   if (!is_pair) {
     std::vector<std::list<InternalDependance>> data_deps(1);
@@ -184,8 +184,12 @@ arminst STXR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
     simple_action act = addExecute(inst, operation(kMOV_), {kOperand2}, data_deps, kOperand5);
     readRegister(inst, 2, rt, data_deps[0], size == 64);
 
-    predicated_dependant_action update_value = updateStoreValueAction(inst, kOperand5);
-    connectDependance(update_value.dependance, act);
+    inst->setOperand(kOperand4, (uint64_t)kCheckAndStore);
+    // predicated_dependant_action update_value = updateStoreValueAction(inst, kOperand5);
+    multiply_dependant_action update_value = updateCASValueAction(inst, kOperand4, kOperand5);
+    connectDependance(update_value.dependances[0], addr);
+    connectDependance(update_value.dependances[1], monitor);
+    connectDependance(update_value.dependances[2], act);
     connectDependance(inst->retirementDependance(), update_value);
     inst->addPostvalidation(validateMemory(kAddress, kOperand5, sz, inst));
 
@@ -225,36 +229,37 @@ arminst STRL(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
 
   eSize sz = dbSize(8 << size);
 
-  eAccType acctype = o0 == 0 ? kAccType_LIMITEDORDERED : kAccType_ORDERED;
-
-  inst->setClass(clsStore, codeStore);
+  inst->setClass(clsAtomic, codeCAS);
   inst->setExclusive();
 
-  if (acctype == kAccType_ORDERED) {
-    MEMBAR(inst, /*kMO_ALL | */ kBAR_STRL);
-  }
+  eAccType acctype = o0 == 0 ? kAccType_LIMITEDORDERED : kAccType_ORDERED;
 
   std::vector<std::list<InternalDependance>> rs_deps(1), data_deps(1);
-  addAddressCompute(inst, rs_deps);
-  addReadXRegister(inst, 1, rn, rs_deps[0], true);
+  simple_action addr = addAddressCompute(inst, rs_deps);
+  readRegister(inst, 1, rn, rs_deps[0], true);
 
+  inst->setOperand(kOperand4, (uint64_t)kAlwaysStore);
   simple_action act = addExecute(inst, operation(kMOV_), {kOperand2}, data_deps, kOperand5);
-  addReadXRegister(inst, 2, rt, data_deps[0], regsize == 64);
+  readRegister(inst, 2, rt, data_deps[0], regsize == 64);
 
-  inst->addDispatchEffect(allocateStore(inst, sz, false, acctype));
-  inst->addRetirementConstraint(storeQueueAvailableConstraint(inst));
-  inst->addRetirementConstraint(sideEffectStoreConstraint(inst));
-
-  predicated_dependant_action update_value = updateStoreValueAction(inst, kOperand5);
-  connectDependance(update_value.dependance, act);
+  // predicated_dependant_action update_value = updateStoreValueAction(inst, kOperand5);
+  multiply_dependant_action update_value = updateCASValueAction(inst, kOperand4, kOperand5);
+  connectDependance(update_value.dependances[0], addr);
+  connectDependance(update_value.dependances[1], act);
+  inst->addDispatchEffect(satisfy(inst, update_value.dependances[2]));
   connectDependance(inst->retirementDependance(), update_value);
 
+  inst->addCheckTrapEffect(mmuPageFaultCheck(inst));
+  inst->addSquashEffect(eraseLSQ(inst));
   inst->addRetirementEffect(retireMem(inst));
   inst->addCommitEffect(commitStore(inst));
-  inst->addSquashEffect(eraseLSQ(inst));
+  // inst->setMayCommit( false ) ; //Can't commit till memory-order speculation is resolved by the core
 
+  // inst->addDispatchEffect(allocateStore(inst, sz, false, acctype));
+  inst->addDispatchEffect(allocateCAS(inst, sz, inst->retirementDependance(), acctype));
+  // inst->addRetirementConstraint(storeQueueAvailableConstraint(inst));
+  // inst->addRetirementConstraint(sideEffectStoreConstraint(inst));
   inst->addPostvalidation(validateMemory(kAddress, kOperand5, sz, inst));
-
   return inst;
 }
 
@@ -274,28 +279,35 @@ arminst LDAQ(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
   regsize = (size == 0x3) ? 64 : 32;
   eSize sz = dbSize(size);
 
+  DBG_(VVerb, (<< "Loading with size " << sz));
+
   SemanticInstruction *inst(new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                     aFetchedOpcode.theBPState, aCPU, aSequenceNo));
 
-  inst->setClass(clsLoad, codeLoad);
+  inst->setClass(clsAtomic, codeCAS);
   inst->setExclusive();
 
   eAccType acctype = o0 == 0 ? kAccType_LIMITEDORDERED : kAccType_ORDERED;
 
   std::vector<std::list<InternalDependance>> rs_deps(1);
-  addAddressCompute(inst, rs_deps);
-
+  simple_action addr = addAddressCompute(inst, rs_deps);
   addReadXRegister(inst, 1, rn, rs_deps[0], true);
+  predicated_dependant_action load = loadAction(inst, sz, kZeroExtend, kPD);
+
+  // SID: treating as CAS because making it a barrier is harder
+  inst->setOperand(kOperand4, (uint64_t)kNeverStore);
+  multiply_dependant_action update_value = updateCASValueAction(inst, kOperand4, kOperand4);
+  connectDependance(update_value.dependances[0], addr);
+  inst->addDispatchEffect(satisfy(inst, update_value.dependances[1]));
+  inst->addDispatchEffect(satisfy(inst, update_value.dependances[2]));
+  connectDependance(inst->retirementDependance(), update_value);
+
+  // inst->addDispatchEffect(allocateLoad(inst, sz, load.dependance, acctype));
+  inst->addDispatchEffect(allocateCAS(inst, sz, load.dependance, acctype));
   inst->addCheckTrapEffect(mmuPageFaultCheck(inst));
   inst->addRetirementEffect(retireMem(inst));
-  inst->addSquashEffect(eraseLSQ(inst));
-
-  DBG_(VVerb, (<< "Loading with size " << sz));
-
-  predicated_dependant_action load;
-  load = loadAction(inst, sz, kZeroExtend, kPD);
-  inst->addDispatchEffect(allocateLoad(inst, sz, load.dependance, acctype));
   inst->addCommitEffect(accessMem(inst));
+  inst->addSquashEffect(eraseLSQ(inst));
   inst->addRetirementConstraint(loadMemoryConstraint(inst));
 
   addDestination(inst, rt, load, regsize == 64);
@@ -325,12 +337,13 @@ arminst LDXR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
   SemanticInstruction *inst(new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                     aFetchedOpcode.theBPState, aCPU, aSequenceNo));
 
-  eAccType acctype = (o0 == 1) ? kAccType_ORDERED : kAccType_ATOMIC;
-  inst->setClass(clsAtomic, codeLoad);
+  inst->setClass(clsAtomic, codeCAS);
   inst->setExclusive();
 
+  eAccType acctype = (o0 == 1) ? kAccType_ORDERED : kAccType_ATOMIC;
+
   std::vector<std::list<InternalDependance>> rs_deps(1);
-  addAddressCompute(inst, rs_deps);
+  simple_action addr = addAddressCompute(inst, rs_deps);
   addReadXRegister(inst, 1, rn, rs_deps[0], true);
 
   predicated_dependant_action load;
@@ -340,14 +353,21 @@ arminst LDXR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
     load = ldpAction(inst, sz, kZeroExtend, kPD, kPD1);
   }
 
-  inst->addDispatchEffect(allocateLoad(inst, sz, load.dependance, acctype));
+  inst->setOperand(kOperand4, (uint64_t)kNeverStore);
+  multiply_dependant_action update_value = updateCASValueAction(inst, kOperand4, kOperand4);
+  connectDependance(update_value.dependances[0], addr);
+  inst->addDispatchEffect(satisfy(inst, update_value.dependances[1]));
+  inst->addDispatchEffect(satisfy(inst, update_value.dependances[2]));
+  connectDependance(inst->retirementDependance(), update_value);
+
+  // inst->addDispatchEffect(allocateLoad(inst, sz, load.dependance, acctype));
+  inst->addDispatchEffect(allocateCAS(inst, sz, load.dependance, acctype));
   inst->addCheckTrapEffect(mmuPageFaultCheck(inst));
   inst->addRetirementEffect(retireMem(inst));
   inst->addCommitEffect(accessMem(inst));
   inst->addSquashEffect(eraseLSQ(inst));
   inst->addRetirementConstraint(loadMemoryConstraint(inst));
-
-  //    inst->addDispatchEffect(markExclusiveMonitor(inst, kRS1, sz));
+  inst->addCommitEffect(markExclusiveMonitor(inst, kAddress, sz));
 
   if (!is_pair) {
     addDestination(inst, rt, load, size == 64);

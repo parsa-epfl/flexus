@@ -155,6 +155,19 @@ enum eMemoryAccess {
   kBAR_SC = 0x30,   /* No ops cross barrier; OR of the above */
 };
 
+enum eFakeEffectCAS {
+  kAlwaysStore = 0x0DEADBEEF,
+  kNeverStore = 0x1DEADBEEF,
+  kCheckAndStore = 0x2DEADBEEF,
+  kMaxStore = 0x3DEADBEEF,
+};
+
+enum eExclusiveMonitorCode {
+  kMonitorSet = 0,
+  kMonitorUnset = 1,
+  kMonitorDoesntExist = 2,
+};
+
 enum eExceptionType {
   kException_UNCATEGORIZED,        //= 0x00,
   kException_WFX_TRAP,             //= 0x01,
@@ -1062,25 +1075,25 @@ struct uArchARM {
     DBG_Assert(false);
   }
 
-  virtual void markExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize) {
+  virtual void markExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize, uint64_t marker) {
     DBG_Assert(false);
   }
-  virtual void markExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize) {
+  virtual void markExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize, uint64_t marker) {
     DBG_Assert(false);
   }
-  virtual void markExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize) {
+  virtual void markExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize, uint64_t marker) {
     DBG_Assert(false);
   }
 
-  virtual bool isExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize) {
+  virtual int isExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize) {
     DBG_Assert(false);
     return false;
   }
-  virtual bool isExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize) {
+  virtual int isExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize) {
     DBG_Assert(false);
     return false;
   }
-  virtual bool isExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize) {
+  virtual int isExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize) {
     DBG_Assert(false);
     return false;
   }

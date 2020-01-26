@@ -1225,6 +1225,7 @@ struct ClearExclusiveMonitor : public Effect {
     FLEXUS_PROFILE();
     if (!anInstruction.isAnnulled()) {
       anInstruction.core()->clearExclusiveLocal();
+      DBG_(Iface, ( << "Clearing Exclusive Monitor Local for " << anInstruction));
     }
     Effect::invoke(anInstruction);
   }
@@ -1252,21 +1253,14 @@ struct MarkExclusiveMonitor : public Effect {
     if (!anInstruction.isAnnulled()) {
 
       uint64_t addr = anInstruction.operand<uint64_t>(theAddressCode);
-      //            bool aligned = (bits(addr) == align(addr, theSize * 8));
-      PhysicalMemoryAddress pAddress = anInstruction.translate();
+      Flexus::Qemu::Processor c = Flexus::Qemu::Processor::getProcessor(anInstruction.cpu());
+      PhysicalMemoryAddress pAddress = PhysicalMemoryAddress(c->translateVirtualAddress(VirtualMemoryAddress((addr >> 6) << 6)));
 
-      //            FIXME -- waiting for mmu
-      //            if (anInstruction.core()->transateAddress(addr,
-      //            kAccType_ATOMIC/*acctype*/, /*iswrite*/false, aligned,
-      //            theSize) != kNoFault)
-      //                return;
-
-      //            if (address is shareable)
-      anInstruction.core()->markExclusiveGlobal(pAddress, theSize);
-
-      anInstruction.core()->markExclusiveLocal(pAddress, theSize);
-      anInstruction.core()->markExclusiveVA(VirtualMemoryAddress(addr),
-                                            theSize); // optional
+      anInstruction.core()->markExclusiveGlobal(pAddress, theSize, kMonitorSet);
+      anInstruction.core()->markExclusiveLocal(pAddress, theSize, kMonitorSet);
+      anInstruction.core()->markExclusiveVA(VirtualMemoryAddress(pAddress),
+                                            theSize, kMonitorSet); // optional
+      DBG_(Iface, ( << "Marking Exclusive Monitor Local for " << anInstruction));
     }
     Effect::invoke(anInstruction);
   }

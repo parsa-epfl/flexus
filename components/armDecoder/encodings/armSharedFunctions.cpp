@@ -437,6 +437,9 @@ simple_action addAddressCompute(SemanticInstruction *inst,
 void MEMBAR(SemanticInstruction *inst, uint32_t anAccess) {
   DECODER_TRACE;
 
+  if((anAccess == kBAR_LDAQ) || (anAccess == kBAR_STRL) || (anAccess == kBAR_SC))
+    inst->addRetirementConstraint(membarSyncConstraint(inst));
+
   switch (anAccess & 0xf) {
   case kMO_ST_ST:
     // MEMBAR #StoreStore
