@@ -97,7 +97,7 @@ arminst EXTR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
 
   SemanticInstruction *inst(new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                     aFetchedOpcode.theBPState, aCPU, aSequenceNo,
-                                                    clsComputation,codeALU));
+                                                    clsComputation, codeALU));
 
   /* MARK: Refactored to deal with the case where there are 2 sources
    * (explicit use of EXTR) or only one (where it should disassemble as ROR)

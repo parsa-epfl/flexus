@@ -271,10 +271,12 @@ simple_action calcAddressAction(SemanticInstruction *anInstruction,
                                 std::vector<std::list<InternalDependance>> &opDeps);
 simple_action translationAction(SemanticInstruction *anInstruction);
 
-predicated_action exclusiveMonitorAction(SemanticInstruction *anInstruction, eOperandCode anAddressCode,
-                                  eSize aSize, boost::optional<eOperandCode> aBypass);
+predicated_action exclusiveMonitorAction(SemanticInstruction *anInstruction,
+                                         eOperandCode anAddressCode, eSize aSize,
+                                         boost::optional<eOperandCode> aBypass);
 predicated_action reverseAction(SemanticInstruction *anInstruction, eOperandCode anInputCode,
-                                eOperandCode anOutputCode, std::vector<std::list<InternalDependance>> &rs_deps, bool is64);
+                                eOperandCode anOutputCode,
+                                std::vector<std::list<InternalDependance>> &rs_deps, bool is64);
 predicated_action reorderAction(SemanticInstruction *anInstruction, eOperandCode anInputCode,
                                 eOperandCode anOutputCode, uint8_t aContainerSize,
                                 std::vector<std::list<InternalDependance>> &rs_deps, bool is64);
@@ -329,9 +331,8 @@ predicated_action extractAction(SemanticInstruction *anInstruction,
                                 eOperandCode anOperandCode1, eOperandCode anOperandCode2,
                                 eOperandCode anOperandCode3, bool is64);
 predicated_action rorAction(SemanticInstruction *anInstruction,
-                                std::vector<std::list<InternalDependance>> &opDeps,
-                                eOperandCode anOperandCode1, eOperandCode anOperandCode2,
-                                bool is64);
+                            std::vector<std::list<InternalDependance>> &opDeps,
+                            eOperandCode anOperandCode1, eOperandCode anOperandCode2, bool is64);
 
 dependant_action writeccAction(SemanticInstruction *anInstruction, eOperandCode aMappedRegisterCode,
                                bool is64);

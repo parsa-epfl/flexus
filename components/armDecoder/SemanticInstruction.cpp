@@ -106,28 +106,29 @@ void SemanticInstruction::constructorInitValidations() {
 }
 
 SemanticInstruction::SemanticInstruction(VirtualMemoryAddress aPC, Opcode anOpcode,
-    boost::intrusive_ptr<BPredState> aBPState, uint32_t aCPU,
-    int64_t aSequenceNo, eInstructionClass aClass, eInstructionCode aCode)
-  : armInstruction(aPC, anOpcode, aBPState, aCPU, aSequenceNo, aClass, aCode),
-  theOverrideSimics(false), thePrevalidationsPassed(false), theRetireDepCount(0),
-  theIsMicroOp(false), theRetirementTarget(*this), theCanRetireCounter(0) {
-    constructorInitValidations();
+                                         boost::intrusive_ptr<BPredState> aBPState, uint32_t aCPU,
+                                         int64_t aSequenceNo, eInstructionClass aClass,
+                                         eInstructionCode aCode)
+    : armInstruction(aPC, anOpcode, aBPState, aCPU, aSequenceNo, aClass, aCode),
+      theOverrideSimics(false), thePrevalidationsPassed(false), theRetireDepCount(0),
+      theIsMicroOp(false), theRetirementTarget(*this), theCanRetireCounter(0) {
+  constructorInitValidations();
 #ifdef TRACK_INSNS
-    constructorTrackLiveInsns();
+  constructorTrackLiveInsns();
 #endif // TRACK_INSNS
-  }
+}
 
 SemanticInstruction::SemanticInstruction(VirtualMemoryAddress aPC, Opcode anOpcode,
-    boost::intrusive_ptr<BPredState> aBPState, uint32_t aCPU,
-    int64_t aSequenceNo)
-  : armInstruction(aPC, anOpcode, aBPState, aCPU, aSequenceNo), theOverrideSimics(false),
-  thePrevalidationsPassed(false), theRetireDepCount(0), theIsMicroOp(false),
-  theRetirementTarget(*this), theCanRetireCounter(0) {
-    constructorInitValidations();
+                                         boost::intrusive_ptr<BPredState> aBPState, uint32_t aCPU,
+                                         int64_t aSequenceNo)
+    : armInstruction(aPC, anOpcode, aBPState, aCPU, aSequenceNo), theOverrideSimics(false),
+      thePrevalidationsPassed(false), theRetireDepCount(0), theIsMicroOp(false),
+      theRetirementTarget(*this), theCanRetireCounter(0) {
+  constructorInitValidations();
 #ifdef TRACK_INSNS
-    constructorTrackLiveInsns();
+  constructorTrackLiveInsns();
 #endif // TRACK_INSNS
-  }
+}
 
 SemanticInstruction::~SemanticInstruction() {
   --theInsnCount;

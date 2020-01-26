@@ -78,9 +78,9 @@ namespace Stat = Flexus::Stat;
 #include <components/CommonQEMU/XactTimeBreakdown.hpp>
 
 #include "../systemRegister.hpp"
+#include "FPStatRegisters.hpp" // Msutherl
 #include "PSTATE.hpp"
 #include "SCTLR_EL.hpp"
-#include "FPStatRegisters.hpp" // Msutherl
 
 // Msutherl, Oct'18
 #include <core/qemu/mai_api.hpp>
@@ -146,8 +146,8 @@ private:
   uint64_t theHCR_EL2;
 
   // MARK: Change these to structs with overloads
-  CImpl_FPSR theFPSR; 
-  CImpl_FPCR theFPCR; 
+  CImpl_FPSR theFPSR;
+  CImpl_FPCR theFPCR;
   Flexus::Qemu::API::exception_t theEXP;
 
   std::map<PhysicalMemoryAddress, uint64_t> theLocalExclusivePhysicalMonitor;

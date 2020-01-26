@@ -54,7 +54,7 @@ arminst RBIT(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
 
   SemanticInstruction *inst(new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                     aFetchedOpcode.theBPState, aCPU, aSequenceNo,
-                                                    clsComputation,codeRev));
+                                                    clsComputation, codeRev));
 
   std::vector<std::list<InternalDependance>> rs_deps(1);
   predicated_action act = reverseAction(inst, kOperand1, kResult, rs_deps, sf);

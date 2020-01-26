@@ -427,7 +427,7 @@ uint64_t CoreImpl::getFPSR() {
   return theFPSR.get();
 }
 void CoreImpl::setFPCR(uint64_t anFPCR) {
-    theFPCR.set(anFPCR);
+  theFPCR.set(anFPCR);
 }
 uint64_t CoreImpl::getFPCR() {
   return theFPCR.get();

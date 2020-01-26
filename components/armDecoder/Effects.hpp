@@ -194,7 +194,8 @@ Effect *checkSystemAccess(SemanticInstruction *inst, uint8_t anOp0, uint8_t anOp
                           uint8_t aCRn, uint8_t aCRm, uint8_t aRT, uint8_t aRead);
 Effect *exceptionEffect(SemanticInstruction *inst, eExceptionType aType);
 Effect *markExclusiveMonitor(SemanticInstruction *inst, eOperandCode anAddressCode, eSize aSize);
-Effect *exclusiveMonitorPass(SemanticInstruction *inst, eOperandCode anAddressCode, eSize aSize, InternalDependance const &aDependance);
+Effect *exclusiveMonitorPass(SemanticInstruction *inst, eOperandCode anAddressCode, eSize aSize,
+                             InternalDependance const &aDependance);
 
 Effect *checkDAIFAccess(SemanticInstruction *inst, uint8_t anOp1);
 Effect *checkSysRegAccess(SemanticInstruction *inst, ePrivRegs aPrivReg, uint8_t is_read);

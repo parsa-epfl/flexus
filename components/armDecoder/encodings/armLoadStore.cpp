@@ -253,7 +253,8 @@ arminst STRL(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
   inst->addSquashEffect(eraseLSQ(inst));
   inst->addRetirementEffect(retireMem(inst));
   inst->addCommitEffect(commitStore(inst));
-  // inst->setMayCommit( false ) ; //Can't commit till memory-order speculation is resolved by the core
+  // inst->setMayCommit(false);
+  // Can't commit till memory-order speculation is resolved by the core
 
   // inst->addDispatchEffect(allocateStore(inst, sz, false, acctype));
   inst->addDispatchEffect(allocateCAS(inst, sz, inst->retirementDependance(), acctype));

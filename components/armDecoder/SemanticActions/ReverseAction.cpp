@@ -262,7 +262,8 @@ struct CRCAction : public PredicatedSemanticAction {
 };
 
 predicated_action reverseAction(SemanticInstruction *anInstruction, eOperandCode anInputCode,
-                                eOperandCode anOutputCode, std::vector<std::list<InternalDependance>> &rs_deps, bool is64) {
+                                eOperandCode anOutputCode,
+                                std::vector<std::list<InternalDependance>> &rs_deps, bool is64) {
   ReverseAction *act = new ReverseAction(anInstruction, anInputCode, anOutputCode, is64);
   anInstruction->addNewComponent(act);
   for (uint32_t i = 0; i < rs_deps.size(); ++i) {

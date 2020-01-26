@@ -698,7 +698,7 @@ private:
   void createDMATracer(void) {
     // Create QemuTracer Factory
     Qemu::Factory<DMATracer> tracer_factory;
-    //API::conf_class_t *trace_class = tracer_factory.getQemuClass();
+    // API::conf_class_t *trace_class = tracer_factory.getQemuClass();
 
     std::string tracer_name("dma-tracer");
     theDMATracer = tracer_factory.create(tracer_name);

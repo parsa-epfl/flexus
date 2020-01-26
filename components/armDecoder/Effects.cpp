@@ -1225,7 +1225,7 @@ struct ClearExclusiveMonitor : public Effect {
     FLEXUS_PROFILE();
     if (!anInstruction.isAnnulled()) {
       anInstruction.core()->clearExclusiveLocal();
-      DBG_(Iface, ( << "Clearing Exclusive Monitor Local for " << anInstruction));
+      DBG_(Iface, (<< "Clearing Exclusive Monitor Local for " << anInstruction));
     }
     Effect::invoke(anInstruction);
   }
@@ -1254,13 +1254,14 @@ struct MarkExclusiveMonitor : public Effect {
 
       uint64_t addr = anInstruction.operand<uint64_t>(theAddressCode);
       Flexus::Qemu::Processor c = Flexus::Qemu::Processor::getProcessor(anInstruction.cpu());
-      PhysicalMemoryAddress pAddress = PhysicalMemoryAddress(c->translateVirtualAddress(VirtualMemoryAddress((addr >> 6) << 6)));
+      PhysicalMemoryAddress pAddress =
+          PhysicalMemoryAddress(c->translateVirtualAddress(VirtualMemoryAddress((addr >> 6) << 6)));
 
       anInstruction.core()->markExclusiveGlobal(pAddress, theSize, kMonitorSet);
       anInstruction.core()->markExclusiveLocal(pAddress, theSize, kMonitorSet);
-      anInstruction.core()->markExclusiveVA(VirtualMemoryAddress(pAddress),
-                                            theSize, kMonitorSet); // optional
-      DBG_(Iface, ( << "Marking Exclusive Monitor Local for " << anInstruction));
+      anInstruction.core()->markExclusiveVA(VirtualMemoryAddress(pAddress), theSize,
+                                            kMonitorSet); // optional
+      DBG_(Iface, (<< "Marking Exclusive Monitor Local for " << anInstruction));
     }
     Effect::invoke(anInstruction);
   }

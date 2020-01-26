@@ -129,7 +129,7 @@ struct TPIDR_EL0 : public SysRegInfo {
 struct FPCR : public SysRegInfo {
   std::string name = "FPCR";
   eRegExecutionState state = kARM_STATE_AA64;
-    // MARK: Edited to match ARM v8-A ISA Manual, page C5-374 (Section 5.2.7)
+  // MARK: Edited to match ARM v8-A ISA Manual, page C5-374 (Section 5.2.7)
   uint8_t opc0 = 3;
   uint8_t opc1 = 3;
   uint8_t opc2 = 0;
@@ -141,23 +141,23 @@ struct FPCR : public SysRegInfo {
 
   /* Override for accessfn(). FPSR can be accessed as RW from EL0 and EL1 */
   virtual eAccessResult accessfn(uArchARM *aCore) override {
-      return kACCESS_OK; // MARK: This is RW-allowed from every exception level
+    return kACCESS_OK; // MARK: This is RW-allowed from every exception level
   }
 
-  // TODO: This models a single, non-renameable FPSR/FPCR. Will resync 
+  // TODO: This models a single, non-renameable FPSR/FPCR. Will resync
   // with QEMU often since many of the fields are written per-instruction.
   virtual uint64_t readfn(uArchARM *aCore) override {
-      return aCore->getFPCR();
+    return aCore->getFPCR();
   } // /*aa64_fpcr_read*/
   virtual void writefn(uArchARM *aCore, uint64_t aVal) override {
-      aCore->setFPCR(aVal);
+    aCore->setFPCR(aVal);
   } // /*aa64_fpcr_write*/
 } FPCR_;
 
 struct FPSR : public SysRegInfo {
   std::string name = "FPSR";
   eRegExecutionState state = kARM_STATE_AA64;
-    // MARK: Edited to match ARM v8-A ISA Manual, page C5-378 (Section 5.2.8)
+  // MARK: Edited to match ARM v8-A ISA Manual, page C5-378 (Section 5.2.8)
   uint8_t opc0 = 3;
   uint8_t opc1 = 3;
   uint8_t opc2 = 1;
@@ -169,16 +169,16 @@ struct FPSR : public SysRegInfo {
 
   /* Override for accessfn(). FPSR can be accessed as RW from EL0 and EL1 */
   virtual eAccessResult accessfn(uArchARM *aCore) override {
-      return kACCESS_OK; // MARK: This is RW-allowed from every exception level
+    return kACCESS_OK; // MARK: This is RW-allowed from every exception level
   }
 
-  // TODO: This models a single, non-renameable FPSR/FPCR. Will resync 
+  // TODO: This models a single, non-renameable FPSR/FPCR. Will resync
   // with QEMU often since many of the fields are written per-instruction.
   virtual uint64_t readfn(uArchARM *aCore) override {
-      return aCore->getFPSR();
+    return aCore->getFPSR();
   } /*aa64_fpsr_read*/
   virtual void writefn(uArchARM *aCore, uint64_t aVal) override {
-      aCore->setFPSR(aVal);
+    aCore->setFPSR(aVal);
   } /*aa64_fpsr_write*/
 } FPSR_;
 

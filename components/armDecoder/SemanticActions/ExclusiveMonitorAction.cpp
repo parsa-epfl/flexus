@@ -74,27 +74,32 @@ struct ExclusiveMonitorAction : public PredicatedSemanticAction {
   eSize theSize;
   boost::optional<eOperandCode> theBypass;
 
-  ExclusiveMonitorAction(SemanticInstruction *anInstruction, eOperandCode anAddressCode, eSize aSize, boost::optional<eOperandCode> aBypass)
-      : PredicatedSemanticAction(anInstruction, 1, true), theAddressCode(anAddressCode), theSize(aSize), theBypass(aBypass) {
+  ExclusiveMonitorAction(SemanticInstruction *anInstruction, eOperandCode anAddressCode,
+                         eSize aSize, boost::optional<eOperandCode> aBypass)
+      : PredicatedSemanticAction(anInstruction, 1, true), theAddressCode(anAddressCode),
+        theSize(aSize), theBypass(aBypass) {
   }
 
   void doEvaluate() {
     DBG_(Iface, (<< *this));
     uint64_t addr = theInstruction->operand<uint64_t>(theAddressCode);
     Flexus::Qemu::Processor c = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu());
-    PhysicalMemoryAddress pAddress = PhysicalMemoryAddress(c->translateVirtualAddress(VirtualMemoryAddress((addr >> 6) << 6)));
+    PhysicalMemoryAddress pAddress =
+        PhysicalMemoryAddress(c->translateVirtualAddress(VirtualMemoryAddress((addr >> 6) << 6)));
 
     // passed &= core()->isExclusiveGlobal(pAddress, theSize);
     // passed &= core()->isExclusiveVA(VirtualMemoryAddress(addr), theSize);
     int passed = core()->isExclusiveLocal(pAddress, theSize);
-    if(passed == kMonitorDoesntExist){
-      DBG_(VVerb, (<< "Recheduling: Exclusive Monitor resulted in " << passed << " for address " << pAddress << ", " << *theInstruction));
+    if (passed == kMonitorDoesntExist) {
+      DBG_(VVerb, (<< "Recheduling: Exclusive Monitor resulted in " << passed << " for address "
+                   << pAddress << ", " << *theInstruction));
       setReady(0, false);
       satisfy(0);
-    } else{
+    } else {
       core()->markExclusiveLocal(pAddress, theSize, kMonitorDoesntExist);
       theInstruction->setOperand(kResult, (uint64_t)passed);
-      DBG_(Iface, (<< "Exclusive Monitor resulted in " << passed << " for address " << pAddress << ", " << *theInstruction));
+      DBG_(Iface, (<< "Exclusive Monitor resulted in " << passed << " for address " << pAddress
+                   << ", " << *theInstruction));
       if (theBypass) {
         mapped_reg name = theInstruction->operand<mapped_reg>(*theBypass);
         SEMANTICS_DBG(*this << " bypassing value=" << std::hex << passed << " to " << name);
@@ -109,8 +114,11 @@ struct ExclusiveMonitorAction : public PredicatedSemanticAction {
   }
 };
 
-predicated_action exclusiveMonitorAction(SemanticInstruction *anInstruction, eOperandCode anAddressCode, eSize aSize, boost::optional<eOperandCode> aBypass) {
-  ExclusiveMonitorAction *act = new ExclusiveMonitorAction(anInstruction, anAddressCode, aSize, aBypass);
+predicated_action exclusiveMonitorAction(SemanticInstruction *anInstruction,
+                                         eOperandCode anAddressCode, eSize aSize,
+                                         boost::optional<eOperandCode> aBypass) {
+  ExclusiveMonitorAction *act =
+      new ExclusiveMonitorAction(anInstruction, anAddressCode, aSize, aBypass);
   anInstruction->addNewComponent(act);
   return predicated_action(act, act->predicate());
 }

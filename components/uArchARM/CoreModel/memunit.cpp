@@ -792,7 +792,7 @@ CoreImpl::doLoad(memq_t::index<by_insn>::type::iterator lsq_entry,
     return aCachedSnoopState;
   }
 
-  boost::optional<bits> previous_value = boost::make_optional(false,bits());
+  boost::optional<bits> previous_value = boost::make_optional(false, bits());
   // First, deal with cleaning up the previous status of this load instruction
   switch (lsq_entry->status()) {
   case kAwaitingValue:

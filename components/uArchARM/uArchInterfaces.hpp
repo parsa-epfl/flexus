@@ -55,9 +55,9 @@
 #include <components/CommonQEMU/Slices/MemOp.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 
+#include "CoreModel/FPStatRegisters.hpp" // MARK
 #include "CoreModel/PSTATE.hpp"
 #include "CoreModel/SCTLR_EL.hpp"
-#include "CoreModel/FPStatRegisters.hpp" // MARK
 
 #include <core/qemu/mai_api.hpp>
 
