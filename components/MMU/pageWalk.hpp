@@ -50,6 +50,7 @@ class PageWalk {
   std::list<TranslationTransport> theTranslationTransports;
   std::queue<boost::intrusive_ptr<Translation>> theDoneTranslations;
   std::queue<boost::intrusive_ptr<Translation>> theMemoryTranslations;
+  PhysicalMemoryAddress trace_address;
   bool TheInitialized;
 
 public:
@@ -64,6 +65,8 @@ public:
   void preTranslate(TranslationTransport &aTransport);
   void cycle();
   bool push_back(boost::intrusive_ptr<Translation> aTranslation);
+  bool push_back_trace(boost::intrusive_ptr<Translation> aTranslation,
+                       Flexus::Qemu::Processor theCPU);
   TranslationPtr popMemoryRequest();
   bool hasMemoryRequest();
   void annulAll();

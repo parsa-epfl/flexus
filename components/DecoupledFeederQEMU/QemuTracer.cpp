@@ -303,7 +303,7 @@ public:
 
     // Minimal memory message implementation
     theMemoryMessage.address() = PhysicalMemoryAddress(mem_trans->s.physical_address);
-    theMemoryMessage.pc() = VirtualMemoryAddress(mem_trans->s.pc);
+    theMemoryMessage.pc() = VirtualMemoryAddress(mem_trans->s.logical_address);
     theMemoryMessage.priv() = IS_PRIV(mem_trans);
 
     // Set the type field of the memory operation

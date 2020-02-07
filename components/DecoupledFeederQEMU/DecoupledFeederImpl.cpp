@@ -161,6 +161,12 @@ public:
     tr->thePaddr = aMessage.address();
 
     FLEXUS_CHANNEL_ARRAY(ToMMU, anIndex) << tr;
+    while (tr->trace_addresses.size()) {
+      aMessage.type() = MemoryMessage::LoadReq;
+      aMessage.address() = tr->trace_addresses.front();
+      tr->trace_addresses.pop();
+      FLEXUS_CHANNEL_ARRAY(ToL1D, anIndex) << aMessage;
+    }
   }
 
   void toNAW(int32_t anIndex, MemoryMessage &aMessage) {

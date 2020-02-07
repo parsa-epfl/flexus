@@ -494,12 +494,20 @@ public:
     return true;
   }
   void push(interface::TLBReqIn const &, index_t anIndex, TranslationPtr &aTranslate) {
-    if (aTranslate->isInstr()) {
-      theInstrTLB[aTranslate->theVaddr] = aTranslate->thePaddr;
-    } else if (aTranslate->isData()) {
-      theDataTLB[aTranslate->theVaddr] = aTranslate->thePaddr;
-    } else {
-      DBG_Assert(false); // should never happen
+    if (!cfg.PerfectTLB &&
+        (aTranslate->isInstr() ? theInstrTLB : theDataTLB).lookUp(aTranslate->theVaddr).first ==
+            false) {
+      if (!theMMUInitialized) {
+        theMMU.reset(new mmu_t());
+        theMMU->initRegsFromQEMUObject(getMMURegsFromQEMU((int)flexusIndex()));
+        theMMU->setupAddressSpaceSizesAndGranules();
+        thePageWalker->setMMU(theMMU);
+        theMMUInitialized = true;
+      }
+      thePageWalker->push_back_trace(aTranslate,
+                                     Flexus::Qemu::Processor::getProcessor((int)flexusIndex()));
+      (aTranslate->isInstr() ? theInstrTLB : theDataTLB)[aTranslate->theVaddr] =
+          aTranslate->thePaddr;
     }
   }
 };

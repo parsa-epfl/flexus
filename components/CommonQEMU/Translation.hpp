@@ -85,6 +85,7 @@ struct Translation : public boost::counted_base {
     theID = aTr.theReady;
     theWaiting = aTr.theReady;
     thePageFault = aTr.thePageFault;
+    trace_addresses = aTr.trace_addresses;
   }
 
   Translation &operator=(Translation &rhs) {
@@ -101,6 +102,7 @@ struct Translation : public boost::counted_base {
     theID = rhs.theID;
     theWaiting = rhs.theReady;
     thePageFault = rhs.thePageFault;
+    trace_addresses = rhs.trace_addresses;
 
     return *this;
   }
@@ -125,6 +127,7 @@ struct Translation : public boost::counted_base {
   bool theAnnul;
   uint64_t theTimeoutCounter;
   bool thePageFault;
+  std::queue<PhysicalMemoryAddress> trace_addresses;
 
   boost::intrusive_ptr<AbstractInstruction> theInstruction;
 
