@@ -643,6 +643,9 @@ public:
     // theBackTransport.set(TransactionTrackerTag, action.theOutputTracker);
     theBackTransport = action.theBackTransport;
     theSendToBack = true;
+    if (transport()[MemoryMessageTag]->isPageWalk() &&
+        !theBackTransport[MemoryMessageTag]->isPageWalk())
+      theBackTransport[MemoryMessageTag]->setPageWalk();
   }
 
   bool hasBackMessage() {

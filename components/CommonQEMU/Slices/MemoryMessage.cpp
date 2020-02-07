@@ -156,7 +156,7 @@ std::ostream &operator<<(std::ostream &s, MemoryMessage const &aMemMsg) {
   s << "MemoryMessage[" << aMemMsg.type() << "]: Addr:0x" << std::hex << aMemMsg.address()
     << " Size:" << std::dec << aMemMsg.reqSize() << " Serial: " << aMemMsg.serial()
     << " Core: " << aMemMsg.coreIdx() << " DStream: " << std::boolalpha << aMemMsg.isDstream()
-    << " Outstanding Msgs: " << aMemMsg.outstandingMsgs()
+    << " Outstanding Msgs: " << aMemMsg.outstandingMsgs() << " PageWalk: " << aMemMsg.isPageWalk()
     << (aMemMsg.ackRequired() ? (aMemMsg.ackRequiresData() ? " Requires Ack+Data" : " Requires Ack")
                               : "");
 

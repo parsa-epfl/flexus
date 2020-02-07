@@ -165,6 +165,10 @@ private:
       theSize = aSize;
     }
 
+    size_t size() {
+      return theTLB.size();
+    }
+
   private:
     void evict() {
       auto res = theTLB.begin();
@@ -228,6 +232,7 @@ public:
 
     iiarch >> theInstrTLB;
     diarch >> theDataTLB;
+    DBG_(Dev, (<< "Entries - iTLB:" << theInstrTLB.size() << ", dTLB:" << theDataTLB.size()));
 
     iFile.close();
     dFile.close();
