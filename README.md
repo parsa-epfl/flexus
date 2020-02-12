@@ -68,7 +68,7 @@ Use the `.clang-format` file from repository and locate it in the folder where y
 Within the folder, use this command to format .cpp/.hpp/.c/.h files:
 
 ```sh
-$ find . -name "*.hpp" -or -name "*.cpp" -or -name "*.h" -or -name "*.c" | xargs clang-format -i
+$ find . -type f -name "*.hpp" -or -name "*.cpp" -or -name "*.h" -or -name "*.c" | xargs clang-format -i
 ```
 
 Use the `clang_format_test.sh` file to check whether the formatting is successful or not. If it is successful, there will be green works showing `All source code in commit are properly formatted`. Otherwise, there will be red warning showing `Found formatting errors!` and which file where the problem is in.
