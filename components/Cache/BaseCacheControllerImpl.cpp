@@ -102,7 +102,8 @@ std::ostream &operator<<(std::ostream &s, const enumAction eAction) {
                            "kReplyAndRemoveResponseMAF",
                            "kInsertMAF_WaitRegion",
                            "kRetryRequest",
-                           "kReplyAndRetryMAF"};
+                           "kReplyAndRetryMAF",
+                           "kReplyAndInsertMAF_WaitResponse"};
   return s << actions[eAction];
 }
 

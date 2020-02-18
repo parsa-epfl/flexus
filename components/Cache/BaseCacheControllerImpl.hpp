@@ -101,6 +101,8 @@ enum enumAction {
   ,
   kReplyAndRetryMAF // Transition to WaitAddress and immediately wake-up and
                     // start over
+  ,
+  kReplyAndInsertMAF_WaitResponse
 };
 
 struct Action {

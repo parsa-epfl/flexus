@@ -137,7 +137,7 @@ std::tuple<bool, bool, Action> InclusiveMESI::doRequest(MemoryTransport transpor
   Action action(kReplyAndRemoveMAF, transport[TransactionTrackerTag], 1);
   MemoryMessage_p msg = transport[MemoryMessageTag];
   TransactionTracker_p tracker = transport[TransactionTrackerTag];
-  MemoryMessage_p request;
+  MemoryMessage_p request, reply;
   MemoryAddress block_addr = getBlockAddress(msg->address());
 
   LookupResult_p lookup = (*theArray)[block_addr];
@@ -414,6 +414,61 @@ std::tuple<bool, bool, Action> InclusiveMESI::doRequest(MemoryTransport transpor
 
     break;
 
+  // This is a request to read the value of a cache line for
+  // a TSO++ atomic preload.  If the data is available in L1,
+  // this request immediately generates an AtomicPreloadReply
+  // containing the data.  Additionally, if the line is not
+  // writable, this message is treated like a store prefetch (but
+  // the AtomicPreloadReply is sent right away).
+  case MemoryMessage::AtomicPreloadReq:
+
+    if((lookup->state() == State::Modified) || (lookup->state() == State::Exclusive)){
+        //For these cases, just reply
+      msg->type() = MemoryMessage::AtomicPreloadReply;
+      theArray->recordAccess(lookup);
+      is_hit = true;
+      action.theFrontTransport = transport;
+      action.theFrontMessage = true;
+    } else {
+      if(lookup->state() == State::Shared){
+        theArray->recordAccess(lookup);
+        is_hit = true;
+        upgrades++;
+        is_upgrade = true;
+        lookup->setProtected(true);
+        request = new MemoryMessage(MemoryMessage::UpgradeReq, getBlockAddress(msg->address()), msg->pc());
+
+        // "request" carries the BackSide Requests if necessary
+        // "reply" carries the AtomicPreloadReply to the FrontSide
+        action.theAction = kReplyAndInsertMAF_WaitResponse;
+        reply = new MemoryMessage(MemoryMessage::AtomicPreloadReply, msg->address(), msg->pc());
+        reply->reqSize() = msg->reqSize();
+        reply->coreIdx() = msg->coreIdx(); 
+        action.theFrontTransport = transport;
+        action.theFrontMessage = true;
+        action.theFrontTransport.set(MemoryMessageTag, reply);
+      } else {
+        is_miss = true;
+        request = new MemoryMessage(MemoryMessage::WriteReq, getBlockAddress(msg->address()), msg->pc());
+        action.theAction = kInsertMAF_WaitResponse;
+      }
+
+      // is_write = true;
+      is_prefetchwrite = true;
+      request->reqSize() = theBlockSize;
+      request->coreIdx() = msg->coreIdx();
+      request->address() = getBlockAddress(msg->address());
+      action.theBackMessage = true;
+      action.theBackTransport = transport;
+      action.theBackTransport.set(MemoryMessageTag, request);
+    }
+    if(is_hit && lookup->state().prefetched()){
+      theTraceTracker.prefetchHit(theNodeId, theCacheLevel, getBlockAddress(msg->address()), true);
+      prefetchHitsButUpgrade++;
+      lookup->setPrefetched(false);
+    }
+  break;
+
   case MemoryMessage::RMWReq:
   case MemoryMessage::CmpxReq:
   case MemoryMessage::StoreReq:
@@ -560,6 +615,11 @@ std::tuple<bool, bool, Action> InclusiveMESI::doRequest(MemoryTransport transpor
   }
 
   switch (action.theAction) {
+  case kReplyAndInsertMAF_WaitResponse:
+    action.theRequiresData = 0;
+    theRequestTracker.startRequest(theArray->getSet(msg->address()));
+    DBG_(Trace, ( << " starting Request in set " << theArray->getSet(msg->address()) << " for " << *msg ));
+    break;
   case kInsertMAF_WaitResponse:
     action.theRequiresData = 0;
     if (action.theBackMessage == false) {
@@ -1190,8 +1250,9 @@ Action InclusiveMESI::handleBackMessage(MemoryTransport transport) {
     DBG_Assert(waiting_maf, (<< " received miss notify with no outstanding request : " << (*msg)));
     DBG_Assert(original_miss->isWrite(), (<< " received MissNotify while wrong type of message was "
                                              "waiting. orig msg : "
-                                          << (*msg) << ", reply : " << (*msg)));
+                                          << (*original_miss) << ", reply : " << (*msg)));
 
+    if(original_miss->type() != MemoryMessage::AtomicPreloadReq){
     MissAddressFile::maf_iter maf_entry = theController->getWaitingMAFEntryIter(msg->address());
     maf_entry->outstanding_msgs += msg->outstandingMsgs();
 
@@ -1273,6 +1334,8 @@ Action InclusiveMESI::handleBackMessage(MemoryTransport transport) {
 
     return Action(kNoAction, tracker);
   }
+  break;
+  }
   default:
     DBG_Assert(false, (<< "Received unexpected message type on back side : " << (*msg)));
     break;
@@ -1297,6 +1360,136 @@ Action InclusiveMESI::handleBackMessage(MemoryTransport transport) {
   Action action(kReplyAndRemoveResponseMAF, tracker, true);
 
   switch (original_miss->type()) {
+  case MemoryMessage::AtomicPreloadReq: {
+
+    // Shouldn't get these two types
+    DBG_Assert( msg->type() != MemoryMessage::MissReply, ( << " received MissReply in response to outstanding write : " << (*msg) ));
+    DBG_Assert( msg->type() != MemoryMessage::FwdReply, ( << " received FwdReply in response to outstanding write : " << (*msg) ));
+    DBG_Assert( !from_eb );
+
+    MissAddressFile::maf_iter maf_entry = theController->getWaitingMAFEntryIter(msg->address());
+
+    if (msg->type() == MemoryMessage::MissNotifyData || msg->type() == MemoryMessage::MissNotify) {
+      maf_entry->outstanding_msgs += msg->outstandingMsgs();
+    } else {
+      // One less msg to wait for
+      maf_entry->outstanding_msgs--;
+    }
+
+    bool is_dirty = false;
+    bool has_data = false;
+
+    switch (msg->type()) {
+      case MemoryMessage::UpgradeReply:
+        maf_entry->outstanding_msgs = 0;
+        break;
+      case MemoryMessage::InvalidateAck:
+      case MemoryMessage::InvalidateNAck:
+      case MemoryMessage::MissNotify:
+        break;
+      case MemoryMessage::MissNotifyData:
+      case MemoryMessage::FwdReplyOwned:
+      case MemoryMessage::FwdReplyDirty:
+      case MemoryMessage::InvUpdateAck:
+      case MemoryMessage::MissReplyDirty:
+        is_dirty = true;
+        // Fall Through!
+      case MemoryMessage::FwdReplyWritable:
+      case MemoryMessage::MissReplyWritable:
+        has_data = true;
+        break;
+      default:
+        DBG_Assert(false, ( << "Atomic forwarded WriteReq/UpgradeReq received unexpected reply: " << (*msg) ));
+        break;
+    }
+
+    DBG_Assert(!((result->state() == State::Shared) && is_dirty), ( << "Shared should not recieve dirty reply " << *msg << " for original_miss " << *original_miss));
+
+    if (has_data) {
+      if (result->state() == State::Invalid) {
+        maf_entry->data_received = true;
+        allocateBlock(result, msg->address());
+        result->setProtected(true);
+        is_fill = true;
+      } else if (!is_dirty) {
+        has_data = false;
+      }
+      if (is_dirty) {
+        result->setState(State::Modified);
+      } else {
+        result->setState(State::Exclusive);
+      }
+    }
+
+    if (!msg->ackRequired() && ((msg->type() == MemoryMessage::MissReplyWritable)
+                                ||  (msg->type() == MemoryMessage::MissReplyDirty))) {
+      maf_entry->outstanding_msgs = 0;
+    }
+    if ((msg->outstandingMsgs() == -1) && ((msg->type() == MemoryMessage::MissReplyWritable)
+                                            ||  (msg->type() == MemoryMessage::MissReplyDirty))) {
+      maf_entry->outstanding_msgs = 0;
+    }
+
+    if (maf_entry->outstanding_msgs == 0) {
+
+      DBG_Assert(result->state() != State::Invalid, (<< "Should not have reached no outstanding msgs while still Invalid for " << *msg << "and original MAF " << *original_miss)); 
+      //If shared, then it sent upgrade req and received no replies with data
+      //So next state is exclusive
+      if(result->state() == State::Shared)
+        result->setState(State::Exclusive);
+
+
+
+      bool sent_upgrade = false;
+      if (!maf_entry->data_received) {
+        tracker->setNetworkTrafficRequired(true);
+        tracker->setResponder(theNodeId);
+        if (!tracker->fillLevel()) {
+          tracker->setFillLevel(theCacheLevel);
+        }
+        maf_entry->data_received = true;
+        sent_upgrade = true;
+      }
+
+      DBG_Assert(maf_entry->data_received, ( << " # of outstanding msgs after receiveing miss notify is 0, but we don't have data yet." ));
+
+      if(msg->ackRequired()){
+        intrusive_ptr<MemoryMessage> reply(new MemoryMessage(MemoryMessage::WriteAck, msg->address(), msg->pc()));
+        if (sent_upgrade) {
+          reply->type() = MemoryMessage::UpgradeAck;
+        }
+        reply->ackRequiresData() = false;
+        action.theBackMessage = true;
+        action.theBackTransport = transport;
+        action.theBackTransport.set(MemoryMessageTag, reply);
+      }
+
+      if(sent_upgrade){
+        action.theFrontMessage = false;
+        action.theAction = kReplyAndRemoveMAF;
+      }else{
+        action.theFrontMessage = true;
+        action.theAction = kReplyAndRemoveResponseMAF;
+        msg->type() = MemoryMessage::AtomicPreloadReply;
+        msg->reqSize() = original_miss->reqSize();
+        msg->address() = original_miss->address();
+        msg->pc() = original_miss->pc();
+        msg->coreIdx() = original_miss->coreIdx();
+      }
+
+      result->setProtected(false);
+      theArray->recordAccess(result);
+      is_final = true;
+    } else {
+      action.theAction = kNoAction;
+      if (!has_data) {
+        action.theRequiresData = 0;
+      }
+    }
+    is_write = true;
+
+    break;
+  }
   case MemoryMessage::FetchReq: {
     DBG_Assert(state == State::Invalid, (<< "Received reply to fetch req but block not invalid - "
                                          << state << " : " << (*msg)));
@@ -1745,7 +1938,7 @@ Action InclusiveMESI::handleBackMessage(MemoryTransport transport) {
     }
   }
 
-  if (action.theAction != kNoAction) {
+  if (action.theAction == kReplyAndRemoveResponseMAF) {
     action.theFrontMessage = true;
     action.theFrontTransport = transport;
   }

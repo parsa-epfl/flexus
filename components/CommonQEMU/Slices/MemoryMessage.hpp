@@ -647,6 +647,7 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     case WriteAllocate:
     case UpgradeReq:
     case UpgradeAllocate:
+    case AtomicPreloadReq:
       return true;
     case Flush:
     case EvictDirty:
@@ -668,7 +669,6 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     case RMWReply:
     case CmpxReply:
     case LoadReq:
-    case AtomicPreloadReq:
     case LoadReply:
     case AtomicPreloadReply:
     case FetchReq:

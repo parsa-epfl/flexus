@@ -1239,6 +1239,16 @@ void CacheController::runRequestProcess(ProcessEntry_p aProcess) {
     enqueueTagPipeline(action, aProcess);
     break;
   }
+  case kReplyAndInsertMAF_WaitResponse: {
+    unreserveMAF( aProcess );
+    DBG_Assert(action.theBackMessage);
+    DBG_Assert(action.theFrontMessage);
+    aProcess->enqueueBackTransport( action );
+    aProcess->enqueueFrontTransport(action);
+    theMaf.allocEntry(addressOf(aProcess), aProcess->transport(), kWaitResponse);
+    enqueueTagPipeline ( action, aProcess );
+    break;
+  }
   case kInsertMAF_WaitProbe: {
 
     // Cache needs to probe hierarchy above to determine what to do
@@ -1301,6 +1311,15 @@ void CacheController::runWakeMafProcess(ProcessEntry_p aProcess) {
 
     theMaf.modifyState(aProcess->mafEntry(), kWaitResponse);
     enqueueTagPipeline(action, aProcess);
+    break;
+  }
+  case kReplyAndInsertMAF_WaitResponse: {
+    DBG_Assert(action.theBackMessage);
+    DBG_Assert(action.theFrontMessage);
+    aProcess->enqueueBackTransport( action );
+    aProcess->enqueueFrontTransport(action);
+    theMaf.modifyState(aProcess->mafEntry(), kWaitResponse);
+    enqueueTagPipeline ( action, aProcess );
     break;
   }
   case kInsertMAF_WaitProbe: {
@@ -1586,6 +1605,33 @@ void CacheController::runBackProcess(ProcessEntry_p aProcess) {
 
     enqueueTagPipeline(action, aProcess);
   } break;
+
+  case kReplyAndRemoveMAF: {
+    aProcess->removeMafEntry() = true;
+    aProcess->mafEntry() = theMaf.getWaitingMAFEntryIter ( addressOf ( aProcess ) );
+    DBG_Assert ( aProcess->mafEntry() != theMaf.end() );
+    theMaf.modifyState ( aProcess->mafEntry(), kCompleted );
+
+    // Initialize other transports
+    aProcess->transport() = aProcess->mafEntry()->transport;
+    aProcess->backTransport() = aProcess->mafEntry()->transport;
+
+    // Update transports with the correct MemoryMessage
+    DBG_Assert(!action.theFrontMessage);
+    unreserveFrontSideOut( aProcess );
+
+    DBG_Assert(action.theBackMessage);
+    aProcess->enqueueBackTransport ( action );
+
+    aProcess->wakeRegion() = action.theWakeRegion;
+    DBG_(Trace, ( << "runBackProcess(" << *aProcess->transport()[MemoryMessageTag] << "): aProcess->wakeRegion() = " << std::boolalpha << aProcess->wakeRegion() << ", action.theWakeRegion = " << action.theWakeRegion ));
+
+    // We need to un-reserve the evict buffer that was reserved during the original request
+    theCacheControllerImpl->unreserveEvictBuffer();
+
+    enqueueTagPipeline ( action, aProcess );
+  }
+  break;
 
   case kReplyAndRetryMAF: {
     aProcess->mafEntry() = theMaf.getWaitingMAFEntryIter(addressOf(aProcess));
