@@ -354,7 +354,7 @@ const CoherenceProtocol::access_t CoherenceProtocol::kEvictDirty;
 const CoherenceProtocol::access_t CoherenceProtocol::kStoreAccess;
 const CoherenceProtocol::access_t CoherenceProtocol::kNAWAccess;
 const CoherenceProtocol::access_t CoherenceProtocol::kUnknownAccess;
-
+ 
 #define CP CoherenceProtocol
 
 // Required specializations
