@@ -94,7 +94,9 @@ void PageWalk::preWalk(TranslationTransport &aTranslation) {
   trace_address = TTEDescriptor;
   //    uint64_t rawTTEValue = Flexus::Core::construct(QEMU_read_phys_memory(
   //    TTEDescriptor, 8 ), 8);
-  pushMemoryRequest(basicPointer);
+  if (!basicPointer->inTraceMode) {
+    pushMemoryRequest(basicPointer);
+  }
 }
 
 bool PageWalk::walk(TranslationTransport &aTranslation) {
@@ -253,6 +255,7 @@ bool PageWalk::push_back_trace(TranslationPtr aTranslation, Flexus::Qemu::Proces
   newTransport.set(TranslationStatefulTag, statefulTranslation);
   if (!InitialTranslationSetup(newTransport))
     return false;
+
   while (1) {
     preTranslate(newTransport);
     basicTranslation->rawTTEValue = (uint64_t)theCPU->readPhysicalAddress(trace_address, 8);
@@ -262,6 +265,7 @@ bool PageWalk::push_back_trace(TranslationPtr aTranslation, Flexus::Qemu::Proces
     if (basicTranslation->isDone())
       break;
   }
+
   return true;
 }
 

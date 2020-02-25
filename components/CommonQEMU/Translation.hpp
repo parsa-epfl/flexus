@@ -64,7 +64,7 @@ struct Translation : public boost::counted_base {
   Translation()
       : theTLBstatus(kTLBunresolved), theTLBtype(kNONE), theReady(false), theWaiting(false),
         theDone(false), theCurrentTranslationLevel(0), rawTTEValue(0), theID(translationID++),
-        theAnnul(false), theTimeoutCounter(0), thePageFault(false)
+        theAnnul(false), theTimeoutCounter(0), thePageFault(false), inTraceMode(false)
 
   {
   }
@@ -86,6 +86,7 @@ struct Translation : public boost::counted_base {
     theWaiting = aTr.theReady;
     thePageFault = aTr.thePageFault;
     trace_addresses = aTr.trace_addresses;
+    inTraceMode = aTr.inTraceMode;
   }
 
   Translation &operator=(Translation &rhs) {
@@ -103,6 +104,7 @@ struct Translation : public boost::counted_base {
     theWaiting = rhs.theReady;
     thePageFault = rhs.thePageFault;
     trace_addresses = rhs.trace_addresses;
+    inTraceMode = rhs.inTraceMode;
 
     return *this;
   }
@@ -128,6 +130,7 @@ struct Translation : public boost::counted_base {
   uint64_t theTimeoutCounter;
   bool thePageFault;
   std::queue<PhysicalMemoryAddress> trace_addresses;
+  bool inTraceMode;
 
   boost::intrusive_ptr<AbstractInstruction> theInstruction;
 

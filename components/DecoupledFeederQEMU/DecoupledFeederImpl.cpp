@@ -159,6 +159,7 @@ public:
     tr->setData();
     tr->theVaddr = aMessage.pc();
     tr->thePaddr = aMessage.address();
+    tr->inTraceMode = true;
 
     FLEXUS_CHANNEL_ARRAY(ToMMU, anIndex) << tr;
     while (tr->trace_addresses.size()) {
@@ -202,6 +203,7 @@ public:
     tr->setInstr();
     tr->theVaddr = aMessage.pc();
     tr->thePaddr = aMessage.address();
+    tr->inTraceMode = true;
 
     FLEXUS_CHANNEL_ARRAY(ToMMU, anIndex) << tr;
     while (tr->trace_addresses.size()) {
