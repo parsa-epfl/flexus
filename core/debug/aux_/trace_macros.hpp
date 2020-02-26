@@ -9,8 +9,12 @@
 #else
 // Trace debugging disabled
 
-#define DBG__internal_Trace(...)                                                                   \
+#define DBG__internal_Trace(Sev, operations)                                                       \
   do {                                                                                             \
+    /* Prevent unused variable warnings if debugging operation is below threshold */               \
+    if (false) {                                                                                   \
+      DBG__internal_PROCESS_DBG(Sev, operations);                                                  \
+    }                                                                                              \
   } while (0)
 
 #endif
