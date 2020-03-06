@@ -143,7 +143,6 @@ public:
     if (theCMPWidth == 0) {
       theCMPWidth = Qemu::API::QEMU_get_num_cores();
     }
-    printf("Hello decouple feeder!\n");
   }
 
   void finalize(void) {
