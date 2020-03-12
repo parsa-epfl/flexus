@@ -8,6 +8,7 @@ QEMU_GET_ETHERNET_PROC QEMU_get_ethernet = nullptr;
 QEMU_CLEAR_EXCEPTION_PROC QEMU_clear_exception = nullptr;
 QEMU_GET_PENDING_INTERRUPT_PROC QEMU_get_pending_interrupt = nullptr;
 
+QEMU_WRITE_REGISTER_PROC QEMU_write_register = nullptr;
 QEMU_READ_REGISTER_PROC QEMU_read_register = nullptr;
 QEMU_READ_PSTATE_PROC QEMU_read_pstate = nullptr;
 QEMU_READ_FPCR_PROC QEMU_read_fpcr = nullptr;
@@ -59,6 +60,7 @@ void QFLEX_API_set_Interface_Hooks(const QFLEX_API_Interface_Hooks_t *hooks) {
   QEMU_get_phys_memory = hooks->QEMU_get_phys_memory;
   QEMU_get_ethernet = hooks->QEMU_get_ethernet;
   QEMU_clear_exception = hooks->QEMU_clear_exception;
+  QEMU_write_register = hooks->QEMU_write_register;
   QEMU_read_register = hooks->QEMU_read_register;
   QEMU_cpu_has_work = hooks->QEMU_cpu_has_work;
 
