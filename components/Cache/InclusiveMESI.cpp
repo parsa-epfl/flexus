@@ -1,40 +1,47 @@
-// DO-NOT-REMOVE begin-copyright-block
+//  DO-NOT-REMOVE begin-copyright-block
+// QFlex consists of several software components that are governed by various
+// licensing terms, in addition to software that was developed internally.
+// Anyone interested in using QFlex needs to fully understand and abide by the
+// licenses governing all the software components.
 //
-// Redistributions of any form whatsoever must retain and/or include the
-// following acknowledgment, notices and disclaimer:
+// ### Software developed externally (not by the QFlex group)
 //
-// This product includes software developed by Carnegie Mellon University.
+//     * [NS-3] (https://www.gnu.org/copyleft/gpl.html)
+//     * [QEMU] (http://wiki.qemu.org/License)
+//     * [SimFlex] (http://parsa.epfl.ch/simflex/)
+//     * [GNU PTH] (https://www.gnu.org/software/pth/)
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic,
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon
-// University.
+// ### Software developed internally (by the QFlex group)
+// **QFlex License**
 //
-// For more information, see the SimFlex project website at:
-//   http://www.ece.cmu.edu/~simflex
+// QFlex
+// Copyright (c) 2020, Parallel Systems Architecture Lab, EPFL
+// All rights reserved.
 //
-// You may not use the name "Carnegie Mellon University" or derivations
-// thereof to endorse or promote products derived from this software.
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
 //
-// If you modify the software you must place a notice on or within any
-// modified version provided or made available to any third party stating
-// that you have modified the software.  The notice shall include at least
-// your name, address, phone number, email address and the date and purpose
-// of the modification.
+//     * Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above copyright notice,
+//       this list of conditions and the following disclaimer in the documentation
+//       and/or other materials provided with the distribution.
+//     * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,
+//       nor the names of its contributors may be used to endorse or promote
+//       products derived from this software without specific prior written
+//       permission.
 //
-// THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
-// EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
-// THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
-// IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-// TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
-// BE LIABLE FOR ANY DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
-// SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
-// ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
-// CONTRACT, TORT OR OTHERWISE).
-//
-// DO-NOT-REMOVE end-copyright-block
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,
+// EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+// GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//  DO-NOT-REMOVE end-copyright-block
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -422,34 +429,36 @@ std::tuple<bool, bool, Action> InclusiveMESI::doRequest(MemoryTransport transpor
   // the AtomicPreloadReply is sent right away).
   case MemoryMessage::AtomicPreloadReq:
 
-    if((lookup->state() == State::Modified) || (lookup->state() == State::Exclusive)){
-        //For these cases, just reply
+    if ((lookup->state() == State::Modified) || (lookup->state() == State::Exclusive)) {
+      // For these cases, just reply
       msg->type() = MemoryMessage::AtomicPreloadReply;
       theArray->recordAccess(lookup);
       is_hit = true;
       action.theFrontTransport = transport;
       action.theFrontMessage = true;
     } else {
-      if(lookup->state() == State::Shared){
+      if (lookup->state() == State::Shared) {
         theArray->recordAccess(lookup);
         is_hit = true;
         upgrades++;
         is_upgrade = true;
         lookup->setProtected(true);
-        request = new MemoryMessage(MemoryMessage::UpgradeReq, getBlockAddress(msg->address()), msg->pc());
+        request = new MemoryMessage(MemoryMessage::UpgradeReq, getBlockAddress(msg->address()),
+                                    msg->pc());
 
         // "request" carries the BackSide Requests if necessary
         // "reply" carries the AtomicPreloadReply to the FrontSide
         action.theAction = kReplyAndInsertMAF_WaitResponse;
         reply = new MemoryMessage(MemoryMessage::AtomicPreloadReply, msg->address(), msg->pc());
         reply->reqSize() = msg->reqSize();
-        reply->coreIdx() = msg->coreIdx(); 
+        reply->coreIdx() = msg->coreIdx();
         action.theFrontTransport = transport;
         action.theFrontMessage = true;
         action.theFrontTransport.set(MemoryMessageTag, reply);
       } else {
         is_miss = true;
-        request = new MemoryMessage(MemoryMessage::WriteReq, getBlockAddress(msg->address()), msg->pc());
+        request =
+            new MemoryMessage(MemoryMessage::WriteReq, getBlockAddress(msg->address()), msg->pc());
         action.theAction = kInsertMAF_WaitResponse;
       }
 
@@ -462,12 +471,12 @@ std::tuple<bool, bool, Action> InclusiveMESI::doRequest(MemoryTransport transpor
       action.theBackTransport = transport;
       action.theBackTransport.set(MemoryMessageTag, request);
     }
-    if(is_hit && lookup->state().prefetched()){
+    if (is_hit && lookup->state().prefetched()) {
       theTraceTracker.prefetchHit(theNodeId, theCacheLevel, getBlockAddress(msg->address()), true);
       prefetchHitsButUpgrade++;
       lookup->setPrefetched(false);
     }
-  break;
+    break;
 
   case MemoryMessage::RMWReq:
   case MemoryMessage::CmpxReq:
@@ -618,7 +627,8 @@ std::tuple<bool, bool, Action> InclusiveMESI::doRequest(MemoryTransport transpor
   case kReplyAndInsertMAF_WaitResponse:
     action.theRequiresData = 0;
     theRequestTracker.startRequest(theArray->getSet(msg->address()));
-    DBG_(Trace, ( << " starting Request in set " << theArray->getSet(msg->address()) << " for " << *msg ));
+    DBG_(Trace,
+         (<< " starting Request in set " << theArray->getSet(msg->address()) << " for " << *msg));
     break;
   case kInsertMAF_WaitResponse:
     action.theRequiresData = 0;
@@ -1252,89 +1262,89 @@ Action InclusiveMESI::handleBackMessage(MemoryTransport transport) {
                                              "waiting. orig msg : "
                                           << (*original_miss) << ", reply : " << (*msg)));
 
-    if(original_miss->type() != MemoryMessage::AtomicPreloadReq){
-    MissAddressFile::maf_iter maf_entry = theController->getWaitingMAFEntryIter(msg->address());
-    maf_entry->outstanding_msgs += msg->outstandingMsgs();
+    if (original_miss->type() != MemoryMessage::AtomicPreloadReq) {
+      MissAddressFile::maf_iter maf_entry = theController->getWaitingMAFEntryIter(msg->address());
+      maf_entry->outstanding_msgs += msg->outstandingMsgs();
 
-    // It's possible we've already received all the other msgs BEFORE we get
-    // this notify in this case the # of outstanding msgs should now be zero and
-    // we can send our replies
-    if (maf_entry->outstanding_msgs == 0) {
-      bool sent_upgrade = (original_miss->type() == MemoryMessage::UpgradeReq);
-      if (!maf_entry->data_received && result->state() != State::Invalid) {
-        tracker->setNetworkTrafficRequired(true);
-        tracker->setResponder(theNodeId);
-        if (!tracker->fillLevel()) {
-          tracker->setFillLevel(theCacheLevel);
+      // It's possible we've already received all the other msgs BEFORE we get
+      // this notify in this case the # of outstanding msgs should now be zero and
+      // we can send our replies
+      if (maf_entry->outstanding_msgs == 0) {
+        bool sent_upgrade = (original_miss->type() == MemoryMessage::UpgradeReq);
+        if (!maf_entry->data_received && result->state() != State::Invalid) {
+          tracker->setNetworkTrafficRequired(true);
+          tracker->setResponder(theNodeId);
+          if (!tracker->fillLevel()) {
+            tracker->setFillLevel(theCacheLevel);
+          }
+          maf_entry->data_received = true;
+          sent_upgrade = true;
         }
-        maf_entry->data_received = true;
-        sent_upgrade = true;
-      }
-      DBG_Assert((original_miss->type() == MemoryMessage::UpgradeReq) || maf_entry->data_received,
-                 (<< " # of outstanding msgs after receiveing miss notify is "
-                     "0, but we don't have data yet."));
-      DBG_Assert(!from_eb, (<< "received miss notify but data in evict buffer."));
-      Action action(kReplyAndRemoveResponseMAF, tracker, true);
+        DBG_Assert((original_miss->type() == MemoryMessage::UpgradeReq) || maf_entry->data_received,
+                   (<< " # of outstanding msgs after receiveing miss notify is "
+                       "0, but we don't have data yet."));
+        DBG_Assert(!from_eb, (<< "received miss notify but data in evict buffer."));
+        Action action(kReplyAndRemoveResponseMAF, tracker, true);
 
-      intrusive_ptr<MemoryMessage> reply(
-          new MemoryMessage(MemoryMessage::WriteAck, msg->address(), msg->pc()));
-      if (sent_upgrade) {
-        reply->type() = MemoryMessage::UpgradeAck;
-      }
-      // Un-protect the block before invalidating it
-      result->setProtected(false);
-      action.theBackMessage = true;
-      action.theBackTransport = transport;
-      action.theBackTransport.set(MemoryMessageTag, reply);
+        intrusive_ptr<MemoryMessage> reply(
+            new MemoryMessage(MemoryMessage::WriteAck, msg->address(), msg->pc()));
+        if (sent_upgrade) {
+          reply->type() = MemoryMessage::UpgradeAck;
+        }
+        // Un-protect the block before invalidating it
+        result->setProtected(false);
+        action.theBackMessage = true;
+        action.theBackTransport = transport;
+        action.theBackTransport.set(MemoryMessageTag, reply);
 
-      if (original_miss->type() == MemoryMessage::StoreReq) {
-        msg->type() = MemoryMessage::StoreReply;
-        result->setState(State::Modified);
-      } else if (original_miss->type() == MemoryMessage::StorePrefetchReq) {
-        msg->type() = MemoryMessage::StorePrefetchReply;
-        result->setState(State::Modified);
-      } else if (original_miss->type() == MemoryMessage::CmpxReq) {
-        msg->type() = MemoryMessage::CmpxReply;
-        result->setState(State::Modified);
-      } else if (original_miss->type() == MemoryMessage::RMWReq) {
-        msg->type() = MemoryMessage::RMWReply;
-        result->setState(State::Modified);
-      } else {
-        if (result->state() == State::Modified) {
-          msg->type() = MemoryMessage::MissReplyDirty;
+        if (original_miss->type() == MemoryMessage::StoreReq) {
+          msg->type() = MemoryMessage::StoreReply;
+          result->setState(State::Modified);
+        } else if (original_miss->type() == MemoryMessage::StorePrefetchReq) {
+          msg->type() = MemoryMessage::StorePrefetchReply;
+          result->setState(State::Modified);
+        } else if (original_miss->type() == MemoryMessage::CmpxReq) {
+          msg->type() = MemoryMessage::CmpxReply;
+          result->setState(State::Modified);
+        } else if (original_miss->type() == MemoryMessage::RMWReq) {
+          msg->type() = MemoryMessage::RMWReply;
+          result->setState(State::Modified);
         } else {
-          DBG_Assert(result->state() != State::Invalid);
-          msg->type() = MemoryMessage::MissReplyWritable;
-        }
-        if (original_miss->type() == MemoryMessage::UpgradeReq) {
-          msg->type() = MemoryMessage::UpgradeReply;
+          if (result->state() == State::Modified) {
+            msg->type() = MemoryMessage::MissReplyDirty;
+          } else {
+            DBG_Assert(result->state() != State::Invalid);
+            msg->type() = MemoryMessage::MissReplyWritable;
+          }
+          if (original_miss->type() == MemoryMessage::UpgradeReq) {
+            msg->type() = MemoryMessage::UpgradeReply;
+          }
+
+          result->setState(State::Exclusive);
         }
 
-        result->setState(State::Exclusive);
+        if (theCacheLevel == eL1) {
+          msg->reqSize() = original_miss->reqSize();
+          msg->address() = original_miss->address();
+          msg->coreIdx() = original_miss->coreIdx();
+        } else {
+          msg->reqSize() = theBlockSize;
+        }
+
+        action.theFrontMessage = true;
+        action.theFrontTransport = transport;
+
+        // We're done with this request
+        theRequestTracker.endRequest(theArray->getSet(msg->address()));
+        DBG_(Trace,
+             (<< " ending Request in set " << theArray->getSet(msg->address()) << " for " << *msg));
+
+        return action;
       }
 
-      if (theCacheLevel == eL1) {
-        msg->reqSize() = original_miss->reqSize();
-        msg->address() = original_miss->address();
-        msg->coreIdx() = original_miss->coreIdx();
-      } else {
-        msg->reqSize() = theBlockSize;
-      }
-
-      action.theFrontMessage = true;
-      action.theFrontTransport = transport;
-
-      // We're done with this request
-      theRequestTracker.endRequest(theArray->getSet(msg->address()));
-      DBG_(Trace,
-           (<< " ending Request in set " << theArray->getSet(msg->address()) << " for " << *msg));
-
-      return action;
+      return Action(kNoAction, tracker);
     }
-
-    return Action(kNoAction, tracker);
-  }
-  break;
+    break;
   }
   default:
     DBG_Assert(false, (<< "Received unexpected message type on back side : " << (*msg)));
@@ -1363,9 +1373,11 @@ Action InclusiveMESI::handleBackMessage(MemoryTransport transport) {
   case MemoryMessage::AtomicPreloadReq: {
 
     // Shouldn't get these two types
-    DBG_Assert( msg->type() != MemoryMessage::MissReply, ( << " received MissReply in response to outstanding write : " << (*msg) ));
-    DBG_Assert( msg->type() != MemoryMessage::FwdReply, ( << " received FwdReply in response to outstanding write : " << (*msg) ));
-    DBG_Assert( !from_eb );
+    DBG_Assert(msg->type() != MemoryMessage::MissReply,
+               (<< " received MissReply in response to outstanding write : " << (*msg)));
+    DBG_Assert(msg->type() != MemoryMessage::FwdReply,
+               (<< " received FwdReply in response to outstanding write : " << (*msg)));
+    DBG_Assert(!from_eb);
 
     MissAddressFile::maf_iter maf_entry = theController->getWaitingMAFEntryIter(msg->address());
 
@@ -1380,30 +1392,33 @@ Action InclusiveMESI::handleBackMessage(MemoryTransport transport) {
     bool has_data = false;
 
     switch (msg->type()) {
-      case MemoryMessage::UpgradeReply:
-        maf_entry->outstanding_msgs = 0;
-        break;
-      case MemoryMessage::InvalidateAck:
-      case MemoryMessage::InvalidateNAck:
-      case MemoryMessage::MissNotify:
-        break;
-      case MemoryMessage::MissNotifyData:
-      case MemoryMessage::FwdReplyOwned:
-      case MemoryMessage::FwdReplyDirty:
-      case MemoryMessage::InvUpdateAck:
-      case MemoryMessage::MissReplyDirty:
-        is_dirty = true;
-        // Fall Through!
-      case MemoryMessage::FwdReplyWritable:
-      case MemoryMessage::MissReplyWritable:
-        has_data = true;
-        break;
-      default:
-        DBG_Assert(false, ( << "Atomic forwarded WriteReq/UpgradeReq received unexpected reply: " << (*msg) ));
-        break;
+    case MemoryMessage::UpgradeReply:
+      maf_entry->outstanding_msgs = 0;
+      break;
+    case MemoryMessage::InvalidateAck:
+    case MemoryMessage::InvalidateNAck:
+    case MemoryMessage::MissNotify:
+      break;
+    case MemoryMessage::MissNotifyData:
+    case MemoryMessage::FwdReplyOwned:
+    case MemoryMessage::FwdReplyDirty:
+    case MemoryMessage::InvUpdateAck:
+    case MemoryMessage::MissReplyDirty:
+      is_dirty = true;
+      // Fall Through!
+    case MemoryMessage::FwdReplyWritable:
+    case MemoryMessage::MissReplyWritable:
+      has_data = true;
+      break;
+    default:
+      DBG_Assert(false,
+                 (<< "Atomic forwarded WriteReq/UpgradeReq received unexpected reply: " << (*msg)));
+      break;
     }
 
-    DBG_Assert(!((result->state() == State::Shared) && is_dirty), ( << "Shared should not recieve dirty reply " << *msg << " for original_miss " << *original_miss));
+    DBG_Assert(!((result->state() == State::Shared) && is_dirty),
+               (<< "Shared should not recieve dirty reply " << *msg << " for original_miss "
+                << *original_miss));
 
     if (has_data) {
       if (result->state() == State::Invalid) {
@@ -1421,24 +1436,24 @@ Action InclusiveMESI::handleBackMessage(MemoryTransport transport) {
       }
     }
 
-    if (!msg->ackRequired() && ((msg->type() == MemoryMessage::MissReplyWritable)
-                                ||  (msg->type() == MemoryMessage::MissReplyDirty))) {
+    if (!msg->ackRequired() && ((msg->type() == MemoryMessage::MissReplyWritable) ||
+                                (msg->type() == MemoryMessage::MissReplyDirty))) {
       maf_entry->outstanding_msgs = 0;
     }
-    if ((msg->outstandingMsgs() == -1) && ((msg->type() == MemoryMessage::MissReplyWritable)
-                                            ||  (msg->type() == MemoryMessage::MissReplyDirty))) {
+    if ((msg->outstandingMsgs() == -1) && ((msg->type() == MemoryMessage::MissReplyWritable) ||
+                                           (msg->type() == MemoryMessage::MissReplyDirty))) {
       maf_entry->outstanding_msgs = 0;
     }
 
     if (maf_entry->outstanding_msgs == 0) {
 
-      DBG_Assert(result->state() != State::Invalid, (<< "Should not have reached no outstanding msgs while still Invalid for " << *msg << "and original MAF " << *original_miss)); 
-      //If shared, then it sent upgrade req and received no replies with data
-      //So next state is exclusive
-      if(result->state() == State::Shared)
+      DBG_Assert(result->state() != State::Invalid,
+                 (<< "Should not have reached no outstanding msgs while still Invalid for " << *msg
+                  << "and original MAF " << *original_miss));
+      // If shared, then it sent upgrade req and received no replies with data
+      // So next state is exclusive
+      if (result->state() == State::Shared)
         result->setState(State::Exclusive);
-
-
 
       bool sent_upgrade = false;
       if (!maf_entry->data_received) {
@@ -1451,10 +1466,12 @@ Action InclusiveMESI::handleBackMessage(MemoryTransport transport) {
         sent_upgrade = true;
       }
 
-      DBG_Assert(maf_entry->data_received, ( << " # of outstanding msgs after receiveing miss notify is 0, but we don't have data yet." ));
+      DBG_Assert(maf_entry->data_received, (<< " # of outstanding msgs after receiveing miss "
+                                               "notify is 0, but we don't have data yet."));
 
-      if(msg->ackRequired()){
-        intrusive_ptr<MemoryMessage> reply(new MemoryMessage(MemoryMessage::WriteAck, msg->address(), msg->pc()));
+      if (msg->ackRequired()) {
+        intrusive_ptr<MemoryMessage> reply(
+            new MemoryMessage(MemoryMessage::WriteAck, msg->address(), msg->pc()));
         if (sent_upgrade) {
           reply->type() = MemoryMessage::UpgradeAck;
         }
@@ -1464,10 +1481,10 @@ Action InclusiveMESI::handleBackMessage(MemoryTransport transport) {
         action.theBackTransport.set(MemoryMessageTag, reply);
       }
 
-      if(sent_upgrade){
+      if (sent_upgrade) {
         action.theFrontMessage = false;
         action.theAction = kReplyAndRemoveMAF;
-      }else{
+      } else {
         action.theFrontMessage = true;
         action.theAction = kReplyAndRemoveResponseMAF;
         msg->type() = MemoryMessage::AtomicPreloadReply;
