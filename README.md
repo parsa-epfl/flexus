@@ -19,8 +19,13 @@ $ sudo update-alternatives --config gcc
 $ sudo update-alternatives --config g++
 ```
 
-* Install a compatible version of `boost` libaray:
+* Install a compatible version of `boost` library:
 
+Using the package manager (1.65 on Ubuntu 18.04)
+```sh
+$ sudo apt-get -y install libboost-all-dev
+```
+or build from scratch
 ```sh
 $ export BOOST="boost_1_70_0"
 $ export BOOST_VERSION="1.70.0"
