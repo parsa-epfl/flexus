@@ -305,8 +305,8 @@ flexus.set "-magic-break:ckpt_cycle"                            "0" # "# of cycl
 flexus.set "-magic-break:ckpt_cycle_name"                       "0" # "Base cycle # from which to build checkpoint names." (CkptCycleName)
 
 ### DRAMSim [timing]
-flexus.set "-memory:device-file"   "/home/sgupta/asplos19/simflex/components/DRAMController/DRAMSim2/ini/DDR4_micron_16M_8B_x8_sg15.ini"
-flexus.set "-memory:memory-system-file"                "/home/sgupta/asplos19/simflex/components/DRAMController/DRAMSim2/system.ini"
+flexus.set "-memory:device-file"   "/qflex/flexus/components/DRAMController/DRAMSim2/ini/DDR4_micron_16M_8B_x8_sg15.ini"	#To be updated
+flexus.set "-memory:memory-system-file"                "/qflex/flexus/components/DRAMController/DRAMSim2/system.ini"		#To be updated
 flexus.set "-memory:interleaving"                              "64" # address interleaving for memory controllers (in bytes)
 flexus.set "-memory:frequency"                               "2000" # "CPU frequency"
 flexus.set "-memory:dyn_size"                                   "1" # "0 - fix DRAM size statically based on 'memory:size', 1- dynamically adjust DRAM size based on the workload"
@@ -327,7 +327,7 @@ flexus.set "-L2:banks"                                          "1" #
 flexus.set "-L2:cores"                                          "2" #
 flexus.set "-L2:CMPWidth"                                       "1" #
 flexus.set "-network:nodes"                                     "3" #
-flexus.set "-network:topology-file"             "/home/sgupta/qflex/flexus/simulators/KnottyKraken/1x3-mesh.topology" #
+flexus.set "-network:topology-file"             "/qflex/flexus/simulators/KnottyKraken/1x3-mesh.topology"	#To be updated
 flexus.set "-net-mapper:Cores"                                  "1" #
 flexus.set "-net-mapper:Directories"                            "1" #
 flexus.set "-net-mapper:Banks"                                  "1" #
