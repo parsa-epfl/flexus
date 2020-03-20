@@ -1,59 +1,67 @@
-// DO-NOT-REMOVE begin-copyright-block 
+//  DO-NOT-REMOVE begin-copyright-block
+// QFlex consists of several software components that are governed by various
+// licensing terms, in addition to software that was developed internally.
+// Anyone interested in using QFlex needs to fully understand and abide by the
+// licenses governing all the software components.
 //
-// Redistributions of any form whatsoever must retain and/or include the
-// following acknowledgment, notices and disclaimer:
+// ### Software developed externally (not by the QFlex group)
 //
-// This product includes software developed by Carnegie Mellon University.
+//     * [NS-3] (https://www.gnu.org/copyleft/gpl.html)
+//     * [QEMU] (http://wiki.qemu.org/License)
+//     * [SimFlex] (http://parsa.epfl.ch/simflex/)
+//     * [GNU PTH] (https://www.gnu.org/software/pth/)
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// ### Software developed internally (by the QFlex group)
+// **QFlex License**
 //
-// For more information, see the SimFlex project website at:
-//   http://www.ece.cmu.edu/~simflex
+// QFlex
+// Copyright (c) 2020, Parallel Systems Architecture Lab, EPFL
+// All rights reserved.
 //
-// You may not use the name "Carnegie Mellon University" or derivations
-// thereof to endorse or promote products derived from this software.
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
 //
-// If you modify the software you must place a notice on or within any
-// modified version provided or made available to any third party stating
-// that you have modified the software.  The notice shall include at least
-// your name, address, phone number, email address and the date and purpose
-// of the modification.
+//     * Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above copyright notice,
+//       this list of conditions and the following disclaimer in the documentation
+//       and/or other materials provided with the distribution.
+//     * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,
+//       nor the names of its contributors may be used to endorse or promote
+//       products derived from this software without specific prior written
+//       permission.
 //
-// THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
-// EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
-// THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
-// IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-// TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
-// BE LIABLE FOR ANY DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
-// SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
-// ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
-// CONTRACT, TORT OR OTHERWISE).
-//
-// DO-NOT-REMOVE end-copyright-block   
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,
+// EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+// GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//  DO-NOT-REMOVE end-copyright-block
 #ifndef FLEXUS_CORE_AUX__STATS_VALUE_ARRAYS__HPP__INCLUDED
 #define FLEXUS_CORE_AUX__STATS_VALUE_ARRAYS__HPP__INCLUDED
 
-#include <string>
-#include <map>
-#include <set>
-#include <vector>
-#include <iostream>
-#include <iomanip>
-#include <cmath>
-#include <numeric>
-#include <functional>
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/set.hpp>
-#include <boost/serialization/serialization.hpp>
 #include <boost/serialization/export.hpp>
+#include <boost/serialization/map.hpp>
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/set.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/vector.hpp>
+#include <cmath>
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <core/boost_extensions/lexical_cast.hpp>
+#include <functional>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <numeric>
+#include <set>
+#include <string>
+#include <vector>
 
 namespace Flexus {
 namespace Stat {
@@ -62,13 +70,13 @@ namespace aux_ {
 class StatValueArray_Counter : public StatValueArrayBase {
 private:
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, uint32_t version) {
-    ar & boost::serialization::base_object<StatValueArrayBase>(*this);
-    ar & theInitialValue;
-    ar & theValues;
+  template <class Archive> void serialize(Archive &ar, uint32_t version) {
+    ar &boost::serialization::base_object<StatValueArrayBase>(*this);
+    ar &theInitialValue;
+    ar &theValues;
   }
-  StatValueArray_Counter() {}
+  StatValueArray_Counter() {
+  }
 
 public:
   typedef int64_t update_type;
@@ -78,25 +86,25 @@ public:
 private:
   value_type theInitialValue;
   std::vector<simple_type> theValues;
+
 public:
-  StatValueArray_Counter(value_type aValue)
-    : theInitialValue(aValue) {
+  StatValueArray_Counter(value_type aValue) : theInitialValue(aValue) {
     theValues.push_back(simple_type(theInitialValue));
   }
 
-  //Used by serialization of other stat types
-  StatValueArray_Counter( std::vector<simple_type> const & aValueVector, value_type aCurrentValue)
-    : theValues(aValueVector) {
+  // Used by serialization of other stat types
+  StatValueArray_Counter(std::vector<simple_type> const &aValueVector, value_type aCurrentValue)
+      : theValues(aValueVector) {
     theValues.push_back(simple_type(aCurrentValue));
   }
 
-  void reduceSum( const StatValueBase & aBase) {
+  void reduceSum(const StatValueBase &aBase) {
     std::cerr << "reductions not supported (StatValueArray_Counter)" << std::endl;
   }
-  void update( update_type anUpdate ) {
+  void update(update_type anUpdate) {
     theValues.back().update(anUpdate);
   }
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     for (int32_t i = 0; i < static_cast<int>(theValues.size()) - 1; ++i) {
       anOstream << theValues[i] << ", ";
     }
@@ -106,14 +114,14 @@ public:
     if (aValueType == accumulation_type::Accumulate) {
       theValues.push_back(theValues.back());
     } else {
-      theValues.push_back( simple_type(theInitialValue) );
+      theValues.push_back(simple_type(theInitialValue));
     }
   }
-  void reset( value_type aValue) {
+  void reset(value_type aValue) {
     theValues.clear();
     theValues.push_back(aValue);
   }
-  StatValueBase & operator[](int32_t anIndex) {
+  StatValueBase &operator[](int32_t anIndex) {
     return theValues[anIndex];
   }
   std::size_t size() {
@@ -149,21 +157,23 @@ public:
       }
 
       //Used by serialization of other stat types
-      StatValueArray_DoubleCounter( std::vector<simple_type> const & aValueVector, value_type aCurrentValue)
-        : theValues(aValueVector)
+      StatValueArray_DoubleCounter( std::vector<simple_type> const &
+  aValueVector, value_type aCurrentValue) : theValues(aValueVector)
       {
         theValues.push_back(simple_type(aCurrentValue));
       }
 
       void reduceSum( const StatValueBase & aBase) {
-        std::cerr << "reductions not supported (StatValueArray_Counter)" << std::endl;
+        std::cerr << "reductions not supported (StatValueArray_Counter)" <<
+  std::endl;
       }
       void update( update_type anUpdate ) {
         theValues.back().update(anUpdate);
       }
-      void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
-        for (int32_t i = 0; i < static_cast<int>(theValues.size()) - 1; ++i) {
-          anOstream << theValues[i] << ", ";
+      void print(std::ostream & anOstream, std::string const & options =
+  std::string("")) const { for (int32_t i = 0; i <
+  static_cast<int>(theValues.size()) - 1; ++i) { anOstream << theValues[i] << ",
+  ";
         }
         anOstream << theValues.back();
       }
@@ -186,13 +196,13 @@ public:
 class StatValueArray_Annotation : public StatValueArrayBase {
 private:
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, uint32_t version) {
-    ar & boost::serialization::base_object<StatValueArrayBase>(*this);
-    ar & theInitialValue;
-    ar & theValues;
+  template <class Archive> void serialize(Archive &ar, uint32_t version) {
+    ar &boost::serialization::base_object<StatValueArrayBase>(*this);
+    ar &theInitialValue;
+    ar &theValues;
   }
-  StatValueArray_Annotation() {}
+  StatValueArray_Annotation() {
+  }
 
 public:
   typedef std::string update_type;
@@ -202,25 +212,25 @@ public:
 private:
   value_type theInitialValue;
   std::vector<simple_type> theValues;
+
 public:
-  StatValueArray_Annotation(value_type aValue)
-    : theInitialValue(aValue) {
+  StatValueArray_Annotation(value_type aValue) : theInitialValue(aValue) {
     theValues.push_back(simple_type(theInitialValue));
   }
 
-  //Used by serialization of other stat types
-  StatValueArray_Annotation( std::vector<simple_type> const & aValueVector, value_type aCurrentValue)
-    : theValues(aValueVector) {
+  // Used by serialization of other stat types
+  StatValueArray_Annotation(std::vector<simple_type> const &aValueVector, value_type aCurrentValue)
+      : theValues(aValueVector) {
     theValues.push_back(simple_type(aCurrentValue));
   }
 
-  void reduceSum( const StatValueBase & aBase) {
+  void reduceSum(const StatValueBase &aBase) {
     std::cerr << "reductions not supported (StatValueArray_Annotation)" << std::endl;
   }
-  void update( update_type anUpdate ) {
+  void update(update_type anUpdate) {
     theValues.back().update(anUpdate);
   }
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     for (int32_t i = 0; i < static_cast<int>(theValues.size()) - 1; ++i) {
       anOstream << theValues[i] << ", ";
     }
@@ -230,14 +240,14 @@ public:
     if (aValueType == accumulation_type::Accumulate) {
       theValues.push_back(theValues.back());
     } else {
-      theValues.push_back( simple_type(theInitialValue) );
+      theValues.push_back(simple_type(theInitialValue));
     }
   }
-  void reset( value_type aValue) {
+  void reset(value_type aValue) {
     theValues.clear();
     theValues.push_back(aValue);
   }
-  StatValueBase & operator[](int32_t anIndex) {
+  StatValueBase &operator[](int32_t anIndex) {
     return theValues[anIndex];
   }
   std::size_t size() {
@@ -248,12 +258,12 @@ public:
 class StatValueArray_Max : public StatValueArrayBase {
 private:
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, uint32_t version) {
-    ar & boost::serialization::base_object<StatValueArrayBase>(*this);
-    ar & theValues;
+  template <class Archive> void serialize(Archive &ar, uint32_t version) {
+    ar &boost::serialization::base_object<StatValueArrayBase>(*this);
+    ar &theValues;
   }
-  StatValueArray_Max() {}
+  StatValueArray_Max() {
+  }
 
 public:
   typedef int64_t update_type;
@@ -262,17 +272,18 @@ public:
 
 private:
   std::vector<simple_type> theValues;
+
 public:
   StatValueArray_Max(value_type /*ignored*/) {
     theValues.push_back(simple_type(0));
   }
-  void reduceSum( const StatValueBase & aBase) {
+  void reduceSum(const StatValueBase &aBase) {
     std::cerr << "reductions not supported (StatValueArray_Max)" << std::endl;
   }
-  void update( update_type anUpdate ) {
+  void update(update_type anUpdate) {
     theValues.back().update(anUpdate);
   }
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     for (int32_t i = 0; i < static_cast<int>(theValues.size()) - 1; ++i) {
       anOstream << theValues[i] << ", ";
     }
@@ -282,14 +293,14 @@ public:
     if (aValueType == accumulation_type::Accumulate) {
       theValues.push_back(theValues.back());
     } else {
-      theValues.push_back( simple_type(0) );
+      theValues.push_back(simple_type(0));
     }
   }
-  void reset( value_type /*ignored*/) {
+  void reset(value_type /*ignored*/) {
     theValues.clear();
-    theValues.push_back( simple_type(0) );
+    theValues.push_back(simple_type(0));
   }
-  StatValueBase & operator[](int32_t anIndex) {
+  StatValueBase &operator[](int32_t anIndex) {
     return theValues[anIndex];
   }
   std::size_t size() {
@@ -300,31 +311,32 @@ public:
 class StatValueArray_Average : public StatValueArrayBase {
 private:
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, uint32_t version) {
-    ar & boost::serialization::base_object<StatValueArrayBase>(*this);
-    ar & theValues;
+  template <class Archive> void serialize(Archive &ar, uint32_t version) {
+    ar &boost::serialization::base_object<StatValueArrayBase>(*this);
+    ar &theValues;
   }
-  StatValueArray_Average() {}
+  StatValueArray_Average() {
+  }
 
 public:
-  typedef std::pair< int64_t, int64_t> update_type;
+  typedef std::pair<int64_t, int64_t> update_type;
   typedef int64_t value_type;
   typedef StatValue_Average simple_type;
 
 private:
   std::vector<simple_type> theValues;
+
 public:
   StatValueArray_Average(value_type /*ignored*/) {
     theValues.push_back(simple_type(0));
   }
-  void reduceSum( const StatValueBase & aBase) {
+  void reduceSum(const StatValueBase &aBase) {
     std::cerr << "reductions not supported (StatValueArray_Average)" << std::endl;
   }
-  void update( update_type anUpdate ) {
+  void update(update_type anUpdate) {
     theValues.back().update(anUpdate);
   }
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     for (int32_t i = 0; i < static_cast<int>(theValues.size()) - 1; ++i) {
       anOstream << theValues[i] << ", ";
     }
@@ -334,14 +346,14 @@ public:
     if (aValueType == accumulation_type::Accumulate) {
       theValues.push_back(theValues.back());
     } else {
-      theValues.push_back( simple_type(0) );
+      theValues.push_back(simple_type(0));
     }
   }
-  void reset( value_type /*ignored*/) {
+  void reset(value_type /*ignored*/) {
     theValues.clear();
-    theValues.push_back( simple_type(0) );
+    theValues.push_back(simple_type(0));
   }
-  StatValueBase & operator[](int32_t anIndex) {
+  StatValueBase &operator[](int32_t anIndex) {
     return theValues[anIndex];
   }
   std::size_t size() {
@@ -352,12 +364,12 @@ public:
 class StatValueArray_StdDev : public StatValueArrayBase {
 private:
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, uint32_t version) {
-    ar & boost::serialization::base_object<StatValueArrayBase>(*this);
-    ar & theValues;
+  template <class Archive> void serialize(Archive &ar, uint32_t version) {
+    ar &boost::serialization::base_object<StatValueArrayBase>(*this);
+    ar &theValues;
   }
-  StatValueArray_StdDev() {}
+  StatValueArray_StdDev() {
+  }
 
 public:
   typedef int64_t update_type;
@@ -366,17 +378,18 @@ public:
 
 private:
   std::vector<simple_type> theValues;
+
 public:
   StatValueArray_StdDev(value_type /*ignored*/) {
     theValues.push_back(simple_type(0));
   }
-  void reduceSum( const StatValueBase & aBase) {
+  void reduceSum(const StatValueBase &aBase) {
     std::cerr << "reductions not supported (StatValueArray_StdDev)" << std::endl;
   }
-  void update( update_type anUpdate ) {
+  void update(update_type anUpdate) {
     theValues.back().update(anUpdate);
   }
-  void print(std::ostream & anOstream, std::string const & options = std::string("")) const {
+  void print(std::ostream &anOstream, std::string const &options = std::string("")) const {
     for (int32_t i = 0; i < static_cast<int>(theValues.size()) - 1; ++i) {
       anOstream << theValues[i] << ", ";
     }
@@ -386,14 +399,14 @@ public:
     if (aValueType == accumulation_type::Accumulate) {
       theValues.push_back(theValues.back());
     } else {
-      theValues.push_back( simple_type(0) );
+      theValues.push_back(simple_type(0));
     }
   }
-  void reset( value_type /*ignored*/) {
+  void reset(value_type /*ignored*/) {
     theValues.clear();
-    theValues.push_back( simple_type(0) );
+    theValues.push_back(simple_type(0));
   }
-  StatValueBase & operator[](int32_t anIndex) {
+  StatValueBase &operator[](int32_t anIndex) {
     return theValues[anIndex];
   }
   std::size_t size() {
@@ -401,8 +414,8 @@ public:
   }
 };
 
-} // end aux_
-} // end Stat
-} // end Flexus
+} // namespace aux_
+} // namespace Stat
+} // namespace Flexus
 
-#endif //FLEXUS_CORE_AUX__STATS_VALUE_ARRAYS__HPP__INCLUDED
+#endif // FLEXUS_CORE_AUX__STATS_VALUE_ARRAYS__HPP__INCLUDED

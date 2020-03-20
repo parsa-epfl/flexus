@@ -1,51 +1,52 @@
-// DO-NOT-REMOVE begin-copyright-block 
-//QFlex consists of several software components that are governed by various
-//licensing terms, in addition to software that was developed internally.
-//Anyone interested in using QFlex needs to fully understand and abide by the
-//licenses governing all the software components.
+//  DO-NOT-REMOVE begin-copyright-block
+// QFlex consists of several software components that are governed by various
+// licensing terms, in addition to software that was developed internally.
+// Anyone interested in using QFlex needs to fully understand and abide by the
+// licenses governing all the software components.
 //
-//### Software developed externally (not by the QFlex group)
+// ### Software developed externally (not by the QFlex group)
 //
-//    * [NS-3](https://www.gnu.org/copyleft/gpl.html)
-//    * [QEMU](http://wiki.qemu.org/License) 
-//    * [SimFlex] (http://parsa.epfl.ch/simflex/)
+//     * [NS-3] (https://www.gnu.org/copyleft/gpl.html)
+//     * [QEMU] (http://wiki.qemu.org/License)
+//     * [SimFlex] (http://parsa.epfl.ch/simflex/)
+//     * [GNU PTH] (https://www.gnu.org/software/pth/)
 //
-//Software developed internally (by the QFlex group)
-//**QFlex License**
+// ### Software developed internally (by the QFlex group)
+// **QFlex License**
 //
-//QFlex
-//Copyright (c) 2016, Parallel Systems Architecture Lab, EPFL
-//All rights reserved.
+// QFlex
+// Copyright (c) 2020, Parallel Systems Architecture Lab, EPFL
+// All rights reserved.
 //
-//Redistribution and use in source and binary forms, with or without modification,
-//are permitted provided that the following conditions are met:
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
 //
-//    * Redistributions of source code must retain the above copyright notice,
-//      this list of conditions and the following disclaimer.
-//    * Redistributions in binary form must reproduce the above copyright notice,
-//      this list of conditions and the following disclaimer in the documentation
-//      and/or other materials provided with the distribution.
-//    * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,
-//      nor the names of its contributors may be used to endorse or promote
-//      products derived from this software without specific prior written
-//      permission.
+//     * Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above copyright notice,
+//       this list of conditions and the following disclaimer in the documentation
+//       and/or other materials provided with the distribution.
+//     * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,
+//       nor the names of its contributors may be used to endorse or promote
+//       products derived from this software without specific prior written
+//       permission.
 //
-//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-//ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-//WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-//DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,
-//EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-//CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-//GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-//HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-//LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
-//THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// DO-NOT-REMOVE end-copyright-block   
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,
+// EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+// GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//  DO-NOT-REMOVE end-copyright-block
 #ifndef _OFFCHIP_TRACKER_HPP_
 #define _OFFCHIP_TRACKER_HPP_
 
-#include <unordered_map>
 #include <boost/dynamic_bitset.hpp>
+#include <unordered_map>
 
 using namespace Flexus;
 using namespace Core;
@@ -83,53 +84,37 @@ struct PrefetchStats {
   Stat::StatCounter RedundantPresent;
 
   PrefetchStats(std::string aName)
-    : Requests(aName + "-Requests")
-    , ReqRead(aName + "-ReqRead")
-    , ReqWrite(aName + "-ReqWrite")
-    , ReqGoodRead(aName + "-ReqGoodRead")
-    , ReqGoodWrite(aName + "-ReqGoodWrite")
-    , ReqWrongPathRead(aName + "-ReqWrongPathRead")
-    , ReqWrongPathWrite(aName + "-ReqWrongPathWrite")
-    , ReqWrongPathEvict(aName + "-ReqWrongPathEvict")
-    , ReqWrongPathInval(aName + "-ReqWrongPathInval")
-    , ReqSpecSwitch(aName + "-ReqSpecSwitch")
-    , Prefetches(aName + "-Prefetches")
-    , PrefHitRead(aName + "-PrefHitRead")
-    , PrefHitWrite(aName + "-PrefHitWrite")
-    , PrefHitGoodRead(aName + "-PrefHitGoodRead")
-    , PrefHitGoodWrite(aName + "-PrefHitGoodWrite")
-    , PrefHitWrongPathRead(aName + "-PrefHitWrongPathRead")
-    , PrefHitWrongPathWrite(aName + "-PrefHitWrongPathWrite")
-    , PrefHitWrongPathEvict(aName + "-PrefHitWrongPathEvict")
-    , PrefHitWrongPathInval(aName + "-PrefHitWrongPathInval")
-    , PrefSpecSwitch(aName + "-PrefSpecSwitch")
-    , PrefOverEvict(aName + "-PrefOverEvict")
-    , PrefOverInval(aName + "-PrefOverInval")
-    , RedundantSpec(aName + "-RedundantSpec")
-    , RedundantPresent(aName + "-RedundantPresent")
-  {}
+      : Requests(aName + "-Requests"), ReqRead(aName + "-ReqRead"), ReqWrite(aName + "-ReqWrite"),
+        ReqGoodRead(aName + "-ReqGoodRead"), ReqGoodWrite(aName + "-ReqGoodWrite"),
+        ReqWrongPathRead(aName + "-ReqWrongPathRead"),
+        ReqWrongPathWrite(aName + "-ReqWrongPathWrite"),
+        ReqWrongPathEvict(aName + "-ReqWrongPathEvict"),
+        ReqWrongPathInval(aName + "-ReqWrongPathInval"), ReqSpecSwitch(aName + "-ReqSpecSwitch"),
+        Prefetches(aName + "-Prefetches"), PrefHitRead(aName + "-PrefHitRead"),
+        PrefHitWrite(aName + "-PrefHitWrite"), PrefHitGoodRead(aName + "-PrefHitGoodRead"),
+        PrefHitGoodWrite(aName + "-PrefHitGoodWrite"),
+        PrefHitWrongPathRead(aName + "-PrefHitWrongPathRead"),
+        PrefHitWrongPathWrite(aName + "-PrefHitWrongPathWrite"),
+        PrefHitWrongPathEvict(aName + "-PrefHitWrongPathEvict"),
+        PrefHitWrongPathInval(aName + "-PrefHitWrongPathInval"),
+        PrefSpecSwitch(aName + "-PrefSpecSwitch"), PrefOverEvict(aName + "-PrefOverEvict"),
+        PrefOverInval(aName + "-PrefOverInval"), RedundantSpec(aName + "-RedundantSpec"),
+        RedundantPresent(aName + "-RedundantPresent") {
+  }
 };
 
 struct PrefetchEntry {
-  enum PrefetchState {
-    eSpeculative,
-    ePresent,
-    ePrefetched,
-    ePrefSpec
-  };
+  enum PrefetchState { eSpeculative, ePresent, ePrefetched, ePrefSpec };
   PrefetchState state;
   bool presentL1;
   bool presentL2;
   bool read;
   bool write;
-  PrefetchStats * stats;
-  PrefetchEntry(bool isPrefetch, bool intoBuffer, bool isWrite, PrefetchStats * aStats)
-    : state(isPrefetch ? ePrefetched : eSpeculative)
-    , presentL1(false)
-    , presentL2(!isPrefetch || !intoBuffer)
-    , read(isPrefetch ? false : !isWrite)
-    , write(isPrefetch ? false : isWrite)
-    , stats(aStats) {
+  PrefetchStats *stats;
+  PrefetchEntry(bool isPrefetch, bool intoBuffer, bool isWrite, PrefetchStats *aStats)
+      : state(isPrefetch ? ePrefetched : eSpeculative), presentL1(false),
+        presentL2(!isPrefetch || !intoBuffer), read(isPrefetch ? false : !isWrite),
+        write(isPrefetch ? false : isWrite), stats(aStats) {
     if (isPrefetch) {
       ++stats->Prefetches;
     } else {
@@ -149,9 +134,9 @@ struct PrefetchEntry {
   void fillL2(bool prefetch) {
     DBG_Assert(!presentL2);
     if (!prefetch) {
-      DBG_Assert(state == ePrefSpec, ( << "state = " << state ) );
+      DBG_Assert(state == ePrefSpec, (<< "state = " << state));
     } else {
-      DBG_Assert(false, ( << "state = " << state ) );
+      DBG_Assert(false, (<< "state = " << state));
     }
     presentL2 = true;
   }
@@ -178,7 +163,7 @@ struct PrefetchEntry {
     return false;
   }
   bool invalL1() {
-    //DBG_Assert(presentL1);
+    // DBG_Assert(presentL1);
     if (presentL1) {
       presentL1 = false;
       if (!present()) {
@@ -189,7 +174,7 @@ struct PrefetchEntry {
     return false;
   }
   bool invalL2() {
-    //DBG_Assert(presentL2);
+    // DBG_Assert(presentL2);
     if (presentL2) {
       presentL2 = false;
       if (!present()) {
@@ -223,18 +208,18 @@ struct PrefetchEntry {
   }
   void redundant() {
     switch (state) {
-      case eSpeculative:
-        ++stats->RedundantSpec;
-        break;
-      case ePresent:
-        ++stats->RedundantPresent;
-        break;
-      case ePrefetched:
-      case ePrefSpec:
-        // duplicate prefetches - don't count here
-        break;
-      default:
-        DBG_Assert(false, ( << "state = " << state ) );
+    case eSpeculative:
+      ++stats->RedundantSpec;
+      break;
+    case ePresent:
+      ++stats->RedundantPresent;
+      break;
+    case ePrefetched:
+    case ePrefSpec:
+      // duplicate prefetches - don't count here
+      break;
+    default:
+      DBG_Assert(false, (<< "state = " << state));
     }
   }
   bool nonSpecAccess(bool isWrite) {
@@ -245,52 +230,52 @@ struct PrefetchEntry {
       return firstUse;
     }
     switch (state) {
-      case eSpeculative:
-        DBG_Assert(readOrWrite());
-        if (write) {
-          ++stats->ReqGoodWrite;
-        } else {
-          ++stats->ReqGoodRead;
-        }
-        if (isWrite && !write) {
-          ++stats->ReqSpecSwitch;
-        }
-        state = ePresent;
-        firstUse = true;
-        break;
-      case ePresent:
-        DBG_Assert(readOrWrite());
-        break;
-      case ePrefetched:
-        // if a prefetched block falls out of L1, then we will not receive
-        // a prefetch-hit notification after it comes back into L1
-        if (isWrite) {
-          ++stats->PrefHitWrite;
-          ++stats->PrefHitGoodWrite;
-          write = true;
-        } else {
-          ++stats->PrefHitRead;
-          ++stats->PrefHitGoodRead;
-          read = true;
-        }
-        state = ePresent;
-        firstUse = true;
-        break;
-      case ePrefSpec:
-        DBG_Assert(readOrWrite());
-        if (write) {
-          ++stats->PrefHitGoodWrite;
-        } else {
-          ++stats->PrefHitGoodRead;
-        }
-        if (isWrite && !write) {
-          ++stats->PrefSpecSwitch;
-        }
-        state = ePresent;
-        firstUse = true;
-        break;
-      default:
-        DBG_Assert(false);
+    case eSpeculative:
+      DBG_Assert(readOrWrite());
+      if (write) {
+        ++stats->ReqGoodWrite;
+      } else {
+        ++stats->ReqGoodRead;
+      }
+      if (isWrite && !write) {
+        ++stats->ReqSpecSwitch;
+      }
+      state = ePresent;
+      firstUse = true;
+      break;
+    case ePresent:
+      DBG_Assert(readOrWrite());
+      break;
+    case ePrefetched:
+      // if a prefetched block falls out of L1, then we will not receive
+      // a prefetch-hit notification after it comes back into L1
+      if (isWrite) {
+        ++stats->PrefHitWrite;
+        ++stats->PrefHitGoodWrite;
+        write = true;
+      } else {
+        ++stats->PrefHitRead;
+        ++stats->PrefHitGoodRead;
+        read = true;
+      }
+      state = ePresent;
+      firstUse = true;
+      break;
+    case ePrefSpec:
+      DBG_Assert(readOrWrite());
+      if (write) {
+        ++stats->PrefHitGoodWrite;
+      } else {
+        ++stats->PrefHitGoodRead;
+      }
+      if (isWrite && !write) {
+        ++stats->PrefSpecSwitch;
+      }
+      state = ePresent;
+      firstUse = true;
+      break;
+    default:
+      DBG_Assert(false);
     }
     return firstUse;
   }
@@ -304,44 +289,44 @@ private:
   }
   void allGone(bool isInval) {
     switch (state) {
-      case eSpeculative:
-        if (isInval) {
-          ++stats->ReqWrongPathInval;
-        } else {
-          ++stats->ReqWrongPathEvict;
-        }
-        if (write) {
-          ++stats->ReqWrongPathWrite;
-        }
-        if (read) {
-          ++stats->ReqWrongPathRead;
-        }
-        break;
-      case ePresent:
-        // normal cache operation - nothing to do
-        break;
-      case ePrefetched:
-        if (isInval) {
-          ++stats->PrefOverInval;
-        } else {
-          ++stats->PrefOverEvict;
-        }
-        break;
-      case ePrefSpec:
-        if (isInval) {
-          ++stats->PrefHitWrongPathInval;
-        } else {
-          ++stats->PrefHitWrongPathEvict;
-        }
-        if (write) {
-          ++stats->PrefHitWrongPathWrite;
-        }
-        if (read) {
-          ++stats->PrefHitWrongPathRead;
-        }
-        break;
-      default:
-        DBG_Assert(false);
+    case eSpeculative:
+      if (isInval) {
+        ++stats->ReqWrongPathInval;
+      } else {
+        ++stats->ReqWrongPathEvict;
+      }
+      if (write) {
+        ++stats->ReqWrongPathWrite;
+      }
+      if (read) {
+        ++stats->ReqWrongPathRead;
+      }
+      break;
+    case ePresent:
+      // normal cache operation - nothing to do
+      break;
+    case ePrefetched:
+      if (isInval) {
+        ++stats->PrefOverInval;
+      } else {
+        ++stats->PrefOverEvict;
+      }
+      break;
+    case ePrefSpec:
+      if (isInval) {
+        ++stats->PrefHitWrongPathInval;
+      } else {
+        ++stats->PrefHitWrongPathEvict;
+      }
+      if (write) {
+        ++stats->PrefHitWrongPathWrite;
+      }
+      if (read) {
+        ++stats->PrefHitWrongPathRead;
+      }
+      break;
+    default:
+      DBG_Assert(false);
     }
   }
 };
@@ -354,39 +339,40 @@ struct PrefetchTracker {
   PrefetchMap theCurrentPrefetches;
   PrefetchStats theStats;
 
-  PrefetchTracker(std::string aName)
-    : theName(aName)
-    , theStats(theName)
-  {}
+  PrefetchTracker(std::string aName) : theName(aName), theStats(theName) {
+  }
   void fill(address_t block, SharedTypes::tFillLevel cache, bool isWrite) {
     PrefetchMapIter iter = theCurrentPrefetches.find(block);
     if (iter != theCurrentPrefetches.end()) {
       switch (cache) {
-        case SharedTypes::eL1:
-          iter->second.fillL1(false);
-          break;
-        case SharedTypes::eL2:
-          // this should only happen on a missWritableReply after a write hit
-          // to a prefetched block
-          iter->second.fillL2(false);
-          break;
-        default:
-          DBG_Assert(false, ( << "cache = " << cache ) );
+      case SharedTypes::eL1:
+        iter->second.fillL1(false);
+        break;
+      case SharedTypes::eL2:
+        // this should only happen on a missWritableReply after a write hit
+        // to a prefetched block
+        iter->second.fillL2(false);
+        break;
+      default:
+        DBG_Assert(false, (<< "cache = " << cache));
       }
     } else {
       switch (cache) {
-        case SharedTypes::eL1:
-          // this is ok - probably an invalidation following a fill up the hierarchy.
-          // the fill will have already been marked as wrong-path, so ignore the fill here
-          break;
-        case SharedTypes::eL2:
-          theCurrentPrefetches.insert( std::make_pair(block, PrefetchEntry(false, false, isWrite, &theStats)) );
-          break;
-        case SharedTypes::ePrefetchBuffer:
-          theCurrentPrefetches.insert( std::make_pair(block, PrefetchEntry(true, true, false, &theStats)) );
-          break;
-        default:
-          DBG_Assert(false, ( << "cache = " << cache ) );
+      case SharedTypes::eL1:
+        // this is ok - probably an invalidation following a fill up the
+        // hierarchy. the fill will have already been marked as wrong-path, so
+        // ignore the fill here
+        break;
+      case SharedTypes::eL2:
+        theCurrentPrefetches.insert(
+            std::make_pair(block, PrefetchEntry(false, false, isWrite, &theStats)));
+        break;
+      case SharedTypes::ePrefetchBuffer:
+        theCurrentPrefetches.insert(
+            std::make_pair(block, PrefetchEntry(true, true, false, &theStats)));
+        break;
+      default:
+        DBG_Assert(false, (<< "cache = " << cache));
       }
     }
   }
@@ -394,23 +380,25 @@ struct PrefetchTracker {
     PrefetchMapIter iter = theCurrentPrefetches.find(block);
     if (iter != theCurrentPrefetches.end()) {
       switch (cache) {
-        case SharedTypes::eL1:
-          iter->second.fillL1(true);
-          break;
-        default:
-          DBG_Assert(false, ( << "cache = " << cache ) );
+      case SharedTypes::eL1:
+        iter->second.fillL1(true);
+        break;
+      default:
+        DBG_Assert(false, (<< "cache = " << cache));
       }
     } else {
       switch (cache) {
-        case SharedTypes::eL1:
-          // this is ok - probably an invalidation following a fill up the hierarchy.
-          // the fill will have already been marked as wrong-path, so ignore the fill here
-          break;
-        case SharedTypes::eL2:
-          theCurrentPrefetches.insert( std::make_pair(block, PrefetchEntry(true, false, false, &theStats)) );
-          break;
-        default:
-          DBG_Assert(false, ( << "cache = " << cache ) );
+      case SharedTypes::eL1:
+        // this is ok - probably an invalidation following a fill up the
+        // hierarchy. the fill will have already been marked as wrong-path, so
+        // ignore the fill here
+        break;
+      case SharedTypes::eL2:
+        theCurrentPrefetches.insert(
+            std::make_pair(block, PrefetchEntry(true, false, false, &theStats)));
+        break;
+      default:
+        DBG_Assert(false, (<< "cache = " << cache));
       }
     }
   }
@@ -426,20 +414,20 @@ struct PrefetchTracker {
     if (iter != theCurrentPrefetches.end()) {
       bool remove = false;
       switch (cache) {
-        case SharedTypes::eL1:
-          remove = iter->second.evictL1();
-          break;
-        case SharedTypes::eL2:
-          remove = iter->second.evictL2();
-          break;
-        case SharedTypes::ePrefetchBuffer:
-          remove = iter->second.evictPB();
-          break;
-        case SharedTypes::eCore:
-          // ignore "core" duplicate L1 cache simulation
-          break;
-        default:
-          DBG_Assert(false, ( << "cache = " << cache ) );
+      case SharedTypes::eL1:
+        remove = iter->second.evictL1();
+        break;
+      case SharedTypes::eL2:
+        remove = iter->second.evictL2();
+        break;
+      case SharedTypes::ePrefetchBuffer:
+        remove = iter->second.evictPB();
+        break;
+      case SharedTypes::eCore:
+        // ignore "core" duplicate L1 cache simulation
+        break;
+      default:
+        DBG_Assert(false, (<< "cache = " << cache));
       }
       if (remove) {
         theCurrentPrefetches.erase(iter);
@@ -451,20 +439,20 @@ struct PrefetchTracker {
     if (iter != theCurrentPrefetches.end()) {
       bool remove = false;
       switch (cache) {
-        case SharedTypes::eL1:
-          remove = iter->second.invalL1();
-          break;
-        case SharedTypes::eL2:
-          remove = iter->second.invalL2();
-          break;
-        case SharedTypes::ePrefetchBuffer:
-          remove = iter->second.invalPB();
-          break;
-        case SharedTypes::eCore:
-          // ignore "core" duplicate L1 cache simulation
-          break;
-        default:
-          DBG_Assert(false, ( << "cache = " << cache ) );
+      case SharedTypes::eL1:
+        remove = iter->second.invalL1();
+        break;
+      case SharedTypes::eL2:
+        remove = iter->second.invalL2();
+        break;
+      case SharedTypes::ePrefetchBuffer:
+        remove = iter->second.invalPB();
+        break;
+      case SharedTypes::eCore:
+        // ignore "core" duplicate L1 cache simulation
+        break;
+      default:
+        DBG_Assert(false, (<< "cache = " << cache));
       }
       if (remove) {
         theCurrentPrefetches.erase(iter);
@@ -531,33 +519,22 @@ struct SgpTrackStats {
   Stat::StatInstanceCounter<int64_t> DetailBothDist;
 
   SgpTrackStats(std::string aName)
-    : Generations(aName + "-Generation")
-    , OffchipMisses(aName + "-OffchipMisses")
-    , SgpHits(aName + "-SgpHits")
-    , OffchipNonHead(aName + "-OffchipNonHead")
-    , HitsNonHead(aName + "-HitsNonHead")
-    , HitsParallel(aName + "-HitsParallel")
-    , HitsNonParallel(aName + "-HitsNonParallel")
-    , OffchipParallel(aName + "-OffchipParallel")
-    , OffchipNonParallel(aName + "-OffchipNonParallel")
-    , SparseGens(aName + "-SparseGens")
-    , SparseHits(aName + "-SparseHits")
-    , EpochsPerGen(aName + "-EpochsPerGen")
-    , OffchipEpochMembership(aName + "-OffchipEpochMembership")
-    , HitsEpochMembership(aName + "-HitsEpochMembership")
-    , OffchipHeadMembership(aName + "-OffchipHeadMembership")
-    , HitsHeadMembership(aName + "-HitsHeadMembership")
-    , DetailNoneGen(aName + "-DetailNoneGen")
-    , DetailNoneEpoch(aName + "-DetailNoneEpoch")
-    , DetailCoreOnly(aName + "-DetailCoreOnly")
-    , DetailSgpOnly(aName + "-DetailSgpOnly")
-    , DetailBoth(aName + "-DetailBoth")
-    , DetailSgpOnlyFirst(aName + "-DetailSgpOnlyFirst")
-    , DetailBothFirst(aName + "-DetailBothFirst")
-    , DetailNoCore(aName + "-DetailNoCore")
-    , DetailNoCoreFirst(aName + "-DetailNoCoreFirst")
-    , DetailBothDist(aName + "-DetailBothDist")
-  {}
+      : Generations(aName + "-Generation"), OffchipMisses(aName + "-OffchipMisses"),
+        SgpHits(aName + "-SgpHits"), OffchipNonHead(aName + "-OffchipNonHead"),
+        HitsNonHead(aName + "-HitsNonHead"), HitsParallel(aName + "-HitsParallel"),
+        HitsNonParallel(aName + "-HitsNonParallel"), OffchipParallel(aName + "-OffchipParallel"),
+        OffchipNonParallel(aName + "-OffchipNonParallel"), SparseGens(aName + "-SparseGens"),
+        SparseHits(aName + "-SparseHits"), EpochsPerGen(aName + "-EpochsPerGen"),
+        OffchipEpochMembership(aName + "-OffchipEpochMembership"),
+        HitsEpochMembership(aName + "-HitsEpochMembership"),
+        OffchipHeadMembership(aName + "-OffchipHeadMembership"),
+        HitsHeadMembership(aName + "-HitsHeadMembership"), DetailNoneGen(aName + "-DetailNoneGen"),
+        DetailNoneEpoch(aName + "-DetailNoneEpoch"), DetailCoreOnly(aName + "-DetailCoreOnly"),
+        DetailSgpOnly(aName + "-DetailSgpOnly"), DetailBoth(aName + "-DetailBoth"),
+        DetailSgpOnlyFirst(aName + "-DetailSgpOnlyFirst"),
+        DetailBothFirst(aName + "-DetailBothFirst"), DetailNoCore(aName + "-DetailNoCore"),
+        DetailNoCoreFirst(aName + "-DetailNoCoreFirst"), DetailBothDist(aName + "-DetailBothDist") {
+  }
 };
 struct SgpTrackEntry {
   SGvector theSeenAccesses;
@@ -567,23 +544,17 @@ struct SgpTrackEntry {
   int32_t theFirstMiss;
   std::deque<SGvector> theParallel;
   SgpTrackEntry(int32_t sgpBlocks, int32_t offset, bool hit)
-    : theSeenAccesses(sgpBlocks)
-    , theOffchipMisses(sgpBlocks)
-    , theSgpPredictions(sgpBlocks)
-    , theSgpHits(sgpBlocks)
-    , theFirstMiss(offset) {
+      : theSeenAccesses(sgpBlocks), theOffchipMisses(sgpBlocks), theSgpPredictions(sgpBlocks),
+        theSgpHits(sgpBlocks), theFirstMiss(offset) {
     theOffchipMisses.set(offset);
     if (hit) {
       theSgpHits.set(offset);
     }
   }
-  SgpTrackEntry(int32_t sgpBlocks, SGvector & predictions)
-    : theSeenAccesses(sgpBlocks)
-    , theOffchipMisses(sgpBlocks)
-    , theSgpPredictions(predictions)
-    , theSgpHits(sgpBlocks)
-    , theFirstMiss(-1)
-  {}
+  SgpTrackEntry(int32_t sgpBlocks, SGvector &predictions)
+      : theSeenAccesses(sgpBlocks), theOffchipMisses(sgpBlocks), theSgpPredictions(predictions),
+        theSgpHits(sgpBlocks), theFirstMiss(-1) {
+  }
 
   void offchipMiss(int32_t offset) {
     if (theFirstMiss < 0) {
@@ -598,35 +569,43 @@ struct SgpTrackEntry {
     theOffchipMisses.set(offset);
     theSgpHits.set(offset);
   }
-  void sgpPredict(SGvector & predictions) {
+  void sgpPredict(SGvector &predictions) {
     if (!theSgpPredictions.any()) {
       theSgpPredictions = predictions;
     }
   }
-  void addParallel(int32_t head, SGvector & parallel, bool disp) {
+  void addParallel(int32_t head, SGvector &parallel, bool disp) {
     if (!theSeenAccesses.test(head)) {
-      if (disp) DBG_(Dev, ( << "  already seen: " << theSeenAccesses ) );
-      if (disp) DBG_(Dev, ( << "  this par.   : " << parallel ) );
+      if (disp)
+        DBG_(Dev, (<< "  already seen: " << theSeenAccesses));
+      if (disp)
+        DBG_(Dev, (<< "  this par.   : " << parallel));
       SGvector newpar(parallel & (~theSeenAccesses));
-      if (disp) DBG_(Dev, ( << "  new parallel: " << newpar ) );
+      if (disp)
+        DBG_(Dev, (<< "  new parallel: " << newpar));
       if (newpar.any()) {
         bool push = true;
         if (!theParallel.empty()) {
-          if (disp) DBG_(Dev, ( << "  prev epoch  : " << theParallel.back() ) );
-          // check if these parallel misses should be attached to the most recent
+          if (disp)
+            DBG_(Dev, (<< "  prev epoch  : " << theParallel.back()));
+          // check if these parallel misses should be attached to the most
+          // recent
           SGvector oldpar(parallel & (~newpar));
           if (oldpar.any()) {
             if (oldpar == theParallel.back()) {
-              // if the non-new bits are identical to the previous epoch, then attach
+              // if the non-new bits are identical to the previous epoch, then
+              // attach
               theParallel.back() |= newpar;
-              if (disp) DBG_(Dev, ( << "  attach prev : " << theParallel.back() ) );
+              if (disp)
+                DBG_(Dev, (<< "  attach prev : " << theParallel.back()));
               push = false;
             } else if (newpar.count() == 1) {
-              // if only one new bit, then attach if other bits from this epoch are
-              // a subset of the previous epoch
-              if (! ((oldpar & (~theParallel.back())).any()) ) {
+              // if only one new bit, then attach if other bits from this epoch
+              // are a subset of the previous epoch
+              if (!((oldpar & (~theParallel.back())).any())) {
                 theParallel.back() |= newpar;
-                if (disp) DBG_(Dev, ( << "  attach prev2: " << theParallel.back() ) );
+                if (disp)
+                  DBG_(Dev, (<< "  attach prev2: " << theParallel.back()));
                 push = false;
               }
             }
@@ -639,7 +618,7 @@ struct SgpTrackEntry {
       }
     }
   }
-  void endGen(SgpTrackStats & stats, bool disp) {
+  void endGen(SgpTrackStats &stats, bool disp) {
     if (!theOffchipMisses.any()) {
       return;
     }
@@ -647,10 +626,10 @@ struct SgpTrackEntry {
     stats.Generations++;
 
     if (disp) {
-      DBG_(Dev, ( << "  seen acc: " << theSeenAccesses ) );
-      DBG_(Dev, ( << "  off-chip: " << theOffchipMisses ) );
-      DBG_(Dev, ( << "  sgp pred: " << theSgpPredictions ) );
-      DBG_(Dev, ( << "  sgp hits: " << theSgpHits ) );
+      DBG_(Dev, (<< "  seen acc: " << theSeenAccesses));
+      DBG_(Dev, (<< "  off-chip: " << theOffchipMisses));
+      DBG_(Dev, (<< "  sgp pred: " << theSgpPredictions));
+      DBG_(Dev, (<< "  sgp hits: " << theSgpHits));
     }
 
     // all vectors with more than one bit set represent parallel accesses
@@ -725,11 +704,13 @@ struct SgpTrackEntry {
       SGvector thisSgp(thisMiss & theSgpPredictions);
       if (thisSgp.any()) {
         // some hits
-        int32_t sgpOnly = 1;  // core cannot get first miss in epoch
+        int32_t sgpOnly = 1; // core cannot get first miss in epoch
         int32_t both = thisSgp.count() - 1;
         int32_t coreOnly = thisMiss.count() - both - 1;
-        DBG_Assert( (both >= 0) && (coreOnly >= 0) );
-        if (disp) DBG_(Dev, ( << "  detail: (epoch" << epoch << ") sgp hit, both=" << both << " core=" << coreOnly ) );
+        DBG_Assert((both >= 0) && (coreOnly >= 0));
+        if (disp)
+          DBG_(Dev, (<< "  detail: (epoch" << epoch << ") sgp hit, both=" << both
+                     << " core=" << coreOnly));
         if (epoch == 0) {
           stats.DetailSgpOnlyFirst += sgpOnly;
           stats.DetailBothFirst += both;
@@ -742,7 +723,8 @@ struct SgpTrackEntry {
           if (coreOnly == 0) {
             stats.DetailNoCore++;
             stats.DetailBothDist << std::make_pair(both, 1);
-            if (disp && both == 0) DBG_(Dev, ( << " here" ) );
+            if (disp && both == 0)
+              DBG_(Dev, (<< " here"));
           }
         }
         stats.DetailCoreOnly += coreOnly;
@@ -750,7 +732,8 @@ struct SgpTrackEntry {
         // some misses but no hits
         int32_t coreOnly = thisMiss.count() - 1;
         DBG_Assert(coreOnly >= 0);
-        if (disp) DBG_(Dev, ( << "  detail: (epoch" << epoch << ") no hit, core=" << coreOnly ) );
+        if (disp)
+          DBG_(Dev, (<< "  detail: (epoch" << epoch << ") no hit, core=" << coreOnly));
         if (epoch == 0) {
           stats.DetailNoneGen++;
         } else {
@@ -774,14 +757,12 @@ class SgpTracker {
 
   SgpTrackMap theGroups;
   SgpTrackStats theStats;
+
 public:
   SgpTracker(std::string aName, int32_t blockSize, int32_t sgpBlocks)
-    : theName(aName)
-    , theSgpBlocks(sgpBlocks)
-    , theGroupMask(~(blockSize * sgpBlocks - 1))
-    , theOffsetShift((int)log2(blockSize))
-    , theStats(aName)
-  {}
+      : theName(aName), theSgpBlocks(sgpBlocks), theGroupMask(~(blockSize * sgpBlocks - 1)),
+        theOffsetShift((int)log2(blockSize)), theStats(aName) {
+  }
   void offchipMiss(address_t block, bool isWrite) {
     address_t group = makeGroup(block);
     int32_t offset = makeOffset(block);
@@ -789,16 +770,16 @@ public:
     if (iter != theGroups.end()) {
       iter->second.offchipMiss(offset);
     } else {
-      theGroups.insert( std::make_pair(group, SgpTrackEntry(theSgpBlocks, offset, false)) );
+      theGroups.insert(std::make_pair(group, SgpTrackEntry(theSgpBlocks, offset, false)));
     }
   }
-  void sgpPredict(address_t group, void * aPredictSet) {
-    SGvector * vec = (SGvector *)aPredictSet;
+  void sgpPredict(address_t group, void *aPredictSet) {
+    SGvector *vec = (SGvector *)aPredictSet;
     SgpTrackIter iter = theGroups.find(group);
     if (iter != theGroups.end()) {
       iter->second.sgpPredict(*vec);
     } else {
-      theGroups.insert( std::make_pair(group, SgpTrackEntry(theSgpBlocks, *vec)) );
+      theGroups.insert(std::make_pair(group, SgpTrackEntry(theSgpBlocks, *vec)));
     }
   }
   void sgpHit(address_t block, bool isWrite) {
@@ -808,10 +789,10 @@ public:
     if (iter != theGroups.end()) {
       iter->second.sgpHit(offset);
     } else {
-      theGroups.insert( std::make_pair(group, SgpTrackEntry(theSgpBlocks, offset, true)) );
+      theGroups.insert(std::make_pair(group, SgpTrackEntry(theSgpBlocks, offset, true)));
     }
   }
-  void parallelList(address_t block, std::set<uint64_t> & list) {
+  void parallelList(address_t block, std::set<uint64_t> &list) {
     address_t group = makeGroup(block);
     SgpTrackIter iter = theGroups.find(group);
     if (iter != theGroups.end()) {
@@ -825,9 +806,9 @@ public:
       }
       int32_t offset = makeOffset(block);
       bool disp = false;
-      //if(group == 0x9370000) {
-      //disp = true;
-      //DBG_(Dev, ( << "Parallel list for group 0x" << std::hex << group ) );
+      // if(group == 0x9370000) {
+      // disp = true;
+      // DBG_(Dev, ( << "Parallel list for group 0x" << std::hex << group ) );
       //}
       iter->second.addParallel(offset, parallel, disp);
     }
@@ -835,9 +816,9 @@ public:
   void endGen(address_t block) {
     address_t group = makeGroup(block);
     bool disp = false;
-    //if(group == 0x9370000) {
-    //disp = true;
-    //DBG_(Dev, ( << "End Gen for group 0x" << std::hex << group ) );
+    // if(group == 0x9370000) {
+    // disp = true;
+    // DBG_(Dev, ( << "End Gen for group 0x" << std::hex << group ) );
     //}
     SgpTrackIter iter = theGroups.find(group);
     if (iter != theGroups.end()) {
@@ -845,6 +826,7 @@ public:
       theGroups.erase(iter);
     }
   }
+
 private:
   address_t makeGroup(address_t addr) {
     return (addr & theGroupMask);

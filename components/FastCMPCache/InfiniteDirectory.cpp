@@ -1,54 +1,62 @@
-// DO-NOT-REMOVE begin-copyright-block 
+//  DO-NOT-REMOVE begin-copyright-block
+// QFlex consists of several software components that are governed by various
+// licensing terms, in addition to software that was developed internally.
+// Anyone interested in using QFlex needs to fully understand and abide by the
+// licenses governing all the software components.
 //
-// Redistributions of any form whatsoever must retain and/or include the
-// following acknowledgment, notices and disclaimer:
+// ### Software developed externally (not by the QFlex group)
 //
-// This product includes software developed by Carnegie Mellon University.
+//     * [NS-3] (https://www.gnu.org/copyleft/gpl.html)
+//     * [QEMU] (http://wiki.qemu.org/License)
+//     * [SimFlex] (http://parsa.epfl.ch/simflex/)
+//     * [GNU PTH] (https://www.gnu.org/software/pth/)
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// ### Software developed internally (by the QFlex group)
+// **QFlex License**
 //
-// For more information, see the SimFlex project website at:
-//   http://www.ece.cmu.edu/~simflex
+// QFlex
+// Copyright (c) 2020, Parallel Systems Architecture Lab, EPFL
+// All rights reserved.
 //
-// You may not use the name "Carnegie Mellon University" or derivations
-// thereof to endorse or promote products derived from this software.
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
 //
-// If you modify the software you must place a notice on or within any
-// modified version provided or made available to any third party stating
-// that you have modified the software.  The notice shall include at least
-// your name, address, phone number, email address and the date and purpose
-// of the modification.
+//     * Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above copyright notice,
+//       this list of conditions and the following disclaimer in the documentation
+//       and/or other materials provided with the distribution.
+//     * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,
+//       nor the names of its contributors may be used to endorse or promote
+//       products derived from this software without specific prior written
+//       permission.
 //
-// THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
-// EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
-// THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
-// IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-// TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
-// BE LIABLE FOR ANY DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
-// SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
-// ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
-// CONTRACT, TORT OR OTHERWISE).
-//
-// DO-NOT-REMOVE end-copyright-block   
-#include <boost/archive/binary_oarchive.hpp>
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,
+// EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+// GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//  DO-NOT-REMOVE end-copyright-block
 #include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
 
 #include <core/debug/debug.hpp>
 
 #include <components/FastCMPCache/AbstractDirectory.hpp>
-#include <components/FastCMPCache/SharingVector.hpp>
 #include <components/FastCMPCache/AbstractProtocol.hpp>
+#include <components/FastCMPCache/SharingVector.hpp>
 #include <unordered_map>
 
-#include <list>
 #include <algorithm>
+#include <list>
 
 #include <components/CommonQEMU/Serializers.hpp>
-//using nCommonSerializers::StdDirEntrySerializer;
+// using nCommonSerializers::StdDirEntrySerializer;
 using nCommonSerializers::StdDirEntryExtendedSerializer;
 
 #include <components/CommonQEMU/Util.hpp>
@@ -57,11 +65,16 @@ using nCommonUtil::log_base2;
 namespace nFastCMPCache {
 
 class InfiniteDirectoryEntry : public AbstractDirectoryEntry {
-  InfiniteDirectoryEntry(InfiniteDirectoryEntry & entry) : address(entry.address), sharers(entry.sharers), state(entry.state) {}
-  InfiniteDirectoryEntry(PhysicalMemoryAddress addr) : address(addr), state(ZeroSharers) {}
+  InfiniteDirectoryEntry(InfiniteDirectoryEntry &entry)
+      : address(entry.address), sharers(entry.sharers), state(entry.state) {
+  }
+  InfiniteDirectoryEntry(PhysicalMemoryAddress addr) : address(addr), state(ZeroSharers) {
+  }
 
-  //InfiniteDirectoryEntry(const StdDirEntrySerializer & serializer) : address(serializer.tag) {
-  InfiniteDirectoryEntry(const StdDirEntryExtendedSerializer & serializer) : address(serializer.tag) {
+  // InfiniteDirectoryEntry(const StdDirEntrySerializer & serializer) :
+  // address(serializer.tag) {
+  InfiniteDirectoryEntry(const StdDirEntryExtendedSerializer &serializer)
+      : address(serializer.tag) {
     sharers.setSharers(serializer.state);
 
     int32_t count = sharers.countSharers();
@@ -74,7 +87,8 @@ class InfiniteDirectoryEntry : public AbstractDirectoryEntry {
     }
   }
 
-  InfiniteDirectoryEntry() : address(0), state(ZeroSharers) {}
+  InfiniteDirectoryEntry() : address(0), state(ZeroSharers) {
+  }
 
 private:
   PhysicalMemoryAddress address;
@@ -94,7 +108,9 @@ private:
   }
 
   inline void makeExclusive(int32_t index) {
-    DBG_Assert(sharers.isSharer(index), ( << "Core " << index << " is not a sharer " << sharers.getSharers() << " for block " << std::hex << address ) );
+    DBG_Assert(sharers.isSharer(index),
+               (<< "Core " << index << " is not a sharer " << sharers.getSharers() << " for block "
+                << std::hex << address));
     DBG_Assert(sharers.countSharers() == 1);
     state = OneSharer;
   }
@@ -108,7 +124,7 @@ private:
     }
   }
 
-  //StdDirEntrySerializer getSerializer() const {
+  // StdDirEntrySerializer getSerializer() const {
   //  return StdDirEntrySerializer((uint64_t)address, sharers.getUInt64());
   //}
 
@@ -116,8 +132,9 @@ private:
     return StdDirEntryExtendedSerializer((uint64_t)address, sharers.getSharers());
   }
 
-  //InfiniteDirectoryEntry & operator=(const StdDirEntrySerializer & serializer) {
-  InfiniteDirectoryEntry & operator=(const StdDirEntryExtendedSerializer & serializer) {
+  // InfiniteDirectoryEntry & operator=(const StdDirEntrySerializer &
+  // serializer) {
+  InfiniteDirectoryEntry &operator=(const StdDirEntryExtendedSerializer &serializer) {
     address = PhysicalMemoryAddress(serializer.tag);
     sharers.setSharers(serializer.state);
     int32_t count = sharers.countSharers();
@@ -135,7 +152,8 @@ private:
 typedef boost::intrusive_ptr<InfiniteDirectoryEntry> InfiniteDirectoryEntry_p;
 
 struct HasZeroSharers {
-  bool operator()(const std::pair<const PhysicalMemoryAddress, InfiniteDirectoryEntry_p> &entry) const {
+  bool
+  operator()(const std::pair<const PhysicalMemoryAddress, InfiniteDirectoryEntry_p> &entry) const {
     return (entry.second->state == ZeroSharers);
   }
 };
@@ -143,26 +161,28 @@ struct HasZeroSharers {
 class InfiniteDirectory : public AbstractDirectory {
 private:
   struct AddrHash {
-    std::size_t operator()(const PhysicalMemoryAddress & addr) const {
+    std::size_t operator()(const PhysicalMemoryAddress &addr) const {
       return addr >> 6;
     }
   };
-  typedef std::unordered_map<PhysicalMemoryAddress, InfiniteDirectoryEntry_p, AddrHash> inf_directory_t;
+  typedef std::unordered_map<PhysicalMemoryAddress, InfiniteDirectoryEntry_p, AddrHash>
+      inf_directory_t;
   inf_directory_t theDirectory;
 
-  InfiniteDirectory() : AbstractDirectory() {};
+  InfiniteDirectory() : AbstractDirectory(){};
 
 protected:
   virtual void addSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
-    InfiniteDirectoryEntry * my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
+    InfiniteDirectoryEntry *my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
     if (my_entry == nullptr) {
       my_entry = findOrCreateEntry(address);
     }
     my_entry->addSharer(index);
   }
 
-  virtual void addExclusiveSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
-    InfiniteDirectoryEntry * my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
+  virtual void addExclusiveSharer(int32_t index, AbstractEntry_p dir_entry,
+                                  PhysicalMemoryAddress address) {
+    InfiniteDirectoryEntry *my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
     if (my_entry == nullptr) {
       my_entry = findOrCreateEntry(address);
     }
@@ -170,21 +190,24 @@ protected:
     my_entry->makeExclusive(index);
   }
 
-  virtual void failedSnoop(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
+  virtual void failedSnoop(int32_t index, AbstractEntry_p dir_entry,
+                           PhysicalMemoryAddress address) {
     // We track precise sharers, so a failed snoop means we remove a sharer
     removeSharer(index, dir_entry, address);
   }
 
-  virtual void removeSharer(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
-    InfiniteDirectoryEntry * my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
+  virtual void removeSharer(int32_t index, AbstractEntry_p dir_entry,
+                            PhysicalMemoryAddress address) {
+    InfiniteDirectoryEntry *my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
     if (my_entry == nullptr) {
       return;
     }
     my_entry->removeSharer(index);
   }
 
-  virtual void makeSharerExclusive(int32_t index, AbstractEntry_p dir_entry, PhysicalMemoryAddress address) {
-    InfiniteDirectoryEntry * my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
+  virtual void makeSharerExclusive(int32_t index, AbstractEntry_p dir_entry,
+                                   PhysicalMemoryAddress address) {
+    InfiniteDirectoryEntry *my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
     if (my_entry == nullptr) {
       return;
     }
@@ -192,10 +215,10 @@ protected:
     my_entry->makeExclusive(index);
   }
 
-  InfiniteDirectoryEntry * findOrCreateEntry(PhysicalMemoryAddress addr) {
+  InfiniteDirectoryEntry *findOrCreateEntry(PhysicalMemoryAddress addr) {
     inf_directory_t::iterator iter;
     bool success;
-    std::tie(iter, success) = theDirectory.insert( std::make_pair(addr, InfiniteDirectoryEntry_p()) );
+    std::tie(iter, success) = theDirectory.insert(std::make_pair(addr, InfiniteDirectoryEntry_p()));
     if (success) {
       iter->second = new InfiniteDirectoryEntry(addr);
     }
@@ -212,11 +235,12 @@ protected:
 
 public:
   virtual std::tuple<SharingVector, SharingState, AbstractEntry_p>
-  lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type, std::list<std::function<void(void)> > &xtra_actions) {
+  lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type,
+         std::list<std::function<void(void)>> &xtra_actions) {
 
     InfiniteDirectoryEntry_p entry = findEntry(address);
     SharingVector sharers;
-    SharingState  state = ZeroSharers;
+    SharingState state = ZeroSharers;
     if (entry != nullptr) {
       sharers = entry->sharers;
       state = entry->state;
@@ -231,7 +255,7 @@ public:
     InfiniteDirectoryEntry_p entry = findEntry(address);
     bool valid = false;
     SharingVector sharers;
-    SharingState  state = ZeroSharers;
+    SharingState state = ZeroSharers;
     if (entry != nullptr) {
       valid = true;
       sharers = entry->sharers;
@@ -241,16 +265,18 @@ public:
     return std::tie(sharers, state, entry, valid);
   }
 
-  virtual void processRequestResponse(int32_t index, const MMType & request, MMType & response,
-                                      AbstractEntry_p dir_entry, PhysicalMemoryAddress address, bool off_chip) {
+  virtual void processRequestResponse(int32_t index, const MMType &request, MMType &response,
+                                      AbstractEntry_p dir_entry, PhysicalMemoryAddress address,
+                                      bool off_chip) {
     // First, do default behaviour
-    AbstractDirectory::processRequestResponse(index, request, response, dir_entry, address, off_chip);
+    AbstractDirectory::processRequestResponse(index, request, response, dir_entry, address,
+                                              off_chip);
 
     if (!MemoryMessage::isEvictType(request)) {
       return;
     }
 
-    InfiniteDirectoryEntry * my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
+    InfiniteDirectoryEntry *my_entry = dynamic_cast<InfiniteDirectoryEntry *>(dir_entry.get());
     if (my_entry == nullptr) {
       return;
     }
@@ -259,58 +285,57 @@ public:
     }
   }
 
-  void saveState( std::ostream & s, const std::string & aDirName ) {
+  void saveState(std::ostream &s, const std::string &aDirName) {
     boost::archive::binary_oarchive oa(s);
 
     uint32_t count = (uint32_t)theDirectory.size();
     oa << count;
-    DBG_(Dev, ( << "Saving " << count << " directory entries." ));
-    //StdDirEntrySerializer serializer;
-    //StdDirEntryExtendedSerializer serializer;
+    DBG_(Dev, (<< "Saving " << count << " directory entries."));
+    // StdDirEntrySerializer serializer;
+    // StdDirEntryExtendedSerializer serializer;
     inf_directory_t::iterator iter = theDirectory.begin();
     for (; iter != theDirectory.end(); iter++) {
       StdDirEntryExtendedSerializer const serializer = iter->second->getSerializer();
-      DBG_(Trace, ( << "Directory saving block: " << serializer ));
+      DBG_(Trace, (<< "Directory saving block: " << serializer));
       oa << serializer;
     }
   }
 
-  bool loadState( std::istream & s, const std::string & aDirName ) {
+  bool loadState(std::istream &s, const std::string &aDirName) {
     boost::archive::binary_iarchive ia(s);
     int32_t count;
     ia >> count;
-    //StdDirEntrySerializer serializer;
+    // StdDirEntrySerializer serializer;
     StdDirEntryExtendedSerializer serializer;
-    DBG_(Trace, ( << "Directory loading " << count << " entries." ));
+    DBG_(Trace, (<< "Directory loading " << count << " entries."));
     for (; count > 0; count--) {
       ia >> serializer;
-      DBG_(Trace, ( << "Directory loading block " << serializer));
+      DBG_(Trace, (<< "Directory loading block " << serializer));
       InfiniteDirectoryEntry entry(serializer);
       if (entry.state != ZeroSharers) {
-        theDirectory.insert( std::pair<PhysicalMemoryAddress, InfiniteDirectoryEntry *>(PhysicalMemoryAddress(serializer.tag), new InfiniteDirectoryEntry(serializer)));
+        theDirectory.insert(std::pair<PhysicalMemoryAddress, InfiniteDirectoryEntry *>(
+            PhysicalMemoryAddress(serializer.tag), new InfiniteDirectoryEntry(serializer)));
       }
     }
     return true;
   }
 
-  static AbstractDirectory * createInstance(std::list<std::pair<std::string, std::string> > &args) {
-    InfiniteDirectory * directory = new InfiniteDirectory();
+  static AbstractDirectory *createInstance(std::list<std::pair<std::string, std::string>> &args) {
+    InfiniteDirectory *directory = new InfiniteDirectory();
 
     directory->parseGenericOptions(args);
 
-    std::list<std::pair<std::string, std::string> >::iterator iter = args.begin();
+    std::list<std::pair<std::string, std::string>>::iterator iter = args.begin();
     for (; iter != args.end(); iter++) {
       // Parse any specifc options we want
     }
 
     return directory;
-
   }
 
   static const std::string name;
-
 };
 
 REGISTER_DIRECTORY_TYPE(InfiniteDirectory, "Infinite");
 
-}; // namespace
+}; // namespace nFastCMPCache

@@ -1,39 +1,47 @@
-// DO-NOT-REMOVE begin-copyright-block 
+//  DO-NOT-REMOVE begin-copyright-block
+// QFlex consists of several software components that are governed by various
+// licensing terms, in addition to software that was developed internally.
+// Anyone interested in using QFlex needs to fully understand and abide by the
+// licenses governing all the software components.
 //
-// Redistributions of any form whatsoever must retain and/or include the
-// following acknowledgment, notices and disclaimer:
+// ### Software developed externally (not by the QFlex group)
 //
-// This product includes software developed by Carnegie Mellon University.
+//     * [NS-3] (https://www.gnu.org/copyleft/gpl.html)
+//     * [QEMU] (http://wiki.qemu.org/License)
+//     * [SimFlex] (http://parsa.epfl.ch/simflex/)
+//     * [GNU PTH] (https://www.gnu.org/software/pth/)
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// ### Software developed internally (by the QFlex group)
+// **QFlex License**
 //
-// For more information, see the SimFlex project website at:
-//   http://www.ece.cmu.edu/~simflex
+// QFlex
+// Copyright (c) 2020, Parallel Systems Architecture Lab, EPFL
+// All rights reserved.
 //
-// You may not use the name "Carnegie Mellon University" or derivations
-// thereof to endorse or promote products derived from this software.
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
 //
-// If you modify the software you must place a notice on or within any
-// modified version provided or made available to any third party stating
-// that you have modified the software.  The notice shall include at least
-// your name, address, phone number, email address and the date and purpose
-// of the modification.
+//     * Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above copyright notice,
+//       this list of conditions and the following disclaimer in the documentation
+//       and/or other materials provided with the distribution.
+//     * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,
+//       nor the names of its contributors may be used to endorse or promote
+//       products derived from this software without specific prior written
+//       permission.
 //
-// THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
-// EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
-// THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
-// IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-// TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
-// BE LIABLE FOR ANY DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
-// SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
-// ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
-// CONTRACT, TORT OR OTHERWISE).
-//
-// DO-NOT-REMOVE end-copyright-block   
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,
+// EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+// GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//  DO-NOT-REMOVE end-copyright-block
 #ifndef FLEXUS_FASTREGIONSCOUTCACHE_CACHESTATS_HPP_INCLUDED
 #define FLEXUS_FASTREGIONSCOUTCACHE_CACHESTATS_HPP_INCLUDED
 
@@ -212,90 +220,90 @@ struct CacheStats {
   int64_t thePrefetchHits_Evict;
   int64_t thePrefetchHits_ButUpgrade;
 
-  CacheStats(std::string const & theName)
-    : Hit_Read_Migratory_stat(theName + "-Hits:Read:Migratory")
-    , Hit_Read_Modified_stat(theName + "-Hits:Read:Modified")
-    , Hit_Read_Owned_stat(theName + "-Hits:Read:Owned")
-    , Hit_Read_Exclusive_stat(theName + "-Hits:Read:Exclusive")
-    , Hit_Read_Shared_stat(theName + "-Hits:Read:Shared")
-    , Miss_Read_Invalid_stat(theName + "-Misses:Read:Invalid")
+  CacheStats(std::string const &theName)
+      : Hit_Read_Migratory_stat(theName + "-Hits:Read:Migratory"),
+        Hit_Read_Modified_stat(theName + "-Hits:Read:Modified"),
+        Hit_Read_Owned_stat(theName + "-Hits:Read:Owned"),
+        Hit_Read_Exclusive_stat(theName + "-Hits:Read:Exclusive"),
+        Hit_Read_Shared_stat(theName + "-Hits:Read:Shared"),
+        Miss_Read_Invalid_stat(theName + "-Misses:Read:Invalid"),
 
-    , Hit_Fetch_Migratory_stat(theName + "-Hits:Fetch:Migratory")
-    , Hit_Fetch_Modified_stat(theName + "-Hits:Fetch:Modified")
-    , Hit_Fetch_Owned_stat(theName + "-Hits:Fetch:Owned")
-    , Hit_Fetch_Exclusive_stat(theName + "-Hits:Fetch:Exclusive")
-    , Hit_Fetch_Shared_stat(theName + "-Hits:Fetch:Shared")
-    , Miss_Fetch_Invalid_stat(theName + "-Misses:Fetch:Invalid")
+        Hit_Fetch_Migratory_stat(theName + "-Hits:Fetch:Migratory"),
+        Hit_Fetch_Modified_stat(theName + "-Hits:Fetch:Modified"),
+        Hit_Fetch_Owned_stat(theName + "-Hits:Fetch:Owned"),
+        Hit_Fetch_Exclusive_stat(theName + "-Hits:Fetch:Exclusive"),
+        Hit_Fetch_Shared_stat(theName + "-Hits:Fetch:Shared"),
+        Miss_Fetch_Invalid_stat(theName + "-Misses:Fetch:Invalid"),
 
-    , Hit_Write_Migratory_stat(theName + "-Hits:Write:Migratory")
-    , Hit_Write_Modified_stat(theName + "-Hits:Write:Modified")
-    , Miss_Write_Owned_stat(theName + "-Misses:Write:Owned")
-    , Hit_Write_Exclusive_stat(theName + "-Hits:Write:Exclusive")
-    , Miss_Write_Shared_stat(theName + "-Misses:Write:Shared")
-    , Miss_Write_Invalid_stat(theName + "-Misses:Write:Invalid")
+        Hit_Write_Migratory_stat(theName + "-Hits:Write:Migratory"),
+        Hit_Write_Modified_stat(theName + "-Hits:Write:Modified"),
+        Miss_Write_Owned_stat(theName + "-Misses:Write:Owned"),
+        Hit_Write_Exclusive_stat(theName + "-Hits:Write:Exclusive"),
+        Miss_Write_Shared_stat(theName + "-Misses:Write:Shared"),
+        Miss_Write_Invalid_stat(theName + "-Misses:Write:Invalid"),
 
-    , Hit_NAW_Migratory_stat(theName + "-Hits:NAW:Migratory")
-    , Hit_NAW_Modified_stat(theName + "-Hits:NAW:Modified")
-    , Miss_NAW_Owned_stat(theName + "-Misses:NAW:Owned")
-    , Hit_NAW_Exclusive_stat(theName + "-Hits:NAW:Exclusive")
-    , Miss_NAW_Shared_stat(theName + "-Misses:NAW:Shared")
-    , Miss_NAW_Invalid_stat(theName + "-Misses:NAW:Invalid")
+        Hit_NAW_Migratory_stat(theName + "-Hits:NAW:Migratory"),
+        Hit_NAW_Modified_stat(theName + "-Hits:NAW:Modified"),
+        Miss_NAW_Owned_stat(theName + "-Misses:NAW:Owned"),
+        Hit_NAW_Exclusive_stat(theName + "-Hits:NAW:Exclusive"),
+        Miss_NAW_Shared_stat(theName + "-Misses:NAW:Shared"),
+        Miss_NAW_Invalid_stat(theName + "-Misses:NAW:Invalid"),
 
-    , Hit_Upgrade_Migratory_stat(theName + "-Hits:Upgrade:Migratory")
-    , Hit_Upgrade_Modified_stat(theName + "-Hits:Upgrade:Modified")
-    , Miss_Upgrade_Owned_stat(theName + "-Misses:Upgrade:Owned")
-    , Hit_Upgrade_Exclusive_stat(theName + "-Hits:Upgrade:Exclusive")
-    , Miss_Upgrade_Shared_stat(theName + "-Misses:Upgrade:Shared")
-    , Miss_Upgrade_Invalid_stat(theName + "-Misses:Upgrade:Invalid")
+        Hit_Upgrade_Migratory_stat(theName + "-Hits:Upgrade:Migratory"),
+        Hit_Upgrade_Modified_stat(theName + "-Hits:Upgrade:Modified"),
+        Miss_Upgrade_Owned_stat(theName + "-Misses:Upgrade:Owned"),
+        Hit_Upgrade_Exclusive_stat(theName + "-Hits:Upgrade:Exclusive"),
+        Miss_Upgrade_Shared_stat(theName + "-Misses:Upgrade:Shared"),
+        Miss_Upgrade_Invalid_stat(theName + "-Misses:Upgrade:Invalid"),
 
-    , Hit_Evict_Migratory_stat(theName + "-Hits:Evict:Migratory")
-    , Hit_Evict_Modified_stat(theName + "-Hits:Evict:Modified")
-    , Hit_Evict_Owned_stat(theName + "-Hits:Evict:Owned")
-    , Hit_Evict_Exclusive_stat(theName + "-Hits:Evict:Exclusive")
-    , Hit_Evict_Shared_stat(theName + "-Hits:Evict:Shared")
-    , Miss_Evict_Invalid_stat(theName + "-Misses:Evict:Invalid")
+        Hit_Evict_Migratory_stat(theName + "-Hits:Evict:Migratory"),
+        Hit_Evict_Modified_stat(theName + "-Hits:Evict:Modified"),
+        Hit_Evict_Owned_stat(theName + "-Hits:Evict:Owned"),
+        Hit_Evict_Exclusive_stat(theName + "-Hits:Evict:Exclusive"),
+        Hit_Evict_Shared_stat(theName + "-Hits:Evict:Shared"),
+        Miss_Evict_Invalid_stat(theName + "-Misses:Evict:Invalid"),
 
-    , Hit_EvictW_Migratory_stat(theName + "-Hits:EvictWritable:Migratory")
-    , Hit_EvictW_Modified_stat(theName + "-Hits:EvictWritable:Modified")
-    , Miss_EvictW_Owned_stat(theName + "-Misses:EvictWritable:Owned")
-    , Hit_EvictW_Exclusive_stat(theName + "-Hits:EvictWritable:Exclusive")
-    , Miss_EvictW_Shared_stat(theName + "-Misses:EvictWritable:Shared")
-    , Miss_EvictW_Invalid_stat(theName + "-Misses:EvictWritable:Invalid")
+        Hit_EvictW_Migratory_stat(theName + "-Hits:EvictWritable:Migratory"),
+        Hit_EvictW_Modified_stat(theName + "-Hits:EvictWritable:Modified"),
+        Miss_EvictW_Owned_stat(theName + "-Misses:EvictWritable:Owned"),
+        Hit_EvictW_Exclusive_stat(theName + "-Hits:EvictWritable:Exclusive"),
+        Miss_EvictW_Shared_stat(theName + "-Misses:EvictWritable:Shared"),
+        Miss_EvictW_Invalid_stat(theName + "-Misses:EvictWritable:Invalid"),
 
-    , Hit_EvictD_Migratory_stat(theName + "-Hits:EvictD:Migratory")
-    , Hit_EvictD_Modified_stat(theName + "-Hits:EvictD:Modified")
-    , Miss_EvictD_Owned_stat(theName + "-Misses:EvictD:Owned")
-    , Hit_EvictD_Exclusive_stat(theName + "-Hits:EvictD:Exclusive")
-    , Miss_EvictD_Shared_stat(theName + "-Misses:EvictD:Shared")
-    , Miss_EvictD_Invalid_stat(theName + "-Misses:EvictD:Invalid")
+        Hit_EvictD_Migratory_stat(theName + "-Hits:EvictD:Migratory"),
+        Hit_EvictD_Modified_stat(theName + "-Hits:EvictD:Modified"),
+        Miss_EvictD_Owned_stat(theName + "-Misses:EvictD:Owned"),
+        Hit_EvictD_Exclusive_stat(theName + "-Hits:EvictD:Exclusive"),
+        Miss_EvictD_Shared_stat(theName + "-Misses:EvictD:Shared"),
+        Miss_EvictD_Invalid_stat(theName + "-Misses:EvictD:Invalid"),
 
-    , Hit_ReturnReq_Migratory_stat(theName + "-Snoops:ReturnReq:Migratory")
-    , Hit_ReturnReq_Modified_stat(theName + "-Snoops:ReturnReq:Modified")
-    , Hit_ReturnReq_Owned_stat(theName + "-Snoops:ReturnReq:Owned")
-    , Hit_ReturnReq_Exclusive_stat(theName + "-Snoops:ReturnReq:Exclusive")
-    , Hit_ReturnReq_Shared_stat(theName + "-Snoops:ReturnReq:Shared")
-    , Miss_ReturnReq_Invalid_stat(theName + "-Snoops:ReturnReq:Invalid")
+        Hit_ReturnReq_Migratory_stat(theName + "-Snoops:ReturnReq:Migratory"),
+        Hit_ReturnReq_Modified_stat(theName + "-Snoops:ReturnReq:Modified"),
+        Hit_ReturnReq_Owned_stat(theName + "-Snoops:ReturnReq:Owned"),
+        Hit_ReturnReq_Exclusive_stat(theName + "-Snoops:ReturnReq:Exclusive"),
+        Hit_ReturnReq_Shared_stat(theName + "-Snoops:ReturnReq:Shared"),
+        Miss_ReturnReq_Invalid_stat(theName + "-Snoops:ReturnReq:Invalid"),
 
-    , Hit_Invalidate_Migratory_stat(theName + "-Snoops:Invalidate:Migratory")
-    , Hit_Invalidate_Modified_stat(theName + "-Snoops:Invalidate:Modified")
-    , Hit_Invalidate_Owned_stat(theName + "-Snoops:Invalidate:Owned")
-    , Hit_Invalidate_Exclusive_stat(theName + "-Snoops:Invalidate:Exclusive")
-    , Hit_Invalidate_Shared_stat(theName + "-Snoops:Invalidate:Shared")
-    , Miss_Invalidate_Invalid_stat(theName + "-Snoops:Invalidate:Invalid")
+        Hit_Invalidate_Migratory_stat(theName + "-Snoops:Invalidate:Migratory"),
+        Hit_Invalidate_Modified_stat(theName + "-Snoops:Invalidate:Modified"),
+        Hit_Invalidate_Owned_stat(theName + "-Snoops:Invalidate:Owned"),
+        Hit_Invalidate_Exclusive_stat(theName + "-Snoops:Invalidate:Exclusive"),
+        Hit_Invalidate_Shared_stat(theName + "-Snoops:Invalidate:Shared"),
+        Miss_Invalidate_Invalid_stat(theName + "-Snoops:Invalidate:Invalid"),
 
-    , Hit_Downgrade_Migratory_stat(theName + "-Snoops:Downgrade:Migratory")
-    , Hit_Downgrade_Modified_stat(theName + "-Snoops:Downgrade:Modified")
-    , Hit_Downgrade_Owned_stat(theName + "-Snoops:Downgrade:Owned")
-    , Hit_Downgrade_Exclusive_stat(theName + "-Snoops:Downgrade:Exclusive")
-    , Hit_Downgrade_Shared_stat(theName + "-Snoops:Downgrade:Shared")
-    , Miss_Downgrade_Invalid_stat(theName + "-Snoops:Downgrade:Invalid")
+        Hit_Downgrade_Migratory_stat(theName + "-Snoops:Downgrade:Migratory"),
+        Hit_Downgrade_Modified_stat(theName + "-Snoops:Downgrade:Modified"),
+        Hit_Downgrade_Owned_stat(theName + "-Snoops:Downgrade:Owned"),
+        Hit_Downgrade_Exclusive_stat(theName + "-Snoops:Downgrade:Exclusive"),
+        Hit_Downgrade_Shared_stat(theName + "-Snoops:Downgrade:Shared"),
+        Miss_Downgrade_Invalid_stat(theName + "-Snoops:Downgrade:Invalid"),
 
-    , theTagMatches_Invalid_stat(theName + "-TagMatchesInvalid")
+        theTagMatches_Invalid_stat(theName + "-TagMatchesInvalid"),
 
-    , thePrefetchHits_Read_stat(theName + "-PrefetchHits:Read")
-    , thePrefetchHits_Write_stat(theName + "-PrefetchHits:Write")
-    , thePrefetchHits_Evict_stat(theName + "-PrefetchHits:Evict")
-    , thePrefetchHits_ButUpgrade_stat(theName + "-PrefetchHits:ButUpgrade")
+        thePrefetchHits_Read_stat(theName + "-PrefetchHits:Read"),
+        thePrefetchHits_Write_stat(theName + "-PrefetchHits:Write"),
+        thePrefetchHits_Evict_stat(theName + "-PrefetchHits:Evict"),
+        thePrefetchHits_ButUpgrade_stat(theName + "-PrefetchHits:ButUpgrade")
 
   {
     HitReadMigratory = 0;
@@ -375,10 +383,10 @@ struct CacheStats {
     HitDowngradeShared = 0;
     MissDowngradeInvalid = 0;
 
-    theTagMatches_Invalid  = 0;
-    thePrefetchHits_Read   = 0;
-    thePrefetchHits_Write  = 0;
-    thePrefetchHits_Evict  = 0;
+    theTagMatches_Invalid = 0;
+    thePrefetchHits_Read = 0;
+    thePrefetchHits_Write = 0;
+    thePrefetchHits_Evict = 0;
     thePrefetchHits_ButUpgrade = 0;
   }
 
@@ -460,10 +468,10 @@ struct CacheStats {
     Hit_Downgrade_Shared_stat += HitDowngradeShared;
     Miss_Downgrade_Invalid_stat += MissDowngradeInvalid;
 
-    theTagMatches_Invalid_stat  += theTagMatches_Invalid  ;
-    thePrefetchHits_Read_stat   += thePrefetchHits_Read   ;
-    thePrefetchHits_Write_stat  += thePrefetchHits_Write  ;
-    thePrefetchHits_Evict_stat  += thePrefetchHits_Evict  ;
+    theTagMatches_Invalid_stat += theTagMatches_Invalid;
+    thePrefetchHits_Read_stat += thePrefetchHits_Read;
+    thePrefetchHits_Write_stat += thePrefetchHits_Write;
+    thePrefetchHits_Evict_stat += thePrefetchHits_Evict;
     thePrefetchHits_ButUpgrade_stat += thePrefetchHits_ButUpgrade;
 
     HitReadMigratory = 0;
@@ -543,15 +551,14 @@ struct CacheStats {
     HitDowngradeShared = 0;
     MissDowngradeInvalid = 0;
 
-    theTagMatches_Invalid  = 0;
-    thePrefetchHits_Read   = 0;
-    thePrefetchHits_Write  = 0;
-    thePrefetchHits_Evict  = 0;
+    theTagMatches_Invalid = 0;
+    thePrefetchHits_Read = 0;
+    thePrefetchHits_Write = 0;
+    thePrefetchHits_Evict = 0;
     thePrefetchHits_ButUpgrade = 0;
   }
 };
 
-}  // namespace nFastCache
+} // namespace nFastCache
 
 #endif /* FLEXUS_FASTREGIONSCOUTCACHE_CACHESTATS_HPP_INCLUDED */
-

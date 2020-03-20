@@ -1,0 +1,184 @@
+//  DO-NOT-REMOVE begin-copyright-block
+// QFlex consists of several software components that are governed by various
+// licensing terms, in addition to software that was developed internally.
+// Anyone interested in using QFlex needs to fully understand and abide by the
+// licenses governing all the software components.
+//
+// ### Software developed externally (not by the QFlex group)
+//
+//     * [NS-3] (https://www.gnu.org/copyleft/gpl.html)
+//     * [QEMU] (http://wiki.qemu.org/License)
+//     * [SimFlex] (http://parsa.epfl.ch/simflex/)
+//     * [GNU PTH] (https://www.gnu.org/software/pth/)
+//
+// ### Software developed internally (by the QFlex group)
+// **QFlex License**
+//
+// QFlex
+// Copyright (c) 2020, Parallel Systems Architecture Lab, EPFL
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
+//
+//     * Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above copyright notice,
+//       this list of conditions and the following disclaimer in the documentation
+//       and/or other materials provided with the distribution.
+//     * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,
+//       nor the names of its contributors may be used to endorse or promote
+//       products derived from this software without specific prior written
+//       permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,
+// EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+// GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//  DO-NOT-REMOVE end-copyright-block
+
+#include <bitset>
+#include <iomanip>
+#include <iostream>
+
+#include <boost/throw_exception.hpp>
+#include <core/boost_extensions/intrusive_ptr.hpp>
+#include <functional>
+
+#include <core/debug/debug.hpp>
+#include <core/target.hpp>
+#include <core/types.hpp>
+
+#include <components/uArchARM/uArchInterfaces.hpp>
+
+#include "Constraints.hpp"
+#include "Effects.hpp"
+#include "SemanticInstruction.hpp"
+
+#define DBG_DeclareCategories armDecoder
+#define DBG_SetDefaultOps AddCat(armDecoder)
+#include DBG_Control()
+
+namespace narmDecoder {
+
+using nuArchARM::eResourceStatus;
+using nuArchARM::kReady;
+using nuArchARM::SemanticAction;
+
+using nuArchARM::kSC;
+using nuArchARM::kTSO;
+
+bool checkStoreQueueAvailable(SemanticInstruction *anInstruction) {
+  if (!anInstruction->core()) {
+    return false;
+  }
+  if (anInstruction->core()->sbFull()) {
+    return false;
+  }
+  return true;
+}
+
+std::function<bool()> storeQueueAvailableConstraint(SemanticInstruction *anInstruction) {
+  return [anInstruction]() { return checkStoreQueueAvailable(anInstruction); };
+}
+
+bool checkMembarStoreStoreConstraint(SemanticInstruction *anInstruction) {
+  if (!anInstruction->core()) {
+    return false;
+  }
+  return anInstruction->core()->mayRetire_MEMBARStSt();
+}
+
+std::function<bool()> membarStoreStoreConstraint(SemanticInstruction *anInstruction) {
+  return [anInstruction]() { return checkMembarStoreStoreConstraint(anInstruction); };
+}
+
+bool checkMembarStoreLoadConstraint(SemanticInstruction *anInstruction) {
+  if (!anInstruction->core()) {
+    return false;
+  }
+  return anInstruction->core()->mayRetire_MEMBARStLd();
+}
+
+std::function<bool()> membarStoreLoadConstraint(SemanticInstruction *anInstruction) {
+  return [anInstruction]() { return checkMembarStoreLoadConstraint(anInstruction); };
+}
+
+bool checkMembarSyncConstraint(SemanticInstruction *anInstruction) {
+  if (!anInstruction->core()) {
+    return false;
+  }
+  return anInstruction->core()->mayRetire_MEMBARSync();
+}
+
+std::function<bool()> membarSyncConstraint(SemanticInstruction *anInstruction) {
+  return [anInstruction]() { return checkMembarSyncConstraint(anInstruction); };
+}
+
+bool checkMemoryConstraint(SemanticInstruction *anInstruction) {
+  if (!anInstruction->core()) {
+    return false;
+  }
+  switch (anInstruction->core()->consistencyModel()) {
+  case kSC:
+    if (!anInstruction->core()->speculativeConsistency()) {
+      // Under nonspeculative SC, a load instruction may only retire when no
+      // stores are outstanding.
+      if (!anInstruction->core()->sbEmpty()) {
+        return false;
+      }
+    }
+    break;
+  case kTSO:
+  case kRMO:
+    // Under TSO and RMO, a load may always retire when it reaches the
+    // head of the re-order buffer.
+    break;
+  default:
+    DBG_Assert(false, (<< "Load Memory Instruction does not support consistency model "
+                       << anInstruction->core()->consistencyModel()));
+  }
+  return true;
+}
+
+std::function<bool()> loadMemoryConstraint(SemanticInstruction *anInstruction) {
+  return [anInstruction]() { return checkMemoryConstraint(anInstruction); };
+}
+
+bool checkStoreQueueEmpty(SemanticInstruction *anInstruction) {
+  if (!anInstruction->core()) {
+    return false;
+  }
+  return anInstruction->core()->sbEmpty();
+}
+
+std::function<bool()> storeQueueEmptyConstraint(SemanticInstruction *anInstruction) {
+  return [anInstruction]() { return checkStoreQueueEmpty; };
+}
+
+bool checkSideEffectStoreConstraint(SemanticInstruction *anInstruction) {
+  if (!anInstruction->core()) {
+    return false;
+  }
+  return anInstruction->core()->checkStoreRetirement(
+      boost::intrusive_ptr<nuArchARM::Instruction>(anInstruction));
+}
+
+std::function<bool()> sideEffectStoreConstraint(SemanticInstruction *anInstruction) {
+  return [anInstruction]() { return checkSideEffectStoreConstraint(anInstruction); };
+}
+
+bool checkpaddrResolutionConstraint(SemanticInstruction *anInstruction) {
+  return anInstruction->isResolved();
+}
+std::function<bool()> paddrResolutionConstraint(SemanticInstruction *anInstruction) {
+  return [anInstruction]() { return checkpaddrResolutionConstraint(anInstruction); };
+}
+
+} // namespace narmDecoder

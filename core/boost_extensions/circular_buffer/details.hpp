@@ -1,39 +1,47 @@
-// DO-NOT-REMOVE begin-copyright-block 
+//  DO-NOT-REMOVE begin-copyright-block
+// QFlex consists of several software components that are governed by various
+// licensing terms, in addition to software that was developed internally.
+// Anyone interested in using QFlex needs to fully understand and abide by the
+// licenses governing all the software components.
 //
-// Redistributions of any form whatsoever must retain and/or include the
-// following acknowledgment, notices and disclaimer:
+// ### Software developed externally (not by the QFlex group)
 //
-// This product includes software developed by Carnegie Mellon University.
+//     * [NS-3] (https://www.gnu.org/copyleft/gpl.html)
+//     * [QEMU] (http://wiki.qemu.org/License)
+//     * [SimFlex] (http://parsa.epfl.ch/simflex/)
+//     * [GNU PTH] (https://www.gnu.org/software/pth/)
 //
-// Copyright 2012 by Mohammad Alisafaee, Eric Chung, Michael Ferdman, Brian 
-// Gold, Jangwoo Kim, Pejman Lotfi-Kamran, Onur Kocberber, Djordje Jevdjic, 
-// Jared Smolens, Stephen Somogyi, Evangelos Vlachos, Stavros Volos, Jason 
-// Zebchuk, Babak Falsafi, Nikos Hardavellas and Tom Wenisch for the SimFlex 
-// Project, Computer Architecture Lab at Carnegie Mellon, Carnegie Mellon University.
+// ### Software developed internally (by the QFlex group)
+// **QFlex License**
 //
-// For more information, see the SimFlex project website at:
-//   http://www.ece.cmu.edu/~simflex
+// QFlex
+// Copyright (c) 2020, Parallel Systems Architecture Lab, EPFL
+// All rights reserved.
 //
-// You may not use the name "Carnegie Mellon University" or derivations
-// thereof to endorse or promote products derived from this software.
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
 //
-// If you modify the software you must place a notice on or within any
-// modified version provided or made available to any third party stating
-// that you have modified the software.  The notice shall include at least
-// your name, address, phone number, email address and the date and purpose
-// of the modification.
+//     * Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above copyright notice,
+//       this list of conditions and the following disclaimer in the documentation
+//       and/or other materials provided with the distribution.
+//     * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,
+//       nor the names of its contributors may be used to endorse or promote
+//       products derived from this software without specific prior written
+//       permission.
 //
-// THE SOFTWARE IS PROVIDED "AS-IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER
-// EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO ANY WARRANTY
-// THAT THE SOFTWARE WILL CONFORM TO SPECIFICATIONS OR BE ERROR-FREE AND ANY
-// IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-// TITLE, OR NON-INFRINGEMENT.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
-// BE LIABLE FOR ANY DAMAGES, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT,
-// SPECIAL OR CONSEQUENTIAL DAMAGES, ARISING OUT OF, RESULTING FROM, OR IN
-// ANY WAY CONNECTED WITH THIS SOFTWARE (WHETHER OR NOT BASED UPON WARRANTY,
-// CONTRACT, TORT OR OTHERWISE).
-//
-// DO-NOT-REMOVE end-copyright-block   
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,
+// EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+// GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//  DO-NOT-REMOVE end-copyright-block
 #if !defined(BOOST_CIRCULAR_BUFFER_DETAILS_HPP)
 #define BOOST_CIRCULAR_BUFFER_DETAILS_HPP
 
@@ -64,14 +72,12 @@ struct cb_int_iterator_tag {
     \struct cb_iterator_category
     \brief Defines iterator category.
 */
-template <bool>
-struct cb_iterator_category {
+template <bool> struct cb_iterator_category {
   //! Represents iterators.
   typedef std::input_iterator_tag iterator_category;
 };
 
-template <>
-struct cb_iterator_category<true> {
+template <> struct cb_iterator_category<true> {
   //! Represents integral types (not iterators).
   typedef cb_int_iterator_tag iterator_category;
 };
@@ -80,18 +86,17 @@ struct cb_iterator_category<true> {
     \struct cb_iterator_category_traits
     \brief Defines the iterator category tag for the given iterator.
 */
-template <class Iterator>
-struct cb_iterator_category_traits {
+template <class Iterator> struct cb_iterator_category_traits {
   //! Iterator category tag type.
   /*!
       Depending on the template parameter the <code>tag</code> distinguishes
       between iterators and non-iterators. If the template parameter
-      is an iterator, the <code>tag</code> is typedef for <code>std::input_iterator_tag</code>.
-      If the parameter is not an iterator, the <code>tag</code> is typedef for
-      <code>cb_int_iterator_tag</code>.
+      is an iterator, the <code>tag</code> is typedef for
+     <code>std::input_iterator_tag</code>. If the parameter is not an iterator,
+     the <code>tag</code> is typedef for <code>cb_int_iterator_tag</code>.
   */
-  typedef typename cb_details::cb_iterator_category <
-  is_integral<Iterator>::value >::iterator_category tag;
+  typedef typename cb_details::cb_iterator_category<is_integral<Iterator>::value>::iterator_category
+      tag;
 };
 
 /*!
@@ -106,7 +111,8 @@ struct cb_destroy_tag {
 
 /*!
     \struct cb_assign_tag
-    \brief Identifying tag for types which do not have to be destroyed when replaced.
+    \brief Identifying tag for types which do not have to be destroyed when
+   replaced.
 */
 struct cb_assign_tag {
 #if BOOST_WORKAROUND(__BORLANDC__, < 0x6000)
@@ -118,14 +124,12 @@ struct cb_assign_tag {
     \struct cb_replace_category
     \brief Defines replace category for the given type.
 */
-template <bool>
-struct cb_replace_category {
+template <bool> struct cb_replace_category {
   //! Represents types which have to be destroyed.
   typedef cb_destroy_tag replace_category;
 };
 
-template <>
-struct cb_replace_category<true> {
+template <> struct cb_replace_category<true> {
   //! Represents types which do not have to be destroyed.
   typedef cb_assign_tag replace_category;
 };
@@ -134,16 +138,14 @@ struct cb_replace_category<true> {
     \struct cb_replace_category_traits
     \brief Defines the replace category tag for the given type.
 */
-template <class Type>
-struct cb_replace_category_traits {
+template <class Type> struct cb_replace_category_traits {
   //! Replace category tag type.
   /*!
       Depending on the template parameter the <code>tag</code> distinguishes
       between types which have to be destroyed (e.g. class) and types which
       do not have to be (e.g. integral type) when replaced.
   */
-  typedef typename cb_details::cb_replace_category <
-  is_scalar<Type>::value >::replace_category tag;
+  typedef typename cb_details::cb_replace_category<is_scalar<Type>::value>::replace_category tag;
 };
 
 template <class Traits> struct cb_nonconst_traits;
@@ -153,8 +155,7 @@ template <class Traits> struct cb_nonconst_traits;
     \brief Defines the data types for a const iterator.
     \param Traits Defines the basic types.
 */
-template <class Traits>
-struct cb_const_traits {
+template <class Traits> struct cb_const_traits {
   // Basic types
   typedef typename Traits::value_type value_type;
   typedef typename Traits::const_pointer pointer;
@@ -171,8 +172,7 @@ struct cb_const_traits {
     \brief Defines the data types for a non-const iterator.
     \param Traits Defines the basic types.
 */
-template <class Traits>
-struct cb_nonconst_traits {
+template <class Traits> struct cb_nonconst_traits {
   // Basic types
   typedef typename Traits::value_type value_type;
   typedef typename Traits::pointer pointer;
@@ -188,8 +188,7 @@ struct cb_nonconst_traits {
     \struct cb_helper_pointer
     \brief Helper pointer used in the cb_iterator.
 */
-template <class Traits0>
-struct cb_helper_pointer {
+template <class Traits0> struct cb_helper_pointer {
   bool m_end;
   typename Traits0::pointer m_it;
 };
@@ -203,30 +202,24 @@ struct cb_helper_pointer {
           for iterating from begin() to end() of the circular buffer.
 */
 template <class Buff, class Traits>
-class cb_iterator :
-  public boost::iterator <
-  std::random_access_iterator_tag,
-  typename Traits::value_type,
-  typename Traits::difference_type,
-  typename Traits::pointer,
-  typename Traits::reference > ,
-  public cb_iterator_base {
+class cb_iterator
+    : public boost::iterator<std::random_access_iterator_tag, typename Traits::value_type,
+                             typename Traits::difference_type, typename Traits::pointer,
+                             typename Traits::reference>,
+      public cb_iterator_base {
 private:
   // Helper types
 
   //! Base iterator.
-  typedef boost::iterator <
-  std::random_access_iterator_tag,
-      typename Traits::value_type,
-      typename Traits::difference_type,
-      typename Traits::pointer,
-      typename Traits::reference > base_type;
+  typedef boost::iterator<std::random_access_iterator_tag, typename Traits::value_type,
+                          typename Traits::difference_type, typename Traits::pointer,
+                          typename Traits::reference>
+      base_type;
 
   //! Non-const iterator.
   typedef cb_iterator<Buff, typename Traits::nonconst_traits> nonconst_self;
 
 public:
-
   //! The type of the elements stored in the circular buffer.
   typedef typename base_type::value_type value_type;
 
@@ -243,7 +236,7 @@ public:
   typedef typename base_type::difference_type difference_type;
 
   //! The circular buffer where the iterator points to.
-  const Buff * m_buff;
+  const Buff *m_buff;
 
   //! An internal iterator.
   pointer m_it;
@@ -251,41 +244,45 @@ public:
   // Default copy constructor.
 
   //! Default constructor.
-  cb_iterator() : m_buff(0), m_it(0) {}
+  cb_iterator() : m_buff(0), m_it(0) {
+  }
 
-  //! Copy constructor (used for converting from a non-const to a const iterator).
-  cb_iterator(const nonconst_self & it) : cb_iterator_base(it), m_buff(it.m_buff), m_it(it.m_it) {}
+  //! Copy constructor (used for converting from a non-const to a const
+  //! iterator).
+  cb_iterator(const nonconst_self &it) : cb_iterator_base(it), m_buff(it.m_buff), m_it(it.m_it) {
+  }
 
   //! Internal constructor.
   /*!
       \note This constructor is not intended to be used directly by the user.
   */
-  cb_iterator(const Buff * cb, const pointer it) : cb_iterator_base(cb), m_buff(cb), m_it(it) {}
+  cb_iterator(const Buff *cb, const pointer it) : cb_iterator_base(cb), m_buff(cb), m_it(it) {
+  }
 
   // Assign operator.
-  cb_iterator & operator = (const cb_iterator & it) {
+  cb_iterator &operator=(const cb_iterator &it) {
     if (this == &it)
       return *this;
-    cb_iterator_base::operator =(it);
+    cb_iterator_base::operator=(it);
     m_buff = it.m_buff;
     m_it = it.m_it;
     return *this;
   }
 
   //! Dereferencing operator.
-  reference operator * () const {
+  reference operator*() const {
     BOOST_CB_ASSERT(is_valid()); // check for uninitialized or invalidated iterator
     BOOST_CB_ASSERT(m_it != 0);  // check for iterator pointing to end()
     return *m_it;
   }
 
   //! Dereferencing operator.
-  pointer operator -> () const {
+  pointer operator->() const {
     return &(operator*());
   }
 
   //! Difference operator.
-  difference_type operator - (const cb_iterator & it) const {
+  difference_type operator-(const cb_iterator &it) const {
     BOOST_CB_ASSERT(is_valid());          // check for uninitialized or invalidated iterator
     BOOST_CB_ASSERT(it.is_valid());       // check for uninitialized or invalidated iterator
     BOOST_CB_ASSERT(m_buff == it.m_buff); // check for iterators of different containers
@@ -299,7 +296,7 @@ public:
   }
 
   //! Increment operator (prefix).
-  cb_iterator & operator ++ () {
+  cb_iterator &operator++() {
     BOOST_CB_ASSERT(is_valid()); // check for uninitialized or invalidated iterator
     BOOST_CB_ASSERT(m_it != 0);  // check for iterator pointing to end()
     m_buff->increment(m_it);
@@ -309,14 +306,14 @@ public:
   }
 
   //! Increment operator (postfix).
-  cb_iterator operator ++ (int) {
+  cb_iterator operator++(int) {
     cb_iterator<Buff, Traits> tmp = *this;
     ++*this;
     return tmp;
   }
 
   //! Decrement operator (prefix).
-  cb_iterator & operator -- () {
+  cb_iterator &operator--() {
     BOOST_CB_ASSERT(is_valid());              // check for uninitialized or invalidated iterator
     BOOST_CB_ASSERT(m_it != m_buff->m_first); // check for iterator pointing to begin()
     if (m_it == 0)
@@ -326,14 +323,14 @@ public:
   }
 
   //! Decrement operator (postfix).
-  cb_iterator operator -- (int) {
+  cb_iterator operator--(int) {
     cb_iterator<Buff, Traits> tmp = *this;
     --*this;
     return tmp;
   }
 
   //! Iterator addition.
-  cb_iterator & operator += (difference_type n) {
+  cb_iterator &operator+=(difference_type n) {
     BOOST_CB_ASSERT(is_valid()); // check for uninitialized or invalidated iterator
     if (n > 0) {
       BOOST_CB_ASSERT(m_buff->end() - *this >= n); // check for too large n
@@ -347,12 +344,12 @@ public:
   }
 
   //! Iterator addition.
-  cb_iterator operator + (difference_type n) const {
+  cb_iterator operator+(difference_type n) const {
     return cb_iterator<Buff, Traits>(*this) += n;
   }
 
   //! Iterator subtraction.
-  cb_iterator & operator -= (difference_type n) {
+  cb_iterator &operator-=(difference_type n) {
     BOOST_CB_ASSERT(is_valid()); // check for uninitialized or invalidated iterator
     if (n > 0) {
       BOOST_CB_ASSERT(m_buff->begin() - *this <= -n); // check for too large n
@@ -364,18 +361,17 @@ public:
   }
 
   //! Iterator subtraction.
-  cb_iterator operator - (difference_type n) const {
+  cb_iterator operator-(difference_type n) const {
     return cb_iterator<Buff, Traits>(*this) -= n;
   }
 
   //! Element access operator.
-  reference operator [] (difference_type n) const {
+  reference operator[](difference_type n) const {
     return *(*this + n);
   }
 
   //! Equality.
-  template <class Traits0>
-  bool operator == (const cb_iterator<Buff, Traits0>& it) const {
+  template <class Traits0> bool operator==(const cb_iterator<Buff, Traits0> &it) const {
     BOOST_CB_ASSERT(is_valid());          // check for uninitialized or invalidated iterator
     BOOST_CB_ASSERT(it.is_valid());       // check for uninitialized or invalidated iterator
     BOOST_CB_ASSERT(m_buff == it.m_buff); // check for iterators of different containers
@@ -383,8 +379,7 @@ public:
   }
 
   //! Inequality.
-  template <class Traits0>
-  bool operator != (const cb_iterator<Buff, Traits0>& it) const {
+  template <class Traits0> bool operator!=(const cb_iterator<Buff, Traits0> &it) const {
     BOOST_CB_ASSERT(is_valid());          // check for uninitialized or invalidated iterator
     BOOST_CB_ASSERT(it.is_valid());       // check for uninitialized or invalidated iterator
     BOOST_CB_ASSERT(m_buff == it.m_buff); // check for iterators of different containers
@@ -392,8 +387,7 @@ public:
   }
 
   //! Less.
-  template <class Traits0>
-  bool operator < (const cb_iterator<Buff, Traits0>& it) const {
+  template <class Traits0> bool operator<(const cb_iterator<Buff, Traits0> &it) const {
     BOOST_CB_ASSERT(is_valid());          // check for uninitialized or invalidated iterator
     BOOST_CB_ASSERT(it.is_valid());       // check for uninitialized or invalidated iterator
     BOOST_CB_ASSERT(m_buff == it.m_buff); // check for iterators of different containers
@@ -401,28 +395,24 @@ public:
   }
 
   //! Greater.
-  template <class Traits0>
-  bool operator > (const cb_iterator<Buff, Traits0>& it) const  {
+  template <class Traits0> bool operator>(const cb_iterator<Buff, Traits0> &it) const {
     return it < *this;
   }
 
   //! Less or equal.
-  template <class Traits0>
-  bool operator <= (const cb_iterator<Buff, Traits0>& it) const {
+  template <class Traits0> bool operator<=(const cb_iterator<Buff, Traits0> &it) const {
     return !(it < *this);
   }
 
   //! Greater or equal.
-  template <class Traits0>
-  bool operator >= (const cb_iterator<Buff, Traits0>& it) const {
+  template <class Traits0> bool operator>=(const cb_iterator<Buff, Traits0> &it) const {
     return !(*this < it);
   }
 
 private:
-
   //! Create helper pointer.
   template <class Traits0>
-  cb_helper_pointer<Traits0> create_helper_pointer(const cb_iterator<Buff, Traits0>& it) const {
+  cb_helper_pointer<Traits0> create_helper_pointer(const cb_iterator<Buff, Traits0> &it) const {
     cb_helper_pointer<Traits0> helper;
     helper.m_end = (it.m_it == 0);
     helper.m_it = helper.m_end ? m_buff->m_last : it.m_it;
@@ -442,97 +432,95 @@ private:
 
   //! Less.
   template <class InternalIterator0, class InternalIterator1>
-  bool less(const InternalIterator0 & lhs, const InternalIterator1 & rhs) const {
+  bool less(const InternalIterator0 &lhs, const InternalIterator1 &rhs) const {
     switch (compare(lhs.m_it, m_buff->m_first)) {
+    case -1:
+      switch (compare(rhs.m_it, m_buff->m_first)) {
       case -1:
-        switch (compare(rhs.m_it, m_buff->m_first)) {
-          case -1:
-            return lhs.m_it < rhs.m_it;
-          case 0:
-            return rhs.m_end;
-          case 1:
-            return false;
-        }
+        return lhs.m_it < rhs.m_it;
       case 0:
-        switch (compare(rhs.m_it, m_buff->m_first)) {
-          case -1:
-            return !lhs.m_end;
-          case 0:
-            return !lhs.m_end && rhs.m_end;
-          case 1:
-            return !lhs.m_end;
-        }
+        return rhs.m_end;
       case 1:
-        switch (compare(rhs.m_it, m_buff->m_first)) {
-          case -1:
-            return true;
-          case 0:
-            return rhs.m_end;
-          case 1:
-            return lhs.m_it < rhs.m_it;
-        }
+        return false;
+      }
+    case 0:
+      switch (compare(rhs.m_it, m_buff->m_first)) {
+      case -1:
+        return !lhs.m_end;
+      case 0:
+        return !lhs.m_end && rhs.m_end;
+      case 1:
+        return !lhs.m_end;
+      }
+    case 1:
+      switch (compare(rhs.m_it, m_buff->m_first)) {
+      case -1:
+        return true;
+      case 0:
+        return rhs.m_end;
+      case 1:
+        return lhs.m_it < rhs.m_it;
+      }
     }
     return false;
   }
 };
 
 template <class Buff, class Traits>
-inline cb_iterator<Buff, Traits>
-operator + (typename Traits::difference_type n, const cb_iterator<Buff, Traits>& it) {
+inline cb_iterator<Buff, Traits> operator+(typename Traits::difference_type n,
+                                           const cb_iterator<Buff, Traits> &it) {
   return it + n;
 }
 
 #if defined(BOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION) && !defined(BOOST_MSVC_STD_ITERATOR)
 
 template <class Buff, class Traits>
-inline std::random_access_iterator_tag iterator_category(const cb_iterator<Buff, Traits>&) {
+inline std::random_access_iterator_tag iterator_category(const cb_iterator<Buff, Traits> &) {
   return std::random_access_iterator_tag();
 }
 
 template <class Buff, class Traits>
-inline typename Traits::value_type * value_type(const cb_iterator<Buff, Traits>&) {
+inline typename Traits::value_type *value_type(const cb_iterator<Buff, Traits> &) {
   return 0;
 }
 
 template <class Buff, class Traits>
-inline typename Traits::difference_type * distance_type(const cb_iterator<Buff, Traits>&) {
+inline typename Traits::difference_type *distance_type(const cb_iterator<Buff, Traits> &) {
   return 0;
 }
 
-#endif // #if defined(BOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION) && !defined(BOOST_MSVC_STD_ITERATOR)
+#endif // #if defined(BOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION) &&
+       // !defined(BOOST_MSVC_STD_ITERATOR)
 
 /*!
-    \fn FwdIterator uninitialized_copy(InputIterator first, InputIterator last, FwdIterator dest, Alloc& alloc)
-    \brief Equivalent of <code>std::uninitialized_copy</code> with allocator.
+    \fn FwdIterator uninitialized_copy(InputIterator first, InputIterator last,
+   FwdIterator dest, Alloc& alloc) \brief Equivalent of
+   <code>std::uninitialized_copy</code> with allocator.
 */
-template<class InputIterator, class FwdIterator, class Alloc>
-inline FwdIterator uninitialized_copy(InputIterator first, InputIterator last, FwdIterator dest, Alloc & alloc) {
+template <class InputIterator, class FwdIterator, class Alloc>
+inline FwdIterator uninitialized_copy(InputIterator first, InputIterator last, FwdIterator dest,
+                                      Alloc &alloc) {
   FwdIterator next = dest;
   BOOST_CB_TRY
   for (; first != last; ++first, ++dest)
     alloc.construct(dest, *first);
-  BOOST_CB_UNWIND(
-    for (; next != dest; ++next)
-    alloc.destroy(next);
-  )
-    return dest;
+  BOOST_CB_UNWIND(for (; next != dest; ++next) alloc.destroy(next);)
+  return dest;
 }
 
 /*!
-    \fn void uninitialized_fill_n(FwdIterator first, Diff n, const T& item, Alloc& alloc)
-    \brief Equivalent of <code>std::uninitialized_fill_n</code> with allocator.
+    \fn void uninitialized_fill_n(FwdIterator first, Diff n, const T& item,
+   Alloc& alloc) \brief Equivalent of <code>std::uninitialized_fill_n</code>
+   with allocator.
 */
-template<class FwdIterator, class Diff, class T, class Alloc>
-inline void uninitialized_fill_n(FwdIterator first, Diff n, const T & item, Alloc & alloc) {
+template <class FwdIterator, class Diff, class T, class Alloc>
+inline void uninitialized_fill_n(FwdIterator first, Diff n, const T &item, Alloc &alloc) {
   FwdIterator next = first;
   BOOST_CB_TRY
   for (; n > 0; ++first, --n)
     alloc.construct(first, item);
-  BOOST_CB_UNWIND(
-    for (; next != first; ++next)
-    alloc.destroy(next);
-  )
-  }
+  BOOST_CB_UNWIND(for (; next != first; ++next) alloc.destroy(next);)
+}
 
 } // namespace cb_details
 

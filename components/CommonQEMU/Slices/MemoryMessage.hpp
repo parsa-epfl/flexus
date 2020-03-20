@@ -1,46 +1,47 @@
-// DO-NOT-REMOVE begin-copyright-block 
-//QFlex consists of several software components that are governed by various
-//licensing terms, in addition to software that was developed internally.
-//Anyone interested in using QFlex needs to fully understand and abide by the
-//licenses governing all the software components.
+//  DO-NOT-REMOVE begin-copyright-block
+// QFlex consists of several software components that are governed by various
+// licensing terms, in addition to software that was developed internally.
+// Anyone interested in using QFlex needs to fully understand and abide by the
+// licenses governing all the software components.
 //
-//### Software developed externally (not by the QFlex group)
+// ### Software developed externally (not by the QFlex group)
 //
-//    * [NS-3](https://www.gnu.org/copyleft/gpl.html)
-//    * [QEMU](http://wiki.qemu.org/License) 
-//    * [SimFlex] (http://parsa.epfl.ch/simflex/)
+//     * [NS-3] (https://www.gnu.org/copyleft/gpl.html)
+//     * [QEMU] (http://wiki.qemu.org/License)
+//     * [SimFlex] (http://parsa.epfl.ch/simflex/)
+//     * [GNU PTH] (https://www.gnu.org/software/pth/)
 //
-//Software developed internally (by the QFlex group)
-//**QFlex License**
+// ### Software developed internally (by the QFlex group)
+// **QFlex License**
 //
-//QFlex
-//Copyright (c) 2016, Parallel Systems Architecture Lab, EPFL
-//All rights reserved.
+// QFlex
+// Copyright (c) 2020, Parallel Systems Architecture Lab, EPFL
+// All rights reserved.
 //
-//Redistribution and use in source and binary forms, with or without modification,
-//are permitted provided that the following conditions are met:
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
 //
-//    * Redistributions of source code must retain the above copyright notice,
-//      this list of conditions and the following disclaimer.
-//    * Redistributions in binary form must reproduce the above copyright notice,
-//      this list of conditions and the following disclaimer in the documentation
-//      and/or other materials provided with the distribution.
-//    * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,
-//      nor the names of its contributors may be used to endorse or promote
-//      products derived from this software without specific prior written
-//      permission.
+//     * Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above copyright notice,
+//       this list of conditions and the following disclaimer in the documentation
+//       and/or other materials provided with the distribution.
+//     * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,
+//       nor the names of its contributors may be used to endorse or promote
+//       products derived from this software without specific prior written
+//       permission.
 //
-//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-//ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-//WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-//DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,
-//EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-//CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-//GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-//HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-//LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
-//THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// DO-NOT-REMOVE end-copyright-block   
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,
+// EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+// GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//  DO-NOT-REMOVE end-copyright-block
 #ifndef FLEXUS_SLICES__MEMORYMESSAGE_HPP_INCLUDED
 #define FLEXUS_SLICES__MEMORYMESSAGE_HPP_INCLUDED
 
@@ -51,12 +52,14 @@
 
 #include <core/boost_extensions/intrusive_ptr.hpp>
 
-#include <core/types.hpp>
 #include <core/exception.hpp>
+#include <core/types.hpp>
 
 #include <components/CommonQEMU/Slices/FillLevel.hpp>
 #include <components/CommonQEMU/Slices/FillType.hpp>
 #include <components/uFetch/uFetchTypes.hpp>
+
+#include <components/CommonQEMU/Slices/AbstractInstruction.hpp>
 
 namespace Flexus {
 namespace SharedTypes {
@@ -64,7 +67,7 @@ namespace SharedTypes {
 using namespace Flexus::Core;
 using boost::intrusive_ptr;
 
-uint32_t memoryMessageSerial ( void );
+uint32_t memoryMessageSerial(void);
 
 #define HEADER_SIZE 8
 
@@ -83,7 +86,8 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     // except spanning multiple blocks), which is contained in the
     // request.  StoreReply is the only valid response.
     StorePrefetchReq,
-    // This is a request to write SPECULATIVELY a word of data (again, any length
+    // This is a request to write SPECULATIVELY a word of data (again, any
+    // length
     // except spanning multiple blocks), which is contained in the
     // request.  StorePrefetchReply is the only valid response.
     FetchReq,
@@ -254,7 +258,8 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     // in the hierarchy above, but not modified or writable (in any level).
     ProbedWritable,
     // This is a response to a Probe that indicates the block is present
-    // and writable (but not dirty) in at least one level of the hierarchy above.
+    // and writable (but not dirty) in at least one level of the hierarchy
+    // above.
     ProbedDirty,
     // This is a response to a Probe that indicates the block is present
     // and modified in at least one level of the hierarchy above.
@@ -268,7 +273,8 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     // Requests a block be streamed from L2 to SVB.
     PrefetchReadNoAllocReq,
     // This is a request for a chunk of data to be read.  It will be
-    // inserted into a prefetch buffer upon reply. Caches that receive this message
+    // inserted into a prefetch buffer upon reply. Caches that receive this
+    // message
     // should respond with PrefetchReadRedundant if they have the block.  If
     // they do not have the block, they should pass a PrefetchReadNoAllocReq
     // to the next cache level, and return either PrefetchReadReply or
@@ -336,11 +342,13 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     UpgradeNAck,
     NASNAck,
 
-    // Notification from directory that indicates how many outstanding invalidates to expect for a write miss in progress
+    // Notification from directory that indicates how many outstanding
+    // invalidates to expect for a write miss in progress
     MissNotify,
     MissNotifyData,
 
-    // BackInvalidate msgs are generated to maintain inclusion (directory inclusion, cache inclusion)
+    // BackInvalidate msgs are generated to maintain inclusion (directory
+    // inclusion, cache inclusion)
     // To avoid changin L1 caches, L1's don't know about BackInvalidates
     BackInvalidate,
 
@@ -349,128 +357,80 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
 
     EvictAck,
     WriteRetry,
-
     NumMemoryMessageTypes
   };
 
   explicit MemoryMessage(MemoryMessageType aType)
-    : theType(aType)
-    , theAddress(0)
-    , theAssociatedPC(0)
-    , theData(0)
-    , theReqSize(0)
-    , theCoreIdx(0)
-    , theSerial(memoryMessageSerial() )
-    , thePriv(false)
-    , theAnyInvs(false)
-    , theDstream(true)
-    , theFillLevel(eUnknown)
-    , theOutstandingMessages(0)
-    , theAckRequired(true)
-    , theAckRequiresData(false)
-    , theEvictHasData(false)
-    , theBranchType(kNonBranch)
-    , theBranchAnnul(false)
-  {}
+      : theType(aType), theAddress(0), theAssociatedPC(0), theData(0), theReqSize(0), theCoreIdx(0),
+        theSerial(memoryMessageSerial()), thePriv(false), theAnyInvs(false), theDstream(true),
+        theFillLevel(eUnknown), theOutstandingMessages(0), theAckRequired(true),
+        theAckRequiresData(false), theEvictHasData(false), theBranchType(kNonBranch),
+        theBranchAnnul(false), thePageWalk(false) {
+  }
   explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress)
-    : theType(aType)
-    , theAddress(anAddress)
-    , theAssociatedPC(0)
-    , theData(0)
-    , theReqSize(0)
-    , theCoreIdx(0)
-    , theSerial(memoryMessageSerial() )
-    , thePriv(false)
-    , theAnyInvs(false)
-    , theDstream(true)
-    , theFillLevel(eUnknown)
-    , theOutstandingMessages(0)
-    , theAckRequired(true)
-    , theAckRequiresData(false)
-    , theEvictHasData(false)
-    , theBranchType(kNonBranch)
-    , theBranchAnnul(false)
-  {}
+      : theType(aType), theAddress(anAddress), theAssociatedPC(0), theData(0), theReqSize(0),
+        theCoreIdx(0), theSerial(memoryMessageSerial()), thePriv(false), theAnyInvs(false),
+        theDstream(true), theFillLevel(eUnknown), theOutstandingMessages(0), theAckRequired(true),
+        theAckRequiresData(false), theEvictHasData(false), theBranchType(kNonBranch),
+        theBranchAnnul(false), thePageWalk(false) {
+  }
   explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC)
-    : theType(aType)
-    , theAddress(anAddress)
-    , theAssociatedPC(aPC)
-    , theData(0)
-    , theReqSize(0)
-    , theCoreIdx(0)
-    , theSerial(memoryMessageSerial() )
-    , thePriv(false)
-    , theAnyInvs(false)
-    , theDstream(true)
-    , theFillLevel(eUnknown)
-    , theOutstandingMessages(0)
-    , theAckRequired(true)
-    , theAckRequiresData(false)
-    , theEvictHasData(false)
-    , theBranchType(kNonBranch)
-    , theBranchAnnul(false)
-  {}
-  explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC, DataWord aData)
-    : theType(aType)
-    , theAddress(anAddress)
-    , theAssociatedPC(aPC)
-    , theData(aData)
-    , theReqSize(0)
-    , theCoreIdx(0)
-    , theSerial(memoryMessageSerial() )
-    , thePriv(false)
-    , theAnyInvs(false)
-    , theDstream(true)
-    , theFillLevel(eUnknown)
-    , theOutstandingMessages(0)
-    , theAckRequired(true)
-    , theAckRequiresData(false)
-    , theEvictHasData(false)
-    , theBranchType(kNonBranch)
-    , theBranchAnnul(false)
-  {}
-  explicit MemoryMessage(MemoryMessage & aMsg)
-    : theType(aMsg.theType)
-    , theAddress(aMsg.theAddress)
-    , theAssociatedPC(aMsg.theAssociatedPC)
-    , theData(aMsg.theData)
-    , theReqSize(aMsg.theReqSize)
-    , theCoreIdx(0)
-    , theSerial(memoryMessageSerial() )
-    , thePriv(aMsg.thePriv)
-    , theAnyInvs(false)
-    , theDstream(aMsg.theDstream)
-    , theFillLevel(eUnknown)
-    , theOutstandingMessages(0)
-    , theAckRequired(aMsg.theAckRequired)
-    , theAckRequiresData(aMsg.theAckRequiresData)
-    , theEvictHasData(aMsg.theEvictHasData)
-    , theBranchType(aMsg.theBranchType)
-    , theBranchAnnul(aMsg.theBranchAnnul)
-  {}
+      : theType(aType), theAddress(anAddress), theAssociatedPC(aPC), theData(0), theReqSize(0),
+        theCoreIdx(0), theSerial(memoryMessageSerial()), thePriv(false), theAnyInvs(false),
+        theDstream(true), theFillLevel(eUnknown), theOutstandingMessages(0), theAckRequired(true),
+        theAckRequiresData(false), theEvictHasData(false), theBranchType(kNonBranch),
+        theBranchAnnul(false), thePageWalk(false) {
+  }
+  explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC,
+                         bits aData)
+      : theType(aType), theAddress(anAddress), theAssociatedPC(aPC), theData(aData), theReqSize(0),
+        theCoreIdx(0), theSerial(memoryMessageSerial()), thePriv(false), theAnyInvs(false),
+        theDstream(true), theFillLevel(eUnknown), theOutstandingMessages(0), theAckRequired(true),
+        theAckRequiresData(false), theEvictHasData(false), theBranchType(kNonBranch),
+        theBranchAnnul(false), thePageWalk(false) {
+  }
+
+  explicit MemoryMessage(MemoryMessage &aMsg)
+      : theType(aMsg.theType), theAddress(aMsg.theAddress), theAssociatedPC(aMsg.theAssociatedPC),
+        theData(aMsg.theData), theReqSize(aMsg.theReqSize), theCoreIdx(0),
+        theSerial(memoryMessageSerial()), thePriv(aMsg.thePriv), theAnyInvs(false),
+        theDstream(aMsg.theDstream), theFillLevel(eUnknown), theOutstandingMessages(0),
+        theAckRequired(aMsg.theAckRequired), theAckRequiresData(aMsg.theAckRequiresData),
+        theEvictHasData(aMsg.theEvictHasData), theBranchType(aMsg.theBranchType),
+        theBranchAnnul(aMsg.theBranchAnnul), thePageWalk(aMsg.thePageWalk) {
+  }
 
   static intrusive_ptr<MemoryMessage> newLoad(MemoryAddress anAddress, VirtualMemoryAddress aPC) {
     intrusive_ptr<MemoryMessage> msg = new MemoryMessage(LoadReq, anAddress, aPC);
     return msg;
   }
-  static intrusive_ptr<MemoryMessage> newStore(MemoryAddress anAddress, VirtualMemoryAddress aPC, DataWord aData) {
+  static intrusive_ptr<MemoryMessage> newStore(MemoryAddress anAddress, VirtualMemoryAddress aPC,
+                                               bits aData) {
     intrusive_ptr<MemoryMessage> msg = new MemoryMessage(StoreReq, anAddress, aPC, aData);
     return msg;
   }
 
-  static intrusive_ptr<MemoryMessage> newRMW(MemoryAddress anAddress, VirtualMemoryAddress aPC, DataWord aData) {
+  static intrusive_ptr<MemoryMessage> newRMW(MemoryAddress anAddress, VirtualMemoryAddress aPC,
+                                             bits aData) {
     intrusive_ptr<MemoryMessage> msg = new MemoryMessage(RMWReq, anAddress, aPC, aData);
     return msg;
   }
-  static intrusive_ptr<MemoryMessage> newCAS(MemoryAddress anAddress, VirtualMemoryAddress aPC, DataWord aData) {
+  static intrusive_ptr<MemoryMessage> newPWRequest(MemoryAddress anAddress) {
+    intrusive_ptr<MemoryMessage> msg = new MemoryMessage(LoadReq, anAddress);
+    return msg;
+  }
+  static intrusive_ptr<MemoryMessage> newCAS(MemoryAddress anAddress, VirtualMemoryAddress aPC,
+                                             bits aData) {
     intrusive_ptr<MemoryMessage> msg = new MemoryMessage(CmpxReq, anAddress, aPC, aData);
     return msg;
   }
-  static intrusive_ptr<MemoryMessage> newAtomicPreload(MemoryAddress anAddress, VirtualMemoryAddress aPC) {
+  static intrusive_ptr<MemoryMessage> newAtomicPreload(MemoryAddress anAddress,
+                                                       VirtualMemoryAddress aPC) {
     intrusive_ptr<MemoryMessage> msg = new MemoryMessage(AtomicPreloadReq, anAddress, aPC);
     return msg;
   }
-  static intrusive_ptr<MemoryMessage> newStorePrefetch(MemoryAddress anAddress, VirtualMemoryAddress aPC, DataWord aData) {
+  static intrusive_ptr<MemoryMessage> newStorePrefetch(MemoryAddress anAddress,
+                                                       VirtualMemoryAddress aPC, bits aData) {
     intrusive_ptr<MemoryMessage> msg = new MemoryMessage(StorePrefetchReq, anAddress, aPC, aData);
     return msg;
   }
@@ -494,7 +454,7 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
   const VirtualMemoryAddress pc() const {
     return theAssociatedPC;
   }
-  const DataWord data() const {
+  const bits data() const {
     return theData;
   }
   const int32_t reqSize() const {
@@ -506,28 +466,28 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
   bool isDstream() const {
     return theDstream;
   }
-  MemoryMessageType & type() {
+  MemoryMessageType &type() {
     return theType;
   }
-  MemoryAddress & address() {
+  MemoryAddress &address() {
     return theAddress;
   }
-  VirtualMemoryAddress & pc() {
+  VirtualMemoryAddress &pc() {
     return theAssociatedPC;
   }
-  DataWord & data() {
+  bits &data() {
     return theData;
   }
-  int32_t & reqSize() {
+  int32_t &reqSize() {
     return theReqSize;
   }
-  bool & priv() {
+  bool &priv() {
     return thePriv;
   }
-  int & tl() {
+  int &tl() {
     return theTL;
   }
-  bool & dstream() {
+  bool &dstream() {
     return theDstream;
   }
   void setPriv() {
@@ -536,19 +496,26 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
   bool anyInvs() {
     return theAnyInvs;
   }
+  void setPageWalk() {
+    assert(!thePageWalk);
+    thePageWalk = true;
+  }
+  bool isPageWalk() const {
+    return thePageWalk;
+  }
   void setInvs() {
     theAnyInvs = true;
   }
   const int32_t coreIdx() const {
     return theCoreIdx;
   }
-  int32_t & coreIdx() {
+  int32_t &coreIdx() {
     return theCoreIdx;
   }
   const tFillLevel fillLevel() const {
     return theFillLevel;
   }
-  tFillLevel & fillLevel() {
+  tFillLevel &fillLevel() {
     return theFillLevel;
   }
   uint32_t serial() const {
@@ -557,18 +524,18 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
   const tFillType fillType() const {
     return theFillType;
   }
-  tFillType & fillType() {
+  tFillType &fillType() {
     return theFillType;
   }
 
   const int32_t outstandingMsgs() const {
     return theOutstandingMessages;
   }
-  int32_t & outstandingMsgs() {
+  int32_t &outstandingMsgs() {
     return theOutstandingMessages;
   }
 
-  bool & ackRequired() {
+  bool &ackRequired() {
     return theAckRequired;
   }
 
@@ -580,7 +547,7 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     return theAckRequiresData;
   }
 
-  bool & ackRequiresData() {
+  bool &ackRequiresData() {
     return theAckRequiresData;
   }
 
@@ -588,443 +555,443 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
     return theEvictHasData;
   }
 
-  bool & evictHasData() {
+  bool &evictHasData() {
     return theEvictHasData;
   }
 
-  eBranchType & branchType() {
+  eBranchType &branchType() {
     return theBranchType;
   }
 
-  bool & branchAnnul() {
+  bool &branchAnnul() {
     return theBranchAnnul;
   }
 
   bool isRequest() const {
     switch (theType) {
-      case LoadReq:
-      case StoreReq:
-      case StorePrefetchReq:
-      case NonAllocatingStoreReq:
-      case FetchReq:
-      case RMWReq:
-      case CmpxReq:
-      case AtomicPreloadReq:
-      case FlushReq:
-      case ReadReq:
-      case WriteReq:
-      case WriteAllocate:
-      case UpgradeReq:
-      case UpgradeAllocate:
-      case Flush:
-      case EvictDirty:
-      case EvictWritable:
-      case EvictClean:
-      case SVBClean:
-      case Invalidate:
-      case Downgrade:
-      case Probe:
-      case DownProbe:
-      case ReturnReq:
-      case StreamFetch:
-      case PrefetchReadNoAllocReq:
-      case PrefetchReadAllocReq:
-      case PrefetchInsert:
-      case PrefetchInsertWritable:
-        return true;
-      case LoadReply:
-      case StoreReply:
-      case StorePrefetchReply:
-      case FetchReply:
-      case RMWReply:
-      case CmpxReply:
-      case AtomicPreloadReply:
-      case MissReply:
-      case MissReplyWritable:
-      case MissReplyDirty:
-      case UpgradeReply:
-      case NonAllocatingStoreReply:
-      case InvalidateAck:
-      case InvalidateNAck:
-      case InvUpdateAck:
-      case DowngradeAck:
-      case DownUpdateAck:
-      case ProbedNotPresent:
-      case ProbedClean:
-      case ProbedWritable:
-      case ProbedDirty:
-      case ReturnReply:
-      case PrefetchReadReply:
-      case PrefetchWritableReply:
-      case PrefetchDirtyReply:
-      case PrefetchReadRedundant:
-      case DownProbePresent:
-      case DownProbeNotPresent:
-      case StreamFetchWritableReply:
-      case StreamFetchRejected:
-        return false;
-      default:
-        break;
+    case LoadReq:
+    case StoreReq:
+    case StorePrefetchReq:
+    case NonAllocatingStoreReq:
+    case FetchReq:
+    case RMWReq:
+    case CmpxReq:
+    case AtomicPreloadReq:
+    case FlushReq:
+    case ReadReq:
+    case WriteReq:
+    case WriteAllocate:
+    case UpgradeReq:
+    case UpgradeAllocate:
+    case Flush:
+    case EvictDirty:
+    case EvictWritable:
+    case EvictClean:
+    case SVBClean:
+    case Invalidate:
+    case Downgrade:
+    case Probe:
+    case DownProbe:
+    case ReturnReq:
+    case StreamFetch:
+    case PrefetchReadNoAllocReq:
+    case PrefetchReadAllocReq:
+    case PrefetchInsert:
+    case PrefetchInsertWritable:
+      return true;
+    case LoadReply:
+    case StoreReply:
+    case StorePrefetchReply:
+    case FetchReply:
+    case RMWReply:
+    case CmpxReply:
+    case AtomicPreloadReply:
+    case MissReply:
+    case MissReplyWritable:
+    case MissReplyDirty:
+    case UpgradeReply:
+    case NonAllocatingStoreReply:
+    case InvalidateAck:
+    case InvalidateNAck:
+    case InvUpdateAck:
+    case DowngradeAck:
+    case DownUpdateAck:
+    case ProbedNotPresent:
+    case ProbedClean:
+    case ProbedWritable:
+    case ProbedDirty:
+    case ReturnReply:
+    case PrefetchReadReply:
+    case PrefetchWritableReply:
+    case PrefetchDirtyReply:
+    case PrefetchReadRedundant:
+    case DownProbePresent:
+    case DownProbeNotPresent:
+    case StreamFetchWritableReply:
+    case StreamFetchRejected:
+      return false;
+    default:
+      break;
     }
     throw FlexusException("isRequest not recognized: " + theType);
   }
 
   bool isWrite() const {
     switch (theType) {
-      case StoreReq:
-      case StorePrefetchReq:
-      case NonAllocatingStoreReq:
-      case RMWReq:
-      case CmpxReq:
-      case WriteReq:
-      case WriteAllocate:
-      case UpgradeReq:
-      case UpgradeAllocate:
-        return true;
-      case Flush:
-      case EvictDirty:
-      case EvictWritable:
-      case EvictClean:
-      case SVBClean:
-      case Invalidate:
-      case Downgrade:
-      case Probe:
-      case DownProbe:
-      case ReturnReq:
-      case StreamFetch:
-      case PrefetchReadNoAllocReq:
-      case PrefetchReadAllocReq:
-      case PrefetchInsert:
-      case PrefetchInsertWritable:
-      case FlushReq:
-      case ReadReq:
-      case RMWReply:
-      case CmpxReply:
-      case LoadReq:
-      case AtomicPreloadReq:
-      case LoadReply:
-      case AtomicPreloadReply:
-      case FetchReq:
-      case FetchReply:
-      case StoreReply:
-      case StorePrefetchReply:
-      case MissReply:
-      case MissReplyWritable:
-      case MissReplyDirty:
-      case UpgradeReply:
-      case NonAllocatingStoreReply:
-      case InvalidateAck:
-      case InvUpdateAck:
-      case DowngradeAck:
-      case DownUpdateAck:
-      case ProbedNotPresent:
-      case ProbedClean:
-      case ProbedWritable:
-      case ProbedDirty:
-      case DownProbePresent:
-      case DownProbeNotPresent:
-      case ReturnReply:
-      case PrefetchReadReply:
-      case PrefetchWritableReply:
-      case PrefetchDirtyReply:
-      case PrefetchReadRedundant:
-      case StreamFetchWritableReply:
-      case StreamFetchRejected:
-        return false;
-      default:
-        break;
+    case StoreReq:
+    case StorePrefetchReq:
+    case NonAllocatingStoreReq:
+    case RMWReq:
+    case CmpxReq:
+    case WriteReq:
+    case WriteAllocate:
+    case UpgradeReq:
+    case UpgradeAllocate:
+    case AtomicPreloadReq:
+      return true;
+    case Flush:
+    case EvictDirty:
+    case EvictWritable:
+    case EvictClean:
+    case SVBClean:
+    case Invalidate:
+    case Downgrade:
+    case Probe:
+    case DownProbe:
+    case ReturnReq:
+    case StreamFetch:
+    case PrefetchReadNoAllocReq:
+    case PrefetchReadAllocReq:
+    case PrefetchInsert:
+    case PrefetchInsertWritable:
+    case FlushReq:
+    case ReadReq:
+    case RMWReply:
+    case CmpxReply:
+    case LoadReq:
+    case LoadReply:
+    case AtomicPreloadReply:
+    case FetchReq:
+    case FetchReply:
+    case StoreReply:
+    case StorePrefetchReply:
+    case MissReply:
+    case MissReplyWritable:
+    case MissReplyDirty:
+    case UpgradeReply:
+    case NonAllocatingStoreReply:
+    case InvalidateAck:
+    case InvUpdateAck:
+    case DowngradeAck:
+    case DownUpdateAck:
+    case ProbedNotPresent:
+    case ProbedClean:
+    case ProbedWritable:
+    case ProbedDirty:
+    case DownProbePresent:
+    case DownProbeNotPresent:
+    case ReturnReply:
+    case PrefetchReadReply:
+    case PrefetchWritableReply:
+    case PrefetchDirtyReply:
+    case PrefetchReadRedundant:
+    case StreamFetchWritableReply:
+    case StreamFetchRejected:
+      return false;
+    default:
+      break;
     }
     throw FlexusException("isWrite unrecognizedMessage: " + theType);
   }
 
-  bool isSnoopType()const  {
+  bool isSnoopType() const {
     switch (theType) {
-      case Invalidate:
-      case Downgrade:
-      case InvalidateAck:
-      case InvUpdateAck:
-      case DowngradeAck:
-      case DownUpdateAck:
-        return true;
-      default:
-        break;
+    case Invalidate:
+    case Downgrade:
+    case InvalidateAck:
+    case InvUpdateAck:
+    case DowngradeAck:
+    case DownUpdateAck:
+      return true;
+    default:
+      break;
     }
     return false;
   }
 
-  bool isAckType()const  {
+  bool isAckType() const {
     switch (theType) {
-      case ReadAck:
-      case FetchAck:
-      case WriteAck:
-      case UpgradeAck:
-      case NASAck:
-        return true;
-      default:
-        return false;
+    case ReadAck:
+    case FetchAck:
+    case WriteAck:
+    case UpgradeAck:
+    case NASAck:
+      return true;
+    default:
+      return false;
     }
   }
 
-  static bool isEvictType(const MemoryMessageType & aType) {
+  static bool isEvictType(const MemoryMessageType &aType) {
     switch (aType) {
-      case EvictDirty:
-      case EvictWritable:
-      case EvictClean:
-        return true;
-      default:
-        break;
+    case EvictDirty:
+    case EvictWritable:
+    case EvictClean:
+      return true;
+    default:
+      break;
     }
     return false;
   }
 
-  bool isEvictType()const  {
+  bool isEvictType() const {
     switch (theType) {
-      case EvictDirty:
-      case EvictWritable:
-      case EvictClean:
-        return true;
-      default:
-        break;
+    case EvictDirty:
+    case EvictWritable:
+    case EvictClean:
+      return true;
+    default:
+      break;
     }
     return false;
   }
 
   bool isProbeType() const {
     switch (theType) {
-      case Probe:
-      case ProbedNotPresent:
-      case ProbedClean:
-      case ProbedWritable:
-      case ProbedDirty:
-      case DownProbe:
-      case DownProbePresent:
-      case DownProbeNotPresent:
-        return true;
-      default:
-        break;
+    case Probe:
+    case ProbedNotPresent:
+    case ProbedClean:
+    case ProbedWritable:
+    case ProbedDirty:
+    case DownProbe:
+    case DownProbePresent:
+    case DownProbeNotPresent:
+      return true;
+    default:
+      break;
     }
     return false;
   }
 
   bool isPrefetchType() const {
     switch (theType) {
-      case StreamFetch:
-      case PrefetchReadNoAllocReq:
-      case PrefetchReadAllocReq:
-      case PrefetchInsert:
-      case PrefetchInsertWritable:
-      case PrefetchReadReply:
-      case PrefetchWritableReply:
-      case PrefetchDirtyReply:
-      case PrefetchReadRedundant:
-      case StreamFetchWritableReply:
-      case StreamFetchRejected:
-        return true;
-      default:
-        break;
+    case StreamFetch:
+    case PrefetchReadNoAllocReq:
+    case PrefetchReadAllocReq:
+    case PrefetchInsert:
+    case PrefetchInsertWritable:
+    case PrefetchReadReply:
+    case PrefetchWritableReply:
+    case PrefetchDirtyReply:
+    case PrefetchReadRedundant:
+    case StreamFetchWritableReply:
+    case StreamFetchRejected:
+      return true;
+    default:
+      break;
     }
     return false;
   }
 
   bool usesSnoopChannel() const {
     switch (theType) {
-      case FlushReq:
-      case Flush:
-      case EvictDirty:
-      case EvictWritable:
-      case EvictClean:
-      case SVBClean:
-      case InvalidateNAck:
-      case InvalidateAck:
-      case InvUpdateAck:
-      case DowngradeAck:
-      case DownUpdateAck:
-      case ProbedNotPresent:
-      case ProbedClean:
-      case ProbedWritable:
-      case ProbedDirty:
-      case PrefetchInsert:
-      case PrefetchInsertWritable:
-      case DownProbe:
-      case ReturnReply:
-        return true;
-      case LoadReq:
-      case AtomicPreloadReq:
-      case StoreReq:
-      case StorePrefetchReq:
-      case NonAllocatingStoreReq:
-      case FetchReq:
-      case RMWReq:
-      case CmpxReq:
-      case ReadReq:
-      case WriteReq:
-      case WriteAllocate:
-      case UpgradeReq:
-      case UpgradeAllocate:
-      case StreamFetch:
-      case PrefetchReadNoAllocReq:
-      case PrefetchReadAllocReq:
-        return false;
-        //The rest go up the heirarchy, thus the question doesn't apply
-      case Invalidate:
-      case Downgrade:
-      case Probe:
-      case LoadReply:
-      case AtomicPreloadReply:
-      case StoreReply:
-      case StorePrefetchReply:
-      case FetchReply:
-      case RMWReply:
-      case CmpxReply:
-      case MissReply:
-      case MissReplyWritable:
-      case MissReplyDirty:
-      case UpgradeReply:
-      case NonAllocatingStoreReply:
-      case PrefetchReadReply:
-      case PrefetchWritableReply:
-      case PrefetchDirtyReply:
-      case PrefetchReadRedundant:
-      case DownProbePresent:
-      case DownProbeNotPresent:
-      case ReturnReq:
-      case StreamFetchWritableReply:
-      case StreamFetchRejected:
-        return false;
-      default:
-        break;
+    case FlushReq:
+    case Flush:
+    case EvictDirty:
+    case EvictWritable:
+    case EvictClean:
+    case SVBClean:
+    case InvalidateNAck:
+    case InvalidateAck:
+    case InvUpdateAck:
+    case DowngradeAck:
+    case DownUpdateAck:
+    case ProbedNotPresent:
+    case ProbedClean:
+    case ProbedWritable:
+    case ProbedDirty:
+    case PrefetchInsert:
+    case PrefetchInsertWritable:
+    case DownProbe:
+    case ReturnReply:
+      return true;
+    case LoadReq:
+    case AtomicPreloadReq:
+    case StoreReq:
+    case StorePrefetchReq:
+    case NonAllocatingStoreReq:
+    case FetchReq:
+    case RMWReq:
+    case CmpxReq:
+    case ReadReq:
+    case WriteReq:
+    case WriteAllocate:
+    case UpgradeReq:
+    case UpgradeAllocate:
+    case StreamFetch:
+    case PrefetchReadNoAllocReq:
+    case PrefetchReadAllocReq:
+      return false;
+      // The rest go up the heirarchy, thus the question doesn't apply
+    case Invalidate:
+    case Downgrade:
+    case Probe:
+    case LoadReply:
+    case AtomicPreloadReply:
+    case StoreReply:
+    case StorePrefetchReply:
+    case FetchReply:
+    case RMWReply:
+    case CmpxReply:
+    case MissReply:
+    case MissReplyWritable:
+    case MissReplyDirty:
+    case UpgradeReply:
+    case NonAllocatingStoreReply:
+    case PrefetchReadReply:
+    case PrefetchWritableReply:
+    case PrefetchDirtyReply:
+    case PrefetchReadRedundant:
+    case DownProbePresent:
+    case DownProbeNotPresent:
+    case ReturnReq:
+    case StreamFetchWritableReply:
+    case StreamFetchRejected:
+      return false;
+    default:
+      break;
     }
     throw FlexusException("usesSnoopChannel unrecognized message: " + theType);
   }
 
   bool directionToBack() const {
     switch (theType) {
-      case LoadReq:
-      case AtomicPreloadReq:
-      case StoreReq:
-      case StorePrefetchReq:
-      case NonAllocatingStoreReq:
-      case FetchReq:
-      case RMWReq:
-      case CmpxReq:
-      case FlushReq: //
-      case ReadReq:
-      case WriteReq:
-      case WriteAllocate:
-      case UpgradeReq:
-      case UpgradeAllocate:
-      case Flush:    //
-      case EvictDirty: //
-      case EvictWritable: //
-      case EvictClean:  //
-      case SVBClean:  //
-      case StreamFetch:
-      case PrefetchReadNoAllocReq:
-      case PrefetchReadAllocReq:
-      case PrefetchInsert:
-      case PrefetchInsertWritable:
-      case InvalidateAck: //
-      case InvUpdateAck: //
-      case DowngradeAck: //
-      case DownUpdateAck: //
-      case ProbedNotPresent: //
-      case ProbedClean: //
-      case ProbedWritable: //
-      case ProbedDirty: //
-      case DownProbe: //
-      case ReturnReply:
-        return true;
-      case Invalidate:
-      case Downgrade:
-      case Probe:
-      case LoadReply:
-      case AtomicPreloadReply:
-      case StoreReply:
-      case StorePrefetchReply:
-      case FetchReply:
-      case RMWReply:
-      case CmpxReply:
-      case MissReply:
-      case MissReplyWritable:
-      case MissReplyDirty:
-      case UpgradeReply:
-      case NonAllocatingStoreReply:
-      case PrefetchReadReply:
-      case PrefetchWritableReply:
-      case PrefetchDirtyReply:
-      case PrefetchReadRedundant:
-      case DownProbePresent: //
-      case DownProbeNotPresent: //
-      case ReturnReq:
-      case StreamFetchWritableReply:
-      case StreamFetchRejected:
-        return false;
-      default:
-        break;
+    case LoadReq:
+    case AtomicPreloadReq:
+    case StoreReq:
+    case StorePrefetchReq:
+    case NonAllocatingStoreReq:
+    case FetchReq:
+    case RMWReq:
+    case CmpxReq:
+    case FlushReq: //
+    case ReadReq:
+    case WriteReq:
+    case WriteAllocate:
+    case UpgradeReq:
+    case UpgradeAllocate:
+    case Flush:         //
+    case EvictDirty:    //
+    case EvictWritable: //
+    case EvictClean:    //
+    case SVBClean:      //
+    case StreamFetch:
+    case PrefetchReadNoAllocReq:
+    case PrefetchReadAllocReq:
+    case PrefetchInsert:
+    case PrefetchInsertWritable:
+    case InvalidateAck:    //
+    case InvUpdateAck:     //
+    case DowngradeAck:     //
+    case DownUpdateAck:    //
+    case ProbedNotPresent: //
+    case ProbedClean:      //
+    case ProbedWritable:   //
+    case ProbedDirty:      //
+    case DownProbe:        //
+    case ReturnReply:
+      return true;
+    case Invalidate:
+    case Downgrade:
+    case Probe:
+    case LoadReply:
+    case AtomicPreloadReply:
+    case StoreReply:
+    case StorePrefetchReply:
+    case FetchReply:
+    case RMWReply:
+    case CmpxReply:
+    case MissReply:
+    case MissReplyWritable:
+    case MissReplyDirty:
+    case UpgradeReply:
+    case NonAllocatingStoreReply:
+    case PrefetchReadReply:
+    case PrefetchWritableReply:
+    case PrefetchDirtyReply:
+    case PrefetchReadRedundant:
+    case DownProbePresent:    //
+    case DownProbeNotPresent: //
+    case ReturnReq:
+    case StreamFetchWritableReply:
+    case StreamFetchRejected:
+      return false;
+    default:
+      break;
     }
     throw FlexusException("directionToBack unrecognized message: " + theType);
   }
 
   int32_t messageSize() {
     switch (theType) {
-      case FetchReq:
-      case ReadReq:
-      case WriteReq:
-      case UpgradeReq:
-      case EvictWritable:
-      case EvictClean:
-      case UpgradeReply:
-      case NonAllocatingStoreReply:
-      case Invalidate:
-      case InvalidateAck:
-      case InvalidateNAck:
-      case FetchFwd:
-      case ReadFwd:
-      case WriteFwd:
-      case FwdNAck:
-      case WriteAck:
-      case UpgradeAck:
-      case NASAck:
-      case ReadNAck:
-      case FetchNAck:
-      case WriteNAck:
-      case UpgradeNAck:
-      case NASNAck:
-      case MissNotify:
-      case BackInvalidate:
-      case ProtocolMessage:
-      case EvictAck:
-      case WriteRetry:
-        return HEADER_SIZE;
-        break;
-      case ReadAck:
-      case FetchAck:
-        if (theAckRequiresData) {
-          return HEADER_SIZE + theReqSize;
-        } else {
-          return HEADER_SIZE;
-        }
-        break;
-      case ReadAckDirty:
-      case FetchAckDirty:
-      case MissNotifyData:
-      case NonAllocatingStoreReq:
-      case FwdReply:
-      case FwdReplyOwned:
-      case FwdReplyWritable:
-      case FwdReplyDirty:
-      case InvUpdateAck:
-      case FetchReply:
-      case MissReply:
-      case MissReplyWritable:
-      case MissReplyDirty:
-      case EvictDirty:
+    case FetchReq:
+    case ReadReq:
+    case WriteReq:
+    case UpgradeReq:
+    case EvictWritable:
+    case EvictClean:
+    case UpgradeReply:
+    case NonAllocatingStoreReply:
+    case Invalidate:
+    case InvalidateAck:
+    case InvalidateNAck:
+    case FetchFwd:
+    case ReadFwd:
+    case WriteFwd:
+    case FwdNAck:
+    case WriteAck:
+    case UpgradeAck:
+    case NASAck:
+    case ReadNAck:
+    case FetchNAck:
+    case WriteNAck:
+    case UpgradeNAck:
+    case NASNAck:
+    case MissNotify:
+    case BackInvalidate:
+    case ProtocolMessage:
+    case EvictAck:
+    case WriteRetry:
+      return HEADER_SIZE;
+      break;
+    case ReadAck:
+    case FetchAck:
+      if (theAckRequiresData) {
         return HEADER_SIZE + theReqSize;
-        break;
-      default:
-        //throw FlexusException("No size for message type: " + theType);
-        return -1;
-        break;
+      } else {
+        return HEADER_SIZE;
+      }
+      break;
+    case ReadAckDirty:
+    case FetchAckDirty:
+    case MissNotifyData:
+    case NonAllocatingStoreReq:
+    case FwdReply:
+    case FwdReplyOwned:
+    case FwdReplyWritable:
+    case FwdReplyDirty:
+    case InvUpdateAck:
+    case FetchReply:
+    case MissReply:
+    case MissReplyWritable:
+    case MissReplyDirty:
+    case EvictDirty:
+      return HEADER_SIZE + theReqSize;
+      break;
+    default:
+      // throw FlexusException("No size for message type: " + theType);
+      return -1;
+      break;
     }
   }
 
@@ -1033,25 +1000,28 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
   }
 
   static MemoryMessageType maxProbe(const MemoryMessageType a, const MemoryMessageType b) {
-    if ( (a == ProbedDirty) || (b == ProbedDirty) ) {
+    if ((a == ProbedDirty) || (b == ProbedDirty)) {
       return ProbedDirty;
     }
-    if ( (a == ProbedWritable) || (b == ProbedWritable) ) {
+    if ((a == ProbedWritable) || (b == ProbedWritable)) {
       return ProbedWritable;
     }
-    if ( (a == ProbedClean) || (b == ProbedClean) ) {
+    if ((a == ProbedClean) || (b == ProbedClean)) {
       return ProbedClean;
     }
     return ProbedNotPresent;
   }
 
+public:
+  boost::intrusive_ptr<AbstractInstruction> theInstruction;
+
 private:
   MemoryMessageType theType;
   MemoryAddress theAddress;
   VirtualMemoryAddress theAssociatedPC;
-  DataWord theData;
+  bits theData;
   int32_t theReqSize;
-  int32_t  theCoreIdx;
+  int32_t theCoreIdx;
   uint32_t theSerial;
   bool thePriv;
   int theTL;
@@ -1065,12 +1035,13 @@ private:
   bool theEvictHasData;
   eBranchType theBranchType;
   bool theBranchAnnul;
+  bool thePageWalk;
 };
 
-std::ostream & operator << (std::ostream & s, MemoryMessage const & aMemMsg);
-std::ostream & operator << (std::ostream & s, MemoryMessage::MemoryMessageType const & aMemMsgType);
+std::ostream &operator<<(std::ostream &s, MemoryMessage const &aMemMsg);
+std::ostream &operator<<(std::ostream &s, MemoryMessage::MemoryMessageType const &aMemMsgType);
 
-} //End MemoryCommon
-} //End Flexus
+} // namespace SharedTypes
+} // namespace Flexus
 
-#endif //FLEXUS_SLICES__MEMORYMESSAGE_HPP_INCLUDED
+#endif // FLEXUS_SLICES__MEMORYMESSAGE_HPP_INCLUDED
