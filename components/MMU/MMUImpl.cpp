@@ -216,8 +216,8 @@ public:
 
   void saveState(std::string const &aDirName) {
     std::ofstream iFile, dFile;
-    iFile.open(aDirName + "/iTLBout", std::ofstream::out | std::ofstream::app);
-    dFile.open(aDirName + "/dTLBout", std::ofstream::out | std::ofstream::app);
+    iFile.open(aDirName + "/" + statName() + "-itlb", std::ofstream::out | std::ofstream::app);
+    dFile.open(aDirName + "/" + statName() + "-dtlb", std::ofstream::out | std::ofstream::app);
 
     boost::archive::text_oarchive ioarch(iFile);
     boost::archive::text_oarchive doarch(dFile);
@@ -231,8 +231,8 @@ public:
 
   void loadState(std::string const &aDirName) {
     std::ifstream iFile, dFile;
-    iFile.open(aDirName + "/iTLBout", std::ifstream::in);
-    dFile.open(aDirName + "/dTLBout", std::ifstream::in);
+    iFile.open(aDirName + "/" + statName() + "-itlb", std::ifstream::in);
+    dFile.open(aDirName + "/" + statName() + "-dtlb", std::ifstream::in);
 
     boost::archive::text_iarchive iiarch(iFile);
     boost::archive::text_iarchive diarch(dFile);
