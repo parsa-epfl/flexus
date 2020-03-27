@@ -406,12 +406,6 @@ typedef struct ROR : public Operation {
     uint64_t input = boost::get<uint64_t>(operands[0]);
     uint64_t shift_size = boost::get<uint64_t>(operands[1]);
     uint64_t input_size = boost::get<uint64_t>(operands[2]);
-
-    if (input_size == 1)
-      input_size = 64;
-    else
-      input_size = 32;
-
     return ror((uint64_t)input, (uint64_t)input_size, (uint64_t)shift_size);
   }
   virtual char const *describe() const {
