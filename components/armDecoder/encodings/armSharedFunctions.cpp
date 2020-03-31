@@ -515,13 +515,11 @@ uint64_t ones(uint64_t length) {
 uint64_t ror(uint64_t input, uint64_t input_size, uint64_t shift_size) {
   uint64_t filter = (input_size == 32) ? 0xffffffff : (uint64_t)-1;
   DBG_Assert(input_size == 64 || input_size == 32);
-
   uint64_t mask = ones(shift_size);
   uint64_t remaining_bits = input & mask;
 
   input >>= shift_size;
   remaining_bits <<= (input_size - shift_size);
-
   return (remaining_bits | input) & filter;
 }
 

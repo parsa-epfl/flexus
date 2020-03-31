@@ -458,6 +458,7 @@ arminst ADDSUB_EXTENDED(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aS
   std::vector<std::list<InternalDependance>> rs_deps(1), rs2_deps(2);
 
   if (shift_amount > 4) {
+    delete inst;
     return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
   }
 
@@ -508,6 +509,7 @@ arminst LOGICAL(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceN
   uint32_t n = extract32(aFetchedOpcode.theOpcode, 21, 1);
 
   if (!sf && (shift_amount & (1 << 5))) {
+    delete inst;
     return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
   }
 

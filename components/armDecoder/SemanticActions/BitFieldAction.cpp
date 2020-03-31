@@ -101,7 +101,7 @@ struct BitFieldAction : public PredicatedSemanticAction {
         uint64_t dst = boost::get<uint64_t>(theInstruction->operand(theOperandCode2));
 
         std::unique_ptr<Operation> ror = operation(kROR_);
-        std::vector<Operand> operands = {src, theR, uint64_t(the64)};
+        std::vector<Operand> operands = {src, theR, (the64 ? (uint64_t)64 : (uint64_t)32)};
         uint64_t res = boost::get<uint64_t>(ror->operator()(operands));
 
         // perform bitfield move on low bits
