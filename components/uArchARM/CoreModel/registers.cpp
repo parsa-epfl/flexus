@@ -150,8 +150,12 @@ std::pair<mapped_reg, mapped_reg> CoreImpl::create(reg aReg) {
   DBG_Assert(status != kUnmapped, (<< " aRegister=" << mapped.second << " status=" << status));
   // This assertion is extremely slow - 15% of total execution time.  Enable
   // at your own risk.
-  //  DBG_Assert( mapTable(aReg.theType).checkInvariants(), ( << "MapTable
-  //  Invariant check failed after freeing " << aReg ) );
+  /*
+  DBG_Assert(mapTable(aReg.theType).checkInvariants(),
+             (<< "MapTable Invariant check failed after creating new mapping for " << aReg
+              << ", new mapping: " << mapped.first << ", old mapping: " << mapped.second
+              << "MapTable: " << mapTable(aReg.theType)));
+  */
   return mapped;
 }
 
@@ -161,8 +165,11 @@ void CoreImpl::free(mapped_reg aReg) {
   unmapRegister(aReg);
   // This assertion is extremely slow - 15% of total execution time.  Enable
   // at your own risk.
-  // DBG_Assert( mapTable(aReg.theType).checkInvariants(), ( << "MapTable
-  // Invariant check failed after freeing " << aReg ) );
+  /*
+  DBG_Assert(mapTable(aReg.theType).checkInvariants(),
+             (<< "MapTable Invariant check failed after freeing " << aReg
+              << "MapTable: " << mapTable(aReg.theType)));
+  */
 }
 
 void CoreImpl::restore(reg aName, mapped_reg aReg) {
@@ -172,8 +179,11 @@ void CoreImpl::restore(reg aName, mapped_reg aReg) {
   mapTable(aName.theType).restore(name.theIndex, aReg.theIndex);
   // This assertion is extremely slow - 15% of total execution time.  Enable
   // at your own risk.
-  // DBG_Assert( mapTable(aReg.theType).checkInvariants(), ( << "MapTable
-  // Invariant check failed after freeing " << aReg ) );
+  /*
+  DBG_Assert(mapTable(aReg.theType).checkInvariants(),
+             (<< "MapTable Invariant check failed after restoring " << aReg
+              << "MapTable: " << mapTable(aReg.theType)));
+  */
 }
 
 void dec_mod8(uint32_t &anInt) {
