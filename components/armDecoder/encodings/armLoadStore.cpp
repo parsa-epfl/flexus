@@ -465,11 +465,17 @@ arminst LDP(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
   uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
   uint32_t scale = 2 + extract32(opc, 1, 1);
-  bool is_signed = (opc & 1) != 0;
+  /* Msutherl:
+   * Sections C6.2.117 and C6.2.118 distinguish between LDP and LDPSW by the following:
+   *    - all LDPs have opc = x0
+   *    - all LDPSW has opc = 01
+   */
+  bool is_signed = (opc & 0x1) == 0x1;
   uint32_t size = 8 << (scale + 1);
   eSize sz = dbSize(size);
 
-  if ((((opc & 1) == 1) && L == 0) || opc == 3) {
+  if ((((opc & 1) == 1) && L == 0) || opc == 3 || (is_signed && index == kNoOffset)) {
+    /* Msutherl: if signed, only valid encodings are preindex, postindex, imm-index */
     return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
   }
 

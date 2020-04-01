@@ -50,12 +50,14 @@
 #include <list>
 #include <vector>
 
-#include "RegisterType.hpp"
 #include <boost/iterator/counting_iterator.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <core/debug/debug.hpp>
+#include <core/performance/profile.hpp>
 
+#include "RegisterType.hpp"
+#include <components/uArchARM/uArchInterfaces.hpp>
 namespace ll = boost::lambda;
 
 namespace nuArchARM {
@@ -333,6 +335,8 @@ struct PhysicalMap {
     }
   }
 };
+
+std::ostream &operator<<(std::ostream &anOstream, PhysicalMap &aMap);
 
 } // namespace nuArchARM
 
