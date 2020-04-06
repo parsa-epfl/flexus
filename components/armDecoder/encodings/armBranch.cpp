@@ -139,6 +139,7 @@ arminst CMPBR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
   std::vector<std::list<InternalDependance>> rs_deps(1);
   branch_cond(inst, target, iszero ? kCBZ_ : kCBNZ_, rs_deps[0]);
   addReadXRegister(inst, 1, rt, rs_deps[0], sf);
+  inst->addPostvalidation(validatePC(inst));
 
   return inst;
 }
@@ -181,6 +182,7 @@ arminst TSTBR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
 
   readRegister(inst, 1, rt, rs_deps[0], sf);
   inst->setOperand(kCondition, uint64_t(1ULL << bit_pos));
+  inst->addPostvalidation(validatePC(inst));
 
   return inst;
 }
@@ -225,6 +227,7 @@ arminst CONDBR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo
     /* 0xe and 0xf are both "always" conditions */
     branch_always(inst, false, target);
   }
+  inst->addPostvalidation(validatePC(inst));
 
   return inst;
 }
@@ -314,6 +317,7 @@ arminst BLR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   }
 
   addReadXRegister(inst, 1, rn, rs_deps[0], true);
+  inst->addPostvalidation(validatePC(inst));
 
   return inst;
 }
