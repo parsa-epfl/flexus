@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #  DO-NOT-REMOVE begin-copyright-block
 # QFlex consists of several software components that are governed by various
 # licensing terms, in addition to software that was developed internally.
@@ -43,29 +45,37 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  DO-NOT-REMOVE end-copyright-block
 
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
 
-dist: bionic
-language: cpp
+set -x
+set -e
 
-addons:
-  apt:
-    packages:
-    - clang-format-6.0
-    - cmake
-    - libboost-all-dev  
+if [ ! -f ".clang-format" ]; then
+    echo ".clang-format file not found!"
+    exit 1
+fi
 
-matrix:
-  include:
-    - env:
-      - SIMULATOR="KeenKraken"
-    - env:
-      - SIMULATOR="KnottyKraken"
-    - env:
-      - LINT=true
+content=$(pwd)
+echo $content
 
-script:
-  - git clone https://github.com/parsa-epfl/libqflex.git ../libqflex
-  - if [ "$LINT" = true ];
-    then ${TRAVIS_BUILD_DIR}/tests/clang_format_test.sh;
-    else ${TRAVIS_BUILD_DIR}/tests/build_flexus.sh ${SIMULATOR};
-    fi
+cd ..
+cp -r $content test_format
+
+cd test_format
+find . -name "*.hpp" -or -name "*.cpp" -or -name "*.h" -or -name "*.c" | xargs clang-format -i -style=file
+
+cd ..
+compare_result=$(diff -uqrNa $content test_format)
+
+if [ -z $compare_result ]; then
+    echo -e "${GREEN}All source code in commit are properly formatted.${NC}"
+    rm -rf test_format
+    exit 0
+else
+    echo -e "${RED}Found formatting errors!${NC}"
+    echo $compare_result
+    rm -rf test_format
+    exit 1
+fi
