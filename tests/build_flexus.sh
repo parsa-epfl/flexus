@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #  DO-NOT-REMOVE begin-copyright-block
 # QFlex consists of several software components that are governed by various
 # licensing terms, in addition to software that was developed internally.
@@ -43,29 +45,25 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  DO-NOT-REMOVE end-copyright-block
 
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
 
-dist: bionic
-language: cpp
+set -x
+set -e
 
-addons:
-  apt:
-    packages:
-    - clang-format-6.0
-    - cmake
-    - libboost-all-dev  
+if [ ! -f "CMakeLists.txt" ]; then
+    echo "CMakeLists.txt file not found!"
+    exit 1
+fi
 
-matrix:
-  include:
-    - env:
-      - SIMULATOR="KeenKraken"
-    - env:
-      - SIMULATOR="KnottyKraken"
-    - env:
-      - LINT=true
+if [ -z $1 ]; then
+    cmake .
+else
+    cmake -DSIMULATOR=$1 . 
+fi
 
-script:
-  - git clone https://github.com/parsa-epfl/libqflex.git ../libqflex
-  - if [ "$LINT" = true ];
-    then ${TRAVIS_BUILD_DIR}/tests/clang_format_test.sh;
-    else ${TRAVIS_BUILD_DIR}/tests/build_flexus.sh ${SIMULATOR};
-    fi
+JOBS=$(($(getconf _NPROCESSORS_ONLN) + 1))
+echo "=== Using ${JOBS} simultaneous jobs ==="
+
+make -j${JOBS}
