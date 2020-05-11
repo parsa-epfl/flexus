@@ -808,19 +808,18 @@ public:
         decrement(dest);
       }
       replace(pos.m_it, item);
-      BOOST_CB_UNWIND(
-          if (dest == m_last) {
-            if (full()) {
-              increment(m_first);
-              --m_size;
-            }
-          } else {
-            if (!full()) {
-              increment(m_last);
-              ++m_size;
-            }
-            tidy(dest);
-          })
+      BOOST_CB_UNWIND(if (dest == m_last) {
+        if (full()) {
+          increment(m_first);
+          --m_size;
+        }
+      } else {
+        if (!full()) {
+          increment(m_last);
+          ++m_size;
+        }
+        tidy(dest);
+      })
     }
     increment(m_last);
     if (full())
@@ -939,19 +938,18 @@ public:
         increment(dest);
       }
       replace((--pos).m_it, item);
-      BOOST_CB_UNWIND(
-          if (dest == first) {
-            if (full()) {
-              decrement(m_last);
-              --m_size;
-            }
-          } else {
-            if (!full()) {
-              m_first = first;
-              ++m_size;
-            }
-            tidy(dest);
-          })
+      BOOST_CB_UNWIND(if (dest == first) {
+        if (full()) {
+          decrement(m_last);
+          --m_size;
+        }
+      } else {
+        if (!full()) {
+          m_first = first;
+          ++m_size;
+        }
+        tidy(dest);
+      })
       decrement(m_first);
     }
     if (full())
