@@ -178,14 +178,14 @@ public:
       widthPrintout = false;
     }
 
-    theProtocol = GenerateCoherenceProtocol(
-        cfg.Protocol, cfg.UsingTraces,
-        [this](MemoryMessage &msg) { return this->forwardMessage(msg); },
-        [this](MemoryMessage &msg) { return this->continueSnoop(msg); },
-        [this](uint64_t addr, bool icache, bool dcache) {
-          return this->sendInvalidate(addr, icache, dcache);
-        },
-        cfg.DowngradeLRU, cfg.SnoopLRU);
+    theProtocol =
+        GenerateCoherenceProtocol(cfg.Protocol, cfg.UsingTraces,
+                                  [this](MemoryMessage &msg) { return this->forwardMessage(msg); },
+                                  [this](MemoryMessage &msg) { return this->continueSnoop(msg); },
+                                  [this](uint64_t addr, bool icache, bool dcache) {
+                                    return this->sendInvalidate(addr, icache, dcache);
+                                  },
+                                  cfg.DowngradeLRU, cfg.SnoopLRU);
     theStats = new CacheStats(statName());
     theIndex = flexusIndex();
 
@@ -207,15 +207,14 @@ public:
     theBlockMask = ~(cfg.BlockSize - 1);
 
     if (cfg.StdArray) {
-      theCache = new StdCache(
-          statName(), cfg.BlockSize, num_sets, cfg.Associativity,
-          [this](uint64_t aTagset, CoherenceState_t aLineState) {
-            return this->evict(aTagset, aLineState);
-          },
-          [this](uint64_t addr, bool icache, bool dcache) {
-            return this->sendInvalidate(addr, icache, dcache);
-          },
-          theIndex, cfg.CacheLevel, cfg.RTReplPolicy, cfg.TextFlexpoints);
+      theCache = new StdCache(statName(), cfg.BlockSize, num_sets, cfg.Associativity,
+                              [this](uint64_t aTagset, CoherenceState_t aLineState) {
+                                return this->evict(aTagset, aLineState);
+                              },
+                              [this](uint64_t addr, bool icache, bool dcache) {
+                                return this->sendInvalidate(addr, icache, dcache);
+                              },
+                              theIndex, cfg.CacheLevel, cfg.RTReplPolicy, cfg.TextFlexpoints);
     } else {
       theCache = new RTCache(
           cfg.BlockSize, num_sets, cfg.Associativity,

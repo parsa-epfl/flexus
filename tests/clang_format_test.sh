@@ -64,7 +64,7 @@ cd ..
 cp -r $content test_format
 
 cd test_format
-find . -name "*.hpp" -or -name "*.cpp" -or -name "*.h" -or -name "*.c" | xargs clang-format -i -style=file
+find . -type f -and \( -name "*.hpp" -or -name "*.cpp" -or -name "*.h" -or -name "*.c" \) | xargs clang-format -i -style=file
 
 cd ..
 compare_result=$(diff -uqrNa $content test_format)
