@@ -325,15 +325,14 @@ public:
     theIndex = flexusIndex();
 
     if (cfg.StdArray) {
-      theCache = new StdCache(
-          statName(), cfg.BlockSize, num_sets, cfg.Associativity,
-          [this](uint64_t aTagset, CoherenceState_t aLineState) {
-            return this->evict(aTagset, aLineState);
-          },
-          [this](uint64_t addr, bool icache, bool dcache) {
-            return this->sendInvalidate(addr, icache, dcache);
-          },
-          theIndex, cfg.CacheLevel, cfg.ReplPolicy);
+      theCache = new StdCache(statName(), cfg.BlockSize, num_sets, cfg.Associativity,
+                              [this](uint64_t aTagset, CoherenceState_t aLineState) {
+                                return this->evict(aTagset, aLineState);
+                              },
+                              [this](uint64_t addr, bool icache, bool dcache) {
+                                return this->sendInvalidate(addr, icache, dcache);
+                              },
+                              theIndex, cfg.CacheLevel, cfg.ReplPolicy);
     } else {
       theCache = new RTCache(
           statName(), cfg.BlockSize, num_sets, cfg.Associativity,
