@@ -125,7 +125,8 @@ private:
     }
 
     TLBentry &operator=(const PhysicalMemoryAddress &other) {
-      thePaddr = other;
+      PhysicalMemoryAddress otherAligned(other & PAGEMASK);
+      thePaddr = otherAligned;
       return *this;
     }
   };
@@ -140,10 +141,11 @@ private:
     }
 
     std::pair<bool, PhysicalMemoryAddress> lookUp(const VirtualMemoryAddress &anAddress) {
+      VirtualMemoryAddress anAddressAligned(anAddress & PAGEMASK);
       std::pair<bool, PhysicalMemoryAddress> ret{false, PhysicalMemoryAddress(0)};
       for (auto iter = theTLB.begin(); iter != theTLB.end(); ++iter) {
         iter->second.theRate++;
-        if (iter->second.theVaddr == anAddress) {
+        if (iter->second.theVaddr == anAddressAligned) {
           iter->second.theRate = 0;
           ret.first = true;
           ret.second = iter->second.thePaddr;
@@ -153,14 +155,15 @@ private:
     }
 
     TLBentry &operator[](VirtualMemoryAddress anAddress) {
-      auto iter = theTLB.find(anAddress);
+      VirtualMemoryAddress anAddressAligned(anAddress & PAGEMASK);
+      auto iter = theTLB.find(anAddressAligned);
       if (iter == theTLB.end()) {
         size_t s = theTLB.size();
         if (s == theSize) {
           evict();
         }
         std::pair<tlbIterator, bool> result;
-        result = theTLB.insert({anAddress, TLBentry(anAddress)});
+        result = theTLB.insert({anAddressAligned, TLBentry(anAddressAligned)});
         assert(result.second);
         iter = result.first;
       }
@@ -282,7 +285,7 @@ public:
 
       std::pair<bool, PhysicalMemoryAddress> entry =
           (item->isInstr() ? theInstrTLB : theDataTLB)
-              .lookUp((VirtualMemoryAddress)(item->theVaddr & PAGEMASK));
+              .lookUp((VirtualMemoryAddress)(item->theVaddr));
       if (cfg.PerfectTLB) {
         PhysicalMemoryAddress perfectPaddr(Qemu::API::QEMU_logical_to_physical(
             *Flexus::Qemu::Processor::getProcessor(flexusIndex()),
@@ -362,9 +365,8 @@ public:
         DBG_Assert(item->isInstr() != item->isData());
         DBG_(Iface, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry "
                      << item->theVaddr));
-        (item->isInstr() ? theInstrTLB
-                         : theDataTLB)[(VirtualMemoryAddress)(item->theVaddr & PAGEMASK)] =
-            (PhysicalMemoryAddress)(item->thePaddr & PAGEMASK);
+        (item->isInstr() ? theInstrTLB : theDataTLB)[(VirtualMemoryAddress)(item->theVaddr)] =
+            (PhysicalMemoryAddress)(item->thePaddr);
         if (item->isInstr())
           FLEXUS_CHANNEL(iTranslationReply) << item;
         else
