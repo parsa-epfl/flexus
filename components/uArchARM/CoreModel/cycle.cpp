@@ -1089,8 +1089,9 @@ void CoreImpl::markExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize, uint
     // theLocalExclusiveVirtualMonitor.cend(); ++it){
     //     DBG_(Dev, ( << "theLocalExclusiveVirtualMonitor " << it->first << " " << it->second));
     // }
-    DBG_Assert(false, (<< "Only one local exclusive tag per core is allowed " << anAddress << ", "
-                       << marker));
+    DBG_(Dev, (<< "Only one local exclusive tag allowed per core, clearing original! " << anAddress
+               << ", " << marker));
+    clearExclusiveLocal();
   }
   theLocalExclusiveVirtualMonitor[anAddress] = (marker << 8) | aSize;
 }
@@ -1105,8 +1106,9 @@ void CoreImpl::markExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize, 
     // theLocalExclusivePhysicalMonitor.cend(); ++it){
     //     DBG_(Dev, ( << "theLocalExclusivePhysicalMonitor " << it->first << " " << it->second));
     // }
-    DBG_Assert(false, (<< "Only one local exclusive tag per core is allowed " << anAddress << ", "
-                       << marker));
+    DBG_(Dev, (<< "Only one local exclusive tag allowed per core, clearing original! " << anAddress
+               << ", " << marker));
+    clearExclusiveLocal();
   }
   theLocalExclusivePhysicalMonitor[anAddress] = (marker << 8) | aSize;
 }
@@ -1131,6 +1133,10 @@ int CoreImpl::isExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize) {
   if (theLocalExclusiveVirtualMonitor.find(anAddress) == theLocalExclusiveVirtualMonitor.end())
     return kMonitorDoesntExist;
   return int(theLocalExclusiveVirtualMonitor[anAddress] >> 8);
+}
+
+bool CoreImpl::isROBHead(boost::intrusive_ptr<Instruction> anInstruction) {
+  return (anInstruction == theROB.front());
 }
 
 void CoreImpl::commitStore(boost::intrusive_ptr<Instruction> anInsn) {

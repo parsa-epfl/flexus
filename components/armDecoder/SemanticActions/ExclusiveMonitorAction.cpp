@@ -96,13 +96,12 @@ struct ExclusiveMonitorAction : public PredicatedSemanticAction {
 
     // passed &= core()->isExclusiveGlobal(pAddress, theSize);
     // passed &= core()->isExclusiveVA(VirtualMemoryAddress(addr), theSize);
-    int passed = core()->isExclusiveLocal(pAddress, theSize);
-    if (passed == kMonitorDoesntExist) {
-      DBG_(VVerb, (<< "Recheduling: Exclusive Monitor resulted in " << passed << " for address "
-                   << pAddress << ", " << *theInstruction));
-      setReady(0, false);
-      satisfy(0);
-    } else {
+    if (core()->isROBHead(theInstruction)) {
+      int passed = core()->isExclusiveLocal(pAddress, theSize);
+      if (passed == kMonitorDoesntExist) {
+        DBG_(Dev, (<< "ExclusiveMonitorAction resulted in kMonitorDoesntExist!"));
+        passed = kMonitorUnset;
+      }
       core()->markExclusiveLocal(pAddress, theSize, kMonitorDoesntExist);
       theInstruction->setOperand(kResult, (uint64_t)passed);
       DBG_(Iface, (<< "Exclusive Monitor resulted in " << passed << " for address " << pAddress
@@ -113,6 +112,11 @@ struct ExclusiveMonitorAction : public PredicatedSemanticAction {
         core()->bypass(name, (uint64_t)passed);
       }
       satisfyDependants();
+    } else {
+      DBG_(VVerb, (<< "Recheduling Exclusive Monitor for address " << pAddress << ", "
+                   << *theInstruction));
+      setReady(0, false);
+      satisfy(0);
     }
   }
 

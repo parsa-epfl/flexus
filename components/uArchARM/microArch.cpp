@@ -267,6 +267,10 @@ public:
     return theCore->clearExclusiveLocal();
   }
 
+  bool isROBHead(boost::intrusive_ptr<Instruction> anInstruction) {
+    return theCore->isROBHead(anInstruction);
+  }
+
   boost::intrusive_ptr<MemOp> popSnoopOp() {
     return theCore->popSnoopOp();
   }
