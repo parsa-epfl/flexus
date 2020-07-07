@@ -1097,6 +1097,10 @@ struct uArchARM {
     DBG_Assert(false);
     return false;
   }
+  virtual bool isROBHead(boost::intrusive_ptr<Instruction> anInstruction) {
+    DBG_Assert(false);
+    return false;
+  }
 
   /* Msutherl: API to read system register encoding and system register value */
   virtual uint64_t readUnhashedSysReg(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn,
