@@ -963,22 +963,23 @@ struct CheckSystemAccess : public Effect {
       // or operation will be performed in System_Put(), System_Get(), SysOp_W(), or SysOp_R().
       /* 64 bit registers have only CRm and Opc1 fields */
 
-      SysRegInfo &ri = anInstruction.core()->getSysRegInfo(theOp0, theOp1, theOp2, theCRn, theCRm);
+      std::unique_ptr<SysRegInfo> ri = getPriv(theOp0, theOp1, theOp2, theCRn, theCRm);
+      ri->setSystemRegisterEncodingValues(theOp0, theOp1, theOp2, theCRn, theCRm);
 
-      DBG_Assert(!((ri.type & kARM_64BIT) && (ri.opc2 || ri.crn)));
+      DBG_Assert(!((ri->type & kARM_64BIT) && (ri->opc2 || ri->crn)));
       /* op0 only exists in the AArch64 encodings */
-      DBG_Assert((ri.state != kARM_STATE_AA32) || (ri.opc0 == 0));
+      DBG_Assert((ri->state != kARM_STATE_AA32) || (ri->opc0 == 0));
       /* AArch64 regs are all 64 bit so ARM_CP_64BIT is meaningless */
-      DBG_Assert((ri.state != kARM_STATE_AA64) || !(ri.type & kARM_64BIT));
+      DBG_Assert((ri->state != kARM_STATE_AA64) || !(ri->type & kARM_64BIT));
       /* The AArch64 pseudocode CheckSystemAccess() specifies that op1
        * encodes a minimum access level for the register. We roll this
        * runtime check into our general permission check code, so check
        * here that the reginfo's specified permissions are strict enough
        * to encompass the generic architectural permission check.
        */
-      if (ri.state != kARM_STATE_AA32) {
+      if (ri->state != kARM_STATE_AA32) {
         int mask = 0;
-        switch (ri.opc1) {
+        switch (ri->opc1) {
         case 0:
         case 1:
         case 2:
@@ -1011,10 +1012,10 @@ struct CheckSystemAccess : public Effect {
           break;
         }
         /* assert our permissions are not too lax (stricter is fine) */
-        DBG_Assert((ri.access & ~mask) == 0);
+        DBG_Assert((ri->access & ~mask) == 0);
 
         // Check for traps on access to all other system registers
-        if (ri.accessfn(anInstruction.core()) != kACCESS_OK) {
+        if (ri->accessfn(anInstruction.core()) != kACCESS_OK) {
           anInstruction.setWillRaise(kException_SYSTEMREGISTERTRAP);
           anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction>(&anInstruction),
                                          anInstruction.willRaise());
@@ -1066,23 +1067,24 @@ Effect *checkDAIFAccess(SemanticInstruction *inst, uint8_t anOp1) {
 
 struct ReadPREffect : public Effect {
   ePrivRegs thePR;
-  ReadPREffect(ePrivRegs aPR) : thePR(aPR) {
+  std::unique_ptr<SysRegInfo> ri;
+
+  ReadPREffect(ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRi) : thePR(aPR), ri(std::move(anRi)) {
   }
 
   void invoke(SemanticInstruction &anInstruction) {
     FLEXUS_PROFILE();
     if (!anInstruction.isAnnulled()) {
-      uint64_t pr = anInstruction.core()->readPR(thePR);
+      // uint64_t pr = anInstruction.core()->readPR(thePR);
       mapped_reg name = anInstruction.operand<mapped_reg>(kPD);
-      SysRegInfo &ri = getPriv(thePR);
-      DBG_(Iface,
-           (<< anInstruction << " Read " << ri.name << " value= " << std::hex << pr << std::dec));
+      uint64_t prVal = ri->readfn(anInstruction.core());
+      DBG_(Iface, (<< anInstruction << " Read " << ri->name << " value= " << std::hex << prVal
+                   << std::dec));
 
-      uint64_t prVal = ri.readfn(anInstruction.core());
       anInstruction.setOperand(kResult, prVal);
 
-      anInstruction.core()->writeRegister(name, pr);
-      anInstruction.core()->bypass(name, pr);
+      anInstruction.core()->writeRegister(name, prVal);
+      anInstruction.core()->bypass(name, prVal);
     } else {
       // ReadPR was annulled.  Copy PPD to PD
       mapped_reg dest = anInstruction.operand<mapped_reg>(kPD);
@@ -1100,31 +1102,31 @@ struct ReadPREffect : public Effect {
   }
 };
 
-Effect *readPR(SemanticInstruction *inst, ePrivRegs aPR) {
-  ReadPREffect *e = new ReadPREffect(aPR);
+Effect *readPR(SemanticInstruction *inst, ePrivRegs aPR, std::unique_ptr<SysRegInfo> ri) {
+  ReadPREffect *e = new ReadPREffect(aPR, std::move(ri));
   inst->addNewComponent(e);
   return e;
 }
 
 struct WritePREffect : public Effect {
   ePrivRegs thePR;
-  WritePREffect(ePrivRegs aPR) : thePR(aPR) {
+  std::unique_ptr<SysRegInfo> ri;
+  WritePREffect(ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRI) : thePR(aPR), ri(std::move(anRI)) {
   }
 
   void invoke(SemanticInstruction &anInstruction) {
     FLEXUS_PROFILE();
     if (!anInstruction.isAnnulled()) {
       uint64_t rs = 0;
-      SysRegInfo &ri = getPriv(thePR);
       if (anInstruction.hasOperand(kResult)) {
         rs = anInstruction.operand<uint64_t>(kResult);
       } else if (anInstruction.hasOperand(kResult1)) {
         rs = anInstruction.operand<uint64_t>(kResult1);
       }
       DBG_(Iface,
-           (<< anInstruction << " Write " << ri.name << " value= " << std::hex << rs << std::dec));
+           (<< anInstruction << " Write " << ri->name << " value= " << std::hex << rs << std::dec));
 
-      ri.writefn(anInstruction.core(), (uint64_t)rs);
+      ri->writefn(anInstruction.core(), (uint64_t)rs);
     }
     Effect::invoke(anInstruction);
   }
@@ -1135,8 +1137,8 @@ struct WritePREffect : public Effect {
   }
 };
 
-Effect *writePR(SemanticInstruction *inst, ePrivRegs aPR) {
-  WritePREffect *e = new WritePREffect(aPR);
+Effect *writePR(SemanticInstruction *inst, ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRI) {
+  WritePREffect *e = new WritePREffect(aPR, std::move(anRI));
   inst->addNewComponent(e);
   return e;
 }
@@ -1160,8 +1162,8 @@ struct WritePSTATE : public Effect {
         break;
       case 0x5: // sp
       {
-        SysRegInfo &ri = getPriv(kSPSel);
-        ri.writefn(anInstruction.core(), (uint64_t)(val & 1));
+        std::unique_ptr<SysRegInfo> ri = getPriv(kSPSel);
+        ri->writefn(anInstruction.core(), (uint64_t)(val & 1));
         break;
       }
       case 0x1e: // daif set
@@ -1199,7 +1201,7 @@ struct WriteNZCV : public Effect {
   void invoke(SemanticInstruction &anInstruction) {
     FLEXUS_PROFILE();
     if (!anInstruction.isAnnulled()) {
-      SysRegInfo &ri = getPriv(kNZCV);
+      std::unique_ptr<SysRegInfo> ri = getPriv(kNZCV);
 
       uint64_t res = anInstruction.operand<uint64_t>(kResult);
       uint64_t val = 0;
@@ -1207,7 +1209,7 @@ struct WriteNZCV : public Effect {
       if (res == 0)
         val |= PSTATE_Z;
 
-      ri.writefn(anInstruction.core(), (uint64_t)val);
+      ri->writefn(anInstruction.core(), (uint64_t)val);
     }
     Effect::invoke(anInstruction);
   }

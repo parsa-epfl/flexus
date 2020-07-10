@@ -48,23 +48,25 @@
 #include <functional>
 #include <iostream>
 #include <string>
+#include <core/MakeUniqueWrapper.hpp>
 
 namespace nuArchARM {
 
 /* Minimal set of EL0-visible registers. This will need to be expanded
  * significantly for system emulation of AArch64 CPUs.
  */
-struct NZCV : public SysRegInfo {
+class NZCV_ : public SysRegInfo {
+public:
   std::string name = "NZCV";
-  eRegExecutionState state = kARM_STATE_AA64;
-  uint8_t opc0 = 3;
-  uint8_t opc1 = 3;
-  uint8_t opc2 = 0;
-  uint8_t crn = 4;
-  uint8_t crm = 2;
-  eAccessRight access = kPL0_RW;
-  eRegInfo type = kARM_NZCV;
-  uint64_t resetvalue = -1;
+  static const eRegExecutionState state = kARM_STATE_AA64;
+  static const uint8_t opc0 = 3;
+  static const uint8_t opc1 = 3;
+  static const uint8_t opc2 = 0;
+  static const uint8_t crn = 4;
+  static const uint8_t crm = 2;
+  static const eAccessRight access = kPL0_RW;
+  static const eRegInfo type = kARM_NZCV;
+  static const uint64_t resetvalue = -1;
   virtual void writefn(uArchARM *aCore, uint64_t aVal) override {
     std::bitset<8> a(aCore->_PSTATE().d());
     std::bitset<8> b(aVal);
@@ -77,24 +79,30 @@ struct NZCV : public SysRegInfo {
   virtual uint64_t readfn(uArchARM *aCore) override {
     return aCore->_PSTATE().NZCV();
   }
-} NZCV_;
 
-struct DAIF : public SysRegInfo {
+  NZCV_()
+      : SysRegInfo("NZCV_", NZCV_::state, NZCV_::type, NZCV_::opc0, NZCV_::opc1, NZCV_::opc2,
+                   NZCV_::crn, NZCV_::crm, NZCV_::access) {
+  }
+};
+
+class DAIF_ : public SysRegInfo {
+public:
   std::string name = "DAIF";
-  eRegExecutionState state = kARM_STATE_AA64;
-  uint8_t opc0 = 3;
-  uint8_t opc1 = 3;
-  uint8_t opc2 = 1;
-  uint8_t crn = 4;
-  uint8_t crm = 2;
-  eAccessRight access = kPL0_RW;
-  eRegInfo type = kARM_NO_RAW;
+  static const eRegExecutionState state = kARM_STATE_AA64;
+  static const uint8_t opc0 = 3;
+  static const uint8_t opc1 = 3;
+  static const uint8_t opc2 = 1;
+  static const uint8_t crn = 4;
+  static const uint8_t crm = 2;
+  static const eAccessRight access = kPL0_RW;
+  static const eRegInfo type = kARM_NO_RAW;
   uint64_t resetvalue = -1;
 
   virtual eAccessResult accessfn(uArchARM *aCore) {
-    DBG_Assert(false);
-    return kACCESS_TRAP;
-  } // FIXME /*aa64_daif_access*/
+    return kACCESS_OK; // access OK since we assume the access right is EL0_RW
+  }
+
   virtual void writefn(uArchARM *aCore, uint64_t aVal) override {
     aCore->setDAIF(aVal);
   } // FIXME
@@ -104,18 +112,23 @@ struct DAIF : public SysRegInfo {
   virtual uint64_t readfn(uArchARM *aCore) override {
     return aCore->_PSTATE().DAIF();
   }
-} DAIF_;
+  DAIF_()
+      : SysRegInfo("DAIF_", DAIF_::state, DAIF_::type, DAIF_::opc0, DAIF_::opc1, DAIF_::opc2,
+                   DAIF_::crn, DAIF_::crm, DAIF_::access) {
+  }
+};
 
-struct TPIDR_EL0 : public SysRegInfo {
+class TPIDR_EL0_ : public SysRegInfo {
+public:
   std::string name = "TPIDR_EL0";
-  eRegExecutionState state = kARM_STATE_AA64;
-  uint8_t opc0 = 3;
-  uint8_t opc1 = 3;
-  uint8_t opc2 = 2;
-  uint8_t crn = 13;
-  uint8_t crm = 0;
-  eAccessRight access = kPL0_RW;
-  eRegInfo type = kARM_NO_RAW;
+  static const eRegExecutionState state = kARM_STATE_AA64;
+  static const uint8_t opc0 = 3;
+  static const uint8_t opc1 = 3;
+  static const uint8_t opc2 = 2;
+  static const uint8_t crn = 13;
+  static const uint8_t crm = 0;
+  static const eAccessRight access = kPL0_RW;
+  static const eRegInfo type = kARM_NO_RAW;
   uint64_t resetvalue = -1;
 
   virtual eAccessResult accessfn(uArchARM *aCore) {
@@ -131,19 +144,25 @@ struct TPIDR_EL0 : public SysRegInfo {
   virtual uint64_t readfn(uArchARM *aCore) override {
     return aCore->getTPIDR(0);
   }
-} TPIDR_EL0_;
+  TPIDR_EL0_()
+      : SysRegInfo("TPIDR_EL0_", TPIDR_EL0_::state, TPIDR_EL0_::type, TPIDR_EL0_::opc0,
+                   TPIDR_EL0_::opc1, TPIDR_EL0_::opc2, TPIDR_EL0_::crn, TPIDR_EL0_::crm,
+                   TPIDR_EL0_::access) {
+  }
+};
 
-struct FPCR : public SysRegInfo {
+class FPCR_ : public SysRegInfo {
+public:
   std::string name = "FPCR";
-  eRegExecutionState state = kARM_STATE_AA64;
+  static const eRegExecutionState state = kARM_STATE_AA64;
   // MARK: Edited to match ARM v8-A ISA Manual, page C5-374 (Section 5.2.7)
-  uint8_t opc0 = 3;
-  uint8_t opc1 = 3;
-  uint8_t opc2 = 0;
-  uint8_t crn = 4;
-  uint8_t crm = 4;
-  eAccessRight access = kPL0_RW;
-  eRegInfo type;
+  static const uint8_t opc0 = 3;
+  static const uint8_t opc1 = 3;
+  static const uint8_t opc2 = 0;
+  static const uint8_t crn = 4;
+  static const uint8_t crm = 4;
+  static const eAccessRight access = kPL0_RW;
+  static const eRegInfo type = kARM_SPECIAL;
   uint64_t resetvalue = -1;
 
   /* Override for accessfn(). FPSR can be accessed as RW from EL0 and EL1 */
@@ -159,19 +178,24 @@ struct FPCR : public SysRegInfo {
   virtual void writefn(uArchARM *aCore, uint64_t aVal) override {
     aCore->setFPCR(aVal);
   } // /*aa64_fpcr_write*/
-} FPCR_;
+  FPCR_()
+      : SysRegInfo("FPCR_", FPCR_::state, FPCR_::type, FPCR_::opc0, FPCR_::opc1, FPCR_::opc2,
+                   FPCR_::crn, FPCR_::crm, FPCR_::access) {
+  }
+};
 
-struct FPSR : public SysRegInfo {
+class FPSR_ : public SysRegInfo {
+public:
   std::string name = "FPSR";
-  eRegExecutionState state = kARM_STATE_AA64;
+  static const eRegExecutionState state = kARM_STATE_AA64;
   // MARK: Edited to match ARM v8-A ISA Manual, page C5-378 (Section 5.2.8)
-  uint8_t opc0 = 3;
-  uint8_t opc1 = 3;
-  uint8_t opc2 = 1;
-  uint8_t crn = 4;
-  uint8_t crm = 4;
-  eAccessRight access = kPL0_RW;
-  eRegInfo type;
+  static const uint8_t opc0 = 3;
+  static const uint8_t opc1 = 3;
+  static const uint8_t opc2 = 1;
+  static const uint8_t crn = 4;
+  static const uint8_t crm = 4;
+  static const eAccessRight access = kPL0_RW;
+  static const eRegInfo type = kARM_SPECIAL;
   uint64_t resetvalue = -1; // architecturally undefined as per manual
 
   /* Override for accessfn(). FPSR can be accessed as RW from EL0 and EL1 */
@@ -187,99 +211,132 @@ struct FPSR : public SysRegInfo {
   virtual void writefn(uArchARM *aCore, uint64_t aVal) override {
     aCore->setFPSR(aVal);
   } /*aa64_fpsr_write*/
-} FPSR_;
+  FPSR_()
+      : SysRegInfo("FPSR_", FPSR_::state, FPSR_::type, FPSR_::opc0, FPSR_::opc1, FPSR_::opc2,
+                   FPSR_::crn, FPSR_::crm, FPSR_::access) {
+  }
+};
 
-struct DCZID_EL0 : public SysRegInfo {
+class DCZID_EL0_ : public SysRegInfo {
+public:
   std::string name = "DCZID_EL0";
-  eRegExecutionState state;
-  uint8_t opc0 = 3;
-  uint8_t opc1 = 3;
-  uint8_t opc2 = 7;
-  uint8_t crn = 0;
-  uint8_t crm = 0;
-  eAccessRight access = kPL0_R;
-  eRegInfo type = kARM_NO_RAW;
+  static const eRegExecutionState state = kARM_STATE_AA64; // FIXME: confirm this
+  static const uint8_t opc0 = 3;
+  static const uint8_t opc1 = 3;
+  static const uint8_t opc2 = 7;
+  static const uint8_t crn = 0;
+  static const uint8_t crm = 0;
+  static const eAccessRight access = kPL0_R;
+  static const eRegInfo type = kARM_NO_RAW;
   uint64_t resetvalue = -1;
 
   virtual uint64_t readfn(uArchARM *aCore) override {
     return aCore->readDCZID_EL0();
   }
-} DCZID_EL0_;
+  DCZID_EL0_()
+      : SysRegInfo("DCZID_EL0_", DCZID_EL0_::state, DCZID_EL0_::type, DCZID_EL0_::opc0,
+                   DCZID_EL0_::opc1, DCZID_EL0_::opc2, DCZID_EL0_::crn, DCZID_EL0_::crm,
+                   DCZID_EL0_::access) {
+  }
+};
 
-struct DC_ZVA : public SysRegInfo {
+class DC_ZVA_ : public SysRegInfo {
+public:
   std::string name = "DC_ZVA";
-  eRegExecutionState state;
-  uint8_t opc0 = 1;
-  uint8_t opc1 = 3;
-  uint8_t opc2 = 1;
-  uint8_t crn = 7;
-  uint8_t crm = 4;
-  eAccessRight access = kPL0_W;
-  eRegInfo type = kARM_DC_ZVA;
+  static const eRegExecutionState state = kARM_STATE_AA64; // FIXME: confirm this
+  static const uint8_t opc0 = 1;
+  static const uint8_t opc1 = 3;
+  static const uint8_t opc2 = 1;
+  static const uint8_t crn = 7;
+  static const uint8_t crm = 4;
+  static const eAccessRight access = kPL0_W;
+  static const eRegInfo type = kARM_DC_ZVA;
   uint64_t resetvalue = -1;
   virtual eAccessResult accessfn(uArchARM *aCore) override {
     return aCore->accessZVA();
   }
-} DC_ZVA_;
+  DC_ZVA_()
+      : SysRegInfo("DC_ZVA_", DC_ZVA_::state, DC_ZVA_::type, DC_ZVA_::opc0, DC_ZVA_::opc1,
+                   DC_ZVA_::opc2, DC_ZVA_::crn, DC_ZVA_::crm, DC_ZVA_::access) {
+  }
+};
 
-struct CURRENT_EL : public SysRegInfo {
+class CURRENT_EL_ : public SysRegInfo {
+public:
   std::string name = "CURRENT_EL";
-  eRegExecutionState state = kARM_STATE_AA64;
-  uint8_t opc0 = 3;
-  uint8_t opc1 = 0;
-  uint8_t opc2 = 2;
-  uint8_t crn = 4;
-  uint8_t crm = 2;
-  eAccessRight access = kPL1_R;
-  eRegInfo type = kARM_CURRENTEL;
+  static const eRegExecutionState state = kARM_STATE_AA64;
+  static const uint8_t opc0 = 3;
+  static const uint8_t opc1 = 0;
+  static const uint8_t opc2 = 2;
+  static const uint8_t crn = 4;
+  static const uint8_t crm = 2;
+  static const eAccessRight access = kPL1_R;
+  static const eRegInfo type = kARM_CURRENTEL;
   uint64_t resetvalue = -1;
 
-} CURRENT_EL_;
+  CURRENT_EL_()
+      : SysRegInfo("CURRENT_EL_", CURRENT_EL_::state, CURRENT_EL_::type, CURRENT_EL_::opc0,
+                   CURRENT_EL_::opc1, CURRENT_EL_::opc2, CURRENT_EL_::crn, CURRENT_EL_::crm,
+                   CURRENT_EL_::access) {
+  }
+};
 
-struct ELR_EL1 : public SysRegInfo {
-  std::string name = "ELR_EL1";
-  eRegExecutionState state = kARM_STATE_AA64;
-  uint8_t opc0 = 3;
-  uint8_t opc1 = 0;
-  uint8_t opc2 = 1;
-  uint8_t crn = 4;
-  uint8_t crm = 0;
-  eAccessRight access = kPL1_RW;
-  eRegInfo type = kARM_ALIAS;
+class ELR_EL1_ : public SysRegInfo {
+public:
+  static const eRegExecutionState state = kARM_STATE_AA64;
+  static const uint8_t opc0 = 3;
+  static const uint8_t opc1 = 0;
+  static const uint8_t opc2 = 1;
+  static const uint8_t crn = 4;
+  static const uint8_t crm = 0;
+  static const eAccessRight access = kPL1_RW;
+  static const eRegInfo type = kARM_ALIAS;
+
+  ELR_EL1_()
+      : SysRegInfo("ELR_EL1", ELR_EL1_::state, ELR_EL1_::type, ELR_EL1_::opc0, ELR_EL1_::opc1,
+                   ELR_EL1_::opc2, ELR_EL1_::crn, ELR_EL1_::crm, ELR_EL1_::access) {
+  }
+};
+
+class SPSR_EL1_ : public SysRegInfo {
+public:
+  static const eRegExecutionState state = kARM_STATE_AA64;
+  static const uint8_t opc0 = 3;
+  static const uint8_t opc1 = 0;
+  static const uint8_t opc2 = 0;
+  static const uint8_t crn = 4;
+  static const uint8_t crm = 0;
+  static const eAccessRight access = kPL1_RW;
+  static const eRegInfo type = kARM_ALIAS;
   uint64_t resetvalue = -1;
-} ELR_EL1_;
 
-struct SPSR_EL1 : public SysRegInfo {
-  std::string name = "SPSR_EL1";
-  eRegExecutionState state = kARM_STATE_AA64;
-  uint8_t opc0 = 3;
-  uint8_t opc1 = 0;
-  uint8_t opc2 = 0;
-  uint8_t crn = 4;
-  uint8_t crm = 0;
-  eAccessRight access = kPL1_RW;
-  eRegInfo type = kARM_ALIAS;
-  uint64_t resetvalue = -1;
-
+  /*
   virtual uint64_t readfn(uArchARM *aCore) override {
     return aCore->getSP_el(1);
   }
-} SPSR_EL1_;
+  */
+
+  SPSR_EL1_()
+      : SysRegInfo("SPSR_EL1", SPSR_EL1_::state, SPSR_EL1_::type, SPSR_EL1_::opc0, SPSR_EL1_::opc1,
+                   SPSR_EL1_::opc2, SPSR_EL1_::crn, SPSR_EL1_::crm, SPSR_EL1_::access) {
+  }
+};
 
 /* We rely on the access checks not allowing the guest to write to the
  * state field when SPSel indicates that it's being used as the stack
  * pointer.
  */
-struct SP_EL0 : public SysRegInfo {
+class SP_EL0_ : public SysRegInfo {
+public:
   std::string name = "SP_EL0";
-  eRegExecutionState state = kARM_STATE_AA64;
-  uint8_t opc0 = 3;
-  uint8_t opc1 = 0;
-  uint8_t opc2 = 0;
-  uint8_t crn = 4;
-  uint8_t crm = 1;
-  eAccessRight access = kPL1_RW;
-  eRegInfo type = kARM_ALIAS;
+  static const eRegExecutionState state = kARM_STATE_AA64;
+  static const uint8_t opc0 = 3;
+  static const uint8_t opc1 = 0;
+  static const uint8_t opc2 = 0;
+  static const uint8_t crn = 4;
+  static const uint8_t crm = 1;
+  static const eAccessRight access = kPL1_RW;
+  static const eRegInfo type = kARM_ALIAS;
   uint64_t resetvalue = -1;
 
   virtual uint64_t readfn(uArchARM *aCore) override {
@@ -294,36 +351,50 @@ struct SP_EL0 : public SysRegInfo {
     aCore->setSP_el(0, aVal);
   }
 
-} SP_EL0_;
+  SP_EL0_()
+      : SysRegInfo("SP_EL0", SP_EL0_::state, SP_EL0_::type, SP_EL0_::opc0, SP_EL0_::opc1,
+                   SP_EL0_::opc2, SP_EL0_::crn, SP_EL0_::crm, SP_EL0_::access) {
+  }
+};
 
-struct SP_EL1 : public SysRegInfo {
+class SP_EL1_ : public SysRegInfo {
+public:
   std::string name = "SP_EL1";
-  eRegExecutionState state = kARM_STATE_AA64;
-  uint8_t opc0 = 3;
-  uint8_t opc1 = 4;
-  uint8_t opc2 = 0;
-  uint8_t crn = 4;
-  uint8_t crm = 1;
-  eAccessRight access = kPL2_RW;
-  eRegInfo type = kARM_ALIAS;
+  static const eRegExecutionState state = kARM_STATE_AA64;
+  static const uint8_t opc0 = 3;
+  static const uint8_t opc1 = 4;
+  static const uint8_t opc2 = 0;
+  static const uint8_t crn = 4;
+  static const uint8_t crm = 1;
+  static const eAccessRight access = kPL2_RW;
+  static const eRegInfo type = kARM_ALIAS;
   uint64_t resetvalue = -1;
+
+  virtual uint64_t readfn(uArchARM *aCore) override {
+    return aCore->getSP_el(1);
+  }
 
   virtual void writefn(uArchARM *aCore, uint64_t aVal) override {
     aCore->setSP_el(1, aVal);
   }
 
-} SP_EL1_;
+  SP_EL1_()
+      : SysRegInfo("SP_EL1", SP_EL1_::state, SP_EL1_::type, SP_EL1_::opc0, SP_EL1_::opc1,
+                   SP_EL1_::opc2, SP_EL1_::crn, SP_EL1_::crm, SP_EL1_::access) {
+  }
+};
 
-struct SPSel : public SysRegInfo {
+class SPSel_ : public SysRegInfo {
+public:
   std::string name = "SPSel";
-  eRegExecutionState state = kARM_STATE_AA64;
-  uint8_t opc0 = 3;
-  uint8_t opc1 = 0;
-  uint8_t opc2 = 0;
-  uint8_t crn = 4;
-  uint8_t crm = 2;
-  eAccessRight access = kPL1_RW;
-  eRegInfo type = kARM_NO_RAW;
+  static const eRegExecutionState state = kARM_STATE_AA64;
+  static const uint8_t opc0 = 3;
+  static const uint8_t opc1 = 0;
+  static const uint8_t opc2 = 0;
+  static const uint8_t crn = 4;
+  static const uint8_t crm = 2;
+  static const eAccessRight access = kPL1_RW;
+  static const eRegInfo type = kARM_NO_RAW;
   uint64_t resetvalue = -1;
 
   /*spsel_read*/
@@ -361,110 +432,137 @@ struct SPSel : public SysRegInfo {
 
     aCore->setSP_el(cur_el, aVal);
   }
-} SPSel_;
 
-struct SPSR_IRQ : public SysRegInfo {
+  SPSel_()
+      : SysRegInfo("SPSel", SPSel_::state, SPSel_::type, SPSel_::opc0, SPSel_::opc1, SPSel_::opc2,
+                   SPSel_::crn, SPSel_::crm, SPSel_::access) {
+  }
+};
+
+class SPSR_IRQ_ : public SysRegInfo {
+public:
   std::string name = "SPSR_IRQ";
-  eRegExecutionState state = kARM_STATE_AA64;
-  uint8_t opc0 = 3;
-  uint8_t opc1 = 4;
-  uint8_t opc2 = 0;
-  uint8_t crn = 4;
-  uint8_t crm = 3;
-  eAccessRight access = kPL2_RW;
-  eRegInfo type = kARM_ALIAS;
+  static const eRegExecutionState state = kARM_STATE_AA64;
+  static const uint8_t opc0 = 3;
+  static const uint8_t opc1 = 4;
+  static const uint8_t opc2 = 0;
+  static const uint8_t crn = 4;
+  static const uint8_t crm = 3;
+  static const eAccessRight access = kPL2_RW;
+  static const eRegInfo type = kARM_ALIAS;
   uint64_t resetvalue = -1;
 
-} SPSR_IRQ_;
+  SPSR_IRQ_()
+      : SysRegInfo("SPSR_IRQ", SPSR_IRQ_::state, SPSR_IRQ_::type, SPSR_IRQ_::opc0, SPSR_IRQ_::opc1,
+                   SPSR_IRQ_::opc2, SPSR_IRQ_::crn, SPSR_IRQ_::crm, SPSR_IRQ_::access) {
+  }
+};
 
-struct SPSR_ABT : public SysRegInfo {
+class SPSR_ABT_ : public SysRegInfo {
+public:
   std::string name = "SPSR_IRQ";
-  eRegExecutionState state = kARM_STATE_AA64;
-  uint8_t opc0 = 3;
-  uint8_t opc1 = 4;
-  uint8_t opc2 = 1;
-  uint8_t crn = 4;
-  uint8_t crm = 3;
-  eAccessRight access = kPL2_RW;
-  eRegInfo type = kARM_ALIAS;
+  static const eRegExecutionState state = kARM_STATE_AA64;
+  static const uint8_t opc0 = 3;
+  static const uint8_t opc1 = 4;
+  static const uint8_t opc2 = 1;
+  static const uint8_t crn = 4;
+  static const uint8_t crm = 3;
+  static const eAccessRight access = kPL2_RW;
+  static const eRegInfo type = kARM_ALIAS;
   uint64_t resetvalue = -1;
 
-} SPSR_ABT_;
+  SPSR_ABT_()
+      : SysRegInfo("SPSR_ABT", SPSR_ABT_::state, SPSR_ABT_::type, SPSR_ABT_::opc0, SPSR_ABT_::opc1,
+                   SPSR_ABT_::opc2, SPSR_ABT_::crn, SPSR_ABT_::crm, SPSR_ABT_::access) {
+  }
+};
 
-struct SPSR_UND : public SysRegInfo {
+class SPSR_UND_ : public SysRegInfo {
+public:
   std::string name = "SPSR_UND";
-  eRegExecutionState state = kARM_STATE_AA64;
-  uint8_t opc0 = 3;
-  uint8_t opc1 = 4;
-  uint8_t opc2 = 2;
-  uint8_t crn = 4;
-  uint8_t crm = 3;
-  eAccessRight access = kPL2_RW;
-  eRegInfo type = kARM_ALIAS;
+  static const eRegExecutionState state = kARM_STATE_AA64;
+  static const uint8_t opc0 = 3;
+  static const uint8_t opc1 = 4;
+  static const uint8_t opc2 = 2;
+  static const uint8_t crn = 4;
+  static const uint8_t crm = 3;
+  static const eAccessRight access = kPL2_RW;
+  static const eRegInfo type = kARM_ALIAS;
   uint64_t resetvalue = -1;
 
-} SPSR_UND_;
+  SPSR_UND_()
+      : SysRegInfo("SPSR_UND", SPSR_UND_::state, SPSR_UND_::type, SPSR_UND_::opc0, SPSR_UND_::opc1,
+                   SPSR_UND_::opc2, SPSR_UND_::crn, SPSR_UND_::crm, SPSR_UND_::access) {
+  }
+};
 
-struct SPSR_FIQ : public SysRegInfo {
+class SPSR_FIQ_ : public SysRegInfo {
+public:
   std::string name = "SPSR_FIQ";
-  eRegExecutionState state = kARM_STATE_AA64;
-  uint8_t opc0 = 3;
-  uint8_t opc1 = 4;
-  uint8_t opc2 = 3;
-  uint8_t crn = 4;
-  uint8_t crm = 3;
-  eAccessRight access = kPL2_RW;
-  eRegInfo type = kARM_ALIAS;
+  static const eRegExecutionState state = kARM_STATE_AA64;
+  static const uint8_t opc0 = 3;
+  static const uint8_t opc1 = 4;
+  static const uint8_t opc2 = 3;
+  static const uint8_t crn = 4;
+  static const uint8_t crm = 3;
+  static const eAccessRight access = kPL2_RW;
+  static const eRegInfo type = kARM_ALIAS;
   uint64_t resetvalue = -1;
 
-} SPSR_FIQ_;
+  SPSR_FIQ_()
+      : SysRegInfo("SPSR_FIQ", SPSR_FIQ_::state, SPSR_FIQ_::type, SPSR_FIQ_::opc0, SPSR_FIQ_::opc1,
+                   SPSR_FIQ_::opc2, SPSR_FIQ_::crn, SPSR_FIQ_::crm, SPSR_FIQ_::access) {
+  }
+};
 
-struct INVALID_PRIV : public SysRegInfo {
+class INVALID_PRIV_ : public SysRegInfo {
+public:
   std::string name = "INVALID_PRIV";
-
-} INVALID_PRIV_;
+};
 
 static std::vector<std::pair<std::array<uint8_t, 5>, ePrivRegs>> supported_sysRegs = {
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
-        {NZCV_.opc0, NZCV_.opc1, NZCV_.opc2, NZCV_.crn, NZCV_.crm}, kNZCV),
+        {NZCV_::opc0, NZCV_::opc1, NZCV_::opc2, NZCV_::crn, NZCV_::crm}, kNZCV),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
-        {DAIF_.opc0, DAIF_.opc1, DAIF_.opc2, DAIF_.crn, DAIF_.crm}, kDAIF),
+        {DAIF_::opc0, DAIF_::opc1, DAIF_::opc2, DAIF_::crn, DAIF_::crm}, kDAIF),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
-        {TPIDR_EL0_.opc0, TPIDR_EL0_.opc1, TPIDR_EL0_.opc2, TPIDR_EL0_.crn, TPIDR_EL0_.crm},
+        {TPIDR_EL0_::opc0, TPIDR_EL0_::opc1, TPIDR_EL0_::opc2, TPIDR_EL0_::crn, TPIDR_EL0_::crm},
         kTPIDR_EL0),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
-        {FPCR_.opc0, FPCR_.opc1, FPCR_.opc2, FPCR_.crn, FPCR_.crm}, kFPCR),
+        {FPCR_::opc0, FPCR_::opc1, FPCR_::opc2, FPCR_::crn, FPCR_::crm}, kFPCR),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
-        {FPSR_.opc0, FPSR_.opc1, FPSR_.opc2, FPSR_.crn, FPSR_.crm}, kFPSR),
+        {FPSR_::opc0, FPSR_::opc1, FPSR_::opc2, FPSR_::crn, FPSR_::crm}, kFPSR),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
-        {DCZID_EL0_.opc0, DCZID_EL0_.opc1, DCZID_EL0_.opc2, DCZID_EL0_.crn, DCZID_EL0_.crm},
+        {DCZID_EL0_::opc0, DCZID_EL0_::opc1, DCZID_EL0_::opc2, DCZID_EL0_::crn, DCZID_EL0_::crm},
         kDCZID_EL0),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
-        {DC_ZVA_.opc0, DC_ZVA_.opc1, DC_ZVA_.opc2, DC_ZVA_.crn, DC_ZVA_.crm}, kDC_ZVA),
+        {DC_ZVA_::opc0, DC_ZVA_::opc1, DC_ZVA_::opc2, DC_ZVA_::crn, DC_ZVA_::crm}, kDC_ZVA),
+    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>({CURRENT_EL_::opc0, CURRENT_EL_::opc1,
+                                                       CURRENT_EL_::opc2, CURRENT_EL_::crn,
+                                                       CURRENT_EL_::crm},
+                                                      kCURRENT_EL),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
-        {CURRENT_EL_.opc0, CURRENT_EL_.opc1, CURRENT_EL_.opc2, CURRENT_EL_.crn, CURRENT_EL_.crm},
-        kCURRENT_EL),
+        {ELR_EL1_::opc0, ELR_EL1_::opc1, ELR_EL1_::opc2, ELR_EL1_::crn, ELR_EL1_::crm}, kELR_EL1),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
-        {ELR_EL1_.opc1, ELR_EL1_.opc1, ELR_EL1_.opc2, ELR_EL1_.crn, ELR_EL1_.crm}, kELR_EL1),
+        {SPSR_EL1_::opc0, SPSR_EL1_::opc1, SPSR_EL1_::opc2, SPSR_EL1_::crn, SPSR_EL1_::crm},
+        kSPSR_EL1),
+    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
+        {SP_EL0_::opc0, SP_EL0_::opc1, SP_EL0_::opc2, SP_EL0_::crn, SP_EL0_::crm}, kSP_EL0),
+    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
+        {SP_EL1_::opc0, SP_EL1_::opc1, SP_EL1_::opc2, SP_EL1_::crn, SP_EL1_::crm}, kSP_EL1),
+    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
+        {SPSel_::opc0, SPSel_::opc1, SPSel_::opc2, SPSel_::crn, SPSel_::crm}, kSPSel),
+    // std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
+    //    {MDSCR_EL1_::opc0, MDSCR_EL1_::opc1, MDSCR_EL1_::opc2, MDSCR_EL1_::crn, MDSCR_EL1_::crm},
+    //    kMDSCR_EL1) std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {SPSR_IRQ_::opc0,
+    //    SPSR_IRQ_::opc1, SPSR_IRQ_::opc2, SPSR_IRQ_::crn, SPSR_IRQ_::crm},  kSPSR_IRQ),
+    //    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>( {SPSR_ABT_::opc0, SPSR_ABT_::opc1,
+    //    SPSR_ABT_::opc2, SPSR_ABT_::crn, SPSR_ABT_::crm},  kSPSR_ABT),
     //    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
-    //    {SPSR_EL1_.opc0, SPSR_EL1_.opc1, SPSR_EL1_.opc2, SPSR_EL1_.crn,
-    //    SPSR_EL1_.crm},  kSPSR_EL1),
-    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
-        {SP_EL0_.opc0, SP_EL0_.opc1, SP_EL0_.opc2, SP_EL0_.crn, SP_EL0_.crm}, kSP_EL0),
-    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
-        {SP_EL1_.opc0, SP_EL1_.opc1, SP_EL1_.opc2, SP_EL1_.crn, SP_EL1_.crm}, kSP_EL1),
-    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
-        {SPSel_.opc0, SPSel_.opc1, SPSel_.opc2, SPSel_.crn, SPSel_.crm}, kSPSel)
-    //    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
-    //    {SPSR_IRQ_.opc0, SPSR_IRQ_.opc1, SPSR_IRQ_.opc2, SPSR_IRQ_.crn,
-    //    SPSR_IRQ_.crm},  kSPSR_IRQ), std::make_pair<std::array<uint8_t,
-    //    5>, ePrivRegs>( {SPSR_ABT_.opc0, SPSR_ABT_.opc1, SPSR_ABT_.opc2,
-    //    SPSR_ABT_.crn, SPSR_ABT_.crm},  kSPSR_ABT),
-    //    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
-    //    {SPSR_UND_.opc0, SPSR_UND_.opc1, SPSR_UND_.opc2, SPSR_UND_.crn,
-    //    SPSR_UND_.crm},  kSPSR_UND), std::make_pair<std::array<uint8_t,
-    //    5>, ePrivRegs>( {SPSR_FIQ_.opc0, SPSR_FIQ_.opc1, SPSR_FIQ_.opc2,
-    //    SPSR_FIQ_.crn, SPSR_FIQ_.crm},  kSPSR_FIQ)
+    //    {SPSR_UND_::opc0, SPSR_UND_::opc1, SPSR_UND_::opc2, SPSR_UND_::crn,
+    //    SPSR_UND_::crm},  kSPSR_UND), std::make_pair<std::array<uint8_t,
+    //    5>, ePrivRegs>( {SPSR_FIQ_::opc0, SPSR_FIQ_::opc1, SPSR_FIQ_::opc2,
+    //    SPSR_FIQ_::crn, SPSR_FIQ_::crm},  kSPSR_FIQ)
 };
 
 ePrivRegs getPrivRegType(const uint8_t op0, const uint8_t op1, const uint8_t op2, const uint8_t crn,
@@ -478,49 +576,51 @@ ePrivRegs getPrivRegType(const uint8_t op0, const uint8_t op1, const uint8_t op2
   return kLastPrivReg;
 }
 
-SysRegInfo &getPriv(ePrivRegs aCode) {
+std::unique_ptr<SysRegInfo> getPriv(ePrivRegs aCode) {
   switch (aCode) {
   case kNZCV:
-    return NZCV_;
+    return std::make_unique<NZCV_>();
   case kDAIF:
-    return DAIF_;
+    return std::make_unique<DAIF_>();
   case kFPCR:
-    return FPCR_;
+    return std::make_unique<FPCR_>();
   case kFPSR:
-    return FPSR_;
+    return std::make_unique<FPSR_>();
   case kDCZID_EL0:
-    return DCZID_EL0_;
+    return std::make_unique<DCZID_EL0_>();
   case kDC_ZVA:
-    return DC_ZVA_;
+    return std::make_unique<DC_ZVA_>();
   case kCURRENT_EL:
-    return CURRENT_EL_;
+    return std::make_unique<CURRENT_EL_>();
   case kELR_EL1:
-    return ELR_EL1_;
+    return std::make_unique<ELR_EL1_>();
   case kSPSR_EL1:
-    return SPSR_EL1_;
+    return std::make_unique<SPSR_EL1_>();
   case kSP_EL0:
-    return SP_EL0_;
+    return std::make_unique<SP_EL0_>();
   case kSP_EL1:
-    return SP_EL1_;
+    return std::make_unique<SP_EL1_>();
   case kSPSel:
-    return SPSel_;
+    return std::make_unique<SPSel_>();
   case kSPSR_IRQ:
-    return SPSR_IRQ_;
+    return std::make_unique<SPSR_IRQ_>();
   case kSPSR_ABT:
-    return SPSR_ABT_;
+    return std::make_unique<SPSR_ABT_>();
   case kSPSR_UND:
-    return SPSR_UND_;
+    return std::make_unique<SPSR_UND_>();
   case kSPSR_FIQ:
-    return SPSR_FIQ_;
+    return std::make_unique<SPSR_FIQ_>();
   case kTPIDR_EL0:
-    return TPIDR_EL0_;
-  default:
-    DBG_Assert(false, (<< "Unimplemented SysReg Code" << aCode));
-    return INVALID_PRIV_;
+    return std::make_unique<TPIDR_EL0_>();
+  default: // FIXME: Only return default/abstract if implemented by QEMU
+    return std::make_unique<SysRegInfo>();
+    // DBG_Assert(false, (<< "Unimplemented SysReg Code" << aCode));
+    // return INVALID_PRIV_;
   }
 }
 
-SysRegInfo &getPriv(uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm) {
+std::unique_ptr<SysRegInfo> getPriv(uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn,
+                                    uint8_t crm) {
   ePrivRegs r = getPrivRegType(op0, op1, op2, crn, crm);
   return getPriv(r);
 }

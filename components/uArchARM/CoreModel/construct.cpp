@@ -395,7 +395,7 @@ void CoreImpl::writePR(uint32_t aPR, uint64_t aVal) {
 }
 // read physical register
 uint64_t CoreImpl::readPR(ePrivRegs aPR) {
-  return getPriv(aPR).readfn(this);
+  return getPriv(aPR)->readfn(this);
 }
 bool CoreImpl::isAARCH64() {
   return theAARCH64;
@@ -407,8 +407,8 @@ uint32_t CoreImpl::getSPSel() {
   return thePSTATE & PSTATE_SP;
 }
 void CoreImpl::setSPSel(uint32_t aVal) {
-  SysRegInfo &ri = getPriv(kSPSel);
-  ri.writefn(this, aVal);
+  std::unique_ptr<SysRegInfo> ri = getPriv(kSPSel);
+  ri->writefn(this, aVal);
 }
 void CoreImpl::setSP_el(uint8_t anId, uint64_t aVal) {
   DBG_Assert(anId >= 0 || anId < 4);

@@ -81,7 +81,7 @@ struct BranchFeedback;
 
 namespace nuArchARM {
 
-struct SysRegInfo;
+class SysRegInfo; // MARK: forward declare
 
 using namespace Flexus::SharedTypes;
 
@@ -237,12 +237,10 @@ enum ePrivRegs {
   kSPSR_UND,
   kSPSR_FIQ,
   kTPIDR_EL0,
+  kAbstractSysReg, /* Msutherl: Blanket type for all registers to represent as hashed/encoded
+                      5-tuple which are then read through QEMU */
   kLastPrivReg
 };
-
-SysRegInfo &getPriv(ePrivRegs aCode);
-ePrivRegs getPrivRegType(const uint8_t op0, const uint8_t op1, const uint8_t op2, const uint8_t crn,
-                         const uint8_t crm);
 
 enum eAccessResult {
   /* Access is permitted */
@@ -893,11 +891,6 @@ struct uArchARM {
     DBG_Assert(false);
     return SCTLR_EL(0);
   }
-  virtual SysRegInfo &getSysRegInfo(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t CRn,
-                                    uint8_t CRm) {
-    DBG_Assert(false);
-    return getPriv(kLastPrivReg);
-  }
   virtual void increaseEL() {
     DBG_Assert(false);
   }
@@ -1010,7 +1003,6 @@ struct uArchARM {
   virtual void setDAIF(uint32_t aDAIF) {
     DBG_Assert(false);
   }
-
   virtual Flexus::Qemu::API::exception_t getException() {
     DBG_Assert(false);
     return Flexus::Qemu::API::exception_t();
@@ -1104,12 +1096,21 @@ struct uArchARM {
     DBG_Assert(false);
     return false;
   }
+
+  /* Msutherl: API to read system register encoding and system register value */
+  virtual uint64_t readUnhashedSysReg(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn,
+                                      uint8_t crm) {
+    DBG_Assert(false);
+    return 0;
+  }
 };
 
 static const PhysicalMemoryAddress kInvalid(0);
 static const VirtualMemoryAddress kUnresolved(-1);
 
 } // namespace nuArchARM
+
+#include <components/uArchARM/systemRegister.hpp> // MARK
 
 namespace Flexus {
 namespace SharedTypes {
