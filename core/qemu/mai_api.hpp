@@ -281,6 +281,11 @@ public:
   bool mai_mode() const {
     return true;
   }
+
+  uint64_t read_sysreg_from_qemu(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn,
+                                 uint8_t crm) {
+    return API::QEMU_read_unhashed_sysreg(*this, opc0, opc1, opc2, crn, crm);
+  }
 };
 
 class armProcessorImpl : public BaseProcessorImpl {

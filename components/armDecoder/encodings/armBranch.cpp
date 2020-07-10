@@ -418,17 +418,29 @@ arminst MSR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
 
   inst->setClass(clsComputation, codeWRPR);
 
+  /* Msutherl: Added check for instructions with special encodings (e.g., DAIFSet and DAIFClr)
+   * - for relevant encodings, see section C5.2.2 "DAIF, Interrupt Mask Bits", page C5-357 of the
+   *   ARMv8 ISA manual */
+  bool isShorthandDAIFEncoding = false;
+  if (op1 == 0x3 && (op2 == 0x7 || op2 == 0x6)) {
+    isShorthandDAIFEncoding = true;
+  }
+
   // Check for supported PR's
   ePrivRegs pr = getPrivRegType(0, op1, op2, 0x4, crm);
-  if (pr == kLastPrivReg) {
+  if (pr == kLastPrivReg && !isShorthandDAIFEncoding) {
     return blackBox(aFetchedOpcode, aCPU,
                     aSequenceNo); // resynchronize on all other PRs
   }
 
   // need to halt dispatch for writes
   inst->setHaltDispatch();
-  inst->addCheckTrapEffect(checkSystemAccess(inst, 0, op1, op2, 0x4, crm, 0x1f, 0));
-  inst->addCheckTrapEffect(checkDAIFAccess(inst, op1));
+  if (!isShorthandDAIFEncoding) {
+    // check general system register
+    inst->addCheckTrapEffect(checkSystemAccess(inst, 0, op1, op2, 0x4, crm, 0x1f, 0));
+  } else {
+    inst->addCheckTrapEffect(checkDAIFAccess(inst, op1));
+  }
   inst->setOperand(kResult, uint64_t(crm));
 
   // FIXME: This code never actually writes the register.
@@ -455,9 +467,9 @@ arminst SYS(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
 
   // Check for supported PR's
   ePrivRegs pr = getPrivRegType(op0, op1, op2, crn, crm);
+
   if (pr == kLastPrivReg) {
-    return blackBox(aFetchedOpcode, aCPU,
-                    aSequenceNo); // resynchronize on all other PRs
+    pr = kAbstractSysReg;
   } else if (pr == kDC_ZVA) {
     return nop(aFetchedOpcode, aCPU, aSequenceNo);
   }
@@ -470,7 +482,10 @@ arminst SYS(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
     inst->addCheckTrapEffect(checkSystemAccess(inst, op0, op1, op2, crn, crm, rt, l));
     setRD(inst, rt);
     inst->addDispatchEffect(mapDestination(inst));
-    inst->addRetirementEffect(readPR(inst, pr));
+
+    std::unique_ptr<SysRegInfo> ri = getPriv(op0, op1, op2, crn, crm);
+    ri->setSystemRegisterEncodingValues(op0, op1, op2, crn, crm);
+    inst->addRetirementEffect(readPR(inst, pr, std::move(ri)));
     inst->addPostvalidation(validateXRegister(rt, kResult, inst, true));
   } else {
     inst->setClass(clsComputation, codeWRPR);
@@ -482,7 +497,9 @@ arminst SYS(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
     inst->addCheckTrapEffect(checkSystemAccess(inst, op0, op1, op2, crn, crm, rt, l));
     addReadXRegister(inst, 1, rt, rs_dep[0], true);
     addExecute(inst, operation(kMOV_), rs_dep);
-    inst->addRetirementEffect(writePR(inst, pr));
+    std::unique_ptr<SysRegInfo> ri = getPriv(op0, op1, op2, crn, crm);
+    ri->setSystemRegisterEncodingValues(op0, op1, op2, crn, crm);
+    inst->addRetirementEffect(writePR(inst, pr, std::move(ri)));
     //        inst->addPostvalidation( validateXRegister( rt, kResult, inst  )
     //        );
     //        FIXME - validate PR

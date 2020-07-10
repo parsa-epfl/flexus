@@ -349,4 +349,10 @@ void CoreImpl::compareARMState(armState &aLeft, armState &aRight) {
   //  aRight.theASI << std::dec ));
 }
 
+/* Msutherl: API to read system register value using QEMU encoding */
+uint64_t CoreImpl::readUnhashedSysReg(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn,
+                                      uint8_t crm) {
+  return theQEMUCPU->read_sysreg_from_qemu(opc0, opc1, opc2, crn, crm);
+}
+
 } // namespace nuArchARM

@@ -732,6 +732,9 @@ public:
   void setPC(uint64_t aPC);
   void setDAIF(uint32_t aDAIF);
 
+  /* Msutherl: API to read system register value using QEMU encoding */
+  uint64_t readUnhashedSysReg(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn, uint8_t crm);
+
   // Interface to Memory Unit
   //==========================================================================
   void breakMSHRLink(memq_t::index<by_insn>::type::iterator iter);
@@ -774,8 +777,6 @@ public:
 
   void SystemRegisterTrap(uint8_t target_el, uint8_t op0, uint8_t op2, uint8_t op1, uint8_t crn,
                           uint8_t rt, uint8_t crm, uint8_t dir);
-
-  SysRegInfo &getSysRegInfo(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn, uint8_t crm);
 
 private:
   bool hasSnoopBuffer() const {

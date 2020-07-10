@@ -71,13 +71,16 @@ enum eRegExecutionState {
   kARM_STATE_BOTH = 2,
 };
 
-struct SysRegInfo {
-
+class SysRegInfo {
+public:
   /* Definition of an ARM system register */
   /* Name of register (useful mainly for debugging, need not be unique) */
   std::string name;
   /* Execution state in which this register is visible: ARCH_STATE_* */
   int state;
+  /* Register type: ARM_CP_* bits/values */
+  int type;
+
   /* Location of register: coprocessor number and (crn,crm,opc1,opc2)
    * tuple. Any of crm, opc1 and opc2 may be CP_ANY to indicate a
    * 'wildcard' field -- any value of that field in the MRC/MCR insn
@@ -103,8 +106,6 @@ struct SysRegInfo {
 
   /* Access rights: PL*_[RW] */
   int access;
-  /* Register type: ARM_CP_* bits/values */
-  int type;
 
   /* Security state: ARM_CP_SECSTATE_* bits/values */
   //      int secure;
@@ -120,8 +121,8 @@ struct SysRegInfo {
    * translate time.
    */
   virtual eAccessResult accessfn(uArchARM *aCore) {
-    DBG_Assert(false);
-    return kACCESS_TRAP;
+    return kACCESS_OK; // Msutherl: Right now it's all OK. QEMU/TCG will check access and trap if
+                       // necessary
   }
 
   /* Function for handling reads of this register. If NULL, then reads
@@ -129,8 +130,7 @@ struct SysRegInfo {
    * by fieldoffset.
    */
   virtual uint64_t readfn(uArchARM *aCore) {
-    DBG_Assert(false);
-    return 0;
+    return aCore->readUnhashedSysReg(opc0, opc1, opc2, crn, crm);
   }
 
   /* Function for handling writes of this register. If NULL, then writes
@@ -167,10 +167,44 @@ struct SysRegInfo {
 
   virtual void reset(uArchARM *aCore) {
   }
+
+  virtual void setSystemRegisterEncodingValues(uint8_t op0, uint8_t op1, uint8_t op2, uint8_t aCrn,
+                                               uint8_t aCrm) {
+    this->opc0 = op0;
+    this->opc1 = op1;
+    this->opc2 = op2;
+    this->crn = aCrn;
+    this->crm = aCrm;
+  }
+
+  /* Default constructor sets undefined code */
+  SysRegInfo()
+      : name("SysRegInfo"), state(kARM_STATE_BOTH), type(kARM_CONST), opc0(0x0), opc1(0x0),
+        opc2(0x0), crn(0x0), crm(0x0), access(kPL1_RW) {
+  }
+
+  /* Specific constructor for defining a code, state, and access */
+  SysRegInfo(std::string aName, int aState, int aType, uint8_t anOpc0, uint8_t anOpc1,
+             uint8_t anOpc2, uint8_t aCrn, uint8_t aCrm, int anAccess)
+      : name(aName), state(aState), type(aType), opc0(anOpc0), opc1(anOpc1), opc2(anOpc2),
+        crn(aCrn), crm(aCrm), access(anAccess) {
+  }
+
+  /* Specific constructor for just a code */
+  SysRegInfo(uint8_t anOpc0, uint8_t anOpc1, uint8_t anOpc2, uint8_t aCrn, uint8_t aCrm)
+      : name("SysRegInfo"), state(kARM_STATE_BOTH), type(kARM_CONST), opc0(anOpc0), opc1(anOpc1),
+        opc2(anOpc2), crn(aCrn), crm(aCrm), access(kPL1_RW) {
+  }
+
+  virtual ~SysRegInfo() {
+  }
 };
 
-SysRegInfo &getPriv(uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm);
-SysRegInfo &getPriv(ePrivRegs aCode);
+ePrivRegs getPrivRegType(const uint8_t op0, const uint8_t op1, const uint8_t op2, const uint8_t crn,
+                         const uint8_t crm);
+std::unique_ptr<SysRegInfo> getPriv(uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn,
+                                    uint8_t crm);
+std::unique_ptr<SysRegInfo> getPriv(ePrivRegs aCode);
 
 } // namespace nuArchARM
 

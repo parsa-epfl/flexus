@@ -1041,11 +1041,6 @@ SCTLR_EL CoreImpl::_SCTLR(uint32_t anELn) {
   return SCTLR_EL(theSCTLR_EL[anELn]);
 }
 
-SysRegInfo &CoreImpl::getSysRegInfo(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn,
-                                    uint8_t crm) {
-  return getPriv(opc0, opc1, opc2, crn, crm);
-}
-
 void CoreImpl::increaseEL() {
   uint32_t el = extract32(thePSTATE, 2, 2);
   if (el < 0 || el >= 1)

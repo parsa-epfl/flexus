@@ -191,8 +191,8 @@ Effect *updateUnconditional(SemanticInstruction *inst, VirtualMemoryAddress aTar
 Effect *updateUnconditional(SemanticInstruction *inst, eOperandCode anOperandCode);
 Effect *updateCall(SemanticInstruction *inst, VirtualMemoryAddress aTarget);
 Effect *updateNonBranch(SemanticInstruction *inst);
-Effect *readPR(SemanticInstruction *inst, ePrivRegs aPR);
-Effect *writePR(SemanticInstruction *inst, ePrivRegs aPR);
+Effect *readPR(SemanticInstruction *inst, ePrivRegs aPR, std::unique_ptr<SysRegInfo> aRI);
+Effect *writePR(SemanticInstruction *inst, ePrivRegs aPR, std::unique_ptr<SysRegInfo> aRI);
 Effect *writePSTATE(SemanticInstruction *inst, uint8_t anOp1, uint8_t anOp2);
 Effect *writeNZCV(SemanticInstruction *inst);
 Effect *clearExclusiveMonitor(SemanticInstruction *inst);

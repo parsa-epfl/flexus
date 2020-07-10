@@ -54,6 +54,7 @@ QEMU_GET_PENDING_INTERRUPT_PROC QEMU_get_pending_interrupt = nullptr;
 
 QEMU_WRITE_REGISTER_PROC QEMU_write_register = nullptr;
 QEMU_READ_REGISTER_PROC QEMU_read_register = nullptr;
+QEMU_READ_UNHASHED_SYSREG_PROC QEMU_read_unhashed_sysreg = nullptr;
 QEMU_READ_PSTATE_PROC QEMU_read_pstate = nullptr;
 QEMU_READ_FPCR_PROC QEMU_read_fpcr = nullptr;
 QEMU_READ_FPSR_PROC QEMU_read_fpsr = nullptr;
@@ -106,6 +107,7 @@ void QFLEX_API_set_Interface_Hooks(const QFLEX_API_Interface_Hooks_t *hooks) {
   QEMU_clear_exception = hooks->QEMU_clear_exception;
   QEMU_write_register = hooks->QEMU_write_register;
   QEMU_read_register = hooks->QEMU_read_register;
+  QEMU_read_unhashed_sysreg = hooks->QEMU_read_unhashed_sysreg;
   QEMU_cpu_has_work = hooks->QEMU_cpu_has_work;
 
   QEMU_read_fpcr = hooks->QEMU_read_fpcr;
