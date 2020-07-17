@@ -103,7 +103,6 @@ struct ExclusiveMonitorAction : public PredicatedSemanticAction {
       setReady(0, false);
       satisfy(0);
     } else {
-      core()->markExclusiveLocal(pAddress, theSize, kMonitorDoesntExist);
       theInstruction->setOperand(kResult, (uint64_t)passed);
       DBG_(Iface, (<< "Exclusive Monitor resulted in " << passed << " for address " << pAddress
                    << ", " << *theInstruction));

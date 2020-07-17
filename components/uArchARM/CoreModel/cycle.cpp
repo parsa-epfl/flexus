@@ -117,11 +117,13 @@ bool CoreImpl::checkValidatation() {
 }
 
 void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
-
-  // qemu warmup
-  if (theFlexus->cycleCount() == 1) {
-    advance_fn();
-    throw ResynchronizeWithQemuException();
+  // qemu warmup or halt state
+  if (theFlexus->cycleCount() == 1 || cpuHalted) {
+    int r = advance_fn();
+    if (cpuHalted && (r != QEMU_HALT_CODE)) { // CPU resumed
+        cpuHalted = false;
+    }
+    throw ResynchronizeWithQemuException(true);
   }
 
   CORE_DBG("--------------START CORE------------------------");
@@ -1505,20 +1507,7 @@ int f_validation = 0;
 void CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction) {
   FLEXUS_PROFILE();
   CORE_DBG(*anInstruction);
-
-  //  Detect kernel-panic
-  //  if (  ( anInstruction->pc() == 0x1000d31c )
-  //        && ( anInstruction->instClass() == clsBranch )
-  //     ) {
-  //    ++theKernelPanicCount;
-  //    if ( theKernelPanicCount == 100) {
-  //      DBG_Assert(false, ( << theName << " Appears to be in the kernel panic
-  //      loop at v:0x1000d31c" ) );
-  //    }
-  //  }
-
   bool validation_passed = true;
-
   int raised = 0;
   bool resync_accounted = false;
 
@@ -1560,6 +1549,12 @@ void CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction) {
                      << raised << std::dec));
       }
       anInstruction->raise(raised == 0 ? kException_None : kException_UNCATEGORIZED);
+      if (raised == QEMU_HALT_CODE) { // QEMU CPU Halted
+          /* If cpu is halted, turn off cycle drives until the CPU is woken up again */
+          cpuHalted = true;
+          DBG_(Dev,(<< "Core " << theNode << " entering halt state, after executing instruction "
+                    << *anInstruction));
+      }
     } else if (anInstruction->willRaise() != kException_None) {
       DBG_(VVerb, (<< *anInstruction << " DANGER:  Core predicted exception: " << std::hex
                    << anInstruction->willRaise() << " but simics says no exception"));

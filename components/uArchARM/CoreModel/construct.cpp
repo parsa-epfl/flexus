@@ -284,6 +284,8 @@ CoreImpl::CoreImpl(uArchOptions_t options
 
   theLastStallCause = nXactTimeBreakdown::kUnknown;
   theCycleCategory = kTBUser;
+
+  cpuHalted = false;
 }
 
 void CoreImpl::resetARM() {

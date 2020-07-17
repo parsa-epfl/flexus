@@ -94,6 +94,8 @@ namespace Stat = Flexus::Stat;
 
 namespace nuArchARM {
 
+#define QEMU_HALT_CODE 0x10003
+
 using nXactTimeBreakdown::TimeBreakdown;
 
 struct ExceptionRecord {
@@ -734,6 +736,8 @@ public:
 
   /* Msutherl: API to read system register value using QEMU encoding */
   uint64_t readUnhashedSysReg(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn, uint8_t crm);
+  // Msutherl: FIXME this should be a call to libqflex
+  bool cpuHalted;
 
   // Interface to Memory Unit
   //==========================================================================
