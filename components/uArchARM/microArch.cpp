@@ -124,7 +124,7 @@ public:
         theCore(CoreModel::construct(options
                                      //, ll::bind( &microArchImpl::translate, this, ll::_1)
                                      ,
-                                     ll::bind(&microArchImpl::advance, this), _squash, _redirect,
+                                     ll::bind(&microArchImpl::advance, this, ll::_1), _squash, _redirect,
                                      _changeState, _feedback, _signalStoreForwardingHit,
                                      _mmuResync)),
         theAvailableROB(0), theResynchronizations(options.name + "-ResyncsCaught"),
@@ -413,10 +413,10 @@ private:
     redirect(redirect_address);
   }
 
-  int32_t advance() {
+  int32_t advance(bool count_tick = true) {
     CORE_TRACE;
     FLEXUS_PROFILE();
-    theExceptionRaised = theCPU->advance();
+    theExceptionRaised = theCPU->advance(count_tick);
     theFlexus->watchdogReset(theCPU->id());
     return theExceptionRaised;
   }

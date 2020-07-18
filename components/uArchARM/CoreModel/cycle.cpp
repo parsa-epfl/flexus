@@ -58,7 +58,6 @@
 //#include <components/WhiteBox/WhiteBoxIface.hpp>
 
 #include <components/armDecoder/armInstruction.hpp>
-
 #include <components/armDecoder/armBitManip.hpp>
 
 #define DBG_DeclareCategories uArchCat
@@ -119,7 +118,7 @@ bool CoreImpl::checkValidatation() {
 void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
   // qemu warmup or halt state
   if (theFlexus->cycleCount() == 1 || cpuHalted) {
-    int r = advance_fn();
+    int r = advance_fn(false); // don't count time when halted
     if (cpuHalted && (r != QEMU_HALT_CODE)) { // CPU resumed
         cpuHalted = false;
     }
@@ -1523,7 +1522,7 @@ void CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction) {
     theInterruptSignalled = false;
     theInterruptInstruction = 0;
 
-    raised = advance_fn();
+    raised = advance_fn(true); // count time
 
     if (raised != 0) {
       if (anInstruction->willRaise() !=

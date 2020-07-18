@@ -118,7 +118,7 @@ class CoreImpl : public CoreModel {
   // Msutherl - removed translate as a call to microArch,
   // now internal to CoreModel
   // std::function< void (Flexus::Qemu::Translation &) > translate;
-  std::function<int()> advance_fn;
+  std::function<int(bool)> advance_fn;
   std::function<void(eSquashCause)> squash_fn;
   std::function<void(VirtualMemoryAddress)> redirect_fn;
   std::function<void(int, int)> change_mode_fn;
@@ -518,7 +518,7 @@ public:
            // Msutherl, removed
            //, std::function< void (Flexus::Qemu::Translation &) > xlat
            ,
-           std::function<int()> advance, std::function<void(eSquashCause)> squash,
+           std::function<int(bool)> advance, std::function<void(eSquashCause)> squash,
            std::function<void(VirtualMemoryAddress)> redirect,
            std::function<void(int, int)> change_mode,
            std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback,

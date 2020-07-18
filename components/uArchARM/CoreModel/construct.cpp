@@ -54,7 +54,7 @@ namespace nuArchARM {
 CoreImpl::CoreImpl(uArchOptions_t options
                    //, std::function< void (Flexus::Qemu::Translation &) > xlat
                    ,
-                   std::function<int()> _advance, std::function<void(eSquashCause)> _squash,
+                   std::function<int(bool)> _advance, std::function<void(eSquashCause)> _squash,
                    std::function<void(VirtualMemoryAddress)> _redirect,
                    std::function<void(int, int)> _change_mode,
                    std::function<void(boost::intrusive_ptr<BranchFeedback>)> _feedback,
@@ -484,7 +484,7 @@ void CoreImpl::setPC(uint64_t aPC) {
 CoreModel *CoreModel::construct(uArchOptions_t options
                                 //, std::function< void (Flexus::Qemu::Translation &) > translate
                                 ,
-                                std::function<int()> advance,
+                                std::function<int(bool)> advance,
                                 std::function<void(eSquashCause)> squash,
                                 std::function<void(VirtualMemoryAddress)> redirect,
                                 std::function<void(int, int)> change_mode,

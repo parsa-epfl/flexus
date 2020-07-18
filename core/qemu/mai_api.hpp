@@ -310,9 +310,9 @@ public:
     API::QEMU_break_simulation("");
   }
 
-  int advance() {
+  int advance(bool count_time = true) {
     int exception = 0;
-    exception = Qemu::API::QEMU_cpu_execute(theProcessor);
+    exception = Qemu::API::QEMU_cpu_execute(theProcessor,count_time);
     return exception;
   }
 };
