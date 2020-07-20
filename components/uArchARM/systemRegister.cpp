@@ -133,7 +133,7 @@ public:
 
   virtual eAccessResult accessfn(uArchARM *aCore) {
     return kACCESS_OK; // access OK since we assume the access right is EL0_RW
-  } // FIXME /*aa64_daif_access*/
+  }                    // FIXME /*aa64_daif_access*/
   virtual void writefn(uArchARM *aCore, uint64_t aVal) override {
     aCore->setDAIF(aVal);
   } // FIXME

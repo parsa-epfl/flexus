@@ -52,9 +52,9 @@
 namespace nuArchARM {
 
 void CoreImpl::accountResyncReason(boost::intrusive_ptr<Instruction> anInstruction) {
-    if (cpuHalted) {
-        ++theResync_CPUHaltedState;
-    }
+  if (cpuHalted) {
+    ++theResync_CPUHaltedState;
+  }
   switch (anInstruction->instCode()) {
   case codeBlackBox:
     ++theResync_BlackBox;
@@ -91,7 +91,8 @@ void CoreImpl::accountResyncReason(boost::intrusive_ptr<Instruction> anInstructi
     ++theResync_SideEffectStore;
     break;
   default:
-    DBG_(Dev, Cond(!cpuHalted) (<< "Unknown resync for instruction code: " << anInstruction->instCode()));
+    DBG_(Dev,
+         Cond(!cpuHalted)(<< "Unknown resync for instruction code: " << anInstruction->instCode()));
     ++theResync_Unknown;
     break;
   }

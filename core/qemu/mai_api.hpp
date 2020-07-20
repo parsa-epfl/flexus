@@ -312,7 +312,7 @@ public:
 
   int advance(bool count_time = true) {
     int exception = 0;
-    exception = Qemu::API::QEMU_cpu_execute(theProcessor,count_time);
+    exception = Qemu::API::QEMU_cpu_execute(theProcessor, count_time);
     return exception;
   }
 };

@@ -124,8 +124,8 @@ public:
         theCore(CoreModel::construct(options
                                      //, ll::bind( &microArchImpl::translate, this, ll::_1)
                                      ,
-                                     ll::bind(&microArchImpl::advance, this, ll::_1), _squash, _redirect,
-                                     _changeState, _feedback, _signalStoreForwardingHit,
+                                     ll::bind(&microArchImpl::advance, this, ll::_1), _squash,
+                                     _redirect, _changeState, _feedback, _signalStoreForwardingHit,
                                      _mmuResync)),
         theAvailableROB(0), theResynchronizations(options.name + "-ResyncsCaught"),
         theResyncInstructions(options.name + "-ResyncsCaught:Instruction"),
@@ -393,7 +393,7 @@ private:
   void resynchronize(bool was_expected) {
     FLEXUS_PROFILE();
 
-    DBG_(Dev,Cond(!was_expected) (<< "Unexpected! Resynchronizing..."));
+    DBG_(Dev, Cond(!was_expected)(<< "Unexpected! Resynchronizing..."));
 
     // Clear out all state in theCore
     theCore->reset();
@@ -409,7 +409,7 @@ private:
 
     // Obtain new state from simics
     VirtualMemoryAddress redirect_address(theCPU->getPC());
-    DBG_(Dev,Cond(!was_expected) (<< "Unexpected! Redirecting to address " << redirect_address));
+    DBG_(Dev, Cond(!was_expected)(<< "Unexpected! Redirecting to address " << redirect_address));
     redirect(redirect_address);
   }
 
@@ -423,7 +423,7 @@ private:
 
   void resetArchitecturalState(bool was_expected) {
     theCore->setPC(theCPU->getPC());
-    DBG_(Dev, Cond(!was_expected) (<< "setting PC to " << std::hex << theCore->pc() << std::dec));
+    DBG_(Dev, Cond(!was_expected)(<< "setting PC to " << std::hex << theCore->pc() << std::dec));
     resetRoundingMode();
     resetSpecialRegs();
     fillXRegisters();

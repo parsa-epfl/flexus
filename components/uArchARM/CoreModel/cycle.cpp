@@ -118,8 +118,8 @@ bool CoreImpl::checkValidatation() {
 void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
   // qemu warmup or halt state
   if (theFlexus->cycleCount() == 1) {
-      advance_fn(true);
-      throw ResynchronizeWithQemuException(true);
+    advance_fn(true);
+    throw ResynchronizeWithQemuException(true);
   }
 
   CORE_DBG("--------------START CORE------------------------");
@@ -1521,21 +1521,22 @@ void CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction) {
     theInterruptInstruction = 0;
 
     if (cpuHalted) {
-        int qemu_rcode = advance_fn(false); // don't count instructions in halt state
-        if (qemu_rcode != QEMU_HALT_CODE) {
-            DBG_(Dev,(<< "Core " << theNode << " leaving halt state, after QEMU sent execution code " << qemu_rcode ));
-            cpuHalted = false;
-        }
-        anInstruction->forceResync();
+      int qemu_rcode = advance_fn(false); // don't count instructions in halt state
+      if (qemu_rcode != QEMU_HALT_CODE) {
+        DBG_(Dev, (<< "Core " << theNode << " leaving halt state, after QEMU sent execution code "
+                   << qemu_rcode));
+        cpuHalted = false;
+      }
+      anInstruction->forceResync();
     } else {
-        int qemu_rcode = advance_fn(true); // count time
-        if (qemu_rcode == QEMU_HALT_CODE) { // QEMU CPU Halted
-            /* If cpu is halted, turn off insn counting until the CPU is woken up again */
-            cpuHalted = true;
-            DBG_(Dev,(<< "Core " << theNode << " entering halt state, after executing instruction "
-                        << *anInstruction));
-            anInstruction->forceResync();
-        }
+      int qemu_rcode = advance_fn(true);  // count time
+      if (qemu_rcode == QEMU_HALT_CODE) { // QEMU CPU Halted
+        /* If cpu is halted, turn off insn counting until the CPU is woken up again */
+        cpuHalted = true;
+        DBG_(Dev, (<< "Core " << theNode << " entering halt state, after executing instruction "
+                   << *anInstruction));
+        anInstruction->forceResync();
+      }
     }
 
     if (raised != 0) {
@@ -1736,7 +1737,7 @@ void CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExcept
   // Only ROB head should raise
   DBG_Assert(anInstruction == theROB.front());
   anInstruction->forceResync();
-  //return;
+  // return;
 
   // Clear ROB
   theSquashRequested = true;
