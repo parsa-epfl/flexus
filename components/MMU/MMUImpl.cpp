@@ -175,6 +175,14 @@ private:
       theSize = aSize;
     }
 
+    size_t capacity() {
+      return theSize;
+    }
+
+    void clear() {
+      theTLB.clear();
+    }
+
     size_t size() {
       return theTLB.size();
     }
@@ -240,9 +248,21 @@ public:
     boost::archive::text_iarchive iiarch(iFile);
     boost::archive::text_iarchive diarch(dFile);
 
+    uint64_t iSize = theInstrTLB.capacity();
+    uint64_t dSize = theDataTLB.capacity();
     iiarch >> theInstrTLB;
     diarch >> theDataTLB;
-    DBG_(Dev, (<< "Entries - iTLB:" << theInstrTLB.size() << ", dTLB:" << theDataTLB.size()));
+    if (iSize != theInstrTLB.capacity()) {
+      theInstrTLB.clear();
+      theInstrTLB.resize(iSize);
+      DBG_(Dev, (<< "Changing iTLB capacity from " << theInstrTLB.capacity() << " to " << iSize));
+    }
+    if (dSize != theDataTLB.capacity()) {
+      theDataTLB.clear();
+      theDataTLB.resize(dSize);
+      DBG_(Dev, (<< "Changing dTLB capacity from " << theInstrTLB.capacity() << " to " << iSize));
+    }
+    DBG_(Dev, (<< "Size - iTLB:" << theInstrTLB.capacity() << ", dTLB:" << theDataTLB.capacity()));
 
     iFile.close();
     dFile.close();
