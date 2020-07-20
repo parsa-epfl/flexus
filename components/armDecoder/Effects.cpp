@@ -1275,7 +1275,7 @@ struct MarkExclusiveMonitor : public Effect {
     Effect::invoke(anInstruction);
   }
   void describe(std::ostream &anOstream) const {
-    anOstream << " MarkExclusiveMonitor ";
+    anOstream << " ClearExclusiveMonitor ";
     Effect::describe(anOstream);
   }
 };

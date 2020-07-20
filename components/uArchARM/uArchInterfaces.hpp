@@ -477,6 +477,7 @@ enum eInstructionCode
   codeMMUAccess,
   codeITLBMiss,
   codeCLREX,
+  codeHaltedState,
   // End of Enum
   codeLastCode };
 

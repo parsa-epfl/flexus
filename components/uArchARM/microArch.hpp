@@ -101,7 +101,7 @@ struct microArch {
   virtual void printMSHR() = 0;
   virtual void pregs() = 0;
   virtual void pregsAll() = 0;
-  virtual void resynchronize() = 0;
+  virtual void resynchronize(bool was_expected) = 0;
   virtual void printRegMappings(std::string) = 0;
   virtual void printRegFreeList(std::string) = 0;
   virtual void printRegReverseMappings(std::string) = 0;

@@ -132,8 +132,7 @@ public:
   uint64_t resetvalue = -1;
 
   virtual eAccessResult accessfn(uArchARM *aCore) {
-    DBG_Assert(false);
-    return kACCESS_TRAP;
+    return kACCESS_OK; // access OK since we assume the access right is EL0_RW
   } // FIXME /*aa64_daif_access*/
   virtual void writefn(uArchARM *aCore, uint64_t aVal) override {
     aCore->setDAIF(aVal);
@@ -343,9 +342,8 @@ public:
     return aCore->getSP_el(0);
   }
   virtual eAccessResult accessfn(uArchARM *aCore) {
-    DBG_Assert(false);
-    return kACCESS_TRAP;
-  } // FIXME /*sp_el0_access*/
+    return kACCESS_OK; // access OK since QEMU will check access and trap if necessary
+  }
 
   virtual void writefn(uArchARM *aCore, uint64_t aVal) override {
     aCore->setSP_el(0, aVal);

@@ -106,7 +106,7 @@ public:
   }
   void resynchronize() {
     DBG_Assert(theMicroArch);
-    theMicroArch->resynchronize();
+    theMicroArch->resynchronize(false);
   }
   void printRegMappings(std::string aRegSet) {
     DBG_Assert(theMicroArch);

@@ -385,7 +385,7 @@ private:
       theResync_WRPRUnsupported, theResync_MEMBARSync, theResync_UnexpectedException,
       theResync_Interrupt, theResync_DeviceAccess, theResync_FailedValidation,
       theResync_FailedHandleTrap, theResync_SideEffectLoad, theResync_SideEffectStore,
-      theResync_Unknown, theFalseITLBMiss;
+      theResync_Unknown, theResync_CPUHaltedState, theFalseITLBMiss;
 
   MemOpCounter *theMemOpCounters[2][2][8];
   Stat::StatCounter *theEpochEnd[2][8];

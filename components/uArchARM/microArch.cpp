@@ -145,7 +145,7 @@ public:
 
     theAvailableROB = theCore->availableROB();
 
-    resetArchitecturalState();
+    resetArchitecturalState(true);
 
     DBG_(Crit, (<< theName << " connected to "
                 << (static_cast<Flexus::Qemu::API::conf_object_t *>(*theCPU))->name));
@@ -364,7 +364,7 @@ public:
         ++theOtherResyncs;
       }
 
-      resynchronize();
+      resynchronize(e.expected);
 
       if (theBreakOnResynchronize) {
         DBG_(Dev, (<< "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id()
@@ -390,10 +390,10 @@ public:
   //  }
 
 private:
-  void resynchronize() {
+  void resynchronize(bool was_expected) {
     FLEXUS_PROFILE();
 
-    DBG_(Dev, (<< "Resynchronizing..."));
+    DBG_(Dev,Cond(!was_expected) (<< "Unexpected! Resynchronizing..."));
 
     // Clear out all state in theCore
     theCore->reset();
@@ -405,11 +405,11 @@ private:
       squash(kResynchronize);
     }
 
-    resetArchitecturalState();
+    resetArchitecturalState(was_expected);
 
     // Obtain new state from simics
     VirtualMemoryAddress redirect_address(theCPU->getPC());
-    DBG_(Dev, (<< "redirecting to address " << redirect_address));
+    DBG_(Dev,Cond(!was_expected) (<< "Unexpected! Redirecting to address " << redirect_address));
     redirect(redirect_address);
   }
 
@@ -421,9 +421,9 @@ private:
     return theExceptionRaised;
   }
 
-  void resetArchitecturalState() {
+  void resetArchitecturalState(bool was_expected) {
     theCore->setPC(theCPU->getPC());
-    DBG_(Dev, (<< "setting PC to " << std::hex << theCore->pc() << std::dec));
+    DBG_(Dev, Cond(!was_expected) (<< "setting PC to " << std::hex << theCore->pc() << std::dec));
     resetRoundingMode();
     resetSpecialRegs();
     fillXRegisters();
