@@ -305,6 +305,7 @@ public:
     theMemoryMessage.address() = PhysicalMemoryAddress(mem_trans->s.physical_address);
     theMemoryMessage.pc() = VirtualMemoryAddress(mem_trans->s.logical_address);
     theMemoryMessage.priv() = IS_PRIV(mem_trans);
+    theMemoryMessage.coreIdx() = theIndex;
 
     // Set the type field of the memory operation
     if (mem_trans->s.atomic) {

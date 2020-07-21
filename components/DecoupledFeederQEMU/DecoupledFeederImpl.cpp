@@ -67,6 +67,36 @@ using namespace Flexus::Qemu;
 extern "C" {
 void houseKeeping(void *, void *, void *);
 }
+
+struct MMUStats {
+  Stat::StatCounter theTotalReqs_stat;
+  Stat::StatCounter theHit_stat;
+  Stat::StatCounter theMiss_stat;
+  Stat::StatCounter theMemAccess_stat;
+
+  int64_t theTotalReqs;
+  int64_t theHit;
+  int64_t theMiss;
+  int64_t theMemAccess;
+
+  MMUStats(std::string const &aName)
+      : theTotalReqs_stat(aName + "TotalReqs"), theHit_stat(aName + "Hits"),
+        theMiss_stat(aName + "Misses"), theMemAccess_stat(aName + "MemAccesses"), theTotalReqs(0),
+        theHit(0), theMiss(0), theMemAccess(0) {
+  }
+
+  void update() {
+    theTotalReqs_stat += theTotalReqs;
+    theHit_stat += theHit;
+    theMiss_stat += theMiss;
+    theMemAccess_stat += theMemAccess;
+    theTotalReqs = 0;
+    theHit = 0;
+    theMiss = 0;
+    theMemAccess = 0;
+  }
+};
+
 class FLEXUS_COMPONENT(DecoupledFeeder) {
   FLEXUS_COMPONENT_IMPL(DecoupledFeeder);
 
@@ -76,6 +106,7 @@ class FLEXUS_COMPONENT(DecoupledFeeder) {
   QemuTracerManager *theTracer;
   int64_t *theLastICounts;
   Stat::StatCounter **theICounts;
+  MMUStats **os_itlb_stats, **os_dtlb_stats, **user_itlb_stats, **user_dtlb_stats;
 
 public:
   FLEXUS_COMPONENT_CONSTRUCTOR(DecoupledFeeder) : base(FLEXUS_PASS_CONSTRUCTOR_ARGS) {
@@ -128,9 +159,17 @@ public:
 
     theLastICounts = new int64_t[theNumCPUs];
     theICounts = new Stat::StatCounter *[theNumCPUs];
+    os_itlb_stats = new MMUStats *[theNumCPUs];
+    os_dtlb_stats = new MMUStats *[theNumCPUs];
+    user_itlb_stats = new MMUStats *[theNumCPUs];
+    user_dtlb_stats = new MMUStats *[theNumCPUs];
     for (int32_t i = 0; i < theNumCPUs; ++i) {
       theICounts[i] =
           new Stat::StatCounter(boost::padded_string_cast<2, '0'>(i) + "-feeder-ICount");
+      os_itlb_stats[i] = new MMUStats(boost::padded_string_cast<2, '0'>(i) + "-itlb-OS:");
+      os_dtlb_stats[i] = new MMUStats(boost::padded_string_cast<2, '0'>(i) + "-dtlb-OS:");
+      user_itlb_stats[i] = new MMUStats(boost::padded_string_cast<2, '0'>(i) + "-itlb-User:");
+      user_dtlb_stats[i] = new MMUStats(boost::padded_string_cast<2, '0'>(i) + "-dtlb-User:");
       theLastICounts[i] = Qemu::API::QEMU_get_instruction_count(i, BOTH_INSTR);
     }
 
@@ -151,9 +190,6 @@ public:
   std::pair<uint64_t, uint32_t> theFetchInfo;
 
   void toL1D(int32_t anIndex, MemoryMessage &aMessage) {
-    //  printf("toL1D interface entry!\n");
-    FLEXUS_CHANNEL_ARRAY(ToL1D, anIndex) << aMessage;
-
     TranslationPtr tr(new Translation);
     tr->setData();
     tr->theVaddr = aMessage.pc();
@@ -161,12 +197,26 @@ public:
     tr->inTraceMode = true;
 
     FLEXUS_CHANNEL_ARRAY(ToMMU, anIndex) << tr;
+    MemoryMessage theMMUMemoryMessage(aMessage);
+    theMMUMemoryMessage.setPageWalk();
+    bool isHit = true;
+    aMessage.isPriv() ? os_dtlb_stats[anIndex]->theTotalReqs++
+                      : user_dtlb_stats[anIndex]->theTotalReqs++;
     while (tr->trace_addresses.size()) {
-      aMessage.type() = MemoryMessage::LoadReq;
-      aMessage.address() = tr->trace_addresses.front();
+      theMMUMemoryMessage.type() = MemoryMessage::LoadReq;
+      theMMUMemoryMessage.address() = tr->trace_addresses.front();
       tr->trace_addresses.pop();
-      FLEXUS_CHANNEL_ARRAY(ToL1D, anIndex) << aMessage;
+      FLEXUS_CHANNEL_ARRAY(ToL1D, anIndex) << theMMUMemoryMessage;
+      aMessage.isPriv() ? os_dtlb_stats[anIndex]->theMemAccess++
+                        : user_dtlb_stats[anIndex]->theMemAccess++;
+      isHit = false;
     }
+    if (isHit)
+      aMessage.isPriv() ? os_dtlb_stats[anIndex]->theHit++ : user_dtlb_stats[anIndex]->theHit++;
+    else
+      aMessage.isPriv() ? os_dtlb_stats[anIndex]->theMiss++ : user_dtlb_stats[anIndex]->theMiss++;
+
+    FLEXUS_CHANNEL_ARRAY(ToL1D, anIndex) << aMessage;
   }
 
   void toNAW(int32_t anIndex, MemoryMessage &aMessage) {
@@ -185,6 +235,32 @@ public:
   }
   */
   void modernToL1I(int32_t anIndex, MemoryMessage &aMessage) {
+    TranslationPtr tr(new Translation);
+    tr->setInstr();
+    tr->theVaddr = aMessage.pc();
+    tr->thePaddr = aMessage.address();
+    tr->inTraceMode = true;
+
+    FLEXUS_CHANNEL_ARRAY(ToMMU, anIndex) << tr;
+    MemoryMessage theMMUMemoryMessage(MemoryMessage::LoadReq);
+    theMMUMemoryMessage.setPageWalk();
+    bool isHit = true;
+    aMessage.isPriv() ? os_itlb_stats[anIndex]->theTotalReqs++
+                      : user_itlb_stats[anIndex]->theTotalReqs++;
+    while (tr->trace_addresses.size()) {
+      theMMUMemoryMessage.type() = MemoryMessage::LoadReq;
+      theMMUMemoryMessage.address() = tr->trace_addresses.front();
+      tr->trace_addresses.pop();
+      FLEXUS_CHANNEL_ARRAY(ToL1D, anIndex) << theMMUMemoryMessage;
+      aMessage.isPriv() ? os_itlb_stats[anIndex]->theMemAccess++
+                        : user_itlb_stats[anIndex]->theMemAccess++;
+      isHit = false;
+    }
+    if (isHit)
+      aMessage.isPriv() ? os_itlb_stats[anIndex]->theHit++ : user_itlb_stats[anIndex]->theHit++;
+    else
+      aMessage.isPriv() ? os_itlb_stats[anIndex]->theMiss++ : user_itlb_stats[anIndex]->theMiss++;
+
     FLEXUS_CHANNEL_ARRAY(ToL1I, anIndex) << aMessage;
 
     pc_type_annul_triplet thePCTypeAndAnnulTriplet;
@@ -197,20 +273,6 @@ public:
     thePCTypeAndAnnulTriplet.second = theTypeAndAnnulPair;
 
     FLEXUS_CHANNEL_ARRAY(ToBPred, anIndex) << thePCTypeAndAnnulTriplet;
-
-    TranslationPtr tr(new Translation);
-    tr->setInstr();
-    tr->theVaddr = aMessage.pc();
-    tr->thePaddr = aMessage.address();
-    tr->inTraceMode = true;
-
-    FLEXUS_CHANNEL_ARRAY(ToMMU, anIndex) << tr;
-    while (tr->trace_addresses.size()) {
-      aMessage.type() = MemoryMessage::LoadReq;
-      aMessage.address() = tr->trace_addresses.front();
-      tr->trace_addresses.pop();
-      FLEXUS_CHANNEL_ARRAY(ToL1D, anIndex) << aMessage;
-    }
   }
   void updateInstructionCounts() {
     // Count instructions
@@ -221,8 +283,17 @@ public:
       theLastICounts[i] = temp;
     }
   }
+  void updateMMUStats() {
+    for (int32_t i = 0; i < theNumCPUs; ++i) {
+      os_itlb_stats[i]->update();
+      os_dtlb_stats[i]->update();
+      user_itlb_stats[i]->update();
+      user_dtlb_stats[i]->update();
+    }
+  }
 
   void doHousekeeping() {
+    updateMMUStats();
     updateInstructionCounts();
     theTracer->updateStats();
 
