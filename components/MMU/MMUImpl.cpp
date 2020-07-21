@@ -94,7 +94,7 @@ namespace nMMU {
 using namespace Flexus;
 using namespace Core;
 using namespace SharedTypes;
-#define PAGEMASK ~0xFFFULL
+uint64_t PAGEMASK;
 
 class FLEXUS_COMPONENT(MMU) {
   FLEXUS_COMPONENT_IMPL(MMU);
@@ -421,6 +421,9 @@ public:
     }
     theMMU->initRegsFromQEMUObject(getMMURegsFromQEMU(anIndex));
     theMMU->setupAddressSpaceSizesAndGranules();
+    DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
+    DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
+    PAGEMASK = ~((1 << theMMU->Gran0->getlogKBSize()) - 1);
     if (thePageWalker) {
       DBG_(VVerb, (<< "Annulling all PW entries"));
       thePageWalker->annulAll();
@@ -535,6 +538,9 @@ public:
         theMMU.reset(new mmu_t());
         theMMU->initRegsFromQEMUObject(getMMURegsFromQEMU((int)flexusIndex()));
         theMMU->setupAddressSpaceSizesAndGranules();
+        DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
+        DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
+        PAGEMASK = ~((1 << theMMU->Gran0->getlogKBSize()) - 1);
         thePageWalker->setMMU(theMMU);
         theMMUInitialized = true;
       }
