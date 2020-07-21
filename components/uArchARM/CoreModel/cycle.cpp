@@ -58,7 +58,6 @@
 //#include <components/WhiteBox/WhiteBoxIface.hpp>
 
 #include <components/armDecoder/armInstruction.hpp>
-
 #include <components/armDecoder/armBitManip.hpp>
 
 #define DBG_DeclareCategories uArchCat
@@ -117,11 +116,10 @@ bool CoreImpl::checkValidatation() {
 }
 
 void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
-
-  // qemu warmup
+  // qemu warmup or halt state
   if (theFlexus->cycleCount() == 1) {
-    advance_fn();
-    throw ResynchronizeWithQemuException();
+    advance_fn(true);
+    throw ResynchronizeWithQemuException(true);
   }
 
   CORE_DBG("--------------START CORE------------------------");
@@ -1022,7 +1020,8 @@ std::ostream &operator<<(std::ostream &anOstream, eExceptionType aCode) {
       "Exception_SOFTWARESTEP          ", "Exception_SOFTWARESTEP_SAME_EL  ",
       "Exception_WATCHPOINT            ", "Exception_WATCHPOINT_SAME_EL    ",
       "Exception_AA32_BKPT             ", "Exception_VECTORCATCH           ",
-      "Exception_AA64_BKPT             ", "Exception_None                  "};
+      "Exception_AA64_BKPT             ", "Exception_IRQ",
+      "Exception_None                  "};
 
   if (aCode >= kException_None) {
     anOstream << "InvalidExceptionType(" << static_cast<int>(aCode) << ")";
@@ -1505,20 +1504,7 @@ int f_validation = 0;
 void CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction) {
   FLEXUS_PROFILE();
   CORE_DBG(*anInstruction);
-
-  //  Detect kernel-panic
-  //  if (  ( anInstruction->pc() == 0x1000d31c )
-  //        && ( anInstruction->instClass() == clsBranch )
-  //     ) {
-  //    ++theKernelPanicCount;
-  //    if ( theKernelPanicCount == 100) {
-  //      DBG_Assert(false, ( << theName << " Appears to be in the kernel panic
-  //      loop at v:0x1000d31c" ) );
-  //    }
-  //  }
-
   bool validation_passed = true;
-
   int raised = 0;
   bool resync_accounted = false;
 
@@ -1534,7 +1520,24 @@ void CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction) {
     theInterruptSignalled = false;
     theInterruptInstruction = 0;
 
-    raised = advance_fn();
+    if (cpuHalted) {
+      int qemu_rcode = advance_fn(false); // don't count instructions in halt state
+      if (qemu_rcode != QEMU_HALT_CODE) {
+        DBG_(Dev, (<< "Core " << theNode << " leaving halt state, after QEMU sent execution code "
+                   << qemu_rcode));
+        cpuHalted = false;
+      }
+      anInstruction->forceResync();
+    } else {
+      int qemu_rcode = advance_fn(true);  // count time
+      if (qemu_rcode == QEMU_HALT_CODE) { // QEMU CPU Halted
+        /* If cpu is halted, turn off insn counting until the CPU is woken up again */
+        cpuHalted = true;
+        DBG_(Dev, (<< "Core " << theNode << " entering halt state, after executing instruction "
+                   << *anInstruction));
+        anInstruction->forceResync();
+      }
+    }
 
     if (raised != 0) {
       if (anInstruction->willRaise() !=
@@ -1734,7 +1737,7 @@ void CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExcept
   // Only ROB head should raise
   DBG_Assert(anInstruction == theROB.front());
   anInstruction->forceResync();
-  return;
+  // return;
 
   // Clear ROB
   theSquashRequested = true;

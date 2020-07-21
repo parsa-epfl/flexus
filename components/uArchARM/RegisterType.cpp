@@ -114,7 +114,7 @@ std::ostream &operator<<(std::ostream &anOstream, eInstructionCode aCode) {
        // Unsupported Instructions
        "RDPRUnsupported", "WRPRUnsupported", "RETRYorDONE", "ExceptionUnsupported", "Exception",
        "SideEffectLoad", "SideEffectStore", "SideEffectAtomic", "DeviceAccess", "MMUAccess",
-       "ITLBMiss", "CLREX"};
+       "ITLBMiss", "CLREX", "HaltCode"};
   if (aCode >= codeLastCode) {
     anOstream << "Invalid code(" << static_cast<int>(aCode) << ")";
   } else {

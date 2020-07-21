@@ -69,7 +69,7 @@ struct CoreModel : public uArchARM {
                               // Msutherl, removed
                               //, std::function< void (Flexus::Qemu::Translation &) > translate
                               ,
-                              std::function<int()> advance,
+                              std::function<int(bool)> advance,
                               std::function<void(eSquashCause)> squash,
                               std::function<void(VirtualMemoryAddress)> redirect,
                               std::function<void(int, int)> change_mode,

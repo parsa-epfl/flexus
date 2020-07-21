@@ -94,6 +94,8 @@ namespace Stat = Flexus::Stat;
 
 namespace nuArchARM {
 
+#define QEMU_HALT_CODE 0x10003
+
 using nXactTimeBreakdown::TimeBreakdown;
 
 struct ExceptionRecord {
@@ -116,7 +118,7 @@ class CoreImpl : public CoreModel {
   // Msutherl - removed translate as a call to microArch,
   // now internal to CoreModel
   // std::function< void (Flexus::Qemu::Translation &) > translate;
-  std::function<int()> advance_fn;
+  std::function<int(bool)> advance_fn;
   std::function<void(eSquashCause)> squash_fn;
   std::function<void(VirtualMemoryAddress)> redirect_fn;
   std::function<void(int, int)> change_mode_fn;
@@ -383,7 +385,7 @@ private:
       theResync_WRPRUnsupported, theResync_MEMBARSync, theResync_UnexpectedException,
       theResync_Interrupt, theResync_DeviceAccess, theResync_FailedValidation,
       theResync_FailedHandleTrap, theResync_SideEffectLoad, theResync_SideEffectStore,
-      theResync_Unknown, theFalseITLBMiss;
+      theResync_Unknown, theResync_CPUHaltedState, theFalseITLBMiss;
 
   MemOpCounter *theMemOpCounters[2][2][8];
   Stat::StatCounter *theEpochEnd[2][8];
@@ -516,7 +518,7 @@ public:
            // Msutherl, removed
            //, std::function< void (Flexus::Qemu::Translation &) > xlat
            ,
-           std::function<int()> advance, std::function<void(eSquashCause)> squash,
+           std::function<int(bool)> advance, std::function<void(eSquashCause)> squash,
            std::function<void(VirtualMemoryAddress)> redirect,
            std::function<void(int, int)> change_mode,
            std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback,
@@ -734,6 +736,8 @@ public:
 
   /* Msutherl: API to read system register value using QEMU encoding */
   uint64_t readUnhashedSysReg(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn, uint8_t crm);
+  // Msutherl: FIXME this should be a call to libqflex
+  bool cpuHalted;
 
   // Interface to Memory Unit
   //==========================================================================

@@ -54,7 +54,7 @@ namespace nuArchARM {
 CoreImpl::CoreImpl(uArchOptions_t options
                    //, std::function< void (Flexus::Qemu::Translation &) > xlat
                    ,
-                   std::function<int()> _advance, std::function<void(eSquashCause)> _squash,
+                   std::function<int(bool)> _advance, std::function<void(eSquashCause)> _squash,
                    std::function<void(VirtualMemoryAddress)> _redirect,
                    std::function<void(int, int)> _change_mode,
                    std::function<void(boost::intrusive_ptr<BranchFeedback>)> _feedback,
@@ -165,8 +165,10 @@ CoreImpl::CoreImpl(uArchOptions_t options
       theResync_FailedHandleTrap(theName + "-Resync:FailedHandleTrap"),
       theResync_SideEffectLoad(theName + "-Resync:SideEffectLoad"),
       theResync_SideEffectStore(theName + "-Resync:SideEffectStore"),
-      theResync_Unknown(theName + "-Resync:Unknown"), theFalseITLBMiss(theName + "-FalseITLBMiss"),
-      theEpochs(theName + "-MLPEpoch"), theEpochs_Instructions(theName + "-MLPEpoch:Instructions"),
+      theResync_Unknown(theName + "-Resync:Unknown"),
+      theResync_CPUHaltedState(theName + "-Resync:CPUHalted"),
+      theFalseITLBMiss(theName + "-FalseITLBMiss"), theEpochs(theName + "-MLPEpoch"),
+      theEpochs_Instructions(theName + "-MLPEpoch:Instructions"),
       theEpochs_Instructions_Avg(theName + "-MLPEpoch:Instructions:Avg"),
       theEpochs_Instructions_StdDev(theName + "-MLPEpoch:Instructions:StdDev"),
       theEpochs_Loads(theName + "-MLPEpoch:Loads"),
@@ -284,6 +286,8 @@ CoreImpl::CoreImpl(uArchOptions_t options
 
   theLastStallCause = nXactTimeBreakdown::kUnknown;
   theCycleCategory = kTBUser;
+
+  cpuHalted = false;
 }
 
 void CoreImpl::resetARM() {
@@ -482,7 +486,7 @@ void CoreImpl::setPC(uint64_t aPC) {
 CoreModel *CoreModel::construct(uArchOptions_t options
                                 //, std::function< void (Flexus::Qemu::Translation &) > translate
                                 ,
-                                std::function<int()> advance,
+                                std::function<int(bool)> advance,
                                 std::function<void(eSquashCause)> squash,
                                 std::function<void(VirtualMemoryAddress)> redirect,
                                 std::function<void(int, int)> change_mode,

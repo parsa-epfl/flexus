@@ -124,8 +124,8 @@ public:
         theCore(CoreModel::construct(options
                                      //, ll::bind( &microArchImpl::translate, this, ll::_1)
                                      ,
-                                     ll::bind(&microArchImpl::advance, this), _squash, _redirect,
-                                     _changeState, _feedback, _signalStoreForwardingHit,
+                                     ll::bind(&microArchImpl::advance, this, ll::_1), _squash,
+                                     _redirect, _changeState, _feedback, _signalStoreForwardingHit,
                                      _mmuResync)),
         theAvailableROB(0), theResynchronizations(options.name + "-ResyncsCaught"),
         theResyncInstructions(options.name + "-ResyncsCaught:Instruction"),
@@ -145,7 +145,7 @@ public:
 
     theAvailableROB = theCore->availableROB();
 
-    resetArchitecturalState();
+    resetArchitecturalState(true);
 
     DBG_(Crit, (<< theName << " connected to "
                 << (static_cast<Flexus::Qemu::API::conf_object_t *>(*theCPU))->name));
@@ -364,7 +364,7 @@ public:
         ++theOtherResyncs;
       }
 
-      resynchronize();
+      resynchronize(e.expected);
 
       if (theBreakOnResynchronize) {
         DBG_(Dev, (<< "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id()
@@ -390,10 +390,10 @@ public:
   //  }
 
 private:
-  void resynchronize() {
+  void resynchronize(bool was_expected) {
     FLEXUS_PROFILE();
 
-    DBG_(Dev, (<< "Resynchronizing..."));
+    DBG_(Dev, Cond(!was_expected)(<< "Unexpected! Resynchronizing..."));
 
     // Clear out all state in theCore
     theCore->reset();
@@ -405,25 +405,25 @@ private:
       squash(kResynchronize);
     }
 
-    resetArchitecturalState();
+    resetArchitecturalState(was_expected);
 
     // Obtain new state from simics
     VirtualMemoryAddress redirect_address(theCPU->getPC());
-    DBG_(Dev, (<< "redirecting to address " << redirect_address));
+    DBG_(Dev, Cond(!was_expected)(<< "Unexpected! Redirecting to address " << redirect_address));
     redirect(redirect_address);
   }
 
-  int32_t advance() {
+  int32_t advance(bool count_tick = true) {
     CORE_TRACE;
     FLEXUS_PROFILE();
-    theExceptionRaised = theCPU->advance();
+    theExceptionRaised = theCPU->advance(count_tick);
     theFlexus->watchdogReset(theCPU->id());
     return theExceptionRaised;
   }
 
-  void resetArchitecturalState() {
+  void resetArchitecturalState(bool was_expected) {
     theCore->setPC(theCPU->getPC());
-    DBG_(Dev, (<< "setting PC to " << std::hex << theCore->pc() << std::dec));
+    DBG_(Dev, Cond(!was_expected)(<< "setting PC to " << std::hex << theCore->pc() << std::dec));
     resetRoundingMode();
     resetSpecialRegs();
     fillXRegisters();
