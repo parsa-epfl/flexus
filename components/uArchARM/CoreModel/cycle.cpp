@@ -55,8 +55,6 @@
 #include <components/CommonQEMU/TraceTracker.hpp>
 #include <components/CommonQEMU/Translation.hpp>
 
-//#include <components/WhiteBox/WhiteBoxIface.hpp>
-
 #include <components/armDecoder/armInstruction.hpp>
 #include <components/armDecoder/armBitManip.hpp>
 
@@ -116,7 +114,7 @@ bool CoreImpl::checkValidatation() {
 }
 
 void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
-  // qemu warmup or halt state
+  // qemu warmup
   if (theFlexus->cycleCount() == 1) {
     advance_fn(true);
     throw ResynchronizeWithQemuException(true);
@@ -276,6 +274,16 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
 
   DBG_(Verb, (<< "*** Arb *** "));
   arbitrate();
+
+  if (cpuHalted) {
+    int qemu_rcode = advance_fn(false); // don't count instructions in halt state
+    if (qemu_rcode != QEMU_HALT_CODE) {
+      DBG_(Dev, (<< "Core " << theNode << " leaving halt state, after QEMU sent execution code "
+                 << qemu_rcode));
+      cpuHalted = false;
+    }
+    throw ResynchronizeWithQemuException(true);
+  }
 
   // Retire instruction from the ROB to the SRB
   retire();
@@ -1520,23 +1528,13 @@ void CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction) {
     theInterruptSignalled = false;
     theInterruptInstruction = 0;
 
-    if (cpuHalted) {
-      int qemu_rcode = advance_fn(false); // don't count instructions in halt state
-      if (qemu_rcode != QEMU_HALT_CODE) {
-        DBG_(Dev, (<< "Core " << theNode << " leaving halt state, after QEMU sent execution code "
-                   << qemu_rcode));
-        cpuHalted = false;
-      }
+    int qemu_rcode = advance_fn(true);  // count time
+    if (qemu_rcode == QEMU_HALT_CODE) { // QEMU CPU Halted
+      /* If cpu is halted, turn off insn counting until the CPU is woken up again */
+      cpuHalted = true;
+      DBG_(Dev, (<< "Core " << theNode << " entering halt state, after executing instruction "
+                 << *anInstruction));
       anInstruction->forceResync();
-    } else {
-      int qemu_rcode = advance_fn(true);  // count time
-      if (qemu_rcode == QEMU_HALT_CODE) { // QEMU CPU Halted
-        /* If cpu is halted, turn off insn counting until the CPU is woken up again */
-        cpuHalted = true;
-        DBG_(Dev, (<< "Core " << theNode << " entering halt state, after executing instruction "
-                   << *anInstruction));
-        anInstruction->forceResync();
-      }
     }
 
     if (raised != 0) {
@@ -1573,7 +1571,7 @@ void CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction) {
 
   theDumpPC = anInstruction->pcNext();
   if (anInstruction->resync()) {
-    DBG_(Dev, (<< "Forced Resync:" << *anInstruction));
+    DBG_(Dev, Cond(!cpuHalted)(<< "Forced Resync:" << *anInstruction));
 
     // Subsequent Empty ROB stalls (until next dispatch) are the result of a
     // synchronizing instruction.

@@ -117,6 +117,7 @@ COMPONENT_INTERFACE(
   PORT( PushInput, boost::intrusive_ptr< AbstractInstruction >, DispatchIn)
   PORT( PullOutput, dispatch_status, AvailableDispatchOut)
   PORT( PullOutput, bool, Stalled)
+  PORT( PullOutput, bool, CoreHalted)
   PORT( PullOutput, int, ICount)
   PORT( PushOutput, eSquashCause, SquashOut )
   PORT( PushOutput, vaddr_pair, RedirectOut )

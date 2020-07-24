@@ -95,6 +95,7 @@ struct CoreModel : public uArchARM {
   virtual int32_t availableROB() const = 0;
   virtual bool isSynchronized() const = 0;
   virtual bool isStalled() const = 0;
+  virtual bool isHalted() const = 0;
   virtual int32_t iCount() const = 0;
   virtual bool isQuiesced() const = 0;
   virtual void dispatch(boost::intrusive_ptr<Instruction>) = 0;

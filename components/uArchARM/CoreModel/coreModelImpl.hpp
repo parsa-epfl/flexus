@@ -639,6 +639,7 @@ public:
     return theROB.empty();
   }
   bool isStalled() const;
+  bool isHalted() const;
   int32_t iCount() const;
   bool isQuiesced() const {
     return theROB.empty() && theBranchFeedback.empty() && theMemQueue.empty() && theMSHRs.empty() &&
@@ -736,7 +737,8 @@ public:
 
   /* Msutherl: API to read system register value using QEMU encoding */
   uint64_t readUnhashedSysReg(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn, uint8_t crm);
-  // Msutherl: FIXME this should be a call to libqflex
+
+  // Msutherl: State variable indicating this has no work to do. Set by QEMU upon instruction retire
   bool cpuHalted;
 
   // Interface to Memory Unit

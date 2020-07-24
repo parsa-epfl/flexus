@@ -404,8 +404,11 @@ typedef struct ROR : public Operation {
   virtual Operand operator()(std::vector<Operand> const &operands) {
     DBG_Assert(operands.size() == 3);
     uint64_t input = boost::get<uint64_t>(operands[0]);
-    uint64_t shift_size = boost::get<uint64_t>(operands[1]);
     uint64_t input_size = boost::get<uint64_t>(operands[2]);
+
+    /* Mask off by 32 or 64 depending on input size according to C6.2.215 of ARM64 manual */
+    uint64_t shift_size = (input_size == 32) ? boost::get<uint64_t>(operands[1]) & ((32 - 1))
+                                             : boost::get<uint64_t>(operands[1]) & ((64 - 1));
     return ror((uint64_t)input, (uint64_t)input_size, (uint64_t)shift_size);
   }
   virtual char const *describe() const {

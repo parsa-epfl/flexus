@@ -175,6 +175,13 @@ private:
 
     AGU_DBG("--------------START ADDRESS GEN------------------------");
 
+    DBG_Assert(FLEXUS_CHANNEL(uArchHalted).available());
+    bool cpu_in_halt = false;
+    FLEXUS_CHANNEL(uArchHalted) >> cpu_in_halt;
+    if (cpu_in_halt) {
+      return;
+    }
+
     if (theFlexus->quiescing()) {
       DBG_(VVerb, (<< "FGU: Flexus is quiescing!.. come back later"));
       return;
