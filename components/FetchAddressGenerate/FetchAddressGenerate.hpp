@@ -69,6 +69,7 @@ COMPONENT_INTERFACE(
   DYNAMIC_PORT_ARRAY( PushOutput, boost::intrusive_ptr<FetchCommand>, FetchAddrOut )
   DYNAMIC_PORT_ARRAY( PullInput, int, AvailableFAQ )
   DYNAMIC_PORT_ARRAY( PullOutput, bool, Stalled)
+  PORT( PullInput, bool, uArchHalted)
 
   DRIVE( FAGDrive )
 );

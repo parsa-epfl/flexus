@@ -77,6 +77,7 @@ struct microArch {
   virtual bool isSynchronized() = 0;
   virtual bool isQuiesced() = 0;
   virtual bool isStalled() = 0;
+  virtual bool isHalted() = 0;
   virtual int32_t iCount() = 0;
   virtual void dispatch(boost::intrusive_ptr<AbstractInstruction>) = 0;
   virtual void skipCycle() = 0;

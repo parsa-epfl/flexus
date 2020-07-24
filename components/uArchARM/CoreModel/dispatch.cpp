@@ -70,6 +70,10 @@ bool CoreImpl::isStalled() const {
              getROBHeadClass() == clsMEMBAR || getROBHeadClass() == clsSynchronizing))));
 }
 
+bool CoreImpl::isHalted() const {
+  return cpuHalted;
+}
+
 int32_t CoreImpl::iCount() const {
   return theROB.size();
 }

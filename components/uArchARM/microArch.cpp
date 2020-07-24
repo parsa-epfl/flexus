@@ -291,6 +291,10 @@ public:
     return theCore->isStalled();
   }
 
+  bool isHalted() {
+    return theCore->isHalted();
+  }
+
   int32_t iCount() {
     return theCore->iCount();
   }

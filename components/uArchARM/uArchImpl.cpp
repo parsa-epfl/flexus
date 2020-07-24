@@ -255,6 +255,11 @@ public:
     return theMicroArch->isStalled();
   }
 
+  FLEXUS_PORT_ALWAYS_AVAILABLE(CoreHalted);
+  bool pull(CoreHalted const &) {
+    return theMicroArch->isHalted();
+  }
+
   FLEXUS_PORT_ALWAYS_AVAILABLE(ICount);
   int32_t pull(ICount const &) {
     return theMicroArch->iCount();
