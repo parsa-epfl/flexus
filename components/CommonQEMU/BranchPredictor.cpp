@@ -80,6 +80,7 @@ using namespace boost::multi_index;
 namespace Stat = Flexus::Stat;
 
 #include <components/CommonQEMU/BranchPredictor.hpp>
+#include <components/uFetch/uFetchTypes.hpp>
 
 #define DBG_DefineCategories BPred
 #define DBG_SetDefaultOps AddCat(BPred)
@@ -87,25 +88,6 @@ namespace Stat = Flexus::Stat;
 
 namespace Flexus {
 namespace SharedTypes {
-
-struct BTBEntry {
-  VirtualMemoryAddress thePC;
-  mutable eBranchType theBranchType;
-  mutable VirtualMemoryAddress theTarget;
-  BTBEntry(VirtualMemoryAddress aPC, eBranchType aType, VirtualMemoryAddress aTarget)
-      : thePC(aPC), theBranchType(aType), theTarget(aTarget) {
-  }
-  BTBEntry() {
-  }
-
-private:
-  friend class boost::serialization::access;
-  template <class Archive> void serialize(Archive &ar, const uint32_t version) {
-    ar &thePC;
-    ar &theBranchType;
-    ar &theTarget;
-  }
-};
 
 struct by_baddr {};
 typedef multi_index_container<

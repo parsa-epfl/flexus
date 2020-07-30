@@ -62,7 +62,7 @@ COMPONENT_PARAMETERS(
 
 COMPONENT_INTERFACE(
   PORT( PushInput, pFetchBundle, FetchBundleIn)
-  PORT( PullOutput, int32_t, AvailableFIQOut)
+  PORT( PullOutput, dispatch_status, AvailableFIQOut)
   PORT( PullInput, dispatch_status, AvailableDispatchIn)
   PORT( PushOutput, boost::intrusive_ptr< AbstractInstruction>, DispatchOut)
   PORT( PushOutput, eSquashCause, SquashOut)

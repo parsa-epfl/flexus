@@ -52,9 +52,9 @@
 #include FLEXUS_BEGIN_COMPONENT_DECLARATION()
 
 #if FLEXUS_TARGET_IS(ARM)
-typedef Flexus::SharedTypes::VirtualMemoryAddress vaddr_pair;
+//typedef Flexus::SharedTypes::VirtualMemoryAddress vaddr_pair;
 #elif FLEXUS_TARGET_IS(v9)
-typedef std::pair<Flexus::SharedTypes::VirtualMemoryAddress, Flexus::SharedTypes::VirtualMemoryAddress> vaddr_pair;
+//typedef std::pair<Flexus::SharedTypes::VirtualMemoryAddress, Flexus::SharedTypes::VirtualMemoryAddress> vaddr_pair;
 #endif
 COMPONENT_PARAMETERS(
   PARAMETER( MaxFetchAddress, uint32_t, "Max fetch addresses generated per cycle", "faddrs", 10 )
@@ -63,7 +63,7 @@ COMPONENT_PARAMETERS(
 );
 
 COMPONENT_INTERFACE(
-  DYNAMIC_PORT_ARRAY( PushInput, vaddr_pair, RedirectIn )
+  DYNAMIC_PORT_ARRAY( PushInput, Flexus::SharedTypes::VirtualMemoryAddress, RedirectIn )
   DYNAMIC_PORT_ARRAY( PushInput, boost::intrusive_ptr<BranchFeedback>, BranchFeedbackIn )
 
   DYNAMIC_PORT_ARRAY( PushOutput, boost::intrusive_ptr<FetchCommand>, FetchAddrOut )

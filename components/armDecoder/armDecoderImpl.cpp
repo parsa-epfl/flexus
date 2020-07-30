@@ -118,12 +118,13 @@ public:
   }
 
   FLEXUS_PORT_ALWAYS_AVAILABLE(AvailableFIQOut);
-  int32_t pull(interface::AvailableFIQOut const &) {
+  dispatch_status pull(interface::AvailableFIQOut const &) {
     int32_t avail = cfg.FIQSize - theFIQ.size();
     if (avail < 0) {
       avail = 0;
     }
-    return avail;
+    //return std::make_pair(avail, (theFIQ.empty() && thePipeline.empty())); FIXME: this thePipeline thing needs to be included
+    return std::make_pair(avail, (theFIQ.empty()));
   }
 
   FLEXUS_PORT_ALWAYS_AVAILABLE(ICount);
