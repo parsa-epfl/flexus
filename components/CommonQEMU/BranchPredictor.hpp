@@ -1,53 +1,9 @@
-//  DO-NOT-REMOVE begin-copyright-block
-// QFlex consists of several software components that are governed by various
-// licensing terms, in addition to software that was developed internally.
-// Anyone interested in using QFlex needs to fully understand and abide by the
-// licenses governing all the software components.
-//
-// ### Software developed externally (not by the QFlex group)
-//
-//     * [NS-3] (https://www.gnu.org/copyleft/gpl.html)
-//     * [QEMU] (http://wiki.qemu.org/License)
-//     * [SimFlex] (http://parsa.epfl.ch/simflex/)
-//     * [GNU PTH] (https://www.gnu.org/software/pth/)
-//
-// ### Software developed internally (by the QFlex group)
-// **QFlex License**
-//
-// QFlex
-// Copyright (c) 2020, Parallel Systems Architecture Lab, EPFL
-// All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without modification,
-// are permitted provided that the following conditions are met:
-//
-//     * Redistributions of source code must retain the above copyright notice,
-//       this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above copyright notice,
-//       this list of conditions and the following disclaimer in the documentation
-//       and/or other materials provided with the distribution.
-//     * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,
-//       nor the names of its contributors may be used to endorse or promote
-//       products derived from this software without specific prior written
-//       permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,
-// EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-// GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
-// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  DO-NOT-REMOVE end-copyright-block
 #ifndef FLEXUS_FETCHADDRESSGENERATE_BRANCHPREDICTOR_HPP_INCLUDED
 #define FLEXUS_FETCHADDRESSGENERATE_BRANCHPREDICTOR_HPP_INCLUDED
 
+#include <iostream>
 #include <core/target.hpp>
 #include <core/types.hpp>
-#include <iostream>
 
 #include <components/uFetch/uFetchTypes.hpp>
 
@@ -55,30 +11,47 @@ namespace Flexus {
 namespace SharedTypes {
 
 struct BranchPredictor {
-  static BranchPredictor *combining(std::string const &aName, uint32_t anIndex);
-  virtual bool isBranch(VirtualMemoryAddress anAddress) = 0;
-  virtual void feedback(BranchFeedback const &aFeedback) = 0;
-  virtual VirtualMemoryAddress predict(FetchAddr &aFetchAddr) = 0;
-  virtual ~BranchPredictor() {
-  }
-  virtual void loadState(std::string const &aDirName) = 0;
-  virtual void saveState(std::string const &aDirName) const = 0;
+  static BranchPredictor * combining(std::string const & aName, uint32_t anIndex, bool RAS, bool TCE, bool TrapRet);
+  virtual bool isBranch( FetchAddr & aFetchAddr) = 0;
+  virtual bool isBranchInsn( VirtualMemoryAddress aFetchAddr) = 0;
+  virtual void feedback( BranchFeedback & aFeedback, int flexusIndex) = 0;
+  virtual void resetRAS() = 0;
+  virtual void reconstructRAS(std::list< boost::intrusive_ptr<BPredState> > & theRASops) = 0;
+  virtual void pushReturnAddresstoRAS(VirtualMemoryAddress retAddress) = 0;
+  virtual void resetState(boost::intrusive_ptr<BPredState>) = 0;
+  virtual void resetUpdateState( boost::intrusive_ptr<BPredState> aBPState) = 0;
+  virtual void resetTrapState(boost::intrusive_ptr<TrapState> aTrapState) = 0;
+  virtual VirtualMemoryAddress predict( FetchAddr & aFetchAddr) = 0;
+  virtual BTBEntry access_BBTB( VirtualMemoryAddress anAddress ) = 0;
+  virtual VirtualMemoryAddress predictBranch(FetchAddr & aFetch, BTBEntry aBTBEntry) = 0;
+  virtual void checkPointBPState (FetchAddr & aFetch) = 0;
+  virtual eDirection conditionalTaken(VirtualMemoryAddress anAddress) = 0;
+  virtual VirtualMemoryAddress getNextPrefetchAddr(VirtualMemoryAddress anAddress) = 0;
+  virtual void updateBTB(VirtualMemoryAddress pc, eBranchType branchType, VirtualMemoryAddress target, bool specialCall, int BBsize) = 0;
+  virtual void updateBBTB(BTBEntry anEntry) = 0;
+  virtual ~BranchPredictor() {}
+  virtual void loadState( std::string const & aDirName) = 0;
+  virtual void saveState( std::string const & aDirName) const = 0;
 };
+
 
 struct FastBranchPredictor {
-  static FastBranchPredictor *combining(std::string const &aName, uint32_t anIndex);
-  // virtual void feedback( BranchFeedback const & aFeedback) = 0;
-  virtual void predict(VirtualMemoryAddress anAddress, BPredState &aBPState) = 0;
-  virtual void feedback(VirtualMemoryAddress anAddress, eBranchType anActualType,
-                        eDirection anActualDirection, VirtualMemoryAddress anActualAddress,
-                        BPredState &aBPState) = 0;
-  virtual ~FastBranchPredictor() {
-  }
-  virtual void loadState(std::string const &aDirName) = 0;
-  virtual void saveState(std::string const &aDirName) const = 0;
+  static FastBranchPredictor * combining(std::string const & aName, uint32_t anIndex);
+  //virtual void feedback( BranchFeedback const & aFeedback) = 0;
+  virtual void predict( VirtualMemoryAddress anAddress, BPredState & aBPState) = 0;
+  virtual void runahead_predict( VirtualMemoryAddress anAddress, BPredState & aBPState) = 0;
+  virtual void reset_runahead_history() = 0;
+  virtual bool feedback( VirtualMemoryAddress anAddress,  eBranchType anActualType, eDirection anActualDirection, VirtualMemoryAddress anActualAddress, BPredState & aBPState, int aBBsize) = 0;
+  virtual void updateBB_BTB( VirtualMemoryAddress anAddress,  eBranchType anActualType, eDirection anActualDirection, VirtualMemoryAddress anActualAddress, BPredState & aBPState, int aBBsize) = 0;
+  virtual void predict_BBTB( VirtualMemoryAddress anAddress, BPredState & aBPState ) = 0;
+  virtual void updateBBTB(BTBEntry anEntry) = 0;
+  virtual eDirection conditionalTaken(VirtualMemoryAddress anAddress) = 0;
+  virtual ~FastBranchPredictor() {}
+  virtual void loadState( std::string const & aDirName) = 0;
+  virtual void saveState( std::string const & aDirName) const = 0;
 };
 
-} // namespace SharedTypes
-} // namespace Flexus
+} //SharedTypes
+} //Flexus
 
-#endif // FLEXUS_FETCHADDRESSGENERATE_BRANCHPREDICTOR_HPP_INCLUDED
+#endif //FLEXUS_FETCHADDRESSGENERATE_BRANCHPREDICTOR_HPP_INCLUDED

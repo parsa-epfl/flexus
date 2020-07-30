@@ -64,6 +64,7 @@ using Flexus::SharedTypes::Translation;
 using Flexus::SharedTypes::VirtualMemoryAddress;
 
 /* Added for boomerang */
+typedef std::pair<Flexus::SharedTypes::VirtualMemoryAddress, Flexus::SharedTypes::VirtualMemoryAddress> vaddr_pair;
 enum xExceptionSource {
   xUnknown = 1
   , xSaveTrap = 2
@@ -141,6 +142,7 @@ struct BTBEntry {
 struct BPredState : boost::counted_base {
   eBranchType thePredictedType;
   VirtualMemoryAddress thePredictedTarget;
+  VirtualMemoryAddress theNextPredictedTarget;
   eDirection thePrediction;
   eDirection theBimodalPrediction;
   eDirection theMetaPrediction;

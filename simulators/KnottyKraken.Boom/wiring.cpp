@@ -55,7 +55,7 @@ std::string theSimulatorName = "KnottyKraken v2.0 - Boomerang Frontend";
 
 #include <components/CMPCache/CMPCache.hpp>
 #include <components/Cache/Cache.hpp>
-#include <components/FetchAddressGenerate/FetchAddressGenerate.hpp>
+#include <components/FetchAddressGenerate_Boom/FetchAddressGenerate.hpp>
 #include <components/MMU/MMU.hpp>
 #include <components/MagicBreakQEMU/MagicBreak.hpp>
 #include <components/MemoryLoopback/MemoryLoopback.hpp>

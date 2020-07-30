@@ -3,7 +3,7 @@ set(KnottyKraken.Boom_REQUIRED_COMPONENTS
   uFetch_Boom
   armDecoder 
   uArchARM 
-  FetchAddressGenerate 
+  FetchAddressGenerate_Boom
   Cache
   MemoryLoopback 
   MemoryMap 

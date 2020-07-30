@@ -330,7 +330,8 @@ private:
 
   void redirect(VirtualMemoryAddress aPC) {
     VirtualMemoryAddress redirect_addr = aPC;
-    FLEXUS_CHANNEL(RedirectOut) << redirect_addr;
+    std::pair<VirtualMemoryAddress,VirtualMemoryAddress> redir_out(redirect_addr,redirect_addr+4);
+    FLEXUS_CHANNEL(RedirectOut) << redir_out;
   }
 
   void feedback(boost::intrusive_ptr<BranchFeedback> aFeedback) {

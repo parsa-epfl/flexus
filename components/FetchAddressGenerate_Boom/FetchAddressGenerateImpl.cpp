@@ -1,0 +1,1257 @@
+#include <components/FetchAddressGenerate_Boom/FetchAddressGenerate.hpp>
+
+#define FLEXUS_BEGIN_COMPONENT FetchAddressGenerate
+#include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
+
+#define DBG_DefineCategories FetchAddressGenerate
+#define DBG_SetDefaultOps AddCat(FetchAddressGenerate)
+#include DBG_Control()
+
+#include <core/flexus.hpp>
+#include <core/qemu/mai_api.hpp>
+#include <core/stats.hpp>
+
+#include <components/CommonQEMU/BranchPredictor.hpp>
+#include <components/MTManager/MTManager.hpp>
+
+#define PerfectBranchDetection
+
+namespace nFetchAddressGenerate {
+
+using namespace Flexus;
+using namespace Core;
+
+typedef Flexus::SharedTypes::VirtualMemoryAddress MemoryAddress;
+
+class FLEXUS_COMPONENT(FetchAddressGenerate)  {
+  FLEXUS_COMPONENT_IMPL(FetchAddressGenerate);
+
+  std::vector<MemoryAddress> thePC;
+  std::vector<MemoryAddress> theNextPC;
+  std::vector<MemoryAddress> theRedirectPC;
+  std::vector<MemoryAddress> theRedirectNextPC;
+  std::vector<bool> theRedirect;
+  boost::scoped_ptr<BranchPredictor> theBranchPredictor;
+  uint32_t theCurrentThread;
+  std::vector<uint64_t> theNextSerial;
+  boost::intrusive_ptr<BPredState> squashedBPState; //Rakesh
+  std::vector<bool> isRedirect;
+  std::vector<bool> RASreconstructed;
+  std::vector<bool> theBTBMiss;
+  std::vector<bool> theLateBTBMiss;
+  std::vector<int> thePredecodeCyclesLeft;
+  std::vector<bool> lastTranslationFailed;
+  std::vector<VirtualMemoryAddress> theBTBFetchedBlock;
+  std::list<VirtualMemoryAddress> theBTBPredecBuff;
+  std::vector<eSquashCause> squashReason;
+  std::map<VirtualMemoryAddress, VirtualMemoryAddress> missMap;
+  Stat::StatCounter theNextReturnAddr;
+  Stat::StatCounter theBTBMissOnCall;
+  Stat::StatCounter theBTBMisses;
+  Stat::StatCounter theBTBHits;
+  Stat::StatCounter theBTBFillsL1;
+  Stat::StatCounter theBTBFillsL2;
+
+  Stat::StatCounter theCondPredicts;
+  Stat::StatCounter theTageOverrides;
+
+  VirtualMemoryAddress BTBMissPrefetchAddr;
+  int32_t BTBMissPrefetchesIssued;
+
+  int32_t theBTBPredecBuffSize;
+  int64_t theBlockMask;
+  uint32_t ICacheLineSize;
+  bool trapRetrunBlock;		//Is the current basic block the one just after a retry or done inst. If yes, it is just half the block assume its a btb hit.
+  bool BTBPrefilled;
+  bool missUnderBTBMiss;
+
+public:
+  FLEXUS_COMPONENT_CONSTRUCTOR(FetchAddressGenerate)
+    : base( FLEXUS_PASS_CONSTRUCTOR_ARGS )
+    , theNextReturnAddr( statName() + "-NextCorrectReturnAddr" )
+	, theBTBMissOnCall( statName() + "-BTBMissOnCall" )
+	, theBTBMisses( statName() + "-BTBMisses" )
+	, theBTBHits( statName() + "-BTBHits" )
+	, theBTBFillsL1( statName() + "-BTBFillsL1" )
+	, theBTBFillsL2( statName() + "-BTBFillsL2" )
+	, theCondPredicts( statName() + "-CondPredicts" )
+	, theTageOverrides( statName() + "-TageOverrides" )
+  {}
+
+  void initialize() {
+    thePC.resize(cfg.Threads);
+    theNextPC.resize(cfg.Threads);
+    theRedirectPC.resize(cfg.Threads);
+    theRedirectNextPC.resize(cfg.Threads);
+    theRedirect.resize(cfg.Threads);
+    theNextSerial.resize(cfg.Threads);
+    isRedirect.resize(cfg.Threads);
+    RASreconstructed.resize(cfg.Threads);
+    theBTBMiss.resize(cfg.Threads);
+    lastTranslationFailed.resize(cfg.Threads);
+    thePredecodeCyclesLeft.resize(cfg.Threads);
+    theBTBFetchedBlock.resize(cfg.Threads);
+    squashReason.resize(cfg.Threads);
+    for (uint32_t i = 0; i < cfg.Threads; ++i) {
+      Qemu::Processor cpu = Qemu::Processor::getProcessor(flexusIndex() * cfg.Threads + i);
+      thePC[i] = cpu->getPC();
+      theNextPC[i] = thePC[i] + 4;
+      theRedirectPC[i] = MemoryAddress(0);
+      theRedirectNextPC[i] = MemoryAddress(0);
+      theRedirect[i] = false;
+      isRedirect[i] = false;
+      RASreconstructed[i] = false;
+      theBTBMiss[i] = false;
+      lastTranslationFailed[i] = false;
+      thePredecodeCyclesLeft[i] = 0;
+      squashReason[i] = kResynchronize; //initialization with random value
+      theBTBFetchedBlock[i] = MemoryAddress(0);
+      DBG_( Dev, Comp(*this) ( << "Thread[" << flexusIndex() << "." << i << "] connected to " << ((static_cast<Flexus::Qemu::API::conf_object_t *>(cpu))->name ) << " Initial PC: " << thePC[i] ) );
+    }
+    theCurrentThread = cfg.Threads;
+    theBranchPredictor.reset( BranchPredictor::combining(statName(), flexusIndex(), cfg.EnableRAS, cfg.EnableTCE, cfg.EnableTrapRet) );
+
+    squashedBPState = 0;
+    BTBMissPrefetchesIssued = 0;
+
+    trapRetrunBlock = false;
+    BTBPrefilled = false;
+    missUnderBTBMiss = false;
+
+    theBTBPredecBuffSize = 8; //Fixme: Should be a parameter.
+    theBTBPredecBuff.resize(theBTBPredecBuffSize);
+
+    ICacheLineSize = 64;//Bytes. Fixme: make it parameter consistent with other places where block size is needed
+    theBlockMask = ~ (ICacheLineSize - 1);
+  }
+
+  void finalize() {}
+
+  bool isQuiesced() const {
+    //the FAG is always quiesced.
+    return true;
+  }
+
+  void saveState(std::string const & aDirName) {
+    theBranchPredictor->saveState(aDirName);
+  }
+
+  void loadState(std::string const & aDirName) {
+    theBranchPredictor->loadState(aDirName);
+  }
+
+public:
+  //RedirectIn
+  //----------
+  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(RedirectIn);
+  void push(interface::RedirectIn const &, index_t anIndex, std::pair<MemoryAddress, MemoryAddress> & aRedirect) {
+    theRedirectPC[anIndex] = aRedirect.first;
+    theRedirectNextPC[anIndex] = aRedirect.second;
+    theRedirect[anIndex] = true;
+    isRedirect[anIndex] = true;
+//    DBG_(Tmp, Comp(*this)( << std::endl<< std::endl<< std::endl << "redirecting pc to " << std::hex << aRedirect.first << " and " << aRedirect.second));
+
+    squashedBPState = 0;
+  }
+
+  //MissPairIn
+  //----------
+  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(MissPairIn);
+  void push(interface::MissPairIn const &, index_t anIndex, std::pair<MemoryAddress, MemoryAddress> & aMissPair) {
+	  std::map<MemoryAddress, MemoryAddress>::iterator it = missMap.find(aMissPair.first);
+	  if ( it != missMap.end()) {
+//		  DBG_(Tmp, ( << "Updating miss pair pc " << aMissPair.first << " to missed block " << aMissPair.second));
+		  it->second = aMissPair.second;
+	  } else {
+//		  DBG_(Tmp, ( << "Inserting miss pair pc " << aMissPair.first << " missed block " << aMissPair.second));
+		  missMap.insert ( aMissPair );
+	  }
+  }
+
+  //BTBReplyIn
+  //----------
+  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(BTBReplyIn);
+  void push(interface::BTBReplyIn const &, index_t anIndex, bool & status) {
+//	  DBG_(Tmp, ( << "In cache " << status));
+	  theBTBMiss[anIndex] = !status;
+	  thePredecodeCyclesLeft[anIndex] = 2; //Fixme: it should be a parameter. Number of cycle for precoding branches in a cache block.
+//	  DBG_(Tmp, ( << "Icache resp: " << status));
+  }
+
+  //SquashIn
+  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(SquashIn);
+  void push( interface::SquashIn const &, index_t anIndex, eSquashCause  & aReason){
+//		DBG_(Tmp, Comp(*this) ( << std::endl<< std::endl<< std::endl<< "Squash cpu " << flexusIndex() << "Resetting branch history reason " << aReason << std::endl << std::endl<< std::endl) );
+
+	  squashReason[anIndex] = aReason;
+	  if (!squashedBPState) {
+		  DBG_Assert ( false, ( << "No BPstate to revert to") );
+	  }
+	  if (aReason == kBranchMispredict) {
+		  theBranchPredictor->resetUpdateState(squashedBPState);
+	  } else {
+		  theBranchPredictor->resetState(squashedBPState);
+	  }
+
+	  if (RASreconstructed[anIndex] == false) {
+//		  DBG_( Tmp, ( << "Reset RAS "));
+		  theBranchPredictor->resetRAS();
+	  }
+	  RASreconstructed[anIndex] = false;
+	  theBTBMiss[anIndex] = false;
+	  thePredecodeCyclesLeft[anIndex] = 0;
+	  BTBMissPrefetchesIssued = 0;
+	  BTBPrefilled = false;
+	  missUnderBTBMiss = false;
+
+//	    if (aReason == kBranchMispredict && squashedBPState->thePredictedType == kNonBranch && (squashedBPState->theActualType == kCall || squashedBPState->theActualType == kJmplCall)) {
+//	    	DBG_Assert( squashedBPState->theActualDirection != kStronglyTaken, ( << "theActualDirection not updated.  Cannot be kStronglyTaken" ) );
+//	    	DBG_( Tmp, ( << "pushing to RAS " << squashedBPState->pc + 8));
+//	    	theBranchPredictor->pushReturnAddresstoRAS(squashedBPState->pc + 8);
+//	    	squashedBPState->callUpdatedRAS = true;
+//	    	theBTBMissOnCall++;
+//	    }
+  }
+
+  //SquashBranchIn
+  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(SquashBranchIn);
+  void push(interface::SquashBranchIn const &, index_t anIndex, boost::intrusive_ptr<BPredState> & aBPState) {
+//	  DBG_(Tmp, ( << std::endl<< std::endl << std::endl << "Branch Mispredicted " << aBPState->thePredictedType << " " << aBPState->returnPopRASTwice <<  " serial " << aBPState->theSerial << std::hex << " pc " << aBPState->pc << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(aBPState->pc)<< std::endl << std::endl<< std::endl) );
+	  squashedBPState = aBPState;
+
+	  if (aBPState->thePredictedType == kRetry || aBPState->thePredictedType == kDone) {
+		  trapRetrunBlock = true;
+	  }
+  }
+
+  //TrapStateIn
+  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(TrapStateIn);
+  void push(interface::TrapStateIn const &, index_t anIndex, boost::intrusive_ptr<TrapState> & aTrapState) {
+//	  DBG_(Tmp, ( << std::endl<< std::endl << std::endl << "Trap State Received " << std::endl << std::endl<< std::endl) );
+	  theBranchPredictor->resetTrapState(aTrapState);
+  }
+
+  //RASOpsIn
+  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(RASOpsIn);
+  void push(interface::RASOpsIn const &, index_t anIndex, std::list< boost::intrusive_ptr<BPredState> > & theRASops) {
+//	  DBG_( Tmp, ( << " reconstruct RAS " ));
+	  theBranchPredictor->reconstructRAS(theRASops);
+	  RASreconstructed[anIndex] = true;
+//	  squashedBPState = aBPState;
+//	  DBG_( Tmp, ( << " Instance More After " << aBPState->theRefCount));
+  }
+
+  //SpecialCallIn
+  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(SpecialCallIn);
+  void push(interface::SpecialCallIn const &, index_t anIndex, boost::intrusive_ptr<BPredState> & aBPState) {
+	  assert(0);
+  }
+
+  //BranchFeedbackIn
+  //----------------
+  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(BranchFeedbackIn);
+  void push(interface::BranchFeedbackIn const &, index_t anIndex, boost::intrusive_ptr<BranchFeedback> & aFeedback) {
+//	  DBG_(Tmp, ( << std::endl<< std::endl<< std::endl<< "Sending branch feedback " << std::endl << std::endl<< std::endl) );
+	  theBranchPredictor->feedback(*aFeedback, flexusIndex());
+  }
+
+  //Drive Interfaces
+  //----------------
+  //The FetchDrive drive interface sends a commands to the Feeder and then fetches instructions,
+  //passing each instruction to its FetchOut port.
+  void drive( interface::FAGDrive const &) {
+    int32_t td = 0;
+    if (cfg.Threads > 1) {
+      td = nMTManager::MTManager::get()->scheduleFAGThread(flexusIndex());
+    }
+    doAddressGen(td);
+  }
+
+private:
+  VirtualMemoryAddress issueWrongPathPrefetch(VirtualMemoryAddress target, FetchAddr faddr) {
+		VirtualMemoryAddress prefetechBlock;
+		VirtualMemoryAddress targetBlock;
+		VirtualMemoryAddress currentBlock = VirtualMemoryAddress(faddr.theAddress & theBlockMask);
+		if (faddr.theBPState->thePrediction <= kTaken && target != 0) {
+			targetBlock = VirtualMemoryAddress(target & theBlockMask);
+			prefetechBlock = currentBlock + 64;
+		} else if (faddr.theBPState->theNextPredictedTarget != 0) {
+			targetBlock = VirtualMemoryAddress(faddr.theBPState->theNextPredictedTarget & theBlockMask);
+			prefetechBlock = targetBlock;
+		} else {
+			targetBlock = currentBlock;
+		}
+
+//		DBG_(Tmp, ( << "currBlock " << std::hex << currentBlock << " target " << targetBlock << " prefetch " << prefetechBlock << " decision " << faddr.theBPState->thePrediction << " addr " << target));
+		if (targetBlock != currentBlock && targetBlock != currentBlock + 64) {
+			return prefetechBlock;
+		} else {
+			return VirtualMemoryAddress(0);
+		}
+  }
+
+#ifdef PerfectBranchDetection
+  class Format3 {
+	uint32_t opcode;
+	public:
+	Format3( uint32_t op)
+	  : opcode(op)
+	{}
+	uint32_t rd() const {
+	  return (opcode >> 25) & 0x1F;  // opcode[29:25]
+	}
+	uint32_t rs1() const {
+	  return (opcode >> 14) & 0x1F;  // opcode[19:14]
+	}
+	bool is_simm13() const {
+	  return (opcode >> 13) & 1;  // opcode[13]
+	}
+	uint32_t rs2() const {
+	  return opcode & 0x1F;  // opcode[4:0]
+	}
+	uint32_t simm13() const {
+	  return opcode & 0x1FFF;  // opcode[12:0]
+	}
+	uint32_t simm11() const {
+	  return opcode & 0x07FF;  // opcode[10:0]
+	}
+	uint32_t simm10() const {
+	  return opcode & 0x03FF;  // opcode[9:0]
+	}
+	uint32_t shcnt64() const {
+	  return opcode & 0x3F;  // opcode[5:0]
+	}
+	uint32_t asi() const {
+	  return ( opcode >> 5) & 0xFF;  // opcode[12:5]
+	}
+	bool i() const {
+	  return (opcode >> 13) & 1;  // opcode[13]
+	}
+	bool x() const {
+	  return (opcode >> 12) & 1;  // opcode[12]
+	}
+	uint32_t cond() const {
+	  return (opcode >> 25) & 0xF;  // opcode[28:25]
+	}
+	bool cc2() const {
+	  return (opcode >> 18) & 1;  // opcode[18]
+	}
+	bool cc1() const {
+	  return (opcode >> 12) & 1;  // opcode[12]
+	}
+	bool cc0() const {
+	  return (opcode >> 11) & 1;  // opcode[11]
+	}
+	uint32_t fcc() const {
+	  return (opcode >> 11) & 3;  // opcode[12:11]
+	}
+  };
+
+std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
+  uint32_t op = opcode >> 30;
+  VirtualMemoryAddress aTarget(0);	//This is actually displacement
+  eBranchType aType = kNonBranch;
+  switch (op) {
+	case 0: { //Bicc, FBfcc, CBccc, SETHI
+			  uint32_t op2 = (opcode >> 22) & 0x7;
+			  switch (op2) {
+				case 1: //BPicc (bpcc)
+				case 5: //FBPfcc (fbpcc)
+				  {
+					uint32_t cond  = (opcode >> 25) & 0xF;    // opcode[28:25]
+					if(cond == 0){
+					  //not a branch;
+					} else{
+					  uint32_t disp19 = opcode & 0x7FFFF;    // opcode[18:0]
+
+					  //sign-extend
+					  int64_t disp19_ll(disp19);
+					  if (disp19_ll & (1 << 18) ) {
+						disp19_ll |=  0xFFFFFFFFFFFC0000LL;
+					  }
+					  aTarget = VirtualMemoryAddress(disp19_ll << 2);
+
+					  if(cond == 8){
+						aType = kUnconditional;
+					  } else{
+						aType = kConditional;
+					  }
+					}
+				  }
+				  break;
+				case 2: //Bicc (bicc)
+				case 6: //FBfcc (bfcc)
+				  {
+					uint32_t cond  = (opcode >> 25) & 0xF;    // opcode[28:25]
+					if(cond == 0){
+					  //not a branch;
+					} else{
+					  uint32_t disp22 = opcode & 0x3FFFFF;    // opcode[21:0]
+
+					  //sign-extend
+					  int64_t disp22_ll(disp22);
+					  if (disp22_ll & (1 << 21) ) {
+						disp22_ll |=  0xFFFFFFFFFFC00000LL;
+					  }
+
+					  aTarget = VirtualMemoryAddress(disp22_ll << 2);
+
+					  if(cond == 8){
+						aType = kUnconditional;
+					  } else{
+						aType = kConditional;
+					  }
+					}
+				  }
+				  break;
+				case 3: {//BPr(bpr)
+						  uint32_t disp16 = ((opcode >> 6) & 0xC000 ) | (opcode & 0x3FFF);    // opcode[21:20] opcode[13:0]
+
+						  //sign-extend
+						  int64_t disp16_ll(disp16);
+						  if (disp16_ll & (1 << 15) ) {
+							disp16_ll |=  0xFFFFFFFFFFFF0000LL;
+						  }
+
+						  aTarget = VirtualMemoryAddress(disp16_ll << 2);
+
+						  aType = kConditional;
+						}
+						break;
+				default:
+						break;
+			  }
+			  break;
+			}
+	case 1:{ //call
+			 int64_t disp30(opcode & 0x3FFFFFFF);    // opcode[29:0]
+
+			 //sign-extend
+			 if (disp30 & 0x20000000 ) {
+			   disp30 |=  0xFFFFFFFFC0000000LL;
+			 }
+
+			 aTarget = VirtualMemoryAddress(disp30 << 2);
+			 aType = kCall;
+		   }
+		   break;
+	case 2:{
+			 uint32_t op3 = (opcode >> 19) & 0x3F;
+			 switch(op3) {
+			   case 0x38: { //jmpl
+							//indirect branch
+							Format3 operands( opcode );
+							if (operands.simm13() == 8 && operands.rd() == 0
+								&& (operands.rs1() == 15 || operands.rs1() == 31)) {
+							  aType = kReturn;
+							} else if(operands.rd() == 15 && operands.simm13() == 0) {
+							  aType = kJmplCall;
+							} else{
+							  aType = kJmpl;
+							}
+						  }
+						  break;
+			   case 0x39:{ //return
+						   //RAS
+						   aType = kReturn;
+						 }
+						 break;
+               case 0x3E:
+						if (opcode & 0x2000000) {
+							aType = kRetry;
+						} else {
+							aType = kDone;
+						}
+						break;
+			   default:
+						 break;
+			 }
+		   }
+		   break;
+	default:{
+			  break;
+			}
+  }
+  return std::make_pair(aType, aTarget);
+}
+
+  Flexus::Core::index_t getSystemWidth() {
+      return -1;
+    //int cpu_count = 0;
+    //int client_cpu_count = 0;
+    // added by PLotfi to support SPECweb2009 workloads
+    // in SPECweb2009 in addition to client and server machines, a third group of machines exists to represent backend. The name of these mahines starts with "besim"
+    //int besim_cpu_count = 0;
+    // end PLotfi
+    /* MARK: This was removed because libqflex does not support this API
+    Flexus::Qemu::API::conf_object_t * queue = Flexus::Simics::API::SIM_next_queue(NULL);
+    while (queue != NULL) {
+      if (std::strstr(queue->name, "client") != 0) {
+        ++client_cpu_count;
+      } else if (std::strstr(queue->name, "besim") != 0) { // added by PLotfi
+        ++besim_cpu_count;
+      } else {
+        ++cpu_count;
+      }
+      queue = Flexus::Simics::API::SIM_next_queue(queue);
+    }
+    return cpu_count;
+    */
+  }
+
+
+  PhysicalMemoryAddress getPhysicalAddress(VirtualMemoryAddress prefetch_addr) {
+	    PhysicalMemoryAddress paddr = Qemu::Processor::getProcessor(flexusIndex())->translateVirtualAddress(prefetch_addr);
+		if (! paddr ) {
+//			DBG_(Tmp, ( << "sys width " << std::dec << getSystemWidth()));
+			for (uint16_t i = 0; i < getSystemWidth(); i++) {
+				paddr = Qemu::Processor::getProcessor(i)->translateVirtualAddress(prefetch_addr);
+				if (paddr) {
+					break;
+				}
+			}
+		}
+		return paddr;
+  }
+
+  bool trackSpecialCall(VirtualMemoryAddress vpc) {
+	  PhysicalMemoryAddress paddr = getPhysicalAddress(vpc);
+	  uint32_t opcode = 0;
+      if (paddr) {
+    	  opcode = Flexus::Qemu::Processor::getProcessor(flexusIndex())->fetchInstruction(vpc);
+    	  if (opcode) {
+			  uint32_t op = opcode >> 30;
+			  if (op == 2) {
+				uint32_t op3 = (opcode >> 19) & 0x3F;
+				if (op3 == 0x3D) {		//Its a restore instruction
+					return true;
+				} else if (op3 == 0x2 || op3 == 0x12) {
+					uint32_t rd = (opcode >> 25) & 0x1F;
+					if (rd == 15) {
+						return true;
+	//                    		DBG_(Tmp, ( << "Decoding a special call " << (*iter).thePC << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble((*iter).thePC)));
+					}
+				}
+			  }
+    	  }
+      }
+      return false;
+  }
+
+#if 0
+  bool preFillBTB (index_t anIndex, VirtualMemoryAddress vpc) {
+	  if (thePredecodeCyclesLeft[anIndex]) {
+		  thePredecodeCyclesLeft[anIndex]--;
+		  return false;
+	  }
+	  /*if (theLateBTBMiss[anIndex]) {
+		  assert (theBTBMissCyclesLeft[anIndex] >= 0 && theBTBMissCyclesLeft[anIndex] < 3);
+		  if (theBTBMissCyclesLeft[anIndex] == 0) {
+			  theLateBTBMiss[anIndex] = false;
+			  theBTBMiss[anIndex] = true;
+			  return false;
+		  } else {
+			  theBTBMissCyclesLeft[anIndex]--;
+		  }
+		  return true;
+	  }*/
+
+	  bool BTBHit = true;
+      PhysicalMemoryAddress paddr = getPhysicalAddress(vpc);
+      int64_t op_code = 0;
+      if (paddr) {
+    	  lastTranslationFailed[anIndex] = false;
+    	  op_code = Flexus::Simics::Processor::getProcessor(flexusIndex())->readPAddr(paddr, 4/*Number of bytes*/);
+    	  if (op_code) {
+    		  std::pair<eBranchType, VirtualMemoryAddress> aPair = targetDecode(op_code);
+    		  eBranchType branchType = aPair.first;
+    		  if (branchType != kNonBranch) {
+//    			  DBG_(Tmp, ( << "cpu " << flexusIndex() << " Branch detected " << vpc));
+    			  if (theBranchPredictor->isBranchInsn( vpc ) == false) {
+    				  theBTBMisses++;
+//    				  DBG_(Tmp, ( << "cpu " << flexusIndex() << " BTB Miss " << vpc));
+    				  VirtualMemoryAddress target = VirtualMemoryAddress(0);;
+        			  if (cfg.MagicBTypeDetect == false || /*branchType == kConditional || branchType == kUnconditional || branchType == kCall*/branchType != kReturn) {
+        				  bool branchTaken = true;
+//            			  if (cfg.MagicBTypeDetect && branchType == kConditional) {
+//        				  don't used it being used for something else.
+//            				  branchTaken = theBranchPredictor->conditionalTaken(vpc);
+//            			  }
+//						  DBG_(Tmp, ( << "BTB Miss " << vpc << " taken " << branchTaken));
+						  if (branchTaken) {
+							  if ((vpc & theBlockMask) != theBTBFetchedBlock[anIndex]) {
+								  //Fetch block from Icache
+								  if (! cfg.PerfectBTB) {
+									  FLEXUS_CHANNEL_ARRAY(BTBRequestOut, anIndex) << vpc;
+									  theBTBFetchedBlock[anIndex] = VirtualMemoryAddress(vpc & theBlockMask);
+									  if (theBTBMiss[anIndex]) {
+//										  DBG_(Tmp, ( << "L1 Miss "));
+										  theBTBFillsL2++;
+									  } else {
+//										  DBG_(Tmp, ( << "L1 Hit "));
+										  theBTBFillsL1++;
+									  }
+//									  return false;
+									  BTBHit = false;
+								  }
+							  }
+						  }
+						  if (branchType == kConditional || branchType == kUnconditional || branchType == kCall) {
+							  target = vpc;
+							  target += aPair.second;
+						  }
+        			  } /*else if (branchType == kJmpl || branchType == kJmplCall) {
+        				  theBTBMissCyclesLeft[anIndex] = 2;
+        			  }*/
+    				  //UPdate BTB
+
+    				  bool specialCall = false;
+    				  if (branchType == kCall || branchType == kJmplCall) { //If the next instruction restores the register window, it is a special call
+    					  specialCall = trackSpecialCall(vpc + 4);
+    				  }
+//    				  DBG_(Tmp, ( << "Target " << target ));
+    				  theBranchPredictor->updateBTB(vpc, branchType, target, specialCall, 0 /*Fixme: pass the size of the basic block*/);
+    			  } else {
+    				  theBTBHits++;
+    			  }
+//    			  DBG_(Tmp, ( << "Enqueued Branch addr " << vpc << " opcode " << std::hex << op_code) );
+    		  }
+    	  }
+      } else {
+    	  lastTranslationFailed[anIndex] = true;
+//    	  DBG_(Tmp, ( << "cpu " << flexusIndex() << " translation failed pc " << vpc ) );
+      }
+//      return true;
+      return BTBHit;
+  }
+#endif
+
+  bool isSpecialCall( VirtualMemoryAddress vpc ) {
+	  PhysicalMemoryAddress paddr = getPhysicalAddress(vpc);
+	  if (paddr) {
+		  uint32_t opcode = Flexus::Qemu::Processor::getProcessor(flexusIndex())->fetchInstruction(vpc);
+		  if (opcode) {
+			  uint32_t op = (opcode >> 30) & 3;
+				if (op == 2) {
+					uint32_t op3 = (opcode >> 19) & 0x3F;
+					if (op3 == 0x2 || op3 == 0x12) {	//Move to %o7
+						uint32_t rd = (opcode >> 25) & 0x1F;
+						if (rd == 15) {
+		//					DBG_( Tmp, ( << " Detected move to o7  "));
+							return true;
+						}
+					} else if (op3 == 0x3D) {	//Restore
+		//				DBG_( Tmp, ( << " Detected restore: "));
+						return true;
+					}
+				}
+		  }
+	  }
+	  return false;
+  }
+
+  std::pair<bool, BTBEntry> preFillBBTB(index_t anIndex, VirtualMemoryAddress vpc) {
+	  BTBEntry aBBTBEntry(vpc, kNonBranch, VirtualMemoryAddress(0), 0, kTaken, false);
+	  int BBSize = 0;
+	  eBranchType branchType = kNonBranch;
+	  lastTranslationFailed[anIndex] = false;
+	  bool isPredecodeBuffHit = false;
+
+	  while(branchType == kNonBranch) {
+//		  DBG_(Tmp, ( << "Predec PC " << vpc));
+		  PhysicalMemoryAddress paddr = getPhysicalAddress(vpc);
+		  if (paddr) {
+			  int64_t op_code = Flexus::Qemu::Processor::getProcessor(flexusIndex())->fetchInstruction(vpc);
+			  if (op_code) {
+				  BBSize++;
+				  std::pair<eBranchType, VirtualMemoryAddress> aPair = targetDecode(op_code);
+				  branchType = aPair.first;
+//				  DBG_(Tmp, ( << "Type " << branchType << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(vpc)));
+				  if (branchType != kNonBranch) {
+					  aBBTBEntry.theBranchType = branchType;
+					  if (branchType == kRetry || branchType == kDone) {
+						  aBBTBEntry.theBBsize = BBSize;
+					  } else {
+						  aBBTBEntry.theBBsize = BBSize + 1;
+					  }
+
+					  if (branchType == kConditional) {
+						  aBBTBEntry.theBranchDirection = theBranchPredictor->conditionalTaken(vpc);
+//						  DBG_(Tmp, ( << "Prediction " << aBBTBEntry.theBranchDirection));
+					  }
+
+					  if (branchType == kConditional || branchType == kUnconditional || branchType == kCall) {
+						  aBBTBEntry.theTarget = vpc;
+						  aBBTBEntry.theTarget += aPair.second;
+					  }
+
+					  if (branchType == kCall || branchType == kJmplCall) {
+						  aBBTBEntry.isSpecialCall = isSpecialCall( vpc + 4);
+					  }
+
+					  if (trapRetrunBlock == false) {
+						  //Number of cache blocks needed to predecode the requested basic block
+						  uint64_t firstBlock = aBBTBEntry.thePC & theBlockMask;
+						  uint64_t lastBlock = (aBBTBEntry.thePC + (aBBTBEntry.theBBsize - 1) * 4/*Inst size in bytes*/ ) & theBlockMask;
+						  int numCacheBlocks = 1 /*Curret Block*/ + (lastBlock - firstBlock)/ICacheLineSize;
+						  boost::intrusive_ptr<RecordedMisses> blockAddresses(new RecordedMisses());
+						  bool predecCached = true;
+
+	//					  DBG_(Tmp, ( << "First address " << aBBTBEntry.thePC << " last addr " << aBBTBEntry.thePC + (aBBTBEntry.theBBsize - 1) * 4 << " 1st block "<< std::hex << firstBlock << " last bloc " << lastBlock << " num blocks " << numCacheBlocks));
+
+						  for (int i = 0; i < numCacheBlocks; i++) {
+							  uint64_t blockAddr = firstBlock + (i * ICacheLineSize);
+							  blockAddresses->theMisses.push_back( VirtualMemoryAddress(blockAddr) );
+							  if (std::find(theBTBPredecBuff.begin(), theBTBPredecBuff.end(), VirtualMemoryAddress(blockAddr)) == theBTBPredecBuff.end()){
+								  predecCached = false;
+	//							  DBG_(Tmp, ( << "block not found " << VirtualMemoryAddress(blockAddr)));
+							  } else {
+	//							  DBG_(Tmp, ( << "block found " << VirtualMemoryAddress(blockAddr)));
+							  }
+						  }
+
+						  if (predecCached == false) {
+
+								if (theBTBMiss[anIndex]) {
+									if (!cfg.EnableBTBPrefill) {
+										assert(0);
+									}
+//									DBG_(Tmp, ( << "MissUnderMiss "));
+									missUnderBTBMiss = true;
+									sendprefetch(anIndex, aBBTBEntry.thePC);
+									return std::make_pair(false, aBBTBEntry);;
+								}
+
+								  if (!(branchType == kJmpl || branchType == kJmplCall || (branchType == kConditional && aBBTBEntry.theBranchDirection >= kNotTaken))) {
+									  missUnderBTBMiss = true;
+//									  DBG_(Tmp, ( << "Early missUnderMiss "));
+								  }
+
+							  theBTBPredecBuff.insert(theBTBPredecBuff.end(), blockAddresses->theMisses.begin(), blockAddresses->theMisses.end());
+
+							  while (theBTBPredecBuff.size() > 8) {
+								  theBTBPredecBuff.pop_front();
+							  }
+
+	//						  DBG_(Tmp, ( << "Sending req to L1 "));
+							  FLEXUS_CHANNEL_ARRAY(BTBRequestOut, anIndex) << blockAddresses;
+
+							  if (theBTBMiss[anIndex]) {
+//											  DBG_(Tmp, ( << "L1 Miss "));
+								  theBTBFillsL2++;
+							  } else {
+//											  DBG_(Tmp, ( << "L1 Hit "));
+								  thePredecodeCyclesLeft[anIndex] += (numCacheBlocks - 1); //Decode latency increase 1 per extra cache block needed
+								  theBTBFillsL1++;
+							  }
+							  BTBPrefilled = true;
+//							  DBG_(Tmp, ( << "Prefilling " << std::hex << vpc));
+
+						  } else {
+//							  DBG_(Tmp, ( << "PredecBuff hit "));
+							  isPredecodeBuffHit = true;
+						  }
+
+						  //Update the BBTB
+						  theBranchPredictor->updateBBTB(aBBTBEntry);
+
+					  } else {
+//						  DBG_(Tmp, ( << "trap ret block hit "));
+						  isPredecodeBuffHit = true;
+					  }
+				  }
+				  vpc += 4;
+			  } else {
+				  aBBTBEntry.thePC = VirtualMemoryAddress(0);
+				  isPredecodeBuffHit = true; //If translation fails, consider it a hit and proceed instruction by instruction
+				  lastTranslationFailed[anIndex] = true;
+				  break;
+			  }
+		  } else {
+			  aBBTBEntry.thePC = VirtualMemoryAddress(0);
+			  isPredecodeBuffHit = true; //If translation fails, consider it a hit and proceed instruction by instruction
+			  lastTranslationFailed[anIndex] = true;
+			  break;
+		  }
+	  }
+	  return std::make_pair(isPredecodeBuffHit, aBBTBEntry);
+  }
+#endif
+
+  bool isBrAlwaysAnnulled(uint32_t opcode) {
+	  if (opcode & 0x20000000) {
+		  uint32_t op = (opcode >> 30) & 3;
+		  if (op == 0) {
+			  uint32_t op2 = (opcode >> 22) & 0x7;
+			  if (op2 == 1 || op2 == 2 || op2 == 5 || op2 == 6) {
+				  uint32_t cond  = (opcode >> 25) & 0xF;
+				  if (cond == 8) {
+					  return true;
+				  }
+			  }
+		   }
+	  }
+      return false;
+  }
+
+  void genSingleAddr(index_t anIndex, boost::intrusive_ptr<FetchCommand>  fetch) {
+  	FetchAddr faddr(thePC[anIndex], theNextSerial[anIndex]);
+    if(isRedirect[anIndex]){
+      faddr.wasRedirected = true;
+      faddr.redirectionCause = squashReason[anIndex];
+      isRedirect[anIndex] = false;
+    }
+	theBranchPredictor->checkPointBPState(faddr);
+  	thePC[anIndex] = theNextPC[anIndex];
+  	theNextPC[anIndex] = thePC[anIndex] + 4;
+
+//    DBG_(Tmp, Comp(*this) ( << "cpu " << flexusIndex() << " Serial " << faddr.theBPState->theSerial << " Enqueue address " << faddr.theAddress << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(faddr.theAddress)));
+
+    fetch->theFetches.push_back( faddr );
+  }
+
+  void sendprefetch(index_t anIndex, VirtualMemoryAddress prefetchAddr) {
+//	  DBG_(Tmp, ( << "Prefetch for " << prefetchAddr));
+		boost::intrusive_ptr<FetchCommand> fetch(new FetchCommand());
+		FetchAddr faddr(prefetchAddr, theNextSerial[anIndex]);
+		faddr.redirectionCause = squashReason[anIndex];
+		fetch->theFetches.push_back( faddr);
+		FLEXUS_CHANNEL_ARRAY(PrefetchAddrOut, anIndex) << fetch;
+  }
+
+  //Implementation of the FetchDrive drive interface
+  void doAddressGen(index_t anIndex) {
+
+//  DBG_(Tmp, ( << std::endl<< std::endl<< std::endl<< "Entering FAG Number: " << anIndex << std::endl << std::endl<< std::endl) );
+//	    DBG_(Tmp, ( << std::endl<< "Entering FAG Number: " << anIndex << std::endl << std::endl));
+
+    if (theFlexus->quiescing()) {
+      //We halt address generation when we are trying to quiesce Flexus
+      return;
+    }
+
+    DBG_Assert(FLEXUS_CHANNEL(uArchHalted).available());
+    bool cpu_in_halt = false;
+    FLEXUS_CHANNEL(uArchHalted) >> cpu_in_halt;
+    if (cpu_in_halt) {
+      return;
+    }
+
+
+    if (theBTBMiss[anIndex] /*&& missUnderBTBMiss*/) {
+    	//Activate prefetching from victimBTB but only if its an L1 miss.
+    	//If this prefetching is enabled, it will mess-up some of the prefetching related stats.
+    	if (BTBMissPrefetchesIssued < cfg.BlocksOnBTBMiss) {
+			if (BTBMissPrefetchesIssued == 0) {
+//				DBG_(Tmp, ( << "Discont lookup " << std::hex << (thePC[anIndex] & (~63))));
+				BTBMissPrefetchAddr = theBranchPredictor->getNextPrefetchAddr(VirtualMemoryAddress(thePC[anIndex] & (~63)));
+			} else {
+//				DBG_(Tmp, ( << "Discont lookup " << BTBMissPrefetchAddr));
+				BTBMissPrefetchAddr = theBranchPredictor->getNextPrefetchAddr(BTBMissPrefetchAddr);
+			}
+			BTBMissPrefetchesIssued++;
+			sendprefetch(anIndex, BTBMissPrefetchAddr);
+    	}
+//    	DBG_(Tmp, ( << "going back "));
+		return;
+    }
+
+    /*This should always be checked after the above theBTBMiss conditional*/
+	  if (thePredecodeCyclesLeft[anIndex] /*&& missUnderBTBMiss*/) {
+		  thePredecodeCyclesLeft[anIndex]--;
+		  if (thePredecodeCyclesLeft[anIndex] == 0) {
+			  missUnderBTBMiss = false;
+		  }
+//		  DBG_(Tmp, ( << "going back "));
+		  return;
+	  }
+
+    BTBMissPrefetchesIssued = 0;
+
+    if (theRedirect[anIndex]) {
+      thePC[anIndex] = theRedirectPC[anIndex];
+      theNextPC[anIndex] = theRedirectNextPC[anIndex];
+      theRedirect[anIndex] = false;
+      DBG_(Iface, Comp(*this) ( << "Redirect Thread[" << anIndex << "] " << thePC[anIndex]) );
+//      DBG_(Tmp, ( << "Redirect to " << std::hex << thePC[anIndex]));
+    }
+    DBG_Assert( FLEXUS_CHANNEL_ARRAY( FetchAddrOut, anIndex).available() );
+    DBG_Assert( FLEXUS_CHANNEL_ARRAY( PrefetchAddrOut, anIndex).available() );	//Rakesh
+    DBG_Assert( FLEXUS_CHANNEL_ARRAY( RecordedMissOut, anIndex).available() );	//Rakesh
+    DBG_Assert( FLEXUS_CHANNEL_ARRAY( AvailableFAQ, anIndex).available() );
+    int32_t available_faq = 0;
+    FLEXUS_CHANNEL_ARRAY( AvailableFAQ, anIndex) >> available_faq;
+
+    if (available_faq == 0) {
+//    	DBG_(Tmp, ( << "No space in Q "));
+    	return;
+    }
+
+    boost::intrusive_ptr<FetchCommand> fetch(new FetchCommand());
+
+    if (theNextPC[anIndex] != thePC[anIndex] + 4) {
+//    	DBG_(Tmp, ( << "NPC not PC+4"));
+    	genSingleAddr(anIndex, fetch);
+
+        FLEXUS_CHANNEL_ARRAY(FetchAddrOut, anIndex) << fetch;
+        FLEXUS_CHANNEL_ARRAY(PrefetchAddrOut, anIndex) << fetch;
+        fetch->theFetches.clear();
+    }
+
+    BTBEntry aBTBEntry = theBranchPredictor->access_BBTB(thePC[anIndex]);
+
+    if (cfg.EnableBTBPrefill || trapRetrunBlock) {
+    	if ( aBTBEntry.thePC == 0) {
+//    		DBG_(Tmp, ( << "BTB Miss " << thePC[anIndex]));
+
+			std::pair<bool, BTBEntry> preFill = preFillBBTB(anIndex, thePC[anIndex]);
+
+			if (preFill.first == false) {
+				return; //BTB Miss being prefilled
+			} else {
+				aBTBEntry = preFill.second;
+			}
+		}
+		trapRetrunBlock = false;
+    }
+
+
+    if (aBTBEntry.thePC == 0) {
+    	if (cfg.EnableBTBPrefill) {
+    		assert(lastTranslationFailed[anIndex] == true);
+    	}
+//    	DBG_(Tmp, ( << "Could not prefill BTB Miss " << cfg.InsnOnBTBMiss));
+    	for (int i = 0; i < cfg.InsnOnBTBMiss; i++) {
+    		genSingleAddr(anIndex, fetch);
+    	}
+    } else {
+
+//    	DBG_(Tmp, ( << "BTB Hit " << thePC[anIndex]));
+//  	  DBG_( Tmp, ( << std::endl  << std::endl << " BB start: " << std::hex << thePC[anIndex] << " end " << (thePC[anIndex] + (aBTBEntry.theBBsize*4)) << " size " << aBTBEntry.theBBsize  << " target " << aBTBEntry.theTarget  << " type " << aBTBEntry.theBranchType << " pred " << aBTBEntry.theBranchDirection << std::endl  << std::endl));
+
+		int32_t max_addrs = aBTBEntry.theBBsize;
+		bool isBrAlwaysAnnul = false;
+
+		VirtualMemoryAddress bbTarget;
+		VirtualMemoryAddress branchAddress;
+
+		  if (aBTBEntry.theBranchType == kRetry || aBTBEntry.theBranchType == kDone) {
+			  branchAddress = thePC[anIndex] + ((max_addrs - 1 ) * 4);
+		  } else {
+			  branchAddress = thePC[anIndex] + ((max_addrs - 2 ) * 4); //-2 is because of delay slot instruction
+		  }
+
+		  if (aBTBEntry.theBranchType == kUnconditional) {
+				int64_t op_code = Flexus::Qemu::Processor::getProcessor(flexusIndex())->fetchInstruction(branchAddress);
+				if (isBrAlwaysAnnulled(op_code)) {
+					max_addrs = max_addrs - 1;
+					isBrAlwaysAnnul = true;
+				}
+		  }
+
+		//    DBG_(Tmp, ( << "AvailableFAQ " << available_faq << " max addr " << max_addrs ) );
+
+		while ( max_addrs > 0 ) {
+		  FetchAddr faddr(thePC[anIndex], theNextSerial[anIndex]);
+		  if(isRedirect[anIndex]){
+			  faddr.wasRedirected = true;
+			  faddr.redirectionCause = squashReason[anIndex];
+			  isRedirect[anIndex] = false;
+		  }
+
+		  if (thePC[anIndex] == branchAddress) {
+			  thePC[anIndex] = theNextPC[anIndex];
+			  theNextPC[anIndex] = bbTarget = theBranchPredictor->predictBranch(faddr, aBTBEntry);
+			  faddr.theBPState->BTBPreFilled = BTBPrefilled;
+			  if (aBTBEntry.theBranchType == kConditional) {
+				  theCondPredicts++;
+				  if (faddr.theBPState->bimodalPrediction == false) {
+					  if ((( aBTBEntry.theBranchDirection >= kNotTaken ) && ( faddr.theBPState->thePrediction <= kTaken )) ||
+						  (( aBTBEntry.theBranchDirection <= kTaken ) && ( faddr.theBPState->thePrediction >= kNotTaken ))	  ){
+//						  DBG_(Tmp, ( << "Different predictions"));
+						  thePredecodeCyclesLeft[anIndex] = 1; //Tage prediction overrode BTB, so we need one bubble cycle
+						  theTageOverrides++;
+					  } else {
+	//					  DBG_(Tmp, ( << "Tage 2-bit same"));
+					  }
+				  } else {
+	//    			  DBG_(Tmp, ( << "It was not a Tage history prediction"));
+				  }
+			  }
+
+			  if (bbTarget == 0) {
+				  theNextPC[anIndex] = thePC[anIndex] + 4;
+			  } else if (aBTBEntry.theBranchType == kRetry) {
+				  if (faddr.theBPState->theNextPredictedTarget != 0 && faddr.theBPState->theNextPredictedTarget != bbTarget + 4) {
+					  	thePC[anIndex] = bbTarget;
+					  	theNextPC[anIndex] = faddr.theBPState->theNextPredictedTarget;
+				  } else {
+//					  DBG_(Tmp, Comp(*this) ( << "block after trap "));
+					  	thePC[anIndex] = bbTarget;
+					  	theNextPC[anIndex] = thePC[anIndex] + 4;
+					  	trapRetrunBlock = true;
+				  }
+			  } else if (aBTBEntry.theBranchType == kDone) {
+				  	thePC[anIndex] = bbTarget;
+				  	theNextPC[anIndex] = thePC[anIndex] + 4;
+				  	trapRetrunBlock = true;
+			  } else if (isBrAlwaysAnnul) {
+					thePC[anIndex] = bbTarget;
+					theNextPC[anIndex] = thePC[anIndex] + 4;
+				}
+
+	//    	  DBG_(Tmp, ( << "target " << bbTarget << " dir " << faddr.theBPState->thePrediction));
+//	    	  DBG_(Tmp, Comp(*this) ( << "cpu " << flexusIndex() << " Serial " << faddr.theBPState->theSerial << " Enqueue Branch address " << faddr.theAddress << " predicted type " << faddr.theBPState->thePredictedType << " "<< Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(faddr.theAddress) ));
+		  } else {
+			  	thePC[anIndex] = theNextPC[anIndex];
+			  	theNextPC[anIndex] = thePC[anIndex] + 4;
+
+			  	theBranchPredictor->checkPointBPState(faddr);
+//			  	DBG_(Tmp, Comp(*this) ( << "cpu " << flexusIndex() << " Serial " << faddr.theBPState->theSerial << " Enqueue address " << faddr.theAddress << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(faddr.theAddress)));
+		  }
+
+		  fetch->theFetches.push_back( faddr );
+
+		  max_addrs--;
+		}
+
+    }
+
+    BTBPrefilled = false;
+    if (fetch->theFetches.size() > 0) {
+      //Send it to FetchOut
+      FLEXUS_CHANNEL_ARRAY(FetchAddrOut, anIndex) << fetch;
+      FLEXUS_CHANNEL_ARRAY(PrefetchAddrOut, anIndex) << fetch;
+    }
+
+  }
+
+#if 0
+  //Implementation of the FetchDrive drive interface
+  void doAddressGen(index_t anIndex) {
+
+    if (theFlexus->quiescing()) {
+      //We halt address generation when we are trying to quiesce Flexus
+      return;
+    }
+
+    if (theBTBMiss[anIndex]) {
+    	//Activate prefetching from victimBTB but only if its an L1 miss.
+    	//If this prefetching is enabled, it will mess-up some of the prefetching related stats.
+    	/*if (BTBMissPrefetchesIssued < 4) {
+			if (BTBMissPrefetchesIssued == 0) {
+				BTBMissPrefetchAddr = theBranchPredictor->getNextPrefetchAddr(VirtualMemoryAddress(thePC[anIndex] & (~63)));
+			} else {
+				BTBMissPrefetchAddr = theBranchPredictor->getNextPrefetchAddr(BTBMissPrefetchAddr);
+			}
+			BTBMissPrefetchesIssued++;
+			boost::intrusive_ptr<FetchCommand> fetch(new FetchCommand());
+			FetchAddr faddr(BTBMissPrefetchAddr, theNextSerial[anIndex]);
+			faddr.redirectionCause = squashReason[anIndex];
+			fetch->theFetches.push_back( faddr);
+			FLEXUS_CHANNEL_ARRAY(PrefetchAddrOut, anIndex) << fetch;
+    	}*/
+		return;
+    }
+    BTBMissPrefetchesIssued = 0;
+
+//    DBG_(Tmp, ( << std::endl<< std::endl<< std::endl<< "Entering FAG Number: " << anIndex << std::endl << std::endl<< std::endl) );
+
+    if (theRedirect[anIndex]) {
+      thePC[anIndex] = theRedirectPC[anIndex];
+      theNextPC[anIndex] = theRedirectNextPC[anIndex];
+      theRedirect[anIndex] = false;
+      DBG_(Iface, Comp(*this) ( << "Redirect Thread[" << anIndex << "] " << thePC[anIndex]) );
+//      DBG_(Tmp, ( << "Redirect to " << std::hex << thePC[anIndex]));
+    }
+    DBG_Assert( FLEXUS_CHANNEL_ARRAY( FetchAddrOut, anIndex).available() );
+    DBG_Assert( FLEXUS_CHANNEL_ARRAY( PrefetchAddrOut, anIndex).available() );	//Rakesh
+    DBG_Assert( FLEXUS_CHANNEL_ARRAY( RecordedMissOut, anIndex).available() );	//Rakesh
+    DBG_Assert( FLEXUS_CHANNEL_ARRAY( AvailableFAQ, anIndex).available() );
+    int32_t available_faq = 0;
+    FLEXUS_CHANNEL_ARRAY( AvailableFAQ, anIndex) >> available_faq;
+
+    int32_t max_addrs = cfg.MaxFetchAddress;
+    if (max_addrs > available_faq) {
+      max_addrs = available_faq;
+    }
+
+//    DBG_(Tmp, ( << "AvailableFAQ " << available_faq << " max addr " << max_addrs << " limit " << cfg.MaxFetchAddress) );
+
+    int32_t max_predicts = cfg.MaxBPred;
+
+    boost::intrusive_ptr<FetchCommand> fetch(new FetchCommand());
+    boost::intrusive_ptr<RecordedMisses> recordedMisses = new RecordedMisses();
+    while ( max_addrs > 0 ) {
+      FetchAddr faddr(thePC[anIndex], theNextSerial[anIndex]);
+
+#ifdef PerfectBranchDetection
+      if (cfg.EnableBTBPrefill && !preFillBTB(anIndex, faddr.theAddress)) {
+    	  break;
+      }
+#endif
+
+      if(isRedirect[anIndex]){
+    	  faddr.wasRedirected = true;
+    	  faddr.redirectionCause = squashReason[anIndex];
+    	  isRedirect[anIndex] = false;
+      }
+
+      //Advance the PC
+      if ( theBranchPredictor->isBranch( faddr/*.theAddress*/ ) ) {
+    	-- max_predicts;
+        if (max_predicts == 0) {
+//        	DBG_(Tmp, ( << "Reached branch prediction limit "));
+        	if (max_addrs > 2)
+        		max_addrs = 2; //This instruction + the next one (as the instruction following branch has to be always executed)
+//          break;
+        }
+        thePC[anIndex] = theNextPC[anIndex];
+        VirtualMemoryAddress target = theNextPC[anIndex] = theBranchPredictor->predict( faddr );
+
+        if (target == 0) {
+        	theNextPC[anIndex] = thePC[anIndex] + 4;
+        } else if (faddr.theBPState->thePredictedType == kRetry ) {
+        	if(!cfg.EnableTrapRet) assert(0);
+        	thePC[anIndex] = target;
+        	if (faddr.theBPState->theNextPredictedTarget != 0) {
+        		theNextPC[anIndex] = faddr.theBPState->theNextPredictedTarget;
+        	} else {
+        		theNextPC[anIndex] = thePC[anIndex] + 4;
+        	}
+        } else if (faddr.theBPState->thePredictedType == kDone) {
+        	if(!cfg.EnableTrapRet) assert(0);
+        	thePC[anIndex] = target;
+        	theNextPC[anIndex] = target + 4;
+        }
+
+        DBG_(Verb, ( << "Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress ) );
+//        DBG_(Tmp, Comp(*this) ( << "cpu " << flexusIndex() << " Serial " << faddr.theBPState->theSerial << " Enqueue Branch address " << faddr.theAddress << " predicted type " << faddr.theBPState->thePredictedType << " "<< Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(faddr.theAddress) << " predictions left " << max_predicts));
+        fetch->theFetches.push_back( faddr);
+
+		/*if (faddr.theBPState->thePredictedType == kConditional) {
+			if (faddr.theBPState->bimodalPrediction) {
+				assert(faddr.theBPState->saturationCounter >= 0 && faddr.theBPState->saturationCounter < 4);
+				if (faddr.theBPState->saturationCounter > 0 && faddr.theBPState->saturationCounter < 3) {
+					VirtualMemoryAddress prefetechBlock = issueWrongPathPrefetch(target, faddr);
+					if (prefetechBlock) {
+//						DBG_(Tmp, ( << "Bimod issuing pfetch " << prefetechBlock));
+						recordedMisses->theMisses.push_back(prefetechBlock);
+						recordedMisses->theMisses.push_back(prefetechBlock + 64);
+					}
+				}
+			} else {
+				assert(faddr.theBPState->saturationCounter >= 0 && faddr.theBPState->saturationCounter < 8);
+				if (faddr.theBPState->saturationCounter > 0 && faddr.theBPState->saturationCounter < 7) {
+					VirtualMemoryAddress prefetechBlock = issueWrongPathPrefetch(target, faddr);
+					if (prefetechBlock) {
+//						DBG_(Tmp, ( << "Tage issuing pfetch " << prefetechBlock));
+						recordedMisses->theMisses.push_back(prefetechBlock);
+						recordedMisses->theMisses.push_back(prefetechBlock + 64);
+					}
+				}
+			}
+		} else if (faddr.theBPState->thePredictedType == kCall || faddr.theBPState->thePredictedType == kJmplCall) {
+			recordedMisses->theMisses.push_back(VirtualMemoryAddress(0x01001300));
+			recordedMisses->theMisses.push_back(VirtualMemoryAddress(0x01001340));
+		} else if (faddr.theBPState->thePredictedType == kReturn) {
+			recordedMisses->theMisses.push_back(VirtualMemoryAddress(0x01001b00));
+			recordedMisses->theMisses.push_back(VirtualMemoryAddress(0x01001b40));
+			recordedMisses->theMisses.push_back(VirtualMemoryAddress(0x01005b00));
+			recordedMisses->theMisses.push_back(VirtualMemoryAddress(0x01005b40));
+		}*/
+#if 0
+        std::map<VirtualMemoryAddress, VirtualMemoryAddress>::iterator it = missMap.find(faddr.theAddress);
+        if ( it != missMap.end()) {
+        	recordedMisses->theMisses.push_back(it->second);
+//        	DBG_(Tmp, ( << "Found recorded miss " << it->first << " missed block " << it->second));
+        }
+#endif
+//        -- max_predicts;
+      } else {
+        thePC[anIndex] = theNextPC[anIndex];
+        DBG_(Verb, ( << "Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress ) );
+//        DBG_(Tmp, Comp(*this) ( << "cpu " << flexusIndex() << " Serial " << faddr.theBPState->theSerial << " Enqueue address " << faddr.theAddress << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(faddr.theAddress)));
+        fetch->theFetches.push_back( faddr );
+        theNextPC[anIndex] = thePC[anIndex] + 4;
+      }
+
+      faddr.theBPState->translationFailed = lastTranslationFailed[anIndex];
+      --max_addrs;
+    }
+
+    if (fetch->theFetches.size() > 0) {
+      //Send it to FetchOut
+      FLEXUS_CHANNEL_ARRAY(FetchAddrOut, anIndex) << fetch;
+      FLEXUS_CHANNEL_ARRAY(PrefetchAddrOut, anIndex) << fetch;
+    }
+    if (recordedMisses->theMisses.size() > 0) {
+    	FLEXUS_CHANNEL_ARRAY(RecordedMissOut, anIndex) << recordedMisses;
+    }
+  }
+#endif
+public:
+  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(Stalled);
+  bool pull(Stalled const &, index_t anIndex) {
+    int32_t available_faq = 0;
+    DBG_Assert( FLEXUS_CHANNEL_ARRAY( AvailableFAQ, anIndex ).available() ) ;
+    FLEXUS_CHANNEL_ARRAY( AvailableFAQ, anIndex ) >> available_faq;
+    return available_faq == 0;
+  }
+
+};
+}//End namespace nFetchAddressGenerate
+
+FLEXUS_COMPONENT_INSTANTIATOR( FetchAddressGenerate, nFetchAddressGenerate);
+
+FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, RedirectIn )           {
+  return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, BranchFeedbackIn )      {
+  return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, FetchAddrOut )    {
+  return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, PrefetchAddrOut )    {	//Rakesh
+  return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, BTBRequestOut )    {	//Rakesh
+  return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, RecordedMissOut )    {	//Rakesh
+  return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, SquashIn){				//Rakesh
+  return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, SquashBranchIn){				//Rakesh
+  return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, TrapStateIn){				//Rakesh
+  return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, SpecialCallIn){				//Rakesh
+  return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, RASOpsIn){				//Rakesh
+  return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, MissPairIn){				//Rakesh
+  return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, BTBReplyIn){				//Rakesh
+  return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, AvailableFAQ )   {
+  return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH( FetchAddressGenerate, Stalled )   {
+  return (cfg.Threads);
+}
+
+#include FLEXUS_END_COMPONENT_IMPLEMENTATION()
+#define FLEXUS_END_COMPONENT FetchAddressGenerate
+
+#define DBG_Reset
+#include DBG_Control()
