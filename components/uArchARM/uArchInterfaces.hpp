@@ -67,6 +67,7 @@
 #include "CoreModel/SCTLR_EL.hpp"
 
 #include <core/qemu/mai_api.hpp>
+#include <components/uFetch/uFetchTypes.hpp>
 
 #define EL0 0
 #define EL1 1
@@ -479,6 +480,11 @@ enum eInstructionCode
   codeCLREX,
   codeHaltedState,
   // End of Enum
+  /* TODO: Sparc has other branch types. I Added them here just to make it compile
+   * but I will remove them
+   */
+  codeBranchJmpl,
+  codeJmplCall,
   codeLastCode };
 
 typedef enum eMemOp {
@@ -582,6 +588,12 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction {
   virtual void doRetirementEffects() = 0; // used
   virtual void checkTraps() = 0;          // used
   virtual void doCommitEffects() = 0;     // used
+
+  /* Msutherl: Add for Boomerang */
+  virtual boost::intrusive_ptr<BPredState> bpState() const = 0;
+  virtual Opcode getOpcode() const = 0;
+  virtual boost::intrusive_ptr<BranchFeedback> branchFeedback() const {return NULL;}
+  /* End Boomerang */
 
   virtual void annul() = 0;
   virtual bool isAnnulled() const = 0;
@@ -803,7 +815,11 @@ struct uArchARM {
                                 boost::intrusive_ptr<Interaction> anInteraction) {
     DBG_Assert(false);
   }
-  virtual bool squashFrom(boost::intrusive_ptr<Instruction> anInsn) {
+  virtual bool squashAfter( boost::intrusive_ptr< Instruction > anInsn, boost::intrusive_ptr<BPredState> aBPState) {
+    DBG_Assert(false);
+    return false;
+  }
+  virtual bool squashFrom(boost::intrusive_ptr<Instruction> anInsn, boost::intrusive_ptr<BPredState> aBPState) {
     DBG_Assert(false);
     return false;
   }
@@ -1066,6 +1082,9 @@ struct uArchARM {
   }
   virtual void takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExceptionType aTrapType) {
     DBG_Assert(false);
+  }
+  virtual void takeTrap(boost::intrusive_ptr<Instruction> anInstruction, int32_t aTrapNum, xExceptionSource exceptionSource) {
+      DBG_Assert(false);
   }
 
   virtual void clearExclusiveLocal() {

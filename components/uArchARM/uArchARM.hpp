@@ -134,6 +134,11 @@ COMPONENT_INTERFACE(
   PORT( PushInput, TranslationPtr,  dTranslationIn )
   PORT( PushInput, TranslationPtr,  MemoryRequestIn )
 
+  PORT( PushOutput, boost::intrusive_ptr<BPredState>, SquashBranchOut )	//Rakesh
+  PORT( PushOutput, std::list< boost::intrusive_ptr<BPredState> >, RASOpsOut )	//Rakesh
+  PORT( PushOutput, boost::intrusive_ptr<TrapState>, TrapStateOut ) //Rakesh  
+  PORT( PullOutput, bool, ROBEmptyOut)//Rakesh
+  PORT( PushOutput, RetireNotice, RetireOut )
 
   DRIVE( uArchDrive )
 );

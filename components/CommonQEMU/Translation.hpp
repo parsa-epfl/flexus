@@ -51,6 +51,8 @@
 namespace Flexus {
 namespace SharedTypes {
 
+struct AbstractInstruction; // fwd declaration
+
 static uint64_t translationID;
 
 struct Translation : public boost::counted_base {

@@ -70,6 +70,10 @@ struct microArch {
             std::function<void(int, int)> changeState,
             std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback,
             std::function<void(bool)> aStoreForwardingHitFunction,
+            std::function< void( boost::intrusive_ptr<BPredState>)> squashBranch,
+            std::function< void( boost::intrusive_ptr<TrapState>)> sendTrapState,
+            std::function< void( std::list< boost::intrusive_ptr<BPredState> >)> reconstructRAS,
+            std::function< void( RetireNotice & )> retirecb,
             std::function<void(int32_t)> mmuResyncFunction);
 
   virtual int32_t availableROB() = 0;

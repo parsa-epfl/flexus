@@ -304,6 +304,7 @@ void SemanticInstruction::doDispatchEffects() {
 
 void SemanticInstruction::doRetirementEffects() {
   FLEXUS_PROFILE();
+  armInstruction::doRetirementEffects();
   theRetirementEffects.invoke(*this);
   theRetired = true;
   // Clear predecessor to avoid leaking instructions

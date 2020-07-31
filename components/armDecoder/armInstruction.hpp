@@ -482,7 +482,7 @@ protected:
 
   // So that armDecoder can send opcodes out to PowerTracker
 public:
-  Opcode getOpcode() {
+  Opcode getOpcode() const {
     return theOpcode;
   }
 };

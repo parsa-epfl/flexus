@@ -71,6 +71,9 @@ COMPONENT_INTERFACE(
   PORT( PullOutput, bool, Stalled)
 
   PORT( PushOutput, int64_t, DispatchedInstructionOut) // Send instruction word to Power Tracker
+  PORT( PushInput, std::list< boost::intrusive_ptr<BPredState> >, RASOpsIn)
+  PORT( PushOutput, std::list< boost::intrusive_ptr<BPredState> >, RASOpsOut )  //Rakesh
+  PORT( PushOutput, boost::intrusive_ptr< BPredState >, SpecialCallOut)
 
   DRIVE( DecoderDrive )
 );

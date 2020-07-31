@@ -50,9 +50,13 @@
 #include <ostream>
 
 #include <components/CommonQEMU/Slices/FillLevel.hpp>
+#include <components/uFetch/uFetchTypes.hpp>
 
 namespace Flexus {
 namespace SharedTypes {
+
+struct InfoMissStats; // fwd declare
+struct Translation; // fwd declare
 
 struct AbstractInstruction : public boost::counted_base {
   boost::intrusive_ptr<TransactionTracker> theFetchTransaction;
@@ -60,6 +64,8 @@ struct AbstractInstruction : public boost::counted_base {
 protected:
   tFillLevel theInsnSourceLevel;
   bool theExclusive;
+  uint64_t theFetchSerial;
+  boost::intrusive_ptr<InfoMissStats> missStatsInfo;
 
 public:
   virtual bool isExclusive() const {
@@ -88,6 +94,12 @@ public:
   virtual tFillLevel sourceLevel() const {
     return theInsnSourceLevel;
   }
+
+  virtual uint64_t &fetchSerial() {
+      return theFetchSerial;
+  }
+  virtual boost::intrusive_ptr<InfoMissStats> getMissStatsInfo() { return missStatsInfo; }
+  virtual void setMissStatsInfo(boost::intrusive_ptr<InfoMissStats> _missStatsInfo) { missStatsInfo = _missStatsInfo; }
 };
 
 enum eSquashCause {

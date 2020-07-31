@@ -59,12 +59,21 @@ CoreImpl::CoreImpl(uArchOptions_t options
                    std::function<void(int, int)> _change_mode,
                    std::function<void(boost::intrusive_ptr<BranchFeedback>)> _feedback,
                    std::function<void(bool)> _signalStoreForwardingHit,
+                   std::function< void( boost::intrusive_ptr<BPredState>)> _squashBranch,
+                   std::function< void( boost::intrusive_ptr<TrapState>)> _sendTrapState,
+                   std::function< void( std::list< boost::intrusive_ptr<BPredState> >)> _reconstructRAS,
+                   std::function< void( RetireNotice & )> _retirecb,
                    std::function<void(int32_t)> _mmuResync)
     : theName(options.name), theNode(options.node),
       //, translate(xlat)
       advance_fn(_advance), squash_fn(_squash), redirect_fn(_redirect),
       change_mode_fn(_change_mode), feedback_fn(_feedback),
-      signalStoreForwardingHit_fn(_signalStoreForwardingHit), mmuResync_fn(_mmuResync),
+      signalStoreForwardingHit_fn(_signalStoreForwardingHit), 
+      squashBranch_fn(_squashBranch),
+      sendTrapState_fn(_sendTrapState),
+      reconstructRAS_fn(_reconstructRAS),
+      retirecb_fn(_retirecb),
+      mmuResync_fn(_mmuResync),
       thePendingTrap(kException_None),
       theBypassNetwork(kxRegs_Total + 3 * options.ROBSize, kvRegs + 4 * options.ROBSize,
                        kccRegs + 2 * options.ROBSize),
@@ -191,7 +200,11 @@ CoreImpl::CoreImpl(uArchOptions_t options
       theEpochs_LoadOrStoreBlocks(theName + "-MLPEpoch:LoadOrStoreBlocks"), theEpoch_StartInsn(0),
       theEpoch_LoadCount(0), theEpoch_StoreCount(0), theEpoch_OffChipStoreCount(0),
       theEpoch_StoreAfterOffChipStoreCount(0), theEmptyROBCause(kSync), theLastCycleIStalls(0),
-      theRetireCount(0), theTimeBreakdown(theName + "-TB"), theMix_Total(theName + "-Mix:Total"),
+      theRetireCount(0), 
+      statSquashesBMPredEarlyRet(theName + "-SquashesBMPredEarlyRet"),
+      statSquashesBTBMissEarlyRet(theName + "-SquashesBTBMissEarlyRet"),
+      statSquashesBTBBPMissEarlyRet(theName + "-SquashesBTBBPMissEarlyRet"),
+      theTimeBreakdown(theName + "-TB"), theMix_Total(theName + "-Mix:Total"),
       theMix_Exception(theName + "-Mix:Exception"), theMix_Load(theName + "-Mix:Load"),
       theMix_Store(theName + "-Mix:Store"), theMix_Atomic(theName + "-Mix:Atomic"),
       theMix_Branch(theName + "-Mix:Branch"), theMix_MEMBAR(theName + "-Mix:MEMBAR"),
@@ -253,6 +266,15 @@ CoreImpl::CoreImpl(uArchOptions_t options
   theMapTables.push_back(std::make_shared<PhysicalMap>(kccRegs, reg_file_sizes[ccBits]));
 
   reset();
+
+  prevBPState[0] = 0;	//Rakesh
+  prevBPState[1] = 0;	//Rakesh
+  prevBranchFeedback[0] = 0; //Rakesh
+  prevBranchFeedback[1] = 0; //Rakesh
+  isBranchAlwaysAnnulled[0] = false;
+  isBranchAlwaysAnnulled[1] = false;
+  theBBAddress = 0; //Rakesh
+  lastBranchType = kNonBranch; //Rakesh
 
   theCommitUSArray[0] = &theCommitCount_NonSpin_User;
   theCommitUSArray[1] = &theCommitCount_NonSpin_System;
@@ -390,6 +412,7 @@ void CoreImpl::reset() {
 void CoreImpl::writePR(uint32_t aPR, uint64_t aVal) {
   switch (aPR) {
   case 6: // PSTATE
+    sendTrapState_fn(getTrapState());	//Rakesh
     setPSTATE(aVal);
     break;
   default:
@@ -492,12 +515,18 @@ CoreModel *CoreModel::construct(uArchOptions_t options
                                 std::function<void(int, int)> change_mode,
                                 std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback,
                                 std::function<void(bool)> signalStoreForwardingHit,
+                                std::function< void( boost::intrusive_ptr<BPredState>)> squashBranch,
+                                std::function< void( boost::intrusive_ptr<TrapState>)> sendTrapState,
+                                std::function< void( std::list< boost::intrusive_ptr<BPredState> >)> reconstructRAS,
+                                std::function< void( RetireNotice & )> retirecb,
                                 std::function<void(int32_t)> mmuResync) {
-
-  return new CoreImpl(options
-                      //, translate
-                      ,
-                      advance, squash, redirect, change_mode, feedback, signalStoreForwardingHit,
+  return new CoreImpl(options,
+                      advance, squash, redirect, change_mode, feedback, 
+                      signalStoreForwardingHit,
+                      squashBranch,
+                      sendTrapState,
+                      reconstructRAS,
+                      retirecb,
                       mmuResync);
 }
 

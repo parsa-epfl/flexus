@@ -109,6 +109,10 @@ class microArchImpl : public microArch {
   std::function<void(int, int)> changeState;
   std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback;
   std::function<void(bool)> signalStoreForwardingHit;
+  std::function<void( boost::intrusive_ptr<BPredState>)> squashBranch;
+  std::function<void( boost::intrusive_ptr<TrapState>)> sendTrapState;
+  std::function<void( std::list< boost::intrusive_ptr<BPredState> >)> reconstructRAS;
+  std::function<void( RetireNotice & )> retirecb;
   std::function<void(int32_t)> mmuResync;
 
 public:
@@ -117,25 +121,33 @@ public:
                 std::function<void(int, int)> _changeState,
                 std::function<void(boost::intrusive_ptr<BranchFeedback>)> _feedback,
                 std::function<void(bool)> _signalStoreForwardingHit,
+                std::function< void( boost::intrusive_ptr<BPredState>)> _squashBranch,
+                std::function< void( boost::intrusive_ptr<TrapState>)> _sendTrapState,
+                std::function< void( std::list< boost::intrusive_ptr<BPredState> >)> _reconstructRAS,
+                std::function< void( RetireNotice & )> _retirecb,
                 std::function<void(int32_t)> _mmuResync
-
                 )
       : theName(options.name),
         theCore(CoreModel::construct(options
-                                     //, ll::bind( &microArchImpl::translate, this, ll::_1)
-                                     ,
-                                     ll::bind(&microArchImpl::advance, this, ll::_1), _squash,
-                                     _redirect, _changeState, _feedback, _signalStoreForwardingHit,
-                                     _mmuResync)),
+                                     , ll::bind(&microArchImpl::advance, this, ll::_1), _squash
+                                     , _redirect, _changeState, _feedback, _signalStoreForwardingHit
+                                     , _squashBranch
+                                     , _sendTrapState
+                                     , _reconstructRAS
+                                     , _retirecb
+                                     , _mmuResync)),
         theAvailableROB(0), theResynchronizations(options.name + "-ResyncsCaught"),
         theResyncInstructions(options.name + "-ResyncsCaught:Instruction"),
         theOtherResyncs(options.name + "-ResyncsCaught:Other"),
         theExceptions(options.name + "-ResyncsCaught:Exception"), theExceptionRaised(0),
         theBreakOnResynchronize(options.breakOnResynchronize), theDriveClients(false),
         theNumClients(0), theNode(options.node), squash(_squash), redirect(_redirect),
-        changeState(_changeState), feedback(_feedback),
-        signalStoreForwardingHit(_signalStoreForwardingHit), mmuResync(_mmuResync)
-
+        changeState(_changeState), feedback(_feedback), signalStoreForwardingHit(_signalStoreForwardingHit)
+        , squashBranch(_squashBranch)
+        , sendTrapState(_sendTrapState)
+        , reconstructRAS(_reconstructRAS)
+        , retirecb(_retirecb)
+        , mmuResync(_mmuResync)
   {
     theCPU = Flexus::Qemu::Processor::getProcessor(theNode);
 
@@ -403,6 +415,9 @@ private:
 
     DBG_(Dev, Cond(!was_expected)(<< "Unexpected! Resynchronizing..."));
 
+    squashBranch(theCore->getResyncBPState());
+    theCore->resetResyncBPState();
+
     // Clear out all state in theCore
     theCore->reset();
     theAvailableROB = theCore->availableROB();
@@ -438,6 +453,7 @@ private:
     fillVRegisters();
 
     mmuResync(theNode);
+    sendTrapState(theCore->getTrapState());
   }
 
   void resetSpecialRegs() {
@@ -608,11 +624,16 @@ std::shared_ptr<microArch> microArch::construct(
     uArchOptions_t options, std::function<void(eSquashCause)> squash,
     std::function<void(VirtualMemoryAddress)> redirect, std::function<void(int, int)> changeState,
     std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback,
-    std::function<void(bool)> signalStoreForwardingHit, std::function<void(int32_t)> mmuResync
-
+    std::function<void(bool)> signalStoreForwardingHit
+	, std::function< void( boost::intrusive_ptr<BPredState>) > squashBranch
+	, std::function< void( boost::intrusive_ptr<TrapState>) > sendTrapState
+	, std::function< void( std::list< boost::intrusive_ptr<BPredState> >) > reconstructRAS
+	, std::function< void( RetireNotice & )> retirecb
+    , std::function<void(int32_t)> mmuResync
 ) {
   return std::make_shared<microArchImpl>(options, squash, redirect, changeState, feedback,
-                                         signalStoreForwardingHit, mmuResync);
+                                         signalStoreForwardingHit, squashBranch, sendTrapState, reconstructRAS,
+                                         retirecb, mmuResync);
 }
 
 } // namespace nuArchARM

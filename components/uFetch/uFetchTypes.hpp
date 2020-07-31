@@ -58,6 +58,9 @@
 namespace Flexus {
 namespace SharedTypes {
 
+struct Translation; // fwd declare
+typedef boost::intrusive_ptr<Translation> TranslationPtr;
+
 using boost::counted_base;
 using Flexus::SharedTypes::TransactionTracker;
 using Flexus::SharedTypes::Translation;
@@ -255,6 +258,7 @@ struct InfoMissStats : boost::counted_base {
 	bool wasRedirected;
 	bool theFAQFull;
 	bool isVisibleBTBMiss;
+
 	InfoMissStats(int64_t _IcacheMissCycles, uint32_t _lastResetDistance, /*eSquashCause*/int _lastSquashCause, boost::intrusive_ptr<BPredState> _lastSquashedBPState, boost::intrusive_ptr<BPredState> _currentBPState, bool _IcacheMiss, bool _missPrefetchOnWay, bool _wasRedirected, bool _theFAQFull)
     : IcacheMissCycles(_IcacheMissCycles)
 	, BTBMissCycles(0)
@@ -324,7 +328,7 @@ struct FetchedOpcode {
   boost::intrusive_ptr<BPredState> theBPState;
   boost::intrusive_ptr<TransactionTracker> theTransaction;
   uint32_t theSerial;
-  //boost::intrusive_ptr<InfoMissStats> missStatsInfo;
+  boost::intrusive_ptr<InfoMissStats> missStatsInfo;
   /*bool thehadIcacheMiss;
   bool theMissPrefetchOnWay;
   uint64_t theIcacheMissCycles;*/
@@ -337,7 +341,7 @@ struct FetchedOpcode {
           , boost::intrusive_ptr<BPredState> aBPState
           , boost::intrusive_ptr<TransactionTracker> aTransaction
           , uint32_t aSerial
-                //, boost::intrusive_ptr<InfoMissStats> _missStatsInfo
+          , boost::intrusive_ptr<InfoMissStats> _missStatsInfo
                 /*, bool hadIcacheMiss
                   , bool missPrefetchOnWay
                   , uint64_t IcacheMissCycles*/
@@ -348,7 +352,7 @@ struct FetchedOpcode {
     , theBPState(aBPState)
     , theTransaction(aTransaction)
   	, theSerial(aSerial)
-    //, missStatsInfo(_missStatsInfo)
+    , missStatsInfo(_missStatsInfo)
   	/*, thehadIcacheMiss(hadIcacheMiss)
     , theMissPrefetchOnWay(missPrefetchOnWay)
     , theIcacheMissCycles(IcacheMissCycles)*/

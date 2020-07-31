@@ -309,6 +309,19 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
   if (theSquashRequested) {
     DBG_(Verb, (<< " Core triggering Squash: " << theSquashReason));
     doSquash();
+
+    /* For Boomerang */
+    if (theSquashReason == kBranchMispredict) {
+//    	DBG_( Tmp, ( << "Branch Mispredict squash " << theBPState->pc));
+    	squashBranch_fn(theBPState);
+    	theBPState = 0;
+    } else if (theSquashReason == kException) {
+    	squashBranch_fn(theBPStateException);
+    	theBPStateException = 0;
+    } else {
+    	DBG_Assert ( false, ( << "Only kBranchMispredict or kException should request a squash here") );
+    }
+
     squash_fn(theSquashReason);
     theSquashRequested = false;
     theIdleThisCycle = false;
@@ -1164,6 +1177,84 @@ void CoreImpl::commitStore(boost::intrusive_ptr<Instruction> anInsn) {
   }
 }
 
+bool isBrAlwaysAnnulled(uint32_t opcode) {
+	if (opcode & 0x20000000) {
+		uint32_t op = (opcode >> 30) & 3;
+		if (op == 0) {
+		  uint32_t op2 = (opcode >> 22) & 0x7;
+		  if (op2 == 1 || op2 == 2 || op2 == 5 || op2 == 6) {
+			  uint32_t cond  = (opcode >> 25) & 0xF;
+			  if (cond == 8) {
+				  return true;
+			  }
+		  }
+		}
+	}
+    return false;
+}
+
+void CoreImpl::BBTBhelper(uint64_t currPC, int64_t opcode, boost::intrusive_ptr<BranchFeedback> branchFeedback, boost::intrusive_ptr<BPredState> bpState) {
+
+	if (branchFeedback) {
+//		DBG_(Tmp, ( << " Is a branch pc " << std::hex << currPC << " " << Flexus::Simics::Processor::getProcessor(0)->disassemble(VirtualMemoryAddress(currPC))));
+		assert(bpState->theActualType != kNonBranch);
+		assert(bpState->theActualType == branchFeedback->theActualType);
+
+	} else {
+//		DBG_(Tmp, ( << " Not a branch " << std::hex << currPC << " " << Flexus::Simics::Processor::getProcessor(0)->disassemble(VirtualMemoryAddress(currPC))));
+		assert(bpState->theActualType == kNonBranch);
+	}
+
+	if (prevBPState[0] && prevBPState[0]->theActualType != kNonBranch) {
+		uint64_t start, end, size;
+
+		start = theBBAddress;
+		if (prevBPState[0]->theActualType == kRetry || prevBPState[0]->theActualType == kDone) {
+			theBBAddress = prevBPState[1]->pc;
+			end = prevBPState[0]->pc;
+		} else {
+			if (isBranchAlwaysAnnulled[0]) {
+				theBBAddress = prevBPState[1]->pc;
+			} else {
+				theBBAddress = currPC;
+			}
+			end = prevBPState[0]->pc + 4;
+
+		}
+		if (start != 0) {
+			size = (end - start)/4 + 1; //+1 is for including the instructio with "end" address as well
+//			DBG_(Tmp, ( << std::hex << theNode << " start addr " << start << " end " << end << " size " << size << " target " << prevBranchFeedback[0]->theActualTarget << " new start " << std::hex << theBBAddress));
+			assert(size < 5000);
+
+			prevBranchFeedback[0]->thePC = VirtualMemoryAddress(start); //thePC now represents the starting address of BB instead of the address of the branch
+			prevBranchFeedback[0]->theBBsize = size;
+			if (lastBranchType != kRetry && lastBranchType != kDone) {
+				feedback_fn(prevBranchFeedback[0]);
+			} else {
+//				DBG_(Tmp, ( << std::hex << theNode << " Incomplete block, not sending back " ));
+			}
+			lastBranchType = prevBPState[0]->theActualType;
+		}
+	}
+
+	  if (prevBPState[0] && prevBPState[1] && prevBPState[1]->pc != prevBPState[0]->pc + 4) {
+		  if (theBBAddress != (uint64_t)prevBPState[1]->pc){
+//			  DBG_(Tmp, ( << theNode << " start addr changed to " << std::hex << prevBPState[1]->pc << std::hex << " from " << theBBAddress));
+			  theBBAddress = prevBPState[1]->pc;
+			  lastBranchType = kNonBranch; //A new basic block is starting
+		  }
+	  }
+
+	prevBPState[0] = prevBPState[1];
+	prevBPState[1] = bpState;
+
+	prevBranchFeedback[0] = prevBranchFeedback[1];
+	prevBranchFeedback[1] = branchFeedback;
+
+	isBranchAlwaysAnnulled[0] = isBranchAlwaysAnnulled[1];
+	isBranchAlwaysAnnulled[1] = isBrAlwaysAnnulled(opcode);
+}
+
 void CoreImpl::retire() {
   FLEXUS_PROFILE();
   bool stop_retire = false;
@@ -1279,6 +1370,16 @@ void CoreImpl::retire() {
     theSRB.push_back(theROB.front());
 
     if (thePendingTrap == kException_None) {
+        /* For Boomerang */
+      uint64_t retirePC = theROB.front()->pc();
+
+//      DBG_(Tmp, ( << theName << " retiring PC: " << *theROB.front() ) );
+      BBTBhelper(retirePC, theROB.front()->getOpcode(), theROB.front()->branchFeedback(), theROB.front()->bpState());
+      theROB.front()->bpState()->hasRetired = true;
+
+      DBG_(Iface, (<< std::hex << "Retirement notification, EL:" << currentEL() << "  PC:" << retirePC));
+      RetireNotice retired(currentEL(), retirePC, theROB.front()->fetchSerial(), theROB.front()->getMissStatsInfo());
+      retirecb_fn(retired);
       theROB.pop_front();
       // Need to squash and retire instructions that cause traps
     }
@@ -1381,6 +1482,7 @@ void CoreImpl::doAbortSpeculation() {
   int32_t remaining_ssb = clearSSB(ckpt_seq_num);
 
   // redirect fetch
+  DBG_Assert ( false, ( << "squashBranch_fn(); needs to be called" ) );
   squash_fn(kFailedSpec);
   theRedirectRequested = true;
   theRedirectPC = VirtualMemoryAddress(ckpt->second.theState.thePC);
@@ -1578,10 +1680,11 @@ void CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction) {
   theDumpPC = anInstruction->pcNext();
   if (anInstruction->resync()) {
     DBG_(Dev, Cond(!cpuHalted)(<< "Forced Resync:" << *anInstruction));
-
     // Subsequent Empty ROB stalls (until next dispatch) are the result of a
     // synchronizing instruction.
     theEmptyROBCause = kSync;
+    theBPStateResync = anInstruction->bpState();
+    theBPStateResync->exceptionSource = xResyn;
     if (!resync_accounted) {
       accountResyncReason(anInstruction);
     }
@@ -1599,6 +1702,8 @@ void CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction) {
     // Subsequent Empty ROB stalls (until next dispatch) are the result of a
     // modelling error resynchronization instruction.
     theEmptyROBCause = kResync;
+    theBPStateResync = anInstruction->bpState();
+    theBPStateResync->exceptionSource = xResyn;
     ++theResync_FailedValidation;
 
     throw ResynchronizeWithQemuException();
@@ -1607,13 +1712,29 @@ void CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction) {
   DBG_(VVerb, (<< std::internal << *anInstruction << std::left));
 }
 
-bool CoreImpl::squashFrom(boost::intrusive_ptr<Instruction> anInsn) {
+bool CoreImpl::squashAfter( boost::intrusive_ptr< Instruction > anInsn, boost::intrusive_ptr<BPredState> aBPState) {
+  return false;
+}
+
+bool CoreImpl::squashFrom(boost::intrusive_ptr<Instruction> anInsn, boost::intrusive_ptr<BPredState> aBPState) {
   if (!theSquashRequested || (anInsn->sequenceNo() <= (*theSquashInstruction)->sequenceNo())) {
+	aBPState->causedSquash = true;
+	if (aBPState->hasRetired) {	/*Insn has already been retired, capture squash stat here*/
+		if (aBPState->thePredictedType == kNonBranch) {
+			statSquashesBTBMissEarlyRet++;
+//			DBG_( Tmp, ( << "Early Ret BTBMiss squash "));
+		} else if ( aBPState->BTBPreFilled == true) {
+			statSquashesBTBBPMissEarlyRet++;
+		}
+		statSquashesBMPredEarlyRet++;
+//		DBG_( Tmp, ( << "Early Ret BMPred squash "));
+	}
     theSquashRequested = true;
     theSquashReason = kBranchMispredict;
     theEmptyROBCause = kMispredict;
     theSquashInstruction = theROB.project<0>(theROB.get<by_insn>().find(anInsn));
     theSquashInclusive = true;
+    theBPState = aBPState;
     return true;
   }
   return false;
@@ -1626,11 +1747,13 @@ void CoreImpl::redirectFetch(VirtualMemoryAddress anAddress) {
 }
 
 void CoreImpl::branchFeedback(boost::intrusive_ptr<BranchFeedback> feedback) {
-  theBranchFeedback.push_back(feedback);
+    /* Mark: Removed for Boomerang */
+  //theBranchFeedback.push_back(feedback);
 }
 
 void CoreImpl::doSquash() {
   FLEXUS_PROFILE();
+  std::list< boost::intrusive_ptr<BPredState> > theRASop;
   if (theSquashInstruction != theROB.end()) {
 
     // There is at least one instruction in the ROB
@@ -1644,6 +1767,9 @@ void CoreImpl::doSquash() {
       rob_t::reverse_iterator iter = theROB.rbegin();
       rob_t::reverse_iterator end = boost::make_reverse_iterator(erase_iter);
       while (iter != end) {
+    	if ((*iter)->bpState()->thePredictedType == kCall || (*iter)->bpState()->thePredictedType == kJmplCall || (*iter)->bpState()->thePredictedType == kReturn) {
+    		theRASop.push_back((*iter)->bpState());
+    	}
         (*iter)->squash();
         ++iter;
       }
@@ -1660,6 +1786,7 @@ void CoreImpl::doSquash() {
       theROB.erase(erase_iter, theROB.end());
     }
   }
+  reconstructRAS_fn(theRASop);
 }
 
 void CoreImpl::startSpeculating() {
@@ -1750,6 +1877,9 @@ void CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExcept
   theSquashInstruction = theROB.begin();
   theSquashInclusive = true;
 
+  theBPStateException = (*theSquashInstruction)->bpState();
+  theBPStateException->exceptionSource = xResyn; // Mark: Qflex is all resyncs as of now
+
   // Record the pending trap
   thePendingTrap = aTrapType;
   theTrapInstruction = anInstruction;
@@ -1796,6 +1926,8 @@ void CoreImpl::handleTrap() {
   DBG_(Crit, (<< theName << " ROB non-empty in handle trap.  Resynchronize instead."));
   theEmptyROBCause = kRaisedException;
   ++theResync_FailedHandleTrap;
+  //Send Trap State to Fetch Address Generation Unit
+  sendTrapState_fn(getTrapState());
   throw ResynchronizeWithQemuException();
 }
 

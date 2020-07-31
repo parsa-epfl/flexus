@@ -1392,6 +1392,7 @@ private:
                                       , fetch_addr.theBPState
                                       , theFetchReplyTransactionTracker[anIndex]
 									  , aFetchSerial
+                                      , nullptr // no InfoMissStats 
                                       )
                                     );
         if (from_icache && theLastMiss[anIndex] && theLastPhysical == theLastMiss[anIndex]->first) {

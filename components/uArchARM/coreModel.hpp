@@ -75,6 +75,10 @@ struct CoreModel : public uArchARM {
                               std::function<void(int, int)> change_mode,
                               std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback,
                               std::function<void(bool)> signalStoreForwardingHit,
+                              std::function< void( boost::intrusive_ptr<BPredState>) > squashBranch,
+                              std::function< void( boost::intrusive_ptr<TrapState>) > sendTrapState,
+                              std::function< void( std::list< boost::intrusive_ptr<BPredState> >) > reconstructRAS,
+                              std::function< void( RetireNotice & )> retirecb,
                               std::function<void(int32_t)> mmuResync);
 
   // Interface to mircoArch
@@ -85,6 +89,9 @@ struct CoreModel : public uArchARM {
 
   virtual void getARMState(armState &aState) = 0;
   virtual void restoreARMState(armState &aState) = 0;
+  virtual boost::intrusive_ptr<TrapState> getTrapState() = 0;//Rakesh
+  virtual boost::intrusive_ptr<BPredState> getResyncBPState() const = 0; //Rakesh
+  virtual void resetResyncBPState() = 0; //Rakesh
 
   virtual void setPC(uint64_t aPC) = 0;
   virtual uint64_t pc() const = 0;

@@ -45,6 +45,8 @@
 
 #include <components/armDecoder/SemanticInstruction.hpp>
 #include <components/armDecoder/armDecoder.hpp>
+#include <components/CommonQEMU/MessageQueues.hpp>
+#include <map>
 
 #define FLEXUS_BEGIN_COMPONENT armDecoder
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
@@ -55,6 +57,9 @@
 
 #include <boost/weak_ptr.hpp>
 #include <components/MTManager/MTManager.hpp>
+#include <components/uArchARM/uArchInterfaces.hpp>
+#include <components/MTManager/MTManager.hpp>
+#define PIPE_LAT 10
 
 namespace ll = boost::lambda;
 
@@ -63,6 +68,7 @@ namespace narmDecoder {
 using namespace Flexus;
 using namespace Core;
 using namespace SharedTypes;
+using namespace nMessageQueues;
 
 std::pair<boost::intrusive_ptr<AbstractInstruction>, bool>
 decode(Flexus::SharedTypes::FetchedOpcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo,
@@ -71,21 +77,30 @@ decode(Flexus::SharedTypes::FetchedOpcode const &aFetchedOpcode, uint32_t aCPU, 
 class FLEXUS_COMPONENT(armDecoder) {
   FLEXUS_COMPONENT_IMPL(armDecoder);
 
+  eInstructionCode lastInsnCode;
   int64_t theInsnSequenceNo;
+  boost::intrusive_ptr<BPredState> lastBPState;
   std::list<boost::intrusive_ptr<AbstractInstruction>> theFIQ;
 
+  Stat::StatCounter theCallRestorePair;
   bool theSyncInsnInProgress;
 
+  typedef PipelineFifo< boost::intrusive_ptr< AbstractInstruction > > CorePipeline;
+  CorePipeline thePipeline;
+
 public:
-  FLEXUS_COMPONENT_CONSTRUCTOR(armDecoder) : base(FLEXUS_PASS_CONSTRUCTOR_ARGS) {
-  }
+  FLEXUS_COMPONENT_CONSTRUCTOR(armDecoder) : base(FLEXUS_PASS_CONSTRUCTOR_ARGS)
+	, theCallRestorePair( statName() + "-CallRestorePair" )
+	, thePipeline( statName() + "-Pipeline", 1, 1, PIPE_LAT)
+   { }
 
   bool isQuiesced() const {
     // the FAG is always quiesced.
-    return theFIQ.empty() && !theSyncInsnInProgress;
+    return theFIQ.empty() && thePipeline.empty() && !theSyncInsnInProgress;
   }
 
   void initialize() {
+    lastBPState = nullptr;
     theInsnSequenceNo = 0;
     theSyncInsnInProgress = false;
   }
@@ -96,6 +111,8 @@ public:
 public:
   FLEXUS_PORT_ALWAYS_AVAILABLE(FetchBundleIn);
   void push(interface::FetchBundleIn const &, pFetchBundle &aBundle) {
+    std::list< FetchedOpcode >::iterator iter = aBundle->theOpcodes.begin();
+
     std::list<tFillLevel>::iterator fill_iter = aBundle->theFillLevels.begin();
     for (auto it = aBundle->theOpcodes.begin(); it != aBundle->theOpcodes.end(); it++) {
       int32_t uop = 0;
@@ -105,8 +122,21 @@ public:
       // configured size.
       while (!final_uop) {
         boost::tie(insn, final_uop) = decode(*it, aBundle->coreID, ++theInsnSequenceNo, uop++);
+        insn->fetchSerial() = final_uop ? iter->theSerial : 0;
         if (insn) {
           insn->setFetchTransactionTracker(it->theTransaction);
+          insn->setMissStatsInfo(iter->missStatsInfo);
+          /*insn->sethadIcacheMiss(iter->thehadIcacheMiss);
+            insn->setMissPrefetchOnWay(iter->theMissPrefetchOnWay);
+            insn->setIcacheMissCycles(iter->theIcacheMissCycles);*/
+
+          eInstructionCode insnCode = (dynamic_cast< armInstruction *>( insn.get() ))->instCode();
+          if ((lastInsnCode == codeCALL || lastInsnCode == codeJmplCall) /*&& lastBPState->callUpdatedRAS == true*/) {
+              trackSpecialCall(insnCode, (*iter).theOpcode);
+          }
+
+          lastInsnCode = insnCode;
+          lastBPState = (*iter).theBPState;
           // Set Fill Level for the insn
           insn->setSourceLevel(*fill_iter);
           theFIQ.push_back(insn);
@@ -117,19 +147,70 @@ public:
     }
   }
 
+  void trackSpecialCall(eInstructionCode insnCode, Opcode theOpcode) {
+      // FIXME: PORT TO ARM
+      if (insnCode == codeBranchJmpl) {
+  		theCallRestorePair++;
+  		lastBPState->detectedSpecialCall = true;
+//        		DBG_(Tmp, ( << "Decoding a special call " << (*iter).thePC << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble((*iter).thePC)));
+//  		DBG_(Tmp, ( << "Decoding a special call "));
+      } else {
+          uint32_t opcode = theOpcode;
+          uint32_t op = opcode >> 30;
+          if (op == 2) {
+          	uint32_t op3 = (opcode >> 19) & 0x3F;
+          	if (op3 == 0x2 || op3 == 0x12) {
+          		uint32_t rd = (opcode >> 25) & 0x1F;
+          		if (rd == 15) {
+              		theCallRestorePair++;
+              		lastBPState->detectedSpecialCall = true;
+//                    		DBG_(Tmp, ( << "Decoding a special call " << (*iter).thePC << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble((*iter).thePC)));
+//              		DBG_(Tmp, ( << "Decoding a special call "));
+          		}
+          	}
+          }
+      }
+  }
+
+  FLEXUS_PORT_ALWAYS_AVAILABLE(RASOpsIn);
+  void push(interface::RASOpsIn const &, std::list< boost::intrusive_ptr<BPredState> > & theRASops) {
+//	  DBG_( Tmp, ( << " reconstruct RAS Decode" ));
+
+	  for (uint32_t i = 0; i < thePipeline.size(); i++) {
+		  boost::intrusive_ptr< AbstractInstruction > inst = thePipeline.peek();
+		  boost::intrusive_ptr<BPredState> bpState = (dynamic_cast< armInstruction *>( inst.get() ))->bpState();
+		  thePipeline.dequeue();
+
+	      if (bpState->thePredictedType == kCall || bpState->thePredictedType == kJmplCall || bpState->thePredictedType == kReturn) {
+//	    	  DBG_( Tmp, ( << " RAS Decode " << bpState->pc << " pred type " << bpState->thePredictedType << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(bpState->pc)));
+	    	  theRASops.push_front(bpState);
+	      }
+	  }
+
+	  for ( std::list< boost::intrusive_ptr< AbstractInstruction > >::iterator it = theFIQ.begin(); it != theFIQ.end(); it++) {
+//		  boost::intrusive_ptr< AbstractInstruction > inst(*it);
+		  boost::intrusive_ptr<BPredState> bpState = (dynamic_cast< armInstruction *>( (*it).get() ))->bpState();
+	      if (bpState->thePredictedType == kCall || bpState->thePredictedType == kJmplCall || bpState->thePredictedType == kReturn) {
+//	    	  DBG_( Tmp, ( << " RAS Decode " << bpState->pc << " pred type " << bpState->thePredictedType << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(bpState->pc)));
+	    	  theRASops.push_front(bpState);
+	      }
+	  }
+
+	  FLEXUS_CHANNEL( RASOpsOut ) << theRASops;
+  }
+
   FLEXUS_PORT_ALWAYS_AVAILABLE(AvailableFIQOut);
   dispatch_status pull(interface::AvailableFIQOut const &) {
     int32_t avail = cfg.FIQSize - theFIQ.size();
     if (avail < 0) {
       avail = 0;
     }
-    //return std::make_pair(avail, (theFIQ.empty() && thePipeline.empty())); FIXME: this thePipeline thing needs to be included
-    return std::make_pair(avail, (theFIQ.empty()));
+    return std::make_pair(avail, (theFIQ.empty() && thePipeline.empty()));
   }
 
   FLEXUS_PORT_ALWAYS_AVAILABLE(ICount);
   int32_t pull(ICount const &) {
-    return theFIQ.size();
+    return theFIQ.size() + thePipeline.size();
   }
 
   FLEXUS_PORT_ALWAYS_AVAILABLE(Stalled);
@@ -148,6 +229,7 @@ public:
     DBG_(VVerb, Comp(*this)(<< "DISPATCH SQUASH: " << aReason
                             << " FIQ discarding: " << theFIQ.size() << " instructions"));
     theFIQ.clear();
+    thePipeline.clear();
 
     FLEXUS_CHANNEL(SquashOut) << aReason;
   }
@@ -170,6 +252,19 @@ private:
   // Implementation of the FetchDrive drive interface
   void doDecode() {
     DISPATCH_DBG("--------------START DISPATCHING------------------------");
+    /* Delay pipe for Boomerang */
+    uint64_t decoded = 0;
+    while(  decoded < cfg.DispatchWidth
+            && !theFIQ.empty()
+            && (thePipeline.size() < (cfg.DispatchWidth*(PIPE_LAT)))
+         ){
+
+        boost::intrusive_ptr< AbstractInstruction > inst(theFIQ.front());
+        theFIQ.pop_front();
+        thePipeline.enqueue(inst);
+
+        decoded++;
+    }
 
     DBG_Assert(FLEXUS_CHANNEL(AvailableDispatchIn).available());
     // the FLEXUS_CHANNEL can only write to an lvalue, hence this rather
@@ -196,19 +291,20 @@ private:
                    << ", theFIQ is empty " << int(theFIQ.empty()) << ", no Sync Insn In Progress "
                    << int(!theSyncInsnInProgress));
     }
-    while (available_dispatch > 0 && dispatched < cfg.DispatchWidth && !theFIQ.empty() &&
-           !theSyncInsnInProgress) {
+    while (available_dispatch > 0 && dispatched < cfg.DispatchWidth && !theFIQ.empty()
+			&& thePipeline.ready() && !theSyncInsnInProgress) {
+        boost::intrusive_ptr< AbstractInstruction > inst = thePipeline.peek();
       if (theFIQ.front()->haltDispatch()) {
         // May only dispatch black box op when core is synchronized
         if (is_sync && dispatched == 0) {
           DISPATCH_DBG("Halt-dispatch " << *theFIQ.front());
-          boost::intrusive_ptr<AbstractInstruction> inst(theFIQ.front());
-          theFIQ.pop_front();
+          thePipeline.dequeue();
+          //boost::intrusive_ptr<AbstractInstruction> inst(theFIQ.front());
+          //theFIQ.pop_front();
 
           // Report the dispatched instruction to the PowerTracker
           theOpcode = (dynamic_cast<armInstruction *>(inst.get()))->getOpcode();
           FLEXUS_CHANNEL(DispatchedInstructionOut) << theOpcode;
-
           FLEXUS_CHANNEL(DispatchOut) << inst;
           theSyncInsnInProgress = true;
         } else {
@@ -218,8 +314,9 @@ private:
 
       } else {
         DISPATCH_DBG("Dispatching " << *theFIQ.front());
-        boost::intrusive_ptr<AbstractInstruction> inst(theFIQ.front());
-        theFIQ.pop_front();
+        //boost::intrusive_ptr<AbstractInstruction> inst(theFIQ.front());
+        //theFIQ.pop_front();
+        thePipeline.dequeue();
 
         // Report the dispatched instruction to the PowerTracker
         theOpcode = (dynamic_cast<armInstruction *>(inst.get()))->getOpcode();

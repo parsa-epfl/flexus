@@ -293,6 +293,11 @@ public:
     return theCurrentSize;
   }
 
+  void clear(){
+    theQueue.clear();
+    theCurrentSize = 0;
+  }
+
 }; // class PipelineFifo
 
 } // End Namespace nMessageQueues
