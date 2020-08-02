@@ -48,6 +48,7 @@
 #include <list>
 
 #include <components/CommonQEMU/Transports/MemoryTransport.hpp>
+#include <core/debug/debug.hpp>
 #include <core/stats.hpp>
 
 #define DBG_DeclareCategories CommonQueues
@@ -210,6 +211,8 @@ public:
 
 }; // class DelayFifo
 
+#define MSG_QUEUE_DEBUG VVerb
+
 template <class Item> class PipelineFifo {
   typedef std::pair<Item, uint64_t> PipelineElement;
   std::list<PipelineElement> theQueue;
@@ -245,10 +248,13 @@ public:
                (<< " front=" << theServerReadyTimes.front() << " curr=" << curr));
     for (uint32_t i = 0; i < aRepeatCount; i++) {
       theServerReadyTimes.pop_front();
+      DBG_(MSG_QUEUE_DEBUG,(<< "Enqueueing: @" << curr << ", theIssueLatency" << theIssueLatency 
+                  << ", server will be ready @ " << curr + theIssueLatency * (i + 1)));
       theServerReadyTimes.push_back(curr + theIssueLatency * (i + 1));
     }
     uint64_t complete = curr + theLatency * aRepeatCount;
     theQueue.push_back(std::make_pair(anItem, complete));
+    DBG_(MSG_QUEUE_DEBUG,(<< "\t... putting item into complete queue @" << curr+theLatency*aRepeatCount));
     ++theCurrentSize;
     if (theInterArrival)
       *theInterArrival << (curr - theLastArrival);
@@ -263,6 +269,8 @@ public:
   }
 
   Item dequeue() {
+    uint64_t curr = Flexus::Core::theFlexus->cycleCount();
+    DBG_(MSG_QUEUE_DEBUG,(<< "Message queue dequeueing @" << curr));
     --theCurrentSize;
     DBG_Assert(theCurrentSize >= 0);
     // remove and remember the head of the queue

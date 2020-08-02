@@ -77,6 +77,7 @@ namespace Stat = Flexus::Stat;
 #include <components/CommonQEMU/BranchPredictor.hpp>
 #include <components/CommonQEMU/Tage.h>
 
+
 #define DBG_DefineCategories BPred
 #define DBG_SetDefaultOps AddCat(BPred)
 #include DBG_Control()
@@ -759,9 +760,8 @@ namespace Flexus {
       void resetUpdateState( boost::intrusive_ptr<BPredState> aBPState) {
 #ifdef TAGE
     	  if (aBPState) {
-//    		  DBG_ (Tmp, ( << " Predicted direction "<< aBPState->thePrediction << " Actual Direction:  " << aBPState->theActualDirection << " pc " << aBPState->pc));
+              DBG_(DBG_BOOM_LEVEL, ( << "in resetUpdateState( " << *aBPState));
     		  DBG_Assert( aBPState->theActualDirection != kStronglyTaken, ( << "theActualDirection not updated.  Cannot be kStronglyTaken" ) );
-//    		  DBG_ (Tmp, ( << " Predicted direction "<< aBPState->thePrediction << " Actual Direction:  " << aBPState->theActualDirection << " pc " << aBPState->pc));
     		  theTage.restore_all_state(*aBPState);
     		  theTL = aBPState->theTL;
     		  if (aBPState->theActualType == kConditional) {

@@ -192,6 +192,7 @@ struct BPredState : boost::counted_base {
   uint32_t theTL;
   uint32_t theBBSize;
 };
+std::ostream &operator<<(std::ostream &anOstream, const BPredState &aBPState);
 
 struct FetchAddr {
   Flexus::SharedTypes::VirtualMemoryAddress theAddress;

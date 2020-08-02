@@ -326,6 +326,7 @@ FLEXUS_INSTANTIATE_COMPONENT( SplitDestinationMapper, theNetMapperCfg, theNetMap
 //====                                  ==
 //FAG to Fetch
 WIRE( theFAG, FetchAddrOut,             theuFetch, FetchAddressIn         )
+WIRE( theFAG, PrefetchAddrOut,          theuFetch, PrefetchAddressIn      ) //Rakesh
 WIRE( theFAG, AvailableFAQ,             theuFetch, AvailableFAQOut        )
 WIRE( theFAG, uArchHalted,              theuArch, CoreHalted              )
 
@@ -334,6 +335,12 @@ WIRE( theuFetch, AvailableFIQ,          theDecoder, AvailableFIQOut       )
 WIRE( theuFetch, FetchBundleOut,        theDecoder, FetchBundleIn         )
 WIRE( theDecoder, SquashOut,            theuFetch, SquashIn               )
 WIRE( theuArch, ChangeCPUState,         theuFetch, ChangeCPUState         )
+WIRE( theDecoder, SpecialCallOut,       theFAG, SpecialCallIn             ) //Rakesh
+WIRE( theuFetch, SquashOut,             theFAG, SquashIn                  ) //Rakesh
+WIRE( theuFetch, RASOpsOut,             theFAG, RASOpsIn                  ) //Rakesh
+WIRE( theuFetch, SquashBranchOut,       theFAG, SquashBranchIn            ) //Rakesh
+WIRE( theuFetch, MissPairOut,           theFAG, MissPairIn                ) //Rakesh
+WIRE( theuFetch, ROBEmptyIn,            theuArch, ROBEmptyOut             )  //Rakesh
 
 // Fetch to MMU
 WIRE( theuFetch, iTranslationOut,       theMMU, iRequestIn                )
@@ -354,6 +361,8 @@ WIRE( theuArch, SquashOut,              theDecoder, SquashIn              )
 //uArch to FAG
 WIRE( theuArch, BranchFeedbackOut,      theFAG, BranchFeedbackIn          )
 WIRE( theuArch, RedirectOut,            theFAG, RedirectIn                )
+WIRE( theuArch, SquashBranchOut,        theuFetch, SquashBranchIn         ) //Rakesh
+WIRE( theuArch, TrapStateOut,           theFAG, TrapStateIn               ) //Rakesh
 
 //uFetch to IDMux
 WIRE( theuFetch, FetchMissOut,          theNetMapper, ICacheRequestIn     )

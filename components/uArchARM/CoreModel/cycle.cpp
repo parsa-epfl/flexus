@@ -1178,30 +1178,18 @@ void CoreImpl::commitStore(boost::intrusive_ptr<Instruction> anInsn) {
 }
 
 bool isBrAlwaysAnnulled(uint32_t opcode) {
-	if (opcode & 0x20000000) {
-		uint32_t op = (opcode >> 30) & 3;
-		if (op == 0) {
-		  uint32_t op2 = (opcode >> 22) & 0x7;
-		  if (op2 == 1 || op2 == 2 || op2 == 5 || op2 == 6) {
-			  uint32_t cond  = (opcode >> 25) & 0xF;
-			  if (cond == 8) {
-				  return true;
-			  }
-		  }
-		}
-	}
-    return false;
+    return false; // never true in ARM
 }
 
 void CoreImpl::BBTBhelper(uint64_t currPC, int64_t opcode, boost::intrusive_ptr<BranchFeedback> branchFeedback, boost::intrusive_ptr<BPredState> bpState) {
 
 	if (branchFeedback) {
-//		DBG_(Tmp, ( << " Is a branch pc " << std::hex << currPC << " " << Flexus::Simics::Processor::getProcessor(0)->disassemble(VirtualMemoryAddress(currPC))));
+		DBG_(Tmp, ( << " Is a branch pc " << std::hex << currPC << " " << theQEMUCPU->disassemble(VirtualMemoryAddress(currPC))));
 		assert(bpState->theActualType != kNonBranch);
 		assert(bpState->theActualType == branchFeedback->theActualType);
 
 	} else {
-//		DBG_(Tmp, ( << " Not a branch " << std::hex << currPC << " " << Flexus::Simics::Processor::getProcessor(0)->disassemble(VirtualMemoryAddress(currPC))));
+		DBG_(Tmp, ( << " Not a branch " << std::hex << currPC << " " << theQEMUCPU->disassemble(VirtualMemoryAddress(currPC))));
 		assert(bpState->theActualType == kNonBranch);
 	}
 
@@ -1223,7 +1211,7 @@ void CoreImpl::BBTBhelper(uint64_t currPC, int64_t opcode, boost::intrusive_ptr<
 		}
 		if (start != 0) {
 			size = (end - start)/4 + 1; //+1 is for including the instructio with "end" address as well
-//			DBG_(Tmp, ( << std::hex << theNode << " start addr " << start << " end " << end << " size " << size << " target " << prevBranchFeedback[0]->theActualTarget << " new start " << std::hex << theBBAddress));
+			DBG_(Tmp, ( << std::hex << theNode << " start addr " << start << " end " << end << " size " << size << " target " << prevBranchFeedback[0]->theActualTarget << " new start " << std::hex << theBBAddress));
 			assert(size < 5000);
 
 			prevBranchFeedback[0]->thePC = VirtualMemoryAddress(start); //thePC now represents the starting address of BB instead of the address of the branch
@@ -1231,7 +1219,7 @@ void CoreImpl::BBTBhelper(uint64_t currPC, int64_t opcode, boost::intrusive_ptr<
 			if (lastBranchType != kRetry && lastBranchType != kDone) {
 				feedback_fn(prevBranchFeedback[0]);
 			} else {
-//				DBG_(Tmp, ( << std::hex << theNode << " Incomplete block, not sending back " ));
+				DBG_(Tmp, ( << std::hex << theNode << " Incomplete block, not sending back " ));
 			}
 			lastBranchType = prevBPState[0]->theActualType;
 		}
@@ -1239,7 +1227,7 @@ void CoreImpl::BBTBhelper(uint64_t currPC, int64_t opcode, boost::intrusive_ptr<
 
 	  if (prevBPState[0] && prevBPState[1] && prevBPState[1]->pc != prevBPState[0]->pc + 4) {
 		  if (theBBAddress != (uint64_t)prevBPState[1]->pc){
-//			  DBG_(Tmp, ( << theNode << " start addr changed to " << std::hex << prevBPState[1]->pc << std::hex << " from " << theBBAddress));
+			  DBG_(Tmp, ( << theNode << " start addr changed to " << std::hex << prevBPState[1]->pc << std::hex << " from " << theBBAddress));
 			  theBBAddress = prevBPState[1]->pc;
 			  lastBranchType = kNonBranch; //A new basic block is starting
 		  }
@@ -1858,6 +1846,9 @@ void CoreImpl::checkStopSpeculating() {
 // iesb_req = TRUE;
 // TakeUnmaskedPhysicalSErrorInterrupts(iesb_req);
 // EndOfInstruction();
+void CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, int32_t x, Flexus::SharedTypes::xExceptionSource y) {
+    // TODO
+}
 
 void CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExceptionType aTrapType) {
 

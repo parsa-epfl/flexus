@@ -643,6 +643,7 @@ struct BranchEffect : public Effect {
     anInstruction.redirectPC(theTarget);
     anInstruction.core()->applyToNext(boost::intrusive_ptr<nuArchARM::Instruction>(&anInstruction),
                                       branchInteraction(theTarget,theBPState));
+    DBG_(Tmp, ( << "Instruction: " << anInstruction << "has BPState: " << theBPState) );
     DBG_(Iface, (<< "BRANCH:  Must redirect to " << theTarget));
     Effect::invoke(anInstruction);
   }
@@ -693,6 +694,10 @@ struct BranchAfterNextWithOperand : public Effect {
 };
 
 Effect *branch(SemanticInstruction *inst, VirtualMemoryAddress aTarget) {
+  if (inst->bpState()) {
+	  inst->bpState()->theActualType = kUnconditional;
+	  inst->bpState()->theActualDirection = kTaken;
+  }
   BranchEffect *b = new BranchEffect(aTarget,inst->bpState());
   inst->addNewComponent(b);
   return b;

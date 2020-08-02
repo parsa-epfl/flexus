@@ -91,7 +91,7 @@ class FLEXUS_COMPONENT(armDecoder) {
 public:
   FLEXUS_COMPONENT_CONSTRUCTOR(armDecoder) : base(FLEXUS_PASS_CONSTRUCTOR_ARGS)
 	, theCallRestorePair( statName() + "-CallRestorePair" )
-	, thePipeline( statName() + "-Pipeline", 1, 1, PIPE_LAT)
+	, thePipeline( statName() + "-Pipeline", cfg.DispatchWidth , 1, PIPE_LAT)
    { }
 
   bool isQuiesced() const {

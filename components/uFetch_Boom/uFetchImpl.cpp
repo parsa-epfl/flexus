@@ -1338,6 +1338,7 @@ private:
 //    DBG_(Tmp, ( << "AvailableFIQ " << available_fiq << " FAQ Size " << theFAQ[anIndex].size()));
     if (available_fiq > 0 && ( theFAQ[anIndex].size() > 1 || theFlexus->quiescing()) ) {
       pFetchBundle bundle(new FetchBundle);
+      bundle->coreID = theBundleCoreID;
 
       std::set< VirtualMemoryAddress> available_lines;
       int32_t remaining_fetch = cfg.MaxFetchInstructions;
@@ -1427,13 +1428,14 @@ private:
     xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
     xlat.theType = Flexus::SharedTypes::Translation::eFetch;
     op_code = cpu(anIndex)->fetchInstruction(xlat.theVaddr);
-    if (xlat.theException == 0) {
-      DBG_(Verb, Comp(*this) ( << "Fetch " << anAddress << " op: " << std::hex << std::setw(8) << op_code << std::dec ) );
-      return op_code;
+    DBG_(Verb, Comp(*this) ( << "Fetch " << anAddress << " op: " << std::hex << std::setw(8) << op_code << std::dec ) );
+    return op_code;
+    /*
     } else {
       DBG_(Iface, Comp(*this) ( << "No translation for " << anAddress << "PSTATE: " << theCPUState[anIndex].thePSTATE << " MMU exception: " << xlat.theException << std::dec ) );
-      return kITLBMiss /* or other exception - OoO will figure it out */;
+      return kITLBMiss // or other exception - OoO will figure it out
     }
+  */
   }
 
   void doPrefetch(index_t anIndex) {
@@ -1625,6 +1627,9 @@ FLEXUS_PORT_ARRAY_WIDTH( uFetch, ICount )   {
   return (cfg.Threads);
 }
 FLEXUS_PORT_ARRAY_WIDTH( uFetch, Stalled )   {
+  return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH(uFetch, ResyncIn) {
   return (cfg.Threads);
 }
 

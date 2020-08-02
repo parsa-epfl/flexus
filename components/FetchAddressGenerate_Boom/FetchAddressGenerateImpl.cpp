@@ -106,7 +106,7 @@ public:
       thePredecodeCyclesLeft[i] = 0;
       squashReason[i] = kResynchronize; //initialization with random value
       theBTBFetchedBlock[i] = MemoryAddress(0);
-      DBG_( Dev, Comp(*this) ( << "Thread[" << flexusIndex() << "." << i << "] connected to " << ((static_cast<Flexus::Qemu::API::conf_object_t *>(cpu))->name ) << " Initial PC: " << thePC[i] ) );
+      //DBG_( Dev, Comp(*this) ( << "Thread[" << flexusIndex() << "." << i << "] connected to " << ((static_cast<Flexus::Qemu::API::conf_object_t *>(cpu))->name ) << " Initial PC: " << thePC[i] ) );
     }
     theCurrentThread = cfg.Threads;
     theBranchPredictor.reset( BranchPredictor::combining(statName(), flexusIndex(), cfg.EnableRAS, cfg.EnableTCE, cfg.EnableTrapRet) );
@@ -185,13 +185,14 @@ public:
 
 	  squashReason[anIndex] = aReason;
 	  if (!squashedBPState) {
-		  DBG_Assert ( false, ( << "No BPstate to revert to") );
-	  }
-	  if (aReason == kBranchMispredict) {
-		  theBranchPredictor->resetUpdateState(squashedBPState);
+		  DBG_( Crit, ( << "WARNING! Squash with no BPstate to revert to") );
 	  } else {
-		  theBranchPredictor->resetState(squashedBPState);
-	  }
+          if (aReason == kBranchMispredict) {
+              theBranchPredictor->resetUpdateState(squashedBPState);
+          } else {
+              theBranchPredictor->resetState(squashedBPState);
+          }
+      }
 
 	  if (RASreconstructed[anIndex] == false) {
 //		  DBG_( Tmp, ( << "Reset RAS "));
@@ -216,7 +217,7 @@ public:
   //SquashBranchIn
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(SquashBranchIn);
   void push(interface::SquashBranchIn const &, index_t anIndex, boost::intrusive_ptr<BPredState> & aBPState) {
-//	  DBG_(Tmp, ( << std::endl<< std::endl << std::endl << "Branch Mispredicted " << aBPState->thePredictedType << " " << aBPState->returnPopRASTwice <<  " serial " << aBPState->theSerial << std::hex << " pc " << aBPState->pc << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(aBPState->pc)<< std::endl << std::endl<< std::endl) );
+//	  DBG_(Tmp, ( << std::endl<< std::endl << std::endl << "Branch Mispredicted " << aBPState->thePredictedType << " " << aBPState->returnPopRASTwice <<  " serial " << aBPState->theSerial << std::hex << " pc " << aBPState->pc << " " << Flexus::Qemu::Processor::getProcessor(flexusIndex())->disassemble(aBPState->pc)<< std::endl << std::endl<< std::endl) );
 	  squashedBPState = aBPState;
 
 	  if (aBPState->thePredictedType == kRetry || aBPState->thePredictedType == kDone) {
@@ -476,7 +477,8 @@ std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
 }
 
   Flexus::Core::index_t getSystemWidth() {
-      return -1;
+      return 1;
+      // TODO
     //int cpu_count = 0;
     //int client_cpu_count = 0;
     // added by PLotfi to support SPECweb2009 workloads
@@ -484,7 +486,7 @@ std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
     //int besim_cpu_count = 0;
     // end PLotfi
     /* MARK: This was removed because libqflex does not support this API
-    Flexus::Qemu::API::conf_object_t * queue = Flexus::Simics::API::SIM_next_queue(NULL);
+    Flexus::Qemu::API::conf_object_t * queue = Flexus::Qemu::API::SIM_next_queue(NULL);
     while (queue != NULL) {
       if (std::strstr(queue->name, "client") != 0) {
         ++client_cpu_count;
@@ -493,7 +495,7 @@ std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
       } else {
         ++cpu_count;
       }
-      queue = Flexus::Simics::API::SIM_next_queue(queue);
+      queue = Flexus::Qemu::API::SIM_next_queue(queue);
     }
     return cpu_count;
     */
@@ -528,8 +530,8 @@ std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
 				} else if (op3 == 0x2 || op3 == 0x12) {
 					uint32_t rd = (opcode >> 25) & 0x1F;
 					if (rd == 15) {
+	                    DBG_(DBG_BOOM_LEVEL, ( << "Decoding a special call " << vpc << " " << Flexus::Qemu::Processor::getProcessor(flexusIndex())->disassemble(vpc)));
 						return true;
-	//                    		DBG_(Tmp, ( << "Decoding a special call " << (*iter).thePC << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble((*iter).thePC)));
 					}
 				}
 			  }
@@ -561,7 +563,7 @@ std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
       int64_t op_code = 0;
       if (paddr) {
     	  lastTranslationFailed[anIndex] = false;
-    	  op_code = Flexus::Simics::Processor::getProcessor(flexusIndex())->readPAddr(paddr, 4/*Number of bytes*/);
+    	  op_code = Flexus::Qemu::Processor::getProcessor(flexusIndex())->readPAddr(paddr, 4/*Number of bytes*/);
     	  if (op_code) {
     		  std::pair<eBranchType, VirtualMemoryAddress> aPair = targetDecode(op_code);
     		  eBranchType branchType = aPair.first;
@@ -637,11 +639,11 @@ std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
 					if (op3 == 0x2 || op3 == 0x12) {	//Move to %o7
 						uint32_t rd = (opcode >> 25) & 0x1F;
 						if (rd == 15) {
-		//					DBG_( Tmp, ( << " Detected move to o7  "));
+							DBG_( DBG_BOOM_LEVEL, ( << " Detected move to o7  "));
 							return true;
 						}
 					} else if (op3 == 0x3D) {	//Restore
-		//				DBG_( Tmp, ( << " Detected restore: "));
+						DBG_( DBG_BOOM_LEVEL, ( << " Detected restore: "));
 						return true;
 					}
 				}
@@ -658,7 +660,7 @@ std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
 	  bool isPredecodeBuffHit = false;
 
 	  while(branchType == kNonBranch) {
-//		  DBG_(Tmp, ( << "Predec PC " << vpc));
+		  DBG_(DBG_BOOM_LEVEL, ( << "Predec PC " << vpc));
 		  PhysicalMemoryAddress paddr = getPhysicalAddress(vpc);
 		  if (paddr) {
 			  int64_t op_code = Flexus::Qemu::Processor::getProcessor(flexusIndex())->fetchInstruction(vpc);
@@ -666,7 +668,7 @@ std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
 				  BBSize++;
 				  std::pair<eBranchType, VirtualMemoryAddress> aPair = targetDecode(op_code);
 				  branchType = aPair.first;
-//				  DBG_(Tmp, ( << "Type " << branchType << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(vpc)));
+				  DBG_(DBG_BOOM_LEVEL, ( << "Type " << branchType << " " << Flexus::Qemu::Processor::getProcessor(flexusIndex())->disassemble(vpc)));
 				  if (branchType != kNonBranch) {
 					  aBBTBEntry.theBranchType = branchType;
 					  if (branchType == kRetry || branchType == kDone) {
@@ -677,7 +679,7 @@ std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
 
 					  if (branchType == kConditional) {
 						  aBBTBEntry.theBranchDirection = theBranchPredictor->conditionalTaken(vpc);
-//						  DBG_(Tmp, ( << "Prediction " << aBBTBEntry.theBranchDirection));
+						  DBG_(DBG_BOOM_LEVEL, ( << "Prediction " << aBBTBEntry.theBranchDirection));
 					  }
 
 					  if (branchType == kConditional || branchType == kUnconditional || branchType == kCall) {
@@ -779,18 +781,6 @@ std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
 #endif
 
   bool isBrAlwaysAnnulled(uint32_t opcode) {
-	  if (opcode & 0x20000000) {
-		  uint32_t op = (opcode >> 30) & 3;
-		  if (op == 0) {
-			  uint32_t op2 = (opcode >> 22) & 0x7;
-			  if (op2 == 1 || op2 == 2 || op2 == 5 || op2 == 6) {
-				  uint32_t cond  = (opcode >> 25) & 0xF;
-				  if (cond == 8) {
-					  return true;
-				  }
-			  }
-		   }
-	  }
       return false;
   }
 
@@ -805,13 +795,13 @@ std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
   	thePC[anIndex] = theNextPC[anIndex];
   	theNextPC[anIndex] = thePC[anIndex] + 4;
 
-//    DBG_(Tmp, Comp(*this) ( << "cpu " << flexusIndex() << " Serial " << faddr.theBPState->theSerial << " Enqueue address " << faddr.theAddress << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(faddr.theAddress)));
+    DBG_(DBG_BOOM_LEVEL, Comp(*this) ( << "cpu " << flexusIndex() << " Serial " << faddr.theBPState->theSerial << " Enqueue address " << faddr.theAddress << " " << Flexus::Qemu::Processor::getProcessor(flexusIndex())->disassemble(faddr.theAddress)));
 
     fetch->theFetches.push_back( faddr );
   }
 
   void sendprefetch(index_t anIndex, VirtualMemoryAddress prefetchAddr) {
-//	  DBG_(Tmp, ( << "Prefetch for " << prefetchAddr));
+	  DBG_(DBG_BOOM_LEVEL, ( << "Prefetch for " << prefetchAddr));
 		boost::intrusive_ptr<FetchCommand> fetch(new FetchCommand());
 		FetchAddr faddr(prefetchAddr, theNextSerial[anIndex]);
 		faddr.redirectionCause = squashReason[anIndex];
@@ -836,7 +826,6 @@ std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
     if (cpu_in_halt) {
       return;
     }
-
 
     if (theBTBMiss[anIndex] /*&& missUnderBTBMiss*/) {
     	//Activate prefetching from victimBTB but only if its an L1 miss.
@@ -890,7 +879,7 @@ std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
     boost::intrusive_ptr<FetchCommand> fetch(new FetchCommand());
 
     if (theNextPC[anIndex] != thePC[anIndex] + 4) {
-//    	DBG_(Tmp, ( << "NPC not PC+4"));
+    	DBG_(DBG_BOOM_LEVEL, ( << "NPC not PC+4"));
     	genSingleAddr(anIndex, fetch);
 
         FLEXUS_CHANNEL_ARRAY(FetchAddrOut, anIndex) << fetch;
@@ -902,7 +891,7 @@ std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
 
     if (cfg.EnableBTBPrefill || trapRetrunBlock) {
     	if ( aBTBEntry.thePC == 0) {
-//    		DBG_(Tmp, ( << "BTB Miss " << thePC[anIndex]));
+    		DBG_(DBG_BOOM_LEVEL, ( << "BTB Miss " << thePC[anIndex]));
 
 			std::pair<bool, BTBEntry> preFill = preFillBBTB(anIndex, thePC[anIndex]);
 
@@ -920,14 +909,14 @@ std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
     	if (cfg.EnableBTBPrefill) {
     		assert(lastTranslationFailed[anIndex] == true);
     	}
-//    	DBG_(Tmp, ( << "Could not prefill BTB Miss " << cfg.InsnOnBTBMiss));
+    	DBG_(DBG_BOOM_LEVEL, ( << "Could not prefill BTB Miss " << cfg.InsnOnBTBMiss));
     	for (int i = 0; i < cfg.InsnOnBTBMiss; i++) {
     		genSingleAddr(anIndex, fetch);
     	}
     } else {
 
-//    	DBG_(Tmp, ( << "BTB Hit " << thePC[anIndex]));
-//  	  DBG_( Tmp, ( << std::endl  << std::endl << " BB start: " << std::hex << thePC[anIndex] << " end " << (thePC[anIndex] + (aBTBEntry.theBBsize*4)) << " size " << aBTBEntry.theBBsize  << " target " << aBTBEntry.theTarget  << " type " << aBTBEntry.theBranchType << " pred " << aBTBEntry.theBranchDirection << std::endl  << std::endl));
+    	DBG_(DBG_BOOM_LEVEL, ( << "BTB Hit " << thePC[anIndex]));
+  	  DBG_(DBG_BOOM_LEVEL, ( << std::endl  << std::endl << " BB start: " << std::hex << thePC[anIndex] << " end " << (thePC[anIndex] + (aBTBEntry.theBBsize*4)) << " size " << aBTBEntry.theBBsize  << " target " << aBTBEntry.theTarget  << " type " << aBTBEntry.theBranchType << " pred " << aBTBEntry.theBranchDirection << std::endl  << std::endl));
 
 		int32_t max_addrs = aBTBEntry.theBBsize;
 		bool isBrAlwaysAnnul = false;
@@ -949,7 +938,7 @@ std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
 				}
 		  }
 
-		//    DBG_(Tmp, ( << "AvailableFAQ " << available_faq << " max addr " << max_addrs ) );
+	    DBG_(DBG_BOOM_LEVEL, ( << "AvailableFAQ " << available_faq << " max addr " << max_addrs ) );
 
 		while ( max_addrs > 0 ) {
 		  FetchAddr faddr(thePC[anIndex], theNextSerial[anIndex]);
@@ -1000,14 +989,14 @@ std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
 					theNextPC[anIndex] = thePC[anIndex] + 4;
 				}
 
-	//    	  DBG_(Tmp, ( << "target " << bbTarget << " dir " << faddr.theBPState->thePrediction));
-//	    	  DBG_(Tmp, Comp(*this) ( << "cpu " << flexusIndex() << " Serial " << faddr.theBPState->theSerial << " Enqueue Branch address " << faddr.theAddress << " predicted type " << faddr.theBPState->thePredictedType << " "<< Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(faddr.theAddress) ));
+	    	  DBG_(DBG_BOOM_LEVEL, ( << "target " << bbTarget << " dir " << faddr.theBPState->thePrediction));
+	    	  DBG_(DBG_BOOM_LEVEL, Comp(*this) ( << "cpu " << flexusIndex() << " Serial " << faddr.theBPState->theSerial << " Enqueue Branch address " << faddr.theAddress << " predicted type " << faddr.theBPState->thePredictedType << " "<< Flexus::Qemu::Processor::getProcessor(flexusIndex())->disassemble(faddr.theAddress) ));
 		  } else {
 			  	thePC[anIndex] = theNextPC[anIndex];
 			  	theNextPC[anIndex] = thePC[anIndex] + 4;
 
 			  	theBranchPredictor->checkPointBPState(faddr);
-//			  	DBG_(Tmp, Comp(*this) ( << "cpu " << flexusIndex() << " Serial " << faddr.theBPState->theSerial << " Enqueue address " << faddr.theAddress << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(faddr.theAddress)));
+			  	DBG_(DBG_BOOM_LEVEL, Comp(*this) ( << "cpu " << flexusIndex() << " Serial " << faddr.theBPState->theSerial << " Enqueue address " << faddr.theAddress << " " << Flexus::Qemu::Processor::getProcessor(flexusIndex())->disassemble(faddr.theAddress)));
 		  }
 
 		  fetch->theFetches.push_back( faddr );
@@ -1126,7 +1115,7 @@ std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
         }
 
         DBG_(Verb, ( << "Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress ) );
-//        DBG_(Tmp, Comp(*this) ( << "cpu " << flexusIndex() << " Serial " << faddr.theBPState->theSerial << " Enqueue Branch address " << faddr.theAddress << " predicted type " << faddr.theBPState->thePredictedType << " "<< Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(faddr.theAddress) << " predictions left " << max_predicts));
+//        DBG_(Tmp, Comp(*this) ( << "cpu " << flexusIndex() << " Serial " << faddr.theBPState->theSerial << " Enqueue Branch address " << faddr.theAddress << " predicted type " << faddr.theBPState->thePredictedType << " "<< Flexus::Qemu::Processor::getProcessor(flexusIndex())->disassemble(faddr.theAddress) << " predictions left " << max_predicts));
         fetch->theFetches.push_back( faddr);
 
 		/*if (faddr.theBPState->thePredictedType == kConditional) {
@@ -1171,7 +1160,7 @@ std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
       } else {
         thePC[anIndex] = theNextPC[anIndex];
         DBG_(Verb, ( << "Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress ) );
-//        DBG_(Tmp, Comp(*this) ( << "cpu " << flexusIndex() << " Serial " << faddr.theBPState->theSerial << " Enqueue address " << faddr.theAddress << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(faddr.theAddress)));
+//        DBG_(Tmp, Comp(*this) ( << "cpu " << flexusIndex() << " Serial " << faddr.theBPState->theSerial << " Enqueue address " << faddr.theAddress << " " << Flexus::Qemu::Processor::getProcessor(flexusIndex())->disassemble(faddr.theAddress)));
         fetch->theFetches.push_back( faddr );
         theNextPC[anIndex] = thePC[anIndex] + 4;
       }

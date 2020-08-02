@@ -244,7 +244,7 @@ public:
 public:
   FLEXUS_PORT_ALWAYS_AVAILABLE(ROBEmptyOut);
   bool pull(ROBEmptyOut const &) {
-    return  theMicroArch->isSynchronized();
+    return theMicroArch->isSynchronized();
   }
 
   FLEXUS_PORT_ALWAYS_AVAILABLE(DispatchIn);

@@ -415,8 +415,10 @@ private:
 
     DBG_(Dev, Cond(!was_expected)(<< "Unexpected! Resynchronizing..."));
 
-    squashBranch(theCore->getResyncBPState());
-    theCore->resetResyncBPState();
+    if (theCore->getResyncBPState()) {
+        squashBranch(theCore->getResyncBPState());
+        theCore->resetResyncBPState();
+    }
 
     // Clear out all state in theCore
     theCore->reset();
