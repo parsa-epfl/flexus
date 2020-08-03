@@ -348,133 +348,82 @@ private:
 	}
   };
 
-std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode){
-  uint32_t op = opcode >> 30;
-  VirtualMemoryAddress aTarget(0);	//This is actually displacement
-  eBranchType aType = kNonBranch;
-  switch (op) {
-	case 0: { //Bicc, FBfcc, CBccc, SETHI
-			  uint32_t op2 = (opcode >> 22) & 0x7;
-			  switch (op2) {
-				case 1: //BPicc (bpcc)
-				case 5: //FBPfcc (fbpcc)
-				  {
-					uint32_t cond  = (opcode >> 25) & 0xF;    // opcode[28:25]
-					if(cond == 0){
-					  //not a branch;
-					} else{
-					  uint32_t disp19 = opcode & 0x7FFFF;    // opcode[18:0]
-
-					  //sign-extend
-					  int64_t disp19_ll(disp19);
-					  if (disp19_ll & (1 << 18) ) {
-						disp19_ll |=  0xFFFFFFFFFFFC0000LL;
-					  }
-					  aTarget = VirtualMemoryAddress(disp19_ll << 2);
-
-					  if(cond == 8){
-						aType = kUnconditional;
-					  } else{
-						aType = kConditional;
-					  }
-					}
-				  }
-				  break;
-				case 2: //Bicc (bicc)
-				case 6: //FBfcc (bfcc)
-				  {
-					uint32_t cond  = (opcode >> 25) & 0xF;    // opcode[28:25]
-					if(cond == 0){
-					  //not a branch;
-					} else{
-					  uint32_t disp22 = opcode & 0x3FFFFF;    // opcode[21:0]
-
-					  //sign-extend
-					  int64_t disp22_ll(disp22);
-					  if (disp22_ll & (1 << 21) ) {
-						disp22_ll |=  0xFFFFFFFFFFC00000LL;
-					  }
-
-					  aTarget = VirtualMemoryAddress(disp22_ll << 2);
-
-					  if(cond == 8){
-						aType = kUnconditional;
-					  } else{
-						aType = kConditional;
-					  }
-					}
-				  }
-				  break;
-				case 3: {//BPr(bpr)
-						  uint32_t disp16 = ((opcode >> 6) & 0xC000 ) | (opcode & 0x3FFF);    // opcode[21:20] opcode[13:0]
-
-						  //sign-extend
-						  int64_t disp16_ll(disp16);
-						  if (disp16_ll & (1 << 15) ) {
-							disp16_ll |=  0xFFFFFFFFFFFF0000LL;
-						  }
-
-						  aTarget = VirtualMemoryAddress(disp16_ll << 2);
-
-						  aType = kConditional;
-						}
-						break;
-				default:
-						break;
-			  }
-			  break;
-			}
-	case 1:{ //call
-			 int64_t disp30(opcode & 0x3FFFFFFF);    // opcode[29:0]
-
-			 //sign-extend
-			 if (disp30 & 0x20000000 ) {
-			   disp30 |=  0xFFFFFFFFC0000000LL;
-			 }
-
-			 aTarget = VirtualMemoryAddress(disp30 << 2);
-			 aType = kCall;
-		   }
-		   break;
-	case 2:{
-			 uint32_t op3 = (opcode >> 19) & 0x3F;
-			 switch(op3) {
-			   case 0x38: { //jmpl
-							//indirect branch
-							Format3 operands( opcode );
-							if (operands.simm13() == 8 && operands.rd() == 0
-								&& (operands.rs1() == 15 || operands.rs1() == 31)) {
-							  aType = kReturn;
-							} else if(operands.rd() == 15 && operands.simm13() == 0) {
-							  aType = kJmplCall;
-							} else{
-							  aType = kJmpl;
-							}
-						  }
-						  break;
-			   case 0x39:{ //return
-						   //RAS
-						   aType = kReturn;
-						 }
-						 break;
-               case 0x3E:
-						if (opcode & 0x2000000) {
-							aType = kRetry;
-						} else {
-							aType = kDone;
-						}
-						break;
-			   default:
-						 break;
-			 }
-		   }
-		   break;
-	default:{
-			  break;
-			}
+  static inline int32_t sextract32(uint32_t value, int start, int length) {
+    assert(start >= 0 && length > 0 && length <= 32 - start);
+    /* Note that this implementation relies on right shift of signed
+    * integers being an arithmetic shift.
+    */
+    return ((int32_t)(value << (32 - length - start))) >> (32 - length);
   }
-  return std::make_pair(aType, aTarget);
-}
+
+  static inline uint32_t extract32(uint32_t value, int start, int length) {
+    assert(start >= 0 && length > 0 && length <= 32 - start);
+    return (value >> start) & (~0U >> (32 - length));
+  }
+
+  std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode) {
+    VirtualMemoryAddress aTarget(0); // This is actually displacement
+    eBranchType aType = kNonBranch;
+    int64_t offset = 0;
+    uint64_t cond = 0;
+    switch (extract32(opcode, 25, 7)) {
+    case 0x0a:
+    case 0x0b:
+    case 0x4a:
+    case 0x4b: /* Unconditional branch (immediate) */
+      offset = sextract32(opcode, 0, 26) << 2;
+      aTarget = VirtualMemoryAddress(offset);
+      aType = kUnconditional;
+      break;
+    case 0x1a:
+    case 0x5a: /* Compare & branch (immediate) */
+      offset = sextract32(opcode, 5, 19) << 2;
+      aTarget = VirtualMemoryAddress(offset);
+      aType = kConditional;
+      break;
+    case 0x1b:
+    case 0x5b: /* Test & branch (immediate) */
+      offset = sextract32(opcode, 5, 14) << 2;
+      aTarget = VirtualMemoryAddress(offset);
+      aType = kConditional;
+      break;
+    case 0x2a: /* Conditional branch (immediate) */
+      cond = extract32(opcode, 0, 4);
+      // program label to be conditionally branched to. Its offset from the address of this
+      // instruction, in the range +/-1MB, is encoded as "imm19" times 4.
+      offset = sextract32(opcode, 5, 19) << 2;
+      aTarget = VirtualMemoryAddress(offset);
+
+      if (cond < 0x0e) {
+        /* genuinely conditional branches */
+        aType = kConditional;
+      } else {
+        /* 0xe and 0xf are both "always" conditions */
+        aType = kUnconditional;
+      }
+      break;
+    case 0x6b: /* Unconditional branch (register) */
+      switch (extract32(opcode, 21, 2)) {
+        case 0:
+          aType = kUnconditional;
+          break;
+        case 1:
+          aType = kCall;
+          break;
+        case 2:
+          aType = kReturn;
+          break;
+        default:
+          aType = kNonBranch;
+          break;
+      }
+      break;
+    default:
+      aType = kLastBranchType;
+      break;
+    }
+    return std::make_pair(aType, aTarget);
+  }
 
   Flexus::Core::index_t getSystemWidth() {
       return 1;
