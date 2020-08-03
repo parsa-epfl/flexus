@@ -107,6 +107,7 @@ arminst UNCONDBR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequence
   }
 
   inst->addDispatchEffect(branch(inst, target));
+  inst->addRetirementEffect(updateUnconditional(inst, target));
   return inst;
 }
 

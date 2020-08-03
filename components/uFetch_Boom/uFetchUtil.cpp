@@ -63,5 +63,19 @@ std::ostream &operator<<(std::ostream &os, const BPredState &s) {
     return os;
 }
 
+std::ostream &operator<<(std::ostream &os, const BranchFeedback &f) {
+    os << "BranchFeedback: { "
+        << "[thePC: " << std::hex << f.thePC << std::dec << "]"
+        << "[theActualType: " << f.theActualType << "]"
+        << "[theActualDirection: " << f.theActualDirection << "]"
+        << "[theBPDirection: " << f.theBPDirection << "]"
+        << "[branchResolution: " << f.branchResolution << "]"
+        << "[theActualTarget: " << std::hex << f.theActualTarget <<  std::dec << "]"
+        << "[theBBSize: " << f.theBBsize << "]"
+        << "[theBPState: " << *(f.theBPState) << "]"
+        << " }" << std::endl;
+    return os;
+}
+
 } // end namespaces
 }

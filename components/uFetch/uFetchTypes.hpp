@@ -319,6 +319,7 @@ struct BranchFeedback : boost::counted_base {
   int theBBsize;
   boost::intrusive_ptr<BPredState> theBPState;
 };
+std::ostream &operator<<(std::ostream &anOstream, const BranchFeedback &aBPState);
 
 typedef uint32_t Opcode;
 

@@ -461,7 +461,7 @@ private:
 
   boost::intrusive_ptr<BPredState> prevBPState[2]; //Rakesh
   boost::intrusive_ptr<BranchFeedback> prevBranchFeedback[2]; //Rakesh
-  bool isBranchAlwaysAnnulled[2];
+  //bool isBranchAlwaysAnnulled[2];
   uint64_t theBBAddress;	//Rakesh
   eBranchType lastBranchType; //Type of last branch that updated the BBTB
   Stat::StatCounter statSquashesBMPredEarlyRet;

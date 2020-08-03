@@ -767,7 +767,7 @@ public:
   {
 
 //	  std::cout << std::endl<< std::endl<< std::endl<< std::endl << "Tage update " << taken << std::endl<< std::endl<< std::endl<< std::endl<< std::endl;
-//	  DBG_( Tmp, ( << " TAGE feedback: " << std::hex << instruction_addr ));
+	  DBG_( DBG_BOOM_LEVEL, ( << " TAGE feedback: " << std::hex << instruction_addr ));
     if (aBPState.thePredictedType == kConditional)
       {
     	int phist_back;

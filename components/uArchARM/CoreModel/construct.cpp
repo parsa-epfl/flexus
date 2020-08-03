@@ -271,8 +271,6 @@ CoreImpl::CoreImpl(uArchOptions_t options
   prevBPState[1] = 0;	//Rakesh
   prevBranchFeedback[0] = 0; //Rakesh
   prevBranchFeedback[1] = 0; //Rakesh
-  isBranchAlwaysAnnulled[0] = false;
-  isBranchAlwaysAnnulled[1] = false;
   theBBAddress = 0; //Rakesh
   lastBranchType = kNonBranch; //Rakesh
 

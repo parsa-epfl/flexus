@@ -1181,22 +1181,60 @@ bool isBrAlwaysAnnulled(uint32_t opcode) {
     return false; // never true in ARM
 }
 
+#define BBTB_HELP_DBG Verb
 void CoreImpl::BBTBhelper(uint64_t currPC, int64_t opcode, boost::intrusive_ptr<BranchFeedback> branchFeedback, boost::intrusive_ptr<BPredState> bpState) {
+    if (!theBBAddress) theBBAddress = currPC; // first instr
 
+    uint64_t start,end,size;
 	if (branchFeedback) {
-		DBG_(Tmp, ( << " Is a branch pc " << std::hex << currPC << " " << theQEMUCPU->disassemble(VirtualMemoryAddress(currPC))));
-		assert(bpState->theActualType != kNonBranch);
-		assert(bpState->theActualType == branchFeedback->theActualType);
+		DBG_(BBTB_HELP_DBG, ( << "BBTBHelper:[" << theNode << "]: Is a branch pc " << std::hex << currPC << " " << theQEMUCPU->disassemble(VirtualMemoryAddress(currPC))));
+		DBG_Assert(bpState->theActualType != kNonBranch);
+		DBG_Assert(bpState->theActualType == branchFeedback->theActualType);
 
 	} else {
-		DBG_(Tmp, ( << " Not a branch " << std::hex << currPC << " " << theQEMUCPU->disassemble(VirtualMemoryAddress(currPC))));
-		assert(bpState->theActualType == kNonBranch);
+		DBG_(BBTB_HELP_DBG, ( << "BBTBHelper:[" << theNode << "]: Not a branch " << std::hex << currPC << " " << theQEMUCPU->disassemble(VirtualMemoryAddress(currPC))));
+		DBG_Assert(bpState->theActualType == kNonBranch);
 	}
 
+    /* Reimplement for ARM */
+    if (prevBPState[0] && prevBPState[0]->theActualType != kNonBranch) {// the last instruction was a branch, terminates a BB
+        if (bpState->theActualType == kNonBranch) { // this insn is not a branch, easy case
+            start = theBBAddress;
+            end = prevBPState[0]->pc;
+            size = (end-start)/4 + 1; // arm64 instruction size 4B, +1 for the terminating branch
+			DBG_(BBTB_HELP_DBG, ( << "BBTBHelper:[" << theNode << "]: NEW BBL!" << " start addr " << std::hex << start << " end " << end << " size " << size << " target " << std::hex << prevBranchFeedback[0]->theActualTarget << " new start " << std::hex << theBBAddress << std::dec));
+
+        } else { // this insn is also a branch, right after another. Harder case.
+            start = prevBPState[0]->pc;
+            end = prevBPState[0]->pc;
+            size = (end-start)/4 + 1;
+			DBG_(BBTB_HELP_DBG, ( << "BBTBHelper:[" << theNode << "]: NEW BBL DOUBLE BRANCH!" << " start addr " << std::hex << start << " end " << end << " size " << size << " target " << std::hex << prevBranchFeedback[0]->theActualTarget << " new start " << std::hex << theBBAddress << std::dec));
+            DBG_Assert(size == 1, ( << "BBTBHelper:[" << theNode << "]: Two successive branches, with BBL size != 1!. start = " << std::hex << start << ", end = " << std::hex << end << std::dec));
+        }
+        prevBranchFeedback[0]->thePC = VirtualMemoryAddress(start); //thePC now represents the starting address of BB instead of the address of the branch
+        prevBranchFeedback[0]->theBBsize = size;
+        if (prevBranchFeedback[0]) DBG_(BBTB_HELP_DBG, (<< "BBTBHelper:[" << theNode << "]: Calling feedback_fn with " << *prevBranchFeedback[0]));
+        feedback_fn(prevBranchFeedback[0]);
+        lastBranchType = prevBPState[0]->theActualType;
+        theBBAddress = currPC;
+    }
+
+    DBG_(BBTB_HELP_DBG, (<< "BBTBHelper:[" << theNode << "]: Setting prevBPState[0] = " << *bpState));
+	prevBPState[0] = bpState;
+	//prevBPState[1] = bpState;
+
+    if (branchFeedback) DBG_(BBTB_HELP_DBG, (<< "BBTBHelper:[" << theNode << "]: Setting prevBranchFeedback[0] = " << *branchFeedback));
+	prevBranchFeedback[0] = branchFeedback;
+	//prevBranchFeedback[1] = branchFeedback;
+
+        /* MARK: old code for SPARC
 	if (prevBPState[0] && prevBPState[0]->theActualType != kNonBranch) {
 		uint64_t start, end, size;
-
 		start = theBBAddress;
+        DBG_Assert(prevBPState[0]->theActualType != kRetry && prevBPState[0]->theActualType != kDone,
+                ( << "prevbpstat[0] had a fake sparc opcode: " << prevBPState[0]->theActualType));
+        theBBAddress = currPC;
+        end = prevBPState[0]->pc + 4;
 		if (prevBPState[0]->theActualType == kRetry || prevBPState[0]->theActualType == kDone) {
 			theBBAddress = prevBPState[1]->pc;
 			end = prevBPState[0]->pc;
@@ -1211,11 +1249,10 @@ void CoreImpl::BBTBhelper(uint64_t currPC, int64_t opcode, boost::intrusive_ptr<
 		}
 		if (start != 0) {
 			size = (end - start)/4 + 1; //+1 is for including the instructio with "end" address as well
-			DBG_(Tmp, ( << std::hex << theNode << " start addr " << start << " end " << end << " size " << size << " target " << prevBranchFeedback[0]->theActualTarget << " new start " << std::hex << theBBAddress));
+			DBG_(Tmp, ( << "BBTBHelper:[" << theNode << "]: " << " start addr " << std::hex << start << " end " << end << " size " << size << " target " << std::hex << prevBranchFeedback[0]->theActualTarget << " new start " << std::hex << theBBAddress << std::dec));
 			assert(size < 5000);
 
-			prevBranchFeedback[0]->thePC = VirtualMemoryAddress(start); //thePC now represents the starting address of BB instead of the address of the branch
-			prevBranchFeedback[0]->theBBsize = size;
+			prevBranchFeedback[0]->thePC = VirtualMemoryAddress(start); //thePC now represents the starting address of BB instead of the address of the branch prevBranchFeedback[0]->theBBsize = size;
 			if (lastBranchType != kRetry && lastBranchType != kDone) {
 				feedback_fn(prevBranchFeedback[0]);
 			} else {
@@ -1227,20 +1264,16 @@ void CoreImpl::BBTBhelper(uint64_t currPC, int64_t opcode, boost::intrusive_ptr<
 
 	  if (prevBPState[0] && prevBPState[1] && prevBPState[1]->pc != prevBPState[0]->pc + 4) {
 		  if (theBBAddress != (uint64_t)prevBPState[1]->pc){
-			  DBG_(Tmp, ( << theNode << " start addr changed to " << std::hex << prevBPState[1]->pc << std::hex << " from " << theBBAddress));
+			  DBG_(Tmp, ( << "BBTBHelper:[" << theNode << "]: " << " start addr changed to " << std::hex << prevBPState[1]->pc << " from " << std::hex << theBBAddress << std::dec));
 			  theBBAddress = prevBPState[1]->pc;
 			  lastBranchType = kNonBranch; //A new basic block is starting
 		  }
 	  }
 
-	prevBPState[0] = prevBPState[1];
-	prevBPState[1] = bpState;
+        */
 
-	prevBranchFeedback[0] = prevBranchFeedback[1];
-	prevBranchFeedback[1] = branchFeedback;
-
-	isBranchAlwaysAnnulled[0] = isBranchAlwaysAnnulled[1];
-	isBranchAlwaysAnnulled[1] = isBrAlwaysAnnulled(opcode);
+	//isBranchAlwaysAnnulled[0] = isBranchAlwaysAnnulled[1];
+	//isBranchAlwaysAnnulled[1] = isBrAlwaysAnnulled(opcode);
 }
 
 void CoreImpl::retire() {
@@ -1877,6 +1910,9 @@ void CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExcept
 
   anInstruction->setWillRaise(aTrapType);
   anInstruction->raise(aTrapType);
+
+  // kill the BBL training for now (can't fix the start/end of the basic block)
+  theBBAddress = 0x0;
 }
 
 bool CoreImpl::acceptInterrupt() {

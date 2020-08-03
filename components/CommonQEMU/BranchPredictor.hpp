@@ -6,7 +6,7 @@
 #include <core/types.hpp>
 
 
-#define DBG_BOOM_LEVEL Dev
+#define DBG_BOOM_LEVEL Verb
 
 #include <components/uFetch/uFetchTypes.hpp>
 

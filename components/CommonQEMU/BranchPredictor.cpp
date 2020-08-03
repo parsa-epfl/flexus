@@ -392,7 +392,7 @@ namespace Flexus {
             iter->theBranchDirection = apply(actualDirection, iter->theBranchDirection);
             iter->isSpecialCall = specialCall;
             if (aTarget) {
-              DBG_(Verb, ( << "BTB setting target for " << aPC << " to " << aTarget ) );
+              DBG_(DBG_BOOM_LEVEL, ( << "BTB setting target for " << aPC << " to " << aTarget ) );
               iter->theTarget = aTarget;
             }
             theBTB[idx].relocate( theBTB[idx].end(), theBTB[idx].project<0>(iter));
@@ -404,10 +404,10 @@ namespace Flexus {
         	anEntry = theBTB[idx].front();
             theBTB[idx].pop_front();
           }
-//    	  DBG_(Tmp, ( << "New Entry for " <<  aPC << " size " << BBsize << " type " << aType << " direction " << BPDirection << " target " << aTarget << " special call " << specialCall ));
-//    	  DBG_(Tmp, ( << "Evicted " << anEntry.thePC));
+    	  DBG_(DBG_BOOM_LEVEL, ( << "New Entry for " <<  aPC << " size " << BBsize << " type " << aType << " direction " << BPDirection << " target " << aTarget << " special call " << specialCall ));
+    	  DBG_(DBG_BOOM_LEVEL, ( << "Evicted " << anEntry.thePC));
 
-          DBG_(Verb, ( << "BTB adding new branch for " << aPC << " to " << aTarget ) );
+          DBG_(DBG_BOOM_LEVEL, ( << "BTB adding new branch for " << aPC << " to " << aTarget ) );
           theBTB[idx].push_back( BTBEntry( aPC, aType, aTarget, BBsize, BPDirection, specialCall) );
           return std::make_pair(true, anEntry); //new entry
         }
@@ -1397,8 +1397,8 @@ namespace Flexus {
 
       /*BTB update by backend*/
       void feedback( BranchFeedback & aFeedback, int flexusIndex) {
-//    	  DBG_(Tmp, ( << " Feedback received for  " << aFeedback.thePC));
-//    	  DBG_(Tmp, ( << " size " << aFeedback.theBBsize << " type " << aFeedback.theActualType << " direction " << aFeedback.theActualDirection << " target " << aFeedback.theActualTarget << " special call " << aFeedback.theBPState->detectedSpecialCall << " bpStatePC" << aFeedback.theBPState->pc));
+    	  DBG_(DBG_BOOM_LEVEL, ( << " Feedback received for  " << aFeedback.thePC));
+    	  DBG_(DBG_BOOM_LEVEL, ( << " size " << aFeedback.theBBsize << " type " << aFeedback.theActualType << " direction " << aFeedback.theActualDirection << " target " << aFeedback.theActualTarget << " special call " << aFeedback.theBPState->detectedSpecialCall << " bpStatePC" << aFeedback.theBPState->pc));
 
     	  /*Get Tage prediction, it will be needed if the */
     	  aFeedback.theBPDirection = aFeedback.theActualDirection;
@@ -1492,13 +1492,13 @@ namespace Flexus {
 #endif
 
         if ( aFeedback.theBPState ) {
-          DBG_(Verb, ( << theIndex << "-BPRED-FEEDBACK: PC \t" << aFeedback.thePC
+          DBG_(DBG_BOOM_LEVEL, ( << theIndex << "-BPRED-FEEDBACK: PC \t" << aFeedback.thePC
                 << " serial " << aFeedback.theBPState->theSerial
                 << " Target \t" << aFeedback.theActualTarget
                 << "\tType " << aFeedback.theActualType << " dir " << aFeedback.theActualDirection
                 << " pred " << aFeedback.theBPState->thePrediction ) );
         } else {
-          DBG_(Verb, ( << theIndex << "-BPRED-FEEDBACK: PC \t" << aFeedback.thePC
+          DBG_(DBG_BOOM_LEVEL, ( << theIndex << "-BPRED-FEEDBACK: PC \t" << aFeedback.thePC
                 << " Target \t" << aFeedback.theActualTarget
                 << "\tType " << aFeedback.theActualType << " dir " << aFeedback.theActualDirection ) );
         }

@@ -643,7 +643,7 @@ struct BranchEffect : public Effect {
     anInstruction.redirectPC(theTarget);
     anInstruction.core()->applyToNext(boost::intrusive_ptr<nuArchARM::Instruction>(&anInstruction),
                                       branchInteraction(theTarget,theBPState));
-    DBG_(Tmp, ( << "Instruction: " << anInstruction << "has BPState: " << theBPState) );
+    DBG_(Iface, ( << "Instruction: " << anInstruction << "has BPState: " << theBPState) );
     DBG_(Iface, (<< "BRANCH:  Must redirect to " << theTarget));
     Effect::invoke(anInstruction);
   }

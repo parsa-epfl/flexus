@@ -181,7 +181,7 @@ public:
   //SquashIn
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(SquashIn);
   void push( interface::SquashIn const &, index_t anIndex, eSquashCause  & aReason){
-//		DBG_(Tmp, Comp(*this) ( << std::endl<< std::endl<< std::endl<< "Squash cpu " << flexusIndex() << "Resetting branch history reason " << aReason << std::endl << std::endl<< std::endl) );
+		DBG_(DBG_BOOM_LEVEL, Comp(*this) ( << std::endl<< std::endl<< std::endl<< "Squash cpu " << flexusIndex() << "Resetting branch history reason " << aReason << std::endl << std::endl<< std::endl) );
 
 	  squashReason[anIndex] = aReason;
 	  if (!squashedBPState) {
@@ -217,7 +217,7 @@ public:
   //SquashBranchIn
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(SquashBranchIn);
   void push(interface::SquashBranchIn const &, index_t anIndex, boost::intrusive_ptr<BPredState> & aBPState) {
-//	  DBG_(Tmp, ( << std::endl<< std::endl << std::endl << "Branch Mispredicted " << aBPState->thePredictedType << " " << aBPState->returnPopRASTwice <<  " serial " << aBPState->theSerial << std::hex << " pc " << aBPState->pc << " " << Flexus::Qemu::Processor::getProcessor(flexusIndex())->disassemble(aBPState->pc)<< std::endl << std::endl<< std::endl) );
+	  DBG_(DBG_BOOM_LEVEL, ( << std::endl<< std::endl << std::endl << "Branch Mispredicted " << aBPState->thePredictedType << " " << aBPState->returnPopRASTwice <<  " serial " << aBPState->theSerial << std::hex << " pc " << aBPState->pc << " " << Flexus::Qemu::Processor::getProcessor(flexusIndex())->disassemble(aBPState->pc)<< std::endl << std::endl<< std::endl) );
 	  squashedBPState = aBPState;
 
 	  if (aBPState->thePredictedType == kRetry || aBPState->thePredictedType == kDone) {
@@ -729,10 +729,6 @@ private:
   }
 #endif
 
-  bool isBrAlwaysAnnulled(uint32_t opcode) {
-      return false;
-  }
-
   void genSingleAddr(index_t anIndex, boost::intrusive_ptr<FetchCommand>  fetch) {
   	FetchAddr faddr(thePC[anIndex], theNextSerial[anIndex]);
     if(isRedirect[anIndex]){
@@ -868,24 +864,10 @@ private:
   	  DBG_(DBG_BOOM_LEVEL, ( << std::endl  << std::endl << " BB start: " << std::hex << thePC[anIndex] << " end " << (thePC[anIndex] + (aBTBEntry.theBBsize*4)) << " size " << aBTBEntry.theBBsize  << " target " << aBTBEntry.theTarget  << " type " << aBTBEntry.theBranchType << " pred " << aBTBEntry.theBranchDirection << std::endl  << std::endl));
 
 		int32_t max_addrs = aBTBEntry.theBBsize;
-		bool isBrAlwaysAnnul = false;
-
 		VirtualMemoryAddress bbTarget;
 		VirtualMemoryAddress branchAddress;
 
-		  if (aBTBEntry.theBranchType == kRetry || aBTBEntry.theBranchType == kDone) {
-			  branchAddress = thePC[anIndex] + ((max_addrs - 1 ) * 4);
-		  } else {
-			  branchAddress = thePC[anIndex] + ((max_addrs - 2 ) * 4); //-2 is because of delay slot instruction
-		  }
-
-		  if (aBTBEntry.theBranchType == kUnconditional) {
-				int64_t op_code = Flexus::Qemu::Processor::getProcessor(flexusIndex())->fetchInstruction(branchAddress);
-				if (isBrAlwaysAnnulled(op_code)) {
-					max_addrs = max_addrs - 1;
-					isBrAlwaysAnnul = true;
-				}
-		  }
+		branchAddress = thePC[anIndex] + ((max_addrs - 1 ) * 4); // no delay slot in ARM64, branch is always max_addrs-1 * 4
 
 	    DBG_(DBG_BOOM_LEVEL, ( << "AvailableFAQ " << available_faq << " max addr " << max_addrs ) );
 
@@ -919,6 +901,8 @@ private:
 
 			  if (bbTarget == 0) {
 				  theNextPC[anIndex] = thePC[anIndex] + 4;
+              }
+                  /* MARK: Code from SPARC
 			  } else if (aBTBEntry.theBranchType == kRetry) {
 				  if (faddr.theBPState->theNextPredictedTarget != 0 && faddr.theBPState->theNextPredictedTarget != bbTarget + 4) {
 					  	thePC[anIndex] = bbTarget;
@@ -937,6 +921,7 @@ private:
 					thePC[anIndex] = bbTarget;
 					theNextPC[anIndex] = thePC[anIndex] + 4;
 				}
+                */
 
 	    	  DBG_(DBG_BOOM_LEVEL, ( << "target " << bbTarget << " dir " << faddr.theBPState->thePrediction));
 	    	  DBG_(DBG_BOOM_LEVEL, Comp(*this) ( << "cpu " << flexusIndex() << " Serial " << faddr.theBPState->theSerial << " Enqueue Branch address " << faddr.theAddress << " predicted type " << faddr.theBPState->thePredictedType << " "<< Flexus::Qemu::Processor::getProcessor(flexusIndex())->disassemble(faddr.theAddress) ));
