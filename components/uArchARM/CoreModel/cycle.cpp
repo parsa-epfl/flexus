@@ -1181,7 +1181,7 @@ bool isBrAlwaysAnnulled(uint32_t opcode) {
     return false; // never true in ARM
 }
 
-#define BBTB_HELP_DBG Verb
+#define BBTB_HELP_DBG Iface
 void CoreImpl::BBTBhelper(uint64_t currPC, int64_t opcode, boost::intrusive_ptr<BranchFeedback> branchFeedback, boost::intrusive_ptr<BPredState> bpState) {
     if (!theBBAddress) theBBAddress = currPC; // first instr
 
@@ -1197,22 +1197,15 @@ void CoreImpl::BBTBhelper(uint64_t currPC, int64_t opcode, boost::intrusive_ptr<
 	}
 
     /* Reimplement for ARM */
-    if (prevBPState[0] && prevBPState[0]->theActualType != kNonBranch) {// the last instruction was a branch, terminates a BB
-        if (bpState->theActualType == kNonBranch) { // this insn is not a branch, easy case
-            start = theBBAddress;
-            end = prevBPState[0]->pc;
-            size = (end-start)/4 + 1; // arm64 instruction size 4B, +1 for the terminating branch
-			DBG_(BBTB_HELP_DBG, ( << "BBTBHelper:[" << theNode << "]: NEW BBL!" << " start addr " << std::hex << start << " end " << end << " size " << size << " target " << std::hex << prevBranchFeedback[0]->theActualTarget << " new start " << std::hex << theBBAddress << std::dec));
-
-        } else { // this insn is also a branch, right after another. Harder case.
-            start = prevBPState[0]->pc;
-            end = prevBPState[0]->pc;
-            size = (end-start)/4 + 1;
-			DBG_(BBTB_HELP_DBG, ( << "BBTBHelper:[" << theNode << "]: NEW BBL DOUBLE BRANCH!" << " start addr " << std::hex << start << " end " << end << " size " << size << " target " << std::hex << prevBranchFeedback[0]->theActualTarget << " new start " << std::hex << theBBAddress << std::dec));
-            DBG_Assert(size == 1, ( << "BBTBHelper:[" << theNode << "]: Two successive branches, with BBL size != 1!. start = " << std::hex << start << ", end = " << std::hex << end << std::dec));
-        }
+    if (prevBPState[0] && prevBPState[0]->theActualType != kNonBranch) { // the last instruction was a branch, terminates a BB
+        start = theBBAddress;
+        end = prevBPState[0]->pc;
+        size = (end-start)/4 + 1; // arm64 instruction size 4B, +1 for the terminating branch
+        DBG_(BBTB_HELP_DBG, ( << "BBTBHelper:[" << theNode << "]: NEW BBL!" << " start addr " << std::hex << start << " end " << end << " size " << size << " target " << std::hex << prevBranchFeedback[0]->theActualTarget << " new start " << std::hex << currPC << std::dec));
+        DBG_Assert( size > 0 && size < 1000 , ( << "BBTBHelper:[" << theNode << "]: BBL SIZE FAIL!"));
         prevBranchFeedback[0]->thePC = VirtualMemoryAddress(start); //thePC now represents the starting address of BB instead of the address of the branch
         prevBranchFeedback[0]->theBBsize = size;
+
         if (prevBranchFeedback[0]) DBG_(BBTB_HELP_DBG, (<< "BBTBHelper:[" << theNode << "]: Calling feedback_fn with " << *prevBranchFeedback[0]));
         feedback_fn(prevBranchFeedback[0]);
         lastBranchType = prevBPState[0]->theActualType;
@@ -1221,59 +1214,9 @@ void CoreImpl::BBTBhelper(uint64_t currPC, int64_t opcode, boost::intrusive_ptr<
 
     DBG_(BBTB_HELP_DBG, (<< "BBTBHelper:[" << theNode << "]: Setting prevBPState[0] = " << *bpState));
 	prevBPState[0] = bpState;
-	//prevBPState[1] = bpState;
 
     if (branchFeedback) DBG_(BBTB_HELP_DBG, (<< "BBTBHelper:[" << theNode << "]: Setting prevBranchFeedback[0] = " << *branchFeedback));
 	prevBranchFeedback[0] = branchFeedback;
-	//prevBranchFeedback[1] = branchFeedback;
-
-        /* MARK: old code for SPARC
-	if (prevBPState[0] && prevBPState[0]->theActualType != kNonBranch) {
-		uint64_t start, end, size;
-		start = theBBAddress;
-        DBG_Assert(prevBPState[0]->theActualType != kRetry && prevBPState[0]->theActualType != kDone,
-                ( << "prevbpstat[0] had a fake sparc opcode: " << prevBPState[0]->theActualType));
-        theBBAddress = currPC;
-        end = prevBPState[0]->pc + 4;
-		if (prevBPState[0]->theActualType == kRetry || prevBPState[0]->theActualType == kDone) {
-			theBBAddress = prevBPState[1]->pc;
-			end = prevBPState[0]->pc;
-		} else {
-			if (isBranchAlwaysAnnulled[0]) {
-				theBBAddress = prevBPState[1]->pc;
-			} else {
-				theBBAddress = currPC;
-			}
-			end = prevBPState[0]->pc + 4;
-
-		}
-		if (start != 0) {
-			size = (end - start)/4 + 1; //+1 is for including the instructio with "end" address as well
-			DBG_(Tmp, ( << "BBTBHelper:[" << theNode << "]: " << " start addr " << std::hex << start << " end " << end << " size " << size << " target " << std::hex << prevBranchFeedback[0]->theActualTarget << " new start " << std::hex << theBBAddress << std::dec));
-			assert(size < 5000);
-
-			prevBranchFeedback[0]->thePC = VirtualMemoryAddress(start); //thePC now represents the starting address of BB instead of the address of the branch prevBranchFeedback[0]->theBBsize = size;
-			if (lastBranchType != kRetry && lastBranchType != kDone) {
-				feedback_fn(prevBranchFeedback[0]);
-			} else {
-				DBG_(Tmp, ( << std::hex << theNode << " Incomplete block, not sending back " ));
-			}
-			lastBranchType = prevBPState[0]->theActualType;
-		}
-	}
-
-	  if (prevBPState[0] && prevBPState[1] && prevBPState[1]->pc != prevBPState[0]->pc + 4) {
-		  if (theBBAddress != (uint64_t)prevBPState[1]->pc){
-			  DBG_(Tmp, ( << "BBTBHelper:[" << theNode << "]: " << " start addr changed to " << std::hex << prevBPState[1]->pc << " from " << std::hex << theBBAddress << std::dec));
-			  theBBAddress = prevBPState[1]->pc;
-			  lastBranchType = kNonBranch; //A new basic block is starting
-		  }
-	  }
-
-        */
-
-	//isBranchAlwaysAnnulled[0] = isBranchAlwaysAnnulled[1];
-	//isBranchAlwaysAnnulled[1] = isBrAlwaysAnnulled(opcode);
 }
 
 void CoreImpl::retire() {
@@ -1389,7 +1332,8 @@ void CoreImpl::retire() {
 
     CORE_DBG("Move instruction to the secondary retirement buffer " << *(theROB.front()));
     theSRB.push_back(theROB.front());
-
+    
+    /* Train on retire stream */
     if (thePendingTrap == kException_None) {
         /* For Boomerang */
       uint64_t retirePC = theROB.front()->pc();
@@ -1398,12 +1342,12 @@ void CoreImpl::retire() {
       BBTBhelper(retirePC, theROB.front()->getOpcode(), theROB.front()->branchFeedback(), theROB.front()->bpState());
       theROB.front()->bpState()->hasRetired = true;
 
-      DBG_(Iface, (<< std::hex << "Retirement notification, EL:" << currentEL() << "  PC:" << retirePC));
-      RetireNotice retired(currentEL(), retirePC, theROB.front()->fetchSerial(), theROB.front()->getMissStatsInfo());
-      retirecb_fn(retired);
+      DBG_(Iface, (<< std::hex << "Commit notification, EL:" << currentEL() << "  PC:" << retirePC));
       theROB.pop_front();
-      // Need to squash and retire instructions that cause traps
+      //RetireNotice retired(currentEL(), retirePC, theROB.front()->fetchSerial(), theROB.front()->getMissStatsInfo());
+      //retirecb_fn(retired);
     }
+
   }
 }
 
@@ -1913,6 +1857,8 @@ void CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExcept
 
   // kill the BBL training for now (can't fix the start/end of the basic block)
   theBBAddress = 0x0;
+  prevBranchFeedback[0] = nullptr;
+  prevBPState[0] = nullptr;
 }
 
 bool CoreImpl::acceptInterrupt() {

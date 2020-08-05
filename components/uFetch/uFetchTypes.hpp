@@ -55,6 +55,8 @@
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <core/qemu/mai_api.hpp>
 
+#define DBG_BOOM_LEVEL Verb
+
 namespace Flexus {
 namespace SharedTypes {
 
@@ -337,6 +339,16 @@ struct FetchedOpcode {
 
   FetchedOpcode(Opcode anOpcode) : theOpcode(anOpcode) {
   }
+  FetchedOpcode(VirtualMemoryAddress anAddr
+          , Opcode anOpcode
+          , boost::intrusive_ptr<BPredState> aBPState
+          , boost::intrusive_ptr<TransactionTracker> aTransaction
+                )
+    : thePC(anAddr)
+    , theOpcode(anOpcode)
+    , theBPState(aBPState)
+    , theTransaction(aTransaction)
+  { }
   FetchedOpcode(VirtualMemoryAddress anAddr
           , VirtualMemoryAddress aNextAddr
           , Opcode anOpcode

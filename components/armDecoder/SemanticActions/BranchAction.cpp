@@ -102,11 +102,6 @@ struct BranchCondAction : public BaseSemanticAction {
         }
 
         boost::intrusive_ptr<BranchFeedback> feedback(new BranchFeedback());
-        if (theInstruction->bpState()) {
-            theInstruction->bpState()->theActualDirection = kTaken;
-            theInstruction->bpState()->theActualType = kConditional;
-        }
-
         theCondition->setInstruction(theInstruction);
 
         bool result = theCondition->operator()(operands);

@@ -5,9 +5,6 @@
 #include <core/target.hpp>
 #include <core/types.hpp>
 
-
-#define DBG_BOOM_LEVEL Verb
-
 #include <components/uFetch/uFetchTypes.hpp>
 
 namespace Flexus {

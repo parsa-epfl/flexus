@@ -365,13 +365,9 @@ public:
     } catch (ResynchronizeWithQemuException &e) {
       ++theResynchronizations;
       if (theExceptionRaised) {
-        // DBG_( Verb, ( << "CPU[" << std::setfill('0') << std::setw(2) <<
-        // theCPU->id() << "] Exception Raised: " <<
-        // Flexus::Qemu::API::SIM_get_exception_name(theCPU, theExceptionRaised)
-        // << "(" << theExceptionRaised << "). Resynchronizing with Simics.") );
         DBG_(Verb,
              (<< "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id()
-              << "] Exception Raised: " << theExceptionRaised << ". Resynchronizing with Simics."));
+              << "] Exception Raised: " << theExceptionRaised << ". Resynchronizing with Qemu."));
         ++theExceptions;
       } else if (e.expected) {
         DBG_(Verb, (<< "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id()

@@ -949,8 +949,8 @@ private:
       auto i = theBundle->theOpcodes.begin();
       if (i->theOpcode != 0) {
         bundle->theOpcodes.push_back(*i);
-        theBundle->theOpcodes.erase(i);
         DBG_(VVerb, (<< "poping entry out of the fetch bundle " << i->thePC));
+        theBundle->theOpcodes.erase(i);
       } else {
         break;
       }

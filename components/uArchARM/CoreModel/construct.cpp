@@ -404,6 +404,12 @@ void CoreImpl::reset() {
   while (!theTranslationQueue.empty()) {
     theTranslationQueue.pop();
   }
+
+  // kill the BBL training for now (can't fix the start/end of the basic block)
+  theBBAddress = 0x0;
+  prevBranchFeedback[0] = nullptr;
+  prevBPState[0] = nullptr;
+
 }
 
 // write to physical register

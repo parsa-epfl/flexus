@@ -372,27 +372,27 @@ public:
     , theLastPhysical(0)
   {
 	    char stat_name[50];
-		for (int i = 0; i <= MAX_RESET_DISTANCE; i++) {
-			sprintf(stat_name, "-lastResetDistance%d", i);
+		for (size_t i = 0; i < MAX_RESET_DISTANCE; i++) {
+			sprintf(stat_name, "-lastResetDistance%lu", i);
 			lastReset[i] = new Stat::StatCounter(statName() + stat_name);
-			sprintf(stat_name, "-lastResetDistanceNP%d", i);
+			sprintf(stat_name, "-lastResetDistanceNP%lu", i);
 			lastResetNP[i] = new Stat::StatCounter(statName() + stat_name);
-			sprintf(stat_name, "-lastResetDistance:Seq%d", i);
+			sprintf(stat_name, "-lastResetDistance:Seq%lu", i);
 			lastResetSeq[i] = new Stat::StatCounter(statName() + stat_name);
-			sprintf(stat_name, "-lastResetDistance:SeqNP%d", i);
+			sprintf(stat_name, "-lastResetDistance:SeqNP%lu", i);
 			lastResetSeqNP[i] = new Stat::StatCounter(statName() + stat_name);
-			sprintf(stat_name, "-lastResetDistance:Branch%d", i);
+			sprintf(stat_name, "-lastResetDistance:Branch%lu", i);
 			lastResetBranch[i] = new Stat::StatCounter(statName() + stat_name);
-			sprintf(stat_name, "-lastResetDistance:BranchNP%d", i);
+			sprintf(stat_name, "-lastResetDistance:BranchNP%lu", i);
 			lastResetBranchNP[i] = new Stat::StatCounter(statName() + stat_name);
 		}
 
-		for (int i = 0; i <= 4; i++) {
-			sprintf(stat_name, "-bimodConfidence%d", i);
+		for (size_t i = 0; i < 4; i++) {
+			sprintf(stat_name, "-bimodConfidence%lu", i);
 			bimodalConfindence[i] = new Stat::StatCounter(statName() + stat_name);
 		}
-		for (int i = 0; i <= 8; i++) {
-			sprintf(stat_name, "-tageConfidence%d", i);
+		for (size_t i = 0; i < 8; i++) {
+			sprintf(stat_name, "-tageConfidence%lu", i);
 			tageConfindence[i] = new Stat::StatCounter(statName() + stat_name);
 		}
 
@@ -1346,14 +1346,14 @@ private:
         remaining_fetch = available_fiq;
       }
 
-//      DBG_(Tmp, ( << "AvailableFIQ " << available_fiq << " max addr " << remaining_fetch << " limit " << cfg.MaxFetchInstructions) );
+      DBG_(Verb, ( << "AvailableFIQ " << available_fiq << " max addr " << remaining_fetch << " limit " << cfg.MaxFetchInstructions) );
       while ( remaining_fetch > 0 && ( theFAQ[anIndex].size() > 1 || theFlexus->quiescing()) && !waitingForRetryDone) {
         bool from_icache(false);
 
         FetchAddr fetch_addr = theFAQ[anIndex].front();
         VirtualMemoryAddress block_addr( fetch_addr.theAddress & theBlockMask);
 
-//        DBG_(Tmp, ( << "Fetching " << fetch_addr.theAddress << " block " << block_addr));
+        DBG_(Verb, ( << "Fetching " << fetch_addr.theAddress << " block " << block_addr));
         if ( available_lines.count( block_addr ) == 0) {
           //Line needs to be fetched from I-cache
           if (available_lines.size() >= cfg.MaxFetchLines) {
