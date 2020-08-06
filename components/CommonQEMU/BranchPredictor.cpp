@@ -668,7 +668,6 @@ struct CombiningImpl : public BranchPredictor {
     bool is_new = theBTB.update(aFeedback);
 
     if (aFeedback.theActualType == kConditional) {
-
       if (is_new) {
         theBimodal.update(aFeedback.thePC, aFeedback.theActualDirection);
         theGShare.shiftIn(aFeedback.theActualDirection);
@@ -831,6 +830,7 @@ struct FastCombiningImpl : public FastBranchPredictor {
   Stat::StatCounter thePredictions_Bimodal;
   Stat::StatCounter thePredictions_GShare;
   Stat::StatCounter thePredictions_Unconditional;
+  Stat::StatCounter thePredictions_Returns;
 
   Stat::StatCounter theCorrect;
   Stat::StatCounter theCorrect_Bimodal;
@@ -845,6 +845,12 @@ struct FastCombiningImpl : public FastBranchPredictor {
   Stat::StatCounter theMispredict_MetaBimod;
   Stat::StatCounter theMispredict_Target;
 
+  Stat::StatCounter theFalseNegBranches;
+  Stat::StatCounter theFalsePosBranches;
+  Stat::StatCounter theTrueBranches;
+  Stat::StatCounter theTrueNonBranches;
+  Stat::StatCounter theFalseNegReturns;
+
   FastCombiningImpl(std::string const &aName, uint32_t anIndex)
       : theName(aName), theIndex(anIndex), theSerial(0), theBTB(1024, 16), theBimodal(32768),
         theMeta(8192), theGShare(13), theBranches(aName + "-branches"),
@@ -855,6 +861,7 @@ struct FastCombiningImpl : public FastBranchPredictor {
         thePredictions_Bimodal(aName + "-predictions:bimodal"),
         thePredictions_GShare(aName + "-predictions:gshare"),
         thePredictions_Unconditional(aName + "-predictions:unconditional"),
+        thePredictions_Returns(aName + "-predictions:returns"),
         theCorrect(aName + "-correct"), theCorrect_Bimodal(aName + "-correct:bimodal"),
         theCorrect_GShare(aName + "-correct:gshare"),
         theCorrect_Unconditional(aName + "-correct:unconditional"),
@@ -863,7 +870,12 @@ struct FastCombiningImpl : public FastBranchPredictor {
         theMispredict_Meta(aName + "-mispredict:meta"),
         theMispredict_MetaGShare(aName + "-mispredict:meta:chose_gshare"),
         theMispredict_MetaBimod(aName + "-mispredict:meta:chose_bimod"),
-        theMispredict_Target(aName + "-mispredict:target") {
+        theMispredict_Target(aName + "-mispredict:target"),
+        theFalseNegBranches(aName + "-mispredict:falseNeg"),
+        theFalsePosBranches(aName + "-mispredict:falsePos"),
+        theTrueBranches(aName + "-correct:trueBranches"),
+        theTrueNonBranches(aName + "-correct:trueNonBranches"),
+        theFalseNegReturns(aName + "-mispredict:falseNegReturns") {
   }
 
   VirtualMemoryAddress predictConditional(VirtualMemoryAddress anAddress, BPredState &aBPState) {
@@ -945,6 +957,8 @@ struct FastCombiningImpl : public FastBranchPredictor {
       // Need to push address onto retstack
       break;
     case kReturn:
+    ++thePredictions;
+    ++thePredictions_Returns;
       // Need to pop retstack
       break;
     default:
@@ -962,11 +976,21 @@ struct FastCombiningImpl : public FastBranchPredictor {
   void stats(uint32_t anAddress, eBranchType anActualType, eDirection anActualDirection,
              uint32_t anActualTarget, BPredState &aBPState) {
     if (anActualType != aBPState.thePredictedType) {
+      if (anActualType == kNonBranch) ++theFalsePosBranches;
+      else if (aBPState.thePredictedType == kNonBranch) {
+        ++theFalseNegBranches;
+        if (anActualType == kReturn) ++theFalseNegReturns;
+      } 
+
       ++theMispredict;
       ++theMispredict_NewBranch;
       DBG_(Verb, (<< "BPRED-RESOLVE Mispredict New-Branch " << anActualType << " @" << anAddress
                   << " " << anActualDirection << " to " << anActualTarget));
     } else {
+      
+      if (anActualType == kNonBranch) ++theTrueNonBranches;
+      else if (anActualType != kNonBranch) ++theTrueBranches;
+
       if (anActualType == kConditional) {
         if ((aBPState.thePrediction >= kNotTaken) && (anActualDirection >= kNotTaken)) {
           ++theCorrect;

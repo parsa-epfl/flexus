@@ -282,6 +282,10 @@ class FLEXUS_COMPONENT(uFetch) {
   // Magic for checking TLB walk.
   std::vector<TranslationPtr> TranslationsFromTLB;
 
+  // Stat on insts dispatched each cycle
+  Stat::StatLog2Histogram theDispatchedInsts;
+
+
 private:
   // I-Cache manipulation functions
   //=================================================================
@@ -332,7 +336,8 @@ public:
         theMaxOutstandingEvicts(statName() + "-MaxEvicts"),
         theAvailableFetchSlots(statName() + "-FetchSlotsPossible"),
         theUsedFetchSlots(statName() + "-FetchSlotsUsed"),
-        theLastVTagSet(0), theLastPhysical(0) {
+        theLastVTagSet(0), theLastPhysical(0),
+        theDispatchedInsts(statName() + "-DispatchedInsts") {
   }
 
   void initialize() {
@@ -864,10 +869,13 @@ private:
 
     FETCH_DBG("--------------START FETCHING------------------------");
 
+    int32_t cycleDispatchedInsts = 0;
+
     if (theIcacheMiss[anIndex]) {
       ++theMissCycles;
       DBG_(VVerb, (<< "FETCH UNIT: in theIcacheMiss" << theMissCycles.theRefCount
                    << "cycles missed so far"));
+      theDispatchedInsts << cycleDispatchedInsts;
       return;
     }
 
@@ -929,10 +937,12 @@ private:
         --remaining_fetch;
 
         theUsedFetchSlots++;
+        ++cycleDispatchedInsts;
       }
     }
     processBundle();
     FETCH_DBG("--------------FINISH FETCHING------------------------");
+    theDispatchedInsts << cycleDispatchedInsts;
   }
 
   void processBundle() {
