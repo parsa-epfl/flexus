@@ -58,6 +58,7 @@ COMPONENT_PARAMETERS(
   PARAMETER( FIQSize, uint32_t, "Fetch instruction queue size", "fiq", 32 )
   PARAMETER( DispatchWidth, uint32_t, "Maximum dispatch per cycle", "dispatch", 8 )
   PARAMETER( Multithread, bool, "Enable multi-threaded execution", "multithread", false )
+  PARAMETER( PipeLat, uint32_t, "Depth of the synthetic pipeline in the decode stage (before an instruction hits ROB)", "pipelat", 1 )
 );
 
 COMPONENT_INTERFACE(

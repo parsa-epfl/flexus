@@ -59,7 +59,6 @@
 #include <components/MTManager/MTManager.hpp>
 #include <components/uArchARM/uArchInterfaces.hpp>
 #include <components/MTManager/MTManager.hpp>
-#define PIPE_LAT 10
 
 namespace ll = boost::lambda;
 
@@ -91,7 +90,7 @@ class FLEXUS_COMPONENT(armDecoder) {
 public:
   FLEXUS_COMPONENT_CONSTRUCTOR(armDecoder) : base(FLEXUS_PASS_CONSTRUCTOR_ARGS)
 	, theCallRestorePair( statName() + "-CallRestorePair" )
-	, thePipeline( statName() + "-Pipeline", cfg.DispatchWidth , 1, PIPE_LAT)
+	, thePipeline( statName() + "-Pipeline", cfg.DispatchWidth , 1, cfg.PipeLat)
    { }
 
   bool isQuiesced() const {
@@ -256,7 +255,7 @@ private:
     uint64_t decoded = 0;
     while(  decoded < cfg.DispatchWidth
             && !theFIQ.empty()
-            && (thePipeline.size() < (cfg.DispatchWidth*(PIPE_LAT)))
+            && (thePipeline.size() < (cfg.DispatchWidth*cfg.PipeLat))
          ){
 
         boost::intrusive_ptr< AbstractInstruction > inst(theFIQ.front());
