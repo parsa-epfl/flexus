@@ -208,10 +208,12 @@ class FLEXUS_COMPONENT(uFetch) {
   Stat::StatCounter theFetchAccesses;
   Stat::StatCounter theFetches;
   Stat::StatCounter thePrefetches;
+  Stat::StatCounter theFDIPPrefetches;
   Stat::StatCounter theFailedTranslations;
   Stat::StatCounter theMisses;
   Stat::StatCounter theHits;
   Stat::StatCounter theTransientHits;
+  Stat::StatCounter theTransientHits_FDIPLines;
   Stat::StatCounter theMissCycles;
   Stat::StatCounter theAllocations;
   Stat::StatMax  theMaxOutstandingEvicts;
@@ -252,6 +254,10 @@ class FLEXUS_COMPONENT(uFetch) {
   Stat::StatCounter returnUsedRAS;
   Stat::StatCounter returnUsedBTB;
   Stat::StatCounter returnUsedBTBZero;
+
+  /* MARK: Stats for blocks in the FAQ and effects of resyncs */
+  Stat::StatInstanceCounter<int64_t> FDIPQDepth;
+  Stat::StatInstanceCounter<int64_t> FDIPPrefetchesSquashed;
 
   uint64_t lastResetCycle;
   eSquashCause lastSquashCause;
@@ -340,10 +346,12 @@ public:
     , theFetchAccesses( statName() + "-FetchAccess" )
     , theFetches( statName() + "-Fetches" )
     , thePrefetches( statName() + "-Prefetches" )
+    , theFDIPPrefetches( statName() + "-FDIP-Prefetches" )
     , theFailedTranslations( statName() + "-FailedTranslations" )
     , theMisses( statName() + "-Misses" )
     , theHits( statName() + "-Hits" )
     , theTransientHits( statName() + "-TransientHits" )
+    , theTransientHits_FDIPLines( statName() + "-TransientHits:FDIP" )
     , theMissCycles( statName() + "-MissCycles" )
     , theAllocations( statName() + "-Allocations" )
     , theMaxOutstandingEvicts( statName() + "-MaxEvicts" )
@@ -368,6 +376,8 @@ public:
     , returnUsedRAS(statName() + "-squashReasonBranch:kReturn:RAS")
     , returnUsedBTB(statName() + "-squashReasonBranch:kReturn:BTB")
     , returnUsedBTBZero(statName() + "-squashReasonBranch:kReturn:Zero")
+    , FDIPQDepth(statName() + "-FDIPQDepth")
+    , FDIPPrefetchesSquashed(statName() + "-FDIPPrefetchesSquashed")
     , theLastVTagSet(0)
     , theLastPhysical(0)
   {
@@ -573,6 +583,10 @@ public:
   void push( interface::SquashIn const &, index_t anIndex, eSquashCause  & aReason) {
     DBG_( Iface, Comp(*this) ( << "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << anIndex << "] Fetch SQUASH: " << aReason));
 //    DBG_( Tmp, Comp(*this) ( << std::endl << std::endl <<  "Squashing CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << anIndex << "] Fetch SQUASH: " << aReason << std::endl << std::endl));
+
+    size_t fdip_q_size = thePBQ.size();
+    FDIPPrefetchesSquashed << std::make_pair(fdip_q_size, 1);
+
     theFAQ[anIndex].clear();
     thePAQ[anIndex].clear();	//Rakesh
     thePBQ[anIndex].clear();	//Rakesh
@@ -686,6 +700,9 @@ public:
 
 public:
   void drive( interface::uFetchDrive const & ) {
+      /* Stat for FDIP Prefetch Q depth */
+      size_t fdip_prefetches_outstanding = theFDIPPrefetchQueue.size();
+      FDIPQDepth << std::make_pair(fdip_prefetches_outstanding,1);
     bool garbage = true;
     FLEXUS_CHANNEL( ClockTickSeen ) << garbage;
 
@@ -810,7 +827,7 @@ private:
     } else if (theOutstandingMissQ[anIndex].find(*theIcacheMiss[anIndex]) != theOutstandingMissQ[anIndex].end()) {
         //We have already sent a prefetch request out for this miss. No need
         //to request again.
-    	theTransientHits++;
+    	theTransientHits_FDIPLines++;
 //    	DBG_(Tmp, ( << "Miss: FDIP prefetch on way " << std::hex << (tagset << theIndexShift)));
     } else {
       theIcachePrefetch[anIndex] = boost::none;
@@ -1523,6 +1540,8 @@ private:
 				  theOutstandingMissQ[anIndex].insert(paddr);
 				  addOustandingMiss(anIndex, prefetch_addr);
 				  issuePreFetch( paddr , prefetch_addr);
+                  theFDIPPrefetches++;
+
 //				  DBG_(Tmp, ( << "FDIP: issue prefech " << std::hex << paddr << " vaddr " << prefetch_addr << " outreq " << theOutstandingMissQ[anIndex].size()));
 				  thePBQ[anIndex].pop_front();
 				} else {

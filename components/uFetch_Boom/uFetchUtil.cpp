@@ -77,5 +77,18 @@ std::ostream &operator<<(std::ostream &os, const BranchFeedback &f) {
     return os;
 }
 
+std::ostream &operator<<(std::ostream &os, eBranchType aType) {
+    const char *br_types[] = {"kNonBranch", "kConditional", "kUnconditional","kCall",
+        "kJmpl", "kReturn", "kJmplCall", "kRetry", "kDone", "kLastBranchType"};
+    os << "BranchType: { ";
+    if (aType >= kLastBranchType) {
+        os << "InvalidBranchType(" << static_cast<int>(aType) << ")";
+    } else {
+        os << br_types[aType];
+    }
+    os << " }";
+    return os;
+}
+
 } // end namespaces
 }

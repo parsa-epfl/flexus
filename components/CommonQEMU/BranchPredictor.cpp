@@ -1142,7 +1142,7 @@ namespace Flexus {
 			}
 			break;
 		  case kUnconditional:
-		  case kJmpl:
+		  //case kJmpl:
 			  aFetch.theBPState->thePredictedTarget = aBTBEntry.theTarget;
 	#ifdef TAGE
 			  theTage.get_prediction(aFetch.theAddress, *(aFetch.theBPState));
@@ -1168,7 +1168,7 @@ namespace Flexus {
 	#endif
 			break;
 		  case kCall:
-		  case kJmplCall:
+		  //case kJmplCall:
 			aFetch.theBPState->callUpdatedRAS = true;
 			aFetch.theBPState->thePredictedTarget = aBTBEntry.theTarget;
 
@@ -1188,53 +1188,6 @@ namespace Flexus {
 			aFetch.theBPState->theGShareShiftReg = theGShare.shiftReg();
 	#endif
 			break;
-		  case kRetry:
-			  {
-	//            	  assert(0);
-				  VirtualMemoryAddress target = VirtualMemoryAddress(getTPC(theTL));
-				  aFetch.theBPState->theNextPredictedTarget = VirtualMemoryAddress(getTNPC(theTL));
-//				  if (aFetch.theBPState->theNextPredictedTarget != 0) {
-//					  if (aFetch.theBPState->theNextPredictedTarget != target+4) {
-//						  DBG_(Tmp, ( << "Not +4 " << target << " and " << aFetch.theBPState->theNextPredictedTarget));
-//					  } else {
-//						  DBG_(Tmp, ( << "Not it is +4 "<< target << " and " << aFetch.theBPState->theNextPredictedTarget));
-//					  }
-//				  } else {
-//					  DBG_(Tmp, ( << "Not it is zero "));
-//				  }
-				  theTL--;
-				  aFetch.theBPState->theTL = theTL;
-				  if (target != 0) {
-					  aFetch.theBPState->thePredictedTarget = target;
-				  } else {
-					  aFetch.theBPState->thePredictedTarget = aBTBEntry.theTarget;
-				  }
-	#ifdef TAGE
-				  theTage.get_prediction(aFetch.theAddress, *(aFetch.theBPState));
-	#else
-				  aFetch.theBPState->theGShareShiftReg = theGShare.shiftReg();
-	#endif
-			  }
-			  break;
-		  case kDone:
-			  {
-	//            	  assert(0);
-				  VirtualMemoryAddress target = VirtualMemoryAddress(getTNPC(theTL));
-//				  DBG_(Tmp, ( << "Done target is " << target));
-				  theTL--;
-				  aFetch.theBPState->theTL = theTL;
-				  if (target != 0) {
-					  aFetch.theBPState->thePredictedTarget = target;
-				  } else {
-					  aFetch.theBPState->thePredictedTarget = aBTBEntry.theTarget;
-				  }
-	#ifdef TAGE
-				  theTage.get_prediction(aFetch.theAddress, *(aFetch.theBPState));
-	#else
-				  aFetch.theBPState->theGShareShiftReg = theGShare.shiftReg();
-	#endif
-			  }
-			  break;
 		  default:
 			assert(0);
 			break;
@@ -2386,26 +2339,6 @@ namespace Flexus {
 
     FastBranchPredictor * FastBranchPredictor::combining(std::string const & aName, uint32_t anIndex) {
       return new FastCombiningImpl(aName, anIndex);
-    }
-
-    std::ostream & operator << (std::ostream & anOstream, eBranchType aType) {
-      char const * types[] = {
-        "NonBranch"
-          , "Conditional"
-          , "Unconditional"
-          , "Call"
-		  , "Jmpl"
-          , "Return"
-		  , "JmplCall"
-		  , "Retry"
-		  , "Done"
-      };
-      if (aType >= kLastBranchType) {
-        anOstream << "InvalidBranchType(" << static_cast<int>(aType) << ")";
-      } else {
-        anOstream << types[aType];
-      }
-      return anOstream;
     }
 
     std::ostream & operator << (std::ostream & anOstream, xExceptionSource aSource) {

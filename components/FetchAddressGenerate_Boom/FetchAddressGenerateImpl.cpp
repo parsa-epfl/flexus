@@ -61,7 +61,7 @@ namespace nFetchAddressGenerate {
         int32_t theBTBPredecBuffSize;
         int64_t theBlockMask;
         uint32_t ICacheLineSize;
-        bool trapRetrunBlock;		//Is the current basic block the one just after a retry or done inst. If yes, it is just half the block assume its a btb hit.
+        //bool trapRetrunBlock;		//Is the current basic block the one just after a retry or done inst. If yes, it is just half the block assume its a btb hit. REMOVEME: SPARC ONLY
         bool BTBPrefilled;
         bool missUnderBTBMiss;
 
@@ -114,7 +114,7 @@ namespace nFetchAddressGenerate {
             squashedBPState = 0;
             BTBMissPrefetchesIssued = 0;
 
-            trapRetrunBlock = false;
+            //trapRetrunBlock = false; REMOVEME: SPARC ONLY
             BTBPrefilled = false;
             missUnderBTBMiss = false;
 
@@ -367,7 +367,6 @@ namespace nFetchAddressGenerate {
       }
       break;
     default:
-      aType = kLastBranchType;
       break;
     }
     return std::make_pair(aType, aTarget);
@@ -555,7 +554,7 @@ namespace nFetchAddressGenerate {
             lastTranslationFailed[anIndex] = false;
             bool isPredecodeBuffHit = false;
 
-            while(branchType == kNonBranch) {
+            while(branchType == kNonBranch && (BBSize < 100)) {
                 DBG_(DBG_BOOM_LEVEL, ( << "Predec PC " << vpc));
                 PhysicalMemoryAddress paddr = getPhysicalAddress(vpc);
                 if (paddr) {
@@ -567,11 +566,13 @@ namespace nFetchAddressGenerate {
                         DBG_(DBG_BOOM_LEVEL, ( << "Type " << branchType << " " << Flexus::Qemu::Processor::getProcessor(flexusIndex())->disassemble(vpc)));
                         if (branchType != kNonBranch) {
                             aBBTBEntry.theBranchType = branchType;
+                            aBBTBEntry.theBBsize = BBSize;
+                            /* REMOVEME - sparc specific
                             if (branchType == kRetry || branchType == kDone) {
                                 aBBTBEntry.theBBsize = BBSize;
                             } else {
                                 aBBTBEntry.theBBsize = BBSize + 1;
-                            }
+                            }*/
 
                             if (branchType == kConditional) {
                                 aBBTBEntry.theBranchDirection = theBranchPredictor->conditionalTaken(vpc);
@@ -583,80 +584,75 @@ namespace nFetchAddressGenerate {
                                 aBBTBEntry.theTarget += aPair.second;
                             }
 
+                            /* REMOVEME - sparc
                             if (branchType == kCall || branchType == kJmplCall) {
                                 aBBTBEntry.isSpecialCall = isSpecialCall( vpc + 4);
                             }
+                            */
 
-                            if (trapRetrunBlock == false) {
-                                //Number of cache blocks needed to predecode the requested basic block
-                                uint64_t firstBlock = aBBTBEntry.thePC & theBlockMask;
-                                uint64_t lastBlock = (aBBTBEntry.thePC + (aBBTBEntry.theBBsize - 1) * 4/*Inst size in bytes*/ ) & theBlockMask;
-                                int numCacheBlocks = 1 /*Curret Block*/ + (lastBlock - firstBlock)/ICacheLineSize;
-                                boost::intrusive_ptr<RecordedMisses> blockAddresses(new RecordedMisses());
-                                bool predecCached = true;
+                            //Number of cache blocks needed to predecode the requested basic block
+                            uint64_t firstBlock = aBBTBEntry.thePC & theBlockMask;
+                            uint64_t lastBlock = (aBBTBEntry.thePC + (aBBTBEntry.theBBsize - 1) * 4/*Inst size in bytes*/ ) & theBlockMask;
+                            int numCacheBlocks = 1 /*Curret Block*/ + (lastBlock - firstBlock)/ICacheLineSize;
+                            boost::intrusive_ptr<RecordedMisses> blockAddresses(new RecordedMisses());
+                            bool predecCached = true;
 
-                                //					  DBG_(Tmp, ( << "First address " << aBBTBEntry.thePC << " last addr " << aBBTBEntry.thePC + (aBBTBEntry.theBBsize - 1) * 4 << " 1st block "<< std::hex << firstBlock << " last bloc " << lastBlock << " num blocks " << numCacheBlocks));
+                            DBG_(DBG_BOOM_LEVEL, ( << "First address " << aBBTBEntry.thePC << " last addr " << aBBTBEntry.thePC + (aBBTBEntry.theBBsize - 1) * 4 << " 1st block "<< std::hex << firstBlock << " last bloc " << lastBlock << " num blocks " << numCacheBlocks));
 
-                                for (int i = 0; i < numCacheBlocks; i++) {
-                                    uint64_t blockAddr = firstBlock + (i * ICacheLineSize);
-                                    blockAddresses->theMisses.push_back( VirtualMemoryAddress(blockAddr) );
-                                    if (std::find(theBTBPredecBuff.begin(), theBTBPredecBuff.end(), VirtualMemoryAddress(blockAddr)) == theBTBPredecBuff.end()){
-                                        predecCached = false;
-                                        //							  DBG_(Tmp, ( << "block not found " << VirtualMemoryAddress(blockAddr)));
-                                    } else {
-                                        //							  DBG_(Tmp, ( << "block found " << VirtualMemoryAddress(blockAddr)));
-                                    }
-                                }
-
-                                if (predecCached == false) {
-
-                                    if (theBTBMiss[anIndex]) {
-                                        if (!cfg.EnableBTBPrefill) {
-                                            assert(0);
-                                        }
-                                        //									DBG_(Tmp, ( << "MissUnderMiss "));
-                                        missUnderBTBMiss = true;
-                                        sendprefetch(anIndex, aBBTBEntry.thePC);
-                                        return std::make_pair(false, aBBTBEntry);;
-                                    }
-
-                                    if (!(branchType == kJmpl || branchType == kJmplCall || (branchType == kConditional && aBBTBEntry.theBranchDirection >= kNotTaken))) {
-                                        missUnderBTBMiss = true;
-                                        //									  DBG_(Tmp, ( << "Early missUnderMiss "));
-                                    }
-
-                                    theBTBPredecBuff.insert(theBTBPredecBuff.end(), blockAddresses->theMisses.begin(), blockAddresses->theMisses.end());
-
-                                    while (theBTBPredecBuff.size() > 8) {
-                                        theBTBPredecBuff.pop_front();
-                                    }
-
-                                    //						  DBG_(Tmp, ( << "Sending req to L1 "));
-                                    FLEXUS_CHANNEL_ARRAY(BTBRequestOut, anIndex) << blockAddresses;
-
-                                    if (theBTBMiss[anIndex]) {
-                                        //											  DBG_(Tmp, ( << "L1 Miss "));
-                                        theBTBFillsL2++;
-                                    } else {
-                                        //											  DBG_(Tmp, ( << "L1 Hit "));
-                                        thePredecodeCyclesLeft[anIndex] += (numCacheBlocks - 1); //Decode latency increase 1 per extra cache block needed
-                                        theBTBFillsL1++;
-                                    }
-                                    BTBPrefilled = true;
-                                    //							  DBG_(Tmp, ( << "Prefilling " << std::hex << vpc));
-
+                            for (int i = 0; i < numCacheBlocks; i++) {
+                                uint64_t blockAddr = firstBlock + (i * ICacheLineSize);
+                                blockAddresses->theMisses.push_back( VirtualMemoryAddress(blockAddr) );
+                                if (std::find(theBTBPredecBuff.begin(), theBTBPredecBuff.end(), VirtualMemoryAddress(blockAddr)) == theBTBPredecBuff.end()){
+                                    predecCached = false;
+                                    DBG_(DBG_BOOM_LEVEL, ( << "block not found " << VirtualMemoryAddress(blockAddr)));
                                 } else {
-                                    //							  DBG_(Tmp, ( << "PredecBuff hit "));
-                                    isPredecodeBuffHit = true;
+                                    DBG_(DBG_BOOM_LEVEL, ( << "block found " << VirtualMemoryAddress(blockAddr)));
+                                }
+                            }
+
+                            if (predecCached == false) {
+                                if (theBTBMiss[anIndex]) {
+                                    if (!cfg.EnableBTBPrefill) {
+                                        assert(0);
+                                    }
+                                    DBG_(DBG_BOOM_LEVEL, ( << "MissUnderMiss "));
+                                    missUnderBTBMiss = true;
+                                    sendprefetch(anIndex, aBBTBEntry.thePC);
+                                    return std::make_pair(false, aBBTBEntry);;
                                 }
 
-                                //Update the BBTB
-                                theBranchPredictor->updateBBTB(aBBTBEntry);
+                                if (!(branchType == kJmpl || branchType == kJmplCall || (branchType == kConditional && aBBTBEntry.theBranchDirection >= kNotTaken))) {
+                                    missUnderBTBMiss = true;
+                                    DBG_(DBG_BOOM_LEVEL, ( << "Early missUnderMiss "));
+                                }
+
+                                theBTBPredecBuff.insert(theBTBPredecBuff.end(), blockAddresses->theMisses.begin(), blockAddresses->theMisses.end());
+
+                                while (theBTBPredecBuff.size() > 8) {
+                                    theBTBPredecBuff.pop_front();
+                                }
+
+                                DBG_(DBG_BOOM_LEVEL, ( << "Sending req to L1 "));
+                                FLEXUS_CHANNEL_ARRAY(BTBRequestOut, anIndex) << blockAddresses;
+
+                                if (theBTBMiss[anIndex]) {
+                                    //DBG_(DBG_BOOM_LEVEL, ( << "L1 Miss "));
+                                    theBTBFillsL2++;
+                                } else {
+                                    //DBG_(DBG_BOOM_LEVEL, ( << "L1 Hit "));
+                                    thePredecodeCyclesLeft[anIndex] += (numCacheBlocks - 1); //Decode latency increase 1 per extra cache block needed
+                                    theBTBFillsL1++;
+                                }
+                                BTBPrefilled = true;
+                                DBG_(DBG_BOOM_LEVEL, ( << "Prefilling " << std::hex << vpc));
 
                             } else {
-                                //						  DBG_(Tmp, ( << "trap ret block hit "));
+                                DBG_(DBG_BOOM_LEVEL, ( << "PredecBuff hit "));
                                 isPredecodeBuffHit = true;
                             }
+
+                            //Update the BBTB
+                            theBranchPredictor->updateBBTB(aBBTBEntry);
                         }
                         vpc += 4;
                     } else {
@@ -783,7 +779,7 @@ namespace nFetchAddressGenerate {
 
             BTBEntry aBTBEntry = theBranchPredictor->access_BBTB(thePC[anIndex]);
 
-            if (cfg.EnableBTBPrefill || trapRetrunBlock) {
+            if (cfg.EnableBTBPrefill) {
                 if ( aBTBEntry.thePC == 0) {
                     DBG_(DBG_BOOM_LEVEL, ( << "BTB Miss " << thePC[anIndex]));
 
@@ -795,7 +791,6 @@ namespace nFetchAddressGenerate {
                         aBTBEntry = preFill.second;
                     }
                 }
-                trapRetrunBlock = false;
             }
 
 
