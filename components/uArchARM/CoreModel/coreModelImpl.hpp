@@ -128,9 +128,7 @@ class CoreImpl : public CoreModel {
 
   // register renaming  architectural -> physical
   // Map Tables
-  RegisterWindowMap theWindowMap;
   std::vector<std::shared_ptr<PhysicalMap>> theMapTables;
-  RegisterWindowMap theArchitecturalWindowMap;
 
   // Register Files
   RegisterFile theRegisters;

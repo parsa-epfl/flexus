@@ -292,8 +292,6 @@ CoreImpl::CoreImpl(uArchOptions_t options
 
 void CoreImpl::resetARM() {
 
-  theWindowMap.reset();
-  theArchitecturalWindowMap.reset();
   mapTable(xRegisters).reset();
   mapTable(vRegisters).reset();
   mapTable(ccBits).reset();
