@@ -133,28 +133,24 @@ struct PhysicalMap {
   void free(pRegister aRegisterName) {
     FLEXUS_PROFILE();
     theFreeList.push_back(aRegisterName);
-    std::list<pRegister>::iterator iter, end;
     int32_t arch_name = theReverseMappings[aRegisterName];
+    std::vector<std::list<pRegister>>::iterator iter = theAssignedRegisters.begin() + arch_name;
     DBG_Assert(arch_name >= 0 && arch_name < static_cast<int>(theAssignedRegisters.size()));
     DBG_Assert(theMappings[arch_name] != aRegisterName);
-    DBG_Assert(theAssignedRegisters[arch_name].size());
+    DBG_Assert(iter->size());
+    DBG_Assert(iter->front() == aRegisterName || iter->back() == aRegisterName, (<< aRegisterName));
     theReverseMappings[aRegisterName] = -1;
-    iter = theAssignedRegisters[arch_name].begin();
-    end = theAssignedRegisters[arch_name].end();
-    bool found = false;
-    while (iter != end) {
-      if (*iter == aRegisterName) {
-        theAssignedRegisters[arch_name].erase(iter);
-        found = true;
-        break;
-      }
-      ++iter;
+    if (iter->front() == aRegisterName) {
+      iter->pop_front();
+    } else {
+      iter->pop_back();
     }
-    DBG_Assert(found);
   }
 
   void restore(regName aRegisterName, pRegister aReg) {
     FLEXUS_PROFILE();
+    pRegister target = *(++theAssignedRegisters[aRegisterName].rbegin());
+    DBG_Assert(aReg == target, (<< target));
     theMappings[aRegisterName] = aReg;
     // Restore should have no effect on the register stacks in
     // theReverseMappings because the restored register had not been freed
