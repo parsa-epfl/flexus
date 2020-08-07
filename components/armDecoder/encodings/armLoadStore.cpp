@@ -493,7 +493,7 @@ arminst LDP(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   simple_action act = addAddressCompute(inst, addr_deps);
   addReadXRegister(inst, 1, rn, addr_deps[0], true);
 
-  if (index != kSignedOffset) {
+  if (index == kPreIndex || index == kPostIndex) {
     std::vector<std::list<InternalDependance>> wb_deps(1);
     predicated_action wback =
         addExecute(inst, operation(kADD_), {kAddress, kOperand4}, wb_deps, kResult2);
@@ -565,7 +565,7 @@ arminst STP(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
 
   addReadXRegister(inst, 1, rn, addr_deps[0], true);
 
-  if (index != kSignedOffset) {
+  if (index == kPreIndex || index == kPostIndex) {
     std::vector<std::list<InternalDependance>> wb_deps(2);
     predicated_action wback =
         addExecute(inst, operation(kADD_), {kAddress, kOperand4}, wb_deps, kResult1);
