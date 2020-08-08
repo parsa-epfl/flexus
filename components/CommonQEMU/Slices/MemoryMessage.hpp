@@ -365,21 +365,21 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
         theSerial(memoryMessageSerial()), thePriv(false), theAnyInvs(false), theDstream(true),
         theFillLevel(eUnknown), theOutstandingMessages(0), theAckRequired(true),
         theAckRequiresData(false), theEvictHasData(false), theBranchType(kNonBranch),
-        theBranchAnnul(false), thePageWalk(false) {
+        theBranchAnnul(false), thePageWalk(false), theTS(0) {
   }
   explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress)
       : theType(aType), theAddress(anAddress), theAssociatedPC(0), theData(0), theReqSize(0),
         theCoreIdx(0), theSerial(memoryMessageSerial()), thePriv(false), theAnyInvs(false),
         theDstream(true), theFillLevel(eUnknown), theOutstandingMessages(0), theAckRequired(true),
         theAckRequiresData(false), theEvictHasData(false), theBranchType(kNonBranch),
-        theBranchAnnul(false), thePageWalk(false) {
+        theBranchAnnul(false), thePageWalk(false), theTS(0) {
   }
   explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC)
       : theType(aType), theAddress(anAddress), theAssociatedPC(aPC), theData(0), theReqSize(0),
         theCoreIdx(0), theSerial(memoryMessageSerial()), thePriv(false), theAnyInvs(false),
         theDstream(true), theFillLevel(eUnknown), theOutstandingMessages(0), theAckRequired(true),
         theAckRequiresData(false), theEvictHasData(false), theBranchType(kNonBranch),
-        theBranchAnnul(false), thePageWalk(false) {
+        theBranchAnnul(false), thePageWalk(false), theTS(0) {
   }
   explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC,
                          bits aData)
@@ -387,7 +387,7 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
         theCoreIdx(0), theSerial(memoryMessageSerial()), thePriv(false), theAnyInvs(false),
         theDstream(true), theFillLevel(eUnknown), theOutstandingMessages(0), theAckRequired(true),
         theAckRequiresData(false), theEvictHasData(false), theBranchType(kNonBranch),
-        theBranchAnnul(false), thePageWalk(false) {
+        theBranchAnnul(false), thePageWalk(false), theTS(0) {
   }
 
   explicit MemoryMessage(MemoryMessage &aMsg)
@@ -397,7 +397,7 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
         theDstream(aMsg.theDstream), theFillLevel(eUnknown), theOutstandingMessages(0),
         theAckRequired(aMsg.theAckRequired), theAckRequiresData(aMsg.theAckRequiresData),
         theEvictHasData(aMsg.theEvictHasData), theBranchType(aMsg.theBranchType),
-        theBranchAnnul(aMsg.theBranchAnnul), thePageWalk(aMsg.thePageWalk) {
+        theBranchAnnul(aMsg.theBranchAnnul), thePageWalk(aMsg.thePageWalk), theTS(aMsg.theTS) {
   }
 
   static intrusive_ptr<MemoryMessage> newLoad(MemoryAddress anAddress, VirtualMemoryAddress aPC) {
@@ -565,6 +565,10 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
 
   bool &branchAnnul() {
     return theBranchAnnul;
+  }
+
+  uint64_t &timeStamp() {
+      return theTS;
   }
 
   bool isRequest() const {
@@ -1036,6 +1040,7 @@ private:
   eBranchType theBranchType;
   bool theBranchAnnul;
   bool thePageWalk;
+  uint64_t theTS;
 };
 
 std::ostream &operator<<(std::ostream &s, MemoryMessage const &aMemMsg);

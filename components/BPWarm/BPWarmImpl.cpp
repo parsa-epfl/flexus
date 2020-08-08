@@ -43,13 +43,13 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
 #include <components/BPWarm/BPWarm.hpp>
-
+#include <components/BPWarm/BPStat.hpp>
 #include <components/CommonQEMU/Slices/ArchitecturalInstruction.hpp>
+#include <components/CommonQEMU/BranchPredictor.hpp>
+#include <core/qemu/mai_api.hpp>
 
 #define FLEXUS_BEGIN_COMPONENT BPWarm
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
-
-#include <components/CommonQEMU/BranchPredictor.hpp>
 
 namespace nBPWarm {
 
@@ -64,11 +64,31 @@ class FLEXUS_COMPONENT(BPWarm) {
 
   std::unique_ptr<FastBranchPredictor> theBranchPredictor;
 
+  std::vector< std::vector< uint32_t > > theOpcode;	//Rakesh
   std::vector<std::vector<VirtualMemoryAddress>> theFetchAddress;
   std::vector<std::vector<BPredState>> theFetchState;
   std::vector<std::vector<eBranchType>> theFetchType;
   std::vector<std::vector<bool>> theFetchAnnul;
   std::vector<bool> theOne;
+
+  // MARK: Added for FDIP/Boomerang
+  std::vector< VirtualMemoryAddress >                theBBAddress;
+  std::vector< eBranchType >                		 theLastBranch;
+
+  int latest_resolved_branch;
+  BPredState BBTBState;
+
+  struct BPFeedback {
+	  VirtualMemoryAddress pc;
+	  eBranchType theFetchType;
+	  eDirection dir;
+	  VirtualMemoryAddress target;
+	  BPredState theFetchState;
+  } theBPFeedback[UNRESOLVED_BRANCH_ARRAY_SIZE];
+
+  BPWarm_stats * bStats;
+  Prefetcher * runAheadPrefetcher;
+  std::map<uint64_t, uint64_t> stats0;
 
   std::pair<eBranchType, bool> decode(uint32_t opcode) {
 #if FLEXUS_TARGET_IS(v9)
@@ -106,7 +126,8 @@ class FLEXUS_COMPONENT(BPWarm) {
       return std::make_pair(kNonBranch, false);
     }
 #else
-    return std::make_pair(kNonBranch, false);
+    std::pair<eBranchType,VirtualMemoryAddress> type_and_offset = targetDecode(opcode);
+    return std::make_pair(type_and_offset.first, false);
 #endif
   }
 
@@ -259,7 +280,7 @@ public:
     return true;
   }
   void push(interface::ITraceInModern const &, index_t anIndex,
-            std::pair<uint64_t, std::pair<uint32_t, uint32_t>> &aPCAndTypeAndAnnulPair) {
+            BPMessage &incomingBPMsg) {
     bool anOne = theOne[anIndex];
 
     uint64_t aVirtualPC = aPCAndTypeAndAnnulPair.first;

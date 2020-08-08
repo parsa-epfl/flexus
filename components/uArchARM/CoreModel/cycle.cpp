@@ -1732,7 +1732,7 @@ void CoreImpl::doSquash() {
       rob_t::reverse_iterator iter = theROB.rbegin();
       rob_t::reverse_iterator end = boost::make_reverse_iterator(erase_iter);
       while (iter != end) {
-    	if ((*iter)->bpState()->thePredictedType == kCall || (*iter)->bpState()->thePredictedType == kJmplCall || (*iter)->bpState()->thePredictedType == kReturn) {
+    	if ((*iter)->bpState()->thePredictedType == kCall || (*iter)->bpState()->thePredictedType == kIndirect || (*iter)->bpState()->thePredictedType == kReturn) {
     		theRASop.push_back((*iter)->bpState());
     	}
         (*iter)->squash();

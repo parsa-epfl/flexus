@@ -13,6 +13,8 @@
 
 #include <components/CommonQEMU/BranchPredictor.hpp>
 #include <components/MTManager/MTManager.hpp>
+#include <components/CommonQEMU/PerfectBranchDecode.hpp>
+#include <components/CommonQEMU/DebugLevelsHeader.hpp>
 
 #define PerfectBranchDetection
 
@@ -295,83 +297,6 @@ namespace nFetchAddressGenerate {
         }
 
 #ifdef PerfectBranchDetection
-
-  static inline int32_t sextract32(uint32_t value, int start, int length) {
-    assert(start >= 0 && length > 0 && length <= 32 - start);
-    /* Note that this implementation relies on right shift of signed
-    * integers being an arithmetic shift.
-    */
-    return ((int32_t)(value << (32 - length - start))) >> (32 - length);
-  }
-
-  static inline uint32_t extract32(uint32_t value, int start, int length) {
-    assert(start >= 0 && length > 0 && length <= 32 - start);
-    return (value >> start) & (~0U >> (32 - length));
-  }
-
-  std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode) {
-    VirtualMemoryAddress aTarget(0); // This is actually displacement
-    eBranchType aType = kNonBranch;
-    int64_t offset = 0;
-    uint64_t cond = 0;
-    switch (extract32(opcode, 25, 7)) {
-    case 0x0a:
-    case 0x0b:
-    case 0x4a:
-    case 0x4b: /* Unconditional branch (immediate) */
-      offset = sextract32(opcode, 0, 26) << 2;
-      aTarget = VirtualMemoryAddress(offset);
-      aType = kUnconditional;
-      break;
-    case 0x1a:
-    case 0x5a: /* Compare & branch (immediate) */
-      offset = sextract32(opcode, 5, 19) << 2;
-      aTarget = VirtualMemoryAddress(offset);
-      aType = kConditional;
-      break;
-    case 0x1b:
-    case 0x5b: /* Test & branch (immediate) */
-      offset = sextract32(opcode, 5, 14) << 2;
-      aTarget = VirtualMemoryAddress(offset);
-      aType = kConditional;
-      break;
-    case 0x2a: /* Conditional branch (immediate) */
-      cond = extract32(opcode, 0, 4);
-      // program label to be conditionally branched to. Its offset from the address of this
-      // instruction, in the range +/-1MB, is encoded as "imm19" times 4.
-      offset = sextract32(opcode, 5, 19) << 2;
-      aTarget = VirtualMemoryAddress(offset);
-
-      if (cond < 0x0e) {
-        /* genuinely conditional branches */
-        aType = kConditional;
-      } else {
-        /* 0xe and 0xf are both "always" conditions */
-        aType = kUnconditional;
-      }
-      break;
-    case 0x6b: /* Unconditional branch (register) */
-      switch (extract32(opcode, 21, 2)) {
-        case 0:
-          aType = kUnconditional;
-          break;
-        case 1:
-          aType = kCall;
-          break;
-        case 2:
-          aType = kReturn;
-          break;
-        default:
-          aType = kNonBranch;
-          break;
-      }
-      break;
-    default:
-      break;
-    }
-    return std::make_pair(aType, aTarget);
-  }
-
         Flexus::Core::index_t getSystemWidth() {
             return 1;
             // TODO
@@ -579,7 +504,7 @@ namespace nFetchAddressGenerate {
                                 DBG_(DBG_BOOM_LEVEL, ( << "Prediction " << aBBTBEntry.theBranchDirection));
                             }
 
-                            if (branchType == kConditional || branchType == kUnconditional || branchType == kCall) {
+                            if (branchType == kConditional || branchType == kUnconditional || branchType == kCall || branchType == kIndirect) {
                                 aBBTBEntry.theTarget = vpc;
                                 aBBTBEntry.theTarget += aPair.second;
                             }
@@ -621,7 +546,7 @@ namespace nFetchAddressGenerate {
                                     return std::make_pair(false, aBBTBEntry);;
                                 }
 
-                                if (!(branchType == kJmpl || branchType == kJmplCall || (branchType == kConditional && aBBTBEntry.theBranchDirection >= kNotTaken))) {
+                                if (!((branchType == kConditional && aBBTBEntry.theBranchDirection >= kNotTaken))) {
                                     missUnderBTBMiss = true;
                                     DBG_(DBG_BOOM_LEVEL, ( << "Early missUnderMiss "));
                                 }
@@ -781,8 +706,8 @@ namespace nFetchAddressGenerate {
 
             if (cfg.EnableBTBPrefill) {
                 if ( aBTBEntry.thePC == 0) {
+                    theBTBMisses++;
                     DBG_(DBG_BOOM_LEVEL, ( << "BTB Miss " << thePC[anIndex]));
-
                     std::pair<bool, BTBEntry> preFill = preFillBBTB(anIndex, thePC[anIndex]);
 
                     if (preFill.first == false) {
@@ -795,14 +720,16 @@ namespace nFetchAddressGenerate {
 
 
             if (aBTBEntry.thePC == 0) {
+                theBTBMisses++;
+                DBG_(DBG_BOOM_LEVEL, ( << "Could not prefill BTB Miss " << cfg.InsnOnBTBMiss));
                 if (cfg.EnableBTBPrefill) {
                     assert(lastTranslationFailed[anIndex] == true);
                 }
-                DBG_(DBG_BOOM_LEVEL, ( << "Could not prefill BTB Miss " << cfg.InsnOnBTBMiss));
                 for (int i = 0; i < cfg.InsnOnBTBMiss; i++) {
                     genSingleAddr(anIndex, fetch);
                 }
             } else {
+                theBTBHits++;
                 DBG_(DBG_BOOM_LEVEL, ( << "BTB Hit " << thePC[anIndex]));
                 DBG_(DBG_BOOM_LEVEL, ( << std::endl  << std::endl << " BB start: " << std::hex << thePC[anIndex] << " end " << (thePC[anIndex] + (aBTBEntry.theBBsize*4)) << " size " << aBTBEntry.theBBsize  << " target " << aBTBEntry.theTarget  << " type " << aBTBEntry.theBranchType << " pred " << aBTBEntry.theBranchDirection << std::endl  << std::endl));
 

@@ -55,8 +55,6 @@
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <core/qemu/mai_api.hpp>
 
-#define DBG_BOOM_LEVEL Verb
-
 namespace Flexus {
 namespace SharedTypes {
 
@@ -88,8 +86,7 @@ enum eBranchResolution {
   , CorrectPrediction
 };
 
-//enum eBranchType { kNonBranch, kConditional, kUnconditional, kCall, kReturn, kLastBranchType };
-enum eBranchType { kNonBranch, kConditional, kUnconditional, kCall, kJmpl, kReturn, kJmplCall, kRetry, kDone, kLastBranchType };
+enum eBranchType { kNonBranch, kConditional, kUnconditional, kCall, kReturn, kIndirect, kLastBranchType };
 std::ostream &operator<<(std::ostream &anOstream, eBranchType aType);
 
 enum eDirection {

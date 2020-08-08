@@ -130,7 +130,7 @@ public:
             insn->setIcacheMissCycles(iter->theIcacheMissCycles);*/
 
           eInstructionCode insnCode = (dynamic_cast< armInstruction *>( insn.get() ))->instCode();
-          if ((lastInsnCode == codeCALL || lastInsnCode == codeJmplCall) /*&& lastBPState->callUpdatedRAS == true*/) {
+          if ((lastInsnCode == codeCALL) /*&& lastBPState->callUpdatedRAS == true*/) {
               trackSpecialCall(insnCode, (*iter).theOpcode);
           }
 
@@ -148,6 +148,7 @@ public:
 
   void trackSpecialCall(eInstructionCode insnCode, Opcode theOpcode) {
       // FIXME: PORT TO ARM
+#if 0
       if (insnCode == codeBranchJmpl) {
   		theCallRestorePair++;
   		lastBPState->detectedSpecialCall = true;
@@ -169,6 +170,7 @@ public:
           	}
           }
       }
+#endif
   }
 
   FLEXUS_PORT_ALWAYS_AVAILABLE(RASOpsIn);
@@ -180,7 +182,7 @@ public:
 		  boost::intrusive_ptr<BPredState> bpState = (dynamic_cast< armInstruction *>( inst.get() ))->bpState();
 		  thePipeline.dequeue();
 
-	      if (bpState->thePredictedType == kCall || bpState->thePredictedType == kJmplCall || bpState->thePredictedType == kReturn) {
+	      if (bpState->thePredictedType == kCall || bpState->thePredictedType == kIndirect || bpState->thePredictedType == kReturn) {
 //	    	  DBG_( Tmp, ( << " RAS Decode " << bpState->pc << " pred type " << bpState->thePredictedType << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(bpState->pc)));
 	    	  theRASops.push_front(bpState);
 	      }
@@ -189,7 +191,7 @@ public:
 	  for ( std::list< boost::intrusive_ptr< AbstractInstruction > >::iterator it = theFIQ.begin(); it != theFIQ.end(); it++) {
 //		  boost::intrusive_ptr< AbstractInstruction > inst(*it);
 		  boost::intrusive_ptr<BPredState> bpState = (dynamic_cast< armInstruction *>( (*it).get() ))->bpState();
-	      if (bpState->thePredictedType == kCall || bpState->thePredictedType == kJmplCall || bpState->thePredictedType == kReturn) {
+	      if (bpState->thePredictedType == kCall || bpState->thePredictedType == kIndirect || bpState->thePredictedType == kReturn) {
 //	    	  DBG_( Tmp, ( << " RAS Decode " << bpState->pc << " pred type " << bpState->thePredictedType << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(bpState->pc)));
 	    	  theRASops.push_front(bpState);
 	      }

@@ -105,6 +105,7 @@ arminst UNCONDBR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequence
     addDestination(inst, 30, exec, true);
   }
   branch_always(inst, 0, target);
+  inst->setClass(clsBranch, codeCALL); // reset this because branch_always sets it to unconditional
 
   return inst;
 }
@@ -282,7 +283,7 @@ arminst BLR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
     return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
   switch (op) {
   case 0:
-    branch_type = kUnconditional;
+    branch_type = kIndirect;
     break;
   case 1:
     branch_type = kCall;

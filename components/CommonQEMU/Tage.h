@@ -16,6 +16,7 @@ Code is essentially derived  from the tagged PPM predictor simulator from Pierre
 #include <inttypes.h>
 
 #include <components/uFetch/uFetchTypes.hpp>
+#include <components/CommonQEMU/DebugLevelsHeader.hpp>
 
 #define TAGE
 

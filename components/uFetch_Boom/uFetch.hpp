@@ -23,6 +23,7 @@ COMPONENT_PARAMETERS(
   PARAMETER( Size, int, "ICache size in bytes", "size", 65536 )
   PARAMETER( Associativity, int, "ICache associativity", "associativity", 4 )
   PARAMETER( MissQueueSize, uint32_t, "Maximum size of the fetch miss queue", "miss_queue_size", 4 )
+  PARAMETER( OutstandingFDIPMisses, uint32_t, "Maximum number of outstanding FDIP misses", "fdip_outstanding_misses", 4 )
   PARAMETER( Threads, uint32_t, "Number of threads under control of this uFetch", "threads", 1 )
   PARAMETER( SendAcks, bool, "Send acknowledgements when we received data", "send_acks", false )
   PARAMETER( UseReplyChannel, bool, "Send replies on Reply Channel and only Evicts on Snoop Channel", "use_reply_channel", false )

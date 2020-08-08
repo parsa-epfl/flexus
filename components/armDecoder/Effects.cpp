@@ -561,9 +561,6 @@ Effect *updateUnconditional(SemanticInstruction *inst, VirtualMemoryAddress aTar
   } else if(inst->instCode() == codeRETURN){
 	  assert(0);
     feedback->theActualType = kReturn;  
-  } else{
-	  assert(0);
-    feedback->theActualType = kJmpl;
   } 
   inst->setBranchFeedback(feedback);
   if (inst->bpState()) {

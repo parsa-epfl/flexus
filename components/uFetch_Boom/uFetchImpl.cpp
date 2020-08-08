@@ -13,6 +13,7 @@
 #include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 #include <components/CommonQEMU/Slices/ExecuteState.hpp>
+#include <components/CommonQEMU/DebugLevelsHeader.hpp>
 
 #define FLEXUS_BEGIN_COMPONENT uFetch
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
@@ -160,9 +161,9 @@ struct SimCache {
     }
     theCache.insert( std::make_pair(addr, 0) );
 //    if (ret_val) {
-//    	DBG_ (Tmp, ( << "Evicting " << (ret_val) ));
+//    	DBG_ (DBG_BOOM_LEVEL, ( << "Evicting " << (ret_val) ));
 //    } else {
-//    	DBG_ (Tmp, ( << "Evicting nothing " ));
+//    	DBG_ (DBG_BOOM_LEVEL, ( << "Evicting nothing " ));
 //    }
     return ret_val;
   }
@@ -196,7 +197,7 @@ class FLEXUS_COMPONENT(uFetch) {
   std::vector< std::list< FetchAddr > > thePAQ; //Rakesh: Prefetch address queue
   std::vector< std::list< VirtualMemoryAddress > > thePBQ; //Rakesh: Prefetch block queue
   std::vector< std::set< PhysicalMemoryAddress > > theOutstandingMissQ; //Rakesh: queue for outstanding misses
-  std::vector< std::list< VirtualMemoryAddress > > theOutstandingMissVQ; //Rakesh
+  std::vector< std::list< VirtualMemoryAddress > > theOutstandingFDIPPrefetches; // MARK
   std::vector< std::vector< FetchAddr > > theLastFetches; //Rakesh
   std::vector< std::list< VirtualMemoryAddress > > theRecordedMissQ; //Rakesh
 
@@ -215,11 +216,13 @@ class FLEXUS_COMPONENT(uFetch) {
   Stat::StatCounter theTransientHits;
   Stat::StatCounter theTransientHits_FDIPLines;
   Stat::StatCounter theMissCycles;
+  Stat::StatCounter theOpsSupplied;
   Stat::StatCounter theAllocations;
   Stat::StatMax  theMaxOutstandingEvicts;
 
   Stat::StatCounter theSeqMiss;
   Stat::StatCounter theBranch;
+  Stat::StatCounter theBranchMissIndirect;
   Stat::StatCounter theResyncMispred;
   Stat::StatCounter theResyncException;
   Stat::StatCounter theResyncInterrupt;
@@ -230,6 +233,7 @@ class FLEXUS_COMPONENT(uFetch) {
 
   Stat::StatCounter theSeqMissP;
   Stat::StatCounter theBranchP;
+  Stat::StatCounter theBranchPIndirect;
   Stat::StatCounter theResyncMispredP;
   Stat::StatCounter theResyncExceptionP;
   Stat::StatCounter theResyncInterruptP;
@@ -249,7 +253,7 @@ class FLEXUS_COMPONENT(uFetch) {
   Stat::StatCounter * tageConfindence[8];
 
   Stat::StatCounter * squashReason[6];
-  Stat::StatCounter * squashReasonBranch[10];
+  Stat::StatCounter * squashReasonBranch[7];
 
   Stat::StatCounter returnUsedRAS;
   Stat::StatCounter returnUsedBTB;
@@ -263,7 +267,6 @@ class FLEXUS_COMPONENT(uFetch) {
   eSquashCause lastSquashCause;
   boost::intrusive_ptr<BPredState> lastSquashedBPState; //Rakesh
   bool demandFetchIssued;
-  bool waitingForRetryDone;
 
   //The I-cache
   SimCache theI;
@@ -357,6 +360,7 @@ public:
     , theMaxOutstandingEvicts( statName() + "-MaxEvicts" )
     , theSeqMiss( statName() + "-Miss:Seq" )
 	, theBranch( statName() + "-Miss:Branch" )
+	, theBranchMissIndirect( statName() + "-Miss:Branch:Indirect" )
 	, theResyncMispred( statName() + "-Miss:Resync:BranchMispredict" )
 	, theResyncException( statName() + "-Miss:Resync:Exception" )
 	, theResyncInterrupt( statName() + "-Miss:Resync:Interrupt" )
@@ -366,6 +370,7 @@ public:
 	, theOthers( statName() + "-Miss:Others" )
 	, theSeqMissP( statName() + "-Miss:Seq:NoPrefetch" )
 	, theBranchP( statName() + "-Miss:Branch:NoPrefetch" )
+	, theBranchPIndirect( statName() + "-Miss:Branch:NoPrefetch:Indirect" )
 	, theResyncMispredP( statName() + "-Miss:Resync:BranchMispredict:NoPrefetch" )
 	, theResyncExceptionP( statName() + "-Miss:Resync:Exception:NoPrefetch" )
 	, theResyncInterruptP( statName() + "-Miss:Resync:Interrupt:NoPrefetch" )
@@ -429,20 +434,12 @@ public:
 	    squashReasonBranch[2] = new Stat::StatCounter(statName() + stat_name);
 	    sprintf(stat_name, "-squashReasonBranch:kCall");
 	    squashReasonBranch[3] = new Stat::StatCounter(statName() + stat_name);
-	    sprintf(stat_name, "-squashReasonBranch:kJmpl");
-	    squashReasonBranch[4] = new Stat::StatCounter(statName() + stat_name);
 	    sprintf(stat_name, "-squashReasonBranch:kReturn");
+	    squashReasonBranch[4] = new Stat::StatCounter(statName() + stat_name);
+	    sprintf(stat_name, "-squashReasonBranch:kIndirect");
 	    squashReasonBranch[5] = new Stat::StatCounter(statName() + stat_name);
-	    sprintf(stat_name, "-squashReasonBranch:kJmplCall");
-	    squashReasonBranch[6] = new Stat::StatCounter(statName() + stat_name);
-	    sprintf(stat_name, "-squashReasonBranch:kRetry");
-	    squashReasonBranch[7] = new Stat::StatCounter(statName() + stat_name);
-	    sprintf(stat_name, "-squashReasonBranch:kDone");
-	    squashReasonBranch[8] = new Stat::StatCounter(statName() + stat_name);
 	    sprintf(stat_name, "-squashReasonBranch:kLastBranchType");
-	    squashReasonBranch[9] = new Stat::StatCounter(statName() + stat_name);
-
-	    waitingForRetryDone = false;
+	    squashReasonBranch[6] = new Stat::StatCounter(statName() + stat_name);
   }
 
   void initialize() {
@@ -459,7 +456,7 @@ public:
     thePBQ.resize(cfg.Threads);		//Rakesh
     theRecordedMissQ.resize(cfg.Threads);
     theOutstandingMissQ.resize(cfg.Threads);		//Rakesh
-    theOutstandingMissVQ.resize(cfg.Threads);		//Rakesh
+    theOutstandingFDIPPrefetches.resize(cfg.Threads); // MARK edit
     theLastFetches.resize(cfg.Threads);		//Rakesh
     theIcacheMiss.resize(cfg.Threads);
     theIcacheVMiss.resize(cfg.Threads);
@@ -470,7 +467,7 @@ public:
     theCPUState.resize(cfg.Threads);
 
     theMissQueueSize = cfg.MissQueueSize;
-    theMaxOutstandingFDIPMisses = 4; //Fixme: make it a parameter.
+    theMaxOutstandingFDIPMisses = cfg.OutstandingFDIPMisses;
     theMaxOutstandingRecMisses = 2;
 
     uint64_t temp = 0;
@@ -481,9 +478,7 @@ public:
     	theLastFetches[i].push_back(FetchAddr(VirtualMemoryAddress(0), temp));
     	theLastFetches[i].push_back(FetchAddr(VirtualMemoryAddress(0), temp));
 
-    	for (uint32_t j = 0; j < (theMaxOutstandingFDIPMisses + theMissQueueSize) * 2 /*random stuff*/; j++) {
-    		theOutstandingMissVQ[i].push_back(VirtualMemoryAddress(0));
-    	}
+        theOutstandingFDIPPrefetches[i].resize(theMaxOutstandingFDIPMisses);
     }
 
     lastResetCycle = 0;
@@ -524,12 +519,12 @@ public:
 
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(RASOpsIn);
   void push(interface::RASOpsIn const &, index_t anIndex, std::list< boost::intrusive_ptr<BPredState> > & theRASops) {
-//	  DBG_( Tmp, ( << " reconstruct RAS uFetch" ));
+//	  DBG_( DBG_BOOM_LEVEL, ( << " reconstruct RAS uFetch" ));
 
 	  for ( std::list< FetchAddr >::iterator it = theFAQ[anIndex].begin(); it != theFAQ[anIndex].end(); it++) {
 		  boost::intrusive_ptr<BPredState> bpState = it->theBPState;
-	      if (bpState->thePredictedType == kCall || bpState->thePredictedType == kJmplCall || bpState->thePredictedType == kReturn) {
-//	    	  DBG_( Tmp, ( << " RAS Decode " << bpState->pc << " pred type " << bpState->thePredictedType << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(bpState->pc)));
+	      if (bpState->thePredictedType == kCall || bpState->thePredictedType == kReturn || bpState->thePredictedType == kIndirect) {
+//	    	  DBG_( DBG_BOOM_LEVEL, ( << " RAS Decode " << bpState->pc << " pred type " << bpState->thePredictedType << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(bpState->pc)));
 	    	  theRASops.push_front(bpState);
 	      }
 	  }
@@ -568,23 +563,25 @@ public:
 			  theRecordedMissQ[anIndex].push_back(preFetch_addr);
 		  }
 		  rMisses->theMisses.pop_front();
-//		  DBG_(Tmp, ( << "Received recoreded miss " << preFetch_addr));
+//		  DBG_(DBG_BOOM_LEVEL, ( << "Received recoreded miss " << preFetch_addr));
 	  }
   }
 
   //AvailableFAQOut
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(AvailableFAQOut);
   int32_t pull( interface::AvailableFAQOut const &, index_t anIndex) {
-    return cfg.FAQSize - theFAQ[anIndex].size() ;
+      size_t my_size = theFAQ[anIndex].size();
+      if (my_size >= cfg.FAQSize) return 0;
+      else return cfg.FAQSize - my_size;
   }
 
   //SquashIn
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(SquashIn);
   void push( interface::SquashIn const &, index_t anIndex, eSquashCause  & aReason) {
     DBG_( Iface, Comp(*this) ( << "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << anIndex << "] Fetch SQUASH: " << aReason));
-//    DBG_( Tmp, Comp(*this) ( << std::endl << std::endl <<  "Squashing CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << anIndex << "] Fetch SQUASH: " << aReason << std::endl << std::endl));
+//    DBG_( DBG_BOOM_LEVEL, Comp(*this) ( << std::endl << std::endl <<  "Squashing CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << anIndex << "] Fetch SQUASH: " << aReason << std::endl << std::endl));
 
-    size_t fdip_q_size = thePBQ.size();
+    size_t fdip_q_size = thePBQ[anIndex].size();
     FDIPPrefetchesSquashed << std::make_pair(fdip_q_size, 1);
 
     theFAQ[anIndex].clear();
@@ -606,7 +603,7 @@ public:
   //BranchSquashIn
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(SquashBranchIn);
   void push( interface::SquashBranchIn const &, index_t anIndex, boost::intrusive_ptr<BPredState> & aBPState) {
-//	  DBG_( Tmp, Comp(*this) ( << std::endl << std::endl <<  "Squashing Mispredicted branch CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << anIndex << "] Fetch SQUASH: " << std::endl << std::endl));
+//	  DBG_( DBG_BOOM_LEVEL, Comp(*this) ( << std::endl << std::endl <<  "Squashing Mispredicted branch CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << anIndex << "] Fetch SQUASH: " << std::endl << std::endl));
 	  lastSquashedBPState = aBPState;
       FLEXUS_CHANNEL(SquashBranchOut) << aBPState;
   }
@@ -700,9 +697,6 @@ public:
 
 public:
   void drive( interface::uFetchDrive const & ) {
-      /* Stat for FDIP Prefetch Q depth */
-      size_t fdip_prefetches_outstanding = theFDIPPrefetchQueue.size();
-      FDIPQDepth << std::make_pair(fdip_prefetches_outstanding,1);
     bool garbage = true;
     FLEXUS_CHANNEL( ClockTickSeen ) << garbage;
 
@@ -710,6 +704,9 @@ public:
     if (cfg.Threads > 1) {
       td = nMTManager::MTManager::get()->scheduleFThread(flexusIndex());
     }
+    /* Stat for FDIP Prefetch Q depth */
+    size_t fdip_prefetches_outstanding = theOutstandingMissQ[td].size();
+    FDIPQDepth << std::make_pair(fdip_prefetches_outstanding,1);
     doFetch(td);
     doPrefetch(td);	//Rakesh
     sendMisses();
@@ -721,8 +718,9 @@ public:
 
 private:
   void addOustandingMiss(index_t anIndex, VirtualMemoryAddress addr) {
-	  theOutstandingMissVQ[anIndex].pop_front();
-	  theOutstandingMissVQ[anIndex].push_back(addr);
+      theOutstandingFDIPPrefetches[anIndex].push_back(addr);
+	  //theOutstandingMissVQ[anIndex].pop_front();
+	  //theOutstandingMissVQ[anIndex].push_back(addr);
   }
 
   void prefetchNext(index_t anIndex) {
@@ -744,25 +742,27 @@ private:
       xlat.thePaddr = cpu(anIndex)->translateVirtualAddress(xlat.theVaddr);
       if (! xlat.thePaddr ) {
         //Unable to translate for prefetch
-//    	  DBG_(Tmp, ( << "NLP translation failed "));
+    	  DBG_(DBG_BOOM_LEVEL, ( << "NLP translation failed "));
         theLastPrefetchVTagSet[anIndex] = boost::none;
         return;
       } else {
     	if (theOutstandingMissQ[anIndex].find(xlat.thePaddr) != theOutstandingMissQ[anIndex].end()) {
-//    		DBG_(Tmp, ( << "NLP: FDIP prefetch on way " << std::hex << vprefetch));
+    		DBG_(DBG_BOOM_LEVEL, ( << "NLP: FDIP prefetch on way " << std::hex << vprefetch));
     	        //We have already sent a prefetch request out for this. No need
     	        //to request again.
     	} else if (lookup( xlat.thePaddr )) {
           //No need to prefetch, already in cache
           theLastPrefetchVTagSet[anIndex] = boost::none;
-        } else {
+        } else if ( theIcachePrefetch[anIndex] != xlat.thePaddr) {
           theIcachePrefetch[anIndex] = xlat.thePaddr;
           DBG_( Iface, Comp(*this) ( << "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << anIndex << "] L1I PREFETCH " << *theIcachePrefetch[anIndex] ));
-          theOutstandingMissQ[anIndex].insert(xlat.thePaddr);
-          addOustandingMiss(anIndex, vprefetch);
-//          DBG_(Tmp, ( << "NLP: issue prefetch " << std::hex << vprefetch << " paddr " << xlat.thePaddr << " outreq " << theOutstandingMissQ[anIndex].size()));
+          //theOutstandingMissQ[anIndex].insert(xlat.thePaddr);
+          DBG_(DBG_BOOM_LEVEL, ( << "NLP: issue prefetch " << std::hex << vprefetch << " paddr " << xlat.thePaddr << " outreq " << theOutstandingMissQ[anIndex].size()));
           issueFetch( xlat.thePaddr , vprefetch);
           ++thePrefetches;
+        } else {
+            // redundant prefetch, line was already in theIcachePrefetch
+            theLastPrefetchVTagSet[anIndex] = boost::none;
         }
       }
     }
@@ -822,19 +822,18 @@ private:
       //to request again.  However, we can advance the prefetcher to the
       //next miss
       theTransientHits++;
-//      DBG_(Tmp, ( << "Miss: NLP prefetch on way " << std::hex << (tagset << theIndexShift)));
+      DBG_(DBG_BOOM_LEVEL, ( << "Miss: NLP prefetch on way " << std::hex << (tagset << theIndexShift)));
       prefetchNext(anIndex);
     } else if (theOutstandingMissQ[anIndex].find(*theIcacheMiss[anIndex]) != theOutstandingMissQ[anIndex].end()) {
         //We have already sent a prefetch request out for this miss. No need
         //to request again.
     	theTransientHits_FDIPLines++;
-//    	DBG_(Tmp, ( << "Miss: FDIP prefetch on way " << std::hex << (tagset << theIndexShift)));
+    	DBG_(DBG_BOOM_LEVEL, ( << "Miss: FDIP prefetch on way " << std::hex << (tagset << theIndexShift)));
     } else {
       theIcachePrefetch[anIndex] = boost::none;
       // Need to issue the miss.
-      theOutstandingMissQ[anIndex].insert(*theIcacheMiss[anIndex]);
-      addOustandingMiss(anIndex, *theIcacheVMiss[anIndex]);
-//      DBG_(Tmp, ( << "Miss: issue fetch " << std::hex << *theIcacheMiss[anIndex] << " vaddr " << *theIcacheVMiss[anIndex] << " outreq " << theOutstandingMissQ[anIndex].size()));
+      //theOutstandingMissQ[anIndex].insert(*theIcacheMiss[anIndex]);
+      DBG_(DBG_BOOM_LEVEL, ( << "Miss: issue fetch " << std::hex << *theIcacheMiss[anIndex] << " vaddr " << *theIcacheVMiss[anIndex] << " outreq " << theOutstandingMissQ[anIndex].size()));
       issueFetch(*theIcacheMiss[anIndex], *theIcacheVMiss[anIndex]);
       demandFetchIssued = true;
 
@@ -859,7 +858,7 @@ private:
 
       DBG_( Trace, Comp(*this) ( << "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "] L1I Sending Miss on Port FMO: " << *trans[MemoryMessageTag] ));;
 
-//      DBG_(Tmp, ( << "Sending L1i miss " << *trans[MemoryMessageTag]));
+      DBG_(DBG_BOOM_LEVEL, ( << "Sending L1i miss " << *trans[MemoryMessageTag]));
       trans[MemoryMessageTag]->coreIdx()=flexusIndex();
       FLEXUS_CHANNEL(FetchMissOut) << trans;
       theMissQueue.pop_front();
@@ -880,7 +879,7 @@ private:
       if (!evictInProcess) {
           DBG_( Trace, Comp(*this) ( << "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "] L1I Sending Miss on Port FMO: " << *trans[MemoryMessageTag] ));;
 
-    //      DBG_(Tmp, ( << "Sending L1i miss " << *trans[MemoryMessageTag]));
+          DBG_(DBG_BOOM_LEVEL, ( << "Sending L1i miss " << *trans[MemoryMessageTag]));
           trans[MemoryMessageTag]->coreIdx()=flexusIndex();
           FLEXUS_CHANNEL(FetchMissOut) << trans;
           theRecMissPrefetchQueue.pop_front();
@@ -902,7 +901,7 @@ private:
       if (!evictInProcess) {
           DBG_( Trace, Comp(*this) ( << "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "] L1I Sending Miss on Port FMO: " << *trans[MemoryMessageTag] ));;
 
-    //      DBG_(Tmp, ( << "Sending L1i miss " << *trans[MemoryMessageTag]));
+          DBG_(DBG_BOOM_LEVEL, ( << "Sending FDIP L1I Prefetch " << *trans[MemoryMessageTag]));
           trans[MemoryMessageTag]->coreIdx()=flexusIndex();
           FLEXUS_CHANNEL(FetchMissOut) << trans;
           theFDIPPrefetchQueue.pop_front();
@@ -962,7 +961,7 @@ private:
         //Insert the address into the array
         PhysicalMemoryAddress replacement = insert( reply->address());
 
-//        DBG_(Tmp, ( << "Miss reply: for " << reply->address() << " replacing " << replacement));
+        DBG_(DBG_BOOM_LEVEL, ( << "Miss reply: for " << reply->address() << " replacing " << replacement));
         issueEvict( replacement );
 
         //See if it is our outstanding miss or our outstanding prefetch
@@ -974,16 +973,16 @@ private:
             theFetchReplyTransactionTracker[i] = tracker;
             if (aTransport[TransactionTrackerTag] && aTransport[TransactionTrackerTag]->fillLevel()) {
               theLastMiss[i] = std::make_pair(PhysicalMemoryAddress(reply->address() & theBlockMask), *aTransport[TransactionTrackerTag]->fillLevel());
-//              DBG_(Tmp, ( << "Fetchreply: for " << reply->address()));
+              DBG_(DBG_BOOM_LEVEL, ( << "Fetchreply: for " << reply->address()));
             } else {
               DBG_(Dev, ( << "Received Fetch Reply with no TransactionTrackerTag" ));
             }
           }
 
           if (theIcachePrefetch[i] && *theIcachePrefetch[i] == reply->address()) {
-            DBG_( Iface, Comp(*this) ( << "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << i << "] L1I PREFETCH-FILL " << reply->address()));
+            DBG_( Iface, Comp(*this) ( << "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << i << "] L1I NLP PREFETCH-FILL " << reply->address()));
             theIcachePrefetch[i] = boost::none;
-//            DBG_(Tmp, ( << "NLPreply: for " << reply->address()));
+            DBG_(DBG_BOOM_LEVEL, ( << "NLPreply: for " << reply->address()));
           }
 
           int32_t anIndex = 0;
@@ -992,10 +991,8 @@ private:
           }
           std::set< PhysicalMemoryAddress >::iterator itr = theOutstandingMissQ[anIndex].find(reply->address());
           if (itr != theOutstandingMissQ[anIndex].end()) {
+              DBG_( Iface, Comp(*this) ( << "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << i << "] L1I FDIP PREFETCH-FILL " << reply->address()));
         	  theOutstandingMissQ[anIndex].erase(itr);
-//        	  DBG_(Tmp, ( << "FDIPreply: for " << reply->address() << " outreq " << theOutstandingMissQ[anIndex].size() ));
-          } else {
-        	  assert(0);
           }
         }
 
@@ -1100,7 +1097,7 @@ private:
       case MemoryMessage::EvictAck: {
         std::set<uint64_t>::iterator iter = theEvictSet.find(reply->address());
         DBG_Assert(iter != theEvictSet.end(), Comp(*this) ( << "Block not found in EvictBuffer upon receipt of Ack: " << *reply ));
-//        DBG_(Tmp, ( << "Removing from evict queue " << reply->address()));
+//        DBG_(DBG_BOOM_LEVEL, ( << "Removing from evict queue " << reply->address()));
         theEvictSet.erase(iter);
         break;
       }
@@ -1117,7 +1114,7 @@ private:
 
       // Put in evict buffer and wait for Ack
       std::pair<std::set<uint64_t>::iterator, bool> ret = theEvictSet.insert(anAddress);
-//      DBG_(Tmp, ( << "Moving to evict queue " << anAddress << " status " << ret.second));
+//      DBG_(DBG_BOOM_LEVEL, ( << "Moving to evict queue " << anAddress << " status " << ret.second));
       DBG_Assert(ret.second);
       theMaxOutstandingEvicts << theEvictSet.size();
       operation->ackRequired() = true;
@@ -1200,87 +1197,96 @@ private:
 	} else if (lastResetDistance >= 150) {
 		lastResetDistance = MAX_RESET_DISTANCE - 1;
 	}
-//  	DBG_(Tmp, Comp(*this) ( << " Miss " << std::hex << fetch_addr.theAddress << " block " << std::hex << (fetch_addr.theAddress & theBlockMask) << " reset distance " << lastResetDistance << " prefetch on way " << !demandFetchIssued << " size " << theLastFetches[anIndex].size()));
+  	DBG_(DBG_BOOM_LEVEL, Comp(*this) ( << " Miss " << std::hex << fetch_addr.theAddress << " block " << std::hex << (fetch_addr.theAddress & theBlockMask) << " reset distance " << lastResetDistance << " prefetch on way " << !demandFetchIssued << " size " << theLastFetches[anIndex].size()));
 
   	(* lastReset[lastResetDistance])++;
 	if (demandFetchIssued) {
 		(* lastResetNP[lastResetDistance])++;
 	}
     if (fetch_addr.theAddress == theLastFetches[anIndex][1].theAddress + 4) {
-//            	  DBG_(Tmp, ( << "Seq Miss " << lastResetDistance));
+            	  DBG_(DBG_BOOM_LEVEL, ( << "Seq Miss " << lastResetDistance));
   	  theSeqMiss++;
   	  (* lastResetSeq[lastResetDistance])++;
   	  if (demandFetchIssued) {
-//  		  DBG_(Tmp, ( << "Seq Miss NP " << lastResetDistance));
+  		  DBG_(DBG_BOOM_LEVEL, ( << "Seq Miss NP " << lastResetDistance));
   		  (* lastResetSeqNP[lastResetDistance])++;
   		  theSeqMissP++;
   	  }
     } else if (theLastFetches[anIndex][0].theBPState && theLastFetches[anIndex][0].theBPState->thePredictedType != kNonBranch && theLastFetches[anIndex][0].theBPState->thePrediction <= kTaken) {
   	  theBranch++;
+      bool is_indirect = false;
+      if (theLastFetches[anIndex][0].theBPState->thePredictedType == kCall ||
+          theLastFetches[anIndex][0].theBPState->thePredictedType == kIndirect) { 
+          // MARK: in ARM64, BLR and BR are both register indirect, one is a call that sets x30, one is not.
+          // See ARMv8 ISA Manual: C6.2.32 BLR and C6.2.34 BR
+          is_indirect = true;
+          theBranchMissIndirect++;
+      }
   	  (* lastResetBranch[lastResetDistance])++;
   	  if (demandFetchIssued) {
-//  		  DBG_(Tmp, ( << "Branch Miss "));
+  		  DBG_(DBG_BOOM_LEVEL, ( << "Branch Miss "));
   		  (* lastResetBranchNP[lastResetDistance])++;
   		  theBranchP++;
+          if (is_indirect) theBranchPIndirect++;
   	  }
-//            	  DBG_(Tmp, ( << "Branch Miss "));
+//            	  DBG_(DBG_BOOM_LEVEL, ( << "Branch Miss "));
     } else if (fetch_addr.wasRedirected) {
   	  switch (fetch_addr.redirectionCause) {
   	  case kResynchronize:
-//            		  DBG_(Tmp, ( << "Resync Miss "));
+            		  DBG_(DBG_BOOM_LEVEL, ( << "Resync Miss "));
   		  theResynchronization++;
       	  if (demandFetchIssued) {
       		  theResynchronizationP++;
-//      		  DBG_(Tmp, ( << "Resync Miss "));
+//      		  DBG_(DBG_BOOM_LEVEL, ( << "Resync Miss "));
       	  }
   		  break;
         case kBranchMispredict:
-//                	  DBG_(Tmp, ( << "BP Mispredict Miss "));
+                	  DBG_(DBG_BOOM_LEVEL, ( << "BP Mispredict Miss "));
       	  theResyncMispred++;
       	  if (demandFetchIssued) {
       		  theResyncMispredP++;
-//      		  DBG_(Tmp, ( << "BP Mispredict Miss "));
+//      		  DBG_(DBG_BOOM_LEVEL, ( << "BP Mispredict Miss "));
       	  }
       	  break;
         case kException:
-//                	  DBG_(Tmp, ( << "Exception Miss "));
-      	  theResyncException++;
+                	  DBG_(DBG_BOOM_LEVEL, ( << "Exception Miss "));
+     	  theResyncException++;
       	  if (demandFetchIssued) {
       		  theResyncExceptionP++;
-//      		  DBG_(Tmp, ( << "Exception Miss "));
+//      		  DBG_(DBG_BOOM_LEVEL, ( << "Exception Miss "));
       	  }
       	  break;
         case kInterrupt:
-//                	  DBG_(Tmp, ( << "Interrupt Miss "));
+                	  DBG_(DBG_BOOM_LEVEL, ( << "Interrupt Miss "));
       	  theResyncInterrupt++;
       	  if (demandFetchIssued) {
       		  theResyncInterruptP++;
-//      		  DBG_(Tmp, ( << "Interrupt Miss "));
+//      		  DBG_(DBG_BOOM_LEVEL, ( << "Interrupt Miss "));
       	  }
       	  break;
         case kFailedSpec:
-//                	  DBG_(Tmp, ( << "Spec failed Miss "));
+                	  DBG_(DBG_BOOM_LEVEL, ( << "Spec failed Miss "));
       	  theResyncSpecFailed++;
       	  if (demandFetchIssued) {
       		  theResyncSpecFailedP++;
-//      		  DBG_(Tmp, ( << "Spec failed Miss "));
+//      		  DBG_(DBG_BOOM_LEVEL, ( << "Spec failed Miss "));
       	  }
       	  break;
         default:
-//                	  DBG_(Tmp, ( << "Unkonwn Miss "));
+                	  DBG_(DBG_BOOM_LEVEL, ( << "Unkonwn Miss "));
       	  theResyncUnknown++;
       	  if (demandFetchIssued) {
       		  theResyncUnknownP++;
-//      		  DBG_(Tmp, ( << "Unkonwn Miss "));
+//      		  DBG_(DBG_BOOM_LEVEL, ( << "Unkonwn Miss "));
       	  }
       	  break;
   	  }
     } else {
-//            	  DBG_(Tmp, ( << "Othre Miss "));
+//            	  DBG_(DBG_BOOM_LEVEL, ( << "Othre Miss "));
   	  theOthers++;
   	  if (demandFetchIssued) {
   		  theOthersP++;
-//  		  DBG_(Tmp, ( << "Othre Miss "));
+//  		  DBG_(DBG_BOOM_LEVEL, ( << "Othre Miss "));
   	  }
     }
 
@@ -1288,18 +1294,18 @@ private:
     assert(lastSquashCause < 6);
     if (lastResetDistance < 30) {
 
-//		DBG_(Tmp, ( << "Miss squash reason " << lastSquashCause));
+		DBG_(DBG_BOOM_LEVEL, ( << "Miss squash reason " << lastSquashCause));
 		(* squashReason[lastSquashCause])++;
 		if (lastSquashCause == kBranchMispredict) {
 
 	    	vaddr_pair missPair;
 	    	missPair.first = lastSquashedBPState->pc;
 	    	missPair.second = VirtualMemoryAddress(fetch_addr.theAddress & theBlockMask);
-//	    	DBG_(Tmp, ( << "Sending miss pair pc " << lastSquashedBPState->pc << " missed block " << missPair.second << " predicted type " << lastSquashedBPState->thePredictedType << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(lastSquashedBPState->pc)));
+	    	DBG_(DBG_BOOM_LEVEL, ( << "Sending miss pair pc " << lastSquashedBPState->pc << " missed block " << missPair.second << " predicted type " << lastSquashedBPState->thePredictedType << " " << Flexus::Qemu::Processor::getProcessor(flexusIndex())->disassemble(lastSquashedBPState->pc)));
 	    	FLEXUS_CHANNEL(MissPairOut) << missPair;
 
 			assert(lastSquashedBPState->thePredictedType < 10);
-//			DBG_(Tmp, ( << "Miss squash Serial " << lastSquashedBPState->theSerial << " pc " << lastSquashedBPState->pc << " miss prediected " << lastSquashedBPState->thePredictedType << " actual type " << lastSquashedBPState->theActualType << " prefetch on way " << !demandFetchIssued << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(lastSquashedBPState->pc)));
+			DBG_(DBG_BOOM_LEVEL, ( << "Miss squash Serial " << lastSquashedBPState->theSerial << " pc " << lastSquashedBPState->pc << " miss prediected " << lastSquashedBPState->thePredictedType << " actual type " << lastSquashedBPState->theActualType << " prefetch on way " << !demandFetchIssued << " " << Flexus::Qemu::Processor::getProcessor(flexusIndex())->disassemble(lastSquashedBPState->pc)));
 			(* squashReasonBranch[lastSquashedBPState->thePredictedType])++;
 			if (lastSquashedBPState->thePredictedType == kConditional) {
 				if (lastSquashedBPState->bimodalPrediction) {
@@ -1311,7 +1317,7 @@ private:
 				}
 			} else if (lastSquashedBPState->thePredictedType == kReturn) {
 				if (lastSquashedBPState->returnUsedRAS) {
-//					DBG_(Tmp, ( << "Used RAS but wrong "));
+//					DBG_(DBG_BOOM_LEVEL, ( << "Used RAS but wrong "));
 					returnUsedRAS++;
 				} else {
 					if (lastSquashedBPState->thePredictedTarget == 0) {
@@ -1328,9 +1334,9 @@ private:
   //Implementation of the FetchDrive drive interface
   void doFetch(index_t anIndex) {
 
-//	  DBG_(Tmp, ( << std::endl<< "Entering uFetch " << theFlexus->cycleCount() << std::endl) );
+//	  DBG_(DBG_BOOM_LEVEL, ( << std::endl<< "Entering uFetch " << theFlexus->cycleCount() << std::endl) );
     if (theIcacheMiss[anIndex]) {
-//    	DBG_(Tmp, ( << "Handling I-cache Miss"));
+//    	DBG_(DBG_BOOM_LEVEL, ( << "Handling I-cache Miss"));
       ++theMissCycles;
       return;
     }
@@ -1348,11 +1354,7 @@ private:
     bool isROBEmpty = false;
     FLEXUS_CHANNEL_ARRAY( ROBEmptyIn, anIndex ) >> isROBEmpty;
 
-    if (isFIQEmpty && isROBEmpty) {
-    	waitingForRetryDone = false;
-    }
-
-//    DBG_(Tmp, ( << "AvailableFIQ " << available_fiq << " FAQ Size " << theFAQ[anIndex].size()));
+//    DBG_(DBG_BOOM_LEVEL, ( << "AvailableFIQ " << available_fiq << " FAQ Size " << theFAQ[anIndex].size()));
     if (available_fiq > 0 && ( theFAQ[anIndex].size() > 1 || theFlexus->quiescing()) ) {
       pFetchBundle bundle(new FetchBundle);
       bundle->coreID = theBundleCoreID;
@@ -1363,19 +1365,19 @@ private:
         remaining_fetch = available_fiq;
       }
 
-      DBG_(Verb, ( << "AvailableFIQ " << available_fiq << " max addr " << remaining_fetch << " limit " << cfg.MaxFetchInstructions) );
-      while ( remaining_fetch > 0 && ( theFAQ[anIndex].size() > 1 || theFlexus->quiescing()) && !waitingForRetryDone) {
+      DBG_(DBG_BOOM_LEVEL, ( << "AvailableFIQ " << available_fiq << " max addr " << remaining_fetch << " limit " << cfg.MaxFetchInstructions) );
+      while ( remaining_fetch > 0 && ( theFAQ[anIndex].size() > 1 || theFlexus->quiescing())) {
         bool from_icache(false);
 
         FetchAddr fetch_addr = theFAQ[anIndex].front();
         VirtualMemoryAddress block_addr( fetch_addr.theAddress & theBlockMask);
 
-        DBG_(Verb, ( << "Fetching " << fetch_addr.theAddress << " block " << block_addr));
+        DBG_(DBG_BOOM_LEVEL, ( << "Fetching " << fetch_addr.theAddress << " block " << block_addr));
         if ( available_lines.count( block_addr ) == 0) {
           //Line needs to be fetched from I-cache
           if (available_lines.size() >= cfg.MaxFetchLines) {
             //Reached limit of I-cache reads per cycle
-//        	  DBG_(Tmp, ( << "Reached I-cache reads per cycle limit "));
+        	  DBG_(DBG_BOOM_LEVEL, ( << "Reached I-cache reads per cycle limit "));
             break;
           }
 
@@ -1402,7 +1404,7 @@ private:
         theLastFetches[anIndex][1] = fetch_addr;
 
         theFAQ[anIndex].pop_front();
-//        DBG_(Tmp, ( << "Fetched " << fetch_addr.theAddress << " " <<std::hex << op_code << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(fetch_addr.theAddress)));
+        DBG_(DBG_BOOM_LEVEL, ( << "Fetched " << fetch_addr.theAddress << " " <<std::hex << op_code << " " << Flexus::Qemu::Processor::getProcessor(flexusIndex())->disassemble(fetch_addr.theAddress)));
         DBG_(Verb, ( << "Fetched " << fetch_addr.theAddress ) );
         bundle->theOpcodes.push_back( FetchedOpcode( fetch_addr.theAddress
                                       , theFAQ[anIndex].empty() ?  VirtualMemoryAddress(0) : theFAQ[anIndex].front().theAddress
@@ -1422,9 +1424,6 @@ private:
         ++theFetches;
 
         eBranchType thePredictedType = fetch_addr.theBPState->thePredictedType;
-        if (thePredictedType == kRetry || thePredictedType == kDone) {
-        	waitingForRetryDone = true;
-        }
         if (op_code == kITLBMiss) {
           //stop fetch on an MMU exception
           break;
@@ -1435,7 +1434,7 @@ private:
         FLEXUS_CHANNEL_ARRAY( FetchBundleOut, anIndex ) << bundle;
       }
     }
-//    DBG_(Tmp, ( << std::endl<< "Leaving uFetch " << std::endl) );
+//    DBG_(DBG_BOOM_LEVEL, ( << std::endl<< "Leaving uFetch " << std::endl) );
   }
 
   uint32_t fetchFromQEMU(index_t anIndex, VirtualMemoryAddress const & anAddress) {
@@ -1461,7 +1460,7 @@ private:
 		  return;
 	  }
 
-//	  DBG_(Tmp, ( << std::endl<< "Entering uPrefetch " << std::endl) );
+//	  DBG_(DBG_BOOM_LEVEL, ( << std::endl<< "Entering uPrefetch " << std::endl) );
 
 	  std::set< VirtualMemoryAddress> available_lines;
 	  while ( thePAQ[anIndex].size() > 0 ) {
@@ -1471,17 +1470,17 @@ private:
 
 		if ( available_lines.find(block_addr) == available_lines.end()) {
 			available_lines.insert( block_addr );
-//			DBG_(Tmp, ( << "FDIP: potential prefetch " <<  block_addr));
+			DBG_(DBG_BOOM_LEVEL, ( << "FDIP: potential prefetch " <<  block_addr));
 
 			std::list<VirtualMemoryAddress>::iterator findIter = std::find(thePBQ[anIndex].begin(), thePBQ[anIndex].end(), block_addr);
 //	    	std::list<VirtualMemoryAddress>::iterator itr = std::find(theOutstandingMissVQ[anIndex].begin(), theOutstandingMissVQ[anIndex].end(), block_addr);
 	    	/*if (itr != theOutstandingMissVQ[anIndex].end()) {
 	    		//Outstanding request, no need to prefetch
-	    		DBG_(Tmp, ( << "FDIP: already outstanding " << std::hex << block_addr));
+	    		DBG_(DBG_BOOM_LEVEL, ( << "FDIP: already outstanding " << std::hex << block_addr));
 	    	} else*/ if ( findIter != thePBQ[anIndex].end()) {
-//				DBG_(Tmp, ( << "FDIP: already in PBQ " << std::hex << block_addr));
+				DBG_(DBG_BOOM_LEVEL, ( << "FDIP: already in PBQ " << std::hex << block_addr));
 			} else {
-//				DBG_(Tmp, ( << "FDIP: push in PBQ " << std::hex << block_addr));
+				DBG_(DBG_BOOM_LEVEL, ( << "FDIP: push in PBQ " << std::hex << block_addr));
 				thePBQ[anIndex].push_back(block_addr);
 			}
 		}
@@ -1500,62 +1499,59 @@ private:
   }
 
   void enqueuePrefetch(index_t anIndex) {
-	  if (thePBQ[anIndex].size()) {
-		VirtualMemoryAddress prefetch_addr = thePBQ[anIndex].front();
-//		DBG_(Tmp, ( << "FDIP: check block " << std::hex << prefetch_addr));
+      if (thePBQ[anIndex].size()) {
+          VirtualMemoryAddress prefetch_addr = thePBQ[anIndex].front();
+          DBG_(DBG_BOOM_LEVEL, ( << "FDIP: check block " << std::hex << prefetch_addr));
 
-		PhysicalMemoryAddress paddr;
-		Flexus::SharedTypes::Translation xlat;
-		xlat.theVaddr = prefetch_addr;
-		xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
-		xlat.theType = Flexus::SharedTypes::Translation::eFetch;
-        xlat.thePaddr = cpu(anIndex)->translateVirtualAddress(xlat.theVaddr);
-		paddr = xlat.thePaddr;
-		if (! paddr ) {
-//			DBG_(Tmp, ( << "NLP translation failed"));
-			//Unable to translate for prefetch. Fixme: should we just move to the next request or keep trying translation
-			return;
-		} else {
-	    	if (theOutstandingMissQ[anIndex].find(paddr) != theOutstandingMissQ[anIndex].end()) {
-	    		//Fetch already sent
-//	    		DBG_(Tmp, ( << "FDIP: Outstanding req " << std::hex << prefetch_addr));
-	    		thePBQ[anIndex].pop_front();
-//	    		assert(0);
-	    	} else if ( theIcachePrefetch[anIndex] && paddr == *theIcachePrefetch[anIndex] ) {
-				assert(0);
-				thePBQ[anIndex].pop_front();
-//				DBG_(Tmp, ( << "FDIP: NLP request already sent " << std::hex << prefetch_addr));
-				//Prefetch already sent
-			} else if ( theIcacheMiss[anIndex] && paddr == *theIcacheMiss[anIndex] ) {
-				assert(0);
-				thePBQ[anIndex].pop_front();
-//				DBG_(Tmp, ( << "FDIP: demand fetch already sent " << std::hex << prefetch_addr));
-				//Fetch already sent
-			} else if (lookup( paddr )) {
-				thePBQ[anIndex].pop_front();
-//				DBG_(Tmp, ( << "FDIP: already in cache " << std::hex << prefetch_addr << " paddr " << paddr));
-			  //No need to prefetch, already in cache
-			} else {
-				if (theFDIPPrefetchQueue.size() < theMaxOutstandingFDIPMisses) {
-				  theOutstandingMissQ[anIndex].insert(paddr);
-				  addOustandingMiss(anIndex, prefetch_addr);
-				  issuePreFetch( paddr , prefetch_addr);
-                  theFDIPPrefetches++;
+          PhysicalMemoryAddress paddr;
+          Flexus::SharedTypes::Translation xlat;
+          xlat.theVaddr = prefetch_addr;
+          xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
+          xlat.theType = Flexus::SharedTypes::Translation::eFetch;
+          xlat.thePaddr = cpu(anIndex)->translateVirtualAddress(xlat.theVaddr);
+          paddr = xlat.thePaddr;
+          if (! paddr ) {
+              DBG_(DBG_BOOM_LEVEL, ( << "NLP translation failed"));
+              //Unable to translate for prefetch. Fixme: should we just move to the next request or keep trying translation
+              return;
+          } else {
+              if (theOutstandingMissQ[anIndex].find(paddr) != theOutstandingMissQ[anIndex].end()) {
+                  //Fetch already sent
+                  DBG_(DBG_BOOM_LEVEL, ( << "FDIP: Outstanding req " << std::hex << prefetch_addr));
+                  thePBQ[anIndex].pop_front();
+                  //	    		assert(0);
+              } else if ( theIcachePrefetch[anIndex] && paddr == *theIcachePrefetch[anIndex] ) {
+                  thePBQ[anIndex].pop_front();
+                  DBG_(DBG_BOOM_LEVEL, ( << "FDIP: NLP request already sent " << std::hex << prefetch_addr));
+                  //Prefetch already sent
+              } else if ( theIcacheMiss[anIndex] && paddr == *theIcacheMiss[anIndex] ) {
+                  thePBQ[anIndex].pop_front();
+                  DBG_(DBG_BOOM_LEVEL, ( << "FDIP: demand fetch already sent " << std::hex << prefetch_addr));
+                  //Fetch already sent
+              } else if (lookup( paddr )) {
+                  thePBQ[anIndex].pop_front();
+                  DBG_(DBG_BOOM_LEVEL, ( << "FDIP: already in cache " << std::hex << prefetch_addr << " paddr " << paddr));
+                  //No need to prefetch, already in cache
+              } else {
+                  if (theOutstandingMissQ[anIndex].size() < theMaxOutstandingFDIPMisses) {
+                      theOutstandingMissQ[anIndex].insert(paddr);
+                      issuePreFetch( paddr , prefetch_addr);
+                      theFDIPPrefetches++;
 
-//				  DBG_(Tmp, ( << "FDIP: issue prefech " << std::hex << paddr << " vaddr " << prefetch_addr << " outreq " << theOutstandingMissQ[anIndex].size()));
-				  thePBQ[anIndex].pop_front();
-				} else {
-//					DBG_(Tmp, ( << "FDIP: max outstanding req " << prefetch_addr ));
-				}
-			}
-		}
-	  }
+                      DBG_(DBG_BOOM_LEVEL, ( << "FDIP: issue prefech " << std::hex << paddr << " vaddr " << prefetch_addr << " outreq " << theOutstandingMissQ[anIndex].size()));
+                      thePBQ[anIndex].pop_front();
+                  } else {
+                      DBG_(DBG_BOOM_LEVEL, ( << "FDIP: max outstanding req " << prefetch_addr ));
+                  }
+              }
+          }
+      }
   }
 
   void enqueueRecMissPrefetch(index_t anIndex) {
 	  if (theRecordedMissQ[anIndex].size()) {
 		VirtualMemoryAddress prefetch_addr = theRecordedMissQ[anIndex].front();
-//		DBG_(Tmp, ( << "Rec miss: check block " << std::hex << prefetch_addr));
+//		DBG_(DBG_BOOM_LEVEL, ( << "Rec miss: check block " << std::hex << prefetch_addr));
 
 		PhysicalMemoryAddress paddr;
 		Flexus::SharedTypes::Translation xlat;
@@ -1565,38 +1561,35 @@ private:
         xlat.thePaddr = cpu(anIndex)->translateVirtualAddress(xlat.theVaddr);
 		paddr = xlat.thePaddr;
 		if (! paddr ) {
-//			DBG_(Tmp, ( << "NLP translation failed"));
+//			DBG_(DBG_BOOM_LEVEL, ( << "NLP translation failed"));
 			//Unable to translate for prefetch. Fixme: should we just move to the next request or keep trying translation
 			return;
 		} else {
 	    	if (theOutstandingMissQ[anIndex].find(paddr) != theOutstandingMissQ[anIndex].end()) {
 	    		//Fetch already sent
-//	    		DBG_(Tmp, ( << "recmiss: Outstanding req " << std::hex << prefetch_addr));
+//	    		DBG_(DBG_BOOM_LEVEL, ( << "recmiss: Outstanding req " << std::hex << prefetch_addr));
 	    		theRecordedMissQ[anIndex].pop_front();
 //	    		assert(0);
 	    	} else if ( theIcachePrefetch[anIndex] && paddr == *theIcachePrefetch[anIndex] ) {
-				assert(0);
 				theRecordedMissQ[anIndex].pop_front();
-//				DBG_(Tmp, ( << "FDIP: NLP request already sent " << std::hex << prefetch_addr));
+//				DBG_(DBG_BOOM_LEVEL, ( << "FDIP: NLP request already sent " << std::hex << prefetch_addr));
 				//Prefetch already sent
 			} else if ( theIcacheMiss[anIndex] && paddr == *theIcacheMiss[anIndex] ) {
-				assert(0);
 				theRecordedMissQ[anIndex].pop_front();
-//				DBG_(Tmp, ( << "FDIP: demand fetch already sent " << std::hex << prefetch_addr));
+//				DBG_(DBG_BOOM_LEVEL, ( << "FDIP: demand fetch already sent " << std::hex << prefetch_addr));
 				//Fetch already sent
 			} else if (lookup( paddr )) {
 				theRecordedMissQ[anIndex].pop_front();
-//				DBG_(Tmp, ( << "recmiss: already in cache " << std::hex << prefetch_addr << " paddr " << paddr));
+//				DBG_(DBG_BOOM_LEVEL, ( << "recmiss: already in cache " << std::hex << prefetch_addr << " paddr " << paddr));
 			  //No need to prefetch, already in cache
 			} else {
 				if (theRecMissPrefetchQueue.size() < theMaxOutstandingRecMisses) {
 				  theOutstandingMissQ[anIndex].insert(paddr);
-				  addOustandingMiss(anIndex, prefetch_addr);
 				  issueRecMissPreFetch( paddr , prefetch_addr);
-//				  DBG_(Tmp, ( << "recmiss: issue prefech " << std::hex << paddr << " vaddr " << prefetch_addr << " outreq " << theOutstandingMissQ[anIndex].size()));
+//				  DBG_(DBG_BOOM_LEVEL, ( << "recmiss: issue prefech " << std::hex << paddr << " vaddr " << prefetch_addr << " outreq " << theOutstandingMissQ[anIndex].size()));
 				  theRecordedMissQ[anIndex].pop_front();
 				} else {
-//					DBG_(Tmp, ( << "recmiss: max outstanding req " << prefetch_addr ));
+//					DBG_(DBG_BOOM_LEVEL, ( << "recmiss: max outstanding req " << prefetch_addr ));
 				}
 			}
 		}

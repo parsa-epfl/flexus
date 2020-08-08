@@ -76,6 +76,7 @@ namespace Stat = Flexus::Stat;
 
 #include <components/CommonQEMU/BranchPredictor.hpp>
 #include <components/CommonQEMU/Tage.h>
+#include <components/CommonQEMU/DebugLevelsHeader.hpp>
 
 
 #define DBG_DefineCategories BPred
@@ -529,7 +530,6 @@ namespace Flexus {
       Stat::StatCounter theBranches_Unconditional;
       Stat::StatCounter theBranches_Conditional;
       Stat::StatCounter theBranches_Call;
-      Stat::StatCounter theBranches_JmplCall;
       Stat::StatCounter theBranches_Return;
       Stat::StatCounter theBranches_Indirect;
       Stat::StatCounter theBranches_Other;
@@ -549,7 +549,6 @@ namespace Flexus {
       Stat::StatCounter theMispredict_Conditional;
       Stat::StatCounter theMispredict_Unconditional;
       Stat::StatCounter theMispredict_Call;
-      Stat::StatCounter theMispredict_JmplCall;
       Stat::StatCounter theMispredict_Return;
       Stat::StatCounter theMispredict_Indirect;
       Stat::StatCounter theMispredict_UncondDir;
@@ -575,17 +574,16 @@ namespace Flexus {
   	  	  , enableRAS (RAS)
   	  	  , enableTCE (TCE)
   	  	  , redirectTrapRet (TrapRet)
-          , theBTB( 512 , 4 )
+          , theBTB( 1, 4096 )
           , theBimodal( 16384 )
           , theMeta( 16384 )
           , theGShare( 14 )
-      	  , theRASHelper(512, 4)
-      	  , theBB_BTB (512, 4)
+      	  , theRASHelper(1, 4096)
+      	  , theBB_BTB (1, 4096)
           , theBranches                      ( aName + "-branches" )
           , theBranches_Unconditional        ( aName + "-branches:unconditional" )
           , theBranches_Conditional          ( aName + "-branches:conditional" )
           , theBranches_Call                 ( aName + "-branches:call" )
-      	  , theBranches_JmplCall             ( aName + "-branches:Jmplcall" )
           , theBranches_Return               ( aName + "-branches:return" )
           , theBranches_Indirect             ( aName + "-branches:indirect" )
           , theBranches_Other                ( aName + "-branches:other" )
@@ -602,7 +600,6 @@ namespace Flexus {
           , theMispredict_Conditional        ( aName + "-mispredict:conditional" )
           , theMispredict_Unconditional      ( aName + "-mispredict:unconditional" )
           , theMispredict_Call               ( aName + "-mispredict:call" )
-      	  , theMispredict_JmplCall           ( aName + "-mispredict:Jmpcall" )
           , theMispredict_Return             ( aName + "-mispredict:return" )
           , theMispredict_Indirect           ( aName + "-mispredict:indirect" )
           , theMispredict_UncondDir          ( aName + "-mispredict:unconddir" )
@@ -645,7 +642,6 @@ namespace Flexus {
 //    		  DBG_( Tmp, ( << "RAS update for " << theRASops.front()->pc << " type " << theRASops.front()->thePredictedType));
     		  switch (theRASops.front()->thePredictedType) {
     		  case kCall:
-    		  case kJmplCall:
     			  if (theRAS.size() && theRASops.front()->callUpdatedRAS) {
 //    				  DBG_( Tmp, ( << "poping " <<  theRAS.back()));
     				  theRAS.pop_back();
@@ -706,20 +702,16 @@ namespace Flexus {
       }
 
       bool isBranchInsn( VirtualMemoryAddress anAddress) {
-    	if (theBTB.contains(anAddress)) {
-    		if (redirectTrapRet || (theBTB.type( anAddress) != kRetry && theBTB.type( anAddress) != kDone)) {
-    			return true;
-    		}
+    	if (theBTB.contains(anAddress) && ((theBTB.type(anAddress) != kNonBranch) || redirectTrapRet)) {
+    		return true;
     	}
     	return false;
       }
 
 
       bool isBranch( FetchAddr & aFetch) {
-    	if (theBTB.contains(aFetch.theAddress)) {
-    		if (redirectTrapRet || (theBTB.type( aFetch.theAddress) != kRetry && theBTB.type( aFetch.theAddress) != kDone)) {
-    			return true;
-    		}
+    	if (theBTB.contains(aFetch.theAddress) && ((theBTB.type(aFetch.theAddress) != kNonBranch) || redirectTrapRet)) {
+    		return true;
     	}
 		aFetch.theBPState = boost::intrusive_ptr<BPredState>(new BPredState() );
 		aFetch.theBPState->thePredictedType = kNonBranch;
@@ -921,7 +913,6 @@ namespace Flexus {
 #endif
             break;
           case kUnconditional:
-          case kJmpl:
               ++thePredictions;
               ++thePredictions_Unconditional;
               if (theBTB.target(aFetch.theAddress)) {
@@ -975,7 +966,6 @@ namespace Flexus {
 #endif
             break;
           case kCall:
-          case kJmplCall:
 //        	DBG_( Tmp, ( << "predicting call " ));
         	aFetch.theBPState->callUpdatedRAS = true;
             ++thePredictions;
@@ -1004,47 +994,6 @@ namespace Flexus {
 #endif
             //Need to push address onto retstack
             break;
-          case kRetry:
-              {
-//            	  assert(0);
-				  VirtualMemoryAddress target = VirtualMemoryAddress(getTPC(theTL));
-				  aFetch.theBPState->theNextPredictedTarget = VirtualMemoryAddress(getTNPC(theTL));
-				  theTL--;
-				  aFetch.theBPState->theTL = theTL;
-				  if (target != 0) {
-					  aFetch.theBPState->thePredictedTarget = target;
-				  } else if (theBTB.target(aFetch.theAddress)) {
-					aFetch.theBPState->thePredictedTarget = *theBTB.target(aFetch.theAddress);
-				  } else {
-					aFetch.theBPState->thePredictedTarget = VirtualMemoryAddress(0);
-				  }
-#ifdef TAGE
-				  theTage.get_prediction((uint64_t)aFetch.theAddress, *(aFetch.theBPState));
-#else
-				  aFetch.theBPState->theGShareShiftReg = theGShare.shiftReg();
-#endif
-              }
-        	  break;
-          case kDone:
-              {
-//            	  assert(0);
-				  VirtualMemoryAddress target = VirtualMemoryAddress(getTNPC(theTL));
-				  theTL--;
-				  aFetch.theBPState->theTL = theTL;
-				  if (target != 0) {
-					  aFetch.theBPState->thePredictedTarget = target;
-				  } else if (theBTB.target(aFetch.theAddress)) {
-					aFetch.theBPState->thePredictedTarget = *theBTB.target(aFetch.theAddress);
-				  } else {
-					aFetch.theBPState->thePredictedTarget = VirtualMemoryAddress(0);
-				  }
-#ifdef TAGE
-				  theTage.get_prediction((uint64_t)aFetch.theAddress, *(aFetch.theBPState));
-#else
-				  aFetch.theBPState->theGShareShiftReg = theGShare.shiftReg();
-#endif
-              }
-        	  break;
           default:
         	assert(0);
             aFetch.theBPState->thePredictedTarget = VirtualMemoryAddress(0);
@@ -1142,7 +1091,6 @@ namespace Flexus {
 			}
 			break;
 		  case kUnconditional:
-		  //case kJmpl:
 			  aFetch.theBPState->thePredictedTarget = aBTBEntry.theTarget;
 	#ifdef TAGE
 			  theTage.get_prediction(aFetch.theAddress, *(aFetch.theBPState));
@@ -1168,7 +1116,6 @@ namespace Flexus {
 	#endif
 			break;
 		  case kCall:
-		  //case kJmplCall:
 			aFetch.theBPState->callUpdatedRAS = true;
 			aFetch.theBPState->thePredictedTarget = aBTBEntry.theTarget;
 
@@ -1278,17 +1225,8 @@ namespace Flexus {
 				  case kCall:
 					++theMispredict_Call;
 					break;
-				  case kJmplCall:
-					++theMispredict_JmplCall;
-					break;
 				  case kReturn:
 					++theMispredict_Return;
-					break;
-				  case kJmpl:
-					++theMispredict_Indirect;
-					break;
-		          case kRetry:
-		          case kDone:
 					break;
 				  default:
 					  assert(0);
@@ -1298,29 +1236,21 @@ namespace Flexus {
           }
         }
 
+        theBranches++;
         switch (aFeedback.theActualType) {
           case kConditional:
-            theBranches++;
             theBranches_Conditional++;
             break;
           case kUnconditional:
-            theBranches++;
             theBranches_Unconditional++;
             break;
           case kCall:
-            theBranches++;
             theBranches_Call++;
             break;
-          case kJmplCall:
-            theBranches++;
-            theBranches_JmplCall++;
-            break;
           case kReturn:
-            theBranches++;
             theBranches_Return++;
             break;
-          case kJmpl:
-            theBranches++;
+          case kIndirect:
             theBranches_Indirect++;
             break;
           default:
@@ -1609,9 +1539,7 @@ namespace Flexus {
       Stat::StatCounter theBranches_Conditional;
       Stat::StatCounter theBranches_ConditionalTaken;
       Stat::StatCounter theBranches_Call;
-      Stat::StatCounter theBranches_JmplCall;
       Stat::StatCounter theBranches_Return;
-      Stat::StatCounter theBranches_Jmpl;
       Stat::StatCounter theBranches_Others;
 
       Stat::StatCounter thePredictions;
@@ -1649,10 +1577,8 @@ namespace Flexus {
           , theBranches_Conditional          ( aName + "-branches:conditional" )
       	  , theBranches_ConditionalTaken     ( aName + "-branches:conditionalTaken" )
           , theBranches_Call                 ( aName + "-branches:call" )
-      	  , theBranches_JmplCall             ( aName + "-branches:Jmplcall" )
           , theBranches_Return               ( aName + "-branches:return" )
-      	  , theBranches_Jmpl                 ( aName + "-branches:Jmpl" )
-      	  , theBranches_Others               ( aName + "-branches:JmplOthers" )
+      	  , theBranches_Others               ( aName + "-branches:Others" )
           , thePredictions                   ( aName + "-predictions" )
           , thePredictions_Bimodal           ( aName + "-predictions:bimodal" )
           , thePredictions_GShare            ( aName + "-predictions:gshare" )
@@ -1822,11 +1748,7 @@ namespace Flexus {
 #endif
               break;
             case kUnconditional:
-            case kRetry:
-            case kDone:
-            case kJmpl:
             case kCall:
-            case kJmplCall:
             case kReturn:
 			  if (theBTB.target(anAddress)) {
 				  aBPState.thePredictedTarget = *theBTB.target(anAddress);
@@ -1895,10 +1817,7 @@ namespace Flexus {
 #endif
             break;
           case kUnconditional:
-          case kJmpl:
           case kReturn:
-          case kRetry:
-          case kDone:
             ++thePredictions;
             ++thePredictions_Unconditional;
             if (theBTB.target(anAddress)) {
@@ -1914,7 +1833,6 @@ namespace Flexus {
 #endif
             break;
           case kCall:
-          case kJmplCall:
         	aBPState.callUpdatedRAS = true;
             ++thePredictions;
             ++thePredictions_Unconditional;
@@ -2044,24 +1962,14 @@ namespace Flexus {
             branhces++;
             theBranches_Call++;
             break;
-          case kJmplCall:
-            theBranches++;
-            branhces++;
-            theBranches_JmplCall++;
-            break;
           case kReturn:
             theBranches++;
             branhces++;
             theBranches_Return++;
             break;
-          case kJmpl:
-        	branhces++;
-            theBranches++;
-            theBranches_Jmpl++;
-            break;
+         
           default:
         	  theBranches_Others++;
-        	  assert(anActualType == kRetry || anActualType == kDone);
             break;
         }
 //        if (branhces > 13035) {
@@ -2094,7 +2002,7 @@ namespace Flexus {
 		theBB_BTB.update(anAddress, anActualType, anActualTarget, aBBsize, anActualDirection, anActualDirection, aBPState.detectedSpecialCall);
 
 		  if (aBPState.detectedSpecialCall) {
-			  assert(anActualType == kCall || anActualType == kJmplCall);
+			  assert(anActualType == kCall || anActualType == kIndirect);
 //			  DBG_(Tmp, ( << "Adding special Call " << &std::hex << anAddress));
 //			  theRASHelper.update(anAddress, anActualType, anActualTarget, false /*used only in trace*/, aBBsize, anActualDirection, anActualDirection);
 		  }
@@ -2113,7 +2021,7 @@ namespace Flexus {
 		theBTB.update(anAddress, anActualType, anActualTarget, aBBsize, anActualDirection, anActualDirection, aBPState.detectedSpecialCall);
 
 		  if (aBPState.detectedSpecialCall) {
-			  assert(anActualType == kCall || anActualType == kJmplCall);
+			  assert(anActualType == kCall || anActualType == kIndirect);
 //			  DBG_(Tmp, ( << "Adding special Call " << &std::hex << anAddress));
 			  theRASHelper.update(anAddress, anActualType, anActualTarget, aBBsize, anActualDirection, anActualDirection, false /*don't care*/);
 		  }
