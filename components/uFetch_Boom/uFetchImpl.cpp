@@ -216,7 +216,6 @@ class FLEXUS_COMPONENT(uFetch) {
   Stat::StatCounter theTransientHits;
   Stat::StatCounter theTransientHits_FDIPLines;
   Stat::StatCounter theMissCycles;
-  Stat::StatCounter theOpsSupplied;
   Stat::StatCounter theAllocations;
   Stat::StatMax  theMaxOutstandingEvicts;
 
@@ -267,7 +266,6 @@ class FLEXUS_COMPONENT(uFetch) {
   eSquashCause lastSquashCause;
   boost::intrusive_ptr<BPredState> lastSquashedBPState; //Rakesh
   bool demandFetchIssued;
-
   //The I-cache
   SimCache theI;
 
@@ -309,6 +307,10 @@ class FLEXUS_COMPONENT(uFetch) {
   std::list< MemoryTransport > theRecordedMissPrefetchQueue;
 
   std::vector<CPUState> theCPUState;
+
+  // MARK: Statistics on slots available and used
+  Stat::StatCounter theAvailableFetchSlots;
+  Stat::StatCounter theUsedFetchSlots;
 
 private:
   //I-Cache manipulation functions
@@ -385,6 +387,8 @@ public:
     , FDIPPrefetchesSquashed(statName() + "-FDIPPrefetchesSquashed")
     , theLastVTagSet(0)
     , theLastPhysical(0)
+    , theAvailableFetchSlots(statName() + "-FetchSlotsPossible")
+    , theUsedFetchSlots(statName() + "-FetchSlotsUsed")
   {
 	    char stat_name[50];
 		for (size_t i = 0; i < MAX_RESET_DISTANCE; i++) {
@@ -1364,6 +1368,7 @@ private:
       if (available_fiq < remaining_fetch) {
         remaining_fetch = available_fiq;
       }
+      theAvailableFetchSlots += remaining_fetch;
 
       DBG_(DBG_BOOM_LEVEL, ( << "AvailableFIQ " << available_fiq << " max addr " << remaining_fetch << " limit " << cfg.MaxFetchInstructions) );
       while ( remaining_fetch > 0 && ( theFAQ[anIndex].size() > 1 || theFlexus->quiescing())) {
@@ -1422,6 +1427,7 @@ private:
           bundle->theFillLevels.push_back(eL1I);
         }
         ++theFetches;
+        theUsedFetchSlots++;
 
         eBranchType thePredictedType = fetch_addr.theBPState->thePredictedType;
         if (op_code == kITLBMiss) {
