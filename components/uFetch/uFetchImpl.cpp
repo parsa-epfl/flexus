@@ -242,6 +242,10 @@ class FLEXUS_COMPONENT(uFetch) {
   Stat::StatCounter theAllocations;
   Stat::StatMax theMaxOutstandingEvicts;
 
+  // MARK: Statistics on slots available and used
+  Stat::StatCounter theAvailableFetchSlots;
+  Stat::StatCounter theUsedFetchSlots;
+
   // The I-cache
   SimCache theI;
 
@@ -325,7 +329,10 @@ public:
         theFailedTranslations(statName() + "-FailedTranslations"),
         theMisses(statName() + "-Misses"), theHits(statName() + "-Hits"),
         theMissCycles(statName() + "-MissCycles"), theAllocations(statName() + "-Allocations"),
-        theMaxOutstandingEvicts(statName() + "-MaxEvicts"), theLastVTagSet(0), theLastPhysical(0) {
+        theMaxOutstandingEvicts(statName() + "-MaxEvicts"),
+        theAvailableFetchSlots(statName() + "-FetchSlotsPossible"),
+        theUsedFetchSlots(statName() + "-FetchSlotsUsed"),
+        theLastVTagSet(0), theLastPhysical(0) {
   }
 
   void initialize() {
@@ -876,6 +883,7 @@ private:
       if (available_fiq < remaining_fetch) {
         remaining_fetch = available_fiq;
       }
+      theAvailableFetchSlots += remaining_fetch;
       FETCH_DBG("starting to process the fetches..." << remaining_fetch);
 
       while (remaining_fetch > 0 && (theFAQ[anIndex].size() > 0 || theFlexus->quiescing())) {
@@ -919,6 +927,8 @@ private:
         theBundle->theFillLevels.push_back(eL1I);
         ++theFetches;
         --remaining_fetch;
+
+        theUsedFetchSlots++;
       }
     }
     processBundle();
