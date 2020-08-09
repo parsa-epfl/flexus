@@ -375,7 +375,7 @@ arminst LDXR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
   inst->addCommitEffect(accessMem(inst));
   inst->addSquashEffect(eraseLSQ(inst));
   inst->addRetirementConstraint(loadMemoryConstraint(inst));
-  inst->addCommitEffect(markExclusiveMonitor(inst, kAddress, sz));
+  inst->addRetirementEffect(markExclusiveMonitor(inst, kAddress, sz));
 
   if (!is_pair) {
     addDestination(inst, rt, load, size == 64);

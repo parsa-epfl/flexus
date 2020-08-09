@@ -92,6 +92,7 @@ struct microArch {
   virtual void markExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize,
                                   uint64_t marker) = 0;
   virtual int isExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize) = 0;
+  virtual bool isROBHead(boost::intrusive_ptr<Instruction> anInstruction) = 0;
   virtual void clearExclusiveLocal() = 0;
   virtual ~microArch() {
   }

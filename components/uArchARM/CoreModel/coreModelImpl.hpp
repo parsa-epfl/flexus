@@ -555,6 +555,7 @@ private:
   int isExclusiveLocal(PhysicalMemoryAddress anAddress, eSize aSize);
   int isExclusiveGlobal(PhysicalMemoryAddress anAddress, eSize aSize);
   int isExclusiveVA(VirtualMemoryAddress anAddress, eSize aSize);
+  bool isROBHead(boost::intrusive_ptr<Instruction> anInstruction);
 
   // Instruction completion
   //==========================================================================
