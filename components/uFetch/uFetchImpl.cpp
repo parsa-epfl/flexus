@@ -282,10 +282,6 @@ class FLEXUS_COMPONENT(uFetch) {
   // Magic for checking TLB walk.
   std::vector<TranslationPtr> TranslationsFromTLB;
 
-  // Stat on insts dispatched each cycle
-  Stat::StatLog2Histogram theDispatchedInsts;
-
-
 private:
   // I-Cache manipulation functions
   //=================================================================
@@ -335,9 +331,7 @@ public:
         theMissCycles(statName() + "-MissCycles"), theAllocations(statName() + "-Allocations"),
         theMaxOutstandingEvicts(statName() + "-MaxEvicts"),
         theAvailableFetchSlots(statName() + "-FetchSlotsPossible"),
-        theUsedFetchSlots(statName() + "-FetchSlotsUsed"),
-        theLastVTagSet(0), theLastPhysical(0),
-        theDispatchedInsts(statName() + "-DispatchedInsts") {
+        theUsedFetchSlots(statName() + "-FetchSlotsUsed"), theLastVTagSet(0), theLastPhysical(0) {
   }
 
   void initialize() {
@@ -875,7 +869,6 @@ private:
       ++theMissCycles;
       DBG_(VVerb, (<< "FETCH UNIT: in theIcacheMiss" << theMissCycles.theRefCount
                    << "cycles missed so far"));
-      theDispatchedInsts << cycleDispatchedInsts;
       return;
     }
 
@@ -888,6 +881,7 @@ private:
         (theFAQ[anIndex].size() > 0 || theFlexus->quiescing())) {
       std::set<VirtualMemoryAddress> available_lines;
       int32_t remaining_fetch = cfg.MaxFetchInstructions;
+
       if (available_fiq < remaining_fetch) {
         remaining_fetch = available_fiq;
       }
@@ -942,7 +936,6 @@ private:
     }
     processBundle();
     FETCH_DBG("--------------FINISH FETCHING------------------------");
-    theDispatchedInsts << cycleDispatchedInsts;
   }
 
   void processBundle() {

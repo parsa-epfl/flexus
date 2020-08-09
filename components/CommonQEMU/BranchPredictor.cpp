@@ -861,8 +861,8 @@ struct FastCombiningImpl : public FastBranchPredictor {
         thePredictions_Bimodal(aName + "-predictions:bimodal"),
         thePredictions_GShare(aName + "-predictions:gshare"),
         thePredictions_Unconditional(aName + "-predictions:unconditional"),
-        thePredictions_Returns(aName + "-predictions:returns"),
-        theCorrect(aName + "-correct"), theCorrect_Bimodal(aName + "-correct:bimodal"),
+        thePredictions_Returns(aName + "-predictions:returns"), theCorrect(aName + "-correct"),
+        theCorrect_Bimodal(aName + "-correct:bimodal"),
         theCorrect_GShare(aName + "-correct:gshare"),
         theCorrect_Unconditional(aName + "-correct:unconditional"),
         theMispredict(aName + "-mispredict"), theMispredict_NewBranch(aName + "-mispredict:new"),
@@ -957,8 +957,8 @@ struct FastCombiningImpl : public FastBranchPredictor {
       // Need to push address onto retstack
       break;
     case kReturn:
-    ++thePredictions;
-    ++thePredictions_Returns;
+      ++thePredictions;
+      ++thePredictions_Returns;
       // Need to pop retstack
       break;
     default:
@@ -976,20 +976,24 @@ struct FastCombiningImpl : public FastBranchPredictor {
   void stats(uint32_t anAddress, eBranchType anActualType, eDirection anActualDirection,
              uint32_t anActualTarget, BPredState &aBPState) {
     if (anActualType != aBPState.thePredictedType) {
-      if (anActualType == kNonBranch) ++theFalsePosBranches;
+      if (anActualType == kNonBranch)
+        ++theFalsePosBranches;
       else if (aBPState.thePredictedType == kNonBranch) {
         ++theFalseNegBranches;
-        if (anActualType == kReturn) ++theFalseNegReturns;
-      } 
+        if (anActualType == kReturn)
+          ++theFalseNegReturns;
+      }
 
       ++theMispredict;
       ++theMispredict_NewBranch;
       DBG_(Verb, (<< "BPRED-RESOLVE Mispredict New-Branch " << anActualType << " @" << anAddress
                   << " " << anActualDirection << " to " << anActualTarget));
     } else {
-      
-      if (anActualType == kNonBranch) ++theTrueNonBranches;
-      else if (anActualType != kNonBranch) ++theTrueBranches;
+
+      if (anActualType == kNonBranch)
+        ++theTrueNonBranches;
+      else if (anActualType != kNonBranch)
+        ++theTrueBranches;
 
       if (anActualType == kConditional) {
         if ((aBPState.thePrediction >= kNotTaken) && (anActualDirection >= kNotTaken)) {
