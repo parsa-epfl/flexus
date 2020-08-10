@@ -378,11 +378,11 @@ arminst DP_3_SRC(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequence
   readRegister(inst, 2, rm, rs_deps[1], is_long ? false : sf);
 
   if (!is_high) {
-    predicated_action act =
-        addExecute(inst, operation(is_sub ? kSUB_ : kADD_), {kOperand3, kResult}, rs2_deps);
+    predicated_action act = addExecute(inst, operation(is_sub ? kSUB_ : kADD_),
+                                       {kOperand3, kResult}, rs2_deps, kResult1);
     readRegister(inst, 3, ra, rs2_deps[0], sf);
     connect(rs2_deps[1], mul);
-    addDestination(inst, rd, act, sf);
+    addDestination1(inst, rd, act, sf);
   } else {
     addDestination(inst, rd, mul, sf);
   }
@@ -450,17 +450,16 @@ arminst ADDSUB_EXTENDED(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aS
   bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
   eExtendType extend_type = DecodeRegExtend(option);
   uint32_t shift_amount = extract32(aFetchedOpcode.theOpcode, 10, 3);
+  bool sf_rm = ((option & 0x3) == 0x3) ? true : false;
+  if (shift_amount > 4) {
+    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+  }
 
   SemanticInstruction *inst = new SemanticInstruction(
       aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo);
 
   inst->setClass(clsComputation, codeALU);
   std::vector<std::list<InternalDependance>> rs_deps(1), rs2_deps(2);
-
-  if (shift_amount > 4) {
-    delete inst;
-    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-  }
 
   predicated_action ex = addExecute(inst, extend(extend_type), {kOperand3}, rs_deps, kOperand2);
   rs_deps.resize(2);
@@ -480,7 +479,7 @@ arminst ADDSUB_EXTENDED(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aS
     addReadXRegister(inst, 1, rn, rs2_deps[0], sf);
   else
     readRegister(inst, 1, rn, rs2_deps[0], sf);
-  readRegister(inst, 3, rm, rs_deps[0], sf);
+  readRegister(inst, 3, rm, rs_deps[0], sf ? sf_rm : sf);
 
   if (!setflags || rd != 31)
     addDestination(inst, rd, res, sf, setflags);
@@ -494,10 +493,6 @@ arminst ADDSUB_EXTENDED(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aS
 arminst LOGICAL(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
 
   DECODER_TRACE;
-  SemanticInstruction *inst = new SemanticInstruction(
-      aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo);
-
-  inst->setClass(clsComputation, codeALU);
   bool sf = extract32(aFetchedOpcode.theOpcode, 31, 1);
   uint32_t opc = extract32(aFetchedOpcode.theOpcode, 29, 2);
   uint32_t shift_type = extract32(aFetchedOpcode.theOpcode, 22, 2);
@@ -509,10 +504,12 @@ arminst LOGICAL(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceN
   uint32_t n = extract32(aFetchedOpcode.theOpcode, 21, 1);
 
   if (!sf && (shift_amount & (1 << 5))) {
-    delete inst;
     return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
   }
 
+  SemanticInstruction *inst = new SemanticInstruction(
+      aFetchedOpcode.thePC, aFetchedOpcode.theOpcode, aFetchedOpcode.theBPState, aCPU, aSequenceNo);
+  inst->setClass(clsComputation, codeALU);
   std::vector<std::list<InternalDependance>> rs_deps(1), rs2_deps(2);
   inst->setOperand(kOperand4, (uint64_t)shift_amount);
   inst->setOperand(kOperand5, sf ? (uint64_t)64 : (uint64_t)32);
