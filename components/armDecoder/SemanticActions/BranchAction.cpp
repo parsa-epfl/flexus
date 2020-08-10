@@ -154,15 +154,15 @@ struct BranchRegAction : public BaseSemanticAction {
 
   VirtualMemoryAddress theTarget;
   eOperandCode theRegOperand;
+  eBranchType theType;
 
-  BranchRegAction(SemanticInstruction *anInstruction, eOperandCode aRegOperand)
-      : BaseSemanticAction(anInstruction, 1), theRegOperand(aRegOperand) {
+  BranchRegAction(SemanticInstruction *anInstruction, eOperandCode aRegOperand, eBranchType aType)
+      : BaseSemanticAction(anInstruction, 1), theRegOperand(aRegOperand), theType(aType) {
     theInstruction->setExecuted(false);
   }
 
   void doEvaluate() {
     if (ready()) {
-
       if (theInstruction->hasPredecessorExecuted()) {
 
         DBG_(Iface, (<< *this << " Branching to an address held in register " << theRegOperand));
@@ -173,7 +173,7 @@ struct BranchRegAction : public BaseSemanticAction {
 
         boost::intrusive_ptr<BranchFeedback> feedback(new BranchFeedback());
         feedback->thePC = theInstruction->pc();
-        feedback->theActualType = kUnconditional;
+        feedback->theActualType = theType;
         feedback->theActualTarget = theTarget;
         feedback->theBPState = theInstruction->bpState();
         theInstruction->setBranchFeedback(feedback);
@@ -198,8 +198,9 @@ struct BranchRegAction : public BaseSemanticAction {
   }
 };
 
-dependant_action branchRegAction(SemanticInstruction *anInstruction, eOperandCode aRegOperand) {
-  BranchRegAction *act = new BranchRegAction(anInstruction, aRegOperand);
+dependant_action branchRegAction(SemanticInstruction *anInstruction, eOperandCode aRegOperand,
+                                 eBranchType type) {
+  BranchRegAction *act = new BranchRegAction(anInstruction, aRegOperand, type);
   anInstruction->addNewComponent(act);
   return dependant_action(act, act->dependance());
 }

@@ -99,6 +99,7 @@ arminst UNCONDBR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequence
   inst->addPostvalidation(validatePC(inst));
 
   if (op) {
+    inst->setClass(clsBranch, codeCALL);
     std::vector<std::list<InternalDependance>> rs_deps(1);
     predicated_action exec = addExecute(inst, operation(kMOV_), rs_deps);
 
@@ -245,6 +246,7 @@ arminst BR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   SemanticInstruction *inst(new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                     aFetchedOpcode.theBPState, aCPU, aSequenceNo));
 
+  inst->setClass(clsBranch, codeBranchUnconditional);
   uint32_t rn = extract32(aFetchedOpcode.theOpcode, 5, 5);
   std::vector<std::list<InternalDependance>> rs_deps(1);
 
@@ -283,10 +285,10 @@ arminst BLR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
     return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
   switch (op) {
   case 0:
-    branch_type = kUnconditional;
+    branch_type = kIndirectReg;
     break;
   case 1:
-    branch_type = kCall;
+    branch_type = kIndirectCall;
     break;
   case 2:
     branch_type = kReturn;
@@ -298,18 +300,30 @@ arminst BLR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
 
   SemanticInstruction *inst(new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
                                                     aFetchedOpcode.theBPState, aCPU, aSequenceNo));
-
-  inst->setClass(clsBranch, codeBranchUnconditional);
   std::vector<std::list<InternalDependance>> rs_deps(1);
 
   simple_action target = calcAddressAction(inst, rs_deps);
-  dependant_action br = branchRegAction(inst, kAddress);
+  dependant_action br = branchRegAction(inst, kAddress, branch_type);
   connectDependance(br.dependance, target);
   connectDependance(inst->retirementDependance(), br);
-  inst->addRetirementEffect(updateUnconditional(inst, kAddress));
+
+  switch (branch_type) {
+  case kIndirectCall:
+    inst->setClass(clsBranch, codeBranchIndirectCall);
+    break;
+  case kIndirectReg:
+    inst->setClass(clsBranch, codeBranchIndirectReg);
+    break;
+  case kReturn:
+    inst->setClass(clsBranch, codeRETURN);
+    break;
+  default:
+    break;
+  }
+  inst->addRetirementEffect(updateIndirect(inst, kAddress, branch_type));
 
   // Link
-  if (branch_type == kCall) {
+  if (branch_type == kIndirectCall) {
     std::unique_ptr<Operation> addop = operation(kMOV_);
     addop->setOperands((uint64_t)aFetchedOpcode.thePC + 4);
     predicated_action exec = addExecute(inst, std::move(addop), rs_deps);
