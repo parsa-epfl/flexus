@@ -1089,7 +1089,7 @@ void BreakpointTrackerMagicBreakpoint(void *obj, Qemu::API::conf_object_t *aCpu,
 
 void RegressionTrackerMagicBreakpoint(void *obj, Qemu::API::conf_object_t *aCpu,
                                       long long aRegression) {
-  static_cast<RegressionTrackerImpl *>(obj)->OnMagicBreakpoint(aCpu, aRegression);
+  // static_cast<RegressionTrackerImpl *>(obj)->OnMagicBreakpoint(aCpu, aRegression);
 }
 
 void ConsoleStringTrackerXTermString(void *obj, Qemu::API::conf_object_t *ignored, char *aString) {

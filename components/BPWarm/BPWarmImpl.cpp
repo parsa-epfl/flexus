@@ -118,7 +118,7 @@ class FLEXUS_COMPONENT(BPWarm) {
     if (theFetchType[anIndex][!anOne] == kConditional) {
       if (theFetchAnnul[anIndex][!anOne]) {
         // For annulled branches, Fetch1 should be theFetch2 + 8
-        if (theFetchAddress[anIndex][anOne] == theFetchAddress[anIndex][!anOne] + 8) {
+        if (theFetchAddress[anIndex][anOne] == theFetchAddress[anIndex][!anOne] + 4) {
           dir = kNotTaken;
         } else {
           dir = kTaken;
@@ -126,7 +126,7 @@ class FLEXUS_COMPONENT(BPWarm) {
         }
       } else {
         // For non-annulled branches, theActual should be theFetch2 + 8
-        if (theActual == theFetchAddress[anIndex][!anOne] + 8) {
+        if (theActual == theFetchAddress[anIndex][!anOne] + 4) {
           dir = kNotTaken;
         } else {
           dir = kTaken;
