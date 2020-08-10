@@ -478,6 +478,10 @@ arminst LDP(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
     /* Msutherl: if signed, only valid encodings are preindex, postindex, imm-index */
     return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
   }
+  if (rt == rt2) {
+    // Constrain unpredictable
+    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+  }
 
   imm7 <<= scale;
 
