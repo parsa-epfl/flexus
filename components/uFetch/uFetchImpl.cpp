@@ -863,7 +863,15 @@ private:
 
     FETCH_DBG("--------------START FETCHING------------------------");
 
-    int32_t cycleDispatchedInsts = 0;
+    // Determine available FIQ this cycle
+    int32_t available_fiq = 0;
+    DBG_Assert(FLEXUS_CHANNEL_ARRAY(AvailableFIQ, anIndex).available());
+    FLEXUS_CHANNEL_ARRAY(AvailableFIQ, anIndex) >> available_fiq;
+    int32_t remaining_fetch = cfg.MaxFetchInstructions;
+    if (available_fiq < remaining_fetch) {
+      remaining_fetch = available_fiq;
+    }
+    theAvailableFetchSlots += remaining_fetch;
 
     if (theIcacheMiss[anIndex]) {
       ++theMissCycles;
@@ -872,20 +880,9 @@ private:
       return;
     }
 
-    // Determine available FIQ this cycle
-    int32_t available_fiq = 0;
-    DBG_Assert(FLEXUS_CHANNEL_ARRAY(AvailableFIQ, anIndex).available());
-    FLEXUS_CHANNEL_ARRAY(AvailableFIQ, anIndex) >> available_fiq;
-
     if (theBundle->theOpcodes.size() < theMissQueueSize && available_fiq > 0 &&
         (theFAQ[anIndex].size() > 0 || theFlexus->quiescing())) {
       std::set<VirtualMemoryAddress> available_lines;
-      int32_t remaining_fetch = cfg.MaxFetchInstructions;
-
-      if (available_fiq < remaining_fetch) {
-        remaining_fetch = available_fiq;
-      }
-      theAvailableFetchSlots += remaining_fetch;
       FETCH_DBG("starting to process the fetches..." << remaining_fetch);
 
       while (remaining_fetch > 0 && (theFAQ[anIndex].size() > 0 || theFlexus->quiescing())) {
@@ -931,7 +928,6 @@ private:
         --remaining_fetch;
 
         theUsedFetchSlots++;
-        ++cycleDispatchedInsts;
       }
     }
     processBundle();
