@@ -174,7 +174,8 @@ public:
       theOne[i] = false;
     }
 
-    theBranchPredictor.reset(FastBranchPredictor::combining(statName(), flexusIndex()));
+    theBranchPredictor.reset(
+        FastBranchPredictor::combining(statName(), flexusIndex(), cfg.BTBSets, cfg.BTBWays));
   }
 
   void finalize() {
