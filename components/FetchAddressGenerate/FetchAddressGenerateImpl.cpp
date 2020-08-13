@@ -110,7 +110,8 @@ public:
       theRedirect[i] = false;
     }
     theCurrentThread = cfg.Threads;
-    theBranchPredictor.reset(BranchPredictor::combining(statName(), flexusIndex()));
+    theBranchPredictor.reset(
+        BranchPredictor::combining(statName(), flexusIndex(), cfg.BTBSets, cfg.BTBWays));
   }
 
   void finalize() {

@@ -428,8 +428,29 @@ struct CombiningImpl : public BranchPredictor {
   Stat::StatCounter theMispredict_Target;
 
   CombiningImpl(std::string const &aName, uint32_t anIndex)
-      : theName(aName), theIndex(anIndex), theSerial(0), theBTB(2048, 16), theBimodal(16384),
+      : theName(aName), theIndex(anIndex), theSerial(0), theBTB(512, 4), theBimodal(16384),
         theMeta(16384), theGShare(13), theBranches(aName + "-branches"),
+        theBranches_Unconditional(aName + "-branches:unconditional"),
+        theBranches_Conditional(aName + "-branches:conditional"),
+        theBranches_Call(aName + "-branches:call"), theBranches_Return(aName + "-branches:return"),
+        thePredictions(aName + "-predictions"),
+        thePredictions_Bimodal(aName + "-predictions:bimodal"),
+        thePredictions_GShare(aName + "-predictions:gshare"),
+        thePredictions_Unconditional(aName + "-predictions:unconditional"),
+        theCorrect(aName + "-correct"), theCorrect_Bimodal(aName + "-correct:bimodal"),
+        theCorrect_GShare(aName + "-correct:gshare"),
+        theCorrect_Unconditional(aName + "-correct:unconditional"),
+        theMispredict(aName + "-mispredict"), theMispredict_NewBranch(aName + "-mispredict:new"),
+        theMispredict_Direction(aName + "-mispredict:direction"),
+        theMispredict_Meta(aName + "-mispredict:meta"),
+        theMispredict_MetaGShare(aName + "-mispredict:meta:chose_gshare"),
+        theMispredict_MetaBimod(aName + "-mispredict:meta:chose_bimod"),
+        theMispredict_Target(aName + "-mispredict:target") {
+  }
+
+  CombiningImpl(std::string const &aName, uint32_t anIndex, uint32_t aBTBSets, uint32_t aBTBWays)
+      : theName(aName), theIndex(anIndex), theSerial(0), theBTB(aBTBSets, aBTBWays),
+        theBimodal(16384), theMeta(16384), theGShare(13), theBranches(aName + "-branches"),
         theBranches_Unconditional(aName + "-branches:unconditional"),
         theBranches_Conditional(aName + "-branches:conditional"),
         theBranches_Call(aName + "-branches:call"), theBranches_Return(aName + "-branches:return"),
@@ -852,8 +873,36 @@ struct FastCombiningImpl : public FastBranchPredictor {
   Stat::StatCounter theFalseNegReturns;
 
   FastCombiningImpl(std::string const &aName, uint32_t anIndex)
-      : theName(aName), theIndex(anIndex), theSerial(0), theBTB(1024, 16), theBimodal(32768),
+      : theName(aName), theIndex(anIndex), theSerial(0), theBTB(512, 4), theBimodal(32768),
         theMeta(8192), theGShare(13), theBranches(aName + "-branches"),
+        theBranches_Unconditional(aName + "-branches:unconditional"),
+        theBranches_Conditional(aName + "-branches:conditional"),
+        theBranches_Call(aName + "-branches:call"), theBranches_Return(aName + "-branches:return"),
+        thePredictions(aName + "-predictions"),
+        thePredictions_Bimodal(aName + "-predictions:bimodal"),
+        thePredictions_GShare(aName + "-predictions:gshare"),
+        thePredictions_Unconditional(aName + "-predictions:unconditional"),
+        thePredictions_Returns(aName + "-predictions:returns"), theCorrect(aName + "-correct"),
+        theCorrect_Bimodal(aName + "-correct:bimodal"),
+        theCorrect_GShare(aName + "-correct:gshare"),
+        theCorrect_Unconditional(aName + "-correct:unconditional"),
+        theMispredict(aName + "-mispredict"), theMispredict_NewBranch(aName + "-mispredict:new"),
+        theMispredict_Direction(aName + "-mispredict:direction"),
+        theMispredict_Meta(aName + "-mispredict:meta"),
+        theMispredict_MetaGShare(aName + "-mispredict:meta:chose_gshare"),
+        theMispredict_MetaBimod(aName + "-mispredict:meta:chose_bimod"),
+        theMispredict_Target(aName + "-mispredict:target"),
+        theFalseNegBranches(aName + "-mispredict:falseNeg"),
+        theFalsePosBranches(aName + "-mispredict:falsePos"),
+        theTrueBranches(aName + "-correct:trueBranches"),
+        theTrueNonBranches(aName + "-correct:trueNonBranches"),
+        theFalseNegReturns(aName + "-mispredict:falseNegReturns") {
+  }
+
+  FastCombiningImpl(std::string const &aName, uint32_t anIndex, uint32_t aBTBSets,
+                    uint32_t aBTBWays)
+      : theName(aName), theIndex(anIndex), theSerial(0), theBTB(aBTBSets, aBTBWays),
+        theBimodal(32768), theMeta(8192), theGShare(13), theBranches(aName + "-branches"),
         theBranches_Unconditional(aName + "-branches:unconditional"),
         theBranches_Conditional(aName + "-branches:conditional"),
         theBranches_Call(aName + "-branches:call"), theBranches_Return(aName + "-branches:return"),
@@ -1237,6 +1286,16 @@ BranchPredictor *BranchPredictor::combining(std::string const &aName, uint32_t a
 
 FastBranchPredictor *FastBranchPredictor::combining(std::string const &aName, uint32_t anIndex) {
   return new FastCombiningImpl(aName, anIndex);
+}
+
+BranchPredictor *BranchPredictor::combining(std::string const &aName, uint32_t anIndex,
+                                            uint32_t aNumSets, uint32_t aNumWays) {
+  return new CombiningImpl(aName, anIndex, aNumSets, aNumWays);
+}
+
+FastBranchPredictor *FastBranchPredictor::combining(std::string const &aName, uint32_t anIndex,
+                                                    uint32_t aNumSets, uint32_t aNumWays) {
+  return new FastCombiningImpl(aName, anIndex, aNumSets, aNumWays);
 }
 
 std::ostream &operator<<(std::ostream &anOstream, eBranchType aType) {

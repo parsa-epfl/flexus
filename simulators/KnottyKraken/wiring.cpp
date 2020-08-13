@@ -102,6 +102,8 @@ bool initializeParameters() {
   theFAGCfg.Threads.initialize(1);
   theFAGCfg.MaxFetchAddress.initialize(1);
   theFAGCfg.MaxBPred.initialize(1);
+  theFAGCfg.BTBSets.initialize(512);
+  theFAGCfg.BTBWays.initialize(4);
 
   theuFetchCfg.Threads.initialize(1);
   theuFetchCfg.FAQSize.initialize(1000);

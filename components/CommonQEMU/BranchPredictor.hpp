@@ -56,6 +56,8 @@ namespace SharedTypes {
 
 struct BranchPredictor {
   static BranchPredictor *combining(std::string const &aName, uint32_t anIndex);
+  static BranchPredictor *combining(std::string const &aName, uint32_t anIndex, uint32_t aBTBSets,
+                                    uint32_t aBTBWays);
   virtual bool isBranch(VirtualMemoryAddress anAddress) = 0;
   virtual void feedback(BranchFeedback const &aFeedback) = 0;
   virtual VirtualMemoryAddress predict(FetchAddr &aFetchAddr) = 0;
@@ -67,6 +69,8 @@ struct BranchPredictor {
 
 struct FastBranchPredictor {
   static FastBranchPredictor *combining(std::string const &aName, uint32_t anIndex);
+  static FastBranchPredictor *combining(std::string const &aName, uint32_t anIndex,
+                                        uint32_t aBTBSets, uint32_t aBTBWays);
   // virtual void feedback( BranchFeedback const & aFeedback) = 0;
   virtual void predict(VirtualMemoryAddress anAddress, BPredState &aBPState) = 0;
   virtual void feedback(VirtualMemoryAddress anAddress, eBranchType anActualType,
