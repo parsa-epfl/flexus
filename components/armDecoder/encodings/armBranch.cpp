@@ -87,8 +87,6 @@ arminst UNCONDBR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequence
                                                     aFetchedOpcode.theBPState, aCPU, aSequenceNo));
 
   bool op = extract32(aFetchedOpcode.theOpcode, 31, 1);
-  inst->setClass(clsBranch, codeBranchUnconditional);
-
   int64_t offset = sextract32(aFetchedOpcode.theOpcode, 0, 26) << 2;
   uint64_t addr = (uint64_t)aFetchedOpcode.thePC + offset;
   VirtualMemoryAddress target(addr);
@@ -105,9 +103,13 @@ arminst UNCONDBR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequence
 
     addReadConstant(inst, 1, (uint64_t)(aFetchedOpcode.thePC) + 4, rs_deps[0]);
     addDestination(inst, 30, exec, true);
-  }
 
-  inst->addDispatchEffect(branch(inst, target));
+    // update call after
+    inst->addDispatchEffect(branch(inst, target));
+    inst->addRetirementEffect(updateCall(inst, target));
+  } else {
+    branch_always(inst, 0, target);
+  }
   return inst;
 }
 
