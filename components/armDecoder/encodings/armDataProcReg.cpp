@@ -380,6 +380,7 @@ arminst DP_3_SRC(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequence
   if (!is_high) {
     predicated_action act = addExecute(inst, operation(is_sub ? kSUB_ : kADD_),
                                        {kOperand3, kResult}, rs2_deps, kResult1);
+    // Store output in kResult1 to not overwrite mul output
     readRegister(inst, 3, ra, rs2_deps[0], sf);
     connect(rs2_deps[1], mul);
     addDestination1(inst, rd, act, sf);
