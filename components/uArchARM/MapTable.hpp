@@ -62,98 +62,6 @@ namespace ll = boost::lambda;
 
 namespace nuArchARM {
 
-// Implements architectural r-register renaming from op-code register names
-//(%g, %l, %o, %i and CWP) to architectural register numbers.  Also tracks
-// the current state of the CWP.
-struct RegisterWindowMap {
-  int32_t theCWP;
-  bool theAG;
-  bool theIG;
-  bool theMG;
-
-  RegisterWindowMap() {
-    reset();
-  }
-
-  void reset() {
-    theCWP = 0;
-    theAG = false;
-    theIG = false;
-    theMG = false;
-  }
-
-  reg rotate(reg aReg) {
-    FLEXUS_PROFILE();
-    if (aReg.theType != xRegisters) {
-      return aReg;
-    }
-    reg reg(aReg);
-    if (reg.theIndex >= kFirstSpecialReg) {
-      // Special register
-      return reg;
-    } else if (reg.theIndex < kGlobalRegCount) {
-      if (theAG && reg.theIndex < kGlobalRegCount) {
-        reg.theIndex += kGlobalRegCount;
-      } else if (theMG && reg.theIndex < kGlobalRegCount) {
-        reg.theIndex += 2 * kGlobalRegCount;
-      } else if (theIG && reg.theIndex < kGlobalRegCount) {
-        reg.theIndex += 3 * kGlobalRegCount;
-      }
-
-      // The global registers %g0 through %g7 and alternate globals
-      //%ag0 through %ag7 do not rotate, nor does Y (comes between %g7 and %ag0)
-
-      return reg;
-    } else {
-      // NOTE: I haven't fixed these comments since adding the MG and IG
-      // register sets aReg ranges from 8 to 32. When theCWP = 0, reg 8 should
-      // map to 128, reg 24 should map to 16 When theCWP = 7, reg 8 should map
-      // to 16, reg 24 should map to 32
-      reg.theIndex = aReg.theIndex + (kNumWindows - 1 - theCWP) * kRegistersPerWindow +
-                     (kGlobalRegSets - 1) * kGlobalRegCount;
-      if (reg.theIndex >= kFirstSpecialReg) {
-        reg.theIndex = reg.theIndex - kWindowRegCount;
-      }
-      return reg;
-    }
-  }
-
-  void setCWP(int32_t aCWP) {
-    theCWP = aCWP;
-    DBG_Assert(theCWP < 8);
-  }
-
-  int32_t getCWP() {
-    return theCWP;
-  }
-
-  void incrementCWP() {
-    ++theCWP;
-    if (theCWP > 7) {
-      theCWP = 0;
-    }
-  }
-
-  void decrementCWP() {
-    --theCWP;
-    if (theCWP < 0) {
-      theCWP = 7;
-    }
-  }
-
-  void setAG(bool anAG) {
-    theAG = anAG;
-  }
-
-  void setIG(bool anIG) {
-    theIG = anIG;
-  }
-
-  void setMG(bool anMG) {
-    theMG = anMG;
-  }
-};
-
 typedef uint32_t regName;
 typedef uint32_t pRegister;
 
@@ -225,28 +133,24 @@ struct PhysicalMap {
   void free(pRegister aRegisterName) {
     FLEXUS_PROFILE();
     theFreeList.push_back(aRegisterName);
-    std::list<pRegister>::iterator iter, end;
     int32_t arch_name = theReverseMappings[aRegisterName];
+    std::vector<std::list<pRegister>>::iterator iter = theAssignedRegisters.begin() + arch_name;
     DBG_Assert(arch_name >= 0 && arch_name < static_cast<int>(theAssignedRegisters.size()));
     DBG_Assert(theMappings[arch_name] != aRegisterName);
-    DBG_Assert(theAssignedRegisters[arch_name].size());
+    DBG_Assert(iter->size());
+    DBG_Assert(iter->front() == aRegisterName || iter->back() == aRegisterName, (<< aRegisterName));
     theReverseMappings[aRegisterName] = -1;
-    iter = theAssignedRegisters[arch_name].begin();
-    end = theAssignedRegisters[arch_name].end();
-    bool found = false;
-    while (iter != end) {
-      if (*iter == aRegisterName) {
-        theAssignedRegisters[arch_name].erase(iter);
-        found = true;
-        break;
-      }
-      ++iter;
+    if (iter->front() == aRegisterName) {
+      iter->pop_front();
+    } else {
+      iter->pop_back();
     }
-    DBG_Assert(found);
   }
 
   void restore(regName aRegisterName, pRegister aReg) {
     FLEXUS_PROFILE();
+    pRegister target = *(++theAssignedRegisters[aRegisterName].rbegin());
+    DBG_Assert(aReg == target, (<< target));
     theMappings[aRegisterName] = aReg;
     // Restore should have no effect on the register stacks in
     // theReverseMappings because the restored register had not been freed

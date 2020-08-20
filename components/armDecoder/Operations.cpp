@@ -616,7 +616,7 @@ typedef struct UMul : public Operation {
     DBG_Assert(operands.size() == 2);
     bits op0 = boost::get<uint64_t>(operands[0]);
     bits op1 = boost::get<uint64_t>(operands[1]);
-    uint64_t prod = (uint64_t)(op0 * op1);
+    uint64_t prod = uint64_t((op0 * op1) & (bits)0xFFFFFFFFFFFFFFFF);
     return prod;
   }
   virtual Operand operator()(std::vector<Operand> const &operands) {
