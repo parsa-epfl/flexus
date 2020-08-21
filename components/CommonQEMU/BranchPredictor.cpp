@@ -476,20 +476,28 @@ struct CombiningImpl : public BranchPredictor {
         theBimodal(16384), theMeta(16384), theGShare(13), theBranches(aName + "-branches"),
         theBranches_Unconditional(aName + "-branches:unconditional"),
         theBranches_Conditional(aName + "-branches:conditional"),
-        theBranches_Call(aName + "-branches:call"), theBranches_Return(aName + "-branches:return"),
-        thePredictions(aName + "-predictions"),
+        theBranches_Call(aName + "-branches:call"),
+        theBranches_IndirectCall(aName + "-branches:indirect:call"),
+        theBranches_RegIndirect(aName + "-branches:indirect:reg"),
+        theBranches_Return(aName + "-branches:return"), thePredictions(aName + "-predictions"),
         thePredictions_Bimodal(aName + "-predictions:bimodal"),
         thePredictions_GShare(aName + "-predictions:gshare"),
         thePredictions_Unconditional(aName + "-predictions:unconditional"),
-        theCorrect(aName + "-correct"), theCorrect_Bimodal(aName + "-correct:bimodal"),
+        thePredictions_Indirect(aName + "-predictions:indirect"),
+        thePredictions_Returns(aName + "-predictions:returns"), theCorrect(aName + "-correct"),
+        theCorrect_Bimodal(aName + "-correct:bimodal"),
         theCorrect_GShare(aName + "-correct:gshare"),
         theCorrect_Unconditional(aName + "-correct:unconditional"),
-        theMispredict(aName + "-mispredict"), theMispredict_NewBranch(aName + "-mispredict:new"),
+        theCorrect_Indirect(aName + "-correct:indirect"),
+        theCorrect_Returns(aName + "-correct:returns"), theMispredict(aName + "-mispredict"),
+        theMispredict_NewBranch(aName + "-mispredict:new"),
         theMispredict_Direction(aName + "-mispredict:direction"),
         theMispredict_Meta(aName + "-mispredict:meta"),
         theMispredict_MetaGShare(aName + "-mispredict:meta:chose_gshare"),
         theMispredict_MetaBimod(aName + "-mispredict:meta:chose_bimod"),
-        theMispredict_Target(aName + "-mispredict:target") {
+        theMispredict_Target(aName + "-mispredict:target"),
+        theMispredict_IndirectTargets(aName + "-mispredict:target:indirect"),
+        theMispredict_Returns(aName + "-mispredict:returns") {
   }
 
   bool isBranch(VirtualMemoryAddress anAddress) {
