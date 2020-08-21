@@ -109,6 +109,7 @@ std::ostream &operator<<(std::ostream &anOstream, eInstructionCode aCode) {
        "CAS", "CASP",
        // Branches
        "BranchUnconditional", "BranchConditional", "BranchFPConditional", "CALL", "RETURN",
+       "IndirectToRegister", "IndirectCall",
        // MEMBARs
        "MEMBARSync", "MEMBARStLd", "MEMBARStSt", "MEMBARLdSt", "MEMBARLdLd",
        // Unsupported Instructions

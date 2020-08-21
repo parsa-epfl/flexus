@@ -228,8 +228,8 @@ public:
     theMemoryMessage.reqSize() = 4;
 
     eBranchType branchTypeTable[API::QEMU_BRANCH_TYPE_COUNT] = {
-        kNonBranch, kConditional, kUnconditional, kCall, kReturn, kLastBranchType};
-
+        kNonBranch,   kConditional,  kUnconditional, kCall,
+        kIndirectReg, kIndirectCall, kReturn,        kLastBranchType};
     theMemoryMessage.branchType() = branchTypeTable[mem_trans->s.branch_type];
     theMemoryMessage.branchAnnul() = (mem_trans->s.annul != 0);
 

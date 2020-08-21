@@ -577,12 +577,19 @@ Effect *updateUnconditional(SemanticInstruction *inst, eOperandCode anOperandCod
 Effect *updateCall(SemanticInstruction *inst, VirtualMemoryAddress aTarget) {
   boost::intrusive_ptr<BranchFeedback> feedback(new BranchFeedback());
   feedback->thePC = inst->pc();
-  feedback->theActualType = kUnconditional;
+  feedback->theActualType = kCall;
   feedback->theActualDirection = kTaken;
   feedback->theActualTarget = aTarget;
   feedback->theBPState = inst->bpState();
   inst->setBranchFeedback(feedback);
   BranchFeedbackEffect *b = new BranchFeedbackEffect();
+  inst->addNewComponent(b);
+  return b;
+}
+
+Effect *updateIndirect(SemanticInstruction *inst, eOperandCode anOperandCode, eBranchType aType) {
+  BranchFeedbackWithOperandEffect *b =
+      new BranchFeedbackWithOperandEffect(aType, kTaken, anOperandCode);
   inst->addNewComponent(b);
   return b;
 }

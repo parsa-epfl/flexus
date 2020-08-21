@@ -88,6 +88,12 @@ namespace Stat = Flexus::Stat;
 namespace Flexus {
 namespace SharedTypes {
 
+// Data structure for tracking number of unique targets per ind. branch
+typedef struct {
+  std::set<VirtualMemoryAddress> targetList;
+  Stat::StatCounter theNumTargets;
+} indir_target_meta_t;
+
 struct BTBEntry {
   VirtualMemoryAddress thePC;
   mutable eBranchType theBranchType;
@@ -403,21 +409,28 @@ struct CombiningImpl : public BranchPredictor {
   Bimodal theMeta;
   gShare theGShare;
 
+  // MARK: Refactor branch types and take into account direct/indirect
   Stat::StatCounter theBranches; // Retired Branches
   Stat::StatCounter theBranches_Unconditional;
   Stat::StatCounter theBranches_Conditional;
   Stat::StatCounter theBranches_Call;
+  Stat::StatCounter theBranches_IndirectCall;
+  Stat::StatCounter theBranches_RegIndirect;
   Stat::StatCounter theBranches_Return;
 
   Stat::StatCounter thePredictions;
   Stat::StatCounter thePredictions_Bimodal;
   Stat::StatCounter thePredictions_GShare;
   Stat::StatCounter thePredictions_Unconditional;
+  Stat::StatCounter thePredictions_Indirect;
+  Stat::StatCounter thePredictions_Returns;
 
   Stat::StatCounter theCorrect;
   Stat::StatCounter theCorrect_Bimodal;
   Stat::StatCounter theCorrect_GShare;
   Stat::StatCounter theCorrect_Unconditional;
+  Stat::StatCounter theCorrect_Indirect;
+  Stat::StatCounter theCorrect_Returns;
 
   Stat::StatCounter theMispredict;
   Stat::StatCounter theMispredict_NewBranch;
@@ -426,26 +439,36 @@ struct CombiningImpl : public BranchPredictor {
   Stat::StatCounter theMispredict_MetaGShare;
   Stat::StatCounter theMispredict_MetaBimod;
   Stat::StatCounter theMispredict_Target;
+  Stat::StatCounter theMispredict_IndirectTargets;
+  Stat::StatCounter theMispredict_Returns;
 
   CombiningImpl(std::string const &aName, uint32_t anIndex)
       : theName(aName), theIndex(anIndex), theSerial(0), theBTB(512, 4), theBimodal(16384),
         theMeta(16384), theGShare(13), theBranches(aName + "-branches"),
         theBranches_Unconditional(aName + "-branches:unconditional"),
         theBranches_Conditional(aName + "-branches:conditional"),
-        theBranches_Call(aName + "-branches:call"), theBranches_Return(aName + "-branches:return"),
-        thePredictions(aName + "-predictions"),
+        theBranches_Call(aName + "-branches:call"),
+        theBranches_IndirectCall(aName + "-branches:indirect:call"),
+        theBranches_RegIndirect(aName + "-branches:indirect:reg"),
+        theBranches_Return(aName + "-branches:return"), thePredictions(aName + "-predictions"),
         thePredictions_Bimodal(aName + "-predictions:bimodal"),
         thePredictions_GShare(aName + "-predictions:gshare"),
         thePredictions_Unconditional(aName + "-predictions:unconditional"),
-        theCorrect(aName + "-correct"), theCorrect_Bimodal(aName + "-correct:bimodal"),
+        thePredictions_Indirect(aName + "-predictions:indirect"),
+        thePredictions_Returns(aName + "-predictions:returns"), theCorrect(aName + "-correct"),
+        theCorrect_Bimodal(aName + "-correct:bimodal"),
         theCorrect_GShare(aName + "-correct:gshare"),
         theCorrect_Unconditional(aName + "-correct:unconditional"),
-        theMispredict(aName + "-mispredict"), theMispredict_NewBranch(aName + "-mispredict:new"),
+        theCorrect_Indirect(aName + "-correct:indirect"),
+        theCorrect_Returns(aName + "-correct:returns"), theMispredict(aName + "-mispredict"),
+        theMispredict_NewBranch(aName + "-mispredict:new"),
         theMispredict_Direction(aName + "-mispredict:direction"),
         theMispredict_Meta(aName + "-mispredict:meta"),
         theMispredict_MetaGShare(aName + "-mispredict:meta:chose_gshare"),
         theMispredict_MetaBimod(aName + "-mispredict:meta:chose_bimod"),
-        theMispredict_Target(aName + "-mispredict:target") {
+        theMispredict_Target(aName + "-mispredict:target"),
+        theMispredict_IndirectTargets(aName + "-mispredict:target:indirect"),
+        theMispredict_Returns(aName + "-mispredict:returns") {
   }
 
   CombiningImpl(std::string const &aName, uint32_t anIndex, uint32_t aBTBSets, uint32_t aBTBWays)
@@ -453,20 +476,28 @@ struct CombiningImpl : public BranchPredictor {
         theBimodal(16384), theMeta(16384), theGShare(13), theBranches(aName + "-branches"),
         theBranches_Unconditional(aName + "-branches:unconditional"),
         theBranches_Conditional(aName + "-branches:conditional"),
-        theBranches_Call(aName + "-branches:call"), theBranches_Return(aName + "-branches:return"),
-        thePredictions(aName + "-predictions"),
+        theBranches_Call(aName + "-branches:call"),
+        theBranches_IndirectCall(aName + "-branches:indirect:call"),
+        theBranches_RegIndirect(aName + "-branches:indirect:reg"),
+        theBranches_Return(aName + "-branches:return"), thePredictions(aName + "-predictions"),
         thePredictions_Bimodal(aName + "-predictions:bimodal"),
         thePredictions_GShare(aName + "-predictions:gshare"),
         thePredictions_Unconditional(aName + "-predictions:unconditional"),
-        theCorrect(aName + "-correct"), theCorrect_Bimodal(aName + "-correct:bimodal"),
+        thePredictions_Indirect(aName + "-predictions:indirect"),
+        thePredictions_Returns(aName + "-predictions:returns"), theCorrect(aName + "-correct"),
+        theCorrect_Bimodal(aName + "-correct:bimodal"),
         theCorrect_GShare(aName + "-correct:gshare"),
         theCorrect_Unconditional(aName + "-correct:unconditional"),
-        theMispredict(aName + "-mispredict"), theMispredict_NewBranch(aName + "-mispredict:new"),
+        theCorrect_Indirect(aName + "-correct:indirect"),
+        theCorrect_Returns(aName + "-correct:returns"), theMispredict(aName + "-mispredict"),
+        theMispredict_NewBranch(aName + "-mispredict:new"),
         theMispredict_Direction(aName + "-mispredict:direction"),
         theMispredict_Meta(aName + "-mispredict:meta"),
         theMispredict_MetaGShare(aName + "-mispredict:meta:chose_gshare"),
         theMispredict_MetaBimod(aName + "-mispredict:meta:chose_bimod"),
-        theMispredict_Target(aName + "-mispredict:target") {
+        theMispredict_Target(aName + "-mispredict:target"),
+        theMispredict_IndirectTargets(aName + "-mispredict:target:indirect"),
+        theMispredict_Returns(aName + "-mispredict:returns") {
   }
 
   bool isBranch(VirtualMemoryAddress anAddress) {
@@ -550,10 +581,29 @@ struct CombiningImpl : public BranchPredictor {
         aFetch.theBPState->thePredictedTarget = VirtualMemoryAddress(0);
       }
       aFetch.theBPState->theGShareShiftReg = theGShare.shiftReg();
-      // Need to push address onto retstack
+      // TODO: There is no RAS implemented
       break;
     case kReturn:
-      // Need to pop retstack
+      ++thePredictions;
+      ++thePredictions_Returns;
+      if (theBTB.target(aFetch.theAddress)) {
+        aFetch.theBPState->thePredictedTarget = *theBTB.target(aFetch.theAddress);
+      } else {
+        aFetch.theBPState->thePredictedTarget = VirtualMemoryAddress(0);
+      }
+      aFetch.theBPState->theGShareShiftReg = theGShare.shiftReg();
+      // TODO: There is no RAS implemented
+      break;
+    case kIndirectCall:
+    case kIndirectReg:
+      ++thePredictions;
+      ++thePredictions_Indirect;
+      if (theBTB.target(aFetch.theAddress)) {
+        aFetch.theBPState->thePredictedTarget = *theBTB.target(aFetch.theAddress);
+      } else {
+        aFetch.theBPState->thePredictedTarget = VirtualMemoryAddress(0);
+      }
+      aFetch.theBPState->theGShareShiftReg = theGShare.shiftReg();
       break;
     default:
       aFetch.theBPState->thePredictedTarget = VirtualMemoryAddress(0);
@@ -594,6 +644,7 @@ struct CombiningImpl : public BranchPredictor {
                         << aFeedback.theActualTarget));
             ++theCorrect_Bimodal;
           }
+
         } else if ((aFeedback.theBPState->thePrediction <= kTaken) &&
                    (aFeedback.theActualDirection <= kTaken)) {
           if (aFeedback.theActualTarget == aFeedback.theBPState->thePredictedTarget) {
@@ -609,6 +660,7 @@ struct CombiningImpl : public BranchPredictor {
                     << " " << aFeedback.theActualType << " @" << aFeedback.thePC << " NOT TAKEN"));
               ++theCorrect_Bimodal;
             }
+
           } else {
             DBG_(Verb, (<< "BPRED-RESOLVE Mispredict (Target) "
                         << aFeedback.theBPState->thePrediction << " " << aFeedback.theActualType
@@ -645,19 +697,56 @@ struct CombiningImpl : public BranchPredictor {
             }
           }
         }
-      } else {
-        // Unconditinal
+      } else if (aFeedback.theActualType == kIndirectCall ||
+                 aFeedback.theActualType == kIndirectReg) { // MARK: Indirect
         if (aFeedback.theActualTarget == aFeedback.theBPState->thePredictedTarget) {
-          DBG_(Verb, (<< "BPRED-RESOLVE Correct (Unconditional) " << aFeedback.theActualType << " @"
+          theCorrect++;
+          theCorrect_Indirect++;
+          DBG_(Verb, (<< "BPRED-RESOLVE Correct (Indirect) " << aFeedback.theActualType << " @"
                       << aFeedback.thePC << " to " << aFeedback.theActualTarget));
-          ++theCorrect;
-          ++theCorrect_Unconditional;
         } else {
-          DBG_(Verb, (<< "BPRED-RESOLVE Mispredict (Uncond-Target) " << aFeedback.theActualType
+          theMispredict++;
+          theMispredict_Target++;
+          theMispredict_IndirectTargets++;
+          DBG_(Verb, (<< "BPRED-RESOLVE Mispredict (Indirect-Target) " << aFeedback.theActualType
                       << " @" << aFeedback.thePC << " to " << aFeedback.theActualTarget
                       << " predicted target " << aFeedback.theBPState->thePredictedTarget));
-          ++theMispredict;
-          ++theMispredict_Target;
+        }
+      } else {
+        // Unconditional, call, and return
+        bool target_correct =
+            (aFeedback.theActualTarget == aFeedback.theBPState->thePredictedTarget);
+        switch (aFeedback.theActualType) {
+        case kReturn:
+          if (target_correct) {
+            theCorrect++;
+            theCorrect_Returns++;
+            DBG_(Verb, (<< "BPRED-RESOLVE Correct (Return) " << aFeedback.theActualType << " @"
+                        << aFeedback.thePC << " to " << aFeedback.theActualTarget));
+          } else {
+            DBG_(Verb, (<< "BPRED-RESOLVE Mispredict (Return-Target) " << aFeedback.theActualType
+                        << " @" << aFeedback.thePC << " to " << aFeedback.theActualTarget
+                        << " predicted target " << aFeedback.theBPState->thePredictedTarget));
+            theMispredict++;
+            theMispredict_Returns++;
+          }
+          break;
+        case kUnconditional:
+        case kCall:
+          if (target_correct) {
+            DBG_(Verb, (<< "BPRED-RESOLVE Correct (Unconditional) " << aFeedback.theActualType
+                        << " @" << aFeedback.thePC << " to " << aFeedback.theActualTarget));
+            ++theCorrect;
+            ++theCorrect_Unconditional;
+          } else {
+            DBG_(Verb, (<< "BPRED-RESOLVE Mispredict (Uncond-Target) " << aFeedback.theActualType
+                        << " @" << aFeedback.thePC << " to " << aFeedback.theActualTarget
+                        << " predicted target " << aFeedback.theBPState->thePredictedTarget));
+            ++theMispredict;
+            ++theMispredict_Target;
+          }
+        default:
+          break;
         }
       }
     }
@@ -678,6 +767,14 @@ struct CombiningImpl : public BranchPredictor {
     case kReturn:
       theBranches++;
       theBranches_Return++;
+      break;
+    case kIndirectReg:
+      theBranches++;
+      theBranches_RegIndirect++;
+      break;
+    case kIndirectCall:
+      theBranches++;
+      theBranches_IndirectCall++;
       break;
     default:
       break;
@@ -841,22 +938,28 @@ struct FastCombiningImpl : public FastBranchPredictor {
   Bimodal theMeta;
   gShare theGShare;
 
+  // MARK: Add stats for indirect branch types
   Stat::StatCounter theBranches; // Retired Branches
   Stat::StatCounter theBranches_Unconditional;
   Stat::StatCounter theBranches_Conditional;
   Stat::StatCounter theBranches_Call;
+  Stat::StatCounter theBranches_IndirectCall;
+  Stat::StatCounter theBranches_RegIndirect;
   Stat::StatCounter theBranches_Return;
 
   Stat::StatCounter thePredictions;
   Stat::StatCounter thePredictions_Bimodal;
   Stat::StatCounter thePredictions_GShare;
   Stat::StatCounter thePredictions_Unconditional;
+  Stat::StatCounter thePredictions_Indirect;
   Stat::StatCounter thePredictions_Returns;
 
   Stat::StatCounter theCorrect;
   Stat::StatCounter theCorrect_Bimodal;
   Stat::StatCounter theCorrect_GShare;
   Stat::StatCounter theCorrect_Unconditional;
+  Stat::StatCounter theCorrect_Indirect;
+  Stat::StatCounter theCorrect_Returns;
 
   Stat::StatCounter theMispredict;
   Stat::StatCounter theMispredict_NewBranch;
@@ -865,6 +968,8 @@ struct FastCombiningImpl : public FastBranchPredictor {
   Stat::StatCounter theMispredict_MetaGShare;
   Stat::StatCounter theMispredict_MetaBimod;
   Stat::StatCounter theMispredict_Target;
+  Stat::StatCounter theMispredict_IndirectTargets;
+  Stat::StatCounter theMispredict_Returns;
 
   Stat::StatCounter theFalseNegBranches;
   Stat::StatCounter theFalsePosBranches;
@@ -877,21 +982,28 @@ struct FastCombiningImpl : public FastBranchPredictor {
         theMeta(8192), theGShare(13), theBranches(aName + "-branches"),
         theBranches_Unconditional(aName + "-branches:unconditional"),
         theBranches_Conditional(aName + "-branches:conditional"),
-        theBranches_Call(aName + "-branches:call"), theBranches_Return(aName + "-branches:return"),
-        thePredictions(aName + "-predictions"),
+        theBranches_Call(aName + "-branches:call"),
+        theBranches_IndirectCall(aName + "-branches:indirect:call"),
+        theBranches_RegIndirect(aName + "-branches:indirect:reg"),
+        theBranches_Return(aName + "-branches:return"), thePredictions(aName + "-predictions"),
         thePredictions_Bimodal(aName + "-predictions:bimodal"),
         thePredictions_GShare(aName + "-predictions:gshare"),
         thePredictions_Unconditional(aName + "-predictions:unconditional"),
+        thePredictions_Indirect(aName + "-predictions:indirect"),
         thePredictions_Returns(aName + "-predictions:returns"), theCorrect(aName + "-correct"),
         theCorrect_Bimodal(aName + "-correct:bimodal"),
         theCorrect_GShare(aName + "-correct:gshare"),
         theCorrect_Unconditional(aName + "-correct:unconditional"),
-        theMispredict(aName + "-mispredict"), theMispredict_NewBranch(aName + "-mispredict:new"),
+        theCorrect_Indirect(aName + "-correct:indirect"),
+        theCorrect_Returns(aName + "-correct:returns"), theMispredict(aName + "-mispredict"),
+        theMispredict_NewBranch(aName + "-mispredict:new"),
         theMispredict_Direction(aName + "-mispredict:direction"),
         theMispredict_Meta(aName + "-mispredict:meta"),
         theMispredict_MetaGShare(aName + "-mispredict:meta:chose_gshare"),
         theMispredict_MetaBimod(aName + "-mispredict:meta:chose_bimod"),
         theMispredict_Target(aName + "-mispredict:target"),
+        theMispredict_IndirectTargets(aName + "-mispredict:target:indirect"),
+        theMispredict_Returns(aName + "-mispredict:returns"),
         theFalseNegBranches(aName + "-mispredict:falseNeg"),
         theFalsePosBranches(aName + "-mispredict:falsePos"),
         theTrueBranches(aName + "-correct:trueBranches"),
@@ -905,21 +1017,28 @@ struct FastCombiningImpl : public FastBranchPredictor {
         theBimodal(32768), theMeta(8192), theGShare(13), theBranches(aName + "-branches"),
         theBranches_Unconditional(aName + "-branches:unconditional"),
         theBranches_Conditional(aName + "-branches:conditional"),
-        theBranches_Call(aName + "-branches:call"), theBranches_Return(aName + "-branches:return"),
-        thePredictions(aName + "-predictions"),
+        theBranches_Call(aName + "-branches:call"),
+        theBranches_IndirectCall(aName + "-branches:indirect:call"),
+        theBranches_RegIndirect(aName + "-branches:indirect:reg"),
+        theBranches_Return(aName + "-branches:return"), thePredictions(aName + "-predictions"),
         thePredictions_Bimodal(aName + "-predictions:bimodal"),
         thePredictions_GShare(aName + "-predictions:gshare"),
         thePredictions_Unconditional(aName + "-predictions:unconditional"),
+        thePredictions_Indirect(aName + "-predictions:indirect"),
         thePredictions_Returns(aName + "-predictions:returns"), theCorrect(aName + "-correct"),
         theCorrect_Bimodal(aName + "-correct:bimodal"),
         theCorrect_GShare(aName + "-correct:gshare"),
         theCorrect_Unconditional(aName + "-correct:unconditional"),
-        theMispredict(aName + "-mispredict"), theMispredict_NewBranch(aName + "-mispredict:new"),
+        theCorrect_Indirect(aName + "-correct:indirect"),
+        theCorrect_Returns(aName + "-correct:returns"), theMispredict(aName + "-mispredict"),
+        theMispredict_NewBranch(aName + "-mispredict:new"),
         theMispredict_Direction(aName + "-mispredict:direction"),
         theMispredict_Meta(aName + "-mispredict:meta"),
         theMispredict_MetaGShare(aName + "-mispredict:meta:chose_gshare"),
         theMispredict_MetaBimod(aName + "-mispredict:meta:chose_bimod"),
         theMispredict_Target(aName + "-mispredict:target"),
+        theMispredict_IndirectTargets(aName + "-mispredict:target:indirect"),
+        theMispredict_Returns(aName + "-mispredict:returns"),
         theFalseNegBranches(aName + "-mispredict:falseNeg"),
         theFalsePosBranches(aName + "-mispredict:falsePos"),
         theTrueBranches(aName + "-correct:trueBranches"),
@@ -1010,6 +1129,17 @@ struct FastCombiningImpl : public FastBranchPredictor {
       ++thePredictions_Returns;
       // Need to pop retstack
       break;
+    case kIndirectCall:
+    case kIndirectReg:
+      ++thePredictions;
+      ++thePredictions_Indirect;
+      if (theBTB.target(anAddress)) {
+        aBPState.thePredictedTarget = *theBTB.target(anAddress);
+      } else {
+        aBPState.thePredictedTarget = VirtualMemoryAddress(0);
+      }
+      aBPState.theGShareShiftReg = theGShare.shiftReg();
+      break;
     default:
       aBPState.thePredictedTarget = VirtualMemoryAddress(0);
       break;
@@ -1022,8 +1152,8 @@ struct FastCombiningImpl : public FastBranchPredictor {
     }
   }
 
-  void stats(uint32_t anAddress, eBranchType anActualType, eDirection anActualDirection,
-             uint32_t anActualTarget, BPredState &aBPState) {
+  void stats(VirtualMemoryAddress anAddress, eBranchType anActualType, eDirection anActualDirection,
+             VirtualMemoryAddress anActualTarget, BPredState &aBPState) {
     if (anActualType != aBPState.thePredictedType) {
       if (anActualType == kNonBranch)
         ++theFalsePosBranches;
@@ -1057,7 +1187,7 @@ struct FastCombiningImpl : public FastBranchPredictor {
             ++theCorrect_Bimodal;
           }
         } else if ((aBPState.thePrediction <= kTaken) && (anActualDirection <= kTaken)) {
-          if (anActualTarget == static_cast<uint32_t>(aBPState.thePredictedTarget)) {
+          if (anActualTarget == aBPState.thePredictedTarget) {
             ++theCorrect;
             if (aBPState.theMetaPrediction >= kNotTaken) {
               DBG_(Verb, (<< "BPRED-RESOLVE Correct (GShare) " << aBPState.thePrediction << " "
@@ -1100,22 +1230,57 @@ struct FastCombiningImpl : public FastBranchPredictor {
             }
           }
         }
-      } else {
-        // Unconditinal
-        if (anActualTarget == static_cast<uint32_t>(aBPState.thePredictedTarget)) {
-          DBG_(Verb, (<< "BPRED-RESOLVE Correct (Unconditional) " << anActualType << " @"
-                      << anAddress << " to " << anActualTarget));
-          ++theCorrect;
-          ++theCorrect_Unconditional;
+      } else if (anActualType == kIndirectCall || anActualType == kIndirectReg) { // MARK: Indirect
+        if (anActualTarget == aBPState.thePredictedTarget) {
+          theCorrect++;
+          theCorrect_Indirect++;
+          DBG_(Verb, (<< "BPRED-RESOLVE Correct (Indirect) " << anActualType << " @" << anAddress
+                      << " to " << anActualTarget));
         } else {
-          DBG_(Verb, (<< "BPRED-RESOLVE Mispredict (Uncond-Target) " << anActualType << " @"
+          theMispredict++;
+          theMispredict_Target++;
+          theMispredict_IndirectTargets++;
+          DBG_(Verb, (<< "BPRED-RESOLVE Mispredict (Indirect-Target) " << anActualType << " @"
                       << anAddress << " to " << anActualTarget << " predicted target "
                       << aBPState.thePredictedTarget));
-          ++theMispredict;
-          ++theMispredict_Target;
         }
-      }
-    }
+      } else {
+        // Unconditional, call, return
+        bool target_correct = (anActualTarget == aBPState.thePredictedTarget);
+        switch (anActualType) {
+        case kReturn:
+          if (target_correct) {
+            theCorrect++;
+            theCorrect_Returns++;
+            DBG_(Verb, (<< "BPRED-RESOLVE Correct (Return) " << anActualType << " @" << anAddress
+                        << " to " << anActualTarget));
+          } else {
+            DBG_(Verb, (<< "BPRED-RESOLVE Mispredict (Return-Target) " << anActualType << " @"
+                        << anAddress << " to " << anActualTarget << " predicted target "
+                        << aBPState.thePredictedTarget));
+            theMispredict++;
+            theMispredict_Returns++;
+          }
+          break;
+        case kUnconditional:
+        case kCall:
+          if (target_correct) {
+            DBG_(Verb, (<< "BPRED-RESOLVE Correct (Unconditional) " << anActualType << " @"
+                        << anAddress << " to " << anActualTarget));
+            ++theCorrect;
+            ++theCorrect_Unconditional;
+          } else {
+            DBG_(Verb, (<< "BPRED-RESOLVE Mispredict (Uncond-Target) " << anActualType << " @"
+                        << anAddress << " to " << anActualTarget << " predicted target "
+                        << aBPState.thePredictedTarget));
+            ++theMispredict;
+            ++theMispredict_Target;
+          }
+        default:
+          break;
+        } // end switch
+      }   // end else { } condition -> unconditional branch types
+    }     // end else { } condition -> not a new branch
 
     switch (anActualType) {
     case kConditional:
@@ -1133,6 +1298,14 @@ struct FastCombiningImpl : public FastBranchPredictor {
     case kReturn:
       theBranches++;
       theBranches_Return++;
+      break;
+    case kIndirectReg:
+      theBranches++;
+      theBranches_RegIndirect++;
+      break;
+    case kIndirectCall:
+      theBranches++;
+      theBranches_IndirectCall++;
       break;
     default:
       break;
@@ -1278,7 +1451,7 @@ struct FastCombiningImpl : public FastBranchPredictor {
       DBG_(Dev, (<< "Unable to load bpred state " << fname << ". Using default state."));
     }
   }
-};
+}; // namespace SharedTypes
 
 BranchPredictor *BranchPredictor::combining(std::string const &aName, uint32_t anIndex) {
   return new CombiningImpl(aName, anIndex);
@@ -1299,7 +1472,8 @@ FastBranchPredictor *FastBranchPredictor::combining(std::string const &aName, ui
 }
 
 std::ostream &operator<<(std::ostream &anOstream, eBranchType aType) {
-  char const *types[] = {"NonBranch", "Conditional", "Unconditional", "Call", "Return"};
+  char const *types[] = {"NonBranch",         "Conditional",   "Unconditional", "Call",
+                         "Indirect Register", "Indirect Call", "Return"};
   if (aType >= kLastBranchType) {
     anOstream << "InvalidBranchType(" << static_cast<int>(aType) << ")";
   } else {

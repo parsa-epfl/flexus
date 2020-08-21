@@ -63,7 +63,16 @@ using Flexus::SharedTypes::TransactionTracker;
 using Flexus::SharedTypes::Translation;
 using Flexus::SharedTypes::VirtualMemoryAddress;
 
-enum eBranchType { kNonBranch, kConditional, kUnconditional, kCall, kReturn, kLastBranchType };
+enum eBranchType {
+  kNonBranch,
+  kConditional,
+  kUnconditional,
+  kCall,
+  kIndirectReg,
+  kIndirectCall,
+  kReturn,
+  kLastBranchType
+};
 std::ostream &operator<<(std::ostream &anOstream, eBranchType aType);
 
 enum eDirection {
