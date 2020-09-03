@@ -543,11 +543,13 @@ uint64_t asr(uint64_t input, uint64_t input_size, uint64_t shift_size) {
   DBG_Assert(input_size == 64 || input_size == 32);
 
   bool is_signed = input & (1 << (input_size - 1));
+  bits big_input = input;
   if (is_signed) {
-    input |= (ones(shift_size) << input_size);
+    bits big_ones = ones(shift_size);
+    big_input |= (big_ones << input_size);
   }
-  input >>= shift_size;
-  return input & mask;
+  big_input >>= shift_size;
+  return (uint64_t)big_input & mask;
 }
 
 bool decodeBitMasks(uint64_t &tmask, uint64_t &wmask, bool immN, char imms, char immr,

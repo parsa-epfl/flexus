@@ -544,7 +544,9 @@ typedef struct ZextB : public Operation {
   }
   virtual Operand operator()(std::vector<Operand> const &operands) {
     DBG_Assert(operands.size() == 1);
-    return boost::get<uint64_t>(operands[0]);
+    uint64_t op = boost::get<uint64_t>(operands[0]);
+    op &= ~SIGNED_UPPER_BOUND_B;
+    return op;
   }
   virtual char const *describe() const {
     return "Zero extend Byte";
@@ -558,7 +560,9 @@ typedef struct ZextH : public Operation {
   }
   virtual Operand operator()(std::vector<Operand> const &operands) {
     DBG_Assert(operands.size() == 1);
-    return boost::get<uint64_t>(operands[0]);
+    uint64_t op = boost::get<uint64_t>(operands[0]);
+    op &= ~SIGNED_UPPER_BOUND_H;
+    return op;
   }
   virtual char const *describe() const {
     return "Zero extend Half Word";
@@ -572,7 +576,9 @@ typedef struct ZextW : public Operation {
   }
   virtual Operand operator()(std::vector<Operand> const &operands) {
     DBG_Assert(operands.size() == 1);
-    return boost::get<uint64_t>(operands[0]);
+    uint64_t op = boost::get<uint64_t>(operands[0]);
+    op &= ~SIGNED_UPPER_BOUND_W;
+    return op;
   }
   virtual char const *describe() const {
     return "Zero extend Word";
