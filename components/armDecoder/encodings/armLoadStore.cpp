@@ -717,7 +717,7 @@ arminst STR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
     addReadXRegister(inst, 1, rn, rs2_deps[0], true);
   else
     readRegister(inst, 1, rn, rs2_deps[0], true);
-  readRegister(inst, 5, rt, rs3_deps[0], true);
+  readRegister(inst, 5, rt, rs3_deps[0], regsize == 64);
 
   if (index == kRegOffset)
     readRegister(inst, 3, rm, rs_deps[0], true);
