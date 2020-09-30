@@ -59,7 +59,7 @@ matrix:
     - env:
       - SIMULATOR="KeenKraken"
     - env:
-      - SIMULATOR="KnottyKraken"
+      - SIMULATOR="KnottyKraken.Boom"
     - env:
       - LINT=true
 
