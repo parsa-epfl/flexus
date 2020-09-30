@@ -58,6 +58,8 @@ COMPONENT_PARAMETERS(
   PARAMETER( Cores, int, "Number of cores", "cores", 1 )
   PARAMETER( UnresolvedBranches, int, "Number of branches between prediction and update", "unresolved_branches", 0 )
   PARAMETER( RunaheadDistance, int, "Number of inst/branches running ahead of the fetch unit", "runahead_distance", 3 )
+  PARAMETER( BTBSets, uint32_t, "Number of sets in the BTB", "btbsets", 512 )
+  PARAMETER( BTBWays, uint32_t, "Number of ways in the BTB", "btbways", 4 )
 );
 
 typedef std::pair< uint64_t, uint32_t> ulong_pair;

@@ -87,6 +87,8 @@ bool initializeParameters() {
   DBG_(Dev, (<< " initializing Parameters..."));
 
   theBPWarmCfg.Cores.initialize(getSystemWidth());
+  theBPWarmCfg.BTBSets.initialize(512);
+  theBPWarmCfg.BTBWays.initialize(4);
 
   //  theFeederCfg.SimicsQuantum.initialize(100);
   theFeederCfg.CMPWidth.initialize(getSystemWidth());

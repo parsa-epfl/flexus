@@ -348,7 +348,8 @@ dependant_action writebackAction(SemanticInstruction *anInstruction, eOperandCod
                                  bool setflags);
 dependant_action branchCondAction(SemanticInstruction *anInstruction, VirtualMemoryAddress aTarget,
                                   std::unique_ptr<Condition> aCondition, size_t numOperands = 1);
-dependant_action branchRegAction(SemanticInstruction *anInstruction, eOperandCode aRegOperand);
+dependant_action branchRegAction(SemanticInstruction *anInstruction, eOperandCode aRegOperand,
+                                 eBranchType type);
 dependant_action branchToCalcAddressAction(SemanticInstruction *anInstruction);
 
 multiply_dependant_action updateVirtualAddressAction(SemanticInstruction *anInstruction,

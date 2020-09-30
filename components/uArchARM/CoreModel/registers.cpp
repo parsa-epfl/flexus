@@ -96,9 +96,6 @@ register_value CoreImpl::readRegister(mapped_reg aRegister) {
 
 register_value CoreImpl::readArchitecturalRegister(reg aRegister, bool aRotate) {
   reg reg = aRegister;
-  if (aRotate) {
-    reg = theArchitecturalWindowMap.rotate(reg);
-  }
   mapped_reg mreg;
   mreg.theType = reg.theType;
   mreg.theIndex = mapTable(reg.theType).mapArchitectural(reg.theIndex);
@@ -130,20 +127,18 @@ PhysicalMap &CoreImpl::mapTable(eRegisterType aMapTable) {
 
 mapped_reg CoreImpl::map(reg aReg) {
   FLEXUS_PROFILE();
-  reg reg = theWindowMap.rotate(aReg);
   mapped_reg ret_val;
-  ret_val.theType = reg.theType;
-  ret_val.theIndex = mapTable(reg.theType).map(reg.theIndex);
+  ret_val.theType = aReg.theType;
+  ret_val.theIndex = mapTable(aReg.theType).map(aReg.theIndex);
   return ret_val;
 }
 
 std::pair<mapped_reg, mapped_reg> CoreImpl::create(reg aReg) {
   FLEXUS_PROFILE();
-  reg reg = theWindowMap.rotate(aReg);
   std::pair<mapped_reg, mapped_reg> mapped;
   mapped.first.theType = mapped.second.theType = aReg.theType;
   std::tie(mapped.first.theIndex, mapped.second.theIndex) =
-      mapTable(reg.theType).create(reg.theIndex);
+      mapTable(aReg.theType).create(aReg.theIndex);
   mapRegister(mapped.first);
 
   eResourceStatus status = theRegisters.status(mapped.second);
@@ -175,8 +170,7 @@ void CoreImpl::free(mapped_reg aReg) {
 void CoreImpl::restore(reg aName, mapped_reg aReg) {
   FLEXUS_PROFILE();
   DBG_Assert(aName.theType == aReg.theType);
-  reg name(theWindowMap.rotate(aName));
-  mapTable(aName.theType).restore(name.theIndex, aReg.theIndex);
+  mapTable(aName.theType).restore(aName.theIndex, aReg.theIndex);
   // This assertion is extremely slow - 15% of total execution time.  Enable
   // at your own risk.
   /*

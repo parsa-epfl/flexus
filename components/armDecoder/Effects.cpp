@@ -622,6 +622,13 @@ Effect *updateCall(SemanticInstruction *inst, VirtualMemoryAddress aTarget) {
   return b;
 }
 
+Effect *updateIndirect(SemanticInstruction *inst, eOperandCode anOperandCode, eBranchType aType) {
+  BranchFeedbackWithOperandEffect *b =
+      new BranchFeedbackWithOperandEffect(aType, kTaken, anOperandCode);
+  inst->addNewComponent(b);
+  return b;
+}
+
 struct BranchEffect : public Effect {
   VirtualMemoryAddress theTarget;
   boost::intrusive_ptr<BPredState> theBPState;

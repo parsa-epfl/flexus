@@ -457,6 +457,8 @@ enum eInstructionCode
   codeBranchFPConditional,
   codeCALL,
   codeRETURN,
+  codeBranchIndirectReg,
+  codeBranchIndirectCall,
   // MEMBARs
   codeMEMBARSync,
   codeMEMBARStLd,
