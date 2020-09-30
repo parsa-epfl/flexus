@@ -1663,18 +1663,19 @@ private:
         } else if (lookup(paddr)) {
           theRecordedMissQ[anIndex].pop_front();
           //				DBG_(DBG_BOOM_LEVEL, ( << "recmiss: already in cache " <<
-          //std::hex
+          // std::hex
           //<< prefetch_addr << " paddr " << paddr)); No need to prefetch, already in cache
         } else {
           if (theRecMissPrefetchQueue.size() < theMaxOutstandingRecMisses) {
             theOutstandingMissQ[anIndex].insert(paddr);
             issueRecMissPreFetch(paddr, prefetch_addr);
-            //				  DBG_(DBG_BOOM_LEVEL, ( << "recmiss: issue prefech " << std::hex <<
-            //paddr
+            //				  DBG_(DBG_BOOM_LEVEL, ( << "recmiss: issue prefech " << std::hex
+            //<< paddr
             //<< " vaddr " << prefetch_addr << " outreq " << theOutstandingMissQ[anIndex].size()));
             theRecordedMissQ[anIndex].pop_front();
           } else {
-            //					DBG_(DBG_BOOM_LEVEL, ( << "recmiss: max outstanding req "
+            //					DBG_(DBG_BOOM_LEVEL, ( << "recmiss: max outstanding req
+            //"
             //<< prefetch_addr
             //));
           }

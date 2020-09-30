@@ -56,7 +56,7 @@ namespace Flexus {
 namespace SharedTypes {
 
 struct InfoMissStats; // fwd declare
-struct Translation; // fwd declare
+struct Translation;   // fwd declare
 
 struct AbstractInstruction : public boost::counted_base {
   boost::intrusive_ptr<TransactionTracker> theFetchTransaction;
@@ -96,10 +96,14 @@ public:
   }
 
   virtual uint64_t &fetchSerial() {
-      return theFetchSerial;
+    return theFetchSerial;
   }
-  virtual boost::intrusive_ptr<InfoMissStats> getMissStatsInfo() { return missStatsInfo; }
-  virtual void setMissStatsInfo(boost::intrusive_ptr<InfoMissStats> _missStatsInfo) { missStatsInfo = _missStatsInfo; }
+  virtual boost::intrusive_ptr<InfoMissStats> getMissStatsInfo() {
+    return missStatsInfo;
+  }
+  virtual void setMissStatsInfo(boost::intrusive_ptr<InfoMissStats> _missStatsInfo) {
+    missStatsInfo = _missStatsInfo;
+  }
 };
 
 enum eSquashCause {

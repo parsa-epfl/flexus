@@ -65,21 +65,20 @@ struct armState {
   uint32_t thePSTATE;
 };
 struct CoreModel : public uArchARM {
-  static CoreModel *construct(uArchOptions_t options
-                              // Msutherl, removed
-                              //, std::function< void (Flexus::Qemu::Translation &) > translate
-                              ,
-                              std::function<int(bool)> advance,
-                              std::function<void(eSquashCause)> squash,
-                              std::function<void(VirtualMemoryAddress)> redirect,
-                              std::function<void(int, int)> change_mode,
-                              std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback,
-                              std::function<void(bool)> signalStoreForwardingHit,
-                              std::function< void( boost::intrusive_ptr<BPredState>) > squashBranch,
-                              std::function< void( boost::intrusive_ptr<TrapState>) > sendTrapState,
-                              std::function< void( std::list< boost::intrusive_ptr<BPredState> >) > reconstructRAS,
-                              std::function< void( RetireNotice & )> retirecb,
-                              std::function<void(int32_t)> mmuResync);
+  static CoreModel *
+  construct(uArchOptions_t options
+            // Msutherl, removed
+            //, std::function< void (Flexus::Qemu::Translation &) > translate
+            ,
+            std::function<int(bool)> advance, std::function<void(eSquashCause)> squash,
+            std::function<void(VirtualMemoryAddress)> redirect,
+            std::function<void(int, int)> change_mode,
+            std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback,
+            std::function<void(bool)> signalStoreForwardingHit,
+            std::function<void(boost::intrusive_ptr<BPredState>)> squashBranch,
+            std::function<void(boost::intrusive_ptr<TrapState>)> sendTrapState,
+            std::function<void(std::list<boost::intrusive_ptr<BPredState>>)> reconstructRAS,
+            std::function<void(RetireNotice &)> retirecb, std::function<void(int32_t)> mmuResync);
 
   // Interface to mircoArch
   virtual void initializeRegister(mapped_reg aRegister, register_value aValue) = 0;
@@ -89,9 +88,9 @@ struct CoreModel : public uArchARM {
 
   virtual void getARMState(armState &aState) = 0;
   virtual void restoreARMState(armState &aState) = 0;
-  virtual boost::intrusive_ptr<TrapState> getTrapState() = 0;//Rakesh
-  virtual boost::intrusive_ptr<BPredState> getResyncBPState() const = 0; //Rakesh
-  virtual void resetResyncBPState() = 0; //Rakesh
+  virtual boost::intrusive_ptr<TrapState> getTrapState() = 0;            // Rakesh
+  virtual boost::intrusive_ptr<BPredState> getResyncBPState() const = 0; // Rakesh
+  virtual void resetResyncBPState() = 0;                                 // Rakesh
 
   virtual void setPC(uint64_t aPC) = 0;
   virtual uint64_t pc() const = 0;

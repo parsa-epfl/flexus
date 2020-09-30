@@ -594,7 +594,9 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction {
   /* Msutherl: Add for Boomerang */
   virtual boost::intrusive_ptr<BPredState> bpState() const = 0;
   virtual Opcode getOpcode() const = 0;
-  virtual boost::intrusive_ptr<BranchFeedback> branchFeedback() const {return NULL;}
+  virtual boost::intrusive_ptr<BranchFeedback> branchFeedback() const {
+    return NULL;
+  }
   /* End Boomerang */
 
   virtual void annul() = 0;
@@ -817,11 +819,13 @@ struct uArchARM {
                                 boost::intrusive_ptr<Interaction> anInteraction) {
     DBG_Assert(false);
   }
-  virtual bool squashAfter( boost::intrusive_ptr< Instruction > anInsn, boost::intrusive_ptr<BPredState> aBPState) {
+  virtual bool squashAfter(boost::intrusive_ptr<Instruction> anInsn,
+                           boost::intrusive_ptr<BPredState> aBPState) {
     DBG_Assert(false);
     return false;
   }
-  virtual bool squashFrom(boost::intrusive_ptr<Instruction> anInsn, boost::intrusive_ptr<BPredState> aBPState) {
+  virtual bool squashFrom(boost::intrusive_ptr<Instruction> anInsn,
+                          boost::intrusive_ptr<BPredState> aBPState) {
     DBG_Assert(false);
     return false;
   }
@@ -1085,8 +1089,9 @@ struct uArchARM {
   virtual void takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExceptionType aTrapType) {
     DBG_Assert(false);
   }
-  virtual void takeTrap(boost::intrusive_ptr<Instruction> anInstruction, int32_t aTrapNum, xExceptionSource exceptionSource) {
-      DBG_Assert(false);
+  virtual void takeTrap(boost::intrusive_ptr<Instruction> anInstruction, int32_t aTrapNum,
+                        xExceptionSource exceptionSource) {
+    DBG_Assert(false);
   }
 
   virtual void clearExclusiveLocal() {

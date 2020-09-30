@@ -568,7 +568,7 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
   }
 
   uint64_t &timeStamp() {
-      return theTS;
+    return theTS;
   }
 
   bool isRequest() const {

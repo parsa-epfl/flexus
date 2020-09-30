@@ -64,7 +64,7 @@ class FLEXUS_COMPONENT(BPWarm) {
 
   std::unique_ptr<FastBranchPredictor> theBranchPredictor;
 
-  std::vector< std::vector< uint32_t > > theOpcode;	//Rakesh
+  std::vector<std::vector<uint32_t>> theOpcode; // Rakesh
   std::vector<std::vector<VirtualMemoryAddress>> theFetchAddress;
   std::vector<std::vector<BPredState>> theFetchState;
   std::vector<std::vector<eBranchType>> theFetchType;
@@ -72,22 +72,22 @@ class FLEXUS_COMPONENT(BPWarm) {
   std::vector<bool> theOne;
 
   // MARK: Added for FDIP/Boomerang
-  std::vector< VirtualMemoryAddress >                theBBAddress;
-  std::vector< eBranchType >                		 theLastBranch;
+  std::vector<VirtualMemoryAddress> theBBAddress;
+  std::vector<eBranchType> theLastBranch;
 
   int latest_resolved_branch;
   BPredState BBTBState;
 
   struct BPFeedback {
-	  VirtualMemoryAddress pc;
-	  eBranchType theFetchType;
-	  eDirection dir;
-	  VirtualMemoryAddress target;
-	  BPredState theFetchState;
+    VirtualMemoryAddress pc;
+    eBranchType theFetchType;
+    eDirection dir;
+    VirtualMemoryAddress target;
+    BPredState theFetchState;
   } theBPFeedback[UNRESOLVED_BRANCH_ARRAY_SIZE];
 
-  BPWarm_stats * bStats;
-  Prefetcher * runAheadPrefetcher;
+  BPWarm_stats *bStats;
+  Prefetcher *runAheadPrefetcher;
   std::map<uint64_t, uint64_t> stats0;
 
   std::pair<eBranchType, bool> decode(uint32_t opcode) {
@@ -126,7 +126,7 @@ class FLEXUS_COMPONENT(BPWarm) {
       return std::make_pair(kNonBranch, false);
     }
 #else
-    std::pair<eBranchType,VirtualMemoryAddress> type_and_offset = targetDecode(opcode);
+    std::pair<eBranchType, VirtualMemoryAddress> type_and_offset = targetDecode(opcode);
     return std::make_pair(type_and_offset.first, false);
 #endif
   }
@@ -280,8 +280,7 @@ public:
   bool available(interface::ITraceInModern const &, index_t anIndex) {
     return true;
   }
-  void push(interface::ITraceInModern const &, index_t anIndex,
-            BPMessage &incomingBPMsg) {
+  void push(interface::ITraceInModern const &, index_t anIndex, BPMessage &incomingBPMsg) {
     bool anOne = theOne[anIndex];
 
     uint64_t aVirtualPC = aPCAndTypeAndAnnulPair.first;

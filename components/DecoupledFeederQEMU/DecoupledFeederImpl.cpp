@@ -234,7 +234,7 @@ public:
     FLEXUS_CHANNEL_ARRAY( ToBPred, anIndex ) << theFetchInfo;
   }
   */
-  void modernToL1I(int32_t anIndex, MemoryMessage &aMessage,uint32_t anOpcode) {
+  void modernToL1I(int32_t anIndex, MemoryMessage &aMessage, uint32_t anOpcode) {
     TranslationPtr tr(new Translation);
     tr->setInstr();
     tr->theVaddr = aMessage.pc();

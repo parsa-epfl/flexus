@@ -227,10 +227,10 @@ public:
                              ll::bind(&uArchARMComponent::changeState, this, ll::_1, ll::_2),
                              ll::bind(&uArchARMComponent::feedback, this, ll::_1),
                              ll::bind(&uArchARMComponent::signalStoreForwardingHit, this, ll::_1),
-                             ll::bind( &uArchARMComponent::squashBranch, this, ll::_1),
-                             ll::bind( &uArchARMComponent::sendTrapState, this, ll::_1),
-                             ll::bind( &uArchARMComponent::reconstructRAS, this, ll::_1),
-                             ll::bind( &uArchARMComponent::retirecb, this, ll::_1),
+                             ll::bind(&uArchARMComponent::squashBranch, this, ll::_1),
+                             ll::bind(&uArchARMComponent::sendTrapState, this, ll::_1),
+                             ll::bind(&uArchARMComponent::reconstructRAS, this, ll::_1),
+                             ll::bind(&uArchARMComponent::retirecb, this, ll::_1),
                              ll::bind(&uArchARMComponent::resyncMMU, this, ll::_1));
 
     theuArchObject = theuArchQemuFactory.create(
@@ -323,16 +323,16 @@ public:
 private:
   struct ResynchronizeWithQemuException {};
 
-  void squashBranch( boost::intrusive_ptr<BPredState> aBPState) {
-    FLEXUS_CHANNEL( SquashBranchOut ) << aBPState;
+  void squashBranch(boost::intrusive_ptr<BPredState> aBPState) {
+    FLEXUS_CHANNEL(SquashBranchOut) << aBPState;
   }
 
-  void sendTrapState( boost::intrusive_ptr<TrapState> aTrapState) {
-    FLEXUS_CHANNEL( TrapStateOut ) << aTrapState;
+  void sendTrapState(boost::intrusive_ptr<TrapState> aTrapState) {
+    FLEXUS_CHANNEL(TrapStateOut) << aTrapState;
   }
 
-  void reconstructRAS( std::list< boost::intrusive_ptr<BPredState> > theRASops) {
-    FLEXUS_CHANNEL( RASOpsOut ) << theRASops;
+  void reconstructRAS(std::list<boost::intrusive_ptr<BPredState>> theRASops) {
+    FLEXUS_CHANNEL(RASOpsOut) << theRASops;
   }
 
   void squash(eSquashCause aSquashReason) {
@@ -351,7 +351,8 @@ private:
 
   void redirect(VirtualMemoryAddress aPC) {
     VirtualMemoryAddress redirect_addr = aPC;
-    std::pair<VirtualMemoryAddress,VirtualMemoryAddress> redir_out(redirect_addr,redirect_addr+4);
+    std::pair<VirtualMemoryAddress, VirtualMemoryAddress> redir_out(redirect_addr,
+                                                                    redirect_addr + 4);
     FLEXUS_CHANNEL(RedirectOut) << redir_out;
   }
 
@@ -359,8 +360,8 @@ private:
     FLEXUS_CHANNEL(BranchFeedbackOut) << aFeedback;
   }
 
-  void retirecb( RetireNotice & aRetirePC ) {
-    FLEXUS_CHANNEL( RetireOut ) << aRetirePC;
+  void retirecb(RetireNotice &aRetirePC) {
+    FLEXUS_CHANNEL(RetireOut) << aRetirePC;
   }
 
   void signalStoreForwardingHit(bool garbage) {

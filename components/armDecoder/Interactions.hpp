@@ -55,7 +55,7 @@ using Flexus::SharedTypes::VirtualMemoryAddress;
 struct BranchInteraction : public nuArchARM::Interaction {
   VirtualMemoryAddress theTarget;
   boost::intrusive_ptr<BPredState> theBPState;
-  BranchInteraction( VirtualMemoryAddress aTarget, boost::intrusive_ptr<BPredState> theBPState);
+  BranchInteraction(VirtualMemoryAddress aTarget, boost::intrusive_ptr<BPredState> theBPState);
   void operator()(boost::intrusive_ptr<nuArchARM::Instruction> anInstruction,
                   nuArchARM::uArchARM &aCore);
   void describe(std::ostream &anOstream) const;
@@ -66,7 +66,8 @@ struct BranchInteraction : public nuArchARM::Interaction {
 
 nuArchARM::Interaction *reinstateInstructionInteraction();
 nuArchARM::Interaction *annulInstructionInteraction();
-nuArchARM::Interaction *branchInteraction(VirtualMemoryAddress aTarget, boost::intrusive_ptr<BPredState> aBPState);
+nuArchARM::Interaction *branchInteraction(VirtualMemoryAddress aTarget,
+                                          boost::intrusive_ptr<BPredState> aBPState);
 
 } // namespace narmDecoder
 

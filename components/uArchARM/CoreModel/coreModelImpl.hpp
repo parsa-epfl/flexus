@@ -124,10 +124,10 @@ class CoreImpl : public CoreModel {
   std::function<void(int, int)> change_mode_fn;
   std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback_fn;
   std::function<void(bool)> signalStoreForwardingHit_fn;
-  std::function< void( boost::intrusive_ptr<BPredState>)> squashBranch_fn;
-  std::function< void( boost::intrusive_ptr<TrapState>)> sendTrapState_fn;
-  std::function< void( std::list< boost::intrusive_ptr<BPredState> >)> reconstructRAS_fn;
-  std::function< void( RetireNotice & )> retirecb_fn;
+  std::function<void(boost::intrusive_ptr<BPredState>)> squashBranch_fn;
+  std::function<void(boost::intrusive_ptr<TrapState>)> sendTrapState_fn;
+  std::function<void(std::list<boost::intrusive_ptr<BPredState>>)> reconstructRAS_fn;
+  std::function<void(RetireNotice &)> retirecb_fn;
   std::function<void(int32_t)> mmuResync_fn;
 
   // register renaming  architectural -> physical
@@ -457,11 +457,11 @@ private:
 
   uint32_t theRetireCount; // Count retirements each cycle
 
-  boost::intrusive_ptr<BPredState> prevBPState[2]; //Rakesh
-  boost::intrusive_ptr<BranchFeedback> prevBranchFeedback[2]; //Rakesh
-  //bool isBranchAlwaysAnnulled[2];
-  uint64_t theBBAddress;	//Rakesh
-  eBranchType lastBranchType; //Type of last branch that updated the BBTB
+  boost::intrusive_ptr<BPredState> prevBPState[2];            // Rakesh
+  boost::intrusive_ptr<BranchFeedback> prevBranchFeedback[2]; // Rakesh
+  // bool isBranchAlwaysAnnulled[2];
+  uint64_t theBBAddress;      // Rakesh
+  eBranchType lastBranchType; // Type of last branch that updated the BBTB
   Stat::StatCounter statSquashesBMPredEarlyRet;
   Stat::StatCounter statSquashesBTBMissEarlyRet;
   Stat::StatCounter statSquashesBTBBPMissEarlyRet;
@@ -538,11 +538,10 @@ public:
            std::function<void(int, int)> change_mode,
            std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback,
            std::function<void(bool)> signalStoreForwardingHit,
-           std::function< void( boost::intrusive_ptr<BPredState>)> squashBranch,
-           std::function< void( boost::intrusive_ptr<TrapState>)> sendTrapState,
-           std::function< void(std::list< boost::intrusive_ptr<BPredState> >)> reconstructRAS,
-           std::function< void( RetireNotice & ) > retirecb,
-           std::function<void(int32_t)> mmuResync);
+           std::function<void(boost::intrusive_ptr<BPredState>)> squashBranch,
+           std::function<void(boost::intrusive_ptr<TrapState>)> sendTrapState,
+           std::function<void(std::list<boost::intrusive_ptr<BPredState>>)> reconstructRAS,
+           std::function<void(RetireNotice &)> retirecb, std::function<void(int32_t)> mmuResync);
 
   virtual ~CoreImpl() {
   }
@@ -605,7 +604,9 @@ public:
   void commitStore(boost::intrusive_ptr<Instruction> aCorrespondingInstruction);
   bool checkStoreRetirement(boost::intrusive_ptr<Instruction> aStore);
   void accessMem(PhysicalMemoryAddress anAddress, boost::intrusive_ptr<Instruction> anInsn);
-  void BBTBhelper(uint64_t currPC, int64_t opcode, boost::intrusive_ptr<BranchFeedback> branchFeedback, boost::intrusive_ptr<BPredState> bpState); //Rakesh
+  void BBTBhelper(uint64_t currPC, int64_t opcode,
+                  boost::intrusive_ptr<BranchFeedback> branchFeedback,
+                  boost::intrusive_ptr<BPredState> bpState); // Rakesh
   bool isSpinning() const {
     return theSpinning;
   }
@@ -640,13 +641,16 @@ private:
   // Squashing & Front-end control
   //==========================================================================
 public:
-  bool squashFrom(boost::intrusive_ptr< Instruction > anInsn, boost::intrusive_ptr<BPredState> aBPFeedback);
-  bool squashAfter( boost::intrusive_ptr< Instruction > anInsn, boost::intrusive_ptr<BPredState> aBPFeedback);
+  bool squashFrom(boost::intrusive_ptr<Instruction> anInsn,
+                  boost::intrusive_ptr<BPredState> aBPFeedback);
+  bool squashAfter(boost::intrusive_ptr<Instruction> anInsn,
+                   boost::intrusive_ptr<BPredState> aBPFeedback);
   void redirectFetch(VirtualMemoryAddress anAddress);
   void branchFeedback(boost::intrusive_ptr<BranchFeedback> feedback);
 
   void takeTrap(boost::intrusive_ptr<Instruction> anInsn, eExceptionType aTrapType);
-  void takeTrap(boost::intrusive_ptr< Instruction > anInsn, int32_t aTrapNum, xExceptionSource exceptionSource);
+  void takeTrap(boost::intrusive_ptr<Instruction> anInsn, int32_t aTrapNum,
+                xExceptionSource exceptionSource);
   void handleTrap();
 
 private:
@@ -726,8 +730,12 @@ public:
   void getARMState(armState &aState);
   void restoreARMState(armState &aState);
   void compareARMState(armState &aLeft, armState &aRight);
-  boost::intrusive_ptr<BPredState> getResyncBPState() const {return theBPStateResync;} //Rakesh
-  void resetResyncBPState() {theBPStateResync = 0;} //Rakesh
+  boost::intrusive_ptr<BPredState> getResyncBPState() const {
+    return theBPStateResync;
+  } // Rakesh
+  void resetResyncBPState() {
+    theBPStateResync = 0;
+  } // Rakesh
   bool isIdleLoop();
   uint64_t pc() const;
   bool isAARCH64();
@@ -768,15 +776,15 @@ public:
 
   /* Msutherl: Functions added from Boomerang */
   boost::intrusive_ptr<TrapState> getTrapState() {
-	  boost::intrusive_ptr<TrapState> theTrapState = boost::intrusive_ptr<TrapState>(new TrapState() );
-      // FIXME: This is sparc specific, needs to be ported to ARM
-	  theTrapState->theTL = 0xdeadbeef;
-	  for (int i = 0; i < 5; i++) {
-		  theTrapState->theTPC[i] = 0xdeadbeef;
-		  theTrapState->theTNPC[i] = 0xdeadbeef;
-	  }
+    boost::intrusive_ptr<TrapState> theTrapState = boost::intrusive_ptr<TrapState>(new TrapState());
+    // FIXME: This is sparc specific, needs to be ported to ARM
+    theTrapState->theTL = 0xdeadbeef;
+    for (int i = 0; i < 5; i++) {
+      theTrapState->theTPC[i] = 0xdeadbeef;
+      theTrapState->theTNPC[i] = 0xdeadbeef;
+    }
 
-	  return theTrapState;
+    return theTrapState;
   }
   // Interface to Memory Unit
   //==========================================================================

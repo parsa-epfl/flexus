@@ -128,4 +128,3 @@ targetDecode(uint32_t opcode) {
   }
   return std::make_pair(aType, aTarget);
 }
-

@@ -223,7 +223,7 @@ public:
   }
 
   API::cycles_t insn_fetch(Qemu::API::memory_transaction_t *mem_trans) {
-      instr_num++;
+    instr_num++;
     const int32_t k_no_stall = 0;
     theMemoryMessage.address() = PhysicalMemoryAddress(mem_trans->s.physical_address);
     theMemoryMessage.pc() = VirtualMemoryAddress(mem_trans->s.logical_address);
@@ -249,7 +249,7 @@ public:
     uint8_t aSize = 4;
     uint8_t tmp_arr[aSize] = {0}; // 32B
     uint32_t opcode;
-    API::QEMU_read_phys_memory(tmp_arr,mem_trans->s.physical_address, aSize);
+    API::QEMU_read_phys_memory(tmp_arr, mem_trans->s.physical_address, aSize);
     std::memcpy(&opcode, tmp_arr, aSize);
     IS_PRIV(mem_trans) ? theOSStats->theFetches++ : theUserStats->theFetches++;
     theBothStats->theFetches++;
@@ -257,7 +257,7 @@ public:
     // TODO FIXME
     DBG_(VVerb, (<< "sending fetch[" << theIndex << "] op: " << opcode
                  << " message: " << theMemoryMessage));
-    toL1I(theIndex, theMemoryMessage,opcode);
+    toL1I(theIndex, theMemoryMessage, opcode);
     return k_no_stall; // Never stalls
   }
 
