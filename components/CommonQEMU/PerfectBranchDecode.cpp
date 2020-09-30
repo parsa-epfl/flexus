@@ -44,86 +44,88 @@
 //  DO-NOT-REMOVE end-copyright-block
 #include <components/CommonQEMU/PerfectBranchDecode.hpp>
 
-using Flexus::SharedTypes::kConditional;
-using Flexus::SharedTypes::kUnconditional;
 using Flexus::SharedTypes::kCall;
-using Flexus::SharedTypes::kReturn;
+using Flexus::SharedTypes::kConditional;
+using Flexus::SharedTypes::kIndirectCall;
+using Flexus::SharedTypes::kIndirectReg;
 using Flexus::SharedTypes::kNonBranch;
-using Flexus::SharedTypes::kIndirect;
+using Flexus::SharedTypes::kReturn;
+using Flexus::SharedTypes::kUnconditional;
 
 int32_t sextract32(uint32_t value, int start, int length) {
-    assert(start >= 0 && length > 0 && length <= 32 - start);
-    /* Note that this implementation relies on right shift of signed
-     * integers being an arithmetic shift.
-     */
-    return ((int32_t)(value << (32 - length - start))) >> (32 - length);
+  assert(start >= 0 && length > 0 && length <= 32 - start);
+  /* Note that this implementation relies on right shift of signed
+   * integers being an arithmetic shift.
+   */
+  return ((int32_t)(value << (32 - length - start))) >> (32 - length);
 }
 
 uint32_t extract32(uint32_t value, int start, int length) {
-    assert(start >= 0 && length > 0 && length <= 32 - start);
-    return (value >> start) & (~0U >> (32 - length));
+  assert(start >= 0 && length > 0 && length <= 32 - start);
+  return (value >> start) & (~0U >> (32 - length));
 }
 
-std::pair<Flexus::SharedTypes::eBranchType, Flexus::SharedTypes::VirtualMemoryAddress> targetDecode(uint32_t opcode) {
-    VirtualMemoryAddress aTarget(0); // This is actually displacement
-    eBranchType aType = kNonBranch;
-    int64_t offset = 0;
-    uint64_t cond = 0;
-    switch (extract32(opcode, 25, 7)) {
-        case 0x0a:
-        case 0x0b:
-        case 0x4a:
-        case 0x4b: /* Unconditional branch (immediate) */
-            offset = sextract32(opcode, 0, 26) << 2;
-            aTarget = VirtualMemoryAddress(offset);
-            aType = kUnconditional;
-            break;
-        case 0x1a:
-        case 0x5a: /* Compare & branch (immediate) */
-            offset = sextract32(opcode, 5, 19) << 2;
-            aTarget = VirtualMemoryAddress(offset);
-            aType = kConditional;
-            break;
-        case 0x1b:
-        case 0x5b: /* Test & branch (immediate) */
-            offset = sextract32(opcode, 5, 14) << 2;
-            aTarget = VirtualMemoryAddress(offset);
-            aType = kConditional;
-            break;
-        case 0x2a: /* Conditional branch (immediate) */
-            cond = extract32(opcode, 0, 4);
-            // program label to be conditionally branched to. Its offset from the address of this
-            // instruction, in the range +/-1MB, is encoded as "imm19" times 4.
-            offset = sextract32(opcode, 5, 19) << 2;
-            aTarget = VirtualMemoryAddress(offset);
+std::pair<Flexus::SharedTypes::eBranchType, Flexus::SharedTypes::VirtualMemoryAddress>
+targetDecode(uint32_t opcode) {
+  VirtualMemoryAddress aTarget(0); // This is actually displacement
+  eBranchType aType = kNonBranch;
+  int64_t offset = 0;
+  uint64_t cond = 0;
+  switch (extract32(opcode, 25, 7)) {
+  case 0x0a:
+  case 0x0b:
+  case 0x4a:
+  case 0x4b: /* Unconditional branch (immediate) */
+    offset = sextract32(opcode, 0, 26) << 2;
+    aTarget = VirtualMemoryAddress(offset);
+    aType = kUnconditional;
+    break;
+  case 0x1a:
+  case 0x5a: /* Compare & branch (immediate) */
+    offset = sextract32(opcode, 5, 19) << 2;
+    aTarget = VirtualMemoryAddress(offset);
+    aType = kConditional;
+    break;
+  case 0x1b:
+  case 0x5b: /* Test & branch (immediate) */
+    offset = sextract32(opcode, 5, 14) << 2;
+    aTarget = VirtualMemoryAddress(offset);
+    aType = kConditional;
+    break;
+  case 0x2a: /* Conditional branch (immediate) */
+    cond = extract32(opcode, 0, 4);
+    // program label to be conditionally branched to. Its offset from the address of this
+    // instruction, in the range +/-1MB, is encoded as "imm19" times 4.
+    offset = sextract32(opcode, 5, 19) << 2;
+    aTarget = VirtualMemoryAddress(offset);
 
-            if (cond < 0x0e) {
-                /* genuinely conditional branches */
-                aType = kConditional;
-            } else {
-                /* 0xe and 0xf are both "always" conditions */
-                aType = kUnconditional;
-            }
-            break;
-        case 0x6b: /* Unconditional branch (register) */
-            switch (extract32(opcode, 21, 2)) {
-                case 0:
-                    aType = kIndirect;
-                    break;
-                case 1:
-                    aType = kCall;
-                    break;
-                case 2:
-                    aType = kReturn;
-                    break;
-                default:
-                    aType = kNonBranch;
-                    break;
-            }
-            break;
-        default:
-            break;
+    if (cond < 0x0e) {
+      /* genuinely conditional branches */
+      aType = kConditional;
+    } else {
+      /* 0xe and 0xf are both "always" conditions */
+      aType = kUnconditional;
     }
-    return std::make_pair(aType, aTarget);
+    break;
+  case 0x6b: /* Unconditional branch (register) */
+    switch (extract32(opcode, 21, 2)) {
+    case 0:
+      aType = kIndirectReg;
+      break;
+    case 1:
+      aType = kCall;
+      break;
+    case 2:
+      aType = kReturn;
+      break;
+    default:
+      aType = kNonBranch;
+      break;
+    }
+    break;
+  default:
+    break;
+  }
+  return std::make_pair(aType, aTarget);
 }
 

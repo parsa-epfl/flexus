@@ -84,14 +84,14 @@ class FLEXUS_COMPONENT(armDecoder) {
   Stat::StatCounter theCallRestorePair;
   bool theSyncInsnInProgress;
 
-  typedef PipelineFifo< boost::intrusive_ptr< AbstractInstruction > > CorePipeline;
+  typedef PipelineFifo<boost::intrusive_ptr<AbstractInstruction>> CorePipeline;
   CorePipeline thePipeline;
 
 public:
-  FLEXUS_COMPONENT_CONSTRUCTOR(armDecoder) : base(FLEXUS_PASS_CONSTRUCTOR_ARGS)
-	, theCallRestorePair( statName() + "-CallRestorePair" )
-	, thePipeline( statName() + "-Pipeline", cfg.DispatchWidth , 1, cfg.PipeLat)
-   { }
+  FLEXUS_COMPONENT_CONSTRUCTOR(armDecoder)
+      : base(FLEXUS_PASS_CONSTRUCTOR_ARGS), theCallRestorePair(statName() + "-CallRestorePair"),
+        thePipeline(statName() + "-Pipeline", cfg.DispatchWidth, 1, cfg.PipeLat) {
+  }
 
   bool isQuiesced() const {
     // the FAG is always quiesced.
@@ -110,7 +110,7 @@ public:
 public:
   FLEXUS_PORT_ALWAYS_AVAILABLE(FetchBundleIn);
   void push(interface::FetchBundleIn const &, pFetchBundle &aBundle) {
-    std::list< FetchedOpcode >::iterator iter = aBundle->theOpcodes.begin();
+    std::list<FetchedOpcode>::iterator iter = aBundle->theOpcodes.begin();
 
     std::list<tFillLevel>::iterator fill_iter = aBundle->theFillLevels.begin();
     for (auto it = aBundle->theOpcodes.begin(); it != aBundle->theOpcodes.end(); it++) {
@@ -129,9 +129,9 @@ public:
             insn->setMissPrefetchOnWay(iter->theMissPrefetchOnWay);
             insn->setIcacheMissCycles(iter->theIcacheMissCycles);*/
 
-          eInstructionCode insnCode = (dynamic_cast< armInstruction *>( insn.get() ))->instCode();
+          eInstructionCode insnCode = (dynamic_cast<armInstruction *>(insn.get()))->instCode();
           if ((lastInsnCode == codeCALL) /*&& lastBPState->callUpdatedRAS == true*/) {
-              trackSpecialCall(insnCode, (*iter).theOpcode);
+            trackSpecialCall(insnCode, (*iter).theOpcode);
           }
 
           lastInsnCode = insnCode;
@@ -147,7 +147,7 @@ public:
   }
 
   void trackSpecialCall(eInstructionCode insnCode, Opcode theOpcode) {
-      // FIXME: PORT TO ARM
+    // FIXME: PORT TO ARM
 #if 0
       if (insnCode == codeBranchJmpl) {
   		theCallRestorePair++;
@@ -174,30 +174,39 @@ public:
   }
 
   FLEXUS_PORT_ALWAYS_AVAILABLE(RASOpsIn);
-  void push(interface::RASOpsIn const &, std::list< boost::intrusive_ptr<BPredState> > & theRASops) {
-//	  DBG_( Tmp, ( << " reconstruct RAS Decode" ));
+  void push(interface::RASOpsIn const &, std::list<boost::intrusive_ptr<BPredState>> &theRASops) {
+    //	  DBG_( Tmp, ( << " reconstruct RAS Decode" ));
 
-	  for (uint32_t i = 0; i < thePipeline.size(); i++) {
-		  boost::intrusive_ptr< AbstractInstruction > inst = thePipeline.peek();
-		  boost::intrusive_ptr<BPredState> bpState = (dynamic_cast< armInstruction *>( inst.get() ))->bpState();
-		  thePipeline.dequeue();
+    for (uint32_t i = 0; i < thePipeline.size(); i++) {
+      boost::intrusive_ptr<AbstractInstruction> inst = thePipeline.peek();
+      boost::intrusive_ptr<BPredState> bpState =
+          (dynamic_cast<armInstruction *>(inst.get()))->bpState();
+      thePipeline.dequeue();
 
-	      if (bpState->thePredictedType == kCall || bpState->thePredictedType == kIndirect || bpState->thePredictedType == kReturn) {
-//	    	  DBG_( Tmp, ( << " RAS Decode " << bpState->pc << " pred type " << bpState->thePredictedType << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(bpState->pc)));
-	    	  theRASops.push_front(bpState);
-	      }
-	  }
+      if (bpState->thePredictedType == kCall || bpState->thePredictedType == kIndirectCall ||
+          bpState->thePredictedType == kIndirectReg || bpState->thePredictedType == kReturn) {
+        //	    	  DBG_( Tmp, ( << " RAS Decode " << bpState->pc << " pred type " <<
+        // bpState->thePredictedType << " " <<
+        // Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(bpState->pc)));
+        theRASops.push_front(bpState);
+      }
+    }
 
-	  for ( std::list< boost::intrusive_ptr< AbstractInstruction > >::iterator it = theFIQ.begin(); it != theFIQ.end(); it++) {
-//		  boost::intrusive_ptr< AbstractInstruction > inst(*it);
-		  boost::intrusive_ptr<BPredState> bpState = (dynamic_cast< armInstruction *>( (*it).get() ))->bpState();
-	      if (bpState->thePredictedType == kCall || bpState->thePredictedType == kIndirect || bpState->thePredictedType == kReturn) {
-//	    	  DBG_( Tmp, ( << " RAS Decode " << bpState->pc << " pred type " << bpState->thePredictedType << " " << Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(bpState->pc)));
-	    	  theRASops.push_front(bpState);
-	      }
-	  }
+    for (std::list<boost::intrusive_ptr<AbstractInstruction>>::iterator it = theFIQ.begin();
+         it != theFIQ.end(); it++) {
+      //		  boost::intrusive_ptr< AbstractInstruction > inst(*it);
+      boost::intrusive_ptr<BPredState> bpState =
+          (dynamic_cast<armInstruction *>((*it).get()))->bpState();
+      if (bpState->thePredictedType == kCall || bpState->thePredictedType == kIndirectCall ||
+          bpState->thePredictedType == kIndirectReg || bpState->thePredictedType == kReturn) {
+        //	    	  DBG_( Tmp, ( << " RAS Decode " << bpState->pc << " pred type " <<
+        // bpState->thePredictedType << " " <<
+        // Flexus::Simics::Processor::getProcessor(flexusIndex())->disassemble(bpState->pc)));
+        theRASops.push_front(bpState);
+      }
+    }
 
-	  FLEXUS_CHANNEL( RASOpsOut ) << theRASops;
+    FLEXUS_CHANNEL(RASOpsOut) << theRASops;
   }
 
   FLEXUS_PORT_ALWAYS_AVAILABLE(AvailableFIQOut);
@@ -255,16 +264,14 @@ private:
     DISPATCH_DBG("--------------START DISPATCHING------------------------");
     /* Delay pipe for Boomerang */
     uint64_t decoded = 0;
-    while(  decoded < cfg.DispatchWidth
-            && !theFIQ.empty()
-            && (thePipeline.size() < (cfg.DispatchWidth*cfg.PipeLat))
-         ){
+    while (decoded < cfg.DispatchWidth && !theFIQ.empty() &&
+           (thePipeline.size() < (cfg.DispatchWidth * cfg.PipeLat))) {
 
-        boost::intrusive_ptr< AbstractInstruction > inst(theFIQ.front());
-        theFIQ.pop_front();
-        thePipeline.enqueue(inst);
+      boost::intrusive_ptr<AbstractInstruction> inst(theFIQ.front());
+      theFIQ.pop_front();
+      thePipeline.enqueue(inst);
 
-        decoded++;
+      decoded++;
     }
 
     DBG_Assert(FLEXUS_CHANNEL(AvailableDispatchIn).available());
@@ -292,16 +299,16 @@ private:
                    << ", theFIQ is empty " << int(theFIQ.empty()) << ", no Sync Insn In Progress "
                    << int(!theSyncInsnInProgress));
     }
-    while (available_dispatch > 0 && dispatched < cfg.DispatchWidth && !theFIQ.empty()
-			&& thePipeline.ready() && !theSyncInsnInProgress) {
-        boost::intrusive_ptr< AbstractInstruction > inst = thePipeline.peek();
+    while (available_dispatch > 0 && dispatched < cfg.DispatchWidth && !theFIQ.empty() &&
+           thePipeline.ready() && !theSyncInsnInProgress) {
+      boost::intrusive_ptr<AbstractInstruction> inst = thePipeline.peek();
       if (theFIQ.front()->haltDispatch()) {
         // May only dispatch black box op when core is synchronized
         if (is_sync && dispatched == 0) {
           DISPATCH_DBG("Halt-dispatch " << *theFIQ.front());
           thePipeline.dequeue();
-          //boost::intrusive_ptr<AbstractInstruction> inst(theFIQ.front());
-          //theFIQ.pop_front();
+          // boost::intrusive_ptr<AbstractInstruction> inst(theFIQ.front());
+          // theFIQ.pop_front();
 
           // Report the dispatched instruction to the PowerTracker
           theOpcode = (dynamic_cast<armInstruction *>(inst.get()))->getOpcode();
@@ -315,8 +322,8 @@ private:
 
       } else {
         DISPATCH_DBG("Dispatching " << *theFIQ.front());
-        //boost::intrusive_ptr<AbstractInstruction> inst(theFIQ.front());
-        //theFIQ.pop_front();
+        // boost::intrusive_ptr<AbstractInstruction> inst(theFIQ.front());
+        // theFIQ.pop_front();
         thePipeline.dequeue();
 
         // Report the dispatched instruction to the PowerTracker

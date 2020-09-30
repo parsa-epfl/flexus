@@ -45,50 +45,38 @@
 #include <iostream>
 #include <components/uFetch/uFetchTypes.hpp>
 
-namespace Flexus{
-namespace SharedTypes{
+namespace Flexus {
+namespace SharedTypes {
 
 std::ostream &operator<<(std::ostream &os, const BPredState &s) {
-    os << "BPredState: { "
-       << " [pc: " << std::hex << s.pc << std::dec << "]"
-       << " [thePredictedType: " << s.thePredictedType << "]"
-       << " [thePredictedTarget: " << s.thePredictedTarget << "]"
-       << " [theNextPredictedTarget: " << s.theNextPredictedTarget << "]"
-       << " [thePrediction: " << s.thePrediction<< "]"
-       << " [theBimodalPrediction: " << s.theBimodalPrediction<< "]"
-       << " [theMetaPrediction: " << s.theMetaPrediction << "]"
-       << " [theGSharePrediction: " << s.theGSharePrediction << "]"
-       << " [theActualDirection: " << s.theActualDirection << "]"
-       << " [theActualType: " << s.theActualType << "]" << " }" << std::endl;
-    return os;
+  os << "BPredState: { "
+     << " [pc: " << std::hex << s.pc << std::dec << "]"
+     << " [thePredictedType: " << s.thePredictedType << "]"
+     << " [thePredictedTarget: " << s.thePredictedTarget << "]"
+     << " [theNextPredictedTarget: " << s.theNextPredictedTarget << "]"
+     << " [thePrediction: " << s.thePrediction << "]"
+     << " [theBimodalPrediction: " << s.theBimodalPrediction << "]"
+     << " [theMetaPrediction: " << s.theMetaPrediction << "]"
+     << " [theGSharePrediction: " << s.theGSharePrediction << "]"
+     << " [theActualDirection: " << s.theActualDirection << "]"
+     << " [theActualType: " << s.theActualType << "]"
+     << " }" << std::endl;
+  return os;
 }
 
 std::ostream &operator<<(std::ostream &os, const BranchFeedback &f) {
-    os << "BranchFeedback: { "
-        << "[thePC: " << std::hex << f.thePC << std::dec << "]"
-        << "[theActualType: " << f.theActualType << "]"
-        << "[theActualDirection: " << f.theActualDirection << "]"
-        << "[theBPDirection: " << f.theBPDirection << "]"
-        << "[branchResolution: " << f.branchResolution << "]"
-        << "[theActualTarget: " << std::hex << f.theActualTarget <<  std::dec << "]"
-        << "[theBBSize: " << f.theBBsize << "]"
-        << "[theBPState: " << *(f.theBPState) << "]"
-        << " }" << std::endl;
-    return os;
+  os << "BranchFeedback: { "
+     << "[thePC: " << std::hex << f.thePC << std::dec << "]"
+     << "[theActualType: " << f.theActualType << "]"
+     << "[theActualDirection: " << f.theActualDirection << "]"
+     << "[theBPDirection: " << f.theBPDirection << "]"
+     << "[branchResolution: " << f.branchResolution << "]"
+     << "[theActualTarget: " << std::hex << f.theActualTarget << std::dec << "]"
+     << "[theBBSize: " << f.theBBsize << "]"
+     << "[theBPState: " << *(f.theBPState) << "]"
+     << " }" << std::endl;
+  return os;
 }
 
-std::ostream &operator<<(std::ostream &os, eBranchType aType) {
-    const char *br_types[] = {"kNonBranch", "kConditional", "kUnconditional","kCall",
-        "kReturn", "kIndirect", "kLastBranchType"};
-    os << "BranchType: { ";
-    if (aType >= kLastBranchType) {
-        os << "InvalidBranchType(" << static_cast<int>(aType) << ")";
-    } else {
-        os << br_types[aType];
-    }
-    os << " }";
-    return os;
-}
-
-} // end namespaces
-}
+} // namespace SharedTypes
+} // namespace Flexus
