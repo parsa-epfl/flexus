@@ -57,8 +57,6 @@ addons:
 matrix:
   include:
     - env:
-      - SIMULATOR="KeenKraken"
-    - env:
       - SIMULATOR="KnottyKraken.Boom"
     - env:
       - LINT=true
