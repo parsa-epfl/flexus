@@ -1038,7 +1038,7 @@ theRASops.front()->theAltPredictedTarget));
 
       if (enableRAS) {
         if (enableTCE == false || theRASHelper.contains(aFetch.theAddress) == false) {
-          theRAS.push_back(aFetch.theAddress + 8);
+          theRAS.push_back(aFetch.theAddress + 4);
           //            	printRAS();
         } else {
           aFetch.theBPState->callUpdatedRAS = false;
@@ -1070,7 +1070,7 @@ theRASops.front()->theAltPredictedTarget));
       }
       if (enableRAS) {
         if (enableTCE == false || theRASHelper.contains(aFetch.theAddress) == false) {
-          theRAS.push_back(aFetch.theAddress + 8);
+          theRAS.push_back(aFetch.theAddress + 4);
           //            	printRAS();
         } else {
           aFetch.theBPState->callUpdatedRAS = false;
@@ -1179,7 +1179,7 @@ theRASops.front()->theAltPredictedTarget));
         if (aFetch.theBPState->thePrediction <= kTaken) {
           aFetch.theBPState->thePredictedTarget = aBTBEntry.theTarget;
         } else {
-          aFetch.theBPState->thePredictedTarget = aFetch.theAddress + 8;
+          aFetch.theBPState->thePredictedTarget = aFetch.theAddress + 4;
         }
       } else {
         //				DBG_(Tmp, ( << "BTB Pred"));
@@ -1187,7 +1187,7 @@ theRASops.front()->theAltPredictedTarget));
         if (aBTBEntry.theBranchDirection <= kTaken) {
           aFetch.theBPState->thePredictedTarget = aBTBEntry.theTarget;
         } else {
-          aFetch.theBPState->thePredictedTarget = aFetch.theAddress + 8;
+          aFetch.theBPState->thePredictedTarget = aFetch.theAddress + 4;
         }
       }
       break;
@@ -1222,7 +1222,7 @@ theRASops.front()->theAltPredictedTarget));
 
       if (enableRAS) {
         if (enableTCE == false || aBTBEntry.isSpecialCall == false) {
-          theRAS.push_back(VirtualMemoryAddress(aFetch.theAddress + 8));
+          theRAS.push_back(VirtualMemoryAddress(aFetch.theAddress + 4));
           //            	printRAS();
         } else {
           aFetch.theBPState->callUpdatedRAS = false;
@@ -1236,7 +1236,46 @@ theRASops.front()->theAltPredictedTarget));
       aFetch.theBPState->theGShareShiftReg = theGShare.shiftReg();
 #endif
       break;
+      /* Difference between indirect jump w. subroutine link and non-link are set out in
+       * ARM ISA Manual S6.2.30/6.2.31.
+       * Reg-indirect does not have call-link.
+       */
     case kIndirectCall:
+      // this behaves like a call and will speculatively push the RAS
+      ++thePredictions;
+      ++thePredictions_Indirect;
+      aFetch.theBPState->callUpdatedRAS = true;
+      if (theBTB.target(aFetch.theAddress)) {
+        aFetch.theBPState->thePredictedTarget = *theBTB.target(aFetch.theAddress);
+      } else {
+        aFetch.theBPState->thePredictedTarget = VirtualMemoryAddress(0);
+      }
+      if (enableRAS) {
+        if (enableTCE == false || theRASHelper.contains(aFetch.theAddress) == false) {
+          theRAS.push_back(aFetch.theAddress + 4);
+          //            	printRAS();
+        } else {
+          aFetch.theBPState->callUpdatedRAS = false;
+        }
+      }
+#ifdef TAGE
+      theTage.get_prediction((uint64_t)aFetch.theAddress, *(aFetch.theBPState));
+//            theTage.checkpoint_history(*(aFetch.theBPState));
+#else
+      aFetch.theBPState->theGShareShiftReg = theGShare.shiftReg();
+#endif
+      break;
+    case kIndirectReg:
+      // this does not push the RAS
+      ++thePredictions;
+      ++thePredictions_Indirect;
+      if (theBTB.target(aFetch.theAddress)) {
+        aFetch.theBPState->thePredictedTarget = *theBTB.target(aFetch.theAddress);
+      } else {
+        aFetch.theBPState->thePredictedTarget = VirtualMemoryAddress(0);
+      }
+      aFetch.theBPState->theGShareShiftReg = theGShare.shiftReg();
+      break;
     default:
       assert(0);
       break;
