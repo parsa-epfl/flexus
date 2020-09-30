@@ -154,7 +154,7 @@ public:
     }
     theCurrentThread = cfg.Threads;
     theBranchPredictor.reset(BranchPredictor::combining(statName(), flexusIndex(), cfg.EnableRAS,
-                                                        cfg.EnableTCE, cfg.EnableTrapRet));
+                                                        cfg.EnableTCE, cfg.EnableTrapRet, cfg.BTBSets, cfg.BTBWays));
 
     squashedBPState = 0;
     BTBMissPrefetchesIssued = 0;

@@ -18,6 +18,8 @@ COMPONENT_PARAMETERS(
   PARAMETER( PerfectBTB, bool, "BTB detect all the branch instructions but not the targets for indirect branches", "perfectBTB", false )
   PARAMETER( BlocksOnBTBMiss, int, "Number of next blocks to be prefetched at BTB miss", "blocksOnBTBMiss", 0 )
   PARAMETER( InsnOnBTBMiss, int, "Number of next consecutive instruction addresses to be enqueued on a BTB miss", "insnOnBTBMiss", 1 )
+  PARAMETER( BTBSets, uint32_t, "Number of sets in the BTB", "btbsets", 512 )
+  PARAMETER( BTBWays, uint32_t, "Number of ways in the BTB", "btbways", 4 )
 );
 
 COMPONENT_INTERFACE(
