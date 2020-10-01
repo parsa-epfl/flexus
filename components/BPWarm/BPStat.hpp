@@ -221,7 +221,7 @@ struct BPWarm_stats {
         disp = disp >> 2; // because of instruction alignment
         target = anActualTarget;
         //			  DBG_( Tmp, ( << " New disp: " << std::hex << disp << " target " <<
-        //target));
+        // target));
       } else {
         assert(anActualType == kConditional);
       }
@@ -309,8 +309,10 @@ struct BPWarm_stats {
     int64_t current_block = CACHE_BLOCK_ADDRESS(ICache_miss_address);
     int num_blocks = 9;
     //		if (current_block - branch_block == 0){
-    //			DBG_( Tmp, ( << "current block " << std::hex << current_block << " prev block " <<
-    //branch_block)); 			assert(current_block - branch_block != 0);
+    //			DBG_( Tmp, ( << "current block " << std::hex << current_block << " prev
+    // block
+    //"
+    //<< branch_block)); 			assert(current_block - branch_block != 0);
     //		}
 
     if (abs(current_block - branch_block) < 9)
@@ -346,31 +348,35 @@ struct BPWarm_stats {
           }
         } else {
           theBP_CondMispredict_Dir++;
-          //  				DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port InsnMissIn[" <<
-          //  anIndex << "] Conditional Miss:DirectionWrong" ));
+          //  				DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port
+          //  InsnMissIn["
+          //  << anIndex << "] Conditional Miss:DirectionWrong" ));
         }
       } else {
         theBP_PredMispredict++;
-        //  			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port InsnMissIn[" <<
-        //  anIndex << "] Conditional Miss:PredWrong" ));
+        //  			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port
+        //  InsnMissIn["
+        //  << anIndex << "] Conditional Miss:PredWrong" ));
       }
 
       if (ICache_miss_address > theFetchAddress) {
         (*theBP_IForwardTaken[num_blocks])++;
-        //  			DBG_( Tmp, Addr(aMessage.address()) ( << std::hex << " Forward Branch block
-        //  " << branch_block << " Current block " << current_block << " Diff " << current_block -
-        //  branch_block));
+        //  			DBG_( Tmp, Addr(aMessage.address()) ( << std::hex << " Forward
+        //  Branch block " << branch_block << " Current block " << current_block << " Diff " <<
+        //  current_block - branch_block));
         return CondForwardBranchMisses;
-        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port InsnMissIn[" <<
-        //    anIndex << "] Conditional Miss: forward"));
+        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port
+        //    InsnMissIn["
+        //    << anIndex << "] Conditional Miss: forward"));
       } else {
         (*theBP_IBackwardTaken[num_blocks])++;
-        //  			DBG_( Tmp, Addr(aMessage.address()) ( << std::hex << " Backward Branch block
-        //  " << branch_block << " Current block " << current_block << " Diff " << branch_block -
-        //  current_block));
+        //  			DBG_( Tmp, Addr(aMessage.address()) ( << std::hex << " Backward
+        //  Branch block " << branch_block << " Current block " << current_block << " Diff " <<
+        //  branch_block - current_block));
         return CondBackwardBrancheMisses;
-        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port InsnMissIn[" <<
-        //    anIndex << "] Conditional Miss: backward"));
+        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port
+        //    InsnMissIn["
+        //    << anIndex << "] Conditional Miss: backward"));
       }
       break;
     case kUnconditional:
@@ -390,26 +396,29 @@ struct BPWarm_stats {
         }
       } else {
         theBP_PredMispredict++;
-        //  			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port InsnMissIn[" <<
-        //  anIndex << "] Unconditional Miss:PredWrong" ));
+        //  			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port
+        //  InsnMissIn["
+        //  << anIndex << "] Unconditional Miss:PredWrong" ));
       }
 
       if (ICache_miss_address > theFetchAddress) {
         (*theBP_IForwardTaken[num_blocks])++;
-        //  			DBG_( Tmp, Addr(aMessage.address()) ( << std::hex << " Forward Branch block
-        //  " << branch_block << " Current block " << current_block << " Diff " << current_block -
-        //  branch_block));
+        //  			DBG_( Tmp, Addr(aMessage.address()) ( << std::hex << " Forward
+        //  Branch block " << branch_block << " Current block " << current_block << " Diff " <<
+        //  current_block - branch_block));
         return UncondForwardBranchMisses;
-        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port InsnMissIn[" <<
-        //    anIndex << "] Unconditional Miss: forward"));
+        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port
+        //    InsnMissIn["
+        //    << anIndex << "] Unconditional Miss: forward"));
       } else {
         (*theBP_IBackwardTaken[num_blocks])++;
-        //  			DBG_( Tmp, Addr(aMessage.address()) ( << std::hex << " Backward Branch block
-        //  " << branch_block << " Current block " << current_block << " Diff " << branch_block -
-        //  current_block));
+        //  			DBG_( Tmp, Addr(aMessage.address()) ( << std::hex << " Backward
+        //  Branch block " << branch_block << " Current block " << current_block << " Diff " <<
+        //  branch_block - current_block));
         return UncondBackwardBrancheMisses;
-        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port InsnMissIn[" <<
-        //    anIndex << "] Unconditional Miss: backward"));
+        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port
+        //    InsnMissIn["
+        //    << anIndex << "] Unconditional Miss: backward"));
       }
       break;
     case kCall:
@@ -430,17 +439,20 @@ struct BPWarm_stats {
         }
       } else {
         theBP_PredMispredict++;
-        //  			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port InsnMissIn[" <<
-        //  anIndex << "] Call Miss:PredWrong" ));
+        //  			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port
+        //  InsnMissIn["
+        //  << anIndex << "] Call Miss:PredWrong" ));
       }
 
       return CallMisses;
       if (ICache_miss_address > theFetchAddress) {
-        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port InsnMissIn[" <<
-        //    anIndex << "] Call Miss: forward"));
+        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port
+        //    InsnMissIn["
+        //    << anIndex << "] Call Miss: forward"));
       } else {
-        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port InsnMissIn[" <<
-        //    anIndex << "] Call Miss: backward"));
+        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port
+        //    InsnMissIn["
+        //    << anIndex << "] Call Miss: backward"));
       }
       break;
     case kJmpl:
@@ -460,24 +472,27 @@ struct BPWarm_stats {
         }
       } else {
         theBP_PredMispredict++;
-        //  			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port InsnMissIn[" <<
-        //  anIndex << "] Ind Miss:PredWrong" ));
+        //  			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port
+        //  InsnMissIn["
+        //  << anIndex << "] Ind Miss:PredWrong" ));
       }
 
       if (ICache_miss_address > theFetchAddress) {
         (*theBP_IIndForwardTaken[num_blocks])++;
-        //  			DBG_( Tmp, Addr(aMessage.address()) ( << std::hex << " Forward Indirect
-        //  Branch block " << branch_block << " Current block " << current_block << " Diff " <<
-        //  current_block - branch_block));
-        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port InsnMissIn[" <<
-        //    anIndex << "] Jmpl Miss: forward"));
+        //  			DBG_( Tmp, Addr(aMessage.address()) ( << std::hex << " Forward
+        //  Indirect Branch block " << branch_block << " Current block " << current_block << " Diff
+        //  " << current_block - branch_block));
+        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port
+        //    InsnMissIn["
+        //    << anIndex << "] Jmpl Miss: forward"));
       } else {
         (*theBP_IIndBackwardTaken[num_blocks])++;
-        //  			DBG_( Tmp, Addr(aMessage.address()) ( << std::hex << " Backward Indirect
-        //  Branch block " << branch_block << " Current block " << current_block << " Diff " <<
-        //  branch_block - current_block));
-        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port InsnMissIn[" <<
-        //    anIndex << "] Jmpl Miss: backward"));
+        //  			DBG_( Tmp, Addr(aMessage.address()) ( << std::hex << " Backward
+        //  Indirect Branch block " << branch_block << " Current block " << current_block << " Diff
+        //  " << branch_block - current_block));
+        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port
+        //    InsnMissIn["
+        //    << anIndex << "] Jmpl Miss: backward"));
       }
       return IndirectBranchMisses;
       break;
@@ -498,17 +513,20 @@ struct BPWarm_stats {
         }
       } else {
         theBP_PredMispredict++;
-        //  			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port InsnMissIn[" <<
-        //  anIndex << "] Ret Miss:PredWrong" ));
+        //  			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port
+        //  InsnMissIn["
+        //  << anIndex << "] Ret Miss:PredWrong" ));
       }
 
       return ReturnMissesMisses;
       if (ICache_miss_address > theFetchAddress) {
-        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port InsnMissIn[" <<
-        //    anIndex << "] Return Miss: forward"));
+        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port
+        //    InsnMissIn["
+        //    << anIndex << "] Return Miss: forward"));
       } else {
-        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port InsnMissIn[" <<
-        //    anIndex << "] Return Miss: backward"));
+        //    			DBG_( Tmp, Addr(aMessage.address()) ( << " Received on Port
+        //    InsnMissIn["
+        //    << anIndex << "] Return Miss: backward"));
       }
       break;
     default:
@@ -569,24 +587,27 @@ struct BPWarm_stats {
       if (icache_block_address == last_icache_block_address + 1) {
         num_sequential_icache_blocks++;
         last_icache_block_address = icache_block_address;
-        //			DBG_( Tmp, ( << " Next seq block: " << std::hex << icache_block_address
+        //			DBG_( Tmp, ( << " Next seq block: " << std::hex <<
+        // icache_block_address
         //<< " last block " << last_icache_block_address << " num seq blocks " <<
-        //num_sequential_icache_blocks));
+        // num_sequential_icache_blocks));
       } else if ((icache_block_address < last_icache_block_address) &&
                  (icache_block_address >= first_icache_block_address)) {
-        //			DBG_( Tmp, ( << " Prev seq block: " << std::hex << icache_block_address
+        //			DBG_( Tmp, ( << " Prev seq block: " << std::hex <<
+        // icache_block_address
         //<< " last block " << last_icache_block_address));
         assert(0);
       } else {
         //			DBG_( Tmp, ( << " Total num seq blocks " <<
-        //num_sequential_icache_blocks));
+        // num_sequential_icache_blocks));
         if (num_sequential_icache_blocks > 9) {
           num_sequential_icache_blocks = 9;
         }
         (*seq_block_run[num_sequential_icache_blocks])++;
-        //			DBG_( Tmp, ( << " Discont block: " << std::hex << icache_block_address
+        //			DBG_( Tmp, ( << " Discont block: " << std::hex <<
+        // icache_block_address
         //<< " last block " << last_icache_block_address << " num seq blocks " <<
-        //num_sequential_icache_blocks));
+        // num_sequential_icache_blocks));
         first_icache_block_address = icache_block_address;
         last_icache_block_address = icache_block_address;
         //			if (icache_block_address == 0x40231){
@@ -594,8 +615,9 @@ struct BPWarm_stats {
         //			}
         //			if (num_sequential_icache_blocks == 0) {
         //				std::map<uint64_t, uint64_t>::iterator it =
-        //stats0.find(icache_block_address); 				if (it == stats0.end()) { 					stats0[icache_block_address]
-        //= 1; 				} else { 					it->second++;
+        // stats0.find(icache_block_address); 				if (it == stats0.end()) {
+        // stats0[icache_block_address] = 1; 				} else {
+        // it->second++;
         //				}
         //			}
         num_sequential_icache_blocks = 0;
@@ -604,12 +626,15 @@ struct BPWarm_stats {
     //	if (insn_count == 1000000)
     //	{
     //		std::multimap<uint64_t, uint64_t> reverse_stats0;
-    //		for (std::map<uint64_t, uint64_t> ::iterator it = stats0.begin(); it != stats0.end();
-    //it++) { 			reverse_stats0.insert(std::make_pair(it->second, it->first));
+    //		for (std::map<uint64_t, uint64_t> ::iterator it = stats0.begin(); it !=
+    // stats0.end(); it++) { 			reverse_stats0.insert(std::make_pair(it->second,
+    // it->first));
     //		}
     //		for (std::multimap<uint64_t, uint64_t> ::iterator it = reverse_stats0.begin(); it !=
-    //reverse_stats0.end(); it++) { 			DBG_( Tmp, ( << std::hex << it->second << " for " << std::dec <<
-    //it->first));
+    // reverse_stats0.end(); it++) { 			DBG_( Tmp, ( << std::hex << it->second << "
+    // for
+    // "
+    // << std::dec << it->first));
     //		}
     //	}
   }

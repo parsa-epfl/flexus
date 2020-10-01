@@ -1669,12 +1669,14 @@ private:
           if (theRecMissPrefetchQueue.size() < theMaxOutstandingRecMisses) {
             theOutstandingMissQ[anIndex].insert(paddr);
             issueRecMissPreFetch(paddr, prefetch_addr);
-            //				  DBG_(DBG_BOOM_LEVEL, ( << "recmiss: issue prefech " << std::hex
+            //				  DBG_(DBG_BOOM_LEVEL, ( << "recmiss: issue prefech " <<
+            // std::hex
             //<< paddr
             //<< " vaddr " << prefetch_addr << " outreq " << theOutstandingMissQ[anIndex].size()));
             theRecordedMissQ[anIndex].pop_front();
           } else {
-            //					DBG_(DBG_BOOM_LEVEL, ( << "recmiss: max outstanding req
+            //					DBG_(DBG_BOOM_LEVEL, ( << "recmiss: max outstanding
+            // req
             //"
             //<< prefetch_addr
             //));

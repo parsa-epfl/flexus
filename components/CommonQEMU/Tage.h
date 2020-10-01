@@ -551,8 +551,8 @@ public:
       // alttaken is the alternate prediction
       //	if (printLog)
       //		std::cout << "Predicting pc " << std::hex << instruction_addr << " pred " <<
-      //pred_taken << " bank " << bank << " alttaken " << alttaken << std::endl; 	DBG_( Tmp, ( << "
-      //TAGE prdict: " << std::hex << instruction_addr << " " << pred_taken));
+      // pred_taken << " bank " << bank << " alttaken " << alttaken << std::endl; 	DBG_( Tmp,
+      // ( << " TAGE prdict: " << std::hex << instruction_addr << " " << pred_taken));
     }
 
     // Save the checkpoint
@@ -562,7 +562,7 @@ public:
     update_history(aBPState, pred_taken, instruction_addr);
     //	std::cout << std::endl<< std::endl<< std::endl<< std::endl << "Tage predict " << pred_taken
     //<< " cond? " << aBPState.is_conditional << std::endl<< std::endl<< std::endl<< std::endl<<
-    //std::endl;
+    // std::endl;
 
     return pred_taken;
   }
@@ -670,7 +670,7 @@ public:
   void update_predictor(uint64_t instruction_addr, BPredState &aBPState, bool taken) {
 
     //	  std::cout << std::endl<< std::endl<< std::endl<< std::endl << "Tage update " << taken <<
-    //std::endl<< std::endl<< std::endl<< std::endl<< std::endl;
+    // std::endl<< std::endl<< std::endl<< std::endl<< std::endl;
     DBG_(DBG_BOOM_LEVEL, (<< " TAGE feedback: " << std::hex << instruction_addr));
     if (aBPState.thePredictedType == kConditional) {
       int phist_back;
@@ -692,8 +692,10 @@ public:
 
       //    	if (printLog) {
       //			std::cout << "UPdate pc " << std::hex << instruction_addr << " pred
-      //" << aBPState.pred_taken << " outcome " << taken << std::endl; 			std::cout << "phist " <<
-      //std::hex << aBPState.phist << " ghist " << aBPState.ghist << " BI " << aBPState.BI << " bank
+      //" << aBPState.pred_taken << " outcome " << taken << std::endl;
+      // std::cout << "phist " << std::hex << aBPState.phist << " ghist " << aBPState.ghist << " BI
+      // "
+      // << aBPState.BI << " bank
       //"<< aBPState.bank << " altpred "<< aBPState.alttaken << std::endl;
       //    	}
       //
