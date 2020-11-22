@@ -542,7 +542,7 @@ uint64_t asr(uint64_t input, uint64_t input_size, uint64_t shift_size) {
   uint64_t mask = (input_size == 32) ? 0xffffffff : (uint64_t)-1;
   DBG_Assert(input_size == 64 || input_size == 32);
 
-  bool is_signed = input & (1 << (input_size - 1));
+  bool is_signed = input >> (input_size - 1);
   bits big_input = input;
   if (is_signed) {
     bits big_ones = ones(shift_size);
