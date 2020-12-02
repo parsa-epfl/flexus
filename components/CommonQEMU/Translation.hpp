@@ -47,6 +47,7 @@
 #include <components/CommonQEMU/Slices/AbstractInstruction.hpp>
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <core/debug/debug.hpp>
+#include <functional>
 
 namespace Flexus {
 namespace SharedTypes {
@@ -222,6 +223,19 @@ struct Translation : public boost::counted_base {
 };
 
 typedef boost::intrusive_ptr<Translation> TranslationPtr;
+
+// MARK: Specialization of hasher and equality operator for translation object
+struct TranslationPtrHasher {
+  std::size_t operator()(const TranslationPtr &transPtr) const {
+    return transPtr->theID;
+  }
+};
+
+struct TranslationPtrEqualityCheck {
+  bool operator()(const TranslationPtr &lhs, const TranslationPtr &rhs) const {
+    return (lhs->theID == rhs->theID) && (lhs->theVaddr == rhs->theVaddr);
+  }
+};
 
 } // namespace SharedTypes
 } // namespace Flexus
