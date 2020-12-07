@@ -57,13 +57,34 @@ if [ ! -f "CMakeLists.txt" ]; then
     exit 1
 fi
 
+JOBS=$(($(getconf _NPROCESSORS_ONLN) + 1))
+echo "=== Using ${JOBS} simultaneous jobs ==="
+
+# Install a compatible version of gcc
+GCC_VERSION="8"
+sudo apt-get update -qq
+sudo apt-get -y install gcc-${GCC_VERSION} g++-${GCC_VERSION}
+
+# Set the recently installed version of gcc as default
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION} 20
+sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${GCC_VERSION} 20
+sudo update-alternatives --config gcc
+sudo update-alternatives --config g++
+
+# Install a compatible version of boost library
+BOOST="boost_1_70_0"
+BOOST_VERSION="1.70.0"
+wget https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/${BOOST}.tar.gz -O /tmp/${BOOST}.tar.gz
+tar -xf /tmp/${BOOST}.tar.gz
+cd ./${BOOST}/
+./bootstrap.sh --prefix=/usr/local
+./b2 -j${JOBS}
+sudo ./b2 install
+
 if [ -z $1 ]; then
     cmake .
 else
     cmake -DSIMULATOR=$1 . 
 fi
-
-JOBS=$(($(getconf _NPROCESSORS_ONLN) + 1))
-echo "=== Using ${JOBS} simultaneous jobs ==="
 
 make -j${JOBS}
