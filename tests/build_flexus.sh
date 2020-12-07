@@ -79,7 +79,7 @@ tar -xf /tmp/${BOOST}.tar.gz
 cd ./${BOOST}/
 ./bootstrap.sh --prefix=/usr/local
 ./b2 -j${JOBS} --with-system --with-regex --with-serialization --with-iostreams
-sudo ./b2 install
+sudo ./b2 --with-system --with-regex --with-serialization --with-iostreams install
 
 cd ${TRAVIS_BUILD_DIR}
 
