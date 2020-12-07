@@ -235,11 +235,12 @@ class FLEXUS_COMPONENT(uFetch) {
   //       MANDATORY because two FetchedOpcs can have same PC but indep. TranslationPtrs
   //       Also, any MMU transaction can complete out of order (in general)
   typedef std::list<FetchedOpcode>::iterator opcodeQIterator;
-  std::unordered_map<TranslationPtr, opcodeQIterator, // K/V
-                     TranslationPtrHasher,            // Custom hash object
-                     TranslationPtrEqualityCheck      // Custom equality comparison
-                     >
-      tr_op_bijection;
+  typedef std::unordered_map<TranslationPtr, opcodeQIterator, // K/V
+                             TranslationPtrHasher,            // Custom hash object
+                             TranslationPtrEqualityCheck      // Custom equality comparison
+                             >
+      BijectionMapType_t;
+  BijectionMapType_t tr_op_bijection;
 
   typedef std::unordered_set<TranslationPtr,             // Key
                              TranslationPtrHasher,       // Custom hash
@@ -994,8 +995,8 @@ private:
     xlat->setInstr();
 
     // Insert an entry into the translation<->opcode map and outstanding translations expected
-    std::pair<std::unordered_map<TranslationPtr, opcodeQIterator>::iterator, bool>
-        bijection_insertion = tr_op_bijection.insert(std::make_pair(xlat, newOpcIterator));
+    std::pair<BijectionMapType_t::iterator, bool> bijection_insertion =
+        tr_op_bijection.insert(std::make_pair(xlat, newOpcIterator));
     DBG_(TR_BIJ_DBG, Comp(*this)(<< "Inserting xlat objection with vaddr " << xlat->theVaddr
                                  << " pointing to PC " << newOpcIterator->thePC
                                  << " into waitingForOpcodesQueue bijection "));
@@ -1044,8 +1045,7 @@ private:
     }
     uint32_t opcode = 1;
     // MARK: Look up in the opc bijection and get the correct index
-    std::unordered_map<TranslationPtr, opcodeQIterator>::iterator bijection_iter =
-        tr_op_bijection.find(tr);
+    BijectionMapType_t::iterator bijection_iter = tr_op_bijection.find(tr);
     DBG_AssertSev(Crit, bijection_iter != tr_op_bijection.end(),
                   Comp(*this)(<< "ERROR: Opcode index was NOT found for translationPtr with ID"
                               << tr->theID << " and address" << tr->theVaddr));
