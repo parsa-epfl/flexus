@@ -78,8 +78,10 @@ wget https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/${BOOST}.ta
 tar -xf /tmp/${BOOST}.tar.gz
 cd ./${BOOST}/
 ./bootstrap.sh --prefix=/usr/local
-./b2 -j${JOBS}
+./b2 -j${JOBS} --with-libraries=system,regex,serialization,iostreams
 sudo ./b2 install
+
+cd ${TRAVIS_BUILD_DIR}
 
 if [ -z $1 ]; then
     cmake .
