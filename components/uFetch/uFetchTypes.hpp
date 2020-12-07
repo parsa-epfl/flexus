@@ -148,60 +148,26 @@ struct FetchBundle : public boost::counted_base {
   std::list<tFillLevel> theFillLevels;
   int32_t coreID;
 
-  void updateOpcode(VirtualMemoryAddress anAddress, Opcode anOpcode) {
-    for (FetchedOpcode &i : theOpcodes) {
-      DBG_(Iface, (<< "comparing entries " << anAddress << " with " << i.thePC));
-
-      if (i.thePC == anAddress) {
-        i.theOpcode = anOpcode;
-        return;
-      }
-    }
-    DBG_(Iface, (<< "didnt find opcode entry for " << anAddress));
-    DBG_Assert(false);
+  void updateOpcode(VirtualMemoryAddress anAddress, std::list<FetchedOpcode>::iterator it,
+                    Opcode anOpcode) {
+    DBG_AssertSev(Crit, it->thePC == anAddress,
+                  (<< "ERROR: FetchedOpcode iterator did not match!! Iterator PC " << it->thePC
+                   << ", translation returned vaddr " << anAddress));
+    it->theOpcode = anOpcode;
   }
 
   void clear() {
-    for (auto &i : theOpcodes) {
-      DBG_(Iface, (<< "deleting opcode entry for " << i.thePC));
-    }
     theOpcodes.clear();
     theFillLevels.clear();
   }
 };
 
+typedef boost::intrusive_ptr<FetchBundle> pFetchBundle;
+
 struct CPUState {
   int32_t theTL;
   int32_t thePSTATE;
 };
-
-typedef boost::intrusive_ptr<FetchBundle> pFetchBundle;
-
-struct TranslationVecWrapper : public boost::counted_base {
-
-  TranslationVecWrapper() {
-  }
-  ~TranslationVecWrapper() {
-  }
-
-  std::queue<TranslationPtr> internalContainer; // from mai_api
-
-  void addNewTranslation(boost::intrusive_ptr<Translation> &aTr) {
-    internalContainer.push(aTr);
-  }
-
-  //    void updateExistingTranslation(VirtualMemoryAddress aVAddr,
-  //    PhysicalMemoryAddress translatedAddress) {
-  //        for( auto& translation : internalContainer ) {
-  //            if( translation->theVaddr == aVAddr ) {
-  //                translation->thePaddr = translatedAddress;
-  //                return;
-  //            }
-  //        }
-  //    }
-};
-
-typedef boost::intrusive_ptr<TranslationVecWrapper> TranslatedAddresses;
 
 } // end namespace SharedTypes
 } // end namespace Flexus
