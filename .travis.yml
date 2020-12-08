@@ -61,6 +61,12 @@ matrix:
     - env:
       - SIMULATOR="KnottyKraken"
     - env:
+      - SIMULATOR="KeenKraken"
+      - $BUILD_BOOST=true
+    - env:
+      - SIMULATOR="KnottyKraken"
+      - $BUILD_BOOST=true
+    - env:
       - LINT=true
 
 script:
