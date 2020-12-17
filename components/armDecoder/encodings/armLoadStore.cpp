@@ -478,7 +478,7 @@ arminst LDP(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
     /* Msutherl: if signed, only valid encodings are preindex, postindex, imm-index */
     return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
   }
-  if (rt == rt2) {
+  if (rt == rt2 || ((index == kPreIndex || index == kPostIndex) && (rn == rt || rn == rt2))) {
     // Constrain unpredictable: C6.2.129 LDP Operation
     return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
   }
