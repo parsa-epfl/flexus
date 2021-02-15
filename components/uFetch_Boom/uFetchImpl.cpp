@@ -1,5 +1,7 @@
 #include <fstream>
 #include <set>
+#include <unordered_map>
+#include <unordered_set>
 
 #include <boost/none.hpp>
 #include <core/boost_extensions/padded_string_cast.hpp>
@@ -49,6 +51,8 @@
                                                                                       ? 9                 \
                                                                                       : ((x) == 1024 ? 10 \
                                                                                                      : ((x) == 2048 ? 11 : ((x) == 4096 ? 12 : ((x) == 8192 ? 13 : ((x) == 16384 ? 14 : ((x) == 32768 ? 15 : ((x) == 65536 ? 16 : ((x) == 131072 ? 17 : ((x) == 262144 ? 18 : ((x) == 524288 ? 19 : ((x) == 1048576 ? 20 : ((x) == 2097152 ? 21 : ((x) == 4194304 ? 22 : ((x) == 8388608 ? 23 : ((x) == 16777216 ? 24 : ((x) == 33554432 ? 25 : ((x) == 67108864 ? 26 : -0xffff)))))))))))))))))))))))))))
+
+#define TR_BIJ_DBG VVerb
 
 namespace nuFetch {
 
@@ -196,10 +200,6 @@ class FLEXUS_COMPONENT(uFetch) {
   std::vector<std::vector<FetchAddr>> theLastFetches;                        // Rakesh
   std::vector<std::list<VirtualMemoryAddress>> theRecordedMissQ;             // Rakesh
 
-  // This opcode is used to signal an ITLB miss to the core, to force
-  // a resync with Simics
-  static const int32_t kITLBMiss = 0UL; // illtrap
-
   // Statistics on the ICache
   Stat::StatCounter theFetchAccesses;
   Stat::StatCounter theFetches;
@@ -265,9 +265,26 @@ class FLEXUS_COMPONENT(uFetch) {
   SimCache theI;
 
   // Magic for checking TLB walk.
-  std::vector<TranslationPtr> TranslationsFromTLB;
-  pFetchBundle theBundle;
+  pFetchBundle waitingForOpcodeQueue;
   int32_t theBundleCoreID;
+
+  // MARK: Meta-map which pairs each FetchedOpcode with a TranslationPtr.
+  //       MANDATORY because two FetchedOpcs can have same PC but indep. TranslationPtrs
+  //       Also, any MMU transaction can complete out of order (in general)
+  typedef std::list<FetchedOpcode>::iterator opcodeQIterator;
+  typedef std::unordered_map<TranslationPtr, opcodeQIterator, // K/V
+                             TranslationPtrHasher,            // Custom hash object
+                             TranslationPtrEqualityCheck      // Custom equality comparison
+                             >
+      BijectionMapType_t;
+  BijectionMapType_t tr_op_bijection;
+
+  typedef std::unordered_set<TranslationPtr,             // Key
+                             TranslationPtrHasher,       // Custom hash
+                             TranslationPtrEqualityCheck // Custom equality
+                             >
+      ExpectedTranslation_t;
+  ExpectedTranslation_t translationsExpected;
 
   // Indicates whether a miss is outstanding, and what the physical address
   // of the miss is
@@ -438,8 +455,8 @@ public:
     theIndexShift = LOG2(cfg.ICacheLineSize);
     theBlockMask = ~(cfg.ICacheLineSize - 1);
     theBundleCoreID = flexusIndex();
-    theBundle = new FetchBundle();
-    theBundle->coreID = theBundleCoreID;
+    waitingForOpcodeQueue = new FetchBundle();
+    waitingForOpcodeQueue->coreID = theBundleCoreID;
 
     theFAQ.resize(cfg.Threads);
     thePAQ.resize(cfg.Threads); // Rakesh
@@ -647,6 +664,13 @@ public:
   //   Msutherl: TLB in-out functions
   FLEXUS_PORT_ALWAYS_AVAILABLE(iTranslationIn);
   void push(interface::iTranslationIn const &, TranslationPtr &retdTranslations) {
+    ExpectedTranslation_t::iterator tr_iter = translationsExpected.find(retdTranslations);
+    if (tr_iter != translationsExpected.end()) {
+      updateTranslationResponse(retdTranslations);
+      translationsExpected.erase(tr_iter);
+    }
+    /* FIXME: Remove this
+    DBG_(VVerb, (<< "Got response from iTranslationIn for PC " << retdTranslations->theVaddr));
     for (std::vector<TranslationPtr>::iterator it = TranslationsFromTLB.begin();
          it != TranslationsFromTLB.end(); ++it) {
       if ((*it)->theID == retdTranslations->theID) {
@@ -656,6 +680,7 @@ public:
         break;
       }
     }
+    */
     DBG_(Iface, (<< "Set TranslationsFromTLB component...."));
   }
 
@@ -663,12 +688,47 @@ public:
     return true;
   }
   void push(interface::ResyncIn const &, index_t anIndex, int &aResync) {
-    TranslationsFromTLB.clear();
-    theBundle->clear();
     theBundleCoreID = aResync;
-    theBundle->coreID = theBundleCoreID;
+    waitingForOpcodeQueue->clear();
+    waitingForOpcodeQueue->coreID = theBundleCoreID;
+    tr_op_bijection.clear();
+    translationsExpected.clear();
   }
 
+  void updateTranslationResponse(TranslationPtr &tr) {
+    DBG_Assert(tr->isDone() || tr->isHit());
+    DBG_(TR_BIJ_DBG, Comp(*this)(<< "Updating translation response for " << tr->theVaddr
+                                 << " @ cpu index " << flexusIndex()));
+    PhysicalMemoryAddress magicTranslation =
+        cpu(tr->theIndex)->translateVirtualAddress(tr->theVaddr);
+
+    if (tr->thePaddr == magicTranslation || tr->isPagefault()) {
+      DBG_(VVerb, Comp(*this)(<< "Magic QEMU translation == MMU Translation. Vaddr = " << std::hex
+                              << tr->theVaddr << std::dec << ", Paddr = " << std::hex
+                              << tr->thePaddr << std::dec));
+    } else {
+      DBG_Assert(false, Comp(*this)(<< "ERROR: Magic QEMU translation NOT EQUAL TO MMU "
+                                       "Translation. Vaddr = "
+                                    << std::hex << tr->theVaddr << std::dec << ", PADDR_MMU = "
+                                    << std::hex << tr->thePaddr << std::dec << ", PADDR_QEMU = "
+                                    << std::hex << magicTranslation << std::dec));
+    }
+    uint32_t opcode = 1;
+    // MARK: Look up in the opc bijection and get the correct index
+    BijectionMapType_t::iterator bijection_iter = tr_op_bijection.find(tr);
+    DBG_AssertSev(Crit, bijection_iter != tr_op_bijection.end(),
+                  Comp(*this)(<< "ERROR: Opcode index was NOT found for translationPtr with ID"
+                              << tr->theID << " and address" << tr->theVaddr));
+    if (!tr->isPagefault()) {
+      opcode = cpu(tr->theIndex)->fetchInstruction(tr->theVaddr);
+      opcode += opcode ? 0 : 1;
+    }
+    waitingForOpcodeQueue->updateOpcode(tr->theVaddr, bijection_iter->second, opcode);
+    // Remove this mapping, opcode is updated
+    tr_op_bijection.erase(bijection_iter);
+  }
+
+  /* FIXME: remove this code altogether
   void getFetchResponse() {
 
     DBG_Assert(TranslationsFromTLB.back()->isDone() || TranslationsFromTLB.back()->isHit());
@@ -700,6 +760,7 @@ public:
       theBundle->updateOpcode(tr->theVaddr, opcode);
     }
   }
+  */
 
 public:
   void drive(interface::uFetchDrive const &) {
@@ -1396,6 +1457,22 @@ private:
   // Implementation of the FetchDrive drive interface
   void doFetch(index_t anIndex) {
 
+    // Determine available FIQ this cycle
+    bool isFIQEmpty = false;
+    int32_t available_fiq = 0;
+    std::pair<int, bool> decode_state;
+    DBG_Assert(FLEXUS_CHANNEL_ARRAY(AvailableFIQ, anIndex).available());
+    DBG_Assert(FLEXUS_CHANNEL_ARRAY(ROBEmptyIn, anIndex).available());
+
+    FLEXUS_CHANNEL_ARRAY(AvailableFIQ, anIndex) >> decode_state;
+    boost::tie(available_fiq, isFIQEmpty) = decode_state;
+
+    int32_t remaining_fetch = cfg.MaxFetchInstructions;
+    if (available_fiq < remaining_fetch) {
+      remaining_fetch = available_fiq;
+    }
+    theAvailableFetchSlots += remaining_fetch;
+
     //	  DBG_(DBG_BOOM_LEVEL, ( << std::endl<< "Entering uFetch " << theFlexus->cycleCount() <<
     // std::endl) );
     if (theIcacheMiss[anIndex]) {
@@ -1404,32 +1481,18 @@ private:
       return;
     }
 
-    // Determine available FIQ this cycle
-    int32_t available_fiq = 0;
-    bool isFIQEmpty = false;
-    std::pair<int, bool> decode_state;
-    DBG_Assert(FLEXUS_CHANNEL_ARRAY(AvailableFIQ, anIndex).available());
-    DBG_Assert(FLEXUS_CHANNEL_ARRAY(ROBEmptyIn, anIndex).available());
-
-    FLEXUS_CHANNEL_ARRAY(AvailableFIQ, anIndex) >> decode_state;
-    boost::tie(available_fiq, isFIQEmpty) = decode_state;
-
     bool isROBEmpty = false;
     FLEXUS_CHANNEL_ARRAY(ROBEmptyIn, anIndex) >> isROBEmpty;
 
     //    DBG_(DBG_BOOM_LEVEL, ( << "AvailableFIQ " << available_fiq << " FAQ Size " <<
     //    theFAQ[anIndex].size()));
-    if (available_fiq > 0 && (theFAQ[anIndex].size() > 1 || theFlexus->quiescing())) {
-      pFetchBundle bundle(new FetchBundle);
-      bundle->coreID = theBundleCoreID;
+    if (waitingForOpcodeQueue->theOpcodes.size() < theMissQueueSize && available_fiq > 0 &&
+        (theFAQ[anIndex].size() > 1 || theFlexus->quiescing())) {
+
+      // pFetchBundle bundle(new FetchBundle); // FIXME: Remove these
+      // bundle->coreID = theBundleCoreID;
 
       std::set<VirtualMemoryAddress> available_lines;
-      int32_t remaining_fetch = cfg.MaxFetchInstructions;
-      if (available_fiq < remaining_fetch) {
-        remaining_fetch = available_fiq;
-      }
-      theAvailableFetchSlots += remaining_fetch;
-
       DBG_(DBG_BOOM_LEVEL, (<< "AvailableFIQ " << available_fiq << " max addr " << remaining_fetch
                             << " limit " << cfg.MaxFetchInstructions));
       while (remaining_fetch > 0 && (theFAQ[anIndex].size() > 1 || theFlexus->quiescing())) {
@@ -1469,39 +1532,112 @@ private:
         theLastFetches[anIndex][0] = theLastFetches[anIndex][1];
         theLastFetches[anIndex][1] = fetch_addr;
 
-        theFAQ[anIndex].pop_front();
+        /* MARK: Pseudo-algorithm for rewritten translate->opcode->output code
+         * A) Pop this from the FAQ because it was an I$ hit, add to fetched instruction queue
+         * (waiting for opcode) B) Create a "Transaction" that represents the MMU/Opcode access flow
+         * C) Append said transaction to something like "outstandingOpcodes", get index
+         * D) Associate "Transaction"->index in a hashmap so that when the MMU replies, we set the
+         * exact correct opcode E) Rework the response path to look up said hashmap
+         */
+
         DBG_(DBG_BOOM_LEVEL,
              (<< "Fetched " << fetch_addr.theAddress << " " << std::hex << op_code << " "
               << Flexus::Qemu::Processor::getProcessor(flexusIndex())
                      ->disassemble(fetch_addr.theAddress)));
         DBG_(Verb, (<< "Fetched " << fetch_addr.theAddress));
-        bundle->theOpcodes.push_back(FetchedOpcode(
+
+        theFAQ[anIndex].pop_front();
+        waitingForOpcodeQueue->theOpcodes.emplace_back(FetchedOpcode(
             fetch_addr.theAddress,
+            theFAQ[anIndex].empty() ? VirtualMemoryAddress(0) : theFAQ[anIndex].front().theAddress,
+            0, // op_code not resolved yet - waiting for translation
+            fetch_addr.theBPState, theFetchReplyTransactionTracker[anIndex], aFetchSerial,
+            nullptr));
+
+        /* TODO: determine how the "op_code" was being used. Cannot be resolved here in a real
+        design. bundle->theOpcodes.push_back(FetchedOpcode( fetch_addr.theAddress,
             theFAQ[anIndex].empty() ? VirtualMemoryAddress(0) : theFAQ[anIndex].front().theAddress,
             op_code, fetch_addr.theBPState, theFetchReplyTransactionTracker[anIndex], aFetchSerial,
             nullptr // no InfoMissStats
             ));
+          */
         if (from_icache && theLastMiss[anIndex] && theLastPhysical == theLastMiss[anIndex]->first) {
-          bundle->theFillLevels.push_back(theLastMiss[anIndex]->second);
+          waitingForOpcodeQueue->theFillLevels.push_back(theLastMiss[anIndex]->second);
           theLastMiss[anIndex] = boost::none;
         } else {
-          bundle->theFillLevels.push_back(eL1I);
+          waitingForOpcodeQueue->theFillLevels.push_back(eL1I);
         }
+
+        DBG_(TR_BIJ_DBG,
+             Comp(*this)(<< "added entry in waiting for opcode queue" << fetch_addr.theAddress));
+        sendTranslationReq(anIndex, fetch_addr.theAddress,
+                           std::prev(waitingForOpcodeQueue->theOpcodes.end()));
         ++theFetches;
         theUsedFetchSlots++;
-
-        eBranchType thePredictedType = fetch_addr.theBPState->thePredictedType;
-        if (op_code == kITLBMiss) {
-          // stop fetch on an MMU exception
-          break;
-        }
         --remaining_fetch;
       }
-      if (bundle->theOpcodes.size() > 0) {
-        FLEXUS_CHANNEL_ARRAY(FetchBundleOut, anIndex) << bundle;
+    }
+    processBundle();
+    //    DBG_(DBG_BOOM_LEVEL, ( << std::endl<< "Leaving uFetch " << std::endl) );
+  }
+
+  void processBundle() {
+
+    if (waitingForOpcodeQueue->theOpcodes.size() == 0)
+      return;
+    if (waitingForOpcodeQueue->theOpcodes.begin()->theOpcode == 0)
+      return;
+
+    pFetchBundle bundle(new FetchBundle);
+    bundle->coreID = theBundleCoreID;
+
+    while (waitingForOpcodeQueue->theOpcodes.size() > 0) {
+      auto i = waitingForOpcodeQueue->theOpcodes.begin();
+      auto fill_iter = waitingForOpcodeQueue->theFillLevels.begin();
+      if (i->theOpcode != 0) {
+        bundle->theOpcodes.emplace_back(std::move(*i));
+        bundle->theFillLevels.emplace_back(std::move(*fill_iter));
+        DBG_(TR_BIJ_DBG,
+             Comp(*this)(<< "popping entry out of the waitingForOpcodeQueue " << i->thePC));
+        waitingForOpcodeQueue->theOpcodes.erase(i);
+        waitingForOpcodeQueue->theFillLevels.erase(fill_iter);
+      } else {
+        break;
       }
     }
-    //    DBG_(DBG_BOOM_LEVEL, ( << std::endl<< "Leaving uFetch " << std::endl) );
+
+    if (bundle->theOpcodes.size() > 0) {
+      FLEXUS_CHANNEL_ARRAY(FetchBundleOut, 0) << bundle;
+    }
+  }
+
+  void sendTranslationReq(index_t anIndex, VirtualMemoryAddress const &anAddress,
+                          opcodeQIterator newOpcIterator) {
+    TranslationPtr xlat(new Flexus::SharedTypes::Translation());
+    xlat->theVaddr = anAddress;
+    xlat->thePSTATE = theCPUState[anIndex].thePSTATE;
+    xlat->theType = Flexus::SharedTypes::Translation::eFetch;
+    xlat->theException = 0; // just for now
+    xlat->theIndex = anIndex;
+    xlat->setInstr();
+
+    // Insert an entry into the translation<->opcode map and outstanding translations expected
+    std::pair<BijectionMapType_t::iterator, bool> bijection_insertion =
+        tr_op_bijection.insert(std::make_pair(xlat, newOpcIterator));
+    DBG_(TR_BIJ_DBG, Comp(*this)(<< "Inserting xlat objection with vaddr " << xlat->theVaddr
+                                 << " pointing to PC " << newOpcIterator->thePC
+                                 << " into waitingForOpcodesQueue bijection "));
+    DBG_AssertSev(
+        Iface, bijection_insertion.second == true,
+        (<< "Inserting xlat object with vaddr " << xlat->theVaddr
+         << " failed!! Clashing object has vaddr: " << bijection_insertion.first->first->theVaddr));
+
+    translationsExpected.emplace(xlat);
+
+    DBG_(TR_BIJ_DBG, Comp(*this)(<< "Adding translation request entry for " << xlat->theVaddr));
+
+    DBG_Assert(FLEXUS_CHANNEL(iTranslationOut).available());
+    FLEXUS_CHANNEL(iTranslationOut) << xlat;
   }
 
   uint32_t fetchFromQEMU(index_t anIndex, VirtualMemoryAddress const &anAddress) {
@@ -1514,13 +1650,6 @@ private:
     DBG_(Verb, Comp(*this)(<< "Fetch " << anAddress << " op: " << std::hex << std::setw(8)
                            << op_code << std::dec));
     return op_code;
-    /*
-    } else {
-      DBG_(Iface, Comp(*this) ( << "No translation for " << anAddress << "PSTATE: " <<
-    theCPUState[anIndex].thePSTATE << " MMU exception: " << xlat.theException << std::dec ) );
-      return kITLBMiss // or other exception - OoO will figure it out
-    }
-  */
   }
 
   void doPrefetch(index_t anIndex) {
