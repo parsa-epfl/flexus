@@ -23,7 +23,7 @@ COMPONENT_PARAMETERS(
     );
 
 COMPONENT_INTERFACE(
-  DYNAMIC_PORT_ARRAY(PushInput, vaddr_pair, RedirectIn)
+  DYNAMIC_PORT_ARRAY(PushInput, Flexus::SharedTypes::VirtualMemoryAddress, RedirectIn)
   DYNAMIC_PORT_ARRAY(PushInput, boost::intrusive_ptr<BranchFeedback>, BranchFeedbackIn)
   DYNAMIC_PORT_ARRAY(PushOutput, boost::intrusive_ptr<FetchCommand>, FetchAddrOut)
   DYNAMIC_PORT_ARRAY(PushOutput, boost::intrusive_ptr<FetchCommand>, PrefetchAddrOut)

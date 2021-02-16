@@ -192,14 +192,12 @@ public:
   //----------
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(RedirectIn);
   void push(interface::RedirectIn const &, index_t anIndex,
-            std::pair<MemoryAddress, MemoryAddress> &aRedirect) {
-    theRedirectPC[anIndex] = aRedirect.first;
-    // theRedirectNextPC[anIndex] = aRedirect.second;
+            Flexus::SharedTypes::VirtualMemoryAddress &aRedirect) {
+    theRedirectPC[anIndex] = aRedirect;
     theRedirect[anIndex] = true;
     isRedirect[anIndex] = true;
     //    DBG_(Tmp, Comp(*this)( << std::endl<< std::endl<< std::endl << "redirecting pc to " <<
     //    std::hex << aRedirect.first << " and " << aRedirect.second));
-
     squashedBPState = 0;
   }
 

@@ -119,7 +119,7 @@ COMPONENT_INTERFACE(
   PORT( PullOutput, bool, CoreHalted)
   PORT( PullOutput, int, ICount)
   PORT( PushOutput, eSquashCause, SquashOut )
-  PORT( PushOutput, vaddr_pair, RedirectOut )
+  PORT( PushOutput, Flexus::SharedTypes::VirtualMemoryAddress, RedirectOut )
   PORT( PushOutput, CPUState, ChangeCPUState )
   PORT( PushOutput, boost::intrusive_ptr<BranchFeedback>, BranchFeedbackOut )
   PORT( PushOutput, MemoryTransport, MemoryOut_Request )
