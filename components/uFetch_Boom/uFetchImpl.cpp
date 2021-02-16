@@ -559,7 +559,10 @@ public:
             boost::intrusive_ptr<FetchCommand> &aCommand) {
     std::copy(aCommand->theFetches.begin(), aCommand->theFetches.end(),
               std::back_inserter(thePAQ[anIndex]));
-    assert(thePAQ[anIndex].size() <= cfg.FAQSize);
+    DBG_AssertSev(Dev, thePAQ[anIndex].size() <= cfg.FAQSize,
+                  (<< "Failed to insert new prefetches. FetchCommand had "
+                   << aCommand->theFetches.size() << " elements, now PAQ has size"
+                   << thePAQ[anIndex].size()));
   }
 
   // RecordedMissIn
@@ -610,6 +613,10 @@ public:
     theLastMiss[anIndex] = boost::none;
     theIcachePrefetch[anIndex] = boost::none;
     theLastPrefetchVTagSet[anIndex] = 0;
+
+    waitingForOpcodeQueue->clear();
+    tr_op_bijection.clear();
+    translationsExpected.clear();
 
     lastResetCycle = theFlexus->cycleCount();
     lastSquashCause = aReason;
@@ -669,18 +676,6 @@ public:
       updateTranslationResponse(retdTranslations);
       translationsExpected.erase(tr_iter);
     }
-    /* FIXME: Remove this
-    DBG_(VVerb, (<< "Got response from iTranslationIn for PC " << retdTranslations->theVaddr));
-    for (std::vector<TranslationPtr>::iterator it = TranslationsFromTLB.begin();
-         it != TranslationsFromTLB.end(); ++it) {
-      if ((*it)->theID == retdTranslations->theID) {
-        TranslationsFromTLB.erase(it);
-        TranslationsFromTLB.push_back(retdTranslations);
-        getFetchResponse();
-        break;
-      }
-    }
-    */
     DBG_(Iface, (<< "Set TranslationsFromTLB component...."));
   }
 
@@ -727,40 +722,6 @@ public:
     // Remove this mapping, opcode is updated
     tr_op_bijection.erase(bijection_iter);
   }
-
-  /* FIXME: remove this code altogether
-  void getFetchResponse() {
-
-    DBG_Assert(TranslationsFromTLB.back()->isDone() || TranslationsFromTLB.back()->isHit());
-
-    DBG_(VVerb, (<< "Starting magic translation after sending to TLB...."));
-    TranslationPtr tr = TranslationsFromTLB.back();
-    TranslationsFromTLB.pop_back();
-    DBG_(VVerb, (<< "poping entry out of fetch translation requests " << tr->theVaddr));
-    PhysicalMemoryAddress magicTranslation =
-        cpu(tr->theIndex)->translateVirtualAddress(tr->theVaddr);
-
-    if (tr->thePaddr == magicTranslation || tr->isPagefault()) {
-      DBG_(VVerb,
-           (<< "Magic QEMU translation == MMU Translation. Vaddr = " << std::hex << tr->theVaddr
-            << std::dec << ", Paddr = " << std::hex << tr->thePaddr << std::dec));
-    } else {
-      DBG_Assert(false, (<< "ERROR: Magic QEMU translation NOT EQUAL TO MMU "
-                            "Translation. Vaddr = "
-                         << std::hex << tr->theVaddr << std::dec << ", PADDR_MMU = " << std::hex
-                         << tr->thePaddr << std::dec << ", PADDR_QEMU = " << std::hex
-                         << magicTranslation << std::dec));
-    }
-    uint32_t opcode = 1;
-    if (!tr->isPagefault()) {
-      opcode = cpu(tr->theIndex)->fetchInstruction(tr->theVaddr);
-      opcode += opcode ? 0 : 1;
-      theBundle->updateOpcode(tr->theVaddr, opcode);
-    } else {
-      theBundle->updateOpcode(tr->theVaddr, opcode);
-    }
-  }
-  */
 
 public:
   void drive(interface::uFetchDrive const &) {
@@ -1488,9 +1449,6 @@ private:
     //    theFAQ[anIndex].size()));
     if (waitingForOpcodeQueue->theOpcodes.size() < theMissQueueSize && available_fiq > 0 &&
         (theFAQ[anIndex].size() > 1 || theFlexus->quiescing())) {
-
-      // pFetchBundle bundle(new FetchBundle); // FIXME: Remove these
-      // bundle->coreID = theBundleCoreID;
 
       std::set<VirtualMemoryAddress> available_lines;
       DBG_(DBG_BOOM_LEVEL, (<< "AvailableFIQ " << available_fiq << " max addr " << remaining_fetch

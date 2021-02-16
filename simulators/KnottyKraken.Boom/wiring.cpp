@@ -101,7 +101,6 @@ bool initializeParameters() {
   DBG_(Dev, (<< " initializing Parameters..."));
 
   theFAGCfg.Threads.initialize(1);
-  theFAGCfg.MaxFetchAddress.initialize(1);
   theFAGCfg.MaxBPred.initialize(1);
 
   theuFetchCfg.Threads.initialize(1);
