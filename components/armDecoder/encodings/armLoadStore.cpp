@@ -478,7 +478,7 @@ arminst LDP(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
     /* Msutherl: if signed, only valid encodings are preindex, postindex, imm-index */
     return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
   }
-  if (rt == rt2) {
+  if (rt == rt2 || ((index == kPreIndex || index == kPostIndex) && (rn == rt || rn == rt2))) {
     // Constrain unpredictable: C6.2.129 LDP Operation
     return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
   }
@@ -770,11 +770,6 @@ arminst LDR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   eSize sz = dbSize(8 << size);
   DBG_(VVerb, (<< "Size " << sz));
 
-  SemanticInstruction *inst(new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
-                                                    aFetchedOpcode.theBPState, aCPU, aSequenceNo));
-  inst->setClass(clsLoad, codeLoad);
-  eAccType acctype = kAccType_NORMAL;
-
   if (is_unsigned) {
     index = kUnsignedOffset;
     imm = extract32(aFetchedOpcode.theOpcode, 10, 12);
@@ -798,6 +793,16 @@ arminst LDR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
       imm = (int64_t)sextract32(aFetchedOpcode.theOpcode, 12, 9);
     }
   }
+
+  if ((index == kPreIndex || index == kPostIndex) && (rn == rt)) {
+    // Constrain unpredictable: C6.2.131 LDR Operation
+    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+  }
+
+  SemanticInstruction *inst(new SemanticInstruction(aFetchedOpcode.thePC, aFetchedOpcode.theOpcode,
+                                                    aFetchedOpcode.theBPState, aCPU, aSequenceNo));
+  inst->setClass(clsLoad, codeLoad);
+  eAccType acctype = kAccType_NORMAL;
 
   std::vector<std::list<InternalDependance>> rs_deps(1), rs2_deps(1);
   predicated_action ex, sh, wb;
