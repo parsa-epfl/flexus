@@ -173,6 +173,11 @@ void SemanticInstruction::setMayRetire(int32_t aBit, bool aFlag) {
 }
 
 bool SemanticInstruction::mayRetire() const {
+  if(theFlexus->cycleCount()%10000 == 0){
+    std::cout << "sematicInstruction mayRetire\n";
+  }
+
+
   FLEXUS_PROFILE();
   if (isPageFault())
     return true;

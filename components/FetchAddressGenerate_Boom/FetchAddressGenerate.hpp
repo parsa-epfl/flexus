@@ -36,7 +36,8 @@ COMPONENT_INTERFACE(
   DYNAMIC_PORT_ARRAY(PushInput, boost::intrusive_ptr<BPredState>,SpecialCallIn)
   DYNAMIC_PORT_ARRAY(PushInput, vaddr_pair, MissPairIn)
   DYNAMIC_PORT_ARRAY(PushInput, bool, BTBReplyIn)
-  DYNAMIC_PORT_ARRAY(PushOutput, boost::intrusive_ptr<RecordedMisses>,BTBRequestOut)
+  DYNAMIC_PORT_ARRAY(PushInput, bool, BTBMissFetchReplyIn) //Ali
+  DYNAMIC_PORT_ARRAY(PushOutput, VirtualMemoryAddress, BTBRequestOut)
   DYNAMIC_PORT_ARRAY(PushInput, boost::intrusive_ptr<TrapState>, TrapStateIn)
   // add for qflex
   PORT(PullInput, bool, uArchHalted)

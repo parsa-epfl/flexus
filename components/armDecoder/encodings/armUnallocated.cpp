@@ -58,6 +58,10 @@ struct BlackBoxInstruction : public armInstruction {
   }
 
   virtual bool mayRetire() const {
+    if(theFlexus->cycleCount()%10000 == 0){
+      std::cout << "mayRetire in armDecoder/encoding/armUnallocated.hpp\n";
+    }
+
     return true;
   }
 

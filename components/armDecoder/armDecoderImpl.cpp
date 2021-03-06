@@ -264,6 +264,14 @@ private:
     DISPATCH_DBG("--------------START DISPATCHING------------------------");
     /* Delay pipe for Boomerang */
     uint64_t decoded = 0;
+
+    if(theFlexus->cycleCount() % 10000 == 0){
+      std::cout << "armDecoder, DispatchWidth: " <<  cfg.DispatchWidth << " theFIQ: " << theFIQ.size() << " thePipeline.size: " << thePipeline.size() << " PipeLatency: " << cfg.PipeLat  << "\n";
+      std::cout << "condition:" << "decoded < cfg.DispatchWidth && !theFIQ.empty() && (thePipeline.size() < (cfg.DispatchWidth * cfg.PipeLat))\n";
+      std::cout << "condition: " << (decoded < cfg.DispatchWidth && !theFIQ.empty() && (thePipeline.size() < (cfg.DispatchWidth * cfg.PipeLat))) << "\n";
+    }
+
+
     while (decoded < cfg.DispatchWidth && !theFIQ.empty() &&
            (thePipeline.size() < (cfg.DispatchWidth * cfg.PipeLat))) {
 
@@ -298,6 +306,14 @@ private:
                    << ", dispatched < cfg.DispatchWidth " << int(dispatched < cfg.DispatchWidth)
                    << ", theFIQ is empty " << int(theFIQ.empty()) << ", no Sync Insn In Progress "
                    << int(!theSyncInsnInProgress));
+      if(theFlexus->cycleCount() % 10000 == 0){
+        std::cout << "cannot dispatch\n";
+        std::cout << "can't dispatch "
+                   << "available_dispatch " << available_dispatch
+                   << ", dispatched < cfg.DispatchWidth " << int(dispatched < cfg.DispatchWidth)
+                   << ", theFIQ is empty " << int(theFIQ.empty()) << ", no Sync Insn In Progress "
+                   << int(!theSyncInsnInProgress) << "\n";
+      }
     }
     while (available_dispatch > 0 && dispatched < cfg.DispatchWidth && !theFIQ.empty() &&
            thePipeline.ready() && !theSyncInsnInProgress) {

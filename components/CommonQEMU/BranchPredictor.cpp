@@ -320,6 +320,7 @@ struct BTB {
   uint32_t theBTBSets;
   uint32_t theBTBAssoc;
   uint64_t theIndexMask;
+  std::set<VirtualMemoryAddress> branches;
 
 private:
   friend class boost::serialization::access;
@@ -379,6 +380,9 @@ public:
                                    VirtualMemoryAddress aTarget, int BBsize,
                                    eDirection actualDirection, eDirection BPDirection,
                                    bool specialCall) {
+    branches.insert(aPC);
+    std::cout << "branches: " << branches.size() << "\n";
+
     int32_t idx = index(aPC);
     btb_set_t::index<by_baddr>::type::iterator iter = theBTB[idx].get<by_baddr>().find(aPC);
     if (iter != theBTB[idx].get<by_baddr>().end()) {

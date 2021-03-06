@@ -310,7 +310,8 @@ FLEXUS_INSTANTIATE_COMPONENT_ARRAY( uArchARM, theuArchCfg, theuArch, SCALE_WITH_
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( Cache, theL1dCfg, theL1d, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MMU , theMMUCfg, theMMU, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( CMPCache, theL2Cfg, theL2, SCALE_WITH_SYSTEM_WIDTH, DIVIDE, 1 );
-FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MemoryLoopback, theMemoryCfg, theMemory, SCALE_WITH_SYSTEM_WIDTH, DIVIDE, 4 );
+//FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MemoryLoopback, theMemoryCfg, theMemory, SCALE_WITH_SYSTEM_WIDTH, DIVIDE, 4 );
+FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MemoryLoopback, theMemoryCfg, theMemory, SCALE_WITH_SYSTEM_WIDTH, DIVIDE, 1 );
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MultiNic2, theNicCfg, theNic, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 3 );
 FLEXUS_INSTANTIATE_COMPONENT( MemoryNetwork, theNetworkCfg, theNetwork );
 FLEXUS_INSTANTIATE_COMPONENT( MemoryMap, theMemoryMapCfg, theMemoryMap );
@@ -328,6 +329,7 @@ WIRE( theFAG, FetchAddrOut,             theuFetch, FetchAddressIn         )
 WIRE( theFAG, PrefetchAddrOut,          theuFetch, PrefetchAddressIn      ) //Rakesh
 WIRE( theFAG, AvailableFAQ,             theuFetch, AvailableFAQOut        )
 WIRE( theFAG, uArchHalted,              theuArch, CoreHalted              )
+WIRE( theFAG, BTBRequestOut,            theuFetch, BTBRequestIn           )
 
 //Fetch to Decoder
 WIRE( theuFetch, AvailableFIQ,          theDecoder, AvailableFIQOut       )
@@ -340,6 +342,9 @@ WIRE( theuFetch, RASOpsOut,             theFAG, RASOpsIn                  ) //Ra
 WIRE( theuFetch, SquashBranchOut,       theFAG, SquashBranchIn            ) //Rakesh
 WIRE( theuFetch, MissPairOut,           theFAG, MissPairIn                ) //Rakesh
 WIRE( theuFetch, ROBEmptyIn,            theuArch, ROBEmptyOut             )  //Rakesh
+WIRE( theuFetch, BTBReplyOut,           theFAG, BTBReplyIn                )
+WIRE( theuFetch, BTBMissFetchReplyOut,   theFAG, BTBMissFetchReplyIn)
+
 
 // Fetch to MMU
 WIRE( theuFetch, iTranslationOut,       theMMU, iRequestIn                )

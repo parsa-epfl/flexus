@@ -93,7 +93,7 @@ public:
         // Try to match a parameter
         parameter_map::iterator iter = theParameters.find(arg);
         if (iter == theParameters.end()) {
-          std::cout << "WARNING: There is no parameter named \"" << arg << "\"" << std::endl;
+          std::cout << "A: WARNING: There is no parameter named \"" << arg << "\"" << std::endl;
           continue;
         }
         std::string lexical_value(anArgv[++i]);
@@ -165,7 +165,7 @@ public:
   void set(std::string const &aName, std::string const &aValue) {
     parameter_map::iterator iter = theParameters.find(aName);
     if (iter == theParameters.end()) {
-      std::cout << "WARNING: There is no parameter named \"" << aName << "\"" << std::endl;
+      std::cout << "B: WARNING: There is no parameter named \"" << aName << "\"" << std::endl;
     } else {
       iter->second->setValue(aValue);
     }

@@ -58,6 +58,11 @@ int32_t CoreImpl::availableROB() const {
   } else if (theSpinning && theSpinControlEnabled && theLSQCount > 0) {
     return 0;
   } else {
+    if(theFlexus->cycleCount()%10000 == 0){
+      std::cout << "availableROB: " << (theROBSize - theROB.size()) << " theROB.size: " << theROB.size() << " theROBSize: " << theROBSize << "\n";
+    }
+
+    //std::cout << "availableROB: " << (theROBSize - theROB.size()) << " theROB.size: " << theROB.size() << " theROBSize: " << theROBSize << "\n";
     return theROBSize - theROB.size();
   }
 }

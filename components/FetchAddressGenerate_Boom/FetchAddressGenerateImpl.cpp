@@ -109,6 +109,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate) {
   uint32_t ICacheLineSize;
   bool BTBPrefilled;
   bool missUnderBTBMiss;
+  std::list<VirtualMemoryAddress> BTBMissFetchBlocks;
 
 public:
   FLEXUS_COMPONENT_CONSTRUCTOR(FetchAddressGenerate)
@@ -221,12 +222,27 @@ public:
   // BTBReplyIn
   //----------
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(BTBReplyIn);
-  void push(interface::BTBReplyIn const &, index_t anIndex, bool &status) {
-    //	  DBG_(Tmp, ( << "In cache " << status));
-    theBTBMiss[anIndex] = !status;
-    thePredecodeCyclesLeft[anIndex] = 2; // Fixme: it should be a parameter. Number of cycle for
-                                         // precoding branches in a cache block.
-    //	  DBG_(Tmp, ( << "Icache resp: " << status));
+  void push(interface::BTBReplyIn const &, index_t anIndex, bool &isMissed) {
+    if (isMissed) {
+      // DBG_(DBG_BOOM_LEVEL, ( << "L1 Miss "));
+      theBTBFillsL2++;
+    } else {
+      // DBG_(DBG_BOOM_LEVEL, ( << "L1 Hit "));
+      theBTBFillsL1++;
+    }
+  }
+
+  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(BTBMissFetchReplyIn);
+  void push(interface::BTBMissFetchReplyIn const &, index_t anIndex, bool &isHit) {
+    if(BTBMissFetchBlocks.empty()){
+      theBTBMiss[anIndex] = false;
+      std::cout << "ReplyIn, BTBMissFetchBlocks empty, clock: " << theFlexus->cycleCount() << "\n";
+    }
+    else{
+      std::cout << "ReplyIn, FAG BTB miss request for: " << (BTBMissFetchBlocks.front() >> 6) << ", clock: " << theFlexus->cycleCount() << "\n";
+      FLEXUS_CHANNEL_ARRAY(BTBRequestOut, anIndex) << BTBMissFetchBlocks.front();
+      BTBMissFetchBlocks.pop_front();
+    }
   }
 
   // SquashIn
@@ -269,6 +285,8 @@ public:
     BTBPrefilled = false;
     missUnderBTBMiss = false;
 
+    BTBMissFetchBlocks.clear();
+
     //	    if (aReason == kBranchMispredict && squashedBPState->thePredictedType == kNonBranch &&
     //(squashedBPState->theActualType == kCall || squashedBPState->theActualType == kJmplCall)) {
     //	    	DBG_Assert( squashedBPState->theActualDirection != kStronglyTaken, ( <<
@@ -284,6 +302,7 @@ public:
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(SquashBranchIn);
   void push(interface::SquashBranchIn const &, index_t anIndex,
             boost::intrusive_ptr<BPredState> &aBPState) {
+
     DBG_(DBG_BOOM_LEVEL,
          (<< std::endl
           << std::endl
@@ -554,6 +573,7 @@ private:
   }
 
   std::pair<bool, BTBEntry> preFillBBTB(index_t anIndex, VirtualMemoryAddress vpc) {
+    std::cout << "\n\n\npreFillBBTB, clock: " << theFlexus->cycleCount() << "\n";
     BTBEntry aBBTBEntry(vpc, kNonBranch, VirtualMemoryAddress(0), 0, kTaken, false);
     int BBSize = 0;
     eBranchType branchType = kNonBranch;
@@ -597,14 +617,20 @@ private:
             boost::intrusive_ptr<RecordedMisses> blockAddresses(new RecordedMisses());
             bool predecCached = true;
 
+            std::cout << "numCacheBlocks: " << numCacheBlocks << "\n";
+
             DBG_(DBG_BOOM_LEVEL,
                  (<< "First address " << aBBTBEntry.thePC << " last addr "
                   << aBBTBEntry.thePC + (aBBTBEntry.theBBsize - 1) * 4 << " 1st block " << std::hex
                   << firstBlock << " last bloc " << lastBlock << " num blocks " << numCacheBlocks));
 
+            assert(BTBMissFetchBlocks.empty());
+
             for (int i = 0; i < numCacheBlocks; i++) {
               uint64_t blockAddr = firstBlock + (i * ICacheLineSize);
               blockAddresses->theMisses.push_back(VirtualMemoryAddress(blockAddr));
+              BTBMissFetchBlocks.push_back(VirtualMemoryAddress(blockAddr));
+
               if (std::find(theBTBPredecBuff.begin(), theBTBPredecBuff.end(),
                             VirtualMemoryAddress(blockAddr)) == theBTBPredecBuff.end()) {
                 predecCached = false;
@@ -615,6 +641,7 @@ private:
             }
 
             if (predecCached == false) {
+              std::cout << "not predecCached\n";
               if (theBTBMiss[anIndex]) {
                 if (!cfg.EnableBTBPrefill) {
                   assert(0);
@@ -639,21 +666,21 @@ private:
               }
 
               DBG_(DBG_BOOM_LEVEL, (<< "Sending req to L1 "));
-              FLEXUS_CHANNEL_ARRAY(BTBRequestOut, anIndex) << blockAddresses;
+              assert(thePredecodeCyclesLeft[anIndex] == 0);
 
-              if (theBTBMiss[anIndex]) {
-                // DBG_(DBG_BOOM_LEVEL, ( << "L1 Miss "));
-                theBTBFillsL2++;
-              } else {
-                // DBG_(DBG_BOOM_LEVEL, ( << "L1 Hit "));
-                thePredecodeCyclesLeft[anIndex] +=
-                    (numCacheBlocks - 1); // Decode latency increase 1 per extra cache block needed
-                theBTBFillsL1++;
-              }
+              std::cout << "FAG: FetchCritical request for: " << (BTBMissFetchBlocks.front() >> 6) << "\n";
+              FLEXUS_CHANNEL_ARRAY(BTBRequestOut, anIndex) << BTBMissFetchBlocks.front();
+              BTBMissFetchBlocks.pop_front();
+
+              theBTBMiss[anIndex] = true;
+              thePredecodeCyclesLeft[anIndex] += (1+numCacheBlocks); // assuming a single cycle per block for decoding!!!!
+
               BTBPrefilled = true;
               DBG_(DBG_BOOM_LEVEL, (<< "Prefilling " << std::hex << vpc));
 
             } else {
+              std::cout << "predecCached\n";
+              BTBMissFetchBlocks.clear();
               DBG_(DBG_BOOM_LEVEL, (<< "PredecBuff hit "));
               isPredecodeBuffHit = true;
             }
@@ -712,7 +739,6 @@ private:
 
   // Implementation of the FetchDrive drive interface
   void doAddressGen(index_t anIndex) {
-
     //  DBG_(Tmp, ( << std::endl<< std::endl<< std::endl<< "Entering FAG Number: " << anIndex <<
     //  std::endl << std::endl<< std::endl) );
     //	    DBG_(Tmp, ( << std::endl<< "Entering FAG Number: " << anIndex << std::endl <<
@@ -754,6 +780,7 @@ private:
 
     /*This should always be checked after the above theBTBMiss conditional*/
     if (thePredecodeCyclesLeft[anIndex] /*&& missUnderBTBMiss*/) {
+      std::cout << "predecoding, clock: " << theFlexus->cycleCount() << "\n";
       thePredecodeCyclesLeft[anIndex]--;
       if (thePredecodeCyclesLeft[anIndex] == 0) {
         missUnderBTBMiss = false;
@@ -1128,6 +1155,9 @@ FLEXUS_PORT_ARRAY_WIDTH(FetchAddressGenerate, MissPairIn) { // Rakesh
   return (cfg.Threads);
 }
 FLEXUS_PORT_ARRAY_WIDTH(FetchAddressGenerate, BTBReplyIn) { // Rakesh
+  return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH(FetchAddressGenerate, BTBMissFetchReplyIn) {
   return (cfg.Threads);
 }
 FLEXUS_PORT_ARRAY_WIDTH(FetchAddressGenerate, AvailableFAQ) {

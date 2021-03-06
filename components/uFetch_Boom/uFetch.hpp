@@ -82,6 +82,11 @@ COMPONENT_INTERFACE(
          ClockTickSeen) // Notify PowerTracker when the clock in this core ticks. This goes here
                         // just because uFetch is driven first and it's convenient.
 
+  DYNAMIC_PORT_ARRAY( PushInput, VirtualMemoryAddress, BTBRequestIn )
+  DYNAMIC_PORT_ARRAY( PushOutput, bool, BTBReplyOut )
+  DYNAMIC_PORT_ARRAY( PushOutput, bool, BTBMissFetchReplyOut )
+
+
     DRIVE(uFetchDrive));
 
 #include FLEXUS_END_COMPONENT_DECLARATION()

@@ -194,6 +194,8 @@ class FLEXUS_COMPONENT(uFetch) {
   std::vector<std::list<FetchAddr>> theFAQ;
   std::vector<std::list<FetchAddr>> thePAQ;            // Rakesh: Prefetch address queue
   std::vector<std::list<VirtualMemoryAddress>> thePBQ; // Rakesh: Prefetch block queue
+  std::vector<std::list<VirtualMemoryAddress>> thePBQC; // Rakesh: Prefetch block queue
+
   std::vector<std::set<PhysicalMemoryAddress>>
       theOutstandingMissQ; // Rakesh: queue for outstanding misses
   std::vector<std::list<VirtualMemoryAddress>> theOutstandingFDIPPrefetches; // MARK
@@ -315,6 +317,7 @@ class FLEXUS_COMPONENT(uFetch) {
   std::list<MemoryTransport> theSnoopQueue;
   std::list<MemoryTransport> theReplyQueue;
   std::list<MemoryTransport> theFDIPPrefetchQueue;
+  std::list<MemoryTransport> theFDIPPrefetchQueueCritical;
   std::list<MemoryTransport> theRecMissPrefetchQueue;
   std::list<MemoryTransport> theRecordedMissPrefetchQueue;
 
@@ -324,6 +327,8 @@ class FLEXUS_COMPONENT(uFetch) {
   Stat::StatCounter theAvailableFetchSlots;
   Stat::StatCounter theUsedFetchSlots;
 
+  std::set<PhysicalMemoryAddress> theOutstandingFDIPCriticalMisses;
+  std::set<PhysicalMemoryAddress> blocks;
 private:
   // I-Cache manipulation functions
   //=================================================================
@@ -461,6 +466,7 @@ public:
     theFAQ.resize(cfg.Threads);
     thePAQ.resize(cfg.Threads); // Rakesh
     thePBQ.resize(cfg.Threads); // Rakesh
+    thePBQC.resize(cfg.Threads);
     theRecordedMissQ.resize(cfg.Threads);
     theOutstandingMissQ.resize(cfg.Threads);          // Rakesh
     theOutstandingFDIPPrefetches.resize(cfg.Threads); // MARK edit
@@ -581,6 +587,14 @@ public:
     }
   }
 
+  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(BTBRequestIn);
+  void push( interface::BTBRequestIn const &, index_t anIndex, VirtualMemoryAddress & prefetchReq) {
+    assert(thePBQC[anIndex].empty());
+    std::cout << "uFetch, Fetch critical request arrive: " << (prefetchReq >> 6) << "\n";
+    thePBQC[anIndex].push_back(prefetchReq);
+  }
+
+
   // AvailableFAQOut
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(AvailableFAQOut);
   int32_t pull(interface::AvailableFAQOut const &, index_t anIndex) {
@@ -594,6 +608,7 @@ public:
   // SquashIn
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(SquashIn);
   void push(interface::SquashIn const &, index_t anIndex, eSquashCause &aReason) {
+
     DBG_(Iface, Comp(*this)(<< "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "."
                             << anIndex << "] Fetch SQUASH: " << aReason));
     //    DBG_( DBG_BOOM_LEVEL, Comp(*this) ( << std::endl << std::endl <<  "Squashing CPU[" <<
@@ -620,6 +635,10 @@ public:
 
     lastResetCycle = theFlexus->cycleCount();
     lastSquashCause = aReason;
+
+    thePBQC[anIndex].clear();
+    theOutstandingFDIPCriticalMisses.clear(); // Ali
+
     FLEXUS_CHANNEL(SquashOut) << aReason;
   }
 
@@ -627,6 +646,7 @@ public:
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(SquashBranchIn);
   void push(interface::SquashBranchIn const &, index_t anIndex,
             boost::intrusive_ptr<BPredState> &aBPState) {
+
     //	  DBG_( DBG_BOOM_LEVEL, Comp(*this) ( << std::endl << std::endl <<  "Squashing Mispredicted
     // branch CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << anIndex << "]
     // Fetch SQUASH: " << std::endl << std::endl));
@@ -738,6 +758,11 @@ public:
     doFetch(td);
     doPrefetch(td); // Rakesh
     sendMisses();
+
+    if(theFlexus->cycleCount() % 10000 == 0){
+      std::cout << "blocks: " << blocks.size() << "\n";
+    }
+
   }
 
   Qemu::Processor cpu(index_t anIndex) {
@@ -830,6 +855,8 @@ private:
       theLastPhysical = paddr;
       theLastVTagSet = tagset;
     }
+
+    blocks.insert(paddr);
 
     bool hit = lookup(paddr);
     ++theFetchAccesses;
@@ -934,6 +961,32 @@ private:
         theRecMissPrefetchQueue.pop_front();
       }
     }
+
+    if (!theFDIPPrefetchQueueCritical.empty() && FLEXUS_CHANNEL(FetchMissOut).available()) {
+      MemoryTransport trans = theFDIPPrefetchQueueCritical.front();
+      bool evictInProcess = false;
+
+      if (!trans[MemoryMessageTag]->isEvictType()) {
+        PhysicalMemoryAddress temp(trans[MemoryMessageTag]->address() & theBlockMask);
+        if (theEvictSet.find(temp) != theEvictSet.end()) {
+          DBG_(Trace, Comp(*this)(<< "Trying to fetch block while evict in process, stalling miss: "
+                                  << *trans[MemoryMessageTag]));
+          evictInProcess = true;
+        }
+      }
+
+      if (!evictInProcess) {
+        DBG_(Trace, Comp(*this)(<< "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex()
+                                << "] L1I Sending Miss on Port FMO: " << *trans[MemoryMessageTag]));
+        ;
+
+        DBG_(DBG_BOOM_LEVEL, (<< "Sending FDIP Critical L1I Prefetch " << *trans[MemoryMessageTag]));
+        trans[MemoryMessageTag]->coreIdx() = flexusIndex();
+        FLEXUS_CHANNEL(FetchMissOut) << trans;
+        theFDIPPrefetchQueueCritical.pop_front();
+      }
+    }
+
 
     if (!theFDIPPrefetchQueue.empty() && FLEXUS_CHANNEL(FetchMissOut).available()) {
       MemoryTransport trans = theFDIPPrefetchQueue.front();
@@ -1053,6 +1106,16 @@ private:
           DBG_(Iface, Comp(*this)(<< "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex()
                                   << "." << i << "] L1I FDIP PREFETCH-FILL " << reply->address()));
           theOutstandingMissQ[anIndex].erase(itr);
+        }
+
+        if(theOutstandingFDIPCriticalMisses.find(reply->address()) != theOutstandingFDIPCriticalMisses.end()){
+          std::cout << "FDIP critical fetchReply, clock: " << theFlexus->cycleCount() << "\n";
+          theOutstandingFDIPCriticalMisses.erase(reply->address());
+          assert(theOutstandingFDIPCriticalMisses.empty());
+          if(theOutstandingFDIPCriticalMisses.empty()){
+            bool isHit = true;
+            FLEXUS_CHANNEL_ARRAY(BTBMissFetchReplyOut, anIndex) << isHit; 
+          }
         }
       }
 
@@ -1229,6 +1292,23 @@ private:
     transport.set(MemoryMessageTag, operation);
 
     theFDIPPrefetchQueue.push_back(transport);
+  }
+
+  void issuePreFetchCritical(PhysicalMemoryAddress anAddress, VirtualMemoryAddress vPC) {
+    DBG_Assert(anAddress != 0);
+    MemoryTransport transport;
+    boost::intrusive_ptr<MemoryMessage> operation(MemoryMessage::newFetch(anAddress, vPC));
+    operation->reqSize() = 64;
+
+    boost::intrusive_ptr<TransactionTracker> tracker = new TransactionTracker;
+    tracker->setAddress(anAddress);
+    tracker->setInitiator(flexusIndex());
+    tracker->setFetch(true);
+    tracker->setSource("uFetch");
+    transport.set(TransactionTrackerTag, tracker);
+    transport.set(MemoryMessageTag, operation);
+
+    theFDIPPrefetchQueueCritical.push_back(transport);
   }
 
   void issueRecMissPreFetch(PhysicalMemoryAddress anAddress, VirtualMemoryAddress vPC) {
@@ -1446,7 +1526,7 @@ private:
     FLEXUS_CHANNEL_ARRAY(ROBEmptyIn, anIndex) >> isROBEmpty;
 
     //    DBG_(DBG_BOOM_LEVEL, ( << "AvailableFIQ " << available_fiq << " FAQ Size " <<
-    //    theFAQ[anIndex].size()));
+    //    theFAQ[anIndex].size()));    
     if (waitingForOpcodeQueue->theOpcodes.size() < theMissQueueSize && available_fiq > 0 &&
         (theFAQ[anIndex].size() > 1 || theFlexus->quiescing())) {
 
@@ -1647,6 +1727,7 @@ private:
       thePAQ[anIndex].pop_front();
     }
 
+    enqueuePrefetchCritical(anIndex);
     enqueuePrefetch(anIndex);
 
     if (!cfg.RecMissEnabled) {
@@ -1711,6 +1792,80 @@ private:
       }
     }
   }
+
+  void enqueuePrefetchCritical(index_t anIndex) {
+    bool missed = true;
+
+    if (thePBQC[anIndex].size()) {
+      VirtualMemoryAddress prefetch_addr = thePBQC[anIndex].front();
+      std::cout << "enqueuePrefetchCritical for: " << (prefetch_addr >> 6) << ", clock: " << theFlexus->cycleCount() << "\n";
+
+      DBG_(DBG_BOOM_LEVEL, (<< "FDIP Critical: check block " << std::hex << prefetch_addr));
+
+      PhysicalMemoryAddress paddr;
+      Flexus::SharedTypes::Translation xlat;
+      xlat.theVaddr = prefetch_addr;
+      xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
+      xlat.theType = Flexus::SharedTypes::Translation::eFetch;
+      xlat.thePaddr = cpu(anIndex)->translateVirtualAddress(xlat.theVaddr);
+      paddr = xlat.thePaddr;
+      if (!paddr) {
+        DBG_(DBG_BOOM_LEVEL, (<< "NLP translation failed"));
+        // Unable to translate for prefetch. Fixme: should we just move to the next request or keep
+        // trying translation
+        thePBQC[anIndex].pop_front();
+      } else {
+        if(!theOutstandingFDIPCriticalMisses.empty()){
+          assert(false);
+        }
+        if (theOutstandingMissQ[anIndex].find(paddr) != theOutstandingMissQ[anIndex].end()) {
+          // Fetch already sent
+          DBG_(DBG_BOOM_LEVEL, (<< "FDIP Critical: Outstanding req " << std::hex << prefetch_addr));
+          thePBQC[anIndex].pop_front();
+          theOutstandingFDIPCriticalMisses.insert(paddr);
+          //	    		assert(0);
+        } else if (theIcachePrefetch[anIndex] && paddr == *theIcachePrefetch[anIndex]) {
+          thePBQC[anIndex].pop_front();
+          theOutstandingFDIPCriticalMisses.insert(paddr);
+          DBG_(DBG_BOOM_LEVEL, (<< "FDIP Critical: NLP request already sent " << std::hex << prefetch_addr));
+          // Prefetch already sent
+        } else if (theIcacheMiss[anIndex] && paddr == *theIcacheMiss[anIndex]) {
+          thePBQC[anIndex].pop_front();
+          theOutstandingFDIPCriticalMisses.insert(paddr);
+          DBG_(DBG_BOOM_LEVEL,
+               (<< "FDIP Critical: demand fetch already sent " << std::hex << prefetch_addr));
+          // Fetch already sent
+        } else if (lookup(paddr)) {
+          thePBQC[anIndex].pop_front();
+          DBG_(DBG_BOOM_LEVEL,
+               (<< "FDIP Critical: already in cache " << std::hex << prefetch_addr << " paddr " << paddr));
+          missed = false;
+          // No need to prefetch, already in cache
+        } else {
+          if (theOutstandingMissQ[anIndex].size() < theMaxOutstandingFDIPMisses) {
+            theOutstandingMissQ[anIndex].insert(paddr);
+            issuePreFetchCritical(paddr, prefetch_addr);
+            theFDIPPrefetches++;
+
+            DBG_(DBG_BOOM_LEVEL,
+                 (<< "FDIP Critical: issue prefech " << std::hex << paddr << " vaddr " << prefetch_addr
+                  << " outreq " << theOutstandingMissQ[anIndex].size()));
+            thePBQC[anIndex].pop_front();
+            theOutstandingFDIPCriticalMisses.insert(paddr);
+          } else {
+            DBG_(DBG_BOOM_LEVEL, (<< "FDIP Critical: max outstanding req " << prefetch_addr));
+          }
+        }
+      }
+      std::cout << "status missed: " << missed << "\n";
+      FLEXUS_CHANNEL_ARRAY(BTBReplyOut, anIndex) << missed;
+      if(!missed){
+        bool isHit = true;
+        FLEXUS_CHANNEL_ARRAY(BTBMissFetchReplyOut, anIndex) << isHit;
+      }
+    }
+  }
+
 
   void enqueueRecMissPrefetch(index_t anIndex) {
     if (theRecordedMissQ[anIndex].size()) {
@@ -1820,6 +1975,18 @@ FLEXUS_PORT_ARRAY_WIDTH(uFetch, Stalled) {
 FLEXUS_PORT_ARRAY_WIDTH(uFetch, ResyncIn) {
   return (cfg.Threads);
 }
+FLEXUS_PORT_ARRAY_WIDTH(uFetch, BTBRequestIn) {
+  return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH(uFetch, BTBReplyOut) {
+  return (cfg.Threads);
+}
+FLEXUS_PORT_ARRAY_WIDTH(uFetch, BTBMissFetchReplyOut) {
+  return (cfg.Threads);
+}
+
+
+
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
 #define FLEXUS_END_COMPONENT uFetch
