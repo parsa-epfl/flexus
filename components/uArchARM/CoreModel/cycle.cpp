@@ -1360,10 +1360,10 @@ void CoreImpl::retire() {
 
       DBG_(Iface,
            (<< std::hex << "Commit notification, EL:" << currentEL() << "  PC:" << retirePC));
-      theROB.pop_front();
       // RetireNotice retired(currentEL(), retirePC, theROB.front()->fetchSerial(),
       // theROB.front()->getMissStatsInfo()); retirecb_fn(retired);
     }
+    theROB.pop_front();
   }
 }
 
