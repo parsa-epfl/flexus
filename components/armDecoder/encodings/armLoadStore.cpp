@@ -103,6 +103,7 @@ arminst CAS(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   if (!is_pair) {
     multiply_dependant_action update_value = updateCASValueAction(inst, kOperand1, kOperand2);
 
+    std::cout << "A9\n";
     InternalDependance dep(inst->retirementDependance());
     connectDependance(dep, update_value);
 
@@ -119,6 +120,7 @@ arminst CAS(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   } else {
     multiply_dependant_action update_value =
         updateCASPValueAction(inst, kOperand1, kOperand2, kOperand3, kOperand4);
+    std::cout << "A10\n";
     InternalDependance dep(inst->retirementDependance());
     connectDependance(dep, update_value);
 
@@ -177,6 +179,8 @@ arminst STXR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
 
   inst->addSquashEffect(eraseLSQ(inst));
   // inst->addDispatchEffect(allocateStore(inst, sz, false, acctype));
+  std::cout << "A11\n";
+
   inst->addDispatchEffect(allocateCAS(inst, sz, inst->retirementDependance(), acctype));
   // inst->addRetirementConstraint(storeQueueAvailableConstraint(inst));
   // inst->addRetirementConstraint(sideEffectStoreConstraint(inst));
@@ -197,6 +201,8 @@ arminst STXR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
     connectDependance(update_value.dependances[0], addr);
     connectDependance(update_value.dependances[1], monitor);
     connectDependance(update_value.dependances[2], act);
+    std::cout << "A12\n";
+
     connectDependance(inst->retirementDependance(), update_value);
     inst->addPostvalidation(validateMemory(kAddress, kOperand5, sz, inst));
 
@@ -212,6 +218,8 @@ arminst STXR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
     multiply_dependant_action update_value = updateSTPValueAction(inst, kResult);
     inst->addDispatchEffect(satisfy(inst, update_value.dependances[1]));
     connectDependance(update_value.dependances[0], act);
+    std::cout << "A13\n";
+
     connectDependance(inst->retirementDependance(), update_value);
     inst->addPostvalidation(validateMemory(kAddress, kResult, sz, inst));
   }
@@ -254,6 +262,8 @@ arminst STRL(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
   connectDependance(update_value.dependances[0], addr);
   connectDependance(update_value.dependances[1], act);
   inst->addDispatchEffect(satisfy(inst, update_value.dependances[2]));
+  std::cout << "A14\n";
+
   connectDependance(inst->retirementDependance(), update_value);
 
   inst->addCheckTrapEffect(mmuPageFaultCheck(inst));
@@ -264,6 +274,8 @@ arminst STRL(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
   // Can't commit till memory-order speculation is resolved by the core
 
   // inst->addDispatchEffect(allocateStore(inst, sz, false, acctype));
+  std::cout << "A15\n";
+
   inst->addDispatchEffect(allocateCAS(inst, sz, inst->retirementDependance(), acctype));
   // inst->addRetirementConstraint(storeQueueAvailableConstraint(inst));
   // inst->addRetirementConstraint(sideEffectStoreConstraint(inst));
@@ -308,6 +320,8 @@ arminst LDAQ(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
   connectDependance(update_value.dependances[0], addr);
   inst->addDispatchEffect(satisfy(inst, update_value.dependances[1]));
   inst->addDispatchEffect(satisfy(inst, update_value.dependances[2]));
+  std::cout << "A16\n";
+
   connectDependance(inst->retirementDependance(), update_value);
 
   // inst->addDispatchEffect(allocateLoad(inst, sz, load.dependance, acctype));
@@ -366,6 +380,8 @@ arminst LDXR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) 
   connectDependance(update_value.dependances[0], addr);
   inst->addDispatchEffect(satisfy(inst, update_value.dependances[1]));
   inst->addDispatchEffect(satisfy(inst, update_value.dependances[2]));
+  std::cout << "A17\n";
+
   connectDependance(inst->retirementDependance(), update_value);
 
   // inst->addDispatchEffect(allocateLoad(inst, sz, load.dependance, acctype));
@@ -604,6 +620,7 @@ arminst STP(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   multiply_dependant_action update_value = updateSTPValueAction(inst, kResult);
   inst->addDispatchEffect(satisfy(inst, update_value.dependances[1]));
   connectDependance(update_value.dependances[0], act);
+  std::cout << "A18\n";
   connectDependance(inst->retirementDependance(), update_value);
 
   inst->addRetirementEffect(retireMem(inst));
@@ -711,6 +728,8 @@ arminst STR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
 
   predicated_dependant_action update_value = updateStoreValueAction(inst, kOperand5);
   rs3_deps[0].push_back(update_value.dependance);
+  std::cout << "A19\n";
+
   connectDependance(inst->retirementDependance(), update_value);
 
   if (rn == 31)
