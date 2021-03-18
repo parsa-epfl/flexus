@@ -236,10 +236,10 @@ public:
   void push(interface::BTBMissFetchReplyIn const &, index_t anIndex, bool &isHit) {
     if(BTBMissFetchBlocks.empty()){
       theBTBMiss[anIndex] = false;
-      std::cout << "ReplyIn, BTBMissFetchBlocks empty, clock: " << theFlexus->cycleCount() << "\n";
+      //std::cout << "ReplyIn, BTBMissFetchBlocks empty, clock: " << theFlexus->cycleCount() << "\n";
     }
     else{
-      std::cout << "ReplyIn, FAG BTB miss request for: " << (BTBMissFetchBlocks.front() >> 6) << ", clock: " << theFlexus->cycleCount() << "\n";
+      //std::cout << "ReplyIn, FAG BTB miss request for: " << (BTBMissFetchBlocks.front() >> 6) << ", clock: " << theFlexus->cycleCount() << "\n";
       FLEXUS_CHANNEL_ARRAY(BTBRequestOut, anIndex) << BTBMissFetchBlocks.front();
       BTBMissFetchBlocks.pop_front();
     }
@@ -573,7 +573,7 @@ private:
   }
 
   std::pair<bool, BTBEntry> preFillBBTB(index_t anIndex, VirtualMemoryAddress vpc) {
-    std::cout << "\n\n\npreFillBBTB, clock: " << theFlexus->cycleCount() << "\n";
+    //std::cout << "\n\n\npreFillBBTB, clock: " << theFlexus->cycleCount() << "\n";
     BTBEntry aBBTBEntry(vpc, kNonBranch, VirtualMemoryAddress(0), 0, kTaken, false);
     int BBSize = 0;
     eBranchType branchType = kNonBranch;
@@ -617,7 +617,7 @@ private:
             boost::intrusive_ptr<RecordedMisses> blockAddresses(new RecordedMisses());
             bool predecCached = true;
 
-            std::cout << "numCacheBlocks: " << numCacheBlocks << "\n";
+            //std::cout << "numCacheBlocks: " << numCacheBlocks << "\n";
 
             DBG_(DBG_BOOM_LEVEL,
                  (<< "First address " << aBBTBEntry.thePC << " last addr "
@@ -641,7 +641,7 @@ private:
             }
 
             if (predecCached == false) {
-              std::cout << "not predecCached\n";
+              //std::cout << "not predecCached\n";
               if (theBTBMiss[anIndex]) {
                 if (!cfg.EnableBTBPrefill) {
                   assert(0);
@@ -668,7 +668,7 @@ private:
               DBG_(DBG_BOOM_LEVEL, (<< "Sending req to L1 "));
               assert(thePredecodeCyclesLeft[anIndex] == 0);
 
-              std::cout << "FAG: FetchCritical request for: " << (BTBMissFetchBlocks.front() >> 6) << "\n";
+              //std::cout << "FAG: FetchCritical request for: " << (BTBMissFetchBlocks.front() >> 6) << "\n";
               FLEXUS_CHANNEL_ARRAY(BTBRequestOut, anIndex) << BTBMissFetchBlocks.front();
               BTBMissFetchBlocks.pop_front();
 
@@ -679,7 +679,7 @@ private:
               DBG_(DBG_BOOM_LEVEL, (<< "Prefilling " << std::hex << vpc));
 
             } else {
-              std::cout << "predecCached\n";
+              //std::cout << "predecCached\n";
               BTBMissFetchBlocks.clear();
               DBG_(DBG_BOOM_LEVEL, (<< "PredecBuff hit "));
               isPredecodeBuffHit = true;
@@ -780,7 +780,7 @@ private:
 
     /*This should always be checked after the above theBTBMiss conditional*/
     if (thePredecodeCyclesLeft[anIndex] /*&& missUnderBTBMiss*/) {
-      std::cout << "predecoding, clock: " << theFlexus->cycleCount() << "\n";
+      //std::cout << "predecoding, clock: " << theFlexus->cycleCount() << "\n";
       thePredecodeCyclesLeft[anIndex]--;
       if (thePredecodeCyclesLeft[anIndex] == 0) {
         missUnderBTBMiss = false;
@@ -927,7 +927,7 @@ private:
         }
 
         fetch->theFetches.push_back(faddr);
-
+        //std::cout << "pc: " << faddr.theAddress << "\t" << Flexus::Qemu::Processor::getProcessor(flexusIndex())->disassemble(faddr.theAddress) << "\n";
         max_addrs--;
       }
     }

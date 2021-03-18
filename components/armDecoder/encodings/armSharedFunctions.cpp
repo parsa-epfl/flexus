@@ -229,7 +229,7 @@ void addSetCC(SemanticInstruction *inst, predicated_action &exec, bool is64) {
   dependant_action cc = writeccAction(inst, kCCpd, is64);
   addAnnulment(inst, exec, cc.dependance);
   connectDependance(cc.dependance, exec);
-  std::cout << "A1\n";
+  //std::cout << "A1\n";
   connectDependance(inst->retirementDependance(), cc);
 }
 
@@ -324,7 +324,7 @@ void addWriteback(SemanticInstruction *inst, eOperandCode aRegisterCode,
 
   // Make writeback depend on execute, make retirement depend on writeback
   connectDependance(wb.dependance, exec);
-  std::cout << "A2\n";
+  //std::cout << "A2\n";
 
   connectDependance(inst->retirementDependance(), wb);
 }
@@ -347,7 +347,7 @@ void addWriteback1(SemanticInstruction *inst, eOperandCode aRegisterCode,
 
   // Make writeback depend on execute, make retirement depend on writeback
   connectDependance(wb.dependance, exec);
-  std::cout << "A3\n";
+  //std::cout << "A3\n";
 
   connectDependance(inst->retirementDependance(), wb);
 }
@@ -370,7 +370,7 @@ void addWriteback2(SemanticInstruction *inst, eOperandCode aRegisterCode,
 
   // Make writeback depend on execute, make retirement depend on writeback
   connectDependance(wb.dependance, exec);
-  std::cout << "A4\n";
+  //std::cout << "A4\n";
 
   connectDependance(inst->retirementDependance(), wb);
 }
@@ -441,7 +441,7 @@ simple_action addAddressCompute(SemanticInstruction *inst,
 
   connectDependance(update_address.dependances[0], exec);
   connectDependance(tr.action->dependance(0), exec);
-  std::cout << "A5\n";
+  //std::cout << "A5\n";
 
   connectDependance(inst->retirementDependance(), update_address);
 

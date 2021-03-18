@@ -165,7 +165,7 @@ void SemanticInstruction::setMayRetire(int32_t aBit, bool aFlag) {
   bool may_retire = mayRetire();
   SEMANTICS_DBG("aBit = " << aBit << ", aFlag = " << aFlag << ", " << *this);
   theRetirementDepends[aBit] = aFlag;
-  std::cout << "setMayRetire: " << aBit << " to: " << aFlag << " for insrtuction: " << thePC << "\n"; 
+  //std::cout << "setMayRetire: " << aBit << " to: " << aFlag << " for insrtuction: " << thePC << "\n"; 
   if (mayRetire() && !may_retire) {
     DBG_(Iface, (<< identify() << " may retire"));
   } else if (!mayRetire() && may_retire) {
@@ -174,12 +174,12 @@ void SemanticInstruction::setMayRetire(int32_t aBit, bool aFlag) {
 }
 
 bool SemanticInstruction::mayRetire() const {
-  if(theFlexus->cycleCount()%10000 == 0){
+  /*if(theFlexus->cycleCount()%10000 == 0){
     std::cout << "sematicInstruction mayRetire\n";
     std::cout << "thePC: " << thePC << "\n";
     std::cout << "instruction: " << theBPState->theActualType << "\n";
     std::cout << "Opcode: " << theOpcode << "\n";
-  }
+  }*/
 
 
   FLEXUS_PROFILE();
@@ -187,24 +187,24 @@ bool SemanticInstruction::mayRetire() const {
     return true;
   bool ok = theRetirementDepends[0] && theRetirementDepends[1] && theRetirementDepends[2] &&
             theRetirementDepends[3];
-  if(theFlexus->cycleCount()% 10000 == 0){
+  /*if(theFlexus->cycleCount()% 10000 == 0){
     std::cout << "A: ok: " << ok << "\n";
     std::cout << "0: " << theRetirementDepends[0] << " 1: " << theRetirementDepends[1] << " 2: " << theRetirementDepends[2] << " 3: " << theRetirementDepends[3] << "\n"; 
-  }
+  }*/
 
   for (std::list<std::function<bool()>>::const_iterator iter = theRetirementConstraints.begin(),
                                                         end = theRetirementConstraints.end();
        ok && (iter != end); ++iter) {
     ok &= (*iter)();
   }
-  if(theFlexus->cycleCount()% 10000 == 0){
+  /*if(theFlexus->cycleCount()% 10000 == 0){
     std::cout << "B: ok: " << ok << "\n";
-  }
+  }*/
 
   ok &= (theCanRetireCounter == 0);
-  if(theFlexus->cycleCount()% 10000 == 0){
+  /*if(theFlexus->cycleCount()% 10000 == 0){
     std::cout << "C: ok: " << ok << "\n";
-  }
+  }*/
   return ok; // May retire if no dependence bit is clear
 }
 
@@ -221,7 +221,7 @@ void SemanticInstruction::decrementCanRetireCounter() {
 InternalDependance SemanticInstruction::retirementDependance() {
   DBG_Assert(theRetireDepCount < 5);
   theRetirementDepends[theRetireDepCount] = false;
-  std::cout << "retirementDependance set " << theRetireDepCount << " to 0 for " << thePC << "\n";
+  //std::cout << "retirementDependance set " << theRetireDepCount << " to 0 for " << thePC << "\n";
   return InternalDependance(&theRetirementTarget, theRetireDepCount++);
 }
 

@@ -590,7 +590,7 @@ public:
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(BTBRequestIn);
   void push( interface::BTBRequestIn const &, index_t anIndex, VirtualMemoryAddress & prefetchReq) {
     assert(thePBQC[anIndex].empty());
-    std::cout << "uFetch, Fetch critical request arrive: " << (prefetchReq >> 6) << "\n";
+    //std::cout << "uFetch, Fetch critical request arrive: " << (prefetchReq >> 6) << "\n";
     thePBQC[anIndex].push_back(prefetchReq);
   }
 
@@ -759,9 +759,9 @@ public:
     doPrefetch(td); // Rakesh
     sendMisses();
 
-    if(theFlexus->cycleCount() % 10000 == 0){
+    /*if(theFlexus->cycleCount() % 10000 == 0){
       std::cout << "blocks: " << blocks.size() << "\n";
-    }
+    }*/
 
   }
 
@@ -1109,7 +1109,7 @@ private:
         }
 
         if(theOutstandingFDIPCriticalMisses.find(reply->address()) != theOutstandingFDIPCriticalMisses.end()){
-          std::cout << "FDIP critical fetchReply, clock: " << theFlexus->cycleCount() << "\n";
+          //std::cout << "FDIP critical fetchReply, clock: " << theFlexus->cycleCount() << "\n";
           theOutstandingFDIPCriticalMisses.erase(reply->address());
           assert(theOutstandingFDIPCriticalMisses.empty());
           if(theOutstandingFDIPCriticalMisses.empty()){
@@ -1798,7 +1798,7 @@ private:
 
     if (thePBQC[anIndex].size()) {
       VirtualMemoryAddress prefetch_addr = thePBQC[anIndex].front();
-      std::cout << "enqueuePrefetchCritical for: " << (prefetch_addr >> 6) << ", clock: " << theFlexus->cycleCount() << "\n";
+      //std::cout << "enqueuePrefetchCritical for: " << (prefetch_addr >> 6) << ", clock: " << theFlexus->cycleCount() << "\n";
 
       DBG_(DBG_BOOM_LEVEL, (<< "FDIP Critical: check block " << std::hex << prefetch_addr));
 
@@ -1857,7 +1857,7 @@ private:
           }
         }
       }
-      std::cout << "status missed: " << missed << "\n";
+      //std::cout << "status missed: " << missed << "\n";
       FLEXUS_CHANNEL_ARRAY(BTBReplyOut, anIndex) << missed;
       if(!missed){
         bool isHit = true;

@@ -381,7 +381,7 @@ public:
                                    eDirection actualDirection, eDirection BPDirection,
                                    bool specialCall) {
     branches.insert(aPC);
-    std::cout << "branches: " << branches.size() << "\n";
+    //std::cout << "branches: " << branches.size() << "\n";
 
     int32_t idx = index(aPC);
     btb_set_t::index<by_baddr>::type::iterator iter = theBTB[idx].get<by_baddr>().find(aPC);

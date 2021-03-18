@@ -1238,10 +1238,10 @@ void CoreImpl::retire() {
   FLEXUS_PROFILE();
   bool stop_retire = false;
 
-  if(theFlexus->cycleCount()%10000 == 0){
+  /*if(theFlexus->cycleCount()%10000 == 0){
     std::cout << "retire, theROB.size: " << theROB.size() << "\n";
     std::cout << "theROB.empty: " << theROB.empty() << " stop_retire: " << stop_retire << "\n";
-  }
+  }*/
 
   if (theROB.empty()) {
     CORE_DBG("ROB is empty! ->" << theROB.size());
@@ -1258,17 +1258,17 @@ void CoreImpl::retire() {
 
     if (!theROB.front()->mayRetire()) {
       CORE_DBG("Cant Retire due to pending retirement dependance " << *theROB.front());
-      if(theFlexus->cycleCount()%10000 == 0){
+      /*if(theFlexus->cycleCount()%10000 == 0){
         std::cout << "break 1\n";
-      }
+      }*/
 
       break;
     }
 
     if (theTSOBReplayStalls > 0) {
-      if(theFlexus->cycleCount()%10000 == 0){
+      /*if(theFlexus->cycleCount()%10000 == 0){
         std::cout << "break 2\n";
-      }
+      }*/
 
       break;
     }
@@ -1279,9 +1279,9 @@ void CoreImpl::retire() {
         theROB.front()->instClass() == clsAtomic && !theROB.front()->isAnnulled() &&
         (static_cast<int>(theCheckpoints.size())) >= theAllowedSpeculativeCheckpoints) {
       DBG_(VVerb, (<< " theROB.front()->instClass() == clsAtomic "));
-      if(theFlexus->cycleCount()%10000 == 0){
+      /*if(theFlexus->cycleCount()%10000 == 0){
         std::cout << "break 3\n";
-      }
+      }*/
 
       break;
     }
@@ -1289,9 +1289,9 @@ void CoreImpl::retire() {
     if ((thePendingInterrupt != kException_None) && theIsSpeculating) {
       // stop retiring so we can stop speculating and handle the interrupt
       DBG_(VVerb, (<< " thePendingInterrupt && theIsSpeculating "));
-      if(theFlexus->cycleCount()%10000 == 0){
+      /*if(theFlexus->cycleCount()%10000 == 0){
         std::cout << "break 4\n";
-      }
+      }*/
 
       break;
     }
@@ -1299,9 +1299,9 @@ void CoreImpl::retire() {
     if ((theROB.front()->resync() || (theROB.front() == theInterruptInstruction)) &&
         theIsSpeculating) {
       // Do not retire sync instructions or interrupts while speculating
-      if(theFlexus->cycleCount()%10000 == 0){
+      /*if(theFlexus->cycleCount()%10000 == 0){
         std::cout << "break 5\n";
-      }
+      }*/
 
       break;
     }
@@ -1317,9 +1317,9 @@ void CoreImpl::retire() {
         ++theSquashInstruction;
         theSquashInclusive = true;
       } else {
-        if(theFlexus->cycleCount()%10000 == 0){
+        /*if(theFlexus->cycleCount()%10000 == 0){
           std::cout << "break 6\n";
-        }
+        }*/
         break;
       }
     }
@@ -1393,9 +1393,9 @@ void CoreImpl::retire() {
       theROB.pop_front();
     }
     else{
-      if(theFlexus->cycleCount()%10000 == 0){
+      /*if(theFlexus->cycleCount()%10000 == 0){
         std::cout << "thePendingTrap: " << thePendingTrap << "\n";
-      }
+      }*/
     }
   }
 }

@@ -58,9 +58,9 @@ struct MAGIC : public armInstruction {
   }
 
   virtual bool mayRetire() const {
-    if(theFlexus->cycleCount()%10000 == 0){
+    /*if(theFlexus->cycleCount()%10000 == 0){
       std::cout << "mayRetire in armDecoder/encoding/armMagic.cpp\n";
-    }
+    }*/
     return true;
   }
   virtual bool preValidate() {

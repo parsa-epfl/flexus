@@ -65,7 +65,7 @@ static void branch_cond(SemanticInstruction *inst, VirtualMemoryAddress target, 
   inst->setClass(clsBranch, codeBranchConditional);
 
   dependant_action br = branchCondAction(inst, target, condition(aCode), 1);
-  std::cout << "A6\n";
+  //std::cout << "A6\n";
 
   connectDependance(inst->retirementDependance(), br);
 
@@ -259,7 +259,7 @@ arminst BR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   simple_action target = calcAddressAction(inst, rs_deps);
   dependant_action br = branchToCalcAddressAction(inst);
   connectDependance(br.dependance, target);
-  std::cout << "A7\n";
+  //std::cout << "A7\n";
 
   connectDependance(inst->retirementDependance(), br);
   inst->addRetirementEffect(updateUnconditional(inst, kAddress));
@@ -311,7 +311,7 @@ arminst BLR(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   simple_action target = calcAddressAction(inst, rs_deps);
   dependant_action br = branchRegAction(inst, kAddress, branch_type);
   connectDependance(br.dependance, target);
-  std::cout << "A8\n";
+  //std::cout << "A8\n";
 
   connectDependance(inst->retirementDependance(), br);
 
