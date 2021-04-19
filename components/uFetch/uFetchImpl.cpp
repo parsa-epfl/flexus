@@ -896,8 +896,7 @@ private:
       return;
     }
 
-    if (waitingForOpcodeQueue->theOpcodes.size() < theMissQueueSize && available_fiq > 0 &&
-        (theFAQ[anIndex].size() > 0 || theFlexus->quiescing())) {
+    if (available_fiq > 0 && (theFAQ[anIndex].size() > 0 || theFlexus->quiescing())) {
       std::set<VirtualMemoryAddress> available_lines;
       FETCH_DBG("starting to process the fetches..." << remaining_fetch);
 
