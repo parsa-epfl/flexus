@@ -50,6 +50,9 @@
 #include <components/CommonQEMU/Transports/TranslationTransport.hpp>
 #include <components/uArchARM/CoreModel/coreModelImpl.hpp>
 #include <core/types.hpp>
+
+#define PW_DBG_LEVEL VVerb
+
 namespace nMMU {
 
 class PageWalk {

@@ -359,18 +359,21 @@ public:
 
       TranslationPtr item = thePageWalkEntries.front();
       DBG_(VVerb, (<< "Processing PW entry for " << item->theVaddr));
+      VirtualMemoryAddress pageAddr(item->theVaddr & PAGEMASK);
 
       if (item->isAnnul()) {
         DBG_(VVerb, (<< "Item was annulled " << item->theVaddr));
+
+        // remove from pw entries and alreadyPW, should not be in standing_entries
+        alreadyPW.erase(pageAddr);
         thePageWalkEntries.pop();
       } else if (item->isDone()) {
-        DBG_(VVerb, (<< "Item was Done translationg " << item->theVaddr));
+        DBG_(VVerb, (<< "Item was Done translating " << item->theVaddr));
 
         CORE_DBG("MMU: Translation is Done " << item->theVaddr << " -- " << item->thePaddr);
 
         thePageWalkEntries.pop();
 
-        VirtualMemoryAddress pageAddr(item->theVaddr & PAGEMASK);
         if (alreadyPW.find(pageAddr) != alreadyPW.end()) {
           alreadyPW.erase(pageAddr);
           for (auto it = standingEntries.begin(); it != standingEntries.end();) {
@@ -382,11 +385,15 @@ public:
             }
           }
         }
+
         DBG_Assert(item->isInstr() != item->isData());
         DBG_(Iface, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry "
                      << item->theVaddr));
-        (item->isInstr() ? theInstrTLB : theDataTLB)[(VirtualMemoryAddress)(item->theVaddr)] =
-            (PhysicalMemoryAddress)(item->thePaddr);
+        if (!item->isPagefault()) {
+          (item->isInstr() ? theInstrTLB : theDataTLB)[(VirtualMemoryAddress)(item->theVaddr)] =
+              (PhysicalMemoryAddress)(item->thePaddr);
+          DBG_(VVerb, (<< "TLB Insert: " << item->theVaddr << " = Entry: " << item->thePaddr));
+        }
         if (item->isInstr())
           FLEXUS_CHANNEL(iTranslationReply) << item;
         else

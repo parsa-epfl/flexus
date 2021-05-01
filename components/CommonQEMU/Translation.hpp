@@ -52,6 +52,9 @@
 namespace Flexus {
 namespace SharedTypes {
 
+// MARK: Address representing invalid translations and page faults, must match what QEMU returns.
+const PhysicalMemoryAddress qemuFaultAddress(0xffffffffffffffff);
+
 static uint64_t translationID;
 
 struct Translation : public boost::counted_base {
@@ -173,6 +176,7 @@ struct Translation : public boost::counted_base {
   }
   void setPagefault() {
     DBG_Assert(!thePageFault);
+    thePaddr = qemuFaultAddress;
     thePageFault = true;
   }
 

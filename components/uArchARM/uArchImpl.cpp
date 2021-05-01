@@ -282,7 +282,7 @@ public:
         Flexus::Qemu::Processor::getProcessor(theMicroArch->core())
             ->translateVirtualAddress(aTranslate->theVaddr);
 
-    if (aTranslate->thePaddr == magicTranslation || magicTranslation == 0xffffffffffffffff) {
+    if (aTranslate->thePaddr == magicTranslation) {
       DBG_(Iface,
            (<< "Magic QEMU translation == MMU Translation. Vaddr = " << std::hex
             << aTranslate->theVaddr << ", PADDR_MMU = " << aTranslate->thePaddr
@@ -293,8 +293,6 @@ public:
                   << std::hex << aTranslate->theVaddr << ", PADDR_MMU = " << aTranslate->thePaddr
                   << ", PADDR_QEMU = " << magicTranslation << std::dec));
     }
-
-    aTranslate->thePaddr = magicTranslation;
     theMicroArch->pushTranslation(aTranslate);
   }
 

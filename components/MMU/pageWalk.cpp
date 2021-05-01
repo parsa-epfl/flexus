@@ -60,7 +60,7 @@ void PageWalk::annulAll() {
     while (theTranslationTransports.size() > 0) {
       boost::intrusive_ptr<Translation> basicPointer(
           theTranslationTransports.front()[TranslationBasicTag]);
-      DBG_(VVerb, (<< "Annulling PW entry " << basicPointer->theVaddr));
+      DBG_(PW_DBG_LEVEL, (<< "Annulling PW entry " << basicPointer->theVaddr));
       theTranslationTransports.pop_back();
     }
 }
@@ -83,19 +83,22 @@ void PageWalk::preWalk(TranslationTransport &aTranslation) {
 
   boost::intrusive_ptr<TranslationState> statefulPointer(aTranslation[TranslationStatefulTag]);
   boost::intrusive_ptr<Translation> basicPointer(aTranslation[TranslationBasicTag]);
-  DBG_(VVerb, (<< "preWalking " << basicPointer->theVaddr));
+  DBG_(PW_DBG_LEVEL, (<< "preWalking " << basicPointer->theVaddr));
 
+  /* TODO: Remove this or store it in the translation state pointer to compare after walk is done.
   if (statefulPointer->currentLookupLevel == 0) {
     PhysicalMemoryAddress magicPaddr(
         QEMU_logical_to_physical(*Flexus::Qemu::Processor::getProcessor(theNode),
                                  QEMU_DI_Instruction, basicPointer->theVaddr));
-    DBG_(VVerb, (<< " QEMU Translated: " << std::hex << basicPointer->theVaddr << std::dec
-                 << ", to: " << std::hex << magicPaddr << std::dec));
+    DBG_(PW_DBG_LEVEL, (<< " QEMU Translated: " << std::hex << basicPointer->theVaddr << std::dec
+                        << ", to: " << std::hex << magicPaddr << std::dec));
   }
+  */
   PhysicalMemoryAddress TTEDescriptor(
       statefulPointer->TTAddressResolver->resolve(basicPointer->theVaddr));
-  DBG_(VVerb, (<< "Current Translation Level: " << (unsigned int)statefulPointer->currentLookupLevel
-               << ", Returned TTE Descriptor Address: " << TTEDescriptor << std::dec));
+  DBG_(PW_DBG_LEVEL,
+       (<< "Current Translation Level: " << (unsigned int)statefulPointer->currentLookupLevel
+        << ", Returned TTE Descriptor Address: " << TTEDescriptor << std::dec));
 
   basicPointer->thePaddr = TTEDescriptor;
   trace_address = TTEDescriptor;
@@ -109,28 +112,41 @@ void PageWalk::preWalk(TranslationTransport &aTranslation) {
 bool PageWalk::walk(TranslationTransport &aTranslation) {
   boost::intrusive_ptr<TranslationState> statefulPointer(aTranslation[TranslationStatefulTag]);
   boost::intrusive_ptr<Translation> basicPointer(aTranslation[TranslationBasicTag]);
-  DBG_(VVerb, (<< "preWalking " << basicPointer->theVaddr));
+  DBG_(PW_DBG_LEVEL, (<< "preWalking " << basicPointer->theVaddr));
 
-  DBG_(VVerb, (<< "Current Translation Level: " << (unsigned int)statefulPointer->currentLookupLevel
-               << ", Read Raw TTE Desc. from QEMU : " << std::hex << basicPointer->rawTTEValue
-               << std::dec));
+  DBG_(PW_DBG_LEVEL,
+       (<< "Current Translation Level: " << (unsigned int)statefulPointer->currentLookupLevel
+        << ", Read Raw TTE Desc. from QEMU : " << std::hex << basicPointer->rawTTEValue
+        << std::dec));
   /* Check Valid */
   bool validBit = extractSingleBitAsBool(basicPointer->rawTTEValue, 0);
-  if (basicPointer->theInstruction) {
-    DBG_(VVerb, (<< "Walking " << *basicPointer->theInstruction));
-  }
   if (validBit != true) {
+    DBG_(PW_DBG_LEVEL,
+         (<< "Encountered INVALID entry in doTTEAccess: " << std::hex << basicPointer->rawTTEValue
+          << std::dec << ", need to generate Page Fault."));
     if (basicPointer->isData() && basicPointer->theInstruction) {
       basicPointer->theInstruction->forceResync();
-    } else {
-      basicPointer->setPagefault();
     }
+    basicPointer->setPagefault();
     basicPointer->setDone();
     return false;
   }
-  //    DBG_Assert( validBit == true , ( << "Encountered INVALID entry in
-  //    doTTEAccess: " << std::hex << basicPointer->rawTTEValue << std::dec <<
-  //    ", need to generate Page Fault."));
+
+  /* Valid entry, check if instruction was squashed. If so, set invalid and say we're done. */
+  if (basicPointer->theInstruction) {
+    /*
+    const boost::intrusive_ptr<narmDecoder::armInstruction> theArmInst =
+        boost::static_pointer_cast<narmDecoder::armInstruction>(basicPointer->theInstruction);
+    if (theArmInst->isSquashed()) {
+      DBG_(PW_DBG_LEVEL, (<< "Annulling PW for address " << basicPointer->theVaddr
+                          << " associated with instruction " << *basicPointer->theInstruction));
+      basicPointer->setAnnul();
+      return false;
+    }
+    */
+    DBG_(PW_DBG_LEVEL, (<< "Walking " << *basicPointer->theInstruction));
+  }
+
   /* distinguish between block and table entries, could cut pwalk early!!! */
   bool isNextLevelTableEntry = extractSingleBitAsBool(basicPointer->rawTTEValue, 1);
   if (statefulPointer->currentLookupLevel == 3) { /* Last level for all granules */
@@ -156,10 +172,11 @@ bool PageWalk::walk(TranslationTransport &aTranslation) {
       PhysicalMemoryAddress shiftedRegionBits = PhysicalMemoryAddress(
           statefulPointer->TTAddressResolver->getBlockOutputBits(basicPointer->rawTTEValue));
       basicPointer->thePaddr = shiftedRegionBits;
-      DBG_(VVerb, (<< "Encountered BLOCK ENTRY in TT level ["
-                   << (unsigned int)statefulPointer->currentLookupLevel << "], TTE = " << std::hex
-                   << basicPointer->rawTTEValue << std::dec << ", ShiftedRegionBits = " << std::hex
-                   << shiftedRegionBits << std::dec));
+      DBG_(PW_DBG_LEVEL,
+           (<< "Encountered BLOCK ENTRY in TT level ["
+            << (unsigned int)statefulPointer->currentLookupLevel << "], TTE = " << std::hex
+            << basicPointer->rawTTEValue << std::dec << ", ShiftedRegionBits = " << std::hex
+            << shiftedRegionBits << std::dec));
       switch (statefulPointer->currentLookupLevel) {
       case 1:
         statefulPointer->BlockSizeFromTTs = 1 << 30; // 1GB block
@@ -179,9 +196,10 @@ bool PageWalk::walk(TranslationTransport &aTranslation) {
       PhysicalMemoryAddress maskedVAddr(basicPointer->theVaddr & PageOffsetMask);
       basicPointer->thePaddr |= maskedVAddr;
 
-      DBG_(VVerb, (<< " PageOffsetMask = " << std::hex << PageOffsetMask << std::dec
-                   << ", maskedVaddr = " << std::hex << maskedVAddr << std::dec
-                   << "PAddr to Return = " << std::hex << basicPointer->thePaddr << std::dec));
+      DBG_(PW_DBG_LEVEL,
+           (<< " PageOffsetMask = " << std::hex << PageOffsetMask << std::dec
+            << ", maskedVaddr = " << std::hex << maskedVAddr << std::dec
+            << "PAddr to Return = " << std::hex << basicPointer->thePaddr << std::dec));
       basicPointer->setDone();
       return true; // p walk done
     }
@@ -314,16 +332,16 @@ void PageWalk::preTranslate(TranslationTransport &aTransport) {
   boost::intrusive_ptr<TranslationState> statefulPointer(aTransport[TranslationStatefulTag]);
   boost::intrusive_ptr<Translation> basicPointer(aTransport[TranslationBasicTag]);
 
-  DBG_(VVerb, (<< "preTranslating " << basicPointer->theVaddr));
+  DBG_(PW_DBG_LEVEL, (<< "preTranslating " << basicPointer->theVaddr));
   // getting here only happens on a NEW translation req.
   if (basicPointer->theCurrentTranslationLevel < statefulPointer->requiredTableLookups) {
     ++basicPointer->theCurrentTranslationLevel;
     preWalk(aTransport);
 
   } else {
-    DBG_(VVerb, (<< "theCurrentTranslationLevel >= "
-                    "statefulPointer->requiredTableLookups "
-                 << basicPointer->theVaddr));
+    DBG_(PW_DBG_LEVEL, (<< "theCurrentTranslationLevel >= "
+                           "statefulPointer->requiredTableLookups "
+                        << basicPointer->theVaddr));
   }
   // once we get here, output address is in the PhysicalAddress field of
   // aTranslation, done
@@ -352,10 +370,10 @@ void PageWalk::cycle() {
     TranslationTransport &item = *i;
     TranslationPtr basicPointer(item[TranslationBasicTag]);
     (*basicPointer)++;
-    DBG_(VVerb, (<< "processing translation entry " << basicPointer->theVaddr));
+    DBG_(PW_DBG_LEVEL, (<< "processing translation entry " << basicPointer->theVaddr));
 
     if ((theTranslationTransports.begin() == i) && basicPointer->isDone()) {
-      DBG_(VVerb, (<< "translation is done for " << basicPointer->theVaddr));
+      DBG_(PW_DBG_LEVEL, (<< "translation is done for " << basicPointer->theVaddr));
 
       //                theDoneTranslations.push(basicPointer);
       theTranslationTransports.erase(i);
@@ -363,10 +381,10 @@ void PageWalk::cycle() {
     }
 
     if (basicPointer->isReady()) {
-      DBG_(VVerb, (<< "translation entry is ready " << basicPointer->theVaddr));
+      DBG_(PW_DBG_LEVEL, (<< "translation entry is ready " << basicPointer->theVaddr));
 
       if (!basicPointer->isWaiting()) {
-        DBG_(VVerb, (<< "translation entry is not waiting " << basicPointer->theVaddr));
+        DBG_(PW_DBG_LEVEL, (<< "translation entry is not waiting " << basicPointer->theVaddr));
 
         preTranslate(item);
         basicPointer->toggleReady();

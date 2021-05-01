@@ -559,14 +559,13 @@ private:
       xlat.theType = Flexus::SharedTypes::Translation::eFetch;
       xlat.thePaddr = cpu(anIndex)->translateVirtualAddress(xlat.theVaddr);
       paddr = xlat.thePaddr;
-      if (paddr == 0) {
-        assert(false);
-        DBG_(VVerb, (<< "Translation failed!"));
+      if (paddr == Flexus::SharedTypes::qemuFaultAddress) {
+        DBG_(VVerb, Comp(*this)(<< "Translation failed for " << vaddr));
         ++theFailedTranslations;
         return true; // Failed translations are treated as hits - they will
                      // cause an MMU miss in the pipe.
       } else {
-        DBG_(VVerb, (<< "Translation success!"));
+        DBG_(VVerb, Comp(*this)(<< "Translation succeeded for " << vaddr));
       }
       // Cache translation
       theLastPhysical = paddr;
@@ -1016,6 +1015,7 @@ private:
   bool available(interface::ResyncIn const &, index_t anIndex) {
     return true;
   }
+
   void push(interface::ResyncIn const &, index_t anIndex, int &aResync) {
     waitingForOpcodeQueue->clear();
     tr_op_bijection.clear();
