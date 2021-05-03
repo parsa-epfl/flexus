@@ -78,6 +78,8 @@
 #define DBG_DefineCategories TLBMissTracking
 #include DBG_Control()
 
+#define MMU_DEBUG_LVL VVerb
+
 #define FLEXUS_BEGIN_COMPONENT MMU
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
 
@@ -297,11 +299,11 @@ public:
 
       TranslationPtr item = theLookUpEntries.front();
       theLookUpEntries.pop();
-      DBG_(VVerb, (<< "Processing lookup entry for " << item->theVaddr));
+      DBG_(MMU_DEBUG_LVL, (<< "Processing lookup entry for " << item->theVaddr));
       DBG_Assert(item->isInstr() != item->isData());
 
-      DBG_(VVerb, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry "
-                   << item->theVaddr));
+      DBG_(MMU_DEBUG_LVL, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry "
+                           << item->theVaddr));
 
       std::pair<bool, PhysicalMemoryAddress> entry =
           (item->isInstr() ? theInstrTLB : theDataTLB)
@@ -317,7 +319,7 @@ public:
           item->setPagefault();
       }
       if (entry.first) {
-        DBG_(VVerb, (<< "Item is a Hit " << item->theVaddr));
+        DBG_(MMU_DEBUG_LVL, (<< "Item is a Hit " << item->theVaddr));
 
         // item exists so mark hit
         item->setHit();
@@ -328,7 +330,7 @@ public:
         else
           FLEXUS_CHANNEL(dTranslationReply) << item;
       } else {
-        DBG_(VVerb, (<< "Item is a miss " << item->theVaddr));
+        DBG_(MMU_DEBUG_LVL, (<< "Item is a miss " << item->theVaddr));
 
         VirtualMemoryAddress pageAddr(item->theVaddr & PAGEMASK);
         if (alreadyPW.find(pageAddr) == alreadyPW.end()) {
@@ -358,17 +360,17 @@ public:
     while (!thePageWalkEntries.empty()) {
 
       TranslationPtr item = thePageWalkEntries.front();
-      DBG_(VVerb, (<< "Processing PW entry for " << item->theVaddr));
+      DBG_(MMU_DEBUG_LVL, (<< "Processing PW entry for " << item->theVaddr));
       VirtualMemoryAddress pageAddr(item->theVaddr & PAGEMASK);
 
       if (item->isAnnul()) {
-        DBG_(VVerb, (<< "Item was annulled " << item->theVaddr));
+        DBG_(MMU_DEBUG_LVL, (<< "Item was annulled " << item->theVaddr));
 
         // remove from pw entries and alreadyPW, should not be in standing_entries
         alreadyPW.erase(pageAddr);
         thePageWalkEntries.pop();
       } else if (item->isDone()) {
-        DBG_(VVerb, (<< "Item was Done translating " << item->theVaddr));
+        DBG_(MMU_DEBUG_LVL, (<< "Item was Done translating " << item->theVaddr));
 
         CORE_DBG("MMU: Translation is Done " << item->theVaddr << " -- " << item->thePaddr);
 
@@ -387,12 +389,13 @@ public:
         }
 
         DBG_Assert(item->isInstr() != item->isData());
-        DBG_(Iface, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry "
-                     << item->theVaddr));
+        DBG_(MMU_DEBUG_LVL, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data")
+                             << " entry " << item->theVaddr));
         if (!item->isPagefault()) {
           (item->isInstr() ? theInstrTLB : theDataTLB)[(VirtualMemoryAddress)(item->theVaddr)] =
               (PhysicalMemoryAddress)(item->thePaddr);
-          DBG_(VVerb, (<< "TLB Insert: " << item->theVaddr << " = Entry: " << item->thePaddr));
+          DBG_(MMU_DEBUG_LVL,
+               (<< "TLB Insert: " << item->theVaddr << " = Entry: " << item->thePaddr));
         }
         if (item->isInstr())
           FLEXUS_CHANNEL(iTranslationReply) << item;
@@ -408,7 +411,7 @@ public:
     CORE_TRACE;
     while (thePageWalker->hasMemoryRequest()) {
       TranslationPtr tmp = thePageWalker->popMemoryRequest();
-      DBG_(VVerb,
+      DBG_(MMU_DEBUG_LVL,
            (<< "Sending a Memory Translation request to Core ready(" << tmp->isReady() << ")  "
             << tmp->theVaddr << " -- " << tmp->thePaddr << "  -- ID " << tmp->theID));
       FLEXUS_CHANNEL(MemoryRequestOut) << tmp;
@@ -417,7 +420,7 @@ public:
 
   void resyncMMU(int anIndex) {
     CORE_TRACE;
-    DBG_(VVerb, (<< "Resynchronizing MMU"));
+    DBG_(MMU_DEBUG_LVL, (<< "Resynchronizing MMU"));
 
     static bool optimize = false;
     theMMUInitialized = optimize;
@@ -432,13 +435,13 @@ public:
     DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
     PAGEMASK = ~((1 << theMMU->Gran0->getlogKBSize()) - 1);
     if (thePageWalker) {
-      DBG_(VVerb, (<< "Annulling all PW entries"));
+      DBG_(MMU_DEBUG_LVL, (<< "Annulling all PW entries"));
       thePageWalker->annulAll();
     }
     if (thePageWalkEntries.size() > 0) {
-      DBG_(VVerb, (<< "deleting PageWalk Entries"));
+      DBG_(MMU_DEBUG_LVL, (<< "deleting PageWalk Entries"));
       while (!thePageWalkEntries.empty()) {
-        DBG_(VVerb, (<< "deleting MMU PageWalk Entrie " << thePageWalkEntries.front()));
+        DBG_(MMU_DEBUG_LVL, (<< "deleting MMU PageWalk Entrie " << thePageWalkEntries.front()));
         thePageWalkEntries.pop();
       }
     }
@@ -447,7 +450,7 @@ public:
 
     if (theLookUpEntries.size() > 0) {
       while (!theLookUpEntries.empty()) {
-        DBG_(VVerb, (<< "deleting MMU Lookup Entrie " << theLookUpEntries.front()));
+        DBG_(MMU_DEBUG_LVL, (<< "deleting MMU Lookup Entrie " << theLookUpEntries.front()));
         theLookUpEntries.pop();
       }
     }
