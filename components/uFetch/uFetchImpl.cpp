@@ -896,8 +896,7 @@ private:
       return;
     }
 
-    if (waitingForOpcodeQueue->theOpcodes.size() < theMissQueueSize && available_fiq > 0 &&
-        (theFAQ[anIndex].size() > 0 || theFlexus->quiescing())) {
+    if (available_fiq > 0 && (theFAQ[anIndex].size() > 0 || theFlexus->quiescing())) {
       std::set<VirtualMemoryAddress> available_lines;
       FETCH_DBG("starting to process the fetches..." << remaining_fetch);
 
@@ -950,11 +949,11 @@ private:
         theUsedFetchSlots++;
       }
     }
-    processBundle();
+    processBundle(available_fiq);
     FETCH_DBG("--------------FINISH FETCHING------------------------");
   }
 
-  void processBundle() {
+  void processBundle(uint32_t available_fiq) {
 
     if (waitingForOpcodeQueue->theOpcodes.size() == 0)
       return;
@@ -964,7 +963,9 @@ private:
     pFetchBundle bundle(new FetchBundle);
     bundle->coreID = theBundleCoreID;
 
-    while (waitingForOpcodeQueue->theOpcodes.size() > 0) {
+    // Only pop fetched instructions up to the limit of decoder FIQ
+    uint32_t insns_added_to_fiq = 0;
+    while (waitingForOpcodeQueue->theOpcodes.size() > 0 && (insns_added_to_fiq < available_fiq)) {
       auto i = waitingForOpcodeQueue->theOpcodes.begin();
       auto fill_iter = waitingForOpcodeQueue->theFillLevels.begin();
       if (i->theOpcode != 0) {
@@ -974,6 +975,7 @@ private:
              Comp(*this)(<< "popping entry out of the waitingForOpcodeQueue " << i->thePC));
         waitingForOpcodeQueue->theOpcodes.erase(i);
         waitingForOpcodeQueue->theFillLevels.erase(fill_iter);
+        insns_added_to_fiq++;
       } else {
         break;
       }
