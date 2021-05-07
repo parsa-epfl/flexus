@@ -64,6 +64,7 @@ if [ "$BUILD_BOOST" = true ]; then
     # Install a compatible version of gcc
     GCC_VERSION="8"
     sudo apt-get update -qq
+    sudo apt-get autoremove libboost-all-dev
     sudo apt-get -y install gcc-${GCC_VERSION} g++-${GCC_VERSION}
 
     # Set the recently installed version of gcc as default
@@ -75,7 +76,13 @@ if [ "$BUILD_BOOST" = true ]; then
     # Install a compatible version of boost library
     BOOST="boost_1_70_0"
     BOOST_VERSION="1.70.0"
-    wget https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/${BOOST}.tar.gz -O /tmp/${BOOST}.tar.gz
+    BOOST_SHA="882b48708d211a5f48e60b0124cf5863c1534cd544ecd0664bb534a4b5d506e9"
+    wget https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VERSION}/source/${BOOST}.tar.gz -O /tmp/${BOOST}.tar.gz
+    echo "${BOOST_SHA} /tmp/${BOOST}.tar.gz | sha256sum --check --status"
+    if [ $? -ne 0 ]; then
+      echo "SHA256 for boost tarball failed!"
+      exit 1
+    fi
     tar -xf /tmp/${BOOST}.tar.gz
     cd ./${BOOST}/
     ./bootstrap.sh --prefix=/usr/local
