@@ -47,26 +47,46 @@
 dist: bionic
 language: cpp
 
-addons:
-  apt:
-    packages:
-    - clang-format-6.0
-    - cmake
-    - libboost-all-dev  
 
 matrix:
   include:
     - env:
       - SIMULATOR="KeenKraken"
+      addons:
+        apt:
+          packages:
+          - clang-format-6.0
+          - cmake
+          - libboost-all-dev  
     - env:
+      addons:
+        apt:
+          packages:
+          - clang-format-6.0
+          - cmake
+          - libboost-all-dev  
       - SIMULATOR="KnottyKraken"
     - env:
+      addons:
+        apt:
+          packages:
+          - clang-format-6.0
+          - cmake
       - SIMULATOR="KeenKraken"
       - $BUILD_BOOST=true
     - env:
+      addons:
+        apt:
+          packages:
+          - clang-format-6.0
+          - cmake
       - SIMULATOR="KnottyKraken"
       - $BUILD_BOOST=true
     - env:
+      addons:
+        apt:
+          packages:
+          - clang-format-6.0
       - LINT=true
 
 script:
