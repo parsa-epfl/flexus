@@ -64,7 +64,7 @@ if [ "$BUILD_BOOST" = true ]; then
     # Install a compatible version of gcc
     GCC_VERSION="8"
     sudo apt-get update -qq
-    sudo apt-get remove libboost-all-dev
+    sudo apt-get autoremove libboost-all-dev
     sudo apt-get -y install gcc-${GCC_VERSION} g++-${GCC_VERSION}
 
     # Set the recently installed version of gcc as default
