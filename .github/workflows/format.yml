@@ -45,6 +45,8 @@
 name: Lint with clang-format and push any changes
 on: 
   push:
+    branches:
+      - master
   pull_request:
     branches:
       - master
@@ -60,6 +62,7 @@ jobs:
           extensions: 'hpp,cpp,c,h'
           clangFormatVersion: 6
           inplace: True
+          style: file 
       - uses: EndBug/add-and-commit@v4
         with:
           author_name: Clang Robot
