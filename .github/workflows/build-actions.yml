@@ -53,6 +53,5 @@ jobs:
       DEPS: cmake libboost-all-dev
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-      - run: apt update -qq && apt upgrade -y && apt install -y $DEPS
+      - run: sudo apt update -qq && apt upgrade -y && apt install -y $DEPS
       - run: ./tests/build_flexus.sh
