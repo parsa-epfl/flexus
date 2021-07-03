@@ -58,7 +58,6 @@ jobs:
       - uses: actions/checkout@v2
       - uses: DoozyX/clang-format-lint-action@v0.12
         with:
-          exclude: 'core/qemu/api.h'
           extensions: 'hpp,cpp,c,h'
           clangFormatVersion: 6
           inplace: True
