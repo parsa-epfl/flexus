@@ -53,7 +53,7 @@ jobs:
     steps:
       - run: sudo apt update -qq && sudo apt upgrade -y && sudo apt install -y $DEPS
 
-  build-tracemode-system-boost:
+  build-tracemode-sysboost:
     needs: setup-env-sysboost
     runs-on: ubuntu-latest
     env:
@@ -65,5 +65,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: parsa-epfl/libqflex
-          path: ../libqflex
+          path: libqflex-checkout
+      - run: mv libqflex-checkout ../libqflex
       - run: ./tests/build_flexus.sh
