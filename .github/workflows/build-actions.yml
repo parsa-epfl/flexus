@@ -46,11 +46,16 @@
 name: build-tests
 on: [push]
 jobs:
-  build-tracemode-syspkgs:
+  build-with-syspkgs:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - sim: "KeenKraken"
+          - sim: "KnottyKraken"
     env:
       DEPS: cmake libboost-all-dev
-      SIMULATOR: KeenKraken
+      SIMULATOR: ${{ matrix.sim }}
     steps:
       - name: Install system dependencies
         run: sudo apt update -qq && sudo apt upgrade -y && sudo apt install -y $DEPS
@@ -63,14 +68,19 @@ jobs:
           path: libqflex-checkout
       - name: Move libqflex to parent dir
         run: mv libqflex-checkout ../libqflex
-      - name: Build trace mode
-        run: ./tests/build_flexus.sh
+      - name: Build flexus
+        run: ./tests/build_flexus.sh $SIMULATOR
 
-  build-tracemode-frozenpkgs:
+  build-with-frozenpkgs:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - sim: "KeenKraken"
+          - sim: "KnottyKraken"
     env:
       DEPS: cmake
-      SIMULATOR: KeenKraken
+      SIMULATOR: ${{ matrix.sim }}
     steps:
       - name: Install system dependencies
         run: sudo apt update -qq && sudo apt upgrade -y && sudo apt install -y $DEPS
@@ -85,5 +95,5 @@ jobs:
         run: mv libqflex-checkout ../libqflex
       - name: Build frozen pkg versions
         run: ./.github/scripts/build_frozen_pkgs.sh
-      - name: Build trace mode
-        run: ./tests/build_flexus.sh
+      - name: Build flexus
+        run: ./tests/build_flexus.sh $SIMULATOR
