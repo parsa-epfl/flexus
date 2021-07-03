@@ -46,12 +46,24 @@
 name: build-tests
 on: [push]
 jobs:
+  setup-env-sysboost:
+    runs-on: ubuntu-latest
+    env:
+      DEPS: cmake libboost-all-dev
+    steps:
+      - run: sudo apt update -qq && sudo apt upgrade -y && sudo apt install -y $DEPS
+
   build-tracemode-system-boost:
+    needs: setup-env-sysboost
     runs-on: ubuntu-latest
     env:
       SIMULATOR: KeenKraken
-      DEPS: cmake libboost-all-dev
     steps:
-      - uses: actions/checkout@v2
-      - run: sudo apt update -qq && sudo apt upgrade -y && sudo apt install -y $DEPS
+      - name: Checkout flexus
+        uses: actions/checkout@v2
+      - name: Checkout libqflex dependency
+        uses: actions/checkout@v2
+        with:
+          repository: parsa-epfl/libqflex
+          path: ../libqflex
       - run: ./tests/build_flexus.sh
