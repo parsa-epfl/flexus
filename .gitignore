@@ -29,3 +29,4 @@ CMakeCache.txt
 Makefile
 cmake_install.cmake
 tags
+boost_*

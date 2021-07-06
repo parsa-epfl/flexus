@@ -61,14 +61,6 @@ if(NOT SELECTED_DEBUG)
   set(SELECTED_DEBUG vverb)
 endif()
 
-
-# TODO
-if(NOT SIMULATOR)
-  message( STATUS "SIMULATOR was not specified; using default SIMULATOR=KnottyKraken" )
-  set(SIMULATOR KnottyKraken)
-endif()
-###########
-
 if(NOT BOOST_INCLUDEDIR)
   message( STATUS "BOOST_INCLUDEDIR was not specified; using default BOOST_INCLUDEDIR=/usr/local/include" )
   set(BOOST_INCLUDEDIR /usr/local/include)
@@ -104,7 +96,6 @@ endif()
 add_definitions(
   -DTARGET_PLATFORM=${TARGET_PLATFORM}
   -DSELECTED_DEBUG=${SELECTED_DEBUG}
-  -DSIMULATOR=${SIMULATOR}
   -DBOOST_MPL_LIMIT_VECTOR_SIZE=50
   -DBOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
   -DCONFIG_QEMU

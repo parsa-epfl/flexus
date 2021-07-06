@@ -46,7 +46,7 @@ cmake_minimum_required(VERSION 3.10.2)
 project(flexus)
 
 include(Configuration.cmake)
-include(${FLEXUS_ROOT}/simulators/${SIMULATOR}/${SIMULATOR}.cmake) # TODO
+include(wiring/components.cmake)
 include_directories(${FLEXUS_ROOT})
 include_directories(SYSTEM ${BOOST_INCLUDEDIR})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${FLEXUS_ROOT}/CMakeFiles)
@@ -62,7 +62,7 @@ target_compile_options(core PRIVATE -c ${GCC_FLAGS})
 target_compile_options(qemu PRIVATE -c ${GCC_FLAGS})
 
 # compile components
-foreach(COMPONENT ${${SIMULATOR}_REQUIRED_COMPONENTS})
+foreach(COMPONENT ${REQUIRED_COMPONENTS})
     file(GLOB_RECURSE COMPONENT_${COMPONENT}_SOURCE "${FLEXUS_ROOT}/components/${COMPONENT}/*.cpp")
     if (${COMPONENT} STREQUAL "NetShim")
         list(FILTER COMPONENT_NetShim_SOURCE EXCLUDE REGEX "^${FLEXUS_ROOT}/components/NetShim/testing")
@@ -73,13 +73,12 @@ endforeach()
 
 # compile simulators
 set(TESTING_HARNESS testing_harness)
-add_library(wiring OBJECT ${FLEXUS_ROOT}/simulators/${SIMULATOR}/wiring.cpp)
+add_library(wiring OBJECT wiring/wiring.cpp)
 target_compile_options(wiring PRIVATE -c ${GCC_FLAGS})
 add_executable(${TESTING_HARNESS} main.cpp $<TARGET_OBJECTS:wiring>)
-target_link_libraries(${TESTING_HARNESS} ${GCC_LDFLAGS} "-Wl,--whole-archive" "-Wl,-export-dynamic" ${${SIMULATOR}_REQUIRED_COMPONENTS})
+target_link_libraries(${TESTING_HARNESS} ${GCC_LDFLAGS} "-Wl,--whole-archive" ${REQUIRED_COMPONENTS})
 target_link_libraries(${TESTING_HARNESS} ${GCC_LDFLAGS} "-Wl,--whole-archive" core qemu "-Wl,--no-whole-archive")
 target_link_libraries(${TESTING_HARNESS} ${GCC_LDFLAGS} "-L${BOOST_LIBRARYDIR}" boost_system boost_regex boost_serialization boost_iostreams z)
-
 # clean for cmake
 add_custom_target(clean_cmake
     COMMAND rm -rf *.o *.a *.so
