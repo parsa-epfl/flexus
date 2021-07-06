@@ -1,23 +1,13 @@
 set(REQUIRED_COMPONENTS
-  CommonQEMU 
-  uFetch 
-  armDecoder 
-  uArchARM 
-  FetchAddressGenerate 
-  Cache
+  CommonQEMU  
   MemoryLoopback 
-  MemoryMap 
-  MagicBreakQEMU 
-  CMPCache 
-  MultiNic 
-  NetShim 
-  TraceTrackerQEMU 
-  MTManager 
-  SplitDestinationMapper 
-  MMU
+  MemoryMap
 )
+#MemoryMap 
+#  CMPCache 
+#  MMU
+#)
 
-set(SUPPORTS_STANDALONE false)
 set(SUPPORTS_SIMICS false)
 set(SUPPORTS_QEMU true)
 set(DEFAULT_TARGET qemu)
