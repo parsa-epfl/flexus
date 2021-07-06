@@ -79,11 +79,11 @@ class FLEXUS_COMPONENT(BPWarm) {
       switch (op2) {
       case 1:
       case 2:
-      case 3:
-      case 5:
+                 case 3:
+    case 5:
       case 6:
-        if (opcode & 0x20000000) {
-          return std::make_pair(kConditional, true);
+        if (opcode & 0x20000000){
+                return std::make_pair(kConditional, true);
         } else {
           return std::make_pair(kConditional, false);
         }

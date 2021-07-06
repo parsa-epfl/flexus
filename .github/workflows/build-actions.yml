@@ -56,6 +56,8 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    outputs:
+      latest_sha: ${{ steps.sha.outputs.SHA }}
     steps:
       - uses: actions/checkout@v2
       - uses: DoozyX/clang-format-lint-action@v0.12
@@ -68,6 +70,11 @@ jobs:
         with:
           default_author: github_actions
           message: 'Commit changes from clang-format'
+      - name: "Get SHA for build jobs"
+        id: sha
+        run: |
+          latest_sha=$(git rev-parse HEAD)
+          echo "::set-output name=SHA::$latest_sha"
 
   build-with-syspkgs:
     runs-on: ubuntu-latest
@@ -85,6 +92,8 @@ jobs:
         run: sudo apt update -qq && sudo apt upgrade -y && sudo apt install -y $DEPS
       - name: Checkout flexus
         uses: actions/checkout@v2
+        with:
+          ref: ${{ needs.lint.outputs.latest_sha }}
       - name: Checkout libqflex dependency
         uses: actions/checkout@v2
         with:
@@ -111,6 +120,8 @@ jobs:
         run: sudo apt update -qq && sudo apt upgrade -y && sudo apt install -y $DEPS
       - name: Checkout flexus
         uses: actions/checkout@v2
+        with:
+          ref: ${{ needs.lint.outputs.latest_sha }}
       - name: Checkout libqflex dependency
         uses: actions/checkout@v2
         with:
