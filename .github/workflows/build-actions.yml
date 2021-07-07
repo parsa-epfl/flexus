@@ -74,7 +74,7 @@ jobs:
           default_author: user_info
           message: 'Commit changes from clang-format'
       - name: "Fail if formatter committed changes."
-        if: ${{ steps.commit_step.committed == 'true' }}
+        if: ${{ steps.commit_step.outputs.committed == 'true' }}
         run: exit 1
 
   build-with-syspkgs:
