@@ -67,11 +67,15 @@ jobs:
           inplace: True
           style: file 
       - uses: EndBug/add-and-commit@v7
+        id: commit_step
         with:
           author_name: "GHA Integration[bot]"
           author_email: "github-actions[bot]@users.noreply.github.com"
           default_author: user_info
           message: 'Commit changes from clang-format'
+      - name: "Fail if formatter committed changes."
+        if: ${{ steps.commit_step.committed == 'true' }}
+        run: exit 1
 
   build-with-syspkgs:
     runs-on: ubuntu-latest
