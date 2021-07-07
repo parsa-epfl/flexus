@@ -1,5 +1,5 @@
 set(REQUIRED_COMPONENTS
   CommonQEMU  
-  MemoryLoopback 
+#  MemoryLoopback 
   MemoryMap
 )
