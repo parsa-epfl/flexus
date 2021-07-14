@@ -3,11 +3,6 @@
 
 int main()
 {
-//	using namespace Flexus;
-//	using namespace Core;
-//	using namespace SharedTypes;
-//	using Flexus::SharedTypes::MemoryMap;
-//	using boost::intrusive_ptr;
 	// Step 2: Create a configuration struct and specify the parameters
 	MemoryLoopbackConfiguration_struct aCfg("The test config");
 	aCfg.Delay = 2;
