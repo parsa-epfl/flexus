@@ -1,29 +1,28 @@
 #include <iostream>
-#include <components/MemoryLoopback/MemoryLoopbackImpl.cpp> // Step 1: Include the .cpp file of the DUT
+#include <components/Dummy/DummyImpl.cpp> // Step 1: Include the .cpp file of the DUT
 
 int main()
 {
 	// Step 2: Create a configuration struct and specify the parameters
-	MemoryLoopbackConfiguration_struct aCfg("The test config");
-	aCfg.Delay = 2;
-	aCfg.MaxRequests = 1;
-	aCfg.UseFetchReply = true;
+	DummyConfiguration_struct aCfg("The test config");
+	aCfg.InitState = 0;
 
 	// Step 3: Create a dummy JumpTable
-	MemoryLoopbackJumpTable aJumpTable;
+	DummyJumpTable aJumpTable;
 
 	// Step 4: Specify the Index and Width
 	Flexus::Core::index_t anIndex = 1;
 	Flexus::Core::index_t aWidth =  1;
 
 	// Step 5: Instantiate the DUT
-	nMemoryLoopback::MemoryLoopbackComponent dut(
+	nDummy::DummyComponent dut(
 	        aCfg,
 		aJumpTable,
 		anIndex,
 		aWidth
 		);
 
+	dut.initialize();
 	std::cout << "test" << std::endl;
 	return -1;
 }

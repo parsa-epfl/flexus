@@ -1,4 +1,4 @@
 set(REQUIRED_COMPONENTS
-  CommonQEMU  
-  MemoryMap
+ # CommonQEMU  
+ # MemoryMap
 )
