@@ -51,6 +51,15 @@ include_directories(${FLEXUS_ROOT})
 include_directories(SYSTEM ${BOOST_INCLUDEDIR})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${FLEXUS_ROOT}/CMakeFiles)
 
+# include google test
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+)
+FetchContent_MakeAvailable(googletest)
+enable_testing()
+
 # compile core
 file(GLOB_RECURSE CORE_SOURCE ${FLEXUS_ROOT}/core/*.cpp)
 file(GLOB_RECURSE QEMU_SOURCE ${FLEXUS_ROOT}/core/qemu/*.cpp)
@@ -75,10 +84,15 @@ endforeach()
 set(TESTING_HARNESS testing_harness)
 add_library(wiring OBJECT wiring/wiring.cpp)
 target_compile_options(wiring PRIVATE -c ${GCC_FLAGS})
-add_executable(${TESTING_HARNESS} main.cpp $<TARGET_OBJECTS:wiring>)
+add_executable(${TESTING_HARNESS} test.cpp $<TARGET_OBJECTS:wiring>)
 target_link_libraries(${TESTING_HARNESS} ${GCC_LDFLAGS} "-Wl,--whole-archive" ${REQUIRED_COMPONENTS})
 target_link_libraries(${TESTING_HARNESS} ${GCC_LDFLAGS} "-Wl,--whole-archive" core qemu "-Wl,--no-whole-archive")
 target_link_libraries(${TESTING_HARNESS} ${GCC_LDFLAGS} "-L${BOOST_LIBRARYDIR}" boost_system boost_regex boost_serialization boost_iostreams z)
+target_link_libraries(${TESTING_HARNESS} gtest_main)
+
+include(GoogleTest)
+gtest_discover_tests(${TESTING_HARNESS})
+
 # clean for cmake
 add_custom_target(clean_cmake
     COMMAND rm -rf *.o *.a *.so

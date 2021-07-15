@@ -1,7 +1,8 @@
 #include <iostream>
 #include <components/Dummy/DummyImpl.cpp> // Step 1: Include the .cpp file of the DUT
+#include <gtest/gtest.h>
 
-int main()
+TEST(DummyTest, DummyInstantiation)
 {
 	// Step 2: Create a configuration struct and specify the parameters
 	DummyConfiguration_struct aCfg("The test config");
@@ -24,5 +25,4 @@ int main()
 
 	dut.initialize();
 	std::cout << "test" << std::endl;
-	return -1;
 }
