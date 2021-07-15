@@ -1,0 +1,23 @@
+HOW TO BUILD:
+1. Create a build directory:
+	mkdir build
+2. Move to the build directory:
+	cd build
+3. Create the Makefile using CMake.
+	cmake -DCMAKE_C_COMPILER=/home/parsacom/tools/gcc-qflex/bin/gcc -DCMAKE_CXX_COMPILER=/home/parsacom/tools/gcc-qflex/bin/g++ -DBOOST_INCLUDEDIR=/mnt/parsafiler1/vol1/users/gupta_setu/qflex/boost_lib/include -DBOOST_LIBRARYDIR=/mnt/parsafiler1/vol1/users/gupta_setu/qflex/boost_lib/lib -DSELECTED_DEBUG=None -S ..
+		-DCMAKE_C_COMPILER specifies the location of gcc
+		-DCMAKE_CXX_COMPILER specifies the location of g++
+		-DBOOST_INCLUDEDIR specifies the path to the include directory of boost installation
+		-DBOOST_LIBRARYDIR specifies the path to the lib directory of boost installation
+		-DSELECT_DEBUG specifies the debug level
+		.. to specify the location of CMakeLists.txt
+4. Build via GNU Make
+	LD_LIBRARY_PATH=/home/parsacom/tools/boost_1_70_0/lib:/home/parsacom/tools/gcc-qflex/lib64 make -j25
+		LD_LIBRARY_PATH to specify the path of dynamically linked libraries
+		-j25 to build using 25 threads parallelly
+
+HOW TO RUN
+In the build directory, execute the following:
+	LD_LIBRARY_PATH=/home/parsacom/tools/boost_1_70_0/lib:/home/parsacom/tools/gcc-qflex/lib64 ./testing_harness
+		LD_LIBRARY_PATH to specify the path of dynamically linked libraries
+		./testing_harness is the executable
