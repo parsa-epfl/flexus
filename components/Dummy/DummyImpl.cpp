@@ -95,7 +95,8 @@ class FLEXUS_COMPONENT(Dummy)
 	{
 		curState++;
 		std::cout << "Drive Called. Sending incremented state " << curState <<  " over Port:getState\n";
-		FLEXUS_CHANNEL(getState) << curState;
+		if(FLEXUS_CHANNEL(getState).available())
+			FLEXUS_CHANNEL(getState) << curState;
 	}
 
 private:
