@@ -45,8 +45,32 @@
 cmake_minimum_required(VERSION 3.10.2)
 project(flexus)
 
+# Include cmake helper macros
+include(cmake_helpers.cmake)
+
+# Configure paths and options
 include(Configuration.cmake)
-include(wiring/components.cmake)
+
+# Specify harness root
+set(HARNESS_ROOT ${FLEXUS_ROOT}/component_test )
+
+# Collect all external component dependencies
+set(EXTRA_DEPS "")	# Stores all external dependencies
+subdirlist(ALL_TESTS ${HARNESS_ROOT}/tests)
+foreach(TEST_DIR ${ALL_TESTS})
+	if(EXISTS "${HARNESS_ROOT}/tests/${TEST_DIR}/extra_deps.cmake" )
+		include(${HARNESS_ROOT}/tests/${TEST_DIR}/extra_deps.cmake)
+	else()
+		set(REQUIRED_COMPONENTS "")	# By default extra dependencies are empty
+		set(ENABLE_TEST YES)	# By defaut tests are enabled
+	endif()
+	if(ENABLE_TEST)
+		list(APPEND EXTRA_DEPS ${REQUIRED_COMPONENTS})	# Add dependencies to a common list
+	endif()
+endforeach()
+list(REMOVE_DUPLICATES EXTRA_DEPS)	# Remove duplicate dependencies
+
+# Setup include paths
 include_directories(${FLEXUS_ROOT})
 include_directories(SYSTEM ${BOOST_INCLUDEDIR})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${FLEXUS_ROOT}/CMakeFiles)
@@ -71,7 +95,7 @@ target_compile_options(core PRIVATE -c ${GCC_FLAGS})
 target_compile_options(qemu PRIVATE -c ${GCC_FLAGS})
 
 # compile components
-foreach(COMPONENT ${REQUIRED_COMPONENTS})
+foreach(COMPONENT ${EXTRA_DEPS})
     file(GLOB_RECURSE COMPONENT_${COMPONENT}_SOURCE "${FLEXUS_ROOT}/components/${COMPONENT}/*.cpp")
     if (${COMPONENT} STREQUAL "NetShim")
         list(FILTER COMPONENT_NetShim_SOURCE EXCLUDE REGEX "^${FLEXUS_ROOT}/components/NetShim/testing")
@@ -80,15 +104,38 @@ foreach(COMPONENT ${REQUIRED_COMPONENTS})
     target_compile_options(${COMPONENT} PRIVATE -c ${GCC_FLAGS})
 endforeach()
 
-# compile simulators
-set(TESTING_HARNESS testing_harness)
-add_library(wiring OBJECT wiring/wiring.cpp)
+# compile wiring
+add_library(wiring OBJECT ${HARNESS_ROOT}/src/wiring.cpp)
 target_compile_options(wiring PRIVATE -c ${GCC_FLAGS})
-add_executable(${TESTING_HARNESS} test.cpp $<TARGET_OBJECTS:wiring>)
-target_link_libraries(${TESTING_HARNESS} ${GCC_LDFLAGS} "-Wl,--whole-archive" ${REQUIRED_COMPONENTS})
+
+# compile tests
+set(ENABLED_TESTS "")
+foreach(TEST_DIR ${ALL_TESTS})
+	if(EXISTS "${HARNESS_ROOT}/tests/${TEST_DIR}/extra_deps.cmake" )
+		include(${HARNESS_ROOT}/tests/${TEST_DIR}/extra_deps.cmake)
+	else()
+		set(REQUIRED_COMPONENTS "")	# By default extra dependencies are empty
+		set(ENABLE_TEST YES)	# By defaut tests are enabled
+	endif()
+	if(ENABLE_TEST)
+    		file(GLOB_RECURSE TEST_${TEST_DIR}_SOURCE "${HARNESS_ROOT}/tests/${TEST_DIR}/*.cpp")	# Fetch all sources for the test
+		add_library(${TEST_DIR} STATIC ${TEST_${TEST_DIR}_SOURCE})	# Create a target library for the test
+    		target_compile_options(${TEST_DIR} PRIVATE -c ${GCC_FLAGS})
+		target_link_libraries(${TEST_DIR} ${GCC_LDFLAGS} "-Wl,--whole-archive" ${REQUIRED_COMPONENTS} "-Wl,--no-whole-archive")
+		target_link_libraries(${TEST_DIR} gtest)
+		list(APPEND ENABLED_TESTS ${TEST_DIR})
+		message("Found test: ${TEST_DIR}")
+	endif()
+endforeach()
+
+# Compile harness
+set(TESTING_HARNESS testing_harness)
+add_executable(${TESTING_HARNESS} ${HARNESS_ROOT}/src/all_tests.cpp)
+target_link_libraries(${TESTING_HARNESS} "-Wl,--whole-archive" ${ENABLED_TESTS} "-Wl,--no-whole-archive") 
+target_link_libraries(${TESTING_HARNESS} gtest_main)
+target_link_libraries(${TESTING_HARNESS} $<TARGET_OBJECTS:wiring>)
 target_link_libraries(${TESTING_HARNESS} ${GCC_LDFLAGS} "-Wl,--whole-archive" core qemu "-Wl,--no-whole-archive")
 target_link_libraries(${TESTING_HARNESS} ${GCC_LDFLAGS} "-L${BOOST_LIBRARYDIR}" boost_system boost_regex boost_serialization boost_iostreams z)
-target_link_libraries(${TESTING_HARNESS} gtest_main)
 
 include(GoogleTest)
 gtest_discover_tests(${TESTING_HARNESS})
@@ -100,6 +147,10 @@ add_custom_target(clean_cmake
     COMMAND rm -rf cmake_install.cmake
     COMMAND rm -rf CMakeCache.txt
     COMMAND rm -rf Makefile
-    COMMAND rm -rf ${TESTING_HARNESS}
+    COMMAND rm -rf ${TESTING_HARNESS}*
+    COMMAND rm -rf _deps
+    COMMAND rm -rf CTestTestfile.cmake 
+    COMMAND rm -rf bin
+    COMMAND rm -rf lib
     COMMAND echo "All cleared."
     )
