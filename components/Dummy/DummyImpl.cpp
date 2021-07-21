@@ -75,6 +75,9 @@ class FLEXUS_COMPONENT(Dummy)
 		std::cout << "Final state is:" << curState << std::endl;
 	}
 
+  int getStateNonWire() {
+    return curState;
+  }
 
 	// setState PushInput Port
 	//=========================
