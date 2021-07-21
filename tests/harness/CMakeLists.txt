@@ -52,7 +52,7 @@ include(cmake_helpers.cmake)
 include(Configuration.cmake)
 
 # Specify harness root
-set(HARNESS_ROOT ${FLEXUS_ROOT}/component_test )
+set(HARNESS_ROOT ${FLEXUS_ROOT}/tests/harness)
 
 # Collect all external component dependencies
 set(EXTRA_DEPS "")	# Stores all external dependencies
