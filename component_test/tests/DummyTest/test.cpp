@@ -56,6 +56,15 @@ TEST(DummyTest1, DummyInstantiation)
 	// Driving the component
 	DummyInterface::DummyDrive drive_temp;
 	dut.drive(drive_temp);
+
+  // MARK: What we want to be able to do here is have functions that probe the component's outputs.
+  // For example, we want to be able to do something like 
+  // ASSERT_EQ( < get output from the getState() output port >  , payload );
+  // These kinds of assertions are a very very common method that we would want. Feed in some input to the
+  // component, and make sure that after 1-N drive functions, the right thing comes out.
+  // As of now, we would need to implement a function called getStateNonWire() (see DummyImpl.cpp).
+  
+  ASSERT_EQ( dut.getStateNonWire(), payload+1 ) << "Getting internal dummy component state failed, returned " << dut.getStateNonWire();
 	
 	// Finalizing the component state
 	dut.finalize();
