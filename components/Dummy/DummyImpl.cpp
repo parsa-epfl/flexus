@@ -48,9 +48,6 @@
 #define FLEXUS_BEGIN_COMPONENT Dummy
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
 
-//#define DBG_DefineCategories Memory
-//#define DBG_SetDefaultOps AddCat(Memory)
-//#include DBG_Control()
 namespace nDummy
 {
 
@@ -75,9 +72,10 @@ class FLEXUS_COMPONENT(Dummy)
 		std::cout << "Final state is:" << curState << std::endl;
 	}
 
-  int getStateNonWire() {
-    return curState;
-  }
+	int getStateNonWire()
+	{
+    		return curState;
+  	}
 
 	// setState PushInput Port
 	//=========================
@@ -86,12 +84,21 @@ class FLEXUS_COMPONENT(Dummy)
 		std::cout << "Port:setState is always available\n";	
 		return true;
 	}
-
+	
 	void push(interface::setState const &, int &newState)
 	{
 		std::cout << "Received:" << newState << " on Port:setState\n";
 		curState = newState;   
 	}
+
+	// pullStateRet PullOutput Port
+	// ============================= 
+  	FLEXUS_PORT_ALWAYS_AVAILABLE(pullStateRet);
+  	int pull(interface::pullStateRet const &)
+	{
+    		return curState;
+  	}
+  
 
 	// Drive Interfaces
 	void drive(interface::DummyDrive const &) 
@@ -100,6 +107,8 @@ class FLEXUS_COMPONENT(Dummy)
 		std::cout << "Drive Called. Sending incremented state " << curState <<  " over Port:getState\n";
 		if(FLEXUS_CHANNEL(getState).available())
 			FLEXUS_CHANNEL(getState) << curState;
+		if(FLEXUS_CHANNEL(pullStateIn).available())
+			FLEXUS_CHANNEL(pullStateIn) >> curState;
 	}
 
 private:
@@ -112,6 +121,3 @@ FLEXUS_COMPONENT_INSTANTIATOR(Dummy, nDummy);
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
 #define FLEXUS_END_COMPONENT Dummy
-
-//#define DBG_Reset
-//#include DBG_Control()

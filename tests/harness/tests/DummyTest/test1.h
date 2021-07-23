@@ -1,8 +1,8 @@
 #include <iostream>
 #include <gtest/gtest.h>
 
-// To connect to the outputs of a components, create two functions: available and manipulate, and register them in the JumpTable
-// Available tell the component if its outgoing port is ready to send data or not
+// To connect to PushOutput port of a component, create two functions: available and manipulate, and register them in the JumpTable
+// Available tells the component if its outgoing port is ready to send data or not
 static bool avail1(Flexus::Core::index_t idx)
 {
 	std::cout << "Available called\n";
@@ -13,6 +13,21 @@ static bool avail1(Flexus::Core::index_t idx)
 static void manip1(Flexus::Core::index_t idx, int &payload)
 {
 	std::cout << "Manipulate called with " << payload << "\n";
+}
+
+// To connect to PullInput port of a component, create two functions: available and manipulate, and register them in the JumpTable
+// Available tells the component if its incoming port is ready to send data or not
+static bool pull_avail1(Flexus::Core::index_t idx)
+{
+	std::cout << "Pull Available called\n";
+	return true;
+}
+
+// Manipulate sends the payload over
+static void pull_manip1(Flexus::Core::index_t idx, int &payload)
+{
+	std::cout << "Pull Manipulate called with " << payload << "\n";
+	payload = 2;
 }
 
 // Create a new test
@@ -26,6 +41,8 @@ TEST(DummyTest1, DummyInstantiation)
 	DummyJumpTable aJumpTable;
 	aJumpTable.wire_available_getState = avail1;
 	aJumpTable.wire_manip_getState = manip1;
+	aJumpTable.wire_available_pullStateIn = pull_avail1;
+	aJumpTable.wire_manip_pullStateIn = pull_manip1;
 	
 	// Step 4: Specify the Index and Width
 	Flexus::Core::index_t anIndex = 1;
@@ -43,27 +60,24 @@ TEST(DummyTest1, DummyInstantiation)
 	dut.initialize();
 
 	// Checking if the component is quiesced
-	std::cout << "Quiesced: " << dut.isQuiesced() << std::endl;
+	ASSERT_EQ( dut.isQuiesced(), true ) << "Quiesced returned false. Failed! ";
 	
 	// Sending some data to the component
 	DummyInterface::setState setState_temp;
 	int payload = 5;
-	std::cout << "Available: " << dut.available(setState_temp)<< std::endl;
+	ASSERT_EQ( dut.available(setState_temp), true) << "setState not available. Failed!";
 	dut.push(setState_temp, payload);
 	
 	// Driving the component
 	DummyInterface::DummyDrive drive_temp;
 	dut.drive(drive_temp);
 
-  // MARK: What we want to be able to do here is have functions that probe the component's outputs.
-  // For example, we want to be able to do something like 
-  // ASSERT_EQ( < get output from the getState() output port >  , payload );
-  // These kinds of assertions are a very very common method that we would want. Feed in some input to the
-  // component, and make sure that after 1-N drive functions, the right thing comes out.
-  // As of now, we would need to implement a function called getStateNonWire() (see DummyImpl.cpp).
-  
-  ASSERT_EQ( dut.getStateNonWire(), payload+1 ) << "Getting internal dummy component state failed, returned " << dut.getStateNonWire();
+	ASSERT_EQ( dut.getStateNonWire(), 2 ) << "Getting internal dummy component state failed, returned " << dut.getStateNonWire();
 	
+	DummyInterface::pullStateRet pullStateRet_tmp;
+	ASSERT_EQ( dut.available(pullStateRet_tmp), true) << "pullStateRet not always available! Failed!";
+	ASSERT_EQ( dut.pull(pullStateRet_tmp), 2) << "pullStateRet returned wrong value! Returned " << dut.pull(pullStateRet_tmp);
+		
 	// Finalizing the component state
 	dut.finalize();
 }

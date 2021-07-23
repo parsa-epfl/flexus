@@ -59,6 +59,8 @@ COMPONENT_INTERFACE(
   // MARK: The jump table interface is fairly clear with both Push functions.
   // How would we support "pulls" which are very common in Flexus? For an example please
   // have a look at FetchAddressGenerate.
+  PORT( PullInput, int, pullStateIn)
+  PORT( PullOutput, int, pullStateRet)
   DRIVE( DummyDrive )
 );
 
