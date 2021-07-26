@@ -98,8 +98,19 @@ class FLEXUS_COMPONENT(Dummy)
 	{
     		return curState;
   	}
-  
+	
+	// setStateDy Dynamic PushInput Port
+	// =================================
+	bool available(interface::setStateDyn const &, index_t anIndex) 
+	{
+		return anIndex % 2 == 0;
+	}
 
+	void push(interface::setStateDyn const &, index_t anIndex, int &payload)
+	{
+		curState = anIndex * payload;
+	}
+	
 	// Drive Interfaces
 	void drive(interface::DummyDrive const &) 
 	{
@@ -118,6 +129,11 @@ private:
 } // End namespace nDummy
 
 FLEXUS_COMPONENT_INSTANTIATOR(Dummy, nDummy);
+
+FLEXUS_PORT_ARRAY_WIDTH(Dummy, setStateDyn)
+{
+  return (4);
+}
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
 #define FLEXUS_END_COMPONENT Dummy
