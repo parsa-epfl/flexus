@@ -40,13 +40,78 @@ Writing Tests:
 
 Interacting with components:
 	1. Configuration_struct: This structure specifies the initial parametrs of the componet. The parameters can be accesed directly as they are members of this struct.
-	2. JumpTable: This class is used to register callbacks to receive data from the component. Each output port on the component requires 2 functions:
-		a. bool avail(index): This check the availability of the port
-		b. void manip(index, payload &): This function is called when the components used the output port to send an object of payload type.
-	3. Sending data: Each input port is expanded into two component class methods: 
-		a. avail(XInterface::<port_name>) returning bool
-		b. push(XInterface::<port_name>, payload) returning void
-	   avail is used to check if the port is ready to receive data, and push is used to send the data.
+	2. JumpTable: This class is used to register callbacks to receive data from the component. Callback functions come in pairs of available and manipulate functions. These can be registered by setting up the function pointers wire_available_<port_name> and wire_manip_<port_name> in the JumpTable.
 	4. Drive: Each component object has a drive(XInterface::<drive_name>) method which is used to drive the component.
 	5. Misc: Other custom methods may be defined for a component. These methods can be called simply by using the component object.
 	An example of such interactions can be found in DummyTest which interacts with the Dummy component.
+	Roughly speaking, JumpTable is used when the component initiates the transfer (via PushOutput and PullInput ports) to register the callback functions.
+	On the other hand, the Interface is used when the component is expected to fulfil a transfer request (via PushInput and PullOutput ports) by declaring the appropiate fucntions, which must be implemented by the component.
+
+Dynamic Ports:
+	Dynamic ports are different from standard ports in two ways:
+		1. PushInput and PullOutput ports take an extra argument for the index on the component side.
+		2. All dynamic ports must implement a width() function, which can be geenrated by using FLEXUS_PORT_ARRAY_WIDTH macro.
+
+All types of ports:
+	1. Standard ports:
+		a. PushOutput:
+			Data flow direction: Component to Environment
+			Transfer Initiator: Component
+			Component side usage: FLEXUS_CHANNEL(port_name) << payload;
+			Environment side usage: Must declare and register two functions:
+						a. bool available(Flexus::Core::index_t)
+						b. void manipulate(Flexus::Core::index_t, PayloadType &)
+		b. PushInput:
+			Data flow direction: Environment to Component
+			Transfer Initiator: Environment
+			Component side usage: Must declare and register two functions:
+						a. bool available(XComponentInterface::<port_name> const &)
+						b. void push(XComponentInterface::<port_name> const &, PayloadType &)
+			Environment side usage: Call the appropiate member functions.
+		
+		c. PullOutput:
+			Data flow direction: Component to Environment
+			Transfer Initiator: Environment
+			Component side usage: Must declare and register two functions:
+						a. bool available(XComponentInterface::<port_name> const &)
+						b. PayloadType pull(XComponentInterface::<port_name> const &)
+			Environment side usage: Call the appropiate member functions.
+
+		d. PullInput:
+			Data flow direction: Environment to Component
+			Transfer Initiator: Component
+			Component side usage: FLEXUS_CHANNEL(port_name) >> payload;
+			Environment side usage: Must declare and register two functions:
+						a. bool available(Flexus::Core::index_t)
+						b. void manipulate(Flexus::Core::index_t, Payload &)
+	2. Dynamic ports 
+		a. PushOutput:
+			Data flow direction: Component to Environment
+			Transfer Initiator: Component
+			Component side usage: FLEXUS_CHANNEL_ARRAY(port_name, index) << payload;
+			Environment side usage: Must declare and register two functions:
+						a. bool available(Flexus::Core::index_t)
+						b. void manipulate(Flexus::Core::index_t, PayloadType &)
+		b. PushInput:
+			Data flow direction: Environment to Component
+			Transfer Initiator: Environment
+			Component side usage: Must declare and register two functions:
+						a. bool available(XComponentInterface::<port_name> const &, Flexus::Core:index_t)
+						b. void push(XComponentInterface::<port_name> const &, Flexus::Core::index_t, PayloadType &)
+			Environment side usage: Call the appropiate member functions.
+		
+		c. PullOutput:
+			Data flow direction: Component to Environment
+			Transfer Initiator: Environment
+			Component side usage: Must declare and register two functions:
+						a. bool available(XComponentInterface::<port_name> const &, Flexus::Core:index_t)
+						b. PayloadType pull(XComponentInterface::<port_name> const &, Flexus::Core::index_t)
+			Environment side usage: Call the appropiate member functions.
+
+		d. PullInput:
+			Data flow direction: Environment to Component
+			Transfer Initiator: Component
+			Component side usage: FLEXUS_CHANNEL_ARRAY(port_name, index) >> payload;
+			Environment side usage: Must declare and register two functions:
+						a. bool available(Flexus::Core::index_t)
+						b. void manipulate(Flexus::Core::index_t, Payload &)
