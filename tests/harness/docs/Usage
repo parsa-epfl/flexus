@@ -115,3 +115,7 @@ All types of ports:
 			Environment side usage: Must declare and register two functions:
 						a. bool available(Flexus::Core::index_t)
 						b. void manipulate(Flexus::Core::index_t, Payload &)
+
+How to generate preprocessed files:
+	Use the following command:
+	g++ -std=c++11 -E -C -P -DSELECTED_DEBUG=None -DTARGET_PLATFORM=arm -DBOOST_MPL_LIMIT_VECTOR_SIZE=50 -I. -I/path/to/boost/include/dir path/to/componentImpl.cpp > output.cpp

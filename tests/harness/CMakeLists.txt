@@ -124,7 +124,7 @@ foreach(TEST_DIR ${ALL_TESTS})
 		target_link_libraries(${TEST_DIR} ${GCC_LDFLAGS} "-Wl,--whole-archive" ${REQUIRED_COMPONENTS} "-Wl,--no-whole-archive")
 		target_link_libraries(${TEST_DIR} gtest)
 		list(APPEND ENABLED_TESTS ${TEST_DIR})
-		message("Found test: ${TEST_DIR}")
+		message(STATUS "Found test: ${TEST_DIR}")
 	endif()
 endforeach()
 

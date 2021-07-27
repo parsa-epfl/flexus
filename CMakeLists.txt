@@ -45,8 +45,23 @@
 cmake_minimum_required(VERSION 3.10.2)
 project(flexus)
 
+# Setup configuration parameters
 include(Configuration.cmake)
-include(${FLEXUS_ROOT}/simulators/${SIMULATOR}/${SIMULATOR}.cmake)
+
+# Include helper macros
+include(cmake_helpers.cmake)
+
+#Include simulator specific settings only for "real" simulators
+if(NOT SIMULATOR STREQUAL "Harness")
+    include(${FLEXUS_ROOT}/simulators/${SIMULATOR}/${SIMULATOR}.cmake)
+endif()
+
+# Setup Harness specific variables
+if(SIMULATOR STREQUAL "Harness")
+    set(HARNESS_ROOT ${FLEXUS_ROOT}/tests/harness)    
+endif()
+
+# Setup include paths
 include_directories(${FLEXUS_ROOT})
 include_directories(SYSTEM ${BOOST_INCLUDEDIR})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${FLEXUS_ROOT}/CMakeFiles)
@@ -61,33 +76,126 @@ add_library(qemu STATIC ${QEMU_SOURCE})
 target_compile_options(core PRIVATE -c ${GCC_FLAGS})
 target_compile_options(qemu PRIVATE -c ${GCC_FLAGS})
 
-# compile components
-foreach(COMPONENT ${${SIMULATOR}_REQUIRED_COMPONENTS})
-    file(GLOB_RECURSE COMPONENT_${COMPONENT}_SOURCE "${FLEXUS_ROOT}/components/${COMPONENT}/*.cpp")
-    if (${COMPONENT} STREQUAL "NetShim")
-        list(FILTER COMPONENT_NetShim_SOURCE EXCLUDE REGEX "^${FLEXUS_ROOT}/components/NetShim/testing")
-    endif()
-    add_library(${COMPONENT} STATIC ${COMPONENT_${COMPONENT}_SOURCE})
-    target_compile_options(${COMPONENT} PRIVATE -c ${GCC_FLAGS})
-endforeach()
-
-# compile simulators
-add_library(wiring OBJECT ${FLEXUS_ROOT}/simulators/${SIMULATOR}/wiring.cpp)
-target_compile_options(wiring PRIVATE -c ${GCC_FLAGS})
-add_library(${SIMULATOR} SHARED $<TARGET_OBJECTS:wiring>)
-target_link_libraries(${SIMULATOR} ${GCC_LDFLAGS} "-Wl,--whole-archive" "-Wl,-export-dynamic" ${${SIMULATOR}_REQUIRED_COMPONENTS})
-target_link_libraries(${SIMULATOR} ${GCC_LDFLAGS} "-Wl,--whole-archive" core qemu "-Wl,--no-whole-archive")
-target_link_libraries(${SIMULATOR} ${GCC_LDFLAGS} "-L${BOOST_LIBRARYDIR}" boost_system boost_regex boost_serialization boost_iostreams z)
-
-# clean for cmake
-add_custom_target(clean_cmake
-    COMMAND rm -rf *.o *.a *.so
-    COMMAND rm -rf CMakeFiles
-    COMMAND rm -rf cmake_install.cmake
-    COMMAND rm -rf CMakeCache.txt
-    COMMAND rm -rf Makefile
-    COMMAND echo "All cleared."
+if(NOT SIMULATOR STREQUAL "Harness")        # Setup for "real" simulators
+    # compile components
+    foreach(COMPONENT ${${SIMULATOR}_REQUIRED_COMPONENTS})
+        file(GLOB_RECURSE COMPONENT_${COMPONENT}_SOURCE "${FLEXUS_ROOT}/components/${COMPONENT}/*.cpp")
+        if (${COMPONENT} STREQUAL "NetShim")
+            list(FILTER COMPONENT_NetShim_SOURCE EXCLUDE REGEX "^${FLEXUS_ROOT}/components/NetShim/testing")
+        endif()
+        add_library(${COMPONENT} STATIC ${COMPONENT_${COMPONENT}_SOURCE})
+        target_compile_options(${COMPONENT} PRIVATE -c ${GCC_FLAGS})
+    endforeach()
+    
+    # compile simulators
+    add_library(wiring OBJECT ${FLEXUS_ROOT}/simulators/${SIMULATOR}/wiring.cpp)
+    target_compile_options(wiring PRIVATE -c ${GCC_FLAGS})
+    add_library(${SIMULATOR} SHARED $<TARGET_OBJECTS:wiring>)
+    target_link_libraries(${SIMULATOR} ${GCC_LDFLAGS} "-Wl,--whole-archive" "-Wl,-export-dynamic" ${${SIMULATOR}_REQUIRED_COMPONENTS})
+    target_link_libraries(${SIMULATOR} ${GCC_LDFLAGS} "-Wl,--whole-archive" core qemu "-Wl,--no-whole-archive")
+    target_link_libraries(${SIMULATOR} ${GCC_LDFLAGS} "-L${BOOST_LIBRARYDIR}" boost_system boost_regex boost_serialization boost_iostreams z)
+    
+    # clean for cmake
+    add_custom_target(clean_cmake
+        COMMAND rm -rf *.o *.a *.so
+        COMMAND rm -rf CMakeFiles
+        COMMAND rm -rf stat-manager
+        COMMAND rm -rf cmake_install.cmake
+        COMMAND rm -rf CMakeCache.txt
+        COMMAND rm -rf Makefile
+        COMMAND echo "All cleared."
     )
+    
+    # Add subdirectory for stat manager
+    add_subdirectory(stat-manager)
 
-# Add subdirectory for stat manager
-add_subdirectory(stat-manager)
+else()      # Setup for Harness
+
+    # Collect all external component dependencies
+    set(EXTRA_DEPS "")    # Stores all external dependencies
+    subdirlist(ALL_TESTS ${HARNESS_ROOT}/tests)
+    foreach(TEST_DIR ${ALL_TESTS})
+        if(EXISTS "${HARNESS_ROOT}/tests/${TEST_DIR}/extra_deps.cmake" )
+            include(${HARNESS_ROOT}/tests/${TEST_DIR}/extra_deps.cmake)
+        else()
+            set(REQUIRED_COMPONENTS "")    # By default extra dependencies are empty
+            set(ENABLE_TEST YES)    # By defaut tests are enabled
+        endif()
+        if(ENABLE_TEST)
+            list(APPEND EXTRA_DEPS ${REQUIRED_COMPONENTS})    # Add dependencies to a common list
+        endif()
+    endforeach()
+    list(REMOVE_DUPLICATES EXTRA_DEPS)    # Remove duplicate dependencies
+    
+
+    # include google test
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+    )
+    FetchContent_MakeAvailable(googletest)
+    enable_testing()
+    
+    # compile components
+    foreach(COMPONENT ${EXTRA_DEPS})
+        file(GLOB_RECURSE COMPONENT_${COMPONENT}_SOURCE "${FLEXUS_ROOT}/components/${COMPONENT}/*.cpp")
+        if (${COMPONENT} STREQUAL "NetShim")
+            list(FILTER COMPONENT_NetShim_SOURCE EXCLUDE REGEX "^${FLEXUS_ROOT}/components/NetShim/testing")
+        endif()
+        add_library(${COMPONENT} STATIC ${COMPONENT_${COMPONENT}_SOURCE})
+        target_compile_options(${COMPONENT} PRIVATE -c ${GCC_FLAGS})
+    endforeach()
+    
+    # compile wiring
+    add_library(wiring OBJECT ${HARNESS_ROOT}/src/wiring.cpp)
+    target_compile_options(wiring PRIVATE -c ${GCC_FLAGS})
+    
+    # compile tests
+    set(ENABLED_TESTS "")
+    foreach(TEST_DIR ${ALL_TESTS})
+        if(EXISTS "${HARNESS_ROOT}/tests/${TEST_DIR}/extra_deps.cmake" )
+            include(${HARNESS_ROOT}/tests/${TEST_DIR}/extra_deps.cmake)
+        else()
+            set(REQUIRED_COMPONENTS "")    # By default extra dependencies are empty
+            set(ENABLE_TEST YES)    # By defaut tests are enabled
+        endif()
+        if(ENABLE_TEST)
+            file(GLOB_RECURSE TEST_${TEST_DIR}_SOURCE "${HARNESS_ROOT}/tests/${TEST_DIR}/*.cpp")    # Fetch all sources for the test
+            add_library(${TEST_DIR} STATIC ${TEST_${TEST_DIR}_SOURCE})    # Create a target library for the test
+            target_compile_options(${TEST_DIR} PRIVATE -c ${GCC_FLAGS})
+            target_link_libraries(${TEST_DIR} ${GCC_LDFLAGS} "-Wl,--whole-archive" ${REQUIRED_COMPONENTS} "-Wl,--no-whole-archive")
+            target_link_libraries(${TEST_DIR} gtest)
+            list(APPEND ENABLED_TESTS ${TEST_DIR})
+            message(STATUS "Found test: ${TEST_DIR}")
+        endif()
+    endforeach()
+    
+    # Compile harness
+    set(TESTING_HARNESS testing_harness)
+    add_executable(${TESTING_HARNESS} ${HARNESS_ROOT}/src/all_tests.cpp)
+    target_link_libraries(${TESTING_HARNESS} "-Wl,--whole-archive" ${ENABLED_TESTS} "-Wl,--no-whole-archive") 
+    target_link_libraries(${TESTING_HARNESS} gtest_main)
+    target_link_libraries(${TESTING_HARNESS} $<TARGET_OBJECTS:wiring>)
+    target_link_libraries(${TESTING_HARNESS} ${GCC_LDFLAGS} "-Wl,--whole-archive" core qemu "-Wl,--no-whole-archive")
+    target_link_libraries(${TESTING_HARNESS} ${GCC_LDFLAGS} "-L${BOOST_LIBRARYDIR}" boost_system boost_regex boost_serialization boost_iostreams z)
+   
+    # Enable google test discovery
+    include(GoogleTest)
+    gtest_discover_tests(${TESTING_HARNESS})
+    
+    # clean for cmake
+    add_custom_target(clean_cmake
+        COMMAND rm -rf *.o *.a *.so
+        COMMAND rm -rf CMakeFiles
+        COMMAND rm -rf cmake_install.cmake
+        COMMAND rm -rf CMakeCache.txt
+        COMMAND rm -rf Makefile
+        COMMAND rm -rf ${TESTING_HARNESS}*
+        COMMAND rm -rf _deps
+        COMMAND rm -rf CTestTestfile.cmake 
+        COMMAND rm -rf bin
+        COMMAND rm -rf lib
+        COMMAND echo "All cleared."
+    )
+endif()

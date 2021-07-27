@@ -64,6 +64,8 @@ endif()
 if(NOT SIMULATOR)
   message( STATUS "SIMULATOR was not specified; using default SIMULATOR=KnottyKraken" )
   set(SIMULATOR KnottyKraken)
+elseif(SIMULATOR STREQUAL "Harness")
+  message( STATUS "SIMULATOR was defined as Harness. Building testing executable" )
 endif()
 
 if(NOT BOOST_INCLUDEDIR)
