@@ -99,8 +99,8 @@ class FLEXUS_COMPONENT(Dummy)
     		return curState;
   	}
 	
-	// setStateDy Dynamic PushInput Port
-	// =================================
+	// setStateDyn Dynamic PushInput Port
+	// ===================================
 	bool available(interface::setStateDyn const &, index_t anIndex) 
 	{
 		return anIndex % 2 == 0;
@@ -111,6 +111,13 @@ class FLEXUS_COMPONENT(Dummy)
 		curState = anIndex * payload;
 	}
 	
+	// pullStateRetDyn Dynamic PullOutput Port
+	// ======================================= 
+	FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(pullStateRetDyn);  	
+	int pull(interface::pullStateRetDyn const &, index_t anIndex)
+	{
+    		return anIndex * 1000;
+  	}
 	// Drive Interfaces
 	void drive(interface::DummyDrive const &) 
 	{
@@ -120,6 +127,11 @@ class FLEXUS_COMPONENT(Dummy)
 			FLEXUS_CHANNEL(getState) << curState;
 		if(FLEXUS_CHANNEL(pullStateIn).available())
 			FLEXUS_CHANNEL(pullStateIn) >> curState;
+		int out = 20;
+		if(FLEXUS_CHANNEL_ARRAY(getStateDyn, 3).available())
+			FLEXUS_CHANNEL_ARRAY(getStateDyn, 3) << out;
+		if(FLEXUS_CHANNEL_ARRAY(pullStateInDyn, 3).available())
+			FLEXUS_CHANNEL_ARRAY(pullStateInDyn, 3) >> curState;
 	}
 
 private:
@@ -132,7 +144,22 @@ FLEXUS_COMPONENT_INSTANTIATOR(Dummy, nDummy);
 
 FLEXUS_PORT_ARRAY_WIDTH(Dummy, setStateDyn)
 {
-  return (4);
+  return 4;
+}
+
+FLEXUS_PORT_ARRAY_WIDTH(Dummy, getStateDyn)
+{
+  return 4;
+}
+
+FLEXUS_PORT_ARRAY_WIDTH(Dummy, pullStateInDyn)
+{
+  return 4;
+}
+
+FLEXUS_PORT_ARRAY_WIDTH(Dummy, pullStateRetDyn)
+{
+  return 4;
 }
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()

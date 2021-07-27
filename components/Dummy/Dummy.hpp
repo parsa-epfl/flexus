@@ -60,6 +60,9 @@ COMPONENT_INTERFACE(
   PORT( PullOutput, int, pullStateRet )
   
   DYNAMIC_PORT_ARRAY( PushInput, int, setStateDyn )
+  DYNAMIC_PORT_ARRAY( PushOutput, int, getStateDyn )
+  DYNAMIC_PORT_ARRAY( PullInput, int, pullStateInDyn )
+  DYNAMIC_PORT_ARRAY( PullOutput, int, pullStateRetDyn )
   DRIVE( DummyDrive )
 );
 
