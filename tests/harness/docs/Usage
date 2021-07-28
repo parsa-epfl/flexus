@@ -1,8 +1,8 @@
 Components In Flexus:
-	Flexus automatically creates a class for every component. Componect "X" will have the class named as "XComponent".
-	Along with component class, there are 2 important structures which decide the behavious of a component:
-		1. "XConfiguration_struct" is used to specify the parameters of a component.
-		2. "XJumpTable" is used to register the callback functions used by the component to send data.
+	Flexus automatically creates a class for every component. Component "X" will have the class named as "XComponent".
+	Along with component class, there are 2 important structures which decide the behaviours of a component:
+		1. "XConfiguration_struct" is used to specify the parameters of a component (e.g., the number of cycles a memory request takes in MemoryLoopback is set by cfg.Delay)
+		2. "XJumpTable" is used to register the callback functions used by the component to send AND receive data. See more in the section "Dynamic Ports".
 	All these structures are generated automatically by the boost pre-processor.
 	An example of one such elaborated component is "MemoryLoopbackExpanded.cpp" which containes the pre-processed MemoryLoopback component. 	
 
@@ -10,23 +10,24 @@ Harness File Structure:
 	1. "src" contains 2 files:
 		a. "all_tests.cpp": the main testing file for google test
 		b. "wiring.cpp": the wiring for a trivial simulator with no components
-	2. "docs" contains files describing harness' usage.
-	3. "tests" contains the actuall tests.
+	2. "docs" contains files describing the testing harness' usage.
+	3. "tests" contains the actual tests.
 
 Tests File Structure:
 	Each test must have an independent test subdirectory under "tests". The name of this subdirectory can be anything.
-	Each test's subdirectory containes:
+	Each test's subdirectory contains:
 		a. The source files for that particular test.
 		b. If the component being tested has external dependencies on other components, then these must be specified in "extra_deps.cmake"
-	It is crucial that two distinct test subdirectories don't test a common component. This will lead to multiple definition of componenet structures.
+      - as an example, see the tests for MemoryLoopback
+	It is crucial that two distinct test subdirectories don't test a common component. This will lead to multiple definition of component structures.
 	If multiple tests are required for a component, they must be specified in the same subdirectory and in the same .cpp (post-preprocessing) file.
-	This .cpp file will include the component implementation .cpp file as  a header.
+	This .cpp file will include the component implementation .cpp file as a header.
 	if multiple files include the component implementation file, the compiler will complain about multiple definitions.
 	To see an example of how multiple tests can be spread across different files, look at DummyTest.
 
 extra_deps.cmake Structure:
 	This cmake file has 2 variables:
-		1. REQUIRED_COMPONENETS: This includes a list of all component names on which the component under test depends.
+		1. REQUIRED_COMPONENTS: This includes a list of all component names on which the component under test depends.
 		2. ENABLE_TEST: If set to YES, the test will be enabled. If set to NO, the test is disabled.
 	"extra_deps.cmake" is optional. If the test subdirectory doesn't have this file, the following default values are used:
 		1. REQUIRED_COMPONENTS: "" i.e. empty list
@@ -34,85 +35,85 @@ extra_deps.cmake Structure:
 
 Writing Tests:
 	1. The component implmentation file must be included. Implementation files for components are available in the respective component sources in flexus.
-	   This files defines the component structures, namely, the Configuration_struct, the JumpTable, and the component class.
+	   This file defines the component structures, namely, the Configuration_struct, the JumpTable, and the component class.
 	2. <gtest/gtest.h> must be included for gtest support.
-	3. The Configuration_struct and JumpTable must be created and passed as constructor arguments to the componet constructor.
+	3. The Configuration_struct and JumpTable must be created and passed as constructor arguments to the component constructor.
 
 Interacting with components:
-	1. Configuration_struct: This structure specifies the initial parametrs of the componet. The parameters can be accesed directly as they are members of this struct.
+	1. Configuration_struct: This structure specifies the initial parameters of the componet. The parameters can be accesed directly as they are members of this struct.
 	2. JumpTable: This class is used to register callbacks to receive data from the component. Callback functions come in pairs of available and manipulate functions. These can be registered by setting up the function pointers wire_available_<port_name> and wire_manip_<port_name> in the JumpTable.
 	4. Drive: Each component object has a drive(XInterface::<drive_name>) method which is used to drive the component.
 	5. Misc: Other custom methods may be defined for a component. These methods can be called simply by using the component object.
 	An example of such interactions can be found in DummyTest which interacts with the Dummy component.
 	Roughly speaking, JumpTable is used when the component initiates the transfer (via PushOutput and PullInput ports) to register the callback functions.
-	On the other hand, the Interface is used when the component is expected to fulfil a transfer request (via PushInput and PullOutput ports) by declaring the appropiate fucntions, which must be implemented by the component.
+	On the other hand, the Interface is used when the component is expected to fulfill a transfer request (via PushInput and PullOutput ports) by declaring the appropiate fucntions, which must be implemented by the component.
 
 Dynamic Ports:
 	Dynamic ports are different from standard ports in two ways:
 		1. PushInput and PullOutput ports take an extra argument for the index on the component side.
-		2. All dynamic ports must implement a width() function, which can be geenrated by using FLEXUS_PORT_ARRAY_WIDTH macro.
+		2. All dynamic ports must implement a width() function, which can be generated by using the FLEXUS_PORT_ARRAY_WIDTH macro.
 
 All types of ports:
 	1. Standard ports:
 		a. PushOutput:
-			Data flow direction: Component to Environment
+			Data flow direction: Component to Testing Harness
 			Transfer Initiator: Component
 			Component side usage: FLEXUS_CHANNEL(port_name) << payload;
-			Environment side usage: Must declare and register two functions:
+			Testing harness usage: Must declare and register two functions:
 						a. bool available(Flexus::Core::index_t)
 						b. void manipulate(Flexus::Core::index_t, PayloadType &)
 		b. PushInput:
-			Data flow direction: Environment to Component
-			Transfer Initiator: Environment
+			Data flow direction: Testing Harness to Component
+			Transfer Initiator:Testing Harness 
 			Component side usage: Must declare and register two functions:
 						a. bool available(XComponentInterface::<port_name> const &)
 						b. void push(XComponentInterface::<port_name> const &, PayloadType &)
-			Environment side usage: Call the appropiate member functions.
+			Testing harness usage: Call the appropiate member functions.
 		
 		c. PullOutput:
-			Data flow direction: Component to Environment
-			Transfer Initiator: Environment
+			Data flow direction: Component to Testing harness
+			Transfer Initiator: Testing harness
 			Component side usage: Must declare and register two functions:
 						a. bool available(XComponentInterface::<port_name> const &)
 						b. PayloadType pull(XComponentInterface::<port_name> const &)
-			Environment side usage: Call the appropiate member functions.
+			Testing harness side usage: Call the appropiate member functions.
 
 		d. PullInput:
-			Data flow direction: Environment to Component
+			Data flow direction: Testing harness to Component
 			Transfer Initiator: Component
 			Component side usage: FLEXUS_CHANNEL(port_name) >> payload;
-			Environment side usage: Must declare and register two functions:
+			Testing harness side usage: Must declare and register two functions:
 						a. bool available(Flexus::Core::index_t)
 						b. void manipulate(Flexus::Core::index_t, Payload &)
 	2. Dynamic ports 
 		a. PushOutput:
-			Data flow direction: Component to Environment
+			Data flow direction: Component to Testing harness
 			Transfer Initiator: Component
 			Component side usage: FLEXUS_CHANNEL_ARRAY(port_name, index) << payload;
-			Environment side usage: Must declare and register two functions:
+			Testing harness side usage: Must declare and register two functions:
 						a. bool available(Flexus::Core::index_t)
 						b. void manipulate(Flexus::Core::index_t, PayloadType &)
 		b. PushInput:
-			Data flow direction: Environment to Component
-			Transfer Initiator: Environment
+			Data flow direction: Testing harness to Component
+			Transfer Initiator: Testing harness
 			Component side usage: Must declare and register two functions:
 						a. bool available(XComponentInterface::<port_name> const &, Flexus::Core:index_t)
 						b. void push(XComponentInterface::<port_name> const &, Flexus::Core::index_t, PayloadType &)
-			Environment side usage: Call the appropiate member functions.
+			Testing harness side usage: Call the appropiate member functions.
 		
 		c. PullOutput:
-			Data flow direction: Component to Environment
-			Transfer Initiator: Environment
+			Data flow direction: Component to Testing harness
+			Transfer Initiator: Testing harness
 			Component side usage: Must declare and register two functions:
 						a. bool available(XComponentInterface::<port_name> const &, Flexus::Core:index_t)
 						b. PayloadType pull(XComponentInterface::<port_name> const &, Flexus::Core::index_t)
-			Environment side usage: Call the appropiate member functions.
+			Testing harness side usage: Call the appropiate member functions.
 
 		d. PullInput:
-			Data flow direction: Environment to Component
+			Data flow direction: Testing harness to Component
 			Transfer Initiator: Component
 			Component side usage: FLEXUS_CHANNEL_ARRAY(port_name, index) >> payload;
-			Environment side usage: Must declare and register two functions:
+			Testing harness side usage: Must declare and register two functions:
 						a. bool available(Flexus::Core::index_t)
 						b. void manipulate(Flexus::Core::index_t, Payload &)
 
