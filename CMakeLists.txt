@@ -148,7 +148,7 @@ else()      # Setup for Harness
     endforeach()
     
     # compile wiring
-    add_library(wiring OBJECT ${HARNESS_ROOT}/src/wiring.cpp)
+    add_library(wiring OBJECT ${HARNESS_ROOT}/harness_base/wiring.cpp)
     target_compile_options(wiring PRIVATE -c ${GCC_FLAGS})
     
     # compile tests
@@ -173,7 +173,7 @@ else()      # Setup for Harness
     
     # Compile harness
     set(TESTING_HARNESS testing_harness)
-    add_executable(${TESTING_HARNESS} ${HARNESS_ROOT}/src/all_tests.cpp)
+    add_executable(${TESTING_HARNESS} ${HARNESS_ROOT}/harness_base/all_tests.cpp)
     target_link_libraries(${TESTING_HARNESS} "-Wl,--whole-archive" ${ENABLED_TESTS} "-Wl,--no-whole-archive") 
     target_link_libraries(${TESTING_HARNESS} gtest_main)
     target_link_libraries(${TESTING_HARNESS} $<TARGET_OBJECTS:wiring>)
