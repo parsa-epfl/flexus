@@ -169,9 +169,9 @@
    BOOST_PP_TUPLE_ELEM(FLEXUS_i_IT_LEN, FLEXUS_i_IT_Width, ParameterTuple)) /**/
 
 #define FLEXUS_IFACE_JUMPTABLE_Impl(Name)                                                          \
-  bool (*BOOST_PP_CAT(wire_available_, Name))(Flexus::Core::index_t anIndex);                      \
+  bool (*BOOST_PP_CAT(wire_available_, Name))(Flexus::Core::index_t anIndex) = 0;                  \
   void (*BOOST_PP_CAT(wire_manip_, Name))(Flexus::Core::index_t anIndex,                           \
-                                          iface::Name::payload & aPayload); /**/
+                                          iface::Name::payload & aPayload) = 0; /**/
 
 #define FLEXUS_IFACE_JUMPTABLE_PullInput(Name) FLEXUS_IFACE_JUMPTABLE_Impl(Name)          /**/
 #define FLEXUS_IFACE_JUMPTABLE_PullInputArray(Name) FLEXUS_IFACE_JUMPTABLE_Impl(Name)     /**/
