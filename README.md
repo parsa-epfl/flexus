@@ -67,7 +67,7 @@ $ LD_LIBRARY_PATH=<path to dynamic libraries> make -j
 
 ## How to Use CMake to Compile Flexus Testing Harness
 
-* Set the SIMULATOR variable to `Harness` while running `cmake`:
+* Set the `SIMULATOR` variable to `Harness` while running `cmake`:
 
 ```sh
 $ cmake -DSIMULATOR=Harness . && make -j
