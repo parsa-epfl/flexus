@@ -46,7 +46,7 @@ Interacting with components:
 	5. Misc: Other custom methods may be defined for a component. These methods can be called simply by using the component object.
 	An example of such interactions can be found in DummyTest which interacts with the Dummy component.
 	Roughly speaking, JumpTable is used when the component initiates the transfer (via PushOutput and PullInput ports) to register the callback functions.
-	On the other hand, the Interface is used when the component is expected to fulfill a transfer request (via PushInput and PullOutput ports) by declaring the appropiate fucntions, which must be implemented by the component.
+	On the other hand, the Interface is used when the component is expected to fulfill a transfer request (via PushInput and PullOutput ports) by declaring the appropriate functions, which must be implemented by the component.
 
 Dynamic Ports:
 	Dynamic ports are different from standard ports in two ways:
