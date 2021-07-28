@@ -23,7 +23,7 @@ Tests File Structure:
 	If multiple tests are required for a component, they must be specified in the same subdirectory and in the same .cpp (post-preprocessing) file.
 	This .cpp file will include the component implementation .cpp file as a header.
 	if multiple files include the component implementation file, the compiler will complain about multiple definitions.
-	To see an example of how multiple tests can be spread across different files, look at DummyTest.
+	To see an example of how multiple tests can be spread across different files, look at ExampleComponentTest.
 
 extra_deps.cmake Structure:
 	This cmake file has 2 variables:
@@ -44,7 +44,7 @@ Interacting with components:
 	2. JumpTable: This class is used to register callbacks to receive data from the component. Callback functions come in pairs of available and manipulate functions. These can be registered by setting up the function pointers wire_available_<port_name> and wire_manip_<port_name> in the JumpTable.
 	4. Drive: Each component object has a drive(XInterface::<drive_name>) method which is used to drive the component.
 	5. Misc: Other custom methods may be defined for a component. These methods can be called simply by using the component object.
-	An example of such interactions can be found in DummyTest which interacts with the Dummy component.
+	An example of such interactions can be found in ExampleComponentTest which interacts with the Dummy component.
 	Roughly speaking, JumpTable is used when the component initiates the transfer (via PushOutput and PullInput ports) to register the callback functions.
 	On the other hand, the Interface is used when the component is expected to fulfill a transfer request (via PushInput and PullOutput ports) by declaring the appropriate functions, which must be implemented by the component.
 

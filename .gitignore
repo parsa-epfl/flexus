@@ -33,3 +33,4 @@ boost_*
 tmp*
 temp*
 build
+*.swp

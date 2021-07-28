@@ -31,7 +31,7 @@ static void pull_manip1(Flexus::Core::index_t idx, int &payload)
 }
 
 // Create a new test
-TEST(DummyTest1, DummyInstantiation)
+TEST(ExampleComponentTest1, DummyInstantiation)
 {
 	// Step 2: Create a configuration struct and specify the parameters
 	DummyConfiguration_struct aCfg("The test config");

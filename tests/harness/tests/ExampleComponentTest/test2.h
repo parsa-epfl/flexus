@@ -15,7 +15,7 @@ static void manip2(Flexus::Core::index_t idx, int &payload)
 	std::cout << "Manipulate called with " << payload << "\n";
 }
 
-TEST(DummyTest2, DummyInstantiation)
+TEST(ExampleComponentTest2, DummyInstantiation)
 {
 	// Step 2: Create a configuration struct and specify the parameters
 	DummyConfiguration_struct aCfg("The test config");
