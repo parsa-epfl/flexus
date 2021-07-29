@@ -45,10 +45,6 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  DO-NOT-REMOVE end-copyright-block
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-NC='\033[0m' # No Color
-
 set -x
 set -e
 
@@ -59,38 +55,6 @@ fi
 
 JOBS=$(($(getconf _NPROCESSORS_ONLN) + 1))
 echo "=== Using ${JOBS} simultaneous jobs ==="
-
-if [ "$BUILD_BOOST" = true ]; then
-    # Install a compatible version of gcc
-    GCC_VERSION="8"
-    sudo apt-get update -qq
-    sudo apt-get autoremove libboost-all-dev
-    sudo apt-get -y install gcc-${GCC_VERSION} g++-${GCC_VERSION}
-
-    # Set the recently installed version of gcc as default
-    sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION} 20
-    sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${GCC_VERSION} 20
-    sudo update-alternatives --config gcc
-    sudo update-alternatives --config g++
-
-    # Install a compatible version of boost library
-    BOOST="boost_1_70_0"
-    BOOST_VERSION="1.70.0"
-    BOOST_SHA="882b48708d211a5f48e60b0124cf5863c1534cd544ecd0664bb534a4b5d506e9"
-    wget https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VERSION}/source/${BOOST}.tar.gz -O /tmp/${BOOST}.tar.gz
-    echo "${BOOST_SHA} /tmp/${BOOST}.tar.gz | sha256sum --check --status"
-    if [ $? -ne 0 ]; then
-      echo "SHA256 for boost tarball failed!"
-      exit 1
-    fi
-    tar -xf /tmp/${BOOST}.tar.gz
-    cd ./${BOOST}/
-    ./bootstrap.sh --prefix=/usr/local
-    ./b2 -j${JOBS} --with-system --with-regex --with-serialization --with-iostreams
-    sudo ./b2 --with-system --with-regex --with-serialization --with-iostreams install
-
-    cd ${TRAVIS_BUILD_DIR}
-fi
 
 if [ -z $1 ]; then
     cmake .

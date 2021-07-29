@@ -169,7 +169,7 @@
    BOOST_PP_TUPLE_ELEM(FLEXUS_i_IT_LEN, FLEXUS_i_IT_Width, ParameterTuple)) /**/
 
 #define FLEXUS_IFACE_JUMPTABLE_Impl(Name)                                                          \
-  bool (*BOOST_PP_CAT(wire_available_, Name))(Flexus::Core::index_t anIndex) = 0;	           \
+  bool (*BOOST_PP_CAT(wire_available_, Name))(Flexus::Core::index_t anIndex) = 0;                  \
   void (*BOOST_PP_CAT(wire_manip_, Name))(Flexus::Core::index_t anIndex,                           \
                                           iface::Name::payload & aPayload) = 0; /**/
 
