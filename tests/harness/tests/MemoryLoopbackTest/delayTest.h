@@ -1,7 +1,7 @@
 #include <components/CommonQEMU/Transports/MemoryTransport.hpp>
 #include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 #include <gtest/gtest.h>
-#include <iostream>
+
 // Define callback function for LoopbackOut available
 bool LoopbackOut_avail(Flexus::Core::index_t)
 {

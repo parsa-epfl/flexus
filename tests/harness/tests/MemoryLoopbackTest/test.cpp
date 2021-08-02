@@ -2,9 +2,6 @@
 #include <components/MemoryMap/MemoryMapImpl.cpp>
 #include <core/flexus.hpp>
 #include <gtest/gtest.h>
-//#include <components/CommonQEMU/Transports/MemoryTransport.hpp>
-//#include <components/CommonQEMU/Slices/MemoryMessage.hpp>
-//#include <core/flexus.hpp>
 
 namespace Flexus
 {
@@ -69,6 +66,7 @@ nMemoryMap::MemoryMapComponent *MemoryLoopbackTestFixture::aMemoryMap = nullptr;
 
 #include "delayTest.h"
 #include "maxRequestsTest.h"
+#include "useFetchReplyTest.h"
 
 //
 //bool LoopbackOut_avail(Flexus::Core::index_t)
