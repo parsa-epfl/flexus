@@ -48,117 +48,104 @@
 #define FLEXUS_BEGIN_COMPONENT Dummy
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
 
-namespace nDummy
-{
+namespace nDummy {
 
-class FLEXUS_COMPONENT(Dummy) 
-{
-	FLEXUS_COMPONENT_IMPL(Dummy);
+class FLEXUS_COMPONENT(Dummy) {
+  FLEXUS_COMPONENT_IMPL(Dummy);
 
-	public:
-	FLEXUS_COMPONENT_CONSTRUCTOR(Dummy) : base(FLEXUS_PASS_CONSTRUCTOR_ARGS) {}
+public:
+  FLEXUS_COMPONENT_CONSTRUCTOR(Dummy) : base(FLEXUS_PASS_CONSTRUCTOR_ARGS) {
+  }
 
-	bool isQuiesced() const { return true; }
+  bool isQuiesced() const {
+    return true;
+  }
 
-	// Initialization
-	void initialize()
-	{
-		std::cout << "Called Init \n";
-		curState = cfg.InitState;   
-	}
+  // Initialization
+  void initialize() {
+    std::cout << "Called Init \n";
+    curState = cfg.InitState;
+  }
 
-	void finalize()
-	{
-		std::cout << "Final state is:" << curState << std::endl;
-	}
+  void finalize() {
+    std::cout << "Final state is:" << curState << std::endl;
+  }
 
-	int getStateNonWire()
-	{
-    		return curState;
-  	}
+  int getStateNonWire() {
+    return curState;
+  }
 
-	// setState PushInput Port
-	//=========================
-	bool available(interface::setState const &)
-	{
-		std::cout << "Port:setState is always available\n";	
-		return true;
-	}
-	
-	void push(interface::setState const &, int &newState)
-	{
-		std::cout << "Received:" << newState << " on Port:setState\n";
-		curState = newState;   
-	}
+  // setState PushInput Port
+  //=========================
+  bool available(interface::setState const &) {
+    std::cout << "Port:setState is always available\n";
+    return true;
+  }
 
-	// pullStateRet PullOutput Port
-	// ============================= 
-  	FLEXUS_PORT_ALWAYS_AVAILABLE(pullStateRet);
-  	int pull(interface::pullStateRet const &)
-	{
-    		return curState;
-  	}
-	
-	// setStateDyn Dynamic PushInput Port
-	// ===================================
-	bool available(interface::setStateDyn const &, index_t anIndex) 
-	{
-		return anIndex % 2 == 0;
-	}
+  void push(interface::setState const &, int &newState) {
+    std::cout << "Received:" << newState << " on Port:setState\n";
+    curState = newState;
+  }
 
-	void push(interface::setStateDyn const &, index_t anIndex, int &payload)
-	{
-		curState = anIndex * payload;
-	}
-	
-	// pullStateRetDyn Dynamic PullOutput Port
-	// ======================================= 
-	FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(pullStateRetDyn);  	
-	int pull(interface::pullStateRetDyn const &, index_t anIndex)
-	{
-    		return anIndex * 1000;
-  	}
-	// Drive Interfaces
-	void drive(interface::DummyDrive const &) 
-	{
-		curState++;
-		std::cout << "Drive Called. Sending incremented state " << curState <<  " over Port:getState\n";
-		if(FLEXUS_CHANNEL(getState).available())
-			FLEXUS_CHANNEL(getState) << curState;
-		if(FLEXUS_CHANNEL(pullStateIn).available())
-			FLEXUS_CHANNEL(pullStateIn) >> curState;
-		int out = 20;
-		if(FLEXUS_CHANNEL_ARRAY(getStateDyn, 3).available())
-			FLEXUS_CHANNEL_ARRAY(getStateDyn, 3) << out;
-		if(FLEXUS_CHANNEL_ARRAY(pullStateInDyn, 3).available())
-			FLEXUS_CHANNEL_ARRAY(pullStateInDyn, 3) >> curState;
-	}
+  // pullStateRet PullOutput Port
+  // =============================
+  FLEXUS_PORT_ALWAYS_AVAILABLE(pullStateRet);
+  int pull(interface::pullStateRet const &) {
+    return curState;
+  }
+
+  // setStateDyn Dynamic PushInput Port
+  // ===================================
+  bool available(interface::setStateDyn const &, index_t anIndex) {
+    return anIndex % 2 == 0;
+  }
+
+  void push(interface::setStateDyn const &, index_t anIndex, int &payload) {
+    curState = anIndex * payload;
+  }
+
+  // pullStateRetDyn Dynamic PullOutput Port
+  // =======================================
+  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(pullStateRetDyn);
+  int pull(interface::pullStateRetDyn const &, index_t anIndex) {
+    return anIndex * 1000;
+  }
+  // Drive Interfaces
+  void drive(interface::DummyDrive const &) {
+    curState++;
+    std::cout << "Drive Called. Sending incremented state " << curState << " over Port:getState\n";
+    if (FLEXUS_CHANNEL(getState).available())
+      FLEXUS_CHANNEL(getState) << curState;
+    if (FLEXUS_CHANNEL(pullStateIn).available())
+      FLEXUS_CHANNEL(pullStateIn) >> curState;
+    int out = 20;
+    if (FLEXUS_CHANNEL_ARRAY(getStateDyn, 3).available())
+      FLEXUS_CHANNEL_ARRAY(getStateDyn, 3) << out;
+    if (FLEXUS_CHANNEL_ARRAY(pullStateInDyn, 3).available())
+      FLEXUS_CHANNEL_ARRAY(pullStateInDyn, 3) >> curState;
+  }
 
 private:
-	int curState = 100;
+  int curState = 100;
 };
 
 } // End namespace nDummy
 
 FLEXUS_COMPONENT_INSTANTIATOR(Dummy, nDummy);
 
-FLEXUS_PORT_ARRAY_WIDTH(Dummy, setStateDyn)
-{
+FLEXUS_PORT_ARRAY_WIDTH(Dummy, setStateDyn) {
   return 4;
 }
 
-FLEXUS_PORT_ARRAY_WIDTH(Dummy, getStateDyn)
-{
+FLEXUS_PORT_ARRAY_WIDTH(Dummy, getStateDyn) {
   return 4;
 }
 
-FLEXUS_PORT_ARRAY_WIDTH(Dummy, pullStateInDyn)
-{
+FLEXUS_PORT_ARRAY_WIDTH(Dummy, pullStateInDyn) {
   return 4;
 }
 
-FLEXUS_PORT_ARRAY_WIDTH(Dummy, pullStateRetDyn)
-{
+FLEXUS_PORT_ARRAY_WIDTH(Dummy, pullStateRetDyn) {
   return 4;
 }
 

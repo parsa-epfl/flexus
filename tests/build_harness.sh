@@ -53,18 +53,10 @@ if [ ! -f "CMakeLists.txt" ]; then
     exit 1
 fi
 
-echo "========================"
-cat /etc/ld.so.conf.d/*
-ls -l /usr/local/lib
-echo "========================"
-
 JOBS=$(($(getconf _NPROCESSORS_ONLN) + 1))
 echo "=== Using ${JOBS} simultaneous jobs ==="
 
-if [ -z $1 ]; then
-    cmake .
-else
-    cmake -DSIMULATOR=$1 . 
-fi
+export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
 
+cmake -DSIMULATOR=Harness . 
 make -j${JOBS}

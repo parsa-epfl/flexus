@@ -48,23 +48,10 @@
 set -x
 set -e
 
-if [ ! -f "CMakeLists.txt" ]; then
-    echo "CMakeLists.txt file not found!"
-    exit 1
-fi
+export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
 
-echo "========================"
-cat /etc/ld.so.conf.d/*
-ls -l /usr/local/lib
-echo "========================"
-
-JOBS=$(($(getconf _NPROCESSORS_ONLN) + 1))
-echo "=== Using ${JOBS} simultaneous jobs ==="
-
-if [ -z $1 ]; then
-    cmake .
-else
-    cmake -DSIMULATOR=$1 . 
-fi
-
-make -j${JOBS}
+for testCase in "$@"
+do
+	echo "Running $testCase"
+	./testing_harness --gtest_filter=$testCase
+done 
