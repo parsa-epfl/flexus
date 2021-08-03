@@ -34,7 +34,7 @@ protected:
 		aMMJumpTable = new MemoryMapJumpTable;					// A dummy jump table
 		Flexus::Core::index_t anIndex = 1;
 		Flexus::Core::index_t aWidth =  1;
-		aMemoryMap = new nMemoryMap::MemoryMapComponent(			// A dummy MemporyMap instance
+		aMemoryMap = new nMemoryMap::MemoryMapComponent(			// A dummy MemoryMap instance
 			*aMMCfg,
 			*aMMJumpTable,
 			anIndex,
