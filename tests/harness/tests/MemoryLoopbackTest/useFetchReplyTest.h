@@ -85,9 +85,9 @@ void LoopbackOut_manip_miss_writable_reply(Flexus::Core::index_t, Flexus::Shared
 // Create a new test
 TEST_F(MemoryLoopbackTestFixture, UseMissReplyWritableConfiguration)
 {
-  // Set output vars to false before test.
-  calledPushFetchReply = false;
-  gotFetchReply = false;
+	// Set output vars to false before test.
+  	calledPushFetchReply = false;
+  	gotFetchReply = false;
 
 	// Create a configuration struct and specify the parameters
 	MemoryLoopbackConfiguration_struct aCfg("The test config");
