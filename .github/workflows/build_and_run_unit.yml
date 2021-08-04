@@ -43,7 +43,7 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  DO-NOT-REMOVE end-copyright-block
 
-name: build-tests
+name: flexus-testing
 on: 
   push:
     branches:
@@ -131,7 +131,7 @@ jobs:
       - name: Build flexus
         run: ./tests/build_flexus.sh $SIMULATOR
   
-  run-harness-with-syspkgs:
+  run-unit-tests-with-syspkgs:
     runs-on: ubuntu-latest
     needs: lint
     env:
@@ -149,12 +149,12 @@ jobs:
           path: libqflex-checkout
       - name: Move libqflex to parent dir
         run: mv libqflex-checkout ../libqflex
-      - name: Build harness
+      - name: Build testing harness
         run: ./tests/build_harness.sh
-      - name: Run harness
+      - name: Run unit tests 
         run: ./tests/run_harness.sh $ALL_TESTS
 
-  run-harness-with-frozenpkgs:
+  run-unit-tests-with-frozenpkgs:
     runs-on: ubuntu-latest
     needs: lint
     env:
@@ -174,7 +174,7 @@ jobs:
         run: mv libqflex-checkout ../libqflex
       - name: Build frozen pkg versions
         run: ./.github/scripts/build_frozen_pkgs.sh
-      - name: Build harness
+      - name: Build testing harness
         run: ./tests/build_harness.sh
-      - name: Run harness
+      - name: Run unit tests
         run: ./tests/run_harness.sh $ALL_TESTS
