@@ -34,7 +34,7 @@ extra_deps.cmake Structure:
 		2. ENABLE_TEST: YES
 
 Writing Tests:
-	1. The component implmentation file must be included. Implementation files for components are available in the respective component sources in flexus.
+	1. The component implementation file must be included. Implementation files for components are available in the respective component sources in flexus.
 	   This file defines the component structures, namely, the Configuration_struct, the JumpTable, and the component class.
 	2. <gtest/gtest.h> must be included for gtest support.
 	3. The Configuration_struct and JumpTable must be created and passed as constructor arguments to the component constructor.
@@ -68,7 +68,7 @@ All types of ports:
 			Component side usage: Must declare and register two functions:
 						a. bool available(XComponentInterface::<port_name> const &)
 						b. void push(XComponentInterface::<port_name> const &, PayloadType &)
-			Testing harness usage: Call the appropiate member functions.
+			Testing harness usage: Call the appropriate member functions.
 		
 		c. PullOutput:
 			Data flow direction: Component to Testing harness
@@ -116,6 +116,15 @@ All types of ports:
 			Testing harness side usage: Must declare and register two functions:
 						a. bool available(Flexus::Core::index_t)
 						b. void manipulate(Flexus::Core::index_t, Payload &)
+
+Test Fixtures:
+	Google tests allows users to create test fixtures which can be used to reduce code duplication.
+	A test fixture is a class which publicly inherits testing::Test. This class can overload 4 functions:
+	1. void SetUpTestCase()		: This function is called once before all tests in the fixture are executed.
+	2. void TearDownTestCase()	: This function is called once after all tests in the fixture are executed.
+	3. void SetUp()			: This function is called once for each tests case, before it is run.
+	4. void TearDown()		: This function is called once for each tests case, after it is run.
+	Moreover, member variables can be defined in the test fixture class which are accessible to the test directly.
 
 How to generate preprocessed files:
 	Use the following command:

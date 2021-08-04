@@ -20,6 +20,7 @@ void LoopbackOut_manip_fetch_reply(Flexus::Core::index_t, Flexus::SharedTypes::M
 } 
 
 // Create a new test
+// This tests whether MemoryLoopback respects the UseFetchReply parameter when it is set to true
 TEST_F(MemoryLoopbackTestFixture, UseFetchReplyConfiguration)
 {
 	// Create a configuration struct and specify the parameters
@@ -83,6 +84,7 @@ void LoopbackOut_manip_miss_writable_reply(Flexus::Core::index_t, Flexus::Shared
 } 
 
 // Create a new test
+// This tests whether MemoryLoopback respects the UseFetchReply parameter when it is set to false
 TEST_F(MemoryLoopbackTestFixture, UseMissReplyWritableConfiguration)
 {
 	// Set output vars to false before test.

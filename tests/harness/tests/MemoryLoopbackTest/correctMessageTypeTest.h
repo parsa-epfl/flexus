@@ -21,6 +21,7 @@ void LoopbackOut_manip_message_type(Flexus::Core::index_t, Flexus::SharedTypes::
 } 
 
 // Create a new test
+// This tests whether MemoryLoopback is responding with correct message types for different requests
 TEST_F(MemoryLoopbackTestFixture, CorrectMessageType)
 {
 	// Create a configuration struct and specify the parameters
@@ -58,6 +59,7 @@ TEST_F(MemoryLoopbackTestFixture, CorrectMessageType)
 	MemoryLoopbackInterface::LoopbackIn LoopbackIn_tmp;	
 
 	// Generate test vectors
+	// This is vector of pairs, each of which denotes the type of the message being sent and the accompanying address
 	std::vector<std::pair<MemoryMessage::MemoryMessageType, uint64_t>> trigger = 
 	{
 		std::make_pair(MemoryMessage::LoadReq,			1),
@@ -77,6 +79,7 @@ TEST_F(MemoryLoopbackTestFixture, CorrectMessageType)
 	};
 
 	// Generate expected output
+	// This is vector of pairs, each of which denotes the type of the expected reply and the accompanying address
 	std::vector<std::pair<MemoryMessage::MemoryMessageType, uint64_t>> expected =
 	{
 		std::make_pair(MemoryMessage::LoadReply, 		1),
@@ -95,9 +98,9 @@ TEST_F(MemoryLoopbackTestFixture, CorrectMessageType)
 		std::make_pair(MemoryMessage::StreamFetchWritableReply,	14)
 	};	
 
-	for(auto testCase : boost::combine(trigger, expected))
+	for(auto testCase : boost::combine(trigger, expected))		// Go over each request and the expected reply
 	{
-		
+		// trig is the request, exp is the expected output
 		std::pair<MemoryMessage::MemoryMessageType, uint64_t> trig, exp;
 		boost::tie(trig, exp) = testCase;
 
@@ -116,7 +119,7 @@ TEST_F(MemoryLoopbackTestFixture, CorrectMessageType)
 		// Drive the dut	
 		dut.drive(LoopbackDrive_tmp);
 		
-		// Assert that LoopbackIn is not ready to receive data
+		// Assert that the DUT returned the correct type of message
 		ASSERT_EQ( exp.first, type ) << "Got wrong message type. Failed!";
 		ASSERT_EQ( exp.second, addr ) << "Got wrong address from DUT. Failed! Got " << addr << " Expected " << exp.second;
 	}	

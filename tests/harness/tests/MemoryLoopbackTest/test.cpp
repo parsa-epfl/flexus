@@ -26,7 +26,6 @@ protected:
     Flexus::Core::CreateFlexusObject();
 
     // Create a memory map to construct a memory map factory object which is used by
-    // dut.initialize()
     aMMCfg = new MemoryMapConfiguration_struct("A MemoryMap config"); // A dummy configuration
     aMMJumpTable = new MemoryMapJumpTable;                            // A dummy jump table
     Flexus::Core::index_t anIndex = 1;

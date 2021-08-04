@@ -13,6 +13,7 @@ static bool calledPush = false;	// Stores whether manipulate was called or not
 static bool gotLoadReply = false;	// Stores whether manipulate was called with correct message or not
 void LoopbackOut_manip(Flexus::Core::index_t, Flexus::SharedTypes::MemoryTransport &aMemoryTransport)
 {
+	// Ensure that the type and the address of the message are as expected
 	if(aMemoryTransport[Flexus::SharedTypes::MemoryMessageTag]->type() == Flexus::SharedTypes::MemoryMessage::LoadReply &&
 	   uint64_t(aMemoryTransport[Flexus::SharedTypes::MemoryMessageTag]->address()) == 1000)
 		gotLoadReply = true;
@@ -20,6 +21,7 @@ void LoopbackOut_manip(Flexus::Core::index_t, Flexus::SharedTypes::MemoryTranspo
 } 
 
 // Create a new test
+// Tests whether MemoryLoopback is respecting the Delay parameter or not
 TEST_F(MemoryLoopbackTestFixture, DelayConfiguration)
 {
 	// Create a configuration struct and specify the parameters

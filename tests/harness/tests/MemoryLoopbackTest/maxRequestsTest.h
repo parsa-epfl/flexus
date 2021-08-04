@@ -20,6 +20,7 @@ void LoopbackOut_manip_max_req(Flexus::Core::index_t, Flexus::SharedTypes::Memor
 } 
 
 // Create a new test
+// This tests whether MemoryLoopback respects the MaxRequests parameter
 TEST_F(MemoryLoopbackTestFixture, MaxRequestsConfiguration)
 {
 	// Create a configuration struct and specify the parameters
