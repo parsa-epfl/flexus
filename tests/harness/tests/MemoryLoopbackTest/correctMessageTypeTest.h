@@ -74,7 +74,7 @@ TEST_F(MemoryLoopbackTestFixture, CorrectMessageType)
 		std::make_pair(MemoryMessage::PrefetchReadAllocReq,	12),
 		std::make_pair(MemoryMessage::PrefetchReadNoAllocReq,	13),
 		std::make_pair(MemoryMessage::StreamFetch, 		14)
-	};	
+	};
 
 	// Generate expected output
 	std::vector<std::pair<MemoryMessage::MemoryMessageType, uint64_t>> expected =
@@ -117,7 +117,7 @@ TEST_F(MemoryLoopbackTestFixture, CorrectMessageType)
 		dut.drive(LoopbackDrive_tmp);
 		
 		// Assert that LoopbackIn is not ready to receive data
-		ASSERT_EQ( exp.first, type ) << "Got wring message type. Failed!";
+		ASSERT_EQ( exp.first, type ) << "Got wrong message type. Failed!";
 		ASSERT_EQ( exp.second, addr ) << "Got wrong address from DUT. Failed! Got " << addr << " Expected " << exp.second;
 	}	
 }
