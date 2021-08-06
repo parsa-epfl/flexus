@@ -59,6 +59,44 @@ $ cmake -DSIMULATOR=KnottyKraken . && make -j
 
 * Use `make clean` to only remove `*.a` and `*.so` files.
 * Use `make clean_cmake` to remove all of the files and folders that cmake produces.
+* If you are using non-default install paths for `boost` and/or `gcc`, modify the location of dynamic libraries before executing `make`
+
+```sh
+$ LD_LIBRARY_PATH=<path to dynamic libraries> make -j
+```
+
+## How to Use CMake to Compile Flexus Testing Harness
+
+* Set the `SIMULATOR` variable to `Harness` while running `cmake`:
+
+```sh
+$ cmake -DSIMULATOR=Harness . && make -j
+```
+
+* The default value of other variables are:
+
+```sh
+-DTARGET_PLATFORM=arm
+-DSELECTED_DEBUG=vverb
+-DCMAKE_C_COMPILER=/usr/bin/gcc
+-DCMAKE_CXX_COMPILER=/usr/bin/g++
+-DBOOST_INCLUDEDIR=/usr/local/include
+-DBOOST_LIBRARYDIR=/usr/local/lib
+```
+
+* Use `make clean` to only remove `*.a` and `*.so` files.
+* Use `make clean_cmake` to remove all of the files and folders that cmake produces.
+* Run the tests by executing `testing_harness`:
+
+```sh
+$ ./testing_harness
+```
+* If you are using non-default install paths for `boost` and/or `gcc`, modify the location of dynamic libraries before executing `make` and `testing_harness`
+
+```sh
+$ LD_LIBRARY_PATH=<path to dynamic libraries> make -j
+$ LD_LIBRARY_PATH=<path to dynamic libraries> ./testing_harness
+```
 
 ## Flexus Code Formatting
 

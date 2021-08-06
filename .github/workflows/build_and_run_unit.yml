@@ -43,7 +43,7 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  DO-NOT-REMOVE end-copyright-block
 
-name: build-tests
+name: flexus-testing
 on: 
   push:
     branches:
@@ -130,3 +130,51 @@ jobs:
         run: ./.github/scripts/build_frozen_pkgs.sh
       - name: Build flexus
         run: ./tests/build_flexus.sh $SIMULATOR
+  
+  run-unit-tests-with-syspkgs:
+    runs-on: ubuntu-latest
+    needs: lint
+    env:
+      DEPS: cmake libboost-all-dev
+      ALL_TESTS: "MemoryLoopbackTestFixture*"
+    steps:
+      - name: Install system dependencies
+        run: sudo apt update -qq && sudo apt upgrade -y && sudo apt install -y $DEPS
+      - name: Checkout flexus
+        uses: actions/checkout@v2
+      - name: Checkout libqflex dependency
+        uses: actions/checkout@v2
+        with:
+          repository: parsa-epfl/libqflex
+          path: libqflex-checkout
+      - name: Move libqflex to parent dir
+        run: mv libqflex-checkout ../libqflex
+      - name: Build testing harness
+        run: ./tests/build_harness.sh
+      - name: Run unit tests 
+        run: ./tests/run_harness.sh $ALL_TESTS
+
+  run-unit-tests-with-frozenpkgs:
+    runs-on: ubuntu-latest
+    needs: lint
+    env:
+      DEPS: cmake
+      ALL_TESTS: "MemoryLoopbackTestFixture*"
+    steps:
+      - name: Install system dependencies
+        run: sudo apt update -qq && sudo apt upgrade -y && sudo apt install -y $DEPS
+      - name: Checkout flexus
+        uses: actions/checkout@v2
+      - name: Checkout libqflex dependency
+        uses: actions/checkout@v2
+        with:
+          repository: parsa-epfl/libqflex
+          path: libqflex-checkout
+      - name: Move libqflex to parent dir
+        run: mv libqflex-checkout ../libqflex
+      - name: Build frozen pkg versions
+        run: ./.github/scripts/build_frozen_pkgs.sh
+      - name: Build testing harness
+        run: ./tests/build_harness.sh
+      - name: Run unit tests
+        run: ./tests/run_harness.sh $ALL_TESTS

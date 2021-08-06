@@ -246,7 +246,7 @@ public:
                                          << "  No reply sent."));
       return;
     }
-    DBG_(VVerb, Comp(*this)(<< "Queing reply: " << *reply)
+    DBG_(VVerb, Comp(*this)(<< "Queueing reply: " << *reply)
                     Addr(aMessageTransport[MemoryMessageTag]->address()));
     aMessageTransport.set(MemoryMessageTag, reply);
 
@@ -259,7 +259,7 @@ public:
   // Drive Interfaces
   void drive(interface::LoopbackDrive const &) {
     if (outQueue->ready() && !FLEXUS_CHANNEL(LoopbackOut).available()) {
-      DBG_(Trace, Comp(*this)(<< "Faile to send reply, channel not available."));
+      DBG_(Trace, Comp(*this)(<< "Failed to send reply, channel not available."));
     }
     while (FLEXUS_CHANNEL(LoopbackOut).available() && outQueue->ready()) {
       MemoryTransport trans(outQueue->dequeue());
