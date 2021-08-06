@@ -4,12 +4,12 @@ Components In Flexus:
 		1. "XConfiguration_struct" is used to specify the parameters of a component (e.g., the number of cycles a memory request takes in MemoryLoopback is set by cfg.Delay)
 		2. "XJumpTable" is used to register the callback functions used by the component to send AND receive data. See more in the section "Dynamic Ports".
 	All these structures are generated automatically by the boost pre-processor.
-	An example of one such elaborated component is "MemoryLoopbackExpanded.cpp" which containes the pre-processed MemoryLoopback component. 	
+	An example of one such elaborated component is "MemoryLoopbackExpanded.cpp" which contains the pre-processed MemoryLoopback component. 	
 
 Harness File Structure:
-	1. "src" contains 2 files:
+	1. "harness_base" contains 2 files:
 		a. "all_tests.cpp": the main testing file for google test
-		b. "wiring.cpp": the wiring for a trivial simulator with no components
+		b. "wiring.cpp": the wiring for a trivial simulator with no components. This is needed to create a dummy core. This just provided the necessary function definitions to the linker so that the testing_harness executable can be generated.
 	2. "docs" contains files describing the testing harness' usage.
 	3. "tests" contains the actual tests.
 
@@ -40,7 +40,7 @@ Writing Tests:
 	3. The Configuration_struct and JumpTable must be created and passed as constructor arguments to the component constructor.
 
 Interacting with components:
-	1. Configuration_struct: This structure specifies the initial parameters of the componet. The parameters can be accesed directly as they are members of this struct.
+	1. Configuration_struct: This structure specifies the initial parameters of the component. The parameters can be accessed directly as they are members of this struct.
 	2. JumpTable: This class is used to register callbacks to receive data from the component. Callback functions come in pairs of available and manipulate functions. These can be registered by setting up the function pointers wire_available_<port_name> and wire_manip_<port_name> in the JumpTable.
 	4. Drive: Each component object has a drive(XInterface::<drive_name>) method which is used to drive the component.
 	5. Misc: Other custom methods may be defined for a component. These methods can be called simply by using the component object.
@@ -76,7 +76,7 @@ All types of ports:
 			Component side usage: Must declare and register two functions:
 						a. bool available(XComponentInterface::<port_name> const &)
 						b. PayloadType pull(XComponentInterface::<port_name> const &)
-			Testing harness side usage: Call the appropiate member functions.
+			Testing harness side usage: Call the appropriate member functions.
 
 		d. PullInput:
 			Data flow direction: Testing harness to Component
@@ -107,7 +107,7 @@ All types of ports:
 			Component side usage: Must declare and register two functions:
 						a. bool available(XComponentInterface::<port_name> const &, Flexus::Core:index_t)
 						b. PayloadType pull(XComponentInterface::<port_name> const &, Flexus::Core::index_t)
-			Testing harness side usage: Call the appropiate member functions.
+			Testing harness side usage: Call the appropriate member functions.
 
 		d. PullInput:
 			Data flow direction: Testing harness to Component
@@ -129,3 +129,14 @@ Test Fixtures:
 How to generate preprocessed files:
 	Use the following command:
 	g++ -std=c++11 -E -C -P -DSELECTED_DEBUG=None -DTARGET_PLATFORM=arm -DBOOST_MPL_LIMIT_VECTOR_SIZE=50 -I. -I/path/to/boost/include/dir path/to/componentImpl.cpp > output.cpp
+
+	Explanation of arguments to g++:
+	-std		to specify the c++ standard
+	-E 		to stop after pre-processing
+	-C 		to not discard comments
+	-P 		to inhibit line marker generation
+	-Dxxx=yyy 	to define a macro xxx as the value yyy
+	-I/some_path 	to add /some_path to the include path
+	
+	What happens this command is executed
+	The pre-processor of a compiler is responsible for resolving macros and handling #include statements. In C/C++, #include<some_file> instructs the pre-processor to replace the #include statement with the contents of "some_file". Since "some_file" itself might have some #include statements, this replacement is done recursively. As a result, the output of the pre-processor is a very large file. The command given above is instructs g++ to stop after the pre-processing step. Since this command generates a very large file, it is useful to know that since the #include statements are replace in-place, the pre-processed code of the componentImpl.cpp file can be found at the near the bottom of the output file. "preprocessing.png" in this directory gives a pictorial description of this process.
