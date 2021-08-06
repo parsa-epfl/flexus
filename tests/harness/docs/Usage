@@ -140,3 +140,22 @@ How to generate preprocessed files:
 	
 	What happens this command is executed
 	The pre-processor of a compiler is responsible for resolving macros and handling #include statements. In C/C++, #include<some_file> instructs the pre-processor to replace the #include statement with the contents of "some_file". Since "some_file" itself might have some #include statements, this replacement is done recursively. As a result, the output of the pre-processor is a very large file. The command given above is instructs g++ to stop after the pre-processing step. Since this command generates a very large file, it is useful to know that since the #include statements are replace in-place, the pre-processed code of the componentImpl.cpp file can be found at the near the bottom of the output file. "preprocessing.png" in this directory gives a pictorial description of this process.
+
+Some commonly used macros in Flexus:
+	a. Macros used in header files:
+		COMPONENT_PARAMETERS: This creates the Configuration_struct for the component. A variable is created for each parameter passed to this macro. The type of this variable is inferred from the second argument of PARAMETER macro. Therefore, the parameters of the component can be configured by setting up these variables to appropriate values.
+		An templated member function named "get" is also created for each parameter. This function can be used to query various attributes of a particular parameter such as name, description, etc. 
+		Apart from this, another struct called Configuration is also generated which holds the instance of the Configuration_struct.
+		COMPONENT_INTERFACE: This creates the JumpTable and the and the Interface structures for the component.
+		Trivial structures are created for each port in the Interface. This is done done because Flexus creates overloaded functions with the same name for different port. The first argument to these functions is an instance of these trivial structures. These overloaded functions are declared in the Interface.
+		The JumpTable holds the function pointers to the callback functions for ports which are invoked by the component. Therefore, to interact with such port,the function pointers in the JumpTable can be set to appropriate values. The naming convention for these function pointers is as follows:
+		manipulate: wire_manip_<PortName>
+		available: wire_available_<PortName>
+	b. Macros used in implementation files:
+		FLEXUS_COMPONENT: This gets expanded to the class name for the component class. It also handles inheritance from FlexusComponentBase.
+		FLEXUS_COMPONENT_IMPL: This macro handles the typedefs and namespaces. This also generates a member function which returns the name of the component
+		FLEXUS_COMPONENT_CONSTRUCTOR: This macros declared the component constructor.
+		FLEXUS_PASS_CONSTRUCTOR_ARGS: This macro sets up the default constructor arguments which are the Configuration_struct, the JumpTable, the Index and the Width.
+		FLEXUS_CHANNEL: This macro expands to a call to the appropriate callback function defined in the JumpTable.
+		FLEXUS_COMPONENT_INSTANTIATOR: This macro creates a defines the component instantiation function in in the component interface.
+		FLEXUS_PORT_ARRAY_WIDTH: Defines the "width" function which returns the port width for a dynamic port.
