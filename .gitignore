@@ -29,7 +29,6 @@ CMakeCache.txt
 Makefile
 cmake_install.cmake
 tags
-boost_*
 tmp*
 temp*
 build
