@@ -97,7 +97,8 @@ if(NOT BUILD_DEBUG)
 else()
     message( STATUS "Building in slow debugging configuration (ASAN enabled)" )
     set(GCC_FLAGS -O0 -g3 -fsanitize=address -Wall -Werror -fmessage-length=160 -x c++) 
-    set(GCC_LDFLAGS -fsanitize=address)
+    set(GCC_LDFLAGS -fsanitize=address -static-libasan -lrt -ldl)
+    set(LD_PRELOAD $(gcc -print-file-name=libasan.so))
 endif()
 
 add_definitions(
