@@ -115,7 +115,7 @@ public:
         if (theEndIteration >= 0 && theIterationCounts[0] >= theEndIteration) {
           DBG_(Dev, AddCat(Termination)(<< "Simulation terminated because target iteration "
                                         << theIterationCounts[0] << " reached."));
-          Flexus::Core::theFlexus->terminateSimulation();
+          Flexus::Core::theFlexus->terminateSimulation(false);
           return;
         }
 
@@ -248,7 +248,7 @@ public:
       if (Flexus::Core::theFlexus->cycleCount() > theCycleMinimum) {
         DBG_(Dev, (<< "Reached target transaction and minimum cycle count. "
                       "Ending simulation."));
-        Flexus::Core::theFlexus->terminateSimulation();
+        Flexus::Core::theFlexus->terminateSimulation(false);
       }
     }
 
@@ -420,7 +420,7 @@ public:
       DBG_(Dev, AddCat(Termination)(<< "Simulation terminated because magic breakpont "
                                     << aBreakpoint << " reached."));
 
-      Flexus::Core::theFlexus->terminateSimulation();
+      Flexus::Core::theFlexus->terminateSimulation(false);
     }
   }
 
@@ -442,7 +442,7 @@ public:
     DBG_(Dev, (<< "Regression Testing Breakpoint: " << aBreakpoint));
     if (aBreakpoint == theStopBreakpoint) {
       DBG_(Dev, (<< "Stop breakpoint.  Terminating Simulation."));
-      Flexus::Core::theFlexus->terminateSimulation();
+      Flexus::Core::theFlexus->terminateSimulation(false);
     }
     theLastBreakpoint = aBreakpoint;
   }
@@ -503,7 +503,7 @@ public:
 
     if (theStopCycle > 0 && Flexus::Core::theFlexus->cycleCount() >= theStopCycle) {
       DBG_(Dev, (<< "Reached target cycle. Ending simulation."));
-      Flexus::Core::theFlexus->terminateSimulation();
+      Flexus::Core::theFlexus->terminateSimulation(false);
     }
   }
 };
@@ -996,7 +996,7 @@ class ConsoleStringTrackerImpl : virtual public ConsoleStringTracker {
 public:
   void OnXtermString(Qemu::API::conf_object_t *ignored, char *aString) {
     DBG_(Dev, (<< "Console termination string " << aString << " has appeared."));
-    Flexus::Core::theFlexus->terminateSimulation();
+    Flexus::Core::theFlexus->terminateSimulation(false);
   }
 
   void addString(std::string const &aString) {

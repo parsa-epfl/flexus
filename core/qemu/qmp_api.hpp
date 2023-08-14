@@ -505,7 +505,7 @@ class qmp_write_debug_configuration : public qmp_flexus_i {
 class qmp_terminate_simulation : public qmp_flexus_i {
 
   virtual void execute(std::string anArgs) override {
-    theFlexus->terminateSimulation();
+    theFlexus->terminateSimulation(false);
   }
 
 } qmp_terminate_simulation_;

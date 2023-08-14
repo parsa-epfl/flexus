@@ -89,7 +89,7 @@ public:
   virtual int32_t breakInsn() const = 0;
 
   virtual void onTerminate(std::function<void()>) = 0;
-  virtual void terminateSimulation() = 0;
+  virtual void terminateSimulation(bool fromQEMU) = 0;
   virtual void quiesce() = 0;
   virtual void quiesceAndSave(uint32_t aSaveNum) = 0;
   virtual void quiesceAndSave() = 0;

@@ -217,7 +217,7 @@ public:
   void printDebugConfiguration();
   void writeDebugConfiguration(std::string const &aFilename);
   void onTerminate(std::function<void()>);
-  void terminateSimulation();
+  void terminateSimulation(bool fromQEMU);
   void log(std::string const &aName, std::string const &anInterval, std::string const &aRegEx);
   void printMMU(int32_t aCPU);
 
@@ -281,7 +281,7 @@ void FlexusImpl::advanceCycles(int64_t aCycleCount) {
 
   if ((theStopCycle > 0) && (theCycleCount >= theStopCycle)) {
     DBG_(Dev, (<< "Reached target cycle count. Ending simulation."));
-    terminateSimulation();
+    terminateSimulation(false);
   }
 
   static uint64_t last_stats = 0;
@@ -706,7 +706,7 @@ void FlexusImpl::onTerminate(std::function<void()> aFn) {
   theTerminateFunctions.push_back(aFn);
 }
 
-void FlexusImpl::terminateSimulation() {
+void FlexusImpl::terminateSimulation(bool fromQEMU) {
   system_clock::time_point now(system_clock::now());
   auto tt = system_clock::to_time_t(now);
   DBG_(Dev, Core()(<< "Terminating simulation. Timestamp: " << std::asctime(std::localtime(&tt))));
@@ -725,7 +725,9 @@ void FlexusImpl::terminateSimulation() {
 #ifdef WRITE_ALL_MEASUREMENT_OUT
   writeMeasurement("all", "all.measurement.out");
 #endif
-  Flexus::Qemu::API::qemu_callbacks.QEMU_quit_simulation("Simulation terminated by flexus.");
+  if (!fromQEMU) {
+    Flexus::Qemu::API::qemu_callbacks.QEMU_quit_simulation("Simulation terminated by flexus.");
+  }
 }
 
 class Flexus_Obj : public Flexus::Qemu::AddInObject<FlexusImpl> {
@@ -774,7 +776,8 @@ static void flexusQMP(Flexus::Qemu::API::qmp_flexus_cmd_t aCMD, const char *anAr
 }
 
 void flexusStop() {
-  DBG_(VVerb, (<< "Cleaning up Flexus"));
+  DBG_(VVerb, (<< "Stopping Flexus from QEMU"));
+  theFlexus->terminateSimulation(true);
   if (theFlexusFactory)
     delete theFlexusFactory;
   // TODO: More structures to cleanup?
@@ -784,7 +787,7 @@ static void flexusStartTiming() {
   while (Qemu::API::qemu_callbacks.QEMU_getCyclesLeft() > 1) {
     theFlexus->doCycle();
   }
-  theFlexus->terminateSimulation();
+  theFlexus->terminateSimulation(false);
 }
 
 void CreateFlexusObject() {
