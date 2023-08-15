@@ -121,6 +121,7 @@ private:
   bool theWatchdogWarning;
   bool theQuiesceRequested;
   bool theSaveRequested;
+  bool theHasExited;
   std::string theSaveName;
 
   bool theFastMode;
@@ -252,6 +253,7 @@ void FlexusImpl::initializeComponents() {
   ConfigurationManager::getConfigurationManager().checkAllOverrides();
   ComponentManager::getComponentManager().initComponents();
   theInitialized = true;
+  theHasExited = false;
 }
 
 void FlexusImpl::advanceCycles(int64_t aCycleCount) {
@@ -707,6 +709,8 @@ void FlexusImpl::onTerminate(std::function<void()> aFn) {
 }
 
 void FlexusImpl::terminateSimulation(bool fromQEMU) {
+  // Already exited, don't double exit
+  if (theHasExited) return;
   system_clock::time_point now(system_clock::now());
   auto tt = system_clock::to_time_t(now);
   DBG_(Dev, Core()(<< "Terminating simulation. Timestamp: " << std::asctime(std::localtime(&tt))));
@@ -725,9 +729,11 @@ void FlexusImpl::terminateSimulation(bool fromQEMU) {
 #ifdef WRITE_ALL_MEASUREMENT_OUT
   writeMeasurement("all", "all.measurement.out");
 #endif
+  // Only send QEMU the exit signal when it's internally to QFlex
   if (!fromQEMU) {
     Flexus::Qemu::API::qemu_callbacks.QEMU_quit_simulation("Simulation terminated by flexus.");
   }
+  theHasExited = true;
 }
 
 class Flexus_Obj : public Flexus::Qemu::AddInObject<FlexusImpl> {
