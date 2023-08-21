@@ -45,6 +45,7 @@
 #include <core/simulator_layout.hpp>
 
 #include <components/CommonQEMU/Slices/MemoryMessage.hpp>
+#include <components/uFetch/uFetchTypes.hpp>
 
 // clang-format off
 #define FLEXUS_BEGIN_COMPONENT DecoupledFeeder
@@ -65,13 +66,11 @@ COMPONENT_PARAMETERS(
 );
 
 typedef std::pair< uint64_t, uint32_t> ulong_pair;
-typedef std::pair< uint64_t, std::pair< uint32_t, uint32_t> > pc_type_annul_triplet;
 
 COMPONENT_INTERFACE(
   DYNAMIC_PORT_ARRAY( PushOutput, MemoryMessage, ToL1D )
   DYNAMIC_PORT_ARRAY( PushOutput, MemoryMessage, ToL1I )
-  //DYNAMIC_PORT_ARRAY( PushOutput, ulong_pair, ToBPred )
-  DYNAMIC_PORT_ARRAY( PushOutput, pc_type_annul_triplet, ToBPred )
+  DYNAMIC_PORT_ARRAY( PushOutput, BPMessage, ToBPred )
   DYNAMIC_PORT_ARRAY( PushOutput, MemoryMessage, ToNAW )
 
   DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, ToMMU )

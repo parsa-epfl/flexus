@@ -42,33 +42,17 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
+#ifndef __COMMON_PERF_DECODE_HPP__
+#define __COMMON_PERF_DECODE_HPP__
+#include <stdint.h>
+#include <utility>
+#include <core/types.hpp>
+#include <components/uFetch/uFetchTypes.hpp>
 
-#ifndef FLEXUS_armDECODER_INTERACTIONS_HPP_INCLUDED
-#define FLEXUS_armDECODER_INTERACTIONS_HPP_INCLUDED
-
-#include "armInstruction.hpp"
-
-namespace narmDecoder {
-
+using Flexus::SharedTypes::eBranchType;
 using Flexus::SharedTypes::VirtualMemoryAddress;
 
-struct BranchInteraction : public nuArchARM::Interaction {
-  VirtualMemoryAddress theTarget;
-  boost::intrusive_ptr<BPredState> theBPState;
-  BranchInteraction(VirtualMemoryAddress aTarget, boost::intrusive_ptr<BPredState> theBPState);
-  void operator()(boost::intrusive_ptr<nuArchARM::Instruction> anInstruction,
-                  nuArchARM::uArchARM &aCore);
-  void describe(std::ostream &anOstream) const;
-  //  boost::optional< uint64_t> npc() {
-  //    return boost::optional<uint64_t>(theTarget);
-  //  }
-};
-
-nuArchARM::Interaction *reinstateInstructionInteraction();
-nuArchARM::Interaction *annulInstructionInteraction();
-nuArchARM::Interaction *branchInteraction(VirtualMemoryAddress aTarget,
-                                          boost::intrusive_ptr<BPredState> aBPState);
-
-} // namespace narmDecoder
-
-#endif // FLEXUS_armDECODER_INTERACTIONS_HPP_INCLUDED
+int32_t sextract32(uint32_t value, int start, int length);
+uint32_t extract32(uint32_t value, int start, int length);
+std::pair<eBranchType, VirtualMemoryAddress> targetDecode(uint32_t opcode);
+#endif // __COMMON_PERF_DECODE_HPP__

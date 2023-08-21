@@ -116,8 +116,8 @@ public:
         [this](int32_t x, MemoryMessage &y) {
           this->toL1D(x, y);
         }, // std::bind( &DecoupledFeederComponent::toL1D, this, _1, _2)
-        [this](int32_t x, MemoryMessage &y, uint32_t dummy) {
-          this->modernToL1I(x, y);
+        [this](int32_t x, MemoryMessage &y, uint32_t opc) {
+          this->modernToL1I(x, y, opc);
         }, // std::bind( &DecoupledFeederComponent::modernToL1I, this, _1, _2)
         [this](MemoryMessage &x) {
           this->toDMA(x);
@@ -233,7 +233,7 @@ public:
     FLEXUS_CHANNEL_ARRAY( ToBPred, anIndex ) << theFetchInfo;
   }
   */
-  void modernToL1I(int32_t anIndex, MemoryMessage &aMessage) {
+  void modernToL1I(int32_t anIndex, MemoryMessage &aMessage, uint32_t anOpcode) {
     TranslationPtr tr(new Translation);
     tr->setInstr();
     tr->theVaddr = aMessage.pc();
@@ -262,16 +262,12 @@ public:
 
     FLEXUS_CHANNEL_ARRAY(ToL1I, anIndex) << aMessage;
 
-    pc_type_annul_triplet thePCTypeAndAnnulTriplet;
-    thePCTypeAndAnnulTriplet.first = aMessage.pc();
+    BPMessage toSendToBP;
+    toSendToBP.pc = aMessage.pc();
+    toSendToBP.opcode = anOpcode;
+    toSendToBP.timeStamp = aMessage.timeStamp();
 
-    std::pair<uint32_t, uint32_t> theTypeAndAnnulPair;
-    theTypeAndAnnulPair.first = (uint32_t)aMessage.branchType();
-    theTypeAndAnnulPair.second = (uint32_t)aMessage.branchAnnul();
-
-    thePCTypeAndAnnulTriplet.second = theTypeAndAnnulPair;
-
-    FLEXUS_CHANNEL_ARRAY(ToBPred, anIndex) << thePCTypeAndAnnulTriplet;
+    FLEXUS_CHANNEL_ARRAY(ToBPred, anIndex) << toSendToBP;
   }
   void updateInstructionCounts() {
     // Count instructions

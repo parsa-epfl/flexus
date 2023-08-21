@@ -71,9 +71,12 @@ arminst disas_fp_int_conv(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t 
  */
 arminst disas_fp_ccomp(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   DECODER_TRACE;
+  /* FIXME: This instruction sets condition codes, so it can't be modelled as NOP.
   arminst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
   inst->setUsesFpCmp();
   return inst;
+  */
+  return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Floating point conditional select
@@ -84,9 +87,12 @@ arminst disas_fp_ccomp(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSe
  */
 arminst disas_fp_csel(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   DECODER_TRACE;
+  /* FIXME: This instruction sets condition codes, so it can't be modelled as NOP.
   arminst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
   inst->setUsesFpCmp();
   return inst;
+  */
+  return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Floating point <-> fixed point conversions
@@ -151,9 +157,12 @@ arminst disas_fp_1src(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSeq
  */
 arminst disas_fp_compare(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
   DECODER_TRACE;
+  /* FIXME: This instruction sets condition codes, so it can't be modelled as NOP.
   arminst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
   inst->setUsesFpCmp();
   return inst;
+  */
+  return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Floating point data-processing (2 source)

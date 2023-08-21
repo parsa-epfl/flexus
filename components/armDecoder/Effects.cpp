@@ -460,7 +460,9 @@ Effect *annulNext(SemanticInstruction *inst) {
   return a;
 }
 
-BranchInteraction::BranchInteraction(VirtualMemoryAddress aTarget) : theTarget(aTarget) {
+BranchInteraction::BranchInteraction(VirtualMemoryAddress aTarget,
+                                     boost::intrusive_ptr<BPredState> aBPState)
+    : theTarget(aTarget), theBPState(aBPState) {
 }
 
 void BranchInteraction::operator()(boost::intrusive_ptr<nuArchARM::Instruction> anInstruction,
@@ -470,8 +472,10 @@ void BranchInteraction::operator()(boost::intrusive_ptr<nuArchARM::Instruction> 
     theTarget = anInstruction->pc() + 4;
   }
   if (anInstruction->pc() != theTarget) {
-    DBG_(Verb, (<< *anInstruction << " Branch Redirection."));
-    if (aCore.squashFrom(anInstruction)) {
+    DBG_(Iface, (<< *anInstruction << " Branch Redirection."));
+    if (aCore.squashFrom(anInstruction, theBPState)) {
+      DBG_(Iface, (<< " REQUESTING SQUASH: BPState was " << *theBPState << " to target " << std::hex
+                   << theTarget << std::dec));
       aCore.redirectFetch(theTarget);
     }
   }
@@ -481,8 +485,9 @@ void BranchInteraction::describe(std::ostream &anOstream) const {
   anOstream << "Branch to " << theTarget;
 }
 
-nuArchARM::Interaction *branchInteraction(VirtualMemoryAddress aTarget) {
-  return new BranchInteraction(aTarget);
+nuArchARM::Interaction *branchInteraction(VirtualMemoryAddress aTarget,
+                                          boost::intrusive_ptr<BPredState> aBPState) {
+  return new BranchInteraction(aTarget, aBPState);
 }
 
 struct BranchFeedbackEffect : public Effect {
@@ -526,6 +531,11 @@ struct BranchFeedbackWithOperandEffect : public Effect {
                  << " to " << target));
     feedback->theActualTarget = target;
     feedback->theBPState = anInstruction.bpState();
+    if (anInstruction.bpState()) {
+      anInstruction.bpState()->theActualType = theType;
+      anInstruction.bpState()->theActualDirection = theDirection;
+    }
+    anInstruction.setBranchFeedback(feedback);
     anInstruction.core()->branchFeedback(feedback);
     Effect::invoke(anInstruction);
   }
@@ -548,7 +558,17 @@ Effect *updateUnconditional(SemanticInstruction *inst, VirtualMemoryAddress aTar
   feedback->theActualDirection = kTaken;
   feedback->theActualTarget = aTarget;
   feedback->theBPState = inst->bpState();
+  if (inst->instCode() == codeBranchUnconditional) {
+    feedback->theActualType = kUnconditional;
+  } else if (inst->instCode() == codeRETURN) {
+    assert(0);
+    feedback->theActualType = kReturn;
+  }
   inst->setBranchFeedback(feedback);
+  if (inst->bpState()) {
+    inst->bpState()->theActualType = feedback->theActualType;
+    inst->bpState()->theActualDirection = kTaken;
+  }
   BranchFeedbackEffect *b = new BranchFeedbackEffect();
   inst->addNewComponent(b);
   return b;
@@ -562,14 +582,27 @@ Effect *updateNonBranch(SemanticInstruction *inst) {
   feedback->theActualTarget = VirtualMemoryAddress(0);
   feedback->theBPState = inst->bpState();
   inst->setBranchFeedback(feedback);
+  if (inst->bpState()) {
+    inst->bpState()->theActualType = kNonBranch;
+    inst->bpState()->theActualDirection = kNotTaken;
+  }
   BranchFeedbackEffect *b = new BranchFeedbackEffect();
   inst->addNewComponent(b);
   return b;
 }
 
 Effect *updateUnconditional(SemanticInstruction *inst, eOperandCode anOperandCode) {
+  if (inst->bpState()) {
+    inst->bpState()->theActualDirection = kTaken;
+    inst->bpState()->theActualType = kUnconditional;
+  }
+  eBranchType t = kUnconditional;
+  if (inst->originalInstCode() == codeRETURN) {
+    t = kReturn;
+    inst->bpState()->theActualType = kReturn;
+  }
   BranchFeedbackWithOperandEffect *b =
-      new BranchFeedbackWithOperandEffect(kUnconditional, kTaken, anOperandCode);
+      new BranchFeedbackWithOperandEffect(t, kTaken, anOperandCode);
   inst->addNewComponent(b);
   return b;
 }
@@ -582,6 +615,10 @@ Effect *updateCall(SemanticInstruction *inst, VirtualMemoryAddress aTarget) {
   feedback->theActualTarget = aTarget;
   feedback->theBPState = inst->bpState();
   inst->setBranchFeedback(feedback);
+  if (inst->bpState()) {
+    inst->bpState()->theActualType = kCall;
+    inst->bpState()->theActualDirection = kTaken;
+  }
   BranchFeedbackEffect *b = new BranchFeedbackEffect();
   inst->addNewComponent(b);
   return b;
@@ -596,8 +633,10 @@ Effect *updateIndirect(SemanticInstruction *inst, eOperandCode anOperandCode, eB
 
 struct BranchEffect : public Effect {
   VirtualMemoryAddress theTarget;
+  boost::intrusive_ptr<BPredState> theBPState;
   bool theHasTarget;
-  BranchEffect(VirtualMemoryAddress aTarget) : theTarget(aTarget), theHasTarget(true) {
+  BranchEffect(VirtualMemoryAddress aTarget, boost::intrusive_ptr<BPredState> aBPState)
+      : theTarget(aTarget), theBPState(aBPState), theHasTarget(true) {
   }
   BranchEffect() : theHasTarget(false) {
   }
@@ -612,7 +651,8 @@ struct BranchEffect : public Effect {
 
     anInstruction.redirectPC(theTarget);
     anInstruction.core()->applyToNext(boost::intrusive_ptr<nuArchARM::Instruction>(&anInstruction),
-                                      branchInteraction(theTarget));
+                                      branchInteraction(theTarget, theBPState));
+    DBG_(Iface, (<< "Instruction: " << anInstruction << "has BPState: " << theBPState));
     DBG_(Iface, (<< "BRANCH:  Must redirect to " << theTarget));
     Effect::invoke(anInstruction);
   }
@@ -631,7 +671,7 @@ struct BranchAfterNext : public Effect {
     FLEXUS_PROFILE();
     DBG_(VVerb, (<< anInstruction.identify() << " Branch after next instruction to " << theTarget));
     anInstruction.core()->applyToNext(boost::intrusive_ptr<nuArchARM::Instruction>(&anInstruction),
-                                      new BranchInteraction(theTarget));
+                                      new BranchInteraction(theTarget, anInstruction.bpState()));
     Effect::invoke(anInstruction);
   }
 
@@ -652,7 +692,7 @@ struct BranchAfterNextWithOperand : public Effect {
     DBG_(VVerb, (<< anInstruction.identify() << " Branch after next instruction to "
                  << theOperandCode << "(" << target << ")"));
     anInstruction.core()->applyToNext(boost::intrusive_ptr<nuArchARM::Instruction>(&anInstruction),
-                                      new BranchInteraction(target));
+                                      new BranchInteraction(target, anInstruction.bpState()));
     Effect::invoke(anInstruction);
   }
 
@@ -663,7 +703,11 @@ struct BranchAfterNextWithOperand : public Effect {
 };
 
 Effect *branch(SemanticInstruction *inst, VirtualMemoryAddress aTarget) {
-  BranchEffect *b = new BranchEffect(aTarget);
+  if (inst->bpState()) {
+    inst->bpState()->theActualType = kUnconditional;
+    inst->bpState()->theActualDirection = kTaken;
+  }
+  BranchEffect *b = new BranchEffect(aTarget, inst->bpState());
   inst->addNewComponent(b);
   return b;
 }
@@ -712,7 +756,7 @@ struct BranchConditionallyEffect : public Effect {
       DBG_(VVerb, (<< anInstruction << " conditional branch CC: " << cc << " TAKEN"));
       anInstruction.core()->applyToNext(
           boost::intrusive_ptr<nuArchARM::Instruction>(&anInstruction),
-          new BranchInteraction(theTarget));
+          new BranchInteraction(theTarget, anInstruction.bpState()));
 
       feedback->theActualDirection = kTaken;
 
@@ -727,9 +771,10 @@ struct BranchConditionallyEffect : public Effect {
       }
       anInstruction.core()->applyToNext(
           boost::intrusive_ptr<nuArchARM::Instruction>(&anInstruction),
-          new BranchInteraction(anInstruction.pc() + 8));
+          new BranchInteraction(anInstruction.pc() + 8, anInstruction.bpState()));
       feedback->theActualDirection = kNotTaken;
     }
+    anInstruction.setBranchFeedback(feedback);
     anInstruction.core()->branchFeedback(feedback);
     Effect::invoke(anInstruction);
   }
@@ -793,6 +838,7 @@ struct BranchRegConditionallyEffect : public Effect {
     //      anInstruction.pc() + 8 ) ); feedback->theActualDirection =
     //      kNotTaken;
     //    }
+    anInstruction.setBranchFeedback(feedback);
     anInstruction.core()->branchFeedback(feedback);
     Effect::invoke(anInstruction);
   }

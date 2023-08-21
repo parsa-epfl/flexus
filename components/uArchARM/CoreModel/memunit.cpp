@@ -77,7 +77,7 @@ bool mmuASI(int32_t asi) {
 
 bool interruptASI(int32_t asi) {
   switch (asi) {
-  case 0x48: // ASI_INTR_DISPATCH_STATUS
+  case 0x48: // ASI_INTR_dispatchStatus
   case 0x49: // ASI_INTR_RECEIVE
   case 0x77: // ASI_INTR_DATA_W
   case 0x7F: // ASI_INTR_DATA_R

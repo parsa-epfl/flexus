@@ -43,13 +43,13 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
 #include <components/BPWarm/BPWarm.hpp>
-
+#include <components/BPWarm/BPStat.hpp>
 #include <components/CommonQEMU/Slices/ArchitecturalInstruction.hpp>
+#include <components/CommonQEMU/BranchPredictor.hpp>
+#include <core/qemu/mai_api.hpp>
 
 #define FLEXUS_BEGIN_COMPONENT BPWarm
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
-
-#include <components/CommonQEMU/BranchPredictor.hpp>
 
 namespace nBPWarm {
 
@@ -64,50 +64,35 @@ class FLEXUS_COMPONENT(BPWarm) {
 
   std::unique_ptr<FastBranchPredictor> theBranchPredictor;
 
+  std::vector<std::vector<uint32_t>> theOpcode; // Rakesh
   std::vector<std::vector<VirtualMemoryAddress>> theFetchAddress;
   std::vector<std::vector<BPredState>> theFetchState;
   std::vector<std::vector<eBranchType>> theFetchType;
   std::vector<std::vector<bool>> theFetchAnnul;
   std::vector<bool> theOne;
 
+  // MARK: Added for FDIP/Boomerang
+  std::vector<VirtualMemoryAddress> theBBAddress;
+  std::vector<eBranchType> theLastBranch;
+
+  int latest_resolved_branch;
+  BPredState BBTBState;
+
+  struct BPFeedback {
+    VirtualMemoryAddress pc;
+    eBranchType theFetchType;
+    eDirection dir;
+    VirtualMemoryAddress target;
+    BPredState theFetchState;
+  } theBPFeedback[UNRESOLVED_BRANCH_ARRAY_SIZE];
+
+  BPWarm_stats *bStats;
+  Prefetcher *runAheadPrefetcher;
+  std::map<uint64_t, uint64_t> stats0;
+
   std::pair<eBranchType, bool> decode(uint32_t opcode) {
-#if FLEXUS_TARGET_IS(v9)
-    uint32_t op = opcode >> 30 & 3;
-    switch (op) {
-    case 0: {
-      uint32_t op2 = (opcode >> 22) & 0x7;
-      switch (op2) {
-      case 1:
-      case 2:
-      case 3:
-      case 5:
-      case 6:
-        if (opcode & 0x20000000) {
-          return std::make_pair(kConditional, true);
-        } else {
-          return std::make_pair(kConditional, false);
-        }
-      default:
-        return std::make_pair(kNonBranch, false);
-      }
-    }
-    case 1:
-      return std::make_pair(kUnconditional, false); // kCall
-    case 2: {
-      uint32_t op3 = (opcode >> 19) & 0x3F;
-      if (op3 == 0x38 /*jmpl*/ || op3 == 0x39 /*return*/) {
-        return std::make_pair(kUnconditional, false);
-      } else {
-        return std::make_pair(kNonBranch, false);
-      }
-    }
-    case 3: // No branches
-    default:
-      return std::make_pair(kNonBranch, false);
-    }
-#else
-    return std::make_pair(kNonBranch, false);
-#endif
+    std::pair<eBranchType, VirtualMemoryAddress> type_and_offset = targetDecode(opcode);
+    return std::make_pair(type_and_offset.first, false);
   }
 
   void doUpdate(VirtualMemoryAddress theActual, index_t anIndex) {
@@ -259,8 +244,7 @@ public:
   bool available(interface::ITraceInModern const &, index_t anIndex) {
     return true;
   }
-  void push(interface::ITraceInModern const &, index_t anIndex,
-            std::pair<uint64_t, std::pair<uint32_t, uint32_t>> &aPCAndTypeAndAnnulPair) {
+  void push(interface::ITraceInModern const &, index_t anIndex, BPMessage &incomingBPMsg) {
     bool anOne = theOne[anIndex];
 
     uint64_t aVirtualPC = aPCAndTypeAndAnnulPair.first;

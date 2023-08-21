@@ -1,0 +1,7 @@
+### Tasks to do before this can be merged to the master.
+- Run Boomerang successfully, not just FDIP.
+- Create KeenKraken.Boom which is the trace-mode version of FDIP/Boomerang.
+- Subclass BranchPredictor.cpp so that it can be instantiated as either TageBranchPredictor or GShareBranchPredictor.
+- Create new matching classes for all other headers/data structures (e.g., MemoryMessage, BranchFeedback) when Boomerang/FDIP is being used.
+- Update TAGE with LSC-TAGE which was re-implemented by hand, so we can put our license on it.
+- Scrape for all +8's in the code and remove them.

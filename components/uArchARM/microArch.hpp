@@ -64,13 +64,15 @@ namespace nuArchARM {
 using Flexus::SharedTypes::VirtualMemoryAddress;
 
 struct microArch {
-  static std::shared_ptr<microArch>
-  construct(uArchOptions_t options, std::function<void(eSquashCause)> squash,
-            std::function<void(VirtualMemoryAddress)> redirect,
-            std::function<void(int, int)> changeState,
-            std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback,
-            std::function<void(bool)> aStoreForwardingHitFunction,
-            std::function<void(int32_t)> mmuResyncFunction);
+  static std::shared_ptr<microArch> construct(
+      uArchOptions_t options, std::function<void(eSquashCause)> squash,
+      std::function<void(VirtualMemoryAddress)> redirect, std::function<void(int, int)> changeState,
+      std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback,
+      std::function<void(bool)> aStoreForwardingHitFunction,
+      std::function<void(boost::intrusive_ptr<BPredState>)> squashBranch,
+      std::function<void(boost::intrusive_ptr<TrapState>)> sendTrapState,
+      std::function<void(std::list<boost::intrusive_ptr<BPredState>>)> reconstructRAS,
+      std::function<void(RetireNotice &)> retirecb, std::function<void(int32_t)> mmuResyncFunction);
 
   virtual int32_t availableROB() = 0;
   virtual const uint32_t core() const = 0;

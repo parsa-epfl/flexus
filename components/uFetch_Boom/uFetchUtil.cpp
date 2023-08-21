@@ -42,33 +42,41 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
+#include <iostream>
+#include <components/uFetch/uFetchTypes.hpp>
 
-#ifndef FLEXUS_armDECODER_INTERACTIONS_HPP_INCLUDED
-#define FLEXUS_armDECODER_INTERACTIONS_HPP_INCLUDED
+namespace Flexus {
+namespace SharedTypes {
 
-#include "armInstruction.hpp"
+std::ostream &operator<<(std::ostream &os, const BPredState &s) {
+  os << "BPredState: { "
+     << " [pc: " << std::hex << s.pc << std::dec << "]"
+     << " [thePredictedType: " << s.thePredictedType << "]"
+     << " [thePredictedTarget: " << s.thePredictedTarget << "]"
+     << " [theNextPredictedTarget: " << s.theNextPredictedTarget << "]"
+     << " [thePrediction: " << s.thePrediction << "]"
+     << " [theBimodalPrediction: " << s.theBimodalPrediction << "]"
+     << " [theMetaPrediction: " << s.theMetaPrediction << "]"
+     << " [theGSharePrediction: " << s.theGSharePrediction << "]"
+     << " [theActualDirection: " << s.theActualDirection << "]"
+     << " [theActualType: " << s.theActualType << "]"
+     << " }" << std::endl;
+  return os;
+}
 
-namespace narmDecoder {
+std::ostream &operator<<(std::ostream &os, const BranchFeedback &f) {
+  os << "BranchFeedback: { "
+     << "[thePC: " << std::hex << f.thePC << std::dec << "]"
+     << "[theActualType: " << f.theActualType << "]"
+     << "[theActualDirection: " << f.theActualDirection << "]"
+     << "[theBPDirection: " << f.theBPDirection << "]"
+     << "[branchResolution: " << f.branchResolution << "]"
+     << "[theActualTarget: " << std::hex << f.theActualTarget << std::dec << "]"
+     << "[theBBSize: " << f.theBBsize << "]"
+     << "[theBPState: " << *(f.theBPState) << "]"
+     << " }" << std::endl;
+  return os;
+}
 
-using Flexus::SharedTypes::VirtualMemoryAddress;
-
-struct BranchInteraction : public nuArchARM::Interaction {
-  VirtualMemoryAddress theTarget;
-  boost::intrusive_ptr<BPredState> theBPState;
-  BranchInteraction(VirtualMemoryAddress aTarget, boost::intrusive_ptr<BPredState> theBPState);
-  void operator()(boost::intrusive_ptr<nuArchARM::Instruction> anInstruction,
-                  nuArchARM::uArchARM &aCore);
-  void describe(std::ostream &anOstream) const;
-  //  boost::optional< uint64_t> npc() {
-  //    return boost::optional<uint64_t>(theTarget);
-  //  }
-};
-
-nuArchARM::Interaction *reinstateInstructionInteraction();
-nuArchARM::Interaction *annulInstructionInteraction();
-nuArchARM::Interaction *branchInteraction(VirtualMemoryAddress aTarget,
-                                          boost::intrusive_ptr<BPredState> aBPState);
-
-} // namespace narmDecoder
-
-#endif // FLEXUS_armDECODER_INTERACTIONS_HPP_INCLUDED
+} // namespace SharedTypes
+} // namespace Flexus
