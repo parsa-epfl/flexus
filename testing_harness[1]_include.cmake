@@ -1,0 +1,5 @@
+if(EXISTS "/home/ninadjangle/Projects/qflex/flexus/testing_harness[1]_tests.cmake")
+  include("/home/ninadjangle/Projects/qflex/flexus/testing_harness[1]_tests.cmake")
+else()
+  add_test(testing_harness_NOT_BUILT testing_harness_NOT_BUILT)
+endif()
