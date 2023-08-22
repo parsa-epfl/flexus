@@ -246,7 +246,7 @@ public:
   void push(interface::ITraceInModern const &, index_t anIndex, BPMessage &incomingBPMsg) {
     bool anOne = theOne[anIndex];
 
-    uint64_t aVirtualPC = aPCAndTypeAndAnnulPair.first;
+    uint64_t aVirtualPC = incomingBPMsg.pc;
     std::pair<eBranchType, bool> aTypeAndAnnulPair =
         std::pair<eBranchType, bool>((eBranchType)aPCAndTypeAndAnnulPair.second.first,
                                      (bool)aPCAndTypeAndAnnulPair.second.second);
@@ -257,9 +257,9 @@ public:
     theOne[anIndex] = !theOne[anIndex];
     anOne = theOne[anIndex];
 
-    eBranchType aFetchType;
-    bool aFetchAnnul;
-    std::tie(aFetchType, aFetchAnnul) = aTypeAndAnnulPair;
+    eBranchType aFetchType = (eBranchType) aPCAndTypeAndAnnulPair.second.first;
+    bool aFetchAnnul = aPCAndTypeAndAnnulPair.second.second;
+    //std::tie(aFetchType, aFetchAnnul) = aTypeAndAnnulPair;
     theFetchType[anIndex][anOne] = aFetchType;
     theFetchAnnul[anIndex][anOne] = aFetchAnnul;
 
