@@ -87,7 +87,6 @@ class FLEXUS_COMPONENT(BPWarm) {
   } theBPFeedback[UNRESOLVED_BRANCH_ARRAY_SIZE];
 
   BPWarm_stats *bStats;
-  Prefetcher *runAheadPrefetcher;
   std::map<uint64_t, uint64_t> stats0;
 
   std::pair<eBranchType, bool> decode(uint32_t opcode) {

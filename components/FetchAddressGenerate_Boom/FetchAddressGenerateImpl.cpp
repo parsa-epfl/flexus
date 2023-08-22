@@ -287,7 +287,7 @@ public:
     BTBMissFetchBlocks.clear();
 
     //	    if (aReason == kBranchMispredict && squashedBPState->thePredictedType == kNonBranch &&
-    //(squashedBPState->theActualType == kCall || squashedBPState->theActualType == kJmplCall)) {
+    //(squashedBPState->theActualType == kCall || squashedBPState->theActualType == kIndirectCall)) {
     //	    	DBG_Assert( squashedBPState->theActualDirection != kStronglyTaken, ( <<
     //"theActualDirection not updated.  Cannot be kStronglyTaken" ) ); 	    	DBG_( Tmp, ( <<
     //"pushing to RAS " << squashedBPState->pc + 8));
@@ -521,13 +521,13 @@ private:
                                     target = vpc;
                                     target += aPair.second;
                                 }
-                            } /*else if (branchType == kJmpl || branchType == kJmplCall) {
+                            } /*else if (branchType == kIndirectReg || branchType == kIndirectCall) {
                                 theBTBMissCyclesLeft[anIndex] = 2;
                                 }*/
                             //UPdate BTB
 
                             bool specialCall = false;
-                            if (branchType == kCall || branchType == kJmplCall) { //If the next instruction restores the register window, it is a special call
+                            if (branchType == kCall || branchType == kIndirectCall) { //If the next instruction restores the register window, it is a special call
                                 specialCall = trackSpecialCall(vpc + 4);
                             }
                             //    				  DBG_(Tmp, ( << "Target " << target ));
@@ -1066,7 +1066,7 @@ private:
                     }
                     }
                     }
-                    } else if (faddr.theBPState->thePredictedType == kCall || faddr.theBPState->thePredictedType == kJmplCall) {
+                    } else if (faddr.theBPState->thePredictedType == kCall || faddr.theBPState->thePredictedType == kIndirectCall) {
                     recordedMisses->theMisses.push_back(VirtualMemoryAddress(0x01001300));
                     recordedMisses->theMisses.push_back(VirtualMemoryAddress(0x01001340));
                     } else if (faddr.theBPState->thePredictedType == kReturn) {

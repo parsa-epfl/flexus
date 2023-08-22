@@ -221,7 +221,7 @@ public:
     theMemoryMessage.tl() = 0;
 
     uint32_t opcode;
-    API::qemu_callbacks.QEMU_read_phys_memory((uint8_t *)&opcode, mem_trans->s.physical_address, 4)
+    API::qemu_callbacks.QEMU_read_phys_memory((uint8_t *)& opcode, mem_trans->s.physical_address, 4);
     IS_PRIV(mem_trans) ? theOSStats->theFetches++ : theUserStats->theFetches++;
     theBothStats->theFetches++;
 

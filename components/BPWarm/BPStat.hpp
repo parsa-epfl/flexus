@@ -206,9 +206,9 @@ struct BPWarm_stats {
     }
 
     std::pair<eBranchType, VirtualMemoryAddress> aPair = targetDecode(anOpcode);
-    int64_t disp_decoded = abs(aPair.second);
+    int64_t disp_decoded = abs((int64_t) aPair.second);
     int64_t disp = disp_decoded;
-    int64_t target = (int64_t)anAddress + (disp_decoded << 2);
+    int64_t target = (int64_t) anAddress + (disp_decoded << 2);
     //      DBG_( Tmp, ( << " disp: " << std::hex << disp << " target " << target));
     if (aPair.first != anActualType) {
       DBG_(Tmp, (<< " actualType: " << anActualType << " decoded type " << aPair.first));
@@ -282,18 +282,18 @@ struct BPWarm_stats {
     case kCall:
       (*CallOffset[numBitsRequired])++;
       break;
-    case kJmplCall:
+    case kIndirectCall:
       (*ICallOffset[numBitsRequired])++;
       break;
     case kReturn:
       (*ReturnOffset[numBitsRequired])++;
       break;
-    case kJmpl:
+    case kIndirectReg:
       (*IBranchOffset[numBitsRequired])++;
       break;
     default:
       (*OtherOffset[numBitsRequired])++;
-      assert(anActualType == kRetry || anActualType == kDone);
+      assert(anActualType == kNonBranch);
       break;
     }
   }
@@ -422,7 +422,7 @@ struct BPWarm_stats {
       }
       break;
     case kCall:
-    case kJmplCall:
+    // case kIndirectCall: // Not supported anymore
       if (branch_resolve.is_pred_correct) {
         if (branch_resolve.is_direction_correct) {
           if (branch_resolve.is_target_correct) {
@@ -455,7 +455,8 @@ struct BPWarm_stats {
         //    << anIndex << "] Call Miss: backward"));
       }
       break;
-    case kJmpl:
+    
+    case kIndirectReg:
       if (branch_resolve.is_pred_correct) {
         if (branch_resolve.is_direction_correct) {
           if (branch_resolve.is_target_correct) {
@@ -496,6 +497,7 @@ struct BPWarm_stats {
       }
       return IndirectBranchMisses;
       break;
+    // */ 
     case kReturn:
       if (branch_resolve.is_pred_correct) {
         if (branch_resolve.is_direction_correct) {
