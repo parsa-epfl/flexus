@@ -116,8 +116,8 @@ public:
         [this](int32_t x, MemoryMessage &y) {
           this->toL1D(x, y);
         }, // std::bind( &DecoupledFeederComponent::toL1D, this, _1, _2)
-        [this](int32_t x, MemoryMessage &y, uint32_t opc) {
-          this->modernToL1I(x, y, opc);
+        [this](int32_t x, MemoryMessage &y) {
+          this->modernToL1I(x, y);
         }, // std::bind( &DecoupledFeederComponent::modernToL1I, this, _1, _2)
         [this](MemoryMessage &x) {
           this->toDMA(x);
@@ -225,15 +225,8 @@ public:
   void toDMA(MemoryMessage &aMessage) {
     FLEXUS_CHANNEL(ToDMA) << aMessage;
   }
-  /*
-  void toL1I(int32_t anIndex, MemoryMessage & aMessage, uint32_t anOpcode) {
-    FLEXUS_CHANNEL_ARRAY( ToL1I, anIndex ) << aMessage;
-    theFetchInfo.first = aMessage.pc();
-    theFetchInfo.second = anOpcode;
-    FLEXUS_CHANNEL_ARRAY( ToBPred, anIndex ) << theFetchInfo;
-  }
-  */
-  void modernToL1I(int32_t anIndex, MemoryMessage &aMessage, uint32_t anOpcode) {
+
+  void modernToL1I(int32_t anIndex, MemoryMessage &aMessage) {
     TranslationPtr tr(new Translation);
     tr->setInstr();
     tr->theVaddr = aMessage.pc();
@@ -261,13 +254,7 @@ public:
       aMessage.isPriv() ? os_itlb_stats[anIndex]->theMiss++ : user_itlb_stats[anIndex]->theMiss++;
 
     FLEXUS_CHANNEL_ARRAY(ToL1I, anIndex) << aMessage;
-
-    BPMessage toSendToBP;
-    toSendToBP.pc = aMessage.pc();
-    toSendToBP.opcode = anOpcode;
-    toSendToBP.timeStamp = aMessage.timeStamp();
-
-    FLEXUS_CHANNEL_ARRAY(ToBPred, anIndex) << toSendToBP;
+    FLEXUS_CHANNEL_ARRAY(ToBPred, anIndex) << aMessage;
   }
   void updateInstructionCounts() {
     // Count instructions

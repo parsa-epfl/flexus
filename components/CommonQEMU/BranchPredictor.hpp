@@ -88,6 +88,7 @@ struct FastBranchPredictor {
   static FastBranchPredictor *combining(std::string const &aName, uint32_t anIndex,
                                         uint32_t aBTBSets, uint32_t aBTBWays);
   // virtual void feedback( BranchFeedback const & aFeedback) = 0;
+  virtual void increaseInstCount(void) = 0;
   virtual void predict(VirtualMemoryAddress anAddress, BPredState &aBPState) = 0;
   virtual void runahead_predict(VirtualMemoryAddress anAddress, BPredState &aBPState) = 0;
   virtual void reset_runahead_history() = 0;

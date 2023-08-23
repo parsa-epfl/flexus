@@ -206,7 +206,9 @@ public:
     instr_num++;
     const int32_t k_no_stall = 0;
     theMemoryMessage.address() = PhysicalMemoryAddress(mem_trans->s.physical_address);
-    theMemoryMessage.pc() = VirtualMemoryAddress(mem_trans->s.logical_address);
+    theMemoryMessage.pc() = VirtualMemoryAddress(mem_trans->s.pc);
+    theMemoryMessage.targetpc() = VirtualMemoryAddress(mem_trans->s.logical_address);
+    theMemoryMessage.opcode() = mem_trans->s.opcode;
     theMemoryMessage.type() = MemoryMessage::FetchReq;
     theMemoryMessage.priv() = IS_PRIV(mem_trans);
     theMemoryMessage.reqSize() = 4;
@@ -220,15 +222,13 @@ public:
 
     theMemoryMessage.tl() = 0;
 
-    uint32_t opcode;
-    API::qemu_callbacks.QEMU_read_phys_memory((uint8_t *)& opcode, mem_trans->s.physical_address, 4);
     IS_PRIV(mem_trans) ? theOSStats->theFetches++ : theUserStats->theFetches++;
     theBothStats->theFetches++;
 
     // TODO FIXME
-    DBG_(VVerb, (<< "sending fetch[" << theIndex << "] op: " << opcode
+    DBG_(VVerb, (<< "sending fetch[" << theIndex << "] op: " << theMemoryMessage.opcode()
                  << " message: " << theMemoryMessage));
-    toL1I(theIndex, theMemoryMessage, opcode);
+    toL1I(theIndex, theMemoryMessage);
     return k_no_stall; // Never stalls
   }
 

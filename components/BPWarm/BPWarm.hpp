@@ -53,6 +53,7 @@
 #include FLEXUS_BEGIN_COMPONENT_DECLARATION()
 
 #include <components/CommonQEMU/Transports/InstructionTransport.hpp>
+#include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 
 COMPONENT_PARAMETERS(
   PARAMETER( Cores, int, "Number of cores", "cores", 1 )
@@ -66,11 +67,7 @@ typedef std::pair< uint64_t, uint32_t> ulong_pair;
 namespace Stat = Flexus::Stat;
 
 COMPONENT_INTERFACE(
-  DYNAMIC_PORT_ARRAY( PushInput, InstructionTransport, InsnIn )
-  DYNAMIC_PORT_ARRAY( PushOutput, InstructionTransport, InsnOut )
-  DYNAMIC_PORT_ARRAY( PushInput, ulong_pair, ITraceIn )
-  DYNAMIC_PORT_ARRAY( PushInput, BPMessage, ITraceInModern )
-
+  DYNAMIC_PORT_ARRAY( PushInput, MemoryMessage, ITraceInModern )
   // MARK: Added for boomerang port 
   DYNAMIC_PORT_ARRAY( PushInput, MemoryMessage, InsnMissIn )
   PORT( PushOutput, ulong_pair, ResetPrefetcherOut )

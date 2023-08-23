@@ -303,6 +303,14 @@ struct BranchFeedback : boost::counted_base {
 };
 std::ostream &operator<<(std::ostream &anOstream, const BranchFeedback &aBPState);
 
+struct BranchPredictorReq : boost::counted_base {
+  VirtualMemoryAddress thePC;
+  eBranchType theActualType;
+  eDirection theActualDirection;
+  VirtualMemoryAddress theActualTarget;
+};
+
+
 typedef uint32_t Opcode;
 
 struct FetchedOpcode {

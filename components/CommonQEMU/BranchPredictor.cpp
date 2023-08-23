@@ -1763,6 +1763,12 @@ struct FastCombiningImpl : public FastBranchPredictor {
   Stat::StatCounter theTrueNonBranches;
   Stat::StatCounter theFalseNegReturns;
 
+  Stat::StatCounter BTBMisses;
+  Stat::StatCounter BTBHits;
+  Stat::StatCounter theInstructions;
+  Stat::StatCounter BTBSkips;
+
+
   FastCombiningImpl(std::string const &aName, uint32_t anIndex)
       : theName(aName), theIndex(anIndex), theSerial(0), theBTB(512, 4), theBimodal(16384),
         theMeta(16384), theGShare(14), theRASHelper(512, 4), theBB_BTB(512, 4),
@@ -1797,10 +1803,11 @@ struct FastCombiningImpl : public FastBranchPredictor {
         theFalsePosBranches(aName + "-mispredict:falsePos"),
         theTrueBranches(aName + "-correct:trueBranches"),
         theTrueNonBranches(aName + "-correct:trueNonBranches"),
-        theFalseNegReturns(aName + "-mispredict:falseNegReturns") {
-    branhces = 0;
-    correct = 0;
-    mispredict = 0;
+        theFalseNegReturns(aName + "-mispredict:falseNegReturns"),
+        BTBMisses(aName + "-btb:misses"),
+        BTBHits(aName + "-btb:hits"),
+        theInstructions(aName + "-instructions"),
+        BTBSkips(aName + "-btb:skips") {
   }
 
   FastCombiningImpl(std::string const &aName, uint32_t anIndex, uint32_t aNumBTBSets,
@@ -1838,10 +1845,15 @@ struct FastCombiningImpl : public FastBranchPredictor {
         theFalsePosBranches(aName + "-mispredict:falsePos"),
         theTrueBranches(aName + "-correct:trueBranches"),
         theTrueNonBranches(aName + "-correct:trueNonBranches"),
-        theFalseNegReturns(aName + "-mispredict:falseNegReturns") {
-    branhces = 0;
-    correct = 0;
-    mispredict = 0;
+        theFalseNegReturns(aName + "-mispredict:falseNegReturns"),
+        BTBMisses(aName + "-btb:misses"),
+        BTBHits(aName + "-btb:hits"),
+        theInstructions(aName + "-instructions"),
+        BTBSkips(aName + "-btb:skips") {
+  }
+
+  void increaseInstCount(void) {
+    theInstructions++;
   }
 
   // trace
@@ -2306,6 +2318,26 @@ struct FastCombiningImpl : public FastBranchPredictor {
       theTage.update_history(aBPState, true, aBPState.pc);
     }
   }
+
+  void feedback(VirtualMemoryAddress anAddress, eBranchType anActualType,
+                eDirection anActualDirection, VirtualMemoryAddress anActualTarget,
+                BPredState &aBPState) {
+    stats(anAddress, anActualType, anActualDirection, anActualTarget, aBPState);
+    std::cout << "A feedback for a: " << anAddress << " t: " << anActualType << " d: " << anActualDirection << " tg: " << anActualTarget << "\n";
+    bool is_new = true;
+    if(anActualDirection == kTaken){
+      bool is_new = theBTB.update(anAddress, anActualType, anActualTarget);
+      switch (is_new) {
+      case true:
+        BTBMisses++;
+        break;
+      case false:
+        BTBHits++;
+        break;
+      }
+    }else{
+      BTBSkips++;
+    }
 
   void updateBB_BTB(VirtualMemoryAddress anAddress, eBranchType anActualType,
                     eDirection anActualDirection, VirtualMemoryAddress anActualTarget,
