@@ -79,6 +79,6 @@ TEST_F(MemoryLoopbackTestFixture, DelayConfiguration)
 	
 	// Check whether the DUT replied
 	ASSERT_EQ( calledPush, true ) << "DUT didn't reply. Failed!";
-	ASSERT_EQ( gotLoadReply, true) << "DUT replied with wring message. Failed!";
+	ASSERT_EQ( gotLoadReply, true) << "DUT replied with wrong message. Failed!";
 
 }

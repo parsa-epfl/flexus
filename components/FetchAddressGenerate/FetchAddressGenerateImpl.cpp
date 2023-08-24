@@ -111,7 +111,7 @@ public:
     }
     theCurrentThread = cfg.Threads;
     theBranchPredictor.reset(
-        BranchPredictor::combining(statName(), flexusIndex(), cfg.BTBSets, cfg.BTBWays));
+        BranchPredictor::combining(statName(), flexusIndex(),cfg.EnableRAS, cfg.EnableTCE, cfg.EnableTrapRet, cfg.BTBSets, cfg.BTBWays));
   }
 
   void finalize() {
@@ -155,7 +155,7 @@ public:
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(BranchFeedbackIn);
   void push(interface::BranchFeedbackIn const &, index_t anIndex,
             boost::intrusive_ptr<BranchFeedback> &aFeedback) {
-    theBranchPredictor->feedback(*aFeedback);
+    theBranchPredictor->feedback(*aFeedback,flexusIndex());
   }
 
   // Drive Interfaces
@@ -221,7 +221,7 @@ private:
       FetchAddr faddr(thePC[anIndex]);
 
       // Advance the PC
-      if (theBranchPredictor->isBranch(faddr.theAddress)) {
+      if (theBranchPredictor->isBranch(faddr)) {
         AGU_DBG("Predicting a Branch");
         if (max_predicts == 0) {
           AGU_DBG("Config set the max prediction to zero, so no prediction");

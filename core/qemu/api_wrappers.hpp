@@ -48,7 +48,11 @@
 namespace Flexus {
 namespace Qemu {
 namespace API {
+#ifdef FLEXUS_TESTBENCH
+#include <core/qemu/qflex-api-test-dummy.hpp>
+#else
 #include <core/qemu/qflex-api.h>
+#endif
 } // namespace API
 } // namespace Qemu
 } // namespace Flexus

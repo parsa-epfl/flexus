@@ -1,4 +1,4 @@
-#include <iostream>
+ #include <iostream>
 #include <gtest/gtest.h>
 
 // To connect to PushOutput port of a component, create two functions: available and manipulate, and register them in the JumpTable

@@ -510,7 +510,7 @@ struct CombiningImpl : public BranchPredictor {
   uint32_t theIndex;
   uint32_t theSerial;
 
-  bool enableRAS;
+  bool enableRAS;       // RAS: Return Address Stack
   bool enableTCE;       // TCE: Tail Call Elimination
   bool redirectTrapRet; // Redirect fetch on a trap return
 

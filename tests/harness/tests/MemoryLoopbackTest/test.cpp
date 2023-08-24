@@ -5,6 +5,7 @@
 
 // Create fixture for testing the DUT
 class MemoryLoopbackTestFixture : public testing::Test {
+  
   static MemoryMapConfiguration_struct *aMMCfg;      // A dummy configuration
   static MemoryMapJumpTable *aMMJumpTable;           // A dummy jump table
   static nMemoryMap::MemoryMapComponent *aMemoryMap; // A dummy MemoryMap
@@ -48,3 +49,6 @@ nMemoryMap::MemoryMapComponent *MemoryLoopbackTestFixture::aMemoryMap =
 #include "maxRequestsTest.h"
 #include "useFetchReplyTest.h"
 #include "correctMessageTypeTest.h"
+#include "ninad_maxReq.h"
+#include "ninad_MixedRequestResponse.h"
+#include "ninad_MaxQueuedRequests.h"

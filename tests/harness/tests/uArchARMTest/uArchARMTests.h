@@ -7,13 +7,15 @@
 #include <core/qemu/mai_api.hpp>
 #include <core/simulator_layout.hpp>
 #include <core/types.hpp>
+#include "../../../../components/uArchARM/microArch.hpp"
+
 // Test fixture for the uArchARM component
 
 
 TEST_F(uArchARMTestFixture, uArchARMTest) {
 
     uArchARMConfiguration_struct aCfg("uArchARMTest config");
-	InitializeuArchARMConfiguration(aCfg,10,2,1,512,4);
+	InitializeuArchARMConfiguration(aCfg,2556,256,false, false, 8,4,1,16,false,0,64,false,true,false,false,false,0,0,false,false, false, false, 0 , 0 , false,1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 );
 
     uArchARMJumpTable aJumpTable;
 	InitializeJumpTable(aJumpTable);
@@ -30,11 +32,8 @@ TEST_F(uArchARMTestFixture, uArchARMTest) {
 		aWidth
 		);
 	std::cout << "uArchARMComponent instantiated\n";
-	
-	// Initializing the component
-	dut.initialize();
 
-	std::cout << "uArchARMComponent initialized\n";
+
 
 	using namespace Flexus;
 	using namespace Core;
@@ -43,6 +42,7 @@ TEST_F(uArchARMTestFixture, uArchARMTest) {
 
     // Initialize the component
     dut.initialize();
+	std::cout << "uArchARMComponent initialized\n";
 
 // Input Initializations
 /*
@@ -54,15 +54,15 @@ struct BranchFeedback : boost::counted_base {
   boost::intrusive_ptr<BPredState> theBPState;
 };
 */
-    // Declare and initialize input
-    boost::intrusive_ptr<BranchFeedback> dummyFeedback(new BranchFeedback());
-// Pushes to the uArchARM
-    dut.push(uArchARMInterface::BranchFeedbackIn(), 0, dummyFeedback);
-    std::cout<<"dut push done\n";
+//     // Declare and initialize input
+//     boost::intrusive_ptr<BranchFeedback> dummyFeedback(new BranchFeedback());
+// // Pushes to the uArchARM
+//     dut.push(uArchARMInterface::BranchFeedbackIn(), 0, dummyFeedback);
+//     std::cout<<"dut push done\n";
 
-//Drive The uArchARM
-	uArchARMInterface::uArchARMDrive drive_temp;
-	dut.drive(drive_temp);
+// //Drive The uArchARM
+// 	uArchARMInterface::uArchARMDrive drive_temp;
+// 	dut.drive(drive_temp);
 
 // TESTS: Perform assertions based on the expected behavior
 

@@ -106,7 +106,7 @@ if(NOT SIMULATOR STREQUAL "Harness")        # Setup for "real" simulators
         COMMAND echo "All cleared."
     )
     
-    # Add subdirectory for stat manager
+    # Add subdirectory for stat manager_SOURCE
     add_subdirectory(stat-manager)
 
 else()      # Setup for Harness
@@ -146,10 +146,14 @@ else()      # Setup for Harness
         add_library(${COMPONENT} STATIC ${COMPONENT_${COMPONENT}_SOURCE})
         target_compile_options(${COMPONENT} PRIVATE -c ${GCC_FLAGS})
     endforeach()
-    
+
     # compile wiring
     add_library(wiring OBJECT ${HARNESS_ROOT}/harness_base/wiring.cpp)
     target_compile_options(wiring PRIVATE -c ${GCC_FLAGS})
+    
+    # compile DummyQEMU
+    add_library(DummyQEMU "${HARNESS_ROOT}/tests/DummyQemu.cpp")
+    include_directories("${HARNESS_ROOT}/tests/")
     
     # compile tests
     set(ENABLED_TESTS "")
@@ -165,6 +169,7 @@ else()      # Setup for Harness
             add_library(${TEST_DIR} STATIC ${TEST_${TEST_DIR}_SOURCE})    # Create a target library for the test
             target_compile_options(${TEST_DIR} PRIVATE -c ${GCC_FLAGS})
             target_link_libraries(${TEST_DIR} ${GCC_LDFLAGS} "-Wl,--whole-archive" ${REQUIRED_COMPONENTS} "-Wl,--no-whole-archive")
+            target_link_libraries(${TEST_DIR} DummyQEMU)
             target_link_libraries(${TEST_DIR} gtest)
             list(APPEND ENABLED_TESTS ${TEST_DIR})
             message(STATUS "Found test: ${TEST_DIR}")

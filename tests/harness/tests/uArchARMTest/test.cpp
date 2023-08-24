@@ -5,7 +5,6 @@
 #include <core/qemu/api_wrappers.hpp>
 #include <core/qemu/mai_api.hpp>
 #include <DummyQemu.h>
-
 class uArchARMTestFixture : public testing::Test {
 public: 
   static TranslationPtr payload;
@@ -24,7 +23,7 @@ public:
   uint32_t IntDivOpPipelineResetTime, uint32_t NumFpAlu, uint32_t FpAddOpLatency, uint32_t FpAddOpPipelineResetTime,
   uint32_t FpCmpOpLatency, uint32_t FpCmpOpPipelineResetTime, uint32_t FpCvtOpLatency, uint32_t FpCvtOpPipelineResetTime,
   uint32_t NumFpMult, uint32_t FpMultOpLatency, uint32_t FpMultOpPipelineResetTime, uint32_t FpDivOpLatency,
-  uint32_t FpDivOpPipelineResetTime, uint32_t FpSqrtOpLatency, uint32_t OnChipLatency, bool CollectWorkTrace) {
+  uint32_t FpDivOpPipelineResetTime, uint32_t FpSqrtOpLatency, uint32_t FpSqrtOpPipelineResetTime) {
     aCfg.ROBSize = ROBSize;
     aCfg.SBSize = SBSize;
     aCfg.NAWBypassSB = NAWBypassSB;
@@ -83,8 +82,7 @@ public:
     
     aCfg.FpDivOpPipelineResetTime = FpDivOpPipelineResetTime;
     aCfg.FpSqrtOpLatency = FpSqrtOpLatency;
-    aCfg.OnChipLatency = OnChipLatency;
-    aCfg.CollectWorkTrace = CollectWorkTrace;
+    aCfg.FpSqrtOpPipelineResetTime = FpSqrtOpPipelineResetTime;
     std::cout << "uArchARMConfiguration_struct defined\n";
   }
 
@@ -135,7 +133,7 @@ public:
         return true;
     }
 
-    static void func_wire_manip_SquashOut(Flexus::Core::index_t idx, int& p) {
+    static void func_wire_manip_SquashOut(Flexus::Core::index_t idx, eSquashCause& p) {
         std::cout << "wire_manip_SquashOut called \n";
     }
 
@@ -144,7 +142,7 @@ public:
         return true;
     }
 
-    static void func_wire_manip_ResyncOut(Flexus::Core::index_t idx, bool& p) {
+    static void func_wire_manip_ResyncOut(Flexus::Core::index_t idx, int& p) {
         std::cout << "wire_manip_ResyncOut called with DTR\n";
     }
 
@@ -153,7 +151,7 @@ public:
         return true;
     }
 
-    static void func_wire_manip_ChangeCPUState(Flexus::Core::index_t idx, pFetchBundle& p) {
+    static void func_wire_manip_ChangeCPUState(Flexus::Core::index_t idx, CPUState& p) {
         std::cout << "wire_manip_ChangeCPUState \n";
 	}
 
@@ -162,7 +160,7 @@ public:
         return true;
     }
 
-    static void func_wire_manip_RedirectOut(Flexus::Core::index_t idx, TranslationPtr& p) {
+    static void func_wire_manip_RedirectOut(Flexus::Core::index_t idx, Flexus::SharedTypes::VirtualMemoryAddress& p) {
         std::cout << "wire_manip_RedirectOut called with RO\n";
     }
 
@@ -171,7 +169,7 @@ public:
         return true;
     }
 
-    static void func_wire_manip_BranchFeedbackOut(Flexus::Core::index_t idx, bool& p) {
+    static void func_wire_manip_BranchFeedbackOut(Flexus::Core::index_t idx, boost::intrusive_ptr<BranchFeedback>& p) {
         std::cout << "wire_manip_BranchFeedbackOut called with ITR\n";
     }        
         // std::cout << p->thePaddr  << "\n";
@@ -182,7 +180,7 @@ public:
         return true;
     }
 
-    static void func_wire_manip_StoreForwardingHitSeen(Flexus::Core::index_t idx, MemoryTransport& p) {
+    static void func_wire_manip_StoreForwardingHitSeen(Flexus::Core::index_t idx, bool& p) {
         std::cout << "wire_manip_StoreForwardingHitSeen called with DTR\n";
     }
 
@@ -191,7 +189,7 @@ public:
         return true;
     }
 
-    static void func_wire_manip_dTranslationOut(Flexus::Core::index_t idx, MemoryTransport& p) {
+    static void func_wire_manip_dTranslationOut(Flexus::Core::index_t idx, TranslationPtr& p) {
         std::cout << "wire_manip_dTranslationOut called with MRO\n";
 		// Assertion to check the payload value is one of the permissible values
         

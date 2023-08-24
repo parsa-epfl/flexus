@@ -187,8 +187,8 @@ private:
       return theTLB.size();
     }
 
-  private:
-    void evict() {
+private:
+  void evict() {
       auto res = theTLB.begin();
       for (auto iter = theTLB.begin(); iter != theTLB.end(); ++iter) {
         if (iter->second.theRate > res->second.theRate) {
@@ -202,6 +202,17 @@ private:
     std::unordered_map<VirtualMemoryAddress, TLBentry> theTLB;
     typedef std::unordered_map<VirtualMemoryAddress, TLBentry>::iterator tlbIterator;
   };
+
+  void setupMMU(int anIndex) {
+    theMMU.reset(new mmu_t());
+    theMMU->initRegsFromQEMUObject(getMMURegsFromQEMU(anIndex));
+    theMMU->setupAddressSpaceSizesAndGranules();
+    DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
+    DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
+    PAGEMASK = ~((1 << theMMU->Gran0->getlogKBSize()) - 1);
+    thePageWalker->setMMU(theMMU);
+    theMMUInitialized = true;
+  }
 
   std::unique_ptr<PageWalk> thePageWalker;
   TLB theInstrTLB;
@@ -436,15 +447,7 @@ public:
     static bool optimize = false;
     theMMUInitialized = optimize;
 
-    if (!theMMUInitialized) {
-      theMMU.reset(new mmu_t());
-      theMMUInitialized = true;
-    }
-    theMMU->initRegsFromQEMUObject(getMMURegsFromQEMU(anIndex));
-    theMMU->setupAddressSpaceSizesAndGranules();
-    DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
-    DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
-    PAGEMASK = ~((1 << theMMU->Gran0->getlogKBSize()) - 1);
+    setupMMU(anIndex);
     if (thePageWalker) {
       DBG_(VVerb, (<< "Annulling all PW entries"));
       thePageWalker->annulAll();
@@ -563,23 +566,21 @@ public:
         aTranslate->isInstr() ? Qemu::API::QEMU_DI_Instruction : Qemu::API::QEMU_DI_Data,
         aTranslate->theVaddr));
     DBG_Assert(aTranslate->thePaddr == perfectPaddr, (<< "Translation mismatch. VA:" << aTranslate->theVaddr << ", PA:" << aTranslate->thePaddr << ", PerfectPaddr:" << perfectPaddr));
-    if (!cfg.PerfectTLB &&
-        (aTranslate->isInstr() ? theInstrTLB : theDataTLB).lookUp(aTranslate->theVaddr).first ==
-            false) {
-      if (!theMMUInitialized) {
-        theMMU.reset(new mmu_t());
-        theMMU->initRegsFromQEMUObject(getMMURegsFromQEMU((int)flexusIndex()));
-        theMMU->setupAddressSpaceSizesAndGranules();
-        DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
-        DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
-        PAGEMASK = ~((1 << theMMU->Gran0->getlogKBSize()) - 1);
-        thePageWalker->setMMU(theMMU);
-        theMMUInitialized = true;
+    
+    DBG_Assert(flexusIndex() == anIndex, (<< "FlexusIndex " << flexusIndex() << "does not match index passed as argument:" << anIndex));
+    if (!cfg.PerfectTLB) {
+      bool is_hit = (aTranslate->isInstr() ? theInstrTLB : theDataTLB).lookUp(aTranslate->theVaddr).first;  
+      if (!is_hit) {
+        if (!theMMUInitialized) {
+          setupMMU((int) anIndex);
+          thePageWalker->setMMU(theMMU);
+        }
+        (aTranslate->isInstr() ? theInstrTLB : theDataTLB)[aTranslate->theVaddr] =
+            aTranslate->thePaddr;
+        thePageWalker->push_back_trace(aTranslate,
+                                      Flexus::Qemu::Processor::getProcessor((int) anIndex));
       }
-      (aTranslate->isInstr() ? theInstrTLB : theDataTLB)[aTranslate->theVaddr] =
-          aTranslate->thePaddr;
-      thePageWalker->push_back_trace(aTranslate,
-                                     Flexus::Qemu::Processor::getProcessor((int)flexusIndex()));
+
     }
   }
 };
