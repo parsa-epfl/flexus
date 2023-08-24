@@ -392,7 +392,7 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
 
   explicit MemoryMessage(MemoryMessage &aMsg)
       : theType(aMsg.theType), theAddress(aMsg.theAddress), theAssociatedPC(aMsg.theAssociatedPC),
-        theTargetPC(aMsg.theTargetPC), theOpcode(aMsg.theOpcode), (aMsg.theData), theReqSize(aMsg.theReqSize), theCoreIdx(0),
+        theTargetPC(aMsg.theTargetPC), theOpcode(aMsg.theOpcode), theData(aMsg.theData), theReqSize(aMsg.theReqSize), theCoreIdx(0),
         theSerial(memoryMessageSerial()), thePriv(aMsg.thePriv), theAnyInvs(false),
         theDstream(aMsg.theDstream), theFillLevel(eUnknown), theOutstandingMessages(0),
         theAckRequired(aMsg.theAckRequired), theAckRequiresData(aMsg.theAckRequiresData),
@@ -457,7 +457,7 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
   const VirtualMemoryAddress targetpc() const {
     return theTargetPC;
   }
-  const VirtualMemoryAddress opcode() const {
+  const uint32_t opcode() const {
     return theOpcode;
   }
   const bits data() const {
@@ -484,7 +484,7 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
   VirtualMemoryAddress &targetpc() {
     return theTargetPC;
   }
-  VirtualMemoryAddress &opcode() {
+  uint32_t &opcode() {
     return theOpcode;
   }
   bits &data() {

@@ -155,7 +155,7 @@ class QemuTracerImpl {
 
 public:
   std::function<void(int, MemoryMessage &)> toL1D;
-  std::function<void(int, MemoryMessage &, uint32_t)> toL1I;
+  std::function<void(int, MemoryMessage &)> toL1I;
   std::function<void(int, MemoryMessage &)> toNAW;
 
   //  bool theWhiteBoxDebug;
@@ -174,7 +174,7 @@ public:
   // Initialize the tracer to the desired CPU
   void init(API::conf_object_t *aCPU, index_t anIndex,
             std::function<void(int, MemoryMessage &)> aToL1D,
-            std::function<void(int, MemoryMessage &, uint32_t)> aToL1I,
+            std::function<void(int, MemoryMessage &)> aToL1I,
             std::function<void(int, MemoryMessage &)> aToNAW,
             //          , bool aWhiteBoxDebug
             //        , int32_t aWhiteBoxPeriod
@@ -477,7 +477,7 @@ class QemuTracerManagerImpl : public QemuTracerManager {
   QemuTracer *theTracers; // QEMU Components that have support for callbacks
   DMATracer theDMATracer;
   std::function<void(int, MemoryMessage &)> toL1D;
-  std::function<void(int, MemoryMessage &, uint32_t)> toL1I;
+  std::function<void(int, MemoryMessage &)> toL1I;
   std::function<void(MemoryMessage &)> toDMA;
   std::function<void(int, MemoryMessage &)> toNAW;
 
@@ -487,7 +487,7 @@ class QemuTracerManagerImpl : public QemuTracerManager {
 
 public:
   QemuTracerManagerImpl(int32_t aNumCPUs, std::function<void(int, MemoryMessage &)> aToL1D,
-                        std::function<void(int, MemoryMessage &, uint32_t)> aToL1I,
+                        std::function<void(int, MemoryMessage &)> aToL1I,
                         std::function<void(MemoryMessage &)> aToDMA,
                         std::function<void(int, MemoryMessage &)> aToNAW,
                         //	  , bool aWhiteBoxDebug
@@ -593,7 +593,7 @@ private:
 
 QemuTracerManager *
 QemuTracerManager::construct(int32_t aNumCPUs, std::function<void(int, MemoryMessage &)> toL1D,
-                             std::function<void(int, MemoryMessage &, uint32_t)> toL1I,
+                             std::function<void(int, MemoryMessage &)> toL1I,
                              std::function<void(MemoryMessage &)> toDMA,
                              std::function<void(int, MemoryMessage &)> toNAW
                              //    , bool aWhiteBoxDebug

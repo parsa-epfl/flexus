@@ -156,7 +156,7 @@ public:
     if (branchReq.theActualType != kNonBranch) {
       theBranchPredictor->predict(branchReq.thePC, theFetchState[anIndex][0]);
       theBranchPredictor->feedback(branchReq.thePC, branchReq.theActualType, branchReq.theActualDirection, branchReq.theActualTarget,
-                                   theFetchState[anIndex][0]);
+                                   theFetchState[anIndex][0], 0 /* BBSize TODO */);
     }
   }
 };

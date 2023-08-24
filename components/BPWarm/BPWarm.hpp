@@ -69,9 +69,9 @@ namespace Stat = Flexus::Stat;
 COMPONENT_INTERFACE(
   DYNAMIC_PORT_ARRAY( PushInput, MemoryMessage, ITraceInModern )
   // MARK: Added for boomerang port 
-  DYNAMIC_PORT_ARRAY( PushInput, MemoryMessage, InsnMissIn )
-  PORT( PushOutput, ulong_pair, ResetPrefetcherOut )
-  DYNAMIC_PORT_ARRAY( PushOutput, MemoryMessage, ToL1I ) //Rakesh
+  // DYNAMIC_PORT_ARRAY( PushInput, MemoryMessage, InsnMissIn )
+  // PORT( PushOutput, ulong_pair, ResetPrefetcherOut )
+  // DYNAMIC_PORT_ARRAY( PushOutput, MemoryMessage, ToL1I ) //Rakesh
 );
 
 #include FLEXUS_END_COMPONENT_DECLARATION()

@@ -2319,26 +2319,6 @@ struct FastCombiningImpl : public FastBranchPredictor {
     }
   }
 
-  void feedback(VirtualMemoryAddress anAddress, eBranchType anActualType,
-                eDirection anActualDirection, VirtualMemoryAddress anActualTarget,
-                BPredState &aBPState) {
-    stats(anAddress, anActualType, anActualDirection, anActualTarget, aBPState);
-    std::cout << "A feedback for a: " << anAddress << " t: " << anActualType << " d: " << anActualDirection << " tg: " << anActualTarget << "\n";
-    bool is_new = true;
-    if(anActualDirection == kTaken){
-      bool is_new = theBTB.update(anAddress, anActualType, anActualTarget);
-      switch (is_new) {
-      case true:
-        BTBMisses++;
-        break;
-      case false:
-        BTBHits++;
-        break;
-      }
-    }else{
-      BTBSkips++;
-    }
-
   void updateBB_BTB(VirtualMemoryAddress anAddress, eBranchType anActualType,
                     eDirection anActualDirection, VirtualMemoryAddress anActualTarget,
                     BPredState &aBPState, int aBBsize) {
@@ -2419,13 +2399,7 @@ struct FastCombiningImpl : public FastBranchPredictor {
 
         if ((gshare >= kNotTaken) != (bimodal >= kNotTaken)) {
           // Need to update meta
-          if ((anActualDirection >= kNotTaken) == (gshare >= kNotTaken)) {
-            // More gshare
-            theMeta.update(anAddress, moreNotTaken(meta));
-          } else {
-            // More bimodal
-            theMeta.update(anAddress, moreTaken(meta));
-          }
+          if ((anActualDirection >= kNotTaken) == (gshare >= kNotTaken)) {theOpcode
         }
       } // end !is_new
     } else if (aBPState.thePredictedType != kNonBranch &&
