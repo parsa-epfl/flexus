@@ -22,7 +22,7 @@
 
 #define DBG_DefineCategories uFetch
 #define DBG_SetDefaultOps AddCat(uFetch)
-#include DBG_Control()
+#include DBG_Control
 
 #include <core/qemu/mai_api.hpp>
 #include <components/CommonQEMU/seq_map.hpp>
@@ -1992,4 +1992,4 @@ FLEXUS_PORT_ARRAY_WIDTH(uFetch, BTBMissFetchReplyOut) {
 #define FLEXUS_END_COMPONENT uFetch
 
 #define DBG_Reset
-#include DBG_Control()
+#include DBG_Control

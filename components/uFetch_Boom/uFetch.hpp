@@ -7,7 +7,9 @@
 #define FLEXUS_BEGIN_COMPONENT uFetch
 #include FLEXUS_BEGIN_COMPONENT_DECLARATION()
 
-typedef  decode_status;
+typedef std::pair<int32_t /*# of instruction */, bool /* FIQ Empty? */> decode_status;
+typedef std::pair<Flexus::SharedTypes::VirtualMemoryAddress,
+                  Flexus::SharedTypes::VirtualMemoryAddress> vaddr_pair;
 
 COMPONENT_PARAMETERS(
     PARAMETER(FAQSize, uint32_t, "Fetch address queue size", "faq", 32)
@@ -26,7 +28,8 @@ COMPONENT_PARAMETERS(
     PARAMETER(Threads, uint32_t, "Number of threads under control of this uFetch", "threads", 1)
     PARAMETER(SendAcks, bool, "Send acknowledgements when we received data", "send_acks", false)
     PARAMETER(UseReplyChannel, bool, "Send replies on Reply Channel and only Evicts on Snoop Channel", "use_reply_channel", false)
-    PARAMETER(EvictOnSnoop, bool, "Send evicts on Snoop Channel (otherwise use Request Channel)", "evict_on_snoop", true));
+    PARAMETER(EvictOnSnoop, bool, "Send evicts on Snoop Channel (otherwise use Request Channel)", "evict_on_snoop", true)
+);
 
 COMPONENT_INTERFACE(
     DYNAMIC_PORT_ARRAY(PushInput, boost::intrusive_ptr<FetchCommand>, FetchAddressIn)
@@ -36,7 +39,7 @@ COMPONENT_INTERFACE(
     DYNAMIC_PORT_ARRAY(PushOutput, eSquashCause, SquashOut) // Rakesh
     DYNAMIC_PORT_ARRAY(PushInput, CPUState, ChangeCPUState) 
     DYNAMIC_PORT_ARRAY(PullOutput, int, AvailableFAQOut) 
-    DYNAMIC_PORT_ARRAY(PullInput,  std::pair<int32_t /*# of instruction */, bool /* FIQ Empty? */>, AvailableFIQ) 
+    DYNAMIC_PORT_ARRAY(PullInput,  decode_status, AvailableFIQ) 
     DYNAMIC_PORT_ARRAY(PullOutput, int, ICount) 
     DYNAMIC_PORT_ARRAY(PullOutput, bool, Stalled)
     DYNAMIC_PORT_ARRAY(PushOutput, pFetchBundle, FetchBundleOut) 
@@ -48,7 +51,9 @@ COMPONENT_INTERFACE(
 
     DYNAMIC_PORT_ARRAY(PushInput, boost::intrusive_ptr<BPredState>, SquashBranchIn)
     DYNAMIC_PORT_ARRAY(PushOutput, boost::intrusive_ptr<BPredState>, SquashBranchOut)
-    DYNAMIC_PORT_ARRAY(PushOutput, std::pair<Flexus::SharedTypes::VirtualMemoryAddress, Flexus::SharedTypes::VirtualMemoryAddress>, MissPairOut)
+    // DYNAMIC_PORT_ARRAY(PushOutput, std::pair<Flexus::SharedTypes::VirtualMemoryAddress, Flexus::SharedTypes::VirtualMemoryAddress>, MissPairOut)
+    DYNAMIC_PORT_ARRAY(PushOutput, vaddr_pair, MissPairOut)
+
     DYNAMIC_PORT_ARRAY(PushInput, std::list<boost::intrusive_ptr<BPredState>>, RASOpsIn)
 
     PORT(PushOutput, std::list<boost::intrusive_ptr<BPredState>>, RASOpsOut) // Rakesh
@@ -65,7 +70,8 @@ COMPONENT_INTERFACE(
     DYNAMIC_PORT_ARRAY( PushOutput, bool, BTBReplyOut )
     DYNAMIC_PORT_ARRAY( PushOutput, bool, BTBMissFetchReplyOut )
 
-    DRIVE(uFetchDrive));
+    DRIVE(uFetchDrive)
+);
 
 #include FLEXUS_END_COMPONENT_DECLARATION()
 #define FLEXUS_END_COMPONENT uFetch

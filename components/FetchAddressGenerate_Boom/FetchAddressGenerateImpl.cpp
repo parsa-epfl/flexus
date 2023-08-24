@@ -49,7 +49,7 @@
 
 #define DBG_DefineCategories FetchAddressGenerate
 #define DBG_SetDefaultOps AddCat(FetchAddressGenerate)
-#include DBG_Control()
+#include DBG_Control
 
 #include <core/flexus.hpp>
 #include <core/qemu/mai_api.hpp>
@@ -1170,4 +1170,4 @@ FLEXUS_PORT_ARRAY_WIDTH(FetchAddressGenerate, Stalled) {
 #define FLEXUS_END_COMPONENT FetchAddressGenerate
 
 #define DBG_Reset
-#include DBG_Control()
+#include DBG_Control
