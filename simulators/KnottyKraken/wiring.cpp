@@ -178,7 +178,7 @@ bool initializeParameters() {
   theuArchCfg.NumFpMult.initialize(true);
   theuArchCfg.NumIntAlu.initialize(true);
   theuArchCfg.NumIntMult.initialize(true);
-  theuArchCfg.CollectWorkTrace.initialize(false);
+  // theuArchCfg.CollectWorkTrace.initialize(false);
 
   static const int K = 1024;
 

@@ -1848,7 +1848,7 @@ void CoreImpl::checkStopSpeculating() {
 void CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, int32_t x,
                         Flexus::SharedTypes::xExceptionSource y) {
   // TODO
-  DBG_(Dev, "Traps not supported modeling, must be implemented");
+  DBG_(Dev, (<< "Traps not supported modeling, must be implemented"));
 }
 
 void CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExceptionType aTrapType) {
