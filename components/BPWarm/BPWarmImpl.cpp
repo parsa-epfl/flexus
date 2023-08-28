@@ -72,10 +72,12 @@ class FLEXUS_COMPONENT(BPWarm) {
 
   // MARK: Added for FDIP/Boomerang
   std::vector<VirtualMemoryAddress> theBBAddress;
-  std::vector<eBranchType> theLastBranch;
+  std::vector<VirtualMemoryAddress> theExpectedAddress;
+  
+  //std::vector<eBranchType> theLastBranch;
 
-  int latest_resolved_branch;
-  BPredState BBTBState;
+  //int latest_resolved_branch;
+  //BPredState BBTBState;
 
   struct BPFeedback {
     VirtualMemoryAddress pc;
@@ -107,6 +109,8 @@ public:
     theFetchState.resize(cfg.Cores);
     theFetchType.resize(cfg.Cores);
     theOne.resize(cfg.Cores);
+    theBBAddress.resize(cfg.Cores);
+    theExpectedAddress.resize(cfg.Cores);
 
     for (int32_t i = 0; i < cfg.Cores; i++) {
       theFetchAddress[i].resize(2);
@@ -118,6 +122,9 @@ public:
       theFetchType[i][0] = kNonBranch;
       theFetchType[i][1] = kNonBranch;
       theOne[i] = false;
+      theBBAddress[i] = VirtualMemoryAddress(0);
+      theExpectedAddress[i] = VirtualMemoryAddress(0);
+      
     }
 
     theBranchPredictor.reset(
@@ -152,11 +159,40 @@ public:
     branchReq.thePC = aMessage.pc();
     branchReq.theActualType = aMessage.branchType();
     branchReq.theActualDirection = aMessage.pc() + 4 == aMessage.targetpc() ? kNotTaken : kTaken;
-    branchReq.theActualTarget = aMessage.targetpc();
+    branchReq.theActualTarget = branchReq.theActualDirection == kTaken ? aMessage.targetpc() : VirtualMemoryAddress(0);
+    
+
+    if(branchReq.theActualType == kNonBranch && aMessage.targetpc() != aMessage.pc() + 4){
+      assert(0);
+    }
+
+    std::cout << "PC: " << branchReq.thePC << "\tType: " << branchReq.theActualType << "\tTarget " << branchReq.theActualTarget << "\tDirection: " << branchReq.theActualDirection << "\n";
+        fflush(stdout);
+
+    // if(theExpectedAddress[anIndex] != 0 && (aMessage.pc() != theExpectedAddress[anIndex])){
+    //   theBBAddress[anIndex] = aMessage.pc();
+    // }
+    
+    theExpectedAddress[anIndex] = aMessage.targetpc();
+
+
     if (branchReq.theActualType != kNonBranch) {
+#ifdef PC_BTB
+      assert(0);
       theBranchPredictor->predict(branchReq.thePC, theFetchState[anIndex][0]);
       theBranchPredictor->feedback(branchReq.thePC, branchReq.theActualType, branchReq.theActualDirection, branchReq.theActualTarget,
-                                   theFetchState[anIndex][0], 0 /* BBSize TODO */);
+                                   theFetchState[anIndex][0], 0);
+#endif
+#ifdef BB_BTB
+      uint64_t BBSize = (branchReq.thePC - theBBAddress[anIndex])/4 + 1;
+      std::cout << "BB from: " << theBBAddress[anIndex] << 
+        "\tto: " << branchReq.thePC << "\tlength: " << BBSize << "\n";
+
+      theBranchPredictor->predict(theBBAddress[anIndex], theFetchState[anIndex][0]);
+      theBranchPredictor->feedback(theBBAddress[anIndex], branchReq.theActualType, branchReq.theActualDirection, branchReq.theActualTarget,
+                                   theFetchState[anIndex][0], BBSize);
+      theBBAddress[anIndex] = aMessage.targetpc();
+#endif
     }
   }
 };

@@ -565,7 +565,8 @@ public:
         *Flexus::Qemu::Processor::getProcessor(flexusIndex()),
         aTranslate->isInstr() ? Qemu::API::QEMU_DI_Instruction : Qemu::API::QEMU_DI_Data,
         aTranslate->theVaddr));
-    DBG_Assert(aTranslate->thePaddr == perfectPaddr, (<< "Translation mismatch. VA:" << aTranslate->theVaddr << ", PA:" << aTranslate->thePaddr << ", PerfectPaddr:" << perfectPaddr));
+      // Rafael suggested to comment this line, TODO: there was an assetion on this line!
+      //DBG_Assert(aTranslate->thePaddr == perfectPaddr, (<< "Translation mismatch. VA:" << aTranslate->theVaddr << ", PA:" << aTranslate->thePaddr << ", PerfectPaddr:" << perfectPaddr));
     
     DBG_Assert(flexusIndex() == anIndex, (<< "FlexusIndex " << flexusIndex() << "does not match index passed as argument:" << anIndex));
     if (!cfg.PerfectTLB) {
