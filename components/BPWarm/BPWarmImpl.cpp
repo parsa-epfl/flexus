@@ -154,27 +154,25 @@ public:
   
   void push(interface::ITraceInModern const &, index_t anIndex,
             MemoryMessage &aMessage) {
-    
     BranchFeedback branchReq;
     branchReq.thePC = aMessage.pc();
     branchReq.theActualType = aMessage.branchType();
     branchReq.theActualDirection = aMessage.pc() + 4 == aMessage.targetpc() ? kNotTaken : kTaken;
     branchReq.theActualTarget = branchReq.theActualDirection == kTaken ? aMessage.targetpc() : VirtualMemoryAddress(0);
-    
+ 
 
+  
     if(branchReq.theActualType == kNonBranch && aMessage.targetpc() != aMessage.pc() + 4){
-      assert(0);
+//      assert(0);
     }
 
-    std::cout << "PC: " << branchReq.thePC << "\tType: " << branchReq.theActualType << "\tTarget " << branchReq.theActualTarget << "\tDirection: " << branchReq.theActualDirection << "\n";
-        fflush(stdout);
 
-    // if(theExpectedAddress[anIndex] != 0 && (aMessage.pc() != theExpectedAddress[anIndex])){
-    //   theBBAddress[anIndex] = aMessage.pc();
-    // }
+    // Here is a HACK! It has to be fixed from QEMU side
+    if(theExpectedAddress[anIndex] != 0 && (aMessage.pc() != theExpectedAddress[anIndex])){
+      theBBAddress[anIndex] = aMessage.pc();
+    }
     
     theExpectedAddress[anIndex] = aMessage.targetpc();
-
 
     if (branchReq.theActualType != kNonBranch) {
 #ifdef PC_BTB
@@ -185,8 +183,6 @@ public:
 #endif
 #ifdef BB_BTB
       uint64_t BBSize = (branchReq.thePC - theBBAddress[anIndex])/4 + 1;
-      std::cout << "BB from: " << theBBAddress[anIndex] << 
-        "\tto: " << branchReq.thePC << "\tlength: " << BBSize << "\n";
 
       theBranchPredictor->predict(theBBAddress[anIndex], theFetchState[anIndex][0]);
       theBranchPredictor->feedback(theBBAddress[anIndex], branchReq.theActualType, branchReq.theActualDirection, branchReq.theActualTarget,
@@ -194,6 +190,8 @@ public:
       theBBAddress[anIndex] = aMessage.targetpc();
 #endif
     }
+
+    theBranchPredictor->increaseInstCount();
   }
 };
 

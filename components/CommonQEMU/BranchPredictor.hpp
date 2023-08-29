@@ -90,19 +90,11 @@ struct FastBranchPredictor {
   static FastBranchPredictor *combining(std::string const &aName, uint32_t anIndex);
   static FastBranchPredictor *combining(std::string const &aName, uint32_t anIndex,
                                         uint32_t aBTBSets, uint32_t aBTBWays);
-  // virtual void feedback( BranchFeedback const & aFeedback) = 0;
   virtual void increaseInstCount(void) = 0;
   virtual void predict(VirtualMemoryAddress anAddress, BPredState &aBPState) = 0;
-  virtual void runahead_predict(VirtualMemoryAddress anAddress, BPredState &aBPState) = 0;
-  virtual void reset_runahead_history() = 0;
   virtual bool feedback(VirtualMemoryAddress anAddress, eBranchType anActualType,
                         eDirection anActualDirection, VirtualMemoryAddress anActualAddress,
                         BPredState &aBPState, int aBBsize) = 0;
-  virtual void updateBB_BTB(VirtualMemoryAddress anAddress, eBranchType anActualType,
-                            eDirection anActualDirection, VirtualMemoryAddress anActualAddress,
-                            BPredState &aBPState, int aBBsize) = 0;
-  virtual void predict_BBTB(VirtualMemoryAddress anAddress, BPredState &aBPState) = 0;
-  virtual void updateBBTB(BTBEntry anEntry) = 0;
   virtual eDirection conditionalTaken(VirtualMemoryAddress anAddress) = 0;
   virtual ~FastBranchPredictor() {
   }
