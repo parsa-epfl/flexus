@@ -1219,18 +1219,18 @@ void CoreImpl::BBTBhelper(uint64_t currPC, int64_t opcode,
 
     if (prevBranchFeedback[0])
       DBG_(BBTB_HELP_DBG, (<< "BBTBHelper:[" << theNode << "]: Calling feedback_fn with "
-                           << *prevBranchFeedback[0]));
+                           << prevBranchFeedback[0].get()));
     feedback_fn(prevBranchFeedback[0]);
     lastBranchType = prevBPState[0]->theActualType;
     theBBAddress = currPC;
   }
 
-  DBG_(BBTB_HELP_DBG, (<< "BBTBHelper:[" << theNode << "]: Setting prevBPState[0] = " << *bpState));
+  DBG_(BBTB_HELP_DBG, (<< "BBTBHelper:[" << theNode << "]: Setting prevBPState[0] = " << bpState.get()));
   prevBPState[0] = bpState;
 
   if (branchFeedback)
     DBG_(BBTB_HELP_DBG, (<< "BBTBHelper:[" << theNode
-                         << "]: Setting prevBranchFeedback[0] = " << *branchFeedback));
+                         << "]: Setting prevBranchFeedback[0] = " << branchFeedback.get()));
   prevBranchFeedback[0] = branchFeedback;
 }
 

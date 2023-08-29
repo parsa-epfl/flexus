@@ -4,7 +4,12 @@
 // #include <hw/core/cpu.h>
 #include <core/qemu/api_wrappers.hpp>
 #include <core/qemu/mai_api.hpp>
+#include <core/qemu/mai_api.hpp>
+#include <core/simulator_layout.hpp>
+#include <core/types.hpp>
+#include <core/debug/debug.hpp>
 #include <DummyQemu.h>
+
 class uArchARMTestFixture : public testing::Test {
 public: 
   static TranslationPtr payload;

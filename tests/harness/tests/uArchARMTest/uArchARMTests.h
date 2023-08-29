@@ -1,13 +1,14 @@
 #include <gtest/gtest.h>
 
+#include <core/qemu/mai_api.hpp>
+#include <core/simulator_layout.hpp>
+#include <core/types.hpp>
+#include <core/debug/debug.hpp>
+
 #include <components/CommonQEMU/Slices/ExecuteState.hpp>
 #include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 #include <components/MTManager/MTManager.hpp>
 
-#include <core/qemu/mai_api.hpp>
-#include <core/simulator_layout.hpp>
-#include <core/types.hpp>
-#include "../../../../components/uArchARM/microArch.hpp"
 
 // Test fixture for the uArchARM component
 

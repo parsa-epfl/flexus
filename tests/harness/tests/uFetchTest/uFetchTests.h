@@ -12,22 +12,8 @@
 #include <core/types.hpp>
 // Test fixture for the uFetch component
 
-/*  
-Manual references:
-D5.3 VMSAv8-64 translation table format descriptors
-D5.2.5 Translation tables and the translation process
 
-TESTS TO WRITE:
-* 1. TLB Miss to Page Walk access -> Verify that Page Walk PortOutput has a request pending with the right VA
-* 2. TLB Push to TLB Hit both dTLB and iTLB -> TLBReqIn push new entry, send Request, assert RequestResponse PortOutput has request pending with right VA
-* 3. TLB Miss to Page Fault -> Cannot do the walk, check in manual what does a Page Table entry get inited to -> BitMap for invalid? Address == NULL / -1?
-*	a. Page Fault level 0, 1, 2, 3 => 4 tests
-*	b. Succesful level 1, 2, 3 walks => 3 tests
-* 4. TLB Miss to Page Walk full walk, match intermediate addresses -> Stages 1, 2, 3, 4 assertions on cache access
-* 5. TLB Miss, Page Walk, TLB Fill, to TLB Hit
-* 6. Consumption of traces
 
-*/
 
 TranslationPtr uFetchTestFixture::payload = nullptr;
 

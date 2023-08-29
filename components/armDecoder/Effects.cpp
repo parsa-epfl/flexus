@@ -474,7 +474,7 @@ void BranchInteraction::operator()(boost::intrusive_ptr<nuArchARM::Instruction> 
   if (anInstruction->pc() != theTarget) {
     DBG_(Iface, (<< *anInstruction << " Branch Redirection."));
     if (aCore.squashFrom(anInstruction, theBPState)) {
-      DBG_(Iface, (<< " REQUESTING SQUASH: BPState was " << *theBPState << " to target " << std::hex
+      DBG_(Iface, (<< " REQUESTING SQUASH: BPState was " << theBPState.get() << " to target " << std::hex
                    << theTarget << std::dec));
       aCore.redirectFetch(theTarget);
     }
