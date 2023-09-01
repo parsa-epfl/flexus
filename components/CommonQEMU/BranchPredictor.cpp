@@ -1990,7 +1990,7 @@ struct FastCombiningImpl : public FastBranchPredictor {
     }
   }
 
-  void predict(VirtualMemoryAddress anAddress, BPredState &aBPState) {
+  void predict(VirtualMemoryAddress anAddress, BPredState &aBPState, int BBSize = 1 ) {
     //    	DBG_(Tmp, ( << "Predict for " << &std::hex << anAddress));
     aBPState.pc = anAddress;
     aBPState.thePredictedType = theBTB.type(anAddress);
@@ -2008,6 +2008,7 @@ struct FastCombiningImpl : public FastBranchPredictor {
 
     switch (aBPState.thePredictedType) {
     case kNonBranch:
+      std::cout << "aBTB miss\n";
 #ifdef TAGE
       theTage.checkpoint_history(aBPState);
 #else
@@ -2028,9 +2029,11 @@ struct FastCombiningImpl : public FastBranchPredictor {
         aBPState.thePredictedTarget = theRAS.back();
         //std::cout << "theRAS gives: " << aBPState.thePredictedTarget << " length: " << theRAS.size() << "\n";
         theRAS.pop_back();
+        std::cout << "Ret from RAS\n";
       }
       else if (theBTB.target(anAddress)) {
         aBPState.thePredictedTarget = *theBTB.target(anAddress);
+        std::cout << "Ret from BTB\n";
       } 
       else {
         // it is a BTB hit and has to have a non-zero target
@@ -2056,8 +2059,8 @@ struct FastCombiningImpl : public FastBranchPredictor {
         aBPState.thePredictedTarget = *theBTB.target(anAddress);
       } else {
         assert(0);
-      }     
-      theRAS.push_back(anAddress + 4);
+      }  
+      theRAS.push_back(anAddress + 4*BBSize);
       /*if (theRASHelper.contains(anAddress) == false) {
         //            	DBG_( Tmp, ( << " Predicting normal call: "));
         theRAS.push_back(anAddress + 4);
@@ -2621,7 +2624,7 @@ std::ostream &operator<<(std::ostream &anOstream, eDirection aDir) {
 
 std::ostream &operator<<(std::ostream &anOstream, eBranchType aType) {
   char const *types[] = {"NonBranch",         "Conditional",   "Unconditional", "Call",
-                         "Indirect Register", "Indirect Call", "Return"};
+                         "IndirectRegister", "IndirectCall", "Return"};
   if (aType >= kLastBranchType) {
     anOstream << "InvalidBranchType(" << static_cast<int>(aType) << ")";
   } else {

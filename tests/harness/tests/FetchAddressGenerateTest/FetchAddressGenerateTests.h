@@ -15,7 +15,7 @@
 TEST_F(FetchAddressGenerateTestFixture, FetchAddressGenerateTest) {
 
     FetchAddressGenerateConfiguration_struct aCfg("FetchAddressGenerateTest config");
-	InitializeFetchAddressGenerateConfiguration(aCfg,10,2,1,false, false, false, 512,4);
+	InitializeFetchAddressGenerateConfiguration(aCfg,2,1,false, false, false, false, false, false, 0, 1,512,4);
 
     FetchAddressGenerateJumpTable aJumpTable;
 	InitializeJumpTable(aJumpTable);

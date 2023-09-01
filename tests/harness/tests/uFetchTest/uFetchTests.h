@@ -23,7 +23,7 @@ TranslationPtr uFetchTestFixture::payload = nullptr;
 TEST_F(uFetchTestFixture, Trace_PageAccessTest) {
 
     uFetchConfiguration_struct aCfg("uFetchTester config");
-	InitializeuFetchConfiguration(aCfg, 32, 2, 10, 64, true, true, false, 65536, 4, 4, 1, false ,false, true);
+	InitializeuFetchConfiguration(aCfg, 32, 2, 10, 64, true, true, false, false, false, 65536, 4, 4,4, 1, false ,false, true);
 
 
     uFetchJumpTable aJumpTable;

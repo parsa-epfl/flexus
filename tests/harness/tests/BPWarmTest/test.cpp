@@ -7,10 +7,13 @@ class BPWarmTestFixture : public testing::Test {
   
 public:
 
-  static void InitializeBPWarmConfiguration(BPWarmConfiguration_struct& aCfg, int Cores, uint32_t BTBSets, uint32_t BTBWays) {
+  static void InitializeBPWarmConfiguration(BPWarmConfiguration_struct& aCfg, int Cores, int UnresolvedBranches, int RunaheadDistance, uint32_t BTBSets, uint32_t BTBWays) {
     aCfg.Cores = Cores;
     aCfg.BTBSets = BTBSets;
+    aCfg.UnresolvedBranches = UnresolvedBranches;
+    aCfg.RunaheadDistance = RunaheadDistance;
     aCfg.BTBWays = BTBWays;
+
 	  std::cout << "BPWarmConfiguration_struct defined\n";
   }
 
@@ -34,6 +37,7 @@ protected:
 
     // Create Flexus base
     Flexus::Core::CreateFlexusObject();
+
 
   }
 

@@ -91,7 +91,7 @@ struct FastBranchPredictor {
   static FastBranchPredictor *combining(std::string const &aName, uint32_t anIndex,
                                         uint32_t aBTBSets, uint32_t aBTBWays);
   virtual void increaseInstCount(void) = 0;
-  virtual void predict(VirtualMemoryAddress anAddress, BPredState &aBPState) = 0;
+  virtual void predict(VirtualMemoryAddress anAddress, BPredState &aBPState , int BBSize =0) = 0;
   virtual bool feedback(VirtualMemoryAddress anAddress, eBranchType anActualType,
                         eDirection anActualDirection, VirtualMemoryAddress anActualAddress,
                         BPredState &aBPState, int aBBsize) = 0;

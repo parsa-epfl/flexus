@@ -150,30 +150,11 @@ else()      # Setup for Harness
     # compile wiring
     add_library(wiring OBJECT ${HARNESS_ROOT}/harness_base/wiring.cpp)
     target_compile_options(wiring PRIVATE -c ${GCC_FLAGS})
+
     
     # compile DummyQEMU
     add_library(DummyQEMU "${HARNESS_ROOT}/tests/DummyQemu.cpp")
     include_directories("${HARNESS_ROOT}/tests/")
-    
-    # #Adding CoreModel
-    # target_include_directories(CoreModel PUBLIC "${FLEXUS_ROOT}/components/uArchARM/CoreModel/")    # List the source files for CoreModel library
-    #     set(CoreModel_SOURCES
-    #     "${FLEXUS_ROOT}/components/uArchARM/CoreModel/coreModelImpl.hpp"
-    #     )
-
-    #     # Compile CoreModel as C++ code
-    #     add_library(CoreModel STATIC ${CoreModel_SOURCES})
-
-    #     # Include directories
-    #     include_directories("${HARNESS_ROOT}/tests/")
-    # compile tests
-
-    # set(CoreModelSources
-    # ${FLEXUS_ROOT}/components/uArchARM/CoreModel/accounting.cpp
-    # ${FLEXUS_ROOT}/components/uArchARM/CoreModel/cycle.cpp
-    # ${FLEXUS_ROOT}/components/uArchARM/CoreModel/memreply.cpp
-    # )
-    # add_library(CoreModel ${CoreModelSources})
 
     set(ENABLED_TESTS "")
     foreach(TEST_DIR ${ALL_TESTS})

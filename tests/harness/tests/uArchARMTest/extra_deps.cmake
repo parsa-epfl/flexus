@@ -1,6 +1,7 @@
 set(REQUIRED_COMPONENTS
 	uArchARM 
 	CommonQEMU
+	MTManager
 	armDecoder
 )
 

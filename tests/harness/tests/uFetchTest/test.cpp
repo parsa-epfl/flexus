@@ -1,4 +1,4 @@
-#include <components/uFetch/uFetchImpl.cpp>
+#include <components/uFetch_Boom/uFetchImpl.cpp>
 #include <gtest/gtest.h>
 #include <core/qemu/qflex-api.h>
 // #include <hw/core/cpu.h>
@@ -13,8 +13,8 @@ public:
 // Initialization Functions
 
   static void InitializeuFetchConfiguration(uFetchConfiguration_struct& aCfg, uint32_t FAQSize, uint32_t MaxFetchLines,
-   uint32_t MaxFetchInstructions, uint64_t ICacheLineSize, bool PerfectICache,bool PrefetchEnabled,bool CleanEvict,int Size,
-   int Associativity, uint32_t MissQueueSize, uint32_t Threads, bool SendAcks, bool UseReplyChannel, bool  EvictOnSnoop) {
+   uint32_t MaxFetchInstructions, uint64_t ICacheLineSize, bool PerfectICache,bool PrefetchEnabled, bool FDIPEnabled, bool RecMissEnabled, bool CleanEvict,int Size,
+   int Associativity, uint32_t MissQueueSize, uint32_t OutstandingFDIPMisses, uint32_t Threads, bool SendAcks, bool UseReplyChannel, bool  EvictOnSnoop) {
     aCfg.FAQSize = FAQSize;
     aCfg.MaxFetchLines = MaxFetchLines;
     aCfg.MaxFetchInstructions = MaxFetchInstructions;
@@ -22,15 +22,19 @@ public:
 
     aCfg.PerfectICache = PerfectICache;
     aCfg.PrefetchEnabled = PrefetchEnabled;
+    aCfg.FDIPEnabled = FDIPEnabled;
+    aCfg.RecMissEnabled = RecMissEnabled;
+
     aCfg.CleanEvict = CleanEvict;
     aCfg.Size = Size;
-    
     aCfg.Associativity = Associativity;
     aCfg.MissQueueSize = MissQueueSize;
+    
+    aCfg.OutstandingFDIPMisses = OutstandingFDIPMisses;
     aCfg.Threads = Threads;
     aCfg.SendAcks = SendAcks;
-	
     aCfg.UseReplyChannel = UseReplyChannel;
+    
     aCfg.EvictOnSnoop = EvictOnSnoop;
 	
     std::cout << "uFetchConfiguration_struct defined\n";
@@ -80,7 +84,7 @@ public:
         return true;
     }
 
-    static void func_wire_manip_AvailableFIQ(Flexus::Core::index_t idx, int& p) {
+    static void func_wire_manip_AvailableFIQ(Flexus::Core::index_t idx, decode_status& p) {
         std::cout << "func_wire_manip_AvailableFIQ called \n";
     }
 
