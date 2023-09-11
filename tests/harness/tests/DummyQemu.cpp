@@ -38,7 +38,7 @@ std::vector<uint64_t> DummyQemu::programCounterVector;
 
     dummyRegs.reg_tcr[0]=(16 << 16);
     // dummyRegs.reg_tcr[1]=2147483648;
-    dummyRegs.reg_tcr[1]=2148794384;
+    dummyRegs.reg_tcr[1]=2148794384; // TODO (1 << 20) | 
     dummyRegs.reg_tcr[2]=(16 << 16);
     dummyRegs.reg_tcr[3]=(12 << 16);
 

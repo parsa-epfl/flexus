@@ -42,14 +42,25 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
-#include <iostream>
-#include <fstream>
+
+//Uncomment for DUMP
+// #include <iostream>
+// #include <fstream>
 
 #include <components/BPWarm/BPWarm.hpp>
 #include <components/BPWarm/BPStat.hpp>
 #include <components/CommonQEMU/Slices/ArchitecturalInstruction.hpp>
 #include <components/CommonQEMU/BranchPredictor.hpp>
 #include <core/qemu/mai_api.hpp>
+
+// Uncomment while Benchmarking
+//#include "../../tests/CBP64Kb/predictor.h"
+
+//TO add timestamp
+// #include <iostream>
+// #include <fstream>
+// #include <ctime>
+// #include <sstream>
 
 #define FLEXUS_BEGIN_COMPONENT BPWarm
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
@@ -92,6 +103,20 @@ class FLEXUS_COMPONENT(BPWarm) {
 
   BPWarm_stats *bStats;
   std::map<uint64_t, uint64_t> stats0;
+  
+  /* Uncomment while Benchmarking
+
+  long instruction_count = 0;
+  float accuracy =0;
+  long predictions =0;
+  long mispredictions=0;
+  PREDICTOR predictor;
+  OpType optype = CBPkNonBranch;
+  std::string originalFileName = "AndreTAGEStats.txt";
+  std::string newFileName;
+  */
+
+
 
   std::pair<eBranchType, bool> decode(uint32_t opcode) {
     std::pair<eBranchType, VirtualMemoryAddress> type_and_offset = targetDecode(opcode);
@@ -106,6 +131,34 @@ class FLEXUS_COMPONENT(BPWarm) {
 public:
   FLEXUS_COMPONENT_CONSTRUCTOR(BPWarm) : base(FLEXUS_PASS_CONSTRUCTOR_ARGS) {
   }
+
+  std::string addTimestampToFileName(const std::string& originalFileName) {
+    // Get current time
+    std::time_t t = std::time(0);
+    std::tm* now = std::localtime(&t);
+
+    // Create a stringstream to format the timestamp
+    std::stringstream ss;
+    ss << (now->tm_year + 1900) << '-'
+       << (now->tm_mon + 1) << '-'
+       << now->tm_mday << '-'
+       << now->tm_hour << '-'
+       << now->tm_min << '-'
+       << now->tm_sec;
+
+    std::string timestamp = ss.str();
+
+    // Find the position of the file extension
+    size_t dotPos = originalFileName.find_last_of('.');
+    std::string name = originalFileName.substr(0, dotPos);
+    std::string extension = originalFileName.substr(dotPos);
+
+    // Create the new file name with timestamp
+    std::string newFileName = name + "_" + timestamp + extension;
+
+    return newFileName;
+  }
+
 
   void initialize() {
     theFetchAddress.resize(cfg.Cores);
@@ -127,7 +180,9 @@ public:
       theOne[i] = false;
       theBBAddress[i] = VirtualMemoryAddress(0);
       theExpectedAddress[i] = VirtualMemoryAddress(0);
-      
+      //Uncomment while benchmarking
+      // newFileName = addTimestampToFileName(originalFileName);
+
     }
 
     theBranchPredictor.reset(
@@ -154,18 +209,93 @@ public:
   bool available(interface::ITraceInModern const &, index_t anIndex) {
     return true;
   }
-  
-void dumpVariablesToFile(bool prediction, const BranchFeedback& branchReq, BPredState& FetchState, const char* filename) {
-    std::ofstream outputFile(filename, std::ios::app); // Open the file for writing
+
+// Unused function unless benchmarking
+void dumpVariablesToFile (const BranchFeedback& branchReq, BPredState& FetchState) {
+    // std::ofstream outputFile(filename, std::ios::app); // Open the file for writing
   // PC theActualType theActualDirection thePredictedDirection theActualTarget
 
-  if (outputFile.is_open()) {
-      outputFile << (prediction?"Correct\t":"Mispredict\t") << branchReq.thePC << "\t" << branchReq.theActualType << "\t" << (FetchState.thePredictedTarget==kTaken?1:0) << "\t" << (branchReq.theActualDirection==kTaken?1:0) << "\t" << branchReq.theActualTarget << "\n" ;
-      outputFile.close(); // Close the file
-      // std::cout << "Variable values dumped to " << filename << " successfully.\n";
-  } else {
-      std::cerr << "Unable to open file for writing.\n";
-  }
+  // if (outputFile.is_open()) {
+  //     DumpStruct myDumpStruct = (DumpStruct) {
+  //       .thePC = branchReq.thePC,
+  //       .theActualType = branchReq.theActualType,
+  //       .thePredictedTarget = FetchState.thePredictedTarget,
+  //       .theActualDirection = branchReq.theActualDirection,
+  //       .theActualTarget = branchReq.theActualTarget
+  //     };
+  //     outputFile.write((char *) &myDumpStruct, sizeof(DumpStruct));
+  //     // outputFile << branchReq.thePC << branchReq.theActualType << (FetchState.thePredictedTarget==kTaken?1:0) << "\t" << (branchReq.theActualDirection==kTaken?1:0) << "\t" << branchReq.theActualTarget << "\n" ;
+  //     outputFile.close(); // Close the file
+  //     // std::cout << "Variable values dumped to " << filename << " successfully.\n";
+  // } else {
+  //     std::cerr << "Unable to open file for writing.\n";
+  // }
+
+        // Code Snippet to get predictin from CBP64
+
+        bool CBP_Optype_exists = true; 
+        switch(branchReq.theActualType){
+            case 0: 
+                optype = CBPkNonBranch;
+                CBP_Optype_exists = false;
+                break;
+            case 1: 
+                optype = CBPkConditional;
+                break;
+            case 2: 
+                optype = CBPkUnconditional;
+                break;
+            case 3: 
+                optype = CBPkCall;
+                break;
+            case 4: 
+                optype = CBPkIndirectReg;
+                CBP_Optype_exists = false;
+                break;
+            case 5: 
+                optype = CBPkIndirectCall;
+                break;
+            case 6: 
+                optype = CBPkReturn;
+                break;
+            case 7: 
+                optype = CBPkLastBranchType;
+                CBP_Optype_exists = false;
+                break;
+            default:
+                printf("ERROR: opType: %d\n", branchReq.theActualType);
+                CBP_Optype_exists = false;
+                break;
+        }
+        if(CBP_Optype_exists){
+          bool prediction = predictor.GetPrediction(branchReq.thePC);
+          bool resolveDir = branchReq.theActualDirection==kTaken?1:0;
+          predictor.UpdatePredictor(branchReq.thePC, optype, resolveDir, branchReq.theActualTarget);
+          // printf("After UpdatePredictor \n");
+          // Call GetPrediction if available
+          if (prediction==resolveDir) {
+              predictions++;
+          } else {
+              mispredictions++;
+          }
+        }
+
+
+        accuracy = (100.0*predictions)/(predictions+mispredictions);
+        if (instruction_count % 10000000 == 0) {
+            printf(" correct \t %ld \t mispredictions \t %ld \t accuracy \t %f \t  instructions \t %ld \t \n\n", predictions, mispredictions,accuracy,instruction_count);
+        }
+        if(instruction_count>9999999990){
+          FILE* file = fopen(newFileName.c_str(), "w");
+          if (file) {
+          fprintf(file, " correct \t %ld \t mispredictions \t %ld \t accuracy \t %f \t  instructions \t %ld \t \n\n", predictions, mispredictions,accuracy,instruction_count); // Write to the file
+          fclose(file); // Close the file
+        } else {
+          perror("Error opening file"); // Print an error message if file couldn't be opened
+          }
+        }
+
+
 
 
 }
@@ -173,7 +303,8 @@ void dumpVariablesToFile(bool prediction, const BranchFeedback& branchReq, BPred
   void push(interface::ITraceInModern const &, index_t anIndex,
             MemoryMessage &aMessage) {
     BranchFeedback branchReq;
-    bool prediction = false;
+    //Uncomment for DUMP
+    // bool prediction = false;
     branchReq.thePC = aMessage.pc();
     branchReq.theActualType = aMessage.branchType();
     branchReq.theActualDirection = aMessage.pc() + 4 == aMessage.targetpc() ? kNotTaken : kTaken;
@@ -197,39 +328,48 @@ void dumpVariablesToFile(bool prediction, const BranchFeedback& branchReq, BPred
 #ifdef PC_BTB
       assert(0);
       theBranchPredictor->predict(branchReq.thePC, theFetchState[anIndex][0]);
-      prediction = theBranchPredictor->feedback(branchReq.thePC, branchReq.theActualType, branchReq.theActualDirection, branchReq.theActualTarget,
+      //Uncomment for DUMP
+
+      // prediction = theBranchPredictor->feedback(branchReq.thePC, branchReq.theActualType, branchReq.theActualDirection, branchReq.theActualTarget,
+                                  //  theFetchState[anIndex][0], 0);
+      theBranchPredictor->feedback(branchReq.thePC, branchReq.theActualType, branchReq.theActualDirection, branchReq.theActualTarget,
                                    theFetchState[anIndex][0], 0);
 #endif
 #ifdef BB_BTB
       int BBSize = (branchReq.thePC - theBBAddress[anIndex])/4 + 1;
 
       theBranchPredictor->predict(theBBAddress[anIndex], theFetchState[anIndex][0], BBSize);
-      prediction = theBranchPredictor->feedback(theBBAddress[anIndex], branchReq.theActualType, branchReq.theActualDirection, branchReq.theActualTarget,
+      //Uncomment for DUMP
+
+      //prediction = theBranchPredictor->feedback(theBBAddress[anIndex], branchReq.theActualType, branchReq.theActualDirection, branchReq.theActualTarget,
+       //                            theFetchState[anIndex][0], BBSize);
+      theBranchPredictor->feedback(theBBAddress[anIndex], branchReq.theActualType, branchReq.theActualDirection, branchReq.theActualTarget,
                                    theFetchState[anIndex][0], BBSize);
       theBBAddress[anIndex] = aMessage.targetpc();
 #endif
     }
 
     if(branchReq.theActualType == kReturn){
-      std::cout << "Act: " << branchReq.theActualTarget << "\tP: " << theFetchState[anIndex][0].thePredictedTarget << "\n";
+      // std::cout << "Act: " << branchReq.theActualTarget << "\tP: " << theFetchState[anIndex][0].thePredictedTarget << "\n";
       if(branchReq.theActualTarget == theFetchState[anIndex][0].thePredictedTarget){
-        std::cout << "RAS works\n";
+        // std::cout << "RAS works\n";
       }
       else{
-        std::cout << "RAS doesn't work\n";
+        // std::cout << "RAS doesn't work\n";
       }
     }
     theBranchPredictor->increaseInstCount();
 
-        if(branchReq.theActualType != kNonBranch){
-          dumpVariablesToFile(prediction, branchReq, theFetchState[anIndex][0], "/home/ninadjangle/Projects/qflex/flexus/tests/results/BPWarmTestResults.txt");
-        }
-      }
+    //Uncomment for Benchmarking against other predictors
+    //instruction_count++;
+    // dumpVariablesToFile( branchReq, theFetchState[anIndex][0]);
+
+  }
 };
 
 } // End namespace nBPWarm
 
-FLEXUS_COMPONENT_INSTANTIATOR(BPWarm, nBPWarm);
+FLEXUS_COMPONENT_INSTANTIATOR(BPWarm, nBPWarm);        
 FLEXUS_PORT_ARRAY_WIDTH(BPWarm, ITraceInModern) {
   return (cfg.Cores);
 }

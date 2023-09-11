@@ -70,6 +70,12 @@
 
 #include <core/boost_extensions/padded_string_cast.hpp>
 
+// TO add timestamp
+#include <iostream>
+#include <fstream>
+#include <ctime>
+#include <sstream>
+
 // #ifndef __STDC_CONSTANT_MACROS
 // #define __STDC_CONSTANT_MACROS
 // #endif
@@ -97,6 +103,9 @@ namespace Core {
 
 using Flexus::Wiring::theDrive;
 using namespace std::chrono;
+
+std::string originalFileName = "stats_db";
+std::string newFileName;
 
 class FlexusImpl : public FlexusInterface {
 private:
@@ -223,6 +232,29 @@ public:
   void printMMU(int32_t aCPU);
 
 public:
+
+  std::string addTimestampToFileName(const std::string& originalFileName) {
+    // Get current time
+    std::time_t t = std::time(0);
+    std::tm* now = std::localtime(&t);
+
+    // Create a stringstream to format the timestamp
+    std::stringstream ss;
+    ss << (now->tm_year + 1900) << '-'
+       << (now->tm_mon + 1) << '-'
+       << now->tm_mday << '-'
+       << now->tm_hour << '-'
+       << now->tm_min << '-'
+       << now->tm_sec;
+
+    std::string timestamp = ss.str();
+
+    // Create the new file name with timestamp
+    std::string newFileName = originalFileName + "_" + timestamp;
+    
+    return newFileName;
+  }
+
   FlexusImpl(Qemu::API::conf_object_t *anObject)
       : theWatchdogTimeout(100000), theNumWatchdogs(0), theInitialized(false), theCycleCount(0),
         theStatInterval(100), theRegionInterval(100000000), theProfileInterval(1000000),
@@ -254,6 +286,8 @@ void FlexusImpl::initializeComponents() {
   ComponentManager::getComponentManager().initComponents();
   theInitialized = true;
   theHasExited = false;
+  newFileName = addTimestampToFileName(originalFileName);
+  
 }
 
 void FlexusImpl::advanceCycles(int64_t aCycleCount) {
@@ -289,7 +323,7 @@ void FlexusImpl::advanceCycles(int64_t aCycleCount) {
   static uint64_t last_stats = 0;
   if (theCycleCount - last_stats >= theStatInterval) {
     DBG_(Dev, Core()(<< "Saving stats at: " << theCycleCount));
-    backupStats("stats_db");
+    backupStats(newFileName);
 
 #ifdef WRITE_ALL_MEASUREMENT_OUT
     writeMeasurement("all", "all.measurement.out");
@@ -573,9 +607,10 @@ void FlexusImpl::doSave(std::string const &aDirName, bool justFlexus) {
 void FlexusImpl::backupStats(std::string const &aFilename) const {
   std::string fullName = aFilename + std::string(".out.gz");
   std::string last1Name = aFilename + std::string(".001.out.gz");
+  
   remove(last1Name.c_str());
   rename(fullName.c_str(), last1Name.c_str());
-
+  std::cout<<aFilename<<"\t"<<fullName<<"\n";
   saveStats(fullName);
 
   remove(last1Name.c_str());
@@ -722,7 +757,7 @@ void FlexusImpl::terminateSimulation(bool fromQEMU) {
   }
 
   Flexus::Stat::getStatManager()->finalize();
-  backupStats("stats_db");
+  backupStats(newFileName);
 
   // ComponentManager::getComponentManager().finalizeComponents();
 

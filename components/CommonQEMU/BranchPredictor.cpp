@@ -2008,7 +2008,7 @@ struct FastCombiningImpl : public FastBranchPredictor {
 
     switch (aBPState.thePredictedType) {
     case kNonBranch:
-      std::cout << "aBTB miss\n";
+      // std::cout << "aBTB miss\n";
 #ifdef TAGE
       theTage.checkpoint_history(aBPState);
 #else
@@ -2029,11 +2029,11 @@ struct FastCombiningImpl : public FastBranchPredictor {
         aBPState.thePredictedTarget = theRAS.back();
         //std::cout << "theRAS gives: " << aBPState.thePredictedTarget << " length: " << theRAS.size() << "\n";
         theRAS.pop_back();
-        std::cout << "Ret from RAS\n";
+        // std::cout << "Ret from RAS\n";
       }
       else if (theBTB.target(anAddress)) {
         aBPState.thePredictedTarget = *theBTB.target(anAddress);
-        std::cout << "Ret from BTB\n";
+        // std::cout << "Ret from BTB\n";
       } 
       else {
         // it is a BTB hit and has to have a non-zero target
