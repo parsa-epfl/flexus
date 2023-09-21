@@ -8,15 +8,15 @@
 #include <core/simulator_layout.hpp>
 #include <core/types.hpp>
 #include <core/debug/debug.hpp>
-#include <DummyQemu.h>
+#include <DummyQemu.hpp>
 
 class uArchARMTestFixture : public testing::Test {
-public: 
+public:
   static TranslationPtr payload;
 
 // Initialization Functions
 
-  static void InitializeuArchARMConfiguration(uArchARMConfiguration_struct& aCfg, 
+  static void InitializeuArchARMConfiguration(uArchARMConfiguration_struct& aCfg,
   uint32_t ROBSize, uint32_t SBSize, bool NAWBypassSB, bool NAWWaitAtSync,
   uint32_t RetireWidth, uint32_t MemoryPorts, uint32_t SnoopPorts, uint32_t StorePrefetches,
   bool PrefetchEarly, uint32_t ConsistencyModel, uint32_t CoherenceUnit, bool BreakOnResynchronize,
@@ -38,12 +38,12 @@ public:
     aCfg.MemoryPorts = MemoryPorts;
     aCfg.SnoopPorts = SnoopPorts;
     aCfg.StorePrefetches = StorePrefetches;
-    
+
     aCfg.PrefetchEarly = PrefetchEarly;
     aCfg.ConsistencyModel = ConsistencyModel;
     aCfg.CoherenceUnit = CoherenceUnit;
     aCfg.BreakOnResynchronize = BreakOnResynchronize;
-	
+
     aCfg.SpinControl = SpinControl;
     aCfg.SpeculativeOrder = SpeculativeOrder;
     aCfg.SpeculateOnAtomicValue = SpeculateOnAtomicValue;
@@ -53,12 +53,12 @@ public:
     aCfg.CheckpointThreshold = CheckpointThreshold;
     aCfg.EarlySGP = EarlySGP;
     aCfg.TrackParallelAccesses = TrackParallelAccesses;
-    
+
     aCfg.InOrderMemory = InOrderMemory;
     aCfg.InOrderExecute = InOrderExecute;
     aCfg.OnChipLatency = OnChipLatency;
     aCfg.OffChipLatency = OffChipLatency;
-	
+
 
     aCfg.Multithread = Multithread;
     aCfg.NumIntAlu = NumIntAlu;
@@ -69,12 +69,12 @@ public:
     aCfg.IntMultOpLatency = IntMultOpLatency;
     aCfg.IntMultOpPipelineResetTime = IntMultOpPipelineResetTime;
     aCfg.IntDivOpLatency = IntDivOpLatency;
-    
+
     aCfg.IntDivOpPipelineResetTime = IntDivOpPipelineResetTime;
     aCfg.NumFpAlu = NumFpAlu;
     aCfg.FpAddOpLatency = FpAddOpLatency;
     aCfg.FpAddOpPipelineResetTime = FpAddOpPipelineResetTime;
-	
+
     aCfg.FpCmpOpLatency = FpCmpOpLatency;
     aCfg.FpCmpOpPipelineResetTime = FpCmpOpPipelineResetTime;
     aCfg.FpCvtOpLatency = FpCvtOpLatency;
@@ -84,7 +84,7 @@ public:
     aCfg.FpMultOpLatency = FpMultOpLatency;
     aCfg.FpMultOpPipelineResetTime = FpMultOpPipelineResetTime;
     aCfg.FpDivOpLatency = FpDivOpLatency;
-    
+
     aCfg.FpDivOpPipelineResetTime = FpDivOpPipelineResetTime;
     aCfg.FpSqrtOpLatency = FpSqrtOpLatency;
     aCfg.FpSqrtOpPipelineResetTime = FpSqrtOpPipelineResetTime;
@@ -93,8 +93,8 @@ public:
 
   static void InitializeRequest(Flexus::SharedTypes::TranslationPtr& tlbRequest, unsigned int Vaddr,unsigned int Paddr){
     // Create an instance of the TLB request and set its attributes
-	tlbRequest->theVaddr = VirtualMemoryAddress(Vaddr); 
-	tlbRequest->thePaddr = PhysicalMemoryAddress(Paddr); 
+	tlbRequest->theVaddr = VirtualMemoryAddress(Vaddr);
+	tlbRequest->thePaddr = PhysicalMemoryAddress(Paddr);
 	tlbRequest->theTLBtype = Flexus::SharedTypes::Translation::kINST;
   tlbRequest->isInstr();
 	std::cout <<"Vaddr"<< tlbRequest->theVaddr << " Paddr"<< tlbRequest->thePaddr<< " TLB instance made\n";
@@ -176,7 +176,7 @@ public:
 
     static void func_wire_manip_BranchFeedbackOut(Flexus::Core::index_t idx, boost::intrusive_ptr<BranchFeedback>& p) {
         std::cout << "wire_manip_BranchFeedbackOut called with ITR\n";
-    }        
+    }
         // std::cout << p->thePaddr  << "\n";
         // setPayloadp(p);
 
@@ -197,7 +197,7 @@ public:
     static void func_wire_manip_dTranslationOut(Flexus::Core::index_t idx, TranslationPtr& p) {
         std::cout << "wire_manip_dTranslationOut called with MRO\n";
 		// Assertion to check the payload value is one of the permissible values
-        
+
         // std::cout << p->thePaddr  << "\n";
         // setPayloadp(p);
 	}
@@ -266,4 +266,4 @@ protected:
 };
 
 
-#include "uArchARMTests.h"    
+#include "uArchARMTests.h"
