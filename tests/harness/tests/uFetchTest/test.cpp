@@ -4,10 +4,10 @@
 // #include <hw/core/cpu.h>
 #include <core/qemu/api_wrappers.hpp>
 #include <core/qemu/mai_api.hpp>
-#include <DummyQemu.h>
+#include <DummyQemu.hpp>
 
 class uFetchTestFixture : public testing::Test {
-public: 
+public:
   static TranslationPtr payload;
 
 // Initialization Functions
@@ -29,22 +29,22 @@ public:
     aCfg.Size = Size;
     aCfg.Associativity = Associativity;
     aCfg.MissQueueSize = MissQueueSize;
-    
+
     aCfg.OutstandingFDIPMisses = OutstandingFDIPMisses;
     aCfg.Threads = Threads;
     aCfg.SendAcks = SendAcks;
     aCfg.UseReplyChannel = UseReplyChannel;
-    
+
     aCfg.EvictOnSnoop = EvictOnSnoop;
-	
+
     std::cout << "uFetchConfiguration_struct defined\n";
 
   }
 
   static void InitializeRequest(Flexus::SharedTypes::TranslationPtr& tlbRequest, unsigned int Vaddr,unsigned int Paddr){
     // Create an instance of the TLB request and set its attributes
-	tlbRequest->theVaddr = VirtualMemoryAddress(Vaddr); 
-	tlbRequest->thePaddr = PhysicalMemoryAddress(Paddr); 
+	tlbRequest->theVaddr = VirtualMemoryAddress(Vaddr);
+	tlbRequest->thePaddr = PhysicalMemoryAddress(Paddr);
 	tlbRequest->theTLBtype = Flexus::SharedTypes::Translation::kINST;
   tlbRequest->isInstr();
 	std::cout <<"Vaddr"<< tlbRequest->theVaddr << " Paddr"<< tlbRequest->thePaddr<< " TLB instance made\n";
@@ -122,7 +122,7 @@ public:
 
     static void func_wire_manip_ClockTickSeen(Flexus::Core::index_t idx, bool& p) {
         std::cout << "func_wire_manip_ClockTickSeen called with ITR\n";
-    }        
+    }
         // std::cout << p->thePaddr  << "\n";
         // setPayloadp(p);
 
@@ -143,7 +143,7 @@ public:
     static void func_wire_manip_FetchSnoopOut(Flexus::Core::index_t idx, MemoryTransport& p) {
         std::cout << "func_wire_manip_FetchSnoopOut called with MRO\n";
 		// Assertion to check the payload value is one of the permissible values
-        
+
         // std::cout << p->thePaddr  << "\n";
         // setPayloadp(p);
 	}
@@ -205,4 +205,4 @@ protected:
 };
 
 
-#include "uFetchTests.h"    
+#include "uFetchTests.h"

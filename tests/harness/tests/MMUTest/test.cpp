@@ -4,10 +4,10 @@
 // #include <hw/core/cpu.h>
 #include <core/qemu/api_wrappers.hpp>
 #include <core/qemu/mai_api.hpp>
-#include <DummyQemu.h>
+#include <DummyQemu.hpp>
 
 class MMUTestFixture : public testing::Test {
-public: 
+public:
   static TranslationPtr payload;
 
 // Initialization Functions
@@ -23,8 +23,8 @@ public:
 
   static void InitializeTLBRequest(Flexus::SharedTypes::TranslationPtr& tlbRequest, unsigned int Vaddr,unsigned int Paddr){
     // Create an instance of the TLB request and set its attributes
-	tlbRequest->theVaddr = VirtualMemoryAddress(Vaddr); 
-	tlbRequest->thePaddr = PhysicalMemoryAddress(Paddr); 
+	tlbRequest->theVaddr = VirtualMemoryAddress(Vaddr);
+	tlbRequest->thePaddr = PhysicalMemoryAddress(Paddr);
 	tlbRequest->theTLBtype = Flexus::SharedTypes::Translation::kINST;
   tlbRequest->isInstr();
 	std::cout <<"Vaddr"<< tlbRequest->theVaddr << " Paddr"<< tlbRequest->thePaddr<< " TLB instance made\n";
@@ -72,7 +72,7 @@ public:
     static void func_wire_manip_MemoryRequestOut(Flexus::Core::index_t idx, TranslationPtr& p) {
         std::cout << "wire_manip_MemoryRequestOut called with MRO\n";
 		// Assertion to check the payload value is one of the permissible values
-        
+
         std::cout << p->thePaddr  << "\n";
         setPayloadp(p);
     //     if (std::find(permissibleMemoryRequestPayloadValues.begin(), permissibleMemoryRequestPayloadValues.end(), p->thePaddr) != permissibleMemoryRequestPayloadValues.end()) {
@@ -137,4 +137,4 @@ protected:
 };
 
 
-#include "MMUTests.h"    
+#include "MMUTests.h"

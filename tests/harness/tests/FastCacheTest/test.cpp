@@ -4,20 +4,20 @@
 // #include <hw/core/cpu.h>
 #include <core/qemu/api_wrappers.hpp>
 #include <core/qemu/mai_api.hpp>
-#include <DummyQemu.h>
+#include <DummyQemu.hpp>
 
 class FastCacheTestFixture : public testing::Test {
-public: 
+public:
   static TranslationPtr payload;
 
 // Initialization Functions
 
   static void InitializeFastCacheConfiguration(FastCacheConfiguration_struct& aCfg,
-  int MTWidth, int Size, int Associativity, int BlockSize, 
+  int MTWidth, int Size, int Associativity, int BlockSize,
   bool CleanEvictions, Flexus::SharedTypes::tFillLevel CacheLevel, bool NotifyReads, bool NotifyWrites,
   bool TraceTracker , int RegionSize , int RTAssoc, int RTSize,
   std::string RTReplPolicy, int ERBSize, bool StdArray, bool BlockScout,
-  bool SkewBlockSet, std::string Protocol, bool UsingTraces, bool TextFlexpoints, 
+  bool SkewBlockSet, std::string Protocol, bool UsingTraces, bool TextFlexpoints,
   bool GZipFlexpoints, bool DowngradeLRU, bool SnoopLRU ) {
     aCfg.MTWidth = MTWidth;
     aCfg.Size = Size;
@@ -28,12 +28,12 @@ public:
     aCfg.CacheLevel = CacheLevel;
     aCfg.NotifyReads = NotifyReads;
     aCfg.NotifyWrites = NotifyWrites;
-    
+
     aCfg.TraceTracker = TraceTracker;
     aCfg.RegionSize = RegionSize;
     aCfg.RTAssoc = RTAssoc;
     aCfg.RTSize = RTSize;
-	
+
     aCfg.RTReplPolicy = RTReplPolicy;
     aCfg.ERBSize = ERBSize;
     aCfg.StdArray = StdArray;
@@ -47,15 +47,15 @@ public:
     aCfg.GZipFlexpoints = GZipFlexpoints;
     aCfg.DowngradeLRU = DowngradeLRU;
     aCfg.SnoopLRU = SnoopLRU;
-	
+
     std::cout << "FastCacheConfiguration_struct defined\n";
 
   }
 
   static void InitializeTLBRequest(Flexus::SharedTypes::TranslationPtr& tlbRequest, unsigned int Vaddr,unsigned int Paddr){
     // Create an instance of the TLB request and set its attributes
-	tlbRequest->theVaddr = VirtualMemoryAddress(Vaddr); 
-	tlbRequest->thePaddr = PhysicalMemoryAddress(Paddr); 
+	tlbRequest->theVaddr = VirtualMemoryAddress(Vaddr);
+	tlbRequest->thePaddr = PhysicalMemoryAddress(Paddr);
 	tlbRequest->theTLBtype = Flexus::SharedTypes::Translation::kINST;
   tlbRequest->isInstr();
 	std::cout <<"Vaddr"<< tlbRequest->theVaddr << " Paddr"<< tlbRequest->thePaddr<< " TLB instance made\n";
@@ -185,4 +185,4 @@ protected:
 };
 
 
-#include "FastCacheTests.h"    
+#include "FastCacheTests.h"

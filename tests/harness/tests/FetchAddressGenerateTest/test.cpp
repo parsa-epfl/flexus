@@ -2,10 +2,10 @@
 #include<components/MTManager/MTManagerComponentImpl.cpp>
 #include <core/flexus.hpp>
 #include <gtest/gtest.h>
-#include <DummyQemu.h>
+#include <DummyQemu.hpp>
 // Create fixture for testing the DUT
 class FetchAddressGenerateTestFixture : public testing::Test {
-  
+
 public:
 
   static void InitializeFetchAddressGenerateConfiguration(FetchAddressGenerateConfiguration_struct& aCfg, uint32_t MaxBPred,uint32_t Threads,bool EnableRAS, bool EnableTCE, bool EnableTrapRet, bool EnableBTBPrefill, bool MagicBTypeDetect ,bool PerfectBTB , int  BlocksOnBTBMiss, int InsnOnBTBMiss, uint32_t BTBSets, uint32_t BTBWays) {
@@ -46,7 +46,7 @@ public:
     aJumpTable.wire_available_AvailableFAQ = func_wire_available_AvailableFAQ;
     aJumpTable.wire_manip_AvailableFAQ = func_wire_manip_AvailableFAQ;
     std::cout << "FetchAddressGenerateJumpTable defined\n";
-    }  
+    }
 // WIRE CALLBACK FUNCTIONS
     static bool func_wire_available_FetchAddrOut(Flexus::Core::index_t anIndex) {
         // Replace with your implementation
