@@ -127,9 +127,8 @@ protected:
     DummyQemu dummyQemuObj(3);
 
     // Initialize hooks_from_qemu with the desired function pointer
-    dummyQemuObj.initialize(3);
-    hooks_from_qemu->QEMU_get_cpu_by_index = dummyQemuObj.DummyQEMU_get_cpu_by_index;
-    hooks_from_qemu->QEMU_get_cpu_index = dummyQemuObj.DummyQEMU_get_cpu_index;
+    hooks_from_qemu->QEMU_get_cpu_by_index    = dummyQemuObj.DummyQEMU_get_cpu_by_index;
+    hooks_from_qemu->QEMU_get_cpu_index       = dummyQemuObj.DummyQEMU_get_cpu_index;
     hooks_from_qemu->QEMU_get_program_counter = dummyQemuObj.DummyQEMU_get_program_counter;
     QFLEX_API_set_Interface_Hooks(hooks_from_qemu);
 

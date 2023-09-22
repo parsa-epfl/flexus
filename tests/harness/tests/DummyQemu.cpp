@@ -1,4 +1,5 @@
 // #include <unordered_map>
+#include <memory>
 #include "DummyQemu.hpp"
 
 // class DummyQemu {
@@ -29,57 +30,49 @@
 //       0x1,   0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF, 0x10,
 //       0x1000 // Adding the value 0x1000 (hexadecimal)
 //   };
+static std::unique_ptr<Flexus::Qemu::API::conf_object_t> qemu_cpus;
 
 //   // Declare the function prototypes
-void DummyQemu::initialize(int ncpus = 3) {
-  qemu_cpus = NULL;
-  qemu_cpus =
-      (Flexus::Qemu::API::conf_object_t *)malloc(sizeof(Flexus::Qemu::API::conf_object_t) * ncpus);
-  cpu_states = (TestBenchDummyCPUState *)malloc(sizeof(TestBenchDummyCPUState) *
-                                                ncpus); // Create dummy objects
+DummyQemu::DummyQemu(int ncpus = 3) {
 
+  qemu_cpus = std::unique_ptr<Flexus::Qemu::API::conf_object_t>(
+      new Flexus::Qemu::API::conf_object_t[ncpus]);
+
+  cpu_states = std::unique_ptr<TestBenchDummyCPUState>(new TestBenchDummyCPUState[ncpus]);
+
+  auto qc = qemu_cpus.get();
+  auto cs = cpu_states.get();
+
+  // Create dummy objects
   for (int i = 0; i < ncpus; i++) {
-    // qemu_cpus[i].type = static_cast<Flexus::Qemu::API::conf_object_t::e>(QEMU_DummyCPUState);
-    qemu_cpus[i].type = Flexus::Qemu::API::conf_object_t::QEMU_DummyCPUState;
     int needed = snprintf(NULL, 0, "cpu%d", i) + 1;
-    qemu_cpus[i].name = (char *)malloc(needed);
-    cpu_states->cpu_index = i;
-    qemu_cpus[i].object = &cpu_states[i];
-  }
+    cs[i].cpu_index = i;
+    cs[i].registers.reg_tcr[0] = (16 << 16);
+    cs[i].registers.reg_tcr[1] = 2148794384; // TODO (1 << 20) |
+    cs[i].registers.reg_tcr[2] = (16 << 16);
+    cs[i].registers.reg_tcr[3] = (12 << 16);
+    cs[i].registers.reg_ttbr0[1] = 0x00001000;
+    cs[i].registers.reg_ttbr1[1] = 0x00000000C0000000;
+    cs[i].registers.ID_AA64MMFR0_EL1 = 0x33;
+    cs[i].registers.pc = 0x1000;
 
-  dummyRegs.reg_tcr[0] = (16 << 16);
-  // dummyRegs.reg_tcr[1]=2147483648;
-  dummyRegs.reg_tcr[1] = 2148794384; // TODO (1 << 20) |
-  dummyRegs.reg_tcr[2] = (16 << 16);
-  dummyRegs.reg_tcr[3] = (12 << 16);
-
-  dummyRegs.reg_ttbr0[1] = 0x00001000;
-  dummyRegs.reg_ttbr1[1] = 0x00000000C0000000;
-
-  dummyRegs.ID_AA64MMFR0_EL1 = 0x33;
-  cpu_states = NULL;
-}
-
-//   Flexus::Qemu::API::conf_object_t getQemuCPUs() const;
-
-DummyQemu::DummyQemu(int ncpus) {
-  for (uint64_t pc = 0x1000; pc < 0x1200; pc += 4) {
-    programCounterVector.push_back(pc);
-    std::cout << "PC Value inserted:" << programCounterVector.back() << "\n";
+    qc[i].name   = (char *)malloc(needed);
+    qc[i].type   = Flexus::Qemu::API::conf_object_t::QEMU_DummyCPUState;
+    qc[i].object = &cs[i];
   }
 }
 
-DummyRegs DummyQemu::getDummyRegs() const {
-  return dummyRegs;
+DummyRegs DummyQemu::getDummyRegs(int index) const {
+  return cpu_states.get()[index].registers;
 }
 TestBenchDummyCPUState DummyQemu::getTestBenchDummyCPUState() const {
   return *cpu_states;
 }
 Flexus::Qemu::API::conf_object_t DummyQemu::getQemuCPUs() const {
-  return *qemu_cpus;
+  return *qemu_cpus.get();
 }
 Flexus::Qemu::API::conf_object_t *DummyQemu::DummyQEMU_get_cpu_by_index(int index) {
-  return &qemu_cpus[index];
+  return &qemu_cpus.get()[index];
 }
 
 int DummyQemu::DummyQEMU_get_cpu_index(Flexus::Qemu::API::conf_object_t *cpu) {
@@ -97,20 +90,20 @@ void DummyQemu::DummyQEMU_read_phys_memory(uint8_t *buf, Flexus::Qemu::API::phys
   }
 }
 
-uint64_t DummyQemu::DummyQEMU_get_program_counter(Flexus::Qemu::API::conf_object_t *cpu) {
-  uint64_t pc = 0x1000; // Default program counter value
+int DummyQemu::DummyQEMU_cpu_execute(Flexus::Qemu::API::conf_object_t *cpu, int cycles) {
+  TestBenchDummyCPUState *cs = (TestBenchDummyCPUState *) cpu->object;
+  cs->registers.pc = cs->registers.pc + 4 * cycles;
+  return 0;
+}
 
-  if (!programCounterVector.empty()) {
-    // Get the latest program counter value from the vector and remove it
-    pc = programCounterVector.back();
-    programCounterVector.pop_back();
-  }
-  std::cout << "PC Value popped:" << pc << "\n";
-  return pc;
+uint64_t DummyQemu::DummyQEMU_get_program_counter(Flexus::Qemu::API::conf_object_t *cpu) {
+  TestBenchDummyCPUState *cs = (TestBenchDummyCPUState *)cpu->object;
+  return cs->registers.pc;
 }
 
 uint64_t DummyQemu::DummyQEMU_read_sctlr(uint8_t id, Flexus::Qemu::API::conf_object_t *cpu) {
-  return dummyRegs.reg_sctlr[id];
+  TestBenchDummyCPUState *cs = (TestBenchDummyCPUState *) cpu->object;
+  return cs->registers.reg_sctlr[id];
 }
 
 Flexus::Qemu::API::physical_address_t
@@ -147,24 +140,26 @@ uint64_t DummyQemu::DummyQEMU_read_register(Flexus::Qemu::API::conf_object_t *cp
                                             Flexus::Qemu::API::arm_register_t reg_type,
                                             int reg_index, int el) {
 
+  TestBenchDummyCPUState* cs = (TestBenchDummyCPUState*) cpu->object;
+
   switch (reg_type) {
   case kGENERAL:
     assert(reg_index <= 31 && reg_index >= 0);
-    return dummyRegs.reg[reg_index];
+    return cs->registers.reg[reg_index];
     ;
   case kFLOATING_POINT:
     assert(reg_index <= 31 && reg_index >= 0);
     return true;
   case kMMU_TCR:
-    return dummyRegs.reg_tcr[el];
+    return cs->registers.reg_tcr[el];
   case kMMU_SCTLR:
-    return dummyRegs.reg_sctlr[el];
+    return cs->registers.reg_sctlr[el];
   case kMMU_TTBR0:
-    return dummyRegs.reg_ttbr0[el];
+    return cs->registers.reg_ttbr0[el];
   case kMMU_TTBR1:
-    return dummyRegs.reg_ttbr1[el];
+    return cs->registers.reg_ttbr1[el];
   case kMMU_ID_AA64MMFR0:
-    return dummyRegs.ID_AA64MMFR0_EL1;
+    return cs->registers.ID_AA64MMFR0_EL1;
   default:
     fprintf(stderr, "ERROR case triggered in readReg. reg_idx: %d, reg_type: %d\n, el: %d",
             reg_index, reg_type, el);
