@@ -1,187 +1,190 @@
 #include <components/FastCache/FastCacheImpl.cpp>
 #include <gtest/gtest.h>
-#include <core/qemu/qflex-api.h>
-// #include <hw/core/cpu.h>
-#include <core/qemu/api_wrappers.hpp>
-#include <core/qemu/mai_api.hpp>
-#include <DummyQemu.hpp>
+#include "FastCacheFixture.hpp"
+#include "DummyQemu.hpp"
 
-class FastCacheTestFixture : public testing::Test {
-public:
-  static TranslationPtr payload;
+#include <memory>
 
-// Initialization Functions
 
-  static void InitializeFastCacheConfiguration(FastCacheConfiguration_struct& aCfg,
-  int MTWidth, int Size, int Associativity, int BlockSize,
-  bool CleanEvictions, Flexus::SharedTypes::tFillLevel CacheLevel, bool NotifyReads, bool NotifyWrites,
-  bool TraceTracker , int RegionSize , int RTAssoc, int RTSize,
-  std::string RTReplPolicy, int ERBSize, bool StdArray, bool BlockScout,
-  bool SkewBlockSet, std::string Protocol, bool UsingTraces, bool TextFlexpoints,
-  bool GZipFlexpoints, bool DowngradeLRU, bool SnoopLRU ) {
-    aCfg.MTWidth = MTWidth;
-    aCfg.Size = Size;
-    aCfg.Associativity = Associativity;
-    aCfg.BlockSize = BlockSize;
+/**
+ * The test file include the implemention then the test bench in that order,
+ * WITH the implementation imported for the exact reason that so far a
+ * linking error could not be avoided "any" other way.
+ */
 
-    aCfg.CleanEvictions = CleanEvictions;
-    aCfg.CacheLevel = CacheLevel;
-    aCfg.NotifyReads = NotifyReads;
-    aCfg.NotifyWrites = NotifyWrites;
 
-    aCfg.TraceTracker = TraceTracker;
-    aCfg.RegionSize = RegionSize;
-    aCfg.RTAssoc = RTAssoc;
-    aCfg.RTSize = RTSize;
+// Test fixture for the FastCache component
 
-    aCfg.RTReplPolicy = RTReplPolicy;
-    aCfg.ERBSize = ERBSize;
-    aCfg.StdArray = StdArray;
-    aCfg.BlockScout = BlockScout;
+FastCacheTestFixture::FastCacheTestFixture() {
+}
 
-    aCfg.SkewBlockSet = SkewBlockSet;
-    aCfg.Protocol = Protocol;
-    aCfg.UsingTraces = UsingTraces;
-    aCfg.TextFlexpoints = TextFlexpoints;
+void FastCacheTestFixture::SetUp() {
+  // Create Flexus base
+  Flexus::Core::CreateFlexusObject();
 
-    aCfg.GZipFlexpoints = GZipFlexpoints;
-    aCfg.DowngradeLRU = DowngradeLRU;
-    aCfg.SnoopLRU = SnoopLRU;
+  // Allocate memory for hooks_from_qemu
+  auto hooks_from_qemu = std::unique_ptr<Flexus::Qemu::API::QFLEX_TO_QEMU_API_t>(
+      new Flexus::Qemu::API::QFLEX_TO_QEMU_API_t);
 
-    std::cout << "FastCacheConfiguration_struct defined\n";
+  DummyQemu dummyQemuObj(3);
 
-  }
+  // Initialize hooks_from_qemu with the desired function pointer
+  hooks_from_qemu->QEMU_get_cpu_by_index = dummyQemuObj.DummyQEMU_get_cpu_by_index;
+  hooks_from_qemu->QEMU_get_cpu_index = dummyQemuObj.DummyQEMU_get_cpu_index;
+  hooks_from_qemu->QEMU_logical_to_physical = dummyQemuObj.DummyQEMU_logical_to_physical;
+  hooks_from_qemu->QEMU_read_sctlr = dummyQemuObj.DummyQEMU_read_sctlr;
+  hooks_from_qemu->QEMU_read_register = dummyQemuObj.DummyQEMU_read_register;
+  hooks_from_qemu->QEMU_read_phys_memory = dummyQemuObj.DummyQEMU_read_phys_memory;
+  QFLEX_API_set_Interface_Hooks(hooks_from_qemu.get());
+}
 
-  static void InitializeTLBRequest(Flexus::SharedTypes::TranslationPtr& tlbRequest, unsigned int Vaddr,unsigned int Paddr){
-    // Create an instance of the TLB request and set its attributes
-	tlbRequest->theVaddr = VirtualMemoryAddress(Vaddr);
-	tlbRequest->thePaddr = PhysicalMemoryAddress(Paddr);
-	tlbRequest->theTLBtype = Flexus::SharedTypes::Translation::kINST;
+void FastCacheTestFixture::TearDown() {
+}
+
+void FastCacheTestFixture::InitializeFastCacheConfiguration(
+    FastCacheConfiguration_struct &aCfg, int MTWidth, int Size, int Associativity, int BlockSize,
+    bool CleanEvictions, Flexus::SharedTypes::tFillLevel CacheLevel, bool NotifyReads,
+    bool NotifyWrites, bool TraceTracker, int RegionSize, int RTAssoc, int RTSize,
+    std::string RTReplPolicy, int ERBSize, bool StdArray, bool BlockScout, bool SkewBlockSet,
+    std::string Protocol, bool UsingTraces, bool TextFlexpoints, bool GZipFlexpoints,
+    bool DowngradeLRU, bool SnoopLRU) {
+
+  aCfg.MTWidth = MTWidth;
+  aCfg.Size = Size;
+  aCfg.Associativity = Associativity;
+  aCfg.BlockSize = BlockSize;
+
+  aCfg.CleanEvictions = CleanEvictions;
+  aCfg.CacheLevel = CacheLevel;
+  aCfg.NotifyReads = NotifyReads;
+  aCfg.NotifyWrites = NotifyWrites;
+
+  aCfg.TraceTracker = TraceTracker;
+  aCfg.RegionSize = RegionSize;
+  aCfg.RTAssoc = RTAssoc;
+  aCfg.RTSize = RTSize;
+
+  aCfg.RTReplPolicy = RTReplPolicy;
+  aCfg.ERBSize = ERBSize;
+  aCfg.StdArray = StdArray;
+  aCfg.BlockScout = BlockScout;
+
+  aCfg.SkewBlockSet = SkewBlockSet;
+  aCfg.Protocol = Protocol;
+  aCfg.UsingTraces = UsingTraces;
+  aCfg.TextFlexpoints = TextFlexpoints;
+
+  aCfg.GZipFlexpoints = GZipFlexpoints;
+  aCfg.DowngradeLRU = DowngradeLRU;
+  aCfg.SnoopLRU = SnoopLRU;
+}
+
+void FastCacheTestFixture::InitializeTLBRequest(Flexus::SharedTypes::TranslationPtr &tlbRequest,
+                                                unsigned int Vaddr, unsigned int Paddr) {
+  tlbRequest->theVaddr = Flexus::SharedTypes::VirtualMemoryAddress(Vaddr);
+  tlbRequest->thePaddr = Flexus::SharedTypes::PhysicalMemoryAddress(Paddr);
+  tlbRequest->theTLBtype = Flexus::SharedTypes::Translation::kINST;
   tlbRequest->isInstr();
-	std::cout <<"Vaddr"<< tlbRequest->theVaddr << " Paddr"<< tlbRequest->thePaddr<< " TLB instance made\n";
-  }
+}
+void FastCacheTestFixture::InitializeJumpTable(FastCacheJumpTable &aJumpTable) {
+  aJumpTable.wire_available_RequestOut = func_wire_available_RequestOut;
+  aJumpTable.wire_manip_RequestOut = func_wire_manip_RequestOut;
 
-  static void InitializeJumpTable(FastCacheJumpTable& aJumpTable) {
-        aJumpTable.wire_available_RequestOut = func_wire_available_RequestOut;
-        aJumpTable.wire_manip_RequestOut = func_wire_manip_RequestOut;
+  aJumpTable.wire_available_SnoopOutI = func_wire_available_SnoopOutI;
+  aJumpTable.wire_manip_SnoopOutI = func_wire_manip_SnoopOutI;
 
-        aJumpTable.wire_available_SnoopOutI = func_wire_available_SnoopOutI;
-        aJumpTable.wire_manip_SnoopOutI = func_wire_manip_SnoopOutI;
+  aJumpTable.wire_available_SnoopOutD = func_wire_available_SnoopOutD;
+  aJumpTable.wire_manip_SnoopOutD = func_wire_manip_SnoopOutD;
 
-        aJumpTable.wire_available_SnoopOutD = func_wire_available_SnoopOutD;
-        aJumpTable.wire_manip_SnoopOutD = func_wire_manip_SnoopOutD;
+  aJumpTable.wire_available_Reads = func_wire_available_Reads;
+  aJumpTable.wire_manip_Reads = func_wire_manip_Reads;
 
-        aJumpTable.wire_available_Reads = func_wire_available_Reads;
-        aJumpTable.wire_manip_Reads = func_wire_manip_Reads;
+  aJumpTable.wire_available_Writes = func_wire_available_Writes;
+  aJumpTable.wire_manip_Writes = func_wire_manip_Writes;
 
-        aJumpTable.wire_available_Writes = func_wire_available_Writes;
-        aJumpTable.wire_manip_Writes = func_wire_manip_Writes;
+  aJumpTable.wire_available_RegionNotify = func_wire_available_RegionNotify;
+  aJumpTable.wire_manip_RegionNotify = func_wire_manip_RegionNotify;
+}
 
-        aJumpTable.wire_available_RegionNotify = func_wire_available_RegionNotify;
-        aJumpTable.wire_manip_RegionNotify = func_wire_manip_RegionNotify;
+bool FastCacheTestFixture::func_wire_available_RequestOut(Flexus::Core::index_t idx) {
+  return true;
+}
+void FastCacheTestFixture::func_wire_manip_RequestOut(Flexus::Core::index_t idx, MemoryMessage &p) {
+}
+bool FastCacheTestFixture::func_wire_available_SnoopOutI(Flexus::Core::index_t idx) {
+  return true;
+}
+void FastCacheTestFixture::func_wire_manip_SnoopOutI(Flexus::Core::index_t idx, MemoryMessage &p) {
+}
+bool FastCacheTestFixture::func_wire_available_SnoopOutD(Flexus::Core::index_t idx) {
+  return true;
+}
+void FastCacheTestFixture::func_wire_manip_SnoopOutD(Flexus::Core::index_t idx, MemoryMessage &p) {
+}
+bool FastCacheTestFixture::func_wire_available_Reads(Flexus::Core::index_t idx) {
+  return true;
+}
+void FastCacheTestFixture::func_wire_manip_Reads(Flexus::Core::index_t idx, MemoryMessage &p) {
+}
+bool FastCacheTestFixture::func_wire_available_Writes(Flexus::Core::index_t idx) {
+  return true;
+}
+void FastCacheTestFixture::func_wire_manip_Writes(Flexus::Core::index_t idx, MemoryMessage &p) {
+}
+bool FastCacheTestFixture::func_wire_available_RegionNotify(Flexus::Core::index_t idx) {
+  return true;
+}
+void FastCacheTestFixture::func_wire_manip_RegionNotify(Flexus::Core::index_t idx,
+                                                        RegionScoutMessage &p) {
+}
 
-       	std::cout << "FastCacheJumpTable defined\n";
+// @see
+// https://github.com/google/googletest/blob/main/docs/primer.md#test-fixtures-using-the-same-data-configuration-for-multiple-tests-same-data-multiple-tests
+TEST_F(FastCacheTestFixture, FastCacheTest) {
 
-    }
-// Wire Callback Functions
-    static bool func_wire_available_RequestOut(Flexus::Core::index_t idx) {
-        std::cout << "func_wire_available_RequestOut called\n";
-        return true;
-    }
+  FastCacheConfiguration_struct aCfg("FastCacheTest config");
+  InitializeFastCacheConfiguration(aCfg, 1, 65536, 2, 64, false, Flexus::SharedTypes::eUnknown,
+                                   false, false, false, 1024, 16, 8192, "SetLRU", 8, false, false,
+                                   false, "InclusiveMESI", true, false, true, false, false);
 
-    static void func_wire_manip_RequestOut(Flexus::Core::index_t idx, MemoryMessage& p) {
-        std::cout << "wire_manip_RequestOut called \n";
-    }
+  FastCacheJumpTable aJumpTable;
+  InitializeJumpTable(aJumpTable);
 
-    static bool func_wire_available_SnoopOutI(Flexus::Core::index_t idx) {
-        std::cout << "wire_available_SnoopOutI called\n";
-        return true;
-    }
+  // Step 4: Specify the Index and Width
+  Flexus::Core::index_t anIndex = 1;
+  Flexus::Core::index_t aWidth  = 1;
 
-    static void func_wire_manip_SnoopOutI(Flexus::Core::index_t idx, MemoryMessage& p) {
-        std::cout << "wire_manip_SnoopOutI called with DTR\n";
-    }
+  std::cout << "FastCache index and widths defined\n";
+  // Step 5: Instantiate the DUT
 
-    static bool func_wire_available_SnoopOutD(Flexus::Core::index_t idx) {
-        std::cout << "wire_available_SnoopOutD called\n";
-        return true;
-    }
+  nFastCache::FastCacheComponent dut(aCfg, aJumpTable, anIndex, aWidth);
+  std::cout << "FastCacheComponent instantiated\n";
 
-    static void func_wire_manip_SnoopOutD(Flexus::Core::index_t idx, MemoryMessage& p) {
-        std::cout << "wire_manip_SnoopOutD \n";
-	}
+  using namespace Flexus::Core;
+  using namespace Flexus::SharedTypes;
+  using namespace nFastCache;
 
-    static bool func_wire_available_Reads(Flexus::Core::index_t idx) {
-        std::cout << "wire_available_Reads called\n";
-        return true;
-    }
+  // Initialize the component
+  dut.initialize();
 
-    static void func_wire_manip_Reads(Flexus::Core::index_t idx, MemoryMessage& p) {
-        std::cout << "wire_available_Reads called\n";
-    }
+  std::cout << "FastCacheComponent initialized\n";
 
-    static bool func_wire_available_Writes(Flexus::Core::index_t idx) {
-        std::cout << "wire_available_Writes called with RO\n";
-        return true;
-    }
+  // Input Initializations
 
-    static void func_wire_manip_Writes(Flexus::Core::index_t idx, MemoryMessage& p) {
-        std::cout << "wire_manip_Writes called\n";
-    }
+  // // Declare and initialize input
+  // boost::intrusive_ptr<BranchFeedback> dummyFeedback(new BranchFeedback());
+  // // Pushes to the FastCache
+  // dut.push(FastCacheInterface::BranchFeedbackIn(), 0, dummyFeedback);
+  // std::cout << "dut push done\n";
 
-    static bool func_wire_available_RegionNotify(Flexus::Core::index_t idx) {
-        std::cout << "wire_available_RegionNotify called\n";
-        return true;
-    }
+  // // Drive The FastCache
+  // FastCacheInterface::FastCacheDrive drive_temp;
+  // dut.drive(drive_temp);
 
-    static void func_wire_manip_RegionNotify(Flexus::Core::index_t idx, RegionScoutMessage& p) {
-        std::cout << "func_wire_manip_RegionNotify called with DTR\n";
-    }
+  // TESTS: Perform assertions based on the expected behavior
 
+  // ASSERT_EQ(expectedTraceInModernResult, pcAndTypeAndAnnulPair);
 
-    // static void setPayloadp(TranslationPtr& p){
-    //     uFetchTestFixture::payload = p;
-    // }
-
-    // static TranslationPtr getPayloadp(){
-    //   return uFetchTestFixture::payload;
-    // }
-
-protected:
-  static void SetUpTestCase() {
-    // Create Flexus base
-    Flexus::Core::CreateFlexusObject();
-
-    // Allocate memory for hooks_from_qemu
-    Flexus::Qemu::API::QFLEX_TO_QEMU_API_t *hooks_from_qemu = new Flexus::Qemu::API::QFLEX_TO_QEMU_API_t;
-
-    DummyQemu dummyQemuObj(3);
-
-    // Initialize hooks_from_qemu with the desired function pointer
-    hooks_from_qemu->QEMU_get_cpu_by_index    = dummyQemuObj.DummyQEMU_get_cpu_by_index;
-    hooks_from_qemu->QEMU_get_cpu_index       = dummyQemuObj.DummyQEMU_get_cpu_index;
-    hooks_from_qemu->QEMU_logical_to_physical = dummyQemuObj.DummyQEMU_logical_to_physical;
-    hooks_from_qemu->QEMU_read_sctlr          = dummyQemuObj.DummyQEMU_read_sctlr;
-    hooks_from_qemu->QEMU_read_register       = dummyQemuObj.DummyQEMU_read_register;
-    hooks_from_qemu->QEMU_read_phys_memory    = dummyQemuObj.DummyQEMU_read_phys_memory;
-    printf("hooks_from_qemu: %p\n", hooks_from_qemu);
-    QFLEX_API_set_Interface_Hooks(hooks_from_qemu);
-  }
-
-  static void TearDownTestCase() {
-    // Deallocate memory for qemu_cpus
-    // free(qemu_cpus);
-    // // Deallocate memory for cpu_states
-    // free(cpu_states);
-    // std::cout << "TearDownTestCase called\n";
-
-  }
-
-  void SetUp() {
-  }
-  void TearDown() {
-  }
-};
-
-
-#include "FastCacheTests.h"
+  // Finalize the component
+  dut.finalize();
+}
