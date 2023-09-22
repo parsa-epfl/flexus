@@ -178,13 +178,12 @@ protected:
     DummyQemu dummyQemuObj(3);
 
     // Initialize hooks_from_qemu with the desired function pointer
-    dummyQemuObj.initialize(3);
-    hooks_from_qemu->QEMU_get_cpu_by_index = dummyQemuObj.DummyQEMU_get_cpu_by_index;
-    hooks_from_qemu->QEMU_get_cpu_index = dummyQemuObj.DummyQEMU_get_cpu_index;
+    hooks_from_qemu->QEMU_get_cpu_by_index    = dummyQemuObj.DummyQEMU_get_cpu_by_index;
+    hooks_from_qemu->QEMU_get_cpu_index       = dummyQemuObj.DummyQEMU_get_cpu_index;
     hooks_from_qemu->QEMU_logical_to_physical = dummyQemuObj.DummyQEMU_logical_to_physical;
-    hooks_from_qemu->QEMU_read_sctlr = dummyQemuObj.DummyQEMU_read_sctlr;
-    hooks_from_qemu->QEMU_read_register = dummyQemuObj.DummyQEMU_read_register;
-    hooks_from_qemu->QEMU_read_phys_memory = dummyQemuObj.DummyQEMU_read_phys_memory;
+    hooks_from_qemu->QEMU_read_sctlr          = dummyQemuObj.DummyQEMU_read_sctlr;
+    hooks_from_qemu->QEMU_read_register       = dummyQemuObj.DummyQEMU_read_register;
+    hooks_from_qemu->QEMU_read_phys_memory    = dummyQemuObj.DummyQEMU_read_phys_memory;
     printf("hooks_from_qemu: %p\n", hooks_from_qemu);
     QFLEX_API_set_Interface_Hooks(hooks_from_qemu);
   }
