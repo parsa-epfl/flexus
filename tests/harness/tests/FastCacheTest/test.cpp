@@ -1,5 +1,7 @@
 #include <components/FastCache/FastCacheImpl.cpp>
 #include <gtest/gtest.h>
+#include <core/types.hpp>
+#include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 #include "FastCacheFixture.hpp"
 #include "DummyQemu.hpp"
 
@@ -110,6 +112,7 @@ bool FastCacheTestFixture::func_wire_available_RequestOut(Flexus::Core::index_t 
   return true;
 }
 void FastCacheTestFixture::func_wire_manip_RequestOut(Flexus::Core::index_t idx, MemoryMessage &p) {
+  std::cout << "Trigger RequestOut Callback" << "\n";
 }
 bool FastCacheTestFixture::func_wire_available_SnoopOutI(Flexus::Core::index_t idx) {
   return true;
@@ -140,6 +143,7 @@ void FastCacheTestFixture::func_wire_manip_RegionNotify(Flexus::Core::index_t id
 
 // @see
 // https://github.com/google/googletest/blob/main/docs/primer.md#test-fixtures-using-the-same-data-configuration-for-multiple-tests-same-data-multiple-tests
+//  TEST 1. First Access always miss
 TEST_F(FastCacheTestFixture, FastCacheTest) {
 
   FastCacheConfiguration_struct aCfg("FastCacheTest config");
@@ -162,29 +166,26 @@ TEST_F(FastCacheTestFixture, FastCacheTest) {
 
   using namespace Flexus::Core;
   using namespace Flexus::SharedTypes;
-  using namespace nFastCache;
+  // using namespace nFastCache;
 
   // Initialize the component
   dut.initialize();
 
   std::cout << "FastCacheComponent initialized\n";
 
-  // Input Initializations
+  MemoryMessage mock_mess(MemoryMessage::MemoryMessageType::LoadReq);
+  mock_mess.address() = PhysicalMemoryAddress(0xc0ffee);
+  mock_mess.pc() = VirtualMemoryAddress(0xc0ffee);
+  // mock_mess.priv() = IS_PRIV(mem_trans);
+  mock_mess.coreIdx() = 0xc0ffee;
 
-  // // Declare and initialize input
-  // boost::intrusive_ptr<BranchFeedback> dummyFeedback(new BranchFeedback());
-  // // Pushes to the FastCache
-  // dut.push(FastCacheInterface::BranchFeedbackIn(), 0, dummyFeedback);
-  // std::cout << "dut push done\n";
+  dut.push(FastCacheInterface::FetchRequestIn(), 0, mock_mess);
 
-  // // Drive The FastCache
-  // FastCacheInterface::FastCacheDrive drive_temp;
-  // dut.drive(drive_temp);
-
-  // TESTS: Perform assertions based on the expected behavior
-
-  // ASSERT_EQ(expectedTraceInModernResult, pcAndTypeAndAnnulPair);
-
-  // Finalize the component
   dut.finalize();
 }
+
+//  TEST 2. Fill first, then HIT
+//  TEST 3. FILL sov, fill associative, and observe eviction
+//  TEST 4. Verify total cache size
+//  TEST 5. LLC Sharing
+//  TEST 6. Coherence Test
