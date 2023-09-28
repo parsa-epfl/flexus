@@ -58,5 +58,5 @@ echo "=== Using ${JOBS} simultaneous jobs ==="
 
 export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
 
-cmake -DSIMULATOR=Harness . 
+cmake -DSIMULATOR=Harness -DBUILD_DEBUG=true . 
 make -j${JOBS}
