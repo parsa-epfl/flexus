@@ -30,15 +30,15 @@
 //       0x1,   0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF, 0x10,
 //       0x1000 // Adding the value 0x1000 (hexadecimal)
 //   };
-static std::unique_ptr<Flexus::Qemu::API::conf_object_t> qemu_cpus;
+static std::unique_ptr<Flexus::Qemu::API::conf_object_t[]> qemu_cpus;
 
 //   // Declare the function prototypes
 DummyQemu::DummyQemu(int ncpus = 3) {
 
-  qemu_cpus = std::unique_ptr<Flexus::Qemu::API::conf_object_t>(
+  qemu_cpus = std::unique_ptr<Flexus::Qemu::API::conf_object_t[]>(
       new Flexus::Qemu::API::conf_object_t[ncpus]);
 
-  cpu_states = std::unique_ptr<TestBenchDummyCPUState>(new TestBenchDummyCPUState[ncpus]);
+  cpu_states = std::unique_ptr<TestBenchDummyCPUState[]>(new TestBenchDummyCPUState[ncpus]);
 
   auto qc = qemu_cpus.get();
   auto cs = cpu_states.get();
@@ -63,10 +63,10 @@ DummyQemu::DummyQemu(int ncpus = 3) {
 }
 
 DummyRegs DummyQemu::getDummyRegs(int index) const {
-  return cpu_states.get()[index].registers;
+  return cpu_states[index].registers;
 }
-TestBenchDummyCPUState DummyQemu::getTestBenchDummyCPUState() const {
-  return *cpu_states;
+TestBenchDummyCPUState& DummyQemu::getTestBenchDummyCPUState(int index) const {
+  return cpu_states[index];
 }
 Flexus::Qemu::API::conf_object_t DummyQemu::getQemuCPUs() const {
   return *qemu_cpus.get();

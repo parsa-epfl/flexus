@@ -44,7 +44,7 @@ typedef struct {
 class DummyQemu {
 
 private:
-  std::unique_ptr<TestBenchDummyCPUState> cpu_states;
+  std::unique_ptr<TestBenchDummyCPUState[]> cpu_states;
 
 public:
   // Declare the function prototypes
@@ -52,7 +52,7 @@ public:
   DummyQemu(int ncpus);
 
   DummyRegs getDummyRegs(int index) const;
-  TestBenchDummyCPUState getTestBenchDummyCPUState() const;
+  TestBenchDummyCPUState& getTestBenchDummyCPUState(int index) const;
   int DummyQEMU_cpu_execute(Flexus::Qemu::API::conf_object_t *cpu, int cycles);
   Flexus::Qemu::API::conf_object_t getQemuCPUs() const;
   static Flexus::Qemu::API::conf_object_t *DummyQEMU_get_cpu_by_index(int index);
