@@ -4,8 +4,13 @@
 #include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 #include "FastCacheFixture.hpp"
 #include "DummyQemu.hpp"
+#include <core/stats.hpp>
+#include "StatStreamParser.h"
 
+#include <iterator>
 #include <memory>
+#include <ostream>
+#include <vector>
 
 
 /**
@@ -112,7 +117,7 @@ bool FastCacheTestFixture::func_wire_available_RequestOut(Flexus::Core::index_t 
   return true;
 }
 void FastCacheTestFixture::func_wire_manip_RequestOut(Flexus::Core::index_t idx, MemoryMessage &p) {
-  std::cout << "Trigger RequestOut Callback" << "\n";
+  p.type() = MemoryMessage::MissReplyWritable;
 }
 bool FastCacheTestFixture::func_wire_available_SnoopOutI(Flexus::Core::index_t idx) {
   return true;
@@ -141,6 +146,9 @@ void FastCacheTestFixture::func_wire_manip_RegionNotify(Flexus::Core::index_t id
                                                         RegionScoutMessage &p) {
 }
 
+
+
+
 // @see
 // https://github.com/google/googletest/blob/main/docs/primer.md#test-fixtures-using-the-same-data-configuration-for-multiple-tests-same-data-multiple-tests
 //  TEST 1. First Access always miss
@@ -165,23 +173,34 @@ TEST_F(FastCacheTestFixture, FastCacheTest) {
   std::cout << "FastCacheComponent instantiated\n";
 
   using namespace Flexus::Core;
-  using namespace Flexus::SharedTypes;
+//  using namespace Flexus::SharedTypes;
   // using namespace nFastCache;
 
   // Initialize the component
+
+  Flexus::Stat::getStatManager()->initialize();
   dut.initialize();
 
   std::cout << "FastCacheComponent initialized\n";
 
   MemoryMessage mock_mess(MemoryMessage::MemoryMessageType::LoadReq);
   mock_mess.address() = PhysicalMemoryAddress(0xc0ffee);
-  mock_mess.pc() = VirtualMemoryAddress(0xc0ffee);
-  // mock_mess.priv() = IS_PRIV(mem_trans);
+  mock_mess.pc() = VirtualMemoryAddress(0x00dead);
   mock_mess.coreIdx() = 0xc0ffee;
 
   dut.push(FastCacheInterface::FetchRequestIn(), 0, mock_mess);
-
   dut.finalize();
+
+  std::stringstream ss;
+  Flexus::Stat::getStatManager()->printMeasurement("all", ss);
+
+  StatStreamHelper helper(ss);
+
+  int value;
+  bool ret_val = helper.get_entry_by_name("sys-FastCacheTest config-Misses:Read:Invalid", value);
+
+  EXPECT_EQ(ret_val, true);
+  ASSERT_EQ(value, 1);
 }
 
 //  TEST 2. Fill first, then HIT
