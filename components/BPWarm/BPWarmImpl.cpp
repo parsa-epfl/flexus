@@ -171,7 +171,7 @@ public:
       theBranchPredictor->predict(branchReq.thePC, theFetchState[anIndex][0]);
       theBranchPredictor->feedback(branchReq.thePC, branchReq.theActualType, branchReq.theActualDirection, branchReq.theActualTarget,
                                    theFetchState[anIndex][0], 0);
-#elif BB_BTB
+#elif defined(BB_BTB)
       int BBSize = (branchReq.thePC - theBBAddress[anIndex])/4 + 1;
 
       theBranchPredictor->predict(theBBAddress[anIndex], theFetchState[anIndex][0], BBSize);

@@ -366,7 +366,6 @@ WIRE( theuArch, SquashOut,              theDecoder, SquashIn              )
 WIRE( theuArch, BranchFeedbackOut,      theFAG, BranchFeedbackIn          )
 WIRE( theuArch, RedirectOut,            theFAG, RedirectIn                )
 WIRE( theuArch, SquashBranchOut,        theuFetch, SquashBranchIn         ) //Rakesh
-WIRE( theuArch, TrapStateOut,           theFAG, TrapStateIn               ) //Rakesh
 
 //uFetch to IDMux
 WIRE( theuFetch, FetchMissOut,          theNetMapper, ICacheRequestIn     )

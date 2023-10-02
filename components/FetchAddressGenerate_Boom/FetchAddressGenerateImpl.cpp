@@ -316,15 +316,6 @@ public:
     squashedBPState = aBPState;
   }
 
-  // TrapStateIn
-  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(TrapStateIn);
-  void push(interface::TrapStateIn const &, index_t anIndex,
-            boost::intrusive_ptr<TrapState> &aTrapState) {
-    //	  DBG_(Tmp, ( << std::endl<< std::endl << std::endl << "Trap State Received " << std::endl
-    //<< std::endl<< std::endl) );
-    theBranchPredictor->resetTrapState(aTrapState);
-  }
-
   // RASOpsIn
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(RASOpsIn);
   void push(interface::RASOpsIn const &, index_t anIndex,
@@ -1139,9 +1130,6 @@ FLEXUS_PORT_ARRAY_WIDTH(FetchAddressGenerate, SquashIn) { // Rakesh
   return (cfg.Threads);
 }
 FLEXUS_PORT_ARRAY_WIDTH(FetchAddressGenerate, SquashBranchIn) { // Rakesh
-  return (cfg.Threads);
-}
-FLEXUS_PORT_ARRAY_WIDTH(FetchAddressGenerate, TrapStateIn) { // Rakesh
   return (cfg.Threads);
 }
 FLEXUS_PORT_ARRAY_WIDTH(FetchAddressGenerate, SpecialCallIn) { // Rakesh

@@ -70,7 +70,6 @@ struct BranchPredictor {
   virtual void pushReturnAddresstoRAS(VirtualMemoryAddress retAddress) = 0;
   virtual void resetState(boost::intrusive_ptr<BPredState>) = 0;
   virtual void resetUpdateState(boost::intrusive_ptr<BPredState> aBPState) = 0;
-  virtual void resetTrapState(boost::intrusive_ptr<TrapState> aTrapState) = 0;
   virtual VirtualMemoryAddress predict(FetchAddr &aFetchAddr) = 0;
   virtual BTBEntry access_BBTB(VirtualMemoryAddress anAddress) = 0;
   virtual VirtualMemoryAddress predictBranch(FetchAddr &aFetch, BTBEntry aBTBEntry) = 0;
