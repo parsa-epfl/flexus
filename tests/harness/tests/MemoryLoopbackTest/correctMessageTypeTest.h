@@ -54,7 +54,7 @@ TEST_F(MemoryLoopbackTestFixture, CorrectMessageType)
 	using namespace SharedTypes;
 
 
-	// Create dummy variablesto call push and drive
+	// Create dummy variables to call push and drive
 	MemoryLoopbackInterface::LoopbackDrive LoopbackDrive_tmp;
 	MemoryLoopbackInterface::LoopbackIn LoopbackIn_tmp;	
 

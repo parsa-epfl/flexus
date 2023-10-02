@@ -48,3 +48,6 @@ nMemoryMap::MemoryMapComponent *MemoryLoopbackTestFixture::aMemoryMap =
 #include "maxRequestsTest.h"
 #include "useFetchReplyTest.h"
 #include "correctMessageTypeTest.h"
+#include "ninad_maxReq.h"
+#include "ninad_MixedRequestResponse.h"
+#include "ninad_MaxQueuedRequests.h"

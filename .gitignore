@@ -34,3 +34,5 @@ temp*
 build
 *.swp
 .cache/
+testing_harness*
+*_deps

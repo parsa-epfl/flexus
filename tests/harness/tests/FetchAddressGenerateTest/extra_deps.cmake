@@ -1,0 +1,5 @@
+set(REQUIRED_COMPONENTS
+	MTManager
+	CommonQEMU
+)
+set(ENABLE_TEST YES)
