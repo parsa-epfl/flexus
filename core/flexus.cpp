@@ -123,6 +123,7 @@ private:
   bool theSaveRequested;
   bool theHasExited;
   std::string theSaveName;
+  std::string theStatsFilename;
 
   bool theFastMode;
 
@@ -222,7 +223,6 @@ public:
   void log(std::string const &aName, std::string const &anInterval, std::string const &aRegEx);
   void printMMU(int32_t aCPU);
 
-public:
   FlexusImpl(Qemu::API::conf_object_t *anObject)
       : theWatchdogTimeout(100000), theNumWatchdogs(0), theInitialized(false), theCycleCount(0),
         theStatInterval(100), theRegionInterval(100000000), theProfileInterval(1000000),
@@ -234,6 +234,30 @@ public:
   virtual ~FlexusImpl() {
   }
 };
+
+static std::string addTimestampToFileName(const std::string& filename) {
+    // Get current time
+    std::time_t t = std::time(0);
+    std::tm* now = std::localtime(&t);
+
+    // Create a stringstream to format the timestamp
+    std::stringstream ss;
+    ss << (now->tm_year + 1900) << '-'
+       << (now->tm_mon + 1) << '-'
+       << now->tm_mday << '-'
+       << now->tm_hour << '-'
+       << now->tm_min << '-'
+       << now->tm_sec;
+
+    std::string timestamp = ss.str();
+
+    // Create the new file name with timestamp
+    std::string stamped_filename = filename + "_" + timestamp;
+    
+    return stamped_filename;
+  }
+
+
 
 void FlexusImpl::printMMU(int32_t aCPU) {
   // Flexus::Qemu::Processor::getProcessor(aCPU)->dumpMMU();
@@ -254,6 +278,7 @@ void FlexusImpl::initializeComponents() {
   ComponentManager::getComponentManager().initComponents();
   theInitialized = true;
   theHasExited = false;
+  theStatsFilename = addTimestampToFileName("stats_db");
 }
 
 void FlexusImpl::advanceCycles(int64_t aCycleCount) {
@@ -289,7 +314,7 @@ void FlexusImpl::advanceCycles(int64_t aCycleCount) {
   static uint64_t last_stats = 0;
   if (theCycleCount - last_stats >= theStatInterval) {
     DBG_(Dev, Core()(<< "Saving stats at: " << theCycleCount));
-    backupStats("stats_db");
+    backupStats(theStatsFilename);
 
 #ifdef WRITE_ALL_MEASUREMENT_OUT
     writeMeasurement("all", "all.measurement.out");
@@ -576,6 +601,7 @@ void FlexusImpl::backupStats(std::string const &aFilename) const {
   remove(last1Name.c_str());
   rename(fullName.c_str(), last1Name.c_str());
 
+  DBG_(Dev, Core()(<< "Saving stats to file: " << fullName << "."));
   saveStats(fullName);
 
   remove(last1Name.c_str());
@@ -714,15 +740,14 @@ void FlexusImpl::terminateSimulation(bool fromQEMU) {
   system_clock::time_point now(system_clock::now());
   auto tt = system_clock::to_time_t(now);
   DBG_(Dev, Core()(<< "Terminating simulation. Timestamp: " << std::asctime(std::localtime(&tt))));
-  DBG_(Dev, Core()(<< "Saving final stats_db."));
-  ;
+
   for (void_fn_vector::iterator iter = theTerminateFunctions.begin();
        iter != theTerminateFunctions.end(); ++iter) {
     (*iter)();
   }
 
   Flexus::Stat::getStatManager()->finalize();
-  backupStats("stats_db");
+  backupStats(theStatsFilename);
 
   // ComponentManager::getComponentManager().finalizeComponents();
 
