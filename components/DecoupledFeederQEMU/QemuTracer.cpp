@@ -155,7 +155,7 @@ class QemuTracerImpl {
 
 public:
   std::function<void(int, MemoryMessage &)> toL1D;
-  std::function<void(int, MemoryMessage &, uint32_t)> toL1I;
+  std::function<void(int, MemoryMessage &)> toL1I;
   std::function<void(int, MemoryMessage &)> toNAW;
 
   //  bool theWhiteBoxDebug;
@@ -174,7 +174,7 @@ public:
   // Initialize the tracer to the desired CPU
   void init(API::conf_object_t *aCPU, index_t anIndex,
             std::function<void(int, MemoryMessage &)> aToL1D,
-            std::function<void(int, MemoryMessage &, uint32_t)> aToL1I,
+            std::function<void(int, MemoryMessage &)> aToL1I,
             std::function<void(int, MemoryMessage &)> aToNAW,
             //          , bool aWhiteBoxDebug
             //        , int32_t aWhiteBoxPeriod
@@ -206,7 +206,9 @@ public:
     instr_num++;
     const int32_t k_no_stall = 0;
     theMemoryMessage.address() = PhysicalMemoryAddress(mem_trans->s.physical_address);
-    theMemoryMessage.pc() = VirtualMemoryAddress(mem_trans->s.logical_address);
+    theMemoryMessage.pc() = VirtualMemoryAddress(mem_trans->s.pc);
+    theMemoryMessage.targetpc() = VirtualMemoryAddress(mem_trans->s.logical_address);
+    theMemoryMessage.opcode() = mem_trans->s.opcode;
     theMemoryMessage.type() = MemoryMessage::FetchReq;
     theMemoryMessage.priv() = IS_PRIV(mem_trans);
     theMemoryMessage.reqSize() = 4;
@@ -214,28 +216,23 @@ public:
 
     eBranchType branchTypeTable[API::QEMU_BRANCH_TYPE_COUNT] = {
         kNonBranch,   kConditional,  kUnconditional, kCall,
-        kIndirectReg, kIndirectCall, kReturn,        kLastBranchType};
+        kIndirectReg, kIndirectCall, kReturn,kLastBranchType};
     theMemoryMessage.branchType() = branchTypeTable[mem_trans->s.branch_type];
     theMemoryMessage.branchAnnul() = (mem_trans->s.annul != 0);
 
     theMemoryMessage.tl() = 0;
 
-    uint32_t opcode;
-    API::qemu_callbacks.QEMU_read_phys_memory((uint8_t *)& opcode, mem_trans->s.physical_address, 4);
     IS_PRIV(mem_trans) ? theOSStats->theFetches++ : theUserStats->theFetches++;
     theBothStats->theFetches++;
 
     // TODO FIXME
-    DBG_(VVerb, (<< "sending fetch[" << theIndex << "] op: " << opcode
+    DBG_(VVerb, (<< "sending fetch[" << theIndex << "] op: " << theMemoryMessage.opcode()
                  << " message: " << theMemoryMessage));
-    toL1I(theIndex, theMemoryMessage, opcode);
+    toL1I(theIndex, theMemoryMessage);
     return k_no_stall; // Never stalls
   }
 
   API::cycles_t trace_mem_hier_operate(API::memory_transaction_t *mem_trans) {
-    // debugTransaction(mem_trans); // ustiugov: uncomment to track every memory
-    // op Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
-    // toL1D((int32_t) 0, msg);
     const int32_t k_no_stall = 0;
     if (mem_trans->io) {
       // Count data accesses
@@ -299,28 +296,6 @@ public:
       case API::QEMU_Trans_Cache:
         // We don't really support these operations
         return k_no_stall;
-        /*
-        if( mem_trans->cache_op == API::QEMU_Invalidate_Cache ) {
-          theMemoryMesage.type() = MemoryMessage::Invalidate;
-
-          if( mem_trans->cache == API::QEMU_Instruction_Cache ) {
-            toL1I( theIndex, theMemoryMessage);
-          } else if( mem_trans->cache == API::QEMU_Data_Cache ) {
-            toL1D( theIndex, theMemoryMessage );
-          }
-          return k_no_stall;
-        } else if( mem_trans->cache_op == API::QEMU_Clean_Cache ) {
-          theMemoryMesage.type() = MemoryMessage::Invalidate;
-
-          if( mem_trans->cache == API::QEMU_Instruction_Cache ) {
-            toL1I( theIndex, theMemoryMessage);
-          } else if( mem_trans->cache == API::QEMU_Data_Cache ) {
-            toL1D( theIndex, theMemoryMessage );
-          }
-          return k_no_stall;
-        }
-        break;
-        */
       default:
         DBG_(Crit, (<< "unhandled transaction type.  Transaction follows:"));
         debugTransaction(mem_trans);
@@ -477,7 +452,7 @@ class QemuTracerManagerImpl : public QemuTracerManager {
   QemuTracer *theTracers; // QEMU Components that have support for callbacks
   DMATracer theDMATracer;
   std::function<void(int, MemoryMessage &)> toL1D;
-  std::function<void(int, MemoryMessage &, uint32_t)> toL1I;
+  std::function<void(int, MemoryMessage &)> toL1I;
   std::function<void(MemoryMessage &)> toDMA;
   std::function<void(int, MemoryMessage &)> toNAW;
 
@@ -487,7 +462,7 @@ class QemuTracerManagerImpl : public QemuTracerManager {
 
 public:
   QemuTracerManagerImpl(int32_t aNumCPUs, std::function<void(int, MemoryMessage &)> aToL1D,
-                        std::function<void(int, MemoryMessage &, uint32_t)> aToL1I,
+                        std::function<void(int, MemoryMessage &)> aToL1I,
                         std::function<void(MemoryMessage &)> aToDMA,
                         std::function<void(int, MemoryMessage &)> aToNAW,
                         //	  , bool aWhiteBoxDebug
@@ -593,7 +568,7 @@ private:
 
 QemuTracerManager *
 QemuTracerManager::construct(int32_t aNumCPUs, std::function<void(int, MemoryMessage &)> toL1D,
-                             std::function<void(int, MemoryMessage &, uint32_t)> toL1I,
+                             std::function<void(int, MemoryMessage &)> toL1I,
                              std::function<void(MemoryMessage &)> toDMA,
                              std::function<void(int, MemoryMessage &)> toNAW
                              //    , bool aWhiteBoxDebug

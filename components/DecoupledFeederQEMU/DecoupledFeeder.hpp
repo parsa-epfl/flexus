@@ -70,7 +70,7 @@ typedef std::pair< uint64_t, uint32_t> ulong_pair;
 COMPONENT_INTERFACE(
   DYNAMIC_PORT_ARRAY( PushOutput, MemoryMessage, ToL1D )
   DYNAMIC_PORT_ARRAY( PushOutput, MemoryMessage, ToL1I )
-  DYNAMIC_PORT_ARRAY( PushOutput, BPMessage, ToBPred )
+  DYNAMIC_PORT_ARRAY( PushOutput, MemoryMessage, ToBPred )
   DYNAMIC_PORT_ARRAY( PushOutput, MemoryMessage, ToNAW )
 
   DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, ToMMU )

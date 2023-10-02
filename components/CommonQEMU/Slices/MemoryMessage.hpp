@@ -361,21 +361,21 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
   };
 
   explicit MemoryMessage(MemoryMessageType aType)
-      : theType(aType), theAddress(0), theAssociatedPC(0), theData(0), theReqSize(0), theCoreIdx(0),
+      : theType(aType), theAddress(0), theAssociatedPC(0), theTargetPC(0), theOpcode(0), theData(0), theReqSize(0), theCoreIdx(0),
         theSerial(memoryMessageSerial()), thePriv(false), theAnyInvs(false), theDstream(true),
         theFillLevel(eUnknown), theOutstandingMessages(0), theAckRequired(true),
         theAckRequiresData(false), theEvictHasData(false), theBranchType(kNonBranch),
         theBranchAnnul(false), thePageWalk(false), theTS(0) {
   }
   explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress)
-      : theType(aType), theAddress(anAddress), theAssociatedPC(0), theData(0), theReqSize(0),
+      : theType(aType), theAddress(anAddress), theAssociatedPC(0), theTargetPC(0), theOpcode(0), theData(0), theReqSize(0),
         theCoreIdx(0), theSerial(memoryMessageSerial()), thePriv(false), theAnyInvs(false),
         theDstream(true), theFillLevel(eUnknown), theOutstandingMessages(0), theAckRequired(true),
         theAckRequiresData(false), theEvictHasData(false), theBranchType(kNonBranch),
         theBranchAnnul(false), thePageWalk(false), theTS(0) {
   }
   explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC)
-      : theType(aType), theAddress(anAddress), theAssociatedPC(aPC), theData(0), theReqSize(0),
+      : theType(aType), theAddress(anAddress), theAssociatedPC(aPC), theTargetPC(0), theOpcode(0), theData(0), theReqSize(0),
         theCoreIdx(0), theSerial(memoryMessageSerial()), thePriv(false), theAnyInvs(false),
         theDstream(true), theFillLevel(eUnknown), theOutstandingMessages(0), theAckRequired(true),
         theAckRequiresData(false), theEvictHasData(false), theBranchType(kNonBranch),
@@ -383,7 +383,7 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
   }
   explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC,
                          bits aData)
-      : theType(aType), theAddress(anAddress), theAssociatedPC(aPC), theData(aData), theReqSize(0),
+      : theType(aType), theAddress(anAddress), theAssociatedPC(aPC), theTargetPC(0), theOpcode(0), theData(aData), theReqSize(0),
         theCoreIdx(0), theSerial(memoryMessageSerial()), thePriv(false), theAnyInvs(false),
         theDstream(true), theFillLevel(eUnknown), theOutstandingMessages(0), theAckRequired(true),
         theAckRequiresData(false), theEvictHasData(false), theBranchType(kNonBranch),
@@ -392,7 +392,7 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
 
   explicit MemoryMessage(MemoryMessage &aMsg)
       : theType(aMsg.theType), theAddress(aMsg.theAddress), theAssociatedPC(aMsg.theAssociatedPC),
-        theData(aMsg.theData), theReqSize(aMsg.theReqSize), theCoreIdx(0),
+        theTargetPC(aMsg.theTargetPC), theOpcode(aMsg.theOpcode), theData(aMsg.theData), theReqSize(aMsg.theReqSize), theCoreIdx(0),
         theSerial(memoryMessageSerial()), thePriv(aMsg.thePriv), theAnyInvs(false),
         theDstream(aMsg.theDstream), theFillLevel(eUnknown), theOutstandingMessages(0),
         theAckRequired(aMsg.theAckRequired), theAckRequiresData(aMsg.theAckRequiresData),
@@ -454,6 +454,12 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
   const VirtualMemoryAddress pc() const {
     return theAssociatedPC;
   }
+  const VirtualMemoryAddress targetpc() const {
+    return theTargetPC;
+  }
+  const uint32_t opcode() const {
+    return theOpcode;
+  }
   const bits data() const {
     return theData;
   }
@@ -474,6 +480,12 @@ struct MemoryMessage : public boost::counted_base { /*, public FastAlloc*/
   }
   VirtualMemoryAddress &pc() {
     return theAssociatedPC;
+  }
+  VirtualMemoryAddress &targetpc() {
+    return theTargetPC;
+  }
+  uint32_t &opcode() {
+    return theOpcode;
   }
   bits &data() {
     return theData;
@@ -1023,6 +1035,8 @@ private:
   MemoryMessageType theType;
   MemoryAddress theAddress;
   VirtualMemoryAddress theAssociatedPC;
+  VirtualMemoryAddress theTargetPC;
+  uint32_t theOpcode;
   bits theData;
   int32_t theReqSize;
   int32_t theCoreIdx;
