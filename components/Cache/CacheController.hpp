@@ -66,8 +66,9 @@
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index_container.hpp>
-using namespace boost::multi_index;
 #include <boost/none.hpp>
+using namespace boost::placeholders;
+using namespace boost::multi_index;
 
 #include <components/CommonQEMU/MessageQueues.hpp>
 #include <components/CommonQEMU/Slices/ExecuteState.hpp>

@@ -49,6 +49,7 @@
 #include <boost/dynamic_bitset.hpp>
 #define MAX_NUM_SHARERS 512
 
+using namespace boost::placeholders;
 namespace nCMPCache {
 
 class SimpleDirectoryState {

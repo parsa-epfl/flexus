@@ -59,9 +59,10 @@
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index_container.hpp>
-#include <components/CommonQEMU/TraceTracker.hpp>
-
 using namespace boost::multi_index;
+using namespace boost::placeholders;
+
+#include <components/CommonQEMU/TraceTracker.hpp>
 
 #include <core/performance/profile.hpp>
 #include <core/stats.hpp>

@@ -46,10 +46,10 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
-#include <components/Cache/Cache.hpp>
-
 #include <core/performance/profile.hpp>
 #include <core/qemu/configuration_api.hpp>
+
+#include <components/Cache/Cache.hpp>
 
 #include "CacheController.hpp"
 
@@ -67,8 +67,6 @@ namespace nCache {
 using namespace Flexus;
 using namespace Core;
 using namespace SharedTypes;
-
-using std::unique_ptr;
 
 class FLEXUS_COMPONENT(Cache) {
   FLEXUS_COMPONENT_IMPL(Cache);

@@ -78,6 +78,7 @@
 #include <components/CommonQEMU/GlobalHasher.hpp>
 
 using namespace boost::multi_index;
+using namespace boost::placeholders;
 
 #include <core/performance/profile.hpp>
 #include <core/stats.hpp>

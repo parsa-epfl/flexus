@@ -69,7 +69,6 @@
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index_container.hpp>
-using namespace boost::multi_index;
 #include <boost/none.hpp>
 
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
@@ -77,6 +76,8 @@ using namespace boost::multi_index;
 #include <components/CommonQEMU/Transports/MemoryTransport.hpp>
 
 using namespace Flexus;
+using namespace boost::multi_index;
+using namespace boost::placeholders;
 
 #include <components/CommonQEMU/MessageQueues.hpp>
 #include <components/CommonQEMU/Slices/ExecuteState.hpp>

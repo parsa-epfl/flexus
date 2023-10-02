@@ -132,9 +132,17 @@ public:
 
           eInstructionCode insnCode = (dynamic_cast<armInstruction *>(insn.get()))->instCode();
           if ((lastInsnCode == codeCALL) /*&& lastBPState->callUpdatedRAS == true*/) {
-            trackSpecialCall(insnCode, (*iter).theOpcode);
+            // This was for SPARC, decoding using specialCalls using (iter*)->Opcode
+            // TODO make sure this makes sense for ARM
+            if (insnCode == codeBranchUnconditional) {
+                theCallRestorePair++;
+                lastBPState->detectedSpecialCall = true;
+            } else if (false) {
+                // Other cases of SpecialCall
+                theCallRestorePair++;
+                lastBPState->detectedSpecialCall = true;
+            }
           }
-
           lastInsnCode = insnCode;
           lastBPState = (*iter).theBPState;
           // Set Fill Level for the insn
@@ -184,7 +192,7 @@ public:
   }
 
   FLEXUS_PORT_ALWAYS_AVAILABLE(AvailableFIQOut);
-  dispatch_status pull(interface::AvailableFIQOut const &) {
+  dispatchStatus pull(interface::AvailableFIQOut const &) {
     int32_t avail = cfg.FIQSize - theFIQ.size();
     if (avail < 0) {
       avail = 0;

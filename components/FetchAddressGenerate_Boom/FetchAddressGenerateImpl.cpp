@@ -49,7 +49,7 @@
 
 #define DBG_DefineCategories FetchAddressGenerate
 #define DBG_SetDefaultOps AddCat(FetchAddressGenerate)
-#include DBG_Control()
+#include DBG_Control
 
 #include <core/flexus.hpp>
 #include <core/qemu/mai_api.hpp>
@@ -76,7 +76,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate) {
   std::vector<MemoryAddress> theRedirectPC;
   // std::vector<MemoryAddress> theRedirectNextPC;
   std::vector<bool> theRedirect;
-  boost::scoped_ptr<BranchPredictor> theBranchPredictor;
+  std::unique_ptr<BranchPredictor> theBranchPredictor;
   uint32_t theCurrentThread;
   std::vector<uint64_t> theNextSerial;
   boost::intrusive_ptr<BPredState> squashedBPState; // Rakesh
@@ -1170,4 +1170,4 @@ FLEXUS_PORT_ARRAY_WIDTH(FetchAddressGenerate, Stalled) {
 #define FLEXUS_END_COMPONENT FetchAddressGenerate
 
 #define DBG_Reset
-#include DBG_Control()
+#include DBG_Control

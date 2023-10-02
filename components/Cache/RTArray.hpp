@@ -75,6 +75,7 @@
 using nCommonUtil::log_base2;
 
 using namespace boost::multi_index;
+using namespace boost::placeholders;
 
 // I don't want to use all of the std namespace
 // but I use these three a few times and it's getting annoying putting std all

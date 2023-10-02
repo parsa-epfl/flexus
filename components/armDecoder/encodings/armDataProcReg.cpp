@@ -535,6 +535,9 @@ arminst LOGICAL(armcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceN
     op = n ? kANDSN_ : kANDS_;
     setflags = true;
     break;
+  default:
+    op = kOVERWRITE_;
+    break;
   }
 
   predicated_action act = addExecute(inst, operation(op), rs2_deps);

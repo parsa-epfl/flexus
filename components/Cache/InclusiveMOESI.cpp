@@ -71,6 +71,7 @@
 #include <components/CommonQEMU/TraceTracker.hpp>
 
 using namespace boost::multi_index;
+using namespace boost::placeholders;
 
 #include <core/stats.hpp>
 #include <core/types.hpp>

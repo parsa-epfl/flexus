@@ -45,7 +45,7 @@
 
 #include <list>
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp> 
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/shared_ptr.hpp>
@@ -66,9 +66,12 @@
 #include "SemanticInstruction.hpp"
 #include "Validations.hpp"
 
+using namespace boost::placeholders;
+
 #define DBG_DeclareCategories armDecoder
 #define DBG_SetDefaultOps AddCat(armDecoder)
 #include DBG_Control
+
 
 namespace narmDecoder {
 
