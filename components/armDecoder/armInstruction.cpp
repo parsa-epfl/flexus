@@ -132,7 +132,7 @@ void armInstruction::setWillRaise(eExceptionType aSetting) {
 }
 
 void armInstruction::doDispatchEffects() {
-  if (bpState() && !isBranch()) {
+  if (bpState() && bpState()->thePredictedType != kNonBranch && !isBranch()) {
     // Branch predictor identified an instruction that is not a branch as a
     // branch.
     DBG_(VVerb, (<< *this << " predicted as a branch, but is a non-branch.  Fixing"));
@@ -143,9 +143,13 @@ void armInstruction::doDispatchEffects() {
     feedback->theActualDirection = kNotTaken;
     feedback->theActualTarget = VirtualMemoryAddress(0);
     feedback->theBPState = bpState();
+    if (bpState()) {
+      bpState()->theActualDirection = kNotTaken;
+      bpState()->theActualType = kNonBranch;
+    }
     core()->branchFeedback(feedback);
-    //    core()->applyToNext( boost::intrusive_ptr< nuArchARM::Instruction >(
-    //    this ) , new BranchInteraction(VirtualMemoryAddress(0)) );
+    core()->applyToNext(boost::intrusive_ptr<nuArchARM::Instruction>(this),
+                        new BranchInteraction(VirtualMemoryAddress(0), bpState()));
   }
 }
 

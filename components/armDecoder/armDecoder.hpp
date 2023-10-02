@@ -52,18 +52,19 @@
 #include <components/uFetch/uFetchTypes.hpp>
 #include <components/CommonQEMU/Slices/AbstractInstruction.hpp>
 
-typedef std::pair < int32_t /*# of instruction */ , bool /* core synchronized? */ > dispatch_status;
+typedef std::pair < int32_t /*# of instruction */ , bool /* core synchronized? */ > dispatchStatus;
 
 COMPONENT_PARAMETERS(
   PARAMETER( FIQSize, uint32_t, "Fetch instruction queue size", "fiq", 32 )
   PARAMETER( DispatchWidth, uint32_t, "Maximum dispatch per cycle", "dispatch", 8 )
   PARAMETER( Multithread, bool, "Enable multi-threaded execution", "multithread", false )
+  PARAMETER( PipeLat, uint32_t, "Depth of the synthetic pipeline in the decode stage (before an instruction hits ROB)", "pipelat", 1 )
 );
 
 COMPONENT_INTERFACE(
   PORT( PushInput, pFetchBundle, FetchBundleIn)
-  PORT( PullOutput, int32_t, AvailableFIQOut)
-  PORT( PullInput, dispatch_status, AvailableDispatchIn)
+  PORT( PullOutput, dispatchStatus, AvailableFIQOut)
+  PORT( PullInput, dispatchStatus, AvailableDispatchIn)
   PORT( PushOutput, boost::intrusive_ptr< AbstractInstruction>, DispatchOut)
   PORT( PushOutput, eSquashCause, SquashOut)
   PORT( PushInput, eSquashCause, SquashIn)
@@ -71,6 +72,9 @@ COMPONENT_INTERFACE(
   PORT( PullOutput, bool, Stalled)
 
   PORT( PushOutput, int64_t, DispatchedInstructionOut) // Send instruction word to Power Tracker
+  PORT( PushInput, std::list< boost::intrusive_ptr<BPredState> >, RASOpsIn)
+  PORT( PushOutput, std::list< boost::intrusive_ptr<BPredState> >, RASOpsOut )  //Rakesh
+  PORT( PushOutput, boost::intrusive_ptr< BPredState >, SpecialCallOut)
 
   DRIVE( DecoderDrive )
 );

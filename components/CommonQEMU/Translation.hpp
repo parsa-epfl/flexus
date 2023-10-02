@@ -53,6 +53,7 @@ namespace Flexus {
 namespace SharedTypes {
 
 const PhysicalMemoryAddress qemuFaultAddress(0xffffffffffffffff);
+struct AbstractInstruction;
 static uint64_t translationID;
 
 struct Translation : public boost::counted_base {

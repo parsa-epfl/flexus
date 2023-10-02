@@ -108,20 +108,18 @@ COMPONENT_PARAMETERS(
   PARAMETER( FpDivOpPipelineResetTime, uint32_t, "Number of cycles required between subsequent FP DIV operations", "fpDivOpPipelineResetTime", 1)
   PARAMETER( FpSqrtOpLatency, uint32_t, "End-to-end latency of an FP SQRT operation", "fpSqrtOpLatency", 1)
   PARAMETER( FpSqrtOpPipelineResetTime, uint32_t, "Number of cycles required between subsequent FP SQRT operations", "fpSqrtOpPipelineResetTime", 1)
-  PARAMETER( CollectWorkTrace, bool, "Collect working set trace", "CollectWorkTrace", false)
 );
 
-typedef std::pair<int, bool> dispatch_status;
-typedef VirtualMemoryAddress vaddr_pair;
+typedef std::pair<int, bool> dispatchStatus;
 
 COMPONENT_INTERFACE(
   PORT( PushInput, boost::intrusive_ptr< AbstractInstruction >, DispatchIn)
-  PORT( PullOutput, dispatch_status, AvailableDispatchOut)
+  PORT( PullOutput, dispatchStatus, AvailableDispatchOut)
   PORT( PullOutput, bool, Stalled)
   PORT( PullOutput, bool, CoreHalted)
   PORT( PullOutput, int, ICount)
   PORT( PushOutput, eSquashCause, SquashOut )
-  PORT( PushOutput, vaddr_pair, RedirectOut )
+  PORT( PushOutput, Flexus::SharedTypes::VirtualMemoryAddress, RedirectOut )
   PORT( PushOutput, CPUState, ChangeCPUState )
   PORT( PushOutput, boost::intrusive_ptr<BranchFeedback>, BranchFeedbackOut )
   PORT( PushOutput, MemoryTransport, MemoryOut_Request )
@@ -136,6 +134,11 @@ COMPONENT_INTERFACE(
   PORT( PushInput, TranslationPtr,  dTranslationIn )
   PORT( PushInput, TranslationPtr,  MemoryRequestIn )
 
+  PORT( PushOutput, boost::intrusive_ptr<BPredState>, SquashBranchOut )	//Rakesh
+  PORT( PushOutput, std::list< boost::intrusive_ptr<BPredState> >, RASOpsOut )	//Rakesh
+  PORT( PushOutput, boost::intrusive_ptr<TrapState>, TrapStateOut ) //Rakesh  
+  PORT( PullOutput, bool, ROBEmptyOut)//Rakesh
+  PORT( PushOutput, RetireNotice, RetireOut )
 
   DRIVE( uArchDrive )
 );

@@ -220,8 +220,6 @@ public:
     options.fpDivOpPipelineResetTime = cfg.FpDivOpPipelineResetTime;
     options.fpSqrtOpLatency = cfg.FpSqrtOpLatency;
     options.fpSqrtOpPipelineResetTime = cfg.FpSqrtOpPipelineResetTime;
-    /* Msutherl: Trace for rpcproc */
-    options.collectTrace = cfg.CollectWorkTrace;
 
     theMicroArch =
         microArch::construct(options, ll::bind(&uArchARMComponent::squash, this, ll::_1),
@@ -229,6 +227,10 @@ public:
                              ll::bind(&uArchARMComponent::changeState, this, ll::_1, ll::_2),
                              ll::bind(&uArchARMComponent::feedback, this, ll::_1),
                              ll::bind(&uArchARMComponent::signalStoreForwardingHit, this, ll::_1),
+                             ll::bind(&uArchARMComponent::squashBranch, this, ll::_1),
+                             ll::bind(&uArchARMComponent::sendTrapState, this, ll::_1),
+                             ll::bind(&uArchARMComponent::reconstructRAS, this, ll::_1),
+                             ll::bind(&uArchARMComponent::retirecb, this, ll::_1),
                              ll::bind(&uArchARMComponent::resyncMMU, this, ll::_1));
 
     theuArchObject = theuArchQemuFactory.create(
@@ -240,6 +242,11 @@ public:
   }
 
 public:
+  FLEXUS_PORT_ALWAYS_AVAILABLE(ROBEmptyOut);
+  bool pull(ROBEmptyOut const &) {
+    return theMicroArch->isSynchronized();
+  }
+
   FLEXUS_PORT_ALWAYS_AVAILABLE(DispatchIn);
   void push(interface::DispatchIn const &,
             boost::intrusive_ptr<AbstractInstruction> &anInstruction) {
@@ -315,6 +322,18 @@ public:
 private:
   struct ResynchronizeWithQemuException {};
 
+  void squashBranch(boost::intrusive_ptr<BPredState> aBPState) {
+    FLEXUS_CHANNEL(SquashBranchOut) << aBPState;
+  }
+
+  void sendTrapState(boost::intrusive_ptr<TrapState> aTrapState) {
+    FLEXUS_CHANNEL(TrapStateOut) << aTrapState;
+  }
+
+  void reconstructRAS(std::list<boost::intrusive_ptr<BPredState>> theRASops) {
+    FLEXUS_CHANNEL(RASOpsOut) << theRASops;
+  }
+
   void squash(eSquashCause aSquashReason) {
     FLEXUS_CHANNEL(SquashOut) << aSquashReason;
   }
@@ -336,6 +355,10 @@ private:
 
   void feedback(boost::intrusive_ptr<BranchFeedback> aFeedback) {
     FLEXUS_CHANNEL(BranchFeedbackOut) << aFeedback;
+  }
+
+  void retirecb(RetireNotice &aRetirePC) {
+    FLEXUS_CHANNEL(RetireOut) << aRetirePC;
   }
 
   void signalStoreForwardingHit(bool garbage) {

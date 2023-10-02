@@ -43,6 +43,10 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
 #include <core/simulator_layout.hpp>
+#include <core/stats.hpp>
+
+#include <components/uFetch/uFetchTypes.hpp>
+#include <components/CommonQEMU/Slices/MemoryMessage.hpp> //Rakesh
 
 // clang-format off
 #define FLEXUS_BEGIN_COMPONENT BPWarm
@@ -52,18 +56,25 @@
 
 COMPONENT_PARAMETERS(
   PARAMETER( Cores, int, "Number of cores", "cores", 1 )
+  PARAMETER( UnresolvedBranches, int, "Number of branches between prediction and update", "unresolved_branches", 0 )
+  PARAMETER( RunaheadDistance, int, "Number of inst/branches running ahead of the fetch unit", "runahead_distance", 3 )
   PARAMETER( BTBSets, uint32_t, "Number of sets in the BTB", "btbsets", 512 )
   PARAMETER( BTBWays, uint32_t, "Number of ways in the BTB", "btbways", 4 )
 );
 
 typedef std::pair< uint64_t, uint32_t> ulong_pair;
-typedef std::pair< uint64_t, std::pair< uint32_t, uint32_t > > pc_type_annul_triplet;
+namespace Stat = Flexus::Stat;
 
 COMPONENT_INTERFACE(
   DYNAMIC_PORT_ARRAY( PushInput, InstructionTransport, InsnIn )
   DYNAMIC_PORT_ARRAY( PushOutput, InstructionTransport, InsnOut )
   DYNAMIC_PORT_ARRAY( PushInput, ulong_pair, ITraceIn )
-  DYNAMIC_PORT_ARRAY( PushInput, pc_type_annul_triplet, ITraceInModern )
+  DYNAMIC_PORT_ARRAY( PushInput, BPMessage, ITraceInModern )
+
+  // MARK: Added for boomerang port 
+  DYNAMIC_PORT_ARRAY( PushInput, MemoryMessage, InsnMissIn )
+  PORT( PushOutput, ulong_pair, ResetPrefetcherOut )
+  DYNAMIC_PORT_ARRAY( PushOutput, MemoryMessage, ToL1I ) //Rakesh
 );
 
 #include FLEXUS_END_COMPONENT_DECLARATION()

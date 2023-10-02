@@ -67,6 +67,7 @@
 #include "CoreModel/SCTLR_EL.hpp"
 
 #include <core/qemu/mai_api.hpp>
+#include <components/uFetch/uFetchTypes.hpp>
 
 #define EL0 0
 #define EL1 1
@@ -572,7 +573,6 @@ struct uArchOptions_t {
   uint32_t fpDivOpPipelineResetTime;
   uint32_t fpSqrtOpLatency;
   uint32_t fpSqrtOpPipelineResetTime;
-  bool collectTrace;
 };
 
 struct Instruction : public Flexus::SharedTypes::AbstractInstruction {
@@ -585,6 +585,14 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction {
   virtual void doRetirementEffects() = 0; // used
   virtual void checkTraps() = 0;          // used
   virtual void doCommitEffects() = 0;     // used
+
+  /* Msutherl: Add for Boomerang */
+  virtual boost::intrusive_ptr<BPredState> bpState() const = 0;
+  virtual Opcode getOpcode() const = 0;
+  virtual boost::intrusive_ptr<BranchFeedback> branchFeedback() const {
+    return NULL;
+  }
+  /* End Boomerang */
 
   virtual void annul() = 0;
   virtual bool isAnnulled() const = 0;
@@ -806,7 +814,13 @@ struct uArchARM {
                                 boost::intrusive_ptr<Interaction> anInteraction) {
     DBG_Assert(false);
   }
-  virtual bool squashFrom(boost::intrusive_ptr<Instruction> anInsn) {
+  virtual bool squashAfter(boost::intrusive_ptr<Instruction> anInsn,
+                           boost::intrusive_ptr<BPredState> aBPState) {
+    DBG_Assert(false);
+    return false;
+  }
+  virtual bool squashFrom(boost::intrusive_ptr<Instruction> anInsn,
+                          boost::intrusive_ptr<BPredState> aBPState) {
     DBG_Assert(false);
     return false;
   }
@@ -1057,6 +1071,10 @@ struct uArchARM {
     DBG_Assert(false);
   }
   virtual void takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExceptionType aTrapType) {
+    DBG_Assert(false);
+  }
+  virtual void takeTrap(boost::intrusive_ptr<Instruction> anInstruction, int32_t aTrapNum,
+                        xExceptionSource exceptionSource) {
     DBG_Assert(false);
   }
 

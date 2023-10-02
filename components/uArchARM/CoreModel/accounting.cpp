@@ -309,7 +309,7 @@ void CoreImpl::accountCommit(boost::intrusive_ptr<Instruction> anInstruction, bo
       break;
     case clsStore:
       DBG_(VVerb, (<< "Get a Store.........."));
-      accountCommitMemOp(anInstruction);
+     accountCommitMemOp(anInstruction);
       ++theMix_Store;
       break;
     case clsAtomic:

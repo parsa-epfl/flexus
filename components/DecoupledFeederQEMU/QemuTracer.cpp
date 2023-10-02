@@ -151,6 +151,8 @@ class QemuTracerImpl {
   TracerStats *theBothStats;
   MemoryMessage theMemoryMessage;
 
+  uint64_t instr_num;
+
 public:
   std::function<void(int, MemoryMessage &)> toL1D;
   std::function<void(int, MemoryMessage &, uint32_t)> toL1I;
@@ -181,6 +183,7 @@ public:
   ) {
     theCPU = aCPU;
     theIndex = anIndex;
+    instr_num = 0;
     toL1D = aToL1D;
     toL1I = aToL1I;
     toNAW = aToNAW;
@@ -200,12 +203,14 @@ public:
   }
 
   API::cycles_t insn_fetch(Qemu::API::memory_transaction_t *mem_trans) {
+    instr_num++;
     const int32_t k_no_stall = 0;
     theMemoryMessage.address() = PhysicalMemoryAddress(mem_trans->s.physical_address);
     theMemoryMessage.pc() = VirtualMemoryAddress(mem_trans->s.logical_address);
     theMemoryMessage.type() = MemoryMessage::FetchReq;
     theMemoryMessage.priv() = IS_PRIV(mem_trans);
     theMemoryMessage.reqSize() = 4;
+    theMemoryMessage.timeStamp() = instr_num;
 
     eBranchType branchTypeTable[API::QEMU_BRANCH_TYPE_COUNT] = {
         kNonBranch,   kConditional,  kUnconditional, kCall,
@@ -215,7 +220,8 @@ public:
 
     theMemoryMessage.tl() = 0;
 
-    uint32_t opcode = 0;
+    uint32_t opcode;
+    API::qemu_callbacks.QEMU_read_phys_memory((uint8_t *)& opcode, mem_trans->s.physical_address, 4);
     IS_PRIV(mem_trans) ? theOSStats->theFetches++ : theUserStats->theFetches++;
     theBothStats->theFetches++;
 
