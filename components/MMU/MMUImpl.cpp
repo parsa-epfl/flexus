@@ -562,22 +562,22 @@ public:
 
   void push(interface::TLBReqIn const &, index_t anIndex, TranslationPtr &aTranslate) {
     PhysicalMemoryAddress perfectPaddr(Qemu::API::qemu_callbacks.QEMU_logical_to_physical(
-        *Flexus::Qemu::Processor::getProcessor(flexusIndex()),
+        *Flexus::Qemu::Processor::getProcessor(anIndex),
         aTranslate->isInstr() ? Qemu::API::QEMU_DI_Instruction : Qemu::API::QEMU_DI_Data,
         aTranslate->theVaddr));
-    DBG_Assert(aTranslate->thePaddr == perfectPaddr, (<< "Translation mismatch. VA:" << aTranslate->theVaddr << ", PA:" << aTranslate->thePaddr << ", PerfectPaddr:" << perfectPaddr));
+    DBG_Assert(aTranslate->thePaddr == perfectPaddr, (<< flexusIndex() << ":" << anIndex << ":Translation mismatch. VA:" << aTranslate->theVaddr << ", PA:" << aTranslate->thePaddr << ", PerfectPaddr:" << perfectPaddr));
 
     if (!cfg.PerfectTLB) {
       bool is_hit = (aTranslate->isInstr() ? theInstrTLB : theDataTLB).lookUp(aTranslate->theVaddr).first;  
       if (!is_hit) {
         if (!theMMUInitialized) {
-          setupMMU((int) flexusIndex());
+          setupMMU((int) anIndex);
           thePageWalker->setMMU(theMMU);
         }
         (aTranslate->isInstr() ? theInstrTLB : theDataTLB)[aTranslate->theVaddr] =
             aTranslate->thePaddr;
         thePageWalker->push_back_trace(aTranslate,
-                                      Flexus::Qemu::Processor::getProcessor((int) flexusIndex()));
+                                      Flexus::Qemu::Processor::getProcessor((int) anIndex));
       }
     }
   }
