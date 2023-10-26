@@ -207,7 +207,7 @@ public:
     const int32_t k_no_stall = 0;
     theMemoryMessage.address() = PhysicalMemoryAddress(mem_trans->s.physical_address);
     theMemoryMessage.pc() = VirtualMemoryAddress(mem_trans->s.pc);
-    theMemoryMessage.targetpc() = VirtualMemoryAddress(mem_trans->s.logical_address);
+    theMemoryMessage.targetpc() = VirtualMemoryAddress(mem_trans->s.target_address);
     theMemoryMessage.opcode() = mem_trans->s.opcode;
     theMemoryMessage.type() = MemoryMessage::FetchReq;
     theMemoryMessage.priv() = IS_PRIV(mem_trans);
