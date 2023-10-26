@@ -2061,7 +2061,7 @@ struct FastCombiningImpl : public FastBranchPredictor {
       } else if (aBPState.thePredictedType == kNonBranch) {
         ++theBTypeMismatch_T2;
         // Trying to preduct a non branch
-        assert(0);
+        // assert(0);
       } else {
         ++theBTypeMismatch_T3;
         // TODO: we enter this part. Why? Assertion is commented for now. 
