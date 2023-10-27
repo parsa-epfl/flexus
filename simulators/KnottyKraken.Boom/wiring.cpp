@@ -101,7 +101,18 @@ bool initializeParameters() {
   DBG_(Dev, (<< " initializing Parameters..."));
 
   theFAGCfg.Threads.initialize(1);
-  theFAGCfg.MaxBPred.initialize(1);
+  theFAGCfg.MaxBPred.initialize(2);
+  theFAGCfg.BlocksOnBTBMiss.initialize(2);
+  theFAGCfg.InsnOnBTBMiss.initialize(1);
+  theFAGCfg.EnableBTBPrefill.initialize(true);
+  theFAGCfg.EnableRAS.initialize(true);
+  theFAGCfg.EnableTCE.initialize(false);
+  theFAGCfg.EnableTrapRet.initialize(false);
+  theFAGCfg.MagicBTypeDetect.initialize(false);
+  theFAGCfg.PerfectBTB.initialize(false);
+  theFAGCfg.BTBSets.initialize(1024);
+  theFAGCfg.BTBWays.initialize(8);
+
 
   theuFetchCfg.Threads.initialize(1);
   theuFetchCfg.FAQSize.initialize(1000);
@@ -117,10 +128,14 @@ bool initializeParameters() {
   theuFetchCfg.SendAcks.initialize(true);
   theuFetchCfg.UseReplyChannel.initialize(true);
   theuFetchCfg.EvictOnSnoop.initialize(true);
+  theuFetchCfg.FDIPEnabled.initialize(true);
+  theuFetchCfg.OutstandingFDIPMisses.initialize(16);
+  theuFetchCfg.RecMissEnabled.initialize(false);
 
   theDecoderCfg.Multithread.initialize(false);
   theDecoderCfg.FIQSize.initialize(1);
   theDecoderCfg.DispatchWidth.initialize(1);
+  theDecoderCfg.PipeLat.initialize(1);
 
   theuArchCfg.Multithread.initialize(false);
   theuArchCfg.ROBSize.initialize(100);
@@ -210,7 +225,7 @@ bool initializeParameters() {
   theL1dCfg.TextFlexpoints.initialize(false);
   theL1dCfg.EvictWritableHasData.initialize(false);
 
-  theL2Cfg.Cores.initialize(2);
+  theL2Cfg.Cores.initialize(1);
   theL2Cfg.BlockSize.initialize(64);
   theL2Cfg.Banks.initialize(1);
   theL2Cfg.BankInterleaving.initialize(64);
@@ -306,9 +321,9 @@ FLEXUS_INSTANTIATE_COMPONENT_ARRAY( FetchAddressGenerate, theFAGCfg, theFAG, SCA
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( uFetch, theuFetchCfg, theuFetch, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( PortCombiner, theCombinerCfg, theuFetchCombiner, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( armDecoder, theDecoderCfg, theDecoder, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
+FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MMU , theMMUCfg, theMMU, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( uArchARM, theuArchCfg, theuArch, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( Cache, theL1dCfg, theL1d, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
-FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MMU , theMMUCfg, theMMU, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( CMPCache, theL2Cfg, theL2, SCALE_WITH_SYSTEM_WIDTH, DIVIDE, 1 );
 //FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MemoryLoopback, theMemoryCfg, theMemory, SCALE_WITH_SYSTEM_WIDTH, DIVIDE, 4 );
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MemoryLoopback, theMemoryCfg, theMemory, SCALE_WITH_SYSTEM_WIDTH, DIVIDE, 1 );

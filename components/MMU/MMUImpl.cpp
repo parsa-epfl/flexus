@@ -204,14 +204,17 @@ private:
   };
 
   void setupMMU(int cpuIndex) {
-    theMMU.reset(new mmu_t());
+ 
+    if (!theMMUInitialized) {
+      theMMU.reset(new mmu_t());
+      theMMUInitialized = true;
+    }
     theMMU->initRegsFromQEMUObject(getMMURegsFromQEMU(cpuIndex));
     theMMU->setupAddressSpaceSizesAndGranules();
     DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
     DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
     PAGEMASK = ~((1 << theMMU->Gran0->getlogKBSize()) - 1);
     thePageWalker->setMMU(theMMU);
-    theMMUInitialized = true;
   }
 
   std::unique_ptr<PageWalk> thePageWalker;
