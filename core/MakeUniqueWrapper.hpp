@@ -42,6 +42,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
+/*
 #include <cstddef>
 #include <memory>
 #include <type_traits>
@@ -67,3 +68,4 @@ template <class T> typename _Unique_if<T>::_Unknown_bound make_unique(size_t n) 
 template <class T, class... Args>
 typename _Unique_if<T>::_Known_bound make_unique(Args &&...) = delete;
 } // namespace std
+*/

@@ -222,28 +222,7 @@ std::tuple<bool, bool, Action> InclusiveMOESI::doRequest(MemoryTransport transpo
 // downgrade reply. We have to make sure that we don't reply with
 // MissReplyWritable rather than changed the state of the line initially, we
 // just wait for the snoop to complete first
-#if 0
-    // Allow overlap of ReadFwd and FetchFwd requests, otherwise wait
-    if ( ((iter->message->type() == MemoryMessage::ReadFwd)
-          || (iter->message->type() == MemoryMessage::FetchFwd))
-         && ((msg->type() == MemoryMessage::ReadReq) || (msg->type() == MemoryMessage::FetchReq))) {
-      // Make sure any waiting snoops are also reads or fetches
-      SnoopBuffer::snoop_iter end;
-      std::tie(iter, end) = theSnoopBuffer.getWaitingEntries(getBlockAddress(msg->address()));
-      for (; iter != end; iter++) {
-        if ( (iter->message->type() != MemoryMessage::ReadFwd)
-             && (iter->message->type() != MemoryMessage::FetchFwd)) {
-          snoop_inval_pending = true;
-          break;
-        }
-      }
-    } else {
-      snoop_inval_pending = true;
-    }
-    if (snoop_inval_pending) {
-#endif
     return std::make_tuple(false, false, Action(kInsertMAF_WaitSnoop, tracker));
-    //   }
   } else if (theSnoopBuffer.hasEntry(getBlockAddress(msg->address()))) {
     return std::make_tuple(false, false, Action(kInsertMAF_WaitSnoop, tracker));
   }

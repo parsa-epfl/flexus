@@ -728,7 +728,7 @@ public:
   virtual std::function<bool(MemoryAddress a, MemoryAddress b)> setCompareFn() const {
     // return [this](auto a, auto b){ return this->sameSet(a, b); };//std::bind(
     // &StdArray<_State, _DefaultState>::sameSet, *this, _1, _2);
-    return boost::bind(&StdArray<_State, _DefaultState>::sameSet, *this, _1, _2);
+    return std::bind(&StdArray<_State, _DefaultState>::sameSet, *this, std::placeholders::_1, std::placeholders::_2);
   }
 
   virtual uint64_t getSet(MemoryAddress const &addr) const {

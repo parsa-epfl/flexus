@@ -71,43 +71,7 @@ class FLEXUS_COMPONENT(BPWarm) {
   std::vector<bool> theOne;
 
   std::pair<eBranchType, bool> decode(uint32_t opcode) {
-#if FLEXUS_TARGET_IS(v9)
-    uint32_t op = opcode >> 30 & 3;
-    switch (op) {
-    case 0: {
-      uint32_t op2 = (opcode >> 22) & 0x7;
-      switch (op2) {
-      case 1:
-      case 2:
-      case 3:
-      case 5:
-      case 6:
-        if (opcode & 0x20000000) {
-          return std::make_pair(kConditional, true);
-        } else {
-          return std::make_pair(kConditional, false);
-        }
-      default:
-        return std::make_pair(kNonBranch, false);
-      }
-    }
-    case 1:
-      return std::make_pair(kUnconditional, false); // kCall
-    case 2: {
-      uint32_t op3 = (opcode >> 19) & 0x3F;
-      if (op3 == 0x38 /*jmpl*/ || op3 == 0x39 /*return*/) {
-        return std::make_pair(kUnconditional, false);
-      } else {
-        return std::make_pair(kNonBranch, false);
-      }
-    }
-    case 3: // No branches
-    default:
-      return std::make_pair(kNonBranch, false);
-    }
-#else
     return std::make_pair(kNonBranch, false);
-#endif
   }
 
   void doUpdate(VirtualMemoryAddress theActual, index_t anIndex) {

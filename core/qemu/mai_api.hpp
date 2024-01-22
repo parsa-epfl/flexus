@@ -88,28 +88,6 @@ struct MemoryException : public QemuException {
   }
 };
 
-// class ProcessorMapper {
-// private:
-//  static ProcessorMapper * theMapper;
-
-//  int theNumVMs;
-//  std::vector<std::pair<int, int> > theProcMap;
-//  std::vector<int> theClientMap;
-//  std::vector<std::pair<int, bool> > theReverseMap;
-
-//  ProcessorMapper();
-
-// public:
-//  static int mapFlexusIndex2ProcNum(int index);
-//  static int mapClientNum2ProcNum(int index);
-//  static int mapProcNum2FlexusIndex(int index);
-//  static int mapFlexusIndex2VM(int index);
-
-//  static int numVMs();
-//  static int numClients();
-//  static int numProcessors();
-//};
-
 using Flexus::SharedTypes::PhysicalMemoryAddress;
 using Flexus::SharedTypes::VirtualMemoryAddress;
 
@@ -123,9 +101,9 @@ protected:
       : theProcessor(aProcessor),
         theProcessorNumber(
             aProcessor
-                ? /*ProcessorMapper::mapProcNum2FlexusIndex(*/ API::QEMU_get_cpu_index(aProcessor)
+                ? /*ProcessorMapper::mapProcNum2FlexusIndex(*/ API::qemu_api.get_cpu_idx(aProcessor)
                 : 0),
-        theQEMUProcessorNumber(aProcessor ? API::QEMU_get_cpu_index(aProcessor) : 0) {
+        theQEMUProcessorNumber(aProcessor ? API::qemu_api.get_cpu_idx(aProcessor) : 0) {
   }
 
 public:
@@ -138,22 +116,16 @@ public:
 
   std::string disassemble(VirtualMemoryAddress const &anAddress) const {
     API::logical_address_t addr(anAddress);
-    char *buffer = API::QEMU_disassemble(*this, addr);
-    char *buffer_dup = (char *)buffer;
-    while (buffer_dup[0] != '\n') {
-      buffer_dup++;
-    }
-    buffer_dup[0] = '\0';
-    std::string s(buffer);
-    free(buffer); // qemu called "malloc" for this area
+    char *buf = API::qemu_api.disass(*this, addr);
+    std::string s(buf);
+    free(buf); // qemu called "malloc" for this area
     return s;
   }
 
   std::string dump_state() const {
-    char *buf = new char[716];
-    API::QEMU_dump_state(*this, &buf);
+    char *buf = API::qemu_api.get_snap(*this);
     std::string s(buf);
-    delete buf;
+    free(buf);
     return s;
   }
 
@@ -162,74 +134,40 @@ public:
   }
 
   VirtualMemoryAddress getPC() const {
-    return VirtualMemoryAddress(API::QEMU_get_program_counter(*this));
+    return VirtualMemoryAddress(API::qemu_api.get_pc(*this));
   }
 
   uint64_t readXRegister(int anIndex) const {
-    return API::QEMU_read_register(*this, API::kGENERAL, anIndex);
+    return API::qemu_api.get_gpr(*this, anIndex);
   }
 
   uint64_t readVRegister(int anIndex) const {
-    return API::QEMU_read_register(*this, API::kFLOATING_POINT, anIndex);
-  }
-
-  uint32_t readPSTATE() const {
-    return API::QEMU_read_pstate(*this);
-  }
-
-  uint64_t readSP_el(uint8_t anId) const {
-    return API::QEMU_read_sp_el(anId, *this);
-  }
-
-  uint32_t readDCZID_EL0() const {
-    return API::QEMU_read_DCZID_EL0(*this);
-  }
-
-  uint32_t readAARCH64() const {
-    return API::QEMU_read_AARCH64(*this);
+    return API::qemu_api.get_fpr(*this, anIndex);
   }
 
   void readException(API::exception_t *exp) const {
-    return API::QEMU_read_exception(*this, exp);
+    assert(false);
+    return;
+//  return API::QEMU_read_exception(*this, exp);
   }
 
   uint64_t getPendingInterrupt() const {
-    return API::QEMU_get_pending_interrupt(*this);
-  }
-
-  uint64_t readSCTLR(uint8_t id) const {
-    return API::QEMU_read_sctlr(id, *this);
-  }
-
-  uint64_t readTPIDR(uint8_t id) const {
-    return API::QEMU_read_tpidr(id, *this);
-  }
-
-  uint64_t readHCREL2() const {
-    return API::QEMU_read_hcr_el2(*this);
-  }
-
-  uint32_t readFPCR() const {
-    return API::QEMU_read_fpcr(*this);
-  }
-
-  uint32_t readFPSR() const {
-    return API::QEMU_read_fpsr(*this);
+    return API::qemu_api.get_irq(*this);
   }
 
   bool hasWork() const {
-    return API::QEMU_cpu_has_work(*this);
+    return API::qemu_api.cpu_busy(*this);
   }
 
   uint64_t readPC() const {
-    return API::QEMU_get_program_counter(*this);
+    return API::qemu_api.get_pc(*this);
   }
 
   bits readPhysicalAddress(PhysicalMemoryAddress anAddress, size_t aSize) const {
     uint8_t *buf = new uint8_t[aSize];
     for (size_t i = 0; i < aSize; i++)
       buf[i] = 0;
-    API::QEMU_read_phys_memory(buf, API::physical_address_t(anAddress), aSize);
+    API::qemu_api.get_mem(buf, API::physical_address_t(anAddress), aSize);
 
     bits tmp;
     for (size_t i = 0; i < aSize; i++) {
@@ -242,30 +180,30 @@ public:
   }
 
   bits readVirtualAddress(VirtualMemoryAddress anAddress, size_t size) {
-    VirtualMemoryAddress finalAddress((anAddress + size - 1) & ~0xFFF);
+    VirtualMemoryAddress finalAddress(((uint64_t)(anAddress) + size - 1) & ~0xFFF);
     if ((finalAddress & 0x1000) != (anAddress & 0x1000)) {
       bits value1, value2;
       size_t partial = finalAddress - anAddress;
       value1 = readPhysicalAddress(
-          PhysicalMemoryAddress(API::QEMU_logical_to_physical(*this, API::QEMU_DI_Instruction,
-                                                              API::logical_address_t(anAddress))),
+          PhysicalMemoryAddress(API::qemu_api.get_pa(*this, API::QEMU_DI_Instruction,
+                                                            API::logical_address_t(anAddress))),
           partial);
       value2 = readPhysicalAddress(
-          PhysicalMemoryAddress(API::QEMU_logical_to_physical(
-              *this, API::QEMU_DI_Instruction, API::logical_address_t(finalAddress))),
+          PhysicalMemoryAddress(API::qemu_api.get_pa(*this, API::QEMU_DI_Instruction,
+                                                            API::logical_address_t(finalAddress))),
           size - partial);
       value2 = (value2 << (partial << 3)) | value1;
       return value2;
     }
     return readPhysicalAddress(
-        PhysicalMemoryAddress(API::QEMU_logical_to_physical(*this, API::QEMU_DI_Instruction,
-                                                            API::logical_address_t(anAddress))),
+        PhysicalMemoryAddress(API::qemu_api.get_pa(*this, API::QEMU_DI_Instruction,
+                                                          API::logical_address_t(anAddress))),
         size);
   }
 
   PhysicalMemoryAddress translateVirtualAddress(VirtualMemoryAddress anAddress) {
-    return PhysicalMemoryAddress(API::QEMU_logical_to_physical(*this, API::QEMU_DI_Instruction,
-                                                               API::logical_address_t(anAddress)));
+    return PhysicalMemoryAddress(API::qemu_api.get_pa(*this, API::QEMU_DI_Instruction,
+                                                             API::logical_address_t(anAddress)));
   }
 
   uint32_t fetchInstruction(VirtualMemoryAddress anAddress) {
@@ -282,13 +220,12 @@ public:
     return true;
   }
 
-  uint64_t read_sysreg_from_qemu(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn,
-                                 uint8_t crm) {
-    return API::QEMU_read_unhashed_sysreg(*this, opc0, opc1, opc2, crn, crm);
+  uint64_t read_sysreg_from_qemu(uint32_t no) {
+    return API::qemu_api.get_csr(*this, no);
   }
 };
 
-class armProcessorImpl : public BaseProcessorImpl {
+class ProcessorImpl : public BaseProcessorImpl {
 private:
   int thePendingInterrupt;
   bool theInterruptsConnected;
@@ -296,28 +233,28 @@ private:
   void handleInterrupt(long long aVector);
 
 public:
-  explicit armProcessorImpl(API::conf_object_t *aProcessor)
+  explicit ProcessorImpl(API::conf_object_t *aProcessor)
       : BaseProcessorImpl(aProcessor), thePendingInterrupt(API::QEMU_PE_No_Exception),
         theInterruptsConnected(false) {
   }
 
 public:
   uint8_t getQEMUExceptionLevel() const {
-    return API::QEMU_get_current_el(*this);
+    return API::qemu_api.get_pl(*this);
   }
 
   void breakSimulation() {
-    API::QEMU_break_simulation("");
+    API::qemu_api.stop("");
   }
 
   int advance(bool count_time = true) {
     int exception = 0;
-    exception = Qemu::API::QEMU_cpu_execute(theProcessor, count_time);
+    exception = Qemu::API::qemu_api.cpu_exec(theProcessor, count_time);
     return exception;
   }
 };
 
-#define PROCESSOR_IMPL armProcessorImpl
+#define PROCESSOR_IMPL ProcessorImpl
 
 class Processor : public BuiltInObject<PROCESSOR_IMPL> {
   typedef BuiltInObject<PROCESSOR_IMPL> base;
@@ -330,14 +267,14 @@ public:
   }
 
   operator API::conf_object_t *() {
-    return *this;
+    return theImpl;
   }
   static Processor getProcessor(int aProcessorNumber) {
-    return Processor(API::QEMU_get_cpu_by_index(
+    return Processor(API::qemu_api.get_cpu_by_idx(
         /*ProcessorMapper::mapFlexusIndex2ProcNum(*/ aProcessorNumber));
   }
   static Processor getProcessor(std::string const &aProcessorName) {
-    return Processor(API::QEMU_get_object_by_name(aProcessorName.c_str()));
+    return Processor(API::qemu_api.get_obj_by_name(aProcessorName.c_str()));
   }
   static Processor current() {
     assert(false);

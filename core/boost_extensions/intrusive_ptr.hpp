@@ -45,6 +45,8 @@
 #ifndef FLEXUS_CORE_BOOST_EXTENSIONS_INTRUSIVE_PTR_HPP_INCLUDED
 #define FLEXUS_CORE_BOOST_EXTENSIONS_INTRUSIVE_PTR_HPP_INCLUDED
 
+#include <stdint.h>
+
 #include <boost/intrusive_ptr.hpp>
 #include <boost/lambda/lambda.hpp>
 

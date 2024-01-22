@@ -75,17 +75,8 @@
 // #endif
 // #include <boost/date_time/posix_time/posix_time.hpp>
 
-// FIXME don't do this need to make sure CONFIG_QEMU is defined elsewhere
-#ifndef CONFIG_QEMU
-#define CONFIG_QEMU // should be set elsewhere
-#endif
-
 #include <core/flexus.hpp>
-#ifdef CONFIG_QEMU
 #include <core/qemu/configuration_api.hpp>
-#else
-#error flexus supports qemu only
-#endif
 
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
@@ -222,16 +213,6 @@ public:
   void printMMU(int32_t aCPU);
 
 public:
-#ifndef CONFIG_QEMU
-  FlexusImpl(Simics::API::conf_object_t *anObject)
-      : theWatchdogTimeout(100000), theNumWatchdogs(0), theInitialized(false), theCycleCount(0),
-        theStatInterval(1000000), theRegionInterval(100000000), theProfileInterval(1000000),
-        theTimestampInterval(100000), theStopCycle(2000000000), theCycleCountStat("sys-cycles"),
-        theWatchdogWarning(false), theQuiesceRequested(false), theSaveRequested(false),
-        theFastMode(false), theBreakCPU(-1), theBreakInsn(0), theSaveCtr(1) {
-    Flexus::Dbg::Debugger::theDebugger->connectCycleCount(&theCycleCount);
-  }
-#else
   FlexusImpl(Qemu::API::conf_object_t *anObject)
       : theWatchdogTimeout(100000), theNumWatchdogs(0), theInitialized(false), theCycleCount(0),
         theStatInterval(100), theRegionInterval(100000000), theProfileInterval(1000000),
@@ -240,23 +221,13 @@ public:
         theFastMode(false), theBreakCPU(-1), theBreakInsn(0), theSaveCtr(1) {
     Flexus::Dbg::Debugger::theDebugger->connectCycleCount(&theCycleCount);
   }
-#endif
   virtual ~FlexusImpl() {
   }
 };
 
-#ifndef CONFIG_QEMU
 void FlexusImpl::printMMU(int32_t aCPU) {
-  Flexus::Simics::Processor::getProcessor(aCPU)->dumpMMU();
-  Flexus::Simics::Processor::getProcessor(aCPU)->validateMMU();
-}
-#else
-void FlexusImpl::printMMU(int32_t aCPU) {
-  // Flexus::Qemu::Processor::getProcessor(aCPU)->dumpMMU();
-  // Flexus::Qemu::Processor::getProcessor(aCPU)->validateMMU();
   DBG_(Crit, (<< "printMMU not implemented yet. Still need to port mai_api.hpp "));
 }
-#endif
 
 void FlexusImpl::initializeComponents() {
   DBG_(VVerb, (<< "Inititializing Flexus components..."));
@@ -283,11 +254,7 @@ void FlexusImpl::advanceCycles(int64_t aCycleCount) {
       theSaveRequested = false;
       doSave(theSaveName);
     } else {
-#ifndef CONFIG_QEMU
-      Simics::BreakSimulation("Flexus is quiesced.");
-#else
-      Qemu::API::QEMU_break_simulation("Flexus is quiesced.");
-#endif
+      Qemu::API::qemu_api.stop("Flexus is quiesced.");
       return;
     }
   }
@@ -394,7 +361,7 @@ void FlexusImpl::watchdogCheck() {
 }
 
 void FlexusImpl::watchdogIncrement() {
-  for (auto aWatchdogCount : theWatchdogCounts) {
+  for (auto &aWatchdogCount: theWatchdogCounts) {
     aWatchdogCount += 255;
   }
 }
@@ -578,14 +545,7 @@ void FlexusImpl::loadState(std::string const &aDirName) {
 
 void FlexusImpl::doLoad(std::string const &aDirName) {
   DBG_(Crit, (<< "Loading Flexus state from subdirectory " << aDirName));
-#ifndef CONFIG_QEMU
-  if (!initialized()) {
-    initializeComponents();
-  }
   ComponentManager::getComponentManager().doLoad(aDirName);
-#else
-  ComponentManager::getComponentManager().doLoad(aDirName);
-#endif
 }
 
 void FlexusImpl::doSave(std::string const &aDirName, bool justFlexus) {
@@ -594,18 +554,8 @@ void FlexusImpl::doSave(std::string const &aDirName, bool justFlexus) {
   } else {
     DBG_(Crit, (<< "Saving Flexus and Qemu state in subdirectory " << aDirName));
   }
-#ifndef CONFIG_QEMU
-  mkdir(aDirName.c_str(), 0777);
-  if (!justFlexus) {
-    std::string simics_cfg_name(aDirName);
-    simics_cfg_name += "/simics-state";
-    Simics::WriteCheckpoint(simics_cfg_name.c_str());
-  }
-  ComponentManager::getComponentManager().doSave(aDirName);
-#else
   ComponentManager::getComponentManager().doSave(aDirName);
   DBG_(Crit, (<< "Saving Flexus state in subdirectory " << aDirName));
-#endif
 }
 
 void FlexusImpl::backupStats(std::string const &aFilename) const {
@@ -765,158 +715,9 @@ void FlexusImpl::terminateSimulation() {
 #ifdef WRITE_ALL_MEASUREMENT_OUT
   writeMeasurement("all", "all.measurement.out");
 #endif
-#ifndef CONFIG_QEMU
-  Flexus::Simics::BreakSimulation("Simulation terminated by flexus.");
-#else
-  Flexus::Qemu::API::QEMU_break_simulation("Simulation terminated by flexus.");
-#endif
+  Flexus::Qemu::API::qemu_api.stop("Simulation terminated by flexus.");
 }
 
-#ifndef CONFIG_QEMU
-class Flexus_Obj : public Simics::AddInObject<FlexusImpl> {
-  typedef Simics::AddInObject<FlexusImpl> base;
-
-public:
-  static const Simics::Persistence class_persistence = Simics::Session;
-  // These constants are defined in Simics/simics.cpp
-  static std::string className() {
-    return "Flexus";
-  }
-  static std::string classDescription() {
-    return "Flexus main class";
-  }
-
-  Flexus_Obj() : base() {
-  }
-  Flexus_Obj(Simics::API::conf_object_t *anObject) : base(anObject) {
-  }
-  Flexus_Obj(FlexusImpl *anImpl) : base(anImpl) {
-  }
-
-  template <class Class> static void defineClass(Class &aClass) {
-
-    // Statistics-related commands
-    aClass.addCommand(&FlexusImpl::listMeasurements, "list-measurements",
-                      "List all available measurments");
-
-    aClass.addCommand(&FlexusImpl::printMeasurement, "print-measurement",
-                      "Print out all stats in the specified measurement", "measurement");
-
-    aClass.addCommand(&FlexusImpl::writeMeasurement, "write-measurement",
-                      "Print out all stats in the specified measurement", "measurement",
-                      "filename");
-
-    aClass.addCommand(&FlexusImpl::log, "log", "log stats to a logged measurement", "name",
-                      "interval", "regex");
-
-    aClass.addCommand(&FlexusImpl::printCycleCount, "print-cycle-count",
-                      "Print out the Flexus timing-module cycle-count");
-
-    aClass.addCommand(&FlexusImpl::saveStats, "save-stats", "Save statistics database", "filename");
-
-    aClass.addCommand(&FlexusImpl::setStatInterval, "set-stat-interval",
-                      "Interval between writing stats to disk", "value");
-
-    aClass.addCommand(&FlexusImpl::setRegionInterval, "set-region-interval",
-                      "Interval between stats regions", "value");
-
-    // State saving/loading commands
-    aClass.addCommand(&FlexusImpl::saveState, "save-state",
-                      "Write out a checkpoint of Flexus state", "dirname");
-
-    aClass.addCommand(&FlexusImpl::saveJustFlexusState, "save-just-flexus-state",
-                      "Write out a checkpoint of JUST Flexus state", "dirname");
-
-    aClass.addCommand(&FlexusImpl::loadState, "load-state", "Read in a checkpoint of Flexus state",
-                      "dirname");
-
-    aClass.addCommand(&FlexusImpl::quiesce, "quiesce", "quiesce Flexus");
-
-    aClass.addCommand(&FlexusImpl::terminateSimulation, "terminate", "terminate Flexus");
-
-    // Profiling commands
-    aClass.addCommand(&FlexusImpl::setProfileInterval, "set-profile-interval",
-                      "Interval for collecting profile data", "value");
-
-    aClass.addCommand(&FlexusImpl::printProfile, "print-profile",
-                      "Print out the Flexus execution profile");
-
-    aClass.addCommand(&FlexusImpl::writeProfile, "write-profile",
-                      "Write the Flexus execution profile to a file", "filename");
-
-    aClass.addCommand(&FlexusImpl::resetProfile, "reset-profile",
-                      "Clear execution profile counters");
-
-    // Configuration-related commands
-    aClass.addCommand(&FlexusImpl::printConfiguration, "print-configuration",
-                      "Print out the Flexus configuration");
-
-    aClass.addCommand(&FlexusImpl::writeConfiguration, "write-configuration",
-                      "Write the Flexus configuration to a file", "filename");
-
-    aClass.addCommand(&FlexusImpl::parseConfiguration, "parse-configuration",
-                      "Parse a Flexus configuration file", "filename");
-
-    aClass.addCommand(&FlexusImpl::setConfiguration, "set", "set a configuration parameter",
-                      "parameter", "value");
-
-    // Simulation control commands
-    aClass.addCommand(&FlexusImpl::setStopCycle, "set-stop-cycle", "Cycle to terminate simulation",
-                      "value");
-
-    aClass.addCommand(&FlexusImpl::enterFastMode, "fast-mode", "Enter fast mode");
-
-    aClass.addCommand(&FlexusImpl::leaveFastMode, "normal-mode", "Enter normal execution mode");
-
-    // Debugging related commands
-    aClass.addCommand(&FlexusImpl::setWatchdogTimeout, "set-watchdog-timeout",
-                      "Set the watchdog timeout value", "timeout");
-
-    aClass.addCommand(&FlexusImpl::reloadDebugCfg, "debug-reload-cfg", "Reprocess debug.cfg");
-
-    aClass.addCommand(&FlexusImpl::addDebugCfg, "debug-add-cfg",
-                      "Parse an additional debug cfg script", "filename");
-
-    aClass.addCommand(&FlexusImpl::setDebug, "debug-set-severity", "Set debug Severity",
-                      "severity");
-
-    aClass.addCommand(&FlexusImpl::enableCategory, "debug-enable-category",
-                      "Enable debugging for the specified category (all of a DBG_ statements "
-                      "categories must be enabled for it to generate output)",
-                      "category");
-
-    aClass.addCommand(&FlexusImpl::disableCategory, "debug-disable-category",
-                      "Disable debugging for the specified category (all of a DBG_ "
-                      "statements categories must be enabled for it to generate output)",
-                      "category");
-
-    aClass.addCommand(&FlexusImpl::listCategories, "debug-list-categories",
-                      "Lists all debugging categories");
-
-    aClass.addCommand(&FlexusImpl::enableComponent, "debug-enable-component",
-                      "Enable debugging for the specified component", "component", "index");
-
-    aClass.addCommand(&FlexusImpl::disableComponent, "debug-disable-component",
-                      "Disable debugging for the specified component", "component", "index");
-
-    aClass.addCommand(&FlexusImpl::listComponents, "debug-list-components", "Lists all components");
-
-    aClass.addCommand(&FlexusImpl::printDebugConfiguration, "debug-print-configuration",
-                      "Print active debug filter configuration script");
-
-    aClass.addCommand(&FlexusImpl::writeDebugConfiguration, "debug-write-configuration",
-                      "Write active debug filter configuration script to file", "filename");
-
-    aClass.addCommand(&FlexusImpl::setBreakCPU, "set-break-cpu",
-                      "Set the CPU to have an active break instruction", "cpu");
-
-    aClass.addCommand(&FlexusImpl::setBreakInsn, "set-break-instruction",
-                      "Set the instruction number on which to break", "insn");
-
-    aClass.addCommand(&FlexusImpl::printMMU, "print-mmu", "Print the contents of an MMU", "cpu");
-  }
-};
-#else
 class Flexus_Obj : public Flexus::Qemu::AddInObject<FlexusImpl> {
   typedef Flexus::Qemu::AddInObject<FlexusImpl> base;
 
@@ -945,41 +746,14 @@ public:
   }
 };
 
-#endif
-
-#ifndef CONFIG_QEMU
-typedef Simics::Factory<Flexus_Obj> FlexusFactory;
-#else
 typedef Qemu::Factory<Flexus_Obj> FlexusFactory;
-#endif
 
 Flexus_Obj theFlexusObj;
 FlexusFactory *theFlexusFactory;
 FlexusInterface *theFlexus = 0; // This is initialized from startup.cpp
 
-void CreateFlexusObject() {
-  theFlexusObj = Core::theFlexusFactory->create("flexus");
-  theFlexus = &Core::theFlexusObj;
-  if (!theFlexus) {
-    DBG_Assert(false, (<< "Unable to create Flexus object in Simics"));
-  }
-}
-
 void setCfg(const char *aFile) {
   config_file = aFile;
-}
-void callQMP(Flexus::Qemu::API::qmp_flexus_cmd_t aCMD, const char *anArgs) {
-
-  try {
-    qmp_flexus_i &q = qmp(aCMD);
-    if (anArgs != NULL) {
-      q.execute(static_cast<string>(anArgs));
-    } else {
-      q.execute("");
-    }
-  } catch (qmp_not_implemented &e) {
-    DBG_(Crit, (<< "QMP call not implemented!"));
-  }
 }
 
 // Might not be best.
@@ -993,15 +767,30 @@ void deinitFlexus() {
   if (theFlexusFactory)
     delete theFlexusFactory;
 }
-void startTimingFlexus() {
-  while (Qemu::API::QEMU_getSimulationTime() > 1) {
-    theFlexus->doCycle();
-  }
-  theFlexus->terminateSimulation();
-}
 
 void PrepareFlexusObject() {
   Core::theFlexusFactory = new FlexusFactory();
+}
+
+void CreateFlexusObject() {
+  theFlexusObj = Core::theFlexusFactory->create("flexus");
+  theFlexus = &Core::theFlexusObj;
+  if (!theFlexus) {
+    DBG_Assert(false, (<< "Unable to create Flexus object in Simics"));
+  }
+}
+
+void flexus_qmp(qmp_flexus_cmd_t aCMD, const char *anArgs) {
+  try {
+    qmp_flexus_i &q = qmp(aCMD);
+    if (anArgs != NULL) {
+      q.execute(static_cast<string>(anArgs));
+    } else {
+      q.execute("");
+    }
+  } catch (qmp_not_implemented &e) {
+    DBG_(Crit, (<< "QMP call not implemented!"));
+  }
 }
 
 } // namespace Core

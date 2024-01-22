@@ -64,8 +64,9 @@ struct Translation : public boost::counted_base {
 
   Translation()
       : theTLBstatus(kTLBunresolved), theTLBtype(kNONE), theReady(false), theWaiting(false),
-        theDone(false), theCurrentTranslationLevel(0), rawTTEValue(0), theID(translationID++),
-        theAnnul(false), theTimeoutCounter(0), thePageFault(false), inTraceMode(false)
+        theDone(false), theID(translationID++),
+        theAnnul(false), theTimeoutCounter(0), thePageFault(false), inTraceMode(false),
+        theUat(false)
 
   {
   }
@@ -74,11 +75,9 @@ struct Translation : public boost::counted_base {
 
   Translation(const Translation &aTr) {
     theVaddr = aTr.theVaddr;
-    thePSTATE = aTr.thePSTATE;
     theType = aTr.theType;
     thePaddr = aTr.thePaddr;
     theException = aTr.theException;
-    theTTEEntry = aTr.theTTEEntry;
     theTLBstatus = aTr.theTLBstatus;
     theTLBtype = aTr.theTLBtype;
     theTimeoutCounter = aTr.theTimeoutCounter;
@@ -88,15 +87,20 @@ struct Translation : public boost::counted_base {
     thePageFault = aTr.thePageFault;
     trace_addresses = aTr.trace_addresses;
     inTraceMode = aTr.inTraceMode;
+
+    theUat   = aTr.theUat;
+    theBase  = aTr.theBase;
+    theBound = aTr.theBound;
+    theOffs  = aTr.theOffs;
+    theAsid  = aTr.theAsid;
+    theCsid  = aTr.theCsid;
   }
 
   Translation &operator=(Translation &rhs) {
     theVaddr = rhs.theVaddr;
-    thePSTATE = rhs.thePSTATE;
     theType = rhs.theType;
     thePaddr = rhs.thePaddr;
     theException = rhs.theException;
-    theTTEEntry = rhs.theTTEEntry;
     theTLBstatus = rhs.theTLBstatus;
     theTLBtype = rhs.theTLBtype;
     theTimeoutCounter = rhs.theTimeoutCounter;
@@ -107,31 +111,48 @@ struct Translation : public boost::counted_base {
     trace_addresses = rhs.trace_addresses;
     inTraceMode = rhs.inTraceMode;
 
+    theUat   = rhs.theUat;
+    theBase  = rhs.theBase;
+    theBound = rhs.theBound;
+    theOffs  = rhs.theOffs;
+    theAsid  = rhs.theAsid;
+    theCsid  = rhs.theCsid;
+
     return *this;
   }
 
   VirtualMemoryAddress theVaddr;
   PhysicalMemoryAddress thePaddr;
 
-  int thePSTATE;
   uint32_t theIndex;
   eTranslationType theType;
   eTLBstatus theTLBstatus;
   eTLBtype theTLBtype;
   int theException;
-  uint64_t theTTEEntry;
 
   bool theReady;   // ready for translation - step i
   bool theWaiting; // in memory - step ii
   bool theDone;    // all done step iii
-  uint8_t theCurrentTranslationLevel;
-  uint64_t rawTTEValue;
   uint64_t theID;
   bool theAnnul;
   uint64_t theTimeoutCounter;
   bool thePageFault;
   std::queue<PhysicalMemoryAddress> trace_addresses;
   bool inTraceMode;
+  
+  bool theUat;
+  uint64_t theBase;
+  uint64_t theBound;
+  uint64_t theOffs;
+  uint64_t theAttr;
+
+  uint64_t theAsid;
+  uint64_t theCsid;
+  uint64_t theSet;
+
+  int theCurrentTranslationLevel;
+  uint64_t rawTTEValue;
+  uint64_t rawUatValue [8];
 
   boost::intrusive_ptr<AbstractInstruction> theInstruction;
 
@@ -159,6 +180,12 @@ struct Translation : public boost::counted_base {
   bool isUnresuloved() {
     return status() == kTLBunresolved;
   }
+  void setUat() {
+    theUat = true;
+  }
+  bool isUat() {
+    return theUat;
+  }
   void setHit() {
     theTLBstatus = kTLBhit;
   }
@@ -179,6 +206,7 @@ struct Translation : public boost::counted_base {
   void setInstruction(boost::intrusive_ptr<AbstractInstruction> anInstruction) {
     theInstruction = anInstruction;
   }
+
   boost::intrusive_ptr<AbstractInstruction> getInstruction() const {
     return theInstruction;
   }

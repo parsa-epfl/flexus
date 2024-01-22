@@ -71,13 +71,7 @@ using namespace Flexus::SharedTypes;
 namespace Qemu = Flexus::Qemu;
 namespace API = Qemu::API;
 
-std::set<API::conf_object_t *> theTimingModels;
 const uint32_t kLargeMemoryQueue = 16000;
-extern "C" {
-void TraceMemHierOperate(void *obj, API::conf_object_t *space,
-                         API::memory_transaction_t *mem_trans);
-void DMAMemHierOperate(void *obj, API::conf_object_t *space, API::memory_transaction_t *mem_trans);
-}
 
 struct TracerStats {
   Stat::StatCounter theMemOps_stat;
@@ -142,22 +136,12 @@ struct TracerStats {
   }
 };
 
-#if FLEXUS_TARGET_IS(v9)
-#define IS_PRIV(mem_trans) (mem_trans->sparc_specific.priv)
-#elif FLEXUS_TARGET_IS(ARM)
-#define IS_PRIV(mem_trans) (!mem_trans->arm_specific.user)
-#elif FLEXUS_TARGET_IS(X86)
-#define IS_PRIV(mem_trans) (mem_trans->i386_specific.mode == API::QEMU_CPU_Mode_Supervisor)
-#else // !FLEXUS_TARGET_IS(v9) && !FLEXUS_TARGET(ARM) && !FLEXUS_TARGET(X86)
-#error Unknown target
-#endif // FLEXUS_TARGET_IS(v9) || FLEXUS_TARGET(ARM) || FLEXUS_TARGET(X86)
+// XXXX
+#define IS_PRIV(mem_trans) (false)
 
 class QemuTracerImpl {
-  API::conf_object_t *theUnderlyingObject;
   API::conf_object_t *theCPU;
   int32_t theIndex;
-  API::conf_object_t *thePhysMemory;
-  API::conf_object_t *thePhysIO;
 
   TracerStats *theUserStats;
   TracerStats *theOSStats;
@@ -175,7 +159,7 @@ public:
 
 public:
   QemuTracerImpl(API::conf_object_t *anUnderlyingObject)
-      : theUnderlyingObject(anUnderlyingObject), theMemoryMessage(MemoryMessage::LoadReq) {
+      : theMemoryMessage(MemoryMessage::LoadReq) {
   }
 
   API::conf_object_t *cpu() const {
@@ -203,14 +187,6 @@ public:
     theUserStats = new TracerStats(boost::padded_string_cast<2, '0'>(theIndex) + "-feeder-User:");
     theOSStats = new TracerStats(boost::padded_string_cast<2, '0'>(theIndex) + "-feeder-OS:");
     theBothStats = new TracerStats(boost::padded_string_cast<2, '0'>(theIndex) + "-feeder-");
-    API::conf_object_t *thePhysMemory = API::QEMU_get_phys_mem(theCPU);
-    theTimingModels.insert(thePhysMemory);
-
-#if FLEXUS_TARGET_IS(v9)
-    thePhysIO = 0;
-#else
-    thePhysIO = 0;
-#endif
   }
 
   void updateStats() {
@@ -227,25 +203,15 @@ public:
     theMemoryMessage.priv() = IS_PRIV(mem_trans);
     theMemoryMessage.reqSize() = 4;
 
-    eBranchType branchTypeTable[API::QEMU_BRANCH_TYPE_COUNT] = {
+    // XXXX
+    eBranchType branchTypeTable[8] = {
         kNonBranch,   kConditional,  kUnconditional, kCall,
         kIndirectReg, kIndirectCall, kReturn,        kLastBranchType};
     theMemoryMessage.branchType() = branchTypeTable[mem_trans->s.branch_type];
     theMemoryMessage.branchAnnul() = (mem_trans->s.annul != 0);
-
-#if FLEXUS_TARGET_IS(v9) & 0
-    uint64_t reg_content;
-    API::QEMU_read_register(theCPU, 46 /* kTL */, nullptr, &reg_content);
-    theMemoryMessage.tl() = reg_content;
-#else
     theMemoryMessage.tl() = 0;
-#endif
 
-#if FLEXUS_TARGET_IS(v9) & 0
-    uint32_t opcode = API::QEMU_read_phys_memory(theCPU, mem_trans->s.physical_address, 4);
-#else
     uint32_t opcode = 0;
-#endif
     IS_PRIV(mem_trans) ? theOSStats->theFetches++ : theUserStats->theFetches++;
     theBothStats->theFetches++;
 
@@ -256,47 +222,19 @@ public:
     return k_no_stall; // Never stalls
   }
 
-  API::cycles_t trace_mem_hier_operate(API::conf_object_t *space,
-                                       API::memory_transaction_t *mem_trans) {
+  API::cycles_t trace_mem_hier_operate(API::memory_transaction_t *mem_trans) {
     // debugTransaction(mem_trans); // ustiugov: uncomment to track every memory
     // op Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
     // toL1D((int32_t) 0, msg);
     const int32_t k_no_stall = 0;
-#if FLEXUS_TARGET_IS(x86) || FLEXUS_TARGET_IS(v9) || FLEXUS_TARGET_IS(ARM)
+
     if (mem_trans->io) {
       // Count data accesses
       IS_PRIV(mem_trans) ? theOSStats->theIOOps++ : theUserStats->theIOOps++;
       theBothStats->theIOOps++;
       return k_no_stall; // Not a memory operation
     }
-#endif
 
-#if FLEXUS_TARGET_IS(v9)
-    if (!mem_trans->sparc_specific.cache_physical) {
-      // Count data accesses
-      IS_PRIV(mem_trans) ? theOSStats->theUncacheableOps++ : theUserStats->theUncacheableOps++;
-      theBothStats->theUncacheableOps++;
-      return k_no_stall; // Not a memory operation
-    }
-#endif
-
-#if FLEXUS_TARGET_IS(v9)
-    if (mem_trans->sparc_specific.address_space == 0x71) {
-      // BLK stores to ASI 71.
-      // These stores update the data caches on hit, but do not allocate on
-      // miss.  The best way to model these in
-      theMemoryMessage.address() = PhysicalMemoryAddress(mem_trans->s.physical_address);
-      theMemoryMessage.pc() = VirtualMemoryAddress(API::QEMU_get_program_counter(theCPU));
-      theMemoryMessage.priv() = IS_PRIV(mem_trans);
-      theMemoryMessage.reqSize() = mem_trans->s.size;
-      theMemoryMessage.type() = MemoryMessage::NonAllocatingStoreReq;
-      toNAW(theIndex, theMemoryMessage);
-      // NOTE: with the current implementation the LRU position of a block is
-      // not updated upon a NAW hit. (NIKOS) We may want to fix the NAW hits,
-      // but I don't expect it'll make a measurable difference.
-      return k_no_stall; // Not a memory operation
-    }
-#endif
     if (mem_trans->s.type == API::QEMU_Trans_Instr_Fetch) {
       return insn_fetch(mem_trans);
     }
@@ -309,79 +247,9 @@ public:
 
     // Set the type field of the memory operation
     if (mem_trans->s.atomic) {
-
-#if FLEXUS_TARGET_IS(v9)
-      // Need to determine opcode, as this may be an RMW or CAS
-      // record the opcode
-      API::physical_address_t pc =
-          API::QEMU_logical_to_physical(theCPU, API::QEMU_DI_Instruction, mem_trans->s.pc);
-      uint32_t op_code = API::QEMU_read_phys_memory(pc, 4);
-
-      // LDD(a)            is 11-- ---0 -001 1--- ---- ---- ---- ----
-      // STD(a)            is 11-- ---0 -011 1--- ---- ---- ---- ----
-
-      // LDSTUB(a)/SWAP(a) is 11-- ---0 -11- 1--- ---- ---- ---- ----
-      // CAS(x)A           is 11-- ---1 111- 0--- ---- ---- ---- ----
-
-      const uint32_t kLDD_mask = 0xC1780000;
-      const uint32_t kLDD_pattern = 0xC0180000;
-
-      const uint32_t kSTD_mask = 0xC1780000;
-      const uint32_t kSTD_pattern = 0xC038000;
-
-      const uint32_t kRMW_mask = 0xC1680000;
-      const uint32_t kRMW_pattern = 0xC0680000;
-
-      const uint32_t kCAS_mask = 0xC1E80000;
-      const uint32_t kCAS_pattern = 0xC1E00000;
-
-      if ((op_code & kLDD_mask) == kLDD_pattern) {
-        theMemoryMessage.type() = MemoryMessage::LoadReq;
-        IS_PRIV(mem_trans) ? theOSStats->theLoadOps++ : theUserStats->theLoadOps++;
-        theBothStats->theLoadOps++;
-      } else if ((op_code & kSTD_mask) == kSTD_pattern) {
-        theMemoryMessage.type() = MemoryMessage::StoreReq;
-        IS_PRIV(mem_trans) ? theOSStats->theStoreOps++ : theUserStats->theStoreOps++;
-        theBothStats->theStoreOps++;
-      } else if ((op_code & kCAS_mask) == kCAS_pattern) {
-        theMemoryMessage.type() = MemoryMessage::CmpxReq;
-        IS_PRIV(mem_trans) ? theOSStats->theCASOps++ : theUserStats->theCASOps++;
-        theBothStats->theCASOps++;
-      } else if ((op_code & kRMW_mask) == kRMW_pattern) {
-        theMemoryMessage.type() = MemoryMessage::RMWReq;
-        IS_PRIV(mem_trans) ? theOSStats->theRMWOps++ : theUserStats->theRMWOps++;
-        theBothStats->theRMWOps++;
-      } else {
-        // FIXME getting an error with swap, says the opcode is 7cc2, which
-        // means the first 2 bytes are all 0s this might not be possible in
-        // sparc.
-        //        printf("LDD: %x, STD: %x, CAS: %x, RMW: %x\n", kLDD_mask,
-        //        kSTD_mask, kRMW_mask, kCAS_mask);
-        DBG_Assert(false, (<< "Unknown atomic operation. Opcode: " << std::hex << op_code
-                           << " pc: " << pc << std::dec));
-      }
-#elif FLEXUS_TARGET_IS(ARM)
-      theMemoryMessage.type() = MemoryMessage::RMWReq;
-      switch (mem_trans->s.type) {
-      case API::QEMU_Trans_Load:
-        IS_PRIV(mem_trans) ? theOSStats->theLoadExOps++ : theUserStats->theLoadExOps++;
-        theBothStats->theLoadExOps++;
-        break;
-      case API::QEMU_Trans_Store:
-        IS_PRIV(mem_trans) ? theOSStats->theStoreExOps++ : theUserStats->theStoreExOps++;
-        theBothStats->theStoreExOps++;
-        break;
-      default:
-        DBG_(Crit, (<< "unhandled transaction type.  Transaction follows:"));
-        debugTransaction(mem_trans);
-        DBG_Assert(false);
-        break;
-      }
-#else  // Assume all atomic x86 atomic operations are RMWs.
       theMemoryMessage.type() = MemoryMessage::RMWReq;
       IS_PRIV(mem_trans) ? theOSStats->theRMWOps++ : theUserStats->theRMWOps++;
       theBothStats->theRMWOps++;
-#endif // v9
 
     } else {
       switch (mem_trans->s.type) {
@@ -410,28 +278,6 @@ public:
       case API::QEMU_Trans_Cache:
         // We don't really support these operations
         return k_no_stall;
-        /*
-        if( mem_trans->cache_op == API::QEMU_Invalidate_Cache ) {
-          theMemoryMesage.type() = MemoryMessage::Invalidate;
-
-          if( mem_trans->cache == API::QEMU_Instruction_Cache ) {
-            toL1I( theIndex, theMemoryMessage);
-          } else if( mem_trans->cache == API::QEMU_Data_Cache ) {
-            toL1D( theIndex, theMemoryMessage );
-          }
-          return k_no_stall;
-        } else if( mem_trans->cache_op == API::QEMU_Clean_Cache ) {
-          theMemoryMesage.type() = MemoryMessage::Invalidate;
-
-          if( mem_trans->cache == API::QEMU_Instruction_Cache ) {
-            toL1I( theIndex, theMemoryMessage);
-          } else if( mem_trans->cache == API::QEMU_Data_Cache ) {
-            toL1D( theIndex, theMemoryMessage );
-          }
-          return k_no_stall;
-        }
-        break;
-        */
       default:
         DBG_(Crit, (<< "unhandled transaction type.  Transaction follows:"));
         debugTransaction(mem_trans);
@@ -439,19 +285,6 @@ public:
         break;
       }
     }
-#if FLEXUS_TARGET_IS(v9)
-    if (mem_trans->sparc_specific.address_space == 0x71) {
-      // BLK stores to ASI 71.
-      // These stores update the data caches on hit, but do not allocate on
-      // miss.  The best way to model these in
-      theMemoryMessage.reqSize() = mem_trans->s.size;
-      if (theSendNonAllocatingStores)
-        theMemoryMessage.type() = MemoryMessage::NonAllocatingStoreReq;
-      else {
-        DBG_Assert(theMemoryMessage.type() = MemoryMessage::StoreReq);
-      }
-    }
-#endif
 
     toL1D(theIndex, theMemoryMessage);
     if (theIndex != 0) {
@@ -462,19 +295,19 @@ public:
 
   // Useful debugging stuff for tracing every instruction
   void debugTransaction(Qemu::API::memory_transaction_t *mem_trans) {
-    API::logical_address_t pc_logical = API::QEMU_get_program_counter(theCPU);
+    API::logical_address_t pc_logical = API::qemu_api.get_pc(theCPU);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
     API::physical_address_t pc =
-        API::QEMU_logical_to_physical(theCPU, API::QEMU_DI_Instruction, pc_logical);
+        API::qemu_api.get_pa(theCPU, API::QEMU_DI_Instruction, pc_logical);
     unsigned opcode = 0;
 
     DBG_(VVerb, SetNumeric((ScaffoldIdx)theIndex)(<< "Mem Hier Instr: " << opcode << " logical pc: "
                                                   << &std::hex << pc_logical << " pc: " << pc));
 #pragma GCC diagnostic pop
 
-    if (API::QEMU_mem_op_is_data(&mem_trans->s)) {
-      if (API::QEMU_mem_op_is_write(&mem_trans->s)) {
+    if (API::qemu_api.mem_op_is_data(&mem_trans->s)) {
+      if (API::qemu_api.mem_op_is_write(&mem_trans->s)) {
         DBG_(VVerb,
              SetNumeric((ScaffoldIdx)theIndex)(
                  << "  Write v@" << &std::hex << mem_trans->s.logical_address << " p@"
@@ -536,14 +369,12 @@ public:
 };
 
 class DMATracerImpl {
-  API::conf_object_t *theUnderlyingObject;
-
   MemoryMessage theMemoryMessage;
   std::function<void(MemoryMessage &)> toDMA;
 
 public:
   DMATracerImpl(API::conf_object_t *anUnderlyingObjec)
-      : theUnderlyingObject(anUnderlyingObjec), theMemoryMessage(MemoryMessage::WriteReq) {
+      : theMemoryMessage(MemoryMessage::WriteReq) {
   }
 
   // Initialize the tracer to the desired CPU
@@ -554,12 +385,10 @@ public:
   void updateStats() {
   }
 
-  API::cycles_t dma_mem_hier_operate(API::conf_object_t *space,
-                                     API::memory_transaction_t *mem_trans) {
-
+  API::cycles_t dma_mem_hier_operate(API::memory_transaction_t *mem_trans) {
     const int32_t k_no_stall = 0;
     // debugTransaction(mem_trans);
-    if (API::QEMU_mem_op_is_write(&mem_trans->s)) {
+    if (API::qemu_api.mem_op_is_write(&mem_trans->s)) {
       DBG_(Verb, (<< "DMA To Mem: " << std::hex << mem_trans->s.physical_address << std::dec
                   << " Size: " << mem_trans->s.size));
       theMemoryMessage.type() = MemoryMessage::WriteReq;
@@ -597,10 +426,11 @@ public:
   }
 };
 
+static QemuTracer *theTracers;
+
 class QemuTracerManagerImpl : public QemuTracerManager {
   int32_t theNumCPUs;
   bool theClientServer;
-  QemuTracer *theTracers;
   DMATracer theDMATracer;
   std::function<void(int, MemoryMessage &)> toL1D;
   std::function<void(int, MemoryMessage &, uint32_t)> toL1I;
@@ -646,8 +476,9 @@ public:
 
   void setSystemTick(double aTickFreq) {
     for (int32_t i = 0; i < theNumCPUs; ++i) {
-      API::conf_object_t *cpu = Qemu::API::QEMU_get_cpu_by_index(i);
-      API::QEMU_set_tick_frequency(cpu, aTickFreq);
+      assert(false);
+//    API::conf_object_t *cpu = Qemu::API::qemu_api.get_cpu_by_idx(i);
+//    API::QEMU_set_tick_frequency(cpu, aTickFreq);
     }
   }
 
@@ -670,7 +501,6 @@ private:
 
     // Create QemuTracer Factory
     Qemu::Factory<QemuTracer> tracer_factory;
-    // registerTimingInterface();
 
     // Create QemuTracer Objects
     // FIXME I believe this had been used incorrectly as the end point of the
@@ -683,17 +513,12 @@ private:
       }
       theTracers[ii] = tracer_factory.create(feeder_name);
 
-      API::conf_object_t *cpu = API::QEMU_get_cpu_by_index(ii);
+      API::conf_object_t *cpu = API::qemu_api.get_cpu_by_idx(ii);
       theTracers[ii]->init(cpu, ii, toL1D, toL1I, toNAW,
                            //			  , theWhiteBoxDebug
                            //			  , theWhiteBoxPeriod
                            theSendNonAllocatingStores);
     }
-    // Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
-    // theTracers[0]->toL1D((int32_t) 0, msg);
-    // Should not be here, need to also change the function
-    //    registerTimingInterface(&theTracers[ii]);
-    registerTimingInterface();
   }
 
   void createDMATracer(void) {
@@ -705,50 +530,6 @@ private:
     theDMATracer = tracer_factory.create(tracer_name);
     DBG_(Crit, (<< "Connecting to DMA memory map"));
     theDMATracer->init(toDMA);
-
-    registerDMAInterface();
-  }
-
-  void registerTimingInterface(/*QemuTracerImpl * p*/) {
-    // XXX: Pass addr of each individual tracer object depending on number
-    // of CPUs. Now need to revamp the callback interface to integrate
-    // conf_object_t, so that callbacks can be called per configuration
-    // object and not in a global context (because that's not how it's
-    // supposed to work).
-    /*API::QEMU_insert_callback(
-                      Flexus::Qemu::API::QEMU_trace_mem_hier
-                    , callback
-                    );*/
-    // TODO figure out how to get the cpuNum
-    QemuTracer *p = (theTracers);
-    if (p) {
-
-      // Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
-      //   (p[0])->toL1D((int32_t) 0, msg);
-    }
-    // FIXME: I am not sure how best to pass the object to the callback
-    // function. This way could possibly cause problems with multiple cpus
-    for (int i = 0; i < theNumCPUs; i++) {
-      API::conf_object_t *cpu = API::QEMU_get_cpu_by_index(i);
-      API::QEMU_insert_callback(API::QEMU_get_cpu_index(cpu), API::QEMU_cpu_mem_trans,
-                                reinterpret_cast<void *>(theTracers + i),
-                                reinterpret_cast<void *>(&TraceMemHierOperate));
-    }
-  }
-
-  void registerDMAInterface() {
-    // XXX: See above
-    /*
-    void *callback = (&this->dma_mem_hier_operate);
-    API::QEMU_insert_callback(
-                      Flexus::Qemu::API::QEMU_trace_mem_hier
-                    , callback
-                    );*/
-    // FIXME: I am not sure how best to pass the object to the callback
-    // function. This way could possibly cause problems with multiple cpus
-    DMATracerImpl *p = (&theDMATracer);
-    API::QEMU_insert_callback(QEMUFLEX_GENERIC_CALLBACK, API::QEMU_dma_mem_trans, ((void *)p),
-                              (void *)&DMAMemHierOperate);
   }
 };
 
@@ -764,17 +545,17 @@ QemuTracerManager::construct(int32_t aNumCPUs, std::function<void(int, MemoryMes
   return new QemuTracerManagerImpl(aNumCPUs, toL1D, toL1I, toDMA, toNAW,
                                    /* aWhiteBoxDebug, aWhiteBoxPeriod,*/ aSendNonAllocatingStores);
 }
-extern "C" {
-void TraceMemHierOperate(void *obj, API::conf_object_t *space,
-                         API::memory_transaction_t *mem_trans) {
-  // Thread safe as is, no need to add muteces
-  QemuTracer *tracer = reinterpret_cast<QemuTracer *>(obj);
-  (*tracer)->trace_mem_hier_operate(space, mem_trans);
-};
-void DMAMemHierOperate(void *obj, API::conf_object_t *space, API::memory_transaction_t *mem_trans) {
-  DMATracerImpl *tracer = reinterpret_cast<DMATracerImpl *>(obj);
-  tracer->dma_mem_hier_operate(space, mem_trans);
-};
-}
 
 } // namespace nDecoupledFeeder
+
+namespace Flexus {
+namespace Qemu {
+namespace API {
+
+void FLEXUS_trace_mem(int idx, Flexus::Qemu::API::memory_transaction_t *tr) {
+  nDecoupledFeeder::theTracers[idx]->trace_mem_hier_operate(tr);
+}
+
+}
+}
+}

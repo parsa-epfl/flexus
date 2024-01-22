@@ -654,11 +654,6 @@ bool NetContainer::handleRoute(istream &infile, NetContainer *nc) {
       return true;
     }
 
-#if 0
-    std::cout << " Adding routing table entry: sw " << sw << " -> " << node
-              << " thru port " << port << endl;
-#endif
-
     if (nc->switches[sw]->addRoutingEntry(node, port, vc)) {
       return true;
     }

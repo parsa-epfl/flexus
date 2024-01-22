@@ -958,16 +958,6 @@ void NonInclusiveMESIPolicy::doEvict(ProcessEntry_p process, bool has_maf) {
       ((maf->transport()[MemoryMessageTag]->type() == MemoryMessage::WriteReq) ||
        (maf != theMAF.end() &&
         maf->transport()[MemoryMessageTag]->type() == MemoryMessage::UpgradeReq))) {
-#if 0
-    // Change protocol to ALWAYS send acks when required
-    if (req->ackRequired()) {
-      process->addSnoopTransport(ack);
-      process->setAction(eForward);
-    } else {
-      process->setAction(eNoAction);
-    }
-    return;
-#endif
     active_write_req = true;
   }
 

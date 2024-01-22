@@ -55,11 +55,6 @@
 
 #include <core/target.hpp>
 
-// FIXME need to make sure that CONFIG_QEMU actually works
-#ifndef CONFIG_QEMU
-#define CONFIG_QEMU
-#endif
-
 #include <core/flexus.hpp>
 #include <core/stats.hpp>
 
@@ -193,94 +188,6 @@ void SeverityAction::printConfiguration(std::ostream &anOstream, std::string con
 void SeverityAction::process(Entry const &anEntry) {
   Flexus::Dbg::Debugger::theDebugger->setMinSev(Severity(theSeverity));
 }
-
-#if 0
-class SaveBufferManager {
-  typedef boost::circular_buffer< Entry const & > entry_buffer;
-  typedef std::map<std::string, std::shared_ptr< entry_buffer > > buf_map;
-  buf_map theBuffers;
-public:
-  //Need destructor
-
-  void create(std::string const & aBufferName, uint32_t aSize) {
-    if (theBuffers[aBufferName].get() == 0) {
-      theBuffers[aBufferName].reset( new entry_buffer (aSize));
-    } else {
-      if (theBuffers[aBufferName]->capacity() != aSize) {
-        theBuffers[aBufferName]->resize(aSize);
-      }
-    }
-  }
-
-  void add(std::string const & aBufferName, Entry const & anEntry) {
-    theBuffers[aBufferName]->push_back(anEntry);
-  }
-
-  void spill(std::string const & aBufferName, Format const & aFormat, std::ostream & anOstream) {
-    entry_buffer::iterator iter(theBuffers[aBufferName]->begin());
-    while (iter != theBuffers[aBufferName]->end()) {
-      aFormat.format(anOstream, **iter);
-      ++iter;
-    }
-  }
-};
-
-std::unique_ptr<SaveBufferManager> theSaveBufferManager;
-
-inline SaveBufferManager & saveBufferManager() {
-  if (theSaveBufferManager.get() == 0) {
-    theSaveBufferManager.reset(new SaveBufferManager());
-  }
-  return *theSaveBufferManager;
-}
-
-SaveAction::SaveAction(std::string aBufferName, uint32_t aCircularBufferSize)
-  : theBufferName(aBufferName)
-  , theSize(aCircularBufferSize) {
-  saveBufferManager().create(theBufferName, theSize);
-}
-
-void SaveAction::printConfiguration(std::ostream & anOstream, std::string const & anIndent) {
-  anOstream << anIndent << "save (" << theBufferName << ") " << theSize << " ;";
-}
-
-void SaveAction::process(Entry const & anEntry) {
-  saveBufferManager().add(theBufferName, anEntry);
-}
-
-FileSpillAction::FileSpillAction(std::string const & aBufferName, std::string const & aFilename, Format * aFormat)
-  : theBufferName(aBufferName)
-  , theFilename(aFilename)
-  , theOstream(streamManager().getStream(aFilename) )
-  , theFormat(aFormat)
-{ };
-
-void FileSpillAction::printConfiguration(std::ostream & anOstream, std::string const & anIndent) {
-  anOstream << anIndent << "spill (" << theBufferName << ")->(" << theFilename << ") ";
-  theFormat->printConfiguration(anOstream, "");
-  anOstream << ";\n";
-}
-
-void FileSpillAction::process(Entry const & anEntry) {
-  saveBufferManager().spill(theBufferName, *theFormat, theOstream);
-  theOstream.flush();
-}
-
-ConsoleSpillAction::ConsoleSpillAction(std::string const & aBufferName, Format * aFormat)
-  : theBufferName(aBufferName)
-  , theFormat(aFormat)
-{ };
-
-void ConsoleSpillAction::printConfiguration(std::ostream & anOstream, std::string const & anIndent) {
-  anOstream << anIndent << "spill (" << theBufferName << ") -> console ";
-  theFormat->printConfiguration(anOstream, "");
-  anOstream << ";\n";
-}
-
-void ConsoleSpillAction::process(Entry const & anEntry) {
-  saveBufferManager().spill(theBufferName, *theFormat, std::cerr);
-}
-#endif
 
 } // namespace Dbg
 } // namespace Flexus

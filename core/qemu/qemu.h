@@ -1,9 +1,6 @@
 #ifndef QEMU_H
 #define QEMU_H
 // not defined in api.c, defined in external binaries (exec.o, libqemuutil.a)
-struct CPUX86State;
-typedef struct CPUX86State CPUX86State;
-typedef CPUX86State CPUArchState;
 struct CPUState;
 typedef struct CPUState CPUState;
 

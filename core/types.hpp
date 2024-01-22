@@ -94,6 +94,10 @@ public:
   bool operator==(MemoryAddress_ const &other) {
     return (address == other.address);
   }
+  MemoryAddress_ &operator=(underlying_type const &other) {
+    address = other;
+    return *this;
+  }
   MemoryAddress_ &operator=(MemoryAddress_ const &other) {
     address = other.address;
     return *this;

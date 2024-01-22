@@ -55,15 +55,6 @@ public:
                 invalidate_function_t inval, bool DowngradeLRU = false, bool SnoopLRU = false)
       : CoherenceProtocol(fwd, cnt, inval) {
 
-#if 0
-    DECLARE_REQUEST_ACTION( kModified, kReadAccess, SendNone, NoAllocate, SameState, UpdateLRU, FillWritable, HitReadModified );
-    DECLARE_REQUEST_ACTION( kModified, kWriteAccess, SendNone, NoAllocate, SameState, UpdateLRU, FillWritable, HitWriteModified );
-    DECLARE_REQUEST_ACTION( kModified, kFetchAccess, SendNone, NoAllocate, SameState, UpdateLRU, FillValid,  HitFetchModified );
-    DECLARE_REQUEST_ACTION( kModified, kUpgrade,  SendNone, NoAllocate, SameState, UpdateLRU, FillWritable, HitUpgradeModified );
-    DECLARE_REQUEST_ACTION( kModified, kEvictClean, SendNone, NoAllocate, SameState, UpdateLRU, NoResponse, HitEvictModified );
-    DECLARE_REQUEST_ACTION( kModified, kEvictWritable, SendNone, NoAllocate, SameState, UpdateLRU, NoResponse, HitEvictWModified );
-    DECLARE_REQUEST_ACTION( kModified, kEvictDirty, SendNone, NoAllocate, SameState, UpdateLRU, NoResponse, HitEvictDModified );
-#endif
     DECLARE_REQUEST_ACTION(kModified, kReadAccess, SendNone, NoAllocate, DependState, UpdateLRU,
                            FillDirty, HitReadModified);
     DECLARE_REQUEST_ACTION(kModified, kWriteAccess, SendNone, NoAllocate, E_State, UpdateLRU,

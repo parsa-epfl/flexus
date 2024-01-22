@@ -69,14 +69,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate) {
   FLEXUS_COMPONENT_IMPL(FetchAddressGenerate);
 
   std::vector<MemoryAddress> thePC;
-//  std::vector<uint32_t> theConvertedInstruction;
-#if FLEXUS_TARGET_IS(v9)
-  std::vector<MemoryAddress> theNextPC;
-#endif
   std::vector<MemoryAddress> theRedirectPC;
-#if FLEXUS_TARGET_IS(v9)
-  std::vector<MemoryAddress> theRedirectNextPC;
-#endif
   std::vector<bool> theRedirect;
   std::unique_ptr<BranchPredictor> theBranchPredictor;
   uint32_t theCurrentThread;
@@ -87,26 +80,13 @@ public:
 
   void initialize() {
     thePC.resize(cfg.Threads);
-    // theConvertedInstruction.resize(cfg.Threads);
-#if FLEXUS_TARGET_IS(v9)
-    theNextPC.resize(cfg.Threads);
-#endif
     theRedirectPC.resize(cfg.Threads);
-#if FLEXUS_TARGET_IS(v9)
-    theRedirectNextPC.resize(cfg.Threads);
-#endif
     theRedirect.resize(cfg.Threads);
     for (uint32_t i = 0; i < cfg.Threads; ++i) {
       Qemu::Processor cpu = Qemu::Processor::getProcessor(flexusIndex() * cfg.Threads + i);
       thePC[i] = cpu->getPC();
       AGU_DBG("PC(" << i << ") = " << thePC[i]);
-#if FLEXUS_TARGET_IS(v9)
-      theNextPC[i] = cpu->getNPC();
-#endif
       theRedirectPC[i] = MemoryAddress(0);
-#if FLEXUS_TARGET_IS(v9)
-      theRedirectNextPC[i] = MemoryAddress(0);
-#endif
       theRedirect[i] = false;
     }
     theCurrentThread = cfg.Threads;
@@ -134,21 +114,11 @@ public:
   // RedirectIn
   //----------
 
-#if FLEXUS_TARGET_IS(ARM)
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(RedirectIn);
   void push(interface::RedirectIn const &, index_t anIndex, MemoryAddress &aRedirect) {
     theRedirectPC[anIndex] = aRedirect;
     theRedirect[anIndex] = true;
   }
-#elif FLEXUS_TARGET_IS(v9)
-  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(RedirectIn);
-  void push(interface::RedirectIn const &, index_t anIndex,
-            std::pair<MemoryAddress, MemoryAddress> &aRedirect) {
-    theRedirectPC[anIndex] = aRedirect.first;
-    theRedirectNextPC[anIndex] = aRedirect.second;
-    theRedirect[anIndex] = true;
-  }
-#endif
 
   // BranchFeedbackIn
   //----------------
@@ -190,9 +160,6 @@ private:
 
     if (theRedirect[anIndex]) {
       thePC[anIndex] = theRedirectPC[anIndex];
-#if FLEXUS_TARGET_IS(v9)
-      theNextPC[anIndex] = theRedirectNextPC[anIndex];
-#endif
       theRedirect[anIndex] = false;
       DBG_(VVerb, Comp(*this)(<< "FGU:  Redirect core[" << anIndex << "] " << thePC[anIndex]));
     }
@@ -226,34 +193,19 @@ private:
           AGU_DBG("Config set the max prediction to zero, so no prediction");
           break;
         }
-#if FLEXUS_TARGET_IS(v9)
-
-        thePC[anIndex] = theNextPC[anIndex];
-        theNextPC[anIndex] = theBranchPredictor->predict(faddr);
-        if (theNextPC[anIndex] == 0) {
-          theNextPC[anIndex] = thePC[anIndex] + 4;
-        }
-#else
         VirtualMemoryAddress prediction = theBranchPredictor->predict(faddr);
         if (prediction == 0)
           thePC[anIndex] += 4;
         else
           thePC[anIndex] = prediction;
-#endif
         AGU_DBG("Advancing PC to: " << thePC[anIndex] << " for core: " << anIndex);
         AGU_DBG("Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress);
 
         fetch->theFetches.push_back(faddr);
         --max_predicts;
       } else {
-#if FLEXUS_TARGET_IS(v9)
-        thePC[anIndex] = theNextPC[anIndex];
-        theNextPC[anIndex] = thePC[anIndex] + 4;
-#else
         DBG_(VVerb, (<< "Before Advancing PC to: " << thePC[anIndex] << " for core: " << anIndex));
-
         thePC[anIndex] += 4;
-#endif
 
         DBG_(VVerb, (<< "Advancing PC to: " << thePC[anIndex] << " for core: " << anIndex));
         DBG_(VVerb, (<< "Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress));

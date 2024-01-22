@@ -74,7 +74,6 @@ COMPONENT_PARAMETERS(
 COMPONENT_INTERFACE(
   DYNAMIC_PORT_ARRAY( PushInput, boost::intrusive_ptr<FetchCommand>, FetchAddressIn )
   DYNAMIC_PORT_ARRAY( PushInput, eSquashCause, SquashIn )
-  DYNAMIC_PORT_ARRAY( PushInput, CPUState, ChangeCPUState )
   PORT( PushInput, MemoryTransport, FetchMissIn )
   DYNAMIC_PORT_ARRAY( PullOutput, int, AvailableFAQOut )
   DYNAMIC_PORT_ARRAY( PullInput, int, AvailableFIQ )
