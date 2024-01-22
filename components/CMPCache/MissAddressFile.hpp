@@ -155,7 +155,7 @@ public:
   MissAddressFile(int32_t aSize) : theSize(aSize), theReserve(0), theCurSize(0) {
     // regionFunc = [this](auto x){ return this->defaultRegionFunc(x);};
     // //std::bind(&MissAddressFile::defaultRegionFunc, this, _1);
-    regionFunc = boost::bind(&MissAddressFile::defaultRegionFunc, this, _1);
+    regionFunc = std::bind(&MissAddressFile::defaultRegionFunc, this, std::placeholders::_1);
   }
 
   void dump() {

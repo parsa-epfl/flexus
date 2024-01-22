@@ -249,7 +249,7 @@ inline void copyState(const std::vector<SimpleDirectoryState> &orig,
   // transform(orig.begin(), orig.end(), copy.begin(), [](auto& x){ return
   // x.getSharers(); });//(&SimpleDirectoryState::getSharers, _1));
   transform(orig.begin(), orig.end(), copy.begin(),
-            boost::bind(&SimpleDirectoryState::getSharers, _1));
+            std::bind(&SimpleDirectoryState::getSharers, std::placeholders::_1));
 }
 
 inline void copyState(const std::vector<boost::dynamic_bitset<uint64_t>> &orig,
@@ -258,7 +258,7 @@ inline void copyState(const std::vector<boost::dynamic_bitset<uint64_t>> &orig,
   // transform(orig.begin(), orig.end(), copy.begin(), [&aDefaultState](auto&
   // x){ return bits2State(x, aDefaultState); });//std::bind(&bits2State, _1,
   // aDefaultState));
-  transform(orig.begin(), orig.end(), copy.begin(), boost::bind(&bits2State, _1, aDefaultState));
+  transform(orig.begin(), orig.end(), copy.begin(), std::bind(&bits2State, std::placeholders::_1, aDefaultState));
 }
 
 inline void setPresence(int32_t sharer, const boost::dynamic_bitset<uint64_t> &presence,

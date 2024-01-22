@@ -99,7 +99,7 @@ std::ostream &operator<<(std::ostream &s, const enum ProcessType eProcess) {
   return s << process_types[eProcess];
 }
 
-std::ostream &operator<<(std::ostream &s, ProcessEntry &process) {
+std::ostream &operator<<(std::ostream &s, ProcessEntry process) {
   s << process.type();
   if (process.transport()[MemoryMessageTag]) {
     s << ": OrigMessage = " << *(process.transport()[MemoryMessageTag]);

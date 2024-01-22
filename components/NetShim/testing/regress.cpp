@@ -215,57 +215,8 @@ bool runRegressSuite(void) {
   outFile.open("output-regress.csv");
 #endif
 
-  // Basic idle network test
-#if 0
-  TRY_TEST ( idleNetwork ( 100000 ) );
-#endif
-
-  // Basic network connectivity test
-#if 0
-  for ( i = 0; i < numNodes; i++ ) {
-    for ( j = 0; j < numNodes; j++ ) {
-      TRY_TEST ( singlePacket1 ( i, j ) );
-    }
-  }
-#endif
-
-  // Basic flood node test
-#if 0
-  for ( i = 0; i < numNodes; i++ ) {
-    // For various numbers of packets
-    for ( j = 1; j  < 8192; j = j * 2 ) {
-      TRY_TEST ( floodNode ( numNodes, j, i ) );
-    }
-  }
-#endif
-
-#if 0
-  for ( f = 0.1; f < 1.5; f = f * 3.0 ) {
-    TRY_TEST ( uniformRandomTraffic ( numNodes, (int)1048576, f ) );
-  }
-#endif
-
-#if 0
-  for ( f = 0.05; f <= 1.0; f = f + .05 ) {
-    TRY_TEST ( uniformRandomTraffic2 ( numNodes, (int)(1048576 * f), LATENCY, f ) );
-  }
-#endif
-
-#if 0
-  for ( f = 0.71; f < .80; f = f + .01 ) {
-    TRY_TEST ( uniformRandomTraffic2 ( numNodes, 1048576, LATENCY, f ) );
-  }
-#endif
-
-#if 1
-  for (f = 0.1; f <= 1.3; f = f + .05) {
     TRY_TEST(poissonRandomTraffic(400000, numNodes, LATENCY, f));
   }
-#endif
-
-#if 0
-  TRY_TEST( worstCaseLatency ( 0, 16 ) );
-#endif
 
   cout << endl;
   cout << "Regression results: failed " << errorCount << " of " << totalTests << " tests." << endl;

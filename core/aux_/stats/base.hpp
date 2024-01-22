@@ -108,6 +108,7 @@ public:
     throw 1; /* by default, stat's don't support sum accumulation */
   }
   virtual void reduceSum(StatValueBase const &anRHS){};
+  virtual void reduceSum(StatValueBase const *anRHS){};
   virtual boost::intrusive_ptr<StatValueBase> avgAccumulator() {
     throw 1; /* by default, stat's don't support average accumulation */
   }

@@ -46,7 +46,7 @@
 #define FLEXUS_CORE_DEBUG_AUX__OPERATIONS_HPP_INCLUDED
 
 #define DBG__internal_STREAM_TRICK(args)                                                           \
-  static_cast<std::stringstream &>(std::stringstream() << std::dec args).str()
+  static_cast<std::stringstream &&>(std::stringstream() << std::dec args).str()
 
 #define DBG__internal_VALID_COMMAND_Message ()
 #define DBG__internal_VALID_COMMAND_Msg ()

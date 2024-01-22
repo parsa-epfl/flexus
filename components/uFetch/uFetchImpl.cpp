@@ -299,8 +299,6 @@ class FLEXUS_COMPONENT(uFetch) {
   std::list<MemoryTransport> theSnoopQueue;
   std::list<MemoryTransport> theReplyQueue;
 
-  std::vector<CPUState> theCPUState;
-
 private:
   // I-Cache manipulation functions
   //=================================================================
@@ -368,7 +366,6 @@ public:
     theLastMiss.resize(cfg.Threads);
     theIcachePrefetch.resize(cfg.Threads);
     theLastPrefetchVTagSet.resize(cfg.Threads);
-    theCPUState.resize(cfg.Threads);
 
     theMissQueueSize = cfg.MissQueueSize;
   }
@@ -447,15 +444,6 @@ public:
     translationsExpected.clear();
   }
 
-  // ChangeCPUState
-  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(ChangeCPUState);
-  void push(interface::ChangeCPUState const &, index_t anIndex, CPUState &aState) {
-    DBG_(Iface, Comp(*this)(<< "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "."
-                            << anIndex << "] Change CPU State.  TL: " << aState.theTL
-                            << " PSTATE: " << std::hex << aState.thePSTATE << std::dec));
-    theCPUState[anIndex] = aState;
-  }
-
   // FetchMissIn
   FLEXUS_PORT_ALWAYS_AVAILABLE(FetchMissIn);
   void push(interface::FetchMissIn const &, MemoryTransport &aTransport) {
@@ -512,7 +500,6 @@ private:
           VirtualMemoryAddress(*theLastPrefetchVTagSet[anIndex] << theIndexShift);
       Flexus::SharedTypes::Translation xlat;
       xlat.theVaddr = vprefetch;
-      xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
       xlat.theType = Flexus::SharedTypes::Translation::eFetch;
       xlat.thePaddr = cpu(anIndex)->translateVirtualAddress(xlat.theVaddr);
       if (!xlat.thePaddr) {
@@ -554,8 +541,6 @@ private:
       DBG_(VVerb, (<< "Not in Flexus cache...Will look into Qemu now!"));
       Flexus::SharedTypes::Translation xlat;
       xlat.theVaddr = vaddr;
-      //      xlat.theTL = theCPUState[anIndex].theTL;
-      xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
       xlat.theType = Flexus::SharedTypes::Translation::eFetch;
       xlat.thePaddr = cpu(anIndex)->translateVirtualAddress(xlat.theVaddr);
       paddr = xlat.thePaddr;
@@ -801,16 +786,6 @@ private:
     case MemoryMessage::BackInvalidate:
       // Same as invalidate
       aTransport[DestinationTag]->type = DestinationMessage::Directory;
-#if 0
-        // Only send an Ack if we actually have the block
-        // If we don't have the block, then our InvalAck will race with an earlier Evict msg
-        // let the Evict msg serve a dual purpose and skip the inval ack.
-        if (inval( reply->address())) {
-          queueSnoopMessage ( aTransport, MemoryMessage::InvalidateAck, reply->address() );
-        } else {
-          DBG_(Trace, Comp(*this) ( << "Received BackInvalidate for block not present in cache: " << *reply ));
-        }
-#endif
 
       // small protocol change - always send the InvalAck, whether we have the
       // block or not
@@ -990,7 +965,6 @@ private:
                           opcodeQIterator newOpcIterator) {
     TranslationPtr xlat(new Flexus::SharedTypes::Translation());
     xlat->theVaddr = anAddress;
-    xlat->thePSTATE = theCPUState[anIndex].thePSTATE;
     xlat->theType = Flexus::SharedTypes::Translation::eFetch;
     xlat->theException = 0; // just for now
     xlat->theIndex = anIndex;
@@ -1069,9 +1043,6 @@ FLEXUS_PORT_ARRAY_WIDTH(uFetch, FetchAddressIn) {
   return (cfg.Threads);
 }
 FLEXUS_PORT_ARRAY_WIDTH(uFetch, SquashIn) {
-  return (cfg.Threads);
-}
-FLEXUS_PORT_ARRAY_WIDTH(uFetch, ChangeCPUState) {
   return (cfg.Threads);
 }
 FLEXUS_PORT_ARRAY_WIDTH(uFetch, AvailableFAQOut) {

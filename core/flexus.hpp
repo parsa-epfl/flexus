@@ -42,10 +42,13 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
-#include <functional>
-
 #ifndef FLEXUS_CORE_FLEXUS_HPP__INCLUDED
 #define FLEXUS_CORE_FLEXUS_HPP__INCLUDED
+
+#include <stdint.h>
+
+#include <string>
+#include <functional>
 
 namespace Flexus {
 namespace Core {
@@ -134,6 +137,10 @@ public:
 };
 
 extern FlexusInterface *theFlexus;
+
+void flexus_start();
+void flexus_stop();
+void flexus_qmp(int cmd, const char *arg);
 
 } // End Namespace Core
 } // namespace Flexus

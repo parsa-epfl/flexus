@@ -42,8 +42,6 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
-#include <core/debug/debug.hpp>
-
 #if defined(DBG_NewCategories)
 #error "DBG_NewCategories has been replaced with DBG_DefineCategories"
 #endif

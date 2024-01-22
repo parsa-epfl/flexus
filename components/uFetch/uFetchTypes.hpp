@@ -119,10 +119,6 @@ typedef uint32_t Opcode;
 
 struct FetchedOpcode {
   VirtualMemoryAddress thePC;
-//  uint32_t theConvertedInstruction;
-#if FLEXUS_TARGET_IS(v9)
-  VirtualMemoryAddress theNextPC;
-#endif
   Opcode theOpcode;
   boost::intrusive_ptr<BPredState> theBPState;
   boost::intrusive_ptr<TransactionTracker> theTransaction;
@@ -132,13 +128,7 @@ struct FetchedOpcode {
   FetchedOpcode(VirtualMemoryAddress anAddr, Opcode anOpcode,
                 boost::intrusive_ptr<BPredState> aBPState,
                 boost::intrusive_ptr<TransactionTracker> aTransaction)
-      : thePC(anAddr)
-//    ,theConvertedInstruction(aConvertedInstruction)
-#if FLEXUS_TARGET_IS(v9)
-        ,
-        theNextPC(aNextAddr)
-#endif
-        ,
+      : thePC(anAddr),
         theOpcode(anOpcode), theBPState(aBPState), theTransaction(aTransaction) {
   }
 };
@@ -163,11 +153,6 @@ struct FetchBundle : public boost::counted_base {
 };
 
 typedef boost::intrusive_ptr<FetchBundle> pFetchBundle;
-
-struct CPUState {
-  int32_t theTL;
-  int32_t thePSTATE;
-};
 
 } // end namespace SharedTypes
 } // end namespace Flexus

@@ -77,22 +77,6 @@ struct RTSerializer {
 };
 BOOST_CLASS_TRACKING(RTSerializer, boost::serialization::track_never)
 
-#if 0
-struct BlockSerializer {
-  uint64_t tag;
-  uint8_t  way;
-  uint8_t  state;
-
-  friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, const uint32_t version) {
-    ar & tag;
-    ar & state;
-  }
-};
-BOOST_CLASS_TRACKING(BlockSerializer, boost::serialization::track_never)
-#endif
-
 #include <components/CommonQEMU/Serializers.hpp>
 
 using nCommonSerializers::BlockSerializer;

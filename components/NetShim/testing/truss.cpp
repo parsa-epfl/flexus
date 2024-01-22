@@ -251,25 +251,9 @@ bool runTrussSuite(void) {
   outFile.open("output-truss.csv");
 #endif
 
-#if 0
-  for ( i = 0; i < numMasters; i++ ) {
-    for ( j = 0; j < numMasters; j++ ) {
-      TRY_TEST ( singlePacket1 ( i, j ) );
-    }
-  }
-#endif
-
-#if 0
-  for ( f = 0.1; f <= 1.0; f = f + 0.05 ) {
-    TRY_TEST ( uniformRandomTraffic2 ( numMasters, (int)(104857 * f), LATENCY, f ) );
-  }
-#endif
-
-#if 1
   for (f = 0.05; f <= 1.5; f = f + .05) {
     TRY_TEST(poissonRandomTraffic(400000, numMasters, LATENCY, f, false));
   }
-#endif
 
 #ifdef LOG_RESULTS
   outFile.close();

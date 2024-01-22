@@ -88,6 +88,7 @@ public:
   virtual tFillLevel sourceLevel() const {
     return theInsnSourceLevel;
   }
+  virtual uint32_t getOpcode() = 0;
 };
 
 enum eSquashCause {

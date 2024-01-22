@@ -45,6 +45,9 @@
 #ifndef FLEXUS_CORE_QEMU_API_WRAPPERS_HPP__INCLUDED
 #define FLEXUS_CORE_QEMU_API_WRAPPERS_HPP__INCLUDED
 
+#include <stdint.h>
+#include <stdbool.h>
+
 namespace Flexus {
 namespace Qemu {
 namespace API {

@@ -104,8 +104,6 @@ class FLEXUS_COMPONENT(DecoupledFeeder) {
   int32_t theNumCPUs;
   int32_t theCMPWidth;
   QemuTracerManager *theTracer;
-  int64_t *theLastICounts;
-  Stat::StatCounter **theICounts;
   MMUStats **os_itlb_stats, **os_dtlb_stats, **user_itlb_stats, **user_dtlb_stats;
 
 public:
@@ -157,30 +155,21 @@ public:
       theTracer->setSystemTick(cfg.SystemTickFrequency);
     }
 
-    theLastICounts = new int64_t[theNumCPUs];
-    theICounts = new Stat::StatCounter *[theNumCPUs];
     os_itlb_stats = new MMUStats *[theNumCPUs];
     os_dtlb_stats = new MMUStats *[theNumCPUs];
     user_itlb_stats = new MMUStats *[theNumCPUs];
     user_dtlb_stats = new MMUStats *[theNumCPUs];
     for (int32_t i = 0; i < theNumCPUs; ++i) {
-      theICounts[i] =
-          new Stat::StatCounter(boost::padded_string_cast<2, '0'>(i) + "-feeder-ICount");
       os_itlb_stats[i] = new MMUStats(boost::padded_string_cast<2, '0'>(i) + "-itlb-OS:");
       os_dtlb_stats[i] = new MMUStats(boost::padded_string_cast<2, '0'>(i) + "-dtlb-OS:");
       user_itlb_stats[i] = new MMUStats(boost::padded_string_cast<2, '0'>(i) + "-itlb-User:");
       user_dtlb_stats[i] = new MMUStats(boost::padded_string_cast<2, '0'>(i) + "-dtlb-User:");
-      theLastICounts[i] = Qemu::API::QEMU_get_instruction_count(i, BOTH_INSTR);
     }
 
-    // TODO fix this with actual QEMU_insert_callback.
-    // thePeriodicHap = new periodic_hap_t(this, cfg.HousekeepingPeriod);
-    Qemu::API::QEMU_insert_callback(QEMUFLEX_GENERIC_CALLBACK, Qemu::API::QEMU_periodic_event,
-                                    (void *)this, (void *)&houseKeeping);
     theFlexus->advanceCycles(0);
     theCMPWidth = cfg.CMPWidth;
     if (theCMPWidth == 0) {
-      theCMPWidth = Qemu::API::QEMU_get_num_cores();
+      theCMPWidth = Qemu::API::qemu_api.get_num_cores();
     }
   }
 
@@ -277,11 +266,6 @@ public:
   void updateInstructionCounts() {
     // Count instructions
     // FIXME Currently Does nothing since step_count ha not been implemented
-    for (int32_t i = 0; i < theNumCPUs; ++i) {
-      int64_t temp = Qemu::API::QEMU_get_instruction_count(i, BOTH_INSTR);
-      *(theICounts[i]) += temp - theLastICounts[i];
-      theLastICounts[i] = temp;
-    }
   }
   void updateMMUStats() {
     for (int32_t i = 0; i < theNumCPUs; ++i) {

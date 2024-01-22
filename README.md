@@ -42,7 +42,7 @@ $ sudo ./b2 install
 * The default settings are:
 
 ```sh
--DTARGET_PLATFORM=arm
+-DTARGET_PLATFORM=riscv
 -DSELECTED_DEBUG=vverb
 -DSIMULATOR=KnottyKraken
 -DCMAKE_C_COMPILER=/usr/bin/gcc
