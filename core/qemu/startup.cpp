@@ -50,6 +50,7 @@
 
 #include <core/debug/debug.hpp>
 
+#include <boost/algorithm/string.hpp>
 #include <boost/version.hpp>
 #include <core/component.hpp>
 #include <core/configuration.hpp>
@@ -72,6 +73,8 @@ namespace API {
 #include <iostream>
 
 namespace Flexus {
+
+std::string oldcwd;
 
 namespace Core {
 void CreateFlexusObject();
@@ -147,11 +150,19 @@ void print_copyright() {
 
 extern "C" {
 
-void qflex_init(Flexus::Qemu::API::QEMU_API_t   *qemu,
-                Flexus::Qemu::API::FLEXUS_API_t *flexus,
-                int ncores,
-                const char *cfg,
-                const char *dbg) {
+void flexus_init(Flexus::Qemu::API::QEMU_API_t   *qemu,
+                 Flexus::Qemu::API::FLEXUS_API_t *flexus,
+                 uint32_t ncores,
+                 const char *cfg,
+                 const char *dbg,
+                 const char *max,
+                 const char *cwd) {
+  auto oldcwd = get_current_dir_name();
+
+  Flexus::oldcwd = oldcwd;
+
+  free(oldcwd);
+
   Flexus::Qemu::API::qemu_api = *qemu;
   Flexus::Qemu::API::FLEXUS_get_api(flexus);
 
@@ -172,18 +183,52 @@ void qflex_init(Flexus::Qemu::API::QEMU_API_t   *qemu,
   Flexus::Core::PrepareFlexusObject();
   Flexus::Core::CreateFlexusObject();
 
-  Flexus::Core::ComponentManager::getComponentManager().instantiateComponents(ncores);
-  Flexus::Core::ConfigurationManager::getConfigurationManager().processCommandLineConfiguration(0, 0);
+  if (cwd) {
+    cerr << "Switching to directory: " << cwd << endl;
+    chdir(cwd);
+  }
+
+  Flexus::Dbg::Debugger::theDebugger->initialize();
 
   if (dbg)
     Flexus::Core::theFlexus->setDebug(dbg);
+  if (max)
+    Flexus::Core::theFlexus->setStopCycle(max);
+
+  Flexus::Core::ComponentManager::getComponentManager().instantiateComponents(ncores);
+
+  // backdoor
+  char *args = getenv("FLEXUS_EXTRA_ARGS");
+
+  if (args) {
+    std::string line(args);
+    std::vector<std::string> strs;
+
+    boost::split(strs, line, boost::is_any_of(" \t\""), boost::token_compress_on);
+
+    auto &manager = Flexus::Core::ConfigurationManager::getConfigurationManager();
+
+    for (auto it = strs.begin(); it != strs.end(); ) {
+      if (it->c_str()[0] == '-') {
+        auto &key = *it++;
+
+        if (it != strs.end()) {
+          auto &val = *it++;
+          manager.set(key, val);
+        } else
+          break;
+
+      } else
+        it++;
+    }
+  }
 
   Flexus::Core::initFlexus();
 
   DBG_(Iface, (<< "Flexus Initialized."));
 }
 
-void qflex_deinit(void) {
+void flexus_deinit(void) {
   Flexus::Core::deinitFlexus();
 }
 
