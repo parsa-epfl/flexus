@@ -51,14 +51,13 @@
 #include <boost/spirit/include/classic_core.hpp>
 #include <boost/spirit/include/classic_file_iterator.hpp>
 #include <boost/spirit/include/classic_utility.hpp>
-// #include <boost/spirit/core.hpp>
-// #include <boost/spirit/utility.hpp>
-// #include <boost/spirit/attribute.hpp>
-// #include <boost/spirit/iterator/file_iterator.hpp>
 
 #include <core/boost_extensions/phoenix.hpp>
 
 namespace Flexus {
+
+extern std::string oldcwd;
+
 namespace Dbg {
 
 namespace aux_ {
@@ -468,8 +467,6 @@ struct DebugGrammar : public boost::spirit::classic::grammar<DebugGrammar> {
 
 } // namespace aux_
 
-extern char const *built_in_debug_cfg;
-
 class ParserImpl : public Parser {
   aux_::Context theContext;
   aux_::DebugGrammar theDebugGrammar;
@@ -481,36 +478,24 @@ public:
   virtual ~ParserImpl() {
   }
 
-  void parse(std::string const &aConfiguration) {
+  void parse(std::string const &aFileName) {
     theContext.reset();
-    if (boost::spirit::classic::parse(aConfiguration.begin(), aConfiguration.end(), theDebugGrammar,
-                                      boost::spirit::classic::space_p)
-            .full) {
-      // Good!
-    } else {
-      std::cout << "parsing failed\n";
-    }
-  }
 
-  void parseFile(std::string const &aFileName) {
+    boost::spirit::classic::file_iterator<> start_iter(aFileName.c_str());
+    boost::spirit::classic::file_iterator<> end_iter = start_iter.make_end();
 
-    boost::spirit::classic::file_iterator<> first(aFileName.c_str());
 
-    if (!first) {
+    auto parsed = boost::spirit::classic::parse(
+      start_iter,
+      end_iter,
+      theDebugGrammar,
+      boost::spirit::classic::space_p);
 
-      parse(std::string(built_in_debug_cfg));
 
-    } else {
-      boost::spirit::classic::file_iterator<> last = first.make_end();
-      theContext.reset();
-      if (boost::spirit::classic::parse(first, last, theDebugGrammar,
-                                        boost::spirit::classic::space_p)
-              .full) {
-        std::cout << "Successfully parsed debug configurations from " << aFileName << "\n";
-      } else {
-        std::cout << "DEBUG ERROR: Failed to parse debug configurations from " << aFileName << "\n";
-      }
-    }
+    if (parsed.hit)
+      std::cout << "Successfully parsed debug configurations from " << aFileName << "\n";
+    else
+      std::cout << "DEBUG ERROR: Failed to parse debug configurations from " << aFileName << "\n";
   }
 };
 
@@ -520,11 +505,11 @@ Parser &Parser::parser() {
 }
 
 void Debugger::initialize() {
-  Parser::parser().parseFile("debug.cfg");
+  Parser::parser().parse(Flexus::oldcwd + "/debug.cfg");
 }
 
 void Debugger::addFile(std::string const &aFile) {
-  Parser::parser().parseFile(aFile.c_str());
+  Parser::parser().parse(aFile.c_str());
 }
 
 } // namespace Dbg
