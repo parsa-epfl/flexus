@@ -42,6 +42,8 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
+#include <core/component.hpp>
+
 #include <components/BPWarm/BPWarm.hpp>
 
 #include <components/CommonQEMU/Slices/ArchitecturalInstruction.hpp>
@@ -119,13 +121,15 @@ public:
   }
 
   void initialize() {
-    theFetchAddress.resize(cfg.Cores);
-    theFetchState.resize(cfg.Cores);
-    theFetchType.resize(cfg.Cores);
-    theFetchAnnul.resize(cfg.Cores);
-    theOne.resize(cfg.Cores);
+    int theCores = cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 
-    for (int32_t i = 0; i < cfg.Cores; i++) {
+    theFetchAddress.resize(theCores);
+    theFetchState.resize(theCores);
+    theFetchType.resize(theCores);
+    theFetchAnnul.resize(theCores);
+    theOne.resize(theCores);
+
+    for (int32_t i = 0; i < theCores; i++) {
       theFetchAddress[i].resize(2);
       theFetchState[i].resize(2);
       theFetchType[i].resize(2);
@@ -258,16 +262,16 @@ public:
 FLEXUS_COMPONENT_INSTANTIATOR(BPWarm, nBPWarm);
 
 FLEXUS_PORT_ARRAY_WIDTH(BPWarm, InsnIn) {
-  return (cfg.Cores);
+  return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 FLEXUS_PORT_ARRAY_WIDTH(BPWarm, InsnOut) {
-  return (cfg.Cores);
+  return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 FLEXUS_PORT_ARRAY_WIDTH(BPWarm, ITraceIn) {
-  return (cfg.Cores);
+  return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 FLEXUS_PORT_ARRAY_WIDTH(BPWarm, ITraceInModern) {
-  return (cfg.Cores);
+  return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
 #define FLEXUS_END_COMPONENT BPWarm
