@@ -46,6 +46,7 @@
 #include <queue>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 #include <boost/optional.hpp>
 

@@ -104,7 +104,7 @@ void qflex_sim_callbacks_xterm_break_string(char *aString) {
 
 // Get MMU register state on initialization
 // QEMU_GET_MMU_STATE_PROC QEMU_get_mmu_state= nullptr;
-QFLEX_TO_QEMU_API_t qemu_callbacks = 
+QFLEX_TO_QEMU_API_t qemu_callbacks =
 {
   .QEMU_clear_exception = nullptr,
   .QEMU_has_pending_irq = nullptr,
@@ -162,7 +162,7 @@ void QFLEX_API_set_Interface_Hooks(const QFLEX_TO_QEMU_API_t *hooks) {
   qemu_callbacks.QEMU_read_sctlr                     = hooks->QEMU_read_sctlr;
   qemu_callbacks.QEMU_cpu_has_work                   = hooks->QEMU_cpu_has_work;
   qemu_callbacks.QEMU_read_sp_el                     = hooks->QEMU_read_sp_el;
- 
+
   qemu_callbacks.QEMU_read_phys_memory               = hooks->QEMU_read_phys_memory;
   qemu_callbacks.QEMU_get_cpu_by_index               = hooks->QEMU_get_cpu_by_index;
   qemu_callbacks.QEMU_get_cpu_index                  = hooks->QEMU_get_cpu_index;
@@ -171,18 +171,18 @@ void QFLEX_API_set_Interface_Hooks(const QFLEX_TO_QEMU_API_t *hooks) {
   qemu_callbacks.QEMU_get_num_cores                  = hooks->QEMU_get_num_cores;
   qemu_callbacks.QEMU_get_num_threads_per_core       = hooks->QEMU_get_num_threads_per_core;
   qemu_callbacks.QEMU_get_all_cpus                   = hooks->QEMU_get_all_cpus;
- 
+
   qemu_callbacks.QEMU_set_tick_frequency             = hooks->QEMU_set_tick_frequency;
   qemu_callbacks.QEMU_get_tick_frequency             = hooks->QEMU_get_tick_frequency;
   qemu_callbacks.QEMU_get_program_counter            = hooks->QEMU_get_program_counter;
   qemu_callbacks.QEMU_logical_to_physical            = hooks->QEMU_logical_to_physical;
   qemu_callbacks.QEMU_quit_simulation                = hooks->QEMU_quit_simulation;
   qemu_callbacks.QEMU_getCyclesLeft                  = hooks->QEMU_getCyclesLeft;
- 
+
   qemu_callbacks.QEMU_mem_op_is_data                 = hooks->QEMU_mem_op_is_data;
   qemu_callbacks.QEMU_mem_op_is_write                = hooks->QEMU_mem_op_is_write;
   qemu_callbacks.QEMU_mem_op_is_read                 = hooks->QEMU_mem_op_is_read;
- 
+
   qemu_callbacks.QEMU_instruction_handle_interrupt   = hooks->QEMU_instruction_handle_interrupt;
   qemu_callbacks.QEMU_get_object_by_name             = hooks->QEMU_get_object_by_name;
   qemu_callbacks.QEMU_cpu_execute                    = hooks->QEMU_cpu_execute;
@@ -211,7 +211,7 @@ void QEMU_API_get_Interface_Hooks (QEMU_TO_QFLEX_CALLBACKS_t* hooks) {
   hooks->xterm_break_string = &qflex_sim_callbacks_xterm_break_string;
 }
 
-qflex_sim_callbacks_t qflex_sim_callbacks = 
+qflex_sim_callbacks_t qflex_sim_callbacks =
 {
   .start_timing = {NULL, NULL, },
   .sim_quit = {NULL, NULL, },
@@ -222,12 +222,12 @@ qflex_sim_callbacks_t qflex_sim_callbacks =
   .ethernet_frame = {NULL, NULL, },
   .xterm_break_string = { NULL, NULL, },
   .magic_inst = {
-    {NULL, NULL}, 
-    {NULL, NULL}, 
-    {NULL, NULL}, 
-    {NULL, NULL}, 
-    {NULL, NULL}, 
-    {NULL, NULL}, 
+    {NULL, NULL},
+    {NULL, NULL},
+    {NULL, NULL},
+    {NULL, NULL},
+    {NULL, NULL},
+    {NULL, NULL},
   },
 };
 

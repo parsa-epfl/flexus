@@ -49,6 +49,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 #include <core/debug/debug.hpp>
 #include <core/qemu/api_wrappers.hpp>
