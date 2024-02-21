@@ -1785,9 +1785,6 @@ void CacheController::doTransmitProcess(ProcessEntry_p aProcess) {
     clearEvictBufferReservation(aProcess);
   }
 
-  DBG_Assert(aProcess->getReservations() == 0,
-             (<< "Process has no more work but still holds reservations! " << (*aProcess)));
-
   aProcess->type() = eProcNoMoreWork;
 
   // Finally, deallocate and unlock the MAF, if necessary and

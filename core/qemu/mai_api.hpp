@@ -89,28 +89,6 @@ struct MemoryException : public QemuException {
   }
 };
 
-// class ProcessorMapper {
-// private:
-//  static ProcessorMapper * theMapper;
-
-//  int theNumVMs;
-//  std::vector<std::pair<int, int> > theProcMap;
-//  std::vector<int> theClientMap;
-//  std::vector<std::pair<int, bool> > theReverseMap;
-
-//  ProcessorMapper();
-
-// public:
-//  static int mapFlexusIndex2ProcNum(int index);
-//  static int mapClientNum2ProcNum(int index);
-//  static int mapProcNum2FlexusIndex(int index);
-//  static int mapFlexusIndex2VM(int index);
-
-//  static int numVMs();
-//  static int numClients();
-//  static int numProcessors();
-//};
-
 using Flexus::SharedTypes::PhysicalMemoryAddress;
 using Flexus::SharedTypes::VirtualMemoryAddress;
 

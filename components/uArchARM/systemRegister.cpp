@@ -48,7 +48,8 @@
 #include <functional>
 #include <iostream>
 #include <string>
-#include <core/MakeUniqueWrapper.hpp>
+#include <memory>
+// #include <core/MakeUniqueWrapper.hpp>
 
 namespace nuArchARM {
 
