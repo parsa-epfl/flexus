@@ -185,7 +185,7 @@ void flexus_init(Flexus::Qemu::API::QEMU_API_t   *qemu,
 
   if (cwd) {
     cerr << "Switching to directory: " << cwd << endl;
-    chdir(cwd);
+    [[maybe_unused]] int x = chdir(cwd);
   }
 
   Flexus::Dbg::Debugger::theDebugger->initialize();
