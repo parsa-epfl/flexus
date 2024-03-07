@@ -258,11 +258,13 @@ public:
 
   // Initialization
   void initialize() {
+    auto nodes = cfg.NumNodes ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+
     // Ensure that PageSize is a non-zero power of 2
     DBG_Assert((cfg.PageSize != 0), Comp(*this));
     DBG_Assert((((cfg.PageSize - 1) & cfg.PageSize) == 0), Comp(*this));
-    DBG_Assert((((cfg.NumNodes - 1) & cfg.NumNodes) == 0), Comp(*this));
-    theNumCPUs = cfg.NumNodes;
+    DBG_Assert((((nodes - 1) & nodes) == 0), Comp(*this));
+    theNumCPUs = nodes;
     thePageMapObject = thePageMapFactory.create(cfg.name());
     thePageMapObject->setPageMap(thePageMap);
     theMapLoaded = false;
@@ -275,7 +277,7 @@ public:
     --page_size_log2;
 
     theNode_shift = page_size_log2;
-    theNode_mask = (cfg.NumNodes - 1);
+    theNode_mask = nodes - 1;
 
     for (unsigned i = 0; i < theNumCPUs; i++) {
       thePageCounts.push_back(new Flexus::Stat::StatCounter(
@@ -370,7 +372,9 @@ public:
     if (cfg.RoundRobin) {
       node = static_cast<node_id_t>((aPageAddr)&theNode_mask);
     }
-    DBG_Assert((node < cfg.NumNodes), Comp(*this));
+    auto nodes = cfg.NumNodes ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+
+    DBG_Assert((node < nodes), Comp(*this));
 
     // first touch - allocate page to the round-robin owner (based on address)
 
@@ -391,10 +395,12 @@ public:
 
     PhysicalMemoryAddress pageAddr = PhysicalMemoryAddress(anAddress >> theNode_shift);
 
+    auto nodes = cfg.NumNodes ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+
     HomeMap::iterator iter = theHomeMap.find(pageAddr);
     if (iter != theHomeMap.end()) {
       // this is not the first touch - we know which node this page belongs to
-      DBG_Assert((iter->second < cfg.NumNodes), Comp(*this));
+      DBG_Assert((iter->second < nodes), Comp(*this));
 
       // STUPID TRUSS HACK: if aRequestingNode is > NumNodes, this is
       // TRUSS.  More specifically, if aRequestingNode % NumNodes ==
@@ -403,7 +409,7 @@ public:
       // return the master node (# < NumNodes), we need to return
       // aRequestingNode
 
-      return aRequestingNode % cfg.NumNodes != iter->second ? iter->second : aRequestingNode;
+      return aRequestingNode % nodes != iter->second ? iter->second : aRequestingNode;
     } else {
       return newPage(pageAddr, aRequestingNode);
     }

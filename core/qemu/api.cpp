@@ -64,9 +64,12 @@ namespace API {
   using namespace Flexus::Core;
 
   void FLEXUS_start() {
-    // while (qemu_api.get_en())
-    //   theFlexus->doCycle();
-    assert(false);
+
+    // TODO while (qemu_api.get_en())
+    while (true)
+    {
+      theFlexus->doCycle();
+    }
   }
 
   void FLEXUS_stop() {
