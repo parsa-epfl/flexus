@@ -120,8 +120,10 @@ public:
     theBusTxCountdown = 0;
     theBusDirection = kIdle;
 
+    auto cores = cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+
     theController.reset(new CacheController(
-        statName(), cfg.Cores, cfg.ArrayConfiguration, cfg.BlockSize, cfg.Banks, cfg.Ports,
+        statName(), cores, cfg.ArrayConfiguration, cfg.BlockSize, cfg.Banks, cfg.Ports,
         cfg.TagLatency, cfg.TagIssueLatency, cfg.DataLatency, cfg.DataIssueLatency,
         (int)flexusIndex(), cfg.CacheLevel, cfg.QueueSizes, cfg.PreQueueSizes, cfg.MAFSize,
         cfg.MAFTargetsPerRequest, cfg.EvictBufferSize, cfg.SnoopBufferSize, cfg.ProbeFetchMiss,
@@ -251,7 +253,9 @@ public:
     FLEXUS_PROFILE();
     DBG_(VVerb, Comp(*this)(<< "bus cycle"));
 
-    for (int32_t i = 0; i < cfg.Cores; i++) {
+    auto cores = cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+
+    for (uint32_t i = 0; i < cores; i++) {
       // Send as much on FrontSideOut as possible
       while (!theController->FrontSideOut_D[i].empty() &&
              FLEXUS_CHANNEL_ARRAY(FrontSideOut_D, i).available()) {
@@ -500,19 +504,19 @@ public:
 FLEXUS_COMPONENT_INSTANTIATOR(Cache, nCache);
 
 FLEXUS_PORT_ARRAY_WIDTH(Cache, FrontSideOut_D) {
-  return (cfg.Cores);
+  return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 FLEXUS_PORT_ARRAY_WIDTH(Cache, FrontSideOut_I) {
-  return (cfg.Cores);
+  return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 FLEXUS_PORT_ARRAY_WIDTH(Cache, FrontSideIn_Snoop) {
-  return (cfg.Cores);
+  return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 FLEXUS_PORT_ARRAY_WIDTH(Cache, FrontSideIn_Request) {
-  return (cfg.Cores);
+  return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 FLEXUS_PORT_ARRAY_WIDTH(Cache, FrontSideIn_Prefetch) {
-  return (cfg.Cores);
+  return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
