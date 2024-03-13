@@ -58,7 +58,7 @@
 #include <functional>
 #include <type_traits>
 
-#include <core/boost_extensions/member_function_traits.hpp>
+// #include <core/boost_extensions/member_function_traits.hpp>
 
 namespace Flexus {
 namespace Qemu {
@@ -233,7 +233,7 @@ struct NoType {
 };
 
 template <class MemberFunction, int Arity> struct member_function_arity {
-  static const bool value = (boost::member_function_traits<MemberFunction>::arity == Arity);
+  static const bool value = (boost::function_traits<MemberFunction>::arity == Arity);
 };
 
 // Implementation of the Class type for Addin classes

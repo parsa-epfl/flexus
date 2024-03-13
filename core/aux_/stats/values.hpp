@@ -53,7 +53,7 @@
 #include <boost/serialization/vector.hpp>
 #include <cmath>
 #include <core/boost_extensions/intrusive_ptr.hpp>
-#include <core/boost_extensions/lexical_cast.hpp>
+#include <boost/lexical_cast.hpp>
 #include <functional>
 #include <iomanip>
 #include <iostream>

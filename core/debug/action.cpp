@@ -51,14 +51,12 @@
 #include <string>
 
 #include <boost/optional.hpp>
-#include <core/boost_extensions/lexical_cast.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <core/target.hpp>
 
 #include <core/flexus.hpp>
 #include <core/stats.hpp>
-
-#include <core/boost_extensions/circular_buffer.hpp>
 
 #include <core/debug/action.hpp>
 #include <core/debug/debugger.hpp>

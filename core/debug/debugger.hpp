@@ -49,7 +49,7 @@
 
 #include <boost/optional.hpp>
 
-#include <core/boost_extensions/lexical_cast.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <core/debug/category.hpp>
 #include <core/debug/entry.hpp>

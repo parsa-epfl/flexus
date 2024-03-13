@@ -45,7 +45,7 @@
 
 #include <list>
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 
 #include <core/performance/profile.hpp>
 
