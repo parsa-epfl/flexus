@@ -42,31 +42,25 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
-#ifndef FLEXUS_CORE_TARGET_HPP_INCLUDED
-#define FLEXUS_CORE_TARGET_HPP_INCLUDED
+#if defined(FLEXUS_TARGET) && (FLEXUS_TARGET == 0)
+#error "Only a single target may be defined in a simulator"
+#endif // FLEXUS_TARGET
 
-#define CAT(x, y) CAT_D(x, y)
-#define CAT_D(x, y) x##y
+#define FLEXUS_LITTLE_ENDIAN 1
+#define FLEXUS_BIG_ENDIAN 0
 
-#ifdef TARGET_PLATFORM
+#define FLEXUS_TARGET_ARM 1
 
-#define TARGET_PLATFORM_aarch64 0
-#define TARGET_PLATFORM_riscv 1
-#define DETECTED_TARGET_PLATFORM CAT(TARGET_PLATFORM_, TARGET_PLATFORM)
+#define FLEXUS_TARGET FLEXUS_TARGET_ARM
+#define FLEXUS_TARGET_WORD_BITS 64
+#define FLEXUS_TARGET_VA_BITS 64
+#define FLEXUS_TARGET_PA_BITS 64
+#define FLEXUS_TARGET_ENDIAN FLEXUS_LITTLE_ENDIAN
 
-#if DETECTED_TARGET_PLATFORM == TARGET_PLATFORM_aarch64
-  #include <core/targets/AARCH64.hpp>
-#elif DETECTED_TARGET_PLATFORM == TARGET_PLATFORM_riscv
-  #include <core/targets/RISCV.hpp>
-#else
-  #error "No correct platform specified"
-#endif
+#define FLEXUS_TARGET_IS(target) (FLEXUS_TARGET == FLEXUS_TARGET_##target)
 
-#else
-#error "TARGET_PLATFORM was not passed in from the make command line"
-#endif
+#define TARGET_VA_BITS 64
+#define TARGET_PA_BITS 64
+#define TARGET_ARM
 
-#undef CAT
-#undef CAT_D
-
-#endif // FLEXUS_CORE_TARGET_HPP_INCLUDED
+#define TARGET_MEM_TRANS memory_transaction_t

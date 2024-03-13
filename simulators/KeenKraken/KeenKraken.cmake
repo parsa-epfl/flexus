@@ -12,4 +12,4 @@ set(KeenKraken_REQUIRED_COMPONENTS
 
 set(SUPPORTS_QEMU true)
 set(DEFAULT_TARGET qemu)
-set(DEFAULT_PLATFORM riscv)
+set(DEFAULT_PLATFORM aarch64)

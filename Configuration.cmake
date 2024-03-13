@@ -46,14 +46,14 @@
 set(FLEXUS_ROOT ${CMAKE_SOURCE_DIR})
 # add option -fPIC
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-# add option --std=c++11
+
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(NOT TARGET_PLATFORM)
-  message( STATUS "TARGET_PLATFORM was not specified; using default TARGET_PLATFORM=riscv" )
-  set(TARGET_PLATFORM riscv)
+  message( STATUS "TARGET_PLATFORM was not specified; using default TARGET_PLATFORM=aarch64" )
+  set(TARGET_PLATFORM aarch64)
 endif()
 
 if(NOT SELECTED_DEBUG)
@@ -96,7 +96,7 @@ if(NOT BUILD_DEBUG)
     endif()
 else()
     message( STATUS "Building in slow debugging configuration (ASAN enabled)" )
-    set(GCC_FLAGS -O0 -g3 -fsanitize=address -Wall -Werror -fmessage-length=160 -x c++) 
+    set(GCC_FLAGS -O0 -g3 -fsanitize=address -Wall -Werror -fmessage-length=160 -x c++)
     set(GCC_LDFLAGS -fsanitize=address)
 endif()
 
