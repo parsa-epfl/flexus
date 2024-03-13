@@ -48,7 +48,7 @@
 #include <core/debug/category.hpp>
 #include <core/debug/entry.hpp>
 
-#include <core/boost_extensions/lexical_cast.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace Flexus {
 namespace Dbg {

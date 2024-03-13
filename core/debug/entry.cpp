@@ -46,7 +46,7 @@
 #include <string>
 
 #include <boost/optional.hpp>
-#include <core/boost_extensions/lexical_cast.hpp>
+#include <boost/lexical_cast.hpp>
 #include <map>
 #include <utility>
 #include <vector>

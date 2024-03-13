@@ -44,7 +44,7 @@
 //  DO-NOT-REMOVE end-copyright-block
 #include <algorithm>
 
-#include <core/boost_extensions/lexical_cast.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <core/debug/category.hpp>
 #include <core/debug/entry.hpp>

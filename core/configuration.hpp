@@ -49,7 +49,7 @@
 #include <type_traits>
 
 #include <boost/utility.hpp>
-#include <core/boost_extensions/lexical_cast.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <core/debug/debug.hpp>
 
