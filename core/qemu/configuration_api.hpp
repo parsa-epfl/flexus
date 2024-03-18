@@ -58,7 +58,6 @@
 #include <functional>
 #include <type_traits>
 
-// #include <core/boost_extensions/member_function_traits.hpp>
 
 namespace Flexus {
 namespace Qemu {
@@ -108,9 +107,6 @@ public:
   ObjectClassImpl const &operator*() const {
     return theImpl;
   }
-  // operator bool const () const {
-  //  return theImpl.isNull();
-  //}
 
   // defineClass does nothing for built-in classes, since they are defined
   // by Qemu
