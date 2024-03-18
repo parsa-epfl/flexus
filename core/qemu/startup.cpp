@@ -111,7 +111,7 @@ void print_copyright() {
   cerr << "//       ****          ******       ***            ***   ***             ********                     //" << endl;
   cerr << "//        *****        *******      ***            ***    ****   ****   ****  ****                    //" << endl;
   cerr << "//           ****    ****   ***     ***            ***      ********   ***      ***                   //" << endl;
-  cerr << "//                                                                                                    //" << endl; 
+  cerr << "//                                                                                                    //" << endl;
   cerr << "//   QFlex (C) 2016-2020, Parallel Systems Architecture Lab, EPFL                                     //" << endl;
   cerr << "//   All rights reserved.                                                                             //" << endl;
   cerr << "//   Website: https://qflex.epfl.ch                                                                   //" << endl;
@@ -119,7 +119,7 @@ void print_copyright() {
   cerr << "//   [NS-3](https://www.gnu.org/copyleft/gpl.html)                                                    //" << endl;
   cerr << "//   [QEMU](http://wiki.qemu.org/License)                                                             //" << endl;
   cerr << "//   [SimFlex] (http://parsa.epfl.ch/simflex/)                                                        //" << endl;
-  cerr << "//                                                                                                    //" << endl; 
+  cerr << "//                                                                                                    //" << endl;
   cerr << "//   Redistribution and use in source and binary forms, with or without modification,                 //" << endl;
   cerr << "//   are permitted provided that the following conditions are met:                                    //" << endl;
   cerr << "//                                                                                                    //" << endl;
