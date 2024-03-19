@@ -45,7 +45,7 @@
 #ifndef FLEXUS_ARM_MMU_REGISTERS_H_INCLUDED
 #define FLEXUS_ARM_MMU_REGISTERS_H_INCLUDED
 
-#include <components/uArchARM/uArchInterfaces.hpp>
+#include <components/uArch/uArchInterfaces.hpp>
 
 typedef unsigned long long mmu_reg_t;
 

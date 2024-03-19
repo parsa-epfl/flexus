@@ -286,15 +286,12 @@ bool initializeParameters() {
   theMagicBreakCfg.EnableIterationCounts.initialize(false);
 
   theMMUCfg.Cores.initialize(1);
-  theMMUCfg.iTlbSets.initialize(1);
-  theMMUCfg.iTlbWays.initialize(64);
-  theMMUCfg.iVlbSets.initialize(1);
-  theMMUCfg.iVlbWays.initialize(64);
-  theMMUCfg.dTlbSets.initialize(1);
-  theMMUCfg.dTlbWays.initialize(64);
-  theMMUCfg.dVlbSets.initialize(1);
-  theMMUCfg.dVlbWays.initialize(64);
-  theMMUCfg.Perfect.initialize(true);
+
+  theMMUCfg.Cores.initialize(1);
+  theMMUCfg.iTLBSize.initialize(64);
+  theMMUCfg.dTLBSize.initialize(64);
+  theMMUCfg.PerfectTLB.initialize(true);
+
 
   theFlexus->setStatInterval("100000");
   theFlexus->setProfileInterval("10000000");

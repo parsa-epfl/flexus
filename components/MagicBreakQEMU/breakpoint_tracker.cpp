@@ -500,21 +500,22 @@ struct web_version1 {
 };
 
 using Flexus::SharedTypes::VirtualMemoryAddress;
-// Helperfunction to read Vadddresses
-char readVirtualAddress(Qemu::API::conf_object_t *cpu, VirtualMemoryAddress anAddr, int size) {
-  uint64_t addr = Qemu::API::qemu_api.get_pa(cpu, Qemu::API::QEMU_DI_Data, anAddr);
-  uint8_t *buf = new uint8_t[size];
-  Qemu::API::qemu_api.get_mem(buf, addr, size);
-  char ret = buf[0];
-  delete[] buf;
-  return ret;
-}
+// // Helperfunction to read Vadddresses
+// char readVirtualAddress(Qemu::API::conf_object_t *cpu, VirtualMemoryAddress anAddr, int size) {
 
-uint64_t readG(Qemu::API::conf_object_t *cpu, int reg) {
-  // XXXX
-  return 0;
-//return Qemu::API::QEMU_read_register(cpu, Qemu::API::kGENERAL, reg);
-}
+//   uint64_t addr = Qemu::API::qemu_api.translate_va2pa(cpu, Qemu::API::QEMU_DI_Data, anAddr);
+//   uint8_t *buf = new uint8_t[size];
+//   Qemu::API::qemu_api.get_mem(buf, addr, size);
+//   char ret = buf[0];
+//   delete[] buf;
+//   return ret;
+// }
+
+// uint64_t readG(Qemu::API::conf_object_t *cpu, int reg) {
+//   // XXXX
+//   return 0;
+// //return Qemu::API::QEMU_read_register(cpu, Qemu::API::kGENERAL, reg);
+// }
 
 class SimPrintHandlerImpl : public SimPrintHandler {
 
@@ -650,20 +651,6 @@ class SimPrintHandlerImpl : public SimPrintHandler {
     default:
       return "Unknown";
     }
-  }
-
-  void readString(Qemu::API::conf_object_t *cpu, VirtualMemoryAddress anAddr, char *aDest,
-                  int32_t aMax) {
-    for (int32_t i = 0; i < aMax; ++i) {
-      // need to make cpu.readVirtualAddress(shouldn't it already have been
-      // ->cpu? adn readG
-      char c = readVirtualAddress(cpu, anAddr + i, 1);
-      aDest[i] = c;
-      if (c == 0) {
-        break;
-      }
-    }
-    aDest[aMax - 1] = 0;
   }
 
 public:

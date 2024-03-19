@@ -154,10 +154,7 @@ public:
 //     return API::qemu_api.get_pc(*this);
 //   }
 
-    bits readPhysicalAddress(PhysicalMemoryAddress anAddress, size_t aSize) const
-    {
-        return bits(0);
-    }
+
 //     uint8_t *buf = new uint8_t[aSize];
 //     for (size_t i = 0; i < aSize; i++)
 //       buf[i] = 0;
@@ -231,7 +228,7 @@ public:
     void readFPSR() {}
     void readHCREL2() {}
     void readPSTATE() {}
-    void readSCTLR() {}
+    // void readSCTLR() {}
     void readSP_el() {}
     void breakSimulation() {}
     int advance(bool count_time = true) {return 0;}
@@ -282,6 +279,13 @@ private:
 
 
 public:
+    uint64_t readSCTLR(uint64_t index) { return 0;}
+
+    bits readPhysicalAddress(PhysicalMemoryAddress anAddress, size_t aSize) const
+    {
+        return bits(0);
+    }
+
     // explicit Processor(): base(0) {}
 
     // explicit Processor(API::conf_object_t* cpu_object) : base(PROCESSOR_IMPL(cpu_object)) {}

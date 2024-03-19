@@ -299,7 +299,7 @@ public:
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
     API::physical_address_t pc =
-        API::qemu_api.get_pa(theCPU, API::QEMU_DI_Instruction, pc_logical);
+        API::qemu_api.translate_va2pa(theIndex, API::QEMU_DI_Instruction, pc_logical);
     unsigned opcode = 0;
 
     DBG_(VVerb, SetNumeric((ScaffoldIdx)theIndex)(<< "Mem Hier Instr: " << opcode << " logical pc: "

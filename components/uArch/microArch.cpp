@@ -184,21 +184,7 @@ public:
   void pushMemOp(boost::intrusive_ptr<MemOp> op) {
     FLEXUS_PROFILE();
     if (op->theOperation == kLoadReply || op->theOperation == kAtomicPreloadReply) {
-      //      if (op->theSideEffect || op->thePAddr > 0x40000000000LL) {
-      //        //Need to get load value from simics
-      //        DBG_Assert(false);
-      //        DBG_( Verb, ( << "Performing side-effect load to " <<
-      //        op->theVAddr));
-      //    ValueTracker::valueTracker(theCPU->id()).access(theCPU->id(),
-      //    op->thePAddr);
-      //        Flexus::SharedTypes::Translation xlat;
-      //        xlat.theVaddr = op->theVAddr;
-      //        xlat.thePSTATE = theCore->getPSTATE();
-      //        xlat.theType = Flexus::SharedTypes::Translation::eLoad;
-      //        op->theValue = theCPU->readVirtualAddress( xlat.theVaddr,
-      //        op->theSize );
-      //      } else {
-      // Need to get load value from the ValueTracker
+
       bits val =
           ValueTracker::valueTracker(theCPU->id()).load(theCPU->id(), op->thePAddr, op->theSize);
       op->theValue = val;
