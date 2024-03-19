@@ -43,44 +43,69 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
 
-// Changelog:
-//  - June'18: msutherl - basic TLB definition, no real timing info
+#ifndef _ARM_TT_RESOLVERS_DEFINED_HPP_
+#define _ARM_TT_RESOLVERS_DEFINED_HPP_
+#include "ARMTranslationGranules.hpp"
+#include "MMUUtil.hpp"
 
-#include <components/CommonQEMU/Slices/TransactionTracker.hpp>
-#include <components/CommonQEMU/Translation.hpp>
-#include <core/qemu/mai_api.hpp>
-#include <core/simulator_layout.hpp>
+#include <memory>
+#include <stdint.h>
 
-// clang-format off
-#define FLEXUS_BEGIN_COMPONENT MMU
-#include FLEXUS_BEGIN_COMPONENT_DECLARATION()
+namespace nMMU {
 
+typedef std::shared_ptr<TranslationGranule> _TTResolver_Shptr_T;
+typedef uint64_t address_t;
 
+/* Used for dealing with all varying address widths and granules, figures out
+ * which bits to get and index and discard.
+ */
+class TTResolver {
+public:
+  TTResolver(bool abro, _TTResolver_Shptr_T aGranule, address_t aTTBR, uint8_t PAddrWidth);
+  virtual address_t resolve(address_t inputAddress);
+  virtual address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
+  void updateRawBaseRegister(address_t newTTBR);
 
-COMPONENT_PARAMETERS(
-    PARAMETER( Cores, int, "Number of cores", "cores", 1 )
-    PARAMETER( iTLBSize, size_t, "Size of the Instruction TLB", "itlbsize", 64 )
-    PARAMETER( dTLBSize, size_t, "Size of the Data TLB", "dtlbsize", 64 )
-    PARAMETER( PerfectTLB, bool, "TLB never misses", "perfecttlb", false )
-);
+protected:
+  // for going through the TT
+  bool isBR0;
+  address_t RawTTBRReg;
+  uint8_t TTBR_LSB;
+  uint8_t TTBR_MSB;
+  uint8_t offset_LSB;
+  uint8_t offset_MSB;
+  uint8_t IAddressWidth;
+  uint8_t PAddressWidth;
+  uint8_t TnSz;
+  address_t descriptorIndex;
 
-COMPONENT_INTERFACE(
-    DYNAMIC_PORT_ARRAY( PushInput,  TranslationPtr, iRequestIn )
-    DYNAMIC_PORT_ARRAY( PushInput,  TranslationPtr, dRequestIn )
-    DYNAMIC_PORT_ARRAY( PushInput,  int, ResyncIn)
+  // for setting input-output bits dependent on TG size
+  _TTResolver_Shptr_T regimeTG;
 
-    DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, iTranslationReply )
-    DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, dTranslationReply )
-    DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, MemoryRequestOut )
+  // utility
+  address_t maskAndShiftInputAddress(address_t anAddr);
+};
 
-    DYNAMIC_PORT_ARRAY( PushInput, TranslationPtr, TLBReqIn ) // this is for trace
+class L0Resolver : public TTResolver {
+public:
+  L0Resolver(bool abro, _TTResolver_Shptr_T aGranule, address_t tbr, uint8_t aPAW);
+  address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
+};
+class L1Resolver : public TTResolver {
+public:
+  L1Resolver(bool abro, _TTResolver_Shptr_T aGranule, address_t attbr, uint8_t aPAW);
+  address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
+};
+class L2Resolver : public TTResolver {
+public:
+  L2Resolver(bool abro, _TTResolver_Shptr_T aGranule, address_t attbr, uint8_t aPAW);
+  address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
+};
+class L3Resolver : public TTResolver {
+public:
+  L3Resolver(bool abro, _TTResolver_Shptr_T aGranule, address_t attbr, uint8_t aPAW);
+  address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
+};
 
-    DYNAMIC_PORT_ARRAY( PushOutput, int, ResyncOut )
-
-
-    DRIVE(MMUDrive)
-);
-
-#include FLEXUS_END_COMPONENT_DECLARATION()
-#define FLEXUS_END_COMPONENT MMU
-// clang-format on
+} // namespace nMMU
+#endif // _ARM_TT_RESOLVERS_DEFINED_HPP_

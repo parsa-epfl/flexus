@@ -42,45 +42,63 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
+#ifndef _ARM_TRANSLATION_GRANULES_DEFINED_HPP_
+#define _ARM_TRANSLATION_GRANULES_DEFINED_HPP_
+#include <stdint.h>
 
-// Changelog:
-//  - June'18: msutherl - basic TLB definition, no real timing info
+namespace nMMU {
 
-#include <components/CommonQEMU/Slices/TransactionTracker.hpp>
-#include <components/CommonQEMU/Translation.hpp>
-#include <core/qemu/mai_api.hpp>
-#include <core/simulator_layout.hpp>
+/* Msutherl - june'18
+ * - added definitions for granules and varying sizes
+ */
+class TranslationGranule {
+protected:
+  unsigned KBSize;
+  unsigned logKBSize;
+  unsigned granuleShift;
+  unsigned granuleEntries;
 
-// clang-format off
-#define FLEXUS_BEGIN_COMPONENT MMU
-#include FLEXUS_BEGIN_COMPONENT_DECLARATION()
+  uint8_t PARange_RawValue;
+  uint8_t PAddrWidth;
+  uint8_t IAddrOffset;
 
+public:
+  TranslationGranule();
+  TranslationGranule(unsigned ksize, unsigned PASize, unsigned IASize);
+  unsigned getKBSize() const;
+  unsigned getlogKBSize() const;
+  unsigned getGranuleShift() const;
+  unsigned getGranuleEntries() const;
+  uint8_t getPARange_Raw() const;
+  void setPARange_Raw(uint8_t aRawValue);
+  uint8_t getPAddrWidth() const;
+  void setPAddrWidth(uint8_t aSize);
+  uint8_t getIAddrOffset() const;
+  void setIAddrOffset(uint8_t aSize);
 
+  uint8_t NumBitsResolvedPerTTAccess() const;
+  uint8_t getIAddrSize() const;
+  uint8_t getInitialLookupLevel() const;
+  virtual uint64_t GetLowerAddressRangeLimit() const;
+  virtual uint64_t GetUpperAddressRangeLimit() const;
+};
 
-COMPONENT_PARAMETERS(
-    PARAMETER( Cores, int, "Number of cores", "cores", 1 )
-    PARAMETER( iTLBSize, size_t, "Size of the Instruction TLB", "itlbsize", 64 )
-    PARAMETER( dTLBSize, size_t, "Size of the Data TLB", "dtlbsize", 64 )
-    PARAMETER( PerfectTLB, bool, "TLB never misses", "perfecttlb", false )
-);
+class TG0_Granule : public TranslationGranule {
+public:
+  TG0_Granule();
+  TG0_Granule(unsigned granuleSize, unsigned PAddrSize, unsigned IAOffset);
+  uint64_t GetLowerAddressRangeLimit() const;
+  uint64_t GetUpperAddressRangeLimit() const;
+};
 
-COMPONENT_INTERFACE(
-    DYNAMIC_PORT_ARRAY( PushInput,  TranslationPtr, iRequestIn )
-    DYNAMIC_PORT_ARRAY( PushInput,  TranslationPtr, dRequestIn )
-    DYNAMIC_PORT_ARRAY( PushInput,  int, ResyncIn)
+class TG1_Granule : public TranslationGranule {
+public:
+  TG1_Granule();
+  TG1_Granule(unsigned granuleSize, unsigned PAddrSize, unsigned IAOffset);
+  uint64_t GetLowerAddressRangeLimit() const;
+  uint64_t GetUpperAddressRangeLimit() const;
+};
 
-    DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, iTranslationReply )
-    DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, dTranslationReply )
-    DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, MemoryRequestOut )
+} // namespace nMMU
 
-    DYNAMIC_PORT_ARRAY( PushInput, TranslationPtr, TLBReqIn ) // this is for trace
-
-    DYNAMIC_PORT_ARRAY( PushOutput, int, ResyncOut )
-
-
-    DRIVE(MMUDrive)
-);
-
-#include FLEXUS_END_COMPONENT_DECLARATION()
-#define FLEXUS_END_COMPONENT MMU
-// clang-format on
+#endif //_ARM_TRANSLATION_GRANULES_DEFINED_HPP_
