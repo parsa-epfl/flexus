@@ -226,7 +226,7 @@ typedef bool              (*QEMU_CPU_BUSY_t)       (conf_object_t* cpu);
 typedef int               (*QEMU_CPU_EXEC_t)       (conf_object_t *cpu, bool count);
 typedef char             *(*QEMU_DISASS_t)         (conf_object_t* cpu, uint64_t addr);
 typedef conf_object_t    *(*QEMU_GET_ALL_CPUS_t)   (void);
-typedef conf_object_t    *(*QEMU_GET_CPU_BY_IDX_t) (int idx);
+typedef conf_object_t    *(*QEMU_GET_CPU_BY_IDX_t) (uint64_t idx);
 typedef int               (*QEMU_GET_CPU_IDX_t)    (conf_object_t *cpu);
 typedef uint64_t          (*QEMU_GET_CSR_t)        (conf_object_t *cpu, int idx);
 typedef uint64_t          (*QEMU_GET_CYCLES_LEFT_t)(void);
@@ -286,7 +286,7 @@ bool               QEMU_cpu_busy       (conf_object_t *cpu);
 int                QEMU_cpu_exec       (conf_object_t *cpu, bool count);
 char              *QEMU_disass         (conf_object_t* cpu, uint64_t pc);
 conf_object_t     *QEMU_get_all_cpus   (void);
-conf_object_t     *QEMU_get_cpu_by_idx (int idx);
+conf_object_t     *QEMU_get_cpu_by_idx (uint64_t idx);
 int                QEMU_get_cpu_idx    (conf_object_t *cpu);
 uint64_t           QEMU_get_csr        (conf_object_t *cpu, int idx);
 uint64_t           QEMU_get_cycles_left(void);
@@ -318,6 +318,6 @@ void   QEMU_get_api(  QEMU_API_t *api);
 void FLEXUS_get_api(FLEXUS_API_t *api);
 
 void qflex_api_init(bool timing_mode, uint64_t sim_cycles);
- 
+
 
 #endif

@@ -60,18 +60,23 @@ using namespace Flexus::Core;
 namespace Flexus {
 namespace Qemu {
 
-void onInterrupt(void *aPtr, void *anObj, long long aVector);
+// void onInterrupt(void *aPtr, void *anObj, long long aVector);
 
 using Flexus::SharedTypes::PhysicalMemoryAddress;
 using Flexus::SharedTypes::VirtualMemoryAddress;
 
-class BaseProcessorImpl {
-// protected:
-//   API::conf_object_t *theProcessor;
-//   int theProcessorNumber;
-//   int theQEMUProcessorNumber;
+class ARMProcessor {
 
-//   BaseProcessorImpl(API::conf_object_t *aProcessor)
+protected:
+//   API::conf_object_t *theProcessor;
+    uint64_t cpu_index;
+
+public:
+    ARMProcessor(uint64_t cpu_index): cpu_index(cpu_index)
+    {}
+
+
+//   ARMProcessor(API::conf_object_t *aProcessor)
 //       : theProcessor(aProcessor),
 //         theProcessorNumber(
 //             aProcessor
@@ -81,7 +86,7 @@ class BaseProcessorImpl {
 //   }
 
 // public:
-//   virtual ~BaseProcessorImpl() {
+//   virtual ~ARMProcessor() {
 //   }
 
 //   operator API::conf_object_t *() const {
@@ -107,24 +112,37 @@ class BaseProcessorImpl {
 //     return "unknown_exception";
 //   }
 
-  VirtualMemoryAddress getPC() const {}
+    VirtualMemoryAddress getPC() const
+    {
+        return VirtualMemoryAddress();
+    }
 //     return VirtualMemoryAddress(API::qemu_api.get_pc(*this));
 //   }
 
-  uint64_t readXRegister(int anIndex) const {}
+    uint64_t readXRegister(size_t anIndex) const
+    {
+        return 0;
+    }
 //     return API::qemu_api.get_gpr(*this, anIndex);
 //   }
 
-  uint64_t readVRegister(int anIndex) const {}
+    uint64_t readVRegister(int anIndex) const
+    {
+        return 0;
+    }
 //     return API::qemu_api.get_fpr(*this, anIndex);
 //   }
 
-  void readException(API::exception_t *exp) const {}
+    void readException(API::exception_t *exp) const
+    {}
 //     assert(false);
 //     return;
 //   }
 
-  uint64_t getPendingInterrupt() const {}
+    uint64_t getPendingInterrupt() const
+    {
+        return 0;
+    }
 //     return API::qemu_api.get_irq(*this);
 //   }
 
@@ -136,7 +154,10 @@ class BaseProcessorImpl {
 //     return API::qemu_api.get_pc(*this);
 //   }
 
-  bits readPhysicalAddress(PhysicalMemoryAddress anAddress, size_t aSize) const {}
+    bits readPhysicalAddress(PhysicalMemoryAddress anAddress, size_t aSize) const
+    {
+        return bits(0);
+    }
 //     uint8_t *buf = new uint8_t[aSize];
 //     for (size_t i = 0; i < aSize; i++)
 //       buf[i] = 0;
@@ -152,7 +173,10 @@ class BaseProcessorImpl {
 //     return tmp;
 //   }
 
-  bits readVirtualAddress(VirtualMemoryAddress anAddress, size_t size) {}
+    bits readVirtualAddress(VirtualMemoryAddress anAddress, size_t size)
+    {
+        return bits(0);
+    }
 //     VirtualMemoryAddress finalAddress(((uint64_t)(anAddress) + size - 1) & ~0xFFF);
 //     if ((finalAddress & 0x1000) != (anAddress & 0x1000)) {
 //       bits value1, value2;
@@ -183,7 +207,10 @@ class BaseProcessorImpl {
 //     return (uint32_t)readVirtualAddress(anAddress, 4);
 //   }
 
-  int id() const {}
+    size_t id() const
+    {
+        return cpu_index;
+    }
 //     return theProcessorNumber;
 //   }
 //   int QEMUId() const {
@@ -198,18 +225,20 @@ class BaseProcessorImpl {
 //   }
 
 
-  void readAArch() {}
-  void readDCZID_EL0() {}
-  void readFPCR() {}
-  void readFPSR() {}
-  void readHCREL2() {}
-  void readPSTATE() {}
-  void readSCTLR() {}
-  void readSP_el() {}
+    void readAArch() {}
+    void readDCZID_EL0() {}
+    void readFPCR() {}
+    void readFPSR() {}
+    void readHCREL2() {}
+    void readPSTATE() {}
+    void readSCTLR() {}
+    void readSP_el() {}
+    void breakSimulation() {}
+    int advance(bool count_time = true) {return 0;}
 
 };
 
-class ProcessorImpl : public BaseProcessorImpl {
+// class ARMProcessor : public ARMProcessor {
 // private:
 //   int thePendingInterrupt;
 //   bool theInterruptsConnected;
@@ -218,7 +247,7 @@ class ProcessorImpl : public BaseProcessorImpl {
 
 // public:
 //   explicit ProcessorImpl(API::conf_object_t *aProcessor)
-//       : BaseProcessorImpl(aProcessor), thePendingInterrupt(API::QEMU_PE_No_Exception),
+//       : ARMProcessor(aProcessor), thePendingInterrupt(API::QEMU_PE_No_Exception),
 //         theInterruptsConnected(false) {
 //   }
 
@@ -227,54 +256,61 @@ class ProcessorImpl : public BaseProcessorImpl {
 //     return API::qemu_api.get_pl(*this);
 //   }
 
-  void breakSimulation() {}
+
 //     API::qemu_api.stop("");
 //   }
 
-  int advance(bool count_time = true) {}
 //     int exception = 0;
 //     exception = Qemu::API::qemu_api.cpu_exec(theProcessor, count_time);
 //     return exception;
 //   }
-};
+// };
 
-#define PROCESSOR_IMPL ProcessorImpl
+// #define PROCESSOR_IMPL ProcessorImpl
 
-class Processor : public BuiltInObject<PROCESSOR_IMPL> {
-  typedef BuiltInObject<PROCESSOR_IMPL> base;
+class Processor /*: public BuiltInObject<PROCESSOR_IMPL>*/
+{
+
+
+private:
+    uint64_t core_index;
+
+    // typedef BuiltInObject<PROCESSOR_IMPL> base;
+
+    Processor(u_int64_t core_index): core_index(core_index)
+    {}
+
 
 public:
-  // explicit Processor() : base(0) {
-  // }
+    // explicit Processor(): base(0) {}
 
-  // explicit Processor(API::conf_object_t *aProcessor) : base(PROCESSOR_IMPL(aProcessor)) {
-  // }
+    // explicit Processor(API::conf_object_t* cpu_object) : base(PROCESSOR_IMPL(cpu_object)) {}
 
-  // operator API::conf_object_t *() {
-  //   return theImpl;
-  // }
-  // static Processor getProcessor(int aProcessorNumber) {
-  //   return Processor(API::qemu_api.get_cpu_by_idx(
-  //       /*ProcessorMapper::mapFlexusIndex2ProcNum(*/ aProcessorNumber));
-  // }
-  // static Processor getProcessor(std::string const &aProcessorName) {
-  //   return Processor(API::qemu_api.get_obj_by_name(aProcessorName.c_str()));
-  // }
-  // static Processor current() {
-  //   assert(false);
-  //   return getProcessor(0);
-  // }
+// operator API::conf_object_t *() {
+//   return theImpl;
+// }
+// static Processor getProcessor(int aProcessorNumber) {
+//   return Processor(API::qemu_api.get_cpu_by_idx(
+//       /*ProcessorMapper::mapFlexusIndex2ProcNum(*/ aProcessorNumber));
+// }
+// static Processor getProcessor(std::string const &aProcessorName) {
+//   return Processor(API::qemu_api.get_obj_by_name(aProcessorName.c_str()));
+// }
+// static Processor current() {
+//   assert(false);
+//   return getProcessor(0);
+// }
 
-  static Processor getProcessor(size_t core_index)
-  {
-    return Processor(API::qemu_api.get_vcpu_by_idx(core_index));
-  }
+    static Processor getProcessor(uint64_t core_index)
+    {
+        return Processor(core_index);
+    }
 
 };
 
-#undef PROCESSOR_IMPL
+// #undef PROCESSOR_IMPL
 
 } // end Namespace Qemu
 } // end namespace Flexus
 
-#endif // FLEXUS_QEMU_MAI_API_HPP_INCLUDED
+#endif  // FLEXUS_QEMU_MAI_API_HPP_INCLUDED
