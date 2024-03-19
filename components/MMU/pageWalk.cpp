@@ -44,17 +44,19 @@
 //  DO-NOT-REMOVE end-copyright-block
 
 #include "pageWalk.hpp"
+#include <components/CommonQEMU/Translation.hpp>
 #include <core/debug/debug.hpp>
 
 #define DBG_DeclareCategories MMU
 #define DBG_SetDefaultOps AddCat(MMU)
 #include DBG_Control()
 
-namespace nMMU {
-using namespace Flexus::Qemu::API;
+using namespace Flexus::Qemu;
 using Flexus::SharedTypes::Translation;
+using Flexus::SharedTypes::TranslationPtr;
 using Flexus::SharedTypes::TranslationTransport;
 
+namespace nMMU {
 void PageWalk::annulAll() {
   if (TheInitialized && theTranslationTransports.size() > 0)
     while (theTranslationTransports.size() > 0) {
@@ -86,9 +88,7 @@ void PageWalk::preWalk(TranslationTransport &aTranslation) {
   DBG_(VVerb, (<< "preWalking " << basicPointer->theVaddr));
 
   if (statefulPointer->currentLookupLevel == 0) {
-    PhysicalMemoryAddress magicPaddr(
-        QEMU_logical_to_physical(*Flexus::Qemu::Processor::getProcessor(theNode),
-                                 QEMU_DI_Instruction, basicPointer->theVaddr));
+    PhysicalMemoryAddress magicPaddr(API::qemu_api.translate_va2pa(theNode, API::QEMU_DI_Instruction, basicPointer->theVaddr));
     DBG_(VVerb, (<< " QEMU Translated: " << std::hex << basicPointer->theVaddr << std::dec
                  << ", to: " << std::hex << magicPaddr << std::dec));
   }
@@ -265,7 +265,7 @@ bool PageWalk::push_back_trace(TranslationPtr aTranslation, Flexus::Qemu::Proces
 
   while (1) {
     preTranslate(newTransport);
-    basicTranslation->rawTTEValue = (uint64_t)theCPU->readPhysicalAddress(trace_address, 8);
+    basicTranslation->rawTTEValue = (uint64_t)theCPU.readPhysicalAddress(trace_address, 8);
     aTranslation->trace_addresses.push(trace_address);
     newTransport.set(TranslationBasicTag, basicTranslation);
     translate(newTransport);

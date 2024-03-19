@@ -47,17 +47,25 @@
 #define FLEXUS_PAGEWALK_HPP_INCLUDED
 
 #include "MMUUtil.hpp"
+#include <components/CommonQEMU/Translation.hpp>
 #include <components/CommonQEMU/Transports/TranslationTransport.hpp>
-#include <components/uArchARM/CoreModel/coreModelImpl.hpp>
 #include <core/types.hpp>
+
+using namespace Flexus::SharedTypes;
+
 namespace nMMU {
 
 class PageWalk {
+
   std::shared_ptr<mmu_t> theMMU;
+
   std::list<TranslationTransport> theTranslationTransports;
+
   std::queue<boost::intrusive_ptr<Translation>> theDoneTranslations;
   std::queue<boost::intrusive_ptr<Translation>> theMemoryTranslations;
+
   PhysicalMemoryAddress trace_address;
+
   bool TheInitialized;
 
 public:

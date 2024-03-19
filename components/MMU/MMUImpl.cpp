@@ -92,6 +92,7 @@ template <> struct hash<VirtualMemoryAddress> {
 namespace nMMU {
 
 using namespace Flexus;
+using namespace Qemu;
 using namespace Core;
 using namespace SharedTypes;
 uint64_t PAGEMASK;
@@ -307,10 +308,10 @@ public:
           (item->isInstr() ? theInstrTLB : theDataTLB)
               .lookUp((VirtualMemoryAddress)(item->theVaddr));
       if (cfg.PerfectTLB) {
-        PhysicalMemoryAddress perfectPaddr(Qemu::API::QEMU_logical_to_physical(
-            *Flexus::Qemu::Processor::getProcessor(flexusIndex()),
-            item->isInstr() ? Qemu::API::QEMU_DI_Instruction : Qemu::API::QEMU_DI_Data,
-            item->theVaddr));
+        PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(
+          flexusIndex(),
+          item->isInstr() ? Qemu::API::QEMU_DI_Instruction : Qemu::API::QEMU_DI_Data,
+          item->theVaddr));
         entry.first = true;
         entry.second = perfectPaddr;
         if (perfectPaddr == 0xFFFFFFFFFFFFFFFF)
@@ -338,8 +339,8 @@ public:
             alreadyPW.insert(pageAddr);
             thePageWalkEntries.push(item);
           } else {
-            PhysicalMemoryAddress perfectPaddr(Qemu::API::QEMU_logical_to_physical(
-                *Flexus::Qemu::Processor::getProcessor(flexusIndex()),
+            PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(
+                flexusIndex(),
                 item->isInstr() ? Qemu::API::QEMU_DI_Instruction : Qemu::API::QEMU_DI_Data,
                 item->theVaddr));
             item->setHit();
@@ -419,7 +420,7 @@ public:
       theMMU.reset(new mmu_t());
       theMMUInitialized = true;
     }
-    theMMU->initRegsFromQEMUObject(getMMURegsFromQEMU(anIndex));
+    //! theMMU->initRegsFromQEMUObject(getMMURegsFromQEMU(anIndex));
     theMMU->setupAddressSpaceSizesAndGranules();
     DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
     DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
@@ -448,42 +449,28 @@ public:
   }
 
   // Msutherl: Fetch MMU's registers
-  std::shared_ptr<mmu_regs_t> getMMURegsFromQEMU(uint8_t anIndex) {
-    std::shared_ptr<mmu_regs_t> mmu_obj(new mmu_regs_t());
+  //! std::shared_ptr<mmu_regs_t> getMMURegsFromQEMU(uint8_t anIndex) {
+  //   std::shared_ptr<mmu_regs_t> mmu_obj(new mmu_regs_t());
 
-    mmu_obj->SCTLR[EL0] = Flexus::Qemu::Processor::getProcessor(anIndex)->readSCTLR(EL0);
-    mmu_obj->SCTLR[EL1] = Flexus::Qemu::Processor::getProcessor(anIndex)->readSCTLR(EL1);
-    mmu_obj->SCTLR[EL2] = Flexus::Qemu::Processor::getProcessor(anIndex)->readSCTLR(EL2);
-    mmu_obj->SCTLR[EL3] = Flexus::Qemu::Processor::getProcessor(anIndex)->readSCTLR(EL3);
+  //   mmu_obj->SCTLR[EL0] = Processor::getProcessor(anIndex).readSCTLR(EL0);
+  //   mmu_obj->SCTLR[EL1] = Processor::getProcessor(anIndex).readSCTLR(EL1);
+  //   mmu_obj->SCTLR[EL2] = Processor::getProcessor(anIndex).readSCTLR(EL2);
+  //   mmu_obj->SCTLR[EL3] = Processor::getProcessor(anIndex).readSCTLR(EL3);
 
-    mmu_obj->TCR[EL0] = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TCR, EL0);
-    mmu_obj->TCR[EL1] = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TCR, EL1);
-    mmu_obj->TCR[EL2] = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TCR, EL2);
-    mmu_obj->TCR[EL3] = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TCR, EL3);
-    // mmu_obj->TTBR1[EL0] = Qemu::API::QEMU_read_register(
-    //     *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TTBR1, EL0);
-    mmu_obj->TTBR0[EL1] = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TTBR0, EL1);
-    mmu_obj->TTBR1[EL1] = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TTBR1, EL1);
-    mmu_obj->TTBR0[EL2] = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TTBR0, EL2);
-    mmu_obj->TTBR1[EL2] = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TTBR1, EL2);
-    mmu_obj->TTBR0[EL3] = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TTBR0, EL3);
-    // mmu_obj->TTBR1[EL3] = Qemu::API::QEMU_read_register(
-    //     *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TTBR1, EL3);
+  //   mmu_obj->TCR[EL0] = API::qemu_api.read_register(anIndex, Qemu::API::kMMU_TCR, EL0);
+  //   mmu_obj->TCR[EL1] = API::qemu_api.read_register(anIndex, Qemu::API::kMMU_TCR, EL1);
+  //   mmu_obj->TCR[EL2] = API::qemu_api.read_register(anIndex, Qemu::API::kMMU_TCR, EL2);
+  //   mmu_obj->TCR[EL3] = API::qemu_api.read_register(anIndex, Qemu::API::kMMU_TCR, EL3);
 
-    mmu_obj->ID_AA64MMFR0_EL1 = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_ID_AA64MMFR0_EL1, 0);
+  //   mmu_obj->TTBR0[EL1] = API::qemu_api.read_register(anIndex, Qemu::API::kMMU_TTBR0, EL1);
+  //   mmu_obj->TTBR1[EL1] = API::qemu_api.read_register(anIndex, Qemu::API::kMMU_TTBR1, EL1);
+  //   mmu_obj->TTBR0[EL2] = API::qemu_api.read_register(anIndex, Qemu::API::kMMU_TTBR0, EL2);
+  //   mmu_obj->TTBR1[EL2] = API::qemu_api.read_register(anIndex, Qemu::API::kMMU_TTBR1, EL2);
+  //   mmu_obj->TTBR0[EL3] = API::qemu_api.read_register(anIndex, Qemu::API::kMMU_TTBR0, EL3);
 
-    return mmu_obj;
-  }
+  //   mmu_obj->ID_AA64MMFR0_EL1 = API::qemu_api.read_register( anIndex, Qemu::API::kMMU_ID_AA64MMFR0_EL1, 0);
+  //   return mmu_obj;
+  // }
 
   bool IsTranslationEnabledAtEL(uint8_t &anEL) {
     return true; // theCore->IsTranslationEnabledAtEL(anEL);
@@ -536,7 +523,7 @@ public:
             false) {
       if (!theMMUInitialized) {
         theMMU.reset(new mmu_t());
-        theMMU->initRegsFromQEMUObject(getMMURegsFromQEMU((int)flexusIndex()));
+        //! theMMU->initRegsFromQEMUObject(getMMURegsFromQEMU((int)flexusIndex()));
         theMMU->setupAddressSpaceSizesAndGranules();
         DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
         DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));

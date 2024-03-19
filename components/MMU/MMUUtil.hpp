@@ -174,7 +174,7 @@ typedef struct mmu_access {
 // Msutherl - june'18
 // - added smaller MMU interface (resolving walks + memory accesses resolved in
 // Flexus components)
-std::shared_ptr<mmu_regs_t> getMMURegsFromQEMU();
+// std::shared_ptr<mmu_regs_t> getMMURegsFromQEMU();
 
 void fm_print_mmu_regs(mmu_regs_t *mmu);
 } // end namespace nMMU

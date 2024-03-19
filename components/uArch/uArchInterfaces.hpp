@@ -179,6 +179,11 @@ enum ePrivRegs {
   kLastPrivReg
 };
 
+#define EL0 0
+#define EL1 1
+#define EL2 2
+#define EL3 3
+
 enum eAccessResult {
   /* Access is permitted */
   kACCESS_OK = 0,
