@@ -49,27 +49,24 @@
 // For debug only
 #include <iostream>
 
-#include <core/boost_extensions/padded_string_cast.hpp>
-
-#include <core/debug/debug.hpp>
-#include <core/types.hpp>
-
-#include <core/qemu/api_wrappers.hpp>
-#include <core/qemu/configuration_api.hpp>
-
 #include <components/DecoupledFeederQEMU/QemuTracer.hpp>
 #include <components/uFetch/uFetchTypes.hpp>
-
+#include <core/boost_extensions/padded_string_cast.hpp>
+#include <core/debug/debug.hpp>
+#include <core/qemu/api_wrappers.hpp>
+#include <core/qemu/configuration_api.hpp>
 #include <core/stats.hpp>
+#include <core/types.hpp>
+
 namespace Stat = Flexus::Stat;
-// was only in namespace nDecoupledFeeder
+using namespace Flexus::Qemu;
+
+
 
 namespace nDecoupledFeeder {
 
 using namespace Flexus::SharedTypes;
 
-namespace Qemu = Flexus::Qemu;
-namespace API = Qemu::API;
 
 const uint32_t kLargeMemoryQueue = 16000;
 
@@ -140,8 +137,8 @@ struct TracerStats {
 #define IS_PRIV(mem_trans) (false)
 
 class QemuTracerImpl {
-  API::conf_object_t *theCPU;
-  int32_t theIndex;
+
+  std::size_t core_index;
 
   TracerStats *theUserStats;
   TracerStats *theOSStats;
@@ -153,40 +150,33 @@ public:
   std::function<void(int, MemoryMessage &, uint32_t)> toL1I;
   std::function<void(int, MemoryMessage &)> toNAW;
 
-  //  bool theWhiteBoxDebug;
-  //  int32_t  theWhiteBoxPeriod;
   bool theSendNonAllocatingStores;
 
 public:
-  QemuTracerImpl(API::conf_object_t *anUnderlyingObject)
-      : theMemoryMessage(MemoryMessage::LoadReq) {
-  }
+  QemuTracerImpl(API::conf_object_t* anUnderlyingObject):
+    theMemoryMessage(MemoryMessage::LoadReq)
+  {}
 
-  API::conf_object_t *cpu() const {
-    return theCPU;
+  std::size_t cpu() const {
+    return core_index;
   }
 
   // Initialize the tracer to the desired CPU
-  void init(API::conf_object_t *aCPU, index_t anIndex,
+  void init(std::size_t cpu_index,
             std::function<void(int, MemoryMessage &)> aToL1D,
             std::function<void(int, MemoryMessage &, uint32_t)> aToL1I,
             std::function<void(int, MemoryMessage &)> aToNAW,
-            //          , bool aWhiteBoxDebug
-            //        , int32_t aWhiteBoxPeriod
             bool aSendNonAllocatingStores
-
-  ) {
-    theCPU = aCPU;
-    theIndex = anIndex;
+  )
+  {
+    core_index = core_index;
     toL1D = aToL1D;
     toL1I = aToL1I;
     toNAW = aToNAW;
-    //   theWhiteBoxDebug = false;
-    //   theWhiteBoxPeriod = aWhiteBoxPeriod;
     theSendNonAllocatingStores = aSendNonAllocatingStores;
-    theUserStats = new TracerStats(boost::padded_string_cast<2, '0'>(theIndex) + "-feeder-User:");
-    theOSStats = new TracerStats(boost::padded_string_cast<2, '0'>(theIndex) + "-feeder-OS:");
-    theBothStats = new TracerStats(boost::padded_string_cast<2, '0'>(theIndex) + "-feeder-");
+    theUserStats = new TracerStats(boost::padded_string_cast<2, '0'>(core_index) + "-feeder-User:");
+    theOSStats = new TracerStats(boost::padded_string_cast<2, '0'>(core_index) + "-feeder-OS:");
+    theBothStats = new TracerStats(boost::padded_string_cast<2, '0'>(core_index) + "-feeder-");
   }
 
   void updateStats() {
@@ -195,7 +185,7 @@ public:
     theBothStats->update();
   }
 
-  API::cycles_t insn_fetch(Qemu::API::memory_transaction_t *mem_trans) {
+  API::cycles_t insn_fetch(API::memory_transaction_t* mem_trans) {
     const int32_t k_no_stall = 0;
     theMemoryMessage.address() = PhysicalMemoryAddress(mem_trans->s.physical_address);
     theMemoryMessage.pc() = VirtualMemoryAddress(mem_trans->s.logical_address);
@@ -216,16 +206,13 @@ public:
     theBothStats->theFetches++;
 
     // TODO FIXME
-    DBG_(VVerb, (<< "sending fetch[" << theIndex << "] op: " << opcode
-                 << " message: " << theMemoryMessage));
-    toL1I(theIndex, theMemoryMessage, opcode);
+    DBG_(VVerb, (<< "sending fetch[" << core_index << "] op: " << opcode << " message: " << theMemoryMessage));
+    toL1I(core_index, theMemoryMessage, opcode);
     return k_no_stall; // Never stalls
   }
 
   API::cycles_t trace_mem_hier_operate(API::memory_transaction_t *mem_trans) {
-    // debugTransaction(mem_trans); // ustiugov: uncomment to track every memory
-    // op Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
-    // toL1D((int32_t) 0, msg);
+
     const int32_t k_no_stall = 0;
 
     if (mem_trans->io) {
@@ -243,7 +230,7 @@ public:
     theMemoryMessage.address() = PhysicalMemoryAddress(mem_trans->s.physical_address);
     theMemoryMessage.pc() = VirtualMemoryAddress(mem_trans->s.logical_address);
     theMemoryMessage.priv() = IS_PRIV(mem_trans);
-    theMemoryMessage.coreIdx() = theIndex;
+    theMemoryMessage.coreIdx() = core_index;
 
     // Set the type field of the memory operation
     if (mem_trans->s.atomic) {
@@ -286,30 +273,28 @@ public:
       }
     }
 
-    toL1D(theIndex, theMemoryMessage);
-    if (theIndex != 0) {
-      // std::cout<<"index : "<<theIndex<<std::endl;
-    }
+    toL1D(core_index, theMemoryMessage);
     return k_no_stall; // Never stalls
   }
 
   // Useful debugging stuff for tracing every instruction
-  void debugTransaction(Qemu::API::memory_transaction_t *mem_trans) {
-    API::logical_address_t pc_logical = API::qemu_api.get_pc(theCPU);
+  void debugTransaction(API::memory_transaction_t *mem_trans) {
+    API::logical_address_t pc_logical = Processor::getProcessor(core_index).getPC();
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
     API::physical_address_t pc =
-        API::qemu_api.translate_va2pa(theIndex, API::QEMU_DI_Instruction, pc_logical);
+        API::qemu_api.translate_va2pa(core_index, API::QEMU_DI_Instruction, pc_logical);
     unsigned opcode = 0;
 
-    DBG_(VVerb, SetNumeric((ScaffoldIdx)theIndex)(<< "Mem Hier Instr: " << opcode << " logical pc: "
+    DBG_(VVerb, SetNumeric((ScaffoldIdx)core_index)(<< "Mem Hier Instr: " << opcode << " logical pc: "
                                                   << &std::hex << pc_logical << " pc: " << pc));
 #pragma GCC diagnostic pop
 
     if (API::qemu_api.mem_op_is_data(&mem_trans->s)) {
       if (API::qemu_api.mem_op_is_write(&mem_trans->s)) {
         DBG_(VVerb,
-             SetNumeric((ScaffoldIdx)theIndex)(
+             SetNumeric((ScaffoldIdx)core_index)(
                  << "  Write v@" << &std::hex << mem_trans->s.logical_address << " p@"
                  << mem_trans->s.physical_address << &std::dec << " size=" << mem_trans->s.size
                  << " type=" << mem_trans->s.type << (mem_trans->s.atomic ? " atomic" : "")
@@ -321,7 +306,7 @@ public:
       } else {
         if (mem_trans->s.type == API::QEMU_Trans_Prefetch) {
           DBG_(VVerb,
-               SetNumeric((ScaffoldIdx)theIndex)(
+               SetNumeric((ScaffoldIdx)core_index)(
                    << "  Prefetch v@" << &std::hex << mem_trans->s.logical_address << " p@"
                    << mem_trans->s.physical_address << &std::dec << " size=" << mem_trans->s.size
                    << " type=" << mem_trans->s.type << (mem_trans->s.atomic ? " atomic" : "")
@@ -332,7 +317,7 @@ public:
                    << (IS_PRIV(mem_trans) ? " priv" : " user")));
         } else {
           DBG_(VVerb,
-               SetNumeric((ScaffoldIdx)theIndex)(
+               SetNumeric((ScaffoldIdx)core_index)(
                    << "  Read v@" << &std::hex << mem_trans->s.logical_address << " p@"
                    << mem_trans->s.physical_address << &std::dec << " size=" << mem_trans->s.size
                    << " type=" << mem_trans->s.type << (mem_trans->s.atomic ? " atomic" : "")
@@ -348,11 +333,11 @@ public:
 
 }; // class QemuTracerImpl
 
-class QemuTracer : public Qemu::AddInObject<QemuTracerImpl> {
-  typedef Qemu::AddInObject<QemuTracerImpl> base;
+class QemuTracer : public AddInObject<QemuTracerImpl> {
+  typedef AddInObject<QemuTracerImpl> base;
 
 public:
-  static const Qemu::Persistence class_persistence = Qemu::Session;
+  static const Persistence class_persistence = Session;
   static std::string className() {
     return "DecoupledFeeder";
   }
@@ -362,7 +347,7 @@ public:
 
   QemuTracer() : base() {
   }
-  QemuTracer(Qemu::API::conf_object_t *aQemuObject) : base(aQemuObject) {
+  QemuTracer(API::conf_object_t *aQemuObject) : base(aQemuObject) {
   }
   QemuTracer(QemuTracerImpl *anImpl) : base(anImpl) {
   }
@@ -406,11 +391,11 @@ public:
 
 }; // class DMATracerImpl
 
-class DMATracer : public Qemu::AddInObject<DMATracerImpl> {
-  typedef Qemu::AddInObject<DMATracerImpl> base;
+class DMATracer : public AddInObject<DMATracerImpl> {
+  typedef AddInObject<DMATracerImpl> base;
 
 public:
-  static const Qemu::Persistence class_persistence = Qemu::Session;
+  static const Persistence class_persistence = Session;
   static std::string className() {
     return "DMATracer";
   }
@@ -420,7 +405,7 @@ public:
 
   DMATracer() : base() {
   }
-  DMATracer(Qemu::API::conf_object_t *aQemuObject) : base(aQemuObject) {
+  DMATracer(API::conf_object_t *aQemuObject) : base(aQemuObject) {
   }
   DMATracer(DMATracerImpl *anImpl) : base(anImpl) {
   }
@@ -429,7 +414,7 @@ public:
 static QemuTracer *theTracers;
 
 class QemuTracerManagerImpl : public QemuTracerManager {
-  int32_t theNumCPUs;
+  std::size_t theNumCPUs;
   bool theClientServer;
   DMATracer theDMATracer;
   std::function<void(int, MemoryMessage &)> toL1D;
@@ -442,12 +427,10 @@ class QemuTracerManagerImpl : public QemuTracerManager {
   bool theSendNonAllocatingStores;
 
 public:
-  QemuTracerManagerImpl(int32_t aNumCPUs, std::function<void(int, MemoryMessage &)> aToL1D,
+  QemuTracerManagerImpl(std::size_t aNumCPUs, std::function<void(int, MemoryMessage &)> aToL1D,
                         std::function<void(int, MemoryMessage &, uint32_t)> aToL1I,
                         std::function<void(MemoryMessage &)> aToDMA,
                         std::function<void(int, MemoryMessage &)> aToNAW,
-                        //	  , bool aWhiteBoxDebug
-                        //	  , int32_t aWhiteBoxPeriod
                         bool aSendNonAllocatingStores)
       : theNumCPUs(aNumCPUs), theClientServer(false), toL1D(aToL1D), toL1I(aToL1I), toDMA(aToDMA),
         toNAW(aToNAW),
@@ -455,13 +438,7 @@ public:
         //  , theWhiteBoxPeriod(aWhiteBoxPeriod)
         theSendNonAllocatingStores(aSendNonAllocatingStores) {
     DBG_(Dev, (<< "Initializing QemuTracerManager."));
-    theNumCPUs = aNumCPUs;
 
-    // Dump translation caches
-    //    Qemu::API::QEMU_flush_all_caches();
-
-    // Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
-    // toL1D((int32_t) 0, msg);
     detectClientServer();
     createTracers();
     createDMATracer();
@@ -472,23 +449,22 @@ public:
   }
 
   void setQemuQuantum(int64_t aSwitchTime) {
+    assert(false);
   }
 
   void setSystemTick(double aTickFreq) {
-    for (int32_t i = 0; i < theNumCPUs; ++i) {
       assert(false);
-//    API::conf_object_t *cpu = Qemu::API::qemu_api.get_cpu_by_idx(i);
-//    API::QEMU_set_tick_frequency(cpu, aTickFreq);
-    }
   }
 
   void updateStats() {
-    for (int32_t i = 0; i < theNumCPUs; ++i) {
-      theTracers[i]->updateStats();
+    for (std::size_t index{0}; index < theNumCPUs; ++index)
+    {
+      theTracers[index]->updateStats();
     }
   }
 
   void enableInstructionTracing() {
+    assert(false);
   }
 
 private:
@@ -500,30 +476,32 @@ private:
     theTracers = new QemuTracer[theNumCPUs];
 
     // Create QemuTracer Factory
-    Qemu::Factory<QemuTracer> tracer_factory;
+    Factory<QemuTracer> tracer_factory;
 
     // Create QemuTracer Objects
     // FIXME I believe this had been used incorrectly as the end point of the
     // inner for loop. In the simics it was being used, but not sure why or how
     // it works.
-    for (int32_t ii = 0; ii < theNumCPUs; ++ii) {
+    for (std::size_t index{0}; index < theNumCPUs; ++index)
+    {
       std::string feeder_name("flexus-feeder");
       if (theNumCPUs > 1) {
-        feeder_name += '-' + boost::padded_string_cast<2, '0'>(ii);
+        feeder_name += '-' + boost::padded_string_cast<2, '0'>(index);
       }
-      theTracers[ii] = tracer_factory.create(feeder_name);
+      theTracers[index] = tracer_factory.create(feeder_name);
 
-      API::conf_object_t *cpu = API::qemu_api.get_cpu_by_idx(ii);
-      theTracers[ii]->init(cpu, ii, toL1D, toL1I, toNAW,
-                           //			  , theWhiteBoxDebug
-                           //			  , theWhiteBoxPeriod
-                           theSendNonAllocatingStores);
+      theTracers[index]->init(
+        index,
+        toL1D,
+        toL1I,
+        toNAW,
+        theSendNonAllocatingStores);
     }
   }
 
   void createDMATracer(void) {
     // Create QemuTracer Factory
-    Qemu::Factory<DMATracer> tracer_factory;
+    Factory<DMATracer> tracer_factory;
     // API::conf_class_t *trace_class = tracer_factory.getQemuClass();
 
     std::string tracer_name("dma-tracer");
@@ -534,16 +512,19 @@ private:
 };
 
 QemuTracerManager *
-QemuTracerManager::construct(int32_t aNumCPUs, std::function<void(int, MemoryMessage &)> toL1D,
+QemuTracerManager::construct(std::size_t aNumCPUs, std::function<void(int, MemoryMessage &)> toL1D,
                              std::function<void(int, MemoryMessage &, uint32_t)> toL1I,
                              std::function<void(MemoryMessage &)> toDMA,
                              std::function<void(int, MemoryMessage &)> toNAW
-                             //    , bool aWhiteBoxDebug
-                             //    , int32_t aWhiteBoxPeriod
                              ,
                              bool aSendNonAllocatingStores) {
-  return new QemuTracerManagerImpl(aNumCPUs, toL1D, toL1I, toDMA, toNAW,
-                                   /* aWhiteBoxDebug, aWhiteBoxPeriod,*/ aSendNonAllocatingStores);
+  return new QemuTracerManagerImpl(
+    aNumCPUs,
+    toL1D,
+    toL1I,
+    toDMA,
+    toNAW,
+    aSendNonAllocatingStores);
 }
 
 } // namespace nDecoupledFeeder
@@ -552,7 +533,7 @@ namespace Flexus {
 namespace Qemu {
 namespace API {
 
-void FLEXUS_trace_mem(int idx, Flexus::Qemu::API::memory_transaction_t *tr) {
+void FLEXUS_trace_mem(int idx, API::memory_transaction_t *tr) {
   nDecoupledFeeder::theTracers[idx]->trace_mem_hier_operate(tr);
 }
 

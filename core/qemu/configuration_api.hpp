@@ -46,6 +46,7 @@
 #define FLEXUS_QEMU_CONFIGURATION_API_HPP_INCLUDED
 
 #include <algorithm>
+#include <cstddef>
 #include <map>
 #include <string>
 #include <vector>
