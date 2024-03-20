@@ -73,9 +73,9 @@ ArchInstruction::ArchInstruction(VirtualMemoryAddress aPC, Opcode anOpcode,
 void ArchInstruction::describe(std::ostream &anOstream) const {
   Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(theCPU);
   anOstream << "#" << std::dec << theSequenceNo << "[" << std::setfill('0') << std::right
-            << std::setw(2) << cpu->id()
+            << std::setw(2) << cpu.id()
             << "] "
-            << printInstClass() << " QEMU disas: " << cpu->disassemble(thePC);
+            << printInstClass() << " QEMU disas: " << cpu.disassemble(thePC);
   if (theRaisedException) {
     anOstream << " {raised}";
   }
@@ -88,7 +88,7 @@ void ArchInstruction::describe(std::ostream &anOstream) const {
 }
 
 std::string ArchInstruction::disassemble() const {
-  return Flexus::Qemu::Processor::getProcessor(theCPU)->disassemble(thePC);
+  return Flexus::Qemu::Processor::getProcessor(theCPU).disassemble(thePC);
 }
 
 void ArchInstruction::setWillRaise(eExceptionType aSetting) {

@@ -112,10 +112,7 @@ public:
 //     return "unknown_exception";
 //   }
 
-    VirtualMemoryAddress getPC() const
-    {
-        return VirtualMemoryAddress();
-    }
+
 //     return VirtualMemoryAddress(API::qemu_api.get_pc(*this));
 //   }
 
@@ -204,10 +201,7 @@ public:
 //     return (uint32_t)readVirtualAddress(anAddress, 4);
 //   }
 
-    size_t id() const
-    {
-        return cpu_index;
-    }
+
 //     return theProcessorNumber;
 //   }
 //   int QEMUId() const {
@@ -222,16 +216,16 @@ public:
 //   }
 
 
-    void readAArch() {}
-    void readDCZID_EL0() {}
-    void readFPCR() {}
-    void readFPSR() {}
-    void readHCREL2() {}
-    void readPSTATE() {}
-    // void readSCTLR() {}
-    void readSP_el() {}
-    void breakSimulation() {}
-    int advance(bool count_time = true) {return 0;}
+    // void readAArch() {}
+    // void readDCZID_EL0() {}
+    // void readFPCR() {}
+    // void readFPSR() {}
+    // void readHCREL2() {}
+    // void readPSTATE() {}
+    // // void readSCTLR() {}
+    // void readSP_el() {}
+    // void breakSimulation() {}
+    // int advance(bool count_time = true) {return 0;}
 
 };
 
@@ -279,14 +273,25 @@ private:
 
 
 public:
+
+    bits readPhysicalAddress(PhysicalMemoryAddress anAddress, size_t aSize) const { return bits(0); }
+
+    PhysicalMemoryAddress translateVirtualAddress(VirtualMemoryAddress addr) { return PhysicalMemoryAddress(); }
+
+    uint32_t fetchInstruction(VirtualMemoryAddress addr) {return 0;}
     uint64_t readSCTLR(uint64_t index) { return 0;}
 
-    bits readPhysicalAddress(PhysicalMemoryAddress anAddress, size_t aSize) const
-    {
-        return bits(0);
-    }
+    VirtualMemoryAddress getPC() const { return VirtualMemoryAddress(); }
 
-    // explicit Processor(): base(0) {}
+    size_t id() const { return core_index; }
+
+    std::string disassemble(VirtualMemoryAddress const &anAddress) const { return "TODO()!"; }
+
+    bool is_busy() const { return true; }
+
+    uint64_t read_sysreg_from_qemu(uint32_t no) { return 0; }
+
+// explicit Processor(): base(0) {}
 
     // explicit Processor(API::conf_object_t* cpu_object) : base(PROCESSOR_IMPL(cpu_object)) {}
 

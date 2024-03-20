@@ -765,50 +765,50 @@ std::string CoreImpl::dumpState() {
   return ss.str();
 }
 
-bool CoreImpl::checkValidatation() {
-  theFlexusDumpState = dumpState();
-  theQemuDumpState = Flexus::Qemu::Processor::getProcessor(theNode)->dump_state();
+// bool CoreImpl::checkValidatation() {
+//   theFlexusDumpState = dumpState();
+//   theQemuDumpState = Flexus::Qemu::Processor::getProcessor(theNode)->dump_state();
 
-  bool ret = (theFlexusDumpState.compare(theQemuDumpState) == 0);
-  if (!ret) {
+//   bool ret = (theFlexusDumpState.compare(theQemuDumpState) == 0);
+//   if (!ret) {
 
-    // Vector of string to save tokens
-    std::vector<std::string> flex_diff, qemu_diff, diff;
+//     // Vector of string to save tokens
+//     std::vector<std::string> flex_diff, qemu_diff, diff;
 
-    std::replace(theFlexusDumpState.begin(), theFlexusDumpState.end(), '\n', ' ');
-    std::replace(theQemuDumpState.begin(), theQemuDumpState.end(), '\n', ' ');
+//     std::replace(theFlexusDumpState.begin(), theFlexusDumpState.end(), '\n', ' ');
+//     std::replace(theQemuDumpState.begin(), theQemuDumpState.end(), '\n', ' ');
 
-    // stringstream class check1
-    std::stringstream flex_check(theFlexusDumpState);
-    std::stringstream qemu_check(theQemuDumpState);
+//     // stringstream class check1
+//     std::stringstream flex_check(theFlexusDumpState);
+//     std::stringstream qemu_check(theQemuDumpState);
 
-    std::string iflex, iqemu;
+//     std::string iflex, iqemu;
 
-    // Tokenizing w.r.t. space ' '
-    while (std::getline(flex_check, iflex, ' ')) {
-      flex_diff.push_back(iflex);
-    }
-    while (std::getline(qemu_check, iqemu, ' ')) {
-      qemu_diff.push_back(iqemu);
-    }
+//     // Tokenizing w.r.t. space ' '
+//     while (std::getline(flex_check, iflex, ' ')) {
+//       flex_diff.push_back(iflex);
+//     }
+//     while (std::getline(qemu_check, iqemu, ' ')) {
+//       qemu_diff.push_back(iqemu);
+//     }
 
-    for (size_t i = 0; i < flex_diff.size() && i < qemu_diff.size(); i++) {
-      if (flex_diff[i].compare(qemu_diff[i]) != 0) {
-        diff.push_back("flexus: " + flex_diff[i]);
-        diff.push_back("qemu:   " + qemu_diff[i]);
-      }
-    }
+//     for (size_t i = 0; i < flex_diff.size() && i < qemu_diff.size(); i++) {
+//       if (flex_diff[i].compare(qemu_diff[i]) != 0) {
+//         diff.push_back("flexus: " + flex_diff[i]);
+//         diff.push_back("qemu:   " + qemu_diff[i]);
+//       }
+//     }
 
-    if (diff.size() > 0) {
-      DBG_(Dev, (<< "state mismatch: "));
-      for (auto &i : diff) {
-        DBG_(Dev, (<< i));
-      }
-    }
-  }
+//     if (diff.size() > 0) {
+//       DBG_(Dev, (<< "state mismatch: "));
+//       for (auto &i : diff) {
+//         DBG_(Dev, (<< i));
+//       }
+//     }
+//   }
 
-  return ret;
-}
+//   return ret;
+// }
 
 void CoreImpl::prepareCycle() {
   FLEXUS_PROFILE();
@@ -1639,7 +1639,7 @@ void CoreImpl::accountRetire(boost::intrusive_ptr<Instruction> anInst) {
   // Determine cycle category (always based on last retire in cycle)
   bool system = (currentEL() == 1); /*theROB.front()->isPriv();*/
 
-  theIsIdle = Flexus::Qemu::Processor::getProcessor(theNode)->hasWork() ? false : true;
+  theIsIdle = ! Flexus::Qemu::Processor::getProcessor(theNode).is_busy();
 
   if (theIsIdle) {
     theCycleCategory = kTBIdle;
@@ -3352,7 +3352,7 @@ void CoreImpl::setPC(uint64_t aPC) {
 }
 
 uint64_t CoreImpl::readUnhashedSysReg(uint32_t no) {
-  return theQEMUCPU->read_sysreg_from_qemu(no);
+  return theQEMUCPU.read_sysreg_from_qemu(no);
 }
 
 void CoreImpl::breakMSHRLink(memq_t::index<by_insn>::type::iterator iter) {

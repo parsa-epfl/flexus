@@ -1048,7 +1048,7 @@ struct MarkExclusiveMonitor : public Effect {
       uint64_t addr = anInstruction.operand<uint64_t>(theAddressCode);
       Flexus::Qemu::Processor c = Flexus::Qemu::Processor::getProcessor(anInstruction.cpu());
       PhysicalMemoryAddress pAddress =
-          PhysicalMemoryAddress(c->translateVirtualAddress(VirtualMemoryAddress((addr >> 6) << 6)));
+          PhysicalMemoryAddress(c.translateVirtualAddress(VirtualMemoryAddress((addr >> 6) << 6)));
 
       anInstruction.core()->markExclusiveGlobal(pAddress, theSize, kMonitorSet);
       anInstruction.core()->markExclusiveLocal(pAddress, theSize, kMonitorSet);
