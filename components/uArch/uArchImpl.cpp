@@ -222,11 +222,13 @@ public:
     options.fpSqrtOpPipelineResetTime = cfg.FpSqrtOpPipelineResetTime;
 
     theMicroArch =
-        microArch::construct(options, ll::bind(&uArchComponent::squash, this, ll::_1),
-                             ll::bind(&uArchComponent::redirect, this, ll::_1),
-                             ll::bind(&uArchComponent::feedback, this, ll::_1),
-                             ll::bind(&uArchComponent::signalStoreForwardingHit, this, ll::_1),
-                             ll::bind(&uArchComponent::resyncMMU, this, ll::_1));
+        microArch::construct(
+          options,
+          ll::bind(&uArchComponent::squash, this, ll::_1),
+          ll::bind(&uArchComponent::redirect, this, ll::_1),
+          ll::bind(&uArchComponent::feedback, this, ll::_1),
+          ll::bind(&uArchComponent::signalStoreForwardingHit, this, ll::_1),
+          ll::bind(&uArchComponent::resyncMMU, this, ll::_1));
 
     theuArchObject = theuArchQemuFactory.create(
         (std::string("uarch-") + boost::padded_string_cast<2, '0'>(flexusIndex())).c_str());
@@ -278,8 +280,7 @@ public:
   void push(interface::dTranslationIn const &, TranslationPtr &aTranslate) {
 
     PhysicalMemoryAddress magicTranslation =
-        Flexus::Qemu::Processor::getProcessor(theMicroArch->core())
-            ->translateVirtualAddress(aTranslate->theVaddr);
+        Flexus::Qemu::Processor::getProcessor(theMicroArch->core()).translateVirtualAddress(aTranslate->theVaddr);
 
     if (aTranslate->thePaddr == magicTranslation || magicTranslation == 0xffffffffffffffff) {
       DBG_(Iface,

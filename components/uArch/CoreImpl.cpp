@@ -47,13 +47,15 @@
 #include <boost/polymorphic_pointer_cast.hpp>
 
 #include <components/CommonQEMU/TraceTracker.hpp>
-
+#include <core/qemu/mai_api.hpp>
 #include "CoreImpl.hpp"
 #include "ValueTracker.hpp"
 
 #define DBG_DeclareCategories uArchCat
 #define DBG_SetDefaultOps AddCat(uArchCat)
 #include DBG_Control()
+
+using namespace Flexus::SharedTypes;
 
 namespace nDecoder {
 extern uint32_t theInsnCount;
@@ -345,11 +347,13 @@ bool MemoryPortArbiter::empty() const {
 
 
 CoreImpl::CoreImpl(uArchOptions_t options,
-                   std::function<int(bool)> _advance, std::function<void(eSquashCause)> _squash,
+                   std::function<int(bool)> _advance,
+                   std::function<void(eSquashCause)> _squash,
                    std::function<void(VirtualMemoryAddress)> _redirect,
                    std::function<void(boost::intrusive_ptr<BranchFeedback>)> _feedback,
                    std::function<void(bool)> _signalStoreForwardingHit,
-                   std::function<void(int32_t)> _mmuResync)
+                   std::function<void(int32_t)> _mmuResync
+                  )
     : theName(options.name), theNode(options.node),
       advance_fn(_advance), squash_fn(_squash), redirect_fn(_redirect),
       feedback_fn(_feedback),
@@ -515,7 +519,8 @@ CoreImpl::CoreImpl(uArchOptions_t options,
       fpSqrtOpPipelineResetTime(options.fpSqrtOpPipelineResetTime),
       // Each FU starts ready to accept an operation
       intAluCyclesToReady(options.numIntAlu, 0), intMultCyclesToReady(options.numIntMult, 0),
-      fpAluCyclesToReady(options.numFpAlu, 0), fpMultCyclesToReady(options.numFpMult, 0) {
+      fpAluCyclesToReady(options.numFpAlu, 0), fpMultCyclesToReady(options.numFpMult, 0)
+{
 
   theQEMUCPU = Flexus::Qemu::Processor::getProcessor(theNode);
 
@@ -6264,9 +6269,7 @@ void CoreImpl::issueSpecial() {
 }
 
 // read physical register
-CoreModel *CoreModel::construct(uArchOptions_t options
-                                //, std::function< void (Flexus::Qemu::Translation &) > translate
-                                ,
+CoreModel* CoreModel::construct(uArchOptions_t options,
                                 std::function<int(bool)> advance,
                                 std::function<void(eSquashCause)> squash,
                                 std::function<void(VirtualMemoryAddress)> redirect,
@@ -6274,9 +6277,7 @@ CoreModel *CoreModel::construct(uArchOptions_t options
                                 std::function<void(bool)> signalStoreForwardingHit,
                                 std::function<void(int32_t)> mmuResync) {
 
-  return new CoreImpl(options
-                      //, translate
-                      ,
+  return new CoreImpl(options,
                       advance, squash, redirect, feedback, signalStoreForwardingHit,
                       mmuResync);
 }

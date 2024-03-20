@@ -202,6 +202,7 @@ struct ValueTracker {
     DBG_(VVerb, (<< "Registering DMA tracker " << vm));
 
     API::conf_object_t *dma_map_object = API::qemu_api.get_obj_by_name("dma_mem");
+
     if (!dma_map_object) {
       std::string dma_map_name = "dma_mem" + std::to_string(vm);
       dma_map_object = API::qemu_api.get_obj_by_name(dma_map_name.c_str());
