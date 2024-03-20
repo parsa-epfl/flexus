@@ -44,6 +44,7 @@
 //  DO-NOT-REMOVE end-copyright-block
 #include <string>
 #include <vector>
+#include <cstddef>
 
 #include <core/qemu/api_wrappers.hpp>
 #include <core/target.hpp>

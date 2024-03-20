@@ -101,7 +101,7 @@ class FLEXUS_COMPONENT(DecoupledFeeder) {
   FLEXUS_COMPONENT_IMPL(DecoupledFeeder);
 
   // The Qemu objects (one for each processor) for getting trace data
-  int32_t theNumCPUs;
+  std::size_t theNumCPUs;
   int32_t theCMPWidth;
   QemuTracerManager *theTracer;
   MMUStats **os_itlb_stats, **os_dtlb_stats, **user_itlb_stats, **user_dtlb_stats;
@@ -159,11 +159,11 @@ public:
     os_dtlb_stats = new MMUStats *[theNumCPUs];
     user_itlb_stats = new MMUStats *[theNumCPUs];
     user_dtlb_stats = new MMUStats *[theNumCPUs];
-    for (int32_t i = 0; i < theNumCPUs; ++i) {
-      os_itlb_stats[i] = new MMUStats(boost::padded_string_cast<2, '0'>(i) + "-itlb-OS:");
-      os_dtlb_stats[i] = new MMUStats(boost::padded_string_cast<2, '0'>(i) + "-dtlb-OS:");
-      user_itlb_stats[i] = new MMUStats(boost::padded_string_cast<2, '0'>(i) + "-itlb-User:");
-      user_dtlb_stats[i] = new MMUStats(boost::padded_string_cast<2, '0'>(i) + "-dtlb-User:");
+    for (std::size_t index{0}; index < theNumCPUs; ++index){
+      os_itlb_stats[index] = new MMUStats(boost::padded_string_cast<2, '0'>(index) + "-itlb-OS:");
+      os_dtlb_stats[index] = new MMUStats(boost::padded_string_cast<2, '0'>(index) + "-dtlb-OS:");
+      user_itlb_stats[index] = new MMUStats(boost::padded_string_cast<2, '0'>(index) + "-itlb-User:");
+      user_dtlb_stats[index] = new MMUStats(boost::padded_string_cast<2, '0'>(index) + "-dtlb-User:");
     }
 
     theFlexus->advanceCycles(0);
@@ -268,11 +268,11 @@ public:
     // FIXME Currently Does nothing since step_count ha not been implemented
   }
   void updateMMUStats() {
-    for (int32_t i = 0; i < theNumCPUs; ++i) {
-      os_itlb_stats[i]->update();
-      os_dtlb_stats[i]->update();
-      user_itlb_stats[i]->update();
-      user_dtlb_stats[i]->update();
+    for (std::size_t index{0}; index < theNumCPUs; ++index){
+      os_itlb_stats[index]->update();
+      os_dtlb_stats[index]->update();
+      user_itlb_stats[index]->update();
+      user_dtlb_stats[index]->update();
     }
   }
 
