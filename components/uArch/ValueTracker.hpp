@@ -304,7 +304,7 @@ struct ValueTracker {
         // the globally visible value was updated by DMA, so update it just in
         // case we use it later
         Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(aCPU);
-        iter->second.theGloballyVisibleValue = cpu->readPhysicalAddress(aligned, 8);
+        iter->second.theGloballyVisibleValue = cpu.readPhysicalAddress(aligned, 8);
         iter->second.theSimicsReflectsCPU = kSimicsReflectsG;
         DBG_(Iface, AddCategory(Special)(<< "CPU[" << aCPU << "] Access.UpdatedGlobalWithDMA "
                                          << anAddress << " Now: " << iter->second));
@@ -315,7 +315,7 @@ struct ValueTracker {
           // Simics currently has the value for this CPU.  We update the tracker
           // with the new value
           Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(aCPU);
-          bits simics_value = cpu->readPhysicalAddress(aligned, 8);
+          bits simics_value = cpu.readPhysicalAddress(aligned, 8);
 
           if (simics_value != local->second.theValue) {
             DBG_(Trace,
@@ -334,13 +334,11 @@ struct ValueTracker {
           // Simics currently has the value for some other CPU.  We overwrite
           // Simics memory with the correct value for this CPU.
 
-          Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(aCPU);
 
-          //          bits current_value = local->second.theValue;
 
           // Change simics' value to reflect what this CPU believes memory
           // looks like
-          //          //cpu->writePAddr( aligned, 8, current_value );
+          //          //cpu.writePAddr( aligned, 8, current_value );
           iter->second.theSimicsReflectsCPU = aCPU;
 
           DBG_(Trace,
@@ -356,12 +354,7 @@ struct ValueTracker {
           DBG_(Iface, (<< "CPU[" << aCPU << "] Access.SimicsReflectsCorrectGlobal " << anAddress
                        << " Now: " << iter->second));
         } else {
-          Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(aCPU);
 
-          //          bits current_value = iter->second.theGloballyVisibleValue;
-          // Change simics' value to reflect what this CPU believes memory
-          // looks like
-          //          //cpu->writePAddr( aligned, 8, current_value );
           iter->second.theSimicsReflectsCPU = kSimicsReflectsG;
 
           DBG_(Trace, AddCategory(Special)(<< "CPU[" << aCPU << "] Access.SwitchedToGlobalValue "
@@ -385,7 +378,7 @@ struct ValueTracker {
     tracker::iterator iter = theTracker.find(aligned);
     if (iter == theTracker.end()) {
       Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(aCPU);
-      bits simics_value = cpu->readPhysicalAddress(aligned, aSize);
+      bits simics_value = cpu.readPhysicalAddress(aligned, aSize);
       // New tracker
       bits updated_value = overlay(simics_value, anAddress, aSize, aStoreValue);
 
@@ -395,7 +388,7 @@ struct ValueTracker {
           theTracker.insert(std::make_pair(aligned, ValueTrack(aCPU, updated_value, simics_value)));
       // When the store is completed, Simics will reflect the value visible to
       // this processor
-      // cpu->writePAddr( aligned, 8, updated_value );
+      // cpu.writePAddr( aligned, 8, updated_value );
 
       DBG_(Iface, (<< "CPU[" << aCPU << "] Store.New " << anAddress
                    << " no prior outstanding values. Now: " << iter->second));
@@ -405,7 +398,7 @@ struct ValueTracker {
         // the globally visible value was updated by DMA, so update it just in
         // case we use it later
         Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(aCPU);
-        iter->second.theGloballyVisibleValue = cpu->readPhysicalAddress(aligned, 8);
+        iter->second.theGloballyVisibleValue = cpu.readPhysicalAddress(aligned, 8);
         iter->second.theSimicsReflectsCPU = kSimicsReflectsG;
         DBG_(Trace, AddCategory(Special)(<< "CPU[" << aCPU << "] Store.UpdatedGlobalWithDMA "
                                          << anAddress << " Now: " << iter->second));
@@ -417,7 +410,7 @@ struct ValueTracker {
           // Simics currently has the value for this CPU.  We update the tracker
           // with the new value
           Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(aCPU);
-          bits simics_value = cpu->readPhysicalAddress(aligned, 8);
+          bits simics_value = cpu.readPhysicalAddress(aligned, 8);
 
           if (simics_value != local->second.theValue) {
             DBG_(Trace, (<< "Simics value more recent than ValueTracker: " << std::hex
@@ -428,7 +421,7 @@ struct ValueTracker {
           local->second.theValue = updated_value;
           local->second.theOutstandingStores++;
           // When the store is completed, Simics will reflect the value visible
-          // to this processor cpu->writePAddr ( aligned, 8, updated_value );
+          // to this processor cpu.writePAddr ( aligned, 8, updated_value );
 
           DBG_(Trace, AddCategory(Special)(<< "CPU[" << aCPU << "] Store.UpdateByCurrent "
                                            << anAddress << " Now: " << iter->second));
@@ -437,14 +430,12 @@ struct ValueTracker {
           // Simics currently has the value for some other CPU.  We overwrite
           // Simics memory with the correct value for this CPU.
 
-          Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(aCPU);
-
           bits current_value = local->second.theValue;
           bits updated_value = overlay(current_value, anAddress, aSize, aStoreValue);
 
           // Change simics' value to reflect what this CPU believes memory
           // looks like
-          // cpu->writePAddr( aligned, 8, updated_value );
+          // cpu.writePAddr( aligned, 8, updated_value );
           iter->second.theSimicsReflectsCPU = aCPU;
 
           local->second.theValue = updated_value;
@@ -457,14 +448,13 @@ struct ValueTracker {
         // No previous value for this CPU.  Start with the globally visible
         // value
 
-        Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(aCPU);
 
         bits current_value = iter->second.theGloballyVisibleValue;
         bits updated_value = overlay(current_value, anAddress, aSize, aStoreValue);
 
         // Change simics' value to reflect what this CPU believes memory
         // looks like
-        // cpu->writePAddr( aligned, 8, updated_value );
+        // cpu.writePAddr( aligned, 8, updated_value );
         iter->second.theSimicsReflectsCPU = aCPU;
 
         iter->second.theLocallyVisibleValues.insert(
@@ -497,7 +487,7 @@ struct ValueTracker {
     if (iter->second.theSimicsReflectsCPU == kPoisonedByDMA) {
       // the globally visible value was updated by DMA, so update it just in
       // case we use it later
-      iter->second.theGloballyVisibleValue = cpu->readPhysicalAddress(aligned, 8);
+      iter->second.theGloballyVisibleValue = cpu.readPhysicalAddress(aligned, 8);
       iter->second.theSimicsReflectsCPU = kSimicsReflectsG;
       DBG_(Iface, AddCategory(Special)(<< "CPU[" << aCPU << "] CommitStore.UpdatedGlobalWithDMA "
                                        << anAddress << " Now: " << iter->second));
@@ -516,7 +506,7 @@ struct ValueTracker {
     // store() above, and enable the check below. Be careful about data races,
     which can
     // appear here as mismatches, even under SC.
-    bits simics_value = cpu->readPhysicalAddress( aligned, 8);
+    bits simics_value = cpu.readPhysicalAddress( aligned, 8);
     if(simics_value != updated_value) {
       DBG_(Iface, ( << "CPU[" << aCPU << "] memory mismatch: Simics: " << std::hex
     << simics_value << "  Flexus: " << updated_value ) );
@@ -524,7 +514,7 @@ struct ValueTracker {
     */
 
     // Change simics to reflect the globally visible value
-    // cpu->writePAddr( aligned, 8, updated_value );
+    // cpu.writePAddr( aligned, 8, updated_value );
     iter->second.theSimicsReflectsCPU = kSimicsReflectsG;
 
     // Decrement outstanding store count
@@ -560,7 +550,7 @@ struct ValueTracker {
     // See if we already have a ValueTrack
     tracker::iterator iter = theTracker.find(aligned);
     if (iter == theTracker.end()) {
-      bits val = cpu->readPhysicalAddress(anAddress, aSize);
+      bits val = cpu.readPhysicalAddress(anAddress, aSize);
       DBG_(Iface, (<< "CPU[" << aCPU << "] Load.NoOutstandingValues " << anAddress << "[" << aSize
                    << "] = " << std::hex << val << std::dec));
       return val;
@@ -569,7 +559,7 @@ struct ValueTracker {
     if (iter->second.theSimicsReflectsCPU == kPoisonedByDMA) {
       // the globally visible value was updated by DMA, so update it just in
       // case we use it later
-      iter->second.theGloballyVisibleValue = cpu->readPhysicalAddress(aligned, 8);
+      iter->second.theGloballyVisibleValue = cpu.readPhysicalAddress(aligned, 8);
       iter->second.theSimicsReflectsCPU = kSimicsReflectsG;
       DBG_(Iface, AddCategory(Special)(<< "CPU[" << aCPU << "] Load.UpdatedGlobalWithDMA "
                                        << anAddress << " Now: " << iter->second));
@@ -579,16 +569,16 @@ struct ValueTracker {
     if (local == iter->second.theLocallyVisibleValues.end()) {
       if (iter->second.theSimicsReflectsCPU != kSimicsReflectsG) {
         // Change simics to reflect the globally visible value
-        // cpu->writePAddr( aligned, 8, iter->second.theGloballyVisibleValue );
+        // cpu.writePAddr( aligned, 8, iter->second.theGloballyVisibleValue );
         iter->second.theSimicsReflectsCPU = kSimicsReflectsG;
 
-        bits val = cpu->readPhysicalAddress(anAddress, aSize);
+        bits val = cpu.readPhysicalAddress(anAddress, aSize);
         DBG_(Trace,
              AddCategory(Special)(<< "CPU[" << aCPU << "] Load.SwitchToGlobalValue " << anAddress
                                   << "[" << aSize << "] = " << std::hex << val << std::dec));
         return bits(val);
       } else {
-        bits val = cpu->readPhysicalAddress(anAddress, aSize);
+        bits val = cpu.readPhysicalAddress(anAddress, aSize);
         DBG_(Iface, (<< "CPU[" << aCPU << "] Load.SimicsAlreadySetToGlobal " << anAddress << "["
                      << aSize << "] = " << std::hex << val << std::dec));
         return bits(val);
@@ -598,17 +588,17 @@ struct ValueTracker {
     if (iter->second.theSimicsReflectsCPU != static_cast<int>(aCPU)) {
 
       // Change simics to reflect the value for this CPU
-      // cpu->writePAddr( aligned, 8, local->second.theValue );
+      // cpu.writePAddr( aligned, 8, local->second.theValue );
       iter->second.theSimicsReflectsCPU = aCPU;
 
-      bits val = cpu->readPhysicalAddress(anAddress, aSize);
+      bits val = cpu.readPhysicalAddress(anAddress, aSize);
       DBG_(Trace,
            AddCategory(Special)(<< "CPU[" << aCPU << "] Load.SwitchToLocalValue " << anAddress
                                 << "[" << aSize << "] = " << std::hex << val << std::dec));
       return bits(val);
     } else {
 
-      bits val = cpu->readPhysicalAddress(anAddress, aSize);
+      bits val = cpu.readPhysicalAddress(anAddress, aSize);
       DBG_(Iface, (<< "CPU[" << aCPU << "] Load.SimicsAlreadySetToLocal " << anAddress << "["
                    << aSize << "] = " << std::hex << val << std::dec));
       return bits(val);
@@ -626,7 +616,7 @@ struct ValueTracker {
       if (iter != theTracker.end()) {
         Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(0);
         DBG_(Iface, (<< "VT invalidating entry due to DMA on " << aligned << " entry: "
-                     << iter->second << " simics_value=" << cpu->readPhysicalAddress(aligned, 8)));
+                     << iter->second << " simics_value=" << cpu.readPhysicalAddress(aligned, 8)));
         iter->second.theGloballyVisibleValue = 0xbaadf00d;
         iter->second.theSimicsReflectsCPU = kPoisonedByDMA;
       }

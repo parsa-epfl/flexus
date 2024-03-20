@@ -84,7 +84,7 @@ public:
     theRedirect.resize(cfg.Threads);
     for (uint32_t i = 0; i < cfg.Threads; ++i) {
       Qemu::Processor cpu = Qemu::Processor::getProcessor(flexusIndex() * cfg.Threads + i);
-      thePC[i] = cpu->getPC();
+      thePC[i] = cpu.getPC();
       AGU_DBG("PC(" << i << ") = " << thePC[i]);
       theRedirectPC[i] = MemoryAddress(0);
       theRedirect[i] = false;

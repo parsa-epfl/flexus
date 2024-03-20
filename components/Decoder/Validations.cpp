@@ -67,7 +67,7 @@ bool validateXRegister::operator()() {
 
   uint64_t flexus = theInstruction->operand<uint64_t>(theOperandCode);
   uint64_t qemu =
-      (Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readXRegister(theReg)) &
+      (Flexus::Qemu::Processor::getProcessor(theInstruction->cpu()).readXRegister(theReg)) &
       (the_64 ? -1LL : 0xFFFFFFFF);
 
   DBG_(Dev, Condition(flexus != qemu)(<< "flexus value in " << std::setw(10) << theOperandCode
@@ -88,7 +88,7 @@ bool validatePC::operator()() {
   }
 
   uint64_t flexus = thePreValidation ? theInstruction->pc() : theInstruction->pcNext();
-  uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPC();
+  uint64_t qemu = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu()).readPC();
 
   DBG_(Dev, Condition(flexus != qemu)(<< "flexus PC value " << std::hex << flexus << std::dec));
   DBG_(Dev, Condition(flexus != qemu)(<< "qemu PC value   " << std::hex << qemu << std::dec));
@@ -120,12 +120,12 @@ bool validateMemory::operator()() {
     theSize_orig -= theSize_extra;
     vaddr_final = (VirtualMemoryAddress)(vaddr_final & ~0xFFFULL);
   }
-  PhysicalMemoryAddress paddr = c->translateVirtualAddress(vaddr);
-  bits qemu = c->readPhysicalAddress(paddr, theSize_orig);
+  PhysicalMemoryAddress paddr = c.translateVirtualAddress(vaddr);
+  bits qemu = c.readPhysicalAddress(paddr, theSize_orig);
   if (theSize_extra) {
     DBG_Assert((qemu >> (theSize_orig * 8)) == 0);
-    PhysicalMemoryAddress paddr_spill = c->translateVirtualAddress(vaddr_final);
-    qemu |= c->readPhysicalAddress(paddr_spill, theSize_extra) << (theSize_orig * 8);
+    PhysicalMemoryAddress paddr_spill = c.translateVirtualAddress(vaddr_final);
+    qemu |= c.readPhysicalAddress(paddr_spill, theSize_extra) << (theSize_orig * 8);
   }
 
   if (flexus == qemu)
