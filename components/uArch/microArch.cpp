@@ -106,9 +106,7 @@ public:
 
                 )
       : theName(options.name),
-        theCore(CoreModel::construct(options
-                                     //, ll::bind( &microArchImpl::translate, this, ll::_1)
-                                     ,
+        theCore(CoreModel::construct(options,
                                      ll::bind(&microArchImpl::advance, this, ll::_1), _squash,
                                      _redirect, _feedback, _signalStoreForwardingHit,
                                      _mmuResync)),
@@ -132,9 +130,9 @@ public:
 
     resetArchitecturalState(true);
 
-    DBG_(Crit, (<< theName << " connected to "
-                << (static_cast<Flexus::Qemu::API::conf_object_t *>(*theCPU))->name));
-    DBG_(VVerb, (<< "CORE:  Initializing MMU "));
+    // DBG_(Crit, (<< theName << " connected to "
+    //             << theCPU.id));
+    // DBG_(VVerb, (<< "CORE:  Initializing MMU "));
 
     if (theBreakOnResynchronize && (theNode == 0)) {
       DBG_(Crit, (<< "Simulation will stop on unexpected synchronizations"));
@@ -143,13 +141,7 @@ public:
 
   void setupDriveClients() {
     for (int i = 0; i < MAX_CLIENT_SIZE; i++) {
-      std::string cpu = "cpu" + std::to_string(i);
-      Flexus::Qemu::API::conf_object_t *client =
-          Flexus::Qemu::API::qemu_api.get_obj_by_name(cpu.c_str());
-      if (!client) {
-        break;
-      }
-      theClientCPUs[i] = Flexus::Qemu::Processor(client);
+      theClientCPUs[i] = Flexus::Qemu::Processor::getProcessor(i);
       if (!theDriveClients) {
         theDriveClients = true;
       }
@@ -161,7 +153,7 @@ public:
     CORE_DBG(theName << " Driving " << theNumClients << " client CPUs at IPC: " << kClientIPC);
     for (int32_t i = 0; i < theNumClients; ++i) {
       for (int32_t ipc = 0; ipc < kClientIPC; ++ipc) {
-        theClientCPUs[i]->advance();
+        theClientCPUs[i].advance();
       }
     }
   }
@@ -186,16 +178,16 @@ public:
     if (op->theOperation == kLoadReply || op->theOperation == kAtomicPreloadReply) {
 
       bits val =
-          ValueTracker::valueTracker(theCPU->id()).load(theCPU->id(), op->thePAddr, op->theSize);
+          ValueTracker::valueTracker(theCPU.id()).load(theCPU.id(), op->thePAddr, op->theSize);
       op->theValue = val;
       //      }
     } else if (op->theOperation == kRMWReply || op->theOperation == kCASReply) {
       // RMW operations load int32_t theExtendedValue
-      ValueTracker::valueTracker(theCPU->id()).access(theCPU->id(), op->thePAddr);
+      ValueTracker::valueTracker(theCPU.id()).access(theCPU.id(), op->thePAddr);
       Flexus::SharedTypes::Translation xlat;
       xlat.theVaddr = op->theVAddr;
       xlat.theType = Flexus::SharedTypes::Translation::eStore;
-      op->theExtendedValue = theCPU->readVirtualAddress(xlat.theVaddr, op->theSize);
+      op->theExtendedValue = theCPU.readVirtualAddress(xlat.theVaddr, op->theSize);
     } else if (op->theOperation == kStoreReply && !op->theSideEffect && !op->theAtomic) {
       // Need to inform ValueTracker that this store is complete
       bits value = op->theValue;
@@ -207,8 +199,8 @@ public:
       //        for addr " << std::hex << op->thePAddr << " val: " <<
       //        op->theValue << " inv: " << value << std::dec ));
       //      }
-      ValueTracker::valueTracker(theCPU->id())
-          .commitStore(theCPU->id(), op->thePAddr, op->theSize, value);
+      ValueTracker::valueTracker(theCPU.id())
+          .commitStore(theCPU.id(), op->thePAddr, op->theSize, value);
     }
     theCore->pushMemOp(op);
   }
@@ -279,7 +271,7 @@ public:
 
   void skipCycle() {
     FLEXUS_PROFILE();
-    if ((theCPU->id() == 0) && ((theFlexus->cycleCount() % 10000) == 0)) {
+    if ((theCPU.id() == 0) && ((theFlexus->cycleCount() % 10000) == 0)) {
       time_t now = time(0);
       DBG_(Dev, (<< "Timestamp: " << ctime(&now)));
     }
@@ -301,7 +293,7 @@ public:
     CORE_DBG("--------------START MICROARCH------------------------");
 
     //      FLEXUS_PROFILE();
-    //    if ((theCPU->id() == 0) && ( (theFlexus->cycleCount() % 10000) == 0) )
+    //    if ((theCPU.id() == 0) && ( (theFlexus->cycleCount() % 10000) == 0) )
     //    {
     //      boost::posix_time::ptime
     //      now(boost::posix_time::second_clock::local_time()); DBG_(Dev, ( <<
@@ -317,26 +309,26 @@ public:
       theAvailableROB = theCore->availableROB();
 
       eExceptionType interrupt =
-          theCPU->getPendingInterrupt() == 0 ? kException_None : kException_; // HEHE
+          theCPU.getPendingInterrupt() == 0 ? kException_None : kException_; // HEHE
       theCore->cycle(interrupt);
 
     } catch (ResynchronizeWithQemuException &e) {
       ++theResynchronizations;
       if (theExceptionRaised) {
         // DBG_( Verb, ( << "CPU[" << std::setfill('0') << std::setw(2) <<
-        // theCPU->id() << "] Exception Raised: " <<
+        // theCPU.id() << "] Exception Raised: " <<
         // Flexus::Qemu::API::SIM_get_exception_name(theCPU, theExceptionRaised)
         // << "(" << theExceptionRaised << "). Resynchronizing with Simics.") );
         DBG_(Verb,
-             (<< "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id()
+             (<< "CPU[" << std::setfill('0') << std::setw(2) << theCPU.id()
               << "] Exception Raised: " << theExceptionRaised << ". Resynchronizing with Simics."));
         ++theExceptions;
       } else if (e.expected) {
-        DBG_(Verb, (<< "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id()
+        DBG_(Verb, (<< "CPU[" << std::setfill('0') << std::setw(2) << theCPU.id()
                     << "] Resynchronizing Instruction. Resynchronizing with Qemu."));
         ++theResyncInstructions;
       } else {
-        DBG_(Verb, (<< "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id()
+        DBG_(Verb, (<< "CPU[" << std::setfill('0') << std::setw(2) << theCPU.id()
                     << "] Flexus Implementation missing/wrong. Resynchronizing with "
                        "Qemu."));
         ++theOtherResyncs;
@@ -345,11 +337,11 @@ public:
       resynchronize(e.expected);
 
       if (theBreakOnResynchronize) {
-        DBG_(Dev, (<< "CPU[" << std::setfill('0') << std::setw(2) << theCPU->id()
+        DBG_(Dev, (<< "CPU[" << std::setfill('0') << std::setw(2) << theCPU.id()
                    << "] Resynchronize "
                       "complete\n==================================================="
                       "=====\n"));
-        theCPU->breakSimulation();
+        theCPU.breakSimulation();
       }
       theExceptionRaised = 0;
     }
@@ -386,7 +378,7 @@ private:
     resetArchitecturalState(was_expected);
 
     // Obtain new state from simics
-    VirtualMemoryAddress redirect_address(theCPU->getPC());
+    VirtualMemoryAddress redirect_address(theCPU.getPC());
     DBG_(Dev, Cond(!was_expected)(<< "Unexpected! Redirecting to address " << redirect_address));
     redirect(redirect_address);
   }
@@ -394,13 +386,13 @@ private:
   int32_t advance(bool count_tick = true) {
     CORE_TRACE;
     FLEXUS_PROFILE();
-    theExceptionRaised = theCPU->advance(count_tick);
-    theFlexus->watchdogReset(theCPU->id());
+    theExceptionRaised = theCPU.advance(count_tick);
+    theFlexus->watchdogReset(theCPU.id());
     return theExceptionRaised;
   }
 
   void resetArchitecturalState(bool was_expected) {
-    theCore->setPC(theCPU->getPC());
+    theCore->setPC(theCPU.getPC());
     DBG_(Dev, Cond(!was_expected)(<< "setting PC to " << std::hex << theCore->pc() << std::dec));
     fillXRegisters();
     fillVRegisters();
@@ -410,7 +402,7 @@ private:
 
   void resetException() {
     API::exception_t exp;
-    theCPU->readException(&exp);
+    theCPU.readException(&exp);
     theCore->setException(exp);
   }
 
@@ -418,7 +410,7 @@ private:
   // in the VM (i.e. client)
   void fillXRegisters() {
     for (int32_t i = 0; i < 32; ++i) {
-      uint64_t val = theCPU->readXRegister(i);
+      uint64_t val = theCPU.readXRegister(i);
       theCore->initializeRegister(xReg(i), val);
     }
   }
@@ -426,7 +418,7 @@ private:
   // in the VM (i.e. client)
   void fillVRegisters() {
     for (int32_t i = 0; i < 32; ++i) {
-      uint64_t val = theCPU->readVRegister(i);
+      uint64_t val = theCPU.readVRegister(i);
       theCore->initializeRegister(vReg(i), val);
     }
   }

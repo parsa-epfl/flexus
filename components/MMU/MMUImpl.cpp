@@ -531,8 +531,7 @@ public:
         thePageWalker->setMMU(theMMU);
         theMMUInitialized = true;
       }
-      thePageWalker->push_back_trace(aTranslate,
-                                     Flexus::Qemu::Processor::getProcessor((int)flexusIndex()));
+      thePageWalker->push_back_trace(aTranslate, Flexus::Qemu::Processor::getProcessor(flexusIndex()));
       (aTranslate->isInstr() ? theInstrTLB : theDataTLB)[aTranslate->theVaddr] =
           aTranslate->thePaddr;
     }

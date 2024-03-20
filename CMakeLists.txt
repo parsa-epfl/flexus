@@ -58,7 +58,7 @@ endif()
 
 # Setup Harness specific variables
 if(SIMULATOR STREQUAL "Harness")
-    set(HARNESS_ROOT ${FLEXUS_ROOT}/tests/harness)    
+    set(HARNESS_ROOT ${FLEXUS_ROOT}/tests/harness)
 endif()
 
 # Setup include paths
@@ -86,7 +86,7 @@ if(NOT SIMULATOR STREQUAL "Harness")        # Setup for "real" simulators
         add_library(${COMPONENT} STATIC ${COMPONENT_${COMPONENT}_SOURCE})
         target_compile_options(${COMPONENT} PRIVATE -c ${GCC_FLAGS})
     endforeach()
-    
+
     # compile simulators
     add_library(wiring OBJECT ${FLEXUS_ROOT}/simulators/${SIMULATOR}/wiring.cpp)
     target_compile_options(wiring PRIVATE -c ${GCC_FLAGS})
@@ -94,7 +94,7 @@ if(NOT SIMULATOR STREQUAL "Harness")        # Setup for "real" simulators
     target_link_libraries(${SIMULATOR} ${GCC_LDFLAGS} "-Wl,--whole-archive" "-Wl,-export-dynamic" ${${SIMULATOR}_REQUIRED_COMPONENTS})
     target_link_libraries(${SIMULATOR} ${GCC_LDFLAGS} "-Wl,--whole-archive" core qemu "-Wl,--no-whole-archive")
     target_link_libraries(${SIMULATOR} ${GCC_LDFLAGS} "-L${BOOST_LIBRARYDIR}" boost_system boost_regex boost_serialization boost_iostreams z)
-    
+
     # clean for cmake
     add_custom_target(clean_cmake
         COMMAND rm -rf *.o *.a *.so
@@ -105,9 +105,9 @@ if(NOT SIMULATOR STREQUAL "Harness")        # Setup for "real" simulators
         COMMAND rm -rf Makefile
         COMMAND echo "All cleared."
     )
-    
+
     # Add subdirectory for stat manager
-    add_subdirectory(stat-manager)
+    # add_subdirectory(stat-manager)
 
 else()      # Setup for Harness
 
@@ -126,7 +126,7 @@ else()      # Setup for Harness
         endif()
     endforeach()
     list(REMOVE_DUPLICATES EXTRA_DEPS)    # Remove duplicate dependencies
-    
+
 
     # include google test
     include(FetchContent)
@@ -136,7 +136,7 @@ else()      # Setup for Harness
     )
     FetchContent_MakeAvailable(googletest)
     enable_testing()
-    
+
     # compile components
     foreach(COMPONENT ${EXTRA_DEPS})
         file(GLOB_RECURSE COMPONENT_${COMPONENT}_SOURCE "${FLEXUS_ROOT}/components/${COMPONENT}/*.cpp")
@@ -146,11 +146,11 @@ else()      # Setup for Harness
         add_library(${COMPONENT} STATIC ${COMPONENT_${COMPONENT}_SOURCE})
         target_compile_options(${COMPONENT} PRIVATE -c ${GCC_FLAGS})
     endforeach()
-    
+
     # compile wiring
     add_library(wiring OBJECT ${HARNESS_ROOT}/harness_base/wiring.cpp)
     target_compile_options(wiring PRIVATE -c ${GCC_FLAGS})
-    
+
     # compile tests
     set(ENABLED_TESTS "")
     foreach(TEST_DIR ${ALL_TESTS})
@@ -170,20 +170,20 @@ else()      # Setup for Harness
             message(STATUS "Found test: ${TEST_DIR}")
         endif()
     endforeach()
-    
+
     # Compile harness
     set(TESTING_HARNESS testing_harness)
     add_executable(${TESTING_HARNESS} ${HARNESS_ROOT}/harness_base/all_tests.cpp)
-    target_link_libraries(${TESTING_HARNESS} "-Wl,--whole-archive" ${ENABLED_TESTS} "-Wl,--no-whole-archive") 
+    target_link_libraries(${TESTING_HARNESS} "-Wl,--whole-archive" ${ENABLED_TESTS} "-Wl,--no-whole-archive")
     target_link_libraries(${TESTING_HARNESS} gtest_main)
     target_link_libraries(${TESTING_HARNESS} $<TARGET_OBJECTS:wiring>)
     target_link_libraries(${TESTING_HARNESS} ${GCC_LDFLAGS} "-Wl,--whole-archive" core qemu "-Wl,--no-whole-archive")
     target_link_libraries(${TESTING_HARNESS} ${GCC_LDFLAGS} "-L${BOOST_LIBRARYDIR}" boost_system boost_regex boost_serialization boost_iostreams z)
-   
+
     # Enable google test discovery
     include(GoogleTest)
     gtest_discover_tests(${TESTING_HARNESS})
-    
+
     # clean for cmake
     add_custom_target(clean_cmake
         COMMAND rm -rf *.o *.a *.so
@@ -193,7 +193,7 @@ else()      # Setup for Harness
         COMMAND rm -rf Makefile
         COMMAND rm -rf ${TESTING_HARNESS}*
         COMMAND rm -rf _deps
-        COMMAND rm -rf CTestTestfile.cmake 
+        COMMAND rm -rf CTestTestfile.cmake
         COMMAND rm -rf bin
         COMMAND rm -rf lib
         COMMAND echo "All cleared."

@@ -46,15 +46,13 @@
 #define FLEXUS_QEMU_MAI_API_HPP_INCLUDED
 
 #include <bitset>
-#include <boost/utility.hpp>
-#include <core/exception.hpp>
+// #include <boost/utility.hpp>
+// #include <core/exception.hpp>
 #include <core/flexus.hpp>
 #include <core/qemu/configuration_api.hpp>
 #include <core/target.hpp>
 #include <core/types.hpp>
-#include <iomanip>
-#include <sstream>
-#include <string>
+
 
 using namespace Flexus::Core;
 namespace Flexus {
@@ -130,16 +128,12 @@ public:
 //     return API::qemu_api.get_fpr(*this, anIndex);
 //   }
 
-    void readException(API::exception_t *exp) const
-    {}
+
 //     assert(false);
 //     return;
 //   }
 
-    uint64_t getPendingInterrupt() const
-    {
-        return 0;
-    }
+
 //     return API::qemu_api.get_irq(*this);
 //   }
 
@@ -160,7 +154,7 @@ public:
 //     bits tmp;
 //     for (size_t i = 0; i <readException aSize; i++) {
 //       const size_t s = i * 8;
-//       bits val = (((bits)buf[i] << s) & ((bits)0xff << s));
+//       bits val = (((int advance(bool count_time = true) {return 0;}bits)buf[i] << s) & ((bits)0xff << s));
 //       tmp |= val;
 //     }
 //     delete[] buf;
@@ -242,7 +236,7 @@ public:
 //         theInterruptsConnected(false) {
 //   }
 
-// public:
+// public:readPhysical
 //   uint8_t getQEMUExceptionLevel() const {
 //     return API::qemu_api.get_pl(*this);
 //   }
@@ -259,7 +253,7 @@ public:
 
 // #define PROCESSOR_IMPL ProcessorImpl
 
-class Processor /*: public BuiltInObject<PROCESSOR_IMPL>*/
+class Processor
 {
 
 
@@ -268,11 +262,22 @@ private:
 
     // typedef BuiltInObject<PROCESSOR_IMPL> base;
 
-    Processor(u_int64_t core_index): core_index(core_index)
+
+    Processor(uint64_t core_index): core_index(core_index)
     {}
 
 
 public:
+
+    Processor(): core_index(0)
+    {}
+
+
+
+    bits readVirtualAddress(VirtualMemoryAddress anAddress, size_t size)
+    {
+        return bits(0);
+    }
 
     bits readPhysicalAddress(PhysicalMemoryAddress anAddress, size_t aSize) const { return bits(0); }
 
@@ -281,9 +286,10 @@ public:
     uint32_t fetchInstruction(VirtualMemoryAddress addr) {return 0;}
     uint64_t readSCTLR(uint64_t index) { return 0;}
 
+    uint64_t readPC() const { return 0;}
     VirtualMemoryAddress getPC() const { return VirtualMemoryAddress(); }
 
-    size_t id() const { return core_index; }
+    uint64_t id() const { return core_index; }
 
     std::string disassemble(VirtualMemoryAddress const &anAddress) const { return "TODO()!"; }
 
@@ -291,6 +297,26 @@ public:
 
     uint64_t read_sysreg_from_qemu(uint32_t no) { return 0; }
 
+     uint64_t readXRegister(size_t anIndex) const
+    {
+        return 0;
+    }
+
+    uint64_t readVRegister(int anIndex) const
+    {
+        return 0;
+    }
+
+    int advance(bool count_time = true) {return 0;}
+
+    uint64_t getPendingInterrupt() const
+    {
+        return 0;
+    }
+
+    void breakSimulation() {}
+
+    void readException(API::exception_t *exp) const {}
 // explicit Processor(): base(0) {}
 
     // explicit Processor(API::conf_object_t* cpu_object) : base(PROCESSOR_IMPL(cpu_object)) {}
@@ -310,7 +336,7 @@ public:
 //   return getProcessor(0);
 // }
 
-    static Processor getProcessor(uint64_t core_index)
+    static Processor getProcessor(uint64_t core_index = 0)
     {
         return Processor(core_index);
     }

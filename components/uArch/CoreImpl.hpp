@@ -365,7 +365,7 @@ class CoreImpl : public CoreModel {
   //==========================================================================
   // Simulation
   std::string theName;
-  uint32_t theNode;
+  uint64_t theNode;
 
   std::function<int(bool)> advance_fn;
   std::function<void(eSquashCause)> squash_fn;
