@@ -102,7 +102,7 @@ class FLEXUS_COMPONENT(DecoupledFeeder) {
 
   // The Qemu objects (one for each processor) for getting trace data
   std::size_t theNumCPUs;
-  int32_t theCMPWidth;
+  std::size_t theCMPWidth;
   QemuTracerManager *theTracer;
   MMUStats **os_itlb_stats, **os_dtlb_stats, **user_itlb_stats, **user_dtlb_stats;
 
