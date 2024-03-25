@@ -533,7 +533,7 @@ namespace Flexus {
 namespace Qemu {
 namespace API {
 
-void FLEXUS_trace_mem(int idx, API::memory_transaction_t *tr) {
+void FLEXUS_trace_mem(uint64_t idx, memory_transaction_t* tr) {
   nDecoupledFeeder::theTracers[idx]->trace_mem_hier_operate(tr);
 }
 
