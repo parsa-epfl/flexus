@@ -178,22 +178,22 @@ typedef struct exception_t{
 } exception_t;
 
 typedef struct {
-  logical_address_t  pc;
-  logical_address_t  logical_address;
-  logical_address_t  target_address;
-  physical_address_t physical_address;
-  uint32_t           opcode;
-  unsigned           size;
-  mem_op_type_t      type;
-  exception_type_t   exception;
-  branch_type_t      branch_type;
-  unsigned int       annul:          1; // annul the delay slot or not
-  unsigned int       atomic:         1;
-  unsigned int       inquiry:        1;
-  unsigned int       may_stall:      1;
-  unsigned int       speculative:    1;
-  unsigned int       ignore:         1;
-  unsigned int       inverse_endian: 1;
+  logical_address_t   pc;
+  logical_address_t   logical_address;
+  logical_address_t   target_address;
+  physical_address_t  physical_address;
+  uint32_t            opcode;
+  size_t              size;
+  mem_op_type_t       type;
+  exception_type_t    exception;
+  branch_type_t       branch_type;
+  uint8_t             annul         : 1;  // annul the delay slot or not
+  uint8_t             atomic        : 1;
+  uint8_t             inquiry       : 1;
+  uint8_t             may_stall     : 1;
+  uint8_t             speculative   : 1;
+  uint8_t             ignore        : 1;
+  uint8_t             inverse_endian: 1;
 } generic_transaction_t;
 
 typedef struct {
@@ -209,11 +209,12 @@ typedef struct address_range{
 
 typedef struct {
   generic_transaction_t  s;
-  unsigned int           io:                  1;
-  cache_type_t           cache;                  // cache to operate on
-  cache_maintenance_op_t cache_op;               // operation to perform on cache
-  int                    line:                1; // 1 for line, 0 for whole cache
-  int                    data_is_set_and_way: 1; // wether or not the operation provides set&way or address (range)
+  cache_type_t           cache;     // cache to operate on
+  cache_maintenance_op_t cache_op;  // operation to perform on cache
+
+  uint8_t io                 : 1;
+  uint8_t line               : 1;  // 1 for line, 0 for whole cache
+  uint8_t data_is_set_and_way: 1;  // wether or not the operation provides set&way or address (range)
 
   union{
     set_and_way_data_t set_and_way;
@@ -264,9 +265,7 @@ typedef uint64_t          (*QEMU_GET_FPR_t)        (conf_object_t *cpu, int idx)
 typedef uint64_t          (*QEMU_GET_GPR_t)        (conf_object_t *cpu, int idx);
 typedef bool              (*QEMU_GET_IRQ_t)        (conf_object_t *cpu);
 typedef void              (*QEMU_GET_MEM_t)        (uint8_t* buf, physical_address_t pa, int bytes);
-typedef int               (*QEMU_GET_NUM_CORES_t)  (void);
 typedef conf_object_t    *(*QEMU_GET_OBJ_BY_NAME_t)(const char *name);
-// typedef physical_address_t(*QEMU_GET_PA_t)         (conf_object_t *cpu, data_or_instr_t fetch, logical_address_t va);
 typedef uint64_t          (*QEMU_GET_PC_t)         (conf_object_t *cpu);
 typedef int               (*QEMU_GET_PL_t)         (conf_object_t *cpu);
 typedef char             *(*QEMU_GET_SNAP_t)       (conf_object_t* cpu);
@@ -277,6 +276,7 @@ typedef void              (*QEMU_STOP_t)           (const char *msg);
 // ─── Bryan Qemu-8.2 ──────────────────────────────────────────────────────────
 typedef physical_address_t(*QEMU_GET_PA_t)          (size_t core_index, data_or_instr_t fetch, logical_address_t va);
 typedef uint64_t          (*QEMU_READ_REG_t)        (size_t core_index, register_type_t reg , register_kwargs_t reg_info);
+typedef size_t            (*QEMU_GET_NUM_CORES_t)   (void);
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -308,7 +308,6 @@ typedef struct QEMU_API_t
   QEMU_GET_GPR_t         get_gpr;
   QEMU_GET_IRQ_t         get_irq;
   QEMU_GET_MEM_t         get_mem;
-  QEMU_GET_NUM_CORES_t   get_num_cores;
   QEMU_GET_OBJ_BY_NAME_t get_obj_by_name;
   QEMU_GET_PC_t          get_pc;
   QEMU_GET_PL_t          get_pl;
@@ -317,6 +316,7 @@ typedef struct QEMU_API_t
   QEMU_MEM_OP_IS_WRITE_t mem_op_is_write;
   QEMU_STOP_t            stop;
   // ─── Bryan ───────────────────────────────────────────────────────────
+  QEMU_GET_NUM_CORES_t   get_num_cores;
   QEMU_READ_REG_t        read_register;
   QEMU_GET_PA_t          translate_va2pa;
   // ─────────────────────────────────────────────────────────────────────

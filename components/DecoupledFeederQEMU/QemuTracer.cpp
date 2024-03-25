@@ -463,9 +463,7 @@ public:
     }
   }
 
-  void enableInstructionTracing() {
-    assert(false);
-  }
+  void enableInstructionTracing() {}
 
 private:
   void detectClientServer() {

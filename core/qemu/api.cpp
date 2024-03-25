@@ -50,34 +50,33 @@ namespace Flexus {
 namespace Qemu {
 namespace API {
 
-#include "api.h"
+  #include "api.h"
 
-QEMU_API_t qemu_api;
+  QEMU_API_t qemu_api;
 
-void FLEXUS_get_api(FLEXUS_API_t *api) {
-  api->start     = FLEXUS_start;
-  api->stop      = FLEXUS_stop;
-  api->qmp       = FLEXUS_qmp;
-  api->trace_mem = FLEXUS_trace_mem;
-}
+  void FLEXUS_get_api(FLEXUS_API_t *api) {
+    api->start     = FLEXUS_start;
+    api->stop      = FLEXUS_stop;
+    api->qmp       = FLEXUS_qmp;
+    api->trace_mem = FLEXUS_trace_mem;
+  }
 
-using namespace Flexus::Core;
+  using namespace Flexus::Core;
 
-void FLEXUS_start() {
-  while (qemu_api.get_cycles_left() > 1)
-    theFlexus->doCycle();
+  void FLEXUS_start() {
+    while (qemu_api.get_cycles_left() > 1)
+      theFlexus->doCycle();
 
-  theFlexus->terminateSimulation();
-}
+    theFlexus->terminateSimulation();
+  }
 
-void FLEXUS_stop() {
-  assert(false);
-}
+  void FLEXUS_stop() {
+    assert(false);
+  }
 
-void FLEXUS_qmp(qmp_flexus_cmd_t aCMD, const char *anArgs) {
-  // qmp_api.hpp is bad
-  flexus_qmp(aCMD, anArgs);
-}
+  void FLEXUS_qmp(qmp_flexus_cmd_t aCMD, const char *anArgs) {
+    flexus_qmp(aCMD, anArgs);  // qmp_api.hpp is bad
+  }
 
 } // namespace API
 } // namespace Qemu
