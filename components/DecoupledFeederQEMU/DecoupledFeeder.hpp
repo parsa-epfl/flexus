@@ -51,12 +51,12 @@
 #include FLEXUS_BEGIN_COMPONENT_DECLARATION()
 
 COMPONENT_PARAMETERS(
-  //FIXME Not sure what this does-- 
+  //FIXME Not sure what this does--
   //PARAMETER( QemuQuantum, int64_t, "CPU quantum size in simics", "simics_quantum", 100 )
   PARAMETER( SystemTickFrequency, double, "CPU System tick frequency. 0.0 leaves frequency unchanged", "stick", 0.0 )
   PARAMETER( HousekeepingPeriod, int64_t, "Simics cycles between housekeeping events", "housekeeping_period", 1000 )
   PARAMETER( TrackIFetch, bool, "Track and report instruction fetches", "ifetch", false )
-  PARAMETER( CMPWidth, int, "Number of cores per CMP chip (0 = sys width)", "CMPwidth", 1 )
+  PARAMETER( CMPWidth, std::size_t, "Number of cores per CMP chip (0 = sys width)", "CMPwidth", 1)
 
   //FIXME Trying to see if it works without WhiteBox
   //PARAMETER( WhiteBoxDebug, bool, "WhiteBox debugging on/off", "whitebox_debug", false )

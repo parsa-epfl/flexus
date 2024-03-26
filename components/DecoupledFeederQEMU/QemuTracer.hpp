@@ -53,10 +53,10 @@ using Flexus::SharedTypes::MemoryMessage;
 
 struct QemuTracerManager {
   static QemuTracerManager *construct(std::size_t aNumCPUs,
-                                      std::function<void(int, MemoryMessage &)> toL1D,
-                                      std::function<void(int, MemoryMessage &, uint32_t)> toL1I,
+                                      std::function<void(std::size_t, MemoryMessage &)> toL1D,
+                                      std::function<void(std::size_t, MemoryMessage &, uint32_t)> toL1I,
                                       std::function<void(MemoryMessage &)> toDMA,
-                                      std::function<void(int, MemoryMessage &)> toNAW,
+                                      std::function<void(std::size_t, MemoryMessage &)> toNAW,
                                       bool aSendNonAllocatingStores);
   virtual ~QemuTracerManager() {
   }

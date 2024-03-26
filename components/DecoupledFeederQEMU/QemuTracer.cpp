@@ -162,14 +162,14 @@ public:
   }
 
   // Initialize the tracer to the desired CPU
-  void init(std::size_t cpu_index,
+  void init(std::size_t core_index,
             std::function<void(int, MemoryMessage &)> aToL1D,
             std::function<void(int, MemoryMessage &, uint32_t)> aToL1I,
             std::function<void(int, MemoryMessage &)> aToNAW,
             bool aSendNonAllocatingStores
   )
   {
-    core_index = core_index;
+    this->core_index = core_index;
     toL1D = aToL1D;
     toL1I = aToL1I;
     toNAW = aToNAW;
@@ -211,7 +211,7 @@ public:
     return k_no_stall; // Never stalls
   }
 
-  API::cycles_t trace_mem_hier_operate(API::memory_transaction_t *mem_trans) {
+  API::cycles_t trace_mem_hier_operate(API::memory_transaction_t* mem_trans) {
 
     const int32_t k_no_stall = 0;
 
@@ -417,10 +417,10 @@ class QemuTracerManagerImpl : public QemuTracerManager {
   std::size_t theNumCPUs;
   bool theClientServer;
   DMATracer theDMATracer;
-  std::function<void(int, MemoryMessage &)> toL1D;
-  std::function<void(int, MemoryMessage &, uint32_t)> toL1I;
+  std::function<void(std::size_t, MemoryMessage &)> toL1D;
+  std::function<void(std::size_t, MemoryMessage &, uint32_t)> toL1I;
   std::function<void(MemoryMessage &)> toDMA;
-  std::function<void(int, MemoryMessage &)> toNAW;
+  std::function<void(std::size_t, MemoryMessage &)> toNAW;
 
   //  bool theWhiteBoxDebug;
   //  int32_t  theWhiteBoxPeriod;
@@ -510,10 +510,10 @@ private:
 };
 
 QemuTracerManager *
-QemuTracerManager::construct(std::size_t aNumCPUs, std::function<void(int, MemoryMessage &)> toL1D,
-                             std::function<void(int, MemoryMessage &, uint32_t)> toL1I,
+QemuTracerManager::construct(std::size_t aNumCPUs, std::function<void(std::size_t, MemoryMessage &)> toL1D,
+                             std::function<void(std::size_t, MemoryMessage &, uint32_t)> toL1I,
                              std::function<void(MemoryMessage &)> toDMA,
-                             std::function<void(int, MemoryMessage &)> toNAW
+                             std::function<void(std::size_t, MemoryMessage &)> toNAW
                              ,
                              bool aSendNonAllocatingStores) {
   return new QemuTracerManagerImpl(

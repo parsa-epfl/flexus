@@ -64,9 +64,6 @@ namespace nDecoupledFeeder {
 
 using namespace Flexus;
 using namespace Flexus::Qemu;
-extern "C" {
-void houseKeeping(void *, void *, void *);
-}
 
 struct MMUStats {
   Stat::StatCounter theTotalReqs_stat;
@@ -112,26 +109,23 @@ public:
 
     theTracer = QemuTracerManager::construct(
         theNumCPUs,
-        [this](int32_t x, MemoryMessage &y) {
+        [this](std::size_t x, MemoryMessage &y) {
           this->toL1D(x, y);
         }, // std::bind( &DecoupledFeederComponent::toL1D, this, _1, _2)
-        [this](int32_t x, MemoryMessage &y, uint32_t dummy) {
+        [this](std::size_t x, MemoryMessage &y, uint32_t dummy) {
           this->modernToL1I(x, y);
         }, // std::bind( &DecoupledFeederComponent::modernToL1I, this, _1, _2)
         [this](MemoryMessage &x) {
           this->toDMA(x);
         }, // std::bind( &DecoupledFeederComponent::toDMA, this, _1)
-        [this](int32_t x, MemoryMessage &y) {
+        [this](std::size_t x, MemoryMessage &y) {
           this->toNAW(x, y);
         }, // std::bind( &DecoupledFeederComponent::toNAW, this, _1, _2)
-        //, cfg.WhiteBoxDebug
-        //, cfg.WhiteBoxPeriod
-        cfg.SendNonAllocatingStores);
-    //    printf("Is the FLEXUS_COMPONENT_CONSTRUCTOR(DecoupledFeeder) run?\n");
-    Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
-    //    DecoupledFeederComponent::toL1D((int32_t) 0, msg);
 
-    //  printf("toL1D %p\n", DecoupledFeederComponent::toL1D);
+        cfg.SendNonAllocatingStores);
+;
+    Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
+
   }
 
   // InstructionOutputPort
@@ -143,10 +137,6 @@ public:
   void initialize(void) {
     DBG_(VVerb, (<< "Inititializing Decoupled feeder..."));
 
-    // Disable cycle-callback
-    // Flexus::Qemu::theQemuInterface->disableCycleHook();
-    //    printf("Decoupled feeder intialized? START...");
-    // theTracer->setQemuQuantum(cfg.QemuQuantum);
     if (cfg.TrackIFetch) {
       theTracer->enableInstructionTracing();
     }
@@ -178,7 +168,7 @@ public:
 
   std::pair<uint64_t, uint32_t> theFetchInfo;
 
-  void toL1D(int32_t anIndex, MemoryMessage &aMessage) {
+  void toL1D(std::size_t anIndex, MemoryMessage &aMessage) {
     TranslationPtr tr(new Translation);
     tr->setData();
     tr->theVaddr = aMessage.pc();
@@ -208,7 +198,7 @@ public:
     FLEXUS_CHANNEL_ARRAY(ToL1D, anIndex) << aMessage;
   }
 
-  void toNAW(int32_t anIndex, MemoryMessage &aMessage) {
+  void toNAW(std::size_t anIndex, MemoryMessage &aMessage) {
     FLEXUS_CHANNEL_ARRAY(ToNAW, anIndex / theCMPWidth) << aMessage;
   }
 
@@ -223,7 +213,7 @@ public:
     FLEXUS_CHANNEL_ARRAY( ToBPred, anIndex ) << theFetchInfo;
   }
   */
-  void modernToL1I(int32_t anIndex, MemoryMessage &aMessage) {
+  void modernToL1I(std::size_t anIndex, MemoryMessage &aMessage) {
     TranslationPtr tr(new Translation);
     tr->setInstr();
     tr->theVaddr = aMessage.pc();
@@ -300,32 +290,23 @@ void houseKeeping(void *obj, void *ign, void *ign2) {
 }
 } // end Namespace nDecoupledFeeder
 
-// extern "C" {
-// void houseKeeping(void* obj, void * ign, void* ign2){
-//    printf("Is houseKeeping being run?  1\n");
-//        nDecoupledFeeder::houseKeep(obj);
-//}
-//}
+
 FLEXUS_COMPONENT_INSTANTIATOR(DecoupledFeeder, nDecoupledFeeder);
 FLEXUS_PORT_ARRAY_WIDTH(DecoupledFeeder, ToL1D) {
-  //  printf("DecoupldFeeder 1\n");
+
   return Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 FLEXUS_PORT_ARRAY_WIDTH(DecoupledFeeder, ToL1I) {
-  //   printf("DecoupldFeeder 2\n");
   return Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 FLEXUS_PORT_ARRAY_WIDTH(DecoupledFeeder, ToBPred) {
-  //   printf("DecoupldFeeder 3\n");
   return Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 FLEXUS_PORT_ARRAY_WIDTH(DecoupledFeeder, ToNAW) {
-  //   printf("DecoupldFeeder 4\n");
   return Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 
 FLEXUS_PORT_ARRAY_WIDTH(DecoupledFeeder, ToMMU) {
-  //   printf("DecoupldFeeder 4\n");
   return Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 

@@ -67,8 +67,9 @@ struct ComponentInterface {
   get_channel_array(Port const &, AvailableFn avail, ManipulateFn manip,
                     Flexus::Core::index_t aComponentIndex, Flexus::Core::index_t aPortIndex,
                     Flexus::Core::index_t aPortWidth) {
-    DBG_Assert(aPortIndex < aPortWidth,
-               (<< "PortIndex: " << aPortIndex << " Width: " << aPortWidth));
+
+    DBG_Assert(aPortIndex < aPortWidth, (<< "PortIndex: " << aPortIndex << " Width: " << aPortWidth));
+
     return Flexus::Core::aux_::port<Port, AvailableFn, ManipulateFn>(
         avail, manip, aComponentIndex * aPortWidth + aPortIndex);
   }
