@@ -103,18 +103,17 @@ typedef enum {
 
   // ─── Bryan ───────────────────────────────────────────────────────────
 
-
-  GENERAL, // Regs for A64 mode.
+  GENERAL,            // Regs for A64 mode.
   FLOATING_POINT,
 
-  // PC,     // Program counter
-  // PSTATE, // PSTATE isn't an architectural register for ARMv8
-  // SYSREG, //maybe
-  TTBR0,  // MMU translation table base 0
-  TTBR1,  // MMU translation table base 1
-
-  // SCTLR,  //system control register
-  // SP,     // AArch64 banked stack pointers
+  // PC,              // Program counter
+  // PSTATE,          // PSTATE isn't an architectural register for ARMv8
+  // SYSREG,          // maybe
+  TTBR0,              // MMU translation table base 0
+  TTBR1,              // MMU translation table base 1
+  ID_AA64MMFR0,       // AArch64 Memory Model Feature Register 0
+  SCTLR,              // System Control Register
+  // SP,              // AArch64 banked stack pointers
   TCR,
   ISA,
 } register_type_t;
@@ -223,32 +222,6 @@ typedef struct {
 
 } memory_transaction_t;
 
-
-// ─── Bryan ───────────────────────────────────────────────────────────────────
-
-typedef enum {
-    /**
-     * Only type of instruction supported by Flexus to this date
-     */
-    ID_AA64MMFR1,
-} isa_regs_t;
-
-/**
- * Structure holding misc informations for accessing register.
- */
-typedef struct
-{
-    union
-    {
-        // Register index to access, ex. r01, r15, x19
-        size_t index;
-
-        // ISA specific register type if needed.
-        isa_regs_t isa_regs;
-    };
-
-} register_kwargs_t;
-
 /*---------------------------------------------------------------
  *-------------------------TYPEDEFS----------------------------
  *---------------------------------------------------------------*/
@@ -275,7 +248,7 @@ typedef void              (*QEMU_STOP_t)           (const char *msg);
 
 // ─── Bryan Qemu-8.2 ──────────────────────────────────────────────────────────
 typedef physical_address_t(*QEMU_GET_PA_t)          (size_t core_index, data_or_instr_t fetch, logical_address_t va);
-typedef uint64_t          (*QEMU_READ_REG_t)        (size_t core_index, register_type_t reg , register_kwargs_t reg_info);
+typedef uint64_t          (*QEMU_READ_REG_t)        (size_t core_index, register_type_t reg , size_t index);
 typedef size_t            (*QEMU_GET_NUM_CORES_t)   (void);
 
 // ─────────────────────────────────────────────────────────────────────────────

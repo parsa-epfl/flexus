@@ -409,7 +409,9 @@ public:
     }
   }
 
-  void resyncMMU(int anIndex) {
+  void
+  resyncMMU(std::size_t anIndex)
+  {
     CORE_TRACE;
     DBG_(VVerb, (<< "Resynchronizing MMU"));
 
@@ -420,7 +422,7 @@ public:
       theMMU.reset(new mmu_t());
       theMMUInitialized = true;
     }
-    //! theMMU->initRegsFromQEMUObject(getMMURegsFromQEMU(anIndex));
+    theMMU->init_mmu_regs(anIndex);
     theMMU->setupAddressSpaceSizesAndGranules();
     DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
     DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
@@ -445,32 +447,8 @@ public:
         theLookUpEntries.pop();
       }
     }
-    FLEXUS_CHANNEL(ResyncOut) << anIndex;
+    FLEXUS_CHANNEL(ResyncOut) << (int&)anIndex;
   }
-
-  // Msutherl: Fetch MMU's registers
-  //! std::shared_ptr<mmu_regs_t> getMMURegsFromQEMU(uint8_t anIndex) {
-  //   std::shared_ptr<mmu_regs_t> mmu_obj(new mmu_regs_t());
-
-  //   mmu_obj->SCTLR[EL0] = Processor::getProcessor(anIndex).readSCTLR(EL0);
-  //   mmu_obj->SCTLR[EL1] = Processor::getProcessor(anIndex).readSCTLR(EL1);
-  //   mmu_obj->SCTLR[EL2] = Processor::getProcessor(anIndex).readSCTLR(EL2);
-  //   mmu_obj->SCTLR[EL3] = Processor::getProcessor(anIndex).readSCTLR(EL3);
-
-  //   mmu_obj->TCR[EL0] = API::qemu_api.read_register(anIndex, Qemu::API::kMMU_TCR, EL0);
-  //   mmu_obj->TCR[EL1] = API::qemu_api.read_register(anIndex, Qemu::API::kMMU_TCR, EL1);
-  //   mmu_obj->TCR[EL2] = API::qemu_api.read_register(anIndex, Qemu::API::kMMU_TCR, EL2);
-  //   mmu_obj->TCR[EL3] = API::qemu_api.read_register(anIndex, Qemu::API::kMMU_TCR, EL3);
-
-  //   mmu_obj->TTBR0[EL1] = API::qemu_api.read_register(anIndex, Qemu::API::kMMU_TTBR0, EL1);
-  //   mmu_obj->TTBR1[EL1] = API::qemu_api.read_register(anIndex, Qemu::API::kMMU_TTBR1, EL1);
-  //   mmu_obj->TTBR0[EL2] = API::qemu_api.read_register(anIndex, Qemu::API::kMMU_TTBR0, EL2);
-  //   mmu_obj->TTBR1[EL2] = API::qemu_api.read_register(anIndex, Qemu::API::kMMU_TTBR1, EL2);
-  //   mmu_obj->TTBR0[EL3] = API::qemu_api.read_register(anIndex, Qemu::API::kMMU_TTBR0, EL3);
-
-  //   mmu_obj->ID_AA64MMFR0_EL1 = API::qemu_api.read_register( anIndex, Qemu::API::kMMU_ID_AA64MMFR0_EL1, 0);
-  //   return mmu_obj;
-  // }
 
   bool IsTranslationEnabledAtEL(uint8_t &anEL) {
     return true; // theCore->IsTranslationEnabledAtEL(anEL);
@@ -518,12 +496,12 @@ public:
     return true;
   }
   void push(interface::TLBReqIn const &, index_t anIndex, TranslationPtr &aTranslate) {
-    if (!cfg.PerfectTLB &&
-        (aTranslate->isInstr() ? theInstrTLB : theDataTLB).lookUp(aTranslate->theVaddr).first ==
-            false) {
-      if (!theMMUInitialized) {
+    if (!cfg.PerfectTLB && (aTranslate->isInstr() ? theInstrTLB : theDataTLB).lookUp(aTranslate->theVaddr).first == false)
+    {
+      if (!theMMUInitialized)
+      {
         theMMU.reset(new mmu_t());
-        //! theMMU->initRegsFromQEMUObject(getMMURegsFromQEMU((int)flexusIndex()));
+        theMMU->init_mmu_regs(flexusIndex());
         theMMU->setupAddressSpaceSizesAndGranules();
         DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
         DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
