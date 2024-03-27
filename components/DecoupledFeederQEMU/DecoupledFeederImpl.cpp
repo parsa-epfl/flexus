@@ -123,7 +123,7 @@ public:
         }, // std::bind( &DecoupledFeederComponent::toNAW, this, _1, _2)
 
         cfg.SendNonAllocatingStores);
-;
+
     Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
 
   }
@@ -136,6 +136,8 @@ public:
 
   void initialize(void) {
     DBG_(VVerb, (<< "Inititializing Decoupled feeder..."));
+
+    theCMPWidth = cfg.CMPWidth ? theCMPWidth : Qemu::API::qemu_api.get_num_cores();
 
     if (cfg.TrackIFetch) {
       theTracer->enableInstructionTracing();
@@ -157,10 +159,7 @@ public:
     }
 
     theFlexus->advanceCycles(0);
-    theCMPWidth = cfg.CMPWidth;
-    if (theCMPWidth == 0) {
-      theCMPWidth = Qemu::API::qemu_api.get_num_cores();
-    }
+
   }
 
   void finalize(void) {

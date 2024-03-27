@@ -124,7 +124,7 @@ public:
   uint8_t getPAWidth(bool isBR0) const;
 
 public: /* Functions that are called externally from TLBs, uArch, etc.... */
-  void initRegsFromQEMUObject(std::shared_ptr<mmu_regs_t> qemuRegs);
+  void init_mmu_regs(std::size_t core_index);
   bool IsExcLevelEnabled(uint8_t elToValidate) const;
   void setupAddressSpaceSizesAndGranules(void);
 

@@ -135,23 +135,41 @@ void mmu_t::setupBitConfigs() {
   aarch64_bit_configs.TG1_SZ_Base = 16;
   aarch64_bit_configs.TGn_SZ_NumBits = 6;
 }
-void mmu_t::initRegsFromQEMUObject(std::shared_ptr<mmu_regs_t> qemuRegs) {
-  setupBitConfigs(); // initialize AARCH64 bit locations for masking
+void
+mmu_t::init_mmu_regs(std::size_t core_index) {
+  using namespace Flexus::Qemu;
 
-  mmu_regs.SCTLR[EL1] = qemuRegs->SCTLR[EL1];
-  mmu_regs.SCTLR[EL2] = qemuRegs->SCTLR[EL2];
-  mmu_regs.SCTLR[EL3] = qemuRegs->SCTLR[EL3];
-  mmu_regs.TCR[EL1] = qemuRegs->TCR[EL1];
-  mmu_regs.TCR[EL2] = qemuRegs->TCR[EL2];
-  mmu_regs.TCR[EL3] = qemuRegs->TCR[EL3];
-  mmu_regs.TTBR0[EL1] = qemuRegs->TTBR0[EL1];
-  mmu_regs.TTBR1[EL1] = qemuRegs->TTBR1[EL1];
-  mmu_regs.TTBR0[EL2] = qemuRegs->TTBR0[EL2];
-  mmu_regs.TTBR1[EL2] = qemuRegs->TTBR1[EL2];
-  mmu_regs.TTBR0[EL3] = qemuRegs->TTBR0[EL3];
-  mmu_regs.ID_AA64MMFR0_EL1 = qemuRegs->ID_AA64MMFR0_EL1;
+
+  setupBitConfigs(); // initialize AARCH64 bit locations for masking
+  Processor cpu = Processor::getProcessor(core_index);
+
+  /**
+   * Everything here is detailed in the chapter D7
+   * of the 2024 ARM Reference manual. (ARM DDI 0487K.a)
+   */
+
+  //? sctlr_el0 does not exist
+  mmu_regs.SCTLR[EL1] = cpu.read_register(Qemu::API::SCTLR, EL1);
+  mmu_regs.SCTLR[EL2] = cpu.read_register(Qemu::API::SCTLR, EL2);
+  mmu_regs.SCTLR[EL3] = cpu.read_register(Qemu::API::SCTLR, EL3);
+
+  //? tcr_el0 does not exist
+  mmu_regs.TCR[EL1] = cpu.read_register(Qemu::API::TCR, EL1);
+  mmu_regs.TCR[EL2] = cpu.read_register(Qemu::API::TCR, EL2);
+  mmu_regs.TCR[EL3] = cpu.read_register(Qemu::API::TCR, EL3);
+
+  //? Section G8.2.167 - TTBR0, Translation Table Base Register 0
+  //? Section G8.2.168 - TTBR1, Translation Table Base Register 1
+  mmu_regs.TTBR0[EL1] = cpu.read_register(Qemu::API::TTBR0, EL1);
+  mmu_regs.TTBR1[EL1] = cpu.read_register(Qemu::API::TTBR1, EL1);
+  mmu_regs.TTBR0[EL2] = cpu.read_register(Qemu::API::TTBR0, EL2);
+  mmu_regs.TTBR1[EL2] = cpu.read_register(Qemu::API::TTBR1, EL2);
+  mmu_regs.TTBR0[EL3] = cpu.read_register(Qemu::API::TTBR0, EL3);
+
+  //? Section D23.2.74 - AArch64 Memory Model Feature Register 0
+  mmu_regs.ID_AA64MMFR0_EL1 = cpu.read_register(Qemu::API::ID_AA64MMFR0, EL1);
+
   DBG_(VVerb, (<< "Initializing mmu registers from QEMU...."));
-  //        fm_print_mmu_regs(&(this->mmu_regs));
 }
 bool mmu_t::IsExcLevelEnabled(uint8_t EL) const {
   DBG_Assert(EL > 0 && EL <= 3,
@@ -162,7 +180,7 @@ void mmu_t::setupAddressSpaceSizesAndGranules(void) {
   unsigned TG0_Size = getGranuleSize(0);
   unsigned TG1_Size = getGranuleSize(1);
   unsigned PASize = parsePASizeFromRegs();
-  PASize = 48; // FIXME: ID_AAMMFR0 REGISTER ALWAYS 0 FROM QEMU????
+  PASize = 48; // FIXME: ID_AAaMMFR0 REGISTER ALWAYS 0 FROM QEMU????
   unsigned BR0_Offset = getIAOffsetValue(true);
   unsigned BR1_Offset = getIAOffsetValue(false);
   Gran0 = std::make_shared<TG0_Granule>(TG0_Size, PASize, BR0_Offset);
@@ -202,10 +220,10 @@ uint32_t mmu_t::getGranuleSize(uint32_t granuleNum) {
     switch (TG_SZ) {
     case 0b00:
       return 1 << 12; // 4KB
-    case 0b01:
-      return 1 << 16; // 64KB
     case 0b11:
       return 1 << 14; // 16KB
+    case 0b01:
+      return 1 << 16; // 64KB
     default:
       DBG_Assert(false, (<< "Unknown value in getting TG0 Granule Size. TG_SZ = " << TG_SZ));
       return 0;
@@ -216,10 +234,10 @@ uint32_t mmu_t::getGranuleSize(uint32_t granuleNum) {
     switch (TG_SZ) {
     case 0b10:
       return 1 << 12; // 4KB
-    case 0b11:
-      return 1 << 16; // 64KB
     case 0b01:
       return 1 << 14; // 16KB
+    case 0b11:
+      return 1 << 16; // 64KB
     default:
       DBG_Assert(false, (<< "Unknown value in getting TG1 Granule Size. TG_SZ = " << TG_SZ));
       return 0;

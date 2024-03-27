@@ -103,11 +103,11 @@ template <class ToInstance, class ToPort> struct resolve_channel<ToInstance, ToP
 
 template <class ToInstance, class ToPort> struct resolve_channel<ToInstance, ToPort, pull, true> {
   static bool invoke_available(Flexus::Core::index_t anIndex) {
-    int32_t width = ToInstance::iface::width(ToInstance::getInstance().theConfiguration, ToPort());
+    uint32_t width = ToInstance::iface::width(ToInstance::getInstance().theConfiguration, ToPort());
     return ToInstance::getReference(anIndex / width).available(ToPort(), anIndex % width);
   }
   static void invoke_manip(Flexus::Core::index_t anIndex, typename ToPort::payload &aPayload) {
-    int32_t width = ToInstance::iface::width(ToInstance::getInstance().theConfiguration, ToPort());
+    uint32_t width = ToInstance::iface::width(ToInstance::getInstance().theConfiguration, ToPort());
     aPayload = ToInstance::getReference(anIndex / width).pull(ToPort(), anIndex % width);
   }
 };

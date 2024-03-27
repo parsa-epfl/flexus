@@ -146,9 +146,9 @@ class QemuTracerImpl {
   MemoryMessage theMemoryMessage;
 
 public:
-  std::function<void(int, MemoryMessage &)> toL1D;
-  std::function<void(int, MemoryMessage &, uint32_t)> toL1I;
-  std::function<void(int, MemoryMessage &)> toNAW;
+  std::function<void(std::size_t, MemoryMessage &)> toL1D;
+  std::function<void(std::size_t, MemoryMessage &, uint32_t)> toL1I;
+  std::function<void(std::size_t, MemoryMessage &)> toNAW;
 
   bool theSendNonAllocatingStores;
 
@@ -170,10 +170,10 @@ public:
   )
   {
     this->core_index = core_index;
-    toL1D = aToL1D;
-    toL1I = aToL1I;
-    toNAW = aToNAW;
-    theSendNonAllocatingStores = aSendNonAllocatingStores;
+    this->toL1D = aToL1D;
+    this->toL1I = aToL1I;
+    this->toNAW = aToNAW;
+    this->theSendNonAllocatingStores = aSendNonAllocatingStores;
     theUserStats = new TracerStats(boost::padded_string_cast<2, '0'>(core_index) + "-feeder-User:");
     theOSStats = new TracerStats(boost::padded_string_cast<2, '0'>(core_index) + "-feeder-OS:");
     theBothStats = new TracerStats(boost::padded_string_cast<2, '0'>(core_index) + "-feeder-");

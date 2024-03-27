@@ -258,12 +258,12 @@ class Processor
 
 
 private:
-    uint64_t core_index;
+    std::size_t core_index;
 
     // typedef BuiltInObject<PROCESSOR_IMPL> base;
 
 
-    Processor(uint64_t core_index): core_index(core_index)
+    Processor(std::size_t core_index): core_index(core_index)
     {}
 
 
@@ -272,14 +272,23 @@ public:
     Processor(): core_index(0)
     {}
 
+    uint64_t
+    read_register(API::register_type_t reg, std::size_t index = 0xFF)
+    {
+        return API::qemu_api.read_register(core_index, reg, index);
+    }
+
+    // TODO ─── NOT implemented ────────────────────────────────────────────────
 
 
-    bits readVirtualAddress(VirtualMemoryAddress anAddress, size_t size)
+
+
+    bits readVirtualAddress(VirtualMemoryAddress anAddress, std::size_t size)
     {
         return bits(0);
     }
 
-    bits readPhysicalAddress(PhysicalMemoryAddress anAddress, size_t aSize) const { return bits(0); }
+    bits readPhysicalAddress(PhysicalMemoryAddress anAddress, std::size_t aSize) const { return bits(0); }
 
     PhysicalMemoryAddress translateVirtualAddress(VirtualMemoryAddress addr) { return PhysicalMemoryAddress(); }
 
