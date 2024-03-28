@@ -171,6 +171,7 @@ mmu_t::init_mmu_regs(std::size_t core_index) {
 
   DBG_(VVerb, (<< "Initializing mmu registers from QEMU...."));
 }
+
 bool mmu_t::IsExcLevelEnabled(uint8_t EL) const {
   DBG_Assert(EL > 0 && EL <= 3,
              (<< "ERROR, ARM MMU: Transl. Request Not Supported at Invalid EL = " << EL));

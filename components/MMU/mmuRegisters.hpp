@@ -71,11 +71,11 @@ typedef struct mmu_bit_configs {
   // Granule configured for EL1 (TODO: add others if we ever care about them in
   // the future)
   // - in TCR_ELx
-  uint8_t TG0_Base; /* 00 = 4KB
+  uint8_t TG0_Base;      /* 00 = 4KB
                             01 = 64KB
                             11 = 16KB */
   uint8_t TG0_NumBits;
-  uint8_t TG1_Base; /* 01 = 16KB
+  uint8_t TG1_Base; /*      01 = 16KB
                             10 = 4KB
                             11 = 64KB (yes, this is different than TG0) */
   uint8_t TG1_NumBits;
@@ -113,19 +113,7 @@ struct mmu_regs_t {
 
   mmu_reg_t ID_AA64MMFR0_EL1; // only implemented in EL1 as far as I know.
 
-  mmu_regs_t(mmu_regs_t &copyMe) {
-    for (unsigned i = 0; i < NUM_AARCH64_ELS; i++) {
-      SCTLR[i] = copyMe.SCTLR[i];
-      TCR[i] = copyMe.TCR[i];
-      TTBR0[i] = copyMe.TTBR0[i];
-    }
-    TTBR1[EL1] = copyMe.TTBR1[EL1];
-    TTBR1[EL2] = copyMe.TTBR1[EL2];
-    ID_AA64MMFR0_EL1 = copyMe.ID_AA64MMFR0_EL1; // only implemented in EL1 as far as I know.
-  }
-
-  mmu_regs_t() {
-  }
+};
 
   /* type      -      ARM_NAME            - funct.
    * ----DO NOT REMOVE---- PEOPLE WILL NEED TO KNOW THIS *
@@ -149,6 +137,5 @@ struct mmu_regs_t {
   as above mmu_reg_t           TTBR1_EL2;          // upper address range for
   EL2
    * ----DO NOT REMOVE---- PEOPLE WILL NEED TO KNOW THIS */
-};
 
 #endif // FLEXUS_ARM_MMU_REGISTERS_HPP_INCLUDED
