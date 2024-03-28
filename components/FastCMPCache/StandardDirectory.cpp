@@ -220,13 +220,19 @@ public:
   lookup(int32_t index, PhysicalMemoryAddress address, MMType req_type,
          std::list<std::function<void(void)>> &xtra_actions) {
 
-    StandardDirectoryEntry *entry =
-        findOrCreateEntry(address, !MemoryMessage::isEvictType(req_type));
+    StandardDirectoryEntry* entry = findOrCreateEntry(address, !MemoryMessage::isEvictType(req_type));
     DBG_Assert(entry != nullptr);
+
     if (entry->tag() != address) {
       // We're evicting an existing entry
+
+      auto tag  = entry->tag();
+      auto sharers = entry->sharers();
+
       xtra_actions.push_back(
-          [&entry, this]() { theInvalidateAction(entry->tag(), entry->sharers()); });
+        [tag, sharers, this]() { theInvalidateAction(tag, sharers); }
+      );
+
       entry->reset(address);
     }
 

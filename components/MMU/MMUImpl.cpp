@@ -213,7 +213,7 @@ private:
   std::set<VirtualMemoryAddress> alreadyPW;
   std::vector<boost::intrusive_ptr<Translation>> standingEntries;
 
-  std::shared_ptr<Flexus::Qemu::Processor> theCPU;
+  Flexus::Qemu::Processor theCPU;
   std::shared_ptr<mmu_t> theMMU;
 
   bool theMMUInitialized;
@@ -271,8 +271,7 @@ public:
 
   // Initialization
   void initialize() {
-    theCPU = std::make_shared<Flexus::Qemu::Processor>(
-        Flexus::Qemu::Processor::getProcessor((int)flexusIndex()));
+    theCPU = Flexus::Qemu::Processor::getProcessor(flexusIndex());
     thePageWalker.reset(new PageWalk(flexusIndex()));
     thePageWalker->setMMU(theMMU);
     theMMUInitialized = false;
@@ -509,6 +508,7 @@ public:
         thePageWalker->setMMU(theMMU);
         theMMUInitialized = true;
       }
+
       thePageWalker->push_back_trace(aTranslate, Flexus::Qemu::Processor::getProcessor(flexusIndex()));
       (aTranslate->isInstr() ? theInstrTLB : theDataTLB)[aTranslate->theVaddr] =
           aTranslate->thePaddr;

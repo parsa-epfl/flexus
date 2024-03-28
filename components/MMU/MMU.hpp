@@ -58,10 +58,10 @@
 
 
 COMPONENT_PARAMETERS(
-    PARAMETER( Cores, int, "Number of cores", "cores", 1 )
-    PARAMETER( iTLBSize, size_t, "Size of the Instruction TLB", "itlbsize", 64 )
-    PARAMETER( dTLBSize, size_t, "Size of the Data TLB", "dtlbsize", 64 )
-    PARAMETER( PerfectTLB, bool, "TLB never misses", "perfecttlb", false )
+    PARAMETER( Cores,       size_t, "Number of cores", "cores",  1 )
+    PARAMETER( iTLBSize,    size_t, "Size of the Instruction TLB", "itlbsize", 64 )
+    PARAMETER( dTLBSize,    size_t, "Size of the Data TLB", "dtlbsize", 64 )
+    PARAMETER( PerfectTLB,  bool, "TLB never misses", "perfect", true )
 );
 
 COMPONENT_INTERFACE(

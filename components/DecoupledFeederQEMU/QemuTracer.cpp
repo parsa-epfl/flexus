@@ -197,17 +197,18 @@ public:
     eBranchType branchTypeTable[8] = {
         kNonBranch,   kConditional,  kUnconditional, kCall,
         kIndirectReg, kIndirectCall, kReturn,        kLastBranchType};
+
     theMemoryMessage.branchType() = branchTypeTable[mem_trans->s.branch_type];
     theMemoryMessage.branchAnnul() = (mem_trans->s.annul != 0);
     theMemoryMessage.tl() = 0;
 
-    uint32_t opcode = 0;
     IS_PRIV(mem_trans) ? theOSStats->theFetches++ : theUserStats->theFetches++;
     theBothStats->theFetches++;
 
     // TODO FIXME
-    DBG_(VVerb, (<< "sending fetch[" << core_index << "] op: " << opcode << " message: " << theMemoryMessage));
-    toL1I(core_index, theMemoryMessage, opcode);
+    // uint32_t opcode = 0;
+    // DBG_(VVerb, (<< "sending fetch[" << core_index << "] op: " << opcode << " message: " << theMemoryMessage));
+    toL1I(core_index, theMemoryMessage, 0);
     return k_no_stall; // Never stalls
   }
 
@@ -428,7 +429,7 @@ class QemuTracerManagerImpl : public QemuTracerManager {
 
 public:
   QemuTracerManagerImpl(std::size_t aNumCPUs, std::function<void(int, MemoryMessage &)> aToL1D,
-                        std::function<void(int, MemoryMessage &, uint32_t)> aToL1I,
+                        std::function<void(std::size_t, MemoryMessage &, uint32_t)> aToL1I,
                         std::function<void(MemoryMessage &)> aToDMA,
                         std::function<void(int, MemoryMessage &)> aToNAW,
                         bool aSendNonAllocatingStores)
