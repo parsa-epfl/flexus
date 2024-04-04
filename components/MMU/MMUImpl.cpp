@@ -409,7 +409,7 @@ public:
   }
 
   void
-  resyncMMU(std::size_t anIndex)
+  resyncMMU(int anIndex)
   {
     CORE_TRACE;
     DBG_(VVerb, (<< "Resynchronizing MMU"));
@@ -446,7 +446,7 @@ public:
         theLookUpEntries.pop();
       }
     }
-    FLEXUS_CHANNEL(ResyncOut) << (int&)anIndex;
+    FLEXUS_CHANNEL(ResyncOut) << anIndex;
   }
 
   bool IsTranslationEnabledAtEL(uint8_t &anEL) {

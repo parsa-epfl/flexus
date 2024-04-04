@@ -46,7 +46,6 @@
 #define FLEXUS_CORE_FLEXUS_HPP__INCLUDED
 
 #include <stdint.h>
-
 #include <string>
 #include <functional>
 
@@ -140,7 +139,7 @@ extern FlexusInterface *theFlexus;
 
 void flexus_start();
 void flexus_stop();
-void flexus_qmp(int cmd, const char *arg);
+void flexus_qmp(int cmd, const char* arg);
 
 } // End Namespace Core
 } // namespace Flexus

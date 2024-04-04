@@ -302,7 +302,7 @@ class qmp_write_measurement : public qmp_flexus_i {
   virtual void execute(std::string anArgs) override {
     if (!anArgs.empty())
       theArgsVector = split(anArgs, ':');
-    if (theArgsVector.size() == 1)
+    if (theArgsVector.size() == 2)
       theFlexus->writeMeasurement(theArgsVector[0], theArgsVector[1]);
     else
       DBG_(Crit, (<< "Wrong number of arguments."));
