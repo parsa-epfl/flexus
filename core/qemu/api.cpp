@@ -42,7 +42,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
-#include <assert.h>
+#include <cassert>
 
 #include <core/flexus.hpp>
 
@@ -64,19 +64,26 @@ namespace API {
   using namespace Flexus::Core;
 
   void FLEXUS_start() {
-    while (qemu_api.get_cycles_left() > 1)
-      theFlexus->doCycle();
-
-    theFlexus->terminateSimulation();
-  }
-
-  void FLEXUS_stop() {
+    // while (qemu_api.get_en())
+    //   theFlexus->doCycle();
     assert(false);
   }
 
-  void FLEXUS_qmp(qmp_flexus_cmd_t aCMD, const char *anArgs) {
-    flexus_qmp(aCMD, anArgs);  // qmp_api.hpp is bad
+  void FLEXUS_stop() {
+    theFlexus->terminateSimulation();
   }
+
+
+  void FLEXUS_qmp(qmp_flexus_cmd_t aCMD, const char* anArgs) {
+    // qmp_api.hpp is bad
+    flexus_qmp(aCMD, anArgs);
+  }
+
+   void __attribute__((weak)) FLEXUS_trace_mem(int idx, memory_transaction_t *tr)
+  {
+    // not exposed in timing
+  }
+
 
 } // namespace API
 } // namespace Qemu

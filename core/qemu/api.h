@@ -200,7 +200,7 @@ typedef struct {
   uint32_t way;
 } set_and_way_data_t;
 
-typedef struct address_range{
+typedef struct address_range {
   physical_address_t start_paddr;
   physical_address_t end_paddr;
 } address_range_t;
@@ -248,7 +248,7 @@ typedef void              (*QEMU_STOP_t)           (const char *msg);
 
 // ─── Bryan Qemu-8.2 ──────────────────────────────────────────────────────────
 typedef physical_address_t(*QEMU_GET_PA_t)          (size_t core_index, data_or_instr_t fetch, logical_address_t va);
-typedef uint64_t          (*QEMU_READ_REG_t)        (size_t core_index, register_type_t reg , size_t index);
+typedef uint64_t          (*QEMU_READ_REG_t)        (size_t core_index, register_type_t reg , size_t reg_info);
 typedef size_t            (*QEMU_GET_NUM_CORES_t)   (void);
 
 // ─────────────────────────────────────────────────────────────────────────────

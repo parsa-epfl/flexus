@@ -710,7 +710,7 @@ void FlexusImpl::terminateSimulation() {
   Flexus::Stat::getStatManager()->finalize();
   backupStats("stats_db");
 
-  // ComponentManager::getComponentManager().finalizeComponents();
+  ComponentManager::getComponentManager().finalizeComponents();
 
 #ifdef WRITE_ALL_MEASUREMENT_OUT
   writeMeasurement("all", "all.measurement.out");
@@ -780,17 +780,24 @@ void CreateFlexusObject() {
   }
 }
 
-void flexus_qmp(qmp_flexus_cmd_t aCMD, const char *anArgs) {
+void flexus_qmp(int aCMD, const char* anArgs) {
+ qmp_flexus_cmd_t cmd = (qmp_flexus_cmd_t)(aCMD);
+
   try {
-    qmp_flexus_i &q = qmp(aCMD);
-    if (anArgs != NULL) {
+
+    qmp_flexus_i &q = qmp(cmd);
+
+    if (anArgs != NULL)
       q.execute(static_cast<string>(anArgs));
-    } else {
+    else
       q.execute("");
-    }
-  } catch (qmp_not_implemented &e) {
+
+  }
+  catch (qmp_not_implemented &e)
+  {
     DBG_(Crit, (<< "QMP call not implemented!"));
   }
+
 }
 
 } // namespace Core

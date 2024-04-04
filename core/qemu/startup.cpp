@@ -133,7 +133,7 @@ void print_copyright() {
   cerr << "//         products derived from this software without specific prior written                         //" << endl;
   cerr << "//         permission.                                                                                //" << endl;
   cerr << "//                                                                                                    //" << endl;
-  cerr << "//   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\" AND                  //" << endl;
+  cerr << "//   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\" AND                //" << endl;
   cerr << "//   ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED                    //" << endl;
   cerr << "//   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE                           //" << endl;
   cerr << "//   DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,                      //" << endl;
