@@ -1,5 +1,0 @@
-set(REQUIRED_COMPONENTS
-	MemoryMap
-	CommonQEMU
-)
-set(ENABLE_TEST YES)
