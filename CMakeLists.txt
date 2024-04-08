@@ -56,11 +56,6 @@ include(cmake_helpers.cmake)
     include(${FLEXUS_ROOT}/simulators/${SIMULATOR}/${SIMULATOR}.cmake)
 # endif()
 
-# Setup Harness specific variables
-# if(SIMULATOR STREQUAL "Harness")
-    # set(HARNESS_ROOT ${FLEXUS_ROOT}/tests/harness)
-# endif()
-
 # Setup include paths
 include_directories(${FLEXUS_ROOT})
 include_directories(SYSTEM ${BOOST_INCLUDEDIR})
@@ -106,4 +101,4 @@ add_custom_target(clean_cmake
 )
 
 # Add subdirectory for stat manager
-# add_subdirectory(stat-manager)
+add_subdirectory(stat-manager)
