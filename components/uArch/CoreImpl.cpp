@@ -750,16 +750,15 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
 std::string CoreImpl::dumpState() {
   std::stringstream ss;
 
-  ss << std::hex << "PC=" << std::setw(16) << std::setfill('0') << (uint64_t)theDumpPC
-     << std::dec << std::endl;
+  ss << std::hex << "PC=" << std::setw(16) << std::setfill('0') << (uint64_t)theDumpPC << std::dec << std::endl;
 
   for (int i = 0; i < kxRegs; i++) {
     mapped_reg mreg;
     mreg.theType = xRegisters;
     mreg.theIndex = theMapTables[0]->mapArchitectural(i);
 
-    ss << "X" << std::setw(2) << std::setfill('0') << i << "=" << std::hex << std::setw(16)
-       << std::setfill('0') << boost::get<uint64_t>(theRegisters.peek(mreg)) << std::dec;
+    ss << "X" << std::setw(2) << std::setfill('0') << i << "=" << std::hex << std::setw(16) << std::setfill('0') << boost::get<uint64_t>(theRegisters.peek(mreg)) << std::dec;
+
     if ((i % 4) == 3) {
       ss << std::endl;
     } else {
@@ -770,50 +769,50 @@ std::string CoreImpl::dumpState() {
   return ss.str();
 }
 
-// bool CoreImpl::checkValidatation() {
-//   theFlexusDumpState = dumpState();
-//   theQemuDumpState = Flexus::Qemu::Processor::getProcessor(theNode)->dump_state();
+bool CoreImpl::checkValidatation() {
+  theFlexusDumpState = dumpState();
+  theQemuDumpState = Flexus::Qemu::Processor::getProcessor(theNode).dump_state();
 
-//   bool ret = (theFlexusDumpState.compare(theQemuDumpState) == 0);
-//   if (!ret) {
+  bool ret = (theFlexusDumpState.compare(theQemuDumpState) == 0);
+  if (!ret) {
 
-//     // Vector of string to save tokens
-//     std::vector<std::string> flex_diff, qemu_diff, diff;
+    // Vector of string to save tokens
+    std::vector<std::string> flex_diff, qemu_diff, diff;
 
-//     std::replace(theFlexusDumpState.begin(), theFlexusDumpState.end(), '\n', ' ');
-//     std::replace(theQemuDumpState.begin(), theQemuDumpState.end(), '\n', ' ');
+    std::replace(theFlexusDumpState.begin(), theFlexusDumpState.end(), '\n', ' ');
+    std::replace(theQemuDumpState.begin(), theQemuDumpState.end(), '\n', ' ');
 
-//     // stringstream class check1
-//     std::stringstream flex_check(theFlexusDumpState);
-//     std::stringstream qemu_check(theQemuDumpState);
+    // stringstream class check1
+    std::stringstream flex_check(theFlexusDumpState);
+    std::stringstream qemu_check(theQemuDumpState);
 
-//     std::string iflex, iqemu;
+    std::string iflex, iqemu;
 
-//     // Tokenizing w.r.t. space ' '
-//     while (std::getline(flex_check, iflex, ' ')) {
-//       flex_diff.push_back(iflex);
-//     }
-//     while (std::getline(qemu_check, iqemu, ' ')) {
-//       qemu_diff.push_back(iqemu);
-//     }
+    // Tokenizing w.r.t. space ' '
+    while (std::getline(flex_check, iflex, ' ')) {
+      flex_diff.push_back(iflex);
+    }
+    while (std::getline(qemu_check, iqemu, ' ')) {
+      qemu_diff.push_back(iqemu);
+    }
 
-//     for (size_t i = 0; i < flex_diff.size() && i < qemu_diff.size(); i++) {
-//       if (flex_diff[i].compare(qemu_diff[i]) != 0) {
-//         diff.push_back("flexus: " + flex_diff[i]);
-//         diff.push_back("qemu:   " + qemu_diff[i]);
-//       }
-//     }
+    for (size_t i = 0; i < flex_diff.size() && i < qemu_diff.size(); i++) {
+      if (flex_diff[i].compare(qemu_diff[i]) != 0) {
+        diff.push_back("flexus: " + flex_diff[i]);
+        diff.push_back("qemu:   " + qemu_diff[i]);
+      }
+    }
 
-//     if (diff.size() > 0) {
-//       DBG_(Dev, (<< "state mismatch: "));
-//       for (auto &i : diff) {
-//         DBG_(Dev, (<< i));
-//       }
-//     }
-//   }
+    if (diff.size() > 0) {
+      DBG_(Dev, (<< "state mismatch: "));
+      for (auto &i : diff) {
+        DBG_(Dev, (<< i));
+      }
+    }
+  }
 
-//   return ret;
-// }
+  return ret;
+}
 
 void CoreImpl::prepareCycle() {
   FLEXUS_PROFILE();

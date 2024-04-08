@@ -79,7 +79,7 @@ namespace API {
     flexus_qmp(aCMD, anArgs);
   }
 
-   void __attribute__((weak)) FLEXUS_trace_mem(int idx, memory_transaction_t *tr)
+   void __attribute__((weak)) FLEXUS_trace_mem(uint64_t idx, memory_transaction_t *tr)
   {
     // not exposed in timing
   }
