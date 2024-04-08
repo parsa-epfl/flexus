@@ -46,8 +46,6 @@
 #define FLEXUS_QEMU_MAI_API_HPP_INCLUDED
 
 #include <bitset>
-// #include <boost/utility.hpp>
-// #include <core/exception.hpp>
 #include <core/flexus.hpp>
 #include <core/qemu/configuration_api.hpp>
 #include <core/target.hpp>
@@ -63,205 +61,12 @@ namespace Qemu {
 using Flexus::SharedTypes::PhysicalMemoryAddress;
 using Flexus::SharedTypes::VirtualMemoryAddress;
 
-class ARMProcessor {
-
-protected:
-//   API::conf_object_t *theProcessor;
-    uint64_t cpu_index;
-
-public:
-    ARMProcessor(uint64_t cpu_index): cpu_index(cpu_index)
-    {}
-
-
-//   ARMProcessor(API::conf_object_t *aProcessor)
-//       : theProcessor(aProcessor),
-//         theProcessorNumber(
-//             aProcessor
-//                 ? API::qemu_api.get_cpu_idx(aProcessor)
-//                 : 0),
-//         theQEMUProcessorNumber(aProcessor ? API::qemu_api.get_cpu_idx(aProcessor) : 0) {
-//   }
-
-// public:
-//   virtual ~ARMProcessor() {
-//   }
-
-//   operator API::conf_object_t *() const {
-//     return theProcessor;
-//   }
-
-//   std::string disassemble(VirtualMemoryAddress const &anAddress) const {
-//     API::logical_address_t addr(anAddress);
-//     char *buf = API::qemu_api.disass(*this, addr);
-//     std::string s(buf);
-//     free(buf); // qemu called "malloc" for this area
-//     return s;
-//   }
-
-//   std::string dump_state() const {
-//     char *buf = API::qemu_api.get_snap(*this);
-//     std::string s(buf);
-//     free(buf);
-//     return s;
-//   }
-
-//   std::string describeException(int anException) const {
-//     return "unknown_exception";
-//   }
-
-
-//     return VirtualMemoryAddress(API::qemu_api.get_pc(*this));
-//   }
-
-    uint64_t readXRegister(size_t anIndex) const
-    {
-        return 0;
-    }
-//     return API::qemu_api.get_gpr(*this, anIndex);
-//   }
-
-    uint64_t readVRegister(int anIndex) const
-    {
-        return 0;
-    }
-//     return API::qemu_api.get_fpr(*this, anIndex);
-//   }
-
-
-//     assert(false);
-//     return;
-//   }
-
-
-//     return API::qemu_api.get_irq(*this);
-//   }
-
-//   bool hasWork() const {
-//     return API::qemu_api.cpu_busy(*this);
-//   }
-
-//   uint64_t readPC() const {
-//     return API::qemu_api.get_pc(*this);
-//   }
-
-
-//     uint8_t *buf = new uint8_t[aSize];
-//     for (size_t i = 0; i < aSize; i++)
-//       buf[i] = 0;
-//     API::qemu_api.get_mem(buf, API::physical_address_t(anAddress), aSize);
-
-//     bits tmp;
-//     for (size_t i = 0; i <readException aSize; i++) {
-//       const size_t s = i * 8;
-//       bits val = (((int advance(bool count_time = true) {return 0;}bits)buf[i] << s) & ((bits)0xff << s));
-//       tmp |= val;
-//     }
-//     delete[] buf;
-//     return tmp;
-//   }
-
-    bits readVirtualAddress(VirtualMemoryAddress anAddress, size_t size)
-    {
-        return bits(0);
-    }
-//     VirtualMemoryAddress finalAddress(((uint64_t)(anAddress) + size - 1) & ~0xFFF);
-//     if ((finalAddress & 0x1000) != (anAddress & 0x1000)) {
-//       bits value1, value2;
-//       size_t partial = finalAddress - anAddress;
-//       value1 = readPhysicalAddress(
-//           PhysicalMemoryAddress(API::qemu_api.get_pa(*this, API::QEMU_DI_Instruction,
-//                                                             API::logical_address_t(anAddress))),
-//           partial);
-//       value2 = readPhysicalAddress(
-//           PhysicalMemoryAddress(API::qemu_api.get_pa(*this, API::QEMU_DI_Instruction,
-//                                                             API::logical_address_t(finalAddress))),
-//           size - partial);
-//       value2 = (value2 << (partial << 3)) | value1;
-//       return value2;
-//     }
-//     return readPhysicalAddress(
-//         PhysicalMemoryAddress(API::qemu_api.get_pa(*this, API::QEMU_DI_Instruction,
-//                                                           API::logical_address_t(anAddress))),
-//         size);
-//   }
-
-//   PhysicalMemoryAddress translateVirtualAddress(VirtualMemoryAddress anAddress) {
-//     return PhysicalMemoryAddress(API::qemu_api.get_pa(*this, API::QEMU_DI_Instruction,
-//                                                              API::logical_address_t(anAddress)));
-//   }
-
-//   uint32_t fetchInstruction(VirtualMemoryAddress anAddress) {
-//     return (uint32_t)readVirtualAddress(anAddress, 4);
-//   }
-
-
-//     return theProcessorNumber;
-//   }
-//   int QEMUId() const {
-//     return theQEMUProcessorNumber;
-//   }
-//   bool mai_mode() const {
-//     return true;
-//   }
-
-//   uint64_t read_sysreg_from_qemu(uint32_t no) {
-//     return API::qemu_api.get_csr(*this, no);
-//   }
-
-
-    // void readAArch() {}
-    // void readDCZID_EL0() {}
-    // void readFPCR() {}
-    // void readFPSR() {}
-    // void readHCREL2() {}
-    // void readPSTATE() {}
-    // // void readSCTLR() {}
-    // void readSP_el() {}
-    // void breakSimulation() {}
-    // int advance(bool count_time = true) {return 0;}
-
-};
-
-// class ARMProcessor : public ARMProcessor {
-// private:
-//   int thePendingInterrupt;
-//   bool theInterruptsConnected;
-//   void initialize();
-//   void handleInterrupt(long long aVector);
-
-// public:
-//   explicit ProcessorImpl(API::conf_object_t *aProcessor)
-//       : ARMProcessor(aProcessor), thePendingInterrupt(API::QEMU_PE_No_Exception),
-//         theInterruptsConnected(false) {
-//   }
-
-// public:readPhysical
-//   uint8_t getQEMUExceptionLevel() const {
-//     return API::qemu_api.get_pl(*this);
-//   }
-
-
-//     API::qemu_api.stop("");
-//   }
-
-//     int exception = 0;
-//     exception = Qemu::API::qemu_api.cpu_exec(theProcessor, count_time);
-//     return exception;
-//   }
-// };
-
-// #define PROCESSOR_IMPL ProcessorImpl
-
 class Processor
 {
 
 
 private:
     std::size_t core_index;
-
-    // typedef BuiltInObject<PROCESSOR_IMPL> base;
-
 
     Processor(std::size_t core_index): core_index(core_index)
     {}
@@ -281,6 +86,11 @@ public:
     // TODO ─── NOT implemented ────────────────────────────────────────────────
 
 
+    std::string
+    dump_state()
+    {
+        return "0xDEADBEEF";
+    }
 
 
     bits readVirtualAddress(VirtualMemoryAddress anAddress, std::size_t size)
