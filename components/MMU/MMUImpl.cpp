@@ -101,7 +101,6 @@ class FLEXUS_COMPONENT(MMU) {
   FLEXUS_COMPONENT_IMPL(MMU);
 
 private:
-private:
   struct TLBentry {
 
     friend class boost::serialization::access;
@@ -421,15 +420,20 @@ public:
       theMMU.reset(new mmu_t());
       theMMUInitialized = true;
     }
+
     theMMU->init_mmu_regs(anIndex);
     theMMU->setupAddressSpaceSizesAndGranules();
+
     DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
     DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
+
     PAGEMASK = ~((1 << theMMU->Gran0->getlogKBSize()) - 1);
+
     if (thePageWalker) {
       DBG_(VVerb, (<< "Annulling all PW entries"));
       thePageWalker->annulAll();
     }
+
     if (thePageWalkEntries.size() > 0) {
       DBG_(VVerb, (<< "deleting PageWalk Entries"));
       while (!thePageWalkEntries.empty()) {
@@ -437,6 +441,7 @@ public:
         thePageWalkEntries.pop();
       }
     }
+
     alreadyPW.clear();
     standingEntries.clear();
 
@@ -457,6 +462,10 @@ public:
     return true;
   }
   void push(interface::ResyncIn const &, index_t anIndex, int &aResync) {
+
+    if (cfg.PerfectTLB)
+      return;
+
     resyncMMU(aResync);
   }
 
@@ -495,25 +504,30 @@ public:
     return true;
   }
   void push(interface::TLBReqIn const &, index_t anIndex, TranslationPtr &aTranslate) {
-    if (!cfg.PerfectTLB && (aTranslate->isInstr() ? theInstrTLB : theDataTLB).lookUp(aTranslate->theVaddr).first == false)
-    {
-      if (!theMMUInitialized)
-      {
-        theMMU.reset(new mmu_t());
-        theMMU->init_mmu_regs(flexusIndex());
-        theMMU->setupAddressSpaceSizesAndGranules();
-        DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
-        DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
-        PAGEMASK = ~((1 << theMMU->Gran0->getlogKBSize()) - 1);
-        thePageWalker->setMMU(theMMU);
-        theMMUInitialized = true;
-      }
 
-      thePageWalker->push_back_trace(aTranslate, Flexus::Qemu::Processor::getProcessor(flexusIndex()));
-      (aTranslate->isInstr() ? theInstrTLB : theDataTLB)[aTranslate->theVaddr] =
-          aTranslate->thePaddr;
+
+    if (cfg.PerfectTLB)
+      return;
+
+    if ((aTranslate->isInstr() ? theInstrTLB : theDataTLB).lookUp(aTranslate->theVaddr).first)
+      return;
+
+    if (!theMMUInitialized)
+    {
+      theMMU.reset(new mmu_t());
+      theMMU->init_mmu_regs(flexusIndex());
+      theMMU->setupAddressSpaceSizesAndGranules();
+      DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
+      DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
+      PAGEMASK = ~((1 << theMMU->Gran0->getlogKBSize()) - 1);
+      thePageWalker->setMMU(theMMU);
+      theMMUInitialized = true;
     }
-  }
+
+    thePageWalker->push_back_trace(aTranslate, Flexus::Qemu::Processor::getProcessor(flexusIndex()));
+    (aTranslate->isInstr() ? theInstrTLB : theDataTLB)[aTranslate->theVaddr] =
+        aTranslate->thePaddr;
+    }
 };
 
 } // End Namespace nMMU

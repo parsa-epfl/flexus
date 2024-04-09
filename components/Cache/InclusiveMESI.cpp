@@ -91,6 +91,10 @@ REGISTER_CONTROLLER_IMPLEMENTATION(InclusiveMESI, "InclusiveMESI");
 // The automagic creation process calls this function
 // The args should be empty, and the params contain a pointer to the controller
 // and the init info.
+//
+// Bryan Perdrizat:
+//      Another bad piece of code, I removed the need for boost lexical_cast
+//      TODO: Refactor
 BaseCacheControllerImpl *
 InclusiveMESI::createInstance(std::list<std::pair<std::string, std::string>> &args,
                               const ControllerParams &params) {
@@ -98,19 +102,24 @@ InclusiveMESI::createInstance(std::list<std::pair<std::string, std::string>> &ar
   bool aSnoopLRU = false;
   bool anEvictAcksRequired = true;
   bool a2LevelPrivate = false;
+
   while (!args.empty()) {
-    if (strcasecmp(args.front().first.c_str(), "AlwaysNAck") == 0) {
-      anAlwaysNAck = boost::lexical_cast<bool>(args.front().second);
-    } else if (strcasecmp(args.front().first.c_str(), "snoop_lru") == 0) {
-      aSnoopLRU = boost::lexical_cast<bool>(args.front().second);
-    } else if (strcasecmp(args.front().first.c_str(), "evict_acks_required") == 0) {
-      anEvictAcksRequired = boost::lexical_cast<bool>(args.front().second);
-    } else if (strcasecmp(args.front().first.c_str(), "two_level_private") == 0) {
-      a2LevelPrivate = boost::lexical_cast<bool>(args.front().second);
-    } else {
-      DBG_Assert(false, NoDefaultOps()(<< "Unknown argument to InclusiveMESI controller: '"
-                                       << args.front().first << "'"));
-    }
+
+    if (strcasecmp(args.front().first.c_str(), "AlwaysNAck") == 0)
+      anAlwaysNAck = (strcasecmp(args.front().second.c_str(), "true") == 0);
+
+    if (strcasecmp(args.front().first.c_str(), "snoop_lru") == 0)
+      aSnoopLRU = (strcasecmp(args.front().second.c_str(), "true") == 0);
+
+    if (strcasecmp(args.front().first.c_str(), "evict_acks_required") == 0)
+      anEvictAcksRequired = (strcasecmp(args.front().second.c_str(), "true") == 0);
+
+    if (strcasecmp(args.front().first.c_str(), "two_level_private") == 0)
+      a2LevelPrivate = (strcasecmp(args.front().second.c_str(), "true") == 0);
+
+    if ( !(anAlwaysNAck | aSnoopLRU | anEvictAcksRequired | a2LevelPrivate))
+      DBG_Assert(false, NoDefaultOps()(<< "Unknown argument to InclusiveMESI controller: '" << args.front().first << "'"));
+
     args.pop_front();
   }
   DBG_Assert(args.empty(), NoDefaultOps()(<< "Tried to create InclusiveMESI controller with "
