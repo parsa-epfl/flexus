@@ -67,7 +67,7 @@ bool validateXRegister::operator()() {
 
   uint64_t flexus = theInstruction->operand<uint64_t>(theOperandCode);
   uint64_t qemu =
-      (Flexus::Qemu::Processor::getProcessor(theInstruction->cpu()).readXRegister(theReg)) &
+      (Flexus::Qemu::Processor::getProcessor(theInstruction->cpu()).read_register(Flexus::Qemu::API::GENERAL, theReg)) &
       (the_64 ? -1LL : 0xFFFFFFFF);
 
   DBG_(Dev, Condition(flexus != qemu)(<< "flexus value in " << std::setw(10) << theOperandCode

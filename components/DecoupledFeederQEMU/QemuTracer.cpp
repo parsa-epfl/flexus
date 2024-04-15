@@ -280,7 +280,7 @@ public:
 
   // Useful debugging stuff for tracing every instruction
   void debugTransaction(API::memory_transaction_t *mem_trans) {
-    API::logical_address_t pc_logical = Processor::getProcessor(core_index).getPC();
+    API::logical_address_t pc_logical = Processor::getProcessor(core_index).get_pc();
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"

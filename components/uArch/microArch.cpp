@@ -378,7 +378,7 @@ private:
     resetArchitecturalState(was_expected);
 
     // Obtain new state from simics
-    VirtualMemoryAddress redirect_address(theCPU.getPC());
+    VirtualMemoryAddress redirect_address(theCPU.get_pc());
     DBG_(Dev, Cond(!was_expected)(<< "Unexpected! Redirecting to address " << redirect_address));
     redirect(redirect_address);
   }
@@ -392,7 +392,7 @@ private:
   }
 
   void resetArchitecturalState(bool was_expected) {
-    theCore->setPC(theCPU.getPC());
+    theCore->setPC(theCPU.get_pc());
     DBG_(Dev, Cond(!was_expected)(<< "setting PC to " << std::hex << theCore->pc() << std::dec));
     fillXRegisters();
     fillVRegisters();
@@ -410,7 +410,7 @@ private:
   // in the VM (i.e. client)
   void fillXRegisters() {
     for (int32_t i = 0; i < 32; ++i) {
-      uint64_t val = theCPU.readXRegister(i);
+      uint64_t val = theCPU.read_register(Flexus::Qemu::API::GENERAL,(std::size_t)i);
       theCore->initializeRegister(xReg(i), val);
     }
   }
@@ -418,7 +418,7 @@ private:
   // in the VM (i.e. client)
   void fillVRegisters() {
     for (int32_t i = 0; i < 32; ++i) {
-      uint64_t val = theCPU.readVRegister(i);
+      uint64_t val = theCPU.read_register(Flexus::Qemu::API::FLOATING_POINT, (std::size_t)i);
       theCore->initializeRegister(vReg(i), val);
     }
   }
