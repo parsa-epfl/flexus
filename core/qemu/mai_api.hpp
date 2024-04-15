@@ -74,6 +74,11 @@ private:
 
 public:
 
+    static Processor getProcessor(uint64_t core_index = 0)
+    {
+        return Processor(core_index);
+    }
+
     Processor(): core_index(0)
     {}
 
@@ -81,6 +86,14 @@ public:
     read_register(API::register_type_t reg, std::size_t index = 0xFF)
     {
         return API::qemu_api.read_register(core_index, reg, index);
+    }
+
+    // Timing implemented
+    //
+    VirtualMemoryAddress
+    get_pc() const
+    {
+        return VirtualMemoryAddress(API::qemu_api.get_pc(core_index));
     }
 
     // TODO ─── NOT implemented ────────────────────────────────────────────────
@@ -106,7 +119,8 @@ public:
     uint64_t readSCTLR(uint64_t index) { return 0;}
 
     uint64_t readPC() const { return 0;}
-    VirtualMemoryAddress getPC() const { return VirtualMemoryAddress(); }
+   
+    
 
     uint64_t id() const { return core_index; }
 
@@ -116,11 +130,13 @@ public:
 
     uint64_t read_sysreg_from_qemu(uint32_t no) { return 0; }
 
-     uint64_t readXRegister(size_t anIndex) const
+    // general purpose register
+    uint64_t readXRegister(size_t anIndex) const
     {
         return 0;
     }
 
+    // flaoting point
     uint64_t readVRegister(int anIndex) const
     {
         return 0;
@@ -154,12 +170,6 @@ public:
 //   assert(false);
 //   return getProcessor(0);
 // }
-
-    static Processor getProcessor(uint64_t core_index = 0)
-    {
-        return Processor(core_index);
-    }
-
 };
 
 // #undef PROCESSOR_IMPL

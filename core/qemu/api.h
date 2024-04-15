@@ -239,7 +239,6 @@ typedef uint64_t          (*QEMU_GET_GPR_t)        (conf_object_t *cpu, int idx)
 typedef bool              (*QEMU_GET_IRQ_t)        (conf_object_t *cpu);
 typedef void              (*QEMU_GET_MEM_t)        (uint8_t* buf, physical_address_t pa, int bytes);
 typedef conf_object_t    *(*QEMU_GET_OBJ_BY_NAME_t)(const char *name);
-typedef uint64_t          (*QEMU_GET_PC_t)         (conf_object_t *cpu);
 typedef int               (*QEMU_GET_PL_t)         (conf_object_t *cpu);
 typedef char             *(*QEMU_GET_SNAP_t)       (conf_object_t* cpu);
 typedef int               (*QEMU_MEM_OP_IS_DATA_t) (generic_transaction_t *mop);
@@ -247,9 +246,10 @@ typedef int               (*QEMU_MEM_OP_IS_WRITE_t)(generic_transaction_t *mop);
 typedef void              (*QEMU_STOP_t)           (const char *msg);
 
 // ─── Bryan Qemu-8.2 ──────────────────────────────────────────────────────────
-typedef physical_address_t(*QEMU_GET_PA_t)          (size_t core_index, data_or_instr_t fetch, logical_address_t va);
+typedef physical_address_t(*QEMU_GET_PA_t)          (size_t core_index, logical_address_t va);
 typedef uint64_t          (*QEMU_READ_REG_t)        (size_t core_index, register_type_t reg , size_t reg_info);
 typedef size_t            (*QEMU_GET_NUM_CORES_t)   (void);
+typedef logical_address_t (*QEMU_GET_PC_t)          (size_t core_index);
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -282,7 +282,6 @@ typedef struct QEMU_API_t
   QEMU_GET_IRQ_t         get_irq;
   QEMU_GET_MEM_t         get_mem;
   QEMU_GET_OBJ_BY_NAME_t get_obj_by_name;
-  QEMU_GET_PC_t          get_pc;
   QEMU_GET_PL_t          get_pl;
   QEMU_GET_SNAP_t        get_snap;
   QEMU_MEM_OP_IS_DATA_t  mem_op_is_data;
@@ -292,6 +291,7 @@ typedef struct QEMU_API_t
   QEMU_GET_NUM_CORES_t   get_num_cores;
   QEMU_READ_REG_t        read_register;
   QEMU_GET_PA_t          translate_va2pa;
+  QEMU_GET_PC_t          get_pc;
   // ─────────────────────────────────────────────────────────────────────
 
 

@@ -302,13 +302,11 @@ public:
       DBG_(VVerb, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry "
                    << item->theVaddr));
 
-      std::pair<bool, PhysicalMemoryAddress> entry =
-          (item->isInstr() ? theInstrTLB : theDataTLB)
-              .lookUp((VirtualMemoryAddress)(item->theVaddr));
+      std::pair<bool, PhysicalMemoryAddress> entry = (item->isInstr() ? theInstrTLB : theDataTLB) .lookUp((VirtualMemoryAddress)(item->theVaddr));
+
       if (cfg.PerfectTLB) {
         PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(
           flexusIndex(),
-          item->isInstr() ? Qemu::API::QEMU_DI_Instruction : Qemu::API::QEMU_DI_Data,
           item->theVaddr));
         entry.first = true;
         entry.second = perfectPaddr;
@@ -339,7 +337,6 @@ public:
           } else {
             PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(
                 flexusIndex(),
-                item->isInstr() ? Qemu::API::QEMU_DI_Instruction : Qemu::API::QEMU_DI_Data,
                 item->theVaddr));
             item->setHit();
             item->thePaddr = perfectPaddr;
@@ -534,27 +531,27 @@ public:
 
 FLEXUS_COMPONENT_INSTANTIATOR(MMU, nMMU);
 FLEXUS_PORT_ARRAY_WIDTH(MMU, dRequestIn) {
-  return (cfg.Cores);
+   return cfg.cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 FLEXUS_PORT_ARRAY_WIDTH(MMU, iRequestIn) {
-  return (cfg.Cores);
+   return cfg.cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 FLEXUS_PORT_ARRAY_WIDTH(MMU, ResyncIn) {
-  return (cfg.Cores);
+   return cfg.cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 FLEXUS_PORT_ARRAY_WIDTH(MMU, iTranslationReply) {
-  return (cfg.Cores);
+   return cfg.cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 FLEXUS_PORT_ARRAY_WIDTH(MMU, dTranslationReply) {
-  return (cfg.Cores);
+   return cfg.cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 
 FLEXUS_PORT_ARRAY_WIDTH(MMU, MemoryRequestOut) {
-  return (cfg.Cores);
+   return cfg.cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 
 FLEXUS_PORT_ARRAY_WIDTH(MMU, TLBReqIn) {
-  return (cfg.Cores);
+   return cfg.cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
