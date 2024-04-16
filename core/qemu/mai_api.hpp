@@ -96,6 +96,11 @@ public:
         return VirtualMemoryAddress(API::qemu_api.get_pc(core_index));
     }
 
+    uint64_t
+    has_irq() const
+    {
+        return API::qemu_api.has_irq(core_index);
+    }
     // TODO ─── NOT implemented ────────────────────────────────────────────────
 
 
@@ -130,24 +135,9 @@ public:
 
     uint64_t read_sysreg_from_qemu(uint32_t no) { return 0; }
 
-    // general purpose register
-    uint64_t readXRegister(size_t anIndex) const
-    {
-        return 0;
-    }
-
-    // flaoting point
-    uint64_t readVRegister(int anIndex) const
-    {
-        return 0;
-    }
-
     int advance(bool count_time = true) {return 0;}
 
-    uint64_t getPendingInterrupt() const
-    {
-        return 0;
-    }
+    
 
     void breakSimulation() {}
 
