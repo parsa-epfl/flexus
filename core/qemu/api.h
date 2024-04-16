@@ -236,7 +236,6 @@ typedef uint64_t          (*QEMU_GET_CSR_t)        (conf_object_t *cpu, int idx)
 typedef uint64_t          (*QEMU_GET_CYCLES_LEFT_t)(void);
 typedef uint64_t          (*QEMU_GET_FPR_t)        (conf_object_t *cpu, int idx);
 typedef uint64_t          (*QEMU_GET_GPR_t)        (conf_object_t *cpu, int idx);
-typedef bool              (*QEMU_GET_IRQ_t)        (conf_object_t *cpu);
 typedef void              (*QEMU_GET_MEM_t)        (uint8_t* buf, physical_address_t pa, int bytes);
 typedef conf_object_t    *(*QEMU_GET_OBJ_BY_NAME_t)(const char *name);
 typedef int               (*QEMU_GET_PL_t)         (conf_object_t *cpu);
@@ -250,10 +249,8 @@ typedef physical_address_t(*QEMU_GET_PA_t)          (size_t core_index, logical_
 typedef uint64_t          (*QEMU_READ_REG_t)        (size_t core_index, register_type_t reg , size_t reg_info);
 typedef size_t            (*QEMU_GET_NUM_CORES_t)   (void);
 typedef logical_address_t (*QEMU_GET_PC_t)          (size_t core_index);
-
+typedef bool              (*QEMU_GET_IRQ_t)         (size_t core_index);
 // ─────────────────────────────────────────────────────────────────────────────
-
-
 
 typedef void              (*FLEXUS_START_t)        (void);
 typedef void              (*FLEXUS_STOP_t)         (void);
@@ -279,7 +276,6 @@ typedef struct QEMU_API_t
   QEMU_GET_CYCLES_LEFT_t get_cycles_left;
   QEMU_GET_FPR_t         get_fpr;
   QEMU_GET_GPR_t         get_gpr;
-  QEMU_GET_IRQ_t         get_irq;
   QEMU_GET_MEM_t         get_mem;
   QEMU_GET_OBJ_BY_NAME_t get_obj_by_name;
   QEMU_GET_PL_t          get_pl;
@@ -292,6 +288,7 @@ typedef struct QEMU_API_t
   QEMU_READ_REG_t        read_register;
   QEMU_GET_PA_t          translate_va2pa;
   QEMU_GET_PC_t          get_pc;
+  QEMU_GET_IRQ_t         has_irq;
   // ─────────────────────────────────────────────────────────────────────
 
 

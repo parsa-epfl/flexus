@@ -308,8 +308,7 @@ public:
       // Record free ROB space for next cycle
       theAvailableROB = theCore->availableROB();
 
-      eExceptionType interrupt =
-          theCPU.getPendingInterrupt() == 0 ? kException_None : kException_; // HEHE
+      eExceptionType interrupt = theCPU.has_irq() ?  kException_ : kException_None; // HEHE
       theCore->cycle(interrupt);
 
     } catch (ResynchronizeWithQemuException &e) {
