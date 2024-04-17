@@ -124,7 +124,7 @@ public:
   uint8_t getPAWidth(bool isBR0) const;
 
 public: /* Functions that are called externally from TLBs, uArch, etc.... */
-  void init_mmu_regs(std::size_t core_index);
+  bool init_mmu_regs(std::size_t core_index);
   bool IsExcLevelEnabled(uint8_t elToValidate) const;
   void setupAddressSpaceSizesAndGranules(void);
 
