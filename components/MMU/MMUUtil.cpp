@@ -135,7 +135,8 @@ void mmu_t::setupBitConfigs() {
   aarch64_bit_configs.TG1_SZ_Base = 16;
   aarch64_bit_configs.TGn_SZ_NumBits = 6;
 }
-void
+
+bool
 mmu_t::init_mmu_regs(std::size_t core_index) {
   using namespace Flexus::Qemu;
 
@@ -169,7 +170,8 @@ mmu_t::init_mmu_regs(std::size_t core_index) {
   //? Section D23.2.74 - AArch64 Memory Model Feature Register 0
   mmu_regs.ID_AA64MMFR0_EL1 = cpu.read_register(Qemu::API::ID_AA64MMFR0, EL1);
 
-  DBG_(VVerb, (<< "Initializing mmu registers from QEMU...."));
+  DBG_(VVerb, (<< "Initializing mmu registers from QEMU...." << mmu_regs.TCR[EL1]));
+  return (mmu_regs.TCR[EL1] != 0);
 }
 
 bool mmu_t::IsExcLevelEnabled(uint8_t EL) const {

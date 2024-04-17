@@ -215,7 +215,26 @@ private:
   Flexus::Qemu::Processor theCPU;
   std::shared_ptr<mmu_t> theMMU;
 
-  bool theMMUInitialized;
+  // Is true when the MMU has been reseted
+  bool mmu_is_init;
+
+private:
+
+  bool
+  cfg_mmu(index_t anIndex)
+  {
+    bool ret = false;
+    theMMU.reset(new mmu_t());
+
+    if(theMMU->init_mmu_regs(anIndex)){
+      theMMU->setupAddressSpaceSizesAndGranules();
+      DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
+      DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
+      PAGEMASK = ~((1 << theMMU->Gran0->getlogKBSize()) - 1);
+      ret = true;
+    }
+    return ret;
+  }
 
 public:
   FLEXUS_COMPONENT_CONSTRUCTOR(MMU) : base(FLEXUS_PASS_CONSTRUCTOR_ARGS) {
@@ -273,7 +292,7 @@ public:
     theCPU = Flexus::Qemu::Processor::getProcessor(flexusIndex());
     thePageWalker.reset(new PageWalk(flexusIndex()));
     thePageWalker->setMMU(theMMU);
-    theMMUInitialized = false;
+    mmu_is_init = false;
     theInstrTLB.resize(cfg.iTLBSize);
     theDataTLB.resize(cfg.dTLBSize);
   }
@@ -302,9 +321,10 @@ public:
       DBG_(VVerb, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry "
                    << item->theVaddr));
 
-      std::pair<bool, PhysicalMemoryAddress> entry = (item->isInstr() ? theInstrTLB : theDataTLB) .lookUp((VirtualMemoryAddress)(item->theVaddr));
-
-      if (cfg.PerfectTLB) {
+      std::pair<bool, PhysicalMemoryAddress> entry =
+          (item->isInstr() ? theInstrTLB : theDataTLB)
+              .lookUp((VirtualMemoryAddress)(item->theVaddr));
+      if (cfg.PerfectTLB || !mmu_is_init) {
         PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(
           flexusIndex(),
           item->theVaddr));
@@ -410,21 +430,7 @@ public:
     CORE_TRACE;
     DBG_(VVerb, (<< "Resynchronizing MMU"));
 
-    static bool optimize = false;
-    theMMUInitialized = optimize;
-
-    if (!theMMUInitialized) {
-      theMMU.reset(new mmu_t());
-      theMMUInitialized = true;
-    }
-
-    theMMU->init_mmu_regs(anIndex);
-    theMMU->setupAddressSpaceSizesAndGranules();
-
-    DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
-    DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
-
-    PAGEMASK = ~((1 << theMMU->Gran0->getlogKBSize()) - 1);
+    if (!mmu_is_init) mmu_is_init = cfg_mmu(anIndex);
 
     if (thePageWalker) {
       DBG_(VVerb, (<< "Annulling all PW entries"));
@@ -497,34 +503,24 @@ public:
     }
   }
 
+
+
   bool available(interface::TLBReqIn const &, index_t anIndex) {
     return true;
   }
   void push(interface::TLBReqIn const &, index_t anIndex, TranslationPtr &aTranslate) {
+    if (cfg.PerfectTLB) return;
+    if ((aTranslate->isInstr() ? theInstrTLB : theDataTLB).lookUp(aTranslate->theVaddr).first) return;
 
+    if (!mmu_is_init) mmu_is_init = cfg_mmu(anIndex);
+    if (!mmu_is_init) return;
 
-    if (cfg.PerfectTLB)
-      return;
-
-    if ((aTranslate->isInstr() ? theInstrTLB : theDataTLB).lookUp(aTranslate->theVaddr).first)
-      return;
-
-    if (!theMMUInitialized)
-    {
-      theMMU.reset(new mmu_t());
-      theMMU->init_mmu_regs(flexusIndex());
-      theMMU->setupAddressSpaceSizesAndGranules();
-      DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
-      DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
-      PAGEMASK = ~((1 << theMMU->Gran0->getlogKBSize()) - 1);
-      thePageWalker->setMMU(theMMU);
-      theMMUInitialized = true;
-    }
+    thePageWalker->setMMU(theMMU);
 
     thePageWalker->push_back_trace(aTranslate, Flexus::Qemu::Processor::getProcessor(flexusIndex()));
     (aTranslate->isInstr() ? theInstrTLB : theDataTLB)[aTranslate->theVaddr] =
         aTranslate->thePaddr;
-    }
+  }
 };
 
 } // End Namespace nMMU
