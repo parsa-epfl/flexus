@@ -501,7 +501,7 @@ private:
       Flexus::SharedTypes::Translation xlat;
       xlat.theVaddr = vprefetch;
       xlat.theType = Flexus::SharedTypes::Translation::eFetch;
-      xlat.thePaddr = cpu(anIndex).translateVirtualAddress(xlat.theVaddr);
+      xlat.thePaddr = cpu(anIndex).translate_va2pa(xlat.theVaddr);
       if (!xlat.thePaddr) {
         // Unable to translate for prefetch
         theLastPrefetchVTagSet[anIndex] = boost::none;
@@ -542,7 +542,7 @@ private:
       Flexus::SharedTypes::Translation xlat;
       xlat.theVaddr = vaddr;
       xlat.theType = Flexus::SharedTypes::Translation::eFetch;
-      xlat.thePaddr = cpu(anIndex).translateVirtualAddress(xlat.theVaddr);
+      xlat.thePaddr = cpu(anIndex).translate_va2pa(xlat.theVaddr);
       paddr = xlat.thePaddr;
       if (paddr == 0) {
         assert(false);
@@ -1006,7 +1006,7 @@ private:
     DBG_(TR_BIJ_DBG, Comp(*this)(<< "Updating translation response for " << tr->theVaddr
                                  << " @ cpu index " << flexusIndex()));
     PhysicalMemoryAddress magicTranslation =
-        cpu(tr->theIndex).translateVirtualAddress(tr->theVaddr);
+        cpu(tr->theIndex).translate_va2pa(tr->theVaddr);
 
     if (tr->thePaddr == magicTranslation || tr->isPagefault()) {
       DBG_(VVerb, Comp(*this)(<< "Magic QEMU translation == MMU Translation. Vaddr = " << std::hex
