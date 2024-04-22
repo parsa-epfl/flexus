@@ -72,6 +72,7 @@ private:
     {}
 
 
+
 public:
 
     static Processor getProcessor(uint64_t core_index = 0)
@@ -133,6 +134,12 @@ public:
             PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(anAddress))),
             size);
     }
+
+    uint32_t fetch_inst(VirtualMemoryAddress addr)
+    {
+            return static_cast<uint32_t>(read_va(addr, 4));
+    }
+
     bits read_pa(PhysicalMemoryAddress anAddress, size_t aSize) const {
         uint8_t buf[aSize] = {0};
 
@@ -159,12 +166,11 @@ public:
 
 
 
-    uint32_t fetchInstruction(VirtualMemoryAddress addr) {return 0;}
     uint64_t readSCTLR(uint64_t index) { return 0;}
 
     uint64_t readPC() const { return 0;}
-   
-    
+
+
 
     uint64_t id() const { return core_index; }
 
@@ -175,7 +181,8 @@ public:
     uint64_t read_sysreg_from_qemu(uint32_t no) { return 0; }
 
 
-    
+
+
 
     void breakSimulation() {}
 

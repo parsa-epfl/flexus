@@ -1026,7 +1026,7 @@ private:
                   Comp(*this)(<< "ERROR: Opcode index was NOT found for translationPtr with ID"
                               << tr->theID << " and address" << tr->theVaddr));
     if (!tr->isPagefault()) {
-      opcode = cpu(tr->theIndex).fetchInstruction(tr->theVaddr);
+      opcode = cpu(tr->theIndex).fetch_inst(tr->theVaddr);
       opcode += opcode ? 0 : 1;
     }
     waitingForOpcodeQueue->updateOpcode(tr->theVaddr, bijection_iter->second, opcode);
