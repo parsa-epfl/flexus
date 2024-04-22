@@ -114,6 +114,25 @@ public:
             API::qemu_api.translate_va2pa(core_index, addr)
         );
     }
+
+    bits read_va(VirtualMemoryAddress anAddress, size_t size) {
+        VirtualMemoryAddress finalAddress(((uint64_t)(anAddress) + size - 1) & ~0xFFF);
+        if ((finalAddress & 0x1000) != (anAddress & 0x1000)) {
+          bits value1, value2;
+          size_t partial = finalAddress - anAddress;
+          value1 = read_pa(
+              PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(anAddress))),
+              partial);
+          value2 = read_pa(
+              PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(finalAddress))),
+              size - partial);
+          value2 = (value2 << (partial << 3)) | value1;
+          return value2;
+        }
+        return read_pa(
+            PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(anAddress))),
+            size);
+    }
     bits read_pa(PhysicalMemoryAddress anAddress, size_t aSize) const {
         uint8_t buf[aSize] = {0};
 
@@ -137,11 +156,6 @@ public:
         return "0xDEADBEEF";
     }
 
-
-    bits readVirtualAddress(VirtualMemoryAddress anAddress, std::size_t size)
-    {
-        return bits(0);
-    }
 
 
 

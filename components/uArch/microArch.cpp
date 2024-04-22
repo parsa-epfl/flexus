@@ -187,7 +187,7 @@ public:
       Flexus::SharedTypes::Translation xlat;
       xlat.theVaddr = op->theVAddr;
       xlat.theType = Flexus::SharedTypes::Translation::eStore;
-      op->theExtendedValue = theCPU.readVirtualAddress(xlat.theVaddr, op->theSize);
+      op->theExtendedValue = theCPU.read_va(xlat.theVaddr, op->theSize);
     } else if (op->theOperation == kStoreReply && !op->theSideEffect && !op->theAtomic) {
       // Need to inform ValueTracker that this store is complete
       bits value = op->theValue;
