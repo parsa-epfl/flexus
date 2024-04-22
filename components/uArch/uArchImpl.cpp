@@ -280,7 +280,7 @@ public:
   void push(interface::dTranslationIn const &, TranslationPtr &aTranslate) {
 
     PhysicalMemoryAddress magicTranslation =
-        Flexus::Qemu::Processor::getProcessor(theMicroArch->core()).translateVirtualAddress(aTranslate->theVaddr);
+        Flexus::Qemu::Processor::getProcessor(theMicroArch->core()).translate_va2pa(aTranslate->theVaddr);
 
     if (aTranslate->thePaddr == magicTranslation || magicTranslation == 0xffffffffffffffff) {
       DBG_(Iface,

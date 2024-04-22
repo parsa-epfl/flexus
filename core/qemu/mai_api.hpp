@@ -107,6 +107,13 @@ public:
     {
         return API::qemu_api.cpu_exec(core_index, count_time);
     }
+
+    PhysicalMemoryAddress translate_va2pa(VirtualMemoryAddress addr)
+    {
+        return PhysicalMemoryAddress(
+            API::qemu_api.translate_va2pa(core_index, addr)
+        );
+    }
     bits read_pa(PhysicalMemoryAddress anAddress, size_t aSize) const {
         uint8_t buf[aSize] = {0};
 
@@ -137,7 +144,6 @@ public:
     }
 
 
-    PhysicalMemoryAddress translateVirtualAddress(VirtualMemoryAddress addr) { return PhysicalMemoryAddress(); }
 
     uint32_t fetchInstruction(VirtualMemoryAddress addr) {return 0;}
     uint64_t readSCTLR(uint64_t index) { return 0;}
