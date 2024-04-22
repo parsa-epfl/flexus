@@ -349,10 +349,10 @@ private:
 
 FLEXUS_COMPONENT_INSTANTIATOR(MemoryNetwork, nNetwork);
 FLEXUS_PORT_ARRAY_WIDTH(MemoryNetwork, ToNode) {
-  return cfg.VChannels * cfg.NumNodes;
+   return cfg.VChannels * (cfg.NumNodes ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth() * 3);
 }
 FLEXUS_PORT_ARRAY_WIDTH(MemoryNetwork, FromNode) {
-  return cfg.VChannels * cfg.NumNodes;
+   return cfg.VChannels * (cfg.NumNodes ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth() * 3);
 }
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
