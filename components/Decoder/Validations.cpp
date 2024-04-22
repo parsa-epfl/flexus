@@ -121,11 +121,11 @@ bool validateMemory::operator()() {
     vaddr_final = (VirtualMemoryAddress)(vaddr_final & ~0xFFFULL);
   }
   PhysicalMemoryAddress paddr = c.translateVirtualAddress(vaddr);
-  bits qemu = c.readPhysicalAddress(paddr, theSize_orig);
+  bits qemu = c.read_pa(paddr, theSize_orig);
   if (theSize_extra) {
     DBG_Assert((qemu >> (theSize_orig * 8)) == 0);
     PhysicalMemoryAddress paddr_spill = c.translateVirtualAddress(vaddr_final);
-    qemu |= c.readPhysicalAddress(paddr_spill, theSize_extra) << (theSize_orig * 8);
+    qemu |= c.read_pa(paddr_spill, theSize_extra) << (theSize_orig * 8);
   }
 
   if (flexus == qemu)
