@@ -265,7 +265,7 @@ bool PageWalk::push_back_trace(TranslationPtr aTranslation, Flexus::Qemu::Proces
 
   while (1) {
     preTranslate(newTransport);
-    basicTranslation->rawTTEValue = (uint64_t)theCPU.readPhysicalAddress(trace_address, 8);
+    basicTranslation->rawTTEValue = (uint64_t)theCPU.read_pa(trace_address, 8);
     aTranslation->trace_addresses.push(trace_address);
     newTransport.set(TranslationBasicTag, basicTranslation);
     translate(newTransport);

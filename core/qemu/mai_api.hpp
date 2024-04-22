@@ -107,6 +107,20 @@ public:
     {
         return API::qemu_api.cpu_exec(core_index, count_time);
     }
+    bits read_pa(PhysicalMemoryAddress anAddress, size_t aSize) const {
+        uint8_t buf[aSize] = {0};
+
+        if (API::qemu_api.get_mem(buf, API::physical_address_t(anAddress), aSize))
+          return ~(bits)(0);
+
+        bits tmp = 0;
+        for (size_t i = 0; i < aSize; i++) {
+          const size_t s = i * 8;
+          bits val = (((bits)buf[i] << s) & ((bits)0xff << s));
+          tmp |= val;
+        }
+        return tmp;
+    }
     // TODO ─── NOT implemented ────────────────────────────────────────────────
 
 
@@ -122,7 +136,6 @@ public:
         return bits(0);
     }
 
-    bits readPhysicalAddress(PhysicalMemoryAddress anAddress, std::size_t aSize) const { return bits(0); }
 
     PhysicalMemoryAddress translateVirtualAddress(VirtualMemoryAddress addr) { return PhysicalMemoryAddress(); }
 
