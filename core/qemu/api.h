@@ -227,7 +227,6 @@ typedef struct {
  *---------------------------------------------------------------*/
 
 typedef bool              (*QEMU_CPU_BUSY_t)       (conf_object_t* cpu);
-typedef int               (*QEMU_CPU_EXEC_t)       (conf_object_t *cpu, bool count);
 typedef char             *(*QEMU_DISASS_t)         (conf_object_t* cpu, uint64_t addr);
 typedef conf_object_t    *(*QEMU_GET_ALL_CPUS_t)   (void);
 typedef conf_object_t    *(*QEMU_GET_CPU_BY_IDX_t) (uint64_t idx);
@@ -250,6 +249,7 @@ typedef uint64_t          (*QEMU_READ_REG_t)        (size_t core_index, register
 typedef size_t            (*QEMU_GET_NUM_CORES_t)   (void);
 typedef logical_address_t (*QEMU_GET_PC_t)          (size_t core_index);
 typedef bool              (*QEMU_GET_IRQ_t)         (size_t core_index);
+typedef uint64_t          (*QEMU_CPU_EXEC_t)        (size_t core_index, bool count);
 // ─────────────────────────────────────────────────────────────────────────────
 
 typedef void              (*FLEXUS_START_t)        (void);
@@ -267,7 +267,6 @@ typedef struct FLEXUS_API_t {
 typedef struct QEMU_API_t
 {
   QEMU_CPU_BUSY_t        cpu_busy;
-  QEMU_CPU_EXEC_t        cpu_exec;
   QEMU_DISASS_t          disass;
   QEMU_GET_ALL_CPUS_t    get_all_cpus;
   QEMU_GET_CPU_BY_IDX_t  get_cpu_by_idx;
@@ -289,6 +288,7 @@ typedef struct QEMU_API_t
   QEMU_GET_PA_t          translate_va2pa;
   QEMU_GET_PC_t          get_pc;
   QEMU_GET_IRQ_t         has_irq;
+  QEMU_CPU_EXEC_t        cpu_exec;
   // ─────────────────────────────────────────────────────────────────────
 
 
