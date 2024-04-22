@@ -98,12 +98,9 @@ typedef enum {
 
 
 typedef enum {
-  kGENERAL = 0,
-  kFLOATING_POINT,
-
   // ─── Bryan ───────────────────────────────────────────────────────────
 
-  GENERAL,            // Regs for A64 mode.
+  GENERAL = 0,            // Regs for A64 mode.
   FLOATING_POINT,
 
   // PC,              // Program counter
