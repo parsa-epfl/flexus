@@ -101,6 +101,12 @@ public:
     {
         return API::qemu_api.has_irq(core_index);
     }
+
+    uint64_t
+    advance(bool count_time = true)
+    {
+        return API::qemu_api.cpu_exec(core_index, count_time);
+    }
     // TODO ─── NOT implemented ────────────────────────────────────────────────
 
 
@@ -135,7 +141,6 @@ public:
 
     uint64_t read_sysreg_from_qemu(uint32_t no) { return 0; }
 
-    int advance(bool count_time = true) {return 0;}
 
     
 
