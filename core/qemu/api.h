@@ -237,7 +237,6 @@ typedef int               (*QEMU_GET_PL_t)         (conf_object_t *cpu);
 typedef char             *(*QEMU_GET_SNAP_t)       (conf_object_t* cpu);
 typedef int               (*QEMU_MEM_OP_IS_DATA_t) (generic_transaction_t *mop);
 typedef int               (*QEMU_MEM_OP_IS_WRITE_t)(generic_transaction_t *mop);
-typedef void              (*QEMU_STOP_t)           (const char *msg);
 
 // ─── Bryan Qemu-8.2 ──────────────────────────────────────────────────────────
 typedef physical_address_t(*QEMU_GET_PA_t)          (size_t core_index, logical_address_t va);
@@ -247,6 +246,7 @@ typedef logical_address_t (*QEMU_GET_PC_t)          (size_t core_index);
 typedef bool              (*QEMU_GET_IRQ_t)         (size_t core_index);
 typedef uint64_t          (*QEMU_CPU_EXEC_t)        (size_t core_index, bool count);
 typedef bool              (*QEMU_GET_MEM_t)         (uint8_t* buffer, physical_address_t pa, size_t nb_bytes);
+typedef void              (*QEMU_STOP_t)            (char const * const msg);
 // ─────────────────────────────────────────────────────────────────────────────
 
 typedef void              (*FLEXUS_START_t)        (void);
@@ -277,7 +277,6 @@ typedef struct QEMU_API_t
   QEMU_GET_SNAP_t        get_snap;
   QEMU_MEM_OP_IS_DATA_t  mem_op_is_data;
   QEMU_MEM_OP_IS_WRITE_t mem_op_is_write;
-  QEMU_STOP_t            stop;
   // ─── Bryan ───────────────────────────────────────────────────────────
   QEMU_GET_NUM_CORES_t   get_num_cores;
   QEMU_READ_REG_t        read_register;
@@ -286,6 +285,7 @@ typedef struct QEMU_API_t
   QEMU_GET_IRQ_t         has_irq;
   QEMU_CPU_EXEC_t        cpu_exec;
   QEMU_GET_MEM_t         get_mem;
+  QEMU_STOP_t            stop;
   // ─────────────────────────────────────────────────────────────────────
 
 
