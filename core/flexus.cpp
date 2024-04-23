@@ -274,7 +274,7 @@ void FlexusImpl::advanceCycles(int64_t aCycleCount) {
   }
 
   static uint64_t last_stats = 0;
-  if (theCycleCount - last_stats >= theStatInterval) {
+  if (theStatInterval && (theCycleCount - last_stats >= theStatInterval)) {
     DBG_(Dev, Core()(<< "Saving stats at: " << theCycleCount));
     backupStats("stats_db");
 

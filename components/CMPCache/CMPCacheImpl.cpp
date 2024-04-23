@@ -95,8 +95,11 @@ public:
   void initialize() {
     DBG_(Dev, (<< "GroupInterleaving = " << cfg.GroupInterleaving));
 
+
+    auto cores = cfg.Cores ?: (Flexus::Core::ComponentManager::getComponentManager().systemWidth() * 2);
+
     CMPCacheInfo theInfo((int)flexusIndex(), statName(), cfg.Policy, cfg.DirectoryType,
-                         cfg.DirectoryConfig, cfg.ArrayConfiguration, cfg.Cores, cfg.BlockSize,
+                         cfg.DirectoryConfig, cfg.ArrayConfiguration, cores, cfg.BlockSize,
                          cfg.Banks, cfg.BankInterleaving, cfg.Groups, cfg.GroupInterleaving,
                          cfg.MAFSize, cfg.DirEvictBufferSize, cfg.CacheEvictBufferSize,
                          cfg.EvictClean, cfg.CacheLevel, cfg.DirLatency, cfg.DirIssueLatency,
