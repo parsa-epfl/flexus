@@ -48,13 +48,8 @@ project(flexus)
 # Setup configuration parameters
 include(Configuration.cmake)
 
-# Include helper macros
-include(cmake_helpers.cmake)
-
 #Include simulator specific settings only for "real" simulators
-# if(NOT SIMULATOR STREQUAL "Harness")
-    include(${FLEXUS_ROOT}/simulators/${SIMULATOR}/${SIMULATOR}.cmake)
-# endif()
+include(${FLEXUS_ROOT}/simulators/${SIMULATOR}/${SIMULATOR}.cmake)
 
 # Setup include paths
 include_directories(${FLEXUS_ROOT})
