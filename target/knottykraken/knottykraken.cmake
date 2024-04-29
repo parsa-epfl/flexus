@@ -16,9 +16,3 @@ set(KnottyKraken_REQUIRED_COMPONENTS
   SplitDestinationMapper
   MMU
 )
-
-set(SUPPORTS_STANDALONE false)
-set(SUPPORTS_SIMICS false)
-set(SUPPORTS_QEMU true)
-set(DEFAULT_TARGET qemu)
-set(DEFAULT_PLATFORM aarch64)
