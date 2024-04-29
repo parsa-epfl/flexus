@@ -319,6 +319,7 @@ public:
       assert(false);
       break;
     }
+    __builtin_unreachable();
   }
 
   virtual eInstructionCode instCode() const {
