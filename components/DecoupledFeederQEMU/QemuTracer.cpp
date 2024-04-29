@@ -133,8 +133,7 @@ struct TracerStats {
   }
 };
 
-// XXXX
-#define IS_PRIV(mem_trans) (false)
+#define IS_PRIV(mem_trans) ((mem_trans->s.logical_address & 0xf000000000000000ULL) != 0)
 
 class QemuTracerImpl {
 
