@@ -127,7 +127,6 @@ extern bool Stats_debug_enabled;
 } // namespace DBG_Cats
 
 #ifndef SELECTED_DEBUG
-#warning "SELECTED_DEBUG not passed in on command line.  Defaulting to Iface"
 #define DBG_SetCompileTimeMinSev Iface
 #else
 #define DBG_SetCompileTimeMinSev SELECTED_DEBUG

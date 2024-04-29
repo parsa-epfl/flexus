@@ -9,7 +9,3 @@ set(KeenKraken_REQUIRED_COMPONENTS
   TraceTrackerQEMU
   MMU
 )
-
-set(SUPPORTS_QEMU true)
-set(DEFAULT_TARGET qemu)
-set(DEFAULT_PLATFORM aarch64)

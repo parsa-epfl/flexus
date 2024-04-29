@@ -1,5 +1,10 @@
-# Created by https://www.toptal.com/developers/gitignore/api/c,c++,cmake,assembler,git,windows,linux,macos,vim,visualstudiocode,archives,jetbrains+all
-# Edit at https://www.toptal.com/developers/gitignore?templates=c,c++,cmake,assembler,git,windows,linux,macos,vim,visualstudiocode,archives,jetbrains+all
+build/
+lib/
+CMakeUserPresets.json
+
+
+# Created by https://www.toptal.com/developers/gitignore/api/c,c++,git,vim,cmake,linux,macos,windows,archives,assembler,jetbrains+all,visualstudiocode,conan
+# Edit at https://www.toptal.com/developers/gitignore?templates=c,c++,git,vim,cmake,linux,macos,windows,archives,assembler,jetbrains+all,visualstudiocode,conan
 
 ### Archives ###
 # It's better to unpack these files and commit the raw source because
@@ -128,10 +133,31 @@ _deps
 # External projects
 *-prefix/
 
+### Conan ###
+# Conan build information
+conan.lock
+conanbuildinfo.*
+conaninfo.txt
+graph_info.json
+
+## Various built-in generators
+# cmake_find_package generator https://docs.conan.io/en/latest/reference/generators/cmake_find_package.html
+Find*.cmake
+
+# cmake_paths generator https://docs.conan.io/en/1.4/integrations/cmake/cmake_paths_generator.html
+conan_paths.*
+
+# Environment activation scripts produced by https://docs.conan.io/en/latest/mastering/virtualenv.html#virtualenv-generator
+activate_run.ps1
+activate_run.sh
+deactivate_run.ps1
+deactivate_run.sh
+environment_run.ps1.env
+environment_run.sh.env
+
 ### Git ###
 # Created by git for backups. To disable backups in Git:
 # $ git config --global mergetool.keepBackup false
-*.ref
 *.orig
 
 # Created by git when using merge tools for conflicts
@@ -341,4 +367,4 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-# End of https://www.toptal.com/developers/gitignore/api/c,c++,cmake,assembler,git,windows,linux,macos,vim,visualstudiocode,archives,jetbrains+all
+# End of https://www.toptal.com/developers/gitignore/api/c,c++,git,vim,cmake,linux,macos,windows,archives,assembler,jetbrains+all,visualstudiocode,conan
