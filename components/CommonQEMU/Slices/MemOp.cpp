@@ -65,8 +65,8 @@ eSize dbSize(uint32_t aSize) {
     return kQuadWord;
   default:
     assert(false);
-    break;
   }
+    __builtin_unreachable();
 }
 
 std::ostream &operator<<(std::ostream &anOstream, eSize op) {
