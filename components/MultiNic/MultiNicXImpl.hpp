@@ -279,8 +279,7 @@ bool available(interface::FromNodeN const &, index_t aVC) {
 void push(interface::FromNodeN const &, index_t aVC, MemoryTransport &transport) {
   // Ensure src port is set correctly.
   DBG_Assert(transport[NetworkMessageTag]->src_port == N);
-  DBG_Assert(transport[NetworkMessageTag]->vc == aVC,
-             (<< "wrong VC: " << *(transport[NetworkMessageTag])));
+  DBG_Assert(static_cast<unsigned int>(transport[NetworkMessageTag]->vc) == aVC, (<< "wrong VC: " << *(transport[NetworkMessageTag])));
 
   sendQueue[(N * cfg.VChannels) + aVC].push_back(transport);
   currSendCount++;

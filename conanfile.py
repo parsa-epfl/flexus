@@ -32,7 +32,7 @@ class KeenKraken(ConanFile):
         cmake_layout(self, build_folder='.', src_folder=self.recipe_folder)
 
     def requirements(self):
-        self.requires("boost/1.83.0")
+        self.requires("boost/1.83.0", headers=True, libs=True)
 
     def build_requirements(self):
         self.tool_requires("cmake/3.25.3")
@@ -57,6 +57,9 @@ class KeenKraken(ConanFile):
         cmake.build()
 
     def package(self):
-        export_path = path.join(self.export_sources_folder, "lib", self.settings.get_safe("build_type", default="Release"))
+        export_path = path.join(
+            self.export_sources_folder,
+            "lib",
+            self.settings.get_safe("build_type", default="Release"))
         self.output.highlight(f"Exporting library to {export_path}")
         copy(self, "*.so", self.build_folder, export_path, keep_path=False)

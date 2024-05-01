@@ -17,6 +17,11 @@ include_directories(.)
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-error=maybe-uninitialized -Wno-error=dangling-pointer -fdiagnostics-color=always")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -ggdb -g3 -fno-eliminate-unused-debug-symbols -fsanitize=address -fno-omit-frame-pointer -funroll-loops")
 
+# Find boost
+set(Boost_USE_DEBUG_LIBS OFF)
+find_package(Boost REQUIRED COMPONENTS system iostreams regex serialization)
+include_directories(${Boost_INCLUDE_DIRS})
+
 # compile core
 file(GLOB_RECURSE CORE_SOURCE ./core/*.cpp)
 add_library(core STATIC ${CORE_SOURCE})
@@ -28,10 +33,6 @@ foreach(COMPONENT ${REQUIRED_COMPONENTS})
     add_library(${COMPONENT} STATIC ${COMPONENT_${COMPONENT}_SOURCE})
     target_compile_options(${COMPONENT} PRIVATE)
 endforeach()
-
-# Find boost
-set(Boost_USE_DEBUG_LIBS OFF)
-find_package(Boost REQUIRED COMPONENTS system iostreams regex serialization)
 
 # compile simulators
 add_library(${SIMULATOR} SHARED ./target/${SIMULATOR}/wiring.cpp)
