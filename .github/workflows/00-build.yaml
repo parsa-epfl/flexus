@@ -1,0 +1,57 @@
+name: Build Binaries
+run-name: '[${{ github.event_name }}] ${{ github.ref_name }} > ${{ github.sha }}'
+
+# When is the workflow actually triggerd
+on:
+  # Manually triggered
+  workflow_dispatch:
+  push:
+    branches:
+  pull_request:
+    branches:
+
+  #TODO: Once 'main' is replaced
+  # schedule:
+  #   # Every Wednesday at midnight
+  #   - cron:  '0 0 * * 3'
+  #
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Build the Krakens if their files have been modified
+  build_simulator:
+    runs-on: ubuntu-latest
+    name: Build Simulators
+    env:
+      CC: gcc-13
+      CXX: g++-13
+
+    strategy:
+      fail-fast: true
+      matrix:
+        binaries:
+          - keenkraken
+          - knottykraken
+        build_type:
+          - release
+          - debug
+
+    steps:
+      - name: Checkout Flexus
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.8'
+
+      - name: Install conan
+        run: pip install conan
+
+      - name: Detect current environmment profile
+        run: conan profile detect --force
+
+      - name: Build a Flexus based on matrix
+        run: conan build . -pr target/_profile/${{ matrix.build_type }} -b missing --name=${{ matrix.binaries }} -of ./build
