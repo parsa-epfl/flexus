@@ -1,0 +1,13 @@
+[settings]
+arch=x86_64
+compiler=gcc
+compiler.cppstd=14
+compiler.libcxx=libstdc++11
+compiler.version=13
+compiler.threads=posix
+os=Linux
+
+[conf]
+tools.build:verbosity=verbose
+tools.compilation:verbosity=verbose
+tools.cmake.cmake_layout:build_folder_vars=['self.name']
