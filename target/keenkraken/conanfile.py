@@ -39,11 +39,7 @@ class KeenKraken(ConanFile):
         tc = CMakeToolchain(self, generator="Ninja")
         tc.cache_variables['FLEXUS_ROOT'] = self.project_root
         tc.cache_variables['SIMULATOR'] = self.name
-        tc.preprocessor_definitions["FLEXUS"] = None
-        tc.preprocessor_definitions["TARGET_PLATFORM"] = "aarch64"
         tc.preprocessor_definitions["SELECTED_DEBUG"] = "vverb"
-        tc.preprocessor_definitions["BOOST_MPL_LIMIT_VECTOR_SIZE"] = 50
-        tc.preprocessor_definitions["BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS"] = None
         tc.generate()
 
         cmake = CMakeDeps(self)
