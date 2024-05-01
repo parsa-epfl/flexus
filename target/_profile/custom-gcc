@@ -1,0 +1,2 @@
+[conf]
+tools.build:compiler_executables={'c':'/opt/qflex/bin/gcc','cpp':'/opt/qflex/bin/g++'}
