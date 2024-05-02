@@ -1576,9 +1576,14 @@ void NonInclusiveMESIPolicy::handleReply(ProcessEntry_p process) {
       process->addSnoopTransport(first->transport());
       process->setAction(eForward);
     } else {
-      // Select a sharer, forward the message to them
-      MemoryMessage_p msg(new MemoryMessage(MemoryMessage::ReadFwd,
-                                            first->transport()[MemoryMessageTag]->address()));
+        // Select a sharer, forward the message to them
+        auto req = first->transport()[MemoryMessageTag];
+        auto msg_a = req->address();
+
+        MemoryMessage_p msg(new MemoryMessage(
+                        MemoryMessage::ReadFwd,
+                        msg_a));
+
       if (first->transport()[MemoryMessageTag]->type() == MemoryMessage::FetchReq) {
         msg->type() = MemoryMessage::FetchFwd;
       }
