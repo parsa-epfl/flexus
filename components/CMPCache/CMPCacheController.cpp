@@ -434,6 +434,9 @@ void CMPCacheController::runRequestProcess(ProcessEntry_p process) {
                << *(process->transport()[MemoryMessageTag])));
 
   thePolicy->handleRequest(process);
+  auto req = process->transport()[MemoryMessageTag];
+  auto msg_a = req->address();
+
 
   switch (process->action()) {
   case eFwdAndWaitAck:
@@ -479,7 +482,7 @@ void CMPCacheController::runRequestProcess(ProcessEntry_p process) {
     unreserveRequestOut(process, 1);
     unreserveEB(process);
     unreserveMAF(process);
-    dumpMAFEntries(process->transport()[MemoryMessageTag]->address());
+    dumpMAFEntries(msg_a);
     break;
 
     // Actions for Evict Messages (now come in on Request channel, still sent
@@ -758,6 +761,8 @@ void CMPCacheController::finalizeProcess(ProcessEntry_p process) {
   FLEXUS_PROFILE();
 
   DBG_(Trace, (<< "Finalize process: " << *process));
+  auto req = process->transport()[MemoryMessageTag];
+  auto msg_a = req->address();
 
   switch (process->action()) {
   case eFwdAndWaitAck:
@@ -819,7 +824,7 @@ void CMPCacheController::finalizeProcess(ProcessEntry_p process) {
     // thePolicy->MAF().removeFirst(process->transport()[MemoryMessageTag]->address(),
     // process->transport()[DestinationTag]->requester);
     thePolicy->MAF().remove(process->maf());
-    thePolicy->wakeMAFs(process->transport()[MemoryMessageTag]->address());
+    thePolicy->wakeMAFs(msg_a);
     break;
   case eRemoveMAF:
     thePolicy->MAF().remove(process->maf());
@@ -830,7 +835,7 @@ void CMPCacheController::finalizeProcess(ProcessEntry_p process) {
     // thePolicy->MAF().removeFirst(process->transport()[MemoryMessageTag]->address(),
     // process->transport()[DestinationTag]->requester);
     thePolicy->MAF().remove(process->maf());
-    thePolicy->wakeMAFs(process->transport()[MemoryMessageTag]->address());
+    thePolicy->wakeMAFs(msg_a);
     break;
   case eStall:
   case eNoAction:
