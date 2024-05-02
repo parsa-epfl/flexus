@@ -28,6 +28,15 @@ class KeenKraken(ConanFile):
     def set_name(self):
         self.name = self.name or None
 
+    def configure(self):
+        if self.name == None:
+            raise ConanInvalidConfiguration("Need to set a name to compile [keenkraken/knottykraken]")
+        if self.name == 'keenkraken' and int(self.settings_build.get_safe('compiler.version')) < 12:
+            raise ConanInvalidConfiguration("Need GCC 12.3 at least to build keenkraken")
+        if self.name == 'knottykraken' and int(self.settings_build.get_safe('compiler.version')) < 13:
+            raise ConanInvalidConfiguration("Need GCC 13.1 at least to build knottykraken")
+
+
     def layout(self):
         cmake_layout(self, build_folder='.', src_folder=self.recipe_folder)
 
@@ -39,10 +48,6 @@ class KeenKraken(ConanFile):
         self.tool_requires("ninja/1.12.0")
 
     def generate(self):
-
-        if self.name == None:
-            raise ConanInvalidConfiguration("Need to set a name to compile [keenkraken/knottykraken]")
-
         tc = CMakeToolchain(self, generator="Ninja")
         tc.cache_variables['SIMULATOR'] = self.name
         tc.preprocessor_definitions["SELECTED_DEBUG"] = "vverb"
