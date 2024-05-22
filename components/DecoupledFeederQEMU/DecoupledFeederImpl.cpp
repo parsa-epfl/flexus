@@ -1,57 +1,11 @@
-//  DO-NOT-REMOVE begin-copyright-block
-// QFlex consists of several software components that are governed by various
-// licensing terms, in addition to software that was developed internally.
-// Anyone interested in using QFlex needs to fully understand and abide by the
-// licenses governing all the software components.
-//
-// ### Software developed externally (not by the QFlex group)
-//
-//     * [NS-3] (https://www.gnu.org/copyleft/gpl.html)
-//     * [QEMU] (http://wiki.qemu.org/License)
-//     * [SimFlex] (http://parsa.epfl.ch/simflex/)
-//     * [GNU PTH] (https://www.gnu.org/software/pth/)
-//
-// ### Software developed internally (by the QFlex group)
-// **QFlex License**
-//
-// QFlex
-// Copyright (c) 2020, Parallel Systems Architecture Lab, EPFL
-// All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without modification,
-// are permitted provided that the following conditions are met:
-//
-//     * Redistributions of source code must retain the above copyright notice,
-//       this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above copyright notice,
-//       this list of conditions and the following disclaimer in the documentation
-//       and/or other materials provided with the distribution.
-//     * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,
-//       nor the names of its contributors may be used to endorse or promote
-//       products derived from this software without specific prior written
-//       permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,
-// EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-// GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
-// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  DO-NOT-REMOVE end-copyright-block
-#include <components/DecoupledFeederQEMU/DecoupledFeeder.hpp>
 
-#include <components/DecoupledFeederQEMU/QemuTracer.hpp>
-#include <components/uFetch/uFetchTypes.hpp>
-#include <core/qemu/api_wrappers.hpp>
-
-#include <core/flexus.hpp>
 #include <core/stats.hpp>
 
-#include <functional>
+#include <core/flexus.hpp>
+#include <core/qemu/api_wrappers.hpp>
+#include <components/DecoupledFeederQEMU/DecoupledFeeder.hpp>
+#include <components/uFetch/uFetchTypes.hpp>
+#include "Tracer.hpp"
 
 #define DBG_DefineCategories Feeder
 #define DBG_SetDefaultOps AddCat(Feeder)
@@ -65,107 +19,68 @@ namespace nDecoupledFeeder {
 using namespace Flexus;
 using namespace Flexus::Qemu;
 
-struct MMUStats {
-  Stat::StatCounter theTotalReqs_stat;
-  Stat::StatCounter theHit_stat;
-  Stat::StatCounter theMiss_stat;
-  Stat::StatCounter theMemAccess_stat;
-
-  int64_t theTotalReqs;
-  int64_t theHit;
-  int64_t theMiss;
-  int64_t theMemAccess;
-
-  MMUStats(std::string const &aName)
-      : theTotalReqs_stat(aName + "TotalReqs"), theHit_stat(aName + "Hits"),
-        theMiss_stat(aName + "Misses"), theMemAccess_stat(aName + "MemAccesses"), theTotalReqs(0),
-        theHit(0), theMiss(0), theMemAccess(0) {
-  }
-
-  void update() {
-    theTotalReqs_stat += theTotalReqs;
-    theHit_stat += theHit;
-    theMiss_stat += theMiss;
-    theMemAccess_stat += theMemAccess;
-    theTotalReqs = 0;
-    theHit = 0;
-    theMiss = 0;
-    theMemAccess = 0;
-  }
-};
-
 class FLEXUS_COMPONENT(DecoupledFeeder) {
   FLEXUS_COMPONENT_IMPL(DecoupledFeeder);
 
   // The Qemu objects (one for each processor) for getting trace data
   std::size_t theNumCPUs;
   std::size_t theCMPWidth;
-  QemuTracerManager *theTracer;
-  MMUStats **os_itlb_stats, **os_dtlb_stats, **user_itlb_stats, **user_dtlb_stats;
+  Tracer *vCPUTracer;
 
 public:
-  FLEXUS_COMPONENT_CONSTRUCTOR(DecoupledFeeder) : base(FLEXUS_PASS_CONSTRUCTOR_ARGS) {
+  FLEXUS_COMPONENT_CONSTRUCTOR(DecoupledFeeder)
+      : base(FLEXUS_PASS_CONSTRUCTOR_ARGS) {
     theNumCPUs = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
-
-    theTracer = QemuTracerManager::construct(
-        theNumCPUs,
-        [this](std::size_t x, MemoryMessage &y) {
-          this->toL1D(x, y);
-        }, // std::bind( &DecoupledFeederComponent::toL1D, this, _1, _2)
-        [this](std::size_t x, MemoryMessage &y, uint32_t dummy) {
-          this->modernToL1I(x, y);
-        }, // std::bind( &DecoupledFeederComponent::modernToL1I, this, _1, _2)
-        [this](MemoryMessage &x) {
-          this->toDMA(x);
-        }, // std::bind( &DecoupledFeederComponent::toDMA, this, _1)
-        [this](std::size_t x, MemoryMessage &y) {
-          this->toNAW(x, y);
-        }, // std::bind( &DecoupledFeederComponent::toNAW, this, _1, _2)
-
-        cfg.SendNonAllocatingStores);
-
+    vCPUTracer = Tracer::getInstance(theNumCPUs, [this](std::size_t x, MemoryMessage &y) { this->feeder_dispatch(x, y); });
     Flexus::SharedTypes::MemoryMessage msg(MemoryMessage::LoadReq);
-
-  }
-
-  // InstructionOutputPort
-  //=====================
-  bool isQuiesced() const {
-    return true;
   }
 
   void initialize(void) {
     DBG_(VVerb, (<< "Inititializing Decoupled feeder..."));
-
-    theCMPWidth = cfg.CMPWidth ? theCMPWidth : Qemu::API::qemu_api.get_num_cores();
-
-    if (cfg.TrackIFetch) {
-      theTracer->enableInstructionTracing();
-    }
-
-    if (cfg.SystemTickFrequency > 0.0) {
-      theTracer->setSystemTick(cfg.SystemTickFrequency);
-    }
-
-    os_itlb_stats = new MMUStats *[theNumCPUs];
-    os_dtlb_stats = new MMUStats *[theNumCPUs];
-    user_itlb_stats = new MMUStats *[theNumCPUs];
-    user_dtlb_stats = new MMUStats *[theNumCPUs];
-    for (std::size_t index{0}; index < theNumCPUs; ++index){
-      os_itlb_stats[index] = new MMUStats(boost::padded_string_cast<2, '0'>(index) + "-itlb-OS:");
-      os_dtlb_stats[index] = new MMUStats(boost::padded_string_cast<2, '0'>(index) + "-dtlb-OS:");
-      user_itlb_stats[index] = new MMUStats(boost::padded_string_cast<2, '0'>(index) + "-itlb-User:");
-      user_dtlb_stats[index] = new MMUStats(boost::padded_string_cast<2, '0'>(index) + "-dtlb-User:");
-    }
-
-    theFlexus->advanceCycles(0);
-
+    theCMPWidth =
+        cfg.CMPWidth ? theCMPWidth : Qemu::API::qemu_api.get_num_cores();
   }
 
-  void finalize(void) {
-  }
+  /**
+   * Function to call periodically.
+   * Mainly to update the statistics
+   **/
+  void housekeeping() { vCPUTracer->update_collector(); }
 
-  std::pair<uint64_t, uint32_t> theFetchInfo;
+  void finalize(void) { housekeeping(); }
+
+  /**
+   * Callback function passed to the Tracer.
+   *
+   * This function dispatch the message from the Tracer to the
+   * right subsystem.
+   *
+   * Eventually call housekeeping function after N instruction
+   **/
+  void feeder_dispatch(std::size_t anIndex, MemoryMessage &aMessage) {
+    switch (aMessage.type()) {
+    case MemoryMessage::FetchReq:
+      modernToL1I(anIndex, aMessage);
+      vCPUTracer->core(anIndex)->touch_itlb_request(aMessage.priv());
+      break;
+
+    case MemoryMessage::RMWReq:
+    case MemoryMessage::LoadReq:
+    case MemoryMessage::StoreReq:
+      toL1D(anIndex, aMessage);
+      vCPUTracer->core(anIndex)->touch_dtlb_request(aMessage.priv());
+      break;
+
+    default:
+      DBG_Assert(false);
+    }
+
+    static uint32_t housekeeping_counter = cfg.HousekeepingPeriod || 1000;
+    if (0 < --housekeeping_counter) {
+      housekeeping();
+      housekeeping_counter = cfg.HousekeepingPeriod || 1000;
+    }
+  }
 
   void toL1D(std::size_t anIndex, MemoryMessage &aMessage) {
     TranslationPtr tr(new Translation);
@@ -175,44 +90,34 @@ public:
     tr->inTraceMode = true;
 
     FLEXUS_CHANNEL_ARRAY(ToMMU, anIndex) << tr;
-    MemoryMessage theMMUMemoryMessage(aMessage);
-    theMMUMemoryMessage.setPageWalk();
-    bool isHit = true;
-    aMessage.isPriv() ? os_dtlb_stats[anIndex]->theTotalReqs++
-                      : user_dtlb_stats[anIndex]->theTotalReqs++;
-    while (tr->trace_addresses.size()) {
-      theMMUMemoryMessage.type() = MemoryMessage::LoadReq;
-      theMMUMemoryMessage.address() = tr->trace_addresses.front();
-      tr->trace_addresses.pop();
-      FLEXUS_CHANNEL_ARRAY(ToL1D, anIndex) << theMMUMemoryMessage;
-      aMessage.isPriv() ? os_dtlb_stats[anIndex]->theMemAccess++
-                        : user_dtlb_stats[anIndex]->theMemAccess++;
-      isHit = false;
-    }
-    if (isHit)
-      aMessage.isPriv() ? os_dtlb_stats[anIndex]->theHit++ : user_dtlb_stats[anIndex]->theHit++;
+
+    MemoryMessage mmu_message(aMessage);
+    mmu_message.setPageWalk();
+
+    vCPUTracer->core(anIndex)->touch_dtlb_request(aMessage.priv());
+
+    // If the page walk did not generated any trace
+    // that mean it was a hit (sorta stupid but ok)
+    if (tr->trace_addresses.empty())
+      vCPUTracer->core(anIndex)->touch_dtlb_hit(aMessage.priv());
     else
-      aMessage.isPriv() ? os_dtlb_stats[anIndex]->theMiss++ : user_dtlb_stats[anIndex]->theMiss++;
+      vCPUTracer->core(anIndex)->touch_dtlb_miss(aMessage.priv());
+
+    while (tr->trace_addresses.size()) {
+      mmu_message.type() = MemoryMessage::LoadReq;
+      mmu_message.address() = tr->trace_addresses.front();
+      tr->trace_addresses.pop();
+
+      FLEXUS_CHANNEL_ARRAY(ToL1D, anIndex) << mmu_message;
+
+      vCPUTracer->core(anIndex)->touch_dtlb_access(aMessage.priv());
+    }
 
     FLEXUS_CHANNEL_ARRAY(ToL1D, anIndex) << aMessage;
   }
 
-  void toNAW(std::size_t anIndex, MemoryMessage &aMessage) {
-    FLEXUS_CHANNEL_ARRAY(ToNAW, anIndex / theCMPWidth) << aMessage;
-  }
-
-  void toDMA(MemoryMessage &aMessage) {
-    FLEXUS_CHANNEL(ToDMA) << aMessage;
-  }
-  /*
-  void toL1I(int32_t anIndex, MemoryMessage & aMessage, uint32_t anOpcode) {
-    FLEXUS_CHANNEL_ARRAY( ToL1I, anIndex ) << aMessage;
-    theFetchInfo.first = aMessage.pc();
-    theFetchInfo.second = anOpcode;
-    FLEXUS_CHANNEL_ARRAY( ToBPred, anIndex ) << theFetchInfo;
-  }
-  */
   void modernToL1I(std::size_t anIndex, MemoryMessage &aMessage) {
+
     TranslationPtr tr(new Translation);
     tr->setInstr();
     tr->theVaddr = aMessage.pc();
@@ -220,24 +125,32 @@ public:
     tr->inTraceMode = true;
 
     FLEXUS_CHANNEL_ARRAY(ToMMU, anIndex) << tr;
-    MemoryMessage theMMUMemoryMessage(MemoryMessage::LoadReq);
-    theMMUMemoryMessage.setPageWalk();
-    bool isHit = true;
-    aMessage.isPriv() ? os_itlb_stats[anIndex]->theTotalReqs++
-                      : user_itlb_stats[anIndex]->theTotalReqs++;
-    while (tr->trace_addresses.size()) {
-      theMMUMemoryMessage.type() = MemoryMessage::LoadReq;
-      theMMUMemoryMessage.address() = tr->trace_addresses.front();
-      tr->trace_addresses.pop();
-      FLEXUS_CHANNEL_ARRAY(ToL1D, anIndex) << theMMUMemoryMessage;
-      aMessage.isPriv() ? os_itlb_stats[anIndex]->theMemAccess++
-                        : user_itlb_stats[anIndex]->theMemAccess++;
-      isHit = false;
-    }
-    if (isHit)
-      aMessage.isPriv() ? os_itlb_stats[anIndex]->theHit++ : user_itlb_stats[anIndex]->theHit++;
+
+    MemoryMessage mmu_message(MemoryMessage::LoadReq);
+    mmu_message.setPageWalk();
+
+    // If the page walk did not generated any trace
+    // that mean it was a hit (sorta stupid but ok)
+    if (tr->trace_addresses.empty())
+      vCPUTracer->core(anIndex)->touch_itlb_hit(aMessage.priv());
     else
-      aMessage.isPriv() ? os_itlb_stats[anIndex]->theMiss++ : user_itlb_stats[anIndex]->theMiss++;
+      vCPUTracer->core(anIndex)->touch_itlb_miss(aMessage.priv());
+
+    // Send all MMU trace to the TL1D and count the number of access
+    while (tr->trace_addresses.size()) {
+      mmu_message.type() = MemoryMessage::LoadReq;
+      //! Stupid flow
+      // front() return a reference to an object in a queue
+      // pop() remove the same object from the queue
+      // therefore mmu_message.address() hold a memory
+      // address which is in a weird state
+      mmu_message.address() = tr->trace_addresses.front();
+      tr->trace_addresses.pop();
+
+      FLEXUS_CHANNEL_ARRAY(ToL1D, anIndex) << mmu_message;
+
+      vCPUTracer->core(anIndex)->touch_itlb_access(aMessage.priv());
+    }
 
     FLEXUS_CHANNEL_ARRAY(ToL1I, anIndex) << aMessage;
 
@@ -252,47 +165,12 @@ public:
 
     FLEXUS_CHANNEL_ARRAY(ToBPred, anIndex) << thePCTypeAndAnnulTriplet;
   }
-  void updateInstructionCounts() {
-    // Count instructions
-    // FIXME Currently Does nothing since step_count ha not been implemented
-  }
-  void updateMMUStats() {
-    for (std::size_t index{0}; index < theNumCPUs; ++index){
-      os_itlb_stats[index]->update();
-      os_dtlb_stats[index]->update();
-      user_itlb_stats[index]->update();
-      user_dtlb_stats[index]->update();
-    }
-  }
-
-  void doHousekeeping() {
-    updateMMUStats();
-    updateInstructionCounts();
-    theTracer->updateStats();
-
-    theFlexus->advanceCycles(cfg.HousekeepingPeriod);
-    theFlexus->invokeDrives();
-  }
-
-  void OnPeriodicEvent(Qemu::API::conf_object_t *ignored, long long aPeriod) {
-    doHousekeeping();
-  }
-
-  // typedef Qemu::HapToMemFnBinding<Qemu::HAPs::Core_Periodic_Event, self,
-  // &self::OnPeriodicEvent> periodic_hap_t; periodic_hap_t * thePeriodicHap;
 
 }; // end class DecoupledFeeder
-extern "C" {
-void houseKeeping(void *obj, void *ign, void *ign2) {
-  static_cast<DecoupledFeederComponent *>(obj)->doHousekeeping();
-}
-}
 } // end Namespace nDecoupledFeeder
-
 
 FLEXUS_COMPONENT_INSTANTIATOR(DecoupledFeeder, nDecoupledFeeder);
 FLEXUS_PORT_ARRAY_WIDTH(DecoupledFeeder, ToL1D) {
-
   return Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
 FLEXUS_PORT_ARRAY_WIDTH(DecoupledFeeder, ToL1I) {
@@ -301,10 +179,6 @@ FLEXUS_PORT_ARRAY_WIDTH(DecoupledFeeder, ToL1I) {
 FLEXUS_PORT_ARRAY_WIDTH(DecoupledFeeder, ToBPred) {
   return Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }
-FLEXUS_PORT_ARRAY_WIDTH(DecoupledFeeder, ToNAW) {
-  return Flexus::Core::ComponentManager::getComponentManager().systemWidth();
-}
-
 FLEXUS_PORT_ARRAY_WIDTH(DecoupledFeeder, ToMMU) {
   return Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }

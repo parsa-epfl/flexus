@@ -51,7 +51,7 @@
 #include <core/simulator_name.hpp>
 namespace Flexus {
 // Simulator Name
-std::string theSimulatorName = "Keen Kraken v1.0";
+std::string theSimulatorName = "KeenKraken v2024.05";
 } // namespace Flexus
 
 #include FLEXUS_BEGIN_DECLARATION_SECTION()
@@ -92,9 +92,7 @@ bool initializeParameters() {
 
   //  theFeederCfg.SimicsQuantum.initialize(100);
   theFeederCfg.CMPWidth.initialize(getSystemWidth());
-  theFeederCfg.TrackIFetch.initialize(true);
   theFeederCfg.HousekeepingPeriod.initialize(1000);
-  theFeederCfg.SystemTickFrequency.initialize(0.0);
 
   static const int K = 1024;
   static const int M = 1024 * K;
@@ -147,7 +145,6 @@ bool initializeParameters() {
   theMMUCfg.iTLBSize.initialize(64);
   theMMUCfg.dTLBSize.initialize(64);
 
-
   theFlexus->setStatInterval("10000000");     // 10M
   theFlexus->setProfileInterval("10000000");  // 10M
   theFlexus->setTimestampInterval("1000000"); // 1M
@@ -182,7 +179,6 @@ FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MMU , theMMUCfg, theMMU, SCALE_WITH_SYSTEM_W
 WIRE(theFeeder, ToL1D,                  theL1D, RequestIn)
 WIRE(theFeeder, ToL1I,                  theL1I, FetchRequestIn)
 WIRE(theFeeder, ToBPred,                theBPWarm, ITraceInModern)
-WIRE(theFeeder, ToDMA,                  theMemory, DMA)
 WIRE(theFeeder, ToMMU,                  theMMU, TLBReqIn)
 
 WIRE(theL1D, RequestOut,                theL2, RequestIn)
