@@ -1,0 +1,27 @@
+﻿---
+BasedOnStyle: Mozilla
+AlignConsecutiveMacros: 'true'
+AlignConsecutiveAssignments: 'true'
+AlignEscapedNewlines: Right
+AlignTrailingComments: 'true'
+AllowAllArgumentsOnNextLine: 'false'
+AllowAllParametersOfDeclarationOnNextLine: 'false'
+AllowShortBlocksOnASingleLine: 'true'
+AllowShortCaseLabelsOnASingleLine: 'true'
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLambdasOnASingleLine: Inline
+AlwaysBreakTemplateDeclarations: 'Yes'
+BinPackArguments: 'false'
+BinPackParameters: 'false'
+ColumnLimit: '120'
+IncludeBlocks: Regroup
+IndentWidth: '4'
+Language: Cpp
+PointerAlignment: Left
+SortIncludes: 'true'
+SortUsingDeclarations: 'true'
+Standard: Cpp11
+TabWidth: '4'
+
+...
