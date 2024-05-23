@@ -61,42 +61,45 @@ namespace SharedTypes {
 typedef Flexus::SharedTypes::PhysicalMemoryAddress MemoryAddress;
 
 namespace IndexCommand {
-enum IndexCommand {
-  eLookup,
-  eInsert,
-  eUpdate,
-  eMatchReply,
-  eNoMatchReply,
-  eNoUpdateReply,
+enum IndexCommand
+{
+    eLookup,
+    eInsert,
+    eUpdate,
+    eMatchReply,
+    eNoMatchReply,
+    eNoUpdateReply,
 };
 
 namespace {
-char *IndexCommandStr[] = {"eLookup",     "eInsert",       "eUpdate",
-                           "eMatchReply", "eNoMatchReply", "eNoUpdateReply"};
+char* IndexCommandStr[] = { "eLookup", "eInsert", "eUpdate", "eMatchReply", "eNoMatchReply", "eNoUpdateReply" };
 }
 
-inline std::ostream &operator<<(std::ostream &aStream, IndexCommand cmd) {
-  if (cmd <= eNoMatchReply) {
-    aStream << IndexCommandStr[cmd];
-  }
-  return aStream;
+inline std::ostream&
+operator<<(std::ostream& aStream, IndexCommand cmd)
+{
+    if (cmd <= eNoMatchReply) { aStream << IndexCommandStr[cmd]; }
+    return aStream;
 }
 } // namespace IndexCommand
 
-struct IndexMessage : public boost::counted_base {
-  IndexCommand::IndexCommand theCommand;
-  MemoryAddress theAddress;
-  int32_t theTMSc;
-  int32_t theCMOB;
-  int64_t theCMOBOffset;
-  uint64_t theStartTime;
-  std::list<MemoryAddress> thePrefix;
+struct IndexMessage : public boost::counted_base
+{
+    IndexCommand::IndexCommand theCommand;
+    MemoryAddress theAddress;
+    int32_t theTMSc;
+    int32_t theCMOB;
+    int64_t theCMOBOffset;
+    uint64_t theStartTime;
+    std::list<MemoryAddress> thePrefix;
 };
 
-inline std::ostream &operator<<(std::ostream &aStream, const IndexMessage &msg) {
-  aStream << msg.theCommand << " TMSc[" << msg.theTMSc << "] " << msg.theAddress << " -> "
-          << msg.theCMOB << " @" << msg.theCMOBOffset;
-  return aStream;
+inline std::ostream&
+operator<<(std::ostream& aStream, const IndexMessage& msg)
+{
+    aStream << msg.theCommand << " TMSc[" << msg.theTMSc << "] " << msg.theAddress << " -> " << msg.theCMOB << " @"
+            << msg.theCMOBOffset;
+    return aStream;
 }
 
 } // namespace SharedTypes

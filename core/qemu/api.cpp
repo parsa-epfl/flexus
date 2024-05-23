@@ -43,50 +43,54 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
 #include <cassert>
-
 #include <core/flexus.hpp>
 
 namespace Flexus {
 namespace Qemu {
 namespace API {
 
-  #include "api.h"
+#include "api.h"
 
-  QEMU_API_t qemu_api;
+QEMU_API_t qemu_api;
 
-  void FLEXUS_get_api(FLEXUS_API_t *api) {
+void
+FLEXUS_get_api(FLEXUS_API_t* api)
+{
     api->start     = FLEXUS_start;
     api->stop      = FLEXUS_stop;
     api->qmp       = FLEXUS_qmp;
     api->trace_mem = FLEXUS_trace_mem;
-  }
+}
 
-  using namespace Flexus::Core;
+using namespace Flexus::Core;
 
-  void FLEXUS_start() {
+void
+FLEXUS_start()
+{
 
     // TODO while (qemu_api.get_en())
-    while (true)
-    {
-      theFlexus->doCycle();
+    while (true) {
+        theFlexus->doCycle();
     }
-  }
+}
 
-  void FLEXUS_stop() {
+void
+FLEXUS_stop()
+{
     theFlexus->terminateSimulation();
-  }
+}
 
-
-  void FLEXUS_qmp(qmp_flexus_cmd_t aCMD, const char* anArgs) {
+void
+FLEXUS_qmp(qmp_flexus_cmd_t aCMD, const char* anArgs)
+{
     // qmp_api.hpp is bad
     flexus_qmp(aCMD, anArgs);
-  }
+}
 
-   void __attribute__((weak)) FLEXUS_trace_mem(uint64_t idx, memory_transaction_t *tr)
-  {
+void __attribute__((weak)) FLEXUS_trace_mem(uint64_t idx, memory_transaction_t* tr)
+{
     // not exposed in timing
-  }
-
+}
 
 } // namespace API
 } // namespace Qemu

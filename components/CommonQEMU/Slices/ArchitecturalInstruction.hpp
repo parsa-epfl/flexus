@@ -61,345 +61,299 @@ namespace SharedTypes {
 // class SimicsTraceConsumer;
 class StoreBuffer;
 
-enum execType { Normal, Second_MemPart, Hardware_Walk, Halt_instr };
+enum execType
+{
+    Normal,
+    Second_MemPart,
+    Hardware_Walk,
+    Halt_instr
+};
 
 // InorderInstructionImpl - Implementation class for SPARC v9 memory operations
 //==================================
-class ArchitecturalInstruction : public boost::counted_base { /*, public FastAlloc*/
-  enum eOpType { Nop, Read, Write, Rmw, Membar };
+class ArchitecturalInstruction : public boost::counted_base
+{ /*, public FastAlloc*/
+    enum eOpType
+    {
+        Nop,
+        Read,
+        Write,
+        Rmw,
+        Membar
+    };
 
-  // A memory operation needs to know its address, data, and operation type
-  PhysicalMemoryAddress thePhysicalAddress;
-  VirtualMemoryAddress theVirtualAddress;
-  PhysicalMemoryAddress thePhysicalInstructionAddress; // i.e. the PC
-  VirtualMemoryAddress theVirtualInstructionAddress;   // i.e. the PC
-  DoubleWord theData;
-  eOpType theOperation;
-  // SimicsTraceConsumer * theConsumer;
-  bool theReleased;
-  bool thePerformed;
-  bool theCommitted;
-  bool theSync;
-  bool thePriv;
-  bool theShadow;
-  bool theTrace; // a traced instruction
-  bool theIsAtomic;
-  uint64_t theStartTime;
-  StoreBuffer *theStoreBuffer;
-  uint32_t theOpcode;
-  char theSize;
-  char instructionSize;   // the size of the instruction...for x86 purposes
-  execType hasIfetchPart; // for instructions that perform 2 memory operations,
-                          // or hardware walks
-  char theIO;
+    // A memory operation needs to know its address, data, and operation type
+    PhysicalMemoryAddress thePhysicalAddress;
+    VirtualMemoryAddress theVirtualAddress;
+    PhysicalMemoryAddress thePhysicalInstructionAddress; // i.e. the PC
+    VirtualMemoryAddress theVirtualInstructionAddress;   // i.e. the PC
+    DoubleWord theData;
+    eOpType theOperation;
+    // SimicsTraceConsumer * theConsumer;
+    bool theReleased;
+    bool thePerformed;
+    bool theCommitted;
+    bool theSync;
+    bool thePriv;
+    bool theShadow;
+    bool theTrace; // a traced instruction
+    bool theIsAtomic;
+    uint64_t theStartTime;
+    StoreBuffer* theStoreBuffer;
+    uint32_t theOpcode;
+    char theSize;
+    char instructionSize;   // the size of the instruction...for x86 purposes
+    execType hasIfetchPart; // for instructions that perform 2 memory operations,
+                            // or hardware walks
+    char theIO;
 
-private:
-  ArchitecturalInstruction(ArchitecturalInstruction *anOriginal)
-      : thePhysicalAddress(anOriginal->thePhysicalAddress),
-        theVirtualAddress(anOriginal->theVirtualAddress),
-        thePhysicalInstructionAddress(anOriginal->thePhysicalInstructionAddress),
-        theVirtualInstructionAddress(anOriginal->theVirtualInstructionAddress),
-        theData(anOriginal->theData), theOperation(anOriginal->theOperation), theReleased(false),
-        thePerformed(false), theCommitted(false), theSync(anOriginal->theSync),
-        thePriv(anOriginal->thePriv), theShadow(true), theTrace(anOriginal->theTrace),
-        theStartTime(0), theStoreBuffer(anOriginal->theStoreBuffer),
-        theOpcode(anOriginal->theOpcode), theSize(anOriginal->theSize),
-        instructionSize(anOriginal->instructionSize), hasIfetchPart(Normal),
-        theIO(anOriginal->theIO) {
-  }
-
-public:
-  ArchitecturalInstruction()
-      : thePhysicalAddress(0), theVirtualAddress(0), thePhysicalInstructionAddress(0),
-        theVirtualInstructionAddress(0), theData(0), theOperation(Nop), theReleased(false),
-        thePerformed(false), theCommitted(false), theSync(false), thePriv(false), theShadow(false),
-        theTrace(false), theStartTime(0), theStoreBuffer(0), theOpcode(0), theSize(0),
-        instructionSize(0), hasIfetchPart(Normal), theIO(false) {
-  }
-
-  /*explicit ArchitecturalInstruction(SimicsTraceConsumer * aConsumer)
-    : thePhysicalAddress(0)
-    , theVirtualAddress(0)
-    , thePhysicalInstructionAddress(0)
-    , theVirtualInstructionAddress(0)
-    , theData(0)
-    , theOperation(Nop)
-//    , theConsumer(aConsumer)
-    , theReleased(false)
-    , thePerformed(false)
-    , theCommitted(false)
-    , theSync(false)
-    , thePriv(false)
-    , theShadow(false)
-    , theTrace(false)
-    , theIsAtomic(false)
-    , theStartTime(0)
-    , theStoreBuffer(0)
-    , theOpcode(0)
-    , theSize(0)
-    , instructionSize(0)
-    , hasIfetchPart(Normal)
-    , theIO(false)
-  {}*/
-
-  boost::intrusive_ptr<ArchitecturalInstruction> createShadow() {
-    return boost::intrusive_ptr<ArchitecturalInstruction>(new ArchitecturalInstruction(this));
-  }
-
-  // ArchitecturalInstruction Interface functions
-  // Query for type of operation
-  bool isNOP() const {
-    return (theOperation == Nop);
-  }
-  bool isMemory() const {
-    return (theOperation == Read) || (theOperation == Write) || (theOperation == Rmw) ||
-           (theOperation == Membar);
-  }
-  bool isLoad() const {
-    return (theOperation == Read);
-  }
-  bool isStore() const {
-    return (theOperation == Write);
-  }
-  bool isRmw() const {
-    return (theOperation == Rmw);
-  }
-  bool isMEMBAR() const {
-    return (theOperation == Membar);
-  }
-  bool isSync() const {
-    return theSync;
-  }
-  bool isPriv() const {
-    return thePriv;
-  }
-
-  bool isShadow() const {
-    return theShadow;
-  }
-
-  bool isTrace() const {
-    return theTrace;
-  }
-
-  uint64_t getStartTime() const {
-    return theStartTime;
-  }
-
-  bool isCommitted() const {
-    return theCommitted;
-  }
-  bool isIO() const {
-    return theIO;
-  }
-  void setIO() {
-    theIO = true;
-  }
-
-  void commit() {
-    DBG_Assert((theCommitted == false));
-    theCommitted = true;
-    ;
-  }
-
-  bool isReleased() const {
-    return theReleased;
-  }
-
-  bool canRelease() const {
-    // TSO
-    if (isSync()) {
-      return isPerformed() && isCommitted() && !isReleased();
-    } else {
-      return isCommitted() && !isReleased();
+  private:
+    ArchitecturalInstruction(ArchitecturalInstruction* anOriginal)
+      : thePhysicalAddress(anOriginal->thePhysicalAddress)
+      , theVirtualAddress(anOriginal->theVirtualAddress)
+      , thePhysicalInstructionAddress(anOriginal->thePhysicalInstructionAddress)
+      , theVirtualInstructionAddress(anOriginal->theVirtualInstructionAddress)
+      , theData(anOriginal->theData)
+      , theOperation(anOriginal->theOperation)
+      , theReleased(false)
+      , thePerformed(false)
+      , theCommitted(false)
+      , theSync(anOriginal->theSync)
+      , thePriv(anOriginal->thePriv)
+      , theShadow(true)
+      , theTrace(anOriginal->theTrace)
+      , theStartTime(0)
+      , theStoreBuffer(anOriginal->theStoreBuffer)
+      , theOpcode(anOriginal->theOpcode)
+      , theSize(anOriginal->theSize)
+      , instructionSize(anOriginal->instructionSize)
+      , hasIfetchPart(Normal)
+      , theIO(anOriginal->theIO)
+    {
     }
-  }
 
-  void release();
+  public:
+    ArchitecturalInstruction()
+      : thePhysicalAddress(0)
+      , theVirtualAddress(0)
+      , thePhysicalInstructionAddress(0)
+      , theVirtualInstructionAddress(0)
+      , theData(0)
+      , theOperation(Nop)
+      , theReleased(false)
+      , thePerformed(false)
+      , theCommitted(false)
+      , theSync(false)
+      , thePriv(false)
+      , theShadow(false)
+      , theTrace(false)
+      , theStartTime(0)
+      , theStoreBuffer(0)
+      , theOpcode(0)
+      , theSize(0)
+      , instructionSize(0)
+      , hasIfetchPart(Normal)
+      , theIO(false)
+    {
+    }
 
-  bool isPerformed() const {
-    return thePerformed;
-  }
+    /*explicit ArchitecturalInstruction(SimicsTraceConsumer * aConsumer)
+      : thePhysicalAddress(0)
+      , theVirtualAddress(0)
+      , thePhysicalInstructionAddress(0)
+      , theVirtualInstructionAddress(0)
+      , theData(0)
+      , theOperation(Nop)
+  //    , theConsumer(aConsumer)
+      , theReleased(false)
+      , thePerformed(false)
+      , theCommitted(false)
+      , theSync(false)
+      , thePriv(false)
+      , theShadow(false)
+      , theTrace(false)
+      , theIsAtomic(false)
+      , theStartTime(0)
+      , theStoreBuffer(0)
+      , theOpcode(0)
+      , theSize(0)
+      , instructionSize(0)
+      , hasIfetchPart(Normal)
+      , theIO(false)
+    {}*/
 
-  DoubleWord const &data() const {
-    return theData;
-  }
+    boost::intrusive_ptr<ArchitecturalInstruction> createShadow()
+    {
+        return boost::intrusive_ptr<ArchitecturalInstruction>(new ArchitecturalInstruction(this));
+    }
 
-  uint32_t size() const {
-    return theSize;
-  }
+    // ArchitecturalInstruction Interface functions
+    // Query for type of operation
+    bool isNOP() const { return (theOperation == Nop); }
+    bool isMemory() const
+    {
+        return (theOperation == Read) || (theOperation == Write) || (theOperation == Rmw) || (theOperation == Membar);
+    }
+    bool isLoad() const { return (theOperation == Read); }
+    bool isStore() const { return (theOperation == Write); }
+    bool isRmw() const { return (theOperation == Rmw); }
+    bool isMEMBAR() const { return (theOperation == Membar); }
+    bool isSync() const { return theSync; }
+    bool isPriv() const { return thePriv; }
 
-  uint32_t InstructionSize() const {
-    return instructionSize;
-  }
+    bool isShadow() const { return theShadow; }
 
-  uint32_t opcode() const {
-    return theOpcode;
-  }
+    bool isTrace() const { return theTrace; }
 
-  // Perform the instruction
-  void perform();
+    uint64_t getStartTime() const { return theStartTime; }
 
-  // InorderInstructionImpl Interface functions
-  void setSync() {
-    theSync = true;
-  }
-  void setPriv() {
-    thePriv = true;
-  }
+    bool isCommitted() const { return theCommitted; }
+    bool isIO() const { return theIO; }
+    void setIO() { theIO = true; }
 
-  // Set operation types
-  void setIsNop() {
-    theOperation = Nop;
-  }
-  void setIsLoad() {
-    theOperation = Read;
-  }
-  void setIsMEMBAR() {
-    theOperation = Membar;
-    setSync();
-  }
-  void setIsStore() {
-    theOperation = Write;
-  }
-  void setIsRmw() {
-    theOperation = Rmw;
-    setSync();
-  }
+    void commit()
+    {
+        DBG_Assert((theCommitted == false));
+        theCommitted = true;
+        ;
+    }
 
-  void setShadow() {
-    theShadow = true;
-  }
+    bool isReleased() const { return theReleased; }
 
-  void setTrace() {
-    theTrace = true;
-  }
+    bool canRelease() const
+    {
+        // TSO
+        if (isSync()) {
+            return isPerformed() && isCommitted() && !isReleased();
+        } else {
+            return isCommitted() && !isReleased();
+        }
+    }
 
-  void setStartTime(uint64_t start) {
-    theStartTime = start;
-  }
+    void release();
 
-  void setSize(char aSize) {
-    theSize = aSize;
-  }
+    bool isPerformed() const { return thePerformed; }
 
-  void setInstructionSize(char const aSize) {
-    instructionSize = aSize;
-  }
+    DoubleWord const& data() const { return theData; }
 
-  // Set the address for a memory operation
-  void setAddress(PhysicalMemoryAddress const &addr) {
-    thePhysicalAddress = addr;
-  }
+    uint32_t size() const { return theSize; }
 
-  // Set the virtual address for a memory operation
-  void setVirtualAddress(VirtualMemoryAddress const &addr) {
-    theVirtualAddress = addr;
-  }
+    uint32_t InstructionSize() const { return instructionSize; }
 
-  void setIfPart(execType const hasifpart) {
-    hasIfetchPart = hasifpart;
-  }
+    uint32_t opcode() const { return theOpcode; }
 
-  // Set the PC for the operation
-  void setPhysInstAddress(PhysicalMemoryAddress const &addr) {
-    thePhysicalInstructionAddress = addr;
-  }
-  void setVirtInstAddress(VirtualMemoryAddress const &addr) {
-    theVirtualInstructionAddress = addr;
-  }
+    // Perform the instruction
+    void perform();
 
-  void setStoreBuffer(StoreBuffer *aStoreBuffer) {
-    theStoreBuffer = aStoreBuffer;
-  }
+    // InorderInstructionImpl Interface functions
+    void setSync() { theSync = true; }
+    void setPriv() { thePriv = true; }
 
-  void setData(DoubleWord const &aData) {
-    theData = aData;
-  }
+    // Set operation types
+    void setIsNop() { theOperation = Nop; }
+    void setIsLoad() { theOperation = Read; }
+    void setIsMEMBAR()
+    {
+        theOperation = Membar;
+        setSync();
+    }
+    void setIsStore() { theOperation = Write; }
+    void setIsRmw()
+    {
+        theOperation = Rmw;
+        setSync();
+    }
 
-  void setOpcode(uint32_t anOpcode) {
-    theOpcode = anOpcode;
-  }
+    void setShadow() { theShadow = true; }
 
-  // Get the address for the instruction reference
-  PhysicalMemoryAddress physicalInstructionAddress() const {
-    return thePhysicalInstructionAddress;
-  }
+    void setTrace() { theTrace = true; }
 
-  VirtualMemoryAddress virtualInstructionAddress() const {
-    return theVirtualInstructionAddress;
-  }
+    void setStartTime(uint64_t start) { theStartTime = start; }
 
-  // Get the address for a memory operation
-  PhysicalMemoryAddress physicalMemoryAddress() const {
-    return thePhysicalAddress;
-  }
+    void setSize(char aSize) { theSize = aSize; }
 
-  VirtualMemoryAddress virtualMemoryAddress() const {
-    return theVirtualAddress;
-  }
+    void setInstructionSize(char const aSize) { instructionSize = aSize; }
 
-  execType getIfPart() const {
-    return hasIfetchPart;
-  }
+    // Set the address for a memory operation
+    void setAddress(PhysicalMemoryAddress const& addr) { thePhysicalAddress = addr; }
 
-  const char *opName() const {
-    const char *opTypeStr[] = {"nop", "read", "write", "rmw", "membar"};
-    return opTypeStr[theOperation];
-  }
+    // Set the virtual address for a memory operation
+    void setVirtualAddress(VirtualMemoryAddress const& addr) { theVirtualAddress = addr; }
 
-  // Forwarding functions from SimicsV9MemoryOp
-  bool isBranch() const {
-    return false;
-  }
-  bool isInterrupt() const {
-    return false;
-  }
-  bool requiresSync() const {
-    return false;
-  }
-  void execute() {
-    if (!isMemory())
-      perform();
-  }
-  void squash() {
-    DBG_Assert(false, (<< "squash not supported"));
-  }
-  bool isValid() const {
-    return true;
-  }
-  bool isFetched() const {
-    return true;
-  }
-  bool isDecoded() const {
-    return true;
-  }
-  bool isExecuted() const {
-    return true;
-  }
-  bool isSquashed() const {
-    return false; // Squashing not supported
-  }
-  bool isExcepted() const {
-    return false; // Exceptions not supported
-  }
-  bool wasTaken() const {
-    return false; // Branches not supported
-  }
-  bool wasNotTaken() const {
-    return false; // Branches not supported
-  }
-  bool canExecute() const {
-    return true; // execute() always true
-  }
-  bool canPerform() const {
-    return true; // execute() always true
-  }
+    void setIfPart(execType const hasifpart) { hasIfetchPart = hasifpart; }
+
+    // Set the PC for the operation
+    void setPhysInstAddress(PhysicalMemoryAddress const& addr) { thePhysicalInstructionAddress = addr; }
+    void setVirtInstAddress(VirtualMemoryAddress const& addr) { theVirtualInstructionAddress = addr; }
+
+    void setStoreBuffer(StoreBuffer* aStoreBuffer) { theStoreBuffer = aStoreBuffer; }
+
+    void setData(DoubleWord const& aData) { theData = aData; }
+
+    void setOpcode(uint32_t anOpcode) { theOpcode = anOpcode; }
+
+    // Get the address for the instruction reference
+    PhysicalMemoryAddress physicalInstructionAddress() const { return thePhysicalInstructionAddress; }
+
+    VirtualMemoryAddress virtualInstructionAddress() const { return theVirtualInstructionAddress; }
+
+    // Get the address for a memory operation
+    PhysicalMemoryAddress physicalMemoryAddress() const { return thePhysicalAddress; }
+
+    VirtualMemoryAddress virtualMemoryAddress() const { return theVirtualAddress; }
+
+    execType getIfPart() const { return hasIfetchPart; }
+
+    const char* opName() const
+    {
+        const char* opTypeStr[] = { "nop", "read", "write", "rmw", "membar" };
+        return opTypeStr[theOperation];
+    }
+
+    // Forwarding functions from SimicsV9MemoryOp
+    bool isBranch() const { return false; }
+    bool isInterrupt() const { return false; }
+    bool requiresSync() const { return false; }
+    void execute()
+    {
+        if (!isMemory()) perform();
+    }
+    void squash() { DBG_Assert(false, (<< "squash not supported")); }
+    bool isValid() const { return true; }
+    bool isFetched() const { return true; }
+    bool isDecoded() const { return true; }
+    bool isExecuted() const { return true; }
+    bool isSquashed() const
+    {
+        return false; // Squashing not supported
+    }
+    bool isExcepted() const
+    {
+        return false; // Exceptions not supported
+    }
+    bool wasTaken() const
+    {
+        return false; // Branches not supported
+    }
+    bool wasNotTaken() const
+    {
+        return false; // Branches not supported
+    }
+    bool canExecute() const
+    {
+        return true; // execute() always true
+    }
+    bool canPerform() const
+    {
+        return true; // execute() always true
+    }
 
 }; // End ArchitecturalInstruction
 
-std::ostream &operator<<(std::ostream &anOstream, const ArchitecturalInstruction &aMemOp);
-bool operator==(const ArchitecturalInstruction &a, const ArchitecturalInstruction &b);
+std::ostream&
+operator<<(std::ostream& anOstream, const ArchitecturalInstruction& aMemOp);
+bool
+operator==(const ArchitecturalInstruction& a, const ArchitecturalInstruction& b);
 
 } // namespace SharedTypes
 } // namespace Flexus

@@ -43,17 +43,16 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
 #include <algorithm>
+#include <core/component.hpp>
+#include <core/debug/debug.hpp>
+#include <functional>
 #include <iostream>
 #include <vector>
 
-#include <functional>
-
-#include <core/component.hpp>
-#include <core/debug/debug.hpp>
-
 namespace Flexus {
 namespace Wiring {
-bool connectWiring();
+bool
+connectWiring();
 }
 } // namespace Flexus
 
@@ -61,123 +60,128 @@ namespace Flexus {
 namespace Core {
 namespace aux_ {
 
-class ComponentManagerImpl : public ComponentManager {
+class ComponentManagerImpl : public ComponentManager
+{
 
-  typedef std::vector<std::function<void(Flexus::Core::index_t)>> instatiation_vector;
-  std::vector<std::function<void(Flexus::Core::index_t aSystemWidth)>> theInstantiationFunctions;
-  std::vector<ComponentInterface *> theComponents;
-  Flexus::Core::index_t theSystemWidth;
+    typedef std::vector<std::function<void(Flexus::Core::index_t)>> instatiation_vector;
+    std::vector<std::function<void(Flexus::Core::index_t aSystemWidth)>> theInstantiationFunctions;
+    std::vector<ComponentInterface*> theComponents;
+    Flexus::Core::index_t theSystemWidth;
 
-public:
-  virtual ~ComponentManagerImpl() {
-  }
+  public:
+    virtual ~ComponentManagerImpl() {}
 
-  Flexus::Core::index_t systemWidth() const {
-    return theSystemWidth;
-  }
+    Flexus::Core::index_t systemWidth() const { return theSystemWidth; }
 
-  void registerHandle(std::function<void(Flexus::Core::index_t)> anInstantiator) {
-    theInstantiationFunctions.push_back(anInstantiator);
-  }
-
-  void instantiateComponents(Flexus::Core::index_t aSystemWidth) {
-    theSystemWidth = aSystemWidth;
-    DBG_(Dev, (<< "Instantiating system with a width factor of: " << aSystemWidth));
-    Flexus::Wiring::connectWiring();
-    instatiation_vector::iterator iter = theInstantiationFunctions.begin();
-    instatiation_vector::iterator end = theInstantiationFunctions.end();
-    while (iter != end) {
-      (*iter)(aSystemWidth);
-      ++iter;
+    void registerHandle(std::function<void(Flexus::Core::index_t)> anInstantiator)
+    {
+        theInstantiationFunctions.push_back(anInstantiator);
     }
-  }
 
-  void registerComponent(ComponentInterface *aComponent) {
-    theComponents.push_back(aComponent);
-  }
-
-  void initComponents() {
-    DBG_(Dev, (<< "Initializing " << theComponents.size() << " components..."));
-    std::vector<ComponentInterface *>::iterator iter = theComponents.begin();
-    std::vector<ComponentInterface *>::iterator end = theComponents.end();
-    int counter = 1;
-    while (iter != end) {
-      DBG_(Dev, (<< "Component " << counter << ": Initializing " << (*iter)->name()));
-      (*iter)->initialize();
-      ++iter;
-      ++counter;
+    void instantiateComponents(Flexus::Core::index_t aSystemWidth)
+    {
+        theSystemWidth = aSystemWidth;
+        DBG_(Dev, (<< "Instantiating system with a width factor of: " << aSystemWidth));
+        Flexus::Wiring::connectWiring();
+        instatiation_vector::iterator iter = theInstantiationFunctions.begin();
+        instatiation_vector::iterator end  = theInstantiationFunctions.end();
+        while (iter != end) {
+            (*iter)(aSystemWidth);
+            ++iter;
+        }
     }
-  }
 
-  // added by PLotfi
-  void finalizeComponents() {
-    DBG_(Dev, (<< "Finalizing components..."));
-    std::vector<ComponentInterface *>::iterator iter = theComponents.begin();
-    std::vector<ComponentInterface *>::iterator end = theComponents.end();
-    while (iter != end) {
-      DBG_(Dev, (<< "Finalizing " << (*iter)->name()));
-      (*iter)->finalize();
-      ++iter;
-    }
-  }
-  // end PLotfi
+    void registerComponent(ComponentInterface* aComponent) { theComponents.push_back(aComponent); }
 
-  bool isQuiesced() const {
-    bool quiesced = true;
-    for (auto *aComponent : theComponents) {
-      quiesced = quiesced && aComponent->isQuiesced();
+    void initComponents()
+    {
+        DBG_(Dev, (<< "Initializing " << theComponents.size() << " components..."));
+        std::vector<ComponentInterface*>::iterator iter = theComponents.begin();
+        std::vector<ComponentInterface*>::iterator end  = theComponents.end();
+        int counter                                     = 1;
+        while (iter != end) {
+            DBG_(Dev, (<< "Component " << counter << ": Initializing " << (*iter)->name()));
+            (*iter)->initialize();
+            ++iter;
+            ++counter;
+        }
     }
-    // std::for_each
-    // ( theComponents.begin()
-    //   , theComponents.end()
-    //   , ll::var(quiesced) = ll::var(quiesced) && ll::bind(
-    //   &ComponentInterface::isQuiesced, ll::_1 )
-    // );
-    return quiesced;
-  }
 
-  void doSave(std::string const &aDirectory) const {
-    for (auto *aComponent : theComponents) {
-      aComponent->saveState(aDirectory);
+    // added by PLotfi
+    void finalizeComponents()
+    {
+        DBG_(Dev, (<< "Finalizing components..."));
+        std::vector<ComponentInterface*>::iterator iter = theComponents.begin();
+        std::vector<ComponentInterface*>::iterator end  = theComponents.end();
+        while (iter != end) {
+            DBG_(Dev, (<< "Finalizing " << (*iter)->name()));
+            (*iter)->finalize();
+            ++iter;
+        }
     }
-    // std::for_each
-    // ( theComponents.begin()
-    //   , theComponents.end()
-    //   , ll::bind( &ComponentInterface::saveState, ll::_1, aDirectory )
-    // );
-  }
+    // end PLotfi
 
-  void doLoad(std::string const &aDirectory) {
-    std::vector<ComponentInterface *>::iterator iter, end;
-    iter = theComponents.begin();
-    end = theComponents.end();
-    while (iter != end) {
-      DBG_(Dev, (<< "Loading state: " << (*iter)->name()));
-      (*iter)->loadState(aDirectory);
-      ++iter;
+    bool isQuiesced() const
+    {
+        bool quiesced = true;
+        for (auto* aComponent : theComponents) {
+            quiesced = quiesced && aComponent->isQuiesced();
+        }
+        // std::for_each
+        // ( theComponents.begin()
+        //   , theComponents.end()
+        //   , ll::var(quiesced) = ll::var(quiesced) && ll::bind(
+        //   &ComponentInterface::isQuiesced, ll::_1 )
+        // );
+        return quiesced;
     }
-    DBG_(Crit, (<< " Done loading."));
-    /*
-          std::for_each
-            ( theComponents.begin()
-            , theComponents.end()
-            , ll::bind( &ComponentInterface::loadState, ll::_1, aDirectory )
-            );
-    */
-  }
+
+    void doSave(std::string const& aDirectory) const
+    {
+        for (auto* aComponent : theComponents) {
+            aComponent->saveState(aDirectory);
+        }
+        // std::for_each
+        // ( theComponents.begin()
+        //   , theComponents.end()
+        //   , ll::bind( &ComponentInterface::saveState, ll::_1, aDirectory )
+        // );
+    }
+
+    void doLoad(std::string const& aDirectory)
+    {
+        std::vector<ComponentInterface*>::iterator iter, end;
+        iter = theComponents.begin();
+        end  = theComponents.end();
+        while (iter != end) {
+            DBG_(Dev, (<< "Loading state: " << (*iter)->name()));
+            (*iter)->loadState(aDirectory);
+            ++iter;
+        }
+        DBG_(Crit, (<< " Done loading."));
+        /*
+              std::for_each
+                ( theComponents.begin()
+                , theComponents.end()
+                , ll::bind( &ComponentInterface::loadState, ll::_1, aDirectory )
+                );
+        */
+    }
 };
 
 } // namespace aux_
 
 std::unique_ptr<aux_::ComponentManagerImpl> theComponentManager{};
 
-ComponentManager &ComponentManager::getComponentManager() {
-  if (theComponentManager == 0) {
-    DBG_(Dev, (<< "Initializing Flexus::ComponentManager..."));
-    theComponentManager.reset(new aux_::ComponentManagerImpl());
-    DBG_(Dev, (<< "ComponentManager initialized"));
-  }
-  return *theComponentManager;
+ComponentManager&
+ComponentManager::getComponentManager()
+{
+    if (theComponentManager == 0) {
+        DBG_(Dev, (<< "Initializing Flexus::ComponentManager..."));
+        theComponentManager.reset(new aux_::ComponentManagerImpl());
+        DBG_(Dev, (<< "ComponentManager initialized"));
+    }
+    return *theComponentManager;
 }
 
 } // namespace Core

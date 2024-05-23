@@ -51,9 +51,15 @@
 
 namespace nuArch {
 
-enum eRegisterType { xRegisters, vRegisters, kLastMapTableCode };
+enum eRegisterType
+{
+    xRegisters,
+    vRegisters,
+    kLastMapTableCode
+};
 
-std::ostream &operator<<(std::ostream &anOstream, eRegisterType aCode);
+std::ostream&
+operator<<(std::ostream& anOstream, eRegisterType aCode);
 
 } // namespace nuArch
 

@@ -43,12 +43,10 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
 
-#include <core/simulator_layout.hpp>
-
-#include <components/uFetch/uFetchTypes.hpp>
-
 #include <components/CommonQEMU/Slices/AbstractInstruction.hpp>
 #include <components/CommonQEMU/Transports/MemoryTransport.hpp>
+#include <components/uFetch/uFetchTypes.hpp>
+#include <core/simulator_layout.hpp>
 
 // clang-format off
 #define FLEXUS_BEGIN_COMPONENT uFetch

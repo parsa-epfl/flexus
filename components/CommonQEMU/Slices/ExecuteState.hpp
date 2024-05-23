@@ -55,11 +55,11 @@
 namespace Flexus {
 namespace SharedTypes {
 
-struct ExecuteState : public boost::counted_base {
-protected:
-  // Only may be created by Execute component
-  ExecuteState() {
-  }
+struct ExecuteState : public boost::counted_base
+{
+  protected:
+    // Only may be created by Execute component
+    ExecuteState() {}
 };
 
 } // namespace SharedTypes

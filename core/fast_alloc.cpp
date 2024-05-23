@@ -78,7 +78,7 @@
 
 #include <core/fast_alloc.hpp>
 
-void *FastAlloc::freeLists[Num_Buckets];
+void* FastAlloc::freeLists[Num_Buckets];
 
 #ifdef FAST_ALLOC_STATS
 unsigned FastAlloc::newCount[Num_Buckets];
@@ -86,47 +86,49 @@ unsigned FastAlloc::deleteCount[Num_Buckets];
 unsigned FastAlloc::allocCount[Num_Buckets];
 #endif
 
-void *FastAlloc::moreStructs(int32_t bucket) {
-  assert(bucket > 0 && bucket < Num_Buckets);
+void*
+FastAlloc::moreStructs(int32_t bucket)
+{
+    assert(bucket > 0 && bucket < Num_Buckets);
 
-  int32_t sz = bucket * Alloc_Quantum;
-  const int32_t nstructs = Num_Structs_Per_New; // how many to allocate?
-  char *p = (char *)::new char[nstructs * sz];
+    int32_t sz             = bucket * Alloc_Quantum;
+    const int32_t nstructs = Num_Structs_Per_New; // how many to allocate?
+    char* p                = (char*)::new char[nstructs * sz];
 
 #ifdef FAST_ALLOC_STATS
-  ++allocCount[bucket];
+    ++allocCount[bucket];
 #endif
 
-  freeLists[bucket] = p;
-  for (int32_t i = 0; i < (nstructs - 2); ++i, p += sz)
-    *(void **)p = p + sz;
-  *(void **)p = 0;
+    freeLists[bucket] = p;
+    for (int32_t i = 0; i < (nstructs - 2); ++i, p += sz)
+        *(void**)p = p + sz;
+    *(void**)p = 0;
 
-  return (p + sz);
+    return (p + sz);
 }
 
 #ifdef FAST_ALLOC_DEBUG
 
-FastAlloc *FastAlloc::inUseList;
+FastAlloc* FastAlloc::inUseList;
 
-FastAlloc::FastAlloc() {
-  inUsePrev = nullptr;
-  inUseNext = inUseList;
-  if (inUseList) {
-    inUseList->inUsePrev = this;
-  }
-  inUseList = this;
+FastAlloc::FastAlloc()
+{
+    inUsePrev = nullptr;
+    inUseNext = inUseList;
+    if (inUseList) { inUseList->inUsePrev = this; }
+    inUseList = this;
 }
 
-FastAlloc::~FastAlloc() {
-  if (inUsePrev) {
-    inUsePrev->inUseNext = inUseNext;
-  } else {
-    assert(inUseList == this);
-    inUseList = inUseNext;
-  }
+FastAlloc::~FastAlloc()
+{
+    if (inUsePrev) {
+        inUsePrev->inUseNext = inUseNext;
+    } else {
+        assert(inUseList == this);
+        inUseList = inUseNext;
+    }
 
-  inUseNext->inUsePrev = inUsePrev;
+    inUseNext->inUsePrev = inUsePrev;
 }
 
 #endif

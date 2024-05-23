@@ -45,17 +45,17 @@
 #ifndef FLEXUS_TRANSPORTS__PREDICTOR_TRANSPORT_HPP_INCLUDED
 #define FLEXUS_TRANSPORTS__PREDICTOR_TRANSPORT_HPP_INCLUDED
 
-#include <core/transport.hpp>
-
 #include <components/CommonQEMU/Slices/PredictorMessage.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
+#include <core/transport.hpp>
 
 namespace Flexus {
 namespace SharedTypes {
 
 #ifndef FLEXUS_TAG_PredictorMessageTag
 #define FLEXUS_TAG_PredictorMessageTag
-struct PredictorMessageTag_t {};
+struct PredictorMessageTag_t
+{};
 namespace {
 PredictorMessageTag_t PredictorMessageTag;
 }
@@ -63,7 +63,8 @@ PredictorMessageTag_t PredictorMessageTag;
 
 #ifndef FLEXUS_TAG_TransactionTrackerTag
 #define FLEXUS_TAG_TransactionTrackerTag
-struct TransactionTrackerTag_t {};
+struct TransactionTrackerTag_t
+{};
 struct TransactionTracker;
 namespace {
 TransactionTrackerTag_t TransactionTrackerTag;
@@ -72,7 +73,7 @@ TransactionTrackerTag_t TransactionTrackerTag;
 
 typedef Transport<mpl::vector<transport_entry<PredictorMessageTag_t, PredictorMessage>,
                               transport_entry<TransactionTrackerTag_t, TransactionTracker>>>
-    PredictorTransport;
+  PredictorTransport;
 
 } // namespace SharedTypes
 } // namespace Flexus

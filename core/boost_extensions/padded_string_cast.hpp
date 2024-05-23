@@ -56,10 +56,13 @@
 
 namespace boost {
 
-template <int32_t w, char c, typename Source> std::string padded_string_cast(Source s) {
-  std::ostringstream ss;
-  ss << std::setfill(c) << std::setw(w) << s;
-  return ss.str();
+template<int32_t w, char c, typename Source>
+std::string
+padded_string_cast(Source s)
+{
+    std::ostringstream ss;
+    ss << std::setfill(c) << std::setw(w) << s;
+    return ss.str();
 }
 
 } // namespace boost

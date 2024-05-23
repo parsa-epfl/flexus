@@ -50,15 +50,12 @@
 #endif
 #define FLEXUS_PerfectPlacementSlice_TYPE_PROVIDED
 
-#include <core/boost_extensions/intrusive_ptr.hpp>
-
 #include <boost/none.hpp>
 #include <boost/optional.hpp>
-
+#include <components/CommonQEMU/Slices/MemoryMessage.hpp>
+#include <core/boost_extensions/intrusive_ptr.hpp>
 #include <core/exception.hpp>
 #include <core/types.hpp>
-
-#include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 
 namespace Flexus {
 namespace SharedTypes {
@@ -68,58 +65,62 @@ using boost::intrusive_ptr;
 
 static MemoryMessage thePerfPlcDummyMemMsg(MemoryMessage::LoadReq);
 
-struct PerfectPlacementSlice : public boost::counted_base { /*, public FastAlloc */
-  typedef PhysicalMemoryAddress MemoryAddress;
+struct PerfectPlacementSlice : public boost::counted_base
+{ /*, public FastAlloc */
+    typedef PhysicalMemoryAddress MemoryAddress;
 
-  // enumerated message type
-  enum PerfectPlacementSliceType { ProcessMsg, MakeBlockWritable };
+    // enumerated message type
+    enum PerfectPlacementSliceType
+    {
+        ProcessMsg,
+        MakeBlockWritable
+    };
 
-  explicit PerfectPlacementSlice(PerfectPlacementSliceType aType)
-      : theType(aType), theAddress(0), theMemoryMessage(thePerfPlcDummyMemMsg) {
-  }
-  explicit PerfectPlacementSlice(PerfectPlacementSliceType aType, MemoryAddress anAddress)
-      : theType(aType), theAddress(anAddress), theMemoryMessage(thePerfPlcDummyMemMsg) {
-  }
-  explicit PerfectPlacementSlice(PerfectPlacementSliceType aType, MemoryAddress anAddress,
-                                 MemoryMessage &aMemMsg)
-      : theType(aType), theAddress(anAddress), theMemoryMessage(aMemMsg) {
-  }
+    explicit PerfectPlacementSlice(PerfectPlacementSliceType aType)
+      : theType(aType)
+      , theAddress(0)
+      , theMemoryMessage(thePerfPlcDummyMemMsg)
+    {
+    }
+    explicit PerfectPlacementSlice(PerfectPlacementSliceType aType, MemoryAddress anAddress)
+      : theType(aType)
+      , theAddress(anAddress)
+      , theMemoryMessage(thePerfPlcDummyMemMsg)
+    {
+    }
+    explicit PerfectPlacementSlice(PerfectPlacementSliceType aType, MemoryAddress anAddress, MemoryMessage& aMemMsg)
+      : theType(aType)
+      , theAddress(anAddress)
+      , theMemoryMessage(aMemMsg)
+    {
+    }
 
-  static intrusive_ptr<PerfectPlacementSlice> newMakeBlockWritable(MemoryAddress anAddress) {
-    intrusive_ptr<PerfectPlacementSlice> slice =
-        new PerfectPlacementSlice(MakeBlockWritable, anAddress);
-    return slice;
-  }
-  static intrusive_ptr<PerfectPlacementSlice> newProcessMsg(MemoryMessage &aMemMsg) {
-    intrusive_ptr<PerfectPlacementSlice> slice =
-        new PerfectPlacementSlice(ProcessMsg, aMemMsg.address(), aMemMsg);
-    return slice;
-  }
+    static intrusive_ptr<PerfectPlacementSlice> newMakeBlockWritable(MemoryAddress anAddress)
+    {
+        intrusive_ptr<PerfectPlacementSlice> slice = new PerfectPlacementSlice(MakeBlockWritable, anAddress);
+        return slice;
+    }
+    static intrusive_ptr<PerfectPlacementSlice> newProcessMsg(MemoryMessage& aMemMsg)
+    {
+        intrusive_ptr<PerfectPlacementSlice> slice = new PerfectPlacementSlice(ProcessMsg, aMemMsg.address(), aMemMsg);
+        return slice;
+    }
 
-  const PerfectPlacementSliceType type() const {
-    return theType;
-  }
-  const MemoryAddress address() const {
-    return theAddress;
-  }
+    const PerfectPlacementSliceType type() const { return theType; }
+    const MemoryAddress address() const { return theAddress; }
 
-  PerfectPlacementSliceType &type() {
-    return theType;
-  }
-  MemoryAddress &address() {
-    return theAddress;
-  }
-  MemoryMessage &memMsg() {
-    return theMemoryMessage;
-  }
+    PerfectPlacementSliceType& type() { return theType; }
+    MemoryAddress& address() { return theAddress; }
+    MemoryMessage& memMsg() { return theMemoryMessage; }
 
-private:
-  PerfectPlacementSliceType theType;
-  MemoryAddress theAddress;
-  MemoryMessage &theMemoryMessage;
+  private:
+    PerfectPlacementSliceType theType;
+    MemoryAddress theAddress;
+    MemoryMessage& theMemoryMessage;
 };
 
-std::ostream &operator<<(std::ostream &s, PerfectPlacementSlice const &aPerfPlcSlice);
+std::ostream&
+operator<<(std::ostream& s, PerfectPlacementSlice const& aPerfPlcSlice);
 
 } // namespace SharedTypes
 } // namespace Flexus

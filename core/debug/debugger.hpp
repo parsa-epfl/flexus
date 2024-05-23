@@ -42,20 +42,17 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
-#include <memory>
-#include <queue>
-#include <string>
-#include <vector>
-
-#include <boost/optional.hpp>
-
 #include <boost/lexical_cast.hpp>
-
+#include <boost/optional.hpp>
 #include <core/debug/category.hpp>
 #include <core/debug/entry.hpp>
 #include <core/debug/field.hpp>
 #include <core/debug/severity.hpp>
 #include <core/debug/target.hpp>
+#include <memory>
+#include <queue>
+#include <string>
+#include <vector>
 
 #ifndef FLEXUS_CORE_DEBUG_DEBUGGER_HPP_INCLUDED
 #define FLEXUS_CORE_DEBUG_DEBUGGER_HPP_INCLUDED
@@ -63,80 +60,81 @@
 namespace Flexus {
 namespace Dbg {
 
-struct At {
-  int64_t theCycle;
-  Action *theAction;
+struct At
+{
+    int64_t theCycle;
+    Action* theAction;
 
-  At(int64_t aCycle, Action *anAction) : theCycle(aCycle), theAction(anAction) {
-  }
+    At(int64_t aCycle, Action* anAction)
+      : theCycle(aCycle)
+      , theAction(anAction)
+    {
+    }
 
-  friend bool operator<(At const &aLeft, At const &aRight) {
-    return aLeft.theCycle > aRight.theCycle;
-  }
+    friend bool operator<(At const& aLeft, At const& aRight) { return aLeft.theCycle > aRight.theCycle; }
 };
 
-class Debugger {
-  std::vector<Target *> theTargets; // Owns all targets
-  std::map<std::string, bool *> theCategories;
-  std::map<std::string, std::vector<bool *>> theComponents;
+class Debugger
+{
+    std::vector<Target*> theTargets; // Owns all targets
+    std::map<std::string, bool*> theCategories;
+    std::map<std::string, std::vector<bool*>> theComponents;
 
-  int64_t theCount;
-  uint64_t *theCycleCount;
+    int64_t theCount;
+    uint64_t* theCycleCount;
 
-  std::priority_queue<At> theAts; // Owns all targets
+    std::priority_queue<At> theAts; // Owns all targets
 
-public:
-  static Debugger *theDebugger;
-  Severity theMinimumSeverity;
+  public:
+    static Debugger* theDebugger;
+    Severity theMinimumSeverity;
 
-  Debugger() : theCount(0), theCycleCount(0), theMinimumSeverity(SevDev) {
-  }
+    Debugger()
+      : theCount(0)
+      , theCycleCount(0)
+      , theMinimumSeverity(SevDev)
+    {
+    }
 
-  ~Debugger();
-  void initialize();
-  void addFile(std::string const &);
-  static void constructDebugger();
+    ~Debugger();
+    void initialize();
+    void addFile(std::string const&);
+    static void constructDebugger();
 
-  int64_t count() {
-    return ++theCount;
-  }
+    int64_t count() { return ++theCount; }
 
-  int64_t cycleCount() {
-    if (theCycleCount)
-      return *theCycleCount;
-    else
-      return 0;
-  }
+    int64_t cycleCount()
+    {
+        if (theCycleCount)
+            return *theCycleCount;
+        else
+            return 0;
+    }
 
-  void connectCycleCount(uint64_t *aCount) {
-    theCycleCount = aCount;
-  }
+    void connectCycleCount(uint64_t* aCount) { theCycleCount = aCount; }
 
-  void process(Entry const &anEntry);
-  void printConfiguration(std::ostream &anOstream);
-  void add(Target *aTarget);
-  void registerCategory(std::string const &aCategory, bool *aSwitch);
-  bool setAllCategories(bool aValue);
-  bool setCategory(std::string const &aCategory, bool aValue);
-  void listCategories(std::ostream &anOstream);
-  void registerComponent(std::string const &aComponent, uint32_t anIndex, bool *aSwitch);
-  bool setAllComponents(int32_t anIndex, bool aValue);
-  bool setComponent(std::string const &aCategory, int32_t anIndex, bool aValue);
-  void listComponents(std::ostream &anOstream);
-  void addAt(int64_t aCycle, Action *anAction);
-  void checkAt();
-  void doNextAt();
-  void reset();
+    void process(Entry const& anEntry);
+    void printConfiguration(std::ostream& anOstream);
+    void add(Target* aTarget);
+    void registerCategory(std::string const& aCategory, bool* aSwitch);
+    bool setAllCategories(bool aValue);
+    bool setCategory(std::string const& aCategory, bool aValue);
+    void listCategories(std::ostream& anOstream);
+    void registerComponent(std::string const& aComponent, uint32_t anIndex, bool* aSwitch);
+    bool setAllComponents(int32_t anIndex, bool aValue);
+    bool setComponent(std::string const& aCategory, int32_t anIndex, bool aValue);
+    void listComponents(std::ostream& anOstream);
+    void addAt(int64_t aCycle, Action* anAction);
+    void checkAt();
+    void doNextAt();
+    void reset();
 
-  void setMinSev(Severity aSeverity) {
-    theMinimumSeverity = aSeverity;
-  }
+    void setMinSev(Severity aSeverity) { theMinimumSeverity = aSeverity; }
 };
 
-struct DebuggerConstructor {
-  DebuggerConstructor() {
-    Debugger::constructDebugger();
-  }
+struct DebuggerConstructor
+{
+    DebuggerConstructor() { Debugger::constructDebugger(); }
 };
 
 } // namespace Dbg

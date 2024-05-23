@@ -48,13 +48,14 @@
 namespace Flexus {
 namespace Core {
 
-struct DriveBase {
-  // This method is called every cycle.
-  virtual ~DriveBase(){};
-  virtual void doCycle() = 0;
+struct DriveBase
+{
+    // This method is called every cycle.
+    virtual ~DriveBase(){};
+    virtual void doCycle() = 0;
 };
 
-typedef DriveBase &DriveReference;
+typedef DriveBase& DriveReference;
 
 } // End namespace Core
 namespace Wiring {

@@ -54,10 +54,13 @@
 
 namespace Flexus {
 namespace SharedTypes {
-struct Mux : public boost::counted_base {
-  explicit Mux(int32_t a) : source(a) {
-  }
-  int32_t source;
+struct Mux : public boost::counted_base
+{
+    explicit Mux(int32_t a)
+      : source(a)
+    {
+    }
+    int32_t source;
 };
 
 } // namespace SharedTypes

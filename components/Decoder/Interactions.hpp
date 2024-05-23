@@ -52,17 +52,20 @@ namespace nDecoder {
 
 using Flexus::SharedTypes::VirtualMemoryAddress;
 
-struct BranchInteraction : public nuArch::Interaction {
-  VirtualMemoryAddress theTarget;
-  BranchInteraction(VirtualMemoryAddress aTarget);
-  void operator()(boost::intrusive_ptr<nuArch::Instruction> anInstruction,
-                  nuArch::uArch &aCore);
-  void describe(std::ostream &anOstream) const;
+struct BranchInteraction : public nuArch::Interaction
+{
+    VirtualMemoryAddress theTarget;
+    BranchInteraction(VirtualMemoryAddress aTarget);
+    void operator()(boost::intrusive_ptr<nuArch::Instruction> anInstruction, nuArch::uArch& aCore);
+    void describe(std::ostream& anOstream) const;
 };
 
-nuArch::Interaction *reinstateInstructionInteraction();
-nuArch::Interaction *annulInstructionInteraction();
-nuArch::Interaction *branchInteraction(VirtualMemoryAddress aTarget);
+nuArch::Interaction*
+reinstateInstructionInteraction();
+nuArch::Interaction*
+annulInstructionInteraction();
+nuArch::Interaction*
+branchInteraction(VirtualMemoryAddress aTarget);
 
 } // namespace nDecoder
 

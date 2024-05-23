@@ -45,18 +45,18 @@
 #ifndef FLEXUS_TRANSPORTS__PREFETCH_TRANSPORT_HPP_INCLUDED
 #define FLEXUS_TRANSPORTS__PREFETCH_TRANSPORT_HPP_INCLUDED
 
-#include <core/transport.hpp>
-
 #include <components/CommonQEMU/Slices/PrefetchCommand.hpp>
 #include <components/CommonQEMU/Slices/PrefetchMessage.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
+#include <core/transport.hpp>
 
 namespace Flexus {
 namespace SharedTypes {
 
 #ifndef FLEXUS_TAG_PrefetchMessageTag
 #define FLEXUS_TAG_PrefetchMessageTag
-struct PrefetchMessageTag_t {};
+struct PrefetchMessageTag_t
+{};
 namespace {
 PrefetchMessageTag_t PrefetchMessageTag;
 }
@@ -64,7 +64,8 @@ PrefetchMessageTag_t PrefetchMessageTag;
 
 #ifndef FLEXUS_TAG_PrefetchCommandTag
 #define FLEXUS_TAG_PrefetchCommandTag
-struct PrefetchCommandTag_t {};
+struct PrefetchCommandTag_t
+{};
 namespace {
 PrefetchCommandTag_t PrefetchCommandTag;
 }
@@ -72,7 +73,8 @@ PrefetchCommandTag_t PrefetchCommandTag;
 
 #ifndef FLEXUS_TAG_TransactionTrackerTag
 #define FLEXUS_TAG_TransactionTrackerTag
-struct TransactionTrackerTag_t {};
+struct TransactionTrackerTag_t
+{};
 struct TransactionTracker;
 namespace {
 TransactionTrackerTag_t TransactionTrackerTag;
@@ -82,7 +84,7 @@ TransactionTrackerTag_t TransactionTrackerTag;
 typedef Transport<mpl::vector<transport_entry<PrefetchMessageTag_t, PrefetchMessage>,
                               transport_entry<PrefetchCommandTag_t, PrefetchCommand>,
                               transport_entry<TransactionTrackerTag_t, TransactionTracker>>>
-    PrefetchTransport;
+  PrefetchTransport;
 
 } // namespace SharedTypes
 } // namespace Flexus

@@ -70,14 +70,18 @@
 namespace nFLEXUS {
 namespace Wiring {
 
-#define WIRE(FromInstance, FromPort, ToInstance, ToPort)                                           \
-  BOOST_PP_CAT(FromInstance, _instance).theJumpTable.BOOST_PP_CAT(wire_available_, FromPort) =     \
-      &resolve_channel<ToInstance, ToInstance::iface::ToPort,                                      \
-                       ToInstance::iface::ToPort::port_type,                                       \
-                       ToInstance::iface::ToPort::is_array>::invoke_available;                     \
-  BOOST_PP_CAT(FromInstance, _instance).theJumpTable.BOOST_PP_CAT(wire_manip_, FromPort) =         \
-      &resolve_channel<ToInstance, ToInstance::iface::ToPort,                                      \
-                       ToInstance::iface::ToPort::port_type,                                       \
+#define WIRE(FromInstance, FromPort, ToInstance, ToPort)                                                               \
+    BOOST_PP_CAT(FromInstance, _instance).theJumpTable.BOOST_PP_CAT(wire_available_, FromPort) =                       \
+      &resolve_channel<ToInstance,                                                                                     \
+                       ToInstance::iface::ToPort,                                                                      \
+                       ToInstance::iface::ToPort::port_type,                                                           \
+                       ToInstance::iface::ToPort::is_array>::invoke_available;                                         \
+    BOOST_PP_CAT(FromInstance, _instance).theJumpTable.BOOST_PP_CAT(wire_manip_, FromPort) =                           \
+      &resolve_channel<ToInstance,                                                                                     \
+                       ToInstance::iface::ToPort,                                                                      \
+                       ToInstance::iface::ToPort::port_type,                                                           \
                        ToInstance::iface::ToPort::is_array>::invoke_manip; /**/
 
-void connectWiring() {
+void
+connectWiring()
+{

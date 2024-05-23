@@ -82,37 +82,47 @@ namespace Core {
 //    return result;
 //}
 
-bool anyBits(bits b) {
-  return b != 0;
+bool
+anyBits(bits b)
+{
+    return b != 0;
 }
 
-bits align(uint64_t x, int y) {
-  return bits(y * (x / y));
+bits
+align(uint64_t x, int y)
+{
+    return bits(y * (x / y));
 }
 
-bits concat_bits(const bits &lhs, const bits &rhs) {
+bits
+concat_bits(const bits& lhs, const bits& rhs)
+{
 
-  return ((lhs << 64) | rhs);
+    return ((lhs << 64) | rhs);
 }
 
-bits construct(uint8_t *bytes, size_t size) {
-  bits result;
-  for (int i = (size - 1); i >= 0; i--) {
-    result |= bytes[i] << i;
-  }
-  return result;
+bits
+construct(uint8_t* bytes, size_t size)
+{
+    bits result;
+    for (int i = (size - 1); i >= 0; i--) {
+        result |= bytes[i] << i;
+    }
+    return result;
 }
 
-std::pair<uint64_t, uint64_t> splitBits(const bits &input, uint64_t size) {
-  size /= 2;
-  bits a, b = -1;
-  a = b <<= size;
-  b = ~a;
-  std::pair<uint64_t, uint64_t> ret;
-  ret.first = static_cast<uint64_t>((a & input) >> size);
-  ret.second = static_cast<uint64_t>(b & input);
+std::pair<uint64_t, uint64_t>
+splitBits(const bits& input, uint64_t size)
+{
+    size /= 2;
+    bits a, b = -1;
+    a = b <<= size;
+    b = ~a;
+    std::pair<uint64_t, uint64_t> ret;
+    ret.first  = static_cast<uint64_t>((a & input) >> size);
+    ret.second = static_cast<uint64_t>(b & input);
 
-  return ret;
+    return ret;
 }
 
 } // namespace Core

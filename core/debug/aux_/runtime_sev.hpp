@@ -42,10 +42,12 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
-struct DBG__SetRuntimeMinSev {
-  DBG__SetRuntimeMinSev() {
-    Flexus::Dbg::Debugger::debugger().setMinSev(
-        Flexus::Dbg::tSeverity::Severity(DBG_internal_Sev_to_int(DBG_SetInitialRuntimeMinSev)));
-  }
+struct DBG__SetRuntimeMinSev
+{
+    DBG__SetRuntimeMinSev()
+    {
+        Flexus::Dbg::Debugger::debugger().setMinSev(
+          Flexus::Dbg::tSeverity::Severity(DBG_internal_Sev_to_int(DBG_SetInitialRuntimeMinSev)));
+    }
 
 } DBG__theSetRuntimeMinSev;

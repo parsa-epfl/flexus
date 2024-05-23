@@ -41,45 +41,37 @@ disabled via "DBG_SetAssertions false" (see below).
 Here is the syntax for the DBG_ family macro:
 
   DBG_( <severity>, <operations> ) ;
-    Creates a debug entry
-      <severity> - Debug severity level, documented below.
-      <operations> - Any of the debug operations, documented under
-        "DBG Operations" below
-    Ex:
-      DBG_( Dev, (<< "Example debug entry at Development severity") );
+Creates a debug entry<severity> - Debug severity level, documented below.<operations> - Any of the debug operations,
+  documented under "DBG Operations" below Ex : DBG_(Dev, (<< "Example debug entry at Development severity"));
 
-  DBG_Assert( <condition> [, <operations>] ) ;
+DBG_Assert(<condition>[, <operations>]);
     Creates an assertion.  The assertion is triggered if condition is false.
     Except for compile time filtering, this is equivalent to:
     DBG_( Crit, Assert() Condition( !( <condition> ) ) <operations> ) ;
-      <condition> - Condition controlling the assertion.  Assertion is
-        triggerred if the condition is FALSE.
-      <operations> - Any of the debug operations, documented under
-        "DBG Operations" below
-    Ex:
-      DBG_Assert( (prt != 0) , (<< "This assert fires when ptr == 0") );
+    <condition> - Condition controlling the assertion.Assertion is triggerred if the condition is FALSE.<operations> -
+      Any of the debug operations,
+      documented under "DBG Operations" below Ex : DBG_Assert((prt != 0), (<< "This assert fires when ptr == 0"));
 
-  DBG_AssertSev( <severity>, <condition> [, <operations> ] ) ;
+    DBG_AssertSev(<severity>, <condition>[, <operations>]);
     Creates an assertion with a specified severity.  Note that severity is
     generally ignored for the purpose of compile time filtering of asserts, but
     can be used by the entry-processing-time filters to customize assert
     behavior.  Except for compile time filtering, this is equivalent to:
     DBG_( <severity>, Assert() Condition( !( <condition> ) ) <operations> ) ;
-      <severity> - Debug severity level, documented below.
-      <condition> - Condition controlling the assertion.  Assertion is
-        triggerred if the condition is FALSE.
-      <operations> - Any of the debug operations, documented under
-        "DBG Operations" below
-    Ex:
-      DBG_AssertSev( Verb, (prt != 0) , (<< "This assert has Verbose severity") );
+    <severity> - Debug severity level,
+      documented below.<condition> -
+        Condition controlling the assertion.Assertion is triggerred if the condition is FALSE.<operations> -
+        Any of the debug operations,
+      documented under "DBG Operations" below Ex
+      : DBG_AssertSev(Verb, (prt != 0), (<< "This assert has Verbose severity"));
 
-PLANNED FEATURES (not yet available):
-  DBG_Invocation();
+    PLANNED
+    FEATURES(not yet available)
+      : DBG_Invocation();
     Track the invocation of the current function, for creating stack backtraces
     for debug entries.
     Ex:
       DBG_Invocation();
-
 
 DBG Operations
 =======
@@ -95,17 +87,13 @@ DBG Operations
     Ex:
       DBG_( Crit, ( << " a complicated " << &std::hex << myVariable << " expression.") );
 
-  AddCategory( <cat-name> | <cat-name> | <cat-name> ... )
-    Associates the specified list of categories with the debug entry.  This list
-    ADDS TO the category list of the debug statement, so it appends onto any
-    previous Category() operations.  Categories must have been previously
-    created using DBG_NewCategory (see below).
-      <cat-name> - the name of the category.  A list of categories can be
-        separated by |
-    Aliases:
-      AddCat( <cat-name> | ... )
-    Ex:
-      DBG_( Crit, Cat( MyCat1 ) AddCat( MyCat2 | MyCat3 ) ( << " some entry.") );
+AddCategory(<cat - name> | <cat - name> | <cat - name>...) Associates the specified list of
+  categories with the debug entry.This list ADDS TO the category list of the debug statement,
+  so it appends onto any previous
+      Category() operations.Categories must have been previously created using DBG_NewCategory(see below)
+        .<cat - name> -
+      the name of the category.A list of categories can be separated by
+    | Aliases : AddCat(<cat - name> | ...) Ex : DBG_(Crit, Cat(MyCat1) AddCat(MyCat2 | MyCat3)(<< " some entry."));
 
   Address( <numeric-expr> )
     Sets the {Address} numeric field of the debug entry to the specified value.
@@ -116,25 +104,17 @@ DBG Operations
     Ex:
       DBG_( Crit, Addr( address ) ( << " memory reference to specified addr.") );
 
-  Assert( )
-    Marks a debug statement as an assertion.  If you use a
-    DBG_( Sev, Assert() ) macro rather than DBG_Assert(), the assertion will
-    be filtered at compile time like a normal debug statement.  Assetions also
-    have the Assert category added.
-    Ex:
-      DBG_( Crit, Assert() ( << "Almost the same as DBG_Assert()" ) );
+  Assert() Marks a debug statement as an assertion.If you use a DBG_(Sev, Assert()) macro rather than DBG_Assert(),
+    the assertion will be filtered at compile time like a normal debug statement
+      .Assetions also have the Assert category added.Ex : DBG_(Crit, Assert()(<< "Almost the same as DBG_Assert()"));
 
-  Category( <cat-name> | <cat-name> | <cat-name> ... )
-    Associates the specified list of categories with the debug entry.  This list
-    REPLACES the category list of the debug statement, so it overwrites any
-    previous Category() operations.  Categories must have been previously
-    created using DBG_NewCategory (see below).
-      <cat-name> - the name of the category.  A list of categories can be
-        separated by |
-    Aliases:
-      Cat( <cat-name> | ... )
-    Ex:
-      DBG_( Crit, Cat( MyCat1 | MyCat2 ) ( << " some entry.") );
+  Category(<cat - name> | <cat - name> | <cat - name>...) Associates the specified list of
+    categories with the debug entry.This list REPLACES the category list of the debug statement,
+    so it overwrites any previous
+        Category() operations.Categories must have been previously created using DBG_NewCategory(see below)
+          .<cat - name> -
+        the name of the category.A list of categories can be separated by
+      | Aliases : Cat(<cat - name> | ...) Ex : DBG_(Crit, Cat(MyCat1 | MyCat2)(<< " some entry."));
 
   Component( <component-ref> )
     Attaches the specified scaffold component to this debug entry.  This makes
@@ -163,13 +143,10 @@ DBG Operations
     Ex:
       DBG_( Crit, Cond( my_variable == 1 ) ( << " my_variable must equal 1.") );
 
-  Core( )
-    Marks a debug statement as belonging to the Scaffold core.  Core debug
-    statements can be filtered out at compile time (core assertions are not
-    filtered out unless all assertions are disabled).  This also gives the
-    debug statement the Core category.
-    Ex:
-      DBG_( Crit, Core() ( << "A core debug statement" ) );
+  Core() Marks a debug statement as belonging to the Scaffold core
+    .Core debug statements can be filtered out at compile
+    time(core assertions are not filtered out unless all assertions are disabled)
+    .This also gives the debug statement the Core category.Ex : DBG_(Crit, Core()(<< "A core debug statement"));
 
   NoDefaultOps( )
     Suppresses the addition of "default operations" to a particular debug
@@ -201,60 +178,59 @@ Compile Time Control of the DBG_ system
 Much of the behavior of debug statements (for example, if they should compile
 away) can be controlled at compile time.  These settings can be changed at
 any point in the code by setting some directives with #define, and then
-#include DBG_Control().  Note tht there are NO SEMICOLONS at the end of the
+#include DBG_Control().Note tht there are NO SEMICOLONS at the end of the
 #define or #include directives.
 
-  #define DBG_NewCategories category, category, ...
-  #include DBG_Control()
+#define DBG_NewCategories category, category, ...
+#include DBG_Control()
     Creates new debug categories.  Categories should be separated by commas.
     This should only be done at global scope (outside of any namespace), or
     the categories will only be visible within that namespace.
     Ex:
-      #define DBG_NewCategories MyCat, MyCat2
-      #include DBG_Control()
+#define DBG_NewCategories MyCat, MyCat2
+#include DBG_Control()
 
-  #define DBG_Reset
-  #include DBG_Control()
+#define DBG_Reset
+#include DBG_Control()
     Clears the default operations set with SetDefaultOps. See DBG_SetDefaultOps
     for more info.
 
-  #define DBG_SetAssertions true or false
-  #include DBG_Control()
+#define DBG_SetAssertions true or false
+#include DBG_Control()
     Enable or disable assertions. This is true by default.
     Ex:
-      #define DBG_Assertions true
-      #include DBG_Control()
+#define DBG_Assertions true
+#include DBG_Control()
 
-  #define DBG_SetCoreDebugging true or false
-  #include DBG_Control()
+#define DBG_SetCoreDebugging true or false
+#include DBG_Control()
     Enable or disable core debugging.  This needs to be set before the
     Scaffold core is included (ie at the top of wiring). This is false
     by default.
     Ex:
-      #define DBG_SetCoreDebugging true
-      #include DBG_Control()
+#define DBG_SetCoreDebugging true
+#include DBG_Control()
 
-  #define DBG_SetDefaultOps <operations>
-  #include DBG_Control()
+#define DBG_SetDefaultOps <operations>
+#include DBG_Control()
     Any debug operations after DBG_SetDefaultOps are automatically appended
     onto the end of every DBG_ and DBG_Assert statement, unless inhibited
     by NoDefaultOps().  These default operations are cleared by DBG_Reset.
     You should put a DBG_Reset at the bottom of any file that uses
     DBG_SetDefaultOps.
     Ex:
-      #define DBG_SetDefaultOps AddCategory(ProtocolEngine)
-      #include DBG_Control()
+#define DBG_SetDefaultOps AddCategory(ProtocolEngine)
+#include DBG_Control()
         ...
-      #define DBG_Reset
-      #include DBG_Control()
+#define DBG_Reset
+#include DBG_Control()
 
-
-  #define DBG_SetMinimumSeverity <severity>
-  #include DBG_Control()
+#define DBG_SetMinimumSeverity <severity>
+#include DBG_Control()
     Set the severity level used for compile-time filtering of debug statements.
     Ex:
-      #define DBG_SetMinimumSeverity Dev
-      #include DBG_Control()
+#define DBG_SetMinimumSeverity Dev
+#include DBG_Control()
 
 
 Run Time Configuration
@@ -267,12 +243,10 @@ modify configurations from within Simics.
 Here is the configuration file format:
 
 target "target-name" {
-  filter {
-    <list of filters>
-  }
-  action {
-    <list of actions>
-  }
+    filter{<list of filters> } action
+    {
+<list of actions>
+    }
 }
 
 Each filter expression and action statement ends in a semicolon.
@@ -354,5 +328,3 @@ Not currently functional:
 {Cycle}           - Current scaffold cycle
 {Drive}           - The Scaffold drive interface that was last invoked, if any
 {BackTrace}       - List of active functions that are tracked by DBG_Invocation()
-
-

@@ -45,8 +45,7 @@
 #ifndef FLEXUS_IMPLEMENTATION_FILE
 
 #ifndef FLEXUS__LAYOUT_DECLARATION_SECTION
-#error                                                                                             \
-    "Component declaration files must be included in the component declaration section of wiring.cpp"
+#error "Component declaration files must be included in the component declaration section of wiring.cpp"
 #endif // FLEXUS_LAYOUT_COMPONENT_DECLARATION_SECTION
 
 #ifndef FLEXUS_BEGIN_COMPONENT
@@ -65,11 +64,11 @@ using namespace Flexus::SharedTypes;
 
 #define COMPONENT_NO_PARAMETERS FLEXUS_DECLARE_COMPONENT_NO_PARAMETERS(FLEXUS_BEGIN_COMPONENT)
 #define COMPONENT_PARAMETERS(x) FLEXUS_DECLARE_COMPONENT_PARAMETERS(FLEXUS_BEGIN_COMPONENT, x)
-#define PARAMETER FLEXUS_PARAMETER
+#define PARAMETER               FLEXUS_PARAMETER
 
-#define COMPONENT_EMPTY_INTERFACE FLEXUS_COMPONENT_EMPTY_INTERFACE(FLEXUS_BEGIN_COMPONENT)
-#define COMPONENT_INTERFACE(x) FLEXUS_COMPONENT_INTERFACE(FLEXUS_BEGIN_COMPONENT, x)
-#define PORT(x, y, z) FLEXUS_IFACE_PORT(x, y, z)
-#define PORT_ARRAY(x, y, z, w) FLEXUS_IFACE_PORT_ARRAY(x, y, z, w)
+#define COMPONENT_EMPTY_INTERFACE   FLEXUS_COMPONENT_EMPTY_INTERFACE(FLEXUS_BEGIN_COMPONENT)
+#define COMPONENT_INTERFACE(x)      FLEXUS_COMPONENT_INTERFACE(FLEXUS_BEGIN_COMPONENT, x)
+#define PORT(x, y, z)               FLEXUS_IFACE_PORT(x, y, z)
+#define PORT_ARRAY(x, y, z, w)      FLEXUS_IFACE_PORT_ARRAY(x, y, z, w)
 #define DYNAMIC_PORT_ARRAY(x, y, z) FLEXUS_IFACE_DYNAMIC_PORT_ARRAY(x, y, z)
-#define DRIVE(x) FLEXUS_IFACE_DRIVE(x)
+#define DRIVE(x)                    FLEXUS_IFACE_DRIVE(x)

@@ -51,44 +51,57 @@
 
 namespace nDecoder {
 
-struct validateXRegister {
-  uint32_t theReg;
-  eOperandCode theOperandCode;
-  SemanticInstruction *theInstruction;
-  bool the_64;
+struct validateXRegister
+{
+    uint32_t theReg;
+    eOperandCode theOperandCode;
+    SemanticInstruction* theInstruction;
+    bool the_64;
 
-  validateXRegister(uint32_t aReg, eOperandCode anOperand, SemanticInstruction *anInstruction,
-                    bool is_64)
-      : theReg(aReg), theOperandCode(anOperand), theInstruction(anInstruction), the_64(is_64) {
-  }
+    validateXRegister(uint32_t aReg, eOperandCode anOperand, SemanticInstruction* anInstruction, bool is_64)
+      : theReg(aReg)
+      , theOperandCode(anOperand)
+      , theInstruction(anInstruction)
+      , the_64(is_64)
+    {
+    }
 
-  bool operator()();
+    bool operator()();
 };
 
-struct validatePC {
-  SemanticInstruction *theInstruction;
-  bool thePreValidation;
+struct validatePC
+{
+    SemanticInstruction* theInstruction;
+    bool thePreValidation;
 
-  validatePC(SemanticInstruction *anInstruction, bool prevalidation = false)
-      : theInstruction(anInstruction), thePreValidation(prevalidation) {
-  }
+    validatePC(SemanticInstruction* anInstruction, bool prevalidation = false)
+      : theInstruction(anInstruction)
+      , thePreValidation(prevalidation)
+    {
+    }
 
-  bool operator()();
+    bool operator()();
 };
 
-struct validateMemory {
-  eOperandCode theAddressCode;
-  eOperandCode theValueCode;
-  nuArch::eSize theSize;
-  SemanticInstruction *theInstruction;
+struct validateMemory
+{
+    eOperandCode theAddressCode;
+    eOperandCode theValueCode;
+    nuArch::eSize theSize;
+    SemanticInstruction* theInstruction;
 
-  validateMemory(eOperandCode anAddressCode, eOperandCode aValueCode, nuArch::eSize aSize,
-                 SemanticInstruction *anInstruction)
-      : theAddressCode(anAddressCode), theValueCode(aValueCode), theSize(aSize),
-        theInstruction(anInstruction) {
-  }
+    validateMemory(eOperandCode anAddressCode,
+                   eOperandCode aValueCode,
+                   nuArch::eSize aSize,
+                   SemanticInstruction* anInstruction)
+      : theAddressCode(anAddressCode)
+      , theValueCode(aValueCode)
+      , theSize(aSize)
+      , theInstruction(anInstruction)
+    {
+    }
 
-  bool operator()();
+    bool operator()();
 };
 
 } // namespace nDecoder

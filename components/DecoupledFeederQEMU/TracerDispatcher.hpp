@@ -1,7 +1,6 @@
 #ifndef FLEXUS_TRACER_DISPATCHER_HPP
 #define FLEXUS_TRACER_DISPATCHER_HPP
 
-
 // Define a macro that identify instruction from the kernel space
 // do not confuse with EL1.
 #define IS_KERNEL(logical_address) ((logical_address & 0xf000000000000000ULL) != 0)
@@ -21,45 +20,38 @@ using namespace nDecoupledFeeder;
  *      As a rule of thumb, every statistic operation for the feeder
  *      should happen here.
  **/
-class TracerDispatcher {
+class TracerDispatcher
+{
 
-public:
+  public:
     /**
      * Return true if the memory access is accessing a
      * memory mapped IO
      **/
-    static bool
-    dispatch_io(memory_transaction_t& transaction)
-    {
-        return (transaction.io);
-    }
+    static bool dispatch_io(memory_transaction_t& transaction) { return (transaction.io); }
 
     /**
      * Return memory message for a fetch request
      * TODO: fix eBranchType enum, it's stupid
      **/
-    static void
-    dispatch_instruction(memory_transaction_t& transaction, MemoryMessage& msg)
+    static void dispatch_instruction(memory_transaction_t& transaction, MemoryMessage& msg)
     {
-        eBranchType branchTypeTable[8] = {
-            kNonBranch,   kConditional,  kUnconditional, kCall,
-            kIndirectReg, kIndirectCall, kReturn,        kLastBranchType};
+        eBranchType branchTypeTable[8] = { kNonBranch,   kConditional,  kUnconditional, kCall,
+                                           kIndirectReg, kIndirectCall, kReturn,        kLastBranchType };
 
-        msg.type() = MemoryMessage::FetchReq;
-        msg.tl() = 0;
-        msg.reqSize() = 4;
-        msg.branchType() = branchTypeTable[transaction.s.branch_type];
+        msg.type()        = MemoryMessage::FetchReq;
+        msg.tl()          = 0;
+        msg.reqSize()     = 4;
+        msg.branchType()  = branchTypeTable[transaction.s.branch_type];
         msg.branchAnnul() = (transaction.s.annul != 0);
     }
 
     /**
      * Dispatch atomic READ-MODIFY-WRITE instruction
      **/
-    static bool
-    dispatch_rmw(memory_transaction_t& transaction, MemoryMessage& msg)
+    static bool dispatch_rmw(memory_transaction_t& transaction, MemoryMessage& msg)
     {
-        if (transaction.s.atomic)
-        {
+        if (transaction.s.atomic) {
             msg.type() = MemoryMessage::RMWReq;
             return true;
         }
@@ -69,15 +61,10 @@ public:
     /**
      * Set message type based on the memory transaction dispatch
      **/
-    static bool
-    dispatch_memory_access(
-        TracerStat& counter,
-        memory_transaction_t& transaction,
-        MemoryMessage& msg)
+    static bool dispatch_memory_access(TracerStat& counter, memory_transaction_t& transaction, MemoryMessage& msg)
     {
 
-        switch(transaction.s.type)
-        {
+        switch (transaction.s.type) {
             case API::QEMU_Trans_Load:
                 counter.touch_feeder_load(msg.priv());
                 msg.type() = MemoryMessage::LoadReq;
@@ -99,40 +86,32 @@ public:
                 return true;
 
             case API::QEMU_Trans_Cache:
-            default:
-                return false;
+            default: return false;
         }
 
         return true;
     }
-
 
     /**
      * Entry point of the dispatch
      * If any dispatch return false, or encounter an unexpected behaviour
      * this should be stopped here at worse.
      **/
-    static void
-    dispatch(
-            TracerStat& counter,
-            memory_transaction_t& transaction,
-            MemoryMessage& msg)
+    static void dispatch(TracerStat& counter, memory_transaction_t& transaction, MemoryMessage& msg)
     {
         msg.address() = PhysicalMemoryAddress(transaction.s.physical_address);
-        msg.pc() = VirtualMemoryAddress(transaction.s.logical_address);
-        msg.priv() = IS_KERNEL(transaction.s.logical_address);
+        msg.pc()      = VirtualMemoryAddress(transaction.s.logical_address);
+        msg.priv()    = IS_KERNEL(transaction.s.logical_address);
 
         bool ret = false;
-        ret = dispatch_io(transaction);
-        if (ret)
-        {
+        ret      = dispatch_io(transaction);
+        if (ret) {
             counter.touch_feeder_io(msg.priv());
             return;
         }
 
         ret = dispatch_rmw(transaction, msg);
-        if (ret)
-        {
+        if (ret) {
             counter.touch_feeder_rmw(msg.priv());
             return;
         }
@@ -141,6 +120,5 @@ public:
         if (!ret) DBG_Assert(false);
     }
 };
-
 
 #endif

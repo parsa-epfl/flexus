@@ -56,7 +56,7 @@
 #include <components/Cache/CacheController.hpp>
 
 #define DBG_DeclareCategories TLBCtrl
-#define DBG_SetDefaultOps AddCat(TLBCtrl)
+#define DBG_SetDefaultOps     AddCat(TLBCtrl)
 #include DBG_Control()
 
 namespace nTLB {

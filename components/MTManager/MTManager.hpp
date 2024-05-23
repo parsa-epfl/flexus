@@ -53,14 +53,15 @@
 
 namespace nMTManager {
 
-struct MTManager {
-  static MTManager *get();
+struct MTManager
+{
+    static MTManager* get();
 
-  virtual ~MTManager(){};
-  virtual uint32_t scheduleFAGThread(uint32_t aCoreIndex) = 0;
-  virtual uint32_t scheduleFThread(uint32_t aCoreIndex) = 0;
-  virtual bool runThisEX(uint32_t anIndex) = 0;
-  virtual bool runThisD(uint32_t anIndex) = 0;
+    virtual ~MTManager(){};
+    virtual uint32_t scheduleFAGThread(uint32_t aCoreIndex) = 0;
+    virtual uint32_t scheduleFThread(uint32_t aCoreIndex)   = 0;
+    virtual bool runThisEX(uint32_t anIndex)                = 0;
+    virtual bool runThisD(uint32_t anIndex)                 = 0;
 };
 
 } // namespace nMTManager

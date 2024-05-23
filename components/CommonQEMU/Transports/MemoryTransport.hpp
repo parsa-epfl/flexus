@@ -45,8 +45,6 @@
 #ifndef FLEXUS_TRANSPORTS__MEMORY_TRANSPORT_HPP_INCLUDED
 #define FLEXUS_TRANSPORTS__MEMORY_TRANSPORT_HPP_INCLUDED
 
-#include <core/transport.hpp>
-
 #include <components/CommonQEMU/Slices/DestinationMessage.hpp>
 #include <components/CommonQEMU/Slices/DirectoryEntry.hpp>
 #include <components/CommonQEMU/Slices/ExecuteState.hpp>
@@ -56,6 +54,7 @@
 #include <components/CommonQEMU/Slices/NetworkMessage.hpp>
 #include <components/CommonQEMU/Slices/TaglessDirMsg.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
+#include <core/transport.hpp>
 
 #pragma GCC diagnostic ignored "-Wunused-variable"
 
@@ -64,7 +63,8 @@ namespace SharedTypes {
 
 #ifndef FLEXUS_TAG_MemoryMessageTag
 #define FLEXUS_TAG_MemoryMessageTag
-struct MemoryMessageTag_t {};
+struct MemoryMessageTag_t
+{};
 namespace {
 MemoryMessageTag_t MemoryMessageTag;
 }
@@ -72,7 +72,8 @@ MemoryMessageTag_t MemoryMessageTag;
 
 #ifndef FLEXUS_TAG_ExecuteStateTag
 #define FLEXUS_TAG_ExecuteStateTag
-struct ExecuteStateTag_t {};
+struct ExecuteStateTag_t
+{};
 namespace {
 ExecuteStateTag_t ExecuteStateTag;
 }
@@ -80,7 +81,8 @@ ExecuteStateTag_t ExecuteStateTag;
 
 #ifndef FLEXUS_TAG_uArchStateTag
 #define FLEXUS_TAG_uArchStateTag
-struct uArchStateTag_t {};
+struct uArchStateTag_t
+{};
 namespace {
 uArchStateTag_t uArchStateTag;
 }
@@ -88,7 +90,8 @@ uArchStateTag_t uArchStateTag;
 
 #ifndef FLEXUS_TAG_MuxTag
 #define FLEXUS_TAG_MuxTag
-struct MuxTag_t {};
+struct MuxTag_t
+{};
 namespace {
 MuxTag_t MuxTag;
 }
@@ -96,7 +99,8 @@ MuxTag_t MuxTag;
 
 #ifndef FLEXUS_TAG_BusTag
 #define FLEXUS_TAG_BusTag
-struct BusTag_t {};
+struct BusTag_t
+{};
 namespace {
 BusTag_t BusTag;
 }
@@ -104,7 +108,8 @@ BusTag_t BusTag;
 
 #ifndef FLEXUS_TAG_DirectoryEntryTag
 #define FLEXUS_TAG_DirectoryEntryTag
-struct DirectoryEntryTag_t {};
+struct DirectoryEntryTag_t
+{};
 struct DirectoryEntry;
 namespace {
 DirectoryEntryTag_t DirectoryEntryTag;
@@ -113,7 +118,8 @@ DirectoryEntryTag_t DirectoryEntryTag;
 
 #ifndef FLEXUS_TAG_TransactionTrackerTag
 #define FLEXUS_TAG_TransactionTrackerTag
-struct TransactionTrackerTag_t {};
+struct TransactionTrackerTag_t
+{};
 struct TransactionTracker;
 namespace {
 TransactionTrackerTag_t TransactionTrackerTag;
@@ -122,7 +128,8 @@ TransactionTrackerTag_t TransactionTrackerTag;
 
 #ifndef FLEXUS_TAG_DestinationTag
 #define FLEXUS_TAG_DestinationTag
-struct DestinationTag_t {};
+struct DestinationTag_t
+{};
 namespace {
 DestinationTag_t DestinationTag;
 }
@@ -130,7 +137,8 @@ DestinationTag_t DestinationTag;
 
 #ifndef FLEXUS_TAG_NetworkMessageTag
 #define FLEXUS_TAG_NetworkMessageTag
-struct NetworkMessageTag_t {};
+struct NetworkMessageTag_t
+{};
 namespace {
 NetworkMessageTag_t NetworkMessageTag;
 }
@@ -138,7 +146,8 @@ NetworkMessageTag_t NetworkMessageTag;
 
 #ifndef FLEXUS_TAG_TaglessDirMsgTag
 #define FLEXUS_TAG_TaglessDirMsgTag
-struct TaglessDirMsgTag_t {};
+struct TaglessDirMsgTag_t
+{};
 namespace {
 TaglessDirMsgTag_t TaglessDirMsgTag;
 }
@@ -147,13 +156,14 @@ TaglessDirMsgTag_t TaglessDirMsgTag;
 typedef Transport<mpl::vector<transport_entry<MemoryMessageTag_t, MemoryMessage>,
                               transport_entry<ExecuteStateTag_t, ExecuteState>,
                               transport_entry<uArchStateTag_t, MemOp>,
-                              transport_entry<MuxTag_t, Mux>, transport_entry<BusTag_t, Mux>,
+                              transport_entry<MuxTag_t, Mux>,
+                              transport_entry<BusTag_t, Mux>,
                               transport_entry<DirectoryEntryTag_t, DirectoryEntry>,
                               transport_entry<TransactionTrackerTag_t, TransactionTracker>,
                               transport_entry<DestinationTag_t, DestinationMessage>,
                               transport_entry<NetworkMessageTag_t, NetworkMessage>,
                               transport_entry<TaglessDirMsgTag_t, TaglessDirMsg>>>
-    MemoryTransport;
+  MemoryTransport;
 
 } // namespace SharedTypes
 } // namespace Flexus

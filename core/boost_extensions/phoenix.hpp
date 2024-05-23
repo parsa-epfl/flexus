@@ -56,44 +56,76 @@
 #include <boost/type_traits/remove_pointer.hpp>
 
 namespace phoenix {
-template <> struct rank<char const *> { static int32_t const value = 160; };
-
-template <> struct rank<char const *const> { static int32_t const value = 160; };
-
-struct new_0_impl {
-  template <class Object> struct result { typedef Object type; };
-
-  template <class Object> Object operator()(Object const ignored) const {
-    return new typename boost::remove_pointer<Object>::type;
-  }
+template<>
+struct rank<char const*>
+{
+    static int32_t const value = 160;
 };
 
-struct new_1_impl {
-  template <class Object, class Arg1> struct result { typedef Object type; };
-
-  template <class Object, class Arg1> Object operator()(Object const ignored, Arg1 &arg1) const {
-    return new typename boost::remove_pointer<Object>::type(arg1);
-  }
+template<>
+struct rank<char const* const>
+{
+    static int32_t const value = 160;
 };
 
-struct new_2_impl {
-  template <class Object, class Arg1, class Arg2> struct result { typedef Object type; };
+struct new_0_impl
+{
+    template<class Object>
+    struct result
+    {
+        typedef Object type;
+    };
 
-  template <class Object, class Arg1, class Arg2>
-  Object operator()(Object const ignored, Arg1 &arg1, Arg2 &arg2) const {
-    return new typename boost::remove_pointer<Object>::type(arg1, arg2);
-  }
+    template<class Object>
+    Object operator()(Object const ignored) const
+    {
+        return new typename boost::remove_pointer<Object>::type;
+    }
 };
 
-struct new_3_impl {
-  template <class Object, class Arg1, class Arg2, class Arg3> struct result {
-    typedef Object type;
-  };
+struct new_1_impl
+{
+    template<class Object, class Arg1>
+    struct result
+    {
+        typedef Object type;
+    };
 
-  template <class Object, class Arg1, class Arg2, class Arg3>
-  Object operator()(Object const ignored, Arg1 &arg1, Arg2 &arg2, Arg3 &arg3) const {
-    return new typename boost::remove_pointer<Object>::type(arg1, arg2, arg3);
-  }
+    template<class Object, class Arg1>
+    Object operator()(Object const ignored, Arg1& arg1) const
+    {
+        return new typename boost::remove_pointer<Object>::type(arg1);
+    }
+};
+
+struct new_2_impl
+{
+    template<class Object, class Arg1, class Arg2>
+    struct result
+    {
+        typedef Object type;
+    };
+
+    template<class Object, class Arg1, class Arg2>
+    Object operator()(Object const ignored, Arg1& arg1, Arg2& arg2) const
+    {
+        return new typename boost::remove_pointer<Object>::type(arg1, arg2);
+    }
+};
+
+struct new_3_impl
+{
+    template<class Object, class Arg1, class Arg2, class Arg3>
+    struct result
+    {
+        typedef Object type;
+    };
+
+    template<class Object, class Arg1, class Arg2, class Arg3>
+    Object operator()(Object const ignored, Arg1& arg1, Arg2& arg2, Arg3& arg3) const
+    {
+        return new typename boost::remove_pointer<Object>::type(arg1, arg2, arg3);
+    }
 };
 
 phoenix::function<new_0_impl> new_0;
