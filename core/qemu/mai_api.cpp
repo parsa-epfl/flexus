@@ -46,30 +46,25 @@
 // Copied this file from SimFlex. Will gradually populate it properly.
 
 #include <boost/regex.hpp>
-#include <cmath>
-#include <fstream>
-#include <iostream>
-#include <sstream>
-
 #include <boost/throw_exception.hpp>
 #include <boost/utility.hpp>
-#include <functional>
-#include <memory>
-
-#include <core/qemu/api_wrappers.hpp>
-#include <core/qemu/qemu.h>
-#include <core/target.hpp>
-#include <core/types.hpp>
-
+#include <cmath>
 #include <core/MakeUniqueWrapper.hpp>
 #include <core/configuration.hpp>
 #include <core/exception.hpp>
 #include <core/flexus.hpp>
+#include <core/qemu/api_wrappers.hpp>
 #include <core/qemu/bitUtilities.hpp>
 #include <core/qemu/configuration_api.hpp>
 #include <core/qemu/mai_api.hpp>
+#include <core/qemu/qemu.h>
 #include <core/target.hpp>
 #include <core/types.hpp>
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <memory>
+#include <sstream>
 
 using namespace Flexus::Core;
 

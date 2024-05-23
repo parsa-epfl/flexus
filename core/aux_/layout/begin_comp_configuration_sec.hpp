@@ -65,11 +65,12 @@ namespace Wiring {
 // Bring in the tools we need from the Configuration component
 using namespace Flexus::Core;
 
-#define CREATE_CONFIGURATION(Component, String, Name)                                              \
-  BOOST_PP_CAT(Component, Configuration) Name(String);
+#define CREATE_CONFIGURATION(Component, String, Name) BOOST_PP_CAT(Component, Configuration) Name(String);
 
-Flexus::Core::index_t getSystemWidth() {
-  return ComponentManager::getComponentManager().systemWidth();
+Flexus::Core::index_t
+getSystemWidth()
+{
+    return ComponentManager::getComponentManager().systemWidth();
 }
 
 using Flexus::Core::theFlexus;

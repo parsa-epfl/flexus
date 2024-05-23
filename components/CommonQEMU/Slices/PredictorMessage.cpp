@@ -42,25 +42,28 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
+#include <components/CommonQEMU/Slices/PredictorMessage.hpp>
 #include <iostream>
 #include <list>
-
-#include <components/CommonQEMU/Slices/PredictorMessage.hpp>
 
 namespace Flexus {
 namespace SharedTypes {
 
-std::ostream &operator<<(std::ostream &anOstream, PredictorMessage::tPredictorMessageType aType) {
-  const char *const name[4] = {"eFlush", "eWrite", "eReadPredicted", "eReadNonPredicted"};
-  anOstream << name[aType];
-  return anOstream;
+std::ostream&
+operator<<(std::ostream& anOstream, PredictorMessage::tPredictorMessageType aType)
+{
+    const char* const name[4] = { "eFlush", "eWrite", "eReadPredicted", "eReadNonPredicted" };
+    anOstream << name[aType];
+    return anOstream;
 }
 
-std::ostream &operator<<(std::ostream &aStream, PredictorMessage const &anEntry) {
-  aStream << "PredictorMessage: type=" << anEntry.type() << " addr=" << &std::hex
-          << anEntry.address() << &std::dec << " node=" << anEntry.node();
+std::ostream&
+operator<<(std::ostream& aStream, PredictorMessage const& anEntry)
+{
+    aStream << "PredictorMessage: type=" << anEntry.type() << " addr=" << &std::hex << anEntry.address() << &std::dec
+            << " node=" << anEntry.node();
 
-  return aStream;
+    return aStream;
 }
 
 } // namespace SharedTypes

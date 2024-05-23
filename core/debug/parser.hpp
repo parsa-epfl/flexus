@@ -52,11 +52,12 @@ namespace Dbg {
 
 class ParserImpl;
 
-struct Parser {
-  static Parser &parser();
+struct Parser
+{
+    static Parser& parser();
 
-  virtual ~Parser(){};
-  virtual void parse(std::string const &aConfigFile) = 0;
+    virtual ~Parser(){};
+    virtual void parse(std::string const& aConfigFile) = 0;
 };
 
 } // namespace Dbg

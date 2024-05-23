@@ -42,62 +42,77 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
-#include <boost/optional.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/optional.hpp>
+#include <core/debug/field.hpp>
 #include <string>
 #include <utility>
-
-#include <core/debug/field.hpp>
 
 namespace Flexus {
 namespace Dbg {
 
-bool Field::operator==(Field const &aField) const {
-  return theName == aField.theName;
+bool
+Field::operator==(Field const& aField) const
+{
+    return theName == aField.theName;
 }
 
-bool Field::operator<(Field const &aField) const {
-  return theName < aField.theName;
+bool
+Field::operator<(Field const& aField) const
+{
+    return theName < aField.theName;
 }
 
-Field::Field(std::string const &aName) : theName(aName) {
+Field::Field(std::string const& aName)
+  : theName(aName)
+{
 }
 
 // This method is declared const because it does not affecgt the ordering
 // of Fields
-void Field::setValue(std::string const &aString) const {
-  theNumericValue.reset();
-  theTextValue.reset(aString);
+void
+Field::setValue(std::string const& aString) const
+{
+    theNumericValue.reset();
+    theTextValue.reset(aString);
 }
 
 // This method is declared const because it does not affecgt the ordering
 // of Fields
-void Field::setValue(int64_t aValue) const {
-  theTextValue.reset();
-  theNumericValue.reset(aValue);
+void
+Field::setValue(int64_t aValue) const
+{
+    theTextValue.reset();
+    theNumericValue.reset(aValue);
 }
 
-bool Field::isNumeric() const {
-  return theNumericValue.is_initialized();
+bool
+Field::isNumeric() const
+{
+    return theNumericValue.is_initialized();
 }
 
-std::string const &Field::value() const {
-  if (!theTextValue) {
-    if (isNumeric()) {
-      theTextValue.reset(std::to_string(*theNumericValue));
-    } else {
-      theTextValue.reset(std::string());
+std::string const&
+Field::value() const
+{
+    if (!theTextValue) {
+        if (isNumeric()) {
+            theTextValue.reset(std::to_string(*theNumericValue));
+        } else {
+            theTextValue.reset(std::string());
+        }
     }
-  }
-  return *theTextValue;
+    return *theTextValue;
 }
 
-int64_t Field::numericValue() const {
-  if (isNumeric()) {
-    return *theNumericValue;
-  } else {
-    return 0;
-  }
+int64_t
+Field::numericValue() const
+{
+    if (isNumeric()) {
+        return *theNumericValue;
+    } else {
+        return 0;
+    }
 }
 
 } // namespace Dbg

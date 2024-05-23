@@ -42,25 +42,29 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
+#include "core/qemu/configuration_api.hpp"
+
+#include "core/qemu/api_wrappers.hpp"
+#include "core/target.hpp"
+
+#include <cstddef>
 #include <string>
 #include <vector>
-#include <cstddef>
-
-#include <core/qemu/api_wrappers.hpp>
-#include <core/target.hpp>
-
-#include <core/qemu/configuration_api.hpp>
 
 namespace Flexus {
 namespace Qemu {
 
 namespace aux_ {
-API::conf_class_t *RegisterClass_stub(std::string const &name, API::class_data_t *class_data) {
-  return new API::conf_class_t;
+API::conf_class_t*
+RegisterClass_stub(std::string const& name, API::class_data_t* class_data)
+{
+    return new API::conf_class_t;
 }
 
-API::conf_object_t *NewObject_stub(API::conf_class_t *aClass, std::string const &aName) {
-  return new API::conf_object_t;
+API::conf_object_t*
+NewObject_stub(API::conf_class_t* aClass, std::string const& aName)
+{
+    return new API::conf_object_t;
 }
 
 } // namespace aux_

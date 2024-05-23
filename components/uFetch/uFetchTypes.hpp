@@ -46,14 +46,13 @@
 #ifndef FLEXUS_uFETCH_TYPES_HPP_INCLUDED
 #define FLEXUS_uFETCH_TYPES_HPP_INCLUDED
 
-#include <iostream>
-#include <list>
-
 #include <components/CommonQEMU/Slices/FillLevel.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 #include <components/CommonQEMU/Translation.hpp>
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <core/qemu/mai_api.hpp>
+#include <iostream>
+#include <list>
 
 namespace Flexus {
 namespace SharedTypes {
@@ -63,93 +62,113 @@ using Flexus::SharedTypes::TransactionTracker;
 using Flexus::SharedTypes::Translation;
 using Flexus::SharedTypes::VirtualMemoryAddress;
 
-enum eBranchType {
-  kNonBranch,
-  kConditional,
-  kUnconditional,
-  kCall,
-  kIndirectReg,
-  kIndirectCall,
-  kReturn,
-  kLastBranchType
+enum eBranchType
+{
+    kNonBranch,
+    kConditional,
+    kUnconditional,
+    kCall,
+    kIndirectReg,
+    kIndirectCall,
+    kReturn,
+    kLastBranchType
 };
-std::ostream &operator<<(std::ostream &anOstream, eBranchType aType);
+std::ostream&
+operator<<(std::ostream& anOstream, eBranchType aType);
 
-enum eDirection {
-  kStronglyTaken,
-  kTaken // Bimodal
-  ,
-  kNotTaken // gShare
-  ,
-  kStronglyNotTaken
+enum eDirection
+{
+    kStronglyTaken,
+    kTaken // Bimodal
+    ,
+    kNotTaken // gShare
+    ,
+    kStronglyNotTaken
 };
-std::ostream &operator<<(std::ostream &anOstream, eDirection aDir);
+std::ostream&
+operator<<(std::ostream& anOstream, eDirection aDir);
 
-struct BPredState : boost::counted_base {
-  eBranchType thePredictedType;
-  VirtualMemoryAddress thePredictedTarget;
-  eDirection thePrediction;
-  eDirection theBimodalPrediction;
-  eDirection theMetaPrediction;
-  eDirection theGSharePrediction;
-  uint32_t theGShareShiftReg;
-  uint32_t theSerial;
-};
-
-struct FetchAddr {
-  Flexus::SharedTypes::VirtualMemoryAddress theAddress;
-  boost::intrusive_ptr<BPredState> theBPState;
-  FetchAddr(Flexus::SharedTypes::VirtualMemoryAddress anAddress) : theAddress(anAddress) {
-  }
+struct BPredState : boost::counted_base
+{
+    eBranchType thePredictedType;
+    VirtualMemoryAddress thePredictedTarget;
+    eDirection thePrediction;
+    eDirection theBimodalPrediction;
+    eDirection theMetaPrediction;
+    eDirection theGSharePrediction;
+    uint32_t theGShareShiftReg;
+    uint32_t theSerial;
 };
 
-struct FetchCommand : boost::counted_base {
-  std::list<FetchAddr> theFetches;
+struct FetchAddr
+{
+    Flexus::SharedTypes::VirtualMemoryAddress theAddress;
+    boost::intrusive_ptr<BPredState> theBPState;
+    FetchAddr(Flexus::SharedTypes::VirtualMemoryAddress anAddress)
+      : theAddress(anAddress)
+    {
+    }
 };
 
-struct BranchFeedback : boost::counted_base {
-  VirtualMemoryAddress thePC;
-  eBranchType theActualType;
-  eDirection theActualDirection;
-  VirtualMemoryAddress theActualTarget;
-  boost::intrusive_ptr<BPredState> theBPState;
+struct FetchCommand : boost::counted_base
+{
+    std::list<FetchAddr> theFetches;
+};
+
+struct BranchFeedback : boost::counted_base
+{
+    VirtualMemoryAddress thePC;
+    eBranchType theActualType;
+    eDirection theActualDirection;
+    VirtualMemoryAddress theActualTarget;
+    boost::intrusive_ptr<BPredState> theBPState;
 };
 
 typedef uint32_t Opcode;
 
-struct FetchedOpcode {
-  VirtualMemoryAddress thePC;
-  Opcode theOpcode;
-  boost::intrusive_ptr<BPredState> theBPState;
-  boost::intrusive_ptr<TransactionTracker> theTransaction;
+struct FetchedOpcode
+{
+    VirtualMemoryAddress thePC;
+    Opcode theOpcode;
+    boost::intrusive_ptr<BPredState> theBPState;
+    boost::intrusive_ptr<TransactionTracker> theTransaction;
 
-  FetchedOpcode(Opcode anOpcode) : theOpcode(anOpcode) {
-  }
-  FetchedOpcode(VirtualMemoryAddress anAddr, Opcode anOpcode,
-                boost::intrusive_ptr<BPredState> aBPState,
-                boost::intrusive_ptr<TransactionTracker> aTransaction)
-      : thePC(anAddr),
-        theOpcode(anOpcode), theBPState(aBPState), theTransaction(aTransaction) {
-  }
+    FetchedOpcode(Opcode anOpcode)
+      : theOpcode(anOpcode)
+    {
+    }
+    FetchedOpcode(VirtualMemoryAddress anAddr,
+                  Opcode anOpcode,
+                  boost::intrusive_ptr<BPredState> aBPState,
+                  boost::intrusive_ptr<TransactionTracker> aTransaction)
+      : thePC(anAddr)
+      , theOpcode(anOpcode)
+      , theBPState(aBPState)
+      , theTransaction(aTransaction)
+    {
+    }
 };
 
-struct FetchBundle : public boost::counted_base {
-  std::list<FetchedOpcode> theOpcodes;
-  std::list<tFillLevel> theFillLevels;
-  int32_t coreID;
+struct FetchBundle : public boost::counted_base
+{
+    std::list<FetchedOpcode> theOpcodes;
+    std::list<tFillLevel> theFillLevels;
+    int32_t coreID;
 
-  void updateOpcode(VirtualMemoryAddress anAddress, std::list<FetchedOpcode>::iterator it,
-                    Opcode anOpcode) {
-    DBG_AssertSev(Crit, it->thePC == anAddress,
-                  (<< "ERROR: FetchedOpcode iterator did not match!! Iterator PC " << it->thePC
-                   << ", translation returned vaddr " << anAddress));
-    it->theOpcode = anOpcode;
-  }
+    void updateOpcode(VirtualMemoryAddress anAddress, std::list<FetchedOpcode>::iterator it, Opcode anOpcode)
+    {
+        DBG_AssertSev(Crit,
+                      it->thePC == anAddress,
+                      (<< "ERROR: FetchedOpcode iterator did not match!! Iterator PC " << it->thePC
+                       << ", translation returned vaddr " << anAddress));
+        it->theOpcode = anOpcode;
+    }
 
-  void clear() {
-    theOpcodes.clear();
-    theFillLevels.clear();
-  }
+    void clear()
+    {
+        theOpcodes.clear();
+        theFillLevels.clear();
+    }
 };
 
 typedef boost::intrusive_ptr<FetchBundle> pFetchBundle;

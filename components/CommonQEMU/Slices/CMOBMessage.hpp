@@ -60,38 +60,49 @@ namespace SharedTypes {
 
 typedef Flexus::SharedTypes::PhysicalMemoryAddress MemoryAddress;
 
-struct CMOBLine {
-  static const int32_t kLineSize = 12;
-  MemoryAddress theAddresses[kLineSize];
-  std::bitset<kLineSize> theWasHit;
+struct CMOBLine
+{
+    static const int32_t kLineSize = 12;
+    MemoryAddress theAddresses[kLineSize];
+    std::bitset<kLineSize> theWasHit;
 };
 
-inline std::ostream &operator<<(std::ostream &aStream, const CMOBLine &line) {
-  for (int32_t i = 0; i < 12; ++i) {
-    aStream << std::hex << line.theAddresses[i] << (line.theWasHit[i] ? "(hit) " : "(nohit) ");
-  }
-  return aStream;
+inline std::ostream&
+operator<<(std::ostream& aStream, const CMOBLine& line)
+{
+    for (int32_t i = 0; i < 12; ++i) {
+        aStream << std::hex << line.theAddresses[i] << (line.theWasHit[i] ? "(hit) " : "(nohit) ");
+    }
+    return aStream;
 }
 
 namespace CMOBCommand {
-enum CMOBCommand { eRead, eWrite, eInit };
+enum CMOBCommand
+{
+    eRead,
+    eWrite,
+    eInit
+};
 }
 namespace {
-char *CMOBCommandStr[] = {"eRead", "eWrite", "eInit"};
+char* CMOBCommandStr[] = { "eRead", "eWrite", "eInit" };
 }
 
-struct CMOBMessage : public boost::counted_base {
-  CMOBCommand::CMOBCommand theCommand;
-  CMOBLine theLine;
-  int64_t theCMOBOffset;
-  uint32_t theCMOBId;
-  int64_t theRequestTag;
+struct CMOBMessage : public boost::counted_base
+{
+    CMOBCommand::CMOBCommand theCommand;
+    CMOBLine theLine;
+    int64_t theCMOBOffset;
+    uint32_t theCMOBId;
+    int64_t theRequestTag;
 };
 
-inline std::ostream &operator<<(std::ostream &aStream, const CMOBMessage &msg) {
-  aStream << "CMOB[" << msg.theCMOBId << "] #" << msg.theRequestTag << " "
-          << CMOBCommandStr[msg.theCommand] << " @" << msg.theCMOBOffset << " " << msg.theLine;
-  return aStream;
+inline std::ostream&
+operator<<(std::ostream& aStream, const CMOBMessage& msg)
+{
+    aStream << "CMOB[" << msg.theCMOBId << "] #" << msg.theRequestTag << " " << CMOBCommandStr[msg.theCommand] << " @"
+            << msg.theCMOBOffset << " " << msg.theLine;
+    return aStream;
 }
 
 } // namespace SharedTypes

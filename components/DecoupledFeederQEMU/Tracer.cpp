@@ -1,5 +1,6 @@
 
 #include "Tracer.hpp"
+
 #include "TracerDispatcher.hpp"
 
 using namespace Flexus::Qemu;
@@ -17,13 +18,12 @@ Tracer* Tracer::instance = nullptr;
  *      TracerStat objects. Then, I've then replicated the previous behaviour -> using pointer.
  *
  **/
-Tracer::Tracer(std::size_t nb_cores, std::function<void(std::size_t, MemoryMessage&)> callback):
-    nb_cores(nb_cores),
-    callback(callback)
+Tracer::Tracer(std::size_t nb_cores, std::function<void(std::size_t, MemoryMessage&)> callback)
+  : nb_cores(nb_cores)
+  , callback(callback)
 {
     vCPUTracer = new TracerStat*[nb_cores];
-    for (std::size_t index{0}; index < nb_cores; index++)
-    {
+    for (std::size_t index{ 0 }; index < nb_cores; index++) {
         vCPUTracer[index] = new TracerStat(index);
     }
 }
@@ -37,8 +37,7 @@ Tracer::~Tracer()
 Tracer*
 Tracer::getInstance(std::size_t nb_cores, std::function<void(std::size_t, MemoryMessage&)> callback)
 {
-    if (!instance)
-        instance = new Tracer(nb_cores, callback);
+    if (!instance) instance = new Tracer(nb_cores, callback);
     return instance;
 }
 
@@ -62,9 +61,8 @@ Tracer::core(std::size_t index)
 void
 Tracer::update_collector()
 {
-    for (std::size_t idx{0}; idx < nb_cores; idx++)
-    {
-       vCPUTracer[idx]->update_collector();
+    for (std::size_t idx{ 0 }; idx < nb_cores; idx++) {
+        vCPUTracer[idx]->update_collector();
     }
 }
 /**

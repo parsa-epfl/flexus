@@ -1,30 +1,34 @@
 #ifndef FLEXUS_TRACER_HPP
 #define FLEXUS_TRACER_HPP
 
-#include <cstddef>
-#include <vector>
+#include "TracerStat.hpp"
 #include "components/CommonQEMU/Slices/MemoryMessage.hpp"
+
 #include <core/qemu/api_wrappers.hpp>
 #include <core/qemu/configuration_api.hpp>
-#include "TracerStat.hpp"
+#include <cstddef>
+#include <vector>
 
 using namespace Flexus::Qemu::API;
 using Flexus::SharedTypes::MemoryMessage;
 
 namespace nDecoupledFeeder {
 
-class Tracer {
+class Tracer
+{
 
-private:
+  private:
     std::size_t nb_cores;
     TracerStat** vCPUTracer;
-    std::function<void(std::size_t, MemoryMessage &)> callback;
-public:
+    std::function<void(std::size_t, MemoryMessage&)> callback;
+
+  public:
     static Tracer* instance; // Static pointer to the singleton instance
 
-private:
-    Tracer(std::size_t, std::function<void(std::size_t, MemoryMessage &)>);
-public:
+  private:
+    Tracer(std::size_t, std::function<void(std::size_t, MemoryMessage&)>);
+
+  public:
     /**
      * Singleton-ish function to return the instance if wasn't yet created before
      **/
@@ -48,7 +52,6 @@ public:
      * For all tracer, update their internal statistics
      **/
     void update_collector(void);
-
 };
 
 };

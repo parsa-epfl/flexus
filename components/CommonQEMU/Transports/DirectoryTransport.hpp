@@ -52,7 +52,8 @@ namespace SharedTypes {
 
 #ifndef FLEXUS_TAG_DirectoryMessageTag
 #define FLEXUS_TAG_DirectoryMessageTag
-struct DirectoryMessageTag_t {};
+struct DirectoryMessageTag_t
+{};
 struct DirectoryMessage;
 namespace {
 DirectoryMessageTag_t DirectoryMessageTag;
@@ -61,7 +62,8 @@ DirectoryMessageTag_t DirectoryMessageTag;
 
 #ifndef FLEXUS_TAG_DirectoryEntryTag
 #define FLEXUS_TAG_DirectoryEntryTag
-struct DirectoryEntryTag_t {};
+struct DirectoryEntryTag_t
+{};
 struct DirectoryEntry;
 namespace {
 DirectoryEntryTag_t DirectoryEntryTag;
@@ -70,7 +72,8 @@ DirectoryEntryTag_t DirectoryEntryTag;
 
 #ifndef FLEXUS_TAG_DirMux2ArbTag
 #define FLEXUS_TAG_DirMux2ArbTag
-struct DirMux2ArbTag_t {};
+struct DirMux2ArbTag_t
+{};
 struct Mux;
 namespace {
 DirMux2ArbTag_t DirMux2ArbTag;
@@ -80,7 +83,7 @@ DirMux2ArbTag_t DirMux2ArbTag;
 typedef Transport<mpl::vector<transport_entry<DirectoryMessageTag_t, DirectoryMessage>,
                               transport_entry<DirectoryEntryTag_t, DirectoryEntry>,
                               transport_entry<DirMux2ArbTag_t, Mux>>>
-    DirectoryTransport;
+  DirectoryTransport;
 
 } // namespace SharedTypes
 } // namespace Flexus

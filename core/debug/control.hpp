@@ -49,12 +49,11 @@
 #if defined(DBG_SetCompileTimeMinSev)
 
 #undef DBG__internal_tmp_MinimumSeverity
-#define DBG__internal_tmp_MinimumSeverity                                                          \
-  BOOST_PP_CAT(DBG__Undefined_Severity_Level__, DBG_SetCompileTimeMinSev)                          \
-  (DBG_internal_Sev_to_int)(DBG_SetCompileTimeMinSev) /**/
+#define DBG__internal_tmp_MinimumSeverity                                                                              \
+    BOOST_PP_CAT(DBG__Undefined_Severity_Level__, DBG_SetCompileTimeMinSev)                                            \
+    (DBG_internal_Sev_to_int)(DBG_SetCompileTimeMinSev) /**/
 
 #include <core/debug/aux_/clear_macros.hpp>
-
 #include <core/debug/aux_/crit_macros.hpp>
 #include <core/debug/aux_/dev_macros.hpp>
 #include <core/debug/aux_/iface_macros.hpp>

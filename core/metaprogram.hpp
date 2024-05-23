@@ -45,9 +45,8 @@
 #ifndef FLEXUS_METAPROGRAM_HPP_INCLUDED
 #define FLEXUS_METAPROGRAM_HPP_INCLUDED
 
-#include <boost/preprocessor/cat.hpp>
-
 #include <boost/mpl/size.hpp>
+#include <boost/preprocessor/cat.hpp>
 namespace mpl = boost::mpl;
 
 #ifdef BOOST_MPL_LIMIT_VECTOR_SIZE

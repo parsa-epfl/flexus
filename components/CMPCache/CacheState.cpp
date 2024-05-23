@@ -43,9 +43,8 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
 
-#include <core/debug/debug.hpp>
-
 #include <components/CMPCache/CacheState.hpp>
+#include <core/debug/debug.hpp>
 
 namespace nCMPCache {
 
@@ -57,18 +56,14 @@ const CacheState CacheState::Invalid("Invalid");
 const CacheState CacheState::InvalidPresent("InvalidPresent");
 const CacheState CacheState::Forward("Forward");
 
-std::ostream &operator<<(std::ostream &os, const CacheState &state) {
-  os << state.name();
-  if (state.isProtected()) {
-    os << "_X";
-  }
-  if (state.prefetched()) {
-    os << "_P";
-  }
-  if (state.isLocked()) {
-    os << "_LOCKED";
-  }
-  return os;
+std::ostream&
+operator<<(std::ostream& os, const CacheState& state)
+{
+    os << state.name();
+    if (state.isProtected()) { os << "_X"; }
+    if (state.prefetched()) { os << "_P"; }
+    if (state.isLocked()) { os << "_LOCKED"; }
+    return os;
 }
 
 }; // namespace nCMPCache

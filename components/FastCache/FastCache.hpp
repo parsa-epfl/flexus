@@ -42,11 +42,10 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
-#include <core/simulator_layout.hpp>
-
 #include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 #include <components/CommonQEMU/Slices/RegionScoutMessage.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
+#include <core/simulator_layout.hpp>
 
 // clang-format off
 #define FLEXUS_BEGIN_COMPONENT FastCache

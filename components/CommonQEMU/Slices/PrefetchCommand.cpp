@@ -42,38 +42,35 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
+#include <components/CommonQEMU/Slices/PrefetchCommand.hpp>
 #include <iostream>
 #include <list>
-
-#include <components/CommonQEMU/Slices/PrefetchCommand.hpp>
 
 namespace Flexus {
 namespace SharedTypes {
 
-std::ostream &operator<<(std::ostream &s, PrefetchCommand const &aMsg) {
-  char const *prefetch_types[] = {"Prefetch Address List", "Prefetch More Addresses"};
-  if (aMsg.tag() == -1) {
-    s << prefetch_types[aMsg.type()] << "#* ";
-  } else {
-    s << prefetch_types[aMsg.type()] << "#" << aMsg.tag() / 32 << "[" << (aMsg.tag() & 15) << "]"
-      << ((aMsg.tag() & 16) ? "b" : "a") << " ";
-  }
-  s << "from " << aMsg.source() << " <" << aMsg.location() << "> ";
-  if (aMsg.queue() != -1) {
-    s << "queue " << aMsg.queue() << " ";
-  }
-  s << "{" << &std::hex;
-  std::list<PhysicalMemoryAddress>::const_iterator iter = aMsg.addressList().begin();
-  std::list<PhysicalMemoryAddress>::const_iterator end = aMsg.addressList().end();
-  while (iter != end) {
-    s << *iter;
-    ++iter;
-    if (iter != end) {
-      s << ", ";
+std::ostream&
+operator<<(std::ostream& s, PrefetchCommand const& aMsg)
+{
+    char const* prefetch_types[] = { "Prefetch Address List", "Prefetch More Addresses" };
+    if (aMsg.tag() == -1) {
+        s << prefetch_types[aMsg.type()] << "#* ";
+    } else {
+        s << prefetch_types[aMsg.type()] << "#" << aMsg.tag() / 32 << "[" << (aMsg.tag() & 15) << "]"
+          << ((aMsg.tag() & 16) ? "b" : "a") << " ";
     }
-  }
-  s << "}" << &std::dec;
-  return s;
+    s << "from " << aMsg.source() << " <" << aMsg.location() << "> ";
+    if (aMsg.queue() != -1) { s << "queue " << aMsg.queue() << " "; }
+    s << "{" << &std::hex;
+    std::list<PhysicalMemoryAddress>::const_iterator iter = aMsg.addressList().begin();
+    std::list<PhysicalMemoryAddress>::const_iterator end  = aMsg.addressList().end();
+    while (iter != end) {
+        s << *iter;
+        ++iter;
+        if (iter != end) { s << ", "; }
+    }
+    s << "}" << &std::dec;
+    return s;
 }
 
 } // namespace SharedTypes

@@ -45,7 +45,7 @@
 #include <components/TraceTrackerQEMU/TraceTrackerComponent.hpp>
 
 #define DBG_DeclareCategories TraceTrack
-#define DBG_SetDefaultOps AddCat(TraceTrack)
+#define DBG_SetDefaultOps     AddCat(TraceTrack)
 #include DBG_Control()
 
 #include <core/performance/profile.hpp>
@@ -60,24 +60,21 @@ using namespace Flexus::Core;
 using namespace Flexus::SharedTypes;
 namespace Stat = Flexus::Stat;
 
-class FLEXUS_COMPONENT(TraceTrackerComponent) {
-  FLEXUS_COMPONENT_IMPL(TraceTrackerComponent);
+class FLEXUS_COMPONENT(TraceTrackerComponent)
+{
+    FLEXUS_COMPONENT_IMPL(TraceTrackerComponent);
 
-public:
-  FLEXUS_COMPONENT_CONSTRUCTOR(TraceTrackerComponent) : base(FLEXUS_PASS_CONSTRUCTOR_ARGS) {
-  }
+  public:
+    FLEXUS_COMPONENT_CONSTRUCTOR(TraceTrackerComponent)
+      : base(FLEXUS_PASS_CONSTRUCTOR_ARGS)
+    {
+    }
 
-  bool isQuiesced() const {
-    return true;
-  }
+    bool isQuiesced() const { return true; }
 
-  void initialize() {
-    theTraceTracker.initialize();
-  }
+    void initialize() { theTraceTracker.initialize(); }
 
-  void finalize() {
-    theTraceTracker.finalize();
-  }
+    void finalize() { theTraceTracker.finalize(); }
 };
 
 } // end namespace nTraceTrackerComponent

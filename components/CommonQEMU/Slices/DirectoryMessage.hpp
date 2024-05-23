@@ -59,43 +59,58 @@ namespace SharedTypes {
 
 typedef Flexus::SharedTypes::PhysicalMemoryAddress DirectoryAddress;
 namespace DirectoryCommand {
-enum DirectoryCommand {
-  Get,
-  Found,
-  Set,
-  // Saved,
-  Lock,
-  Acquired,
-  Unlock,
-  // Released,
-  Squash
+enum DirectoryCommand
+{
+    Get,
+    Found,
+    Set,
+    // Saved,
+    Lock,
+    Acquired,
+    Unlock,
+    // Released,
+    Squash
 };
 }
 namespace {
-const char *DirectoryCommandStr[] = {"GetEntry", "EntryRetrieved", "SetEntry",
-                                     //"EntryCommitted",
-                                     "LockRequest", "LockAcquired", "UnlockRequest",
-                                     //"LockReleased",
-                                     "SquashPending"};
+const char* DirectoryCommandStr[] = { "GetEntry",
+                                      "EntryRetrieved",
+                                      "SetEntry",
+                                      //"EntryCommitted",
+                                      "LockRequest",
+                                      "LockAcquired",
+                                      "UnlockRequest",
+                                      //"LockReleased",
+                                      "SquashPending" };
 }
 
-struct DirectoryMessage : public boost::counted_base {
-  DirectoryMessage(DirectoryCommand::DirectoryCommand anOp) : op(anOp), addr(0) {
-  }
-  DirectoryMessage(DirectoryCommand::DirectoryCommand anOp, DirectoryAddress anAddr)
-      : op(anOp), addr(anAddr) {
-  }
-  DirectoryMessage(const DirectoryMessage &oldMsg) : op(oldMsg.op), addr(oldMsg.addr) {
-  }
+struct DirectoryMessage : public boost::counted_base
+{
+    DirectoryMessage(DirectoryCommand::DirectoryCommand anOp)
+      : op(anOp)
+      , addr(0)
+    {
+    }
+    DirectoryMessage(DirectoryCommand::DirectoryCommand anOp, DirectoryAddress anAddr)
+      : op(anOp)
+      , addr(anAddr)
+    {
+    }
+    DirectoryMessage(const DirectoryMessage& oldMsg)
+      : op(oldMsg.op)
+      , addr(oldMsg.addr)
+    {
+    }
 
-  DirectoryCommand::DirectoryCommand op;
-  DirectoryAddress addr;
+    DirectoryCommand::DirectoryCommand op;
+    DirectoryAddress addr;
 };
 
-inline std::ostream &operator<<(std::ostream &aStream, const DirectoryMessage &msg) {
-  aStream << "DirMsg: op=" << DirectoryCommandStr[msg.op] << " addr=" << &std::hex << msg.addr
-          << &std::dec;
-  return aStream;
+inline std::ostream&
+operator<<(std::ostream& aStream, const DirectoryMessage& msg)
+{
+    aStream << "DirMsg: op=" << DirectoryCommandStr[msg.op] << " addr=" << &std::hex << msg.addr << &std::dec;
+    return aStream;
 }
 
 } // namespace SharedTypes

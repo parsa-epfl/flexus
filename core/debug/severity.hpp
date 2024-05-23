@@ -48,19 +48,21 @@
 namespace Flexus {
 namespace Dbg {
 
-enum Severity {
-  SevInv = 0,
-  SevVVerb,
-  SevVerb,
-  SevIface,
-  SevTrace,
-  SevDev,
-  SevCrit,
-  SevTmp,
-  NumSev
+enum Severity
+{
+    SevInv = 0,
+    SevVVerb,
+    SevVerb,
+    SevIface,
+    SevTrace,
+    SevDev,
+    SevCrit,
+    SevTmp,
+    NumSev
 };
 
-std::string const &toString(Severity aSeverity);
+std::string const&
+toString(Severity aSeverity);
 
 } // namespace Dbg
 } // namespace Flexus
