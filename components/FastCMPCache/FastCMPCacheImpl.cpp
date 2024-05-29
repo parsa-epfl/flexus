@@ -796,6 +796,9 @@ class FLEXUS_COMPONENT(FastCMPCache)
                 default: DBG_Assert(false, (<< "Illegal message type " << orig_msg_type)); break;
             }
         }
+
+        theDirStats->update();
+        theCacheStats->update();
     }
 
     void saveState(std::string const& aDirName)
