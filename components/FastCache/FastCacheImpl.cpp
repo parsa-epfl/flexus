@@ -278,6 +278,7 @@ class FLEXUS_COMPONENT(FastCache)
 
         // Increment stat counter
         (theStats->*stat_ptr)++;
+        theStats->update();
 
         DBG_(Iface, Addr(aMessage.address())(<< "Done, reply: " << aMessage));
         DBG_(Iface,
@@ -352,6 +353,7 @@ class FLEXUS_COMPONENT(FastCache)
 
         // Increment counter
         (theStats->*stat_ptr)++;
+        theStats->update();
 
         snp_lookup = theCache->lookup(tagset);
         DBG_(Iface,
