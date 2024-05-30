@@ -106,8 +106,6 @@ class FlexusInterface
     virtual void writeConfiguration(std::string const& aFilename)                                        = 0;
     virtual void parseConfiguration(std::string const& aFilename)                                        = 0;
     virtual void setConfiguration(std::string const& aName, std::string const& aValue)                   = 0;
-    virtual void printMeasurement(std::string const& aMeasurement)                                       = 0;
-    virtual void listMeasurements()                                                                      = 0;
     virtual void writeMeasurement(std::string const& aMeasurement, std::string const& aFilename)         = 0;
     virtual void enterFastMode()                                                                         = 0;
     virtual void leaveFastMode()                                                                         = 0;
@@ -116,10 +114,6 @@ class FlexusInterface
     virtual void loadState(std::string const& aDirName)                                                  = 0;
     virtual void doLoad(std::string const& aDirName)                                                     = 0;
     virtual void doSave(std::string const& aDirName, bool justFlexus = false)                            = 0;
-    virtual void backupStats(std::string const& aFilename) const                                         = 0;
-    virtual void saveStats(std::string const& aFilename) const                                           = 0;
-    virtual void saveStatsUncompressed(std::ofstream& anOstream) const                                   = 0;
-    virtual void saveStatsCompressed(std::ofstream& anOstream) const                                     = 0;
     virtual void reloadDebugCfg()                                                                        = 0;
     virtual void addDebugCfg(std::string const& aFilename)                                               = 0;
     virtual void enableCategory(std::string const& aComponent)                                           = 0;

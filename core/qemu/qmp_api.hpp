@@ -289,26 +289,6 @@ class qmp_set_configuration : public qmp_flexus_i
 
 } qmp_set_configuration_;
 
-class qmp_print_measurement : public qmp_flexus_i
-{
-
-    virtual void execute(std::string anArgs) override
-    {
-        if (!anArgs.empty()) theArgsVector = split(anArgs, ':');
-        if (theArgsVector.size() == 1)
-            theFlexus->printMeasurement(theArgsVector[0]);
-        else
-            DBG_(Crit, (<< "Wrong number of arguments."));
-    }
-
-} qmp_print_measurement_;
-
-class qmp_list_measurement : public qmp_flexus_i
-{
-
-    virtual void execute(std::string anArgs) override { theFlexus->listMeasurements(); }
-
-} qmp_list_measurement_;
 
 class qmp_write_measurement : public qmp_flexus_i
 {
@@ -372,34 +352,6 @@ class qmp_do_save : public qmp_flexus_i
     }
 
 } qmp_do_save_;
-
-class qmp_backup_stats : public qmp_flexus_i
-{
-
-    virtual void execute(std::string anArgs) override
-    {
-        if (!anArgs.empty()) theArgsVector = split(anArgs, ':');
-        if (theArgsVector.size() == 1)
-            theFlexus->backupStats(theArgsVector[0]);
-        else
-            DBG_(Crit, (<< "Wrong number of arguments."));
-    }
-
-} qmp_backup_stats_;
-
-class qmp_save_stats : public qmp_flexus_i
-{
-
-    virtual void execute(std::string anArgs) override
-    {
-        if (!anArgs.empty()) theArgsVector = split(anArgs, ':');
-        if (theArgsVector.size() == 1)
-            theFlexus->saveStats(theArgsVector[0]);
-        else
-            DBG_(Crit, (<< "Wrong number of arguments."));
-    }
-
-} qmp_save_stats_;
 
 class qmp_reload_debug_cfg : public qmp_flexus_i
 {
@@ -595,16 +547,12 @@ qmp(qmp_flexus_cmd_t aCMD)
         case QMP_FLEXUS_WRITECONFIGURATION: return qmp_write_configuration_;
         case QMP_FLEXUS_PARSECONFIGURATION: return qmp_parse_configuration_;
         case QMP_FLEXUS_SETCONFIGURATION: return qmp_set_configuration_;
-        case QMP_FLEXUS_PRINTMEASUREMENT: return qmp_print_measurement_;
-        case QMP_FLEXUS_LISTMEASUREMENTS: return qmp_list_measurement_;
         case QMP_FLEXUS_WRITEMEASUREMENT: return qmp_write_measurement_;
         case QMP_FLEXUS_ENTERFASTMODE: return qmp_enter_fastmode_;
         case QMP_FLEXUS_LEAVEFASTMODE: return qmp_leave_fastmode_;
         case QMP_FLEXUS_QUIESCE: return qmp_quiesce_;
         case QMP_FLEXUS_DOLOAD: return qmp_do_load_;
         case QMP_FLEXUS_DOSAVE: return qmp_do_save_;
-        case QMP_FLEXUS_BACKUPSTATS: return qmp_backup_stats_;
-        case QMP_FLEXUS_SAVESTATS: return qmp_save_stats_;
         case QMP_FLEXUS_RELOADDEBUGCFG: return qmp_reload_debug_cfg_;
         case QMP_FLEXUS_ADDDEBUGCFG: return qmp_add_debug_cfg_;
         case QMP_FLEXUS_SETDEBUG: return qmp_set_debug_;
