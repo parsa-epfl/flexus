@@ -1,59 +1,21 @@
-//  DO-NOT-REMOVE begin-copyright-block
-// QFlex consists of several software components that are governed by various
-// licensing terms, in addition to software that was developed internally.
-// Anyone interested in using QFlex needs to fully understand and abide by the
-// licenses governing all the software components.
-//
-// ### Software developed externally (not by the QFlex group)
-//
-//     * [NS-3] (https://www.gnu.org/copyleft/gpl.html)
-//     * [QEMU] (http://wiki.qemu.org/License)
-//     * [SimFlex] (http://parsa.epfl.ch/simflex/)
-//     * [GNU PTH] (https://www.gnu.org/software/pth/)
-//
-// ### Software developed internally (by the QFlex group)
-// **QFlex License**
-//
-// QFlex
-// Copyright (c) 2020, Parallel Systems Architecture Lab, EPFL
-// All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without modification,
-// are permitted provided that the following conditions are met:
-//
-//     * Redistributions of source code must retain the above copyright notice,
-//       this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above copyright notice,
-//       this list of conditions and the following disclaimer in the documentation
-//       and/or other materials provided with the distribution.
-//     * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,
-//       nor the names of its contributors may be used to endorse or promote
-//       products derived from this software without specific prior written
-//       permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,
-// EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-// GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
-// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  DO-NOT-REMOVE end-copyright-block
+#include "core/flexus.hpp"
+
+#include "core/boost_extensions/padded_string_cast.hpp"
+#include "core/component.hpp"
+#include "core/configuration.hpp"
+#include "core/debug/debug.hpp"
+#include "core/drive_reference.hpp"
+#include "core/exception.hpp"
+#include "core/metaprogram.hpp"
+#include "core/performance/profile.hpp"
+#include "core/qemu/configuration_api.hpp"
+#include "core/qemu/qmp_api.hpp"
+#include "core/stats.hpp"
+#include "core/target.hpp"
+
+#include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
 #include <chrono>
-#include <core/boost_extensions/padded_string_cast.hpp>
-#include <core/component.hpp>
-#include <core/configuration.hpp>
-#include <core/debug/debug.hpp>
-#include <core/drive_reference.hpp>
-#include <core/exception.hpp>
-#include <core/metaprogram.hpp>
-#include <core/performance/profile.hpp>
-#include <core/qemu/qmp_api.hpp>
-#include <core/stats.hpp>
-#include <core/target.hpp>
 #include <ctime>
 #include <fstream>
 #include <functional>
@@ -62,16 +24,6 @@
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
-
-// #ifndef __STDC_CONSTANT_MACROS
-// #define __STDC_CONSTANT_MACROS
-// #endif
-// #include <boost/date_time/posix_time/posix_time.hpp>
-
-#include <boost/iostreams/filter/gzip.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
-#include <core/flexus.hpp>
-#include <core/qemu/configuration_api.hpp>
 
 static std::string config_file;
 
@@ -159,8 +111,6 @@ class FlexusImpl : public FlexusInterface
     void writeConfiguration(std::string const& aFilename);
     void parseConfiguration(std::string const& aFilename);
     void setConfiguration(std::string const& aName, std::string const& aValue);
-    void printMeasurement(std::string const& aMeasurement);
-    void listMeasurements();
     void writeMeasurement(std::string const& aMeasurement, std::string const& aFilename);
     void enterFastMode();
     void leaveFastMode();
@@ -172,10 +122,6 @@ class FlexusImpl : public FlexusInterface
     void loadState(std::string const& aDirName);
     void doLoad(std::string const& aDirName);
     void doSave(std::string const& aDirName, bool justFlexus = false);
-    void backupStats(std::string const& aFilename) const;
-    void saveStats(std::string const& aFilename) const;
-    void saveStatsUncompressed(std::ofstream& anOstream) const;
-    void saveStatsCompressed(std::ofstream& anOstream) const;
     void reloadDebugCfg();
     void addDebugCfg(std::string const& aFilename);
     void setDebug(std::string const& aDebugSeverity);
@@ -273,11 +219,7 @@ FlexusImpl::advanceCycles(int64_t aCycleCount)
     static uint64_t last_stats = 0;
     if (theStatInterval && (theCycleCount - last_stats >= theStatInterval)) {
         DBG_(Dev, Core()(<< "Saving stats at: " << theCycleCount));
-        backupStats("stats_db");
-
-#ifdef WRITE_ALL_MEASUREMENT_OUT
         writeMeasurement("all", "all.measurement.out");
-#endif
 
         last_stats = theCycleCount;
     }
@@ -502,18 +444,6 @@ FlexusImpl::setConfiguration(std::string const& aName, std::string const& aValue
 }
 
 void
-FlexusImpl::printMeasurement(std::string const& aMeasurement)
-{
-    Stat::getStatManager()->printMeasurement(aMeasurement, std::cout);
-}
-
-void
-FlexusImpl::listMeasurements()
-{
-    Stat::getStatManager()->listMeasurements(std::cout);
-}
-
-void
 FlexusImpl::log(std::string const& aName, std::string const& anInterval, std::string const& aRegEx)
 {
     uint64_t interval = boost::lexical_cast<uint64_t>(anInterval);
@@ -626,48 +556,6 @@ FlexusImpl::doSave(std::string const& aDirName, bool justFlexus)
     }
     ComponentManager::getComponentManager().doSave(aDirName);
     DBG_(Crit, (<< "Saving Flexus state in subdirectory " << aDirName));
-}
-
-void
-FlexusImpl::backupStats(std::string const& aFilename) const
-{
-    std::string fullName  = aFilename + std::string(".out.gz");
-    std::string last1Name = aFilename + std::string(".001.out.gz");
-    remove(last1Name.c_str());
-    rename(fullName.c_str(), last1Name.c_str());
-
-    saveStats(fullName);
-
-    remove(last1Name.c_str());
-}
-
-void
-FlexusImpl::saveStats(std::string const& aFilename) const
-{
-    std::ofstream anOstream(aFilename.c_str(), std::ios::binary);
-    size_t loc = aFilename.rfind(".gz");
-    if (loc == std::string::npos) {
-        saveStatsUncompressed(anOstream);
-    } else {
-        saveStatsCompressed(anOstream);
-    }
-}
-
-void
-FlexusImpl::saveStatsUncompressed(std::ofstream& anOstream) const
-{
-    Stat::getStatManager()->save(anOstream);
-    anOstream.close();
-}
-
-void
-FlexusImpl::saveStatsCompressed(std::ofstream& anOstream) const
-{
-    boost::iostreams::filtering_ostream out;
-    out.push(boost::iostreams::gzip_compressor());
-    out.push(anOstream);
-    Stat::getStatManager()->save(out);
-    out.reset();
 }
 
 void
@@ -803,21 +691,19 @@ FlexusImpl::terminateSimulation()
     system_clock::time_point now(system_clock::now());
     auto tt = system_clock::to_time_t(now);
     DBG_(Dev, Core()(<< "Terminating simulation. Timestamp: " << std::asctime(std::localtime(&tt))));
-    DBG_(Dev, Core()(<< "Saving final stats_db."));
+    DBG_(Dev, Core()(<< "Saving final mesurments"));
     ;
     for (void_fn_vector::iterator iter = theTerminateFunctions.begin(); iter != theTerminateFunctions.end(); ++iter) {
         (*iter)();
     }
 
     Flexus::Stat::getStatManager()->finalize();
-    backupStats("stats_db");
 
     ComponentManager::getComponentManager().finalizeComponents();
 
-#ifdef WRITE_ALL_MEASUREMENT_OUT
     writeMeasurement("all", "all.measurement.out");
-#endif
     Flexus::Qemu::API::qemu_api.stop("Simulation terminated by flexus.");
+    exit(0);
 }
 
 class Flexus_Obj : public Flexus::Qemu::AddInObject<FlexusImpl>
