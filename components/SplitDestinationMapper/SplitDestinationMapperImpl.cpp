@@ -127,10 +127,20 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
     {
         theTotalNumCores = cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 
-        auto directories = cfg.Directories ?: theTotalNumCores;
+         theTotalNumCores =
+        Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+
+        if (cfg.Cores == 0)
+          cfg.Cores = theTotalNumCores;
+
+        if (cfg.Directories == 0)
+          cfg.Directories = theTotalNumCores;
+
+        if (cfg.Banks == 0)
+          cfg.Banks = theTotalNumCores;
 
         DBG_Assert((cfg.MemControllers & (cfg.MemControllers - 1)) == 0);
-        DBG_Assert((directories & (directories - 1)) == 0);
+        DBG_Assert((cfg.Directories & (cfg.Directories - 1)) == 0);
         DBG_Assert((cfg.MemInterleaving & (cfg.MemInterleaving - 1)) == 0);
         DBG_Assert((cfg.DirInterleaving & (cfg.DirInterleaving - 1)) == 0);
 
@@ -140,13 +150,13 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
 
         theDirShift    = log_base2(cfg.DirInterleaving);
         theDirXORShift = cfg.DirXORShift;
-        theDirMask     = directories - 1;
+        theDirMask     = cfg.Directories - 1;
 
         DBG_(Crit,
-             (<< "Creating SplitDestinationMapper with " << theTotalNumCores << " cores, " << directories
-              << " directories, and " << cfg.MemControllers << " memory controllers."));
+             (<< "Creating SplitDestinationMapper with " << theTotalNumCores << " cores, " << cfg.Directories
+              << " cfg.Directories, and " << cfg.MemControllers << " memory controllers."));
         DBG_Assert(
-          cfg.Banks <= directories,
+          cfg.Banks <= cfg.Directories,
           (<< "Number of banks = " << cfg.Banks << " Did you initialize the number of banks in the specs file???"));
 
         // Determine where directory is located
@@ -177,7 +187,7 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
 
         theMemIndexMap.resize(cfg.MemControllers, -1);
         theMemReverseMap.resize(theTotalNumCores, -1);
-        theDirIndexMap.resize(directories, -1);
+        theDirIndexMap.resize(cfg.Directories, -1);
         theDirReverseMap.resize(theTotalNumCores, -1);
 
         // Mem Index Map: flexus index of memory controller -> absolute network port
@@ -196,8 +206,8 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
         }
 
         if (theDirLoc == eDistributed) {
-            DBG_Assert(directories == theTotalNumCores);
-            for (int32_t i = 0; i < directories; i++) {
+            DBG_Assert(cfg.Directories == theTotalNumCores);
+            for (int32_t i = 0; i < cfg.Directories; i++) {
                 theDirIndexMap[i]   = i + (DIR_PORT * theTotalNumCores);
                 theDirReverseMap[i] = i;
             }
