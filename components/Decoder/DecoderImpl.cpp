@@ -187,12 +187,19 @@ class FLEXUS_COMPONENT(Decoder)
         }
         uint32_t dispatched = 0;
 
-        if (!(available_dispatch > 0 && dispatched < cfg.DispatchWidth && !theFIQ.empty() && !theSyncInsnInProgress)) {
-            DISPATCH_DBG("Can't dispatch "
-                         << "available_dispatch " << available_dispatch << ", dispatched < cfg.DispatchWidth "
-                         << int(dispatched < cfg.DispatchWidth) << ", theFIQ is empty " << int(theFIQ.empty())
-                         << ", no Sync Insn In Progress " << int(!theSyncInsnInProgress));
-        }
+
+        if (0 >= available_dispatch)
+               DISPATCH_DBG("Can't dispatch REASON: available_dispatch (=" << available_dispatch << ") is under 0");
+
+        if ( dispatched > cfg.DispatchWidth)
+               DISPATCH_DBG("Can't dispatch REASON: it dispatched (=" << dispatched << ") more than the cfg.DispatchWidth (=" << cfg.DispatchWidth << ")");
+
+        if (theFIQ.empty())
+               DISPATCH_DBG("Can't dispatch REASON: the Fast Interrupt Query queue is empty");
+
+        if (theSyncInsnInProgress)
+               DISPATCH_DBG("Can't dispatch REASON: A sync is in progress");
+
         while (available_dispatch > 0 && dispatched < cfg.DispatchWidth && !theFIQ.empty() && !theSyncInsnInProgress) {
             if (theFIQ.front()->haltDispatch()) {
                 // May only dispatch black box op when core is synchronized
