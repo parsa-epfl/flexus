@@ -4,6 +4,7 @@ set(REQUIRED_COMPONENTS
   Decoder
   uArch
   FetchAddressGenerate
+  BranchPredictor
   Cache
   MemoryLoopback
   MemoryMap

@@ -42,14 +42,14 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
-#include <components/BPWarm/BPWarm.hpp>
-#include <components/CommonQEMU/Slices/ArchitecturalInstruction.hpp>
-#include <core/component.hpp>
+#include "components/BPWarm/BPWarm.hpp"
+#include "components/CommonQEMU/Slices/ArchitecturalInstruction.hpp"
+#include "components/BranchPredictor/BranchPredictor.hpp"
+#include "components/uFetch/uFetchTypes.hpp"
+#include "core/component.hpp"
 
 #define FLEXUS_BEGIN_COMPONENT BPWarm
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
-
-#include <components/CommonQEMU/BranchPredictor.hpp>
 
 namespace nBPWarm {
 
@@ -63,7 +63,7 @@ class FLEXUS_COMPONENT(BPWarm)
 {
     FLEXUS_COMPONENT_IMPL(BPWarm);
 
-    std::unique_ptr<FastBranchPredictor> theBranchPredictor;
+    std::unique_ptr<BranchPredictor> theBranchPredictor;
 
     std::vector<std::vector<VirtualMemoryAddress>> theFetchAddress;
     std::vector<std::vector<BPredState>> theFetchState;
@@ -143,7 +143,7 @@ class FLEXUS_COMPONENT(BPWarm)
             theOne[i]             = false;
         }
 
-        theBranchPredictor.reset(FastBranchPredictor::combining(statName(), flexusIndex(), cfg.BTBSets, cfg.BTBWays));
+        theBranchPredictor = std::make_unique<BranchPredictor>(statName(), flexusIndex(), cfg.BTBSets, cfg.BTBWays);
     }
 
     void finalize() {}

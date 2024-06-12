@@ -92,12 +92,52 @@ struct BPredState : boost::counted_base
 {
     eBranchType thePredictedType;
     VirtualMemoryAddress thePredictedTarget;
+    VirtualMemoryAddress theNextPredictedTarget;
     eDirection thePrediction;
     eDirection theBimodalPrediction;
     eDirection theMetaPrediction;
     eDirection theGSharePrediction;
     uint32_t theGShareShiftReg;
     uint32_t theSerial;
+    eDirection theActualDirection;
+    eBranchType theActualType;
+    VirtualMemoryAddress pc;
+
+    // stuff for tage
+    int bank;
+    bool pred_taken;
+    bool alttaken;
+    int BI;
+    int GI[15]; // 15 is random, upper bound on #tables?
+
+    unsigned ch_i[15];
+    unsigned ch_t[2][15];
+
+    int altbank;
+    int PWIN;
+
+    int phist;
+    std::bitset<131> ghist; // Fixme: replace 131 with a correct macro
+
+    bool caused_ICache_miss;
+    VirtualMemoryAddress ICache_miss_address;
+    uint32_t last_miss_distance;
+
+    bool is_runahead;       // 1: if it is prediction from runahead path
+    bool bimodalPrediction; // Is the final prediction from bimoal (in case of Tage)
+    bool returnUsedRAS;     // Did the return instruction used RAS to get the return address
+    bool returnPopRASTwice;
+    bool callUpdatedRAS;
+    bool detectedSpecialCall;
+    bool haltDispatch;
+    bool translationFailed;
+    bool BTBPreFilled;
+    bool causedSquash;
+    bool hasRetired;
+    // xExceptionSource exceptionSource;    // ! Probably needed in the future
+    int8_t saturationCounter; // What is the counter value
+    uint32_t theTL;
+    uint32_t theBBSize;
 };
 
 struct FetchAddr
