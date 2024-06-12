@@ -52,7 +52,7 @@
 #define DBG_SetDefaultOps    AddCat(FetchAddressGenerate)
 #include DBG_Control()
 
-#include <components/CommonQEMU/BranchPredictor.hpp>
+#include <components/BranchPredictor/BranchPredictor.hpp>
 #include <components/MTManager/MTManager.hpp>
 #include <core/flexus.hpp>
 #include <core/qemu/mai_api.hpp>
@@ -93,7 +93,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
             theRedirect[i]   = false;
         }
         theCurrentThread = cfg.Threads;
-        theBranchPredictor.reset(BranchPredictor::combining(statName(), flexusIndex(), cfg.BTBSets, cfg.BTBWays));
+        theBranchPredictor = std::make_unique<BranchPredictor>(statName(), flexusIndex(), cfg.BTBSets, cfg.BTBWays);
     }
 
     void finalize() {}
@@ -124,7 +124,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
     FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(BranchFeedbackIn);
     void push(interface::BranchFeedbackIn const&, index_t anIndex, boost::intrusive_ptr<BranchFeedback>& aFeedback)
     {
-        theBranchPredictor->feedback(*aFeedback);
+        theBranchPredictor->feedback(aFeedback->thePC, aFeedback->theActualType, aFeedback->theActualDirection, aFeedback->theActualTarget, *aFeedback->theBPState);
     }
 
     // Drive Interfaces
@@ -189,7 +189,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
                     AGU_DBG("Config set the max prediction to zero, so no prediction");
                     break;
                 }
-                VirtualMemoryAddress prediction = theBranchPredictor->predict(faddr);
+                VirtualMemoryAddress prediction = theBranchPredictor->predict(faddr.theAddress, *faddr.theBPState);
                 if (prediction == 0)
                     thePC[anIndex] += 4;
                 else

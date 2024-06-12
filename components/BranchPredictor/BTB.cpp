@@ -1,0 +1,145 @@
+#include "BTB.hpp"
+
+#include <cstdint>
+
+BTB::BTB(int32_t aBTBSets, int32_t aBTBAssoc)
+  : theBTBSets(aBTBSets)
+  , theBTBAssoc(aBTBAssoc)
+{
+    // aBTBSize must be a power of 2
+    DBG_Assert(((aBTBSets - 1) & (aBTBSets)) == 0);
+    theBTB.resize(aBTBSets);
+    theIndexMask = aBTBSets - 1; // ! Shouldn't it be log2(aBTBSets) ?
+}
+
+/* The PC is assumed to be word aligned so the index into the Set Associative structure is */
+/* INDEX_MASK anded with the PC >> 2 */
+uint32_t
+BTB::index(VirtualMemoryAddress anAddress)
+{
+    // Shift address by 2, since we assume word-aligned PCs
+    return (anAddress >> 2) & theIndexMask;
+}
+
+// Whether the BTB contains target for anAddress
+bool
+BTB::contains(VirtualMemoryAddress anAddress)
+{
+    int32_t ind = index(anAddress);
+    return theBTB[ind].isHit(anAddress);
+}
+
+// The kind of branch corresponding to the address: conditional, direct, indirect, return, etc
+eBranchType
+BTB::type(VirtualMemoryAddress anAddress)
+{
+    int32_t ind = index(anAddress);
+    bool isHit  = theBTB[ind].isHit(anAddress);
+
+    if (!isHit) {
+        return kNonBranch;
+    } else {
+        return theBTB[ind].access(anAddress)->theBranchType;
+    }
+}
+
+// Target address of the branch
+boost::optional<VirtualMemoryAddress>
+BTB::target(VirtualMemoryAddress anAddress)
+{
+    int32_t ind = index(anAddress);
+    bool isHit  = theBTB[ind].isHit(anAddress);
+
+    if (!isHit) {
+        return boost::none;
+    } else {
+        return theBTB[ind].access(anAddress)->theTarget;
+    }
+}
+
+// Update or add a new entry to the BTB
+bool
+BTB::update(VirtualMemoryAddress aPC, eBranchType aType, VirtualMemoryAddress aTarget)
+{
+    int32_t ind = index(aPC);
+    bool isHit  = theBTB[ind].isHit(aPC);
+
+    if (isHit) {
+        if (aType == kNonBranch) {
+            theBTB[ind].invalidate(aPC); // [MADHUR] Mispredict
+        } else {
+            BTBEntry* btbEntry = theBTB[ind].access(aPC); // [MADHUR] Access will also update the replacement queue
+
+            btbEntry->theBranchType = aType;
+
+            if (aTarget) {
+                DBG_(Verb, (<< "BTB setting target for " << aPC << " to " << aTarget));
+
+                btbEntry->theTarget = aTarget;
+            }
+        }
+
+        return false; // not a new entry
+    } else if (aType != kNonBranch) {
+        DBG_(Verb, (<< "BTB adding new branch for " << aPC << " to " << aTarget));
+
+        theBTB[ind].insert(BTBEntry(aPC, aType, aTarget)); // [MADHUR] Inserting a new entry
+
+        return true;
+    }
+    return false; // not a new entry
+}
+
+bool
+BTB::update(BranchFeedback const& aFeedback)
+{
+    return update(aFeedback.thePC, aFeedback.theActualType, aFeedback.theActualTarget);
+}
+
+// void
+// BTB::loadState(json checkpoint)
+//{
+//
+//     for (size_t set = 0; set < (size_t)theBTBSets; set++) {
+//
+//         size_t blockSize = checkpoint.at(set).size();
+//
+//         theBTB[set].get<by_baddr>().clear();
+//
+//         for (size_t block = 0; block < blockSize; block++) {
+//             uint64_t aPC     = checkpoint.at(set).at(block)["PC"];
+//             uint64_t aTarget = checkpoint.at(set).at(block)["target"];
+//             uint64_t aType   = checkpoint.at(set).at(block)["type"];
+//
+//             switch (aType) {
+//                 case 0:
+//                     theBTB[set].push_back(
+//                       BTBEntry(VirtualMemoryAddress(aPC), kNonBranch, VirtualMemoryAddress(aTarget)));
+//                     break;
+//                 case 1:
+//                     theBTB[set].push_back(
+//                       BTBEntry(VirtualMemoryAddress(aPC), kConditional, VirtualMemoryAddress(aTarget)));
+//                     break;
+//                 case 2:
+//                     theBTB[set].push_back(
+//                       BTBEntry(VirtualMemoryAddress(aPC), kUnconditional, VirtualMemoryAddress(aTarget)));
+//                     break;
+//                 case 3:
+//                     theBTB[set].push_back(BTBEntry(VirtualMemoryAddress(aPC), kCall, VirtualMemoryAddress(aTarget)));
+//                     break;
+//                 case 4:
+//                     theBTB[set].push_back(
+//                       BTBEntry(VirtualMemoryAddress(aPC), kIndirectReg, VirtualMemoryAddress(aTarget)));
+//                     break;
+//                 case 5:
+//                     theBTB[set].push_back(
+//                       BTBEntry(VirtualMemoryAddress(aPC), kIndirectCall, VirtualMemoryAddress(aTarget)));
+//                     break;
+//                 case 6:
+//                     theBTB[set].push_back(BTBEntry(VirtualMemoryAddress(aPC), kReturn,
+//                     VirtualMemoryAddress(aTarget))); break;
+//                 default: DBG_Assert(false, (<< "Don't know how to load type" << aType)); break;
+//             }
+//         }
+//     }
+// }

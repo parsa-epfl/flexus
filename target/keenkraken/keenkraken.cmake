@@ -7,5 +7,6 @@ set(REQUIRED_COMPONENTS
   MagicBreakQEMU
   BPWarm
   TraceTrackerQEMU
+  BranchPredictor
   MMU
 )
