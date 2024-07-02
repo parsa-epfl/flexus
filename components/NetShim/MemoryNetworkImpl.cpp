@@ -109,6 +109,9 @@ class FLEXUS_COMPONENT(MemoryNetwork)
         PacketCount = 0;
         // end of medhi
 
+        if (cfg.NumNodes == 0)
+          cfg.NumNodes = Flexus::Core::ComponentManager::getComponentManager().systemWidth() * 3;
+
         for (i = 0; i < cfg.VChannels; i++) {
             theNetworkLatencyHistograms.push_back(
               new Stat::StatLog2Histogram("NetworkLatency   VC[" + std::to_string(i) + "]", this));
@@ -347,11 +350,11 @@ class FLEXUS_COMPONENT(MemoryNetwork)
 FLEXUS_COMPONENT_INSTANTIATOR(MemoryNetwork, nNetwork);
 FLEXUS_PORT_ARRAY_WIDTH(MemoryNetwork, ToNode)
 {
-    return cfg.VChannels * (cfg.NumNodes ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth() * 3);
+    return cfg.VChannels * cfg.NumNodes;
 }
 FLEXUS_PORT_ARRAY_WIDTH(MemoryNetwork, FromNode)
 {
-    return cfg.VChannels * (cfg.NumNodes ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth() * 3);
+    return cfg.VChannels * cfg.NumNodes;
 }
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()

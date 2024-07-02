@@ -49,12 +49,8 @@
 #include <core/qemu/mai_api.hpp>
 #include <core/stats.hpp>
 #include <core/types.hpp>
-#include <fstream>
 
 using nCommonUtil::log_base2;
-
-#include <math.h>
-#include <stdlib.h> // for random()
 
 #define DBG_DefineCategories SplitDestinationMapper
 #define DBG_SetDefaultOps    AddCat(SplitDestinationMapper) Comp(*this)
@@ -125,10 +121,8 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
 
     void initialize(void)
     {
-        theTotalNumCores = cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 
-         theTotalNumCores =
-        Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+        theTotalNumCores = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 
         if (cfg.Cores == 0)
           cfg.Cores = theTotalNumCores;
@@ -923,85 +917,85 @@ FLEXUS_COMPONENT_INSTANTIATOR(SplitDestinationMapper, nSplitDestinationMapper);
 
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, DirReplyIn)
 {
-    return cfg.Directories ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return cfg.Directories;
 }
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, DirSnoopIn)
 {
-    return cfg.Directories ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return cfg.Directories;
 }
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, DirRequestIn)
 {
-    return cfg.Directories ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return cfg.Directories;
 }
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, DirReplyOut)
 {
-    return cfg.Directories ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return cfg.Directories;
 }
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, DirSnoopOut)
 {
-    return cfg.Directories ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return cfg.Directories;
 }
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, DirRequestOut)
 {
-    return cfg.Directories ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return cfg.Directories;
 }
 
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, CacheSnoopOut)
 {
-    return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return cfg.Cores;
 }
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, CacheReplyOut)
 {
-    return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return cfg.Cores;
 }
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, CacheRequestIn)
 {
-    return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return cfg.Cores;
 }
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, CacheSnoopIn)
 {
-    return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return cfg.Cores;
 }
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, CacheReplyIn)
 {
-    return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return cfg.Cores;
 }
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, ICacheSnoopOut)
 {
-    return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return cfg.Cores;
 }
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, ICacheReplyOut)
 {
-    return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return cfg.Cores;
 }
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, ICacheRequestIn)
 {
-    return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return cfg.Cores;
 }
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, ICacheSnoopIn)
 {
-    return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return cfg.Cores;
 }
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, ICacheReplyIn)
 {
-    return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return cfg.Cores;
 }
 
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, FromNIC0)
 {
-    return NUM_VC * NUM_PORTS * (cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth());
+    return NUM_VC * NUM_PORTS * cfg.Cores;
 }
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, ToNIC0)
 {
-    return NUM_VC * NUM_PORTS * (cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth());
+    return NUM_VC * NUM_PORTS * cfg.Cores;
 }
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, FromNIC1)
 {
-    return NUM_VC * NUM_PORTS * (cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth());
+    return NUM_VC * NUM_PORTS * cfg.Cores;
 }
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, ToNIC1)
 {
-    return NUM_VC * NUM_PORTS * (cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth());
+    return NUM_VC * NUM_PORTS * cfg.Cores;
 }
 
 FLEXUS_PORT_ARRAY_WIDTH(SplitDestinationMapper, MemoryIn)
