@@ -212,7 +212,7 @@ bool initializeParameters() {
   theL1dCfg.TextFlexpoints.initialize(false);
   theL1dCfg.EvictWritableHasData.initialize(false);
 
-  theL2Cfg.Cores.initialize(2);
+  theL2Cfg.Cores.initialize(0);
   theL2Cfg.BlockSize.initialize(64);
   theL2Cfg.Banks.initialize(1);
   theL2Cfg.BankInterleaving.initialize(64);
@@ -245,9 +245,9 @@ bool initializeParameters() {
   theNetworkCfg.NumNodes.initialize(3);
   theNetworkCfg.VChannels.initialize(3);
 
-  theNetMapperCfg.Cores.initialize(1);
-  theNetMapperCfg.Directories.initialize(1);
-  theNetMapperCfg.Banks.initialize(1);
+  theNetMapperCfg.Cores.initialize(0);
+  theNetMapperCfg.Directories.initialize(0);
+  theNetMapperCfg.Banks.initialize(0);
   theNetMapperCfg.MemControllers.initialize(1);
   theNetMapperCfg.DirInterleaving.initialize(64);
   theNetMapperCfg.MemInterleaving.initialize(4096);
@@ -315,7 +315,7 @@ FLEXUS_INSTANTIATE_COMPONENT_ARRAY( uArch, theuArchCfg, theuArch, SCALE_WITH_SYS
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( Cache, theL1dCfg, theL1d, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MMU , theMMUCfg, theMMU, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( CMPCache, theL2Cfg, theL2, SCALE_WITH_SYSTEM_WIDTH, DIVIDE, 1 );
-FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MemoryLoopback, theMemoryCfg, theMemory, SCALE_WITH_SYSTEM_WIDTH, DIVIDE, 1 );
+FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MemoryLoopback, theMemoryCfg, theMemory, FIXED, DIVIDE, 1 );
 // The above parameter dictates the number of memory controllers in the system.
 // It should always match the postload, and should be set to 1 for single core setup.
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MultiNic2, theNicCfg, theNic, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 3 );
