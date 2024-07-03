@@ -53,7 +53,6 @@
 #include <core/target.hpp>
 #include <core/types.hpp>
 #include <iostream>
-#include <map>
 
 namespace API = Flexus::Qemu::API;
 
@@ -195,7 +194,7 @@ struct ValueTracker
             theGlobalTracker = new ValueTracker*[theNumTrackers];
             for (int i = 0; i < theNumTrackers; i++) {
                 theGlobalTracker[i] = new ValueTracker;
-                theGlobalTracker[i]->register_mem_iface(i);
+                //theGlobalTracker[i]->register_mem_iface(i);
             }
         }
         return *theGlobalTracker[0];
@@ -205,96 +204,96 @@ struct ValueTracker
     tracker theTracker;
     DMATracer theDMATracer;
 
-    void register_mem_iface(int vm)
-    {
-        DBG_(VVerb, (<< "Registering DMA tracker " << vm));
+    //void register_mem_iface(int vm)
+    //{
+    //    DBG_(VVerb, (<< "Registering DMA tracker " << vm));
 
-        API::conf_object_t* dma_map_object = API::qemu_api.get_obj_by_name("dma_mem");
+    //    API::conf_object_t* dma_map_object = API::qemu_api.get_obj_by_name("dma_mem");
 
-        if (!dma_map_object) {
-            std::string dma_map_name = "dma_mem" + std::to_string(vm);
-            dma_map_object           = API::qemu_api.get_obj_by_name(dma_map_name.c_str());
-        }
+    //    if (!dma_map_object) {
+    //        std::string dma_map_name = "dma_mem" + std::to_string(vm);
+    //        dma_map_object           = API::qemu_api.get_obj_by_name(dma_map_name.c_str());
+    //    }
 
-        DBG_(Crit,
-             (<< "ALEX -- WARNING: DMA tracker has not been set up (Needs to "
-                 "be fixed)"));
-        // ALEX - Need to handle dma! Temporarily commented out the following:
-        /*
-            if (! dma_map_object) {
-              bool client_server = false;
-              DBG_( Dev, ( << "Creating DMA map object" ) );
-              std::string cpu_name = "machine" + std::to_string(vm) + "_cpu0";
-              std::string cpu_mem_name = cpu_name + "_mem";
-              API::conf_object_t * cpu0_mem =
-           API::QEMU_get_object_by_name(cpu_mem_name.c_str()); API::conf_object_t *
-           cpu0 = API::QEMU_get_object_by_name(cpu_name.c_str()); if ((vm == 0) &&
-           (!cpu0_mem)){ cpu0_mem = API::QEMU_get_object_by_name("cpu0_mem"); cpu0 =
-           API::QEMU_get_object_by_name("cpu0");
-              }
+    //    DBG_(Crit,
+    //         (<< "ALEX -- WARNING: DMA tracker has not been set up (Needs to "
+    //             "be fixed)"));
+    //    // ALEX - Need to handle dma! Temporarily commented out the following:
+    //    /*
+    //        if (! dma_map_object) {
+    //          bool client_server = false;
+    //          DBG_( Dev, ( << "Creating DMA map object" ) );
+    //          std::string cpu_name = "machine" + std::to_string(vm) + "_cpu0";
+    //          std::string cpu_mem_name = cpu_name + "_mem";
+    //          API::conf_object_t * cpu0_mem =
+    //       API::QEMU_get_object_by_name(cpu_mem_name.c_str()); API::conf_object_t *
+    //       cpu0 = API::QEMU_get_object_by_name(cpu_name.c_str()); if ((vm == 0) &&
+    //       (!cpu0_mem)){ cpu0_mem = API::QEMU_get_object_by_name("cpu0_mem"); cpu0 =
+    //       API::QEMU_get_object_by_name("cpu0");
+    //          }
 
-              if ( ! cpu0_mem ) {
-                client_server = true;
-                cpu_name = "machine" + std::to_string(vm) + "_server_cpu0";
-                //cpu_mem_name = "machine" + std::to_string(vm) +
-           "_server_server_cpu0_mem"; cpu_mem_name = "server_machine" +
-           std::to_string(vm) + "_server_cpu0_mem"; cpu0_mem =
-           API::QEMU_get_object_by_name(cpu_mem_name.c_str()); cpu0 =
-           API::QEMU_get_object_by_name(cpu_name.c_str()); if ((vm == 0) &&
-           (!cpu0_mem)){ cpu0_mem = API::QEMU_get_object_by_name("server_cpu0_mem");
-                  cpu0 = API::QEMU_get_object_by_name("server_cpu0");
-                }
-                DBG_Assert(cpu0_mem, ( << "Unable to connect DMA because there is no
-           cpu0_mem"));
-              }
+    //          if ( ! cpu0_mem ) {
+    //            client_server = true;
+    //            cpu_name = "machine" + std::to_string(vm) + "_server_cpu0";
+    //            //cpu_mem_name = "machine" + std::to_string(vm) +
+    //       "_server_server_cpu0_mem"; cpu_mem_name = "server_machine" +
+    //       std::to_string(vm) + "_server_cpu0_mem"; cpu0_mem =
+    //       API::QEMU_get_object_by_name(cpu_mem_name.c_str()); cpu0 =
+    //       API::QEMU_get_object_by_name(cpu_name.c_str()); if ((vm == 0) &&
+    //       (!cpu0_mem)){ cpu0_mem = API::QEMU_get_object_by_name("server_cpu0_mem");
+    //              cpu0 = API::QEMU_get_object_by_name("server_cpu0");
+    //            }
+    //            DBG_Assert(cpu0_mem, ( << "Unable to connect DMA because there is no
+    //       cpu0_mem"));
+    //          }
 
-              API::attr_value_t map_key = API::SIM_make_attr_string("map");
-              API::attr_value_t map_value = API::SIM_get_attribute(cpu0_mem, "map");
-              API::attr_value_t map_pair = API::SIM_make_attr_list(2, map_key,
-           map_value); API::attr_value_t map_list = API::SIM_make_attr_list(1,
-           map_pair); API::conf_class_t * memory_space = API::SIM_get_class(
-           "memory-space" ); std::string dma_map_name = "dma_mem" +
-           std::to_string(vm); dma_map_object = SIM_create_object(memory_space,
-           dma_map_name.c_str(), map_list); DBG_Assert( dma_map_object, ( << "Failed
-           to create object ' " << dma_map_name << "'")); API::conf_class_t * schizo
-           = API::SIM_get_class( "serengeti-schizo" ); API::attr_value_t dma_attr;
-              dma_attr.kind = API::Sim_Val_Object;
-              dma_attr.u.object = dma_map_object;
+    //          API::attr_value_t map_key = API::SIM_make_attr_string("map");
+    //          API::attr_value_t map_value = API::SIM_get_attribute(cpu0_mem, "map");
+    //          API::attr_value_t map_pair = API::SIM_make_attr_list(2, map_key,
+    //       map_value); API::attr_value_t map_list = API::SIM_make_attr_list(1,
+    //       map_pair); API::conf_class_t * memory_space = API::SIM_get_class(
+    //       "memory-space" ); std::string dma_map_name = "dma_mem" +
+    //       std::to_string(vm); dma_map_object = SIM_create_object(memory_space,
+    //       dma_map_name.c_str(), map_list); DBG_Assert( dma_map_object, ( << "Failed
+    //       to create object ' " << dma_map_name << "'")); API::conf_class_t * schizo
+    //       = API::SIM_get_class( "serengeti-schizo" ); API::attr_value_t dma_attr;
+    //          dma_attr.kind = API::Sim_Val_Object;
+    //          dma_attr.u.object = dma_map_object;
 
-              API::attr_value_t all_objects = API::SIM_get_all_objects();
-              DBG_Assert(all_objects.kind == API::Sim_Val_List);
-              for (int32_t i = 0; i < all_objects.u.list.size; ++i) {
-                if (all_objects.u.list.vector[i].u.object->class_data == schizo &&
-           API::SIM_get_attribute( all_objects.u.list.vector[i].u.object,
-           "queue").u.object == cpu0 ) {
-                  API::SIM_set_attribute(all_objects.u.list.vector[i].u.object,
-           "memory_space", &dma_attr );
-                }
-              }
+    //          API::attr_value_t all_objects = API::SIM_get_all_objects();
+    //          DBG_Assert(all_objects.kind == API::Sim_Val_List);
+    //          for (int32_t i = 0; i < all_objects.u.list.size; ++i) {
+    //            if (all_objects.u.list.vector[i].u.object->class_data == schizo &&
+    //       API::SIM_get_attribute( all_objects.u.list.vector[i].u.object,
+    //       "queue").u.object == cpu0 ) {
+    //              API::SIM_set_attribute(all_objects.u.list.vector[i].u.object,
+    //       "memory_space", &dma_attr );
+    //            }
+    //          }
 
-            }
+    //        }
 
-            //Create SimicsTracer Factory
-            Flexus::Qemu::Factory<DMATracer> tracer_factory;
-            API::conf_class_t * trace_class = tracer_factory.getSimicsClass();
+    //        //Create SimicsTracer Factory
+    //        Flexus::Qemu::Factory<DMATracer> tracer_factory;
+    //        API::conf_class_t * trace_class = tracer_factory.getSimicsClass();
 
-            API::timing_model_interface_t * timing_interface;
-            timing_interface = new API::timing_model_interface_t(); //LEAKS - Need
-           to fix timing_interface->operate =
-           &Flexus::Qemu::make_signature_from_addin_fn2<API::operate_func_t>::with<DMATracer,
-           DMATracerImpl, &DMATracerImpl::dma_mem_hier_operate>::trampoline;
-            API::SIM_register_interface(trace_class, "timing-model",
-           timing_interface);
+    //        API::timing_model_interface_t * timing_interface;
+    //        timing_interface = new API::timing_model_interface_t(); //LEAKS - Need
+    //       to fix timing_interface->operate =
+    //       &Flexus::Qemu::make_signature_from_addin_fn2<API::operate_func_t>::with<DMATracer,
+    //       DMATracerImpl, &DMATracerImpl::dma_mem_hier_operate>::trampoline;
+    //        API::SIM_register_interface(trace_class, "timing-model",
+    //       timing_interface);
 
-            std::string tracer_name("dma-tracer");
-            tracer_name += std::to_string(vm);
-            theDMATracer = tracer_factory.create(tracer_name);
-            DBG_( Crit, ( << "Connecting to DMA memory map" ) );
-            theDMATracer->init(dma_map_object,vm);
+    //        std::string tracer_name("dma-tracer");
+    //        tracer_name += std::to_string(vm);
+    //        theDMATracer = tracer_factory.create(tracer_name);
+    //        DBG_( Crit, ( << "Connecting to DMA memory map" ) );
+    //        theDMATracer->init(dma_map_object,vm);
 
-            DBG_(VVerb, ( << "Done registering DMA tracker"));
-        */
-    }
+    //        DBG_(VVerb, ( << "Done registering DMA tracker"));
+    //    */
+    //}
 
     void access(uint32_t aCPU, PhysicalMemoryAddress anAddress)
     {
