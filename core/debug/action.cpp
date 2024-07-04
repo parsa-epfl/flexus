@@ -59,11 +59,6 @@
 
 namespace Flexus {
 
-namespace Core {
-void
-Break();
-}
-
 namespace Dbg {
 
 void
@@ -190,7 +185,7 @@ BreakAction::printConfiguration(std::ostream& anOstream, std::string const& anIn
 void
 BreakAction::process(Entry const& anEntry)
 {
-    Flexus::Core::Break();
+    DBG_Assert(false, (<< " Should be unreachable"));
 }
 
 void

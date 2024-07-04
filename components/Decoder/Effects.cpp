@@ -46,7 +46,8 @@
 #include "Interactions.hpp"
 #include "SemanticInstruction.hpp"
 
-#include <components/uArch/uArchInterfaces.hpp>
+#include "components/uArch/uArchInterfaces.hpp"
+#include "components/uFetch/uFetchTypes.hpp"
 #include <core/performance/profile.hpp>
 
 #define DBG_DeclareCategories Decoder
@@ -501,10 +502,10 @@ struct BranchFeedbackEffect : public Effect
         DBG_(VVerb, (<< anInstruction << " BranchFeedbackEffect ")); // NOOSHIN
 
         if (anInstruction.branchFeedback()) {
-            DBG_(VVerb,
-                 (<< anInstruction << " Update Branch predictor: " << anInstruction.branchFeedback()->theActualType
-                  << " " << anInstruction.branchFeedback()->theActualDirection << " to "
-                  << anInstruction.branchFeedback()->theActualTarget));
+        //    DBG_(VVerb,
+        //         (<< anInstruction << " Update Branch predictor: " << anInstruction.branchFeedback()->theActualType
+        //          << " " << anInstruction.branchFeedback()->theActualDirection << " to "
+        //          << anInstruction.branchFeedback()->theActualTarget));
             anInstruction.core()->branchFeedback(anInstruction.branchFeedback());
         }
         Effect::invoke(anInstruction);
@@ -535,8 +536,7 @@ struct BranchFeedbackWithOperandEffect : public Effect
         feedback->theActualType      = theType;
         feedback->theActualDirection = theDirection;
         VirtualMemoryAddress target(anInstruction.operand<uint64_t>(theOperandCode));
-        DBG_(Iface,
-             (<< anInstruction << " Update Branch predictor: " << theType << " " << theDirection << " to " << target));
+        //DBG_(Iface, (<< anInstruction << " Update Branch predictor: " << theType << " " << theDirection << " to " << target));
         feedback->theActualTarget = target;
         feedback->theBPState      = anInstruction.bpState();
         anInstruction.core()->branchFeedback(feedback);
