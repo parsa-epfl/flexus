@@ -258,6 +258,9 @@ public:
 
   // Initialization
   void initialize() {
+    if (cfg.NumNodes == 0)
+      cfg.NumNodes = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+
     // Ensure that PageSize is a non-zero power of 2
     DBG_Assert((cfg.PageSize != 0), Comp(*this));
     DBG_Assert((((cfg.PageSize - 1) & cfg.PageSize) == 0), Comp(*this));
@@ -275,7 +278,7 @@ public:
     --page_size_log2;
 
     theNode_shift = page_size_log2;
-    theNode_mask = (cfg.NumNodes - 1);
+    theNode_mask = cfg.NumNodes - 1;
 
     for (unsigned i = 0; i < theNumCPUs; i++) {
       thePageCounts.push_back(new Flexus::Stat::StatCounter(
@@ -370,6 +373,7 @@ public:
     if (cfg.RoundRobin) {
       node = static_cast<node_id_t>((aPageAddr)&theNode_mask);
     }
+
     DBG_Assert((node < cfg.NumNodes), Comp(*this));
 
     // first touch - allocate page to the round-robin owner (based on address)

@@ -241,8 +241,8 @@ public:
   bool requiresData() const {
     return theRequiresData;
   }
-  void setRequiresData(bool requires) {
-    theRequiresData = requires;
+  void setRequiresData(bool _requires) {
+    theRequiresData = _requires;
   }
 
   bool transmitAfterTag() const {
@@ -493,56 +493,6 @@ inline std::ostream &operator<<(std::ostream &os, const ProcessEntry &p) {
 
   return os;
 }
-
-#if 0
-inline std::ostream & operator<<(std::ostream & os, const ProcessAction & action) {
-  switch (action) {
-    case eFwdAndWaitAck:
-      os << "FwdAndWaitAck, ";
-      break;
-    case eNotifyAndWaitAck:
-      os << "NotifyAndWaitAck, ";
-      break;
-    case eForwardAndRemoveMAF:
-      os << "ForwardAndRemoveMAF, ";
-      break;
-    case eFwdAndWakeEvictMAF:
-      os << "FwdAndWakeEvictMAF, ";
-      break;
-    case eWakeEvictMAF:
-      os << "WakeEvictMAF, ";
-      break;
-    case eForward:
-      os << "Forward, ";
-      break;
-    case eFwdRequest:
-      os << "FwdRequest, ";
-      break;
-    case eFwdAndReply:
-      os << "FwdAndReply, ";
-      break;
-    case eReply:
-      os << "Reply, ";
-      break;
-    case eReplyAndRemoveMAF:
-      os << "ReplyAndRemoveMAF, ";
-      break;
-    case eRemoveMAF:
-      os << "RemoveMAF, ";
-      break;
-    case eRemoveAndWakeMAF:
-      os << "RemoveAndWakeMAF, ";
-      break;
-    case eStall:
-      os << "Stall, ";
-      break;
-    case eNoAction:
-      os << "NoAction, ";
-      break;
-  }
-  return os;
-}
-#endif
 
 }; // namespace nCMPCache
 

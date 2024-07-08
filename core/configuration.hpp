@@ -141,43 +141,6 @@ protected:
 
 namespace aux_ {
 
-#if 0
-template <class ParamStruct, class Type, Type ParamStruct:: * Member>
-struct FLEXUS_CONFIGURATION_WARNING {
-  FLEXUS_CONFIGURATION_WARNING() {
-    int32_t WARNING__FLEXUS_PARAMETER_VALUE_IS_NOT_SPECIFIED_IN_WIRING;
-  }
-};
-
-template <class ParamStruct, class Type, Type ParamStruct:: * Member>
-struct FLEXUS_CONFIGURATION_ERROR {
-  struct ERROR;
-
-  ERROR ERROR__FLEXUS_PARAMETER_VALUE_IS_NOT_SPECIFIED_IN_WIRING;
-};
-
-template < class ParamStruct, class Type, Type ParamStruct::* Member>
-struct CompileValue {
-  std::string theValue;
-  CompileValue(const std::string & aValue)
-    : theValue(aValue) {
-  }
-  CompileValue(const std::string & aValue, bool /*automatic*/)
-    : theValue(aValue) {
-#ifndef FLEXUS__NO_DEFAULT_PARAMETER_WARNING
-    //Force warning
-    FLEXUS_CONFIGURATION_WARNING<ParamStruct, Type, Member> warning;
-#endif // FLEXUS__NO_DEFAULT_PARAMETER_WARNING
-
-#ifdef FLEXUS__DISALLOW_DEFAULT_PARAMETER_VALUES
-    FLEXUS_CONFIGURATION_ERROR<ParamStruct, Type, Member> error;
-    (void)error;
-#endif // FLEXUS__DISALLOW_DEFAULT_PARAMETER_VALUES
-  }
-
-};
-#endif
-
 // Dynamic Parameter Implementation
 //******************************
 // Template for defininig dynamic parameters

@@ -225,8 +225,11 @@ public:
     DBG_Assert(entry != nullptr);
     if (entry->tag() != address) {
       // We're evicting an existing entry
+      auto tag     = entry->tag();
+      auto sharers = entry->sharers();
+
       xtra_actions.push_back(
-          [&entry, this]() { theInvalidateAction(entry->tag(), entry->sharers()); });
+          [tag, sharers, this]() { theInvalidateAction(tag, sharers); });
       entry->reset(address);
     }
 
@@ -296,6 +299,7 @@ public:
         theDirectory[set][way] = serializer;
       }
     }
+
     return true;
   }
 

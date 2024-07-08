@@ -86,7 +86,6 @@ COMPONENT_PARAMETERS(
 
   PARAMETER( EvictClean, bool, "Cause the cache to evict clean blocks", "allow_evict_clean", false )
   PARAMETER( ArrayConfiguration, std::string, "Configuration of cache array (STD:sets=1024:assoc=16:repl=LRU", "array_config", "STD:sets=1024:assoc=16:repl=LRU" )
-
 );
 
 COMPONENT_INTERFACE(
@@ -96,6 +95,7 @@ COMPONENT_INTERFACE(
   PORT(PushInput, MemoryTransport, Request_In)
   PORT(PushInput, MemoryTransport, Snoop_In)
   PORT(PushInput, MemoryTransport, Reply_In)
+
   DRIVE(CMPCacheDrive)
 );
 

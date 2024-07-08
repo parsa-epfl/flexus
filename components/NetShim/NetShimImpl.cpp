@@ -63,6 +63,10 @@
 #define DBG_SetDefaultOps AddCat(NetShim)
 #include DBG_Control()
 
+namespace Flexus {
+  extern std::string oldcwd;
+};
+
 namespace nNetwork {
 
 using namespace Flexus;
@@ -104,7 +108,11 @@ public:
     }
 
     nc = new NetContainer();
-    if (nc->buildNetwork(cfg.NetworkTopologyFile.c_str())) {
+
+    if (cfg.NetworkTopologyFile == "BuildMesh") {
+      if (nc->buildMesh())
+        throw Flexus::Core::FlexusException("Error building the network");
+    } else if (nc->buildNetwork((oldcwd + "/" + cfg.NetworkTopologyFile).c_str())) {
       throw Flexus::Core::FlexusException("Error building the network");
     }
   }
@@ -312,10 +320,10 @@ private:
 
 FLEXUS_COMPONENT_INSTANTIATOR(NetShim, nNetwork);
 FLEXUS_PORT_ARRAY_WIDTH(NetShim, ToNode) {
-  return cfg.VChannels * cfg.NumNodes;
+  return cfg.VChannels * (cfg.NumNodes ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth());
 }
 FLEXUS_PORT_ARRAY_WIDTH(NetShim, FromNode) {
-  return cfg.VChannels * cfg.NumNodes;
+  return cfg.VChannels * (cfg.NumNodes ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth());
 }
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()

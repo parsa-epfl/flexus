@@ -33,3 +33,4 @@ tmp*
 temp*
 build
 *.swp
+.cache

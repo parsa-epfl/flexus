@@ -117,37 +117,6 @@ public:
   virtual void process(Entry const &anEntry);
 };
 
-#if 0
-class SaveAction : public Action {
-  std::string theBufferName;
-  uint32_t theSize;
-public:
-  SaveAction(std::string aBufferName, uint32_t aCircularBufferSize);
-  virtual void printConfiguration(std::ostream & anOstream, std::string const & anIndent);
-  virtual void process(Entry const & anEntry);
-};
-
-class FileSpillAction : public Action {
-  std::string theBufferName;
-  std::string theFilename;
-  std::ostream & theOstream;
-  std::unique_ptr<Format> theFormat;
-public:
-  FileSpillAction(std::string const & aBufferName, std::string const & aFilename, Format * aFormat);
-  virtual void printConfiguration(std::ostream & anOstream, std::string const & anIndent);
-  virtual void process(Entry const & anEntry);
-};
-
-class ConsoleSpillAction : public Action {
-  std::string theBufferName;
-  std::unique_ptr<Format> theFormat;
-public:
-  ConsoleSpillAction(std::string const & aBufferName, Format * aFormat);
-  virtual void printConfiguration(std::ostream & anOstream, std::string const & anIndent);
-  virtual void process(Entry const & anEntry);
-};
-#endif
-
 } // namespace Dbg
 } // namespace Flexus
 

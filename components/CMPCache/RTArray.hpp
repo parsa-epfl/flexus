@@ -1077,50 +1077,6 @@ public:
 
   inline bool isConsistent(uint64_t tagset) {
     return true;
-#if 0
-    block_set_t * block_set = &(theBlocks[get_block_set(tagset, 0)]);
-    tag_iterator block = (block_set->template get<by_tag>()).find(get_block_tag(tagset));
-    tag_iterator bend   = (block_set->template get<by_tag>()).end();
-
-    uint64_t rt_tag = get_rt_tag(tagset);
-    int rt_set_index = get_rt_set(tagset);
-    int32_t offset = get_block_offset(tagset);
-
-    rt_set_t * rt_set = &(theRVA[rt_set_index]);
-    rt_index * rt  = &(rt_set->template get<by_tag>());
-    rt_iterator entry = rt->find(rt_tag);
-    rt_iterator end  = rt->end();
-
-    if (entry == end) {
-      rt_set  = &theERB;
-      rt  = &(theERB.template get<by_tag>());
-      entry = rt->find(rt_tag);
-      end  = rt->end();
-    }
-
-    if (entry == end) {
-      if (block != bend) {
-        if (block->state.isValid()) {
-          DBG_(Crit, ( << "block " << std::hex << tagset << " region not present but block is valid"));
-          return false;
-        }
-      }
-      return true;
-    }
-    if ((block == bend) && (entry->state[offset].isValid())) {
-      DBG_(Crit, Set( (CompName) << theName) Addr(tagset) ( << "block " << std::hex << tagset << " not present but RVA says valid"));
-      return false;
-    }
-    if ((block != bend) && entry->state[offset] != block->state)  {
-      DBG_(Crit, Set( (CompName) << theName) Addr(tagset) ( << "block " << std::hex << tagset << " RVA and BST states do not match (" << entry->state[offset] << " != " << block->state << ")" ));
-      return false;
-    }
-    if ((block != bend) && (entry->ways[offset] != block->way) && (block->state.isValid())) {
-      DBG_(Crit, Set( (CompName) << theName) Addr(tagset) ( << "block " << std::hex << tagset << " RVA and BST ways do not match (" << entry->ways[offset] << " != " << block->way << ")" ));
-      return false;
-    }
-    return true;
-#endif
   }
 
   virtual AbstractArrayLookup_p operator[](const MemoryAddress &anAddress) {

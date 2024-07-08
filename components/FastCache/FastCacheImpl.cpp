@@ -262,8 +262,8 @@ public:
   FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(RequestIn);
   void push(interface::RequestIn const &, index_t anIndex, MemoryMessage &aMessage) {
     FLEXUS_PROFILE();
-    MemoryMessage orig_message(aMessage);
-    orig_message.coreIdx() = aMessage.coreIdx();
+
+    aMessage.fillLevel() = cfg.CacheLevel;
 
     // Create a set and tag from the message's address
     uint64_t tagset = aMessage.address() & theBlockMask;

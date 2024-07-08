@@ -69,7 +69,8 @@ public:
     theExclusive = true;
   }
   virtual void describe(std::ostream &anOstream) const;
-  virtual void forceResync() = 0;
+  virtual bool resync() const = 0;
+  virtual void forceResync(bool r = true) = 0;
   virtual bool haltDispatch() const;
   virtual void setFetchTransactionTracker(boost::intrusive_ptr<TransactionTracker> aTransaction) {
     theFetchTransaction = aTransaction;
@@ -88,6 +89,7 @@ public:
   virtual tFillLevel sourceLevel() const {
     return theInsnSourceLevel;
   }
+  virtual uint32_t getOpcode() = 0;
 };
 
 enum eSquashCause {

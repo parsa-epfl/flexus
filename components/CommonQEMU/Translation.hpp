@@ -56,17 +56,18 @@ static uint64_t translationID;
 
 struct Translation : public boost::counted_base {
 
-  enum eTranslationType { eStore, eLoad, eFetch };
+  enum eTranslationType { eLoad, eStore, eFetch };
 
   enum eTLBstatus { kTLBunresolved, kTLBmiss, kTLBhit };
 
   enum eTLBtype { kINST, kDATA, kNONE };
 
   Translation()
-      : theTLBstatus(kTLBunresolved), theTLBtype(kNONE), theReady(false), theWaiting(false),
-        theDone(false), theCurrentTranslationLevel(0), rawTTEValue(0), theID(translationID++),
-        theAnnul(false), theTimeoutCounter(0), thePageFault(false), inTraceMode(false)
-
+      : theVaddr(-1), thePaddr(-1),
+        theTLBstatus(kTLBunresolved), theTLBtype(kNONE), theReady(false), theWaiting(false),
+        theDone(false), theID(translationID++),
+        theAnnul(false), theTimeoutCounter(0), thePageFault(false), inTraceMode(false),
+        theLine(0)
   {
   }
   ~Translation() {
@@ -74,11 +75,9 @@ struct Translation : public boost::counted_base {
 
   Translation(const Translation &aTr) {
     theVaddr = aTr.theVaddr;
-    thePSTATE = aTr.thePSTATE;
     theType = aTr.theType;
     thePaddr = aTr.thePaddr;
     theException = aTr.theException;
-    theTTEEntry = aTr.theTTEEntry;
     theTLBstatus = aTr.theTLBstatus;
     theTLBtype = aTr.theTLBtype;
     theTimeoutCounter = aTr.theTimeoutCounter;
@@ -88,15 +87,20 @@ struct Translation : public boost::counted_base {
     thePageFault = aTr.thePageFault;
     trace_addresses = aTr.trace_addresses;
     inTraceMode = aTr.inTraceMode;
+
+    theSet     = aTr.theSet;
+    theBase    = aTr.theBase;
+    theAttr    = aTr.theAttr;
+    theAddr    = aTr.theAddr;
+    theAsid    = aTr.theAsid;
+    theTime    = aTr.theTime;
   }
 
   Translation &operator=(Translation &rhs) {
     theVaddr = rhs.theVaddr;
-    thePSTATE = rhs.thePSTATE;
     theType = rhs.theType;
     thePaddr = rhs.thePaddr;
     theException = rhs.theException;
-    theTTEEntry = rhs.theTTEEntry;
     theTLBstatus = rhs.theTLBstatus;
     theTLBtype = rhs.theTLBtype;
     theTimeoutCounter = rhs.theTimeoutCounter;
@@ -107,31 +111,46 @@ struct Translation : public boost::counted_base {
     trace_addresses = rhs.trace_addresses;
     inTraceMode = rhs.inTraceMode;
 
+    theSet     = rhs.theSet;
+    theBase    = rhs.theBase;
+    theAttr    = rhs.theAttr;
+    theAddr    = rhs.theAddr;
+    theAsid    = rhs.theAsid;
+    theTime    = rhs.theTime;
+
     return *this;
   }
 
   VirtualMemoryAddress theVaddr;
   PhysicalMemoryAddress thePaddr;
 
-  int thePSTATE;
   uint32_t theIndex;
   eTranslationType theType;
   eTLBstatus theTLBstatus;
   eTLBtype theTLBtype;
   int theException;
-  uint64_t theTTEEntry;
 
   bool theReady;   // ready for translation - step i
   bool theWaiting; // in memory - step ii
   bool theDone;    // all done step iii
-  uint8_t theCurrentTranslationLevel;
-  uint64_t rawTTEValue;
   uint64_t theID;
   bool theAnnul;
   uint64_t theTimeoutCounter;
   bool thePageFault;
   std::queue<PhysicalMemoryAddress> trace_addresses;
   bool inTraceMode;
+
+  uint64_t theSet;
+  uint64_t theLine;
+
+  uint64_t theBase;
+  uint64_t theAttr;
+  uint64_t theAddr;
+  uint64_t theAsid;
+  uint64_t theTime;
+
+  int theCurrentTranslationLevel;
+  uint64_t rawTTEValue;
 
   boost::intrusive_ptr<AbstractInstruction> theInstruction;
 
@@ -171,14 +190,14 @@ struct Translation : public boost::counted_base {
   bool isPagefault() {
     return thePageFault;
   }
-  void setPagefault() {
-    DBG_Assert(!thePageFault);
-    thePageFault = true;
+  void setPagefault(bool p = true) {
+    thePageFault = p;
   }
 
   void setInstruction(boost::intrusive_ptr<AbstractInstruction> anInstruction) {
     theInstruction = anInstruction;
   }
+
   boost::intrusive_ptr<AbstractInstruction> getInstruction() const {
     return theInstruction;
   }
@@ -202,9 +221,8 @@ struct Translation : public boost::counted_base {
   bool isDone() const {
     return theDone;
   }
-  void setDone() {
-    DBG_Assert(!theDone);
-    theDone = true;
+  void setDone(bool d = true) {
+    theDone = d;
   }
 
   bool isAnnul() const {
@@ -214,11 +232,12 @@ struct Translation : public boost::counted_base {
     theAnnul = true;
   }
 
-  Translation &operator++(int) {
-    if (++theTimeoutCounter > 1000) {
+  void incr() {
+    if (++theTimeoutCounter > 10000) {
+      DBG_(Crit, (<< "Translation timeout " << theVaddr
+                  << " id:" << theID));
       DBG_Assert(false);
     }
-    return *this;
   }
 };
 

@@ -80,9 +80,8 @@
 namespace nFastCMPCache {
 
 using namespace Flexus;
-using namespace Flexus::Core;
-using namespace Flexus::SharedTypes;
-using namespace nFastCMPCache;
+using namespace Core;
+using namespace SharedTypes;
 
 class FLEXUS_COMPONENT(FastCMPCache) {
   FLEXUS_COMPONENT_IMPL(FastCMPCache);
@@ -311,6 +310,9 @@ public:
     DBG_Assert((cfg.BlockSize & (cfg.BlockSize - 1)) == 0);
     DBG_Assert(cfg.BlockSize >= 4);
 
+    // for simplicity
+    cfg.Size *= theCMPWidth;
+
     int32_t num_sets = cfg.Size / cfg.BlockSize / cfg.Associativity;
 
     // Confirm that num_sets is a power of 2
@@ -514,6 +516,8 @@ private:
     int32_t extra_snoops_sent = 0;
     bool accessed_memory = false;
     PhysicalMemoryAddress addr(aMessage.address() & theCoherenceUnitMask);
+
+    aMessage.fillLevel() = cfg.CacheLevel;
 
     performDelayedActions();
 
@@ -810,6 +814,8 @@ private:
     if (snoop_success) { // request satisfied from another L1 cache, because it
                          // wasn't in L2, or it wasn't in appropriate state in
                          // L2 (coherence miss)
+      aMessage.fillLevel() = ePeerL1Cache;
+
       switch (orig_msg_type) {
       case MemoryMessage::ReadReq:
         theCacheStats->Misses_Onchip_Read++;

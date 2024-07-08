@@ -46,7 +46,13 @@
 #ifndef __CMP_CACHE_INFO_HPP__
 #define __CMP_CACHE_INFO_HPP__
 
+#include <iostream>
+
+#include <components/CommonQEMU/Slices/FillLevel.hpp>
+
 namespace nCMPCache {
+
+using namespace Flexus::SharedTypes;
 
 struct CMPCacheInfo {
 

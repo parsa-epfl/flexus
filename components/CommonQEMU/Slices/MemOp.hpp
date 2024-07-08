@@ -59,11 +59,8 @@ namespace SharedTypes {
 enum eOperation { // Sorted by priority for requesting memory ports
   kPageWalkRequest,
   kLoad,
-  kLDP,
   kAtomicPreload,
   kRMW,
-  kCAS,
-  kCASP,
   kStorePrefetch,
   kStore,
   kInvalidate,
@@ -75,7 +72,6 @@ enum eOperation { // Sorted by priority for requesting memory ports
   kStoreReply,
   kStorePrefetchReply,
   kRMWReply,
-  kCASReply,
   kDowngradeAck,
   kInvAck,
   kProbeAck,
@@ -85,6 +81,27 @@ enum eOperation { // Sorted by priority for requesting memory ports
   kLastOperation
 };
 std::ostream &operator<<(std::ostream &anOstream, eOperation op);
+
+enum eRMWOperation {
+  kAMOADD,
+  kAMOADDW,
+  kAMOAND,
+  kAMOANDW,
+  kAMOMAX,
+  kAMOMAXU,
+  kAMOMAXUW,
+  kAMOMAXW,
+  kAMOMIN,
+  kAMOMINU,
+  kAMOMINUW,
+  kAMOMINW,
+  kAMOOR,
+  kAMOORW,
+  kAMOSWAP,
+  kAMOSWAPW,
+  kAMOXOR,
+  kAMOXORW
+};
 
 enum eSize { kByte = 1, kHalfWord = 2, kWord = 4, kDoubleWord = 8, kQuadWord = 16, kIllegalSize };
 
@@ -119,8 +136,8 @@ struct MemOp : boost::counted_base {
         thePAddr(anOther.thePAddr), thePC(anOther.thePC), theValue(anOther.theValue),
         theExtendedValue(anOther.theExtendedValue), theReverseEndian(anOther.theReverseEndian),
         theNonCacheable(anOther.theNonCacheable), theSideEffect(anOther.theSideEffect),
-        theAtomic(anOther.theAtomic), theNAW(anOther.theNAW), theTracker(anOther.theTracker),
-        theInstruction(anOther.theInstruction) {
+        theAtomic(anOther.theAtomic), theNAW(anOther.theNAW),
+        theTracker(anOther.theTracker), theInstruction(anOther.theInstruction) {
   }
 };
 

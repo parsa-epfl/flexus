@@ -52,27 +52,9 @@
 
 namespace nProfile {
 
-#ifndef X86_64
 inline int64_t rdtsc() {
-  int64_t tsc;
-  __asm__ __volatile__("rdtsc" : "=A"(tsc));
-  return tsc;
+  return 0;
 }
-#else
-inline int64_t rdtsc() {
-  int64_t tsca, tscd;
-  __asm__ __volatile__("rdtsc" : "=A"(tsca), "=D"(tscd));
-  return (tscd << 32) | (tsca & 0xffffffff);
-}
-#endif
-
-/*
-inline int32_t prid() {
-  int64_t id = 0;
-  __asm__ __volatile__ ( "cpuid" : "=b" (id) : "a" (1) ) ;
-  return id >> 31;
-}
-*/
 
 class Timer;
 class ManualTimer;

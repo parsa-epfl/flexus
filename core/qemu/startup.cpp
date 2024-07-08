@@ -50,11 +50,11 @@
 
 #include <core/debug/debug.hpp>
 
-#include <boost/version.hpp>
 #include <core/component.hpp>
 #include <core/configuration.hpp>
 #include <core/simulator_name.hpp>
 #include <core/target.hpp>
+#include <core/flexus.hpp>
 
 #define QEMUFLEX_FLEXUS_INTERNAL
 namespace Flexus {
@@ -72,71 +72,16 @@ namespace API {
 
 namespace Flexus {
 
+std::string oldcwd;
+
 namespace Core {
-void Break() {
-  // QEMU: halt simulation and print message
-}
 void CreateFlexusObject();
 void PrepareFlexusObject();
 void initFlexus();
 void deinitFlexus();
-void callQMP(Flexus::Qemu::API::qmp_flexus_cmd_t aCMD, const char *args);
 void setCfg(const char *aFile);
-void startTimingFlexus();
 } // namespace Core
 
-namespace Qemu {
-
-using namespace Flexus::Core;
-namespace Qemu = Flexus::Qemu;
-
-void CreateFlexus() {
-  CreateFlexusObject();
-
-  Flexus::Core::index_t system_width;
-  std::ifstream ifs("preload_system_width");
-
-  if (!ifs.good()) {
-    DBG_(Crit, (<< "Warning! Components instantiation failed due "
-                   "to the system width is not defined!"
-                << " Defaulting to 1 cpu"));
-    system_width = 1;
-    exit(1);
-  } else {
-    ifs >> system_width;
-  }
-  ifs.close();
-
-  DBG_(Crit, (<< "Instantiating Flexus components with SystemWidth = " << system_width));
-
-  Flexus::Core::ComponentManager::getComponentManager().instantiateComponents(system_width);
-  ConfigurationManager::getConfigurationManager().processCommandLineConfiguration(0, 0);
-}
-
-void PrepareFlexus() {
-  PrepareFlexusObject();
-  Qemu::API::QEMU_insert_callback(QEMUFLEX_GENERIC_CALLBACK, Qemu::API::QEMU_config_ready, nullptr,
-                                  (void *)&CreateFlexus);
-}
-
-extern "C" void qmp_call(Flexus::Qemu::API::qmp_flexus_cmd_t aCMD, const char *anArgs) {
-  callQMP(aCMD, anArgs);
-}
-extern "C" void set_config(const char *aFile) {
-  setCfg(aFile);
-}
-extern "C" void flexus_init(void) {
-  initFlexus();
-}
-
-extern "C" void flexus_deinit(void) {
-  deinitFlexus();
-}
-
-extern "C" void start_timing_sim(void) {
-  startTimingFlexus();
-}
-} // namespace Qemu
 } // end namespace Flexus
 
 namespace {
@@ -201,28 +146,23 @@ void print_copyright() {
 }
 // clang-format on
 
-extern "C" void qmpcall(Flexus::Qemu::API::qmp_flexus_cmd_t aCMD, const char *anArgs) {
-  Flexus::Qemu::qmp_call(aCMD, anArgs);
-}
-extern "C" void setConfig(const char *aFile) {
-  Flexus::Qemu::set_config(aFile);
-}
+extern "C" {
 
-} // namespace
-extern "C" void flexInit() {
-  Flexus::Qemu::flexus_init();
-}
+void flexus_init(Flexus::Qemu::API::QEMU_API_t   *qemu,
+                 Flexus::Qemu::API::FLEXUS_API_t *flexus,
+                 uint32_t ncores,
+                 const char *cfg,
+                 const char *dbg,
+                 int64_t max,
+                 const char *cwd) {
+  auto oldcwd = get_current_dir_name();
 
-extern "C" void flexDeinit() {
-  Flexus::Qemu::flexus_deinit();
-}
+  Flexus::oldcwd = oldcwd;
 
-extern "C" void startTiming() {
-  Flexus::Qemu::start_timing_sim();
-}
+  free(oldcwd);
 
-extern "C" void qflex_init(Flexus::Qemu::API::QFLEX_API_Interface_Hooks_t *hooks) {
-  Flexus::Qemu::API::QFLEX_API_set_Interface_Hooks(hooks);
+  Flexus::Qemu::API::qemu_api = *qemu;
+  Flexus::Qemu::API::FLEXUS_get_api(flexus);
 
   print_copyright();
 
@@ -237,12 +177,38 @@ extern "C" void qflex_init(Flexus::Qemu::API::QFLEX_API_Interface_Hooks_t *hooks
   DBG_(Dev, (<< "Compiled with Boost: " << BOOST_VERSION / 100000 << "."
              << BOOST_VERSION / 100 % 1000 << "." << BOOST_VERSION % 100));
 
-  // Do all the stuff we need to get Simics to know we are here
-  Flexus::Qemu::PrepareFlexus();
+  Flexus::Core::setCfg(cfg);
+  Flexus::Core::PrepareFlexusObject();
+  Flexus::Core::CreateFlexusObject();
+
+  if (cwd) {
+    cerr << "Switching to: " << cwd;
+
+    if (chdir(cwd))
+      cerr << " failed: " << strerror(errno) << endl;
+    else
+      cerr << " done." << endl;
+  }
+
+  Flexus::Dbg::Debugger::theDebugger->initialize();
+
+  if (dbg)
+    Flexus::Core::theFlexus->setDebug(dbg);
+  if (max)
+    Flexus::Core::theFlexus->setStopCycle(std::to_string(max));
+
+  Flexus::Core::theFlexus->setDebugOverride();
+
+  Flexus::Core::ComponentManager::getComponentManager().instantiateComponents(ncores);
+
+  Flexus::Core::initFlexus();
 
   DBG_(Iface, (<< "Flexus Initialized."));
 }
 
-extern "C" void qflex_quit(void) {
-  flexDeinit();
+void flexus_deinit(void) {
+  Flexus::Core::deinitFlexus();
+}
+
+}
 }

@@ -96,21 +96,7 @@ class IterationTrackerImpl : public IterationTracker {
 
 public:
   void OnMagicBreakpoint(Qemu::API::conf_object_t *aCpu, uint64_t aBreakpoint) {
-    uint32_t cpu_no = Qemu::API::QEMU_get_cpu_index(aCpu);
-
-#if FLEXUS_TARGET_IS(x86)
-    int64_t pc = Qemu::API::QEMU_get_program_counter(aCpu);
-    Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor(aCpu);
-
-    int64_t addr = int64_t(cpu->translateVirtualAddress(VirtualMemoryAddress(pc)) + 5);
-    aBreakpoint = (cpu->readPhysicalAddress(PhysicalMemoryAddress(addr), 8));
-
-    if ((aBreakpoint & 0xFFFF0000LL) != 0xDEAD0000) {
-      DBG_(Iface, (<< "Breakpoint does not have a marker"));
-      return;
-    }
-    aBreakpoint &= 0x0FFL;
-#endif
+    uint32_t cpu_no = Qemu::API::qemu_api.get_cpu_idx(aCpu);
 
     if (aBreakpoint == kIterationCountBreakpoint) {
       if (cpu_no >= theIterationCounts.size()) {
@@ -164,9 +150,8 @@ public:
     theIterationCounts[aCPU] = aCount;
   }
   void enable() {
-    // theMagicBreakpointHap.reset(new on_magic_break_t(this));
-    Qemu::API::QEMU_insert_callback(QEMUFLEX_GENERIC_CALLBACK, Qemu::API::QEMU_magic_instruction,
-                                    (void *)this, (void *)&IterationTrackerMagicBreakpoint);
+//  Flexus::Qemu::API::qflex_sim_callbacks.magic_inst[Flexus::Qemu::API::MagicIterationTracker].obj = (void *)(this);
+//  Flexus::Qemu::API::qflex_sim_callbacks.magic_inst[Flexus::Qemu::API::MagicIterationTracker].fn  = (void *)(IterationTrackerMagicBreakpoint);
 
     int32_t iter = 0;
     if (theIterationCounts.size() > 0) {
@@ -229,26 +214,10 @@ class TransactionTrackerImpl : public BreakpointTracker {
   int32_t theTransactionCount;
   int32_t theLastIntervalCount;
   int32_t theLastCkptCount;
-  bool theToggle;
   uint64_t theCycleMinimum;
 
 public:
   void OnMagicBreakpoint(Qemu::API::conf_object_t *aCpu, uint64_t aBreakpoint) {
-
-#if FLEXUS_TARGET_IS(x86)
-    int64_t pc = Qemu::API::QEMU_get_program_counter(aCpu);
-    Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor(aCpu);
-
-    int64_t addr = int64_t(cpu->translateVirtualAddress(VirtualMemoryAddress(pc)) + 5);
-    aBreakpoint = (cpu->readPhysicalAddress(PhysicalMemoryAddress(addr), 8));
-
-    if ((aBreakpoint & 0xFFFF0000LL) != 0xDEAD0000) {
-      ++statJBB_Other;
-      DBG_(Iface, (<< "Breakpoint does not have a marker"));
-      return;
-    }
-    aBreakpoint &= 0x0FFL;
-#endif
 
     if (theTransactionType == 0) {
       doTpccJbbTransaction(aBreakpoint);
@@ -413,7 +382,7 @@ public:
                                                       : (aFirstTransactionIs / theStatInterval)),
         theCurrentStatIntervalName("disabled"), theTransactionCount(aFirstTransactionIs),
         theLastIntervalCount(aFirstTransactionIs), theLastCkptCount(aFirstTransactionIs),
-        theToggle(false), theCycleMinimum(aCycleMinimum) {
+        theCycleMinimum(aCycleMinimum) {
     if (theStatInterval > 0) {
       theCurrentStatIntervalName = std::string("Trans Interval ") +
                                    boost::padded_string_cast<3, '0'>(theCurrentStatInterval++);
@@ -421,8 +390,8 @@ public:
     }
 
     // not sure it goes here
-    Qemu::API::QEMU_insert_callback(QEMUFLEX_GENERIC_CALLBACK, Qemu::API::QEMU_magic_instruction,
-                                    (void *)this, (void *)&TransactionTrackerMagicBreakpoint);
+//  Flexus::Qemu::API::qflex_sim_callbacks.magic_inst[Flexus::Qemu::API::MagicTransactionTracker].obj = (void *)(this);
+//  Flexus::Qemu::API::qflex_sim_callbacks.magic_inst[Flexus::Qemu::API::MagicTransactionTracker].fn  = (void *)(TransactionTrackerMagicBreakpoint);
   }
 };
 
@@ -432,20 +401,6 @@ class TerminateOnMagicBreakTracker : public BreakpointTracker {
 public:
   void OnMagicBreakpoint(Qemu::API::conf_object_t *aCpu, long long aBreakpoint) {
 
-#if FLEXUS_TARGET_IS(x86)
-    int64_t pc = Qemu::API::QEMU_get_program_counter(aCpu);
-    Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor(aCpu);
-
-    int64_t addr = int64_t(cpu->translateVirtualAddress(VirtualMemoryAddress(pc)) + 5);
-    aBreakpoint = (cpu->readPhysicalAddress(PhysicalMemoryAddress(addr), 8));
-
-    if ((aBreakpoint & 0xFFFF0000LL) != 0xDEAD0000) {
-      DBG_(Iface, (<< "Breakpoint does not have a marker"));
-      return;
-    }
-    aBreakpoint &= 0x0FFL;
-#endif
-
     if (aBreakpoint == theMagicBreakpoint) {
       DBG_(Dev, AddCat(Termination)(<< "Simulation terminated because magic breakpont "
                                     << aBreakpoint << " reached."));
@@ -453,17 +408,11 @@ public:
       Flexus::Core::theFlexus->terminateSimulation();
     }
   }
-  // Does not go here
-  //  Qemu::API::QEMU_insert_callback(
-  //		    Qemu::API::QEMU_magic_instruction
-  //		  , (void*) this
-  //		  , &BreakpointTrackerMagicBreakpoint
-  //		  );
 
 public:
   TerminateOnMagicBreakTracker(int32_t aBreakpoint) : theMagicBreakpoint(aBreakpoint) {
-    Qemu::API::QEMU_insert_callback(QEMUFLEX_GENERIC_CALLBACK, Qemu::API::QEMU_magic_instruction,
-                                    (void *)this, (void *)&BreakpointTrackerMagicBreakpoint);
+//  Flexus::Qemu::API::qflex_sim_callbacks.magic_inst[Flexus::Qemu::API::MagicBreakpointTracker].obj = (void *)(this);
+//  Flexus::Qemu::API::qflex_sim_callbacks.magic_inst[Flexus::Qemu::API::MagicBreakpointTracker].fn  = (void *)(BreakpointTrackerMagicBreakpoint);
   }
 };
 
@@ -489,21 +438,8 @@ public:
   RegressionTrackerImpl()
       : system_width(ComponentManager::getComponentManager().systemWidth()),
         struct_id(system_width), theLastBreakpoint(0), theStopBreakpoint(1) {
-    for (int i = 0; i < system_width; i++) {     // init a callback for each cpu
-      int r = Qemu::API::QEMU_insert_callback(i, // cpu-idx
-                                              Qemu::API::QEMU_magic_instruction, (void *)this,
-                                              (void *)&RegressionTrackerMagicBreakpoint);
-      if (r == -1) {
-        DBG_Assert(
-            false,
-            (<< "Failed to register RegressionTrackerImpl structure with QEMU, cpu_id = " << i));
-      } else {
-        struct_id.at(i) = r; // will throw if out of range
-        DBG_(Dev,
-             (<< "Successfully registered RegressionTrackerMagicBreakpoint with QEMU, cpu_id = "
-              << i << ", struct id = " << r));
-      }
-    }
+//  Flexus::Qemu::API::qflex_sim_callbacks.magic_inst[Flexus::Qemu::API::MagicRegressionTracker].obj = (void *) this;
+//  Flexus::Qemu::API::qflex_sim_callbacks.magic_inst[Flexus::Qemu::API::MagicRegressionTracker].fn = (void *) &RegressionTrackerMagicBreakpoint;
   }
 
   void enable() {
@@ -516,12 +452,10 @@ class CycleTrackerImpl : public CycleTracker {
   uint64_t theStopCycle;
   uint64_t theCkptInterval;
   uint64_t theLastCkpt;
-  uint32_t theCkptNameStart;
 
 public:
   CycleTrackerImpl(uint64_t aStopCycle, uint64_t aCkptInterval, uint32_t aCkptNameStart)
-      : theStopCycle(aStopCycle), theCkptInterval(aCkptInterval), theLastCkpt(0),
-        theCkptNameStart(aCkptNameStart) {
+      : theStopCycle(aStopCycle), theCkptInterval(aCkptInterval), theLastCkpt(0) {
     //((FlexusImpl *)(Flexus::Core::theFlexus))->setStopCycle(aStopCycle);
   }
 
@@ -540,10 +474,6 @@ public:
     }
   }
 };
-
-#if FLEXUS_TARGET_IS(v9)
-static char simprint_buffer[1024];
-#endif
 
 struct xact_version1 {
   uint64_t struct_version;
@@ -572,26 +502,19 @@ struct web_version1 {
 using Flexus::SharedTypes::VirtualMemoryAddress;
 // Helperfunction to read Vadddresses
 char readVirtualAddress(Qemu::API::conf_object_t *cpu, VirtualMemoryAddress anAddr, int size) {
-  uint64_t addr = Qemu::API::QEMU_logical_to_physical(cpu, Qemu::API::QEMU_DI_Data, anAddr);
+  uint64_t addr = Qemu::API::qemu_api.get_pa(cpu, Qemu::API::QEMU_Curr_Load, anAddr);
   uint8_t *buf = new uint8_t[size];
-  Qemu::API::QEMU_read_phys_memory(buf, addr, size);
+  if (Qemu::API::qemu_api.get_mem(buf, addr, size))
+    return ~0;
   char ret = buf[0];
   delete[] buf;
   return ret;
 }
 
-// char readVAddr2(Qemu::API::conf_object_t *cpu, VirtualMemoryAddress anAddr,
-// int asi, int size){
-//    //TODO implement correctly, currently doesn't do anything with ASI which
-//    is wrong return (char)(Qemu::API::QEMU_read_phys_memory(
-//            Qemu::API::QEMU_logical_to_physical(cpu, Qemu::API::QEMU_DI_Data
-//            ,anAddr)
-//            ,size)[0]);
-//}
-
-// FIXME: make a proper x86 variant
 uint64_t readG(Qemu::API::conf_object_t *cpu, int reg) {
-  return Qemu::API::QEMU_read_register(cpu, Qemu::API::kGENERAL, reg);
+  // XXXX
+  return 0;
+//return Qemu::API::QEMU_read_register(cpu, Qemu::API::kGENERAL, reg);
 }
 
 class SimPrintHandlerImpl : public SimPrintHandler {
@@ -746,173 +669,6 @@ class SimPrintHandlerImpl : public SimPrintHandler {
 
 public:
   void OnMagicBreakpoint(Qemu::API::conf_object_t *aCpu, long long aBreakpoint) {
-#if FLEXUS_TARGET_IS(v9)
-    uint32_t cpu_no = Qemu::API::QEMU_get_cpu_index(aCpu);
-
-    switch (aBreakpoint) {
-    case 0x666: {
-      // Flexus::Qemu::v9ProcessorImpl cpu(aCpu);
-      // SimPrint int
-      uint64_t val = readG(aCpu, 1);
-      DBG_(Dev, AddCat(SimPrint)(<< "CPU[" << cpu_no << "] SimPrint: " << val << " (0x" << std::hex
-                                 << val << std::dec << ")"));
-      break;
-    }
-    case 0x667: {
-      // SimPrint str
-      // Flexus::Qemu::v9ProcessorImpl cpu(aCpu);
-      uint64_t vaddr = readG(aCpu, 1);
-      for (int32_t i = 0; i < 1024; ++i) {
-        simprint_buffer[i] =
-            readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + i), 0x80, 1);
-        if (simprint_buffer[i] == 0) {
-          break;
-        }
-      }
-      simprint_buffer[1023] = 0;
-      DBG_(Dev, AddCat(SimPrint)(<< "CPU[" << cpu_no << "] SimPrint: " << simprint_buffer));
-      break;
-    }
-    case 0x668: {
-      // SimPrint xact
-      // Flexus::Qemu::v9ProcessorImpl cpu(aCpu);
-      uint64_t vaddr = readG(aCpu, 1);
-      int64_t struct_version =
-          readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr), 0x80, 8);
-      if (struct_version != 1) {
-        DBG_(Dev, AddCat(SimPrint)(<< "CPU[" << cpu_no
-                                   << "] SimPrint Transaction encountered "
-                                      "marker with unknown struct_version: "
-                                   << struct_version));
-      } else {
-        xact_version1 xact_;
-        xact_.struct_version = struct_version;
-        xact_.pid = readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 8), 0x80, 8);
-        xact_.xact_num =
-            readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 16), 0x80, 8);
-        xact_.xact_type =
-            readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 24), 0x80, 8);
-        xact_.marker_type =
-            readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 32), 0x80, 8);
-        xact_.marker_num =
-            readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 40), 0x80, 8);
-        xact_.xact_struct_base_addr =
-            readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 48), 0x80, 8);
-        xact_.canary =
-            readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 56), 0x80, 8);
-
-        std::string canary("ok");
-        if (xact_.canary != 0xDEAD) {
-          std::stringstream canary_str;
-          canary_str << "invalid:" << std::hex << xact_.canary;
-          canary = canary_str.str();
-        }
-
-        char const *xact_type = xactType(xact_);
-        char const *marker_name = marker(xact_);
-
-        DBG_(Dev, AddCat(SimPrint)(<< "CPU[" << cpu_no << "] pid(" << xact_.pid << ") xact#("
-                                   << xact_.xact_num << ") type(" << xact_type << ") marker("
-                                   << marker_name << ") canary(" << canary << ")"));
-      }
-
-      break;
-    }
-    case 0x669: {
-      // SimPrint sci
-      // Flexus::Qemu::v9ProcessorImpl cpu(aCpu);
-      uint64_t td = readG(aCpu, 1);
-      VirtualMemoryAddress fn_addr = VirtualMemoryAddress(readG(aCpu, 2));
-      VirtualMemoryAddress file_addr = VirtualMemoryAddress(readG(aCpu, 3));
-      uint64_t line = readG(aCpu, 4);
-      uint64_t value = readG(aCpu, 5);
-      VirtualMemoryAddress pc = (VirtualMemoryAddress)Qemu::API::QEMU_get_program_counter(aCpu);
-      char fn[256];
-      char file[256];
-      readString(aCpu, fn_addr, fn, sizeof(fn));
-      readString(aCpu, file_addr, file, sizeof(file));
-
-      DBG_(Dev, AddCat(SimPrint)(<< "CPU[" << cpu_no << "] thread(" << td << ") pc(" << pc << ") "
-                                 << file << ":" << line << " - " << fn << " " << value));
-      break;
-    }
-    case 0x670: {
-      // SimPrint web
-      // Flexus::Qemu::v9ProcessorImpl cpu(aCpu);
-      uint64_t vaddr = readG(aCpu, 1);
-      int64_t struct_version =
-          readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr), 0x80, 8);
-      if (struct_version != 1) {
-        DBG_(Dev, AddCat(SimPrint)(<< "CPU[" << cpu_no
-                                   << "] SimPrint Web encountered marker with "
-                                      "unknown struct_version: "
-                                   << struct_version));
-      } else {
-        web_version1 web_;
-        web_.struct_version = struct_version;
-        web_.client =
-            readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 8), 0x80, 8);
-        web_.generator =
-            readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 16), 0x80, 8);
-        web_.marker_type =
-            readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 24), 0x80, 8);
-        web_.marker_num =
-            readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 32), 0x80, 8);
-        web_.curr_time =
-            readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 40), 0x80, 8);
-        web_.type_or_size =
-            readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 48), 0x80, 8);
-        web_.class_or_sleep =
-            readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 56), 0x80, 8);
-        web_.base_addr =
-            readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 64), 0x80, 8);
-        web_.canary =
-            readVAddr2(aCpu, Flexus::SharedTypes::VirtualMemoryAddress(vaddr + 72), 0x80, 8);
-
-        std::string canary("ok");
-        if (web_.canary != 0xDEAD) {
-          std::stringstream canary_str;
-          canary_str << "invalid:" << std::hex << web_.canary;
-          canary = canary_str.str();
-        }
-
-        switch (web_.marker_type) {
-        case 1:
-          DBG_(Dev,
-               AddCat(SimPrint)(<< "CPU[" << cpu_no << "] web begin cl(" << web_.client << ") gen("
-                                << web_.generator << ") #(" << web_.marker_num << ") tm("
-                                << web_.curr_time << ") typ(" << web_.type_or_size << ") cls("
-                                << web_.class_or_sleep << ") canary(" << canary << ")"));
-          break;
-        case 2:
-          DBG_(Dev, AddCat(SimPrint)(<< "CPU[" << cpu_no << "] web success cl(" << web_.client
-                                     << ") gen(" << web_.generator << ") #(" << web_.marker_num
-                                     << ") tm(" << web_.curr_time << ") sz(" << web_.type_or_size
-                                     << ") sleep(" << web_.class_or_sleep << ") canary(" << canary
-                                     << ")"));
-          break;
-        case 3:
-          DBG_(Dev, AddCat(SimPrint)(<< "CPU[" << cpu_no << "] web error cl(" << web_.client
-                                     << ") gen(" << web_.generator << ") #(" << web_.marker_num
-                                     << ") tm(" << web_.curr_time << ") canary(" << canary << ")"));
-          break;
-        default:
-          DBG_(Dev, AddCat(SimPrint)(<< "CPU[" << cpu_no << "] web unknown marker type cl("
-                                     << web_.client << ") gen(" << web_.generator << ") mark("
-                                     << web_.marker_type << ") #(" << web_.marker_num << ") tm("
-                                     << web_.curr_time << ") sz(" << web_.type_or_size << ") cls("
-                                     << web_.class_or_sleep << ") canary(" << canary << ")"));
-          break;
-        }
-      }
-
-      break;
-    }
-    default:
-      break;
-      // Not a SimPrint call
-    }
-#endif // FLEXUS_TARGET_IS(v9)
   }
 
   int64_t theLastBreakpoint;
@@ -920,17 +676,14 @@ public:
 
 public:
   SimPrintHandlerImpl() {
-    Qemu::API::QEMU_insert_callback(QEMUFLEX_GENERIC_CALLBACK, Qemu::API::QEMU_magic_instruction,
-                                    (void *)this, (void *)&SimPrintHandlerMagicBreakpoint);
+//  Flexus::Qemu::API::qflex_sim_callbacks.magic_inst[Flexus::Qemu::API::MagicSimPrintHandler].obj = (void *)(this);
+//  Flexus::Qemu::API::qflex_sim_callbacks.magic_inst[Flexus::Qemu::API::MagicSimPrintHandler].fn  = (void *)(SimPrintHandlerMagicBreakpoint);
   }
 };
 
 class PacketTrackerImpl : public BreakpointTracker {
 
   Qemu::API::conf_object_t *theNetwork;
-  char theClientMAC;
-  char theServerMAC;
-  int32_t thePort;
 
   Stat::StatCounter thePackets;
   Stat::StatCounter thePackets_ClientToServer;
@@ -947,86 +700,21 @@ public:
       return;
     }
     DBG_(Dev, (<< "Packet tracing is currently unsupported in QEMU."));
-#if 0
-    Simics::API::attr_value_t frame = Simics::API::SIM_get_attribute( theNetwork, "last_frame");
-    if (frame.kind == Simics::API::Sim_Val_Data) {
-      ++thePackets;
-      while (true) {
-        int32_t size = frame.u.data.size;
-        Qemu::API::uint8 * data = frame.u.data.data;
-        if (size < 24) {
-          //Can't be TCP/IP packet, too short
-          break;
-        }
-        bool server_to_client = false;
-        //We have at least enough for an IP header
-        //Check MAC addresses
-        for (int32_t i = 0; i <= 4; ++i) {
-          if (data[i] != 0x10) break;
-        }
-        for (int32_t i = 6; i <= 10; ++i) {
-          if (data[i] != 0x10) break;
-        }
-        //Figure out packet direction
-        if (data[5] == theClientMAC && data[11] == theServerMAC) {
-          ++thePackets_ServerToClient;
-          server_to_client = true;
-        } else if (data[5] == theServerMAC && data[11] == theClientMAC) {
-          ++thePackets_ClientToServer;
-        } else {
-          //Not client to server or server to client
-          break;
-        }
-        //Only analyze server->client packets further
-        if (!server_to_client) {
-          break;
-        }
-        int32_t ether_type = data[12] * 0x100 + data[13];
-        if (ether_type != 0x800) {
-          //Not IP
-          break;
-        }
-        int32_t ip_header_len = (data[14] & 0x0F) * 4;
-        int32_t ip_packet_len = (data[16] * 0x100) + data[17];
-        if (data[23] != 0x06) {
-          //Not TCP
-          break;
-        }
-        if (size < 26 + ip_header_len) {
-          //packet is somehow broken
-          break;
-        }
-        int32_t src_port = data[14+ip_header_len] * 0x100 + data[15+ip_header_len];
-        if (src_port != thePort) {
-          DBG_(Dev, ( << "Src Port: " << src_port ) );
-          //Packet is not from the web server
-          break;
-        }
-        int32_t tcp_header_len = (data[26+ip_header_len] & 0xf0) >> 2;
-        int32_t tcp_data_len = ip_packet_len - ip_header_len - tcp_header_len;
-        DBG_( Trace, ( << "TCP Packet len: " << tcp_data_len ) );
-        theServerTxData += tcp_data_len;
-
-        break;
-      }
-    }
-    Simics::API::SIM_free_attribute(frame);
-#endif
   }
 
 public:
   PacketTrackerImpl(int32_t aSrcPortNumber, char aServerMACCode, char aClientMACCode)
-      : theNetwork(0), theClientMAC(aClientMACCode), theServerMAC(aServerMACCode),
-        thePort(aSrcPortNumber), thePackets("sys-Packets"),
+      : theNetwork(0), thePackets("sys-Packets"),
         thePackets_ClientToServer("sys-Packets:C2S"), thePackets_ServerToClient("sys-Packets:S2C"),
         theServerTxData("sys-ServerTxData") {
-    theNetwork = Qemu::API::QEMU_get_ethernet();
+    // Not supported
+    theNetwork = NULL;
+    /*
     if (theNetwork != 0) {
-      // Qemu::API::QEMU_insert_callback(Qemu::API::QEMU_ethernet_frame,
-      // &this->OnPacket);
-      Qemu::API::QEMU_insert_callback(QEMUFLEX_GENERIC_CALLBACK, Qemu::API::QEMU_ethernet_frame,
-                                      (void *)this, (void *)&PacketTrackerEthernetFrame);
+      Flexus::Qemu::API::qflex_sim_callbacks.ethernet_frame.obj = (void *)(this);
+      Flexus::Qemu::API::qflex_sim_callbacks.ethernet_frame.fn  = (void *)(PacketTrackerEthernetFrame);
     }
+    */
   }
 };
 
@@ -1036,33 +724,14 @@ public:
     DBG_(Dev, (<< "Console termination string " << aString << " has appeared."));
     Flexus::Core::theFlexus->terminateSimulation();
   }
-  // does not belong probably
-  // Qemu::API::QEMU_insert_callback(
-  //	    Qemu::API::QEMU_xterm_break_string
-  //	  , static_cast<void*> this
-  //	  , &ConsoleStringTrackerXTermString
-  //	  );
 
 public:
   void addString(std::string const &aString) {
-#if 0
-    Simics::API::conf_object_t * con = Simics::API::SIM_get_object("con0");
-    if (con == 0) {
-      con = Simics::API::SIM_get_object("server_con0");
-    }
-    if (con) {
-      Simics::API::attr_value_t attr;
-
-      attr.kind = Simics::API::Sim_Val_String;
-      attr.u.string = aString.c_str();
-      Simics::API::SIM_set_attribute(con, "break_string", &attr);
-    }
-#endif
   }
 
   ConsoleStringTrackerImpl() {
-    Qemu::API::QEMU_insert_callback(QEMUFLEX_GENERIC_CALLBACK, Qemu::API::QEMU_xterm_break_string,
-                                    (void *)this, (void *)&ConsoleStringTrackerXTermString);
+//  Flexus::Qemu::API::qflex_sim_callbacks.xterm_break_string.obj = (void *)(this);
+//  Flexus::Qemu::API::qflex_sim_callbacks.xterm_break_string.fn  = (void *)(&ConsoleStringTrackerXTermString);
   }
 };
 
@@ -1103,7 +772,6 @@ void PacketTrackerEthernetFrame(void *obj, int32_t aNetworkID, int32_t aFrameTyp
 }
 
 // FIXME Possibly incorrect in some way, was commented
-//#if 0
 boost::intrusive_ptr<IterationTracker> BreakpointTracker::newIterationTracker() {
   return new IterationTrackerImpl();
 }
@@ -1138,5 +806,4 @@ boost::intrusive_ptr<ConsoleStringTracker> BreakpointTracker::newConsoleStringTr
   return new ConsoleStringTrackerImpl();
 }
 
-//#endif
 } // namespace nMagicBreak

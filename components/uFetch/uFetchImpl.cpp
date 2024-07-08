@@ -61,6 +61,8 @@
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 #include <components/CommonQEMU/Transports/MemoryTransport.hpp>
 
+#include <components/uArch/uArchInterfaces.hpp>
+
 #define FLEXUS_BEGIN_COMPONENT uFetch
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
 
@@ -71,26 +73,11 @@
 #include <components/CommonQEMU/seq_map.hpp>
 #include <core/qemu/mai_api.hpp>
 
-#define LOG2(x)                                                                                           \
-  ((x) == 1                                                                                               \
-       ? 0                                                                                                \
-       : ((x) == 2                                                                                        \
-              ? 1                                                                                         \
-              : ((x) == 4 ? 2                                                                             \
-                          : ((x) == 8 ? 3                                                                 \
-                                      : ((x) == 16                                                        \
-                                             ? 4                                                          \
-                                             : ((x) == 32                                                 \
-                                                    ? 5                                                   \
-                                                    : ((x) == 64 ? 6                                      \
-                                                                 : ((x) == 128                            \
-                                                                        ? 7                               \
-                                                                        : ((x) == 256                     \
-                                                                               ? 8                        \
-                                                                               : ((x) == 512              \
-                                                                                      ? 9                 \
-                                                                                      : ((x) == 1024 ? 10 \
-                                                                                                     : ((x) == 2048 ? 11 : ((x) == 4096 ? 12 : ((x) == 8192 ? 13 : ((x) == 16384 ? 14 : ((x) == 32768 ? 15 : ((x) == 65536 ? 16 : ((x) == 131072 ? 17 : ((x) == 262144 ? 18 : ((x) == 524288 ? 19 : ((x) == 1048576 ? 20 : ((x) == 2097152 ? 21 : ((x) == 4194304 ? 22 : ((x) == 8388608 ? 23 : ((x) == 16777216 ? 24 : ((x) == 33554432 ? 25 : ((x) == 67108864 ? 26 : -0xffff)))))))))))))))))))))))))))
+#define LOG2(x)                         \
+  ({                                    \
+    uint64_t _x = (x);                  \
+    _x ? (63 - __builtin_clzl(_x)) : 0; \
+  })
 
 #define TR_BIJ_DBG VVerb
 
@@ -234,7 +221,7 @@ class FLEXUS_COMPONENT(uFetch) {
   // MARK: Meta-map which pairs each FetchedOpcode with a TranslationPtr.
   //       MANDATORY because two FetchedOpcs can have same PC but indep. TranslationPtrs
   //       Also, any MMU transaction can complete out of order (in general)
-  typedef std::list<FetchedOpcode>::iterator opcodeQIterator;
+  typedef std::shared_ptr<FetchedOpcode> opcodeQIterator;
   typedef std::unordered_map<TranslationPtr, opcodeQIterator, // K/V
                              TranslationPtrHasher,            // Custom hash object
                              TranslationPtrEqualityCheck      // Custom equality comparison
@@ -299,7 +286,12 @@ class FLEXUS_COMPONENT(uFetch) {
   std::list<MemoryTransport> theSnoopQueue;
   std::list<MemoryTransport> theReplyQueue;
 
-  std::vector<CPUState> theCPUState;
+  bool lastInited = false;
+  bool lastRemain = false;
+  uint32_t lastOpcode;
+  uint64_t lastPC;
+  std::shared_ptr<FetchedOpcode> lastFetch;
+  std::shared_ptr<tFillLevel> lastFill;
 
 private:
   // I-Cache manipulation functions
@@ -368,7 +360,6 @@ public:
     theLastMiss.resize(cfg.Threads);
     theIcachePrefetch.resize(cfg.Threads);
     theLastPrefetchVTagSet.resize(cfg.Threads);
-    theCPUState.resize(cfg.Threads);
 
     theMissQueueSize = cfg.MissQueueSize;
   }
@@ -445,15 +436,7 @@ public:
     waitingForOpcodeQueue->clear();
     tr_op_bijection.clear();
     translationsExpected.clear();
-  }
-
-  // ChangeCPUState
-  FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(ChangeCPUState);
-  void push(interface::ChangeCPUState const &, index_t anIndex, CPUState &aState) {
-    DBG_(Iface, Comp(*this)(<< "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "."
-                            << anIndex << "] Change CPU State.  TL: " << aState.theTL
-                            << " PSTATE: " << std::hex << aState.thePSTATE << std::dec));
-    theCPUState[anIndex] = aState;
+    lastRemain = false;
   }
 
   // FetchMissIn
@@ -512,10 +495,10 @@ private:
           VirtualMemoryAddress(*theLastPrefetchVTagSet[anIndex] << theIndexShift);
       Flexus::SharedTypes::Translation xlat;
       xlat.theVaddr = vprefetch;
-      xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
       xlat.theType = Flexus::SharedTypes::Translation::eFetch;
-      xlat.thePaddr = cpu(anIndex)->translateVirtualAddress(xlat.theVaddr);
-      if (!xlat.thePaddr) {
+      xlat.thePaddr = cpu(anIndex)->translateVirtualAddress(xlat.theVaddr,
+          Flexus::Qemu::API::QEMU_Curr_Fetch);
+      if (xlat.thePaddr == nuArch::kUnresolved) {
         // Unable to translate for prefetch
         theLastPrefetchVTagSet[anIndex] = boost::none;
         return;
@@ -544,7 +527,7 @@ private:
     uint64_t tagset = vaddr >> theIndexShift;
     if (tagset == theLastVTagSet) {
       paddr = theLastPhysical;
-      if (paddr == 0) {
+      if (paddr == nuArch::kUnresolved) {
         DBG_(VVerb, (<< "Last Physical translation lookup failed!"));
         ++theFailedTranslations;
         return true; // Failed translations are treated as hits - they will
@@ -554,13 +537,11 @@ private:
       DBG_(VVerb, (<< "Not in Flexus cache...Will look into Qemu now!"));
       Flexus::SharedTypes::Translation xlat;
       xlat.theVaddr = vaddr;
-      //      xlat.theTL = theCPUState[anIndex].theTL;
-      xlat.thePSTATE = theCPUState[anIndex].thePSTATE;
       xlat.theType = Flexus::SharedTypes::Translation::eFetch;
-      xlat.thePaddr = cpu(anIndex)->translateVirtualAddress(xlat.theVaddr);
+      xlat.thePaddr = cpu(anIndex)->translateVirtualAddress(xlat.theVaddr,
+          Flexus::Qemu::API::QEMU_Curr_Fetch);
       paddr = xlat.thePaddr;
-      if (paddr == 0) {
-        assert(false);
+      if (paddr == nuArch::kUnresolved) {
         DBG_(VVerb, (<< "Translation failed!"));
         ++theFailedTranslations;
         return true; // Failed translations are treated as hits - they will
@@ -801,16 +782,6 @@ private:
     case MemoryMessage::BackInvalidate:
       // Same as invalidate
       aTransport[DestinationTag]->type = DestinationMessage::Directory;
-#if 0
-        // Only send an Ack if we actually have the block
-        // If we don't have the block, then our InvalAck will race with an earlier Evict msg
-        // let the Evict msg serve a dual purpose and skip the inval ack.
-        if (inval( reply->address())) {
-          queueSnoopMessage ( aTransport, MemoryMessage::InvalidateAck, reply->address() );
-        } else {
-          DBG_(Trace, Comp(*this) ( << "Received BackInvalidate for block not present in cache: " << *reply ));
-        }
-#endif
 
       // small protocol change - always send the InvalAck, whether we have the
       // block or not
@@ -935,14 +906,14 @@ private:
          */
         theFAQ[anIndex].pop_front();
         waitingForOpcodeQueue->theOpcodes.emplace_back(
-            FetchedOpcode(fetch_addr.theAddress,
-                          0, // op_code not resolved yet - waiting for translation
+            new FetchedOpcode(fetch_addr.theAddress,
+                          0xefffffff, // op_code not resolved yet - waiting for translation
                           fetch_addr.theBPState, theFetchReplyTransactionTracker[anIndex]));
-        waitingForOpcodeQueue->theFillLevels.emplace_back(eL1I);
+        waitingForOpcodeQueue->theFillLevels.emplace_back(new tFillLevel(eL1I));
         DBG_(TR_BIJ_DBG,
              Comp(*this)(<< "added entry in waiting for opcode queue" << fetch_addr.theAddress));
         sendTranslationReq(anIndex, fetch_addr.theAddress,
-                           std::prev(waitingForOpcodeQueue->theOpcodes.end()));
+                           *std::prev(waitingForOpcodeQueue->theOpcodes.end()));
 
         ++theFetches;
         --remaining_fetch;
@@ -957,28 +928,117 @@ private:
 
     if (waitingForOpcodeQueue->theOpcodes.size() == 0)
       return;
-    if (waitingForOpcodeQueue->theOpcodes.begin()->theOpcode == 0)
+    if ((*waitingForOpcodeQueue->theOpcodes.begin())->theOpcode == 0xefffffff)
       return;
 
     pFetchBundle bundle(new FetchBundle);
     bundle->coreID = theBundleCoreID;
 
     // Only pop fetched instructions up to the limit of decoder FIQ
-    uint32_t insns_added_to_fiq = 0;
-    while (waitingForOpcodeQueue->theOpcodes.size() > 0 && (insns_added_to_fiq < available_fiq)) {
+    while (waitingForOpcodeQueue->theOpcodes.size() > 0 && (bundle->theOpcodes.size() < available_fiq)) {
       auto i = waitingForOpcodeQueue->theOpcodes.begin();
+      auto iter = *i;
       auto fill_iter = waitingForOpcodeQueue->theFillLevels.begin();
-      if (i->theOpcode != 0) {
-        bundle->theOpcodes.emplace_back(std::move(*i));
-        bundle->theFillLevels.emplace_back(std::move(*fill_iter));
-        DBG_(TR_BIJ_DBG,
-             Comp(*this)(<< "popping entry out of the waitingForOpcodeQueue " << i->thePC));
-        waitingForOpcodeQueue->theOpcodes.erase(i);
-        waitingForOpcodeQueue->theFillLevels.erase(fill_iter);
-        insns_added_to_fiq++;
-      } else {
+
+      if (iter->theOpcode == 0xefffffff)
         break;
+
+      if (!lastInited || (iter->thePC == lastPC))
+        // normal case
+        lastInited = true;
+
+      else if (lastRemain && (iter->thePC == (lastPC + 2))) {
+        // we have a remaining halfword. first deal with it
+        auto compressed = (lastOpcode & 0x3) != 0x3;
+
+        if (compressed) {
+          // the remaining is a compressed instr
+          auto ins = std::make_shared<FetchedOpcode>(
+            iter->thePC,
+            iter->theOpcode,
+            iter->theBPState,
+            iter->theTransaction
+          );
+          ins->thePC = lastPC;
+          ins->theOpcode = lastOpcode;
+
+          lastRemain = false;
+          lastPC = iter->thePC;
+
+          bundle->theOpcodes.emplace_back(ins);
+          bundle->theFillLevels.emplace_back(*fill_iter);
+
+        } else {
+          // the remaining halfword and the lower part of the current instr
+          // forms the real instr
+          uint32_t op = lastOpcode;
+
+          lastRemain = !(iter->thePC & 0x2);
+          lastOpcode = iter->theOpcode >> 16;
+          lastPC = iter->thePC + 2;
+
+          iter->theOpcode = ((iter->theOpcode & 0xffff) << 16) | op;
+          iter->thePC = iter->thePC - 2;
+
+          bundle->theOpcodes.emplace_back(*i);
+          bundle->theFillLevels.emplace_back(*fill_iter);
+
+          waitingForOpcodeQueue->theOpcodes.erase(i);
+          waitingForOpcodeQueue->theFillLevels.erase(fill_iter);
+        }
+
+        lastFetch.reset();
+        lastFill.reset();
+        continue;
+
+      } else if (lastRemain) {
+        // a halfword remains, but pc jumps away
+        lastRemain = false;
+
+        // fortunately, the opcode *is* reliable and we don't need to
+        // handle cross-cacheline cases
+        if (lastFetch.get()) {
+          bundle->theOpcodes.emplace_back(lastFetch);
+          bundle->theFillLevels.emplace_back(lastFill);
+
+          lastFetch.reset();
+          lastFill.reset();
+          continue;
+        }
       }
+
+      // ok, deal with the current instr in the queue
+      auto compressed = (iter->theOpcode & 0x3) != 0x3;
+
+      if (compressed) {
+        // for an incomplete fetch, nothing remains
+        lastRemain = !(iter->thePC & 0x2);
+        lastOpcode = iter->theOpcode >> 16;
+        lastPC = iter->thePC + 2;
+
+      } else {
+        // the higher halfword is not reliable. leave the lower halfword
+        // to be merged later
+        lastRemain = iter->thePC & 0x2;
+        lastOpcode = iter->theOpcode & 0xffff;
+        lastPC = iter->thePC;
+
+        if (lastRemain) {
+          // used later
+          lastFetch = iter;
+          lastFill = *fill_iter;
+
+          waitingForOpcodeQueue->theOpcodes.erase(i);
+          waitingForOpcodeQueue->theFillLevels.erase(fill_iter);
+          continue;
+        }
+      }
+
+      bundle->theOpcodes.emplace_back(*i);
+      bundle->theFillLevels.emplace_back(*fill_iter);
+
+      waitingForOpcodeQueue->theOpcodes.erase(i);
+      waitingForOpcodeQueue->theFillLevels.erase(fill_iter);
     }
 
     if (bundle->theOpcodes.size() > 0) {
@@ -990,7 +1050,6 @@ private:
                           opcodeQIterator newOpcIterator) {
     TranslationPtr xlat(new Flexus::SharedTypes::Translation());
     xlat->theVaddr = anAddress;
-    xlat->thePSTATE = theCPUState[anIndex].thePSTATE;
     xlat->theType = Flexus::SharedTypes::Translation::eFetch;
     xlat->theException = 0; // just for now
     xlat->theIndex = anIndex;
@@ -1032,9 +1091,10 @@ private:
     DBG_(TR_BIJ_DBG, Comp(*this)(<< "Updating translation response for " << tr->theVaddr
                                  << " @ cpu index " << flexusIndex()));
     PhysicalMemoryAddress magicTranslation =
-        cpu(tr->theIndex)->translateVirtualAddress(tr->theVaddr);
+        cpu(tr->theIndex)->translateVirtualAddress(tr->theVaddr,
+            Flexus::Qemu::API::QEMU_Curr_Fetch);
 
-    if (tr->thePaddr == magicTranslation || tr->isPagefault()) {
+    if (tr->thePaddr == magicTranslation || magicTranslation == nuArch::kUnresolved) {
       DBG_(VVerb, Comp(*this)(<< "Magic QEMU translation == MMU Translation. Vaddr = " << std::hex
                               << tr->theVaddr << std::dec << ", Paddr = " << std::hex
                               << tr->thePaddr << std::dec));
@@ -1045,16 +1105,20 @@ private:
                                     << std::hex << tr->thePaddr << std::dec << ", PADDR_QEMU = "
                                     << std::hex << magicTranslation << std::dec));
     }
-    uint32_t opcode = 1;
+    uint32_t opcode = 0xffffffff;
     // MARK: Look up in the opc bijection and get the correct index
     BijectionMapType_t::iterator bijection_iter = tr_op_bijection.find(tr);
     DBG_AssertSev(Crit, bijection_iter != tr_op_bijection.end(),
                   Comp(*this)(<< "ERROR: Opcode index was NOT found for translationPtr with ID"
                               << tr->theID << " and address" << tr->theVaddr));
-    if (!tr->isPagefault()) {
+
+    // respect qemu result as flexus does not have pmp
+    // TODO: but this should only happen for access faults
+    if (!tr->isPagefault() && (magicTranslation == nuArch::kUnresolved))
+      tr->setPagefault();
+
+    if (!tr->isPagefault())
       opcode = cpu(tr->theIndex)->fetchInstruction(tr->theVaddr);
-      opcode += opcode ? 0 : 1;
-    }
     waitingForOpcodeQueue->updateOpcode(tr->theVaddr, bijection_iter->second, opcode);
     // Remove this mapping, opcode is updated
     tr_op_bijection.erase(bijection_iter);
@@ -1069,9 +1133,6 @@ FLEXUS_PORT_ARRAY_WIDTH(uFetch, FetchAddressIn) {
   return (cfg.Threads);
 }
 FLEXUS_PORT_ARRAY_WIDTH(uFetch, SquashIn) {
-  return (cfg.Threads);
-}
-FLEXUS_PORT_ARRAY_WIDTH(uFetch, ChangeCPUState) {
   return (cfg.Threads);
 }
 FLEXUS_PORT_ARRAY_WIDTH(uFetch, AvailableFAQOut) {

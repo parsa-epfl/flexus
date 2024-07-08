@@ -238,7 +238,6 @@ Debugger *Debugger::theDebugger((Debugger *)0);
 void Debugger::constructDebugger() {
   if (theDebugger == 0) {
     theDebugger = new Debugger();
-    theDebugger->initialize();
   }
 }
 

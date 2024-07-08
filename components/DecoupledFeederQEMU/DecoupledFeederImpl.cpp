@@ -74,6 +74,16 @@ struct MMUStats {
   Stat::StatCounter theMiss_stat;
   Stat::StatCounter theMemAccess_stat;
 
+  Stat::StatCounter ttwHitL1;
+  Stat::StatCounter ttwHitPeerL1;
+  Stat::StatCounter ttwHitL2;
+  Stat::StatCounter ttwHitMem;
+
+  Stat::StatCounter datHitL1;
+  Stat::StatCounter datHitPeerL1;
+  Stat::StatCounter datHitL2;
+  Stat::StatCounter datHitMem;
+
   int64_t theTotalReqs;
   int64_t theHit;
   int64_t theMiss;
@@ -81,7 +91,16 @@ struct MMUStats {
 
   MMUStats(std::string const &aName)
       : theTotalReqs_stat(aName + "TotalReqs"), theHit_stat(aName + "Hits"),
-        theMiss_stat(aName + "Misses"), theMemAccess_stat(aName + "MemAccesses"), theTotalReqs(0),
+        theMiss_stat(aName + "Misses"), theMemAccess_stat(aName + "MemAccesses"),
+        ttwHitL1(aName + "ttwHitL1"),
+        ttwHitPeerL1(aName + "ttwHitPeerL1"),
+        ttwHitL2(aName + "ttwHitL2"),
+        ttwHitMem(aName + "ttwHitMem"),
+        datHitL1(aName + "datHitL1"),
+        datHitPeerL1(aName + "datHitPeerL1"),
+        datHitL2(aName + "datHitL2"),
+        datHitMem(aName + "datHitMem"),
+        theTotalReqs(0),
         theHit(0), theMiss(0), theMemAccess(0) {
   }
 
@@ -97,6 +116,10 @@ struct MMUStats {
   }
 };
 
+class DecoupledFeederComponent;
+
+static DecoupledFeederComponent *theFeeder = NULL;
+
 class FLEXUS_COMPONENT(DecoupledFeeder) {
   FLEXUS_COMPONENT_IMPL(DecoupledFeeder);
 
@@ -104,8 +127,6 @@ class FLEXUS_COMPONENT(DecoupledFeeder) {
   int32_t theNumCPUs;
   int32_t theCMPWidth;
   QemuTracerManager *theTracer;
-  int64_t *theLastICounts;
-  Stat::StatCounter **theICounts;
   MMUStats **os_itlb_stats, **os_dtlb_stats, **user_itlb_stats, **user_dtlb_stats;
 
 public:
@@ -134,6 +155,7 @@ public:
     //    DecoupledFeederComponent::toL1D((int32_t) 0, msg);
 
     //  printf("toL1D %p\n", DecoupledFeederComponent::toL1D);
+    theFeeder = this;
   }
 
   // InstructionOutputPort
@@ -157,30 +179,21 @@ public:
       theTracer->setSystemTick(cfg.SystemTickFrequency);
     }
 
-    theLastICounts = new int64_t[theNumCPUs];
-    theICounts = new Stat::StatCounter *[theNumCPUs];
     os_itlb_stats = new MMUStats *[theNumCPUs];
     os_dtlb_stats = new MMUStats *[theNumCPUs];
     user_itlb_stats = new MMUStats *[theNumCPUs];
     user_dtlb_stats = new MMUStats *[theNumCPUs];
     for (int32_t i = 0; i < theNumCPUs; ++i) {
-      theICounts[i] =
-          new Stat::StatCounter(boost::padded_string_cast<2, '0'>(i) + "-feeder-ICount");
       os_itlb_stats[i] = new MMUStats(boost::padded_string_cast<2, '0'>(i) + "-itlb-OS:");
       os_dtlb_stats[i] = new MMUStats(boost::padded_string_cast<2, '0'>(i) + "-dtlb-OS:");
       user_itlb_stats[i] = new MMUStats(boost::padded_string_cast<2, '0'>(i) + "-itlb-User:");
       user_dtlb_stats[i] = new MMUStats(boost::padded_string_cast<2, '0'>(i) + "-dtlb-User:");
-      theLastICounts[i] = Qemu::API::QEMU_get_instruction_count(i, BOTH_INSTR);
     }
 
-    // TODO fix this with actual QEMU_insert_callback.
-    // thePeriodicHap = new periodic_hap_t(this, cfg.HousekeepingPeriod);
-    Qemu::API::QEMU_insert_callback(QEMUFLEX_GENERIC_CALLBACK, Qemu::API::QEMU_periodic_event,
-                                    (void *)this, (void *)&houseKeeping);
     theFlexus->advanceCycles(0);
     theCMPWidth = cfg.CMPWidth;
     if (theCMPWidth == 0) {
-      theCMPWidth = Qemu::API::QEMU_get_num_cores();
+      theCMPWidth = Qemu::API::qemu_api.get_num_cores();
     }
   }
 
@@ -192,6 +205,7 @@ public:
   void toL1D(int32_t anIndex, MemoryMessage &aMessage) {
     TranslationPtr tr(new Translation);
     tr->setData();
+    tr->theType = aMessage.type() == MemoryMessage::LoadReq ? Translation::eLoad : Translation::eStore;
     tr->theVaddr = aMessage.pc();
     tr->thePaddr = aMessage.address();
     tr->inTraceMode = true;
@@ -237,6 +251,7 @@ public:
   void modernToL1I(int32_t anIndex, MemoryMessage &aMessage) {
     TranslationPtr tr(new Translation);
     tr->setInstr();
+    tr->theType = Translation::eFetch;
     tr->theVaddr = aMessage.pc();
     tr->thePaddr = aMessage.address();
     tr->inTraceMode = true;
@@ -277,11 +292,6 @@ public:
   void updateInstructionCounts() {
     // Count instructions
     // FIXME Currently Does nothing since step_count ha not been implemented
-    for (int32_t i = 0; i < theNumCPUs; ++i) {
-      int64_t temp = Qemu::API::QEMU_get_instruction_count(i, BOTH_INSTR);
-      *(theICounts[i]) += temp - theLastICounts[i];
-      theLastICounts[i] = temp;
-    }
   }
   void updateMMUStats() {
     for (int32_t i = 0; i < theNumCPUs; ++i) {

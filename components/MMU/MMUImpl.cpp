@@ -46,31 +46,14 @@
 // Changelog:
 //  - June'18: msutherl - basic TLB definition, no real timing info
 
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/serialization/serialization.hpp>
-#include <boost/serialization/unordered_map.hpp>
-
-#include <components/MMU/MMU.hpp>
-
-#include <core/performance/profile.hpp>
-#include <core/qemu/configuration_api.hpp>
-
-#include "MMUUtil.hpp"
-#include "pageWalk.hpp"
-#include <components/CommonQEMU/Translation.hpp>
-
 #include <fstream>
-#include <functional>
-#include <iostream>
-#include <map>
-#include <queue>
-#include <sstream>
-#include <unordered_map>
-#include <vector>
+
+#include <core/component.hpp>
+
+#include "MMUImpl.hpp"
+#include "PageWalk.hpp"
+
+#define CSR_SATP 0x180
 
 #define DBG_DefineCategories MMU
 #define DBG_SetDefaultOps AddCat(MMU)
@@ -81,502 +64,601 @@
 #define FLEXUS_BEGIN_COMPONENT MMU
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
 
-namespace std {
-template <> struct hash<VirtualMemoryAddress> {
-  std::size_t operator()(const VirtualMemoryAddress &anAddress) const {
-    return ((hash<uint64_t>()(uint64_t(anAddress))));
-  }
-};
-} // namespace std
-
 namespace nMMU {
 
 using namespace Flexus;
 using namespace Core;
+using namespace Qemu;
 using namespace SharedTypes;
-uint64_t PAGEMASK;
 
-class FLEXUS_COMPONENT(MMU) {
-  FLEXUS_COMPONENT_IMPL(MMU);
+uint64_t mask(uint64_t i) {
+  return (1lu << i) - 1lu;
+}
 
-private:
-private:
-  struct TLBentry {
+void TlbEntry::set(uint64_t _vaddr,
+                   uint64_t _paddr,
+                   uint64_t _attr,
+                   uint64_t _asid) {
+  asid  = _asid;
+  attr  = _attr;
+  vaddr = _vaddr;
+  paddr = _paddr;
+}
 
-    friend class boost::serialization::access;
+bool TlbEntry::hit(uint64_t _base,
+                   uint64_t _asid) {
+  return ((vaddr == _base) &&
+         ((asid  == _asid) || (attr & 0x20)));
+}
 
-    template <class Archive> void serialize(Archive &ar, const unsigned int version) {
-      ar &theRate;
-      ar &theVaddr;
-      ar &thePaddr;
+bool TlbEntry::inv(uint64_t _addr,
+                   uint64_t _asid) {
+  return (!_addr || (vaddr == _addr)) &&
+         (!_asid || (asid  == _asid)  || (attr & 0x20));
+}
+
+void TlbEntry::load(boost::archive::text_iarchive &m) {
+  m >> asid;
+  m >> attr;
+  m >> vaddr;
+  m >> paddr;
+}
+
+void TlbEntry::save(boost::archive::text_oarchive &m) {
+  m << asid;
+  m << attr;
+  m << vaddr;
+  m << paddr;
+}
+
+PhysicalMemoryAddress TlbEntry::translate(const VirtualMemoryAddress &vaddr, API::trans_type_t trans) const {
+  if ((int64_t)(paddr) < 0)
+    return PhysicalMemoryAddress(API::qemu_api.get_pa(mmu->cpu, trans, vaddr));
+
+  return PhysicalMemoryAddress(paddr + (vaddr & mask(12)));
+}
+
+void Tlb::initialize(const std::string &name,
+                     MMUComponent *_mmu,
+                     size_t _tlbSets,
+                     size_t _tlbWays) {
+  mmu = _mmu;
+
+  tlbSets = _tlbSets;
+  tlbWays = _tlbWays;
+
+  for (size_t i = 0; i < tlbSets; i++) {
+    tlb.emplace_back();
+    tlbFreelist.emplace_back();
+
+    auto &fl = tlbFreelist.back();
+
+    for (size_t i = 0; i < tlbWays; i++)
+      fl.push_back(new TlbEntry(mmu));
+  }
+}
+
+void Tlb::load(boost::archive::text_iarchive &m, bool data) {
+  m >> tlbSets;
+  m >> tlbWays;
+
+  for (size_t i = 0; i < tlbSets; i++) {
+    size_t len;
+
+    m >> len;
+
+    for (size_t j = 0; j < len; j++) {
+      auto e = tlbFreelist[i].back();
+
+      e->load(m);
+
+      tlbFreelist[i].pop_back();
+      tlb[i].push_back(e);
     }
+  }
+}
 
-    TLBentry() {
-    }
+void Tlb::save(boost::archive::text_oarchive &m) {
+  m << tlbSets;
+  m << tlbWays;
 
-    TLBentry(VirtualMemoryAddress anAddress) : theRate(0), theVaddr(anAddress) {
-    }
-    uint64_t theRate;
-    VirtualMemoryAddress theVaddr;
-    PhysicalMemoryAddress thePaddr;
+  for (size_t i = 0; i < tlbSets; i++) {
+    size_t len = tlb[i].size();
 
-    bool operator==(const TLBentry &other) const {
-      return (theVaddr == other.theVaddr);
-    }
+    m << len;
 
-    TLBentry &operator=(const PhysicalMemoryAddress &other) {
-      PhysicalMemoryAddress otherAligned(other & PAGEMASK);
-      thePaddr = otherAligned;
-      return *this;
-    }
-  };
+    for (const auto &e: tlb[i])
+      e->save(m);
+  }
+}
 
-  struct TLB {
+void Tlb::resync() {
+  faulty = boost::none;
+}
 
-    friend class boost::serialization::access;
+LookupResult Tlb::lookup(TranslationPtr &tr) {
+  auto trans = (tr->theType == Translation::eLoad ) ? API::QEMU_Curr_Load  :
+               (tr->theType == Translation::eStore) ? API::QEMU_Curr_Store :
+                                                      API::QEMU_Curr_Fetch;
 
-    template <class Archive> void serialize(Archive &ar, const unsigned int version) {
-      ar &theTLB;
-      ar &theSize;
-    }
+  auto base = tr->theVaddr & ~mask(12);
+  auto idx  = tr->theSet % tlbSets;
 
-    std::pair<bool, PhysicalMemoryAddress> lookUp(const VirtualMemoryAddress &anAddress) {
-      VirtualMemoryAddress anAddressAligned(anAddress & PAGEMASK);
-      std::pair<bool, PhysicalMemoryAddress> ret{false, PhysicalMemoryAddress(0)};
-      for (auto iter = theTLB.begin(); iter != theTLB.end(); ++iter) {
-        iter->second.theRate++;
-        if (iter->second.theVaddr == anAddressAligned) {
-          iter->second.theRate = 0;
-          ret.first = true;
-          ret.second = iter->second.thePaddr;
-        }
+  for (auto i = tlb[idx].begin(); i != tlb[idx].end(); i++) {
+    auto e = *i;
+
+    if (e->hit(base, tr->theAsid)) {
+      LookupResult res(e->translate(tr->theVaddr, trans), e->attr);
+
+      if (i != tlb[idx].begin()) {
+        tlb[idx].erase(i);
+        tlb[idx].push_front(e);
       }
-      return ret;
+
+      return res;
     }
-
-    TLBentry &operator[](VirtualMemoryAddress anAddress) {
-      VirtualMemoryAddress anAddressAligned(anAddress & PAGEMASK);
-      auto iter = theTLB.find(anAddressAligned);
-      if (iter == theTLB.end()) {
-        size_t s = theTLB.size();
-        if (s == theSize) {
-          evict();
-        }
-        std::pair<tlbIterator, bool> result;
-        result = theTLB.insert({anAddressAligned, TLBentry(anAddressAligned)});
-        assert(result.second);
-        iter = result.first;
-      }
-      return iter->second;
-    }
-
-    void resize(size_t aSize) {
-      theTLB.reserve(aSize);
-      theSize = aSize;
-    }
-
-    size_t capacity() {
-      return theSize;
-    }
-
-    void clear() {
-      theTLB.clear();
-    }
-
-    size_t size() {
-      return theTLB.size();
-    }
-
-  private:
-    void evict() {
-      auto res = theTLB.begin();
-      for (auto iter = theTLB.begin(); iter != theTLB.end(); ++iter) {
-        if (iter->second.theRate > res->second.theRate) {
-          res = iter;
-        }
-      }
-      theTLB.erase(res);
-    }
-
-    size_t theSize;
-    std::unordered_map<VirtualMemoryAddress, TLBentry> theTLB;
-    typedef std::unordered_map<VirtualMemoryAddress, TLBentry>::iterator tlbIterator;
-  };
-
-  std::unique_ptr<PageWalk> thePageWalker;
-  TLB theInstrTLB;
-  TLB theDataTLB;
-
-  std::queue<boost::intrusive_ptr<Translation>> theLookUpEntries;
-  std::queue<boost::intrusive_ptr<Translation>> thePageWalkEntries;
-  std::set<VirtualMemoryAddress> alreadyPW;
-  std::vector<boost::intrusive_ptr<Translation>> standingEntries;
-
-  std::shared_ptr<Flexus::Qemu::Processor> theCPU;
-  std::shared_ptr<mmu_t> theMMU;
-
-  bool theMMUInitialized;
-
-public:
-  FLEXUS_COMPONENT_CONSTRUCTOR(MMU) : base(FLEXUS_PASS_CONSTRUCTOR_ARGS) {
   }
 
-  bool isQuiesced() const {
-    return false;
+  if (faulty && faulty->hit(tr->theVaddr & ~mask(12), tr->theAsid))
+    return LookupResult(faulty->translate(tr->theVaddr, trans), faulty->attr);
+
+  return LookupResult();
+}
+
+void Tlb::insert(TranslationPtr &tr) {
+  if (tr->isPagefault()) {
+    if (tr->inTraceMode)
+      return;
+
+    if (!faulty)
+      faulty = TlbEntry(mmu);
+
+    faulty->set(tr->theVaddr & ~mask(12),
+                tr->thePaddr & ~mask(12),
+                tr->theAttr,
+                tr->theAsid);
+
+    return;
   }
 
-  void saveState(std::string const &aDirName) {
-    std::ofstream iFile, dFile;
-    iFile.open(aDirName + "/" + statName() + "-itlb", std::ofstream::out | std::ofstream::app);
-    dFile.open(aDirName + "/" + statName() + "-dtlb", std::ofstream::out | std::ofstream::app);
+  TlbEntry *f;
 
-    boost::archive::text_oarchive ioarch(iFile);
-    boost::archive::text_oarchive doarch(dFile);
+  auto idx = tr->theSet % tlbSets;
 
-    ioarch << theInstrTLB;
-    doarch << theDataTLB;
+  if (tlbFreelist[idx].empty()) {
+    auto &sub = tlb[idx];
 
-    iFile.close();
-    dFile.close();
+    f = sub.back();
+
+    sub.erase(std::prev(sub.end()));
+    sub.push_front(f);
+
+  } else {
+    f = tlbFreelist[idx].back();
+
+    tlbFreelist[idx].pop_back();
+    tlb[idx].push_front(f);
   }
 
-  void loadState(std::string const &aDirName) {
-    std::ifstream iFile, dFile;
-    iFile.open(aDirName + "/" + statName() + "-itlb", std::ifstream::in);
-    dFile.open(aDirName + "/" + statName() + "-dtlb", std::ifstream::in);
+  f->set(tr->theVaddr & ~mask(12),
+         tr->thePaddr & ~mask(12),
+         tr->theAttr,
+         tr->theAsid);
+}
 
-    boost::archive::text_iarchive iiarch(iFile);
-    boost::archive::text_iarchive diarch(dFile);
+void Tlb::clear(uint64_t addr, uint64_t asid) {
+  for (size_t i = 0; i < tlbSets; i++) {
+    for (auto j = tlb[i].begin(); j != tlb[i].end(); ) {
+      auto e = *j;
 
-    uint64_t iSize = theInstrTLB.capacity();
-    uint64_t dSize = theDataTLB.capacity();
-    iiarch >> theInstrTLB;
-    diarch >> theDataTLB;
-    if (iSize != theInstrTLB.capacity()) {
-      theInstrTLB.clear();
-      theInstrTLB.resize(iSize);
-      DBG_(Dev, (<< "Changing iTLB capacity from " << theInstrTLB.capacity() << " to " << iSize));
+      if (e->inv(addr, asid)) {
+        j = tlb[i].erase(j);
+        tlbFreelist[i].push_back(e);
+
+      } else
+        j++;
     }
-    if (dSize != theDataTLB.capacity()) {
-      theDataTLB.clear();
-      theDataTLB.resize(dSize);
-      DBG_(Dev, (<< "Changing dTLB capacity from " << theInstrTLB.capacity() << " to " << iSize));
-    }
-    DBG_(Dev, (<< "Size - iTLB:" << theInstrTLB.capacity() << ", dTLB:" << theDataTLB.capacity()));
-
-    iFile.close();
-    dFile.close();
   }
 
-  // Initialization
-  void initialize() {
-    theCPU = std::make_shared<Flexus::Qemu::Processor>(
-        Flexus::Qemu::Processor::getProcessor((int)flexusIndex()));
-    thePageWalker.reset(new PageWalk(flexusIndex()));
-    thePageWalker->setMMU(theMMU);
-    theMMUInitialized = false;
-    theInstrTLB.resize(cfg.iTLBSize);
-    theDataTLB.resize(cfg.dTLBSize);
+  resync();
+}
+
+MMUComponent::FLEXUS_COMPONENT_CONSTRUCTOR(MMU) :
+    base(FLEXUS_PASS_CONSTRUCTOR_ARGS) {
+}
+
+std::vector<MMUComponent *> theMmu;
+
+void MMUComponent::initialize() {
+  cpu = (API::conf_object_t *)(Flexus::Qemu::Processor::getProcessor(flexusIndex()));
+
+  walker.reset(new PageWalk(this));
+
+  itlb.initialize("itlb", this, cfg.itlbsets, cfg.itlbways);
+  dtlb.initialize("dtlb", this, cfg.dtlbsets, cfg.dtlbways);
+
+  // can be out-of-order
+  while (theMmu.size() <= flexusIndex())
+    theMmu.push_back(NULL);
+
+  theMmu[flexusIndex()] = this;
+}
+
+bool MMUComponent::isQuiesced() const {
+  return false;
+}
+
+void MMUComponent::saveState(std::string const &aDirName) {
+  std::string itlb_fn(aDirName);
+  std::string dtlb_fn(aDirName);
+
+  itlb_fn.append("/").append(statName()).append("-itlb");
+  dtlb_fn.append("/").append(statName()).append("-dtlb");
+
+  std::ofstream itlb_fs(itlb_fn);
+  std::ofstream dtlb_fs(dtlb_fn);
+
+  if (!itlb_fs.good() || !dtlb_fs.good()) {
+    DBG_(Dev, (<< "Could not load MMU state from " << aDirName));
+    return;
   }
 
-  void finalize() {
+  boost::archive::text_oarchive itlb_os(itlb_fs);
+  boost::archive::text_oarchive dtlb_os(dtlb_fs);
+
+  itlb.save(itlb_os);
+  dtlb.save(dtlb_os);
+}
+
+void MMUComponent::loadState(std::string const &aDirName) {
+  std::string itlb_fn(aDirName);
+  std::string dtlb_fn(aDirName);
+
+  itlb_fn.append("/").append(statName()).append("-itlb");
+  dtlb_fn.append("/").append(statName()).append("-dtlb");
+
+  std::ifstream itlb_fs(itlb_fn);
+  std::ifstream dtlb_fs(dtlb_fn);
+
+  if (!itlb_fs.good() || !dtlb_fs.good()) {
+    DBG_(Dev, (<< "Could not load MMU state from " << aDirName));
+    return;
   }
 
-  // MMUDrive
-  //----------
-  void drive(interface::MMUDrive const &) {
-    DBG_(VVerb, Comp(*this)(<< "MMUDrive"));
-    busCycle();
-    thePageWalker->cycle();
-    processMemoryRequests();
+  boost::archive::text_iarchive itlb_is(itlb_fs);
+  boost::archive::text_iarchive dtlb_is(dtlb_fs);
+
+  itlb.load(itlb_is, false);
+  dtlb.load(dtlb_is, true);
+}
+
+void MMUComponent::finalize() {
+}
+
+void MMUComponent::drive(interface::MMUDrive const &) {
+  cycle();
+  walker->cycle();
+
+  while (walker->walkSize()) {
+    auto &tr = walker->walkFront();
+
+    DBG_(VVerb, (<< "walk: " << tr->theVaddr << std::hex
+                 << ":"      << tr->theAddr
+                 << ":"      << tr->theID));
+
+    FLEXUS_CHANNEL(MemoryRequestOut) << tr;
+
+    walker->popWalk();
   }
+}
 
-  void busCycle() {
+void MMUComponent::cycle() {
+  // requests coming at this cycle can see walks just done
+  while (walker->size()) {
+    auto &tr = walker->front();
 
-    while (!theLookUpEntries.empty()) {
+    if (tr->isAnnul()) {
+      DBG_(VVerb, (<< "walk "      << tr->theVaddr
+                   << ":"          << tr->theID
+                   << ": annulled"));
 
-      TranslationPtr item = theLookUpEntries.front();
-      theLookUpEntries.pop();
-      DBG_(VVerb, (<< "Processing lookup entry for " << item->theVaddr));
-      DBG_Assert(item->isInstr() != item->isData());
+      done(tr);
 
-      DBG_(VVerb, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry "
-                   << item->theVaddr));
+    } else if (tr->isDone()) {
+      DBG_(VVerb, (<< "walk "  << tr->theVaddr
+                   << ":"      << tr->theID
+                   << ": done"));
 
-      std::pair<bool, PhysicalMemoryAddress> entry =
-          (item->isInstr() ? theInstrTLB : theDataTLB)
-              .lookUp((VirtualMemoryAddress)(item->theVaddr));
-      if (cfg.PerfectTLB) {
-        PhysicalMemoryAddress perfectPaddr(Qemu::API::QEMU_logical_to_physical(
-            *Flexus::Qemu::Processor::getProcessor(flexusIndex()),
-            item->isInstr() ? Qemu::API::QEMU_DI_Instruction : Qemu::API::QEMU_DI_Data,
-            item->theVaddr));
-        entry.first = true;
-        entry.second = perfectPaddr;
-        if (perfectPaddr == 0xFFFFFFFFFFFFFFFF)
-          item->setPagefault();
-      }
-      if (entry.first) {
-        DBG_(VVerb, (<< "Item is a Hit " << item->theVaddr));
+      done(tr);
 
-        // item exists so mark hit
-        item->setHit();
-        item->thePaddr = (PhysicalMemoryAddress)(entry.second | (item->theVaddr & ~(PAGEMASK)));
+      if (tr->isInstr()) {
+        itlb.insert(tr);
 
-        if (item->isInstr())
-          FLEXUS_CHANNEL(iTranslationReply) << item;
-        else
-          FLEXUS_CHANNEL(dTranslationReply) << item;
+        FLEXUS_CHANNEL(iTranslationReply) << tr;
+
       } else {
-        DBG_(VVerb, (<< "Item is a miss " << item->theVaddr));
+        dtlb.insert(tr);
 
-        VirtualMemoryAddress pageAddr(item->theVaddr & PAGEMASK);
-        if (alreadyPW.find(pageAddr) == alreadyPW.end()) {
-          // mark miss
-          item->setMiss();
-          if (thePageWalker->push_back(item)) {
-            alreadyPW.insert(pageAddr);
-            thePageWalkEntries.push(item);
-          } else {
-            PhysicalMemoryAddress perfectPaddr(Qemu::API::QEMU_logical_to_physical(
-                *Flexus::Qemu::Processor::getProcessor(flexusIndex()),
-                item->isInstr() ? Qemu::API::QEMU_DI_Instruction : Qemu::API::QEMU_DI_Data,
-                item->theVaddr));
-            item->setHit();
-            item->thePaddr = perfectPaddr;
-            if (item->isInstr())
-              FLEXUS_CHANNEL(iTranslationReply) << item;
-            else
-              FLEXUS_CHANNEL(dTranslationReply) << item;
-          }
-        } else {
-          standingEntries.push_back(item);
-        }
+        FLEXUS_CHANNEL(dTranslationReply) << tr;
       }
-    }
 
-    while (!thePageWalkEntries.empty()) {
+    } else
+      break;
 
-      TranslationPtr item = thePageWalkEntries.front();
-      DBG_(VVerb, (<< "Processing PW entry for " << item->theVaddr));
-
-      if (item->isAnnul()) {
-        DBG_(VVerb, (<< "Item was annulled " << item->theVaddr));
-        thePageWalkEntries.pop();
-      } else if (item->isDone()) {
-        DBG_(VVerb, (<< "Item was Done translationg " << item->theVaddr));
-
-        CORE_DBG("MMU: Translation is Done " << item->theVaddr << " -- " << item->thePaddr);
-
-        thePageWalkEntries.pop();
-
-        VirtualMemoryAddress pageAddr(item->theVaddr & PAGEMASK);
-        if (alreadyPW.find(pageAddr) != alreadyPW.end()) {
-          alreadyPW.erase(pageAddr);
-          for (auto it = standingEntries.begin(); it != standingEntries.end();) {
-            if (((*it)->theVaddr & pageAddr) == pageAddr && item->isInstr() == (*it)->isInstr()) {
-              theLookUpEntries.push(*it);
-              standingEntries.erase(it);
-            } else {
-              ++it;
-            }
-          }
-        }
-        DBG_Assert(item->isInstr() != item->isData());
-        DBG_(Iface, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry "
-                     << item->theVaddr));
-        (item->isInstr() ? theInstrTLB : theDataTLB)[(VirtualMemoryAddress)(item->theVaddr)] =
-            (PhysicalMemoryAddress)(item->thePaddr);
-        if (item->isInstr())
-          FLEXUS_CHANNEL(iTranslationReply) << item;
-        else
-          FLEXUS_CHANNEL(dTranslationReply) << item;
-      } else {
-        break;
-      }
-    }
+    walker->pop();
   }
 
-  void processMemoryRequests() {
-    CORE_TRACE;
-    while (thePageWalker->hasMemoryRequest()) {
-      TranslationPtr tmp = thePageWalker->popMemoryRequest();
-      DBG_(VVerb,
-           (<< "Sending a Memory Translation request to Core ready(" << tmp->isReady() << ")  "
-            << tmp->theVaddr << " -- " << tmp->thePaddr << "  -- ID " << tmp->theID));
-      FLEXUS_CHANNEL(MemoryRequestOut) << tmp;
-    }
-  }
+  while (lookupEntries.size()) {
+    auto tr  = lookupEntries.front();
+    auto res = lookup(tr);
 
-  void resyncMMU(int anIndex) {
-    CORE_TRACE;
-    DBG_(VVerb, (<< "Resynchronizing MMU"));
+    if (res.hit) {
+      DBG_(VVerb, (<< "lookup " << tr->theVaddr
+                   << ":"       << tr->theID
+                   << std::hex
+                   << ": hit "  << res.addr));
 
-    static bool optimize = false;
-    theMMUInitialized = optimize;
+      tr->setHit();
 
-    if (!theMMUInitialized) {
-      theMMU.reset(new mmu_t());
-      theMMUInitialized = true;
-    }
-    theMMU->initRegsFromQEMUObject(getMMURegsFromQEMU(anIndex));
-    theMMU->setupAddressSpaceSizesAndGranules();
-    DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
-    DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
-    PAGEMASK = ~((1 << theMMU->Gran0->getlogKBSize()) - 1);
-    if (thePageWalker) {
-      DBG_(VVerb, (<< "Annulling all PW entries"));
-      thePageWalker->annulAll();
-    }
-    if (thePageWalkEntries.size() > 0) {
-      DBG_(VVerb, (<< "deleting PageWalk Entries"));
-      while (!thePageWalkEntries.empty()) {
-        DBG_(VVerb, (<< "deleting MMU PageWalk Entrie " << thePageWalkEntries.front()));
-        thePageWalkEntries.pop();
-      }
-    }
-    alreadyPW.clear();
-    standingEntries.clear();
+      tr->thePaddr = res.addr;
+      tr->theAttr  = res.attr;
 
-    if (theLookUpEntries.size() > 0) {
-      while (!theLookUpEntries.empty()) {
-        DBG_(VVerb, (<< "deleting MMU Lookup Entrie " << theLookUpEntries.front()));
-        theLookUpEntries.pop();
-      }
-    }
-    FLEXUS_CHANNEL(ResyncOut) << anIndex;
-  }
+      if (check(tr))
+        fault(tr, false);
 
-  // Msutherl: Fetch MMU's registers
-  std::shared_ptr<mmu_regs_t> getMMURegsFromQEMU(uint8_t anIndex) {
-    std::shared_ptr<mmu_regs_t> mmu_obj(new mmu_regs_t());
+      if (tr->isInstr())
+        FLEXUS_CHANNEL(iTranslationReply) << tr;
+      else
+        FLEXUS_CHANNEL(dTranslationReply) << tr;
 
-    mmu_obj->SCTLR[EL0] = Flexus::Qemu::Processor::getProcessor(anIndex)->readSCTLR(EL0);
-    mmu_obj->SCTLR[EL1] = Flexus::Qemu::Processor::getProcessor(anIndex)->readSCTLR(EL1);
-    mmu_obj->SCTLR[EL2] = Flexus::Qemu::Processor::getProcessor(anIndex)->readSCTLR(EL2);
-    mmu_obj->SCTLR[EL3] = Flexus::Qemu::Processor::getProcessor(anIndex)->readSCTLR(EL3);
-
-    mmu_obj->TCR[EL0] = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TCR, EL0);
-    mmu_obj->TCR[EL1] = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TCR, EL1);
-    mmu_obj->TCR[EL2] = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TCR, EL2);
-    mmu_obj->TCR[EL3] = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TCR, EL3);
-    // mmu_obj->TTBR1[EL0] = Qemu::API::QEMU_read_register(
-    //     *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TTBR1, EL0);
-    mmu_obj->TTBR0[EL1] = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TTBR0, EL1);
-    mmu_obj->TTBR1[EL1] = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TTBR1, EL1);
-    mmu_obj->TTBR0[EL2] = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TTBR0, EL2);
-    mmu_obj->TTBR1[EL2] = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TTBR1, EL2);
-    mmu_obj->TTBR0[EL3] = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TTBR0, EL3);
-    // mmu_obj->TTBR1[EL3] = Qemu::API::QEMU_read_register(
-    //     *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_TTBR1, EL3);
-
-    mmu_obj->ID_AA64MMFR0_EL1 = Qemu::API::QEMU_read_register(
-        *Flexus::Qemu::Processor::getProcessor(anIndex), Qemu::API::kMMU_ID_AA64MMFR0_EL1, 0);
-
-    return mmu_obj;
-  }
-
-  bool IsTranslationEnabledAtEL(uint8_t &anEL) {
-    return true; // theCore->IsTranslationEnabledAtEL(anEL);
-  }
-
-  bool available(interface::ResyncIn const &, index_t anIndex) {
-    return true;
-  }
-  void push(interface::ResyncIn const &, index_t anIndex, int &aResync) {
-    resyncMMU(aResync);
-  }
-
-  bool available(interface::iRequestIn const &, index_t anIndex) {
-    return true;
-  }
-  void push(interface::iRequestIn const &, index_t anIndex, TranslationPtr &aTranslate) {
-    CORE_DBG("MMU: Instruction RequestIn");
-
-    aTranslate->theIndex = anIndex;
-    aTranslate->toggleReady();
-    theLookUpEntries.push(aTranslate);
-  }
-
-  bool available(interface::dRequestIn const &, index_t anIndex) {
-    return true;
-  }
-  void push(interface::dRequestIn const &, index_t anIndex, TranslationPtr &aTranslate) {
-    CORE_DBG("MMU: Data RequestIn");
-
-    aTranslate->theIndex = anIndex;
-
-    aTranslate->toggleReady();
-    theLookUpEntries.push(aTranslate);
-  }
-
-  void sendTLBresponse(TranslationPtr aTranslation) {
-    if (aTranslation->isInstr()) {
-      FLEXUS_CHANNEL(iTranslationReply) << aTranslation;
     } else {
-      FLEXUS_CHANNEL(dTranslationReply) << aTranslation;
+      DBG_(VVerb, (<< "lookup " << tr->theVaddr
+                   << ":"       << tr->theID
+                   << ": miss"));
+
+      tr->theTime = Flexus::Core::theFlexus->cycleCount();
+
+      if (replayEntries.find(tr->theBase) == replayEntries.end())
+        walker->push(tr);
+
+      replayEntries[tr->theBase].emplace_back(tr);
+    }
+
+    lookupEntries.pop();
+  }
+}
+
+LookupResult MMUComponent::lookup(TranslationPtr &tr) {
+  auto pl = API::qemu_api.get_pl(cpu);
+
+  if (cfg.perfect) {
+    if (!tr->inTraceMode) {
+      auto trans = (tr->theType == Translation::eLoad ) ? API::QEMU_Curr_Load  :
+                   (tr->theType == Translation::eStore) ? API::QEMU_Curr_Store :
+                                                          API::QEMU_Curr_Fetch;
+
+      PhysicalMemoryAddress addr(API::qemu_api.get_pa(cpu, trans, tr->theVaddr));
+
+      if ((int64_t)(addr) < 0)
+        fault(tr);
+
+      // TODO
+      return LookupResult(addr, 0xf);
+    }
+
+    return LookupResult(0, 0);
+  }
+
+  if ((pl > 1) || (ppnMode == 0)) {
+    if (tr->theVaddr >= 0x40000000000lu)
+      fault(tr);
+
+    return LookupResult(tr->theVaddr, 0xf);
+  }
+
+  if (ppnMode != 8) {
+    fault(tr);
+    return LookupResult(0, 0);
+  }
+
+  walker->base(tr);
+
+  return (tr->isInstr() ? itlb : dtlb).lookup(tr);
+}
+
+bool MMUComponent::check(TranslationPtr &tr) {
+  if (tr->isDone())
+    return false;
+
+  switch (tr->theType) {
+  case Translation::eLoad:
+    if (!(tr->theAttr & 0x2))
+      return true;
+    break;
+  case Translation::eStore:
+    if (!(tr->theAttr & 0x4))
+      return true;
+    break;
+  case Translation::eFetch:
+    if (!(tr->theAttr & 0x8))
+      return true;
+    break;
+  }
+
+  return false;
+}
+
+bool MMUComponent::fault(TranslationPtr &tr, bool inv) {
+  DBG_(VVerb, (<< "fault " << tr->theVaddr
+               << ":"      << tr->theID));
+
+  if (inv) {
+    tr->thePaddr = ~0lu;
+    tr->theAttr  =  0;
+  }
+
+  if (tr->isDone())
+    return true;
+
+  tr->setPagefault();
+  tr->setDone();
+  return true;
+}
+
+void MMUComponent::clear(uint64_t addr, uint64_t asid) {
+  addr &= ~mask(12);
+
+  itlb.clear(addr, asid);
+  dtlb.clear(addr, asid);
+
+  if (walker)
+    walker->annul();
+
+  replayEntries.clear();
+
+  while (!lookupEntries.empty())
+    lookupEntries.pop();
+}
+
+void MMUComponent::parseSatp(uint64_t val) {
+  asid    = extractBitsWithBounds(val, 59, 44);
+  ppnMode = extractBitsWithBounds(val, 63, 60);
+  ppnRoot = extractBitsWithBounds(val, 43,  0) << 12;
+
+  DBG_(Iface, (<< "c" << flexusIndex() << " satp: " << std::hex << val));
+}
+
+void MMUComponent::parse(uint64_t mode) {
+  if (mode & 0x1)
+    parseSatp(API::qemu_api.get_csr(cpu, CSR_SATP));
+}
+
+void MMUComponent::done(TranslationPtr &tr) {
+  auto it = replayEntries.find(tr->theBase);
+
+  if (it->second.size() > 1) {
+    it->second.pop_front();
+
+    for (const auto &e: it->second) {
+      DBG_(VVerb, (<< "retry " << e->theVaddr
+                   << ":"      << e->theID));
+
+      lookupEntries.push(e);
     }
   }
 
-  bool available(interface::TLBReqIn const &, index_t anIndex) {
-    return true;
-  }
-  void push(interface::TLBReqIn const &, index_t anIndex, TranslationPtr &aTranslate) {
-    if (!cfg.PerfectTLB &&
-        (aTranslate->isInstr() ? theInstrTLB : theDataTLB).lookUp(aTranslate->theVaddr).first ==
-            false) {
-      if (!theMMUInitialized) {
-        theMMU.reset(new mmu_t());
-        theMMU->initRegsFromQEMUObject(getMMURegsFromQEMU((int)flexusIndex()));
-        theMMU->setupAddressSpaceSizesAndGranules();
-        DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
-        DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
-        PAGEMASK = ~((1 << theMMU->Gran0->getlogKBSize()) - 1);
-        thePageWalker->setMMU(theMMU);
-        theMMUInitialized = true;
-      }
-      thePageWalker->push_back_trace(aTranslate,
-                                     Flexus::Qemu::Processor::getProcessor((int)flexusIndex()));
-      (aTranslate->isInstr() ? theInstrTLB : theDataTLB)[aTranslate->theVaddr] =
-          aTranslate->thePaddr;
+  replayEntries.erase(it);
+}
+
+void MMUComponent::resync(int anIndex) {
+  DBG_(VVerb, (<< "resync"));
+
+  itlb.resync();
+  dtlb.resync();
+
+  if (walker)
+    walker->annul();
+
+  replayEntries.clear();
+
+  if (lookupEntries.size() > 0) {
+    while (!lookupEntries.empty()) {
+      auto tr = lookupEntries.front();
+
+      DBG_(VVerb, (<< "annul " << tr->theVaddr
+                   << ":"      << tr->theID));
+
+      lookupEntries.pop();
     }
   }
-};
+
+  FLEXUS_CHANNEL(ResyncOut) << anIndex;
+}
+
+bool MMUComponent::available(interface::ResyncIn const &, index_t anIndex) {
+  return true;
+}
+void MMUComponent::push(interface::ResyncIn const &, index_t anIndex, int &aResync) {
+  resync(aResync);
+}
+
+bool MMUComponent::available(interface::iRequestIn const &, index_t anIndex) {
+  return true;
+}
+void MMUComponent::push(interface::iRequestIn const &, index_t anIndex, TranslationPtr &tr) {
+  tr->theIndex = anIndex;
+  tr->toggleReady();
+
+  tr->theAsid = asid;
+
+  lookupEntries.push(tr);
+}
+
+bool MMUComponent::available(interface::dRequestIn const &, index_t anIndex) {
+  return true;
+}
+void MMUComponent::push(interface::dRequestIn const &, index_t anIndex, TranslationPtr &tr) {
+  tr->theIndex = anIndex;
+  tr->toggleReady();
+
+  tr->theAsid = asid;
+
+  lookupEntries.push(tr);
+}
+
+bool MMUComponent::available(interface::TLBReqIn const &, index_t anIndex) {
+  return true;
+}
+void MMUComponent::push(interface::TLBReqIn const &, index_t anIndex, TranslationPtr &tr) {
+  tr->theAsid = asid;
+
+  auto res = lookup(tr);
+
+  if (res.hit) {
+    DBG_(VVerb, (<< "lookup " << tr->theVaddr
+                 << ":"       << tr->theID
+                 << ": hit "  << tr->thePaddr));
+
+    return;
+  }
+
+  DBG_(VVerb, (<< "lookup " << tr->theVaddr
+               << ":"       << tr->theID
+               << ": miss"));
+
+  walker->pushTrace(tr);
+
+  if (tr->isInstr())
+    itlb.insert(tr);
+  else
+    dtlb.insert(tr);
+}
 
 } // End Namespace nMMU
 
 FLEXUS_COMPONENT_INSTANTIATOR(MMU, nMMU);
 FLEXUS_PORT_ARRAY_WIDTH(MMU, dRequestIn) {
-  return (cfg.Cores);
+  return (cfg.cores);
 }
 FLEXUS_PORT_ARRAY_WIDTH(MMU, iRequestIn) {
-  return (cfg.Cores);
+  return (cfg.cores);
 }
 FLEXUS_PORT_ARRAY_WIDTH(MMU, ResyncIn) {
-  return (cfg.Cores);
+  return (cfg.cores);
 }
 FLEXUS_PORT_ARRAY_WIDTH(MMU, iTranslationReply) {
-  return (cfg.Cores);
+  return (cfg.cores);
 }
 FLEXUS_PORT_ARRAY_WIDTH(MMU, dTranslationReply) {
-  return (cfg.Cores);
+  return (cfg.cores);
 }
 
 FLEXUS_PORT_ARRAY_WIDTH(MMU, MemoryRequestOut) {
-  return (cfg.Cores);
+  return (cfg.cores);
 }
 
 FLEXUS_PORT_ARRAY_WIDTH(MMU, TLBReqIn) {
-  return (cfg.Cores);
+  return (cfg.cores);
 }
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()
@@ -584,3 +666,16 @@ FLEXUS_PORT_ARRAY_WIDTH(MMU, TLBReqIn) {
 
 #define DBG_Reset
 #include DBG_Control()
+
+
+namespace Flexus {
+namespace Qemu {
+namespace API {
+
+void FLEXUS_parse_mmu(int idx, uint64_t mode) {
+  nMMU::theMmu[idx]->parse(mode);
+}
+
+}
+}
+}

@@ -101,15 +101,6 @@ public:
   }
 
   template <class Class> static void defineClass(Class &aClass) {
-
-#if 0
-    aClass.addCommand
-    ( & ConsoleBreakString_QemuObject_Impl::addString
-      , "add-break-string"
-      , "Add a string to the list of console strings that will halt simulation"
-      , "string"
-    );
-#endif
   }
 };
 
@@ -153,14 +144,6 @@ public:
   }
 
   template <class Class> static void defineClass(Class &aClass) {
-
-#if 0
-    aClass.addCommand
-    ( & RegressionTesting_QemuObject_Impl::enable
-      , "enable"
-      , "Enable regression testing"
-    );
-#endif
   }
 };
 
@@ -234,21 +217,6 @@ public:
   }
 
   template <class Class> static void defineClass(Class &aClass) {
-#if 0
-    aClass.addCommand
-    ( & IterationTracker_QemuObject_Impl::setIterationCount
-      , "set-iteration-count"
-      , "Set the iteration count for a cpu"
-      , "cpu"
-      , "count"
-    );
-
-    aClass.addCommand
-    ( & IterationTracker_QemuObject_Impl::printIterationCounts
-      , "print-counts"
-      , "Print out iteration counts"
-    );
-#endif
   }
 };
 

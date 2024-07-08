@@ -316,9 +316,9 @@ public:
       }
       while (!theController->BackSideOut_Reply.empty() &&
              FLEXUS_CHANNEL(BackSideOut_Reply).available()) {
-        MemoryTransport transport = theController->BackSideOut_Snoop.dequeue();
+        MemoryTransport transport = theController->BackSideOut_Reply.dequeue();
         transport[MemoryMessageTag]->coreIdx() = flexusIndex();
-        FLEXUS_CHANNEL(BackSideOut_Snoop) << transport;
+        FLEXUS_CHANNEL(BackSideOut_Reply) << transport;
       }
       return;
     }

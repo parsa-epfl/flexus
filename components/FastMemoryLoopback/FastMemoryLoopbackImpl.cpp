@@ -80,20 +80,20 @@ public:
   // Ports
   FLEXUS_PORT_ALWAYS_AVAILABLE(FromCache);
   void push(interface::FromCache const &, MemoryMessage &message) {
-
     DBG_(Iface, Addr(message.address())(<< "request received: " << message));
+
+    message.fillLevel() = eLocalMem;
+
     switch (message.type()) {
     case MemoryMessage::LoadReq:
     case MemoryMessage::FetchReq:
       message.type() = MemoryMessage::MissReply;
-      message.fillLevel() = eLocalMem;
       (theStats->theReadRequests_stat)++;
       break;
     case MemoryMessage::ReadReq:
     case MemoryMessage::PrefetchReadNoAllocReq:
     case MemoryMessage::PrefetchReadAllocReq:
       message.type() = MemoryMessage::MissReply;
-      message.fillLevel() = eLocalMem;
       (theStats->theReadRequests_stat)++;
       break;
     case MemoryMessage::StoreReq:
@@ -107,12 +107,10 @@ public:
     case MemoryMessage::UpgradeReq:
     case MemoryMessage::UpgradeAllocate:
       message.type() = MemoryMessage::MissReplyWritable;
-      message.fillLevel() = eLocalMem;
       (theStats->theUpgradeRequest_stat)++;
       break;
     case MemoryMessage::EvictDirty:
       (theStats->theEvictDirtys_stat)++;
-
       break;
     case MemoryMessage::EvictWritable:
       (theStats->theEvictWritables_stat)++;
@@ -123,7 +121,6 @@ public:
       break;
     case MemoryMessage::NonAllocatingStoreReq:
       message.type() = MemoryMessage::NonAllocatingStoreReply;
-      message.fillLevel() = eLocalMem;
       (theStats->theNonAllocatingStoreReq_stat)++;
       break;
     default:

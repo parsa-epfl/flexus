@@ -50,7 +50,7 @@
 
 namespace nFastCMPCache {
 
-#define MAX_NUM_SHARERS 512
+#define MAX_NUM_SHARERS 64
 
 class SharingVector {
 protected:
@@ -202,7 +202,7 @@ public:
 };
 
 inline std::ostream &operator<<(std::ostream &os, const SharingVector &sharers) {
-  os << sharers.getSharers();
+  os << sharers.getSharers().to_ulong();
   return os;
 }
 

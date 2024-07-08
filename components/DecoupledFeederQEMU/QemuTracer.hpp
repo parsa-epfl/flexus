@@ -56,10 +56,9 @@ struct QemuTracerManager {
                                       std::function<void(int, MemoryMessage &)> toL1D,
                                       std::function<void(int, MemoryMessage &, uint32_t)> toL1I,
                                       std::function<void(MemoryMessage &)> toDMA,
-                                      std::function<void(int, MemoryMessage &)> toNAW
+                                      std::function<void(int, MemoryMessage &)> toNAW,
                                       //				 , bool aWhiteBoxDebug
                                       //				 , int32_t aWhiteBoxPeriod
-                                      ,
                                       bool aSendNonAllocatingStores);
   virtual ~QemuTracerManager() {
   }

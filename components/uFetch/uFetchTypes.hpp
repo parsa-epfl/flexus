@@ -71,7 +71,8 @@ enum eBranchType {
   kIndirectReg,
   kIndirectCall,
   kReturn,
-  kLastBranchType
+  kLastBranchType,
+  kBarrier
 };
 std::ostream &operator<<(std::ostream &anOstream, eBranchType aType);
 
@@ -119,10 +120,6 @@ typedef uint32_t Opcode;
 
 struct FetchedOpcode {
   VirtualMemoryAddress thePC;
-//  uint32_t theConvertedInstruction;
-#if FLEXUS_TARGET_IS(v9)
-  VirtualMemoryAddress theNextPC;
-#endif
   Opcode theOpcode;
   boost::intrusive_ptr<BPredState> theBPState;
   boost::intrusive_ptr<TransactionTracker> theTransaction;
@@ -132,23 +129,17 @@ struct FetchedOpcode {
   FetchedOpcode(VirtualMemoryAddress anAddr, Opcode anOpcode,
                 boost::intrusive_ptr<BPredState> aBPState,
                 boost::intrusive_ptr<TransactionTracker> aTransaction)
-      : thePC(anAddr)
-//    ,theConvertedInstruction(aConvertedInstruction)
-#if FLEXUS_TARGET_IS(v9)
-        ,
-        theNextPC(aNextAddr)
-#endif
-        ,
+      : thePC(anAddr),
         theOpcode(anOpcode), theBPState(aBPState), theTransaction(aTransaction) {
   }
 };
 
 struct FetchBundle : public boost::counted_base {
-  std::list<FetchedOpcode> theOpcodes;
-  std::list<tFillLevel> theFillLevels;
+  std::list<std::shared_ptr<FetchedOpcode>> theOpcodes;
+  std::list<std::shared_ptr<tFillLevel>> theFillLevels;  // Level in memory hierarchy from where the instruction was fetched
   int32_t coreID;
 
-  void updateOpcode(VirtualMemoryAddress anAddress, std::list<FetchedOpcode>::iterator it,
+  void updateOpcode(VirtualMemoryAddress anAddress, std::shared_ptr<FetchedOpcode> it,
                     Opcode anOpcode) {
     DBG_AssertSev(Crit, it->thePC == anAddress,
                   (<< "ERROR: FetchedOpcode iterator did not match!! Iterator PC " << it->thePC
@@ -163,11 +154,6 @@ struct FetchBundle : public boost::counted_base {
 };
 
 typedef boost::intrusive_ptr<FetchBundle> pFetchBundle;
-
-struct CPUState {
-  int32_t theTL;
-  int32_t thePSTATE;
-};
 
 } // end namespace SharedTypes
 } // end namespace Flexus

@@ -59,6 +59,9 @@
 #include <core/boost_extensions/phoenix.hpp>
 
 namespace Flexus {
+
+extern std::string oldcwd;
+
 namespace Dbg {
 
 namespace aux_ {
@@ -520,7 +523,7 @@ Parser &Parser::parser() {
 }
 
 void Debugger::initialize() {
-  Parser::parser().parseFile("debug.cfg");
+  Parser::parser().parseFile(Flexus::oldcwd + "/debug.cfg");
 }
 
 void Debugger::addFile(std::string const &aFile) {

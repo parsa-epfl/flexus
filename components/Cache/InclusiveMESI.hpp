@@ -146,12 +146,6 @@ protected:
   virtual std::tuple<bool, bool, Action>
   doRequest(MemoryTransport transport, bool has_maf_entry,
             TransactionTracker_p aWakingTracker = TransactionTracker_p());
-#if 0
-  virtual std::tuple<bool, bool, Action> doRequest ( MemoryMessage_p        msg,
-      TransactionTracker_p   tracker,
-      bool                   has_maf_entry,
-      TransactionTracker_p aWakingTracker =  TransactionTracker_p() );
-#endif
 
   virtual Action handleBackMessage(MemoryTransport transport);
 

@@ -76,7 +76,6 @@ COMPONENT_PARAMETERS(
   PARAMETER( SeparateID, bool, "Track Instruction and Data caches separately", "seperate_id", false)
 
   PARAMETER( CoherenceUnit, uint64_t, "Coherence Unit", "coherence_unit", 64)
-
 );
 
 COMPONENT_INTERFACE(

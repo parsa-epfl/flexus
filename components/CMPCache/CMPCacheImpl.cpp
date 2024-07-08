@@ -95,6 +95,9 @@ public:
   void initialize() {
     DBG_(Dev, (<< "GroupInterleaving = " << cfg.GroupInterleaving));
 
+    if (cfg.Cores == 0)
+      cfg.Cores = Flexus::Core::ComponentManager::getComponentManager().systemWidth() * 2;
+
     CMPCacheInfo theInfo((int)flexusIndex(), statName(), cfg.Policy, cfg.DirectoryType,
                          cfg.DirectoryConfig, cfg.ArrayConfiguration, cfg.Cores, cfg.BlockSize,
                          cfg.Banks, cfg.BankInterleaving, cfg.Groups, cfg.GroupInterleaving,

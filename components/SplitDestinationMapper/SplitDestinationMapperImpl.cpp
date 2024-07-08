@@ -47,6 +47,7 @@
 
 #include <core/stats.hpp>
 #include <core/types.hpp>
+#include <core/component.hpp>
 
 #include <core/qemu/mai_api.hpp>
 
@@ -124,8 +125,16 @@ public:
 
   void initialize(void) {
     theTotalNumCores =
-        (cfg.Cores ? cfg.Cores
-                   : Flexus::Core::ComponentManager::getComponentManager().systemWidth());
+        Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+
+    if (cfg.Cores == 0)
+      cfg.Cores = theTotalNumCores;
+
+    if (cfg.Directories == 0)
+      cfg.Directories = theTotalNumCores;
+
+    if (cfg.Banks == 0)
+      cfg.Banks = theTotalNumCores;
 
     DBG_Assert((cfg.MemControllers & (cfg.MemControllers - 1)) == 0);
     DBG_Assert((cfg.Directories & (cfg.Directories - 1)) == 0);
@@ -202,6 +211,9 @@ public:
         theDirReverseMap[i] = i;
       }
     }
+
+    // it should be fine for now
+    DBG_Assert(theDirLoc == eDistributed);
 
     the2PhaseWB = cfg.TwoPhaseWB;
   }

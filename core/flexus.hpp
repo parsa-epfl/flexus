@@ -42,10 +42,13 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
-#include <functional>
-
 #ifndef FLEXUS_CORE_FLEXUS_HPP__INCLUDED
 #define FLEXUS_CORE_FLEXUS_HPP__INCLUDED
+
+#include <stdint.h>
+
+#include <string>
+#include <functional>
 
 namespace Flexus {
 namespace Core {
@@ -65,11 +68,14 @@ public:
   virtual void invokeDrives() = 0;
 
   // Simulator state inquiry
+  virtual bool isTiming() const = 0;
   virtual bool isFastMode() const = 0;
   virtual bool isQuiesced() const = 0;
   virtual bool quiescing() const = 0;
   virtual uint64_t cycleCount() const = 0;
   virtual bool initialized() const = 0;
+
+  virtual void setCycle(uint64_t cycle) = 0;
 
   // Watchdog Functions
   virtual void watchdogCheck() = 0;
@@ -87,6 +93,7 @@ public:
   virtual void quiesceAndSave() = 0;
 
   virtual void setDebug(std::string const &aDebugSeverity) = 0;
+  virtual void setDebugOverride() = 0;
 
   virtual void setStatInterval(std::string const &aValue) = 0;
   virtual void setProfileInterval(std::string const &aValue) = 0;
@@ -103,6 +110,7 @@ public:
   virtual void printConfiguration() = 0;
   virtual void writeConfiguration(std::string const &aFilename) = 0;
   virtual void parseConfiguration(std::string const &aFilename) = 0;
+  virtual void parseConfigurationOverride() = 0;
   virtual void setConfiguration(std::string const &aName, std::string const &aValue) = 0;
   virtual void printMeasurement(std::string const &aMeasurement) = 0;
   virtual void listMeasurements() = 0;
@@ -134,6 +142,10 @@ public:
 };
 
 extern FlexusInterface *theFlexus;
+
+void flexus_start();
+void flexus_stop();
+void flexus_qmp(int cmd, const char *arg);
 
 } // End Namespace Core
 } // namespace Flexus

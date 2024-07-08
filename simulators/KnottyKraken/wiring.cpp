@@ -63,8 +63,8 @@ std::string theSimulatorName = "KnottyKraken v1.0";
 #include <components/MultiNic/MultiNic2.hpp>
 #include <components/NetShim/MemoryNetwork.hpp>
 #include <components/SplitDestinationMapper/SplitDestinationMapper.hpp>
-#include <components/armDecoder/armDecoder.hpp>
-#include <components/uArchARM/uArchARM.hpp>
+#include <components/Decoder/Decoder.hpp>
+#include <components/uArch/uArch.hpp>
 #include <components/uFetch/PortCombiner.hpp>
 #include <components/uFetch/uFetch.hpp>
 
@@ -76,8 +76,8 @@ CREATE_CONFIGURATION(MMU, "mmu", theMMUCfg);
 CREATE_CONFIGURATION(FetchAddressGenerate, "fag", theFAGCfg);
 CREATE_CONFIGURATION(uFetch, "ufetch", theuFetchCfg);
 CREATE_CONFIGURATION(PortCombiner, "combiner", theCombinerCfg);
-CREATE_CONFIGURATION(armDecoder, "decoder", theDecoderCfg);
-CREATE_CONFIGURATION(uArchARM, "uarcharm", theuArchCfg);
+CREATE_CONFIGURATION(Decoder, "decoder", theDecoderCfg);
+CREATE_CONFIGURATION(uArch, "uarch", theuArchCfg);
 
 CREATE_CONFIGURATION(Cache, "L1d", theL1dCfg);
 CREATE_CONFIGURATION(CMPCache, "L2", theL2Cfg);
@@ -285,14 +285,16 @@ bool initializeParameters() {
   theMagicBreakCfg.TerminateOnMagicBreak.initialize(-1);
   theMagicBreakCfg.EnableIterationCounts.initialize(false);
 
-  theMMUCfg.Cores.initialize(1);
-  theMMUCfg.iTLBSize.initialize(64);
-  theMMUCfg.dTLBSize.initialize(64);
-  theMMUCfg.PerfectTLB.initialize(true);
+  theMMUCfg.cores.initialize(1);
+  theMMUCfg.itlbsets.initialize(1);
+  theMMUCfg.itlbways.initialize(64);
+  theMMUCfg.dtlbsets.initialize(1);
+  theMMUCfg.dtlbways.initialize(64);
+  theMMUCfg.perfect.initialize(false);
 
-  theFlexus->setStatInterval("100000");
+  theFlexus->setStatInterval("100000000");
   theFlexus->setProfileInterval("10000000");
-  theFlexus->setTimestampInterval("50000");
+  theFlexus->setTimestampInterval("1000000");
 
   return true; // true = Abort simulation if parameters are not initialized
 }
@@ -307,12 +309,12 @@ bool initializeParameters() {
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( FetchAddressGenerate, theFAGCfg, theFAG, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( uFetch, theuFetchCfg, theuFetch, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( PortCombiner, theCombinerCfg, theuFetchCombiner, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
-FLEXUS_INSTANTIATE_COMPONENT_ARRAY( armDecoder, theDecoderCfg, theDecoder, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
-FLEXUS_INSTANTIATE_COMPONENT_ARRAY( uArchARM, theuArchCfg, theuArch, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
+FLEXUS_INSTANTIATE_COMPONENT_ARRAY( Decoder, theDecoderCfg, theDecoder, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
+FLEXUS_INSTANTIATE_COMPONENT_ARRAY( uArch, theuArchCfg, theuArch, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( Cache, theL1dCfg, theL1d, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MMU , theMMUCfg, theMMU, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( CMPCache, theL2Cfg, theL2, SCALE_WITH_SYSTEM_WIDTH, DIVIDE, 1 );
-FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MemoryLoopback, theMemoryCfg, theMemory, SCALE_WITH_SYSTEM_WIDTH, DIVIDE, 1 );
+FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MemoryLoopback, theMemoryCfg, theMemory, FIXED, DIVIDE, 1 );
 // The above parameter dictates the number of memory controllers in the system.
 // It should always match the postload, and should be set to 1 for single core setup.
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MultiNic2, theNicCfg, theNic, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 3 );
@@ -336,7 +338,6 @@ WIRE( theFAG, uArchHalted,              theuArch, CoreHalted              )
 WIRE( theuFetch, AvailableFIQ,          theDecoder, AvailableFIQOut       )
 WIRE( theuFetch, FetchBundleOut,        theDecoder, FetchBundleIn         )
 WIRE( theDecoder, SquashOut,            theuFetch, SquashIn               )
-WIRE( theuArch, ChangeCPUState,         theuFetch, ChangeCPUState         )
 
 // Fetch to MMU
 WIRE( theuFetch, iTranslationOut,       theMMU, iRequestIn                )
@@ -346,8 +347,8 @@ WIRE( theMMU, iTranslationReply,        theuFetch, iTranslationIn         )
 WIRE( theuArch, dTranslationOut,        theMMU, dRequestIn                )
 WIRE( theMMU, dTranslationReply,        theuArch, dTranslationIn          )
 WIRE( theMMU, MemoryRequestOut,         theuArch, MemoryRequestIn         )
-WIRE(theuArch, ResyncOut,               theMMU,   ResyncIn                )
-WIRE(theMMU, ResyncOut,                 theuFetch,   ResyncIn             )
+WIRE( theuArch, ResyncOut,              theMMU,   ResyncIn                )
+WIRE( theMMU, ResyncOut,                theuFetch,   ResyncIn             )
 
 //Decoder to uArch
 WIRE( theDecoder, AvailableDispatchIn,  theuArch, AvailableDispatchOut    )
@@ -374,9 +375,9 @@ WIRE( theNetMapper, ICacheReplyOut,     theuFetchCombiner, ReplyIn        )
 WIRE( theuFetchCombiner, FetchMissOut,  theuFetch, FetchMissIn            )
 
 //L1d to NetMapper
-WIRE( theL1d, BackSideOut_Request,       theNetMapper, CacheRequestIn     )
-WIRE( theL1d, BackSideOut_Snoop,         theNetMapper, CacheSnoopIn       )
-WIRE( theL1d, BackSideOut_Reply,         theNetMapper, CacheReplyIn       )
+WIRE( theL1d, BackSideOut_Request,      theNetMapper, CacheRequestIn      )
+WIRE( theL1d, BackSideOut_Snoop,        theNetMapper, CacheSnoopIn        )
+WIRE( theL1d, BackSideOut_Reply,        theNetMapper, CacheReplyIn        )
 WIRE( theNetMapper, CacheSnoopOut,      theL1d, BackSideIn_Request        )
 WIRE( theNetMapper, CacheReplyOut,      theL1d, BackSideIn_Reply          )
 

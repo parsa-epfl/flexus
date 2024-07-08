@@ -65,7 +65,7 @@ eSize dbSize(uint32_t aSize) {
     return kQuadWord;
   default:
     assert(false);
-    break;
+    return kIllegalSize;
   }
 }
 
@@ -99,11 +99,8 @@ std::ostream &operator<<(std::ostream &anOstream, eSize op) {
 std::ostream &operator<<(std::ostream &anOstream, eOperation op) {
   const char *map_tables[] = {"PageWalkRequest",
                               "Load",
-                              "Load Pair",
                               "AtomicPreload",
                               "RMW",
-                              "CAS",
-                              "CAS Pair",
                               "StorePrefetch",
                               "Store",
                               "Invalidate",
@@ -115,7 +112,6 @@ std::ostream &operator<<(std::ostream &anOstream, eOperation op) {
                               "StoreReply",
                               "StorePrefetchReply",
                               "RMWReply",
-                              "CASReply",
                               "DowngradeAck",
                               "InvAck",
                               "ProbeAck",

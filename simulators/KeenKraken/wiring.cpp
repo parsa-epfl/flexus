@@ -143,9 +143,12 @@ bool initializeParameters() {
   theMagicBreakCfg.TerminateOnMagicBreak.initialize(-1);
   theMagicBreakCfg.EnableIterationCounts.initialize(false);
 
-  theMMUCfg.Cores.initialize(1);
-  theMMUCfg.iTLBSize.initialize(64);
-  theMMUCfg.dTLBSize.initialize(64);
+  theMMUCfg.cores.initialize(1);
+  theMMUCfg.itlbsets.initialize(64);
+  theMMUCfg.itlbways.initialize(64);
+  theMMUCfg.dtlbsets.initialize(64);
+  theMMUCfg.dtlbways.initialize(64);
+  theMMUCfg.perfect.initialize(false);
 
   theFlexus->setStatInterval("10000000");     // 10M
   theFlexus->setProfileInterval("10000000");  // 10M

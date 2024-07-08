@@ -46,37 +46,36 @@
 // Changelog:
 //  - June'18: msutherl - basic TLB definition, no real timing info
 
-#include <components/CommonQEMU/Slices/TransactionTracker.hpp>
-#include <components/CommonQEMU/Translation.hpp>
-#include <core/qemu/mai_api.hpp>
 #include <core/simulator_layout.hpp>
+
+#include <components/CommonQEMU/Translation.hpp>
 
 // clang-format off
 #define FLEXUS_BEGIN_COMPONENT MMU
 #include FLEXUS_BEGIN_COMPONENT_DECLARATION()
 
-
-
 COMPONENT_PARAMETERS(
-    PARAMETER( Cores, int, "Number of cores", "cores", 1 )
-    PARAMETER( iTLBSize, size_t, "Size of the Instruction TLB", "itlbsize", 64 )
-    PARAMETER( dTLBSize, size_t, "Size of the Data TLB", "dtlbsize", 64 )
-    PARAMETER( PerfectTLB, bool, "TLB never misses", "perfecttlb", false )
+    PARAMETER(cores,    int,    "Number of cores",            "cores",    1)
+    PARAMETER(itlbsets, size_t, "Number of sets of the iTlb", "itlbsets", 1)
+    PARAMETER(itlbways, size_t, "Number of ways of the iTlb", "itlbways", 64)
+    PARAMETER(dtlbsets, size_t, "Number of sets of the dTlb", "dtlbsets", 1)
+    PARAMETER(dtlbways, size_t, "Number of ways of the dTlb", "dtlbways", 64)
+
+    PARAMETER(perfect,  bool,   "TLB never misses",           "perfect",  false )
 );
 
 COMPONENT_INTERFACE(
-    DYNAMIC_PORT_ARRAY( PushInput,  TranslationPtr, iRequestIn )
-    DYNAMIC_PORT_ARRAY( PushInput,  TranslationPtr, dRequestIn )
-    DYNAMIC_PORT_ARRAY( PushInput,  int, ResyncIn)
+    DYNAMIC_PORT_ARRAY(PushInput,  TranslationPtr, iRequestIn)
+    DYNAMIC_PORT_ARRAY(PushInput,  TranslationPtr, dRequestIn)
+    DYNAMIC_PORT_ARRAY(PushInput,  int,            ResyncIn)
 
-    DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, iTranslationReply )
-    DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, dTranslationReply )
-    DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, MemoryRequestOut )
+    DYNAMIC_PORT_ARRAY(PushOutput, TranslationPtr, iTranslationReply)
+    DYNAMIC_PORT_ARRAY(PushOutput, TranslationPtr, dTranslationReply)
+    DYNAMIC_PORT_ARRAY(PushOutput, TranslationPtr, MemoryRequestOut)
 
-    DYNAMIC_PORT_ARRAY( PushInput, TranslationPtr, TLBReqIn ) // this is for trace
+    DYNAMIC_PORT_ARRAY(PushInput,  TranslationPtr, TLBReqIn) // this is for trace
 
-    DYNAMIC_PORT_ARRAY( PushOutput, int, ResyncOut )
-
+    DYNAMIC_PORT_ARRAY(PushOutput, int,            ResyncOut)
 
     DRIVE(MMUDrive)
 );

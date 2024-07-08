@@ -65,6 +65,10 @@
 #define DBG_SetDefaultOps AddCat(MemoryNetwork)
 #include DBG_Control()
 
+namespace Flexus {
+  extern std::string oldcwd;
+};
+
 namespace nNetwork {
 
 using namespace Flexus;
@@ -109,6 +113,9 @@ public:
     PacketCount = 0;
     // end of medhi
 
+    if (cfg.NumNodes == 0)
+      cfg.NumNodes = Flexus::Core::ComponentManager::getComponentManager().systemWidth() * 3;
+
     for (i = 0; i < cfg.VChannels; i++) {
       theNetworkLatencyHistograms.push_back(
           new Stat::StatLog2Histogram("NetworkLatency   VC[" + std::to_string(i) + "]", this));
@@ -121,7 +128,12 @@ public:
     }
 
     nc = new NetContainer();
-    if (nc->buildNetwork(cfg.NetworkTopologyFile.c_str())) {
+
+    if (cfg.NetworkTopologyFile == "BuildMesh") {
+      if (nc->buildMesh()) {
+        throw Flexus::Core::FlexusException("Error building the network");
+      }
+    } else if (nc->buildNetwork((oldcwd + "/" + cfg.NetworkTopologyFile).c_str())) {
       throw Flexus::Core::FlexusException("Error building the network");
     }
   }
@@ -288,28 +300,6 @@ private:
     msg->priority = MAX_PROT_VC - transport[NetworkMessageTag]->vc -
                     1; // Note, this field really needs to be added to the NetworkMessage
     msg->networkVC = 0;
-#if 0
-    // Size is a boolean (!control/data), which is translated into a
-    // real latency inside the network simulator
-    if (transport[MemoryMessageTag]) {
-      DBG_Assert(transport[NetworkMessageTag]->size == 0 || transport[NetworkMessageTag]->size == 64,
-                 ( << "Bad size field: src=" << transport[NetworkMessageTag]->src << " dest=" << transport[NetworkMessageTag]->dest
-                   << " vc=" << transport[NetworkMessageTag]->vc
-                   << " size=" << transport[NetworkMessageTag]->size
-                   << " src_port=" << transport[NetworkMessageTag]->src_port
-                   << " dst_port=" << transport[NetworkMessageTag]->dst_port
-                   << " content=" << *transport[MemoryMessageTag]
-                 ));
-    } else {
-      DBG_Assert(transport[NetworkMessageTag]->size == 0 || transport[NetworkMessageTag]->size == 64,
-                 ( << "Bad size field: src=" << transport[NetworkMessageTag]->src << " dest=" << transport[NetworkMessageTag]->dest
-                   << " vc=" << transport[NetworkMessageTag]->vc
-                   << " size=" << transport[NetworkMessageTag]->size
-                   << " src_port=" << transport[NetworkMessageTag]->src_port
-                   << " dst_port=" << transport[NetworkMessageTag]->dst_port
-                 ));
-    }
-#endif
     msg->transmitLatency = transport[NetworkMessageTag]->size;
     msg->flexusInFastMode = Flexus::Core::theFlexus->isFastMode();
     msg->hopCount = -1; // Note, the local switch also gets counted, so we start at -1

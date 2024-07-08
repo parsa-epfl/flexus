@@ -93,8 +93,7 @@ struct ComponentManager {
                                       Flexus::Core::index_t anIndex,                               \
                                       Flexus::Core::index_t aWidth) {                              \
     return new Namespace::BOOST_PP_CAT(Comp, Component)(aCfg, aJumpTable, anIndex, aWidth);        \
-  }                                                                                                \
-  struct eat_semicolon_ /**/
+  }
 
 #define FLEXUS_PORT_ARRAY_WIDTH(Comp, PortArray)                                                   \
   Flexus::Core::index_t BOOST_PP_CAT(Comp, Interface)::width(                                      \
@@ -134,15 +133,13 @@ private:                                                                        
 #define FLEXUS_PORT_ALWAYS_AVAILABLE(PortName)                                                     \
   bool available(interface::PortName const &) {                                                    \
     return true;                                                                                   \
-  }                                                                                                \
-  struct eat_semicolon__ /**/
+  }
 
 #define FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(PortName)                                               \
   bool available(interface::PortName const &pn, Flexus::Core::index_t aWidth) {                    \
     DBG_Assert(aWidth < width(cfg, pn));                                                           \
     return true;                                                                                   \
-  }                                                                                                \
-  struct eat_semicolon__ /**/
+  }
 
 #define FLEXUS_CHANNEL(PORT)                                                                       \
   get_channel(interface::PORT(), jump_table_.BOOST_PP_CAT(wire_available_, PORT),                  \
