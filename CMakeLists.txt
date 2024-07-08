@@ -36,5 +36,5 @@ endforeach()
 
 # compile simulators
 add_library(${SIMULATOR} SHARED ./target/${SIMULATOR}/wiring.cpp)
-target_link_libraries(${SIMULATOR} "-Wl,--whole-archive" core ${REQUIRED_COMPONENTS})
+target_link_libraries(${SIMULATOR} "-Wl,--whole-archive" "-Wl,--no-undefined" core ${REQUIRED_COMPONENTS})
 target_link_libraries(${SIMULATOR} "-Wl,--no-whole-archive" ${Boost_LIBRARIES} boost_system boost_regex boost_serialization boost_iostreams)
