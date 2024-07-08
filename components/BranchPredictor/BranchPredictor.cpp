@@ -1,8 +1,13 @@
 #include "BranchPredictor.hpp"
 
+#include <core/boost_extensions/padded_string_cast.hpp>
 #include <components/uFetch/uFetchTypes.hpp>
 #include "core/debug/debug.hpp"
 #include "core/types.hpp"
+#include <fstream>
+
+#include <core/checkpoint/json.hpp>
+using json = nlohmann::json;
 
 //#define DBG_DefineCategories BPred
 //#define DBG_SetDefaultOps    AddCat(BPred)
@@ -153,4 +158,17 @@ BranchPredictor::feedback(VirtualMemoryAddress anAddress,
 
 
 void BranchPredictor::loadState(std::string const& aDirName) {}
-void BranchPredictor::saveState(std::string const& aDirName) {}
+
+void BranchPredictor::saveState(std::string const& aDirName) {
+    std::string fname(aDirName);
+    fname += "/bpred-" + boost::padded_string_cast<2, '0'>(theIndex) + ".json";
+    std::ofstream ofs(fname.c_str());
+
+    json checkpoint;
+
+    // checkpoint["BTB"] = theBTB.saveState();
+    checkpoint["TAGE"] = theTage.saveState();
+
+    ofs << std::setw(4) << checkpoint << std::endl;
+    ofs.close();
+}

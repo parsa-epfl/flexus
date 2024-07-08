@@ -19,6 +19,9 @@ OGEHL predictor simulator from Andr� Seznec
 #include <core/types.hpp>
 #include <components/uFetch/uFetchTypes.hpp>
 
+#include <core/checkpoint/json.hpp>
+using json = nlohmann::json;
+
 #define TAGE
 
 #define ASSERT(cond)                                                                               \
@@ -853,58 +856,80 @@ public:
     //      }
   }
 
-  void saveState(std::ostream &s) const {
-    s << PWIN << "\n";
-    s << TICK << "\n";
-    s << Seed << "\n";
-    s << phist << "\n";
-    s << ghist.to_string() << "\n";
-    s << LOGB << "\n";
-    s << NHIST << "\n";
-    s << LOGG << "\n";
-    s << TBITS << "\n";
-    s << MAXHIST << "\n";
-    s << MINHIST << "\n";
-    s << CBITS << "\n";
+  json saveState() const {
+    json checkpoint;
 
-    //	  s << "\n";
+    checkpoint["PWIN"]    = PWIN;
+    checkpoint["TICK"]    = TICK;
+    checkpoint["Seed"]    = Seed;
+    checkpoint["phist"]   = phist;
+    checkpoint["ghist"]   = ghist.to_string();
+    checkpoint["LOGB"]    = LOGB;
+    checkpoint["NHIST"]   = NHIST;
+    checkpoint["LOGG"]    = LOGG;
+    checkpoint["TBITS"]   = TBITS;
+    checkpoint["MAXHIST"] = MAXHIST;
+    checkpoint["MINHIST"] = MINHIST;
+    checkpoint["CBITS"]   = CBITS;
 
     // bimodal table
     for (int i = 0; i < (1 << LOGB); i++) {
-      s << (int)btable[i].hyst << " " << (int)btable[i].pred << "\n";
+      json btable_json;
+
+      btable_json["hyst"] = (int)btable[i].hyst;
+      btable_json["pred"] = (int)btable[i].pred;
+
+      checkpoint["btable"].push_back(btable_json);
     }
-    s << "\n";
 
     for (int i = 0; i < NHIST; i++) {
+      json gtable_array_json;
+
       for (int j = 0; j < (1 << LOGG); j++) {
-        s << (int)gtable[i][j].ctr << " " << (int)gtable[i][j].tag << " " << (int)gtable[i][j].ubit
-          << "\n";
+        json gtable_json;
+
+        gtable_json["ctr"] = (int)gtable[i][j].ctr;
+        gtable_json["tag"] = (int)gtable[i][j].tag;
+        gtable_json["ubit"] = (int)gtable[i][j].ubit;
+
+        gtable_array_json.push_back(gtable_json);
       }
-      s << "\n";
+
+      checkpoint["gtable"].push_back(gtable_array_json);
     };
 
     for (int i = 0; i < NHIST; i++) {
-      s << (uint32_t)ch_i[i].comp << " " << ch_i[i].CLENGTH << " " << ch_i[i].OLENGTH << " "
-        << ch_i[i].OUTPOINT << "\n";
+      json ch_i_json;
+
+      ch_i_json["comp"] = (uint32_t)ch_i[i].comp;
+      ch_i_json["c_length"] = (uint32_t)ch_i[i].CLENGTH;
+      ch_i_json["o_length"] = (uint32_t)ch_i[i].OLENGTH;
+
+      checkpoint["ch_i"].push_back(ch_i_json);
     }
-    s << "\n";
+
+
+    for (int j = 0; j < 2; j++) {
+      json ch_t_array_json;
+
+      for (int i = 0; i < NHIST; i++) {
+        json ch_t_json;
+
+        ch_t_json["comp"] = (uint32_t)ch_t[j][i].comp;
+        ch_t_json["o_length"] = (uint32_t)ch_t[j][i].OLENGTH;
+        ch_t_json["out_point"] = (uint32_t)ch_t[j][i].OUTPOINT;
+
+        ch_t_array_json.push_back(ch_t_json);
+      }
+
+      checkpoint["ch_t"].push_back(ch_t_array_json);
+    }
 
     for (int i = 0; i < NHIST; i++) {
-      s << (uint32_t)ch_t[0][i].comp << " " << ch_t[0][i].CLENGTH << " " << ch_t[0][i].OLENGTH
-        << " " << ch_t[0][i].OUTPOINT << "\n";
-    }
-    s << "\n";
-
-    for (int i = 0; i < NHIST; i++) {
-      s << (uint32_t)ch_t[1][i].comp << " " << ch_t[1][i].CLENGTH << " " << ch_t[1][i].OLENGTH
-        << " " << ch_t[1][i].OUTPOINT << "\n";
-    }
-    s << "\n";
-
-    for (int i = 0; i < NHIST; i++) {
-      s << m[i] << " ";
+      checkpoint["m"].push_back(m[i]);
     };
-    s << "\n";
+
+    return checkpoint;
   }
 
   void loadState(std::istream &s) {
