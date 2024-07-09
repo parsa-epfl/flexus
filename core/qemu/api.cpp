@@ -65,13 +65,13 @@ FLEXUS_get_api(FLEXUS_API_t* api)
 using namespace Flexus::Core;
 
 void
-FLEXUS_start()
+FLEXUS_start(uint64_t cycle)
 {
+    theFlexus->setCycle(cycle);
 
-    // TODO while (qemu_api.get_en())
-    while (true) {
+  //while (qemu_api.get_en())
+    while(true)
         theFlexus->doCycle();
-    }
 }
 
 void

@@ -61,6 +61,7 @@ class FlexusInterface
 
     // The main cycle function
     virtual void doCycle() = 0;
+    virtual void setCycle(uint64_t cycle) = 0;
     // fast-forward through cycles
     // Note: does not tick stats, check watchdogs, or call drives
     virtual void advanceCycles(int64_t aCycleCount) = 0;
