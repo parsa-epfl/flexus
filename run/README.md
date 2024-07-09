@@ -34,9 +34,9 @@ If you encounter the problem `undefined reference to symbol dlsym@@GLIBC_2.2.5`,
 git clone -b riscv https://github.com/parsa-epfl/flexus
 cd flexus
 ./build.sh KeenKraken   # trace simulator
-make -C KeenKraken
+make -C build.KeenKraken
 ./build.sh KnottyKraken # timing simulator
-make -C KnottyKraken
+make -C build.KnottyKraken
 ```
 
 ## Create symlinks
