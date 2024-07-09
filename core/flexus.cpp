@@ -196,6 +196,8 @@ FlexusImpl::advanceCycles(int64_t aCycleCount)
     theCycleCount += aCycleCount;
     theCycleCountStat += aCycleCount;
 
+    Qemu::API::qemu_api.tick();
+
     if (theQuiesceRequested && isQuiesced()) {
         DBG_(Crit, (<< "Flexus is quiesced as of cycle " << theCycleCount));
         theQuiesceRequested = false;
