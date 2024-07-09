@@ -55,6 +55,7 @@
 #include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 #include <components/MTManager/MTManager.hpp>
 #include <core/debug/debug.hpp>
+#include "core/qemu/configuration_api.hpp"
 #include <core/qemu/mai_api.hpp>
 
 #define DBG_DefineCategories uArchCat, Special
