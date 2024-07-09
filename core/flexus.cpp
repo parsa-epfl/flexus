@@ -71,6 +71,7 @@ class FlexusImpl : public FlexusInterface
 
     // The main cycle function
     void doCycle();
+    void setCycle(uint64_t cycle);
     void advanceCycles(int64_t aCycleCount);
     void invokeDrives();
 
@@ -167,6 +168,11 @@ void
 FlexusImpl::printMMU(int32_t aCPU)
 {
     DBG_(Crit, (<< "printMMU not implemented yet. Still need to port mai_api.hpp "));
+}
+
+void FlexusImpl::setCycle(uint64_t cycle) {
+    theCycleCount = cycle;
+    theStopCycle += cycle;
 }
 
 void
