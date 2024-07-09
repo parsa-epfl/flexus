@@ -69,7 +69,6 @@ FLEXUS_start(uint64_t cycle)
 {
     theFlexus->setCycle(cycle);
 
-  //while (qemu_api.get_en())
     while(true)
         theFlexus->doCycle();
 }

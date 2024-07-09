@@ -239,16 +239,6 @@ FlexusImpl::advanceCycles(int64_t aCycleCount)
         last_region = theCycleCount;
     }
 
-    static uint64_t last_profile = 0;
-    if (theProfileInterval > 0 && theCycleCount - last_profile >= theProfileInterval) {
-        // DBG_(Dev, Core() ( << "Writing profile at: " << theCycleCount));
-        DBG_(Dev, Core()(<< "Profiling disabled"));
-
-        // writeProfile("profile.out");
-        // resetProfile();
-        last_profile = theCycleCount;
-    }
-
     Flexus::Dbg::Debugger::theDebugger->checkAt();
 
     Stat::getStatManager()->tick(aCycleCount);
