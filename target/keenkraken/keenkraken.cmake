@@ -4,7 +4,6 @@ set(REQUIRED_COMPONENTS
   FastCache
   FastCMPCache
   FastMemoryLoopback
-  MagicBreakQEMU
   BPWarm
   TraceTrackerQEMU
   BranchPredictor

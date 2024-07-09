@@ -57,7 +57,6 @@ std::string theSimulatorName = "KnottyKraken v1.0";
 #include <components/Cache/Cache.hpp>
 #include <components/FetchAddressGenerate/FetchAddressGenerate.hpp>
 #include <components/MMU/MMU.hpp>
-#include <components/MagicBreakQEMU/MagicBreak.hpp>
 #include <components/MemoryLoopback/MemoryLoopback.hpp>
 #include <components/MemoryMap/MemoryMap.hpp>
 #include <components/MultiNic/MultiNic2.hpp>
@@ -88,7 +87,6 @@ CREATE_CONFIGURATION(SplitDestinationMapper, "net-mapper", theNetMapperCfg);
 
 CREATE_CONFIGURATION(MemoryLoopback, "memory", theMemoryCfg);
 CREATE_CONFIGURATION(MemoryMap, "memory-map", theMemoryMapCfg);
-CREATE_CONFIGURATION(MagicBreak, "magic-break", theMagicBreakCfg);
 
 // You may optionally initialize configuration parameters from within this
 // function.  This initialization occur before the command line is processed,
@@ -270,21 +268,6 @@ bool initializeParameters() {
   theMemoryMapCfg.CreatePageMap.initialize(true);
   theMemoryMapCfg.ReadPageMap.initialize(true);
 
-  theMagicBreakCfg.CkptCycleInterval.initialize(0);
-  theMagicBreakCfg.CkptCycleName.initialize(0);
-  theMagicBreakCfg.CheckpointOnIteration.initialize(false);
-  theMagicBreakCfg.CheckpointEveryXTransactions.initialize(false);
-  theMagicBreakCfg.TerminateOnTransaction.initialize(-1);
-  theMagicBreakCfg.FirstTransactionIs.initialize(0);
-  theMagicBreakCfg.CycleMinimum.initialize(0);
-  theMagicBreakCfg.TransactionStatsInterval.initialize(10000);
-  theMagicBreakCfg.StopCycle.initialize(0);
-  theMagicBreakCfg.EnableTransactionCounts.initialize(false);
-  theMagicBreakCfg.TransactionType.initialize(0);
-  theMagicBreakCfg.TerminateOnIteration.initialize(-1);
-  theMagicBreakCfg.TerminateOnMagicBreak.initialize(-1);
-  theMagicBreakCfg.EnableIterationCounts.initialize(false);
-
   theMMUCfg.cores.initialize(1);
 
   theMMUCfg.cores.initialize(1);
@@ -321,7 +304,6 @@ FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MemoryLoopback, theMemoryCfg, theMemory, FIX
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MultiNic2, theNicCfg, theNic, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 3 );
 FLEXUS_INSTANTIATE_COMPONENT( MemoryNetwork, theNetworkCfg, theNetwork );
 FLEXUS_INSTANTIATE_COMPONENT( MemoryMap, theMemoryMapCfg, theMemoryMap );
-FLEXUS_INSTANTIATE_COMPONENT( MagicBreak, theMagicBreakCfg, theMagicBreak );
 FLEXUS_INSTANTIATE_COMPONENT( SplitDestinationMapper, theNetMapperCfg, theNetMapper );
 
 #include FLEXUS_END_COMPONENT_INSTANTIATION_SECTION()
@@ -418,7 +400,6 @@ DRIVE( theuFetch, uFetchDrive )
 , DRIVE( theMemory, LoopbackDrive )
 , DRIVE( theL2, CMPCacheDrive )
 , DRIVE( theL1d, CacheDrive )
-, DRIVE( theMagicBreak, TickDrive )
 
 #include FLEXUS_END_DRIVE_ORDER_SECTION()
     // clang-format on
