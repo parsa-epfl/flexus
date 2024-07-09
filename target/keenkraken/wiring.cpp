@@ -62,7 +62,6 @@ std::string theSimulatorName = "KeenKraken v2024.05";
 #include <components/FastCache/FastCache.hpp>
 #include <components/FastMemoryLoopback/FastMemoryLoopback.hpp>
 #include <components/MMU/MMU.hpp>
-#include <components/MagicBreakQEMU/MagicBreak.hpp>
 
 #include FLEXUS_END_DECLARATION_SECTION()
 
@@ -73,7 +72,6 @@ CREATE_CONFIGURATION(FastCache, "L1d", theL1DCfg);
 CREATE_CONFIGURATION(FastCache, "L1i", theL1ICfg);
 CREATE_CONFIGURATION(FastCMPCache, "L2", theL2Cfg);
 CREATE_CONFIGURATION(FastMemoryLoopback, "memory", theMemoryCfg);
-CREATE_CONFIGURATION(MagicBreak, "magic-break", theMagicBreakCfg);
 CREATE_CONFIGURATION(BPWarm, "bpwarm", theBPWarmCfg);
 CREATE_CONFIGURATION(MMU, "mmu", theMMUCfg);
 
@@ -126,20 +124,6 @@ bool initializeParameters() {
   theL2Cfg.TraceTracker.initialize(false);
   theL2Cfg.SeparateID.initialize(true);
 
-  theMagicBreakCfg.CkptCycleInterval.initialize(0);
-  theMagicBreakCfg.CkptCycleName.initialize(0);
-  theMagicBreakCfg.CheckpointOnIteration.initialize(false);
-  theMagicBreakCfg.CheckpointEveryXTransactions.initialize(false);
-  theMagicBreakCfg.TerminateOnTransaction.initialize(-1);
-  theMagicBreakCfg.FirstTransactionIs.initialize(0);
-  theMagicBreakCfg.CycleMinimum.initialize(0);
-  theMagicBreakCfg.TransactionStatsInterval.initialize(10000);
-  theMagicBreakCfg.StopCycle.initialize(0);
-  theMagicBreakCfg.EnableTransactionCounts.initialize(false);
-  theMagicBreakCfg.TransactionType.initialize(0);
-  theMagicBreakCfg.TerminateOnIteration.initialize(-1);
-  theMagicBreakCfg.TerminateOnMagicBreak.initialize(-1);
-  theMagicBreakCfg.EnableIterationCounts.initialize(false);
 
   theMMUCfg.cores.initialize(1);
   theMMUCfg.iTLBSize.initialize(64);
@@ -165,7 +149,6 @@ FLEXUS_INSTANTIATE_COMPONENT_ARRAY( FastCache, theL1DCfg, theL1D, SCALE_WITH_SYS
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( FastCache, theL1ICfg, theL1I, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT( FastCMPCache, theL2Cfg, theL2 );
 FLEXUS_INSTANTIATE_COMPONENT( FastMemoryLoopback, theMemoryCfg, theMemory );
-FLEXUS_INSTANTIATE_COMPONENT( MagicBreak, theMagicBreakCfg, theMagicBreak );
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MMU , theMMUCfg, theMMU, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 
 //FLEXUS_INSTANTIATE_COMPONENT( WhiteBox, theWhiteBoxCfg, theWhiteBox );
@@ -201,8 +184,7 @@ WIRE(theMemory, ToCache,                theL2, SnoopIn)
 
 #include FLEXUS_BEGIN_DRIVE_ORDER_SECTION()
 
-DRIVE( theMagicBreak, TickDrive )
-, DRIVE( theL1D, UpdateStatsDrive )
+DRIVE( theL1D, UpdateStatsDrive )
 , DRIVE( theL1I, UpdateStatsDrive )
 , DRIVE( theL2, UpdateStatsDrive )
 

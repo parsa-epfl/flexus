@@ -8,7 +8,6 @@ set(REQUIRED_COMPONENTS
   Cache
   MemoryLoopback
   MemoryMap
-  MagicBreakQEMU
   CMPCache
   MultiNic
   NetShim
