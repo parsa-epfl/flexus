@@ -288,17 +288,6 @@ class microArchImpl : public microArch
     {
         CORE_DBG("--------------START MICROARCH------------------------");
 
-        //      FLEXUS_PROFILE();
-        //    if ((theCPU.id() == 0) && ( (theFlexus->cycleCount() % 10000) == 0) )
-        //    {
-        //      boost::posix_time::ptime
-        //      now(boost::posix_time::second_clock::local_time()); DBG_(Dev, ( <<
-        //      "Timestamp: " << boost::posix_time::to_simple_string(now)));
-        //    }
-
-        //    if (theDriveClients) {
-        //      driveClients();
-        //    }
         try {
 
             // Record free ROB space for next cycle
