@@ -9,11 +9,8 @@ OGEHL predictor simulator from Andr� Seznec
 #define PREDICTOR_H_SEEN
 
 #include <cmath>
-#include <cstddef>
 #include <cstdlib>
 #include <bitset>
-#include <string>
-#include <iostream>
 #include <inttypes.h>
 
 #include <core/types.hpp>
@@ -860,8 +857,8 @@ public:
     json checkpoint;
 
     checkpoint["PWIN"]    = PWIN;
-    checkpoint["TICK"]    = TICK;
-    checkpoint["Seed"]    = Seed;
+    checkpoint["tick"]    = TICK;
+    checkpoint["seed"]    = Seed;
     checkpoint["phist"]   = phist;
     checkpoint["ghist"]   = ghist.to_string();
     checkpoint["LOGB"]    = LOGB;
@@ -932,126 +929,9 @@ public:
     return checkpoint;
   }
 
-  void loadState(std::istream &s) {
-    int logb, nhist, logg, tbits, maxhist, minhist, cbits;
-    int a, b, c;
-    s >> PWIN;
-    s >> TICK;
-    s >> Seed;
-    s >> phist;
-    s >> ghist;
-
-    DBG_(Tmp, (<< " ghist reloaded: " << ghist));
-    phist_retired = phist;
-    ghist_retired = std::bitset<MAXHIST>(ghist.to_string());
-
-    s >> logb;
-    s >> nhist;
-    s >> logg;
-    s >> tbits;
-    s >> maxhist;
-    s >> minhist;
-    s >> cbits;
-
-    assert(LOGB == logb);
-    assert(NHIST == nhist);
-    assert(LOGG == logg);
-    assert(TBITS == tbits);
-    assert(MAXHIST == maxhist);
-    assert(MINHIST == minhist);
-    assert(CBITS == cbits);
-
-    // bimodal table
-
-    for (int i = 0; i < (1 << LOGB); i++) {
-      //			s >> btable[i].hyst >> btable[i].pred;
-      s >> a >> b;
-      btable[i].hyst = a;
-      btable[i].pred = b;
-    }
-
-    for (int i = 0; i < NHIST; i++) {
-      for (int j = 0; j < (1 << LOGG); j++) {
-        //			s >> gtable[i][j].ctr >>  gtable[i][j].tag >> gtable[i][j].ubit;
-        s >> a >> b >> c;
-        gtable[i][j].ctr = a;
-        gtable[i][j].tag = b;
-        gtable[i][j].ubit = c;
-      }
-    }
-
-    for (int i = 0; i < NHIST; i++) {
-      s >> ch_i[i].comp >> ch_i[i].CLENGTH >> ch_i[i].OLENGTH >> ch_i[i].OUTPOINT;
-    }
-
-    for (int i = 0; i < NHIST; i++) {
-      s >> ch_t[0][i].comp >> ch_t[0][i].CLENGTH >> ch_t[0][i].OLENGTH >> ch_t[0][i].OUTPOINT;
-    }
-
-    for (int i = 0; i < NHIST; i++) {
-      s >> ch_t[1][i].comp >> ch_t[1][i].CLENGTH >> ch_t[1][i].OLENGTH >> ch_t[1][i].OUTPOINT;
-    }
-
-    for (int i = 0; i < NHIST; i++) {
-      s >> m[i];
-    }
+  void loadState(json checkpoint) {
   }
 
-  void print_state(std::ostream &s) const {
-    s << PWIN << "\n";
-    s << TICK << "\n";
-    s << Seed << "\n";
-    s << phist << "\n";
-    s << ghist.to_string() << "\n";
-    s << LOGB << "\n";
-    s << NHIST << "\n";
-    s << LOGG << "\n";
-    s << TBITS << "\n";
-    s << MAXHIST << "\n";
-    s << MINHIST << "\n";
-    s << CBITS << "\n";
-
-    s << "\n btable";
-
-    // bimodal table
-    for (int i = 0; i < (1 << LOGB); i++) {
-      s << (int)btable[i].hyst << " " << (int)btable[i].pred << "\n";
-    }
-    s << "\n gtable";
-
-    for (int i = 0; i < NHIST; i++) {
-      for (int j = 0; j < (1 << LOGG); j++) {
-        s << (int)gtable[i][j].ctr << " " << (uint32_t)gtable[i][j].tag << " "
-          << (int)gtable[i][j].ubit << "\n";
-      }
-      s << "\n next gtable";
-    }
-
-    s << "\n ch_i";
-
-    for (int i = 0; i < NHIST; i++) {
-      s << (uint32_t)ch_i[i].comp << " " << ch_i[i].CLENGTH << " " << ch_i[i].OLENGTH << " "
-        << ch_i[i].OUTPOINT << "\n";
-    }
-    s << "\n ch_t1";
-
-    for (int i = 0; i < NHIST; i++) {
-      s << (uint32_t)ch_t[0][i].comp << " " << ch_t[0][i].CLENGTH << " " << ch_t[0][i].OLENGTH
-        << " " << ch_t[0][i].OUTPOINT << "\n";
-    }
-    s << "\n ch_t2";
-
-    for (int i = 0; i < NHIST; i++) {
-      s << (uint32_t)ch_t[1][i].comp << " " << ch_t[1][i].CLENGTH << " " << ch_t[1][i].OLENGTH
-        << " " << ch_t[1][i].OUTPOINT << "\n";
-    }
-    s << "\n m";
-
-    for (int i = 0; i < NHIST; i++) {
-      s << m[i] << " ";
-    };
-    s << "\n Done";
-  }
 };
 } // namespace SharedTypes
 } // namespace Flexus
