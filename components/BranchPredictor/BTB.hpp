@@ -3,9 +3,11 @@
 
 #include "BTBSet.hpp"
 #include "core/types.hpp"
+#include "core/checkpoint/json.hpp"
 
 #include <vector>
 
+using json = nlohmann::json;
 using namespace Flexus::SharedTypes;
 
 class BTB
@@ -35,6 +37,8 @@ class BTB
     // Update or add a new entry to the BTB
     bool update(VirtualMemoryAddress aPC, eBranchType aType, VirtualMemoryAddress aTarget);
     bool update(BranchFeedback const& aFeedback);
+
+    json saveState() const;
 };
 
 #endif
