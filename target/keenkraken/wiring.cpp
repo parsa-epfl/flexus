@@ -101,7 +101,6 @@ bool initializeParameters() {
   theL1DCfg.BlockSize.initialize(64);
   theL1DCfg.CleanEvictions.initialize(false);
   theL1DCfg.CacheLevel.initialize(eL1);
-  theL1DCfg.TraceTracker.initialize(false);
   theL1DCfg.NotifyReads.initialize(false);
   theL1DCfg.NotifyWrites.initialize(false);
 
@@ -111,7 +110,6 @@ bool initializeParameters() {
   theL1ICfg.BlockSize.initialize(64);
   theL1ICfg.CleanEvictions.initialize(false);
   theL1ICfg.CacheLevel.initialize(eL1I);
-  theL1ICfg.TraceTracker.initialize(false);
   theL1ICfg.NotifyReads.initialize(false);
   theL1ICfg.NotifyWrites.initialize(false);
 
@@ -170,10 +168,7 @@ WIRE(theL1I, RequestOut,                theL2, FetchRequestIn)
 WIRE(theL2, SnoopOutI,                  theL1I, SnoopIn)
 WIRE(theL2, SnoopOutD,                  theL1D, SnoopIn)
 
-WIRE(theL1D, RegionNotify,              theL2, RegionNotify)
-
 WIRE(theL2, RequestOut,                 theMemory, FromCache)
-WIRE(theL2, RegionProbe,                theL1D, RegionProbe)
 
 WIRE(theMemory, ToCache,                theL2, SnoopIn)
 

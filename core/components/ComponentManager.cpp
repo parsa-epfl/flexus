@@ -141,11 +141,6 @@ class ComponentManagerImpl : public ComponentManager
         for (auto* aComponent : theComponents) {
             aComponent->saveState(aDirectory);
         }
-        // std::for_each
-        // ( theComponents.begin()
-        //   , theComponents.end()
-        //   , ll::bind( &ComponentInterface::saveState, ll::_1, aDirectory )
-        // );
     }
 
     void doLoad(std::string const& aDirectory)

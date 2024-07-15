@@ -118,31 +118,39 @@ class BasicCacheState
         ar& val;
     }
 
-    static const BasicCacheState& char2State(uint8_t c)
-    {
-        switch (c) {
-            case 'M': return Modified; break;
-            case 'O': return Owned; break;
-            case 'E': return Exclusive; break;
-            case 'S': return Shared; break;
-            case 'I': return Invalid; break;
-            default: DBG_Assert(false, (<< "Unknown state '" << c << "'")); break;
-        }
-        return Invalid;
-    }
+    //static const BasicCacheState& char2State(uint8_t c)
+    //{
+    //    switch (c) {
+    //        case 'M': return Modified; break;
+    //        case 'O': return Owned; break;
+    //        case 'E': return Exclusive; break;
+    //        case 'S': return Shared; break;
+    //        case 'I': return Invalid; break;
+    //        default: DBG_Assert(false, (<< "Unknown state '" << c << "'")); break;
+    //    }
+    //    return Invalid;
+    //}
 
-    static const BasicCacheState& int2State(int32_t c)
+    //static const BasicCacheState& int2State(int32_t c)
+    //{
+    //    // For loading text flexpoints ONLY!
+    //    switch (c) {
+    //        case 7: return Modified; break;
+    //        case 3: return Owned; break;
+    //        case 5: return Exclusive; break;
+    //        case 1: return Shared; break;
+    //        case 0: return Invalid; break;
+    //        default: DBG_Assert(false, (<< "Unknown state '" << c << "'")); break;
+    //    }
+    //    return Invalid;
+    //}
+
+    static const BasicCacheState& bool2state(bool dirty, bool writable)
     {
-        // For loading text flexpoints ONLY!
-        switch (c) {
-            case 7: return Modified; break;
-            case 3: return Owned; break;
-            case 5: return Exclusive; break;
-            case 1: return Shared; break;
-            case 0: return Invalid; break;
-            default: DBG_Assert(false, (<< "Unknown state '" << c << "'")); break;
-        }
-        return Invalid;
+        if (dirty & writable) return Modified;
+        if (dirty) return Owned;
+        if (writable) return Exclusive;
+        return Shared;
     }
 
   private:

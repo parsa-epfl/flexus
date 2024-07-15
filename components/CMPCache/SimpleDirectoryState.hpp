@@ -53,14 +53,13 @@ namespace nCMPCache {
 
 class SimpleDirectoryState
 {
-  private:
+public:
     // no one ever calls this, so we always have a size
-    SimpleDirectoryState()
+    SimpleDirectoryState(uint32_t nb_sharers = MAX_NUM_SHARERS)
       : theSharers()
-      , theNumSharers(0)
-    {
-    }
+      , theNumSharers(nb_sharers) {}
 
+  private:
     boost::dynamic_bitset<uint64_t> theSharers;
     int theNumSharers;
 
@@ -193,6 +192,7 @@ class SimpleDirectoryState
     {
     }
 
+
     SimpleDirectoryState& operator&=(SimpleDirectoryState& a)
     {
         theSharers &= a.theSharers;
@@ -256,8 +256,6 @@ bits2State(const boost::dynamic_bitset<uint64_t>& aState, const SimpleDirectoryS
 inline void
 copyState(const std::vector<SimpleDirectoryState>& orig, std::vector<boost::dynamic_bitset<uint64_t>>& copy)
 {
-    // transform(orig.begin(), orig.end(), copy.begin(), [](auto& x){ return
-    // x.getSharers(); });//(&SimpleDirectoryState::getSharers, _1));
     transform(orig.begin(),
               orig.end(),
               copy.begin(),
@@ -269,9 +267,6 @@ copyState(const std::vector<boost::dynamic_bitset<uint64_t>>& orig,
           std::vector<SimpleDirectoryState>& copy,
           const SimpleDirectoryState& aDefaultState)
 {
-    // transform(orig.begin(), orig.end(), copy.begin(), [&aDefaultState](auto&
-    // x){ return bits2State(x, aDefaultState); });//std::bind(&bits2State, _1,
-    // aDefaultState));
     transform(orig.begin(), orig.end(), copy.begin(), std::bind(&bits2State, std::placeholders::_1, aDefaultState));
 }
 
@@ -295,5 +290,4 @@ setPresence(int32_t sharer,
 }
 
 }; // namespace nCMPCache
-
 #endif // __SIMPLE_DIRECTORY_STATE_HPP__

@@ -109,8 +109,7 @@ class AbstractArray
     virtual void invalidateBlock(LookupResult_p lookup) = 0;
 
     // Checkpoint reading/writing functions
-    virtual bool saveState(std::ostream& s)                  = 0;
-    virtual bool loadState(std::istream& s, int32_t anIndex) = 0;
+    virtual void load_cache_from_ckpt(std::string const&, int32_t anIndex) = 0;
 
     // Addressing helper functions
     MemoryAddress blockAddress(MemoryAddress const& anAddress) const
@@ -179,7 +178,6 @@ class AbstractArray
 
 }; // namespace nCMPCache
 
-#include <components/CMPCache/RTArray.hpp>
 #include <components/CMPCache/StdArray.hpp>
 
 namespace nCMPCache {
@@ -236,8 +234,6 @@ constructArray(std::string& anArrayConfiguration, CMPCacheInfo& theInfo, int32_t
     // BlockSize is always passed separately to avoid specifying it more than once
     if (name == "std" || name == "Std" || name == "STD") {
         return new StdArray<_State, _Default>(theInfo, theBlockSize, arg_list);
-    } else if (name == "RegionTracker" || name == "RT" || name == "rt") {
-        return new RTArray<_State, _Default>(theInfo, theBlockSize, arg_list);
     }
 
     DBG_Assert(false, (<< "Failed to create Instance of '" << name << "'"));

@@ -247,15 +247,9 @@ CacheController::isQuiesced() const
 }
 
 void
-CacheController::saveState(std::string const& aDirName)
+CacheController::loadState(std::string const& aDirName)
 {
-    theCacheControllerImpl->saveState(aDirName);
-}
-
-void
-CacheController::loadState(std::string const& aDirName, bool aTextFlexpoint, bool aGZippedFlexpoint)
-{
-    theCacheControllerImpl->loadState(aDirName, aTextFlexpoint, aGZippedFlexpoint);
+    theCacheControllerImpl->loadState(aDirName);
 }
 
 CacheController::CacheController(std::string const& aName,

@@ -395,11 +395,8 @@ struct BaseCacheControllerImpl
              (<< theName << " SnoopBuffer Size/Reserve/Free = " << sb_size << "/" << sb_reserve << "/" << sb_free));
     }
 
-    virtual void saveState(std::string const& aDirName);
-    virtual void loadState(std::string const& aDirName, bool aTextFlexpoint, bool aGZippedFlexpoint);
-
-    virtual void saveArrayState(std::ostream& os)                      = 0;
-    virtual bool loadArrayState(std::istream& is, bool aTextFlexpoint) = 0;
+    virtual void loadState(std::string const& aDirName);
+    virtual void load_from_ckpt(std::istream& is) = 0;
 
     virtual MemoryAddress getBlockAddress(MemoryAddress const& anAddress) const        = 0;
     virtual BlockOffset getBlockOffset(MemoryAddress const& anAddress) const           = 0;

@@ -44,19 +44,19 @@
 //  DO-NOT-REMOVE end-copyright-block
 
 #include <boost/none.hpp>
-#include <components/CommonQEMU/Slices/ExecuteState.hpp>
-#include <components/CommonQEMU/Slices/MemoryMessage.hpp>
-#include <components/CommonQEMU/Slices/TransactionTracker.hpp>
-#include <components/CommonQEMU/Transports/MemoryTransport.hpp>
-#include <components/MTManager/MTManager.hpp>
-#include <components/uFetch/uFetch.hpp>
-#include <components/uFetch/uFetchTypes.hpp>
-#include <core/boost_extensions/padded_string_cast.hpp>
-#include <core/stats.hpp>
+#include "components/CommonQEMU/Slices/ExecuteState.hpp"
+#include "components/CommonQEMU/Slices/MemoryMessage.hpp"
+#include "components/CommonQEMU/Slices/TransactionTracker.hpp"
+#include "components/CommonQEMU/Transports/MemoryTransport.hpp"
+#include "components/MTManager/MTManager.hpp"
+#include "components/uFetch/uFetch.hpp"
+#include "components/uFetch/uFetchTypes.hpp"
+#include "core/boost_extensions/padded_string_cast.hpp"
+#include "core/stats.hpp"
 #include <fstream>
-#include <set>
-#include <unordered_map>
 #include <unordered_set>
+#include "core/checkpoint/json.hpp"
+using json = nlohmann::json;
 
 #define FLEXUS_BEGIN_COMPONENT uFetch
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
@@ -65,8 +65,8 @@
 #define DBG_SetDefaultOps    AddCat(uFetch)
 #include DBG_Control()
 
-#include <components/CommonQEMU/seq_map.hpp>
-#include <core/qemu/mai_api.hpp>
+#include "components/CommonQEMU/seq_map.hpp"
+#include "core/qemu/mai_api.hpp"
 
 #define LOG2(x)                         \
   ({                                    \
@@ -105,74 +105,33 @@ struct SimCache
         theName = aName;
     }
 
-    void loadState(std::string const& aDirName)
+    void loadState(std::string const& filename)
     {
-        std::string fname(aDirName);
-        DBG_(VVerb, (<< "Loading state: " << fname << " for ufetch order L1i cache"));
-        std::ifstream ifs(fname.c_str());
+        std::string ckpt_filename(filename);
+
+        std::ifstream ifs(ckpt_filename.c_str(), std::ios::in);
+
         if (!ifs.good()) {
-            DBG_(VVerb, (<< " saved checkpoint state " << fname << " not found.  Resetting to empty cache. "));
-        } else {
-            ifs >> std::skipws;
-
-            if (!loadArray(ifs)) {
-                DBG_(VVerb,
-                     (<< "Error loading checkpoint state from file: " << fname
-                      << ".  Make sure your checkpoints match your current "
-                         "cache configuration."));
-                DBG_Assert(false);
-            }
-            ifs.close();
+            DBG_(Dev, (<< "checkpoint file: " << ckpt_filename << " not found."));
+            DBG_Assert(false, (<< "FILE NOT FOUND"));
         }
-    }
-    bool loadArray(std::istream& s)
-    {
-        static const int32_t kSave_ValidBit = 1;
-        int32_t tagShift                    = LOG2(theCache.sets());
 
-        char paren;
-        int32_t dummy;
-        int32_t load_state;
-        uint64_t load_tag;
-        for (uint32_t i = 0; i < theCache.sets(); i++) {
-            s >> paren; // {
-            if (paren != '{') {
-                DBG_(Crit, (<< "Expected '{' when loading checkpoint"));
-                return false;
-            }
-            for (uint32_t j = 0; j < theCache.assoc(); j++) {
-                s >> paren >> load_state >> load_tag >> paren;
-                DBG_(Trace,
-                     (<< theName << " Loading block " << std::hex
-                      << (((load_tag << tagShift) | i) << theCacheBlockShift) << " with state "
-                      << ((load_state & kSave_ValidBit) ? "Shared" : "Invalid") << " in way " << j));
-                if (load_state & kSave_ValidBit) {
-                    theCache.insert(std::make_pair(((load_tag << tagShift) | i), 0));
-                    DBG_Assert(theCache.size() <= theCache.assoc());
-                }
-            }
-            s >> paren; // }
-            if (paren != '}') {
-                DBG_(Crit, (<< "Expected '}' when loading checkpoint"));
-                return false;
-            }
+        json checkpoint;
 
-            // useless associativity information
-            s >> paren; // <
-            if (paren != '<') {
-                DBG_(Crit, (<< "Expected '<' when loading checkpoint"));
-                return false;
-            }
-            for (uint32_t j = 0; j < theCache.assoc(); j++) {
-                s >> dummy;
-            }
-            s >> paren; // >
-            if (paren != '>') {
-                DBG_(Crit, (<< "Expected '>' when loading checkpoint"));
-                return false;
+        ifs >> checkpoint;
+        uint32_t tag_shift                    = LOG2(theCache.sets());
+
+        for (std::size_t i{0}; i < theCache.sets(); i++) {
+            for (uint32_t j = 0; j < checkpoint["tags"].at(i).size(); j++) {
+                bool dirty = checkpoint["tags"].at(i).at(j)["dirty"];
+                bool writable = checkpoint["tags"].at(i).at(j)["writable"];
+                uint64_t tag = checkpoint["tags"].at(i).at(j)["tag"];
+
+                theCache.insert(std::make_pair((tag << tag_shift) | i, 0));
             }
         }
-        return true;
+
+        ifs.close();
     }
 
     uint64_t insert(uint64_t addr)
@@ -387,20 +346,20 @@ class FLEXUS_COMPONENT(uFetch)
 
     void saveState(std::string const& aDirName)
     {
-        std::string fname(aDirName);
-        fname += "/" + boost::padded_string_cast<3, '0'>(flexusIndex()) + "-L1i";
-        // Not supported
+        DBG_Assert(false, (<< "NOT SUPPORTED"));
     }
 
-    void loadState(std::string const& aDirName)
+    void loadState(std::string const& dirname)
     {
-        std::string fname(aDirName);
+        std::string fname(dirname);
         if (flexusWidth() == 1) {
             fname += "/sys-L1i";
         } else {
             fname += "/" + boost::padded_string_cast<2, '0'>(flexusIndex()) + "-L1i";
         }
-        DBG_(VVerb, (<< "file for sys-L1i " << fname));
+
+        fname += ".json";
+        DBG_(VVerb, (<< "file for" << (boost::padded_string_cast<2, '0'>(flexusIndex()) + "-L1i") << ": " << fname));
         theI.loadState(fname);
     }
 

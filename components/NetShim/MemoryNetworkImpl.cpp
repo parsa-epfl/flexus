@@ -92,7 +92,6 @@ class FLEXUS_COMPONENT(MemoryNetwork)
     }
 
     // added by mehdi
-    ofstream LatencyOut;
     long long latency;
     long PacketCount;
     // mehdi
@@ -104,7 +103,6 @@ class FLEXUS_COMPONENT(MemoryNetwork)
     {
         int i;
         // mehdi
-        LatencyOut.open("NetshimStatOut");
         latency     = 0;
         PacketCount = 0;
         // end of medhi
@@ -161,8 +159,6 @@ class FLEXUS_COMPONENT(MemoryNetwork)
 
         if (nNetShim::currTime == 149999) {
             double avg_latency = double(latency) / double(PacketCount);
-            LatencyOut << "latency of netshim : " << avg_latency;
-            LatencyOut.flush();
         }
 
         // We need to use function objects for calls back into simics from the

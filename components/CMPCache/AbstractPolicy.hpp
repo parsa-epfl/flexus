@@ -98,8 +98,8 @@ class AbstractPolicy
 
     virtual void wakeMAFs(MemoryAddress anAddress) = 0;
 
-    virtual bool loadDirState(std::istream& is)   = 0;
-    virtual bool loadCacheState(std::istream& is) = 0;
+    virtual void load_dir_from_ckpt(std::string const&)   = 0;
+    virtual void load_cache_from_ckpt(std::string const&) = 0;
 
     virtual void reserveArrayEvictResource(int32_t n)   = 0;
     virtual void unreserveArrayEvictResource(int32_t n) = 0;

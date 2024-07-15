@@ -56,6 +56,10 @@
 using nCommonSerializers::StdDirEntrySerializer;
 using nCommonUtil::log_base2;
 
+#include <core/checkpoint/json.hpp>
+using json = nlohmann::json;
+#define MAX_NUM_SHARERS 512
+
 namespace nFastCMPCache {
 
 typedef BlockDirectoryEntry StandardDirectoryEntry;
@@ -235,36 +239,89 @@ class StandardDirectory : public AbstractDirectory
 
         BlockEntryWrapper_p wrapper(new BlockEntryWrapper(*entry));
 
-        return std::tie(entry->sharers(), entry->state(), wrapper);
+    return std::tie(entry->sharers(), entry->state(), wrapper);
+  }
+
+  virtual std::tuple<SharingVector, SharingState, AbstractEntry_p, bool>
+  snoopLookup(int32_t index, PhysicalMemoryAddress address, MMType req_type) {
+
+    StandardDirectoryEntry *entry = findOrCreateEntry(address, false);
+    DBG_Assert(entry != nullptr);
+
+    bool valid = true;
+    if (entry->tag() != address) {
+      SharingVector sharers;
+      SharingState state = ZeroSharers;
+      BlockEntryWrapper_p wrapper;
+      valid = false;
+      return std::tie(sharers, state, wrapper, valid);
     }
 
-    virtual std::tuple<SharingVector, SharingState, AbstractEntry_p, bool> snoopLookup(int32_t index,
-                                                                                       PhysicalMemoryAddress address,
-                                                                                       MMType req_type)
-    {
+    BlockEntryWrapper_p wrapper(new BlockEntryWrapper(*entry));
 
-        StandardDirectoryEntry* entry = findOrCreateEntry(address, false);
-        DBG_Assert(entry != nullptr);
+    return std::tie(entry->sharers(), entry->state(), wrapper, valid);
+  }
+  
+  void saveStateJSON(std::ostream &s, const std::string &aDirName) {
 
-        bool valid = true;
-        if (entry->tag() != address) {
-            SharingVector sharers;
-            SharingState state = ZeroSharers;
-            BlockEntryWrapper_p wrapper;
-            valid = false;
-            return std::tie(sharers, state, wrapper, valid);
+    json checkpoint;
+
+    checkpoint = json::array();
+
+    DBG_(Dev, (<< "Saving directory entries."));
+
+    uint64_t i = 0;
+    for (size_t set = 0; set < (size_t)theNumSets; set++) {
+      for (size_t way = 0; way < (size_t)theAssociativity; way++) {
+
+        uint64_t dirAddress = theDirectory[set][way].theAddress;
+        uint64_t sharers = theDirectory[set][way].theSharers.getSharers().to_ullong();
+
+        checkpoint[i++] = {{"tag", dirAddress}, {"sharers", sharers}};
+        
+        DBG_(Trace, (<< "Directory saving block: " << dirAddress));
+
+      }
+    }
+
+    s << std::setw(4) << checkpoint << std::endl;
+
+  }
+
+  bool loadStateJSON(std::istream &s, const std::string &aDirName) {
+    
+    json checkpoint;
+    s >> checkpoint;
+    
+    uint32_t dirSize = checkpoint.size();
+
+    DBG_(Trace, (<< "Directory loading " << dirSize << " entries."));
+    for (size_t set = 0; set < (size_t)theNumSets; set++) {
+      
+        //empty the directory
+        theDirectory[set].clear();
+
+        for (size_t way = 0; way < (size_t)theAssociativity; way++) {
+
+        DBG_(Trace, (<< "Directory loading block " << set*way));
+
+        uint64_t address = checkpoint.at(set*way)["tag"];
+        std::bitset<MAX_NUM_SHARERS> state ((uint64_t)checkpoint.at(set*way)["sharers"]);
+
+        //push new elements
+        theDirectory[set].push_back(StandardDirectoryEntry(PhysicalMemoryAddress(address), state));
+
         }
-
-        BlockEntryWrapper_p wrapper(new BlockEntryWrapper(*entry));
-
-        return std::tie(entry->sharers(), entry->state(), wrapper, valid);
     }
-    void saveState(std::ostream& s, const std::string& aDirName)
-    {
-        boost::archive::binary_oarchive oa(s);
 
-        uint64_t set_count     = theNumSets;
-        uint32_t associativity = theAssociativity;
+    return true;
+  }
+
+  void saveState(std::ostream &s, const std::string &aDirName) {
+    boost::archive::binary_oarchive oa(s);
+
+    uint64_t set_count = theNumSets;
+    uint32_t associativity = theAssociativity;
 
         oa << set_count;
         oa << associativity;

@@ -110,11 +110,10 @@ class FLEXUS_COMPONENT(Cache)
                (theController.get() ? theController->isQuiesced() : true);
     }
 
-    void saveState(std::string const& aDirName) { theController->saveState(aDirName); }
 
     void loadState(std::string const& aDirName)
     {
-        theController->loadState(aDirName, cfg.TextFlexpoints, cfg.GZipFlexpoints);
+        theController->loadState(aDirName);
     }
 
     // Initialization

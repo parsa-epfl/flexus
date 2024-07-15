@@ -46,22 +46,18 @@
 #ifndef _CACHE_ARRAY_HPP
 #define _CACHE_ARRAY_HPP
 
-#include "boost/archive/binary_iarchive.hpp"
-#include "boost/archive/binary_oarchive.hpp"
-#include "boost/dynamic_bitset.hpp"
-#include "boost/throw_exception.hpp"
 #include "components/CommonQEMU/Serializers.hpp"
 #include "components/CommonQEMU/Util.hpp"
 #include "core/debug/debug.hpp"
 #include "core/target.hpp"
 #include "core/types.hpp"
+#include "core/checkpoint/json.hpp"
 
-#include <exception>
 #include <iostream>
-#include <stdlib.h>
 
 using nCommonSerializers::BlockSerializer;
 using nCommonUtil::log_base2;
+using json = nlohmann::json;
 
 namespace nCache {
 
@@ -73,7 +69,6 @@ typedef uint32_t BlockOffset;
 enum ReplacementPolicy
 {
     REPLACEMENT_LRU,
-    REPLACEMENT_PLRU
 };
 
 // This is a cache block.  The accessor functions are braindead simple.
@@ -234,13 +229,7 @@ class Set
     virtual void recordAccess(Block<_State, _DefaultState>* aBlock)    = 0;
     virtual void invalidateBlock(Block<_State, _DefaultState>* aBlock) = 0;
 
-    virtual bool saveState(std::ostream& s)                                                       = 0;
-    virtual bool loadState(boost::archive::binary_iarchive& ia, int32_t theIndex, int32_t theSet) = 0;
-    virtual bool loadTextState(std::istream& is,
-                               int32_t theIndex,
-                               int32_t theSet,
-                               int32_t theTagShift,
-                               int32_t theSetShift)                                               = 0;
+    virtual void load_set_from_ckpt(json& is, int32_t core_idx, int32_t set_idx, int32_t tag_shift, int32_t set_shift) = 0;
 
     MemoryAddress blockAddress(const Block<_State, _DefaultState>* theBlock) { return theBlock->tag(); }
 
@@ -329,77 +318,21 @@ class SetLRU : public Set<_State, _DefaultState>
         moveToTail(theBlockNum);
     }
 
-    virtual bool saveState(std::ostream& s) { return true; }
-
-    virtual bool loadState(boost::archive::binary_iarchive& ia, int32_t theIndex, int32_t theSet)
+    virtual void load_set_from_ckpt(
+        json& checkpoint,
+        int32_t core_idx,
+        int32_t set_idx,
+        int32_t tag_shift,
+        int32_t set_shift)
     {
-        nCommonSerializers::BlockSerializer bs;
-        for (int32_t i = (Set<_State, _DefaultState>::theAssociativity - 1); i >= 0; i--) {
-            ia >> bs;
-            DBG_(Trace,
-                 Addr(bs.tag)(<< theIndex << "-L2: Loading block " << std::hex << bs.tag << " in state "
-                              << (uint16_t)bs.state << " in way " << (uint16_t)bs.way << " in set " << theSet));
-            _State state(_State::char2State(bs.state));
-            // int32_t way = bs.way;
-            MemoryAddress tag                                = MemoryAddress(bs.tag);
-            theMRUOrder[i]                                   = i;
-            Set<_State, _DefaultState>::theBlocks[i].tag()   = tag;
-            Set<_State, _DefaultState>::theBlocks[i].state() = state;
-        }
-        return false;
-    }
+        for (uint32_t i{0}; i < checkpoint["tags"].at(set_idx).size(); i++) {
+            bool dirty = checkpoint["tags"].at(set_idx).at(i)["dirty"];
+            bool writable = checkpoint["tags"].at(set_idx).at(i)["writable"];
+            uint64_t tag = checkpoint["tags"].at(set_idx).at(i)["tag"];
 
-    virtual bool loadTextState(std::istream& is,
-                               int32_t theIndex,
-                               int32_t theSet,
-                               int32_t theTagShift,
-                               int32_t theSetShift)
-    {
-
-        char paren;
-        int32_t dummy;
-        //    int32_t load_state;
-        //    uint64_t load_tag;
-        is >> paren; // {
-        if (paren != '{') {
-            DBG_(Crit, (<< "Expected '{' when loading checkpoint, read '" << paren << "' instead"));
-            return true;
+            Set<_State, _DefaultState>::theBlocks[i].tag() = MemoryAddress((tag << tag_shift) | (set_idx << set_shift));
+            Set<_State, _DefaultState>::theBlocks[i].state() = _State::bool2state(dirty, writable);
         }
-
-        for (int32_t i = 0; i < Set<_State, _DefaultState>::theAssociativity; i++) {
-            uint64_t tag;
-            int32_t state;
-            is >> paren >> state >> tag >> paren;
-            Set<_State, _DefaultState>::theBlocks[i].tag() =
-              MemoryAddress((tag << theTagShift) | (theSet << theSetShift));
-            Set<_State, _DefaultState>::theBlocks[i].state() = _State::int2State(state);
-            DBG_(Trace,
-                 (<< theIndex << "-L?: Loading block " << std::hex << tag << ", in state "
-                  << (Set<_State, _DefaultState>::theBlocks[i].state())));
-        }
-
-        is >> paren; // }
-        if (paren != '}') {
-            DBG_(Crit, (<< "Expected '}' when loading checkpoint"));
-            return true;
-        }
-
-        // useless associativity information
-        is >> paren; // <
-        if (paren != '<') {
-            DBG_(Crit, (<< "Expected '<' when loading checkpoint"));
-            return false;
-        }
-        for (int32_t j = 0; j < Set<_State, _DefaultState>::theAssociativity; j++) {
-            is >> dummy;
-        }
-        is >> paren; // >
-        if (paren != '>') {
-            DBG_(Crit, (<< "Expected '>' when loading checkpoint"));
-            return false;
-        }
-
-        return false;
     }
 
   protected:
@@ -433,78 +366,6 @@ class SetLRU : public Set<_State, _DefaultState>
     SetIndex* theMRUOrder;
 
 }; // class SetLRU
-
-template<typename _State, const _State& _DefaultState>
-class SetPseudoLRU : public Set<_State, _DefaultState>
-{
-  public:
-    SetPseudoLRU(const int32_t anAssociativity)
-      : Set<_State, _DefaultState>(anAssociativity)
-      , theMRUBits(anAssociativity, ((1ULL << anAssociativity) - 1))
-    {
-    }
-
-    virtual Block<_State, _DefaultState>* pickVictim()
-    {
-        DBG_Assert(false);
-        // TODO: Fix this to check protected bits!!
-        // First look for "invalid block", ie. block in DefaultState
-        for (int32_t i = 0; i < Set<_State, _DefaultState>::theAssociativity; i++) {
-            if (Set<_State, _DefaultState>::theBlocks[i].state() == _DefaultState) {
-                return &Set<_State, _DefaultState>::theBlocks[i];
-            }
-        }
-
-        int32_t theBlockNum = theMRUBits.find_first();
-        return Set<_State, _DefaultState>::theBlocks + theBlockNum;
-    }
-
-    virtual bool victimAvailable()
-    {
-        DBG_Assert(false);
-        // First look for "invalid block", ie. block in DefaultState
-        for (int32_t i = 0; i < Set<_State, _DefaultState>::theAssociativity; i++) {
-            if (Set<_State, _DefaultState>::theBlocks[i].state() == _DefaultState) { return true; }
-        }
-
-        return true;
-        // TODO: Fix this to check protected bits!!
-    }
-
-    virtual void recordAccess(Block<_State, _DefaultState>* aBlock)
-    {
-        int32_t theBlockNum     = aBlock - Set<_State, _DefaultState>::theBlocks;
-        theMRUBits[theBlockNum] = 0;
-        if (theMRUBits.none()) {
-            theMRUBits.flip();
-            theMRUBits[theBlockNum] = 0;
-        }
-    }
-
-    virtual void invalidateBlock(Block<_State, _DefaultState>* aBlock)
-    {
-        int32_t theBlockNum     = aBlock - Set<_State, _DefaultState>::theBlocks;
-        theMRUBits[theBlockNum] = 1;
-    }
-
-    virtual bool saveState(std::ostream& s) { return true; }
-
-    virtual bool loadState(boost::archive::binary_iarchive& ia, int32_t theIndex, int32_t theSet) { return true; }
-
-    virtual bool loadTextState(std::istream& is,
-                               int32_t theIndex,
-                               int32_t theSet,
-                               int32_t theTgShift,
-                               int32_t theSetShift)
-    {
-        return true;
-    }
-
-  protected:
-    // This uses one bit per bool, pretty space-efficient
-    boost::dynamic_bitset<> theMRUBits;
-
-}; // class SetPseudoLRU
 
 template<typename _State, const _State& _DefaultState>
 class StdArray : public AbstractArray<_State>
@@ -544,9 +405,6 @@ class StdArray : public AbstractArray<_State>
                        strcasecmp(iter->first.c_str(), "replacement") == 0) {
                 if (strcasecmp(iter->second.c_str(), "lru") == 0) {
                     theReplacementPolicy = REPLACEMENT_LRU;
-                } else if (strcasecmp(iter->second.c_str(), "plru") == 0 ||
-                           strcasecmp(iter->second.c_str(), "pseudoLRU") == 0) {
-                    theReplacementPolicy = REPLACEMENT_PLRU;
                 } else {
                     DBG_Assert(false, (<< "Invalid replacement policy type " << iter->second));
                 }
@@ -604,7 +462,6 @@ class StdArray : public AbstractArray<_State>
 
             switch (theReplacementPolicy) {
                 case REPLACEMENT_LRU: theSets[i] = new SetLRU<_State, _DefaultState>(theAssociativity); break;
-                case REPLACEMENT_PLRU: theSets[i] = new SetPseudoLRU<_State, _DefaultState>(theAssociativity); break;
                 default: DBG_Assert(0);
             };
         }
@@ -665,48 +522,14 @@ class StdArray : public AbstractArray<_State>
         return std::make_pair(_DefaultState, MemoryAddress(0));
     }
 
-    // Checkpoint reading/writing functions
-    virtual bool saveState(std::ostream& s)
+    virtual void load_from_ckpt(std::istream& is, int32_t theIndex)
     {
+        json checkpoint;
+        is >> checkpoint;
 
-        // NOT IMPLEMENTED!
-        return true;
-    }
-
-    virtual bool loadState(std::istream& s, int32_t theIndex, bool text)
-    {
-
-        if (text) {
-            for (int32_t i = 0; i < setCount; i++) {
-                if (theSets[i]->loadTextState(s, theIndex, i, theTagShift, setIndexShift)) {
-                    DBG_(Crit, (<< " Error loading state for set: line number " << i));
-                    return true; // true == error
-                }
-            }
-        } else {
-            boost::archive::binary_iarchive ia(s);
-
-            uint64_t set_count     = 0;
-            uint32_t associativity = 0;
-
-            ia >> set_count;
-            ia >> associativity;
-
-            DBG_Assert(set_count == (uint64_t)setCount,
-                       (<< "Error loading cache state. Flexpoint contains " << set_count
-                        << " sets but simulator configured for " << setCount << " sets."));
-            DBG_Assert(associativity == (uint64_t)theAssociativity,
-                       (<< "Error loading cache state. Flexpoint contains " << associativity
-                        << "-way sets but simulator configured for " << theAssociativity << "-way sets."));
-
-            for (int32_t i = 0; i < setCount; i++) {
-                if (theSets[i]->loadState(ia, theIndex, i)) {
-                    DBG_(Crit, (<< " Error loading state for set: line number " << i));
-                    return true; // true == error
-                }
-            }
+        for (int32_t i{0}; i < setCount; i++) {
+            theSets[i]->load_set_from_ckpt(checkpoint, theIndex, i, theTagShift, setIndexShift);
         }
-        return false; // false == no errors
     }
 
     // Addressing helper functions
@@ -728,8 +551,6 @@ class StdArray : public AbstractArray<_State>
 
     virtual std::function<bool(MemoryAddress a, MemoryAddress b)> setCompareFn() const
     {
-        // return [this](auto a, auto b){ return this->sameSet(a, b); };//std::bind(
-        // &StdArray<_State, _DefaultState>::sameSet, *this, _1, _2);
         return std::bind(&StdArray<_State, _DefaultState>::sameSet,
                          *this,
                          std::placeholders::_1,

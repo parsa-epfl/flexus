@@ -175,18 +175,7 @@ class PageMap_QemuObject_Impl
 
     void setPageMap(PageMap& aPageMap) { thePageMap = &aPageMap; }
 
-    void printStats()
-    {
-        if (thePageMap) {
-            PageMap::iterator iter = thePageMap->begin();
-            while (iter != thePageMap->end()) {
-                PhysicalMemoryAddress base_address = iter->first;
-                std::cout << "Page @" << std::hex << base_address << std::endl;
-                std::cout << iter->second;
-                ++iter;
-            }
-        }
-    }
+    void printStats() {}
 };
 
 class PageMap_QemuObject : public Qemu::AddInObject<PageMap_QemuObject_Impl>
@@ -260,12 +249,10 @@ class FLEXUS_COMPONENT(MemoryMap), public MemoryMapFactory
 
     void saveState(std::string const& aDirName)
     {
-        writePageMap(aDirName + "/page_map.out");
     }
 
     void loadState(std::string const& aDirName)
     {
-        readPageMap(aDirName + "/page_map.out"); // reads from ckpt directory
     }
 
     // Initialization
@@ -297,65 +284,13 @@ class FLEXUS_COMPONENT(MemoryMap), public MemoryMapFactory
               new Flexus::Stat::StatCounter(std::string(boost::padded_string_cast<3, '0'>(i) + "-memory-Pages")));
         }
 
-        if (cfg.ReadPageMap) {
-            readPageMap("page_map.out"); // reads from current directory
-        }
-
-        if (cfg.CreatePageMap) {
-            if (cfg.ReadPageMap) {
-                theHomeMapFile.reset(new std::ofstream("page_map.out", std::ios::out | std::ios::app));
-            } else {
-                theHomeMapFile.reset(new std::ofstream("page_map.out", std::ios::out));
-            }
-        }
     }
 
     void finalize() {}
 
-    void writePageMap(std::string const& aFilename)
-    {
-        std::ofstream out(aFilename.c_str());
-        if (out) {
-            HomeMap::iterator iter = theHomeMap.begin();
-            HomeMap::iterator end  = theHomeMap.end();
-            while (iter != end) {
-                out << iter->second << " " << static_cast<int64_t>(iter->first) << "\n";
-                ++iter;
-            }
-        } else {
-            DBG_(Crit, (<< "Unable to save page map to " << aFilename));
-        }
-    }
+    void writePageMap(std::string const& aFilename) {}
 
-    void readPageMap(std::string const& aFilename)
-    {
-        DBG_Assert(!theMapLoaded, (<< "Attempted to load page map twice (" << aFilename << ")"));
-        std::ifstream in(aFilename.c_str());
-        if (in) {
-            DBG_(Dev, (<< "Page map file page_map.out found.  Reading contents..."));
-
-            int32_t count = 0;
-            while (in) {
-                int32_t node;
-                int64_t addr;
-                in >> node;
-                in >> addr;
-                if (in.good()) {
-                    DBG_(VVerb, (<< "Page " << addr << " assigned to node " << node));
-                    HomeMap::iterator ignored;
-                    bool is_new;
-                    std::tie(ignored, is_new) = theHomeMap.insert({ PhysicalMemoryAddress(addr), node_id_t(node) });
-                    DBG_Assert(is_new);
-                    ++count;
-                }
-            }
-            theMapLoaded = true;
-
-            DBG_(Dev, (<< "Assigned " << count << " pages."));
-        } else {
-            DBG_(Dev, (<< "Page map file page_map.out was not found."));
-        }
-    }
+    void readPageMap(std::string const& aFilename) {}
 
     virtual ~MemoryMapComponent() {} // Eliminate warning about virtual destructor
 
@@ -370,19 +305,13 @@ class FLEXUS_COMPONENT(MemoryMap), public MemoryMapFactory
     }
 
     bool isCacheable(PhysicalMemoryAddress const& anAddress)
-    {
-        return true;
-    }
+    { return true; }
 
     bool isMemory(PhysicalMemoryAddress const& anAddress)
-    {
-        return true;
-    }
+    { return true; }
 
     bool isIO(PhysicalMemoryAddress const& anAddress)
-    {
-        return true;
-    }
+    { return true; }
 
     node_id_t newPage(PhysicalMemoryAddress const& aPageAddr, const node_id_t aRequestingNode)
     {

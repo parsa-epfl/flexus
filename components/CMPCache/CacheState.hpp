@@ -130,26 +130,33 @@ class CacheState
         ar& val;
     }
 
-    static const CacheState& char2State(uint8_t c)
+//    static const CacheState& char2State(uint8_t c)
+//    {
+//        switch (c) {
+//            case 'M': return Modified; break;
+//            case 'O': return Owned; break;
+//            case 'E': return Exclusive; break;
+//            case 'S': return Shared; break;
+//            case 'I': return Invalid; break;
+//            case 'P': return InvalidPresent; break;
+//            case 'F': return Forward; break;
+//            default: DBG_Assert(false, (<< "Unknown state '" << c << "'")); break;
+//        }
+//        return Invalid;
+//    }
+    static const CacheState& bool2state(bool dirty, bool writable)
     {
-        switch (c) {
-            case 'M': return Modified; break;
-            case 'O': return Owned; break;
-            case 'E': return Exclusive; break;
-            case 'S': return Shared; break;
-            case 'I': return Invalid; break;
-            case 'P': return InvalidPresent; break;
-            case 'F': return Forward; break;
-            default: DBG_Assert(false, (<< "Unknown state '" << c << "'")); break;
-        }
-        return Invalid;
+        if (dirty & writable) return Modified;
+        if (dirty) return Owned;
+        if (writable) return Exclusive;
+        return Shared;
     }
 
   private:
     explicit CacheState()
       : val(Invalid.val)
-    { /* Never called */
-        *(int*)0 = 0;
+    {
+        DBG_Assert(false);
     }
     CacheState(const std::string& name)
       : val(names().size())

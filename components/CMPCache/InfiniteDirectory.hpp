@@ -46,7 +46,8 @@
 #ifndef __INFINITE_DIRECTORY_HPP__
 #define __INFINITE_DIRECTORY_HPP__
 
-#include <boost/archive/binary_iarchive.hpp>
+#include <fstream>
+#include <core/checkpoint/json.hpp>
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/member.hpp>
@@ -54,9 +55,9 @@
 #include <boost/multi_index_container.hpp>
 using namespace boost::multi_index;
 
-#include <components/CommonQEMU/Serializers.hpp>
 #include <components/CommonQEMU/Util.hpp>
-using nCommonSerializers::StdDirEntryExtendedSerializer;
+
+using json = nlohmann::json;
 using nCommonUtil::AddressHash;
 using nCommonUtil::log_base2;
 
@@ -76,16 +77,15 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
           : theAddress(anAddress)
           , theState(aState)
           , theProtectedState(false)
-        {
-        }
+        {}
 
-        InfDirEntry(const StdDirEntryExtendedSerializer& serializer, int32_t aNumSharers)
-          : theAddress(serializer.tag)
-          , theState(aNumSharers)
-          , theProtectedState(false)
-        {
-            theState = serializer.state;
-        }
+        InfDirEntry(
+            MemoryAddress tag,
+            uint32_t sharer_nb,
+            _State sharers) :
+        theAddress(tag),
+        theState(sharer_nb),
+        theProtectedState(false) { theState = sharers; }
     };
 
     typedef multi_index_container<InfDirEntry,
@@ -252,28 +252,41 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
         return boost::intrusive_ptr<AbstractLookupResult<_State>>(new DummyLookupResult(state));
     }
 
-    virtual bool loadState(std::istream& is)
+    virtual void load_dir_from_ckpt(const std::string& filename)
     {
-        boost::archive::binary_iarchive ia(is);
-        return loadState(ia);
-    }
+        std::ifstream ifs(filename.c_str(), std::ios::in);
 
-    virtual bool loadState(boost::archive::binary_iarchive& ia)
-    {
-
-        uint32_t count;
-        ia >> count;
-        StdDirEntryExtendedSerializer serializer;
-        DBG_(Dev, (<< theName << " - Directory loading " << count << " entries."));
-        for (; count > 0; count--) {
-            ia >> serializer;
-            // only store entries for this bank to save memory
-            if ((getBank(serializer.tag) == theLocalBankIndex) && (getGroup(serializer.tag) == theGroupIndex)) {
-                DBG_(Trace, (<< theName << " - Directory loading block " << serializer));
-                theDirectory.insert(InfDirEntry(serializer, theNumSharers));
-            }
+        if (!ifs.good()) {
+            DBG_(Dev, (<< "checkpoint file: " << filename << " not found."));
+            DBG_Assert(false, (<< "FILE NOT FOUND"));
         }
-        return true;
+
+        json checkpoint;
+        ifs >> checkpoint;
+
+        //empty the directory
+        theDirectory.clear();
+
+
+        // for length of the dir
+        uint32_t cache_size = checkpoint.size();
+        DBG_(Trace, (<< "Directory loading " << cache_size << " entries."));
+
+        for (uint32_t i{0}; i < cache_size; i++)
+        {
+            uint64_t address = checkpoint.at(i)["tag"];
+            std::bitset<MAX_NUM_SHARERS> sharers ((uint64_t)checkpoint.at(i)["sharers"]);
+
+            // It's stupid but that's the only way to workaround this object
+            SimpleDirectoryState state(theNumSharers);
+            state = sharers;
+
+            if ((getBank(address) == theLocalBankIndex) && (getGroup(address) == theGroupIndex))
+                theDirectory.insert(InfDirEntry(PhysicalMemoryAddress(address), state));
+        }
+
+        DBG_(Trace, (<< "Directory loaded"));
+        ifs.close();
     }
 };
 
