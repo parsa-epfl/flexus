@@ -1,71 +1,12 @@
-//  DO-NOT-REMOVE begin-copyright-block
-// QFlex consists of several software components that are governed by various
-// licensing terms, in addition to software that was developed internally.
-// Anyone interested in using QFlex needs to fully understand and abide by the
-// licenses governing all the software components.
-//
-// ### Software developed externally (not by the QFlex group)
-//
-//     * [NS-3] (https://www.gnu.org/copyleft/gpl.html)
-//     * [QEMU] (http://wiki.qemu.org/License)
-//     * [SimFlex] (http://parsa.epfl.ch/simflex/)
-//     * [GNU PTH] (https://www.gnu.org/software/pth/)
-//
-// ### Software developed internally (by the QFlex group)
-// **QFlex License**
-//
-// QFlex
-// Copyright (c) 2020, Parallel Systems Architecture Lab, EPFL
-// All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without modification,
-// are permitted provided that the following conditions are met:
-//
-//     * Redistributions of source code must retain the above copyright notice,
-//       this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above copyright notice,
-//       this list of conditions and the following disclaimer in the documentation
-//       and/or other materials provided with the distribution.
-//     * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,
-//       nor the names of its contributors may be used to endorse or promote
-//       products derived from this software without specific prior written
-//       permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,
-// EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-// GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
-// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  DO-NOT-REMOVE end-copyright-block
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
-#include <boost/serialization/export.hpp>
-#include <boost/serialization/list.hpp>
-#include <boost/serialization/serialization.hpp>
-#include <boost/serialization/tracking.hpp>
-#include <boost/serialization/vector.hpp>
-#include <components/CommonQEMU/TraceTracker.hpp>
-#include <components/FastCache/AbstractCache.hpp>
-#include <components/FastCache/CacheStats.hpp>
+#include "core/debug/debug.hpp"
+
 #include <components/FastCache/CoherenceProtocol.hpp>
 #include <components/FastCache/FastCache.hpp>
-#include <components/FastCache/InclusiveMOESI.hpp>
-#include <components/FastCache/LookupResult.hpp>
-#include <components/FastCache/RTCache.hpp>
 #include <components/FastCache/StdCache.hpp>
-#include <core/performance/profile.hpp>
+#include <cstdint>
 #include <fstream>
 #include <string>
 
-#define DBG_DefineCategories RTCacheCat
-#define DBG_SetDefaultOps    AddCat(RTCacheCat) Comp(*this)
 #include DBG_Control()
 
 #define FLEXUS_BEGIN_COMPONENT FastCache
@@ -80,7 +21,7 @@ class FLEXUS_COMPONENT(FastCache)
     FLEXUS_COMPONENT_IMPL(FastCache);
 
     CoherenceProtocol* theProtocol;
-    AbstractCache* theCache;
+    StdCache* theCache;
     CacheStats* theStats;
 
     uint64_t theBlockMask;
@@ -108,50 +49,95 @@ class FLEXUS_COMPONENT(FastCache)
     void saveState(std::string const& aDirName)
     {
         std::string fname(aDirName);
-        fname += "/" + statName();
-        if (cfg.GZipFlexpoints) { fname += ".gz"; }
+        fname += "/" + statName() + ".json";
 
-        std::ios_base::openmode omode = std::ios::out;
-        if (!cfg.TextFlexpoints) { omode |= std::ios::binary; }
+        std::ofstream ofs(fname.c_str(), std::ios::out);
 
-        std::ofstream ofs(fname.c_str(), omode);
-
-        boost::iostreams::filtering_stream<boost::iostreams::output> out;
-        if (cfg.GZipFlexpoints) { out.push(boost::iostreams::gzip_compressor(boost::iostreams::gzip_params(9))); }
-        out.push(ofs);
-
-        theCache->saveState(out);
+        theCache->saveState(ofs);
+        ofs.close();
     }
 
-    void loadState(std::string const& aDirName)
+    // void loadStateJSON(std::string const &aDirName) {
+    //     std::string fname(aDirName);
+    //     fname += "/" + statName() + ".json";
+
+    //    std::ifstream ifs(fname.c_str(), std::ios::in);
+
+    //    if (!ifs.good()) {
+    //        DBG_(Dev,
+    //            (<< " saved checkpoint state " << fname << " not found.  Resetting to empty cache. "));
+    //    } else {
+    //        if (!theCache->loadStateJSON(ifs)) {
+    //            DBG_(Dev, (<< "Error loading checkpoint state from file: " << fname
+    //                    << ".  Make sure your checkpoints match your current cache "
+    //                        "configuration."));
+    //            DBG_Assert(false);
+    //        }
+    //    }
+    //    ifs.close();
+    //}
+
+    void evict(uint64_t aTagset, CoherenceState_t aLineState)
     {
-        std::string fname(aDirName);
-        fname += "/" + statName();
-        if (cfg.GZipFlexpoints) { fname += ".gz"; }
+        theEvictMessage.address() = PhysicalMemoryAddress(aTagset);
+        theEvictMessage.type()    = theProtocol->evict(aTagset, aLineState);
 
-        std::ios_base::openmode omode = std::ios::in;
-        if (!cfg.TextFlexpoints) { omode |= std::ios::binary; }
-
-        std::ifstream ifs(fname.c_str(), omode);
-        if (!ifs.good()) {
-            DBG_(Dev, (<< " saved checkpoint state " << fname << " not found.  Resetting to empty cache. "));
-        } else {
-            // ifs >> std::skipws;
-
-            boost::iostreams::filtering_stream<boost::iostreams::input> in;
-            if (cfg.GZipFlexpoints) { in.push(boost::iostreams::gzip_decompressor()); }
-            in.push(ifs);
-
-            if (!theCache->loadState(in)) {
-                DBG_(Dev,
-                     (<< "Error loading checkpoint state from file: " << fname
-                      << ".  Make sure your checkpoints match your current cache "
-                         "configuration."));
-                DBG_Assert(false);
-            }
+        if (theEvictMessage.type() == MemoryMessage::EvictDirty || cfg.CleanEvictions) {
+            DBG_(Iface, Addr(aTagset)(<< "Evict: " << theEvictMessage));
+            FLEXUS_CHANNEL(RequestOut) << theEvictMessage;
         }
     }
 
+    bool sendInvalidate(uint64_t addr, bool icache, bool dcache)
+    {
+        bool was_dirty                 = false;
+        theInvalidateMessage.address() = PhysicalMemoryAddress(addr);
+
+        if (icache) {
+            theInvalidateMessage.type() = MemoryMessage::Invalidate;
+            DBG_(Iface, Addr(addr)(<< "Sending ICache Invalidate: " << std::hex << addr << std::dec));
+            FLEXUS_CHANNEL(SnoopOutI) << theInvalidateMessage;
+            // We can cached a dirty copy in the ICache too!!
+            was_dirty = (theInvalidateMessage.type() == MemoryMessage::InvUpdateAck);
+        }
+
+        if (dcache) {
+            theInvalidateMessage.type() = MemoryMessage::Invalidate;
+            DBG_(Iface, Addr(addr)(<< "Sending DCache Invalidate: " << std::hex << addr << std::dec));
+            FLEXUS_CHANNEL(SnoopOutD) << theInvalidateMessage;
+        }
+
+        return (was_dirty || (theInvalidateMessage.type() == MemoryMessage::InvUpdateAck));
+    }
+
+    void forwardMessage(MemoryMessage& msg) { FLEXUS_CHANNEL(RequestOut) << msg; }
+
+    void continueSnoop(MemoryMessage& msg)
+    {
+        MemoryMessage dup_msg(msg);
+
+        if (msg.type() != MemoryMessage::Downgrade) { FLEXUS_CHANNEL(SnoopOutI) << dup_msg; }
+
+        FLEXUS_CHANNEL(SnoopOutD) << msg;
+
+        // ReturnReq can get data from I or D cache.
+        // All other requests, D cache response is the correct response
+        if (msg.type() == MemoryMessage::ReturnNAck && dup_msg.type() != MemoryMessage::ReturnNAck) {
+            msg.type() = dup_msg.type();
+        }
+    }
+
+    void finalize(void) { theStats->update(); }
+
+    void notifyRead(MemoryMessage& aMessage)
+    {
+        if (cfg.NotifyReads) { FLEXUS_CHANNEL(Reads) << aMessage; }
+    }
+
+    void notifyWrite(MemoryMessage& aMessage)
+    {
+        if (cfg.NotifyWrites) { FLEXUS_CHANNEL(Writes) << aMessage; }
+    }
     void initialize(void)
     {
         static volatile bool widthPrintout = true;
@@ -189,50 +175,17 @@ class FLEXUS_COMPONENT(FastCache)
         // Calculate shifts and masks
         theBlockMask = ~(cfg.BlockSize - 1);
 
-        if (cfg.StdArray) {
-            theCache = new StdCache(
-              statName(),
-              cfg.BlockSize,
-              num_sets,
-              cfg.Associativity,
-              [this](uint64_t aTagset, CoherenceState_t aLineState) { return this->evict(aTagset, aLineState); },
-              [this](uint64_t addr, bool icache, bool dcache) { return this->sendInvalidate(addr, icache, dcache); },
-              theIndex,
-              cfg.CacheLevel,
-              cfg.RTReplPolicy,
-              cfg.TextFlexpoints);
-        } else {
-            theCache = new RTCache(
-              cfg.BlockSize,
-              num_sets,
-              cfg.Associativity,
-              [this](uint64_t aTagset, CoherenceState_t aLineState) { return this->evict(aTagset, aLineState); },
-              [this](uint64_t aTagset, int32_t owner) { return this->evictRegion(aTagset, owner); },
-              [this](uint64_t addr, bool icache, bool dcache) { return this->sendInvalidate(addr, icache, dcache); },
-              theIndex,
-              cfg.CacheLevel,
-              cfg.RegionSize,
-              cfg.RTAssoc,
-              cfg.RTSize,
-              cfg.ERBSize,
-              cfg.SkewBlockSet,
-              cfg.RTReplPolicy);
-        }
+        theCache = new StdCache(
+          statName(),
+          cfg.BlockSize,
+          num_sets,
+          cfg.Associativity,
+          [this](uint64_t aTagset, CoherenceState_t aLineState) { return this->evict(aTagset, aLineState); },
+          [this](uint64_t addr, bool icache, bool dcache) { return this->sendInvalidate(addr, icache, dcache); },
+          theIndex,
+          cfg.CacheLevel);
 
-        Flexus::Stat::getStatManager()->addFinalizer(
-          [this]() { return this->finalize(); }); // ll::bind( &nFastCache::FastCacheComponent::finalize, this ));
-    }
-
-    void finalize(void) { theStats->update(); }
-
-    void notifyRead(MemoryMessage& aMessage)
-    {
-        if (cfg.NotifyReads) { FLEXUS_CHANNEL(Reads) << aMessage; }
-    }
-
-    void notifyWrite(MemoryMessage& aMessage)
-    {
-        if (cfg.NotifyWrites) { FLEXUS_CHANNEL(Writes) << aMessage; }
+        Flexus::Stat::getStatManager()->addFinalizer([this]() { return this->finalize(); });
     }
 
     FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(FetchRequestIn);
@@ -248,7 +201,6 @@ class FLEXUS_COMPONENT(FastCache)
     FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(RequestIn);
     void push(interface::RequestIn const&, index_t anIndex, MemoryMessage& aMessage)
     {
-        FLEXUS_PROFILE();
         MemoryMessage orig_message(aMessage);
         orig_message.coreIdx() = aMessage.coreIdx();
 
@@ -291,48 +243,9 @@ class FLEXUS_COMPONENT(FastCache)
         }
     }
 
-    void evict(uint64_t aTagset, CoherenceState_t aLineState)
-    {
-
-        theEvictMessage.address() = PhysicalMemoryAddress(aTagset);
-
-        theEvictMessage.type() = theProtocol->evict(aTagset, aLineState);
-
-        if (theEvictMessage.type() == MemoryMessage::EvictDirty || cfg.CleanEvictions) {
-            DBG_(Iface, Addr(aTagset)(<< "Evict: " << theEvictMessage));
-            FLEXUS_CHANNEL(RequestOut) << theEvictMessage;
-        }
-    }
-
-    void evictRegion(uint64_t aTagset, int32_t owner)
-    {
-        RegionScoutMessage message(RegionScoutMessage::eRegionEvict, PhysicalMemoryAddress(aTagset));
-        message.setOwner(owner);
-
-        FLEXUS_CHANNEL(RegionNotify) << message;
-    }
-
-    void forwardMessage(MemoryMessage& msg) { FLEXUS_CHANNEL(RequestOut) << msg; }
-
-    void continueSnoop(MemoryMessage& msg)
-    {
-        MemoryMessage dup_msg(msg);
-
-        if (msg.type() != MemoryMessage::Downgrade) { FLEXUS_CHANNEL(SnoopOutI) << dup_msg; }
-
-        FLEXUS_CHANNEL(SnoopOutD) << msg;
-
-        // ReturnReq can get data from I or D cache.
-        // All other requests, D cache response is the correct response
-        if (msg.type() == MemoryMessage::ReturnNAck && dup_msg.type() != MemoryMessage::ReturnNAck) {
-            msg.type() = dup_msg.type();
-        }
-    }
-
     FLEXUS_PORT_ALWAYS_AVAILABLE(SnoopIn);
     void push(interface::SnoopIn const&, MemoryMessage& aMessage)
     {
-        FLEXUS_PROFILE();
         uint64_t tagset = aMessage.address() & theBlockMask;
 
         DBG_(Iface,
@@ -359,93 +272,6 @@ class FLEXUS_COMPONENT(FastCache)
         DBG_(Iface,
              Addr(aMessage.address())(<< "Snoop Left tagset: " << std::hex << tagset << " in state "
                                       << state2String(snp_lookup->getState()) << std::dec));
-    }
-
-    bool sendInvalidate(uint64_t addr, bool icache, bool dcache)
-    {
-        bool was_dirty                 = false;
-        theInvalidateMessage.address() = PhysicalMemoryAddress(addr);
-
-        if (icache) {
-            theInvalidateMessage.type() = MemoryMessage::Invalidate;
-            DBG_(Iface, Addr(addr)(<< "Sending ICache Invalidate: " << std::hex << addr << std::dec));
-            FLEXUS_CHANNEL(SnoopOutI) << theInvalidateMessage;
-            // We can cached a dirty copy in the ICache too!!
-            was_dirty = (theInvalidateMessage.type() == MemoryMessage::InvUpdateAck);
-        }
-
-        if (dcache) {
-            theInvalidateMessage.type() = MemoryMessage::Invalidate;
-            DBG_(Iface, Addr(addr)(<< "Sending DCache Invalidate: " << std::hex << addr << std::dec));
-            FLEXUS_CHANNEL(SnoopOutD) << theInvalidateMessage;
-        }
-
-        return (was_dirty || (theInvalidateMessage.type() == MemoryMessage::InvUpdateAck));
-    }
-
-    FLEXUS_PORT_ALWAYS_AVAILABLE(RegionProbe);
-    void push(interface::RegionProbe const&, RegionScoutMessage& aMessage)
-    {
-        switch (aMessage.type()) {
-            case RegionScoutMessage::eRegionProbe: {
-                uint32_t present = theCache->regionProbe(aMessage.region());
-                if (present) {
-                    aMessage.setType(RegionScoutMessage::eRegionHitReply);
-                    aMessage.setBlocks(present);
-                } else {
-                    aMessage.setType(RegionScoutMessage::eRegionMissReply);
-                }
-                break;
-            }
-            case RegionScoutMessage::eBlockProbe: {
-                uint32_t present = theCache->blockProbe(aMessage.region());
-                if (present) {
-                    aMessage.setType(RegionScoutMessage::eBlockHitReply);
-                } else {
-                    aMessage.setType(RegionScoutMessage::eBlockMissReply);
-                }
-                break;
-            }
-            case RegionScoutMessage::eBlockScoutProbe: {
-                uint32_t present = theCache->blockScoutProbe(aMessage.region());
-                if (present) {
-                    aMessage.setType(RegionScoutMessage::eRegionHitReply);
-                    aMessage.setBlocks(present);
-                } else {
-                    aMessage.setType(RegionScoutMessage::eRegionMissReply);
-                }
-                break;
-            }
-            case RegionScoutMessage::eRegionStateProbe: {
-                bool non_shared = theCache->isNonSharedRegion(aMessage.region());
-                if (non_shared) {
-                    aMessage.setType(RegionScoutMessage::eRegionNonShared);
-                } else {
-                    aMessage.setType(RegionScoutMessage::eRegionIsShared);
-                }
-                break;
-            }
-            case RegionScoutMessage::eRegionGlobalMiss: {
-                theCache->setNonSharedRegion(aMessage.region());
-                break;
-            }
-            case RegionScoutMessage::eRegionPartialMiss: {
-                theCache->setPartialSharedRegion(aMessage.region(), aMessage.blocks());
-                break;
-            }
-            case RegionScoutMessage::eRegionProbeOwner: {
-                int32_t owner = theCache->getOwner(lookup, aMessage.region());
-                aMessage.setType(RegionScoutMessage::eRegionOwnerReply);
-                aMessage.setOwner(owner);
-                break;
-            }
-            case RegionScoutMessage::eRegionSetOwner: {
-                theCache->updateOwner(lookup, aMessage.owner(), aMessage.region(), aMessage.shared());
-                break;
-            }
-            case RegionScoutMessage::eSetTagProbe: theCache->getSetTags(aMessage.region(), aMessage.getTags()); break;
-            default: DBG_Assert(false, (<< "Received invalid RegionScoutMessage " << aMessage)); break;
-        }
     }
 
     void drive(interface::UpdateStatsDrive const&) { theStats->update(); }

@@ -97,8 +97,8 @@ class NonInclusiveMESIPolicy : public AbstractPolicy
                                           const CMPCacheInfo& params);
     static const std::string name;
 
-    virtual bool loadDirState(std::istream& is);
-    virtual bool loadCacheState(std::istream& is);
+    virtual void load_dir_from_ckpt(std::string const&);
+    virtual void load_cache_from_ckpt(std::string const&);
 
     virtual AbstractDirEvictBuffer& DirEB() { return *theDirEvictBuffer; }
     virtual AbstractEvictBuffer& CacheEB() { return theCacheEvictBuffer; }

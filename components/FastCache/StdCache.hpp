@@ -1,47 +1,3 @@
-//  DO-NOT-REMOVE begin-copyright-block
-// QFlex consists of several software components that are governed by various
-// licensing terms, in addition to software that was developed internally.
-// Anyone interested in using QFlex needs to fully understand and abide by the
-// licenses governing all the software components.
-//
-// ### Software developed externally (not by the QFlex group)
-//
-//     * [NS-3] (https://www.gnu.org/copyleft/gpl.html)
-//     * [QEMU] (http://wiki.qemu.org/License)
-//     * [SimFlex] (http://parsa.epfl.ch/simflex/)
-//     * [GNU PTH] (https://www.gnu.org/software/pth/)
-//
-// ### Software developed internally (by the QFlex group)
-// **QFlex License**
-//
-// QFlex
-// Copyright (c) 2020, Parallel Systems Architecture Lab, EPFL
-// All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without modification,
-// are permitted provided that the following conditions are met:
-//
-//     * Redistributions of source code must retain the above copyright notice,
-//       this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above copyright notice,
-//       this list of conditions and the following disclaimer in the documentation
-//       and/or other materials provided with the distribution.
-//     * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,
-//       nor the names of its contributors may be used to endorse or promote
-//       products derived from this software without specific prior written
-//       permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,
-// EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-// GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
-// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  DO-NOT-REMOVE end-copyright-block
 #ifndef FLEXUS_FASTCACHE_STANDARD_CACHE_HPP_INCLUDED
 #define FLEXUS_FASTCACHE_STANDARD_CACHE_HPP_INCLUDED
 
@@ -52,19 +8,21 @@
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index_container.hpp>
 #include <components/CommonQEMU/Util.hpp>
-#include <components/FastCache/AbstractCache.hpp>
+#include <core/checkpoint/json.hpp>
+#include <core/types.hpp>
 #include <functional>
 
 using namespace boost::multi_index;
-using nCommonUtil::log_base2;
-
-#include <core/types.hpp>
-
 using Flexus::SharedTypes::PhysicalMemoryAddress;
-
+using nCommonUtil::log_base2;
+using json = nlohmann::json;
 namespace nFastCache {
 
-class StdCache : public AbstractCache
+typedef std::function<void(uint64_t tagset, CoherenceState_t state)> evict_function_t;
+typedef std::function<void(uint64_t tagset, int32_t owner)> region_evict_function_t;
+typedef std::function<bool(uint64_t tagset, bool icache, bool dcache)> invalidate_function_t;
+
+class StdCache //: public AbstractCache
 {
   private:
     // Structur to mimic traditional tag array (BST like structure)
@@ -169,18 +127,18 @@ class StdCache : public AbstractCache
         {
         }
 
-        virtual ~StdLookupResult() {}
+        ~StdLookupResult() {}
 
-        virtual void allocate(CoherenceState_t new_state) { theCache->allocate(theAddress, new_state, *this); }
+        void allocate(CoherenceState_t new_state) { theCache->allocate(theAddress, new_state, *this); }
 
-        virtual void changeState(CoherenceState_t new_state, bool make_MRU, bool make_LRU)
+        void changeState(CoherenceState_t new_state, bool make_MRU, bool make_LRU)
         {
             theCache->updateState(*this, new_state, make_MRU, make_LRU);
         }
 
-        virtual void updateLRU() { theBlock = theCache->update_lru(theSet, theBlock); }
+        void updateLRU() { theBlock = theCache->update_lru(theSet, theBlock); }
 
-        virtual CoherenceState_t getState()
+        CoherenceState_t getState()
         {
             if (theBlock->tag == theAddress) {
                 return theBlock->state;
@@ -189,7 +147,7 @@ class StdCache : public AbstractCache
             }
         }
 
-        virtual PhysicalMemoryAddress address() { return theAddress; }
+        PhysicalMemoryAddress address() { return theAddress; }
     };
 
     typedef boost::intrusive_ptr<StdLookupResult> StdLookupResult_p;
@@ -203,11 +161,6 @@ class StdCache : public AbstractCache
     int32_t blockSetMask;
     int64_t blockTagMask;
 
-    enum ReplPolicy_t
-    {
-        TRUE_LRU
-    } theReplPolicy;
-
     evict_function_t evict;
     invalidate_function_t sendInvalidate;
     int32_t theIndex;
@@ -215,23 +168,12 @@ class StdCache : public AbstractCache
 
     block_set_t* theBlocks;
 
-    bool theTextFlexpoints;
     bool theAllocateInProgress;
     int64_t theAllocateAddr;
 
     int32_t get_set(uint64_t addr) { return (addr >> blockShift) & blockSetMask; }
 
     uint64_t get_tag(uint64_t addr) { return (addr & blockTagMask); }
-
-    ReplPolicy_t string2ReplPolicy(std::string policy)
-    {
-        if (strcasecmp(policy.c_str(), "LRU") == 0) {
-            return TRUE_LRU;
-        } else {
-            DBG_(Crit, (<< "Unknown replacement policy: '" << policy << "', using LRU."));
-            return TRUE_LRU;
-        }
-    }
 
   public:
     StdCache(const std::string& aName,
@@ -241,15 +183,12 @@ class StdCache : public AbstractCache
              evict_function_t anEvict,
              invalidate_function_t aSendInvalidate,
              int32_t anIndex,
-             Flexus::SharedTypes::tFillLevel aLevel,
-             std::string aReplPolicy,
-             bool aTextFlexpoints)
+             Flexus::SharedTypes::tFillLevel aLevel)
     {
-        theName           = aName;
-        theNumSets        = aNumSets;
-        theAssoc          = anAssociativity;
-        theBlockSize      = aBlockSize;
-        theTextFlexpoints = aTextFlexpoints;
+        theName      = aName;
+        theNumSets   = aNumSets;
+        theAssoc     = anAssociativity;
+        theBlockSize = aBlockSize;
 
         theAllocateInProgress = false;
 
@@ -270,11 +209,9 @@ class StdCache : public AbstractCache
         blockShift   = log_base2(theBlockSize);
         blockTagMask = ~(aBlockSize - 1);
         blockSetMask = (theNumSets - 1);
-
-        theReplPolicy = string2ReplPolicy(aReplPolicy);
     }
 
-    virtual ~StdCache() { delete[] theBlocks; }
+    ~StdCache() { delete[] theBlocks; }
 
     void allocate(PhysicalMemoryAddress addr, CoherenceState_t new_state, StdLookupResult& lookup)
     {
@@ -330,7 +267,7 @@ class StdCache : public AbstractCache
         }
     }
 
-    virtual LookupResult_p lookup(uint64_t tagset)
+    LookupResult_p lookup(uint64_t tagset)
     {
         int64_t tag       = get_tag(tagset);
         int32_t set_index = get_set(tagset);
@@ -356,60 +293,7 @@ class StdCache : public AbstractCache
         return StdLookupResult_p(new StdLookupResult(PhysicalMemoryAddress(tag), t_block->state, set, t_block, this));
     }
 
-    virtual uint32_t regionProbe(uint64_t tagset)
-    {
-        DBG_Assert(false, (<< "regionProbe() function not supported by this Cache structure."));
-        return 0;
-    }
-
-    virtual uint32_t blockScoutProbe(uint64_t tagset)
-    {
-        DBG_Assert(false,
-                   (<< "blockScoutProbe() function not supported by this "
-                       "Cache structure."));
-        return 0;
-    }
-
-    virtual uint32_t blockProbe(uint64_t tagset)
-    {
-        DBG_Assert(false, (<< "blockProbe() function not supported by this Cache structure."));
-        return 0;
-    }
-
-    virtual void setNonSharedRegion(uint64_t tagset)
-    {
-        DBG_Assert(false,
-                   (<< "setNonSharedRegion() function not supported by this "
-                       "Cache structure."));
-    }
-
-    virtual void setPartialSharedRegion(uint64_t tagset, uint32_t shared)
-    {
-        DBG_Assert(false,
-                   (<< "setPartialSharedRegion() function not supported by "
-                       "this Cache structure."));
-    }
-
-    virtual bool isNonSharedRegion(uint64_t tagset)
-    {
-        DBG_Assert(false,
-                   (<< "isNonSharedRegion() function not supported by this "
-                       "Cache structure."));
-        return false;
-    }
-
-    int32_t getOwner(LookupResult_p result, uint64_t tagset)
-    {
-        DBG_Assert(false, (<< "getOwner() function not supported by this Cache structure."));
-        return -1;
-    }
-
-    void updateOwner(LookupResult_p result, int32_t owner, uint64_t tagset, bool shared = true)
-    {
-        DBG_Assert(false, (<< "updateOwner() function not supported by this Cache structure."));
-    }
-
-    virtual void getSetTags(uint64_t address, std::list<PhysicalMemoryAddress>& tags)
+    void getSetTags(uint64_t address, std::list<PhysicalMemoryAddress>& tags)
     {
         int32_t set_index = get_set(address);
 
@@ -431,184 +315,103 @@ class StdCache : public AbstractCache
         }
     }
 
-    virtual void saveState(std::ostream& s)
+    void saveState(std::ostream& s)
     {
-        static const int32_t kSave_ValidBit      = 1;
-        static const int32_t kSave_DirtyBit      = 2;
-        static const int32_t kSave_ModifiableBit = 4;
+        json checkpoint;
+        checkpoint["associativity"] = (uint64_t)theAssoc;
 
-        if (theTextFlexpoints) {
-            int32_t shift = blockShift + log_base2(theNumSets);
+        uint32_t shift = blockShift + log_base2(theNumSets);
 
-            for (int32_t set = 0; set < theNumSets; set++) {
-                order_iterator block = theBlocks[set].get<by_order>().begin();
-                order_iterator end   = theBlocks[set].get<by_order>().end();
-                s << "{";
-                int32_t way = 0;
-                for (; block != end; block++, way++) {
-                    uint64_t tag = block->tag >> shift;
+        for (size_t set = 0; set < (size_t)theNumSets; set++) {
 
-                    int32_t save_state = 0;
-                    switch (block->state) {
-                        case kModified: save_state = (kSave_ValidBit | kSave_DirtyBit | kSave_ModifiableBit); break;
-                        case kOwned: save_state = (kSave_ValidBit | kSave_DirtyBit); break;
-                        case kExclusive: save_state = (kSave_ValidBit | kSave_ModifiableBit); break;
-                        case kShared: save_state = (kSave_ValidBit); break;
-                        case kInvalid: save_state = 0; break;
-                        default: DBG_Assert(false, (<< "Don't know how to save state " << block->state)); break;
-                    }
+            checkpoint["tags"][set] = json::array();
 
-                    DBG_(Trace,
-                         (<< theName << " - Saving block " << std::hex << block->tag << " with state "
-                          << state2String(block->state) << " in way " << way));
+            order_iterator block = theBlocks[set].get<by_order>().begin();
+            order_iterator end   = theBlocks[set].get<by_order>().end();
 
-                    s << "[ " << save_state << " " << static_cast<uint64_t>(tag) << " ]";
+            uint16_t i         = 0;
+            bool dirty_flag    = false;
+            bool writable_flag = false;
+
+            for (; block != end; block++) {
+
+                DBG_Assert(i < theAssoc, (<< "The number of way saved is greater than the associativity... weird"));
+                uint64_t tag = block->tag >> shift;
+
+                switch (block->state) {
+                    case kModified:
+                        writable_flag = true;
+                        dirty_flag    = true;
+                        break;
+                    case kOwned:
+                        writable_flag = false;
+                        dirty_flag    = true;
+                        break;
+                    case kExclusive:
+                        writable_flag = true;
+                        dirty_flag    = false;
+                        break;
+                    case kShared:
+                        writable_flag = false;
+                        dirty_flag    = false;
+                        break;
+                    case kInvalid: continue;
+                    default: DBG_Assert(false, (<< "Don't know how to save state " << block->state)); break;
                 }
-                for (; way < theAssoc; way++) {
-                    s << "[ 0 0 ]";
-                }
-                s << "} < ";
-                for (int32_t j = 0; j < theAssoc; j++) {
-                    s << j << " ";
-                }
-                s << "> " << std::endl;
-            }
-        } else {
-            boost::archive::binary_oarchive oa(s);
 
-            uint64_t set_count     = theNumSets;
-            uint32_t associativity = theAssoc;
+                checkpoint["tags"][set][i++] = { { "tag", tag },
+                                                 { "writable", writable_flag },
+                                                 { "dirty", dirty_flag } };
 
-            oa << set_count;
-            oa << associativity;
-
-            BlockSerializer bs;
-            for (int32_t set = 0; set < theNumSets; set++) {
-                order_iterator block = theBlocks[set].get<by_order>().begin();
-                order_iterator end   = theBlocks[set].get<by_order>().end();
-                int32_t way          = 0;
-                for (; block != end; block++, way++) {
-                    bs.tag = block->tag;
-                    bs.way = block->way;
-                    switch (block->state) {
-                        case kModified: bs.state = (uint8_t)'M'; break;
-                        case kOwned: bs.state = (uint8_t)'O'; break;
-                        case kExclusive: bs.state = (uint8_t)'E'; break;
-                        case kShared: bs.state = (uint8_t)'S'; break;
-                        case kInvalid: bs.state = (uint8_t)'I'; break;
-                        default: DBG_Assert(false, (<< "Don't know how to save state " << block->state)); break;
-                    }
-                    oa << bs;
-                    DBG_(Trace,
-                         Addr(block->tag)(<< theName << ": saving block " << std::hex << block->tag << " in state "
-                                          << (char)bs.state));
-                }
-                bs.state = 'I';
-                bs.tag   = 0;
-                for (; way < theAssoc; way++) {
-                    bs.way = way;
-                    oa << bs;
-                }
+                DBG_(Trace,
+                     (<< theName << " - Saving block " << std::hex << block->tag << " with state "
+                      << state2String(block->state) << " in way " << block->way));
             }
         }
+
+        s << std::setw(4) << checkpoint << std::endl;
     }
 
-    virtual bool loadState(std::istream& s)
-    {
-        static const int32_t kSave_ValidBit      = 1;
-        static const int32_t kSave_DirtyBit      = 2;
-        static const int32_t kSave_ModifiableBit = 4;
-
-        if (theTextFlexpoints) {
-            int32_t shift = blockShift + log_base2(theNumSets);
-
-            char paren;
-            int32_t dummy;
-            int32_t load_state;
-            uint64_t load_tag;
-            for (int32_t set = 0; set < theNumSets; set++) {
-                s >> paren; // {
-                if (paren != '{') {
-                    DBG_(Crit, (<< "Expected '{' when loading checkpoint"));
-                    return false;
-                }
-                for (int32_t j = 0; j < theAssoc; j++) {
-                    s >> paren >> load_state >> load_tag >> paren;
-
-                    CoherenceState_t state(kInvalid);
-                    switch (load_state) {
-                        case (kSave_ValidBit | kSave_DirtyBit | kSave_ModifiableBit): state = kModified; break;
-                        case (kSave_ValidBit | kSave_DirtyBit): state = kOwned; break;
-                        case (kSave_ValidBit | kSave_ModifiableBit): state = kExclusive; break;
-                        case (kSave_ValidBit): state = kShared; break;
-                        case 0: state = kInvalid; break;
-                        default: DBG_Assert(false, (<< "Don't know how to load state " << load_state)); break;
-                    }
-
-                    DBG_(Trace,
-                         (<< theName << " - Loading block " << std::hex << ((load_tag << shift) | (set << blockShift))
-                          << " with state " << state2String(state) << " in way " << j));
-                    theBlocks[set].get<by_order>().push_back(
-                      BlockEntry(((load_tag << shift) | (set << blockShift)), state, j));
-                }
-                s >> paren; // }
-                if (paren != '}') {
-                    DBG_(Crit, (<< "Expected '}' when loading checkpoint"));
-                    return false;
-                }
-
-                // useless associativity information
-                s >> paren; // <
-                if (paren != '<') {
-                    DBG_(Crit, (<< "Expected '<' when loading checkpoint"));
-                    return false;
-                }
-                for (int32_t j = 0; j < theAssoc; j++) {
-                    s >> dummy;
-                }
-                s >> paren; // >
-                if (paren != '>') {
-                    DBG_(Crit, (<< "Expected '>' when loading checkpoint"));
-                    return false;
-                }
-            }
-        } else {
-            boost::archive::binary_iarchive ia(s);
-
-            uint64_t set_count     = 0;
-            uint32_t associativity = 0;
-
-            ia >> set_count;
-            ia >> associativity;
-
-            DBG_Assert(set_count == (uint64_t)theNumSets,
-                       (<< "Error loading cache state. Flexpoint contains " << set_count
-                        << " sets but simulator configured for " << theNumSets << " sets."));
-            DBG_Assert(associativity == (uint64_t)theAssoc,
-                       (<< "Error loading cache state. Flexpoint contains " << associativity
-                        << "-way sets but simulator configured for " << theAssoc << "-way sets."));
-
-            for (int32_t set = 0; set < theNumSets; set++) {
-                for (int32_t way = 0; way < theAssoc; way++) {
-                    BlockSerializer bs;
-                    ia >> bs;
-                    CoherenceState_t bstate = kInvalid;
-                    switch (bs.state) {
-                        case (uint8_t)'M': bstate = kModified; break;
-                        case (uint8_t)'O': bstate = kOwned; break;
-                        case (uint8_t)'E': bstate = kExclusive; break;
-                        case (uint8_t)'S': bstate = kShared; break;
-                        case (uint8_t)'I': bstate = kInvalid; break;
-                        default: DBG_Assert(false, (<< "Unknown Block State: " << (uint8_t)bs.state)); break;
-                    }
-                    DBG_(Trace,
-                         (<< theName << " - Loading block " << std::hex << bs.tag << " in state " << (char)bs.state));
-                    theBlocks[set].get<by_order>().push_back(BlockEntry(bs.tag, bstate, way));
-                }
-            }
-        }
-        return true;
-    }
+    //   bool loadStateJSON(std::istream &s) {
+    //    json checkpoint;
+    //    s >> checkpoint;
+    //
+    //    uint32_t shift = blockShift + log_base2(theNumSets);
+    //
+    //    for (size_t set = 0; set < (size_t)theNumSets; set++) {
+    //
+    //      size_t blockSize = checkpoint["tags"].at(set).size();
+    //
+    //      //empty the cache set
+    //      theBlocks[set].get<by_order>().clear();
+    //
+    //      for(size_t block = 0; block < blockSize; block++){
+    //        bool dirty = checkpoint["tags"].at(set).at(block)["dirty"];
+    //        bool writable = checkpoint["tags"].at(set).at(block)["writable"];
+    //        uint64_t tag = checkpoint["tags"].at(set).at(block)["tag"];
+    //
+    //        CoherenceState_t state(kInvalid);
+    //        if(dirty){
+    //          if(writable) state = kModified;
+    //          else state = kOwned;
+    //        } else{
+    //          if(writable) state = kExclusive;
+    //          else state = kShared;
+    //        }
+    //
+    //        DBG_(Trace, (<< theName << " - Loading block " << std::hex
+    //                       << ((tag << shift) | (set << blockShift)) << " with state "
+    //                       << state2String(state) << " in way " << block));
+    //
+    //        //fill the empty set
+    //        theBlocks[set].get<by_order>().push_back(
+    //          BlockEntry(((tag << shift) | (set << blockShift)), state, (uint16_t)(block)));
+    //      }
+    //
+    //    }
+    //
+    //    return true;
+    //  }
 };
 
 } // namespace nFastCache

@@ -44,9 +44,11 @@
 //  DO-NOT-REMOVE end-copyright-block
 #ifndef __LOOKUP_RESULT_HPP__
 #define __LOOKUP_RESULT_HPP__
-
 #include "components/FastCache/CoherenceStates.hpp"
 #include "core/boost_extensions/intrusive_ptr.hpp"
+#include "core/types.hpp"
+
+#include <boost/multi_index_container.hpp>
 
 using namespace Flexus::SharedTypes;
 

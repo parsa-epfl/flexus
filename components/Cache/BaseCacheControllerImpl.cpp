@@ -56,10 +56,6 @@
  *     twenisch    23 Feb 03 - Integrated with CacheImpl.hpp
  */
 
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
@@ -69,10 +65,7 @@
 #include <components/CommonQEMU/TraceTracker.hpp>
 #include <core/metaprogram.hpp>
 #include <core/performance/profile.hpp>
-#include <deque>
 #include <fstream>
-#include <iterator>
-#include <vector>
 
 using namespace boost::multi_index;
 using namespace Flexus;
@@ -213,53 +206,23 @@ BaseCacheControllerImpl::BaseCacheControllerImpl(CacheController* aController, C
 // State management
 
 void
-BaseCacheControllerImpl::saveState(std::string const& aDirName)
+BaseCacheControllerImpl::loadState(std::string const& ckpt_dirname)
 {
-    std::string fname(aDirName);
-    fname += "/" + theName;
-    std::ofstream ofs(fname.c_str());
 
-    saveArrayState(ofs);
+    std::string ckpt_filename(ckpt_dirname);
+    ckpt_filename += "/" + theName + ".json";
 
-    ofs.close();
 
-    fname = aDirName + "/" + theName + "-evictbuffer";
-    std::ofstream ebofs(fname.c_str());
-    evictBuffer().saveState(ebofs);
-    ebofs.close();
-}
+    std::ifstream ifs(ckpt_filename.c_str(), std::ios::in);
 
-void
-BaseCacheControllerImpl::loadState(std::string const& aDirName, bool aTextFlexpoint, bool aGZippedFlexpoint)
-{
-    std::string fname(aDirName);
-    fname += "/" + theName;
-    if (aGZippedFlexpoint) { fname += ".gz"; }
-
-    std::ifstream ifs(fname.c_str());
     if (!ifs.good()) {
-        DBG_(Dev, (<< " saved checkpoint state " << fname << " not found.  Resetting to empty cache. "));
-    } else {
-
-        boost::iostreams::filtering_stream<boost::iostreams::input> in;
-        if (aGZippedFlexpoint) { in.push(boost::iostreams::gzip_decompressor()); }
-        in.push(ifs);
-
-        if (loadArrayState(in, aTextFlexpoint)) {
-            DBG_(Dev,
-                 (<< "Error loading checkpoint state from file: " << fname
-                  << ".  Make sure your checkpoints match your current cache "
-                     "configuration."));
-            DBG_Assert(false);
-        }
-
-        fname = aDirName + "/" + theName + "-evictbuffer";
-        std::ifstream ebifs(fname.c_str());
-        if (ebifs) {
-            evictBuffer().loadState(ebifs);
-            ebifs.close();
-        }
+        DBG_(Dev, (<< "checkpoint file: " << ckpt_filename << " not found."));
+        DBG_Assert(false, (<< "FILE NOT FOUND"));
     }
+
+    load_from_ckpt(ifs);
+
+    ifs.close();
 }
 
 ///////////////////////////

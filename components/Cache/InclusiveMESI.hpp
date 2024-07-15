@@ -111,11 +111,10 @@ class InclusiveMESI : public BaseCacheControllerImpl
                   bool a2LevelPrivate);
 
   protected:
-    virtual void saveArrayState(std::ostream& os) { theArray->saveState(os); }
 
-    virtual bool loadArrayState(std::istream& is, bool aTextFlexpoint)
+    virtual void load_from_ckpt(std::istream& is)
     {
-        return theArray->loadState(is, theNodeId, aTextFlexpoint);
+        return theArray->load_from_ckpt(is, theNodeId);
     }
 
     virtual void setProtectedBlock(MemoryAddress addr, bool flag)

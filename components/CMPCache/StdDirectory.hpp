@@ -48,7 +48,7 @@
 
 #include <components/CommonQEMU/Serializers.hpp>
 #include <components/CommonQEMU/Util.hpp>
-#include <strings.h>
+#include <string>
 
 using nCommonSerializers::StdDirEntrySerializer;
 using nCommonUtil::log_base2;
@@ -196,15 +196,11 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
             }
             return best;
         }
-        bool loadState(boost::archive::binary_iarchive& ia, const std::string& aName)
+
+        virtual void load_dir_from_ckpt(std::string const& filename)
         {
-            StdDirEntrySerializer serializer;
-            for (int32_t way = 0; way < theAssociativity; way++) {
-                ia >> serializer;
-                theBlocks[way] = serializer;
-                DBG_(Trace, Addr(serializer.tag)(<< aName << " Directory loading block " << serializer));
-            }
-            return true;
+            // Not implemented
+            DBG_Assert(false, ( << "Not IMPLEMENTED"));
         }
     };
 
@@ -418,51 +414,10 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
 
     virtual DirEvictBuffer<_EState>* getEvictBuffer() { return &theEvictBuffer; }
 
-    virtual bool loadState(std::istream& is)
+    virtual void load_dir_from_ckpt(std::string const& filename)
     {
-        boost::archive::binary_iarchive ia(is);
-
-        // Loop through ALL of the sets and select the ones that belong to this set
-
-        MemoryAddress addr(0);
-        int32_t theTotalSets = theNumSets * theBanks * theGroups;
-        int32_t local_set    = 0;
-        int32_t global_set   = 0;
-
-        uint64_t set_count     = 0;
-        uint32_t associativity = 0;
-
-        ia >> set_count;
-        ia >> associativity;
-
-        DBG_Assert(set_count == (uint64_t)theTotalSets,
-                   (<< "Error loading directory state. Flexpoint contains " << set_count
-                    << " sets but simulator configured for " << theTotalSets << " sets."));
-        DBG_Assert(associativity == (uint64_t)theAssociativity,
-                   (<< "Error loading directory state. Flexpoint contains " << associativity
-                    << "-way sets but simulator configured for " << theAssociativity << "-way sets."));
-
-        StdDirEntrySerializer serializer;
-        for (; global_set < theTotalSets; global_set++, addr += theBlockSize) {
-            DBG_(Trace,
-                 (<< theName << ": Loading global set " << global_set << ", bank = " << getBank(addr)
-                  << ", local bank = " << theLocalBankIndex << ", group = " << getGroup(addr)
-                  << ", local group = " << theGroupIndex));
-            if ((getBank(addr) == theLocalBankIndex) && (getGroup(addr) == theGroupIndex)) {
-                if (!theSets[local_set]->loadState(ia, theName)) {
-                    DBG_Assert(false, (<< "failed to load dir state for set " << local_set));
-                    return false;
-                }
-                local_set++;
-            } else {
-                for (int32_t way = 0; way < theAssociativity; way++) {
-                    // Skip over entries that belong to other banks
-                    ia >> serializer;
-                }
-            }
-        }
-
-        return true;
+        // Not implemented
+        DBG_Assert(false, ( << "Not IMPLEMENTED"));
     }
 };
 

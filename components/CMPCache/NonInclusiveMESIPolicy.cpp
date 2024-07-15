@@ -43,8 +43,6 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
 
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
 #include <boost/dynamic_bitset.hpp>
 #include <components/CommonQEMU/MessageQueues.hpp>
 #include <components/CommonQEMU/Transports/MemoryTransport.hpp>
@@ -106,16 +104,16 @@ NonInclusiveMESIPolicy::createInstance(std::list<std::pair<std::string, std::str
     return new NonInclusiveMESIPolicy(params);
 }
 
-bool
-NonInclusiveMESIPolicy::loadDirState(std::istream& is)
+void
+NonInclusiveMESIPolicy::load_dir_from_ckpt(std::string const& filename)
 {
-    return theDirectory->loadState(is);
+    theDirectory->load_dir_from_ckpt(filename);
 }
 
-bool
-NonInclusiveMESIPolicy::loadCacheState(std::istream& is)
+void
+NonInclusiveMESIPolicy::load_cache_from_ckpt(std::string const& filename)
 {
-    return theCache->loadState(is, theCMPCacheInfo.theNodeId);
+    theCache->load_cache_from_ckpt(filename, theCMPCacheInfo.theNodeId);
 }
 void
 NonInclusiveMESIPolicy::handleRequest(ProcessEntry_p process)
@@ -1806,7 +1804,6 @@ NonInclusiveMESIPolicy::evictCacheBlock(CacheLookupResult_p victim)
         theCacheEvictBuffer.allocEntry(victim->blockAddress(), evict_type, victim->state());
         // theTraceTracker.eviction(theNodeId, theCacheLevel,
         // victim->blockAddress(), false);
-
         DBG_(Trace, (<< " Adding " << std::hex << victim->blockAddress() << " to the EvictBuffer."));
     }
 }

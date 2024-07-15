@@ -44,7 +44,6 @@
 //  DO-NOT-REMOVE end-copyright-block
 #include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 #include <components/CommonQEMU/Slices/RegionScoutMessage.hpp>
-#include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 #include <core/simulator_layout.hpp>
 
 // clang-format off
@@ -60,15 +59,15 @@ COMPONENT_PARAMETERS(
   PARAMETER( CacheLevel, Flexus::SharedTypes::tFillLevel, "CacheLevel", "level", Flexus::SharedTypes::eUnknown )
   PARAMETER( NotifyReads, bool, "Notify on reads (does not notify on fast-hit)", "notify_reads", false )
   PARAMETER( NotifyWrites, bool, "Notify on writes", "notify_writes", false )
-  PARAMETER( TraceTracker, bool, "Turn trace tracker on/off", "trace_tracker_on", false )
+ // PARAMETER( TraceTracker, bool, "Turn trace tracker on/off", "trace_tracker_on", false )
 
-  PARAMETER( RegionSize, int, "Region size in bytes", "rsize", 1024 )
-  PARAMETER( RTAssoc, int, "RegionTracker Associativity", "rt_assoc", 16 )
-  PARAMETER( RTSize, int, "RegionTracker size (number of regions tracked)", "rt_size", 8192 )
-  PARAMETER( RTReplPolicy, std::string, "RegionTracker replacement policy (SetLRU | RegionLRU)", "rt_repl", "SetLRU" )
-  PARAMETER( ERBSize, int, "Evicted Region Buffer size", "erb_size", 8 )
-
-  PARAMETER( StdArray, bool, "Use Standard Tag Array instead of RegionTracker", "std_array", false )
+//  PARAMETER( RegionSize, int, "Region size in bytes", "rsize", 1024 )
+//  PARAMETER( RTAssoc, int, "RegionTracker Associativity", "rt_assoc", 16 )
+//  PARAMETER( RTSize, int, "RegionTracker size (number of regions tracked)", "rt_size", 8192 )
+//  PARAMETER( RTReplPolicy, std::string, "RegionTracker replacement policy (SetLRU | RegionLRU)", "rt_repl", "SetLRU" )
+//  PARAMETER( ERBSize, int, "Evicted Region Buffer size", "erb_size", 8 )
+//
+//  PARAMETER( StdArray, bool, "Use Standard Tag Array instead of RegionTracker", "std_array", false )
 
   PARAMETER( BlockScout, bool, "Use precise block sharing info", "block_scout", false )
 
@@ -78,8 +77,8 @@ COMPONENT_PARAMETERS(
 
   PARAMETER( UsingTraces, bool, "References are coming from traces (allow certain inconsistancies", "using_traces", true )
 
-  PARAMETER( TextFlexpoints, bool, "Store flexpoints as text files (compatible with old FastCache component)", "text_flexpoints", false )
-  PARAMETER( GZipFlexpoints, bool, "Compress flexpoints with gzip", "gzip_flexpoints", true )
+//  PARAMETER( TextFlexpoints, bool, "Store flexpoints as text files (compatible with old FastCache component)", "text_flexpoints", false )
+//  PARAMETER( GZipFlexpoints, bool, "Compress flexpoints with gzip", "gzip_flexpoints", true )
 
   PARAMETER( DowngradeLRU, bool, "Move block to LRU position when a Downgrade is recieved for a block in Modified or Exclusive state", "downgrade_lru", false )
   PARAMETER( SnoopLRU, bool, "Move block to LRU position when a Snoop (ReturnReq) is recieved for a block in Modified or Exclusive state", "snoop_lru", false )
@@ -98,8 +97,8 @@ COMPONENT_INTERFACE(
   PORT( PushOutput, MemoryMessage, Reads )
   PORT( PushOutput, MemoryMessage, Writes )
 
-  PORT( PushInput, RegionScoutMessage, RegionProbe )
-  PORT( PushOutput, RegionScoutMessage, RegionNotify )
+//  PORT( PushInput, RegionScoutMessage, RegionProbe )
+//  PORT( PushOutput, RegionScoutMessage, RegionNotify )
 
   DRIVE( UpdateStatsDrive )
 );

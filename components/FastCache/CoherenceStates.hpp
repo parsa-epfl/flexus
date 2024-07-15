@@ -45,6 +45,9 @@
 #ifndef __COHERENCE_STATES_HPP__
 #define __COHERENCE_STATES_HPP__
 
+#include <cstdint>
+#include <string>
+
 namespace nFastCache {
 
 // Define states

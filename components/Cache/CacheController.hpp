@@ -838,9 +838,7 @@ class CacheController
 
     bool isQuiesced() const;
 
-    void saveState(std::string const& aDirName);
-
-    void loadState(std::string const& aDirName, bool aTextFlexpoint, bool aGZippedFlexpoint);
+    void loadState(std::string const& aDirName);
 
     CacheController(std::string const& aName,
                     int32_t aCores,

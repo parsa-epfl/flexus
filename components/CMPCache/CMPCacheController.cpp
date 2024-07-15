@@ -44,21 +44,18 @@
 //  DO-NOT-REMOVE end-copyright-block
 
 #include <boost/dynamic_bitset.hpp>
-#include <core/flexus.hpp>
-#include <core/performance/profile.hpp>
-#include <core/qemu/configuration_api.hpp>
-#include <core/simulator_layout.hpp>
-// #include <components/SplitDestinationMapper/SplitDestinationMapperStats.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
-#include <components/CMPCache/CMPCacheController.hpp>
-#include <components/CommonQEMU/MessageQueues.hpp>
-#include <components/CommonQEMU/Transports/MemoryTransport.hpp>
-#include <core/boost_extensions/intrusive_ptr.hpp>
-#include <core/debug/debug.hpp>
-#include <core/stats.hpp>
-#include <core/target.hpp>
-#include <core/types.hpp>
+#include "core/flexus.hpp"
+#include "core/performance/profile.hpp"
+#include "core/qemu/configuration_api.hpp"
+#include "core/simulator_layout.hpp"
+#include "components/CMPCache/CMPCacheController.hpp"
+#include "components/CommonQEMU/MessageQueues.hpp"
+#include "components/CommonQEMU/Transports/MemoryTransport.hpp"
+#include "core/boost_extensions/intrusive_ptr.hpp"
+#include "core/debug/debug.hpp"
+#include "core/stats.hpp"
+#include "core/target.hpp"
+#include "core/types.hpp"
 #include <fstream>
 
 namespace nCMPCache {
@@ -113,65 +110,24 @@ CMPCacheController::isQuiesced() const
            thePolicy->isQuiesced();
 }
 
-void
-CMPCacheController::saveState(std::string const& aDirName)
-{
-}
 
 void
-CMPCacheController::loadState(std::string const& aDirName)
+CMPCacheController::loadState(std::string const& ckpt_dirname)
 {
-    std::string fname(aDirName);
-    // This is a little ugly.
-    // The functional simulator saves all the cmp cache/directory state in single
-    // files but the timing simulator has seperate objects for each bank This
-    // allows the timing simulator to use the same data for multiple different
-    // banking schemes
 
-    // Key point, change the name from "XX-L3" to "sys-L3"
+    std::string real_name = theName;
+    real_name.replace(0, theName.find('-'), "sys");
+    // -- LOAD DIRECTORY
+    std::string ckpt_filename_cachedir(ckpt_dirname);
+    ckpt_filename_cachedir += "/" + real_name + "-dir.json";
+    DBG_(Dev, (<< " Start loading Directory state from " << ckpt_filename_cachedir));
+    thePolicy->load_dir_from_ckpt(ckpt_filename_cachedir);
 
-    std::string obj_name = theName;
-    obj_name.replace(0, theName.find('-'), "sys");
-
-    fname += "/" + obj_name + "-dir.gz";
-    std::ifstream ifs(fname.c_str(), std::ios::binary);
-    if (!ifs.good()) {
-        DBG_(Dev, (<< " saved checkpoint state " << fname << " not found.  Resetting to empty cache. "));
-    } else {
-
-        boost::iostreams::filtering_stream<boost::iostreams::input> in;
-        in.push(boost::iostreams::gzip_decompressor());
-        in.push(ifs);
-
-        if (!thePolicy->loadDirState(in)) {
-            DBG_(Dev,
-                 (<< "Error loading checkpoint state from file: " << fname
-                  << ".  Make sure your checkpoints match your current cache "
-                     "configuration."));
-            DBG_Assert(false);
-        }
-    }
-    ifs.close();
-
-    fname = aDirName + "/" + obj_name + "-cache.gz";
-    std::ifstream c_ifs(fname.c_str(), std::ios::binary);
-    if (!c_ifs.good()) {
-        DBG_(Dev, (<< " saved checkpoint state " << fname << " not found.  Resetting to empty cache. "));
-    } else {
-
-        boost::iostreams::filtering_stream<boost::iostreams::input> in;
-        in.push(boost::iostreams::gzip_decompressor());
-        in.push(c_ifs);
-
-        if (!thePolicy->loadCacheState(in)) {
-            DBG_(Dev,
-                 (<< "Error loading checkpoint state from file: " << fname
-                  << ".  Make sure your checkpoints match your current cache "
-                     "configuration."));
-            DBG_Assert(false);
-        }
-    }
-    c_ifs.close();
+    // -- LOAD CACHE
+    std::string ckpt_filename_cache(ckpt_dirname);
+    ckpt_filename_cache += "/" + real_name + "-cache.json";
+    DBG_(Dev, (<< " Start loading Cache state from " << ckpt_filename_cache));
+    thePolicy->load_cache_from_ckpt(ckpt_filename_cache);
 }
 
 void

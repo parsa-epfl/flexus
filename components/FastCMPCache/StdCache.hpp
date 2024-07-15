@@ -58,6 +58,9 @@ using namespace boost::multi_index;
 
 #include <core/types.hpp>
 
+#include <core/checkpoint/json.hpp>
+using json = nlohmann::json;
+
 using Flexus::SharedTypes::PhysicalMemoryAddress;
 
 namespace nFastCMPCache {
@@ -409,63 +412,171 @@ class StdCache : public AbstractCache
     {
         int32_t set_index = get_set(address);
 
-        // First, check if we're in the process of allocating a new block to this
-        // set (This happens if this was called as a resul of evicting a block
-        // during the allocation process)
-        if (theAllocateInProgress) {
-            int32_t alloc_set = get_set(theAllocateAddr);
-            if (alloc_set == set_index) { tags.push_back(PhysicalMemoryAddress(theAllocateAddr)); }
-        }
-
-        // Now check all the Valid blocks in the given set
-        block_set_t* block_set = &(theBlocks[set_index]);
-        tag_iterator block     = block_set->get<by_tag>().begin();
-        tag_iterator bend      = block_set->get<by_tag>().end();
-
-        for (; block != bend; block++) {
-            if (isValid(block->state)) { tags.push_back(PhysicalMemoryAddress(block->tag)); }
-        }
+    // First, check if we're in the process of allocating a new block to this
+    // set (This happens if this was called as a resul of evicting a block
+    // during the allocation process)
+    if (theAllocateInProgress) {
+      int32_t alloc_set = get_set(theAllocateAddr);
+      if (alloc_set == set_index) {
+        tags.push_back(PhysicalMemoryAddress(theAllocateAddr));
+      }
     }
 
-    virtual void saveState(std::ostream& s)
-    {
-        boost::archive::binary_oarchive oa(s);
+    // Now check all the Valid blocks in the given set
+    block_set_t *block_set = &(theBlocks[set_index]);
+    tag_iterator block = block_set->get<by_tag>().begin();
+    tag_iterator bend = block_set->get<by_tag>().end();
 
-        uint64_t set_count     = theNumSets;
-        uint32_t associativity = theAssoc;
-
-        oa << set_count;
-        oa << associativity;
-
-        BlockSerializer bs;
-        for (int32_t set = 0; set < theNumSets; set++) {
-            order_iterator block = theBlocks[set].get<by_order>().begin();
-            order_iterator end   = theBlocks[set].get<by_order>().end();
-            int32_t way          = 0;
-            for (; block != end; block++, way++) {
-                bs.tag = block->tag;
-                bs.way = block->way;
-                switch (block->state) {
-                    case kModified: bs.state = (uint8_t)'M'; break;
-                    case kOwned: bs.state = (uint8_t)'O'; break;
-                    case kExclusive: bs.state = (uint8_t)'E'; break;
-                    case kShared: bs.state = (uint8_t)'S'; break;
-                    case kInvalid: bs.state = (uint8_t)'I'; break;
-                    default: DBG_Assert(false, (<< "Don't know how to save state " << block->state)); break;
-                }
-                oa << bs;
-                DBG_(Trace,
-                     Addr(block->tag)(<< theIndex << "-L3: saving block " << std::hex << block->tag << " in state "
-                                      << (char)bs.state));
-            }
-            bs.state = 'I';
-            bs.tag   = 0;
-            for (; way < theAssoc; way++) {
-                bs.way = way;
-                oa << bs;
-            }
-        }
+    for (; block != bend; block++) {
+      if (isValid(block->state)) {
+        tags.push_back(PhysicalMemoryAddress(block->tag));
+      }
     }
+  }
+
+  virtual void saveStateJSON(std::ostream &s){
+    json checkpoint;
+    checkpoint["associativity"] = (uint64_t)theAssoc;
+
+    uint32_t shift = blockShift + log_base2(theNumSets);
+
+    for (size_t set = 0; set < (size_t)theNumSets; set++) {
+
+      checkpoint["tags"][set] = json::array();
+
+      order_iterator block = theBlocks[set].get<by_order>().begin();
+      order_iterator end = theBlocks[set].get<by_order>().end();
+
+      uint8_t i = 0;
+      for (; block != end; block++) {
+        uint64_t tag = block->tag >> shift;
+        switch (block->state) {
+          case kModified:
+            checkpoint["tags"][set][i++] = {
+              {"tag", tag}, {"writable", true}, {"dirty", true}
+            };
+            break;
+          case kOwned:
+            checkpoint["tags"][set][i++] = {
+              {"tag", tag}, {"writable", false}, {"dirty", true}
+            };
+            break;
+          case kExclusive:
+            checkpoint["tags"][set][i++] = {
+              {"tag", tag}, {"writable", true}, {"dirty", false}
+            };
+            break;
+          case kShared:
+            checkpoint["tags"][set][i++] = {
+              {"tag", tag}, {"writable", false}, {"dirty", false}
+            };
+            break;
+          case kInvalid:
+            break;
+          default:
+            DBG_Assert(false, (<< "Don't know how to save state " << block->state));
+            break;
+        }
+
+        DBG_(Trace, (<< theName << " L3 - Saving block " << std::hex << block->tag << " with state "
+                       << state2String(block->state) << " in way " << block->way));
+                       
+      }
+    }
+
+    s << std::setw(4) << checkpoint << std::endl;
+
+  }
+
+  virtual bool loadStateJSON(std::istream &s) {
+    json checkpoint;
+    s >> checkpoint;
+
+    uint32_t shift = blockShift + log_base2(theNumSets);
+
+    for (size_t set = 0; set < (size_t)theNumSets; set++) {
+      
+      size_t blockSize = checkpoint["tags"].at(set).size();
+
+      //empty the cache set
+      theBlocks[set].get<by_order>().clear();
+      
+      for(size_t block = 0; block < blockSize; block++){
+        bool dirty = checkpoint["tags"].at(set).at(block)["dirty"];
+        bool writable = checkpoint["tags"].at(set).at(block)["writable"];
+        uint64_t tag = checkpoint["tags"].at(set).at(block)["tag"];
+
+        CoherenceState_t state(kInvalid);
+        if(dirty){
+          if(writable) state = kModified;
+          else state = kOwned;
+        } else{
+          if(writable) state = kExclusive;
+          else state = kShared;
+        }
+
+        DBG_(Trace, (<< theName << " L3 - Loading block " << std::hex
+                       << ((tag << shift) | (set << blockShift)) << " with state "
+                       << state2String(state) << " in way " << block));
+
+        //fill the empty set
+        theBlocks[set].get<by_order>().push_back(
+          BlockEntry(((tag << shift) | (set << blockShift)), state, (uint16_t)(block)));
+      }
+    }
+
+    return true;
+  }
+
+  virtual void saveState(std::ostream &s) {
+    boost::archive::binary_oarchive oa(s);
+
+    uint64_t set_count = theNumSets;
+    uint32_t associativity = theAssoc;
+
+    oa << set_count;
+    oa << associativity;
+
+    BlockSerializer bs;
+    for (int32_t set = 0; set < theNumSets; set++) {
+      order_iterator block = theBlocks[set].get<by_order>().begin();
+      order_iterator end = theBlocks[set].get<by_order>().end();
+      int32_t way = 0;
+      for (; block != end; block++, way++) {
+        bs.tag = block->tag;
+        bs.way = block->way;
+        switch (block->state) {
+        case kModified:
+          bs.state = (uint8_t)'M';
+          break;
+        case kOwned:
+          bs.state = (uint8_t)'O';
+          break;
+        case kExclusive:
+          bs.state = (uint8_t)'E';
+          break;
+        case kShared:
+          bs.state = (uint8_t)'S';
+          break;
+        case kInvalid:
+          bs.state = (uint8_t)'I';
+          break;
+        default:
+          DBG_Assert(false, (<< "Don't know how to save state " << block->state));
+          break;
+        }
+        oa << bs;
+        DBG_(Trace, Addr(block->tag)(<< theIndex << "-L3: saving block " << std::hex << block->tag
+                                     << " in state " << (char)bs.state));
+      }
+      bs.state = 'I';
+      bs.tag = 0;
+      for (; way < theAssoc; way++) {
+        bs.way = way;
+        oa << bs;
+      }
+    }
+  }
 
     virtual bool loadState(std::istream& s)
     {

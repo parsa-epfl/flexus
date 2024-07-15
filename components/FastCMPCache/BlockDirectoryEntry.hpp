@@ -47,144 +47,152 @@
 
 #include <components/CommonQEMU/Serializers.hpp>
 
+#define MAX_NUM_SHARERS 512
+
 namespace nFastCMPCache {
 
 using nCommonSerializers::StdDirEntrySerializer;
 
-class BlockDirectoryEntry : public AbstractDirectoryEntry
-{
-  private:
-    PhysicalMemoryAddress theAddress;
-    SharingVector theSharers;
-    SharingState theState;
+class BlockDirectoryEntry : public AbstractDirectoryEntry {
+public:
+  PhysicalMemoryAddress theAddress;
+  SharingVector theSharers;
+  SharingState theState;
 
-  public:
-    BlockDirectoryEntry(PhysicalMemoryAddress addr)
-      : theAddress(addr)
-      , theState(ZeroSharers)
-    {
-    }
-    BlockDirectoryEntry()
-      : theAddress(0)
-      , theState(ZeroSharers)
-    {
-    }
-    virtual ~BlockDirectoryEntry() {}
+public:
+  BlockDirectoryEntry(PhysicalMemoryAddress addr) : theAddress(addr), theState(ZeroSharers) {
+  }
+  BlockDirectoryEntry() : theAddress(0), theState(ZeroSharers) {
+  }
+  virtual ~BlockDirectoryEntry() {
+  }
 
-    const SharingVector& sharers() const { return theSharers; }
-    const SharingState& state() const { return theState; }
-    const PhysicalMemoryAddress& tag() const { return theAddress; }
+  BlockDirectoryEntry(PhysicalMemoryAddress addr, std::bitset<MAX_NUM_SHARERS> state) : theAddress(addr) {
+    theAddress = addr;
+    theSharers.setSharers(state);
+    int32_t count = theSharers.countSharers();
+    if (count == 1) {
+      theState = OneSharer;
+    } else if (count == 0) {
+      theState = ZeroSharers;
+    } else {
+      theState = ManySharers;
+    }
+  }
 
-    inline void addSharer(int32_t index)
-    {
-        theSharers.addSharer(index);
-        if (theSharers.countSharers() == 1) {
-            theState = OneSharer;
-        } else {
-            theState = ManySharers;
-        }
-    }
+  const SharingVector &sharers() const {
+    return theSharers;
+  }
+  const SharingState &state() const {
+    return theState;
+  }
+  const PhysicalMemoryAddress &tag() const {
+    return theAddress;
+  }
 
-    inline void makeExclusive(int32_t index)
-    {
-        DBG_Assert(theSharers.isSharer(index), (<< "Core " << index << " is not a sharer " << theSharers.getSharers()));
-        DBG_Assert(theSharers.countSharers() == 1, (<< "Cannot make xclusive, sharers = " << theSharers));
-        theState = OneSharer;
+  inline void addSharer(int32_t index) {
+    theSharers.addSharer(index);
+    if (theSharers.countSharers() == 1) {
+      theState = OneSharer;
+    } else {
+      theState = ManySharers;
     }
+  }
 
-    inline void removeSharer(int32_t index)
-    {
-        theSharers.removeSharer(index);
-        if (theSharers.countSharers() == 0) {
-            theState = ZeroSharers;
-        } else if (theSharers.countSharers() == 1) {
-            theState = OneSharer;
-        }
-    }
-    void setSharers(const SharingVector& new_sharers)
-    {
-        theSharers    = new_sharers;
-        int32_t count = theSharers.countSharers();
-        if (count == 1) {
-            theState = OneSharer;
-        } else if (count == 0) {
-            theState = ZeroSharers;
-        } else {
-            theState = ManySharers;
-        }
-    }
-    void setSharers(uint64_t new_sharers)
-    {
-        theSharers.setSharers(new_sharers);
-        int32_t count = theSharers.countSharers();
-        if (count == 1) {
-            theState = OneSharer;
-        } else if (count == 0) {
-            theState = ZeroSharers;
-        } else {
-            theState = ManySharers;
-        }
-    }
+  inline void makeExclusive(int32_t index) {
+    DBG_Assert(theSharers.isSharer(index),
+               (<< "Core " << index << " is not a sharer " << theSharers.getSharers()));
+    DBG_Assert(theSharers.countSharers() == 1,
+               (<< "Cannot make xclusive, sharers = " << theSharers));
+    theState = OneSharer;
+  }
 
-    inline void clear()
-    {
-        theSharers.clear();
-        theState = ZeroSharers;
+  inline void removeSharer(int32_t index) {
+    theSharers.removeSharer(index);
+    if (theSharers.countSharers() == 0) {
+      theState = ZeroSharers;
+    } else if (theSharers.countSharers() == 1) {
+      theState = OneSharer;
     }
+  }
+  void setSharers(const SharingVector &new_sharers) {
+    theSharers = new_sharers;
+    int32_t count = theSharers.countSharers();
+    if (count == 1) {
+      theState = OneSharer;
+    } else if (count == 0) {
+      theState = ZeroSharers;
+    } else {
+      theState = ManySharers;
+    }
+  }
+  void setSharers(uint64_t new_sharers) {
+    theSharers.setSharers(new_sharers);
+    int32_t count = theSharers.countSharers();
+    if (count == 1) {
+      theState = OneSharer;
+    } else if (count == 0) {
+      theState = ZeroSharers;
+    } else {
+      theState = ManySharers;
+    }
+  }
 
-    inline void reset(PhysicalMemoryAddress addr)
-    {
-        theAddress = addr;
-        theSharers.clear();
-        theState = ZeroSharers;
-    }
+  inline void clear() {
+    theSharers.clear();
+    theState = ZeroSharers;
+  }
 
-    BlockDirectoryEntry& operator&=(const BlockDirectoryEntry& entry)
-    {
-        theSharers &= entry.theSharers;
-        int32_t count = theSharers.countSharers();
-        if (count == 1) {
-            theState = OneSharer;
-        } else if (count == 0) {
-            theState = ZeroSharers;
-        } else {
-            theState = ManySharers;
-        }
-        return *this;
-    }
+  inline void reset(PhysicalMemoryAddress addr) {
+    theAddress = addr;
+    theSharers.clear();
+    theState = ZeroSharers;
+  }
 
-    StdDirEntrySerializer getSerializer()
-    {
-        return StdDirEntrySerializer((uint64_t)theAddress, theSharers.getUInt64());
+  BlockDirectoryEntry &operator&=(const BlockDirectoryEntry &entry) {
+    theSharers &= entry.theSharers;
+    int32_t count = theSharers.countSharers();
+    if (count == 1) {
+      theState = OneSharer;
+    } else if (count == 0) {
+      theState = ZeroSharers;
+    } else {
+      theState = ManySharers;
     }
+    return *this;
+  }
 
-    void operator=(const StdDirEntrySerializer& serializer)
-    {
-        theAddress = PhysicalMemoryAddress(serializer.tag);
-        theSharers.setSharers(serializer.state);
-        int32_t count = theSharers.countSharers();
-        if (count == 1) {
-            theState = OneSharer;
-        } else if (count == 0) {
-            theState = ZeroSharers;
-        } else {
-            theState = ManySharers;
-        }
+  StdDirEntrySerializer getSerializer() {
+    return StdDirEntrySerializer((uint64_t)theAddress, theSharers.getUInt64());
+  }
+
+  void operator=(const StdDirEntrySerializer &serializer) {
+    theAddress = PhysicalMemoryAddress(serializer.tag);
+    theSharers.setSharers(serializer.state);
+    int32_t count = theSharers.countSharers();
+    if (count == 1) {
+      theState = OneSharer;
+    } else if (count == 0) {
+      theState = ZeroSharers;
+    } else {
+      theState = ManySharers;
     }
+  }
 };
 
 typedef boost::intrusive_ptr<BlockDirectoryEntry> BlockDirectoryEntry_p;
 
-struct BlockEntryWrapper : public AbstractDirectoryEntry
-{
-    BlockEntryWrapper(BlockDirectoryEntry& block)
-      : block(block)
-    {
-    }
-    BlockDirectoryEntry& block;
+struct BlockEntryWrapper : public AbstractDirectoryEntry {
+  BlockEntryWrapper(BlockDirectoryEntry &block) : block(block) {
+  }
+  BlockDirectoryEntry &block;
 
-    BlockDirectoryEntry* operator->() const { return &block; }
-    BlockDirectoryEntry& operator*() const { return block; }
+  BlockDirectoryEntry *operator->() const {
+    return &block;
+  }
+  BlockDirectoryEntry &operator*() const {
+    return block;
+  }
 };
 
 typedef boost::intrusive_ptr<BlockEntryWrapper> BlockEntryWrapper_p;

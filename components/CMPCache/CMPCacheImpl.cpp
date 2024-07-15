@@ -84,8 +84,6 @@ class FLEXUS_COMPONENT(CMPCache)
         return theController->isQuiesced();
     }
 
-    void saveState(std::string const& aDirName) { theController->saveState(aDirName); }
-
     void loadState(std::string const& aDirName) { theController->loadState(aDirName); }
 
     // Initialization

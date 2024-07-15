@@ -72,9 +72,7 @@ class CoherenceProtocol
     virtual std::string Short2Req(access_t r)
     {
         switch (r) {
-            case kReadAccess:
-                //        return "Read";
-                //        break;
+            case kReadAccess: return "Read"; break;
             case kWriteAccess: return "Write"; break;
             case kFetchAccess: return "Fetch"; break;
             case kUpgrade: return "Upgrade"; break;

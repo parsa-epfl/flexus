@@ -1,4 +1,4 @@
-//  DO-NOT-REMOVE begin-copyright-block
+//  DO-NOT-REMOVE begin-copyright-blockl
 // QFlex consists of several software components that are governed by various
 // licensing terms, in addition to software that was developed internally.
 // Anyone interested in using QFlex needs to fully understand and abide by the
@@ -46,22 +46,20 @@
 #ifndef _CMP_CACHE_STDARRAY_HPP
 #define _CMP_CACHE_STDARRAY_HPP
 
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
+#include <fstream>
 #include <boost/dynamic_bitset.hpp>
 #include <boost/throw_exception.hpp>
-#include <components/CMPCache/CMPCacheInfo.hpp>
-#include <components/CommonQEMU/Serializers.hpp>
-#include <components/CommonQEMU/Util.hpp>
-#include <core/debug/debug.hpp>
-#include <core/target.hpp>
-#include <core/types.hpp>
-#include <exception>
-#include <iostream>
-#include <stdlib.h>
+#include "components/CMPCache/CMPCacheInfo.hpp"
+#include "components/CommonQEMU/Serializers.hpp"
+#include "components/CommonQEMU/Util.hpp"
+#include "core/debug/debug.hpp"
+#include "core/target.hpp"
+#include "core/types.hpp"
+#include "core/checkpoint/json.hpp"
 
 using nCommonSerializers::BlockSerializer;
 using nCommonUtil::log_base2;
+using json = nlohmann::json;
 
 namespace nCMPCache {
 
@@ -73,7 +71,6 @@ typedef uint32_t BlockOffset;
 enum ReplacementPolicy
 {
     REPLACEMENT_LRU,
-    REPLACEMENT_PLRU
 };
 
 // This is a cache block.  The accessor functions are braindead simple.
@@ -276,8 +273,7 @@ class Set
     virtual bool recordAccess(Block<_State, _DefaultState>* aBlock)    = 0;
     virtual void invalidateBlock(Block<_State, _DefaultState>* aBlock) = 0;
 
-    virtual bool saveState(std::ostream& s)                                                       = 0;
-    virtual bool loadState(boost::archive::binary_iarchive& ia, int32_t theIndex, int32_t theSet) = 0;
+    virtual void load_set_from_ckpt(uint32_t index, uint64_t tag ,bool dirty, bool writable) = 0;
 
     MemoryAddress blockAddress(const Block<_State, _DefaultState>* theBlock) { return theBlock->tag(); }
 
@@ -402,27 +398,13 @@ class SetLRU : public Set<_State, _DefaultState>
         moveToTail(theBlockNum);
     }
 
-    virtual bool saveState(std::ostream& s) { return true; }
-
-    // return true if successful
-    virtual bool loadState(boost::archive::binary_iarchive& ia, int32_t theIndex, int32_t theSet)
+    virtual void load_set_from_ckpt(uint32_t index, uint64_t tag ,bool dirty, bool writable)
     {
-        BlockSerializer bs;
-        for (int32_t i = (Set<_State, _DefaultState>::theAssociativity - 1); i >= 0; i--) {
-            ia >> bs;
-            _State state(_State::char2State(bs.state));
-            // int32_t way = bs.way;
-            MemoryAddress tag                                = MemoryAddress(bs.tag);
-            theMRUOrder[i]                                   = i;
-            Set<_State, _DefaultState>::theBlocks[i].tag()   = tag;
-            Set<_State, _DefaultState>::theBlocks[i].state() = state;
-            _State temp_state(Set<_State, _DefaultState>::theBlocks[i].state());
-
-            DBG_(Trace,
-                 NoDefaultOps()(<< theIndex << "-L3: Loading block " << std::hex << bs.tag << " in state " << temp_state
-                                << " in set " << theSet));
-        }
-        return true;
+            _State state(_State::bool2state(dirty, writable));
+            theMRUOrder[index]                                   = index;
+            Set<_State, _DefaultState>::theBlocks[index].tag()   = MemoryAddress(tag);
+            Set<_State, _DefaultState>::theBlocks[index].state() = state;
+            DBG_(Trace, NoDefaultOps()(<< index << "-LLC: Loading block " << std::hex << tag << " in state " << state));
     }
 
   protected:
@@ -454,70 +436,6 @@ class SetLRU : public Set<_State, _DefaultState>
     }
 
     SetIndex* theMRUOrder;
-
-}; // class SetLRU
-
-template<typename _State, const _State& _DefaultState>
-class SetPseudoLRU : public Set<_State, _DefaultState>
-{
-  public:
-    SetPseudoLRU(const int32_t anAssociativity)
-      : Set<_State, _DefaultState>(anAssociativity)
-      , theMRUBits(anAssociativity, ((1ULL << anAssociativity) - 1))
-    {
-    }
-
-    virtual Block<_State, _DefaultState>* pickVictim()
-    {
-        DBG_Assert(false,
-                   (<< "This code needs to be updated to not replace "
-                       "protected or locked blocks."));
-        // First look for "invalid block", ie. block in DefaultState
-        for (int32_t i = 0; i < Set<_State, _DefaultState>::theAssociativity; i++) {
-            if (Set<_State, _DefaultState>::theBlocks[i].state() == _DefaultState) {
-                return &Set<_State, _DefaultState>::theBlocks[i];
-            }
-        }
-
-        int32_t theBlockNum = theMRUBits.find_first();
-        return Set<_State, _DefaultState>::theBlocks + theBlockNum;
-    }
-    virtual bool victimAvailable()
-    {
-        DBG_Assert(false, (<< "This code needs to be implemented."));
-        return false;
-    }
-    virtual Block<_State, _DefaultState>* pickLockedVictim()
-    {
-        DBG_Assert(false, (<< "This code needs to be implemented."));
-        return nullptr;
-    }
-
-    virtual bool recordAccess(Block<_State, _DefaultState>* aBlock)
-    {
-        int32_t theBlockNum = aBlock - Set<_State, _DefaultState>::theBlocks;
-        if (theMRUBits[theBlockNum] == 0) { return false; }
-        theMRUBits[theBlockNum] = 0;
-        if (theMRUBits.none()) {
-            theMRUBits.flip();
-            theMRUBits[theBlockNum] = 0;
-        }
-        return true;
-    }
-
-    virtual void invalidateBlock(Block<_State, _DefaultState>* aBlock)
-    {
-        int32_t theBlockNum     = aBlock - Set<_State, _DefaultState>::theBlocks;
-        theMRUBits[theBlockNum] = 1;
-    }
-
-    virtual bool saveState(std::ostream& s) { return true; }
-
-    virtual bool loadState(boost::archive::binary_iarchive& ia, int32_t theIndex, int32_t theSet) { return true; }
-
-  protected:
-    // This uses one bit per bool, pretty space-efficient
-    boost::dynamic_bitset<> theMRUBits;
 
 }; // class SetLRU
 
@@ -591,9 +509,6 @@ class StdArray : public AbstractArray<_State>
                        strcasecmp(iter->first.c_str(), "replacement") == 0) {
                 if (strcasecmp(iter->second.c_str(), "lru") == 0) {
                     theReplacementPolicy = REPLACEMENT_LRU;
-                } else if (strcasecmp(iter->second.c_str(), "plru") == 0 ||
-                           strcasecmp(iter->second.c_str(), "pseudoLRU") == 0) {
-                    theReplacementPolicy = REPLACEMENT_PLRU;
                 } else {
                     DBG_Assert(false, (<< "Invalid replacement policy type " << iter->second));
                 }
@@ -687,8 +602,7 @@ class StdArray : public AbstractArray<_State>
 
             switch (theReplacementPolicy) {
                 case REPLACEMENT_LRU: theSets[i] = new SetLRU<_State, _DefaultState>(theAssociativity); break;
-                case REPLACEMENT_PLRU: theSets[i] = new SetPseudoLRU<_State, _DefaultState>(theAssociativity); break;
-                default: DBG_Assert(0);
+                default: DBG_Assert(false);
             };
         }
     }
@@ -744,56 +658,37 @@ class StdArray : public AbstractArray<_State>
     }
 
     // Checkpoint reading/writing functions
-    virtual bool saveState(std::ostream& s) { return true; }
 
-    virtual bool loadState(std::istream& s, int32_t theIndex)
+    virtual void load_cache_from_ckpt(std::string const& filename, int32_t theIndex)
     {
 
-        boost::archive::binary_iarchive ia(s);
+        std::ifstream ifs(filename.c_str(), std::ios::in);
 
-        BlockSerializer serializer;
+        if (!ifs.good()) {
+            DBG_(Dev, (<< "checkpoint file: " << filename << " not found."));
+            DBG_Assert(false, (<< "FILE NOT FOUND"));
+        }
 
-        MemoryAddress addr(0);
-        int32_t theTotalSets = theNumSets * theBanks * theGroups;
-        DBG_(Trace,
-             (<< "theTotalSets:" << theTotalSets << " = product of: theNumSets:" << theNumSets
-              << " theBanks:" << theBanks << " theGroups:" << theGroups));
-        int32_t local_set  = 0;
-        int32_t global_set = 0;
+        json checkpoint;
+        ifs >> checkpoint;
 
-        uint64_t set_count     = 0;
-        uint32_t associativity = 0;
+        uint8_t associativity = checkpoint["associativity"];
+        uint32_t set_count = checkpoint["tags"].size();
 
-        ia >> set_count;
-        ia >> associativity;
+        for (int32_t i{0}; i < theNumSets; i++)
+        {
+            // if ((getBank(addr) == theLocalBankIndex) && (getGroup(addr) == theGroupIndex))
+            for (uint16_t j = 0; j < checkpoint["tags"].at(i).size(); j++)
+            {
+                uint64_t tag = checkpoint["tags"].at(i).at(j)["tag"];
+                bool dirty = checkpoint["tags"].at(i).at(j)["dirty"];
+                bool writable = checkpoint["tags"].at(i).at(j)["writable"];
 
-        DBG_Assert(set_count == (uint64_t)theTotalSets,
-                   (<< "Error loading cache state. Flexpoint contains " << set_count
-                    << " sets but simulator configured for " << theTotalSets << " total sets."));
-        DBG_Assert(associativity == (uint64_t)theAssociativity,
-                   (<< "Error loading cache state. Flexpoint contains " << associativity
-                    << "-way sets but simulator configured for " << theAssociativity << "-way sets."));
-
-        for (; global_set < theTotalSets; global_set++, addr += theBlockSize) {
-            if ((getBank(addr) == theLocalBankIndex) && (getGroup(addr) == theGroupIndex)) {
-                DBG_(Trace,
-                     (<< "Attempting to load local_set " << local_set << "(group = " << theGroupIndex
-                      << ", bank = " << theLocalBankIndex << ", gset = " << global_set));
-                if (!theSets[local_set]->loadState(ia, theIndex, local_set)) {
-                    DBG_Assert(false, (<< "failed to load cache set " << local_set));
-                    return true;
-                }
-                local_set++;
-            } else {
-                DBG_(Trace, (<< "Skipping " << theAssociativity << " ways from gset " << global_set));
-                for (int32_t way = 0; way < theAssociativity; way++) {
-                    // Skip over entries that belong to other banks
-                    ia >> serializer;
-                }
+                theSets[i]->load_set_from_ckpt(j, tag , dirty, writable);
             }
         }
 
-        return true; // true == no errors
+        ifs.close();
     }
 
     // Addressing helper functions
