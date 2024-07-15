@@ -96,6 +96,40 @@ BTB::update(BranchFeedback const& aFeedback)
     return update(aFeedback.thePC, aFeedback.theActualType, aFeedback.theActualTarget);
 }
 
+json
+BTB::saveState() const {
+
+    json checkpoint;
+
+    for(size_t i = 0; i < theBTBSets; i++){
+
+      checkpoint.emplace_back(json::array());
+
+      auto block = theBTB[i].blocks.begin();
+      auto end = theBTB[i].blocks.end();
+
+      size_t j = 0;
+      for (; block != end; block++, j++) {
+        uint8_t type = 15;
+        switch(block->theBranchType){
+          case kNonBranch: type = 0; break;
+          case kConditional: type = 1; break;
+          case kUnconditional: type = 2; break;
+          case kCall: type = 3; break;
+          case kIndirectReg: type = 4; break;
+          case kIndirectCall: type = 5; break;
+          case kReturn: type = 6; break;
+          default:
+            //DBG_Assert(false, (<< "Don't know how to save type " << block->theBranchType));
+            break;
+        }
+        checkpoint[i][j] = {{"PC", (uint64_t)block->thePC}, {"target", (uint64_t)block->theTarget}, {"type", (uint8_t)type}};
+      }
+    }
+
+    return checkpoint;
+
+}
 // void
 // BTB::loadState(json checkpoint)
 //{

@@ -166,8 +166,8 @@ void BranchPredictor::saveState(std::string const& aDirName) {
 
     json checkpoint;
 
-    // checkpoint["BTB"] = theBTB.saveState();
-    checkpoint["TAGE"] = theTage.saveState();
+    checkpoint["btb"] = theBTB.saveState();
+    checkpoint["tage"] = theTage.saveState();
 
     ofs << std::setw(4) << checkpoint << std::endl;
     ofs.close();

@@ -13,12 +13,12 @@
  */
 class BTBSet
 {
-  private:
+  public:
     std::vector<BTBEntry> blocks; // Array of blocks make up a set
+  private:
     std::vector<uint32_t> replacementQueue;
-
     void updateReplacementQueue(uint32_t index); // [MADHUR] Right now, it is LRU
-
+    //
   public:
     BTBSet();
 
