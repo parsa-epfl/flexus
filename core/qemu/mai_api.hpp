@@ -101,16 +101,17 @@ class Processor
     {
         VirtualMemoryAddress finalAddress(((uint64_t)(anAddress) + size - 1) & ~0xFFF);
         if ((finalAddress & 0x1000) != (anAddress & 0x1000)) {
-            bits value1, value2;
-            size_t partial = finalAddress - anAddress;
-            value1         = read_pa(
-              PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(anAddress))),
-              partial);
-            value2 = read_pa(
-              PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(finalAddress))),
-              size - partial);
-            value2 = (value2 << (partial << 3)) | value1;
-            return value2;
+            DBG_Assert(false, (<< "Execution ended up somewhere Bryan did NOT expected it to go"));
+        //    bits value1, value2;
+        //    size_t partial = finalAddress - anAddress;
+        //    value1         = read_pa(
+        //      PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(anAddress))),
+        //      partial);
+        //    value2 = read_pa(
+        //      PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(finalAddress))),
+        //      size - partial);
+        //    value2 = (value2 << (partial << 3)) | value1;
+        //    return value2;
         }
         return read_pa(
           PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(anAddress))),
@@ -123,7 +124,7 @@ class Processor
     {
         uint8_t buf[aSize] = { 0 };
 
-        if (API::qemu_api.get_mem(buf, API::physical_address_t(anAddress), aSize)) return ~(bits)(0);
+        API::qemu_api.get_mem(buf, API::physical_address_t(anAddress), aSize);
 
         bits tmp = 0;
         for (size_t i = 0; i < aSize; i++) {
