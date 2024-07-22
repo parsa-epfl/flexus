@@ -45,6 +45,7 @@
 
 #include "Interactions.hpp"
 #include "SemanticInstruction.hpp"
+#include "components/uArch/systemRegister.hpp"
 
 #include "components/uArch/uArchInterfaces.hpp"
 #include "components/uFetch/uFetchTypes.hpp"
@@ -268,6 +269,12 @@ struct MapDestinationEffect : public Effect
         Effect::describe(anOstream);
     }
 };
+
+Effect *mapCCDestination(SemanticInstruction *inst) {
+  MapDestinationEffect *mde = new MapDestinationEffect(kCCd, kCCpd, kPCCpd, true);
+  inst->addNewComponent(mde);
+  return mde;
+}
 
 Effect*
 mapDestination(SemanticInstruction* inst)
@@ -907,8 +914,7 @@ struct CheckSysRegAccess : public Effect
     }
 };
 
-Effect*
-checkSysRegAccess(SemanticInstruction* inst, ePrivRegs aPrivReg, uint8_t is_read)
+Effect* checkSysRegAccess(SemanticInstruction* inst, ePrivRegs aPrivReg, uint8_t is_read)
 {
     CheckSysRegAccess* e = new CheckSysRegAccess(aPrivReg, is_read);
     inst->addNewComponent(e);
@@ -917,12 +923,12 @@ checkSysRegAccess(SemanticInstruction* inst, ePrivRegs aPrivReg, uint8_t is_read
 
 struct CheckSystemAccess : public Effect
 {
-    uint32_t theNo, theRead;
-    CheckSystemAccess(uint32_t aNo, uint8_t aRead)
-      : theNo(aNo)
-      , theRead(aRead)
-    {
-    }
+  uint8_t theOp0, theOp1, theOp2, theCRn, theCRm, theRT, theRead;
+  CheckSystemAccess(uint8_t anOp0, uint8_t anOp1, uint8_t anOp2, uint8_t aCRn, uint8_t aCRm,
+                    uint8_t aRT, uint8_t aRead)
+      : theOp0(anOp0), theOp1(anOp1), theOp2(anOp2), theCRn(aCRn), theCRm(aCRm), theRT(aRT),
+        theRead(aRead) {
+  }
 
     void invoke(SemanticInstruction& anInstruction)
     {
@@ -1004,16 +1010,42 @@ struct CheckSystemAccess : public Effect
     }
 };
 
-Effect*
-checkSystemAccess(SemanticInstruction* inst, uint32_t anNo, uint8_t aRead)
-{
-    CheckSystemAccess* e = new CheckSystemAccess(anNo, aRead);
-    inst->addNewComponent(e);
-    return e;
+Effect *checkSystemAccess(SemanticInstruction* inst, uint8_t anOp0, uint8_t anOp1, uint8_t anOp2,
+                          uint8_t aCRn, uint8_t aCRm, uint8_t aRT, uint8_t aRead) {
+  CheckSystemAccess *e = new CheckSystemAccess(anOp0, anOp1, anOp2, aCRn, aCRm, aRT, aRead);
+  inst->addNewComponent(e);
+  return e;
 }
 
-// HEHE
-#if 0
+struct CheckDAIFAccess : public Effect {
+  uint8_t theOp1;
+  CheckDAIFAccess(uint8_t anOp1) : theOp1(anOp1) {
+  }
+
+  void invoke(SemanticInstruction &anInstruction) {
+    FLEXUS_PROFILE();
+    if (!anInstruction.isAnnulled()) {
+      if (theOp1 == 0x3 /*011*/ && anInstruction.core()->_PSTATE().EL() == EL0 &&
+          anInstruction.core()->_SCTLR(EL0).UMA() == 0) {
+        anInstruction.setWillRaise(kException_SYSTEMREGISTERTRAP);
+        anInstruction.core()->takeTrap(boost::intrusive_ptr<nuArch::Instruction>(&anInstruction),
+                                       anInstruction.willRaise());
+      }
+    }
+    Effect::invoke(anInstruction);
+  }
+  void describe(std::ostream &anOstream) const {
+    anOstream << " CheckDAIFAccess";
+    Effect::describe(anOstream);
+  }
+};
+
+Effect *checkDAIFAccess(SemanticInstruction *inst, uint8_t anOp1) {
+  CheckDAIFAccess *e = new CheckDAIFAccess(anOp1);
+  inst->addNewComponent(e);
+  return e;
+}
+
 struct ReadPREffect : public Effect {
   ePrivRegs thePR;
   std::unique_ptr<SysRegInfo> ri;
@@ -1056,125 +1088,125 @@ Effect *readPR(SemanticInstruction *inst, ePrivRegs aPR, std::unique_ptr<SysRegI
   inst->addNewComponent(e);
   return e;
 }
-
-struct WritePREffect : public Effect {
-  ePrivRegs thePR;
-  std::unique_ptr<SysRegInfo> ri;
-  WritePREffect(ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRI) : thePR(aPR), ri(std::move(anRI)) {
-  }
-
-  void invoke(SemanticInstruction &anInstruction) {
-    FLEXUS_PROFILE();
-    if (!anInstruction.isAnnulled()) {
-      uint64_t rs = 0;
-      if (anInstruction.hasOperand(kResult)) {
-        rs = anInstruction.operand<uint64_t>(kResult);
-      } else if (anInstruction.hasOperand(kResult1)) {
-        rs = anInstruction.operand<uint64_t>(kResult1);
-      }
-      DBG_(Iface,
-           (<< anInstruction << " Write " << ri->name << " value= " << std::hex << rs << std::dec));
-
-      ri->writefn(anInstruction.core(), (uint64_t)rs);
-    }
-    Effect::invoke(anInstruction);
-  }
-
-  void describe(std::ostream &anOstream) const {
-    anOstream << " Write PR " << thePR;
-    Effect::describe(anOstream);
-  }
-};
-
-Effect *writePR(SemanticInstruction *inst, ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRI) {
-  WritePREffect *e = new WritePREffect(aPR, std::move(anRI));
-  inst->addNewComponent(e);
-  return e;
-}
-
-struct WritePSTATE : public Effect {
-  uint8_t theOp1, theOp2;
-  WritePSTATE(uint8_t anOp1, uint8_t anOp2) : theOp1(anOp1), theOp2(anOp2) {
-  }
-
-  void invoke(SemanticInstruction &anInstruction) {
-    FLEXUS_PROFILE();
-    if (!anInstruction.isAnnulled()) {
-
-      uint64_t val = anInstruction.operand<uint64_t>(kResult);
-      switch ((theOp1 << 3) | theOp2) {
-      case 0x3:
-      case 0x4:
-        anInstruction.setWillRaise(kException_SYSTEMREGISTERTRAP);
-        anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction>(&anInstruction),
-                                       anInstruction.willRaise());
-        break;
-      case 0x5: // sp
-      {
-        std::unique_ptr<SysRegInfo> ri = getPriv(kSPSel);
-        ri->writefn(anInstruction.core(), (uint64_t)(val & 1));
-        break;
-      }
-      case 0x1e: // daif set
-        anInstruction.core()->setDAIF((uint32_t)val | anInstruction.core()->_PSTATE().DAIF());
-        break;
-      case 0x1f: // daif clr
-        anInstruction.core()->setDAIF((uint32_t)val ^ anInstruction.core()->_PSTATE().DAIF());
-        break;
-      default:
-        anInstruction.setWillRaise(kException_UNCATEGORIZED);
-        anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction>(&anInstruction),
-                                       anInstruction.willRaise());
-        break;
-      }
-    }
-    Effect::invoke(anInstruction);
-  }
-
-  void describe(std::ostream &anOstream) const {
-    anOstream << " Write PSTATE ";
-    Effect::describe(anOstream);
-  }
-};
-
-Effect *writePSTATE(SemanticInstruction *inst, uint8_t anOp1, uint8_t anOp2) {
-  Effect *e = new WritePSTATE(anOp1, anOp2);
-  inst->addNewComponent(e);
-  return e;
-}
-
-struct WriteNZCV : public Effect {
-  WriteNZCV() {
-  }
-
-  void invoke(SemanticInstruction &anInstruction) {
-    FLEXUS_PROFILE();
-    if (!anInstruction.isAnnulled()) {
-      std::unique_ptr<SysRegInfo> ri = getPriv(kNZCV);
-
-      uint64_t res = anInstruction.operand<uint64_t>(kResult);
-      uint64_t val = 0;
-      val = PSTATE_N & res;
-      if (res == 0)
-        val |= PSTATE_Z;
-
-      ri->writefn(anInstruction.core(), (uint64_t)val);
-    }
-    Effect::invoke(anInstruction);
-  }
-
-  void describe(std::ostream &anOstream) const {
-    anOstream << " Write NZCV ";
-    Effect::describe(anOstream);
-  }
-};
-
-Effect *writeNZCV(SemanticInstruction *inst) {
-  WriteNZCV *e = new WriteNZCV();
-  inst->addNewComponent(e);
-  return e;
-}
-#endif
+//
+//struct WritePREffect : public Effect {
+//  ePrivRegs thePR;
+//  std::unique_ptr<SysRegInfo> ri;
+//  WritePREffect(ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRI) : thePR(aPR), ri(std::move(anRI)) {
+//  }
+//
+//  void invoke(SemanticInstruction &anInstruction) {
+//    FLEXUS_PROFILE();
+//    if (!anInstruction.isAnnulled()) {
+//      uint64_t rs = 0;
+//      if (anInstruction.hasOperand(kResult)) {
+//        rs = anInstruction.operand<uint64_t>(kResult);
+//      } else if (anInstruction.hasOperand(kResult1)) {
+//        rs = anInstruction.operand<uint64_t>(kResult1);
+//      }
+//      DBG_(Iface,
+//           (<< anInstruction << " Write " << ri->name << " value= " << std::hex << rs << std::dec));
+//
+//      ri->writefn(anInstruction.core(), (uint64_t)rs);
+//    }
+//    Effect::invoke(anInstruction);
+//  }
+//
+//  void describe(std::ostream &anOstream) const {
+//    anOstream << " Write PR " << thePR;
+//    Effect::describe(anOstream);
+//  }
+//};
+//
+//Effect *writePR(SemanticInstruction *inst, ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRI) {
+//  WritePREffect *e = new WritePREffect(aPR, std::move(anRI));
+//  inst->addNewComponent(e);
+//  return e;
+//}
+//
+//struct WritePSTATE : public Effect {
+//  uint8_t theOp1, theOp2;
+//  WritePSTATE(uint8_t anOp1, uint8_t anOp2) : theOp1(anOp1), theOp2(anOp2) {
+//  }
+//
+//  void invoke(SemanticInstruction &anInstruction) {
+//    FLEXUS_PROFILE();
+//    if (!anInstruction.isAnnulled()) {
+//
+//      uint64_t val = anInstruction.operand<uint64_t>(kResult);
+//      switch ((theOp1 << 3) | theOp2) {
+//      case 0x3:
+//      case 0x4:
+//        anInstruction.setWillRaise(kException_SYSTEMREGISTERTRAP);
+//        anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction>(&anInstruction),
+//                                       anInstruction.willRaise());
+//        break;
+//      case 0x5: // sp
+//      {
+//        std::unique_ptr<SysRegInfo> ri = getPriv(kSPSel);
+//        ri->writefn(anInstruction.core(), (uint64_t)(val & 1));
+//        break;
+//      }
+//      case 0x1e: // daif set
+//        anInstruction.core()->setDAIF((uint32_t)val | anInstruction.core()->_PSTATE().DAIF());
+//        break;
+//      case 0x1f: // daif clr
+//        anInstruction.core()->setDAIF((uint32_t)val ^ anInstruction.core()->_PSTATE().DAIF());
+//        break;
+//      default:
+//        anInstruction.setWillRaise(kException_UNCATEGORIZED);
+//        anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction>(&anInstruction),
+//                                       anInstruction.willRaise());
+//        break;
+//      }
+//    }
+//    Effect::invoke(anInstruction);
+//  }
+//
+//  void describe(std::ostream &anOstream) const {
+//    anOstream << " Write PSTATE ";
+//    Effect::describe(anOstream);
+//  }
+//};
+//
+//Effect *writePSTATE(SemanticInstruction *inst, uint8_t anOp1, uint8_t anOp2) {
+//  Effect *e = new WritePSTATE(anOp1, anOp2);
+//  inst->addNewComponent(e);
+//  return e;
+//}
+//
+//struct WriteNZCV : public Effect {
+//  WriteNZCV() {
+//  }
+//
+//  void invoke(SemanticInstruction &anInstruction) {
+//    FLEXUS_PROFILE();
+//    if (!anInstruction.isAnnulled()) {
+//      std::unique_ptr<SysRegInfo> ri = getPriv(kNZCV);
+//
+//      uint64_t res = anInstruction.operand<uint64_t>(kResult);
+//      uint64_t val = 0;
+//      val = PSTATE_N & res;
+//      if (res == 0)
+//        val |= PSTATE_Z;
+//
+//      ri->writefn(anInstruction.core(), (uint64_t)val);
+//    }
+//    Effect::invoke(anInstruction);
+//  }
+//
+//  void describe(std::ostream &anOstream) const {
+//    anOstream << " Write NZCV ";
+//    Effect::describe(anOstream);
+//  }
+//};
+//
+//Effect *writeNZCV(SemanticInstruction *inst) {
+//  WriteNZCV *e = new WriteNZCV();
+//  inst->addNewComponent(e);
+//  return e;
+//}
+//#endif
 
 struct ClearExclusiveMonitor : public Effect
 {
@@ -1267,14 +1299,14 @@ struct ExclusiveMonitorPass : public Effect
         bool aligned    = (uint64_t(addr) == align((uint64_t)addr, theSize * 8));
 
         if (!aligned) {
-            anInstruction.setWillRaise(kException_); // HEHE
+            anInstruction.setWillRaise(kException_DATAABORT);
             anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction>(&anInstruction),
                                            anInstruction.willRaise());
         }
 
         bool passed = anInstruction.core()->isExclusiveVA(VirtualMemoryAddress(addr), theSize);
         if (!passed) {
-            anInstruction.setWillRaise(kException_); // HEHE
+            anInstruction.setWillRaise(kException_DATAABORT);
             anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction>(&anInstruction),
                                            anInstruction.willRaise());
         }

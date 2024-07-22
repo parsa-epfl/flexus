@@ -56,6 +56,8 @@
 #include "core/qemu/mai_api.hpp"
 #include "core/target.hpp"
 #include "core/types.hpp"
+#include "PSTATE.hpp"
+#include "SCTLR_EL.hpp"
 
 #include <bitset>
 #include <boost/none.hpp>
@@ -169,20 +171,148 @@ enum eExclusiveMonitorCode
     kMonitorDoesntExist = 2,
 };
 
-enum eExceptionType
-{
-    kException_,     // HEHE
-    kException_None, //= 0xff,
+enum eExceptionType {
+  kException_UNCATEGORIZED,        //= 0x00,
+  kException_WFX_TRAP,             //= 0x01,
+  kException_CP15RTTRAP,           //= 0x03,
+  kException_CP15RRTTRAP,          //= 0x04,
+  kException_CP14RTTRAP,           //= 0x05,
+  kException_CP14DTTRAP,           //= 0x06,
+  kException_ADVSIMDFPACCESSTRAP,  //= 0x07,
+  kException_FPIDTRAP,             //= 0x08,
+  kException_CP14RRTTRAP,          //= 0x0c,
+  kException_ILLEGALSTATE,         //= 0x0e,
+  kException_AA32_SVC,             //= 0x11,
+  kException_AA32_HVC,             //= 0x12,
+  kException_AA32_SMC,             //= 0x13,
+  kException_AA64_SVC,             //= 0x15,
+  kException_AA64_HVC,             //= 0x16,
+  kException_AA64_SMC,             //= 0x17,
+  kException_SYSTEMREGISTERTRAP,   //= 0x18,
+  kException_INSNABORT,            //= 0x20,
+  kException_INSNABORT_SAME_EL,    //= 0x21,
+  kException_PCALIGNMENT,          //= 0x22,
+  kException_DATAABORT,            //= 0x24,
+  kException_DATAABORT_SAME_EL,    //= 0x25,
+  kException_SPALIGNMENT,          //= 0x26,
+  kException_AA32_FPTRAP,          //= 0x28,
+  kException_AA64_FPTRAP,          //= 0x2c,
+  kException_SERROR,               //= 0x2f,
+  kException_BREAKPOINT,           //= 0x30,
+  kException_BREAKPOINT_SAME_EL,   //= 0x31,
+  kException_SOFTWARESTEP,         //= 0x32,
+  kException_SOFTWARESTEP_SAME_EL, //= 0x33,
+  kException_WATCHPOINT,           //= 0x34,
+  kException_WATCHPOINT_SAME_EL,   //= 0x35,
+  kException_AA32_BKPT,            //= 0x38,
+  kException_VECTORCATCH,          //= 0x3a,
+  kException_AA64_BKPT,            //= 0x3c,
+  kException_IRQ,
+  kException_None, //= 0xff,
 };
 
 std::ostream&
 operator<<(std::ostream& anOstream, eExceptionType aCode);
 
-enum ePrivRegs
-{
-    kAbstractSysReg, /* Msutherl: Blanket type for all registers to represent as hashed/encoded
-                        5-tuple which are then read through QEMU */
-    kLastPrivReg
+enum ePrivRegs {
+  kPSTATE,
+  kSCTLR_EL,
+  kNZCV,
+  kDAIF,
+  kFPCR,
+  kFPSR,
+  kDCZID_EL0,
+  kDC_ZVA,
+  kCURRENT_EL,
+  kELR_EL1,
+  kSPSR_EL1,
+  kSP_EL0,
+  kSP_EL1,
+  kSPSel,
+  kSPSR_IRQ,
+  kSPSR_ABT,
+  kSPSR_UND,
+  kSPSR_FIQ,
+  kTPIDR_EL0,
+  kAbstractSysReg, /* Msutherl: Blanket type for all registers to represent as hashed/encoded
+                      5-tuple which are then read through QEMU */
+  kLastPrivReg
+};
+
+/* Access rights:
+ * We define bits for Read and Write access for what rev C of the v7-AR ARM ARM
+ * defines as PL0 (user), PL1 (fiq/irq/svc/abt/und/sys, ie privileged), and
+ * PL2 (hyp). The other level which has Read and Write bits is Secure PL1
+ * (ie any of the privileged modes in Secure state, or Monitor mode).
+ * If a register is accessible in one privilege level it's always accessible
+ * in higher privilege levels too. Since "Secure PL1" also follows this rule
+ * (ie anything visible in PL2 is visible in S-PL1, some things are only
+ * visible in S-PL1) but "Secure PL1" is a bit of a mouthful, we bend the
+ * terminology a little and call this PL3.
+ * In AArch64 things are somewhat simpler as the PLx bits line up exactly
+ * with the ELx exception levels.
+ *
+ * If access permissions for a register are more complex than can be
+ * described with these bits, then use a laxer set of restrictions, and
+ * do the more restrictive/complex check inside a helper function.
+ */
+
+enum eAccessRight {
+  kPL3_R = 0x80,
+  kPL3_W = 0x40,
+  kPL2_R = (0x20 | kPL3_R),
+  kPL2_W = (0x10 | kPL3_W),
+  kPL1_R = (0x08 | kPL2_R),
+  kPL1_W = (0x04 | kPL2_W),
+  kPL0_R = (0x02 | kPL1_R),
+  kPL0_W = (0x01 | kPL1_W),
+  kPL3_RW = (kPL3_R | kPL3_W),
+  kPL2_RW = (kPL2_R | kPL2_W),
+  kPL1_RW = (kPL1_R | kPL1_W),
+  kPL0_RW = (kPL0_R | kPL0_W),
+};
+
+/* ARMCPRegInfo type field bits. If the SPECIAL bit is set this is a
+ * special-behaviour cp reg and bits [15..8] indicate what behaviour
+ * it has. Otherwise it is a simple cp reg, where CONST indicates that
+ * TCG can assume the value to be constant (ie load at translate time)
+ * and 64BIT indicates a 64 bit wide coprocessor register. SUPPRESS_TB_END
+ * indicates that the TB should not be ended after a write to this register
+ * (the default is that the TB ends after cp writes). OVERRIDE permits
+ * a register definition to override a previous definition for the
+ * same (cp, is64, crn,crm,opc1,opc2) tuple: either the new or the
+ * old must have the OVERRIDE bit set.
+ *
+ * ALIAS indicates that this register is an alias view of some underlying
+ * state which is also visible via another register, and that the other
+ * register is handling migration and reset; registers marked ALIAS will not be
+ * migrated but may have their state set by syncing of register state from KVM.
+ * NO_RAW indicates that this register has no underlying state and does not
+ * support raw access for state saving/loading; it will not be used for either
+ * migration or KVM state synchronization. (Typically this is for "registers"
+ * which are actually used as instructions for cache maintenance and so on.)
+ * IO indicates that this register does I/O and therefore its accesses
+ * need to be surrounded by gen_io_start()/gen_io_end(). In particular,
+ * registers which implement clocks or timers require this.
+ */
+
+enum eRegInfo {
+  kARM_SPECIAL = 1,
+  kARM_CONST = 2,
+  kARM_64BIT = 4,
+  kARM_SUPPRESS_TB_END = 8,
+  kARM_OVERRIDE = 16,
+  kARM_ALIAS = 32,
+  kARM_IO = 64,
+  kARM_NO_RAW = 128,
+  kARM_NOP = (kARM_SPECIAL | (1 << 8)),
+  kARM_WFI = (kARM_SPECIAL | (2 << 8)),
+  kARM_NZCV = (kARM_SPECIAL | (3 << 8)),
+  kARM_CURRENTEL = (kARM_SPECIAL | (4 << 8)),
+  kARM_DC_ZVA = (kARM_SPECIAL | (5 << 8)),
+  kARM_LAST_SPECIAL = kARM_DC_ZVA,
+  /* Mask of only the flag bits in a type field */
+  kARM_FLAG_MASK = 0xff,
 };
 
 #define EL0 0
@@ -436,6 +566,7 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction
     virtual bool postValidate()                 = 0;
     virtual bool resync() const                 = 0;
     virtual void forceResync()                  = 0;
+    virtual void setClass(eInstructionClass anInstructionClass, eInstructionCode aCode)                     = 0;
 
     virtual void setTransactionTracker(boost::intrusive_ptr<TransactionTracker> aTransaction) = 0;
     virtual boost::intrusive_ptr<TransactionTracker> getTransactionTracker() const            = 0;
@@ -758,6 +889,12 @@ struct uArch
         return 0;
     }
     virtual void writeFPCR(uint32_t aValue) { DBG_Assert(false); }
+
+      virtual SCTLR_EL _SCTLR(uint32_t anELn) {
+        DBG_Assert(false);
+        return SCTLR_EL(0);
+      }
+
     virtual void setSCTLR_EL(uint8_t anId, uint64_t aSCTLR) { DBG_Assert(false); }
     virtual uint64_t getSCTLR_EL(uint8_t anId)
     {
@@ -799,6 +936,11 @@ struct uArch
         DBG_Assert(false);
         return 0;
     }
+    virtual PSTATE _PSTATE() {
+        DBG_Assert(false);
+        return PSTATE(0);
+    }
+
     virtual void setXRegister(uint32_t aReg, uint64_t aVal) { DBG_Assert(false); }
     virtual void bypass(mapped_reg aReg, register_value aValue) { DBG_Assert(false); }
     virtual void connectBypass(mapped_reg aReg,
@@ -881,7 +1023,7 @@ struct uArch
         DBG_Assert(false);
         return false;
     }
-    virtual uint64_t readUnhashedSysReg(uint32_t no)
+    virtual uint64_t readUnhashedSysReg(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn, uint8_t crm)
     {
         DBG_Assert(false);
         return 0;

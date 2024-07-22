@@ -45,7 +45,10 @@
 
 #include "Validations.hpp"
 
-#include <components/uArch/uArchInterfaces.hpp>
+#include "core/qemu/api_wrappers.hpp"
+#include "components/uArch/uArchInterfaces.hpp"
+
+
 
 #define DBG_DeclareCategories Decoder
 #define DBG_SetDefaultOps     AddCat(Decoder)
@@ -94,7 +97,7 @@ validatePC::operator()()
     }
 
     uint64_t flexus = thePreValidation ? theInstruction->pc() : theInstruction->pcNext();
-    uint64_t qemu   = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu()).readPC();
+    uint64_t qemu   = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu()).read_register(Flexus::Qemu::API::PC);
 
     DBG_(Dev, Condition(flexus != qemu)(<< "flexus PC value " << std::hex << flexus << std::dec));
     DBG_(Dev, Condition(flexus != qemu)(<< "qemu PC value   " << std::hex << qemu << std::dec));

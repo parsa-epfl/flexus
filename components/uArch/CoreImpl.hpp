@@ -414,6 +414,8 @@ class CoreImpl : public CoreModel
     RegisterFile theRegisters;
 
     uint64_t thePC;
+    uint32_t thePSTATE;
+    uint64_t theSCTLR_EL[4];
 
     // MMU Internal State:
     // ===================================================================
@@ -932,8 +934,10 @@ class CoreImpl : public CoreModel
     void setXRegister(uint32_t aReg, uint64_t aVal);
     uint64_t getXRegister(uint32_t aReg);
     void setPC(uint64_t aPC);
+    PSTATE _PSTATE();
+    SCTLR_EL _SCTLR(uint32_t anELn);
 
-    uint64_t readUnhashedSysReg(uint32_t no);
+    uint64_t readUnhashedSysReg(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn, uint8_t crm);
 
     bool cpuHalted;
 
@@ -965,6 +969,7 @@ class CoreImpl : public CoreModel
     TranslationPtr popTranslation();
     void pushTranslation(TranslationPtr aTranslation);
 
+    uint32_t currentEL();
     void invalidateCache(eCacheType aType);
     void invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress);
     void invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, uint32_t aSize);

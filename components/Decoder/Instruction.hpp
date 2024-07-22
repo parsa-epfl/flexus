@@ -156,6 +156,13 @@ class ArchInstruction : public nuArch::Instruction
     virtual bool resync() const { return theResync; }
     virtual void forceResync() { theResync = true; }
 
+    virtual void setClass(eInstructionClass anInstructionClass, eInstructionCode aCode)
+    {
+        theInstructionClass        = anInstructionClass;
+        theOriginalInstructionCode = theInstructionCode = aCode;
+        DECODER_DBG(*this);
+    }
+
     virtual void setTransactionTracker(boost::intrusive_ptr<TransactionTracker> aTransaction)
     {
         theTransaction = aTransaction;
@@ -265,12 +272,6 @@ class ArchInstruction : public nuArch::Instruction
 
     virtual void changeInstCode(eInstructionCode aCode) { theInstructionCode = aCode; }
 
-    void setClass(eInstructionClass anInstructionClass, eInstructionCode aCode)
-    {
-        theInstructionClass        = anInstructionClass;
-        theOriginalInstructionCode = theInstructionCode = aCode;
-        DECODER_DBG(*this);
-    }
 
     uint32_t cpu() { return theCPU; }
     virtual bool isMicroOp() const { return false; }
