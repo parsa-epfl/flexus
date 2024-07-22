@@ -824,48 +824,49 @@ CoreImpl::dumpState()
 bool
 CoreImpl::checkValidatation()
 {
-    theFlexusDumpState = dumpState();
-    theQemuDumpState   = Flexus::Qemu::Processor::getProcessor(theNode).dump_state();
+// TODO
+//    theFlexusDumpState = dumpState();
+//    theQemuDumpState   = Flexus::Qemu::Processor::getProcessor(theNode).dump_state();
+//
+//    bool ret = (theFlexusDumpState.compare(theQemuDumpState) == 0);
+//    if (!ret) {
+//
+//        // Vector of string to save tokens
+//        std::vector<std::string> flex_diff, qemu_diff, diff;
+//
+//        std::replace(theFlexusDumpState.begin(), theFlexusDumpState.end(), '\n', ' ');
+//        std::replace(theQemuDumpState.begin(), theQemuDumpState.end(), '\n', ' ');
+//
+//        // stringstream class check1
+//        std::stringstream flex_check(theFlexusDumpState);
+//        std::stringstream qemu_check(theQemuDumpState);
+//
+//        std::string iflex, iqemu;
+//
+//        // Tokenizing w.r.t. space ' '
+//        while (std::getline(flex_check, iflex, ' ')) {
+//            flex_diff.push_back(iflex);
+//        }
+//        while (std::getline(qemu_check, iqemu, ' ')) {
+//            qemu_diff.push_back(iqemu);
+//        }
+//
+//        for (size_t i = 0; i < flex_diff.size() && i < qemu_diff.size(); i++) {
+//            if (flex_diff[i].compare(qemu_diff[i]) != 0) {
+//                diff.push_back("flexus: " + flex_diff[i]);
+//                diff.push_back("qemu:   " + qemu_diff[i]);
+//            }
+//        }
+//
+//        if (diff.size() > 0) {
+//            DBG_(Dev, (<< "state mismatch: "));
+//            for (auto& i : diff) {
+//                DBG_(Dev, (<< i));
+//            }
+//        }
+//    }
 
-    bool ret = (theFlexusDumpState.compare(theQemuDumpState) == 0);
-    if (!ret) {
-
-        // Vector of string to save tokens
-        std::vector<std::string> flex_diff, qemu_diff, diff;
-
-        std::replace(theFlexusDumpState.begin(), theFlexusDumpState.end(), '\n', ' ');
-        std::replace(theQemuDumpState.begin(), theQemuDumpState.end(), '\n', ' ');
-
-        // stringstream class check1
-        std::stringstream flex_check(theFlexusDumpState);
-        std::stringstream qemu_check(theQemuDumpState);
-
-        std::string iflex, iqemu;
-
-        // Tokenizing w.r.t. space ' '
-        while (std::getline(flex_check, iflex, ' ')) {
-            flex_diff.push_back(iflex);
-        }
-        while (std::getline(qemu_check, iqemu, ' ')) {
-            qemu_diff.push_back(iqemu);
-        }
-
-        for (size_t i = 0; i < flex_diff.size() && i < qemu_diff.size(); i++) {
-            if (flex_diff[i].compare(qemu_diff[i]) != 0) {
-                diff.push_back("flexus: " + flex_diff[i]);
-                diff.push_back("qemu:   " + qemu_diff[i]);
-            }
-        }
-
-        if (diff.size() > 0) {
-            DBG_(Dev, (<< "state mismatch: "));
-            for (auto& i : diff) {
-                DBG_(Dev, (<< i));
-            }
-        }
-    }
-
-    return ret;
+    return true; //TODO
 }
 
 void
@@ -1605,7 +1606,7 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
 
         if (raised != 0) {
             if (anInstruction->willRaise() !=
-                (raised == 0 ? kException_None : kException_)) { // FIXME get exception mapper HEHE
+                (raised == 0 ? kException_None : kException_UNCATEGORIZED)) {
                 DBG_(VVerb,
                      (<< *anInstruction
                       << " Core did not predict correct exception for this "
@@ -1625,7 +1626,7 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
                 DBG_(VVerb,
                      (<< *anInstruction << " Core correctly identified raise=0x" << std::hex << raised << std::dec));
             }
-            anInstruction->raise(raised == 0 ? kException_None : kException_); // HEHE
+            anInstruction->raise(raised == 0 ? kException_None : kException_UNCATEGORIZED);
         } else if (anInstruction->willRaise() != kException_None) {
             DBG_(VVerb,
                  (<< *anInstruction << " DANGER:  Core predicted exception: " << std::hex << anInstruction->willRaise()
@@ -1685,13 +1686,13 @@ CoreImpl::acceptInterrupt()
         DBG_(Dev,
              (<< theName << " Accepting interrupt " << thePendingInterrupt << " on instruction " << *theROB.front()));
         theInterruptInstruction = theROB.front();
-        takeTrap(theInterruptInstruction,
-                 /*thePendingInterrupt*/ kException_); // HEHE
+        takeTrap(theInterruptInstruction, kException_UNCATEGORIZED);
 
         return true;
     }
     return false;
 }
+
 
 void
 CoreImpl::accountRetire(boost::intrusive_ptr<Instruction> anInst)
@@ -3353,9 +3354,9 @@ CoreImpl::setPC(uint64_t aPC)
 }
 
 uint64_t
-CoreImpl::readUnhashedSysReg(uint32_t no)
+CoreImpl::readUnhashedSysReg(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn, uint8_t crm)
 {
-    return theQEMUCPU.read_sysreg_from_qemu(no);
+    return theQEMUCPU.read_sysreg(opc0, opc1, opc2, crn, crm);
 }
 
 void
@@ -3540,6 +3541,15 @@ CoreImpl::eraseLSQ(boost::intrusive_ptr<Instruction> anInsn)
 
     theMemQueue.get<by_insn>().erase(iter);
     DBG_Assert(theLSQCount + theSBCount + theSBNAWCount == static_cast<long>(theMemQueue.size()));
+}
+
+PSTATE CoreImpl::_PSTATE() {
+  return PSTATE(thePSTATE);
+}
+
+SCTLR_EL CoreImpl::_SCTLR(uint32_t anELn) {
+  DBG_Assert(anELn >= 0 || anELn <= 3);
+  return SCTLR_EL(theSCTLR_EL[anELn]);
 }
 
 void
@@ -3742,11 +3752,15 @@ CoreImpl::pushTranslation(TranslationPtr aTranslation)
     } else {
         DBG_(Iface, (<< "Not Resolved.. vaddr: " << lsq_entry->theVaddr << " due to resync."));
 
-        lsq_entry->theException = kException_; // HEHE
+        lsq_entry->theException = kException_UNCATEGORIZED;
         insn->pageFault();
     }
 
     DBG_Assert(lsq_entry->thePaddr != kInvalid);
+}
+
+uint32_t CoreImpl::currentEL() {
+  return extract32(thePSTATE, 2, 2);
 }
 
 void

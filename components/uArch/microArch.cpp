@@ -293,7 +293,7 @@ class microArchImpl : public microArch
             // Record free ROB space for next cycle
             theAvailableROB = theCore->availableROB();
 
-            eExceptionType interrupt = theCPU.has_irq() ? kException_ : kException_None; // HEHE
+            eExceptionType interrupt = theCPU.has_irq() ? kException_IRQ : kException_None; // HEHE
             theCore->cycle(interrupt);
 
         } catch (ResynchronizeWithQemuException& e) {
@@ -328,7 +328,7 @@ class microArchImpl : public microArch
                       << "] Resynchronize "
                          "complete\n==================================================="
                          "=====\n"));
-                theCPU.breakSimulation();
+                //theCPU.breakSimulation(); TODO
             }
             theExceptionRaised = 0;
         }
@@ -393,7 +393,7 @@ class microArchImpl : public microArch
     void resetException()
     {
         API::exception_t exp;
-        theCPU.readException(&exp);
+        // theCPU.readException(&exp); TODO
         theCore->setException(exp);
     }
 

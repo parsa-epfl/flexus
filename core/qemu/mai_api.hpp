@@ -46,6 +46,7 @@
 #define FLEXUS_QEMU_MAI_API_HPP_INCLUDED
 
 #include <bitset>
+#include <cstdint>
 #include <core/flexus.hpp>
 #include <core/qemu/configuration_api.hpp>
 #include <core/target.hpp>
@@ -134,25 +135,42 @@ class Processor
         }
         return tmp;
     }
-    // TODO ─── NOT implemented ────────────────────────────────────────────────
 
-    std::string dump_state() { return "0xDEADBEEF"; }
-
-    uint64_t readSCTLR(uint64_t index) { return 0; }
-
-    uint64_t readPC() const { return 0; }
+    uint64_t read_sysreg(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn, uint8_t crm) {
+        return API::qemu_api.read_sys_register(core_index, opc0, opc1, opc2, crn, crm);
+    }
 
     uint64_t id() const { return core_index; }
 
-    std::string disassemble(VirtualMemoryAddress const& anAddress) const { return "TODO()!"; }
+    std::string disassemble(VirtualMemoryAddress const& address) const
+    {
+        char* qemu_disas_str = API::qemu_api.disassembly(core_index, (uint64_t)address, 4);
 
-    bool is_busy() const { return true; }
+        std::string buffer(qemu_disas_str);
+        free(qemu_disas_str);
 
-    uint64_t read_sysreg_from_qemu(uint32_t no) { return 0; }
+        return buffer;
 
-    void breakSimulation() {}
+    }
 
-    void readException(API::exception_t* exp) const {}
+    bool is_busy() const {
+        return API::qemu_api.is_busy(core_index);
+    }
+    // TODO ─── NOT implemented ────────────────────────────────────────────────
+
+    //std::string dump_state() { return "0xDEADBEEF"; }
+
+    //uint64_t readSCTLR(uint64_t index) { return 0; }
+
+    //uint64_t readPC() const { return 0; }
+
+
+
+
+
+    //void breakSimulation() {}
+
+    //void readException(API::exception_t* exp) const {}
     // explicit Processor(): base(0) {}
 
     // explicit Processor(API::conf_object_t* cpu_object) : base(PROCESSOR_IMPL(cpu_object)) {}

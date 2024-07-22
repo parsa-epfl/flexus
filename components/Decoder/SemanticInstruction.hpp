@@ -46,11 +46,10 @@
 #ifndef FLEXUS_DECODER_SEMANTICINSTRUCTION_HPP_INCLUDED
 #define FLEXUS_DECODER_SEMANTICINSTRUCTION_HPP_INCLUDED
 
+#include "components/uArch/uArchInterfaces.hpp"
 #include "Effects.hpp"
 #include "Instruction.hpp"
 #include "OperandMap.hpp"
-
-#include <components/uArch/uArchInterfaces.hpp>
 
 namespace nDecoder {
 

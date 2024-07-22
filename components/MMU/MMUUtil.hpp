@@ -46,7 +46,7 @@
 #ifndef FLEXUS_MMU_UTIL_HPP_INCLUDED
 #define FLEXUS_MMU_UTIL_HPP_INCLUDED
 
-#include "ARMTranslationGranules.hpp"
+#include "TranslationGranules.hpp"
 #include "TTResolvers.hpp"
 #include "TranslationState.hpp"
 #include "mmuRegisters.hpp"

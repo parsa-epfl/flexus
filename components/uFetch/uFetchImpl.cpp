@@ -976,13 +976,15 @@ class FLEXUS_COMPONENT(uFetch)
                                    << tr->thePaddr << std::dec << ", PADDR_QEMU = " << std::hex << magicTranslation
                                    << std::dec));
         }
-        uint32_t opcode = 1;
         // MARK: Look up in the opc bijection and get the correct index
         BijectionMapType_t::iterator bijection_iter = tr_op_bijection.find(tr);
         DBG_AssertSev(Crit,
                       bijection_iter != tr_op_bijection.end(),
                       Comp(*this)(<< "ERROR: Opcode index was NOT found for translationPtr with ID" << tr->theID
                                   << " and address" << tr->theVaddr));
+
+
+        uint64_t opcode = 0;
         if (!tr->isPagefault()) {
             opcode = cpu(tr->theIndex).fetch_inst(tr->theVaddr);
             opcode += opcode ? 0 : 1;

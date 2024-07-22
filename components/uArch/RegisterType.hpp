@@ -55,6 +55,7 @@ enum eRegisterType
 {
     xRegisters,
     vRegisters,
+    ccBits,
     kLastMapTableCode
 };
 
