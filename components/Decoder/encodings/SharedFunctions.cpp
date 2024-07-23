@@ -70,6 +70,9 @@ eExtendType DecodeRegExtend(int anOption) {
     assert(false);
     break;
   }
+
+    __builtin_unreachable();
+
 }
 
 eIndex getIndex(unsigned int index) {
@@ -84,6 +87,7 @@ eIndex getIndex(unsigned int index) {
     return kNoOffset;
     break;
   }
+    __builtin_unreachable();
 }
 
 std::unique_ptr<Operation> extend(eExtendType anExtend) {
@@ -109,6 +113,7 @@ std::unique_ptr<Operation> extend(eExtendType anExtend) {
     assert(false);
     break;
   }
+    __builtin_unreachable();
 }
 
 /* The input should be a value in the bottom e bits (with higher
