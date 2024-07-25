@@ -145,8 +145,9 @@ struct FetchAddr
     Flexus::SharedTypes::VirtualMemoryAddress theAddress;
     boost::intrusive_ptr<BPredState> theBPState;
     FetchAddr(Flexus::SharedTypes::VirtualMemoryAddress anAddress)
-      : theAddress(anAddress)
-    {
+
+      : theAddress(anAddress) {
+        theBPState = new BPredState();
     }
 };
 
