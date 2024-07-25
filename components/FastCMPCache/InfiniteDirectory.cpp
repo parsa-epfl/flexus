@@ -64,7 +64,7 @@ using nCommonUtil::log_base2;
 
 #include <core/checkpoint/json.hpp>
 using json = nlohmann::json;
-#define MAX_NUM_SHARERS 512
+#define MAX_NUM_SHARERS 64
 
 namespace nFastCMPCache {
 

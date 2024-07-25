@@ -383,6 +383,7 @@ class FLEXUS_COMPONENT(FastCMPCache)
         // DBG_Assert(false, ( << "AHHH someone tried to send us a snoop message!
         // What were they thinking?!?" ));
         PhysicalMemoryAddress addr(aMessage.address() & theCoherenceUnitMask);
+        aMessage.fillLevel() = cfg.CacheLevel;
 
         performDelayedActions();
 
@@ -773,6 +774,8 @@ class FLEXUS_COMPONENT(FastCMPCache)
     if (snoop_success) { // request satisfied from another L1 cache, because it
                          // wasn't in L2, or it wasn't in appropriate state in
                          // L2 (coherence miss)
+                          //
+      aMessage.fillLevel() = ePeerL1Cache;
       switch (orig_msg_type) {
       case MemoryMessage::ReadReq:
         theCacheStats->Misses_Onchip_Read++;

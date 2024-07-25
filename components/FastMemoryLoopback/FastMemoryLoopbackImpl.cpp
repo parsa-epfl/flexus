@@ -82,19 +82,20 @@ class FLEXUS_COMPONENT(FastMemoryLoopback)
     void push(interface::FromCache const&, MemoryMessage& message)
     {
 
+         message.fillLevel() = eLocalMem;
+
+
         DBG_(Iface, Addr(message.address())(<< "request received: " << message));
         switch (message.type()) {
             case MemoryMessage::LoadReq:
             case MemoryMessage::FetchReq:
                 message.type()      = MemoryMessage::MissReply;
-                message.fillLevel() = eLocalMem;
                 (theStats->theReadRequests_stat)++;
                 break;
             case MemoryMessage::ReadReq:
             case MemoryMessage::PrefetchReadNoAllocReq:
             case MemoryMessage::PrefetchReadAllocReq:
                 message.type()      = MemoryMessage::MissReply;
-                message.fillLevel() = eLocalMem;
                 (theStats->theReadRequests_stat)++;
                 break;
             case MemoryMessage::StoreReq:
@@ -106,7 +107,6 @@ class FLEXUS_COMPONENT(FastMemoryLoopback)
             case MemoryMessage::UpgradeReq:
             case MemoryMessage::UpgradeAllocate:
                 message.type()      = MemoryMessage::MissReplyWritable;
-                message.fillLevel() = eLocalMem;
                 (theStats->theUpgradeRequest_stat)++;
                 break;
             case MemoryMessage::EvictDirty: (theStats->theEvictDirtys_stat)++; break;
@@ -117,7 +117,6 @@ class FLEXUS_COMPONENT(FastMemoryLoopback)
                 break;
             case MemoryMessage::NonAllocatingStoreReq:
                 message.type()      = MemoryMessage::NonAllocatingStoreReply;
-                message.fillLevel() = eLocalMem;
                 (theStats->theNonAllocatingStoreReq_stat)++;
                 break;
             default: DBG_Assert(false, (<< "unknown request received: " << message));

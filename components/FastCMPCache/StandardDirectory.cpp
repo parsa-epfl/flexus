@@ -58,7 +58,7 @@ using nCommonUtil::log_base2;
 
 #include <core/checkpoint/json.hpp>
 using json = nlohmann::json;
-#define MAX_NUM_SHARERS 512
+#define MAX_NUM_SHARERS 64
 
 namespace nFastCMPCache {
 
@@ -261,7 +261,7 @@ class StandardDirectory : public AbstractDirectory
 
     return std::tie(entry->sharers(), entry->state(), wrapper, valid);
   }
-  
+
   void saveStateJSON(std::ostream &s, const std::string &aDirName) {
 
     json checkpoint;
@@ -278,7 +278,7 @@ class StandardDirectory : public AbstractDirectory
         uint64_t sharers = theDirectory[set][way].theSharers.getSharers().to_ullong();
 
         checkpoint[i++] = {{"tag", dirAddress}, {"sharers", sharers}};
-        
+
         DBG_(Trace, (<< "Directory saving block: " << dirAddress));
 
       }
@@ -289,15 +289,15 @@ class StandardDirectory : public AbstractDirectory
   }
 
   bool loadStateJSON(std::istream &s, const std::string &aDirName) {
-    
+
     json checkpoint;
     s >> checkpoint;
-    
+
     uint32_t dirSize = checkpoint.size();
 
     DBG_(Trace, (<< "Directory loading " << dirSize << " entries."));
     for (size_t set = 0; set < (size_t)theNumSets; set++) {
-      
+
         //empty the directory
         theDirectory[set].clear();
 

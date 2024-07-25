@@ -47,7 +47,7 @@
 #define __SIMPLE_DIRECTORY_STATE_HPP__
 #include <bitset>
 #include <boost/dynamic_bitset.hpp>
-#define MAX_NUM_SHARERS 512
+#define MAX_NUM_SHARERS 64
 
 namespace nCMPCache {
 
