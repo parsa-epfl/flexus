@@ -53,8 +53,8 @@
 #include "components/uArch/RegisterType.hpp"
 #include "components/uArch/uArchInterfaces.hpp"
 
-#include "components/uArch/PSTATE.hpp"
-#include "components/uArch/SCTLR_EL.hpp"
+#include "components/uArch/CoreModel/PSTATE.hpp"
+#include "components/uArch/CoreModel/SCTLR_EL.hpp"
 
 #include "core/MakeUniqueWrapper.hpp"
 
