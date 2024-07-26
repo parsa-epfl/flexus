@@ -43,10 +43,10 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
 
-#include "CoreImpl.hpp"
+//#include "CoreImpl.hpp"
 
 #include "ValueTracker.hpp"
-
+#if 0
 #include <boost/optional/optional_io.hpp>
 #include <boost/polymorphic_pointer_cast.hpp>
 #include <components/CommonQEMU/TraceTracker.hpp>
@@ -367,7 +367,7 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , signalStoreForwardingHit_fn(_signalStoreForwardingHit)
   , mmuResync_fn(_mmuResync)
   , thePendingTrap(kException_None)
-  , theBypassNetwork(kxRegs + 3 * options.ROBSize, kvRegs + 4 * options.ROBSize)
+  , theBypassNetwork(kxRegs_Total + 3 * options.ROBSize, kvRegs + 4 * options.ROBSize, kccRegs + 2 * options.ROBSize)
   , theLastGarbageCollect(0)
   , thePreserveInteractions(false)
   , theMemoryPortArbiter(*this, options.numMemoryPorts, options.numStorePrefetches)
@@ -580,30 +580,34 @@ CoreImpl::CoreImpl(uArchOptions_t options,
     // original constructor continues here...
     prepareMemOpAccounting();
 
-    std::vector<uint32_t> reg_file_sizes;
-    reg_file_sizes.resize(kLastMapTableCode + 2);
-    reg_file_sizes[xRegisters] = kxRegs + 3 * theROBSize;
-    reg_file_sizes[vRegisters] = kvRegs + 4 * theROBSize;
-    theRegisters.initialize(reg_file_sizes);
+      std::vector<uint32_t> reg_file_sizes;
+      reg_file_sizes.resize(kLastMapTableCode + 2);
+      reg_file_sizes[xRegisters] = kxRegs_Total + 3 * theROBSize;
+      reg_file_sizes[vRegisters] = kvRegs + 4 * theROBSize;
+      reg_file_sizes[ccBits] = kccRegs + 2 * theROBSize;
+      theRegisters.initialize(reg_file_sizes);
 
-    // Map table for xRegisters
-    theMapTables.push_back(std::make_shared<PhysicalMap>(kxRegs, reg_file_sizes[xRegisters]));
+      // Map table for xRegisters
+      theMapTables.push_back(std::make_shared<PhysicalMap>(kxRegs_Total, reg_file_sizes[xRegisters]));
 
-    // Map table for vRegisters
-    theMapTables.push_back(std::make_shared<PhysicalMap>(kvRegs, reg_file_sizes[vRegisters]));
+      // Map table for vRegisters
+      theMapTables.push_back(std::make_shared<PhysicalMap>(kvRegs, reg_file_sizes[vRegisters]));
 
-    reset();
+      // Map table for ccBits
+      theMapTables.push_back(std::make_shared<PhysicalMap>(kccRegs, reg_file_sizes[ccBits]));
 
-    theCommitUSArray[0] = &theCommitCount_NonSpin_User;
-    theCommitUSArray[1] = &theCommitCount_NonSpin_System;
-    theCommitUSArray[2] = &theCommitCount_NonSpin_Trap;
-    theCommitUSArray[3] = &theCommitCount_NonSpin_Idle;
-    theCommitUSArray[4] = &theCommitCount_Spin_User;
-    theCommitUSArray[5] = &theCommitCount_Spin_System;
-    theCommitUSArray[6] = &theCommitCount_Spin_Trap;
-    theCommitUSArray[7] = &theCommitCount_Spin_Idle;
+      reset();
 
-    for (int32_t i = 0; i < codeLastCode; ++i) {
+      theCommitUSArray[0] = &theCommitCount_NonSpin_User;
+      theCommitUSArray[1] = &theCommitCount_NonSpin_System;
+      theCommitUSArray[2] = &theCommitCount_NonSpin_Trap;
+      theCommitUSArray[3] = &theCommitCount_NonSpin_Idle;
+      theCommitUSArray[4] = &theCommitCount_Spin_User;
+      theCommitUSArray[5] = &theCommitCount_Spin_System;
+      theCommitUSArray[6] = &theCommitCount_Spin_Trap;
+      theCommitUSArray[7] = &theCommitCount_Spin_Idle;
+
+      for (int32_t i = 0; i < codeLastCode; ++i) {
         std::stringstream user_name;
         user_name << theName << "-InsnCount:User:" << eInstructionCode(i);
         std::stringstream system_name;
@@ -617,17 +621,18 @@ CoreImpl::CoreImpl(uArchOptions_t options,
         theCommitsByCode[1].push_back(new Stat::StatCounter(system_name.str()));
         theCommitsByCode[2].push_back(new Stat::StatCounter(trap_name.str()));
         theCommitsByCode[3].push_back(new Stat::StatCounter(idle_name.str()));
-    }
+      }
 
-    kTBUser   = theTimeBreakdown.addClass("User");
-    kTBSystem = theTimeBreakdown.addClass("System");
-    kTBTrap   = theTimeBreakdown.addClass("Trap");
-    kTBIdle   = theTimeBreakdown.addClass("Idle");
+      kTBUser = theTimeBreakdown.addClass("User");
+      kTBSystem = theTimeBreakdown.addClass("System");
+      kTBTrap = theTimeBreakdown.addClass("Trap");
+      kTBIdle = theTimeBreakdown.addClass("Idle");
 
-    theLastStallCause = nXactTimeBreakdown::kUnknown;
-    theCycleCategory  = kTBUser;
+      theLastStallCause = nXactTimeBreakdown::kUnknown;
+      theCycleCategory = kTBUser;
 
-    cpuHalted = false;
+      cpuHalted = false;
+
 }
 
 void
@@ -6346,3 +6351,4 @@ operator<<(std::ostream& anOstream, eExceptionType aCode)
 }
 
 } // namespace nuArch
+#endif

@@ -56,8 +56,8 @@
 #include "core/qemu/mai_api.hpp"
 #include "core/target.hpp"
 #include "core/types.hpp"
-#include "PSTATE.hpp"
-#include "SCTLR_EL.hpp"
+#include "CoreModel/PSTATE.hpp"
+#include "CoreModel/SCTLR_EL.hpp"
 
 #include <bitset>
 #include <boost/none.hpp>
@@ -355,6 +355,47 @@ enum eCacheType
 {
     kInstructionCache,
     kDataCache,
+};
+
+enum eCachePoint {
+  kPoC, // Point of Coherency (PoC). For a particular address, the PoC is the
+        // point at which all observers, for example, cores, DSPs, or DMA
+        // engines, that can access memory, are guaranteed to see the same copy
+        // of a memory location. Typically, this is the main external system
+        // memory.
+
+  kPoU, // Point of Unification (PoU). The PoU for a core is the point at which
+        // the instruction and data caches and translation table walks of the
+        // core are guaranteed to see the same copy of a memory location. For
+        // example, a unified level 2 cache would be the point of unification in
+        // a system with Harvard level 1 caches and a TLB for caching
+        // translation table entries. If no external cache is present, main
+        // memory would be the Point of Unification.
+};
+
+enum eShareableDomain {
+  kNonShareable, // This represents memory accessible only by a single processor
+                 // or other agent, so memory accesses never need to be
+                 // synchronized with other processors. This domain is not
+                 // typically used in SMP systems.
+
+  KInnerShareable, // This represents a shareability domain that can be shared
+                   // by multiple processors, but not necessarily all of the
+                   // agents in the system. A system might have multiple Inner
+                   // Shareable domains. An operation that affects one Inner
+                   // Shareable domain does not affect other Inner Shareable
+                   // domains in the system. An example of such a domain might
+                   // be a quad-core Cortex-A57 cluster.
+
+  kOuterShareable, // An outer shareable (OSH) domain re-orderis shared by
+                   // multiple agents and can consist of one or more inner
+                   // shareable domains. An operation that affects an outer
+                   // shareable domain also implicitly affects all inner
+                   // shareable domains inside it. However, it does not
+                   // otherwise behave as an inner shareable operation.
+
+  kFullSystem, // An operation on the full system (SY) affects all observers in
+               // the system.
 };
 
 enum eInstructionClass
@@ -692,6 +733,13 @@ vReg(uint32_t anIndex)
     ret_val.theType  = vRegisters;
     ret_val.theIndex = anIndex;
     return ret_val;
+}
+
+inline mapped_reg ccReg(uint32_t anIndex) {
+  mapped_reg ret_val;
+  ret_val.theType = ccBits;
+  ret_val.theIndex = anIndex;
+  return ret_val;
 }
 
 typedef boost::variant<int64_t, uint64_t, bits> register_value;

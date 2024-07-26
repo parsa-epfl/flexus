@@ -109,6 +109,7 @@ typedef enum {
   SCTLR,              // System Control Register
   TCR,
   ISA,
+  TODO,
 } register_type_t;
 
 typedef enum {
