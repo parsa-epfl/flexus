@@ -111,6 +111,7 @@ typedef enum {
   // SP,              // AArch64 banked stack pointers
   TCR,
   ISA,
+  TODO,
 } register_type_t;
 
 typedef enum {
