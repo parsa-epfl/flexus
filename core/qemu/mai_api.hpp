@@ -158,7 +158,15 @@ class Processor
     }
     // TODO ─── NOT implemented ────────────────────────────────────────────────
 
-    //std::string dump_state() { return "0xDEADBEEF"; }
+    void dump_state(SharedTypes::CPU_State& dump)
+    {
+        dump.pc = read_register(API::PC);
+
+        for (std::size_t i{0}; i < 32; i++)
+        {
+           dump.regs[i] = read_register(API::GENERAL, i);
+        }
+    }
 
     //uint64_t readSCTLR(uint64_t index) { return 0; }
 

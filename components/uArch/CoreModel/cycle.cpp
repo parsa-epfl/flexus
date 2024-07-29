@@ -62,55 +62,54 @@
 #define DBG_SetDefaultOps AddCat(uArchCat)
 #include DBG_Control()
 
+
 namespace nDecoder {
 extern uint32_t theInsnCount;
 }
 
 namespace nuArch {
 
-bool CoreImpl::checkValidatation() {
-  theFlexusDumpState = dumpState();
-//  theQemuDumpState = Flexus::Qemu::Processor::getProcessor(theNode).dump_state();
-//
-//  bool ret = (theFlexusDumpState.compare(theQemuDumpState) == 0);
-//  if (!ret) {
-//
-//    // Vector of string to save tokens
-//    std::vector<std::string> flex_diff, qemu_diff, diff;
-//
-//    std::replace(theFlexusDumpState.begin(), theFlexusDumpState.end(), '\n', ' ');
-//    std::replace(theQemuDumpState.begin(), theQemuDumpState.end(), '\n', ' ');
-//
-//    // stringstream class check1
-//    std::stringstream flex_check(theFlexusDumpState);
-//    std::stringstream qemu_check(theQemuDumpState);
-//
-//    std::string iflex, iqemu;
-//
-//    // Tokenizing w.r.t. space ' '
-//    while (std::getline(flex_check, iflex, ' ')) {
-//      flex_diff.push_back(iflex);
-//    }
-//    while (std::getline(qemu_check, iqemu, ' ')) {
-//      qemu_diff.push_back(iqemu);
-//    }
-//
-//    for (size_t i = 0; i < flex_diff.size() && i < qemu_diff.size(); i++) {
-//      if (flex_diff[i].compare(qemu_diff[i]) != 0) {
-//        diff.push_back("flexus: " + flex_diff[i]);
-//        diff.push_back("qemu:   " + qemu_diff[i]);
-//      }
-//    }
-//
-//    if (diff.size() > 0) {
-//      DBG_(Dev, (<< "state mismatch: "));
-//      for (auto &i : diff) {
-//        DBG_(Dev, (<< i));
-//      }
-//    }
-//  }
+/**
+ * This function is called by the Flexus simulation engine to
+ * dump the PC and registers of the core to the state variable.
+ */
+void
+CoreImpl::dumpState(Flexus::SharedTypes::CPU_State &state)
+{
+    state.pc = theDumpPC;
+    for (int i = 0; i < 32; i++) {
+        mapped_reg mreg;
+        mreg.theType  = xRegisters;
+        mreg.theIndex = theMapTables[0]->mapArchitectural(i);
+        state.regs[i] = boost::get<uint64_t>(theRegisters.peek(mreg));
+    }
+}
 
-  return true;
+/**
+ * This function is called by the Flexus simulation engine to
+ * check if the QEMU and Flexus states are the same.
+ */
+bool CoreImpl::checkValidatation() {
+    CPU_State flexus_dump, qemu_dump = {0};
+
+    dumpState(flexus_dump);
+    Flexus::Qemu::Processor::getProcessor(theNode).dump_state(qemu_dump);
+
+    DBG_(Dev, (<< "Trying to [VALIDATE] Flexus CORE against QEMU"));
+    bool same = true;
+
+    if (qemu_dump.pc != flexus_dump.pc) {
+        DBG_(Dev, (<< "PC mismatch: QEMU= 0x" << std::hex << qemu_dump.pc << " Flexus= 0x" << flexus_dump.pc << std::dec));
+        same = false;
+    }
+    for (std::size_t i{0}; i < 32; i++) {
+        if (qemu_dump.regs[i] != flexus_dump.regs[i]) {
+            DBG_(Dev, (<< "Register " << (i == 31 ? "SP" : std::to_string(i)) << " mismatch: QEMU= 0x" << std::hex << qemu_dump.regs[i] << " Flexus= 0x" << flexus_dump.regs[i] << std::dec));
+            same = false;
+        }
+    }
+
+    return same;
 }
 
 void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
@@ -1429,49 +1428,6 @@ void CoreImpl::doAbortSpeculation() {
   }
 }
 
-std::string CoreImpl::dumpState() {
-
-  //    std::ofstream fp;
-  //    fp.open("flexus-dump-state.txt");
-
-  std::stringstream ss;
-  mapped_reg sp;
-  sp.theType = xRegisters;
-  sp.theIndex = theMapTables[0]->mapArchitectural(31);
-
-  ss << std::hex << "PC=" << std::setw(16) << std::setfill('0') << (uint64_t)theDumpPC << "  "
-     << "SP=" << std::setw(16) << std::setfill('0')
-     << boost::get<uint64_t>(theRegisters.peek(sp)) /*theSP_el[_PSTATE().EL()]*/
-     << std::dec << std::endl;
-
-  for (int i = 0; i < 31; i++) {
-    mapped_reg mreg;
-    mreg.theType = xRegisters;
-    mreg.theIndex = theMapTables[0]->mapArchitectural(i);
-
-    ss << "X" << std::setw(2) << std::setfill('0') << i << "=" << std::hex << std::setw(16)
-       << std::setfill('0') << boost::get<uint64_t>(theRegisters.peek(mreg)) << std::dec;
-    if ((i % 4) == 3) {
-      ss << std::endl;
-    } else {
-      ss << " ";
-    }
-  }
-
-  mapped_reg ccreg;
-  ccreg.theType = ccBits;
-  ccreg.theIndex = theMapTables[2]->mapArchitectural(0);
-  uint64_t psr = boost::get<uint64_t>(theRegisters.peek(ccreg));
-
-  ss << std::endl
-     << "PSTATE=" << std::hex << std::setw(8) << std::setfill('0') << psr << std::dec << " "
-     << (psr & PSTATE_N ? 'N' : '-') << (psr & PSTATE_Z ? 'Z' : '-') << (psr & PSTATE_C ? 'C' : '-')
-     << (psr & PSTATE_V ? 'V' : '-') << ""
-     << " "
-     << "EL" << _PSTATE().EL() << (psr & PSTATE_SP ? 'h' : 't') << std::endl;
-
-  return ss.str();
-}
 
 void CoreImpl::commit() {
   FLEXUS_PROFILE();
@@ -1588,7 +1544,7 @@ void CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction) {
     throw ResynchronizeWithQemuException(true);
   }
 
-  // validation_passed &= checkValidatation();
+  validation_passed &= checkValidatation();
 
   validation_passed &= anInstruction->postValidate();
   DBG_(Iface, (<< "Post Validating... " << validation_passed));

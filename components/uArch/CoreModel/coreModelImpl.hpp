@@ -164,7 +164,6 @@ private:
 
   eExceptionType thePendingTrap;
   boost::intrusive_ptr<Instruction> theTrapInstruction;
-  std::string theFlexusDumpState, theQemuDumpState;
 
   // Bypass Network
   BypassNetwork theBypassNetwork;
@@ -532,7 +531,7 @@ public:
 public:
   void skipCycle();
   void cycle(eExceptionType aPendingInterrupt);
-  std::string dumpState();
+  void dumpState(Flexus::SharedTypes::CPU_State&);
   bool checkValidatation();
 
 private:
