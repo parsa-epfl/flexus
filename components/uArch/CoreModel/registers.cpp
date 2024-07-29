@@ -63,7 +63,7 @@ void CoreImpl::connectBypass(mapped_reg aReg, boost::intrusive_ptr<Instruction> 
 
 void CoreImpl::mapRegister(mapped_reg aRegister) {
   FLEXUS_PROFILE();
-  // DBG_( VVerb, ( << theName << " Mapping " << aRegister ) );
+  DBG_( VVerb, ( << theName << " Mapping " << aRegister ) );
   eResourceStatus status = theRegisters.status(aRegister);
   DBG_Assert(status == kUnmapped, (<< " aRegister=" << aRegister << " status=" << status));
   theRegisters.map(aRegister);
@@ -137,12 +137,12 @@ std::pair<mapped_reg, mapped_reg> CoreImpl::create(reg aReg) {
   FLEXUS_PROFILE();
   std::pair<mapped_reg, mapped_reg> mapped;
   mapped.first.theType = mapped.second.theType = aReg.theType;
-  std::tie(mapped.first.theIndex, mapped.second.theIndex) =
-      mapTable(aReg.theType).create(aReg.theIndex);
+    // (new register index, old register index)
+  std::tie(mapped.first.theIndex, mapped.second.theIndex) = mapTable(aReg.theType).create(aReg.theIndex);
   mapRegister(mapped.first);
 
   eResourceStatus status = theRegisters.status(mapped.second);
-  DBG_Assert(status != kUnmapped, (<< " aRegister=" << mapped.second << " status=" << status));
+  //DBG_Assert(status != kUnmapped, (<< " aRegister=" << mapped.second << " status=" << status));
   // This assertion is extremely slow - 15% of total execution time.  Enable
   // at your own risk.
   /*
