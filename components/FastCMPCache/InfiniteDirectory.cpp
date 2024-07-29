@@ -314,9 +314,8 @@ public:
     for (; iter != theDirectory.end(); iter++) {
 
       uint64_t dirAddress = iter->second->address;
-      uint64_t sharers = iter->second->sharers.getSharers().to_ullong();
-
-      checkpoint[i++] = {{"tag", dirAddress}, {"sharers", sharers}};
+      
+      checkpoint[i++] = {{"tag", dirAddress}, {"sharers", iter->second->sharers.getSharers().to_string()}};
 
       DBG_(Trace, (<< "Directory saving block: " << dirAddress));
 

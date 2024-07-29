@@ -73,3 +73,11 @@ BTBSet::invalidate(VirtualMemoryAddress anAddress)
         }
     }
 }
+
+void
+BTBSet::invalidateAll()
+{
+    for (uint32_t i = 0; i < blocks.size(); ++i) {
+        blocks[i].valid = false;
+    }
+}

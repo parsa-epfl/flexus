@@ -275,8 +275,10 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
         for (uint32_t i{0}; i < cache_size; i++)
         {
             uint64_t address = checkpoint.at(i)["tag"];
-            std::bitset<MAX_NUM_SHARERS> sharers ((uint64_t)checkpoint.at(i)["sharers"]);
+            std::bitset<MAX_NUM_SHARERS> sharers (checkpoint.at(i)["sharers"].get<std::string>());
 
+            DBG_Assert(sharers.size() <= theNumSharers, (<< "Sharers size mismatch"));
+            
             // It's stupid but that's the only way to workaround this object
             SimpleDirectoryState state(theNumSharers);
             state = sharers;

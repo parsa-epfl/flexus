@@ -857,10 +857,10 @@ public:
     json checkpoint;
 
     checkpoint["PWIN"]    = PWIN;
-    checkpoint["tick"]    = TICK;
-    checkpoint["seed"]    = Seed;
-    checkpoint["phist"]   = phist;
-    checkpoint["ghist"]   = ghist.to_string();
+    checkpoint["TICK"]    = TICK;
+    checkpoint["SEED"]    = Seed;
+    checkpoint["PHIST"]   = phist;
+    checkpoint["GHIST"]   = ghist.to_string();
     checkpoint["LOGB"]    = LOGB;
     checkpoint["NHIST"]   = NHIST;
     checkpoint["LOGG"]    = LOGG;
@@ -930,9 +930,54 @@ public:
   }
 
   void loadState(json checkpoint) {
-  }
 
-};
-} // namespace SharedTypes
+    DBG_Assert(LOGB == checkpoint["LOGB"]);
+    DBG_Assert(NHIST == checkpoint["NHIST"]);
+    DBG_Assert(LOGG == checkpoint["LOGG"]);
+    DBG_Assert(TBITS == checkpoint["TBITS"]);
+    DBG_Assert(MAXHIST == checkpoint["MAXHIST"]);
+    DBG_Assert(MINHIST == checkpoint["MINHIST"]);
+    DBG_Assert(CBITS == checkpoint["CBITS"]);
+
+    PWIN    = checkpoint["PWIN"];
+    TICK    = checkpoint["TICK"];
+    Seed    = checkpoint["SEED"];
+    phist   = checkpoint["PHIST"];
+    ghist   = history_t(checkpoint["GHIST"].get<std::string>());
+
+    // bimodal table
+    for (int i = 0; i < (1 << LOGB); i++) {
+      btable[i].hyst = checkpoint["btable"][i]["hyst"];
+      btable[i].pred = checkpoint["btable"][i]["pred"];
+    }
+
+    for (int i = 0; i < NHIST; i++) {
+      for (int j = 0; j < (1 << LOGG); j++) {
+        gtable[i][j].ctr  = checkpoint["gtable"][i][j]["ctr"];
+        gtable[i][j].tag  = checkpoint["gtable"][i][j]["tag"];
+        gtable[i][j].ubit = checkpoint["gtable"][i][j]["ubit"];
+      }
+    };
+
+    for (int i = 0; i < NHIST; i++) {
+      ch_i[i].comp    = checkpoint["ch_i"][i]["comp"];
+      ch_i[i].CLENGTH = checkpoint["ch_i"][i]["c_length"];
+      ch_i[i].OLENGTH = checkpoint["ch_i"][i]["o_length"];
+    }
+
+    for (int j = 0; j < 2; j++) {
+      for (int i = 0; i < NHIST; i++) {
+        ch_t[j][i].comp    = checkpoint["ch_t"][j][i]["comp"];
+        ch_t[j][i].OLENGTH = checkpoint["ch_t"][j][i]["o_length"];
+        ch_t[j][i].OUTPOINT = checkpoint["ch_t"][j][i]["out_point"];
+      }
+    }
+
+    for (int i = 0; i < NHIST; i++) {
+      m[i] = checkpoint["m"][i];
+    }
+  };
+}; // namespace SharedTypes
 } // namespace Flexus
+}
 #endif // PREDICTOR_H_SEEN

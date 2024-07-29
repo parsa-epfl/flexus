@@ -8,7 +8,8 @@ BTB::BTB(int32_t aBTBSets, int32_t aBTBAssoc)
 {
     // aBTBSize must be a power of 2
     DBG_Assert(((aBTBSets - 1) & (aBTBSets)) == 0);
-    theBTB.resize(aBTBSets);
+    theBTB.resize(aBTBSets, BTBSet(aBTBAssoc));
+    
     theIndexMask = aBTBSets - 1; // ! Shouldn't it be log2(aBTBSets) ?
 }
 
@@ -123,57 +124,56 @@ BTB::saveState() const {
             //DBG_Assert(false, (<< "Don't know how to save type " << block->theBranchType));
             break;
         }
-        checkpoint[i][j] = {{"PC", (uint64_t)block->thePC}, {"target", (uint64_t)block->theTarget}, {"type", (uint8_t)type}};
+        if(block->valid){
+            checkpoint[i][j] = {{"PC", (uint64_t)block->thePC}, {"target", (uint64_t)block->theTarget}, {"type", (uint8_t)type}};
+        }
       }
     }
 
     return checkpoint;
 
 }
-// void
-// BTB::loadState(json checkpoint)
-//{
-//
-//     for (size_t set = 0; set < (size_t)theBTBSets; set++) {
-//
-//         size_t blockSize = checkpoint.at(set).size();
-//
-//         theBTB[set].get<by_baddr>().clear();
-//
-//         for (size_t block = 0; block < blockSize; block++) {
-//             uint64_t aPC     = checkpoint.at(set).at(block)["PC"];
-//             uint64_t aTarget = checkpoint.at(set).at(block)["target"];
-//             uint64_t aType   = checkpoint.at(set).at(block)["type"];
-//
-//             switch (aType) {
-//                 case 0:
-//                     theBTB[set].push_back(
-//                       BTBEntry(VirtualMemoryAddress(aPC), kNonBranch, VirtualMemoryAddress(aTarget)));
-//                     break;
-//                 case 1:
-//                     theBTB[set].push_back(
-//                       BTBEntry(VirtualMemoryAddress(aPC), kConditional, VirtualMemoryAddress(aTarget)));
-//                     break;
-//                 case 2:
-//                     theBTB[set].push_back(
-//                       BTBEntry(VirtualMemoryAddress(aPC), kUnconditional, VirtualMemoryAddress(aTarget)));
-//                     break;
-//                 case 3:
-//                     theBTB[set].push_back(BTBEntry(VirtualMemoryAddress(aPC), kCall, VirtualMemoryAddress(aTarget)));
-//                     break;
-//                 case 4:
-//                     theBTB[set].push_back(
-//                       BTBEntry(VirtualMemoryAddress(aPC), kIndirectReg, VirtualMemoryAddress(aTarget)));
-//                     break;
-//                 case 5:
-//                     theBTB[set].push_back(
-//                       BTBEntry(VirtualMemoryAddress(aPC), kIndirectCall, VirtualMemoryAddress(aTarget)));
-//                     break;
-//                 case 6:
-//                     theBTB[set].push_back(BTBEntry(VirtualMemoryAddress(aPC), kReturn,
-//                     VirtualMemoryAddress(aTarget))); break;
-//                 default: DBG_Assert(false, (<< "Don't know how to load type" << aType)); break;
-//             }
-//         }
-//     }
-// }
+
+void
+BTB::loadState(json checkpoint) {
+    
+    for (size_t set = 0; set < (size_t)theBTBSets; set++) {
+
+        size_t blockSize = checkpoint.at(set).size();
+
+        theBTB[set].invalidateAll();
+
+        for (size_t block = 0; block < blockSize; block++) {
+            uint64_t aPC     = checkpoint.at(set).at(block)["PC"];
+            uint64_t aTarget = checkpoint.at(set).at(block)["target"];
+            uint8_t aType   = checkpoint.at(set).at(block)["type"];
+
+            switch (aType) {
+                case 0:
+                    theBTB[set].insert(BTBEntry(VirtualMemoryAddress(aPC), kNonBranch, VirtualMemoryAddress(aTarget)));
+                    break;
+                case 1:
+                    theBTB[set].insert(BTBEntry(VirtualMemoryAddress(aPC), kConditional, VirtualMemoryAddress(aTarget)));
+                    break;
+                case 2:
+                    theBTB[set].insert(BTBEntry(VirtualMemoryAddress(aPC), kUnconditional, VirtualMemoryAddress(aTarget)));
+                    break;
+                case 3:
+                    theBTB[set].insert(BTBEntry(VirtualMemoryAddress(aPC), kCall, VirtualMemoryAddress(aTarget)));
+                    break;
+                case 4:
+                    theBTB[set].insert(BTBEntry(VirtualMemoryAddress(aPC), kIndirectReg, VirtualMemoryAddress(aTarget)));
+                    break;
+                case 5:
+                    theBTB[set].insert(BTBEntry(VirtualMemoryAddress(aPC), kIndirectCall, VirtualMemoryAddress(aTarget)));
+                    break;
+                case 6:
+                    theBTB[set].insert(BTBEntry(VirtualMemoryAddress(aPC), kReturn, VirtualMemoryAddress(aTarget)));
+                    break;
+                default:
+                    //DBG_Assert(false, (<< "Don't know how to load type" << aType));
+                    break;
+            }
+        }
+    }
+};
