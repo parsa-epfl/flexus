@@ -181,6 +181,11 @@ typedef Core ::Word64Bit DataWord;
 typedef Core::MemoryAddress_<Core::Word64Bit, false> PhysicalMemoryAddress;
 typedef Core::MemoryAddress_<Core::Word64Bit, true> VirtualMemoryAddress;
 
+struct CPU_State {
+    uint64_t pc;
+    uint64_t regs[32];
+};
+
 using Flexus::Core::index_t;
 using Flexus::Core::node_id_t;
 
