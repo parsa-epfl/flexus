@@ -43,21 +43,20 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
 
-#include <algorithm>
-#include <iomanip>
-#include <iostream>
+//#include <algorithm>
+//#include <iomanip>
 #include <fstream>
-#include <list>
-#include <memory>
-#include <vector>
+//#include <list>
+//#include <memory>
+//#include <vector>
 
-#include <boost/iterator/reverse_iterator.hpp>
-#include <boost/none.hpp>
-#include <boost/optional.hpp>
-#include <boost/throw_exception.hpp>
-#include <boost/variant/get.hpp>
-#include <core/boost_extensions/intrusive_ptr.hpp>
-#include <core/metaprogram.hpp>
+//#include <boost/iterator/reverse_iterator.hpp>
+//#include <boost/none.hpp>
+//#include <boost/optional.hpp>
+//#include <boost/throw_exception.hpp>
+//#include <boost/variant/get.hpp>
+//#include <core/boost_extensions/intrusive_ptr.hpp>
+//#include <core/metaprogram.hpp>
 
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/identity.hpp>
@@ -66,7 +65,8 @@
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index_container.hpp>
 using namespace boost::multi_index;
-#include <core/debug/debug.hpp>
+
+//#include <core/debug/debug.hpp>
 #include <core/flexus.hpp>
 #include <core/performance/profile.hpp>
 #include <core/target.hpp>
@@ -81,6 +81,7 @@ namespace Stat = Flexus::Stat;
 #include "../CoreModel.hpp"
 #include "bbv.hpp" /* CMU-ONLY */
 #include "coreModelTypes.hpp"
+
 #include <components/CommonQEMU/Slices/PredictorMessage.hpp> /* CMU-ONLY */
 #include <components/CommonQEMU/Transports/TranslationTransport.hpp>
 #include <components/CommonQEMU/XactTimeBreakdown.hpp>

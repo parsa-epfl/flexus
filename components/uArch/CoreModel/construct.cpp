@@ -430,6 +430,7 @@ void CoreImpl::setPSTATE(uint32_t aPSTATE) {
   thePSTATE = aPSTATE;
 }
 uint64_t CoreImpl::getTPIDR(uint8_t anEL) {
+  DBG_(Crit, (<< "SHOULD HAVE NEVER COME HERE"));
   return Flexus::Qemu::Processor::getProcessor(theNode).read_register(Flexus::Qemu::API::TODO);
 }
 void CoreImpl::setFPSR(uint64_t anFPSR) {

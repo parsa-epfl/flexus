@@ -163,7 +163,7 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
   }
 
   if (Flexus::Dbg::Debugger::theDebugger->theMinimumSeverity <= 3) {
-    //      DBG_( VVerb, ( << "Dumping..." ) );
+    DBG_( VVerb, ( << "Dumping..." ) );
 
     dumpROB();
     dumpSRB();
@@ -171,8 +171,8 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
     dumpMSHR();
     dumpCheckpoints();
     dumpSBPermissions();
-    //    dumpActions();
-    //    DBG_( VVerb, ( << "Dumping done" ) );
+    dumpActions();
+    DBG_( VVerb, ( << "Dumping done" ) );
   }
 
   if (theIsSpeculating) {
@@ -183,64 +183,6 @@ void CoreImpl::cycle(eExceptionType aPendingInterrupt) {
     DBG_Assert(theOpenCheckpoint != 0);
     DBG_Assert(theCheckpoints.find(theOpenCheckpoint) != theCheckpoints.end());
 
-#ifdef VALIDATE_STORE_PREFETCHING
-    // Ensure that the required blocks are somewhere
-    std::map<boost::intrusive_ptr<Instruction>, Checkpoint>::iterator ckpt = theCheckpoints.begin();
-    while (ckpt != theCheckpoints.end()) {
-      // Walk through the required permissions, make sure the block is somewhere
-      std::map<PhysicalMemoryAddress, boost::intrusive_ptr<Instruction>>::iterator iter, end;
-      iter = ckpt->second.theRequiredPermissions.begin();
-      end = ckpt->second.theRequiredPermissions.end();
-      while (iter != end) {
-        if (!ckpt->second.theHeldPermissions.count(iter->first) > 0) {
-          // permission not held
-          if (!theOutstandingStorePrefetches.count(iter->first) > 0) {
-            if (!theWaitingStorePrefetches.count(iter->first) > 0) {
-              if (!theBlockedStorePrefetches.count(iter->first) > 0) {
-                Flexus::Core::theFlexus->setDebug("verb");
-                dumpCheckpoints();
-                dumpMSHR();
-                dumpSBPermissions();
-                DBG_Assert(false, (<< theName << " required store address is lost: " << iter->first
-                                   << " required by " << *iter->second));
-              } else {
-                bool found = false;
-                MSHRs_t::iterator miter, mend;
-                for (miter = theMSHRs.begin(), mend = theMSHRs.end(); miter != mend; ++miter) {
-                  if ((miter->first & ~63) == iter->first) {
-                    found = true;
-                    break;
-                  }
-                }
-                if (!found) {
-                  Flexus::Core::theFlexus->setDebug("verb");
-                  dumpCheckpoints();
-                  dumpMSHR();
-                  dumpSBPermissions();
-                  DBG_Assert(false, (<< theName << " blocked prefetch for: " << iter->first
-                                     << " has no obvious blocking MSHR. "));
-                }
-              }
-            } else {
-              DBG_Assert(!theWaitingStorePrefetches[iter->first].empty());
-              if (theMemoryPortArbiter.theStorePrefetchRequests.get<by_insn>().find(
-                      *theWaitingStorePrefetches[iter->first].begin()) ==
-                  theMemoryPortArbiter.theStorePrefetchRequests.get<by_insn>().end()) {
-                Flexus::Core::theFlexus->setDebug("verb");
-                dumpCheckpoints();
-                dumpMSHR();
-                dumpSBPermissions();
-                DBG_Assert(false, (<< theName << " no queued prefetch request for: "
-                                   << **theWaitingStorePrefetches[iter->first].begin()));
-              }
-            }
-          }
-        }
-        ++iter;
-      }
-      ++ckpt;
-    }
-#endif // VALIDATE STORE PREFETCHING
   } else {
     CORE_DBG("Not Speculating");
 
@@ -1793,69 +1735,11 @@ void CoreImpl::valuePredictAtomic() {
 }
 
 bool CoreImpl::isIdleLoop() {
-  // /   assert(false);
   return false; // ALEX - we don't currently have WhiteBox in QEMU
-  // /*uint64_t idle =
-  // nWhiteBox::WhiteBox::getWhiteBox()->get_idle_thread_t(theNode);
-  //  mapped_reg mapped_reg;
-  // mapped_reg.theType = xRegisters;
-  // mapped_reg.theIndex = 7;  // %g7 holds current thread
-  // uint64_t ct = boost::get<uint64_t>(readArchitecturalRegister(mapped_reg,
-  // false));
-
-  //  DBG_(Verb, ( << theName << " isIdleLoop: idle=0x" << std::hex << idle <<
-  //  "== ct=0x" << ct << " : " << (ct == idle)));
-
-  //  return ((idle != 0) && (ct == idle));
 }
 
 uint64_t CoreImpl::pc() const {
-  // if (! theROB.empty()) {
-  //   if (theROB.front()->isAnnulled() || theROB.front()->isMicroOp() ) {
-  //    return theROB.front()->npc();
-  //  } else {
-  //    return theROB.front()->pc();
-  //  }
-  //  } else {
   return thePC;
-  //}
 }
-// uint64_t CoreImpl::npc() const {
-//  if (! theROB.empty()) {
-//    if (theROB.front()->isAnnulled() || theROB.front()->isMicroOp() ) {
-//      DBG_(VVerb, ( << "NPC= front->npc + 4" ) );
-//      return theROB.front()->npc() + 4;
-//    } else {
-//      DBG_(VVerb, ( << "NPC= front->npcReg" ) );
-//      return theROB.front()->npcReg();
-//    }
-//  } else if (theNPC) {
-//    DBG_(VVerb, ( << "NPC= *NPC" ) );
-//    return *theNPC;
-//  } else {
-//    if (!theDispatchInteractions.empty()) {
-//      std::list< boost::intrusive_ptr< Interaction > >::const_iterator iter,
-//      end; iter = theDispatchInteractions.begin(); end =
-//      theDispatchInteractions.end(); uint64_t npc = 0; bool found = false;
-//      while (iter != end)  {
-//        DBG_(VVerb, ( << "interaction: " << **iter) );
-//        if ((*iter)->npc()) {
-//          npc = *((*iter)->npc());
-//          found = true;
-//        } else if ((*iter)->annuls()) {
-//          found = false;
-//          break;
-//        }
-//        ++iter;
-//      }
-//      if (found) {
-//        DBG_(VVerb, ( << "NPC= from interaction " ) );
-//        return npc;
-//      }
-//    }
-//  }
-//  DBG_(VVerb, ( << "NPC= PC + 4" ) );
-//  return thePC + 4;
-//}
 
 } // namespace nuArch

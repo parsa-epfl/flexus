@@ -138,7 +138,7 @@ void CoreImpl::dumpROB() {
     DBG_(VVerb, (<< theName << "*** ROB Contents ***"));
     rob_t::iterator iter, end;
     for (iter = theROB.begin(), end = theROB.end(); iter != end; ++iter) {
-      DBG_(VVerb, (/*<< std::internal*/ << **iter));
+      DBG_(VVerb, (<< **iter));
     }
   }
 }
