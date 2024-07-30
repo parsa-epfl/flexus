@@ -42,19 +42,21 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
-
-#include <boost/none.hpp>
-#include "components/CommonQEMU/Slices/ExecuteState.hpp"
-#include "components/CommonQEMU/Slices/MemoryMessage.hpp"
-#include "components/CommonQEMU/Slices/TransactionTracker.hpp"
-#include "components/CommonQEMU/Transports/MemoryTransport.hpp"
-#include "components/MTManager/MTManager.hpp"
-#include "components/uFetch/uFetch.hpp"
-#include "components/uFetch/uFetchTypes.hpp"
-#include "core/boost_extensions/padded_string_cast.hpp"
-#include "core/stats.hpp"
 #include <fstream>
 #include <unordered_set>
+//#include <boost/none.hpp>
+//#include "components/CommonQEMU/Slices/ExecuteState.hpp"
+#include "core/stats.hpp"
+//#include "components/CommonQEMU/Slices/MemoryMessage.hpp"
+//#include "components/CommonQEMU/Slices/TransactionTracker.hpp"
+//#include "components/CommonQEMU/Transports/MemoryTransport.hpp"
+#include "components/MTManager/MTManager.hpp"
+//#include "components/uFetch/uFetchTypes.hpp"
+#include "uFetch.hpp"
+#include "components/uArch/uArchInterfaces.hpp"
+#include "components/CommonQEMU/seq_map.hpp"
+#include "core/qemu/mai_api.hpp"
+//#include "core/boost_extensions/padded_string_cast.hpp"
 #include "core/checkpoint/json.hpp"
 using json = nlohmann::json;
 
@@ -64,9 +66,6 @@ using json = nlohmann::json;
 #define DBG_DefineCategories uFetch
 #define DBG_SetDefaultOps    AddCat(uFetch)
 #include DBG_Control()
-
-#include "components/CommonQEMU/seq_map.hpp"
-#include "core/qemu/mai_api.hpp"
 
 #define LOG2(x)                         \
   ({                                    \
@@ -184,7 +183,7 @@ class FLEXUS_COMPONENT(uFetch)
     // MARK: Meta-map which pairs each FetchedOpcode with a TranslationPtr.
     //       MANDATORY because two FetchedOpcs can have same PC but indep. TranslationPtrs
     //       Also, any MMU transaction can complete out of order (in general)
-    typedef std::list<FetchedOpcode>::iterator opcodeQIterator;
+    typedef std::shared_ptr<FetchedOpcode> opcodeQIterator;
     typedef std::unordered_map<TranslationPtr,
                                opcodeQIterator,            // K/V
                                TranslationPtrHasher,       // Custom hash object
@@ -499,6 +498,7 @@ class FLEXUS_COMPONENT(uFetch)
                              // cause an MMU miss in the pipe.
             }
         } else {
+            // TODO - YL version maybe better
             DBG_(VVerb, (<< "Not in Flexus cache...Will look into Qemu now!"));
             Flexus::SharedTypes::Translation xlat;
             xlat.theVaddr = vaddr;
@@ -873,13 +873,13 @@ class FLEXUS_COMPONENT(uFetch)
                  */
                 theFAQ[anIndex].pop_front();
                 waitingForOpcodeQueue->theOpcodes.emplace_back(
-                  FetchedOpcode(fetch_addr.theAddress,
-                                0, // op_code not resolved yet - waiting for translation
+                  new FetchedOpcode(fetch_addr.theAddress,
+                                0xDEADBEEF, // op_code not resolved yet - waiting for translation
                                 fetch_addr.theBPState,
                                 theFetchReplyTransactionTracker[anIndex]));
-                waitingForOpcodeQueue->theFillLevels.emplace_back(eL1I);
+                waitingForOpcodeQueue->theFillLevels.emplace_back(new tFillLevel(eL1I));
                 DBG_(TR_BIJ_DBG, Comp(*this)(<< "added entry in waiting for opcode queue" << fetch_addr.theAddress));
-                sendTranslationReq(anIndex, fetch_addr.theAddress, std::prev(waitingForOpcodeQueue->theOpcodes.end()));
+                sendTranslationReq(anIndex, fetch_addr.theAddress, *std::prev(waitingForOpcodeQueue->theOpcodes.end()));
 
                 ++theFetches;
                 --remaining_fetch;
@@ -894,7 +894,7 @@ class FLEXUS_COMPONENT(uFetch)
     {
 
         if (waitingForOpcodeQueue->theOpcodes.size() == 0) return;
-        if (waitingForOpcodeQueue->theOpcodes.begin()->theOpcode == 0) return;
+        if ((*waitingForOpcodeQueue->theOpcodes.begin())->theOpcode == 0xDEADBEEF) return;
 
         pFetchBundle bundle(new FetchBundle);
         bundle->coreID = theBundleCoreID;
@@ -903,17 +903,19 @@ class FLEXUS_COMPONENT(uFetch)
         uint32_t insns_added_to_fiq = 0;
         while (waitingForOpcodeQueue->theOpcodes.size() > 0 && (insns_added_to_fiq < available_fiq)) {
             auto i         = waitingForOpcodeQueue->theOpcodes.begin();
+            auto iter      = *i;
             auto fill_iter = waitingForOpcodeQueue->theFillLevels.begin();
-            if (i->theOpcode != 0) {
-                bundle->theOpcodes.emplace_back(std::move(*i));
-                bundle->theFillLevels.emplace_back(std::move(*fill_iter));
-                DBG_(TR_BIJ_DBG, Comp(*this)(<< "popping entry out of the waitingForOpcodeQueue " << i->thePC));
-                waitingForOpcodeQueue->theOpcodes.erase(i);
-                waitingForOpcodeQueue->theFillLevels.erase(fill_iter);
-                insns_added_to_fiq++;
-            } else {
+
+            if (iter->theOpcode == 0xDEADBEEF)
                 break;
-            }
+
+            bundle->theOpcodes.emplace_back(*i);
+            bundle->theFillLevels.emplace_back(*fill_iter);
+
+            waitingForOpcodeQueue->theOpcodes.erase(i);
+            waitingForOpcodeQueue->theFillLevels.erase(fill_iter);
+
+            insns_added_to_fiq++;
         }
 
         if (bundle->theOpcodes.size() > 0) { FLEXUS_CHANNEL_ARRAY(FetchBundleOut, 0) << bundle; }
@@ -976,6 +978,7 @@ class FLEXUS_COMPONENT(uFetch)
                                    << tr->thePaddr << std::dec << ", PADDR_QEMU = " << std::hex << magicTranslation
                                    << std::dec));
         }
+        uint64_t opcode = 0xDEADBEEF;
         // MARK: Look up in the opc bijection and get the correct index
         BijectionMapType_t::iterator bijection_iter = tr_op_bijection.find(tr);
         DBG_AssertSev(Crit,
@@ -983,12 +986,12 @@ class FLEXUS_COMPONENT(uFetch)
                       Comp(*this)(<< "ERROR: Opcode index was NOT found for translationPtr with ID" << tr->theID
                                   << " and address" << tr->theVaddr));
 
+        //TODO: YL version maybe better
 
-        uint64_t opcode = 0;
         if (!tr->isPagefault()) {
             opcode = cpu(tr->theIndex).fetch_inst(tr->theVaddr);
-            opcode += opcode ? 0 : 1;
         }
+
         waitingForOpcodeQueue->updateOpcode(tr->theVaddr, bijection_iter->second, opcode);
         // Remove this mapping, opcode is updated
         tr_op_bijection.erase(bijection_iter);
