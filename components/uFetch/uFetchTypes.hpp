@@ -1,6 +1,8 @@
 #ifndef FLEXUS_uFETCH_TYPES_HPP_INCLUDED
 #define FLEXUS_uFETCH_TYPES_HPP_INCLUDED
 
+#include <unordered_map>
+#include <unordered_set>
 #include "components/CommonQEMU/Translation.hpp"
 
 using boost::counted_base;
@@ -17,7 +19,19 @@ namespace Flexus::SharedTypes {
 typedef uint32_t Opcode;
 
 struct FetchBundle; // Forward declaration
+struct FetchedOpcode; // Forward declaration
 typedef boost::intrusive_ptr<FetchBundle> pFetchBundle;
+typedef std::shared_ptr<FetchedOpcode> opcodeQIterator;
+typedef std::unordered_map<TranslationPtr, opcodeQIterator, // K/V
+                         TranslationPtrHasher,            // Custom hash object
+                         TranslationPtrEqualityCheck      // Custom equality comparison
+                         > BijectionMapType_t;
+
+typedef std::unordered_set<TranslationPtr,             // Key
+                             TranslationPtrHasher,       // Custom hash
+                             TranslationPtrEqualityCheck // Custom equality
+                             >
+      ExpectedTranslation_t;
 
 // =========== ENUM ===================
 enum eBranchType {

@@ -100,6 +100,7 @@ bool CoreImpl::checkValidatation() {
 
     if (qemu_dump.pc != flexus_dump.pc) {
         DBG_(Dev, (<< "PC mismatch: QEMU= 0x" << std::hex << qemu_dump.pc << " Flexus= 0x" << flexus_dump.pc << std::dec));
+        DBG_Assert(false, (<< "Breaking for debug purpose"));
         same = false;
     }
     for (std::size_t i{0}; i < 32; i++) {
