@@ -193,7 +193,7 @@ class SharingVector
 inline std::ostream&
 operator<<(std::ostream& os, const SharingVector& sharers)
 {
-    os << sharers.getSharers();
+    os << sharers.getSharers().to_ulong();
     return os;
 }
 
