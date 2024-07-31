@@ -575,7 +575,7 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction
     virtual void connectuArch(uArch& uArch) = 0;
     virtual void doDispatchEffects()        = 0; // used
     virtual void squash()                   = 0;
-    virtual void pageFault()                = 0;
+    virtual void pageFault(bool p = true)                = 0;
     virtual bool isPageFault() const        = 0;
     virtual void doRescheduleEffects()      = 0;
     virtual void doRetirementEffects()      = 0; // used
@@ -606,7 +606,7 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction
     virtual bool advancesSimics() const         = 0;
     virtual bool postValidate()                 = 0;
     virtual bool resync() const                 = 0;
-    virtual void forceResync()                  = 0;
+    virtual void forceResync(bool r = true)                  = 0;
     virtual void setClass(eInstructionClass anInstructionClass, eInstructionCode aCode)                     = 0;
 
     virtual void setTransactionTracker(boost::intrusive_ptr<TransactionTracker> aTransaction) = 0;
