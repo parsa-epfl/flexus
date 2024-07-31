@@ -99,16 +99,14 @@ typedef enum { QEMU_Class_Kind_Vanilla,
 typedef enum {
   // ─── Bryan ───────────────────────────────────────────────────────────
 
-  GENERAL = 0,            // Regs for A64 mode.
+  GENERAL = 0,        // Regs for A64 mode.
   FLOATING_POINT,
-
   PC,
   PSTATE,             // PSTATE isn't an architectural register for ARMv8
   TTBR0,              // MMU translation table base 0
   TTBR1,              // MMU translation table base 1
   ID_AA64MMFR0,       // AArch64 Memory Model Feature Register 0
   SCTLR,              // System Control Register
-  // SP,              // AArch64 banked stack pointers
   TCR,
   ISA,
   TODO,
@@ -237,13 +235,13 @@ typedef struct {
 
 typedef physical_address_t(*QEMU_GET_PA_t)          (size_t core_index, logical_address_t va);
 typedef uint64_t          (*QEMU_READ_REG_t)        (size_t core_index, register_type_t reg , size_t reg_info);
-typedef uint64_t          (*QEMU_READ_SYSREG_t)     (size_t cpu_index, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm);
+typedef uint64_t          (*QEMU_READ_SYSREG_t)     (size_t core_index, uint8_t op0, uint8_t op1, uint8_t op2, uint8_t crn, uint8_t crm);
 typedef size_t            (*QEMU_GET_NUM_CORES_t)   (void);
 typedef logical_address_t (*QEMU_GET_PC_t)          (size_t core_index);
 typedef bool              (*QEMU_GET_IRQ_t)         (size_t core_index);
 typedef uint64_t          (*QEMU_CPU_EXEC_t)        (size_t core_index, bool count);
 typedef void              (*QEMU_TICK_t)            (void);
-typedef bool              (*QEMU_GET_MEM_t)         (uint8_t* buffer, physical_address_t pa, size_t nb_bytes);
+typedef void              (*QEMU_GET_MEM_t)         (uint8_t* buffer, physical_address_t pa, size_t nb_bytes);
 typedef void              (*QEMU_STOP_t)            (char const * const msg);
 typedef char*             (*QEMU_DISASS_t)          (size_t core_index, uint64_t addr, size_t size);
 typedef bool              (*QEMU_CPU_BUSY_t)        (size_t core_index);
