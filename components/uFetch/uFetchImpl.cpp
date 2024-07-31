@@ -356,13 +356,13 @@ class FLEXUS_COMPONENT(uFetch)
     {
         std::string fname(dirname);
         if (flexusWidth() == 1) {
-            fname += "/sys-L1i";
+            fname += "/000-L1i";
         } else {
-            fname += "/" + boost::padded_string_cast<2, '0'>(flexusIndex()) + "-L1i";
+            fname += "/" + boost::padded_string_cast<3, '0'>(flexusIndex()) + "-L1i";
         }
 
         fname += ".json";
-        DBG_(VVerb, (<< "file for" << (boost::padded_string_cast<2, '0'>(flexusIndex()) + "-L1i") << ": " << fname));
+        DBG_(VVerb, (<< "file for" << (boost::padded_string_cast<3, '0'>(flexusIndex()) + "-L1i") << ": " << fname));
         theI.loadState(fname);
     }
 

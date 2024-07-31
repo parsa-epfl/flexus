@@ -196,9 +196,9 @@ class FlexusComponentBase
     std::string name() const
     {
         if (flexusWidth() > 1) {
-            return boost::padded_string_cast<2, '0'>(flexusIndex()) + "-" + cfg.name();
+            return boost::padded_string_cast<3, '0'>(flexusIndex()) + "-" + cfg.name();
         } else {
-            return std::string("sys-") + cfg.name();
+            return std::string("000-") + cfg.name();
         }
     }
 
