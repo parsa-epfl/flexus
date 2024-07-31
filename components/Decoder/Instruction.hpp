@@ -122,7 +122,7 @@ class ArchInstruction : public nuArch::Instruction
 
     virtual void doDispatchEffects();
     virtual void squash() {}
-    virtual void pageFault() { thePageFault = true; }
+    virtual void pageFault(bool p = true) { thePageFault = p; }
     virtual bool isPageFault() const { return thePageFault; }
     virtual void doRescheduleEffects() {}
     virtual void doRetirementEffects() {}
@@ -154,7 +154,7 @@ class ArchInstruction : public nuArch::Instruction
     virtual eExceptionType raised() { return theRaisedException; }
     virtual void raise(eExceptionType anException) { theRaisedException = anException; }
     virtual bool resync() const { return theResync; }
-    virtual void forceResync() { theResync = true; }
+    virtual void forceResync(bool r = true) { theResync = r; }
 
 
     virtual void setTransactionTracker(boost::intrusive_ptr<TransactionTracker> aTransaction)

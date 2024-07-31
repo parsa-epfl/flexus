@@ -65,7 +65,8 @@ struct AbstractInstruction : public boost::counted_base
     virtual bool isExclusive() const { return theExclusive; }
     virtual void setExclusive() { theExclusive = true; }
     virtual void describe(std::ostream& anOstream) const;
-    virtual void forceResync() = 0;
+    virtual bool resync() const = 0;
+    virtual void forceResync(bool r = true) = 0;
     virtual bool haltDispatch() const;
     virtual void setFetchTransactionTracker(boost::intrusive_ptr<TransactionTracker> aTransaction)
     {
