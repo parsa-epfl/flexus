@@ -124,19 +124,22 @@ ArchInstruction::setWillRaise(eExceptionType aSetting)
 void
 ArchInstruction::doDispatchEffects()
 {
-    if (bpState() && !isBranch()) {
-        // Branch predictor identified an instruction that is not a branch as a
-        // branch.
-        DBG_(VVerb, (<< *this << " predicted as a branch, but is a non-branch.  Fixing"));
+    auto bp_state = bpState();
 
-        boost::intrusive_ptr<BranchFeedback> feedback(new BranchFeedback());
-        feedback->thePC              = pc();
-        feedback->theActualType      = kNonBranch;
-        feedback->theActualDirection = kNotTaken;
-        feedback->theActualTarget    = VirtualMemoryAddress(0);
-        feedback->theBPState         = bpState();
-        core()->branchFeedback(feedback);
-    }
+    DBG_Assert(bp_state, (<< "No branch predictor state exists, but it must"));
+    if (bp_state->theActualType == kNonBranch) return;
+    if (isBranch()) return;
+
+    // Branch predictor identified an instruction that is not a branch as a branch.
+    DBG_(VVerb, (<< *this << " predicted as a branch, but is a non-branch. Fixing"));
+
+    boost::intrusive_ptr<BranchFeedback> feedback(new BranchFeedback());
+    feedback->thePC              = pc();
+    feedback->theActualType      = kNonBranch;
+    feedback->theActualDirection = kNotTaken;
+    feedback->theActualTarget    = VirtualMemoryAddress(0);
+    feedback->theBPState         = bpState();
+    core()->branchFeedback(feedback);
 }
 
 bool
