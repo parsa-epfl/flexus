@@ -65,11 +65,9 @@ BTBSet::insert(BTBEntry btbEntry)
 void
 BTBSet::invalidate(VirtualMemoryAddress anAddress)
 {
-    for (uint32_t i = 0; i < blocks.size(); ++i) {
-        if (blocks[i].thePC == anAddress && blocks[i].valid) {
-            // Entry to be invalidated is present
-            blocks[i].valid = false; // Invalidate
-            // TODO: Update replacementQueue for invalidation
-        }
+    for (auto& block : blocks)
+    {
+        if (block.thePC == anAddress && block.valid)
+            block.valid = false;
     }
 }
