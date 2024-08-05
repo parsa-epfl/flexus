@@ -672,8 +672,8 @@ class StdArray : public AbstractArray<_State>
         json checkpoint;
         ifs >> checkpoint;
 
-        uint8_t associativity = checkpoint["associativity"];
-        uint32_t set_count = checkpoint["tags"].size();
+        DBG_Assert((uint64_t)theAssociativity == checkpoint["associativity"]);
+        DBG_Assert((uint64_t)theNumSets == checkpoint["tags"].size());
 
         for (int32_t i{0}; i < theNumSets; i++)
         {

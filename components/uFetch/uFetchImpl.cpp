@@ -121,6 +121,9 @@ struct SimCache
         ifs >> checkpoint;
         uint32_t tag_shift                    = LOG2(theCache.sets());
 
+        DBG_Assert((uint64_t)theCacheAssoc == checkpoint["associativity"]);
+        DBG_Assert((uint64_t)theCache.sets() == checkpoint["tags"].size());
+
         for (std::size_t i{0}; i < theCache.sets(); i++) {
             for (uint32_t j = 0; j < checkpoint["tags"].at(i).size(); j++) {
                 bool dirty = checkpoint["tags"].at(i).at(j)["dirty"];
