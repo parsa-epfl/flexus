@@ -53,7 +53,7 @@
 #include <boost/serialization/tracking.hpp>
 #include <boost/lambda/lambda.hpp>
 
-#define MAX_NUM_SHARERS 512
+#define MAX_NUM_SHARERS 128
 
 namespace boost {
 namespace serialization {

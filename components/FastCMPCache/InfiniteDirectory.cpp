@@ -64,7 +64,7 @@ using nCommonUtil::log_base2;
 
 #include <core/checkpoint/json.hpp>
 using json = nlohmann::json;
-#define MAX_NUM_SHARERS 512
+#define MAX_NUM_SHARERS 128
 
 namespace nFastCMPCache {
 
@@ -314,9 +314,8 @@ public:
     for (; iter != theDirectory.end(); iter++) {
 
       uint64_t dirAddress = iter->second->address;
-      uint64_t sharers = iter->second->sharers.getSharers().to_ullong();
 
-      checkpoint[i++] = {{"tag", dirAddress}, {"sharers", sharers}};
+      checkpoint[i++] = {{"tag", dirAddress}, {"sharers", iter->second->sharers.getSharers().to_string()}};
 
       DBG_(Trace, (<< "Directory saving block: " << dirAddress));
 
@@ -344,7 +343,7 @@ public:
       DBG_(Trace, (<< "Directory loading block " << count));
 
       uint64_t address = checkpoint["entries"].at(count)["tag"];
-      std::bitset<MAX_NUM_SHARERS> state ((uint64_t)checkpoint["entries"].at(count)["sharers"]);
+      std::bitset<MAX_NUM_SHARERS> state (checkpoint.at(count)["sharers"].get<std::string>());
 
       if (state != ZeroSharers) {
         theDirectory.insert(std::pair<PhysicalMemoryAddress, InfiniteDirectoryEntry *>(
