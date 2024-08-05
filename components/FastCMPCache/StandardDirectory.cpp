@@ -275,9 +275,8 @@ class StandardDirectory : public AbstractDirectory
       for (size_t way = 0; way < (size_t)theAssociativity; way++) {
 
         uint64_t dirAddress = theDirectory[set][way].theAddress;
-        uint64_t sharers = theDirectory[set][way].theSharers.getSharers().to_ullong();
 
-        checkpoint[i++] = {{"tag", dirAddress}, {"sharers", sharers}};
+        checkpoint[i++] = {{"tag", dirAddress}, {"sharers", theDirectory[set][way].theSharers.getSharers().to_string()}};
         
         DBG_(Trace, (<< "Directory saving block: " << dirAddress));
 

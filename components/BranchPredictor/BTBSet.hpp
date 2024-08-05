@@ -35,6 +35,8 @@ class BTBSet
 
     // [MADHUR] Invalidate entry if present
     void invalidate(VirtualMemoryAddress anAddress);
+
+    void invalidateAll();
 };
 
 #endif
