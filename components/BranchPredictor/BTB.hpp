@@ -39,6 +39,7 @@ class BTB
     bool update(BranchFeedback const& aFeedback);
 
     json saveState() const;
+    void loadState(json checkpoint);
 };
 
 #endif
