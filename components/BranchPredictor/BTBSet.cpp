@@ -71,3 +71,13 @@ BTBSet::invalidate(VirtualMemoryAddress anAddress)
             block.valid = false;
     }
 }
+
+void
+BTBSet::invalidateAll()
+{
+
+    for (auto& block : blocks)
+    {
+        block.valid = false;
+    }
+}

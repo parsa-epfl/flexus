@@ -58,7 +58,7 @@ using nCommonUtil::log_base2;
 
 #include <core/checkpoint/json.hpp>
 using json = nlohmann::json;
-#define MAX_NUM_SHARERS 512
+#define MAX_NUM_SHARERS 128
 
 namespace nFastCMPCache {
 
@@ -261,8 +261,8 @@ class StandardDirectory : public AbstractDirectory
 
     return std::tie(entry->sharers(), entry->state(), wrapper, valid);
   }
-  
-  void saveStateJSON(std::ostream &s, const std::string &aDirName) {
+
+  void saveState(std::ostream &s, const std::string &aDirName) {
 
     json checkpoint;
 
@@ -275,10 +275,9 @@ class StandardDirectory : public AbstractDirectory
       for (size_t way = 0; way < (size_t)theAssociativity; way++) {
 
         uint64_t dirAddress = theDirectory[set][way].theAddress;
-        uint64_t sharers = theDirectory[set][way].theSharers.getSharers().to_ullong();
 
-        checkpoint[i++] = {{"tag", dirAddress}, {"sharers", sharers}};
-        
+        checkpoint[i++] = {{"tag", dirAddress}, {"sharers", theDirectory[set][way].theSharers.getSharers().to_string()}};
+
         DBG_(Trace, (<< "Directory saving block: " << dirAddress));
 
       }
@@ -288,16 +287,16 @@ class StandardDirectory : public AbstractDirectory
 
   }
 
-  bool loadStateJSON(std::istream &s, const std::string &aDirName) {
-    
+  bool loadState(std::istream &s, const std::string &aDirName) {
+
     json checkpoint;
     s >> checkpoint;
-    
+
     uint32_t dirSize = checkpoint.size();
 
     DBG_(Trace, (<< "Directory loading " << dirSize << " entries."));
     for (size_t set = 0; set < (size_t)theNumSets; set++) {
-      
+
         //empty the directory
         theDirectory[set].clear();
 
@@ -306,7 +305,7 @@ class StandardDirectory : public AbstractDirectory
         DBG_(Trace, (<< "Directory loading block " << set*way));
 
         uint64_t address = checkpoint.at(set*way)["tag"];
-        std::bitset<MAX_NUM_SHARERS> state ((uint64_t)checkpoint.at(set*way)["sharers"]);
+        std::bitset<MAX_NUM_SHARERS> state (checkpoint.at(set*way)["sharers"].get<std::string>());
 
         //push new elements
         theDirectory[set].push_back(StandardDirectoryEntry(PhysicalMemoryAddress(address), state));
@@ -316,52 +315,6 @@ class StandardDirectory : public AbstractDirectory
 
     return true;
   }
-
-  void saveState(std::ostream &s, const std::string &aDirName) {
-    boost::archive::binary_oarchive oa(s);
-
-    uint64_t set_count = theNumSets;
-    uint32_t associativity = theAssociativity;
-
-        oa << set_count;
-        oa << associativity;
-
-        StdDirEntrySerializer serializer;
-        for (int32_t set = 0; set < theNumSets; set++) {
-            for (int32_t way = 0; way < theAssociativity; way++) {
-                serializer = theDirectory[set][way].getSerializer();
-                DBG_(Trace, (<< "Directory saving block " << serializer));
-                oa << serializer;
-            }
-        }
-    }
-
-    bool loadState(std::istream& s, const std::string& aDirName)
-    {
-        boost::archive::binary_iarchive ia(s);
-
-        uint64_t set_count     = 0;
-        uint32_t associativity = 0;
-
-        ia >> set_count;
-        ia >> associativity;
-
-        DBG_Assert(set_count == (uint64_t)theNumSets,
-                   (<< "Error loading directory state. Flexpoint contains " << set_count
-                    << " sets but simulator configured for " << theNumSets << " sets."));
-        DBG_Assert(associativity == (uint64_t)theAssociativity,
-                   (<< "Error loading directory state. Flexpoint contains " << associativity
-                    << "-way sets but simulator configured for " << theAssociativity << "-way sets."));
-
-        StdDirEntrySerializer serializer;
-        for (int32_t set = 0; set < theNumSets; set++) {
-            for (int32_t way = 0; way < theAssociativity; way++) {
-                ia >> serializer;
-                theDirectory[set][way] = serializer;
-            }
-        }
-        return true;
-    }
 
     static AbstractDirectory* createInstance(std::list<std::pair<std::string, std::string>>& args)
     {

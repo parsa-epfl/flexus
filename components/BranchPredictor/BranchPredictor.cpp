@@ -157,11 +157,22 @@ BranchPredictor::feedback(VirtualMemoryAddress anAddress,
 }
 
 
-void BranchPredictor::loadState(std::string const& aDirName) {}
+void BranchPredictor::loadState(std::string const& aDirName) {
+    std::string fname(aDirName);
+    fname += "/" + boost::padded_string_cast<3, '0'>(theIndex) + "-bpred" + ".json";
+    std::ifstream ifs(fname.c_str());
+
+    json checkpoint;
+    ifs >> checkpoint;
+
+    theBTB.loadState(checkpoint["btb"]);
+    theTage.loadState(checkpoint["tage"]);
+    ifs.close();
+}
 
 void BranchPredictor::saveState(std::string const& aDirName) {
     std::string fname(aDirName);
-    fname += "/bpred-" + boost::padded_string_cast<2, '0'>(theIndex) + ".json";
+    fname += "/" + boost::padded_string_cast<3, '0'>(theIndex) + "-bpred" + ".json";
     std::ofstream ofs(fname.c_str());
 
     json checkpoint;

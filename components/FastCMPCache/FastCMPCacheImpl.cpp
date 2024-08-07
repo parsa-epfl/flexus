@@ -815,24 +815,24 @@ class FLEXUS_COMPONENT(FastCMPCache)
         theCacheStats->update();
     }
 
-    void saveStateJSON(std::string const &aDirName) {
+    void saveState(std::string const &aDirName) {
         std::string fname(aDirName);
         fname += "/" + statName() + "-dir.json";
         std::ofstream ofs(fname.c_str(), std::ios::out);
 
-        theDirectory->saveStateJSON(ofs, aDirName);
+        theDirectory->saveState(ofs, aDirName);
 
         fname = aDirName;
         fname += "/" + statName() + "-cache.json";
         std::ofstream c_ofs(fname.c_str(), std::ios::out);
 
-        theCache->saveStateJSON(c_ofs);
+        theCache->saveState(c_ofs);
 
         ofs.close();
         c_ofs.close();
     }
 
-    void loadStateJSON(std::string const &aDirName)
+    void loadState(std::string const &aDirName)
     {
         std::string fname(aDirName);
         fname += "/" + statName() + "-dir.json";
@@ -841,7 +841,7 @@ class FLEXUS_COMPONENT(FastCMPCache)
         DBG_(Dev,
             (<< " saved checkpoint state " << fname << " not found.  Resetting to empty cache. "));
         } else {
-        if (!theDirectory->loadStateJSON(ifs, aDirName)) {
+        if (!theDirectory->loadState(ifs, aDirName)) {
             DBG_(Dev, (<< "Error loading checkpoint state from file: " << fname
                     << ".  Make sure your checkpoints match your current cache "
                         "configuration."));
@@ -857,7 +857,7 @@ class FLEXUS_COMPONENT(FastCMPCache)
         DBG_(Dev,
             (<< " saved checkpoint state " << c_fname << " not found.  Resetting to empty cache. "));
         } else {
-        if (!theCache->loadStateJSON(c_ifs)) {
+        if (!theCache->loadState(c_ifs)) {
             DBG_(Dev, (<< "Error loading checkpoint state from file: " << c_fname
                     << ".  Make sure your checkpoints match your current cache "
                         "configuration."));
@@ -868,78 +868,6 @@ class FLEXUS_COMPONENT(FastCMPCache)
 
         ifs.close();
         c_ifs.close();
-    }
-
-    void saveState(std::string const& aDirName)
-    {
-        std::string fname(aDirName);
-        fname += "/" + statName() + "-dir.gz";
-        std::ofstream ofs(fname.c_str(), std::ios::binary);
-
-        boost::iostreams::filtering_stream<boost::iostreams::output> out;
-        out.push(boost::iostreams::gzip_compressor(boost::iostreams::gzip_params(9)));
-        out.push(ofs);
-
-        theDirectory->saveState(out, aDirName);
-
-        fname = aDirName;
-        fname += "/" + statName() + "-cache.gz";
-        std::ofstream c_ofs(fname.c_str(), std::ios::binary);
-
-        boost::iostreams::filtering_stream<boost::iostreams::output> c_out;
-        c_out.push(boost::iostreams::gzip_compressor(boost::iostreams::gzip_params(9)));
-        c_out.push(c_ofs);
-
-        theCache->saveState(c_out);
-        saveStateJSON(aDirName);
-    }
-
-    void loadState(std::string const &aDirName)
-    {
-        std::string fname(aDirName);
-        fname += "/" + statName() + "-dir.gz";
-        std::ifstream ifs(fname.c_str(), std::ios::binary);
-        if (!ifs.good()) {
-        DBG_(Dev,
-            (<< " saved checkpoint state " << fname << " not found.  Resetting to empty cache. "));
-        } else {
-        // ifs >> std::skipws;
-
-        boost::iostreams::filtering_stream<boost::iostreams::input> in;
-        in.push(boost::iostreams::gzip_decompressor());
-        in.push(ifs);
-
-        if (!theDirectory->loadState(in, aDirName)) {
-            DBG_(Dev, (<< "Error loading checkpoint state from file: " << fname
-                    << ".  Make sure your checkpoints match your current cache "
-                        "configuration."));
-            DBG_Assert(false);
-        }
-        loadStateJSON(aDirName);
-        }
-        DBG_(Dev, (<< " Directory state loaded"));
-        std::string c_fname(aDirName);
-        c_fname += "/" + statName() + "-cache.gz";
-        std::ifstream c_ifs(c_fname.c_str(), std::ios::binary);
-        if (!c_ifs.good()) {
-        DBG_(Dev,
-            (<< " saved checkpoint state " << c_fname << " not found.  Resetting to empty cache. "));
-        } else {
-        // ifs >> std::skipws;
-
-                boost::iostreams::filtering_stream<boost::iostreams::input> c_in;
-                c_in.push(boost::iostreams::gzip_decompressor());
-                c_in.push(c_ifs);
-
-                if (!theCache->loadState(c_in)) {
-                    DBG_(Dev,
-                        (<< "Error loading checkpoint state from file: " << c_fname
-                        << ".  Make sure your checkpoints match your current cache "
-                            "configuration."));
-                    DBG_Assert(false);
-                }
-            }
-            DBG_(Dev, (<< " Cache state loaded"));
     }
 
 }; // end class FastCMPCache

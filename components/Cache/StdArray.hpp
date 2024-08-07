@@ -527,6 +527,9 @@ class StdArray : public AbstractArray<_State>
         json checkpoint;
         is >> checkpoint;
 
+        DBG_Assert((uint64_t)theAssociativity == checkpoint["associativity"]);
+        DBG_Assert((uint64_t)setCount == checkpoint["tags"].size());
+
         for (int32_t i{0}; i < setCount; i++) {
             theSets[i]->load_set_from_ckpt(checkpoint, theIndex, i, theTagShift, setIndexShift);
         }

@@ -57,7 +57,7 @@ class FLEXUS_COMPONENT(FastCache)
         ofs.close();
     }
 
-    // void loadStateJSON(std::string const &aDirName) {
+    // void loadState(std::string const &aDirName) {
     //     std::string fname(aDirName);
     //     fname += "/" + statName() + ".json";
 
@@ -67,7 +67,7 @@ class FLEXUS_COMPONENT(FastCache)
     //        DBG_(Dev,
     //            (<< " saved checkpoint state " << fname << " not found.  Resetting to empty cache. "));
     //    } else {
-    //        if (!theCache->loadStateJSON(ifs)) {
+    //        if (!theCache->loadState(ifs)) {
     //            DBG_(Dev, (<< "Error loading checkpoint state from file: " << fname
     //                    << ".  Make sure your checkpoints match your current cache "
     //                        "configuration."));
