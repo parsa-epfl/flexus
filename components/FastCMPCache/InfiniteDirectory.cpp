@@ -301,7 +301,7 @@ public:
     }
   }
 
-  void saveStateJSON(std::ostream &s, const std::string &aDirName) {
+  void saveState(std::ostream &s, const std::string &aDirName) {
 
     json checkpoint;
     checkpoint = json::array();
@@ -325,7 +325,7 @@ public:
 
   }
 
-  bool loadStateJSON(std::istream &s, const std::string &aDirName) {
+  bool loadState(std::istream &s, const std::string &aDirName) {
 
     json checkpoint;
     s >> checkpoint;
@@ -351,41 +351,6 @@ public:
       }
     }
 
-    return true;
-  }
-
-  void saveState(std::ostream &s, const std::string &aDirName) {
-    boost::archive::binary_oarchive oa(s);
-
-    uint32_t count = (uint32_t)theDirectory.size();
-    oa << count;
-    DBG_(Dev, (<< "Saving " << count << " directory entries."));
-    // StdDirEntrySerializer serializer;
-    // StdDirEntryExtendedSerializer serializer;
-    inf_directory_t::iterator iter = theDirectory.begin();
-    for (; iter != theDirectory.end(); iter++) {
-      StdDirEntryExtendedSerializer const serializer = iter->second->getSerializer();
-      DBG_(Trace, (<< "Directory saving block: " << serializer));
-      oa << serializer;
-    }
-  }
-
-  bool loadState(std::istream &s, const std::string &aDirName) {
-    boost::archive::binary_iarchive ia(s);
-    int32_t count;
-    ia >> count;
-    // StdDirEntrySerializer serializer;
-    StdDirEntryExtendedSerializer serializer;
-    DBG_(Trace, (<< "Directory loading " << count << " entries."));
-    for (; count > 0; count--) {
-      ia >> serializer;
-      DBG_(Trace, (<< "Directory loading block " << serializer));
-      InfiniteDirectoryEntry entry(serializer);
-      if (entry.state != ZeroSharers) {
-        theDirectory.insert(std::pair<PhysicalMemoryAddress, InfiniteDirectoryEntry *>(
-            PhysicalMemoryAddress(serializer.tag), new InfiniteDirectoryEntry(serializer)));
-      }
-    }
     return true;
   }
 

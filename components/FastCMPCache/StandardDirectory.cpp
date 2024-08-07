@@ -262,7 +262,7 @@ class StandardDirectory : public AbstractDirectory
     return std::tie(entry->sharers(), entry->state(), wrapper, valid);
   }
 
-  void saveStateJSON(std::ostream &s, const std::string &aDirName) {
+  void saveState(std::ostream &s, const std::string &aDirName) {
 
     json checkpoint;
 
@@ -277,7 +277,7 @@ class StandardDirectory : public AbstractDirectory
         uint64_t dirAddress = theDirectory[set][way].theAddress;
 
         checkpoint[i++] = {{"tag", dirAddress}, {"sharers", theDirectory[set][way].theSharers.getSharers().to_string()}};
-        
+
         DBG_(Trace, (<< "Directory saving block: " << dirAddress));
 
       }
@@ -287,7 +287,7 @@ class StandardDirectory : public AbstractDirectory
 
   }
 
-  bool loadStateJSON(std::istream &s, const std::string &aDirName) {
+  bool loadState(std::istream &s, const std::string &aDirName) {
 
     json checkpoint;
     s >> checkpoint;
@@ -315,52 +315,6 @@ class StandardDirectory : public AbstractDirectory
 
     return true;
   }
-
-  void saveState(std::ostream &s, const std::string &aDirName) {
-    boost::archive::binary_oarchive oa(s);
-
-    uint64_t set_count = theNumSets;
-    uint32_t associativity = theAssociativity;
-
-        oa << set_count;
-        oa << associativity;
-
-        StdDirEntrySerializer serializer;
-        for (int32_t set = 0; set < theNumSets; set++) {
-            for (int32_t way = 0; way < theAssociativity; way++) {
-                serializer = theDirectory[set][way].getSerializer();
-                DBG_(Trace, (<< "Directory saving block " << serializer));
-                oa << serializer;
-            }
-        }
-    }
-
-    bool loadState(std::istream& s, const std::string& aDirName)
-    {
-        boost::archive::binary_iarchive ia(s);
-
-        uint64_t set_count     = 0;
-        uint32_t associativity = 0;
-
-        ia >> set_count;
-        ia >> associativity;
-
-        DBG_Assert(set_count == (uint64_t)theNumSets,
-                   (<< "Error loading directory state. Flexpoint contains " << set_count
-                    << " sets but simulator configured for " << theNumSets << " sets."));
-        DBG_Assert(associativity == (uint64_t)theAssociativity,
-                   (<< "Error loading directory state. Flexpoint contains " << associativity
-                    << "-way sets but simulator configured for " << theAssociativity << "-way sets."));
-
-        StdDirEntrySerializer serializer;
-        for (int32_t set = 0; set < theNumSets; set++) {
-            for (int32_t way = 0; way < theAssociativity; way++) {
-                ia >> serializer;
-                theDirectory[set][way] = serializer;
-            }
-        }
-        return true;
-    }
 
     static AbstractDirectory* createInstance(std::list<std::pair<std::string, std::string>>& args)
     {

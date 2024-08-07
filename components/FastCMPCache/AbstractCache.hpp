@@ -128,10 +128,6 @@ public:
   virtual void saveState(std::ostream &s) = 0;
 
   virtual bool loadState(std::istream &s) = 0;
-
-  virtual void saveStateJSON(std::ostream &s) = 0;
-
-  virtual bool loadStateJSON(std::istream &s) = 0;
 };
 
 } // namespace nFastCMPCache

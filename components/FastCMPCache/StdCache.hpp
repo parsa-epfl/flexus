@@ -434,7 +434,7 @@ class StdCache : public AbstractCache
     }
   }
 
-  virtual void saveStateJSON(std::ostream &s){
+  virtual void saveState(std::ostream &s){
     json checkpoint;
     checkpoint["associativity"] = (uint64_t)theAssoc;
 
@@ -480,7 +480,7 @@ class StdCache : public AbstractCache
 
         DBG_(Trace, (<< theName << " L3 - Saving block " << std::hex << block->tag << " with state "
                        << state2String(block->state) << " in way " << block->way));
-                       
+
       }
     }
 
@@ -488,19 +488,19 @@ class StdCache : public AbstractCache
 
   }
 
-  virtual bool loadStateJSON(std::istream &s) {
+  virtual bool loadState(std::istream &s) {
     json checkpoint;
     s >> checkpoint;
 
     uint32_t shift = blockShift + log_base2(theNumSets);
 
     for (size_t set = 0; set < (size_t)theNumSets; set++) {
-      
+
       size_t blockSize = checkpoint["tags"].at(set).size();
 
       //empty the cache set
       theBlocks[set].get<by_order>().clear();
-      
+
       for(size_t block = 0; block < blockSize; block++){
         bool dirty = checkpoint["tags"].at(set).at(block)["dirty"];
         bool writable = checkpoint["tags"].at(set).at(block)["writable"];
@@ -528,93 +528,6 @@ class StdCache : public AbstractCache
     return true;
   }
 
-  virtual void saveState(std::ostream &s) {
-    boost::archive::binary_oarchive oa(s);
-
-    uint64_t set_count = theNumSets;
-    uint32_t associativity = theAssoc;
-
-    oa << set_count;
-    oa << associativity;
-
-    BlockSerializer bs;
-    for (int32_t set = 0; set < theNumSets; set++) {
-      order_iterator block = theBlocks[set].get<by_order>().begin();
-      order_iterator end = theBlocks[set].get<by_order>().end();
-      int32_t way = 0;
-      for (; block != end; block++, way++) {
-        bs.tag = block->tag;
-        bs.way = block->way;
-        switch (block->state) {
-        case kModified:
-          bs.state = (uint8_t)'M';
-          break;
-        case kOwned:
-          bs.state = (uint8_t)'O';
-          break;
-        case kExclusive:
-          bs.state = (uint8_t)'E';
-          break;
-        case kShared:
-          bs.state = (uint8_t)'S';
-          break;
-        case kInvalid:
-          bs.state = (uint8_t)'I';
-          break;
-        default:
-          DBG_Assert(false, (<< "Don't know how to save state " << block->state));
-          break;
-        }
-        oa << bs;
-        DBG_(Trace, Addr(block->tag)(<< theIndex << "-L3: saving block " << std::hex << block->tag
-                                     << " in state " << (char)bs.state));
-      }
-      bs.state = 'I';
-      bs.tag = 0;
-      for (; way < theAssoc; way++) {
-        bs.way = way;
-        oa << bs;
-      }
-    }
-  }
-
-    virtual bool loadState(std::istream& s)
-    {
-        boost::archive::binary_iarchive ia(s);
-
-        uint64_t set_count     = 0;
-        uint32_t associativity = 0;
-
-        ia >> set_count;
-        ia >> associativity;
-
-        DBG_Assert(set_count == (uint64_t)theNumSets,
-                   (<< "Error loading cache state. Flexpoint contains " << set_count
-                    << " sets but simulator configured for " << theNumSets << " sets."));
-        DBG_Assert(associativity == (uint64_t)theAssoc,
-                   (<< "Error loading cache state. Flexpoint contains " << associativity
-                    << "-way sets but simulator configured for " << theAssoc << "-way sets."));
-
-        for (int32_t set = 0; set < theNumSets; set++) {
-            for (int32_t way = 0; way < theAssoc; way++) {
-                BlockSerializer bs;
-                ia >> bs;
-                CoherenceState_t bstate = kInvalid;
-                switch (bs.state) {
-                    case (uint8_t)'M': bstate = kModified; break;
-                    case (uint8_t)'O': bstate = kOwned; break;
-                    case (uint8_t)'E': bstate = kExclusive; break;
-                    case (uint8_t)'S': bstate = kShared; break;
-                    case (uint8_t)'I': bstate = kInvalid; break;
-                    default: DBG_Assert(false, (<< "Unknown Block State: " << (uint8_t)bs.state)); break;
-                }
-                DBG_(Trace,
-                     (<< theIndex << "-L2: Loading block " << std::hex << bs.tag << " in state " << (char)bs.state));
-                theBlocks[set].get<by_order>().push_back(BlockEntry(bs.tag, bstate, way));
-            }
-        }
-        return true;
-    }
 };
 
 }; // namespace nFastCMPCache

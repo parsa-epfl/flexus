@@ -372,7 +372,7 @@ class StdCache //: public AbstractCache
         s << std::setw(4) << checkpoint << std::endl;
     }
 
-    //   bool loadStateJSON(std::istream &s) {
+    //   bool loadState(std::istream &s) {
     //    json checkpoint;
     //    s >> checkpoint;
     //
