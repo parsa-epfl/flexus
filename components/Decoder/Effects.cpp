@@ -243,7 +243,7 @@ struct MapDestinationEffect : public Effect
         // Add effect to free previous mapping upon retirement
         Effect* e = new FreeMappingEffect(thePreviousMappingCode);
         anInstruction.addNewComponent(e);
-        anInstruction.addRetirementEffect(e);
+        anInstruction.addCommitEffect(e);
 
         // Add effect to deallocate new register and restore previous mapping upon
         // squash
