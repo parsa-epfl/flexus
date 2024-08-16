@@ -484,14 +484,26 @@ CoreImpl::setSPSel(uint32_t aVal)
 void
 CoreImpl::setSP_el(uint8_t anId, uint64_t aVal)
 {
-    DBG_Assert(anId >= 0 || anId < 4);
+    DBG_Assert(0 <= anId && anId < 4, (<< "Out of bound access with index = " << anId));
     theSP_el[anId] = aVal;
 }
 uint64_t
 CoreImpl::getSP_el(uint8_t anId)
 {
-    DBG_Assert(anId >= 0 || anId < 4);
+    DBG_Assert(0 <= anId && anId < 4, (<< "Out of bound access with index = " << anId));
     return theSP_el[anId];
+}
+void
+CoreImpl::setSPSR_el(uint8_t anId, uint64_t aVal)
+{
+    DBG_Assert(0 <= anId && anId < 4, (<< "Out of bound access with index = " << anId));
+    theSPSR_EL[anId] = aVal;
+}
+uint64_t
+CoreImpl::getSPSR_el(uint8_t anId)
+{
+    DBG_Assert(0 <= anId && anId < 4, (<< "Out of bound access with index = " << anId));
+    return theSPSR_EL[anId];
 }
 uint32_t
 CoreImpl::getPSTATE()
@@ -506,6 +518,7 @@ CoreImpl::setPSTATE(uint32_t aPSTATE)
 uint64_t
 CoreImpl::getTPIDR(uint8_t anEL)
 {
+    DBG_Assert(false);
     return Flexus::Qemu::Processor::getProcessor(theNode).read_register(Flexus::Qemu::API::TODO);
 }
 void
@@ -583,6 +596,16 @@ CoreImpl::setDAIF(uint32_t aDAIF)
 {
     if (aDAIF == 0) { return; }
     thePSTATE = ((thePSTATE & ~PSTATE_DAIF) | (aDAIF & PSTATE_DAIF));
+}
+void
+CoreImpl::setELR_el(uint8_t anEL, uint64_t aVal)
+{
+    theELR_EL[anEL] = aVal;
+}
+uint64_t
+CoreImpl::getELR_el(uint8_t anEL)
+{
+    return theELR_EL[anEL];
 }
 void
 CoreImpl::setPC(uint64_t aPC)

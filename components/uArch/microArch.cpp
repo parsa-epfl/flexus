@@ -383,6 +383,7 @@ class microArchImpl : public microArch
     {
         theCore->setPC(theCPU.get_pc());
         DBG_(Dev, Cond(!was_expected)(<< "setting PC to " << std::hex << theCore->pc() << std::dec));
+        fillSysRegisters();
         fillXRegisters();
         fillVRegisters();
 
@@ -394,6 +395,13 @@ class microArchImpl : public microArch
         API::exception_t exp;
         // theCPU.readException(&exp); TODO
         theCore->setException(exp);
+    }
+
+    void fillSysRegisters()
+    {
+        for (auto& reg : nuArch::supported_sysRegs) {
+            getPriv(reg.second)->sync(theCore.get(), theNode);
+        }
     }
 
     // fills/re-sets global registers to the state they are

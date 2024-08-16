@@ -902,6 +902,12 @@ struct uArch
         DBG_Assert(false);
         return 0;
     }
+    virtual void setSPSR_el(uint8_t anEL, uint64_t aVal) { DBG_Assert(false); }
+    virtual uint64_t getSPSR_el(uint8_t anEL)
+    {
+        DBG_Assert(false);
+        return 0;
+    }
     virtual void setSPSel(uint32_t aVal) { DBG_Assert(false); }
     virtual uint32_t getSPSel()
     {
@@ -945,6 +951,12 @@ struct uArch
 
     virtual void setSCTLR_EL(uint8_t anId, uint64_t aSCTLR) { DBG_Assert(false); }
     virtual uint64_t getSCTLR_EL(uint8_t anId)
+    {
+        DBG_Assert(false);
+        return 0;
+    }
+    virtual void setELR_el(uint8_t anEL, uint64_t aVal) { DBG_Assert(false); }
+    virtual uint64_t getELR_el(uint8_t anEL)
     {
         DBG_Assert(false);
         return 0;

@@ -166,6 +166,13 @@ class SysRegInfo
 
     virtual void reset(uArch* aCore) {}
 
+    virtual void sync(uArch* aCore, size_t theNode)
+    {
+        this->writefn(aCore,
+                      Flexus::Qemu::API::qemu_api
+                        .read_sys_register(theNode, this->opc0, this->opc1, this->opc2, this->crn, this->crm));
+    }
+
     virtual void setSystemRegisterEncodingValues(uint8_t op0, uint8_t op1, uint8_t op2, uint8_t aCrn, uint8_t aCrm)
     {
         this->opc0 = op0;
@@ -227,6 +234,8 @@ class SysRegInfo
 
     virtual ~SysRegInfo() {}
 };
+
+extern std::vector<std::pair<std::array<uint8_t, 5>, ePrivRegs>> supported_sysRegs;
 
 ePrivRegs
 getPrivRegType(const uint8_t op0, const uint8_t op1, const uint8_t op2, const uint8_t crn, const uint8_t crm);

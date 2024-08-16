@@ -80,6 +80,11 @@ class NZCV_ : public SysRegInfo
 
     } // FIXME
     virtual uint64_t readfn(uArch* aCore) override { return aCore->_PSTATE().NZCV(); }
+    virtual void sync(uArch* aCore, size_t theNode) override
+    {
+        auto pstate = Flexus::Qemu::API::qemu_api.read_register(theNode, Flexus::Qemu::API::PSTATE, 0);
+        writefn(aCore, extract32(pstate, 28, 4));
+    }
 
     NZCV_()
       : SysRegInfo("NZCV_",
@@ -117,6 +122,11 @@ class DAIF_ : public SysRegInfo
     virtual void writefn(uArch* aCore, uint64_t aVal) override { aCore->setDAIF(aVal); } // FIXME
     virtual void reset(uArch* aCore) override { DBG_Assert(false); } // FIXME /*arm_cp_reset_ignore*/
     virtual uint64_t readfn(uArch* aCore) override { return aCore->_PSTATE().DAIF(); }
+    virtual void sync(uArch* aCore, size_t theNode) override
+    {
+        auto pstate = Flexus::Qemu::API::qemu_api.read_register(theNode, Flexus::Qemu::API::PSTATE, 0);
+        writefn(aCore, pstate);
+    }
     DAIF_()
       : SysRegInfo("DAIF_",
                    DAIF_::state,
@@ -259,6 +269,8 @@ class DCZID_EL0_ : public SysRegInfo
     uint64_t resetvalue                   = -1;
 
     virtual uint64_t readfn(uArch* aCore) override { return aCore->readDCZID_EL0(); }
+    // No need for sync, effects are done by the readfn
+    virtual void sync(uArch* aCore, size_t theNode) override {}
     DCZID_EL0_()
       : SysRegInfo("DCZID_EL0_",
                    DCZID_EL0_::state,
@@ -287,6 +299,8 @@ class DC_ZVA_ : public SysRegInfo
     static const eRegInfo type            = kARM_DC_ZVA;
     uint64_t resetvalue                   = -1;
     virtual eAccessResult accessfn(uArch* aCore) override { return aCore->accessZVA(); }
+    // No need for sync, effects are done by the readfn
+    virtual void sync(uArch* aCore, size_t theNode) override {}
     DC_ZVA_()
       : SysRegInfo("DC_ZVA_",
                    DC_ZVA_::state,
@@ -315,6 +329,17 @@ class CURRENT_EL_ : public SysRegInfo
     static const eRegInfo type            = kARM_CURRENTEL;
     uint64_t resetvalue                   = -1;
 
+    virtual uint64_t readfn(uArch* aCore) override { return aCore->_PSTATE().EL(); }
+    virtual void writefn(uArch* aCore, uint64_t aVal) override
+    {
+        aCore->setPSTATE(deposit32(aCore->_PSTATE().d(), 2, 2, aVal));
+    }
+    virtual void sync(uArch* aCore, size_t theNode) override
+    {
+        auto pstate = Flexus::Qemu::API::qemu_api.read_register(theNode, Flexus::Qemu::API::PSTATE, 0);
+        writefn(aCore, extract32(pstate, 2, 2));
+    }
+
     CURRENT_EL_()
       : SysRegInfo("CURRENT_EL_",
                    CURRENT_EL_::state,
@@ -329,6 +354,30 @@ class CURRENT_EL_ : public SysRegInfo
     }
 };
 
+class ELR_EL2_ : public SysRegInfo
+{
+  public:
+    static const eRegExecutionState state = kARM_STATE_AA64;
+    static const uint8_t opc0             = 3;
+    static const uint8_t opc1             = 4;
+    static const uint8_t opc2             = 1;
+    static const uint8_t crn              = 4;
+    static const uint8_t crm              = 0;
+    static const eAccessRight access      = kPL1_RW;
+    static const eRegInfo type            = kARM_ALIAS;
+    ELR_EL2_()
+      : SysRegInfo("ELR_EL2",
+                   ELR_EL2_::state,
+                   ELR_EL2_::type,
+                   ELR_EL2_::opc0,
+                   ELR_EL2_::opc1,
+                   ELR_EL2_::opc2,
+                   ELR_EL2_::crn,
+                   ELR_EL2_::crm,
+                   ELR_EL2_::access)
+    {
+    }
+};
 class ELR_EL1_ : public SysRegInfo
 {
   public:
@@ -341,6 +390,73 @@ class ELR_EL1_ : public SysRegInfo
     static const eAccessRight access      = kPL1_RW;
     static const eRegInfo type            = kARM_ALIAS;
 
+    virtual uint64_t readfn(uArch* aCore) override
+    {
+        // if PSTATE.EL == EL0 then
+        //     UNDEFINED;
+        // elsif PSTATE.EL == EL1 then
+        //     if EL2Enabled() && HCR_EL2.<NV2,NV1,NV> == '011' then
+        //         AArch64.SystemAccessTrap(EL2, 0x18);
+        //     elsif EL2Enabled() && HCR_EL2.<NV2,NV1,NV> == '111' then
+        //         return NVMem[0x230];
+        //     else
+        //         return ELR_EL1;
+        // elsif PSTATE.EL == EL2 then
+        //     if HCR_EL2.E2H == '1' then
+        //         return ELR_EL2;
+        //     else
+        //         return ELR_EL1;
+        // elsif PSTATE.EL == EL3 then
+        //     return ELR_EL1;
+        auto currentel   = aCore->_PSTATE().EL();
+        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1);
+        auto HCR_EL2_E2H = extract64(HCR_EL2, 34, 1);
+
+        if (currentel == 1 || currentel == 3) return aCore->getELR_el(1);
+        if (currentel == 2) {
+            if (HCR_EL2_E2H == 1)
+                return aCore->getELR_el(2);
+            else
+                return aCore->getELR_el(1);
+        }
+
+        return aCore->getELR_el(1);
+    }
+    virtual void writefn(uArch* aCore, uint64_t aVal) override
+    {
+        auto currentel   = aCore->_PSTATE().EL();
+        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1);
+        auto HCR_EL2_E2H = extract64(HCR_EL2, 34, 1);
+
+        if (currentel == 1 || currentel == 3) aCore->setELR_el(1, aVal);
+        if (currentel == 2) {
+            if (HCR_EL2_E2H == 1)
+                aCore->setELR_el(2, aVal);
+            else
+                aCore->setELR_el(1, aVal);
+        }
+    }
+    virtual void sync(uArch* aCore, size_t theNode) override
+    {
+        auto currentel   = aCore->_PSTATE().EL();
+        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1);
+        auto HCR_EL2_E2H = extract64(HCR_EL2, 34, 1);
+        auto valELR_EL1  = Flexus::Qemu::API::qemu_api.read_sys_register(theNode, opc0, opc1, opc2, crn, crm);
+        auto valELR_EL2  = Flexus::Qemu::API::qemu_api.read_sys_register(theNode,
+                                                                        ELR_EL2_::opc0,
+                                                                        ELR_EL2_::opc1,
+                                                                        ELR_EL2_::opc2,
+                                                                        ELR_EL2_::crn,
+                                                                        ELR_EL2_::crm);
+
+        if (currentel == 1 || currentel == 3) writefn(aCore, valELR_EL1);
+        if (currentel == 2) {
+            if (HCR_EL2_E2H == 1)
+                writefn(aCore, valELR_EL2);
+            else
+                writefn(aCore, valELR_EL1);
+        }
+    }
     ELR_EL1_()
       : SysRegInfo("ELR_EL1",
                    ELR_EL1_::state,
@@ -354,7 +470,32 @@ class ELR_EL1_ : public SysRegInfo
     {
     }
 };
+class SPSR_EL2_ : public SysRegInfo
+{
+  public:
+    static const eRegExecutionState state = kARM_STATE_AA64;
+    static const uint8_t opc0             = 3;
+    static const uint8_t opc1             = 4;
+    static const uint8_t opc2             = 0;
+    static const uint8_t crn              = 4;
+    static const uint8_t crm              = 0;
+    static const eAccessRight access      = kPL1_RW;
+    static const eRegInfo type            = kARM_ALIAS;
+    uint64_t resetvalue                   = -1;
 
+    SPSR_EL2_()
+      : SysRegInfo("SPSR_EL2",
+                   SPSR_EL2_::state,
+                   SPSR_EL2_::type,
+                   SPSR_EL2_::opc0,
+                   SPSR_EL2_::opc1,
+                   SPSR_EL2_::opc2,
+                   SPSR_EL2_::crn,
+                   SPSR_EL2_::crm,
+                   SPSR_EL2_::access)
+    {
+    }
+};
 class SPSR_EL1_ : public SysRegInfo
 {
   public:
@@ -368,7 +509,84 @@ class SPSR_EL1_ : public SysRegInfo
     static const eRegInfo type            = kARM_ALIAS;
     uint64_t resetvalue                   = -1;
 
-    virtual uint64_t readfn(uArch* aCore) override { return aCore->getSP_el(1); }
+    virtual uint64_t readfn(uArch* aCore) override
+    {
+        // if PSTATE.EL == EL0 then
+        //     UNDEFINED;
+        // elsif PSTATE.EL == EL1 then
+        //     if EffectiveHCR_EL2_NVx() == '011' then
+        //         AArch64.SystemAccessTrap(EL2, 0x18);
+        //     elsif EffectiveHCR_EL2_NVx() IN {'111'} then
+        //         X[t, 64] = NVMem[0x160];
+        //     else
+        //         X[t, 64] = SPSR_EL1;
+        // elsif PSTATE.EL == EL2 then
+        //     if ELIsInHost(EL2) then
+        //         X[t, 64] = SPSR_EL2;
+        //     else
+        //         X[t, 64] = SPSR_EL1;
+        // elsif PSTATE.EL == EL3 then
+        //     X[t, 64] = SPSR_EL1;
+        //
+        // boolean ELIsInHost(bits(2) el)
+        //     ...
+        //     when EL2
+        //         return EL2Enabled() && HCR_EL2.E2H == '1';
+        //     ...
+        //
+        // boolean EL2Enabled()
+        //  return HaveEL(EL2) && (!HaveEL(EL3) || SCR_GEN[].NS == '1' || IsSecureEL2Enabled());
+
+        auto currentel   = aCore->_PSTATE().EL();
+        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1);
+        auto HCR_EL2_E2H = extract64(HCR_EL2, 34, 1);
+
+        if (currentel == 1 || currentel == 3) return aCore->getSPSR_el(1);
+        if (currentel == 2) {
+            if (HCR_EL2_E2H == 1)
+                return aCore->getSPSR_el(2);
+            else
+                return aCore->getSPSR_el(1);
+        }
+
+        return aCore->getSPSR_el(1);
+    }
+    virtual void writefn(uArch* aCore, uint64_t aVal) override
+    {
+        auto currentel   = aCore->_PSTATE().EL();
+        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1);
+        auto HCR_EL2_E2H = extract64(HCR_EL2, 34, 1);
+
+        if (currentel == 1 || currentel == 3) return aCore->setSPSR_el(1, aVal);
+        if (currentel == 2) {
+            if (HCR_EL2_E2H == 1)
+                return aCore->setSPSR_el(2, aVal);
+            else
+                return aCore->setSPSR_el(1, aVal);
+        }
+    }
+
+    virtual void sync(uArch* aCore, size_t theNode) override
+    {
+        auto currentel   = aCore->_PSTATE().EL();
+        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1);
+        auto HCR_EL2_E2H = extract64(HCR_EL2, 34, 1);
+        auto valSPSR_EL1 = Flexus::Qemu::API::qemu_api.read_sys_register(theNode, opc0, opc1, opc2, crn, crm);
+        auto valSPSR_EL2 = Flexus::Qemu::API::qemu_api.read_sys_register(theNode,
+                                                                         SPSR_EL2_::opc0,
+                                                                         SPSR_EL2_::opc1,
+                                                                         SPSR_EL2_::opc2,
+                                                                         SPSR_EL2_::crn,
+                                                                         SPSR_EL2_::crm);
+
+        if (currentel == 1 || currentel == 3) writefn(aCore, valSPSR_EL1);
+        if (currentel == 2) {
+            if (HCR_EL2_E2H == 1)
+                writefn(aCore, valSPSR_EL2);
+            else
+                writefn(aCore, valSPSR_EL1);
+        }
+    }
 
     SPSR_EL1_()
       : SysRegInfo("SPSR_EL1",
@@ -471,14 +689,11 @@ class SPSel_ : public SysRegInfo
     uint64_t resetvalue                   = -1;
 
     /*spsel_read*/
-    virtual uint64_t readfn(uArch* aCore) override
-    {
-        unsigned int cur_el = aCore->_PSTATE().EL();
-        return aCore->getSP_el(cur_el);
-    }
+    virtual uint64_t readfn(uArch* aCore) override { return aCore->_PSTATE().SP(); }
     virtual void writefn(uArch* aCore, uint64_t aVal) override
     {
-        unsigned int cur_el = aCore->_PSTATE().EL();
+        aCore->setPSTATE(deposit32(aCore->_PSTATE().d(), 0, 1, aVal));
+        // unsigned int cur_el = aCore->_PSTATE().EL();
         /* Update PSTATE SPSel bit; this requires us to update the
          * working stack pointer in xregs[31].
          */
@@ -505,7 +720,7 @@ class SPSel_ : public SysRegInfo
         //            aCore->setXRegister(31, aCore->getSP_el(0));
         //        }
 
-        aCore->setSP_el(cur_el, aVal);
+        // aCore->setSP_el(cur_el, aVal);
     }
 
     SPSel_()
@@ -640,7 +855,7 @@ class INVALID_PRIV_ : public SysRegInfo
     std::string name = "INVALID_PRIV";
 };
 
-static std::vector<std::pair<std::array<uint8_t, 5>, ePrivRegs>> supported_sysRegs = {
+std::vector<std::pair<std::array<uint8_t, 5>, ePrivRegs>> supported_sysRegs = {
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>({ NZCV_::opc0, NZCV_::opc1, NZCV_::opc2, NZCV_::crn, NZCV_::crm },
                                                       kNZCV),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>({ DAIF_::opc0, DAIF_::opc1, DAIF_::opc2, DAIF_::crn, DAIF_::crm },

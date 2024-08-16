@@ -161,6 +161,8 @@ private:
   std::map<VirtualMemoryAddress, uint64_t> theLocalExclusiveVirtualMonitor;
 
   uint64_t theSP_el[4];
+  uint64_t theELR_EL[4];
+  uint64_t theSPSR_EL[4];
 
   eExceptionType thePendingTrap;
   boost::intrusive_ptr<Instruction> theTrapInstruction;
@@ -732,6 +734,10 @@ public:
   void setXRegister(uint32_t aReg, uint64_t aVal);
   uint64_t getXRegister(uint32_t aReg);
   void setPC(uint64_t aPC);
+  void setELR_el(uint8_t anEL, uint64_t aVal);
+  uint64_t getELR_el(uint8_t anEL);
+  void setSPSR_el(uint8_t anEL, uint64_t aVal);
+  uint64_t getSPSR_el(uint8_t anEL);
   void setDAIF(uint32_t aDAIF);
 
   /* Msutherl: API to read system register value using QEMU encoding */
