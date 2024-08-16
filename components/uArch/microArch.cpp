@@ -47,24 +47,23 @@
 
 #include "CoreModel.hpp"
 #include "ValueTracker.hpp"
+#include "components/CommonQEMU/Slices/MemOp.hpp"
+#include "core/boost_extensions/padded_string_cast.hpp"
+#include "core/debug/debug.hpp"
+#include "core/performance/profile.hpp"
+#include "core/qemu/api.h"
+#include "core/qemu/configuration_api.hpp"
+#include "core/qemu/mai_api.hpp"
+#include "core/stats.hpp"
+#include "core/target.hpp"
+#include "core/types.hpp"
+#include "systemRegister.hpp"
 
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/polymorphic_pointer_cast.hpp>
-#include "core/debug/debug.hpp"
-#include "core/stats.hpp"
-#include "core/performance/profile.hpp"
-#include "core/qemu/configuration_api.hpp"
-
-#include "core/boost_extensions/padded_string_cast.hpp"
-#include "core/target.hpp"
-#include "core/types.hpp"
-#include "components/CommonQEMU/Slices/MemOp.hpp"
-#include "core/qemu/api.h"
-#include "core/qemu/mai_api.hpp"
 
 namespace API = Flexus::Qemu::API;
-
 
 #define DBG_DeclareCategories uArchCat
 #define DBG_SetDefaultOps     AddCat(uArchCat)
@@ -328,7 +327,7 @@ class microArchImpl : public microArch
                       << "] Resynchronize "
                          "complete\n==================================================="
                          "=====\n"));
-                //theCPU.breakSimulation(); TODO
+                // theCPU.breakSimulation(); TODO
             }
             theExceptionRaised = 0;
         }

@@ -46,9 +46,9 @@
 #include "Interactions.hpp"
 #include "SemanticInstruction.hpp"
 #include "components/uArch/systemRegister.hpp"
-
 #include "components/uArch/uArchInterfaces.hpp"
 #include "components/uFetch/uFetchTypes.hpp"
+
 #include <core/performance/profile.hpp>
 
 #define DBG_DeclareCategories Decoder
@@ -270,10 +270,12 @@ struct MapDestinationEffect : public Effect
     }
 };
 
-Effect *mapCCDestination(SemanticInstruction *inst) {
-  MapDestinationEffect *mde = new MapDestinationEffect(kCCd, kCCpd, kPCCpd, true);
-  inst->addNewComponent(mde);
-  return mde;
+Effect*
+mapCCDestination(SemanticInstruction* inst)
+{
+    MapDestinationEffect* mde = new MapDestinationEffect(kCCd, kCCpd, kPCCpd, true);
+    inst->addNewComponent(mde);
+    return mde;
 }
 
 Effect*
@@ -509,10 +511,11 @@ struct BranchFeedbackEffect : public Effect
         DBG_(VVerb, (<< anInstruction << " BranchFeedbackEffect ")); // NOOSHIN
 
         if (anInstruction.branchFeedback()) {
-        //    DBG_(VVerb,
-        //         (<< anInstruction << " Update Branch predictor: " << anInstruction.branchFeedback()->theActualType
-        //          << " " << anInstruction.branchFeedback()->theActualDirection << " to "
-        //          << anInstruction.branchFeedback()->theActualTarget));
+            //    DBG_(VVerb,
+            //         (<< anInstruction << " Update Branch predictor: " <<
+            //         anInstruction.branchFeedback()->theActualType
+            //          << " " << anInstruction.branchFeedback()->theActualDirection << " to "
+            //          << anInstruction.branchFeedback()->theActualTarget));
             anInstruction.core()->branchFeedback(anInstruction.branchFeedback());
         }
         Effect::invoke(anInstruction);
@@ -543,7 +546,8 @@ struct BranchFeedbackWithOperandEffect : public Effect
         feedback->theActualType      = theType;
         feedback->theActualDirection = theDirection;
         VirtualMemoryAddress target(anInstruction.operand<uint64_t>(theOperandCode));
-        //DBG_(Iface, (<< anInstruction << " Update Branch predictor: " << theType << " " << theDirection << " to " << target));
+        // DBG_(Iface, (<< anInstruction << " Update Branch predictor: " << theType << " " << theDirection << " to " <<
+        // target));
         feedback->theActualTarget = target;
         feedback->theBPState      = anInstruction.bpState();
         anInstruction.core()->branchFeedback(feedback);
@@ -914,7 +918,8 @@ struct CheckSysRegAccess : public Effect
     }
 };
 
-Effect* checkSysRegAccess(SemanticInstruction* inst, ePrivRegs aPrivReg, uint8_t is_read)
+Effect*
+checkSysRegAccess(SemanticInstruction* inst, ePrivRegs aPrivReg, uint8_t is_read)
 {
     CheckSysRegAccess* e = new CheckSysRegAccess(aPrivReg, is_read);
     inst->addNewComponent(e);
@@ -923,12 +928,23 @@ Effect* checkSysRegAccess(SemanticInstruction* inst, ePrivRegs aPrivReg, uint8_t
 
 struct CheckSystemAccess : public Effect
 {
-  uint8_t theOp0, theOp1, theOp2, theCRn, theCRm, theRT, theRead;
-  CheckSystemAccess(uint8_t anOp0, uint8_t anOp1, uint8_t anOp2, uint8_t aCRn, uint8_t aCRm,
-                    uint8_t aRT, uint8_t aRead)
-      : theOp0(anOp0), theOp1(anOp1), theOp2(anOp2), theCRn(aCRn), theCRm(aCRm), theRT(aRT),
-        theRead(aRead) {
-  }
+    uint8_t theOp0, theOp1, theOp2, theCRn, theCRm, theRT, theRead;
+    CheckSystemAccess(uint8_t anOp0,
+                      uint8_t anOp1,
+                      uint8_t anOp2,
+                      uint8_t aCRn,
+                      uint8_t aCRm,
+                      uint8_t aRT,
+                      uint8_t aRead)
+      : theOp0(anOp0)
+      , theOp1(anOp1)
+      , theOp2(anOp2)
+      , theCRn(aCRn)
+      , theCRm(aCRm)
+      , theRT(aRT)
+      , theRead(aRead)
+    {
+    }
 
     void invoke(SemanticInstruction& anInstruction)
     {
@@ -1010,86 +1026,108 @@ struct CheckSystemAccess : public Effect
     }
 };
 
-Effect *checkSystemAccess(SemanticInstruction* inst, uint8_t anOp0, uint8_t anOp1, uint8_t anOp2,
-                          uint8_t aCRn, uint8_t aCRm, uint8_t aRT, uint8_t aRead) {
-  CheckSystemAccess *e = new CheckSystemAccess(anOp0, anOp1, anOp2, aCRn, aCRm, aRT, aRead);
-  inst->addNewComponent(e);
-  return e;
+Effect*
+checkSystemAccess(SemanticInstruction* inst,
+                  uint8_t anOp0,
+                  uint8_t anOp1,
+                  uint8_t anOp2,
+                  uint8_t aCRn,
+                  uint8_t aCRm,
+                  uint8_t aRT,
+                  uint8_t aRead)
+{
+    CheckSystemAccess* e = new CheckSystemAccess(anOp0, anOp1, anOp2, aCRn, aCRm, aRT, aRead);
+    inst->addNewComponent(e);
+    return e;
 }
 
-struct CheckDAIFAccess : public Effect {
-  uint8_t theOp1;
-  CheckDAIFAccess(uint8_t anOp1) : theOp1(anOp1) {
-  }
-
-  void invoke(SemanticInstruction &anInstruction) {
-    FLEXUS_PROFILE();
-    if (!anInstruction.isAnnulled()) {
-      if (theOp1 == 0x3 /*011*/ && anInstruction.core()->_PSTATE().EL() == EL0 &&
-          anInstruction.core()->_SCTLR(EL0).UMA() == 0) {
-        anInstruction.setWillRaise(kException_SYSTEMREGISTERTRAP);
-        anInstruction.core()->takeTrap(boost::intrusive_ptr<nuArch::Instruction>(&anInstruction),
-                                       anInstruction.willRaise());
-      }
+struct CheckDAIFAccess : public Effect
+{
+    uint8_t theOp1;
+    CheckDAIFAccess(uint8_t anOp1)
+      : theOp1(anOp1)
+    {
     }
-    Effect::invoke(anInstruction);
-  }
-  void describe(std::ostream &anOstream) const {
-    anOstream << " CheckDAIFAccess";
-    Effect::describe(anOstream);
-  }
+
+    void invoke(SemanticInstruction& anInstruction)
+    {
+        FLEXUS_PROFILE();
+        if (!anInstruction.isAnnulled()) {
+            if (theOp1 == 0x3 /*011*/ && anInstruction.core()->_PSTATE().EL() == EL0 &&
+                anInstruction.core()->_SCTLR(EL0).UMA() == 0) {
+                anInstruction.setWillRaise(kException_SYSTEMREGISTERTRAP);
+                anInstruction.core()->takeTrap(boost::intrusive_ptr<nuArch::Instruction>(&anInstruction),
+                                               anInstruction.willRaise());
+            }
+        }
+        Effect::invoke(anInstruction);
+    }
+    void describe(std::ostream& anOstream) const
+    {
+        anOstream << " CheckDAIFAccess";
+        Effect::describe(anOstream);
+    }
 };
 
-Effect *checkDAIFAccess(SemanticInstruction *inst, uint8_t anOp1) {
-  CheckDAIFAccess *e = new CheckDAIFAccess(anOp1);
-  inst->addNewComponent(e);
-  return e;
+Effect*
+checkDAIFAccess(SemanticInstruction* inst, uint8_t anOp1)
+{
+    CheckDAIFAccess* e = new CheckDAIFAccess(anOp1);
+    inst->addNewComponent(e);
+    return e;
 }
 
-struct ReadPREffect : public Effect {
-  ePrivRegs thePR;
-  std::unique_ptr<SysRegInfo> ri;
+struct ReadPREffect : public Effect
+{
+    ePrivRegs thePR;
+    std::unique_ptr<SysRegInfo> ri;
 
-  ReadPREffect(ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRi) : thePR(aPR), ri(std::move(anRi)) {
-  }
-
-  void invoke(SemanticInstruction &anInstruction) {
-    FLEXUS_PROFILE();
-    if (!anInstruction.isAnnulled()) {
-      // uint64_t pr = anInstruction.core()->readPR(thePR);
-      mapped_reg name = anInstruction.operand<mapped_reg>(kPD);
-      uint64_t prVal = ri->readfn(anInstruction.core());
-      DBG_(Iface, (<< anInstruction << " Read " << ri->name << " value= " << std::hex << prVal
-                   << std::dec));
-
-      anInstruction.setOperand(kResult, prVal);
-
-      anInstruction.core()->writeRegister(name, prVal);
-      anInstruction.core()->bypass(name, prVal);
-    } else {
-      // ReadPR was annulled.  Copy PPD to PD
-      mapped_reg dest = anInstruction.operand<mapped_reg>(kPD);
-      mapped_reg prev = anInstruction.operand<mapped_reg>(kPPD);
-      register_value val = anInstruction.core()->readRegister(prev);
-      anInstruction.core()->writeRegister(dest, val);
-      anInstruction.setOperand(kResult, val);
+    ReadPREffect(ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRi)
+      : thePR(aPR)
+      , ri(std::move(anRi))
+    {
     }
-    Effect::invoke(anInstruction);
-  }
 
-  void describe(std::ostream &anOstream) const {
-    anOstream << " Read PR " << thePR;
-    Effect::describe(anOstream);
-  }
+    void invoke(SemanticInstruction& anInstruction)
+    {
+        FLEXUS_PROFILE();
+        if (!anInstruction.isAnnulled()) {
+            // uint64_t pr = anInstruction.core()->readPR(thePR);
+            mapped_reg name = anInstruction.operand<mapped_reg>(kPD);
+            uint64_t prVal  = ri->readfn(anInstruction.core());
+            DBG_(Iface, (<< anInstruction << " Read " << ri->name << " value= " << std::hex << prVal << std::dec));
+
+            anInstruction.setOperand(kResult, prVal);
+
+            anInstruction.core()->writeRegister(name, prVal);
+            anInstruction.core()->bypass(name, prVal);
+        } else {
+            // ReadPR was annulled.  Copy PPD to PD
+            mapped_reg dest    = anInstruction.operand<mapped_reg>(kPD);
+            mapped_reg prev    = anInstruction.operand<mapped_reg>(kPPD);
+            register_value val = anInstruction.core()->readRegister(prev);
+            anInstruction.core()->writeRegister(dest, val);
+            anInstruction.setOperand(kResult, val);
+        }
+        Effect::invoke(anInstruction);
+    }
+
+    void describe(std::ostream& anOstream) const
+    {
+        anOstream << " Read PR " << thePR;
+        Effect::describe(anOstream);
+    }
 };
 
-Effect *readPR(SemanticInstruction *inst, ePrivRegs aPR, std::unique_ptr<SysRegInfo> ri) {
-  ReadPREffect *e = new ReadPREffect(aPR, std::move(ri));
-  inst->addNewComponent(e);
-  return e;
+Effect*
+readPR(SemanticInstruction* inst, ePrivRegs aPR, std::unique_ptr<SysRegInfo> ri)
+{
+    ReadPREffect* e = new ReadPREffect(aPR, std::move(ri));
+    inst->addNewComponent(e);
+    return e;
 }
 //
-//struct WritePREffect : public Effect {
+// struct WritePREffect : public Effect {
 //  ePrivRegs thePR;
 //  std::unique_ptr<SysRegInfo> ri;
 //  WritePREffect(ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRI) : thePR(aPR), ri(std::move(anRI)) {
@@ -1118,13 +1156,13 @@ Effect *readPR(SemanticInstruction *inst, ePrivRegs aPR, std::unique_ptr<SysRegI
 //  }
 //};
 //
-//Effect *writePR(SemanticInstruction *inst, ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRI) {
+// Effect *writePR(SemanticInstruction *inst, ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRI) {
 //  WritePREffect *e = new WritePREffect(aPR, std::move(anRI));
 //  inst->addNewComponent(e);
 //  return e;
 //}
 //
-//struct WritePSTATE : public Effect {
+// struct WritePSTATE : public Effect {
 //  uint8_t theOp1, theOp2;
 //  WritePSTATE(uint8_t anOp1, uint8_t anOp2) : theOp1(anOp1), theOp2(anOp2) {
 //  }
@@ -1169,13 +1207,13 @@ Effect *readPR(SemanticInstruction *inst, ePrivRegs aPR, std::unique_ptr<SysRegI
 //  }
 //};
 //
-//Effect *writePSTATE(SemanticInstruction *inst, uint8_t anOp1, uint8_t anOp2) {
+// Effect *writePSTATE(SemanticInstruction *inst, uint8_t anOp1, uint8_t anOp2) {
 //  Effect *e = new WritePSTATE(anOp1, anOp2);
 //  inst->addNewComponent(e);
 //  return e;
 //}
 //
-//struct WriteNZCV : public Effect {
+// struct WriteNZCV : public Effect {
 //  WriteNZCV() {
 //  }
 //
@@ -1201,12 +1239,12 @@ Effect *readPR(SemanticInstruction *inst, ePrivRegs aPR, std::unique_ptr<SysRegI
 //  }
 //};
 //
-//Effect *writeNZCV(SemanticInstruction *inst) {
+// Effect *writeNZCV(SemanticInstruction *inst) {
 //  WriteNZCV *e = new WriteNZCV();
 //  inst->addNewComponent(e);
 //  return e;
 //}
-//#endif
+// #endif
 
 struct ClearExclusiveMonitor : public Effect
 {
