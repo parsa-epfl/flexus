@@ -410,7 +410,7 @@ class microArchImpl : public microArch
     {
         for (int32_t i = 0; i < 32; ++i) {
             uint64_t val = theCPU.read_register(Flexus::Qemu::API::GENERAL, (std::size_t)i);
-            theCore->initializeRegister(xReg(i), val);
+            theCore->initializeRegister(theCore->map(xRegArch(i)), val);
         }
     }
     // fills/re-sets floating point registers to the state they are
@@ -419,7 +419,7 @@ class microArchImpl : public microArch
     {
         for (int32_t i = 0; i < 32; ++i) {
             uint64_t val = theCPU.read_register(Flexus::Qemu::API::FLOATING_POINT, (std::size_t)i);
-            theCore->initializeRegister(vReg(i), val);
+            theCore->initializeRegister(theCore->map(vRegArch(i)), val);
         }
     }
 

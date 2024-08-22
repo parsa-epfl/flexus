@@ -718,6 +718,33 @@ struct reg : public reg_
 struct mapped_reg : public reg_
 {};
 
+inline reg
+xRegArch(uint32_t anIndex)
+{
+    reg ret_val;
+    ret_val.theType  = xRegisters;
+    ret_val.theIndex = anIndex;
+    return ret_val;
+}
+
+inline reg
+vRegArch(uint32_t anIndex)
+{
+    reg ret_val;
+    ret_val.theType  = vRegisters;
+    ret_val.theIndex = anIndex;
+    return ret_val;
+}
+
+inline reg
+ccRegArch(uint32_t anIndex)
+{
+    reg ret_val;
+    ret_val.theType  = ccBits;
+    ret_val.theIndex = anIndex;
+    return ret_val;
+}
+
 inline mapped_reg
 xReg(uint32_t anIndex)
 {
