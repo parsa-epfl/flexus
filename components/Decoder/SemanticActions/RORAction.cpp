@@ -92,85 +92,87 @@
  * - Oct'19: initial implementation
  */
 
-#include <iomanip>
-#include <iostream>
-
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/throw_exception.hpp>
 #include <core/boost_extensions/intrusive_ptr.hpp>
+#include <iomanip>
+#include <iostream>
 namespace ll = boost::lambda;
-
-#include <boost/none.hpp>
-
-#include <boost/dynamic_bitset.hpp>
-
-#include <core/debug/debug.hpp>
-#include <core/target.hpp>
-#include <core/types.hpp>
-
-#include <components/uArch/uArchInterfaces.hpp>
 
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
 #include "../SemanticInstruction.hpp"
 #include "PredicatedSemanticAction.hpp"
 #include "RegisterValueExtractor.hpp"
+
+#include <boost/dynamic_bitset.hpp>
+#include <boost/none.hpp>
 #include <components/uArch/systemRegister.hpp>
+#include <components/uArch/uArchInterfaces.hpp>
+#include <core/debug/debug.hpp>
+#include <core/target.hpp>
+#include <core/types.hpp>
 
 #define DBG_DeclareCategories Decoder
-#define DBG_SetDefaultOps AddCat(Decoder)
+#define DBG_SetDefaultOps     AddCat(Decoder)
 #include DBG_Control()
 
 namespace nDecoder {
 using namespace nuArch;
 
-struct RORAction : public PredicatedSemanticAction {
-  eOperandCode theOperandCode1, theOperandCode2;
-  bool the64;
+struct RORAction : public PredicatedSemanticAction
+{
+    eOperandCode theOperandCode1, theOperandCode2;
+    bool the64;
 
-  RORAction(SemanticInstruction *anInstruction, eOperandCode anOpc1, eOperandCode anOpc2,
-            bool is64b)
-      : PredicatedSemanticAction(anInstruction, 2, true), theOperandCode1(anOpc1),
-        theOperandCode2(anOpc2), the64(is64b) {
-    theInstruction->setExecuted(false);
-  }
-
-  void doEvaluate() {
-    if (ready()) {
-      if (theInstruction->hasPredecessorExecuted()) {
-        uint64_t src = boost::get<uint64_t>(theInstruction->operand(theOperandCode1));
-        uint64_t imm = boost::get<uint64_t>(theInstruction->operand(theOperandCode2));
-
-        std::unique_ptr<Operation> op = operation(the64 ? kCONCAT64_ : kCONCAT32_);
-        std::vector<Operand> operands = {src, src};
-        bits res = boost::get<bits>(op->operator()(operands));
-        res >>= imm;
-        theInstruction->setOperand(kResult, (uint64_t)res);
-        satisfyDependants();
-        theInstruction->setExecuted(true);
-      } else {
-        DBG_(VVerb, (<< *this << " waiting for predecessor "));
-        reschedule();
-      }
+    RORAction(SemanticInstruction* anInstruction, eOperandCode anOpc1, eOperandCode anOpc2, bool is64b)
+      : PredicatedSemanticAction(anInstruction, 2, true)
+      , theOperandCode1(anOpc1)
+      , theOperandCode2(anOpc2)
+      , the64(is64b)
+    {
+        theInstruction->setExecuted(false);
     }
-  }
 
-  void describe(std::ostream &anOstream) const {
-    anOstream << theInstruction->identify() << " RORAction ";
-  }
+    void doEvaluate()
+    {
+        if (ready()) {
+            if (theInstruction->hasPredecessorExecuted()) {
+                uint64_t src = boost::get<uint64_t>(theInstruction->operand(theOperandCode1));
+                uint64_t imm = boost::get<uint64_t>(theInstruction->operand(theOperandCode2));
+
+                std::unique_ptr<Operation> op = operation(the64 ? kCONCAT64_ : kCONCAT32_);
+                std::vector<Operand> operands = { src, src };
+                bits res                      = boost::get<bits>(op->operator()(operands));
+                res >>= imm;
+                theInstruction->setOperand(kResult, (uint64_t)res);
+                satisfyDependants();
+                theInstruction->setExecuted(true);
+            } else {
+                DBG_(VVerb, (<< *this << " waiting for predecessor "));
+                reschedule();
+            }
+        }
+    }
+
+    void describe(std::ostream& anOstream) const { anOstream << theInstruction->identify() << " RORAction "; }
 
 }; /* End struct RORAction */
 
-predicated_action rorAction(SemanticInstruction *anInstruction,
-                            std::vector<std::list<InternalDependance>> &opDeps,
-                            eOperandCode anOperandCode1, eOperandCode anOperandCode2, bool is64) {
-  RORAction *act = new RORAction(anInstruction, anOperandCode1, anOperandCode2, is64);
-  anInstruction->addNewComponent(act);
-  for (uint32_t i = 0; i < opDeps.size(); ++i) {
-    opDeps[i].push_back(act->dependance(i));
-  }
-  return predicated_action(act, act->predicate());
+predicated_action
+rorAction(SemanticInstruction* anInstruction,
+          std::vector<std::list<InternalDependance>>& opDeps,
+          eOperandCode anOperandCode1,
+          eOperandCode anOperandCode2,
+          bool is64)
+{
+    RORAction* act = new RORAction(anInstruction, anOperandCode1, anOperandCode2, is64);
+    anInstruction->addNewComponent(act);
+    for (uint32_t i = 0; i < opDeps.size(); ++i) {
+        opDeps[i].push_back(act->dependance(i));
+    }
+    return predicated_action(act, act->predicate());
 }
 
 } /* End namespace nDecoder */

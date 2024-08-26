@@ -55,33 +55,28 @@ namespace nDecoder {
  * | 1 1 0 1 0 1 1 |  opc  |  op2  |  op3  |  Rn  |  op4  |
  * +---------------+-------+-------+-------+------+-------+
  */
-archinst disas_uncond_b_reg(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  DECODER_TRACE;
-
-  uint32_t opc = extract32(aFetchedOpcode.theOpcode, 21, 4);
-  uint32_t op2 = extract32(aFetchedOpcode.theOpcode, 16, 5);
-  uint32_t op3 = extract32(aFetchedOpcode.theOpcode, 10, 6);
-  uint32_t op4 = extract32(aFetchedOpcode.theOpcode, 0, 5);
-
-  if (op4 != 0x0 || op3 != 0x0 || op2 != 0x1f) {
-    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-  }
-
-  switch (opc) {
-  case 0: /* BR */
-  case 1: /* BLR */
-  case 2: /* RET */
+archinst
+disas_uncond_b_reg(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
     DECODER_TRACE;
-    return BLR(aFetchedOpcode, aCPU, aSequenceNo);
-  case 4: /* ERET */
-    return ERET(aFetchedOpcode, aCPU, aSequenceNo);
 
-  case 5: /* DRPS */
-    return DPRS(aFetchedOpcode, aCPU, aSequenceNo);
+    uint32_t opc = extract32(aFetchedOpcode.theOpcode, 21, 4);
+    uint32_t op2 = extract32(aFetchedOpcode.theOpcode, 16, 5);
+    uint32_t op3 = extract32(aFetchedOpcode.theOpcode, 10, 6);
+    uint32_t op4 = extract32(aFetchedOpcode.theOpcode, 0, 5);
 
-  default:
-    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-  }
+    if (op4 != 0x0 || op3 != 0x0 || op2 != 0x1f) { return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo); }
+
+    switch (opc) {
+        case 0: /* BR */
+        case 1: /* BLR */
+        case 2: /* RET */ DECODER_TRACE; return BLR(aFetchedOpcode, aCPU, aSequenceNo);
+        case 4: /* ERET */ return ERET(aFetchedOpcode, aCPU, aSequenceNo);
+
+        case 5: /* DRPS */ return DPRS(aFetchedOpcode, aCPU, aSequenceNo);
+
+        default: return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
 }
 
 /* Exception generation
@@ -91,32 +86,26 @@ archinst disas_uncond_b_reg(archcode const &aFetchedOpcode, uint32_t aCPU, int64
  * | 1 1 0 1 0 1 0 0 | opc |          imm16         | op2 | LL |
  * +-----------------------+------------------------+----------+
  */
-archinst disas_exc(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  DECODER_TRACE;
+archinst
+disas_exc(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
+    DECODER_TRACE;
 
-  uint32_t ll = extract32(aFetchedOpcode.theOpcode, 0, 2);
-  uint32_t opc = extract32(aFetchedOpcode.theOpcode, 21, 3) << 2;
+    uint32_t ll  = extract32(aFetchedOpcode.theOpcode, 0, 2);
+    uint32_t opc = extract32(aFetchedOpcode.theOpcode, 21, 3) << 2;
 
-  uint32_t res = opc | ll;
+    uint32_t res = opc | ll;
 
-  switch (res) {
-  case 0x1:
-    return SVC(aFetchedOpcode, aCPU, aSequenceNo);
-  case 0x2:
-    return HVC(aFetchedOpcode, aCPU, aSequenceNo);
-  case 0x3:
-    return SMC(aFetchedOpcode, aCPU, aSequenceNo);
-  case 0x4:
-    return BRK(aFetchedOpcode, aCPU, aSequenceNo);
-  case 0x5:
-    return HLT(aFetchedOpcode, aCPU, aSequenceNo);
-  case 0x15:
-  case 0x16:
-    return DCPS(aFetchedOpcode, aCPU, aSequenceNo);
-  default:
-    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-    break;
-  }
+    switch (res) {
+        case 0x1: return SVC(aFetchedOpcode, aCPU, aSequenceNo);
+        case 0x2: return HVC(aFetchedOpcode, aCPU, aSequenceNo);
+        case 0x3: return SMC(aFetchedOpcode, aCPU, aSequenceNo);
+        case 0x4: return BRK(aFetchedOpcode, aCPU, aSequenceNo);
+        case 0x5: return HLT(aFetchedOpcode, aCPU, aSequenceNo);
+        case 0x15:
+        case 0x16: return DCPS(aFetchedOpcode, aCPU, aSequenceNo);
+        default: return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo); break;
+    }
 }
 
 /* System
@@ -125,41 +114,36 @@ archinst disas_exc(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSeque
  * | 1 1 0 1 0 1 0 1 0 0 | L | op0 | op1 |  CRn  |  CRm  | op2 |  Rt  |
  * +---------------------+---+-----+-----+-------+-------+-----+------+
  */
-archinst disas_system(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  DECODER_TRACE;
+archinst
+disas_system(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
+    DECODER_TRACE;
 
-  bool l = extract32(aFetchedOpcode.theOpcode, 21, 1);
-  uint32_t op0 = extract32(aFetchedOpcode.theOpcode, 19, 2);
-  uint32_t crn = extract32(aFetchedOpcode.theOpcode, 12, 4);
-  uint32_t rt = extract32(aFetchedOpcode.theOpcode, 0, 5);
+    bool l       = extract32(aFetchedOpcode.theOpcode, 21, 1);
+    uint32_t op0 = extract32(aFetchedOpcode.theOpcode, 19, 2);
+    uint32_t crn = extract32(aFetchedOpcode.theOpcode, 12, 4);
+    uint32_t rt  = extract32(aFetchedOpcode.theOpcode, 0, 5);
 
-  if (op0 == 0) {
-    if (l || rt != 31) {
-      return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    if (op0 == 0) {
+        if (l || rt != 31) { return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo); }
+        switch (crn) {
+            case 2: /* HINT (including allocated hints like NOP, YIELD, etc) */
+                return HINT(aFetchedOpcode, aCPU, aSequenceNo);
+                break;
+            case 3: /* CLREX, DSB, DMB, ISB */ return SYNC(aFetchedOpcode, aCPU, aSequenceNo); break;
+            case 4: /* MSR (immediate) */ return MSR(aFetchedOpcode, aCPU, aSequenceNo); break;
+            default: return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+        }
     }
-    switch (crn) {
-    case 2: /* HINT (including allocated hints like NOP, YIELD, etc) */
-      return HINT(aFetchedOpcode, aCPU, aSequenceNo);
-      break;
-    case 3: /* CLREX, DSB, DMB, ISB */
-      return SYNC(aFetchedOpcode, aCPU, aSequenceNo);
-      break;
-    case 4: /* MSR (immediate) */
-      return MSR(aFetchedOpcode, aCPU, aSequenceNo);
-      break;
-    default:
-      return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-    }
-  }
 
-  /* MRS - move from system register
-   * MSR (register) - move to system register
-   * SYS
-   * SYSL
-   * These are all essentially the same insn in 'read' and 'write'
-   * versions, with varying op0 fields.
-   */
-  return SYS(aFetchedOpcode, aCPU, aSequenceNo);
+    /* MRS - move from system register
+     * MSR (register) - move to system register
+     * SYS
+     * SYSL
+     * These are all essentially the same insn in 'read' and 'write'
+     * versions, with varying op0 fields.
+     */
+    return SYS(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Conditional branch (immediate)
@@ -168,14 +152,16 @@ archinst disas_system(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSe
  * | 0 1 0 1 0 1 0 | o1 |         imm19       | o0 | cond |
  * +---------------+----+---------------------+----+------+
  */
-archinst disas_cond_b_imm(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  DECODER_TRACE;
+archinst
+disas_cond_b_imm(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
+    DECODER_TRACE;
 
-  if ((aFetchedOpcode.theOpcode & (1 << 4)) || (aFetchedOpcode.theOpcode & (1 << 24))) {
-    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-  }
+    if ((aFetchedOpcode.theOpcode & (1 << 4)) || (aFetchedOpcode.theOpcode & (1 << 24))) {
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
 
-  return CONDBR(aFetchedOpcode, aCPU, aSequenceNo);
+    return CONDBR(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Test and branch (immediate)
@@ -184,9 +170,11 @@ archinst disas_cond_b_imm(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t
  * | b5 | 0 1 1 0 1 1 | op |  b40  |    imm14    |  Rt  |
  * +----+-------------+----+-------+-------------+------+
  */
-archinst disas_test_b_imm(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  DECODER_TRACE;
-  return TSTBR(aFetchedOpcode, aCPU, aSequenceNo);
+archinst
+disas_test_b_imm(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
+    DECODER_TRACE;
+    return TSTBR(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Compare and branch (immediate)
@@ -195,9 +183,11 @@ archinst disas_test_b_imm(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t
  * | sf | 0 1 1 0 1 0 | op |         imm19       |   Rt   |
  * +----+-------------+----+---------------------+--------+
  */
-archinst disas_comp_b_imm(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  DECODER_TRACE;
-  return CMPBR(aFetchedOpcode, aCPU, aSequenceNo);
+archinst
+disas_comp_b_imm(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
+    DECODER_TRACE;
+    return CMPBR(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Unconditional branch (immediate)
@@ -206,9 +196,11 @@ archinst disas_comp_b_imm(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t
  * | op | 0 0 1 0 1 |                 imm26               |
  * +----+-----------+-------------------------------------+
  */
-archinst disas_uncond_b_imm(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  DECODER_TRACE;
-  return UNCONDBR(aFetchedOpcode, aCPU, aSequenceNo);
+archinst
+disas_uncond_b_imm(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
+    DECODER_TRACE;
+    return UNCONDBR(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* Branches, exception generating and system instructions
@@ -237,34 +229,30 @@ archinst disas_uncond_b_imm(archcode const &aFetchedOpcode, uint32_t aCPU, int64
 
 */
 
-archinst disas_b_exc_sys(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  DECODER_TRACE;
-  switch (extract32(aFetchedOpcode.theOpcode, 25, 7)) {
-  case 0x0a:
-  case 0x0b:
-  case 0x4a:
-  case 0x4b: /* Unconditional branch (immediate) */
-    return disas_uncond_b_imm(aFetchedOpcode, aCPU, aSequenceNo);
-  case 0x1a:
-  case 0x5a: /* Compare & branch (immediate) */
-    return disas_comp_b_imm(aFetchedOpcode, aCPU, aSequenceNo);
-  case 0x1b:
-  case 0x5b: /* Test & branch (immediate) */
-    return disas_test_b_imm(aFetchedOpcode, aCPU, aSequenceNo);
-  case 0x2a: /* Conditional branch (immediate) */
-    return disas_cond_b_imm(aFetchedOpcode, aCPU, aSequenceNo);
-  case 0x6a: /* Exception generation / System */
-    if (aFetchedOpcode.theOpcode & (1 << 24)) {
-      return disas_system(aFetchedOpcode, aCPU, aSequenceNo);
-    } else {
-      return disas_exc(aFetchedOpcode, aCPU, aSequenceNo);
+archinst
+disas_b_exc_sys(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
+    DECODER_TRACE;
+    switch (extract32(aFetchedOpcode.theOpcode, 25, 7)) {
+        case 0x0a:
+        case 0x0b:
+        case 0x4a:
+        case 0x4b: /* Unconditional branch (immediate) */ return disas_uncond_b_imm(aFetchedOpcode, aCPU, aSequenceNo);
+        case 0x1a:
+        case 0x5a: /* Compare & branch (immediate) */ return disas_comp_b_imm(aFetchedOpcode, aCPU, aSequenceNo);
+        case 0x1b:
+        case 0x5b: /* Test & branch (immediate) */ return disas_test_b_imm(aFetchedOpcode, aCPU, aSequenceNo);
+        case 0x2a: /* Conditional branch (immediate) */ return disas_cond_b_imm(aFetchedOpcode, aCPU, aSequenceNo);
+        case 0x6a: /* Exception generation / System */
+            if (aFetchedOpcode.theOpcode & (1 << 24)) {
+                return disas_system(aFetchedOpcode, aCPU, aSequenceNo);
+            } else {
+                return disas_exc(aFetchedOpcode, aCPU, aSequenceNo);
+            }
+            break;
+        case 0x6b: /* Unconditional branch (register) */ return disas_uncond_b_reg(aFetchedOpcode, aCPU, aSequenceNo);
+        default: return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
-    break;
-  case 0x6b: /* Unconditional branch (register) */
-    return disas_uncond_b_reg(aFetchedOpcode, aCPU, aSequenceNo);
-  default:
-    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-  }
 }
 
 } // namespace nDecoder

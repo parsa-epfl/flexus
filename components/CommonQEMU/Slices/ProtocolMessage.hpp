@@ -145,9 +145,9 @@ enum ProtocolMessageType
     LocalEvict,         // VC 0. Contains data. Evicting a dirty line. Causes a Writeback
                         // to HE.
     LocalPrefetchRead,  // VC 0. Prefetch read request.
-                       // LocalReadEx,         // - Not used
-                       // LocalWriteAll,       // - Not used
-                       // LocalReadAndForget   // - Not used
+                        // LocalReadEx,         // - Not used
+                        // LocalWriteAll,       // - Not used
+                        // LocalReadAndForget   // - Not used
 
     // Replies from local Caches to PE
     InvAck,             // VC 1.  The cache acknowledges an Invalidate CPU_OP. Delivered to HE

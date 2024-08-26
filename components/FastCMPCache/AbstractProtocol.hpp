@@ -129,7 +129,7 @@ struct PrimaryAction
     };
 
     PrimaryAction()
-      : poison(true){};
+      : poison(true) {};
 };
 
 class AbstractProtocol

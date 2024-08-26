@@ -48,6 +48,7 @@
 
 #include "SharedFunctions.hpp"
 
-namespace nDecoder {}
+namespace nDecoder {
+}
 
 #endif // FLEXUS_armDECODER_armDATAPROCFP_HPP_INCLUDED

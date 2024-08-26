@@ -43,7 +43,6 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
 
-#include <boost/none.hpp>
 #include "components/CommonQEMU/Slices/ExecuteState.hpp"
 #include "components/CommonQEMU/Slices/MemoryMessage.hpp"
 #include "components/CommonQEMU/Slices/TransactionTracker.hpp"
@@ -52,10 +51,12 @@
 #include "components/uFetch/uFetch.hpp"
 #include "components/uFetch/uFetchTypes.hpp"
 #include "core/boost_extensions/padded_string_cast.hpp"
+#include "core/checkpoint/json.hpp"
 #include "core/stats.hpp"
+
+#include <boost/none.hpp>
 #include <fstream>
 #include <unordered_set>
-#include "core/checkpoint/json.hpp"
 using json = nlohmann::json;
 
 #define FLEXUS_BEGIN_COMPONENT uFetch
@@ -68,11 +69,11 @@ using json = nlohmann::json;
 #include "components/CommonQEMU/seq_map.hpp"
 #include "core/qemu/mai_api.hpp"
 
-#define LOG2(x)                         \
-  ({                                    \
-    uint64_t _x = (x);                  \
-    _x ? (63 - __builtin_clzl(_x)) : 0; \
-  })
+#define LOG2(x)                                                                                                        \
+    ({                                                                                                                 \
+        uint64_t _x = (x);                                                                                             \
+        _x ? (63 - __builtin_clzl(_x)) : 0;                                                                            \
+    })
 
 #define TR_BIJ_DBG VVerb
 
@@ -119,16 +120,16 @@ struct SimCache
         json checkpoint;
 
         ifs >> checkpoint;
-        uint32_t tag_shift                    = LOG2(theCache.sets());
+        uint32_t tag_shift = LOG2(theCache.sets());
 
         DBG_Assert((uint64_t)theCacheAssoc == checkpoint["associativity"]);
         DBG_Assert((uint64_t)theCache.sets() == checkpoint["tags"].size());
 
-        for (std::size_t i{0}; i < theCache.sets(); i++) {
+        for (std::size_t i{ 0 }; i < theCache.sets(); i++) {
             for (uint32_t j = 0; j < checkpoint["tags"].at(i).size(); j++) {
-                bool dirty = checkpoint["tags"].at(i).at(j)["dirty"];
+                bool dirty    = checkpoint["tags"].at(i).at(j)["dirty"];
                 bool writable = checkpoint["tags"].at(i).at(j)["writable"];
-                uint64_t tag = checkpoint["tags"].at(i).at(j)["tag"];
+                uint64_t tag  = checkpoint["tags"].at(i).at(j)["tag"];
 
                 theCache.insert(std::make_pair((tag << tag_shift) | i, 0));
             }
@@ -347,10 +348,7 @@ class FLEXUS_COMPONENT(uFetch)
         return true;
     }
 
-    void saveState(std::string const& aDirName)
-    {
-        DBG_Assert(false, (<< "NOT SUPPORTED"));
-    }
+    void saveState(std::string const& aDirName) { DBG_Assert(false, (<< "NOT SUPPORTED")); }
 
     void loadState(std::string const& dirname)
     {
@@ -985,7 +983,6 @@ class FLEXUS_COMPONENT(uFetch)
                       bijection_iter != tr_op_bijection.end(),
                       Comp(*this)(<< "ERROR: Opcode index was NOT found for translationPtr with ID" << tr->theID
                                   << " and address" << tr->theVaddr));
-
 
         uint64_t opcode = 0;
         if (!tr->isPagefault()) {

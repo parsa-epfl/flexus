@@ -247,13 +247,9 @@ class FLEXUS_COMPONENT(MemoryMap), public MemoryMapFactory
         return true; // MemoryMap is always quiesced
     }
 
-    void saveState(std::string const& aDirName)
-    {
-    }
+    void saveState(std::string const& aDirName) {}
 
-    void loadState(std::string const& aDirName)
-    {
-    }
+    void loadState(std::string const& aDirName) {}
 
     // Initialization
     void initialize()
@@ -283,7 +279,6 @@ class FLEXUS_COMPONENT(MemoryMap), public MemoryMapFactory
             thePageCounts.push_back(
               new Flexus::Stat::StatCounter(std::string(boost::padded_string_cast<3, '0'>(i) + "-memory-Pages")));
         }
-
     }
 
     void finalize() {}
@@ -305,13 +300,19 @@ class FLEXUS_COMPONENT(MemoryMap), public MemoryMapFactory
     }
 
     bool isCacheable(PhysicalMemoryAddress const& anAddress)
-    { return true; }
+    {
+        return true;
+    }
 
     bool isMemory(PhysicalMemoryAddress const& anAddress)
-    { return true; }
+    {
+        return true;
+    }
 
     bool isIO(PhysicalMemoryAddress const& anAddress)
-    { return true; }
+    {
+        return true;
+    }
 
     node_id_t newPage(PhysicalMemoryAddress const& aPageAddr, const node_id_t aRequestingNode)
     {

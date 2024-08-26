@@ -3,9 +3,10 @@
 
 #include "BTB.hpp"
 #include "TAGEImpl.hpp"
-#include <components/uFetch/uFetchTypes.hpp>
 #include "core/stats.hpp"
 #include "core/types.hpp"
+
+#include <components/uFetch/uFetchTypes.hpp>
 
 namespace Stat = Flexus::Stat;
 
@@ -29,8 +30,7 @@ class BranchPredictor
      * If the prediction is NotTaken, there is no need to read the BTB as we will anyway jump to the next instruction
      * If the prediction is taken, we jump to the target address (if present) as given by the BTB
      */
-    VirtualMemoryAddress predictConditional(VirtualMemoryAddress anAddress,
-                                                                     BPredState& aBPState);
+    VirtualMemoryAddress predictConditional(VirtualMemoryAddress anAddress, BPredState& aBPState);
 
     void reconstructHistory(BPredState aBPState);
 

@@ -84,7 +84,6 @@ class CMPCacheController : public AbstractCacheController
 
     virtual bool isQuiesced() const;
 
-
     virtual void loadState(std::string const& aDirName);
 
     virtual void processMessages();

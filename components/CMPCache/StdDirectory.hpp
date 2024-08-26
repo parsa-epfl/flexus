@@ -200,7 +200,7 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
         virtual void load_dir_from_ckpt(std::string const& filename)
         {
             // Not implemented
-            DBG_Assert(false, ( << "Not IMPLEMENTED"));
+            DBG_Assert(false, (<< "Not IMPLEMENTED"));
         }
     };
 
@@ -417,7 +417,7 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
     virtual void load_dir_from_ckpt(std::string const& filename)
     {
         // Not implemented
-        DBG_Assert(false, ( << "Not IMPLEMENTED"));
+        DBG_Assert(false, (<< "Not IMPLEMENTED"));
     }
 };
 

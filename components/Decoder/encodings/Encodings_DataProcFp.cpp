@@ -55,11 +55,13 @@ namespace nDecoder {
  * | sf | 0 | S | 1 1 1 1 0 | type | 1 | rmode | opc | 0 0 0 0 0 0 | Rn | Rd |
  * +----+---+---+-----------+------+---+-------+-----+-------------+----+----+
  */
-archinst disas_fp_int_conv(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  DECODER_TRACE;
-  archinst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
-  inst->usesFpCvt();
-  return inst;
+archinst
+disas_fp_int_conv(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
+    DECODER_TRACE;
+    archinst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
+    inst->usesFpCvt();
+    return inst;
 }
 
 /* Floating point conditional compare
@@ -68,11 +70,13 @@ archinst disas_fp_int_conv(archcode const &aFetchedOpcode, uint32_t aCPU, int64_
  * | M | 0 | S | 1 1 1 1 0 | type | 1 |  Rm  | cond | 0 1 |  Rn  | op | nzcv |
  * +---+---+---+-----------+------+---+------+------+-----+------+----+------+
  */
-archinst disas_fp_ccomp(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  DECODER_TRACE;
-  archinst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
-  inst->setUsesFpCmp();
-  return inst;
+archinst
+disas_fp_ccomp(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
+    DECODER_TRACE;
+    archinst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
+    inst->setUsesFpCmp();
+    return inst;
 }
 
 /* Floating point conditional select
@@ -81,11 +85,13 @@ archinst disas_fp_ccomp(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t a
  * | M | 0 | S | 1 1 1 1 0 | type | 1 |  Rm  | cond | 1 1 |  Rn  |  Rd  |
  * +---+---+---+-----------+------+---+------+------+-----+------+------+
  */
-archinst disas_fp_csel(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  DECODER_TRACE;
-  archinst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
-  inst->setUsesFpCmp();
-  return inst;
+archinst
+disas_fp_csel(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
+    DECODER_TRACE;
+    archinst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
+    inst->setUsesFpCmp();
+    return inst;
 }
 
 /* Floating point <-> fixed point conversions
@@ -94,11 +100,13 @@ archinst disas_fp_csel(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aS
  * | sf | 0 | S | 1 1 1 1 0 | type | 0 | rmode | opcode | scale |  Rn  |  Rd  |
  * +----+---+---+-----------+------+---+-------+--------+-------+------+------+
  */
-archinst disas_fp_fixed_conv(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  DECODER_TRACE;
-  archinst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
-  inst->setUsesFpCvt();
-  return inst;
+archinst
+disas_fp_fixed_conv(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
+    DECODER_TRACE;
+    archinst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
+    inst->setUsesFpCvt();
+    return inst;
 }
 
 /* Floating point data-processing (1 source)
@@ -107,39 +115,32 @@ archinst disas_fp_fixed_conv(archcode const &aFetchedOpcode, uint32_t aCPU, int6
  * | M | 0 | S | 1 1 1 1 0 | type | 1 | opcode | 1 0 0 0 0 |  Rn  |  Rd  |
  * +---+---+---+-----------+------+---+--------+-----------+------+------+
  */
-archinst disas_fp_1src(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  DECODER_TRACE;
-  archinst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
-  // uint32_t type = extract32(aFetchedOpcode.theOpcode, 22, 2);
-  uint32_t opcode = extract32(aFetchedOpcode.theOpcode, 15, 6);
-  switch (opcode) {
-  /* FCVT between half, single and double precision */
-  case 0x4:
-  case 0x5:
-  case 0x7:
-    inst->setUsesFpCvt();
-    break;
-  case 0x0: /* FMOV */
-  case 0x1: /* FABS */
-  case 0x2: /* FNEG */
-    inst->setUsesFpAdd();
-    break;
-  case 0x3:
-    inst->setUsesFpSqrt();
-    break;
-  case 0x8: /* FRINTN */
-  case 0x9: /* FRINTP */
-  case 0xa: /* FRINTM */
-  case 0xb: /* FRINTZ */
-  case 0xc: /* FRINTA */
-  case 0xe: /* FRINTX */
-  case 0xf: /* FRINTI */
-    inst->setUsesFpCvt();
-    break;
-  default:
-    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-  }
-  return inst;
+archinst
+disas_fp_1src(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
+    DECODER_TRACE;
+    archinst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
+    // uint32_t type = extract32(aFetchedOpcode.theOpcode, 22, 2);
+    uint32_t opcode = extract32(aFetchedOpcode.theOpcode, 15, 6);
+    switch (opcode) {
+        /* FCVT between half, single and double precision */
+        case 0x4:
+        case 0x5:
+        case 0x7: inst->setUsesFpCvt(); break;
+        case 0x0: /* FMOV */
+        case 0x1: /* FABS */
+        case 0x2: /* FNEG */ inst->setUsesFpAdd(); break;
+        case 0x3: inst->setUsesFpSqrt(); break;
+        case 0x8: /* FRINTN */
+        case 0x9: /* FRINTP */
+        case 0xa: /* FRINTM */
+        case 0xb: /* FRINTZ */
+        case 0xc: /* FRINTA */
+        case 0xe: /* FRINTX */
+        case 0xf: /* FRINTI */ inst->setUsesFpCvt(); break;
+        default: return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
+    return inst;
 }
 
 /* Floating point compare
@@ -148,11 +149,13 @@ archinst disas_fp_1src(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aS
  * | M | 0 | S | 1 1 1 1 0 | type | 1 |  Rm  | op  | 1 0 0 0 |  Rn  |  op2  |
  * +---+---+---+-----------+------+---+------+-----+---------+------+-------+
  */
-archinst disas_fp_compare(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  DECODER_TRACE;
-  archinst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
-  inst->setUsesFpCmp();
-  return inst;
+archinst
+disas_fp_compare(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
+    DECODER_TRACE;
+    archinst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
+    inst->setUsesFpCmp();
+    return inst;
 }
 
 /* Floating point data-processing (2 source)
@@ -161,35 +164,26 @@ archinst disas_fp_compare(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t
  * | M | 0 | S | 1 1 1 1 0 | type | 1 |  Rm  | opcode | 1 0 |  Rn  |  Rd  |
  * +---+---+---+-----------+------+---+------+--------+-----+------+------+
  */
-archinst disas_fp_2src(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  DECODER_TRACE;
-  archinst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
-  uint32_t opcode = extract32(aFetchedOpcode.theOpcode, 12, 4);
+archinst
+disas_fp_2src(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
+    DECODER_TRACE;
+    archinst inst   = nop(aFetchedOpcode, aCPU, aSequenceNo);
+    uint32_t opcode = extract32(aFetchedOpcode.theOpcode, 12, 4);
 
-  switch (opcode) {
-  case 0x0: /* FMUL */
-    inst->setUsesFpMult();
-    break;
-  case 0x1: /* FDIV */
-    inst->setUsesFpDiv();
-    break;
-  case 0x2: /* FADD */
-  case 0x3: /* FSUB */
-    inst->setUsesFpAdd();
-    break;
-  case 0x4: /* FMAX */
-  case 0x5: /* FMIN */
-  case 0x6: /* FMAXNM */
-  case 0x7: /* FMINNM */
-    inst->setUsesFpCmp();
-    break;
-  case 0x8: /* FNMUL */
-    inst->setUsesFpMult();
-    break;
-  default:
-    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-  }
-  return inst;
+    switch (opcode) {
+        case 0x0: /* FMUL */ inst->setUsesFpMult(); break;
+        case 0x1: /* FDIV */ inst->setUsesFpDiv(); break;
+        case 0x2: /* FADD */
+        case 0x3: /* FSUB */ inst->setUsesFpAdd(); break;
+        case 0x4: /* FMAX */
+        case 0x5: /* FMIN */
+        case 0x6: /* FMAXNM */
+        case 0x7: /* FMINNM */ inst->setUsesFpCmp(); break;
+        case 0x8: /* FNMUL */ inst->setUsesFpMult(); break;
+        default: return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
+    return inst;
 }
 
 /* Floating point data-processing (3 source)
@@ -198,19 +192,18 @@ archinst disas_fp_2src(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aS
  * | M | 0 | S | 1 1 1 1 1 | type | o1 |  Rm  | o0 |  Ra  |  Rn  |  Rd  |
  * +---+---+---+-----------+------+----+------+----+------+------+------+
  */
-archinst disas_fp_3src(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  DECODER_TRACE;
-  /* fused multiply and add */
-  uint32_t type = extract32(aFetchedOpcode.theOpcode, 22, 2);
-  archinst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
-  switch (type) {
-  case 0:
-  case 1:
-    inst->setUsesFpMult();
-    return inst;
-  default:
-    return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-  }
+archinst
+disas_fp_3src(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
+    DECODER_TRACE;
+    /* fused multiply and add */
+    uint32_t type = extract32(aFetchedOpcode.theOpcode, 22, 2);
+    archinst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
+    switch (type) {
+        case 0:
+        case 1: inst->setUsesFpMult(); return inst;
+        default: return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
 }
 
 /* Floating point immediate
@@ -219,11 +212,13 @@ archinst disas_fp_3src(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aS
  * | M | 0 | S | 1 1 1 1 0 | type | 1 |    imm8    | 1 0 0 | imm5 |  Rd  |
  * +---+---+---+-----------+------+---+------------+-------+------+------+
  */
-archinst disas_fp_imm(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  DECODER_TRACE;
-  archinst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
-  inst->setUsesFpAdd();
-  return inst;
+archinst
+disas_fp_imm(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
+    DECODER_TRACE;
+    archinst inst = nop(aFetchedOpcode, aCPU, aSequenceNo);
+    inst->setUsesFpAdd();
+    return inst;
 }
 
 /* FP-specific subcases of table C3-6 (SIMD and FP data processing)
@@ -232,61 +227,64 @@ archinst disas_fp_imm(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSe
  * |   | 0 |   | 1 1 1 1 |                             |
  * +---+---+---+---------+-----------------------------+
  */
-archinst disas_data_proc_fp(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  if (extract32(aFetchedOpcode.theOpcode, 24, 1)) {
-    /* Floating point data-processing (3 source) */
-    return disas_fp_3src(aFetchedOpcode, aCPU, aSequenceNo);
-  } else if (!extract32(aFetchedOpcode.theOpcode, 21, 1)) {
-    /* Floating point to fixed point conversions */
-    return disas_fp_fixed_conv(aFetchedOpcode, aCPU, aSequenceNo);
-  } else {
-    switch (extract32(aFetchedOpcode.theOpcode, 10, 2)) {
-    case 1:
-      /* Floating point conditional compare */
-      return disas_fp_ccomp(aFetchedOpcode, aCPU, aSequenceNo);
-    case 2:
-      /* Floating point data-processing (2 source) */
-      return disas_fp_2src(aFetchedOpcode, aCPU, aSequenceNo);
-    case 3:
-      /* Floating point conditional select */
-      return disas_fp_csel(aFetchedOpcode, aCPU, aSequenceNo);
-    case 0:
-      switch (ctz32(extract32(aFetchedOpcode.theOpcode, 12, 4))) {
-      case 0: /* [15:12] == xxx1 */
-        /* Floating point immediate */
-        return disas_fp_imm(aFetchedOpcode, aCPU, aSequenceNo);
-      case 1: /* [15:12] == xx10 */
-        /* Floating point compare */
-        return disas_fp_compare(aFetchedOpcode, aCPU, aSequenceNo);
-      case 2: /* [15:12] == x100 */
-        /* Floating point data-processing (1 source) */
-        return disas_fp_1src(aFetchedOpcode, aCPU, aSequenceNo);
-      case 3: /* [15:12] == 1000 */
-        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
-      default: /* [15:12] == 0000 */
-        /* Floating point <-> integer conversions */
-        return disas_fp_int_conv(aFetchedOpcode, aCPU, aSequenceNo);
-      }
-    default:
-      return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+archinst
+disas_data_proc_fp(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
+    if (extract32(aFetchedOpcode.theOpcode, 24, 1)) {
+        /* Floating point data-processing (3 source) */
+        return disas_fp_3src(aFetchedOpcode, aCPU, aSequenceNo);
+    } else if (!extract32(aFetchedOpcode.theOpcode, 21, 1)) {
+        /* Floating point to fixed point conversions */
+        return disas_fp_fixed_conv(aFetchedOpcode, aCPU, aSequenceNo);
+    } else {
+        switch (extract32(aFetchedOpcode.theOpcode, 10, 2)) {
+            case 1:
+                /* Floating point conditional compare */
+                return disas_fp_ccomp(aFetchedOpcode, aCPU, aSequenceNo);
+            case 2:
+                /* Floating point data-processing (2 source) */
+                return disas_fp_2src(aFetchedOpcode, aCPU, aSequenceNo);
+            case 3:
+                /* Floating point conditional select */
+                return disas_fp_csel(aFetchedOpcode, aCPU, aSequenceNo);
+            case 0:
+                switch (ctz32(extract32(aFetchedOpcode.theOpcode, 12, 4))) {
+                    case 0: /* [15:12] == xxx1 */
+                        /* Floating point immediate */
+                        return disas_fp_imm(aFetchedOpcode, aCPU, aSequenceNo);
+                    case 1: /* [15:12] == xx10 */
+                        /* Floating point compare */
+                        return disas_fp_compare(aFetchedOpcode, aCPU, aSequenceNo);
+                    case 2: /* [15:12] == x100 */
+                        /* Floating point data-processing (1 source) */
+                        return disas_fp_1src(aFetchedOpcode, aCPU, aSequenceNo);
+                    case 3: /* [15:12] == 1000 */ return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+                    default: /* [15:12] == 0000 */
+                        /* Floating point <-> integer conversions */
+                        return disas_fp_int_conv(aFetchedOpcode, aCPU, aSequenceNo);
+                }
+            default: return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+        }
     }
-  }
 }
 
-archinst disas_data_proc_simd(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  DECODER_TRACE;
-  return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
+archinst
+disas_data_proc_simd(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
+    DECODER_TRACE;
+    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
 }
 
 /* C3.6 Data processing - SIMD and floating point */
-archinst disas_data_proc_simd_fp(archcode const &aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo) {
-  if (extract32(aFetchedOpcode.theOpcode, 28, 1) == 1 &&
-      extract32(aFetchedOpcode.theOpcode, 30, 1) == 0) {
-    return disas_data_proc_fp(aFetchedOpcode, aCPU, aSequenceNo);
-  } else {
-    /* SIMD, including crypto */
-    return disas_data_proc_simd(aFetchedOpcode, aCPU, aSequenceNo);
-  }
+archinst
+disas_data_proc_simd_fp(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+{
+    if (extract32(aFetchedOpcode.theOpcode, 28, 1) == 1 && extract32(aFetchedOpcode.theOpcode, 30, 1) == 0) {
+        return disas_data_proc_fp(aFetchedOpcode, aCPU, aSequenceNo);
+    } else {
+        /* SIMD, including crypto */
+        return disas_data_proc_simd(aFetchedOpcode, aCPU, aSequenceNo);
+    }
 }
 
 } // namespace nDecoder

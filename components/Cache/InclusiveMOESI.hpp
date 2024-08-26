@@ -111,11 +111,7 @@ class InclusiveMOESI : public BaseCacheControllerImpl
                    bool aEvictAcksRequired);
 
   protected:
-
-    virtual void load_from_ckpt(std::istream& is)
-    {
-        return theArray->load_from_ckpt(is, theNodeId);
-    }
+    virtual void load_from_ckpt(std::istream& is) { return theArray->load_from_ckpt(is, theNodeId); }
 
     virtual void setProtectedBlock(MemoryAddress addr, bool flag)
     {

@@ -290,13 +290,9 @@ class FLEXUS_COMPONENT(MagicBreak)
         return true; // MagicBreakComponent is always quiesced
     }
 
-    void saveState(std::string const& aDirName)
-    {
-    }
+    void saveState(std::string const& aDirName) {}
 
-    void loadState(std::string const& aDirName)
-    {
-    }
+    void loadState(std::string const& aDirName) {}
 
     void initialize()
     {

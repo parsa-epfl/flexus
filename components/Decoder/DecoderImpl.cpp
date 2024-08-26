@@ -187,18 +187,16 @@ class FLEXUS_COMPONENT(Decoder)
         }
         uint32_t dispatched = 0;
 
-
         if (0 >= available_dispatch)
-               DISPATCH_DBG("Can't dispatch REASON: available_dispatch (=" << available_dispatch << ") is under 0");
+            DISPATCH_DBG("Can't dispatch REASON: available_dispatch (=" << available_dispatch << ") is under 0");
 
-        if ( dispatched > cfg.DispatchWidth)
-               DISPATCH_DBG("Can't dispatch REASON: it dispatched (=" << dispatched << ") more than the cfg.DispatchWidth (=" << cfg.DispatchWidth << ")");
+        if (dispatched > cfg.DispatchWidth)
+            DISPATCH_DBG("Can't dispatch REASON: it dispatched (="
+                         << dispatched << ") more than the cfg.DispatchWidth (=" << cfg.DispatchWidth << ")");
 
-        if (theFIQ.empty())
-               DISPATCH_DBG("Can't dispatch REASON: the Fast Interrupt Query queue is empty");
+        if (theFIQ.empty()) DISPATCH_DBG("Can't dispatch REASON: the Fast Interrupt Query queue is empty");
 
-        if (theSyncInsnInProgress)
-               DISPATCH_DBG("Can't dispatch REASON: A sync is in progress");
+        if (theSyncInsnInProgress) DISPATCH_DBG("Can't dispatch REASON: A sync is in progress");
 
         while (available_dispatch > 0 && dispatched < cfg.DispatchWidth && !theFIQ.empty() && !theSyncInsnInProgress) {
             if (theFIQ.front()->haltDispatch()) {

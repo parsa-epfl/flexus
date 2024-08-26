@@ -82,20 +82,19 @@ class FLEXUS_COMPONENT(FastMemoryLoopback)
     void push(interface::FromCache const&, MemoryMessage& message)
     {
 
-         message.fillLevel() = eLocalMem;
-
+        message.fillLevel() = eLocalMem;
 
         DBG_(Iface, Addr(message.address())(<< "request received: " << message));
         switch (message.type()) {
             case MemoryMessage::LoadReq:
             case MemoryMessage::FetchReq:
-                message.type()      = MemoryMessage::MissReply;
+                message.type() = MemoryMessage::MissReply;
                 (theStats->theReadRequests_stat)++;
                 break;
             case MemoryMessage::ReadReq:
             case MemoryMessage::PrefetchReadNoAllocReq:
             case MemoryMessage::PrefetchReadAllocReq:
-                message.type()      = MemoryMessage::MissReply;
+                message.type() = MemoryMessage::MissReply;
                 (theStats->theReadRequests_stat)++;
                 break;
             case MemoryMessage::StoreReq:
@@ -106,7 +105,7 @@ class FLEXUS_COMPONENT(FastMemoryLoopback)
             case MemoryMessage::WriteAllocate: (theStats->theWriteRequests_stat)++; break;
             case MemoryMessage::UpgradeReq:
             case MemoryMessage::UpgradeAllocate:
-                message.type()      = MemoryMessage::MissReplyWritable;
+                message.type() = MemoryMessage::MissReplyWritable;
                 (theStats->theUpgradeRequest_stat)++;
                 break;
             case MemoryMessage::EvictDirty: (theStats->theEvictDirtys_stat)++; break;
@@ -116,7 +115,7 @@ class FLEXUS_COMPONENT(FastMemoryLoopback)
                 (theStats->theEvictCleans_stat)++;
                 break;
             case MemoryMessage::NonAllocatingStoreReq:
-                message.type()      = MemoryMessage::NonAllocatingStoreReply;
+                message.type() = MemoryMessage::NonAllocatingStoreReply;
                 (theStats->theNonAllocatingStoreReq_stat)++;
                 break;
             default: DBG_Assert(false, (<< "unknown request received: " << message));

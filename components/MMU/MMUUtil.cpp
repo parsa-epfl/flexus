@@ -46,7 +46,6 @@
 #include "MMUUtil.hpp"
 
 #include <boost/throw_exception.hpp>
-#include <core/MakeUniqueWrapper.hpp>
 #include <core/qemu/api_wrappers.hpp>
 #include <core/qemu/mai_api.hpp>
 #include <core/target.hpp>

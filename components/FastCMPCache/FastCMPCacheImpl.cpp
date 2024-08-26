@@ -771,31 +771,20 @@ class FLEXUS_COMPONENT(FastCMPCache)
             }
         }
 
-    if (snoop_success) { // request satisfied from another L1 cache, because it
-                         // wasn't in L2, or it wasn't in appropriate state in
-                         // L2 (coherence miss)
-                          //
-      aMessage.fillLevel() = ePeerL1Cache;
-      switch (orig_msg_type) {
-      case MemoryMessage::ReadReq:
-        theCacheStats->Misses_Onchip_Read++;
-        break;
-      case MemoryMessage::FetchReq:
-        theCacheStats->Misses_Onchip_Fetch++;
-        break;
-      case MemoryMessage::WriteReq:
-        theCacheStats->Misses_Onchip_Write++;
-        break;
-      case MemoryMessage::NonAllocatingStoreReq:
-        theCacheStats->Misses_Onchip_NAStore++;
-        break;
-      case MemoryMessage::UpgradeReq:
-        break; // do nothing!
-      default:
-        DBG_Assert(false, (<< "Illegal message type " << orig_msg_type));
-        break;
-      }
-    }
+        if (snoop_success) { // request satisfied from another L1 cache, because it
+                             // wasn't in L2, or it wasn't in appropriate state in
+                             // L2 (coherence miss)
+                             //
+            aMessage.fillLevel() = ePeerL1Cache;
+            switch (orig_msg_type) {
+                case MemoryMessage::ReadReq: theCacheStats->Misses_Onchip_Read++; break;
+                case MemoryMessage::FetchReq: theCacheStats->Misses_Onchip_Fetch++; break;
+                case MemoryMessage::WriteReq: theCacheStats->Misses_Onchip_Write++; break;
+                case MemoryMessage::NonAllocatingStoreReq: theCacheStats->Misses_Onchip_NAStore++; break;
+                case MemoryMessage::UpgradeReq: break; // do nothing!
+                default: DBG_Assert(false, (<< "Illegal message type " << orig_msg_type)); break;
+            }
+        }
 
         if (!snoop_success && !accessed_memory) { // request satisfied in L2 => L2 hit
             switch (orig_msg_type) {
@@ -815,7 +804,8 @@ class FLEXUS_COMPONENT(FastCMPCache)
         theCacheStats->update();
     }
 
-    void saveState(std::string const &aDirName) {
+    void saveState(std::string const& aDirName)
+    {
         std::string fname(aDirName);
         fname += "/" + statName() + "-dir.json";
         std::ofstream ofs(fname.c_str(), std::ios::out);
@@ -832,21 +822,21 @@ class FLEXUS_COMPONENT(FastCMPCache)
         c_ofs.close();
     }
 
-    void loadState(std::string const &aDirName)
+    void loadState(std::string const& aDirName)
     {
         std::string fname(aDirName);
         fname += "/" + statName() + "-dir.json";
         std::ifstream ifs(fname.c_str(), std::ios::in);
         if (!ifs.good()) {
-        DBG_(Dev,
-            (<< " saved checkpoint state " << fname << " not found.  Resetting to empty cache. "));
+            DBG_(Dev, (<< " saved checkpoint state " << fname << " not found.  Resetting to empty cache. "));
         } else {
-        if (!theDirectory->loadState(ifs, aDirName)) {
-            DBG_(Dev, (<< "Error loading checkpoint state from file: " << fname
-                    << ".  Make sure your checkpoints match your current cache "
-                        "configuration."));
-            DBG_Assert(false);
-        }
+            if (!theDirectory->loadState(ifs, aDirName)) {
+                DBG_(Dev,
+                     (<< "Error loading checkpoint state from file: " << fname
+                      << ".  Make sure your checkpoints match your current cache "
+                         "configuration."));
+                DBG_Assert(false);
+            }
         }
         DBG_(Dev, (<< " Directory state loaded"));
 
@@ -854,15 +844,15 @@ class FLEXUS_COMPONENT(FastCMPCache)
         c_fname += "/" + statName() + "-cache.json";
         std::ifstream c_ifs(c_fname.c_str(), std::ios::in);
         if (!c_ifs.good()) {
-        DBG_(Dev,
-            (<< " saved checkpoint state " << c_fname << " not found.  Resetting to empty cache. "));
+            DBG_(Dev, (<< " saved checkpoint state " << c_fname << " not found.  Resetting to empty cache. "));
         } else {
-        if (!theCache->loadState(c_ifs)) {
-            DBG_(Dev, (<< "Error loading checkpoint state from file: " << c_fname
-                    << ".  Make sure your checkpoints match your current cache "
-                        "configuration."));
-            DBG_Assert(false);
-        }
+            if (!theCache->loadState(c_ifs)) {
+                DBG_(Dev,
+                     (<< "Error loading checkpoint state from file: " << c_fname
+                      << ".  Make sure your checkpoints match your current cache "
+                         "configuration."));
+                DBG_Assert(false);
+            }
         }
         DBG_(Dev, (<< " Cache state loaded"));
 

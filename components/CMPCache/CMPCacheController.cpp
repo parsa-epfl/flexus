@@ -43,19 +43,21 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
 
-#include <boost/dynamic_bitset.hpp>
-#include "core/flexus.hpp"
-#include "core/performance/profile.hpp"
-#include "core/qemu/configuration_api.hpp"
-#include "core/simulator_layout.hpp"
 #include "components/CMPCache/CMPCacheController.hpp"
+
 #include "components/CommonQEMU/MessageQueues.hpp"
 #include "components/CommonQEMU/Transports/MemoryTransport.hpp"
 #include "core/boost_extensions/intrusive_ptr.hpp"
 #include "core/debug/debug.hpp"
+#include "core/flexus.hpp"
+#include "core/performance/profile.hpp"
+#include "core/qemu/configuration_api.hpp"
+#include "core/simulator_layout.hpp"
 #include "core/stats.hpp"
 #include "core/target.hpp"
 #include "core/types.hpp"
+
+#include <boost/dynamic_bitset.hpp>
 #include <fstream>
 
 namespace nCMPCache {
@@ -109,7 +111,6 @@ CMPCacheController::isQuiesced() const
            SnoopIn.empty() && ReplyIn.empty() && RequestOut.empty() && SnoopOut.empty() && ReplyOut.empty() &&
            thePolicy->isQuiesced();
 }
-
 
 void
 CMPCacheController::loadState(std::string const& ckpt_dirname)

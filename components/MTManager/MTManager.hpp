@@ -57,7 +57,7 @@ struct MTManager
 {
     static MTManager* get();
 
-    virtual ~MTManager(){};
+    virtual ~MTManager() {};
     virtual uint32_t scheduleFAGThread(uint32_t aCoreIndex) = 0;
     virtual uint32_t scheduleFThread(uint32_t aCoreIndex)   = 0;
     virtual bool runThisEX(uint32_t anIndex)                = 0;

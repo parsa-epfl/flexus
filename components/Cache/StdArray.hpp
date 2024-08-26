@@ -48,10 +48,10 @@
 
 #include "components/CommonQEMU/Serializers.hpp"
 #include "components/CommonQEMU/Util.hpp"
+#include "core/checkpoint/json.hpp"
 #include "core/debug/debug.hpp"
 #include "core/target.hpp"
 #include "core/types.hpp"
-#include "core/checkpoint/json.hpp"
 
 #include <iostream>
 
@@ -229,7 +229,11 @@ class Set
     virtual void recordAccess(Block<_State, _DefaultState>* aBlock)    = 0;
     virtual void invalidateBlock(Block<_State, _DefaultState>* aBlock) = 0;
 
-    virtual void load_set_from_ckpt(json& is, int32_t core_idx, int32_t set_idx, int32_t tag_shift, int32_t set_shift) = 0;
+    virtual void load_set_from_ckpt(json& is,
+                                    int32_t core_idx,
+                                    int32_t set_idx,
+                                    int32_t tag_shift,
+                                    int32_t set_shift) = 0;
 
     MemoryAddress blockAddress(const Block<_State, _DefaultState>* theBlock) { return theBlock->tag(); }
 
@@ -318,17 +322,16 @@ class SetLRU : public Set<_State, _DefaultState>
         moveToTail(theBlockNum);
     }
 
-    virtual void load_set_from_ckpt(
-        json& checkpoint,
-        int32_t core_idx,
-        int32_t set_idx,
-        int32_t tag_shift,
-        int32_t set_shift)
+    virtual void load_set_from_ckpt(json& checkpoint,
+                                    int32_t core_idx,
+                                    int32_t set_idx,
+                                    int32_t tag_shift,
+                                    int32_t set_shift)
     {
-        for (uint32_t i{0}; i < checkpoint["tags"].at(set_idx).size(); i++) {
-            bool dirty = checkpoint["tags"].at(set_idx).at(i)["dirty"];
+        for (uint32_t i{ 0 }; i < checkpoint["tags"].at(set_idx).size(); i++) {
+            bool dirty    = checkpoint["tags"].at(set_idx).at(i)["dirty"];
             bool writable = checkpoint["tags"].at(set_idx).at(i)["writable"];
-            uint64_t tag = checkpoint["tags"].at(set_idx).at(i)["tag"];
+            uint64_t tag  = checkpoint["tags"].at(set_idx).at(i)["tag"];
 
             Set<_State, _DefaultState>::theBlocks[i].tag() = MemoryAddress((tag << tag_shift) | (set_idx << set_shift));
             Set<_State, _DefaultState>::theBlocks[i].state() = _State::bool2state(dirty, writable);
@@ -530,7 +533,7 @@ class StdArray : public AbstractArray<_State>
         DBG_Assert((uint64_t)theAssociativity == checkpoint["associativity"]);
         DBG_Assert((uint64_t)setCount == checkpoint["tags"].size());
 
-        for (int32_t i{0}; i < setCount; i++) {
+        for (int32_t i{ 0 }; i < setCount; i++) {
             theSets[i]->load_set_from_ckpt(checkpoint, theIndex, i, theTagShift, setIndexShift);
         }
     }

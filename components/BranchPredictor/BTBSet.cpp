@@ -23,7 +23,8 @@ BTBSet::BTBSet(uint32_t associativity)
 
 void
 BTBSet::updateReplacementQueue(uint32_t index)
-{     replacementQueue.erase(std::remove(replacementQueue.begin(), replacementQueue.end(), index),
+{
+    replacementQueue.erase(std::remove(replacementQueue.begin(), replacementQueue.end(), index),
                            replacementQueue.end());
     replacementQueue.insert(replacementQueue.end(), index);
 }
@@ -65,10 +66,8 @@ BTBSet::insert(BTBEntry btbEntry)
 void
 BTBSet::invalidate(VirtualMemoryAddress anAddress)
 {
-    for (auto& block : blocks)
-    {
-        if (block.thePC == anAddress && block.valid)
-            block.valid = false;
+    for (auto& block : blocks) {
+        if (block.thePC == anAddress && block.valid) block.valid = false;
     }
 }
 
@@ -76,8 +75,7 @@ void
 BTBSet::invalidateAll()
 {
 
-    for (auto& block : blocks)
-    {
+    for (auto& block : blocks) {
         block.valid = false;
     }
 }

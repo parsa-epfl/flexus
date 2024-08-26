@@ -46,6 +46,8 @@
 #ifndef FLEXUS_UARCH_uARCHINTERFACES_HPP_INCLUDED
 #define FLEXUS_UARCH_uARCHINTERFACES_HPP_INCLUDED
 
+#include "CoreModel/PSTATE.hpp"
+#include "CoreModel/SCTLR_EL.hpp"
 #include "RegisterType.hpp"
 #include "components/CommonQEMU/Slices/AbstractInstruction.hpp"
 #include "components/CommonQEMU/Slices/MemOp.hpp"
@@ -56,8 +58,6 @@
 #include "core/qemu/mai_api.hpp"
 #include "core/target.hpp"
 #include "core/types.hpp"
-#include "CoreModel/PSTATE.hpp"
-#include "CoreModel/SCTLR_EL.hpp"
 
 #include <bitset>
 #include <boost/none.hpp>
@@ -171,72 +171,74 @@ enum eExclusiveMonitorCode
     kMonitorDoesntExist = 2,
 };
 
-enum eExceptionType {
-  kException_UNCATEGORIZED,        //= 0x00,
-  kException_WFX_TRAP,             //= 0x01,
-  kException_CP15RTTRAP,           //= 0x03,
-  kException_CP15RRTTRAP,          //= 0x04,
-  kException_CP14RTTRAP,           //= 0x05,
-  kException_CP14DTTRAP,           //= 0x06,
-  kException_ADVSIMDFPACCESSTRAP,  //= 0x07,
-  kException_FPIDTRAP,             //= 0x08,
-  kException_CP14RRTTRAP,          //= 0x0c,
-  kException_ILLEGALSTATE,         //= 0x0e,
-  kException_AA32_SVC,             //= 0x11,
-  kException_AA32_HVC,             //= 0x12,
-  kException_AA32_SMC,             //= 0x13,
-  kException_AA64_SVC,             //= 0x15,
-  kException_AA64_HVC,             //= 0x16,
-  kException_AA64_SMC,             //= 0x17,
-  kException_SYSTEMREGISTERTRAP,   //= 0x18,
-  kException_INSNABORT,            //= 0x20,
-  kException_INSNABORT_SAME_EL,    //= 0x21,
-  kException_PCALIGNMENT,          //= 0x22,
-  kException_DATAABORT,            //= 0x24,
-  kException_DATAABORT_SAME_EL,    //= 0x25,
-  kException_SPALIGNMENT,          //= 0x26,
-  kException_AA32_FPTRAP,          //= 0x28,
-  kException_AA64_FPTRAP,          //= 0x2c,
-  kException_SERROR,               //= 0x2f,
-  kException_BREAKPOINT,           //= 0x30,
-  kException_BREAKPOINT_SAME_EL,   //= 0x31,
-  kException_SOFTWARESTEP,         //= 0x32,
-  kException_SOFTWARESTEP_SAME_EL, //= 0x33,
-  kException_WATCHPOINT,           //= 0x34,
-  kException_WATCHPOINT_SAME_EL,   //= 0x35,
-  kException_AA32_BKPT,            //= 0x38,
-  kException_VECTORCATCH,          //= 0x3a,
-  kException_AA64_BKPT,            //= 0x3c,
-  kException_IRQ,
-  kException_None, //= 0xff,
+enum eExceptionType
+{
+    kException_UNCATEGORIZED,        //= 0x00,
+    kException_WFX_TRAP,             //= 0x01,
+    kException_CP15RTTRAP,           //= 0x03,
+    kException_CP15RRTTRAP,          //= 0x04,
+    kException_CP14RTTRAP,           //= 0x05,
+    kException_CP14DTTRAP,           //= 0x06,
+    kException_ADVSIMDFPACCESSTRAP,  //= 0x07,
+    kException_FPIDTRAP,             //= 0x08,
+    kException_CP14RRTTRAP,          //= 0x0c,
+    kException_ILLEGALSTATE,         //= 0x0e,
+    kException_AA32_SVC,             //= 0x11,
+    kException_AA32_HVC,             //= 0x12,
+    kException_AA32_SMC,             //= 0x13,
+    kException_AA64_SVC,             //= 0x15,
+    kException_AA64_HVC,             //= 0x16,
+    kException_AA64_SMC,             //= 0x17,
+    kException_SYSTEMREGISTERTRAP,   //= 0x18,
+    kException_INSNABORT,            //= 0x20,
+    kException_INSNABORT_SAME_EL,    //= 0x21,
+    kException_PCALIGNMENT,          //= 0x22,
+    kException_DATAABORT,            //= 0x24,
+    kException_DATAABORT_SAME_EL,    //= 0x25,
+    kException_SPALIGNMENT,          //= 0x26,
+    kException_AA32_FPTRAP,          //= 0x28,
+    kException_AA64_FPTRAP,          //= 0x2c,
+    kException_SERROR,               //= 0x2f,
+    kException_BREAKPOINT,           //= 0x30,
+    kException_BREAKPOINT_SAME_EL,   //= 0x31,
+    kException_SOFTWARESTEP,         //= 0x32,
+    kException_SOFTWARESTEP_SAME_EL, //= 0x33,
+    kException_WATCHPOINT,           //= 0x34,
+    kException_WATCHPOINT_SAME_EL,   //= 0x35,
+    kException_AA32_BKPT,            //= 0x38,
+    kException_VECTORCATCH,          //= 0x3a,
+    kException_AA64_BKPT,            //= 0x3c,
+    kException_IRQ,
+    kException_None, //= 0xff,
 };
 
 std::ostream&
 operator<<(std::ostream& anOstream, eExceptionType aCode);
 
-enum ePrivRegs {
-  kPSTATE,
-  kSCTLR_EL,
-  kNZCV,
-  kDAIF,
-  kFPCR,
-  kFPSR,
-  kDCZID_EL0,
-  kDC_ZVA,
-  kCURRENT_EL,
-  kELR_EL1,
-  kSPSR_EL1,
-  kSP_EL0,
-  kSP_EL1,
-  kSPSel,
-  kSPSR_IRQ,
-  kSPSR_ABT,
-  kSPSR_UND,
-  kSPSR_FIQ,
-  kTPIDR_EL0,
-  kAbstractSysReg, /* Msutherl: Blanket type for all registers to represent as hashed/encoded
-                      5-tuple which are then read through QEMU */
-  kLastPrivReg
+enum ePrivRegs
+{
+    kPSTATE,
+    kSCTLR_EL,
+    kNZCV,
+    kDAIF,
+    kFPCR,
+    kFPSR,
+    kDCZID_EL0,
+    kDC_ZVA,
+    kCURRENT_EL,
+    kELR_EL1,
+    kSPSR_EL1,
+    kSP_EL0,
+    kSP_EL1,
+    kSPSel,
+    kSPSR_IRQ,
+    kSPSR_ABT,
+    kSPSR_UND,
+    kSPSR_FIQ,
+    kTPIDR_EL0,
+    kAbstractSysReg, /* Msutherl: Blanket type for all registers to represent as hashed/encoded
+                        5-tuple which are then read through QEMU */
+    kLastPrivReg
 };
 
 /* Access rights:
@@ -257,19 +259,20 @@ enum ePrivRegs {
  * do the more restrictive/complex check inside a helper function.
  */
 
-enum eAccessRight {
-  kPL3_R = 0x80,
-  kPL3_W = 0x40,
-  kPL2_R = (0x20 | kPL3_R),
-  kPL2_W = (0x10 | kPL3_W),
-  kPL1_R = (0x08 | kPL2_R),
-  kPL1_W = (0x04 | kPL2_W),
-  kPL0_R = (0x02 | kPL1_R),
-  kPL0_W = (0x01 | kPL1_W),
-  kPL3_RW = (kPL3_R | kPL3_W),
-  kPL2_RW = (kPL2_R | kPL2_W),
-  kPL1_RW = (kPL1_R | kPL1_W),
-  kPL0_RW = (kPL0_R | kPL0_W),
+enum eAccessRight
+{
+    kPL3_R  = 0x80,
+    kPL3_W  = 0x40,
+    kPL2_R  = (0x20 | kPL3_R),
+    kPL2_W  = (0x10 | kPL3_W),
+    kPL1_R  = (0x08 | kPL2_R),
+    kPL1_W  = (0x04 | kPL2_W),
+    kPL0_R  = (0x02 | kPL1_R),
+    kPL0_W  = (0x01 | kPL1_W),
+    kPL3_RW = (kPL3_R | kPL3_W),
+    kPL2_RW = (kPL2_R | kPL2_W),
+    kPL1_RW = (kPL1_R | kPL1_W),
+    kPL0_RW = (kPL0_R | kPL0_W),
 };
 
 /* ARMCPRegInfo type field bits. If the SPECIAL bit is set this is a
@@ -296,23 +299,24 @@ enum eAccessRight {
  * registers which implement clocks or timers require this.
  */
 
-enum eRegInfo {
-  kARM_SPECIAL = 1,
-  kARM_CONST = 2,
-  kARM_64BIT = 4,
-  kARM_SUPPRESS_TB_END = 8,
-  kARM_OVERRIDE = 16,
-  kARM_ALIAS = 32,
-  kARM_IO = 64,
-  kARM_NO_RAW = 128,
-  kARM_NOP = (kARM_SPECIAL | (1 << 8)),
-  kARM_WFI = (kARM_SPECIAL | (2 << 8)),
-  kARM_NZCV = (kARM_SPECIAL | (3 << 8)),
-  kARM_CURRENTEL = (kARM_SPECIAL | (4 << 8)),
-  kARM_DC_ZVA = (kARM_SPECIAL | (5 << 8)),
-  kARM_LAST_SPECIAL = kARM_DC_ZVA,
-  /* Mask of only the flag bits in a type field */
-  kARM_FLAG_MASK = 0xff,
+enum eRegInfo
+{
+    kARM_SPECIAL         = 1,
+    kARM_CONST           = 2,
+    kARM_64BIT           = 4,
+    kARM_SUPPRESS_TB_END = 8,
+    kARM_OVERRIDE        = 16,
+    kARM_ALIAS           = 32,
+    kARM_IO              = 64,
+    kARM_NO_RAW          = 128,
+    kARM_NOP             = (kARM_SPECIAL | (1 << 8)),
+    kARM_WFI             = (kARM_SPECIAL | (2 << 8)),
+    kARM_NZCV            = (kARM_SPECIAL | (3 << 8)),
+    kARM_CURRENTEL       = (kARM_SPECIAL | (4 << 8)),
+    kARM_DC_ZVA          = (kARM_SPECIAL | (5 << 8)),
+    kARM_LAST_SPECIAL    = kARM_DC_ZVA,
+    /* Mask of only the flag bits in a type field */
+    kARM_FLAG_MASK = 0xff,
 };
 
 #define EL0 0
@@ -357,45 +361,47 @@ enum eCacheType
     kDataCache,
 };
 
-enum eCachePoint {
-  kPoC, // Point of Coherency (PoC). For a particular address, the PoC is the
-        // point at which all observers, for example, cores, DSPs, or DMA
-        // engines, that can access memory, are guaranteed to see the same copy
-        // of a memory location. Typically, this is the main external system
-        // memory.
+enum eCachePoint
+{
+    kPoC, // Point of Coherency (PoC). For a particular address, the PoC is the
+          // point at which all observers, for example, cores, DSPs, or DMA
+          // engines, that can access memory, are guaranteed to see the same copy
+          // of a memory location. Typically, this is the main external system
+          // memory.
 
-  kPoU, // Point of Unification (PoU). The PoU for a core is the point at which
-        // the instruction and data caches and translation table walks of the
-        // core are guaranteed to see the same copy of a memory location. For
-        // example, a unified level 2 cache would be the point of unification in
-        // a system with Harvard level 1 caches and a TLB for caching
-        // translation table entries. If no external cache is present, main
-        // memory would be the Point of Unification.
+    kPoU, // Point of Unification (PoU). The PoU for a core is the point at which
+          // the instruction and data caches and translation table walks of the
+          // core are guaranteed to see the same copy of a memory location. For
+          // example, a unified level 2 cache would be the point of unification in
+          // a system with Harvard level 1 caches and a TLB for caching
+          // translation table entries. If no external cache is present, main
+          // memory would be the Point of Unification.
 };
 
-enum eShareableDomain {
-  kNonShareable, // This represents memory accessible only by a single processor
-                 // or other agent, so memory accesses never need to be
-                 // synchronized with other processors. This domain is not
-                 // typically used in SMP systems.
+enum eShareableDomain
+{
+    kNonShareable, // This represents memory accessible only by a single processor
+                   // or other agent, so memory accesses never need to be
+                   // synchronized with other processors. This domain is not
+                   // typically used in SMP systems.
 
-  KInnerShareable, // This represents a shareability domain that can be shared
-                   // by multiple processors, but not necessarily all of the
-                   // agents in the system. A system might have multiple Inner
-                   // Shareable domains. An operation that affects one Inner
-                   // Shareable domain does not affect other Inner Shareable
-                   // domains in the system. An example of such a domain might
-                   // be a quad-core Cortex-A57 cluster.
+    KInnerShareable, // This represents a shareability domain that can be shared
+                     // by multiple processors, but not necessarily all of the
+                     // agents in the system. A system might have multiple Inner
+                     // Shareable domains. An operation that affects one Inner
+                     // Shareable domain does not affect other Inner Shareable
+                     // domains in the system. An example of such a domain might
+                     // be a quad-core Cortex-A57 cluster.
 
-  kOuterShareable, // An outer shareable (OSH) domain re-orderis shared by
-                   // multiple agents and can consist of one or more inner
-                   // shareable domains. An operation that affects an outer
-                   // shareable domain also implicitly affects all inner
-                   // shareable domains inside it. However, it does not
-                   // otherwise behave as an inner shareable operation.
+    kOuterShareable, // An outer shareable (OSH) domain re-orderis shared by
+                     // multiple agents and can consist of one or more inner
+                     // shareable domains. An operation that affects an outer
+                     // shareable domain also implicitly affects all inner
+                     // shareable domains inside it. However, it does not
+                     // otherwise behave as an inner shareable operation.
 
-  kFullSystem, // An operation on the full system (SY) affects all observers in
-               // the system.
+    kFullSystem, // An operation on the full system (SY) affects all observers in
+                 // the system.
 };
 
 enum eInstructionClass
@@ -575,7 +581,7 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction
     virtual void connectuArch(uArch& uArch) = 0;
     virtual void doDispatchEffects()        = 0; // used
     virtual void squash()                   = 0;
-    virtual void pageFault(bool p = true)                = 0;
+    virtual void pageFault(bool p = true)   = 0;
     virtual bool isPageFault() const        = 0;
     virtual void doRescheduleEffects()      = 0;
     virtual void doRetirementEffects()      = 0; // used
@@ -597,17 +603,17 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction
 
     virtual void redirectPC(VirtualMemoryAddress aPC) = 0;
 
-    virtual VirtualMemoryAddress pc() const     = 0;
-    virtual VirtualMemoryAddress pcNext() const = 0;
-    virtual bool isPriv() const                 = 0;
-    virtual void makePriv()                     = 0;
-    virtual bool isTrap() const                 = 0;
-    virtual bool preValidate()                  = 0;
-    virtual bool advancesSimics() const         = 0;
-    virtual bool postValidate()                 = 0;
-    virtual bool resync() const                 = 0;
-    virtual void forceResync(bool r = true)                  = 0;
-    virtual void setClass(eInstructionClass anInstructionClass, eInstructionCode aCode)                     = 0;
+    virtual VirtualMemoryAddress pc() const                                             = 0;
+    virtual VirtualMemoryAddress pcNext() const                                         = 0;
+    virtual bool isPriv() const                                                         = 0;
+    virtual void makePriv()                                                             = 0;
+    virtual bool isTrap() const                                                         = 0;
+    virtual bool preValidate()                                                          = 0;
+    virtual bool advancesSimics() const                                                 = 0;
+    virtual bool postValidate()                                                         = 0;
+    virtual bool resync() const                                                         = 0;
+    virtual void forceResync(bool r = true)                                             = 0;
+    virtual void setClass(eInstructionClass anInstructionClass, eInstructionCode aCode) = 0;
 
     virtual void setTransactionTracker(boost::intrusive_ptr<TransactionTracker> aTransaction) = 0;
     virtual boost::intrusive_ptr<TransactionTracker> getTransactionTracker() const            = 0;
@@ -762,11 +768,13 @@ vReg(uint32_t anIndex)
     return ret_val;
 }
 
-inline mapped_reg ccReg(uint32_t anIndex) {
-  mapped_reg ret_val;
-  ret_val.theType = ccBits;
-  ret_val.theIndex = anIndex;
-  return ret_val;
+inline mapped_reg
+ccReg(uint32_t anIndex)
+{
+    mapped_reg ret_val;
+    ret_val.theType  = ccBits;
+    ret_val.theIndex = anIndex;
+    return ret_val;
 }
 
 typedef boost::variant<int64_t, uint64_t, bits> register_value;
@@ -971,10 +979,11 @@ struct uArch
     }
     virtual void writeFPCR(uint32_t aValue) { DBG_Assert(false); }
 
-      virtual SCTLR_EL _SCTLR(uint32_t anELn) {
+    virtual SCTLR_EL _SCTLR(uint32_t anELn)
+    {
         DBG_Assert(false);
         return SCTLR_EL(0);
-      }
+    }
 
     virtual void setSCTLR_EL(uint8_t anId, uint64_t aSCTLR) { DBG_Assert(false); }
     virtual uint64_t getSCTLR_EL(uint8_t anId)
@@ -1023,7 +1032,8 @@ struct uArch
         DBG_Assert(false);
         return 0;
     }
-    virtual PSTATE _PSTATE() {
+    virtual PSTATE _PSTATE()
+    {
         DBG_Assert(false);
         return PSTATE(0);
     }

@@ -107,8 +107,7 @@ class FLEXUS_COMPONENT(MemoryNetwork)
         PacketCount = 0;
         // end of medhi
 
-        if (cfg.NumNodes == 0)
-          cfg.NumNodes = Flexus::Core::ComponentManager::getComponentManager().systemWidth() * 3;
+        if (cfg.NumNodes == 0) cfg.NumNodes = Flexus::Core::ComponentManager::getComponentManager().systemWidth() * 3;
 
         for (i = 0; i < cfg.VChannels; i++) {
             theNetworkLatencyHistograms.push_back(
@@ -157,9 +156,7 @@ class FLEXUS_COMPONENT(MemoryNetwork)
     {
         nNetShim::currTime = Flexus::Core::theFlexus->cycleCount();
 
-        if (nNetShim::currTime == 149999) {
-            double avg_latency = double(latency) / double(PacketCount);
-        }
+        if (nNetShim::currTime == 149999) { double avg_latency = double(latency) / double(PacketCount); }
 
         // We need to use function objects for calls back into simics from the
         // NetShim. In particular, checking if a node will accept a message

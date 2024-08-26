@@ -52,28 +52,28 @@
 namespace nDecoder {
 using namespace nuArch;
 
-enum eCondCode {
-  kCBZ_,
-  kCBNZ_,
-  kTBZ_,
-  kTBNZ_,
-  kBCOND_,
+enum eCondCode
+{
+    kCBZ_,
+    kCBNZ_,
+    kTBZ_,
+    kTBNZ_,
+    kBCOND_,
 };
 
-struct Condition {
-  virtual ~Condition() {
-  }
-  virtual bool operator()(std::vector<Operand> const &operands) = 0;
-  virtual char const *describe() const = 0;
-  void setInstruction(SemanticInstruction *anInstruction) {
-    theInstruction = anInstruction;
-  }
+struct Condition
+{
+    virtual ~Condition() {}
+    virtual bool operator()(std::vector<Operand> const& operands) = 0;
+    virtual char const* describe() const                          = 0;
+    void setInstruction(SemanticInstruction* anInstruction) { theInstruction = anInstruction; }
 
-protected:
-  SemanticInstruction *theInstruction;
+  protected:
+    SemanticInstruction* theInstruction;
 };
 
-std::unique_ptr<Condition> condition(eCondCode aCond);
+std::unique_ptr<Condition>
+condition(eCondCode aCond);
 
 } // namespace narmDecoder
 

@@ -46,13 +46,13 @@
 #ifndef __INFINITE_DIRECTORY_HPP__
 #define __INFINITE_DIRECTORY_HPP__
 
-#include <fstream>
-#include <core/checkpoint/json.hpp>
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index_container.hpp>
+#include <core/checkpoint/json.hpp>
+#include <fstream>
 using namespace boost::multi_index;
 
 #include <components/CommonQEMU/Util.hpp>
@@ -77,15 +77,16 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
           : theAddress(anAddress)
           , theState(aState)
           , theProtectedState(false)
-        {}
+        {
+        }
 
-        InfDirEntry(
-            MemoryAddress tag,
-            uint32_t sharer_nb,
-            _State sharers) :
-        theAddress(tag),
-        theState(sharer_nb),
-        theProtectedState(false) { theState = sharers; }
+        InfDirEntry(MemoryAddress tag, uint32_t sharer_nb, _State sharers)
+          : theAddress(tag)
+          , theState(sharer_nb)
+          , theProtectedState(false)
+        {
+            theState = sharers;
+        }
     };
 
     typedef multi_index_container<InfDirEntry,
@@ -264,18 +265,16 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
         json checkpoint;
         ifs >> checkpoint;
 
-        //empty the directory
+        // empty the directory
         theDirectory.clear();
-
 
         // for length of the dir
         uint32_t cache_size = checkpoint.size();
         DBG_(Trace, (<< "Directory loading " << cache_size << " entries."));
 
-        for (uint32_t i{0}; i < cache_size; i++)
-        {
+        for (uint32_t i{ 0 }; i < cache_size; i++) {
             uint64_t address = checkpoint.at(i)["tag"];
-            std::bitset<MAX_NUM_SHARERS> sharers (checkpoint.at(i)["sharers"].get<std::string>());
+            std::bitset<MAX_NUM_SHARERS> sharers(checkpoint.at(i)["sharers"].get<std::string>());
 
             DBG_Assert(sharers.size() <= MAX_NUM_SHARERS, (<< "Sharers size mismatch"));
 

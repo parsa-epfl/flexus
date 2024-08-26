@@ -56,6 +56,8 @@
  *     twenisch    23 Feb 03 - Integrated with CacheImpl.hpp
  */
 
+#include "components/CommonQEMU/Transports/MemoryTransport.hpp"
+
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/intrusive_ptr.hpp>
@@ -69,7 +71,6 @@
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/tracking.hpp>
 #include <boost/serialization/version.hpp>
-#include "components/CommonQEMU/Transports/MemoryTransport.hpp"
 
 #ifndef _CMPCACHE_CACHEBUFFERS_HPP
 #define _CMPCACHE_CACHEBUFFERS_HPP
@@ -78,13 +79,12 @@ namespace nCMPCache {
 
 typedef Flexus::SharedTypes::PhysicalMemoryAddress MemoryAddress;
 using Flexus::SharedTypes::MemoryMessage;
-using Flexus::SharedTypes::MemoryTransport;
 using Flexus::SharedTypes::MemoryMessageTag;
+using Flexus::SharedTypes::MemoryTransport;
 
 using boost::counted_base;
 using boost::intrusive_ptr;
 using namespace boost::multi_index;
-
 
 template<typename _State>
 struct EvictEntry
@@ -135,11 +135,11 @@ struct EvictEntry
         // Version 0 of the EvictEntry does not contain theEvictable.
         // It is always considered to be true in older checkpoints.
         // Version 1 contains this boolean flag.
-        ar& theBlockAddress;
-        ar& theType;
+        ar & theBlockAddress;
+        ar & theType;
         if (version > 0) {
-            ar& theEvictable;
-            ar& theState;
+            ar & theEvictable;
+            ar & theState;
         } else {
             theEvictable = true;
         }
@@ -167,7 +167,6 @@ class AbstractEvictBuffer
     int32_t theCurSize;
 
   public:
-
     virtual void loadState(std::istream& anIstream) = 0;
 
     AbstractEvictBuffer(int32_t aSize)
@@ -268,7 +267,6 @@ class CacheEvictBuffer : public AbstractEvictBuffer
     // templates
     typedef typename evict_buf_t::template nth_index<1>::type::iterator iterator;
     typedef typename evict_buf_t::template nth_index<1>::type::const_iterator const_iterator;
-
 
     virtual void loadState(std::istream& anIstream)
     {

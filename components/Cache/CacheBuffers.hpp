@@ -59,7 +59,7 @@
 #ifndef _CACHEBUFFERS_HPP
 #define _CACHEBUFFERS_HPP
 
-//#include "BasicCacheState.hpp"
+// #include "BasicCacheState.hpp"
 #include "boost/archive/binary_iarchive.hpp"
 #include "boost/archive/binary_oarchive.hpp"
 #include "boost/intrusive_ptr.hpp"
@@ -74,19 +74,19 @@
 #include "boost/serialization/serialization.hpp"
 #include "boost/serialization/tracking.hpp"
 #include "boost/serialization/version.hpp"
-#include "core/types.hpp"
 #include "components/CommonQEMU/Slices/MemoryMessage.hpp"
 #include "components/CommonQEMU/Transports/MemoryTransport.hpp"
+#include "core/types.hpp"
 
-//#include "components/CommonQEMU/Serializers.hpp"
-//#include "components/CommonQEMU/Transports/MemoryTransport.hpp"
+// #include "components/CommonQEMU/Serializers.hpp"
+// #include "components/CommonQEMU/Transports/MemoryTransport.hpp"
 
 namespace nCache {
 
 typedef Flexus::SharedTypes::PhysicalMemoryAddress MemoryAddress;
 using Flexus::SharedTypes::MemoryMessage;
-using Flexus::SharedTypes::MemoryTransport;
 using Flexus::SharedTypes::MemoryMessageTag;
+using Flexus::SharedTypes::MemoryTransport;
 
 using boost::counted_base;
 using boost::intrusive_ptr;
@@ -141,11 +141,11 @@ struct EvictEntry
         // Version 0 of the EvictEntry does not contain theEvictable.
         // It is always considered to be true in older checkpoints.
         // Version 1 contains this boolean flag.
-        ar& theBlockAddress;
-        ar& theType;
+        ar & theBlockAddress;
+        ar & theType;
         if (version > 0) {
-            ar& theEvictable;
-            ar& theState;
+            ar & theEvictable;
+            ar & theState;
         } else {
             theEvictable = true;
         }

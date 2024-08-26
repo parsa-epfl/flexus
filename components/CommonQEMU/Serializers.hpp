@@ -45,13 +45,13 @@
 #ifndef _COMMON_SERIALIZERS_HPP_
 #define _COMMON_SERIALIZERS_HPP_
 
-#include "core/types.hpp"
 #include "core/debug/debug.hpp"
+#include "core/types.hpp"
 
 #include <bitset>
+#include <boost/lambda/lambda.hpp>
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/tracking.hpp>
-#include <boost/lambda/lambda.hpp>
 
 #define MAX_NUM_SHARERS 128
 

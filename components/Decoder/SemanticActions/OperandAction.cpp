@@ -43,74 +43,83 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
 
-#include <iomanip>
-#include <iostream>
-
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/throw_exception.hpp>
 #include <core/boost_extensions/intrusive_ptr.hpp>
+#include <iomanip>
+#include <iostream>
 namespace ll = boost::lambda;
-
-#include <boost/none.hpp>
-
-#include <boost/dynamic_bitset.hpp>
-
-#include <core/debug/debug.hpp>
-#include <core/target.hpp>
-#include <core/types.hpp>
-
-#include <components/uArch/uArchInterfaces.hpp>
 
 #include "../Effects.hpp"
 #include "../SemanticActions.hpp"
 #include "../SemanticInstruction.hpp"
 #include "PredicatedSemanticAction.hpp"
 
+#include <boost/dynamic_bitset.hpp>
+#include <boost/none.hpp>
+#include <components/uArch/uArchInterfaces.hpp>
+#include <core/debug/debug.hpp>
+#include <core/target.hpp>
+#include <core/types.hpp>
+
 #define DBG_DeclareCategories Decoder
-#define DBG_SetDefaultOps AddCat(Decoder)
+#define DBG_SetDefaultOps     AddCat(Decoder)
 #include DBG_Control()
 
 namespace nDecoder {
 
 using namespace nuArch;
 
-struct OperandAction : public PredicatedSemanticAction {
-  eOperandCode theOperand;
-  eOperandCode theResult;
-  boost::optional<eOperandCode> theBypass;
-  int theOffset;
+struct OperandAction : public PredicatedSemanticAction
+{
+    eOperandCode theOperand;
+    eOperandCode theResult;
+    boost::optional<eOperandCode> theBypass;
+    int theOffset;
 
-  OperandAction(SemanticInstruction *anInstruction, eOperandCode anOperand, eOperandCode aResult,
-                int anOffset, boost::optional<eOperandCode> aBypass)
-      : PredicatedSemanticAction(anInstruction, 1, true), theOperand(anOperand), theResult(aResult),
-        theBypass(aBypass), theOffset(anOffset) {
-  }
-
-  void doEvaluate() {
-    DBG_(Iface, (<< *this << " evaluated"));
-    if (theBypass) {
-      mapped_reg name = theInstruction->operand<mapped_reg>(*theBypass);
-      uint64_t value = theInstruction->operand<uint64_t>(theOperand);
-      theInstruction->setOperand(theResult, value);
-
-      core()->bypass(name, value);
+    OperandAction(SemanticInstruction* anInstruction,
+                  eOperandCode anOperand,
+                  eOperandCode aResult,
+                  int anOffset,
+                  boost::optional<eOperandCode> aBypass)
+      : PredicatedSemanticAction(anInstruction, 1, true)
+      , theOperand(anOperand)
+      , theResult(aResult)
+      , theBypass(aBypass)
+      , theOffset(anOffset)
+    {
     }
-    satisfyDependants();
-  }
 
-  void describe(std::ostream &anOstream) const {
-    anOstream << theInstruction->identify() << " store constant " << theOperand << " in "
-              << theResult;
-  }
+    void doEvaluate()
+    {
+        DBG_(Iface, (<< *this << " evaluated"));
+        if (theBypass) {
+            mapped_reg name = theInstruction->operand<mapped_reg>(*theBypass);
+            uint64_t value  = theInstruction->operand<uint64_t>(theOperand);
+            theInstruction->setOperand(theResult, value);
+
+            core()->bypass(name, value);
+        }
+        satisfyDependants();
+    }
+
+    void describe(std::ostream& anOstream) const
+    {
+        anOstream << theInstruction->identify() << " store constant " << theOperand << " in " << theResult;
+    }
 };
 
-predicated_action operandAction(SemanticInstruction *anInstruction, eOperandCode anOperand,
-                                eOperandCode aResult, int anOffset,
-                                boost::optional<eOperandCode> aBypass) {
-  OperandAction *act = new OperandAction(anInstruction, anOperand, aResult, anOffset, aBypass);
-  anInstruction->addNewComponent(act);
-  return predicated_action(act, act->predicate());
+predicated_action
+operandAction(SemanticInstruction* anInstruction,
+              eOperandCode anOperand,
+              eOperandCode aResult,
+              int anOffset,
+              boost::optional<eOperandCode> aBypass)
+{
+    OperandAction* act = new OperandAction(anInstruction, anOperand, aResult, anOffset, aBypass);
+    anInstruction->addNewComponent(act);
+    return predicated_action(act, act->predicate());
 }
 
 } // namespace nDecoder

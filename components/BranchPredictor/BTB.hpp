@@ -2,8 +2,8 @@
 #define FLEXUS_BTB
 
 #include "BTBSet.hpp"
-#include "core/types.hpp"
 #include "core/checkpoint/json.hpp"
+#include "core/types.hpp"
 
 #include <vector>
 

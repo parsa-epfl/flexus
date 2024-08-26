@@ -44,6 +44,7 @@
 //  DO-NOT-REMOVE end-copyright-block
 
 #include "Instruction.hpp"
+
 #include "components/uArch/uArchInterfaces.hpp"
 #include "encodings/Encodings.hpp"
 
@@ -202,7 +203,7 @@ decode(Flexus::SharedTypes::FetchedOpcode const& aFetchedOpcode, uint32_t aCPU, 
     DBG_(VVerb, (<< "\033[1;31m DECODER: Decoding " << std::hex << aFetchedOpcode.theOpcode << std::dec << "\033[0m"));
 
     bool last_uop = true;
-    //boost::intrusive_ptr<AbstractInstruction> ret_val; // HEHE
+    // boost::intrusive_ptr<AbstractInstruction> ret_val; // HEHE
     boost::intrusive_ptr<AbstractInstruction> ret_val = disas_a64_insn(aFetchedOpcode, aCPU, aSequenceNo, aUop);
     return std::make_pair(ret_val, last_uop);
 }

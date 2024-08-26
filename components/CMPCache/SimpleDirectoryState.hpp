@@ -53,11 +53,13 @@ namespace nCMPCache {
 
 class SimpleDirectoryState
 {
-public:
+  public:
     // no one ever calls this, so we always have a size
     SimpleDirectoryState(uint32_t nb_sharers = MAX_NUM_SHARERS)
       : theSharers()
-      , theNumSharers(nb_sharers) {}
+      , theNumSharers(nb_sharers)
+    {
+    }
 
   private:
     boost::dynamic_bitset<uint64_t> theSharers;
@@ -191,7 +193,6 @@ public:
       , theNumSharers(aNumSharers)
     {
     }
-
 
     SimpleDirectoryState& operator&=(SimpleDirectoryState& a)
     {

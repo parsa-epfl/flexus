@@ -18,7 +18,7 @@ class BTBSet
   private:
     std::vector<uint32_t> replacementQueue;
     void updateReplacementQueue(uint32_t index); // [MADHUR] Right now, it is LRU
-    //
+                                                 //
   public:
     BTBSet();
 

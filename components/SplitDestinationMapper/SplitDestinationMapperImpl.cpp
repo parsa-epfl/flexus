@@ -124,14 +124,11 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
 
         theTotalNumCores = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 
-        if (cfg.Cores == 0)
-          cfg.Cores = theTotalNumCores;
+        if (cfg.Cores == 0) cfg.Cores = theTotalNumCores;
 
-        if (cfg.Directories == 0)
-          cfg.Directories = theTotalNumCores;
+        if (cfg.Directories == 0) cfg.Directories = theTotalNumCores;
 
-        if (cfg.Banks == 0)
-          cfg.Banks = theTotalNumCores;
+        if (cfg.Banks == 0) cfg.Banks = theTotalNumCores;
 
         DBG_Assert((cfg.MemControllers & (cfg.MemControllers - 1)) == 0);
         DBG_Assert((cfg.Directories & (cfg.Directories - 1)) == 0);

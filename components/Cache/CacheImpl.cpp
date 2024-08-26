@@ -110,11 +110,7 @@ class FLEXUS_COMPONENT(Cache)
                (theController.get() ? theController->isQuiesced() : true);
     }
 
-
-    void loadState(std::string const& aDirName)
-    {
-        theController->loadState(aDirName);
-    }
+    void loadState(std::string const& aDirName) { theController->loadState(aDirName); }
 
     // Initialization
     void initialize()

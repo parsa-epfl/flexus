@@ -194,9 +194,7 @@ ChannelInputPort::insertMessage(MessageState* msg)
     // For time in buffer statistics
     msg->bufferTime -= currTime;
 
-    TRACE(msg,
-          "ChannelInputPort received message"
-            << " to node " << msg->destNode << " with delay " << msl->delay);
+    TRACE(msg, "ChannelInputPort received message" << " to node " << msg->destNode << " with delay " << msl->delay);
 
     return false;
 }
@@ -256,8 +254,7 @@ ChannelOutputPort::insertMessage(MessageState* msg)
     channel->notifyWaitingMessage();
 
     TRACE(msg,
-          "ChannelOutputPort received message"
-            << " to node " << msg->destNode << " with priority " << msg->priority);
+          "ChannelOutputPort received message" << " to node " << msg->destNode << " with priority " << msg->priority);
 
     return insertMessageHelper(msg);
 }

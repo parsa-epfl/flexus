@@ -44,11 +44,7 @@
 //  DO-NOT-REMOVE end-copyright-block
 
 #include "systemRegister.hpp"
-// #include "CoreModel/coreModelImpl.hpp"
 #include "CoreModel.hpp"
-// #include <functional>
-// #include <iostream>
-#include "core/MakeUniqueWrapper.hpp"
 
 #include <string>
 
@@ -86,9 +82,9 @@ class NZCV_ : public SysRegInfo
         auto pstate = Flexus::Qemu::API::qemu_api.read_register(theNode, Flexus::Qemu::API::PSTATE, 0);
         writefn(aCore, extract32(pstate, 28, 4));
 
-        CoreModel *bCore = dynamic_cast<CoreModel *>(aCore);
+        CoreModel* bCore = dynamic_cast<CoreModel*>(aCore);
         if (bCore) {
-            bCore->initializeRegister(bCore->map(ccRegArch(0)), (register_value) (int64_t) extract32(pstate, 28, 4));
+            bCore->initializeRegister(bCore->map(ccRegArch(0)), (register_value)(int64_t)extract32(pstate, 28, 4));
         }
     }
 

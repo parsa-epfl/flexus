@@ -156,7 +156,6 @@ class ArchInstruction : public nuArch::Instruction
     virtual bool resync() const { return theResync; }
     virtual void forceResync(bool r = true) { theResync = r; }
 
-
     virtual void setTransactionTracker(boost::intrusive_ptr<TransactionTracker> aTransaction)
     {
         theTransaction = aTransaction;

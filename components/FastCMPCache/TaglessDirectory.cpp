@@ -110,7 +110,7 @@ class TaglessDirectory : public AbstractDirectory
       , theTrackCollisions(false)
       , theTrackBitCounts(false)
       , theTrackBitPatterns(false)
-      , thePartitioned(true){};
+      , thePartitioned(true) {};
 
     typedef std::function<int(uint64_t)> hash_fn_t;
 

@@ -43,35 +43,35 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
 
-//#include <iostream>
-//#include <iomanip>
+// #include <iostream>
+// #include <iomanip>
 
-//#include <core/boost_extensions/intrusive_ptr.hpp>
-//#include <boost/throw_exception.hpp>
-//#include <boost/function.hpp>
-//#include <boost/lambda/lambda.hpp>
-// namespace ll = boost::lambda;
+// #include <core/boost_extensions/intrusive_ptr.hpp>
+// #include <boost/throw_exception.hpp>
+// #include <boost/function.hpp>
+// #include <boost/lambda/lambda.hpp>
+//  namespace ll = boost::lambda;
 
-//#include <boost/none.hpp>
+// #include <boost/none.hpp>
 
-//#include <boost/dynamic_bitset.hpp>
+// #include <boost/dynamic_bitset.hpp>
 
-//#include <core/target.hpp>
-//#include <core/debug/debug.hpp>
-//#include <core/types.hpp>
+// #include <core/target.hpp>
+// #include <core/debug/debug.hpp>
+// #include <core/types.hpp>
 
-//#include <components/uArch/uArchInterfaces.hpp>
+// #include <components/uArch/uArchInterfaces.hpp>
 
-//#include "../SemanticInstruction.hpp"
-//#include "../Effects.hpp"
-//#include "../SemanticActions.hpp"
-//#include "PredicatedSemanticAction.hpp"
+// #include "../SemanticInstruction.hpp"
+// #include "../Effects.hpp"
+// #include "../SemanticActions.hpp"
+// #include "PredicatedSemanticAction.hpp"
 
-//#include <components/uArch/systemRegister.hpp>
+// #include <components/uArch/systemRegister.hpp>
 
-//#define DBG_DeclareCategories Decoder
-//#define DBG_SetDefaultOps AddCat(Decoder)
-//#include DBG_Control()
+// #define DBG_DeclareCategories Decoder
+// #define DBG_SetDefaultOps AddCat(Decoder)
+// #include DBG_Control()
 
 // namespace nDecoder {
 

@@ -46,16 +46,17 @@
 #ifndef _CMP_CACHE_STDARRAY_HPP
 #define _CMP_CACHE_STDARRAY_HPP
 
-#include <fstream>
-#include <boost/dynamic_bitset.hpp>
-#include <boost/throw_exception.hpp>
 #include "components/CMPCache/CMPCacheInfo.hpp"
 #include "components/CommonQEMU/Serializers.hpp"
 #include "components/CommonQEMU/Util.hpp"
+#include "core/checkpoint/json.hpp"
 #include "core/debug/debug.hpp"
 #include "core/target.hpp"
 #include "core/types.hpp"
-#include "core/checkpoint/json.hpp"
+
+#include <boost/dynamic_bitset.hpp>
+#include <boost/throw_exception.hpp>
+#include <fstream>
 
 using nCommonSerializers::BlockSerializer;
 using nCommonUtil::log_base2;
@@ -273,7 +274,7 @@ class Set
     virtual bool recordAccess(Block<_State, _DefaultState>* aBlock)    = 0;
     virtual void invalidateBlock(Block<_State, _DefaultState>* aBlock) = 0;
 
-    virtual void load_set_from_ckpt(uint32_t index, uint64_t tag ,bool dirty, bool writable) = 0;
+    virtual void load_set_from_ckpt(uint32_t index, uint64_t tag, bool dirty, bool writable) = 0;
 
     MemoryAddress blockAddress(const Block<_State, _DefaultState>* theBlock) { return theBlock->tag(); }
 
@@ -398,13 +399,13 @@ class SetLRU : public Set<_State, _DefaultState>
         moveToTail(theBlockNum);
     }
 
-    virtual void load_set_from_ckpt(uint32_t index, uint64_t tag ,bool dirty, bool writable)
+    virtual void load_set_from_ckpt(uint32_t index, uint64_t tag, bool dirty, bool writable)
     {
-            _State state(_State::bool2state(dirty, writable));
-            theMRUOrder[index]                                   = index;
-            Set<_State, _DefaultState>::theBlocks[index].tag()   = MemoryAddress(tag);
-            Set<_State, _DefaultState>::theBlocks[index].state() = state;
-            DBG_(Trace, NoDefaultOps()(<< index << "-LLC: Loading block " << std::hex << tag << " in state " << state));
+        _State state(_State::bool2state(dirty, writable));
+        theMRUOrder[index]                                   = index;
+        Set<_State, _DefaultState>::theBlocks[index].tag()   = MemoryAddress(tag);
+        Set<_State, _DefaultState>::theBlocks[index].state() = state;
+        DBG_(Trace, NoDefaultOps()(<< index << "-LLC: Loading block " << std::hex << tag << " in state " << state));
     }
 
   protected:
@@ -675,16 +676,14 @@ class StdArray : public AbstractArray<_State>
         DBG_Assert((uint64_t)theAssociativity == checkpoint["associativity"]);
         DBG_Assert((uint64_t)theNumSets == checkpoint["tags"].size());
 
-        for (int32_t i{0}; i < theNumSets; i++)
-        {
+        for (int32_t i{ 0 }; i < theNumSets; i++) {
             // if ((getBank(addr) == theLocalBankIndex) && (getGroup(addr) == theGroupIndex))
-            for (uint16_t j = 0; j < checkpoint["tags"].at(i).size(); j++)
-            {
-                uint64_t tag = checkpoint["tags"].at(i).at(j)["tag"];
-                bool dirty = checkpoint["tags"].at(i).at(j)["dirty"];
+            for (uint16_t j = 0; j < checkpoint["tags"].at(i).size(); j++) {
+                uint64_t tag  = checkpoint["tags"].at(i).at(j)["tag"];
+                bool dirty    = checkpoint["tags"].at(i).at(j)["dirty"];
                 bool writable = checkpoint["tags"].at(i).at(j)["writable"];
 
-                theSets[i]->load_set_from_ckpt(j, tag , dirty, writable);
+                theSets[i]->load_set_from_ckpt(j, tag, dirty, writable);
             }
         }
 

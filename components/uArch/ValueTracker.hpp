@@ -194,7 +194,7 @@ struct ValueTracker
             theGlobalTracker = new ValueTracker*[theNumTrackers];
             for (int i = 0; i < theNumTrackers; i++) {
                 theGlobalTracker[i] = new ValueTracker;
-                //theGlobalTracker[i]->register_mem_iface(i);
+                // theGlobalTracker[i]->register_mem_iface(i);
             }
         }
         return *theGlobalTracker[0];
@@ -204,9 +204,9 @@ struct ValueTracker
     tracker theTracker;
     DMATracer theDMATracer;
 
-    //void register_mem_iface(int vm)
+    // void register_mem_iface(int vm)
     //{
-    //    DBG_(VVerb, (<< "Registering DMA tracker " << vm));
+    //     DBG_(VVerb, (<< "Registering DMA tracker " << vm));
 
     //    API::conf_object_t* dma_map_object = API::qemu_api.get_obj_by_name("dma_mem");
 

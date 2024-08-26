@@ -47,9 +47,10 @@
 #define __CACHE_STATE_HPP__
 
 #include "core/debug/debug.hpp"
+
+#include <cstdint>
 #include <string>
 #include <vector>
-#include <cstdint>
 
 namespace nCMPCache {
 
@@ -127,23 +128,23 @@ class CacheState
     template<class Archive>
     void serialize(Archive& ar, const uint32_t version)
     {
-        ar& val;
+        ar & val;
     }
 
-//    static const CacheState& char2State(uint8_t c)
-//    {
-//        switch (c) {
-//            case 'M': return Modified; break;
-//            case 'O': return Owned; break;
-//            case 'E': return Exclusive; break;
-//            case 'S': return Shared; break;
-//            case 'I': return Invalid; break;
-//            case 'P': return InvalidPresent; break;
-//            case 'F': return Forward; break;
-//            default: DBG_Assert(false, (<< "Unknown state '" << c << "'")); break;
-//        }
-//        return Invalid;
-//    }
+    //    static const CacheState& char2State(uint8_t c)
+    //    {
+    //        switch (c) {
+    //            case 'M': return Modified; break;
+    //            case 'O': return Owned; break;
+    //            case 'E': return Exclusive; break;
+    //            case 'S': return Shared; break;
+    //            case 'I': return Invalid; break;
+    //            case 'P': return InvalidPresent; break;
+    //            case 'F': return Forward; break;
+    //            default: DBG_Assert(false, (<< "Unknown state '" << c << "'")); break;
+    //        }
+    //        return Invalid;
+    //    }
     static const CacheState& bool2state(bool dirty, bool writable)
     {
         if (dirty & writable) return Modified;

@@ -24,7 +24,8 @@ class BTBEntry
 
     BTBEntry()
       : valid(false)
-    { }
+    {
+    }
 };
 
 #endif

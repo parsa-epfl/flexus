@@ -477,9 +477,7 @@ NetSwitchInternalBuffer::insertMessage(MessageState* msg)
     msg->atHeadTime -= currTime;
     msg->bufferTime -= currTime;
 
-    TRACE(msg,
-          "NetSwitch received message"
-            << " to node " << msg->destNode << " with priority " << msg->priority);
+    TRACE(msg, "NetSwitch received message" << " to node " << msg->destNode << " with priority " << msg->priority);
 
     return false;
 }

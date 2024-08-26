@@ -93,7 +93,7 @@ struct TransactionTracer
 
 struct TransactionStatManager
 {
-    virtual ~TransactionStatManager(){};
+    virtual ~TransactionStatManager() {};
     virtual void count(TransactionTracker const& aTransaction) = 0;
     static std::shared_ptr<TransactionStatManager> createTSM();
 };

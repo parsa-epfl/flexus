@@ -212,7 +212,6 @@ BaseCacheControllerImpl::loadState(std::string const& ckpt_dirname)
     std::string ckpt_filename(ckpt_dirname);
     ckpt_filename += "/" + theName + ".json";
 
-
     std::ifstream ifs(ckpt_filename.c_str(), std::ios::in);
 
     if (!ifs.good()) {

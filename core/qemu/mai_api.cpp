@@ -49,7 +49,6 @@
 #include <boost/throw_exception.hpp>
 #include <boost/utility.hpp>
 #include <cmath>
-#include <core/MakeUniqueWrapper.hpp>
 #include <core/configuration.hpp>
 #include <core/exception.hpp>
 #include <core/flexus.hpp>

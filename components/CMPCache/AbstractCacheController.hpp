@@ -101,7 +101,6 @@ class AbstractCacheController
 
     virtual void processMessages() = 0;
 
-
     virtual void loadState(std::string const& aDirName) = 0;
 
     inline void reserveSnoopOut(ProcessEntry_p process, uint8_t n)

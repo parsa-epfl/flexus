@@ -92,7 +92,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
             theRedirectPC[i] = MemoryAddress(0);
             theRedirect[i]   = false;
         }
-        theCurrentThread = cfg.Threads;
+        theCurrentThread   = cfg.Threads;
         theBranchPredictor = std::make_unique<BranchPredictor>(statName(), flexusIndex(), cfg.BTBSets, cfg.BTBWays);
     }
 
@@ -124,7 +124,11 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
     FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(BranchFeedbackIn);
     void push(interface::BranchFeedbackIn const&, index_t anIndex, boost::intrusive_ptr<BranchFeedback>& aFeedback)
     {
-        theBranchPredictor->feedback(aFeedback->thePC, aFeedback->theActualType, aFeedback->theActualDirection, aFeedback->theActualTarget, *aFeedback->theBPState);
+        theBranchPredictor->feedback(aFeedback->thePC,
+                                     aFeedback->theActualType,
+                                     aFeedback->theActualDirection,
+                                     aFeedback->theActualTarget,
+                                     *aFeedback->theBPState);
     }
 
     // Drive Interfaces

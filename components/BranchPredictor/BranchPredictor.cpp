@@ -1,17 +1,17 @@
 #include "BranchPredictor.hpp"
 
-#include <core/boost_extensions/padded_string_cast.hpp>
-#include <components/uFetch/uFetchTypes.hpp>
 #include "core/debug/debug.hpp"
 #include "core/types.hpp"
-#include <fstream>
 
+#include <components/uFetch/uFetchTypes.hpp>
+#include <core/boost_extensions/padded_string_cast.hpp>
 #include <core/checkpoint/json.hpp>
+#include <fstream>
 using json = nlohmann::json;
 
-//#define DBG_DefineCategories BPred
-//#define DBG_SetDefaultOps    AddCat(BPred)
-//#include DBG_Control()
+// #define DBG_DefineCategories BPred
+// #define DBG_SetDefaultOps    AddCat(BPred)
+// #include DBG_Control()
 
 BranchPredictor::BranchPredictor(std::string const& aName, uint32_t anIndex, uint32_t aBTBSets, uint32_t aBTBWays)
   : theName(aName)
@@ -106,9 +106,9 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState)
     }
 
     if (aBPState.thePredictedType != kNonBranch) {
-        //DBG_(Verb,
-        //     (<< theIndex << "-BPRED-PREDICT: PC \t" << anAddress << " serial " << aBPState.theSerial << " Target \t"
-        //      << aBPState.thePredictedTarget << "\tType " << aBPState.thePredictedType));
+        // DBG_(Verb,
+        //      (<< theIndex << "-BPRED-PREDICT: PC \t" << anAddress << " serial " << aBPState.theSerial << " Target \t"
+        //       << aBPState.thePredictedTarget << "\tType " << aBPState.thePredictedType));
     }
 
     return aBPState.thePredictedTarget;
@@ -156,8 +156,9 @@ BranchPredictor::feedback(VirtualMemoryAddress anAddress,
     }
 }
 
-
-void BranchPredictor::loadState(std::string const& aDirName) {
+void
+BranchPredictor::loadState(std::string const& aDirName)
+{
     std::string fname(aDirName);
     fname += "/" + boost::padded_string_cast<3, '0'>(theIndex) + "-bpred" + ".json";
     std::ifstream ifs(fname.c_str());
@@ -170,14 +171,16 @@ void BranchPredictor::loadState(std::string const& aDirName) {
     ifs.close();
 }
 
-void BranchPredictor::saveState(std::string const& aDirName) {
+void
+BranchPredictor::saveState(std::string const& aDirName)
+{
     std::string fname(aDirName);
     fname += "/" + boost::padded_string_cast<3, '0'>(theIndex) + "-bpred" + ".json";
     std::ofstream ofs(fname.c_str());
 
     json checkpoint;
 
-    checkpoint["btb"] = theBTB.saveState();
+    checkpoint["btb"]  = theBTB.saveState();
     checkpoint["tage"] = theTage.saveState();
 
     ofs << std::setw(4) << checkpoint << std::endl;

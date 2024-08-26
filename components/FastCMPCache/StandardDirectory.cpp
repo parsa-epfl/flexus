@@ -86,7 +86,7 @@ class StandardDirectory : public AbstractDirectory
 
     StandardDirectory()
       : AbstractDirectory()
-      , theReplPolicy(LRURepl){};
+      , theReplPolicy(LRURepl) {};
 
     virtual void initialize(const std::string& aName)
     {
@@ -239,82 +239,84 @@ class StandardDirectory : public AbstractDirectory
 
         BlockEntryWrapper_p wrapper(new BlockEntryWrapper(*entry));
 
-    return std::tie(entry->sharers(), entry->state(), wrapper);
-  }
-
-  virtual std::tuple<SharingVector, SharingState, AbstractEntry_p, bool>
-  snoopLookup(int32_t index, PhysicalMemoryAddress address, MMType req_type) {
-
-    StandardDirectoryEntry *entry = findOrCreateEntry(address, false);
-    DBG_Assert(entry != nullptr);
-
-    bool valid = true;
-    if (entry->tag() != address) {
-      SharingVector sharers;
-      SharingState state = ZeroSharers;
-      BlockEntryWrapper_p wrapper;
-      valid = false;
-      return std::tie(sharers, state, wrapper, valid);
+        return std::tie(entry->sharers(), entry->state(), wrapper);
     }
 
-    BlockEntryWrapper_p wrapper(new BlockEntryWrapper(*entry));
+    virtual std::tuple<SharingVector, SharingState, AbstractEntry_p, bool> snoopLookup(int32_t index,
+                                                                                       PhysicalMemoryAddress address,
+                                                                                       MMType req_type)
+    {
 
-    return std::tie(entry->sharers(), entry->state(), wrapper, valid);
-  }
+        StandardDirectoryEntry* entry = findOrCreateEntry(address, false);
+        DBG_Assert(entry != nullptr);
 
-  void saveState(std::ostream &s, const std::string &aDirName) {
-
-    json checkpoint;
-
-    checkpoint = json::array();
-
-    DBG_(Dev, (<< "Saving directory entries."));
-
-    uint64_t i = 0;
-    for (size_t set = 0; set < (size_t)theNumSets; set++) {
-      for (size_t way = 0; way < (size_t)theAssociativity; way++) {
-
-        uint64_t dirAddress = theDirectory[set][way].theAddress;
-
-        checkpoint[i++] = {{"tag", dirAddress}, {"sharers", theDirectory[set][way].theSharers.getSharers().to_string()}};
-
-        DBG_(Trace, (<< "Directory saving block: " << dirAddress));
-
-      }
-    }
-
-    s << std::setw(4) << checkpoint << std::endl;
-
-  }
-
-  bool loadState(std::istream &s, const std::string &aDirName) {
-
-    json checkpoint;
-    s >> checkpoint;
-
-    uint32_t dirSize = checkpoint.size();
-
-    DBG_(Trace, (<< "Directory loading " << dirSize << " entries."));
-    for (size_t set = 0; set < (size_t)theNumSets; set++) {
-
-        //empty the directory
-        theDirectory[set].clear();
-
-        for (size_t way = 0; way < (size_t)theAssociativity; way++) {
-
-        DBG_(Trace, (<< "Directory loading block " << set*way));
-
-        uint64_t address = checkpoint.at(set*way)["tag"];
-        std::bitset<MAX_NUM_SHARERS> state (checkpoint.at(set*way)["sharers"].get<std::string>());
-
-        //push new elements
-        theDirectory[set].push_back(StandardDirectoryEntry(PhysicalMemoryAddress(address), state));
-
+        bool valid = true;
+        if (entry->tag() != address) {
+            SharingVector sharers;
+            SharingState state = ZeroSharers;
+            BlockEntryWrapper_p wrapper;
+            valid = false;
+            return std::tie(sharers, state, wrapper, valid);
         }
+
+        BlockEntryWrapper_p wrapper(new BlockEntryWrapper(*entry));
+
+        return std::tie(entry->sharers(), entry->state(), wrapper, valid);
     }
 
-    return true;
-  }
+    void saveState(std::ostream& s, const std::string& aDirName)
+    {
+
+        json checkpoint;
+
+        checkpoint = json::array();
+
+        DBG_(Dev, (<< "Saving directory entries."));
+
+        uint64_t i = 0;
+        for (size_t set = 0; set < (size_t)theNumSets; set++) {
+            for (size_t way = 0; way < (size_t)theAssociativity; way++) {
+
+                uint64_t dirAddress = theDirectory[set][way].theAddress;
+
+                checkpoint[i++] = { { "tag", dirAddress },
+                                    { "sharers", theDirectory[set][way].theSharers.getSharers().to_string() } };
+
+                DBG_(Trace, (<< "Directory saving block: " << dirAddress));
+            }
+        }
+
+        s << std::setw(4) << checkpoint << std::endl;
+    }
+
+    bool loadState(std::istream& s, const std::string& aDirName)
+    {
+
+        json checkpoint;
+        s >> checkpoint;
+
+        uint32_t dirSize = checkpoint.size();
+
+        DBG_(Trace, (<< "Directory loading " << dirSize << " entries."));
+        for (size_t set = 0; set < (size_t)theNumSets; set++) {
+
+            // empty the directory
+            theDirectory[set].clear();
+
+            for (size_t way = 0; way < (size_t)theAssociativity; way++) {
+
+                DBG_(Trace, (<< "Directory loading block " << set * way));
+
+                uint64_t address = checkpoint.at(set * way)["tag"];
+                std::bitset<MAX_NUM_SHARERS> state(checkpoint.at(set * way)["sharers"].get<std::string>());
+
+                // push new elements
+                theDirectory[set].push_back(StandardDirectoryEntry(PhysicalMemoryAddress(address), state));
+            }
+        }
+
+        return true;
+    }
 
     static AbstractDirectory* createInstance(std::list<std::pair<std::string, std::string>>& args)
     {

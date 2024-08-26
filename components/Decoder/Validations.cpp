@@ -45,10 +45,8 @@
 
 #include "Validations.hpp"
 
-#include "core/qemu/api_wrappers.hpp"
 #include "components/uArch/uArchInterfaces.hpp"
-
-
+#include "core/qemu/api_wrappers.hpp"
 
 #define DBG_DeclareCategories Decoder
 #define DBG_SetDefaultOps     AddCat(Decoder)

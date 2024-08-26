@@ -43,8 +43,8 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  DO-NOT-REMOVE end-copyright-block
 #include "components/BPWarm/BPWarm.hpp"
-#include "components/CommonQEMU/Slices/ArchitecturalInstruction.hpp"
 #include "components/BranchPredictor/BranchPredictor.hpp"
+#include "components/CommonQEMU/Slices/ArchitecturalInstruction.hpp"
 #include "components/uFetch/uFetchTypes.hpp"
 #include "core/component.hpp"
 
