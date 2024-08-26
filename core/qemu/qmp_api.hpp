@@ -289,7 +289,6 @@ class qmp_set_configuration : public qmp_flexus_i
 
 } qmp_set_configuration_;
 
-
 class qmp_write_measurement : public qmp_flexus_i
 {
 

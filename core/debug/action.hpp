@@ -79,7 +79,7 @@ class ConsoleLogAction : public Action
 
   public:
     ConsoleLogAction(Format* aFormat)
-      : theFormat(aFormat){};
+      : theFormat(aFormat) {};
     virtual void printConfiguration(std::ostream& anOstream, std::string const& anIndent);
     virtual void process(Entry const& anEntry);
 };

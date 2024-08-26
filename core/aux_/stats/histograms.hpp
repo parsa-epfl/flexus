@@ -71,7 +71,7 @@ namespace aux_ {
 
 struct HistogramPrint
 {
-    virtual ~HistogramPrint(){};
+    virtual ~HistogramPrint() {};
     virtual int32_t buckets() const            = 0;
     virtual int64_t bucketVal(int32_t i) const = 0;
     virtual int64_t sum() const                = 0;
@@ -94,7 +94,7 @@ struct InstanceCounterPrint
         bool operator<(sort_helper const& other) const { return count > other.count; }
     };
 
-    virtual ~InstanceCounterPrint(){};
+    virtual ~InstanceCounterPrint() {};
     virtual void fillVector(std::vector<sort_helper>& aVector) const = 0;
     virtual int64_t count(int64_t aKey) const                        = 0;
     virtual int64_t sum() const                                      = 0;

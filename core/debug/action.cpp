@@ -147,7 +147,7 @@ streamManager()
 FileLogAction::FileLogAction(std::string aFilename, Format* aFormat)
   : theFilename(aFilename)
   , theOstream(streamManager().getStream(aFilename))
-  , theFormat(aFormat){};
+  , theFormat(aFormat) {};
 
 void
 FileLogAction::printConfiguration(std::ostream& anOstream, std::string const& anIndent)
@@ -201,7 +201,7 @@ PrintStatsAction::process(Entry const& anEntry)
 }
 
 SeverityAction::SeverityAction(uint32_t aSeverity)
-  : theSeverity(aSeverity){};
+  : theSeverity(aSeverity) {};
 
 void
 SeverityAction::printConfiguration(std::ostream& anOstream, std::string const& anIndent)

@@ -170,7 +170,9 @@ FlexusImpl::printMMU(int32_t aCPU)
     DBG_(Crit, (<< "printMMU not implemented yet. Still need to port mai_api.hpp "));
 }
 
-void FlexusImpl::setCycle(uint64_t cycle) {
+void
+FlexusImpl::setCycle(uint64_t cycle)
+{
     theCycleCount = cycle;
     theStopCycle += cycle;
 }

@@ -60,7 +60,7 @@ class FlexusInterface
     virtual void initializeComponents() = 0;
 
     // The main cycle function
-    virtual void doCycle() = 0;
+    virtual void doCycle()                = 0;
     virtual void setCycle(uint64_t cycle) = 0;
     // fast-forward through cycles
     // Note: does not tick stats, check watchdogs, or call drives
@@ -131,7 +131,8 @@ class FlexusInterface
 
 extern FlexusInterface* theFlexus;
 
-void flexus_qmp(int cmd, const char* arg);
+void
+flexus_qmp(int cmd, const char* arg);
 
 } // End Namespace Core
 } // namespace Flexus

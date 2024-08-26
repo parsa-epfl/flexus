@@ -46,11 +46,11 @@
 #define FLEXUS_QEMU_MAI_API_HPP_INCLUDED
 
 #include <bitset>
-#include <cstdint>
 #include <core/flexus.hpp>
 #include <core/qemu/configuration_api.hpp>
 #include <core/target.hpp>
 #include <core/types.hpp>
+#include <cstdint>
 
 using namespace Flexus::Core;
 namespace Flexus {
@@ -103,16 +103,16 @@ class Processor
         VirtualMemoryAddress finalAddress(((uint64_t)(anAddress) + size - 1) & ~0xFFF);
         if ((finalAddress & 0x1000) != (anAddress & 0x1000)) {
             DBG_Assert(false, (<< "Execution ended up somewhere Bryan did NOT expected it to go"));
-        //    bits value1, value2;
-        //    size_t partial = finalAddress - anAddress;
-        //    value1         = read_pa(
-        //      PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(anAddress))),
-        //      partial);
-        //    value2 = read_pa(
-        //      PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(finalAddress))),
-        //      size - partial);
-        //    value2 = (value2 << (partial << 3)) | value1;
-        //    return value2;
+            //    bits value1, value2;
+            //    size_t partial = finalAddress - anAddress;
+            //    value1         = read_pa(
+            //      PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(anAddress))),
+            //      partial);
+            //    value2 = read_pa(
+            //      PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index,
+            //      API::logical_address_t(finalAddress))), size - partial);
+            //    value2 = (value2 << (partial << 3)) | value1;
+            //    return value2;
         }
         return read_pa(
           PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(anAddress))),
@@ -136,7 +136,8 @@ class Processor
         return tmp;
     }
 
-    uint64_t read_sysreg(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn, uint8_t crm) {
+    uint64_t read_sysreg(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn, uint8_t crm)
+    {
         return API::qemu_api.read_sys_register(core_index, opc0, opc1, opc2, crn, crm);
     }
 
@@ -150,36 +151,28 @@ class Processor
         free(qemu_disas_str);
 
         return buffer;
-
     }
 
-    bool is_busy() const {
-        return API::qemu_api.is_busy(core_index);
-    }
+    bool is_busy() const { return API::qemu_api.is_busy(core_index); }
     // TODO ─── NOT implemented ────────────────────────────────────────────────
 
     void dump_state(SharedTypes::CPU_State& dump)
     {
         dump.pc = read_register(API::PC);
 
-        for (std::size_t i{0}; i < 32; i++)
-        {
-           dump.regs[i] = read_register(API::GENERAL, i);
+        for (std::size_t i{ 0 }; i < 32; i++) {
+            dump.regs[i] = read_register(API::GENERAL, i);
         }
     }
 
-    //uint64_t readSCTLR(uint64_t index) { return 0; }
+    // uint64_t readSCTLR(uint64_t index) { return 0; }
 
-    //uint64_t readPC() const { return 0; }
+    // uint64_t readPC() const { return 0; }
 
+    // void breakSimulation() {}
 
-
-
-
-    //void breakSimulation() {}
-
-    //void readException(API::exception_t* exp) const {}
-    // explicit Processor(): base(0) {}
+    // void readException(API::exception_t* exp) const {}
+    //  explicit Processor(): base(0) {}
 
     // explicit Processor(API::conf_object_t* cpu_object) : base(PROCESSOR_IMPL(cpu_object)) {}
 

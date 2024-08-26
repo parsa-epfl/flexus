@@ -109,21 +109,21 @@ struct StatValueBase : public boost::counted_base
     {
         throw 1; /* by default, stat's don't support sum accumulation */
     }
-    virtual void reduceSum(StatValueBase const& anRHS){};
-    virtual void reduceSum(StatValueBase const* anRHS){};
+    virtual void reduceSum(StatValueBase const& anRHS) {};
+    virtual void reduceSum(StatValueBase const* anRHS) {};
     virtual boost::intrusive_ptr<StatValueBase> avgAccumulator()
     {
         throw 1; /* by default, stat's don't support average accumulation */
     }
-    virtual void reduceAvg(StatValueBase const& anRHS){};
+    virtual void reduceAvg(StatValueBase const& anRHS) {};
     virtual boost::intrusive_ptr<StatValueBase> stdevAccumulator()
     {
         throw 1; /* by default, stat's don't support standard deviation accumulation
                   */
     }
-    virtual void reduceStdDev(StatValueBase const& anRHS){};
+    virtual void reduceStdDev(StatValueBase const& anRHS) {};
     virtual boost::intrusive_ptr<StatValueBase> countAccumulator();
-    virtual void reduceCount(StatValueBase const& anRHS){};
+    virtual void reduceCount(StatValueBase const& anRHS) {};
 };
 
 struct StatValueArrayBase : public StatValueBase

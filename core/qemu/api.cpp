@@ -69,7 +69,7 @@ FLEXUS_start(uint64_t cycle)
 {
     theFlexus->setCycle(cycle);
 
-    while(true)
+    while (true)
         theFlexus->doCycle();
 }
 
@@ -86,7 +86,8 @@ FLEXUS_qmp(qmp_flexus_cmd_t aCMD, const char* anArgs)
     flexus_qmp(aCMD, anArgs);
 }
 
-void __attribute__((weak)) FLEXUS_trace_mem(uint64_t idx, memory_transaction_t* tr)
+void __attribute__((weak))
+FLEXUS_trace_mem(uint64_t idx, memory_transaction_t* tr)
 {
     // not exposed in timing
 }

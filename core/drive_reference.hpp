@@ -51,7 +51,7 @@ namespace Core {
 struct DriveBase
 {
     // This method is called every cycle.
-    virtual ~DriveBase(){};
+    virtual ~DriveBase() {};
     virtual void doCycle() = 0;
 };
 
