@@ -45,7 +45,6 @@
 
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/map.hpp>
-#include <core/metaprogram.hpp>
 #include <fstream>
 #include <iomanip>
 #include <iostream>

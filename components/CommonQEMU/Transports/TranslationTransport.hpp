@@ -44,6 +44,9 @@
 //  DO-NOT-REMOVE end-copyright-block
 #ifndef FLEXUS_TRANSPORTS__TRANSLATION_TRANSPORT_HPP_INCLUDED
 #define FLEXUS_TRANSPORTS__TRANSLATION_TRANSPORT_HPP_INCLUDED
+
+#include <boost/mpl/vector.hpp>
+
 #include <components/CommonQEMU/Translation.hpp>
 #include <components/MMU/TranslationState.hpp>
 #include <core/transport.hpp>

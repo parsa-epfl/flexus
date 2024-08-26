@@ -47,7 +47,6 @@
 
 #include <boost/mpl/deref.hpp>
 #include <core/drive_reference.hpp>
-#include <core/metaprogram.hpp>
 #include <core/performance/profile.hpp>
 
 namespace Flexus {

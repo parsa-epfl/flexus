@@ -51,7 +51,6 @@
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index_container.hpp>
 #include <components/CommonQEMU/TraceTracker.hpp>
-#include <core/metaprogram.hpp>
 #include <deque>
 #include <fstream>
 #include <iterator>

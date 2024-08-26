@@ -65,7 +65,6 @@
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index_container.hpp>
 #include <core/flexus.hpp>
-#include <core/metaprogram.hpp>
 #include <core/performance/profile.hpp>
 using namespace boost::multi_index;
 #include <boost/none.hpp>

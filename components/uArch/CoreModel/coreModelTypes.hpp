@@ -56,7 +56,6 @@
 #include <boost/throw_exception.hpp>
 #include <boost/variant/get.hpp>
 #include <core/boost_extensions/intrusive_ptr.hpp>
-#include <core/metaprogram.hpp>
 #include <iomanip>
 #include <iostream>
 #include <list>

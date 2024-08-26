@@ -6,7 +6,6 @@
 #include "core/debug/debug.hpp"
 #include "core/drive_reference.hpp"
 #include "core/exception.hpp"
-#include "core/metaprogram.hpp"
 #include "core/performance/profile.hpp"
 #include "core/qemu/configuration_api.hpp"
 #include "core/qemu/qmp_api.hpp"

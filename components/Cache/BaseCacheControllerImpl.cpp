@@ -63,7 +63,6 @@
 #include <boost/multi_index_container.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 #include <components/CommonQEMU/TraceTracker.hpp>
-#include <core/metaprogram.hpp>
 #include <core/performance/profile.hpp>
 #include <fstream>
 

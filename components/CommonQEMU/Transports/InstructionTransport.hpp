@@ -45,6 +45,7 @@
 #ifndef FLEXUS_TRANSPORTS__INSTRUCTION_TRANSPORT_HPP_INCLUDED
 #define FLEXUS_TRANSPORTS__INSTRUCTION_TRANSPORT_HPP_INCLUDED
 
+#include <boost/mpl/vector.hpp>
 #include <core/transport.hpp>
 
 #pragma GCC diagnostic push

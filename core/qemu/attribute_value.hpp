@@ -48,7 +48,6 @@
 #include <boost/mpl/eval_if.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <core/debug/debug.hpp>
-#include <core/metaprogram.hpp>
 #include <string>
 namespace mpl = boost::mpl;
 

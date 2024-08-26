@@ -49,7 +49,6 @@
 #include <boost/utility.hpp>
 #include <core/debug/debug.hpp>
 #include <core/exception.hpp>
-#include <core/metaprogram.hpp>
 #include <sstream>
 #include <type_traits>
 

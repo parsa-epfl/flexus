@@ -54,7 +54,6 @@
 #include "components/CommonQEMU/Slices/TransactionTracker.hpp"
 #include "components/uFetch/uFetchTypes.hpp"
 #include "core/debug/debug.hpp"
-#include "core/metaprogram.hpp"
 #include "core/qemu/mai_api.hpp"
 #include "core/target.hpp"
 #include "core/types.hpp"

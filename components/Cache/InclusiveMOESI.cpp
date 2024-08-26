@@ -56,7 +56,6 @@
 #include <boost/multi_index_container.hpp>
 #include <boost/serialization/list.hpp>
 #include <components/CommonQEMU/TraceTracker.hpp>
-#include <core/metaprogram.hpp>
 #include <core/performance/profile.hpp>
 #include <deque>
 #include <fstream>
