@@ -48,6 +48,7 @@
 #define FLEXUS_BEGIN_COMPONENT uArch
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
 
+#include "core/qemu/configuration_api.hpp"
 #include "microArch.hpp"
 #include "uArchInterfaces.hpp"
 
@@ -55,7 +56,6 @@
 #include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 #include <components/MTManager/MTManager.hpp>
 #include <core/debug/debug.hpp>
-#include "core/qemu/configuration_api.hpp"
 #include <core/qemu/mai_api.hpp>
 
 #define DBG_DefineCategories uArchCat, Special
@@ -293,10 +293,12 @@ class FLEXUS_COMPONENT(uArch)
                   << ", PADDR_MMU = " << aTranslate->thePaddr << ", PADDR_QEMU = " << magicTranslation << std::dec
                   << ", ID: " << aTranslate->theID));
         } else {
-            DBG_Assert(false,
-                       (<< "ERROR: Magic QEMU translation NOT EQUAL TO MMU Translation. Vaddr = " << std::hex
-                        << aTranslate->theVaddr << ", PADDR_MMU = " << aTranslate->thePaddr
-                        << ", PADDR_QEMU = " << magicTranslation << std::dec));
+            if (!aTranslate->isPagefault()) {
+                DBG_Assert(false,
+                           (<< "ERROR: Magic QEMU translation NOT EQUAL TO MMU Translation. Vaddr = " << std::hex
+                            << aTranslate->theVaddr << ", PADDR_MMU = " << aTranslate->thePaddr
+                            << ", PADDR_QEMU = " << magicTranslation << std::dec));
+            }
         }
 
         aTranslate->thePaddr = magicTranslation;

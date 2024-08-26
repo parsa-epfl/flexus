@@ -45,8 +45,8 @@
 
 #ifndef _ARM_TT_RESOLVERS_DEFINED_HPP_
 #define _ARM_TT_RESOLVERS_DEFINED_HPP_
-#include "TranslationGranules.hpp"
 #include "MMUUtil.hpp"
+#include "TranslationGranules.hpp"
 
 #include <memory>
 #include <stdint.h>

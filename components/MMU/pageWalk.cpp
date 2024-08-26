@@ -123,11 +123,8 @@ PageWalk::walk(TranslationTransport& aTranslation)
     bool validBit = extractSingleBitAsBool(basicPointer->rawTTEValue, 0);
     if (basicPointer->theInstruction) { DBG_(VVerb, (<< "Walking " << *basicPointer->theInstruction)); }
     if (validBit != true) {
-        if (basicPointer->isData() && basicPointer->theInstruction) {
-            basicPointer->theInstruction->forceResync();
-        } else {
-            basicPointer->setPagefault();
-        }
+        if (basicPointer->isData() && basicPointer->theInstruction) { basicPointer->theInstruction->forceResync(); }
+        basicPointer->setPagefault();
         basicPointer->setDone();
         return false;
     }
@@ -299,7 +296,7 @@ PageWalk::InitialTranslationSetup(TranslationTransport& aTranslation)
     statefulPointer->requiredTableLookups = 4 - initialLevel;
     statefulPointer->currentLookupLevel   = initialLevel;
     statefulPointer->granuleSize          = theMMU->getGranuleSize(statefulPointer->isBR0);
-    statefulPointer->ELRegime             = 1; /*currentEL();*/
+    statefulPointer->ELRegime             = currentEL();
 
     uint8_t EL = statefulPointer->ELRegime;
     uint64_t initialTTBR;
@@ -407,6 +404,18 @@ bool
 PageWalk::hasMemoryRequest()
 {
     return !theMemoryTranslations.empty();
+}
+
+uint8_t
+PageWalk::currentEL()
+{
+    return extract32(currentPSTATE(), 2, 2);
+}
+
+uint32_t
+PageWalk::currentPSTATE()
+{
+    return Flexus::Qemu::API::qemu_api.read_register(theNode, Flexus::Qemu::API::PSTATE, 0);
 }
 
 // TODO??

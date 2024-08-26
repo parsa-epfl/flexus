@@ -96,6 +96,9 @@ class PageWalk
 
     TTEDescriptor getNextTTDescriptor(TranslationTransport& aTranslation);
 
+    uint8_t currentEL();
+    uint32_t currentPSTATE();
+
     uint32_t theNode;
 };
 
