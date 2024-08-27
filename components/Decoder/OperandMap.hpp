@@ -50,17 +50,13 @@
 
 #include <components/uArch/uArchInterfaces.hpp>
 
+using namespace nuArch;
+
 namespace nDecoder {
 
-using nuArch::mapped_reg;
-using nuArch::reg;
-using nuArch::register_value;
-
-typedef mpl::push_front<register_value::types, mapped_reg>::type operand_typelist_1;
-
-typedef mpl::push_front<operand_typelist_1, reg>::type operand_typelist;
-
-typedef boost::make_variant_over<operand_typelist>::type Operand;
+using operand_typelist_1 = mpl::push_front<register_value::types, mapped_reg>::type ;
+using operand_typelist = mpl::push_front<operand_typelist_1, reg>::type;
+using Operand = boost::make_variant_over<operand_typelist>::type;
 
 class OperandMap
 {

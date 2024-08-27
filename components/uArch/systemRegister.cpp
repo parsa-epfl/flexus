@@ -84,7 +84,7 @@ class NZCV_ : public SysRegInfo
 
         CoreModel* bCore = dynamic_cast<CoreModel*>(aCore);
         if (bCore) {
-            bCore->initializeRegister(bCore->map(ccRegArch(0)), (register_value)(int64_t)extract32(pstate, 28, 4));
+            bCore->initializeRegister(bCore->map(ccRegArch(0)), register_value(static_cast<uint64_t>(extract32(pstate, 28, 4))));
         }
     }
 
