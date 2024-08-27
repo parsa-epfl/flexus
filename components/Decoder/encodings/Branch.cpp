@@ -521,6 +521,7 @@ SYS(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
 
     if (pr == kLastPrivReg) {
         pr = kAbstractSysReg;
+        return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
     } else if (pr == kDC_ZVA) {
         return nop(aFetchedOpcode, aCPU, aSequenceNo);
     }
