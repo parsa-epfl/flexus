@@ -46,6 +46,7 @@
 #include "Validations.hpp"
 
 #include "components/uArch/uArchInterfaces.hpp"
+#include <components/uArch/ValueTracker.hpp>
 #include "core/qemu/api_wrappers.hpp"
 
 #define DBG_DeclareCategories Decoder
@@ -137,6 +138,13 @@ validateMemory::operator()()
     }
 
     if (flexus == qemu) return true;
+    // TODO: check
+    // mmio
+    if (theInstruction->getAccessAddress() < 0x40000000)
+        return true;
+
+    ValueTracker::valueTracker(0).invalidate(paddr, theSize);
+
     DBG_(Dev, Condition(flexus != qemu)(<< "flexus value: " << std::hex << flexus));
     DBG_(Dev, Condition(flexus != qemu)(<< "qemu value:   " << std::hex << qemu));
 

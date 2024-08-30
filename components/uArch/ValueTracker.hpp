@@ -385,6 +385,10 @@ struct ValueTracker
              (<< "CPU[" << aCPU << "] Store " << anAddress << "[" << aSize << "] = " << std::hex << aStoreValue
               << std::dec));
 
+        // mmio
+        if (anAddress < 0x40000000)
+          return;
+
         // Align the address
         PhysicalMemoryAddress aligned = dwAddr(anAddress);
 
@@ -492,6 +496,10 @@ struct ValueTracker
         DBG_(Iface,
              (<< "CPU[" << aCPU << "] CommitStore " << anAddress << "[" << aSize << "] = " << std::hex << aStoreValue
               << std::dec));
+        //
+        // mmio
+        if (anAddress < 0x40000000)
+          return;
 
         Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(aCPU);
 
@@ -571,6 +579,7 @@ struct ValueTracker
         // See if we already have a ValueTrack
         tracker::iterator iter = theTracker.find(aligned);
         if (iter == theTracker.end()) {
+        // for mmio loads, we can only assume that they are idempotent
             bits val = cpu.read_pa(anAddress, aSize);
             DBG_(Iface,
                  (<< "CPU[" << aCPU << "] Load.NoOutstandingValues " << anAddress << "[" << aSize << "] = " << std::hex
