@@ -383,7 +383,6 @@ class FLEXUS_COMPONENT(FastCMPCache)
         // DBG_Assert(false, ( << "AHHH someone tried to send us a snoop message!
         // What were they thinking?!?" ));
         PhysicalMemoryAddress addr(aMessage.address() & theCoherenceUnitMask);
-        aMessage.fillLevel() = cfg.CacheLevel;
 
         performDelayedActions();
 
@@ -499,6 +498,7 @@ class FLEXUS_COMPONENT(FastCMPCache)
         int32_t extra_snoops_sent       = 0;
         bool accessed_memory            = false;
         PhysicalMemoryAddress addr(aMessage.address() & theCoherenceUnitMask);
+        aMessage.fillLevel() = cfg.CacheLevel;
 
         performDelayedActions();
 
