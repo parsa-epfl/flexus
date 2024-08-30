@@ -242,8 +242,12 @@ SemanticInstruction::postValidate()
         return false;
     }
 
-    if (thePrevalidationsPassed && theOverrideSimics && !theOverrideFns.empty() && !theRaisedException &&
-        !theAnnulled) {
+    if (thePrevalidationsPassed
+        && theOverrideSimics
+        && !theOverrideFns.empty()
+        && (theRaisedException != kException_None)
+        && !theAnnulled) {
+
         DBG_(VVerb, (<< *this << " overrideSimics flag set and override conditions passed."));
         while (!theOverrideFns.empty()) {
             theOverrideFns.front()();

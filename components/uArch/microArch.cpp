@@ -292,12 +292,13 @@ class microArchImpl : public microArch
             // Record free ROB space for next cycle
             theAvailableROB = theCore->availableROB();
 
+            // TODO -
             eExceptionType interrupt = theCPU.has_irq() ? kException_IRQ : kException_None; // HEHE
             theCore->cycle(interrupt);
 
         } catch (ResynchronizeWithQemuException& e) {
             ++theResynchronizations;
-            if (theExceptionRaised) {
+            if (theExceptionRaised != (int)(kException_None)) {
                 // DBG_( Verb, ( << "CPU[" << std::setfill('0') << std::setw(2) <<
                 // theCPU.id() << "] Exception Raised: " <<
                 // Flexus::Qemu::API::SIM_get_exception_name(theCPU, theExceptionRaised)
@@ -329,7 +330,7 @@ class microArchImpl : public microArch
                          "=====\n"));
                 // theCPU.breakSimulation(); TODO
             }
-            theExceptionRaised = 0;
+            theExceptionRaised = kException_None;
         }
 
         CORE_DBG("--------------FINISH MICROARCH------------------------");
@@ -356,7 +357,7 @@ class microArchImpl : public microArch
         theCore->reset();
         theAvailableROB = theCore->availableROB();
 
-        if (theExceptionRaised) {
+        if (theExceptionRaised != (int)(kException_None)) {
             squash(kException);
         } else {
             squash(kResynchronize);

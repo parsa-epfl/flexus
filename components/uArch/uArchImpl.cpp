@@ -287,7 +287,7 @@ class FLEXUS_COMPONENT(uArch)
         PhysicalMemoryAddress magicTranslation =
           Flexus::Qemu::Processor::getProcessor(theMicroArch->core()).translate_va2pa(aTranslate->theVaddr);
 
-        if (aTranslate->thePaddr == magicTranslation || magicTranslation == 0xffffffffffffffff) {
+        if (aTranslate->thePaddr == magicTranslation || magicTranslation == kUnresolved) {
             DBG_(Iface,
                  (<< "Magic QEMU translation == MMU Translation. Vaddr = " << std::hex << aTranslate->theVaddr
                   << ", PADDR_MMU = " << aTranslate->thePaddr << ", PADDR_QEMU = " << magicTranslation << std::dec
