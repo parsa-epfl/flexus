@@ -84,6 +84,7 @@ class FLEXUS_COMPONENT(DecoupledFeeder)
     {
         TranslationPtr tr(new Translation);
         tr->setData();
+        tr->theType     = (aMessage.type() == MemoryMessage::LoadReq) ? Translation::eLoad : Translation::eStore;
         tr->theVaddr    = aMessage.pc();
         tr->thePaddr    = aMessage.address();
         tr->inTraceMode = true;
@@ -120,6 +121,7 @@ class FLEXUS_COMPONENT(DecoupledFeeder)
 
         TranslationPtr tr(new Translation);
         tr->setInstr();
+        tr->theType     = Translation::eFetch;
         tr->theVaddr    = aMessage.pc();
         tr->thePaddr    = aMessage.address();
         tr->inTraceMode = true;
