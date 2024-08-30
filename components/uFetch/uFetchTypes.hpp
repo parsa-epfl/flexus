@@ -1,67 +1,39 @@
-//  DO-NOT-REMOVE begin-copyright-block
-// QFlex consists of several software components that are governed by various
-// licensing terms, in addition to software that was developed internally.
-// Anyone interested in using QFlex needs to fully understand and abide by the
-// licenses governing all the software components.
-//
-// ### Software developed externally (not by the QFlex group)
-//
-//     * [NS-3] (https://www.gnu.org/copyleft/gpl.html)
-//     * [QEMU] (http://wiki.qemu.org/License)
-//     * [SimFlex] (http://parsa.epfl.ch/simflex/)
-//     * [GNU PTH] (https://www.gnu.org/software/pth/)
-//
-// ### Software developed internally (by the QFlex group)
-// **QFlex License**
-//
-// QFlex
-// Copyright (c) 2020, Parallel Systems Architecture Lab, EPFL
-// All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without modification,
-// are permitted provided that the following conditions are met:
-//
-//     * Redistributions of source code must retain the above copyright notice,
-//       this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above copyright notice,
-//       this list of conditions and the following disclaimer in the documentation
-//       and/or other materials provided with the distribution.
-//     * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,
-//       nor the names of its contributors may be used to endorse or promote
-//       products derived from this software without specific prior written
-//       permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,
-// EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-// GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
-// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  DO-NOT-REMOVE end-copyright-block
-
 #ifndef FLEXUS_uFETCH_TYPES_HPP_INCLUDED
 #define FLEXUS_uFETCH_TYPES_HPP_INCLUDED
 
-#include <components/CommonQEMU/Slices/FillLevel.hpp>
-#include <components/CommonQEMU/Slices/TransactionTracker.hpp>
-#include <components/CommonQEMU/Translation.hpp>
-#include <core/boost_extensions/intrusive_ptr.hpp>
-#include <core/qemu/mai_api.hpp>
-#include <iostream>
-#include <list>
+#include "components/CommonQEMU/Translation.hpp"
 
-namespace Flexus {
-namespace SharedTypes {
+#include <unordered_map>
+#include <unordered_set>
 
 using boost::counted_base;
 using Flexus::SharedTypes::TransactionTracker;
 using Flexus::SharedTypes::Translation;
 using Flexus::SharedTypes::VirtualMemoryAddress;
 
+namespace Flexus::SharedTypes {
+
+// =========== TYPEDEF ===================
+typedef uint32_t Opcode;
+
+struct FetchBundle;   // Forward declaration
+struct FetchedOpcode; // Forward declaration
+typedef boost::intrusive_ptr<FetchBundle> pFetchBundle;
+typedef std::shared_ptr<FetchedOpcode> opcodeQIterator;
+typedef std::unordered_map<TranslationPtr,
+                           opcodeQIterator,            // K/V
+                           TranslationPtrHasher,       // Custom hash object
+                           TranslationPtrEqualityCheck // Custom equality comparison
+                           >
+  BijectionMapType_t;
+
+typedef std::unordered_set<TranslationPtr,             // Key
+                           TranslationPtrHasher,       // Custom hash
+                           TranslationPtrEqualityCheck // Custom equality
+                           >
+  ExpectedTranslation_t;
+
+// =========== ENUM ===================
 enum eBranchType
 {
     kNonBranch,
@@ -71,58 +43,50 @@ enum eBranchType
     kIndirectReg,
     kIndirectCall,
     kReturn,
-    kLastBranchType
+    kLastBranchType,
+    kBarrier
 };
-std::ostream&
-operator<<(std::ostream& anOstream, eBranchType aType);
 
 enum eDirection
 {
     kStronglyTaken,
-    kTaken // Bimodal
-    ,
-    kNotTaken // gShare
-    ,
+    kTaken,
+    kNotTaken,
     kStronglyNotTaken
 };
-std::ostream&
-operator<<(std::ostream& anOstream, eDirection aDir);
 
+// =========== STRUCT ===================
 struct BPredState : boost::counted_base
 {
     eBranchType thePredictedType;
+    eBranchType theActualType;
+
+    VirtualMemoryAddress pc;
     VirtualMemoryAddress thePredictedTarget;
     VirtualMemoryAddress theNextPredictedTarget;
+
     eDirection thePrediction;
-    eDirection theBimodalPrediction;
-    eDirection theMetaPrediction;
-    eDirection theGSharePrediction;
-    uint32_t theGShareShiftReg;
-    uint32_t theSerial;
     eDirection theActualDirection;
-    eBranchType theActualType;
-    VirtualMemoryAddress pc;
 
-    // stuff for tage
-    int bank;
-    bool pred_taken;
-    bool alttaken;
-    int BI;
-    int GI[15]; // 15 is random, upper bound on #tables?
-
+    // TODO: Fix magic values
     unsigned ch_i[15];
     unsigned ch_t[2][15];
 
+    int bank;
+    int BI;
+    int GI[15]; // 15 is random, upper bound on #tables?
     int altbank;
     int PWIN;
-
     int phist;
+
     std::bitset<131> ghist; // Fixme: replace 131 with a correct macro
 
-    bool caused_ICache_miss;
-    VirtualMemoryAddress ICache_miss_address;
     uint32_t last_miss_distance;
+    VirtualMemoryAddress ICache_miss_address;
 
+    bool caused_ICache_miss;
+    bool pred_taken;
+    bool alttaken;
     bool is_runahead;       // 1: if it is prediction from runahead path
     bool bimodalPrediction; // Is the final prediction from bimoal (in case of Tage)
     bool returnUsedRAS;     // Did the return instruction used RAS to get the return address
@@ -135,26 +99,11 @@ struct BPredState : boost::counted_base
     bool causedSquash;
     bool hasRetired;
     // xExceptionSource exceptionSource;    // ! Probably needed in the future
+
     int8_t saturationCounter; // What is the counter value
     uint32_t theTL;
     uint32_t theBBSize;
-};
-
-struct FetchAddr
-{
-    Flexus::SharedTypes::VirtualMemoryAddress theAddress;
-    boost::intrusive_ptr<BPredState> theBPState;
-    FetchAddr(Flexus::SharedTypes::VirtualMemoryAddress anAddress)
-
-      : theAddress(anAddress)
-    {
-        theBPState = new BPredState();
-    }
-};
-
-struct FetchCommand : boost::counted_base
-{
-    std::list<FetchAddr> theFetches;
+    uint32_t theSerial;
 };
 
 struct BranchFeedback : boost::counted_base
@@ -166,7 +115,21 @@ struct BranchFeedback : boost::counted_base
     boost::intrusive_ptr<BPredState> theBPState;
 };
 
-typedef uint32_t Opcode;
+struct FetchAddr
+{
+    VirtualMemoryAddress theAddress;
+    boost::intrusive_ptr<BPredState> theBPState;
+    FetchAddr(VirtualMemoryAddress anAddress)
+      : theAddress(anAddress)
+      , theBPState(new BPredState())
+    {
+    }
+};
+
+struct FetchCommand : boost::counted_base
+{
+    std::list<FetchAddr> theFetches;
+};
 
 struct FetchedOpcode
 {
@@ -179,6 +142,7 @@ struct FetchedOpcode
       : theOpcode(anOpcode)
     {
     }
+
     FetchedOpcode(VirtualMemoryAddress anAddr,
                   Opcode anOpcode,
                   boost::intrusive_ptr<BPredState> aBPState,
@@ -193,11 +157,12 @@ struct FetchedOpcode
 
 struct FetchBundle : public boost::counted_base
 {
-    std::list<FetchedOpcode> theOpcodes;
-    std::list<tFillLevel> theFillLevels;
+    std::list<std::shared_ptr<FetchedOpcode>> theOpcodes;
+    std::list<std::shared_ptr<tFillLevel>>
+      theFillLevels; // Level in memory hierarchy from where the instruction was fetched
     int32_t coreID;
 
-    void updateOpcode(VirtualMemoryAddress anAddress, std::list<FetchedOpcode>::iterator it, Opcode anOpcode)
+    void updateOpcode(VirtualMemoryAddress anAddress, std::shared_ptr<FetchedOpcode> it, Opcode anOpcode)
     {
         DBG_AssertSev(Crit,
                       it->thePC == anAddress,
@@ -213,9 +178,6 @@ struct FetchBundle : public boost::counted_base
     }
 };
 
-typedef boost::intrusive_ptr<FetchBundle> pFetchBundle;
+} // FLEXUS::SHAREDTYPES
 
-} // end namespace SharedTypes
-} // end namespace Flexus
-
-#endif // FLEXUS_uFETCH_TYPES_HPP_INCLUDED
+#endif

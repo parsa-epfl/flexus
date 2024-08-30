@@ -100,19 +100,21 @@ class FLEXUS_COMPONENT(Decoder)
     FLEXUS_PORT_ALWAYS_AVAILABLE(FetchBundleIn);
     void push(interface::FetchBundleIn const&, pFetchBundle& aBundle)
     {
-        std::list<tFillLevel>::iterator fill_iter = aBundle->theFillLevels.begin();
+        std::list<std::shared_ptr<tFillLevel>>::iterator fill_iter = aBundle->theFillLevels.begin();
         for (auto it = aBundle->theOpcodes.begin(); it != aBundle->theOpcodes.end(); it++) {
+            auto iter = *it;
+
             int32_t uop = 0;
             boost::intrusive_ptr<AbstractInstruction> insn;
             bool final_uop = false;
             // Note that multi-uop instructions can cause theFIQ to fill beyond its
             // configured size.
             while (!final_uop) {
-                boost::tie(insn, final_uop) = decode(*it, aBundle->coreID, ++theInsnSequenceNo, uop++);
+                boost::tie(insn, final_uop) = decode(*iter, aBundle->coreID, ++theInsnSequenceNo, uop++);
                 if (insn) {
-                    insn->setFetchTransactionTracker(it->theTransaction);
+                    insn->setFetchTransactionTracker(iter->theTransaction);
                     // Set Fill Level for the insn
-                    insn->setSourceLevel(*fill_iter);
+                    insn->setSourceLevel(**fill_iter);
                     theFIQ.push_back(insn);
                 } else
                     DBG_(VVerb, (<< "No INSTRUCTION"));

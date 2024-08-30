@@ -48,6 +48,7 @@
 
 #include <core/target.hpp>
 #include <core/types.hpp>
+#include <core/debug/debug.hpp>
 
 #include DBG_Control()
 
