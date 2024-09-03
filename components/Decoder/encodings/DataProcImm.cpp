@@ -117,6 +117,7 @@ EXTR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
                                                       clsComputation,
                                                       codeALU));
 
+    inst->setClass(clsComputation, codeALU);
     /* MARK: Refactored to deal with the case where there are 2 sources
      * (explicit use of EXTR) or only one (where it should disassemble as ROR)
      */

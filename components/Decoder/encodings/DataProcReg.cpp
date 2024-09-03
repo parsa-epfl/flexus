@@ -50,9 +50,9 @@
 #include "components/Decoder/Conditions.hpp"
 #include "components/uArch/uArchInterfaces.hpp"
 
-namespace nDecoder {
 using namespace nuArch;
 
+namespace nDecoder {
 // Data-processing (1 source)
 archinst
 RBIT(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
@@ -71,6 +71,7 @@ RBIT(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
                                                       clsComputation,
                                                       codeRev));
 
+    inst->setClass(clsComputation, codeALU);
     std::vector<std::list<InternalDependance>> rs_deps(1);
     predicated_action act = reverseAction(inst, kOperand1, kResult, rs_deps, sf);
 
@@ -229,6 +230,7 @@ CRC(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
                                                       aCPU,
                                                       aSequenceNo));
 
+    inst->setClass(clsComputation, codeALU);
     std::vector<std::list<InternalDependance>> rs_deps(2);
     uint32_t poly = crc32c ? 0x1EDC6F41 : 0x04C11DB7;
 
@@ -345,6 +347,7 @@ ADDSUB_CARRY(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
                                                       aCPU,
                                                       aSequenceNo));
 
+    inst->setClass(clsComputation, codeALU);
     std::vector<std::list<InternalDependance>> rs_deps(3);
     predicated_action exec =
       addExecute(inst, operation(setflags ? (sub_op ? kSUBS_ : kADDS_) : (sub_op ? kSUB_ : kADD_)), rs_deps);
@@ -360,6 +363,7 @@ ADDSUB_CARRY(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         addDestination(inst, rd, exec, sf, setflags);
     else if (setflags)
         addSetCC(inst, exec, sf);
+
     return inst;
 }
 
