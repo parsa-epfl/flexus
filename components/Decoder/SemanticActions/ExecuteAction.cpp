@@ -75,7 +75,11 @@ using namespace nuArch;
 
 struct ExecuteBase : public PredicatedSemanticAction
 {
-    eOperandCode theOperands[5];
+    std::array<eOperandCode, 5> theOperands = { kLastOperandCode,
+                                                kLastOperandCode,
+                                                kLastOperandCode,
+                                                kLastOperandCode,
+                                                kLastOperandCode };
     eOperandCode theResult;
     std::unique_ptr<Operation> theOperation;
 
@@ -87,6 +91,8 @@ struct ExecuteBase : public PredicatedSemanticAction
       , theResult(aResult)
       , theOperation(std::move(anOperation))
     {
+
+        DBG_Assert(0 < numOperands(), (<< "There should be at least 1 operand"));
 
         for (int32_t i = 0; i < numOperands(); ++i) {
             theOperands[i] = anOperands[i];
