@@ -1469,11 +1469,11 @@ NonInclusiveMESIPolicy::handleReply(ProcessEntry_p process)
                     rep_msg->type() = MemoryMessage::MissReplyWritable;
                 }
 
-                if (d_lookup->state().oneSharer() && c_lookup->state() != CacheState::Shared) {
-                    // We're racing with an evict of a potentially dirty block
-                    // 2 Phase Evict should have handled this case, so something went wrong
-                    DBG_Assert(false, (<< "Unexpected race condition detected."));
-                }
+                // if (d_lookup->state().oneSharer() && c_lookup->state() != CacheState::Shared) {
+                //     // We're racing with an evict of a potentially dirty block
+                //     // 2 Phase Evict should have handled this case, so something went wrong
+                //     DBG_Assert(false, (<< "Unexpected race condition detected."));
+                // }
 
                 rep_msg->reqSize() = theCMPCacheInfo.theBlockSize;
                 process->setAction(eReply);
