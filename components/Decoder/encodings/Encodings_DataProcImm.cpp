@@ -44,7 +44,6 @@
 //  DO-NOT-REMOVE end-copyright-block
 
 #include "Branch.hpp"
-#include "DataProcFp.hpp"
 #include "DataProcImm.hpp"
 #include "DataProcReg.hpp"
 #include "Encodings.hpp"

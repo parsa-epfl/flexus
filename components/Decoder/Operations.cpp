@@ -44,11 +44,13 @@
 //  DO-NOT-REMOVE end-copyright-block
 
 #include "Conditions.hpp"
-#include "OperandMap.hpp"
+#include "BitManip.hpp"
 #include "SemanticActions.hpp"
 #include "encodings/SharedFunctions.hpp"
+#include "OperandMap.hpp"
 
 #include <boost/throw_exception.hpp>
+#include "SemanticActions.hpp"
 #include <components/uArch/RegisterType.hpp>
 #include <components/uArch/uArchInterfaces.hpp>
 #include <core/boost_extensions/intrusive_ptr.hpp>
@@ -56,13 +58,15 @@
 #include <core/target.hpp>
 #include <core/types.hpp>
 
+
 #define DBG_DeclareCategories Decoder
 #define DBG_SetDefaultOps     AddCat(Decoder)
 #include DBG_Control()
 
+using namespace nuArch;
+
 namespace nDecoder {
 
-using namespace nuArch;
 
 typedef struct OFFSET : public Operation
 {

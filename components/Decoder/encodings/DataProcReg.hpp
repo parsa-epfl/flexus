@@ -46,7 +46,10 @@
 #ifndef FLEXUS_armDECODER_armDATAPROCREG_HPP_INCLUDED
 #define FLEXUS_armDECODER_armDATAPROCREG_HPP_INCLUDED
 
-#include "SharedFunctions.hpp"
+#include "components/Decoder/Instruction.hpp"
+
+using namespace nuArch;
+
 namespace nDecoder {
 
 // Logical (shifted register)
