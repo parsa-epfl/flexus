@@ -64,87 +64,91 @@ archinst
 CAS(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
-    SemanticInstruction* inst(new SemanticInstruction(aFetchedOpcode.thePC,
-                                                      aFetchedOpcode.theOpcode,
-                                                      aFetchedOpcode.theBPState,
-                                                      aCPU,
-                                                      aSequenceNo));
-    //    uint32_t o0 = extract32(aFetchedOpcode.theOpcode, 15, 1);
-    bool L       = extract32(aFetchedOpcode.theOpcode, 22, 1);
-    bool sz      = extract32(aFetchedOpcode.theOpcode, 30, 1);
-    uint32_t rs  = extract32(aFetchedOpcode.theOpcode, 16,
-                            5); // ignored by all loads and store-release
-    uint32_t rt  = extract32(aFetchedOpcode.theOpcode, 0, 5);
-    uint32_t rn  = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    bool is_pair = !extract32(aFetchedOpcode.theOpcode, 23, 1);
+    [[maybe_unused]] SemanticInstruction* inst(new SemanticInstruction(aFetchedOpcode.thePC,
+                                                                       aFetchedOpcode.theOpcode,
+                                                                       aFetchedOpcode.theBPState,
+                                                                       aCPU,
+                                                                       aSequenceNo));
 
-    inst->setClass(clsAtomic, codeCAS);
-    inst->setExclusive();
-
-    bool sf      = sz;
-    eSize dbsize = (sz == 1) ? kQuadWord : kDoubleWord;
-
-    //    eAccType stacctype = o0 == 1 ? kAccType_ORDEREDRW : kAccType_ATOMICRW;
-    eAccType ldacctype = L == 1 ? kAccType_ORDEREDRW : kAccType_ATOMICRW;
-
-    // obtain the loaded values
-    std::vector<std::list<InternalDependance>> rs_deps(1);
-    addAddressCompute(inst, rs_deps);
-    addReadXRegister(inst, 3, rn, rs_deps[0], true);
-
-    predicated_dependant_action cas;
-    if (!is_pair) {
-        cas = casAction(inst, dbsize, kNoExtension, kPD);
-    } else {
-        cas = caspAction(inst, dbsize, kNoExtension, kPD, kPD1);
-    }
-    inst->addDispatchEffect(allocateCAS(inst, dbsize, cas.dependance, ldacctype));
-    inst->addCheckTrapEffect(mmuPageFaultCheck(inst));
-    inst->addRetirementEffect(retireMem(inst));
-    inst->addSquashEffect(eraseLSQ(inst));
-    inst->addCommitEffect(accessMem(inst));
-    inst->setMayCommit(false); // Can't commit till memory-order speculation is
-                               // resolved by the core
-
-    if (!is_pair) {
-        multiply_dependant_action update_value = updateCASValueAction(inst, kOperand1, kOperand2);
-
-        InternalDependance dep(inst->retirementDependance());
-        connectDependance(dep, update_value);
-
-        // Read the value which will be stored
-        std::vector<std::list<InternalDependance>> str_dep(1);
-        str_dep[0].push_back(update_value.dependances[0]);
-        addReadXRegister(inst, 2, rt, str_dep[0], sf);
-
-        // Read the comparison value
-        std::vector<std::list<InternalDependance>> cmp_dep(1);
-        cmp_dep[0].push_back(update_value.dependances[1]);
-        addReadXRegister(inst, 1, rs, cmp_dep[0], sf);
-
-    } else {
-        multiply_dependant_action update_value =
-          updateCASPValueAction(inst, kOperand1, kOperand2, kOperand3, kOperand4);
-        InternalDependance dep(inst->retirementDependance());
-        connectDependance(dep, update_value);
-
-        // Read the value which will be stored
-        std::vector<std::list<InternalDependance>> uv_dep(2);
-        uv_dep[0].push_back(update_value.dependances[0]);
-        uv_dep[1].push_back(update_value.dependances[1]);
-        addReadXRegister(inst, 3, rt, uv_dep[0], sf);
-        addReadXRegister(inst, 4, rt, uv_dep[1], sf);
-
-        // Read the comparison value
-        std::vector<std::list<InternalDependance>> cmp_dep(2);
-        cmp_dep[0].push_back(update_value.dependances[2]);
-        cmp_dep[1].push_back(update_value.dependances[3]);
-        addReadXRegister(inst, 1, rs, cmp_dep[0], sf);
-        addReadXRegister(inst, 2, rs, cmp_dep[1], sf);
-    }
-
-    return inst;
+    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
 }
+//
+//    //    uint32_t o0 = extract32(aFetchedOpcode.theOpcode, 15, 1);
+//    bool L       = extract32(aFetchedOpcode.theOpcode, 22, 1);
+//    bool sz      = extract32(aFetchedOpcode.theOpcode, 30, 1);
+//    uint32_t rs  = extract32(aFetchedOpcode.theOpcode, 16,
+//                            5); // ignored by all loads and store-release
+//    uint32_t rt  = extract32(aFetchedOpcode.theOpcode, 0, 5);
+//    uint32_t rn  = extract32(aFetchedOpcode.theOpcode, 5, 5);
+//    bool is_pair = !extract32(aFetchedOpcode.theOpcode, 23, 1);
+//
+//    inst->setClass(clsAtomic, codeCAS);
+//    inst->setExclusive();
+//
+//    bool sf      = sz;
+//    eSize dbsize = (sz == 1) ? kQuadWord : kDoubleWord;
+//
+//    //    eAccType stacctype = o0 == 1 ? kAccType_ORDEREDRW : kAccType_ATOMICRW;
+//    eAccType ldacctype = L == 1 ? kAccType_ORDEREDRW : kAccType_ATOMICRW;
+//
+//    // obtain the loaded values
+//    std::vector<std::list<InternalDependance>> rs_deps(1);
+//    addAddressCompute(inst, rs_deps);
+//    addReadXRegister(inst, 3, rn, rs_deps[0], true);
+//
+//    predicated_dependant_action cas;
+//    if (!is_pair) {
+//        cas = casAction(inst, dbsize, kNoExtension, kPD);
+//    } else {
+//        cas = caspAction(inst, dbsize, kNoExtension, kPD, kPD1);
+//    }
+//    inst->addDispatchEffect(allocateCAS(inst, dbsize, cas.dependance, ldacctype));
+//    inst->addCheckTrapEffect(mmuPageFaultCheck(inst));
+//    inst->addRetirementEffect(retireMem(inst));
+//    inst->addSquashEffect(eraseLSQ(inst));
+//    inst->addCommitEffect(accessMem(inst));
+//    inst->setMayCommit(false); // Can't commit till memory-order speculation is
+//                               // resolved by the core
+//
+//    if (!is_pair) {
+//        multiply_dependant_action update_value = updateCASValueAction(inst, kOperand1, kOperand2);
+//
+//        InternalDependance dep(inst->retirementDependance());
+//        connectDependance(dep, update_value);
+//
+//        // Read the value which will be stored
+//        std::vector<std::list<InternalDependance>> str_dep(1);
+//        str_dep[0].push_back(update_value.dependances[0]);
+//        addReadXRegister(inst, 2, rt, str_dep[0], sf);
+//
+//        // Read the comparison value
+//        std::vector<std::list<InternalDependance>> cmp_dep(1);
+//        cmp_dep[0].push_back(update_value.dependances[1]);
+//        addReadXRegister(inst, 1, rs, cmp_dep[0], sf);
+//
+//    } else {
+//        multiply_dependant_action update_value =
+//          updateCASPValueAction(inst, kOperand1, kOperand2, kOperand3, kOperand4);
+//        InternalDependance dep(inst->retirementDependance());
+//        connectDependance(dep, update_value);
+//
+//        // Read the value which will be stored
+//        std::vector<std::list<InternalDependance>> uv_dep(2);
+//        uv_dep[0].push_back(update_value.dependances[0]);
+//        uv_dep[1].push_back(update_value.dependances[1]);
+//        addReadXRegister(inst, 3, rt, uv_dep[0], sf);
+//        addReadXRegister(inst, 4, rt, uv_dep[1], sf);
+//
+//        // Read the comparison value
+//        std::vector<std::list<InternalDependance>> cmp_dep(2);
+//        cmp_dep[0].push_back(update_value.dependances[2]);
+//        cmp_dep[1].push_back(update_value.dependances[3]);
+//        addReadXRegister(inst, 1, rs, cmp_dep[0], sf);
+//        addReadXRegister(inst, 2, rs, cmp_dep[1], sf);
+//    }
+//
+//    return inst;
+//}
 
 /* Store Exclusive Register Byte stores a byte from a register to memory
  * if the PE has exclusive access to the memory address, and returns a status
