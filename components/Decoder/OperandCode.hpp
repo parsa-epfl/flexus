@@ -182,7 +182,7 @@ enum eOperandCode
     kocFPCR,
     kUopAddressOffset,
     kSopAddressOffset,
-    kLastOperandCode
+    kLastOperandCode = 0xDEAD
 };
 
 std::ostream&
