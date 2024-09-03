@@ -346,7 +346,7 @@ BLR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         case kIndirectCall: inst->setClass(clsBranch, codeBranchIndirectCall); break;
         case kIndirectReg: inst->setClass(clsBranch, codeBranchIndirectReg); break;
         case kReturn: inst->setClass(clsBranch, codeRETURN); break;
-        default: break;
+        default: DBG_Assert(false, (<< "Not setting a class is weird, what happend ?"));
     }
     inst->addRetirementEffect(updateIndirect(inst, kAddress, branch_type));
 
@@ -492,8 +492,8 @@ MSR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     }
     inst->setOperand(kResult, uint64_t(crm));
 
+    // TODO: WTF >.>, no mortal should ever do this
     // FIXME: This code never actually writes the register.
-
     // inst->addRetirementEffect( writePSTATE(inst, op1, op2) );
     // inst->addPostvalidation( validateXRegister( rt, kResult, inst  ) );
     // FIXME - validate PR
@@ -516,7 +516,6 @@ SYS(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     op2 = extract32(aFetchedOpcode.theOpcode, 5, 3);
     rt  = extract32(aFetchedOpcode.theOpcode, 0, 5);
 
-    // Check for supported PR's
     ePrivRegs pr = getPrivRegType(op0, op1, op2, crn, crm);
 
     if (pr == kLastPrivReg) {
@@ -569,7 +568,7 @@ SVC(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
     return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
-    return generateException(aFetchedOpcode, aCPU, aSequenceNo, kException_AA64_SVC);
+    // return generateException(aFetchedOpcode, aCPU, aSequenceNo, kException_AA64_SVC);
 }
 archinst
 HVC(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
@@ -594,13 +593,13 @@ HLT(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
     return generateException(aFetchedOpcode, aCPU, aSequenceNo, kException_UNCATEGORIZED);
-} // not supported - do we care about semihosting exception? if yes, then raise
+} // TODO: not supported - do we care about semihosting exception? if yes, then raise
   // it here
 archinst
 DCPS(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
     return generateException(aFetchedOpcode, aCPU, aSequenceNo, kException_UNCATEGORIZED);
-} // not supported
+} // TODO not supported
 
 } // namespace nDecoder
