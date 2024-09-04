@@ -105,6 +105,8 @@ ArchInstruction::describe(std::ostream& anOstream) const
     Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(theCPU);
     anOstream << "#" << std::dec << theSequenceNo << "[" << std::setfill('0') << std::right << std::setw(2) << cpu.id()
               << "] " << printInstClass() << " QEMU disas: " << cpu.disassemble(thePC);
+
+    if (theAnnulled) { anOstream << " {annuled}"; }
     if (theRaisedException != kException_None) { anOstream << " {raised}"; }
     if (theResync) { anOstream << " {force-resync}"; }
     if (haltDispatch()) { anOstream << " {halt-dispatch}"; }
@@ -203,7 +205,6 @@ decode(Flexus::SharedTypes::FetchedOpcode const& aFetchedOpcode, uint32_t aCPU, 
     DBG_(VVerb, (<< "\033[1;31m DECODER: Decoding " << std::hex << aFetchedOpcode.theOpcode << std::dec << "\033[0m"));
 
     bool last_uop = true;
-    // boost::intrusive_ptr<AbstractInstruction> ret_val; // HEHE
     boost::intrusive_ptr<AbstractInstruction> ret_val = disas_a64_insn(aFetchedOpcode, aCPU, aSequenceNo, aUop);
     return std::make_pair(ret_val, last_uop);
 }
