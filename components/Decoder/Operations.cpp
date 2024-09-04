@@ -93,14 +93,21 @@ typedef struct ADD : public Operation
     {
         std::vector<Operand> finalOperands = theOperands.size() ? theOperands : operands;
         SEMANTICS_DBG("ADDING with " << finalOperands.size());
-        DBG_Assert(finalOperands.size() == 1 || finalOperands.size() == 2,
+        DBG_Assert(finalOperands.size() <= 3 && finalOperands.size() > 0,
                    (<< *theInstruction << "num operands: " << finalOperands.size()));
 
-        if (finalOperands.size() > 1) {
-            return boost::get<uint64_t>(finalOperands[0]) + boost::get<uint64_t>(finalOperands[1]);
-        } else {
-            return boost::get<uint64_t>(finalOperands[0]);
+        auto result = boost::get<uint64_t>(finalOperands[0]);
+
+        if (finalOperands.size() == 1) {
+            return result;
+        } else if (finalOperands.size() == 2) {
+            return result + boost::get<uint64_t>(finalOperands[1]);
+        } else if (finalOperands.size() == 3) {
+            result += boost::get<uint64_t>(finalOperands[1]);
+            result += (boost::get<bits>(finalOperands[2]) != 0) ? 1 : 0; // ! This is only for ADC and SUBC.
         }
+
+        return result;
     }
     virtual char const* describe() const { return "Add"; }
 } ADD_;

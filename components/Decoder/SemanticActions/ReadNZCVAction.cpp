@@ -99,6 +99,7 @@ struct ReadNZCVAction : public BaseSemanticAction
         }
 
         theInstruction->setOperand(theOperandCode, nzcv_bit);
+        satisfyDependants();
     }
 
     void describe(std::ostream& anOstream) const { anOstream << theInstruction->identify() << " ReadNZCVAction "; }
