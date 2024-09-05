@@ -1175,6 +1175,10 @@ CoreImpl::retire()
             }
         }
 
+        // the remaining instrs in the ROB are all invalid
+        if (theROB.front()->isSquashed())
+            break;
+
         // FOR in-order SMS Experiments only - not normal in-order
         // Under theInOrderMemory, we do not allow stores or atomics to retire
         // unless the OoO core is fully idle.  This is not neccessary for loads -
