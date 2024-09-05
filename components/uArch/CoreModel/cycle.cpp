@@ -184,67 +184,6 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
         DBG_Assert(theOpenCheckpoint != 0);
         DBG_Assert(theCheckpoints.find(theOpenCheckpoint) != theCheckpoints.end());
 
-#ifdef VALIDATE_STORE_PREFETCHING
-        // Ensure that the required blocks are somewhere
-        std::map<boost::intrusive_ptr<Instruction>, Checkpoint>::iterator ckpt = theCheckpoints.begin();
-        while (ckpt != theCheckpoints.end()) {
-            // Walk through the required permissions, make sure the block is somewhere
-            std::map<PhysicalMemoryAddress, boost::intrusive_ptr<Instruction>>::iterator iter, end;
-            iter = ckpt->second.theRequiredPermissions.begin();
-            end  = ckpt->second.theRequiredPermissions.end();
-            while (iter != end) {
-                if (!ckpt->second.theHeldPermissions.count(iter->first) > 0) {
-                    // permission not held
-                    if (!theOutstandingStorePrefetches.count(iter->first) > 0) {
-                        if (!theWaitingStorePrefetches.count(iter->first) > 0) {
-                            if (!theBlockedStorePrefetches.count(iter->first) > 0) {
-                                Flexus::Core::theFlexus->setDebug("verb");
-                                dumpCheckpoints();
-                                dumpMSHR();
-                                dumpSBPermissions();
-                                DBG_Assert(false,
-                                           (<< theName << " required store address is lost: " << iter->first
-                                            << " required by " << *iter->second));
-                            } else {
-                                bool found = false;
-                                MSHRs_t::iterator miter, mend;
-                                for (miter = theMSHRs.begin(), mend = theMSHRs.end(); miter != mend; ++miter) {
-                                    if ((miter->first & ~63) == iter->first) {
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                                if (!found) {
-                                    Flexus::Core::theFlexus->setDebug("verb");
-                                    dumpCheckpoints();
-                                    dumpMSHR();
-                                    dumpSBPermissions();
-                                    DBG_Assert(false,
-                                               (<< theName << " blocked prefetch for: " << iter->first
-                                                << " has no obvious blocking MSHR. "));
-                                }
-                            }
-                        } else {
-                            DBG_Assert(!theWaitingStorePrefetches[iter->first].empty());
-                            if (theMemoryPortArbiter.theStorePrefetchRequests.get<by_insn>().find(
-                                  *theWaitingStorePrefetches[iter->first].begin()) ==
-                                theMemoryPortArbiter.theStorePrefetchRequests.get<by_insn>().end()) {
-                                Flexus::Core::theFlexus->setDebug("verb");
-                                dumpCheckpoints();
-                                dumpMSHR();
-                                dumpSBPermissions();
-                                DBG_Assert(false,
-                                           (<< theName << " no queued prefetch request for: "
-                                            << **theWaitingStorePrefetches[iter->first].begin()));
-                            }
-                        }
-                    }
-                }
-                ++iter;
-            }
-            ++ckpt;
-        }
-#endif // VALIDATE STORE PREFETCHING
     } else {
         CORE_DBG("Not Speculating");
 
@@ -685,23 +624,6 @@ CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn)
             // TRACE TRACKER : Notify trace tracker of store
             // uint64_t logical_timestamp = theCommitNumber + theSRB.size();
             theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/, anInsn->isPriv(), 0);
-            /* CMU-ONLY-BLOCK-BEGIN */
-            //      if (theTrackParallelAccesses ) {
-            //        theTraceTracker.parallelList(theNode, eCore, iter->thePaddr,
-            //        iter->theParallelAddresses);
-            /*
-                      DBG_( Dev,  ( << theName << " CAS/RMW " << std::hex <<
-               iter->thePaddr << std::dec << " parallel set follows " ) ); std::set<
-               PhysicalMemoryAddress >::iterator pal_iter =
-               iter->theParallelAddresses.begin(); std::set< PhysicalMemoryAddress
-               >::iterator pal_end = iter->theParallelAddresses.end(); while (pal_iter
-               != pal_end ) { DBG_ ( Dev, ( << "    " << std::hex << *pal_iter <<
-               std::dec ) );
-                        ++pal_iter;
-                      }
-             */
-            //      }
-            /* CMU-ONLY-BLOCK-END */
         }
 
         if (iter->theOperation == kRMW) {
@@ -1208,11 +1130,6 @@ CoreImpl::retire()
     theRetireCount = 0;
     while (!theROB.empty() && !stop_retire) {
 
-        //  if (! theROB.front()->isAnnulled() ) {
-        //        theROB.pop_front();
-        //        continue;
-        //  }
-
         if (!theROB.front()->mayRetire()) {
             CORE_DBG("Cant Retire due to pending retirement dependance " << *theROB.front());
             break;
@@ -1668,56 +1585,6 @@ CoreImpl::checkStopSpeculating()
     }
 }
 
-//// AArch64.TakeException()
-//// =======================
-//// Take an exception to an Exception Level using AArch64.
-// void CoreImpl::TakeException(uint8_t target_el, ExceptionRecord exception,
-// uint64_t preferred_exception_return, int vect_offset)
-////SynchronizeContext();
-////assert HaveEL(target_el) && !ELUsingAArch32(target_el) && UInt(target_el) >=
-/// UInt(PSTATE.EL); / If coming from AArch32 state, the top parts of the X[]
-/// registers might be set to zero
-// from_32 = UsingAArch32();
-// if from_32 then AArch64.MaybeZeroRegisterUppers();
-// if UInt(target_el) > UInt(PSTATE.EL) then
-// boolean lower_32;
-// if target_el == EL3 then
-// if !IsSecure() && HaveEL(EL2) then
-// lower_32 = ELUsingAArch32(EL2);
-// else
-// lower_32 = ELUsingAArch32(EL1);
-// elsif IsInHost() && PSTATE.EL == EL0 && target_el == EL2 then
-// lower_32 = ELUsingAArch32(EL0);
-// else
-// lower_32 = ELUsingAArch32(target_el - 1);
-// vect_offset = vect_offset + (if lower_32 then 0x600 else 0x400);
-// elsif PSTATE.SP == '1' then
-// vect_offset = vect_offset + 0x200;
-// spsr = GetPSRFromPSTATE();
-// if HaveUAOExt() then PSTATE.UAO = '0';
-// if !(exception.type IN {Exception_IRQ, Exception_FIQ}) then
-// AArch64.ReportException(exception, target_el);
-// PSTATE.EL = target_el;
-// PSTATE.nRW = '0';
-// PSTATE.SP = '1';
-// SPSR[] = spsr;
-// ELR[] = preferred_exception_return;
-// PSTATE.SS = '0';
-// PSTATE.<D,A,I,F> = '1111';
-// PSTATE.IL = '0';
-// if from_32 then
-//// Coming from AArch32
-// PSTATE.IT = '00000000'; PSTATE.T = '0';
-//// PSTATE.J is RES0
-// if HavePANExt() && (PSTATE.EL == EL1 || (PSTATE.EL == EL2 &&
-// ELIsInHost(EL0))) && SCTLR[].SPAN == '0' then PSTATE.PAN = '1';
-// BranchTo(VBAR[]<63:11>:vect_offset<10:0>, BranchType_EXCEPTION);
-// if HaveRASExt() && SCTLR[].IESB == '1' then
-// SynchronizeErrors();
-// iesb_req = TRUE;
-// TakeUnmaskedPhysicalSErrorInterrupts(iesb_req);
-// EndOfInstruction();
-
 void
 CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExceptionType aTrapType)
 {
@@ -1757,7 +1624,6 @@ CoreImpl::acceptInterrupt()
         && !theROB.front()->isSquashed()         // Do not take interrupts on squashed instructions
         && !theROB.front()->isMicroOp()          // Do not take interrupts on squashed micro-ops
         && !theIsSpeculating                     // Do not take interrupts while speculating
-        //          &&   (getPSTATE() & 0x2)         //PSTATE.IE = 1
     ) {
         // Interrupt was signalled this cycle.  Clear the ROB
         theInterruptSignalled = false;

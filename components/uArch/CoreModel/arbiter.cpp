@@ -84,6 +84,7 @@ MemoryPortArbiter::inOrderArbitrate()
 {
     // load at LSQ head gets to go first
     uint32_t sent = 0;
+
     memq_t::index<by_queue>::type::iterator iter, end;
     std::tie(iter, end) = theCore.theMemQueue.get<by_queue>().equal_range(std::make_tuple(kLSQ));
     while (iter != end) {
@@ -492,6 +493,7 @@ CoreImpl::issueMMU(TranslationPtr aTranslation)
     pair.first->second.theWaitingPagewalks.push_back(aTranslation);
     if (pair.second)
         theMemoryPorts.push_back(op);
+
     DBG_(Iface,
          (<< theName << " "
           << " issuing translation operation " << *op << "  -- ID " << aTranslation->theID));
@@ -649,41 +651,12 @@ CoreImpl::issueStorePrefetch(boost::intrusive_ptr<Instruction> anInstruction)
         // Memory operation completed some other way (i.e. forwarding, annullment)
         DBG_(Verb, (<< theName << " Store Prefetch request ignored because LSQ entry is gone" << *anInstruction));
 
-#ifdef VALIDATE_STORE_PREFETCHING
-        // Find the waiting store prefetch
-        std::map<PhysicalMemoryAddress, std::set<boost::intrusive_ptr<Instruction>>>::iterator iter, item, end;
-        iter       = theWaitingStorePrefetches.begin();
-        end        = theWaitingStorePrefetches.end();
-        bool found = false;
-        while (iter != end) {
-            item = iter;
-            ++iter;
-            if (item->second.count(anInstruction) > 0) {
-                DBG_Assert(!found);
-                item->second.erase(anInstruction);
-                found = true;
-            }
-            if (item->second.empty()) { theWaitingStorePrefetches.erase(item); }
-        }
-        DBG_Assert(found);
-#endif // VALIDATE_STORE_PREFETCHING
         return;
     }
 
     PhysicalMemoryAddress aligned =
       PhysicalMemoryAddress(static_cast<uint64_t>(lsq_entry->thePaddr) & ~(theCoherenceUnit - 1));
     std::map<PhysicalMemoryAddress, std::set<boost::intrusive_ptr<Instruction>>>::iterator iter;
-#ifdef VALIDATE_STORE_PREFETCHING
-    iter = theWaitingStorePrefetches.find(aligned);
-    DBG_Assert(iter != theWaitingStorePrefetches.end(),
-               (<< theName << " Non-waiting store prefetch by: " << *anInstruction));
-    DBG_Assert(iter->second.count(anInstruction) > 0);
-    iter->second.erase(anInstruction);
-    if (iter->second.empty()) {
-        DBG_(Verb, (<< theName << " Erase store prefetch " << *anInstruction));
-        theWaitingStorePrefetches.erase(iter);
-    }
-#endif // VALIDATE_STORE_PREFETCHING
 
     if (lsq_entry->isAbnormalAccess() || lsq_entry->isNAW() || lsq_entry->thePaddr == kUnresolved) {
         DBG_(Verb,

@@ -245,10 +245,7 @@ class CoreImpl : public CoreModel
     // Outsanding prefetch tracking
     bool thePrefetchEarly;
     std::map<PhysicalMemoryAddress, std::set<boost::intrusive_ptr<Instruction>>> theOutstandingStorePrefetches;
-#ifdef VALIDATE_STORE_PREFETCHING
-    std::map<PhysicalMemoryAddress, std::set<boost::intrusive_ptr<Instruction>>> theWaitingStorePrefetches;
-    std::map<PhysicalMemoryAddress, std::set<boost::intrusive_ptr<Instruction>>> theBlockedStorePrefetches;
-#endif // VALIDATE_STORE_PREFETCHING
+
     std::map<PhysicalMemoryAddress, std::pair<int, bool>> theSBLines_Permission;
     int32_t theSBLines_Permission_falsecount;
 
