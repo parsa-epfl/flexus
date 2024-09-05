@@ -85,7 +85,6 @@ MemQueueEntry::describe(std::ostream& anOstream) const
 
         if (theValue) { anOstream << " =" << std::hex << *theValue; }
         if (theExtendedValue) { anOstream << " x=" << *theExtendedValue; }
-        if (theCompareValue) { anOstream << " ?=" << *theCompareValue; }
 
         if (theAnnulled) { anOstream << " {annulled}"; }
         if (theStoreComplete) { anOstream << " {store-complete}"; }
