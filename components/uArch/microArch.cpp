@@ -131,7 +131,7 @@ class microArchImpl : public microArch
       , theResyncInstructions(options.name + "-ResyncsCaught:Instruction")
       , theOtherResyncs(options.name + "-ResyncsCaught:Other")
       , theExceptions(options.name + "-ResyncsCaught:Exception")
-      , theExceptionRaised(0)
+      , theExceptionRaised(kException_None)
       , theBreakOnResynchronize(options.breakOnResynchronize)
       , theDriveClients(false)
       , theNumClients(0)
