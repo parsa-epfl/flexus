@@ -1133,6 +1133,9 @@ CoreImpl::retire()
     while (!theROB.empty() && !stop_retire) {
 
         if (!theROB.front()->mayRetire()) {
+            // wfi still executing
+            if (theROB.front()->getOpcode() == 0x7F2003D5)
+                 theFlexus->reset_core_watchdog(theNode);
             CORE_DBG("Cant Retire due to pending retirement dependance " << *theROB.front());
             break;
         }
@@ -1614,7 +1617,22 @@ CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExceptionTy
     theSquashReason      = kException;
     theEmptyROBCause     = kRaisedException;
     theSquashInstruction = theROB.begin();
-    theSquashInclusive   = true;
+
+    auto wfi = (anInstruction->getOpcode() == 0x7F2003D5) && (aTrapType & 0x80000000);
+
+    // different from the pure emulation where the wfi instruction is nevertheless
+    // executed first and the emulator then waits for the interrupt, here, we drive
+    // the simulator first, waiting for the emulator to signal the interrupt.
+    // this means that at the time we see the interrupt and are about to retire
+    // the wfi, it is not yet executed in the emulator, neither is the required
+    // pc advancement (+4) performed.
+    if (wfi)
+    {
+        DBG_Assert(false, (<< "[==BRYAN==] You seems to have entered the WAIT FOR INTERRUPT (wfi) realm proceed with caution because it was NOT tested at all, and the condition where left unchanged from the RISC-V version"));
+        // Flexus::Qemu::API::qemu_api.set_pc(theQEMUCPU, theROB.front()->pc() + 4);
+    }
+
+    theSquashInclusive = !wfi;
 
     // Record the pending trap
     thePendingTrap     = aTrapType;
