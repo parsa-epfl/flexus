@@ -83,6 +83,7 @@ void
 MemoryPortArbiter::inOrderArbitrate()
 {
     // load at LSQ head gets to go first
+    uint32_t sent = 0;
     memq_t::index<by_queue>::type::iterator iter, end;
     std::tie(iter, end) = theCore.theMemQueue.get<by_queue>().equal_range(std::make_tuple(kLSQ));
     while (iter != end) {
@@ -90,8 +91,9 @@ MemoryPortArbiter::inOrderArbitrate()
             ++iter;
             continue;
         }
-        if (theCore.hasMemPort() && iter->status() == kAwaitingPort && iter->theOperation != kStore) {
+        if (theCore.hasMemPort(sent) && iter->status() == kAwaitingPort && iter->theOperation != kStore) {
             theCore.issue(iter->theInstruction);
+            sent++;
         }
         break;
     }
@@ -100,15 +102,19 @@ MemoryPortArbiter::inOrderArbitrate()
     std::tie(iter, end) = theCore.theMemQueue.get<by_queue>().equal_range(std::make_tuple(kSB));
     if (iter != end) {
         DBG_Assert(iter->theOperation == kStore);
-        if (theCore.hasMemPort() && iter->status() == kAwaitingPort) { theCore.issue(iter->theInstruction); }
+        if (theCore.hasMemPort(sent) && iter->status() == kAwaitingPort) {
+            theCore.issue(iter->theInstruction);
+            sent++;
+        }
     }
 
     // Now try Store prefetch
-    while (!theStorePrefetchRequests.empty() && theCore.hasMemPort() &&
+    while (!theStorePrefetchRequests.empty() && theCore.hasMemPort(sent) &&
            theCore.outstandingStorePrefetches() < theMaxStorePrefetches) {
         // issue one store prefetch request
         theCore.issueStorePrefetch(theStorePrefetchRequests.begin()->theInstruction);
         theStorePrefetchRequests.erase(theStorePrefetchRequests.begin());
+        sent++;
     }
 }
 
@@ -119,13 +125,16 @@ MemoryPortArbiter::arbitrate()
         inOrderArbitrate();
         return;
     }
-    while (!empty() && theCore.hasMemPort()) {
+
+    uint32_t sent = 0;
+    while (!empty() && theCore.hasMemPort(sent)) {
         DBG_(VVerb, (<< "Arbiter granting request"));
 
         // Always issue a store or RMW if there is one ready to go.
         if (!thePriorityRequests.empty()) {
             theCore.issue(thePriorityRequests.top().theEntry);
             thePriorityRequests.pop();
+            sent++;
             continue;
         }
 
@@ -146,6 +155,7 @@ MemoryPortArbiter::arbitrate()
         if (!theReadRequests.empty()) {
             theCore.issue(theReadRequests.top().theEntry);
             theReadRequests.pop();
+            sent++;
             continue;
         }
 
@@ -153,6 +163,7 @@ MemoryPortArbiter::arbitrate()
             // issue one store prefetch request
             theCore.issueStorePrefetch(theStorePrefetchRequests.begin()->theInstruction);
             theStorePrefetchRequests.erase(theStorePrefetchRequests.begin());
+            sent++;
             continue;
         }
 
@@ -180,26 +191,7 @@ MemoryPortArbiter::request(eOperation op, uint64_t age, boost::intrusive_ptr<Ins
 void
 CoreImpl::killStorePrefetches(boost::intrusive_ptr<Instruction> anInstruction)
 {
-    if (theMemoryPortArbiter.theStorePrefetchRequests.get<by_insn>().erase(anInstruction) > 0) {
-#ifdef VALIDATE_STORE_PREFETCHING
-        // Find the waiting store prefetch
-        std::map<PhysicalMemoryAddress, std::set<boost::intrusive_ptr<Instruction>>>::iterator iter, item, end;
-        iter       = theWaitingStorePrefetches.begin();
-        end        = theWaitingStorePrefetches.end();
-        bool found = false;
-        while (iter != end) {
-            item = iter;
-            ++iter;
-            if (item->second.count(anInstruction) > 0) {
-                DBG_Assert(!found);
-                item->second.erase(anInstruction);
-                found = true;
-            }
-            if (item->second.empty()) { theWaitingStorePrefetches.erase(item); }
-        }
-        DBG_Assert(found);
-#endif // VALIDATE_STORE_PREFETCHING
-    }
+    if (theMemoryPortArbiter.theStorePrefetchRequests.get<by_insn>().erase(anInstruction) > 0) {}
 }
 
 void
@@ -220,12 +212,6 @@ CoreImpl::requestStorePrefetch(memq_t::index<by_insn>::type::iterator lsq_entry)
     if (lsq_entry->thePaddr && !lsq_entry->isAbnormalAccess() && !lsq_entry->isNAW()) {
         theMemoryPortArbiter.requestStorePrefetch(lsq_entry);
         DBG_(Verb, (<< theName << " Store prefetch request: " << *lsq_entry));
-#ifdef VALIDATE_STORE_PREFETCHING
-        PhysicalMemoryAddress aligned =
-          PhysicalMemoryAddress(static_cast<uint64_t>(lsq_entry->thePaddr) & ~(theCoherenceUnit - 1));
-        DBG_Assert(theWaitingStorePrefetches[aligned].count(lsq_entry->theInstruction) == 0);
-        theWaitingStorePrefetches[aligned].insert(lsq_entry->theInstruction);
-#endif // VALIDATE_STORE_PREFETCHING
     }
 }
 

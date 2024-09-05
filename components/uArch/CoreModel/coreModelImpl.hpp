@@ -779,7 +779,7 @@ class CoreImpl : public CoreModel
     bool hasSnoopBuffer() const { return theSnoopPorts.size() < theNumSnoopPorts; }
 
   public:
-    bool hasMemPort() const { return theMemoryPorts.size() < theNumMemoryPorts; }
+    bool hasMemPort(uint32_t sent) const { return sent < theNumMemoryPorts; }
     eInstructionClass getROBHeadClass() const
     {
         eInstructionClass rob_head = clsComputation;
