@@ -294,6 +294,7 @@ struct MSHR
     std::list<memq_t::index<by_insn>::type::iterator> theWaitingLSQs;
     std::list<boost::intrusive_ptr<Instruction>> theBlockedOps;
     std::list<boost::intrusive_ptr<Instruction>> theBlockedPrefetches;
+    std::list<TranslationPtr> theWaitingPagewalks;
     boost::intrusive_ptr<TransactionTracker> theTracker;
     MSHR()
       : thePaddr(kUnresolved)

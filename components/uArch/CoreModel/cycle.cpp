@@ -261,6 +261,9 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     processMemoryReplies();
     prepareCycle();
 
+    for (const auto &tr: thePageWalkReissues)
+        issueMMU(tr);
+    thePageWalkReissues.clear();
     DBG_(VVerb, (<< "*** Eval *** "));
     evaluate();
 
@@ -532,7 +535,6 @@ CoreImpl::freeCheckpoint(boost::intrusive_ptr<Instruction> anInsn)
     DBG_Assert(ckpt != theCheckpoints.end());
     theCheckpoints.erase(ckpt);
     anInsn->setHasCheckpoint(false);
-    //  Flexus::Qemu::Processor::getProcessor( theNode )->releaseMMUCkpt();
     if (theOpenCheckpoint == anInsn) { theOpenCheckpoint = 0; }
     checkStopSpeculating();
 }

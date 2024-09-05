@@ -222,7 +222,8 @@ class CoreImpl : public CoreModel
     bool theNAWBypassSB;
     bool theNAWWaitAtSync;
     MSHRs_t theMSHRs;
-    std::map<VirtualMemoryAddress, TranslationPtr> thePageWalkRequests;
+    std::list<TranslationPtr> thePageWalkReissues;
+    std::list<TranslationPtr> thePageWalkRequests;
     eConsistencyModel theConsistencyModel;
     uint64_t theCoherenceUnit;
     uint32_t thePartialSnoopersOutstanding;

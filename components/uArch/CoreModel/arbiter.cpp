@@ -486,19 +486,15 @@ CoreImpl::issueMMU(TranslationPtr aTranslation)
     op->theTracker  = tracker;
     mshr.theTracker = tracker;
 
-    bool ignored;
-    /*std::tie(lsq_entry->theMSHR, ignored) = */ theMSHRs.insert(std::make_pair(mshr.thePaddr, mshr));
-    theMemoryPorts.push_back(op);
+    // the ptw can now issue multiple reqs (potentially with the same pa)
+    auto pair = theMSHRs.insert(std::make_pair(mshr.thePaddr, mshr));
+
+    pair.first->second.theWaitingPagewalks.push_back(aTranslation);
+    if (pair.second)
+        theMemoryPorts.push_back(op);
     DBG_(Iface,
          (<< theName << " "
           << " issuing translation operation " << *op << "  -- ID " << aTranslation->theID));
-    bool inserted = thePageWalkRequests.emplace(std::make_pair(aTranslation->theVaddr, aTranslation)).second;
-    while (!inserted) {
-        std::map<VirtualMemoryAddress, TranslationPtr>::iterator item =
-          thePageWalkRequests.find(aTranslation->theVaddr);
-        thePageWalkRequests.erase(item);
-        inserted = thePageWalkRequests.emplace(std::make_pair(aTranslation->theVaddr, aTranslation)).second;
-    }
 }
 
 bool
@@ -508,7 +504,7 @@ CoreImpl::scanAndAttachMSHR(memq_t::index<by_insn>::type::iterator anLSQEntry)
     // Check for an existing MSHR for the same address (issued this cycle)
     MSHRs_t::iterator existing = theMSHRs.find(anLSQEntry->thePaddr);
     if (existing != theMSHRs.end()) {
-        DBG_Assert(!existing->second.theWaitingLSQs.empty());
+        //DBG_Assert(!existing->second.theWaitingLSQs.empty());
         if (existing->second.theOperation == kLoad && existing->second.theSize == anLSQEntry->theSize) {
             existing->second.theWaitingLSQs.push_back(anLSQEntry);
             DBG_Assert(!anLSQEntry->theMSHR);
@@ -537,7 +533,7 @@ CoreImpl::scanAndBlockMSHR(memq_t::index<by_insn>::type::iterator anLSQEntry)
     // Check for an existing MSHR for the same address (issued this cycle)
     MSHRs_t::iterator existing = theMSHRs.find(anLSQEntry->thePaddr);
     if (existing != theMSHRs.end()) {
-        DBG_Assert(!existing->second.theWaitingLSQs.empty());
+         DBG_Assert(!existing->second.theWaitingLSQs.empty());
         existing->second.theBlockedOps.push_back(anLSQEntry->theInstruction);
         return true;
     }
@@ -552,7 +548,7 @@ CoreImpl::scanAndBlockPrefetch(memq_t::index<by_insn>::type::iterator anLSQEntry
     // Check for an existing MSHR for the same address (issued this cycle)
     MSHRs_t::iterator existing = theMSHRs.find(anLSQEntry->thePaddr);
     if (existing != theMSHRs.end()) {
-        DBG_Assert(!existing->second.theWaitingLSQs.empty());
+        // DBG_Assert(!existing->second.theWaitingLSQs.empty());
         existing->second.theBlockedPrefetches.push_back(anLSQEntry->theInstruction);
         return true;
     }
@@ -647,7 +643,6 @@ void
 CoreImpl::issueStorePrefetch(boost::intrusive_ptr<Instruction> anInstruction)
 {
     FLEXUS_PROFILE();
-    DBG_Assert(hasMemPort());
 
     memq_t::index<by_insn>::type::iterator lsq_entry = theMemQueue.get<by_insn>().find(anInstruction);
     if (lsq_entry == theMemQueue.get<by_insn>().end()) {
@@ -767,7 +762,7 @@ CoreImpl::issueAtomic()
     FLEXUS_PROFILE();
     if (!theMemQueue.empty() &&
         (theMemQueue.front().theOperation == kCAS || theMemQueue.front().theOperation == kRMW) &&
-        theMemQueue.front().status() == kAwaitingIssue && theMemQueue.front().theValue &&
+        theMemQueue.front().status() == kAwaitingIssue &&
         (theMemQueue.front().theInstruction == theROB.front())) {
         // Atomics that are issued as the head of theMemQueue don't need to
         // worry about partial snoops

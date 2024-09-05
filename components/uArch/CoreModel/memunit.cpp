@@ -102,6 +102,11 @@ CoreImpl::breakMSHRLink(memq_t::index<by_insn>::type::iterator iter)
     iter->theIssued = false;
     if (iter->theMSHR) {
         DBG_(Verb, (<< "Breaking MSHR connection of " << *iter));
+        // page walk requests can be chained to normal load/store misses
+        for (const auto &tr: (*iter->theMSHR)->second.theWaitingPagewalks)
+            thePageWalkReissues.push_back(tr);
+
+        (*iter->theMSHR)->second.theWaitingPagewalks.clear();
         // Break dependance on pending load
         std::list<memq_t::index<by_insn>::type::iterator>::iterator link =
           find((*iter->theMSHR)->second.theWaitingLSQs.begin(), (*iter->theMSHR)->second.theWaitingLSQs.end(), iter);
@@ -139,6 +144,7 @@ CoreImpl::breakMSHRLink(memq_t::index<by_insn>::type::iterator iter)
             std::list<boost::intrusive_ptr<Instruction>> wake_list;
             wake_list.swap((*iter->theMSHR)->second.theBlockedOps);
             if ((*iter->theMSHR)->second.theTracker) { (*iter->theMSHR)->second.theTracker->setWrongPath(true); }
+            DBG_(VVerb, (<< "breakingMSHRLink: erasing MSHR " << (*iter->theMSHR)->second));
             theMSHRs.erase(*iter->theMSHR);
 
             std::list<boost::intrusive_ptr<Instruction>>::iterator wake_iter, wake_end;
@@ -370,6 +376,7 @@ CoreImpl::cleanMSHRS(uint64_t aDiscardAfterSequenceNum)
             std::list<boost::intrusive_ptr<Instruction>> wake_list;
             wake_list.swap(mshr_temp->second.theBlockedOps);
             if (mshr_temp->second.theTracker) { mshr_temp->second.theTracker->setWrongPath(true); }
+            DBG_(VVerb, (<< "cleanMSHRS: erasing MSHR " << mshr_temp->second));
             theMSHRs.erase(mshr_temp);
 
             std::list<boost::intrusive_ptr<Instruction>>::iterator wake_iter, wake_end;
