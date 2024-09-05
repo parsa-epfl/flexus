@@ -283,7 +283,7 @@ CoreImpl::eraseLSQ(boost::intrusive_ptr<Instruction> anInsn)
     }
     */
 
-    if ((iter->thePaddr == kUnresolved) || iter->isAbnormalAccess()) {
+    if (iter->thePaddr == kUnresolved || iter->isAbnormalAccess()) {
         iter->theInstruction->setAccessAddress(PhysicalMemoryAddress(0));
     } else {
         iter->theInstruction->setAccessAddress(iter->thePaddr);
@@ -586,6 +586,7 @@ CoreImpl::updateVaddr(memq_t::index<by_insn>::type::iterator lsq_entry, VirtualM
     // x.thePaddr_aligned = PhysicalMemoryAddress(kUnresolved);});//ll::bind(
     // &MemQueueEntry::thePaddr_aligned, ll::_1 ) =
     // PhysicalMemoryAddress(kUnresolved));
+    lsq_entry->thePaddr = kUnresolved;
     theMemQueue.get<by_insn>().modify(lsq_entry,
                                       ll::bind(&MemQueueEntry::thePaddr_aligned, ll::_1) =
                                         PhysicalMemoryAddress(kUnresolved));
@@ -937,7 +938,7 @@ CoreImpl::resnoopDependantLoads(memq_t::index<by_insn>::type::iterator lsq_entry
 
     // Changing the address or annulling a store.  Need to squash all loads which
     // got values from this store.
-    if (lsq_entry->thePaddr != kInvalid && lsq_entry->thePaddr != kUnresolved) {
+    if (lsq_entry->thePaddr != kUnresolved) {
         bool was_annulled      = lsq_entry->theAnnulled;
         lsq_entry->theAnnulled = true;
         updateDependantLoads(lsq_entry);

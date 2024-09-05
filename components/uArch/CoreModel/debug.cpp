@@ -90,7 +90,7 @@ MemQueueEntry::describe(std::ostream& anOstream) const
         if (theAnnulled) { anOstream << " {annulled}"; }
         if (theStoreComplete) { anOstream << " {store-complete}"; }
         if (thePartialSnoop) { anOstream << " {partial-snoop}"; }
-        if (theException >= kException_None) { anOstream << " {raise " << theException << " }"; }
+        if (theException != kException_None) { anOstream << " {raise " << theException << " }"; }
         if (theSideEffect) { anOstream << " {side-effect}"; }
         if (theSpeculatedValue) { anOstream << " {value-speculation}"; }
         if (theBypassSB) { anOstream << " {bypass-SB}"; }

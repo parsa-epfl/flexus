@@ -300,7 +300,7 @@ CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction)
     }
 
     DBG_(Iface, (<< "Attempting to issue a memory requst for " << lsq_entry->thePaddr));
-    DBG_Assert(lsq_entry->thePaddr != 0);
+    DBG_Assert(lsq_entry->thePaddr != kUnresolved);
 
     eOperation issue_op = lsq_entry->theOperation;
 
@@ -335,7 +335,7 @@ CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction)
 
     switch (issue_op) {
         case kAtomicPreload:
-            if (!lsq_entry->thePaddr) {
+            if (lsq_entry->thePaddr == kUnresolved) {
                 DBG_(Verb, (<< "Cache atomic preload to invalid address for " << *lsq_entry));
                 // Unable to map virtual address to physical address for load.  Load is
                 // speculative or TLB miss.
@@ -378,7 +378,7 @@ CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction)
         case kStore:
         case kRMW:
         case kCAS:
-            if (!lsq_entry->thePaddr) {
+            if (lsq_entry->thePaddr == kUnresolved) {
                 DBG_(Crit, (<< theName << " Store/Atomic issued without a Paddr."));
                 DBG_(Verb, (<< "Cache write to invalid address for " << *lsq_entry));
                 // Unable to map virtual address to physical address for load.  Store is
@@ -533,7 +533,7 @@ bool
 CoreImpl::scanAndBlockMSHR(memq_t::index<by_insn>::type::iterator anLSQEntry)
 {
     FLEXUS_PROFILE();
-    if (!anLSQEntry->thePaddr) { DBG_(Crit, (<< "LSQ Entry missing PADDR in scanAndBlockMSHR" << *anLSQEntry)); }
+    if (anLSQEntry->thePaddr == kUnresolved) { DBG_(Crit, (<< "LSQ Entry missing PADDR in scanAndBlockMSHR" << *anLSQEntry)); }
     // Check for an existing MSHR for the same address (issued this cycle)
     MSHRs_t::iterator existing = theMSHRs.find(anLSQEntry->thePaddr);
     if (existing != theMSHRs.end()) {
@@ -548,7 +548,7 @@ bool
 CoreImpl::scanAndBlockPrefetch(memq_t::index<by_insn>::type::iterator anLSQEntry)
 {
     FLEXUS_PROFILE();
-    if (!anLSQEntry->thePaddr) { return false; }
+    if (anLSQEntry->thePaddr == kUnresolved) { return false; }
     // Check for an existing MSHR for the same address (issued this cycle)
     MSHRs_t::iterator existing = theMSHRs.find(anLSQEntry->thePaddr);
     if (existing != theMSHRs.end()) {
@@ -602,7 +602,7 @@ CoreImpl::issueStore()
                 }
             }
         }
-        DBG_Assert(theMemQueue.front().thePaddr != kInvalid,
+        DBG_Assert(theMemQueue.front().thePaddr != kUnresolved,
                    (<< "Abnormal stores should not get to issueStore: " << theMemQueue.front()));
         DBG_(Verb, (<< theName << " Port request from here: " << *theMemQueue.project<by_insn>(theMemQueue.begin())));
         requestPort(theMemQueue.project<by_insn>(theMemQueue.begin()));
@@ -616,7 +616,7 @@ CoreImpl::issueAtomicSpecWrite()
     if ((!theMemQueue.empty()) && (theMemQueue.front().theQueue == kSB) && (!theMemQueue.front().theIssued) &&
         (theMemQueue.front().status() == kComplete)) {
         DBG_(Verb, (<< theName << "issueAtomicSpecWrite() " << theMemQueue.front()));
-        DBG_Assert(theMemQueue.front().thePaddr != kInvalid, (<< "issueAtomicSpecWrite: " << theMemQueue.front()));
+        DBG_Assert(theMemQueue.front().thePaddr != kUnresolved, (<< "issueAtomicSpecWrite: " << theMemQueue.front()));
         DBG_Assert(!theMemQueue.front().theSideEffect, (<< "issueAtomicSpecWrite: " << theMemQueue.front()));
         DBG_Assert(theMemQueue.front().isAtomic(), (<< "issueAtomicSpecWrite: " << theMemQueue.front()));
         DBG_Assert(theSpeculativeOrder);
@@ -690,8 +690,7 @@ CoreImpl::issueStorePrefetch(boost::intrusive_ptr<Instruction> anInstruction)
     }
 #endif // VALIDATE_STORE_PREFETCHING
 
-    if (lsq_entry->isAbnormalAccess() || lsq_entry->isNAW() || lsq_entry->thePaddr == kInvalid ||
-        lsq_entry->thePaddr == kUnresolved || lsq_entry->thePaddr == 0) {
+    if (lsq_entry->isAbnormalAccess() || lsq_entry->isNAW() || lsq_entry->thePaddr == kUnresolved) {
         DBG_(Verb,
              (<< theName << " Store prefetch request by " << *lsq_entry << " ignored because store is abnormal "));
         return;
@@ -776,7 +775,7 @@ CoreImpl::issueAtomic()
             theMemQueue.front().thePartialSnoop = false;
             --thePartialSnoopersOutstanding;
         }
-        if (theMemQueue.front().thePaddr == kInvalid) {
+        if (theMemQueue.front().thePaddr == kUnresolved) {
             // CAS to unsupported ASI.  Pretend the operation is done.
             theMemQueue.front().theIssued        = true;
             theMemQueue.front().theExtendedValue = 0;

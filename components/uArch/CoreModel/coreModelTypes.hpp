@@ -296,7 +296,7 @@ struct MSHR
     std::list<boost::intrusive_ptr<Instruction>> theBlockedPrefetches;
     boost::intrusive_ptr<TransactionTracker> theTracker;
     MSHR()
-      : thePaddr(0)
+      : thePaddr(kUnresolved)
       , theOperation(kLoad)
       , theSize(kWord)
     {

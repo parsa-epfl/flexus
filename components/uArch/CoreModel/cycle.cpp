@@ -541,7 +541,7 @@ void
 CoreImpl::requireWritePermission(memq_t::index<by_insn>::type::iterator aWrite)
 {
     PhysicalMemoryAddress addr(aWrite->thePaddr & ~(theCoherenceUnit - 1));
-    if (aWrite->thePaddr > 0) {
+    if (aWrite->thePaddr != kUnresolved) {
         std::map<PhysicalMemoryAddress, std::pair<int, bool>>::iterator sbline;
         bool is_new;
         DBG_(Iface, (<< theName << "requireWritePermission : " << *aWrite));
@@ -676,7 +676,7 @@ CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn)
     DBG_Assert(iter->theQueue == kLSQ);
 
     if (iter->theOperation == kCAS || iter->theOperation == kRMW) {
-        if (!iter->isAbnormalAccess() && iter->thePaddr != 0) {
+        if (!iter->isAbnormalAccess() && iter->thePaddr != kUnresolved) {
             PhysicalMemoryAddress block_addr(static_cast<uint64_t>(iter->thePaddr) & ~(theCoherenceUnit - 1));
             addSLATEntry(block_addr, anInsn);
 
@@ -1033,7 +1033,7 @@ operator<<(std::ostream& anOstream, eExceptionType aCode)
         "Exception_None                  "
     };
 
-    if (aCode >= kException_None) {
+    if (aCode == kException_None) {
         anOstream << "InvalidExceptionType(" << static_cast<int>(aCode) << ")";
     } else {
         anOstream << exceptionTypes[aCode];
@@ -1177,7 +1177,7 @@ CoreImpl::commitStore(boost::intrusive_ptr<Instruction> anInsn)
         DBG_Assert(!anInsn->isSquashed());
         DBG_Assert(!iter->isAbnormalAccess());
         DBG_Assert(iter->theValue);
-        DBG_Assert(iter->thePaddr != 0);
+        DBG_Assert(iter->thePaddr != kUnresolved);
 
         bits value = *iter->theValue;
         //    if (iter->theInverseEndian) {
@@ -1492,7 +1492,7 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
     FLEXUS_PROFILE();
     CORE_DBG(*anInstruction);
     bool validation_passed = true;
-    int raised             = 0;
+    eExceptionType raised  = kException_None;;
     bool resync_accounted  = false;
 
     if (anInstruction->advancesSimics()) {
@@ -1516,9 +1516,9 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
             anInstruction->forceResync();
         }
 
-        if (raised != 0) {
             if (anInstruction->willRaise() !=
                 (raised == 0 ? kException_None : kException_UNCATEGORIZED)) { // FIXME get exception mapper
+        if (raised != kException_None) {
                 DBG_(VVerb,
                      (<< *anInstruction
                       << " Core did not predict correct exception for this "
