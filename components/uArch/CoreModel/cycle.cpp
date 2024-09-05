@@ -203,6 +203,8 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     for (const auto &tr: thePageWalkReissues)
         issueMMU(tr);
     thePageWalkReissues.clear();
+
+
     DBG_(VVerb, (<< "*** Eval *** "));
     evaluate();
 
@@ -222,7 +224,7 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
 
     if (cpuHalted) {
         int qemu_rcode = advance_fn(false); // don't count instructions in halt state
-        if (qemu_rcode != QEMU_HALT_CODE) {
+        if (qemu_rcode != QEMU_EXCP_HALTED) {
             DBG_(Dev, (<< "Core " << theNode << " leaving halt state, after QEMU sent execution code " << qemu_rcode));
             cpuHalted = false;
         }
@@ -1427,27 +1429,35 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
         theInterruptInstruction = 0;
 
         int qemu_rcode = advance_fn(true);  // count time
-        if (qemu_rcode == QEMU_HALT_CODE) { // QEMU CPU Halted
+
+        DBG_(Dev, (<< "c" << theNode
+                 << " commit [" << std::hex << qemu_rcode
+                 << "] " << *anInstruction));
+
+        if (qemu_rcode == QEMU_EXCP_HALTED) { // QEMU CPU Halted
             /* If cpu is halted, turn off insn counting until the CPU is woken up again */
             cpuHalted = true;
             DBG_(Dev,
                  (<< "Core " << theNode << " entering halt state, after executing instruction " << *anInstruction));
             anInstruction->forceResync();
         }
+        if ((qemu_rcode != (int)(kException_None)) && (qemu_rcode < QEMU_EXCP_INTERRUPT))
+             raised = (eExceptionType)(qemu_rcode);
 
-            if (anInstruction->willRaise() !=
-                (raised == 0 ? kException_None : kException_UNCATEGORIZED)) { // FIXME get exception mapper
         if (raised != kException_None) {
+            if (anInstruction->willRaise() != raised) { // FIXME get exception mapper
                 DBG_(VVerb,
                      (<< *anInstruction
                       << " Core did not predict correct exception for this "
                          "instruction raised=0x"
                       << std::hex << raised << " will_raise=0x" << anInstruction->willRaise() << std::dec));
                 if (anInstruction->instCode() != codeITLBMiss) {
-                    anInstruction->changeInstCode(codeExceptionUnsupported);
+                    anInstruction->changeInstCode(codeException);
                 }
                 anInstruction->forceResync();
                 resync_accounted = true;
+
+                // TODO: what does it means
                 if (raised < 0x400) {
                     ++theResync_UnexpectedException;
                 } else {
@@ -1457,15 +1467,15 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
                 DBG_(VVerb,
                      (<< *anInstruction << " Core correctly identified raise=0x" << std::hex << raised << std::dec));
             }
-            anInstruction->raise(raised == 0 ? kException_None : kException_UNCATEGORIZED);
+            anInstruction->raise(raised);
         } else if (anInstruction->willRaise() != kException_None) {
             DBG_(VVerb,
-                 (<< *anInstruction << " DANGER:  Core predicted exception: " << std::hex << anInstruction->willRaise()
-                  << " but simics says no exception"));
+                 (<< *anInstruction << " Core predicted exception: " << std::hex << anInstruction->willRaise()
+                  << " but QEMU says no exception"));
         }
     }
 
-    accountCommit(anInstruction, raised);
+    accountCommit(anInstruction, raised != kException_None);
 
     theDumpPC = anInstruction->pcNext();
     if (anInstruction->resync()) {
@@ -1484,7 +1494,8 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
     DBG_(Iface, (<< "Post Validating... " << validation_passed));
 
     if (!validation_passed) {
-        DBG_(Dev, (<< "Failed Validated " << std::internal << *anInstruction << std::left));
+        DBG_(Trace, (<< "Failed Validated " << *anInstruction));
+        DBG_(Iface, (<< std::internal << *anInstruction << std::left));
 
         // Subsequent Empty ROB stalls (until next dispatch) are the result of a
         // modelling error resynchronization instruction.
@@ -1617,6 +1628,7 @@ bool
 CoreImpl::acceptInterrupt()
 {
     if ((thePendingInterrupt != kException_None)) { DBG_(Dev, (<< "IRQ is pending...")); }
+
     if ((thePendingInterrupt != kException_None) // Interrupt is pending
         && !theInterruptSignalled                // Already accepted the interrupt
         && !theROB.empty()                       // Need an instruction to take the interrupt on
@@ -1624,17 +1636,18 @@ CoreImpl::acceptInterrupt()
         && !theROB.front()->isSquashed()         // Do not take interrupts on squashed instructions
         && !theROB.front()->isMicroOp()          // Do not take interrupts on squashed micro-ops
         && !theIsSpeculating                     // Do not take interrupts while speculating
+        // comply with qemu that exceptions have higher priority
+        && (theROB.front()->willRaise() == kException_None)
     ) {
         // Interrupt was signalled this cycle.  Clear the ROB
         theInterruptSignalled = false;
 
         // theROB.front()->makePriv();
 
-        DBG_(Dev,
-             (<< theName << " Accepting interrupt " << thePendingInterrupt << " on instruction " << *theROB.front()));
+        DBG_(Dev, (<< theName << " Accepting interrupt " << thePendingInterrupt << " on instruction " << *theROB.front()));
+
         theInterruptInstruction = theROB.front();
-        takeTrap(theInterruptInstruction,
-                 /*thePendingInterrupt*/ kException_UNCATEGORIZED);
+        takeTrap(theInterruptInstruction, thePendingInterrupt);
 
         return true;
     }
