@@ -376,7 +376,7 @@ class microArchImpl : public microArch
         CORE_TRACE;
         FLEXUS_PROFILE();
         theExceptionRaised = theCPU.advance(count_tick);
-        theFlexus->watchdogReset(theCPU.id());
+        theFlexus->reset_core_watchdog(theCPU.id());
         return theExceptionRaised;
     }
 

@@ -49,8 +49,7 @@
 #include <stdint.h>
 #include <string>
 
-namespace Flexus {
-namespace Core {
+namespace Flexus::Core {
 
 class FlexusInterface
 {
@@ -75,9 +74,8 @@ class FlexusInterface
     virtual bool initialized() const    = 0;
 
     // Watchdog Functions
-    virtual void watchdogCheck()                 = 0;
-    virtual void watchdogIncrement()             = 0;
-    virtual void watchdogReset(uint32_t anIndex) = 0;
+    virtual void check_cpu_watchdogs(void) = 0;
+    virtual void reset_core_watchdog(uint32_t) = 0;
 
     // Debugging support functions
     virtual int32_t breakCPU() const  = 0;
@@ -134,7 +132,6 @@ extern FlexusInterface* theFlexus;
 void
 flexus_qmp(int cmd, const char* arg);
 
-} // End Namespace Core
-} // namespace Flexus
+}
 
 #endif // FLEXUS_CORE_FLEXUS_HPP__INCLUDED

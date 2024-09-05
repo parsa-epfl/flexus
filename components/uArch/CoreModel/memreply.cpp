@@ -426,6 +426,7 @@ CoreImpl::complete(MemOp const& anOperation)
 
             match->second.theWaitingPagewalks.clear();
             DBG_(VVerb, (<< "complete: erasing MSHR " << match->second));
+
             // Extract lists
             std::list<memq_t::index<by_insn>::type::iterator> complete_list;
             complete_list.swap(match->second.theWaitingLSQs);
@@ -621,7 +622,7 @@ CoreImpl::completeLSQ(memq_t::index<by_insn>::type::iterator lsq_entry, MemOp co
             DBG_Assert(lsq_entry->theQueue == kSB ||
                        (lsq_entry->theQueue == kSSB && lsq_entry->isAtomic() && theSpeculativeOrder));
             // Consider completed SB stores as forward progress.
-            theFlexus->watchdogReset(theNode);
+            theFlexus->reset_core_watchdog(theNode);
         }
         lsq_entry->theStoreComplete = true;
     }
