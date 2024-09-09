@@ -273,7 +273,7 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
         ++theIdleCycleCount;
     } else {
         theIdleCycleCount = 0;
-        //    CORE_DBG(theName << " Non-Idle" );
+        CORE_DBG(theName << " Non-Idle" );
     }
     theIdleThisCycle = true;
 
@@ -867,19 +867,19 @@ CoreImpl::currentEL()
 void
 CoreImpl::invalidateCache(eCacheType aType, eShareableDomain aDomain, eCachePoint aPoint)
 {
-    // TODO
+    DBG_Assert(false);
 }
 
 void
 CoreImpl::invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, eCachePoint aPoint)
 {
-    // TODO
+    DBG_Assert(false);
 }
 
 void
 CoreImpl::invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, uint32_t aSize, eCachePoint aPoint)
 {
-    // TODO
+    DBG_Assert(false);
 }
 
 eAccessResult
@@ -938,6 +938,7 @@ CoreImpl::SystemRegisterTrap(uint8_t target_el,
     //    else
     //        AArch64.TakeException(target_el, exception,
     //        preferred_exception_return, vect_offset);
+    DBG_Assert(false);
 }
 
 std::ostream&

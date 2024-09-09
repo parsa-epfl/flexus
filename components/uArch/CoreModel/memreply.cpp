@@ -334,6 +334,7 @@ CoreImpl::processReply(MemOp const& anOperation)
     std::set<boost::intrusive_ptr<Instruction>>::iterator iter, end;
     PhysicalMemoryAddress addr(static_cast<uint64_t>(anOperation.thePAddr) & ~(theCoherenceUnit - 1));
 
+    DBG_(Dev, (<< "Processing reply for " << anOperation.theOperation << " at " << anOperation.thePAddr));
     switch (anOperation.theOperation) {
         case kRMWReply:
         case kCASReply:
