@@ -1126,7 +1126,6 @@ struct uArch
     }
 };
 
-static const PhysicalMemoryAddress kInvalid(0);
 static const VirtualMemoryAddress kUnresolved(-1);
 
 } // namespace nuArch
