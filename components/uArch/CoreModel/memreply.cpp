@@ -334,6 +334,7 @@ CoreImpl::processReply(MemOp const& anOperation)
     std::set<boost::intrusive_ptr<Instruction>>::iterator iter, end;
     PhysicalMemoryAddress addr(static_cast<uint64_t>(anOperation.thePAddr) & ~(theCoherenceUnit - 1));
 
+    DBG_(Dev, (<< "Processing reply for " << anOperation.theOperation << " at " << anOperation.thePAddr));
     switch (anOperation.theOperation) {
         case kRMWReply:
         case kCASReply:
@@ -411,6 +412,22 @@ CoreImpl::complete(MemOp const& anOperation)
         if (satisfies(anOperation.theOperation, match->second.theOperation) &&
             (match->second.theSize == anOperation.theSize)) {
 
+            // page walk requests can be chained to normal load/store misses
+            for (const auto &tr: match->second.theWaitingPagewalks) {
+                tr->rawTTEValue = static_cast<uint64_t>(anOperation.theValue);
+
+                DBG_(Iface, (<< "Process Memory Reply for ID( " << tr->theID << ") ready("
+                             << tr->isReady() << ")  -- vaddr: " << anOperation.theVAddr
+                             << "  -- paddr: " << anOperation.thePAddr << "  --  Instruction: "
+                             << anOperation.theInstruction << " --  PC: " << anOperation.thePC));
+
+                tr->toggleReady();
+            }
+
+
+            match->second.theWaitingPagewalks.clear();
+            DBG_(VVerb, (<< "complete: erasing MSHR " << match->second));
+
             // Extract lists
             std::list<memq_t::index<by_insn>::type::iterator> complete_list;
             complete_list.swap(match->second.theWaitingLSQs);
@@ -421,20 +438,20 @@ CoreImpl::complete(MemOp const& anOperation)
             std::list<boost::intrusive_ptr<Instruction>> pf_list;
             pf_list.swap(match->second.theBlockedPrefetches);
 
-            if (match->second.theOperation == kPageWalkRequest) {
-                std::map<VirtualMemoryAddress, TranslationPtr>::iterator item =
-                  thePageWalkRequests.find(anOperation.theVAddr);
-
-                DBG_Assert(item != thePageWalkRequests.end());
-                item->second->rawTTEValue = (uint64_t)anOperation.theValue;
-                item->second->toggleReady();
-                DBG_(Iface,
-                     (<< "Process Memory Reply for ID( " << item->second->theID << ") ready(" << item->second->isReady()
-                      << ")  -- vaddr: " << anOperation.theVAddr << "  -- paddr: " << anOperation.thePAddr
-                      << "  --  Instruction: " << anOperation.theInstruction << " --  PC: " << anOperation.thePC));
-
-                thePageWalkRequests.erase(item);
-            }
+//            if (match->second.theOperation == kPageWalkRequest) {
+//                std::map<VirtualMemoryAddress, TranslationPtr>::iterator item =
+//                  thePageWalkRequests.find(anOperation.theVAddr);
+//
+//                DBG_Assert(item != thePageWalkRequests.end());
+//                item->second->rawTTEValue = (uint64_t)anOperation.theValue;
+//                item->second->toggleReady();
+//                DBG_(Iface,
+//                     (<< "Process Memory Reply for ID( " << item->second->theID << ") ready(" << item->second->isReady()
+//                      << ")  -- vaddr: " << anOperation.theVAddr << "  -- paddr: " << anOperation.thePAddr
+//                      << "  --  Instruction: " << anOperation.theInstruction << " --  PC: " << anOperation.thePC));
+//
+//                thePageWalkRequests.erase(item);
+//            }
             theMSHRs.erase(match);
 
             // The MSHR has to be erased before we can call either of these
@@ -606,7 +623,7 @@ CoreImpl::completeLSQ(memq_t::index<by_insn>::type::iterator lsq_entry, MemOp co
             DBG_Assert(lsq_entry->theQueue == kSB ||
                        (lsq_entry->theQueue == kSSB && lsq_entry->isAtomic() && theSpeculativeOrder));
             // Consider completed SB stores as forward progress.
-            theFlexus->watchdogReset(theNode);
+            theFlexus->reset_core_watchdog(theNode);
         }
         lsq_entry->theStoreComplete = true;
     }

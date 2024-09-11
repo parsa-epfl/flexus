@@ -83,6 +83,8 @@ void
 MemoryPortArbiter::inOrderArbitrate()
 {
     // load at LSQ head gets to go first
+    uint32_t sent = 0;
+
     memq_t::index<by_queue>::type::iterator iter, end;
     std::tie(iter, end) = theCore.theMemQueue.get<by_queue>().equal_range(std::make_tuple(kLSQ));
     while (iter != end) {
@@ -90,8 +92,9 @@ MemoryPortArbiter::inOrderArbitrate()
             ++iter;
             continue;
         }
-        if (theCore.hasMemPort() && iter->status() == kAwaitingPort && iter->theOperation != kStore) {
+        if (theCore.hasMemPort(sent) && iter->status() == kAwaitingPort && iter->theOperation != kStore) {
             theCore.issue(iter->theInstruction);
+            sent++;
         }
         break;
     }
@@ -100,15 +103,19 @@ MemoryPortArbiter::inOrderArbitrate()
     std::tie(iter, end) = theCore.theMemQueue.get<by_queue>().equal_range(std::make_tuple(kSB));
     if (iter != end) {
         DBG_Assert(iter->theOperation == kStore);
-        if (theCore.hasMemPort() && iter->status() == kAwaitingPort) { theCore.issue(iter->theInstruction); }
+        if (theCore.hasMemPort(sent) && iter->status() == kAwaitingPort) {
+            theCore.issue(iter->theInstruction);
+            sent++;
+        }
     }
 
     // Now try Store prefetch
-    while (!theStorePrefetchRequests.empty() && theCore.hasMemPort() &&
+    while (!theStorePrefetchRequests.empty() && theCore.hasMemPort(sent) &&
            theCore.outstandingStorePrefetches() < theMaxStorePrefetches) {
         // issue one store prefetch request
         theCore.issueStorePrefetch(theStorePrefetchRequests.begin()->theInstruction);
         theStorePrefetchRequests.erase(theStorePrefetchRequests.begin());
+        sent++;
     }
 }
 
@@ -119,13 +126,16 @@ MemoryPortArbiter::arbitrate()
         inOrderArbitrate();
         return;
     }
-    while (!empty() && theCore.hasMemPort()) {
+
+    uint32_t sent = 0;
+    while (!empty() && theCore.hasMemPort(sent)) {
         DBG_(VVerb, (<< "Arbiter granting request"));
 
         // Always issue a store or RMW if there is one ready to go.
         if (!thePriorityRequests.empty()) {
             theCore.issue(thePriorityRequests.top().theEntry);
             thePriorityRequests.pop();
+            sent++;
             continue;
         }
 
@@ -146,6 +156,7 @@ MemoryPortArbiter::arbitrate()
         if (!theReadRequests.empty()) {
             theCore.issue(theReadRequests.top().theEntry);
             theReadRequests.pop();
+            sent++;
             continue;
         }
 
@@ -153,6 +164,7 @@ MemoryPortArbiter::arbitrate()
             // issue one store prefetch request
             theCore.issueStorePrefetch(theStorePrefetchRequests.begin()->theInstruction);
             theStorePrefetchRequests.erase(theStorePrefetchRequests.begin());
+            sent++;
             continue;
         }
 
@@ -180,26 +192,7 @@ MemoryPortArbiter::request(eOperation op, uint64_t age, boost::intrusive_ptr<Ins
 void
 CoreImpl::killStorePrefetches(boost::intrusive_ptr<Instruction> anInstruction)
 {
-    if (theMemoryPortArbiter.theStorePrefetchRequests.get<by_insn>().erase(anInstruction) > 0) {
-#ifdef VALIDATE_STORE_PREFETCHING
-        // Find the waiting store prefetch
-        std::map<PhysicalMemoryAddress, std::set<boost::intrusive_ptr<Instruction>>>::iterator iter, item, end;
-        iter       = theWaitingStorePrefetches.begin();
-        end        = theWaitingStorePrefetches.end();
-        bool found = false;
-        while (iter != end) {
-            item = iter;
-            ++iter;
-            if (item->second.count(anInstruction) > 0) {
-                DBG_Assert(!found);
-                item->second.erase(anInstruction);
-                found = true;
-            }
-            if (item->second.empty()) { theWaitingStorePrefetches.erase(item); }
-        }
-        DBG_Assert(found);
-#endif // VALIDATE_STORE_PREFETCHING
-    }
+    if (theMemoryPortArbiter.theStorePrefetchRequests.get<by_insn>().erase(anInstruction) > 0) {}
 }
 
 void
@@ -220,12 +213,6 @@ CoreImpl::requestStorePrefetch(memq_t::index<by_insn>::type::iterator lsq_entry)
     if (lsq_entry->thePaddr && !lsq_entry->isAbnormalAccess() && !lsq_entry->isNAW()) {
         theMemoryPortArbiter.requestStorePrefetch(lsq_entry);
         DBG_(Verb, (<< theName << " Store prefetch request: " << *lsq_entry));
-#ifdef VALIDATE_STORE_PREFETCHING
-        PhysicalMemoryAddress aligned =
-          PhysicalMemoryAddress(static_cast<uint64_t>(lsq_entry->thePaddr) & ~(theCoherenceUnit - 1));
-        DBG_Assert(theWaitingStorePrefetches[aligned].count(lsq_entry->theInstruction) == 0);
-        theWaitingStorePrefetches[aligned].insert(lsq_entry->theInstruction);
-#endif // VALIDATE_STORE_PREFETCHING
     }
 }
 
@@ -314,7 +301,7 @@ CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction)
     }
 
     DBG_(Iface, (<< "Attempting to issue a memory requst for " << lsq_entry->thePaddr));
-    DBG_Assert(lsq_entry->thePaddr != 0);
+    DBG_Assert(lsq_entry->thePaddr != kUnresolved);
 
     eOperation issue_op = lsq_entry->theOperation;
 
@@ -349,7 +336,7 @@ CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction)
 
     switch (issue_op) {
         case kAtomicPreload:
-            if (!lsq_entry->thePaddr) {
+            if (lsq_entry->thePaddr == kUnresolved) {
                 DBG_(Verb, (<< "Cache atomic preload to invalid address for " << *lsq_entry));
                 // Unable to map virtual address to physical address for load.  Load is
                 // speculative or TLB miss.
@@ -392,7 +379,7 @@ CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction)
         case kStore:
         case kRMW:
         case kCAS:
-            if (!lsq_entry->thePaddr) {
+            if (lsq_entry->thePaddr == kUnresolved) {
                 DBG_(Crit, (<< theName << " Store/Atomic issued without a Paddr."));
                 DBG_(Verb, (<< "Cache write to invalid address for " << *lsq_entry));
                 // Unable to map virtual address to physical address for load.  Store is
@@ -500,19 +487,16 @@ CoreImpl::issueMMU(TranslationPtr aTranslation)
     op->theTracker  = tracker;
     mshr.theTracker = tracker;
 
-    bool ignored;
-    /*std::tie(lsq_entry->theMSHR, ignored) = */ theMSHRs.insert(std::make_pair(mshr.thePaddr, mshr));
-    theMemoryPorts.push_back(op);
+    // the ptw can now issue multiple reqs (potentially with the same pa)
+    auto pair = theMSHRs.insert(std::make_pair(mshr.thePaddr, mshr));
+
+    pair.first->second.theWaitingPagewalks.push_back(aTranslation);
+    if (pair.second)
+        theMemoryPorts.push_back(op);
+
     DBG_(Iface,
          (<< theName << " "
           << " issuing translation operation " << *op << "  -- ID " << aTranslation->theID));
-    bool inserted = thePageWalkRequests.emplace(std::make_pair(aTranslation->theVaddr, aTranslation)).second;
-    while (!inserted) {
-        std::map<VirtualMemoryAddress, TranslationPtr>::iterator item =
-          thePageWalkRequests.find(aTranslation->theVaddr);
-        thePageWalkRequests.erase(item);
-        inserted = thePageWalkRequests.emplace(std::make_pair(aTranslation->theVaddr, aTranslation)).second;
-    }
 }
 
 bool
@@ -522,7 +506,7 @@ CoreImpl::scanAndAttachMSHR(memq_t::index<by_insn>::type::iterator anLSQEntry)
     // Check for an existing MSHR for the same address (issued this cycle)
     MSHRs_t::iterator existing = theMSHRs.find(anLSQEntry->thePaddr);
     if (existing != theMSHRs.end()) {
-        DBG_Assert(!existing->second.theWaitingLSQs.empty());
+        //DBG_Assert(!existing->second.theWaitingLSQs.empty());
         if (existing->second.theOperation == kLoad && existing->second.theSize == anLSQEntry->theSize) {
             existing->second.theWaitingLSQs.push_back(anLSQEntry);
             DBG_Assert(!anLSQEntry->theMSHR);
@@ -547,11 +531,11 @@ bool
 CoreImpl::scanAndBlockMSHR(memq_t::index<by_insn>::type::iterator anLSQEntry)
 {
     FLEXUS_PROFILE();
-    if (!anLSQEntry->thePaddr) { DBG_(Crit, (<< "LSQ Entry missing PADDR in scanAndBlockMSHR" << *anLSQEntry)); }
+    if (anLSQEntry->thePaddr == kUnresolved) { DBG_(Crit, (<< "LSQ Entry missing PADDR in scanAndBlockMSHR" << *anLSQEntry)); }
     // Check for an existing MSHR for the same address (issued this cycle)
     MSHRs_t::iterator existing = theMSHRs.find(anLSQEntry->thePaddr);
     if (existing != theMSHRs.end()) {
-        DBG_Assert(!existing->second.theWaitingLSQs.empty());
+         DBG_Assert(!existing->second.theWaitingLSQs.empty());
         existing->second.theBlockedOps.push_back(anLSQEntry->theInstruction);
         return true;
     }
@@ -562,11 +546,11 @@ bool
 CoreImpl::scanAndBlockPrefetch(memq_t::index<by_insn>::type::iterator anLSQEntry)
 {
     FLEXUS_PROFILE();
-    if (!anLSQEntry->thePaddr) { return false; }
+    if (anLSQEntry->thePaddr == kUnresolved) { return false; }
     // Check for an existing MSHR for the same address (issued this cycle)
     MSHRs_t::iterator existing = theMSHRs.find(anLSQEntry->thePaddr);
     if (existing != theMSHRs.end()) {
-        DBG_Assert(!existing->second.theWaitingLSQs.empty());
+        // DBG_Assert(!existing->second.theWaitingLSQs.empty());
         existing->second.theBlockedPrefetches.push_back(anLSQEntry->theInstruction);
         return true;
     }
@@ -616,7 +600,7 @@ CoreImpl::issueStore()
                 }
             }
         }
-        DBG_Assert(theMemQueue.front().thePaddr != kInvalid,
+        DBG_Assert(theMemQueue.front().thePaddr != kUnresolved,
                    (<< "Abnormal stores should not get to issueStore: " << theMemQueue.front()));
         DBG_(Verb, (<< theName << " Port request from here: " << *theMemQueue.project<by_insn>(theMemQueue.begin())));
         requestPort(theMemQueue.project<by_insn>(theMemQueue.begin()));
@@ -630,7 +614,7 @@ CoreImpl::issueAtomicSpecWrite()
     if ((!theMemQueue.empty()) && (theMemQueue.front().theQueue == kSB) && (!theMemQueue.front().theIssued) &&
         (theMemQueue.front().status() == kComplete)) {
         DBG_(Verb, (<< theName << "issueAtomicSpecWrite() " << theMemQueue.front()));
-        DBG_Assert(theMemQueue.front().thePaddr != kInvalid, (<< "issueAtomicSpecWrite: " << theMemQueue.front()));
+        DBG_Assert(theMemQueue.front().thePaddr != kUnresolved, (<< "issueAtomicSpecWrite: " << theMemQueue.front()));
         DBG_Assert(!theMemQueue.front().theSideEffect, (<< "issueAtomicSpecWrite: " << theMemQueue.front()));
         DBG_Assert(theMemQueue.front().isAtomic(), (<< "issueAtomicSpecWrite: " << theMemQueue.front()));
         DBG_Assert(theSpeculativeOrder);
@@ -661,51 +645,20 @@ void
 CoreImpl::issueStorePrefetch(boost::intrusive_ptr<Instruction> anInstruction)
 {
     FLEXUS_PROFILE();
-    DBG_Assert(hasMemPort());
 
     memq_t::index<by_insn>::type::iterator lsq_entry = theMemQueue.get<by_insn>().find(anInstruction);
     if (lsq_entry == theMemQueue.get<by_insn>().end()) {
         // Memory operation completed some other way (i.e. forwarding, annullment)
         DBG_(Verb, (<< theName << " Store Prefetch request ignored because LSQ entry is gone" << *anInstruction));
 
-#ifdef VALIDATE_STORE_PREFETCHING
-        // Find the waiting store prefetch
-        std::map<PhysicalMemoryAddress, std::set<boost::intrusive_ptr<Instruction>>>::iterator iter, item, end;
-        iter       = theWaitingStorePrefetches.begin();
-        end        = theWaitingStorePrefetches.end();
-        bool found = false;
-        while (iter != end) {
-            item = iter;
-            ++iter;
-            if (item->second.count(anInstruction) > 0) {
-                DBG_Assert(!found);
-                item->second.erase(anInstruction);
-                found = true;
-            }
-            if (item->second.empty()) { theWaitingStorePrefetches.erase(item); }
-        }
-        DBG_Assert(found);
-#endif // VALIDATE_STORE_PREFETCHING
         return;
     }
 
     PhysicalMemoryAddress aligned =
       PhysicalMemoryAddress(static_cast<uint64_t>(lsq_entry->thePaddr) & ~(theCoherenceUnit - 1));
     std::map<PhysicalMemoryAddress, std::set<boost::intrusive_ptr<Instruction>>>::iterator iter;
-#ifdef VALIDATE_STORE_PREFETCHING
-    iter = theWaitingStorePrefetches.find(aligned);
-    DBG_Assert(iter != theWaitingStorePrefetches.end(),
-               (<< theName << " Non-waiting store prefetch by: " << *anInstruction));
-    DBG_Assert(iter->second.count(anInstruction) > 0);
-    iter->second.erase(anInstruction);
-    if (iter->second.empty()) {
-        DBG_(Verb, (<< theName << " Erase store prefetch " << *anInstruction));
-        theWaitingStorePrefetches.erase(iter);
-    }
-#endif // VALIDATE_STORE_PREFETCHING
 
-    if (lsq_entry->isAbnormalAccess() || lsq_entry->isNAW() || lsq_entry->thePaddr == kInvalid ||
-        lsq_entry->thePaddr == kUnresolved || lsq_entry->thePaddr == 0) {
+    if (lsq_entry->isAbnormalAccess() || lsq_entry->isNAW() || lsq_entry->thePaddr == kUnresolved) {
         DBG_(Verb,
              (<< theName << " Store prefetch request by " << *lsq_entry << " ignored because store is abnormal "));
         return;
@@ -782,7 +735,7 @@ CoreImpl::issueAtomic()
     FLEXUS_PROFILE();
     if (!theMemQueue.empty() &&
         (theMemQueue.front().theOperation == kCAS || theMemQueue.front().theOperation == kRMW) &&
-        theMemQueue.front().status() == kAwaitingIssue && theMemQueue.front().theValue &&
+        theMemQueue.front().status() == kAwaitingIssue &&
         (theMemQueue.front().theInstruction == theROB.front())) {
         // Atomics that are issued as the head of theMemQueue don't need to
         // worry about partial snoops
@@ -790,7 +743,7 @@ CoreImpl::issueAtomic()
             theMemQueue.front().thePartialSnoop = false;
             --thePartialSnoopersOutstanding;
         }
-        if (theMemQueue.front().thePaddr == kInvalid) {
+        if (theMemQueue.front().thePaddr == kUnresolved) {
             // CAS to unsupported ASI.  Pretend the operation is done.
             theMemQueue.front().theIssued        = true;
             theMemQueue.front().theExtendedValue = 0;

@@ -184,67 +184,6 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
         DBG_Assert(theOpenCheckpoint != 0);
         DBG_Assert(theCheckpoints.find(theOpenCheckpoint) != theCheckpoints.end());
 
-#ifdef VALIDATE_STORE_PREFETCHING
-        // Ensure that the required blocks are somewhere
-        std::map<boost::intrusive_ptr<Instruction>, Checkpoint>::iterator ckpt = theCheckpoints.begin();
-        while (ckpt != theCheckpoints.end()) {
-            // Walk through the required permissions, make sure the block is somewhere
-            std::map<PhysicalMemoryAddress, boost::intrusive_ptr<Instruction>>::iterator iter, end;
-            iter = ckpt->second.theRequiredPermissions.begin();
-            end  = ckpt->second.theRequiredPermissions.end();
-            while (iter != end) {
-                if (!ckpt->second.theHeldPermissions.count(iter->first) > 0) {
-                    // permission not held
-                    if (!theOutstandingStorePrefetches.count(iter->first) > 0) {
-                        if (!theWaitingStorePrefetches.count(iter->first) > 0) {
-                            if (!theBlockedStorePrefetches.count(iter->first) > 0) {
-                                Flexus::Core::theFlexus->setDebug("verb");
-                                dumpCheckpoints();
-                                dumpMSHR();
-                                dumpSBPermissions();
-                                DBG_Assert(false,
-                                           (<< theName << " required store address is lost: " << iter->first
-                                            << " required by " << *iter->second));
-                            } else {
-                                bool found = false;
-                                MSHRs_t::iterator miter, mend;
-                                for (miter = theMSHRs.begin(), mend = theMSHRs.end(); miter != mend; ++miter) {
-                                    if ((miter->first & ~63) == iter->first) {
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                                if (!found) {
-                                    Flexus::Core::theFlexus->setDebug("verb");
-                                    dumpCheckpoints();
-                                    dumpMSHR();
-                                    dumpSBPermissions();
-                                    DBG_Assert(false,
-                                               (<< theName << " blocked prefetch for: " << iter->first
-                                                << " has no obvious blocking MSHR. "));
-                                }
-                            }
-                        } else {
-                            DBG_Assert(!theWaitingStorePrefetches[iter->first].empty());
-                            if (theMemoryPortArbiter.theStorePrefetchRequests.get<by_insn>().find(
-                                  *theWaitingStorePrefetches[iter->first].begin()) ==
-                                theMemoryPortArbiter.theStorePrefetchRequests.get<by_insn>().end()) {
-                                Flexus::Core::theFlexus->setDebug("verb");
-                                dumpCheckpoints();
-                                dumpMSHR();
-                                dumpSBPermissions();
-                                DBG_Assert(false,
-                                           (<< theName << " no queued prefetch request for: "
-                                            << **theWaitingStorePrefetches[iter->first].begin()));
-                            }
-                        }
-                    }
-                }
-                ++iter;
-            }
-            ++ckpt;
-        }
-#endif // VALIDATE STORE PREFETCHING
     } else {
         CORE_DBG("Not Speculating");
 
@@ -260,6 +199,11 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
 
     processMemoryReplies();
     prepareCycle();
+
+    for (const auto &tr: thePageWalkReissues)
+        issueMMU(tr);
+    thePageWalkReissues.clear();
+
 
     DBG_(VVerb, (<< "*** Eval *** "));
     evaluate();
@@ -280,7 +224,7 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
 
     if (cpuHalted) {
         int qemu_rcode = advance_fn(false); // don't count instructions in halt state
-        if (qemu_rcode != QEMU_HALT_CODE) {
+        if (qemu_rcode != QEMU_EXCP_HALTED) {
             DBG_(Dev, (<< "Core " << theNode << " leaving halt state, after QEMU sent execution code " << qemu_rcode));
             cpuHalted = false;
         }
@@ -329,7 +273,7 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
         ++theIdleCycleCount;
     } else {
         theIdleCycleCount = 0;
-        //    CORE_DBG(theName << " Non-Idle" );
+        CORE_DBG(theName << " Non-Idle" );
     }
     theIdleThisCycle = true;
 
@@ -532,7 +476,6 @@ CoreImpl::freeCheckpoint(boost::intrusive_ptr<Instruction> anInsn)
     DBG_Assert(ckpt != theCheckpoints.end());
     theCheckpoints.erase(ckpt);
     anInsn->setHasCheckpoint(false);
-    //  Flexus::Qemu::Processor::getProcessor( theNode )->releaseMMUCkpt();
     if (theOpenCheckpoint == anInsn) { theOpenCheckpoint = 0; }
     checkStopSpeculating();
 }
@@ -541,7 +484,7 @@ void
 CoreImpl::requireWritePermission(memq_t::index<by_insn>::type::iterator aWrite)
 {
     PhysicalMemoryAddress addr(aWrite->thePaddr & ~(theCoherenceUnit - 1));
-    if (aWrite->thePaddr > 0) {
+    if (aWrite->thePaddr != kUnresolved) {
         std::map<PhysicalMemoryAddress, std::pair<int, bool>>::iterator sbline;
         bool is_new;
         DBG_(Iface, (<< theName << "requireWritePermission : " << *aWrite));
@@ -676,30 +619,13 @@ CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn)
     DBG_Assert(iter->theQueue == kLSQ);
 
     if (iter->theOperation == kCAS || iter->theOperation == kRMW) {
-        if (!iter->isAbnormalAccess() && iter->thePaddr != 0) {
+        if (!iter->isAbnormalAccess() && iter->thePaddr != kUnresolved) {
             PhysicalMemoryAddress block_addr(static_cast<uint64_t>(iter->thePaddr) & ~(theCoherenceUnit - 1));
             addSLATEntry(block_addr, anInsn);
 
             // TRACE TRACKER : Notify trace tracker of store
             // uint64_t logical_timestamp = theCommitNumber + theSRB.size();
             theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/, anInsn->isPriv(), 0);
-            /* CMU-ONLY-BLOCK-BEGIN */
-            //      if (theTrackParallelAccesses ) {
-            //        theTraceTracker.parallelList(theNode, eCore, iter->thePaddr,
-            //        iter->theParallelAddresses);
-            /*
-                      DBG_( Dev,  ( << theName << " CAS/RMW " << std::hex <<
-               iter->thePaddr << std::dec << " parallel set follows " ) ); std::set<
-               PhysicalMemoryAddress >::iterator pal_iter =
-               iter->theParallelAddresses.begin(); std::set< PhysicalMemoryAddress
-               >::iterator pal_end = iter->theParallelAddresses.end(); while (pal_iter
-               != pal_end ) { DBG_ ( Dev, ( << "    " << std::hex << *pal_iter <<
-               std::dec ) );
-                        ++pal_iter;
-                      }
-             */
-            //      }
-            /* CMU-ONLY-BLOCK-END */
         }
 
         if (iter->theOperation == kRMW) {
@@ -941,19 +867,19 @@ CoreImpl::currentEL()
 void
 CoreImpl::invalidateCache(eCacheType aType, eShareableDomain aDomain, eCachePoint aPoint)
 {
-    // TODO
+    DBG_Assert(false);
 }
 
 void
 CoreImpl::invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, eCachePoint aPoint)
 {
-    // TODO
+    DBG_Assert(false);
 }
 
 void
 CoreImpl::invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, uint32_t aSize, eCachePoint aPoint)
 {
-    // TODO
+    DBG_Assert(false);
 }
 
 eAccessResult
@@ -1012,6 +938,7 @@ CoreImpl::SystemRegisterTrap(uint8_t target_el,
     //    else
     //        AArch64.TakeException(target_el, exception,
     //        preferred_exception_return, vect_offset);
+    DBG_Assert(false);
 }
 
 std::ostream&
@@ -1033,7 +960,7 @@ operator<<(std::ostream& anOstream, eExceptionType aCode)
         "Exception_None                  "
     };
 
-    if (aCode >= kException_None) {
+    if (aCode == kException_None) {
         anOstream << "InvalidExceptionType(" << static_cast<int>(aCode) << ")";
     } else {
         anOstream << exceptionTypes[aCode];
@@ -1177,7 +1104,7 @@ CoreImpl::commitStore(boost::intrusive_ptr<Instruction> anInsn)
         DBG_Assert(!anInsn->isSquashed());
         DBG_Assert(!iter->isAbnormalAccess());
         DBG_Assert(iter->theValue);
-        DBG_Assert(iter->thePaddr != 0);
+        DBG_Assert(iter->thePaddr != kUnresolved);
 
         bits value = *iter->theValue;
         //    if (iter->theInverseEndian) {
@@ -1206,12 +1133,10 @@ CoreImpl::retire()
     theRetireCount = 0;
     while (!theROB.empty() && !stop_retire) {
 
-        //  if (! theROB.front()->isAnnulled() ) {
-        //        theROB.pop_front();
-        //        continue;
-        //  }
-
         if (!theROB.front()->mayRetire()) {
+            // wfi still executing
+            if (theROB.front()->getOpcode() == 0x7F2003D5)
+                 theFlexus->reset_core_watchdog(theNode);
             CORE_DBG("Cant Retire due to pending retirement dependance " << *theROB.front());
             break;
         }
@@ -1250,6 +1175,10 @@ CoreImpl::retire()
                 break;
             }
         }
+
+        // the remaining instrs in the ROB are all invalid
+        if (theROB.front()->isSquashed())
+            break;
 
         // FOR in-order SMS Experiments only - not normal in-order
         // Under theInOrderMemory, we do not allow stores or atomics to retire
@@ -1492,7 +1421,7 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
     FLEXUS_PROFILE();
     CORE_DBG(*anInstruction);
     bool validation_passed = true;
-    int raised             = 0;
+    eExceptionType raised  = kException_None;;
     bool resync_accounted  = false;
 
     if (anInstruction->advancesSimics()) {
@@ -1508,27 +1437,35 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
         theInterruptInstruction = 0;
 
         int qemu_rcode = advance_fn(true);  // count time
-        if (qemu_rcode == QEMU_HALT_CODE) { // QEMU CPU Halted
+
+        DBG_(Dev, (<< "c" << theNode
+                 << " commit [" << std::hex << qemu_rcode
+                 << "] " << *anInstruction));
+
+        if (qemu_rcode == QEMU_EXCP_HALTED) { // QEMU CPU Halted
             /* If cpu is halted, turn off insn counting until the CPU is woken up again */
             cpuHalted = true;
             DBG_(Dev,
                  (<< "Core " << theNode << " entering halt state, after executing instruction " << *anInstruction));
             anInstruction->forceResync();
         }
+        if ((qemu_rcode != (int)(kException_None)) && (qemu_rcode < QEMU_EXCP_INTERRUPT))
+             raised = (eExceptionType)(qemu_rcode);
 
-        if (raised != 0) {
-            if (anInstruction->willRaise() !=
-                (raised == 0 ? kException_None : kException_UNCATEGORIZED)) { // FIXME get exception mapper
+        if (raised != kException_None) {
+            if (anInstruction->willRaise() != raised) { // FIXME get exception mapper
                 DBG_(VVerb,
                      (<< *anInstruction
                       << " Core did not predict correct exception for this "
                          "instruction raised=0x"
                       << std::hex << raised << " will_raise=0x" << anInstruction->willRaise() << std::dec));
                 if (anInstruction->instCode() != codeITLBMiss) {
-                    anInstruction->changeInstCode(codeExceptionUnsupported);
+                    anInstruction->changeInstCode(codeException);
                 }
                 anInstruction->forceResync();
                 resync_accounted = true;
+
+                // TODO: what does it means
                 if (raised < 0x400) {
                     ++theResync_UnexpectedException;
                 } else {
@@ -1538,15 +1475,15 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
                 DBG_(VVerb,
                      (<< *anInstruction << " Core correctly identified raise=0x" << std::hex << raised << std::dec));
             }
-            anInstruction->raise(raised == 0 ? kException_None : kException_UNCATEGORIZED);
+            anInstruction->raise(raised);
         } else if (anInstruction->willRaise() != kException_None) {
             DBG_(VVerb,
-                 (<< *anInstruction << " DANGER:  Core predicted exception: " << std::hex << anInstruction->willRaise()
-                  << " but simics says no exception"));
+                 (<< *anInstruction << " Core predicted exception: " << std::hex << anInstruction->willRaise()
+                  << " but QEMU says no exception"));
         }
     }
 
-    accountCommit(anInstruction, raised);
+    accountCommit(anInstruction, raised != kException_None);
 
     theDumpPC = anInstruction->pcNext();
     if (anInstruction->resync()) {
@@ -1565,7 +1502,8 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
     DBG_(Iface, (<< "Post Validating... " << validation_passed));
 
     if (!validation_passed) {
-        DBG_(Dev, (<< "Failed Validated " << std::internal << *anInstruction << std::left));
+        DBG_(Trace, (<< "Failed Validated " << *anInstruction));
+        DBG_(Iface, (<< std::internal << *anInstruction << std::left));
 
         // Subsequent Empty ROB stalls (until next dispatch) are the result of a
         // modelling error resynchronization instruction.
@@ -1666,56 +1604,6 @@ CoreImpl::checkStopSpeculating()
     }
 }
 
-//// AArch64.TakeException()
-//// =======================
-//// Take an exception to an Exception Level using AArch64.
-// void CoreImpl::TakeException(uint8_t target_el, ExceptionRecord exception,
-// uint64_t preferred_exception_return, int vect_offset)
-////SynchronizeContext();
-////assert HaveEL(target_el) && !ELUsingAArch32(target_el) && UInt(target_el) >=
-/// UInt(PSTATE.EL); / If coming from AArch32 state, the top parts of the X[]
-/// registers might be set to zero
-// from_32 = UsingAArch32();
-// if from_32 then AArch64.MaybeZeroRegisterUppers();
-// if UInt(target_el) > UInt(PSTATE.EL) then
-// boolean lower_32;
-// if target_el == EL3 then
-// if !IsSecure() && HaveEL(EL2) then
-// lower_32 = ELUsingAArch32(EL2);
-// else
-// lower_32 = ELUsingAArch32(EL1);
-// elsif IsInHost() && PSTATE.EL == EL0 && target_el == EL2 then
-// lower_32 = ELUsingAArch32(EL0);
-// else
-// lower_32 = ELUsingAArch32(target_el - 1);
-// vect_offset = vect_offset + (if lower_32 then 0x600 else 0x400);
-// elsif PSTATE.SP == '1' then
-// vect_offset = vect_offset + 0x200;
-// spsr = GetPSRFromPSTATE();
-// if HaveUAOExt() then PSTATE.UAO = '0';
-// if !(exception.type IN {Exception_IRQ, Exception_FIQ}) then
-// AArch64.ReportException(exception, target_el);
-// PSTATE.EL = target_el;
-// PSTATE.nRW = '0';
-// PSTATE.SP = '1';
-// SPSR[] = spsr;
-// ELR[] = preferred_exception_return;
-// PSTATE.SS = '0';
-// PSTATE.<D,A,I,F> = '1111';
-// PSTATE.IL = '0';
-// if from_32 then
-//// Coming from AArch32
-// PSTATE.IT = '00000000'; PSTATE.T = '0';
-//// PSTATE.J is RES0
-// if HavePANExt() && (PSTATE.EL == EL1 || (PSTATE.EL == EL2 &&
-// ELIsInHost(EL0))) && SCTLR[].SPAN == '0' then PSTATE.PAN = '1';
-// BranchTo(VBAR[]<63:11>:vect_offset<10:0>, BranchType_EXCEPTION);
-// if HaveRASExt() && SCTLR[].IESB == '1' then
-// SynchronizeErrors();
-// iesb_req = TRUE;
-// TakeUnmaskedPhysicalSErrorInterrupts(iesb_req);
-// EndOfInstruction();
-
 void
 CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExceptionType aTrapType)
 {
@@ -1734,7 +1622,22 @@ CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExceptionTy
     theSquashReason      = kException;
     theEmptyROBCause     = kRaisedException;
     theSquashInstruction = theROB.begin();
-    theSquashInclusive   = true;
+
+    auto wfi = (anInstruction->getOpcode() == 0x7F2003D5) && (aTrapType & 0x80000000);
+
+    // different from the pure emulation where the wfi instruction is nevertheless
+    // executed first and the emulator then waits for the interrupt, here, we drive
+    // the simulator first, waiting for the emulator to signal the interrupt.
+    // this means that at the time we see the interrupt and are about to retire
+    // the wfi, it is not yet executed in the emulator, neither is the required
+    // pc advancement (+4) performed.
+    if (wfi)
+    {
+        DBG_Assert(false, (<< "[==BRYAN==] You seems to have entered the WAIT FOR INTERRUPT (wfi) realm proceed with caution because it was NOT tested at all, and the condition where left unchanged from the RISC-V version"));
+        // Flexus::Qemu::API::qemu_api.set_pc(theQEMUCPU, theROB.front()->pc() + 4);
+    }
+
+    theSquashInclusive = !wfi;
 
     // Record the pending trap
     thePendingTrap     = aTrapType;
@@ -1748,6 +1651,7 @@ bool
 CoreImpl::acceptInterrupt()
 {
     if ((thePendingInterrupt != kException_None)) { DBG_(Dev, (<< "IRQ is pending...")); }
+
     if ((thePendingInterrupt != kException_None) // Interrupt is pending
         && !theInterruptSignalled                // Already accepted the interrupt
         && !theROB.empty()                       // Need an instruction to take the interrupt on
@@ -1755,18 +1659,18 @@ CoreImpl::acceptInterrupt()
         && !theROB.front()->isSquashed()         // Do not take interrupts on squashed instructions
         && !theROB.front()->isMicroOp()          // Do not take interrupts on squashed micro-ops
         && !theIsSpeculating                     // Do not take interrupts while speculating
-        //          &&   (getPSTATE() & 0x2)         //PSTATE.IE = 1
+        // comply with qemu that exceptions have higher priority
+        && (theROB.front()->willRaise() == kException_None)
     ) {
         // Interrupt was signalled this cycle.  Clear the ROB
         theInterruptSignalled = false;
 
         // theROB.front()->makePriv();
 
-        DBG_(Dev,
-             (<< theName << " Accepting interrupt " << thePendingInterrupt << " on instruction " << *theROB.front()));
+        DBG_(Dev, (<< theName << " Accepting interrupt " << thePendingInterrupt << " on instruction " << *theROB.front()));
+
         theInterruptInstruction = theROB.front();
-        takeTrap(theInterruptInstruction,
-                 /*thePendingInterrupt*/ kException_UNCATEGORIZED);
+        takeTrap(theInterruptInstruction, thePendingInterrupt);
 
         return true;
     }

@@ -35,9 +35,9 @@ using namespace std::chrono;
 class FlexusImpl : public FlexusInterface
 {
   private:
-    uint64_t theWatchdogTimeout;
-    std::vector<uint32_t> theWatchdogCounts;
-    uint32_t theNumWatchdogs;
+    uint64_t cpu_watchdog_timeout;
+    std::vector<uint32_t> cpu_watchdogs;
+
     bool theInitialized;
     uint64_t theCycleCount;
     uint64_t theStatInterval;
@@ -53,7 +53,6 @@ class FlexusImpl : public FlexusInterface
     typedef std::vector<std::function<void()>> void_fn_vector;
     void_fn_vector theTerminateFunctions;
 
-    bool theWatchdogWarning;
     bool theQuiesceRequested;
     bool theSaveRequested;
     std::string theSaveName;
@@ -86,10 +85,8 @@ class FlexusImpl : public FlexusInterface
     bool initialized() const { return theInitialized; }
 
     // Watchdog Functions
-    void setWatchdogTimeout(std::string const& aTimeoutStr);
-    void watchdogCheck();
-    void watchdogIncrement();
-    void watchdogReset(uint32_t anIndex);
+    void check_cpu_watchdogs(void);
+    void reset_core_watchdog(uint32_t);
 
     // Debugging support functions
     int32_t breakCPU() const { return theBreakCPU; }
@@ -140,8 +137,7 @@ class FlexusImpl : public FlexusInterface
 
   public:
     FlexusImpl(Qemu::API::conf_object_t* anObject)
-      : theWatchdogTimeout(100000)
-      , theNumWatchdogs(0)
+      : cpu_watchdog_timeout(1000)
       , theInitialized(false)
       , theCycleCount(0)
       , theStatInterval(100)
@@ -150,7 +146,6 @@ class FlexusImpl : public FlexusInterface
       , theTimestampInterval(100000)
       , theStopCycle(2000000000)
       , theCycleCountStat("sys-cycles")
-      , theWatchdogWarning(false)
       , theQuiesceRequested(false)
       , theSaveRequested(false)
       , theFastMode(false)
@@ -189,6 +184,11 @@ FlexusImpl::initializeComponents()
     ConfigurationManager::getConfigurationManager().checkAllOverrides();
     ComponentManager::getComponentManager().initComponents();
     theInitialized = true;
+
+    cpu_watchdogs.reserve(ComponentManager::getComponentManager().systemWidth());
+
+    for (std::size_t i{0}; i < ComponentManager::getComponentManager().systemWidth(); i++)
+         cpu_watchdogs.push_back(0);
 }
 
 void
@@ -262,12 +262,10 @@ FlexusImpl::doCycle()
 
     advanceCycles(1);
 
-    uint32_t recent_watchdog_count = ((uint32_t)theCycleCount) & 0xFF;
-    if (recent_watchdog_count == 0) {
-        // Check for watchdog timeout
-        watchdogCheck();
-        watchdogIncrement();
-    }
+    // Check the watchdog only every 255 cycles
+    if ((static_cast<uint32_t>(theCycleCount) & 0xFF) == 0)
+        check_cpu_watchdogs();
+
 
     invokeDrives();
 
@@ -275,52 +273,20 @@ FlexusImpl::doCycle()
 }
 
 void
-FlexusImpl::setWatchdogTimeout(std::string const& aTimeoutStr)
+FlexusImpl::check_cpu_watchdogs()
 {
-    std::istringstream ss(aTimeoutStr, std::istringstream::in);
-    ss >> theWatchdogTimeout;
-}
-
-void
-FlexusImpl::watchdogCheck()
-{
-    for (uint32_t i = 0; i < theNumWatchdogs; ++i) {
-        // We get 10k cycles of Iface trace after a watchdog timeout before we
-        // assert and kill Flexus
-        if (!(theWatchdogCounts[i] < (uint32_t)(0.8 * theWatchdogTimeout))) {
-            //  if (!( theWatchdogCounts[i] < 90000)) {
-
-            if (!theWatchdogWarning) {
-                theWatchdogWarning = true;
-                DBG_(Crit,
-                     (<< "Watchdog timer expired.  No progress by CPU " << i << " for  " << theWatchdogCounts[i]
-                      << "cycles"));
-                Flexus::Dbg::Debugger::theDebugger->setMinSev(Dbg::Severity(DBG_internal_Sev_to_int(Iface)));
-            }
-        }
-        DBG_Assert(theWatchdogCounts[i] < theWatchdogTimeout + 10,
-                   Core()(<< "Watchdog timer expired.  No progress by CPU " << i << " for  " << theWatchdogCounts[i]
-                          << "cycles"));
+    for (auto& watchdog : cpu_watchdogs)
+    {
+        DBG_Assert(watchdog < cpu_watchdog_timeout, Core()(<< "Watchdog timer(" << cpu_watchdog_timeout <<") expired.  No progress by CPU for " << watchdog << " cycles"));
+        watchdog += 255; // incrementing by 255 because we check this function only every 0xFF cycles
     }
 }
 
 void
-FlexusImpl::watchdogIncrement()
+FlexusImpl::reset_core_watchdog(uint32_t core_idx)
 {
-    for (auto& aWatchdogCount : theWatchdogCounts) {
-        aWatchdogCount += 255;
-    }
-}
-
-void
-FlexusImpl::watchdogReset(uint32_t anIndex)
-{
-    if (anIndex >= theNumWatchdogs) {
-        theNumWatchdogs = anIndex + 1;
-        theWatchdogCounts.resize(theNumWatchdogs, 0);
-    } else {
-        theWatchdogCounts[anIndex] = 0;
-    }
+    DBG_Assert(core_idx < cpu_watchdogs.size(), (<< "More core that watchdog"));
+    cpu_watchdogs[core_idx] = 0;
 }
 
 void

@@ -102,6 +102,14 @@ CoreImpl::breakMSHRLink(memq_t::index<by_insn>::type::iterator iter)
     iter->theIssued = false;
     if (iter->theMSHR) {
         DBG_(Verb, (<< "Breaking MSHR connection of " << *iter));
+
+
+        // page walk requests can be chained to normal load/store misses
+        for (const auto &tr: (*iter->theMSHR)->second.theWaitingPagewalks)
+            thePageWalkReissues.push_back(tr);
+
+        (*iter->theMSHR)->second.theWaitingPagewalks.clear();
+
         // Break dependance on pending load
         std::list<memq_t::index<by_insn>::type::iterator>::iterator link =
           find((*iter->theMSHR)->second.theWaitingLSQs.begin(), (*iter->theMSHR)->second.theWaitingLSQs.end(), iter);
@@ -118,17 +126,6 @@ CoreImpl::breakMSHRLink(memq_t::index<by_insn>::type::iterator iter)
 
                 memq_t::index<by_insn>::type::iterator lsq_entry = theMemQueue.get<by_insn>().find(*pf_iter);
                 if (lsq_entry != theMemQueue.get<by_insn>().end()) {
-#ifdef VALIDATE_STORE_PREFETCHING
-                    PhysicalMemoryAddress aligned =
-                      PhysicalMemoryAddress(static_cast<uint64_t>(lsq_entry->thePaddr) & ~(theCoherenceUnit - 1));
-                    std::map<PhysicalMemoryAddress, std::set<boost::intrusive_ptr<Instruction>>>::iterator bl_iter;
-                    bl_iter = theBlockedStorePrefetches.find(aligned);
-                    DBG_Assert(bl_iter != theBlockedStorePrefetches.end(),
-                               (<< theName << " Non-blocked store prefetch by: " << **pf_iter));
-                    DBG_Assert(bl_iter->second.count(*pf_iter) > 0);
-                    bl_iter->second.erase(*pf_iter);
-                    if (bl_iter->second.empty()) { theBlockedStorePrefetches.erase(bl_iter); }
-#endif // VALIDATE_STORE_PREFETCHING
                     requestStorePrefetch(lsq_entry);
                 }
 
@@ -139,6 +136,8 @@ CoreImpl::breakMSHRLink(memq_t::index<by_insn>::type::iterator iter)
             std::list<boost::intrusive_ptr<Instruction>> wake_list;
             wake_list.swap((*iter->theMSHR)->second.theBlockedOps);
             if ((*iter->theMSHR)->second.theTracker) { (*iter->theMSHR)->second.theTracker->setWrongPath(true); }
+
+            DBG_(VVerb, (<< "breakingMSHRLink: erasing MSHR " << (*iter->theMSHR)->second));
             theMSHRs.erase(*iter->theMSHR);
 
             std::list<boost::intrusive_ptr<Instruction>>::iterator wake_iter, wake_end;
@@ -283,7 +282,7 @@ CoreImpl::eraseLSQ(boost::intrusive_ptr<Instruction> anInsn)
     }
     */
 
-    if ((iter->thePaddr == kUnresolved) || iter->isAbnormalAccess()) {
+    if (iter->thePaddr == kUnresolved || iter->isAbnormalAccess()) {
         iter->theInstruction->setAccessAddress(PhysicalMemoryAddress(0));
     } else {
         iter->theInstruction->setAccessAddress(iter->thePaddr);
@@ -350,17 +349,6 @@ CoreImpl::cleanMSHRS(uint64_t aDiscardAfterSequenceNum)
             while (pf_iter != pf_end) {
                 memq_t::index<by_insn>::type::iterator lsq_entry = theMemQueue.get<by_insn>().find(*pf_iter);
                 if (lsq_entry != theMemQueue.get<by_insn>().end()) {
-#ifdef VALIDATE_STORE_PREFETCHING
-                    PhysicalMemoryAddress aligned =
-                      PhysicalMemoryAddress(static_cast<uint64_t>(lsq_entry->thePaddr) & ~(theCoherenceUnit - 1));
-                    std::map<PhysicalMemoryAddress, std::set<boost::intrusive_ptr<Instruction>>>::iterator bl_iter;
-                    bl_iter = theBlockedStorePrefetches.find(aligned);
-                    DBG_Assert(bl_iter != theBlockedStorePrefetches.end(),
-                               (<< theName << " Non-blocked store prefetch by: " << **pf_iter));
-                    DBG_Assert(bl_iter->second.count(*pf_iter) > 0);
-                    bl_iter->second.erase(*pf_iter);
-                    if (bl_iter->second.empty()) { theBlockedStorePrefetches.erase(bl_iter); }
-#endif // VALIDATE_STORE_PREFETCHING
                     requestStorePrefetch(lsq_entry);
                 }
                 ++pf_iter;
@@ -370,6 +358,8 @@ CoreImpl::cleanMSHRS(uint64_t aDiscardAfterSequenceNum)
             std::list<boost::intrusive_ptr<Instruction>> wake_list;
             wake_list.swap(mshr_temp->second.theBlockedOps);
             if (mshr_temp->second.theTracker) { mshr_temp->second.theTracker->setWrongPath(true); }
+
+            DBG_(VVerb, (<< "cleanMSHRS: erasing MSHR " << mshr_temp->second));
             theMSHRs.erase(mshr_temp);
 
             std::list<boost::intrusive_ptr<Instruction>>::iterator wake_iter, wake_end;
@@ -521,14 +511,11 @@ CoreImpl::pushTranslation(TranslationPtr aTranslation)
     } else {
         DBG_(Iface, (<< "Not Resolved.. vaddr: " << lsq_entry->theVaddr << " due to resync."));
 
-        lsq_entry->theException = kException_UNCATEGORIZED;
-        //        lsq_entry->theDependance->squash();
-        //        insn->squash();
+        //lsq_entry->theException = lsq_entry->isLoad() ? kException_LoadPageFault : kException_StorePageFault;
+        lsq_entry->theException = kException_IRQ;
+        insn->forceResync();
         insn->pageFault();
-        //        squashFrom(insn);
     }
-
-    DBG_Assert(lsq_entry->thePaddr != kInvalid);
 }
 
 boost::intrusive_ptr<MemOp>
@@ -581,11 +568,7 @@ CoreImpl::updateVaddr(memq_t::index<by_insn>::type::iterator lsq_entry, VirtualM
     FLEXUS_PROFILE();
     lsq_entry->theVaddr = anAddr;
     DBG_(VVerb, (<< "in updateVaddr")); // NOOOSHIN
-    lsq_entry->thePaddr = PhysicalMemoryAddress(kUnresolved);
-    // theMemQueue.get<by_insn>().modify( lsq_entry, [](auto& x){
-    // x.thePaddr_aligned = PhysicalMemoryAddress(kUnresolved);});//ll::bind(
-    // &MemQueueEntry::thePaddr_aligned, ll::_1 ) =
-    // PhysicalMemoryAddress(kUnresolved));
+    lsq_entry->thePaddr = kUnresolved;
     theMemQueue.get<by_insn>().modify(lsq_entry,
                                       ll::bind(&MemQueueEntry::thePaddr_aligned, ll::_1) =
                                         PhysicalMemoryAddress(kUnresolved));
@@ -601,21 +584,17 @@ CoreImpl::updatePaddr(memq_t::index<by_insn>::type::iterator lsq_entry, Physical
 
     lsq_entry->theInstruction->setWillRaise(kException_None);
 
-    if (lsq_entry->theInstruction->instCode() == codeSideEffectLoad ||
-        lsq_entry->theInstruction->instCode() == codeSideEffectStore ||
-        lsq_entry->theInstruction->instCode() == codeSideEffectAtomic) {
-        DBG_(Verb, (<< theName << " no longer SideEffect access: " << *lsq_entry));
-        lsq_entry->theInstruction->restoreOriginalInstCode();
-    }
+   // if (lsq_entry->theInstruction->instCode() == codeSideEffectLoad ||
+   //     lsq_entry->theInstruction->instCode() == codeSideEffectStore ||
+   //     lsq_entry->theInstruction->instCode() == codeSideEffectAtomic) {
+   //     DBG_(Verb, (<< theName << " no longer SideEffect access: " << *lsq_entry));
+   //     lsq_entry->theInstruction->restoreOriginalInstCode();
+   // }
 
     PhysicalMemoryAddress addr_aligned(lsq_entry->thePaddr & 0xFFFFFFFFFFFFFFF8ULL);
-    // theMemQueue.get<by_insn>().modify( lsq_entry, [&addr_aligned](auto& x){
-    // x.thePaddr_aligned = addr_aligned; });//ll::bind(
-    // &MemQueueEntry::thePaddr_aligned, ll::_1 ) = addr_aligned);
     theMemQueue.get<by_insn>().modify(lsq_entry, ll::bind(&MemQueueEntry::thePaddr_aligned, ll::_1) = addr_aligned);
 
-    if (thePrefetchEarly && lsq_entry->isStore() && lsq_entry->thePaddr != kUnresolved && lsq_entry->thePaddr != 0 &&
-        !lsq_entry->isAbnormalAccess()) {
+    if (thePrefetchEarly && lsq_entry->isStore() && lsq_entry->thePaddr != kUnresolved && !lsq_entry->isAbnormalAccess()) {
         requestStorePrefetch(lsq_entry);
     }
 }
@@ -659,6 +638,7 @@ CoreImpl::translate(boost::intrusive_ptr<Instruction> anInsn)
     tr->theVaddr = lsq_entry->theVaddr;
     tr->setData();
     tr->setInstruction(anInsn);
+    tr->theType = lsq_entry->isLoad() ? Translation::eLoad : Translation::eStore;
 
     DBG_(
       Iface,
@@ -678,6 +658,8 @@ CoreImpl::resolveVAddr(boost::intrusive_ptr<Instruction> anInsn, VirtualMemoryAd
         CORE_DBG("no update neccessary for " << anAddr);
         return; // No change
     }
+
+
     DBG_(Verb, (<< "Resolved VAddr for " << *lsq_entry << " to " << anAddr));
     CORE_DBG("Resolved VAddr for " << *lsq_entry << " to " << anAddr);
 
@@ -699,7 +681,14 @@ CoreImpl::resolveVAddr(boost::intrusive_ptr<Instruction> anInsn, VirtualMemoryAd
             breakMSHRLink(lsq_entry);
         }
         lsq_entry->theIssued = false;
+        lsq_entry->theException = kException_None;
+
+        if (lsq_entry->theInstruction) {
+            lsq_entry->theInstruction->forceResync(false);
+            lsq_entry->theInstruction->pageFault(false);
+        }
     }
+
 
     updateVaddr(lsq_entry, anAddr);
 }
@@ -710,17 +699,17 @@ CoreImpl::resolvePAddr(boost::intrusive_ptr<Instruction> anInsn, PhysicalMemoryA
 
     memq_t::index<by_insn>::type::iterator lsq_entry = theMemQueue.get<by_insn>().find(anInsn);
     DBG_Assert(lsq_entry != theMemQueue.get<by_insn>().end());
-    DBG_Assert(lsq_entry->thePaddr != 0);
 
     if (lsq_entry->thePaddr == anAddr) {
         CORE_DBG("no update neccessary for " << anAddr);
         return; // No change
     }
 
+    if (anAddr == kUnresolved)
+        return;
+
     updatePaddr(lsq_entry, anAddr);
     anInsn->setResolved();
-
-    if (anAddr == (PhysicalMemoryAddress)kUnresolved) return;
 
     switch (lsq_entry->status()) {
         case kComplete:
@@ -937,7 +926,7 @@ CoreImpl::resnoopDependantLoads(memq_t::index<by_insn>::type::iterator lsq_entry
 
     // Changing the address or annulling a store.  Need to squash all loads which
     // got values from this store.
-    if (lsq_entry->thePaddr != kInvalid && lsq_entry->thePaddr != kUnresolved) {
+    if (lsq_entry->thePaddr != kUnresolved) {
         bool was_annulled      = lsq_entry->theAnnulled;
         lsq_entry->theAnnulled = true;
         updateDependantLoads(lsq_entry);
@@ -955,6 +944,7 @@ CoreImpl::doStore(memq_t::index<by_insn>::type::iterator lsq_entry)
     updateDependantLoads(lsq_entry);
 }
 
+// TODO: Check if this make sens
 void
 CoreImpl::updateCASValue(boost::intrusive_ptr<Instruction> anInsn, bits aValue, bits aCompareValue)
 {

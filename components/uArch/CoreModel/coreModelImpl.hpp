@@ -91,7 +91,19 @@ namespace Stat = Flexus::Stat;
 
 namespace nuArch {
 
-#define QEMU_HALT_CODE 0x10003
+#define QEMU_EXCP_INTERRUPT  0x10000 /* async interruption */
+#define QEMU_EXCP_HLT        0x10001 /* hlt instruction reached */
+#define QEMU_EXCP_DEBUG      0x10002 /* cpu stopped after a breakpoint or singlestep */
+#define QEMU_EXCP_HALTED     0x10003 /* cpu is halted (waiting for external event) */
+#define QEMU_EXCP_YIELD      0x10004 /* cpu wants to yield timeslice to another */
+#define QEMU_EXCP_ATOMIC     0x10005 /* stop-the-world and emulate atomic */
+
+/* Custom defined flag, they are not used in Flexus, but may help understand
+ * QEMU behaviour when debuging */
+#define EXCP_QFLEX_IDLE    0x10010
+#define EXCP_QFLEX_UNPLUG  0x10011
+#define EXCP_QFLEX_STOP    0x10012
+#define EXCP_QFLEX_UNKNOWN 0x10013
 
 using nXactTimeBreakdown::TimeBreakdown;
 
@@ -222,7 +234,8 @@ class CoreImpl : public CoreModel
     bool theNAWBypassSB;
     bool theNAWWaitAtSync;
     MSHRs_t theMSHRs;
-    std::map<VirtualMemoryAddress, TranslationPtr> thePageWalkRequests;
+    std::list<TranslationPtr> thePageWalkReissues;
+    std::list<TranslationPtr> thePageWalkRequests;
     eConsistencyModel theConsistencyModel;
     uint64_t theCoherenceUnit;
     uint32_t thePartialSnoopersOutstanding;
@@ -244,10 +257,7 @@ class CoreImpl : public CoreModel
     // Outsanding prefetch tracking
     bool thePrefetchEarly;
     std::map<PhysicalMemoryAddress, std::set<boost::intrusive_ptr<Instruction>>> theOutstandingStorePrefetches;
-#ifdef VALIDATE_STORE_PREFETCHING
-    std::map<PhysicalMemoryAddress, std::set<boost::intrusive_ptr<Instruction>>> theWaitingStorePrefetches;
-    std::map<PhysicalMemoryAddress, std::set<boost::intrusive_ptr<Instruction>>> theBlockedStorePrefetches;
-#endif // VALIDATE_STORE_PREFETCHING
+
     std::map<PhysicalMemoryAddress, std::pair<int, bool>> theSBLines_Permission;
     int32_t theSBLines_Permission_falsecount;
 
@@ -779,7 +789,7 @@ class CoreImpl : public CoreModel
     bool hasSnoopBuffer() const { return theSnoopPorts.size() < theNumSnoopPorts; }
 
   public:
-    bool hasMemPort() const { return theMemoryPorts.size() < theNumMemoryPorts; }
+    bool hasMemPort(uint32_t sent) const { return sent < theNumMemoryPorts; }
     eInstructionClass getROBHeadClass() const
     {
         eInstructionClass rob_head = clsComputation;

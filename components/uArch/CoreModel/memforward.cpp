@@ -260,9 +260,8 @@ void
 CoreImpl::updateDependantLoads(memq_t::index<by_insn>::type::iterator anUpdatedStore)
 {
     FLEXUS_PROFILE();
-    if (anUpdatedStore->thePaddr == kUnresolved || anUpdatedStore->thePaddr == kInvalid) {
-        CORE_DBG("anUpdatedStore->thePaddr == kUnresolved || "
-                 "anUpdatedStore->thePaddr == kInvalid");
+    if (anUpdatedStore->thePaddr == kUnresolved) {
+        CORE_DBG("anUpdatedStore->thePaddr == kUnresolved");
         return;
     }
 
