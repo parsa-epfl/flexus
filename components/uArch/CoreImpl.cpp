@@ -520,10 +520,7 @@ CoreImpl::CoreImpl(uArchOptions_t options,
       fpAluCyclesToReady(options.numFpAlu, 0), fpMultCyclesToReady(options.numFpMult, 0),
       memAtL1(theName + "-memAtL1"), memAtL1Lat(theName + "-memAtL1Lat"),
       memAtL2(theName + "-memAtL2"), memAtL2Lat(theName + "-memAtL2Lat"),
-      memAtMC(theName + "-memAtMC"), memAtMCLat(theName + "-memAtMCLat"),
-      uatAtL1(theName + "-uatAtL1"), uatAtL1Lat(theName + "-uatAtL1Lat"),
-      uatAtL2(theName + "-uatAtL2"), uatAtL2Lat(theName + "-uatAtL2Lat"),
-      uatAtMC(theName + "-uatAtMC"), uatAtMCLat(theName + "-uatAtMCLat") {
+      memAtMC(theName + "-memAtMC"), memAtMCLat(theName + "-memAtMCLat") {
 
   theQEMUCPU = Flexus::Qemu::Processor::getProcessor(theNode);
 
@@ -786,7 +783,7 @@ std::string CoreImpl::dumpState() {
   return ss.str();
 }
 
-bool CoreImpl::checkValidatation() {
+bool CoreImpl::checkValidation() {
   theFlexusDumpState = dumpState();
   theQemuDumpState = Flexus::Qemu::Processor::getProcessor(theNode)->dump_state();
 
@@ -1574,7 +1571,7 @@ void CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction) {
     throw ResynchronizeWithQemuException(true);
   }
 
-  // validation_passed &= checkValidatation();
+  // validation_passed &= checkValidation();
 
   validation_passed &= anInstruction->postValidate();
   DBG_(Iface, (<< "Post Validating... " << validation_passed));
@@ -5681,15 +5678,7 @@ void CoreImpl::complete(MemOp const &anOperation) {
                      << "  -- paddr: " << anOperation.thePAddr << "  --  Instruction: "
                      << anOperation.theInstruction << " --  PC: " << anOperation.thePC));
 
-        if (tr->theLine == 2) {
-          // fetch the next line
-          tr->theAddr += 0x40;
-          tr->theLine++;
-
-          issueMMU(tr);
-
-        } else
-          tr->toggleReady();
+        tr->toggleReady();
       }
 
       match->second.theWaitingPagewalks.clear();

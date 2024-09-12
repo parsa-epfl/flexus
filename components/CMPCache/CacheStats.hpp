@@ -71,13 +71,6 @@ struct CacheStats {
   Flexus::Stat::StatCounter EvictDirtyWrite;
   Flexus::Stat::StatCounter EvictDirtyBypass;
 
-  Flexus::Stat::StatCounter uatAccess;
-  Flexus::Stat::StatCounter uatHitBoth;
-  Flexus::Stat::StatCounter uatHitMain;
-  Flexus::Stat::StatCounter uatHitSelf;
-  Flexus::Stat::StatCounter uatInv;
-  Flexus::Stat::StatCounter uatEvict;
-
   CacheStats(const std::string &aName)
       : WriteHit(aName + "-WriteHit"),
         WriteMissInvalidatesOnly(aName + "-WriteMissInvalidatesOnly"),
@@ -91,13 +84,7 @@ struct CacheStats {
         NASMissMemory(aName + "-NASMissMemory"), EvictClean(aName + "-EvictClean"),
         EvictWritableWrite(aName + "-EvictWritableWrite"),
         EvictWritableBypass(aName + "-EvictWritableBypass"),
-        EvictDirtyWrite(aName + "-EvictDirtyWrite"), EvictDirtyBypass(aName + "-EvictDirtyBypass"),
-        uatAccess(aName + "-uatAccess"),
-        uatHitBoth(aName + "-uatHitBoth"),
-        uatHitMain(aName + "-uatHitMain"),
-        uatHitSelf(aName + "-uatHitSelf"),
-        uatInv(aName + "-uatInv"),
-        uatEvict(aName + "-uatEvict")
+        EvictDirtyWrite(aName + "-EvictDirtyWrite"), EvictDirtyBypass(aName + "-EvictDirtyBypass")
   {
   }
 

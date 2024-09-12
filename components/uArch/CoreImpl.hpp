@@ -732,13 +732,6 @@ private:
   Stat::StatCounter memAtMC;
   Stat::StatCounter memAtMCLat;
 
-  Stat::StatCounter uatAtL1;
-  Stat::StatCounter uatAtL1Lat;
-  Stat::StatCounter uatAtL2;
-  Stat::StatCounter uatAtL2Lat;
-  Stat::StatCounter uatAtMC;
-  Stat::StatCounter uatAtMCLat;
-
   // CONSTRUCTION
   //==========================================================================
 public:
@@ -758,7 +751,7 @@ public:
   void skipCycle();
   void cycle(eExceptionType aPendingInterrupt);
   std::string dumpState();
-  bool checkValidatation();
+  bool checkValidation();
 
   uint64_t userCycle() const {
     return theUserCycle;

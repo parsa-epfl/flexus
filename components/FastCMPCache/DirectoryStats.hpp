@@ -76,13 +76,6 @@ struct DirectoryStats {
   Stat::StatInstanceCounter<int64_t> theUpgradesOnChip_FSharers;
   Stat::StatInstanceCounter<int64_t> theUpgradesOnChip_ASharers;
 
-  Stat::StatCounter uatAccess;
-  Stat::StatCounter uatHitBoth;
-  Stat::StatCounter uatHitMain;
-  Stat::StatCounter uatHitSelf; 
-  Stat::StatCounter uatInv;
-  Stat::StatCounter uatEvict;
-
   Stat::StatCounter theReadsOnChipLatency;
   Stat::StatCounter theWritesOnChipLatency;
   Stat::StatCounter theFetchesOnChipLatency;
@@ -115,12 +108,6 @@ struct DirectoryStats {
         theUpgradesOnChip_PSharers(theName + "-Upgrades:On:PotentialSharers"),
         theUpgradesOnChip_FSharers(theName + "-Upgrades:On:WrongSharers"),
         theUpgradesOnChip_ASharers(theName + "-Upgrades:On:AdditionalSharers"),
-        uatAccess(theName + "-uatAccess"),
-        uatHitBoth(theName + "-uatHitBoth"),
-        uatHitMain(theName + "-uatHitMain"),
-        uatHitSelf(theName + "-uatHitSelf"),
-        uatInv(theName + "-uatInv"),
-        uatEvict(theName + "-uatEvict"),
         theReadsOnChipLatency(theName + "Reads:On:Latency"),
         theWritesOnChipLatency(theName + "Writes:On:Latency"),
         theFetchesOnChipLatency(theName + "Fetches:On:Latency"),

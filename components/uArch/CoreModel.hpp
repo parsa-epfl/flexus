@@ -97,7 +97,7 @@ struct CoreModel : public uArch {
   virtual void cycle(eExceptionType aPendingInterrupt) = 0;
   virtual void issueMMU(TranslationPtr aTranslation) = 0;
 
-  virtual bool checkValidatation() = 0;
+  virtual bool checkValidation() = 0;
   virtual void pushMemOp(boost::intrusive_ptr<MemOp>) = 0;
   virtual bool canPushMemOp() = 0;
   virtual boost::intrusive_ptr<MemOp> popMemOp() = 0;
