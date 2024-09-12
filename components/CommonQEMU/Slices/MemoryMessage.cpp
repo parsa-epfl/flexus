@@ -154,14 +154,27 @@ operator<<(std::ostream& s, MemoryMessage::MemoryMessageType const& aMemMsgType)
     return s << message_types[aMemMsgType];
 }
 std::ostream&
-operator<<(std::ostream& s, MemoryMessage const& aMemMsg)
+operator<<(std::ostream& s, MemoryMessage const& mem)
 {
-    if (aMemMsg.theInstruction) { s << "instr=>> " << *(aMemMsg.theInstruction) << " << "; }
-    s << "MemoryMessage[" << aMemMsg.type() << "]: Addr:0x" << std::hex << aMemMsg.address() << " Size:" << std::dec
-      << aMemMsg.reqSize() << " Serial: " << aMemMsg.serial() << " Core: " << aMemMsg.coreIdx()
-      << " DStream: " << std::boolalpha << aMemMsg.isDstream() << " Outstanding Msgs: " << aMemMsg.outstandingMsgs()
-      << " PageWalk: " << aMemMsg.isPageWalk()
-      << (aMemMsg.ackRequired() ? (aMemMsg.ackRequiresData() ? " Requires Ack+Data" : " Requires Ack") : "");
+    //if (aMemMsg.theInstruction) { s << "instr=>> " << *(aMemMsg.theInstruction) << " << "; }
+
+    s << "MemoryMessage("<<mem.type()<<")";
+    s << " | "<<mem.address();
+    s << " | From("<<mem.coreIdx()<<")";
+    if (mem.isPageWalk()) s << "| PageWalk";
+    if (mem.ackRequired()) {
+        s << " | Require(Ack";
+
+        if (mem.ackRequiresData())
+            s << "+Data";
+
+        s << ")";
+    }
+
+//    s << "MemoryMessage[" << aMemMsg.type() << "]: Addr:0x" << std::hex << aMemMsg.address() << " Size:" << std::dec << aMemMsg.reqSize() << " Serial: " << aMemMsg.serial() << " Core: " << aMemMsg.coreIdx()
+//      << " DStream: " << std::boolalpha << aMemMsg.isDstream() << " Outstanding Msgs: " << aMemMsg.outstandingMsgs()
+//      << " PageWalk: " << aMemMsg.isPageWalk()
+//      << (aMemMsg.ackRequired() ? (aMemMsg.ackRequiresData() ? " Requires Ack+Data" : " Requires Ack") : "");
 
     return s;
 }

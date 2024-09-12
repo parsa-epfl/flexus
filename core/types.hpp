@@ -124,11 +124,15 @@ class MemoryAddress_
     }
     operator underlying_type() const { return address; }
     bool operator==(MemoryAddress_ const& other) const { return (address == other.address); }
-    friend std::ostream& operator<<(std::ostream& anOstream, MemoryAddress_ const& aMemoryAddress)
+    friend std::ostream& operator<<(std::ostream& s, MemoryAddress_ const& mem)
     {
-        anOstream << (isVirtual ? "v:" : "p:") << std::hex << std::setw(9) << std::right << std::setfill('0')
-                  << aMemoryAddress.address << std::dec;
-        return anOstream;
+        s << (isVirtual ? "v(" : "p(");
+        s << "0x" << std::hex << std::setw(9) << std::right << std::setfill('0');
+        s << mem.address;
+        s << std::dec;
+        s << ")";
+
+        return s;
     }
 
     friend underlying_type operator+(MemoryAddress_ const& aMemoryAddress, const uint64_t aVal)

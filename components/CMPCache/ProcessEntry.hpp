@@ -378,44 +378,56 @@ typedef boost::intrusive_ptr<ProcessEntry> ProcessEntry_p;
 inline std::ostream&
 operator<<(std::ostream& os, const ProcessEntry& p)
 {
+    os << "Proc(";
     switch (p.type()) {
-        case eProcWakeMAF: os << "ProcWakeMAF: "; break;
-        case eProcCacheEvict: os << "ProcCacheEvict: "; break;
-        case eProcDirEvict: os << "ProcDirEvict: "; break;
-        case eProcReply: os << "ProcReply: "; break;
-        case eProcSnoop: os << "ProcSnoop: "; break;
-        case eProcRequest: os << "ProcRequest: "; break;
-        case eProcIdleWork: os << "ProcIdleWork: "; break;
-    }
+        case eProcWakeMAF: os << "WakeMAF"; break;
+        case eProcCacheEvict: os << "CacheEvict"; break;
+        case eProcDirEvict: os << "DirEvict"; break;
+        case eProcReply: os << "Reply"; break;
+        case eProcSnoop: os << "Snoop"; break;
+        case eProcRequest: os << "Request"; break;
+        case eProcIdleWork: os << "IdleWork"; break; }
+    os << ")";
 
+    os << "{";
     switch (p.action()) {
-        case eFwdAndWaitAck: os << "FwdAndWaitAck, "; break;
-        case eNotifyAndWaitAck: os << "NotifyAndWaitAck, "; break;
-        case eFwdAndWakeEvictMAF: os << "FwdAndWakeEvictMAF, "; break;
-        case eWakeEvictMAF: os << "WakeEvictMAF, "; break;
-        case eForward: os << "Forward, "; break;
-        case eFwdRequest: os << "FwdRequest, "; break;
-        case eFwdAndReply: os << "FwdAndReply, "; break;
-        case eReply: os << "Reply, "; break;
-        case eReplyAndRemoveMAF: os << "ReplyAndRemoveMAF, "; break;
-        case eRemoveMAF: os << "RemoveMAF, "; break;
-        case eRemoveAndWakeMAF: os << "RemoveAndWakeMAF, "; break;
-        case eStall: os << "Stall, "; break;
-        case eNoAction: os << "NoAction, "; break;
+        case eFwdAndWaitAck: os << "FwdAndWaitAck"; break;
+        case eNotifyAndWaitAck: os << "NotifyAndWaitAck"; break;
+        case eFwdAndWakeEvictMAF: os << "FwdAndWakeEvictMAF"; break;
+        case eWakeEvictMAF: os << "WakeEvictMAF"; break;
+        case eForward: os << "Forward"; break;
+        case eFwdRequest: os << "FwdRequest"; break;
+        case eFwdAndReply: os << "FwdAndReply"; break;
+        case eReply: os << "Reply"; break;
+        case eReplyAndRemoveMAF: os << "ReplyAndRemoveMAF"; break;
+        case eRemoveMAF: os << "RemoveMAF"; break;
+        case eRemoveAndWakeMAF: os << "RemoveAndWakeMAF"; break;
+        case eStall: os << "Stall"; break;
+        case eNoAction: os << "NoAction"; break;
     }
+    os << "}";
 
-    os << "snoop reservations: " << p.getSnoopReservations() << ", ";
-    os << "request reservations: " << p.getRequestReservations() << ", ";
-    os << "reply reservations: " << p.getReplyReservations() << ", ";
-    if (p.getMAFReserved()) { os << "MAF reserved, "; }
-    if (p.getCacheEBReserved()) { os << "Cache EB reserved (" << p.getCacheEBReserved() << "), "; }
-    if (p.getDirEBReserved()) { os << "Dir EB reserved, "; }
+    os << " | Reservation:";
+    if (p.getSnoopReservations() > 0) os << " Snoop="<<p.getSnoopReservations();
+    if (p.getRequestReservations() > 0) os << " Request="<<p.getRequestReservations();
+    if (p.getReplyReservations() > 0) os << " Reply="<<p.getReplyReservations();
+    if (p.getMAFReserved()) os << " MAF";
+    if (p.getCacheEBReserved()) os << " CacheEB="<<p.getCacheEBReserved();
+    if (p.getDirEBReserved()) os << " DirEB";
+    os << " | ";
+
     if (p.transport()[MemoryMessageTag] != nullptr) { os << *(p.transport()[MemoryMessageTag]); }
+
     ActionSet::iterator iter = p.theScheduledActions.begin();
     ActionSet::iterator end  = p.theScheduledActions.end();
-    os << "    Scheduled Tag Reads = " << p.tagReadsScheduled() << "  ";
-    for (; iter != end; iter++) {
-        os << "[" << *iter << "]";
+
+    if (iter != end)
+    {
+        os << "Scheduled("<<p.tagReadsScheduled()<<"): ";
+        for (; iter != end; iter++) {
+            os << "[" << *iter << "]";
+        }
+        os << " | ";
     }
 
     return os;
