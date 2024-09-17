@@ -71,7 +71,9 @@ ConditionHolds(const PSTATE& pstate, int condcode)
 
     bool result = false;
     switch (condcode >> 1) {
-        case 0: // EQ or NE result = pstate.Z(); break;
+        case 0: // EQ or NE
+            result = pstate.Z();
+            break;
         case 1: // CS or CC
             result = pstate.C();
             break;
