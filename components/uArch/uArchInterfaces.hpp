@@ -235,6 +235,7 @@ enum ePrivRegs
     kSPSR_UND,
     kSPSR_FIQ,
     kTPIDR_EL0,
+    kTPIDR_EL2,
     kAbstractSysReg, /* Msutherl: Blanket type for all registers to represent as hashed/encoded
                         5-tuple which are then read through QEMU */
     kLastPrivReg
