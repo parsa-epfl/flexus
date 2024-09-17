@@ -15,7 +15,7 @@ COMPONENT_PARAMETERS(
   PARAMETER( ICacheLineSize, uint64_t, "Icache line size in bytes", "iline", 64 )
   PARAMETER( PerfectICache, bool, "Use a perfect ICache", "perfect", true )
   PARAMETER( PrefetchEnabled, bool, "Enable Next-line Prefetcher", "prefetch", true )
-  PARAMETER( CleanEvict, bool, "Enable eviction messages", "clean_evict", false)
+  PARAMETER( CleanEvict, bool, "Enable eviction messages", "clean_evict", true)
   PARAMETER( Size, int, "ICache size in bytes", "size", 65536 )
   PARAMETER( Associativity, int, "ICache associativity", "associativity", 4 )
   PARAMETER( MissQueueSize, uint32_t, "Maximum size of the fetch miss queue", "miss_queue_size", 4 )

@@ -72,7 +72,7 @@ COMPONENT_PARAMETERS(
   PARAMETER( ProbeFetchMiss, bool, "Probe hierarchy on Ifetch miss", "probe_fetchmiss", false )
   PARAMETER( BusTime_NoData, uint32_t, "Bus transfer time - no data", "bustime_nodata", 1 )
   PARAMETER( BusTime_Data, uint32_t, "Bus transfer time - data", "bustime_data", 2 )
-  PARAMETER( EvictClean, bool, "Cause the cache to evict clean blocks", "allow_evict_clean", false )
+  PARAMETER( EvictClean, bool, "Cause the cache to evict clean blocks", "allow_evict_clean", true )
   PARAMETER( EvictWritableHasData, bool, "Send data with EvictWritable messages", "evict_writable_has_data", false )
   PARAMETER( EvictOnSnoop, bool, "Send evictions on Snoop channel", "evict_on_snoop", false )
   PARAMETER( FastEvictClean, bool, "Send clean evicts without reserving data bus", "fast_evict_clean", false )
