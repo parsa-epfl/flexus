@@ -162,6 +162,8 @@ addPairDestination(SemanticInstruction* inst,
                    bool addSquash = true);
 simple_action
 addAddressCompute(SemanticInstruction* inst, std::vector<std::list<InternalDependance>>& rs_deps);
+simple_action
+addAddressCompute(SemanticInstruction* inst, std::vector<std::list<InternalDependance>>& rs_deps, uint8_t operandInstructionBase);
 void
 setRD(SemanticInstruction* inst, uint32_t rd);
 void

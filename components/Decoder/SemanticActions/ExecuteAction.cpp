@@ -136,7 +136,7 @@ struct ExecuteAction : public ExecuteBase
 
         if (ready()) {
 
-            DBG_(Iface, (<< "Executing " << *this));
+            DBG_(Iface, (<< "Executing " << *this << " with instruction: " << *theInstruction << "and address instruction of " << theInstruction << " and code for instruction of "  << theInstruction->instCode() << " the address of the action is: " << this));
 
             if (theInstruction->hasPredecessorExecuted()) {
                 std::vector<Operand> operands;
@@ -415,14 +415,24 @@ fpExecuteAction(SemanticInstruction* anInstruction,
     return predicated_action(act, act->predicate());
 }
 
+
 simple_action
-calcAddressAction(SemanticInstruction* anInstruction, std::vector<std::list<InternalDependance>>& opDeps)
+calcAddressAction(SemanticInstruction* anInstruction, std::vector<std::list<InternalDependance>>& opDeps){
+    return calcAddressAction(anInstruction, opDeps, 0);
+}
+
+simple_action
+calcAddressAction(SemanticInstruction* anInstruction, std::vector<std::list<InternalDependance>>& opDeps, uint8_t operandInstructionBase)
 {
+
+    DBG_Assert(operandInstructionBase <= (kOperand5 -kOperand1), (<< "Too much operands decoded"));
+
     std::vector<eOperandCode> operands;
     for (uint32_t i = 0; i < opDeps.size(); ++i) {
-        operands.push_back(eOperandCode(kOperand1 + i));
+        operands.push_back(eOperandCode(kOperand1 + operandInstructionBase + i));
     }
     std::unique_ptr<Operation> add = operation(kADD_);
+    // Pooria Poorsarvi Tehrani , example of actions being created
     ExecuteAction* act             = new ExecuteAction(anInstruction, operands, kAddress, add, boost::none);
     anInstruction->addNewComponent(act);
 

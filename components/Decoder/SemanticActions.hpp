@@ -179,6 +179,7 @@ class BaseSemanticAction
 
     int64_t instructionNo() const { return theInstruction->sequenceNo(); }
 
+    // Pooria Poorsarvi Tehrani Creates the internal dependancy : i.e. instruction to its operands
     InternalDependance dependance(int32_t anArg = 0)
     {
         DBG_Assert(anArg < theNumOperands);
@@ -196,7 +197,11 @@ class BaseSemanticAction
     bool cancelled() const { return theInstruction->isSquashed() || theInstruction->isRetired(); }
     bool ready() const { return theReady[0] && theReady[1] && theReady[2] && theReady[3] && theReady[4]; }
     bool signalled() const { return theSignalled; }
-    void setReady(int32_t anArg, bool aReady) { theReady[anArg] = aReady; }
+    void setReady(int32_t anArg, bool aReady) {
+      // Pooria Poorsarvi Tehrani keep this debug or debugging gets hard
+      DBG_(Iface, (<< "Changing ready status to: " << aReady << " from " << theReady[anArg] << " for arg: " << anArg << " for instruction : " << *theInstruction <<  " and instruction address of " << theInstruction << " with code " << theInstruction->instCode() << " and action address of: " << this << " " << *this));
+      theReady[anArg] = aReady;
+    }
 
     void addRef();
     void releaseRef();
@@ -280,6 +285,8 @@ simple_action
 readConstantAction(SemanticInstruction* anInstruction, uint64_t aVal, eOperandCode anOperandCode);
 simple_action
 calcAddressAction(SemanticInstruction* anInstruction, std::vector<std::list<InternalDependance>>& opDeps);
+simple_action
+calcAddressAction(SemanticInstruction* anInstruction, std::vector<std::list<InternalDependance>>& opDeps, uint8_t operandInstructionBase);
 simple_action
 translationAction(SemanticInstruction* anInstruction);
 

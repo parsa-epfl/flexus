@@ -89,7 +89,7 @@ CAS(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
 
     // obtain the loaded values
     std::vector<std::list<InternalDependance>> rs_deps(1);
-    addAddressCompute(inst, rs_deps);
+    addAddressCompute(inst, rs_deps, 2);
     addReadXRegister(inst, 3, rn, rs_deps[0], true);
 
     predicated_dependant_action cas;
@@ -142,7 +142,6 @@ CAS(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         addReadXRegister(inst, 1, rs, cmp_dep[0], sf);
         addReadXRegister(inst, 2, rs, cmp_dep[1], sf);
     }
-
     return inst;
 }
 

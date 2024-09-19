@@ -484,14 +484,19 @@ addExecute(SemanticInstruction* inst,
 }
 
 simple_action
-addAddressCompute(SemanticInstruction* inst, std::vector<std::list<InternalDependance>>& rs_deps)
+addAddressCompute(SemanticInstruction* inst, std::vector<std::list<InternalDependance>>& rs_deps){
+    return addAddressCompute(inst, rs_deps, 0);
+}
+
+simple_action
+addAddressCompute(SemanticInstruction* inst, std::vector<std::list<InternalDependance>>& rs_deps, uint8_t operandInstructionBase)
 {
     DECODER_TRACE;
 
     simple_action tr                         = translationAction(inst);
     multiply_dependant_action update_address = updateVirtualAddressAction(inst);
     inst->addDispatchEffect(satisfy(inst, update_address.dependances[1]));
-    simple_action exec = calcAddressAction(inst, rs_deps);
+    simple_action exec = calcAddressAction(inst, rs_deps, operandInstructionBase);
 
     connectDependance(update_address.dependances[0], exec);
     connectDependance(tr.action->dependance(0), exec);

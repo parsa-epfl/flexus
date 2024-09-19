@@ -65,7 +65,7 @@ void
 DependanceTarget::invokeSatisfy(int32_t anArg)
 {
     void (nDecoder::DependanceTarget::*satisfy_pt)(int32_t) = &nDecoder::DependanceTarget::satisfy;
-    DBG_(VVerb, (<< std::hex << "Satisfy: " << satisfy_pt << "\n"));
+    DBG_(VVerb, (<< std::hex << "Invoke Satisfy: " << " for arg " << anArg << satisfy_pt << "\n"));
     satisfy(anArg);
     DBG_(VVerb, (<< "After satisfy"));
 }

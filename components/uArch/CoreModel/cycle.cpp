@@ -1499,7 +1499,7 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
         CORE_DBG("Instruction is neither annuled nor is a micro-op");
 
         validation_passed &= anInstruction->preValidate();
-        DBG_(Iface, (<< "Pre Validating... " << validation_passed));
+        DBG_(Iface, (<< "Pre Validating... " << validation_passed << " for " << anInstruction << " " << *anInstruction));
 
         //    DBG_( VVerb, Condition(!validation_passed) ( << *anInstruction <<
         //    "Prevalidation failure." ) ); bool take_interrupt =
