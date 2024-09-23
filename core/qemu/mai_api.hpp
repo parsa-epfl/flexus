@@ -138,7 +138,7 @@ class Processor
 
     uint64_t read_sysreg(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn, uint8_t crm)
     {
-        return API::qemu_api.read_sys_register(core_index, opc0, opc1, opc2, crn, crm);
+        return API::qemu_api.read_sys_register(core_index, opc0, opc1, opc2, crn, crm, false);
     }
 
     uint64_t id() const { return core_index; }
