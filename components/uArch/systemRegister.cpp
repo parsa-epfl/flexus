@@ -116,7 +116,7 @@ class DAIF_ : public SysRegInfo
     static const eRegInfo type            = kARM_NO_RAW;
     uint64_t resetvalue                   = -1;
 
-    virtual eAccessResult accessfn(uArch* aCore)
+    virtual eAccessResult accessfn(uArch* aCore) override
     {
         return kACCESS_OK; // access OK since we assume the access right is EL0_RW
     }
@@ -157,7 +157,7 @@ class TPIDR_EL0_ : public SysRegInfo
     static const eRegInfo type            = kARM_NO_RAW;
     uint64_t resetvalue                   = -1;
 
-    virtual eAccessResult accessfn(uArch* aCore)
+    virtual eAccessResult accessfn(uArch* aCore) override
     {
         return kACCESS_OK; // access OK since we assume the access right is EL0_RW
     } // FIXME /*aa64_daif_access*/
@@ -191,7 +191,7 @@ class TPIDR_EL2_ : public SysRegInfo
     static const eRegInfo type            = kARM_NO_RAW;
     uint64_t resetvalue                   = -1;
 
-    virtual eAccessResult accessfn(uArch* aCore)
+    virtual eAccessResult accessfn(uArch* aCore) override
     {
         if (aCore->currentEL() <= 2) {
             return kACCESS_TRAP_EL2;
@@ -447,7 +447,7 @@ class ELR_EL1_ : public SysRegInfo
         // elsif PSTATE.EL == EL3 then
         //     return ELR_EL1;
         auto currentel   = aCore->_PSTATE().EL();
-        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1);
+        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1, false);
         auto HCR_EL2_E2H = extract64(HCR_EL2, 34, 1);
 
         if (currentel == 1 || currentel == 3) return aCore->getELR_el(1);
@@ -463,7 +463,7 @@ class ELR_EL1_ : public SysRegInfo
     virtual void writefn(uArch* aCore, uint64_t aVal) override
     {
         auto currentel   = aCore->_PSTATE().EL();
-        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1);
+        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1, false);
         auto HCR_EL2_E2H = extract64(HCR_EL2, 34, 1);
 
         if (currentel == 1 || currentel == 3) aCore->setELR_el(1, aVal);
@@ -477,15 +477,15 @@ class ELR_EL1_ : public SysRegInfo
     virtual void sync(uArch* aCore, size_t theNode) override
     {
         auto currentel   = aCore->_PSTATE().EL();
-        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1);
+        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1, true);
         auto HCR_EL2_E2H = extract64(HCR_EL2, 34, 1);
-        auto valELR_EL1  = Flexus::Qemu::API::qemu_api.read_sys_register(theNode, opc0, opc1, opc2, crn, crm);
+        auto valELR_EL1  = Flexus::Qemu::API::qemu_api.read_sys_register(theNode, opc0, opc1, opc2, crn, crm, true);
         auto valELR_EL2  = Flexus::Qemu::API::qemu_api.read_sys_register(theNode,
                                                                         ELR_EL2_::opc0,
                                                                         ELR_EL2_::opc1,
                                                                         ELR_EL2_::opc2,
                                                                         ELR_EL2_::crn,
-                                                                        ELR_EL2_::crm);
+                                                                        ELR_EL2_::crm, true);
 
         if (currentel == 1 || currentel == 3) writefn(aCore, valELR_EL1);
         if (currentel == 2) {
@@ -576,7 +576,7 @@ class SPSR_EL1_ : public SysRegInfo
         //  return HaveEL(EL2) && (!HaveEL(EL3) || SCR_GEN[].NS == '1' || IsSecureEL2Enabled());
 
         auto currentel   = aCore->_PSTATE().EL();
-        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1);
+        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1, false);
         auto HCR_EL2_E2H = extract64(HCR_EL2, 34, 1);
 
         if (currentel == 1 || currentel == 3) return aCore->getSPSR_el(1);
@@ -592,7 +592,7 @@ class SPSR_EL1_ : public SysRegInfo
     virtual void writefn(uArch* aCore, uint64_t aVal) override
     {
         auto currentel   = aCore->_PSTATE().EL();
-        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1);
+        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1, false);
         auto HCR_EL2_E2H = extract64(HCR_EL2, 34, 1);
 
         if (currentel == 1 || currentel == 3) return aCore->setSPSR_el(1, aVal);
@@ -607,15 +607,15 @@ class SPSR_EL1_ : public SysRegInfo
     virtual void sync(uArch* aCore, size_t theNode) override
     {
         auto currentel   = aCore->_PSTATE().EL();
-        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1);
+        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1, true);
         auto HCR_EL2_E2H = extract64(HCR_EL2, 34, 1);
-        auto valSPSR_EL1 = Flexus::Qemu::API::qemu_api.read_sys_register(theNode, opc0, opc1, opc2, crn, crm);
+        auto valSPSR_EL1 = Flexus::Qemu::API::qemu_api.read_sys_register(theNode, opc0, opc1, opc2, crn, crm, true);
         auto valSPSR_EL2 = Flexus::Qemu::API::qemu_api.read_sys_register(theNode,
                                                                          SPSR_EL2_::opc0,
                                                                          SPSR_EL2_::opc1,
                                                                          SPSR_EL2_::opc2,
                                                                          SPSR_EL2_::crn,
-                                                                         SPSR_EL2_::crm);
+                                                                         SPSR_EL2_::crm, true);
 
         if (currentel == 1 || currentel == 3) writefn(aCore, valSPSR_EL1);
         if (currentel == 2) {
@@ -659,7 +659,7 @@ class SP_EL0_ : public SysRegInfo
     uint64_t resetvalue                   = -1;
 
     virtual uint64_t readfn(uArch* aCore) override { return aCore->getSP_el(0); }
-    virtual eAccessResult accessfn(uArch* aCore)
+    virtual eAccessResult accessfn(uArch* aCore) override
     {
         return kACCESS_OK; // access OK since QEMU will check access and trap if necessary
     }

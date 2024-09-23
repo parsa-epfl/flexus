@@ -170,7 +170,7 @@ class SysRegInfo
     {
         this->writefn(aCore,
                       Flexus::Qemu::API::qemu_api
-                        .read_sys_register(theNode, this->opc0, this->opc1, this->opc2, this->crn, this->crm));
+                        .read_sys_register(theNode, this->opc0, this->opc1, this->opc2, this->crn, this->crm, true));
     }
 
     virtual void setSystemRegisterEncodingValues(uint8_t op0, uint8_t op1, uint8_t op2, uint8_t aCrn, uint8_t aCrm)
