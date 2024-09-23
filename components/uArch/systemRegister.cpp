@@ -161,8 +161,7 @@ class TPIDR_EL0_ : public SysRegInfo
     {
         return kACCESS_OK; // access OK since we assume the access right is EL0_RW
     } // FIXME /*aa64_daif_access*/
-    virtual void writefn(uArch* aCore, uint64_t aVal) override { aCore->setDAIF(aVal); } // FIXME
-    virtual void reset(uArch* aCore) override { DBG_Assert(false); } // FIXME /*arm_cp_reset_ignore*/
+    virtual void writefn(uArch* aCore, uint64_t aVal) override {  }
     virtual uint64_t readfn(uArch* aCore) override { return aCore->getTPIDR(0); }
     TPIDR_EL0_()
       : SysRegInfo("TPIDR_EL0_",
@@ -174,6 +173,43 @@ class TPIDR_EL0_ : public SysRegInfo
                    TPIDR_EL0_::crn,
                    TPIDR_EL0_::crm,
                    TPIDR_EL0_::access)
+    {
+    }
+};
+
+class TPIDR_EL2_ : public SysRegInfo
+{
+  public:
+    std::string name                      = "TPIDR_EL2";
+    static const eRegExecutionState state = kARM_STATE_AA64;
+    static const uint8_t opc0             = 3;
+    static const uint8_t opc1             = 4;
+    static const uint8_t opc2             = 2;
+    static const uint8_t crn              = 13;
+    static const uint8_t crm              = 0;
+    static const eAccessRight access      = kPL0_RW;
+    static const eRegInfo type            = kARM_NO_RAW;
+    uint64_t resetvalue                   = -1;
+
+    virtual eAccessResult accessfn(uArch* aCore)
+    {
+        if (aCore->currentEL() <= 2) {
+            return kACCESS_TRAP_EL2;
+        }
+        return kACCESS_OK; // access OK since we assume the access right is EL0_RW
+    } // FIXME /*aa64_daif_access*/
+    virtual void writefn(uArch* aCore, uint64_t aVal) override {  }
+    virtual uint64_t readfn(uArch* aCore) override { return aCore->getTPIDR(2); }
+    TPIDR_EL2_()
+      : SysRegInfo("TPIDR_EL2_",
+                   TPIDR_EL2_::state,
+                   TPIDR_EL2_::type,
+                   TPIDR_EL2_::opc0,
+                   TPIDR_EL2_::opc1,
+                   TPIDR_EL2_::opc2,
+                   TPIDR_EL2_::crn,
+                   TPIDR_EL2_::crm,
+                   TPIDR_EL2_::access)
     {
     }
 };
@@ -865,6 +901,9 @@ std::vector<std::pair<std::array<uint8_t, 5>, ePrivRegs>> supported_sysRegs = {
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
       { TPIDR_EL0_::opc0, TPIDR_EL0_::opc1, TPIDR_EL0_::opc2, TPIDR_EL0_::crn, TPIDR_EL0_::crm },
       kTPIDR_EL0),
+    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
+      { TPIDR_EL2_::opc0, TPIDR_EL2_::opc1, TPIDR_EL2_::opc2, TPIDR_EL2_::crn, TPIDR_EL2_::crm },
+      kTPIDR_EL2),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>({ FPCR_::opc0, FPCR_::opc1, FPCR_::opc2, FPCR_::crn, FPCR_::crm },
                                                       kFPCR),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>({ FPSR_::opc0, FPSR_::opc1, FPSR_::opc2, FPSR_::crn, FPSR_::crm },
@@ -938,6 +977,7 @@ getPriv(ePrivRegs aCode)
         case kSPSR_UND: return std::make_unique<SPSR_UND_>();
         case kSPSR_FIQ: return std::make_unique<SPSR_FIQ_>();
         case kTPIDR_EL0: return std::make_unique<TPIDR_EL0_>();
+        case kTPIDR_EL2: return std::make_unique<TPIDR_EL2_>();
         default: // FIXME: Only return default/abstract if implemented by QEMU
             return std::make_unique<SysRegInfo>();
             // DBG_Assert(false, (<< "Unimplemented SysReg Code" << aCode));
