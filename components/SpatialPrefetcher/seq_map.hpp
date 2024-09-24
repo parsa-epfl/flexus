@@ -108,9 +108,6 @@ class flexus_boost_set_assoc
 
     SetAssocTable theTable;
     T_key theCurrIndex;
-#ifdef FLEXUS_BOOST_SET_ASSOC_STATS
-    std::vector<int> theSetCounts;
-#endif
 
     T_key theIndexMask;
     T_key theUsefulBottomMask;
@@ -132,9 +129,6 @@ class flexus_boost_set_assoc
         theTable.resize(theSets);
         theCurrIndex = 0;
         theIndexMask = theSets - 1;
-#ifdef FLEXUS_BOOST_SET_ASSOC_STATS
-        theSetCounts.resize(theSets);
-#endif
     }
 
     size_type sets() const { return theSets; }
@@ -204,9 +198,6 @@ class flexus_boost_set_assoc
     std::pair<iterator, bool> insert(const std::pair<T_key, T_val>& apair)
     {
         theCurrIndex = makeIndex(apair.first);
-#ifdef FLEXUS_BOOST_SET_ASSOC_STATS
-        theSetCounts[theCurrIndex]++;
-#endif
         return theTable[theCurrIndex].insert(apair);
     }
 
@@ -221,9 +212,6 @@ class flexus_boost_set_assoc
     void push_back(const std::pair<T_key, T_val>& apair)
     {
         theCurrIndex = makeIndex(apair.first);
-#ifdef FLEXUS_BOOST_SET_ASSOC_STATS
-        theSetCounts[theCurrIndex]++;
-#endif
         theTable[theCurrIndex].push_back(apair);
     }
 
@@ -231,9 +219,6 @@ class flexus_boost_set_assoc
 
     void move_back(iterator const& iter) { theTable[theCurrIndex].move_back(iter); }
 
-#ifdef FLEXUS_BOOST_SET_ASSOC_STATS
-    std::vector<int>& get_counts() { return theSetCounts; }
-#endif
 };
 
 #endif

@@ -8,9 +8,6 @@
 #include <core/types.hpp>
 #include <iostream>
 
-#ifdef FLEXUS_DirectoryEntry_TYPE_PROVIDED
-#error "Only one component may provide the Flexus::SharedTypes::DirectoryEntry data type"
-#endif
 #define FLEXUS_DirectoryEntry_TYPE_PROVIDED
 
 namespace Flexus {

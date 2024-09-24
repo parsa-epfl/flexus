@@ -3,6 +3,7 @@
 #define _NS_CHANNEL_HPP_
 
 #include "netcommon.hpp"
+#include <cassert>
 
 namespace nNetShim {
 

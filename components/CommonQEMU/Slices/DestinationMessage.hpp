@@ -6,9 +6,6 @@
 #include <iostream>
 #include <list>
 
-#ifdef FLEXUS_DestinationMessage_TYPE_PROVIDED
-#error "Only one component may provide the Flexus::SharedTypes::DestinationMessage data type"
-#endif
 #define FLEXUS_DestinationMessage_TYPE_PROVIDED
 
 namespace Flexus {

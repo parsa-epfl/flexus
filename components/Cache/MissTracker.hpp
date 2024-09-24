@@ -16,10 +16,6 @@ using namespace boost::multi_index;
 #define DBG_DeclareCategories CacheMissTracking
 #include DBG_Control()
 
-#ifdef FLEXUS_TRACK_COHMISSES
-Flexus::Stat::StatInstanceCounter<int64_t> theCoherenceMisses_User("sys-CoherenceMisses:User");
-Flexus::Stat::StatInstanceCounter<int64_t> theCoherenceMisses_System("sys-CoherenceMisses:System");
-#endif // FLEXUS_TRACK_COHMISSES
 
 namespace nCache {
 namespace Stat = Flexus::Stat;
@@ -264,9 +260,6 @@ struct MissTracker
                         if (front->theTracker->OS() && *front->theTracker->OS()) {
                             ++theMisses_S;
                             ++theMisses_S_Coherence;
-#ifdef FLEXUS_TRACK_COHMISSES
-                            theCoherenceMisses_System << std::make_pair(*front->theTracker->address() & (~63LL), 1LL);
-#endif // FLEXUS_TRACK_COHMISSES
                             DBG_(Trace,
                                  AddCat(CacheMissTracking)(<< theName << " COHERENCE Miss to " << std::hex
                                                            << ((*front->theTracker->address() & (~63LL))) << std::dec
@@ -274,9 +267,6 @@ struct MissTracker
                         } else {
                             ++theMisses_U;
                             ++theMisses_U_Coherence;
-#ifdef FLEXUS_TRACK_COHMISSES
-                            theCoherenceMisses_User << std::make_pair(*front->theTracker->address() & (~63LL), 1LL);
-#endif // FLEXUS_TRACK_COHMISSES
                             DBG_(Trace,
                                  AddCat(CacheMissTracking)(<< theName << " COHERENCE Miss to " << std::hex
                                                            << ((*front->theTracker->address() & (~63LL))) << std::dec

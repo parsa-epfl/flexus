@@ -252,30 +252,6 @@ CoreImpl::printMSHR()
             }
         }
     }
-#ifdef VALIDATE_STORE_PREFETCHING
-    std::cout << theName << " *** Waiting prefetches *** " << std::endl;
-    if (!theWaitingStorePrefetches.empty()) {
-        std::map<PhysicalMemoryAddress, std::set<boost::intrusive_ptr<Instruction>>>::iterator iter, end;
-        for (iter = theWaitingStorePrefetches.begin(), end = theWaitingStorePrefetches.end(); iter != end; ++iter) {
-            std::cout << "   " << iter->first << std::endl;
-            std::set<boost::intrusive_ptr<Instruction>>::iterator insn_iter, insn_end;
-            for (insn_iter = iter->second.begin(), insn_end = iter->second.end(); insn_iter != insn_end; ++insn_iter) {
-                std::cout << "         " << **insn_iter << std::endl;
-            }
-        }
-    }
-    std::cout << theName << " *** Blocked prefetches *** " << std::endl;
-    if (!theBlockedStorePrefetches.empty()) {
-        std::map<PhysicalMemoryAddress, std::set<boost::intrusive_ptr<Instruction>>>::iterator iter, end;
-        for (iter = theBlockedStorePrefetches.begin(), end = theBlockedStorePrefetches.end(); iter != end; ++iter) {
-            std::cout << "   " << iter->first << std::endl;
-            std::set<boost::intrusive_ptr<Instruction>>::iterator insn_iter, insn_end;
-            for (insn_iter = iter->second.begin(), insn_end = iter->second.end(); insn_iter != insn_end; ++insn_iter) {
-                std::cout << "         " << **insn_iter << std::endl;
-            }
-        }
-    }
-#endif // VALIDATE_STORE_PREFETCHING
     std::cout << theName << " *** Prefetch Queue *** " << std::endl;
     if (!theMemoryPortArbiter.theStorePrefetchRequests.empty()) {
         prefetch_queue_t::iterator iter, end;

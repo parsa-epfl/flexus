@@ -1,9 +1,6 @@
 #ifndef FLEXUS_SLICES__MEMORYMESSAGE_HPP_INCLUDED
 #define FLEXUS_SLICES__MEMORYMESSAGE_HPP_INCLUDED
 
-#ifdef FLEXUS_MemoryMessage_TYPE_PROVIDED
-#error "Only one component may provide the Flexus::SharedTypes::MemoryMessage data type"
-#endif
 #define FLEXUS_MemoryMessage_TYPE_PROVIDED
 
 #include <components/CommonQEMU/Slices/AbstractInstruction.hpp>

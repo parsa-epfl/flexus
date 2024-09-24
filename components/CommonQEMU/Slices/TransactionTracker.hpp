@@ -1,9 +1,6 @@
 #ifndef FLEXUS_SLICES__TRANSACTION_TRACKER_HPP_INCLUDED
 #define FLEXUS_SLICES__TRANSACTION_TRACKER_HPP_INCLUDED
 
-#ifdef FLEXUS_TransactionTracker_TYPE_PROVIDED
-#error "Only one component may provide the Flexus::SharedTypes::TransactionTracker data type"
-#endif
 #define FLEXUS_TransactionTracker_TYPE_PROVIDED
 
 #include <boost/optional.hpp>

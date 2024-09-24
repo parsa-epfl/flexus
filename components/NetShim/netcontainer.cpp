@@ -325,9 +325,6 @@ NetContainer::drive(void)
     int i;
 
 #ifndef NS_STANDALONE
-#ifdef NS_DEBUG
-    currTime++;
-#endif
 #endif
     for (i = 0; i < numSwitches; i++) {
         if (switches[i]->drive()) return true;

@@ -1,9 +1,6 @@
 #ifndef FLEXUS_SLICES__PERFECTPLACEMENTSLICE_HPP_INCLUDED
 #define FLEXUS_SLICES__PERFECTPLACEMENTSLICE_HPP_INCLUDED
 
-#ifdef FLEXUS_PerfectPlacementSlice_TYPE_PROVIDED
-#error "Only one component may provide the Flexus::SharedTypes::PerfectPlacementSlice data type"
-#endif
 #define FLEXUS_PerfectPlacementSlice_TYPE_PROVIDED
 
 #include <boost/none.hpp>

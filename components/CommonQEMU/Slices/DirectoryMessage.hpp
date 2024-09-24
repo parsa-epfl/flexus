@@ -5,9 +5,6 @@
 #include <core/types.hpp>
 #include <iostream>
 
-#ifdef FLEXUS_DirectoryMessage_TYPE_PROVIDED
-#error "Only one component may provide the Flexus::SharedTypes::DirectoryMessage data type"
-#endif
 #define FLEXUS_DirectoryMessage_TYPE_PROVIDED
 
 namespace Flexus {

@@ -1,9 +1,6 @@
 #ifndef FLEXUS_SLICES__PROTOCOLMESSAGE_HPP_INCLUDED
 #define FLEXUS_SLICES__PROTOCOLMESSAGE_HPP_INCLUDED
 
-#ifdef FLEXUS_ProtocolMessage_TYPE_PROVIDED
-#error "Only one component may provide the Flexus::SharedTypes::ProtocolMessage data type"
-#endif
 #define FLEXUS_ProtocolMessage_TYPE_PROVIDED
 
 #include <components/CommonQEMU/Slices/DirectoryEntry.hpp>

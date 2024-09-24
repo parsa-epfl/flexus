@@ -635,10 +635,6 @@ CoreImpl::issueStorePrefetch(boost::intrusive_ptr<Instruction> anInstruction)
         DBG_(
           Verb,
           (<< theName << " Store prefetch request by " << *lsq_entry << " delayed because of conflicting MSHR entry."));
-#ifdef VALIDATE_STORE_PREFETCHING
-        DBG_Assert(theBlockedStorePrefetches[aligned].count(lsq_entry->theInstruction) == 0);
-        theBlockedStorePrefetches[aligned].insert(anInstruction);
-#endif // VALIDATE_STORE_PREFETCHING
         ++theStorePrefetchConflicts;
         return;
     }

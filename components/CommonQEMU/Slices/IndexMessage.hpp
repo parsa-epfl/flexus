@@ -6,9 +6,6 @@
 #include <iostream>
 #include <list>
 
-#ifdef FLEXUS_IndexMessage_TYPE_PROVIDED
-#error "Only one component may provide the Flexus::SharedTypes::IndexMessage data type"
-#endif
 #define FLEXUS_IndexMessage_TYPE_PROVIDED
 
 namespace Flexus {

@@ -3,9 +3,6 @@
 
 #include <core/boost_extensions/intrusive_ptr.hpp>
 
-#ifdef FLEXUS_Mux_TYPE_PROVIDED
-#error "Only one component may provide the Flexus::SharedTypes::Mux data type"
-#endif
 #define FLEXUS_Mux_TYPE_PROVIDED
 
 namespace Flexus {

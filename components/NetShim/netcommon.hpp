@@ -6,18 +6,7 @@
 #include <limits.h>
 #include <stdio.h>
 
-#ifdef NS_STANDALONE
-
-#include <assert.h>
-
-#else
-
-#undef assert
-#define assert DBG_Assert
-
-#include <core/debug/debug.hpp>
-
-#endif
+#include "core/debug/debug.hpp"
 
 using namespace std;
 
@@ -77,10 +66,6 @@ class MessageState
       , startTS(0)
       ,
     // CMU-ONLY-BLOCK-BEGIN
-#ifdef NS_STANDALONE
-      replTS(0)
-      ,
-#endif
       // CMU-ONLY-BLOCK-END
       myList(nullptr)
     {
@@ -106,10 +91,6 @@ class MessageState
       , startTS(0)
       ,
     // CMU-ONLY-BLOCK-BEGIN
-#ifdef NS_STANDALONE
-      replTS(0)
-      ,
-#endif
       // CMU-ONLY-BLOCK-END
       myList(nullptr)
     {
@@ -139,9 +120,6 @@ class MessageState
         startTS         = startTS_;
 
         // CMU-ONLY-BLOCK-BEGIN
-#ifdef NS_STANDALONE
-        replTS = 0;
-#endif
         // CMU-ONLY-BLOCK-END
         flexusInFastMode = flexusInFastMode_;
     }
@@ -172,9 +150,6 @@ class MessageState
                          */
     int64_t startTS;    /* When did this message enter the network? */
                         // CMU-ONLY-BLOCK-BEGIN
-#ifdef NS_STANDALONE
-    int64_t replTS;
-#endif
     // CMU-ONLY-BLOCK-END
 
     /* Note that we calculate the total queuing time statistic with the following
@@ -199,9 +174,6 @@ class MessageStateList
       , next(nullptr)
       , delay(0)
     {
-#ifdef NS_DEBUG
-        usageCount = 0;
-#endif
     }
 
   public:
@@ -210,9 +182,6 @@ class MessageStateList
     MessageStateList* next;
     int64_t delay;
 
-#ifdef NS_DEBUG
-    int32_t usageCount;
-#endif
 };
 
 //  Message and message list allocation/deallocation functions.
@@ -231,27 +200,12 @@ freeMessageState(MessageState* msg);
 bool
 resetMessageStateSerial(void);
 
-#ifdef NS_DEBUG
-
-#ifdef NS_STANDALONE
-#define TRACE(M, TXT)                                                                                                  \
-    {                                                                                                                  \
-        cerr << "Time: " << currTime << " Msg: " << (M)->serial << " " << TXT << endl;                                 \
-    }
-#else
 #define TRACE(M, TXT)                                                                                                  \
     {                                                                                                                  \
         DBG_(Iface, (<< "Time: " << currTime << " Msg: " << (M)->serial << " " << TXT << endl));                       \
     }
-#endif
 
 extern int64_t currTime;
-
-#else
-
-#define TRACE(M, TXT)
-
-#endif
 
 } // namespace nNetShim
 

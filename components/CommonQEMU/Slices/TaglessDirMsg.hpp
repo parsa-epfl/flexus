@@ -8,9 +8,6 @@
 #include <core/types.hpp>
 #include <iostream>
 
-#ifdef FLEXUS_TaglessDirMsg_TYPE_PROVIDED
-#error "Only one component may provide the Flexus::SharedTypes::TaglessDirMsg data type"
-#endif
 #define FLEXUS_TaglessDirMsg_TYPE_PROVIDED
 
 namespace Flexus {

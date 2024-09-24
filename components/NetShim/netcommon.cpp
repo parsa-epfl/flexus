@@ -1,7 +1,6 @@
 
 #include "netcommon.hpp"
-
-#include <string.h>
+#include <cassert>
 
 namespace nNetShim {
 
@@ -43,10 +42,6 @@ allocMessageStateList(void)
     newNode->next  = nullptr;
     newNode->delay = 0;
 
-#ifdef NS_DEBUG
-    assert(newNode->usageCount == 0);
-    newNode->usageCount++;
-#endif
 
     return newNode;
 }
@@ -63,10 +58,6 @@ allocMessageStateList(MessageState* msg)
 bool
 freeMessageStateList(MessageStateList* msgl)
 {
-#ifdef NS_DEBUG
-    msgl->usageCount--;
-    assert(msgl->usageCount == 0);
-#endif
 
     //  msgl->msg = (MessageState *)msgl->msg->serial;
     //  msgl->msg   = nullptr;

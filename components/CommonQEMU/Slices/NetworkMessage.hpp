@@ -1,9 +1,6 @@
 #ifndef FLEXUS_SLICES__NETWORKMESSAGE_HPP_INCLUDED
 #define FLEXUS_SLICES__NETWORKMESSAGE_HPP_INCLUDED
 
-#ifdef FLEXUS_NetworkMessage_TYPE_PROVIDED
-#error "Only one component may provide the Flexus::SharedTypes::NetworkMessage data type"
-#endif
 #define FLEXUS_NetworkMessage_TYPE_PROVIDED
 
 #include <core/boost_extensions/intrusive_ptr.hpp>

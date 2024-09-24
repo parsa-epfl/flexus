@@ -432,17 +432,6 @@ CoreImpl::complete(MemOp const& anOperation)
             while (pf_iter != pf_end) {
                 memq_t::index<by_insn>::type::iterator lsq_entry = theMemQueue.get<by_insn>().find(*pf_iter);
                 if (lsq_entry != theMemQueue.get<by_insn>().end()) {
-#ifdef VALIDATE_STORE_PREFETCHING
-                    PhysicalMemoryAddress aligned =
-                      PhysicalMemoryAddress(static_cast<uint64_t>(lsq_entry->thePaddr) & ~(theCoherenceUnit - 1));
-                    std::map<PhysicalMemoryAddress, std::set<boost::intrusive_ptr<Instruction>>>::iterator bl_iter;
-                    bl_iter = theBlockedStorePrefetches.find(aligned);
-                    DBG_Assert(bl_iter != theBlockedStorePrefetches.end(),
-                               (<< theName << " Non-blocked store prefetch by: " << **pf_iter));
-                    DBG_Assert(bl_iter->second.count(*pf_iter) > 0);
-                    bl_iter->second.erase(*pf_iter);
-                    if (bl_iter->second.empty()) { theBlockedStorePrefetches.erase(bl_iter); }
-#endif // VALIDATE_STORE_PREFETCHING
                     requestStorePrefetch(lsq_entry);
                 }
                 ++pf_iter;

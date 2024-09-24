@@ -54,10 +54,6 @@ struct MemoryMapImpl : public MemoryMap
 
     virtual void recordAccess(PhysicalMemoryAddress const& anAddress, AccessType aType)
     {
-#ifdef TRACK_ACCESSES
-        theRequestingComponent_isValid ? theMemoryMap.recordAccess(anAddress, aType, theRequestingComponent)
-                                       : theMemoryMap.recordAccess(anAddress, aType);
-#endif
     }
 };
 
@@ -327,25 +323,6 @@ class FLEXUS_COMPONENT(MemoryMap), public MemoryMapFactory
                       MemoryMap::AccessType aType,
                       node_id_t anAccessingComponent)
     {
-#ifdef TRACK_ACCESSES
-        DBG_(Iface,
-             (<< "Access by " << anAccessingComponent << " of " << MemoryMap::AccessType_toString(aType) << " @"
-              << &std::hex << anAddress << &std::dec) Addr(anAddress) Comp(*this));
-
-        // Get page base address
-        PhysicalMemoryAddress page_base(anAddress & ~(cfg.PageSize - 1));
-
-        // Get the new or existing page object
-        pair<PageMap::iterator, bool> insert_result = thePageMap.insert(std::make_pair(page_base, MemoryPage()));
-        if (insert_result.second) {
-            // If the new page was inserted
-            insert_result.first->second.initialize(theNumCPUs);
-        }
-
-        // Increment the access count
-        insert_result.first->second.increment(aType, anAccessingComponent);
-
-#endif // TRACK_ACCESSES
     }
 };
 

@@ -1,9 +1,6 @@
 #ifndef FLEXUS_SLICES__ARCHITECTURAL_INSTRUCTION_HPP_INCLUDED
 #define FLEXUS_SLICES__ARCHITECTURAL_INSTRUCTION_HPP_INCLUDED
 
-#ifdef FLEXUS_ArchitecturalInstruction_TYPE_PROVIDED
-#error "Only one component may provide the Flexus::SharedTypes::ArchitecturalInstruction data type"
-#endif
 #define FLEXUS_ArchitecturalInstruction_TYPE_PROVIDED
 
 #include <components/CommonQEMU/DoubleWord.hpp>
