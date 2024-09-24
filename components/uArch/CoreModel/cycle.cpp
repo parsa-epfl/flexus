@@ -156,10 +156,9 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     processMemoryReplies();
     prepareCycle();
 
-    for (const auto &tr: thePageWalkReissues)
+    for (const auto& tr : thePageWalkReissues)
         issueMMU(tr);
     thePageWalkReissues.clear();
-
 
     DBG_(VVerb, (<< "*** Eval *** "));
     evaluate();
@@ -229,7 +228,7 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
         ++theIdleCycleCount;
     } else {
         theIdleCycleCount = 0;
-        CORE_DBG(theName << " Non-Idle" );
+        CORE_DBG(theName << " Non-Idle");
     }
     theIdleThisCycle = true;
 
@@ -1091,8 +1090,7 @@ CoreImpl::retire()
 
         if (!theROB.front()->mayRetire()) {
             // wfi still executing
-            if (theROB.front()->getOpcode() == 0x7F2003D5)
-                 theFlexus->reset_core_watchdog(theNode);
+            if (theROB.front()->getOpcode() == 0x7F2003D5) theFlexus->reset_core_watchdog(theNode);
             CORE_DBG("Cant Retire due to pending retirement dependance " << *theROB.front());
             break;
         }
@@ -1133,8 +1131,7 @@ CoreImpl::retire()
         }
 
         // the remaining instrs in the ROB are all invalid
-        if (theROB.front()->isSquashed())
-            break;
+        if (theROB.front()->isSquashed()) break;
 
         // FOR in-order SMS Experiments only - not normal in-order
         // Under theInOrderMemory, we do not allow stores or atomics to retire
@@ -1377,8 +1374,9 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
     FLEXUS_PROFILE();
     CORE_DBG(*anInstruction);
     bool validation_passed = true;
-    eExceptionType raised  = kException_None;;
-    bool resync_accounted  = false;
+    eExceptionType raised  = kException_None;
+    ;
+    bool resync_accounted = false;
 
     if (anInstruction->advancesSimics()) {
         CORE_DBG("Instruction is neither annuled nor is a micro-op");
@@ -1392,11 +1390,9 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
         theInterruptSignalled   = false;
         theInterruptInstruction = 0;
 
-        int qemu_rcode = advance_fn(true);  // count time
+        int qemu_rcode = advance_fn(true); // count time
 
-        DBG_(Dev, (<< "c" << theNode
-                 << " commit [" << std::hex << qemu_rcode
-                 << "] " << *anInstruction));
+        DBG_(Dev, (<< "c" << theNode << " commit [" << std::hex << qemu_rcode << "] " << *anInstruction));
 
         if (qemu_rcode == QEMU_EXCP_HALTED) { // QEMU CPU Halted
             /* If cpu is halted, turn off insn counting until the CPU is woken up again */
@@ -1406,7 +1402,7 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
             anInstruction->forceResync();
         }
         if ((qemu_rcode != (int)(kException_None)) && (qemu_rcode < QEMU_EXCP_INTERRUPT))
-             raised = (eExceptionType)(qemu_rcode);
+            raised = (eExceptionType)(qemu_rcode);
 
         if (raised != kException_None) {
             if (anInstruction->willRaise() != raised) { // FIXME get exception mapper
@@ -1415,9 +1411,7 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
                       << " Core did not predict correct exception for this "
                          "instruction raised=0x"
                       << std::hex << raised << " will_raise=0x" << anInstruction->willRaise() << std::dec));
-                if (anInstruction->instCode() != codeITLBMiss) {
-                    anInstruction->changeInstCode(codeException);
-                }
+                if (anInstruction->instCode() != codeITLBMiss) { anInstruction->changeInstCode(codeException); }
                 anInstruction->forceResync();
                 resync_accounted = true;
 
@@ -1587,9 +1581,11 @@ CoreImpl::takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExceptionTy
     // this means that at the time we see the interrupt and are about to retire
     // the wfi, it is not yet executed in the emulator, neither is the required
     // pc advancement (+4) performed.
-    if (wfi)
-    {
-        DBG_Assert(false, (<< "[==BRYAN==] You seems to have entered the WAIT FOR INTERRUPT (wfi) realm proceed with caution because it was NOT tested at all, and the condition where left unchanged from the RISC-V version"));
+    if (wfi) {
+        DBG_Assert(
+          false,
+          (<< "[==BRYAN==] You seems to have entered the WAIT FOR INTERRUPT (wfi) realm proceed with caution because "
+              "it was NOT tested at all, and the condition where left unchanged from the RISC-V version"));
         // Flexus::Qemu::API::qemu_api.set_pc(theQEMUCPU, theROB.front()->pc() + 4);
     }
 
@@ -1616,14 +1612,14 @@ CoreImpl::acceptInterrupt()
         && !theROB.front()->isMicroOp()          // Do not take interrupts on squashed micro-ops
         && !theIsSpeculating                     // Do not take interrupts while speculating
         // comply with qemu that exceptions have higher priority
-        && (theROB.front()->willRaise() == kException_None)
-    ) {
+        && (theROB.front()->willRaise() == kException_None)) {
         // Interrupt was signalled this cycle.  Clear the ROB
         theInterruptSignalled = false;
 
         // theROB.front()->makePriv();
 
-        DBG_(Dev, (<< theName << " Accepting interrupt " << thePendingInterrupt << " on instruction " << *theROB.front()));
+        DBG_(Dev,
+             (<< theName << " Accepting interrupt " << thePendingInterrupt << " on instruction " << *theROB.front()));
 
         theInterruptInstruction = theROB.front();
         takeTrap(theInterruptInstruction, thePendingInterrupt);

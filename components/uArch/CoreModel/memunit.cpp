@@ -59,9 +59,8 @@ CoreImpl::breakMSHRLink(memq_t::index<by_insn>::type::iterator iter)
     if (iter->theMSHR) {
         DBG_(Verb, (<< "Breaking MSHR connection of " << *iter));
 
-
         // page walk requests can be chained to normal load/store misses
-        for (const auto &tr: (*iter->theMSHR)->second.theWaitingPagewalks)
+        for (const auto& tr : (*iter->theMSHR)->second.theWaitingPagewalks)
             thePageWalkReissues.push_back(tr);
 
         (*iter->theMSHR)->second.theWaitingPagewalks.clear();
@@ -81,9 +80,7 @@ CoreImpl::breakMSHRLink(memq_t::index<by_insn>::type::iterator iter)
             while (pf_iter != pf_end) {
 
                 memq_t::index<by_insn>::type::iterator lsq_entry = theMemQueue.get<by_insn>().find(*pf_iter);
-                if (lsq_entry != theMemQueue.get<by_insn>().end()) {
-                    requestStorePrefetch(lsq_entry);
-                }
+                if (lsq_entry != theMemQueue.get<by_insn>().end()) { requestStorePrefetch(lsq_entry); }
 
                 ++pf_iter;
             }
@@ -304,9 +301,7 @@ CoreImpl::cleanMSHRS(uint64_t aDiscardAfterSequenceNum)
             pf_end  = mshr_temp->second.theBlockedPrefetches.end();
             while (pf_iter != pf_end) {
                 memq_t::index<by_insn>::type::iterator lsq_entry = theMemQueue.get<by_insn>().find(*pf_iter);
-                if (lsq_entry != theMemQueue.get<by_insn>().end()) {
-                    requestStorePrefetch(lsq_entry);
-                }
+                if (lsq_entry != theMemQueue.get<by_insn>().end()) { requestStorePrefetch(lsq_entry); }
                 ++pf_iter;
             }
             mshr_temp->second.theBlockedPrefetches.clear();
@@ -467,7 +462,7 @@ CoreImpl::pushTranslation(TranslationPtr aTranslation)
     } else {
         DBG_(Iface, (<< "Not Resolved.. vaddr: " << lsq_entry->theVaddr << " due to resync."));
 
-        //lsq_entry->theException = lsq_entry->isLoad() ? kException_LoadPageFault : kException_StorePageFault;
+        // lsq_entry->theException = lsq_entry->isLoad() ? kException_LoadPageFault : kException_StorePageFault;
         lsq_entry->theException = kException_IRQ;
         insn->forceResync();
         insn->pageFault();
@@ -540,17 +535,18 @@ CoreImpl::updatePaddr(memq_t::index<by_insn>::type::iterator lsq_entry, Physical
 
     lsq_entry->theInstruction->setWillRaise(kException_None);
 
-   // if (lsq_entry->theInstruction->instCode() == codeSideEffectLoad ||
-   //     lsq_entry->theInstruction->instCode() == codeSideEffectStore ||
-   //     lsq_entry->theInstruction->instCode() == codeSideEffectAtomic) {
-   //     DBG_(Verb, (<< theName << " no longer SideEffect access: " << *lsq_entry));
-   //     lsq_entry->theInstruction->restoreOriginalInstCode();
-   // }
+    // if (lsq_entry->theInstruction->instCode() == codeSideEffectLoad ||
+    //     lsq_entry->theInstruction->instCode() == codeSideEffectStore ||
+    //     lsq_entry->theInstruction->instCode() == codeSideEffectAtomic) {
+    //     DBG_(Verb, (<< theName << " no longer SideEffect access: " << *lsq_entry));
+    //     lsq_entry->theInstruction->restoreOriginalInstCode();
+    // }
 
     PhysicalMemoryAddress addr_aligned(lsq_entry->thePaddr & 0xFFFFFFFFFFFFFFF8ULL);
     theMemQueue.get<by_insn>().modify(lsq_entry, ll::bind(&MemQueueEntry::thePaddr_aligned, ll::_1) = addr_aligned);
 
-    if (thePrefetchEarly && lsq_entry->isStore() && lsq_entry->thePaddr != kUnresolved && !lsq_entry->isAbnormalAccess()) {
+    if (thePrefetchEarly && lsq_entry->isStore() && lsq_entry->thePaddr != kUnresolved &&
+        !lsq_entry->isAbnormalAccess()) {
         requestStorePrefetch(lsq_entry);
     }
 }
@@ -615,7 +611,6 @@ CoreImpl::resolveVAddr(boost::intrusive_ptr<Instruction> anInsn, VirtualMemoryAd
         return; // No change
     }
 
-
     DBG_(Verb, (<< "Resolved VAddr for " << *lsq_entry << " to " << anAddr));
     CORE_DBG("Resolved VAddr for " << *lsq_entry << " to " << anAddr);
 
@@ -636,7 +631,7 @@ CoreImpl::resolveVAddr(boost::intrusive_ptr<Instruction> anInsn, VirtualMemoryAd
             CORE_DBG("lsq_entry->theMSHR");
             breakMSHRLink(lsq_entry);
         }
-        lsq_entry->theIssued = false;
+        lsq_entry->theIssued    = false;
         lsq_entry->theException = kException_None;
 
         if (lsq_entry->theInstruction) {
@@ -644,7 +639,6 @@ CoreImpl::resolveVAddr(boost::intrusive_ptr<Instruction> anInsn, VirtualMemoryAd
             lsq_entry->theInstruction->pageFault(false);
         }
     }
-
 
     updateVaddr(lsq_entry, anAddr);
 }
@@ -661,8 +655,7 @@ CoreImpl::resolvePAddr(boost::intrusive_ptr<Instruction> anInsn, PhysicalMemoryA
         return; // No change
     }
 
-    if (anAddr == kUnresolved)
-        return;
+    if (anAddr == kUnresolved) return;
 
     updatePaddr(lsq_entry, anAddr);
     anInsn->setResolved();

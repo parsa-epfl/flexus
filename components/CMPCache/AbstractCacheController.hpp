@@ -62,7 +62,7 @@ class AbstractCacheController
     inline void reserveSnoopOut(ProcessEntry_p process, uint8_t n)
     {
 
-        DBG_(Trace, (<< "reserve | Snoop(Out){"<<n<<"} | "<< theName));
+        DBG_(Trace, (<< "reserve | Snoop(Out){" << n << "} | " << theName));
 
         DBG_(Trace, (<< theName << "reserveSnoopOut(" << (int)n << "): " << *process));
         DBG_Assert(n > 0);

@@ -2,7 +2,6 @@
 #define FLEXUS_TRANSPORTS__MEMORY_TRANSPORT_HPP_INCLUDED
 
 #include <boost/mpl/vector.hpp>
-
 #include <components/CommonQEMU/Slices/DestinationMessage.hpp>
 #include <components/CommonQEMU/Slices/DirectoryEntry.hpp>
 #include <components/CommonQEMU/Slices/ExecuteState.hpp>

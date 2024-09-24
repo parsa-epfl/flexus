@@ -2,8 +2,8 @@
 #define FLEXUS_TRANSPORT_HPP_INCLUDED
 
 #include <boost/mpl/contains.hpp>
-#include <boost/mpl/size.hpp>
 #include <boost/mpl/for_each.hpp>
+#include <boost/mpl/size.hpp>
 #include <boost/mpl/transform.hpp>
 #include <core/boost_extensions/intrusive_ptr.hpp>
 

@@ -1,19 +1,17 @@
 
-#include "Conditions.hpp"
 #include "BitManip.hpp"
+#include "Conditions.hpp"
+#include "OperandMap.hpp"
 #include "SemanticActions.hpp"
 #include "encodings/SharedFunctions.hpp"
-#include "OperandMap.hpp"
 
 #include <boost/throw_exception.hpp>
-#include "SemanticActions.hpp"
 #include <components/uArch/RegisterType.hpp>
 #include <components/uArch/uArchInterfaces.hpp>
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <core/debug/debug.hpp>
 #include <core/target.hpp>
 #include <core/types.hpp>
-
 
 #define DBG_DeclareCategories Decoder
 #define DBG_SetDefaultOps     AddCat(Decoder)
@@ -22,7 +20,6 @@
 using namespace nuArch;
 
 namespace nDecoder {
-
 
 typedef struct OFFSET : public Operation
 {

@@ -2,7 +2,6 @@
 #define FLEXUS_TRANSPORTS__NETWORK_TRANSPORT_HPP_INCLUDED
 
 #include <boost/mpl/vector.hpp>
-
 #include <components/CommonQEMU/Slices/NetworkMessage.hpp>
 #include <components/CommonQEMU/Slices/ProtocolMessage.hpp>
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>

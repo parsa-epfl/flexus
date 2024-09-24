@@ -187,8 +187,8 @@ FlexusImpl::initializeComponents()
 
     cpu_watchdogs.reserve(ComponentManager::getComponentManager().systemWidth());
 
-    for (std::size_t i{0}; i < ComponentManager::getComponentManager().systemWidth(); i++)
-         cpu_watchdogs.push_back(0);
+    for (std::size_t i{ 0 }; i < ComponentManager::getComponentManager().systemWidth(); i++)
+        cpu_watchdogs.push_back(0);
 }
 
 void
@@ -263,9 +263,7 @@ FlexusImpl::doCycle()
     advanceCycles(1);
 
     // Check the watchdog only every 255 cycles
-    if ((static_cast<uint32_t>(theCycleCount) & 0xFF) == 0)
-        check_cpu_watchdogs();
-
+    if ((static_cast<uint32_t>(theCycleCount) & 0xFF) == 0) check_cpu_watchdogs();
 
     invokeDrives();
 
@@ -275,9 +273,10 @@ FlexusImpl::doCycle()
 void
 FlexusImpl::check_cpu_watchdogs()
 {
-    for (auto& watchdog : cpu_watchdogs)
-    {
-        DBG_Assert(watchdog < cpu_watchdog_timeout, Core()(<< "Watchdog timer(" << cpu_watchdog_timeout <<") expired.  No progress by CPU for " << watchdog << " cycles"));
+    for (auto& watchdog : cpu_watchdogs) {
+        DBG_Assert(watchdog < cpu_watchdog_timeout,
+                   Core()(<< "Watchdog timer(" << cpu_watchdog_timeout << ") expired.  No progress by CPU for "
+                          << watchdog << " cycles"));
         watchdog += 255; // incrementing by 255 because we check this function only every 0xFF cycles
     }
 }

@@ -2,8 +2,9 @@
 #include "Validations.hpp"
 
 #include "components/uArch/uArchInterfaces.hpp"
-#include <components/uArch/ValueTracker.hpp>
 #include "core/qemu/api_wrappers.hpp"
+
+#include <components/uArch/ValueTracker.hpp>
 
 #define DBG_DeclareCategories Decoder
 #define DBG_SetDefaultOps     AddCat(Decoder)
@@ -96,8 +97,7 @@ validateMemory::operator()()
     if (flexus == qemu) return true;
     // TODO: check
     // mmio
-    if (theInstruction->getAccessAddress() < 0x40000000)
-        return true;
+    if (theInstruction->getAccessAddress() < 0x40000000) return true;
 
     ValueTracker::valueTracker(0).invalidate(paddr, theSize);
 

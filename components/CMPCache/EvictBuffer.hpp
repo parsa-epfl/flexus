@@ -176,7 +176,7 @@ class DirEvictBuffer : public AbstractDirEvictBuffer
     virtual bool freeSlotsPending() const
     {
         bool ret = ((thePendingInvalidates > 0) || ((theCurSize + theReserve) < theSize));
-        //DBG_(Iface, (<< "In DirEvictBuffer<_State>::freeSlotsPending(), return value = " << std::boolalpha << ret));
+        // DBG_(Iface, (<< "In DirEvictBuffer<_State>::freeSlotsPending(), return value = " << std::boolalpha << ret));
         return ((thePendingInvalidates > 0) || ((theCurSize + theReserve) < theSize));
     }
     virtual int32_t size() const { return theSize; }

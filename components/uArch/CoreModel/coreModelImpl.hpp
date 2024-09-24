@@ -47,12 +47,12 @@ namespace Stat = Flexus::Stat;
 
 namespace nuArch {
 
-#define QEMU_EXCP_INTERRUPT  0x10000 /* async interruption */
-#define QEMU_EXCP_HLT        0x10001 /* hlt instruction reached */
-#define QEMU_EXCP_DEBUG      0x10002 /* cpu stopped after a breakpoint or singlestep */
-#define QEMU_EXCP_HALTED     0x10003 /* cpu is halted (waiting for external event) */
-#define QEMU_EXCP_YIELD      0x10004 /* cpu wants to yield timeslice to another */
-#define QEMU_EXCP_ATOMIC     0x10005 /* stop-the-world and emulate atomic */
+#define QEMU_EXCP_INTERRUPT 0x10000 /* async interruption */
+#define QEMU_EXCP_HLT       0x10001 /* hlt instruction reached */
+#define QEMU_EXCP_DEBUG     0x10002 /* cpu stopped after a breakpoint or singlestep */
+#define QEMU_EXCP_HALTED    0x10003 /* cpu is halted (waiting for external event) */
+#define QEMU_EXCP_YIELD     0x10004 /* cpu wants to yield timeslice to another */
+#define QEMU_EXCP_ATOMIC    0x10005 /* stop-the-world and emulate atomic */
 
 /* Custom defined flag, they are not used in Flexus, but may help understand
  * QEMU behaviour when debuging */

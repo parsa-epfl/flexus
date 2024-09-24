@@ -1,5 +1,6 @@
 
 #include "systemRegister.hpp"
+
 #include "CoreModel.hpp"
 
 #include <string>
@@ -40,7 +41,8 @@ class NZCV_ : public SysRegInfo
 
         CoreModel* bCore = dynamic_cast<CoreModel*>(aCore);
         if (bCore) {
-            bCore->initializeRegister(bCore->map(ccRegArch(0)), register_value(static_cast<uint64_t>(extract32(pstate, 28, 4))));
+            bCore->initializeRegister(bCore->map(ccRegArch(0)),
+                                      register_value(static_cast<uint64_t>(extract32(pstate, 28, 4))));
         }
     }
 
@@ -117,7 +119,7 @@ class TPIDR_EL0_ : public SysRegInfo
     {
         return kACCESS_OK; // access OK since we assume the access right is EL0_RW
     } // FIXME /*aa64_daif_access*/
-    virtual void writefn(uArch* aCore, uint64_t aVal) override {  }
+    virtual void writefn(uArch* aCore, uint64_t aVal) override {}
     virtual uint64_t readfn(uArch* aCore) override { return aCore->getTPIDR(0); }
     TPIDR_EL0_()
       : SysRegInfo("TPIDR_EL0_",
@@ -149,12 +151,10 @@ class TPIDR_EL2_ : public SysRegInfo
 
     virtual eAccessResult accessfn(uArch* aCore) override
     {
-        if (aCore->currentEL() <= 2) {
-            return kACCESS_TRAP_EL2;
-        }
+        if (aCore->currentEL() <= 2) { return kACCESS_TRAP_EL2; }
         return kACCESS_OK; // access OK since we assume the access right is EL0_RW
     } // FIXME /*aa64_daif_access*/
-    virtual void writefn(uArch* aCore, uint64_t aVal) override {  }
+    virtual void writefn(uArch* aCore, uint64_t aVal) override {}
     virtual uint64_t readfn(uArch* aCore) override { return aCore->getTPIDR(2); }
     TPIDR_EL2_()
       : SysRegInfo("TPIDR_EL2_",
@@ -441,7 +441,8 @@ class ELR_EL1_ : public SysRegInfo
                                                                         ELR_EL2_::opc1,
                                                                         ELR_EL2_::opc2,
                                                                         ELR_EL2_::crn,
-                                                                        ELR_EL2_::crm, true);
+                                                                        ELR_EL2_::crm,
+                                                                        true);
 
         if (currentel == 1 || currentel == 3) writefn(aCore, valELR_EL1);
         if (currentel == 2) {
@@ -571,7 +572,8 @@ class SPSR_EL1_ : public SysRegInfo
                                                                          SPSR_EL2_::opc1,
                                                                          SPSR_EL2_::opc2,
                                                                          SPSR_EL2_::crn,
-                                                                         SPSR_EL2_::crm, true);
+                                                                         SPSR_EL2_::crm,
+                                                                         true);
 
         if (currentel == 1 || currentel == 3) writefn(aCore, valSPSR_EL1);
         if (currentel == 2) {

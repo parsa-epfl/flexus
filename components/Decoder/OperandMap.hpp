@@ -10,9 +10,9 @@ using namespace nuArch;
 
 namespace nDecoder {
 
-using operand_typelist_1 = mpl::push_front<register_value::types, mapped_reg>::type ;
-using operand_typelist = mpl::push_front<operand_typelist_1, reg>::type;
-using Operand = boost::make_variant_over<operand_typelist>::type;
+using operand_typelist_1 = mpl::push_front<register_value::types, mapped_reg>::type;
+using operand_typelist   = mpl::push_front<operand_typelist_1, reg>::type;
+using Operand            = boost::make_variant_over<operand_typelist>::type;
 
 class OperandMap
 {

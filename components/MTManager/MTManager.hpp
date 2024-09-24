@@ -2,9 +2,9 @@
 #ifndef FLEXUS_MTManager_MTManager_HPP_INCLUDED
 #define FLEXUS_MTManager_MTManager_HPP_INCLUDED
 
+#include <core/debug/debug.hpp>
 #include <core/target.hpp>
 #include <core/types.hpp>
-#include <core/debug/debug.hpp>
 
 #include DBG_Control()
 

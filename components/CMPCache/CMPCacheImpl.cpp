@@ -95,13 +95,17 @@ class FLEXUS_COMPONENT(CMPCache)
     {
         DBG_Assert(!theController->RequestIn.full());
 
-        DBG_(Trace, (<< "received | Request(In){FromNode("<<aMessage[DestinationTag]->requester<<")} | "<<*(aMessage[MemoryMessageTag])));
+        DBG_(Trace,
+             (<< "received | Request(In){FromNode(" << aMessage[DestinationTag]->requester << ")} | "
+              << *(aMessage[MemoryMessageTag])));
 
         if (aMessage[TransactionTrackerTag]) {
             aMessage[TransactionTrackerTag]->setDelayCause(name(), "Directory Rx Req");
         }
 
-        DBG_Assert(aMessage[DestinationTag], (<< "received | ERROR(NoTag) | Request(In){FromNode("<<aMessage[DestinationTag]->requester<<")} | "<<*(aMessage[MemoryMessageTag])));
+        DBG_Assert(aMessage[DestinationTag],
+                   (<< "received | ERROR(NoTag) | Request(In){FromNode(" << aMessage[DestinationTag]->requester
+                    << ")} | " << *(aMessage[MemoryMessageTag])));
         theController->RequestIn.enqueue(aMessage);
     }
 
@@ -115,12 +119,14 @@ class FLEXUS_COMPONENT(CMPCache)
     void push(interface::Snoop_In const&, MemoryTransport& aMessage)
     {
         DBG_Assert(!theController->SnoopIn.full());
-        DBG_(Trace, (<< "received | Snoop(In){} | "<<*(aMessage[MemoryMessageTag])));
+        DBG_(Trace, (<< "received | Snoop(In){} | " << *(aMessage[MemoryMessageTag])));
 
         if (aMessage[TransactionTrackerTag]) {
             aMessage[TransactionTrackerTag]->setDelayCause(name(), "Directory Rx Snoop");
         }
-        DBG_Assert(aMessage[DestinationTag], (<< "received | ERROR(NoTag) | Snoop(In){FromNode("<<aMessage[DestinationTag]->requester<<")} | "<<*(aMessage[MemoryMessageTag])));
+        DBG_Assert(aMessage[DestinationTag],
+                   (<< "received | ERROR(NoTag) | Snoop(In){FromNode(" << aMessage[DestinationTag]->requester << ")} | "
+                    << *(aMessage[MemoryMessageTag])));
 
         theController->SnoopIn.enqueue(aMessage);
     }
@@ -135,11 +141,13 @@ class FLEXUS_COMPONENT(CMPCache)
     void push(interface::Reply_In const&, MemoryTransport& aMessage)
     {
         DBG_Assert(!theController->ReplyIn.full());
-        DBG_(Trace, (<< "received | Reply(In){} | "<<*(aMessage[MemoryMessageTag])));
+        DBG_(Trace, (<< "received | Reply(In){} | " << *(aMessage[MemoryMessageTag])));
         if (aMessage[TransactionTrackerTag]) {
             aMessage[TransactionTrackerTag]->setDelayCause(name(), "Directory Rx Reply");
         }
-        DBG_Assert(aMessage[DestinationTag], (<< "received | ERROR(NoTag) | Reply(In){FromNode("<<aMessage[DestinationTag]->requester<<")} | "<<*(aMessage[MemoryMessageTag])));
+        DBG_Assert(aMessage[DestinationTag],
+                   (<< "received | ERROR(NoTag) | Reply(In){FromNode(" << aMessage[DestinationTag]->requester << ")} | "
+                    << *(aMessage[MemoryMessageTag])));
 
         theController->ReplyIn.enqueue(aMessage);
     }
@@ -164,7 +172,7 @@ class FLEXUS_COMPONENT(CMPCache)
 
             MemoryTransport transport = theController->ReplyOut.dequeue();
 
-            DBG_(Trace, (<< "sent | Reply(Out){} | "<<*(transport[MemoryMessageTag])));
+            DBG_(Trace, (<< "sent | Reply(Out){} | " << *(transport[MemoryMessageTag])));
 
             FLEXUS_CHANNEL(Reply_Out) << transport;
         }
@@ -177,7 +185,7 @@ class FLEXUS_COMPONENT(CMPCache)
                 transport.set(DestinationTag, transport[DestinationTag]->removeFirstMulticastDest());
                 transport.set(MemoryMessageTag, new MemoryMessage(*(transport[MemoryMessageTag])));
 
-                DBG_(Trace, (<< "sent | Snoop(Out){} | "<<*(transport[MemoryMessageTag])));
+                DBG_(Trace, (<< "sent | Snoop(Out){} | " << *(transport[MemoryMessageTag])));
 
                 FLEXUS_CHANNEL(Snoop_Out) << transport;
             } else {
@@ -185,14 +193,15 @@ class FLEXUS_COMPONENT(CMPCache)
 
                 MemoryTransport transport = theController->SnoopOut.dequeue();
                 DBG_Assert(transport[MemoryMessageTag]);
-                DBG_Assert(transport[DestinationTag], (<< statName() << " no dest for msg: " << *transport[MemoryMessageTag]));
+                DBG_Assert(transport[DestinationTag],
+                           (<< statName() << " no dest for msg: " << *transport[MemoryMessageTag]));
 
                 if (transport[DestinationTag]->type == DestinationMessage::Multicast) {
 
                     DBG_(Trace, (<< "convert multicast | Snoop(Out){} | " << statName()));
                     transport[DestinationTag]->convertMulticast();
                 }
-                DBG_(Trace, (<< "sent | Snoop(Out){} | "<<*(transport[MemoryMessageTag])));
+                DBG_(Trace, (<< "sent | Snoop(Out){} | " << *(transport[MemoryMessageTag])));
                 FLEXUS_CHANNEL(Snoop_Out) << transport;
             }
         }
@@ -201,7 +210,7 @@ class FLEXUS_COMPONENT(CMPCache)
             DBG_(Trace, (<< "dequeue | Request(Out){} | " << statName()));
             MemoryTransport transport = theController->RequestOut.dequeue();
 
-            DBG_(Trace, (<< "sent | Request(Out){} | "<<*(transport[MemoryMessageTag])));
+            DBG_(Trace, (<< "sent | Request(Out){} | " << *(transport[MemoryMessageTag])));
             FLEXUS_CHANNEL(Request_Out) << transport;
         }
     }

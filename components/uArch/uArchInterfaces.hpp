@@ -733,7 +733,7 @@ ccReg(uint32_t anIndex)
     return ret_val;
 }
 
-using register_value  = boost::variant<int64_t, uint64_t, bits> ;
+using register_value = boost::variant<int64_t, uint64_t, bits>;
 
 struct uArch
 {

@@ -258,8 +258,7 @@ class FLEXUS_COMPONENT(uArch)
         }
         // respect qemu result as flexus does not have pmp
         // TODO: but this should only happen for access faults
-        if (!aTranslate->isPagefault() && (magicTranslation == kUnresolved))
-            aTranslate->setPagefault();
+        if (!aTranslate->isPagefault() && (magicTranslation == kUnresolved)) aTranslate->setPagefault();
 
         aTranslate->thePaddr = magicTranslation;
         theMicroArch->pushTranslation(aTranslate);

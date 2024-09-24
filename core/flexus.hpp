@@ -30,7 +30,7 @@ class FlexusInterface
     virtual bool initialized() const    = 0;
 
     // Watchdog Functions
-    virtual void check_cpu_watchdogs(void) = 0;
+    virtual void check_cpu_watchdogs(void)     = 0;
     virtual void reset_core_watchdog(uint32_t) = 0;
 
     // Debugging support functions

@@ -342,7 +342,8 @@ operator<<(std::ostream& os, const ProcessEntry& p)
         case eProcReply: os << "Reply"; break;
         case eProcSnoop: os << "Snoop"; break;
         case eProcRequest: os << "Request"; break;
-        case eProcIdleWork: os << "IdleWork"; break; }
+        case eProcIdleWork: os << "IdleWork"; break;
+    }
     os << ")";
 
     os << "{";
@@ -364,11 +365,11 @@ operator<<(std::ostream& os, const ProcessEntry& p)
     os << "}";
 
     os << " | Reservation:";
-    if (p.getSnoopReservations() > 0) os << " Snoop="<<p.getSnoopReservations();
-    if (p.getRequestReservations() > 0) os << " Request="<<p.getRequestReservations();
-    if (p.getReplyReservations() > 0) os << " Reply="<<p.getReplyReservations();
+    if (p.getSnoopReservations() > 0) os << " Snoop=" << p.getSnoopReservations();
+    if (p.getRequestReservations() > 0) os << " Request=" << p.getRequestReservations();
+    if (p.getReplyReservations() > 0) os << " Reply=" << p.getReplyReservations();
     if (p.getMAFReserved()) os << " MAF";
-    if (p.getCacheEBReserved()) os << " CacheEB="<<p.getCacheEBReserved();
+    if (p.getCacheEBReserved()) os << " CacheEB=" << p.getCacheEBReserved();
     if (p.getDirEBReserved()) os << " DirEB";
     os << " | ";
 
@@ -377,9 +378,8 @@ operator<<(std::ostream& os, const ProcessEntry& p)
     ActionSet::iterator iter = p.theScheduledActions.begin();
     ActionSet::iterator end  = p.theScheduledActions.end();
 
-    if (iter != end)
-    {
-        os << "Scheduled("<<p.tagReadsScheduled()<<"): ";
+    if (iter != end) {
+        os << "Scheduled(" << p.tagReadsScheduled() << "): ";
         for (; iter != end; iter++) {
             os << "[" << *iter << "]";
         }

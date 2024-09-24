@@ -447,8 +447,7 @@ CoreImpl::issueMMU(TranslationPtr aTranslation)
     auto pair = theMSHRs.insert(std::make_pair(mshr.thePaddr, mshr));
 
     pair.first->second.theWaitingPagewalks.push_back(aTranslation);
-    if (pair.second)
-        theMemoryPorts.push_back(op);
+    if (pair.second) theMemoryPorts.push_back(op);
 
     DBG_(Iface,
          (<< theName << " "
@@ -462,7 +461,7 @@ CoreImpl::scanAndAttachMSHR(memq_t::index<by_insn>::type::iterator anLSQEntry)
     // Check for an existing MSHR for the same address (issued this cycle)
     MSHRs_t::iterator existing = theMSHRs.find(anLSQEntry->thePaddr);
     if (existing != theMSHRs.end()) {
-        //DBG_Assert(!existing->second.theWaitingLSQs.empty());
+        // DBG_Assert(!existing->second.theWaitingLSQs.empty());
         if (existing->second.theOperation == kLoad && existing->second.theSize == anLSQEntry->theSize) {
             existing->second.theWaitingLSQs.push_back(anLSQEntry);
             DBG_Assert(!anLSQEntry->theMSHR);
@@ -487,11 +486,13 @@ bool
 CoreImpl::scanAndBlockMSHR(memq_t::index<by_insn>::type::iterator anLSQEntry)
 {
     FLEXUS_PROFILE();
-    if (anLSQEntry->thePaddr == kUnresolved) { DBG_(Crit, (<< "LSQ Entry missing PADDR in scanAndBlockMSHR" << *anLSQEntry)); }
+    if (anLSQEntry->thePaddr == kUnresolved) {
+        DBG_(Crit, (<< "LSQ Entry missing PADDR in scanAndBlockMSHR" << *anLSQEntry));
+    }
     // Check for an existing MSHR for the same address (issued this cycle)
     MSHRs_t::iterator existing = theMSHRs.find(anLSQEntry->thePaddr);
     if (existing != theMSHRs.end()) {
-         DBG_Assert(!existing->second.theWaitingLSQs.empty());
+        DBG_Assert(!existing->second.theWaitingLSQs.empty());
         existing->second.theBlockedOps.push_back(anLSQEntry->theInstruction);
         return true;
     }
@@ -691,8 +692,7 @@ CoreImpl::issueAtomic()
     FLEXUS_PROFILE();
     if (!theMemQueue.empty() &&
         (theMemQueue.front().theOperation == kCAS || theMemQueue.front().theOperation == kRMW) &&
-        theMemQueue.front().status() == kAwaitingIssue &&
-        (theMemQueue.front().theInstruction == theROB.front())) {
+        theMemQueue.front().status() == kAwaitingIssue && (theMemQueue.front().theInstruction == theROB.front())) {
         // Atomics that are issued as the head of theMemQueue don't need to
         // worry about partial snoops
         if (theMemQueue.front().thePartialSnoop) {

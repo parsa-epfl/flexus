@@ -369,17 +369,16 @@ CoreImpl::complete(MemOp const& anOperation)
             (match->second.theSize == anOperation.theSize)) {
 
             // page walk requests can be chained to normal load/store misses
-            for (const auto &tr: match->second.theWaitingPagewalks) {
+            for (const auto& tr : match->second.theWaitingPagewalks) {
                 tr->rawTTEValue = static_cast<uint64_t>(anOperation.theValue);
 
-                DBG_(Iface, (<< "Process Memory Reply for ID( " << tr->theID << ") ready("
-                             << tr->isReady() << ")  -- vaddr: " << anOperation.theVAddr
-                             << "  -- paddr: " << anOperation.thePAddr << "  --  Instruction: "
-                             << anOperation.theInstruction << " --  PC: " << anOperation.thePC));
+                DBG_(Iface,
+                     (<< "Process Memory Reply for ID( " << tr->theID << ") ready(" << tr->isReady()
+                      << ")  -- vaddr: " << anOperation.theVAddr << "  -- paddr: " << anOperation.thePAddr
+                      << "  --  Instruction: " << anOperation.theInstruction << " --  PC: " << anOperation.thePC));
 
                 tr->toggleReady();
             }
-
 
             match->second.theWaitingPagewalks.clear();
             DBG_(VVerb, (<< "complete: erasing MSHR " << match->second));
@@ -394,20 +393,22 @@ CoreImpl::complete(MemOp const& anOperation)
             std::list<boost::intrusive_ptr<Instruction>> pf_list;
             pf_list.swap(match->second.theBlockedPrefetches);
 
-//            if (match->second.theOperation == kPageWalkRequest) {
-//                std::map<VirtualMemoryAddress, TranslationPtr>::iterator item =
-//                  thePageWalkRequests.find(anOperation.theVAddr);
-//
-//                DBG_Assert(item != thePageWalkRequests.end());
-//                item->second->rawTTEValue = (uint64_t)anOperation.theValue;
-//                item->second->toggleReady();
-//                DBG_(Iface,
-//                     (<< "Process Memory Reply for ID( " << item->second->theID << ") ready(" << item->second->isReady()
-//                      << ")  -- vaddr: " << anOperation.theVAddr << "  -- paddr: " << anOperation.thePAddr
-//                      << "  --  Instruction: " << anOperation.theInstruction << " --  PC: " << anOperation.thePC));
-//
-//                thePageWalkRequests.erase(item);
-//            }
+            //            if (match->second.theOperation == kPageWalkRequest) {
+            //                std::map<VirtualMemoryAddress, TranslationPtr>::iterator item =
+            //                  thePageWalkRequests.find(anOperation.theVAddr);
+            //
+            //                DBG_Assert(item != thePageWalkRequests.end());
+            //                item->second->rawTTEValue = (uint64_t)anOperation.theValue;
+            //                item->second->toggleReady();
+            //                DBG_(Iface,
+            //                     (<< "Process Memory Reply for ID( " << item->second->theID << ") ready(" <<
+            //                     item->second->isReady()
+            //                      << ")  -- vaddr: " << anOperation.theVAddr << "  -- paddr: " << anOperation.thePAddr
+            //                      << "  --  Instruction: " << anOperation.theInstruction << " --  PC: " <<
+            //                      anOperation.thePC));
+            //
+            //                thePageWalkRequests.erase(item);
+            //            }
             theMSHRs.erase(match);
 
             // The MSHR has to be erased before we can call either of these

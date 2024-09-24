@@ -3,6 +3,8 @@
 #define FLEXUS_UARCH_VALUETRACKER_HPP_INCLUDED
 
 #include "components/uArch/uArchInterfaces.hpp"
+
+#include <components/CommonQEMU/Slices/MemOp.hpp>
 #include <core/boost_extensions/padded_string_cast.hpp>
 #include <core/debug/debug.hpp>
 #include <core/performance/profile.hpp>
@@ -11,7 +13,6 @@
 #include <core/types.hpp>
 #include <iostream>
 #include <unordered_map>
-#include <components/CommonQEMU/Slices/MemOp.hpp>
 
 namespace API = Flexus::Qemu::API;
 using namespace Flexus::SharedTypes;
@@ -342,8 +343,7 @@ struct ValueTracker
               << std::dec));
 
         // mmio
-        if (anAddress < 0x40000000)
-          return;
+        if (anAddress < 0x40000000) return;
 
         // Align the address
         PhysicalMemoryAddress aligned = dwAddr(anAddress);
@@ -454,8 +454,7 @@ struct ValueTracker
               << std::dec));
         //
         // mmio
-        if (anAddress < 0x40000000)
-          return;
+        if (anAddress < 0x40000000) return;
 
         Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(aCPU);
 
@@ -535,7 +534,7 @@ struct ValueTracker
         // See if we already have a ValueTrack
         tracker::iterator iter = theTracker.find(aligned);
         if (iter == theTracker.end()) {
-        // for mmio loads, we can only assume that they are idempotent
+            // for mmio loads, we can only assume that they are idempotent
             bits val = cpu.read_pa(anAddress, aSize);
             DBG_(Iface,
                  (<< "CPU[" << aCPU << "] Load.NoOutstandingValues " << anAddress << "[" << aSize << "] = " << std::hex
