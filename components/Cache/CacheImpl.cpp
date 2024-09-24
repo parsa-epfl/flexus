@@ -166,9 +166,7 @@ class FLEXUS_COMPONENT(Cache)
     {
         DBG_Assert(!theController->FrontSideIn_Snoop[0].full());
         aMessage[MemoryMessageTag]->coreIdx() = anIndex;
-        DBG_(Trace,
-             Comp(*this)(<< "Received on Port FrontSideIn(Snoop) [" << anIndex
-                         << "]: " << *(aMessage[MemoryMessageTag])) Addr(aMessage[MemoryMessageTag]->address()));
+        DBG_(Trace, (<< "received | FrontSideIn(Snoop){"<<anIndex<<"} | "<<*(aMessage[MemoryMessageTag])));
         if (aMessage[TransactionTrackerTag]) { aMessage[TransactionTrackerTag]->setDelayCause(name(), "Front Rx"); }
 
         theController->FrontSideIn_Snoop[0].enqueue(aMessage);
@@ -184,9 +182,7 @@ class FLEXUS_COMPONENT(Cache)
     {
         DBG_Assert(!theController->FrontSideIn_Prefetch[0].full(), (<< statName()));
         aMessage[MemoryMessageTag]->coreIdx() = anIndex;
-        DBG_(Trace,
-             Comp(*this)(<< "Received on Port FrontSideIn(Prefetch) [" << anIndex
-                         << "]: " << *(aMessage[MemoryMessageTag])) Addr(aMessage[MemoryMessageTag]->address()));
+        DBG_(Trace, (<< "received | FrontSideIn(Prefetch){"<<anIndex<<"} | "<<*(aMessage[MemoryMessageTag])));
         if (aMessage[TransactionTrackerTag]) { aMessage[TransactionTrackerTag]->setDelayCause(name(), "Front Rx"); }
 
         theController->FrontSideIn_Prefetch[0].enqueue(aMessage);
@@ -202,9 +198,8 @@ class FLEXUS_COMPONENT(Cache)
     {
         DBG_Assert(!theController->FrontSideIn_Request[0].full(), (<< statName()));
         aMessage[MemoryMessageTag]->coreIdx() = anIndex;
-        DBG_(Trace,
-             Comp(*this)(<< "Received on Port FrontSideIn(Request) [" << anIndex
-                         << "]: " << *(aMessage[MemoryMessageTag])) Addr(aMessage[MemoryMessageTag]->address()));
+        DBG_(Trace, (<< "received | FrontSideIn(Request){"<<anIndex<<"} | "<<*(aMessage[MemoryMessageTag])));
+
         if (aMessage[TransactionTrackerTag]) { aMessage[TransactionTrackerTag]->setDelayCause(name(), "Front Rx"); }
 
         theController->FrontSideIn_Request[0].enqueue(aMessage);
@@ -250,7 +245,7 @@ class FLEXUS_COMPONENT(Cache)
     //----------
     void drive(interface::CacheDrive const&)
     {
-        DBG_(VVerb, Comp(*this)(<< "CacheDrive"));
+        DBG_(VVerb, (<< "drive()"));
         theController->processMessages();
         busCycle();
     }
@@ -265,7 +260,7 @@ class FLEXUS_COMPONENT(Cache)
     void busCycle()
     {
         FLEXUS_PROFILE();
-        DBG_(VVerb, Comp(*this)(<< "bus cycle"));
+        DBG_(VVerb, (<< "busCycle()"));
 
         auto cores = cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 
@@ -273,16 +268,12 @@ class FLEXUS_COMPONENT(Cache)
             // Send as much on FrontSideOut as possible
             while (!theController->FrontSideOut_D[i].empty() && FLEXUS_CHANNEL_ARRAY(FrontSideOut_D, i).available()) {
                 MemoryTransport transport = theController->FrontSideOut_D[i].dequeue();
-                DBG_(Trace,
-                     Comp(*this)(<< "Sent on Port FrontSideOut_D [" << i << "]: " << *(transport[MemoryMessageTag]))
-                       Addr(transport[MemoryMessageTag]->address()));
+                DBG_(Trace, (<< "sent | FrontSideOut_D(){"<<i<<"} | "<<*(transport[MemoryMessageTag])));
                 FLEXUS_CHANNEL_ARRAY(FrontSideOut_D, i) << transport;
             }
             while (!theController->FrontSideOut_I[i].empty() && FLEXUS_CHANNEL_ARRAY(FrontSideOut_I, i).available()) {
                 MemoryTransport transport = theController->FrontSideOut_I[i].dequeue();
-                DBG_(Trace,
-                     Comp(*this)(<< "Sent on Port FrontSideOut_I [" << i << "]: " << *(transport[MemoryMessageTag]))
-                       Addr(transport[MemoryMessageTag]->address()));
+                DBG_(Trace, (<< "sent | FrontSideOut_I(){"<<i<<"} | "<<*(transport[MemoryMessageTag])));
                 FLEXUS_CHANNEL_ARRAY(FrontSideOut_I, i) << transport;
             }
         }
@@ -341,10 +332,7 @@ class FLEXUS_COMPONENT(Cache)
                     if (type == MemoryMessage::EvictClean || type == MemoryMessage::EvictWritable) {
                         MemoryTransport transport              = theController->BackSideOut_Snoop.dequeue();
                         transport[MemoryMessageTag]->coreIdx() = flexusIndex();
-                        DBG_(Trace,
-                             Comp(*this)(<< "Fast Transmit evict on port BackSideOut(Snoop): "
-                                         << *(transport[MemoryMessageTag]))
-                               Addr(transport[MemoryMessageTag]->address()));
+                        DBG_(Trace, (<< "sent | BackSideOut(Snoop){} | "<<*(transport[MemoryMessageTag])));
                         FLEXUS_CHANNEL(BackSideOut_Snoop) << transport;
                     }
                 }
@@ -407,20 +395,14 @@ class FLEXUS_COMPONENT(Cache)
                 case kIdle: break; // Nothing to do
                 case kToBackSideIn_Reply:
                     if (!theController->BackSideIn_Reply[0].full()) {
-                        DBG_(
-                          Trace,
-                          Comp(*this)(<< "Received on Port BackSideIn_Reply: " << *(theBusContents[MemoryMessageTag]))
-                            Addr(theBusContents[MemoryMessageTag]->address()));
+                        DBG_(Trace, (<< "received | BackSideIn(Reply){} | "<<*(theBusContents[MemoryMessageTag])));
                         theController->BackSideIn_Reply[0].enqueue(theBusContents);
                         theBusDirection = kIdle;
                     }
                     break;
                 case kToBackSideIn_Request:
                     if (!theController->BackSideIn_Request[0].full()) {
-                        DBG_(
-                          Trace,
-                          Comp(*this)(<< "Received on Port BackSideIn_Request: " << *(theBusContents[MemoryMessageTag]))
-                            Addr(theBusContents[MemoryMessageTag]->address()));
+                        DBG_(Trace, (<< "received | BackSideIn(Request){0} | "<<*(theBusContents[MemoryMessageTag])));
                         theController->BackSideIn_Request[0].enqueue(theBusContents);
                         theBusDirection = kIdle;
                     }
@@ -430,9 +412,7 @@ class FLEXUS_COMPONENT(Cache)
                         DBG_Assert(!theController->BackSideOut_Snoop.empty());
                         theBusContents                              = theController->BackSideOut_Snoop.dequeue();
                         theBusContents[MemoryMessageTag]->coreIdx() = flexusIndex();
-                        DBG_(Trace,
-                             Comp(*this)(<< "Sent on Port BackSideOut(Snoop): " << *(theBusContents[MemoryMessageTag]))
-                               Addr(theBusContents[MemoryMessageTag]->address()));
+                        DBG_(Trace, (<< "sent | BackSideOut(Snoop){} | "<<*(theBusContents[MemoryMessageTag])));
                         FLEXUS_CHANNEL(BackSideOut_Snoop) << theBusContents;
                         theBusDirection = kIdle;
                     } else {
@@ -446,9 +426,7 @@ class FLEXUS_COMPONENT(Cache)
                         DBG_Assert(!theController->BackSideOut_Reply.empty());
                         theBusContents                              = theController->BackSideOut_Reply.dequeue();
                         theBusContents[MemoryMessageTag]->coreIdx() = flexusIndex();
-                        DBG_(Trace,
-                             Comp(*this)(<< "Sent on Port BackSideOut(Reply): " << *(theBusContents[MemoryMessageTag]))
-                               Addr(theBusContents[MemoryMessageTag]->address()));
+                        DBG_(Trace, (<< "sent | BackSideOut(Reply){} | "<<*(theBusContents[MemoryMessageTag])));
                         FLEXUS_CHANNEL(BackSideOut_Reply) << theBusContents;
                         theBusDirection = kIdle;
                     } else {
@@ -462,10 +440,7 @@ class FLEXUS_COMPONENT(Cache)
                         DBG_Assert(!theController->BackSideOut_Request.empty());
                         theBusContents                              = theController->BackSideOut_Request.dequeue();
                         theBusContents[MemoryMessageTag]->coreIdx() = flexusIndex();
-                        DBG_(
-                          Trace,
-                          Comp(*this)(<< "Sent on Port BackSideOut(Request): " << *(theBusContents[MemoryMessageTag]))
-                            Addr(theBusContents[MemoryMessageTag]->address()));
+                        DBG_(Trace, (<< "sent | BackSideOut(Request){} | "<<*(theBusContents[MemoryMessageTag])));
                         FLEXUS_CHANNEL(BackSideOut_Request) << theBusContents;
                         theBusDirection = kIdle;
                     } else {
@@ -478,10 +453,7 @@ class FLEXUS_COMPONENT(Cache)
                     if (FLEXUS_CHANNEL(BackSideOut_Prefetch).available()) {
                         DBG_Assert(!theController->BackSideOut_Prefetch.empty());
                         theBusContents = theController->BackSideOut_Prefetch.dequeue();
-                        DBG_(
-                          Trace,
-                          Comp(*this)(<< "Sent on Port BackSideOut(Prefetch): " << *(theBusContents[MemoryMessageTag]))
-                            Addr(theBusContents[MemoryMessageTag]->address()));
+                        DBG_(Trace, (<< "sent | BackSideOut(Prefetch){} | "<<*(theBusContents[MemoryMessageTag])));
                         FLEXUS_CHANNEL(BackSideOut_Prefetch) << theBusContents;
                         theBusDirection = kIdle;
                     } else {

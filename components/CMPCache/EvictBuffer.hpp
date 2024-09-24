@@ -220,7 +220,7 @@ class DirEvictBuffer : public AbstractDirEvictBuffer
     virtual bool freeSlotsPending() const
     {
         bool ret = ((thePendingInvalidates > 0) || ((theCurSize + theReserve) < theSize));
-        DBG_(Iface, (<< "In DirEvictBuffer<_State>::freeSlotsPending(), return value = " << std::boolalpha << ret));
+        //DBG_(Iface, (<< "In DirEvictBuffer<_State>::freeSlotsPending(), return value = " << std::boolalpha << ret));
         return ((thePendingInvalidates > 0) || ((theCurSize + theReserve) < theSize));
     }
     virtual int32_t size() const { return theSize; }
@@ -235,7 +235,7 @@ class DirEvictBuffer : public AbstractDirEvictBuffer
         seq_iterator iter = (theDirEvictBuffer.template get<1>()).begin();
         seq_iterator end  = (theDirEvictBuffer.template get<1>()).end();
         for (; iter != end; iter++) {
-            if (iter->invalidatesPending()) aList << " 0x" << iter->address();
+            if (iter->invalidatesPending()) aList << iter->address();
         }
         return aList.str();
     }

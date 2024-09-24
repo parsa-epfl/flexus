@@ -138,16 +138,14 @@ class FLEXUS_COMPONENT(CMPCache)
     void push(interface::Request_In const&, MemoryTransport& aMessage)
     {
         DBG_Assert(!theController->RequestIn.full());
-        DBG_(Trace,
-             Comp(*this)(<< "Received on Port Request_In : " << *(aMessage[MemoryMessageTag]) << " from node "
-                         << aMessage[DestinationTag]->requester) Addr(aMessage[MemoryMessageTag]->address()));
+
+        DBG_(Trace, (<< "received | Request(In){FromNode("<<aMessage[DestinationTag]->requester<<")} | "<<*(aMessage[MemoryMessageTag])));
+
         if (aMessage[TransactionTrackerTag]) {
             aMessage[TransactionTrackerTag]->setDelayCause(name(), "Directory Rx Req");
         }
 
-        DBG_Assert(aMessage[DestinationTag],
-                   (<< "Received Message with NO Dest Tag: " << *(aMessage[MemoryMessageTag])));
-
+        DBG_Assert(aMessage[DestinationTag], (<< "received | ERROR(NoTag) | Request(In){FromNode("<<aMessage[DestinationTag]->requester<<")} | "<<*(aMessage[MemoryMessageTag])));
         theController->RequestIn.enqueue(aMessage);
     }
 
@@ -161,14 +159,12 @@ class FLEXUS_COMPONENT(CMPCache)
     void push(interface::Snoop_In const&, MemoryTransport& aMessage)
     {
         DBG_Assert(!theController->SnoopIn.full());
-        DBG_(Trace,
-             Comp(*this)(<< "Received on Port Snoop_In : " << *(aMessage[MemoryMessageTag]))
-               Addr(aMessage[MemoryMessageTag]->address()));
+        DBG_(Trace, (<< "received | Snoop(In){} | "<<*(aMessage[MemoryMessageTag])));
+
         if (aMessage[TransactionTrackerTag]) {
             aMessage[TransactionTrackerTag]->setDelayCause(name(), "Directory Rx Snoop");
         }
-        DBG_Assert(aMessage[DestinationTag],
-                   (<< "Received Message with NO Dest Tag: " << *(aMessage[MemoryMessageTag])));
+        DBG_Assert(aMessage[DestinationTag], (<< "received | ERROR(NoTag) | Snoop(In){FromNode("<<aMessage[DestinationTag]->requester<<")} | "<<*(aMessage[MemoryMessageTag])));
 
         theController->SnoopIn.enqueue(aMessage);
     }
@@ -183,14 +179,11 @@ class FLEXUS_COMPONENT(CMPCache)
     void push(interface::Reply_In const&, MemoryTransport& aMessage)
     {
         DBG_Assert(!theController->ReplyIn.full());
-        DBG_(Trace,
-             Comp(*this)(<< "Received on Port Reply_In : " << *(aMessage[MemoryMessageTag]))
-               Addr(aMessage[MemoryMessageTag]->address()));
+        DBG_(Trace, (<< "received | Reply(In){} | "<<*(aMessage[MemoryMessageTag])));
         if (aMessage[TransactionTrackerTag]) {
             aMessage[TransactionTrackerTag]->setDelayCause(name(), "Directory Rx Reply");
         }
-        DBG_Assert(aMessage[DestinationTag],
-                   (<< "Received Message with NO Dest Tag: " << *(aMessage[MemoryMessageTag])));
+        DBG_Assert(aMessage[DestinationTag], (<< "received | ERROR(NoTag) | Reply(In){FromNode("<<aMessage[DestinationTag]->requester<<")} | "<<*(aMessage[MemoryMessageTag])));
 
         theController->ReplyIn.enqueue(aMessage);
     }
@@ -199,7 +192,7 @@ class FLEXUS_COMPONENT(CMPCache)
     //----------
     void drive(interface::CMPCacheDrive const&)
     {
-        DBG_(VVerb, Comp(*this)(<< "DirectoryDrive"));
+        DBG_(VVerb, Comp(*this)(<< "drive()"));
         theController->processMessages();
         busCycle();
     }
@@ -207,48 +200,52 @@ class FLEXUS_COMPONENT(CMPCache)
     void busCycle()
     {
         FLEXUS_PROFILE();
-        DBG_(VVerb, Comp(*this)(<< "bus cycle"));
+        DBG_(VVerb, Comp(*this)(<< "busCycle()"));
 
         while (!theController->ReplyOut.empty() && FLEXUS_CHANNEL(Reply_Out).available()) {
-            DBG_(Trace, (<< statName() << " Removing item from Reply queue."));
+
+            DBG_(Trace, (<< "dequeue | Reply(Out){} | " << statName()));
+
             MemoryTransport transport = theController->ReplyOut.dequeue();
-            DBG_(Trace,
-                 Comp(*this)(<< "Sent on Port ReplyOut: " << *(transport[MemoryMessageTag]))
-                   Addr(transport[MemoryMessageTag]->address()));
+
+            DBG_(Trace, (<< "sent | Reply(Out){} | "<<*(transport[MemoryMessageTag])));
+
             FLEXUS_CHANNEL(Reply_Out) << transport;
         }
         while (!theController->SnoopOut.empty() && FLEXUS_CHANNEL(Snoop_Out).available()) {
             if (theController->SnoopOut.peek()[DestinationTag]->isMultipleMsgs()) {
                 MemoryTransport transport = theController->SnoopOut.peek();
-                DBG_(Trace, (<< statName() << " Removing Multicast from Snoop queue."));
+
+                DBG_(Trace, (<< "remove multicast | Snoop(Out){} | " << statName()));
+
                 transport.set(DestinationTag, transport[DestinationTag]->removeFirstMulticastDest());
                 transport.set(MemoryMessageTag, new MemoryMessage(*(transport[MemoryMessageTag])));
-                DBG_(Trace,
-                     Comp(*this)(<< "Sent on Port SnoopOut: " << *(transport[MemoryMessageTag]))
-                       Addr(transport[MemoryMessageTag]->address()));
+
+                DBG_(Trace, (<< "sent | Snoop(Out){} | "<<*(transport[MemoryMessageTag])));
+
                 FLEXUS_CHANNEL(Snoop_Out) << transport;
             } else {
-                DBG_(Trace, (<< statName() << " Removing item from Snoop queue."));
+                DBG_(Trace, (<< "dequeue | Snoop(Out){} | " << statName()));
+
                 MemoryTransport transport = theController->SnoopOut.dequeue();
                 DBG_Assert(transport[MemoryMessageTag]);
-                DBG_Assert(transport[DestinationTag],
-                           (<< statName() << " no dest for msg: " << *transport[MemoryMessageTag]));
+                DBG_Assert(transport[DestinationTag], (<< statName() << " no dest for msg: " << *transport[MemoryMessageTag]));
+
                 if (transport[DestinationTag]->type == DestinationMessage::Multicast) {
-                    DBG_(Trace, (<< statName() << " Converting multicast message: " << *transport[MemoryMessageTag]));
+
+                    DBG_(Trace, (<< "convert multicast | Snoop(Out){} | " << statName()));
                     transport[DestinationTag]->convertMulticast();
                 }
-                DBG_(Trace,
-                     Comp(*this)(<< "Sent on Port SnoopOut: " << *(transport[MemoryMessageTag]))
-                       Addr(transport[MemoryMessageTag]->address()));
+                DBG_(Trace, (<< "sent | Snoop(Out){} | "<<*(transport[MemoryMessageTag])));
                 FLEXUS_CHANNEL(Snoop_Out) << transport;
             }
         }
         while (!theController->RequestOut.empty() && FLEXUS_CHANNEL(Request_Out).available()) {
-            DBG_(Trace, (<< "Removing item from request queue."));
+
+            DBG_(Trace, (<< "dequeue | Request(Out){} | " << statName()));
             MemoryTransport transport = theController->RequestOut.dequeue();
-            DBG_(Trace,
-                 Comp(*this)(<< "Sent on Port RequestOut: " << *(transport[MemoryMessageTag]))
-                   Addr(transport[MemoryMessageTag]->address()));
+
+            DBG_(Trace, (<< "sent | Request(Out){} | "<<*(transport[MemoryMessageTag])));
             FLEXUS_CHANNEL(Request_Out) << transport;
         }
     }
