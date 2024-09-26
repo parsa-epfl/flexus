@@ -255,6 +255,13 @@ PageWalk::InitialTranslationSetup(TranslationTransport& aTranslation)
     statefulPointer->ELRegime             = currentEL();
 
     uint8_t EL = statefulPointer->ELRegime;
+
+    // Handle a case where for Linux, the page table of EL0 is in EL1's register.
+    if (EL == 0) {
+        DBG_Assert(statefulPointer->isBR0);
+        EL = 1;
+    };
+
     uint64_t initialTTBR;
     if (statefulPointer->isBR0)
         initialTTBR = theMMU->mmu_regs.TTBR0[EL];

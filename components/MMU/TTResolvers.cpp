@@ -1,8 +1,8 @@
 
 #include "TTResolvers.hpp"
 
-#include <assert.h>
-#include <core/qemu/bitUtilities.hpp>
+#include "core/debug/debug.hpp"
+#include "core/qemu/bitUtilities.hpp"
 #include <iostream>
 
 namespace nMMU {
@@ -17,6 +17,7 @@ TTResolver::TTResolver(bool abro, _TTResolver_Shptr_T aGranule, address_t aTTBR,
   , PAddressWidth(PAddrWidth)
   , regimeTG(aGranule)
 {
+    DBG_Assert(aTTBR != 0);
     TnSz          = regimeTG->getIAddrOffset();
     IAddressWidth = 64 - regimeTG->getIAddrSize();
 }
@@ -26,6 +27,7 @@ address_t
 TTResolver::resolve(address_t inputAddress)
 {
     DBG_(VVerb, (<< "TTBR RAW: " << std::hex << RawTTBRReg << std::dec));
+    DBG_Assert(RawTTBRReg != 0);
     address_t output = extractBitsWithBounds(RawTTBRReg, TTBR_MSB, TTBR_LSB);
     DBG_(VVerb, (<< "TTBR EXTRACT: " << std::hex << output << std::dec));
     output = output << TTBR_LSB;
