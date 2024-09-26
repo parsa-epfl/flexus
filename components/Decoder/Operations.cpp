@@ -113,8 +113,14 @@ typedef struct SUB : public Operation
     virtual ~SUB() {}
     virtual Operand operator()(std::vector<Operand> const& operands)
     {
-        DBG_Assert(operands.size() == 2);
-        return boost::get<uint64_t>(operands[0]) - boost::get<uint64_t>(operands[1]);
+        DBG_Assert(operands.size() == 2 || operands.size() == 3); // operand 3 is carry
+        if (operands.size() == 2) {
+            return boost::get<uint64_t>(operands[0]) - boost::get<uint64_t>(operands[1]);
+        } else {
+            auto fix_from_carry = static_cast<uint8_t>(boost::get<bits>(operands[2]));
+            DBG_Assert(fix_from_carry == 0 || fix_from_carry == 1);
+            return (boost::get<uint64_t>(operands[0]) - boost::get<uint64_t>(operands[1]) - fix_from_carry);
+        }
     }
     virtual char const* describe() const { return "SUB"; }
 } SUB_;
