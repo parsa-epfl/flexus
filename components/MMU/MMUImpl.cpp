@@ -444,7 +444,7 @@ class FLEXUS_COMPONENT(MMU)
         CORE_TRACE;
         DBG_(VVerb, (<< "Resynchronizing MMU"));
 
-        if (!mmu_is_init) mmu_is_init = cfg_mmu(anIndex);
+        cfg_mmu(anIndex);
 
         if (thePageWalker) {
             DBG_(VVerb, (<< "Annulling all PW entries"));
