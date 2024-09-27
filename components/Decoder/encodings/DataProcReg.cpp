@@ -190,7 +190,7 @@ CRC(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     std::vector<std::list<InternalDependance>> rs_deps(2);
     uint32_t poly = crc32c ? 0x1EDC6F41 : 0x04C11DB7;
 
-    predicated_action act = crcAction(inst, poly, kOperand1, kOperand2, kResult, sf);
+    predicated_action act = crcAction(inst, poly, kOperand1, kOperand2, kResult, rs_deps, sf);
 
     readRegister(inst, 1, rn, rs_deps[0], false);
     readRegister(inst, 2, rm, rs_deps[1], sf);

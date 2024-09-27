@@ -263,6 +263,7 @@ crcAction(SemanticInstruction* anInstruction,
           eOperandCode anInputCode,
           eOperandCode anInputCode2,
           eOperandCode anOutputCode,
+          std::vector<std::list<InternalDependance>>& rs_deps,
           bool is64);
 predicated_action
 countAction(SemanticInstruction* anInstruction,
