@@ -184,8 +184,9 @@ struct CRCAction : public PredicatedSemanticAction
               eOperandCode anInputCode2,
               eOperandCode anOutputCode,
               bool is64)
-      : PredicatedSemanticAction(anInstruction, 1, true)
+      : PredicatedSemanticAction(anInstruction, 2, true)
       , theInputCode(anInputCode)
+      , theInputCode2(anInputCode2)
       , theOutputCode(anOutputCode)
       , thePoly(aPoly)
       , the64(is64)
@@ -207,7 +208,7 @@ struct CRCAction : public PredicatedSemanticAction
 
         Operand in   = theInstruction->operand(theInputCode);
         Operand in2  = theInstruction->operand(theInputCode2);
-        uint32_t acc = (uint32_t)(boost::get<bits>(in));
+        uint32_t acc = uint32_t(boost::get<uint64_t>(in));
         // bits val = boost::get<bits> (in2);
 
         bits tempacc = (bits)((bitReverse(acc)) << (the64 ? 64 : 32));
@@ -228,7 +229,8 @@ struct CRCAction : public PredicatedSemanticAction
 
         data &= 0xffffffff;
 
-        theInstruction->setOperand(theOutputCode, data);
+        theInstruction->setOperand(theOutputCode, uint64_t(data));
+        satisfyDependants();
     }
 
     void describe(std::ostream& anOstream) const { anOstream << theInstruction->identify() << " CRCAction "; }
@@ -287,10 +289,15 @@ crcAction(SemanticInstruction* anInstruction,
           eOperandCode anInputCode,
           eOperandCode anInputCode2,
           eOperandCode anOutputCode,
+          std::vector<std::list<InternalDependance>>& rs_deps,
           bool is64)
 {
     CRCAction* act = new CRCAction(anInstruction, aPoly, anInputCode, anInputCode2, anOutputCode, is64);
     anInstruction->addNewComponent(act);
+    for (uint32_t i = 0; i < rs_deps.size(); ++i) {
+        rs_deps[i].push_back(act->dependance(i));
+    }
+
     return predicated_action(act, act->predicate());
 }
 
