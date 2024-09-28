@@ -135,41 +135,6 @@ class TPIDR_EL0_ : public SysRegInfo
     }
 };
 
-class TPIDR_EL2_ : public SysRegInfo
-{
-  public:
-    std::string name                      = "TPIDR_EL2";
-    static const eRegExecutionState state = kARM_STATE_AA64;
-    static const uint8_t opc0             = 3;
-    static const uint8_t opc1             = 4;
-    static const uint8_t opc2             = 2;
-    static const uint8_t crn              = 13;
-    static const uint8_t crm              = 0;
-    static const eAccessRight access      = kPL0_RW;
-    static const eRegInfo type            = kARM_NO_RAW;
-    uint64_t resetvalue                   = -1;
-
-    virtual eAccessResult accessfn(uArch* aCore) override
-    {
-        if (aCore->currentEL() <= 2) { return kACCESS_TRAP_EL2; }
-        return kACCESS_OK; // access OK since we assume the access right is EL0_RW
-    } // FIXME /*aa64_daif_access*/
-    virtual void writefn(uArch* aCore, uint64_t aVal) override {}
-    virtual uint64_t readfn(uArch* aCore) override { return aCore->getTPIDR(2); }
-    TPIDR_EL2_()
-      : SysRegInfo("TPIDR_EL2_",
-                   TPIDR_EL2_::state,
-                   TPIDR_EL2_::type,
-                   TPIDR_EL2_::opc0,
-                   TPIDR_EL2_::opc1,
-                   TPIDR_EL2_::opc2,
-                   TPIDR_EL2_::crn,
-                   TPIDR_EL2_::crm,
-                   TPIDR_EL2_::access)
-    {
-    }
-};
-
 class FPCR_ : public SysRegInfo
 {
   public:
@@ -348,30 +313,6 @@ class CURRENT_EL_ : public SysRegInfo
     }
 };
 
-class ELR_EL2_ : public SysRegInfo
-{
-  public:
-    static const eRegExecutionState state = kARM_STATE_AA64;
-    static const uint8_t opc0             = 3;
-    static const uint8_t opc1             = 4;
-    static const uint8_t opc2             = 1;
-    static const uint8_t crn              = 4;
-    static const uint8_t crm              = 0;
-    static const eAccessRight access      = kPL1_RW;
-    static const eRegInfo type            = kARM_ALIAS;
-    ELR_EL2_()
-      : SysRegInfo("ELR_EL2",
-                   ELR_EL2_::state,
-                   ELR_EL2_::type,
-                   ELR_EL2_::opc0,
-                   ELR_EL2_::opc1,
-                   ELR_EL2_::opc2,
-                   ELR_EL2_::crn,
-                   ELR_EL2_::crm,
-                   ELR_EL2_::access)
-    {
-    }
-};
 class ELR_EL1_ : public SysRegInfo
 {
   public:
@@ -386,71 +327,21 @@ class ELR_EL1_ : public SysRegInfo
 
     virtual uint64_t readfn(uArch* aCore) override
     {
-        // if PSTATE.EL == EL0 then
-        //     UNDEFINED;
-        // elsif PSTATE.EL == EL1 then
-        //     if EL2Enabled() && HCR_EL2.<NV2,NV1,NV> == '011' then
-        //         AArch64.SystemAccessTrap(EL2, 0x18);
-        //     elsif EL2Enabled() && HCR_EL2.<NV2,NV1,NV> == '111' then
-        //         return NVMem[0x230];
-        //     else
-        //         return ELR_EL1;
-        // elsif PSTATE.EL == EL2 then
-        //     if HCR_EL2.E2H == '1' then
-        //         return ELR_EL2;
-        //     else
-        //         return ELR_EL1;
-        // elsif PSTATE.EL == EL3 then
-        //     return ELR_EL1;
         auto currentel   = aCore->_PSTATE().EL();
-        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1, false);
-        auto HCR_EL2_E2H = extract64(HCR_EL2, 34, 1);
-
-        if (currentel == 1 || currentel == 3) return aCore->getELR_el(1);
-        if (currentel == 2) {
-            if (HCR_EL2_E2H == 1)
-                return aCore->getELR_el(2);
-            else
-                return aCore->getELR_el(1);
-        }
-
-        return aCore->getELR_el(1);
+        DBG_Assert(currentel == 1, (<< "EL must be EL1"));
+        return aCore->getELR_el(currentel);
     }
     virtual void writefn(uArch* aCore, uint64_t aVal) override
     {
         auto currentel   = aCore->_PSTATE().EL();
-        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1, false);
-        auto HCR_EL2_E2H = extract64(HCR_EL2, 34, 1);
+        DBG_Assert(currentel == 1, (<< "EL must be EL1"));
 
-        if (currentel == 1 || currentel == 3) aCore->setELR_el(1, aVal);
-        if (currentel == 2) {
-            if (HCR_EL2_E2H == 1)
-                aCore->setELR_el(2, aVal);
-            else
-                aCore->setELR_el(1, aVal);
-        }
+        aCore->setELR_el(currentel, aVal);
     }
     virtual void sync(uArch* aCore, size_t theNode) override
     {
-        auto currentel   = aCore->_PSTATE().EL();
-        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1, true);
-        auto HCR_EL2_E2H = extract64(HCR_EL2, 34, 1);
         auto valELR_EL1  = Flexus::Qemu::API::qemu_api.read_sys_register(theNode, opc0, opc1, opc2, crn, crm, true);
-        auto valELR_EL2  = Flexus::Qemu::API::qemu_api.read_sys_register(theNode,
-                                                                        ELR_EL2_::opc0,
-                                                                        ELR_EL2_::opc1,
-                                                                        ELR_EL2_::opc2,
-                                                                        ELR_EL2_::crn,
-                                                                        ELR_EL2_::crm,
-                                                                        true);
-
-        if (currentel == 1 || currentel == 3) writefn(aCore, valELR_EL1);
-        if (currentel == 2) {
-            if (HCR_EL2_E2H == 1)
-                writefn(aCore, valELR_EL2);
-            else
-                writefn(aCore, valELR_EL1);
-        }
+        aCore->setELR_el(1, valELR_EL1);
     }
     ELR_EL1_()
       : SysRegInfo("ELR_EL1",
@@ -465,32 +356,7 @@ class ELR_EL1_ : public SysRegInfo
     {
     }
 };
-class SPSR_EL2_ : public SysRegInfo
-{
-  public:
-    static const eRegExecutionState state = kARM_STATE_AA64;
-    static const uint8_t opc0             = 3;
-    static const uint8_t opc1             = 4;
-    static const uint8_t opc2             = 0;
-    static const uint8_t crn              = 4;
-    static const uint8_t crm              = 0;
-    static const eAccessRight access      = kPL1_RW;
-    static const eRegInfo type            = kARM_ALIAS;
-    uint64_t resetvalue                   = -1;
 
-    SPSR_EL2_()
-      : SysRegInfo("SPSR_EL2",
-                   SPSR_EL2_::state,
-                   SPSR_EL2_::type,
-                   SPSR_EL2_::opc0,
-                   SPSR_EL2_::opc1,
-                   SPSR_EL2_::opc2,
-                   SPSR_EL2_::crn,
-                   SPSR_EL2_::crm,
-                   SPSR_EL2_::access)
-    {
-    }
-};
 class SPSR_EL1_ : public SysRegInfo
 {
   public:
@@ -506,82 +372,24 @@ class SPSR_EL1_ : public SysRegInfo
 
     virtual uint64_t readfn(uArch* aCore) override
     {
-        // if PSTATE.EL == EL0 then
-        //     UNDEFINED;
-        // elsif PSTATE.EL == EL1 then
-        //     if EffectiveHCR_EL2_NVx() == '011' then
-        //         AArch64.SystemAccessTrap(EL2, 0x18);
-        //     elsif EffectiveHCR_EL2_NVx() IN {'111'} then
-        //         X[t, 64] = NVMem[0x160];
-        //     else
-        //         X[t, 64] = SPSR_EL1;
-        // elsif PSTATE.EL == EL2 then
-        //     if ELIsInHost(EL2) then
-        //         X[t, 64] = SPSR_EL2;
-        //     else
-        //         X[t, 64] = SPSR_EL1;
-        // elsif PSTATE.EL == EL3 then
-        //     X[t, 64] = SPSR_EL1;
-        //
-        // boolean ELIsInHost(bits(2) el)
-        //     ...
-        //     when EL2
-        //         return EL2Enabled() && HCR_EL2.E2H == '1';
-        //     ...
-        //
-        // boolean EL2Enabled()
-        //  return HaveEL(EL2) && (!HaveEL(EL3) || SCR_GEN[].NS == '1' || IsSecureEL2Enabled());
-
         auto currentel   = aCore->_PSTATE().EL();
-        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1, false);
-        auto HCR_EL2_E2H = extract64(HCR_EL2, 34, 1);
-
-        if (currentel == 1 || currentel == 3) return aCore->getSPSR_el(1);
-        if (currentel == 2) {
-            if (HCR_EL2_E2H == 1)
-                return aCore->getSPSR_el(2);
-            else
-                return aCore->getSPSR_el(1);
-        }
+        DBG_Assert(currentel == 1, (<< "EL must be EL1"));
 
         return aCore->getSPSR_el(1);
     }
     virtual void writefn(uArch* aCore, uint64_t aVal) override
     {
         auto currentel   = aCore->_PSTATE().EL();
-        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1, false);
-        auto HCR_EL2_E2H = extract64(HCR_EL2, 34, 1);
+        DBG_Assert(currentel == 1, (<< "EL must be EL1"));
+        return aCore->setSPSR_el(1, aVal);
 
-        if (currentel == 1 || currentel == 3) return aCore->setSPSR_el(1, aVal);
-        if (currentel == 2) {
-            if (HCR_EL2_E2H == 1)
-                return aCore->setSPSR_el(2, aVal);
-            else
-                return aCore->setSPSR_el(1, aVal);
-        }
     }
 
     virtual void sync(uArch* aCore, size_t theNode) override
     {
-        auto currentel   = aCore->_PSTATE().EL();
-        auto HCR_EL2     = Flexus::Qemu::API::qemu_api.read_sys_register(0, 3, 4, 0, 1, 1, true);
-        auto HCR_EL2_E2H = extract64(HCR_EL2, 34, 1);
         auto valSPSR_EL1 = Flexus::Qemu::API::qemu_api.read_sys_register(theNode, opc0, opc1, opc2, crn, crm, true);
-        auto valSPSR_EL2 = Flexus::Qemu::API::qemu_api.read_sys_register(theNode,
-                                                                         SPSR_EL2_::opc0,
-                                                                         SPSR_EL2_::opc1,
-                                                                         SPSR_EL2_::opc2,
-                                                                         SPSR_EL2_::crn,
-                                                                         SPSR_EL2_::crm,
-                                                                         true);
 
-        if (currentel == 1 || currentel == 3) writefn(aCore, valSPSR_EL1);
-        if (currentel == 2) {
-            if (HCR_EL2_E2H == 1)
-                writefn(aCore, valSPSR_EL2);
-            else
-                writefn(aCore, valSPSR_EL1);
-        }
+        aCore->setSPSR_el(1, valSPSR_EL1);
     }
 
     SPSR_EL1_()
@@ -859,9 +667,6 @@ std::vector<std::pair<std::array<uint8_t, 5>, ePrivRegs>> supported_sysRegs = {
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
       { TPIDR_EL0_::opc0, TPIDR_EL0_::opc1, TPIDR_EL0_::opc2, TPIDR_EL0_::crn, TPIDR_EL0_::crm },
       kTPIDR_EL0),
-    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
-      { TPIDR_EL2_::opc0, TPIDR_EL2_::opc1, TPIDR_EL2_::opc2, TPIDR_EL2_::crn, TPIDR_EL2_::crm },
-      kTPIDR_EL2),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>({ FPCR_::opc0, FPCR_::opc1, FPCR_::opc2, FPCR_::crn, FPCR_::crm },
                                                       kFPCR),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>({ FPSR_::opc0, FPSR_::opc1, FPSR_::opc2, FPSR_::crn, FPSR_::crm },
@@ -935,7 +740,6 @@ getPriv(ePrivRegs aCode)
         case kSPSR_UND: return std::make_unique<SPSR_UND_>();
         case kSPSR_FIQ: return std::make_unique<SPSR_FIQ_>();
         case kTPIDR_EL0: return std::make_unique<TPIDR_EL0_>();
-        case kTPIDR_EL2: return std::make_unique<TPIDR_EL2_>();
         default: // FIXME: Only return default/abstract if implemented by QEMU
             return std::make_unique<SysRegInfo>();
             // DBG_Assert(false, (<< "Unimplemented SysReg Code" << aCode));

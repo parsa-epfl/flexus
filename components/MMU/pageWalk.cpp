@@ -256,6 +256,14 @@ PageWalk::InitialTranslationSetup(TranslationTransport& aTranslation)
 
     uint8_t EL = statefulPointer->ELRegime;
 
+
+     /**
+      * Bryan Perdrizat
+      *      EL2 and EL3 are not setted up because QFlex is not (yet)
+      *      supporting well EL2 (hypervisor) mode well.
+      */
+    DBG_Assert(EL <= 1);
+
     // Handle a case where for Linux, the page table of EL0 is in EL1's register.
     if (EL == 0) {
         DBG_Assert(statefulPointer->isBR0);

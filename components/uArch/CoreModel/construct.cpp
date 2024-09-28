@@ -441,24 +441,28 @@ void
 CoreImpl::setSP_el(uint8_t anId, uint64_t aVal)
 {
     DBG_Assert(0 <= anId && anId < 4, (<< "Out of bound access with index = " << anId));
+    DBG_Assert(anId < 2, (<< "Unhandled simulation of hypervisor mode"));
     theSP_el[anId] = aVal;
 }
 uint64_t
 CoreImpl::getSP_el(uint8_t anId)
 {
     DBG_Assert(0 <= anId && anId < 4, (<< "Out of bound access with index = " << anId));
+    DBG_Assert(anId < 2, (<< "Unhandled simulation of hypervisor mode"));
     return theSP_el[anId];
 }
 void
 CoreImpl::setSPSR_el(uint8_t anId, uint64_t aVal)
 {
     DBG_Assert(0 <= anId && anId < 4, (<< "Out of bound access with index = " << anId));
+    DBG_Assert(anId < 2, (<< "Unhandled simulation of hypervisor mode"));
     theSPSR_EL[anId] = aVal;
 }
 uint64_t
 CoreImpl::getSPSR_el(uint8_t anId)
 {
     DBG_Assert(0 <= anId && anId < 4, (<< "Out of bound access with index = " << anId));
+    DBG_Assert(anId < 2, (<< "Unhandled simulation of hypervisor mode"));
     return theSPSR_EL[anId];
 }
 uint32_t
@@ -514,6 +518,7 @@ CoreImpl::setSCTLR_EL(uint8_t anId, uint64_t aSCTLR_EL)
 uint64_t
 CoreImpl::getSCTLR_EL(uint8_t anId)
 {
+    DBG_Assert(anId < 2, (<< "Unhandled simulation of hypervisor mode"));
     return theSCTLR_EL[anId];
 }
 void
@@ -524,7 +529,8 @@ CoreImpl::setHCREL2(uint64_t aHCREL2)
 uint64_t
 CoreImpl::getHCREL2()
 {
-    return theHCR_EL2;
+    DBG_Assert(false, (<< "Unhandled simulation of hypervisor mode"));
+    return 0;
 }
 void
 CoreImpl::setException(Flexus::Qemu::API::exception_t anEXP)
