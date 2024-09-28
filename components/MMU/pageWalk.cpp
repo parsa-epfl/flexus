@@ -258,7 +258,8 @@ PageWalk::InitialTranslationSetup(TranslationTransport& aTranslation)
 
     // Handle a case where for Linux, the page table of EL0 is in EL1's register.
     if (EL == 0) {
-        DBG_Assert(statefulPointer->isBR0);
+        // There might be speculative memory accesses, so the following check may not be passed.
+        // DBG_Assert(statefulPointer->isBR0);
         EL = 1;
     };
 
