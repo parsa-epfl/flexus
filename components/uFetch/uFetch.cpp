@@ -555,7 +555,7 @@ class FLEXUS_COMPONENT(uFetch)
             }
         }
     }
-    void initialize()
+    void initialize() override
     {
 
         theI.init(cfg.Size, cfg.Associativity, cfg.ICacheLineSize, statName());
@@ -572,8 +572,8 @@ class FLEXUS_COMPONENT(uFetch)
         theIcachePrefetch.resize(cfg.Threads);
         theLastPrefetchVTagSet.resize(cfg.Threads);
     }
-    void finalize() {}
-    void drive(interface::uFetchDrive const&)
+    void finalize() override {}
+    void drive(interface::uFetchDrive const&) override
     {
 
         bool garbage = true;
@@ -780,6 +780,18 @@ class FLEXUS_COMPONENT(uFetch)
             }
             default: DBG_Assert(false, Comp(*this)(<< "FETCH UNIT: Unhandled message received: " << *reply));
         }
+    }
+
+    void loadState(std::string const& aDirName) override
+    {
+        // I need to load the instruction cache here.
+        this->theI.loadState(aDirName + "/" + statName() + "-L1i.json");
+    }
+
+    void saveState(std::string const& aDirName) override
+    {
+        // Not implemented.
+        
     }
 };
 
