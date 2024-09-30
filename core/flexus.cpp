@@ -137,7 +137,7 @@ class FlexusImpl : public FlexusInterface
 
   public:
     FlexusImpl(Qemu::API::conf_object_t* anObject)
-      : cpu_watchdog_timeout(1000)
+      : cpu_watchdog_timeout(2000)
       , theInitialized(false)
       , theCycleCount(0)
       , theStatInterval(100)
