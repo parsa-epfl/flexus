@@ -683,6 +683,7 @@ class CoreImpl : public CoreModel
     void setSPSR_el(uint8_t anEL, uint64_t aVal);
     uint64_t getSPSR_el(uint8_t anEL);
     void setDAIF(uint32_t aDAIF);
+    bool isPrivileged();
 
     /* Msutherl: API to read system register value using QEMU encoding */
     uint64_t readUnhashedSysReg(uint8_t opc0, uint8_t opc1, uint8_t opc2, uint8_t crn, uint8_t crm);

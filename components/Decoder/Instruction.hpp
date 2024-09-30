@@ -58,7 +58,6 @@ class ArchInstruction : public nuArch::Instruction
     bool theUsesFpDiv;
     bool theUsesFpSqrt;
     tFillLevel theInsnSourceLevel;
-    bool thePriv;
 
   public:
     virtual bool usesIntAlu() const;
@@ -245,9 +244,6 @@ class ArchInstruction : public nuArch::Instruction
 
     virtual VirtualMemoryAddress pcNext() const { return thePCReg; }
 
-    virtual bool isPriv() const { return thePriv; }
-    virtual void makePriv() { thePriv = true; }
-
     virtual bool isTrap() const { return theRaisedException != kException_None; }
     virtual boost::intrusive_ptr<BPredState> bpState() const { return theBPState; }
     bool isBranch() const { return theInstructionClass == clsBranch; }
@@ -320,7 +316,6 @@ class ArchInstruction : public nuArch::Instruction
       , theUsesFpDiv(false)
       , theUsesFpSqrt(false)
       , theInsnSourceLevel(eL1I)
-      , thePriv(false)
     {
     }
 

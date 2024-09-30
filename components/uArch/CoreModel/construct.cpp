@@ -574,6 +574,11 @@ CoreImpl::setPC(uint64_t aPC)
     thePC = aPC;
 }
 
+bool CoreImpl::isPrivileged()
+{
+    return currentEL() != 0;
+}
+
 CoreModel*
 CoreModel::construct(uArchOptions_t options,
                      std::function<int(bool)> advance,

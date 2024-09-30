@@ -333,6 +333,7 @@ tags
 !.vscode/launch.json
 !.vscode/extensions.json
 !.vscode/*.code-snippets
+.cache
 
 # Local History for Visual Studio Code
 .history/
