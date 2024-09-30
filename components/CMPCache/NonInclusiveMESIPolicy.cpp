@@ -1225,10 +1225,12 @@ NonInclusiveMESIPolicy::handleReply(ProcessEntry_p process)
         case MemoryMessage::UpgradeAck: {
             maf_iter_t maf = theMAF.findFirst(req->address(), eWaitAck);
             DBG_Assert(maf != theMAF.end(), (<< "No matching MAF for request: " << *req));
-            DBG_Assert(maf->transport()[MemoryMessageTag]->type() == MemoryMessage::UpgradeReq,
+            auto message = maf->transport()[MemoryMessageTag]->type();
+            DBG_Assert(
+                message == MemoryMessage::UpgradeReq || message == MemoryMessage::WriteReq ||
+                message == MemoryMessage::AtomicPreloadReq || message == MemoryMessage::MissNotify,
                        (<< "Matching MAF is not an Upgrade. MAF = " << *(maf->transport()[MemoryMessageTag])
                         << " reply = " << *req));
-            DBG_Assert(maf != theMAF.end() && maf->transport()[MemoryMessageTag]->type() == MemoryMessage::UpgradeReq);
 
             // Do a directory lookup and set the state
             DirLookupResult_p d_lookup = theDirectory->lookup(req->address());
