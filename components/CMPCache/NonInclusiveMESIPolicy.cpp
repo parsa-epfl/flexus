@@ -1231,7 +1231,6 @@ NonInclusiveMESIPolicy::handleReply(ProcessEntry_p process)
                 message == MemoryMessage::AtomicPreloadReq || message == MemoryMessage::MissNotify,
                        (<< "Matching MAF is not an Upgrade. MAF = " << *(maf->transport()[MemoryMessageTag])
                         << " reply = " << *req));
-            // DBG_Assert(maf != theMAF.end() && maf->transport()[MemoryMessageTag]->type() == MemoryMessage::UpgradeReq);
 
             // Do a directory lookup and set the state
             DirLookupResult_p d_lookup = theDirectory->lookup(req->address());
