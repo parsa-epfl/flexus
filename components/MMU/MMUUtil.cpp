@@ -38,22 +38,17 @@ TTEDescriptor::isBlockEntry()
 }
 
 void
-fm_print_mmu_regs(mmu_regs_t* r)
+fm_print_mmu_regs(mmu_regs_t* mmu_regs)
 {
-    DBG_(VVerb,
-         (<< "SCTLR_EL1: " << std::hex << r->SCTLR[EL1] << std::dec << std::endl
-          << "SCTLR_EL2: " << std::hex << r->SCTLR[EL2] << std::dec << std::endl
-          << "SCTLR_EL3: " << std::hex << r->SCTLR[EL3] << std::dec << std::endl
-          << "TCR_EL1: " << std::hex << r->TCR[EL1] << std::dec << std::endl
-          << "TCR_EL2: " << std::hex << r->TCR[EL2] << std::dec << std::endl
-          << "TCR_EL3: " << std::hex << r->TCR[EL3] << std::dec << std::endl
-          << "TTBR0_EL1: " << std::hex << r->TTBR0[EL1] << std::dec << std::endl
-          << "TTBR1_EL1: " << std::hex << r->TTBR1[EL1] << std::dec << std::endl
-          << "TTBR0_EL2: " << std::hex << r->TTBR0[EL2] << std::dec << std::endl
-          << "TTBR1_EL2: " << std::hex << r->TTBR1[EL2] << std::dec << std::endl
-          << "TTBR0_EL3: " << std::hex << r->TTBR0[EL3] << std::dec << std::endl
-          << "ID_AA64MMFR0_EL1: " << std::hex << r->ID_AA64MMFR0_EL1 << std::dec));
-    ;
+    DBG_(VVerb, (<< "Initializing mmu registers from QEMU..." << std::endl
+                    << std::hex
+                    << "\t" << "TCR_EL1: " << mmu_regs->TCR[EL1] << std::endl
+                    << "\t" << "SCTLR_El1: " << mmu_regs->SCTLR[EL1] << std::endl
+                    << "\t" << "TTBR0_EL1: " << mmu_regs->TTBR0[EL1] << std::endl
+                    << "\t" << "TTBR1_EL1: " << mmu_regs->TTBR1[EL1] << std::endl
+                    << "\t" << "ID_AA64MMFR0_EL1: " << mmu_regs->ID_AA64MMFR0_EL1
+                    << std::dec
+                    << std::endl));
 }
 void
 mmu_t::setupBitConfigs()
@@ -112,39 +107,31 @@ mmu_t::init_mmu_regs(std::size_t core_index)
     /**
      * Everything here is detailed in the chapter D7
      * of the 2024 ARM Reference manual. (ARM DDI 0487K.a)
+     *
+     * Bryan Perdrizat
+     *      EL2 and EL3 are not setted up because QFlex is not (yet)
+     *      supporting well EL2 (hypervisor) mode well.
      */
 
     //? sctlr_el0 does not exist
     mmu_regs.SCTLR[EL1] = cpu.read_register(Qemu::API::SCTLR, EL1);
-    mmu_regs.SCTLR[EL2] = cpu.read_register(Qemu::API::SCTLR, EL2);
-    mmu_regs.SCTLR[EL3] = cpu.read_register(Qemu::API::SCTLR, EL3);
 
     //? tcr_el0 does not exist
     mmu_regs.TCR[EL1] = cpu.read_register(Qemu::API::TCR, EL1);
-    mmu_regs.TCR[EL2] = cpu.read_register(Qemu::API::TCR, EL2);
-    mmu_regs.TCR[EL3] = cpu.read_register(Qemu::API::TCR, EL3);
 
     //? Section G8.2.167 - TTBR0, Translation Table Base Register 0
     //? Section G8.2.168 - TTBR1, Translation Table Base Register 1
     mmu_regs.TTBR0[EL1] = cpu.read_register(Qemu::API::TTBR0, EL1);
     mmu_regs.TTBR1[EL1] = cpu.read_register(Qemu::API::TTBR1, EL1);
-    mmu_regs.TTBR0[EL2] = cpu.read_register(Qemu::API::TTBR0, EL2);
-    mmu_regs.TTBR1[EL2] = cpu.read_register(Qemu::API::TTBR1, EL2);
-    mmu_regs.TTBR0[EL3] = cpu.read_register(Qemu::API::TTBR0, EL3);
 
     //? Section D23.2.74 - AArch64 Memory Model Feature Register 0
     mmu_regs.ID_AA64MMFR0_EL1 = cpu.read_register(Qemu::API::ID_AA64MMFR0, EL1);
 
-    DBG_(VVerb, (<< "Initializing mmu registers from QEMU...." << mmu_regs.TCR[EL1]));
+    fm_print_mmu_regs(&mmu_regs);
+
     return (mmu_regs.TCR[EL1] != 0);
 }
 
-bool
-mmu_t::IsExcLevelEnabled(uint8_t EL) const
-{
-    DBG_Assert(EL > 0 && EL <= 3, (<< "ERROR, ARM MMU: Transl. Request Not Supported at Invalid EL = " << EL));
-    return extractSingleBitAsBool(mmu_regs.SCTLR[EL], aarch64_bit_configs.M_Bit);
-}
 void
 mmu_t::setupAddressSpaceSizesAndGranules(void)
 {
