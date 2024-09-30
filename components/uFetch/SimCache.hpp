@@ -2,6 +2,7 @@
 #define FLEXUS_UFETCH_SIMCACHE
 #include "components/CommonQEMU/seq_map.hpp"
 #include "core/checkpoint/json.hpp"
+#include "core/debug/debug.hpp"
 
 #include <fstream>
 using json = nlohmann::json;
@@ -51,13 +52,21 @@ struct SimCache
         ifs >> checkpoint;
         uint32_t tag_shift = LOG2(theCache.sets());
 
+        DBG_Assert((uint64_t)theCacheAssoc == checkpoint["associativity"]);
+        DBG_Assert((uint64_t)theCache.sets() == checkpoint["tags"].size());
+
         for (std::size_t i{ 0 }; i < theCache.sets(); i++) {
-            for (uint32_t j = 0; j < checkpoint["tags"].at(i).size(); j++) {
+            for (uint32_t j = checkpoint["tags"].at(i).size()-1; j != 0; j--) {
+                // The reason why we reverse the order is because we want to insert the least recent tags first
                 bool dirty    = checkpoint["tags"].at(i).at(j)["dirty"];
+                DBG_Assert(!dirty, (<< "Only non dirty block should have been saved, therefore imported"));
                 bool writable = checkpoint["tags"].at(i).at(j)["writable"];
+                DBG_Assert(!writable, (<< "Only non writeable block should have been saved, therefore imported"));
                 uint64_t tag  = checkpoint["tags"].at(i).at(j)["tag"];
 
                 theCache.insert(std::make_pair((tag << tag_shift) | i, 0));
+
+                DBG_(Dev, (<< "Loading tag " << std::hex << ((tag << tag_shift) | i)));
             }
         }
 
