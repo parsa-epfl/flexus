@@ -492,7 +492,8 @@ CoreImpl::scanAndBlockMSHR(memq_t::index<by_insn>::type::iterator anLSQEntry)
     // Check for an existing MSHR for the same address (issued this cycle)
     MSHRs_t::iterator existing = theMSHRs.find(anLSQEntry->thePaddr);
     if (existing != theMSHRs.end()) {
-        DBG_Assert(!existing->second.theWaitingLSQs.empty());
+        // Maybe the original load was a speculative load that was annulled
+        // DBG_Assert(!existing->second.theWaitingLSQs.empty());
         existing->second.theBlockedOps.push_back(anLSQEntry->theInstruction);
         return true;
     }
