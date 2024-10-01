@@ -140,6 +140,7 @@ struct ReadRegisterAction : public BaseSemanticAction
                 }
             }
         } else {
+
             if (!theConnected) {
 
                 mapped_reg name = theInstruction->operand<mapped_reg>(theRegisterCode);
@@ -149,24 +150,25 @@ struct ReadRegisterAction : public BaseSemanticAction
                 core()->connectBypass(name, theInstruction, ll::bind(&ReadRegisterAction::bypass, this, ll::_1));
                 theConnected = true;
             }
-            if (!signalled()) {
-                SEMANTICS_DBG("Signalling");
-                mapped_reg name        = theInstruction->operand<mapped_reg>(theRegisterCode);
-                eResourceStatus status = core()->requestRegister(name);
 
-                if (status == kReady) {
-                    aValue = core()->readRegister(name);
-                    val    = boost::get<uint64_t>(aValue);
-                } else {
-                    setReady(0, false);
-                    squashDependants();
-                    DBG_(Iface, (<< "Skipping adding reg by using set ready: " <<  status << " ready was set to: " << ready() << "address of instruction is: " << theInstruction << " and code for instruction of "  << theInstruction->instCode() << " the address of the action is: " << this));
-                    return;
-                }
-            } else {
+            if (signalled()) {
                 DBG_(Iface, (<< "Just skipping without using set ready: "  << " address of instruction is: " << theInstruction << " and code for instruction of "  << theInstruction->instCode() << " the address of the action is: " << this));
                 return;
             }
+
+            SEMANTICS_DBG("Signalling");
+            mapped_reg name        = theInstruction->operand<mapped_reg>(theRegisterCode);
+            eResourceStatus status = core()->requestRegister(name);
+
+            if (status != kReady) {
+                setReady(0, false);
+                squashDependants();
+                DBG_(Iface, (<< "Skipping adding reg by using set ready: " <<  status << " ready was set to: " << ready() << "address of instruction is: " << theInstruction << " and code for instruction of "  << theInstruction->instCode() << " the address of the action is: " << this));
+                return;
+            }
+
+            aValue = core()->readRegister(name);
+            val    = boost::get<uint64_t>(aValue);
         }
 
         if (!the64) { val &= 0xffffffff; }
