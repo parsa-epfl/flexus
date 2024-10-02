@@ -227,15 +227,14 @@ class FLEXUS_COMPONENT(MemoryNetwork)
         DBG_Assert(transport[NetworkMessageTag]);
 
         // Ensure all NetworkMessage fields have been initialized
-        DBG_Assert(transport[NetworkMessageTag]->src != -1, (<< "No src for " << *(transport[MemoryMessageTag])));
-        DBG_Assert(transport[NetworkMessageTag]->dest != -1, (<< "No src for " << *(transport[MemoryMessageTag])));
-        DBG_Assert(transport[NetworkMessageTag]->vc != -1, (<< "No src for " << *(transport[MemoryMessageTag])));
-        DBG_Assert(transport[NetworkMessageTag]->size != -1, (<< "No src for " << *(transport[MemoryMessageTag])));
-        DBG_Assert(transport[NetworkMessageTag]->src_port != -1, (<< "No src for " << *(transport[MemoryMessageTag])));
-        DBG_Assert(transport[NetworkMessageTag]->dst_port != -1, (<< "No src for " << *(transport[MemoryMessageTag])));
+        DBG_Assert(transport[NetworkMessageTag]->src != -1, (<< "No source in " << *(transport[MemoryMessageTag])));
+        DBG_Assert(transport[NetworkMessageTag]->dest != -1, (<< "No deestination in " << *(transport[MemoryMessageTag])));
+        DBG_Assert(transport[NetworkMessageTag]->vc != -1, (<< "No virtual channel in " << *(transport[MemoryMessageTag])));
+        DBG_Assert(transport[NetworkMessageTag]->size != -1, (<< "No message size in " << *(transport[MemoryMessageTag])));
+        DBG_Assert(transport[NetworkMessageTag]->src_port != -1, (<< "No source port in " << *(transport[MemoryMessageTag])));
+        DBG_Assert(transport[NetworkMessageTag]->dst_port != -1, (<< "No destination port in " << *(transport[MemoryMessageTag])));
 
-        // Allocate and initialize the internal NetShim simulator message
-        // state and send it into the interconnect.
+        // Allocate and initialize the internal NetShim simulator message state and send it into the interconnect.
         msg = allocMessageState();
 
         msg->srcNode  = transport[NetworkMessageTag]->src;

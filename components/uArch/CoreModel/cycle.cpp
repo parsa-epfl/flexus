@@ -1080,8 +1080,8 @@ CoreImpl::retire()
     FLEXUS_PROFILE();
     bool stop_retire = false;
 
+    CORE_DBG("ROB size: " << theROB.size());
     if (theROB.empty()) {
-        CORE_DBG("ROB is empty! ->" << theROB.size());
         return;
     }
 

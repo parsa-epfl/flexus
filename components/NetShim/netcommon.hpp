@@ -202,7 +202,7 @@ resetMessageStateSerial(void);
 
 #define TRACE(M, TXT)                                                                                                  \
     {                                                                                                                  \
-        DBG_(Iface, (<< "Time: " << currTime << " Msg: " << (M)->serial << " " << TXT << endl));                       \
+        DBG_(Iface, (<< " Msg: " << (M)->serial << " " << TXT << endl));                       \
     }
 
 extern int64_t currTime;
