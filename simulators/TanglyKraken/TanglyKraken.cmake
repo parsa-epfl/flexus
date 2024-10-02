@@ -1,4 +1,4 @@
-set(KnottyKraken_REQUIRED_COMPONENTS
+set(TanglyKraken_REQUIRED_COMPONENTS
   CommonQEMU
   uFetch
   Decoder

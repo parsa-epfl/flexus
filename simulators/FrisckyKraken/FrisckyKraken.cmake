@@ -1,4 +1,4 @@
-set(KeenKraken_REQUIRED_COMPONENTS
+set(FrisckyKraken_REQUIRED_COMPONENTS
   CommonQEMU
   DecoupledFeederQEMU
   FastCache

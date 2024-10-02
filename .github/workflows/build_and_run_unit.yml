@@ -83,8 +83,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - sim: "KeenKraken"
-          - sim: "KnottyKraken"
+          - sim: "FrisckyKraken"
+          - sim: "TanglyKraken"
     env:
       DEPS: cmake libboost-all-dev
       SIMULATOR: ${{ matrix.sim }}
@@ -109,8 +109,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - sim: "KeenKraken"
-          - sim: "KnottyKraken"
+          - sim: "FrisckyKraken"
+          - sim: "TanglyKraken"
     env:
       DEPS: cmake
       SIMULATOR: ${{ matrix.sim }}

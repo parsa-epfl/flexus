@@ -44,7 +44,7 @@ $ sudo ./b2 install
 ```sh
 -DTARGET_PLATFORM=riscv
 -DSELECTED_DEBUG=vverb
--DSIMULATOR=KnottyKraken
+-DSIMULATOR=TanglyKraken
 -DCMAKE_C_COMPILER=/usr/bin/gcc
 -DCMAKE_CXX_COMPILER=/usr/bin/g++
 -DBOOST_INCLUDEDIR=/usr/local/include
@@ -54,7 +54,7 @@ $ sudo ./b2 install
 * Add options by `-D${OPTION_NAME}=${OPTION}` after `cmake`.
 
 ```sh
-$ cmake -DSIMULATOR=KnottyKraken . && make -j
+$ cmake -DSIMULATOR=TanglyKraken . && make -j
 ```
 
 * Use `make clean` to only remove `*.a` and `*.so` files.

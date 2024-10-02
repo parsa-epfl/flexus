@@ -33,18 +33,18 @@ If you encounter the problem `undefined reference to symbol dlsym@@GLIBC_2.2.5`,
 ```sh
 git clone -b riscv https://github.com/parsa-epfl/flexus
 cd flexus
-./build.sh KeenKraken   # trace simulator
-make -C build.KeenKraken
-./build.sh KnottyKraken # timing simulator
-make -C build.KnottyKraken
+./build.sh FrisckyKraken   # trace simulator
+make -C build.FrisckyKraken
+./build.sh TanglyKraken # timing simulator
+make -C build.TanglyKraken
 ```
 
 ## Create symlinks
 ```sh
 cd flexus/run
 ln -s ${PATH_TO_QEMU}/build/qemu-system-riscv64 qemu
-ln -s ../build.KeenKraken/libKeenKraken.so .
-ln -s ../build.KnottyKraken/libKnottyKraken.so .
+ln -s ../build.FrisckyKraken/libFrisckyKraken.so .
+ln -s ../build.TanglyKraken/libTanglyKraken.so .
 ```
 
 # Run

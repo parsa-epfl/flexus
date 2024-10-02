@@ -1,7 +1,7 @@
 #!/bin/bash
 
 OLD=${PWD}
-SIM=${1:-KeenKraken}
+SIM=${1:-FrisckyKraken}
 NEW=build.${SIM}
 
 mkdir -p ${NEW} && cd ${NEW}
