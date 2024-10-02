@@ -161,7 +161,7 @@ CoreImpl::invalidate(PhysicalMemoryAddress anAddress)
                 ++theRaces;
                 race_counted = true;
             }
-            bool system = temp->theInstruction->isPriv();
+            bool system = isPrivileged();
 
             // if its a completed load, and it has a higher sequence number than
             // first_incomplete, the load attempts forwarding.  If forwarding fails,

@@ -196,7 +196,7 @@ CoreImpl::accountCommit(boost::intrusive_ptr<Instruction> anInstruction, bool aR
         level = 3 /* idle */;
     else if (anInstruction->isTrap())
         level = 2 /* trap */;
-    else if (anInstruction->isPriv())
+    else if (isPrivileged())
         level = 1 /* system */;
     int32_t spin = (theSpinning) ? 4 : 0;
 
@@ -383,7 +383,7 @@ CoreImpl::accountRetire(boost::intrusive_ptr<Instruction> anInst)
     if (theIsSpeculating) { ++theRetiresSinceCheckpoint; }
 
     // Determine cycle category (always based on last retire in cycle)
-    bool system = theROB.front()->isPriv();
+    bool system = isPrivileged();
 
     theIsIdle = Flexus::Qemu::Processor::getProcessor(theNode).is_busy() ? false : true;
 

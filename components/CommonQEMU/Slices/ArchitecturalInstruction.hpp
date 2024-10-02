@@ -47,7 +47,6 @@ class ArchitecturalInstruction : public boost::counted_base
     bool thePerformed;
     bool theCommitted;
     bool theSync;
-    bool thePriv;
     bool theShadow;
     bool theTrace; // a traced instruction
     bool theIsAtomic;
@@ -72,7 +71,6 @@ class ArchitecturalInstruction : public boost::counted_base
       , thePerformed(false)
       , theCommitted(false)
       , theSync(anOriginal->theSync)
-      , thePriv(anOriginal->thePriv)
       , theShadow(true)
       , theTrace(anOriginal->theTrace)
       , theStartTime(0)
@@ -97,7 +95,6 @@ class ArchitecturalInstruction : public boost::counted_base
       , thePerformed(false)
       , theCommitted(false)
       , theSync(false)
-      , thePriv(false)
       , theShadow(false)
       , theTrace(false)
       , theStartTime(0)
@@ -122,7 +119,6 @@ class ArchitecturalInstruction : public boost::counted_base
       , thePerformed(false)
       , theCommitted(false)
       , theSync(false)
-      , thePriv(false)
       , theShadow(false)
       , theTrace(false)
       , theIsAtomic(false)
@@ -152,7 +148,6 @@ class ArchitecturalInstruction : public boost::counted_base
     bool isRmw() const { return (theOperation == Rmw); }
     bool isMEMBAR() const { return (theOperation == Membar); }
     bool isSync() const { return theSync; }
-    bool isPriv() const { return thePriv; }
 
     bool isShadow() const { return theShadow; }
 
@@ -200,7 +195,6 @@ class ArchitecturalInstruction : public boost::counted_base
 
     // InorderInstructionImpl Interface functions
     void setSync() { theSync = true; }
-    void setPriv() { thePriv = true; }
 
     // Set operation types
     void setIsNop() { theOperation = Nop; }

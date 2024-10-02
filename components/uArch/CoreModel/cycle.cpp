@@ -580,7 +580,7 @@ CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn)
 
             // TRACE TRACKER : Notify trace tracker of store
             // uint64_t logical_timestamp = theCommitNumber + theSRB.size();
-            theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/, anInsn->isPriv(), 0);
+            theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/, isPrivileged(), 0);
         }
 
         if (iter->theOperation == kRMW) {
@@ -672,7 +672,7 @@ CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn)
             // TRACE TRACKER : Notify trace tracker of load commit
             // uint64_t logical_timestamp = theCommitNumber + theSRB.size();
             theTraceTracker
-              .access(theNode, eCore, iter->thePaddr, anInsn->pc(), false, false, false, anInsn->isPriv(), 0);
+              .access(theNode, eCore, iter->thePaddr, anInsn->pc(), false, false, false, isPrivileged(), 0);
             theTraceTracker.commit(theNode, eCore, iter->thePaddr, anInsn->pc(), 0);
             /* CMU-ONLY-BLOCK-BEGIN */
             //      if (theTrackParallelAccesses ) {
@@ -722,7 +722,7 @@ CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn)
 
             // TRACE TRACKER : Notify trace tracker of store
             //      uint64_t logical_timestamp = theCommitNumber + theSRB.size();
-            theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/, anInsn->isPriv(), 0);
+            theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/, isPrivileged(), 0);
 
             requireWritePermission(iter);
         }

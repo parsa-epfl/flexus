@@ -51,7 +51,6 @@ ArchInstruction::ArchInstruction(VirtualMemoryAddress aPC,
   , theUsesFpDiv(false)
   , theUsesFpSqrt(false)
   , theInsnSourceLevel(eL1I)
-  , thePriv(false)
 {
 }
 

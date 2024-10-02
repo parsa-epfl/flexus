@@ -378,7 +378,7 @@ CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction)
     op->theSize = mshr.theSize = lsq_entry->theSize;
     mshr.theWaitingLSQs.push_back(lsq_entry);
     op->thePC   = lsq_entry->theInstruction->pc();
-    bool system = lsq_entry->theInstruction->isPriv();
+    bool system = isPrivileged();
     if (lsq_entry->theValue) {
         op->theValue = *lsq_entry->theValue;
     } else {
