@@ -19,6 +19,7 @@ class NetContainer
     NetContainer(void);
 
   public:
+    bool buildMesh();
     bool buildNetwork(const char* filename);
 
     bool drive(void);
