@@ -16,13 +16,7 @@
 #include <core/performance/profile.hpp>
 #include <core/qemu/configuration_api.hpp>
 #include <fstream>
-#include <functional>
 #include <iostream>
-#include <map>
-#include <queue>
-#include <sstream>
-#include <unordered_map>
-#include <vector>
 
 #define DBG_DefineCategories MMU
 #define DBG_SetDefaultOps    AddCat(MMU)
@@ -64,16 +58,6 @@ class FLEXUS_COMPONENT(MMU)
     struct TLBentry
     {
 
-        friend class boost::serialization::access;
-
-        template<class Archive>
-        void serialize(Archive& ar, const unsigned int version)
-        {
-            ar & theRate;
-            ar & theVaddr;
-            ar & thePaddr;
-        }
-
         TLBentry() {}
 
         TLBentry(VirtualMemoryAddress aVAddress, PhysicalMemoryAddress aPaddress, uint64_t aRate)
@@ -104,15 +88,6 @@ class FLEXUS_COMPONENT(MMU)
 
     struct TLB
     {
-
-        friend class boost::serialization::access;
-
-        template<class Archive>
-        void serialize(Archive& ar, const unsigned int version)
-        {
-            ar & theTLB;
-            ar & theSize;
-        }
 
         void loadState(json checkpoint)
         {
@@ -244,6 +219,7 @@ class FLEXUS_COMPONENT(MMU)
             PAGEMASK = ~((1 << theMMU->Gran0->getlogKBSize()) - 1);
             ret      = true;
         }
+
         return ret;
     }
 

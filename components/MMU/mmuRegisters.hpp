@@ -72,27 +72,5 @@ struct mmu_regs_t
     mmu_reg_t ID_AA64MMFR0_EL1; // only implemented in EL1 as far as I know.
 };
 
-/* type      -      ARM_NAME            - funct.
- * ----DO NOT REMOVE---- PEOPLE WILL NEED TO KNOW THIS *
- mmu_reg_t           SCTLR_EL1;          // enables/disables Secure EL1/EL0
-translation mmu_reg_t           SCTLR_EL2;          // enables/disables
-Non-Secure EL2 Stage 1, Non-Secure EL1/EL0 Stage 2 mmu_reg_t SCTLR_EL3; //
-enables/disables Secure EL3 Stage 1
-// all SCTLRs also include cacheability bits for PTEs
-
-mmu_reg_t           TCR_EL1;            // controls Secure/NonSecure EL1/EL0
-mmu_reg_t           TCR_EL2;            // controls Secure EL2Stg1 and
-Non-Secure EL1/EL0 Stage 2 mmu_reg_t           TCR_EL3;            // controls
-Secure EL3 Stage 1
-
-mmu_reg_t           TTBR0_EL1;          // controls lower address range for
-EL1 (default 0x0 - 0xffff ffff ffff), configurable through TCR_ELx.T0SZ
-mmu_reg_t           TTBR1_EL1;          // upper address range for EL1, size
-also configurable through TCR_ELx.T1SZ mmu_reg_t           TTBR0_EL3; //
-controls single address range for EL3 mmu_reg_t           TTBR0_EL2; //
-controls lower address range for EL2 (default 0x0 - 0xffff ffff ffff), config.
-as above mmu_reg_t           TTBR1_EL2;          // upper address range for
-EL2
- * ----DO NOT REMOVE---- PEOPLE WILL NEED TO KNOW THIS */
 
 #endif // FLEXUS_ARM_MMU_REGISTERS_HPP_INCLUDED
