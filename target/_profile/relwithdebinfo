@@ -1,0 +1,4 @@
+include(linux_x86_64-common)
+
+[settings]
+build_type=RelWithDebInfo
