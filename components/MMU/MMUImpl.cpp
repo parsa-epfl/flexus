@@ -536,33 +536,33 @@ class FLEXUS_COMPONENT(MMU)
 FLEXUS_COMPONENT_INSTANTIATOR(MMU, nMMU);
 FLEXUS_PORT_ARRAY_WIDTH(MMU, dRequestIn)
 {
-    return cfg.cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return 1;
 }
 FLEXUS_PORT_ARRAY_WIDTH(MMU, iRequestIn)
 {
-    return cfg.cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return 1;
 }
 FLEXUS_PORT_ARRAY_WIDTH(MMU, ResyncIn)
 {
-    return cfg.cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return 1;
 }
 FLEXUS_PORT_ARRAY_WIDTH(MMU, iTranslationReply)
 {
-    return cfg.cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return 1;
 }
 FLEXUS_PORT_ARRAY_WIDTH(MMU, dTranslationReply)
 {
-    return cfg.cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return 1;
 }
 
 FLEXUS_PORT_ARRAY_WIDTH(MMU, MemoryRequestOut)
 {
-    return cfg.cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return 1;
 }
 
 FLEXUS_PORT_ARRAY_WIDTH(MMU, TLBReqIn)
 {
-    return cfg.cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+    return 1;
 }
 
 #include FLEXUS_END_COMPONENT_IMPLEMENTATION()

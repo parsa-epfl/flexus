@@ -79,7 +79,6 @@ bool initializeParameters() {
   theL2Cfg.SeparateID.initialize(true);
 
 
-  theMMUCfg.cores.initialize(1);
   theMMUCfg.iTLBSize.initialize(64);
   theMMUCfg.dTLBSize.initialize(64);
 
