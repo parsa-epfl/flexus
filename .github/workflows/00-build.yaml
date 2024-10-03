@@ -6,7 +6,7 @@ on:
   # Manually triggered
   workflow_dispatch:
   push:
-    branches:
+    branches: [maintainer/bryan]
   pull_request:
     branches:
 
@@ -37,6 +37,7 @@ jobs:
           - knottykraken
         build_type:
           - release
+          - relwithdebinfo
           - debug
 
     steps:
