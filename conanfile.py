@@ -50,6 +50,7 @@ class KeenKraken(ConanFile):
     def generate(self):
         tc = CMakeToolchain(self, generator="Ninja")
         tc.cache_variables['SIMULATOR'] = self.name
+        tc.cache_variables["CMAKE_EXPORT_COMPILE_COMMANDS"] = "ON"
         tc.preprocessor_definitions["SELECTED_DEBUG"] = "vverb"
         tc.generate()
 
