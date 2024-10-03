@@ -1,4 +1,5 @@
 
+#include <core/component.hpp>
 #include "netcontainer.hpp"
 
 #include <fstream>
@@ -73,6 +74,143 @@ NetContainer::NetContainer(void)
   , openFiles(0)
 {
 }
+
+bool NetContainer::buildMesh() {
+  // fixed for now
+  channelLatency = 3;
+  channelLatencyData = 4;
+  channelLatencyControl = 1;
+  localChannelLatencyDivider = 1;
+  switchInputBuffers = 6;
+  switchOutputBuffers = 6;
+  switchInternalBuffersPerVC = 6;
+
+  numSwitches = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+  numNodes = numSwitches * 3;
+  switchPorts = 7; // 3 ports from/to node and 4 ports for up/down/left/right
+  switchBandwidth = 4;
+
+  if (allocateNetworkStructures())
+    return true;
+
+  // nodes to switches
+  for (int i = 0; i < numNodes; i++) {
+    auto s = i % numSwitches;
+    auto p = i / numSwitches;
+
+    if (attachNodeChannels(this, i))
+      return true;
+    if (attachSwitchChannels(this, s, p, true))
+      return true;
+    if (switches[s]->setLocalDelayOnly(p))
+      return true;
+
+    maxChannelIndex += 2;
+  }
+
+#define U 3
+#define D 4
+#define L 5
+#define R 6
+
+  // switches to switches
+  int col = -1;
+  int row = -1;
+
+  // ad hoc
+  for (int i = 1; i < 9; i++)
+    for (int j = 1; j < 3; j++)
+      if (i * i * j == numSwitches) {
+        col = i * j;
+        row = i;
+        break;
+      }
+
+  assert(col >= 0);
+
+  int col_m1 = col - 1;
+  int row_m1 = row - 1;
+
+  for (int i = 0; i < row; i++)
+    for (int j = 0; j < col; j++) {
+      auto s = i * col + j;
+
+      if (j < col_m1) {
+        auto r = s + 1;
+
+        if (attachSwitchChannels(this, s, R, false))
+          return true;
+        if (attachSwitchChannels(this, r, L, true))
+          return true;
+
+        maxChannelIndex += 2;
+      }
+
+      if (i < row_m1) {
+        auto d = s + col;
+
+        if (attachSwitchChannels(this, s, D, false))
+          return true;
+        if (attachSwitchChannels(this, d, U, true))
+          return true;
+
+        maxChannelIndex += 2;
+      }
+    }
+
+  // routes
+  for (int i = 0; i < numSwitches; i++) {
+    auto c = i % col;
+    auto r = i / col;
+
+    for (int j = 0; j < numNodes; j++) {
+      auto s  = j % numSwitches;
+      auto p  = j / numSwitches;
+
+      auto cc = s % col;
+      auto rr = s / col;
+
+      // x-y
+      if (c < cc) {
+        if (switches[i]->addRoutingEntry(j, R, 0))
+          return true;
+      } else if (c > cc) {
+        if (switches[i]->addRoutingEntry(j, L, 0))
+          return true;
+      } else if (r < rr) {
+        if (switches[i]->addRoutingEntry(j, D, 0))
+          return true;
+      } else if (r > rr) {
+        if (switches[i]->addRoutingEntry(j, U, 0))
+          return true;
+      } else {
+        if (switches[i]->addRoutingEntry(j, p, 0))
+          return true;
+      }
+
+      // y-x
+      if (r < rr) {
+        if (switches[i]->addRoutingEntry(j, D, 1))
+          return true;
+      } else if (r > rr) {
+        if (switches[i]->addRoutingEntry(j, U, 1))
+          return true;
+      } else if (c < cc) {
+        if (switches[i]->addRoutingEntry(j, R, 1))
+          return true;
+      } else if (c > cc) {
+        if (switches[i]->addRoutingEntry(j, L, 1))
+          return true;
+      } else {
+        if (switches[i]->addRoutingEntry(j, p, 1))
+          return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 
 bool
 NetContainer::buildNetwork(const char* filename)

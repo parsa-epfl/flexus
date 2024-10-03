@@ -61,7 +61,10 @@ class FLEXUS_COMPONENT(NetShim)
         }
 
         nc = new NetContainer();
-        if (nc->buildNetwork(cfg.NetworkTopologyFile.c_str())) {
+        if (cfg.NetworkTopologyFile == "BuildMesh") {
+        if (nc->buildMesh())
+            throw Flexus::Core::FlexusException("Error building the network");
+        } else if (nc->buildNetwork(cfg.NetworkTopologyFile.c_str())) {
             throw Flexus::Core::FlexusException("Error building the network");
         }
     }
