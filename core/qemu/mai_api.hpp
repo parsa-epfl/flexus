@@ -57,18 +57,20 @@ class Processor
     bits read_va(VirtualMemoryAddress anAddress, size_t size)
     {
         VirtualMemoryAddress finalAddress(((uint64_t)(anAddress) + size - 1) & ~0xFFF);
+
         if ((finalAddress & 0x1000) != (anAddress & 0x1000)) {
-            DBG_Assert(false, (<< "Execution ended up somewhere Bryan did NOT expected it to go"));
-            //    bits value1, value2;
-            //    size_t partial = finalAddress - anAddress;
-            //    value1         = read_pa(
-            //      PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(anAddress))),
-            //      partial);
-            //    value2 = read_pa(
-            //      PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index,
-            //      API::logical_address_t(finalAddress))), size - partial);
-            //    value2 = (value2 << (partial << 3)) | value1;
-            //    return value2;
+            // Break the access into two memory accesses on each page, then concaticate their result.
+            bits value1, value2;
+            size_t partial = finalAddress - anAddress; // Partial is the size of the first access.
+            value1         = read_pa(
+              PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(anAddress))),
+              partial);
+            value2 = read_pa(
+              PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index,
+              API::logical_address_t(finalAddress))), size - partial);
+            // * 8 convert bytes to bits. value2 si appended to value2
+            value2 = (value2 << (partial * 8)) | value1;
+            return value2;
         }
         return read_pa(
           PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(anAddress))),
