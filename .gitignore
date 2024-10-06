@@ -1,7 +1,7 @@
 build/
 lib/
 CMakeUserPresets.json
-
+.cache
 
 # Created by https://www.toptal.com/developers/gitignore/api/c,c++,git,vim,cmake,linux,macos,windows,archives,assembler,jetbrains+all,visualstudiocode,conan
 # Edit at https://www.toptal.com/developers/gitignore?templates=c,c++,git,vim,cmake,linux,macos,windows,archives,assembler,jetbrains+all,visualstudiocode,conan
@@ -368,3 +368,4 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/c,c++,git,vim,cmake,linux,macos,windows,archives,assembler,jetbrains+all,visualstudiocode,conan
+core/flexus.cpp
