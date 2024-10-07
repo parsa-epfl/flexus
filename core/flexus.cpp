@@ -140,7 +140,7 @@ class FlexusImpl : public FlexusInterface
       : cpu_watchdog_timeout(2000)
       , theInitialized(false)
       , theCycleCount(0)
-      , theStatInterval(100)
+      , theStatInterval(50000)
       , theRegionInterval(100000000)
       , theProfileInterval(1000000)
       , theTimestampInterval(100000)
@@ -194,8 +194,12 @@ FlexusImpl::initializeComponents()
 void
 FlexusImpl::advanceCycles(int64_t aCycleCount)
 {
+
+    static uint64_t advanced_cycle_count = 0;
+
     theCycleCount += aCycleCount;
     theCycleCountStat += aCycleCount;
+    advanced_cycle_count += aCycleCount;
 
     Qemu::API::qemu_api.tick();
 
@@ -226,11 +230,11 @@ FlexusImpl::advanceCycles(int64_t aCycleCount)
     }
 
     static uint64_t last_stats = 0;
-    if (theStatInterval && (theCycleCount - last_stats >= theStatInterval)) {
+    if (theStatInterval && (advanced_cycle_count - last_stats >= theStatInterval)) {
         DBG_(Dev, Core()(<< "Saving stats at: " << theCycleCount));
-        writeMeasurement("all", "all.measurement.out");
-
-        last_stats = theCycleCount;
+        std::string report_name = "all.measurement." + boost::padded_string_cast<10, '0'>(advanced_cycle_count) + ".log";
+        writeMeasurement("all", report_name);
+        last_stats = advanced_cycle_count;
     }
 
     static uint64_t last_region = 0;
@@ -665,7 +669,7 @@ FlexusImpl::terminateSimulation()
 
     ComponentManager::getComponentManager().finalizeComponents();
 
-    writeMeasurement("all", "all.measurement.out");
+    writeMeasurement("all", "all.measurement.end.log");
     Flexus::Qemu::API::qemu_api.stop("Simulation terminated by flexus.");
     exit(0);
 }
