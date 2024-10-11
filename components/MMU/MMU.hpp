@@ -61,6 +61,12 @@ COMPONENT_PARAMETERS(
     PARAMETER(dtlbsets, size_t, "Number of sets of the dTlb", "dtlbsets", 1)
     PARAMETER(dtlbways, size_t, "Number of ways of the dTlb", "dtlbways", 64)
 
+    PARAMETER(stlblat,  int,    "sTLB lookup latency",        "stlblat",  2)
+    PARAMETER(stlbsets, size_t, "Number of sets of the sTLB", "stlbsets", 1024)
+    PARAMETER(stlbways, size_t, "Number of ways of the sTLB", "stlbways", 4)
+    PARAMETER(svlbsets, size_t, "Number of sets of the sVLB", "svlbsets", 64)
+    PARAMETER(svlbways, size_t, "Number of ways of the sVLB", "svlbways", 4)
+
     PARAMETER(perfect,  bool,   "TLB never misses",           "perfect",  false )
 );
 

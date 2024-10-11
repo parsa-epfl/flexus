@@ -79,8 +79,8 @@ struct Tlb {
 
   void resync();
 
-  LookupResult lookup(TranslationPtr &t);
-  void         insert(TranslationPtr &t);
+  LookupResult lookup(TranslationPtr &tr);
+  void         insert(TranslationPtr &tr);
 
   void clear(uint64_t addr, uint64_t asid);
 
@@ -112,14 +112,6 @@ public:
 
   void drive(interface::MMUDrive const &);
 
-  LookupResult lookup(TranslationPtr &tr);
-
-  bool check(TranslationPtr &tr);
-  bool fault(TranslationPtr &tr, bool inv = true);
-
-  void clear(uint64_t addr, uint64_t asid);
-  void invalidate(uint64_t addr);
-
   void parseSatp(uint64_t val);
   void parse(uint64_t mode);
 
@@ -135,7 +127,22 @@ public:
   void push(interface::dRequestIn const &, index_t anIndex, TranslationPtr &aTranslate);
   void push(interface::TLBReqIn   const &, index_t anIndex, TranslationPtr &aTranslate);
 
+  void clear(uint64_t addr, uint64_t asid);
+
   API::conf_object_t *cpu;
+  std::unique_ptr<PageWalk> walker;
+
+  friend class PageWalk;
+
+private:
+  void cycle();
+  void done(TranslationPtr &tr);
+
+  LookupResult lookup(TranslationPtr &tr);
+
+  bool check(TranslationPtr &tr, LookupResult &res);
+  bool check(TranslationPtr &tr);
+  bool fault(TranslationPtr &tr, bool inv = true);
 
   // states
   uint64_t asid;
@@ -143,15 +150,9 @@ public:
   uint64_t ppnMode;
   uint64_t ppnRoot;
 
-  std::unique_ptr<PageWalk> walker;
-
-private:
-  void cycle();
-
-  void done(TranslationPtr &tr);
-
   Tlb itlb;
   Tlb dtlb;
+  Tlb stlb;
 
   std::queue<TranslationPtr> lookupEntries;
   std::map<uint64_t, std::deque<TranslationPtr>> replayEntries;

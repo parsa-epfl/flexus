@@ -276,6 +276,7 @@ void MMUComponent::initialize() {
 
   itlb.initialize("itlb", this, cfg.itlbsets, cfg.itlbways);
   dtlb.initialize("dtlb", this, cfg.dtlbsets, cfg.dtlbways);
+  stlb.initialize("stlb", this, cfg.stlbsets, cfg.stlbways);
 
   // can be out-of-order
   while (theMmu.size() <= flexusIndex())
@@ -291,45 +292,55 @@ bool MMUComponent::isQuiesced() const {
 void MMUComponent::saveState(std::string const &aDirName) {
   std::string itlb_fn(aDirName);
   std::string dtlb_fn(aDirName);
+  std::string stlb_fn(aDirName);
 
   itlb_fn.append("/").append(statName()).append("-itlb");
   dtlb_fn.append("/").append(statName()).append("-dtlb");
+  stlb_fn.append("/").append(statName()).append("-stlb");
 
   std::ofstream itlb_fs(itlb_fn);
   std::ofstream dtlb_fs(dtlb_fn);
+  std::ofstream stlb_fs(stlb_fn);
 
-  if (!itlb_fs.good() || !dtlb_fs.good()) {
+  if (!itlb_fs.good() || !dtlb_fs.good() || !stlb_fs.good()) {
     DBG_(Dev, (<< "Could not load MMU state from " << aDirName));
     return;
   }
 
   boost::archive::text_oarchive itlb_os(itlb_fs);
   boost::archive::text_oarchive dtlb_os(dtlb_fs);
+  boost::archive::text_oarchive stlb_os(stlb_fs);
 
   itlb.save(itlb_os);
   dtlb.save(dtlb_os);
+  stlb.save(stlb_os);
 }
 
 void MMUComponent::loadState(std::string const &aDirName) {
   std::string itlb_fn(aDirName);
   std::string dtlb_fn(aDirName);
+  std::string stlb_fn(aDirName);
 
   itlb_fn.append("/").append(statName()).append("-itlb");
   dtlb_fn.append("/").append(statName()).append("-dtlb");
+  stlb_fn.append("/").append(statName()).append("-stlb");
 
   std::ifstream itlb_fs(itlb_fn);
   std::ifstream dtlb_fs(dtlb_fn);
+  std::ifstream stlb_fs(stlb_fn);
 
-  if (!itlb_fs.good() || !dtlb_fs.good()) {
+  if (!itlb_fs.good() || !dtlb_fs.good() || !stlb_fs.good()) {
     DBG_(Dev, (<< "Could not load MMU state from " << aDirName));
     return;
   }
 
   boost::archive::text_iarchive itlb_is(itlb_fs);
   boost::archive::text_iarchive dtlb_is(dtlb_fs);
+  boost::archive::text_iarchive stlb_is(stlb_fs);
 
   itlb.load(itlb_is, false);
   dtlb.load(dtlb_is, true);
+  stlb.load(stlb_is, true);
 }
 
 void MMUComponent::finalize() {
@@ -398,13 +409,7 @@ void MMUComponent::cycle() {
                    << std::hex
                    << ": hit "  << res.addr));
 
-      tr->setHit();
-
-      tr->thePaddr = res.addr;
-      tr->theAttr  = res.attr;
-
-      if (check(tr))
-        fault(tr, false);
+      check(tr, res);
 
       if (tr->isInstr())
         FLEXUS_CHANNEL(iTranslationReply) << tr;
@@ -466,6 +471,19 @@ LookupResult MMUComponent::lookup(TranslationPtr &tr) {
   return (tr->isInstr() ? itlb : dtlb).lookup(tr);
 }
 
+bool MMUComponent::check(TranslationPtr &tr, LookupResult &res) {
+  tr->thePaddr = res.addr;
+  tr->theAttr  = res.attr;
+
+  if (check(tr))
+    fault(tr, false);
+
+  tr->setHit();
+  tr->setDone();
+
+  return false;
+}
+
 bool MMUComponent::check(TranslationPtr &tr) {
   if (tr->isDone())
     return false;
@@ -510,6 +528,7 @@ void MMUComponent::clear(uint64_t addr, uint64_t asid) {
 
   itlb.clear(addr, asid);
   dtlb.clear(addr, asid);
+  stlb.clear(addr, asid);
 
   if (walker)
     walker->annul();
@@ -555,6 +574,7 @@ void MMUComponent::resync(int anIndex) {
 
   itlb.resync();
   dtlb.resync();
+  stlb.resync();
 
   if (walker)
     walker->annul();
@@ -619,6 +639,7 @@ void MMUComponent::push(interface::TLBReqIn const &, index_t anIndex, Translatio
                  << ":"       << tr->theID
                  << ": hit "  << tr->thePaddr));
 
+    check(tr, res);
     return;
   }
 

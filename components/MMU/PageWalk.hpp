@@ -84,6 +84,7 @@ public:
   void base(TranslationPtr &tr);
 
 private:
+  std::list <TranslationPtr> delay;
   std::list <TranslationPtr> trans;
   std::queue<TranslationPtr> walks;
 

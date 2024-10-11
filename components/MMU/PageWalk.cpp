@@ -60,6 +60,37 @@ using namespace Flexus::Qemu;
 using namespace Flexus::SharedTypes;
 
 void PageWalk::cycle() {
+  for (auto i = delay.begin(); i != delay.end(); ) {
+    auto &tr = *i;
+
+    // repurpose the field
+    if (++tr->theCurrentTranslationLevel > mmu->cfg.stlblat) {
+      tr->theCurrentTranslationLevel = 0;
+
+      auto res = mmu->stlb.lookup(tr);
+
+      if (res.hit) {
+        DBG_(VVerb, (<< "stlb hit " << tr->theVaddr
+                     << ":"         << tr->theID
+                     << std::hex
+                     << ":"         << res.addr));
+
+        mmu->check(tr, res);
+
+      } else
+        DBG_(VVerb, (<< "lookup " << tr->theVaddr
+                     << ":"       << tr->theID
+                     << ": miss"));
+
+      // go to the next stage whether hit or miss
+      trans.push_back(tr);
+
+      i = delay.erase(i);
+
+    } else
+      i++;
+  }
+
   for (auto &tr: trans) {
     DBG_(VVerb, (<< "walk " << tr->theVaddr
                  << ":"     << tr->theID
@@ -73,10 +104,11 @@ void PageWalk::cycle() {
     tr->incr();
 
     if (tr->isReady()) {
-      if (tr->isWaiting())
-        walk(tr);
+      if (tr->isWaiting()) {
+        if (walk(tr))
+          mmu->stlb.insert(tr);
 
-      else {
+      } else {
         preWalk(tr);
 
         if (tr->isDone())
@@ -91,6 +123,16 @@ void PageWalk::cycle() {
 }
 
 void PageWalk::annul() {
+  while (delay.size()) {
+    auto &tr = delay.front();
+
+    DBG_(VVerb, (<< "walk " << tr->theVaddr
+                 << ":"     << tr->theID
+                 << ": annulled"));
+
+    delay.pop_back();
+  }
+
   while (trans.size()) {
     auto &tr = trans.front();
 
@@ -169,7 +211,10 @@ bool PageWalk::walk(TranslationPtr &tr) {
 void PageWalk::push(TranslationPtr &tr) {
   tr->theCurrentTranslationLevel = 0;
 
-  trans.push_back(tr);
+  if (mmu->cfg.stlblat)
+    delay.push_back(tr);
+  else
+    trans.push_back(tr);
 }
 
 void PageWalk::pop() {
@@ -185,6 +230,11 @@ TranslationPtr &PageWalk::front() {
 }
 
 bool PageWalk::pushTrace(TranslationPtr &tr) {
+  auto res = mmu->stlb.lookup(tr);
+
+  if (res.hit)
+    return mmu->check(tr, res);
+
   tr->theCurrentTranslationLevel = 0;
 
   while (true) {
@@ -202,8 +252,10 @@ bool PageWalk::pushTrace(TranslationPtr &tr) {
         break;
     }
 
-    if (walk(tr))
+    if (walk(tr)) {
+      mmu->stlb.insert(tr);
       break;
+    }
   }
 
   return false;
