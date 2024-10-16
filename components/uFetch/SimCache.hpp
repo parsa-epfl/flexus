@@ -60,10 +60,10 @@ struct SimCache
                 continue;
             }
 
-            for (uint32_t j = checkpoint["tags"].at(i).size()-1; j != 0; j--) {
+            for (uint32_t j = 0; j < checkpoint["tags"].at(i).size(); j++) {
                 uint64_t tag  = checkpoint["tags"].at(i).at(j)["tag"];
 
-                theCache.insert(std::make_pair((tag << tag_shift) | i, 0));
+                this->insert(((tag << tag_shift) | i) << theCacheBlockShift);
 
                 DBG_(Dev, (<< "Loading tag " << std::hex << ((tag << tag_shift) | i)));
             }

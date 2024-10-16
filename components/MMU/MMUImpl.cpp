@@ -99,8 +99,8 @@ class FLEXUS_COMPONENT(MMU)
 
             size_t TLBSize = checkpoint["entries"].size();
             for (size_t i = 0; i < TLBSize; i++) {
-                VirtualMemoryAddress aVaddr  = VirtualMemoryAddress((uint64_t)checkpoint["entries"].at(i)["vpn"]);
-                PhysicalMemoryAddress aPaddr = PhysicalMemoryAddress((uint64_t)checkpoint["entries"].at(i)["ppn"]);
+                VirtualMemoryAddress aVaddr  = VirtualMemoryAddress((uint64_t)checkpoint["entries"].at(i)["vpn"] << 12);
+                PhysicalMemoryAddress aPaddr = PhysicalMemoryAddress((uint64_t)checkpoint["entries"].at(i)["ppn"] << 12);
                 uint64_t index               = (uint64_t)(TLBSize - i - 1);
                 theTLB.insert({ aVaddr, TLBentry(aVaddr, aPaddr, index) });
                 DBG_(Dev, (<< "Inserting TLB line with" << aVaddr << " " << aPaddr << "at index: [" << index << "]"));
@@ -127,8 +127,8 @@ class FLEXUS_COMPONENT(MMU)
             checkpoint["entries"] = json::array();
             size_t i              = 0;
             for (const auto& entry : entries) {
-                checkpoint["entries"][i++] = { { "vpn", (uint64_t)entry.theVaddr },
-                                               { "ppn", (uint64_t)entry.thePaddr } };
+                checkpoint["entries"][i++] = { { "vpn", (uint64_t)entry.theVaddr >> 12 },
+                                               { "ppn", (uint64_t)entry.thePaddr >> 12 } };
             }
 
             return checkpoint;
