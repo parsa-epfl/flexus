@@ -19,9 +19,14 @@ BranchPredictor::BranchPredictor(std::string const& aName, uint32_t anIndex, uin
   , theSerial(0)
   , theBTB(aBTBSets, aBTBWays)
   , theBranches(aName + "-branches")
+
   , thePredictions_TAGE(aName + "-predictions:TAGE")
   , theCorrect_TAGE(aName + "-correct:TAGE")
   , theMispredict_TAGE(aName + "-mispredict:TAGE")
+
+  , thePredictions_BTB(aName + "-predictions:BTB")
+  , theCorrect_BTB(aName + "-correct:BTB")
+  , theMispredict_BTB(aName + "-mispredict:BTB")
 {
 }
 
@@ -32,11 +37,16 @@ BranchPredictor::BranchPredictor(std::string const& aName, uint32_t anIndex, uin
 VirtualMemoryAddress
 BranchPredictor::predictConditional(VirtualMemoryAddress anAddress, BPredState& aBPState)
 {
+    ++thePredictions_TAGE;
+
     bool isTaken = theTage.get_prediction((uint64_t)anAddress, aBPState);
 
     aBPState.thePrediction = isTaken ? kTaken : kNotTaken;
 
-    if (aBPState.thePrediction <= kTaken && theBTB.target(anAddress)) { return *theBTB.target(anAddress); }
+    if (aBPState.thePrediction <= kTaken && theBTB.target(anAddress)) { 
+        ++thePredictions_BTB;
+        return *theBTB.target(anAddress); 
+    }
 
     return VirtualMemoryAddress(0);
 }
@@ -70,7 +80,6 @@ BranchPredictor::isBranch(VirtualMemoryAddress anAddress)
 VirtualMemoryAddress
 BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState)
 {
-    ++thePredictions_TAGE;
     // Implementation of predict function
     aBPState.pc                  = anAddress;
     aBPState.thePredictedType    = theBTB.type(anAddress);
@@ -143,10 +152,39 @@ BranchPredictor::feedback(VirtualMemoryAddress anAddress,
     aBPState.theActualType      = anActualType;
 
     if (is_mispredict) {
-        ++theMispredict_TAGE;
+
+        if (aBPState.thePredictedType == kConditional) {
+            // we need to figure out whether the direction was correct or the target was correct
+            if (aBPState.thePrediction <= kTaken) {
+                if (anActualDirection >= kTaken) {
+                    ++theMispredict_TAGE;
+                } else {
+                    ++theMispredict_BTB;
+                }
+            } else {
+                if (anActualAddress != aBPState.thePredictedTarget) {
+                    ++theMispredict_BTB;
+                } else {
+                    ++theMispredict_TAGE;
+                }
+            }
+        } else {
+            ++theMispredict_BTB;
+        }
+
         reconstructHistory(aBPState);
     } else {
-        ++theCorrect_TAGE;
+        // If the prediction was correct, we need to update the stats
+        if (aBPState.thePredictedType == kConditional) {
+            if (aBPState.thePrediction <= kTaken) {
+                ++theCorrect_TAGE;
+            } else {
+                ++theCorrect_BTB;
+                ++theCorrect_TAGE;
+            }
+        } else {
+            ++theCorrect_BTB;
+        }
     }
     ++theBranches;
 
