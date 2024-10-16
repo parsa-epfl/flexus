@@ -338,7 +338,7 @@ void BranchInteraction::operator()(boost::intrusive_ptr<Instruction> anInstructi
                                    uArch &aCore) {
   DBG_(VVerb, (<< *anInstruction << " " << *this));
   if (theTarget == 0) {
-    theTarget = anInstruction->pc() + 4;
+    theTarget = anInstruction->pc() + (((anInstruction->getOpcode() & 0x3) != 0x3) ? 2 : 4);
   }
   if (anInstruction->pc() != theTarget) {
     DBG_(Verb, (<< *anInstruction << " Branch Redirection."));
