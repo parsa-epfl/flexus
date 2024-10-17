@@ -21,9 +21,14 @@ class BranchPredictor
 
   public:
     Stat::StatCounter theBranches;
+
     Stat::StatCounter thePredictions_TAGE;
     Stat::StatCounter theCorrect_TAGE;
     Stat::StatCounter theMispredict_TAGE;
+
+    Stat::StatCounter thePredictions_BTB;
+    Stat::StatCounter theCorrect_BTB;
+    Stat::StatCounter theMispredict_BTB;
 
   private:
     /* Depending on whether the prediction of the Branch Predictor we use is Taken or Not Taken, the target is returned

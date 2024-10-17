@@ -28,6 +28,7 @@
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
 
 #include <core/checkpoint/json.hpp>
+#include <core/stats.hpp>
 
 using json = nlohmann::json;
 
@@ -95,7 +96,10 @@ class FLEXUS_COMPONENT(MMU)
 
             theTLB.clear();
 
-            if (size != theSize) { resize(size); }
+            if (size != theSize) { 
+                DBG_Assert(false, (<< "TLB size mismatch: " << size << " != " << theSize));
+            }
+                resize(size); 
 
             size_t TLBSize = checkpoint["entries"].size();
             for (size_t i = 0; i < TLBSize; i++) {
@@ -203,6 +207,12 @@ class FLEXUS_COMPONENT(MMU)
     Flexus::Qemu::Processor theCPU;
     std::shared_ptr<mmu_t> theMMU;
 
+
+    Stat::StatCounter itlb_accesses;
+    Stat::StatCounter dtlb_accesses;
+    Stat::StatCounter itlb_misses;
+    Stat::StatCounter dtlb_misses;
+
     // Is true when the MMU has been reseted
     bool mmu_is_init;
 
@@ -225,7 +235,9 @@ class FLEXUS_COMPONENT(MMU)
 
   public:
     FLEXUS_COMPONENT_CONSTRUCTOR(MMU)
-      : base(FLEXUS_PASS_CONSTRUCTOR_ARGS)
+      : base(FLEXUS_PASS_CONSTRUCTOR_ARGS), itlb_accesses(statName() + "-itlb_accesses"),
+        dtlb_accesses(statName() + "-dtlb_accesses"), itlb_misses(statName() + "-itlb_misses"),
+        dtlb_misses(statName() + "-dtlb_misses")
     {
     }
 
@@ -322,6 +334,14 @@ class FLEXUS_COMPONENT(MMU)
                 entry.second = perfectPaddr;
                 if (perfectPaddr == 0xFFFFFFFFFFFFFFFF) item->setPagefault();
             }
+
+            if (item->isInstr() && entry.first) {
+                itlb_accesses++;
+            } else if (entry.first) {
+                dtlb_accesses++;
+            }
+
+
             if (entry.first) {
                 DBG_(VVerb, (<< "Item is a Hit " << item->theVaddr));
 
@@ -335,6 +355,14 @@ class FLEXUS_COMPONENT(MMU)
                     FLEXUS_CHANNEL(dTranslationReply) << item;
             } else {
                 DBG_(VVerb, (<< "Item is a miss " << item->theVaddr));
+
+
+                if (item->isInstr()) {
+                    itlb_misses++;
+                } else {
+                    dtlb_misses++;
+                }
+
 
                 VirtualMemoryAddress pageAddr(item->theVaddr & PAGEMASK);
                 if (alreadyPW.find(pageAddr) == alreadyPW.end()) {
