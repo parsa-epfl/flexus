@@ -230,7 +230,7 @@ class Set
     virtual bool recordAccess(Block<_State, _DefaultState>* aBlock)    = 0;
     virtual void invalidateBlock(Block<_State, _DefaultState>* aBlock) = 0;
 
-    virtual void load_set_from_ckpt(uint32_t index, uint64_t tag, bool dirty, bool writable) = 0;
+    virtual void load_set_from_ckpt(uint32_t index, uint32_t mru_index, uint64_t tag, bool dirty, bool writable) = 0;
 
     MemoryAddress blockAddress(const Block<_State, _DefaultState>* theBlock) { return theBlock->tag(); }
 
@@ -355,10 +355,10 @@ class SetLRU : public Set<_State, _DefaultState>
         moveToTail(theBlockNum);
     }
 
-    virtual void load_set_from_ckpt(uint32_t index, uint64_t tag, bool dirty, bool writable)
+    virtual void load_set_from_ckpt(uint32_t index, uint32_t mru_order_index, uint64_t tag, bool dirty, bool writable)
     {
         _State state(_State::bool2state(dirty, writable));
-        theMRUOrder[index]                                   = index;
+        theMRUOrder[index]                                   = mru_order_index;
         Set<_State, _DefaultState>::theBlocks[index].tag()   = MemoryAddress(tag);
         Set<_State, _DefaultState>::theBlocks[index].state() = state;
         DBG_(Trace, NoDefaultOps()(<< index << "-LLC: Loading block " << std::hex << tag << " in state " << state));
@@ -639,7 +639,7 @@ class StdArray : public AbstractArray<_State>
                 bool dirty    = checkpoint["tags"].at(i).at(j)["dirty"];
                 bool writable = checkpoint["tags"].at(i).at(j)["writable"];
 
-                theSets[i]->load_set_from_ckpt(j, tag, dirty, writable);
+                theSets[i]->load_set_from_ckpt(j, theAssociativity - j - 1,tag, dirty, writable); // the last element is the most recently used cacheline.
             }
         }
 
