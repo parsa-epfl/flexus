@@ -64,12 +64,12 @@ class FLEXUS_COMPONENT(MMU)
         TLBentry(VirtualMemoryAddress aVAddress,
                  PhysicalMemoryAddress aPaddress,
                  uint64_t aRate,
-                 uint16_t aASID,
+                 uint16_t anASID,
                  bool aNG)
           : theRate(aRate)
           , theVaddr(aVAddress)
           , thePaddr(aPaddress)
-          , theASID(aASID)
+          , theASID(anASID)
           , thenG(aNG)
         {
         }
@@ -94,7 +94,7 @@ class FLEXUS_COMPONENT(MMU)
         {
             size_t size = checkpoint["capacity"];
 
-            theTLB.clear();
+            clear();
 
             if (size != theSize) { 
                 DBG_Assert(false, (<< "TLB size mismatch: " << size << " != " << theSize));
@@ -105,10 +105,10 @@ class FLEXUS_COMPONENT(MMU)
             for (size_t i = 0; i < TLBSize; i++) {
                 VirtualMemoryAddress aVaddr  = VirtualMemoryAddress((uint64_t)checkpoint["entries"].at(i)["vpn"] << 12);
                 PhysicalMemoryAddress aPaddr = PhysicalMemoryAddress((uint64_t)checkpoint["entries"].at(i)["ppn"] << 12);
-                uint16_t aASID               = (uint16_t)checkpoint["entries"].at(i)["asid"];
+                uint16_t anASID               = (uint16_t)checkpoint["entries"].at(i)["asid"];
                 bool aNG                     = (bool)checkpoint["entries"].at(i)["ng"];
                 uint64_t index               = (uint64_t)(TLBSize - i - 1);
-                theTLB.insert({ aVaddr, TLBentry(aVaddr, aPaddr, index, aASID, aNG) });
+                theTLB.insert({ aVaddr, TLBentry(aVaddr, aPaddr, index, anASID, aNG) });
                 DBG_(Dev, (<< "Inserting TLB line with" << aVaddr << " " << aPaddr << "at index: [" << index << "]"));
             }
         }
@@ -157,6 +157,12 @@ class FLEXUS_COMPONENT(MMU)
                     ret.second           = iter->second.thePaddr;
                 }
             }
+            // check if the entry is faulty
+            if (faultyEntry && faultyEntry->theVaddr == anAddressAligned &&
+                (anASID == faultyEntry->theASID || !faultyEntry->thenG)) {
+                ret.first  = true;
+                ret.second = faultyEntry->thePaddr;
+            }
             return ret;
         }
 
@@ -164,11 +170,17 @@ class FLEXUS_COMPONENT(MMU)
         {
             bool aNG = tr->theNG;
             uint16_t anASID = tr->theASID;
-            VirtualMemoryAddress anAddressAligned(tr->theVaddr & PAGEMASK);
-            PhysicalMemoryAddress otherAligned(tr->thePaddr & PAGEMASK);
+            VirtualMemoryAddress alignedVirtualAddr(tr->theVaddr & PAGEMASK);
+            PhysicalMemoryAddress alignedPhysicalAddr(tr->thePaddr & PAGEMASK);
+            if (tr->isPagefault()) {
+                if (tr->inTraceMode)
+                    return;
+                faultyEntry = TLBentry(alignedVirtualAddr, alignedPhysicalAddr, 0, anASID, aNG);
+                return;
+            }
             // Check if the virtual address is in TLB (with the same ASID or as a global entry)
             auto iter  = theTLB.end();
-            auto range = theTLB.equal_range(anAddressAligned);
+            auto range = theTLB.equal_range(alignedVirtualAddr);
             for (auto it = range.first; it != range.second; ++it) {
                 if (it->second.theASID == anASID || !it->second.thenG) {
                     iter = it;
@@ -179,10 +191,10 @@ class FLEXUS_COMPONENT(MMU)
             if (iter == theTLB.end()) {
                 size_t s = theTLB.size();
                 if (s == theSize) { evict(); }
-                iter = theTLB.insert({ anAddressAligned, TLBentry(anAddressAligned, anASID) });
+                iter = theTLB.insert({ alignedVirtualAddr, TLBentry(alignedVirtualAddr, anASID) });
             }
             // update TLB entry
-            iter->second.thePaddr = otherAligned;
+            iter->second.thePaddr = alignedPhysicalAddr;
             iter->second.thenG    = aNG;
             return;
         }
@@ -195,7 +207,12 @@ class FLEXUS_COMPONENT(MMU)
 
         size_t capacity() { return theSize; }
 
-        void clear() { theTLB.clear(); }
+        void clear() { 
+            theTLB.clear(); 
+            clearFaultyEntry();
+        }
+
+        void clearFaultyEntry() { faultyEntry = boost::none; }
 
         size_t size() { return theTLB.size(); }
 
@@ -210,6 +227,7 @@ class FLEXUS_COMPONENT(MMU)
         }
 
         size_t theSize;
+        boost::optional<TLBentry> faultyEntry;
         std::unordered_multimap<VirtualMemoryAddress, TLBentry> theTLB;
         typedef std::unordered_multimap<VirtualMemoryAddress, TLBentry>::iterator tlbIterator;
     };
@@ -453,9 +471,8 @@ class FLEXUS_COMPONENT(MMU)
                 DBG_Assert(item->isInstr() != item->isData());
                 DBG_(Iface,
                      (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry " << item->theVaddr));
-                // update TLB unless it is a pagefault
-                if (!item->isPagefault())
-                    (item->isInstr() ? theInstrTLB : theDataTLB).insert(item);
+                // update TLB 
+                (item->isInstr() ? theInstrTLB : theDataTLB).insert(item);
                 if (item->isInstr())
                     FLEXUS_CHANNEL(iTranslationReply) << item;
                 else
@@ -507,6 +524,9 @@ class FLEXUS_COMPONENT(MMU)
                 theLookUpEntries.pop();
             }
         }
+
+        theInstrTLB.clearFaultyEntry();
+        theDataTLB.clearFaultyEntry();
         FLEXUS_CHANNEL(ResyncOut) << anIndex;
     }
 
