@@ -61,30 +61,30 @@ class FLEXUS_COMPONENT(MMU)
 
         TLBentry() {}
 
-        TLBentry(VirtualMemoryAddress aVAddress, PhysicalMemoryAddress aPaddress, uint64_t aRate)
+        TLBentry(VirtualMemoryAddress aVAddress,
+                 PhysicalMemoryAddress aPaddress,
+                 uint64_t aRate,
+                 uint16_t aASID,
+                 bool aNG)
           : theRate(aRate)
           , theVaddr(aVAddress)
           , thePaddr(aPaddress)
+          , theASID(aASID)
+          , thenG(aNG)
         {
         }
 
-        TLBentry(VirtualMemoryAddress anAddress)
+        TLBentry(VirtualMemoryAddress anAddress, uint16_t anASID)
           : theRate(0)
           , theVaddr(anAddress)
+          , theASID(anASID)
         {
         }
         uint64_t theRate;
         VirtualMemoryAddress theVaddr;
         PhysicalMemoryAddress thePaddr;
-
-        bool operator==(const TLBentry& other) const { return (theVaddr == other.theVaddr); }
-
-        TLBentry& operator=(const PhysicalMemoryAddress& other)
-        {
-            PhysicalMemoryAddress otherAligned(other & PAGEMASK);
-            thePaddr = otherAligned;
-            return *this;
-        }
+        uint16_t theASID; // Address Space Identifier
+        bool thenG;       // non-Global bit
     };
 
     struct TLB
@@ -105,8 +105,10 @@ class FLEXUS_COMPONENT(MMU)
             for (size_t i = 0; i < TLBSize; i++) {
                 VirtualMemoryAddress aVaddr  = VirtualMemoryAddress((uint64_t)checkpoint["entries"].at(i)["vpn"] << 12);
                 PhysicalMemoryAddress aPaddr = PhysicalMemoryAddress((uint64_t)checkpoint["entries"].at(i)["ppn"] << 12);
+                uint16_t aASID               = (uint16_t)checkpoint["entries"].at(i)["asid"];
+                bool aNG                     = (bool)checkpoint["entries"].at(i)["ng"];
                 uint64_t index               = (uint64_t)(TLBSize - i - 1);
-                theTLB.insert({ aVaddr, TLBentry(aVaddr, aPaddr, index) });
+                theTLB.insert({ aVaddr, TLBentry(aVaddr, aPaddr, index, aASID, aNG) });
                 DBG_(Dev, (<< "Inserting TLB line with" << aVaddr << " " << aPaddr << "at index: [" << index << "]"));
             }
         }
@@ -132,19 +134,24 @@ class FLEXUS_COMPONENT(MMU)
             size_t i              = 0;
             for (const auto& entry : entries) {
                 checkpoint["entries"][i++] = { { "vpn", (uint64_t)entry.theVaddr >> 12 },
-                                               { "ppn", (uint64_t)entry.thePaddr >> 12 } };
+                                               { "ppn", (uint64_t)entry.thePaddr >> 12 },
+                                               { "asid", (uint16_t)entry.theASID },
+                                               { "ng", (bool)entry.thenG } };
             }
 
             return checkpoint;
         }
 
-        std::pair<bool, PhysicalMemoryAddress> lookUp(const VirtualMemoryAddress& anAddress)
+        std::pair<bool, PhysicalMemoryAddress> lookUp(TranslationPtr &tr)
         {
+            VirtualMemoryAddress anAddress = tr->theVaddr;
+            uint16_t anASID = tr->theASID;
             VirtualMemoryAddress anAddressAligned(anAddress & PAGEMASK);
             std::pair<bool, PhysicalMemoryAddress> ret{ false, PhysicalMemoryAddress(0) };
             for (auto iter = theTLB.begin(); iter != theTLB.end(); ++iter) {
                 iter->second.theRate++;
-                if (iter->second.theVaddr == anAddressAligned) {
+                if (iter->second.theVaddr == anAddressAligned &&
+                    (anASID == iter->second.theASID || !iter->second.thenG)) {
                     iter->second.theRate = 0;
                     ret.first            = true;
                     ret.second           = iter->second.thePaddr;
@@ -153,19 +160,31 @@ class FLEXUS_COMPONENT(MMU)
             return ret;
         }
 
-        TLBentry& operator[](VirtualMemoryAddress anAddress)
+        void insert(TranslationPtr &tr)
         {
-            VirtualMemoryAddress anAddressAligned(anAddress & PAGEMASK);
-            auto iter = theTLB.find(anAddressAligned);
+            bool aNG = tr->theNG;
+            uint16_t anASID = tr->theASID;
+            VirtualMemoryAddress anAddressAligned(tr->theVaddr & PAGEMASK);
+            PhysicalMemoryAddress otherAligned(tr->thePaddr & PAGEMASK);
+            // Check if the virtual address is in TLB (with the same ASID or as a global entry)
+            auto iter  = theTLB.end();
+            auto range = theTLB.equal_range(anAddressAligned);
+            for (auto it = range.first; it != range.second; ++it) {
+                if (it->second.theASID == anASID || !it->second.thenG) {
+                    iter = it;
+                    break;
+                }
+            }
+            // If the virtual address is not in TLB, insert it
             if (iter == theTLB.end()) {
                 size_t s = theTLB.size();
                 if (s == theSize) { evict(); }
-                std::pair<tlbIterator, bool> result;
-                result = theTLB.insert({ anAddressAligned, TLBentry(anAddressAligned) });
-                assert(result.second);
-                iter = result.first;
+                iter = theTLB.insert({ anAddressAligned, TLBentry(anAddressAligned, anASID) });
             }
-            return iter->second;
+            // update TLB entry
+            iter->second.thePaddr = otherAligned;
+            iter->second.thenG    = aNG;
+            return;
         }
 
         void resize(size_t aSize)
@@ -191,8 +210,8 @@ class FLEXUS_COMPONENT(MMU)
         }
 
         size_t theSize;
-        std::unordered_map<VirtualMemoryAddress, TLBentry> theTLB;
-        typedef std::unordered_map<VirtualMemoryAddress, TLBentry>::iterator tlbIterator;
+        std::unordered_multimap<VirtualMemoryAddress, TLBentry> theTLB;
+        typedef std::unordered_multimap<VirtualMemoryAddress, TLBentry>::iterator tlbIterator;
     };
 
     std::unique_ptr<PageWalk> thePageWalker;
@@ -239,6 +258,23 @@ class FLEXUS_COMPONENT(MMU)
         dtlb_accesses(statName() + "-dtlb_accesses"), itlb_misses(statName() + "-itlb_misses"),
         dtlb_misses(statName() + "-dtlb_misses")
     {
+    }
+
+    uint16_t getASID()
+    {
+        uint16_t ASID;
+        auto TCR_EL1 = theMMU->mmu_regs.TCR[EL1];
+        auto A1bit   = extract64(TCR_EL1, 22, 1);
+        if (A1bit) {
+            // TTBR1_EL1.ASID defines the ASID.
+            auto TTBR1_EL1 = theMMU->mmu_regs.TTBR1[EL1];
+            ASID           = extract64(TTBR1_EL1, 48, 16);
+        } else {
+            // TTBR0_EL1.ASID defines the ASID.
+            auto TTBR0_EL1 = theMMU->mmu_regs.TTBR0[EL1];
+            ASID           = extract64(TTBR0_EL1, 48, 16);
+        }
+        return ASID;
     }
 
     bool isQuiesced() const { return false; }
@@ -327,7 +363,7 @@ class FLEXUS_COMPONENT(MMU)
             DBG_(VVerb, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry " << item->theVaddr));
 
             std::pair<bool, PhysicalMemoryAddress> entry =
-              (item->isInstr() ? theInstrTLB : theDataTLB).lookUp((VirtualMemoryAddress)(item->theVaddr));
+              (item->isInstr() ? theInstrTLB : theDataTLB).lookUp(item);
             if (cfg.PerfectTLB || !mmu_is_init) {
                 PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr));
                 entry.first  = true;
@@ -419,8 +455,7 @@ class FLEXUS_COMPONENT(MMU)
                      (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry " << item->theVaddr));
                 // update TLB unless it is a pagefault
                 if (!item->isPagefault())
-                    (item->isInstr() ? theInstrTLB : theDataTLB)[(VirtualMemoryAddress)(item->theVaddr)] =
-                      (PhysicalMemoryAddress)(item->thePaddr);
+                    (item->isInstr() ? theInstrTLB : theDataTLB).insert(item);
                 if (item->isInstr())
                     FLEXUS_CHANNEL(iTranslationReply) << item;
                 else
@@ -494,6 +529,7 @@ class FLEXUS_COMPONENT(MMU)
     {
         CORE_DBG("MMU: Instruction RequestIn");
 
+        aTranslate->setASID(getASID());
         aTranslate->theIndex = anIndex;
         aTranslate->toggleReady();
         theLookUpEntries.push(aTranslate);
@@ -504,6 +540,7 @@ class FLEXUS_COMPONENT(MMU)
     {
         CORE_DBG("MMU: Data RequestIn");
 
+        aTranslate->setASID(getASID());
         aTranslate->theIndex = anIndex;
 
         aTranslate->toggleReady();
@@ -522,8 +559,9 @@ class FLEXUS_COMPONENT(MMU)
     bool available(interface::TLBReqIn const&, index_t anIndex) { return true; }
     void push(interface::TLBReqIn const&, index_t anIndex, TranslationPtr& aTranslate)
     {
+        aTranslate->setASID(getASID());
         if (cfg.PerfectTLB) return;
-        if ((aTranslate->isInstr() ? theInstrTLB : theDataTLB).lookUp(aTranslate->theVaddr).first) return;
+        if ((aTranslate->isInstr() ? theInstrTLB : theDataTLB).lookUp(aTranslate).first) return;
 
         if (!mmu_is_init) mmu_is_init = cfg_mmu(anIndex);
         if (!mmu_is_init) return;
@@ -531,7 +569,7 @@ class FLEXUS_COMPONENT(MMU)
         thePageWalker->setMMU(theMMU);
 
         thePageWalker->push_back_trace(aTranslate, Flexus::Qemu::Processor::getProcessor(flexusIndex()));
-        (aTranslate->isInstr() ? theInstrTLB : theDataTLB)[aTranslate->theVaddr] = aTranslate->thePaddr;
+        (aTranslate->isInstr() ? theInstrTLB : theDataTLB).insert(aTranslate);
     }
 };
 
