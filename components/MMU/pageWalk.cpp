@@ -1,5 +1,6 @@
 
 #include "pageWalk.hpp"
+#include "MMUImpl.hpp"
 
 #include <components/CommonQEMU/Translation.hpp>
 #include <core/debug/debug.hpp>
@@ -202,7 +203,7 @@ PageWalk::push_back(TranslationPtr aTranslation)
      * - For each level, decode and create the TTE Access
      */
     if (!InitialTranslationSetup(newTransport)) return false;
-    theTranslationTransports.push_back(newTransport);
+    delay.push_back(newTransport);
     if (!TheInitialized) TheInitialized = true;
     return true;
 }
@@ -320,9 +321,32 @@ void
 PageWalk::cycle()
 {
 
-    //        for (auto i = theTranslationTransports.begin(); i !=
-    //        theTranslationTransports.end() && theTranslationTransports.size() >
-    //        0; ++i) {
+    for (auto i = delay.begin(); i != delay.end();) {
+        auto tr = (*i)[TranslationBasicTag];
+        // repurpose the field
+        if (++tr->theCurrentTranslationLevel > mmu->cfg.stlblat) {
+            tr->theCurrentTranslationLevel = 0;
+            auto res = mmu->theSecondTLB.lookUp(tr);
+            if (res.first) {
+                DBG_(VVerb, (<< "stlb hit " << tr->theVaddr
+                     << ":"         << tr->theID
+                     << std::hex
+                     << ":"         << res.second));
+                     tr->setHit();
+                     tr->thePaddr = (PhysicalMemoryAddress)(res.second | (tr->theVaddr & ~(PAGEMASK)));
+                     mmu->stlb_accesses++;
+            } else
+                DBG_(VVerb, (<< "stlb " << tr->theVaddr
+                        << ":"       << tr->theID
+                        << ": miss"));
+                // go to the next stage whether hit or miss
+                theTranslationTransports.push_back(*i);
+
+                i = delay.erase(i);
+        } else
+            i++;
+    }
+    
 
     if (theTranslationTransports.size() > 0) {
 

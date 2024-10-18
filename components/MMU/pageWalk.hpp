@@ -12,6 +12,8 @@ using namespace Flexus::SharedTypes;
 
 namespace nMMU {
 
+class MMUComponent;
+
 class PageWalk
 {
 
@@ -27,8 +29,9 @@ class PageWalk
     bool TheInitialized;
 
   public:
-    PageWalk(uint32_t aNode)
+    PageWalk(uint32_t aNode, MMUComponent *aMMU)
       : TheInitialized(false)
+      , mmu(aMMU)
       , theNode(aNode)
     {
     }
@@ -51,6 +54,9 @@ class PageWalk
     void pushMemoryRequest(TranslationPtr aTranslation);
 
     TTEDescriptor getNextTTDescriptor(TranslationTransport& aTranslation);
+
+    std::list <TranslationTransport> delay;
+    MMUComponent *mmu;
 
     uint8_t currentEL();
     uint32_t currentPSTATE();
