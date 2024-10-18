@@ -1,5 +1,7 @@
 
 #include "pageWalk.hpp"
+#include "MMUImpl.hpp"
+#include "core/types.hpp"
 
 #include <components/CommonQEMU/Translation.hpp>
 #include <core/debug/debug.hpp>
@@ -201,8 +203,9 @@ PageWalk::push_back(TranslationPtr aTranslation)
      * - Call into nMMU to setup the translation parameter
      * - For each level, decode and create the TTE Access
      */
+    DBG_(VVerb, (<< "Pushing back translation request for " << basicTranslation->theVaddr));
     if (!InitialTranslationSetup(newTransport)) return false;
-    theTranslationTransports.push_back(newTransport);
+    delay.push_back(newTransport);
     if (!TheInitialized) TheInitialized = true;
     return true;
 }
@@ -320,9 +323,30 @@ void
 PageWalk::cycle()
 {
 
-    //        for (auto i = theTranslationTransports.begin(); i !=
-    //        theTranslationTransports.end() && theTranslationTransports.size() >
-    //        0; ++i) {
+    for (auto i = delay.begin(); i != delay.end();) {
+        auto tr = (*i)[TranslationBasicTag];
+        // repurpose the field
+        if (++tr->theCurrentTranslationLevel > mmu->cfg.sTLBlat) {
+            tr->theCurrentTranslationLevel = 0;
+            auto res                       = mmu->theSecondTLB.lookUp(tr);
+            if (res.first) {
+                DBG_(VVerb,
+                     (<< "stlb hit " << (VirtualMemoryAddress)(tr->theVaddr & (PAGEMASK)) << ":" << tr->theID
+                      << std::hex << ":" << res.second));
+                tr->setHit();
+                tr->thePaddr = (PhysicalMemoryAddress)(res.second | (tr->theVaddr & ~(PAGEMASK)));
+                mmu->stlb_accesses++;
+            } else
+                DBG_(VVerb,
+                     (<< "stlb " << (VirtualMemoryAddress)(tr->theVaddr & (PAGEMASK)) << ":" << tr->theID << ": miss"));
+            // go to the next stage whether hit or miss
+            theTranslationTransports.push_back(*i);
+
+            i = delay.erase(i);
+        } else
+            i++;
+    }
+
 
     if (theTranslationTransports.size() > 0) {
 
@@ -337,6 +361,7 @@ PageWalk::cycle()
             DBG_(VVerb, (<< "translation is done for " << basicPointer->theVaddr));
 
             //                theDoneTranslations.push(basicPointer);
+            mmu->theSecondTLB.insert(basicPointer);
             theTranslationTransports.erase(i);
             return;
         }
@@ -349,7 +374,10 @@ PageWalk::cycle()
 
                 preTranslate(item);
                 basicPointer->toggleReady();
-                if (basicPointer->isDone()) { return; }
+                if (basicPointer->isDone()) {
+                    mmu->theSecondTLB.insert(basicPointer);
+                    return;
+                }
             } else {
                 translate(item);
             }

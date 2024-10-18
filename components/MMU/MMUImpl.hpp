@@ -15,12 +15,6 @@
 #include <core/performance/profile.hpp>
 #include <core/qemu/configuration_api.hpp>
 
-#define DBG_DefineCategories MMU
-#define DBG_SetDefaultOps    AddCat(MMU)
-#include DBG_Control()
-#define DBG_DefineCategories TLBMissTracking
-#include DBG_Control()
-
 #define FLEXUS_BEGIN_COMPONENT MMU
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
 
@@ -41,6 +35,7 @@ using namespace Qemu;
 using namespace Core;
 using namespace SharedTypes;
 using json = nlohmann::json;
+extern uint64_t PAGEMASK;
 
 struct TLBentry
 {
@@ -84,11 +79,14 @@ struct TLB
 
 class FLEXUS_COMPONENT(MMU)
 {
+public:
+    TLB theInstrTLB;
+    TLB theDataTLB;
+    TLB theSecondTLB;
+private:
     FLEXUS_COMPONENT_IMPL(MMU);
     
     std::unique_ptr<PageWalk> thePageWalker;
-    TLB theInstrTLB;
-    TLB theDataTLB;
 
     std::queue<boost::intrusive_ptr<Translation>> theLookUpEntries;
     std::queue<boost::intrusive_ptr<Translation>> thePageWalkEntries;
@@ -98,16 +96,17 @@ class FLEXUS_COMPONENT(MMU)
     Flexus::Qemu::Processor theCPU;
     std::shared_ptr<mmu_t> theMMU;
 
-
+public:
     Stat::StatCounter itlb_accesses;
     Stat::StatCounter dtlb_accesses;
+    Stat::StatCounter stlb_accesses;
     Stat::StatCounter itlb_misses;
     Stat::StatCounter dtlb_misses;
-
-    // Is true when the MMU has been reseted
-    bool mmu_is_init;
+    Stat::StatCounter stlb_misses;
     
   private:
+    // Is true when the MMU has been reseted
+    bool mmu_is_init;
     bool cfg_mmu(index_t anIndex);
 
   public:

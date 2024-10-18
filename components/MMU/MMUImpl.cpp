@@ -5,6 +5,12 @@
 #include <fstream>
 #include <iostream>
 
+#define DBG_DefineCategories MMU
+#define DBG_SetDefaultOps    AddCat(MMU)
+#include DBG_Control()
+#define DBG_DefineCategories TLBMissTracking
+#include DBG_Control()
+
 using json = nlohmann::json;
 
 namespace std {
@@ -198,8 +204,9 @@ bool MMUComponent::cfg_mmu(index_t anIndex)
 
 MMUComponent::FLEXUS_COMPONENT_CONSTRUCTOR(MMU)
     : base(FLEXUS_PASS_CONSTRUCTOR_ARGS), itlb_accesses(statName() + "-itlb_accesses"),
-    dtlb_accesses(statName() + "-dtlb_accesses"), itlb_misses(statName() + "-itlb_misses"),
-    dtlb_misses(statName() + "-dtlb_misses")
+    dtlb_accesses(statName() + "-dtlb_accesses"), stlb_accesses(statName() + "-stlb_accesses"),
+    itlb_misses(statName() + "-itlb_misses"), dtlb_misses(statName() + "-dtlb_misses"),
+    stlb_misses(statName() + "-stlb_misses")
 {
 }
 
@@ -225,7 +232,7 @@ bool MMUComponent::isQuiesced() const { return false; }
 void MMUComponent::saveState(std::string const& dirname)
 {
 
-    std::ofstream iFile, dFile;
+    std::ofstream iFile, dFile, sFile;
 
     iFile.open(dirname + "/" + statName() + "-itlb.json", std::ofstream::out);
     json iCheckpoint = theInstrTLB.saveState();
@@ -236,11 +243,16 @@ void MMUComponent::saveState(std::string const& dirname)
     json dCheckpoint = theDataTLB.saveState();
     dFile << std::setw(4) << dCheckpoint << std::endl;
     dFile.close();
+
+    sFile.open(dirname + "/" + statName() + "-stlb.json", std::ofstream::out);
+    json sCheckpoint = theSecondTLB.saveState();
+    sFile << std::setw(4) << sCheckpoint << std::endl;
+    sFile.close();
 }
 
 void MMUComponent::loadState(std::string const& dirname)
 {
-    json iCheckpoint, dCheckpoint;
+    json iCheckpoint, dCheckpoint, sCheckpoint;
 
     std::string itlb_ckpt_file = dirname + "/" + statName() + "-itlb.json";
 
@@ -268,13 +280,26 @@ void MMUComponent::loadState(std::string const& dirname)
     dtlb_s >> dCheckpoint;
     theDataTLB.loadState(dCheckpoint);
     dtlb_s.close();
+
+    std::string stlb_ckpt_file = dirname + "/" + statName() + "-stlb.json";
+    DBG_(Dev, (<< "Loading sTLB checkpoint form:" << stlb_ckpt_file));
+    std::ifstream stlb_s(stlb_ckpt_file, std::ifstream::in);
+
+    if (!stlb_s.good()) {
+        DBG_(Dev, (<< "checkpoint file: " << itlb_ckpt_file << " not found"));
+        DBG_Assert(false, (<< "FILE NOT FOUND"));
+    }
+
+    stlb_s >> sCheckpoint;
+    theSecondTLB.loadState(sCheckpoint);
+    stlb_s.close();
 }
 
 // Initialization
 void MMUComponent::initialize()
 {
     theCPU = Flexus::Qemu::Processor::getProcessor(flexusIndex());
-    thePageWalker.reset(new PageWalk(flexusIndex()));
+    thePageWalker.reset(new PageWalk(flexusIndex(), this));
     thePageWalker->setMMU(theMMU);
     mmu_is_init = false;
     theInstrTLB.resize(cfg.iTLBSize);
@@ -456,6 +481,7 @@ void MMUComponent::resyncMMU(int anIndex)
 
     theInstrTLB.clearFaultyEntry();
     theDataTLB.clearFaultyEntry();
+    theSecondTLB.clearFaultyEntry();
     FLEXUS_CHANNEL(ResyncOut) << anIndex;
 }
 
