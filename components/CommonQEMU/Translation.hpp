@@ -3,7 +3,7 @@
 #include <components/CommonQEMU/Slices/AbstractInstruction.hpp>
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <core/debug/debug.hpp>
-#include <functional>
+
 
 namespace Flexus {
 namespace SharedTypes {
@@ -49,6 +49,8 @@ struct Translation : public boost::counted_base
       , theTimeoutCounter(0)
       , thePageFault(false)
       , inTraceMode(false)
+      , theASID(0)
+      , theNG(true)
 
     {
     }
@@ -70,6 +72,8 @@ struct Translation : public boost::counted_base
         thePageFault      = aTr.thePageFault;
         trace_addresses   = aTr.trace_addresses;
         inTraceMode       = aTr.inTraceMode;
+        theNG             = aTr.theNG;
+        theASID           = aTr.theASID;
     }
 
     Translation& operator=(Translation& rhs)
@@ -89,6 +93,8 @@ struct Translation : public boost::counted_base
         thePageFault      = rhs.thePageFault;
         trace_addresses   = rhs.trace_addresses;
         inTraceMode       = rhs.inTraceMode;
+        theNG             = rhs.theNG;
+        theASID           = rhs.theASID;
 
         return *this;
     }
@@ -115,6 +121,8 @@ struct Translation : public boost::counted_base
     bool thePageFault;
     std::queue<PhysicalMemoryAddress> trace_addresses;
     bool inTraceMode;
+    uint16_t theASID; // Address Space Identifier
+    bool theNG; // non-global bit
 
     boost::intrusive_ptr<AbstractInstruction> theInstruction;
 
@@ -152,6 +160,9 @@ struct Translation : public boost::counted_base
 
     bool isAnnul() const { return theAnnul; }
     void setAnnul() { theAnnul = true; }
+
+    void setNG(bool ng) { theNG = ng; }
+    void setASID(uint16_t asid) { theASID = asid; }
 
     Translation& operator++(int)
     {
