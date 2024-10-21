@@ -3,6 +3,7 @@
 //  - June'18: msutherl - basic TLB definition, no real timing info
 
 #include "MMUUtil.hpp"
+#include "core/types.hpp"
 #include "pageWalk.hpp"
 
 #include <boost/archive/binary_iarchive.hpp>
@@ -216,7 +217,7 @@ class FLEXUS_COMPONENT(MMU)
             theMMU->setupAddressSpaceSizesAndGranules();
             DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
             DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
-            PAGEMASK = ~((1 << theMMU->Gran0->getlogKBSize()) - 1);
+            PAGEMASK = ~((1ULL << theMMU->Gran0->getlogKBSize()) - 1);
             ret      = true;
         }
 
@@ -288,6 +289,10 @@ class FLEXUS_COMPONENT(MMU)
         mmu_is_init = false;
         theInstrTLB.resize(cfg.iTLBSize);
         theDataTLB.resize(cfg.dTLBSize);
+
+        if (cfg.PerfectTLB) {
+            PAGEMASK = ~((1ULL << 12) - 1);
+        }
     }
 
     void finalize() {}
