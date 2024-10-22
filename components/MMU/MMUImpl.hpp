@@ -58,22 +58,24 @@ struct TLBentry
 
 struct TLB
 {
-
     void loadState(json checkpoint);
     json saveState();
     std::pair<bool, PhysicalMemoryAddress> lookUp(TranslationPtr &tr);
     void insert(TranslationPtr &tr);
-    void resize(size_t aSize);
+    void resize(size_t set, size_t associativity);
     size_t capacity();
     void clear();
     void clearFaultyEntry();
     size_t size();
 
-    private:
-    void evict();
-    size_t theSize;
+private:
+    void evict(size_t which_set);
+
+    size_t theAssociativity;
+    size_t theSets;
+
     boost::optional<TLBentry> faultyEntry;
-    std::unordered_multimap<VirtualMemoryAddress, TLBentry> theTLB;
+    std::vector<std::unordered_multimap<VirtualMemoryAddress, TLBentry>> theTLB;
     typedef std::unordered_multimap<VirtualMemoryAddress, TLBentry>::iterator tlbIterator;
 };
 
