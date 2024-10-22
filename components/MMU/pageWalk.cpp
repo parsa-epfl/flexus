@@ -336,9 +336,11 @@ PageWalk::cycle()
                 tr->setHit();
                 tr->thePaddr = (PhysicalMemoryAddress)(res.second | (tr->theVaddr & ~(PAGEMASK)));
                 mmu->stlb_accesses++;
-            } else
+            } else {
                 DBG_(VVerb,
                      (<< "stlb " << (VirtualMemoryAddress)(tr->theVaddr & (PAGEMASK)) << ":" << tr->theID << ": miss"));
+                mmu->stlb_misses++;
+            }
             // go to the next stage whether hit or miss
             theTranslationTransports.push_back(*i);
 

@@ -79,8 +79,11 @@ bool initializeParameters() {
   theL2Cfg.SeparateID.initialize(true);
 
 
-  theMMUCfg.iTLBSize.initialize(64);
-  theMMUCfg.dTLBSize.initialize(64);
+  theMMUCfg.iTLBSet.initialize(1);
+  theMMUCfg.iTLBAssoc.initialize(64);
+
+  theMMUCfg.dTLBSet.initialize(1);
+  theMMUCfg.dTLBAssoc.initialize(64);
 
   theFlexus->setStatInterval(10000000);     // 10M
 

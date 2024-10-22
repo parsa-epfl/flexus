@@ -53,24 +53,30 @@ TLBentry::TLBentry(VirtualMemoryAddress anAddress, uint16_t anASID)
 
 void TLB::loadState(json checkpoint)
 {
-    size_t size = checkpoint["capacity"];
+    size_t associativity = checkpoint["associativity"];
+    size_t set = checkpoint["entries"].size();
 
     clear();
 
-    if (size != theSize) {
-        DBG_Assert(false, (<< "TLB size mismatch: " << size << " != " << theSize));
+    if (associativity != theAssociativity || set != theSets) {
+        DBG_Assert(false, (<< "TLB size mismatch: Expected " << theSets << " sets and " << theAssociativity << " associativity, got " << set << " sets and " << associativity << " associativity"));
     }
-        resize(size);
 
-    size_t TLBSize = checkpoint["entries"].size();
-    for (size_t i = 0; i < TLBSize; i++) {
-        VirtualMemoryAddress aVaddr  = VirtualMemoryAddress(static_cast<uint64_t>(checkpoint["entries"].at(i)["vpn"]) << 12);
-        PhysicalMemoryAddress aPaddr = PhysicalMemoryAddress(static_cast<uint64_t>(checkpoint["entries"].at(i)["ppn"]) << 12);
-        uint16_t anASID               = static_cast<uint16_t>(checkpoint["entries"].at(i)["asid"]);
-        bool aNG                     = static_cast<bool>(checkpoint["entries"].at(i)["ng"]);
-        uint64_t index               = static_cast<uint64_t>(TLBSize - i - 1);
-        theTLB.insert({ aVaddr, TLBentry(aVaddr, aPaddr, index, anASID, aNG) });
-        DBG_(Dev, (<< "Inserting TLB line with" << aVaddr << " " << aPaddr << "at index: [" << index << "]"));
+    for (size_t i = 0; i < set; ++i) {
+        theTLB.push_back(std::unordered_multimap<VirtualMemoryAddress, TLBentry>());
+
+        // get each entry in the set.
+        size_t TLBSize = checkpoint["entries"][i].size();
+
+        for (size_t j = 0; j < TLBSize; j++) {
+            VirtualMemoryAddress aVaddr  = VirtualMemoryAddress(static_cast<uint64_t>(checkpoint["entries"][i].at(j)["vpn"]) << 12);
+            PhysicalMemoryAddress aPaddr = PhysicalMemoryAddress(static_cast<uint64_t>(checkpoint["entries"][i].at(j)["ppn"]) << 12);
+            uint16_t anASID              = static_cast<uint16_t>(checkpoint["entries"][i].at(j)["asid"]);
+            bool aNG                     = static_cast<bool>(checkpoint["entries"][i].at(j)["ng"]);
+            uint64_t index               = static_cast<uint64_t>(TLBSize - j - 1);
+            theTLB[i].insert({ aVaddr, TLBentry(aVaddr, aPaddr, index, anASID, aNG) });
+            DBG_(Dev, (<< "Inserting TLB line with" << aVaddr << " " << aPaddr << "at index: [" << index << "]"));
+        }
     }
 }
 
@@ -79,25 +85,25 @@ json TLB::saveState()
 
     json checkpoint;
 
-    checkpoint["capacity"] = theSize;
-
-    // sorting TLB entries for LRU
-    std::vector<TLBentry> entries;
-    for (const auto& pair : theTLB) {
-        entries.push_back(pair.second);
-    }
-    std::sort(entries.begin(), entries.end(), [](const TLBentry& a, const TLBentry& b) {
-        return b.theRate < a.theRate;
-    });
-
-    // saving the ordered entries
+    checkpoint["associativity"] = theAssociativity;
     checkpoint["entries"] = json::array();
-    size_t i              = 0;
-    for (const auto& entry : entries) {
-        checkpoint["entries"][i++] = { { "vpn", static_cast<uint64_t>(entry.theVaddr >> 12) },
-                                        { "ppn", static_cast<uint64_t>(entry.thePaddr >> 12) },
-                                        { "asid", static_cast<uint16_t>(entry.theASID) },
-                                        { "ng", static_cast<bool>(entry.thenG) } };
+    for (size_t set_idx = 0; set_idx < theSets; ++set_idx) {
+        std::vector<TLBentry> entries;
+        for (const auto& pair : theTLB[set_idx]) {
+            entries.push_back(pair.second);
+        }
+        std::sort(entries.begin(), entries.end(), [](const TLBentry& a, const TLBentry& b) {
+            return b.theRate < a.theRate;
+        });
+
+        checkpoint["entries"][set_idx] = json::array();
+        size_t i = 0;
+        for (const auto& entry : entries) {
+            checkpoint["entries"][set_idx][i++] = { { "vpn", static_cast<uint64_t>(entry.theVaddr) >> 12 },
+                                                    { "ppn", static_cast<uint64_t>(entry.thePaddr) >> 12 },
+                                                    { "asid", static_cast<uint16_t>(entry.theASID) },
+                                                    { "ng", static_cast<bool>(entry.thenG) } };
+        }
     }
 
     return checkpoint;
@@ -108,8 +114,10 @@ std::pair<bool, PhysicalMemoryAddress> TLB::lookUp(TranslationPtr &tr)
     VirtualMemoryAddress anAddress = tr->theVaddr;
     uint16_t anASID = tr->theASID;
     VirtualMemoryAddress anAddressAligned(anAddress & PAGEMASK);
+    // Find the set.
+    size_t set_idx = anAddressAligned & (theSets - 1);
     std::pair<bool, PhysicalMemoryAddress> ret{ false, PhysicalMemoryAddress(0) };
-    for (auto iter = theTLB.begin(); iter != theTLB.end(); ++iter) {
+    for (auto iter = theTLB[set_idx].begin(); iter != theTLB[set_idx].end(); ++iter) {
         iter->second.theRate++;
         if (iter->second.theVaddr == anAddressAligned &&
             (anASID == iter->second.theASID || !iter->second.thenG)) {
@@ -139,9 +147,10 @@ void TLB::insert(TranslationPtr &tr)
         faultyEntry = TLBentry(alignedVirtualAddr, alignedPhysicalAddr, 0, anASID, aNG);
         return;
     }
+    size_t set_idx = alignedVirtualAddr & (theSets - 1);
     // Check if the virtual address is in TLB (with the same ASID or as a global entry)
-    auto iter  = theTLB.end();
-    auto range = theTLB.equal_range(alignedVirtualAddr);
+    auto iter  = theTLB[set_idx].end();
+    auto range = theTLB[set_idx].equal_range(alignedVirtualAddr);
     for (auto it = range.first; it != range.second; ++it) {
         if (it->second.theASID == anASID || !it->second.thenG) {
             iter = it;
@@ -149,10 +158,10 @@ void TLB::insert(TranslationPtr &tr)
         }
     }
     // If the virtual address is not in TLB, insert it
-    if (iter == theTLB.end()) {
-        size_t s = theTLB.size();
-        if (s == theSize) { evict(); }
-        iter = theTLB.insert({ alignedVirtualAddr, TLBentry(alignedVirtualAddr, anASID) });
+    if (iter == theTLB[set_idx].end()) {
+        size_t s = theTLB[set_idx].size();
+        if (s == theAssociativity) { evict(set_idx); }
+        iter = theTLB[set_idx].insert({ alignedVirtualAddr, TLBentry(alignedVirtualAddr, anASID) });
     }
     // update TLB entry
     iter->second.thePaddr = alignedPhysicalAddr;
@@ -160,13 +169,14 @@ void TLB::insert(TranslationPtr &tr)
     return;
 }
 
-void TLB::resize(size_t aSize)
+void TLB::resize(size_t associativity, size_t set)
 {
-    theTLB.reserve(aSize);
-    theSize = aSize;
+    theAssociativity = associativity;
+    theSets = set;
+    theTLB.clear();
+    theTLB.resize(set);
 }
 
-size_t TLB::capacity() { return theSize; }
 
 void TLB::clear() {
     theTLB.clear();
@@ -175,15 +185,14 @@ void TLB::clear() {
 
 void TLB::clearFaultyEntry() { faultyEntry = boost::none; }
 
-size_t TLB::size() { return theTLB.size(); }
 
-void TLB::evict()
+void TLB::evict(size_t which_set)
 {
-    auto res = theTLB.begin();
-    for (auto iter = theTLB.begin(); iter != theTLB.end(); ++iter) {
+    auto res = theTLB[which_set].begin();
+    for (auto iter = theTLB[which_set].begin(); iter != theTLB[which_set].end(); ++iter) {
         if (iter->second.theRate > res->second.theRate) { res = iter; }
     }
-    theTLB.erase(res);
+    theTLB[which_set].erase(res);
 }
 
 bool MMUComponent::cfg_mmu(index_t anIndex)
@@ -302,8 +311,10 @@ void MMUComponent::initialize()
     thePageWalker.reset(new PageWalk(flexusIndex(), this));
     thePageWalker->setMMU(theMMU);
     mmu_is_init = false;
-    theInstrTLB.resize(cfg.iTLBSize);
-    theDataTLB.resize(cfg.dTLBSize);
+
+    theInstrTLB.resize(cfg.iTLBAssoc, cfg.iTLBSet);
+    theDataTLB.resize(cfg.dTLBAssoc, cfg.dTLBSet);
+    theSecondTLB.resize(cfg.sTLBAssoc, cfg.sTLBSet);
 
     if (cfg.PerfectTLB) {
         PAGEMASK = ~((1ULL << 12) - 1);
