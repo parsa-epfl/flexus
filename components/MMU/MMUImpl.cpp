@@ -174,6 +174,7 @@ void TLB::resize(size_t associativity, size_t set)
 {
     theAssociativity = associativity;
     theSets = set;
+    theTLB.clear();
     theTLB.resize(set);
 }
 
@@ -311,9 +312,9 @@ void MMUComponent::initialize()
     thePageWalker.reset(new PageWalk(flexusIndex(), this));
     thePageWalker->setMMU(theMMU);
     mmu_is_init = false;
-    theInstrTLB.resize(cfg.iTLBSet, cfg.iTLBAssoc);
-    theDataTLB.resize(cfg.dTLBSet, cfg.dTLBAssoc);
-    theSecondTLB.resize(cfg.sTLBSet, cfg.sTLBAssoc);
+    theInstrTLB.resize(cfg.iTLBAssoc, cfg.iTLBSet);
+    theDataTLB.resize(cfg.dTLBAssoc, cfg.dTLBSet);
+    theSecondTLB.resize(cfg.sTLBAssoc, cfg.sTLBSet);
 }
 
 void MMUComponent::finalize() {}
