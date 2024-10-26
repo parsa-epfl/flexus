@@ -425,7 +425,7 @@ void MMUComponent::busCycle()
             if (alreadyPW.find(pageAddr) != alreadyPW.end()) {
                 alreadyPW.erase(pageAddr);
                 for (auto it = standingEntries.begin(); it != standingEntries.end();) {
-                    if (((*it)->theVaddr & pageAddr) == pageAddr && item->isInstr() == (*it)->isInstr()) {
+                    if (((*it)->theVaddr & PAGEMASK) == pageAddr) {
                         theLookUpEntries.push(*it);
                         standingEntries.erase(it);
                     } else {
