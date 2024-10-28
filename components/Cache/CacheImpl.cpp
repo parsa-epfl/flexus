@@ -208,7 +208,6 @@ class FLEXUS_COMPONENT(Cache)
 
     uint32_t transferTime(const MemoryTransport& trans)
     {
-        if (theFlexus->isFastMode()) { return 0; }
         DBG_Assert(trans[MemoryMessageTag] != nullptr);
         return ((trans[MemoryMessageTag]->reqSize() > 0) ? cfg.BusTime_Data : cfg.BusTime_NoData) - 1;
     }

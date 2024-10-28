@@ -41,9 +41,6 @@ class FlexusImpl : public FlexusInterface
     bool theInitialized;
     uint64_t theCycleCount;
     uint64_t theStatInterval;
-    uint64_t theRegionInterval;
-    uint64_t theProfileInterval;
-    uint64_t theTimestampInterval;
     uint64_t theStopCycle;
     Stat::StatCounter theCycleCountStat;
 
@@ -74,7 +71,6 @@ class FlexusImpl : public FlexusInterface
     void invokeDrives();
 
     // Simulator state inquiry
-    bool isFastMode() const { return theFastMode; }
     bool isQuiesced() const
     {
         if (!initialized()) { return true; }
@@ -88,52 +84,17 @@ class FlexusImpl : public FlexusInterface
     void check_cpu_watchdogs(void);
     void reset_core_watchdog(uint32_t);
 
-    // Debugging support functions
-    int32_t breakCPU() const { return theBreakCPU; }
-    int32_t breakInsn() const { return theBreakInsn; }
-
     // Flexus command line interface
-    void printCycleCount();
     void setStopCycle(std::string const& aValue);
     void setStatInterval(std::string const& aValue);
-    void setRegionInterval(std::string const& aValue);
-    void setBreakCPU(int32_t aCPU);
-    void setBreakInsn(std::string const& aValue);
-    void setProfileInterval(std::string const& aValue);
-    void setTimestampInterval(std::string const& aValue);
-    void printProfile();
-    void resetProfile();
-    void writeProfile(std::string const& aFilename);
-    void printConfiguration();
-    void writeConfiguration(std::string const& aFilename);
     void parseConfiguration(std::string const& aFilename);
-    void setConfiguration(std::string const& aName, std::string const& aValue);
     void writeMeasurement(std::string const& aMeasurement, std::string const& aFilename);
-    void enterFastMode();
-    void leaveFastMode();
-    void quiesce();
-    void quiesceAndSave(uint32_t aSaveNum);
-    void quiesceAndSave();
     void saveState(std::string const& aDirName);
-    void saveJustFlexusState(std::string const& aDirName);
     void loadState(std::string const& aDirName);
     void doLoad(std::string const& aDirName);
     void doSave(std::string const& aDirName, bool justFlexus = false);
-    void reloadDebugCfg();
-    void addDebugCfg(std::string const& aFilename);
     void setDebug(std::string const& aDebugSeverity);
-    void enableCategory(std::string const& aComponent);
-    void disableCategory(std::string const& aComponent);
-    void listCategories();
-    void enableComponent(std::string const& aComponent, std::string const& anIndex);
-    void disableComponent(std::string const& aComponent, std::string const& anIndex);
-    void listComponents();
-    void printDebugConfiguration();
-    void writeDebugConfiguration(std::string const& aFilename);
-    void onTerminate(std::function<void()>);
     void terminateSimulation();
-    void log(std::string const& aName, std::string const& anInterval, std::string const& aRegEx);
-    void printMMU(int32_t aCPU);
 
   public:
     FlexusImpl(Qemu::API::conf_object_t* anObject)
@@ -141,14 +102,10 @@ class FlexusImpl : public FlexusInterface
       , theInitialized(false)
       , theCycleCount(0)
       , theStatInterval(50000)
-      , theRegionInterval(100000000)
-      , theProfileInterval(1000000)
-      , theTimestampInterval(100000)
       , theStopCycle(2000000000)
       , theCycleCountStat("sys-cycles")
       , theQuiesceRequested(false)
       , theSaveRequested(false)
-      , theFastMode(false)
       , theBreakCPU(-1)
       , theBreakInsn(0)
       , theSaveCtr(1)
@@ -157,12 +114,6 @@ class FlexusImpl : public FlexusInterface
     }
     virtual ~FlexusImpl() {}
 };
-
-void
-FlexusImpl::printMMU(int32_t aCPU)
-{
-    DBG_(Crit, (<< "printMMU not implemented yet. Still need to port mai_api.hpp "));
-}
 
 void
 FlexusImpl::setCycle(uint64_t cycle)
@@ -180,7 +131,6 @@ FlexusImpl::initializeComponents()
     theCurrentStatRegionName = std::string("Region ") + boost::padded_string_cast<3, '0'>(theCurrentStatRegion++);
     Stat::getStatManager()->openMeasurement(theCurrentStatRegionName);
     parseConfiguration(config_file);
-    writeConfiguration("configuration.out");
     ConfigurationManager::getConfigurationManager().checkAllOverrides();
     ComponentManager::getComponentManager().initComponents();
     theInitialized = true;
@@ -203,27 +153,6 @@ FlexusImpl::advanceCycles(int64_t aCycleCount)
 
     Qemu::API::qemu_api.tick();
 
-    if (theQuiesceRequested && isQuiesced()) {
-        DBG_(Crit, (<< "Flexus is quiesced as of cycle " << theCycleCount));
-        theQuiesceRequested = false;
-        if (theSaveRequested) {
-            theSaveRequested = false;
-            doSave(theSaveName);
-        } else {
-            Qemu::API::qemu_api.stop("Flexus is quiesced.");
-            return;
-        }
-    }
-
-    // Check how much time has elapsed every 1024*1024 cycles
-    static uint64_t last_timestamp = 0;
-    if (!theCycleCount || theCycleCount - last_timestamp >= theTimestampInterval) {
-        system_clock::time_point now(system_clock::now());
-        auto tt = system_clock::to_time_t(now);
-        DBG_(Dev, Core()(<< "Timestamp: " << std::asctime(std::localtime(&tt))));
-        last_timestamp = theCycleCount;
-    }
-
     if ((theStopCycle > 0) && (theCycleCount >= theStopCycle)) {
         DBG_(Dev, (<< "Reached target cycle count. Ending simulation."));
         terminateSimulation();
@@ -235,15 +164,6 @@ FlexusImpl::advanceCycles(int64_t aCycleCount)
         std::string report_name = "all.measurement." + boost::padded_string_cast<10, '0'>(advanced_cycle_count) + ".log";
         writeMeasurement("all", report_name);
         last_stats = advanced_cycle_count;
-    }
-
-    static uint64_t last_region = 0;
-    if (theCycleCount - last_region >= theRegionInterval) {
-        Stat::getStatManager()->closeMeasurement(theCurrentStatRegionName);
-        theCurrentStatRegionName = std::string("Region ") + boost::padded_string_cast<3, '0'>(theCurrentStatRegion++);
-        Stat::getStatManager()->openMeasurement(theCurrentStatRegionName);
-
-        last_region = theCycleCount;
     }
 
     Flexus::Dbg::Debugger::theDebugger->checkAt();
@@ -293,12 +213,6 @@ FlexusImpl::reset_core_watchdog(uint32_t core_idx)
 }
 
 void
-FlexusImpl::printCycleCount()
-{
-    DBG_(Crit, Cat(Stats) Set((Source) << "flexus")(<< "Cycle count: " << theCycleCount));
-}
-
-void
 FlexusImpl::setStopCycle(std::string const& aValue)
 {
     theStopCycle = boost::lexical_cast<uint64_t>(aValue);
@@ -312,119 +226,10 @@ FlexusImpl::setStatInterval(std::string const& aValue)
 }
 
 void
-FlexusImpl::setRegionInterval(std::string const& aValue)
-{
-    theRegionInterval = boost::lexical_cast<uint64_t>(aValue);
-    DBG_(Dev, Set((Source) << "flexus")(<< "Set region interval to : " << theRegionInterval));
-}
-
-void
-FlexusImpl::setBreakCPU(int32_t aCPU)
-{
-    theBreakCPU = aCPU;
-    DBG_(Dev, Set((Source) << "flexus")(<< "Set break CPU to : " << aCPU));
-}
-
-void
-FlexusImpl::setBreakInsn(std::string const& aValue)
-{
-    theBreakInsn = boost::lexical_cast<uint64_t>(aValue);
-    DBG_(Dev, Set((Source) << "flexus")(<< "Set break instruction # to : " << theBreakInsn));
-}
-
-void
-FlexusImpl::setProfileInterval(std::string const& aValue)
-{
-    theProfileInterval = boost::lexical_cast<uint64_t>(aValue);
-    DBG_(Dev, Set((Source) << "flexus")(<< "Set profile interval to : " << theProfileInterval));
-}
-
-void
-FlexusImpl::setTimestampInterval(std::string const& aValue)
-{
-    theTimestampInterval = boost::lexical_cast<uint64_t>(aValue);
-    DBG_(Dev, Set((Source) << "flexus")(<< "Set timestamp interval to : " << theTimestampInterval));
-}
-
-void
-FlexusImpl::enterFastMode()
-{
-    if (!theFastMode) {
-        theFastMode = true;
-        DBG_(Dev, Set((Source) << "flexus")(<< "Fast Mode enabled"));
-    }
-}
-
-void
-FlexusImpl::leaveFastMode()
-{
-    if (theFastMode) {
-        theFastMode = false;
-        DBG_(Dev, Set((Source) << "flexus")(<< "Fast Mode disabled"));
-    }
-}
-
-void
-FlexusImpl::printProfile()
-{
-    nProfile::ProfileManager::profileManager()->report(std::cout);
-}
-
-void
-FlexusImpl::resetProfile()
-{
-    nProfile::ProfileManager::profileManager()->reset();
-}
-
-void
-FlexusImpl::writeProfile(std::string const& aFilename)
-{
-    std::ofstream out(aFilename.c_str(), std::ios::app);
-    out << "Profile as of " << theCycleCount << std::endl;
-    nProfile::ProfileManager::profileManager()->report(out);
-    out << std::endl;
-}
-
-void
-FlexusImpl::printConfiguration()
-{
-    ConfigurationManager::getConfigurationManager().printConfiguration(std::cout);
-}
-
-void
-FlexusImpl::writeConfiguration(std::string const& aFilename)
-{
-    std::ofstream out(aFilename.c_str());
-    ConfigurationManager::getConfigurationManager().printConfiguration(out);
-}
-
-void
 FlexusImpl::parseConfiguration(std::string const& aFilename)
 {
     std::ifstream in(aFilename.c_str());
     ConfigurationManager::getConfigurationManager().parseConfiguration(in);
-}
-
-void
-FlexusImpl::setConfiguration(std::string const& aName, std::string const& aValue)
-{
-    ConfigurationManager::getConfigurationManager().set(aName, aValue);
-}
-
-void
-FlexusImpl::log(std::string const& aName, std::string const& anInterval, std::string const& aRegEx)
-{
-    uint64_t interval = boost::lexical_cast<uint64_t>(anInterval);
-    DBG_(Dev,
-         Set((Source) << "flexus")(<< "Logging: " << aRegEx << " every " << anInterval << " cycles as measurement "
-                                   << aName << " to " << aName + ".out"));
-    std::string filename(aName + ".out");
-    std::ofstream* log = new std::ofstream(filename.c_str()); // Leaks intentionally
-    Stat::getStatManager()->openLoggedPeriodicMeasurement(aName.c_str(),
-                                                          interval,
-                                                          Stat::accumulation_type::Accumulate,
-                                                          *log,
-                                                          aRegEx.c_str());
 }
 
 void
@@ -433,42 +238,6 @@ FlexusImpl::writeMeasurement(std::string const& aMeasurement, std::string const&
     std::ofstream out(aFilename.c_str());
     Stat::getStatManager()->printMeasurement(aMeasurement, out);
     out.close();
-}
-
-void
-FlexusImpl::quiesce()
-{
-    if (!isQuiesced()) {
-        DBG_(Crit, (<< "Flexus will quiesce when simulation continues"));
-        theQuiesceRequested = true;
-    }
-}
-
-void
-FlexusImpl::quiesceAndSave()
-{
-    if (!isQuiesced()) {
-        DBG_(Crit, (<< "Flexus will quiesce when simulation continues"));
-        theQuiesceRequested = true;
-        theSaveRequested    = true;
-        theSaveName         = "newckpt-" + boost::padded_string_cast<4, '0'>(theSaveCtr);
-    } else {
-        doSave("newckpt-" + boost::padded_string_cast<4, '0'>(theSaveCtr));
-    }
-    ++theSaveCtr;
-}
-
-void
-FlexusImpl::quiesceAndSave(uint32_t aSaveNum)
-{
-    if (!isQuiesced()) {
-        DBG_(Crit, (<< "Flexus will quiesce when simulation continues"));
-        theQuiesceRequested = true;
-        theSaveRequested    = true;
-        theSaveName         = "ckpt-" + boost::padded_string_cast<4, '0'>(aSaveNum);
-    } else {
-        doSave("ckpt-" + boost::padded_string_cast<4, '0'>(aSaveNum));
-    }
 }
 
 void
@@ -483,17 +252,6 @@ FlexusImpl::saveState(std::string const& aDirName)
     }
 }
 
-void
-FlexusImpl::saveJustFlexusState(std::string const& aDirName)
-{
-    if (isQuiesced()) {
-        doSave(aDirName, true);
-    } else {
-        DBG_(Crit,
-             (<< "Flexus cannot save unless the system is quiesced. Use the "
-                 "command \"flexus.quiesce\" to quiesce the system"));
-    }
-}
 
 void
 FlexusImpl::loadState(std::string const& aDirName)
@@ -525,20 +283,6 @@ FlexusImpl::doSave(std::string const& aDirName, bool justFlexus)
     ComponentManager::getComponentManager().doSave(aDirName);
     DBG_(Crit, (<< "Saving Flexus state in subdirectory " << aDirName));
 }
-
-void
-FlexusImpl::reloadDebugCfg()
-{
-    Flexus::Dbg::Debugger::theDebugger->reset();
-    Flexus::Dbg::Debugger::theDebugger->initialize();
-}
-
-void
-FlexusImpl::addDebugCfg(std::string const& aFilename)
-{
-    Flexus::Dbg::Debugger::theDebugger->addFile(aFilename);
-}
-
 void
 FlexusImpl::setDebug(std::string const& aDebugSeverity)
 {
@@ -566,91 +310,6 @@ FlexusImpl::setDebug(std::string const& aDebugSeverity)
     } else {
         std::cout << "Unknown debug severity: " << aDebugSeverity << ". Severity unchanged." << std::endl;
     }
-}
-
-void
-FlexusImpl::enableCategory(std::string const& aCategory)
-{
-    if (Flexus::Dbg::Debugger::theDebugger->setCategory(aCategory, true)) {
-        DBG_(Dev, (<< "Enabled debugging for " << aCategory));
-    } else {
-        DBG_(Dev, (<< "No category named " << aCategory));
-    }
-}
-void
-FlexusImpl::disableCategory(std::string const& aCategory)
-{
-    if (Flexus::Dbg::Debugger::theDebugger->setCategory(aCategory, false)) {
-        DBG_(Dev, (<< "Disabled debugging for " << aCategory));
-    } else {
-        DBG_(Dev, (<< "No category named " << aCategory));
-    }
-}
-
-void
-FlexusImpl::listCategories()
-{
-    Flexus::Dbg::Debugger::theDebugger->listCategories(std::cout);
-}
-void
-FlexusImpl::enableComponent(std::string const& aComponent, std::string const& anIndexStr)
-{
-    int32_t anIndex = -1;
-    if (anIndexStr != "all") {
-        try {
-            anIndex = boost::lexical_cast<int>(anIndexStr);
-        } catch (boost::bad_lexical_cast& ignored) {
-            DBG_(Dev, (<< "Invalid component index " << anIndexStr));
-            return;
-        }
-    }
-    if (Flexus::Dbg::Debugger::theDebugger->setComponent(aComponent, anIndex, true)) {
-        DBG_(Dev, (<< "Enabled debugging for " << aComponent << "[" << anIndexStr << "]"));
-    } else {
-        DBG_(Dev, (<< "No such component " << aComponent << "[" << anIndexStr << "]"));
-    }
-}
-void
-FlexusImpl::disableComponent(std::string const& aComponent, string const& anIndexStr)
-{
-    int32_t anIndex = -1;
-    if (anIndexStr != "all") {
-        try {
-            anIndex = boost::lexical_cast<int>(anIndexStr);
-        } catch (boost::bad_lexical_cast& ignored) {
-            DBG_(Dev, (<< "Invalid component index " << anIndexStr));
-            return;
-        }
-    }
-    if (Flexus::Dbg::Debugger::theDebugger->setComponent(aComponent, anIndex, false)) {
-        DBG_(Dev, (<< "Disabled debugging for " << aComponent << "[" << anIndexStr << "]"));
-    } else {
-        DBG_(Dev, (<< "No such component " << aComponent << "[" << anIndexStr << "]"));
-    }
-}
-void
-FlexusImpl::listComponents()
-{
-    Flexus::Dbg::Debugger::theDebugger->listComponents(std::cout);
-}
-
-void
-FlexusImpl::printDebugConfiguration()
-{
-    Flexus::Dbg::Debugger::theDebugger->printConfiguration(std::cout);
-}
-
-void
-FlexusImpl::writeDebugConfiguration(std::string const& aFilename)
-{
-    std::ofstream out(aFilename.c_str());
-    Flexus::Dbg::Debugger::theDebugger->printConfiguration(out);
-}
-
-void
-FlexusImpl::onTerminate(std::function<void()> aFn)
-{
-    theTerminateFunctions.push_back(aFn);
 }
 
 void
