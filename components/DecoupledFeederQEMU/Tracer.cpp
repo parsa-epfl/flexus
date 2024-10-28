@@ -49,7 +49,7 @@ Tracer::trace(uint64_t idx, memory_transaction_t& tr)
 
     TracerDispatcher::dispatch(*vCPUTracer[idx], tr, msg);
 
-    if (tr.io) return;
+    // if (tr.io) return;
 
     callback(idx, msg);
 }

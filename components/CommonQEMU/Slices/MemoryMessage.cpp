@@ -19,6 +19,8 @@ operator<<(std::ostream& s, MemoryMessage::MemoryMessageType const& aMemMsgType)
                                            "Store Prefetch Request",
                                            "Fetch Request",
                                            "Non-allocating Store Request",
+                                           "IO Load Request",
+                                           "IO Store Request",
                                            "RMW Request",
                                            "Cmp-Swap Request",
                                            "Atomic Preload Request",

@@ -52,6 +52,9 @@ struct MemoryMessage : public boost::counted_base
         // In the SimFlex tracer this request can be initiated by
         // either the CPU or the cache (request from front side).
 
+        IOLoadReq,
+        IOStoreReq,
+
         RMWReq,
         CmpxReq,
         // This is a compare and swap atomic operation. It obtains write

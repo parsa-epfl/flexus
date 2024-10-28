@@ -8,6 +8,8 @@
 #include "TracerStat.hpp"
 #include "core/types.hpp"
 
+#include <stdio.h>
+
 using namespace Flexus::Qemu;
 using namespace Flexus::SharedTypes;
 using namespace nDecoupledFeeder;
@@ -28,7 +30,19 @@ class TracerDispatcher
      * Return true if the memory access is accessing a
      * memory mapped IO
      **/
-    static bool dispatch_io(memory_transaction_t& transaction) { return (transaction.io); }
+    static bool dispatch_io(memory_transaction_t& transaction, MemoryMessage& msg) { 
+        switch (transaction.s.type) {
+            case API::QEMU_Trans_Load:
+                msg.type() = MemoryMessage::IOLoadReq;
+                return transaction.io;
+
+            case API::QEMU_Trans_Store:
+                msg.type() = MemoryMessage::IOStoreReq;
+                return transaction.io;
+
+            default: return transaction.io;
+        }
+    }
 
     /**
      * Return memory message for a fetch request
@@ -104,7 +118,7 @@ class TracerDispatcher
         msg.priv()    = IS_KERNEL(transaction.s.logical_address);
 
         bool ret = false;
-        ret      = dispatch_io(transaction);
+        ret      = dispatch_io(transaction, msg);
         if (ret) {
             counter.touch_feeder_io(msg.priv());
             return;

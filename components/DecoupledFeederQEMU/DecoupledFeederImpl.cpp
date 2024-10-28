@@ -70,6 +70,12 @@ class FLEXUS_COMPONENT(DecoupledFeeder)
                 vCPUTracer->core(anIndex)->touch_dtlb_request(aMessage.priv());
                 break;
 
+            case MemoryMessage::IOLoadReq:
+            case MemoryMessage::IOStoreReq:
+                toPCIeRootComplex(anIndex, aMessage);
+                vCPUTracer->core(anIndex)->touch_dtlb_request(aMessage.priv());
+                break;
+
             default: DBG_Assert(false);
         }
 
@@ -166,6 +172,43 @@ class FLEXUS_COMPONENT(DecoupledFeeder)
         thePCTypeAndAnnulTriplet.second = theTypeAndAnnulPair;
 
         FLEXUS_CHANNEL_ARRAY(ToBPred, anIndex) << thePCTypeAndAnnulTriplet;
+    }
+
+    void toPCIeRootComplex(std::size_t anIndex, MemoryMessage& aMessage)
+    {
+        TranslationPtr tr(new Translation);
+        tr->setData();
+        tr->theType     = (aMessage.type() == MemoryMessage::IOLoadReq) ? Translation::eLoad : Translation::eStore;
+        tr->theVaddr    = aMessage.pc();
+        tr->thePaddr    = aMessage.address();
+        tr->inTraceMode = true;
+
+        FLEXUS_CHANNEL_ARRAY(ToMMU, anIndex) << tr;
+
+        MemoryMessage mmu_message(aMessage);
+        mmu_message.setPageWalk();
+
+        vCPUTracer->core(anIndex)->touch_dtlb_request(aMessage.priv());
+
+        // If the page walk did not generated any trace
+        // that mean it was a hit (sorta stupid but ok)
+        if (tr->trace_addresses.empty())
+            vCPUTracer->core(anIndex)->touch_dtlb_hit(aMessage.priv());
+        else
+            vCPUTracer->core(anIndex)->touch_dtlb_miss(aMessage.priv());
+
+        while (tr->trace_addresses.size()) {
+            mmu_message.type()    = MemoryMessage::LoadReq;
+            mmu_message.address() = tr->trace_addresses.front();
+            tr->trace_addresses.pop();
+
+            FLEXUS_CHANNEL_ARRAY(ToL1D, anIndex) << mmu_message;
+
+            vCPUTracer->core(anIndex)->touch_dtlb_access(aMessage.priv());
+        }
+
+        DBG_(Iface,
+             Addr(aMessage.address())(<< "IO Request[" << anIndex << "]: " << aMessage << std::dec));
     }
 
 }; // end class DecoupledFeeder
