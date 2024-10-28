@@ -243,7 +243,7 @@ class FLEXUS_COMPONENT(MemoryNetwork)
                         1; // Note, this field really needs to be added to the NetworkMessage
         msg->networkVC        = 0;
         msg->transmitLatency  = transport[NetworkMessageTag]->size;
-        msg->flexusInFastMode = Flexus::Core::theFlexus->isFastMode();
+        msg->flexusInFastMode = false;
         msg->hopCount         = -1; // Note, the local switch also gets counted, so we start at -1
         msg->startTS          = Flexus::Core::theFlexus->cycleCount();
         msg->myList           = nullptr;

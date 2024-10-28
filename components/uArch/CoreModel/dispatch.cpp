@@ -46,12 +46,12 @@ CoreImpl::dispatch(boost::intrusive_ptr<Instruction> anInsn)
 {
     FLEXUS_PROFILE();
 
-    if (static_cast<int>(theNode) == Flexus::Core::theFlexus->breakCPU()) {
-        if (anInsn->sequenceNo() == Flexus::Core::theFlexus->breakInsn()) {
-            DBG_(VVerb, (<< theName << " Encounted break instruction: " << *anInsn));
-            Flexus::Core::theFlexus->setDebug("verb");
-        }
-    }
+    //if (static_cast<int>(theNode) == Flexus::Core::theFlexus->breakCPU()) {
+    //    if (anInsn->sequenceNo() == Flexus::Core::theFlexus->breakInsn()) {
+    //        DBG_(VVerb, (<< theName << " Encounted break instruction: " << *anInsn));
+    //        Flexus::Core::theFlexus->setDebug("verb");
+    //    }
+    //}
 
     theIdleThisCycle = false;
 

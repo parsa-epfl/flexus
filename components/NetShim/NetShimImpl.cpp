@@ -219,7 +219,7 @@ class FLEXUS_COMPONENT(NetShim)
                         << " dst_port=" << transport[NetworkMessageTag]->dst_port));
         }
         msg->transmitLatency  = transport[NetworkMessageTag]->size;
-        msg->flexusInFastMode = Flexus::Core::theFlexus->isFastMode();
+        msg->flexusInFastMode = false;
         msg->hopCount         = -1; // Note, the local switch also gets counted, so we start at -1
         msg->startTS          = Flexus::Core::theFlexus->cycleCount();
         msg->myList           = nullptr;
