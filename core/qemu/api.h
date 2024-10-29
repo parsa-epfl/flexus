@@ -49,45 +49,12 @@ typedef uint64_t logical_address_t;
 
 typedef enum
 {
-    QMP_FLEXUS_PRINTCYCLECOUNT = 0,
-    QMP_FLEXUS_SETSTOPCYCLE,
     QMP_FLEXUS_SETSTATINTERVAL,
-    QMP_FLEXUS_SETREGIONINTERVAL,
-    QMP_FLEXUS_SETBREAKCPU,
-    QMP_FLEXUS_SETBREAKINSN,
-    QMP_FLEXUS_SETPROFILEINTERVAL,
-    QMP_FLEXUS_SETTIMESTAMPINTERVAL,
-    QMP_FLEXUS_PRINTPROFILE,
-    QMP_FLEXUS_RESETPROFILE,
-    QMP_FLEXUS_WRITEPROFILE,
-    QMP_FLEXUS_PRINTCONFIGURATION,
-    QMP_FLEXUS_WRITECONFIGURATION,
-    QMP_FLEXUS_PARSECONFIGURATION,
-    QMP_FLEXUS_SETCONFIGURATION,
-    QMP_FLEXUS_PRINTMEASUREMENT,
-    QMP_FLEXUS_LISTMEASUREMENTS,
     QMP_FLEXUS_WRITEMEASUREMENT,
-    QMP_FLEXUS_ENTERFASTMODE,
-    QMP_FLEXUS_LEAVEFASTMODE,
-    QMP_FLEXUS_QUIESCE,
     QMP_FLEXUS_DOLOAD,
     QMP_FLEXUS_DOSAVE,
-    QMP_FLEXUS_BACKUPSTATS,
     QMP_FLEXUS_SAVESTATS,
-    QMP_FLEXUS_RELOADDEBUGCFG,
-    QMP_FLEXUS_ADDDEBUGCFG,
-    QMP_FLEXUS_SETDEBUG,
-    QMP_FLEXUS_ENABLECATEGORY,
-    QMP_FLEXUS_DISABLECATEGORY,
-    QMP_FLEXUS_LISTCATEGORIES,
-    QMP_FLEXUS_ENABLECOMPONENT,
-    QMP_FLEXUS_DISABLECOMPONENT,
-    QMP_FLEXUS_LISTCOMPONENTS,
-    QMP_FLEXUS_PRINTDEBUGCONFIGURATION,
-    QMP_FLEXUS_WRITEDEBUGCONFIGURATION,
     QMP_FLEXUS_TERMINATESIMULATION,
-    QMP_FLEXUS_LOG,
-    QMP_FLEXUS_PRINTMMU,
 } qmp_flexus_cmd_t;
 
 typedef enum
@@ -232,6 +199,13 @@ typedef struct
 
 } memory_transaction_t;
 
+struct cycles_opts
+{
+    uint64_t until_stop;
+    uint64_t stats_interval;
+    uint64_t log_delay;
+};
+
 /*---------------------------------------------------------------
  *-------------------------TYPEDEFS----------------------------
  *---------------------------------------------------------------*/
@@ -257,7 +231,7 @@ typedef uint64_t (*QEMU_READ_SYSREG_t)(size_t core_index,
                                        uint8_t op2,
                                        uint8_t crn,
                                        uint8_t crm,
-                                       uint8_t ignore_permission_check);
+                                       bool ignore_permission_check);
 typedef size_t (*QEMU_GET_NUM_CORES_t)(void);
 typedef logical_address_t (*QEMU_GET_PC_t)(size_t core_index);
 typedef bool (*QEMU_GET_IRQ_t)(size_t core_index);
@@ -284,19 +258,6 @@ typedef struct FLEXUS_API_t
 
 typedef struct QEMU_API_t
 {
-    //  QEMU_GET_ALL_CPUS_t    get_all_cpus;
-    //  QEMU_GET_CPU_BY_IDX_t  get_cpu_by_idx;
-    //  QEMU_GET_CPU_IDX_t     get_cpu_idx;
-    //  QEMU_GET_CSR_t         get_csr;
-    //  QEMU_GET_CYCLES_LEFT_t get_cycles_left;
-    //  QEMU_GET_FPR_t         get_fpr;
-    //  QEMU_GET_GPR_t         get_gpr;
-    //  QEMU_GET_OBJ_BY_NAME_t get_obj_by_name;
-    //  QEMU_GET_PL_t          get_pl;
-    //  QEMU_GET_SNAP_t        get_snap;
-    //  QEMU_MEM_OP_IS_DATA_t  mem_op_is_data;
-    //  QEMU_MEM_OP_IS_WRITE_t mem_op_is_write;
-    // ─── Bryan ───────────────────────────────────────────────────────────
     QEMU_GET_NUM_CORES_t get_num_cores;
     QEMU_READ_REG_t read_register;
     QEMU_READ_SYSREG_t read_sys_register;
@@ -309,8 +270,6 @@ typedef struct QEMU_API_t
     QEMU_TICK_t tick;
     QEMU_DISASS_t disassembly;
     QEMU_CPU_BUSY_t is_busy;
-    // ─────────────────────────────────────────────────────────────────────
-
 } QEMU_API_t;
 
 extern QEMU_API_t qemu_api;

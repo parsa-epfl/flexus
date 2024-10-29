@@ -82,9 +82,7 @@ bool initializeParameters() {
   theMMUCfg.iTLBSize.initialize(64);
   theMMUCfg.dTLBSize.initialize(64);
 
-  theFlexus->setStatInterval("10000000");     // 10M
-  theFlexus->setProfileInterval("10000000");  // 10M
-  theFlexus->setTimestampInterval("1000000"); // 1M
+  theFlexus->setStatInterval(10000000);     // 10M
 
   return false; // Abort simulation if parameters are not initialized
 }
