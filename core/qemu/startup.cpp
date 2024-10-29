@@ -114,7 +114,7 @@ extern "C"
                      uint32_t ncores,
                      const char* cfg,
                      const char* dbg,
-                     const char* max,
+                     Flexus::Qemu::API::cycles_opts cycles,
                      const char* cwd)
     {
         auto oldcwd = get_current_dir_name();
@@ -151,8 +151,12 @@ extern "C"
 
         Flexus::Dbg::Debugger::theDebugger->initialize();
 
+        Flexus::Core::theFlexus->setStopCycle(cycles.until_stop);
+        Flexus::Core::theFlexus->setStatInterval(cycles.stats_interval);
+        Flexus::Core::theFlexus->set_log_delay(cycles.log_delay);
+
         if (dbg) Flexus::Core::theFlexus->setDebug(dbg);
-        if (max) Flexus::Core::theFlexus->setStopCycle(max);
+
 
         Flexus::Core::ComponentManager::getComponentManager().instantiateComponents(ncores);
 

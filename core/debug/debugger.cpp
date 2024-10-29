@@ -212,6 +212,12 @@ Debugger::reset()
     theTargets.clear();
 }
 
+bool
+Debugger::is_logging_enabled(void)
+{
+    return (cycleCount()) ? (static_cast<uint64_t>(cycleCount()) >= *cycle_delay_log) : true;
+}
+
 Debugger* Debugger::theDebugger((Debugger*)0);
 
 void
