@@ -38,6 +38,7 @@ class Debugger
 
     int64_t theCount;
     uint64_t* theCycleCount;
+    uint64_t* cycle_delay_log;
 
     std::priority_queue<At> theAts; // Owns all targets
 
@@ -47,7 +48,8 @@ class Debugger
 
     Debugger()
       : theCount(0)
-      , theCycleCount(0)
+      , theCycleCount(nullptr)
+      , cycle_delay_log(nullptr)
       , theMinimumSeverity(SevDev)
     {
     }
@@ -67,7 +69,10 @@ class Debugger
             return 0;
     }
 
-    void connectCycleCount(uint64_t* aCount) { theCycleCount = aCount; }
+    void connectCycleCount(uint64_t* aCount, uint64_t* log_delay) {
+        theCycleCount = aCount;
+        cycle_delay_log = log_delay;
+    }
 
     void process(Entry const& anEntry);
     void printConfiguration(std::ostream& anOstream);
@@ -84,6 +89,7 @@ class Debugger
     void checkAt();
     void doNextAt();
     void reset();
+    bool is_logging_enabled(void);
 
     void setMinSev(Severity aSeverity) { theMinimumSeverity = aSeverity; }
 };

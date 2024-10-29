@@ -42,23 +42,14 @@ class FlexusImpl : public FlexusInterface
     uint64_t theCycleCount;
     uint64_t theStatInterval;
     uint64_t theStopCycle;
+    uint64_t cycle_delay_log;
     Stat::StatCounter theCycleCountStat;
-
-    std::string theCurrentStatRegionName;
-    uint32_t theCurrentStatRegion;
 
     typedef std::vector<std::function<void()>> void_fn_vector;
     void_fn_vector theTerminateFunctions;
 
     bool theQuiesceRequested;
     bool theSaveRequested;
-    std::string theSaveName;
-
-    bool theFastMode;
-
-    int32_t theBreakCPU;
-    uint64_t theBreakInsn;
-    int32_t theSaveCtr;
 
   public:
     // Initialization functions
@@ -85,8 +76,9 @@ class FlexusImpl : public FlexusInterface
     void reset_core_watchdog(uint32_t);
 
     // Flexus command line interface
-    void setStopCycle(std::string const& aValue);
-    void setStatInterval(std::string const& aValue);
+    void setStopCycle(uint64_t aValue);
+    void setStatInterval(uint64_t aValue);
+    void set_log_delay(uint64_t aValue);
     void parseConfiguration(std::string const& aFilename);
     void writeMeasurement(std::string const& aMeasurement, std::string const& aFilename);
     void saveState(std::string const& aDirName);
@@ -101,16 +93,14 @@ class FlexusImpl : public FlexusInterface
       : cpu_watchdog_timeout(2000)
       , theInitialized(false)
       , theCycleCount(0)
-      , theStatInterval(50000)
+      , theStatInterval(10000)
       , theStopCycle(2000000000)
+      , cycle_delay_log(0)
       , theCycleCountStat("sys-cycles")
       , theQuiesceRequested(false)
       , theSaveRequested(false)
-      , theBreakCPU(-1)
-      , theBreakInsn(0)
-      , theSaveCtr(1)
     {
-        Flexus::Dbg::Debugger::theDebugger->connectCycleCount(&theCycleCount);
+        Flexus::Dbg::Debugger::theDebugger->connectCycleCount(&theCycleCount, &cycle_delay_log);
     }
     virtual ~FlexusImpl() {}
 };
@@ -120,6 +110,7 @@ FlexusImpl::setCycle(uint64_t cycle)
 {
     theCycleCount = cycle;
     theStopCycle += cycle;
+    cycle_delay_log += cycle;
 }
 
 void
@@ -127,9 +118,6 @@ FlexusImpl::initializeComponents()
 {
     DBG_(VVerb, (<< "Inititializing Flexus components..."));
     Stat::getStatManager()->initialize();
-    theCurrentStatRegion     = 0;
-    theCurrentStatRegionName = std::string("Region ") + boost::padded_string_cast<3, '0'>(theCurrentStatRegion++);
-    Stat::getStatManager()->openMeasurement(theCurrentStatRegionName);
     parseConfiguration(config_file);
     ConfigurationManager::getConfigurationManager().checkAllOverrides();
     ComponentManager::getComponentManager().initComponents();
@@ -161,7 +149,8 @@ FlexusImpl::advanceCycles(int64_t aCycleCount)
     static uint64_t last_stats = 0;
     if (theStatInterval && (advanced_cycle_count - last_stats >= theStatInterval)) {
         DBG_(Dev, Core()(<< "Saving stats at: " << theCycleCount));
-        std::string report_name = "all.measurement." + boost::padded_string_cast<10, '0'>(advanced_cycle_count) + ".log";
+        std::string report_name =
+          "all.measurement." + boost::padded_string_cast<10, '0'>(advanced_cycle_count) + ".log";
         writeMeasurement("all", report_name);
         last_stats = advanced_cycle_count;
     }
@@ -213,16 +202,24 @@ FlexusImpl::reset_core_watchdog(uint32_t core_idx)
 }
 
 void
-FlexusImpl::setStopCycle(std::string const& aValue)
+FlexusImpl::set_log_delay(uint64_t aValue)
 {
-    theStopCycle = boost::lexical_cast<uint64_t>(aValue);
+    cycle_delay_log = aValue;
+    DBG_(Dev, Set((Source) << "flexus")(<< "Set LOG delay to : " << cycle_delay_log));
 }
 
 void
-FlexusImpl::setStatInterval(std::string const& aValue)
+FlexusImpl::setStopCycle(uint64_t aValue)
 {
-    theStatInterval = boost::lexical_cast<uint64_t>(aValue);
-    DBG_(Dev, Set((Source) << "flexus")(<< "Set stat interval to : " << theStatInterval));
+    theStopCycle = aValue;
+    DBG_(Dev, Set((Source) << "flexus")(<< "Set STOP to : " << theStopCycle));
+}
+
+void
+FlexusImpl::setStatInterval(uint64_t aValue)
+{
+    theStatInterval = aValue;
+    DBG_(Dev, Set((Source) << "flexus")(<< "Set STAT interval to : " << theStatInterval));
 }
 
 void
@@ -251,7 +248,6 @@ FlexusImpl::saveState(std::string const& aDirName)
                  "command \"flexus.quiesce\" to quiesce the system"));
     }
 }
-
 
 void
 FlexusImpl::loadState(std::string const& aDirName)
