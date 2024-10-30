@@ -51,18 +51,18 @@ void TLB::loadState(json checkpoint)
 
     clear();
 
-    if (size != theSize) { 
+    if (size != theSize) {
         DBG_Assert(false, (<< "TLB size mismatch: " << size << " != " << theSize));
     }
-        resize(size); 
+        resize(size);
 
     size_t TLBSize = checkpoint["entries"].size();
     for (size_t i = 0; i < TLBSize; i++) {
-        VirtualMemoryAddress aVaddr  = VirtualMemoryAddress((uint64_t)checkpoint["entries"].at(i)["vpn"] << 12);
-        PhysicalMemoryAddress aPaddr = PhysicalMemoryAddress((uint64_t)checkpoint["entries"].at(i)["ppn"] << 12);
-        uint16_t anASID               = (uint16_t)checkpoint["entries"].at(i)["asid"];
-        bool aNG                     = (bool)checkpoint["entries"].at(i)["ng"];
-        uint64_t index               = (uint64_t)(TLBSize - i - 1);
+        VirtualMemoryAddress aVaddr  = VirtualMemoryAddress(static_cast<uint64_t>(checkpoint["entries"].at(i)["vpn"]) << 12);
+        PhysicalMemoryAddress aPaddr = PhysicalMemoryAddress(static_cast<uint64_t>(checkpoint["entries"].at(i)["ppn"]) << 12);
+        uint16_t anASID               = static_cast<uint16_t>(checkpoint["entries"].at(i)["asid"]);
+        bool aNG                     = static_cast<bool>(checkpoint["entries"].at(i)["ng"]);
+        uint64_t index               = static_cast<uint64_t>(TLBSize - i - 1);
         theTLB.insert({ aVaddr, TLBentry(aVaddr, aPaddr, index, anASID, aNG) });
         DBG_(Dev, (<< "Inserting TLB line with" << aVaddr << " " << aPaddr << "at index: [" << index << "]"));
     }
@@ -88,10 +88,10 @@ json TLB::saveState()
     checkpoint["entries"] = json::array();
     size_t i              = 0;
     for (const auto& entry : entries) {
-        checkpoint["entries"][i++] = { { "vpn", (uint64_t)entry.theVaddr >> 12 },
-                                        { "ppn", (uint64_t)entry.thePaddr >> 12 },
-                                        { "asid", (uint16_t)entry.theASID },
-                                        { "ng", (bool)entry.thenG } };
+        checkpoint["entries"][i++] = { { "vpn", static_cast<uint64_t>(entry.theVaddr >> 12) },
+                                        { "ppn", static_cast<uint64_t>(entry.thePaddr >> 12) },
+                                        { "asid", static_cast<uint16_t>(entry.theASID) },
+                                        { "ng", static_cast<bool>(entry.thenG) } };
     }
 
     return checkpoint;
@@ -162,8 +162,8 @@ void TLB::resize(size_t aSize)
 
 size_t TLB::capacity() { return theSize; }
 
-void TLB::clear() { 
-    theTLB.clear(); 
+void TLB::clear() {
+    theTLB.clear();
     clearFaultyEntry();
 }
 
@@ -396,7 +396,7 @@ void MMUComponent::busCycle()
             DBG_Assert(item->isInstr() != item->isData());
             DBG_(Iface,
                     (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry " << item->theVaddr));
-            // update TLB 
+            // update TLB
             (item->isInstr() ? theInstrTLB : theDataTLB).insert(item);
             if (item->isInstr())
                 FLEXUS_CHANNEL(iTranslationReply) << item;
