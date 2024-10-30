@@ -60,7 +60,7 @@ class KeenKraken(ConanFile):
     def build(self):
         cmake = CMake(self)
         cmake.configure()
-        cmake.build(build_tool_args=["-j12"])
+        cmake.build()
 
     def package(self):
         export_path = path.join(
