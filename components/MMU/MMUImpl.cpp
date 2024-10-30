@@ -189,7 +189,7 @@ bool MMUComponent::cfg_mmu(index_t anIndex)
         theMMU->setupAddressSpaceSizesAndGranules();
         DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
         DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
-        PAGEMASK = ~((1 << theMMU->Gran0->getlogKBSize()) - 1);
+        PAGEMASK = ~((1ULL << theMMU->Gran0->getlogKBSize()) - 1);
         ret      = true;
     }
 
@@ -279,6 +279,10 @@ void MMUComponent::initialize()
     mmu_is_init = false;
     theInstrTLB.resize(cfg.iTLBSize);
     theDataTLB.resize(cfg.dTLBSize);
+
+    if (cfg.PerfectTLB) {
+        PAGEMASK = ~((1ULL << 12) - 1);
+    }
 }
 
 void MMUComponent::finalize() {}
