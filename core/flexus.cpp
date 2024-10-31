@@ -62,11 +62,6 @@ class FlexusImpl : public FlexusInterface
     void invokeDrives();
 
     // Simulator state inquiry
-    bool isQuiesced() const
-    {
-        if (!initialized()) { return true; }
-        return ComponentManager::getComponentManager().isQuiesced();
-    }
     bool quiescing() const { return theQuiesceRequested; }
     uint64_t cycleCount() const { return theCycleCount; }
     bool initialized() const { return theInitialized; }
@@ -81,10 +76,8 @@ class FlexusImpl : public FlexusInterface
     void set_log_delay(uint64_t aValue);
     void parseConfiguration(std::string const& aFilename);
     void writeMeasurement(std::string const& aMeasurement, std::string const& aFilename);
-    void saveState(std::string const& aDirName);
-    void loadState(std::string const& aDirName);
     void doLoad(std::string const& aDirName);
-    void doSave(std::string const& aDirName, bool justFlexus = false);
+    void doSave(std::string const& aDirName);
     void setDebug(std::string const& aDebugSeverity);
     void terminateSimulation();
 
@@ -238,30 +231,6 @@ FlexusImpl::writeMeasurement(std::string const& aMeasurement, std::string const&
 }
 
 void
-FlexusImpl::saveState(std::string const& aDirName)
-{
-    if (isQuiesced()) {
-        doSave(aDirName);
-    } else {
-        DBG_(Crit,
-             (<< "Flexus cannot save unless the system is quiesced. Use the "
-                 "command \"flexus.quiesce\" to quiesce the system"));
-    }
-}
-
-void
-FlexusImpl::loadState(std::string const& aDirName)
-{
-    if (isQuiesced()) {
-        doLoad(aDirName);
-    } else {
-        DBG_(Crit,
-             (<< "Flexus cannot load unless the system is quiesced. Use the "
-                 "command \"flexus.quiesce\" to quiesce the system"));
-    }
-}
-
-void
 FlexusImpl::doLoad(std::string const& aDirName)
 {
     DBG_(Crit, (<< "Loading Flexus state from subdirectory " << aDirName));
@@ -269,15 +238,10 @@ FlexusImpl::doLoad(std::string const& aDirName)
 }
 
 void
-FlexusImpl::doSave(std::string const& aDirName, bool justFlexus)
+FlexusImpl::doSave(std::string const& aDirName)
 {
-    if (justFlexus) {
-        DBG_(Crit, (<< "Saving Flexus state in subdirectory " << aDirName));
-    } else {
-        DBG_(Crit, (<< "Saving Flexus and Qemu state in subdirectory " << aDirName));
-    }
-    ComponentManager::getComponentManager().doSave(aDirName);
     DBG_(Crit, (<< "Saving Flexus state in subdirectory " << aDirName));
+    ComponentManager::getComponentManager().doSave(aDirName);
 }
 void
 FlexusImpl::setDebug(std::string const& aDebugSeverity)

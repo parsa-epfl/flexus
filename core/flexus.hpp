@@ -32,6 +32,8 @@ class FlexusInterface
     virtual void setStopCycle(uint64_t aValue)               = 0;
     virtual void set_log_delay(uint64_t aValue)              = 0;
 
+    virtual void doLoad(std::string const& aDirName)         = 0;
+    virtual void doSave(std::string const& aDirName)         = 0;
     virtual void writeMeasurement(std::string const& aMeasurement, std::string const& aFilename) = 0;
 };
 

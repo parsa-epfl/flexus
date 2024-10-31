@@ -70,6 +70,34 @@ class qmp_write_measurement : public qmp_flexus_i
 
 } qmp_write_measurement_;
 
+class qmp_do_load : public qmp_flexus_i
+{
+
+    virtual void execute(std::string anArgs) override
+    {
+        if (!anArgs.empty()) theArgsVector = split(anArgs, ':');
+        if (theArgsVector.size() == 1)
+            theFlexus->doLoad(theArgsVector[0]);
+        else
+            DBG_(Crit, (<< "Wrong number of arguments."));
+    }
+
+} qmp_do_load_;
+
+class qmp_do_save : public qmp_flexus_i
+{
+
+    virtual void execute(std::string anArgs) override
+    {
+        if (!anArgs.empty()) theArgsVector = split(anArgs, ':');
+        if (theArgsVector.size() == 1)
+            theFlexus->doSave(theArgsVector[0]);
+        else
+            DBG_(Crit, (<< "Wrong number of arguments."));
+    }
+
+} qmp_do_save_;
+
 class qmp_terminate_simulation : public qmp_flexus_i
 {
 
@@ -96,6 +124,8 @@ qmp(qmp_flexus_cmd_t aCMD)
 
     switch (aCMD) {
         case QMP_FLEXUS_WRITEMEASUREMENT: return qmp_write_measurement_;
+        case QMP_FLEXUS_DOLOAD: return qmp_do_load_;
+        case QMP_FLEXUS_DOSAVE: return qmp_do_save_;
         case QMP_FLEXUS_TERMINATESIMULATION: return qmp_terminate_simulation_;
         default: throw qmp_not_implemented();
     }
