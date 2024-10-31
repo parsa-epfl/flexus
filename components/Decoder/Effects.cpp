@@ -337,7 +337,7 @@ BranchInteraction::BranchInteraction(VirtualMemoryAddress aTarget) : theTarget(a
 void BranchInteraction::operator()(boost::intrusive_ptr<Instruction> anInstruction,
                                    uArch &aCore) {
   DBG_(VVerb, (<< *anInstruction << " " << *this));
-  if (theTarget == 0) {
+  if (theTarget == 0 || theTarget == ~(uint64_t)(0)) {
     theTarget = anInstruction->pc() + (((anInstruction->getOpcode() & 0x3) != 0x3) ? 2 : 4);
   }
   if (anInstruction->pc() != theTarget) {
