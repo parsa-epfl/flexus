@@ -18,6 +18,7 @@ std::string theSimulatorName = "KeenKraken v2024.05";
 #include <components/FastCache/FastCache.hpp>
 #include <components/FastMemoryLoopback/FastMemoryLoopback.hpp>
 #include <components/MMU/MMU.hpp>
+#include <components/IODevices/NIC.hpp>
 
 #include FLEXUS_END_DECLARATION_SECTION()
 
@@ -30,6 +31,7 @@ CREATE_CONFIGURATION(FastCMPCache, "L2", theL2Cfg);
 CREATE_CONFIGURATION(FastMemoryLoopback, "memory", theMemoryCfg);
 CREATE_CONFIGURATION(BPWarm, "bpwarm", theBPWarmCfg);
 CREATE_CONFIGURATION(MMU, "mmu", theMMUCfg);
+CREATE_CONFIGURATION(NIC, "nic", theNICCfg);
 
 // You may optionally initialize configuration parameters from within this
 // function.  This initialization occur before the command line is processed,
@@ -103,6 +105,7 @@ FLEXUS_INSTANTIATE_COMPONENT_ARRAY( FastCache, theL1ICfg, theL1I, SCALE_WITH_SYS
 FLEXUS_INSTANTIATE_COMPONENT( FastCMPCache, theL2Cfg, theL2 );
 FLEXUS_INSTANTIATE_COMPONENT( FastMemoryLoopback, theMemoryCfg, theMemory );
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MMU , theMMUCfg, theMMU, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
+FLEXUS_INSTANTIATE_COMPONENT( NIC, theNICCfg, theNIC );
 
 //FLEXUS_INSTANTIATE_COMPONENT( WhiteBox, theWhiteBoxCfg, theWhiteBox );
 

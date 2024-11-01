@@ -30,7 +30,13 @@ class FLEXUS_COMPONENT(NIC)
 
     void initialize(void)
     {
+      Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(0); // Use CPU 0 for now
+      
+      RXPBS = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BASE_ADDRESS + RXPBS_offset), 8);
+      TXPBS = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BASE_ADDRESS + TXPBS_offset), 8);
 
+      DBG_(VVerb,
+             (<< "NIC Initialization: RXPBS(" << RXPBS << ")\tTXPBS(" << TXPBS << ")" << std::dec));
     }
 
     // Single ports do not need index
@@ -46,6 +52,16 @@ class FLEXUS_COMPONENT(NIC)
     }
 
     void drive(interface::UpdateNICState const&) {}
+
+
+  private:
+    uint32_t RXPBS;
+    uint32_t TXPBS;
+
+  private:
+    const uint64_t BASE_ADDRESS = 0x10000000; // TODO: This should not be hardcoded. It should be determined by reading the PCIe BAR register
+    const uint32_t RXPBS_offset = 0x2404;
+    const uint32_t TXPBS_offset = 0x3404;
 
 }; // end class NIC
 
