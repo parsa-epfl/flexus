@@ -8,4 +8,5 @@ set(REQUIRED_COMPONENTS
   TraceTrackerQEMU
   BranchPredictor
   MMU
+  IODevices
 )
