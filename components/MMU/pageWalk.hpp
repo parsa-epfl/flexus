@@ -29,7 +29,7 @@ class PageWalk
     bool TheInitialized;
 
   public:
-    PageWalk(uint32_t aNode, MMUComponent *aMMU)
+    PageWalk(uint32_t aNode, MMUComponent* aMMU)
       : TheInitialized(false)
       , mmu(aMMU)
       , theNode(aNode)
@@ -55,8 +55,8 @@ class PageWalk
 
     TTEDescriptor getNextTTDescriptor(TranslationTransport& aTranslation);
 
-    std::list <TranslationTransport> delay;
-    MMUComponent *mmu;
+    std::list<TranslationTransport> delay;
+    MMUComponent* mmu;
 
     uint8_t currentEL();
     uint32_t currentPSTATE();

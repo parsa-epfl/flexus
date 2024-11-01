@@ -1,5 +1,6 @@
 
 #include "pageWalk.hpp"
+
 #include "MMUImpl.hpp"
 #include "core/types.hpp"
 
@@ -348,7 +349,6 @@ PageWalk::cycle()
         } else
             i++;
     }
-
 
     if (theTranslationTransports.size() > 0) {
 

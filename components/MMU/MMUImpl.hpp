@@ -43,10 +43,10 @@ struct TLBentry
     TLBentry();
 
     TLBentry(VirtualMemoryAddress aVAddress,
-                PhysicalMemoryAddress aPaddress,
-                uint64_t aRate,
-                uint16_t anASID,
-                bool aNG);
+             PhysicalMemoryAddress aPaddress,
+             uint64_t aRate,
+             uint16_t anASID,
+             bool aNG);
 
     TLBentry(VirtualMemoryAddress anAddress, uint16_t anASID);
     uint64_t theRate;
@@ -60,15 +60,15 @@ struct TLB
 {
     void loadState(json checkpoint);
     json saveState();
-    std::pair<bool, PhysicalMemoryAddress> lookUp(TranslationPtr &tr);
-    void insert(TranslationPtr &tr);
+    std::pair<bool, PhysicalMemoryAddress> lookUp(TranslationPtr& tr);
+    void insert(TranslationPtr& tr);
     void resize(size_t set, size_t associativity);
     size_t capacity();
     void clear();
     void clearFaultyEntry();
     size_t size();
 
-private:
+  private:
     void evict(size_t which_set);
 
     size_t theAssociativity;
@@ -81,13 +81,14 @@ private:
 
 class FLEXUS_COMPONENT(MMU)
 {
-public:
+  public:
     TLB theInstrTLB;
     TLB theDataTLB;
     TLB theSecondTLB;
-private:
+
+  private:
     FLEXUS_COMPONENT_IMPL(MMU);
-    
+
     std::unique_ptr<PageWalk> thePageWalker;
 
     std::queue<boost::intrusive_ptr<Translation>> theLookUpEntries;
@@ -98,14 +99,14 @@ private:
     Flexus::Qemu::Processor theCPU;
     std::shared_ptr<mmu_t> theMMU;
 
-public:
+  public:
     Stat::StatCounter itlb_accesses;
     Stat::StatCounter dtlb_accesses;
     Stat::StatCounter stlb_accesses;
     Stat::StatCounter itlb_misses;
     Stat::StatCounter dtlb_misses;
     Stat::StatCounter stlb_misses;
-    
+
   private:
     // Is true when the MMU has been reseted
     bool mmu_is_init;
