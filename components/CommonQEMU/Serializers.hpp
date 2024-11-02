@@ -49,7 +49,7 @@
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/tracking.hpp>
 
-#define MAX_NUM_SHARERS 64
+#define MAX_NUM_SHARERS 128
 
 namespace boost {
 namespace serialization {
@@ -87,6 +87,8 @@ template <std::size_t size> struct tracking_level<std::bitset<size>> : mpl::int_
 
 namespace nCommonSerializers {
 
+typedef unsigned __int128 uint128_t;
+
 struct StdDirEntryExtendedSerializer {
   StdDirEntryExtendedSerializer(uint64_t t = 0, std::bitset<MAX_NUM_SHARERS> s = 0)
       : tag(t), state(s) {
@@ -119,11 +121,11 @@ inline std::ostream &operator<<(std::ostream &os, const StdDirEntryExtendedSeria
 }
 
 struct StdDirEntrySerializer {
-  StdDirEntrySerializer(uint64_t t = 0, uint64_t s = 0) : tag(t), state(s) {
+  StdDirEntrySerializer(uint64_t t = 0, uint128_t s = 0) : tag(t), state(s) {
   }
 
   uint64_t tag;
-  uint64_t state;
+  uint128_t state;
   friend class boost::serialization::access;
   template <class Archive> void serialize(Archive &ar, const uint32_t version) {
     ar &tag;

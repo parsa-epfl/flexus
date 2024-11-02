@@ -50,7 +50,9 @@
 
 namespace nFastCMPCache {
 
-#define MAX_NUM_SHARERS 64
+#define MAX_NUM_SHARERS 128
+
+typedef unsigned __int128 uint128_t;
 
 class SharingVector {
 protected:
@@ -177,9 +179,9 @@ public:
     return sharers.any();
   }
 
-  virtual uint64_t getUInt64() const {
-    uint64_t ret = 0;
-    for (int32_t i = 63; i >= 0; i--) {
+  virtual uint64_t getUInt() const {
+    uint128_t ret = 0;
+    for (int32_t i = MAX_NUM_SHARERS; i >= 0; i--) {
       ret = ret << 1;
       ret |= (sharers[i] ? 1 : 0);
     }

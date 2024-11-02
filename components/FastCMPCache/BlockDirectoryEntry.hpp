@@ -111,17 +111,6 @@ public:
       theState = ManySharers;
     }
   }
-  void setSharers(uint64_t new_sharers) {
-    theSharers.setSharers(new_sharers);
-    int32_t count = theSharers.countSharers();
-    if (count == 1) {
-      theState = OneSharer;
-    } else if (count == 0) {
-      theState = ZeroSharers;
-    } else {
-      theState = ManySharers;
-    }
-  }
 
   inline void clear() {
     theSharers.clear();
@@ -148,7 +137,7 @@ public:
   }
 
   StdDirEntrySerializer getSerializer() {
-    return StdDirEntrySerializer((uint64_t)theAddress, theSharers.getUInt64());
+    return StdDirEntrySerializer((uint64_t)theAddress, theSharers.getUInt());
   }
 
   void operator=(const StdDirEntrySerializer &serializer) {
