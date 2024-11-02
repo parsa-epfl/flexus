@@ -4,6 +4,7 @@
 #include "components/uFetch/uFetchTypes.hpp"
 #include "core/flexus.hpp"
 #include "core/qemu/api_wrappers.hpp"
+#include "core/qemu/mai_api.hpp"
 #include "core/stats.hpp"
 
 #define FLEXUS_BEGIN_COMPONENT DecoupledFeeder
@@ -174,6 +175,8 @@ class FLEXUS_COMPONENT(DecoupledFeeder)
         FLEXUS_CHANNEL_ARRAY(ToBPred, anIndex) << thePCTypeAndAnnulTriplet;
     }
 
+    #define NIC_BASE_ADDRESS        0x10000000
+
     void toPCIeRootComplex(std::size_t anIndex, MemoryMessage& aMessage)
     {
         TranslationPtr tr(new Translation);
@@ -207,8 +210,14 @@ class FLEXUS_COMPONENT(DecoupledFeeder)
             vCPUTracer->core(anIndex)->touch_dtlb_access(aMessage.priv());
         }
 
-        DBG_(Iface,
-             Addr(aMessage.address())(<< "IO Request[" << anIndex << "]: " << aMessage << std::dec));
+        // TODO: Not the best condition to check
+        // This function should be replaced with a 
+        // Switch statement so that the appropriate 
+        // handler can be called for the IO device
+        if ((uint64_t)aMessage.address() >= NIC_BASE_ADDRESS && (uint64_t)aMessage.address() < 2 * NIC_BASE_ADDRESS)
+        {
+            FLEXUS_CHANNEL (ToNIC) << aMessage;
+        }
     }
 
 }; // end class DecoupledFeeder

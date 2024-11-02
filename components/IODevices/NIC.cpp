@@ -89,6 +89,15 @@ class FLEXUS_COMPONENT(NIC)
     FLEXUS_PORT_ALWAYS_AVAILABLE(MemoryRequest);
     void push(interface::MemoryRequest const&, MemoryMessage& aMessage)
     {
+      Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(0); // Use CPU 0 for now
+
+      DBG_(VVerb, (<< "NIC Memory Message: Address: " << std::hex << (uint64_t)aMessage.address() << std::dec));
+      if ((uint64_t)aMessage.address() == 0x10003818) {
+        DBG_(VVerb, ( << "NIC Memory Message: Address: " 
+                      << std::hex << (uint64_t)aMessage.address() 
+                      << "\tData: " << (uint64_t)cpu.read_pa(aMessage.address(), 4)
+                      << std::dec));
+      }
     }
 
     void drive(interface::UpdateNICState const&) {}

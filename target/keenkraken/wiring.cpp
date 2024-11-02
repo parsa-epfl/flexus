@@ -119,6 +119,7 @@ WIRE(theFeeder, ToL1D,                  theL1D, RequestIn)
 WIRE(theFeeder, ToL1I,                  theL1I, FetchRequestIn)
 WIRE(theFeeder, ToBPred,                theBPWarm, ITraceInModern)
 WIRE(theFeeder, ToMMU,                  theMMU, TLBReqIn)
+WIRE(theFeeder, ToNIC,                  theNIC, MemoryRequest)
 
 WIRE(theL1D, RequestOut,                theL2, RequestIn)
 WIRE(theL1I, RequestOut,                theL2, FetchRequestIn)
@@ -140,6 +141,7 @@ WIRE(theMemory, ToCache,                theL2, SnoopIn)
 DRIVE( theL1D, UpdateStatsDrive )
 , DRIVE( theL1I, UpdateStatsDrive )
 , DRIVE( theL2, UpdateStatsDrive )
+, DRIVE (theNIC, UpdateNICState)
 
 #include FLEXUS_END_DRIVE_ORDER_SECTION()
     // clang-format on
