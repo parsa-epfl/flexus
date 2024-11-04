@@ -56,25 +56,35 @@ class FLEXUS_COMPONENT(NIC)
 
     void finalize(void) {  }
 
+    void initializeBARs () {    // TODO: This should be a member of PCIeDevice class
+      BAR0 = Flexus::Qemu::API::qemu_api.get_pcie_config(BDF, 0x10);
+      BAR1 = Flexus::Qemu::API::qemu_api.get_pcie_config(BDF, 0x14);
+      BAR2 = Flexus::Qemu::API::qemu_api.get_pcie_config(BDF, 0x18);
+      BAR3 = Flexus::Qemu::API::qemu_api.get_pcie_config(BDF, 0x1C);
+    }
+
     void initialize(void)
     {
+
+      initializeBARs();
+
       Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(0); // Use CPU 0 for now
       
-      RXPBS = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BASE_ADDRESS + RXPBS_offset), 4);
-      RCTL  = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BASE_ADDRESS + RCTL_offset), 4);
-      RDBAL = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BASE_ADDRESS + RDBAL_offset), 4);
-      RDBAH = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BASE_ADDRESS + RDBAH_offset), 4);
-      RDLEN = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BASE_ADDRESS + RDLEN_offset), 4);
-      RDH = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BASE_ADDRESS + RDH_offset), 4);
-      RDT = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BASE_ADDRESS + RDT_offset), 4);
+      RXPBS = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + RXPBS_offset), 4);
+      RCTL  = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + RCTL_offset), 4);
+      RDBAL = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + RDBAL_offset), 4);
+      RDBAH = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + RDBAH_offset), 4);
+      RDLEN = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + RDLEN_offset), 4);
+      RDH = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + RDH_offset), 4);
+      RDT = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + RDT_offset), 4);
 
-      TXPBS = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BASE_ADDRESS + TXPBS_offset), 4);
-      TCTL  = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BASE_ADDRESS + TCTL_offset), 4);
-      TDBAL = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BASE_ADDRESS + TDBAL_offset), 4);
-      TDBAH = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BASE_ADDRESS + TDBAH_offset), 4);
-      TDLEN = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BASE_ADDRESS + TDLEN_offset), 4);
-      TDH = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BASE_ADDRESS + TDH_offset), 4);
-      TDT = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BASE_ADDRESS + TDT_offset), 4);
+      TXPBS = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + TXPBS_offset), 4);
+      TCTL  = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + TCTL_offset), 4);
+      TDBAL = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + TDBAL_offset), 4);
+      TDBAH = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + TDBAH_offset), 4);
+      TDLEN = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + TDLEN_offset), 4);
+      TDH = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + TDH_offset), 4);
+      TDT = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + TDT_offset), 4);
 
       printNICRegisters();
     }
@@ -92,7 +102,8 @@ class FLEXUS_COMPONENT(NIC)
       Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(0); // Use CPU 0 for now
 
       DBG_(VVerb, (<< "NIC Memory Message: Address: " << std::hex << (uint64_t)aMessage.address() << std::dec));
-      if ((uint64_t)aMessage.address() == 0x10003818) {
+      
+      if ((uint64_t)aMessage.address() >= BAR0 && (uint64_t)aMessage.address() < (BAR0 + BAR0_size)) {  // Print the data in device memory space if it is within the BAR space
         DBG_(VVerb, ( << "NIC Memory Message: Address: " 
                       << std::hex << (uint64_t)aMessage.address() 
                       << "\tData: " << (uint64_t)cpu.read_pa(aMessage.address(), 4)
@@ -104,6 +115,12 @@ class FLEXUS_COMPONENT(NIC)
 
 
   private:
+
+    uint32_t BAR0;    // BAR of NIC                             // TODO: Every IO device connected to PCIe has
+    uint32_t BAR1;                                              // various BARs. So This field should preferably
+    uint32_t BAR2;                                              // be in a Base class PCIeDevice which gets inherited
+    uint32_t BAR3;                                              // by the various kinds of PCIe devices
+
     uint32_t RXPBS;   // RX Packet Buffer Size
     uint32_t RCTL;    // Receive Control Register
     uint32_t RDBAL;   // Receive Descriptor Base Address Low    // TODO: This has aliases
@@ -122,8 +139,13 @@ class FLEXUS_COMPONENT(NIC)
 
 
   private:
-    const uint64_t BASE_ADDRESS = 0x10000000; // TODO: This should not be hardcoded. It should be determined by reading the PCIe BAR register
-    
+    const uint16_t BDF          = 0x8;        // TODO: This BDF should be dynamically determined and should also be a member of PCIeDevice class
+    const uint32_t BAR0_size    = 128 * 1024; // TODO: BAR Sizes are device specific and specified in the Device documentation, so they need to be
+                                              // initialized by the device constructor
+    const uint32_t BAR1_size    = 64 * 1024;
+    const uint32_t BAR2_size    = 32;
+    const uint32_t BAR3_size    = 16 * 1024;
+
     const uint32_t RXPBS_offset = 0x2404;
     const uint32_t RCTL_offset  = 0x100;
     const uint32_t RDBAL_offset = 0xC000;
