@@ -102,12 +102,20 @@ class FLEXUS_COMPONENT(NIC)
       Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(0); // Use CPU 0 for now
 
       DBG_(VVerb, (<< "NIC Memory Message: Address: " << std::hex << (uint64_t)aMessage.address() << std::dec));
-      
-      if ((uint64_t)aMessage.address() >= BAR0 && (uint64_t)aMessage.address() < (BAR0 + BAR0_size)) {  // Print the data in device memory space if it is within the BAR space
-        DBG_(VVerb, ( << "NIC Memory Message: Address: " 
-                      << std::hex << (uint64_t)aMessage.address() 
-                      << "\tData: " << (uint64_t)cpu.read_pa(aMessage.address(), 4)
+
+      if ((uint64_t)aMessage.address() >= BAR0 && (uint64_t)aMessage.address() < (BAR0 + BAR0_size)) {
+        if ((uint64_t)aMessage.address() == (BAR0 + TDT_offset) ) {
+          uint64_t tailPosition = (uint64_t)cpu.read_pa(aMessage.address(), 4);
+
+          VirtualMemoryAddress tailDescriptorIOVA ( TDBAL + (tailPosition << 4));
+
+          uint64_t physicalAddress = Flexus::Qemu::API::qemu_api.translate_iova2pa (BDF, tailDescriptorIOVA);
+
+          DBG_(VVerb, ( << "NIC Memory Message: Transmit Tail Access: IOVA:" 
+                      << std::hex << (uint64_t) tailDescriptorIOVA
+                      << "\tPA: " << (uint64_t)physicalAddress
                       << std::dec));
+        }
       }
     }
 
@@ -160,7 +168,7 @@ class FLEXUS_COMPONENT(NIC)
     const uint32_t TDBAH_offset = 0xE004;
     const uint32_t TDLEN_offset = 0xE008;
     const uint32_t TDH_offset   = 0xE010;
-    const uint32_t TDT_offset   = 0xE018;
+    const uint32_t TDT_offset   = 0x3818;
     
 
 }; // end class NIC

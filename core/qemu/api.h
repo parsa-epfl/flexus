@@ -269,6 +269,7 @@ typedef char* (*QEMU_DISASS_t)(size_t core_index, uint64_t addr, size_t size);
 typedef bool (*QEMU_CPU_BUSY_t)(size_t core_index);
 typedef void (*QEMU_PCIe_GET_BDF_t) (uint16_t * bdf_array);
 typedef uint32_t (*QEMU_PCIe_CONFIG_t) (uint16_t bdf, uint32_t address);
+typedef physical_address_t(*QEMU_GET_IOPA_t)        (uint16_t bdf, logical_address_t iova);
 // ─────────────────────────────────────────────────────────────────────────────
 
 typedef void (*FLEXUS_START_t)(uint64_t);
@@ -313,6 +314,7 @@ typedef struct QEMU_API_t
     QEMU_CPU_BUSY_t is_busy;
     QEMU_PCIe_GET_BDF_t get_bdf_array;
     QEMU_PCIe_CONFIG_t get_pcie_config;
+    QEMU_GET_IOPA_t     translate_iova2pa;
     // ─────────────────────────────────────────────────────────────────────
 
 } QEMU_API_t;
