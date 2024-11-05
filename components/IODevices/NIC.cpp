@@ -14,6 +14,49 @@ namespace nNIC {
 
 using namespace Flexus;
 
+// This should not be of interest to us as the context descriptor 
+// holds the control information for transmission
+// This may also be wrong, so double check
+typedef struct AdvancedTransmitContextDescriptor {
+    struct Lo { 
+        uint64_t reserved : 24;     
+        uint64_t ipsec_sa_index : 8;
+        uint64_t vlan : 16;         
+        uint64_t maclen : 7;        
+        uint64_t iplen : 9;         
+    } lo;
+
+    struct Hi {
+        uint64_t mss : 16;         
+        uint64_t l4len : 8;        
+        uint64_t rsv1 : 1;         
+        uint64_t idx : 3;          
+        uint64_t reserved : 6;     
+        uint64_t dext : 1;         
+        uint64_t rsv2 : 5;         
+        uint64_t dtyp : 4;         
+        uint64_t tucmd : 12;       
+        uint64_t ipsec_esp_len : 9;
+    } hi;
+} AdvancedTransmitContextDescriptor;  // Advanced Transmit Context Descriptor
+
+typedef struct AdvancedTransmitDataDescriptor {
+    uint64_t address;
+
+    struct Fields {
+        uint64_t dtalen : 16; 
+        uint64_t rsv : 2;
+        uint64_t mac : 2;  
+        uint64_t dtyp : 4;  
+        uint64_t dcmd : 8;    
+        uint64_t sta : 4; 
+        uint64_t idx : 3; 
+        uint64_t cc : 1;   
+        uint64_t popts : 6;   
+        uint64_t paylen : 18; 
+    } fields;
+} AdvancedTransmitDataDescriptor; // Advanced Transmit Data Descriptor
+
 class FLEXUS_COMPONENT(NIC)
 {
     FLEXUS_COMPONENT_IMPL(NIC);
@@ -66,9 +109,9 @@ class FLEXUS_COMPONENT(NIC)
     void initialize(void)
     {
 
-      initializeBARs();
+      cpu = Flexus::Qemu::Processor::getProcessor(0); // Use CPU 0 for now
 
-      Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(0); // Use CPU 0 for now
+      initializeBARs();
       
       RXPBS = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + RXPBS_offset), 4);
       RCTL  = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + RCTL_offset), 4);
@@ -99,28 +142,93 @@ class FLEXUS_COMPONENT(NIC)
     FLEXUS_PORT_ALWAYS_AVAILABLE(MemoryRequest);
     void push(interface::MemoryRequest const&, MemoryMessage& aMessage)
     {
-      Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(0); // Use CPU 0 for now
-
       DBG_(VVerb, (<< "NIC Memory Message: Address: " << std::hex << (uint64_t)aMessage.address() << std::dec));
 
       if ((uint64_t)aMessage.address() >= BAR0 && (uint64_t)aMessage.address() < (BAR0 + BAR0_size)) {
         if ((uint64_t)aMessage.address() == (BAR0 + TDT_offset) ) {
-          uint64_t tailPosition = (uint64_t)cpu.read_pa(aMessage.address(), 4);
-
-          VirtualMemoryAddress tailDescriptorIOVA ( TDBAL + (tailPosition << 4));
-
-          uint64_t physicalAddress = Flexus::Qemu::API::qemu_api.translate_iova2pa (BDF, tailDescriptorIOVA);
-
-          DBG_(VVerb, ( << "NIC Memory Message: Transmit Tail Access: IOVA:" 
-                      << std::hex << (uint64_t) tailDescriptorIOVA
-                      << "\tPA: " << (uint64_t)physicalAddress
-                      << std::dec));
+          processTxTailUpdate();
         }
       }
     }
 
     void drive(interface::UpdateNICState const&) {}
 
+  private:
+
+    void processTxDescriptor (AdvancedTransmitDataDescriptor transmitDescriptor) {
+      printDataDescriptor(transmitDescriptor);
+    }
+
+    // Use pointer arithmetic to conveniently read descriptors that are bigger than 64 bits
+    AdvancedTransmitDataDescriptor readTransmitDataDescriptor (PhysicalMemoryAddress tailDescriptorPA) {
+      AdvancedTransmitDataDescriptor transmitDescriptor;
+
+      *((uint64_t *) (&transmitDescriptor)) = (uint64_t)cpu.read_pa(tailDescriptorPA, 8);
+      *((uint64_t *) (&transmitDescriptor) + 1) = (uint64_t)cpu.read_pa(tailDescriptorPA + 8, 8);
+
+      return transmitDescriptor;
+    }
+
+    /**
+     * Handle update to TDT
+     * TDT update means that the Driver wrote
+     * a new TX descriptor to be processed
+     * processTxTailUpdate handles the update 
+     * by getting the PA of the buffer descriptor
+     * then processing the descriptor
+     */
+    void processTxTailUpdate () {
+
+      // Current position of the tail in the TX Ring Buffer
+      // This points to the next empty slot in ring buffer, meaning 
+      // the slot before this one has the descriptor address written
+      // by the OS
+      uint64_t tailPosition = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + TDT_offset), 4);
+      tailPosition--;
+
+      VirtualMemoryAddress tailDescriptorIOVA ( TDBAL + (tailPosition << 4) );
+      PhysicalMemoryAddress tailDescriptorPA (Flexus::Qemu::API::qemu_api.translate_iova2pa (BDF, tailDescriptorIOVA));
+
+      AdvancedTransmitDataDescriptor transmitDescriptor = readTransmitDataDescriptor(tailDescriptorPA);
+
+      if (transmitDescriptor.fields.dtyp == 0x3) { // 0x3 means that this is a data descriptor
+        processTxDescriptor(transmitDescriptor);
+      }
+    }
+
+  private:  // These are helpers for debugging purposes and can be safely removed in release
+    void printDataDescriptor(const AdvancedTransmitDataDescriptor& descriptor) {
+      DBG_(VVerb, ( << "Advanced Transmit Data Descriptor Contents:"
+      
+      // Print the 64-bit address field in hex
+      << "\n  Buffer IOVA:      0x" << std::hex << std::setw(16) << std::setfill('0') 
+      << descriptor.address 
+      
+      // Print fields in the 'Fields' struct
+      << "\n  PAYLEN:           0x" << std::hex << std::setw(5) << std::setfill('0') 
+      << descriptor.fields.paylen 
+      << "\n  POPTS:            0x" << std::hex << std::setw(1) << std::setfill('0') 
+      << descriptor.fields.popts 
+      << "\n  CC:               0x" << std::hex << std::setw(2) << std::setfill('0') 
+      << descriptor.fields.cc 
+      << "\n  IDX:              0x" << std::hex << std::setw(1) << std::setfill('0') 
+      << descriptor.fields.idx 
+      << "\n  STA:              0x" << std::hex << std::setw(1) << std::setfill('0') 
+      << descriptor.fields.sta 
+      << "\n  DCMD:             0x" << std::hex << std::setw(2) << std::setfill('0') 
+      << descriptor.fields.dcmd 
+      << "\n  DTYP:             0x" << std::hex << std::setw(1) << std::setfill('0') 
+      << descriptor.fields.dtyp 
+      << "\n  MAC:              0x" << std::hex << std::setw(1) << std::setfill('0') 
+      << descriptor.fields.mac 
+      << "\n  RSV:              0x" << std::hex << std::setw(1) << std::setfill('0') 
+      << descriptor.fields.rsv 
+      << "\n  DTA_LEN:          0x" << std::hex << std::setw(5) << std::setfill('0') 
+      << descriptor.fields.dtalen ));
+    }
+
+  private:
+    Flexus::Qemu::Processor cpu;  // TODO: Technically NIC should not be tied to a CPU but this exposes convenient functions that we want to use
 
   private:
 
