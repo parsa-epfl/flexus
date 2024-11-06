@@ -82,7 +82,7 @@ typedef struct ADDS : public Operation
         if (operands.size() == 2) {
             carry = 0;
         } else {
-            carry = boost::get<uint64_t>(operands[2]);
+            carry = boost::get<bits>(operands[2]) ? 1 : 0;
         }
 
         uint64_t op1 = boost::get<uint64_t>(operands[0]);
@@ -137,7 +137,7 @@ typedef struct SUBS : public Operation
         if (operands.size() == 2) {
             carry = 1;
         } else {
-            carry = (uint64_t)boost::get<uint64_t>(operands[2]);
+            carry = boost::get<bits>(operands[2]) ? 1 : 0;
         }
 
         uint64_t op1 = boost::get<uint64_t>(operands[0]);
