@@ -157,32 +157,32 @@ PageWalk::setupTTResolver(TranslationTransport& aTranslation, uint64_t TTDescrip
 {
     boost::intrusive_ptr<TranslationState> statefulPointer(aTranslation[TranslationStatefulTag]);
     boost::intrusive_ptr<Translation> basicPointer(aTranslation[TranslationBasicTag]);
-    uint8_t PAWidth = theMMU->getPAWidth(statefulPointer->isBR0);
+    uint8_t PAWidth = mmu->theMMU->getPAWidth(statefulPointer->isBR0);
     // Resolve TTBR base.
     switch (statefulPointer->currentLookupLevel) {
         case 0:
             statefulPointer->TTAddressResolver =
               (statefulPointer->isBR0
-                 ? std::make_shared<L0Resolver>(statefulPointer->isBR0, theMMU->Gran0, TTDescriptor, PAWidth)
-                 : std::make_shared<L0Resolver>(statefulPointer->isBR0, theMMU->Gran1, TTDescriptor, PAWidth));
+                 ? std::make_shared<L0Resolver>(statefulPointer->isBR0, mmu->theMMU->Gran0, TTDescriptor, PAWidth)
+                 : std::make_shared<L0Resolver>(statefulPointer->isBR0, mmu->theMMU->Gran1, TTDescriptor, PAWidth));
             break;
         case 1:
             statefulPointer->TTAddressResolver =
               (statefulPointer->isBR0
-                 ? std::make_shared<L1Resolver>(statefulPointer->isBR0, theMMU->Gran0, TTDescriptor, PAWidth)
-                 : std::make_shared<L1Resolver>(statefulPointer->isBR0, theMMU->Gran1, TTDescriptor, PAWidth));
+                 ? std::make_shared<L1Resolver>(statefulPointer->isBR0, mmu->theMMU->Gran0, TTDescriptor, PAWidth)
+                 : std::make_shared<L1Resolver>(statefulPointer->isBR0, mmu->theMMU->Gran1, TTDescriptor, PAWidth));
             break;
         case 2:
             statefulPointer->TTAddressResolver =
               (statefulPointer->isBR0
-                 ? std::make_shared<L2Resolver>(statefulPointer->isBR0, theMMU->Gran0, TTDescriptor, PAWidth)
-                 : std::make_shared<L2Resolver>(statefulPointer->isBR0, theMMU->Gran1, TTDescriptor, PAWidth));
+                 ? std::make_shared<L2Resolver>(statefulPointer->isBR0, mmu->theMMU->Gran0, TTDescriptor, PAWidth)
+                 : std::make_shared<L2Resolver>(statefulPointer->isBR0, mmu->theMMU->Gran1, TTDescriptor, PAWidth));
             break;
         case 3:
             statefulPointer->TTAddressResolver =
               (statefulPointer->isBR0
-                 ? std::make_shared<L3Resolver>(statefulPointer->isBR0, theMMU->Gran0, TTDescriptor, PAWidth)
-                 : std::make_shared<L3Resolver>(statefulPointer->isBR0, theMMU->Gran1, TTDescriptor, PAWidth));
+                 ? std::make_shared<L3Resolver>(statefulPointer->isBR0, mmu->theMMU->Gran0, TTDescriptor, PAWidth)
+                 : std::make_shared<L3Resolver>(statefulPointer->isBR0, mmu->theMMU->Gran1, TTDescriptor, PAWidth));
             break;
         default:
             DBG_Assert(false,
@@ -242,7 +242,7 @@ PageWalk::InitialTranslationSetup(TranslationTransport& aTranslation)
     // setup stateful API that gets passed along with the tr.
     boost::intrusive_ptr<TranslationState> statefulPointer(aTranslation[TranslationStatefulTag]);
     boost::intrusive_ptr<Translation> basicPointer(aTranslation[TranslationBasicTag]);
-    int br = theMMU->checkBR0RangeForVAddr(basicPointer->theVaddr);
+    int br = mmu->theMMU->checkBR0RangeForVAddr(basicPointer->theVaddr);
     if (br != -1) {
         if (br == 0) {
             statefulPointer->isBR0 = true;
@@ -254,10 +254,10 @@ PageWalk::InitialTranslationSetup(TranslationTransport& aTranslation)
               << ", Dropping Request"));
         return false;
     }
-    uint8_t initialLevel                  = theMMU->getInitialLookupLevel(statefulPointer->isBR0);
+    uint8_t initialLevel                  = mmu->theMMU->getInitialLookupLevel(statefulPointer->isBR0);
     statefulPointer->requiredTableLookups = 4 - initialLevel;
     statefulPointer->currentLookupLevel   = initialLevel;
-    statefulPointer->granuleSize          = theMMU->getGranuleSize(statefulPointer->isBR0);
+    statefulPointer->granuleSize          = mmu->theMMU->getGranuleSize(statefulPointer->isBR0);
     statefulPointer->ELRegime             = currentEL();
 
     uint8_t EL = statefulPointer->ELRegime;
@@ -278,9 +278,9 @@ PageWalk::InitialTranslationSetup(TranslationTransport& aTranslation)
 
     uint64_t initialTTBR;
     if (statefulPointer->isBR0)
-        initialTTBR = theMMU->mmu_regs.TTBR0[EL];
+        initialTTBR = mmu->theMMU->mmu_regs.TTBR0[EL];
     else
-        initialTTBR = theMMU->mmu_regs.TTBR1[EL];
+        initialTTBR = mmu->theMMU->mmu_regs.TTBR1[EL];
     setupTTResolver(aTranslation, initialTTBR);
     return true;
 }
@@ -335,7 +335,8 @@ PageWalk::cycle()
                      (<< "stlb hit " << (VirtualMemoryAddress)(tr->theVaddr & (PAGEMASK)) << ":" << tr->theID
                       << std::hex << ":" << res.second));
                 tr->setHit();
-                tr->thePaddr = (PhysicalMemoryAddress)(res.second | (tr->theVaddr & ~(PAGEMASK)));
+                PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(mmu->flexusIndex(), tr->theVaddr));
+                tr->thePaddr = perfectPaddr;
                 mmu->stlb_accesses++;
             } else {
                 DBG_(VVerb,

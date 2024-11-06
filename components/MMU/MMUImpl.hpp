@@ -153,6 +153,8 @@ class FLEXUS_COMPONENT(MMU)
 
     bool available(interface::TLBReqIn const&, index_t anIndex);
     void push(interface::TLBReqIn const&, index_t anIndex, TranslationPtr& aTranslate);
+
+    friend class PageWalk;
 };
 }
 #endif
