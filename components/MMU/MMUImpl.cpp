@@ -309,7 +309,6 @@ void MMUComponent::initialize()
 {
     theCPU = Flexus::Qemu::Processor::getProcessor(flexusIndex());
     thePageWalker.reset(new PageWalk(flexusIndex(), this));
-    thePageWalker->setMMU(theMMU);
     mmu_is_init = false;
 
     theInstrTLB.resize(cfg.iTLBAssoc, cfg.iTLBSet);
@@ -366,7 +365,9 @@ void MMUComponent::busCycle()
 
             // item exists so mark hit
             item->setHit();
-            item->thePaddr = (PhysicalMemoryAddress)(entry.second | (item->theVaddr & ~(PAGEMASK)));
+            PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr));
+            // item->thePaddr = (PhysicalMemoryAddress)(entry.second | (item->theVaddr & ~(PAGEMASK)));
+            item->thePaddr = perfectPaddr;
 
             if (item->isInstr())
                 FLEXUS_CHANNEL(iTranslationReply) << item;
@@ -551,8 +552,6 @@ void MMUComponent::push(interface::TLBReqIn const&, index_t anIndex, Translation
 
     if (!mmu_is_init) mmu_is_init = cfg_mmu(anIndex);
     if (!mmu_is_init) return;
-
-    thePageWalker->setMMU(theMMU);
 
     thePageWalker->push_back_trace(aTranslate, Flexus::Qemu::Processor::getProcessor(flexusIndex()));
     (aTranslate->isInstr() ? theInstrTLB : theDataTLB).insert(aTranslate);
