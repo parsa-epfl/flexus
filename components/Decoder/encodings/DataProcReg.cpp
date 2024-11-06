@@ -195,9 +195,6 @@ CRC(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     readRegister(inst, 1, rn, rs_deps[0], false);
     readRegister(inst, 2, rm, rs_deps[1], sf);
 
-    connect(rs_deps[0], act);
-    connect(rs_deps[1], act);
-
     addDestination(inst, rd, act, sf);
 
     return inst;
