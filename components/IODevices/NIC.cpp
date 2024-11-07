@@ -189,6 +189,15 @@ class FLEXUS_COMPONENT(NIC)
       VirtualMemoryAddress tailDescriptorIOVA ( TDBAL + (tailPosition << 4) );
       PhysicalMemoryAddress tailDescriptorPA (Flexus::Qemu::API::qemu_api.translate_iova2pa (BDF, tailDescriptorIOVA));
 
+      TranslationPtr tr(new Translation);
+        tr->setData();
+        tr->theType     = Translation::eLoad; // Reading Tail Descriptor
+        tr->theVaddr    = tailDescriptorIOVA;
+        tr->thePaddr    = PhysicalMemoryAddress(0);   // ? Why does a translation request need the PA?
+        tr->inTraceMode = true;
+
+      FLEXUS_CHANNEL(TranslationRequestOut) << tr;  // Sending to SMMU for translation
+
       AdvancedTransmitDataDescriptor transmitDescriptor = readTransmitDataDescriptor(tailDescriptorPA);
 
       if (transmitDescriptor.fields.dtyp == 0x3) { // 0x3 means that this is a data descriptor

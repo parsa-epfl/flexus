@@ -18,6 +18,8 @@ COMPONENT_INTERFACE(
     PORT( PushInput, MemoryMessage, MemoryRequest )
     PORT( PushOutput, MemoryMessage, MemoryResponse )
 
+    PORT ( PushOutput, TranslationPtr, TranslationRequestOut )
+
     DRIVE( UpdateNICState )
 );
 

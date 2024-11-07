@@ -31,7 +31,21 @@ private:
 		uint64_t res0       : 5;        
 		uint64_t fmt        : 2;        // Format of Stream table: 0->Linear, 1->2-level
 		uint64_t res1       : 14;
+
+		// toString method that returns a formatted string
+		std::string toString() const {
+			std::ostringstream oss;
+			oss << "Log2Size(" << log2size << ")\tSplit(" << split << ")\tFmt(" << fmt << ")";
+			return oss.str();
+		}
 	} StreamTableBaseConfig;
+
+	typedef struct L1StreamTableDescriptor {
+		uint64_t Span			: 5;
+		uint64_t Res0         	: 1;
+		uint64_t L2Ptr          : 50;
+		uint64_t Res1		    : 8;
+	} L1StreamTableDescriptor;
 
 	typedef struct StreamTableEntry {
 		uint64_t V              : 1;
@@ -40,6 +54,14 @@ private:
 		uint64_t S1ContextPtr   : 50;
 		uint64_t Res0           : 3;
 		uint64_t S1CDMax        : 5;
+
+		// toString method that returns a formatted string
+		std::string toString() const {
+			std::ostringstream oss;
+			oss << "V(" << V << ")\tConfig(" << Config << ")\tS1Fmt(" << S1Fmt 
+				<< ")\tS1ContextPtr(" << S1ContextPtr << ")\tS1CDMax(" << S1CDMax << ")";
+			return oss.str();
+		}
 	} StreamTableEntry;
 
 	typedef struct ContextDescriptor {
@@ -114,8 +136,9 @@ private:
     uint64_t streamTableBase;
 
 private:
-    const uint32_t SMMU_STRTAB_BASE_CFG     =   0x0080;       // Stream Table Base Configuration register offset
-    const uint32_t SMMU_STRTAB_BASE         =   0x0088;       // Stream Table Base register offset
+    const uint32_t SMMU_STRTAB_BASE_CFG     =   0x0088;       // Stream Table Base Configuration register offset
+    const uint32_t SMMU_STRTAB_BASE         =   0x0080;       // Stream Table Base register offset
+	const uint32_t SMMU_IDR0				=	0x0000;
 
 
   public:
@@ -134,17 +157,24 @@ private:
         streamTableBase &= 0xffffffffffffff;
         streamTableBase = ((streamTableBase >> 6) << 6);
 
-        DBG_Assert(streamTableBaseConfig.fmt == 0 , (<< "Invalid Stream Table Format. Only 1 level tables are supported"));
+        DBG_Assert(streamTableBaseConfig.fmt == 1, (<< "Invalid Stream Table Format. Only 2 level tables are supported"));
 
         streamTableSize = 1ULL << streamTableBaseConfig.log2size;
+
+		printSMMUConfig();
+
+		DBG_(VVerb, (<< "SMMU IDR0: " << std::hex << (uint32_t)cpu.read_pa(PhysicalMemoryAddress(configBaseAddress + SMMU_IDR0), 4) << std::dec));
 	}
 
 	PhysicalMemoryAddress translateIOVA (uint16_t bdf, VirtualMemoryAddress iova) {
+
+		DBG_(VVerb, (<< "Translating: BDF: " << std::hex << bdf << "\tIOVA: " << (uint64_t) iova << std::dec ));
+
         StreamTableEntry streamTableEntry = getStreamTableEntry (bdf);
         ContextDescriptor contextDescriptor = getContextDescriptor (streamTableEntry);
         uint64_t translationTableBase = getTranslationTableBase(iova, contextDescriptor);
 
-		DBG_(VVerb, (<< "Translation: BDF: " << std::hex << bdf << "\tIOVA: " << (uint64_t) iova << "Translation Table Base: " << translationTableBase << std::dec));
+		DBG_(VVerb, (<< "Translation: BDF: " << std::hex << bdf << "\tIOVA: " << (uint64_t) iova << "\tTranslation Table Base: " << translationTableBase << std::dec));
 
 		return PhysicalMemoryAddress(-1);
     }
@@ -160,19 +190,40 @@ private:
 	bool available(interface::TranslationRequestIn const&) { return true; }
 	void push(interface::TranslationRequestIn const&, TranslationPtr& aTranslate)
 	{
+		translateIOVA (0x8, aTranslate->theVaddr);	// TODO: BDF is hardcoded right now. It should come from the translation message
 	}
 
 private:
     // Reads Stream Table from memory, so it should be hooked to LLC or memory
     // There should also be a cache for Stream Table Entries
     StreamTableEntry getStreamTableEntry (uint16_t bdf) {
-        StreamTableEntry streamTableEntry;
+        L1StreamTableDescriptor l1StreamTableDescriptor;
+		StreamTableEntry streamTableEntry;
 
         uint16_t SID = bdf;     // SMMU Stream ID is the same as BDF of PCIe device
+		uint32_t split = streamTableBaseConfig.split;	// This is he index where the stream id needs to be split in order to get the two indices for the two stream tables
+		uint16_t l1Index = SID >> split;				// SID[:split]
+		uint16_t l2Index = SID & ((1U << split) - 1);	// SID[split-1:]
 
-        uint64_t streamTablePointer = streamTableBase + SID;
+        uint64_t l1StreamTablePointer = streamTableBase + (l1Index * 8);
 
-        *((uint64_t *)(&streamTableEntry)) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(streamTablePointer), 8);
+		*((uint64_t *)(&l1StreamTableDescriptor)) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(l1StreamTablePointer), 8);
+
+		DBG_Assert(l1StreamTableDescriptor.Span != 0, (<< "Invalid Stream Table Descriptor"));
+		DBG_Assert((1 << (l1StreamTableDescriptor.Span - 1)) >= l2Index , (<< "l2 index is beyond the range of l2 table"));
+
+		// Bits L2Ptr[N:0] are treated as 0 by the SMMU, where N == 5 + (Span - 1).
+		// uint16_t N = 5 + (l1StreamTableDescriptor.Span - 1);
+		// l1StreamTableDescriptor.L2Ptr = (l1StreamTableDescriptor.L2Ptr & ~((1 << (N + 1)) - 1));
+
+		uint64_t l2StreamTablePointer = (l1StreamTableDescriptor.L2Ptr << 6) + (l2Index * 8);
+
+        *((uint64_t *)(&streamTableEntry)) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(l2StreamTablePointer), 8);
+
+		DBG_Assert(streamTableEntry.V == 1 , (<< "Stream Table Entry is invalid. STE: " << streamTableEntry.toString() 
+			<< "Others: L1Index: " << l1Index << "\tl2Index: " << l2Index << "\tSpan: " << l1StreamTableDescriptor.Span << "\tl2StreamTablePointer: " << std::hex << l2StreamTablePointer << std::dec));
+
+		DBG_(VVerb, (<< "Stream Table Entry: " << streamTableEntry.toString() ));
 
         return streamTableEntry;
     }
@@ -219,6 +270,21 @@ private:
         /* in the gap between the two regions, this is a Translation fault */
         return 0;
     }
+
+	void printSMMUConfig() {
+		DBG_(VVerb, (<< "Initializing SMMU from QEMU..." 								<< std::endl
+                << std::hex
+
+                // Print Receive Side Registers
+                << "\t" << "Config Base Address: "  		<< configBaseAddress  		<< std::endl
+                << "\t" << "Config Size: "   				<< configSize  				<< std::endl
+                << "\t" << "Stream Table Base Config: " 	<< streamTableBaseConfig.toString()  	<< std::endl
+                << "\t" << "Stream Table Base Address: "  	<< streamTableBase  		<< std::endl
+                << "\t" << "Stream Table Size: "  			<< streamTableSize  		<< std::endl
+
+                << std::dec
+                << std::endl));
+	}
 
 };
 

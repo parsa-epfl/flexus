@@ -19,6 +19,7 @@ std::string theSimulatorName = "KeenKraken v2024.05";
 #include <components/FastMemoryLoopback/FastMemoryLoopback.hpp>
 #include <components/MMU/MMU.hpp>
 #include <components/IODevices/NIC.hpp>
+#include <components/IODevices/SMMU.hpp>
 
 #include FLEXUS_END_DECLARATION_SECTION()
 
@@ -31,6 +32,7 @@ CREATE_CONFIGURATION(FastCMPCache, "L2", theL2Cfg);
 CREATE_CONFIGURATION(FastMemoryLoopback, "memory", theMemoryCfg);
 CREATE_CONFIGURATION(BPWarm, "bpwarm", theBPWarmCfg);
 CREATE_CONFIGURATION(MMU, "mmu", theMMUCfg);
+CREATE_CONFIGURATION(SMMU, "smmu", theSMMUCfg);
 CREATE_CONFIGURATION(NIC, "nic", theNICCfg);
 
 // You may optionally initialize configuration parameters from within this
@@ -105,6 +107,7 @@ FLEXUS_INSTANTIATE_COMPONENT_ARRAY( FastCache, theL1ICfg, theL1I, SCALE_WITH_SYS
 FLEXUS_INSTANTIATE_COMPONENT( FastCMPCache, theL2Cfg, theL2 );
 FLEXUS_INSTANTIATE_COMPONENT( FastMemoryLoopback, theMemoryCfg, theMemory );
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MMU , theMMUCfg, theMMU, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
+FLEXUS_INSTANTIATE_COMPONENT( SMMU, theSMMUCfg, theSMMU );
 FLEXUS_INSTANTIATE_COMPONENT( NIC, theNICCfg, theNIC );
 
 //FLEXUS_INSTANTIATE_COMPONENT( WhiteBox, theWhiteBoxCfg, theWhiteBox );
@@ -130,6 +133,8 @@ WIRE(theL2, SnoopOutD,                  theL1D, SnoopIn)
 WIRE(theL2, RequestOut,                 theMemory, FromCache)
 
 WIRE(theMemory, ToCache,                theL2, SnoopIn)
+
+WIRE(theNIC, TranslationRequestOut,     theSMMU, TranslationRequestIn)
 
 //Fetch, L1I and Execute
 
