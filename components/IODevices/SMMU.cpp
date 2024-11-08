@@ -48,12 +48,16 @@ private:
 	} L1StreamTableDescriptor;
 
 	typedef struct StreamTableEntry {
+		// First 64-bits
 		uint64_t V              : 1;
 		uint64_t Config         : 3;
 		uint64_t S1Fmt          : 2;
 		uint64_t S1ContextPtr   : 50;
 		uint64_t Res0           : 3;
 		uint64_t S1CDMax        : 5;
+
+		// Rest of the bits are garbage
+		uint64_t g0[7];
 
 		// toString method that returns a formatted string
 		std::string toString() const {
@@ -123,6 +127,9 @@ private:
 		uint64_t HWU159         : 1;
 		uint64_t HWU160         : 1;
 		uint64_t SKL1           : 2;
+
+		// 192-511 are garbage
+		uint64_t garbage[5];
 
 	} ContextDescriptor;
 
@@ -205,7 +212,7 @@ private:
 		uint16_t l1Index = SID >> split;				// SID[:split]
 		uint16_t l2Index = SID & ((1U << split) - 1);	// SID[split-1:]
 
-        uint64_t l1StreamTablePointer = streamTableBase + (l1Index * 8);
+        uint64_t l1StreamTablePointer = streamTableBase + (l1Index * sizeof(l1StreamTableDescriptor));
 
 		*((uint64_t *)(&l1StreamTableDescriptor)) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(l1StreamTablePointer), 8);
 
@@ -216,14 +223,17 @@ private:
 		// uint16_t N = 5 + (l1StreamTableDescriptor.Span - 1);
 		// l1StreamTableDescriptor.L2Ptr = (l1StreamTableDescriptor.L2Ptr & ~((1 << (N + 1)) - 1));
 
-		uint64_t l2StreamTablePointer = (l1StreamTableDescriptor.L2Ptr << 6) + (l2Index * 8);
+		uint64_t l2StreamTablePointer = (l1StreamTableDescriptor.L2Ptr << 6) + (l2Index * sizeof(streamTableEntry));
 
         *((uint64_t *)(&streamTableEntry)) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(l2StreamTablePointer), 8);
 
-		DBG_Assert(streamTableEntry.V == 1 , (<< "Stream Table Entry is invalid. STE: " << streamTableEntry.toString() 
-			<< "Others: L1Index: " << l1Index << "\tl2Index: " << l2Index << "\tSpan: " << l1StreamTableDescriptor.Span << "\tl2StreamTablePointer: " << std::hex << l2StreamTablePointer << std::dec));
+		DBG_Assert(streamTableEntry.V == 1, (<< "Stream Table Entry is invalid. STE: " << streamTableEntry.toString() 
+			<< "Others: L1Index: " << l1Index << "\tl2Index: " << l2Index << "\tSpan: " << l1StreamTableDescriptor.Span 
+			<< "\tl1StreamTablePointer: " << std::hex << l1StreamTablePointer << "\tl2StreamTablePointer: " << l2StreamTablePointer << std::dec));
 
-		DBG_(VVerb, (<< "Stream Table Entry: " << streamTableEntry.toString() ));
+		DBG_Assert(streamTableEntry.Config == 5, (<< "Only Stage 1 translation and Stage 2 bypass is supported"));
+
+		DBG_(VVerb, (<< "Stream Table Pointer (" << std::hex << l2StreamTablePointer << ")" ));
 
         return streamTableEntry;
     }
@@ -231,12 +241,20 @@ private:
     ContextDescriptor getContextDescriptor (StreamTableEntry streamTableEntry) {
         ContextDescriptor contextDescriptor;
 
+		DBG_Assert(streamTableEntry.S1Fmt == 0, (<< "Only Linear Context Descriptor Tables supported"));
+		DBG_Assert(streamTableEntry.S1CDMax == 0, (<< "Only single entry in Context Descriptor Table supported. \
+														We do not have SubstreamIDs to index into CD Table as PCIe BDF can only be converted to Stream ID"));
+
         uint64_t contextPointer = streamTableEntry.S1ContextPtr << 6;   // S1ContextPtr holds bits 55:6
+
+		DBG_(VVerb, (<< "Context Descriptor Pointer (" << std::hex << contextPointer << ")" ));
         
         // Reading only the first 192 bits of context descriptor as the other fields are pretty useless
         *((uint64_t *)(&contextDescriptor))     = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(contextPointer), 8);
         *((uint64_t *)(&contextDescriptor) + 1) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(contextPointer + 8), 8);
         *((uint64_t *)(&contextDescriptor) + 2) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(contextPointer + 16), 8);
+
+		DBG_Assert(contextDescriptor.V == 1, (<< "Context Descriptor is invalid" ));
 
         return contextDescriptor;
     }
