@@ -193,8 +193,9 @@ class FLEXUS_COMPONENT(NIC)
         tr->setData();
         tr->theType     = Translation::eLoad; // Reading Tail Descriptor
         tr->theVaddr    = tailDescriptorIOVA;
-        tr->thePaddr    = PhysicalMemoryAddress(0);   // ? Why does a translation request need the PA?
+        tr->thePaddr    = PhysicalMemoryAddress(0);   // This will hold the PA of IOVA after the PTW
         tr->inTraceMode = true;
+        tr->setIO(BDF);
 
       FLEXUS_CHANNEL(TranslationRequestOut) << tr;  // Sending to SMMU for translation
 

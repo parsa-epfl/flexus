@@ -87,7 +87,6 @@ class mmu_t
     bool IsExcLevelEnabled(uint8_t elToValidate) const;
     void setupAddressSpaceSizesAndGranules(void);
 
-  private:
     void setupBitConfigs();
 };
 

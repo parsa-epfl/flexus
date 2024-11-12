@@ -49,6 +49,8 @@ struct Translation : public boost::counted_base
       , theTimeoutCounter(0)
       , thePageFault(false)
       , inTraceMode(false)
+      , io(false)
+      , bdf(0)
 
     {
     }
@@ -70,6 +72,8 @@ struct Translation : public boost::counted_base
         thePageFault      = aTr.thePageFault;
         trace_addresses   = aTr.trace_addresses;
         inTraceMode       = aTr.inTraceMode;
+        io                = aTr.io;
+        bdf               = aTr.bdf;
     }
 
     Translation& operator=(Translation& rhs)
@@ -89,6 +93,8 @@ struct Translation : public boost::counted_base
         thePageFault      = rhs.thePageFault;
         trace_addresses   = rhs.trace_addresses;
         inTraceMode       = rhs.inTraceMode;
+        io                = rhs.io;
+        bdf               = rhs.bdf;
 
         return *this;
     }
@@ -118,6 +124,9 @@ struct Translation : public boost::counted_base
 
     boost::intrusive_ptr<AbstractInstruction> theInstruction;
 
+    bool io;
+    uint16_t bdf;
+
     void setData() { theTLBtype = kDATA; }
     void setInstr() { theTLBtype = kINST; }
     eTLBtype type() const { return theTLBtype; }
@@ -131,6 +140,9 @@ struct Translation : public boost::counted_base
     bool isHit() const { return theTLBstatus == kTLBhit; }
     bool isPagefault() { return thePageFault; }
     void setPagefault(bool p = true) { thePageFault = p; }
+
+    void setIO (uint16_t BDF) {io = true; bdf = BDF;}
+    bool isIO () {return io;}
 
     void setInstruction(boost::intrusive_ptr<AbstractInstruction> anInstruction) { theInstruction = anInstruction; }
     boost::intrusive_ptr<AbstractInstruction> getInstruction() const { return theInstruction; }

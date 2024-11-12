@@ -48,7 +48,11 @@ PageWalk::preWalk(TranslationTransport& aTranslation)
     DBG_(VVerb, (<< "preWalking " << basicPointer->theVaddr));
 
     if (statefulPointer->currentLookupLevel == 0) {
-        PhysicalMemoryAddress magicPaddr(API::qemu_api.translate_va2pa(theNode, basicPointer->theVaddr));
+        PhysicalMemoryAddress magicPaddr(   basicPointer->isIO() ?
+                                                API::qemu_api.translate_iova2pa(basicPointer->bdf, basicPointer->theVaddr)
+                                            :
+                                                API::qemu_api.translate_va2pa(theNode, basicPointer->theVaddr)
+                                        );
         DBG_(VVerb,
              (<< " QEMU Translated: " << std::hex << basicPointer->theVaddr << std::dec << ", to: " << std::hex
               << magicPaddr << std::dec));

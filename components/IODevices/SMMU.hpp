@@ -1,8 +1,12 @@
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
 #include <components/CommonQEMU/Translation.hpp>
 #include <core/qemu/mai_api.hpp>
+#include <core/qemu/api_wrappers.hpp>
 #include <core/simulator_layout.hpp>
 #include "components/Decoder/BitManip.hpp"
+#include "components/MMU/MMUUtil.hpp"
+#include "components/MMU/pageWalk.hpp"
+#include "components/MMU/mmuRegisters.hpp"
 
 // clang-format off
 #define FLEXUS_BEGIN_COMPONENT SMMU
