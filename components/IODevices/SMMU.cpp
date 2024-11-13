@@ -163,7 +163,10 @@ private:
 	std::unique_ptr<PageWalk> thePageWalker;
 	std::shared_ptr<mmu_t> theMMU;
 
-  public:
+private:
+	 std::shared_ptr<IOTLB> theIOTLB;
+
+public:
 	FLEXUS_COMPONENT_CONSTRUCTOR(SMMU)
 	  : base(FLEXUS_PASS_CONSTRUCTOR_ARGS)
 	{
@@ -187,11 +190,28 @@ private:
 
 		thePageWalker.reset(new PageWalk(flexusIndex()));
 		thePageWalker->setMMU(theMMU);
+
+		theIOTLB.reset (new IOTLB (12, 1024, 8));	// TODO: Use Config file to get the config for IOTLB
 	}
 
 	PhysicalMemoryAddress translateIOVA (uint16_t bdf, TranslationPtr& aTranslate) {
 
 		DBG_(VVerb, (<< "Translating: BDF: " << std::hex << bdf << "\tIOVA: " << (uint64_t) aTranslate->theVaddr << std::dec ));
+
+		if (theIOTLB->contains(bdf, aTranslate->theVaddr)) {	// Hit in IOTLB
+			aTranslate->thePaddr = theIOTLB->access(bdf, aTranslate->theVaddr);
+
+			DBG_(VVerb, (	
+						<< "Translation Hit in IOTLB: BDF: " << std::hex << bdf 
+						<< "\tIOVA: " << (uint64_t) aTranslate->theVaddr 
+						<< "\tPA: " << (uint64_t)  aTranslate->thePaddr
+						<< std::dec
+						));
+
+			return aTranslate->thePaddr;
+		}
+
+		// Miss in IOTLB, do Page Table Walk and insert the entry into the IOTLB
 
         StreamTableEntry streamTableEntry = getStreamTableEntry (bdf);
         ContextDescriptor contextDescriptor = getContextDescriptor (streamTableEntry);
@@ -210,7 +230,11 @@ private:
 			aTranslate->trace_addresses.pop();
 		}
 
-		DBG_(VVerb, (	<< "Translation: BDF: " << std::hex << bdf 
+		// Insert the translation into the IOTLB
+
+		theIOTLB->update(bdf, aTranslate->theVaddr, aTranslate->thePaddr);
+
+		DBG_(VVerb, (	<< "Translation Miss in IOTLB: BDF: " << std::hex << bdf 
 						<< "\tIOVA: " << (uint64_t) aTranslate->theVaddr 
 						<< "\tPA: " << (uint64_t)  aTranslate->thePaddr
 						<< std::dec));

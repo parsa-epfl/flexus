@@ -8,6 +8,8 @@
 #include "components/MMU/pageWalk.hpp"
 #include "components/MMU/mmuRegisters.hpp"
 
+#include "IOTLB.hpp"
+
 // clang-format off
 #define FLEXUS_BEGIN_COMPONENT SMMU
 #include FLEXUS_BEGIN_COMPONENT_DECLARATION()
