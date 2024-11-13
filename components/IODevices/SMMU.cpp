@@ -194,7 +194,9 @@ public:
 		theIOTLB.reset (new IOTLB (12, 1024, 8));	// TODO: Use Config file to get the config for IOTLB
 	}
 
-	PhysicalMemoryAddress translateIOVA (uint16_t bdf, TranslationPtr& aTranslate) {
+	PhysicalMemoryAddress translateIOVA (TranslationPtr& aTranslate) {
+
+		uint16_t bdf = aTranslate->bdf;
 
 		DBG_(VVerb, (<< "Translating: BDF: " << std::hex << bdf << "\tIOVA: " << (uint64_t) aTranslate->theVaddr << std::dec ));
 
@@ -230,6 +232,8 @@ public:
 			aTranslate->trace_addresses.pop();
 		}
 
+		// TODO: Inject PTW memory accesses into the cache hierarchy
+
 		// Insert the translation into the IOTLB
 
 		theIOTLB->update(bdf, aTranslate->theVaddr, aTranslate->thePaddr);
@@ -253,10 +257,50 @@ public:
 	bool available(interface::TranslationRequestIn const&) { return true; }
 	void push(interface::TranslationRequestIn const&, TranslationPtr& aTranslate)
 	{
-		PhysicalMemoryAddress qflexPA = translateIOVA (0x8, aTranslate);	// TODO: BDF is hardcoded right now. It should come from the translation message
-		PhysicalMemoryAddress qemuPA (Flexus::Qemu::API::qemu_api.translate_iova2pa (0x8, (uint64_t)aTranslate->theVaddr));
+		PhysicalMemoryAddress qflexPA = translateIOVA (aTranslate);
+		PhysicalMemoryAddress qemuPA (Flexus::Qemu::API::qemu_api.translate_iova2pa (aTranslate->bdf, (uint64_t)aTranslate->theVaddr));
 
 		DBG_Assert(((uint64_t)qflexPA) == ((uint64_t)qemuPA), (<< "Mismatch between QFlex Translation and QEMU Translation"));
+	}
+
+	bool available(interface::DeviceMemoryRequest const&) { return true; }
+	void push(interface::DeviceMemoryRequest const&, MemoryMessage& aMemoryMessage)
+	{
+
+		// TODO: Currently there is no breakdown of memory request into Page sized translation request
+		// So a 1GB request will do a single translation, which is a wrong behavior
+		// This function should chop the requests into page sized requests
+
+		TranslationPtr tr(new Translation);
+		  tr->setData();
+		  tr->theType     = aMemoryMessage.type() == MemoryMessage::IOLoadReq ? Translation::eLoad : Translation::eStore;
+		  tr->theVaddr    = aMemoryMessage.pc();	// holds the IOVA for IO devices
+		  tr->thePaddr    = PhysicalMemoryAddress(0);   // This will hold the PA of IOVA after the PTW
+		  tr->inTraceMode = true;
+		  tr->setIO(aMemoryMessage.getBDF());
+
+		PhysicalMemoryAddress qflexPA = translateIOVA (tr);	// SMMU translation happens here
+
+		// Validation
+		PhysicalMemoryAddress qemuPA (Flexus::Qemu::API::qemu_api.translate_iova2pa (tr->bdf, (uint64_t)tr->theVaddr));
+		DBG_Assert(((uint64_t)qflexPA) == ((uint64_t)qemuPA), (<< "Mismatch between QFlex Translation and QEMU Translation"));
+
+		aMemoryMessage.address() = tr->thePaddr;
+
+		// aMemoryMessage is ready to perform the memory operation as it now has the physical address
+		if (aMemoryMessage.getDataRequired()) {
+			char * data = (char *) malloc ((aMemoryMessage.reqSize() / sizeof(uint32_t) + 1) * sizeof(uint32_t));	// Allocate a little bit more memory than actually needed
+
+			for (int i = 0; i < aMemoryMessage.reqSize() / 4; i++) {	// Always read 4 bytes at a time
+				*(((uint32_t *) (data)) + i) = (uint32_t)cpu.read_pa(aMemoryMessage.address() + 4 * i, 4);
+			}
+
+			aMemoryMessage.setDataPtr((uint64_t) data);
+		}
+
+		// TODO: Send reply
+		// TODO: Inject traffic into the LLC or memory
+
 	}
 
 private:

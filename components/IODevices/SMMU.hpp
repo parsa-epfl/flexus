@@ -1,4 +1,5 @@
 #include <components/CommonQEMU/Slices/TransactionTracker.hpp>
+#include <components/CommonQEMU/Slices/MemoryMessage.hpp>
 #include <components/CommonQEMU/Translation.hpp>
 #include <core/qemu/mai_api.hpp>
 #include <core/qemu/api_wrappers.hpp>
@@ -32,6 +33,12 @@ COMPONENT_INTERFACE(
     // TODO: Ideally, there should be a port array connecting 
     // SMMU directly to the LLC.
     PORT( PushInput, TranslationPtr, TranslationRequestIn )
+
+    // This channel takes in memory request from the device
+    // If required, it performs translation
+    // Then it performs the memory operation and returns the 
+    // message with the data to the sender
+    PORT( PushInput, MemoryMessage, DeviceMemoryRequest )
 
     DRIVE(SMMUDrive)
 );

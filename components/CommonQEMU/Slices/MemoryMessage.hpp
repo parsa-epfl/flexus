@@ -335,6 +335,9 @@ struct MemoryMessage : public boost::counted_base
       , theBranchType(kNonBranch)
       , theBranchAnnul(false)
       , thePageWalk(false)
+      , BDF(-1)
+      , dataRequired (false)
+      , dataPtr(0)
     {
     }
     explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress)
@@ -356,6 +359,9 @@ struct MemoryMessage : public boost::counted_base
       , theBranchType(kNonBranch)
       , theBranchAnnul(false)
       , thePageWalk(false)
+      , BDF(-1)
+      , dataRequired (false)
+      , dataPtr(0)
     {
     }
     explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC)
@@ -377,6 +383,9 @@ struct MemoryMessage : public boost::counted_base
       , theBranchType(kNonBranch)
       , theBranchAnnul(false)
       , thePageWalk(false)
+      , BDF(-1)
+      , dataRequired (false)
+      , dataPtr(0)
     {
     }
     explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC, bits aData)
@@ -398,6 +407,58 @@ struct MemoryMessage : public boost::counted_base
       , theBranchType(kNonBranch)
       , theBranchAnnul(false)
       , thePageWalk(false)
+      , BDF(-1)
+      , dataRequired (false)
+      , dataPtr(0)
+    {
+    }
+
+    explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC, uint16_t BDF)
+      : theType(aType)
+      , theAddress(anAddress)
+      , theAssociatedPC(aPC)
+      , theData(0)
+      , theReqSize(0)
+      , theCoreIdx(0)
+      , theSerial(memoryMessageSerial())
+      , thePriv(false)
+      , theAnyInvs(false)
+      , theDstream(true)
+      , theFillLevel(eUnknown)
+      , theOutstandingMessages(0)
+      , theAckRequired(true)
+      , theAckRequiresData(false)
+      , theEvictHasData(false)
+      , theBranchType(kNonBranch)
+      , theBranchAnnul(false)
+      , thePageWalk(false)
+      , BDF(BDF)
+      , dataRequired (false)
+      , dataPtr(0)
+    {
+    }
+    explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC, bits aData, uint16_t BDF)
+      : theType(aType)
+      , theAddress(anAddress)
+      , theAssociatedPC(aPC)
+      , theData(aData)
+      , theReqSize(0)
+      , theCoreIdx(0)
+      , theSerial(memoryMessageSerial())
+      , thePriv(false)
+      , theAnyInvs(false)
+      , theDstream(true)
+      , theFillLevel(eUnknown)
+      , theOutstandingMessages(0)
+      , theAckRequired(true)
+      , theAckRequiresData(false)
+      , theEvictHasData(false)
+      , theBranchType(kNonBranch)
+      , theBranchAnnul(false)
+      , thePageWalk(false)
+      , BDF(BDF)
+      , dataRequired (false)
+      , dataPtr(0)
     {
     }
 
@@ -420,6 +481,9 @@ struct MemoryMessage : public boost::counted_base
       , theBranchType(aMsg.theBranchType)
       , theBranchAnnul(aMsg.theBranchAnnul)
       , thePageWalk(aMsg.thePageWalk)
+      , BDF(aMsg.BDF)
+      , dataRequired (aMsg.dataRequired)
+      , dataPtr(aMsg.dataPtr)
     {
     }
 
@@ -522,6 +586,16 @@ struct MemoryMessage : public boost::counted_base
     eBranchType& branchType() { return theBranchType; }
 
     bool& branchAnnul() { return theBranchAnnul; }
+
+    uint16_t& getBDF () { return BDF; }
+
+    void setDataRequired () { dataRequired = true; }
+
+    bool getDataRequired () { return dataRequired; }
+
+    uint64_t getDataPtr () { return dataPtr; }
+
+    void setDataPtr (uint64_t dataptr) { dataPtr = dataptr; }
 
     bool isRequest() const
     {
@@ -968,6 +1042,11 @@ struct MemoryMessage : public boost::counted_base
     eBranchType theBranchType;
     bool theBranchAnnul;
     bool thePageWalk;
+
+    uint16_t BDF;       // BDF of IO device in case of an IO memory message
+    bool dataRequired;  // If this field is true, then the data needs to br read from QEMU instead of just accessing the microarchitectural state
+    uint64_t dataPtr;   // Holds the pointer to the data accessed. 
+                        // ! It is the responsibility of the user to deallocate the memory after using the data to avoid OOM
 };
 
 std::ostream&

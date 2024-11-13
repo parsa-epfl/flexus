@@ -166,11 +166,20 @@ class FLEXUS_COMPONENT(NIC)
     }
 
     // Use pointer arithmetic to conveniently read descriptors that are bigger than 64 bits
-    AdvancedTransmitDataDescriptor readTransmitDataDescriptor (PhysicalMemoryAddress tailDescriptorPA) {
+    AdvancedTransmitDataDescriptor readTransmitDataDescriptor (VirtualMemoryAddress tailDescriptorIOVA) {
+
       AdvancedTransmitDataDescriptor transmitDescriptor;
 
-      *((uint64_t *) (&transmitDescriptor)) = (uint64_t)cpu.read_pa(tailDescriptorPA, 8);
-      *((uint64_t *) (&transmitDescriptor) + 1) = (uint64_t)cpu.read_pa(tailDescriptorPA + 8, 8);
+      MemoryMessage txDataDescriptorReadMessage (MemoryMessage::IOLoadReq, PhysicalMemoryAddress(0), tailDescriptorIOVA, BDF);
+      txDataDescriptorReadMessage.reqSize() = sizeof (transmitDescriptor);   // Descriptor is 16-bytes long
+      txDataDescriptorReadMessage.setDataRequired();  // NIC requires the descriptor data
+
+      FLEXUS_CHANNEL(DeviceMemoryRequest) << txDataDescriptorReadMessage;  // Sending to SMMU for processing
+                                                                 // Processing entails both translation and memory access
+
+      transmitDescriptor = *((AdvancedTransmitDataDescriptor *) txDataDescriptorReadMessage.getDataPtr());  // Copy data from memory message to transmitDescriptor
+
+      free((void *)txDataDescriptorReadMessage.getDataPtr()); // Free the memory allocated for holding the data
 
       return transmitDescriptor;
     }
@@ -193,19 +202,8 @@ class FLEXUS_COMPONENT(NIC)
       tailPosition--;
 
       VirtualMemoryAddress tailDescriptorIOVA ( TDBAL + (tailPosition << 4) );
-      PhysicalMemoryAddress tailDescriptorPA (Flexus::Qemu::API::qemu_api.translate_iova2pa (BDF, tailDescriptorIOVA));
 
-      TranslationPtr tr(new Translation);
-        tr->setData();
-        tr->theType     = Translation::eLoad; // Reading Tail Descriptor
-        tr->theVaddr    = tailDescriptorIOVA;
-        tr->thePaddr    = PhysicalMemoryAddress(0);   // This will hold the PA of IOVA after the PTW
-        tr->inTraceMode = true;
-        tr->setIO(BDF);
-
-      FLEXUS_CHANNEL(TranslationRequestOut) << tr;  // Sending to SMMU for translation
-
-      AdvancedTransmitDataDescriptor transmitDescriptor = readTransmitDataDescriptor(tailDescriptorPA);
+      AdvancedTransmitDataDescriptor transmitDescriptor = readTransmitDataDescriptor(tailDescriptorIOVA);
 
       if (transmitDescriptor.fields.dtyp == 0x3) { // 0x3 means that this is a data descriptor
         processTxDescriptor(transmitDescriptor);
