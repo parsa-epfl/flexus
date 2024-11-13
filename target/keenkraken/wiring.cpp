@@ -122,7 +122,7 @@ WIRE(theFeeder, ToL1D,                  theL1D, RequestIn)
 WIRE(theFeeder, ToL1I,                  theL1I, FetchRequestIn)
 WIRE(theFeeder, ToBPred,                theBPWarm, ITraceInModern)
 WIRE(theFeeder, ToMMU,                  theMMU, TLBReqIn)
-WIRE(theFeeder, ToNIC,                  theNIC, MemoryRequest)
+WIRE(theFeeder, ToNIC,                  theNIC, CPUMemoryRequest)
 
 WIRE(theL1D, RequestOut,                theL2, RequestIn)
 WIRE(theL1I, RequestOut,                theL2, FetchRequestIn)

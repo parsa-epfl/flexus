@@ -139,8 +139,8 @@ class FLEXUS_COMPONENT(NIC)
     // For PushOutput, the driver simply pushes an output into the port and the 
     // component connected to the PushOutput then receives the message at its 
     // PushInput port and handles the message in its push function
-    FLEXUS_PORT_ALWAYS_AVAILABLE(MemoryRequest);
-    void push(interface::MemoryRequest const&, MemoryMessage& aMessage)
+    FLEXUS_PORT_ALWAYS_AVAILABLE(CPUMemoryRequest);
+    void push(interface::CPUMemoryRequest const&, MemoryMessage& aMessage)
     {
       DBG_(VVerb, (<< "NIC Memory Message: Address: " << std::hex << (uint64_t)aMessage.address() << std::dec));
 
@@ -149,6 +149,12 @@ class FLEXUS_COMPONENT(NIC)
           processTxTailUpdate();
         }
       }
+    }
+
+    FLEXUS_PORT_ALWAYS_AVAILABLE(DeviceMemoryResponse);
+    void push(interface::DeviceMemoryResponse const&, MemoryMessage& aMessage)
+    {
+      // TODO
     }
 
     void drive(interface::UpdateNICState const&) {}
