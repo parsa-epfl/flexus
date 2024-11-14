@@ -161,7 +161,56 @@ class FLEXUS_COMPONENT(NIC)
 
   private:
 
+    // TODO: Overload this function for Receive Descriptor
+    // This function takes a descriptor as input and chops it up into smaller
+    // TLP sized messages to be sent to the SMMU
+    std::vector <MemoryMessage> generateMemoryMessageFromDescriptor (AdvancedTransmitDataDescriptor transmitDescriptor) {
+
+      std::vector <MemoryMessage> ret;
+
+      uint32_t bytesLeft = transmitDescriptor.fields.paylen;
+      uint32_t numberOfMessages = ceil(bytesLeft / (maxTLPSize * 1.0));
+
+      for (uint32_t i = 0; i < numberOfMessages; i++) {
+
+        VirtualMemoryAddress txBufferIOVA = VirtualMemoryAddress( transmitDescriptor.address + i * maxTLPSize );
+
+        uint32_t payloadLength = bytesLeft > maxTLPSize ? maxTLPSize : bytesLeft;
+
+        MemoryMessage txDataReadMessage (MemoryMessage::IOLoadReq, PhysicalMemoryAddress(0), txBufferIOVA, BDF);
+        txDataReadMessage.reqSize() = payloadLength;
+        // Data is not actually required so dataRequired field is not set here
+
+        ret.push_back(txDataReadMessage);
+
+        bytesLeft -= payloadLength;
+      }
+
+      return ret;
+    }
+
     void processTxDescriptor (AdvancedTransmitDataDescriptor transmitDescriptor) {
+
+      /**
+       * Read the IOVA of Tx Buffer from the buffer descriptor
+       * Create memory message*s* with the appropriate IOVA and message size
+       * Send the memory message to the SMMU
+       * SMMU will then process that message, do translation and read and
+       * return data if necessary
+       * SMMU will be responsible for injecting memory accesses into the cache
+       * hierarchy
+       * So the NIC only sends MemoryMessages and not inject memory operations
+       * directly into the memory or LLC
+       */
+
+      std::vector <MemoryMessage> txDataReadMessages = generateMemoryMessageFromDescriptor (transmitDescriptor);
+
+      for (auto& txDataReadMessage : txDataReadMessages)
+        FLEXUS_CHANNEL(DeviceMemoryRequest) << txDataReadMessage;  // Sending to SMMU for processing
+                                                                   // Processing entails both translation and memory access
+
+      // By this point, the SMMU should have injected read requests into the cache hierarchy
+
       printDataDescriptor(transmitDescriptor);
     }
 
@@ -170,6 +219,8 @@ class FLEXUS_COMPONENT(NIC)
 
       AdvancedTransmitDataDescriptor transmitDescriptor;
 
+      // !!!!!! Assuming that this message is always < maxTLP
+      // !!!!!! Otherwise this message also needs to be chopped
       MemoryMessage txDataDescriptorReadMessage (MemoryMessage::IOLoadReq, PhysicalMemoryAddress(0), tailDescriptorIOVA, BDF);
       txDataDescriptorReadMessage.reqSize() = sizeof (transmitDescriptor);   // Descriptor is 16-bytes long
       txDataDescriptorReadMessage.setDataRequired();  // NIC requires the descriptor data
@@ -203,8 +254,10 @@ class FLEXUS_COMPONENT(NIC)
 
       VirtualMemoryAddress tailDescriptorIOVA ( TDBAL + (tailPosition << 4) );
 
+      // This step requires one translation
       AdvancedTransmitDataDescriptor transmitDescriptor = readTransmitDataDescriptor(tailDescriptorIOVA);
 
+      // This will require as many translations as the data is big
       if (transmitDescriptor.fields.dtyp == 0x3) { // 0x3 means that this is a data descriptor
         processTxDescriptor(transmitDescriptor);
       }
@@ -269,6 +322,7 @@ class FLEXUS_COMPONENT(NIC)
 
 
   private:
+    const uint16_t maxTLPSize   = 4 * 1024;   // As per PCIe 6 documentation, the maximum size of a TLP can be 4KB
     const uint16_t BDF          = 0x8;        // TODO: This BDF should be dynamically determined and should also be a member of PCIeDevice class
     const uint32_t BAR0_size    = 128 * 1024; // TODO: BAR Sizes are device specific and specified in the Device documentation, so they need to be
                                               // initialized by the device constructor

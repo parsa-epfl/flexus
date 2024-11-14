@@ -267,9 +267,9 @@ public:
 	void push(interface::DeviceMemoryRequest const&, MemoryMessage& aMemoryMessage)
 	{
 
-		// TODO: Currently there is no breakdown of memory request into Page sized translation request
-		// So a 1GB request will do a single translation, which is a wrong behavior
-		// This function should chop the requests into page sized requests
+		// NOTE: it should be guaranteed by the Device that the memory message it sends
+		// will not exceede the maximum TLP size. THus we need not worry if a memory message 
+		// may span more than one page as the max TLP size is 4KB as per PCIe 6 Specification
 
 		TranslationPtr tr(new Translation);
 		  tr->setData();
@@ -283,7 +283,7 @@ public:
 
 		// Validation
 		PhysicalMemoryAddress qemuPA (Flexus::Qemu::API::qemu_api.translate_iova2pa (tr->bdf, (uint64_t)tr->theVaddr));
-		DBG_Assert(((uint64_t)qflexPA) == ((uint64_t)qemuPA), (<< "Mismatch between QFlex Translation and QEMU Translation"));
+		DBG_Assert(((uint64_t)qflexPA) == ((uint64_t)qemuPA), (<< "Mismatch between QFlex Translation(0x" << std::hex << ((uint64_t)qflexPA) << ") and QEMU Translation(0x" << ((uint64_t)qemuPA) << ")"));
 
 		aMemoryMessage.address() = tr->thePaddr;
 

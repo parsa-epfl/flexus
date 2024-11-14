@@ -462,7 +462,7 @@ struct MemoryMessage : public boost::counted_base
     {
     }
 
-    explicit MemoryMessage(MemoryMessage& aMsg)
+    explicit MemoryMessage(const MemoryMessage& aMsg)
       : theType(aMsg.theType)
       , theAddress(aMsg.theAddress)
       , theAssociatedPC(aMsg.theAssociatedPC)
