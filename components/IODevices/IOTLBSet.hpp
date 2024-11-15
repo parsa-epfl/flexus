@@ -39,6 +39,8 @@ public:
 	void invalidate(uint16_t BDF);	// Invalidate the entries belonging to a device
 	void invalidate();	// Invalidate the entire set
 
+	void printValidEntries();
+
 };
 
 #endif

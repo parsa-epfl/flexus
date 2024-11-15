@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <core/qemu/mai_api.hpp>
+#include "core/debug/debug.hpp"
 
 using namespace Flexus::SharedTypes;
 
@@ -26,6 +27,13 @@ public:
 	IOTLBEntry()
 		: valid(false)
 	{
+	}
+
+	void print() {
+		DBG_(Crit, (	<< "IOTLB Entry: IOVAPFN(0x" << std::hex << (uint64_t)theIOVAPFN
+					 	<< ")\tPAPFN(" << (uint64_t)thePAPFN
+						<< ")"
+					));
 	}
 };
 

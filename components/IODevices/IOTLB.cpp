@@ -72,21 +72,28 @@ IOTLB::update(uint16_t BDF, VirtualMemoryAddress aVaddr, PhysicalMemoryAddress a
 
 void 
 IOTLB::invalidate() {
-	for (auto iotlbSet : theIOTLB) {
+	for (auto& iotlbSet : theIOTLB) {
 		iotlbSet.invalidate();
 	}
 }
 
 void 
 IOTLB::invalidate(uint16_t BDF) {
-	for (auto iotlbSet : theIOTLB) {
+	for (auto& iotlbSet : theIOTLB) {
 		iotlbSet.invalidate(BDF);
 	}
 }
 
 void 
 IOTLB::invalidate(uint16_t BDF, VirtualMemoryAddress aVaddr) {
-	for (auto iotlbSet : theIOTLB) {
+	for (auto& iotlbSet : theIOTLB) {
 		iotlbSet.invalidate(BDF, iovaPFN(aVaddr));
+	}
+}
+
+void 
+IOTLB::printValidIOTLBEntries() {
+	for (auto iotlbSet : theIOTLB) {
+		iotlbSet.printValidEntries();
 	}
 }

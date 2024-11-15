@@ -86,3 +86,12 @@ IOTLBSet::invalidate()
         block.valid = false;
     }
 }
+
+void 
+IOTLBSet::printValidEntries() {
+    for (auto& block : blocks) {
+        if (block.valid) {
+            block.print();
+        }
+    }
+}

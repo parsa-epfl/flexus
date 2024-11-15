@@ -50,6 +50,8 @@ public:
 	void invalidate();												// Invalidate the entire IOTLB
 	void invalidate(uint16_t BDF);									// Invalidate all the entries belonging to a device
 	void invalidate(uint16_t BDF, VirtualMemoryAddress aVaddr);		// Invlaidate a specific entry
+
+	void printValidIOTLBEntries();
 };
 
 #endif
