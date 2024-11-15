@@ -261,8 +261,6 @@ LDAQ(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     uint32_t size = 8 << extract32(aFetchedOpcode.theOpcode, 30, 2);
     uint32_t rt   = extract32(aFetchedOpcode.theOpcode, 0, 5);
     uint32_t rn   = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    uint32_t regsize;
-    regsize  = (size == 0x3) ? 64 : 32;
     eSize sz = dbSize(size);
 
     DBG_(VVerb, (<< "Loading with size " << sz));
@@ -299,7 +297,7 @@ LDAQ(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     inst->addSquashEffect(eraseLSQ(inst));
     inst->addRetirementConstraint(loadMemoryConstraint(inst));
 
-    addDestination(inst, rt, load, regsize == 64);
+    addDestination(inst, rt, load, size == 64);
 
     return inst;
 }
