@@ -27,6 +27,28 @@ private:
 	Flexus::Qemu::Processor cpu;  // TODO: Technically SMMU should not be tied to a CPU but this exposes convenient functions that we want to use
 
 private:
+
+	typedef struct SMMUInterfaceConfig {
+		uint32_t SMMUEN			: 1;
+		uint32_t PRIQEN			: 1;
+		uint32_t EVENTQEN		: 1;
+		uint32_t CMDQEN			: 1;
+		uint32_t ATSCHK			: 1;
+		uint32_t Res0			: 1;
+		uint32_t VMW			: 3;
+		uint32_t Res1			: 1;
+		uint32_t DPT_WALK_EN	: 1;
+		uint32_t Res3			: 21;
+
+		// toString method that returns a formatted string
+		std::string toString() const {
+			std::ostringstream oss;
+			oss << "SMMUEN(" << SMMUEN << ")\tPRIQEN(" << PRIQEN << ")\tEVENTQEN(" << EVENTQEN 
+				<< ")\tCMDQEN(" << CMDQEN << ")\tATSCHK(" << ATSCHK << ")\tVMW(" << VMW << ")";
+			return oss.str();
+		}
+	} SMMUInterfaceConfig;
+
 	typedef struct StreamTableBaseConfig {
 		uint64_t log2size   : 6;        // Table size as log2 (entries).
 		uint64_t split      : 5;        // StreamID split point for multi-level table. 6->4KB leaf, 8->16KB leaf, 10->64KB leaf
@@ -151,11 +173,13 @@ private:
     StreamTableBaseConfig streamTableBaseConfig;
     uint64_t streamTableSize;
     uint64_t streamTableBase;
+	SMMUInterfaceConfig smmuInterfaceConfig;				// SMMU programming interface control and configuration register
 
 private:
     const uint32_t SMMU_STRTAB_BASE_CFG     =   0x0088;       // Stream Table Base Configuration register offset
     const uint32_t SMMU_STRTAB_BASE         =   0x0080;       // Stream Table Base register offset
 	const uint32_t SMMU_IDR0				=	0x0000;
+	const uint32_t SMMU_CR0					=	0x0020;		  // SMMU programming interface control and configuration register
 
 // These are from core MMU of QFlex
 private:
@@ -176,6 +200,12 @@ public:
 	void initialize()
 	{
 		cpu = Flexus::Qemu::Processor::getProcessor(0); // Use CPU 0 for now
+
+		*((uint32_t *)(&smmuInterfaceConfig)) = (uint32_t)cpu.read_pa(PhysicalMemoryAddress(configBaseAddress + SMMU_CR0), 4);
+
+		DBG_Assert(smmuInterfaceConfig.SMMUEN == 1, (<< "QEMU does not have an SMMU"));
+		DBG_Assert(smmuInterfaceConfig.CMDQEN == 1, (<< "QEMU does not have an SMMU Command Queue Enabled"));
+		DBG_Assert(smmuInterfaceConfig.EVENTQEN == 1, (<< "QEMU does not have an SMMU Event Queue Enabled"));
 
 		*((uint32_t *)(&streamTableBaseConfig)) = (uint32_t)cpu.read_pa(PhysicalMemoryAddress(configBaseAddress + SMMU_STRTAB_BASE_CFG), 4);
         streamTableBase         = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(configBaseAddress + SMMU_STRTAB_BASE), 8);
@@ -393,12 +423,13 @@ private:
     }
 
 	void printSMMUConfig() {
-		DBG_(VVerb, (<< "Initializing SMMU from QEMU..." 								<< std::endl
+		DBG_(Crit, (<< "Initializing SMMU from QEMU..." 								<< std::endl
                 << std::hex
 
                 // Print Receive Side Registers
                 << "\t" << "Config Base Address: "  		<< configBaseAddress  		<< std::endl
                 << "\t" << "Config Size: "   				<< configSize  				<< std::endl
+				<< "\t" << "Interface Config: "   			<< smmuInterfaceConfig.toString()  		<< std::endl
                 << "\t" << "Stream Table Base Config: " 	<< streamTableBaseConfig.toString()  	<< std::endl
                 << "\t" << "Stream Table Base Address: "  	<< streamTableBase  		<< std::endl
                 << "\t" << "Stream Table Size: "  			<< streamTableSize  		<< std::endl
