@@ -840,7 +840,10 @@ LDR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     inst->addCommitEffect(accessMem(inst));
     inst->addRetirementConstraint(loadMemoryConstraint(inst));
 
-    addDestination(inst, rt, load, regsize == 64);
+    // destination register == 31 means LDR XZR, which is a NOP
+    // Normally register 31 is SP, but it cannot be used as a destination of LDR
+    if (rt != 31)
+        addDestination(inst, rt, load, regsize == 64);
 
     return inst;
 }
