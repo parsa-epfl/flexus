@@ -80,6 +80,7 @@ typedef enum
     SCTLR,        // System Control Register
     TCR,
     ISA,
+    DAIF,
 } register_type_t;
 
 typedef enum
