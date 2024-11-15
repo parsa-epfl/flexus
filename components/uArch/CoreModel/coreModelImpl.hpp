@@ -570,7 +570,7 @@ class CoreImpl : public CoreModel
     // Squashing & Front-end control
     //==========================================================================
   public:
-    bool squashFrom(boost::intrusive_ptr<Instruction> anInsn);
+    bool squashFrom(boost::intrusive_ptr<Instruction> anInsn, bool inclusive = true);
     void redirectFetch(VirtualMemoryAddress anAddress);
     void branchFeedback(boost::intrusive_ptr<BranchFeedback> feedback);
 

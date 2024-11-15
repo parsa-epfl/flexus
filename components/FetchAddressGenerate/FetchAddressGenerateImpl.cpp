@@ -1,4 +1,5 @@
 
+#include "components/uFetch/uFetchTypes.hpp"
 #include <components/FetchAddressGenerate/FetchAddressGenerate.hpp>
 
 #define FLEXUS_BEGIN_COMPONENT FetchAddressGenerate
@@ -141,19 +142,26 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
             AGU_DBG("Getting addresses: " << max_addrs << " remaining");
 
             FetchAddr faddr(thePC[anIndex]);
+            faddr.theBPState->pc = thePC[anIndex];
 
             // Advance the PC
             if (theBranchPredictor->isBranch(faddr.theAddress)) {
                 AGU_DBG("Predicting a Branch");
+                faddr.theBPState->thePredictedType = kUnconditional;
                 if (max_predicts == 0) {
                     AGU_DBG("Config set the max prediction to zero, so no prediction");
                     break;
                 }
                 VirtualMemoryAddress prediction = theBranchPredictor->predict(faddr.theAddress, *faddr.theBPState);
-                if (prediction == 0)
+                if (prediction == 0) {
                     thePC[anIndex] += 4;
-                else
+                    faddr.theBPState->thePrediction = kNotTaken;
+                }
+                else {
                     thePC[anIndex] = prediction;
+                    faddr.theBPState->thePrediction = kTaken;
+                }
+                faddr.theBPState->thePredictedTarget = thePC[anIndex];
                 AGU_DBG("Advancing PC to: " << thePC[anIndex] << " for core: " << anIndex);
                 AGU_DBG("Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress);
 
