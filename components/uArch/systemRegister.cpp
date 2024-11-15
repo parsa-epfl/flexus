@@ -84,7 +84,7 @@ class DAIF_ : public SysRegInfo
     virtual uint64_t readfn(uArch* aCore) override { return aCore->_PSTATE().DAIF(); }
     virtual void sync(uArch* aCore, size_t theNode) override
     {
-        auto pstate = Flexus::Qemu::API::qemu_api.read_register(theNode, Flexus::Qemu::API::PSTATE, 0);
+        auto pstate = Flexus::Qemu::API::qemu_api.read_register(theNode, Flexus::Qemu::API::DAIF, 0);
         writefn(aCore, pstate);
     }
     DAIF_()
