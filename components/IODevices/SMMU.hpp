@@ -23,6 +23,19 @@ COMPONENT_PARAMETERS(
 );
 
 COMPONENT_INTERFACE(
+
+    // CPU uses this interface to talk to the SMMU
+    // CPU writes to MMIO registers of SMMU to insert commands
+    // Eg. IOTLB Invalidation command
+    // CPU uses this port to get the status of SMMU as well
+    // Eg. Progress of IOTLB invalidation, Fault Occurrence 
+    PORT( PushInput, MemoryMessage, CPUMemoryRequest )
+
+    // SMMU uses this port to communicate to LLC or Memory
+    // to read data like entries in Command, Event or PRI Queues
+    // These queues are memory resident
+    PORT( PushOutput, MemoryMessage, MemoryRequest )
+
     // this is for trace
     // IO devices send TranslationPtr to SMMU
     // SMMU looks up the IOTLB and performs PTW if required

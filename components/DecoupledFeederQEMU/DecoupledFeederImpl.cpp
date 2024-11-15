@@ -175,7 +175,11 @@ class FLEXUS_COMPONENT(DecoupledFeeder)
         FLEXUS_CHANNEL_ARRAY(ToBPred, anIndex) << thePCTypeAndAnnulTriplet;
     }
 
+    // TODO: This should not be hardcoded
+    // TODO: Implement proper routing logic for PCIe RC
     #define NIC_BASE_ADDRESS        0x10000000
+    #define SMMU_BASE_ADDRESS       0x09050000
+    #define SMMU_BASE_SIZE          0x00020000
 
     void toPCIeRootComplex(std::size_t anIndex, MemoryMessage& aMessage)
     {
@@ -217,6 +221,8 @@ class FLEXUS_COMPONENT(DecoupledFeeder)
         if ((uint64_t)aMessage.address() >= NIC_BASE_ADDRESS && (uint64_t)aMessage.address() < 2 * NIC_BASE_ADDRESS)
         {
             FLEXUS_CHANNEL (ToNIC) << aMessage;
+        } else if ((uint64_t)aMessage.address() >= SMMU_BASE_ADDRESS && (uint64_t)aMessage.address() < (SMMU_BASE_ADDRESS + SMMU_BASE_SIZE)) {
+            FLEXUS_CHANNEL (ToSMMU) << aMessage;
         }
     }
 

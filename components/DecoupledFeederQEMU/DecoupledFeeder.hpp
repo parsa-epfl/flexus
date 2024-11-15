@@ -24,6 +24,7 @@ COMPONENT_INTERFACE(
   DYNAMIC_PORT_ARRAY( PushOutput, pc_type_annul_triplet, ToBPred )
   DYNAMIC_PORT_ARRAY( PushOutput, TranslationPtr, ToMMU )
   PORT( PushOutput, MemoryMessage, ToNIC )  // TODO: Should technically be connected to the Root Complex. But we don't have a Root Complex yet.
+  PORT( PushOutput, MemoryMessage, ToSMMU )  // TODO: Should technically be connected to the Root Complex. But we don't have a Root Complex yet.
 );
 
 #include FLEXUS_END_COMPONENT_DECLARATION()

@@ -175,11 +175,19 @@ private:
     uint64_t streamTableBase;
 	SMMUInterfaceConfig smmuInterfaceConfig;				// SMMU programming interface control and configuration register
 
+	uint64_t commandQueueBase;
+	uint32_t commandQueueLog2Size;
+	uint32_t commandQueueProd;
+	uint32_t commandQueueCons;
+
 private:
     const uint32_t SMMU_STRTAB_BASE_CFG     =   0x0088;       // Stream Table Base Configuration register offset
     const uint32_t SMMU_STRTAB_BASE         =   0x0080;       // Stream Table Base register offset
 	const uint32_t SMMU_IDR0				=	0x0000;
 	const uint32_t SMMU_CR0					=	0x0020;		  // SMMU programming interface control and configuration register
+	const uint32_t SMMU_CMDQ_BASE			=	0x0090;
+	const uint32_t SMMU_CMDQ_PROD			=	0x0098;
+	const uint32_t SMMU_CMDQ_CONS			=	0x009c;
 
 // These are from core MMU of QFlex
 private:
@@ -206,6 +214,15 @@ public:
 		DBG_Assert(smmuInterfaceConfig.SMMUEN == 1, (<< "QEMU does not have an SMMU"));
 		DBG_Assert(smmuInterfaceConfig.CMDQEN == 1, (<< "QEMU does not have an SMMU Command Queue Enabled"));
 		DBG_Assert(smmuInterfaceConfig.EVENTQEN == 1, (<< "QEMU does not have an SMMU Event Queue Enabled"));
+
+		*((uint64_t *)(&commandQueueBase)) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(configBaseAddress + SMMU_CMDQ_BASE), 8);
+		commandQueueLog2Size = commandQueueBase & ((1UL << 5) - 1);
+		commandQueueBase >>= 5;
+		commandQueueBase &= ((1UL << 51) - 1);
+		commandQueueBase <<= 5;
+
+		*((uint32_t *)(&commandQueueProd)) = (uint32_t)cpu.read_pa(PhysicalMemoryAddress(configBaseAddress + SMMU_CMDQ_PROD), 4);
+		*((uint32_t *)(&commandQueueCons)) = (uint32_t)cpu.read_pa(PhysicalMemoryAddress(configBaseAddress + SMMU_CMDQ_CONS), 4);
 
 		*((uint32_t *)(&streamTableBaseConfig)) = (uint32_t)cpu.read_pa(PhysicalMemoryAddress(configBaseAddress + SMMU_STRTAB_BASE_CFG), 4);
         streamTableBase         = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(configBaseAddress + SMMU_STRTAB_BASE), 8);
@@ -282,6 +299,14 @@ public:
 	//----------
 	void drive(interface::SMMUDrive const&)
 	{
+	}
+
+	FLEXUS_PORT_ALWAYS_AVAILABLE(CPUMemoryRequest);
+	void push(interface::CPUMemoryRequest const&, MemoryMessage& aMessage)
+	{
+		if ((uint64_t)aMessage.address() == (configBaseAddress + SMMU_CMDQ_PROD)) {	// CPU produced a command
+			processCommandQueue ();
+		}
 	}
 
 	bool available(interface::TranslationRequestIn const&) { return true; }
@@ -422,6 +447,73 @@ private:
         return 0;
     }
 
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	/**
+	 * Currently, the command queue is processed
+	 * whenever there is a write to the CMDQ_PROD register
+	 * The entire queue is processed all at once
+	 * However, the real hardware may not process all the 
+	 * commands at once. It may process some commands and
+	 * update the CMDQ_CONS register such that the CMDQ is
+	 * not empty.
+	 * But right now, we are implementing it such that the
+	 * entire wueue is processed all at once and CMDQ_CONS
+	 * and CMDQ_PROD become equal (empty queue)
+	 * This may lead to incorrect or subpar behavior
+	 * If we optimistically process more commands than are done
+	 * by the HW, worst case scenario, we end up reexecuting
+	 * those commands. For IOTLB invalidation, this may lead to 
+	 * more invalidations than are intended. But that does not
+	 * imply incorrect behavior, just more IOPTW walks
+	 */
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	void processCommandQueue () {
+		*((uint32_t *)(&commandQueueProd)) = (uint32_t)cpu.read_pa(PhysicalMemoryAddress(configBaseAddress + SMMU_CMDQ_PROD), 4);
+		
+		uint32_t QS = commandQueueLog2Size;
+
+		uint32_t prodWrBit = (commandQueueProd >> QS) & 1U;
+		uint32_t consWrBit = (commandQueueCons >> QS) & 1U;
+
+		commandQueueProd &= ((1UL << QS) - 1);
+		commandQueueCons &= ((1UL << QS) - 1);
+
+		DBG_(VVerb, ( 	<< "Processing Command Queue: CMDQ_PROD(" << commandQueueProd 
+						<< ")\tCMDQ_CONS(" << commandQueueCons 
+						<< ")\tPROD_WR(" << prodWrBit 
+						<< ")\tCONS_WR(" << consWrBit 
+						<< ")" ));
+
+		while (!(commandQueueProd == commandQueueCons && prodWrBit == consWrBit)) {	// Empty Queue Condition
+			processCommand(commandQueueCons);
+			
+			commandQueueCons++;
+			consWrBit++;
+			consWrBit &= 1UL;
+		}
+
+		/** QEMU also processes all the commands in the queue at once
+		 * So if commandQueueCons is also initialized at the beginning of this function 
+		 * like commandQueueProd, both will have the same value and appear to be empty
+		 * So updating the commandQueueCons at the end of this function causes the next 
+		 * invocation of this function to see the old value of commandQueueCons and the 
+		 * queue appears to be non-empty
+		 */
+		*((uint32_t *)(&commandQueueCons)) = (uint32_t)cpu.read_pa(PhysicalMemoryAddress(configBaseAddress + SMMU_CMDQ_CONS), 4);
+	}
+
+	void processCommand (uint32_t index) {
+
+		// TODO: Implement proper command processing
+		// const uint8_t commandSize = 16;	// Every command is 16 bytes long
+
+		// *((uint64_t *)(&commandQueueProd)) = (uint32_t)cpu.read_pa(PhysicalMemoryAddress(configBaseAddress + SMMU_CMDQ_PROD), 4);
+
+		theIOTLB->invalidate();	// ! Just for testing purposes
+
+		DBG_(VVerb, (<< "Invalidated IOTLB" 	<< std::endl ));
+	}
+
 	void printSMMUConfig() {
 		DBG_(Crit, (<< "Initializing SMMU from QEMU..." 								<< std::endl
                 << std::hex
@@ -430,6 +522,10 @@ private:
                 << "\t" << "Config Base Address: "  		<< configBaseAddress  		<< std::endl
                 << "\t" << "Config Size: "   				<< configSize  				<< std::endl
 				<< "\t" << "Interface Config: "   			<< smmuInterfaceConfig.toString()  		<< std::endl
+				<< "\t" << "Command Queue Base Address: "  	<< commandQueueBase  		<< std::endl
+				<< "\t" << "Command Queue Log2Size: "  		<< commandQueueLog2Size  		<< std::endl
+				<< "\t" << "Command Queue Prod: "  			<< commandQueueProd  		<< std::endl
+				<< "\t" << "Command Queue Cons: "  			<< commandQueueCons  		<< std::endl
                 << "\t" << "Stream Table Base Config: " 	<< streamTableBaseConfig.toString()  	<< std::endl
                 << "\t" << "Stream Table Base Address: "  	<< streamTableBase  		<< std::endl
                 << "\t" << "Stream Table Size: "  			<< streamTableSize  		<< std::endl
