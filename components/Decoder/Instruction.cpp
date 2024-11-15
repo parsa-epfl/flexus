@@ -85,7 +85,7 @@ ArchInstruction::doDispatchEffects()
     auto bp_state = bpState();
 
     DBG_Assert(bp_state, (<< "No branch predictor state exists, but it must"));
-    if (bp_state->theActualType == kNonBranch) return;
+    if (bp_state->thePredictedType == kNonBranch) return;
     if (isBranch()) return;
 
     // Branch predictor identified an instruction that is not a branch as a branch.
@@ -98,6 +98,7 @@ ArchInstruction::doDispatchEffects()
     feedback->theActualTarget    = VirtualMemoryAddress(0);
     feedback->theBPState         = bpState();
     core()->branchFeedback(feedback);
+    if (core()->squashFrom(dynamic_cast<Instruction*>(this), false)) { core()->redirectFetch(pc() + 4); }
 }
 
 bool
