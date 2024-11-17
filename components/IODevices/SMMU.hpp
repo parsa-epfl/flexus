@@ -9,6 +9,7 @@
 #include "components/MMU/pageWalk.hpp"
 #include "components/MMU/mmuRegisters.hpp"
 
+#include "SMMUTypes.hpp"
 #include "IOTLB.hpp"
 
 // clang-format off
