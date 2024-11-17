@@ -39,17 +39,17 @@ public:
 	IOTLB(uint16_t pageSize, int32_t IOTLBSets, int32_t IOTLBAssoc);
 
 	// Whether IOTLB contains the translation
-	bool contains(uint16_t BDF, VirtualMemoryAddress aVaddr);
+	bool contains(uint16_t ASID, VirtualMemoryAddress aVaddr);
 
 	// Get the hit IOTLB entry's IOPFN
-	PhysicalMemoryAddress access(uint16_t BDF, VirtualMemoryAddress aVaddr);
+	PhysicalMemoryAddress access(uint16_t ASID, VirtualMemoryAddress aVaddr);
 
 	// Change or add a new translation. In case there is a hit, just modify. In case of a miss, add a new entry
-	bool update(uint16_t BDF, VirtualMemoryAddress aVaddr, PhysicalMemoryAddress aPaddr);
+	bool update(uint16_t ASID, VirtualMemoryAddress aVaddr, PhysicalMemoryAddress aPaddr);
 
 	void invalidate();												// Invalidate the entire IOTLB
-	void invalidate(uint16_t BDF);									// Invalidate all the entries belonging to a device
-	void invalidate(uint16_t BDF, VirtualMemoryAddress aVaddr);		// Invlaidate a specific entry
+	void invalidate(uint16_t ASID);									// Invalidate all the entries belonging to a device
+	void invalidate(uint16_t ASID, VirtualMemoryAddress aVaddr);	// Invlaidate a specific entry
 
 	void printValidIOTLBEntries();
 };

@@ -2,8 +2,7 @@
 #define __SMMU_COMMAND_TYPES_HPP__
 
 #include <stdint.h>
-#include <string.h>
-#include <iostream>
+#include <sstream>
 
 namespace Flexus {
 namespace SharedTypes {
@@ -150,6 +149,49 @@ typedef struct ContextDescriptor {
 	}
 
 } ContextDescriptor;
+
+typedef struct InvalidationCommand {
+
+	enum CommandType {
+		// EL1 specific commands
+		CMD_TLBI_NH_ALL		=	0x10,
+		CMD_TLBI_NH_ASID	=	0x11,
+		CMD_TLBI_NH_VAA		=	0x13,
+		CMD_TLBI_NH_VA		=	0x12
+	};
+
+	// First 32-bits
+	CommandType opcode	: 8;
+	uint64_t Res0		: 4;
+	uint64_t NUM		: 5;
+	uint64_t Res1		: 3;
+	uint64_t SCALE		: 6;
+	uint64_t Res2		: 6;
+
+	// 63-32 bits
+	uint64_t VMID		: 16;
+	uint64_t ASID		: 16;
+
+	// 127-64 bits
+	uint64_t Leaf		: 1;
+	uint64_t Res3		: 6;
+	uint64_t TTL128		: 1;
+	uint64_t TTL		: 2;
+	uint64_t TG			: 2;
+	uint64_t Address	: 52;
+	
+	// toString method that returns a formatted string
+	std::string toString() const {
+		std::ostringstream oss;
+		oss << "opcode("		<< opcode
+			<< ")\tVMID("		<< VMID 
+			<< ")\tASID("		<< ASID 
+			<< ")\tAddress("	<< Address 
+			<< ")";
+		return oss.str();
+	}
+
+} InvalidationCommand;
 
 }
 }

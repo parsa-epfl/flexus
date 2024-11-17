@@ -28,20 +28,21 @@ IOTLBSet::updateReplacementQueue(uint32_t index)
 }
 
 bool
-IOTLBSet::isHit(uint16_t BDF, VirtualMemoryAddress anIOVAPFN)
+IOTLBSet::isHit(uint16_t ASID, VirtualMemoryAddress anIOVAPFN)
 {
     for (uint32_t i = 0; i < blocks.size(); ++i) {
-        if (blocks[i].theIOVAPFN == anIOVAPFN && blocks[i].valid) { return true; }
+        if (blocks[i].theASID == ASID &&
+         blocks[i].theIOVAPFN == anIOVAPFN && blocks[i].valid) { return true; }
     }
     return false;
 }
 
 // [MADHUR] Return the Hit IOTLB entry
 IOTLBEntry*
-IOTLBSet::access(uint16_t BDF, VirtualMemoryAddress anIOVAPFN)
+IOTLBSet::access(uint16_t ASID, VirtualMemoryAddress anIOVAPFN)
 {
     for (uint32_t i = 0; i < blocks.size(); ++i) {
-        if (blocks[i].theBDF == BDF && blocks[i].theIOVAPFN == anIOVAPFN && blocks[i].valid) {
+        if (blocks[i].theASID == ASID && blocks[i].theIOVAPFN == anIOVAPFN && blocks[i].valid) {
             updateReplacementQueue(i);
             return &blocks[i];
         }
@@ -62,19 +63,20 @@ IOTLBSet::insert(IOTLBEntry iotlbEntry)
 
 // [MADHUR] Invalidate entry if present
 void
-IOTLBSet::invalidate(uint16_t BDF, VirtualMemoryAddress anIOVAPFN)
+IOTLBSet::invalidate(uint16_t ASID, VirtualMemoryAddress anIOVAPFN)
 {
     for (auto& block : blocks) {
-        if (block.theBDF == BDF && block.theIOVAPFN == anIOVAPFN && block.valid) block.valid = false;
+        if (block.theASID == ASID 
+        && block.theIOVAPFN == anIOVAPFN && block.valid) block.valid = false;
     }
 }
 
 // [MADHUR] Invalidate all entries of a device
 void
-IOTLBSet::invalidate(uint16_t BDF)
+IOTLBSet::invalidate(uint16_t ASID)
 {
     for (auto& block : blocks) {
-        if (block.theBDF == BDF) block.valid = false;
+        if (block.theASID == ASID) block.valid = false;
     }
 }
 

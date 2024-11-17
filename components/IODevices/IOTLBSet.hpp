@@ -26,17 +26,17 @@ public:
 	IOTLBSet(uint32_t associativity);
 
 	// [MADHUR] Whether IOTLB entry corresponding to anIOVAPFN is present
-	bool isHit(uint16_t BDF, VirtualMemoryAddress anIOVAPFN);
+	bool isHit(uint16_t ASID, VirtualMemoryAddress anIOVAPFN);
 
 	// [MADHUR] Return the Hit IOTLB entry
-	IOTLBEntry * access(uint16_t BDF, VirtualMemoryAddress anIOVAPFN);
+	IOTLBEntry * access(uint16_t ASID, VirtualMemoryAddress anIOVAPFN);
 
 	// [MADHUR] Insert a new IOTLB Entry
 	void insert(IOTLBEntry iotlbEntry);
 
 	// [MADHUR] Invalidate entry if present
-	void invalidate(uint16_t BDF, VirtualMemoryAddress anIOVAPFN);
-	void invalidate(uint16_t BDF);	// Invalidate the entries belonging to a device
+	void invalidate(uint16_t ASID, VirtualMemoryAddress anIOVAPFN);
+	void invalidate(uint16_t ASID);	// Invalidate the entries belonging to an ASID
 	void invalidate();	// Invalidate the entire set
 
 	void printValidEntries();

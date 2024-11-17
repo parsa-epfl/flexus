@@ -1,4 +1,6 @@
+#include "components/IODevices/SMMUTypes.hpp"
 #include "core/debug/debug.hpp"
+#include "core/types.hpp"
 #include "SMMU.hpp"
 
 #include DBG_Control()
@@ -108,8 +110,17 @@ public:
 
 		DBG_(VVerb, (<< "Translating: BDF: " << std::hex << bdf << "\tIOVA: " << (uint64_t) aTranslate->theVaddr << std::dec ));
 
-		if (theIOTLB->contains(bdf, aTranslate->theVaddr)) {	// Hit in IOTLB
-			aTranslate->thePaddr = theIOTLB->access(bdf, aTranslate->theVaddr);
+		// Configuration lookup happens for every IOTLB access as well
+		// TODO: Add caching for configuration
+
+		StreamTableEntry streamTableEntry = getStreamTableEntry (bdf);
+		ContextDescriptor contextDescriptor = getContextDescriptor (streamTableEntry);
+		uint64_t translationTableBase = getTranslationTableBase(aTranslate->theVaddr, contextDescriptor);
+
+		uint16_t ASID = contextDescriptor.ASID;
+
+		if (theIOTLB->contains(ASID, aTranslate->theVaddr)) {	// Hit in IOTLB
+			aTranslate->thePaddr = theIOTLB->access(ASID, aTranslate->theVaddr);
 
 			DBG_(VVerb, (	
 						<< "Translation Hit in IOTLB: BDF: " << std::hex << bdf 
@@ -122,11 +133,6 @@ public:
 		}
 
 		// Miss in IOTLB, do Page Table Walk and insert the entry into the IOTLB
-
-        StreamTableEntry streamTableEntry = getStreamTableEntry (bdf);
-        ContextDescriptor contextDescriptor = getContextDescriptor (streamTableEntry);
-        uint64_t translationTableBase = getTranslationTableBase(aTranslate->theVaddr, contextDescriptor);
-
 		cfg_smmu(0, contextDescriptor, aTranslate->theVaddr);	// TODO: Passing 0 for now as we have only 1 device
 
 		thePageWalker->setMMU(theMMU);
@@ -144,7 +150,7 @@ public:
 
 		// Insert the translation into the IOTLB
 
-		theIOTLB->update(bdf, aTranslate->theVaddr, aTranslate->thePaddr);
+		theIOTLB->update(ASID, aTranslate->theVaddr, aTranslate->thePaddr);
 
 		DBG_(VVerb, (	<< "Translation Miss in IOTLB: BDF: " << std::hex << bdf 
 						<< "\tIOVA: " << (uint64_t) aTranslate->theVaddr 
@@ -365,14 +371,32 @@ private:
 
 	void processCommand (uint32_t index) {
 
-		// TODO: Implement proper command processing
-		// const uint8_t commandSize = 16;	// Every command is 16 bytes long
+		// TODO: Implement other non-invalidation commands as well
+		// TODO: Implement Config Cache invalidations
+		// TODO: Invalidation Broadcast
+		InvalidationCommand invalidationCommand;
 
-		// *((uint64_t *)(&commandQueueProd)) = (uint32_t)cpu.read_pa(PhysicalMemoryAddress(configBaseAddress + SMMU_CMDQ_PROD), 4);
+		*((uint64_t *)(&invalidationCommand)) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(commandQueueBase + sizeof(invalidationCommand) * index), 8);
+		*((uint64_t *)(&invalidationCommand) + 1) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(commandQueueBase + sizeof(invalidationCommand) * index + 8), 8);
 
-		theIOTLB->invalidate();	// ! Just for testing purposes
-
-		DBG_(VVerb, (<< "Invalidated IOTLB" 	<< std::endl ));
+		switch (invalidationCommand.opcode) {
+            case InvalidationCommand::CMD_TLBI_NH_ALL:
+				theIOTLB->invalidate();
+				DBG_(Crit, (<< "Invalidated Entire IOTLB" 	<< std::endl ));
+				break;
+			case InvalidationCommand::CMD_TLBI_NH_VAA:
+            case InvalidationCommand::CMD_TLBI_NH_ASID:
+				theIOTLB->invalidate(invalidationCommand.ASID);
+				DBG_(Crit, (<< "Invalidated IOTLB ASID(" << invalidationCommand.ASID << ")"	<< std::endl ));
+				break;
+            case InvalidationCommand::CMD_TLBI_NH_VA:
+				theIOTLB->invalidate(invalidationCommand.ASID,  VirtualMemoryAddress(invalidationCommand.Address << 12));	// TODO: Should not hardcode 12 here. 
+																																				// ? What to do when we have hugepages?
+				DBG_(Crit, (<< "Invalidated IOTLB ASID(" << invalidationCommand.ASID << ")\tIOVA(" << std::hex << (invalidationCommand.Address << 12)	<< ")" << std::endl ));
+				break;
+			default:
+				DBG_(Crit, (<< "Not IOTLB Invalidation Command" 	<< std::endl ));
+        }
 	}
 
 	void printSMMUConfig() {

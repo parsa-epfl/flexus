@@ -34,37 +34,37 @@ IOTLB::iopaPFN(PhysicalMemoryAddress aPaddr) {
 
 // Whether the IOTLB contains target for an IOVA
 bool
-IOTLB::contains(uint16_t BDF, VirtualMemoryAddress aVaddr)
+IOTLB::contains(uint16_t ASID, VirtualMemoryAddress aVaddr)
 {
 	int32_t ind = index(aVaddr);
-	return theIOTLB[ind].isHit(BDF, iovaPFN(aVaddr));
+	return theIOTLB[ind].isHit(ASID, iovaPFN(aVaddr));
 }
 
 PhysicalMemoryAddress 
-IOTLB::access(uint16_t BDF, VirtualMemoryAddress aVaddr) {
+IOTLB::access(uint16_t ASID, VirtualMemoryAddress aVaddr) {
 	int32_t ind = index(aVaddr);
 
-	PhysicalMemoryAddress IOPAPFN = theIOTLB[ind].access(BDF, iovaPFN(aVaddr))->thePAPFN;
+	PhysicalMemoryAddress IOPAPFN = theIOTLB[ind].access(ASID, iovaPFN(aVaddr))->thePAPFN;
 
 	return PhysicalMemoryAddress( (((uint64_t)IOPAPFN) << pageSize) | (((uint64_t)aVaddr) & ((1UL << pageSize) - 1)) );
 }
 
 // Update or add a new entry to the BTB
 bool
-IOTLB::update(uint16_t BDF, VirtualMemoryAddress aVaddr, PhysicalMemoryAddress aPaddr)
+IOTLB::update(uint16_t ASID, VirtualMemoryAddress aVaddr, PhysicalMemoryAddress aPaddr)
 {
 	int32_t ind = index(aVaddr);
-	bool isHit  = theIOTLB[ind].isHit(BDF, iovaPFN(aVaddr));
+	bool isHit  = theIOTLB[ind].isHit(ASID, iovaPFN(aVaddr));
 
 	if (isHit) {    // Change in the mapping
-		IOTLBEntry* iotlbEntry = theIOTLB[ind].access(BDF, iovaPFN(aVaddr)); // [MADHUR] Access will also update the replacement queue
+		IOTLBEntry* iotlbEntry = theIOTLB[ind].access(ASID, iovaPFN(aVaddr)); // [MADHUR] Access will also update the replacement queue
 
 		iotlbEntry->thePAPFN = iopaPFN(aPaddr);
 
 		return false; // not a new entry
 	} else {   // Adding a new entry
 		
-		theIOTLB[ind].insert(IOTLBEntry(BDF, iovaPFN(aVaddr), iopaPFN(aPaddr))); // [MADHUR] Inserting a new entry
+		theIOTLB[ind].insert(IOTLBEntry(ASID, iovaPFN(aVaddr), iopaPFN(aPaddr))); // [MADHUR] Inserting a new entry
 
 		return true;
 	}
@@ -78,16 +78,16 @@ IOTLB::invalidate() {
 }
 
 void 
-IOTLB::invalidate(uint16_t BDF) {
+IOTLB::invalidate(uint16_t ASID) {
 	for (auto& iotlbSet : theIOTLB) {
-		iotlbSet.invalidate(BDF);
+		iotlbSet.invalidate(ASID);
 	}
 }
 
 void 
-IOTLB::invalidate(uint16_t BDF, VirtualMemoryAddress aVaddr) {
+IOTLB::invalidate(uint16_t ASID, VirtualMemoryAddress aVaddr) {
 	for (auto& iotlbSet : theIOTLB) {
-		iotlbSet.invalidate(BDF, iovaPFN(aVaddr));
+		iotlbSet.invalidate(ASID, iovaPFN(aVaddr));
 	}
 }
 
