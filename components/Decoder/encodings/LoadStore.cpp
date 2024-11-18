@@ -663,6 +663,9 @@ STR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         regsize = (size == 0x3) ? 64 : 32;
     } else if (size != 0x3) {
         regsize = (opc & 1) ? 32 : 64;
+    } else {
+        DBG_(Crit, (<< "Invalid encoding for LDR. Catch you!"));
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 
     eSize sz = dbSize(8 << size);
@@ -787,6 +790,9 @@ LDR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         regsize = (size == 0x3) ? 64 : 32;
     } else if (size != 0x3) {
         regsize = (opc & 1) ? 32 : 64;
+    } else {
+        DBG_(Crit, (<< "Invalid encoding for LDR. Catch you!"));
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 
     eSize sz = dbSize(8 << size);
