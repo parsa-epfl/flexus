@@ -369,6 +369,8 @@ typedef struct LSL : public Operation
         uint64_t op2       = boost::get<uint64_t>(operands[1]);
         uint64_t data_size = boost::get<uint64_t>(operands[2]);
 
+        assert(data_size == 32 || data_size == 64);
+
         uint64_t mask = (data_size == 32) ? 0xffffffff : 0xffffffffffffffff;
         return (op1 << (op2 % data_size) & mask);
     }
