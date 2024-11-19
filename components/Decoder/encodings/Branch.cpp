@@ -448,9 +448,8 @@ MSR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     }
     inst->setOperand(kResult, uint64_t(crm));
 
-    // TODO: WTF >.>, no mortal should ever do this
-    // FIXME: This code never actually writes the register.
-    // inst->addRetirementEffect( writePSTATE(inst, op1, op2) );
+    // Confusing name writePSTATE, but it it implemented correctly for this very specific DAIFset and DAIFclr case
+    inst->addRetirementEffect( writePSTATE(inst, op1, op2) );
     // inst->addPostvalidation( validateXRegister( rt, kResult, inst  ) );
     // FIXME - validate PR
 
