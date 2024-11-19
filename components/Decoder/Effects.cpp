@@ -1118,56 +1118,56 @@ readPR(SemanticInstruction* inst, ePrivRegs aPR, std::unique_ptr<SysRegInfo> ri)
 //  return e;
 //}
 //
-// struct WritePSTATE : public Effect {
-//  uint8_t theOp1, theOp2;
-//  WritePSTATE(uint8_t anOp1, uint8_t anOp2) : theOp1(anOp1), theOp2(anOp2) {
-//  }
-//
-//  void invoke(SemanticInstruction &anInstruction) {
-//    FLEXUS_PROFILE();
-//    if (!anInstruction.isAnnulled()) {
-//
-//      uint64_t val = anInstruction.operand<uint64_t>(kResult);
-//      switch ((theOp1 << 3) | theOp2) {
-//      case 0x3:
-//      case 0x4:
-//        anInstruction.setWillRaise(kException_SYSTEMREGISTERTRAP);
-//        anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction>(&anInstruction),
-//                                       anInstruction.willRaise());
-//        break;
-//      case 0x5: // sp
-//      {
-//        std::unique_ptr<SysRegInfo> ri = getPriv(kSPSel);
-//        ri->writefn(anInstruction.core(), (uint64_t)(val & 1));
-//        break;
-//      }
-//      case 0x1e: // daif set
-//        anInstruction.core()->setDAIF((uint32_t)val | anInstruction.core()->_PSTATE().DAIF());
-//        break;
-//      case 0x1f: // daif clr
-//        anInstruction.core()->setDAIF((uint32_t)val ^ anInstruction.core()->_PSTATE().DAIF());
-//        break;
-//      default:
-//        anInstruction.setWillRaise(kException_UNCATEGORIZED);
-//        anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction>(&anInstruction),
-//                                       anInstruction.willRaise());
-//        break;
-//      }
-//    }
-//    Effect::invoke(anInstruction);
-//  }
-//
-//  void describe(std::ostream &anOstream) const {
-//    anOstream << " Write PSTATE ";
-//    Effect::describe(anOstream);
-//  }
-//};
-//
-// Effect *writePSTATE(SemanticInstruction *inst, uint8_t anOp1, uint8_t anOp2) {
-//  Effect *e = new WritePSTATE(anOp1, anOp2);
-//  inst->addNewComponent(e);
-//  return e;
-//}
+struct WritePSTATE : public Effect {
+ uint8_t theOp1, theOp2;
+ WritePSTATE(uint8_t anOp1, uint8_t anOp2) : theOp1(anOp1), theOp2(anOp2) {
+ }
+
+ void invoke(SemanticInstruction &anInstruction) {
+   FLEXUS_PROFILE();
+   if (!anInstruction.isAnnulled()) {
+
+     uint64_t val = anInstruction.operand<uint64_t>(kResult);
+     switch ((theOp1 << 3) | theOp2) {
+     case 0x3:
+     case 0x4:
+       anInstruction.setWillRaise(kException_SYSTEMREGISTERTRAP);
+       anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction>(&anInstruction),
+                                      anInstruction.willRaise());
+       break;
+     case 0x5: // sp
+     {
+       std::unique_ptr<SysRegInfo> ri = getPriv(kSPSel);
+       ri->writefn(anInstruction.core(), (uint64_t)(val & 1));
+       break;
+     }
+     case 0x1e: // daif set
+       anInstruction.core()->setDAIF((uint32_t)val | anInstruction.core()->_PSTATE().DAIF());
+       break;
+     case 0x1f: // daif clr
+       anInstruction.core()->setDAIF((uint32_t)val ^ anInstruction.core()->_PSTATE().DAIF());
+       break;
+     default:
+       anInstruction.setWillRaise(kException_UNCATEGORIZED);
+       anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction>(&anInstruction),
+                                      anInstruction.willRaise());
+       break;
+     }
+   }
+   Effect::invoke(anInstruction);
+ }
+
+ void describe(std::ostream &anOstream) const {
+   anOstream << " Write PSTATE ";
+   Effect::describe(anOstream);
+ }
+};
+
+Effect *writePSTATE(SemanticInstruction *inst, uint8_t anOp1, uint8_t anOp2) {
+ Effect *e = new WritePSTATE(anOp1, anOp2);
+ inst->addNewComponent(e);
+ return e;
+}
 //
 // struct WriteNZCV : public Effect {
 //  WriteNZCV() {

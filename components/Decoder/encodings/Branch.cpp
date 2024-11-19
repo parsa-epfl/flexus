@@ -4,6 +4,7 @@
 #include "../Effects.hpp"
 #include "Unallocated.hpp"
 #include "components/Decoder/Conditions.hpp"
+#include "components/Decoder/SemanticActions.hpp"
 #include "components/uArch/systemRegister.hpp"
 
 namespace nDecoder {
@@ -446,11 +447,10 @@ MSR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     } else {
         inst->addCheckTrapEffect(checkDAIFAccess(inst, op1));
     }
-    inst->setOperand(kResult, uint64_t(crm));
+    inst->setOperand(kResult, uint64_t(crm << 6));
 
-    // TODO: WTF >.>, no mortal should ever do this
-    // FIXME: This code never actually writes the register.
-    // inst->addRetirementEffect( writePSTATE(inst, op1, op2) );
+    // Confusing name writePSTATE, but it it implemented correctly for this very specific DAIFset and DAIFclr case
+    inst->addRetirementEffect( writePSTATE(inst, op1, op2) );
     // inst->addPostvalidation( validateXRegister( rt, kResult, inst  ) );
     // FIXME - validate PR
 
