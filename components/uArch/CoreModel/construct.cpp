@@ -555,7 +555,6 @@ CoreImpl::getRoundingMode()
 void
 CoreImpl::setDAIF(uint32_t aDAIF)
 {
-    if (aDAIF == 0) { return; }
     thePSTATE = ((thePSTATE & ~PSTATE_DAIF) | (aDAIF & PSTATE_DAIF));
 }
 void
