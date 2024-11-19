@@ -3,6 +3,7 @@
 
 #include "SharedFunctions.hpp"
 #include "Unallocated.hpp"
+#include "boost/none.hpp"
 
 namespace nDecoder {
 using namespace nuArch;
@@ -833,7 +834,11 @@ LDR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     inst->addSquashEffect(eraseLSQ(inst));
 
     predicated_dependant_action load;
-    load = loadAction(inst, sz, extract32(opc, 1, 1) ? kSignExtend : kZeroExtend, kPD);
+    // rt == 31 means LDR XZR, which has no destination. Don't have a bypass register for it.
+    if (rt != 31)
+        load = loadAction(inst, sz, extract32(opc, 1, 1) ? kSignExtend : kZeroExtend, kPD);
+    else 
+        load = loadAction(inst, sz, extract32(opc, 1, 1) ? kSignExtend : kZeroExtend, boost::none);
     inst->addDispatchEffect(allocateLoad(inst, sz, load.dependance, acctype));
     inst->addCommitEffect(accessMem(inst));
     inst->addRetirementConstraint(loadMemoryConstraint(inst));
