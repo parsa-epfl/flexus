@@ -233,10 +233,8 @@ public:
 
 		// TODO: Send reply
 
-		std::vector<MemoryMessage> cacheMessages = generateCacheMessages(aMemoryMessage);
-		
-		for (auto & cacheMessage : cacheMessages)
-			FLEXUS_CHANNEL(MemoryRequest) << cacheMessage;
+		// Inject memory message into the LLC after translation
+		injectMemoryMessageIntoLLC(aMemoryMessage);
 
 	}
 
@@ -254,7 +252,8 @@ private:
 
         uint64_t l1StreamTablePointer = streamTableBase + (l1Index * sizeof(l1StreamTableDescriptor));
 
-		*((uint64_t *)(&l1StreamTableDescriptor)) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(l1StreamTablePointer), 8);
+		*((uint64_t *)(&l1StreamTableDescriptor)) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(l1StreamTablePointer), 8);	// Read with data
+		injectMemoryMessageIntoLLC(PhysicalMemoryAddress(l1StreamTablePointer), sizeof(l1StreamTableDescriptor), false);		// Inject read into LLC
 
 		DBG_Assert(l1StreamTableDescriptor.Span != 0, (<< "Invalid Stream Table Descriptor"));
 		DBG_Assert((1 << (l1StreamTableDescriptor.Span - 1)) >= l2Index , (<< "l2 index is beyond the range of l2 table"));
@@ -266,6 +265,7 @@ private:
 		uint64_t l2StreamTablePointer = (l1StreamTableDescriptor.L2Ptr << 6) + (l2Index * sizeof(streamTableEntry));
 
         *((uint64_t *)(&streamTableEntry)) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(l2StreamTablePointer), 8);
+		injectMemoryMessageIntoLLC(PhysicalMemoryAddress(l2StreamTablePointer), sizeof(StreamTableEntry), false);		// Inject read into LLC
 
 		DBG_Assert(streamTableEntry.V == 1, (<< "Stream Table Entry is invalid. STE: " << streamTableEntry.toString() 
 			<< "Others: L1Index: " << l1Index << "\tl2Index: " << l2Index << "\tSpan: " << l1StreamTableDescriptor.Span 
@@ -293,6 +293,8 @@ private:
         *((uint64_t *)(&contextDescriptor))     = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(contextPointer), 8);
         *((uint64_t *)(&contextDescriptor) + 1) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(contextPointer + 8), 8);
         *((uint64_t *)(&contextDescriptor) + 2) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(contextPointer + 16), 8);
+
+		injectMemoryMessageIntoLLC(PhysicalMemoryAddress(contextPointer), sizeof(ContextDescriptor), false);
 
 		DBG_Assert(contextDescriptor.V == 1, (<< "Context Descriptor is invalid" ));
 
@@ -393,6 +395,7 @@ private:
 
 		*((uint64_t *)(&invalidationCommand)) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(commandQueueBase + sizeof(invalidationCommand) * index), 8);
 		*((uint64_t *)(&invalidationCommand) + 1) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(commandQueueBase + sizeof(invalidationCommand) * index + 8), 8);
+		injectMemoryMessageIntoLLC(PhysicalMemoryAddress(commandQueueBase + sizeof(invalidationCommand) * index), sizeof(InvalidationCommand), false);
 
 		switch (invalidationCommand.opcode) {
             case InvalidationCommand::CMD_TLBI_NH_ALL:
@@ -441,6 +444,21 @@ private:
 		}
 
       return ret;
+	}
+
+	void injectMemoryMessageIntoLLC (MemoryMessage & memoryMessage) {	// Inject memory message
+		std::vector <MemoryMessage> cacheMessages = generateCacheMessages (memoryMessage);
+		
+		for (auto & cacheMessage : cacheMessages)
+			FLEXUS_CHANNEL(MemoryRequest) << cacheMessage;
+	}
+
+	void injectMemoryMessageIntoLLC (PhysicalMemoryAddress pa, uint64_t size, bool isWrite) {	// Prepare the memory message and then inject
+		MemoryMessage memoryMessage (isWrite ? MemoryMessage::IOStoreReq : MemoryMessage::IOLoadReq, pa);
+		memoryMessage.reqSize() = size;
+		memoryMessage.setFromSMMU();
+
+		injectMemoryMessageIntoLLC(memoryMessage);
 	}
 
 	void printSMMUConfig() {
