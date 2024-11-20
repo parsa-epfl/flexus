@@ -1,7 +1,9 @@
+#include "components/CommonQEMU/Slices/MemoryMessage.hpp"
 #include "components/IODevices/SMMUTypes.hpp"
 #include "core/debug/debug.hpp"
 #include "core/types.hpp"
 #include <cstdint>
+#include <vector>
 #include "SMMU.hpp"
 
 #include DBG_Control()
@@ -30,6 +32,7 @@ private:
 	Flexus::Qemu::Processor cpu;  // TODO: Technically SMMU should not be tied to a CPU but this exposes convenient functions that we want to use
 
 private:
+	const uint64_t CacheMessageSize		=	8;				  // SMMU sends cache messages of size 8 Bytes to the LLC
     const uint32_t configBaseAddress	=	0x09050000;       // TODO: Should be determined from QEMU. Base address of SMMU config space
     const uint32_t configSize			=	0x00020000;       // Size of SMMU config space
 
@@ -229,7 +232,11 @@ public:
 		}
 
 		// TODO: Send reply
-		// TODO: Inject traffic into the LLC or memory
+
+		std::vector<MemoryMessage> cacheMessages = generateCacheMessages(aMemoryMessage);
+		
+		for (auto & cacheMessage : cacheMessages)
+			FLEXUS_CHANNEL(MemoryRequest) << cacheMessage;
 
 	}
 
@@ -405,6 +412,35 @@ private:
 			default:
 				DBG_(VVerb, (<< "Not IOTLB Invalidation Command" 	<< std::endl ));
         }
+	}
+
+	std::vector <MemoryMessage> generateCacheMessages (MemoryMessage & memoryMessage) {
+		std::vector <MemoryMessage> ret;
+
+		uint32_t bytesLeft = memoryMessage.reqSize();
+      	uint32_t numberOfMessages = ceil(bytesLeft / (CacheMessageSize * 1.0));
+
+		for (uint32_t i = 0; i < numberOfMessages; i++) {
+
+			uint32_t cacheMessageSize = bytesLeft > CacheMessageSize ? CacheMessageSize : bytesLeft;
+
+			MemoryMessage cacheMessage (memoryMessage);
+
+			DBG_Assert(memoryMessage.type() == MemoryMessage::IOLoadReq || memoryMessage.type() == MemoryMessage::IOStoreReq, (<< "Invalid IO Request Type" ));
+
+			cacheMessage.type() = memoryMessage.type() == MemoryMessage::IOLoadReq ? MemoryMessage::ReadReq : MemoryMessage::WriteReq;
+			cacheMessage.reqSize() = cacheMessageSize;
+			cacheMessage.pc() = VirtualMemoryAddress( (uint64_t)memoryMessage.pc() + i * CacheMessageSize );
+			cacheMessage.address() = PhysicalMemoryAddress( (uint64_t)memoryMessage.address() + i * CacheMessageSize );
+
+			// Data is not actually required so dataRequired field is not set here
+
+			ret.push_back(cacheMessage);
+
+			bytesLeft -= cacheMessageSize;
+		}
+
+      return ret;
 	}
 
 	void printSMMUConfig() {
