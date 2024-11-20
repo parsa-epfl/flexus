@@ -44,6 +44,8 @@ COMPONENT_INTERFACE(
   DYNAMIC_PORT_ARRAY( PushOutput, RegionScoutMessage, RegionNotifyOut )
   DYNAMIC_PORT_ARRAY( PushOutput, RegionScoutMessage, RegionProbe )
 
+  PORT( PushInput, MemoryMessage, SMMURequestIn )
+
   // From Directory OUT to Memory Controller
   PORT( PushInput, MemoryMessage, SnoopIn ) // From MemController IN to topology
   PORT( PushOutput, MemoryMessage, RequestOut ) // From topology OUT to memcontroller

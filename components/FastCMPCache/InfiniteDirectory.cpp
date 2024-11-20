@@ -253,10 +253,11 @@ class InfiniteDirectory : public AbstractDirectory
                                         MMType& response,
                                         AbstractEntry_p dir_entry,
                                         PhysicalMemoryAddress address,
-                                        bool off_chip)
+                                        bool off_chip,
+                                        bool fromSMMU)
     {
         // First, do default behaviour
-        AbstractDirectory::processRequestResponse(index, request, response, dir_entry, address, off_chip);
+        AbstractDirectory::processRequestResponse(index, request, response, dir_entry, address, off_chip, fromSMMU);
 
         if (!MemoryMessage::isEvictType(request)) { return; }
 

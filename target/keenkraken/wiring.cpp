@@ -138,6 +138,8 @@ WIRE(theMemory, ToCache,                theL2, SnoopIn)
 WIRE(theNIC, TranslationRequestOut,     theSMMU, TranslationRequestIn)
 WIRE(theNIC, DeviceMemoryRequest,       theSMMU, DeviceMemoryRequest)
 
+WIRE(theSMMU, MemoryRequest,            theL2, SMMURequestIn)
+
 //Fetch, L1I and Execute
 
 

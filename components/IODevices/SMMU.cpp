@@ -1,6 +1,7 @@
 #include "components/IODevices/SMMUTypes.hpp"
 #include "core/debug/debug.hpp"
 #include "core/types.hpp"
+#include <cstdint>
 #include "SMMU.hpp"
 
 #include DBG_Control()
@@ -104,7 +105,7 @@ public:
 		theIOTLB.reset (new IOTLB (12, 1024, 8));	// TODO: Use Config file to get the config for IOTLB
 	}
 
-	PhysicalMemoryAddress translateIOVA (TranslationPtr& aTranslate) {
+	PhysicalMemoryAddress translateIOVA (TranslationPtr& aTranslate, MemoryMessage& aMemoryMessage) {
 
 		uint16_t bdf = aTranslate->bdf;
 
@@ -139,14 +140,20 @@ public:
 
 		thePageWalker->push_back_trace(aTranslate, Flexus::Qemu::Processor::getProcessor(flexusIndex()));
 
-		PhysicalMemoryAddress pma[4];	// Max 4 levels 
-		uint64_t traceSize = aTranslate->trace_addresses.size();
-		for (uint64_t i = 0; i < traceSize; i++) {
-			pma[i] = aTranslate->trace_addresses.front();
-			aTranslate->trace_addresses.pop();
-		}
+		// Injecting PTW memory accesses into the cache hierarchy
+		MemoryMessage mmu_message(aMemoryMessage);
+        mmu_message.setPageWalk();
 
-		// TODO: Inject PTW memory accesses into the cache hierarchy
+		while (aTranslate->trace_addresses.size()) {
+            mmu_message.type()    = MemoryMessage::ReadReq;		// As this request doesn't go to L1 cache, the memory type must be ReadReq instead of LoadReq so that coherence protocol doesn't mess up
+																// We use fromSMMU field in the memory message to tell the directory that the address need not be added to the sharers list. 
+																// Therefore every message coming from the SMMU **MUST** have fromSMMU field set
+            mmu_message.address() = aTranslate->trace_addresses.front();
+			mmu_message.setFromSMMU();
+            aTranslate->trace_addresses.pop();
+
+			FLEXUS_CHANNEL(MemoryRequest) << mmu_message;
+		}
 
 		// Insert the translation into the IOTLB
 
@@ -176,13 +183,14 @@ public:
 		}
 	}
 
+	// !This needs to be implemented
 	bool available(interface::TranslationRequestIn const&) { return true; }
 	void push(interface::TranslationRequestIn const&, TranslationPtr& aTranslate)
 	{
-		PhysicalMemoryAddress qflexPA = translateIOVA (aTranslate);
-		PhysicalMemoryAddress qemuPA (Flexus::Qemu::API::qemu_api.translate_iova2pa (aTranslate->bdf, (uint64_t)aTranslate->theVaddr));
+		// PhysicalMemoryAddress qflexPA = translateIOVA (aTranslate,);
+		// PhysicalMemoryAddress qemuPA (Flexus::Qemu::API::qemu_api.translate_iova2pa (aTranslate->bdf, (uint64_t)aTranslate->theVaddr));
 
-		DBG_Assert(((uint64_t)qflexPA) == ((uint64_t)qemuPA), (<< "Mismatch between QFlex Translation and QEMU Translation"));
+		// DBG_Assert(((uint64_t)qflexPA) == ((uint64_t)qemuPA), (<< "Mismatch between QFlex Translation and QEMU Translation"));
 	}
 
 	bool available(interface::DeviceMemoryRequest const&) { return true; }
@@ -201,7 +209,7 @@ public:
 		  tr->inTraceMode = true;
 		  tr->setIO(aMemoryMessage.getBDF());
 
-		PhysicalMemoryAddress qflexPA = translateIOVA (tr);	// SMMU translation happens here
+		PhysicalMemoryAddress qflexPA = translateIOVA (tr, aMemoryMessage);	// SMMU translation happens here
 
 		// Validation
 		PhysicalMemoryAddress qemuPA (Flexus::Qemu::API::qemu_api.translate_iova2pa (tr->bdf, (uint64_t)tr->theVaddr));
@@ -382,20 +390,20 @@ private:
 		switch (invalidationCommand.opcode) {
             case InvalidationCommand::CMD_TLBI_NH_ALL:
 				theIOTLB->invalidate();
-				DBG_(Crit, (<< "Invalidated Entire IOTLB" 	<< std::endl ));
+				DBG_(VVerb, (<< "Invalidated Entire IOTLB" 	<< std::endl ));
 				break;
 			case InvalidationCommand::CMD_TLBI_NH_VAA:
             case InvalidationCommand::CMD_TLBI_NH_ASID:
 				theIOTLB->invalidate(invalidationCommand.ASID);
-				DBG_(Crit, (<< "Invalidated IOTLB ASID(" << invalidationCommand.ASID << ")"	<< std::endl ));
+				DBG_(VVerb, (<< "Invalidated IOTLB ASID(" << invalidationCommand.ASID << ")"	<< std::endl ));
 				break;
             case InvalidationCommand::CMD_TLBI_NH_VA:
 				theIOTLB->invalidate(invalidationCommand.ASID,  VirtualMemoryAddress(invalidationCommand.Address << 12));	// TODO: Should not hardcode 12 here. 
 																																				// ? What to do when we have hugepages?
-				DBG_(Crit, (<< "Invalidated IOTLB ASID(" << invalidationCommand.ASID << ")\tIOVA(" << std::hex << (invalidationCommand.Address << 12)	<< ")" << std::endl ));
+				DBG_(VVerb, (<< "Invalidated IOTLB ASID(" << invalidationCommand.ASID << ")\tIOVA(" << std::hex << (invalidationCommand.Address << 12)	<< ")" << std::endl ));
 				break;
 			default:
-				DBG_(Crit, (<< "Not IOTLB Invalidation Command" 	<< std::endl ));
+				DBG_(VVerb, (<< "Not IOTLB Invalidation Command" 	<< std::endl ));
         }
 	}
 

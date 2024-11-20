@@ -338,6 +338,7 @@ struct MemoryMessage : public boost::counted_base
       , BDF(-1)
       , dataRequired (false)
       , dataPtr(0)
+      , fromSMMU (false)
     {
     }
     explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress)
@@ -362,6 +363,7 @@ struct MemoryMessage : public boost::counted_base
       , BDF(-1)
       , dataRequired (false)
       , dataPtr(0)
+      , fromSMMU (false)
     {
     }
     explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC)
@@ -386,6 +388,7 @@ struct MemoryMessage : public boost::counted_base
       , BDF(-1)
       , dataRequired (false)
       , dataPtr(0)
+      , fromSMMU (false)
     {
     }
     explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC, bits aData)
@@ -410,6 +413,7 @@ struct MemoryMessage : public boost::counted_base
       , BDF(-1)
       , dataRequired (false)
       , dataPtr(0)
+      , fromSMMU (false)
     {
     }
 
@@ -435,6 +439,7 @@ struct MemoryMessage : public boost::counted_base
       , BDF(BDF)
       , dataRequired (false)
       , dataPtr(0)
+      , fromSMMU (false)
     {
     }
     explicit MemoryMessage(MemoryMessageType aType, MemoryAddress anAddress, VirtualMemoryAddress aPC, bits aData, uint16_t BDF)
@@ -459,6 +464,7 @@ struct MemoryMessage : public boost::counted_base
       , BDF(BDF)
       , dataRequired (false)
       , dataPtr(0)
+      , fromSMMU (false)
     {
     }
 
@@ -484,6 +490,7 @@ struct MemoryMessage : public boost::counted_base
       , BDF(aMsg.BDF)
       , dataRequired (aMsg.dataRequired)
       , dataPtr(aMsg.dataPtr)
+      , fromSMMU(aMsg.fromSMMU)
     {
     }
 
@@ -596,6 +603,10 @@ struct MemoryMessage : public boost::counted_base
     uint64_t getDataPtr () { return dataPtr; }
 
     void setDataPtr (uint64_t dataptr) { dataPtr = dataptr; }
+
+    void setFromSMMU () { fromSMMU = true; }
+
+    bool isFromSMMU () { return fromSMMU; }
 
     bool isRequest() const
     {
@@ -1047,6 +1058,8 @@ struct MemoryMessage : public boost::counted_base
     bool dataRequired;  // If this field is true, then the data needs to br read from QEMU instead of just accessing the microarchitectural state
     uint64_t dataPtr;   // Holds the pointer to the data accessed. 
                         // ! It is the responsibility of the user to deallocate the memory after using the data to avoid OOM
+    bool fromSMMU;      // true if the memory request comes from the SMMU
+                        // Any request coming from SMMU, be it for PTW or regular memory access for IO device has this field set
 };
 
 std::ostream&

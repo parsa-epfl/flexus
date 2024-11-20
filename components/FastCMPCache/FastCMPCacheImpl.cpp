@@ -330,6 +330,23 @@ class FLEXUS_COMPONENT(FastCMPCache)
         processRequest(anIndex, aMessage);
     }
 
+    ////////////////////// from SMMU
+    bool available(interface::SMMURequestIn const&) { return true; }
+
+    void push(interface::SMMURequestIn const&, MemoryMessage& aMessage)
+    {
+        index_t anIndex = theCMPWidth;     // Index is theCMPWidth => Caches are indexed 0...theCMPWidth-1 while SMMU has the index theCMPWidth
+        aMessage.setFromSMMU();
+
+        DBG_(Iface,
+             Comp(*this)
+               Addr(aMessage.address())(<< "Received on Port SMMU RequestIn: " << aMessage));
+        aMessage.dstream() = true;
+
+        if (cfg.SeparateID) { anIndex <<= 1; }
+        processRequest(anIndex, aMessage);
+    }
+
     ////////////////////// snoop port
     FLEXUS_PORT_ALWAYS_AVAILABLE(SnoopIn);
     void push(interface::SnoopIn const&, MemoryMessage& aMessage)
@@ -547,7 +564,11 @@ class FLEXUS_COMPONENT(FastCMPCache)
 
             for (; index_iter != snoop_list.end(); index_iter++) {
                 // Skip the requesting node
-                if ((uint32_t)*index_iter == anIndex) {
+                if ((uint32_t)*index_iter == anIndex) {     // Due to this condition, the SMMU request port can not have an 
+                                                            // index that is one of the core indices. We don't want SMMU
+                                                            // request to skip any core's directory
+                                                            // But since SMMU does not have a cache of its own, SMMU index
+                                                            // can never hold any data
                     DBG_(Iface, Comp(*this) Addr(aMessage.address())(<< "Skipping snoop to " << (*index_iter)));
                     // potential_sharers--;
                     continue;
@@ -646,7 +667,7 @@ class FLEXUS_COMPONENT(FastCMPCache)
 
         // Update the directory, passing it the original message type, the source,
         // and the response we're sending
-        theDirectory->processRequestResponse(anIndex, orig_msg_type, aMessage.type(), dir_entry, addr, accessed_memory);
+        theDirectory->processRequestResponse(anIndex, orig_msg_type, aMessage.type(), dir_entry, addr, accessed_memory, aMessage.isFromSMMU());
         theDirectory->updateLRU(anIndex, dir_entry, addr);
 
         // Update the Cache

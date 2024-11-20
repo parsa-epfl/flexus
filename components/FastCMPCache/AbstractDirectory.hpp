@@ -121,24 +121,32 @@ class AbstractDirectory
                                         MMType& response,
                                         AbstractEntry_p dir_entry,
                                         PhysicalMemoryAddress address,
-                                        bool off_chip)
+                                        bool off_chip,
+                                        bool fromSMMU)
     {
         switch (request) {
             case MemoryMessage::EvictClean:
             case MemoryMessage::EvictWritable:
-            case MemoryMessage::EvictDirty: removeSharer(index, dir_entry, address); return;
+            case MemoryMessage::EvictDirty: removeSharer(index, dir_entry, address); return;    // TODO: IDK if SMMU would hit this case. For correctness, an SMMU write should perform this to invalidate from sharers.
             case MemoryMessage::UpgradeReq:
                 DBG_Assert(response == MemoryMessage::UpgradeReply,
                            (<< " Received " << request << " in response to UpgradeReq."));
-                makeSharerExclusive(index, dir_entry, address);
+                makeSharerExclusive(index, dir_entry, address);    // No read or write from the SMMU should make a sharer exclusive!
+                                                                        // A read should not change the state while a write should removeSharer
+                                                                        // ! For SMMU tracing, this switch will never match
                 return;
             default: break;
         }
+
+        // If a Snoop fails for SMMU, it requests main memory for data
+        // Response from main memory would add the requester to the list
+        // of sharers. But for SMMU, as SMMU is not in the sharers list, 
+        // we do not need to add anything to the sharer list!
         switch (response) {
             case MemoryMessage::MissReply:
-            case MemoryMessage::FwdReplyOwned: addSharer(index, dir_entry, address); return;
+            case MemoryMessage::FwdReplyOwned: if (!fromSMMU) addSharer(index, dir_entry, address); return;
             case MemoryMessage::MissReplyWritable:
-            case MemoryMessage::MissReplyDirty: addExclusiveSharer(index, dir_entry, address); return;
+            case MemoryMessage::MissReplyDirty: if (!fromSMMU) addExclusiveSharer(index, dir_entry, address); return;
             case MemoryMessage::NonAllocatingStoreReply:
                 // Snoop replies will remove any previous sharers and we never add any
                 // sharers so nothing new to do
