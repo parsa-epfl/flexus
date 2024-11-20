@@ -211,6 +211,8 @@ class FLEXUS_COMPONENT(FastCMPCache)
         theCMPWidth =
           (cfg.CMPWidth ? cfg.CMPWidth : Flexus::Core::ComponentManager::getComponentManager().systemWidth());
 
+        theCMPWidth++;      // Extra width for SMMU
+
         static volatile bool widthPrintout = true;
         if (widthPrintout) {
             DBG_(Crit, (<< "Running with CMP width " << theCMPWidth));
