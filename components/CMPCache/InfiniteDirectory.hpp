@@ -106,41 +106,15 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
     DirEvictBuffer<_EState> theEvictBuffer;
 
     int32_t theNumSharers;
-    int32_t theBlockSize;
-    int32_t theBanks;
-    int32_t theGlobalBankIndex;
-    int32_t theLocalBankIndex;
-    int32_t theBankInterleaving;
-    int32_t theGroups;
-    int32_t theGroupIndex;
-    int32_t theGroupInterleaving;
+    uint32_t theBlockSize;
+    uint32_t theBlockShift;
 
-    int32_t theBankShift;
-    int32_t theBankMask;
-    int32_t theGroupShift;
-    int32_t theGroupMask;
-    int32_t theSkewShift;
+    uint64_t theNodeId;
+    uint64_t theNumNodes;
 
     bool theSameSetReturnValue;
 
     std::string theName;
-
-    int32_t getBank(uint64_t addr)
-    {
-        if (theSkewShift >= 0) {
-            return ((addr >> theBankShift) ^ (addr >> theSkewShift)) & theBankMask;
-        } else {
-            return (addr >> theBankShift) & theBankMask;
-        }
-    }
-    int32_t getGroup(uint64_t addr)
-    {
-        if (theSkewShift >= 0) {
-            return ((addr >> theGroupShift) ^ (addr >> theSkewShift)) & theGroupMask;
-        } else {
-            return (addr >> theGroupShift) & theGroupMask;
-        }
-    }
 
   public:
     typedef InfiniteLookupResult LookupResult;
@@ -153,31 +127,14 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
     {
         theNumSharers        = theInfo.theCores;
         theBlockSize         = theInfo.theBlockSize;
-        theBanks             = theInfo.theNumBanks;
-        theBankInterleaving  = theInfo.theBankInterleaving;
-        theGlobalBankIndex   = theInfo.theNodeId;
-        theGroups            = theInfo.theNumGroups;
-        theGroupInterleaving = theInfo.theGroupInterleaving;
 
-        theLocalBankIndex = theGlobalBankIndex % theBanks;
-        theGroupIndex     = theGlobalBankIndex / theBanks;
+        // The current interleaving scheme requires a block size of 64 bytes
+        DBG_Assert(theBlockSize == 64);
 
-        theBankShift = log_base2(theBankInterleaving);
-        theBankMask  = theBanks - 1;
-
-        theGroupShift = log_base2(theGroupInterleaving);
-        theGroupMask  = theGroups - 1;
-
-        theSkewShift = -1;
-
-        std::list<std::pair<std::string, std::string>>::const_iterator iter = args.begin();
-        for (; iter != args.end(); iter++) {
-            if (strcasecmp(iter->first.c_str(), "skew_shift") == 0) {
-                theSkewShift = boost::lexical_cast<int>(iter->second);
-            } else {
-                DBG_Assert(false, (<< "Unrecognized parameter '" << iter->first << "' passed to InfiniteDirectory."));
-            }
-        }
+        theBlockShift = log_base2(theBlockSize);
+        theNodeId  = theInfo.theNodeId;
+        theNumNodes = Flexus::Core::ComponentManager::getComponentManager().systemWidth();;
+        
     }
 
     virtual bool allocate(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup,
@@ -238,8 +195,9 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
             SimpleDirectoryState state(theNumSharers);
             state = sharers;
 
-            if ((getBank(address) == theLocalBankIndex) && (getGroup(address) == theGroupIndex))
+            if (((address >> theBlockShift) % theNumNodes) == theNodeId) {
                 theDirectory.insert(InfDirEntry(PhysicalMemoryAddress(address), state));
+            }
         }
 
         DBG_(Trace, (<< "Directory loaded"));

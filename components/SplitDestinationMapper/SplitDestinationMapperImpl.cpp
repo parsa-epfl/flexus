@@ -80,6 +80,10 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
 
         theTotalNumCores = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 
+        // The block interleaving is fixed to be 64. 
+        // If you modify this value, you need also to modify the checkpoint save/load logic of the CMPCache/StdArray.hpp
+        DBG_Assert(cfg.DirInterleaving == 64); 
+
         if (cfg.Cores == 0) cfg.Cores = theTotalNumCores;
 
         if (cfg.Directories == 0) cfg.Directories = theTotalNumCores;
@@ -724,6 +728,7 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
     inline int32_t getDirectoryLocation(const PhysicalMemoryAddress& anAddress)
     {
         if (theDirXORShift > 0) {
+            DBG_Assert(false);
             return ((anAddress >> theDirShift) ^ (anAddress >> theDirXORShift)) & theDirMask;
         } else {
             return ((anAddress >> theDirShift) & theDirMask) % cfg.Banks;
