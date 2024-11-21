@@ -17,7 +17,7 @@ namespace nCMPCache {
 
 typedef Flexus::SharedTypes::PhysicalMemoryAddress MemoryAddress;
 
-typedef uint32_t BlockOffset;
+typedef uint64_t BlockOffset;
 
 class InvalidCacheAccessException : public std::exception
 {};
@@ -65,7 +65,7 @@ class AbstractArray
     virtual void invalidateBlock(LookupResult_p lookup) = 0;
 
     // Checkpoint reading/writing functions
-    virtual void load_cache_from_ckpt(std::string const&, int32_t anIndex) = 0;
+    virtual void load_cache_from_ckpt(std::string const&, uint64_t anIndex) = 0;
 
     // Addressing helper functions
     MemoryAddress blockAddress(MemoryAddress const& anAddress) const
@@ -75,12 +75,12 @@ class AbstractArray
 
     BlockOffset blockOffset(MemoryAddress const& anAddress) const { return BlockOffset(anAddress & blockOffsetMask); }
 
-    virtual uint32_t freeEvictionResources() const { return UINT_MAX; }
+    virtual uint64_t freeEvictionResources() const { return UINT_MAX; }
     virtual bool evictionResourcePressure() const { return false; }
     virtual bool evictionResourcesAvailable() const { return true; }
     virtual bool evictionResourcesEmpty() const { return true; }
-    virtual void reserveEvictionResource(int32_t n) {}
-    virtual void unreserveEvictionResource(int32_t n) {}
+    virtual void reserveEvictionResource(uint64_t n) {}
+    virtual void unreserveEvictionResource(uint64_t n) {}
     virtual std::pair<_State, MemoryAddress> getPreemptiveEviction() = 0;
 
     virtual bool sameSet(MemoryAddress a, MemoryAddress b) { return false; }
@@ -114,21 +114,15 @@ class AbstractArray
         return nullptr;
     }
 
-    virtual void setLockedThreshold(int32_t threshold)
+    virtual void setLockedThreshold(uint64_t threshold)
     {
         DBG_Assert(theLockedThreshold > 0);
         theLockedThreshold = threshold;
     }
 
-    virtual uint32_t globalCacheSets()
-    {
-        DBG_Assert(false, (<< "Derived class does not implement globalCacheSets() function."));
-        return 0;
-    }
-
   protected:
     MemoryAddress blockOffsetMask;
-    int32_t theLockedThreshold;
+    uint64_t theLockedThreshold;
 
 }; // class AbstractArray
 
@@ -152,7 +146,7 @@ namespace nCMPCache {
  */
 template<typename _State, const _State& _Default>
 AbstractArray<_State>*
-constructArray(std::string& anArrayConfiguration, CMPCacheInfo& theInfo, int32_t theBlockSize)
+constructArray(std::string& anArrayConfiguration, CMPCacheInfo& theInfo, uint64_t theBlockSize)
 {
     std::string& args = anArrayConfiguration;
 
