@@ -108,6 +108,12 @@ class SimpleDirectoryState
         for (int32_t i = 0; i < theNumSharers; i++) {
             theSharers[i] = s[i];
         }
+
+        // Other fields in s should be zero. 
+        for (int32_t i = theNumSharers; i < MAX_NUM_SHARERS; i++) {
+            DBG_Assert(s[i] == false, (<< "Extra bits set in bitset"));
+        }
+
         return *this;
     }
 
