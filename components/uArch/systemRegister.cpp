@@ -228,8 +228,9 @@ class DCZID_EL0_ : public SysRegInfo
     uint64_t resetvalue                   = -1;
 
     virtual uint64_t readfn(uArch* aCore) override { return aCore->readDCZID_EL0(); }
-    // No need for sync, effects are done by the readfn
-    virtual void sync(uArch* aCore, size_t theNode) override {}
+    virtual void writefn(uArch* aCore, uint64_t aVal) override {
+      aCore->setDCZID_EL0(aVal);
+    }
     DCZID_EL0_()
       : SysRegInfo("DCZID_EL0_",
                    DCZID_EL0_::state,
