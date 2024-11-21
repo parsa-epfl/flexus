@@ -308,9 +308,7 @@ ADDSUB_CARRY(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     readRegister(inst, 1, rn, rs_deps[0], sf);
     readRegister(inst, 2, rm, rs_deps[1], sf);
 
-    simple_action nzcv = readNZCVAction(inst, kC, kOperand3);
-    connect(rs_deps[2], nzcv);
-    inst->addDispatchAction(nzcv);
+    addReadCC(inst, 3, rs_deps[2], true);
 
     if (!setflags || rd != 31)
         addDestination(inst, rd, exec, sf, setflags);
