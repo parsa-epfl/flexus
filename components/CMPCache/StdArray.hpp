@@ -376,8 +376,12 @@ class SetLRU : public Set<_State, _DefaultState>
     inline void moveToHead(const SetIndex aBlock)
     {
         SetIndex i = 0;
-        while (theMRUOrder[i] != aBlock)
-            i++;
+        for (i = 0; i < this->theAssociativity; i++) {
+            if (theMRUOrder[i] == aBlock) { break; }
+        }
+
+        DBG_Assert(i < this->theAssociativity);
+
         while (i > 0) {
             theMRUOrder[i] = theMRUOrder[i - 1];
             i--;
@@ -388,8 +392,14 @@ class SetLRU : public Set<_State, _DefaultState>
     inline void moveToTail(const SetIndex aBlock)
     {
         SetIndex i = 0;
-        while (theMRUOrder[i] != aBlock)
-            i++;
+
+        for (i = 0; i < this->theAssociativity; i++) {
+            if (theMRUOrder[i] == aBlock) { break; }
+        }
+
+        DBG_Assert(i < this->theAssociativity);
+
+
         while (i < (this->theAssociativity - 1)) {
             theMRUOrder[i] = theMRUOrder[i + 1];
             i++;
@@ -488,10 +498,11 @@ class StdArray : public AbstractArray<_State>
         // Set indexes and masks
         DBG_Assert((theNumSets & (theNumSets - 1)) == 0);
         DBG_Assert(((theBlockSize - 1) & theBlockSize) == 0);
+        DBG_Assert((theNumNodes & (theNumNodes - 1)) == 0); // Currently, we only support power of 2 nodes.
 
         uint64_t blockOffsetBits      = log_base2(theBlockSize);
         // int32_t indexBits            = log_base2(theNumSets);
-        this->theSetIndexShift       = blockOffsetBits;
+        this->theSetIndexShift       = blockOffsetBits + log_base2(theNumNodes);
         this->theSetIndexMask        = (theNumSets - 1); // mask is applied after shift.
 
         this->theTagMask = MemoryAddress(~0ULL & ~((uint64_t)(theBlockSize - 1)));
@@ -515,6 +526,15 @@ class StdArray : public AbstractArray<_State>
     // Main array lookup function
     virtual boost::intrusive_ptr<AbstractArrayLookupResult<_State>> operator[](const MemoryAddress& anAddress)
     {
+        uint64_t blockOffsetBits      = log_base2(theBlockSize);
+        uint64_t affiliatedNode = (anAddress >> blockOffsetBits) % this->theNumNodes;
+
+        DBG_Assert(
+            affiliatedNode == (uint64_t)theInfo.theNodeId,
+            (<< "Address " << std::hex << anAddress << " is not in the correct node. Expected node "
+             << theInfo.theNodeId << " but got node " << affiliatedNode)
+        );
+
         uint64_t set_number = this->makeSet(anAddress);
 
         DBG_(Trace,
@@ -584,11 +604,15 @@ class StdArray : public AbstractArray<_State>
         DBG_Assert((uint64_t)theAssociativity == checkpoint["associativity"]);
         DBG_Assert((uint64_t)theNumSets == (checkpoint["tags"].size() / theNumNodes)); // Only load one slice.
 
-        for (uint64_t i = 0; i < theNumSets; i++) {
+        for (uint64_t i = 0; i < checkpoint["tags"].size(); i++) {
             // Only load the set that corresponds to this slice.
             if (i % theNumNodes != theIndex) {
                 continue;
             }
+
+            uint64_t local_index = i / theNumNodes;
+
+            DBG_Assert(local_index < theNumSets);
 
             assert(checkpoint["tags"].at(i).size() <= (uint64_t)theAssociativity);
             for (uint64_t j = 0; j < checkpoint["tags"].at(i).size(); j++) {
@@ -596,7 +620,22 @@ class StdArray : public AbstractArray<_State>
                 bool dirty    = checkpoint["tags"].at(i).at(j)["dirty"];
                 bool writable = checkpoint["tags"].at(i).at(j)["writable"];
 
-                theSets[i]->load_set_from_ckpt(j, theAssociativity - j - 1,tag, dirty, writable); // the last element is the most recently used cacheline.
+                uint64_t target_set = uint64_t(makeSet(MemoryAddress(tag)));
+
+                // Check this cache line.
+                DBG_Assert(target_set == local_index, (<< "Tag " << std::hex << tag << " is in set " << local_index << " but should be in set " << target_set));
+
+                uint64_t target_node = (tag >> log_base2(theBlockSize)) % theNumNodes;
+
+                DBG_Assert(target_node == theIndex, (<< "Tag " << std::hex << tag << " is in node " << target_node << " but should be in node " << theIndex));
+
+                theSets[local_index]->load_set_from_ckpt(j, theAssociativity - j - 1,tag, dirty, writable); // the last element is the most recently used cacheline.
+            }
+
+            if (checkpoint["tags"].at(i).size() < (uint64_t)theAssociativity) {
+                for (uint64_t j = checkpoint["tags"].at(i).size(); j < (uint64_t)theAssociativity; j++) {
+                    theSets[local_index]->load_set_from_ckpt(j, theAssociativity - j - 1, 0, false, false);
+                }
             }
         }
 
