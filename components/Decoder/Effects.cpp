@@ -4,6 +4,7 @@
 #include "components/uArch/systemRegister.hpp"
 #include "components/uArch/uArchInterfaces.hpp"
 #include "components/uFetch/uFetchTypes.hpp"
+#include "core/debug/debug.hpp"
 
 #include <core/performance/profile.hpp>
 
@@ -1082,42 +1083,42 @@ readPR(SemanticInstruction* inst, ePrivRegs aPR, std::unique_ptr<SysRegInfo> ri)
     inst->addNewComponent(e);
     return e;
 }
-//
-// struct WritePREffect : public Effect {
-//  ePrivRegs thePR;
-//  std::unique_ptr<SysRegInfo> ri;
-//  WritePREffect(ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRI) : thePR(aPR), ri(std::move(anRI)) {
-//  }
-//
-//  void invoke(SemanticInstruction &anInstruction) {
-//    FLEXUS_PROFILE();
-//    if (!anInstruction.isAnnulled()) {
-//      uint64_t rs = 0;
-//      if (anInstruction.hasOperand(kResult)) {
-//        rs = anInstruction.operand<uint64_t>(kResult);
-//      } else if (anInstruction.hasOperand(kResult1)) {
-//        rs = anInstruction.operand<uint64_t>(kResult1);
-//      }
-//      DBG_(Iface,
-//           (<< anInstruction << " Write " << ri->name << " value= " << std::hex << rs << std::dec));
-//
-//      ri->writefn(anInstruction.core(), (uint64_t)rs);
-//    }
-//    Effect::invoke(anInstruction);
-//  }
-//
-//  void describe(std::ostream &anOstream) const {
-//    anOstream << " Write PR " << thePR;
-//    Effect::describe(anOstream);
-//  }
-//};
-//
-// Effect *writePR(SemanticInstruction *inst, ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRI) {
-//  WritePREffect *e = new WritePREffect(aPR, std::move(anRI));
-//  inst->addNewComponent(e);
-//  return e;
-//}
-//
+
+struct WritePREffect : public Effect {
+ ePrivRegs thePR;
+ std::unique_ptr<SysRegInfo> ri;
+ WritePREffect(ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRI) : thePR(aPR), ri(std::move(anRI)) {
+ }
+
+ void invoke(SemanticInstruction &anInstruction) {
+   FLEXUS_PROFILE();
+   if (!anInstruction.isAnnulled()) {
+     uint64_t rs = 0;
+     if (anInstruction.hasOperand(kResult)) {
+       rs = anInstruction.operand<uint64_t>(kResult);
+     } else if (anInstruction.hasOperand(kResult1)) {
+       rs = anInstruction.operand<uint64_t>(kResult1);
+     }
+     DBG_(Iface,
+          (<< anInstruction << " Write " << ri->name << " value= " << std::hex << rs << std::dec));
+
+     ri->writefn(anInstruction.core(), (uint64_t)rs);
+   }
+   Effect::invoke(anInstruction);
+ }
+
+ void describe(std::ostream &anOstream) const {
+   anOstream << " Write PR " << thePR;
+   Effect::describe(anOstream);
+ }
+};
+
+Effect *writePR(SemanticInstruction *inst, ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRI) {
+ WritePREffect *e = new WritePREffect(aPR, std::move(anRI));
+ inst->addNewComponent(e);
+ return e;
+}
+
 struct WritePSTATE : public Effect {
  uint8_t theOp1, theOp2;
  WritePSTATE(uint8_t anOp1, uint8_t anOp2) : theOp1(anOp1), theOp2(anOp2) {
@@ -1145,7 +1146,7 @@ struct WritePSTATE : public Effect {
        anInstruction.core()->setDAIF((uint32_t)val | anInstruction.core()->_PSTATE().DAIF());
        break;
      case 0x1f: // daif clr
-       anInstruction.core()->setDAIF((uint32_t)val ^ anInstruction.core()->_PSTATE().DAIF());
+       anInstruction.core()->setDAIF((uint32_t)(~val & anInstruction.core()->_PSTATE().DAIF()));
        break;
      default:
        anInstruction.setWillRaise(kException_UNCATEGORIZED);
