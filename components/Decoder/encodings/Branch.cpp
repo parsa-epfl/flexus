@@ -4,6 +4,7 @@
 #include "../Effects.hpp"
 #include "Unallocated.hpp"
 #include "components/Decoder/Conditions.hpp"
+#include "components/Decoder/OperandCode.hpp"
 #include "components/Decoder/SemanticActions.hpp"
 #include "components/uArch/systemRegister.hpp"
 
@@ -499,14 +500,14 @@ SYS(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         inst->addPostvalidation(validateXRegister(rt, kResult, inst, true));
     } else {
         inst->setClass(clsComputation, codeWRPR);
-        return inst; // FIXME: This will never actually write the register
 
         std::vector<std::list<InternalDependance>> rs_dep(1);
         // need to halt dispatch for writes
         inst->setHaltDispatch();
         inst->addCheckTrapEffect(checkSystemAccess(inst, op0, op1, op2, crn, crm, rt, l));
+        predicated_action exec = addExecute(inst, (operation(kMOV_)), {kOperand1}, rs_dep, kResult);
         addReadXRegister(inst, 1, rt, rs_dep[0], true);
-        addExecute(inst, operation(kMOV_), rs_dep);
+        connectDependance(inst->retirementDependance(), exec);
         std::unique_ptr<SysRegInfo> ri = getPriv(op0, op1, op2, crn, crm);
         ri->setSystemRegisterEncodingValues(op0, op1, op2, crn, crm);
         inst->addRetirementEffect(writePR(inst, pr, std::move(ri)));
