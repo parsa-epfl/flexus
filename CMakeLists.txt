@@ -14,9 +14,10 @@ include(./target/${SIMULATOR}/${SIMULATOR}.cmake)
 
 # Setup include paths
 include_directories(.)
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-error=maybe-uninitialized -Wno-error=dangling-pointer -fdiagnostics-color=always")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -ggdb -g3 -fno-eliminate-unused-debug-symbols -fno-omit-frame-pointer -funroll-loops")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ggdb -g3 -march=native")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wno-error")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -gdwarf-5 -g3 -fno-omit-frame-pointer -funroll-loops")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -gdwarf-5 -g3 -march=native -fno-omit-frame-pointer")
+
 
 # Find boost
 set(Boost_USE_DEBUG_LIBS OFF)
@@ -37,5 +38,5 @@ endforeach()
 
 # compile simulators
 add_library(${SIMULATOR} SHARED ./target/${SIMULATOR}/wiring.cpp)
-target_link_libraries(${SIMULATOR} "-Wl,--whole-archive" "-Wl,--no-undefined" core ${REQUIRED_COMPONENTS})
+target_link_libraries(${SIMULATOR} "-Wl,--whole-archive" core ${REQUIRED_COMPONENTS})
 target_link_libraries(${SIMULATOR} "-Wl,--no-whole-archive" ${Boost_LIBRARIES} boost_system boost_regex boost_serialization boost_iostreams)
