@@ -149,6 +149,11 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
     }
     virtual boost::intrusive_ptr<AbstractLookupResult<_State>> lookup(MemoryAddress address)
     {
+        // Make sure this address is in the right range.
+        uint64_t node_index = (address >> theBlockShift) % theNumNodes;
+
+        DBG_Assert(node_index == theNodeId, (<< "Address " << std::hex << address << " is not in the correct node. Expected node " << theNodeId << " but got node " << node_index));
+
         iterator iter = theDirectory.find(address);
         return LookupResult_p(new LookupResult(iter, (iter != theDirectory.end())));
     }
