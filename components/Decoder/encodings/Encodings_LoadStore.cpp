@@ -135,6 +135,10 @@ disas_ldst_reg_roffset(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aS
     uint32_t opc    = extract32(aFetchedOpcode.theOpcode, 22, 2);
     bool is_store   = (opc == 0);
 
+    if (size == 3 && opc == 2) {
+        return nop(aFetchedOpcode, aCPU, aSequenceNo); // PRFM
+    }
+
     if (extract32(option, 1, 1) == 0) { return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo); }
 
     if (!V && opc == 3 && size > 1) { return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo); }
@@ -252,6 +256,9 @@ disas_ldst_reg(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceN
         case 0:
             if (extract32(aFetchedOpcode.theOpcode, 21, 1) == 1 && extract32(aFetchedOpcode.theOpcode, 10, 2) == 2) {
                 return disas_ldst_reg_roffset(aFetchedOpcode, aCPU, aSequenceNo);
+            } else if (extract32(aFetchedOpcode.theOpcode, 21, 1) == 1 && extract32(aFetchedOpcode.theOpcode, 10, 2) == 0) {
+                // Atomic memory operations
+                return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
             } else {
                 /* Load/store register (unscaled immediate)
                  * Load/store immediate pre/post-indexed
