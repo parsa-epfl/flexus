@@ -85,6 +85,7 @@ ArchInstruction::doDispatchEffects()
     auto bp_state = bpState();
 
     DBG_Assert(bp_state, (<< "No branch predictor state exists, but it must"));
+    if (isMicroOp()) return;
     if (bp_state->thePredictedType == kNonBranch) return;
     if (isBranch()) return;
 
@@ -161,7 +162,7 @@ decode(Flexus::SharedTypes::FetchedOpcode const& aFetchedOpcode, uint32_t aCPU, 
     DBG_(VVerb, (<< "\033[1;31m DECODER: Decoding " << std::hex << aFetchedOpcode.theOpcode << std::dec << "\033[0m"));
 
     bool last_uop                                     = true;
-    boost::intrusive_ptr<AbstractInstruction> ret_val = disas_a64_insn(aFetchedOpcode, aCPU, aSequenceNo, aUop);
+    boost::intrusive_ptr<AbstractInstruction> ret_val = disas_a64_insn(aFetchedOpcode, aCPU, aSequenceNo, aUop, last_uop);
     return std::make_pair(ret_val, last_uop);
 }
 
