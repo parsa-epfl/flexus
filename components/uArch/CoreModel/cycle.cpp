@@ -1446,9 +1446,11 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
         throw ResynchronizeWithQemuException(true);
     }
 
-    validation_passed &= checkValidatation();
-
-    validation_passed &= anInstruction->postValidate();
+    if (anInstruction->advancesSimics()) {
+        validation_passed &= checkValidatation();
+        validation_passed &= anInstruction->postValidate();
+    }
+    
     DBG_(Iface, (<< "Post Validating... " << validation_passed));
 
     if (!validation_passed) {
