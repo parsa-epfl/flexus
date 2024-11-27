@@ -2,6 +2,7 @@
 #include <components/CommonQEMU/Translation.hpp>
 #include <core/qemu/mai_api.hpp>
 #include <core/simulator_layout.hpp>
+#include "NICTypes.hpp"
 
 // clang-format off
 #define FLEXUS_BEGIN_COMPONENT NIC

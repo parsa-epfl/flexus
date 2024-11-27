@@ -148,6 +148,12 @@ class FLEXUS_COMPONENT(NIC)
         if ((uint64_t)aMessage.address() == (BAR0 + TDT_offset) ) {
           processTxTailUpdate();
         }
+        else if ((uint64_t)aMessage.address() == (BAR0 + RDT_offset) ) {
+          DBG_(Crit, ( << "Rx Tail Access: Write(" << (aMessage.type() == MemoryMessage::IOStoreReq) << ")" ));
+          processRxTailUpdate(aMessage.type() == MemoryMessage::IOStoreReq);
+        } else if ((uint64_t)aMessage.address() == (BAR0 + RDH_offset) ) {
+          DBG_(Crit, ( << "Rx Head Access: Write(" << (aMessage.type() == MemoryMessage::IOStoreReq) << ")" ));
+        }
       }
     }
 
@@ -212,7 +218,32 @@ class FLEXUS_COMPONENT(NIC)
 
       // By this point, the SMMU should have injected read requests into the cache hierarchy
 
-      printDataDescriptor(transmitDescriptor);
+      printDescriptor(transmitDescriptor);
+    }
+
+    void processRxDescriptor (AdvancedReceiveDescriptor receiveDescriptor) {
+
+      // /**
+      //  * Read the IOVA of Rx data and header Buffer from the buffer descriptor
+      //  * Create memory message*s* with the appropriate IOVA and message size
+      //  * Send the memory message to the SMMU
+      //  * SMMU will then process that message, do translation and read and
+      //  * return data if necessary
+      //  * SMMU will be responsible for injecting memory accesses into the cache
+      //  * hierarchy
+      //  * So the NIC only sends MemoryMessages and not inject memory operations
+      //  * directly into the memory or LLC
+      //  */
+
+      // std::vector <MemoryMessage> rxReadReadMessages = generateMemoryMessageFromDescriptor (transmitDescriptor);
+
+      // for (auto& txDataReadMessage : txDataReadMessages)
+      //   FLEXUS_CHANNEL(DeviceMemoryRequest) << txDataReadMessage;  // Sending to SMMU for processing
+      //                                                              // Processing entails both translation and memory access
+
+      // // By this point, the SMMU should have injected read requests into the cache hierarchy
+
+      printDescriptor(receiveDescriptor);
     }
 
     // Use pointer arithmetic to conveniently read descriptors that are bigger than 64 bits
@@ -234,6 +265,27 @@ class FLEXUS_COMPONENT(NIC)
       free((void *)txDataDescriptorReadMessage.getDataPtr()); // Free the memory allocated for holding the data
 
       return transmitDescriptor;
+    }
+
+    // Use pointer arithmetic to conveniently read descriptors that are bigger than 64 bits
+    AdvancedReceiveDescriptor readReceiveDescriptor (VirtualMemoryAddress tailDescriptorIOVA) {
+
+      AdvancedReceiveDescriptor receiveDescriptor;
+
+      // !!!!!! Assuming that this message is always < maxTLP
+      // !!!!!! Otherwise this message also needs to be chopped
+      MemoryMessage rxDescriptorReadMessage (MemoryMessage::IOLoadReq, PhysicalMemoryAddress(0), tailDescriptorIOVA, BDF);
+      rxDescriptorReadMessage.reqSize() = sizeof (receiveDescriptor.advancedReceiveReadDescriptor);   // Descriptor is 16-bytes long
+      rxDescriptorReadMessage.setDataRequired();  // NIC requires the descriptor data
+
+      FLEXUS_CHANNEL(DeviceMemoryRequest) << rxDescriptorReadMessage;  // Sending to SMMU for processing
+                                                                       // Processing entails both translation and memory access
+
+      receiveDescriptor.advancedReceiveReadDescriptor = *((AdvancedReceiveDescriptor::AdvancedReceiveReadDescriptor *) rxDescriptorReadMessage.getDataPtr());  // Copy data from memory message to receiveDescriptor
+
+      free((void *)rxDescriptorReadMessage.getDataPtr()); // Free the memory allocated for holding the data
+
+      return receiveDescriptor;
     }
 
     /**
@@ -264,8 +316,36 @@ class FLEXUS_COMPONENT(NIC)
       }
     }
 
+    /**
+     * Handle update to RDT
+     * RDT update means that the Driver wrote
+     * a new RX descriptor to be processed
+     * processRxTailUpdate handles the update 
+     * by getting the PA of the buffer descriptor
+     * then processing the descriptor
+     */
+    void processRxTailUpdate (bool isWriteBack) {
+
+      // Current position of the tail in the RX Ring Buffer
+      // This points to the next empty slot in ring buffer, meaning 
+      // the slot before this one has the descriptor address written
+      // by the OS
+      // uint64_t tailPosition = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + RDT_offset), 4);
+      // tailPosition--;
+
+      uint64_t headPosition = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + RDT_offset), 4);
+
+      VirtualMemoryAddress tailDescriptorIOVA ( RDBAL + (headPosition << 4) );
+
+      // This step requires one translation
+      AdvancedReceiveDescriptor receiveDescriptor = readReceiveDescriptor(tailDescriptorIOVA);
+
+      // This will require as many translations as the data is big
+      processRxDescriptor(receiveDescriptor);
+    }
+
   private:  // These are helpers for debugging purposes and can be safely removed in release
-    void printDataDescriptor(const AdvancedTransmitDataDescriptor& descriptor) {
+    void printDescriptor(const AdvancedTransmitDataDescriptor& descriptor) {
       DBG_(VVerb, ( << "Advanced Transmit Data Descriptor Contents:"
       
       // Print the 64-bit address field in hex
@@ -293,6 +373,32 @@ class FLEXUS_COMPONENT(NIC)
       << descriptor.fields.rsv 
       << "\n  DTA_LEN:          0x" << std::hex << std::setw(5) << std::setfill('0') 
       << descriptor.fields.dtalen ));
+    }
+
+    void printDescriptor(const AdvancedReceiveDescriptor& descriptor) {
+
+      RDH = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + RDH_offset), 4);
+      RDT = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + RDT_offset), 4);
+
+      bool isProcessed = descriptor.advancedReceiveWriteDescriptor.DD == 1;
+
+      if (!isProcessed) {
+        DBG_(Crit, ( << "Advanced Receive Read Descriptor Contents: RDH: " << RDH << "\tRDT: " << RDT
+        
+        // Print the 64-bit address field in hex
+        << "\n  Packet Buffer IOVA: " << std::hex << std::setw(16) << std::setfill('0') 
+        << descriptor.advancedReceiveReadDescriptor.packetBufferAddress
+        
+        << "\n  Header Buffer IOVA: " << std::hex << std::setw(16) << std::setfill('0') 
+        << (descriptor.advancedReceiveReadDescriptor.headerBufferAddress << 1)
+        ));
+      } else {
+        DBG_(Crit, ( << "Advanced Receive Writeback Descriptor Contents: RDH: " << RDH << "\tRDT: " << RDT
+        
+        << "\n  Packet Length: " << std::hex << (uint64_t)descriptor.advancedReceiveWriteDescriptor.PKT_LEN 
+        << "\n  Header Length: " << std::hex << descriptor.advancedReceiveWriteDescriptor.HDR_LEN
+        << "\n  End Of Packet: " << (uint64_t)descriptor.advancedReceiveWriteDescriptor.EOP ));
+      }
     }
 
   private:
@@ -337,7 +443,7 @@ class FLEXUS_COMPONENT(NIC)
     const uint32_t RDBAH_offset = 0xC004;
     const uint32_t RDLEN_offset = 0xC008;
     const uint32_t RDH_offset   = 0xC010;
-    const uint32_t RDT_offset   = 0xC018;
+    const uint32_t RDT_offset   = 0x2818;
 
     const uint32_t TXPBS_offset = 0x3404;
     const uint32_t TCTL_offset  = 0x400;
