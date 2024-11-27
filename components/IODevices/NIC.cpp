@@ -168,7 +168,8 @@ class FLEXUS_COMPONENT(NIC)
 
       std::vector <MemoryMessage> ret;
 
-      uint32_t bytesLeft = transmitDescriptor.fields.paylen;
+      uint32_t bytesLeft = transmitDescriptor.fields.dtalen;  //! Use dtalen instead of paylen. When TSO is enabled, dtalen holds the length of data to be transmitted
+                                                              // !!!! I need confirmation for this!!!! I am not sure if I have implemented correct functionality for TSO
       uint32_t numberOfMessages = ceil(bytesLeft / (maxTLPSize * 1.0));
 
       for (uint32_t i = 0; i < numberOfMessages; i++) {
