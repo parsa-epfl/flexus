@@ -10,6 +10,7 @@
 #include "components/MMU/mmuRegisters.hpp"
 
 #include "SMMUTypes.hpp"
+#include "SMMUStats.hpp"
 #include "IOTLB.hpp"
 
 // clang-format off

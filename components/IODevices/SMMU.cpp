@@ -1,4 +1,5 @@
 #include "components/CommonQEMU/Slices/MemoryMessage.hpp"
+#include "components/IODevices/SMMUStats.hpp"
 #include "components/IODevices/SMMUTypes.hpp"
 #include "core/debug/debug.hpp"
 #include "core/types.hpp"
@@ -65,6 +66,9 @@ private:
 private:
 	 std::shared_ptr<IOTLB> theIOTLB;
 
+private:
+	SMMUStats * theSMMUStats;
+
 public:
 	FLEXUS_COMPONENT_CONSTRUCTOR(SMMU)
 	  : base(FLEXUS_PASS_CONSTRUCTOR_ARGS)
@@ -102,14 +106,23 @@ public:
 
 		printSMMUConfig();
 
-		thePageWalker.reset(new PageWalk(flexusIndex()));
+		thePageWalker.reset(new PageWalk(flexusIndex()));	// ? Not sure if flexusIndex()  should be passed as the Node
 		thePageWalker->setMMU(theMMU);
 
 		theIOTLB.reset (new IOTLB (12, 1024, 8));	// TODO: Use Config file to get the config for IOTLB
+
+		theSMMUStats = new SMMUStats(statName());
 	}
 
 	PhysicalMemoryAddress translateIOVA (TranslationPtr& aTranslate, MemoryMessage& aMemoryMessage) {
-
+		
+		theSMMUStats->Total_Translation++;
+		if (aMemoryMessage.type() == MemoryMessage::IOLoadReq) {
+			theSMMUStats->Translation_Read_Stats++;
+		} else {		// Assertion in the caller of this function ensures that the message type can only be either IOLoadReq or IOStoreReq
+			theSMMUStats->Translation_Write_Stats++;
+		}
+		
 		uint16_t bdf = aTranslate->bdf;
 
 		DBG_(VVerb, (<< "Translating: BDF: " << std::hex << bdf << "\tIOVA: " << (uint64_t) aTranslate->theVaddr << std::dec ));
@@ -126,6 +139,8 @@ public:
 		if (theIOTLB->contains(ASID, aTranslate->theVaddr)) {	// Hit in IOTLB
 			aTranslate->thePaddr = theIOTLB->access(ASID, aTranslate->theVaddr);
 
+			theSMMUStats->IOTLB_Hit++;
+
 			DBG_(VVerb, (	
 						<< "Translation Hit in IOTLB: BDF: " << std::hex << bdf 
 						<< "\tIOVA: " << (uint64_t) aTranslate->theVaddr 
@@ -135,6 +150,8 @@ public:
 
 			return aTranslate->thePaddr;
 		}
+
+		theSMMUStats->IOTLB_Miss++;
 
 		// Miss in IOTLB, do Page Table Walk and insert the entry into the IOTLB
 		cfg_smmu(0, contextDescriptor, aTranslate->theVaddr);	// TODO: Passing 0 for now as we have only 1 device
@@ -176,6 +193,7 @@ public:
 	//----------
 	void drive(interface::SMMUDrive const&)
 	{
+		theSMMUStats->update();
 	}
 
 	FLEXUS_PORT_ALWAYS_AVAILABLE(CPUMemoryRequest);
@@ -184,6 +202,8 @@ public:
 		if ((uint64_t)aMessage.address() == (configBaseAddress + SMMU_CMDQ_PROD)) {	// CPU produced a command
 			processCommandQueue ();
 		}
+
+		theSMMUStats->update();	// For updating Invalidation Stats
 	}
 
 	// !This needs to be implemented
@@ -199,6 +219,10 @@ public:
 	bool available(interface::DeviceMemoryRequest const&) { return true; }
 	void push(interface::DeviceMemoryRequest const&, MemoryMessage& aMemoryMessage)
 	{
+		DBG_Assert(	aMemoryMessage.type() == MemoryMessage::IOLoadReq ||
+					aMemoryMessage.type() == MemoryMessage::IOStoreReq , 
+					(<< "Invalid Memory Message sent to SMMU for translation")
+				);
 
 		// NOTE: it should be guaranteed by the Device that the memory message it sends
 		// will not exceede the maximum TLP size. THus we need not worry if a memory message 
@@ -213,6 +237,7 @@ public:
 		  tr->setIO(aMemoryMessage.getBDF());
 
 		PhysicalMemoryAddress qflexPA = translateIOVA (tr, aMemoryMessage);	// SMMU translation happens here
+		theSMMUStats->update();	// Update Stats for IOTLB access
 
 		// Validation
 		PhysicalMemoryAddress qemuPA (Flexus::Qemu::API::qemu_api.translate_iova2pa (tr->bdf, (uint64_t)tr->theVaddr));
@@ -392,6 +417,8 @@ private:
 		// TODO: Implement Config Cache invalidations
 		// TODO: Invalidation Broadcast
 		InvalidationCommand invalidationCommand;
+
+		theSMMUStats->IOTLB_Invalidation++;
 
 		*((uint64_t *)(&invalidationCommand)) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(commandQueueBase + sizeof(invalidationCommand) * index), 8);
 		*((uint64_t *)(&invalidationCommand) + 1) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(commandQueueBase + sizeof(invalidationCommand) * index + 8), 8);
