@@ -416,9 +416,9 @@ private:
 		// TODO: Implement other non-invalidation commands as well
 		// TODO: Implement Config Cache invalidations
 		// TODO: Invalidation Broadcast
-		InvalidationCommand invalidationCommand;
 
-		theSMMUStats->IOTLB_Invalidation++;
+		// !!!!! TODO: Implement SYNC Command !!!!! Very important for completeness but not as much for correctness as invalidations happen as soon as the invalidation command is issues. SYNC command is for notifying the CPU about invalidation completion
+		InvalidationCommand invalidationCommand;
 
 		*((uint64_t *)(&invalidationCommand)) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(commandQueueBase + sizeof(invalidationCommand) * index), 8);
 		*((uint64_t *)(&invalidationCommand) + 1) = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(commandQueueBase + sizeof(invalidationCommand) * index + 8), 8);
@@ -427,20 +427,41 @@ private:
 		switch (invalidationCommand.opcode) {
             case InvalidationCommand::CMD_TLBI_NH_ALL:
 				theIOTLB->invalidate();
+				theSMMUStats->IOTLB_Invalidation++;
 				DBG_(VVerb, (<< "Invalidated Entire IOTLB" 	<< std::endl ));
 				break;
 			case InvalidationCommand::CMD_TLBI_NH_VAA:
             case InvalidationCommand::CMD_TLBI_NH_ASID:
 				theIOTLB->invalidate(invalidationCommand.ASID);
+				theSMMUStats->IOTLB_Invalidation++;
 				DBG_(VVerb, (<< "Invalidated IOTLB ASID(" << invalidationCommand.ASID << ")"	<< std::endl ));
 				break;
             case InvalidationCommand::CMD_TLBI_NH_VA:
-				theIOTLB->invalidate(invalidationCommand.ASID,  VirtualMemoryAddress(invalidationCommand.Address << 12));	// TODO: Should not hardcode 12 here. 
-																																				// ? What to do when we have hugepages?
-				DBG_(VVerb, (<< "Invalidated IOTLB ASID(" << invalidationCommand.ASID << ")\tIOVA(" << std::hex << (invalidationCommand.Address << 12)	<< ")" << std::endl ));
+				// TODO: Range based invalidation requires a lot of checks of various fileds like TG, NUM, SCALE, TTL, etc.
+				// TODO: I am most likely not checking all the fields :,)
+				// Ref: Section 4.4.1.1 of SMMUv3 Reference
+				if (invalidationCommand.TG == 0) {		// Not range based invalidation
+					theIOTLB->invalidate(invalidationCommand.ASID,  VirtualMemoryAddress(invalidationCommand.Address << 12));	// TODO: Should not hardcode 12 here. 
+																																					// ? What to do when we have hugepages?
+					DBG_(VVerb, (<< "Invalidated IOTLB ASID(" << invalidationCommand.ASID << ")\tIOVA(" << std::hex << (invalidationCommand.Address << 12)	<< ")" << std::endl ));
+				} else if (invalidationCommand.TG == 1) {
+					// Range = ((NUM+1)*2^SCALE)*Translation_Granule_Size
+					uint64_t NUM = invalidationCommand.NUM;
+					uint64_t SCALE = invalidationCommand.SCALE;
+					uint64_t range_start = invalidationCommand.Address;
+					uint64_t range_size = ((NUM + 1) * (1 << SCALE));
+					uint64_t range_end = range_start + range_size;
+					for (uint64_t i = range_start; i < range_end; i++) {
+						theIOTLB->invalidate(invalidationCommand.ASID,  VirtualMemoryAddress(i << 12));	// TODO: Should not hardcode 12 here. 
+					}
+					DBG_(VVerb, (<< "Invalidated IOTLB ASID(" << invalidationCommand.ASID << ")\tIOVA Range Start(" << std::hex << (range_start << 12) << ")\tIOVA Range End(" << std::hex << (range_end << 12)	<< ")" << std::endl ));
+				} else {
+					DBG_Assert(false, (<< "Translation Granule for Invalidation is not supported" ));
+				}
+				theSMMUStats->IOTLB_Invalidation++;		// TODO: ? Not sure if this should be incremented once or multiple times for range invalidation
 				break;
 			default:
-				DBG_(VVerb, (<< "Not IOTLB Invalidation Command" 	<< std::endl ));
+				DBG_(VVerb, (<< "Not IOTLB Invalidation Command Opcode(" << std::dec << invalidationCommand.opcode << ")" 	<< std::endl ));
         }
 	}
 
