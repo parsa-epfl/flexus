@@ -135,6 +135,10 @@ disas_ldst_reg_roffset(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aS
     uint32_t opc    = extract32(aFetchedOpcode.theOpcode, 22, 2);
     bool is_store   = (opc == 0);
 
+    if (size == 3 && opc == 2) {
+        return nop(aFetchedOpcode, aCPU, aSequenceNo); // PRFM
+    }
+
     if (extract32(option, 1, 1) == 0) { return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo); }
 
     if (!V && opc == 3 && size > 1) { return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo); }
@@ -252,6 +256,9 @@ disas_ldst_reg(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceN
         case 0:
             if (extract32(aFetchedOpcode.theOpcode, 21, 1) == 1 && extract32(aFetchedOpcode.theOpcode, 10, 2) == 2) {
                 return disas_ldst_reg_roffset(aFetchedOpcode, aCPU, aSequenceNo);
+            } else if (extract32(aFetchedOpcode.theOpcode, 21, 1) == 1 && extract32(aFetchedOpcode.theOpcode, 10, 2) == 0) {
+                // Atomic memory operations
+                return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
             } else {
                 /* Load/store register (unscaled immediate)
                  * Load/store immediate pre/post-indexed
@@ -293,9 +300,11 @@ disas_ldst_reg(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceN
  * imm7 = signed offset (multiple of 4 or 8 depending on size)
  */
 archinst
-disas_ldst_pair(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+disas_ldst_pair(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo, int32_t aUop, bool& aLastUop)
 {
     DECODER_TRACE;
+
+    aLastUop = !(aUop == 0);
 
     bool is_vector = extract32(aFetchedOpcode.theOpcode, 26, 1);
     bool is_load   = extract32(aFetchedOpcode.theOpcode, 22, 1);
@@ -313,9 +322,9 @@ disas_ldst_pair(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequence
         //        }
     } else {
         if (is_load) {
-            return LDP(aFetchedOpcode, aCPU, aSequenceNo);
+            return LDP(aFetchedOpcode, aCPU, aSequenceNo, aUop);
         } else {
-            return STP(aFetchedOpcode, aCPU, aSequenceNo);
+            return STP(aFetchedOpcode, aCPU, aSequenceNo, aUop);
         }
     }
 }
@@ -396,7 +405,7 @@ disas_ldst_excl(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequence
 
 /* Loads and stores */
 archinst
-disas_ldst(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+disas_ldst(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo, int32_t aUop, bool& aLastUop)
 {
     switch (extract32(aFetchedOpcode.theOpcode, 24, 6)) {
         case 0x08: /* Load/store exclusive */ return disas_ldst_excl(aFetchedOpcode, aCPU, aSequenceNo);
@@ -405,7 +414,7 @@ disas_ldst(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         case 0x28:
         case 0x29:
         case 0x2c:
-        case 0x2d: /* Load/store pair (all forms) */ return disas_ldst_pair(aFetchedOpcode, aCPU, aSequenceNo);
+        case 0x2d: /* Load/store pair (all forms) */ return disas_ldst_pair(aFetchedOpcode, aCPU, aSequenceNo, aUop, aLastUop);
         case 0x38:
         case 0x39:
         case 0x3c:

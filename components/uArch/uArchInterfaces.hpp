@@ -781,7 +781,7 @@ struct uArch
     {
         DBG_Assert(false);
     }
-    virtual bool squashFrom(boost::intrusive_ptr<Instruction> anInsn)
+    virtual bool squashFrom(boost::intrusive_ptr<Instruction> anInsn, bool inclusive = true)
     {
         DBG_Assert(false);
         return false;

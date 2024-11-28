@@ -7,7 +7,7 @@ namespace nDecoder {
 
 /* C3.1 A64 instruction index by encoding */
 archinst
-disas_a64_insn(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo, int32_t aUop)
+disas_a64_insn(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo, int32_t aUop, bool &aLastUop)
 {
     if (aFetchedOpcode.theOpcode == 1) { // instruction fetch page fault
         return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
@@ -27,7 +27,7 @@ disas_a64_insn(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceN
         case 0x4:
         case 0x6:
         case 0xc:
-        case 0xe: /* Loads and stores */ return disas_ldst(aFetchedOpcode, aCPU, aSequenceNo);
+        case 0xe: /* Loads and stores */ return disas_ldst(aFetchedOpcode, aCPU, aSequenceNo, aUop, aLastUop);
         case 0x5:
         case 0xd: /* Data processing - register */ return disas_data_proc_reg(aFetchedOpcode, aCPU, aSequenceNo);
         case 0x7:

@@ -3,6 +3,7 @@
 #include "Conditions.hpp"
 #include "OperandMap.hpp"
 #include "SemanticActions.hpp"
+#include "components/uArch/CoreModel/PSTATE.hpp"
 #include "encodings/SharedFunctions.hpp"
 
 #include <boost/throw_exception.hpp>
@@ -12,6 +13,7 @@
 #include <core/debug/debug.hpp>
 #include <core/target.hpp>
 #include <core/types.hpp>
+#include <cstdint>
 
 #define DBG_DeclareCategories Decoder
 #define DBG_SetDefaultOps     AddCat(Decoder)
@@ -61,7 +63,9 @@ typedef struct ADD : public Operation
             return result + boost::get<uint64_t>(finalOperands[1]);
         } else if (finalOperands.size() == 3) {
             result += boost::get<uint64_t>(finalOperands[1]);
-            result += (boost::get<bits>(finalOperands[2]) != 0) ? 1 : 0; // ! This is only for ADC and SUBC.
+            PSTATE pstate = boost::get<uint64_t>(operands[2]);
+            uint64_t carry = pstate.C();
+            result += carry; // ! This is only for ADC and SUBC.
         }
 
         return result;
@@ -82,7 +86,8 @@ typedef struct ADDS : public Operation
         if (operands.size() == 2) {
             carry = 0;
         } else {
-            carry = boost::get<uint64_t>(operands[2]);
+            PSTATE pstate = boost::get<uint64_t>(operands[2]);
+            carry = pstate.C();
         }
 
         uint64_t op1 = boost::get<uint64_t>(operands[0]);
@@ -117,7 +122,9 @@ typedef struct SUB : public Operation
         if (operands.size() == 2) {
             return boost::get<uint64_t>(operands[0]) - boost::get<uint64_t>(operands[1]);
         } else {
-            auto fix_from_carry = static_cast<uint8_t>(boost::get<bits>(operands[2]));
+            PSTATE pstate = boost::get<uint64_t>(operands[2]);
+            auto fix_from_carry = pstate.C() ? 0 : 1;
+
             DBG_Assert(fix_from_carry == 0 || fix_from_carry == 1);
             return (boost::get<uint64_t>(operands[0]) - boost::get<uint64_t>(operands[1]) - fix_from_carry);
         }
@@ -137,7 +144,8 @@ typedef struct SUBS : public Operation
         if (operands.size() == 2) {
             carry = 1;
         } else {
-            carry = (uint64_t)boost::get<uint64_t>(operands[2]);
+            PSTATE pstate = boost::get<uint64_t>(operands[2]);
+            carry = pstate.C();
         }
 
         uint64_t op1 = boost::get<uint64_t>(operands[0]);

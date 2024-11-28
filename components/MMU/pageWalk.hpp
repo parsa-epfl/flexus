@@ -16,9 +16,6 @@ class MMUComponent;
 
 class PageWalk
 {
-
-    std::shared_ptr<mmu_t> theMMU;
-
     std::list<TranslationTransport> theTranslationTransports;
 
     std::queue<boost::intrusive_ptr<Translation>> theDoneTranslations;
@@ -36,7 +33,6 @@ class PageWalk
     {
     }
     ~PageWalk() {}
-    void setMMU(std::shared_ptr<mmu_t> aMMU) { theMMU = aMMU; }
     void translate(TranslationTransport& aTransport);
     void preTranslate(TranslationTransport& aTransport);
     void cycle();

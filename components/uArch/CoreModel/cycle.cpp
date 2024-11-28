@@ -1446,9 +1446,11 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
         throw ResynchronizeWithQemuException(true);
     }
 
-    validation_passed &= checkValidatation();
+    if (anInstruction->advancesSimics()) {
+        validation_passed &= checkValidatation();
+        validation_passed &= anInstruction->postValidate();
+    }
 
-    validation_passed &= anInstruction->postValidate();
     DBG_(Iface, (<< "Post Validating... " << validation_passed));
 
     if (!validation_passed) {
@@ -1469,14 +1471,14 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
 }
 
 bool
-CoreImpl::squashFrom(boost::intrusive_ptr<Instruction> anInsn)
+CoreImpl::squashFrom(boost::intrusive_ptr<Instruction> anInsn, bool inclusive)
 {
     if (!theSquashRequested || (anInsn->sequenceNo() <= (*theSquashInstruction)->sequenceNo())) {
         theSquashRequested   = true;
         theSquashReason      = kBranchMispredict;
         theEmptyROBCause     = kMispredict;
         theSquashInstruction = theROB.project<0>(theROB.get<by_insn>().find(anInsn));
-        theSquashInclusive   = true;
+        theSquashInclusive   = inclusive;
         return true;
     }
     return false;

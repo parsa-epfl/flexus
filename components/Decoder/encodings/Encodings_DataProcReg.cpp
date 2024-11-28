@@ -62,7 +62,7 @@ disas_data_proc_1src(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSeq
         case 3: /* REV64 */ return REV(aFetchedOpcode, aCPU, aSequenceNo);
         case 4: /* CLZ */
         case 5: /* CLS */ return CL(aFetchedOpcode, aCPU, aSequenceNo);
-        default: DBG_Assert(false); return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+        default: return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 }
 

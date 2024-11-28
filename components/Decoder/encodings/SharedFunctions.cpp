@@ -527,6 +527,8 @@ highestSetBit(bits val)
 uint64_t
 ones(uint64_t length)
 {
+    if (length > 64) { return (uint64_t)-1; }
+
     uint64_t tmp = 0;
     for (uint32_t i = 0; i < length; i++) {
         tmp |= (1 << i);
