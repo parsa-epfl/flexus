@@ -826,7 +826,11 @@ LDR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         rs2_deps.resize(2);
         if (shift_amount) {
             inst->setOperand(kResult2, (uint64_t)shift_amount);
-            inst->setOperand(kOperand4, (uint64_t)regsize);
+            if (option & 0x1) {
+                inst->setOperand(kOperand4, (uint64_t)64);
+            } else  {
+                inst->setOperand(kOperand4, (uint64_t)32);
+            }
             sh = addExecute(inst, operation(kLSL_), { kOperand2, kResult2, kOperand4 }, rs_deps, kOperand2);
             connect(rs_deps[1], ex);
             inst->addDispatchEffect(satisfy(inst, sh.action->dependance(2)));
