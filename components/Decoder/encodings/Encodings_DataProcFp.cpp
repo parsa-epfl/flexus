@@ -234,6 +234,7 @@ disas_data_proc_simd(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSeq
 archinst
 disas_data_proc_simd_fp(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
 {
+    return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
     if (extract32(aFetchedOpcode.theOpcode, 28, 1) == 1 && extract32(aFetchedOpcode.theOpcode, 30, 1) == 0) {
         return disas_data_proc_fp(aFetchedOpcode, aCPU, aSequenceNo);
     } else {
