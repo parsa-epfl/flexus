@@ -104,12 +104,12 @@ public:
 
         streamTableSize = 1ULL << streamTableBaseConfig.log2size;
 
-		printSMMUConfig();
-
 		thePageWalker.reset(new PageWalk(flexusIndex()));	// ? Not sure if flexusIndex()  should be passed as the Node
 		thePageWalker->setMMU(theMMU);
 
-		theIOTLB.reset (new IOTLB (12, 1024, 8));	// TODO: Use Config file to get the config for IOTLB
+		theIOTLB.reset (new IOTLB (12, cfg.IOTLBSize / cfg.IOTLBAssoc, cfg.IOTLBAssoc));
+
+		printSMMUConfig();
 
 		theSMMUStats = new SMMUStats(statName());
 	}
@@ -524,6 +524,11 @@ private:
                 << "\t" << "Stream Table Base Config: " 	<< streamTableBaseConfig.toString()  	<< std::endl
                 << "\t" << "Stream Table Base Address: "  	<< streamTableBase  		<< std::endl
                 << "\t" << "Stream Table Size: "  			<< streamTableSize  		<< std::endl
+
+				<< std::dec 
+
+				<< "\t" << "IOTLB Size: "					<< cfg.IOTLBSize			<< std::endl
+				<< "\t" << "IOTLB Associativity: "			<< cfg.IOTLBAssoc			<< std::endl
 
                 << std::dec
                 << std::endl));
