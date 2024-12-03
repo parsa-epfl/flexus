@@ -933,7 +933,7 @@ SCTLR_EL
 CoreImpl::_SCTLR(uint32_t anELn)
 {
     DBG_Assert(anELn >= 0 || anELn <= 3);
-    return SCTLR_EL(theSCTLR_EL[anELn]);
+    return Flexus::Qemu::Processor::getProcessor(theNode).read_register(Flexus::Qemu::API::SCTLR, anELn);
 }
 
 void
