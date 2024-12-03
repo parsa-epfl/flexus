@@ -655,7 +655,7 @@ STR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     uint32_t shift_amount = (S) ? size : 0;
     bool is_unsigned      = extract32(aFetchedOpcode.theOpcode, 24, 1);
     uint64_t imm = 0, regsize = 0;
-    eIndex index = kNoOffset;
+    eIndex index = kSignedOffset;
 
     if ((opc & 0x2) == 0) {
         regsize = (size == 0x3) ? 64 : 32;
@@ -680,9 +680,15 @@ STR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         imm <<= size;
     } else {
         switch (extract32(aFetchedOpcode.theOpcode, 10, 2)) {
-            case 0x0: index = kNoOffset; break;
+            case 0x0: index = kSignedOffset; break;
             case 0x1: index = kPostIndex; break;
-            case 0x2: index = kRegOffset; break;
+            case 0x2: {
+                if (extract32(aFetchedOpcode.theOpcode, 21, 1) == 1)
+                    index = kRegOffset;    // LDR x1, [x2, x3, LSL #2]
+                else
+                    index = kSignedOffset; // LDTR x1, [x2, #4]
+                break;
+            }
             case 0x3: index = kPreIndex; break;
         }
         if (index != kRegOffset) { imm = (int64_t)sextract32(aFetchedOpcode.theOpcode, 12, 9); }
@@ -715,7 +721,7 @@ STR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     if (index == kUnsignedOffset) {
         inst->setOperand(kUopAddressOffset, imm);
         DBG_(VVerb, (<< "setting unsigned offset " << std::hex << imm));
-    } else if (index == kNoOffset) {
+    } else if (index == kSignedOffset) {
         inst->setOperand(kSopAddressOffset, (int64_t)imm);
         DBG_(VVerb, (<< "setting signed offset no offset " << std::hex << imm));
     } else if (index == kPreIndex) {
@@ -779,7 +785,7 @@ LDR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     uint32_t shift_amount = (S) ? size : 0;
     bool is_unsigned      = extract32(aFetchedOpcode.theOpcode, 24, 1);
     uint64_t imm = 0, regsize = 0;
-    eIndex index = kNoOffset;
+    eIndex index = kSignedOffset;
 
     if ((opc & 0x2) == 0) {
         regsize = (size == 0x3) ? 64 : 32;
@@ -796,9 +802,15 @@ LDR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         imm <<= size;
     } else {
         switch (extract32(aFetchedOpcode.theOpcode, 10, 2)) {
-            case 0x0: index = kNoOffset; break;
+            case 0x0: index = kSignedOffset; break;
             case 0x1: index = kPostIndex; break;
-            case 0x2: index = kRegOffset; break;
+            case 0x2: {
+                if (extract32(aFetchedOpcode.theOpcode, 21, 1) == 1)
+                    index = kRegOffset;    // LDR x1, [x2, x3, LSL #2]
+                else
+                    index = kSignedOffset; // LDTR x1, [x2, #4]
+                break;
+            }
             case 0x3: index = kPreIndex; break;
         }
         if (index != kRegOffset) { imm = (int64_t)sextract32(aFetchedOpcode.theOpcode, 12, 9); }
@@ -848,7 +860,7 @@ LDR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     if (index == kUnsignedOffset) {
         inst->setOperand(kUopAddressOffset, imm);
         DBG_(VVerb, (<< "setting unsigned offset " << std::hex << imm));
-    } else if (index == kNoOffset) {
+    } else if (index == kSignedOffset) {
         inst->setOperand(kSopAddressOffset, (int64_t)imm);
         DBG_(VVerb, (<< "setting signed offset no offset " << std::hex << imm));
     } else if (index == kPreIndex) {
