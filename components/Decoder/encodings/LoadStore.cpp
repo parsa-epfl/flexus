@@ -453,8 +453,8 @@ LDP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo, int32_t 
      */
     bool is_signed = (opc & 0x1) == 0x1;
     uint32_t size  = 8 << (scale + 1);
-    auto sizeOfEachPair = size / 2;
-    auto sizeOfEachPairInBytes = sizeOfEachPair / 8;
+    int64_t sizeOfEachPair = size / 2;
+    int64_t sizeOfEachPairInBytes = sizeOfEachPair / 8;
     eSize sz       = dbSize(size / 2);
 
     if ((((opc & 1) == 1) && L == 0) || opc == 3 || (is_signed && index == kNoOffset)) {
@@ -562,8 +562,8 @@ STP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo, int32_t 
     uint32_t scale = 2 + extract32(opc, 1, 1);
     //    bool is_signed = ( opc & 1 ) != 0;
     int size = 8 << (scale + 1);
-    auto sizeOfEachPair = size / 2;
-    auto sizeOfEachPairInBytes = sizeOfEachPair / 8;
+    int64_t sizeOfEachPair = size / 2;
+    int64_t sizeOfEachPairInBytes = sizeOfEachPair / 8;
     eSize sz = dbSize(size / 2);
 
     if ((((opc & 1) == 1) && L == 0) || opc == 3) { return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo); }
