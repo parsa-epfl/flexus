@@ -10,61 +10,34 @@ namespace Core {
 
 namespace aux_ {
 
-template<int32_t N, int32_t idx, class DriveHandleIter>
+template<int32_t N, class DriveHandleIter>
 struct do_cycle_step
 {
-    static void doCycle()
+    static void doCycle(index_t idx)
     {
-        DBG_(Dev, (<< "Driving " << idx << " of " << N));
         mpl::deref<DriveHandleIter>::type::getReference(idx).drive(
             typename mpl::deref<DriveHandleIter>::type::drive());
         
-        do_cycle_step<N - 1, idx, typename mpl::next<DriveHandleIter>::type>::doCycle();
-    }
-};
-
-template<int32_t idx, class DriveHandleIter>
-struct do_cycle_step<0, idx, DriveHandleIter>
-{
-    static void doCycle() {}
-};
-
-template<int32_t N, int32_t syswidth, class DriveHandleIter>
-struct do_cycle_core
-{
-    static void doCycle()
-    {
-        do_cycle_step<N, syswidth, DriveHandleIter>::doCycle();
-        do_cycle_core<N, syswidth-1, DriveHandleIter>::doCycle();
-    }
-};
-
-template <int32_t N, class DriveHandleIter>
-struct do_cycle_core<N, -1, DriveHandleIter>
-{
-    static void doCycle() {}
-};
-
-template<int32_t N, class DriveHandleIter>
-struct do_cycle_uncore
-{
-    static void doCycle()
-    {
-        {
-            FLEXUS_PROFILE_N(mpl::deref<DriveHandleIter>::type::drive::name());
-            for (index_t i = 0; i < mpl::deref<DriveHandleIter>::type::width(); i++) {
-                mpl::deref<DriveHandleIter>::type::getReference(i).drive(
-                  typename mpl::deref<DriveHandleIter>::type::drive());
-            }
-        }
-        do_cycle_uncore<N - 1, typename mpl::next<DriveHandleIter>::type>::doCycle();
+        do_cycle_step<N - 1, typename mpl::next<DriveHandleIter>::type>::doCycle(idx);
     }
 };
 
 template<class DriveHandleIter>
-struct do_cycle_uncore<0, DriveHandleIter>
+struct do_cycle_step<0, DriveHandleIter>
 {
-    static void doCycle() {}
+    static void doCycle(index_t idx) {}
+};
+
+template<class DriveHandles>
+struct do_cycle_top
+{
+    static void doCycle()
+    {
+        const index_t syswidth = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+        for(index_t sysIdx = 0; sysIdx < syswidth; ++sysIdx) {
+            do_cycle_step<mpl::size<DriveHandles>::value, typename mpl::begin<DriveHandles>::type>::doCycle(sysIdx);
+        }
+    }
 };
 
 template<class DriveHandles>
@@ -75,12 +48,8 @@ struct do_cycle
         typedef typename mpl::deref<typename mpl::begin<DriveHandles>::type>::type coreDriveHandles;
         typedef typename mpl::deref<typename mpl::next<typename mpl::begin<DriveHandles>::type>::type>::type uncoreDriveHandles;
 
-        // constexpr int32_t syswidth = mpl::deref<typename mpl::begin<coreDriveHandles>::type>::type::width();
-        constexpr int32_t syswidth = 1;
-        // constexpr int32_t syswidth = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
-
-        do_cycle_core<mpl::size<coreDriveHandles>::value, syswidth, typename mpl::begin<coreDriveHandles>::type>::doCycle();
-        do_cycle_uncore<mpl::size<uncoreDriveHandles>::value, typename mpl::begin<uncoreDriveHandles>::type>::doCycle();    
+        do_cycle_top<coreDriveHandles>::doCycle();
+        do_cycle_top<uncoreDriveHandles>::doCycle();    
     }
 };
 } // namespace aux_
