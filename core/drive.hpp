@@ -10,8 +10,43 @@ namespace Core {
 
 namespace aux_ {
 
-template<int32_t N, class DriveHandleIter>
+template<int32_t N, int32_t idx, class DriveHandleIter>
 struct do_cycle_step
+{
+    static void doCycle()
+    {
+        DBG_(Dev, (<< "Driving " << idx << " of " << N));
+        mpl::deref<DriveHandleIter>::type::getReference(idx).drive(
+            typename mpl::deref<DriveHandleIter>::type::drive());
+        
+        do_cycle_step<N - 1, idx, typename mpl::next<DriveHandleIter>::type>::doCycle();
+    }
+};
+
+template<int32_t idx, class DriveHandleIter>
+struct do_cycle_step<0, idx, DriveHandleIter>
+{
+    static void doCycle() {}
+};
+
+template<int32_t N, int32_t syswidth, class DriveHandleIter>
+struct do_cycle_core
+{
+    static void doCycle()
+    {
+        do_cycle_step<N, syswidth, DriveHandleIter>::doCycle();
+        do_cycle_core<N, syswidth-1, DriveHandleIter>::doCycle();
+    }
+};
+
+template <int32_t N, class DriveHandleIter>
+struct do_cycle_core<N, -1, DriveHandleIter>
+{
+    static void doCycle() {}
+};
+
+template<int32_t N, class DriveHandleIter>
+struct do_cycle_uncore
 {
     static void doCycle()
     {
@@ -22,12 +57,12 @@ struct do_cycle_step
                   typename mpl::deref<DriveHandleIter>::type::drive());
             }
         }
-        do_cycle_step<N - 1, typename mpl::next<DriveHandleIter>::type>::doCycle();
+        do_cycle_uncore<N - 1, typename mpl::next<DriveHandleIter>::type>::doCycle();
     }
 };
 
 template<class DriveHandleIter>
-struct do_cycle_step<0, DriveHandleIter>
+struct do_cycle_uncore<0, DriveHandleIter>
 {
     static void doCycle() {}
 };
@@ -37,7 +72,15 @@ struct do_cycle
 {
     static void doCycle()
     {
-        do_cycle_step<mpl::size<DriveHandles>::value, typename mpl::begin<DriveHandles>::type>::doCycle();
+        typedef typename mpl::deref<typename mpl::begin<DriveHandles>::type>::type coreDriveHandles;
+        typedef typename mpl::deref<typename mpl::next<typename mpl::begin<DriveHandles>::type>::type>::type uncoreDriveHandles;
+
+        // constexpr int32_t syswidth = mpl::deref<typename mpl::begin<coreDriveHandles>::type>::type::width();
+        constexpr int32_t syswidth = 1;
+        // constexpr int32_t syswidth = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+
+        do_cycle_core<mpl::size<coreDriveHandles>::value, syswidth, typename mpl::begin<coreDriveHandles>::type>::doCycle();
+        do_cycle_uncore<mpl::size<uncoreDriveHandles>::value, typename mpl::begin<uncoreDriveHandles>::type>::doCycle();    
     }
 };
 } // namespace aux_

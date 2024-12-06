@@ -345,16 +345,18 @@ WIRE( theNetwork, ToNode,               theNic, FromNetwork               )
 
 #include FLEXUS_BEGIN_DRIVE_ORDER_SECTION()
 
-DRIVE( theuFetch, uFetchDrive )
+  mpl::vector <
+  DRIVE( theuFetch, uFetchDrive )
 , DRIVE( theFAG, FAGDrive )
 , DRIVE( theuArch, uArchDrive )
 , DRIVE( theMMU, MMUDrive  )
 , DRIVE( theDecoder, DecoderDrive )
-, DRIVE( theNic, MultiNicDrive )
+, DRIVE( theL1d, CacheDrive ) > 
+,  mpl::vector <
+  DRIVE( theNic, MultiNicDrive )
 , DRIVE( theNetwork, NetworkDrive )
 , DRIVE( theMemory, LoopbackDrive )
-, DRIVE( theL2, CMPCacheDrive )
-, DRIVE( theL1d, CacheDrive )
+, DRIVE( theL2, CMPCacheDrive ) >
 
 #include FLEXUS_END_DRIVE_ORDER_SECTION()
     // clang-format on
