@@ -25,6 +25,24 @@ class ComponentManagerImpl : public ComponentManager
     Flexus::Core::index_t theSystemWidth;
     Flexus::Core::freq_opts theFreq;
 
+  private:
+    // Helper functions to calculate drive frequencies
+    index_t gcd(index_t a, index_t b) {
+        while (b != 0) {
+            int t = b;
+            b     = a % b;
+            a     = t;
+        }
+        return a;
+    }
+
+    std::tuple<index_t, index_t> helper(float number) {
+        index_t num = (index_t)(number * 10);   // Assumption: number only has single digit after decimal point
+        index_t den = 10;
+        index_t g   = gcd(num, den);
+        return std::make_tuple(num / g, den / g);
+    }
+
   public:
     virtual ~ComponentManagerImpl() {}
 
@@ -36,7 +54,7 @@ class ComponentManagerImpl : public ComponentManager
         theInstantiationFunctions.push_back(anInstantiator);
     }
 
-    void instantiateComponents(Flexus::Core::index_t aSystemWidth, Flexus::Core::index_t aFreqCore, Flexus::Core::index_t aFreqUncore)
+    void instantiateComponents(Flexus::Core::index_t aSystemWidth, float aFreqCore, float aFreqUncore)
     {
         theSystemWidth = aSystemWidth;
         DBG_(Dev, (<< "Instantiating system with a width factor of: " << aSystemWidth));
@@ -47,9 +65,14 @@ class ComponentManagerImpl : public ComponentManager
             (*iter)(aSystemWidth);
             ++iter;
         }
-        theFreq.core   = aFreqCore;
-        theFreq.uncore = aFreqUncore;
-        DBG_(Dev, (<< "[Ayan] Core frequency: " << theFreq.core << " Uncore frequency: " << theFreq.uncore));
+        index_t coreNum, coreDen, uncoreNum, uncoreDen;
+        std::tie(coreNum, coreDen) = helper(aFreqCore);
+        std::tie(uncoreNum, uncoreDen) = helper(aFreqUncore);
+        index_t lcmDen = (coreDen * uncoreDen) / gcd(coreDen, uncoreDen);
+        theFreq.core   = (lcmDen / coreDen) * coreNum;
+        theFreq.uncore = (lcmDen / uncoreDen) * uncoreNum;
+        DBG_(Dev, (<< "[Ayan] Core frequency" << aFreqCore << " Uncore frequency: " << aFreqUncore));
+        DBG_(Dev, (<< "[Ayan] Core Drive frequency: " << theFreq.core << " Uncore Drive frequency: " << theFreq.uncore));
     }
 
     void registerComponent(ComponentInterface* aComponent) { theComponents.push_back(aComponent); }

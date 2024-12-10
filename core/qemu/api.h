@@ -209,8 +209,8 @@ struct cycles_opts
 
 struct freq_opts
 {
-    uint32_t core;
-    uint32_t uncore;
+    float core;
+    float uncore;
 };
 
 /*---------------------------------------------------------------

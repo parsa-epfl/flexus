@@ -72,8 +72,23 @@ struct do_cycle
         typedef typename mpl::deref<typename mpl::begin<DriveHandles>::type>::type coreDriveHandles;
         typedef typename mpl::deref<typename mpl::next<typename mpl::begin<DriveHandles>::type>::type>::type uncoreDriveHandles;
 
-        do_cycle_core<coreDriveHandles>::doCycle();
-        do_cycle_uncore<mpl::size<uncoreDriveHandles>::value, typename mpl::begin<uncoreDriveHandles>::type>::doCycle();
+        const Flexus::Core::freq_opts freq = ComponentManager::getComponentManager().getFreq();
+        index_t minFreq = freq.core < freq.uncore ? freq.core : freq.uncore;
+        index_t diffCore = freq.core - minFreq;
+        index_t diffUncore = freq.uncore - minFreq;
+
+        for(index_t iter = 0; iter < minFreq; ++iter) {
+            do_cycle_core<coreDriveHandles>::doCycle();
+            do_cycle_uncore<mpl::size<uncoreDriveHandles>::value, typename mpl::begin<uncoreDriveHandles>::type>::doCycle();
+        }
+
+        for(index_t iter = 0; iter < diffCore; ++iter) {
+            do_cycle_core<coreDriveHandles>::doCycle();
+        }
+
+        for(index_t iter = 0; iter < diffUncore; ++iter) {
+            do_cycle_uncore<mpl::size<uncoreDriveHandles>::value, typename mpl::begin<uncoreDriveHandles>::type>::doCycle();
+        }
     }
 };
 } // namespace aux_
