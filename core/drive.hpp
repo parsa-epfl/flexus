@@ -15,6 +15,7 @@ struct do_cycle_step
 {
     static void doCycle(index_t idx)
     {
+        DBG_(Dev, (<< "Drive: " << N << " idx: " << idx));
         mpl::deref<DriveHandleIter>::type::getReference(idx).drive(
             typename mpl::deref<DriveHandleIter>::type::drive());
         
@@ -29,15 +30,38 @@ struct do_cycle_step<0, DriveHandleIter>
 };
 
 template<class DriveHandles>
-struct do_cycle_top
+struct do_cycle_core
 {
     static void doCycle()
     {
         const index_t syswidth = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+        // Note: this assumes all components (eg, fetch, decoder, etc) have the same number of instances = syswidth
         for(index_t sysIdx = 0; sysIdx < syswidth; ++sysIdx) {
             do_cycle_step<mpl::size<DriveHandles>::value, typename mpl::begin<DriveHandles>::type>::doCycle(sysIdx);
         }
     }
+};
+
+template<int32_t N, class DriveHandleIter>
+struct do_cycle_uncore
+{
+    static void doCycle()
+    {
+        {
+            FLEXUS_PROFILE_N(mpl::deref<DriveHandleIter>::type::drive::name());
+            for (index_t i = 0; i < mpl::deref<DriveHandleIter>::type::width(); i++) {
+                mpl::deref<DriveHandleIter>::type::getReference(i).drive(
+                  typename mpl::deref<DriveHandleIter>::type::drive());
+            }
+        }
+        do_cycle_uncore<N - 1, typename mpl::next<DriveHandleIter>::type>::doCycle();
+    }
+};
+
+template<class DriveHandleIter>
+struct do_cycle_uncore<0, DriveHandleIter>
+{
+    static void doCycle() {}
 };
 
 template<class DriveHandles>
@@ -48,8 +72,8 @@ struct do_cycle
         typedef typename mpl::deref<typename mpl::begin<DriveHandles>::type>::type coreDriveHandles;
         typedef typename mpl::deref<typename mpl::next<typename mpl::begin<DriveHandles>::type>::type>::type uncoreDriveHandles;
 
-        do_cycle_top<coreDriveHandles>::doCycle();
-        do_cycle_top<uncoreDriveHandles>::doCycle();    
+        do_cycle_core<coreDriveHandles>::doCycle();
+        do_cycle_uncore<mpl::size<uncoreDriveHandles>::value, typename mpl::begin<uncoreDriveHandles>::type>::doCycle();
     }
 };
 } // namespace aux_
