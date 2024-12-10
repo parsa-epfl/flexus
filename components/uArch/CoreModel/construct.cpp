@@ -10,8 +10,8 @@ namespace nuArch {
 CoreImpl::CoreImpl(uArchOptions_t options,
                    std::function<int(bool)> _advance,
                    std::function<void(eSquashCause)> _squash,
-                   std::function<void(VirtualMemoryAddress)> _redirect,
-                   std::function<void(boost::intrusive_ptr<BranchFeedback>)> _feedback,
+                   std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> _redirect,
+                   std::function<void(boost::intrusive_ptr<BPredState>)> _trainBP,
                    std::function<void(bool)> _signalStoreForwardingHit,
                    std::function<void(int32_t)> _mmuResync)
   : theName(options.name)
@@ -21,7 +21,7 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   advance_fn(_advance)
   , squash_fn(_squash)
   , redirect_fn(_redirect)
-  , feedback_fn(_feedback)
+  , trainBP_fn(_trainBP)
   , signalStoreForwardingHit_fn(_signalStoreForwardingHit)
   , mmuResync_fn(_mmuResync)
   , thePendingTrap(kException_None)
@@ -335,7 +335,7 @@ CoreImpl::resetCore()
     theSquashInclusive = false;
 
     theRedirectRequested = false;
-    theRedirectPC        = VirtualMemoryAddress(0);
+    theRedirectRequest   = nullptr;
     theDumpPC            = VirtualMemoryAddress(0);
 
     clearLSQ();
@@ -353,8 +353,6 @@ CoreImpl::reset()
     resetCore();
 
     theSRB.clear();
-
-    // theBranchFeedback is NOT cleared
 
     clearSSB();
 
@@ -582,13 +580,13 @@ CoreModel*
 CoreModel::construct(uArchOptions_t options,
                      std::function<int(bool)> advance,
                      std::function<void(eSquashCause)> squash,
-                     std::function<void(VirtualMemoryAddress)> redirect,
-                     std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback,
+                     std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect,
+                     std::function<void(boost::intrusive_ptr<BPredState>)> trainBP,
                      std::function<void(bool)> signalStoreForwardingHit,
                      std::function<void(int32_t)> mmuResync)
 {
 
-    return new CoreImpl(options, advance, squash, redirect, feedback, signalStoreForwardingHit, mmuResync);
+    return new CoreImpl(options, advance, squash, redirect, trainBP, signalStoreForwardingHit, mmuResync);
 }
 
 } // namespace nuArch

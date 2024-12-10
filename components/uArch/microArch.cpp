@@ -4,6 +4,7 @@
 #include "CoreModel.hpp"
 #include "ValueTracker.hpp"
 #include "components/CommonQEMU/Slices/MemOp.hpp"
+#include "components/uFetch/uFetchTypes.hpp"
 #include "core/boost_extensions/padded_string_cast.hpp"
 #include "core/debug/debug.hpp"
 #include "core/performance/profile.hpp"
@@ -60,26 +61,25 @@ class microArchImpl : public microArch
     int32_t theNumClients;
     int32_t theNode;
     std::function<void(eSquashCause)> squash;
-    std::function<void(VirtualMemoryAddress)> redirect;
-    std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback;
+    std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect;
+    std::function<void(boost::intrusive_ptr<BPredState>)> trainBP;
     std::function<void(bool)> signalStoreForwardingHit;
     std::function<void(int32_t)> mmuResync;
 
   public:
     microArchImpl(uArchOptions_t options,
                   std::function<void(eSquashCause)> _squash,
-                  std::function<void(VirtualMemoryAddress)> _redirect,
-                  std::function<void(boost::intrusive_ptr<BranchFeedback>)> _feedback,
+                  std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> _redirect,
+                  std::function<void(boost::intrusive_ptr<BPredState>)> _trainBP,
                   std::function<void(bool)> _signalStoreForwardingHit,
                   std::function<void(int32_t)> _mmuResync
-
                   )
       : theName(options.name)
       , theCore(CoreModel::construct(options,
                                      ll::bind(&microArchImpl::advance, this, ll::_1),
                                      _squash,
                                      _redirect,
-                                     _feedback,
+                                     _trainBP,
                                      _signalStoreForwardingHit,
                                      _mmuResync))
       , theAvailableROB(0)
@@ -94,7 +94,7 @@ class microArchImpl : public microArch
       , theNode(options.node)
       , squash(_squash)
       , redirect(_redirect)
-      , feedback(_feedback)
+      , trainBP(_trainBP)
       , signalStoreForwardingHit(_signalStoreForwardingHit)
       , mmuResync(_mmuResync)
 
@@ -276,7 +276,7 @@ class microArchImpl : public microArch
                 ++theOtherResyncs;
             }
 
-            resynchronize(e.expected);
+            resynchronize(e.expected, e.affilicated_with_instruction ? e.theInstruction : nullptr);
 
             if (theBreakOnResynchronize) {
                 DBG_(Dev,
@@ -303,7 +303,7 @@ class microArchImpl : public microArch
     //  }
 
   private:
-    void resynchronize(bool was_expected)
+    void resynchronize(bool was_expected, boost::intrusive_ptr<Instruction> source = nullptr)
     {
         FLEXUS_PROFILE();
 
@@ -324,7 +324,17 @@ class microArchImpl : public microArch
         // Obtain new state from simics
         VirtualMemoryAddress redirect_address(theCPU.get_pc());
         DBG_(Dev, Cond(!was_expected)(<< "Unexpected! Redirecting to address " << redirect_address));
-        redirect(redirect_address);
+
+        boost::intrusive_ptr<BPredRedictRequest> redirect_request = new BPredRedictRequest();
+        redirect_request->theTarget = redirect_address;
+        if (source == nullptr) {
+            redirect_request->theBPState = nullptr;
+        } else {
+            redirect_request->theBPState = source->bpState();
+        }
+        redirect_request->theInsertNewHistory = false;
+
+        redirect(redirect_request);
     }
 
     int32_t advance(bool count_tick = true)
@@ -393,7 +403,7 @@ class microArchImpl : public microArch
         squash(kResynchronize);
 
         // Obtain new state from simics
-        VirtualMemoryAddress redirect_address(theCore->pc());
+        // VirtualMemoryAddress redirect_address(theCore->pc());
     }
 
     void printROB() { theCore->printROB(); }
@@ -453,14 +463,14 @@ class microArchImpl : public microArch
 std::shared_ptr<microArch>
 microArch::construct(uArchOptions_t options,
                      std::function<void(eSquashCause)> squash,
-                     std::function<void(VirtualMemoryAddress)> redirect,
-                     std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback,
+                     std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect,
+                     std::function<void(boost::intrusive_ptr<BPredState>)> trainBP,
                      std::function<void(bool)> signalStoreForwardingHit,
                      std::function<void(int32_t)> mmuResync
 
 )
 {
-    return std::make_shared<microArchImpl>(options, squash, redirect, feedback, signalStoreForwardingHit, mmuResync);
+    return std::make_shared<microArchImpl>(options, squash, redirect, trainBP, signalStoreForwardingHit, mmuResync);
 }
 
 } // namespace nuArchARM

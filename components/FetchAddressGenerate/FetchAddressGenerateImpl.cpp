@@ -1,5 +1,6 @@
 
 #include "components/uFetch/uFetchTypes.hpp"
+#include "core/types.hpp"
 #include <components/FetchAddressGenerate/FetchAddressGenerate.hpp>
 
 #define FLEXUS_BEGIN_COMPONENT FetchAddressGenerate
@@ -70,22 +71,22 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
     //----------
 
     FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(RedirectIn);
-    void push(interface::RedirectIn const&, index_t anIndex, MemoryAddress& aRedirect)
+    void push(interface::RedirectIn const&, index_t anIndex, boost::intrusive_ptr<BPredRedictRequest>& redirectRequest)
     {
-        theRedirectPC[anIndex] = aRedirect;
-        theRedirect[anIndex]   = true;
+        if(!theRedirect[anIndex]) { // Lower priority than the RedirectDueToResyncIn
+            theRedirectPC[anIndex] = redirectRequest->theTarget;
+            theRedirect[anIndex]   = true;
+
+            theBranchPredictor->recoverHistory(*redirectRequest);
+        }
     }
 
-    // BranchFeedbackIn
+    // TrainIn
     //----------------
-    FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(BranchFeedbackIn);
-    void push(interface::BranchFeedbackIn const&, index_t anIndex, boost::intrusive_ptr<BranchFeedback>& aFeedback)
+    FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(TrainIn);
+    void push(interface::TrainIn const&, index_t anIndex, boost::intrusive_ptr<BPredState>& bpState)
     {
-        theBranchPredictor->feedback(aFeedback->thePC,
-                                     aFeedback->theActualType,
-                                     aFeedback->theActualDirection,
-                                     aFeedback->theActualTarget,
-                                     *aFeedback->theBPState);
+        theBranchPredictor->train(*bpState);
     }
 
     // Drive Interfaces
@@ -144,6 +145,9 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
             FetchAddr faddr(thePC[anIndex]);
             faddr.theBPState->pc = thePC[anIndex];
 
+            // Checkpoint the history before advancing the PC
+            theBranchPredictor->checkpointHistory(*faddr.theBPState);
+
             // Advance the PC
             if (theBranchPredictor->isBranch(faddr.theAddress)) {
                 AGU_DBG("Predicting a Branch");
@@ -170,6 +174,9 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
             } else {
                 DBG_(VVerb, (<< "Before Advancing PC to: " << thePC[anIndex] << " for core: " << anIndex));
                 thePC[anIndex] += 4;
+                faddr.theBPState->thePredictedType = kNonBranch;
+                faddr.theBPState->thePredictedTarget = thePC[anIndex];
+                faddr.theBPState->thePrediction = kNotTaken;
 
                 DBG_(VVerb, (<< "Advancing PC to: " << thePC[anIndex] << " for core: " << anIndex));
                 DBG_(VVerb, (<< "Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress));
@@ -210,7 +217,7 @@ FLEXUS_PORT_ARRAY_WIDTH(FetchAddressGenerate, RedirectIn)
 {
     return (cfg.Threads);
 }
-FLEXUS_PORT_ARRAY_WIDTH(FetchAddressGenerate, BranchFeedbackIn)
+FLEXUS_PORT_ARRAY_WIDTH(FetchAddressGenerate, TrainIn)
 {
     return (cfg.Threads);
 }

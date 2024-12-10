@@ -1,4 +1,5 @@
 
+#include "core/types.hpp"
 #include <components/uArch/uArch.hpp>
 
 #define FLEXUS_BEGIN_COMPONENT uArch
@@ -66,7 +67,7 @@ class uArch_QemuObject_Impl
     void resynchronize()
     {
         DBG_Assert(theMicroArch);
-        theMicroArch->resynchronize(false);
+        theMicroArch->resynchronize(false, nullptr);
     }
     void printRegMappings(std::string aRegSet)
     {
@@ -193,7 +194,7 @@ class FLEXUS_COMPONENT(uArch)
         theMicroArch = microArch::construct(options,
                                             ll::bind(&uArchComponent::squash, this, ll::_1),
                                             ll::bind(&uArchComponent::redirect, this, ll::_1),
-                                            ll::bind(&uArchComponent::feedback, this, ll::_1),
+                                            ll::bind(&uArchComponent::trainBP, this, ll::_1),
                                             ll::bind(&uArchComponent::signalStoreForwardingHit, this, ll::_1),
                                             ll::bind(&uArchComponent::resyncMMU, this, ll::_1));
 
@@ -273,19 +274,16 @@ class FLEXUS_COMPONENT(uArch)
     void drive(interface::uArchDrive const&) { doCycle(); }
 
   private:
-    struct ResynchronizeWithQemuException
-    {};
 
     void squash(eSquashCause aSquashReason) { FLEXUS_CHANNEL(SquashOut) << aSquashReason; }
     void resyncMMU(int32_t aNode) { FLEXUS_CHANNEL(ResyncOut) << aNode; }
 
-    void redirect(VirtualMemoryAddress aPC)
+    void redirect(boost::intrusive_ptr<BPredRedictRequest> aRequest)
     {
-        VirtualMemoryAddress redirect_addr = aPC;
-        FLEXUS_CHANNEL(RedirectOut) << redirect_addr;
+        FLEXUS_CHANNEL(RedirectOut) << aRequest;
     }
 
-    void feedback(boost::intrusive_ptr<BranchFeedback> aFeedback) { FLEXUS_CHANNEL(BranchFeedbackOut) << aFeedback; }
+    void trainBP(boost::intrusive_ptr<BPredState> aBPState) { FLEXUS_CHANNEL(BranchTrainOut) << aBPState; }
 
     void signalStoreForwardingHit(bool garbage)
     {
