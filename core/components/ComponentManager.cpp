@@ -23,18 +23,20 @@ class ComponentManagerImpl : public ComponentManager
     std::vector<std::function<void(Flexus::Core::index_t aSystemWidth)>> theInstantiationFunctions;
     std::vector<ComponentInterface*> theComponents;
     Flexus::Core::index_t theSystemWidth;
+    Flexus::Core::freq_opts theFreq;
 
   public:
     virtual ~ComponentManagerImpl() {}
 
     Flexus::Core::index_t systemWidth() const { return theSystemWidth; }
+    Flexus::Core::freq_opts getFreq() const { return theFreq; }
 
     void registerHandle(std::function<void(Flexus::Core::index_t)> anInstantiator)
     {
         theInstantiationFunctions.push_back(anInstantiator);
     }
 
-    void instantiateComponents(Flexus::Core::index_t aSystemWidth)
+    void instantiateComponents(Flexus::Core::index_t aSystemWidth, Flexus::Core::index_t aFreqCore, Flexus::Core::index_t aFreqUncore)
     {
         theSystemWidth = aSystemWidth;
         DBG_(Dev, (<< "Instantiating system with a width factor of: " << aSystemWidth));
@@ -45,6 +47,9 @@ class ComponentManagerImpl : public ComponentManager
             (*iter)(aSystemWidth);
             ++iter;
         }
+        theFreq.core   = aFreqCore;
+        theFreq.uncore = aFreqUncore;
+        DBG_(Dev, (<< "[Ayan] Core frequency: " << theFreq.core << " Uncore frequency: " << theFreq.uncore));
     }
 
     void registerComponent(ComponentInterface* aComponent) { theComponents.push_back(aComponent); }
