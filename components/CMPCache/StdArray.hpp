@@ -366,7 +366,6 @@ class SetLRU : public Set<_State, _DefaultState>
         theMRUOrder[index]                                   = mru_order_index;
         this->theBlocks[index].tag()   = MemoryAddress(tag);
         this->theBlocks[index].state() = state;
-        DBG_(Trace, NoDefaultOps()(<< index << "-LLC: Loading block " << std::hex << tag << " in state " << state));
     }
 
   protected:
