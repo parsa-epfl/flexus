@@ -210,6 +210,8 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , theAtomicVal_CASs_MatchAfterMismatch(theName + "-AtmVal:CAS:Match:AfterMismatch")
   , theAtomicVal_CASs_Zero(theName + "-AtmVal:CAS:Zero")
   , theAtomicVal_CASs_NonZero(theName + "-AtmVal:CAS:NonZero")
+  , theResyncFromHaltDetection(theName + "-Resync:FromHaltDetection")
+  , theResyncFromInstruction(theName + "-Resync:FromInstruction")
   , theAtomicVal_LastCASMismatch(false)
   , theCoalescedStores(theName + "-CoalescedStores")
   , intAluOpLatency(options.intAluOpLatency)
@@ -237,6 +239,15 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , fpAluCyclesToReady(options.numFpAlu, 0)
   , fpMultCyclesToReady(options.numFpMult, 0)
   , trace_fname("core_" + std::to_string(theNode) + "_retinsts.txt")
+  , collectTrace(false)
+
+  , trackingMemOps(theName + "-MemOpsTracking")
+  , memAtL1(theName + "-MemAtL1")
+  , memAtL1I(theName + "-MemAtL1I") 
+  , memAtPeerL1(theName + "-MemAtPeerL1")
+  , memAtL2(theName + "-MemAtL2")
+  , memAtLocalMem(theName + "-MemAtLocalMem")
+
 {
 
     // Msutherl - for MMU verification. Remove when done

@@ -439,6 +439,31 @@ CoreImpl::complete(MemOp const& anOperation)
 
             theIdleThisCycle = false;
         }
+
+        auto &tracker = anOperation.theTracker;
+        if (tracker && tracker->fillLevel()) {
+            auto latency = Flexus::Core::theFlexus->cycleCount() - tracker->startCycle();
+            trackingMemOps++;
+            switch (tracker->fillLevel().get()) {
+                case eL1I:
+                    memAtL1I++;
+                    break;
+                case eL1:
+                    memAtL1++;
+                    break;
+                case ePeerL1Cache:
+                    memAtPeerL1++;
+                    break;
+                case eL2:
+                    memAtL2++;
+                    break;
+                case eLocalMem:
+                    memAtLocalMem++;
+                    break;
+                default:
+                    break;
+            }
+        }
     } else {
         if (anOperation.theTracker) {
             if (anOperation.theTracker->fillType() && *anOperation.theTracker->fillType() == eCoherence) {

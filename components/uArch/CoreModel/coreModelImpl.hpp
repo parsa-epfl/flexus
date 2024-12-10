@@ -1,4 +1,5 @@
 
+#include "components/uFetch/uFetchTypes.hpp"
 #include <algorithm>
 #include <boost/iterator/reverse_iterator.hpp>
 #include <boost/multi_index/composite_key.hpp>
@@ -442,6 +443,16 @@ class CoreImpl : public CoreModel
     bool theAtomicVal_LastCASMismatch;
 
     Stat::StatCounter theCoalescedStores;
+
+    Stat::StatCounter theResyncFromHaltDetection;
+    Stat::StatCounter theResyncFromInstruction;
+
+    Stat::StatCounter trackingMemOps;
+    Stat::StatCounter memAtL1;
+    Stat::StatCounter memAtL1I;
+    Stat::StatCounter memAtPeerL1;
+    Stat::StatCounter memAtL2;
+    Stat::StatCounter memAtLocalMem;
 
     uint32_t intAluOpLatency;
     uint32_t intAluOpPipelineResetTime;
