@@ -138,12 +138,17 @@ BTB::saveState() const
 void
 BTB::loadState(json checkpoint)
 {
+    // Check the BTB set number and the associativity.
+    DBG_Assert(checkpoint.size() == (size_t)theBTBSets);
 
     for (size_t set = 0; set < (size_t)theBTBSets; set++) {
 
         size_t blockSize = checkpoint.at(set).size();
 
+        DBG_Assert(blockSize <= (size_t)theBTBAssoc);
+
         theBTB[set].invalidateAll();
+        uint64_t ts = 0;
 
         for (size_t block = 0; block < blockSize; block++) {
 
@@ -152,8 +157,16 @@ BTB::loadState(json checkpoint)
             uint64_t aTarget      = checkpoint.at(set).at(block)["target"];
             uint8_t aType         = checkpoint.at(set).at(block)["type"];
 
+            if (ts != 0){
+                DBG_Assert(ts <= checkpoint.at(set).at(block)["ts"]);
+                ts = checkpoint.at(set).at(block)["ts"];
+            }
+
+            // This PC must be word aligned, and its index must be the same as the one in the checkpoint
+            DBG_Assert(index(VirtualMemoryAddress(aPC)) == set);
+
             switch (aType) {
-                case 0: type = kNonBranch; break;
+                case 0: DBG_Assert(false); break;
                 case 1: type = kConditional; break;
                 case 2: type = kUnconditional; break;
                 case 3: type = kCall; break;
