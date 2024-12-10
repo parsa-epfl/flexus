@@ -625,6 +625,8 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction
     virtual void setUsesFpMult() = 0;
     virtual void setUsesFpDiv()  = 0;
     virtual void setUsesFpSqrt() = 0;
+
+    virtual boost::intrusive_ptr<BPredState> bpState() const = 0;
 };
 
 struct InstructionDependance
@@ -786,7 +788,7 @@ struct uArch
         DBG_Assert(false);
         return false;
     }
-    virtual void redirectFetch(VirtualMemoryAddress anAddress) { DBG_Assert(false); }
+    virtual void redirectFetch(boost::intrusive_ptr<BPredRedictRequest> anRequest) { DBG_Assert(false); }
     virtual void insertLSQ(boost::intrusive_ptr<Instruction> anInsn,
                            eOperation anOperation,
                            eSize aSize,
@@ -1034,7 +1036,7 @@ struct uArch
         DBG_Assert(false);
         return false;
     }
-    virtual void branchFeedback(boost::intrusive_ptr<BranchFeedback> feedback) { DBG_Assert(false); }
+    virtual void trainingBranch(boost::intrusive_ptr<BPredState> feedback) { DBG_Assert(false); }
     virtual void takeTrap(boost::intrusive_ptr<Instruction> anInstruction, eExceptionType aTrapType)
     {
         DBG_Assert(false);

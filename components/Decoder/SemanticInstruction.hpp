@@ -27,8 +27,6 @@ struct SemanticInstruction : public ArchInstruction
     EffectChain theAnnulmentEffects;
     EffectChain theReinstatementEffects;
 
-    boost::intrusive_ptr<BranchFeedback> theBranchFeedback;
-
     std::list<std::function<bool()>> theRetirementConstraints;
 
     std::list<std::function<bool()>> thePreValidations;
@@ -159,8 +157,6 @@ struct SemanticInstruction : public ArchInstruction
 
     InternalDependance retirementDependance();
 
-    void setBranchFeedback(boost::intrusive_ptr<BranchFeedback> aFeedback) { theBranchFeedback = aFeedback; }
-    boost::intrusive_ptr<BranchFeedback> branchFeedback() const { return theBranchFeedback; }
     void setAccessAddress(PhysicalMemoryAddress anAddress) { theAccessAddress = anAddress; }
     PhysicalMemoryAddress getAccessAddress() const
     {

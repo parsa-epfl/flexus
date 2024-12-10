@@ -2,6 +2,7 @@
 #define FLEXUS_BTB
 
 #include "BTBSet.hpp"
+#include "components/uFetch/uFetchTypes.hpp"
 #include "core/checkpoint/json.hpp"
 #include "core/types.hpp"
 
@@ -36,7 +37,7 @@ class BTB
     boost::optional<VirtualMemoryAddress> target(VirtualMemoryAddress anAddress);
     // Update or add a new entry to the BTB
     bool update(VirtualMemoryAddress aPC, eBranchType aType, VirtualMemoryAddress aTarget);
-    bool update(BranchFeedback const& aFeedback);
+    bool update(const BPredState &aFeedback);
 
     json saveState() const;
     void loadState(json checkpoint);

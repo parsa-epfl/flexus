@@ -7,7 +7,6 @@
 #include <boost/bind/bind.hpp>
 #include <components/uArch/uArchInterfaces.hpp>
 #include <core/performance/profile.hpp>
-#include <list>
 
 #define DBG_DeclareCategories Decoder
 #define DBG_SetDefaultOps     AddCat(Decoder)
@@ -73,6 +72,8 @@ SemanticInstruction::SemanticInstruction(VirtualMemoryAddress aPC,
   , theCanRetireCounter(0)
 {
     constructorInitValidations();
+    // Add a commit effect to update the branch predictor.
+    addCommitEffect(branchPredictorTraining(this));
 }
 
 SemanticInstruction::SemanticInstruction(VirtualMemoryAddress aPC,
@@ -89,6 +90,8 @@ SemanticInstruction::SemanticInstruction(VirtualMemoryAddress aPC,
   , theCanRetireCounter(0)
 {
     constructorInitValidations();
+    // Add a commit effect to update the branch predictor.
+    addCommitEffect(branchPredictorTraining(this));
 }
 
 SemanticInstruction::~SemanticInstruction()
@@ -352,6 +355,8 @@ SemanticInstruction::addCheckTrapEffect(Effect* anEffect)
 void
 SemanticInstruction::addCommitEffect(Effect* anEffect)
 {
+    DBG_Assert(anEffect->theNext == nullptr, (<< "Adding an effect that is already part of a chain."));
+    
     theCommitEffects.append(anEffect);
 }
 
