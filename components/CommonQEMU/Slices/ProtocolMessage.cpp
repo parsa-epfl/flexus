@@ -155,7 +155,7 @@ networkMessageTypeToVC(ProtocolMessageType msg_type)
         VC0, // ERROR IN PROTOCOL!!!
 
     };
-    DBG_Assert((msg_type) < static_cast<int>(sizeof(VCs)));
+    DBG_Assert((msg_type) < static_cast<int>(sizeof(VCs) / sizeof(VCs[0])));
 
     return VCs[msg_type];
 }
@@ -230,7 +230,7 @@ operator<<(std::ostream& anOstream, ProtocolMessageType msg_type)
         // Error packet
         "ERROR!!!!!!!!!!!!" // ERROR IN PROTOCOL!!!
     };
-    DBG_Assert(msg_type < static_cast<int>(sizeof(name)));
+    DBG_Assert(msg_type < static_cast<int>(sizeof(name) / sizeof(name[0])));
     anOstream << name[msg_type];
     return anOstream;
 }
