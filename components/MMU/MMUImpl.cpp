@@ -81,7 +81,6 @@ TLB::loadState(json checkpoint)
             bool aNG        = static_cast<bool>(checkpoint["entries"][i].at(j)["ng"]);
             uint64_t index  = static_cast<uint64_t>(TLBSize - j - 1);
             theTLB[i].insert({ aVaddr, TLBentry(aVaddr, aPaddr, index, anASID, aNG) });
-            DBG_(Dev, (<< "Inserting TLB line with" << aVaddr << " " << aPaddr << "at index: [" << index << "]"));
         }
     }
 }
