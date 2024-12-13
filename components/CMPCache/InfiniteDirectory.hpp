@@ -192,6 +192,11 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
 
         for (uint32_t i{ 0 }; i < cache_size; i++) {
             uint64_t address = checkpoint.at(i)["tag"];
+
+            uint64_t node_idx_of_cacheline = (address >> theBlockShift) % theNumNodes;
+
+            DBG_Assert(node_idx_of_cacheline == theNodeId, (<< "Address " << std::hex << address << " is not in the correct node. Expected node " << theNodeId << " but got node " << node_idx_of_cacheline));
+
             std::bitset<MAX_NUM_SHARERS> sharers(checkpoint.at(i)["sharers"].get<std::string>());
 
             DBG_Assert(sharers.size() <= MAX_NUM_SHARERS, (<< "Sharers size mismatch"));
@@ -199,10 +204,7 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
             // It's stupid but that's the only way to workaround this object
             SimpleDirectoryState state(theNumSharers);
             state = sharers;
-
-            if (((address >> theBlockShift) % theNumNodes) == theNodeId) {
-                theDirectory.insert(InfDirEntry(PhysicalMemoryAddress(address), state));
-            }
+            theDirectory.insert(InfDirEntry(PhysicalMemoryAddress(address), state));
         }
 
         DBG_(Trace, (<< "Directory loaded"));
