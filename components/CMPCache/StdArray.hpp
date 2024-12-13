@@ -601,18 +601,9 @@ class StdArray : public AbstractArray<_State>
         ifs >> checkpoint;
 
         DBG_Assert((uint64_t)theAssociativity == checkpoint["associativity"]);
-        DBG_Assert((uint64_t)theNumSets == (checkpoint["tags"].size() / theNumNodes)); // Only load one slice.
+        DBG_Assert((uint64_t)theNumSets == (checkpoint["tags"].size())); // Only load one slice.
 
         for (uint64_t i = 0; i < checkpoint["tags"].size(); i++) {
-            // Only load the set that corresponds to this slice.
-            if (i % theNumNodes != theIndex) {
-                continue;
-            }
-
-            uint64_t local_index = i / theNumNodes;
-
-            DBG_Assert(local_index < theNumSets);
-
             assert(checkpoint["tags"].at(i).size() <= (uint64_t)theAssociativity);
             for (uint64_t j = 0; j < checkpoint["tags"].at(i).size(); j++) {
                 uint64_t tag  = checkpoint["tags"].at(i).at(j)["tag"];
@@ -622,18 +613,17 @@ class StdArray : public AbstractArray<_State>
                 uint64_t target_set = uint64_t(makeSet(MemoryAddress(tag)));
 
                 // Check this cache line.
-                DBG_Assert(target_set == local_index, (<< "Tag " << std::hex << tag << " is in set " << local_index << " but should be in set " << target_set));
+                DBG_Assert(target_set == i, (<< "Tag " << std::hex << tag << " is in set " << i << " but should be in set " << target_set));
 
                 uint64_t target_node = (tag >> log_base2(theBlockSize)) % theNumNodes;
-
                 DBG_Assert(target_node == theIndex, (<< "Tag " << std::hex << tag << " is in node " << target_node << " but should be in node " << theIndex));
 
-                theSets[local_index]->load_set_from_ckpt(j, theAssociativity - j - 1,tag, dirty, writable); // the last element is the most recently used cacheline.
+                theSets[i]->load_set_from_ckpt(j, theAssociativity - j - 1,tag, dirty, writable); // the last element is the most recently used cacheline.
             }
 
             if (checkpoint["tags"].at(i).size() < (uint64_t)theAssociativity) {
                 for (uint64_t j = checkpoint["tags"].at(i).size(); j < (uint64_t)theAssociativity; j++) {
-                    theSets[local_index]->load_set_from_ckpt(j, theAssociativity - j - 1, 0, false, false);
+                    theSets[i]->load_set_from_ckpt(j, theAssociativity - j - 1, 0, false, false);
                 }
             }
         }
