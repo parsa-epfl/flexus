@@ -71,6 +71,9 @@ class ComponentManagerImpl : public ComponentManager
         index_t lcmDen = (coreDen * uncoreDen) / gcd(coreDen, uncoreDen);
         theFreq.core   = (lcmDen / coreDen) * coreNum;
         theFreq.uncore = (lcmDen / uncoreDen) * uncoreNum;
+        index_t gcdFreq = gcd(theFreq.core, theFreq.uncore);
+        theFreq.core /= gcdFreq;
+        theFreq.uncore /= gcdFreq;
         DBG_(Dev, (<< "[Ayan] Core frequency" << aFreqCore << " Uncore frequency: " << aFreqUncore));
         DBG_(Dev, (<< "[Ayan] Core Drive frequency: " << theFreq.core << " Uncore Drive frequency: " << theFreq.uncore));
     }
