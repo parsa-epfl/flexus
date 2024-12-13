@@ -27,15 +27,19 @@ include_directories(${Boost_INCLUDE_DIRS})
 file(GLOB_RECURSE CORE_SOURCE ./core/*.cpp)
 add_library(core STATIC ${CORE_SOURCE})
 target_compile_options(core PRIVATE)
+target_compile_definitions(core PRIVATE SELECTED_DEBUG=vverb)
 
 # compile components
 foreach(COMPONENT ${REQUIRED_COMPONENTS})
     file(GLOB_RECURSE COMPONENT_${COMPONENT}_SOURCE "./components/${COMPONENT}/*.cpp")
     add_library(${COMPONENT} STATIC ${COMPONENT_${COMPONENT}_SOURCE})
     target_compile_options(${COMPONENT} PRIVATE)
+    target_compile_definitions(${COMPONENT} PRIVATE SELECTED_DEBUG=vverb)
+
 endforeach()
 
 # compile simulators
 add_library(${SIMULATOR} SHARED ./target/${SIMULATOR}/wiring.cpp)
 target_link_libraries(${SIMULATOR} "-Wl,--whole-archive" "-Wl,--no-undefined" core ${REQUIRED_COMPONENTS})
+target_compile_definitions(${SIMULATOR} PRIVATE SELECTED_DEBUG=vverb)
 target_link_libraries(${SIMULATOR} "-Wl,--no-whole-archive" ${Boost_LIBRARIES} boost_system boost_regex boost_serialization boost_iostreams)
