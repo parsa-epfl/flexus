@@ -23,7 +23,7 @@ class ComponentManagerImpl : public ComponentManager
     std::vector<std::function<void(Flexus::Core::index_t aSystemWidth)>> theInstantiationFunctions;
     std::vector<ComponentInterface*> theComponents;
     Flexus::Core::index_t theSystemWidth;
-    Flexus::Core::freq_opts theFreq;
+    Flexus::Core::freq_opts theDriveFreq;
 
   private:
     // Helper functions to calculate drive frequencies
@@ -43,18 +43,34 @@ class ComponentManagerImpl : public ComponentManager
         return std::make_tuple(num / g, den / g);
     }
 
+    std::vector<std::string> splitString(const char * str, char delimiter) {
+        std::vector<std::string> tokens;
+        if(str == nullptr) return tokens;
+        const char* start = str;
+        const char* curr = str;
+        while(*curr != '\0') {
+            if(*curr == delimiter) {
+                tokens.emplace_back(start, curr);
+                start = curr + 1;
+            }
+            ++curr;
+        }
+        if(start != curr) tokens.emplace_back(start, curr);
+        return tokens;
+    }
+
   public:
     virtual ~ComponentManagerImpl() {}
 
     Flexus::Core::index_t systemWidth() const { return theSystemWidth; }
-    Flexus::Core::freq_opts getFreq() const { return theFreq; }
+    Flexus::Core::freq_opts getFreq() const { return theDriveFreq; }
 
     void registerHandle(std::function<void(Flexus::Core::index_t)> anInstantiator)
     {
         theInstantiationFunctions.push_back(anInstantiator);
     }
 
-    void instantiateComponents(Flexus::Core::index_t aSystemWidth, float aFreqCore, float aFreqUncore)
+    void instantiateComponents(Flexus::Core::index_t aSystemWidth, const char * freq)
     {
         theSystemWidth = aSystemWidth;
         DBG_(Dev, (<< "Instantiating system with a width factor of: " << aSystemWidth));
@@ -65,17 +81,45 @@ class ComponentManagerImpl : public ComponentManager
             (*iter)(aSystemWidth);
             ++iter;
         }
-        index_t coreNum, coreDen, uncoreNum, uncoreDen;
-        std::tie(coreNum, coreDen) = helper(aFreqCore);
-        std::tie(uncoreNum, uncoreDen) = helper(aFreqUncore);
-        index_t lcmDen = (coreDen * uncoreDen) / gcd(coreDen, uncoreDen);
-        theFreq.core   = (lcmDen / coreDen) * coreNum;
-        theFreq.uncore = (lcmDen / uncoreDen) * uncoreNum;
-        index_t gcdFreq = gcd(theFreq.core, theFreq.uncore);
-        theFreq.core /= gcdFreq;
-        theFreq.uncore /= gcdFreq;
-        DBG_(Dev, (<< "[Ayan] Core frequency" << aFreqCore << " Uncore frequency: " << aFreqUncore));
-        DBG_(Dev, (<< "[Ayan] Core Drive frequency: " << theFreq.core << " Uncore Drive frequency: " << theFreq.uncore));
+
+        // Drive frequency calculations
+        std::vector<std::string> freq_split = splitString(freq, ':');
+        assert(freq_split.size() == aSystemWidth + 1);
+        index_t numerator[aSystemWidth+1], denominator[aSystemWidth+1], driveFreq[aSystemWidth+1];
+
+        // Reduce fractions to their simplest form
+        for(index_t i = 0; i <= aSystemWidth; ++i) {
+            float f_freq = std::stof(freq_split[i]);
+            std::tie(numerator[i], denominator[i]) = helper(f_freq);
+        }
+
+        // Find the LCM of all denominators
+        index_t lcmDen = denominator[0];
+        for(index_t i = 1; i <= aSystemWidth; ++i) {
+            lcmDen = (lcmDen * denominator[i]) / gcd(lcmDen, denominator[i]);
+        }
+
+        // Calculate the drive frequencies
+        for(index_t i = 0; i <= aSystemWidth; ++i) {
+            driveFreq[i] = (lcmDen / denominator[i]) * numerator[i];
+        }
+
+        // Calculate the GCD of all drive frequencies
+        index_t gcdFreq = driveFreq[0];
+        for(index_t i = 1; i <= aSystemWidth; ++i) {
+            gcdFreq = gcd(gcdFreq, driveFreq[i]);
+        }
+
+        // Normalize the drive frequencies
+        for(index_t i = 0; i <= aSystemWidth; ++i) {
+            driveFreq[i] /= gcdFreq;
+        }
+
+        // Store the drive frequencies
+        theDriveFreq.freq = new index_t[aSystemWidth + 1];
+        std::copy(driveFreq, driveFreq + aSystemWidth + 1, theDriveFreq.freq);
+        std::sort(driveFreq, driveFreq + aSystemWidth + 1);
+        theDriveFreq.maxFreq = driveFreq[aSystemWidth];
     }
 
     void registerComponent(ComponentInterface* aComponent) { theComponents.push_back(aComponent); }

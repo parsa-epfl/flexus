@@ -115,7 +115,7 @@ extern "C"
                      const char* cfg,
                      const char* dbg,
                      Flexus::Qemu::API::cycles_opts cycles,
-                     Flexus::Qemu::API::freq_opts freq,
+                     const char* freq,
                      const char* cwd)
     {
         auto oldcwd = get_current_dir_name();
@@ -159,7 +159,7 @@ extern "C"
         if (dbg) Flexus::Core::theFlexus->setDebug(dbg);
 
 
-        Flexus::Core::ComponentManager::getComponentManager().instantiateComponents(ncores, freq.core, freq.uncore);
+        Flexus::Core::ComponentManager::getComponentManager().instantiateComponents(ncores, freq);
 
         // backdoor
         char* args = getenv("FLEXUS_EXTRA_ARGS");

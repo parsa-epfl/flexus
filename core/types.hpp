@@ -132,8 +132,8 @@ typedef uint64_t Word64Bit;
 
 struct freq_opts
 {
-    uint32_t core;
-    uint32_t uncore;
+    uint32_t* freq;
+    uint32_t maxFreq;
 };
 
 } // end namespace Core

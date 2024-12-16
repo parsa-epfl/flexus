@@ -23,14 +23,14 @@ struct ComponentManager
     // added by PLotfi
     virtual void finalizeComponents() = 0;
     // end PLotfi
-    virtual bool isQuiesced() const                                                                             = 0;
-    virtual void doSave(std::string const& aDirectory) const                                                    = 0;
-    virtual void doLoad(std::string const& aDirectory)                                                          = 0;
-    virtual void registerComponent(ComponentInterface* aComponent)                                              = 0;
-    virtual void registerHandle(std::function<void(Flexus::Core::index_t)> anInstantiator)                      = 0;
-    virtual void instantiateComponents(Flexus::Core::index_t aSystemWidth, float aFreqCore, float aFreqUncore)  = 0;
-    virtual Flexus::Core::index_t systemWidth() const                                                           = 0;
-    virtual Flexus::Core::freq_opts getFreq() const                                                             = 0;
+    virtual bool isQuiesced() const                                                             = 0;
+    virtual void doSave(std::string const& aDirectory) const                                    = 0;
+    virtual void doLoad(std::string const& aDirectory)                                          = 0;
+    virtual void registerComponent(ComponentInterface* aComponent)                              = 0;
+    virtual void registerHandle(std::function<void(Flexus::Core::index_t)> anInstantiator)      = 0;
+    virtual void instantiateComponents(Flexus::Core::index_t aSystemWidth, const char * freq)   = 0;
+    virtual Flexus::Core::index_t systemWidth() const                                           = 0;
+    virtual Flexus::Core::freq_opts getFreq() const                                             = 0;
     static ComponentManager& getComponentManager();
 };
 
