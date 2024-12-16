@@ -467,6 +467,8 @@ class FLEXUS_COMPONENT(FastCMPCache)
     ////// process incoming requests
     void processRequest(const index_t anIndex, MemoryMessage& aMessage)
     {
+        const std::lock_guard<std::mutex> lock(cacheMutex);
+
         FLEXUS_PROFILE();
         int32_t potential_sharers       = 0;
         int32_t unnecessary_snoops_sent = 0;
@@ -838,6 +840,11 @@ class FLEXUS_COMPONENT(FastCMPCache)
         ifs.close();
         c_ifs.close();
     }
+
+private:
+    std::mutex cacheMutex;	// To make sure that if IO and CPU threads in QEMU try to trigger SMMU, only one thread can actually use SMMU
+							            // Otherwise we end up with race conditions where the state of LLC is inconsistent as two 
+							            // entities try to modify the state of LLC without lock protection    
 
 }; // end class FastCMPCache
 
