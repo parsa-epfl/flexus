@@ -21,6 +21,7 @@
 
 COMPONENT_PARAMETERS(
     PARAMETER( IOTLBSize,    size_t, "Size of the IOTLB", "iotlbsize", 64 )
+    PARAMETER( IOTLBAssoc,   size_t, "Associativity of the IOTLB", "iotlbassoc", 2 )
     PARAMETER( PerfectTLB,  bool, "IOTLB never misses", "perfect", true )
 );
 

@@ -183,36 +183,45 @@ class FLEXUS_COMPONENT(DecoupledFeeder)
 
     void toPCIeRootComplex(std::size_t anIndex, MemoryMessage& aMessage)
     {
-        TranslationPtr tr(new Translation);
-        tr->setData();
-        tr->theType     = (aMessage.type() == MemoryMessage::IOLoadReq) ? Translation::eLoad : Translation::eStore;
-        tr->theVaddr    = aMessage.pc();
-        tr->thePaddr    = aMessage.address();
-        tr->inTraceMode = true;
+        if (!aMessage.isFromDevice()) { // If message is not initiated by device, it must have been initiated buy the CPU
+                                        // So the memory address is VA. Thus it needs to be translated to PA before sending it
+                                        // to the Device
+            TranslationPtr tr(new Translation);
+            tr->setData();
+            tr->theType     = (aMessage.type() == MemoryMessage::IOLoadReq) ? Translation::eLoad : Translation::eStore;
+            tr->theVaddr    = aMessage.pc();
+            tr->thePaddr    = aMessage.address();
+            tr->inTraceMode = true;
 
-        FLEXUS_CHANNEL_ARRAY(ToMMU, anIndex) << tr;
+            FLEXUS_CHANNEL_ARRAY(ToMMU, anIndex) << tr;
 
-        MemoryMessage mmu_message(aMessage);
-        mmu_message.setPageWalk();
+            MemoryMessage mmu_message(aMessage);
+            mmu_message.setPageWalk();
 
-        vCPUTracer->core(anIndex)->touch_dtlb_request(aMessage.priv());
+            vCPUTracer->core(anIndex)->touch_dtlb_request(aMessage.priv());
 
-        // If the page walk did not generated any trace
-        // that mean it was a hit (sorta stupid but ok)
-        if (tr->trace_addresses.empty())
-            vCPUTracer->core(anIndex)->touch_dtlb_hit(aMessage.priv());
-        else
-            vCPUTracer->core(anIndex)->touch_dtlb_miss(aMessage.priv());
+            // If the page walk did not generated any trace
+            // that mean it was a hit (sorta stupid but ok)
+            if (tr->trace_addresses.empty())
+                vCPUTracer->core(anIndex)->touch_dtlb_hit(aMessage.priv());
+            else
+                vCPUTracer->core(anIndex)->touch_dtlb_miss(aMessage.priv());
 
-        while (tr->trace_addresses.size()) {
-            mmu_message.type()    = MemoryMessage::LoadReq;
-            mmu_message.address() = tr->trace_addresses.front();
-            tr->trace_addresses.pop();
+            while (tr->trace_addresses.size()) {
+                mmu_message.type()    = MemoryMessage::LoadReq;
+                mmu_message.address() = tr->trace_addresses.front();
+                tr->trace_addresses.pop();
 
-            FLEXUS_CHANNEL_ARRAY(ToL1D, anIndex) << mmu_message;
+                FLEXUS_CHANNEL_ARRAY(ToL1D, anIndex) << mmu_message;
 
-            vCPUTracer->core(anIndex)->touch_dtlb_access(aMessage.priv());
+                vCPUTracer->core(anIndex)->touch_dtlb_access(aMessage.priv());
+            }
         }
+
+        // Else, the memory message already contains the physical address of MMIO register it is trying to modify
+        // NOTE: Device initiated memory messages should only be accessing the device MMIO region. They should not
+        // be allowed to access DRAM as it would be an unsafe behavior.
+        // TODO: Add an assert to make sure that the Device Initiated messages only access MMIO
 
         // TODO: Not the best condition to check
         // This function should be replaced with a 

@@ -34,10 +34,23 @@ class TracerDispatcher
         switch (transaction.s.type) {
             case API::QEMU_Trans_Load:
                 msg.type() = MemoryMessage::IOLoadReq;
+                if (transaction.dev_initiated == 1) {
+                    DBG_(Crit, (<< "Device Initiated Address: 0x" << std::hex << transaction.s.logical_address << std::dec ));
+                    msg.setFromDevice();
+                    msg.getBDF() = transaction.bdf; // These fields need to be set here as the memory message is not tied to
+                                                    // an MMIO access from CPU so there is no way to know what device initiated
+                                                    // the memory message from the message address itself. Thus we relay this
+                                                    // information from QEMU
+                }
                 return transaction.io;
 
             case API::QEMU_Trans_Store:
                 msg.type() = MemoryMessage::IOStoreReq;
+                if (transaction.dev_initiated == 1) {
+                    DBG_(Crit, (<< "Device Initiated Address: 0x" << std::hex << transaction.s.logical_address << std::dec ));
+                    msg.setFromDevice();
+                    msg.getBDF() = transaction.bdf;
+                }
                 return transaction.io;
 
             default: return transaction.io;
@@ -116,6 +129,7 @@ class TracerDispatcher
         msg.address() = PhysicalMemoryAddress(transaction.s.physical_address);
         msg.pc()      = VirtualMemoryAddress(transaction.s.logical_address);
         msg.priv()    = IS_KERNEL(transaction.s.logical_address);
+        msg.setDataPtr((unsigned long) transaction.s.data);
 
         bool ret = false;
         ret      = dispatch_io(transaction, msg);

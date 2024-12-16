@@ -336,6 +336,7 @@ struct MemoryMessage : public boost::counted_base
       , theBranchAnnul(false)
       , thePageWalk(false)
       , BDF(-1)
+      , fromDev(false)
       , dataRequired (false)
       , dataPtr(0)
       , fromSMMU (false)
@@ -361,6 +362,7 @@ struct MemoryMessage : public boost::counted_base
       , theBranchAnnul(false)
       , thePageWalk(false)
       , BDF(-1)
+      , fromDev(false)
       , dataRequired (false)
       , dataPtr(0)
       , fromSMMU (false)
@@ -386,6 +388,7 @@ struct MemoryMessage : public boost::counted_base
       , theBranchAnnul(false)
       , thePageWalk(false)
       , BDF(-1)
+      , fromDev(false)
       , dataRequired (false)
       , dataPtr(0)
       , fromSMMU (false)
@@ -411,6 +414,7 @@ struct MemoryMessage : public boost::counted_base
       , theBranchAnnul(false)
       , thePageWalk(false)
       , BDF(-1)
+      , fromDev(false)
       , dataRequired (false)
       , dataPtr(0)
       , fromSMMU (false)
@@ -437,6 +441,7 @@ struct MemoryMessage : public boost::counted_base
       , theBranchAnnul(false)
       , thePageWalk(false)
       , BDF(BDF)
+      , fromDev(false)
       , dataRequired (false)
       , dataPtr(0)
       , fromSMMU (false)
@@ -462,6 +467,7 @@ struct MemoryMessage : public boost::counted_base
       , theBranchAnnul(false)
       , thePageWalk(false)
       , BDF(BDF)
+      , fromDev(false)
       , dataRequired (false)
       , dataPtr(0)
       , fromSMMU (false)
@@ -488,6 +494,7 @@ struct MemoryMessage : public boost::counted_base
       , theBranchAnnul(aMsg.theBranchAnnul)
       , thePageWalk(aMsg.thePageWalk)
       , BDF(aMsg.BDF)
+      , fromDev(aMsg.fromDev)
       , dataRequired (aMsg.dataRequired)
       , dataPtr(aMsg.dataPtr)
       , fromSMMU(aMsg.fromSMMU)
@@ -607,6 +614,10 @@ struct MemoryMessage : public boost::counted_base
     void setFromSMMU () { fromSMMU = true; }
 
     bool isFromSMMU () { return fromSMMU; }
+
+    bool isFromDevice () { return fromDev; }
+    
+    void setFromDevice () { fromDev = true; }
 
     bool isRequest() const
     {
@@ -1055,6 +1066,7 @@ struct MemoryMessage : public boost::counted_base
     bool thePageWalk;
 
     uint16_t BDF;       // BDF of IO device in case of an IO memory message
+    bool fromDev;       // True if the memory message is initiated by the IO device
     bool dataRequired;  // If this field is true, then the data needs to br read from QEMU instead of just accessing the microarchitectural state
     uint64_t dataPtr;   // Holds the pointer to the data accessed. 
                         // ! It is the responsibility of the user to deallocate the memory after using the data to avoid OOM

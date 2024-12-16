@@ -200,6 +200,7 @@ typedef struct
     uint8_t speculative : 1;
     uint8_t ignore : 1;
     uint8_t inverse_endian : 1;
+    void *data; // Holds data sent from QEMU
 } generic_transaction_t;
 
 typedef struct
@@ -220,7 +221,11 @@ typedef struct
     cache_type_t cache;              // cache to operate on
     cache_maintenance_op_t cache_op; // operation to perform on cache
 
-    uint8_t io : 1;
+    uint8_t io : 1;                     // This field is 1 if the memory transaction is initiated by the CPU
+                                        // to an MMIO region or Initiated by an IO device
+    uint8_t dev_initiated : 1;           // This is 1 if the Memory transaction is initiated by the IO device
+                                        // and not by the CPU 
+    uint16_t bdf : 16;                  // Stores BDF if the memory transaction is initiated by the IO device instead of CPU
     uint8_t line : 1;                // 1 for line, 0 for whole cache
     uint8_t data_is_set_and_way : 1; // wether or not the operation provides set&way or address (range)
 
