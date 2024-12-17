@@ -75,7 +75,7 @@ struct LDPAction : public PredicatedSemanticAction
         Flexus::Qemu::Processor c = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu());
         uint64_t addr             = theInstruction->operand<uint64_t>(kAddress);
         uint64_t addr_final       = addr + (size >> 3) - 1;
-        bits value_new            = c.read_va(VirtualMemoryAddress(addr), size >> 3);
+        bits value_new            = c.read_va(VirtualMemoryAddress(addr), size >> 3, theInstruction->unprivAccess());
         if (((addr & 0x1000) != (addr_final & 0x1000)) && value != value_new) {
             DBG_(Iface,
                  (<< theInstruction->identify() << " Correcting LDP access across pages at address: " << std::hex

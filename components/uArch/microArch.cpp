@@ -165,7 +165,7 @@ class microArchImpl : public microArch
             Flexus::SharedTypes::Translation xlat;
             xlat.theVaddr        = op->theVAddr;
             xlat.theType         = Flexus::SharedTypes::Translation::eStore;
-            op->theExtendedValue = theCPU.read_va(xlat.theVaddr, op->theSize);
+            op->theExtendedValue = theCPU.read_va(xlat.theVaddr, op->theSize, (op->theInstruction ? op->theInstruction->unprivAccess() : false));
         } else if (op->theOperation == kStoreReply && !op->theSideEffect && !op->theAtomic) {
             // Need to inform ValueTracker that this store is complete
             bits value = op->theValue;

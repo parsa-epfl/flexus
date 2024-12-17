@@ -374,7 +374,7 @@ MMUComponent::busCycle()
 
         std::pair<bool, PhysicalMemoryAddress> entry = (item->isInstr() ? theInstrTLB : theDataTLB).lookUp(item);
         if (cfg.PerfectTLB || !mmu_is_init) {
-            PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr));
+            PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr, (item->getInstruction() ? item->getInstruction()->unprivAccess(): false)));
             entry.first  = true;
             entry.second = perfectPaddr;
             if (perfectPaddr == 0xFFFFFFFFFFFFFFFF) item->setPagefault();
@@ -391,7 +391,7 @@ MMUComponent::busCycle()
 
             // item exists so mark hit
             item->setHit();
-            PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr));
+            PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr, (item->getInstruction() ? item->getInstruction()->unprivAccess(): false)));
             // item->thePaddr = (PhysicalMemoryAddress)(entry.second | (item->theVaddr & ~(PAGEMASK)));
             item->thePaddr = perfectPaddr;
 
@@ -416,7 +416,8 @@ MMUComponent::busCycle()
                     alreadyPW.insert(pageAddr);
                     thePageWalkEntries.push(item);
                 } else {
-                    PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr));
+                    PhysicalMemoryAddress perfectPaddr(
+                        API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr, (item->getInstruction() ? item->getInstruction()->unprivAccess(): false)));
                     item->setHit();
                     item->thePaddr = perfectPaddr;
                     if (item->isInstr())

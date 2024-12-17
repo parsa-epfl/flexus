@@ -241,7 +241,7 @@ class FLEXUS_COMPONENT(uArch)
     {
 
         PhysicalMemoryAddress magicTranslation =
-          Flexus::Qemu::Processor::getProcessor(theMicroArch->core()).translate_va2pa(aTranslate->theVaddr);
+          Flexus::Qemu::Processor::getProcessor(theMicroArch->core()).translate_va2pa(aTranslate->theVaddr, (aTranslate->getInstruction() ? aTranslate->getInstruction()->unprivAccess(): false));
 
         if (aTranslate->thePaddr == magicTranslation || magicTranslation == kUnresolved) {
             DBG_(Iface,

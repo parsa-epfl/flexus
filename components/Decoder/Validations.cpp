@@ -86,11 +86,11 @@ validateMemory::operator()()
         theSize_orig -= theSize_extra;
         vaddr_final = (VirtualMemoryAddress)(vaddr_final & ~0xFFFULL);
     }
-    PhysicalMemoryAddress paddr = c.translate_va2pa(vaddr);
+    PhysicalMemoryAddress paddr = c.translate_va2pa(vaddr, theInstruction->unprivAccess());
     bits qemu                   = c.read_pa(paddr, theSize_orig);
     if (theSize_extra) {
         DBG_Assert((qemu >> (theSize_orig * 8)) == 0);
-        PhysicalMemoryAddress paddr_spill = c.translate_va2pa(vaddr_final);
+        PhysicalMemoryAddress paddr_spill = c.translate_va2pa(vaddr_final, theInstruction->unprivAccess());
         qemu |= c.read_pa(paddr_spill, theSize_extra) << (theSize_orig * 8);
     }
 

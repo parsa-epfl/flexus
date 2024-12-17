@@ -685,8 +685,10 @@ STR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
             case 0x2: {
                 if (extract32(aFetchedOpcode.theOpcode, 21, 1) == 1)
                     index = kRegOffset;    // LDR x1, [x2, x3, LSL #2]
-                else
+                else {
                     index = kSignedOffset; // LDTR x1, [x2, #4]
+                    inst->setUnprivAccess();
+                }
                 break;
             }
             case 0x3: index = kPreIndex; break;
@@ -786,6 +788,7 @@ LDR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     bool is_unsigned      = extract32(aFetchedOpcode.theOpcode, 24, 1);
     uint64_t imm = 0, regsize = 0;
     eIndex index = kSignedOffset;
+    bool unprivAccess = false;
 
     if ((opc & 0x2) == 0) {
         regsize = (size == 0x3) ? 64 : 32;
@@ -807,8 +810,10 @@ LDR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
             case 0x2: {
                 if (extract32(aFetchedOpcode.theOpcode, 21, 1) == 1)
                     index = kRegOffset;    // LDR x1, [x2, x3, LSL #2]
-                else
+                else {
                     index = kSignedOffset; // LDTR x1, [x2, #4]
+                    unprivAccess = true;
+                }
                 break;
             }
             case 0x3: index = kPreIndex; break;
@@ -828,6 +833,10 @@ LDR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
                                                       aSequenceNo));
     inst->setClass(clsLoad, codeLoad);
     eAccType acctype = kAccType_NORMAL;
+
+    if (unprivAccess) {
+        inst->setUnprivAccess();
+    }
 
     std::vector<std::list<InternalDependance>> rs_deps(1), rs2_deps(1);
     predicated_action ex, sh, wb;

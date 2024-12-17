@@ -49,12 +49,12 @@ class Processor
 
     uint64_t advance(bool count_time = true) { return API::qemu_api.cpu_exec(core_index, count_time); }
 
-    PhysicalMemoryAddress translate_va2pa(VirtualMemoryAddress addr)
+    PhysicalMemoryAddress translate_va2pa(VirtualMemoryAddress addr, bool unprivileged)
     {
-        return PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, addr));
+        return PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, addr, unprivileged));
     }
 
-    bits read_va(VirtualMemoryAddress anAddress, size_t size)
+    bits read_va(VirtualMemoryAddress anAddress, size_t size, bool unprivileged)
     {
         VirtualMemoryAddress finalAddress(((uint64_t)(anAddress) + size - 1) & ~0xFFF);
 
@@ -63,21 +63,21 @@ class Processor
             bits value1, value2;
             size_t partial = finalAddress - anAddress; // Partial is the size of the first access.
             value1         = read_pa(
-              PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(anAddress))),
+              PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(anAddress), unprivileged)),
               partial);
             value2 = read_pa(
               PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index,
-              API::logical_address_t(finalAddress))), size - partial);
+              API::logical_address_t(finalAddress), unprivileged)), size - partial);
             // * 8 convert bytes to bits. value2 si appended to value2
             value2 = (value2 << (partial * 8)) | value1;
             return value2;
         }
         return read_pa(
-          PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(anAddress))),
+          PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, API::logical_address_t(anAddress), unprivileged)),
           size);
     }
 
-    uint32_t fetch_inst(VirtualMemoryAddress addr) { return static_cast<uint32_t>(read_va(addr, 4)); }
+    uint32_t fetch_inst(VirtualMemoryAddress addr) { return static_cast<uint32_t>(read_va(addr, 4, false)); }
 
     bits read_pa(PhysicalMemoryAddress anAddress, size_t aSize) const
     {
