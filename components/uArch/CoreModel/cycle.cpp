@@ -1659,8 +1659,11 @@ CoreImpl::valuePredictAtomic()
             ++theValuePredictions;
 
             if (theSpeculateOnAtomicValuePerfect) {
-                lsq_head->theExtendedValue =
-                  ValueTracker::valueTracker(theNode).load(theNode, lsq_head->thePaddr, lsq_head->theSize);
+                bits val = ValueTracker::valueTracker(theNode).load(theNode, lsq_head->thePaddr, lsq_head->theSize);
+                lsq_head->theExtendedValue = val;
+                if (val == -1) {
+                    lsq_head->theInstruction->forceResync(true);
+                }
             } else {
                 if (lsq_head->theOperation == kCAS) {
                     lsq_head->theExtendedValue = lsq_head->theCompareValue;

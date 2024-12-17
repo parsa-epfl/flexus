@@ -154,6 +154,9 @@ class microArchImpl : public microArch
         if (op->theOperation == kLoadReply || op->theOperation == kAtomicPreloadReply) {
 
             bits val     = ValueTracker::valueTracker(theCPU.id()).load(theCPU.id(), op->thePAddr, op->theSize);
+            if (val == -1) {
+                op->theInstruction->forceResync(true);
+            }
             op->theValue = val;
             //      }
         } else if (op->theOperation == kRMWReply || op->theOperation == kCASReply) {
