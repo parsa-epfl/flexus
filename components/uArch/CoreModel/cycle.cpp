@@ -1378,7 +1378,7 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
     ;
     bool resync_accounted = false;
 
-    if (anInstruction->advancesSimics()) {
+    if (anInstruction->advancesSimics() || anInstruction->resync()) {
         CORE_DBG("Instruction is neither annuled nor is a micro-op");
 
         validation_passed &= anInstruction->preValidate();
