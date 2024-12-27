@@ -241,7 +241,7 @@ public:
 
 		// Validation
 		PhysicalMemoryAddress qemuPA (Flexus::Qemu::API::qemu_api.translate_iova2pa (tr->bdf, (uint64_t)tr->theVaddr));
-		DBG_Assert(((uint64_t)qflexPA) == ((uint64_t)qemuPA), (<< "Mismatch between QFlex Translation(0x" << std::hex << ((uint64_t)qflexPA) << ") and QEMU Translation(0x" << ((uint64_t)qemuPA) << ")"));
+		DBG_Assert(((uint64_t)qflexPA) == ((uint64_t)qemuPA), (<< "Mismatch between QFlex Translation(0x" << std::hex << ((uint64_t)qflexPA) << ") and QEMU Translation(0x" << ((uint64_t)qemuPA) << ") of IOVA(0x" << (uint64_t)tr->theVaddr << ")"));
 
 		aMemoryMessage.address() = tr->thePaddr;
 
@@ -426,15 +426,16 @@ private:
 
 		switch (invalidationCommand.opcode) {
             case InvalidationCommand::CMD_TLBI_NH_ALL:
+			case InvalidationCommand::CMD_TLBI_NSNH_ALL:
 				theIOTLB->invalidate();
 				theSMMUStats->IOTLB_Invalidation++;
-				DBG_(VVerb, (<< "Invalidated Entire IOTLB" 	<< std::endl ));
+				DBG_(Crit, (<< "Invalidated Entire IOTLB" 	<< std::endl ));
 				break;
 			case InvalidationCommand::CMD_TLBI_NH_VAA:
             case InvalidationCommand::CMD_TLBI_NH_ASID:
 				theIOTLB->invalidate(invalidationCommand.ASID);
 				theSMMUStats->IOTLB_Invalidation++;
-				DBG_(VVerb, (<< "Invalidated IOTLB ASID(" << invalidationCommand.ASID << ")"	<< std::endl ));
+				DBG_(Crit, (<< "Invalidated IOTLB ASID(" << invalidationCommand.ASID << ")"	<< std::endl ));
 				break;
             case InvalidationCommand::CMD_TLBI_NH_VA:
 				// TODO: Range based invalidation requires a lot of checks of various fileds like TG, NUM, SCALE, TTL, etc.
@@ -443,7 +444,7 @@ private:
 				if (invalidationCommand.TG == 0) {		// Not range based invalidation
 					theIOTLB->invalidate(invalidationCommand.ASID,  VirtualMemoryAddress(invalidationCommand.Address << 12));	// TODO: Should not hardcode 12 here. 
 																																					// ? What to do when we have hugepages?
-					DBG_(VVerb, (<< "Invalidated IOTLB ASID(" << invalidationCommand.ASID << ")\tIOVA(" << std::hex << (invalidationCommand.Address << 12)	<< ")" << std::endl ));
+					DBG_(Crit, (<< "Invalidated IOTLB ASID(" << invalidationCommand.ASID << ")\tIOVA(" << std::hex << (invalidationCommand.Address << 12)	<< ")" << std::endl ));
 				} else if (invalidationCommand.TG == 1) {
 					// Range = ((NUM+1)*2^SCALE)*Translation_Granule_Size
 					uint64_t NUM = invalidationCommand.NUM;
@@ -454,14 +455,14 @@ private:
 					for (uint64_t i = range_start; i < range_end; i++) {
 						theIOTLB->invalidate(invalidationCommand.ASID,  VirtualMemoryAddress(i << 12));	// TODO: Should not hardcode 12 here. 
 					}
-					DBG_(VVerb, (<< "Invalidated IOTLB ASID(" << invalidationCommand.ASID << ")\tIOVA Range Start(" << std::hex << (range_start << 12) << ")\tIOVA Range End(" << std::hex << (range_end << 12)	<< ")" << std::endl ));
+					DBG_(Crit, (<< "Invalidated IOTLB ASID(" << invalidationCommand.ASID << ")\tIOVA Range Start(" << std::hex << (range_start << 12) << ")\tIOVA Range End(" << std::hex << (range_end << 12)	<< ")" << std::endl ));
 				} else {
 					DBG_Assert(false, (<< "Translation Granule for Invalidation is not supported" ));
 				}
 				theSMMUStats->IOTLB_Invalidation++;		// TODO: ? Not sure if this should be incremented once or multiple times for range invalidation
 				break;
 			default:
-				DBG_(VVerb, (<< "Not IOTLB Invalidation Command Opcode(" << std::dec << invalidationCommand.opcode << ")" 	<< std::endl ));
+				DBG_(Crit, (<< "Not IOTLB Invalidation Command Opcode(" << std::dec << invalidationCommand.opcode << ")" 	<< std::endl ));
         }
 	}
 

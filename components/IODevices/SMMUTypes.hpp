@@ -157,7 +157,8 @@ typedef struct InvalidationCommand {
 		CMD_TLBI_NH_ALL		=	0x10,
 		CMD_TLBI_NH_ASID	=	0x11,
 		CMD_TLBI_NH_VAA		=	0x13,
-		CMD_TLBI_NH_VA		=	0x12
+		CMD_TLBI_NH_VA		=	0x12,
+		CMD_TLBI_NSNH_ALL	=	0x30
 	};
 
 	// First 32-bits
