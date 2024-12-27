@@ -1,6 +1,8 @@
+#include "components/IODevices/NICTypes.hpp"
 #include "core/debug/debug.hpp"
 
 #include <components/IODevices/NIC.hpp>
+#include <components/IODevices/RingBuffer.hpp>
 #include <cstdint>
 #include <fstream>
 #include <string>
@@ -13,49 +15,6 @@
 namespace nNIC {
 
 using namespace Flexus;
-
-// This should not be of interest to us as the context descriptor 
-// holds the control information for transmission
-// This may also be wrong, so double check
-typedef struct AdvancedTransmitContextDescriptor {
-    struct Lo { 
-        uint64_t reserved : 24;     
-        uint64_t ipsec_sa_index : 8;
-        uint64_t vlan : 16;         
-        uint64_t maclen : 7;        
-        uint64_t iplen : 9;         
-    } lo;
-
-    struct Hi {
-        uint64_t mss : 16;         
-        uint64_t l4len : 8;        
-        uint64_t rsv1 : 1;         
-        uint64_t idx : 3;          
-        uint64_t reserved : 6;     
-        uint64_t dext : 1;         
-        uint64_t rsv2 : 5;         
-        uint64_t dtyp : 4;         
-        uint64_t tucmd : 12;       
-        uint64_t ipsec_esp_len : 9;
-    } hi;
-} AdvancedTransmitContextDescriptor;  // Advanced Transmit Context Descriptor
-
-typedef struct AdvancedTransmitDataDescriptor {
-    uint64_t address;
-
-    struct Fields {
-        uint64_t dtalen : 16; 
-        uint64_t rsv : 2;
-        uint64_t mac : 2;  
-        uint64_t dtyp : 4;  
-        uint64_t dcmd : 8;    
-        uint64_t sta : 4; 
-        uint64_t idx : 3; 
-        uint64_t cc : 1;   
-        uint64_t popts : 6;   
-        uint64_t paylen : 18; 
-    } fields;
-} AdvancedTransmitDataDescriptor; // Advanced Transmit Data Descriptor
 
 class FLEXUS_COMPONENT(NIC)
 {
@@ -81,6 +40,7 @@ class FLEXUS_COMPONENT(NIC)
                     << "\t" << "RDLEN: "  << RDLEN  << std::endl
                     << "\t" << "RDH: "    << RDH    << std::endl
                     << "\t" << "RDT: "    << RDT    << std::endl
+                    << "\t" << "SRRCTL: " << SRRCTL << std::endl
 
                     << std::endl
 
@@ -120,6 +80,7 @@ class FLEXUS_COMPONENT(NIC)
       RDLEN = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + RDLEN_offset), 4);
       RDH = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + RDH_offset), 4);
       RDT = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + RDT_offset), 4);
+      SRRCTL = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + SRRCTL_offset), 4);
 
       TXPBS = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + TXPBS_offset), 4);
       TCTL  = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + TCTL_offset), 4);
@@ -128,13 +89,6 @@ class FLEXUS_COMPONENT(NIC)
       TDLEN = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + TDLEN_offset), 4);
       TDH = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + TDH_offset), 4);
       TDT = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + TDT_offset), 4);
-
-      receiveQueue.resize (RDLEN / sizeof (AdvancedReceiveDescriptor));
-      
-      receiveHeadCurrent = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + RDH_offset), 4);
-      receiveTailCurrent = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + RDT_offset), 4);
-      receiveHeadPrevious = receiveHeadCurrent;
-      receiveTailPrevious = receiveTailCurrent;
 
       printNICRegisters();
     }
@@ -155,12 +109,9 @@ class FLEXUS_COMPONENT(NIC)
         if ((uint64_t)aMessage.address() == (BAR0 + TDT_offset) ) {
           processTxTailUpdate();
         }
-        else if ((uint64_t)aMessage.address() == (BAR0 + RDT_offset) ) {
-          DBG_(Crit, ( << "Rx Tail Access: Write(" << (aMessage.type() == MemoryMessage::IOStoreReq) << ")" ));
-          processRxTailUpdate();
-        } else if ((uint64_t)aMessage.address() == (BAR0 + RDH_offset) ) {
-          DBG_(Crit, ( << "Rx Head Access: Write(" << (aMessage.type() == MemoryMessage::IOStoreReq) << ")\t Head Prev: 0x" << std::hex << receiveHeadPrevious << "\tHead Curr: 0x" << receiveHeadCurrent << std::dec ));
-          processRxHeadUpdate(*((uint32_t *)aMessage.getDataPtr()));
+        else if ((uint64_t)aMessage.address() == (BAR0 + RDH_offset) ) {
+          DBG_(Crit, ( << "Rx Head Access: Write(" << (aMessage.type() == MemoryMessage::IOStoreReq) << ")" ));
+          processRxHeadUpdate((void *)aMessage.getDataPtr());
         }
       }
     }
@@ -175,7 +126,6 @@ class FLEXUS_COMPONENT(NIC)
 
   private:
 
-    // TODO: Overload this function for Receive Descriptor
     // This function takes a descriptor as input and chops it up into smaller
     // TLP sized messages to be sent to the SMMU
     std::vector <MemoryMessage> generateMemoryMessageFromDescriptor (AdvancedTransmitDataDescriptor transmitDescriptor) {
@@ -197,6 +147,48 @@ class FLEXUS_COMPONENT(NIC)
         // Data is not actually required so dataRequired field is not set here
 
         ret.push_back(txDataReadMessage);
+
+        bytesLeft -= payloadLength;
+      }
+
+      return ret;
+    }
+
+    std::vector <MemoryMessage> generateMemoryMessageFromDescriptor (AdvancedReceiveDescriptor readDescriptor, AdvancedReceiveDescriptor writebackDescriptor) {
+
+      std::vector <MemoryMessage> ret;
+
+      // TODO: Determining packetBuffer and bytesLeft this way is hackish
+      // I don't exactly know why any of the fields are 0
+      // So a more thotrough look at Intel NIC spec must be done
+
+      // Packet Buffer is in the Read Descriptor
+      // uint64_t packetBuffer = readDescriptor.advancedReceiveReadDescriptor.packetBufferAddress == 0 ?
+      //                         readDescriptor.advancedReceiveReadDescriptor.headerBufferAddress 
+      //                         : readDescriptor.advancedReceiveReadDescriptor.packetBufferAddress;
+
+      uint64_t packetBuffer = readDescriptor.advancedReceiveReadDescriptor.packetBufferAddress;
+
+      // Amount of data is in the writeback descriptor
+      // uint64_t bytesLeft =  writebackDescriptor.advancedReceiveWriteDescriptor.PKT_LEN == 0 ? 
+      //                       writebackDescriptor.advancedReceiveWriteDescriptor.HDR_LEN :
+      //                       writebackDescriptor.advancedReceiveWriteDescriptor.PKT_LEN;
+
+      uint64_t bytesLeft =  writebackDescriptor.advancedReceiveWriteDescriptor.PKT_LEN;
+
+      uint32_t numberOfMessages = ceil(bytesLeft / (maxTLPSize * 1.0));
+
+      for (uint32_t i = 0; i < numberOfMessages; i++) {
+
+        VirtualMemoryAddress rxBufferIOVA = VirtualMemoryAddress( packetBuffer + i * maxTLPSize );
+
+        uint32_t payloadLength = bytesLeft > maxTLPSize ? maxTLPSize : bytesLeft;
+
+        MemoryMessage rxDataReadMessage (MemoryMessage::IOStoreReq, PhysicalMemoryAddress(0), rxBufferIOVA, BDF);
+        rxDataReadMessage.reqSize() = payloadLength;
+        // Data is not actually required so dataRequired field is not set here
+
+        ret.push_back(rxDataReadMessage);
 
         bytesLeft -= payloadLength;
       }
@@ -229,7 +221,7 @@ class FLEXUS_COMPONENT(NIC)
       printDescriptor(transmitDescriptor);
     }
 
-    void processRxDescriptor (AdvancedReceiveDescriptor receiveDescriptor) {
+    void processRxDescriptor (AdvancedReceiveDescriptor readDescriptor, AdvancedReceiveDescriptor writebackDescriptor) {
 
       // /**
       //  * Read the IOVA of Rx data and header Buffer from the buffer descriptor
@@ -243,17 +235,29 @@ class FLEXUS_COMPONENT(NIC)
       //  * directly into the memory or LLC
       //  */
 
-      // std::vector <MemoryMessage> rxReadReadMessages = generateMemoryMessageFromDescriptor (transmitDescriptor);
+      std::vector <MemoryMessage> rxReadReadMessages = generateMemoryMessageFromDescriptor (readDescriptor, writebackDescriptor);
 
-      // for (auto& txDataReadMessage : txDataReadMessages)
-      //   FLEXUS_CHANNEL(DeviceMemoryRequest) << txDataReadMessage;  // Sending to SMMU for processing
-      //                                                              // Processing entails both translation and memory access
+      // Packet Buffer is in the Read Descriptor
+      uint64_t packetBuffer = readDescriptor.advancedReceiveReadDescriptor.packetBufferAddress == 0 ?
+                              readDescriptor.advancedReceiveReadDescriptor.headerBufferAddress 
+                              : readDescriptor.advancedReceiveReadDescriptor.packetBufferAddress;
 
-      // // By this point, the SMMU should have injected read requests into the cache hierarchy
+      // Amount of data is in the writeback descriptor
+      uint64_t bytesLeft =  writebackDescriptor.advancedReceiveWriteDescriptor.PKT_LEN == 0 ? 
+                            writebackDescriptor.advancedReceiveWriteDescriptor.HDR_LEN :
+                            writebackDescriptor.advancedReceiveWriteDescriptor.PKT_LEN;
 
-      printDescriptor(receiveDescriptor);
+      DBG_(Crit, (  << "Rx Processing: IOVA(0x" << std::hex << packetBuffer << ")" 
+          << std::dec << "\tSize(" <<  bytesLeft << ")"));
+
+      for (auto& rxDataReadMessage : rxReadReadMessages)
+        FLEXUS_CHANNEL(DeviceMemoryRequest) << rxDataReadMessage;  // Sending to SMMU for processing
+                                                                   // Processing entails both translation and memory access
+
+      // By this point, the SMMU should have injected read requests into the cache hierarchy
     }
 
+    
     // Use pointer arithmetic to conveniently read descriptors that are bigger than 64 bits
     AdvancedTransmitDataDescriptor readTransmitDataDescriptor (VirtualMemoryAddress tailDescriptorIOVA) {
 
@@ -276,24 +280,14 @@ class FLEXUS_COMPONENT(NIC)
     }
 
     // Use pointer arithmetic to conveniently read descriptors that are bigger than 64 bits
-    AdvancedReceiveDescriptor readReceiveDescriptor (VirtualMemoryAddress descriptorIOVA) {
-
-      AdvancedReceiveDescriptor receiveDescriptor;
-
+    void readReceiveDescriptor (VirtualMemoryAddress descriptorIOVA) {
       // !!!!!! Assuming that this message is always < maxTLP
       // !!!!!! Otherwise this message also needs to be chopped
       MemoryMessage rxDescriptorReadMessage (MemoryMessage::IOLoadReq, PhysicalMemoryAddress(0), descriptorIOVA, BDF);
-      rxDescriptorReadMessage.reqSize() = sizeof (receiveDescriptor.advancedReceiveReadDescriptor);   // Descriptor is 16-bytes long
-      rxDescriptorReadMessage.setDataRequired();  // NIC requires the descriptor data
+      rxDescriptorReadMessage.reqSize() = sizeof (AdvancedReceiveDescriptor);   // Descriptor is 16-bytes long
 
       FLEXUS_CHANNEL(DeviceMemoryRequest) << rxDescriptorReadMessage;  // Sending to SMMU for processing
                                                                        // Processing entails both translation and memory access
-
-      receiveDescriptor.advancedReceiveReadDescriptor = *((AdvancedReceiveDescriptor::AdvancedReceiveReadDescriptor *) rxDescriptorReadMessage.getDataPtr());  // Copy data from memory message to receiveDescriptor
-
-      free((void *)rxDescriptorReadMessage.getDataPtr()); // Free the memory allocated for holding the data
-
-      return receiveDescriptor;
     }
 
     /**
@@ -325,52 +319,6 @@ class FLEXUS_COMPONENT(NIC)
     }
 
     /**
-     * Handle update to RDT
-     * RDT update means that the Driver wrote
-     * a new RX descriptor to be processed
-     * processRxTailUpdate handles the update 
-     * by getting the PA of the buffer descriptor
-     * then processing the descriptor
-     */
-    void processRxTailUpdate () {
-
-      // Current position of the tail in the RX Ring Buffer
-      // Tail update implies that the SW wrote a new empty descriptor
-      // at tail-1 and updated the pointer to tail
-      // So we should obtain the Tail Descriptor and store it in
-      // the internal receive descriptor queue (receiveQueue)
-
-      // At the same time, we should read the Head Pointer too in
-      // order to know the progress of the hardware
-
-      receiveTailCurrent = (uint64_t)cpu.read_pa(PhysicalMemoryAddress(BAR0 + RDT_offset), 4);
-
-      // TODO: Wrap around logic
-      // Everything between PreviousTail and Current Tail has been added by the Software
-      // for the hardware to process
-      for (uint32_t i = receiveTailPrevious; i < receiveTailCurrent; i++) {
-        VirtualMemoryAddress tailDescriptorIOVA ( RDBAL + (i << 4) );
-
-      // This step requires one translation
-      AdvancedReceiveDescriptor receiveDescriptor = readReceiveDescriptor(tailDescriptorIOVA);
-        receiveDescriptor.advancedReceiveReadDescriptor.DD = 0; // For some reason QEMU gives wrong DD so we fix the DD here
-                                                                // Tail update implies that new descriptors have been added to
-                                                                // to the ring. Thus, these descriptors are unprocessed
-
-        receiveQueue[i] = receiveDescriptor;
-
-        // This will require as many translations as the data is big
-        processRxDescriptor(receiveDescriptor);
-      }
-
-      // Everything between PreviousHead and CurrentHead was processed by the hardware 
-      // and can be taken by the software
-
-      receiveTailPrevious = receiveTailCurrent; // Update the Previous pointer to the current pointer
-                                                // Current pointer gets updated st the next invocation of this function
-    }
-
-    /**
      * Handle update to RDH
      * Update to RDH implies that 
      * NIC processed reception of data
@@ -378,33 +326,27 @@ class FLEXUS_COMPONENT(NIC)
      * Descriptor to the Rx Ring. This WriteBack
      * descriptor can be used to determine how much
      * data was written
+     * Store the writeback descriptor in the receiveWritebackDescriptorQueue
      */
-    void processRxHeadUpdate (uint32_t headPosition) {
+    void processRxHeadUpdate (void * userData) {
 
-      receiveHeadCurrent = headPosition;
+      // First 4 bytes of the userdata have the head pointer position
+      // Next 16 bytes have the read descriptor
+      // Next 16 bytes have the writeback descriptor
 
-      // TODO: Wrap around logic
-      // Everything between PreviousTail and Current Tail has been added by the Software
-      // for the hardware to process
-      for (uint32_t i = receiveHeadPrevious; i < receiveHeadCurrent; i++) {
-        VirtualMemoryAddress headDescriptorIOVA ( RDBAL + (i << 4) );
+      uint32_t headPosition;
+      AdvancedReceiveDescriptor receiveReadDescriptor;
+      AdvancedReceiveDescriptor receiveWritebackDescriptor;
 
-        // This step requires one translation
-        AdvancedReceiveDescriptor receiveDescriptor = readReceiveDescriptor(headDescriptorIOVA);
-        receiveDescriptor.advancedReceiveReadDescriptor.DD = 1; // For some reason QEMU gives wrong DD so we fix the DD here
-                                                                // Head update implies that descriptors have been processed
-                                                                // by hardware
+      headPosition = *((uint32_t *) userData);
 
-        receiveQueue[i] = receiveDescriptor;
+      VirtualMemoryAddress headDescriptorIOVA ( RDBAL + (headPosition << 4) );
+      readReceiveDescriptor(headDescriptorIOVA);  // Perform Descriptor Read to inject IOMMU and LLC traffic
 
-      // This will require as many translations as the data is big
-      processRxDescriptor(receiveDescriptor);
-      }
+      receiveReadDescriptor = *((AdvancedReceiveDescriptor *) (((char *) userData) + 4));
+      receiveWritebackDescriptor = *((AdvancedReceiveDescriptor *) (((char *) userData) + 20));
 
-      // Everything between PreviousHead and CurrentHead was processed by the hardware 
-      // and can be taken by the software
-
-      receiveHeadPrevious = receiveHeadCurrent;
+      processRxDescriptor(receiveReadDescriptor, receiveWritebackDescriptor);
     }
 
   private:  // These are helpers for debugging purposes and can be safely removed in release
@@ -443,7 +385,7 @@ class FLEXUS_COMPONENT(NIC)
       bool isProcessed = descriptor.advancedReceiveWriteDescriptor.DD == 1;
 
       if (!isProcessed) {
-        DBG_(Crit, ( << "Advanced Receive Read Descriptor Contents: HeadPrev: " << receiveHeadPrevious << "\tHeadCurr: " << receiveHeadCurrent << "\tTailPrev: " << receiveTailPrevious << "\tTailCurr: " << receiveTailCurrent
+        DBG_(Crit, ( << "Advanced Receive Read Descriptor Contents:"
         
         // Print the 64-bit address field in hex
         << "\n  Packet Buffer IOVA: " << std::hex << std::setw(16) << std::setfill('0') 
@@ -454,10 +396,13 @@ class FLEXUS_COMPONENT(NIC)
         << "\n  Descriptor Done: " << (uint64_t) descriptor.advancedReceiveWriteDescriptor.DD
         ));
       } else {
-        DBG_(Crit, ( << "Advanced Receive Writeback Descriptor Contents: HeadPrev: " << receiveHeadPrevious << "\tHeadCurr: " << receiveHeadCurrent << "\tTailPrev: " << receiveTailPrevious << "\tTailCurr: " << receiveTailCurrent
+        DBG_(Crit, ( << "Advanced Receive Writeback Descriptor Contents:"
         
         << "\n  Packet Length: " << std::hex << (uint64_t)descriptor.advancedReceiveWriteDescriptor.PKT_LEN 
         << "\n  Header Length: " << std::hex << descriptor.advancedReceiveWriteDescriptor.HDR_LEN
+        << "\n  Packet Type: " << std::hex << (uint64_t)descriptor.advancedReceiveWriteDescriptor.Packet_Type
+        << "\n  SPH: " << std::hex << (uint64_t)descriptor.advancedReceiveWriteDescriptor.SPH
+
         << "\n  End Of Packet: " << (uint64_t)descriptor.advancedReceiveWriteDescriptor.EOP ));
       }
     }
@@ -480,6 +425,7 @@ class FLEXUS_COMPONENT(NIC)
     uint32_t RDLEN;   // Receive Descriptor Ring Length         // TODO: This has aliases
     uint32_t RDH;     // Receive Descriptor Head Register       // TODO: This has aliases
     uint32_t RDT;     // Receive Descriptor Tail Register       // TODO: This has aliases
+    uint32_t SRRCTL;  // Split and Replication Receive Control for Receive Queue 0
 
     uint32_t TXPBS;   // TX Packet Buffer Size
     uint32_t TCTL;    // Transmit Control Register
@@ -506,6 +452,7 @@ class FLEXUS_COMPONENT(NIC)
     const uint32_t RDLEN_offset = 0xC008;
     const uint32_t RDH_offset   = 0x2810;
     const uint32_t RDT_offset   = 0x2818;
+    const uint32_t SRRCTL_offset= 0xC00C;
 
     const uint32_t TXPBS_offset = 0x3404;
     const uint32_t TCTL_offset  = 0x400;
@@ -514,17 +461,6 @@ class FLEXUS_COMPONENT(NIC)
     const uint32_t TDLEN_offset = 0xE008;
     const uint32_t TDH_offset   = 0xE010;
     const uint32_t TDT_offset   = 0x3818;
-
-  private:
-    // These are different from the MMIO registers and 
-    // are maintained inside the NIC for its internal processing
-    uint32_t receiveHeadCurrent;
-    uint32_t receiveHeadPrevious;
-    uint32_t receiveTailCurrent;
-    uint32_t receiveTailPrevious;
-    std::vector <AdvancedReceiveDescriptor> receiveQueue;
-    
-
 }; // end class NIC
 
 } // end Namespace nNIC
