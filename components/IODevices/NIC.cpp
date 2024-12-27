@@ -110,7 +110,7 @@ class FLEXUS_COMPONENT(NIC)
           processTxTailUpdate();
         }
         else if ((uint64_t)aMessage.address() == (BAR0 + RDH_offset) ) {
-          DBG_(Crit, ( << "Rx Head Access: Write(" << (aMessage.type() == MemoryMessage::IOStoreReq) << ")" ));
+          DBG_(VVerb, ( << "Rx Head Access: Write(" << (aMessage.type() == MemoryMessage::IOStoreReq) << ")" ));
           processRxHeadUpdate((void *)aMessage.getDataPtr());
         }
       }
@@ -247,7 +247,7 @@ class FLEXUS_COMPONENT(NIC)
                             writebackDescriptor.advancedReceiveWriteDescriptor.HDR_LEN :
                             writebackDescriptor.advancedReceiveWriteDescriptor.PKT_LEN;
 
-      DBG_(Crit, (  << "Rx Processing: IOVA(0x" << std::hex << packetBuffer << ")" 
+      DBG_(VVerb, (  << "Rx Processing: IOVA(0x" << std::hex << packetBuffer << ")" 
           << std::dec << "\tSize(" <<  bytesLeft << ")"));
 
       for (auto& rxDataReadMessage : rxReadReadMessages)
@@ -405,7 +405,7 @@ class FLEXUS_COMPONENT(NIC)
       bool isProcessed = descriptor.advancedReceiveWriteDescriptor.DD == 1;
 
       if (!isProcessed) {
-        DBG_(Crit, ( << "Advanced Receive Read Descriptor Contents:"
+        DBG_(VVerb, ( << "Advanced Receive Read Descriptor Contents:"
         
         // Print the 64-bit address field in hex
         << "\n  Packet Buffer IOVA: " << std::hex << std::setw(16) << std::setfill('0') 
@@ -416,7 +416,7 @@ class FLEXUS_COMPONENT(NIC)
         << "\n  Descriptor Done: " << (uint64_t) descriptor.advancedReceiveWriteDescriptor.DD
         ));
       } else {
-        DBG_(Crit, ( << "Advanced Receive Writeback Descriptor Contents:"
+        DBG_(VVerb, ( << "Advanced Receive Writeback Descriptor Contents:"
         
         << "\n  Packet Length: " << std::hex << (uint64_t)descriptor.advancedReceiveWriteDescriptor.PKT_LEN 
         << "\n  Header Length: " << std::hex << descriptor.advancedReceiveWriteDescriptor.HDR_LEN
