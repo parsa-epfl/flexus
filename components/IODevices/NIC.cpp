@@ -290,6 +290,18 @@ class FLEXUS_COMPONENT(NIC)
                                                                        // Processing entails both translation and memory access
     }
 
+    // Both receive and transmit have to writeback descriptors into the memory
+    // This function will inject the writeback traffic into LLC and IOMMU
+    void writebackDescriptor (VirtualMemoryAddress descriptorIOVA) {
+      // !!!!!! Assuming that this message is always < maxTLP
+      // !!!!!! Otherwise this message also needs to be chopped
+      MemoryMessage rxDescriptorWriteMessage (MemoryMessage::IOStoreReq, PhysicalMemoryAddress(0), descriptorIOVA, BDF);
+      rxDescriptorWriteMessage.reqSize() = 16;   // Descriptors are 16-bytes long
+
+      FLEXUS_CHANNEL(DeviceMemoryRequest) << rxDescriptorWriteMessage;  // Sending to SMMU for processing
+                                                                       // Processing entails both translation and memory access
+    }
+
     /**
      * Handle update to TDT
      * TDT update means that the Driver wrote
@@ -299,6 +311,8 @@ class FLEXUS_COMPONENT(NIC)
      * then processing the descriptor
      */
     void processTxTailUpdate () {
+
+      // Read-Process-Writeback
 
       // Current position of the tail in the TX Ring Buffer
       // This points to the next empty slot in ring buffer, meaning 
@@ -315,6 +329,8 @@ class FLEXUS_COMPONENT(NIC)
       // This will require as many translations as the data is big
       if (transmitDescriptor.fields.dtyp == 0x3) { // 0x3 means that this is a data descriptor
         processTxDescriptor(transmitDescriptor);
+
+        writebackDescriptor(tailDescriptorIOVA);
       }
     }
 
@@ -329,6 +345,8 @@ class FLEXUS_COMPONENT(NIC)
      * Store the writeback descriptor in the receiveWritebackDescriptorQueue
      */
     void processRxHeadUpdate (void * userData) {
+
+      // Read-Process-Writeback
 
       // First 4 bytes of the userdata have the head pointer position
       // Next 16 bytes have the read descriptor
@@ -347,6 +365,8 @@ class FLEXUS_COMPONENT(NIC)
       receiveWritebackDescriptor = *((AdvancedReceiveDescriptor *) (((char *) userData) + 20));
 
       processRxDescriptor(receiveReadDescriptor, receiveWritebackDescriptor);
+
+      writebackDescriptor(headDescriptorIOVA);
     }
 
   private:  // These are helpers for debugging purposes and can be safely removed in release
