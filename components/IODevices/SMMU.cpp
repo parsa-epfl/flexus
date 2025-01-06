@@ -112,6 +112,10 @@ public:
 		printSMMUConfig();
 
 		theSMMUStats = new SMMUStats(statName());
+
+		theMMU.reset(new mmu_t());
+
+		theMMU->setupBitConfigs();
 	}
 
 	PhysicalMemoryAddress translateIOVA (TranslationPtr& aTranslate, MemoryMessage& aMemoryMessage) {
@@ -241,7 +245,11 @@ public:
 
 		// Validation
 		PhysicalMemoryAddress qemuPA (Flexus::Qemu::API::qemu_api.translate_iova2pa (tr->bdf, (uint64_t)tr->theVaddr));
-		DBG_Assert(((uint64_t)qflexPA) == ((uint64_t)qemuPA), (<< "Mismatch between QFlex Translation(0x" << std::hex << ((uint64_t)qflexPA) << ") and QEMU Translation(0x" << ((uint64_t)qemuPA) << ") of IOVA(0x" << (uint64_t)tr->theVaddr << ")"));
+
+		if (((uint64_t)qflexPA) != ((uint64_t)qemuPA)) {
+			// DBG_Assert(false, (<< "Mismatch between QFlex Translation(0x" << std::hex << ((uint64_t)qflexPA) << ") and QEMU Translation(0x" << ((uint64_t)qemuPA) << ") of IOVA(0x" << (uint64_t)tr->theVaddr << ")"));
+			DBG_(Crit, (<< "Mismatch between QFlex Translation(0x" << std::hex << ((uint64_t)qflexPA) << ") and QEMU Translation(0x" << ((uint64_t)qemuPA) << ") of IOVA(0x" << (uint64_t)tr->theVaddr << ")"));
+		}
 
 		aMemoryMessage.address() = tr->thePaddr;
 
@@ -536,22 +544,14 @@ private:
 	}
 
 private:
-    bool cfg_smmu(index_t anIndex, ContextDescriptor contextDescriptor, VirtualMemoryAddress iova)
+    void cfg_smmu(index_t anIndex, ContextDescriptor contextDescriptor, VirtualMemoryAddress iova)
     {
-        bool ret = false;
-        theMMU.reset(new mmu_t());
-
-		theMMU->setupBitConfigs();
-
         if (init_smmu_regs(anIndex, theMMU, contextDescriptor, iova)) {
             theMMU->setupAddressSpaceSizesAndGranules();
             DBG_Assert(theMMU->Gran0->getlogKBSize() == 12, (<< "TG0 has non-4KB size - unsupported"));
             DBG_Assert(theMMU->Gran1->getlogKBSize() == 12, (<< "TG1 has non-4KB size - unsupported"));
             PAGEMASK = ~((1 << theMMU->Gran0->getlogKBSize()) - 1);
-            ret      = true;
-        }
-
-        return ret;
+		}
     }
 
 	void setupBitConfigs()
