@@ -1282,7 +1282,7 @@ CoreImpl::doAbortSpeculation()
     theRedirectRequested = true;
     DBG_Assert(ckpt->second.theState.thePC == ckpt->first->bpState()->pc);
     // theRedirectInstruction = ckpt->first;
-    theRedirectRequest = boost::intrusive_ptr(new BPredRedictRequest);
+    theRedirectRequest = boost::intrusive_ptr<BPredRedictRequest>(new BPredRedictRequest);
     theRedirectRequest->theTarget = ckpt->second.theState.thePC;
     theRedirectRequest->theBPState = ckpt->first->bpState();
     theRedirectRequest->theInsertNewHistory = false;
