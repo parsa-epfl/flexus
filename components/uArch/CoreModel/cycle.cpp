@@ -1443,7 +1443,6 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
         // synchronizing instruction.
         theEmptyROBCause = kSync;
         if (!resync_accounted) { accountResyncReason(anInstruction); }
-        this->theResyncFromInstruction++;
         throw ResynchronizeWithQemuException(true, true, anInstruction);
     }
 
