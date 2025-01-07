@@ -473,6 +473,7 @@ class PREDICTOR
 
         // No way to predict the direction of a non-conditional branch
         DBG_Assert(false);
+        __builtin_unreachable();
     }
 
     bool getbim(address_t pc, int BI) { return (btable[BI].pred > 0); }
@@ -565,26 +566,23 @@ class PREDICTOR
             int GI[NHIST];
             int BI;
             int bank;
-            int altbank;
             bool alt_pred;
             bool pred_taken;
-            
+
             if (aBPState.theTagePredictionValid) {
                 for (int i = 0; i < NHIST; i++)
                     GI[i] = aBPState.GI[i];
                 BI        = aBPState.BI;
                 bank      = aBPState.bank;
-                altbank   = aBPState.altbank;
                 alt_pred  = aBPState.alt_pred;
                 pred_taken = aBPState.pred_taken;
             } else {
-                // We need to recompute the indices. 
+                // We need to recompute the indices.
                 DBG_Assert(aBPState.thePredictedType != kConditional);
                 for (int i = 0; i < NHIST; i++)
                     GI[i] = gindex(instruction_addr >> 2, i);
                 BI = bindex(instruction_addr >> 2);
                 bank = NHIST;
-                altbank = NHIST;
                 alt_pred = aBPState.thePrediction == kTaken;
                 pred_taken = aBPState.thePrediction == kTaken;
             }

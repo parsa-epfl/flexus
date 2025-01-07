@@ -16,7 +16,7 @@ COMPONENT_PARAMETERS(
 
 COMPONENT_INTERFACE(
   DYNAMIC_PORT_ARRAY( PushInput, boost::intrusive_ptr<BPredRedictRequest>, RedirectIn )
-  DYNAMIC_PORT_ARRAY( PushInput, boost::intrusive_ptr<BPredState>, TrainIn )
+  DYNAMIC_PORT_ARRAY( PushInput, boost::intrusive_ptr<BPredState>, BranchTrainIn )
 
   DYNAMIC_PORT_ARRAY( PushOutput, boost::intrusive_ptr<FetchCommand>, FetchAddrOut )
   DYNAMIC_PORT_ARRAY( PullInput, int, AvailableFAQ )

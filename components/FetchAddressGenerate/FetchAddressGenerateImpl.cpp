@@ -83,8 +83,8 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
 
     // TrainIn
     //----------------
-    FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(TrainIn);
-    void push(interface::TrainIn const&, index_t anIndex, boost::intrusive_ptr<BPredState>& bpState)
+    FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(BranchTrainIn);
+    void push(interface::BranchTrainIn const&, index_t anIndex, boost::intrusive_ptr<BPredState>& bpState)
     {
         theBranchPredictor->train(*bpState);
     }
@@ -217,7 +217,7 @@ FLEXUS_PORT_ARRAY_WIDTH(FetchAddressGenerate, RedirectIn)
 {
     return (cfg.Threads);
 }
-FLEXUS_PORT_ARRAY_WIDTH(FetchAddressGenerate, TrainIn)
+FLEXUS_PORT_ARRAY_WIDTH(FetchAddressGenerate, BranchTrainIn)
 {
     return (cfg.Threads);
 }
