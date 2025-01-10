@@ -294,7 +294,7 @@ WIRE( theDecoder, DispatchOut,          theuArch, DispatchIn              )
 WIRE( theuArch, SquashOut,              theDecoder, SquashIn              )
 
 //uArch to FAG
-WIRE( theuArch, BranchFeedbackOut,      theFAG, BranchFeedbackIn          )
+WIRE( theuArch, BranchTrainOut,         theFAG, TrainIn                   )
 WIRE( theuArch, RedirectOut,            theFAG, RedirectIn                )
 
 //uFetch to IDMux
