@@ -1381,7 +1381,7 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
     ;
     bool resync_accounted = false;
 
-    if (anInstruction->advancesSimics()) {
+    if (anInstruction->advancesSimics() || anInstruction->resync()) {
         CORE_DBG("Instruction is neither annuled nor is a micro-op");
 
         validation_passed &= anInstruction->preValidate();
@@ -1395,7 +1395,14 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
 
         int qemu_rcode = advance_fn(true); // count time
 
-        DBG_(Dev, (<< "c" << theNode << " commit [" << std::hex << qemu_rcode << "] " << *anInstruction));
+        DBG_(Dev, (<< "c" << theNode << " commit [" << std::hex << qemu_rcode << "] " << *anInstruction << "PC:" << std::hex << anInstruction->pc() << std::dec));
+
+        theAdvacnedInstructionCount++;
+
+        if ((((uint64_t)anInstruction->pc()) >> 48) == 0) {
+            theAdvancedInstructionCountUser++;
+        }
+
 
         if (qemu_rcode == QEMU_EXCP_HALTED) { // QEMU CPU Halted
             /* If cpu is halted, turn off insn counting until the CPU is woken up again */
