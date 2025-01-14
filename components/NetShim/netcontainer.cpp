@@ -86,6 +86,7 @@ bool NetContainer::buildMesh() {
   switchInternalBuffersPerVC = 6;
 
   numSwitches = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+
   numNodes = numSwitches * 3;
   switchPorts = 7; // 3 ports from/to node and 4 ports for up/down/left/right
   switchBandwidth = 4;
