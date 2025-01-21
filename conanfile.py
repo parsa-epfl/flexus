@@ -4,7 +4,7 @@ from conan.errors import ConanInvalidConfiguration
 from conan.tools.files import copy
 from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain, cmake_layout
 
-class KeenKraken(ConanFile):
+class Flexus(ConanFile):
     # Optional metadata
     license = "<Put the package license here>"
     author = "Bryan Perdrizat bryan.perdrizat@epfl.ch"
@@ -30,9 +30,7 @@ class KeenKraken(ConanFile):
 
     def configure(self):
         if self.name == None:
-            raise ConanInvalidConfiguration("Need to set a name to compile [keenkraken/knottykraken]")
-        if self.name == 'keenkraken' and int(self.settings_build.get_safe('compiler.version')) < 12:
-            raise ConanInvalidConfiguration("Need GCC 12.3 at least to build keenkraken")
+            raise ConanInvalidConfiguration("Need to set a name to compile [knottykraken]")
         if self.name == 'knottykraken' and int(self.settings_build.get_safe('compiler.version')) < 13:
             raise ConanInvalidConfiguration("Need GCC 13.1 at least to build knottykraken")
 
