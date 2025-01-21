@@ -236,7 +236,6 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , intMultCyclesToReady(options.numIntMult, 0)
   , fpAluCyclesToReady(options.numFpAlu, 0)
   , fpMultCyclesToReady(options.numFpMult, 0)
-  , trace_fname("core_" + std::to_string(theNode) + "_retinsts.txt")
 {
 
     // Msutherl - for MMU verification. Remove when done
@@ -298,7 +297,6 @@ CoreImpl::CoreImpl(uArchOptions_t options,
 
     cpuHalted = false;
 
-    if (collectTrace) { trace_stream = std::ofstream(trace_fname, std::ofstream::out | std::ofstream::trunc); }
 }
 
 void
