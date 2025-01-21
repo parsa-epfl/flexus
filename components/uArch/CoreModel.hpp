@@ -34,8 +34,8 @@ struct CoreModel : public uArch
                                 ,
                                 std::function<int(bool)> advance,
                                 std::function<void(eSquashCause)> squash,
-                                std::function<void(VirtualMemoryAddress)> redirect,
-                                std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback,
+                                std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect,
+                                std::function<void(boost::intrusive_ptr<BPredState>)> trainBP,
                                 std::function<void(bool)> signalStoreForwardingHit,
                                 std::function<void(int32_t)> mmuResync);
 
@@ -92,8 +92,13 @@ struct CoreModel : public uArch
 struct ResynchronizeWithQemuException
 {
     bool expected;
-    ResynchronizeWithQemuException(bool was_expected = false)
-      : expected(was_expected)
+
+    bool affilicated_with_instruction;
+
+    boost::intrusive_ptr<Instruction> theInstruction;
+
+    ResynchronizeWithQemuException(bool was_expected = false, bool affilicated_with_instruction = false, boost::intrusive_ptr<Instruction> instruction = nullptr)
+      : expected(was_expected), affilicated_with_instruction(affilicated_with_instruction), theInstruction(instruction)
     {
     }
 };

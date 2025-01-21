@@ -285,8 +285,8 @@ WIRE( theMMU, iTranslationReply,        theuFetch, iTranslationIn         )
 WIRE( theuArch, dTranslationOut,        theMMU, dRequestIn                )
 WIRE( theMMU, dTranslationReply,        theuArch, dTranslationIn          )
 WIRE( theMMU, MemoryRequestOut,         theuArch, MemoryRequestIn         )
-WIRE(theuArch, ResyncOut,               theMMU,   ResyncIn                )
-WIRE(theMMU, ResyncOut,                 theuFetch,   ResyncIn             )
+WIRE(theuArch, ResyncOut,               theMMU, ResyncIn                  )
+WIRE(theMMU, ResyncOut,                 theuFetch, ResyncIn               )
 
 //Decoder to uArch
 WIRE( theDecoder, AvailableDispatchIn,  theuArch, AvailableDispatchOut    )
@@ -294,7 +294,7 @@ WIRE( theDecoder, DispatchOut,          theuArch, DispatchIn              )
 WIRE( theuArch, SquashOut,              theDecoder, SquashIn              )
 
 //uArch to FAG
-WIRE( theuArch, BranchFeedbackOut,      theFAG, BranchFeedbackIn          )
+WIRE( theuArch, BranchTrainOut,         theFAG, BranchTrainIn             )
 WIRE( theuArch, RedirectOut,            theFAG, RedirectIn                )
 
 //uFetch to IDMux

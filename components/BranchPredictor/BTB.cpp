@@ -1,4 +1,5 @@
 #include "BTB.hpp"
+#include "components/uFetch/uFetchTypes.hpp"
 
 #include <cstdint>
 
@@ -92,9 +93,9 @@ BTB::update(VirtualMemoryAddress aPC, eBranchType aType, VirtualMemoryAddress aT
 }
 
 bool
-BTB::update(BranchFeedback const& aFeedback)
+BTB::update(const BPredState &aFeedback)
 {
-    return update(aFeedback.thePC, aFeedback.theActualType, aFeedback.theActualTarget);
+    return update(aFeedback.pc, aFeedback.theActualType, aFeedback.theActualTarget);
 }
 
 json

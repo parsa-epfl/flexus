@@ -35,6 +35,15 @@ struct Effect : UncountedComponent
     // NOTE: No virtual destructor because effects are never destructed.
 };
 
+struct BranchPredictorTrainingEffect : public Effect 
+{
+    BranchPredictorTrainingEffect();
+
+    void invoke(SemanticInstruction &anInstruction);
+
+    void describe(std::ostream &anOstream) const;
+};
+
 struct EffectChain
 {
     Effect* theFirst;
@@ -119,18 +128,8 @@ Effect*
 branch(SemanticInstruction* inst, VirtualMemoryAddress aTarget);
 Effect*
 returnFromTrap(SemanticInstruction* inst, bool isDone);
-Effect*
-branchAfterNext(SemanticInstruction* inst, VirtualMemoryAddress aTarget);
-Effect*
-branchAfterNext(SemanticInstruction* inst, eOperandCode aCode);
-Effect*
-branchConditionally(SemanticInstruction* inst,
-                    VirtualMemoryAddress aTarget,
-                    bool anAnnul,
-                    Condition& aCondition,
-                    bool isFloating);
-Effect*
-branchRegConditionally(SemanticInstruction* inst, VirtualMemoryAddress aTarget, bool anAnnul, uint32_t aCondition);
+Effect *
+branchPredictorTraining(SemanticInstruction* inst);
 Effect*
 allocateLoad(SemanticInstruction* inst,
              nuArch::eSize aSize,
@@ -173,18 +172,6 @@ Effect*
 commitStore(SemanticInstruction* inst);
 Effect*
 accessMem(SemanticInstruction* inst);
-Effect*
-updateConditional(SemanticInstruction* inst);
-Effect*
-updateUnconditional(SemanticInstruction* inst, VirtualMemoryAddress aTarget);
-Effect*
-updateUnconditional(SemanticInstruction* inst, eOperandCode anOperandCode);
-Effect*
-updateCall(SemanticInstruction* inst, VirtualMemoryAddress aTarget);
-Effect*
-updateIndirect(SemanticInstruction* inst, eOperandCode anOperandCode, nuArch::eBranchType aType);
-Effect*
-updateNonBranch(SemanticInstruction* inst);
 Effect*
 readPR(SemanticInstruction* inst, nuArch::ePrivRegs aPR, std::unique_ptr<nuArch::SysRegInfo> aRI);
 Effect*

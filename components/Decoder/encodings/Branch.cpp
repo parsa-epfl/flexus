@@ -19,7 +19,10 @@ branch_always(SemanticInstruction* inst, bool immediate, VirtualMemoryAddress ta
 
     inst->setClass(clsBranch, codeBranchUnconditional);
     inst->addDispatchEffect(branch(inst, target));
-    inst->addRetirementEffect(updateUnconditional(inst, target));
+
+    inst->bpState()->theActualType = kUnconditional;
+    inst->bpState()->theActualDirection = kTaken;
+    inst->bpState()->theActualTarget = target;
 }
 
 static void
@@ -36,9 +39,6 @@ branch_cond(SemanticInstruction* inst,
     connectDependance(inst->retirementDependance(), br);
 
     rs_deps.push_back(br.dependance);
-
-    //  inst->addDispatchAction( br );
-    inst->addRetirementEffect(updateConditional(inst));
 }
 
 /*
@@ -77,10 +77,14 @@ UNCONDBR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         addReadConstant(inst, 1, (uint64_t)(aFetchedOpcode.thePC) + 4, rs_deps[0]);
         addDestination(inst, 30, exec, true);
 
+        inst->bpState()->theActualType = kCall;
+
         // update call after
         inst->addDispatchEffect(branch(inst, target));
-        inst->addRetirementEffect(updateCall(inst, target));
     } else {
+
+        inst->bpState()->theActualType = kUnconditional;
+
         branch_always(inst, 0, target);
     }
     return inst;
@@ -120,6 +124,7 @@ CMPBR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     branch_cond(inst, target, iszero ? kCBZ_ : kCBNZ_, rs_deps[0]);
     addReadXRegister(inst, 1, rt, rs_deps[0], sf);
     inst->addPostvalidation(validatePC(inst));
+    inst->bpState()->theActualType = kConditional;
 
     return inst;
 }
@@ -168,6 +173,7 @@ TSTBR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     readRegister(inst, 1, rt, rs_deps[0], sf);
     inst->setOperand(kCondition, uint64_t(1ULL << bit_pos));
     inst->addPostvalidation(validatePC(inst));
+    inst->bpState()->theActualType = kConditional;
 
     return inst;
 }
@@ -210,6 +216,8 @@ CONDBR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         branch_cond(inst, target, kBCOND_, rs_deps[0]);
         inst->setOperand(kCondition, cond);
         addReadCC(inst, 1, rs_deps[0], true);
+
+        inst->bpState()->theActualType = kConditional;
     } else {
         DBG_(Iface,
              (<< "unconditionally branching to " << std::hex << target << " with an offset of 0x" << std::hex << offset
@@ -218,6 +226,8 @@ CONDBR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
 
         /* 0xe and 0xf are both "always" conditions */
         branch_always(inst, false, target);
+
+        inst->bpState()->theActualType = kUnconditional;
     }
     inst->addPostvalidation(validatePC(inst));
 
@@ -252,7 +262,7 @@ BR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     dependant_action br  = branchToCalcAddressAction(inst);
     connectDependance(br.dependance, target);
     connectDependance(inst->retirementDependance(), br);
-    inst->addRetirementEffect(updateUnconditional(inst, kAddress));
+    inst->bpState()->theActualType = kIndirectReg;
 
     return inst;
 }
@@ -301,12 +311,23 @@ BLR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     connectDependance(inst->retirementDependance(), br);
 
     switch (branch_type) {
-        case kIndirectCall: inst->setClass(clsBranch, codeBranchIndirectCall); break;
-        case kIndirectReg: inst->setClass(clsBranch, codeBranchIndirectReg); break;
-        case kReturn: inst->setClass(clsBranch, codeRETURN); break;
+        case kIndirectCall: {
+            inst->setClass(clsBranch, codeBranchIndirectCall); 
+            inst->bpState()->theActualType = kIndirectCall;
+            break;
+        }
+        case kIndirectReg: {
+            inst->setClass(clsBranch, codeBranchIndirectReg); 
+            inst->bpState()->theActualType = kIndirectReg;
+            break;
+        }
+        case kReturn: {
+            inst->setClass(clsBranch, codeRETURN); 
+            inst->bpState()->theActualType = kReturn;
+            break;
+        }
         default: DBG_Assert(false, (<< "Not setting a class is weird, what happend ?"));
     }
-    inst->addRetirementEffect(updateIndirect(inst, kAddress, branch_type));
 
     // Link
     if (branch_type == kIndirectCall) {

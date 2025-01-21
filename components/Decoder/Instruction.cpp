@@ -2,6 +2,7 @@
 #include "Instruction.hpp"
 
 #include "components/uArch/uArchInterfaces.hpp"
+#include "components/uFetch/uFetchTypes.hpp"
 #include "encodings/Encodings.hpp"
 
 #define DBG_DeclareCategories Decoder
@@ -82,24 +83,22 @@ ArchInstruction::setWillRaise(eExceptionType aSetting)
 void
 ArchInstruction::doDispatchEffects()
 {
-    auto bp_state = bpState();
-
-    DBG_Assert(bp_state, (<< "No branch predictor state exists, but it must"));
+    DBG_Assert(bpState(), (<< "No branch predictor state exists, but it must"));
     if (isMicroOp()) return;
-    if (bp_state->thePredictedType == kNonBranch) return;
+    if (bpState()->thePredictedType == kNonBranch) return;
     if (isBranch()) return;
 
     // Branch predictor identified an instruction that is not a branch as a branch.
     DBG_(VVerb, (<< *this << " predicted as a branch, but is a non-branch. Fixing"));
 
-    boost::intrusive_ptr<BranchFeedback> feedback(new BranchFeedback());
-    feedback->thePC              = pc();
-    feedback->theActualType      = kNonBranch;
-    feedback->theActualDirection = kNotTaken;
-    feedback->theActualTarget    = VirtualMemoryAddress(0);
-    feedback->theBPState         = bpState();
-    core()->branchFeedback(feedback);
-    if (core()->squashFrom(dynamic_cast<Instruction*>(this), false)) { core()->redirectFetch(pc() + 4); }
+    if (core()->squashFrom(dynamic_cast<Instruction*>(this), false)) { 
+        boost::intrusive_ptr<BPredRedictRequest> aRequest = new BPredRedictRequest();
+        aRequest->theTarget = bpState()->theActualTarget;
+        aRequest->theBPState = bpState();
+        aRequest->theInsertNewHistory = false;
+        
+        core()->redirectFetch(aRequest); 
+    }
 }
 
 bool

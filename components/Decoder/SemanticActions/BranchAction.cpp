@@ -34,7 +34,6 @@ struct BranchCondAction : public BaseSemanticAction
 
     VirtualMemoryAddress theTarget;
     std::unique_ptr<Condition> theCondition;
-    uint32_t theFeedbackCount;
 
     BranchCondAction(SemanticInstruction* anInstruction,
                      VirtualMemoryAddress aTarget,
@@ -43,7 +42,6 @@ struct BranchCondAction : public BaseSemanticAction
       : BaseSemanticAction(anInstruction, numOperands)
       , theTarget(aTarget)
       , theCondition(std::move(aCondition))
-      , theFeedbackCount(0)
     {
         theInstruction->setExecuted(false);
     }
@@ -60,11 +58,7 @@ struct BranchCondAction : public BaseSemanticAction
 
                 if (theInstruction->hasOperand(kCondition)) { operands.push_back(theInstruction->operand(kCondition)); }
 
-                boost::intrusive_ptr<BranchFeedback> feedback(new BranchFeedback());
-                feedback->thePC           = theInstruction->pc();
-                feedback->theActualType   = kConditional;
-                feedback->theActualTarget = theTarget;
-                feedback->theBPState      = theInstruction->bpState();
+                DBG_Assert(theInstruction->bpState()->theActualType == kConditional);
 
                 theCondition->setInstruction(theInstruction);
 
@@ -72,18 +66,21 @@ struct BranchCondAction : public BaseSemanticAction
 
                 if (result) {
                     // Taken
-                    theInstruction->redirectPC(theTarget);
-                    core()->applyToNext(theInstruction, branchInteraction(theTarget));
-                    feedback->theActualDirection = kTaken;
+                    theInstruction->bpState()->theActualTarget = theTarget;
+                    theInstruction->bpState()->theActualDirection = kTaken;
+
+                    theInstruction->redirectPC(theTarget); 
+                    core()->applyToNext(theInstruction, branchInteraction(theInstruction));
                     DBG_(Iface, (<< "Branch taken! " << *theInstruction));
                 } else {
+                    // Not Taken
+                    theInstruction->bpState()->theActualTarget = theInstruction->pc() + 4;
+                    theInstruction->bpState()->theActualDirection = kNotTaken;
+
                     theInstruction->redirectPC(theInstruction->pc() + 4);
-                    core()->applyToNext(theInstruction, branchInteraction(theInstruction->pc() + 4));
-                    feedback->theActualDirection = kNotTaken;
+                    core()->applyToNext(theInstruction, branchInteraction(theInstruction)); 
                     DBG_(Iface, (<< "Branch Not taken! " << *theInstruction));
                 }
-                theInstruction->setBranchFeedback(feedback);
-
                 satisfyDependants();
                 theInstruction->setExecuted(true);
             } else {
@@ -135,19 +132,15 @@ struct BranchRegAction : public BaseSemanticAction
 
                 theTarget = VirtualMemoryAddress(target);
 
-                boost::intrusive_ptr<BranchFeedback> feedback(new BranchFeedback());
-                feedback->thePC           = theInstruction->pc();
-                feedback->theActualType   = theType;
-                feedback->theActualTarget = theTarget;
-                feedback->theBPState      = theInstruction->bpState();
-                theInstruction->setBranchFeedback(feedback);
+                theInstruction->bpState()->theActualDirection = kTaken;
+                theInstruction->bpState()->theActualTarget = theTarget;
 
                 DBG_(
                   Iface,
                   (<< *this << " Checking for redirection PC= " << theInstruction->pc() << " target= " << theTarget));
 
-                theInstruction->redirectPC(theTarget);
-                core()->applyToNext(theInstruction, branchInteraction(theTarget));
+                theInstruction->redirectPC(theTarget); 
+                core()->applyToNext(theInstruction, branchInteraction(theInstruction));
 
                 satisfyDependants();
                 theInstruction->setExecuted(true);
@@ -172,12 +165,10 @@ branchRegAction(SemanticInstruction* anInstruction, eOperandCode aRegOperand, eB
 struct BranchToCalcAddressAction : public BaseSemanticAction
 {
     eOperandCode theTarget;
-    uint32_t theFeedbackCount;
 
     BranchToCalcAddressAction(SemanticInstruction* anInstruction, eOperandCode aTarget)
       : BaseSemanticAction(anInstruction, 1)
       , theTarget(aTarget)
-      , theFeedbackCount(0)
     {
         theInstruction->setExecuted(false);
     }
@@ -186,15 +177,18 @@ struct BranchToCalcAddressAction : public BaseSemanticAction
     {
         if (ready()) {
             if (theInstruction->hasPredecessorExecuted()) {
-
-                // Feedback is taken care of by the updateUncoditional effect at
-                // retirement
                 uint64_t target = theInstruction->operand<uint64_t>(theTarget);
                 VirtualMemoryAddress target_addr(target);
                 DBG_(Iface, (<< *this << " branc to mapped_reg target: " << target_addr));
 
+                // Only used by BR
+                DBG_Assert(theInstruction->bpState()->theActualType == kIndirectReg);
+
+                theInstruction->bpState()->theActualDirection = kTaken;
+                theInstruction->bpState()->theActualTarget = target_addr;
+
                 theInstruction->redirectPC(target_addr);
-                core()->applyToNext(theInstruction, branchInteraction(target_addr));
+                core()->applyToNext(theInstruction, branchInteraction(theInstruction));
 
                 satisfyDependants();
                 theInstruction->setExecuted(true);
