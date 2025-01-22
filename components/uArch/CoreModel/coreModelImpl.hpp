@@ -443,6 +443,14 @@ class CoreImpl : public CoreModel
 
     Stat::StatCounter theCoalescedStores;
 
+    Stat::StatCounter theTrackedMemoryOps;
+    Stat::StatCounter theTrackedMemoryOpsReachL1;
+    Stat::StatCounter theTrackedMemoryOpsReachL1I;
+    Stat::StatCounter theTrackedMemoryOpsReachPeerL1;
+    Stat::StatCounter theTrackedMemoryOpsReachL2;
+    Stat::StatCounter theTrackedMemoryOpsReachMemory;
+
+
     uint32_t intAluOpLatency;
     uint32_t intAluOpPipelineResetTime;
 
