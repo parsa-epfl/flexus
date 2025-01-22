@@ -439,6 +439,31 @@ CoreImpl::complete(MemOp const& anOperation)
 
             theIdleThisCycle = false;
         }
+
+        auto &tracker = anOperation.theTracker;
+        if (tracker && tracker->fillLevel()) {
+            theTrackedMemoryOps++;
+            switch(tracker->fillLevel().get()) {
+                case eL1I:
+                    theTrackedMemoryOpsReachL1I++;
+                    break;
+                case eL1:
+                    theTrackedMemoryOpsReachL1++;
+                    break;
+                case ePeerL1Cache:
+                    theTrackedMemoryOpsReachPeerL1++;
+                    break;
+                case eL2:
+                    theTrackedMemoryOpsReachL2++;
+                    break;
+                case eLocalMem:
+                    theTrackedMemoryOpsReachMemory++;
+                    break;
+                default:
+                    break;
+            }
+        }
+
     } else {
         if (anOperation.theTracker) {
             if (anOperation.theTracker->fillType() && *anOperation.theTracker->fillType() == eCoherence) {
