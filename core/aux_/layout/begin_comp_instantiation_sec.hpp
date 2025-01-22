@@ -21,3 +21,5 @@ using Flexus::Core::ComponentInstance;
 
 #define SCALE_WITH_SYSTEM_WIDTH true
 #define FIXED                   false
+#define MULTIPLY                true
+#define DIVIDE                  false

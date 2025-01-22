@@ -13,11 +13,6 @@ namespace ll = boost::lambda;
 #include <core/debug/debugger.hpp>
 #include <core/interface_macros.hpp>
 
-enum FlexusComponentScalingStyle {
-    MULTIPLY = 0,
-    DIVIDE = 1,
-    DIVIDE_BY_TWO_THEN_MULTIPLY = 2
-};
 
 namespace Flexus {
 namespace Core {
@@ -199,10 +194,10 @@ class FlexusComponentBase
                             &BOOST_PP_CAT(InstanceName, _instance)>                                                    \
       InstanceName; /**/
 
-#define FLEXUS_INSTANTIATE_COMPONENT_ARRAY(Component, Configuration, InstanceName, Scale, ScalingStype, Width)             \
+#define FLEXUS_INSTANTIATE_COMPONENT_ARRAY(Component, Configuration, InstanceName, Scale, Multiply, Width)             \
     ComponentInstance<BOOST_PP_CAT(Component, Interface)> BOOST_PP_CAT(                                                \
       InstanceName,                                                                                                    \
-      _instance)(Configuration.cfg(), Width, Scale, ScalingStype);                                                         \
+      _instance)(Configuration.cfg(), Width, Scale, Multiply);                                                         \
     typedef ComponentHandle<ComponentInstance<BOOST_PP_CAT(Component, Interface)>,                                     \
                             &BOOST_PP_CAT(InstanceName, _instance)>                                                    \
       InstanceName; /**/
@@ -233,16 +228,16 @@ struct ComponentInstance
     typename iface::jump_table theJumpTable;
     typename iface::configuration& theConfiguration;
     bool theScaleWithSystem;
-    FlexusComponentScalingStyle theScalingStyle;
+    bool theMultiply;
     ComponentInstance(typename iface::configuration& aConfiguration,
-                      Flexus::Core::index_t anArrayWidth                            = 1,
-                      bool aScaleWithSystem                                         = false,
-                      FlexusComponentScalingStyle aScalingStyle                     = FlexusComponentScalingStyle::MULTIPLY)
+                      Flexus::Core::index_t anArrayWidth = 1,
+                      bool aScaleWithSystem              = false,
+                      bool aMultiply                     = false)
       : theComponent(0)
       , theWidth(anArrayWidth)
       , theConfiguration(aConfiguration)
       , theScaleWithSystem(aScaleWithSystem)
-      , theScalingStyle(aScalingStyle)
+      , theMultiply(aMultiply)
     {
         ComponentManager::getComponentManager().registerHandle(
           [this](Flexus::Core::index_t x) { return this->instantiator(x); });
@@ -251,19 +246,10 @@ struct ComponentInstance
     void instantiator(Flexus::Core::index_t aSystemWidth)
     {
         if (theScaleWithSystem) {
-            switch (theScalingStyle) {
-                case FlexusComponentScalingStyle::MULTIPLY:
-                    theWidth = aSystemWidth * theWidth;
-                    break;
-                
-                case FlexusComponentScalingStyle::DIVIDE:
-                    theWidth = aSystemWidth / theWidth;
-                    break;
-                
-                case FlexusComponentScalingStyle::DIVIDE_BY_TWO_THEN_MULTIPLY:
-                    DBG_Assert((aSystemWidth % 2) == 0);
-                    theWidth = (aSystemWidth * theWidth) / 2;
-                    break;
+            if (theMultiply) {
+                theWidth = aSystemWidth * theWidth;
+            } else {
+                theWidth = aSystemWidth / theWidth;
             }
         }
 

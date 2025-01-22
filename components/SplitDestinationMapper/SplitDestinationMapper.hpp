@@ -27,7 +27,6 @@ COMPONENT_PARAMETERS(
   PARAMETER( MemAcksNeedData, bool, "When memory replies directly to requester, require data with final ack", "MemAcksNeedData", true)
   PARAMETER( TwoPhaseWB, bool, "2 Phase Write-Back sends NAcks to requester, not directory", "TwoPhaseWB", false)
   PARAMETER( LocalDir, bool, "Treate directory as always being local to the requester", "LocalDir", false)
-
 );
 
 COMPONENT_INTERFACE(
