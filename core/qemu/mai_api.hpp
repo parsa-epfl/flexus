@@ -81,7 +81,7 @@ class Processor
 
     bits read_pa(PhysicalMemoryAddress anAddress, size_t aSize) const
     {
-        uint8_t buf[aSize] = { 0 };
+        uint8_t *buf = new uint8_t[aSize];
 
         API::qemu_api.get_mem(buf, API::physical_address_t(anAddress), aSize);
 
@@ -91,6 +91,8 @@ class Processor
             bits val       = (((bits)buf[i] << s) & ((bits)0xff << s));
             tmp |= val;
         }
+
+        delete[] buf;
         return tmp;
     }
 
