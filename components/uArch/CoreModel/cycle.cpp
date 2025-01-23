@@ -181,7 +181,6 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
         if (qemu_rcode != QEMU_EXCP_HALTED) {
             DBG_(Dev, (<< "Core " << theNode << " leaving halt state, after QEMU sent execution code " << qemu_rcode));
             cpuHalted = false;
-            this->theResyncFromHaltDetection++;
             throw ResynchronizeWithQemuException(true, false, nullptr);
         }
 
