@@ -51,7 +51,7 @@ REV(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
 
     uint8_t container_size = 0;
     switch (opc) {
-        case 0x0: DBG_Assert(false); break;
+        case 0x0: return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
         case 0x1: container_size = 16; break;
         case 0x2: container_size = 32; break;
         case 0x3:
