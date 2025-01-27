@@ -3,7 +3,7 @@
 #define __SIMPLE_DIRECTORY_STATE_HPP__
 #include <bitset>
 #include <boost/dynamic_bitset.hpp>
-#define MAX_NUM_SHARERS 128
+#define MAX_NUM_SHARERS 256
 
 namespace nCMPCache {
 
@@ -95,19 +95,17 @@ class SimpleDirectoryState
         theNumSharers = numSharers;
     }
 
-    SimpleDirectoryState& operator=(uint64_t s)
-    {
-        for (int32_t i = 0; i < theNumSharers; i++, s >>= 1) {
-            theSharers[i] = (((s & 1) == 1) ? true : false);
-        }
-        return *this;
-    }
-
     SimpleDirectoryState& operator=(std::bitset<MAX_NUM_SHARERS> s)
     {
         for (int32_t i = 0; i < theNumSharers; i++) {
             theSharers[i] = s[i];
         }
+
+        // Other fields in s should be zero. 
+        for (int32_t i = theNumSharers; i < MAX_NUM_SHARERS; i++) {
+            DBG_Assert(s[i] == false, (<< "Extra bits set in bitset"));
+        }
+
         return *this;
     }
 
@@ -115,14 +113,6 @@ class SimpleDirectoryState
     {
         for (int32_t i = 0; i < theNumSharers; i++) {
             theSharers[i] |= s[i];
-        }
-        return *this;
-    }
-
-    SimpleDirectoryState& operator|=(uint64_t s)
-    {
-        for (int32_t i = 0; i < theNumSharers; i++, s >>= 1) {
-            theSharers[i] = theSharers[i] || (((s & 1) == 1) ? true : false);
         }
         return *this;
     }

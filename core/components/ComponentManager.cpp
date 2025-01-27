@@ -1,3 +1,4 @@
+#include "core/simulator_name.hpp"
 #include <algorithm>
 #include <core/component.hpp>
 #include <core/debug/debug.hpp>
@@ -72,13 +73,21 @@ class ComponentManagerImpl : public ComponentManager
 
     void instantiateComponents(Flexus::Core::index_t aSystemWidth, const char * freq)
     {
-        theSystemWidth = aSystemWidth;
-        DBG_(Dev, (<< "Instantiating system with a width factor of: " << aSystemWidth));
+        // A dirty way to hack the system width.
+        if (Flexus::theSimulatorName.find("SemiKraken") != std::string::npos) {
+            DBG_(Dev, (<< "Detecting Semikraken. Now the system width is shrunk to half of" << aSystemWidth));
+            DBG_Assert(aSystemWidth % 2 == 0, (<< "The system width should be even."));
+            theSystemWidth = aSystemWidth / 2;
+        } else {
+            theSystemWidth = aSystemWidth;
+        }
+
+        DBG_(Dev, (<< "Instantiating system with a width factor of: " << theSystemWidth));
         Flexus::Wiring::connectWiring();
         instatiation_vector::iterator iter = theInstantiationFunctions.begin();
         instatiation_vector::iterator end  = theInstantiationFunctions.end();
         while (iter != end) {
-            (*iter)(aSystemWidth);
+            (*iter)(theSystemWidth);
             ++iter;
         }
 

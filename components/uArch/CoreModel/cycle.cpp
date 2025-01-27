@@ -1394,7 +1394,8 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
 
         int qemu_rcode = advance_fn(true); // count time
 
-        DBG_(Dev, (<< "c" << theNode << " commit [" << std::hex << qemu_rcode << "] " << *anInstruction));
+        DBG_(Dev, (<< "c" << theNode << " commit [" << std::hex << qemu_rcode << "] " << *anInstruction << "PC:" << std::hex << anInstruction->pc() << std::dec));
+
 
         if (qemu_rcode == QEMU_EXCP_HALTED) { // QEMU CPU Halted
             /* If cpu is halted, turn off insn counting until the CPU is woken up again */

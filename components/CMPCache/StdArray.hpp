@@ -22,8 +22,8 @@ namespace nCMPCache {
 
 typedef Flexus::SharedTypes::PhysicalMemoryAddress MemoryAddress;
 
-typedef int32_t SetIndex;
-typedef uint32_t BlockOffset;
+typedef uint32_t SetIndex;
+typedef uint64_t BlockOffset;
 
 enum ReplacementPolicy
 {
@@ -120,7 +120,7 @@ template<typename _State, const _State& _DefaultState>
 class Set
 {
   public:
-    Set(const int32_t aAssociativity)
+    Set(const uint64_t aAssociativity)
     {
         theAssociativity = aAssociativity;
         theBlocks        = new Block<_State, _DefaultState>[theAssociativity];
@@ -133,7 +133,7 @@ class Set
 
     LookupResult_p lookupBlock(const MemoryAddress anAddress)
     {
-        int32_t i, t = -1;
+        uint64_t i, t = 0xffffffffffffffffULL;
 
         // Linearly search through the set for the matching block
         // This could be made faster for higher-associativity sets
@@ -146,7 +146,7 @@ class Set
                 t = i;
             }
         }
-        if (t >= 0) { return LookupResult_p(new LookupResult(this, &(theBlocks[t]), anAddress, false)); }
+        if (t != 0xffffffffffffffffULL) { return LookupResult_p(new LookupResult(this, &(theBlocks[t]), anAddress, false)); }
 
         // Miss on this set
         return LookupResult_p(new LookupResult(this, nullptr, anAddress, false));
@@ -168,7 +168,7 @@ class Set
             Block<_State, _DefaultState>* victim = pickVictim();
 
             // Create lookup result now and remember the block state
-            LookupResult_p v_lookup(new LookupResult(this, victim, blockAddress(victim), true));
+            LookupResult_p v_lookup(new LookupResult(this, victim, this->blockAddress(victim), true));
             v_lookup->isHit = false;
 
             victim->tag() = anAddress;
@@ -205,10 +205,10 @@ class Set
 
             Block<_State, _DefaultState>* victim = pickLockedVictim();
 
-            DBG_(Trace, (<< "Replacing block " << std::hex << blockAddress(victim) << " in state " << victim->state()));
+            DBG_(Trace, (<< "Replacing block " << std::hex << this->blockAddress(victim) << " in state " << victim->state()));
 
             // Create lookup result now and remember the block state
-            LookupResult_p v_lookup(new LookupResult(this, victim, blockAddress(victim), true));
+            LookupResult_p v_lookup(new LookupResult(this, victim, this->blockAddress(victim), true));
             v_lookup->isHit = false;
 
             if (swap_locked_victim) { lookup->theBlock->tag() = victim->tag(); }
@@ -230,13 +230,16 @@ class Set
     virtual bool recordAccess(Block<_State, _DefaultState>* aBlock)    = 0;
     virtual void invalidateBlock(Block<_State, _DefaultState>* aBlock) = 0;
 
-    virtual void load_set_from_ckpt(uint32_t index, uint32_t mru_index, uint64_t tag, bool dirty, bool writable) = 0;
+    virtual void load_set_from_ckpt(uint64_t index, uint64_t mru_index, uint64_t tag, bool dirty, bool writable) = 0;
 
-    MemoryAddress blockAddress(const Block<_State, _DefaultState>* theBlock) { return theBlock->tag(); }
+    MemoryAddress blockAddress(const Block<_State, _DefaultState>* theBlock)
+    { 
+        return theBlock->tag(); 
+    }
 
-    int32_t count(const MemoryAddress& aTag)
+    uint64_t count(const MemoryAddress& aTag)
     {
-        int32_t i, res = 0;
+        uint64_t i, res = 0;
 
         for (i = 0; i < theAssociativity; i++) {
             if (theBlocks[i].tag() == aTag) { res++; }
@@ -248,7 +251,7 @@ class Set
     std::list<MemoryAddress> getTags()
     {
         std::list<MemoryAddress> tag_list;
-        for (int32_t i = 0; i < theAssociativity; i++) {
+        for (uint64_t i = 0; i < theAssociativity; i++) {
             if (theBlocks[i].state().isValid()) { tag_list.push_back(theBlocks[i].tag()); }
         }
         return tag_list;
@@ -259,7 +262,7 @@ class Set
         int locked_count    = 0;
         int unlocked_count  = 0;
         int unlocked_thresh = theAssociativity - max_locked;
-        for (int32_t i = 0; i < theAssociativity; i++) {
+        for (uint64_t i = 0; i < theAssociativity; i++) {
             if (theBlocks[i].state().isLocked()) {
                 locked_count++;
                 if (locked_count >= max_locked) { return true; }
@@ -274,7 +277,7 @@ class Set
     virtual bool lockedVictimAvailable() const
     {
         // Look for a block that is Locked, but not protected
-        for (int32_t i = 0; i < theAssociativity; i++) {
+        for (uint64_t i = 0; i < theAssociativity; i++) {
             if (theBlocks[i].state().isLocked() && !theBlocks[i].state().isProtected()) { return true; }
         }
         return false;
@@ -282,7 +285,7 @@ class Set
 
   protected:
     Block<_State, _DefaultState>* theBlocks;
-    int32_t theAssociativity;
+    SetIndex theAssociativity;
 
 }; // class Set
 
@@ -290,24 +293,24 @@ template<typename _State, const _State& _DefaultState>
 class SetLRU : public Set<_State, _DefaultState>
 {
   public:
-    SetLRU(const int32_t aAssociativity)
+    SetLRU(const uint64_t aAssociativity)
       : Set<_State, _DefaultState>(aAssociativity)
     {
-        theMRUOrder = new int[aAssociativity];
+        theMRUOrder = new SetIndex[aAssociativity];
 
-        for (int32_t i = 0; i < aAssociativity; i++) {
+        for (uint64_t i = 0; i < aAssociativity; i++) {
             theMRUOrder[i] = i;
         }
     }
 
     virtual Block<_State, _DefaultState>* pickVictim()
     {
-        for (int32_t i = Set<_State, _DefaultState>::theAssociativity - 1; i >= 0; i--) {
-            int32_t index = theMRUOrder[i];
+        for (SetIndex i = this->theAssociativity - 1; i >= 0; i--) {
+            SetIndex index = theMRUOrder[i];
             // Can't be protected or locked
-            if (!Set<_State, _DefaultState>::theBlocks[index].state().isProtected() &&
-                !Set<_State, _DefaultState>::theBlocks[index].state().isLocked()) {
-                return &(Set<_State, _DefaultState>::theBlocks[index]);
+            if (!this->theBlocks[index].state().isProtected() &&
+                !this->theBlocks[index].state().isLocked()) {
+                return &(this->theBlocks[index]);
             }
         }
         DBG_Assert(false, (<< "All blocks in the set are protected."));
@@ -316,12 +319,12 @@ class SetLRU : public Set<_State, _DefaultState>
 
     virtual Block<_State, _DefaultState>* pickLockedVictim()
     {
-        for (int32_t i = Set<_State, _DefaultState>::theAssociativity - 1; i >= 0; i--) {
-            int32_t index = theMRUOrder[i];
+        for (SetIndex i = this->theAssociativity - 1; i >= 0; i--) {
+            SetIndex index = theMRUOrder[i];
             // Can't be protected or locked
-            if (!Set<_State, _DefaultState>::theBlocks[index].state().isProtected() &&
-                Set<_State, _DefaultState>::theBlocks[index].state().isLocked()) {
-                return &(Set<_State, _DefaultState>::theBlocks[index]);
+            if (!this->theBlocks[index].state().isProtected() &&
+                this->theBlocks[index].state().isLocked()) {
+                return &(this->theBlocks[index]);
             }
         }
         DBG_Assert(false, (<< "All blocks in the set are protected."));
@@ -330,10 +333,10 @@ class SetLRU : public Set<_State, _DefaultState>
 
     virtual bool victimAvailable()
     {
-        for (int32_t i = Set<_State, _DefaultState>::theAssociativity - 1; i >= 0; i--) {
-            int32_t index = theMRUOrder[i];
-            if (!Set<_State, _DefaultState>::theBlocks[index].state().isProtected() &&
-                !Set<_State, _DefaultState>::theBlocks[index].state().isLocked()) {
+        for (SetIndex i = this->theAssociativity - 1; i >= 0; i--) {
+            SetIndex index = theMRUOrder[i];
+            if (!this->theBlocks[index].state().isProtected() &&
+                !this->theBlocks[index].state().isLocked()) {
                 return true;
             }
         }
@@ -342,7 +345,7 @@ class SetLRU : public Set<_State, _DefaultState>
 
     virtual bool recordAccess(Block<_State, _DefaultState>* aBlock)
     {
-        int32_t theBlockNum = aBlock - Set<_State, _DefaultState>::theBlocks;
+        SetIndex theBlockNum = aBlock - this->theBlocks;
         // If it's already at the head, just return now
         if (theMRUOrder[0] == theBlockNum) { return false; }
         moveToHead(theBlockNum);
@@ -351,28 +354,33 @@ class SetLRU : public Set<_State, _DefaultState>
 
     virtual void invalidateBlock(Block<_State, _DefaultState>* aBlock)
     {
-        int32_t theBlockNum = aBlock - Set<_State, _DefaultState>::theBlocks;
+        SetIndex theBlockNum = aBlock - this->theBlocks;
         moveToTail(theBlockNum);
     }
 
-    virtual void load_set_from_ckpt(uint32_t index, uint32_t mru_order_index, uint64_t tag, bool dirty, bool writable)
+    virtual void load_set_from_ckpt(uint64_t index, uint64_t mru_order_index, uint64_t tag, bool dirty, bool writable)
     {
+        
+        DBG_Assert(index < uint64_t(this->theAssociativity));
         _State state(_State::bool2state(dirty, writable));
         theMRUOrder[index]                                   = mru_order_index;
-        Set<_State, _DefaultState>::theBlocks[index].tag()   = MemoryAddress(tag);
-        Set<_State, _DefaultState>::theBlocks[index].state() = state;
-        DBG_(Trace, NoDefaultOps()(<< index << "-LLC: Loading block " << std::hex << tag << " in state " << state));
+        this->theBlocks[index].tag()   = MemoryAddress(tag);
+        this->theBlocks[index].state() = state;
     }
 
   protected:
-    inline int32_t lruListHead(void) { return theMRUOrder[0]; }
-    inline int32_t lruListTail(void) { return theMRUOrder[Set<_State, _DefaultState>::theAssociativity - 1]; }
+    inline SetIndex lruListHead(void) { return theMRUOrder[0]; }
+    inline SetIndex lruListTail(void) { return theMRUOrder[this->theAssociativity - 1]; }
 
     inline void moveToHead(const SetIndex aBlock)
     {
-        int32_t i = 0;
-        while (theMRUOrder[i] != aBlock)
-            i++;
+        SetIndex i = 0;
+        for (i = 0; i < this->theAssociativity; i++) {
+            if (theMRUOrder[i] == aBlock) { break; }
+        }
+
+        DBG_Assert(i < this->theAssociativity);
+
         while (i > 0) {
             theMRUOrder[i] = theMRUOrder[i - 1];
             i--;
@@ -382,14 +390,20 @@ class SetLRU : public Set<_State, _DefaultState>
 
     inline void moveToTail(const SetIndex aBlock)
     {
-        int32_t i = 0;
-        while (theMRUOrder[i] != aBlock)
-            i++;
-        while (i < (Set<_State, _DefaultState>::theAssociativity - 1)) {
+        SetIndex i = 0;
+
+        for (i = 0; i < this->theAssociativity; i++) {
+            if (theMRUOrder[i] == aBlock) { break; }
+        }
+
+        DBG_Assert(i < this->theAssociativity);
+
+
+        while (i < (this->theAssociativity - 1)) {
             theMRUOrder[i] = theMRUOrder[i + 1];
             i++;
         }
-        theMRUOrder[Set<_State, _DefaultState>::theAssociativity - 1] = aBlock;
+        theMRUOrder[this->theAssociativity - 1] = aBlock;
     }
 
     SetIndex* theMRUOrder;
@@ -403,62 +417,44 @@ class StdArray : public AbstractArray<_State>
     CMPCacheInfo theInfo;
 
     // Masks to address portions of the cache
-    int32_t theAssociativity;
-    int32_t theReplacementPolicy;
-    int32_t theBlockSize;
-    int32_t theBanks;
-    int32_t theTotalBanks;
-    int32_t theGlobalBankIndex;
-    int32_t theLocalBankIndex;
-    int32_t theBankInterleaving;
-    int32_t theGroups;
-    int32_t theGroupIndex;
-    int32_t theGroupInterleaving;
+    uint64_t theAssociativity;
+    uint64_t theReplacementPolicy;
+    uint64_t theBlockSize;
 
-    int32_t theNumSets;
-    MemoryAddress tagMask;
-    int32_t setHighShift;
-    int32_t setMidShift;
-    int32_t setLowShift;
-    uint64_t setLowMask;
-    uint64_t setMidMask;
-    uint64_t setHighMask;
+    uint64_t theNumSets;
+    uint64_t theSetIndexShift;
+    uint64_t theSetIndexMask;
 
-    int32_t theBankMask, theBankShift;
-    int32_t theGroupMask, theGroupShift;
+    uint64_t theNumNodes;
+
+    MemoryAddress theTagMask;
 
     Set<_State, _DefaultState>** theSets;
 
   public:
     virtual ~StdArray() {}
     StdArray(CMPCacheInfo& aCacheInfo,
-             const int32_t aBlockSize,
+             const uint64_t aBlockSize,
              const std::list<std::pair<std::string, std::string>>& theConfiguration)
       : theInfo(aCacheInfo)
     {
         theBlockSize         = aBlockSize;
-        theBanks             = theInfo.theNumBanks;
-        theBankInterleaving  = theInfo.theBankInterleaving;
-        theGroups            = theInfo.theNumGroups;
-        theGroupInterleaving = theInfo.theGroupInterleaving;
-        DBG_(Dev, (<< "theGroupInterleaving = " << theGroupInterleaving));
 
-        theGlobalBankIndex = theInfo.theNodeId;
-        theLocalBankIndex  = theInfo.theNodeId % theBanks;
-        theGroupIndex      = theInfo.theNodeId / theBanks;
+        // Currently, we only test with 64-byte blocks
+        // A larger block can cause wrong interleaving in the LLC.
+        DBG_Assert(theBlockSize == 64);
 
-        theTotalBanks = theBanks * theGroups;
+        theNumNodes = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+        DBG_Assert(theNumNodes > 0);
 
         std::list<std::pair<std::string, std::string>>::const_iterator iter = theConfiguration.begin();
         for (; iter != theConfiguration.end(); iter++) {
             if (iter->first == "sets") {
                 theNumSets = strtoll(iter->second.c_str(), nullptr, 0);
-            } else if (iter->first == "total_sets" || iter->first == "global_sets") {
-                int32_t global_sets = strtol(iter->second.c_str(), nullptr, 0);
-                theNumSets          = global_sets / theTotalBanks;
-                DBG_Assert((theNumSets * theTotalBanks) == global_sets,
-                           (<< "global_sets (" << global_sets << ") is not divisible by number of banks ("
-                            << theTotalBanks << ")"));
+            } else if (iter->first == "total_sets") {
+                uint64_t total_sets = strtoll(iter->second.c_str(), nullptr, 0);
+                DBG_Assert(total_sets % theNumNodes == 0);
+                theNumSets = total_sets / theNumNodes;
             } else if (strcasecmp(iter->first.c_str(), "assoc") == 0 ||
                        strcasecmp(iter->first.c_str(), "associativity") == 0) {
                 theAssociativity = strtol(iter->second.c_str(), nullptr, 0);
@@ -501,79 +497,54 @@ class StdArray : public AbstractArray<_State>
         // Set indexes and masks
         DBG_Assert((theNumSets & (theNumSets - 1)) == 0);
         DBG_Assert(((theBlockSize - 1) & theBlockSize) == 0);
-        DBG_Assert(((theBankInterleaving - 1) & theBankInterleaving) == 0);
-        DBG_Assert(((theGroupInterleaving - 1) & theGroupInterleaving) == 0);
+        DBG_Assert((theNumNodes & (theNumNodes - 1)) == 0); // Currently, we only support power of 2 nodes.
 
-        DBG_Assert((theBankInterleaving * theBanks) <= theGroupInterleaving,
-                   (<< "Invalid interleaving: BI = " << theBankInterleaving << ", Banks = " << theBanks
-                    << ", GI = " << theGroupInterleaving << ", Groups = " << theGroups));
+        uint64_t blockOffsetBits      = log_base2(theBlockSize);
+        // int32_t indexBits            = log_base2(theNumSets);
+        this->theSetIndexShift       = blockOffsetBits + log_base2(theNumNodes);
+        this->theSetIndexMask        = (theNumSets - 1); // mask is applied after shift.
 
-        int32_t blockOffsetBits      = log_base2(theBlockSize);
-        int32_t indexBits            = log_base2(theNumSets);
-        int32_t bankBits             = log_base2(theBanks);
-        int32_t bankInterleavingBits = log_base2(theBankInterleaving);
-
-        int32_t groupBits             = log_base2(theGroups);
-        int32_t groupInterleavingBits = log_base2(theGroupInterleaving);
-
-        int32_t lowBits  = bankInterleavingBits - blockOffsetBits;
-        int32_t midBits  = groupInterleavingBits - bankInterleavingBits - bankBits;
-        int32_t highBits = indexBits - midBits - lowBits;
-        if ((midBits + lowBits) > indexBits) {
-            midBits  = indexBits - lowBits;
-            highBits = 0;
-        }
-
-        setLowMask  = (1 << lowBits) - 1;
-        setMidMask  = ((1 << midBits) - 1) << lowBits;
-        setHighMask = ((1 << highBits) - 1) << (midBits + lowBits);
-
-        setLowShift  = blockOffsetBits;
-        setMidShift  = bankBits + blockOffsetBits;
-        setHighShift = groupBits + bankBits + blockOffsetBits;
-
-        theBankMask   = theBanks - 1;
-        theBankShift  = bankInterleavingBits;
-        theGroupMask  = theGroups - 1;
-        theGroupShift = groupInterleavingBits;
-
-        DBG_(Dev,
-             (<< "blockOffsetBits = " << std::dec << blockOffsetBits << ", indexBits = " << std::dec << indexBits
-              << ", bankBits = " << std::dec << bankBits << ", bankInterleavingBits = " << std::dec
-              << bankInterleavingBits << ", groupBits = " << std::dec << groupBits
-              << ", groupInterleavingBits = " << std::dec << groupInterleavingBits << ", lowBits = " << std::dec
-              << lowBits << ", midBits = " << std::dec << midBits << ", highBits = " << std::dec << highBits
-              << ", setLowMask = " << std::hex << setLowMask << ", setMidMask = " << std::hex << setMidMask
-              << ", setHighMask = " << std::hex << setHighMask << ", setLowShift = " << std::dec << setLowShift
-              << ", setMidShift = " << std::dec << setMidShift << ", setHighShift = " << std::dec << setHighShift
-              << ", theBankMask = " << std::hex << theBankMask << ", theBankShift = " << std::dec << theBankShift
-              << ", theGroupMask = " << std::hex << theGroupMask << ", theGroupShift = " << std::dec << theGroupShift));
-
-        tagMask = MemoryAddress(~0ULL & ~((uint64_t)(theBlockSize - 1)));
+        this->theTagMask = MemoryAddress(~0ULL & ~((uint64_t)(theBlockSize - 1)));
 
         // Allocate the sets
         theSets = new Set<_State, _DefaultState>*[theNumSets];
         DBG_Assert(theSets);
 
-        for (int32_t i = 0; i < theNumSets; i++) {
+        for (uint64_t i = 0; i < theNumSets; i++) {
 
             switch (theReplacementPolicy) {
-                case REPLACEMENT_LRU: theSets[i] = new SetLRU<_State, _DefaultState>(theAssociativity); break;
+                case REPLACEMENT_LRU: theSets[i] = new SetLRU<_State, _DefaultState>(theAssociativity); 
+                break;
                 default: DBG_Assert(false);
             };
         }
+
+        DBG_(Crit, (<< "Created CMP Cache StdArray with " << theNumSets << " sets, " << theAssociativity << " ways"));
     }
 
     // Main array lookup function
     virtual boost::intrusive_ptr<AbstractArrayLookupResult<_State>> operator[](const MemoryAddress& anAddress)
     {
+        uint64_t blockOffsetBits      = log_base2(theBlockSize);
+        uint64_t affiliatedNode = (anAddress >> blockOffsetBits) % this->theNumNodes;
+
+        DBG_Assert(
+            affiliatedNode == (uint64_t)theInfo.theNodeId,
+            (<< "Address " << std::hex << anAddress << " is not in the correct node. Expected node "
+             << theInfo.theNodeId << " but got node " << affiliatedNode)
+        );
+
+        uint64_t set_number = this->makeSet(anAddress);
+
         DBG_(Trace,
-             (<< "Looking for block " << std::hex << anAddress << " in set " << makeSet(anAddress)
+             (<< "Looking for block " << std::hex << anAddress << " in set " << set_number
               << " theNumSets = " << theNumSets));
+
+        DBG_Assert(set_number < theNumSets && set_number >= 0);
         boost::intrusive_ptr<AbstractArrayLookupResult<_State>> ret =
-          theSets[makeSet(anAddress)]->lookupBlock(blockAddress(anAddress));
+          theSets[set_number]->lookupBlock(this->blockAddress(anAddress));
         DBG_(Trace,
-             (<< "Found block " << std::hex << anAddress << " in set " << makeSet(anAddress) << " in state "
+             (<< "Found block " << std::hex << anAddress << " in set " << this->makeSet(anAddress) << " in state "
               << ret->state()));
         return ret;
     }
@@ -586,7 +557,7 @@ class StdArray : public AbstractArray<_State>
           dynamic_cast<StdLookupResult<_State, _DefaultState>*>(lookup.get());
         DBG_Assert(std_lookup != nullptr);
 
-        return std_lookup->theSet->allocate(std_lookup, blockAddress(anAddress));
+        return std_lookup->theSet->allocate(std_lookup, this->blockAddress(anAddress));
     }
 
     virtual bool recordAccess(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup)
@@ -616,7 +587,7 @@ class StdArray : public AbstractArray<_State>
 
     // Checkpoint reading/writing functions
 
-    virtual void load_cache_from_ckpt(std::string const& filename, int32_t theIndex)
+    virtual void load_cache_from_ckpt(std::string const& filename, uint64_t theIndex)
     {
 
         std::ifstream ifs(filename.c_str(), std::ios::in);
@@ -630,16 +601,30 @@ class StdArray : public AbstractArray<_State>
         ifs >> checkpoint;
 
         DBG_Assert((uint64_t)theAssociativity == checkpoint["associativity"]);
-        DBG_Assert((uint64_t)theNumSets == checkpoint["tags"].size());
+        DBG_Assert((uint64_t)theNumSets == (checkpoint["tags"].size())); // Only load one slice.
 
-        for (int32_t i{ 0 }; i < theNumSets; i++) {
-            // if ((getBank(addr) == theLocalBankIndex) && (getGroup(addr) == theGroupIndex))
-            for (uint16_t j = 0; j < checkpoint["tags"].at(i).size(); j++) {
+        for (uint64_t i = 0; i < checkpoint["tags"].size(); i++) {
+            assert(checkpoint["tags"].at(i).size() <= (uint64_t)theAssociativity);
+            for (uint64_t j = 0; j < checkpoint["tags"].at(i).size(); j++) {
                 uint64_t tag  = checkpoint["tags"].at(i).at(j)["tag"];
                 bool dirty    = checkpoint["tags"].at(i).at(j)["dirty"];
                 bool writable = checkpoint["tags"].at(i).at(j)["writable"];
 
+                uint64_t target_set = uint64_t(makeSet(MemoryAddress(tag)));
+
+                // Check this cache line.
+                DBG_Assert(target_set == i, (<< "Tag " << std::hex << tag << " is in set " << i << " but should be in set " << target_set));
+
+                uint64_t target_node = (tag >> log_base2(theBlockSize)) % theNumNodes;
+                DBG_Assert(target_node == theIndex, (<< "Tag " << std::hex << tag << " is in node " << target_node << " but should be in node " << theIndex));
+
                 theSets[i]->load_set_from_ckpt(j, theAssociativity - j - 1,tag, dirty, writable); // the last element is the most recently used cacheline.
+            }
+
+            if (checkpoint["tags"].at(i).size() < (uint64_t)theAssociativity) {
+                for (uint64_t j = checkpoint["tags"].at(i).size(); j < (uint64_t)theAssociativity; j++) {
+                    theSets[i]->load_set_from_ckpt(j, theAssociativity - j - 1, 0, false, false);
+                }
             }
         }
 
@@ -647,37 +632,35 @@ class StdArray : public AbstractArray<_State>
     }
 
     // Addressing helper functions
-    MemoryAddress blockAddress(MemoryAddress const& anAddress) const { return MemoryAddress(anAddress & tagMask); }
+    MemoryAddress blockAddress(MemoryAddress const& anAddress) const 
+    { 
+        return MemoryAddress(anAddress & this->theTagMask); 
+    }
 
     SetIndex makeSet(const MemoryAddress& anAddress) const
     {
-        return ((anAddress >> setLowShift) & setLowMask) | ((anAddress >> setMidShift) & setMidMask) |
-               ((anAddress >> setHighShift) & setHighMask);
+        return ((anAddress >> this->theSetIndexShift) & this->theSetIndexMask);
     }
 
-    int32_t getBank(const MemoryAddress& anAddress) const { return ((anAddress >> theBankShift) & theBankMask); }
+    virtual bool sameSet(MemoryAddress a, MemoryAddress b) { return (this->makeSet(a) == this->makeSet(b)); }
 
-    int32_t getGroup(const MemoryAddress& anAddress) const { return ((anAddress >> theGroupShift) & theGroupMask); }
-
-    virtual bool sameSet(MemoryAddress a, MemoryAddress b) { return (makeSet(a) == makeSet(b)); }
-
-    virtual std::list<MemoryAddress> getSetTags(MemoryAddress addr) { return theSets[makeSet(addr)]->getTags(); }
+    virtual std::list<MemoryAddress> getSetTags(MemoryAddress addr) { return theSets[this->makeSet(addr)]->getTags(); }
     virtual bool setAlmostFull(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup,
                                MemoryAddress const& anAddress) const
     {
-        return theSets[makeSet(anAddress)]->almostFull(AbstractArray<_State>::theLockedThreshold);
+        return theSets[this->makeSet(anAddress)]->almostFull(AbstractArray<_State>::theLockedThreshold);
     }
 
     virtual bool lockedVictimAvailable(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup,
                                        MemoryAddress const& anAddress) const
     {
-        return theSets[makeSet(anAddress)]->lockedVictimAvailable();
+        return theSets[this->makeSet(anAddress)]->lockedVictimAvailable();
     }
 
     virtual bool victimAvailable(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup,
                                  MemoryAddress const& anAddress) const
     {
-        return theSets[makeSet(anAddress)]->victimAvailable();
+        return theSets[this->makeSet(anAddress)]->victimAvailable();
     }
 
     virtual boost::intrusive_ptr<AbstractArrayLookupResult<_State>> replaceLockedBlock(
@@ -689,17 +672,14 @@ class StdArray : public AbstractArray<_State>
           dynamic_cast<StdLookupResult<_State, _DefaultState>*>(lookup.get());
         DBG_Assert(std_lookup != nullptr);
 
-        return std_lookup->theSet->replaceLocked(std_lookup, blockAddress(anAddress));
+        return std_lookup->theSet->replaceLocked(std_lookup, this->blockAddress(anAddress));
     }
 
-    virtual void setLockedThreshold(int32_t threshold)
+    virtual void setLockedThreshold(uint64_t threshold)
     {
         DBG_Assert(threshold > 0 && threshold < theAssociativity);
         AbstractArray<_State>::theLockedThreshold = threshold;
     }
-
-    virtual uint32_t globalCacheSets() { return theNumSets * theTotalBanks; }
-
 }; // class StdArray
 
 }; // namespace nCMPCache

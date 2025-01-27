@@ -73,6 +73,7 @@ class FLEXUS_COMPONENT(Cache)
     {
         theBusTxCountdown = 0;
         theBusDirection   = kIdle;
+        DBG_Assert(cfg.Cores == 1);
 
         auto cores = cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 

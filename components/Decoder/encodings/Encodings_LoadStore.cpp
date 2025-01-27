@@ -303,6 +303,11 @@ archinst
 disas_ldst_pair(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo, int32_t aUop, bool& aLastUop)
 {
     DECODER_TRACE;
+    if (aUop == 0) {
+        aLastUop = false;
+    } else {
+        aLastUop = true;
+    }
 
     aLastUop = !(aUop == 0);
 

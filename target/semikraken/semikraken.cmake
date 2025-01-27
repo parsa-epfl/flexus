@@ -1,0 +1,19 @@
+set(REQUIRED_COMPONENTS
+  CommonQEMU
+  uFetch
+  Decoder
+  uArch
+  FetchAddressGenerate
+  BranchPredictor
+  Cache
+  MemoryLoopback
+  MemoryMap
+  CMPCache
+  MultiNic
+  NetShim
+  TraceTrackerQEMU
+  MTManager
+  SplitDestinationMapper
+  MMU
+  PhantomCPU
+)
