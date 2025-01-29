@@ -73,6 +73,7 @@ class FLEXUS_COMPONENT(Cache)
     {
         theBusTxCountdown = 0;
         theBusDirection   = kIdle;
+        DBG_Assert(cfg.Cores == 1);
 
         auto cores = cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 
@@ -208,7 +209,6 @@ class FLEXUS_COMPONENT(Cache)
 
     uint32_t transferTime(const MemoryTransport& trans)
     {
-        if (theFlexus->isFastMode()) { return 0; }
         DBG_Assert(trans[MemoryMessageTag] != nullptr);
         return ((trans[MemoryMessageTag]->reqSize() > 0) ? cfg.BusTime_Data : cfg.BusTime_NoData) - 1;
     }

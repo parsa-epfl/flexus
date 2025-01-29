@@ -6,8 +6,6 @@
 #define FLEXUS_BEGIN_COMPONENT FetchAddressGenerate
 #include FLEXUS_BEGIN_COMPONENT_DECLARATION()
 
-typedef Flexus::SharedTypes::VirtualMemoryAddress vaddr_pair;
-
 COMPONENT_PARAMETERS(
   PARAMETER( MaxFetchAddress, uint32_t, "Max fetch addresses generated per cycle", "faddrs", 10 )
   PARAMETER( MaxBPred, uint32_t, "Max branches predicted per cycle", "bpreds", 2 )
@@ -17,8 +15,8 @@ COMPONENT_PARAMETERS(
 );
 
 COMPONENT_INTERFACE(
-  DYNAMIC_PORT_ARRAY( PushInput, vaddr_pair, RedirectIn )
-  DYNAMIC_PORT_ARRAY( PushInput, boost::intrusive_ptr<BranchFeedback>, BranchFeedbackIn )
+  DYNAMIC_PORT_ARRAY( PushInput, boost::intrusive_ptr<BPredRedictRequest>, RedirectIn )
+  DYNAMIC_PORT_ARRAY( PushInput, boost::intrusive_ptr<BPredState>, BranchTrainIn )
 
   DYNAMIC_PORT_ARRAY( PushOutput, boost::intrusive_ptr<FetchCommand>, FetchAddrOut )
   DYNAMIC_PORT_ARRAY( PullInput, int, AvailableFAQ )

@@ -10,8 +10,8 @@ namespace nuArch {
 CoreImpl::CoreImpl(uArchOptions_t options,
                    std::function<int(bool)> _advance,
                    std::function<void(eSquashCause)> _squash,
-                   std::function<void(VirtualMemoryAddress)> _redirect,
-                   std::function<void(boost::intrusive_ptr<BranchFeedback>)> _feedback,
+                   std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> _redirect,
+                   std::function<void(boost::intrusive_ptr<BPredState>)> _trainBP,
                    std::function<void(bool)> _signalStoreForwardingHit,
                    std::function<void(int32_t)> _mmuResync)
   : theName(options.name)
@@ -21,7 +21,7 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   advance_fn(_advance)
   , squash_fn(_squash)
   , redirect_fn(_redirect)
-  , feedback_fn(_feedback)
+  , trainBP_fn(_trainBP)
   , signalStoreForwardingHit_fn(_signalStoreForwardingHit)
   , mmuResync_fn(_mmuResync)
   , thePendingTrap(kException_None)
@@ -212,6 +212,12 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , theAtomicVal_CASs_NonZero(theName + "-AtmVal:CAS:NonZero")
   , theAtomicVal_LastCASMismatch(false)
   , theCoalescedStores(theName + "-CoalescedStores")
+  , theTrackedMemoryOps(theName + "-TrackedMemoryOps")
+  , theTrackedMemoryOpsReachL1(theName + "-TrackedMemoryOps:ReachL1")
+  , theTrackedMemoryOpsReachL1I(theName + "-TrackedMemoryOps:ReachL1I")
+  , theTrackedMemoryOpsReachPeerL1(theName + "-TrackedMemoryOps:ReachPeerL1")
+  , theTrackedMemoryOpsReachL2(theName + "-TrackedMemoryOps:ReachL2")
+  , theTrackedMemoryOpsReachMemory(theName + "-TrackedMemoryOps:ReachMemory")
   , intAluOpLatency(options.intAluOpLatency)
   , intAluOpPipelineResetTime(options.intAluOpPipelineResetTime)
   , intMultOpLatency(options.intMultOpLatency)
@@ -236,7 +242,6 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , intMultCyclesToReady(options.numIntMult, 0)
   , fpAluCyclesToReady(options.numFpAlu, 0)
   , fpMultCyclesToReady(options.numFpMult, 0)
-  , trace_fname("core_" + std::to_string(theNode) + "_retinsts.txt")
 {
 
     // Msutherl - for MMU verification. Remove when done
@@ -298,7 +303,6 @@ CoreImpl::CoreImpl(uArchOptions_t options,
 
     cpuHalted = false;
 
-    if (collectTrace) { trace_stream = std::ofstream(trace_fname, std::ofstream::out | std::ofstream::trunc); }
 }
 
 void
@@ -335,7 +339,7 @@ CoreImpl::resetCore()
     theSquashInclusive = false;
 
     theRedirectRequested = false;
-    theRedirectPC        = VirtualMemoryAddress(0);
+    theRedirectRequest   = nullptr;
     theDumpPC            = VirtualMemoryAddress(0);
 
     clearLSQ();
@@ -353,8 +357,6 @@ CoreImpl::reset()
     resetCore();
 
     theSRB.clear();
-
-    // theBranchFeedback is NOT cleared
 
     clearSSB();
 
@@ -555,7 +557,6 @@ CoreImpl::getRoundingMode()
 void
 CoreImpl::setDAIF(uint32_t aDAIF)
 {
-    if (aDAIF == 0) { return; }
     thePSTATE = ((thePSTATE & ~PSTATE_DAIF) | (aDAIF & PSTATE_DAIF));
 }
 void
@@ -583,13 +584,13 @@ CoreModel*
 CoreModel::construct(uArchOptions_t options,
                      std::function<int(bool)> advance,
                      std::function<void(eSquashCause)> squash,
-                     std::function<void(VirtualMemoryAddress)> redirect,
-                     std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback,
+                     std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect,
+                     std::function<void(boost::intrusive_ptr<BPredState>)> trainBP,
                      std::function<void(bool)> signalStoreForwardingHit,
                      std::function<void(int32_t)> mmuResync)
 {
 
-    return new CoreImpl(options, advance, squash, redirect, feedback, signalStoreForwardingHit, mmuResync);
+    return new CoreImpl(options, advance, squash, redirect, trainBP, signalStoreForwardingHit, mmuResync);
 }
 
 } // namespace nuArch

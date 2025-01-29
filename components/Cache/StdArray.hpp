@@ -292,6 +292,11 @@ class SetLRU : public Set<_State, _DefaultState>
             Set<_State, _DefaultState>::theBlocks[i].tag() = MemoryAddress((tag << tag_shift) | (set_idx << set_shift));
             Set<_State, _DefaultState>::theBlocks[i].state() = _State::bool2state(dirty, writable);
         }
+
+        // reset the MRU order. Least recently used cache line is in the beginning.
+        for (int32_t i = 0; i < this->theAssociativity; i++) {
+            theMRUOrder[i] = this->theAssociativity - i - 1;
+        }
     }
 
   protected:

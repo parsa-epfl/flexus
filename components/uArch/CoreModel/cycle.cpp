@@ -1,4 +1,5 @@
 #include "../ValueTracker.hpp"
+#include "components/uFetch/uFetchTypes.hpp"
 #include "coreModelImpl.hpp"
 
 #include <components/CommonQEMU/Slices/FillLevel.hpp>
@@ -7,10 +8,8 @@
 #include <components/Decoder/BitManip.hpp>
 #include <components/Decoder/Instruction.hpp>
 #include <core/debug/severity.hpp>
-#include <fstream>
 #include <iostream>
-#include <regex>
-#include <sstream>
+#include <algorithm>
 
 #define DBG_DeclareCategories uArchCat
 #define DBG_SetDefaultOps     AddCat(uArchCat)
@@ -76,7 +75,7 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     // qemu warmup
     if (theFlexus->cycleCount() == 1) {
         advance_fn(true);
-        throw ResynchronizeWithQemuException(true);
+        throw ResynchronizeWithQemuException(true, false, nullptr);
     }
 
     CORE_DBG("--------------START CORE------------------------");
@@ -115,7 +114,7 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
                   << "Garbage-collect detects too many live instructions.  "
                      "Forcing resynchronize."));
             ++theResync_GarbageCollect;
-            throw ResynchronizeWithQemuException();
+            throw ResynchronizeWithQemuException(false, false, nullptr);
         }
     }
 
@@ -182,8 +181,10 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
         if (qemu_rcode != QEMU_EXCP_HALTED) {
             DBG_(Dev, (<< "Core " << theNode << " leaving halt state, after QEMU sent execution code " << qemu_rcode));
             cpuHalted = false;
+            throw ResynchronizeWithQemuException(true, false, nullptr);
         }
-        throw ResynchronizeWithQemuException(true);
+
+        return;
     }
 
     // Retire instruction from the ROB to the SRB
@@ -195,13 +196,6 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     completeAccounting();
 
     if (theTSOBReplayStalls > 0) { --theTSOBReplayStalls; }
-
-    while (!theBranchFeedback.empty()) {
-        feedback_fn(theBranchFeedback.front());
-        DBG_(Verb, (<< " Sent Branch Feedback"));
-        theBranchFeedback.pop_front();
-        theIdleThisCycle = false;
-    }
 
     if (theSquashRequested) {
         DBG_(Verb, (<< " Core triggering Squash: " << theSquashReason));
@@ -218,9 +212,10 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     //  handlePopTL();
 
     if (theRedirectRequested) {
-        DBG_(Iface, (<< " Core triggering Redirect to " << theRedirectPC));
-        redirect_fn(theRedirectPC);
-        thePC                = theRedirectPC;
+        DBG_(Iface, (<< " Core triggering Redirect to " << theRedirectRequest));
+        DBG_Assert(theRedirectRequest);
+        redirect_fn(theRedirectRequest);
+        thePC                = theRedirectRequest->theTarget;
         theRedirectRequested = false;
         theIdleThisCycle     = false;
     }
@@ -933,7 +928,7 @@ SCTLR_EL
 CoreImpl::_SCTLR(uint32_t anELn)
 {
     DBG_Assert(anELn >= 0 || anELn <= 3);
-    return SCTLR_EL(theSCTLR_EL[anELn]);
+    return Flexus::Qemu::Processor::getProcessor(theNode).read_register(Flexus::Qemu::API::SCTLR, anELn);
 }
 
 void
@@ -1287,7 +1282,12 @@ CoreImpl::doAbortSpeculation()
     // redirect fetch
     squash_fn(kFailedSpec);
     theRedirectRequested = true;
-    theRedirectPC        = VirtualMemoryAddress(ckpt->second.theState.thePC);
+    DBG_Assert(ckpt->second.theState.thePC == ckpt->first->bpState()->pc);
+    // theRedirectInstruction = ckpt->first;
+    theRedirectRequest = boost::intrusive_ptr<BPredRedictRequest>(new BPredRedictRequest);
+    theRedirectRequest->theTarget = ckpt->second.theState.thePC;
+    theRedirectRequest->theBPState = ckpt->first->bpState();
+    theRedirectRequest->theInsertNewHistory = false;
 
     // Clean up SLAT
     SpeculativeLoadAddressTracker::iterator slat_iter = theSLAT.begin();
@@ -1345,6 +1345,8 @@ CoreImpl::commit()
             DBG_(VVerb, (<< theName << " commit effects complete"));
         }
 
+        theLastTrainingFeedback = nullptr;
+
         commit(theSRB.front());
         DBG_(VVerb, (<< theName << " committed in Qemu"));
 
@@ -1378,7 +1380,7 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
     ;
     bool resync_accounted = false;
 
-    if (anInstruction->advancesSimics()) {
+    if (anInstruction->advancesSimics() || anInstruction->resync()) {
         CORE_DBG("Instruction is neither annuled nor is a micro-op");
 
         validation_passed &= anInstruction->preValidate();
@@ -1392,7 +1394,8 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
 
         int qemu_rcode = advance_fn(true); // count time
 
-        DBG_(Dev, (<< "c" << theNode << " commit [" << std::hex << qemu_rcode << "] " << *anInstruction));
+        DBG_(Dev, (<< "c" << theNode << " commit [" << std::hex << qemu_rcode << "] " << *anInstruction << "PC:" << std::hex << anInstruction->pc() << std::dec));
+
 
         if (qemu_rcode == QEMU_EXCP_HALTED) { // QEMU CPU Halted
             /* If cpu is halted, turn off insn counting until the CPU is woken up again */
@@ -1443,12 +1446,14 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
         // synchronizing instruction.
         theEmptyROBCause = kSync;
         if (!resync_accounted) { accountResyncReason(anInstruction); }
-        throw ResynchronizeWithQemuException(true);
+        throw ResynchronizeWithQemuException(true, true, anInstruction);
     }
 
-    validation_passed &= checkValidatation();
+    if (anInstruction->advancesSimics()) {
+        validation_passed &= checkValidatation();
+        validation_passed &= anInstruction->postValidate();
+    }
 
-    validation_passed &= anInstruction->postValidate();
     DBG_(Iface, (<< "Post Validating... " << validation_passed));
 
     if (!validation_passed) {
@@ -1460,7 +1465,7 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
         theEmptyROBCause = kResync;
         ++theResync_FailedValidation;
 
-        throw ResynchronizeWithQemuException();
+        throw ResynchronizeWithQemuException(true, true, anInstruction);
     }
     /* Dump PC to file if logging is enabled */
     if (collectTrace) { trace_stream << anInstruction->pc() << std::endl; }
@@ -1469,31 +1474,38 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
 }
 
 bool
-CoreImpl::squashFrom(boost::intrusive_ptr<Instruction> anInsn)
+CoreImpl::squashFrom(boost::intrusive_ptr<Instruction> anInsn, bool inclusive)
 {
     if (!theSquashRequested || (anInsn->sequenceNo() <= (*theSquashInstruction)->sequenceNo())) {
         theSquashRequested   = true;
         theSquashReason      = kBranchMispredict;
         theEmptyROBCause     = kMispredict;
         theSquashInstruction = theROB.project<0>(theROB.get<by_insn>().find(anInsn));
-        theSquashInclusive   = true;
+        theSquashInclusive   = inclusive;
         return true;
     }
     return false;
 }
 
 void
-CoreImpl::redirectFetch(VirtualMemoryAddress anAddress)
+CoreImpl::redirectFetch(boost::intrusive_ptr<BPredRedictRequest> request)
 {
-    DBG_(Iface, (<< "redirectFetch anAddress: " << anAddress));
     theRedirectRequested = true;
-    theRedirectPC        = anAddress;
+    theRedirectRequest = request;
 }
 
 void
-CoreImpl::branchFeedback(boost::intrusive_ptr<BranchFeedback> feedback)
+CoreImpl::trainingBranch(boost::intrusive_ptr<BPredState> feedback)
 {
-    theBranchFeedback.push_back(feedback);
+    // Well, this training should only be called once.
+
+    DBG_(VVerb, (<< "Training branch predictor: " << feedback->pc));
+
+    DBG_Assert(theLastTrainingFeedback == nullptr);
+
+    trainBP_fn(feedback);
+
+    theLastTrainingFeedback = feedback;
 }
 
 void
@@ -1637,7 +1649,7 @@ CoreImpl::handleTrap()
     DBG_(Crit, (<< theName << " ROB non-empty in handle trap.  Resynchronize instead."));
     theEmptyROBCause = kRaisedException;
     ++theResync_FailedHandleTrap;
-    throw ResynchronizeWithQemuException();
+    throw ResynchronizeWithQemuException(false, true, theTrapInstruction);
 }
 
 void
@@ -1657,8 +1669,11 @@ CoreImpl::valuePredictAtomic()
             ++theValuePredictions;
 
             if (theSpeculateOnAtomicValuePerfect) {
-                lsq_head->theExtendedValue =
-                  ValueTracker::valueTracker(theNode).load(theNode, lsq_head->thePaddr, lsq_head->theSize);
+                bits val = ValueTracker::valueTracker(theNode).load(theNode, lsq_head->thePaddr, lsq_head->theSize);
+                lsq_head->theExtendedValue = val;
+                if (val == -1) {
+                    lsq_head->theInstruction->forceResync(true);
+                }
             } else {
                 if (lsq_head->theOperation == kCAS) {
                     lsq_head->theExtendedValue = lsq_head->theCompareValue;

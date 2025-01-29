@@ -2,6 +2,7 @@
 #include "Instruction.hpp"
 
 #include "components/uArch/uArchInterfaces.hpp"
+#include "components/uFetch/uFetchTypes.hpp"
 #include "encodings/Encodings.hpp"
 
 #define DBG_DeclareCategories Decoder
@@ -82,22 +83,22 @@ ArchInstruction::setWillRaise(eExceptionType aSetting)
 void
 ArchInstruction::doDispatchEffects()
 {
-    auto bp_state = bpState();
-
-    DBG_Assert(bp_state, (<< "No branch predictor state exists, but it must"));
-    if (bp_state->theActualType == kNonBranch) return;
+    DBG_Assert(bpState(), (<< "No branch predictor state exists, but it must"));
+    if (isMicroOp()) return;
+    if (bpState()->thePredictedType == kNonBranch) return;
     if (isBranch()) return;
 
     // Branch predictor identified an instruction that is not a branch as a branch.
     DBG_(VVerb, (<< *this << " predicted as a branch, but is a non-branch. Fixing"));
 
-    boost::intrusive_ptr<BranchFeedback> feedback(new BranchFeedback());
-    feedback->thePC              = pc();
-    feedback->theActualType      = kNonBranch;
-    feedback->theActualDirection = kNotTaken;
-    feedback->theActualTarget    = VirtualMemoryAddress(0);
-    feedback->theBPState         = bpState();
-    core()->branchFeedback(feedback);
+    if (core()->squashFrom(dynamic_cast<Instruction*>(this), false)) { 
+        boost::intrusive_ptr<BPredRedictRequest> aRequest = new BPredRedictRequest();
+        aRequest->theTarget = bpState()->theActualTarget;
+        aRequest->theBPState = bpState();
+        aRequest->theInsertNewHistory = false;
+        
+        core()->redirectFetch(aRequest); 
+    }
 }
 
 bool
@@ -160,7 +161,7 @@ decode(Flexus::SharedTypes::FetchedOpcode const& aFetchedOpcode, uint32_t aCPU, 
     DBG_(VVerb, (<< "\033[1;31m DECODER: Decoding " << std::hex << aFetchedOpcode.theOpcode << std::dec << "\033[0m"));
 
     bool last_uop                                     = true;
-    boost::intrusive_ptr<AbstractInstruction> ret_val = disas_a64_insn(aFetchedOpcode, aCPU, aSequenceNo, aUop);
+    boost::intrusive_ptr<AbstractInstruction> ret_val = disas_a64_insn(aFetchedOpcode, aCPU, aSequenceNo, aUop, last_uop);
     return std::make_pair(ret_val, last_uop);
 }
 

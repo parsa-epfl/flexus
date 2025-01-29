@@ -56,17 +56,14 @@ struct SimCache
         DBG_Assert((uint64_t)theCache.sets() == checkpoint["tags"].size());
 
         for (std::size_t i{ 0 }; i < theCache.sets(); i++) {
-            for (uint32_t j = checkpoint["tags"].at(i).size()-1; j != 0; j--) {
-                // The reason why we reverse the order is because we want to insert the least recent tags first
-                bool dirty    = checkpoint["tags"].at(i).at(j)["dirty"];
-                DBG_Assert(!dirty, (<< "Only non dirty block should have been saved, therefore imported"));
-                bool writable = checkpoint["tags"].at(i).at(j)["writable"];
-                DBG_Assert(!writable, (<< "Only non writeable block should have been saved, therefore imported"));
+            if (checkpoint["tags"].at(i).size() == 0) {
+                continue;
+            }
+
+            for (uint32_t j = 0; j < checkpoint["tags"].at(i).size(); j++) {
                 uint64_t tag  = checkpoint["tags"].at(i).at(j)["tag"];
 
-                theCache.insert(std::make_pair((tag << tag_shift) | i, 0));
-
-                DBG_(Dev, (<< "Loading tag " << std::hex << ((tag << tag_shift) | i)));
+                this->insert(((tag << tag_shift) | i) << theCacheBlockShift);
             }
         }
 

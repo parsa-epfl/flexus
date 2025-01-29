@@ -9,6 +9,7 @@
 #include <boost/preprocessor/seq/elem.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
 #include <core/boost_extensions/va.h>
+#include <core/flexus.hpp>
 
 #define DBG__internal_FIRST(x, y) x
 
@@ -146,9 +147,9 @@
 #define DBG__internal_PROCESS_DEFAULT_OPS_1(output, State, empty) (output, State, empty) /**/
 
 #define DBG__internal_FINALIZE(output, state, empty)                                                                   \
-    if (Flexus::Dbg::Debugger::theDebugger->theMinimumSeverity <= DBG__internal_State_GetSev(state) &&                 \
+    if (Flexus::Dbg::Debugger::theDebugger->is_logging_enabled() && Flexus::Dbg::Debugger::theDebugger->theMinimumSeverity <= DBG__internal_State_GetSev(state) &&                 \
         (DBG__internal_ASSERTIONS_ENABLED || !DBG__internal_State_GetAssert(state))) {                                 \
-        if (DBG__internal_BUILTIN_CONDITIONS(state) && DBG__internal_State_GetCondition(state)) {                      \
+        if (DBG__internal_BUILTIN_CONDITIONS(state) && DBG__internal_State_GetCondition(state)) {                     \
             using namespace DBG_Cats;                                                                                  \
             using DBG_Cats::Core;                                                                                      \
             Flexus::Dbg::Entry entry__(/*Severity*/ Flexus::Dbg::Severity(DBG__internal_State_GetSev(state)),          \

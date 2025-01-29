@@ -130,6 +130,12 @@ construct(uint8_t* bytes, size_t size);
 typedef uint32_t Word32Bit;
 typedef uint64_t Word64Bit;
 
+struct freq_opts
+{
+    uint32_t* freq;
+    uint32_t maxFreq;
+};
+
 } // end namespace Core
 
 namespace SharedTypes {

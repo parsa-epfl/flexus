@@ -1,10 +1,11 @@
+#include "core/component.hpp"
 #define FLEXUS_WIRING_FILE
 #include <core/simulator_layout.hpp>
 
 // This section contains the name of the simulator
 #include <core/simulator_name.hpp>
 namespace Flexus {
-std::string theSimulatorName = "KnottyKraken v1.0";
+std::string theSimulatorName = "SemiKraken v1.0";
 }
 
 #include FLEXUS_BEGIN_DECLARATION_SECTION()
@@ -22,6 +23,7 @@ std::string theSimulatorName = "KnottyKraken v1.0";
 #include <components/uArch/uArch.hpp>
 #include <components/uFetch/PortCombiner.hpp>
 #include <components/uFetch/uFetch.hpp>
+#include <components/PhantomCPU/PhantomCPU.hpp>
 
 #include FLEXUS_END_DECLARATION_SECTION()
 
@@ -43,6 +45,8 @@ CREATE_CONFIGURATION(SplitDestinationMapper, "net-mapper", theNetMapperCfg);
 
 CREATE_CONFIGURATION(MemoryLoopback, "memory", theMemoryCfg);
 CREATE_CONFIGURATION(MemoryMap, "memory-map", theMemoryMapCfg);
+
+CREATE_CONFIGURATION(PhantomCPU, "phantom-cpu", thePhantomCfg);
 
 // You may optionally initialize configuration parameters from within this
 // function.  This initialization occur before the command line is processed,
@@ -232,6 +236,7 @@ bool initializeParameters() {
   theMMUCfg.dTLBAssoc.initialize(64);
   theMMUCfg.PerfectTLB.initialize(true);
 
+  thePhantomCfg.EstimatedIPC.initialize(5);
 
   theFlexus->setStatInterval(100000);
 
@@ -252,8 +257,9 @@ FLEXUS_INSTANTIATE_COMPONENT_ARRAY( Decoder, theDecoderCfg, theDecoder, SCALE_WI
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( uArch, theuArchCfg, theuArch, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( Cache, theL1dCfg, theL1d, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MMU , theMMUCfg, theMMU, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
-FLEXUS_INSTANTIATE_COMPONENT_ARRAY( CMPCache, theL2Cfg, theL2, SCALE_WITH_SYSTEM_WIDTH, DIVIDE, 1 );
-FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MemoryLoopback, theMemoryCfg, theMemory, FIXED, DIVIDE, 1 );
+FLEXUS_INSTANTIATE_COMPONENT_ARRAY( CMPCache, theL2Cfg, theL2, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1 );
+FLEXUS_INSTANTIATE_COMPONENT_ARRAY( PhantomCPU, thePhantomCfg, thePhantomCPU, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
+FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MemoryLoopback, theMemoryCfg, theMemory, FIXED, DIVIDE, 1 ); //
 // The above parameter dictates the number of memory controllers in the system.
 // It should always match the postload, and should be set to 1 for single core setup.
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MultiNic2, theNicCfg, theNic, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 3 );
@@ -285,8 +291,8 @@ WIRE( theMMU, iTranslationReply,        theuFetch, iTranslationIn         )
 WIRE( theuArch, dTranslationOut,        theMMU, dRequestIn                )
 WIRE( theMMU, dTranslationReply,        theuArch, dTranslationIn          )
 WIRE( theMMU, MemoryRequestOut,         theuArch, MemoryRequestIn         )
-WIRE(theuArch, ResyncOut,               theMMU, ResyncIn                  )
-WIRE(theMMU, ResyncOut,                 theuFetch, ResyncIn               )
+WIRE(theuArch, ResyncOut,               theMMU,   ResyncIn                )
+WIRE(theMMU, ResyncOut,                 theuFetch,   ResyncIn             )
 
 //Decoder to uArch
 WIRE( theDecoder, AvailableDispatchIn,  theuArch, AvailableDispatchOut    )
@@ -345,14 +351,15 @@ WIRE( theNetwork, ToNode,               theNic, FromNetwork               )
 
 #include FLEXUS_BEGIN_DRIVE_ORDER_SECTION()
 
-  mpl::vector <
-  DRIVE( theuFetch, uFetchDrive )
+mpl::vector <
+DRIVE( theuFetch, uFetchDrive )
 , DRIVE( theFAG, FAGDrive )
 , DRIVE( theuArch, uArchDrive )
 , DRIVE( theMMU, MMUDrive  )
 , DRIVE( theDecoder, DecoderDrive )
-, DRIVE( theL1d, CacheDrive ) >
-,  mpl::vector <
+, DRIVE( theL1d, CacheDrive )
+, DRIVE ( thePhantomCPU, PhantomDrive ) >
+, mpl::vector <
   DRIVE( theNic, MultiNicDrive )
 , DRIVE( theNetwork, NetworkDrive )
 , DRIVE( theMemory, LoopbackDrive )

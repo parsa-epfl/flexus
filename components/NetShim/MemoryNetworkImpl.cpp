@@ -63,7 +63,9 @@ class FLEXUS_COMPONENT(MemoryNetwork)
         PacketCount = 0;
         // end of medhi
 
-        if (cfg.NumNodes == 0) cfg.NumNodes = Flexus::Core::ComponentManager::getComponentManager().systemWidth() * 3;
+        uint64_t equivalent_system_width = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+
+        if (cfg.NumNodes == 0) cfg.NumNodes = equivalent_system_width * 3;
 
         for (i = 0; i < cfg.VChannels; i++) {
             theNetworkLatencyHistograms.push_back(
@@ -243,7 +245,7 @@ class FLEXUS_COMPONENT(MemoryNetwork)
                         1; // Note, this field really needs to be added to the NetworkMessage
         msg->networkVC        = 0;
         msg->transmitLatency  = transport[NetworkMessageTag]->size;
-        msg->flexusInFastMode = Flexus::Core::theFlexus->isFastMode();
+        msg->flexusInFastMode = false;
         msg->hopCount         = -1; // Note, the local switch also gets counted, so we start at -1
         msg->startTS          = Flexus::Core::theFlexus->cycleCount();
         msg->myList           = nullptr;

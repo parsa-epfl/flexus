@@ -40,15 +40,13 @@ TTEDescriptor::isBlockEntry()
 void
 fm_print_mmu_regs(mmu_regs_t* mmu_regs)
 {
-    DBG_(VVerb, (<< "Initializing mmu registers from QEMU..." << std::endl
-                    << std::hex
-                    << "\t" << "TCR_EL1: " << mmu_regs->TCR[EL1] << std::endl
-                    << "\t" << "SCTLR_El1: " << mmu_regs->SCTLR[EL1] << std::endl
-                    << "\t" << "TTBR0_EL1: " << mmu_regs->TTBR0[EL1] << std::endl
-                    << "\t" << "TTBR1_EL1: " << mmu_regs->TTBR1[EL1] << std::endl
-                    << "\t" << "ID_AA64MMFR0_EL1: " << mmu_regs->ID_AA64MMFR0_EL1
-                    << std::dec
-                    << std::endl));
+    DBG_(VVerb,
+         (<< "Initializing mmu registers from QEMU..." << std::endl
+          << std::hex << "\t" << "TCR_EL1: " << mmu_regs->TCR[EL1] << std::endl
+          << "\t" << "SCTLR_El1: " << mmu_regs->SCTLR[EL1] << std::endl
+          << "\t" << "TTBR0_EL1: " << mmu_regs->TTBR0[EL1] << std::endl
+          << "\t" << "TTBR1_EL1: " << mmu_regs->TTBR1[EL1] << std::endl
+          << "\t" << "ID_AA64MMFR0_EL1: " << mmu_regs->ID_AA64MMFR0_EL1 << std::dec << std::endl));
 }
 void
 mmu_t::setupBitConfigs()

@@ -51,7 +51,7 @@ REV(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
 
     uint8_t container_size = 0;
     switch (opc) {
-        case 0x0: DBG_Assert(false); break;
+        case 0x0: return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
         case 0x1: container_size = 16; break;
         case 0x2: container_size = 32; break;
         case 0x3:
@@ -195,9 +195,6 @@ CRC(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     readRegister(inst, 1, rn, rs_deps[0], false);
     readRegister(inst, 2, rm, rs_deps[1], sf);
 
-    connect(rs_deps[0], act);
-    connect(rs_deps[1], act);
-
     addDestination(inst, rd, act, sf);
 
     return inst;
@@ -311,9 +308,7 @@ ADDSUB_CARRY(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     readRegister(inst, 1, rn, rs_deps[0], sf);
     readRegister(inst, 2, rm, rs_deps[1], sf);
 
-    simple_action nzcv = readNZCVAction(inst, kC, kOperand3);
-    connect(rs_deps[2], nzcv);
-    inst->addDispatchAction(nzcv);
+    addReadCC(inst, 3, rs_deps[2], true);
 
     if (!setflags || rd != 31)
         addDestination(inst, rd, exec, sf, setflags);

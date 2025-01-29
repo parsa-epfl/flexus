@@ -26,9 +26,9 @@ LDR_lit(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 
 // Load/store pair (all forms)
 archinst
-LDP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+LDP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo, int32_t aUop);
 archinst
-STP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+STP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo, int32_t aUop);
 
 /* Load/store register (all forms) */
 archinst

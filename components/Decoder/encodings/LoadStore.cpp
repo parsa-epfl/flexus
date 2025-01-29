@@ -3,7 +3,7 @@
 
 #include "SharedFunctions.hpp"
 #include "Unallocated.hpp"
-
+#include "boost/none.hpp"
 namespace nDecoder {
 using namespace nuArch;
 
@@ -261,8 +261,6 @@ LDAQ(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     uint32_t size = 8 << extract32(aFetchedOpcode.theOpcode, 30, 2);
     uint32_t rt   = extract32(aFetchedOpcode.theOpcode, 0, 5);
     uint32_t rn   = extract32(aFetchedOpcode.theOpcode, 5, 5);
-    uint32_t regsize;
-    regsize  = (size == 0x3) ? 64 : 32;
     eSize sz = dbSize(size);
 
     DBG_(VVerb, (<< "Loading with size " << sz));
@@ -299,7 +297,7 @@ LDAQ(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     inst->addSquashEffect(eraseLSQ(inst));
     inst->addRetirementConstraint(loadMemoryConstraint(inst));
 
-    addDestination(inst, rt, load, regsize == 64);
+    addDestination(inst, rt, load, size == 64);
 
     return inst;
 }
@@ -437,7 +435,7 @@ LDR_lit(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
 }
 // Load/store pair (all forms)
 archinst
-LDP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+LDP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo, int32_t aUop)
 {
     DECODER_TRACE;
     uint32_t opc   = extract32(aFetchedOpcode.theOpcode, 30, 2);
@@ -455,7 +453,9 @@ LDP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
      */
     bool is_signed = (opc & 0x1) == 0x1;
     uint32_t size  = 8 << (scale + 1);
-    eSize sz       = dbSize(size);
+    int64_t sizeOfEachPair = size / 2;
+    int64_t sizeOfEachPairInBytes = sizeOfEachPair / 8;
+    eSize sz       = dbSize(size / 2);
 
     if ((((opc & 1) == 1) && L == 0) || opc == 3 || (is_signed && index == kNoOffset)) {
         /* Msutherl: if signed, only valid encodings are preindex, postindex, imm-index */
@@ -473,6 +473,9 @@ LDP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
                                                       aFetchedOpcode.theBPState,
                                                       aCPU,
                                                       aSequenceNo));
+    if (aUop == 0) {
+        inst->setIsMicroOp(true);
+    }
 
     inst->setClass(clsLoad, codeLDP);
 
@@ -480,14 +483,24 @@ LDP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     std::vector<std::list<InternalDependance>> addr_deps(1);
 
     // calculate the address from rn
-    simple_action act = addAddressCompute(inst, addr_deps);
+    simple_action act;
+    if (aUop == 0) {
+        // first uop computes the address using rn and offset
+        act = addAddressCompute(inst, addr_deps);
+    } else {
+        // second uop also adds the size of each pair to the address
+        addr_deps.resize(2);
+        act = addAddressCompute(inst, addr_deps);
+        addReadConstant(inst, 2, sizeOfEachPairInBytes, addr_deps[1]);
+    }
     addReadXRegister(inst, 1, rn, addr_deps[0], true);
 
-    if (index == kPreIndex || index == kPostIndex) {
+    if ((index == kPreIndex || index == kPostIndex) && aUop == 1) {
         // C6.2.129 LDP PostIndex and PreIndex cause writeback
+        // Writeback only happens in the second uop
         std::vector<std::list<InternalDependance>> wb_deps(1);
         predicated_action wback = addExecute(inst, operation(kADD_), { kAddress, kOperand4 }, wb_deps, kResult2);
-        addReadConstant(inst, 4, ((index == kPostIndex) ? imm7 : 0), wb_deps[0]);
+        addReadConstant(inst, 4, ((index == kPostIndex) ? imm7 - sizeOfEachPairInBytes : -sizeOfEachPairInBytes), wb_deps[0]);
         //        wback.action->addDependance(wback.action->dependance(1));
         connectDependance(wback.action->dependance(1), act);
         //        wb_deps[0].push_back(act.action->dependance(0));
@@ -510,7 +523,21 @@ LDP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     }
 
     predicated_dependant_action load;
-    load = ldpAction(inst, sz, is_signed ? kSignExtend : kNoExtension, kPD, kPD1);
+    if (aUop == 0) {
+        if (rt != 31) {
+            load = loadAction(inst, sz, is_signed ? kSignExtend : kNoExtension, kPD);
+            addDestination(inst, rt, load, size / 2 == 64);
+        } else {
+            load = loadAction(inst, sz, is_signed ? kSignExtend : kNoExtension,  boost::none);
+        }
+    } else {
+        if (rt2 != 31) {
+            load = loadAction(inst, sz, is_signed ? kSignExtend : kNoExtension, kPD);
+            addDestination(inst, rt2, load, size / 2 == 64);
+        } else {
+            load = loadAction(inst, sz, is_signed ? kSignExtend : kNoExtension,  boost::none);
+        }
+    }
 
     inst->addDispatchEffect(allocateLoad(inst, sz, load.dependance, acctype));
     inst->addCheckTrapEffect(mmuPageFaultCheck(inst));
@@ -519,12 +546,10 @@ LDP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     inst->addSquashEffect(eraseLSQ(inst));
     inst->addRetirementConstraint(loadMemoryConstraint(inst));
 
-    addPairDestination(inst, rt, rt2, load, size / 2 == 64);
-
     return inst;
 }
 archinst
-STP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
+STP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo, int32_t aUop)
 {
     DECODER_TRACE;
     uint32_t opc   = extract32(aFetchedOpcode.theOpcode, 30, 2);
@@ -537,7 +562,9 @@ STP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     uint32_t scale = 2 + extract32(opc, 1, 1);
     //    bool is_signed = ( opc & 1 ) != 0;
     int size = 8 << (scale + 1);
-    eSize sz = dbSize(size);
+    int64_t sizeOfEachPair = size / 2;
+    int64_t sizeOfEachPairInBytes = sizeOfEachPair / 8;
+    eSize sz = dbSize(size / 2);
 
     if ((((opc & 1) == 1) && L == 0) || opc == 3) { return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo); }
 
@@ -550,20 +577,33 @@ STP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
                                                       aSequenceNo));
 
     inst->setClass(clsStore, codeStore);
+    if (aUop == 0) {
+        inst->setIsMicroOp(true);
+    }
 
     // calculate the address from rn
     eAccType acctype = kAccType_STREAM;
-    std::vector<std::list<InternalDependance>> addr_deps(1), data_deps(2);
-    simple_action addr = addAddressCompute(inst, addr_deps);
+    std::vector<std::list<InternalDependance>> addr_deps(1), data_deps(1);
 
+    simple_action addr;
+    if (aUop == 0) {
+        // first uop computes the address using rn and offset
+        addr = addAddressCompute(inst, addr_deps);
+    } else {
+        // second uop also adds the size of each pair to the address
+        addr_deps.resize(2);
+        addr = addAddressCompute(inst, addr_deps);
+        addReadConstant(inst, 2, sizeOfEachPairInBytes, addr_deps[1]);
+    }
     addReadXRegister(inst, 1, rn, addr_deps[0], true);
 
-    if (index == kPreIndex || index == kPostIndex) {
+    if ((index == kPreIndex || index == kPostIndex) && aUop == 1) {
         // C6.2.273 STP PostIndex and PreIndex cause writeback
+        // Writeback only happens in the second uop
         std::vector<std::list<InternalDependance>> wb_deps(2);
         predicated_action wback = addExecute(inst, operation(kADD_), { kAddress, kOperand4 }, wb_deps, kResult1);
         connect(wb_deps[1], addr);
-        addReadConstant(inst, 4, ((index == kPostIndex) ? imm7 : 0), wb_deps[0]);
+        addReadConstant(inst, 4, ((index == kPostIndex) ? imm7 - sizeOfEachPairInBytes : - sizeOfEachPairInBytes), wb_deps[0]);
         addDestination1(inst, rn, wback, size / 2 == 64);
     }
 
@@ -577,28 +617,26 @@ STP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
             DBG_(VVerb, (<< "setting signed offset #" << imm7));
         }
     }
-
+    predicated_dependant_action update_value = updateStoreValueAction(inst, kOperand5);
+    data_deps[0].push_back(update_value.dependance);
+    connectDependance(inst->retirementDependance(), update_value);
     // read data registers
-    simple_action act =
-      addExecute(inst, operation(size / 2 == 64 ? kCONCAT64_ : kCONCAT32_), { kOperand2, kOperand3 }, data_deps);
-    readRegister(inst, 2, rt2, data_deps[0], size / 2 == 64);
-    readRegister(inst, 3, rt, data_deps[1], size / 2 == 64);
+    if (aUop == 0) {
+        readRegister(inst, 5, rt, data_deps[0], size / 2 == 64);
+    } else {
+        readRegister(inst, 5, rt2, data_deps[0], size / 2 == 64);
+    }
 
     inst->addDispatchEffect(allocateStore(inst, sz, false, acctype));
     inst->addCheckTrapEffect(mmuPageFaultCheck(inst));
     inst->addRetirementConstraint(storeQueueAvailableConstraint(inst));
     inst->addRetirementConstraint(sideEffectStoreConstraint(inst));
 
-    multiply_dependant_action update_value = updateSTPValueAction(inst, kResult);
-    inst->addDispatchEffect(satisfy(inst, update_value.dependances[1]));
-    connectDependance(update_value.dependances[0], act);
-    connectDependance(inst->retirementDependance(), update_value);
-
     inst->addRetirementEffect(retireMem(inst));
     inst->addCommitEffect(commitStore(inst));
     inst->addSquashEffect(eraseLSQ(inst));
 
-    inst->addPostvalidation(validateMemory(kAddress, kResult, sz, inst));
+    inst->addPostvalidation(validateMemory(kAddress, kOperand5, sz, inst));
 
     return inst;
 }
@@ -617,12 +655,15 @@ STR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     uint32_t shift_amount = (S) ? size : 0;
     bool is_unsigned      = extract32(aFetchedOpcode.theOpcode, 24, 1);
     uint64_t imm = 0, regsize = 0;
-    eIndex index = kNoOffset;
+    eIndex index = kSignedOffset;
 
     if ((opc & 0x2) == 0) {
         regsize = (size == 0x3) ? 64 : 32;
     } else if (size != 0x3) {
         regsize = (opc & 1) ? 32 : 64;
+    } else {
+        DBG_(Crit, (<< "Invalid encoding for LDR. Catch you!"));
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 
     eSize sz = dbSize(8 << size);
@@ -642,9 +683,17 @@ STR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         imm <<= size;
     } else {
         switch (extract32(aFetchedOpcode.theOpcode, 10, 2)) {
-            case 0x0: index = kNoOffset; break;
+            case 0x0: index = kSignedOffset; break;
             case 0x1: index = kPostIndex; break;
-            case 0x2: index = kRegOffset; break;
+            case 0x2: {
+                if (extract32(aFetchedOpcode.theOpcode, 21, 1) == 1)
+                    index = kRegOffset;    // LDR x1, [x2, x3, LSL #2]
+                else {
+                    index = kSignedOffset; // LDTR x1, [x2, #4]
+                    inst->setUnprivAccess();
+                }
+                break;
+            }
             case 0x3: index = kPreIndex; break;
         }
         if (index != kRegOffset) { imm = (int64_t)sextract32(aFetchedOpcode.theOpcode, 12, 9); }
@@ -677,7 +726,7 @@ STR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     if (index == kUnsignedOffset) {
         inst->setOperand(kUopAddressOffset, imm);
         DBG_(VVerb, (<< "setting unsigned offset " << std::hex << imm));
-    } else if (index == kNoOffset) {
+    } else if (index == kSignedOffset) {
         inst->setOperand(kSopAddressOffset, (int64_t)imm);
         DBG_(VVerb, (<< "setting signed offset no offset " << std::hex << imm));
     } else if (index == kPreIndex) {
@@ -741,12 +790,16 @@ LDR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     uint32_t shift_amount = (S) ? size : 0;
     bool is_unsigned      = extract32(aFetchedOpcode.theOpcode, 24, 1);
     uint64_t imm = 0, regsize = 0;
-    eIndex index = kNoOffset;
+    eIndex index = kSignedOffset;
+    bool unprivAccess = false;
 
     if ((opc & 0x2) == 0) {
         regsize = (size == 0x3) ? 64 : 32;
     } else if (size != 0x3) {
         regsize = (opc & 1) ? 32 : 64;
+    } else {
+        DBG_(Crit, (<< "Invalid encoding for LDR. Catch you!"));
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
 
     eSize sz = dbSize(8 << size);
@@ -758,9 +811,17 @@ LDR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         imm <<= size;
     } else {
         switch (extract32(aFetchedOpcode.theOpcode, 10, 2)) {
-            case 0x0: index = kNoOffset; break;
+            case 0x0: index = kSignedOffset; break;
             case 0x1: index = kPostIndex; break;
-            case 0x2: index = kRegOffset; break;
+            case 0x2: {
+                if (extract32(aFetchedOpcode.theOpcode, 21, 1) == 1)
+                    index = kRegOffset;    // LDR x1, [x2, x3, LSL #2]
+                else {
+                    index = kSignedOffset; // LDTR x1, [x2, #4]
+                    unprivAccess = true;
+                }
+                break;
+            }
             case 0x3: index = kPreIndex; break;
         }
         if (index != kRegOffset) { imm = (int64_t)sextract32(aFetchedOpcode.theOpcode, 12, 9); }
@@ -779,6 +840,10 @@ LDR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     inst->setClass(clsLoad, codeLoad);
     eAccType acctype = kAccType_NORMAL;
 
+    if (unprivAccess) {
+        inst->setUnprivAccess();
+    }
+
     std::vector<std::list<InternalDependance>> rs_deps(1), rs2_deps(1);
     predicated_action ex, sh, wb;
 
@@ -788,7 +853,11 @@ LDR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         rs2_deps.resize(2);
         if (shift_amount) {
             inst->setOperand(kResult2, (uint64_t)shift_amount);
-            inst->setOperand(kOperand4, (uint64_t)regsize);
+            if (option & 0x1) {
+                inst->setOperand(kOperand4, (uint64_t)64);
+            } else  {
+                inst->setOperand(kOperand4, (uint64_t)32);
+            }
             sh = addExecute(inst, operation(kLSL_), { kOperand2, kResult2, kOperand4 }, rs_deps, kOperand2);
             connect(rs_deps[1], ex);
             inst->addDispatchEffect(satisfy(inst, sh.action->dependance(2)));
@@ -806,7 +875,7 @@ LDR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     if (index == kUnsignedOffset) {
         inst->setOperand(kUopAddressOffset, imm);
         DBG_(VVerb, (<< "setting unsigned offset " << std::hex << imm));
-    } else if (index == kNoOffset) {
+    } else if (index == kSignedOffset) {
         inst->setOperand(kSopAddressOffset, (int64_t)imm);
         DBG_(VVerb, (<< "setting signed offset no offset " << std::hex << imm));
     } else if (index == kPreIndex) {
@@ -835,12 +904,19 @@ LDR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     inst->addSquashEffect(eraseLSQ(inst));
 
     predicated_dependant_action load;
-    load = loadAction(inst, sz, extract32(opc, 1, 1) ? kSignExtend : kZeroExtend, kPD);
+    // rt == 31 means LDR XZR, which has no destination. Don't have a bypass register for it.
+    if (rt != 31)
+        load = loadAction(inst, sz, extract32(opc, 1, 1) ? kSignExtend : kZeroExtend, kPD);
+    else
+        load = loadAction(inst, sz, extract32(opc, 1, 1) ? kSignExtend : kZeroExtend, boost::none);
     inst->addDispatchEffect(allocateLoad(inst, sz, load.dependance, acctype));
     inst->addCommitEffect(accessMem(inst));
     inst->addRetirementConstraint(loadMemoryConstraint(inst));
 
-    addDestination(inst, rt, load, regsize == 64);
+    // destination register == 31 means LDR XZR, which is a NOP
+    // Normally register 31 is SP, but it cannot be used as a destination of LDR
+    if (rt != 31)
+        addDestination(inst, rt, load, regsize == 64);
 
     return inst;
 }

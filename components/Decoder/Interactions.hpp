@@ -11,9 +11,9 @@ using Flexus::SharedTypes::VirtualMemoryAddress;
 
 struct BranchInteraction : public nuArch::Interaction
 {
-
-    VirtualMemoryAddress theTarget;
-    BranchInteraction(VirtualMemoryAddress aTarget);
+    boost::intrusive_ptr<nuArch::Instruction> theIssuer;
+    
+    BranchInteraction(boost::intrusive_ptr<nuArch::Instruction> anIssuer);
     void operator()(boost::intrusive_ptr<nuArch::Instruction> anInstruction, nuArch::uArch& aCore);
     void describe(std::ostream& anOstream) const;
     //  boost::optional< uint64_t> npc() {
@@ -26,7 +26,7 @@ reinstateInstructionInteraction();
 nuArch::Interaction*
 annulInstructionInteraction();
 nuArch::Interaction*
-branchInteraction(VirtualMemoryAddress aTarget);
+branchInteraction(boost::intrusive_ptr<nuArch::Instruction> anIssuer);
 
 } // namespace nDecoder
 

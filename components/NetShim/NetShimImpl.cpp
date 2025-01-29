@@ -48,6 +48,7 @@ class FLEXUS_COMPONENT(NetShim)
     // Initialization
     void initialize()
     {
+        DBG_Assert(false);
         int i;
         for (i = 0; i < cfg.VChannels; i++) {
             theNetworkLatencyHistograms.push_back(
@@ -219,7 +220,7 @@ class FLEXUS_COMPONENT(NetShim)
                         << " dst_port=" << transport[NetworkMessageTag]->dst_port));
         }
         msg->transmitLatency  = transport[NetworkMessageTag]->size;
-        msg->flexusInFastMode = Flexus::Core::theFlexus->isFastMode();
+        msg->flexusInFastMode = false;
         msg->hopCount         = -1; // Note, the local switch also gets counted, so we start at -1
         msg->startTS          = Flexus::Core::theFlexus->cycleCount();
         msg->myList           = nullptr;

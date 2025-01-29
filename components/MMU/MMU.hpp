@@ -14,9 +14,14 @@
 
 
 COMPONENT_PARAMETERS(
-    PARAMETER( iTLBSize,    size_t, "Size of the Instruction TLB", "itlbsize", 64 )
-    PARAMETER( dTLBSize,    size_t, "Size of the Data TLB", "dtlbsize", 64 )
-    PARAMETER( PerfectTLB,  bool, "TLB never misses", "perfect", true )
+    PARAMETER( iTLBSet,    size_t,  "Set count of the Instruction TLB",  "itlb_set", 1 )
+    PARAMETER( iTLBAssoc,  size_t,  "Associativity of the Instruction TLB", "itlb_assoc", 64 )
+    PARAMETER( dTLBSet,    size_t,  "Set count of the Data TLB",         "dtlb_set", 64 )
+    PARAMETER( dTLBAssoc,  size_t,  "Associativity of the Data TLB",     "dtlb_assoc", 64 )
+    PARAMETER( sTLBlat,     int,    "sTLB lookup latency",          "stlblat",  2)
+    PARAMETER( sTLBSet,    size_t,  "Set count of the Second-level TLB", "stlb_sete", 2048 )
+    PARAMETER( sTLBAssoc,  size_t,  "Associativity of the Second-level TLB", "stlb_assoc", 4 )
+    PARAMETER( PerfectTLB,  bool,   "TLB never misses",             "perfect",  true )
 );
 
 COMPONENT_INTERFACE(

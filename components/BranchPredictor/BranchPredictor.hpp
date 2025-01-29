@@ -21,9 +21,19 @@ class BranchPredictor
 
   public:
     Stat::StatCounter theBranches;
+
     Stat::StatCounter thePredictions_TAGE;
     Stat::StatCounter theCorrect_TAGE;
     Stat::StatCounter theMispredict_TAGE;
+    Stat::StatCounter theMispredict_TAGE_User;
+    Stat::StatCounter theMispredict_TAGE_System;
+
+    Stat::StatCounter thePredictions_BTB;
+    Stat::StatCounter theCorrect_BTB;
+    Stat::StatCounter theMispredict_BTB;
+    Stat::StatCounter theMispredict_BTB_User;
+    Stat::StatCounter theMispredict_BTB_System;
+
 
   private:
     /* Depending on whether the prediction of the Branch Predictor we use is Taken or Not Taken, the target is returned
@@ -32,18 +42,19 @@ class BranchPredictor
      */
     VirtualMemoryAddress predictConditional(VirtualMemoryAddress anAddress, BPredState& aBPState);
 
-    void reconstructHistory(BPredState aBPState);
-
   public:
     BranchPredictor(std::string const& aName, uint32_t anIndex, uint32_t aBTBSets, uint32_t aBTBWays);
     bool isBranch(VirtualMemoryAddress anAddress);
 
+    void checkpointHistory(BPredState& aBPState) const;
+
     VirtualMemoryAddress predict(VirtualMemoryAddress anAddress, BPredState& aBPState);
-    void feedback(VirtualMemoryAddress anAddress,
-                  eBranchType anActualType,
-                  eDirection anActualDirection,
-                  VirtualMemoryAddress anActualAddress,
-                  BPredState& aBPState);
+
+    // This function is called whenever a prediction is resolved.
+    void recoverHistory(const BPredRedictRequest& aRequest);
+
+    // This function is called whenever an instruction triggering a prediction retires.
+    void train(const BPredState& aBPState);
 
     void loadState(std::string const& aDirName);
     void saveState(std::string const& aDirName);

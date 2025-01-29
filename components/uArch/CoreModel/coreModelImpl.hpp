@@ -87,8 +87,8 @@ class CoreImpl : public CoreModel
     // std::function< void (Flexus::Qemu::Translation &) > translate;
     std::function<int(bool)> advance_fn;
     std::function<void(eSquashCause)> squash_fn;
-    std::function<void(VirtualMemoryAddress)> redirect_fn;
-    std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback_fn;
+    std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect_fn;
+    std::function<void(boost::intrusive_ptr<BPredState>)> trainBP_fn;
     std::function<void(bool)> signalStoreForwardingHit_fn;
     std::function<void(int32_t)> mmuResync_fn;
 
@@ -163,9 +163,6 @@ class CoreImpl : public CoreModel
     eExceptionType thePendingInterrupt;
     boost::intrusive_ptr<Instruction> theInterruptInstruction;
 
-    // Branch Feedback
-    std::list<boost::intrusive_ptr<BranchFeedback>> theBranchFeedback;
-
     // Squash and Redirect control
     bool theSquashRequested;
     eSquashCause theSquashReason;
@@ -173,7 +170,10 @@ class CoreImpl : public CoreModel
     bool theSquashInclusive;
 
     bool theRedirectRequested;
-    VirtualMemoryAddress theRedirectPC;
+    boost::intrusive_ptr<BPredRedictRequest> theRedirectRequest;
+
+    boost::intrusive_ptr<BPredState> theLastTrainingFeedback;
+    
     VirtualMemoryAddress theDumpPC;
 
     // Load Store Queue and associated memory control
@@ -443,6 +443,14 @@ class CoreImpl : public CoreModel
 
     Stat::StatCounter theCoalescedStores;
 
+    Stat::StatCounter theTrackedMemoryOps;
+    Stat::StatCounter theTrackedMemoryOpsReachL1;
+    Stat::StatCounter theTrackedMemoryOpsReachL1I;
+    Stat::StatCounter theTrackedMemoryOpsReachPeerL1;
+    Stat::StatCounter theTrackedMemoryOpsReachL2;
+    Stat::StatCounter theTrackedMemoryOpsReachMemory;
+
+
     uint32_t intAluOpLatency;
     uint32_t intAluOpPipelineResetTime;
 
@@ -482,8 +490,8 @@ class CoreImpl : public CoreModel
     CoreImpl(uArchOptions_t options,
              std::function<int(bool)> advance,
              std::function<void(eSquashCause)> squash,
-             std::function<void(VirtualMemoryAddress)> redirect,
-             std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback,
+             std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect,
+             std::function<void(boost::intrusive_ptr<BPredState>)> trainBP,
              std::function<void(bool)> signalStoreForwardingHit,
              std::function<void(int32_t)> mmuResync);
 
@@ -570,9 +578,9 @@ class CoreImpl : public CoreModel
     // Squashing & Front-end control
     //==========================================================================
   public:
-    bool squashFrom(boost::intrusive_ptr<Instruction> anInsn);
-    void redirectFetch(VirtualMemoryAddress anAddress);
-    void branchFeedback(boost::intrusive_ptr<BranchFeedback> feedback);
+    bool squashFrom(boost::intrusive_ptr<Instruction> anInsn, bool inclusive = true);
+    void redirectFetch(boost::intrusive_ptr<BPredRedictRequest> aRequest);
+    void trainingBranch(boost::intrusive_ptr<BPredState> feedback);
 
     void takeTrap(boost::intrusive_ptr<Instruction> anInsn, eExceptionType aTrapType);
     void handleTrap();
@@ -592,7 +600,7 @@ class CoreImpl : public CoreModel
     int32_t iCount() const;
     bool isQuiesced() const
     {
-        return theROB.empty() && theBranchFeedback.empty() && theMemQueue.empty() && theMSHRs.empty() &&
+        return theROB.empty() && theMemQueue.empty() && theMSHRs.empty() &&
                theMemoryPortArbiter.empty() && theMemoryPorts.empty() && theSnoopPorts.empty() &&
                theMemoryReplies.empty() && theActiveActions.empty() && theRescheduledActions.empty() &&
                !theSquashRequested && !theRedirectRequested;

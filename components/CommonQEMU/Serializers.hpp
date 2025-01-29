@@ -9,7 +9,7 @@
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/tracking.hpp>
 
-#define MAX_NUM_SHARERS 128
+#define MAX_NUM_SHARERS 256
 
 namespace boost {
 namespace serialization {

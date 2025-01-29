@@ -13,6 +13,12 @@ namespace ll = boost::lambda;
 #include <core/debug/debugger.hpp>
 #include <core/interface_macros.hpp>
 
+enum FlexusComponentScalingStyle {
+    MULTIPLY = 0,
+    DIVIDE = 1,
+    DIVIDE_BY_TWO_THEN_MULTIPLY = 2
+};
+
 namespace Flexus {
 namespace Core {
 
@@ -23,13 +29,14 @@ struct ComponentManager
     // added by PLotfi
     virtual void finalizeComponents() = 0;
     // end PLotfi
-    virtual bool isQuiesced() const                                                        = 0;
-    virtual void doSave(std::string const& aDirectory) const                               = 0;
-    virtual void doLoad(std::string const& aDirectory)                                     = 0;
-    virtual void registerComponent(ComponentInterface* aComponent)                         = 0;
-    virtual void registerHandle(std::function<void(Flexus::Core::index_t)> anInstantiator) = 0;
-    virtual void instantiateComponents(Flexus::Core::index_t aSystemWidth)                 = 0;
-    virtual Flexus::Core::index_t systemWidth() const                                      = 0;
+    virtual bool isQuiesced() const                                                             = 0;
+    virtual void doSave(std::string const& aDirectory) const                                    = 0;
+    virtual void doLoad(std::string const& aDirectory)                                          = 0;
+    virtual void registerComponent(ComponentInterface* aComponent)                              = 0;
+    virtual void registerHandle(std::function<void(Flexus::Core::index_t)> anInstantiator)      = 0;
+    virtual void instantiateComponents(Flexus::Core::index_t aSystemWidth, const char * freq)   = 0;
+    virtual Flexus::Core::index_t systemWidth() const                                           = 0;
+    virtual Flexus::Core::freq_opts getFreq() const                                             = 0;
     static ComponentManager& getComponentManager();
 };
 
@@ -192,10 +199,10 @@ class FlexusComponentBase
                             &BOOST_PP_CAT(InstanceName, _instance)>                                                    \
       InstanceName; /**/
 
-#define FLEXUS_INSTANTIATE_COMPONENT_ARRAY(Component, Configuration, InstanceName, Scale, Multiply, Width)             \
+#define FLEXUS_INSTANTIATE_COMPONENT_ARRAY(Component, Configuration, InstanceName, Scale, ScalingStype, Width)             \
     ComponentInstance<BOOST_PP_CAT(Component, Interface)> BOOST_PP_CAT(                                                \
       InstanceName,                                                                                                    \
-      _instance)(Configuration.cfg(), Width, Scale, Multiply);                                                         \
+      _instance)(Configuration.cfg(), Width, Scale, ScalingStype);                                                         \
     typedef ComponentHandle<ComponentInstance<BOOST_PP_CAT(Component, Interface)>,                                     \
                             &BOOST_PP_CAT(InstanceName, _instance)>                                                    \
       InstanceName; /**/
@@ -226,16 +233,16 @@ struct ComponentInstance
     typename iface::jump_table theJumpTable;
     typename iface::configuration& theConfiguration;
     bool theScaleWithSystem;
-    bool theMultiply;
+    FlexusComponentScalingStyle theScalingStyle;
     ComponentInstance(typename iface::configuration& aConfiguration,
-                      Flexus::Core::index_t anArrayWidth = 1,
-                      bool aScaleWithSystem              = false,
-                      bool aMultiply                     = false)
+                      Flexus::Core::index_t anArrayWidth                            = 1,
+                      bool aScaleWithSystem                                         = false,
+                      FlexusComponentScalingStyle aScalingStyle                     = FlexusComponentScalingStyle::MULTIPLY)
       : theComponent(0)
       , theWidth(anArrayWidth)
       , theConfiguration(aConfiguration)
       , theScaleWithSystem(aScaleWithSystem)
-      , theMultiply(aMultiply)
+      , theScalingStyle(aScalingStyle)
     {
         ComponentManager::getComponentManager().registerHandle(
           [this](Flexus::Core::index_t x) { return this->instantiator(x); });
@@ -243,11 +250,23 @@ struct ComponentInstance
 
     void instantiator(Flexus::Core::index_t aSystemWidth)
     {
-        if (theScaleWithSystem && theMultiply) {
-            theWidth = aSystemWidth * theWidth;
-        } else if (theScaleWithSystem && !theMultiply) {
-            theWidth = aSystemWidth / theWidth;
+        if (theScaleWithSystem) {
+            switch (theScalingStyle) {
+                case FlexusComponentScalingStyle::MULTIPLY:
+                    theWidth = aSystemWidth * theWidth;
+                    break;
+                
+                case FlexusComponentScalingStyle::DIVIDE:
+                    theWidth = aSystemWidth / theWidth;
+                    break;
+                
+                case FlexusComponentScalingStyle::DIVIDE_BY_TWO_THEN_MULTIPLY:
+                    DBG_Assert((aSystemWidth % 2) == 0);
+                    theWidth = (aSystemWidth * theWidth) / 2;
+                    break;
+            }
         }
+
         theComponent = new iface*[theWidth];
         for (Flexus::Core::index_t i = 0; i < theWidth; ++i) {
             theComponent[i] = ComponentInterface::instantiate(theConfiguration, theJumpTable, i, theWidth);

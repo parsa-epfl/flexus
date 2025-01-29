@@ -1,9 +1,12 @@
 
+#include "components/Decoder/Effects.hpp"
 #include "Interactions.hpp"
 #include "SemanticInstruction.hpp"
 #include "components/uArch/systemRegister.hpp"
 #include "components/uArch/uArchInterfaces.hpp"
 #include "components/uFetch/uFetchTypes.hpp"
+#include "core/debug/debug.hpp"
+#include "core/types.hpp"
 
 #include <core/performance/profile.hpp>
 
@@ -47,6 +50,9 @@ EffectChain::append(Effect* anEffect)
         theLast->theNext = anEffect;
     }
     theLast = anEffect;
+
+    // There should not be only one effect in the chain.
+    DBG_Assert(anEffect->theNext == 0);
 }
 
 EffectChain::EffectChain()
@@ -430,8 +436,8 @@ annulNext(SemanticInstruction* inst)
     return a;
 }
 
-BranchInteraction::BranchInteraction(VirtualMemoryAddress aTarget)
-  : theTarget(aTarget)
+BranchInteraction::BranchInteraction(boost::intrusive_ptr<nuArch::Instruction> anIssuer)
+  : theIssuer(anIssuer)
 {
 }
 
@@ -439,148 +445,75 @@ void
 BranchInteraction::operator()(boost::intrusive_ptr<Instruction> anInstruction, uArch& aCore)
 {
     DBG_(VVerb, (<< *anInstruction << " " << *this));
-    if (theTarget == 0) { theTarget = anInstruction->pc() + 4; }
-    if (anInstruction->pc() != theTarget) {
+    // DBG_Assert(theIssuer->bpState()->theActualTarget != VirtualMemoryAddress(0),
+    //            (<< "BranchInteraction invoked without a target")); // This is possible, because of the misprediction.
+    if (anInstruction->pc() != theIssuer->bpState()->theActualTarget) {
         DBG_(Verb, (<< *anInstruction << " Branch Redirection."));
-        if (aCore.squashFrom(anInstruction)) { aCore.redirectFetch(theTarget); }
+        if (aCore.squashFrom(anInstruction)) { 
+            boost::intrusive_ptr<BPredRedictRequest> aRequest = new BPredRedictRequest();
+            aRequest->theTarget = theIssuer->bpState()->theActualTarget;
+            aRequest->theBPState = theIssuer->bpState();
+            aRequest->theInsertNewHistory = true;    
+            aCore.redirectFetch(aRequest); 
+        }
     }
 }
 
 void
 BranchInteraction::describe(std::ostream& anOstream) const
 {
-    anOstream << "Branch to " << theTarget;
+    anOstream << "Branch to " << theIssuer->bpState()->theActualTarget;
 }
 
 Interaction*
-branchInteraction(VirtualMemoryAddress aTarget)
+branchInteraction(boost::intrusive_ptr<Instruction> anIssuer)
 {
-    return new BranchInteraction(aTarget);
+    return new BranchInteraction(anIssuer);
 }
 
-struct BranchFeedbackEffect : public Effect
-{
-    BranchFeedbackEffect() {}
-    void invoke(SemanticInstruction& anInstruction)
-    {
-        FLEXUS_PROFILE();
-        DBG_(VVerb, (<< anInstruction << " BranchFeedbackEffect ")); // NOOSHIN
 
-        if (anInstruction.branchFeedback()) {
-            //    DBG_(VVerb,
-            //         (<< anInstruction << " Update Branch predictor: " <<
-            //         anInstruction.branchFeedback()->theActualType
-            //          << " " << anInstruction.branchFeedback()->theActualDirection << " to "
-            //          << anInstruction.branchFeedback()->theActualTarget));
-            anInstruction.core()->branchFeedback(anInstruction.branchFeedback());
-        }
-        Effect::invoke(anInstruction);
-    }
-    void describe(std::ostream& anOstream) const
-    {
-        anOstream << " Update Branch Predictor";
-        Effect::describe(anOstream);
-    }
-};
+// struct BranchPredictorTrainingEffect : public Effect 
+// {
+//     BranchPredictorTrainingEffect() {}
 
-struct BranchFeedbackWithOperandEffect : public Effect
-{
-    eDirection theDirection;
-    eBranchType theType;
-    eOperandCode theOperandCode;
-    BranchFeedbackWithOperandEffect(eBranchType aType, eDirection aDirection, eOperandCode anOperandCode)
-      : theDirection(aDirection)
-      , theType(aType)
-      , theOperandCode(anOperandCode)
-    {
-    }
-    void invoke(SemanticInstruction& anInstruction)
-    {
-        FLEXUS_PROFILE();
-        boost::intrusive_ptr<BranchFeedback> feedback(new BranchFeedback());
-        feedback->thePC              = anInstruction.pc();
-        feedback->theActualType      = theType;
-        feedback->theActualDirection = theDirection;
-        VirtualMemoryAddress target(anInstruction.operand<uint64_t>(theOperandCode));
-        // DBG_(Iface, (<< anInstruction << " Update Branch predictor: " << theType << " " << theDirection << " to " <<
-        // target));
-        feedback->theActualTarget = target;
-        feedback->theBPState      = anInstruction.bpState();
-        anInstruction.core()->branchFeedback(feedback);
-        Effect::invoke(anInstruction);
-    }
-    void describe(std::ostream& anOstream) const
-    {
-        anOstream << " Update Branch Predictor";
-        Effect::describe(anOstream);
-    }
-};
+//     void invoke(SemanticInstruction &anInstruction)
+//     {
+//         FLEXUS_PROFILE();
+//         DBG_(VVerb, (<< anInstruction << " BranchTrainingEffect "));
+//         anInstruction.core()->trainingBranch(anInstruction.bpState());
 
-Effect*
-updateConditional(SemanticInstruction* inst)
-{
-    BranchFeedbackEffect* b = new BranchFeedbackEffect();
-    inst->addNewComponent(b);
-    return b;
+//         Effect::invoke(anInstruction);
+//     }
+
+//     void describe(std::ostream &anOstream) const
+//     {
+//         anOstream << "Training Branch Predictor";
+//         Effect::describe(anOstream);
+//     }
+// };
+
+BranchPredictorTrainingEffect::BranchPredictorTrainingEffect() {
+    
 }
 
-Effect*
-updateUnconditional(SemanticInstruction* inst, VirtualMemoryAddress aTarget)
+void BranchPredictorTrainingEffect::invoke(SemanticInstruction &anInstruction)
 {
-    boost::intrusive_ptr<BranchFeedback> feedback(new BranchFeedback());
-    feedback->thePC              = inst->pc();
-    feedback->theActualType      = kUnconditional;
-    feedback->theActualDirection = kTaken;
-    feedback->theActualTarget    = aTarget;
-    feedback->theBPState         = inst->bpState();
-    inst->setBranchFeedback(feedback);
-    BranchFeedbackEffect* b = new BranchFeedbackEffect();
-    inst->addNewComponent(b);
-    return b;
+    FLEXUS_PROFILE();
+    DBG_(VVerb, (<< anInstruction << " BranchTrainingEffect "));
+    anInstruction.core()->trainingBranch(anInstruction.bpState());
+
+    Effect::invoke(anInstruction);
 }
 
-Effect*
-updateNonBranch(SemanticInstruction* inst)
+void BranchPredictorTrainingEffect::describe(std::ostream &anOstream) const
 {
-    boost::intrusive_ptr<BranchFeedback> feedback(new BranchFeedback());
-    feedback->thePC              = inst->pc();
-    feedback->theActualType      = kNonBranch;
-    feedback->theActualDirection = kNotTaken;
-    feedback->theActualTarget    = VirtualMemoryAddress(0);
-    feedback->theBPState         = inst->bpState();
-    inst->setBranchFeedback(feedback);
-    BranchFeedbackEffect* b = new BranchFeedbackEffect();
-    inst->addNewComponent(b);
-    return b;
+    anOstream << "Training Branch Predictor";
+    Effect::describe(anOstream);
 }
 
-Effect*
-updateUnconditional(SemanticInstruction* inst, eOperandCode anOperandCode)
-{
-    BranchFeedbackWithOperandEffect* b = new BranchFeedbackWithOperandEffect(kUnconditional, kTaken, anOperandCode);
-    inst->addNewComponent(b);
-    return b;
-}
-
-Effect*
-updateCall(SemanticInstruction* inst, VirtualMemoryAddress aTarget)
-{
-    boost::intrusive_ptr<BranchFeedback> feedback(new BranchFeedback());
-    feedback->thePC              = inst->pc();
-    feedback->theActualType      = kCall;
-    feedback->theActualDirection = kTaken;
-    feedback->theActualTarget    = aTarget;
-    feedback->theBPState         = inst->bpState();
-    inst->setBranchFeedback(feedback);
-    BranchFeedbackEffect* b = new BranchFeedbackEffect();
-    inst->addNewComponent(b);
-    return b;
-}
-
-Effect*
-updateIndirect(SemanticInstruction* inst, eOperandCode anOperandCode, eBranchType aType)
-{
-    BranchFeedbackWithOperandEffect* b = new BranchFeedbackWithOperandEffect(aType, kTaken, anOperandCode);
+Effect *
+branchPredictorTraining(SemanticInstruction* inst){
+    BranchPredictorTrainingEffect *b = new BranchPredictorTrainingEffect();
     inst->addNewComponent(b);
     return b;
 }
@@ -607,10 +540,19 @@ struct BranchEffect : public Effect
             Operand address = anInstruction.operand(kAddress);
             theTarget       = VirtualMemoryAddress(boost::get<uint64_t>(address));
         }
+        
+        // This effect currently is only used by call and unconditional branch instructions
+        DBG_Assert(anInstruction.bpState()->theActualType == kUnconditional || anInstruction.bpState()->theActualType == kCall,
+                   (<< "BranchEffect invoked on an instruction that is not a call or unconditional branch: " << anInstruction));
+
+        // Update the actual target.
+        anInstruction.bpState()->theActualTarget = theTarget;
+        anInstruction.bpState()->theActualDirection = kTaken;
 
         anInstruction.redirectPC(theTarget);
-        anInstruction.core()->applyToNext(boost::intrusive_ptr<Instruction>(&anInstruction),
-                                          branchInteraction(theTarget));
+
+        boost::intrusive_ptr<Instruction> anInstructionPtr{&anInstruction};
+        anInstruction.core()->applyToNext(anInstructionPtr, branchInteraction(anInstructionPtr));
         DBG_(Iface, (<< "BRANCH:  Must redirect to " << theTarget));
         Effect::invoke(anInstruction);
     }
@@ -621,76 +563,10 @@ struct BranchEffect : public Effect
     }
 };
 
-struct BranchAfterNext : public Effect
-{
-    VirtualMemoryAddress theTarget;
-    BranchAfterNext(VirtualMemoryAddress aTarget)
-      : theTarget(aTarget)
-    {
-    }
-
-    void invoke(SemanticInstruction& anInstruction)
-    {
-        FLEXUS_PROFILE();
-        DBG_(VVerb, (<< anInstruction.identify() << " Branch after next instruction to " << theTarget));
-        anInstruction.core()->applyToNext(boost::intrusive_ptr<Instruction>(&anInstruction),
-                                          new BranchInteraction(theTarget));
-        Effect::invoke(anInstruction);
-    }
-
-    void describe(std::ostream& anOstream) const
-    {
-        anOstream << "Branch to " << theTarget << " after next instruction";
-        Effect::describe(anOstream);
-    }
-};
-
-struct BranchAfterNextWithOperand : public Effect
-{
-    eOperandCode theOperandCode;
-    BranchAfterNextWithOperand(eOperandCode anOperandCode)
-      : theOperandCode(anOperandCode)
-    {
-    }
-
-    void invoke(SemanticInstruction& anInstruction)
-    {
-        FLEXUS_PROFILE();
-        VirtualMemoryAddress target(anInstruction.operand<uint64_t>(theOperandCode));
-        DBG_(VVerb,
-             (<< anInstruction.identify() << " Branch after next instruction to " << theOperandCode << "(" << target
-              << ")"));
-        anInstruction.core()->applyToNext(boost::intrusive_ptr<Instruction>(&anInstruction),
-                                          new BranchInteraction(target));
-        Effect::invoke(anInstruction);
-    }
-
-    void describe(std::ostream& anOstream) const
-    {
-        anOstream << "Branch to " << theOperandCode << " after next instruction";
-        Effect::describe(anOstream);
-    }
-};
-
 Effect*
 branch(SemanticInstruction* inst, VirtualMemoryAddress aTarget)
 {
     BranchEffect* b = new BranchEffect(aTarget);
-    inst->addNewComponent(b);
-    return b;
-}
-Effect*
-branchAfterNext(SemanticInstruction* inst, VirtualMemoryAddress aTarget)
-{
-    BranchAfterNext* b = new BranchAfterNext(aTarget);
-    inst->addNewComponent(b);
-    return b;
-}
-
-Effect*
-branchAfterNext(SemanticInstruction* inst, eOperandCode anOperandCode)
-{
-    BranchAfterNextWithOperand* b = new BranchAfterNextWithOperand(anOperandCode);
     inst->addNewComponent(b);
     return b;
 }
@@ -1082,92 +958,92 @@ readPR(SemanticInstruction* inst, ePrivRegs aPR, std::unique_ptr<SysRegInfo> ri)
     inst->addNewComponent(e);
     return e;
 }
-//
-// struct WritePREffect : public Effect {
-//  ePrivRegs thePR;
-//  std::unique_ptr<SysRegInfo> ri;
-//  WritePREffect(ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRI) : thePR(aPR), ri(std::move(anRI)) {
-//  }
-//
-//  void invoke(SemanticInstruction &anInstruction) {
-//    FLEXUS_PROFILE();
-//    if (!anInstruction.isAnnulled()) {
-//      uint64_t rs = 0;
-//      if (anInstruction.hasOperand(kResult)) {
-//        rs = anInstruction.operand<uint64_t>(kResult);
-//      } else if (anInstruction.hasOperand(kResult1)) {
-//        rs = anInstruction.operand<uint64_t>(kResult1);
-//      }
-//      DBG_(Iface,
-//           (<< anInstruction << " Write " << ri->name << " value= " << std::hex << rs << std::dec));
-//
-//      ri->writefn(anInstruction.core(), (uint64_t)rs);
-//    }
-//    Effect::invoke(anInstruction);
-//  }
-//
-//  void describe(std::ostream &anOstream) const {
-//    anOstream << " Write PR " << thePR;
-//    Effect::describe(anOstream);
-//  }
-//};
-//
-// Effect *writePR(SemanticInstruction *inst, ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRI) {
-//  WritePREffect *e = new WritePREffect(aPR, std::move(anRI));
-//  inst->addNewComponent(e);
-//  return e;
-//}
-//
-// struct WritePSTATE : public Effect {
-//  uint8_t theOp1, theOp2;
-//  WritePSTATE(uint8_t anOp1, uint8_t anOp2) : theOp1(anOp1), theOp2(anOp2) {
-//  }
-//
-//  void invoke(SemanticInstruction &anInstruction) {
-//    FLEXUS_PROFILE();
-//    if (!anInstruction.isAnnulled()) {
-//
-//      uint64_t val = anInstruction.operand<uint64_t>(kResult);
-//      switch ((theOp1 << 3) | theOp2) {
-//      case 0x3:
-//      case 0x4:
-//        anInstruction.setWillRaise(kException_SYSTEMREGISTERTRAP);
-//        anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction>(&anInstruction),
-//                                       anInstruction.willRaise());
-//        break;
-//      case 0x5: // sp
-//      {
-//        std::unique_ptr<SysRegInfo> ri = getPriv(kSPSel);
-//        ri->writefn(anInstruction.core(), (uint64_t)(val & 1));
-//        break;
-//      }
-//      case 0x1e: // daif set
-//        anInstruction.core()->setDAIF((uint32_t)val | anInstruction.core()->_PSTATE().DAIF());
-//        break;
-//      case 0x1f: // daif clr
-//        anInstruction.core()->setDAIF((uint32_t)val ^ anInstruction.core()->_PSTATE().DAIF());
-//        break;
-//      default:
-//        anInstruction.setWillRaise(kException_UNCATEGORIZED);
-//        anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction>(&anInstruction),
-//                                       anInstruction.willRaise());
-//        break;
-//      }
-//    }
-//    Effect::invoke(anInstruction);
-//  }
-//
-//  void describe(std::ostream &anOstream) const {
-//    anOstream << " Write PSTATE ";
-//    Effect::describe(anOstream);
-//  }
-//};
-//
-// Effect *writePSTATE(SemanticInstruction *inst, uint8_t anOp1, uint8_t anOp2) {
-//  Effect *e = new WritePSTATE(anOp1, anOp2);
-//  inst->addNewComponent(e);
-//  return e;
-//}
+
+struct WritePREffect : public Effect {
+ ePrivRegs thePR;
+ std::unique_ptr<SysRegInfo> ri;
+ WritePREffect(ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRI) : thePR(aPR), ri(std::move(anRI)) {
+ }
+
+ void invoke(SemanticInstruction &anInstruction) {
+   FLEXUS_PROFILE();
+   if (!anInstruction.isAnnulled()) {
+     uint64_t rs = 0;
+     if (anInstruction.hasOperand(kResult)) {
+       rs = anInstruction.operand<uint64_t>(kResult);
+     } else if (anInstruction.hasOperand(kResult1)) {
+       rs = anInstruction.operand<uint64_t>(kResult1);
+     }
+     DBG_(Iface,
+          (<< anInstruction << " Write " << ri->name << " value= " << std::hex << rs << std::dec));
+
+     ri->writefn(anInstruction.core(), (uint64_t)rs);
+   }
+   Effect::invoke(anInstruction);
+ }
+
+ void describe(std::ostream &anOstream) const {
+   anOstream << " Write PR " << thePR;
+   Effect::describe(anOstream);
+ }
+};
+
+Effect *writePR(SemanticInstruction *inst, ePrivRegs aPR, std::unique_ptr<SysRegInfo> anRI) {
+ WritePREffect *e = new WritePREffect(aPR, std::move(anRI));
+ inst->addNewComponent(e);
+ return e;
+}
+
+struct WritePSTATE : public Effect {
+ uint8_t theOp1, theOp2;
+ WritePSTATE(uint8_t anOp1, uint8_t anOp2) : theOp1(anOp1), theOp2(anOp2) {
+ }
+
+ void invoke(SemanticInstruction &anInstruction) {
+   FLEXUS_PROFILE();
+   if (!anInstruction.isAnnulled()) {
+
+     uint64_t val = anInstruction.operand<uint64_t>(kResult);
+     switch ((theOp1 << 3) | theOp2) {
+     case 0x3:
+     case 0x4:
+       anInstruction.setWillRaise(kException_SYSTEMREGISTERTRAP);
+       anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction>(&anInstruction),
+                                      anInstruction.willRaise());
+       break;
+     case 0x5: // sp
+     {
+       std::unique_ptr<SysRegInfo> ri = getPriv(kSPSel);
+       ri->writefn(anInstruction.core(), (uint64_t)(val & 1));
+       break;
+     }
+     case 0x1e: // daif set
+       anInstruction.core()->setDAIF((uint32_t)val | anInstruction.core()->_PSTATE().DAIF());
+       break;
+     case 0x1f: // daif clr
+       anInstruction.core()->setDAIF((uint32_t)(~val & anInstruction.core()->_PSTATE().DAIF()));
+       break;
+     default:
+       anInstruction.setWillRaise(kException_UNCATEGORIZED);
+       anInstruction.core()->takeTrap(boost::intrusive_ptr<Instruction>(&anInstruction),
+                                      anInstruction.willRaise());
+       break;
+     }
+   }
+   Effect::invoke(anInstruction);
+ }
+
+ void describe(std::ostream &anOstream) const {
+   anOstream << " Write PSTATE ";
+   Effect::describe(anOstream);
+ }
+};
+
+Effect *writePSTATE(SemanticInstruction *inst, uint8_t anOp1, uint8_t anOp2) {
+ Effect *e = new WritePSTATE(anOp1, anOp2);
+ inst->addNewComponent(e);
+ return e;
+}
 //
 // struct WriteNZCV : public Effect {
 //  WriteNZCV() {
@@ -1249,7 +1125,7 @@ struct MarkExclusiveMonitor : public Effect
             uint64_t addr             = anInstruction.operand<uint64_t>(theAddressCode);
             Flexus::Qemu::Processor c = Flexus::Qemu::Processor::getProcessor(anInstruction.cpu());
             PhysicalMemoryAddress pAddress =
-              PhysicalMemoryAddress(c.translate_va2pa(VirtualMemoryAddress((addr >> 6) << 6)));
+              PhysicalMemoryAddress(c.translate_va2pa(VirtualMemoryAddress((addr >> 6) << 6), anInstruction.unprivAccess()));
 
             anInstruction.core()->markExclusiveGlobal(pAddress, theSize, kMonitorSet);
             anInstruction.core()->markExclusiveLocal(pAddress, theSize, kMonitorSet);
