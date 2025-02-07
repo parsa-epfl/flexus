@@ -62,7 +62,7 @@ private:
         for(std::size_t i = 0; i < cfg.EstimatedIPC; i++) {
             uint64_t return_value = theCPU.advance();
             if(return_value == 0x10003){ // QEMU_EXCP_HALTED
-                DBG_(Crit, (<< "CPU " << theCPUIndex << " has halted."));
+                // DBG_(Crit, (<< "CPU " << theCPUIndex << " has halted."));
             } else {
                 ++theCommitCount;
             }
