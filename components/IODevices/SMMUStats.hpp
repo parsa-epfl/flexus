@@ -2,6 +2,7 @@
 #define FLEXUS_SMMU_STATS
 
 #include <core/stats.hpp>
+#include <sstream>
 
 namespace nSMMU {
 
@@ -18,6 +19,7 @@ struct SMMUStats
 	Stat::StatCounter IOTLB_Miss_Stats;
 	Stat::StatCounter IOTLB_Eviction_Stats;
 	Stat::StatCounter IOTLB_Invalidation_Stats;	
+	Stat::StatAnnotation IOVA_Stats;
 
 	uint64_t Total_Translation;
 	uint64_t Translation_Read;
@@ -26,6 +28,7 @@ struct SMMUStats
 	uint64_t IOTLB_Miss;
 	uint64_t IOTLB_Eviction;
 	uint64_t IOTLB_Invalidation;
+	std::stringstream ss;
 
 	SMMUStats(std::string const& theName)
 		: Total_Translation_Stats(theName + "-Translation:Total")
@@ -35,6 +38,7 @@ struct SMMUStats
 		, IOTLB_Miss_Stats(theName + "-IOTLB:Miss")
 		, IOTLB_Eviction_Stats(theName + "-IOTLB:Eviction")
 		, IOTLB_Invalidation_Stats(theName + "-IOTLB:Invalidation")
+		, IOVA_Stats(theName + "-IOVA")
 
 	{
 		Total_Translation		= 0;
@@ -46,7 +50,7 @@ struct SMMUStats
 		IOTLB_Invalidation		= 0;
 	}
 
-	void update()
+	void update(uint64_t IOVA)
 	{
 		Total_Translation_Stats		+= Total_Translation;
 		Translation_Read_Stats		+= Translation_Read;
@@ -55,6 +59,15 @@ struct SMMUStats
 		IOTLB_Miss_Stats			+= IOTLB_Miss;
 		IOTLB_Eviction_Stats		+= IOTLB_Eviction;
 		IOTLB_Invalidation_Stats	+= IOTLB_Invalidation;
+
+		if (IOVA) {
+			if (IOTLB_Hit) {
+				ss << "0x" << std::hex << IOVA << "[H]\t";
+			} else if (IOTLB_Miss) {
+				ss << "0x" << std::hex << IOVA << "[M]\t";
+			}
+			IOVA_Stats = ss.str();
+		}
 
 		Total_Translation			= 0;
 		Translation_Read			= 0;

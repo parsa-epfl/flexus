@@ -5,6 +5,7 @@
 #include "core/types.hpp"
 #include <cstdint>
 #include <vector>
+#include <mutex>
 #include "SMMU.hpp"
 
 #include DBG_Control()
@@ -68,6 +69,7 @@ private:
 
 private:
 	SMMUStats * theSMMUStats;
+	std::mutex SMMUMutex;
 
 public:
 	FLEXUS_COMPONENT_CONSTRUCTOR(SMMU)
@@ -197,17 +199,18 @@ public:
 	//----------
 	void drive(interface::SMMUDrive const&)
 	{
-		theSMMUStats->update();
+		// theSMMUStats->update();
 	}
 
 	FLEXUS_PORT_ALWAYS_AVAILABLE(CPUMemoryRequest);
 	void push(interface::CPUMemoryRequest const&, MemoryMessage& aMessage)
 	{
+		const std::lock_guard<std::mutex> lock(SMMUMutex);
 		if ((uint64_t)aMessage.address() == (configBaseAddress + SMMU_CMDQ_PROD)) {	// CPU produced a command
 			processCommandQueue ();
 		}
 
-		theSMMUStats->update();	// For updating Invalidation Stats
+		theSMMUStats->update(0x0);	// For updating Invalidation Stats
 	}
 
 	// !This needs to be implemented
@@ -223,6 +226,7 @@ public:
 	bool available(interface::DeviceMemoryRequest const&) { return true; }
 	void push(interface::DeviceMemoryRequest const&, MemoryMessage& aMemoryMessage)
 	{
+		const std::lock_guard<std::mutex> lock(SMMUMutex);
 		DBG_Assert(	aMemoryMessage.type() == MemoryMessage::IOLoadReq ||
 					aMemoryMessage.type() == MemoryMessage::IOStoreReq , 
 					(<< "Invalid Memory Message sent to SMMU for translation")
@@ -241,7 +245,7 @@ public:
 		  tr->setIO(aMemoryMessage.getBDF());
 
 		PhysicalMemoryAddress qflexPA = translateIOVA (tr, aMemoryMessage);	// SMMU translation happens here
-		theSMMUStats->update();	// Update Stats for IOTLB access
+		theSMMUStats->update(tr->theVaddr);	// Update Stats for IOTLB access
 
 		// Validation
 		PhysicalMemoryAddress qemuPA (Flexus::Qemu::API::qemu_api.translate_iova2pa (tr->bdf, (uint64_t)tr->theVaddr));
