@@ -217,7 +217,6 @@ class PREDICTOR
 
         ghist          = 0;
         ghist_retired  = 0;
-        DBG_(Tmp, (<< " ghist ini: " << ghist));
         // computes the geometric history lengths
         m[0]         = MAXHIST - 1;
         m[NHIST - 1] = MINHIST;
@@ -392,16 +391,6 @@ class PREDICTOR
                     altpred = (gtable[aBPState.altbank][aBPState.GI[aBPState.altbank]].ctr >= 0);
                 else
                     altpred = getbim(pc, aBPState.BI);
-                // if the entry is recognized as a newly allocated entry and
-                // counter PWIN is negative use the alternate prediction
-                // see section 3.2.4
-                //	  if ((PWIN < 0) || (abs (2 * gtable[bank][GI[bank]].ctr + 1) != 1)
-                //	      || (gtable[bank][GI[bank]].ubit != 0))
-                //
-                //	    return (gtable[bank][GI[bank]].ctr >= 0);
-                //	  else
-                //	    return (altpred);
-                //	  DBG_(Tmp, ( << "Tage history prediciton"));
                 aBPState.bimodalPrediction = false;
                 aBPState.saturationCounter = gtable[bank][aBPState.GI[bank]].ctr + 4 /*To make the value positive (0 and 7) */;
                 return (gtable[bank][aBPState.GI[bank]].ctr >= 0);
@@ -409,7 +398,6 @@ class PREDICTOR
             } else {
                 altpred = getbim(pc, aBPState.BI);
 
-                //	  DBG_(Tmp, ( << "Tage base prediciton"));
                 aBPState.bimodalPrediction = true;
                 aBPState.saturationCounter = getSatCounter(aBPState.BI);
                 return altpred;

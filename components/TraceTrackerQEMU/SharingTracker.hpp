@@ -22,8 +22,6 @@ extern "C"
 using namespace Flexus;
 using namespace Core;
 
-#define MyLevel Iface
-
 #include DBG_Control()
 
 namespace nTraceTracker {
@@ -238,7 +236,7 @@ class SharingTracker
     void accessLoad(int32_t aNode, address_t block, uint32_t offset, int32_t size)
     {
         if (block == 0xd170080 /*FS*/ || block == 0x1da87240 /*SS*/)
-            DBG_(MyLevel, (<< "[" << aNode << "] accessLoad 0x" << std::hex << block << "," << offset));
+            DBG_(Iface, (<< "[" << aNode << "] accessLoad 0x" << std::hex << block << "," << offset));
 
         SharingMap::iterator iter = theInvalidTags[aNode].find(block);
         if (iter != theInvalidTags[aNode].end()) {
@@ -252,7 +250,7 @@ class SharingTracker
     void accessStore(int32_t aNode, address_t block, uint32_t offset, int32_t size)
     {
         if (block == 0xd170080 /*FS*/ || block == 0x1da87240 /*SS*/)
-            DBG_(MyLevel, (<< "[" << aNode << "] accessStore 0x" << std::hex << block << "," << offset));
+            DBG_(Iface, (<< "[" << aNode << "] accessStore 0x" << std::hex << block << "," << offset));
 
         int32_t ii;
         for (ii = 0; ii < theNumNodes; ii++) {
@@ -271,7 +269,7 @@ class SharingTracker
     void accessAtomic(int32_t aNode, address_t block, uint32_t offset, int32_t size)
     {
         if (block == 0xd170080 /*FS*/ || block == 0x1da87240 /*SS*/)
-            DBG_(MyLevel, (<< "[" << aNode << "] accessAtomic 0x" << std::hex << block << "," << offset));
+            DBG_(Iface, (<< "[" << aNode << "] accessAtomic 0x" << std::hex << block << "," << offset));
 
         accessLoad(aNode, block, offset, size);
         accessStore(aNode, block, offset, size);
@@ -280,7 +278,7 @@ class SharingTracker
     void fill(int32_t aNode, int32_t aCacheLevel, address_t block)
     {
         if (block == 0xd170080 /*FS*/ || block == 0x1da87240 /*SS*/)
-            DBG_(MyLevel, (<< "[" << aNode << ":" << aCacheLevel << "] fill 0x" << std::hex << block));
+            DBG_(Iface, (<< "[" << aNode << ":" << aCacheLevel << "] fill 0x" << std::hex << block));
 
         SharingMap::iterator iter = theInvalidTags[aNode].find(block);
         if (iter != theInvalidTags[aNode].end()) {
@@ -292,7 +290,7 @@ class SharingTracker
     void insert(int32_t aNode, int32_t aCacheLevel, address_t block)
     {
         if (block == 0xd170080 /*FS*/ || block == 0x1da87240 /*SS*/)
-            DBG_(MyLevel, (<< "[" << aNode << ":" << aCacheLevel << "] insert 0x" << std::hex << block));
+            DBG_(Iface, (<< "[" << aNode << ":" << aCacheLevel << "] insert 0x" << std::hex << block));
 
         SharingMap::iterator iter = theInvalidTags[aNode].find(block);
         if (iter != theInvalidTags[aNode].end()) {
@@ -304,7 +302,7 @@ class SharingTracker
     void evict(int32_t aNode, int32_t aCacheLevel, address_t block, bool drop)
     {
         if (block == 0xd170080 /*FS*/ || block == 0x1da87240 /*SS*/)
-            DBG_(MyLevel, (<< "[" << aNode << ":" << aCacheLevel << "] evict 0x" << std::hex << block));
+            DBG_(Iface, (<< "[" << aNode << ":" << aCacheLevel << "] evict 0x" << std::hex << block));
 
         SharingMap::iterator iter = theInvalidTags[aNode].find(block);
         if (iter != theInvalidTags[aNode].end()) {
@@ -324,7 +322,7 @@ class SharingTracker
     void invalidate(int32_t aNode, int32_t aCacheLevel, address_t block)
     {
         if (block == 0xd170080 /*FS*/ || block == 0x1da87240 /*SS*/)
-            DBG_(MyLevel, (<< "[" << aNode << ":" << aCacheLevel << "] invalidate 0x" << std::hex << block));
+            DBG_(Iface, (<< "[" << aNode << ":" << aCacheLevel << "] invalidate 0x" << std::hex << block));
 
         SharingMap::iterator iter = theInvalidTags[aNode].find(block);
         if (iter != theInvalidTags[aNode].end()) {
@@ -339,7 +337,7 @@ class SharingTracker
     void invalidAck(int32_t aNode, address_t block)
     {
         if (block == 0xd170080 /*FS*/ || block == 0x1da87240 /*SS*/)
-            DBG_(MyLevel, (<< "[" << aNode << "] invalidAck 0x" << std::hex << block));
+            DBG_(Iface, (<< "[" << aNode << "] invalidAck 0x" << std::hex << block));
 
         SharingMap::iterator iter = theInvalidTags[aNode].find(block);
         if (iter != theInvalidTags[aNode].end()) {
@@ -357,7 +355,7 @@ class SharingTracker
     void invTagCreate(int32_t aNode, address_t block)
     {
         if (block == 0xd170080 /*FS*/ || block == 0x1da87240 /*SS*/)
-            DBG_(MyLevel, (<< "[" << aNode << "] tagCreate 0x" << std::hex << block));
+            DBG_(Iface, (<< "[" << aNode << "] tagCreate 0x" << std::hex << block));
 
         SharingMap::iterator iter = theInvalidTags[aNode].find(block);
         if (iter != theInvalidTags[aNode].end()) {
@@ -370,13 +368,13 @@ class SharingTracker
     void invTagRefill(int32_t aNode, address_t block)
     {
         if (block == 0xd170080 /*FS*/ || block == 0x1da87240 /*SS*/)
-            DBG_(MyLevel, (<< "[" << aNode << "] tagRefill 0x" << std::hex << block));
+            DBG_(Iface, (<< "[" << aNode << "] tagRefill 0x" << std::hex << block));
     }
 
     void invTagReplace(int32_t aNode, address_t block)
     {
         if (block == 0xd170080 /*FS*/ || block == 0x1da87240 /*SS*/)
-            DBG_(MyLevel, (<< "[" << aNode << "] tagReplace 0x" << std::hex << block));
+            DBG_(Iface, (<< "[" << aNode << "] tagReplace 0x" << std::hex << block));
 
         SharingMap::iterator iter = theInvalidTags[aNode].find(block);
         if (iter != theInvalidTags[aNode].end()) {
@@ -456,6 +454,5 @@ class SharingTracker
 
 } // namespace nTraceTracker
 
-#undef MyLevel
 
 #endif
