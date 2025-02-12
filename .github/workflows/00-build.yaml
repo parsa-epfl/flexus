@@ -7,10 +7,7 @@ on:
   workflow_dispatch:
   push:
     branches: [maintainer/bryan]
-  pull_request:
-    branches:
 
-  #TODO: Once 'main' is replaced
   # schedule:
   #   # Every Wednesday at midnight
   #   - cron:  '0 0 * * 3'
