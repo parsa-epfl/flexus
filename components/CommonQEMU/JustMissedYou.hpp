@@ -109,7 +109,7 @@ struct JustMissedYou
                 ++(*theJustMisses_U[aNode]);
                 (*theJustMisses_U_Delay[aNode]) += theFlexus->cycleCount() - iter->theCycle;
             }
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< filled_lexical_cast<3>(aNode) << "-JMY JustMissed " << anAddress << (isSystem ? "[S]" : "[U]")
                   << " prefetch precedes miss by " << theFlexus->cycleCount() - iter->theCycle));
         }
@@ -130,7 +130,7 @@ struct JustMissedYou
                 ++(*theJustMisses_U[aNode]);
                 (*theJustMisses_U_Delay[aNode]) += theFlexus->cycleCount() - iter->theCycle;
             }
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< filled_lexical_cast<3>(aNode) << "-JMY JustMissed " << anAddress
                   << (iter->theSystem ? "[S]" : "[U]") << " miss precedes prefetch by "
                   << theFlexus->cycleCount() - iter->theCycle));

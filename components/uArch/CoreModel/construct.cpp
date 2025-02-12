@@ -361,7 +361,7 @@ CoreImpl::reset()
     clearSSB();
 
     if (theIsSpeculating) {
-        DBG_(Iface, (<< theName << " Speculation aborted by sync"));
+        DBG_(VVerb, (<< theName << " Speculation aborted by sync"));
         accountResyncSpeculation();
     } else {
         accountResync();

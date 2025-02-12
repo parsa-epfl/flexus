@@ -449,12 +449,12 @@ BranchInteraction::operator()(boost::intrusive_ptr<Instruction> anInstruction, u
     //            (<< "BranchInteraction invoked without a target")); // This is possible, because of the misprediction.
     if (anInstruction->pc() != theIssuer->bpState()->theActualTarget) {
         DBG_(Verb, (<< *anInstruction << " Branch Redirection."));
-        if (aCore.squashFrom(anInstruction)) { 
+        if (aCore.squashFrom(anInstruction)) {
             boost::intrusive_ptr<BPredRedictRequest> aRequest = new BPredRedictRequest();
             aRequest->theTarget = theIssuer->bpState()->theActualTarget;
             aRequest->theBPState = theIssuer->bpState();
-            aRequest->theInsertNewHistory = true;    
-            aCore.redirectFetch(aRequest); 
+            aRequest->theInsertNewHistory = true;
+            aCore.redirectFetch(aRequest);
         }
     }
 }
@@ -472,7 +472,7 @@ branchInteraction(boost::intrusive_ptr<Instruction> anIssuer)
 }
 
 
-// struct BranchPredictorTrainingEffect : public Effect 
+// struct BranchPredictorTrainingEffect : public Effect
 // {
 //     BranchPredictorTrainingEffect() {}
 
@@ -493,7 +493,7 @@ branchInteraction(boost::intrusive_ptr<Instruction> anIssuer)
 // };
 
 BranchPredictorTrainingEffect::BranchPredictorTrainingEffect() {
-    
+
 }
 
 void BranchPredictorTrainingEffect::invoke(SemanticInstruction &anInstruction)
@@ -540,7 +540,7 @@ struct BranchEffect : public Effect
             Operand address = anInstruction.operand(kAddress);
             theTarget       = VirtualMemoryAddress(boost::get<uint64_t>(address));
         }
-        
+
         // This effect currently is only used by call and unconditional branch instructions
         DBG_Assert(anInstruction.bpState()->theActualType == kUnconditional || anInstruction.bpState()->theActualType == kCall,
                    (<< "BranchEffect invoked on an instruction that is not a call or unconditional branch: " << anInstruction));
@@ -553,7 +553,7 @@ struct BranchEffect : public Effect
 
         boost::intrusive_ptr<Instruction> anInstructionPtr{&anInstruction};
         anInstruction.core()->applyToNext(anInstructionPtr, branchInteraction(anInstructionPtr));
-        DBG_(Iface, (<< "BRANCH:  Must redirect to " << theTarget));
+        DBG_(VVerb, (<< "BRANCH:  Must redirect to " << theTarget));
         Effect::invoke(anInstruction);
     }
     void describe(std::ostream& anOstream) const
@@ -927,7 +927,7 @@ struct ReadPREffect : public Effect
             // uint64_t pr = anInstruction.core()->readPR(thePR);
             mapped_reg name = anInstruction.operand<mapped_reg>(kPD);
             uint64_t prVal  = ri->readfn(anInstruction.core());
-            DBG_(Iface, (<< anInstruction << " Read " << ri->name << " value= " << std::hex << prVal << std::dec));
+            DBG_(VVerb, (<< anInstruction << " Read " << ri->name << " value= " << std::hex << prVal << std::dec));
 
             anInstruction.setOperand(kResult, prVal);
 
@@ -974,7 +974,7 @@ struct WritePREffect : public Effect {
      } else if (anInstruction.hasOperand(kResult1)) {
        rs = anInstruction.operand<uint64_t>(kResult1);
      }
-     DBG_(Iface,
+     DBG_(VVerb,
           (<< anInstruction << " Write " << ri->name << " value= " << std::hex << rs << std::dec));
 
      ri->writefn(anInstruction.core(), (uint64_t)rs);
@@ -1087,7 +1087,7 @@ struct ClearExclusiveMonitor : public Effect
         FLEXUS_PROFILE();
         if (!anInstruction.isAnnulled()) {
             anInstruction.core()->clearExclusiveLocal();
-            DBG_(Iface, (<< "Clearing Exclusive Monitor Local for " << anInstruction));
+            DBG_(VVerb, (<< "Clearing Exclusive Monitor Local for " << anInstruction));
         }
         Effect::invoke(anInstruction);
     }
@@ -1131,7 +1131,7 @@ struct MarkExclusiveMonitor : public Effect
             anInstruction.core()->markExclusiveLocal(pAddress, theSize, kMonitorSet);
             anInstruction.core()->markExclusiveVA(VirtualMemoryAddress(pAddress), theSize,
                                                   kMonitorSet); // optional
-            DBG_(Iface, (<< "Marking Exclusive Monitor Local for " << anInstruction));
+            DBG_(VVerb, (<< "Marking Exclusive Monitor Local for " << anInstruction));
         }
         Effect::invoke(anInstruction);
     }
@@ -1245,11 +1245,11 @@ struct CommitStoreEffect : public Effect
 {
     void invoke(SemanticInstruction& anInstruction)
     {
-        DBG_(Iface, (<< anInstruction.identify() << " CommitStoreEffect "));
+        DBG_(VVerb, (<< anInstruction.identify() << " CommitStoreEffect "));
 
         FLEXUS_PROFILE();
         anInstruction.core()->commitStore(boost::intrusive_ptr<Instruction>(&anInstruction));
-        DBG_(Iface, (<< anInstruction << " Commit store instruction"));
+        DBG_(VVerb, (<< anInstruction << " Commit store instruction"));
         Effect::invoke(anInstruction);
     }
 

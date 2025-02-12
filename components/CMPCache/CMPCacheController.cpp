@@ -133,11 +133,11 @@ CMPCacheController::scheduleNewProcesses()
         reserveEB(process, thePolicy->getEBRequirements(process->transport()));
         theMAFPipeline.enqueue(process);
 
-        DBG_(Trace, (<< theName << " Scheduled WakeMAF: " << *(process->transport()[MemoryMessageTag])));
+        DBG_(VVerb, (<< theName << " Scheduled WakeMAF: " << *(process->transport()[MemoryMessageTag])));
         scheduled = true;
     }
     if (!scheduled && thePolicy->MAF().hasWakingEntry()) {
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< theName << " Failed to schedule waking MAF: SnoopOut " << SnoopOut.getSize() << "/"
               << SnoopOut.getReserve() << ", ReplyOut " << ReplyOut.getSize() << "/" << ReplyOut.getReserve()
               << ", ReqOut " << RequestOut.getSize() << "/" << RequestOut.getReserve() << ", EB full " << std::boolalpha
@@ -158,11 +158,11 @@ CMPCacheController::scheduleNewProcesses()
         reserveSnoopOut(process, 1);
 
         theMAFPipeline.enqueue(process);
-        DBG_(Trace, (<< theName << " Scheduled Cache Evict: " << *(process->transport()[MemoryMessageTag])));
+        DBG_(VVerb, (<< theName << " Scheduled Cache Evict: " << *(process->transport()[MemoryMessageTag])));
         scheduled = true;
     }
     if (!scheduled && !thePolicy->freeCacheEBPending()) {
-        DBG_(Trace, (<< theName << " Failed to schedule evict, no snoop buffer space."));
+        DBG_(VVerb, (<< theName << " Failed to schedule evict, no snoop buffer space."));
     }
 
     while (theMAFPipeline.serverAvail() && !theIdleWorkScheduled &&
@@ -173,13 +173,13 @@ CMPCacheController::scheduleNewProcesses()
         reserveCacheEB(process, 1);
 
         theMAFPipeline.enqueue(process);
-        DBG_(Trace, (<< theName << " Scheduled Dir Evict: " << *(process->transport()[MemoryMessageTag])));
+        DBG_(VVerb, (<< theName << " Scheduled Dir Evict: " << *(process->transport()[MemoryMessageTag])));
         scheduled = true;
     }
     if (!scheduled && !thePolicy->freeDirEBPending()) {
-        DBG_(Trace, (<< theName << " Failed to schedule evict, no snoop buffer space."));
+        DBG_(VVerb, (<< theName << " Failed to schedule evict, no snoop buffer space."));
     } else if (!scheduled && thePolicy->DirEB().full()) {
-        DBG_(Iface,
+        DBG_(VVerb,
              (<< theName
               << " Failed to schedule Dir Evict when DirEB FULL: "
                  "Used/Reserved/Size = "
@@ -195,11 +195,11 @@ CMPCacheController::scheduleNewProcesses()
         reserveReplyOut(process, 1);
         theMAFPipeline.enqueue(process);
 
-        DBG_(Trace, (<< theName << " Scheduled Reply: " << *(process->transport()[MemoryMessageTag])));
+        DBG_(VVerb, (<< theName << " Scheduled Reply: " << *(process->transport()[MemoryMessageTag])));
         scheduled = true;
     }
     if (!scheduled && !ReplyIn.empty()) {
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< theName << " Failed to schedule Reply: SnoopOut " << SnoopOut.getSize() << "/" << SnoopOut.getReserve()
               << ", ReplyOut " << ReplyOut.getSize() << "/" << ReplyOut.getReserve()));
     }
@@ -213,11 +213,11 @@ CMPCacheController::scheduleNewProcesses()
         reserveMAF(process);
         theMAFPipeline.enqueue(process);
 
-        DBG_(Trace, (<< theName << " Scheduled Snoop: " << *(process->transport()[MemoryMessageTag])));
+        DBG_(VVerb, (<< theName << " Scheduled Snoop: " << *(process->transport()[MemoryMessageTag])));
         scheduled = true;
     }
     if (!scheduled && !SnoopIn.empty()) {
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< theName << " Failed to schedule Snoop: SnoopOut " << SnoopOut.getSize() << "/" << SnoopOut.getReserve()
               << ", ReplyOut " << ReplyOut.getSize() << "/" << ReplyOut.getReserve() << std::boolalpha << ", MAF full "
               << thePolicy->MAF().full()));
@@ -235,17 +235,17 @@ CMPCacheController::scheduleNewProcesses()
         reserveMAF(process);
         theMAFPipeline.enqueue(process);
 
-        DBG_(Trace, (<< theName << " Scheduled Request: " << *(process->transport()[MemoryMessageTag])));
+        DBG_(VVerb, (<< theName << " Scheduled Request: " << *(process->transport()[MemoryMessageTag])));
         scheduled = true;
     }
     if (!scheduled && !RequestIn.empty()) {
-        DBG_(Iface,
+        DBG_(VVerb,
              (<< theName << " Failed to schedule Request: SnoopOut " << SnoopOut.getSize() << "/"
               << SnoopOut.getReserve() << ", ReplyOut " << ReplyOut.getSize() << "/" << ReplyOut.getReserve()
               << ", ReqOut " << RequestOut.getSize() << "/" << RequestOut.getReserve() << ", EB full " << std::boolalpha
               << thePolicy->EBFull() << ", MAF full " << thePolicy->MAF().full()));
         if (thePolicy->EBFull()) {
-            DBG_(Iface,
+            DBG_(VVerb,
                  (<< theName << " DirEB.full() = " << std::boolalpha << thePolicy->DirEB().full()
                   << ", CacheEB (reserved,used,size) = (" << thePolicy->CacheEB().reservedEntries() << ", "
                   << thePolicy->CacheEB().usedEntries() << ", " << theCMPCacheInfo.theCacheEBSize
@@ -267,12 +267,12 @@ CMPCacheController::scheduleNewProcesses()
         // Get any additional, policy specific reservations
         thePolicy->getIdleWorkReservations(process);
 
-        DBG_(Trace, (<< theName << " Scheduled IdleWork: " << *(process->transport()[MemoryMessageTag])));
+        DBG_(VVerb, (<< theName << " Scheduled IdleWork: " << *(process->transport()[MemoryMessageTag])));
         theIdleWorkScheduled = true;
         scheduled            = true;
     }
     if (!scheduled && thePolicy->hasIdleWorkAvailable()) {
-        DBG_(Trace, (<< theName << " Failed to schedule idle work, no space in Snoop Out"));
+        DBG_(VVerb, (<< theName << " Failed to schedule idle work, no space in Snoop Out"));
     }
 }
 
@@ -330,7 +330,7 @@ CMPCacheController::runRequestProcess(ProcessEntry_p process)
 {
     FLEXUS_PROFILE();
 
-    DBG_(Trace, (<< theName << " handleRequest: " << *process << " for " << *(process->transport()[MemoryMessageTag])));
+    DBG_(VVerb, (<< theName << " handleRequest: " << *process << " for " << *(process->transport()[MemoryMessageTag])));
 
     thePolicy->handleRequest(process);
     auto req   = process->transport()[MemoryMessageTag];
@@ -417,7 +417,7 @@ CMPCacheController::runRequestProcess(ProcessEntry_p process)
         default: DBG_Assert(false, (<< "Unexpected action type for Request process: " << process->action())); break;
     }
 
-    DBG_(Trace,
+    DBG_(VVerb,
          (<< theName << " runRequestProcess: " << *process << " for " << *(process->transport()[MemoryMessageTag])));
 
     // Either put into the directory pipeline, or finalize the process
@@ -434,7 +434,7 @@ CMPCacheController::runSnoopProcess(ProcessEntry_p process)
 {
     FLEXUS_PROFILE();
 
-    DBG_(Trace, (<< theName << " runSnoopProcess: " << *process->transport()[MemoryMessageTag]));
+    DBG_(VVerb, (<< theName << " runSnoopProcess: " << *process->transport()[MemoryMessageTag]));
     thePolicy->handleSnoop(process);
 
     switch (process->action()) {
@@ -479,7 +479,7 @@ CMPCacheController::runReplyProcess(ProcessEntry_p process)
 {
     FLEXUS_PROFILE();
 
-    DBG_(Trace, (<< theName << " runReplyProcess: " << *process->transport()[MemoryMessageTag]));
+    DBG_(VVerb, (<< theName << " runReplyProcess: " << *process->transport()[MemoryMessageTag]));
     thePolicy->handleReply(process);
 
     switch (process->action()) {
@@ -506,7 +506,7 @@ CMPCacheController::runReplyProcess(ProcessEntry_p process)
             break;
         default: DBG_Assert(false, (<< "Unexpected action type for Reply process: " << process->action())); break;
     }
-    DBG_(Trace, (<< theName << " runReplyProcess: " << *process << " FOR " << *process->transport()[MemoryMessageTag]));
+    DBG_(VVerb, (<< theName << " runReplyProcess: " << *process << " FOR " << *process->transport()[MemoryMessageTag]));
 
     // Either put into the directory pipeline, or finalize the process
     if (process->lookupRequired()) {
@@ -522,7 +522,7 @@ CMPCacheController::runCacheEvictProcess(ProcessEntry_p process)
 {
     FLEXUS_PROFILE();
 
-    DBG_(Trace, (<< theName << " runEvictProcess: " << *process->transport()[MemoryMessageTag]));
+    DBG_(VVerb, (<< theName << " runEvictProcess: " << *process->transport()[MemoryMessageTag]));
     thePolicy->handleCacheEvict(process);
 
     DBG_Assert(process->action() == eForward, (<< "Unexpected action type for Evict process: " << process->action()));
@@ -539,7 +539,7 @@ CMPCacheController::runDirEvictProcess(ProcessEntry_p process)
 {
     FLEXUS_PROFILE();
 
-    DBG_(Trace, (<< theName << " runEvictProcess: " << *process->transport()[MemoryMessageTag]));
+    DBG_(VVerb, (<< theName << " runEvictProcess: " << *process->transport()[MemoryMessageTag]));
     thePolicy->handleDirEvict(process);
 
     DBG_Assert(process->action() == eForward, (<< "Unexpected action type for Evict process: " << process->action()));
@@ -555,7 +555,7 @@ CMPCacheController::runIdleWorkProcess(ProcessEntry_p process)
 {
     FLEXUS_PROFILE();
 
-    DBG_(Trace, (<< theName << " runIdleWorkProcess: " << *process->transport()[MemoryMessageTag]));
+    DBG_(VVerb, (<< theName << " runIdleWorkProcess: " << *process->transport()[MemoryMessageTag]));
     thePolicy->handleIdleWork(process);
 
     // Remove any remaining EB reservations
@@ -642,7 +642,7 @@ CMPCacheController::runWakeMAFProcess(ProcessEntry_p process)
         default: DBG_Assert(false, (<< "Unexpected action type for WakeMAF process: " << *process)); break;
     }
 
-    DBG_(Trace,
+    DBG_(VVerb,
          (<< theName << " runWakeMAFProcess: " << *process << " FOR " << *process->transport()[MemoryMessageTag]));
 
     // Either put into the directory pipeline, or finalize the process
@@ -660,7 +660,7 @@ CMPCacheController::finalizeProcess(ProcessEntry_p process)
 {
     FLEXUS_PROFILE();
 
-    DBG_(Trace, (<< "Finalize process: " << *process));
+    DBG_(VVerb, (<< "Finalize process: " << *process));
     auto req   = process->transport()[MemoryMessageTag];
     auto msg_a = req->address();
 
@@ -696,12 +696,12 @@ CMPCacheController::finalizeProcess(ProcessEntry_p process)
             DBG_Assert(process->getSnoopTransports().size() != 0);
             unreserveSnoopOut(process, process->getSnoopTransports().size());
             sendSnoops(process);
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< theName << " Waking MAF Waiting on Evict: " << *(process->maf()->transport()[MemoryMessageTag])));
             thePolicy->MAF().wakeAfterEvict(process->maf());
             break;
         case eWakeEvictMAF:
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< theName << " Waking MAF Waiting on Evict: " << *(process->maf()->transport()[MemoryMessageTag])));
             thePolicy->MAF().wakeAfterEvict(process->maf());
             break;
@@ -747,9 +747,9 @@ void
 CMPCacheController::sendSnoops(ProcessEntry_p process)
 {
     std::list<MemoryTransport>& snoops = process->getSnoopTransports();
-    DBG_(Trace, (<< theName << " enqueueing " << snoops.size() << " snoop transports."));
+    DBG_(VVerb, (<< theName << " enqueueing " << snoops.size() << " snoop transports."));
     while (!snoops.empty()) {
-        DBG_(Trace, (<< theName << " enqueuing Snoop msg: " << *(snoops.front()[MemoryMessageTag])));
+        DBG_(VVerb, (<< theName << " enqueuing Snoop msg: " << *(snoops.front()[MemoryMessageTag])));
         SnoopOut.enqueue(snoops.front());
         snoops.pop_front();
     }

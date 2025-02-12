@@ -212,7 +212,7 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     //  handlePopTL();
 
     if (theRedirectRequested) {
-        DBG_(Iface, (<< " Core triggering Redirect to " << theRedirectRequest));
+        DBG_(VVerb, (<< " Core triggering Redirect to " << theRedirectRequest));
         DBG_Assert(theRedirectRequest);
         redirect_fn(theRedirectRequest);
         thePC                = theRedirectRequest->theTarget;
@@ -327,7 +327,7 @@ CoreImpl::spinDetect(memq_t::index<by_insn>::type::iterator iter)
                 ++va_iter;
             }
             spin_string += "}";
-            DBG_(Iface, (<< theName << " leaving spin mode. " << spin_string));
+            DBG_(VVerb, (<< theName << " leaving spin mode. " << spin_string));
 
             theSpinning = false;
             theSpinCount += theSpinDetectCount;
@@ -373,7 +373,7 @@ CoreImpl::spinDetect(memq_t::index<by_insn>::type::iterator iter)
                     ++va_iter;
                 }
                 spin_string += "}";
-                DBG_(Iface, (<< theName << " entering spin mode. " << spin_string));
+                DBG_(VVerb, (<< theName << " entering spin mode. " << spin_string));
 
                 theSpinning       = true;
                 theSpinStartCycle = theFlexus->cycleCount();
@@ -437,7 +437,7 @@ CoreImpl::requireWritePermission(memq_t::index<by_insn>::type::iterator aWrite)
     if (aWrite->thePaddr != kUnresolved) {
         std::map<PhysicalMemoryAddress, std::pair<int, bool>>::iterator sbline;
         bool is_new;
-        DBG_(Iface, (<< theName << "requireWritePermission : " << *aWrite));
+        DBG_(VVerb, (<< theName << "requireWritePermission : " << *aWrite));
         std::tie(sbline, is_new) = theSBLines_Permission.insert(std::make_pair(addr, std::make_pair(1, false)));
         if (is_new) {
             ++theSBLines_Permission_falsecount;
@@ -466,7 +466,7 @@ CoreImpl::unrequireWritePermission(PhysicalMemoryAddress anAddress)
         --sbline->second.first;
         DBG_Assert(sbline->second.first >= 0);
         if (sbline->second.first == 0) {
-            DBG_(Iface, (<< theName << " Stop tracking: " << anAddress));
+            DBG_(VVerb, (<< theName << " Stop tracking: " << anAddress));
             if (!sbline->second.second) {
                 --theSBLines_Permission_falsecount;
                 DBG_Assert(theSBLines_Permission_falsecount >= 0);
@@ -612,7 +612,7 @@ CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn)
         } else {
             // Speculatively retiring an atomic
             DBG_Assert(theSpeculativeOrder);
-            DBG_(Trace, (<< theName << " Spec-Retire Atomic: " << *iter));
+            DBG_(VVerb, (<< theName << " Spec-Retire Atomic: " << *iter));
 
             // theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue =
             // kSSB; });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSSB );
@@ -1350,19 +1350,6 @@ CoreImpl::commit()
         commit(theSRB.front());
         DBG_(VVerb, (<< theName << " committed in Qemu"));
 
-        //    if (theValidateMMU) {
-        //      DBG_Assert(theSRB.front()->getMMU(), ( << theName << " instruction
-        //      does not have MMU: " << *theSRB.front())); DBG_(VVerb, ( << theName
-        //      << " comparing MMU state after: " << *theSRB.front()));
-        //      Flexus::Qemu::MMU::mmu_t mmu = *(theSRB.front()->getMMU());
-        //      if (! Flexus::Qemu::Processor::getProcessor( theNode
-        //      )->validateMMU(&mmu)) {
-        //        DBG_(Crit, ( << theName << " MMU mismatch after FinalCommit of: "
-        //        << *theSRB.front())); Flexus::Qemu::Processor::getProcessor(
-        //        theNode )->dumpMMU(&mmu);
-        //      }
-        //    }
-
         theSRB.pop_front();
     }
 }
@@ -1384,7 +1371,7 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
         CORE_DBG("Instruction is neither annuled nor is a micro-op");
 
         validation_passed &= anInstruction->preValidate();
-        DBG_(Iface, (<< "Pre Validating... " << validation_passed));
+        DBG_(VVerb, (<< "Pre Validating... " << validation_passed));
 
         //    DBG_( VVerb, Condition(!validation_passed) ( << *anInstruction <<
         //    "Prevalidation failure." ) ); bool take_interrupt =
@@ -1454,11 +1441,11 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
         validation_passed &= anInstruction->postValidate();
     }
 
-    DBG_(Iface, (<< "Post Validating... " << validation_passed));
+    DBG_(VVerb, (<< "Post Validating... " << validation_passed));
 
     if (!validation_passed) {
-        DBG_(Trace, (<< "Failed Validated " << *anInstruction));
-        DBG_(Iface, (<< std::internal << *anInstruction << std::left));
+        DBG_(VVerb, (<< "Failed Validated " << *anInstruction));
+        DBG_(VVerb, (<< std::internal << *anInstruction << std::left));
 
         // Subsequent Empty ROB stalls (until next dispatch) are the result of a
         // modelling error resynchronization instruction.
@@ -1469,7 +1456,7 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
     }
     /* Dump PC to file if logging is enabled */
     if (collectTrace) { trace_stream << anInstruction->pc() << std::endl; }
-    DBG_(Iface, (<< "uARCH Validated "));
+    DBG_(VVerb, (<< "uARCH Validated "));
     DBG_(VVerb, (<< std::internal << *anInstruction << std::left));
 }
 
@@ -1545,7 +1532,7 @@ void
 CoreImpl::startSpeculating()
 {
     if (!isSpeculating()) {
-        DBG_(Iface, (<< theName << " Starting Speculation"));
+        DBG_(VVerb, (<< theName << " Starting Speculation"));
         theIsSpeculating    = true;
         theAbortSpeculation = false;
         accountStartSpeculation();
@@ -1556,11 +1543,11 @@ void
 CoreImpl::checkStopSpeculating()
 {
     if (isSpeculating() && !theAbortSpeculation && theCheckpoints.size() == 0) {
-        DBG_(Iface, (<< theName << " Ending Successful Speculation"));
+        DBG_(VVerb, (<< theName << " Ending Successful Speculation"));
         theIsSpeculating = false;
         accountEndSpeculation();
     } else {
-        DBG_(Iface,
+        DBG_(VVerb,
              (<< theName << " continuing speculation checkpoints: " << theCheckpoints.size() << " Abort pending? "
               << theAbortSpeculation));
     }
@@ -1665,7 +1652,7 @@ CoreImpl::valuePredictAtomic()
             (!theValuePredictInhibit) // Disables value prediction for one
                                       // instruction after a rollback
             && (lsq_head->status() == kIssuedToMemory)) {
-            DBG_(Iface, (<< theName << " Value-predicting " << *lsq_head));
+            DBG_(VVerb, (<< theName << " Value-predicting " << *lsq_head));
             ++theValuePredictions;
 
             if (theSpeculateOnAtomicValuePerfect) {

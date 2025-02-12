@@ -531,7 +531,7 @@ class PREDICTOR
 
         //	  std::cout << std::endl<< std::endl<< std::endl<< std::endl << "Tage update " << taken <<
         // std::endl<< std::endl<< std::endl<< std::endl<< std::endl;
-        DBG_(Iface, (<< " TAGE feedback: " << std::hex << instruction_addr));
+        DBG_(VVerb, (<< " TAGE feedback: " << std::hex << instruction_addr));
         if (aBPState.thePredictedType == kConditional) {
             int phist_back;
             history_t ghist_back;

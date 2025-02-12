@@ -150,28 +150,28 @@ class AbstractEvictBuffer
     void reserve()
     {
         ++theReserve;
-        DBG_(Trace, (<< "CacheEB Reserve(" << 1 << ") -> " << theReserve << " entries reserved."));
+        DBG_(VVerb, (<< "CacheEB Reserve(" << 1 << ") -> " << theReserve << " entries reserved."));
         DBG_Assert(theCurSize + theReserve <= theSize);
     }
 
     void reserve(int32_t count)
     {
         theReserve += count;
-        DBG_(Trace, (<< "CacheEB Reserve(" << count << ") -> " << theReserve << " entries reserved."));
+        DBG_(VVerb, (<< "CacheEB Reserve(" << count << ") -> " << theReserve << " entries reserved."));
         DBG_Assert(theCurSize + theReserve <= theSize);
     }
 
     void unreserve()
     {
         --theReserve;
-        DBG_(Trace, (<< "CacheEB Un-Reserve(" << 1 << ") -> " << theReserve << " entries reserved."));
+        DBG_(VVerb, (<< "CacheEB Un-Reserve(" << 1 << ") -> " << theReserve << " entries reserved."));
         DBG_Assert(theReserve >= 0);
     }
 
     void unreserve(int32_t n)
     {
         theReserve -= n;
-        DBG_(Trace, (<< "CacheEB Un-Reserve(" << n << ") -> " << theReserve << " entries reserved."));
+        DBG_(VVerb, (<< "CacheEB Un-Reserve(" << n << ") -> " << theReserve << " entries reserved."));
         DBG_Assert(theReserve >= 0);
     }
 
@@ -304,7 +304,7 @@ class CacheEvictBuffer : public AbstractEvictBuffer
     {
         iterator existing = find(anAddress);
         if (existing != end()) {
-            DBG_(Iface,
+            DBG_(VVerb,
                  (<< "When trying to allocate an evict buffer entry for " << anAddress
                   << " an existing entry with type " << existing->theType << " was found"));
             existing->theType  = aType;
@@ -322,7 +322,7 @@ class CacheEvictBuffer : public AbstractEvictBuffer
         DBG_Assert(!theEvictions.empty());
         boost::intrusive_ptr<MemoryMessage> retval =
           new MemoryMessage(theEvictions.front().theType, theEvictions.front().theBlockAddress);
-        DBG_(Iface, (<< "Evict buffer popping entry for " << theEvictions.front().theBlockAddress));
+        DBG_(VVerb, (<< "Evict buffer popping entry for " << theEvictions.front().theBlockAddress));
         DBG_Assert(theEvictions.front().evictable());
         theEvictions.pop_front();
         theCurSize--;
@@ -342,7 +342,7 @@ class CacheEvictBuffer : public AbstractEvictBuffer
         }
         DBG_Assert(iter->evictable());
         boost::intrusive_ptr<MemoryMessage> retval = new MemoryMessage(iter->theType, iter->theBlockAddress);
-        DBG_(Iface, (<< "Evict buffer getting entry for " << iter->theBlockAddress));
+        DBG_(VVerb, (<< "Evict buffer getting entry for " << iter->theBlockAddress));
         iter->setPending(true);
         return retval;
     }
@@ -358,7 +358,7 @@ class CacheEvictBuffer : public AbstractEvictBuffer
         DBG_Assert(iter != end);
 
         boost::intrusive_ptr<MemoryMessage> retval = new MemoryMessage(iter->theType, iter->theBlockAddress);
-        DBG_(Iface, (<< "Evict buffer getting entry for " << iter->theBlockAddress << " setting to pending Evict"));
+        DBG_(VVerb, (<< "Evict buffer getting entry for " << iter->theBlockAddress << " setting to pending Evict"));
         iter->setPending(true);
         thePendingEvicts++;
         return retval;
@@ -379,7 +379,7 @@ class CacheEvictBuffer : public AbstractEvictBuffer
         DBG_Assert(iter != end);
 
         if (iter->pending()) { thePendingEvicts--; }
-        DBG_(Iface, (<< "Evict buffer removing entry for " << iter->theBlockAddress));
+        DBG_(VVerb, (<< "Evict buffer removing entry for " << iter->theBlockAddress));
         theEvictions.erase(iter);
         theCurSize--;
     }
@@ -392,7 +392,7 @@ class CacheEvictBuffer : public AbstractEvictBuffer
     {
         if (iter != end()) {
             if (iter->pending()) { thePendingEvicts--; }
-            DBG_(Iface, (<< "Evict buffer removing entry for " << iter->theBlockAddress));
+            DBG_(VVerb, (<< "Evict buffer removing entry for " << iter->theBlockAddress));
             (theEvictions.template get<1>()).erase(iter);
             theCurSize--;
         }

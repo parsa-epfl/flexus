@@ -94,11 +94,11 @@ struct ExecuteAction : public ExecuteBase
     void doEvaluate()
     {
 
-        DBG_(Iface, (<< "Trying to Execute " << *this));
+        DBG_(VVerb, (<< "Trying to Execute " << *this));
 
         if (ready()) {
 
-            DBG_(Iface, (<< "Executing " << *this));
+            DBG_(VVerb, (<< "Executing " << *this));
 
             if (theInstruction->hasPredecessorExecuted()) {
                 std::vector<Operand> operands;
@@ -116,13 +116,13 @@ struct ExecuteAction : public ExecuteBase
                 if (theOperation->is128()) {
                     bits res = boost::get<bits>(result);
                     theInstruction->setOperand(theResult, res);
-                    DBG_(Iface, (<< "Writing " << res << " in [ " << result << " -> " << theResult << " ]"));
+                    DBG_(VVerb, (<< "Writing " << res << " in [ " << result << " -> " << theResult << " ]"));
                 } else {
                     uint64_t res = boost::get<uint64_t>(result);
                     theInstruction->setOperand(theResult, res);
-                    DBG_(Iface, (<< "Writing " << std::hex << res << std::dec << " in " << theResult));
+                    DBG_(VVerb, (<< "Writing " << std::hex << res << std::dec << " in " << theResult));
                 }
-                DBG_(Iface,
+                DBG_(VVerb,
                      (<< *this << " operands: " << OperandPrintHelper(operands) << std::hex << " result=" << result
                       << std::dec));
                 if (theBypass) {
@@ -133,11 +133,11 @@ struct ExecuteAction : public ExecuteBase
                 satisfyDependants();
                 theInstruction->setExecuted(true);
             } else {
-                DBG_(Iface, (<< *this << " waiting for predecessor "));
+                DBG_(VVerb, (<< *this << " waiting for predecessor "));
                 reschedule();
             }
         } else {
-            DBG_(Iface, (<< "cant Execute " << *this << " yet"));
+            DBG_(VVerb, (<< "cant Execute " << *this << " yet"));
         }
     }
 

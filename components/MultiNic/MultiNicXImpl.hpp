@@ -81,12 +81,12 @@ class FLEXUS_COMPONENT(MultiNicX)
     bool available(interface::FromNetwork const&, index_t aVC) { return recvAvailable(aVC); }
     void push(interface::FromNetwork const&, index_t anIndex, MemoryTransport& transport)
     {
-        DBG_(Iface,
+        DBG_(VVerb,
              (<< "Recv from network: src=" << transport[NetworkMessageTag]->src
               << " dest=" << transport[NetworkMessageTag]->dest << " vc=" << transport[NetworkMessageTag]->vc
               << " src_port=" << transport[NetworkMessageTag]->src_port
               << " dest_port=" << transport[NetworkMessageTag]->dst_port) Comp(*this));
-        DBG_(Iface,
+        DBG_(VVerb,
              Condition((transport[MemoryMessageTag]))(<< "  Packet contains: " << *transport[MemoryMessageTag])
                Comp(*this));
 
@@ -148,13 +148,13 @@ class FLEXUS_COMPONENT(MultiNicX)
                         MemoryTransport transport = sendQueue[ii].front();
                         sendQueue[ii].pop_front();
                         --currSendCount;
-                        DBG_(Iface,
+                        DBG_(VVerb,
                              (<< "Send to network: src=" << transport[NetworkMessageTag]->src << " dest="
                               << transport[NetworkMessageTag]->dest << " vc=" << transport[NetworkMessageTag]->vc
                               << " size=" << transport[NetworkMessageTag]->size
                               << " src_port=" << transport[NetworkMessageTag]->src_port
                               << " dst_port=" << transport[NetworkMessageTag]->dst_port) Comp(*this));
-                        DBG_(Iface,
+                        DBG_(VVerb,
                              Condition((transport[MemoryMessageTag]))(<< "  Packet contains: "
                                                                       << *transport[MemoryMessageTag]) Comp(*this));
 

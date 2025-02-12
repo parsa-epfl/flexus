@@ -162,7 +162,7 @@ struct CountAction : public PredicatedSemanticAction
                 default: DBG_Assert(false); break;
             }
 
-            DBG_(Iface, (<< "writing " << out_val << " into " << theOutputCode));
+            DBG_(VVerb, (<< "writing " << out_val << " into " << theOutputCode));
             theInstruction->setOperand(theOutputCode, out_val);
             satisfyDependants();
         }

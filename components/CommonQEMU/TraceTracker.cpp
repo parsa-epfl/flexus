@@ -89,7 +89,7 @@ TraceTracker::access(int32_t aNode,
                      bool priv,
                      uint64_t ltime)
 {
-    DBG_(Iface, (<< "[" << aNode << ":" << cache << "] access 0x" << std::hex << addr));
+    DBG_(VVerb, (<< "[" << aNode << ":" << cache << "] access 0x" << std::hex << addr));
     // DBG_(Dev, (<< "[" << aNode << ":" << cache << "] access 0x" << std::hex <<
     // addr << " (ts:" << ltime <<")"));
 }
@@ -97,7 +97,7 @@ TraceTracker::access(int32_t aNode,
 void
 TraceTracker::commit(int32_t aNode, SharedTypes::tFillLevel cache, address_t addr, address_t pc, uint64_t aLogicalTime)
 {
-    DBG_(Iface, (<< "[" << aNode << ":" << cache << "] commit 0x" << std::hex << addr));
+    DBG_(VVerb, (<< "[" << aNode << ":" << cache << "] commit 0x" << std::hex << addr));
 }
 
 void
@@ -109,13 +109,13 @@ TraceTracker::store(int32_t aNode,
                     bool priv,
                     uint64_t aLogicalTime)
 {
-    DBG_(Iface, (<< "[" << aNode << ":" << cache << "] store 0x" << std::hex << addr));
+    DBG_(VVerb, (<< "[" << aNode << ":" << cache << "] store 0x" << std::hex << addr));
 }
 
 void
 TraceTracker::prefetch(int32_t aNode, SharedTypes::tFillLevel cache, address_t block)
 {
-    DBG_(Iface, (<< "[" << aNode << ":" << cache << "] prefetch 0x" << std::hex << block));
+    DBG_(VVerb, (<< "[" << aNode << ":" << cache << "] prefetch 0x" << std::hex << block));
 }
 
 void
@@ -126,7 +126,7 @@ TraceTracker::fill(int32_t aNode,
                    bool isFetch,
                    bool isWrite)
 {
-    DBG_(Iface, (<< "[" << aNode << ":" << cache << "] fill 0x" << std::hex << block));
+    DBG_(VVerb, (<< "[" << aNode << ":" << cache << "] fill 0x" << std::hex << block));
     DBG_Assert(fillLevel != SharedTypes::eUnknown);
 }
 
@@ -136,86 +136,86 @@ TraceTracker::prefetchFill(int32_t aNode,
                            address_t block,
                            SharedTypes::tFillLevel fillLevel)
 {
-    DBG_(Iface, (<< "[" << aNode << ":" << cache << "] prefetch fill 0x" << std::hex << block));
+    DBG_(VVerb, (<< "[" << aNode << ":" << cache << "] prefetch fill 0x" << std::hex << block));
     DBG_Assert(fillLevel != SharedTypes::eUnknown);
 }
 
 void
 TraceTracker::prefetchHit(int32_t aNode, Flexus::SharedTypes::tFillLevel cache, address_t block, bool isWrite)
 {
-    DBG_(Iface, (<< "[" << aNode << ":" << cache << "] prefetch hit 0x" << std::hex << block));
+    DBG_(VVerb, (<< "[" << aNode << ":" << cache << "] prefetch hit 0x" << std::hex << block));
 }
 
 void
 TraceTracker::prefetchRedundant(int32_t aNode, Flexus::SharedTypes::tFillLevel cache, address_t block)
 {
-    DBG_(Iface, (<< "[" << aNode << ":" << cache << "] prefetch redundant 0x" << std::hex << block));
+    DBG_(VVerb, (<< "[" << aNode << ":" << cache << "] prefetch redundant 0x" << std::hex << block));
 }
 
 void
 TraceTracker::insert(int32_t aNode, SharedTypes::tFillLevel cache, address_t block)
 {
-    DBG_(Iface, (<< "[" << aNode << ":" << cache << "] insert 0x" << std::hex << block));
+    DBG_(VVerb, (<< "[" << aNode << ":" << cache << "] insert 0x" << std::hex << block));
 }
 
 void
 TraceTracker::eviction(int32_t aNode, SharedTypes::tFillLevel cache, address_t block, bool drop)
 {
-    DBG_(Iface, (<< "[" << aNode << ":" << cache << "] evict 0x" << std::hex << block));
+    DBG_(VVerb, (<< "[" << aNode << ":" << cache << "] evict 0x" << std::hex << block));
 }
 
 void
 TraceTracker::invalidation(int32_t aNode, SharedTypes::tFillLevel cache, address_t block)
 {
-    DBG_(Iface, (<< "[" << aNode << ":" << cache << "] invalidate 0x" << std::hex << block));
+    DBG_(VVerb, (<< "[" << aNode << ":" << cache << "] invalidate 0x" << std::hex << block));
 }
 
 void
 TraceTracker::invalidAck(int32_t aNode, SharedTypes::tFillLevel cache, address_t block)
 {
-    DBG_(Iface, (<< "[" << aNode << ":" << cache << "] invAck 0x" << std::hex << block));
+    DBG_(VVerb, (<< "[" << aNode << ":" << cache << "] invAck 0x" << std::hex << block));
 }
 
 void
 TraceTracker::invalidTagCreate(int32_t aNode, SharedTypes::tFillLevel cache, address_t block)
 {
-    DBG_(Iface, (<< "[" << aNode << ":" << cache << "] invTagCreate 0x" << std::hex << block));
+    DBG_(VVerb, (<< "[" << aNode << ":" << cache << "] invTagCreate 0x" << std::hex << block));
 }
 
 void
 TraceTracker::invalidTagRefill(int32_t aNode, SharedTypes::tFillLevel cache, address_t block)
 {
-    DBG_(Iface, (<< "[" << aNode << ":" << cache << "] invTagRefill 0x" << std::hex << block));
+    DBG_(VVerb, (<< "[" << aNode << ":" << cache << "] invTagRefill 0x" << std::hex << block));
 }
 
 void
 TraceTracker::invalidTagReplace(int32_t aNode, SharedTypes::tFillLevel cache, address_t block)
 {
-    DBG_(Iface, (<< "[" << aNode << ":" << cache << "] invTagReplace 0x" << std::hex << block));
+    DBG_(VVerb, (<< "[" << aNode << ":" << cache << "] invTagReplace 0x" << std::hex << block));
 }
 
 void
 TraceTracker::accessLoad(int32_t aNode, SharedTypes::tFillLevel cache, address_t block, uint32_t offset, int32_t size)
 {
-    DBG_(Iface, (<< "[" << aNode << ":" << cache << "] accessLoad 0x" << std::hex << block << "," << offset));
+    DBG_(VVerb, (<< "[" << aNode << ":" << cache << "] accessLoad 0x" << std::hex << block << "," << offset));
 }
 
 void
 TraceTracker::accessStore(int32_t aNode, SharedTypes::tFillLevel cache, address_t block, uint32_t offset, int32_t size)
 {
-    DBG_(Iface, (<< "[" << aNode << ":" << cache << "] accessStore 0x" << std::hex << block << "," << offset));
+    DBG_(VVerb, (<< "[" << aNode << ":" << cache << "] accessStore 0x" << std::hex << block << "," << offset));
 }
 
 void
 TraceTracker::accessFetch(int32_t aNode, SharedTypes::tFillLevel cache, address_t block, uint32_t offset, int32_t size)
 {
-    DBG_(Iface, (<< "[" << aNode << ":" << cache << "] accessLoad 0x" << std::hex << block << "," << offset));
+    DBG_(VVerb, (<< "[" << aNode << ":" << cache << "] accessLoad 0x" << std::hex << block << "," << offset));
 }
 
 void
 TraceTracker::accessAtomic(int32_t aNode, SharedTypes::tFillLevel cache, address_t block, uint32_t offset, int32_t size)
 {
-    DBG_(Iface, (<< "[" << aNode << ":" << cache << "] accessAtomic 0x" << std::hex << block << "," << offset));
+    DBG_(VVerb, (<< "[" << aNode << ":" << cache << "] accessAtomic 0x" << std::hex << block << "," << offset));
 }
 
 TraceTracker::TraceTracker() {}
@@ -223,14 +223,14 @@ TraceTracker::TraceTracker() {}
 void
 TraceTracker::initialize()
 {
-    DBG_(Iface, (<< "initializing TraceTracker"));
+    DBG_(VVerb, (<< "initializing TraceTracker"));
     Flexus::Stat::getStatManager()->addFinalizer([this]() { return this->finalize(); });
 }
 
 void
 TraceTracker::finalize()
 {
-    DBG_(Iface, (<< "finalizing TraceTracker"));
+    DBG_(VVerb, (<< "finalizing TraceTracker"));
 }
 
 } // namespace nTraceTracker
