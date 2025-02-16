@@ -78,6 +78,8 @@ UNCONDBR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         addDestination(inst, 30, exec, true);
 
         inst->bpState()->theActualType = kCall;
+        inst->bpState()->theActualDirection = kTaken;
+        inst->bpState()->theActualTarget = target;
 
         // update call after
         inst->addDispatchEffect(branch(inst, target));
