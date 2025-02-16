@@ -78,6 +78,8 @@ BTB::update(VirtualMemoryAddress aPC, eBranchType aType, VirtualMemoryAddress aT
                 DBG_(Verb, (<< "BTB setting target for " << aPC << " to " << aTarget));
 
                 btbEntry->theTarget = aTarget;
+            } else {
+                DBG_Assert(false);
             }
         }
 
@@ -90,12 +92,6 @@ BTB::update(VirtualMemoryAddress aPC, eBranchType aType, VirtualMemoryAddress aT
         return true;
     }
     return false; // not a new entry
-}
-
-bool
-BTB::update(const BPredState &aFeedback)
-{
-    return update(aFeedback.pc, aFeedback.theActualType, aFeedback.theActualTarget);
 }
 
 json
@@ -112,22 +108,26 @@ BTB::saveState() const
         auto end   = theBTB[i].blocks.end();
 
         size_t j = 0;
-        for (; block != end; block++, j++) {
-            uint8_t type = 15;
-            switch (block->theBranchType) {
-                case kNonBranch: type = 0; break;
-                case kConditional: type = 1; break;
-                case kUnconditional: type = 2; break;
-                case kCall: type = 3; break;
-                case kIndirectReg: type = 4; break;
-                case kIndirectCall: type = 5; break;
-                case kReturn: type = 6; break;
-                default: DBG_Assert(false, (<< "Don't know how to save branch type")); break;
-            }
+        for (; block != end; block++) {
             if (block->valid) {
-                checkpoint[i][j] = { { "PC", (uint64_t)block->thePC },
-                                     { "target", (uint64_t)block->theTarget },
-                                     { "type", (uint8_t)type } };
+                uint8_t type = 15;
+                switch (block->theBranchType) {
+                    case kNonBranch: type = 0; DBG_Assert(false); break;
+                    case kConditional: type = 1; break;
+                    case kUnconditional: type = 2; break;
+                    case kCall: type = 3; break;
+                    case kIndirectReg: type = 4; break;
+                    case kIndirectCall: type = 5; break;
+                    case kReturn: type = 6; break;
+                    default: DBG_Assert(false, (<< "Don't know how to save branch type")); break;
+                }
+                checkpoint[i][j] = { 
+                    { "PC", (uint64_t)block->thePC },
+                    { "target", (uint64_t)block->theTarget },
+                    { "type", (uint8_t)type },
+                };
+
+                ++j;
             }
         }
     }
