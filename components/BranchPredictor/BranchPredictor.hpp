@@ -34,6 +34,18 @@ class BranchPredictor
     Stat::StatCounter theMispredict_BTB_User;
     Stat::StatCounter theMispredict_BTB_System;
 
+    Stat::StatCounter theMispredict_BTB_Unconditional;
+    Stat::StatCounter theMispredict_BTB_Unconditional_User;
+    Stat::StatCounter theMispredict_BTB_Unconditional_System;
+
+    Stat::StatCounter theMispredict_BTB_WrongType;
+    Stat::StatCounter theMispredict_BTB_WrongType_User;
+    Stat::StatCounter theMispredict_BTB_WrongType_System;
+
+    Stat::StatCounter theMispredict_BTB_Conditional;
+    Stat::StatCounter theMispredict_BTB_Conditional_User;
+    Stat::StatCounter theMispredict_BTB_Conditional_System;
+
 
   private:
     /* Depending on whether the prediction of the Branch Predictor we use is Taken or Not Taken, the target is returned
@@ -54,7 +66,7 @@ class BranchPredictor
     void recoverHistory(const BPredRedictRequest& aRequest);
 
     // This function is called whenever an instruction triggering a prediction retires.
-    void train(const BPredState& aBPState);
+    void train(boost::intrusive_ptr<BPredState>& aBPState);
 
     void loadState(std::string const& aDirName);
     void saveState(std::string const& aDirName);

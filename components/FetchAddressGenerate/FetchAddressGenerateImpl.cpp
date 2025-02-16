@@ -89,7 +89,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
     FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(BranchTrainIn);
     void push(interface::BranchTrainIn const&, index_t anIndex, boost::intrusive_ptr<BPredState>& bpState)
     {
-        theBranchPredictor->train(*bpState);
+        theBranchPredictor->train(bpState);
     }
 
     // Drive Interfaces
