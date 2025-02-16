@@ -79,7 +79,9 @@ class FLEXUS_COMPONENT(CMPCache)
           AbstractFactory<AbstractCacheController, CMPCacheInfo>::createInstance(cfg.ControllerType, theInfo));
     }
 
-    void finalize() {}
+    void finalize() {
+        theController->saveState("output_state");
+    }
 
     // Ports
     //======

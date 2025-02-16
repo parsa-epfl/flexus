@@ -68,6 +68,7 @@ class AbstractArray
 
     // Checkpoint reading/writing functions
     virtual void load_from_ckpt(std::istream& s, int32_t anIndex) = 0;
+    virtual void serialize_array(std::ostream& s, int32_t anIndex) const  = 0;
 
     // Addressing helper functions
     MemoryAddress blockAddress(MemoryAddress const& anAddress) const

@@ -207,6 +207,12 @@ CacheController::loadState(std::string const& aDirName)
     theCacheControllerImpl->loadState(aDirName);
 }
 
+void
+CacheController::saveState(std::string const& aDirName)
+{
+    theCacheControllerImpl->saveState(aDirName);
+}
+
 CacheController::CacheController(std::string const& aName,
                                  int32_t aCores,
                                  std::string const& anArrayConfiguration,

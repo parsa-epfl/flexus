@@ -191,6 +191,8 @@ class Set
                                     int32_t tag_shift,
                                     int32_t set_shift) = 0;
 
+    virtual json serialize_set_to_json(int32_t target_shift, int32_t set_shift) = 0;
+
     MemoryAddress blockAddress(const Block<_State, _DefaultState>* theBlock) { return theBlock->tag(); }
 
     int32_t count(const MemoryAddress& aTag)
@@ -297,6 +299,26 @@ class SetLRU : public Set<_State, _DefaultState>
         for (int32_t i = 0; i < this->theAssociativity; i++) {
             theMRUOrder[i] = this->theAssociativity - i - 1;
         }
+    }
+
+    virtual json serialize_set_to_json(int32_t target_shift, int32_t set_shift)
+    {
+        json set_json;
+        for (int32_t i = 0; i < this->theAssociativity; i++) {
+            // Get the MRU order of the block.
+            int32_t mru_order = theMRUOrder[this->theAssociativity - i - 1];
+
+            bool is_valid = Set<_State, _DefaultState>::theBlocks[mru_order].state().isValid();
+
+            if (!is_valid) continue;
+
+            json block_json;
+            block_json["tag"]   = Set<_State, _DefaultState>::theBlocks[mru_order].tag() >> target_shift;
+            block_json["dirty"] = Set<_State, _DefaultState>::theBlocks[mru_order].state().isDirty();
+            block_json["writable"] = Set<_State, _DefaultState>::theBlocks[mru_order].state().isWritable();
+            set_json.push_back(block_json);
+        }
+        return set_json;
     }
 
   protected:
@@ -497,6 +519,16 @@ class StdArray : public AbstractArray<_State>
         for (int32_t i{ 0 }; i < setCount; i++) {
             theSets[i]->load_set_from_ckpt(checkpoint, theIndex, i, theTagShift, setIndexShift);
         }
+    }
+
+    virtual void serialize_array(std::ostream& s, int32_t theIndex) const
+    {
+        json checkpoint;
+        checkpoint["associativity"] = theAssociativity;
+        for (int32_t i{ 0 }; i < setCount; i++) {
+            checkpoint["tags"].push_back(theSets[i]->serialize_set_to_json(theTagShift, setIndexShift));
+        }
+        s << checkpoint.dump(2);
     }
 
     // Addressing helper functions

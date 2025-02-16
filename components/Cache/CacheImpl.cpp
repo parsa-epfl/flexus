@@ -108,7 +108,9 @@ class FLEXUS_COMPONENT(Cache)
         DBG_Assert(cfg.BusTime_NoData > 0);
     }
 
-    void finalize() {}
+    void finalize() {
+        theController->saveState("output_state");
+    }
 
     // Ports
     //======

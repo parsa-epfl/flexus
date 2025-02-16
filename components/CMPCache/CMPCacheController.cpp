@@ -87,6 +87,18 @@ CMPCacheController::loadState(std::string const& ckpt_dirname)
 }
 
 void
+CMPCacheController::saveState(std::string const& ckpt_dirname)
+{
+    std::string real_name = theName;
+
+    // -- SAVE CACHE
+
+    std::string ckpt_filename_cache(ckpt_dirname);
+    ckpt_filename_cache += "/" + theName + "-cache-slice.json";
+    DBG_(Dev, (<< " Start saving Cache state to " << ckpt_filename_cache));
+    thePolicy->serialize_cache(ckpt_filename_cache);
+}
+void
 CMPCacheController::processMessages()
 {
 

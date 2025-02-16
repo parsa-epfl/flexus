@@ -71,6 +71,13 @@ NonInclusiveMESIPolicy::load_cache_from_ckpt(std::string const& filename)
 {
     theCache->load_cache_from_ckpt(filename, theCMPCacheInfo.theNodeId);
 }
+
+void
+NonInclusiveMESIPolicy::serialize_cache(std::string const& filename) const
+{
+    theCache->serialize_array(filename, theCMPCacheInfo.theNodeId);
+}
+
 void
 NonInclusiveMESIPolicy::handleRequest(ProcessEntry_p process)
 {

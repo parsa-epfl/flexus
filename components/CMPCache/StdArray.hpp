@@ -231,6 +231,7 @@ class Set
     virtual void invalidateBlock(Block<_State, _DefaultState>* aBlock) = 0;
 
     virtual void load_set_from_ckpt(uint64_t index, uint64_t mru_index, uint64_t tag, bool dirty, bool writable) = 0;
+    virtual json serialize_set() const = 0;
 
     MemoryAddress blockAddress(const Block<_State, _DefaultState>* theBlock)
     { 
@@ -363,9 +364,27 @@ class SetLRU : public Set<_State, _DefaultState>
         
         DBG_Assert(index < uint64_t(this->theAssociativity));
         _State state(_State::bool2state(dirty, writable));
-        theMRUOrder[index]                                   = mru_order_index;
+        theMRUOrder[index]                                   = mru_order_index; // weird way of inserting the LRU information.
         this->theBlocks[index].tag()   = MemoryAddress(tag);
         this->theBlocks[index].state() = state;
+    }
+
+    virtual json serialize_set() const 
+    {
+        // TODO: This serialization function does not consider the LRU order. 
+        json set;
+        for (uint64_t i = 0; i < this->theAssociativity; i++) {
+            bool is_valid = this->theBlocks[i].state().isValid();
+
+            if (!is_valid) { continue; }
+
+            json block;
+            block["tag"] = static_cast<uint64_t>(this->theBlocks[i].tag());
+            block["writeable"] = this->theBlocks[i].state().isWritable();
+            block["dirty"] = this->theBlocks[i].state().isDirty();
+            set.push_back(block);
+        }
+        return set;
     }
 
   protected:
@@ -629,6 +648,22 @@ class StdArray : public AbstractArray<_State>
         }
 
         ifs.close();
+    }
+
+    virtual void serialize_array(std::string const& filename, uint64_t theIndex) const
+    {
+        std::ofstream ofs(filename.c_str(), std::ios::out);
+
+        json checkpoint;
+
+        checkpoint["associativity"] = theAssociativity;
+
+        for (uint64_t i = 0; i < theNumSets; i++) {
+            checkpoint["tags"].push_back(theSets[i]->serialize_set());
+        }
+
+        ofs << std::setw(2) << checkpoint << std::endl;
+        ofs.close();
     }
 
     // Addressing helper functions
