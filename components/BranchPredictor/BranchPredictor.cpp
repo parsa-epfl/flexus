@@ -133,6 +133,7 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState)
         case kIndirectReg:
         case kUnconditional:
         case kCall:
+        case kReturn:
             if (theBTB.target(anAddress)) {
                 aBPState.thePredictedTarget = *theBTB.target(anAddress);
             } else {
