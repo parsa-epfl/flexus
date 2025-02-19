@@ -122,7 +122,7 @@ TLB::lookUp(TranslationPtr& tr)
     uint16_t anASID                = tr->theASID;
     VirtualMemoryAddress anAddressAligned(anAddress & PAGEMASK);
     // Find the set.
-    size_t set_idx = anAddressAligned & (theSets - 1);
+    size_t set_idx = (anAddressAligned >> 12) & (theSets - 1);
     std::pair<bool, PhysicalMemoryAddress> ret{ false, PhysicalMemoryAddress(0) };
     for (auto iter = theTLB[set_idx].begin(); iter != theTLB[set_idx].end(); ++iter) {
         iter->second.theRate++;
@@ -153,7 +153,7 @@ TLB::insert(TranslationPtr& tr)
         faultyEntry = TLBentry(alignedVirtualAddr, alignedPhysicalAddr, 0, anASID, aNG);
         return;
     }
-    size_t set_idx = alignedVirtualAddr & (theSets - 1);
+    size_t set_idx = (alignedVirtualAddr >> 12) & (theSets - 1);
     // Check if the virtual address is in TLB (with the same ASID or as a global entry)
     auto iter  = theTLB[set_idx].end();
     auto range = theTLB[set_idx].equal_range(alignedVirtualAddr);
