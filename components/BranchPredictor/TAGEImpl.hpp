@@ -501,11 +501,11 @@ class PREDICTOR
             restore_history(aBPState);
 
             // GI, BI, bank, altbank, pred_taken, alt_pred
-            int GI[NHIST];
-            int BI;
-            int bank;
-            bool alt_pred;
-            bool pred_taken;
+            int GI[NHIST] = {0};
+            int BI = 0;
+            int bank = 0;
+            bool alt_pred = false;
+            bool pred_taken = false;
 
             if (aBPState.theTagePredictionValid) {
                 for (int i = 0; i < NHIST; i++)
