@@ -15,7 +15,7 @@ struct do_cycle_core
 {
     static void doCycle(index_t idx)
     {
-        DBG_(Dev, (<< "[Core] Drive component ID: " << N << " core idx: " << idx));
+        DBG_(VVerb, (<< "[Core] Drive component ID: " << N << " core idx: " << idx));
         mpl::deref<DriveHandleIter>::type::getReference(idx).drive(
             typename mpl::deref<DriveHandleIter>::type::drive());
 
@@ -37,7 +37,7 @@ struct do_cycle_uncore
         {
             FLEXUS_PROFILE_N(mpl::deref<DriveHandleIter>::type::drive::name());
             for (index_t i = 0; i < mpl::deref<DriveHandleIter>::type::width(); i++) {
-                DBG_(Dev, (<< "[Uncore] Drive Component ID: " << N << " uncore idx: " << i));
+                DBG_(VVerb, (<< "[Uncore] Drive Component ID: " << N << " uncore idx: " << i));
                 mpl::deref<DriveHandleIter>::type::getReference(i).drive(
                   typename mpl::deref<DriveHandleIter>::type::drive());
             }

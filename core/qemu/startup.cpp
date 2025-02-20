@@ -202,7 +202,7 @@ extern "C"
 
         Flexus::Core::initFlexus();
 
-        DBG_(Iface, (<< "Flexus Initialized."));
+        DBG_(VVerb, (<< "Flexus Initialized."));
     }
 
     void flexus_deinit(void)
