@@ -14,8 +14,8 @@ include(./target/${SIMULATOR}/${SIMULATOR}.cmake)
 
 # Setup include paths
 include_directories(.)
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-error=maybe-uninitialized -Wno-error=dangling-pointer -fdiagnostics-color=always")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -ggdb -g3 -fno-eliminate-unused-debug-symbols -fno-omit-frame-pointer -funroll-loops")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-error=maybe-uninitialized -Wno-error=dangling-pointer -fdiagnostics-color=always -g3 -gdwarf-5")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -ggdb -fno-eliminate-unused-debug-symbols -fno-omit-frame-pointer -funroll-loops -fno-inline -fno-lto")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native")
 
 # Find boost
