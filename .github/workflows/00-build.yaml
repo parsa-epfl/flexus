@@ -6,7 +6,12 @@ on:
   # Manually triggered
   workflow_dispatch:
   push:
-    branches: [maintainer/bryan]
+    branches:
+      - master
+      - maintainer/bryan # will be deleted at some point
+  pull_request:
+    branches:
+      - master
 
   # schedule:
   #   # Every Wednesday at midnight
