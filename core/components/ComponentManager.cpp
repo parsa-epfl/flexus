@@ -92,7 +92,7 @@ class ComponentManagerImpl : public ComponentManager
         }
 
         // Drive frequency calculations
-        std::vector<std::string> freq_split = splitString(freq, ':');
+        std::vector<std::string> freq_split = (freq != nullptr && strlen(freq)) ? splitString(freq, ':') : std::vector(aSystemWidth+1, std::string("1"));
         assert(freq_split.size() == aSystemWidth + 1);
         index_t numerator[aSystemWidth+1], denominator[aSystemWidth+1], driveFreq[aSystemWidth+1];
 
