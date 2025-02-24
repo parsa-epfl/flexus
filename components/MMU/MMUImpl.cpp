@@ -536,8 +536,6 @@ void
 MMUComponent::push(interface::ResyncIn const&, index_t anIndex, int& aResync)
 {
 
-    if (cfg.PerfectTLB) return;
-
     resyncMMU(aResync);
 }
 
