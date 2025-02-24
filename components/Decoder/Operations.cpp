@@ -75,7 +75,7 @@ typedef struct ADD : public Operation
 
 typedef struct ADDS : public Operation
 {
-    ADDS() {}
+    using Operation::Operation;
     virtual ~ADDS() {}
 
     virtual Operand operator()(std::vector<Operand> const& operands)
@@ -90,26 +90,57 @@ typedef struct ADDS : public Operation
             carry = pstate.C();
         }
 
-        uint64_t op1 = boost::get<uint64_t>(operands[0]);
-        uint64_t op2 = boost::get<uint64_t>(operands[1]);
-
-        int64_t sresult  = (int64_t)op1 + (int64_t)op2 + carry;
-        uint64_t uresult = op1 + op2 + carry;
-        uint64_t result  = uresult;
-        bool overflow    = (uresult < op1) || (uresult < op2);
-
-        uint32_t N = ((result & ((uint64_t)1 << 63)) ? PSTATE_N : 0);
-        uint32_t Z = ((result == 0) ? PSTATE_Z : 0);
-        uint32_t C = (overflow ? PSTATE_C : 0);
-        uint32_t V = ((((int64_t)result) == sresult) ? 0 : PSTATE_V);
-
+        
+        // https://developer.arm.com/documentation/ddi0602/2024-03/Shared-Pseudocode/shared-functions-integer?lang=en#impl-shared.AddWithCarry.3
+        // (bits(N), bits(4)) AddWithCarry(bits(N) x, bits(N) y, bit carry_in)
+        //     integer unsigned_sum = UInt(x) + UInt(y) + UInt(carry_in);
+        //     integer signed_sum = SInt(x) + SInt(y) + UInt(carry_in);
+        //     bits(N) result = unsigned_sum<N-1:0>; // same value as signed_sum<N-1:0>
+        //     bit n = result<N-1>;
+        //     bit z = if IsZero(result) then '1' else '0';
+        //     bit c = if UInt(result) == unsigned_sum then '0' else '1';
+        //     bit v = if SInt(result) == signed_sum then '0' else '1';
+        //     return (result, n:z:c:v);
+        uint64_t result;
+        uint32_t N;
+        uint32_t Z;
+        uint32_t C;
+        uint32_t V;
+        if (theSize == 64) {
+            uint64_t op1 = boost::get<uint64_t>(operands[0]);
+            uint64_t op2 = boost::get<uint64_t>(operands[1]);
+            boost::multiprecision::int128_t sresult;
+            sresult = (boost::multiprecision::int128_t)((int64_t)op1) + (boost::multiprecision::int128_t)((int64_t)op2) + carry;
+            boost::multiprecision::uint128_t uresult = (boost::multiprecision::uint128_t)op1 + (boost::multiprecision::uint128_t)op2 + carry;
+            result = uint64_t(uresult);
+            N = ((result & ((uint64_t)1 << 63)) ? PSTATE_N : 0);
+            Z = ((result == 0) ? PSTATE_Z : 0);
+            C = uresult == result ? 0 : PSTATE_C;
+            V = sresult == (int64_t)result ? 0 : PSTATE_V;
+        } else {
+            uint32_t op1 = static_cast<uint32_t>(boost::get<uint64_t>(operands[0]));
+            uint32_t op2 = static_cast<uint32_t>(boost::get<uint64_t>(operands[1]));
+            int64_t sresult = static_cast<int64_t>(static_cast<int32_t>(op1)) + static_cast<int64_t>(static_cast<int32_t>(op2)) + carry;
+            uint64_t uresult = static_cast<uint64_t>(op1) + static_cast<uint64_t>(op2) + carry;
+            result = uint32_t(uresult);
+            N = ((result & ((uint32_t)1 << 31)) ? PSTATE_N : 0);
+            Z = ((result == 0) ? PSTATE_Z : 0);
+            C = uresult == result ? 0 : PSTATE_C;
+            V = sresult == static_cast<int64_t>(static_cast<int32_t>(result)) ? 0 : PSTATE_V;
+        }
         theNZCV = N | Z | C | V;
 
         theNZCVFlags = true;
 
         return result;
     }
-    virtual char const* describe() const { return "ADDS"; }
+    virtual char const* describe() const { 
+        if (theSize == 64) {
+            return "ADDS64"; 
+        } else {
+            return "ADDS32";
+        }
+    }
 } ADDS_;
 
 typedef struct SUB : public Operation
@@ -134,7 +165,10 @@ typedef struct SUB : public Operation
 
 typedef struct SUBS : public Operation
 {
-    SUBS() {}
+    SUBS(uint32_t aSize = 64)
+    {
+        theSize = aSize;
+    }
     virtual ~SUBS() {}
     virtual Operand operator()(std::vector<Operand> const& operands)
     {
@@ -148,26 +182,57 @@ typedef struct SUBS : public Operation
             carry = pstate.C();
         }
 
-        uint64_t op1 = boost::get<uint64_t>(operands[0]);
-        uint64_t op2 = ~boost::get<uint64_t>(operands[1]);
-
-        int64_t sresult  = (int64_t)op1 + (int64_t)op2 + carry;
-        uint64_t uresult = op1 + op2 + carry;
-        uint64_t result  = uresult;
-        bool overflow    = (uresult < op1) || (uresult < op2);
-
-        uint32_t N = ((result & ((uint64_t)1 << 63)) ? PSTATE_N : 0);
-        uint32_t Z = ((result == 0) ? PSTATE_Z : 0);
-        uint32_t C = (overflow ? PSTATE_C : 0);
-        uint32_t V = ((((int64_t)result) == sresult) ? 0 : PSTATE_V);
-
+        
+        // https://developer.arm.com/documentation/ddi0602/2024-03/Shared-Pseudocode/shared-functions-integer?lang=en#impl-shared.AddWithCarry.3
+        // (bits(N), bits(4)) AddWithCarry(bits(N) x, bits(N) y, bit carry_in)
+        //     integer unsigned_sum = UInt(x) + UInt(y) + UInt(carry_in);
+        //     integer signed_sum = SInt(x) + SInt(y) + UInt(carry_in);
+        //     bits(N) result = unsigned_sum<N-1:0>; // same value as signed_sum<N-1:0>
+        //     bit n = result<N-1>;
+        //     bit z = if IsZero(result) then '1' else '0';
+        //     bit c = if UInt(result) == unsigned_sum then '0' else '1';
+        //     bit v = if SInt(result) == signed_sum then '0' else '1';
+        //     return (result, n:z:c:v);
+        uint64_t result;
+        uint32_t N;
+        uint32_t Z;
+        uint32_t C;
+        uint32_t V;
+        if (theSize == 64) {
+            uint64_t op1 = boost::get<uint64_t>(operands[0]);
+            uint64_t op2 = ~boost::get<uint64_t>(operands[1]);
+            boost::multiprecision::int128_t sresult;
+            sresult = (boost::multiprecision::int128_t)((int64_t)op1) + (boost::multiprecision::int128_t)((int64_t)op2) + carry;
+            boost::multiprecision::uint128_t uresult = (boost::multiprecision::uint128_t)op1 + (boost::multiprecision::uint128_t)op2 + carry;
+            result = uint64_t(uresult);
+            N = ((result & ((uint64_t)1 << 63)) ? PSTATE_N : 0);
+            Z = ((result == 0) ? PSTATE_Z : 0);
+            C = uresult == result ? 0 : PSTATE_C;
+            V = sresult == (int64_t)result ? 0 : PSTATE_V;
+        } else {
+            uint32_t op1 = static_cast<uint32_t>(boost::get<uint64_t>(operands[0]));
+            uint32_t op2 = ~static_cast<uint32_t>(boost::get<uint64_t>(operands[1]));
+            int64_t sresult = static_cast<int64_t>(static_cast<int32_t>(op1)) + static_cast<int64_t>(static_cast<int32_t>(op2)) + carry;
+            uint64_t uresult = static_cast<uint64_t>(op1) + static_cast<uint64_t>(op2) + carry;
+            result = uint32_t(uresult);
+            N = ((result & ((uint32_t)1 << 31)) ? PSTATE_N : 0);
+            Z = ((result == 0) ? PSTATE_Z : 0);
+            C = uresult == result ? 0 : PSTATE_C;
+            V = sresult == static_cast<int64_t>(static_cast<int32_t>(result)) ? 0 : PSTATE_V;
+        }
         theNZCV = N | Z | C | V;
 
         theNZCVFlags = true;
 
         return result;
     }
-    virtual char const* describe() const { return "SUBS"; }
+    virtual char const* describe() const { 
+        if (theSize == 64) {
+            return "SUBS64"; 
+        } else {
+            return "SUBS32";
+        }
+    }
 } SUBS_;
 
 typedef struct CONCAT32 : public Operation
@@ -808,14 +873,16 @@ operation(eOpType aType)
     std::unique_ptr<Operation> ptr;
     switch (aType) {
         case kADD_: ptr.reset(new ADD_()); break;
-        case kADDS_: ptr.reset(new ADDS_()); break;
+        case kADDS32_: ptr.reset(new ADDS_(32)); break;
+        case kADDS64_: ptr.reset(new ADDS_(64)); break;
         case kAND_: ptr.reset(new AND_()); break;
         case kANDS_: ptr.reset(new ANDS_()); break;
         case kANDSN_: ptr.reset(new ANDSN_()); break;
         case kORR_: ptr.reset(new ORR_()); break;
         case kXOR_: ptr.reset(new XOR_()); break;
         case kSUB_: ptr.reset(new SUB_()); break;
-        case kSUBS_: ptr.reset(new SUBS_()); break;
+        case kSUBS64_: ptr.reset(new SUBS_(64)); break;
+        case kSUBS32_: ptr.reset(new SUBS_(32)); break;
         case kAndN_: ptr.reset(new AndN_()); break;
         case kOrN_: ptr.reset(new OrN_()); break;
         case kEoN_: ptr.reset(new EoN_()); break;
