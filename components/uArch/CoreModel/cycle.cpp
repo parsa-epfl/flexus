@@ -77,6 +77,8 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
         advance_fn(true);
         throw ResynchronizeWithQemuException(true, false, nullptr);
     }
+    theCycleCountStat++;
+    theCycleCount++;
 
     CORE_DBG("--------------START CORE------------------------");
 
@@ -1085,7 +1087,10 @@ CoreImpl::retire()
 
         if (!theROB.front()->mayRetire()) {
             // wfi still executing
-            if (theROB.front()->getOpcode() == 0x7F2003D5) theFlexus->reset_core_watchdog(theNode);
+            if (theROB.front()->getOpcode() == 0x7F2003D5) {
+                theWFI++;
+                theFlexus->reset_core_watchdog(theNode);
+            }
             CORE_DBG("Cant Retire due to pending retirement dependance " << *theROB.front());
             break;
         }

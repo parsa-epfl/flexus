@@ -59,7 +59,7 @@ class FlexusImpl : public FlexusInterface
     void doCycle();
     void setCycle(uint64_t cycle);
     void advanceCycles(int64_t aCycleCount);
-    void invokeDrives();
+    uint32_t invokeDrives();
 
     // Simulator state inquiry
     bool quiescing() const { return theQuiesceRequested; }
@@ -83,7 +83,7 @@ class FlexusImpl : public FlexusInterface
 
   public:
     FlexusImpl(Qemu::API::conf_object_t* anObject)
-      : cpu_watchdog_timeout(2000)
+      : cpu_watchdog_timeout(100000)
       , theInitialized(false)
       , theCycleCount(0)
       , theStatInterval(10000)
@@ -153,10 +153,10 @@ FlexusImpl::advanceCycles(int64_t aCycleCount)
     Stat::getStatManager()->tick(aCycleCount);
 }
 
-void
+uint32_t
 FlexusImpl::invokeDrives()
 {
-    theDrive.doCycle();
+    return theDrive.doCycle();
 }
 
 void
@@ -166,12 +166,15 @@ FlexusImpl::doCycle()
 
     FLEXUS_DBG("--------------START FLEXUS CYCLE " << theCycleCount << " ------------------------");
 
-    advanceCycles(1);
+
+    uint32_t oldCount = theCycleCount;
+    uint32_t advanceBy = invokeDrives();
+    
+    advanceCycles(advanceBy);
 
     // Check the watchdog only every 255 cycles
-    if ((static_cast<uint32_t>(theCycleCount) & 0xFF) == 0) check_cpu_watchdogs();
-
-    invokeDrives();
+    bool hasItBeen255Cycles = (theCycleCount & 0xFF) < (oldCount & 0xFF);
+    if (hasItBeen255Cycles) check_cpu_watchdogs();
 
     FLEXUS_DBG("--------------FINISH FLEXUS CYCLE " << theCycleCount - 1 << " ------------------------");
 }
