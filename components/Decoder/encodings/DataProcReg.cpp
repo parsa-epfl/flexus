@@ -181,6 +181,8 @@ CRC(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     if (sf && sz != 3) return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     if (!sf && sz == 3) return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
 
+    uint32_t size = 8 << sz;
+
     SemanticInstruction* inst(new SemanticInstruction(aFetchedOpcode.thePC,
                                                       aFetchedOpcode.theOpcode,
                                                       aFetchedOpcode.theBPState,
@@ -191,7 +193,7 @@ CRC(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     std::vector<std::list<InternalDependance>> rs_deps(2);
     uint32_t poly = crc32c ? 0x1EDC6F41 : 0x04C11DB7;
 
-    predicated_action act = crcAction(inst, poly, kOperand1, kOperand2, kResult, rs_deps, sf);
+    predicated_action act = crcAction(inst, poly, kOperand1, kOperand2, kResult, rs_deps, size);
 
     readRegister(inst, 1, rn, rs_deps[0], false);
     readRegister(inst, 2, rm, rs_deps[1], sf);
