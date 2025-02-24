@@ -14,7 +14,8 @@ namespace nDecoder {
 enum eOpType
 {
     kADD_,
-    kADDS_,
+    kADDS32_,
+    kADDS64_,
     kCONCAT32_,
     kCONCAT64_,
     kAND_,
@@ -24,7 +25,8 @@ enum eOpType
     kXOR_,
 
     kSUB_,
-    kSUBS_,
+    kSUBS64_,
+    kSUBS32_,
     kAndN_,
     kOrN_,
     kEoN_,

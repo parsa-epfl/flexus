@@ -5,6 +5,7 @@
 #include "Unallocated.hpp"
 #include "components/Decoder/Conditions.hpp"
 #include "components/uArch/uArchInterfaces.hpp"
+#include <cstdint>
 
 using namespace nuArch;
 
@@ -303,8 +304,7 @@ ADDSUB_CARRY(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     inst->setClass(clsComputation, codeALU);
     std::vector<std::list<InternalDependance>> rs_deps(3);
     predicated_action exec =
-      addExecute(inst, operation(setflags ? (sub_op ? kSUBS_ : kADDS_) : (sub_op ? kSUB_ : kADD_)), rs_deps);
-
+      addExecute(inst, operation(setflags ? (sub_op ? (sf ? kSUBS64_ : kSUBS32_) : (sf ? kADDS64_ : kADDS32_)) : (sub_op ? kSUB_ : kADD_)), rs_deps);
     readRegister(inst, 1, rn, rs_deps[0], sf);
     readRegister(inst, 2, rm, rs_deps[1], sf);
 
@@ -418,7 +418,7 @@ ADDSUB_SHIFTED(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceN
     inst->addDispatchEffect(satisfy(inst, sh.action->dependance(2)));
 
     predicated_action res =
-      addExecute(inst, operation((sub_op ? (setflags ? kSUBS_ : kSUB_) : (setflags ? kADDS_ : kADD_))), rs2_deps);
+      addExecute(inst, operation((sub_op ? (setflags ? (sf ? kSUBS64_ : kSUBS32_) : kSUB_) : (setflags ? (sf ? kADDS64_ : kADDS32_) : kADD_))), rs2_deps);
     connect(rs2_deps[1], sh);
 
     readRegister(inst, 1, rn, rs2_deps[0], sf);
@@ -469,7 +469,7 @@ ADDSUB_EXTENDED(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequence
     inst->addDispatchEffect(satisfy(inst, sh.action->dependance(2)));
 
     predicated_action res =
-      addExecute(inst, operation((sub_op ? (setflags ? kSUBS_ : kSUB_) : (setflags ? kADDS_ : kADD_))), rs2_deps);
+      addExecute(inst, operation((sub_op ? (setflags ? (sf ? kSUBS64_ : kSUBS32_) : kSUB_) : (setflags ? (sf ? kADDS64_ : kADDS32_) : kADD_))), rs2_deps);
     connect(rs2_deps[1], sh);
 
     if (rn == 31)
