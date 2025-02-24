@@ -92,6 +92,8 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   theMispredictCount(0)
   , // for IStall and mispredict stats
   theCommitNumber(0)
+  , theCycleCount(0)
+  , theCycleCountStat(theName + "-Cycles")
   , theCommitCount(theName + "-Commits")
   , theCommitCount_NonSpin_User(theName + "-Commits:NonSpin:User")
   , theCommitCount_NonSpin_System(theName + "-Commits:NonSpin:System")
@@ -107,6 +109,7 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , theSBNAWOccupancy(theName + "-Occupancy:SBNAW")
   , theSpinCount(theName + "-Spins")
   , theSpinCycles(theName + "-SpinCycles")
+  , theWFI(theName + "-WFICycles")
   , theStorePrefetches(theName + "-StorePrefetches")
   , theAtomicPrefetches(theName + "-AtomicPrefetches")
   , theStorePrefetchConflicts(theName + "-StorePrefetchConflicts")

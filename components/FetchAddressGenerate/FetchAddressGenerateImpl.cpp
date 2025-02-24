@@ -77,6 +77,8 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
             theRedirectPC[anIndex] = redirectRequest->theTarget;
             theRedirect[anIndex]   = true;
 
+            redirectRequest->theBPState->theCorrectionCycle = theFlexus->cycleCount();
+
             theBranchPredictor->recoverHistory(*redirectRequest);
         }
     }
@@ -144,6 +146,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
 
             FetchAddr faddr(thePC[anIndex]);
             faddr.theBPState->pc = thePC[anIndex];
+            faddr.theBPState->thePredCycle = theFlexus->cycleCount();
 
             // Checkpoint the history before advancing the PC
             theBranchPredictor->checkpointHistory(*faddr.theBPState);

@@ -4,6 +4,7 @@
 #include "components/CommonQEMU/Translation.hpp"
 #include "core/types.hpp"
 
+#include <cstdint>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -66,6 +67,9 @@ struct BPredState : boost::counted_base
     VirtualMemoryAddress thePredictedTarget;
     VirtualMemoryAddress theActualTarget;
 
+    uint64_t thePredCycle;
+    uint64_t theCorrectionCycle;
+
     eDirection thePrediction;
     eDirection theActualDirection;
 
@@ -112,6 +116,9 @@ struct BPredState : boost::counted_base
       pc = VirtualMemoryAddress(0);
       thePredictedTarget = VirtualMemoryAddress(0);
       theActualTarget = VirtualMemoryAddress(0);
+
+      thePredCycle = 0;
+      theCorrectionCycle = 0;
 
       thePrediction = kNotTaken;
       theActualDirection = kNotTaken;

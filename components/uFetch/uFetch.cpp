@@ -69,6 +69,10 @@ class FLEXUS_COMPONENT(uFetch)
     std::list<MemoryTransport> theSnoopQueue;
     std::list<MemoryTransport> theReplyQueue;
 
+    // LLC latency modifications
+    std::map<uint64_t, uint64_t> miss_issue_cycle; 
+    Flexus::Stat::StatCounter llc_latency_cycles;
+
   public:
     FLEXUS_COMPONENT_CONSTRUCTOR(uFetch)
       : base(FLEXUS_PASS_CONSTRUCTOR_ARGS)
@@ -85,6 +89,7 @@ class FLEXUS_COMPONENT(uFetch)
       , theUsedFetchSlots(statName() + "-FetchSlotsUsed")
       , theLastVTagSet(0)
       , theLastPhysical(0)
+      , llc_latency_cycles(statName() + "-LLC_latency_cycles")
     {
     }
 
@@ -247,6 +252,8 @@ class FLEXUS_COMPONENT(uFetch)
         transport.set(MemoryMessageTag, operation);
 
         theMissQueue.push_back(transport);
+
+        miss_issue_cycle[anAddress] = Flexus::Core::theFlexus->cycleCount();
     }
 
     bool is_li1_cache_hit(PhysicalMemoryAddress const& anAddress)
@@ -657,6 +664,13 @@ class FLEXUS_COMPONENT(uFetch)
                 PhysicalMemoryAddress replacement = l1i_insert(reply->address());
 
                 issueEvict(replacement);
+
+                // modifications for LLC latency
+                if (miss_issue_cycle[reply->address()]) {
+                    llc_latency_cycles += (Flexus::Core::theFlexus->cycleCount() - miss_issue_cycle[reply->address()]);
+                    miss_issue_cycle.erase(reply->address());
+                }
+                
 
                 // See if it is our outstanding miss or our outstanding prefetch
                 for (uint32_t i = 0; i < cfg.Threads; ++i) {
