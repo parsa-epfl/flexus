@@ -721,13 +721,20 @@ typedef struct UDiv : public Operation
 
 typedef struct SDiv : public Operation
 {
-    SDiv() {}
+    using Operation::Operation;
     virtual ~SDiv() {}
     uint64_t calc(std::vector<Operand> const& operands)
     {
         DBG_Assert(operands.size() == 2);
-        uint64_t op0 = boost::get<uint64_t>(operands[0]);
-        uint64_t op1 = boost::get<uint64_t>(operands[1]);
+        int64_t op0;
+        int64_t op1;
+        if (theSize == 64) {
+            op0 = int64_t(boost::get<uint64_t>(operands[0]));
+            op1 = int64_t(boost::get<uint64_t>(operands[1]));
+        } else {
+            op0 = int32_t(boost::get<uint64_t>(operands[0]));
+            op1 = int32_t(boost::get<uint64_t>(operands[1]));
+        }
 
         if (op1 == 0) return uint64_t(0);
 
@@ -898,7 +905,8 @@ operation(eOpType aType)
         case kSMulL_: ptr.reset(new SMulL_()); break;
         case kUDivX_: ptr.reset(new UDivX_()); break;
         case kUDiv_: ptr.reset(new UDiv_()); break;
-        case kSDiv_: ptr.reset(new SDiv_()); break;
+        case kSDiv32_: ptr.reset(new SDiv_(32)); break;
+        case kSDiv64_: ptr.reset(new SDiv_(64)); break;
         case kSDivX_: ptr.reset(new SDivX_()); break;
         case kMOV_: ptr.reset(new MOV_()); break;
         case kMOVN_: ptr.reset(new MOVN_()); break;

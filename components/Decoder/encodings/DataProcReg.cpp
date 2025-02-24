@@ -123,7 +123,7 @@ DIV(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     inst->setClass(clsComputation, codeALU);
 
     std::vector<std::list<InternalDependance>> rs_deps(2);
-    predicated_action exec = addExecute(inst, is_signed ? operation(kSDiv_) : operation(kUDiv_), rs_deps);
+    predicated_action exec = addExecute(inst, is_signed ? operation((sf ? kSDiv64_ : kSDiv32_)) : operation(kUDiv_), rs_deps);
 
     readRegister(inst, 1, rn, rs_deps[0], sf);
     readRegister(inst, 2, rm, rs_deps[1], sf);
