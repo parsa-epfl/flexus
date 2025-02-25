@@ -135,6 +135,7 @@ struct BPredRedictRequest : boost::counted_base
   VirtualMemoryAddress theTarget;
   boost::intrusive_ptr<BPredState> theBPState; // this might be NULL. If so, no history update is needed.
   bool theInsertNewHistory;                    // If true, insert a new history when recovering from a misprediction
+  bool isResync;                               // If true, overwrite the existing redirect request
 };
 
 struct FetchAddr
