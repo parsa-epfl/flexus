@@ -454,6 +454,7 @@ BranchInteraction::operator()(boost::intrusive_ptr<Instruction> anInstruction, u
             aRequest->theTarget = theIssuer->bpState()->theActualTarget;
             aRequest->theBPState = theIssuer->bpState();
             aRequest->theInsertNewHistory = true;    
+            aRequest->isResync = false;
             aCore.redirectFetch(aRequest); 
         }
     }
