@@ -453,8 +453,9 @@ BranchInteraction::operator()(boost::intrusive_ptr<Instruction> anInstruction, u
             boost::intrusive_ptr<BPredRedictRequest> aRequest = new BPredRedictRequest();
             aRequest->theTarget = theIssuer->bpState()->theActualTarget;
             aRequest->theBPState = theIssuer->bpState();
-            aRequest->theInsertNewHistory = true;
-            aCore.redirectFetch(aRequest);
+            aRequest->theInsertNewHistory = true;    
+            aRequest->isResync = false;
+            aCore.redirectFetch(aRequest); 
         }
     }
 }

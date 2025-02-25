@@ -336,6 +336,7 @@ class microArchImpl : public microArch
             redirect_request->theBPState = source->bpState();
         }
         redirect_request->theInsertNewHistory = false;
+        redirect_request->isResync            = true;
 
         redirect(redirect_request);
     }
