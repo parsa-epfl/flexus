@@ -149,84 +149,71 @@ BranchPredictor::train(const BPredState& aBPState)
 {
     DBG_(VVerb, (<< "Training Branch Predictor by PC: " << std::hex << aBPState.pc));
     // Implementation of feedback function
-    theBTB.update(aBPState.pc, aBPState.theActualType, aBPState.theActualTarget);
+
+    DBG_Assert(aBPState.theActualTarget != VirtualMemoryAddress(0));
+
+    if (aBPState.theActualDirection <= kTaken || aBPState.theActualType == kNonBranch) {
+        // BTB is only updated when the branch is taken, or when the branch is not a branch
+        theBTB.update(aBPState.pc, aBPState.theActualType, aBPState.theActualTarget);
+    }
 
     bool is_system = ((uint64_t)aBPState.pc >> 63) != 0;
 
-    bool is_mispredict = false;
-    if (aBPState.theActualType != aBPState.thePredictedType) {
-        is_mispredict = true;
-    } else {
-        if (aBPState.theActualType == kConditional) {
-            if (!(aBPState.thePrediction >= kNotTaken) && (aBPState.theActualDirection >= kNotTaken)) {
-                if ((aBPState.thePrediction <= kTaken) && (aBPState.theActualDirection <= kTaken)) {
-                    if (aBPState.theActualTarget == aBPState.thePredictedTarget) { is_mispredict = true; }
-                } else {
-                    is_mispredict = true;
-                }
-            }
-        }
-    }
+    bool is_mispredict = aBPState.theActualTarget != aBPState.thePredictedTarget;
 
     if (is_mispredict) {
-        if (aBPState.theCorrectionCycle)
+        if (aBPState.theCorrectionCycle){
             theBranchMispredictionPenalty += aBPState.theCorrectionCycle - aBPState.thePredCycle;
-        if (aBPState.thePredictedType == kConditional) {
-            // we need to figure out whether the direction was correct or the target was correct
-            if (aBPState.thePrediction <= kTaken) {
-                if (aBPState.theActualDirection >= kTaken) {
-                    ++theMispredict_TAGE;
-                    if (is_system) {
-                        ++theMispredict_TAGE_System;
-                    } else {
-                        ++theMispredict_TAGE_User;
-                    }
-                } else {
-                    ++theMispredict_BTB;
-                    if (is_system) {
-                        ++theMispredict_BTB_System;
-                    } else {
-                        ++theMispredict_BTB_User;
-                    }
-                }
-            } else {
-                if (aBPState.thePredictedTarget != aBPState.thePredictedTarget) {
-                    ++theMispredict_BTB;
-                    if(is_system) {
-                        ++theMispredict_BTB_System;
-                    } else {
-                        ++theMispredict_BTB_User;
-                    }
-                } else {
-                    ++theMispredict_TAGE;
-                    if (is_system) {
-                        ++theMispredict_TAGE_System;
-                    } else {
-                        ++theMispredict_TAGE_User;
-                    }
-                }
-            }
-        } else {
+        }
+
+        if(aBPState.theActualType != kConditional) {
+            // Wrong target for non-conditional
             ++theMispredict_BTB;
             if (is_system) {
                 ++theMispredict_BTB_System;
             } else {
                 ++theMispredict_BTB_User;
             }
-        }
-    } else {
-        // If the prediction was correct, we need to update the stats
-        if (aBPState.thePredictedType == kConditional) {
-            if (aBPState.thePrediction <= kTaken) {
-                ++theCorrect_TAGE;
-            } else {
-                ++theCorrect_BTB;
-                ++theCorrect_TAGE;
-            }
+
+            // theTrainingHistory.push_back(aBPState);
         } else {
-            ++theCorrect_BTB;
+            if (aBPState.theActualType != aBPState.thePredictedType) {
+                // Wrong type
+                ++theMispredict_BTB;
+                if (is_system) {
+                    ++theMispredict_BTB_System;
+                } else {
+                    ++theMispredict_BTB_User;
+                }
+
+                // theTrainingHistory.push_back(aBPState);
+            } else {
+                bool direction_matching = 
+                (aBPState.theActualDirection <= kTaken && aBPState.thePrediction <= kTaken) || 
+                (aBPState.theActualDirection > kTaken && aBPState.thePrediction > kTaken);
+                if (!direction_matching) {
+                    // Wrong direction
+                    ++theMispredict_TAGE;
+                    if (is_system) {
+                        ++theMispredict_TAGE_System;
+                    } else {
+                        ++theMispredict_TAGE_User;
+                    }
+                } else {
+                    // Wrong target for conditional
+                    ++theMispredict_BTB;
+                    if (is_system) {
+                        ++theMispredict_BTB_System;
+                    } else {
+                        ++theMispredict_BTB_User;
+                    }
+
+                    // theTrainingHistory.push_back(aBPState);
+                }
+            }
         }
     }
+
     ++theBranches;
 
     if (aBPState.thePredictedType == kConditional && aBPState.thePredictedType == kConditional) {

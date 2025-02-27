@@ -77,9 +77,8 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
             theRedirectPC[anIndex] = redirectRequest->theTarget;
             theRedirect[anIndex]   = true;
 
-            redirectRequest->theBPState->theCorrectionCycle = theFlexus->cycleCount();
-
             if (redirectRequest->theBPState) {
+                redirectRequest->theBPState->theCorrectionCycle = theFlexus->cycleCount();
                 theBranchPredictor->recoverHistory(*redirectRequest);
             }
         }
