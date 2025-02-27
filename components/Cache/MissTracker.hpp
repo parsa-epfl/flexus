@@ -208,13 +208,13 @@ struct MissTracker
                             if (front->theTracker->OS() && *front->theTracker->OS()) {
                                 ++theMisses_S;
                                 ++theMisses_S_CohContend;
-                                DBG_(Trace,
+                                DBG_(VVerb,
                                      AddCat(CacheMissTracking)(<< theName << " CONTENTION Miss to " << std::hex
                                                                << address << std::dec << "[S]"));
                             } else {
                                 ++theMisses_U;
                                 ++theMisses_U_CohContend;
-                                DBG_(Trace,
+                                DBG_(VVerb,
                                      AddCat(CacheMissTracking)(<< theName << " CONTENTION Miss to " << std::hex
                                                                << address << std::dec << "[U]"));
                             }
@@ -244,14 +244,14 @@ struct MissTracker
                         if (front->theTracker->OS() && *front->theTracker->OS()) {
                             ++theMisses_S;
                             ++theMisses_S_SpecAtomicCoherence;
-                            DBG_(Trace,
+                            DBG_(VVerb,
                                  AddCat(CacheMissTracking)(<< theName << " SPEC-ATOMIC-COHERENCE Miss to " << std::hex
                                                            << ((*front->theTracker->address() & (~63LL))) << std::dec
                                                            << "[S]"));
                         } else {
                             ++theMisses_U;
                             ++theMisses_U_SpecAtomicCoherence;
-                            DBG_(Trace,
+                            DBG_(VVerb,
                                  AddCat(CacheMissTracking)(<< theName << " SPEC-ATOMIC-COHERENCE Miss to " << std::hex
                                                            << ((*front->theTracker->address() & (~63LL))) << std::dec
                                                            << "[U]"));
@@ -260,14 +260,14 @@ struct MissTracker
                         if (front->theTracker->OS() && *front->theTracker->OS()) {
                             ++theMisses_S;
                             ++theMisses_S_Coherence;
-                            DBG_(Trace,
+                            DBG_(VVerb,
                                  AddCat(CacheMissTracking)(<< theName << " COHERENCE Miss to " << std::hex
                                                            << ((*front->theTracker->address() & (~63LL))) << std::dec
                                                            << "[S]"));
                         } else {
                             ++theMisses_U;
                             ++theMisses_U_Coherence;
-                            DBG_(Trace,
+                            DBG_(VVerb,
                                  AddCat(CacheMissTracking)(<< theName << " COHERENCE Miss to " << std::hex
                                                            << ((*front->theTracker->address() & (~63LL))) << std::dec
                                                            << "[U]"));

@@ -205,7 +205,7 @@ class Set
 
             Block<_State, _DefaultState>* victim = pickLockedVictim();
 
-            DBG_(Trace, (<< "Replacing block " << std::hex << this->blockAddress(victim) << " in state " << victim->state()));
+            DBG_(VVerb, (<< "Replacing block " << std::hex << this->blockAddress(victim) << " in state " << victim->state()));
 
             // Create lookup result now and remember the block state
             LookupResult_p v_lookup(new LookupResult(this, victim, this->blockAddress(victim), true));
@@ -233,8 +233,8 @@ class Set
     virtual void load_set_from_ckpt(uint64_t index, uint64_t mru_index, uint64_t tag, bool dirty, bool writable) = 0;
 
     MemoryAddress blockAddress(const Block<_State, _DefaultState>* theBlock)
-    { 
-        return theBlock->tag(); 
+    {
+        return theBlock->tag();
     }
 
     uint64_t count(const MemoryAddress& aTag)
@@ -360,7 +360,7 @@ class SetLRU : public Set<_State, _DefaultState>
 
     virtual void load_set_from_ckpt(uint64_t index, uint64_t mru_order_index, uint64_t tag, bool dirty, bool writable)
     {
-        
+
         DBG_Assert(index < uint64_t(this->theAssociativity));
         _State state(_State::bool2state(dirty, writable));
         theMRUOrder[index]                                   = mru_order_index;
@@ -513,7 +513,7 @@ class StdArray : public AbstractArray<_State>
         for (uint64_t i = 0; i < theNumSets; i++) {
 
             switch (theReplacementPolicy) {
-                case REPLACEMENT_LRU: theSets[i] = new SetLRU<_State, _DefaultState>(theAssociativity); 
+                case REPLACEMENT_LRU: theSets[i] = new SetLRU<_State, _DefaultState>(theAssociativity);
                 break;
                 default: DBG_Assert(false);
             };
@@ -536,14 +536,14 @@ class StdArray : public AbstractArray<_State>
 
         uint64_t set_number = this->makeSet(anAddress);
 
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "Looking for block " << std::hex << anAddress << " in set " << set_number
               << " theNumSets = " << theNumSets));
 
         DBG_Assert(set_number < theNumSets && set_number >= 0);
         boost::intrusive_ptr<AbstractArrayLookupResult<_State>> ret =
           theSets[set_number]->lookupBlock(this->blockAddress(anAddress));
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "Found block " << std::hex << anAddress << " in set " << this->makeSet(anAddress) << " in state "
               << ret->state()));
         return ret;
@@ -632,9 +632,9 @@ class StdArray : public AbstractArray<_State>
     }
 
     // Addressing helper functions
-    MemoryAddress blockAddress(MemoryAddress const& anAddress) const 
-    { 
-        return MemoryAddress(anAddress & this->theTagMask); 
+    MemoryAddress blockAddress(MemoryAddress const& anAddress) const
+    {
+        return MemoryAddress(anAddress & this->theTagMask);
     }
 
     SetIndex makeSet(const MemoryAddress& anAddress) const

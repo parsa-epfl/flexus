@@ -134,7 +134,7 @@ class FLEXUS_COMPONENT(NetShim)
     {
         int32_t real_net_vc = MAX_PROT_VC - vc - 1;
         index_t pdest       = (node)*cfg.VChannels + real_net_vc;
-        DBG_(Iface,
+        DBG_(VVerb,
              (<< "available? "
               << "node: " << node << " vc: " << real_net_vc << " pdest: " << pdest));
         return FLEXUS_CHANNEL_ARRAY(ToNode, pdest).available();
@@ -236,7 +236,7 @@ class FLEXUS_COMPONENT(NetShim)
         // (assigned when the MessageState object is allocated) to transports
         transports.insert(make_pair(msg->serial, transport));
 
-        DBG_(Iface,
+        DBG_(VVerb,
              (<< "New packet: "
               << " serial=" << msg->serial << " src=" << transport[NetworkMessageTag]->src
               << " dest=" << transport[NetworkMessageTag]->dest << " vc=" << transport[NetworkMessageTag]->vc

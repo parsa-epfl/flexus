@@ -7,6 +7,7 @@ add_compile_definitions(FLEXUS)
 add_compile_definitions(TARGET_PLATFORM=aarch64)
 add_compile_definitions(BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS)
 add_compile_definitions(BOOST_MPL_LIMIT_VECTOR_SIZE=50)
+add_compile_definitions(SELECTED_DEBUG=vverb)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 #Include simulator specific settings only for "real" simulators
@@ -14,8 +15,8 @@ include(./target/${SIMULATOR}/${SIMULATOR}.cmake)
 
 # Setup include paths
 include_directories(.)
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-error=maybe-uninitialized -Wno-error=dangling-pointer -fdiagnostics-color=always")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -ggdb -g3 -fno-eliminate-unused-debug-symbols -fsanitize=address -fno-omit-frame-pointer -funroll-loops")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-error=maybe-uninitialized -Wno-error=dangling-pointer -fdiagnostics-color=always -g3 -gdwarf-5")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -ggdb -fno-eliminate-unused-debug-symbols -fno-omit-frame-pointer -funroll-loops -fno-inline -fno-lto")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native")
 
 # Find boost

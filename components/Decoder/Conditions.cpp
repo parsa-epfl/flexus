@@ -125,8 +125,8 @@ typedef struct BCOND : public Condition
         //    uint32_t pstate =
         //    Flexus::Qemu::Processor::getProcessor(theInstruction->cpu())->readPSTATE();
 
-        //    DBG_(Iface, (<< "Flexus pstate = " <<
-        //    theInstruction->core()->getPSTATE())); DBG_(Iface, (<< "qemu pstate = "
+        //    DBG_(VVerb, (<< "Flexus pstate = " <<
+        //    theInstruction->core()->getPSTATE())); DBG_(VVerb, (<< "qemu pstate = "
         //    << pstate));
 
         return ConditionHolds(p, test);
@@ -141,23 +141,23 @@ condition(eCondCode aCond)
     std::unique_ptr<Condition> ptr;
     switch (aCond) {
         case kCBZ_:
-            DBG_(Iface, (<< "CBZ"));
+            DBG_(VVerb, (<< "CBZ"));
             ptr.reset(new CMPBR());
             break;
         case kCBNZ_:
-            DBG_(Iface, (<< "CBNZ"));
+            DBG_(VVerb, (<< "CBNZ"));
             ptr.reset(new CBNZ());
             break;
         case kTBZ_:
-            DBG_(Iface, (<< "kTBZ_"));
+            DBG_(VVerb, (<< "kTBZ_"));
             ptr.reset(new TBZ());
             break;
         case kTBNZ_:
-            DBG_(Iface, (<< "TBNZ"));
+            DBG_(VVerb, (<< "TBNZ"));
             ptr.reset(new TBNZ());
             break;
         case kBCOND_:
-            DBG_(Iface, (<< "BCOND"));
+            DBG_(VVerb, (<< "BCOND"));
             ptr.reset(new BCOND());
             break;
         default: DBG_Assert(false); return nullptr;

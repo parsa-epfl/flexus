@@ -4,6 +4,7 @@
 #include "components/CommonQEMU/Translation.hpp"
 #include "core/types.hpp"
 
+#include <cstdint>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -66,6 +67,9 @@ struct BPredState : boost::counted_base
     VirtualMemoryAddress thePredictedTarget;
     VirtualMemoryAddress theActualTarget;
 
+    uint64_t thePredCycle;
+    uint64_t theCorrectionCycle;
+
     eDirection thePrediction;
     eDirection theActualDirection;
 
@@ -113,6 +117,9 @@ struct BPredState : boost::counted_base
       thePredictedTarget = VirtualMemoryAddress(0);
       theActualTarget = VirtualMemoryAddress(0);
 
+      thePredCycle = 0;
+      theCorrectionCycle = 0;
+
       thePrediction = kNotTaken;
       theActualDirection = kNotTaken;
 
@@ -128,6 +135,7 @@ struct BPredRedictRequest : boost::counted_base
   VirtualMemoryAddress theTarget;
   boost::intrusive_ptr<BPredState> theBPState; // this might be NULL. If so, no history update is needed.
   bool theInsertNewHistory;                    // If true, insert a new history when recovering from a misprediction
+  bool isResync;                               // If true, overwrite the existing redirect request
 };
 
 struct FetchAddr

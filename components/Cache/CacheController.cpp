@@ -658,7 +658,7 @@ CacheController::scheduleNewProcesses()
             theWakeMAFList[i].pop_front();
             MissAddressFile::maf_iter iter = theMaf.getBlockedMafEntry(wake_entry.first);
             if (iter == theMaf.end()) {
-                DBG_(Trace,
+                DBG_(VVerb,
                      (<< "Woke MAF entry for addr: " << std::hex << wake_entry.first
                       << " but failed to find blocked maf entry."));
                 continue;
@@ -670,7 +670,7 @@ CacheController::scheduleNewProcesses()
             // theWakeMAFList.push_back(wake_entry);
             //}
 
-            DBG_(Trace, (<< " schedule WakeMAF " << *iter->transport[MemoryMessageTag]));
+            DBG_(VVerb, (<< " schedule WakeMAF " << *iter->transport[MemoryMessageTag]));
 
             ProcessEntry_p aProcess = new ProcessEntry(iter, wake_entry.second, eProcMAFWakeup);
             reserveFrontSideOut(aProcess);
@@ -682,7 +682,7 @@ CacheController::scheduleNewProcesses()
             scheduled = true;
         }
         if (!scheduled && !theWakeMAFList[i].empty()) {
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< "Failed to schedule WakeMAF: BSO_Req full " << std::boolalpha << BackSideOut_Request.full()
                   << ", FSO Full " << isFrontSideOutFull() << ", EB full "
                   << theCacheControllerImpl->fullEvictBuffer()));
@@ -702,7 +702,7 @@ CacheController::scheduleNewProcesses()
             MissAddressFile::maf_iter iter = theIProbeList[i].front();
             theIProbeList[i].pop_front();
 
-            DBG_(Iface, (<< " schedule IProbe " << *iter->transport[MemoryMessageTag]));
+            DBG_(VVerb, (<< " schedule IProbe " << *iter->transport[MemoryMessageTag]));
 
             ProcessEntry_p aProcess = new ProcessEntry(iter, iter->transport[TransactionTrackerTag], eProcIProbe);
             reserveFrontSideOut(aProcess);
@@ -711,7 +711,7 @@ CacheController::scheduleNewProcesses()
             scheduled = true;
         }
         if (!scheduled && !theIProbeList[i].empty()) {
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< "Failed to schedule IProbe: BSO_Req full " << std::boolalpha << BackSideOut_Request.full()
                   << ", FSO Full " << isFrontSideOutFull()));
         }
@@ -730,7 +730,7 @@ CacheController::scheduleNewProcesses()
             scheduled = true;
         }
         if (!scheduled && theCacheControllerImpl->hasWakingSnoops()) {
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< "Failed to schedule WakeSnoop: BSO_Snoop full " << std::boolalpha << BackSideOut_Snoop.full()
                   << ", FSO Full " << isFrontSideOutFull()));
         }
@@ -745,7 +745,7 @@ CacheController::scheduleNewProcesses()
         while (theMAFPipeline[i].serverAvail() && theCacheControllerImpl->evictableBlockExists(theScheduledEvicts) &&
                (theCacheControllerImpl->freeEvictBuffer() + theScheduledEvicts <= thePorts) &&
                (theEvictOnSnoop ? !BackSideOut_Snoop.full() : !BackSideOut_Request.full())) {
-            DBG_(Trace, (<< " schedule Evict"));
+            DBG_(VVerb, (<< " schedule Evict"));
 
             theCacheControllerImpl->dumpEvictBuffer();
 
@@ -758,17 +758,17 @@ CacheController::scheduleNewProcesses()
         }
         if (!scheduled && theCacheControllerImpl->evictableBlockExists(theScheduledEvicts) &&
             (theCacheControllerImpl->freeEvictBuffer() + theScheduledEvicts <= thePorts)) {
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< "Failed to schedule Forced Evict: BSO_Snoop full " << std::boolalpha << BackSideOut_Snoop.full()));
         } else if (theCacheControllerImpl->fullEvictBuffer()) {
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< "Failed to schedule Forced Evict: BSO_Snoop full " << std::boolalpha << BackSideOut_Snoop.full()
                   << ", scheduled evicts " << theScheduledEvicts
                   << ", freeEvictBuffer() = " << theCacheControllerImpl->freeEvictBuffer() << ", ports = " << thePorts
                   << " evictableBlockExists? " << theCacheControllerImpl->evictableBlockExists(theScheduledEvicts)));
             theCacheControllerImpl->dumpEvictBuffer();
             if (!theCacheControllerImpl->evictableBlockExists(theScheduledEvicts)) {
-                //        DBG_(Trace, ( << "evict_waiting_on_idle_work = true" ));
+                //        DBG_(VVerb, ( << "evict_waiting_on_idle_work = true" ));
                 //        evict_waiting_on_idle_work = true;
             }
         } else if (theFlexus->quiescing() && !theCacheControllerImpl->evictableBlockExists(theScheduledEvicts) &&
@@ -785,7 +785,7 @@ CacheController::scheduleNewProcesses()
         while (theMAFPipeline[i].serverAvail() && !BankBackSideIn_Reply[i].empty() && !isFrontSideOutFull() &&
                !(theUseReplyChannel ? BackSideOut_Reply.full() : BackSideOut_Snoop.full())) {
             MemoryTransport transport(BankBackSideIn_Reply[i].dequeue());
-            DBG_(Iface, (<< " schedule Back " << *transport[MemoryMessageTag]));
+            DBG_(VVerb, (<< " schedule Back " << *transport[MemoryMessageTag]));
 
             ProcessEntry_p aProcess = new ProcessEntry(transport, eProcBackReply);
             reserveFrontSideOut(aProcess);
@@ -794,7 +794,7 @@ CacheController::scheduleNewProcesses()
             scheduled = true;
         }
         if (!scheduled && !BankBackSideIn_Reply[i].empty()) {
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< "Failed to schedule Back Reply: BSO_Snoop full " << std::boolalpha << BackSideOut_Snoop.full()
                   << ", FSO Full " << isFrontSideOutFull()));
         }
@@ -807,7 +807,7 @@ CacheController::scheduleNewProcesses()
                !(theUseReplyChannel ? BackSideOut_Reply.full() : BackSideOut_Snoop.full()) &&
                !theCacheControllerImpl->fullSnoopBuffer()) {
             MemoryTransport transport(BankBackSideIn_Request[i].dequeue());
-            DBG_(Iface, (<< " schedule Back " << *transport[MemoryMessageTag]));
+            DBG_(VVerb, (<< " schedule Back " << *transport[MemoryMessageTag]));
 
             ProcessEntry_p aProcess = new ProcessEntry(transport, eProcBackRequest);
             reserveFrontSideOut(aProcess);
@@ -817,7 +817,7 @@ CacheController::scheduleNewProcesses()
             scheduled = true;
         }
         if (!scheduled && !BankBackSideIn_Request[i].empty()) {
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< "Failed to schedule BackSide Request (Snoop): BSO_Snoop full " << std::boolalpha
                   << BackSideOut_Snoop.full() << ", FSO Full " << isFrontSideOutFull() << ", SB full "
                   << theCacheControllerImpl->fullSnoopBuffer()));
@@ -835,7 +835,7 @@ CacheController::scheduleNewProcesses()
           (BankFrontSideIn_Snoop[i].empty() ||
            BankFrontSideIn_Snoop[i].headTimestamp() > BankFrontSideIn_Request[i].headTimestamp())) {
             MemoryTransport transport(BankFrontSideIn_Request[i].dequeue());
-            DBG_(Iface, (<< " schedule Request " << *transport[MemoryMessageTag]));
+            DBG_(VVerb, (<< " schedule Request " << *transport[MemoryMessageTag]));
 
             ProcessEntry_p aProcess = new ProcessEntry(transport, eProcRequest);
             reserveBackSideOut_Request(aProcess);
@@ -847,7 +847,7 @@ CacheController::scheduleNewProcesses()
             scheduled = true;
         }
         if (!scheduled && !BankFrontSideIn_Request[i].empty()) {
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< "Failed to schedule Request: BSO_Req full " << std::boolalpha << BackSideOut_Request.full()
                   << ", FSO Full " << isFrontSideOutFull() << ", MAF full " << theMaf.full() << ", EB full "
                   << theCacheControllerImpl->fullEvictBuffer() << " older snoop avail: "
@@ -873,7 +873,7 @@ CacheController::scheduleNewProcesses()
                (BankFrontSideIn_Snoop[i].empty() ||
                 BankFrontSideIn_Snoop[i].headTimestamp() > BankFrontSideIn_Prefetch[i].headTimestamp())) {
             MemoryTransport transport(BankFrontSideIn_Prefetch[i].dequeue());
-            DBG_(Iface, (<< " schedule Prefetch " << *transport[MemoryMessageTag]));
+            DBG_(VVerb, (<< " schedule Prefetch " << *transport[MemoryMessageTag]));
 
             ProcessEntry_p aProcess = new ProcessEntry(transport, eProcPrefetch);
             reserveBackSideOut_Prefetch(aProcess);
@@ -884,7 +884,7 @@ CacheController::scheduleNewProcesses()
             scheduled = true;
         }
         if (!scheduled && !BankFrontSideIn_Prefetch[i].empty()) {
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< "Failed to schedule Prefetch: BSO_Prefetch full " << std::boolalpha << BackSideOut_Prefetch.full()
                   << ", FSO Full " << isFrontSideOutFull() << ", MAF full " << theMaf.full() << ", EB full "
                   << theCacheControllerImpl->fullEvictBuffer() << " older snoop avail: "
@@ -902,7 +902,7 @@ CacheController::scheduleNewProcesses()
                !(theUseReplyChannel ? BackSideOut_Reply.full() : BackSideOut_Snoop.full()) &&
                theCacheControllerImpl->snoopResourcesAvailable(BankFrontSideIn_Snoop[i].peek()[MemoryMessageTag])) {
             MemoryTransport transport(BankFrontSideIn_Snoop[i].dequeue());
-            DBG_(Iface, (<< " schedule Snoop " << *transport[MemoryMessageTag]));
+            DBG_(VVerb, (<< " schedule Snoop " << *transport[MemoryMessageTag]));
 
             ProcessEntry_p aProcess = new ProcessEntry(transport, eProcSnoop);
             reserveBackSideOut_Snoop(aProcess);
@@ -931,7 +931,7 @@ CacheController::scheduleNewProcesses()
             aProcess->transport().set(MemoryMessageTag, theCacheControllerImpl->getIdleWorkMessage(aProcess));
 
             theMAFPipeline[i].enqueue(aProcess);
-            DBG_(Trace, (<< "Scheduled Idle Work: " << *(aProcess->transport()[MemoryMessageTag])));
+            DBG_(VVerb, (<< "Scheduled Idle Work: " << *(aProcess->transport()[MemoryMessageTag])));
         }
     }
 
@@ -944,7 +944,7 @@ void
 CacheController::enqueueWakeMaf(MemoryAddress const& anAddress,
                                 boost::intrusive_ptr<TransactionTracker> aWakeTransaction)
 {
-    DBG_(Iface, (<< " enqueueWakeMaf " << (uint64_t)anAddress));
+    DBG_(VVerb, (<< " enqueueWakeMaf " << (uint64_t)anAddress));
     theWakeMAFList[getBank(anAddress)].push_back(std::make_pair(anAddress, aWakeTransaction));
 }
 
@@ -952,7 +952,7 @@ void
 CacheController::enqueueWakeRegionMaf(MemoryAddress const& anAddress,
                                       boost::intrusive_ptr<TransactionTracker> aWakeTransaction)
 {
-    DBG_(Trace, (<< " enqueueWakeRegionMaf " << anAddress));
+    DBG_(VVerb, (<< " enqueueWakeRegionMaf " << anAddress));
     // Get all maf entries in state WaitRegion
     std::list<MemoryAddress> blocks = theCacheControllerImpl->getRegionBlockList(anAddress);
     for (; !blocks.empty();) {
@@ -960,10 +960,10 @@ CacheController::enqueueWakeRegionMaf(MemoryAddress const& anAddress,
         blocks.pop_front();
         if (theMaf.contains(addr, kWaitRegion)) {
             theWakeMAFList[getBank(addr)].push_back(std::make_pair(addr, aWakeTransaction));
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< "enqueueWakeRegionMaf(" << std::hex << anAddress << ") Waking Maf Waiting with addr: " << addr));
         } else {
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< "enqueueWakeRegionMaf(" << std::hex << anAddress << ") No Maf Waiting with addr: " << addr));
         }
     }
@@ -1000,13 +1000,13 @@ CacheController::doNewRequests(std::vector<MessageQueue<MemoryTransport>>& aMess
                 if (!aBankQueue[bank].full()) {
                     MemoryTransport trans(aMessageQueue[i].dequeue());
 
-                    DBG_(Iface,
+                    DBG_(VVerb,
                          (<< " scheduling request to bank " << bank << ": " << *trans[MemoryMessageTag] << " "
                           << theCacheInitInfo.theCacheLevel));
                     aBankQueue[bank].enqueue(trans);
                     sentMessages = true;
                 } else {
-                    DBG_(Iface,
+                    DBG_(VVerb,
                          (<< " bank[" << bank << "] conflict for[" << i
                           << "]: " << *aMessageQueue[i].peek()[MemoryMessageTag]));
                 }
@@ -1027,7 +1027,7 @@ CacheController::runIdleWorkProcess(ProcessEntry_p aProcess)
     tracker->setSource(theName + " IdleWork");
     tracker->setDelayCause(theName, "IdleWork");
 
-    DBG_(Trace,
+    DBG_(VVerb,
          (<< " runIdleWorkProcess serial " << aProcess->serial() << ": " << *aProcess->transport()[MemoryMessageTag]));
     aProcess->transport().set(TransactionTrackerTag, tracker);
 
@@ -1061,7 +1061,7 @@ CacheController::runIdleWorkProcess(ProcessEntry_p aProcess)
 void
 CacheController::runWakeSnoopProcess(ProcessEntry_p aProcess)
 {
-    DBG_(Trace, (<< " runWakeSnoopProcess " << aProcess->serial() << ": " << *aProcess->transport()[MemoryMessageTag]));
+    DBG_(VVerb, (<< " runWakeSnoopProcess " << aProcess->serial() << ": " << *aProcess->transport()[MemoryMessageTag]));
     TransactionTracker_p tracker = aProcess->transport()[TransactionTrackerTag];
 
     DBG_Assert(tracker != nullptr);
@@ -1108,7 +1108,7 @@ void
 CacheController::runEvictProcess(ProcessEntry_p aProcess)
 {
     FLEXUS_PROFILE();
-    DBG_(Trace, (<< " runEvictProcess " << aProcess->serial() << ": "));
+    DBG_(VVerb, (<< " runEvictProcess " << aProcess->serial() << ": "));
 
     Action action = theCacheControllerImpl->doEviction();
 
@@ -1132,7 +1132,7 @@ CacheController::runRequestProcess(ProcessEntry_p aProcess)
 {
     FLEXUS_PROFILE();
     DBG_Assert(aProcess->type() == eProcRequest || aProcess->type() == eProcPrefetch);
-    DBG_(Trace, (<< " runRequestProcess " << aProcess->serial() << ": " << *aProcess->transport()[MemoryMessageTag]));
+    DBG_(VVerb, (<< " runRequestProcess " << aProcess->serial() << ": " << *aProcess->transport()[MemoryMessageTag]));
 
     bool has_maf_entry = theMaf.contains(addressOf(aProcess));
     // We call handleRequestMessage even if there is a maf entry outstanding,
@@ -1146,7 +1146,7 @@ CacheController::runRequestProcess(ProcessEntry_p aProcess)
 
     aProcess->consumeAction(action);
 
-    DBG_(Trace, (<< "  Action for " << *aProcess->transport()[MemoryMessageTag] << " is: " << action.theAction));
+    DBG_(VVerb, (<< "  Action for " << *aProcess->transport()[MemoryMessageTag] << " is: " << action.theAction));
 
     switch (action.theAction) {
         case kSend:
@@ -1341,7 +1341,7 @@ CacheController::runWakeMafProcess(ProcessEntry_p aProcess)
             DBG_Assert(action.theFrontMessage);
             aProcess->enqueueFrontTransport(action);
 
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< " Selecting maf entry for removal (serial: " << aProcess->serial()
                   << "): " << *(aProcess->mafEntry()->transport[MemoryMessageTag])));
 
@@ -1414,7 +1414,7 @@ void
 CacheController::runSnoopProcess(ProcessEntry_p aProcess)
 {
     FLEXUS_PROFILE();
-    DBG_(Trace, (<< " runSnoopProcess " << aProcess->serial() << ": " << *aProcess->transport()[MemoryMessageTag]));
+    DBG_(VVerb, (<< " runSnoopProcess " << aProcess->serial() << ": " << *aProcess->transport()[MemoryMessageTag]));
 
     // Need to deal with I-cache probes
     MissAddressFile::maf_iter temp = theMaf.getProbingMAFEntry(addressOf(aProcess));
@@ -1481,7 +1481,7 @@ void
 CacheController::runIProbeProcess(ProcessEntry_p aProcess)
 {
     FLEXUS_PROFILE();
-    DBG_(Trace,
+    DBG_(VVerb,
          (<< " runIProbeProcess " << aProcess->serial() << ": " << *aProcess->mafEntry()->transport[MemoryMessageTag]));
 
     Action action =
@@ -1529,12 +1529,12 @@ void
 CacheController::runBackProcess(ProcessEntry_p aProcess)
 {
     FLEXUS_PROFILE();
-    DBG_(Trace, (<< " runBackProcess " << aProcess->serial() << ": " << *aProcess->transport()[MemoryMessageTag]));
+    DBG_(VVerb, (<< " runBackProcess " << aProcess->serial() << ": " << *aProcess->transport()[MemoryMessageTag]));
 
     Action action = theCacheControllerImpl->handleBackMessage(aProcess->transport());
     aProcess->consumeAction(action);
 
-    DBG_(Trace,
+    DBG_(VVerb,
          (<< " Process " << aProcess->serial() << ": action = " << action.theAction << ", "
           << (action.theFrontMessage == false ? "NoFront" : "Front")
           << (action.theBackMessage == false ? " NoBack" : " Back")));
@@ -1588,7 +1588,7 @@ CacheController::runBackProcess(ProcessEntry_p aProcess)
             aProcess->transport() = aProcess->mafEntry()->transport;
 
             aProcess->wakeRegion() = action.theWakeRegion;
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< "runBackProcess(" << *aProcess->transport()[MemoryMessageTag] << "): aProcess->wakeRegion() = "
                   << std::boolalpha << aProcess->wakeRegion() << ", action.theWakeRegion = " << action.theWakeRegion));
 
@@ -1620,7 +1620,7 @@ CacheController::runBackProcess(ProcessEntry_p aProcess)
             aProcess->enqueueBackTransport(action);
 
             aProcess->wakeRegion() = action.theWakeRegion;
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< "runBackProcess(" << *aProcess->transport()[MemoryMessageTag] << "): aProcess->wakeRegion() = "
                   << std::boolalpha << aProcess->wakeRegion() << ", action.theWakeRegion = " << action.theWakeRegion));
 
@@ -1644,7 +1644,7 @@ CacheController::runBackProcess(ProcessEntry_p aProcess)
             aProcess->transport() = aProcess->mafEntry()->transport;
 
             aProcess->wakeRegion() = action.theWakeRegion;
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< "runBackProcess(" << *aProcess->transport()[MemoryMessageTag] << "): aProcess->wakeRegion() = "
                   << std::boolalpha << aProcess->wakeRegion() << ", action.theWakeRegion = " << action.theWakeRegion));
 
@@ -1686,7 +1686,7 @@ CacheController::runBackProcess(ProcessEntry_p aProcess)
 
             aProcess->wakeAfterEvict() = action.theWakeEvicts;
             aProcess->type()           = eProcNoMoreWork;
-            DBG_(Trace, (<< " no more work required for: " << *aProcess->transport()[MemoryMessageTag]));
+            DBG_(VVerb, (<< " no more work required for: " << *aProcess->transport()[MemoryMessageTag]));
 
             if (aProcess->wakeAfterEvict()) {
                 doTransmitProcess(aProcess);
@@ -1720,7 +1720,7 @@ void
 CacheController::doTransmitProcess(ProcessEntry_p aProcess)
 {
 
-    DBG_(Trace,
+    DBG_(VVerb,
          (<< " starting transmit for process serial: " << aProcess->serial() << " addr: " << std::hex
           << (uint64_t)addressOf(aProcess) << ", wakeAfterSnoop: " << std::boolalpha << aProcess->wakeAfterSnoop()
           << ", removeMafEntry: " << aProcess->removeMafEntry()));
@@ -1786,7 +1786,7 @@ CacheController::doTransmitProcess(ProcessEntry_p aProcess)
     // Finally, deallocate and unlock the MAF, if necessary and
     // wakeup any processes waiting on the address
 
-    DBG_(Trace,
+    DBG_(VVerb,
          (<< " process serial: " << aProcess->serial() << " wakeRegion " << std::boolalpha << aProcess->wakeRegion()
           << " addr: " << std::hex << (uint64_t)addressOf(aProcess)));
 
@@ -1807,12 +1807,12 @@ CacheController::doTransmitProcess(ProcessEntry_p aProcess)
 
         DBG_Assert(aProcess->mafEntry() != theMaf.end());
         DBG_Assert(aProcess->mafEntry()->state == kCompleted);
-        DBG_(Trace, (<< " removing MAF entry: " << *aProcess->mafEntry()->transport[MemoryMessageTag]));
+        DBG_(VVerb, (<< " removing MAF entry: " << *aProcess->mafEntry()->transport[MemoryMessageTag]));
 
         if (theMaf.contains(addressOf(aProcess), kWaitAddress)) {
             enqueueWakeMaf(addressOf(aProcess), trackerOf(aProcess));
         } else {
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< " process serial: " << aProcess->serial() << " addr: " << std::hex << (uint64_t)addressOf(aProcess)
                   << ", NO MAF entries waiting on Address."));
         }
@@ -1835,7 +1835,7 @@ CacheController::doTransmitProcess(ProcessEntry_p aProcess)
                 enqueueWakeMaf(addressOf(aProcess), trackerOf(aProcess));
             }
         } else {
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< " process serial: " << aProcess->serial() << " addr: " << std::hex << (uint64_t)addressOf(aProcess)
                   << ", NO MAF entries waiting on Snoop."));
         }
@@ -1851,7 +1851,7 @@ CacheController::doTransmitProcess(ProcessEntry_p aProcess)
 void
 CacheController::sendFront(MemoryTransport& transport, bool to_D, bool to_I)
 {
-    DBG_(Trace, (<< " sendFront (D-" << to_D << ", I-" << to_I << ") : " << *transport[MemoryMessageTag]));
+    DBG_(VVerb, (<< " sendFront (D-" << to_D << ", I-" << to_I << ") : " << *transport[MemoryMessageTag]));
 
     if (transport[TransactionTrackerTag]) { transport[TransactionTrackerTag]->setDelayCause(theName, "Front Tx"); }
 
@@ -1871,7 +1871,7 @@ CacheController::sendFront(MemoryTransport& transport, bool to_D, bool to_I)
 void
 CacheController::sendBack_Request(MemoryTransport& transport)
 {
-    DBG_(Trace, (<< " sendBack_Request " << *transport[MemoryMessageTag]));
+    DBG_(VVerb, (<< " sendBack_Request " << *transport[MemoryMessageTag]));
     if (transport[TransactionTrackerTag]) { transport[TransactionTrackerTag]->setDelayCause(theName, "Back Tx"); }
     BackSideOut_Request.enqueue(transport);
 }
@@ -1880,7 +1880,7 @@ CacheController::sendBack_Request(MemoryTransport& transport)
 void
 CacheController::sendBack_Prefetch(MemoryTransport& transport)
 {
-    DBG_(Trace, (<< " sendBack_Prefetch" << *transport[MemoryMessageTag]));
+    DBG_(VVerb, (<< " sendBack_Prefetch" << *transport[MemoryMessageTag]));
     if (transport[TransactionTrackerTag]) { transport[TransactionTrackerTag]->setDelayCause(theName, "Back Tx"); }
     BackSideOut_Prefetch.enqueue(transport);
 }
@@ -1889,10 +1889,10 @@ CacheController::sendBack_Prefetch(MemoryTransport& transport)
 void
 CacheController::sendBack_Snoop(MemoryTransport& transport)
 {
-    DBG_(Trace, (<< " sendBack_Snoop " << *transport[MemoryMessageTag]));
+    DBG_(VVerb, (<< " sendBack_Snoop " << *transport[MemoryMessageTag]));
     if (transport[TransactionTrackerTag]) { transport[TransactionTrackerTag]->setDelayCause(theName, "Back Tx"); }
     if (theUseReplyChannel) {
-        DBG_(Trace, (<< " Using REPLY channel sendBack_Snoop" << *transport[MemoryMessageTag]));
+        DBG_(VVerb, (<< " Using REPLY channel sendBack_Snoop" << *transport[MemoryMessageTag]));
         BackSideOut_Reply.enqueue(transport);
     } else {
         BackSideOut_Snoop.enqueue(transport);
@@ -1903,7 +1903,7 @@ CacheController::sendBack_Snoop(MemoryTransport& transport)
 void
 CacheController::sendBack_Evict(MemoryTransport& transport)
 {
-    DBG_(Trace, (<< " sendBack_Evict" << *transport[MemoryMessageTag]));
+    DBG_(VVerb, (<< " sendBack_Evict" << *transport[MemoryMessageTag]));
     if (transport[TransactionTrackerTag]) { transport[TransactionTrackerTag]->setDelayCause(theName, "Back Tx"); }
     if (theEvictOnSnoop) {
         BackSideOut_Snoop.enqueue(transport);

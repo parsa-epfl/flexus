@@ -77,7 +77,7 @@ struct LDPAction : public PredicatedSemanticAction
         uint64_t addr_final       = addr + (size >> 3) - 1;
         bits value_new            = c.read_va(VirtualMemoryAddress(addr), size >> 3, theInstruction->unprivAccess());
         if (((addr & 0x1000) != (addr_final & 0x1000)) && value != value_new) {
-            DBG_(Iface,
+            DBG_(VVerb,
                  (<< theInstruction->identify() << " Correcting LDP access across pages at address: " << std::hex
                   << addr << ", size: " << size << ", original: " << value << ", final: " << value_new));
             core()->setLoadValue(boost::intrusive_ptr<Instruction>(theInstruction), value_new);
@@ -88,8 +88,8 @@ struct LDPAction : public PredicatedSemanticAction
         theInstruction->setOperand(kResult, pairValues.second);
         theInstruction->setOperand(kResult1, pairValues.first);
 
-        DBG_(Iface, (<< *this << " received pair load value = " << std::hex << value << std::dec));
-        DBG_(Iface,
+        DBG_(VVerb, (<< *this << " received pair load value = " << std::hex << value << std::dec));
+        DBG_(VVerb,
              (<< *this << " received load values = " << std::hex << pairValues.first << " and " << pairValues.second
               << std::dec));
 

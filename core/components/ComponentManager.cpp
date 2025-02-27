@@ -92,7 +92,16 @@ class ComponentManagerImpl : public ComponentManager
         }
 
         // Drive frequency calculations
-        std::vector<std::string> freq_split = splitString(freq, ':');
+        std::vector<std::string> freq_split = (freq != nullptr && strlen(freq)) ? splitString(freq, ':') : std::vector<std::string>(aSystemWidth+1, std::string("1"));
+        if (freq_split.size() == 1) {
+            // replicate the frequency for all the components
+            freq_split.resize(aSystemWidth + 1, freq_split[0]);
+
+            for (std::size_t i = 1; i <= aSystemWidth; ++i) {
+                freq_split[i] = freq_split[0];
+            }
+        }
+
         assert(freq_split.size() == aSystemWidth + 1);
         index_t numerator[aSystemWidth+1], denominator[aSystemWidth+1], driveFreq[aSystemWidth+1];
 
@@ -194,13 +203,6 @@ class ComponentManagerImpl : public ComponentManager
             ++iter;
         }
         DBG_(Crit, (<< " Done loading."));
-        /*
-              std::for_each
-                ( theComponents.begin()
-                , theComponents.end()
-                , ll::bind( &ComponentInterface::loadState, ll::_1, aDirectory )
-                );
-        */
     }
 };
 

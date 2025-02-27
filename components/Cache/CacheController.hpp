@@ -243,7 +243,7 @@ class MissAddressFile
 
     void allocEntry(MemoryAddress aBlockAddress, Transport& aTransport, MafStates aState)
     {
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< theName << " - Adding MAF entry for block " << std::hex << aBlockAddress << " in state "
               << mafState2String(aState)));
         DBG_Assert(!full());
@@ -318,7 +318,7 @@ class MissAddressFile
 
     bool contains(const MemoryAddress& aBlockAddress) const
     {
-        DBG_(Trace, (<< "Searching MAF for block " << std::hex << aBlockAddress));
+        DBG_(VVerb, (<< "Searching MAF for block " << std::hex << aBlockAddress));
         return theMshrs.count(std::make_tuple(aBlockAddress)) > 0;
     }
 
@@ -332,7 +332,7 @@ class MissAddressFile
     {
         maf_t::iterator iter = theMshrs.find(std::make_tuple(aBlockAddress, kWaitResponse));
         if (iter == theMshrs.end()) {
-            DBG_(Iface, (<< "Expected to find MAF entry for " << aBlockAddress << " but found none."));
+            DBG_(VVerb, (<< "Expected to find MAF entry for " << aBlockAddress << " but found none."));
             return std::make_pair(boost::intrusive_ptr<MemoryMessage>(0), boost::intrusive_ptr<TransactionTracker>(0));
         }
 
@@ -419,17 +419,17 @@ class MissAddressFile
     {
         maf_t::iterator iter = theMshrs.begin();
 
-        DBG_(Trace,
+        DBG_(VVerb,
              Set((CompName) << theName)(<< theName << " MAF content dump (" << theMshrs.size() << "/" << theSize));
 
         while (iter != theMshrs.end()) {
-            DBG_(Trace,
+            DBG_(VVerb,
                  Set((CompName) << theName)(<< "entry[" << iter->state << ":" << iter->type
                                             << "]: " << *iter->transport[MemoryMessageTag]));
             iter++;
         }
 
-        DBG_(Trace, Set((CompName) << theName)(<< theName << " MAF content finished"));
+        DBG_(VVerb, Set((CompName) << theName)(<< theName << " MAF content finished"));
     }
 
 }; // end class MissAddressFile

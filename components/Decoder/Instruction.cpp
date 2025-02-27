@@ -96,6 +96,7 @@ ArchInstruction::doDispatchEffects()
         aRequest->theTarget = bpState()->theActualTarget;
         aRequest->theBPState = bpState();
         aRequest->theInsertNewHistory = false;
+        aRequest->isResync = false;
         
         core()->redirectFetch(aRequest); 
     }

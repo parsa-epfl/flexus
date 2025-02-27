@@ -155,7 +155,7 @@ class FLEXUS_COMPONENT(MemoryNetwork)
     {
         int32_t real_net_vc = MAX_PROT_VC - vc - 1;
         index_t pdest       = (node)*cfg.VChannels + real_net_vc;
-        DBG_(Iface,
+        DBG_(VVerb,
              (<< "netmessage: available? "
               << "node: " << node << " vc: " << real_net_vc << " pdest: " << pdest));
         return FLEXUS_CHANNEL_ARRAY(ToNode, pdest).available();
@@ -171,7 +171,7 @@ class FLEXUS_COMPONENT(MemoryNetwork)
 
         int32_t vc = transports[msg->serial][NetworkMessageTag]->vc;
 
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "Network Delivering msg From " << msg->srcNode << " to " << msg->destNode << ", on vc "
               << msg->networkVC << ", serial: " << msg->serial
               << " Message =  " << *(transports[msg->serial][MemoryMessageTag])));
@@ -261,14 +261,14 @@ class FLEXUS_COMPONENT(MemoryNetwork)
         // (assigned when the MessageState object is allocated) to transports
         transports.insert(make_pair(msg->serial, transport));
 
-        DBG_(Iface,
+        DBG_(VVerb,
              (<< "New packet: "
               << " serial=" << msg->serial << " src=" << transport[NetworkMessageTag]->src
               << " dest=" << transport[NetworkMessageTag]->dest << " vc=" << transport[NetworkMessageTag]->vc
               << " src_port=" << transport[NetworkMessageTag]->src_port
               << " dest_port=" << transport[NetworkMessageTag]->dst_port) Comp(*this));
 
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "Network Received msg From " << msg->srcNode << " to " << msg->destNode << ", on vc " << msg->networkVC
               << ", serial: " << msg->serial << " Message =  " << *(transport[MemoryMessageTag])));
 

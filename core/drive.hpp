@@ -15,7 +15,7 @@ struct do_cycle_core
 {
     static void doCycle(index_t idx)
     {
-        DBG_(Dev, (<< "[Core] Drive component ID: " << N << " core idx: " << idx));
+        DBG_(VVerb, (<< "[Core] Drive component ID: " << N << " core idx: " << idx));
         mpl::deref<DriveHandleIter>::type::getReference(idx).drive(
             typename mpl::deref<DriveHandleIter>::type::drive());
 
@@ -37,7 +37,7 @@ struct do_cycle_uncore
         {
             FLEXUS_PROFILE_N(mpl::deref<DriveHandleIter>::type::drive::name());
             for (index_t i = 0; i < mpl::deref<DriveHandleIter>::type::width(); i++) {
-                DBG_(Dev, (<< "[Uncore] Drive Component ID: " << N << " uncore idx: " << i));
+                DBG_(VVerb, (<< "[Uncore] Drive Component ID: " << N << " uncore idx: " << i));
                 mpl::deref<DriveHandleIter>::type::getReference(i).drive(
                   typename mpl::deref<DriveHandleIter>::type::drive());
             }
@@ -55,19 +55,27 @@ struct do_cycle_uncore<0, DriveHandleIter>
 template<class DriveHandles>
 struct do_cycle
 {
-    static void doCycle()
+    static uint32_t doCycle()
     {
         typedef typename mpl::deref<typename mpl::begin<DriveHandles>::type>::type coreDriveHandles;
         typedef typename mpl::deref<typename mpl::next<typename mpl::begin<DriveHandles>::type>::type>::type uncoreDriveHandles;
+        uint32_t advanceCycles = 0;
 
         index_t* freq = ComponentManager::getComponentManager().getFreq().freq;
         index_t maxFreq = ComponentManager::getComponentManager().getFreq().maxFreq;
         index_t sysWidth = ComponentManager::getComponentManager().systemWidth();
 
+        DBG_(Dev, (<< "maxFreq: " << maxFreq << " sysWidth: " << sysWidth));
+        for (index_t id = 0; id <= sysWidth; ++id) {
+            DBG_(Dev, (<< "freq[" << id << "]: " << freq[id]));
+        }
+
         for(index_t iter = 0; iter < maxFreq; ++iter) {
             for(index_t id = 0; id <= sysWidth; ++id) {
                 if(iter < freq[id]) {
                     if(id == sysWidth) {
+                        // Advance flexus cycles once per uncore drive
+                        advanceCycles++;
                         do_cycle_uncore<mpl::size<uncoreDriveHandles>::value, typename mpl::begin<uncoreDriveHandles>::type>::doCycle();
                     } else {
                         do_cycle_core<mpl::size<coreDriveHandles>::value, typename mpl::begin<coreDriveHandles>::type>::doCycle(id);
@@ -75,6 +83,7 @@ struct do_cycle
                 }
             }
         }
+        return advanceCycles;
     }
 };
 } // namespace aux_
@@ -110,13 +119,13 @@ struct list_drives
 template<class OrderedDriveHandleList>
 class Drive : public DriveBase
 {
-    virtual void doCycle()
+    virtual uint32_t doCycle()
     {
         // Through the magic of template expansion and static dispatch, this calls
         // every Drive's do_cycle() method in the order specified in
         // OrderedDriveHandleList.
         FLEXUS_PROFILE_N("Drive::doCycle");
-        aux_::do_cycle<OrderedDriveHandleList>::doCycle();
+        return aux_::do_cycle<OrderedDriveHandleList>::doCycle();
     }
 };
 

@@ -221,7 +221,7 @@ NonInclusiveMESIPolicy::doRequest(ProcessEntry_p process, bool has_maf)
                 } else {
                     theMAF.insert(process->transport(), address, eWaitSet, theDefaultState);
                 }
-                DBG_(Trace,
+                DBG_(VVerb,
                      (<< theCMPCacheInfo.theName << " - failed to allocate directory entry for " << std::hex << address
                       << " found in evict buffer."));
                 return;
@@ -236,7 +236,7 @@ NonInclusiveMESIPolicy::doRequest(ProcessEntry_p process, bool has_maf)
                 } else {
                     theMAF.insert(process->transport(), address, eWaitSet, theDefaultState);
                 }
-                DBG_(Trace,
+                DBG_(VVerb,
                      (<< theCMPCacheInfo.theName << " - failed to allocate directory entry for " << std::hex << address
                       << " stalling."));
                 return;
@@ -268,7 +268,7 @@ NonInclusiveMESIPolicy::doRequest(ProcessEntry_p process, bool has_maf)
             theCacheEvictBuffer.remove(c_eb);
             c_lookup->setState(block_state);
 
-            DBG_(Trace, (<< " replaceing EB entry, evicting block in state " << victim->state() << " : " << *msg));
+            DBG_(VVerb, (<< " replaceing EB entry, evicting block in state " << victim->state() << " : " << *msg));
             if (victim->state() != CacheState::Invalid) { evictCacheBlock(victim); }
         }
     }
@@ -342,7 +342,7 @@ NonInclusiveMESIPolicy::doRequest(ProcessEntry_p process, bool has_maf)
     // Check if it's necessary to convert an Upgrade to a Write
     // This happens when a block is invalidated after an upgrade is sent
     if (req_type == MemoryMessage::UpgradeReq && !dir_lookup->state().isSharer(requester)) {
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "Received Upgrade from Non-Sharer, converting to WriteReq: "
               << *(process->transport()[MemoryMessageTag])));
         req_type                                       = MemoryMessage::WriteReq;
@@ -648,7 +648,7 @@ NonInclusiveMESIPolicy::doRequest(ProcessEntry_p process, bool has_maf)
                     // let the requester know the notify contains data
                     rep_msg->type()    = MemoryMessage::MissNotifyData;
                     rep_msg->reqSize() = theCMPCacheInfo.theBlockSize;
-                    DBG_(Trace,
+                    DBG_(VVerb,
                          (<< theCMPCacheInfo.theName << " sending MissNotifyData, cstate = " << c_lookup->state()
                           << ", sharers = " << dir_lookup->state().getSharers()
                           << ", Req = " << *process->transport()[MemoryMessageTag]));
@@ -824,7 +824,7 @@ NonInclusiveMESIPolicy::doEvict(ProcessEntry_p process, bool has_maf)
     MemoryMessage_p req   = process->transport()[MemoryMessageTag];
     MemoryAddress address = req->address();
 
-    DBG_(Trace, (<< theCMPCacheInfo.theName << " - doEvict() for " << *req));
+    DBG_(VVerb, (<< theCMPCacheInfo.theName << " - doEvict() for " << *req));
 
     int32_t source = process->transport()[DestinationTag]->requester;
 
@@ -841,7 +841,7 @@ NonInclusiveMESIPolicy::doEvict(ProcessEntry_p process, bool has_maf)
         if (iter->transport()[MemoryMessageTag]->address() != address) { continue; }
         if (iter->state() != eWaitAck) { continue; }
         if (iter->transport()[DestinationTag]->requester == source) {
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< "Found maf waiting for ack from evicting core, stalling: " << *req << " while waiting for "
                   << *(iter->transport()[MemoryMessageTag])));
             if (has_maf) {
@@ -912,7 +912,7 @@ NonInclusiveMESIPolicy::doEvict(ProcessEntry_p process, bool has_maf)
 
             // Steal Cache EB reservations from Dir EB entry if possible
             if (d_eb != nullptr && d_eb->cacheEBReserved() > 0) {
-                DBG_(Trace,
+                DBG_(VVerb,
                      (<< theCMPCacheInfo.theName << " - Recovering " << d_eb->cacheEBReserved()
                       << " saved cacheEB reservations."));
                 process->cache_eb_reserved += d_eb->cacheEBReserved();
@@ -940,7 +940,7 @@ NonInclusiveMESIPolicy::doEvict(ProcessEntry_p process, bool has_maf)
 
                 if (victim->state() != CacheState::Invalid) { evictCacheBlock(victim); }
             } else if (req->type() == MemoryMessage::EvictDirty) {
-                DBG_(Trace,
+                DBG_(VVerb,
                      (<< theCMPCacheInfo.theName << " Forwarding evict to memory. cache_eb_reserved = "
                       << process->cache_eb_reserved << ", CacheEBHasSpace = " << std::boolalpha << CacheEBHasSpace()
                       << ", Msg = " << *(process->transport()[MemoryMessageTag])));
@@ -966,7 +966,7 @@ NonInclusiveMESIPolicy::doEvict(ProcessEntry_p process, bool has_maf)
 
             maf_iter_t waiting_maf = theMAF.findFirst(req->address(), eWaitEvict);
             if (waiting_maf != theMAF.end()) {
-                DBG_(Trace,
+                DBG_(VVerb,
                      (<< theCMPCacheInfo.theName << " - found maf waiting on Evict of " << std::hex << address << " -> "
                       << *(waiting_maf->transport()[MemoryMessageTag])));
                 DBG_Assert(waiting_maf->transport()[MemoryMessageTag]->address() == address);
@@ -1049,7 +1049,7 @@ NonInclusiveMESIPolicy::handleReply(ProcessEntry_p process)
 
                     // Allocate the block in the cache
                     CacheLookupResult_p victim = theCache->allocate(c_lookup, req->address());
-                    DBG_(Trace,
+                    DBG_(VVerb,
                          (<< " allocating block on InvUpdateAck, evicting block " << std::hex << victim->blockAddress()
                           << " in state " << victim->state() << " : " << *req));
 
@@ -1135,7 +1135,7 @@ NonInclusiveMESIPolicy::handleReply(ProcessEntry_p process)
 
                     // Allocate the block in the cache
                     CacheLookupResult_p victim = theCache->allocate(c_lookup, req->address());
-                    DBG_(Trace,
+                    DBG_(VVerb,
                          (<< " allocating block " << std::hex << req->address() << " on Ack, evicting block "
                           << std::hex << victim->blockAddress() << " in state " << victim->state() << " : " << *req));
 
@@ -1150,7 +1150,7 @@ NonInclusiveMESIPolicy::handleReply(ProcessEntry_p process)
                 } else if (req->type() == MemoryMessage::FetchAck && c_lookup->state() != CacheState::Modified) {
                     c_lookup->setState(CacheState::Shared);
                 } else if (req->type() == MemoryMessage::ReadAck && c_lookup->state() != CacheState::Modified) {
-                    c_lookup->setState(CacheState::Exclusive);
+                    c_lookup->setState(CacheState::Shared); // You cannot create an exclusive copy with a ReadAck which already suggests two sharers.
                 }
             }
 
@@ -1201,7 +1201,7 @@ NonInclusiveMESIPolicy::handleReply(ProcessEntry_p process)
                         c_eb->state() = CacheState::Exclusive;
                         c_eb->type()  = MemoryMessage::EvictClean;
                     } else {
-                        DBG_(Trace,
+                        DBG_(VVerb,
                              (<< theCMPCacheInfo.theName << " Removing CEB entry for block " << std::hex
                               << req->address()));
                         theCacheEvictBuffer.remove(c_eb);
@@ -1250,7 +1250,7 @@ NonInclusiveMESIPolicy::handleReply(ProcessEntry_p process)
                         c_eb->state() = CacheState::Exclusive;
                         c_eb->type()  = MemoryMessage::EvictClean;
                     } else {
-                        DBG_(Trace,
+                        DBG_(VVerb,
                              (<< theCMPCacheInfo.theName << " Removing CEB entry for block " << std::hex
                               << req->address()));
                         theCacheEvictBuffer.remove(c_eb);
@@ -1355,7 +1355,7 @@ NonInclusiveMESIPolicy::handleReply(ProcessEntry_p process)
 
                     // Allocate the block in the cache
                     CacheLookupResult_p victim = theCache->allocate(c_lookup, req->address());
-                    DBG_(Trace,
+                    DBG_(VVerb,
                          (<< " allocating block on receiving " << req->type() << ", evicting block " << std::hex
                           << victim->blockAddress() << " in state " << victim->state() << " : " << *req));
 
@@ -1414,7 +1414,7 @@ NonInclusiveMESIPolicy::handleReply(ProcessEntry_p process)
                         theCacheEvictBuffer.remove(c_eb);
                         c_lookup->setState(block_state);
 
-                        DBG_(Trace,
+                        DBG_(VVerb,
                              (<< " replaceing EB entry, evicting block in state " << victim->state() << " : " << *req));
                         if (victim->state() != CacheState::Invalid) { evictCacheBlock(victim); }
                     }
@@ -1579,7 +1579,7 @@ NonInclusiveMESIPolicy::handleIdleWork(ProcessEntry_p process)
                 // theTraceTracker.eviction(theNodeId, theCacheLevel,
                 // victim->blockAddress(), false);
 
-                DBG_(Trace, (<< " Adding " << std::hex << victim.second << " to the EvictBuffer."));
+                DBG_(VVerb, (<< " Adding " << std::hex << victim.second << " to the EvictBuffer."));
             }
         } else if (!theCacheEvictBuffer.empty()) {
             if (theCacheEvictBuffer.evictableReady()) {
@@ -1762,7 +1762,7 @@ NonInclusiveMESIPolicy::evictCacheBlock(CacheLookupResult_p victim)
         theCacheEvictBuffer.allocEntry(victim->blockAddress(), evict_type, victim->state());
         // theTraceTracker.eviction(theNodeId, theCacheLevel,
         // victim->blockAddress(), false);
-        DBG_(Trace, (<< " Adding " << std::hex << victim->blockAddress() << " to the EvictBuffer."));
+        DBG_(VVerb, (<< " Adding " << std::hex << victim->blockAddress() << " to the EvictBuffer."));
     }
 }
 

@@ -118,7 +118,7 @@ class MissAddressFile
 
         order_iterator iter = theMAF.get<by_order>().begin();
         for (int32_t i = 0; iter != theMAF.get<by_order>().end(); iter++, i++) {
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< "MAF[" << i << "]: " << std::hex << iter->theAddress << " " << state_names[iter->theState]
                   << " -> " << *iter->theTransport[MemoryMessageTag]));
         }

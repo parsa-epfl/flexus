@@ -20,6 +20,8 @@ BranchPredictor::BranchPredictor(std::string const& aName, uint32_t anIndex, uin
   , theBTB(aBTBSets, aBTBWays)
   , theBranches(aName + "-branches")
 
+  , theBranchMispredictionPenalty(aName + "-mispredict:penalty")
+
   , thePredictions_TAGE(aName + "-predictions:TAGE")
   , theCorrect_TAGE(aName + "-correct:TAGE")
   , theMispredict_TAGE(aName + "-mispredict:TAGE")
@@ -121,6 +123,7 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState)
         case kIndirectReg:
         case kUnconditional:
         case kCall:
+        case kReturn:
             if (theBTB.target(anAddress)) {
                 aBPState.thePredictedTarget = *theBTB.target(anAddress);
             } else {
@@ -166,6 +169,8 @@ BranchPredictor::train(const BPredState& aBPState)
     }
 
     if (is_mispredict) {
+        if (aBPState.theCorrectionCycle)
+            theBranchMispredictionPenalty += aBPState.theCorrectionCycle - aBPState.thePredCycle;
         if (aBPState.thePredictedType == kConditional) {
             // we need to figure out whether the direction was correct or the target was correct
             if (aBPState.thePrediction <= kTaken) {

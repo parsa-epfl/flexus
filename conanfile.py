@@ -12,7 +12,7 @@ class Flexus(ConanFile):
     description = "Quick & Flexible Rack-Scale Computer Architecture Simulator"
 
     name = None
-    version = "2024.4"
+    version = "2025.02"
     settings = "os", "compiler", "build_type", "arch"
     options = {
         "shared": [True, False],
@@ -49,7 +49,6 @@ class Flexus(ConanFile):
         tc = CMakeToolchain(self, generator="Ninja")
         tc.cache_variables['SIMULATOR'] = self.name
         tc.cache_variables["CMAKE_EXPORT_COMPILE_COMMANDS"] = "ON"
-        tc.preprocessor_definitions["SELECTED_DEBUG"] = "vverb"
         tc.generate()
 
         cmake = CMakeDeps(self)

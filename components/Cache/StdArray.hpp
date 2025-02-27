@@ -436,7 +436,7 @@ class StdArray : public AbstractArray<_State>
     {
         boost::intrusive_ptr<AbstractLookupResult<_State>> ret =
           theSets[makeSet(anAddress)]->lookupBlock(blockAddress(anAddress));
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "Found block " << std::hex << blockAddress(anAddress) << " (" << anAddress << ") in set "
               << makeSet(anAddress) << " in state " << ret->state()));
         return ret;

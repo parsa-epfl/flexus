@@ -121,9 +121,9 @@ SemanticInstruction::setMayRetire(int32_t aBit, bool aFlag)
     SEMANTICS_DBG("aBit = " << aBit << ", aFlag = " << aFlag << ", " << *this);
     theRetirementDepends[aBit] = aFlag;
     if (mayRetire() && !may_retire) {
-        DBG_(Iface, (<< identify() << " may retire"));
+        DBG_(VVerb, (<< identify() << " may retire"));
     } else if (!mayRetire() && may_retire) {
-        DBG_(Iface, (<< identify() << " may not retire"));
+        DBG_(VVerb, (<< identify() << " may not retire"));
     }
 }
 
@@ -356,7 +356,7 @@ void
 SemanticInstruction::addCommitEffect(Effect* anEffect)
 {
     DBG_Assert(anEffect->theNext == nullptr, (<< "Adding an effect that is already part of a chain."));
-    
+
     theCommitEffects.append(anEffect);
 }
 

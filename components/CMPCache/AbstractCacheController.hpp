@@ -62,9 +62,9 @@ class AbstractCacheController
     inline void reserveSnoopOut(ProcessEntry_p process, uint8_t n)
     {
 
-        DBG_(Trace, (<< "reserve | Snoop(Out){" << n << "} | " << theName));
+        DBG_(VVerb, (<< "reserve | Snoop(Out){" << n << "} | " << theName));
 
-        DBG_(Trace, (<< theName << "reserveSnoopOut(" << (int)n << "): " << *process));
+        DBG_(VVerb, (<< theName << "reserveSnoopOut(" << (int)n << "): " << *process));
         DBG_Assert(n > 0);
         SnoopOut.reserve(n);
         process->snoop_out_reserved += n;
@@ -119,7 +119,7 @@ class AbstractCacheController
 
     inline void unreserveSnoopOut(ProcessEntry_p process, uint8_t n)
     {
-        DBG_(Trace, (<< theName << "unreserveSnoopOut(" << (int)n << "): " << *process));
+        DBG_(VVerb, (<< theName << "unreserveSnoopOut(" << (int)n << "): " << *process));
         if (n == 0) return;
         SnoopOut.unreserve(n);
         DBG_Assert(process->snoop_out_reserved >= n,
@@ -204,12 +204,12 @@ class AbstractCacheController
 
     inline void dumpSnoopReservations()
     {
-        DBG_(Iface, (<< theName << " dumping snoop reservations."));
+        DBG_(VVerb, (<< theName << " dumping snoop reservations."));
         std::map<ProcessEntry*, int>::iterator iter, end;
         iter = theSnoopReservations.begin();
         end  = theSnoopReservations.end();
         for (; iter != end; iter++) {
-            DBG_(Iface, (<< theName << " reserved " << iter->second << " snoop entries for " << *(iter->first)));
+            DBG_(VVerb, (<< theName << " reserved " << iter->second << " snoop entries for " << *(iter->first)));
         }
     }
 
@@ -217,7 +217,7 @@ class AbstractCacheController
     {
         MissAddressFile::iterator iter = thePolicy->MAF().find(addr);
         for (; iter != thePolicy->MAF().end(); iter++) {
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< theName << " MAF contains: " << *(iter->transport()[MemoryMessageTag]) << " in state "
                   << (int)(iter->state())));
         }

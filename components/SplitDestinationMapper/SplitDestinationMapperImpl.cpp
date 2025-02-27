@@ -80,9 +80,9 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
 
         theTotalNumCores = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 
-        // The block interleaving is fixed to be 64. 
+        // The block interleaving is fixed to be 64.
         // If you modify this value, you need also to modify the checkpoint save/load logic of the CMPCache/StdArray.hpp
-        DBG_Assert(cfg.DirInterleaving == 64); 
+        DBG_Assert(cfg.DirInterleaving == 64);
 
         if (cfg.Cores == 0) cfg.Cores = theTotalNumCores;
 
@@ -199,7 +199,7 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
         aMessage[NetworkMessageTag]->src_port = 1;
 
         DBG_(Verb, (<< "Serial: " << aMessage[MemoryMessageTag]->serial() << ", DEST: " << *aMessage[DestinationTag]));
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "Received Request from cache " << anIndex << " sending to network port " << nic_index << " - "
               << *aMessage[MemoryMessageTag]));
         FLEXUS_CHANNEL_ARRAY(ToNIC1, nic_index) << aMessage;
@@ -237,7 +237,7 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
         aMessage[NetworkMessageTag]->src_port = 1;
 
         DBG_(Verb, (<< "Serial: " << aMessage[MemoryMessageTag]->serial() << ", DEST: " << *aMessage[DestinationTag]));
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "Received Snoop from cache " << anIndex << " sending to network port " << nic_index << " - "
               << *aMessage[MemoryMessageTag]));
 
@@ -278,7 +278,7 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
         aMessage[NetworkMessageTag]->src_port = 1;
 
         DBG_(Verb, (<< "Sending cache reply: " << *aMessage[MemoryMessageTag] << " - " << *aMessage[DestinationTag]));
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "Received Reply from cache " << anIndex << " sending to network port " << nic_index << " - "
               << *aMessage[MemoryMessageTag]));
 
@@ -312,7 +312,7 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
 
         aMessage.set(NetworkMessageTag, buildNetworkMessage(aMessage, anIndex, REQUEST_VC));
         DBG_(Verb, (<< "Serial: " << aMessage[MemoryMessageTag]->serial() << ", DEST: " << *aMessage[DestinationTag]));
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "Received Request from cache " << anIndex << " sending to network port " << nic_index << " - "
               << *aMessage[MemoryMessageTag]));
         FLEXUS_CHANNEL_ARRAY(ToNIC0, nic_index) << aMessage;
@@ -348,7 +348,7 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
                    (<< "Received Multicast message from CacheSnoop!" << *aMessage[DestinationTag]));
         aMessage.set(NetworkMessageTag, buildNetworkMessage(aMessage, anIndex, SNOOP_VC));
         DBG_(Verb, (<< "Serial: " << aMessage[MemoryMessageTag]->serial() << ", DEST: " << *aMessage[DestinationTag]));
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "Received Snoop from cache " << anIndex << " sending to network port " << nic_index << " - "
               << *aMessage[MemoryMessageTag]));
         FLEXUS_CHANNEL_ARRAY(ToNIC0, nic_index) << aMessage;
@@ -388,7 +388,7 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
 
         DBG_(Verb, (<< "Sending cache reply: " << *aMessage[MemoryMessageTag] << " - " << *aMessage[DestinationTag]));
 
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "Received Reply from cache " << anIndex << " sending to network port " << nic_index << " - "
               << *aMessage[MemoryMessageTag]));
         FLEXUS_CHANNEL_ARRAY(ToNIC0, nic_index) << aMessage;
@@ -412,7 +412,7 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
         aMessage.set(NetworkMessageTag, buildNetworkMessage(aMessage, dirIndex2NodeIndex(anIndex), REQUEST_VC));
 
         DBG_(Verb, (<< "Serial: " << aMessage[MemoryMessageTag]->serial() << ", DEST: " << *aMessage[DestinationTag]));
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "Received Request from Directory " << anIndex << " sending to network port " << nic_index << " - "
               << *aMessage[MemoryMessageTag]));
 
@@ -440,7 +440,7 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
         aMessage.set(NetworkMessageTag, buildNetworkMessage(aMessage, dirIndex2NodeIndex(anIndex), SNOOP_VC));
 
         DBG_(Verb, (<< "Serial: " << aMessage[MemoryMessageTag]->serial() << ", DEST: " << *aMessage[DestinationTag]));
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "Received Snoop from Directory " << anIndex << " sending to network port " << nic_index << " - "
               << *aMessage[MemoryMessageTag]));
 
@@ -466,7 +466,7 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
         aMessage.set(NetworkMessageTag, buildNetworkMessage(aMessage, dirIndex2NodeIndex(anIndex), REPLY_VC));
 
         DBG_(Verb, (<< "Serial: " << aMessage[MemoryMessageTag]->serial() << ", DEST: " << *aMessage[DestinationTag]));
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "Received Reply from Directory " << anIndex << " sending to network port " << nic_index << " - "
               << *aMessage[MemoryMessageTag]));
 
@@ -505,7 +505,7 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
         aMessage.set(NetworkMessageTag, buildNetworkMessage(aMessage, memIndex2NodeIndex(anIndex), REPLY_VC));
 
         DBG_(Verb, (<< "Serial: " << aMessage[MemoryMessageTag]->serial() << ", DEST: " << *aMessage[DestinationTag]));
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "Received Reply from Memory " << anIndex << " sending to network port " << nic_index << " - "
               << *aMessage[MemoryMessageTag]));
 
@@ -580,11 +580,11 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
                                     << *aMessage[MemoryMessageTag]));
                         break;
                     case SNOOP_VC:
-                        DBG_(Trace, (<< "Received Snoop for cache " << node << " - " << *aMessage[MemoryMessageTag]));
+                        DBG_(VVerb, (<< "Received Snoop for cache " << node << " - " << *aMessage[MemoryMessageTag]));
                         FLEXUS_CHANNEL_ARRAY(CacheSnoopOut, node) << aMessage;
                         break;
                     case REPLY_VC:
-                        DBG_(Trace, (<< "Received Reply for cache " << node << " - " << *aMessage[MemoryMessageTag]));
+                        DBG_(VVerb, (<< "Received Reply for cache " << node << " - " << *aMessage[MemoryMessageTag]));
                         FLEXUS_CHANNEL_ARRAY(CacheReplyOut, node) << aMessage;
                         break;
                     default:
@@ -609,12 +609,12 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
                         FLEXUS_CHANNEL_ARRAY(DirRequestOut, dir_index) << aMessage;
                         break;
                     case SNOOP_VC:
-                        DBG_(Trace,
+                        DBG_(VVerb,
                              (<< "Received Snoop for Directory " << dir_index << " - " << *aMessage[MemoryMessageTag]));
                         FLEXUS_CHANNEL_ARRAY(DirSnoopOut, dir_index) << aMessage;
                         break;
                     case REPLY_VC:
-                        DBG_(Trace,
+                        DBG_(VVerb,
                              (<< "Received Reply for Directory " << dir_index << " - " << *aMessage[MemoryMessageTag]));
                         FLEXUS_CHANNEL_ARRAY(DirReplyOut, dir_index) << aMessage;
                         break;
@@ -629,7 +629,7 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
             case MEM_PORT: {
                 int32_t mem_index = theMemReverseMap[node];
                 DBG_Assert(mem_index >= 0);
-                DBG_(Trace, (<< "Received Request for Memory " << mem_index << " - " << *aMessage[MemoryMessageTag]));
+                DBG_(VVerb, (<< "Received Request for Memory " << mem_index << " - " << *aMessage[MemoryMessageTag]));
                 FLEXUS_CHANNEL_ARRAY(MemoryOut, mem_index) << aMessage;
                 break;
             }
@@ -693,11 +693,11 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
                                     << *aMessage[MemoryMessageTag]));
                         break;
                     case SNOOP_VC:
-                        DBG_(Trace, (<< "Received Snoop for cache " << node << " - " << *aMessage[MemoryMessageTag]));
+                        DBG_(VVerb, (<< "Received Snoop for cache " << node << " - " << *aMessage[MemoryMessageTag]));
                         FLEXUS_CHANNEL_ARRAY(ICacheSnoopOut, node) << aMessage;
                         break;
                     case REPLY_VC:
-                        DBG_(Trace, (<< "Received Reply for cache " << node << " - " << *aMessage[MemoryMessageTag]));
+                        DBG_(VVerb, (<< "Received Reply for cache " << node << " - " << *aMessage[MemoryMessageTag]));
                         FLEXUS_CHANNEL_ARRAY(ICacheReplyOut, node) << aMessage;
                         break;
                     default:
@@ -763,18 +763,18 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
             case DestinationMessage::Requester:
                 ret->dest     = aMessage[DestinationTag]->requester >> 1;
                 ret->dst_port = aMessage[DestinationTag]->requester & 1;
-                DBG_(Trace, (<< "Dest = " << ret->dest << " (requester):" << *(aMessage[MemoryMessageTag])));
+                DBG_(VVerb, (<< "Dest = " << ret->dest << " (requester):" << *(aMessage[MemoryMessageTag])));
                 break;
             case DestinationMessage::Directory:
                 if (cfg.LocalDir && aMessage[DestinationTag]->requester >= 0) {
                     ret->dest = dirIndex2NodeIndex(aMessage[DestinationTag]->requester >> 1);
-                    DBG_(Trace,
+                    DBG_(VVerb,
                          (<< "Dest = " << ret->dest << " (dirIndex2NodeIndex(" << aMessage[DestinationTag]->requester
                           << ")):" << *(aMessage[MemoryMessageTag])));
                 } else {
                     DBG_Assert(aMessage[DestinationTag]->directory >= 0);
                     ret->dest = dirIndex2NodeIndex(aMessage[DestinationTag]->directory);
-                    DBG_(Trace,
+                    DBG_(VVerb,
                          (<< "Dest = " << ret->dest << " (dirIndex2NodeIndex(" << aMessage[DestinationTag]->directory
                           << ")):" << *(aMessage[MemoryMessageTag])));
                 }

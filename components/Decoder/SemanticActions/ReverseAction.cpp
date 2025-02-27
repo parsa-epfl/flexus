@@ -4,6 +4,7 @@
 #include <boost/lambda/lambda.hpp>
 #include <boost/throw_exception.hpp>
 #include <core/boost_extensions/intrusive_ptr.hpp>
+#include <cstdint>
 #include <iomanip>
 #include <iostream>
 namespace ll = boost::lambda;
@@ -162,7 +163,7 @@ struct CountAction : public PredicatedSemanticAction
                 default: DBG_Assert(false); break;
             }
 
-            DBG_(Iface, (<< "writing " << out_val << " into " << theOutputCode));
+            DBG_(VVerb, (<< "writing " << out_val << " into " << theOutputCode));
             theInstruction->setOperand(theOutputCode, out_val);
             satisfyDependants();
         }
@@ -176,31 +177,64 @@ struct CRCAction : public PredicatedSemanticAction
     eOperandCode theInputCode, theInputCode2;
     eOperandCode theOutputCode;
     uint32_t thePoly;
-    bool the64;
+    uint32_t theSize;
 
     CRCAction(SemanticInstruction* anInstruction,
               uint32_t aPoly,
               eOperandCode anInputCode,
               eOperandCode anInputCode2,
               eOperandCode anOutputCode,
-              bool is64)
+              uint32_t aSize)
       : PredicatedSemanticAction(anInstruction, 2, true)
       , theInputCode(anInputCode)
       , theInputCode2(anInputCode2)
       , theOutputCode(anOutputCode)
       , thePoly(aPoly)
-      , the64(is64)
+      , theSize(aSize)
     {
     }
 
-    uint32_t bitReverse(uint32_t input)
+    uint64_t bitReverse(uint64_t input, uint32_t limit)
     {
-        uint32_t out_val = 0;
-        for (int i = 0; i < 32; i++) {
-            if ((input & (1 << i)) == 1) { out_val |= (1 << (32 - i)); }
+        uint64_t out_val = 0;
+        for (uint32_t i = 0; i < limit; i++) {
+            if (input & (1ULL << i)) { out_val |= (1ULL << (limit - i - 1)); }
         }
         return out_val;
     }
+
+    // https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/CRC32B--CRC32H--CRC32W--CRC32X--CRC32-checksum-
+    // constant bits(32)      acc     = X[n, 32];     // accumulator
+    // constant bits(size)    val     = X[m, size];   // input value
+    // constant bits(32)      poly    = 0x04C11DB7<31:0>;
+
+    // constant bits(32+size) tempacc = BitReverse(acc):Zeros(size);
+    // constant bits(size+32) tempval = BitReverse(val):Zeros(32);
+
+    // // Poly32Mod2 on a bitstring does a polynomial Modulus over {0,1} operation
+    // X[d, 32] = BitReverse(Poly32Mod2(tempacc EOR tempval, poly));
+    
+    // // Poly32Mod2()
+    // // ============
+    // // Poly32Mod2 on a bitstring does a polynomial Modulus over {0,1} operation
+    // bits(32) Poly32Mod2(bits(N) data_in, bits(32) poly)
+    //     assert N > 32;
+    //     bits(N) data = data_in;
+    //     for i = N-1 downto 32
+    //         if data<i> == '1' then
+    //             data<i-1:0> = data<i-1:0> EOR (poly:Zeros(i-32));
+    //     return data<31:0>;
+
+    uint32_t poly32Mod2(boost::multiprecision::uint128_t data_in, uint32_t poly) {
+        boost::multiprecision::uint128_t data = data_in;
+        for (int i = 127; i >= 32; i--) {
+            if (data & (static_cast<boost::multiprecision::uint128_t>(1) << i)) {
+                data ^= (static_cast<boost::multiprecision::uint128_t>(poly)) << (i - 32);
+            }
+        }
+        return static_cast<uint32_t>(data);
+    }
+    
 
     void doEvaluate()
     {
@@ -209,17 +243,19 @@ struct CRCAction : public PredicatedSemanticAction
         Operand in   = theInstruction->operand(theInputCode);
         Operand in2  = theInstruction->operand(theInputCode2);
         uint32_t acc = static_cast<uint32_t>(boost::get<uint64_t>(in));
+        uint64_t val = boost::get<uint64_t>(in2);
+        val          = val & ((1ULL << theSize) - 1);
 
-        bits tempacc = static_cast<bits>(bitReverse(acc) << (the64 ? 64 : 32));
-        bits tempval = 0;
+        boost::multiprecision::uint128_t tempacc = static_cast<boost::multiprecision::uint128_t>(bitReverse(acc, 32)) << theSize;
+        boost::multiprecision::uint128_t tempval = static_cast<boost::multiprecision::uint128_t>(bitReverse(val, theSize)) << 32;
 
         // Poly32Mod2 on a bitstring does a polynomial Modulus over {0,1} operation;
-        tempacc ^= tempval;
-        bits data = tempacc;
+        boost::multiprecision::uint128_t data = tempacc ^ tempval;
 
-        data &= 0xffffffff;
+        uint32_t polyres = poly32Mod2(data, thePoly);
+        uint32_t data_out = bitReverse(polyres, 32);
 
-        theInstruction->setOperand(theOutputCode, static_cast<uint64_t>(data));
+        theInstruction->setOperand(theOutputCode, static_cast<uint64_t>(data_out));
         satisfyDependants();
     }
 
@@ -280,9 +316,9 @@ crcAction(SemanticInstruction* anInstruction,
           eOperandCode anInputCode2,
           eOperandCode anOutputCode,
           std::vector<std::list<InternalDependance>>& rs_deps,
-          bool is64)
+          uint32_t size)
 {
-    CRCAction* act = new CRCAction(anInstruction, aPoly, anInputCode, anInputCode2, anOutputCode, is64);
+    CRCAction* act = new CRCAction(anInstruction, aPoly, anInputCode, anInputCode2, anOutputCode, size);
     anInstruction->addNewComponent(act);
     for (uint32_t i = 0; i < rs_deps.size(); ++i) {
         rs_deps[i].push_back(act->dependance(i));

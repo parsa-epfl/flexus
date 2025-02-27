@@ -201,7 +201,7 @@ class SerializableRTDirEntry
         ar & theWays;
         ar & owner;
         ar & shared;
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "serialize Region: " << std::hex << theAddress << " owner = " << std::dec << (int)owner
               << (shared ? " Shared" : " Non-Shared")));
     }

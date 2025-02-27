@@ -131,12 +131,12 @@ InclusiveMOESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transac
 
     LookupResult_p lookup = (*theArray)[msg->address()];
 
-    DBG_(Iface, (<< " Do Request: " << *msg));
+    DBG_(VVerb, (<< " Do Request: " << *msg));
 
     // For now, we stall ALL requests if we have an outstanding request for this
     // block
     if (has_maf_entry) {
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< " Stalling request while we have a MAF entry, block state is " << lookup->state() << " : " << (*msg)));
         return std::make_tuple(false, false, Action(kInsertMAF_WaitAddress, tracker));
     }
@@ -160,7 +160,7 @@ InclusiveMOESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transac
             // Keep state from EB.
             lookup->setState(block_state);
 
-            DBG_(Trace, (<< " replacing EB entry, evicting block in state " << victim->state() << " : " << *msg));
+            DBG_(VVerb, (<< " replacing EB entry, evicting block in state " << victim->state() << " : " << *msg));
             if (victim->state() != State::Invalid) { evictee_write = evictBlock(victim); }
             theTraceTracker
               .fill(theNodeId, theCacheLevel, getBlockAddress(msg->address()), theCacheLevel, false, evictee_write);
@@ -464,7 +464,7 @@ InclusiveMOESI::evictBlock(LookupResult_p victim)
     theEvictBuffer.allocEntry(victim->blockAddress(), evict_type, victim->state(), false);
     theTraceTracker.eviction(theNodeId, theCacheLevel, victim->blockAddress(), false);
 
-    DBG_(Trace, (<< " Adding " << std::hex << victim->blockAddress() << " to the EvictBuffer."));
+    DBG_(VVerb, (<< " Adding " << std::hex << victim->blockAddress() << " to the EvictBuffer."));
 
     return (evict_type == MemoryMessage::EvictDirty);
 }
@@ -488,7 +488,7 @@ InclusiveMOESI::handleBackMessage(MemoryTransport transport)
     MemoryMessage_p msg          = transport[MemoryMessageTag];
     TransactionTracker_p tracker = transport[TransactionTrackerTag];
 
-    DBG_(Trace, (<< " Handle BackProcess: " << *msg));
+    DBG_(VVerb, (<< " Handle BackProcess: " << *msg));
 
     accesses++;
     if (tracker && tracker->isFetch() && *tracker->isFetch()) {
@@ -733,7 +733,7 @@ InclusiveMOESI::handleBackMessage(MemoryTransport transport)
 
                     return act;
                 } else {
-                    DBG_(Trace,
+                    DBG_(VVerb,
                          (<< "Received BackInval for block in invalid state. "
                              "Droping backinval: "
                           << *msg));
@@ -923,7 +923,7 @@ InclusiveMOESI::handleBackMessage(MemoryTransport transport)
             is_final = true;
             is_fetch = true;
 
-            DBG_(Iface, (<< " Creating Ack"));
+            DBG_(VVerb, (<< " Creating Ack"));
             msg->type() = MemoryMessage::FetchReply;
             if (msg->ackRequired()) {
                 intrusive_ptr<MemoryMessage> reply(new MemoryMessage(MemoryMessage::FetchAck, msg->address()));
@@ -1128,7 +1128,7 @@ InclusiveMOESI::handleBackMessage(MemoryTransport transport)
         theTraceTracker.prefetch(theNodeId, theCacheLevel, original_miss->address());
         theTraceTracker.prefetchFill(theNodeId, theCacheLevel, msg->address(), *tracker->fillLevel());
     } else if (is_final) {
-        DBG_(Iface, (<< "calling theTraceTracker.access()"));
+        DBG_(VVerb, (<< "calling theTraceTracker.access()"));
         theTraceTracker.access(theNodeId,
                                theCacheLevel,
                                original_miss->address(),
@@ -1138,7 +1138,7 @@ InclusiveMOESI::handleBackMessage(MemoryTransport transport)
                                !is_upgrade,
                                original_miss->isPriv(),
                                (original_tracker->logicalTimestamp() ? *original_tracker->logicalTimestamp() : 0));
-        DBG_(Iface, (<< "return from theTraceTracker.access()"));
+        DBG_(VVerb, (<< "return from theTraceTracker.access()"));
     }
 
     if (is_final) {
@@ -1150,14 +1150,14 @@ InclusiveMOESI::handleBackMessage(MemoryTransport transport)
     }
 
     if (is_fill && !is_prefetch) {
-        DBG_(Iface, (<< "calling theTraceTracker.fill()"));
+        DBG_(VVerb, (<< "calling theTraceTracker.fill()"));
         theTraceTracker.fill(theNodeId, thePeerLevel, msg->address(), *tracker->fillLevel(), is_fetch, is_write);
-        DBG_(Iface, (<< "return from theTraceTracker.fill()"));
+        DBG_(VVerb, (<< "return from theTraceTracker.fill()"));
     }
 
-    DBG_(Iface, (<< "calling theReadTracker.finishMiss()"));
+    DBG_(VVerb, (<< "calling theReadTracker.finishMiss()"));
     theReadTracker.finishMiss(original_tracker);
-    DBG_(Iface, (<< "return from theReadTracker.finishMiss()"));
+    DBG_(VVerb, (<< "return from theReadTracker.finishMiss()"));
 
     if (result->state().isValid()) {
         if (is_prefetch) {
@@ -1214,7 +1214,7 @@ InclusiveMOESI::finalizeSnoop(MemoryTransport transport, LookupResult_p result)
 
     // Do we have another snoop reply outstanding?
     if (snp->d_snoop_outstanding || snp->i_snoop_outstanding) {
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "reply received, but still waiting for other snoop (D|I) = (" << std::boolalpha
               << snp->d_snoop_outstanding << "|" << snp->i_snoop_outstanding
               << "): " << *snp->transport[MemoryMessageTag]));
@@ -1410,7 +1410,7 @@ InclusiveMOESI::finalizeSnoop(MemoryTransport transport, LookupResult_p result)
     action.theBackMessage   = true;
     action.theBackTransport = snp->transport;
 
-    DBG_(Trace, (<< "Removing Snoop Buffer entry after receiving final reply: " << *snp->transport[MemoryMessageTag]));
+    DBG_(VVerb, (<< "Removing Snoop Buffer entry after receiving final reply: " << *snp->transport[MemoryMessageTag]));
     // Now remove the snoop buffer entry
     theSnoopBuffer.remove(snp);
 
@@ -1427,7 +1427,7 @@ InclusiveMOESI::handleSnoopMessage(MemoryTransport transport)
     MemoryMessage_p msg          = transport[MemoryMessageTag];
     TransactionTracker_p tracker = transport[TransactionTrackerTag];
 
-    DBG_(Trace, (<< "Snoop message: " << *msg));
+    DBG_(VVerb, (<< "Snoop message: " << *msg));
     DBG_Assert(msg);
     DBG_Assert(msg->usesSnoopChannel());
 
@@ -1628,13 +1628,13 @@ InclusiveMOESI::handleIdleWork(MemoryTransport transport)
             EvictBuffer<State>::iterator iter =
               theEvictBuffer.allocEntry(victim.second, evict_type, victim.first, false);
             theTraceTracker.eviction(theNodeId, theCacheLevel, victim.second, false);
-            DBG_(Trace, (<< " Adding " << std::hex << victim.second << " to the EvictBuffer."));
+            DBG_(VVerb, (<< " Adding " << std::hex << victim.second << " to the EvictBuffer."));
 
             if (msg->type() == MemoryMessage::NumMemoryMessageTypes) {
                 msg->type()            = evict_type;
                 msg->address()         = victim.second;
                 iter->theSnoopRequired = false;
-                DBG_(Trace, (<< "Getting Idle work: evicting " << std::hex << iter->theBlockAddress));
+                DBG_(VVerb, (<< "Getting Idle work: evicting " << std::hex << iter->theBlockAddress));
             }
         }
     }
@@ -1653,7 +1653,7 @@ InclusiveMOESI::handleIdleWork(MemoryTransport transport)
     // and the time we get here. To handle this, we just return an empty action if
     // we can't find the block in question
     if (iter == theEvictBuffer.end()) {
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "Failed to find " << std::hex << msg->address() << " in the evict buffer, skipping idle work."));
         Action action(kNoAction, tracker, false);
         action.theRememberSnoopTransport = false;
@@ -1702,7 +1702,7 @@ InclusiveMOESI::handleWakeSnoop(MemoryTransport transport)
     MemoryMessage_p msg          = transport[MemoryMessageTag];
     TransactionTracker_p tracker = transport[TransactionTrackerTag];
 
-    DBG_(Trace, (<< " Handle WakeSnoop: " << *msg));
+    DBG_(VVerb, (<< " Handle WakeSnoop: " << *msg));
     if (msg->isEvictType()) {
         SnoopBuffer::snoop_iter snp = theSnoopBuffer.findEntry(msg->address());
         DBG_Assert(snp == theSnoopBuffer.end());
@@ -1758,7 +1758,7 @@ InclusiveMOESI::doEviction()
         MemoryMessage_p msg(theEvictBuffer.pop(thePendingEvicts));
         msg->reqSize() = theBlockSize;
 
-        DBG_(Trace, (<< " Queuing eviction " << *msg));
+        DBG_(VVerb, (<< " Queuing eviction " << *msg));
 
         if (msg->type() == MemoryMessage::EvictDirty) {
             evicts_dirty++;
@@ -1799,11 +1799,11 @@ void
 InclusiveMOESI::dumpEvictBuffer() const
 {
     BaseCacheControllerImpl::dumpEvictBuffer();
-    DBG_(Trace, (<< " Pending Evicts = " << thePendingEvicts));
+    DBG_(VVerb, (<< " Pending Evicts = " << thePendingEvicts));
 
     EvictBuffer<State>::const_o_iterator iter = theEvictBuffer.o_begin();
     for (int32_t i = 0; iter != theEvictBuffer.o_end(); i++, iter++) {
-        DBG_(Trace, (<< " EB[" << i << "] = " << *iter));
+        DBG_(VVerb, (<< " EB[" << i << "] = " << *iter));
     }
 }
 

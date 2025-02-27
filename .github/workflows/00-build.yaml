@@ -6,11 +6,13 @@ on:
   # Manually triggered
   workflow_dispatch:
   push:
-    branches: [maintainer/bryan]
+    branches:
+      - master
+      - maintainer/bryan # will be deleted at some point
   pull_request:
     branches:
+      - master
 
-  #TODO: Once 'main' is replaced
   # schedule:
   #   # Every Wednesday at midnight
   #   - cron:  '0 0 * * 3'

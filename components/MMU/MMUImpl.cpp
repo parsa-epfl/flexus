@@ -122,7 +122,7 @@ TLB::lookUp(TranslationPtr& tr)
     uint16_t anASID                = tr->theASID;
     VirtualMemoryAddress anAddressAligned(anAddress & PAGEMASK);
     // Find the set.
-    size_t set_idx = anAddressAligned & (theSets - 1);
+    size_t set_idx = (anAddressAligned >> 12) & (theSets - 1);
     std::pair<bool, PhysicalMemoryAddress> ret{ false, PhysicalMemoryAddress(0) };
     for (auto iter = theTLB[set_idx].begin(); iter != theTLB[set_idx].end(); ++iter) {
         iter->second.theRate++;
@@ -153,7 +153,7 @@ TLB::insert(TranslationPtr& tr)
         faultyEntry = TLBentry(alignedVirtualAddr, alignedPhysicalAddr, 0, anASID, aNG);
         return;
     }
-    size_t set_idx = alignedVirtualAddr & (theSets - 1);
+    size_t set_idx = (alignedVirtualAddr >> 12) & (theSets - 1);
     // Check if the virtual address is in TLB (with the same ASID or as a global entry)
     auto iter  = theTLB[set_idx].end();
     auto range = theTLB[set_idx].equal_range(alignedVirtualAddr);
@@ -458,7 +458,7 @@ MMUComponent::busCycle()
                 }
             }
             DBG_Assert(item->isInstr() != item->isData());
-            DBG_(Iface, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry " << item->theVaddr));
+            DBG_(VVerb, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry " << item->theVaddr));
             // update TLB
             (item->isInstr() ? theInstrTLB : theDataTLB).insert(item);
             if (item->isInstr())
@@ -535,8 +535,6 @@ MMUComponent::available(interface::ResyncIn const&, index_t anIndex)
 void
 MMUComponent::push(interface::ResyncIn const&, index_t anIndex, int& aResync)
 {
-
-    if (cfg.PerfectTLB) return;
 
     resyncMMU(aResync);
 }

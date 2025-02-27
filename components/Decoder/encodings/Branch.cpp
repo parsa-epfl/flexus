@@ -64,7 +64,7 @@ UNCONDBR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     uint64_t addr  = (uint64_t)aFetchedOpcode.thePC + offset;
     VirtualMemoryAddress target(addr);
 
-    DBG_(Iface,
+    DBG_(VVerb,
          (<< "branching to " << std::hex << target << " with an offset of 0x" << std::hex << offset << std::dec));
 
     inst->addPostvalidation(validatePC(inst));
@@ -78,6 +78,8 @@ UNCONDBR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         addDestination(inst, 30, exec, true);
 
         inst->bpState()->theActualType = kCall;
+        inst->bpState()->theActualDirection = kTaken;
+        inst->bpState()->theActualTarget = target;
 
         // update call after
         inst->addDispatchEffect(branch(inst, target));
@@ -118,7 +120,7 @@ CMPBR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     uint64_t addr  = (uint64_t)aFetchedOpcode.thePC + offset;
     VirtualMemoryAddress target(addr);
 
-    DBG_(Iface, (<< "cmp/br to " << std::hex << target << " with an offset of 0x" << std::hex << offset << std::dec));
+    DBG_(VVerb, (<< "cmp/br to " << std::hex << target << " with an offset of 0x" << std::hex << offset << std::dec));
 
     std::vector<std::list<InternalDependance>> rs_deps(1);
     branch_cond(inst, target, iszero ? kCBZ_ : kCBNZ_, rs_deps[0]);
@@ -159,10 +161,10 @@ TSTBR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     int64_t offset   = sextract32(aFetchedOpcode.theOpcode, 5, 14) << 2;
     VirtualMemoryAddress target((uint64_t)aFetchedOpcode.thePC + offset);
 
-    DBG_(Iface, (<< "offest is set to #" << offset));
-    DBG_(Iface, (<< "Branch address is set to " << target));
+    DBG_(VVerb, (<< "offest is set to #" << offset));
+    DBG_(VVerb, (<< "Branch address is set to " << target));
 
-    DBG_(Iface,
+    DBG_(VVerb,
          (<< "Testing bit value (" << bit_val << ") and bit pos (" << bit_pos << ")  -- "
           << "Branching to address " << std::hex << (uint64_t)aFetchedOpcode.thePC << " with an offset of 0x" << offset
           << std::dec << " -->> " << target));
@@ -207,7 +209,7 @@ CONDBR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     VirtualMemoryAddress target(addr);
 
     if (cond < 0x0e) {
-        DBG_(Iface,
+        DBG_(VVerb,
              (<< "conditionally branching to " << std::hex << target << " with an offset of 0x" << std::hex << offset
               << std::dec));
 
@@ -219,7 +221,7 @@ CONDBR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
 
         inst->bpState()->theActualType = kConditional;
     } else {
-        DBG_(Iface,
+        DBG_(VVerb,
              (<< "unconditionally branching to " << std::hex << target << " with an offset of 0x" << std::hex << offset
               << std::dec));
         inst->addPostvalidation(validatePC(inst));
@@ -312,17 +314,17 @@ BLR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
 
     switch (branch_type) {
         case kIndirectCall: {
-            inst->setClass(clsBranch, codeBranchIndirectCall); 
+            inst->setClass(clsBranch, codeBranchIndirectCall);
             inst->bpState()->theActualType = kIndirectCall;
             break;
         }
         case kIndirectReg: {
-            inst->setClass(clsBranch, codeBranchIndirectReg); 
+            inst->setClass(clsBranch, codeBranchIndirectReg);
             inst->bpState()->theActualType = kIndirectReg;
             break;
         }
         case kReturn: {
-            inst->setClass(clsBranch, codeRETURN); 
+            inst->setClass(clsBranch, codeRETURN);
             inst->bpState()->theActualType = kReturn;
             break;
         }
