@@ -3,6 +3,7 @@
 #define FLEXUS_DECODER_SEMANTICACTIONS_HPP_INCLUDED
 
 #include "SemanticInstruction.hpp"
+#include <cstdint>
 
 namespace nDecoder {
 
@@ -56,9 +57,10 @@ using nuArch::SemanticAction;
 
 struct Operation
 {
-    Operation()
+    Operation(uint32_t aSize = 64)
       : theNZCVFlags{ false }
       , the128{ false }
+      , theSize{ aSize }
     {
     }
     virtual ~Operation() {}
@@ -77,6 +79,7 @@ struct Operation
     std::vector<Operand> theOperands;
     SemanticInstruction* theInstruction;
     bool the128;
+    uint32_t theSize;
 };
 
 std::unique_ptr<Operation>
@@ -264,7 +267,7 @@ crcAction(SemanticInstruction* anInstruction,
           eOperandCode anInputCode2,
           eOperandCode anOutputCode,
           std::vector<std::list<InternalDependance>>& rs_deps,
-          bool is64);
+          uint32_t size);
 predicated_action
 countAction(SemanticInstruction* anInstruction,
             eOperandCode anInputCode,

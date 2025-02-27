@@ -73,11 +73,15 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
     FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(RedirectIn);
     void push(interface::RedirectIn const&, index_t anIndex, boost::intrusive_ptr<BPredRedictRequest>& redirectRequest)
     {
-        if(!theRedirect[anIndex]) { // Lower priority than the RedirectDueToResyncIn
+        if(!theRedirect[anIndex] || redirectRequest->isResync) { // Lower priority than the RedirectDueToResyncIn
             theRedirectPC[anIndex] = redirectRequest->theTarget;
             theRedirect[anIndex]   = true;
 
-            theBranchPredictor->recoverHistory(*redirectRequest);
+            redirectRequest->theBPState->theCorrectionCycle = theFlexus->cycleCount();
+
+            if (redirectRequest->theBPState) {
+                theBranchPredictor->recoverHistory(*redirectRequest);
+            }
         }
     }
 
@@ -144,6 +148,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
 
             FetchAddr faddr(thePC[anIndex]);
             faddr.theBPState->pc = thePC[anIndex];
+            faddr.theBPState->thePredCycle = theFlexus->cycleCount();
 
             // Checkpoint the history before advancing the PC
             theBranchPredictor->checkpointHistory(*faddr.theBPState);
