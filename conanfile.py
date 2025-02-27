@@ -12,7 +12,7 @@ class Flexus(ConanFile):
     description = "Quick & Flexible Rack-Scale Computer Architecture Simulator"
 
     name = None
-    version = "2024.4"
+    version = "2025.02"
     settings = "os", "compiler", "build_type", "arch"
     options = {
         "shared": [True, False],
