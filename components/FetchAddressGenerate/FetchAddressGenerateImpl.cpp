@@ -56,7 +56,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
 
     void finalize() {
         // Fuck, dump the branch predictor state in a folder called output_state.
-        this->saveState("output_state");
+        // this->saveState("output_state"); //
     }
 
     bool isQuiesced() const

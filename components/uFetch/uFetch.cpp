@@ -572,7 +572,10 @@ class FLEXUS_COMPONENT(uFetch)
         theIcachePrefetch.resize(cfg.Threads);
         theLastPrefetchVTagSet.resize(cfg.Threads);
     }
-    void finalize() override {}
+    void finalize() override {
+        // this->saveState("output_state");
+    }
+
     void drive(interface::uFetchDrive const&) override
     {
 
@@ -791,7 +794,7 @@ class FLEXUS_COMPONENT(uFetch)
     void saveState(std::string const& aDirName) override
     {
         // Not implemented.
-        
+        this->theI.saveState(aDirName + "/" + statName() + "-L1i.json");
     }
 };
 

@@ -43,6 +43,8 @@ BranchPredictor::BranchPredictor(std::string const& aName, uint32_t anIndex, uin
   , theMispredict_BTB_Conditional(aName + "-mispredict:BTB:Conditional")
   , theMispredict_BTB_Conditional_User(aName + "-mispredict:BTB:Conditional:User")
   , theMispredict_BTB_Conditional_System(aName + "-mispredict:BTB:Conditional:System")
+{
+    theTrainingHistory.clear();
 }
 
 /* Depending on whether the prediction of the Branch Predictor we use is Taken or Not Taken, the target is returned
@@ -142,7 +144,9 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState)
             // theTage.get_prediction((uint64_t)anAddress, aBPState);
             theTage.update_history(aBPState, true, aBPState.pc);
             break;
-        default: aBPState.thePredictedTarget = VirtualMemoryAddress(0); break;
+        default: 
+            DBG_Assert(false);
+            aBPState.thePredictedTarget = VirtualMemoryAddress(0); break;
     }
 
     if (aBPState.thePredictedType != kNonBranch) {
@@ -183,6 +187,8 @@ BranchPredictor::train(boost::intrusive_ptr<BPredState>& aBPState)
                 ++theMispredict_BTB_User;
                 ++theMispredict_BTB_Unconditional_User;
             }
+
+            // theTrainingHistory.push_back(aBPState);
         } else {
             if (aBPState->theActualType != aBPState->thePredictedType) {
                 // Wrong type
@@ -195,6 +201,8 @@ BranchPredictor::train(boost::intrusive_ptr<BPredState>& aBPState)
                     ++theMispredict_BTB_User;
                     ++theMispredict_BTB_WrongType_User;
                 }
+
+                // theTrainingHistory.push_back(aBPState);
             } else {
                 bool direction_matching = 
                 (aBPState->theActualDirection <= kTaken && aBPState->thePrediction <= kTaken) || 
@@ -218,6 +226,8 @@ BranchPredictor::train(boost::intrusive_ptr<BPredState>& aBPState)
                         ++theMispredict_BTB_User;
                         ++theMispredict_BTB_Conditional_User;
                     }
+
+                    // theTrainingHistory.push_back(aBPState);
                 }
             }
         }
@@ -260,4 +270,19 @@ BranchPredictor::saveState(std::string const& aDirName)
 
     ofs << std::setw(4) << checkpoint << std::endl;
     ofs.close();
+
+    // Also save the training history
+    std::string fname_training(aDirName);
+    fname_training += "/" + boost::padded_string_cast<3, '0'>(theIndex) + "-bpred-training-history" + ".json";
+    std::ofstream ofs_training(fname_training.c_str());
+
+    json training_history;
+
+    for (const auto &bpred_state : theTrainingHistory) {
+        training_history.push_back(bpred_state->serialize());
+    }
+
+    ofs_training << std::setw(4) << training_history << std::endl;
+
+    ofs_training.close();
 }

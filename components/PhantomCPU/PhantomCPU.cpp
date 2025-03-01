@@ -32,13 +32,19 @@ private:
     uint64_t theCPUIndex;
 
     Stat::StatCounter theCommitCount;
+    Stat::StatCounter theCommitCountUser;
+    Stat::StatCounter theCommitCountSystem;
+    Stat::StatCounter theTotalTrials;
 
 public:
     FLEXUS_COMPONENT_CONSTRUCTOR(PhantomCPU)
       : base(FLEXUS_PASS_CONSTRUCTOR_ARGS),
         theCPU(),
         theCPUIndex(0),
-        theCommitCount(std::string("Phantom-") + std::to_string(flexusIndex()) + std::string("-CommitCount"))
+        theCommitCount(std::string("Phantom-") + std::to_string(flexusIndex()) + std::string("-CommitCount")),
+        theCommitCountUser(std::string("Phantom-") + std::to_string(flexusIndex()) + std::string("-CommitCount:User"))
+        , theCommitCountSystem(std::string("Phantom-") + std::to_string(flexusIndex()) + std::string("-CommitCount:System"))
+        , theTotalTrials(std::string("Phantom-") + std::to_string(flexusIndex()) + std::string("-TotalTrials"))
     {
     }
 
@@ -60,12 +66,20 @@ private:
     void doCycle() {
         // 1. advance the CPU by the estimated IPC.
         for(std::size_t i = 0; i < cfg.EstimatedIPC; i++) {
+            // get the current PC of the CPU.
+            VirtualMemoryAddress pc = theCPU.get_pc();
             uint64_t return_value = theCPU.advance();
             if(return_value == 0x10003){ // QEMU_EXCP_HALTED
                 // DBG_(Crit, (<< "CPU " << theCPUIndex << " has halted."));
             } else {
                 ++theCommitCount;
+                if (pc >> 63) {
+                    ++theCommitCountSystem;
+                } else {
+                    ++theCommitCountUser;
+                }
             }
+            ++theTotalTrials;
         }
     }
 };

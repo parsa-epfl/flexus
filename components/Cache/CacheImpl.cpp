@@ -109,7 +109,7 @@ class FLEXUS_COMPONENT(Cache)
     }
 
     void finalize() {
-        theController->saveState("output_state");
+        // theController->saveState("output_state");
     }
 
     // Ports

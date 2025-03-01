@@ -19,6 +19,8 @@ class BranchPredictor
     BTB theBTB;
     PREDICTOR theTage;
 
+    std::vector<boost::intrusive_ptr<BPredState>> theTrainingHistory;
+
   public:
     Stat::StatCounter theBranches;
 

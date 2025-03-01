@@ -3,6 +3,7 @@
 
 #include "components/CommonQEMU/Translation.hpp"
 #include "core/types.hpp"
+#include "core/checkpoint/json.hpp"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -11,6 +12,8 @@ using boost::counted_base;
 using Flexus::SharedTypes::TransactionTracker;
 using Flexus::SharedTypes::Translation;
 using Flexus::SharedTypes::VirtualMemoryAddress;
+
+using json = nlohmann::json;
 
 namespace Flexus::SharedTypes {
 
@@ -120,6 +123,52 @@ struct BPredState : boost::counted_base
 
       theTageHistoryValid = false;
       theTagePredictionValid = false;
+    }
+
+    json serialize() const {
+      json j;
+      j["thePredictedType"] = thePredictedType;
+      j["theActualType"] = theActualType;
+      j["pc"] = (uint64_t)pc;
+      j["thePredictedTarget"] = (uint64_t)thePredictedTarget;
+      j["theActualTarget"] = (uint64_t)theActualTarget;
+      j["thePrediction"] = thePrediction;
+      j["theActualDirection"] = theActualDirection;
+      j["theTageHistoryValid"] = theTageHistoryValid;
+      j["phist"] = phist;
+
+      for (int i = 0; i < ghist.size(); ++i) {
+        j["ghist"].push_back(ghist[i]);
+      }
+      
+      j["ch_i"] = std::vector<unsigned>(ch_i, ch_i + 15);
+      j["ch_t"] = std::vector<std::vector<unsigned>>{std::vector<unsigned>(ch_t[0], ch_t[0] + 15), std::vector<unsigned>(ch_t[1], ch_t[1] + 15)};
+      j["theTagePredictionValid"] = theTagePredictionValid;
+      j["GI"] = std::vector<int>(GI, GI + 15);
+      j["BI"] = BI;
+      j["bank"] = bank;
+      j["altbank"] = altbank;
+      j["pred_taken"] = pred_taken;
+      j["alt_pred"] = alt_pred;
+      j["last_miss_distance"] = last_miss_distance;
+      j["ICache_miss_address"] = (uint64_t)ICache_miss_address;
+      j["caused_ICache_miss"] = caused_ICache_miss;
+      j["bimodalPrediction"] = bimodalPrediction;
+      j["returnUsedRAS"] = returnUsedRAS;
+      j["returnPopRASTwice"] = returnPopRASTwice;
+      j["callUpdatedRAS"] = callUpdatedRAS;
+      j["detectedSpecialCall"] = detectedSpecialCall;
+      j["haltDispatch"] = haltDispatch;
+      j["translationFailed"] = translationFailed;
+      j["BTBPreFilled"] = BTBPreFilled;
+      j["causedSquash"] = causedSquash;
+      j["hasRetired"] = hasRetired;
+      j["saturationCounter"] = saturationCounter;
+      j["theTL"] = theTL;
+      j["theBBSize"] = theBBSize;
+      j["theSerial"] = theSerial;
+
+      return j;
     }
 };
 

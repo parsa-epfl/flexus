@@ -13,6 +13,7 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <boost/type_traits/function_traits.hpp>
 
 namespace Flexus {
 namespace Qemu {

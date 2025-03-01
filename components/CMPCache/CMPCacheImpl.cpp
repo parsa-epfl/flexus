@@ -80,7 +80,7 @@ class FLEXUS_COMPONENT(CMPCache)
     }
 
     void finalize() {
-        theController->saveState("output_state");
+        // theController->saveState("output_state");
     }
 
     // Ports

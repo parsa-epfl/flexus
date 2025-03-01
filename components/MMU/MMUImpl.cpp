@@ -345,6 +345,7 @@ MMUComponent::initialize()
 void
 MMUComponent::finalize()
 {
+    // this->saveState("output_state");
 }
 
 // MMUDrive

@@ -14,9 +14,9 @@ include(./target/${SIMULATOR}/${SIMULATOR}.cmake)
 
 # Setup include paths
 include_directories(.)
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-error=maybe-uninitialized -Wno-error=dangling-pointer -fdiagnostics-color=always")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -ggdb -g3 -fno-eliminate-unused-debug-symbols -fsanitize=address -fno-omit-frame-pointer -funroll-loops")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wno-error -fdiagnostics-color=always")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -gdwarf-5 -g3 -fno-eliminate-unused-debug-symbols -fsanitize=address -fno-omit-frame-pointer -funroll-loops")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -gdwarf-5 -O3 -march=native")
 
 # Find boost
 set(Boost_USE_DEBUG_LIBS OFF)
@@ -33,9 +33,11 @@ foreach(COMPONENT ${REQUIRED_COMPONENTS})
     file(GLOB_RECURSE COMPONENT_${COMPONENT}_SOURCE "./components/${COMPONENT}/*.cpp")
     add_library(${COMPONENT} STATIC ${COMPONENT_${COMPONENT}_SOURCE})
     target_compile_options(${COMPONENT} PRIVATE)
+    target_compile_definitions(${COMPONENT} PRIVATE SELECTED_DEBUG=vverb)
 endforeach()
 
 # compile simulators
 add_library(${SIMULATOR} SHARED ./target/${SIMULATOR}/wiring.cpp)
 target_link_libraries(${SIMULATOR} "-Wl,--whole-archive" "-Wl,--no-undefined" core ${REQUIRED_COMPONENTS})
+target_compile_definitions(${SIMULATOR} PRIVATE SELECTED_DEBUG=vverb)
 target_link_libraries(${SIMULATOR} "-Wl,--no-whole-archive" ${Boost_LIBRARIES} boost_system boost_regex boost_serialization boost_iostreams)
