@@ -63,7 +63,9 @@ class FLEXUS_COMPONENT(MemoryNetwork)
         PacketCount = 0;
         // end of medhi
 
-        if (cfg.NumNodes == 0) cfg.NumNodes = Flexus::Core::ComponentManager::getComponentManager().systemWidth() * 3;
+        uint64_t equivalent_system_width = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+
+        if (cfg.NumNodes == 0) cfg.NumNodes = equivalent_system_width * 3;
 
         for (i = 0; i < cfg.VChannels; i++) {
             theNetworkLatencyHistograms.push_back(

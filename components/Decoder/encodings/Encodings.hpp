@@ -62,13 +62,13 @@ disas_ldst_reg_unsigned_imm(archcode const& aFetchedOpcode, uint32_t aCPU, int64
 archinst
 disas_ldst_reg(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 archinst
-disas_ldst_pair(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+disas_ldst_pair(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo, int32_t aUop, bool& aLastUop);
 archinst
 disas_ld_lit(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 archinst
 disas_ldst_excl(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
 archinst
-disas_ldst(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo);
+disas_ldst(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo, int32_t aUop, bool& aLastUop);
 
 //<<--Data Processing -- Register
 archinst
@@ -120,7 +120,7 @@ disas_data_proc_simd_fp(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t a
 
 /* C3.1 A64 instruction index by encoding */
 archinst
-disas_a64_insn(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo, int32_t aUop);
+disas_a64_insn(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo, int32_t aUop, bool& aLastUop);
 
 } // namespace nDecoder
 

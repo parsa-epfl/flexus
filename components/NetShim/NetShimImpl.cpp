@@ -48,6 +48,7 @@ class FLEXUS_COMPONENT(NetShim)
     // Initialization
     void initialize()
     {
+        DBG_Assert(false);
         int i;
         for (i = 0; i < cfg.VChannels; i++) {
             theNetworkLatencyHistograms.push_back(

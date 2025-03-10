@@ -50,6 +50,10 @@ class BasicCacheState
 
     inline const bool isValid() const { return (*this != Invalid); }
 
+    inline const bool isDirty() const { return (*this == Modified) || (*this == Owned); }
+
+    inline const bool isWritable() const { return (*this == Modified) || (*this == Exclusive); }
+
     inline void setPrefetched(bool p)
     {
         if (p) {

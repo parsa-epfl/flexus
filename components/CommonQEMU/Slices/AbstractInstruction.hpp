@@ -18,6 +18,11 @@ struct AbstractInstruction : public boost::counted_base
     bool theExclusive;
 
   public:
+
+    bool theUnprivAccess;
+    virtual void setUnprivAccess() { theUnprivAccess = true; }
+    virtual bool unprivAccess() const { return theUnprivAccess; }
+
     virtual bool isExclusive() const { return theExclusive; }
     virtual void setExclusive() { theExclusive = true; }
     virtual void describe(std::ostream& anOstream) const;
@@ -32,6 +37,7 @@ struct AbstractInstruction : public boost::counted_base
     AbstractInstruction()
       : theInsnSourceLevel(eL1I)
       , theExclusive(false)
+      , theUnprivAccess(false)
     {
     }
     virtual ~AbstractInstruction() {}

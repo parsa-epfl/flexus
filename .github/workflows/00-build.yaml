@@ -33,11 +33,11 @@ jobs:
       fail-fast: true
       matrix:
         binaries:
-          - keenkraken
+          - semikraken
           - knottykraken
         build_type:
           - release
-          - relwithdebinfo
+          #- relwithdebinfo
           - debug
 
     steps:

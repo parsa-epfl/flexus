@@ -238,7 +238,10 @@ class ArchInstruction : public nuArch::Instruction
     }
     virtual ~ArchInstruction() { DBG_(VVerb, (<< identify() << " destroyed")); }
 
-    virtual void redirectPC(VirtualMemoryAddress anPCReg) { thePCReg = anPCReg; }
+    virtual void redirectPC(VirtualMemoryAddress anPCReg) { 
+        thePCReg = anPCReg; 
+        DBG_Assert(this->bpState()->theActualTarget == anPCReg, (<< "Redirecting PC to " << anPCReg << " but BPState says " << this->bpState()->theActualTarget));
+    }
 
     virtual VirtualMemoryAddress pc() const { return thePC; }
 

@@ -8,6 +8,7 @@ OGEHL predictor simulator from Andr� Seznec
 #ifndef PREDICTOR_H_SEEN
 #define PREDICTOR_H_SEEN
 
+#include "core/debug/debug.hpp"
 #include <bitset>
 #include <cmath>
 #include <components/uFetch/uFetchTypes.hpp>
@@ -22,7 +23,7 @@ using json = nlohmann::json;
 #define ASSERT(cond)                                                                                                   \
     if (!(cond)) {                                                                                                     \
         printf("assert line %d\n", __LINE__);                                                                          \
-        exit(EXIT_FAILURE);                                                                                            \
+        abort();                                                                                            \
     }
 
 // the predictor features NHIST tagged components + a base bimodal component
@@ -189,21 +190,15 @@ class PREDICTOR
     };
 
     // predictor storage data
-    int PWIN;
     // 4 bits to determine whether newly allocated entries should be considered as
     // valid or not for delivering  the prediction
     int TICK;
     int phist;
-    int phist_runahead;
-    int phist_retired;
     // use a path history as for the OGEHL predictor
     history_t ghist;
-    history_t ghist_runahead;
     history_t ghist_retired;
     folded_history ch_i[NHIST];
     folded_history ch_t[2][NHIST];
-    folded_history ch_i_runahead[NHIST];
-    folded_history ch_t_runahead[2][NHIST];
     bentry* btable;
     gentry* gtable[NHIST];
     // used for storing the history lengths
@@ -213,16 +208,12 @@ class PREDICTOR
     {
         int STORAGESIZE = 0;
 
-        PWIN = 0; // EPFL change
         Seed = 0;
         TICK = 0;
 
         phist          = 0;
-        phist_runahead = 0;
-        phist_retired  = 0;
 
         ghist          = 0;
-        ghist_runahead = 0;
         ghist_retired  = 0;
         DBG_(Tmp, (<< " ghist ini: " << ghist));
         // computes the geometric history lengths
@@ -241,8 +232,7 @@ class PREDICTOR
 
             fprintf(stderr, "%d ", m[i]);
 
-            ch_i[i].init(m[i], (LOGG));
-            ch_i_runahead[i].init(m[i], (LOGG));
+            ch_i[i].init(m[i], LOGG);
             STORAGESIZE += (1 << LOGG) * (5 + TBITS - ((i + (NHIST & 1)) / 2));
         }
         fprintf(stderr, "\n");
@@ -257,8 +247,6 @@ class PREDICTOR
         for (int i = 0; i < NHIST; i++) {
             ch_t[0][i].init(ch_i[i].OLENGTH, TBITS - ((i + (NHIST & 1)) / 2));
             ch_t[1][i].init(ch_i[i].OLENGTH, TBITS - ((i + (NHIST & 1)) / 2) - 1);
-            ch_t_runahead[0][i].init(ch_i_runahead[i].OLENGTH, TBITS - ((i + (NHIST & 1)) / 2));
-            ch_t_runahead[1][i].init(ch_i_runahead[i].OLENGTH, TBITS - ((i + (NHIST & 1)) / 2) - 1);
         }
 
         btable = new bentry[1 << LOGB];
@@ -272,10 +260,6 @@ class PREDICTOR
     // index function for the bimodal table
 
     int bindex(address_t pc) { return (pc & ((1 << (LOGB)) - 1)); }
-
-    // indexes to the different tables are computed only once  and store in GI and BI
-    int GI[NHIST];
-    int BI;
 
     // index function for the global tables:
     // includes path history as in the OGEHL predictor
@@ -292,43 +276,25 @@ class PREDICTOR
         A  = ((A << bank) & ((1 << LOGG) - 1)) + (A >> (LOGG - bank));
         return (A);
     }
-    int gindex(address_t pc, int bank, bool is_runahead)
+    int gindex(address_t pc, int bank)
     {
         int index;
 
-        if (is_runahead) {
-            if (m[bank] >= 16)
-                index =
-                  pc ^ (pc >> ((LOGG - (NHIST - bank - 1)))) ^ ch_i_runahead[bank].comp ^ F(phist_runahead, 16, bank);
+        if (m[bank] >= 16)
+            index = pc ^ (pc >> ((LOGG - (NHIST - bank - 1)))) ^ ch_i[bank].comp ^ F(phist, 16, bank);
 
-            else
-                index =
-                  pc ^ (pc >> (LOGG - NHIST + bank + 1)) ^ ch_i_runahead[bank].comp ^ F(phist_runahead, m[bank], bank);
+        else
+            index = pc ^ (pc >> (LOGG - NHIST + bank + 1)) ^ ch_i[bank].comp ^ F(phist, m[bank], bank);
 
-            return (index & ((1 << (LOGG)) - 1));
-
-        } else {
-            if (m[bank] >= 16)
-                index = pc ^ (pc >> ((LOGG - (NHIST - bank - 1)))) ^ ch_i[bank].comp ^ F(phist, 16, bank);
-
-            else
-                index = pc ^ (pc >> (LOGG - NHIST + bank + 1)) ^ ch_i[bank].comp ^ F(phist, m[bank], bank);
-
-            return (index & ((1 << (LOGG)) - 1));
-        }
+        return (index & ((1 << (LOGG)) - 1));
     }
 
     //  tag computation
-    uint16_t gtag(address_t pc, int bank, bool is_runahead)
+    uint16_t gtag(address_t pc, int bank)
     {
 
-        if (is_runahead) {
-            int tag = pc ^ ch_t_runahead[0][bank].comp ^ (ch_t_runahead[1][bank].comp << 1);
-            return (tag & ((1 << (TBITS - ((bank + (NHIST & 1)) / 2))) - 1));
-        } else {
-            int tag = pc ^ ch_t[0][bank].comp ^ (ch_t[1][bank].comp << 1);
-            return (tag & ((1 << (TBITS - ((bank + (NHIST & 1)) / 2))) - 1));
-        }
+        int tag = pc ^ ch_t[0][bank].comp ^ (ch_t[1][bank].comp << 1);
+        return (tag & ((1 << (TBITS - ((bank + (NHIST & 1)) / 2))) - 1));
         // does not use the same length for all the components
     }
 
@@ -342,102 +308,31 @@ class PREDICTOR
         }
     }
 
-    void reset_runahead_history()
-    {
-
-        for (int i = 0; i < NHIST; i++) {
-            ch_i_runahead[i].comp    = ch_i[i].comp;
-            ch_t_runahead[0][i].comp = ch_t[0][i].comp;
-            ch_t_runahead[1][i].comp = ch_t[1][i].comp;
-        }
-        phist_runahead = phist;
-        ghist_runahead = std::bitset<MAXHIST>(ghist.to_string());
-    }
-
-    eDirection isCondTaken(uint64_t instruction_addr)
-    {
-
-        address_t pc = instruction_addr >> 2;
-
-        // computes the table addresses
-        int GI[NHIST];
-        int BI;
-
-        for (int i = 0; i < NHIST; i++)
-            GI[i] = gindex(pc, i, 0);
-        BI = bindex(pc);
-
-        int bank = NHIST;
-
-        for (int i = 0; i < NHIST; i++) {
-            if (gtable[i][GI[i]].tag == gtag(pc, i, 0)) {
-                bank = i;
-                break;
-            }
-        }
-
-        if (bank < NHIST) {
-
-            //		  return (gtable[bank][GI[bank]].ctr >= 0);
-            //	    	DBG_( Tmp, ( << " Tage predict: " << (int)gtable[bank][GI[bank]].ctr));
-            int8_t ctr = gtable[bank][GI[bank]].ctr;
-            if (ctr == 3 || ctr == 2) {
-                return kStronglyTaken;
-            } else if (ctr == 1 || ctr == 0) {
-                return kTaken;
-            } else if (ctr == -1 || ctr == -2) {
-                return kNotTaken;
-            } else {
-                return kStronglyNotTaken;
-                assert(ctr == -3 || ctr == -4);
-            }
-
-        } else {
-            //		  return btable[BI].pred > 0;
-            //	    	  DBG_( Tmp, ( << " Base predict: " << (int)btable[BI].pred << " " <<
-            //(int)btable[BI].hyst));
-            int8_t ctr = ((btable[BI].pred << 1) + btable[BI].hyst);
-            if (ctr == 3) {
-                return kStronglyTaken;
-            } else if (ctr == 2) {
-                return kTaken;
-            } else if (ctr == 1) {
-                return kNotTaken;
-            } else {
-                return kStronglyNotTaken;
-                assert(ctr == 0);
-            }
-        }
-        return kNotTaken; // Mark: Added
-    }
-
-    int altbank;
     // prediction given by longest matching global history
     // altpred contains the alternate prediction
-    bool read_prediction(address_t pc, int& bank, bool& altpred, BPredState& aBPState)
+    void read_prediction(address_t pc, BPredState& aBPState)
     {
-
-        bank    = NHIST;
-        altbank = NHIST;
+        aBPState.bank = NHIST;
+        aBPState.altbank = NHIST;
 
         {
             for (int i = 0; i < NHIST; i++) {
-                if (gtable[i][GI[i]].tag == gtag(pc, i, aBPState.is_runahead)) {
-                    bank = i;
+                if (gtable[i][aBPState.GI[i]].tag == gtag(pc, i)) {
+                    aBPState.bank = i;
                     break;
                 }
             }
-            for (int i = bank + 1; i < NHIST; i++) {
-                if (gtable[i][GI[i]].tag == gtag(pc, i, aBPState.is_runahead)) {
-                    altbank = i;
+            for (int i = aBPState.bank + 1; i < NHIST; i++) {
+                if (gtable[i][aBPState.GI[i]].tag == gtag(pc, i)) {
+                    aBPState.altbank = i;
                     break;
                 }
             }
-            if (bank < NHIST) {
-                if (altbank < NHIST)
-                    altpred = (gtable[altbank][GI[altbank]].ctr >= 0);
+            if (aBPState.bank < NHIST) {
+                if (aBPState.altbank < NHIST)
+                    aBPState.alt_pred = (gtable[aBPState.altbank][aBPState.GI[aBPState.altbank]].ctr >= 0);
                 else
-                    altpred = getbim(pc);
+                    aBPState.alt_pred = getbim(pc, aBPState.BI);
                 // if the entry is recognized as a newly allocated entry and
                 // counter PWIN is negative use the alternate prediction
                 // see section 3.2.4
@@ -449,99 +344,54 @@ class PREDICTOR
                 //	    return (altpred);
                 //	  DBG_(Tmp, ( << "Tage history prediciton"));
                 aBPState.bimodalPrediction = false;
-                aBPState.saturationCounter = gtable[bank][GI[bank]].ctr + 4 /*To make the value positive (0 and 7) */;
-                return (gtable[bank][GI[bank]].ctr >= 0);
+                aBPState.saturationCounter = gtable[aBPState.bank][aBPState.GI[aBPState.bank]].ctr + 4 /*To make the value positive (0 and 7) */;
+                aBPState.pred_taken = (gtable[aBPState.bank][aBPState.GI[aBPState.bank]].ctr >= 0);
 
             } else {
-                altpred = getbim(pc);
+                aBPState.alt_pred = getbim(pc, aBPState.BI);
 
                 //	  DBG_(Tmp, ( << "Tage base prediciton"));
                 aBPState.bimodalPrediction = true;
-                aBPState.saturationCounter = getSatCounter();
-                return altpred;
+                aBPState.saturationCounter = getSatCounter(aBPState.BI);
+                aBPState.pred_taken = aBPState.alt_pred;
             }
         }
     }
 
-    void update_retired_history(eBranchType theBranchType, bool taken, uint64_t instruction_addr)
+    void checkpointHistory(BPredState& aBPState) const
     {
-        ghist_retired = (ghist_retired << 1);
-        if ((!(theBranchType == kConditional)) | (taken)) ghist_retired |= (history_t)1;
+        // This checkpoint only saves the global history and path history
+        DBG_Assert(aBPState.theTageHistoryValid == false);
+        aBPState.phist = phist;
+        aBPState.ghist = std::bitset<MAXHIST>(ghist.to_string());
 
-        phist_retired = (phist_retired << 1) + (instruction_addr >> 2 & 1);
-        phist_retired = (phist_retired & ((1 << 16) - 1));
-    }
-
-    void checkpoint_history(BPredState& aBPState)
-    {
-        // Save a checkpoint. We never reload a checkpoint from runahead state.
-
-        if (aBPState.is_runahead) {
-            assert(0);
-            aBPState.bank       = bank;
-            aBPState.pred_taken = pred_taken;
-            aBPState.alttaken   = alttaken;
-            aBPState.BI         = BI;
-
-            for (int i = 0; i < NHIST; i++) {
-                aBPState.GI[i]      = GI[i];
-                aBPState.ch_i[i]    = ch_i_runahead[i].comp;
-                aBPState.ch_t[0][i] = ch_t_runahead[0][i].comp;
-                aBPState.ch_t[1][i] = ch_t_runahead[1][i].comp;
-            }
-            aBPState.phist = phist_runahead;
-            aBPState.ghist = std::bitset<MAXHIST>(ghist_runahead.to_string());
-        } else {
-            aBPState.bank       = bank;
-            aBPState.pred_taken = pred_taken;
-            aBPState.alttaken   = alttaken;
-            aBPState.BI         = BI;
-
-            for (int i = 0; i < NHIST; i++) {
-                aBPState.GI[i]      = GI[i];
-                aBPState.ch_i[i]    = ch_i[i].comp;
-                aBPState.ch_t[0][i] = ch_t[0][i].comp;
-                aBPState.ch_t[1][i] = ch_t[1][i].comp;
-            }
-            aBPState.phist = phist;
-            aBPState.ghist = std::bitset<MAXHIST>(ghist.to_string());
+        // Checkpoint ch_i and ch_t. They are the function of the global history.
+        for (int i = 0; i < NHIST; i++) {
+            aBPState.ch_i[i] = ch_i[i].comp;
+            aBPState.ch_t[0][i] = ch_t[0][i].comp;
+            aBPState.ch_t[1][i] = ch_t[1][i].comp;
         }
+
+        aBPState.theTageHistoryValid = true;
     }
 
-    void update_history(BPredState& aBPState, bool taken, uint64_t instruction_addr)
+    void update_history(const BPredState& aBPState, bool taken, uint64_t instruction_addr)
     {
-
+        // TODO: Check whether this function is called for non-conditional branches.
         // Update the state
-        if (aBPState.is_runahead) {
-            assert(0);
-            ghist_runahead = (ghist_runahead << 1);
-            if ((!(aBPState.thePredictedType == kConditional)) | (taken)) ghist_runahead |= (history_t)1;
+        ghist = (ghist << 1);
+        if ((!(aBPState.thePredictedType == kConditional)) | (taken)) ghist[0] = 1;
 
-            phist_runahead = (phist_runahead << 1) + (instruction_addr >> 2 & 1);
-            phist_runahead = (phist_runahead & ((1 << 16) - 1));
-            for (int i = 0; i < NHIST; i++) {
-                ch_i_runahead[i].update(ghist_runahead);
-                ch_t_runahead[0][i].update(ghist_runahead);
-                ch_t_runahead[1][i].update(ghist_runahead);
-            }
-
-        } else {
-            ghist = (ghist << 1);
-            if ((!(aBPState.thePredictedType == kConditional)) | (taken)) ghist |= (history_t)1;
-
-            phist = (phist << 1) + (instruction_addr >> 2 & 1);
-            phist = (phist & ((1 << 16) - 1));
-            for (int i = 0; i < NHIST; i++) {
-                ch_i[i].update(ghist);
-                ch_t[0][i].update(ghist);
-                ch_t[1][i].update(ghist);
-            }
+        phist = (phist << 1) + (instruction_addr >> 2 & 1);
+        phist = (phist & ((1 << 16) - 1));
+        for (int i = 0; i < NHIST; i++) {
+            ch_i[i].update(ghist);
+            ch_t[0][i].update(ghist);
+            ch_t[1][i].update(ghist);
         }
     }
 
     // PREDICTION
-    bool pred_taken, alttaken;
-    int bank;
     bool get_prediction(uint64_t instruction_addr, BPredState& aBPState)
     {
         aBPState.saturationCounter = -1;
@@ -550,39 +400,31 @@ class PREDICTOR
             address_t pc = instruction_addr >> 2;
             // computes the table addresses
             for (int i = 0; i < NHIST; i++)
-                GI[i] = gindex(pc, i, aBPState.is_runahead);
-            BI = bindex(pc);
+                aBPState.GI[i] = gindex(pc, i);
+            aBPState.BI = bindex(pc);
 
-            pred_taken = read_prediction(pc, bank, alttaken, aBPState);
-            //	std::cout << "Tage Predict " << std::hex << instruction_addr <<std::endl;
-            // bank contains the number of the matching table, NHIST if no match
-            // pred_taken is the prediction
-            // alttaken is the alternate prediction
-            //	if (printLog)
-            //		std::cout << "Predicting pc " << std::hex << instruction_addr << " pred " <<
-            // pred_taken << " bank " << bank << " alttaken " << alttaken << std::endl; 	DBG_( Tmp,
-            // ( << " TAGE prdict: " << std::hex << instruction_addr << " " << pred_taken));
+            read_prediction(pc, aBPState);
+
+            update_history(aBPState, aBPState.pred_taken, instruction_addr);
+
+            aBPState.theTagePredictionValid = true;
+
+            return aBPState.pred_taken;
         }
 
-        // Save the checkpoint
-        checkpoint_history(aBPState);
-
-        // Speculatively update the history
-        update_history(aBPState, pred_taken, instruction_addr);
-        //	std::cout << std::endl<< std::endl<< std::endl<< std::endl << "Tage predict " << pred_taken
-        //<< " cond? " << aBPState.is_conditional << std::endl<< std::endl<< std::endl<< std::endl<<
-        // std::endl;
-
-        return pred_taken;
+        // No way to predict the direction of a non-conditional branch
+        DBG_Assert(false);
+        __builtin_unreachable();
     }
-    bool getbim(address_t pc) { return (btable[BI].pred > 0); }
 
-    int8_t getSatCounter() { return (btable[BI].pred << 1) + btable[BI].hyst; }
+    bool getbim(address_t pc, int BI) { return (btable[BI].pred > 0); }
+
+    int8_t getSatCounter(int BI) { return (btable[BI].pred << 1) + btable[BI].hyst; }
     // update  the bimodal predictor
-    void baseupdate(address_t pc, bool Taken)
+    void baseupdate(address_t pc, bool Taken, int BI)
     {
         // just a normal 2-bit counter apart that hysteresis is shared
-        if (Taken == getbim(pc)) {
+        if (Taken == getbim(pc, BI)) {
 
             if (Taken) {
                 if (btable[BI].pred)
@@ -618,62 +460,26 @@ class PREDICTOR
         return (Seed);
     }
 
-    void confirm_state(BPredState& aBPState)
-    {
-        if (ghist_retired != aBPState.ghist) {
-            DBG_(Tmp, (<< " Ghist is different retired: " << ghist_retired << " carried " << aBPState.ghist));
-            assert(0);
-        } else if (phist_retired != aBPState.phist) {
-            DBG_(Tmp, (<< " Phist is different retired: " << phist_retired << " carried " << aBPState.phist));
-            assert(0);
-        }
-    }
-
-    void restore_retired_state()
+    void restore_history(const BPredState& aBPState)
     {
 
-        phist = phist_retired;
-        ghist = std::bitset<MAXHIST>(ghist_retired.to_string());
-        for (int i = 0; i < NHIST; i++) {
-            ch_i[i].update(ghist);
-            ch_t[0][i].update(ghist);
-            ch_t[1][i].update(ghist);
-        }
-    }
-
-    void restore_state(BPredState& aBPState)
-    {
-
-        bank       = aBPState.bank;
-        pred_taken = aBPState.pred_taken;
-        alttaken   = aBPState.alttaken;
-        BI         = aBPState.BI;
+        DBG_Assert(aBPState.theTageHistoryValid);
 
         for (int i = 0; i < NHIST; i++) {
-            GI[i] = aBPState.GI[i];
-        }
-    }
-
-    void restore_all_state(BPredState& aBPState)
-    {
-
-        bank       = aBPState.bank;
-        pred_taken = aBPState.pred_taken;
-        alttaken   = aBPState.alttaken;
-        BI         = aBPState.BI;
-
-        for (int i = 0; i < NHIST; i++) {
-            GI[i]           = aBPState.GI[i];
             ch_i[i].comp    = aBPState.ch_i[i];
+            DBG_Assert((ch_i[i].comp >> ch_i[i].CLENGTH) == 0);
             ch_t[0][i].comp = aBPState.ch_t[0][i];
+            DBG_Assert((ch_t[0][i].comp >> ch_t[0][i].CLENGTH) == 0);
             ch_t[1][i].comp = aBPState.ch_t[1][i];
+            DBG_Assert((ch_t[1][i].comp >> ch_t[0][i].CLENGTH) == 0);
         }
+
         phist = aBPState.phist;
         ghist = std::bitset<MAXHIST>(aBPState.ghist.to_string());
     }
 
     // PREDICTOR UPDATE
-    void update_predictor(uint64_t instruction_addr, BPredState& aBPState, bool taken)
+    void update_predictor(uint64_t instruction_addr, const BPredState& aBPState, bool taken)
     {
 
         //	  std::cout << std::endl<< std::endl<< std::endl<< std::endl << "Tage update " << taken <<
@@ -695,17 +501,23 @@ class PREDICTOR
             }
             /*Done*/
             /*Restore the history when the branch was predicted*/
-            restore_all_state(aBPState);
+            restore_history(aBPState);
 
-            //    	if (printLog) {
-            //			std::cout << "UPdate pc " << std::hex << instruction_addr << " pred
-            //" << aBPState.pred_taken << " outcome " << taken << std::endl;
-            // std::cout << "phist " << std::hex << aBPState.phist << " ghist " << aBPState.ghist << " BI
-            // "
-            // << aBPState.BI << " bank
-            //"<< aBPState.bank << " altpred "<< aBPState.alttaken << std::endl;
-            //    	}
-            //
+            // GI, BI, bank, altbank, pred_taken, alt_pred
+            int GI[NHIST];
+            int BI;
+            int bank;
+            bool alt_pred;
+            bool pred_taken;
+
+            if (aBPState.theTagePredictionValid) {
+                for (int i = 0; i < NHIST; i++)
+                    GI[i] = aBPState.GI[i];
+                BI        = aBPState.BI;
+                bank      = aBPState.bank;
+                alt_pred  = aBPState.alt_pred;
+                pred_taken = aBPState.pred_taken;
+            }
 
             address_t pc = instruction_addr >> 2;
 
@@ -731,15 +543,15 @@ class PREDICTOR
                     // even if the overall prediction was false
 
                     // see section 3.2.4
-                    if (loctaken != alttaken) {
-                        if (alttaken == taken) {
+                    // if (loctaken != alt_pred) {
+                    //     if (alt_pred == taken) {
 
-                            if (PWIN < 7) PWIN++;
-                        }
+                    //         if (PWIN < 7) PWIN++;
+                    //     }
 
-                        else if (PWIN > -8)
-                            PWIN--;
-                    }
+                    //     else if (PWIN > -8)
+                    //         PWIN--;
+                    // }
                 }
             }
 
@@ -776,10 +588,10 @@ class PREDICTOR
 
                     {
                         int T = i;
-                        if ((gtable[T][GI[T]].ubit == min)) {
+                        if (gtable[T][GI[T]].ubit == min) {
                             //		    		std::cout << "Bank alloc " << T << std::endl;
 
-                            gtable[T][GI[T]].tag  = gtag(pc, T, 0 /*Not from runahead path*/);
+                            gtable[T][GI[T]].tag  = gtag(pc, T);
                             gtable[T][GI[T]].ctr  = (taken) ? 0 : -1;
                             gtable[T][GI[T]].ubit = 0;
                             break;
@@ -800,13 +612,12 @@ class PREDICTOR
 
             // update the counter that provided the prediction, and only this counter
             if (bank < NHIST) {
-
                 ctrupdate(gtable[bank][GI[bank]].ctr, taken, CBITS);
             } else {
-                baseupdate(pc, taken);
+                baseupdate(pc, taken, BI);
             }
             // update the ubit counter
-            if ((pred_taken != alttaken)) {
+            if ((pred_taken != alt_pred)) {
                 ASSERT(bank < NHIST);
 
                 if (pred_taken == taken) {
@@ -818,14 +629,6 @@ class PREDICTOR
                 }
             }
 
-            /* On a wrong prediction, update the history with correct values.
-             * It could be a mis-prediction due to target miss in BTB and not because of wrong direction.
-             * Therefore, we use "is_mispredict" variable instead of comparing the predicted and actual
-             * direction. Moved to "feedback" function in BranchPredictor.cpp
-             */
-            //	if(is_mispredict) {
-            //		update_history(aBPState, taken, instruction_addr);
-            //	}
             /*Restore the current history*/
             phist = phist_back;
             ghist = std::bitset<MAXHIST>(ghist_back.to_string());
@@ -837,32 +640,15 @@ class PREDICTOR
 
             /*Done*/
         }
-        // update global history and cyclic shift registers
-        // use also history on unconditional branches as for OGEHL predictors.
-
-        //    ghist = (ghist << 1);
-        //    if ((!br->is_conditional) | (taken))
-        //      ghist |= (history_t) 1;
-        //
-        //    phist = (phist << 1) + (br->instruction_addr & 1);
-        //    phist = (phist & ((1 << 16) - 1));
-        //    for (int i = 0; i < NHIST; i++)
-        //      {
-        //	ch_i[i].update (ghist);
-        //	ch_t[0][i].update (ghist);
-        //	ch_t[1][i].update (ghist);
-        //      }
     }
 
     json saveState() const
     {
         json checkpoint;
 
-        checkpoint["PWIN"]    = PWIN;
         checkpoint["TICK"]    = TICK;
         checkpoint["SEED"]    = Seed;
         checkpoint["PHIST"]   = phist;
-        checkpoint["GHIST"]   = ghist.to_string();
         checkpoint["LOGB"]    = LOGB;
         checkpoint["NHIST"]   = NHIST;
         checkpoint["LOGG"]    = LOGG;
@@ -870,6 +656,10 @@ class PREDICTOR
         checkpoint["MAXHIST"] = MAXHIST;
         checkpoint["MINHIST"] = MINHIST;
         checkpoint["CBITS"]   = CBITS;
+
+        for (int i = 0; i < MAXHIST; ++i) {
+            checkpoint["GHIST"].push_back(ghist[i]);
+        }
 
         // bimodal table
         for (int i = 0; i < (1 << LOGB); i++) {
@@ -941,11 +731,14 @@ class PREDICTOR
         DBG_Assert(MINHIST == checkpoint["MINHIST"]);
         DBG_Assert(CBITS == checkpoint["CBITS"]);
 
-        PWIN  = checkpoint["PWIN"];
         TICK  = checkpoint["TICK"];
         Seed  = checkpoint["SEED"];
         phist = checkpoint["PHIST"];
-        ghist = history_t(checkpoint["GHIST"].get<std::string>());
+
+        // Load the g history
+        for (int i = 0; i < MAXHIST; i++) {
+            ghist[i] = checkpoint["GHIST"][i];
+        }
 
         // bimodal table
         for (int i = 0; i < (1 << LOGB); i++) {
@@ -976,7 +769,8 @@ class PREDICTOR
         }
 
         for (int i = 0; i < NHIST; i++) {
-            m[i] = checkpoint["m"][i];
+            // Check whether two m are the same.
+            DBG_Assert(m[i] == checkpoint["m"][i]);
         }
     };
 }; // namespace SharedTypes

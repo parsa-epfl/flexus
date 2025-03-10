@@ -224,7 +224,7 @@ struct cycles_opts
 // typedef int               (*QEMU_MEM_OP_IS_DATA_t) (generic_transaction_t *mop);
 // typedef int               (*QEMU_MEM_OP_IS_WRITE_t)(generic_transaction_t *mop);
 
-typedef physical_address_t (*QEMU_GET_PA_t)(size_t core_index, logical_address_t va);
+typedef physical_address_t (*QEMU_GET_PA_t)(size_t core_index, logical_address_t va, bool unprivileged);
 typedef uint64_t (*QEMU_READ_REG_t)(size_t core_index, register_type_t reg, size_t reg_info);
 typedef uint64_t (*QEMU_READ_SYSREG_t)(size_t core_index,
                                        uint8_t op0,

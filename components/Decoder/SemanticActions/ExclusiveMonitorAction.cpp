@@ -51,7 +51,7 @@ struct ExclusiveMonitorAction : public PredicatedSemanticAction
         uint64_t addr             = theInstruction->operand<uint64_t>(theAddressCode);
         Flexus::Qemu::Processor c = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu());
         PhysicalMemoryAddress pAddress =
-          PhysicalMemoryAddress(c.translate_va2pa(VirtualMemoryAddress((addr >> 6) << 6)));
+          PhysicalMemoryAddress(c.translate_va2pa(VirtualMemoryAddress((addr >> 6) << 6), theInstruction->unprivAccess()));
 
         // passed &= core()->isExclusiveGlobal(pAddress, theSize);
         // passed &= core()->isExclusiveVA(VirtualMemoryAddress(addr), theSize);

@@ -73,6 +73,7 @@ class FLEXUS_COMPONENT(Cache)
     {
         theBusTxCountdown = 0;
         theBusDirection   = kIdle;
+        DBG_Assert(cfg.Cores == 1);
 
         auto cores = cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 
@@ -107,7 +108,9 @@ class FLEXUS_COMPONENT(Cache)
         DBG_Assert(cfg.BusTime_NoData > 0);
     }
 
-    void finalize() {}
+    void finalize() {
+        // theController->saveState("output_state");
+    }
 
     // Ports
     //======

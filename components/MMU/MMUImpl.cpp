@@ -2,6 +2,7 @@
 // Changelog:
 //  - June'18: msutherl - basic TLB definition, no real timing info
 #include "MMUImpl.hpp"
+
 #include <fstream>
 #include <iostream>
 
@@ -14,7 +15,8 @@
 using json = nlohmann::json;
 
 namespace std {
-std::size_t hash<VirtualMemoryAddress>::operator()(const VirtualMemoryAddress& anAddress) const
+std::size_t
+hash<VirtualMemoryAddress>::operator()(const VirtualMemoryAddress& anAddress) const
 {
     return ((hash<uint64_t>()(uint64_t(anAddress))));
 }
@@ -28,38 +30,40 @@ using namespace Core;
 using namespace SharedTypes;
 uint64_t PAGEMASK;
 
-
 TLBentry::TLBentry() {}
 
 TLBentry::TLBentry(VirtualMemoryAddress aVAddress,
-            PhysicalMemoryAddress aPaddress,
-            uint64_t aRate,
-            uint16_t anASID,
-            bool aNG)
-    : theRate(aRate)
-    , theVaddr(aVAddress)
-    , thePaddr(aPaddress)
-    , theASID(anASID)
-    , thenG(aNG)
+                   PhysicalMemoryAddress aPaddress,
+                   uint64_t aRate,
+                   uint16_t anASID,
+                   bool aNG)
+  : theRate(aRate)
+  , theVaddr(aVAddress)
+  , thePaddr(aPaddress)
+  , theASID(anASID)
+  , thenG(aNG)
 {
 }
 
 TLBentry::TLBentry(VirtualMemoryAddress anAddress, uint16_t anASID)
-    : theRate(0)
-    , theVaddr(anAddress)
-    , theASID(anASID)
+  : theRate(0)
+  , theVaddr(anAddress)
+  , theASID(anASID)
 {
 }
 
-void TLB::loadState(json checkpoint)
+void
+TLB::loadState(json checkpoint)
 {
     size_t associativity = checkpoint["associativity"];
-    size_t set = checkpoint["entries"].size();
+    size_t set           = checkpoint["entries"].size();
 
     clear();
 
     if (associativity != theAssociativity || set != theSets) {
-        DBG_Assert(false, (<< "TLB size mismatch: Expected " << theSets << " sets and " << theAssociativity << " associativity, got " << set << " sets and " << associativity << " associativity"));
+        DBG_Assert(false,
+                   (<< "TLB size mismatch: Expected " << theSets << " sets and " << theAssociativity
+                    << " associativity, got " << set << " sets and " << associativity << " associativity"));
     }
 
     for (size_t i = 0; i < set; ++i) {
@@ -69,24 +73,26 @@ void TLB::loadState(json checkpoint)
         size_t TLBSize = checkpoint["entries"][i].size();
 
         for (size_t j = 0; j < TLBSize; j++) {
-            VirtualMemoryAddress aVaddr  = VirtualMemoryAddress(static_cast<uint64_t>(checkpoint["entries"][i].at(j)["vpn"]) << 12);
-            PhysicalMemoryAddress aPaddr = PhysicalMemoryAddress(static_cast<uint64_t>(checkpoint["entries"][i].at(j)["ppn"]) << 12);
-            uint16_t anASID              = static_cast<uint16_t>(checkpoint["entries"][i].at(j)["asid"]);
-            bool aNG                     = static_cast<bool>(checkpoint["entries"][i].at(j)["ng"]);
-            uint64_t index               = static_cast<uint64_t>(TLBSize - j - 1);
+            VirtualMemoryAddress aVaddr =
+              VirtualMemoryAddress(static_cast<uint64_t>(checkpoint["entries"][i].at(j)["vpn"]) << 12);
+            PhysicalMemoryAddress aPaddr =
+              PhysicalMemoryAddress(static_cast<uint64_t>(checkpoint["entries"][i].at(j)["ppn"]) << 12);
+            uint16_t anASID = static_cast<uint16_t>(checkpoint["entries"][i].at(j)["asid"]);
+            bool aNG        = static_cast<bool>(checkpoint["entries"][i].at(j)["ng"]);
+            uint64_t index  = static_cast<uint64_t>(TLBSize - j - 1);
             theTLB[i].insert({ aVaddr, TLBentry(aVaddr, aPaddr, index, anASID, aNG) });
-            DBG_(Dev, (<< "Inserting TLB line with" << aVaddr << " " << aPaddr << "at index: [" << index << "]"));
         }
     }
 }
 
-json TLB::saveState()
+json
+TLB::saveState()
 {
 
     json checkpoint;
 
     checkpoint["associativity"] = theAssociativity;
-    checkpoint["entries"] = json::array();
+    checkpoint["entries"]       = json::array();
     for (size_t set_idx = 0; set_idx < theSets; ++set_idx) {
         std::vector<TLBentry> entries;
         for (const auto& pair : theTLB[set_idx]) {
@@ -97,7 +103,7 @@ json TLB::saveState()
         });
 
         checkpoint["entries"][set_idx] = json::array();
-        size_t i = 0;
+        size_t i                       = 0;
         for (const auto& entry : entries) {
             checkpoint["entries"][set_idx][i++] = { { "vpn", static_cast<uint64_t>(entry.theVaddr) >> 12 },
                                                     { "ppn", static_cast<uint64_t>(entry.thePaddr) >> 12 },
@@ -109,18 +115,18 @@ json TLB::saveState()
     return checkpoint;
 }
 
-std::pair<bool, PhysicalMemoryAddress> TLB::lookUp(TranslationPtr &tr)
+std::pair<bool, PhysicalMemoryAddress>
+TLB::lookUp(TranslationPtr& tr)
 {
     VirtualMemoryAddress anAddress = tr->theVaddr;
-    uint16_t anASID = tr->theASID;
+    uint16_t anASID                = tr->theASID;
     VirtualMemoryAddress anAddressAligned(anAddress & PAGEMASK);
     // Find the set.
-    size_t set_idx = anAddressAligned & (theSets - 1);
+    size_t set_idx = (anAddressAligned >> 12) & (theSets - 1);
     std::pair<bool, PhysicalMemoryAddress> ret{ false, PhysicalMemoryAddress(0) };
     for (auto iter = theTLB[set_idx].begin(); iter != theTLB[set_idx].end(); ++iter) {
         iter->second.theRate++;
-        if (iter->second.theVaddr == anAddressAligned &&
-            (anASID == iter->second.theASID || !iter->second.thenG)) {
+        if (iter->second.theVaddr == anAddressAligned && (anASID == iter->second.theASID || !iter->second.thenG)) {
             iter->second.theRate = 0;
             ret.first            = true;
             ret.second           = iter->second.thePaddr;
@@ -135,19 +141,19 @@ std::pair<bool, PhysicalMemoryAddress> TLB::lookUp(TranslationPtr &tr)
     return ret;
 }
 
-void TLB::insert(TranslationPtr &tr)
+void
+TLB::insert(TranslationPtr& tr)
 {
-    bool aNG = tr->theNG;
+    bool aNG        = tr->theNG;
     uint16_t anASID = tr->theASID;
     VirtualMemoryAddress alignedVirtualAddr(tr->theVaddr & PAGEMASK);
     PhysicalMemoryAddress alignedPhysicalAddr(tr->thePaddr & PAGEMASK);
     if (tr->isPagefault()) {
-        if (tr->inTraceMode)
-            return;
+        if (tr->inTraceMode) return;
         faultyEntry = TLBentry(alignedVirtualAddr, alignedPhysicalAddr, 0, anASID, aNG);
         return;
     }
-    size_t set_idx = alignedVirtualAddr & (theSets - 1);
+    size_t set_idx = (alignedVirtualAddr >> 12) & (theSets - 1);
     // Check if the virtual address is in TLB (with the same ASID or as a global entry)
     auto iter  = theTLB[set_idx].end();
     auto range = theTLB[set_idx].equal_range(alignedVirtualAddr);
@@ -169,24 +175,30 @@ void TLB::insert(TranslationPtr &tr)
     return;
 }
 
-void TLB::resize(size_t associativity, size_t set)
+void
+TLB::resize(size_t associativity, size_t set)
 {
     theAssociativity = associativity;
-    theSets = set;
+    theSets          = set;
     theTLB.clear();
     theTLB.resize(set);
 }
 
-
-void TLB::clear() {
+void
+TLB::clear()
+{
     theTLB.clear();
     clearFaultyEntry();
 }
 
-void TLB::clearFaultyEntry() { faultyEntry = boost::none; }
+void
+TLB::clearFaultyEntry()
+{
+    faultyEntry = boost::none;
+}
 
-
-void TLB::evict(size_t which_set)
+void
+TLB::evict(size_t which_set)
 {
     auto res = theTLB[which_set].begin();
     for (auto iter = theTLB[which_set].begin(); iter != theTLB[which_set].end(); ++iter) {
@@ -195,7 +207,8 @@ void TLB::evict(size_t which_set)
     theTLB[which_set].erase(res);
 }
 
-bool MMUComponent::cfg_mmu(index_t anIndex)
+bool
+MMUComponent::cfg_mmu(index_t anIndex)
 {
     bool ret = false;
     theMMU.reset(new mmu_t());
@@ -212,14 +225,18 @@ bool MMUComponent::cfg_mmu(index_t anIndex)
 }
 
 MMUComponent::FLEXUS_COMPONENT_CONSTRUCTOR(MMU)
-    : base(FLEXUS_PASS_CONSTRUCTOR_ARGS), itlb_accesses(statName() + "-itlb_accesses"),
-    dtlb_accesses(statName() + "-dtlb_accesses"), stlb_accesses(statName() + "-stlb_accesses"),
-    itlb_misses(statName() + "-itlb_misses"), dtlb_misses(statName() + "-dtlb_misses"),
-    stlb_misses(statName() + "-stlb_misses")
+  : base(FLEXUS_PASS_CONSTRUCTOR_ARGS)
+  , itlb_accesses(statName() + "-itlb_accesses")
+  , dtlb_accesses(statName() + "-dtlb_accesses")
+  , stlb_accesses(statName() + "-stlb_accesses")
+  , itlb_misses(statName() + "-itlb_misses")
+  , dtlb_misses(statName() + "-dtlb_misses")
+  , stlb_misses(statName() + "-stlb_misses")
 {
 }
 
-uint16_t MMUComponent::getASID()
+uint16_t
+MMUComponent::getASID()
 {
     uint16_t ASID;
     auto TCR_EL1 = theMMU->mmu_regs.TCR[EL1];
@@ -236,9 +253,14 @@ uint16_t MMUComponent::getASID()
     return ASID;
 }
 
-bool MMUComponent::isQuiesced() const { return false; }
+bool
+MMUComponent::isQuiesced() const
+{
+    return false;
+}
 
-void MMUComponent::saveState(std::string const& dirname)
+void
+MMUComponent::saveState(std::string const& dirname)
 {
 
     std::ofstream iFile, dFile, sFile;
@@ -259,7 +281,8 @@ void MMUComponent::saveState(std::string const& dirname)
     sFile.close();
 }
 
-void MMUComponent::loadState(std::string const& dirname)
+void
+MMUComponent::loadState(std::string const& dirname)
 {
     json iCheckpoint, dCheckpoint, sCheckpoint;
 
@@ -305,7 +328,8 @@ void MMUComponent::loadState(std::string const& dirname)
 }
 
 // Initialization
-void MMUComponent::initialize()
+void
+MMUComponent::initialize()
 {
     theCPU = Flexus::Qemu::Processor::getProcessor(flexusIndex());
     thePageWalker.reset(new PageWalk(flexusIndex(), this));
@@ -315,16 +339,19 @@ void MMUComponent::initialize()
     theDataTLB.resize(cfg.dTLBAssoc, cfg.dTLBSet);
     theSecondTLB.resize(cfg.sTLBAssoc, cfg.sTLBSet);
 
-    if (cfg.PerfectTLB) {
-        PAGEMASK = ~((1ULL << 12) - 1);
-    }
+    if (cfg.PerfectTLB) { PAGEMASK = ~((1ULL << 12) - 1); }
 }
 
-void MMUComponent::finalize() {}
+void
+MMUComponent::finalize()
+{
+    // this->saveState("output_state");
+}
 
 // MMUDrive
 //----------
-void MMUComponent::drive(interface::MMUDrive const&)
+void
+MMUComponent::drive(interface::MMUDrive const&)
 {
     DBG_(VVerb, Comp(*this)(<< "MMUDrive"));
     busCycle();
@@ -332,7 +359,8 @@ void MMUComponent::drive(interface::MMUDrive const&)
     processMemoryRequests();
 }
 
-void MMUComponent::busCycle()
+void
+MMUComponent::busCycle()
 {
 
     while (!theLookUpEntries.empty()) {
@@ -344,10 +372,9 @@ void MMUComponent::busCycle()
 
         DBG_(VVerb, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry " << item->theVaddr));
 
-        std::pair<bool, PhysicalMemoryAddress> entry =
-            (item->isInstr() ? theInstrTLB : theDataTLB).lookUp(item);
+        std::pair<bool, PhysicalMemoryAddress> entry = (item->isInstr() ? theInstrTLB : theDataTLB).lookUp(item);
         if (cfg.PerfectTLB || !mmu_is_init) {
-            PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr));
+            PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr, (item->getInstruction() ? item->getInstruction()->unprivAccess(): false)));
             entry.first  = true;
             entry.second = perfectPaddr;
             if (perfectPaddr == 0xFFFFFFFFFFFFFFFF) item->setPagefault();
@@ -359,13 +386,12 @@ void MMUComponent::busCycle()
             dtlb_accesses++;
         }
 
-
         if (entry.first) {
             DBG_(VVerb, (<< "Item is a Hit " << item->theVaddr));
 
             // item exists so mark hit
             item->setHit();
-            PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr));
+            PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr, (item->getInstruction() ? item->getInstruction()->unprivAccess(): false)));
             // item->thePaddr = (PhysicalMemoryAddress)(entry.second | (item->theVaddr & ~(PAGEMASK)));
             item->thePaddr = perfectPaddr;
 
@@ -376,13 +402,11 @@ void MMUComponent::busCycle()
         } else {
             DBG_(VVerb, (<< "Item is a miss " << item->theVaddr));
 
-
             if (item->isInstr()) {
                 itlb_misses++;
             } else {
                 dtlb_misses++;
             }
-
 
             VirtualMemoryAddress pageAddr(item->theVaddr & PAGEMASK);
             if (alreadyPW.find(pageAddr) == alreadyPW.end()) {
@@ -393,7 +417,7 @@ void MMUComponent::busCycle()
                     thePageWalkEntries.push(item);
                 } else {
                     PhysicalMemoryAddress perfectPaddr(
-                        API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr));
+                        API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr, (item->getInstruction() ? item->getInstruction()->unprivAccess(): false)));
                     item->setHit();
                     item->thePaddr = perfectPaddr;
                     if (item->isInstr())
@@ -435,8 +459,7 @@ void MMUComponent::busCycle()
                 }
             }
             DBG_Assert(item->isInstr() != item->isData());
-            DBG_(Iface,
-                    (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry " << item->theVaddr));
+            DBG_(Iface, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry " << item->theVaddr));
             // update TLB
             (item->isInstr() ? theInstrTLB : theDataTLB).insert(item);
             if (item->isInstr())
@@ -449,19 +472,21 @@ void MMUComponent::busCycle()
     }
 }
 
-void MMUComponent::processMemoryRequests()
+void
+MMUComponent::processMemoryRequests()
 {
     CORE_TRACE;
     while (thePageWalker->hasMemoryRequest()) {
         TranslationPtr tmp = thePageWalker->popMemoryRequest();
         DBG_(VVerb,
-                (<< "Sending a Memory Translation request to Core ready(" << tmp->isReady() << ")  " << tmp->theVaddr
-                << " -- " << tmp->thePaddr << "  -- ID " << tmp->theID));
+             (<< "Sending a Memory Translation request to Core ready(" << tmp->isReady() << ")  " << tmp->theVaddr
+              << " -- " << tmp->thePaddr << "  -- ID " << tmp->theID));
         FLEXUS_CHANNEL(MemoryRequestOut) << tmp;
     }
 }
 
-void MMUComponent::resyncMMU(int anIndex)
+void
+MMUComponent::resyncMMU(int anIndex)
 {
     CORE_TRACE;
     DBG_(VVerb, (<< "Resynchronizing MMU"));
@@ -497,13 +522,19 @@ void MMUComponent::resyncMMU(int anIndex)
     FLEXUS_CHANNEL(ResyncOut) << anIndex;
 }
 
-bool MMUComponent::IsTranslationEnabledAtEL(uint8_t& anEL)
+bool
+MMUComponent::IsTranslationEnabledAtEL(uint8_t& anEL)
 {
     return true; // theCore->IsTranslationEnabledAtEL(anEL);
 }
 
-bool MMUComponent::available(interface::ResyncIn const&, index_t anIndex) { return true; }
-void MMUComponent::push(interface::ResyncIn const&, index_t anIndex, int& aResync)
+bool
+MMUComponent::available(interface::ResyncIn const&, index_t anIndex)
+{
+    return true;
+}
+void
+MMUComponent::push(interface::ResyncIn const&, index_t anIndex, int& aResync)
 {
 
     if (cfg.PerfectTLB) return;
@@ -511,8 +542,13 @@ void MMUComponent::push(interface::ResyncIn const&, index_t anIndex, int& aResyn
     resyncMMU(aResync);
 }
 
-bool MMUComponent::available(interface::iRequestIn const&, index_t anIndex) { return true; }
-void MMUComponent::push(interface::iRequestIn const&, index_t anIndex, TranslationPtr& aTranslate)
+bool
+MMUComponent::available(interface::iRequestIn const&, index_t anIndex)
+{
+    return true;
+}
+void
+MMUComponent::push(interface::iRequestIn const&, index_t anIndex, TranslationPtr& aTranslate)
 {
     CORE_DBG("MMU: Instruction RequestIn");
 
@@ -522,8 +558,13 @@ void MMUComponent::push(interface::iRequestIn const&, index_t anIndex, Translati
     theLookUpEntries.push(aTranslate);
 }
 
-bool MMUComponent::available(interface::dRequestIn const&, index_t anIndex) { return true; }
-void MMUComponent::push(interface::dRequestIn const&, index_t anIndex, TranslationPtr& aTranslate)
+bool
+MMUComponent::available(interface::dRequestIn const&, index_t anIndex)
+{
+    return true;
+}
+void
+MMUComponent::push(interface::dRequestIn const&, index_t anIndex, TranslationPtr& aTranslate)
 {
     CORE_DBG("MMU: Data RequestIn");
 
@@ -534,7 +575,8 @@ void MMUComponent::push(interface::dRequestIn const&, index_t anIndex, Translati
     theLookUpEntries.push(aTranslate);
 }
 
-void MMUComponent::sendTLBresponse(TranslationPtr aTranslation)
+void
+MMUComponent::sendTLBresponse(TranslationPtr aTranslation)
 {
     if (aTranslation->isInstr()) {
         FLEXUS_CHANNEL(iTranslationReply) << aTranslation;
@@ -543,8 +585,13 @@ void MMUComponent::sendTLBresponse(TranslationPtr aTranslation)
     }
 }
 
-bool MMUComponent::available(interface::TLBReqIn const&, index_t anIndex) { return true; }
-void MMUComponent::push(interface::TLBReqIn const&, index_t anIndex, TranslationPtr& aTranslate)
+bool
+MMUComponent::available(interface::TLBReqIn const&, index_t anIndex)
+{
+    return true;
+}
+void
+MMUComponent::push(interface::TLBReqIn const&, index_t anIndex, TranslationPtr& aTranslate)
 {
     aTranslate->setASID(getASID());
     if (cfg.PerfectTLB) return;

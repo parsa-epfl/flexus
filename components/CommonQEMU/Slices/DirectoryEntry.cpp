@@ -8,7 +8,7 @@ std::ostream&
 operator<<(std::ostream& anOstream, tDirState const x)
 {
     const char* const name[3] = { "DIR_STATE_INVALID", "DIR_STATE_SHARED", "DIR_STATE_MODIFIED" };
-    DBG_Assert(x < static_cast<int>(sizeof(name)));
+    DBG_Assert(x < static_cast<int>(sizeof(name) / sizeof(name[0])));
     anOstream << name[x];
     return anOstream;
 }

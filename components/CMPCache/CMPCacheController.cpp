@@ -73,20 +73,31 @@ CMPCacheController::loadState(std::string const& ckpt_dirname)
 {
 
     std::string real_name = theName;
-    real_name.replace(0, theName.find('-'), "sys");
     // -- LOAD DIRECTORY
     std::string ckpt_filename_cachedir(ckpt_dirname);
-    ckpt_filename_cachedir += "/" + real_name + "-dir.json";
+    ckpt_filename_cachedir += "/" + theName + "-dir-slice.json";
     DBG_(Dev, (<< " Start loading Directory state from " << ckpt_filename_cachedir));
     thePolicy->load_dir_from_ckpt(ckpt_filename_cachedir);
 
     // -- LOAD CACHE
     std::string ckpt_filename_cache(ckpt_dirname);
-    ckpt_filename_cache += "/" + real_name + "-cache.json";
+    ckpt_filename_cache += "/" + theName + "-cache-slice.json";
     DBG_(Dev, (<< " Start loading Cache state from " << ckpt_filename_cache));
     thePolicy->load_cache_from_ckpt(ckpt_filename_cache);
 }
 
+void
+CMPCacheController::saveState(std::string const& ckpt_dirname)
+{
+    std::string real_name = theName;
+
+    // -- SAVE CACHE
+
+    std::string ckpt_filename_cache(ckpt_dirname);
+    ckpt_filename_cache += "/" + theName + "-cache-slice.json";
+    DBG_(Dev, (<< " Start saving Cache state to " << ckpt_filename_cache));
+    thePolicy->serialize_cache(ckpt_filename_cache);
+}
 void
 CMPCacheController::processMessages()
 {

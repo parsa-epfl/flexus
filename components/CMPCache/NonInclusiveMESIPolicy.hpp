@@ -55,6 +55,7 @@ class NonInclusiveMESIPolicy : public AbstractPolicy
 
     virtual void load_dir_from_ckpt(std::string const&);
     virtual void load_cache_from_ckpt(std::string const&);
+    virtual void serialize_cache(std::string const&) const;
 
     virtual AbstractDirEvictBuffer& DirEB() { return *theDirEvictBuffer; }
     virtual AbstractEvictBuffer& CacheEB() { return theCacheEvictBuffer; }

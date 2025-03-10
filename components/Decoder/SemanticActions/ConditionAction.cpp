@@ -145,9 +145,9 @@ struct ConditionCompareAction : public PredicatedSemanticAction
                 Operand res   = (nzcv & PSTATE_N) ? 0xFFFFFFFFFFFFFFFF : 0;
                 if (result) {
                     if (theSub_op) {
-                        op = operation(kSUBS_);
+                        op = operation( the64 ? kSUBS64_ : kSUBS32_);
                     } else {
-                        op = operation(kADDS_);
+                        op = operation(the64 ? kADDS64_ : kADDS32_);
                     }
 
                     std::vector<Operand> operands = { theInstruction->operand(kOperand1),

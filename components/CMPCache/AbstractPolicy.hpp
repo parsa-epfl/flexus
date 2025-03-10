@@ -57,6 +57,8 @@ class AbstractPolicy
     virtual void load_dir_from_ckpt(std::string const&)   = 0;
     virtual void load_cache_from_ckpt(std::string const&) = 0;
 
+    virtual void serialize_cache(std::string const&) const = 0;
+
     virtual void reserveArrayEvictResource(int32_t n)   = 0;
     virtual void unreserveArrayEvictResource(int32_t n) = 0;
 

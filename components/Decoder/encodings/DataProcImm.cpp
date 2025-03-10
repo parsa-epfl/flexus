@@ -366,7 +366,7 @@ ALUIMM(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
 
     std::vector<std::list<InternalDependance>> rs_deps(2);
     predicated_action exec =
-      addExecute(inst, operation(setflags ? (sub_op ? kSUBS_ : kADDS_) : (sub_op ? kSUB_ : kADD_)), rs_deps);
+      addExecute(inst, operation(setflags ? (sub_op ? (sf ? kSUBS64_ : kSUBS32_) : (sf ? kADDS64_ : kADDS32_)) : (sub_op ? kSUB_ : kADD_)), rs_deps);
     addReadConstant(inst, 2, imm, rs_deps[1]);
 
     addReadXRegister(inst, 1, rn, rs_deps[0], sf);

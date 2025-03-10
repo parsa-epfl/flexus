@@ -166,7 +166,7 @@ class FLEXUS_COMPONENT(uFetch)
         DBG_Assert(tr->isDone() || tr->isHit());
         DBG_(VVerb,
              Comp(*this)(<< "Updating translation response for " << tr->theVaddr << " @ cpu index " << flexusIndex()));
-        PhysicalMemoryAddress magicTranslation = cpu(tr->theIndex).translate_va2pa(tr->theVaddr);
+        PhysicalMemoryAddress magicTranslation = cpu(tr->theIndex).translate_va2pa(tr->theVaddr, (tr->getInstruction() ? tr->getInstruction()->unprivAccess(): false));
 
         if (tr->thePaddr == magicTranslation || magicTranslation == nuArch::kUnresolved) {
             DBG_(VVerb,
@@ -276,7 +276,7 @@ class FLEXUS_COMPONENT(uFetch)
         Flexus::SharedTypes::Translation xlat;
         xlat.theVaddr = vaddr;
         xlat.theType  = Translation::eFetch;
-        xlat.thePaddr = cpu(anIndex).translate_va2pa(xlat.theVaddr);
+        xlat.thePaddr = cpu(anIndex).translate_va2pa(xlat.theVaddr, false);
         return xlat.thePaddr;
     }
 
@@ -572,7 +572,10 @@ class FLEXUS_COMPONENT(uFetch)
         theIcachePrefetch.resize(cfg.Threads);
         theLastPrefetchVTagSet.resize(cfg.Threads);
     }
-    void finalize() override {}
+    void finalize() override {
+        // this->saveState("output_state");
+    }
+
     void drive(interface::uFetchDrive const&) override
     {
 
@@ -791,7 +794,7 @@ class FLEXUS_COMPONENT(uFetch)
     void saveState(std::string const& aDirName) override
     {
         // Not implemented.
-        
+        this->theI.saveState(aDirName + "/" + statName() + "-L1i.json");
     }
 };
 

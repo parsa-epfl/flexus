@@ -18,8 +18,8 @@ struct microArch
 {
     static std::shared_ptr<microArch> construct(uArchOptions_t options,
                                                 std::function<void(eSquashCause)> squash,
-                                                std::function<void(VirtualMemoryAddress)> redirect,
-                                                std::function<void(boost::intrusive_ptr<BranchFeedback>)> feedback,
+                                                std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect,
+                                                std::function<void(boost::intrusive_ptr<BPredState>)> trainBP,
                                                 std::function<void(bool)> aStoreForwardingHitFunction,
                                                 std::function<void(int32_t)> mmuResyncFunction);
 
@@ -45,19 +45,19 @@ struct microArch
     virtual bool isROBHead(boost::intrusive_ptr<Instruction> anInstruction)                        = 0;
     virtual void clearExclusiveLocal()                                                             = 0;
     virtual ~microArch() {}
-    virtual void testCkptRestore()                                    = 0;
-    virtual void printROB()                                           = 0;
-    virtual void printSRB()                                           = 0;
-    virtual void printMemQueue()                                      = 0;
-    virtual void printMSHR()                                          = 0;
-    virtual void pregs()                                              = 0;
-    virtual void pregsAll()                                           = 0;
-    virtual void resynchronize(bool was_expected)                     = 0;
-    virtual void printRegMappings(std::string)                        = 0;
-    virtual void printRegFreeList(std::string)                        = 0;
-    virtual void printRegReverseMappings(std::string)                 = 0;
-    virtual void printAssignments(std::string)                        = 0;
-    virtual void writePermissionLost(PhysicalMemoryAddress anAddress) = 0;
+    virtual void testCkptRestore()                                                                 = 0;
+    virtual void printROB()                                                                        = 0;
+    virtual void printSRB()                                                                        = 0;
+    virtual void printMemQueue()                                                                   = 0;
+    virtual void printMSHR()                                                                       = 0;
+    virtual void pregs()                                                                           = 0;
+    virtual void pregsAll()                                                                        = 0;
+    virtual void resynchronize(bool was_expected, boost::intrusive_ptr<Instruction> source)        = 0;
+    virtual void printRegMappings(std::string)                                                     = 0;
+    virtual void printRegFreeList(std::string)                                                     = 0;
+    virtual void printRegReverseMappings(std::string)                                              = 0;
+    virtual void printAssignments(std::string)                                                     = 0;
+    virtual void writePermissionLost(PhysicalMemoryAddress anAddress)                              = 0;
 };
 
 } // namespace nuArchARM

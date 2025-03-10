@@ -1,4 +1,5 @@
 #include "BTB.hpp"
+#include "components/uFetch/uFetchTypes.hpp"
 
 #include <cstdint>
 
@@ -77,6 +78,8 @@ BTB::update(VirtualMemoryAddress aPC, eBranchType aType, VirtualMemoryAddress aT
                 DBG_(Verb, (<< "BTB setting target for " << aPC << " to " << aTarget));
 
                 btbEntry->theTarget = aTarget;
+            } else {
+                DBG_Assert(false);
             }
         }
 
@@ -89,12 +92,6 @@ BTB::update(VirtualMemoryAddress aPC, eBranchType aType, VirtualMemoryAddress aT
         return true;
     }
     return false; // not a new entry
-}
-
-bool
-BTB::update(BranchFeedback const& aFeedback)
-{
-    return update(aFeedback.thePC, aFeedback.theActualType, aFeedback.theActualTarget);
 }
 
 json
@@ -111,22 +108,26 @@ BTB::saveState() const
         auto end   = theBTB[i].blocks.end();
 
         size_t j = 0;
-        for (; block != end; block++, j++) {
-            uint8_t type = 15;
-            switch (block->theBranchType) {
-                case kNonBranch: type = 0; break;
-                case kConditional: type = 1; break;
-                case kUnconditional: type = 2; break;
-                case kCall: type = 3; break;
-                case kIndirectReg: type = 4; break;
-                case kIndirectCall: type = 5; break;
-                case kReturn: type = 6; break;
-                default: DBG_Assert(false, (<< "Don't know how to save branch type")); break;
-            }
+        for (; block != end; block++) {
             if (block->valid) {
-                checkpoint[i][j] = { { "PC", (uint64_t)block->thePC },
-                                     { "target", (uint64_t)block->theTarget },
-                                     { "type", (uint8_t)type } };
+                uint8_t type = 15;
+                switch (block->theBranchType) {
+                    case kNonBranch: type = 0; DBG_Assert(false); break;
+                    case kConditional: type = 1; break;
+                    case kUnconditional: type = 2; break;
+                    case kCall: type = 3; break;
+                    case kIndirectReg: type = 4; break;
+                    case kIndirectCall: type = 5; break;
+                    case kReturn: type = 6; break;
+                    default: DBG_Assert(false, (<< "Don't know how to save branch type")); break;
+                }
+                checkpoint[i][j] = { 
+                    { "PC", (uint64_t)block->thePC },
+                    { "target", (uint64_t)block->theTarget },
+                    { "type", (uint8_t)type },
+                };
+
+                ++j;
             }
         }
     }
@@ -137,12 +138,17 @@ BTB::saveState() const
 void
 BTB::loadState(json checkpoint)
 {
+    // Check the BTB set number and the associativity.
+    DBG_Assert(checkpoint.size() == (size_t)theBTBSets);
 
     for (size_t set = 0; set < (size_t)theBTBSets; set++) {
 
         size_t blockSize = checkpoint.at(set).size();
 
+        DBG_Assert(blockSize <= (size_t)theBTBAssoc);
+
         theBTB[set].invalidateAll();
+        uint64_t ts = 0;
 
         for (size_t block = 0; block < blockSize; block++) {
 
@@ -151,8 +157,16 @@ BTB::loadState(json checkpoint)
             uint64_t aTarget      = checkpoint.at(set).at(block)["target"];
             uint8_t aType         = checkpoint.at(set).at(block)["type"];
 
+            if (ts != 0){
+                DBG_Assert(ts <= checkpoint.at(set).at(block)["ts"]);
+                ts = checkpoint.at(set).at(block)["ts"];
+            }
+
+            // This PC must be word aligned, and its index must be the same as the one in the checkpoint
+            DBG_Assert(index(VirtualMemoryAddress(aPC)) == set);
+
             switch (aType) {
-                case 0: type = kNonBranch; break;
+                case 0: DBG_Assert(false); break;
                 case 1: type = kConditional; break;
                 case 2: type = kUnconditional; break;
                 case 3: type = kCall; break;

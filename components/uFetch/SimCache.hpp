@@ -64,12 +64,14 @@ struct SimCache
                 uint64_t tag  = checkpoint["tags"].at(i).at(j)["tag"];
 
                 this->insert(((tag << tag_shift) | i) << theCacheBlockShift);
-
-                DBG_(Dev, (<< "Loading tag " << std::hex << ((tag << tag_shift) | i)));
             }
         }
 
         ifs.close();
+    }
+
+    void saveState(std::string const& filename)
+    {
     }
 
     uint64_t insert(uint64_t addr)
