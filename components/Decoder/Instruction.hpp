@@ -212,7 +212,7 @@ class ArchInstruction : public nuArch::Instruction
 
     virtual void restoreOriginalInstCode()
     {
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "Restoring instruction code from " << theInstructionCode << " to " << theOriginalInstructionCode
               << ": " << *this));
         theInstructionCode = theOriginalInstructionCode;
@@ -238,8 +238,8 @@ class ArchInstruction : public nuArch::Instruction
     }
     virtual ~ArchInstruction() { DBG_(VVerb, (<< identify() << " destroyed")); }
 
-    virtual void redirectPC(VirtualMemoryAddress anPCReg) { 
-        thePCReg = anPCReg; 
+    virtual void redirectPC(VirtualMemoryAddress anPCReg) {
+        thePCReg = anPCReg;
         DBG_Assert(this->bpState()->theActualTarget == anPCReg, (<< "Redirecting PC to " << anPCReg << " but BPState says " << this->bpState()->theActualTarget));
     }
 

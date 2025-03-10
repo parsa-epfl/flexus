@@ -194,13 +194,6 @@ class ComponentManagerImpl : public ComponentManager
             ++iter;
         }
         DBG_(Crit, (<< " Done loading."));
-        /*
-              std::for_each
-                ( theComponents.begin()
-                , theComponents.end()
-                , ll::bind( &ComponentInterface::loadState, ll::_1, aDirectory )
-                );
-        */
     }
 };
 

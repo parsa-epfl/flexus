@@ -245,7 +245,7 @@ class FLEXUS_COMPONENT(uArch)
           Flexus::Qemu::Processor::getProcessor(theMicroArch->core()).translate_va2pa(aTranslate->theVaddr, (aTranslate->getInstruction() ? aTranslate->getInstruction()->unprivAccess(): false));
 
         if (aTranslate->thePaddr == magicTranslation || magicTranslation == kUnresolved) {
-            DBG_(Iface,
+            DBG_(VVerb,
                  (<< "Magic QEMU translation == MMU Translation. Vaddr = " << std::hex << aTranslate->theVaddr
                   << ", PADDR_MMU = " << aTranslate->thePaddr << ", PADDR_QEMU = " << magicTranslation << std::dec
                   << ", ID: " << aTranslate->theID));
@@ -325,7 +325,7 @@ class FLEXUS_COMPONENT(uArch)
             MemoryTransport transport;
             boost::intrusive_ptr<MemoryMessage> operation;
 
-            DBG_(Iface,
+            DBG_(VVerb,
                  (<< "Sending Memory Request: " << op->theOperation << "  -- vaddr: " << op->theVAddr << "  -- paddr: "
                   << op->thePAddr
                   //  << "  --  Instruction: " <<  *(op->theInstruction)
@@ -410,7 +410,7 @@ class FLEXUS_COMPONENT(uArch)
             boost::intrusive_ptr<MemOp> op(theMicroArch->popSnoopOp());
             if (!op) break;
 
-            DBG_(Iface, (<< "Send Snoop: " << *op));
+            DBG_(VVerb, (<< "Send Snoop: " << *op));
 
             MemoryTransport transport;
             boost::intrusive_ptr<MemoryMessage> operation;

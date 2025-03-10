@@ -213,11 +213,11 @@ class FLEXUS_COMPONENT(MemoryLoopback)
     void drive(interface::LoopbackDrive const&)
     {
         if (outQueue->ready() && !FLEXUS_CHANNEL(LoopbackOut).available()) {
-            DBG_(Trace, Comp(*this)(<< "Failed to send reply, channel not available."));
+            DBG_(VVerb, Comp(*this)(<< "Failed to send reply, channel not available."));
         }
         while (FLEXUS_CHANNEL(LoopbackOut).available() && outQueue->ready()) {
             MemoryTransport trans(outQueue->dequeue());
-            DBG_(Trace,
+            DBG_(VVerb,
                  Comp(*this)(<< "Sending reply: " << *(trans[MemoryMessageTag]))
                    Addr(trans[MemoryMessageTag]->address()));
             FLEXUS_CHANNEL(LoopbackOut) << trans;

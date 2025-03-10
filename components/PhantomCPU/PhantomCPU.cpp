@@ -69,9 +69,7 @@ private:
             // get the current PC of the CPU.
             VirtualMemoryAddress pc = theCPU.get_pc();
             uint64_t return_value = theCPU.advance();
-            if(return_value == 0x10003){ // QEMU_EXCP_HALTED
-                // DBG_(Crit, (<< "CPU " << theCPUIndex << " has halted."));
-            } else {
+            if(return_value != 0x10003){
                 ++theCommitCount;
                 if (pc >> 63) {
                     ++theCommitCountSystem;

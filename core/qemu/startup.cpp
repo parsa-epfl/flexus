@@ -46,65 +46,78 @@ setCfg(const char* aFile);
 
 namespace {
 
-using std::cerr;
-using std::endl;
 
-// clang-format off
-void print_copyright() {
 
-  cerr << "////////////////////////////////////////////////////////////////////////////////////////////////////////" << endl;
-  cerr << "//                                                                                                    //" << endl;
-  cerr << "//           ************                                                                             //" << endl;
-  cerr << "//          **************                                                                            //" << endl;
-  cerr << "//   *      **************      *                                                                     //" << endl;
-  cerr << "//  **      ***  ****  ***     ***                                                                    //" << endl;
-  cerr << "// ***      **************      ***                                                                   //" << endl;
-  cerr << "// ****     **************     ****                                                                   //" << endl;
-  cerr << "//  ******************************   ***********    *                                                 //" << endl;
-  cerr << "//    *********        **********   *************  ***                                                //" << endl;
-  cerr << "//      *****            *****      ***            ***       *****      *        *                    //" << endl;
-  cerr << "//      ****              ****      ***            ***    ***********  ****    ****                   //" << endl;
-  cerr << "//      ****               ***      **********     ***   ****     ****   ********                     //" << endl;
-  cerr << "//      ****          *** ****      **********     ***   *************     ****                       //" << endl;
-  cerr << "//       ****          ******       ***            ***   ***             ********                     //" << endl;
-  cerr << "//        *****        *******      ***            ***    ****   ****   ****  ****                    //" << endl;
-  cerr << "//           ****    ****   ***     ***            ***      ********   ***      ***                   //" << endl;
-  cerr << "//                                                                                                    //" << endl;
-  cerr << "//   QFlex (C) 2016-2020, Parallel Systems Architecture Lab, EPFL                                     //" << endl;
-  cerr << "//   All rights reserved.                                                                             //" << endl;
-  cerr << "//   Website: https://qflex.epfl.ch                                                                   //" << endl;
-  cerr << "//   QFlex uses software developed externally:                                                        //" << endl;
-  cerr << "//   [NS-3](https://www.gnu.org/copyleft/gpl.html)                                                    //" << endl;
-  cerr << "//   [QEMU](http://wiki.qemu.org/License)                                                             //" << endl;
-  cerr << "//   [SimFlex] (http://parsa.epfl.ch/simflex/)                                                        //" << endl;
-  cerr << "//                                                                                                    //" << endl;
-  cerr << "//   Redistribution and use in source and binary forms, with or without modification,                 //" << endl;
-  cerr << "//   are permitted provided that the following conditions are met:                                    //" << endl;
-  cerr << "//                                                                                                    //" << endl;
-  cerr << "//       * Redistributions of source code must retain the above copyright notice,                     //" << endl;
-  cerr << "//         this list of conditions and the following disclaimer.                                      //" << endl;
-  cerr << "//       * Redistributions in binary form must reproduce the above copyright notice,                  //" << endl;
-  cerr << "//         this list of conditions and the following disclaimer in the documentation                  //" << endl;
-  cerr << "//         and/or other materials provided with the distribution.                                     //" << endl;
-  cerr << "//       * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,                    //" << endl;
-  cerr << "//         nor the names of its contributors may be used to endorse or promote                        //" << endl;
-  cerr << "//         products derived from this software without specific prior written                         //" << endl;
-  cerr << "//         permission.                                                                                //" << endl;
-  cerr << "//                                                                                                    //" << endl;
-  cerr << "//   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\" AND                //" << endl;
-  cerr << "//   ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED                    //" << endl;
-  cerr << "//   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE                           //" << endl;
-  cerr << "//   DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,                      //" << endl;
-  cerr << "//   EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR                      //" << endl;
-  cerr << "//   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE                  //" << endl;
-  cerr << "//   GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)                      //" << endl;
-  cerr << "//   HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT                       //" << endl;
-  cerr << "//   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF                 //" << endl;
-  cerr << "//   THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                     //" << endl;
-  cerr << "////////////////////////////////////////////////////////////////////////////////////////////////////////" << endl << endl << endl;;
-  cerr << "//   QFlex simulator - Built as " << Flexus::theSimulatorName << endl << endl;
-}
-// clang-format on
+std::string license_text = R"(
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                           ┃
+┃                                                                                           ┃
+┃                ************                                                               ┃
+┃               **************                                                              ┃
+┃        *      **************      *                                                       ┃
+┃       **      ***  ****  ***     ***                                                      ┃
+┃      ***      **************      ***                                                     ┃
+┃      ****     **************     ****                                                     ┃
+┃       ******************************   ***********    *                                   ┃
+┃         *********        **********   *************  ***                                  ┃
+┃           *****            *****      ***            ***       *****      *        *      ┃
+┃           ****              ****      ***            ***    ***********  ****    ****     ┃
+┃           ****               ***      **********     ***   ****     ****   ********       ┃
+┃           ****          *** ****      **********     ***   *************     ****         ┃
+┃            ****          ******       ***            ***   ***             ********       ┃
+┃             *****        *******      ***            ***    ****   ****   ****  ****      ┃
+┃                ****    ****   ***     ***            ***      ********   ***      ***     ┃
+┃                                                                                           ┃
+┃                                                                                           ┃
+┃                                                                                           ┃
+┃                                                                                           ┃
+┃     ***Software developed externally (not by the QFlex group)***                          ┃
+┃                                                                                           ┃
+┃     QFlex consists of several software components that are governed by various            ┃
+┃     licensing terms, in addition to software that was developed internally.               ┃
+┃     Anyone interested in using QFlex needs to fully understand and abide by the           ┃
+┃     licenses governing all the software components.                                       ┃
+┃                                                                                           ┃
+┃       * [QEMU] (https://wiki.qemu.org/License)                                            ┃
+┃       * [Boost] (https://www.boost.org/users/license.html)                                ┃
+┃       * [Conan] (https://github.com/conan-io/conan/blob/develop2/LICENSE.md)              ┃
+┃                                                                                           ┃
+┃     **QFlex License**                                                                     ┃
+┃                                                                                           ┃
+┃     QFlex                                                                                 ┃
+┃     Copyright (c) 2025, Parallel Systems Architecture Lab, EPFL                           ┃
+┃     All rights reserved.                                                                  ┃
+┃                                                                                           ┃
+┃     Redistribution and use in source and binary forms, with or without modification,      ┃
+┃     are permitted provided that the following conditions are met:                         ┃
+┃                                                                                           ┃
+┃      * Redistributions of source code must retain the above copyright notice,             ┃
+┃        this list of conditions and the following disclaimer.                              ┃
+┃      * Redistributions in binary form must reproduce the above copyright notice,          ┃
+┃        this list of conditions and the following disclaimer in the documentation          ┃
+┃        and/or other materials provided with the distribution.                             ┃
+┃      * Neither the name of the Parallel Systems Architecture Laboratory, EPFL,            ┃
+┃        nor the names of its contributors may be used to endorse or promote                ┃
+┃        products derived from this software without specific prior written                 ┃
+┃        permission.                                                                        ┃
+┃                                                                                           ┃
+┃     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND       ┃
+┃     ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED         ┃
+┃     WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE                ┃
+┃     DISCLAIMED. IN NO EVENT SHALL THE PARALLEL SYSTEMS ARCHITECTURE LABORATORY,           ┃
+┃     EPFL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR           ┃
+┃     CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE       ┃
+┃     GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)           ┃
+┃     HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT            ┃
+┃     LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF      ┃
+┃     THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.          ┃
+┃                                                                                           ┃
+┃                                                                                           ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+)";
+
+
+
 
 extern "C"
 {
@@ -127,7 +140,7 @@ extern "C"
         Flexus::Qemu::API::qemu_api = *qemu;
         Flexus::Qemu::API::FLEXUS_get_api(flexus);
 
-        print_copyright();
+        std::cout << license_text;
 
         if (getenv("WAITFORSIGCONT")) {
             std::cerr << "Waiting for SIGCONT..." << std::endl;
@@ -146,7 +159,7 @@ extern "C"
         Flexus::Core::CreateFlexusObject();
 
         if (cwd) {
-            cerr << "Switching to directory: " << cwd << endl;
+            std::cerr << "Switching to directory: " << cwd << std::endl;
             [[maybe_unused]] int x = chdir(cwd);
         }
 
@@ -189,7 +202,7 @@ extern "C"
 
         Flexus::Core::initFlexus();
 
-        DBG_(Iface, (<< "Flexus Initialized."));
+        DBG_(VVerb, (<< "Flexus Initialized."));
     }
 
     void flexus_deinit(void)

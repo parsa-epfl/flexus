@@ -209,7 +209,7 @@ BaseCacheControllerImpl::doEviction()
         MemoryMessage_p msg(evictBuffer().pop());
         msg->reqSize() = theBlockSize;
 
-        DBG_(Trace, (<< " Queuing eviction " << *msg));
+        DBG_(VVerb, (<< " Queuing eviction " << *msg));
 
         if (msg->type() == MemoryMessage::EvictDirty) {
             evicts_dirty++;
@@ -245,7 +245,7 @@ BaseCacheControllerImpl::handleRequestTransport(MemoryTransport transport, bool 
     MemoryMessage_p msg          = transport[MemoryMessageTag];
     TransactionTracker_p tracker = transport[TransactionTrackerTag];
 
-    DBG_(Iface, (<< " Handle Request: " << *msg));
+    DBG_(VVerb, (<< " Handle Request: " << *msg));
 
     // check invariants for handleRequestMessage
     DBG_Assert(msg);
@@ -288,7 +288,7 @@ BaseCacheControllerImpl::wakeMaf(MemoryTransport transport, TransactionTracker_p
     MemoryMessage_p msg          = transport[MemoryMessageTag];
     TransactionTracker_p tracker = transport[TransactionTrackerTag];
 
-    DBG_(Iface, (<< " Wake MAF: " << *msg));
+    DBG_(VVerb, (<< " Wake MAF: " << *msg));
 
     accesses++;
     if (tracker && tracker->isFetch() && *tracker->isFetch()) {
@@ -322,7 +322,7 @@ BaseCacheControllerImpl::examineRequest(MemoryTransport transport,
     MemoryMessage_p msg          = transport[MemoryMessageTag];
     TransactionTracker_p tracker = transport[TransactionTrackerTag];
 
-    DBG_(Iface, (<< " Examine Request " << *msg));
+    DBG_(VVerb, (<< " Examine Request " << *msg));
     if (tracker) { tracker->setDelayCause(theName, "Processing"); }
 
     bool was_write = msg->isWrite();
@@ -352,7 +352,7 @@ BaseCacheControllerImpl::examineRequest(MemoryTransport transport,
                                    (tracker->logicalTimestamp() ? *tracker->logicalTimestamp() : 0));
         }
 
-        DBG_(Trace, (<< " Hit: " << *msg));
+        DBG_(VVerb, (<< " Hit: " << *msg));
         hits++;
         if (tracker && tracker->isFetch() && *tracker->isFetch()) {
             if (tracker->OS() && *tracker->OS()) {
@@ -418,7 +418,7 @@ BaseCacheControllerImpl::examineRequest(MemoryTransport transport,
         }
 
     } else {
-        DBG_(Trace, (<< " Miss: " << *msg << " action is " << action.theAction));
+        DBG_(VVerb, (<< " Miss: " << *msg << " action is " << action.theAction));
         // We used to record invalid tag matches here, need to make sure we do that
         // someplace else now
     }

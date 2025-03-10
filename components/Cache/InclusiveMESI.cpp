@@ -123,12 +123,12 @@ InclusiveMESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transact
 
     LookupResult_p lookup = (*theArray)[block_addr];
 
-    DBG_(Iface, (<< " Do Request: " << *msg));
+    DBG_(VVerb, (<< " Do Request: " << *msg));
 
     // For now, we stall ALL requests if we have an outstanding request for this
     // block
     if (has_maf_entry) {
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< " Stalling request while we have a MAF entry, block state is " << lookup->state() << " : " << (*msg)));
         return std::make_tuple(false, false, Action(kInsertMAF_WaitAddress, tracker));
     }
@@ -155,7 +155,7 @@ InclusiveMESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transact
             // Keep state from EB.
             lookup->setState(block_state);
 
-            DBG_(Trace, (<< " replacing EB entry, evicting block in state " << victim->state() << " : " << *msg));
+            DBG_(VVerb, (<< " replacing EB entry, evicting block in state " << victim->state() << " : " << *msg));
             if (victim->state() != State::Invalid) { evictee_write = evictBlock(victim); }
             theTraceTracker
               .fill(theNodeId, theCacheLevel, getBlockAddress(msg->address()), theCacheLevel, false, evictee_write);
@@ -557,7 +557,7 @@ InclusiveMESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transact
         case kReplyAndInsertMAF_WaitResponse:
             action.theRequiresData = 0;
             theRequestTracker.startRequest(theArray->getSet(msg->address()));
-            DBG_(Trace, (<< " starting Request in set " << theArray->getSet(msg->address()) << " for " << *msg));
+            DBG_(VVerb, (<< " starting Request in set " << theArray->getSet(msg->address()) << " for " << *msg));
             break;
         case kInsertMAF_WaitResponse:
             action.theRequiresData = 0;
@@ -566,7 +566,7 @@ InclusiveMESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transact
                 action.theBackTransport = transport;
             }
             theRequestTracker.startRequest(theArray->getSet(msg->address()));
-            DBG_(Trace, (<< " starting Request in set " << theArray->getSet(msg->address()) << " for " << *msg));
+            DBG_(VVerb, (<< " starting Request in set " << theArray->getSet(msg->address()) << " for " << *msg));
             break;
 
         case kReplyAndRemoveMAF:
@@ -582,7 +582,7 @@ InclusiveMESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transact
 
         case kInsertMAF_WaitProbe:
             theRequestTracker.startRequest(theArray->getSet(msg->address()));
-            DBG_(Trace, (<< " starting Request in set " << theArray->getSet(msg->address()) << " for " << *msg));
+            DBG_(VVerb, (<< " starting Request in set " << theArray->getSet(msg->address()) << " for " << *msg));
 
         default: break;
     }
@@ -657,7 +657,7 @@ InclusiveMESI::evictBlock(LookupResult_p victim)
     theEvictBuffer.allocEntry(victim->blockAddress(), evict_type, victim->state(), (theCacheLevel == eL1I));
     theTraceTracker.eviction(theNodeId, theCacheLevel, victim->blockAddress(), false);
 
-    DBG_(Trace, (<< " Adding " << std::hex << victim->blockAddress() << " to the EvictBuffer."));
+    DBG_(VVerb, (<< " Adding " << std::hex << victim->blockAddress() << " to the EvictBuffer."));
 
     return (evict_type == MemoryMessage::EvictDirty);
 }
@@ -686,7 +686,7 @@ InclusiveMESI::handleBackMessage(MemoryTransport transport)
     MemoryMessage_p msg          = transport[MemoryMessageTag];
     TransactionTracker_p tracker = transport[TransactionTrackerTag];
 
-    DBG_(Trace, (<< " Handle BackProcess: " << *msg));
+    DBG_(VVerb, (<< " Handle BackProcess: " << *msg));
 
     accesses++;
     if (tracker && tracker->isFetch() && *tracker->isFetch()) {
@@ -731,7 +731,7 @@ InclusiveMESI::handleBackMessage(MemoryTransport transport)
         if (evictee != theEvictBuffer.end()) {
             from_eb = true;
             state   = evictee->state();
-            DBG_(Trace,
+            DBG_(VVerb,
                  (<< "Found block " << std::hex << getBlockAddress(msg->address()) << " in EB in state: " << state));
         }
     }
@@ -1025,7 +1025,7 @@ InclusiveMESI::handleBackMessage(MemoryTransport transport)
 
                     return act;
                 } else {
-                    DBG_(Trace,
+                    DBG_(VVerb,
                          (<< "Received BackInval for block in invalid state. "
                              "Droping backinval: "
                           << *msg));
@@ -1182,7 +1182,7 @@ InclusiveMESI::handleBackMessage(MemoryTransport transport)
                 return act;
             }
             theRequestTracker.endRequest(theArray->getSet(msg->address()));
-            DBG_(Trace, (<< " ending Request in set " << theArray->getSet(msg->address()) << " for " << *msg));
+            DBG_(VVerb, (<< " ending Request in set " << theArray->getSet(msg->address()) << " for " << *msg));
             break;
         }
 
@@ -1264,7 +1264,7 @@ InclusiveMESI::handleBackMessage(MemoryTransport transport)
 
                     // We're done with this request
                     theRequestTracker.endRequest(theArray->getSet(msg->address()));
-                    DBG_(Trace, (<< " ending Request in set " << theArray->getSet(msg->address()) << " for " << *msg));
+                    DBG_(VVerb, (<< " ending Request in set " << theArray->getSet(msg->address()) << " for " << *msg));
 
                     return action;
                 }
@@ -1439,7 +1439,7 @@ InclusiveMESI::handleBackMessage(MemoryTransport transport)
             is_final = true;
             is_fetch = true;
 
-            DBG_(Iface, (<< " Creating Ack"));
+            DBG_(VVerb, (<< " Creating Ack"));
             if (msg->ackRequired()) {
                 intrusive_ptr<MemoryMessage> reply(
                   new MemoryMessage(MemoryMessage::FetchAck, msg->address(), msg->pc()));
@@ -1794,7 +1794,7 @@ InclusiveMESI::handleBackMessage(MemoryTransport transport)
 
     if (is_final) {
         theRequestTracker.endRequest(theArray->getSet(msg->address()));
-        DBG_(Trace, (<< " ending Request in set " << theArray->getSet(msg->address()) << " for " << *msg));
+        DBG_(VVerb, (<< " ending Request in set " << theArray->getSet(msg->address()) << " for " << *msg));
         if (is_upgrade) {
             upg_replies++;
         } else {
@@ -1864,7 +1864,7 @@ InclusiveMESI::finalizeSnoop(MemoryTransport transport, LookupResult_p result)
 
     // Do we have another snoop reply outstanding?
     if (snp->d_snoop_outstanding || snp->i_snoop_outstanding) {
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "reply received, but still waiting for other snoop (D|I) = (" << std::boolalpha
               << snp->d_snoop_outstanding << "|" << snp->i_snoop_outstanding
               << "): " << *snp->transport[MemoryMessageTag]));
@@ -2071,7 +2071,7 @@ InclusiveMESI::finalizeSnoop(MemoryTransport transport, LookupResult_p result)
     action.theBackMessage   = true;
     action.theBackTransport = snp->transport;
 
-    DBG_(Trace, (<< "Removing Snoop Buffer entry after receiving final reply: " << *snp->transport[MemoryMessageTag]));
+    DBG_(VVerb, (<< "Removing Snoop Buffer entry after receiving final reply: " << *snp->transport[MemoryMessageTag]));
     // Now remove the snoop buffer entry
     theSnoopBuffer.remove(snp);
 
@@ -2088,7 +2088,7 @@ InclusiveMESI::handleSnoopMessage(MemoryTransport transport)
     MemoryMessage_p msg          = transport[MemoryMessageTag];
     TransactionTracker_p tracker = transport[TransactionTrackerTag];
 
-    DBG_(Trace, (<< "Snoop message: " << *msg));
+    DBG_(VVerb, (<< "Snoop message: " << *msg));
     DBG_Assert(msg);
     DBG_Assert(msg->usesSnoopChannel());
 
@@ -2187,7 +2187,7 @@ InclusiveMESI::handleIprobe(bool aHit, MemoryTransport transport)
     lookup->setProtected(false);
 
     theRequestTracker.endRequest(theArray->getSet(fetchReq->address()));
-    DBG_(Trace, (<< " ending request for " << *fetchReq));
+    DBG_(VVerb, (<< " ending request for " << *fetchReq));
 
     // If a snoop came in while we were waiting, then let it proceed and we'll
     // wait
@@ -2282,13 +2282,13 @@ InclusiveMESI::handleIdleWork(MemoryTransport transport)
             EvictBuffer<State>::iterator iter =
               theEvictBuffer.allocEntry(victim.second, evict_type, victim.first, false);
             theTraceTracker.eviction(theNodeId, theCacheLevel, victim.second, false);
-            DBG_(Trace, (<< " Adding " << std::hex << victim.second << " to the EvictBuffer."));
+            DBG_(VVerb, (<< " Adding " << std::hex << victim.second << " to the EvictBuffer."));
 
             if (msg->type() == MemoryMessage::NumMemoryMessageTypes) {
                 msg->type()            = evict_type;
                 msg->address()         = victim.second;
                 iter->theSnoopRequired = false;
-                DBG_(Trace, (<< "Getting Idle work: evicting " << std::hex << iter->theBlockAddress));
+                DBG_(VVerb, (<< "Getting Idle work: evicting " << std::hex << iter->theBlockAddress));
             }
         }
     }
@@ -2307,7 +2307,7 @@ InclusiveMESI::handleIdleWork(MemoryTransport transport)
     // and the time we get here. To handle this, we just return an empty action if
     // we can't find the block in question
     if (iter == theEvictBuffer.end()) {
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "Failed to find " << std::hex << msg->address() << " in the evict buffer, skipping idle work."));
         Action action(kNoAction, tracker, false);
         action.theRememberSnoopTransport = false;
@@ -2356,7 +2356,7 @@ InclusiveMESI::handleWakeSnoop(MemoryTransport transport)
     MemoryMessage_p msg          = transport[MemoryMessageTag];
     TransactionTracker_p tracker = transport[TransactionTrackerTag];
 
-    DBG_(Trace, (<< " Handle WakeSnoop: " << *msg));
+    DBG_(VVerb, (<< " Handle WakeSnoop: " << *msg));
     if (msg->isEvictType()) {
         SnoopBuffer::snoop_iter snp = theSnoopBuffer.findEntry(msg->address());
         DBG_Assert(snp == theSnoopBuffer.end());
@@ -2414,7 +2414,7 @@ InclusiveMESI::doEviction()
         MemoryMessage_p msg(theEvictBuffer.pop(thePendingEvicts));
         msg->reqSize() = theBlockSize;
 
-        DBG_(Trace, (<< " Queuing eviction " << *msg));
+        DBG_(VVerb, (<< " Queuing eviction " << *msg));
 
         if (msg->type() == MemoryMessage::EvictDirty) {
             msg->evictHasData() = true;

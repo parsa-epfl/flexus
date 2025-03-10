@@ -7,6 +7,7 @@ add_compile_definitions(FLEXUS)
 add_compile_definitions(TARGET_PLATFORM=aarch64)
 add_compile_definitions(BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS)
 add_compile_definitions(BOOST_MPL_LIMIT_VECTOR_SIZE=50)
+add_compile_definitions(SELECTED_DEBUG=vverb)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 #Include simulator specific settings only for "real" simulators

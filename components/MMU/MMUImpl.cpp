@@ -459,7 +459,7 @@ MMUComponent::busCycle()
                 }
             }
             DBG_Assert(item->isInstr() != item->isData());
-            DBG_(Iface, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry " << item->theVaddr));
+            DBG_(VVerb, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry " << item->theVaddr));
             // update TLB
             (item->isInstr() ? theInstrTLB : theDataTLB).insert(item);
             if (item->isInstr())
@@ -537,7 +537,7 @@ void
 MMUComponent::push(interface::ResyncIn const&, index_t anIndex, int& aResync)
 {
 
-    if (cfg.PerfectTLB) return;
+    // if (cfg.PerfectTLB) return;
 
     resyncMMU(aResync);
 }

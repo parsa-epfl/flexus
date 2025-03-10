@@ -1,6 +1,7 @@
 #ifndef FLEXUS_DRIVE_REFERENCE_HPP_INCLUDED
 #define FLEXUS_DRIVE_REFERENCE_HPP_INCLUDED
 
+#include <cstdint>
 namespace Flexus {
 namespace Core {
 
@@ -8,7 +9,7 @@ struct DriveBase
 {
     // This method is called every cycle.
     virtual ~DriveBase() {};
-    virtual void doCycle() = 0;
+    virtual uint32_t doCycle() = 0;
 };
 
 typedef DriveBase& DriveReference;

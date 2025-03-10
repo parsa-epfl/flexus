@@ -275,6 +275,8 @@ class CoreImpl : public CoreModel
     uint64_t theMispredictCount;
 
     uint64_t theCommitNumber;
+    uint64_t theCycleCount;
+    Stat::StatCounter theCycleCountStat;
     Stat::StatCounter theCommitCount;
 
     Stat::StatCounter theCommitCount_NonSpin_User;
@@ -295,6 +297,7 @@ class CoreImpl : public CoreModel
 
     Stat::StatCounter theSpinCount;
     Stat::StatCounter theSpinCycles;
+    Stat::StatCounter theWFI;
 
     Stat::StatCounter theStorePrefetches;
     Stat::StatCounter theAtomicPrefetches;

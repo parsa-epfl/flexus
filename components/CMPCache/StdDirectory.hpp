@@ -360,7 +360,7 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
 
     virtual boost::intrusive_ptr<AbstractLookupResult<_State>> lookup(MemoryAddress address)
     {
-        DBG_(Trace,
+        DBG_(VVerb,
              (<< "StdDirectory::lookup(0x" << std::hex << (uint64_t)address << ") in set 0x" << std::hex
               << makeSet(address)));
         return theSets[makeSet(address)]->lookup(makeTag(address));

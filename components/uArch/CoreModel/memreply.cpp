@@ -20,9 +20,9 @@ CoreImpl::invalidate(PhysicalMemoryAddress anAddress)
     // If the processor is speculating, check the SLAT.  On a match, we will
     // abort the speculation, and we can save ourselves the trouble of looking
     // at the rest of theMemQueue
-    DBG_(Iface, (<< "Checking invalidation for " << anAddress << ", " << theNode));
+    DBG_(VVerb, (<< "Checking invalidation for " << anAddress << ", " << theNode));
     if (isExclusiveLocal(anAddress, kWord) != 2) {
-        DBG_(Iface, (<< "Clearing Local " << theNode));
+        DBG_(VVerb, (<< "Clearing Local " << theNode));
         markExclusiveGlobal(anAddress, kWord, kMonitorUnset);
         markExclusiveLocal(anAddress, kWord, kMonitorUnset);
         markExclusiveVA(VirtualMemoryAddress(anAddress), kWord, kMonitorUnset);
@@ -42,12 +42,12 @@ CoreImpl::invalidate(PhysicalMemoryAddress anAddress)
                     DBG_Assert(violator_memq != theMemQueue.get<by_insn>().end());
                     if (!violator_memq->theSpeculatedValue) {
                         // must roll back
-                        DBG_(Iface,
+                        DBG_(VVerb,
                              (<< theName << " SLAT hit required " << anAddress << " for: " << *violator_memq
                               << " because value is no longer speculative"));
                         violator = iter->second;
                     } else {
-                        DBG_(Iface,
+                        DBG_(VVerb,
                              (<< theName << " avoided SLAT hit on " << anAddress << " for: " << *violator_memq
                               << " because value is still speculative"));
                         ++theSLATHits_AtomicAvoided;
@@ -213,7 +213,7 @@ CoreImpl::invalidate(PhysicalMemoryAddress anAddress)
                 }
 
                 // Load does not need to roll back
-                DBG_(Iface,
+                DBG_(VVerb,
                      (<< "Completed load to address " << anAddress
                       << " which does not need re-execution.  Will override Simics."));
                 temp->theInstruction->overrideSimics();
@@ -247,7 +247,7 @@ CoreImpl::ackInvalidate(MemOp const& anInvalidate)
     invalidate(anInvalidate.thePAddr);
     boost::intrusive_ptr<MemOp> op(new MemOp(anInvalidate));
     op->theOperation = kInvAck;
-    DBG_(Iface, (<< "Sending InvAck: " << *op));
+    DBG_(VVerb, (<< "Sending InvAck: " << *op));
     theSnoopPorts.push_back(op);
 }
 
@@ -259,7 +259,7 @@ CoreImpl::ackDowngrade(MemOp const& aDowngrade)
     loseWritePermission(eLosePerm_Downgrade, aDowngrade.thePAddr);
     boost::intrusive_ptr<MemOp> op(new MemOp(aDowngrade));
     op->theOperation = kDowngradeAck;
-    DBG_(Iface, (<< "Sending DowngradeAck: " << *op));
+    DBG_(VVerb, (<< "Sending DowngradeAck: " << *op));
     theSnoopPorts.push_back(op);
 }
 
@@ -271,7 +271,7 @@ CoreImpl::ackProbe(MemOp const& aProbe)
     DBG_Assert(consistencyModel() == kSC || consistencyModel() == kTSO || consistencyModel() == kRMO);
     boost::intrusive_ptr<MemOp> op(new MemOp(aProbe));
     op->theOperation = kProbeAck;
-    DBG_(Iface, (<< "Sending ProbeAck: " << *op));
+    DBG_(VVerb, (<< "Sending ProbeAck: " << *op));
     theSnoopPorts.push_back(op);
 }
 
@@ -290,7 +290,7 @@ CoreImpl::processReply(MemOp const& anOperation)
     std::set<boost::intrusive_ptr<Instruction>>::iterator iter, end;
     PhysicalMemoryAddress addr(static_cast<uint64_t>(anOperation.thePAddr) & ~(theCoherenceUnit - 1));
 
-    DBG_(Dev, (<< "Processing reply for " << anOperation.theOperation << " at " << anOperation.thePAddr));
+    DBG_(Verb, (<< "Processing reply for " << anOperation.theOperation << " at " << anOperation.thePAddr));
     switch (anOperation.theOperation) {
         case kRMWReply:
         case kCASReply:
@@ -372,7 +372,7 @@ CoreImpl::complete(MemOp const& anOperation)
             for (const auto& tr : match->second.theWaitingPagewalks) {
                 tr->rawTTEValue = static_cast<uint64_t>(anOperation.theValue);
 
-                DBG_(Iface,
+                DBG_(VVerb,
                      (<< "Process Memory Reply for ID( " << tr->theID << ") ready(" << tr->isReady()
                       << ")  -- vaddr: " << anOperation.theVAddr << "  -- paddr: " << anOperation.thePAddr
                       << "  --  Instruction: " << anOperation.theInstruction << " --  PC: " << anOperation.thePC));
@@ -400,7 +400,7 @@ CoreImpl::complete(MemOp const& anOperation)
             //                DBG_Assert(item != thePageWalkRequests.end());
             //                item->second->rawTTEValue = (uint64_t)anOperation.theValue;
             //                item->second->toggleReady();
-            //                DBG_(Iface,
+            //                DBG_(VVerb,
             //                     (<< "Process Memory Reply for ID( " << item->second->theID << ") ready(" <<
             //                     item->second->isReady()
             //                      << ")  -- vaddr: " << anOperation.theVAddr << "  -- paddr: " << anOperation.thePAddr
@@ -468,13 +468,13 @@ CoreImpl::complete(MemOp const& anOperation)
         if (anOperation.theTracker) {
             if (anOperation.theTracker->fillType() && *anOperation.theTracker->fillType() == eCoherence) {
                 ++theWP_CoherenceMiss;
-                DBG_(Trace,
+                DBG_(VVerb,
                      (<< theName << " WrongPath Coherence "
                       << (anOperation.theTracker->OS() && *anOperation.theTracker->OS() ? "[S] " : "[U] ")
                       << anOperation));
             } else if (anOperation.theTracker->fillLevel() && *anOperation.theTracker->fillLevel() == ePrefetchBuffer) {
                 ++theWP_SVBHit;
-                DBG_(Trace,
+                DBG_(VVerb,
                      (<< theName << " WrongPath: SVB-HIT "
                       << (anOperation.theTracker->OS() && *anOperation.theTracker->OS() ? "[S] " : "[U] ")
                       << anOperation));
@@ -482,7 +482,7 @@ CoreImpl::complete(MemOp const& anOperation)
                 // fixme: add a stat for wrong path here
             }
         }
-        DBG_(Iface, (<< "No matching MSHR: " << anOperation));
+        DBG_(VVerb, (<< "No matching MSHR: " << anOperation));
     }
 }
 
@@ -502,7 +502,7 @@ CoreImpl::completeLSQ(memq_t::index<by_insn>::type::iterator lsq_entry, MemOp co
             DBG_Assert(theIsSpeculating);
             if (anOperation.theValue != *lsq_entry->theExtendedValue) {
                 // Speculation was wrong.
-                DBG_(Iface,
+                DBG_(VVerb,
                      (<< theName << " Value mispredict Predicted: " << *lsq_entry->theExtendedValue
                       << " actual: " << anOperation.theValue << " LSQ entry: " << *lsq_entry));
                 theViolatingInstruction = lsq_entry->theInstruction;
@@ -511,7 +511,7 @@ CoreImpl::completeLSQ(memq_t::index<by_insn>::type::iterator lsq_entry, MemOp co
             } else {
                 lsq_entry->theSpeculatedValue = false;
                 ++theValuePredictions_Successful;
-                DBG_(Iface,
+                DBG_(VVerb,
                      (<< theName << " Value Predict correct: " << *lsq_entry->theExtendedValue
                       << " LSQ entry: " << *lsq_entry));
             }

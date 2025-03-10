@@ -69,17 +69,17 @@ struct BranchCondAction : public BaseSemanticAction
                     theInstruction->bpState()->theActualTarget = theTarget;
                     theInstruction->bpState()->theActualDirection = kTaken;
 
-                    theInstruction->redirectPC(theTarget); 
+                    theInstruction->redirectPC(theTarget);
                     core()->applyToNext(theInstruction, branchInteraction(theInstruction));
-                    DBG_(Iface, (<< "Branch taken! " << *theInstruction));
+                    DBG_(VVerb, (<< "Branch taken! " << *theInstruction));
                 } else {
                     // Not Taken
                     theInstruction->bpState()->theActualTarget = theInstruction->pc() + 4;
                     theInstruction->bpState()->theActualDirection = kNotTaken;
 
                     theInstruction->redirectPC(theInstruction->pc() + 4);
-                    core()->applyToNext(theInstruction, branchInteraction(theInstruction)); 
-                    DBG_(Iface, (<< "Branch Not taken! " << *theInstruction));
+                    core()->applyToNext(theInstruction, branchInteraction(theInstruction));
+                    DBG_(VVerb, (<< "Branch Not taken! " << *theInstruction));
                 }
                 satisfyDependants();
                 theInstruction->setExecuted(true);
@@ -126,7 +126,7 @@ struct BranchRegAction : public BaseSemanticAction
         if (ready()) {
             if (theInstruction->hasPredecessorExecuted()) {
 
-                DBG_(Iface, (<< *this << " Branching to an address held in register " << theRegOperand));
+                DBG_(VVerb, (<< *this << " Branching to an address held in register " << theRegOperand));
 
                 uint64_t target = boost::get<uint64_t>(theInstruction->operand<uint64_t>(kOperand1));
 
@@ -139,7 +139,7 @@ struct BranchRegAction : public BaseSemanticAction
                   Iface,
                   (<< *this << " Checking for redirection PC= " << theInstruction->pc() << " target= " << theTarget));
 
-                theInstruction->redirectPC(theTarget); 
+                theInstruction->redirectPC(theTarget);
                 core()->applyToNext(theInstruction, branchInteraction(theInstruction));
 
                 satisfyDependants();
@@ -179,7 +179,7 @@ struct BranchToCalcAddressAction : public BaseSemanticAction
             if (theInstruction->hasPredecessorExecuted()) {
                 uint64_t target = theInstruction->operand<uint64_t>(theTarget);
                 VirtualMemoryAddress target_addr(target);
-                DBG_(Iface, (<< *this << " branc to mapped_reg target: " << target_addr));
+                DBG_(VVerb, (<< *this << " branc to mapped_reg target: " << target_addr));
 
                 // Only used by BR
                 DBG_Assert(theInstruction->bpState()->theActualType == kIndirectReg);

@@ -256,7 +256,7 @@ CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction)
         }
     }
 
-    DBG_(Iface, (<< "Attempting to issue a memory requst for " << lsq_entry->thePaddr));
+    DBG_(VVerb, (<< "Attempting to issue a memory requst for " << lsq_entry->thePaddr));
     DBG_Assert(lsq_entry->thePaddr != kUnresolved);
 
     eOperation issue_op = lsq_entry->theOperation;
@@ -371,7 +371,7 @@ CoreImpl::issue(boost::intrusive_ptr<Instruction> anInstruction)
     op->theNonCacheable  = lsq_entry->theNonCacheable;
     if (issue_op == kStore && lsq_entry->isAtomic()) { op->theAtomic = true; }
     if (lsq_entry->theBypassSB) {
-        DBG_(Trace, (<< "NAW store issued: " << *lsq_entry));
+        DBG_(VVerb, (<< "NAW store issued: " << *lsq_entry));
         op->theNAW = true;
     }
     op->thePAddr = mshr.thePaddr = lsq_entry->thePaddr;
@@ -449,7 +449,7 @@ CoreImpl::issueMMU(TranslationPtr aTranslation)
     pair.first->second.theWaitingPagewalks.push_back(aTranslation);
     if (pair.second) theMemoryPorts.push_back(op);
 
-    DBG_(Iface,
+    DBG_(VVerb,
          (<< theName << " "
           << " issuing translation operation " << *op << "  -- ID " << aTranslation->theID));
 }
@@ -751,7 +751,7 @@ CoreImpl::resolveCheckpoint()
           DBG_Assert( isSpeculating()); //Should only be a MEMBAR at the SSB
   head when we are speculating
           //MEMBAR markers at the head of theMemQueue are no longer speculative
-          DBG_(Trace, ( << theName << " Resolving MEMBAR speculation: " <<
+          DBG_(VVerb, ( << theName << " Resolving MEMBAR speculation: " <<
   theMemQueue.front()) );
           theMemQueue.front().theInstruction->resolveSpeculation();
     }

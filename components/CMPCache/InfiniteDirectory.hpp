@@ -134,7 +134,7 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
         theBlockShift = log_base2(theBlockSize);
         theNodeId  = theInfo.theNodeId;
         theNumNodes = Flexus::Core::ComponentManager::getComponentManager().systemWidth();;
-        
+
     }
 
     virtual bool allocate(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup,
@@ -188,7 +188,7 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
 
         // for length of the dir
         uint32_t cache_size = checkpoint.size();
-        DBG_(Trace, (<< "Directory loading " << cache_size << " entries."));
+        DBG_(VVerb, (<< "Directory loading " << cache_size << " entries."));
 
         for (uint32_t i{ 0 }; i < cache_size; i++) {
             uint64_t address = checkpoint.at(i)["tag"];
@@ -207,7 +207,7 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
             theDirectory.insert(InfDirEntry(PhysicalMemoryAddress(address), state));
         }
 
-        DBG_(Trace, (<< "Directory loaded"));
+        DBG_(VVerb, (<< "Directory loaded"));
         ifs.close();
     }
 };

@@ -433,6 +433,7 @@ enum eInstructionCode
     codeITLBMiss,
     codeCLREX,
     codeHaltedState,
+    codeWFI,
     // End of Enum
     codeLastCode
 };

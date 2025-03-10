@@ -24,6 +24,8 @@ class BranchPredictor
   public:
     Stat::StatCounter theBranches;
 
+    Stat::StatCounter theBranchMispredictionPenalty;
+
     Stat::StatCounter thePredictions_TAGE;
     Stat::StatCounter theCorrect_TAGE;
     Stat::StatCounter theMispredict_TAGE;

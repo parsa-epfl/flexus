@@ -221,7 +221,7 @@ CoreImpl::eraseLSQ(boost::intrusive_ptr<Instruction> anInsn)
                 DBG_Assert(theSBCount >= 0);
             }
             if (iter->isStore() || iter->isAtomic()) {
-                DBG_(Iface, (<< theName << " unrequire " << *iter));
+                DBG_(VVerb, (<< theName << " unrequire " << *iter));
                 unrequireWritePermission(iter->thePaddr);
             }
             break;
@@ -264,7 +264,7 @@ CoreImpl::accessMem(PhysicalMemoryAddress anAddress, boost::intrusive_ptr<Instru
     memq_t::index<by_insn>::type::iterator iter = theMemQueue.get<by_insn>().find(anInsn);
 
     if (iter != theMemQueue.get<by_insn>().end() && iter->isAtomic() && iter->theQueue == kSSB) {
-        DBG_(Iface, (<< theName << " atomic committing in body of checkpoint " << *iter));
+        DBG_(VVerb, (<< theName << " atomic committing in body of checkpoint " << *iter));
         // theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSB;
         // });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
         ValueTracker::valueTracker(theNode).access(theNode, anAddress);
@@ -343,7 +343,7 @@ CoreImpl::clearSSB()
     std::tie(lb, ub) = theMemQueue.get<by_queue>().equal_range(std::make_tuple(kSSB));
     iter             = lb;
     while (iter != ub) {
-        DBG_(Iface, (<< theName << " unrequire " << *iter));
+        DBG_(VVerb, (<< theName << " unrequire " << *iter));
         if (iter->isStore() || iter->isAtomic()) { unrequireWritePermission(iter->thePaddr); }
         if (iter->theBypassSB) {
             sbnaw_count++;
@@ -383,7 +383,7 @@ CoreImpl::clearSSB(uint64_t aLowestInsnSeq)
             ++remaining_ssb_count;
         }
         if (first_found) {
-            DBG_(Iface, (<< theName << " unrequire " << *iter));
+            DBG_(VVerb, (<< theName << " unrequire " << *iter));
             if (iter->isStore() || iter->isAtomic()) { unrequireWritePermission(iter->thePaddr); }
             if (iter->theBypassSB) {
                 sbnaw_count++;
@@ -416,7 +416,7 @@ void
 CoreImpl::pushMemOp(boost::intrusive_ptr<MemOp> anOp)
 {
     theMemoryReplies.push_back(anOp);
-    DBG_(Iface, (<< " Received: " << *anOp));
+    DBG_(VVerb, (<< " Received: " << *anOp));
 }
 
 boost::intrusive_ptr<MemOp>
@@ -427,7 +427,7 @@ CoreImpl::popMemOp()
     if (!theMemoryPorts.empty()) {
         ret_val = theMemoryPorts.front();
 
-        DBG_(Iface, (<< "Sending: " << *ret_val));
+        DBG_(VVerb, (<< "Sending: " << *ret_val));
         theMemoryPorts.pop_front();
     }
     return ret_val;
@@ -458,9 +458,9 @@ CoreImpl::pushTranslation(TranslationPtr aTranslation)
     if (!insn->resync() && !(aTranslation->isPagefault())) {
         resolvePAddr(insn, aTranslation->thePaddr);
 
-        DBG_(Iface, (<< "Resolved.. vaddr: " << lsq_entry->theVaddr << " to paddr " << lsq_entry->thePaddr));
+        DBG_(VVerb, (<< "Resolved.. vaddr: " << lsq_entry->theVaddr << " to paddr " << lsq_entry->thePaddr));
     } else {
-        DBG_(Iface, (<< "Not Resolved.. vaddr: " << lsq_entry->theVaddr << " due to resync."));
+        DBG_(VVerb, (<< "Not Resolved.. vaddr: " << lsq_entry->theVaddr << " due to resync."));
 
         // lsq_entry->theException = lsq_entry->isLoad() ? kException_LoadPageFault : kException_StorePageFault;
         lsq_entry->theException = kException_IRQ;
@@ -475,7 +475,7 @@ CoreImpl::popSnoopOp()
     boost::intrusive_ptr<MemOp> ret_val;
     if (!theSnoopPorts.empty()) {
         ret_val = theSnoopPorts.front();
-        DBG_(Iface, (<< "Sending: " << *ret_val));
+        DBG_(VVerb, (<< "Sending: " << *ret_val));
         theSnoopPorts.pop_front();
     }
     return ret_val;
@@ -931,7 +931,7 @@ CoreImpl::updateStoreValue(boost::intrusive_ptr<Instruction> anInsn, bits aValue
     memq_t::index<by_insn>::type::iterator lsq_entry = theMemQueue.get<by_insn>().find(anInsn);
     DBG_Assert(lsq_entry != theMemQueue.get<by_insn>().end());
     DBG_Assert(lsq_entry->theOperation != kLoad);
-    DBG_(Iface, (<< "Updated store value for " << *lsq_entry << " to " << aValue << "[:" << anExtendedValue << "]"));
+    DBG_(VVerb, (<< "Updated store value for " << *lsq_entry << " to " << aValue << "[:" << anExtendedValue << "]"));
 
     boost::optional<bits> previous_value(lsq_entry->theValue);
 

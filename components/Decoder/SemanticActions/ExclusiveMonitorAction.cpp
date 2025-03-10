@@ -47,7 +47,7 @@ struct ExclusiveMonitorAction : public PredicatedSemanticAction
 
     void doEvaluate()
     {
-        DBG_(Iface, (<< *this));
+        DBG_(VVerb, (<< *this));
         uint64_t addr             = theInstruction->operand<uint64_t>(theAddressCode);
         Flexus::Qemu::Processor c = Flexus::Qemu::Processor::getProcessor(theInstruction->cpu());
         PhysicalMemoryAddress pAddress =
@@ -63,7 +63,7 @@ struct ExclusiveMonitorAction : public PredicatedSemanticAction
             }
             core()->markExclusiveLocal(pAddress, theSize, kMonitorDoesntExist);
             theInstruction->setOperand(kResult, (uint64_t)passed);
-            DBG_(Iface,
+            DBG_(VVerb,
                  (<< "Exclusive Monitor resulted in " << passed << " for address " << pAddress << ", "
                   << *theInstruction));
             if (theBypass) {

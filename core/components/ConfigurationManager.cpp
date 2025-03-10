@@ -118,7 +118,7 @@ class ConfigurationManagerDetails : public ConfigurationManager
             }
             comment = ss.str();
 
-            DBG_(Iface, (<< "Dynamic param:" << param_name << ", value:" << value << ", comment:" << comment));
+            DBG_(VVerb, (<< "Dynamic param:" << param_name << ", value:" << value << ", comment:" << comment));
             set(param_name, value);
         }
     }
@@ -179,7 +179,7 @@ class ConfigurationManagerDetails : public ConfigurationManager
     // Adds a DynamicParameter to theParameters
     void registerParameter(ParameterBase& aParam)
     {
-        DBG_(Iface, Core()(<< "Registered Parameter: -" << aParam.theConfig << ':' << aParam.theSwitch));
+        DBG_(VVerb, Core()(<< "Registered Parameter: -" << aParam.theConfig << ':' << aParam.theSwitch));
         theParameters.insert(std::make_pair(std::string("-") + aParam.theConfig + ":" + aParam.theSwitch, &aParam));
     }
 };

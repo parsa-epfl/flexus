@@ -64,7 +64,7 @@ struct UpdateAddressAction : public BaseSemanticAction
     void updateAddress()
     {
         if (ready()) {
-            DBG_(Iface, (<< "Executing " << *this));
+            DBG_(VVerb, (<< "Executing " << *this));
 
             if (theVirtual) {
                 DBG_Assert(theInstruction->hasOperand(theAddressCode));

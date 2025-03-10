@@ -20,6 +20,8 @@ BranchPredictor::BranchPredictor(std::string const& aName, uint32_t anIndex, uin
   , theBTB(aBTBSets, aBTBWays)
   , theBranches(aName + "-branches")
 
+  , theBranchMispredictionPenalty(aName + "-mispredict:penalty")
+
   , thePredictions_TAGE(aName + "-predictions:TAGE")
   , theCorrect_TAGE(aName + "-correct:TAGE")
   , theMispredict_TAGE(aName + "-mispredict:TAGE")
@@ -164,49 +166,47 @@ BranchPredictor::train(boost::intrusive_ptr<BPredState>& aBPState)
     DBG_(VVerb, (<< "Training Branch Predictor by PC: " << std::hex << aBPState->pc));
     // Implementation of feedback function
 
-    DBG_Assert(aBPState->theActualTarget != VirtualMemoryAddress(0));
+    DBG_Assert(aBPState.theActualTarget != VirtualMemoryAddress(0));
 
-    if (aBPState->theActualDirection <= kTaken || aBPState->theActualType == kNonBranch) {
+    if (aBPState.theActualDirection <= kTaken || aBPState.theActualType == kNonBranch) {
         // BTB is only updated when the branch is taken, or when the branch is not a branch
-        theBTB.update(aBPState->pc, aBPState->theActualType, aBPState->theActualTarget);
+        theBTB.update(aBPState.pc, aBPState.theActualType, aBPState.theActualTarget);
     }
 
     bool is_system = ((uint64_t)aBPState->pc >> 63) != 0;
 
-    bool is_mispredict = aBPState->theActualTarget != aBPState->thePredictedTarget;
+    bool is_mispredict = aBPState.theActualTarget != aBPState.thePredictedTarget;
 
     if (is_mispredict) {
-        if(aBPState->theActualType != kConditional) {
+        if (aBPState.theCorrectionCycle){
+            theBranchMispredictionPenalty += aBPState.theCorrectionCycle - aBPState.thePredCycle;
+        }
+
+        if(aBPState.theActualType != kConditional) {
             // Wrong target for non-conditional
             ++theMispredict_BTB;
-            ++theMispredict_BTB_Unconditional;
             if (is_system) {
                 ++theMispredict_BTB_System;
-                ++theMispredict_BTB_Unconditional_System;
             } else {
                 ++theMispredict_BTB_User;
-                ++theMispredict_BTB_Unconditional_User;
             }
 
             // theTrainingHistory.push_back(aBPState);
         } else {
-            if (aBPState->theActualType != aBPState->thePredictedType) {
+            if (aBPState.theActualType != aBPState.thePredictedType) {
                 // Wrong type
                 ++theMispredict_BTB;
-                ++theMispredict_BTB_WrongType;
                 if (is_system) {
                     ++theMispredict_BTB_System;
-                    ++theMispredict_BTB_WrongType_System;
                 } else {
                     ++theMispredict_BTB_User;
-                    ++theMispredict_BTB_WrongType_User;
                 }
 
                 // theTrainingHistory.push_back(aBPState);
             } else {
                 bool direction_matching = 
-                (aBPState->theActualDirection <= kTaken && aBPState->thePrediction <= kTaken) || 
-                (aBPState->theActualDirection > kTaken && aBPState->thePrediction > kTaken);
+                (aBPState.theActualDirection <= kTaken && aBPState.thePrediction <= kTaken) || 
+                (aBPState.theActualDirection > kTaken && aBPState.thePrediction > kTaken);
                 if (!direction_matching) {
                     // Wrong direction
                     ++theMispredict_TAGE;
@@ -224,7 +224,6 @@ BranchPredictor::train(boost::intrusive_ptr<BPredState>& aBPState)
                         ++theMispredict_BTB_Conditional_System;
                     } else {
                         ++theMispredict_BTB_User;
-                        ++theMispredict_BTB_Conditional_User;
                     }
 
                     // theTrainingHistory.push_back(aBPState);

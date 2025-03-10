@@ -118,7 +118,7 @@ class FLEXUS_COMPONENT(MTManagerComponent), public MTManager
         uint32_t min_icount = static_cast<uint32_t>(-1);
         int32_t td          = selected_td;
         for (uint32_t i = 0; i < cfg.Threads; ++i) {
-            DBG_(Iface,
+            DBG_(VVerb,
                  (<< "   Td[" << td << "] icount: " << icount[td] << " stalled? " << (this->*isStalled)(aCore, td)));
             if (icount[td] < min_icount && !(this->*isStalled)(aCore, td)) {
                 selected_td = td;
@@ -127,7 +127,7 @@ class FLEXUS_COMPONENT(MTManagerComponent), public MTManager
             td = (td + 1) % cfg.Threads;
         }
         aSchedule.theThreadThisCycle = selected_td;
-        DBG_(Iface, (<< "   Td[" << selected_td << "] selected"));
+        DBG_(VVerb, (<< "   Td[" << selected_td << "] selected"));
         aSchedule.theRoundRobinPtr      = (aSchedule.theRoundRobinPtr + 1) % cfg.Threads;
         aSchedule.theLastScheduledCycle = Flexus::Core::theFlexus->cycleCount();
     }
@@ -137,10 +137,10 @@ class FLEXUS_COMPONENT(MTManagerComponent), public MTManager
         int32_t selected_td = aSchedule.theRoundRobinPtr;
         for (uint32_t i = 0; i < cfg.Threads; ++i) {
             if (isEXStalled(aCore, selected_td)) {
-                DBG_(Iface, (<< "   Td[" << selected_td << "] stalled"));
+                DBG_(VVerb, (<< "   Td[" << selected_td << "] stalled"));
                 selected_td = (selected_td + 1) % cfg.Threads;
             } else {
-                DBG_(Iface, (<< "   Td[" << selected_td << "] selected"));
+                DBG_(VVerb, (<< "   Td[" << selected_td << "] selected"));
                 break;
             }
         }
@@ -154,10 +154,10 @@ class FLEXUS_COMPONENT(MTManagerComponent), public MTManager
         int32_t selected_td = aSchedule.theRoundRobinPtr;
         for (uint32_t i = 0; i < cfg.Threads; ++i) {
             if (isDStalled(aCore, selected_td)) {
-                DBG_(Iface, (<< "   Td[" << selected_td << "] stalled"));
+                DBG_(VVerb, (<< "   Td[" << selected_td << "] stalled"));
                 selected_td = (selected_td + 1) % cfg.Threads;
             } else {
-                DBG_(Iface, (<< "   Td[" << selected_td << "] selected"));
+                DBG_(VVerb, (<< "   Td[" << selected_td << "] selected"));
                 break;
             }
         }
@@ -182,13 +182,13 @@ class FLEXUS_COMPONENT(MTManagerComponent), public MTManager
         DBG_Assert(aCoreIndex < cfg.Cores);
         ScheduleState& sched = aSchedules[aCoreIndex];
         if (cfg.FrontEndPolicy == kFE_ICount) {
-            DBG_(Iface, (<< "Core[" << aCoreIndex << "] Schedule " << aResource << " via ICount "));
+            DBG_(VVerb, (<< "Core[" << aCoreIndex << "] Schedule " << aResource << " via ICount "));
             scheduleICount(aCoreIndex, sched, isStalled);
         } else {
-            DBG_(Iface, (<< "Core[" << aCoreIndex << "] Schedule " << aResource << " via RoundRobin "));
+            DBG_(VVerb, (<< "Core[" << aCoreIndex << "] Schedule " << aResource << " via RoundRobin "));
             scheduleStrictRoundRobin(sched);
         }
-        DBG_(Iface, (<< "Core[" << aCoreIndex << "] " << aResource << ": " << sched.theThreadThisCycle));
+        DBG_(VVerb, (<< "Core[" << aCoreIndex << "] " << aResource << ": " << sched.theThreadThisCycle));
         return sched.theThreadThisCycle;
     }
 
@@ -213,10 +213,10 @@ class FLEXUS_COMPONENT(MTManagerComponent), public MTManager
 
         if (sched.theLastScheduledCycle != Flexus::Core::theFlexus->cycleCount()) {
             if (cfg.BackEndPolicy == kBE_SmartRoundRobin) {
-                DBG_(Iface, (<< "Core[" << core_index << "] Schedule EX via SmartRoundRobin"));
+                DBG_(VVerb, (<< "Core[" << core_index << "] Schedule EX via SmartRoundRobin"));
                 scheduleExecuteRoundRobin(core_index, sched);
             } else {
-                DBG_(Iface, (<< "Core[" << core_index << "] Schedule EX via StrictRoundRobin"));
+                DBG_(VVerb, (<< "Core[" << core_index << "] Schedule EX via StrictRoundRobin"));
                 scheduleStrictRoundRobin(sched);
             }
             DBG_(Verb, (<< "Core[" << core_index << "] EX: " << sched.theThreadThisCycle));
@@ -233,12 +233,12 @@ class FLEXUS_COMPONENT(MTManagerComponent), public MTManager
 
         if (sched.theLastScheduledCycle != Flexus::Core::theFlexus->cycleCount()) {
             if (cfg.BackEndPolicy == kBE_SmartRoundRobin) {
-                DBG_(Iface, (<< "Core[" << core_index << "] Schedule D via SmartRoundRobin"));
+                DBG_(VVerb, (<< "Core[" << core_index << "] Schedule D via SmartRoundRobin"));
                 // scheduleThread(  theDSchedules, "D",
                 // &nMTManager::MTManagerComponentComponent::isDStalled, core_index);
                 scheduleDispatchRoundRobin(core_index, sched);
             } else {
-                DBG_(Iface, (<< "Core[" << core_index << "] Schedule D via StrictRoundRobin"));
+                DBG_(VVerb, (<< "Core[" << core_index << "] Schedule D via StrictRoundRobin"));
                 scheduleStrictRoundRobin(sched);
             }
         }

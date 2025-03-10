@@ -68,7 +68,7 @@ struct UpdateStoreValueAction : public PredicatedSemanticAction
         if (!cancelled()) {
             if (thePredicate && ready()) {
                 uint64_t value = theInstruction->operand<uint64_t>(theOperandCode);
-                DBG_(Iface, (<< *this << " updating store value=" << value));
+                DBG_(VVerb, (<< *this << " updating store value=" << value));
                 core()->updateStoreValue(boost::intrusive_ptr<Instruction>(theInstruction), value);
                 satisfyDependants();
             }
@@ -115,10 +115,10 @@ struct UpdateCASValueAction : public BaseSemanticAction
                 uint64_t cmp_value   = theInstruction->operand<uint64_t>(theCompareCode);
                 if ((cmp_value & (uint64_t)kMaxStore) == (uint64_t)kCheckAndStore) {
                     uint64_t result = theInstruction->operand<uint64_t>(kResult);
-                    DBG_(Iface, (<< *this << " Read result as " << std::hex << result));
+                    DBG_(VVerb, (<< *this << " Read result as " << std::hex << result));
                     cmp_value = (result << 32) | kAlwaysStore;
                 }
-                DBG_(Iface, (<< *this << " updating CAS write=" << std::hex << store_value << " cmp=" << cmp_value));
+                DBG_(VVerb, (<< *this << " updating CAS write=" << std::hex << store_value << " cmp=" << cmp_value));
                 core()->updateCASValue(boost::intrusive_ptr<Instruction>(theInstruction), store_value, cmp_value);
                 satisfyDependants();
             } else {
@@ -154,7 +154,7 @@ struct UpdateSTPValueAction : public BaseSemanticAction
         if (ready()) {
             if (theInstruction->hasOperand(theOperand)) {
                 bits value = theInstruction->operand<bits>(theOperand);
-                DBG_(Iface, (<< *this << " updating store value " << value << " from operand " << theOperand));
+                DBG_(VVerb, (<< *this << " updating store value " << value << " from operand " << theOperand));
                 core()->updateStoreValue(boost::intrusive_ptr<Instruction>(theInstruction), value);
                 satisfyDependants();
             } else {

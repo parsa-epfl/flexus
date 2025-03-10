@@ -215,7 +215,6 @@ class PREDICTOR
 
         ghist          = 0;
         ghist_retired  = 0;
-        DBG_(Tmp, (<< " ghist ini: " << ghist));
         // computes the geometric history lengths
         m[0]         = MAXHIST - 1;
         m[NHIST - 1] = MINHIST;
@@ -350,7 +349,6 @@ class PREDICTOR
             } else {
                 aBPState.alt_pred = getbim(pc, aBPState.BI);
 
-                //	  DBG_(Tmp, ( << "Tage base prediciton"));
                 aBPState.bimodalPrediction = true;
                 aBPState.saturationCounter = getSatCounter(aBPState.BI);
                 aBPState.pred_taken = aBPState.alt_pred;
@@ -451,7 +449,6 @@ class PREDICTOR
     }
     // just building our own simple pseudo random number generator based on linear feedback shift
     // register
-    //  int Seed;
 
     int MYRANDOM()
     {
@@ -484,7 +481,7 @@ class PREDICTOR
 
         //	  std::cout << std::endl<< std::endl<< std::endl<< std::endl << "Tage update " << taken <<
         // std::endl<< std::endl<< std::endl<< std::endl<< std::endl;
-        DBG_(Iface, (<< " TAGE feedback: " << std::hex << instruction_addr));
+        DBG_(VVerb, (<< " TAGE feedback: " << std::hex << instruction_addr));
         if (aBPState.thePredictedType == kConditional) {
             int phist_back;
             history_t ghist_back;
@@ -504,11 +501,11 @@ class PREDICTOR
             restore_history(aBPState);
 
             // GI, BI, bank, altbank, pred_taken, alt_pred
-            int GI[NHIST];
-            int BI;
-            int bank;
-            bool alt_pred;
-            bool pred_taken;
+            int GI[NHIST] = {0};
+            int BI = 0;
+            int bank = 0;
+            bool alt_pred = false;
+            bool pred_taken = false;
 
             if (aBPState.theTagePredictionValid) {
                 for (int i = 0; i < NHIST; i++)

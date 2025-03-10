@@ -292,7 +292,7 @@ struct BaseCacheControllerImpl
     {
         // if (const_EvictBuffer().full() || (arrayEvictResourcesAvailable() == 0))
         // {
-        // DBG_(Trace, ( << theName << " Full EvictBuffer: " << std::boolalpha <<
+        // DBG_(VVerb, ( << theName << " Full EvictBuffer: " << std::boolalpha <<
         // const_EvictBuffer().full() << ", " <<
         // (bool)(arrayEvictResourcesAvailable() == 0) )); if
         // (const_EvictBuffer().full()) {
@@ -308,7 +308,7 @@ struct BaseCacheControllerImpl
     {
         evictBuffer().reserve();
         reserveArrayEvictResource();
-        // DBG_(Trace, ( << theName << " reserveEvictBuffer, Free entries = " <<
+        // DBG_(VVerb, ( << theName << " reserveEvictBuffer, Free entries = " <<
         // freeEvictBuffer() ));
     }
 
@@ -316,7 +316,7 @@ struct BaseCacheControllerImpl
     {
         evictBuffer().unreserve();
         unreserveArrayEvictResource();
-        // DBG_(Trace, ( << theName << " unreserveEvictBuffer, Free entries = " <<
+        // DBG_(VVerb, ( << theName << " unreserveEvictBuffer, Free entries = " <<
         // freeEvictBuffer() ));
     }
 
