@@ -123,7 +123,7 @@ FlexusImpl::initializeComponents()
 }
 
 void
-FlexusImpl::advanceCycles(int64_t aCycleCount)
+FlexusImpl::advanceCycles(uint32_t aCycleCount, uint32_t aTickCount)
 {
 
     static uint64_t advanced_cycle_count = 0;
@@ -132,7 +132,8 @@ FlexusImpl::advanceCycles(int64_t aCycleCount)
     theCycleCountStat += aCycleCount;
     advanced_cycle_count += aCycleCount;
 
-    Qemu::API::qemu_api.tick();
+    for(uint32_t tick = 0; tick < aTickCount; tick++)
+        Qemu::API::qemu_api.tick();
 
     if ((theStopCycle > 0) && (theCycleCount >= theStopCycle)) {
         DBG_(Dev, (<< "Reached target cycle count. Ending simulation."));
@@ -166,11 +167,11 @@ FlexusImpl::doCycle()
 
     FLEXUS_DBG("--------------START FLEXUS CYCLE " << theCycleCount << " ------------------------");
 
-
+    uint32_t advanceBy, tickBy;
     uint32_t oldCount = theCycleCount;
-    uint32_t advanceBy = invokeDrives();
-    
-    advanceCycles(advanceBy);
+    std::tie(advanceBy, tickBy) = invokeDrives();
+
+    advanceCycles(advanceBy, tickBy);
 
     // Check the watchdog only every 255 cycles
     bool hasItBeen255Cycles = (theCycleCount & 0xFF) < (oldCount & 0xFF);
