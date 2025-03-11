@@ -97,7 +97,8 @@ operator<<(std::ostream& anOstream, eInstructionCode aCode)
         "MMUAccess",
         "ITLBMiss",
         "CLREX",
-        "HaltCode" };
+        "HaltCode",
+        "WFI" };
     if (aCode >= codeLastCode) {
         anOstream << "Invalid code(" << static_cast<int>(aCode) << ")";
     } else {
