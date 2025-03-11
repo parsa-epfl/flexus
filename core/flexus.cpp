@@ -58,8 +58,8 @@ class FlexusImpl : public FlexusInterface
     // The main cycle function
     void doCycle();
     void setCycle(uint64_t cycle);
-    void advanceCycles(int64_t aCycleCount);
-    uint32_t invokeDrives();
+    void advanceCycles(uint32_t aCycleCount, uint32_t aTickCount);
+    std::tuple<uint32_t, uint32_t> invokeDrives();
 
     // Simulator state inquiry
     bool quiescing() const { return theQuiesceRequested; }
@@ -154,7 +154,7 @@ FlexusImpl::advanceCycles(uint32_t aCycleCount, uint32_t aTickCount)
     Stat::getStatManager()->tick(aCycleCount);
 }
 
-uint32_t
+std::tuple<uint32_t, uint32_t>
 FlexusImpl::invokeDrives()
 {
     return theDrive.doCycle();

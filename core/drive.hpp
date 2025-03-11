@@ -59,7 +59,6 @@ struct do_cycle
     {
         typedef typename mpl::deref<typename mpl::begin<DriveHandles>::type>::type coreDriveHandles;
         typedef typename mpl::deref<typename mpl::next<typename mpl::begin<DriveHandles>::type>::type>::type uncoreDriveHandles;
-        uint32_t advanceCycles = 0;
 
         index_t* freq = ComponentManager::getComponentManager().getFreq().freq;
         index_t maxFreq = ComponentManager::getComponentManager().getFreq().maxFreq;
