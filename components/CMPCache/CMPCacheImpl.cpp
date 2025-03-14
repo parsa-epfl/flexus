@@ -49,6 +49,8 @@ class FLEXUS_COMPONENT(CMPCache)
 
         auto cores = cfg.Cores ?: (Flexus::Core::ComponentManager::getComponentManager().systemWidth() * 2);
 
+        cfg.Banks = cfg.Banks ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+
         CMPCacheInfo theInfo((int)flexusIndex(),
                              statName(),
                              cfg.Policy,

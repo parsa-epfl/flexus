@@ -60,7 +60,8 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
     enum DirLocation_t
     {
         eDistributed,
-        eAtMemory
+        eAtMemory,
+        eUserSpecified
     } theDirLoc;
 
   public:
@@ -103,6 +104,11 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
         theDirXORShift = cfg.DirXORShift;
         theDirMask     = cfg.Directories - 1;
 
+        theMemIndexMap.resize(cfg.MemControllers, -1);
+        theMemReverseMap.resize(theTotalNumCores, -1);
+        theDirIndexMap.resize(cfg.Directories, -1);
+        theDirReverseMap.resize(theTotalNumCores, -1);
+
         DBG_(Crit,
              (<< "Creating SplitDestinationMapper with " << theTotalNumCores << " cores, " << cfg.Directories
               << " cfg.Directories, and " << cfg.MemControllers << " memory controllers."));
@@ -116,7 +122,30 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
         } else if (strcasecmp(cfg.DirLocation.c_str(), "AtMemory") == 0) {
             theDirLoc = eAtMemory;
         } else {
-            DBG_Assert(false, (<< "Unknown Directory Location '" << cfg.DirLocation << "'"));
+            theDirLoc = eUserSpecified;
+            std::string dir_loc_str = cfg.DirLocation;
+            std::list<int> dir_loc_list;
+            std::string::size_type loc;
+            do {
+                loc = dir_loc_str.find(',', 0);
+                if (loc != std::string::npos) {
+                    std::string cur_loc = dir_loc_str.substr(0, loc);
+                    dir_loc_str         = dir_loc_str.substr(loc + 1);
+                    dir_loc_list.push_back(boost::lexical_cast<int>(cur_loc));
+                    DBG_(VVerb, (<< "Dir Location: " << cur_loc));
+                }
+            } while (loc != std::string::npos);
+            if (dir_loc_str.length() > 0) { dir_loc_list.push_back(boost::lexical_cast<int>(dir_loc_str)); }
+            DBG_Assert((int)dir_loc_list.size() == cfg.Directories,
+                       (<< "Configuration specifies " << cfg.Directories
+                        << " directories, but locations given for " << dir_loc_list.size()));    
+            for (int32_t i = 0; i < cfg.Directories; i++) {
+                int32_t loc = dir_loc_list.front();
+                dir_loc_list.pop_front();
+                theDirIndexMap[i]     = loc + (DIR_PORT * theTotalNumCores);
+                theDirReverseMap[loc] = i;
+                DBG_(Crit, (<< "Dir " << i << " is at " << theDirIndexMap[i]));
+            }
         }
 
         // Map Memory Controllers to nodes
@@ -135,11 +164,6 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
         DBG_Assert((int)mem_loc_list.size() == cfg.MemControllers,
                    (<< "Configuration specifies " << cfg.MemControllers
                     << " memory controllers, but locations given for " << mem_loc_list.size()));
-
-        theMemIndexMap.resize(cfg.MemControllers, -1);
-        theMemReverseMap.resize(theTotalNumCores, -1);
-        theDirIndexMap.resize(cfg.Directories, -1);
-        theDirReverseMap.resize(theTotalNumCores, -1);
 
         // Mem Index Map: flexus index of memory controller -> absolute network port
         // index Dir Index Map: flexus index of memory controller -> absolute
@@ -165,7 +189,7 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
         }
 
         // it should be fine for now
-        DBG_Assert(theDirLoc == eDistributed);
+        // DBG_Assert(theDirLoc == eDistributed);
 
         the2PhaseWB = cfg.TwoPhaseWB;
     }
