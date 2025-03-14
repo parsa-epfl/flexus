@@ -33,6 +33,8 @@ BranchPredictor::BranchPredictor(std::string const& aName, uint32_t anIndex, uin
   , theMispredict_BTB(aName + "-mispredict:BTB")
   , theMispredict_BTB_User(aName + "-mispredict:BTB:User")
   , theMispredict_BTB_System(aName + "-mispredict:BTB:System")
+  , theMispredict_Return(aName + "-mispredict:Return")
+  , theMispredict_Indirect(aName + "-mispredict:Indirect")
 {
 }
 
@@ -60,13 +62,14 @@ BranchPredictor::predictConditional(VirtualMemoryAddress anAddress, BPredState& 
 void
 BranchPredictor::recoverHistory(const BPredRedictRequest& aRequest)
 {
-    theTage.restore_history(*aRequest.theBPState);
+    const BPredState &aBPState = *aRequest.theBPState;
 
+    RAS.recover(aBPState.thePredCycle);
+
+    theTage.restore_history(*aRequest.theBPState);
     if (!aRequest.theInsertNewHistory) {
         return;
     }
-
-    const BPredState &aBPState = *aRequest.theBPState;
 
     if(aBPState.theActualType == Flexus::SharedTypes::kNonBranch) {
         return;
@@ -119,11 +122,8 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState)
         // TODO: These cases can be merged because they all have the same effect. However, when logging, they all
         // increment different stats. So they must be done in their individual cases and increment the corresponding
         // stats
-        case kIndirectCall:
         case kIndirectReg:
         case kUnconditional:
-        case kCall:
-        case kReturn:
             if (theBTB.target(anAddress)) {
                 aBPState.thePredictedTarget = *theBTB.target(anAddress);
             } else {
@@ -132,6 +132,30 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState)
             // theTage.get_prediction((uint64_t)anAddress, aBPState);
             theTage.update_history(aBPState, true, aBPState.pc);
             break;
+        case kIndirectCall:
+        case kCall:
+            if (theBTB.target(anAddress)) {
+                aBPState.thePredictedTarget = *theBTB.target(anAddress);
+            } else {
+                aBPState.thePredictedTarget = VirtualMemoryAddress(0);
+            }
+            // theTage.get_prediction((uint64_t)anAddress, aBPState);
+            theTage.update_history(aBPState, true, aBPState.pc);
+            RAS.push(anAddress+4, aBPState.thePredCycle);
+            break;
+        case kReturn:
+            if(RAS.get_occupancy() > 0){
+                aBPState.thePredictedTarget = RAS.pop();
+            }
+            else if (theBTB.target(anAddress)) {
+                aBPState.thePredictedTarget = *theBTB.target(anAddress);
+            } else {
+                aBPState.thePredictedTarget = VirtualMemoryAddress(0);
+            }
+            // theTage.get_prediction((uint64_t)anAddress, aBPState);
+            theTage.update_history(aBPState, true, aBPState.pc);
+            break;
+            
         default: aBPState.thePredictedTarget = VirtualMemoryAddress(0); break;
     }
 
@@ -140,7 +164,6 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState)
         //      (<< theIndex << "-BPRED-PREDICT: PC \t" << anAddress << " serial " << aBPState.theSerial << " Target \t"
         //       << aBPState.thePredictedTarget << "\tType " << aBPState.thePredictedType));
     }
-
     return aBPState.thePredictedTarget;
 }
 
@@ -164,6 +187,13 @@ BranchPredictor::train(const BPredState& aBPState)
     if (is_mispredict) {
         if (aBPState.theCorrectionCycle){
             theBranchMispredictionPenalty += aBPState.theCorrectionCycle - aBPState.thePredCycle;
+        }
+
+        if(aBPState.theActualType == kReturn){
+            ++theMispredict_Return;
+        }
+        else if(aBPState.theActualType == kIndirectCall || aBPState.theActualType == kIndirectReg){
+            ++theMispredict_Indirect;
         }
 
         if(aBPState.theActualType != kConditional) {
