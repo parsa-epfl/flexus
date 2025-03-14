@@ -15,6 +15,7 @@ class SimpleDirectoryState
       : theSharers()
       , theNumSharers(nb_sharers)
     {
+        theSharers.resize(nb_sharers);
     }
 
   private:

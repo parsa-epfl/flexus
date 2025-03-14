@@ -223,8 +223,10 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
             return ((a >> setLowShift) & setLowMask) | ((a >> setMidShift) & setMidMask) |
                    ((a >> setHighShift) & setHighMask);
         } else {
-            return ((addr >> setLowShift) & setLowMask) | ((addr >> setMidShift) & setMidMask) |
-                   ((addr >> setHighShift) & setHighMask);
+            // return ((addr >> setLowShift) & setLowMask) | ((addr >> setMidShift) & setMidMask) |
+            //        ((addr >> setHighShift) & setHighMask);
+
+            return ((addr >> 6 >> log_base2(theNumSharers / 2))) % theNumSets;
         }
     }
 
@@ -266,6 +268,8 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
         theGroupIndex        = theInfo.theNodeId / theBanks;
         theNumSharers        = theInfo.theCores;
         theTotalBanks        = theBanks * theGroups;
+
+        theSkewSet           = false;
 
         std::list<std::pair<std::string, std::string>>::const_iterator iter = theConfiguration.begin();
         for (; iter != theConfiguration.end(); iter++) {
@@ -362,10 +366,19 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
               << ", NumSharers = " << theNumSharers));
     }
 
+    void checkAddress(uint64_t address) {
+        uint64_t node_idx_of_cacheline = (address >> 6) % (theNumSharers / 2);
+        DBG_Assert(node_idx_of_cacheline == theGlobalBankIndex,
+                    (<< "Address " << std::hex << address << " is not in the correct node. Expected node "
+                    << theTotalBanks << " but got node " << node_idx_of_cacheline));
+    }
+
     virtual bool allocate(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup,
                           MemoryAddress address,
                           const _State& state)
     {
+        // checkAddress((uint64_t)address);
+        
         StdLookupResult* std_lookup = dynamic_cast<StdLookupResult*>(lookup.get());
         DBG_Assert(std_lookup != nullptr, (<< "allocate() was not passed a valid StdLookupResult"));
         bool success, has_victim;
@@ -383,6 +396,8 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
         DBG_(VVerb,
              (<< "StdDirectory::lookup(0x" << std::hex << (uint64_t)address << ") in set 0x" << std::hex
               << makeSet(address)));
+        
+        // checkAddress((uint64_t)address);
         return theSets[makeSet(address)]->lookup(makeTag(address));
     }
 
@@ -400,8 +415,6 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
         // - The bank interleaving is 64B.
 
         DBG_Assert(theBlockSize == 64, (<< "Block size has to be 64B. But got " << theBlockSize));
-        DBG_Assert(theBanks == 1, (<< "The bank size has to be 1. But got " << theBanks));
-        DBG_Assert(theGroups == 1, (<< "The group size has to be 1. But got " << theGroups));
         DBG_Assert(theBankInterleaving == 64, (<< "The bank interleaving has to be 64B. But got " << theBankInterleaving));
 
         std::ifstream ifs(filename.c_str(), std::ios::in);
@@ -420,14 +433,24 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
             // are beloing to this set and the node index.
             for (uint32_t j = 0; j < checkpoint.at(i).size(); j++) {
                 uint64_t address = checkpoint.at(i).at(j)["tag"];
-                uint64_t node_idx_of_cacheline = (address >> setLowShift) % theTotalBanks;
+                uint64_t node_idx_of_cacheline = (address >> 6) % (theNumSharers / 2);
                 DBG_Assert(node_idx_of_cacheline == theGlobalBankIndex,
                            (<< "Address " << std::hex << address << " is not in the correct node. Expected node "
                             << theTotalBanks << " but got node " << node_idx_of_cacheline));
 
+                if (makeSet(PhysicalMemoryAddress(address)) != i) {
+                    DBG_(Crit, (<< "Address " << std::hex << address
+                                << " is not in the correct set. Expected set " << i
+                                << " but got set " << makeSet(PhysicalMemoryAddress(address))));
+                    DBG_(Crit, (<< "theSkewSet: " << theSkewSet << " setLowShift: " << setLowShift << "setLowMask: " << setLowMask << " setMidShift: " << setMidShift
+                                << " setMidMask: " << setMidMask << " setHighShift: " << setHighShift << " setHighMask: " << setHighMask));
+                }
+
+
                 DBG_Assert(makeSet(PhysicalMemoryAddress(address)) == i, (<< "Address " << std::hex << address
                                                    << " is not in the correct set. Expected set " << i
                                                    << " but got set " << makeSet(PhysicalMemoryAddress(address))));
+
             }
             this->theSets[i]->load_dir_from_ckpt(checkpoint.at(i));
         }
