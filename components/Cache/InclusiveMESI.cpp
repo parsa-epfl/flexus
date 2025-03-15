@@ -102,6 +102,7 @@ InclusiveMESI::InclusiveMESI(CacheController* aController,
                                                      anInit->theName,
                                                      anInit->theNodeId,
                                                      anInit->theBlockSize);
+    thePerfect = anInit->thePerfect;
 }
 
 // Perform lookup, select action and update cache state if necessary
@@ -122,6 +123,9 @@ InclusiveMESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transact
     MemoryAddress block_addr = getBlockAddress(msg->address());
 
     LookupResult_p lookup = (*theArray)[block_addr];
+
+    if (thePerfect) 
+        lookup->setState(State::Modified, true);
 
     DBG_(VVerb, (<< " Do Request: " << *msg));
 
@@ -715,6 +719,9 @@ InclusiveMESI::handleBackMessage(MemoryTransport transport)
 
     // Do a cache lookup
     LookupResult_p result = (*theArray)[msg->address()];
+
+    if (thePerfect)
+        DBG_Assert(false);
 
     // Look for an outstanding request
     MemoryMessage_p original_miss;
@@ -2096,6 +2103,9 @@ InclusiveMESI::handleSnoopMessage(MemoryTransport transport)
 
     LookupResult_p result = (*theArray)[msg->address()];
 
+    if (thePerfect)
+        result->setState(State::Invalid, true);
+
     switch (msg->type()) {
             // Snoops
         case MemoryMessage::InvalidateAck:
@@ -2178,6 +2188,9 @@ InclusiveMESI::handleIprobe(bool aHit, MemoryTransport transport)
     iprobes++;
 
     LookupResult_p lookup = (*theArray)[fetchReq->address()];
+
+    if (thePerfect) 
+        lookup->setState(State::Modified, true);
 
     // We only really sent the probe to get dirty data
     // This will be a little bit sketchy, but whatever

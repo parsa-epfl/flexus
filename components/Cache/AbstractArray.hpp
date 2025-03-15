@@ -30,7 +30,7 @@ class AbstractLookupResult : public boost::counted_base
     AbstractLookupResult() {}
 
     virtual const _State& state(void) const        = 0;
-    virtual void setState(const _State& aNewState) = 0;
+    virtual void setState(const _State &aNewState, bool force = false) = 0;
     virtual void setProtected(bool val)            = 0;
     virtual void setPrefetched(bool val)           = 0;
 

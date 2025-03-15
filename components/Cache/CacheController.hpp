@@ -821,7 +821,8 @@ class CacheController
                     uint32_t aTraceAddress,
                     bool anAllowOffChipStreamFetch,
                     bool anEvictOnSnoop,
-                    bool aUseReplyChannel);
+                    bool aUseReplyChannel,
+                    bool aPerfect);
 
     // These methods are used by the Impl to manipulate the MAF
 

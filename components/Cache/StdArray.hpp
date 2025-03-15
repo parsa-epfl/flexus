@@ -2,6 +2,7 @@
 #ifndef _CACHE_ARRAY_HPP
 #define _CACHE_ARRAY_HPP
 
+#include "BasicCacheState.hpp"
 #include "components/CommonQEMU/Serializers.hpp"
 #include "components/CommonQEMU/Util.hpp"
 #include "core/checkpoint/json.hpp"
@@ -63,7 +64,10 @@ template<typename _State, const _State& _DefaultState>
 class StdLookupResult : public AbstractLookupResult<_State>
 {
   public:
-    virtual ~StdLookupResult() {}
+    virtual ~StdLookupResult() {
+        if (theForce)
+            delete theBlock;
+    }
     StdLookupResult(Set<_State, _DefaultState>* aSet,
                     Block<_State, _DefaultState>* aBlock,
                     MemoryAddress aBlockAddress,
@@ -72,6 +76,7 @@ class StdLookupResult : public AbstractLookupResult<_State>
       , theBlock(aBlock)
       , theBlockAddress(aBlockAddress)
       , isHit(aIsHit)
+      , theForce(false)
       , theOrigState(aIsHit ? aBlock->state() : _DefaultState)
     {
         DBG_Assert((aBlock == nullptr) || (aBlock->tag() == aBlockAddress),
@@ -80,7 +85,16 @@ class StdLookupResult : public AbstractLookupResult<_State>
     }
 
     const _State& state() const { return (isHit ? theBlock->state() : theOrigState); }
-    void setState(const _State& aNewState) { theBlock->state() = aNewState; }
+    void setState(const _State& aNewState, bool force = false) { 
+        if (force) {
+            if (theBlock == nullptr)
+                theBlock = new Block<_State, _DefaultState>();
+
+            isHit = aNewState !=  BasicCacheState::Invalid;
+            theForce = true;
+        }
+        theBlock->state() = aNewState; 
+    }
     void setProtected(bool val) { theBlock->state().setProtected(val); }
     void setPrefetched(bool val) { theBlock->state().setPrefetched(val); }
 
@@ -96,6 +110,7 @@ class StdLookupResult : public AbstractLookupResult<_State>
     Block<_State, _DefaultState>* theBlock;
     MemoryAddress theBlockAddress;
     bool isHit;
+    bool theForce;
     _State theOrigState;
 
     friend class Set<_State, _DefaultState>;
@@ -467,6 +482,9 @@ class StdArray : public AbstractArray<_State>
           dynamic_cast<StdLookupResult<_State, _DefaultState>*>(lookup.get());
         DBG_Assert(std_lookup != nullptr);
         DBG_Assert(std_lookup->valid());
+
+        if (std_lookup->theForce) 
+            return;
 
         std_lookup->theSet->recordAccess(std_lookup->theBlock);
     }

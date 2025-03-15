@@ -39,6 +39,7 @@ COMPONENT_PARAMETERS(
   PARAMETER( UseReplyChannel, bool, "Separate Reply and Snoop channels on BackSide", "use_reply_channel", false )
   PARAMETER( TextFlexpoints, bool, "Store flexpoints as text files (compatible with old FastCache component)", "text_flexpoints", false )
   PARAMETER( GZipFlexpoints, bool, "Compress flexpoints with gzip", "gzip_flexpoints", true )
+  PARAMETER( Perfect, bool, "Perfect cache (no misses)", "perfect", false )
 );
 
 COMPONENT_INTERFACE(

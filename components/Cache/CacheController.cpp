@@ -232,7 +232,8 @@ CacheController::CacheController(std::string const& aName,
                                  uint32_t aTraceAddress,
                                  bool anAllowOffChipStreamFetch,
                                  bool anEvictOnSnoop,
-                                 bool anUseReplyChannel)
+                                 bool anUseReplyChannel,
+                                 bool aPerfect)
   : theName(aName)
   , theCacheInitInfo(aName,
                      aCores,
@@ -245,7 +246,8 @@ CacheController::CacheController(std::string const& aName,
                      aProbeOnIfetchMiss,
                      aDoCleanEvictions,
                      aWritableEvictsHaveData,
-                     anAllowOffChipStreamFetch)
+                     anAllowOffChipStreamFetch,
+                     aPerfect)
   , theCacheControllerImpl(BaseCacheControllerImpl::construct(this, &theCacheInitInfo, aCacheType))
   , theCores(aCores)
   , theBanks(aBanks)

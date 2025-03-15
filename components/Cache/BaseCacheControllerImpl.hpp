@@ -141,7 +141,8 @@ class CacheInitInfo
                   bool aProbeOnIfetchMiss,
                   bool aDoCleanEvictions,
                   bool aWritableEvictsHaveData,
-                  bool anAllowOffChipStreamFetch)
+                  bool anAllowOffChipStreamFetch,
+                  bool aPerfect)
       : theName(aName)
       , theCores(aCores)
       , theArrayConfiguration(anArrayConfiguration)
@@ -154,6 +155,7 @@ class CacheInitInfo
       , theDoCleanEvictions(aDoCleanEvictions)
       , theWritableEvictsHaveData(aWritableEvictsHaveData)
       , theAllowOffChipStreamFetch(anAllowOffChipStreamFetch)
+      , thePerfect(aPerfect)
     {
     }
 
@@ -169,6 +171,7 @@ class CacheInitInfo
     bool theDoCleanEvictions;
     bool theWritableEvictsHaveData;
     bool theAllowOffChipStreamFetch;
+    bool thePerfect;
 };
 
 struct BaseCacheControllerImpl;
