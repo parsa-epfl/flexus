@@ -288,7 +288,7 @@ SemanticInstruction::doDispatchActions()
     ArchInstruction::doDispatchActions();
     while (!theDispatchActions.empty()) {
         auto &a = theDispatchActions.front();
-        if (a>evalNow())
+        if (a->evalNow())
             a->evaluate();
         else
             core()->create(a);

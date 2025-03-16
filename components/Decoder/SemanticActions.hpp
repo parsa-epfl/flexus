@@ -123,7 +123,7 @@ class BaseSemanticAction
       , theSignalled(false)
       , theSquashed(false)
       , theNumOperands(aNumOperands)
-      , theEvalNow(now),
+      , theEvalNow(now)
       , theDependanceTarget(*this)
       , theInstruction(anInstruction)
       , theScheduled(false)

@@ -86,7 +86,7 @@ ArchInstruction::canDispatch() {
 }
 
 void
-void ArchInstruction::doDispatchEffects() {
+ArchInstruction::doDispatchEffects() {
 }
 
 void

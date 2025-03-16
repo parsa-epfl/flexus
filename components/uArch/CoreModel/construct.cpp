@@ -253,21 +253,22 @@ CoreImpl::CoreImpl(uArchOptions_t options,
     // original constructor continues here...
     prepareMemOpAccounting();
 
+    bool inOrder = (theInOrderExecute == 1);
     std::vector<uint32_t> reg_file_sizes;
     reg_file_sizes.resize(kLastMapTableCode + 2);
     reg_file_sizes[xRegisters] = kxRegs_Total + 3 * theROBSize;
     reg_file_sizes[vRegisters] = kvRegs + 4 * theROBSize;
     reg_file_sizes[ccBits]     = kccRegs + 2 * theROBSize;
-    theRegisters.initialize(reg_file_sizes);
+    theRegisters.initialize(reg_file_sizes, inOrder);
 
     // Map table for xRegisters
-    theMapTables.push_back(std::make_shared<PhysicalMap>(kxRegs_Total, reg_file_sizes[xRegisters]));
+    theMapTables.push_back(std::make_shared<PhysicalMap>(kxRegs_Total, reg_file_sizes[xRegisters], inOrder));
 
     // Map table for vRegisters
-    theMapTables.push_back(std::make_shared<PhysicalMap>(kvRegs, reg_file_sizes[vRegisters]));
+    theMapTables.push_back(std::make_shared<PhysicalMap>(kvRegs, reg_file_sizes[vRegisters], inOrder));
 
     // Map table for ccBits
-    theMapTables.push_back(std::make_shared<PhysicalMap>(kccRegs, reg_file_sizes[ccBits]));
+    theMapTables.push_back(std::make_shared<PhysicalMap>(kccRegs, reg_file_sizes[ccBits], inOrder));
 
     reset();
 

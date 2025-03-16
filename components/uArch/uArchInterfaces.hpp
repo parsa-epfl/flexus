@@ -38,7 +38,7 @@ struct SemanticAction
     virtual void squashDependants() {}
     virtual void addRef() {}
     virtual void releaseRef() {}
-    virtual void canDispatch() { return true; }
+    virtual bool canDispatch() { return true; }
     virtual int64_t instructionNo() const { return 0; }
     virtual ~SemanticAction() {}
 };
