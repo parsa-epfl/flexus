@@ -97,6 +97,10 @@ struct ExecuteAction : public ExecuteBase
         DBG_(VVerb, (<< "Trying to Execute " << *this));
 
         if (ready()) {
+            if (!core()->reqEU(theOperation->euType())) {
+                reschedule();
+                return;
+            }
 
             DBG_(VVerb, (<< "Executing " << *this));
 

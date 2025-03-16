@@ -162,8 +162,27 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     thePageWalkReissues.clear();
 
     DBG_(VVerb, (<< "*** Eval *** "));
+    
+    theUsedALU = 0;
+    theUsedMUL = 0;
+    theUsedAGU = 0;
+    
     evaluate();
 
+    // redo dispatch
+    if (theDispatchStalled) {
+            for (auto t = theDispatchingInsts.begin(); t != theDispatchingInsts.end();) {
+                auto &i = *t;
+                DBG_(VVerb, (<< "redispatching " << *i));
+                if (!i->canDispatch())
+                    goto dispatch_cont;
+                i->doDispatchActions();
+                t = theDispatchingInsts.erase(t);
+            }
+            theDispatchStalled = false;
+        }
+
+    dispatch_cont:
     DBG_(VVerb, (<< "*** Issue Mem *** "));
 
     issuePartialSnoop();

@@ -1,5 +1,6 @@
 
 #include "coreModelImpl.hpp"
+#include <components/Decoder/SemanticActions.hpp>
 
 #define DBG_DeclareCategories uArchCat
 #define DBG_SetDefaultOps     AddCat(uArchCat)
@@ -16,7 +17,12 @@ CoreImpl::availableROB() const
     } else if (theSpinning && theSpinControlEnabled && theLSQCount > 0) {
         return 0;
     } else {
-        return theROBSize - theROB.size();
+        if (theDispatchStalled)
+            return 0;
+        
+        auto rob = theROBSize - theROB.size();
+        auto dsp = theDispatchWidth - theDispatchingInsts.size();
+        return std::min(rob, dsp);
     }
 }
 
@@ -187,6 +193,17 @@ CoreImpl::dispatch(boost::intrusive_ptr<Instruction> anInsn)
         (*dispatch_interactions.front())(anInsn, *this);
         dispatch_interactions.pop_front();
     }
+
+    if (theDispatchStalled || (theInOrderExecute && !anInsn->canDispatch())) {
+        theDispatchStalled = true;
+        theDispatchingInsts.push_back(anInsn);
+
+        DBG_(VVerb, (<< *anInsn << " cannot dispatch"));
+        return;
+    }
+
+    anInsn->doDispatchActions();   
+
     DISPATCH_DBG("Done");
 }
 
@@ -218,6 +235,70 @@ CoreImpl::deferInteraction(boost::intrusive_ptr<Instruction> anInsn, boost::intr
     DBG_(Verb, (<< theName << *anInsn << " saving deffered interaction " << *anInteraction << "."));
     thePreserveInteractions = true;
     theDispatchInteractions.push_back(anInteraction);
+}
+
+bool
+CoreImpl::canDispatch(mapped_reg &reg, bool isRead)
+{
+    if (isRead)
+        return true;
+
+    return theRegisters.status(reg) != kNotReady;
+}
+
+void
+CoreImpl::mapDestInOrder(int64_t seq, mapped_reg &reg)
+{
+    if (theInOrderExecute) {
+        if (reg.theType == xRegisters)
+            theXRScoreboard[reg.theIndex] = seq;
+        if (reg.theType == ccBits)
+            theCCScoreboard[reg.theIndex] = seq;
+
+        theRegisters.setStatus(reg, kNotReady);
+    }
+}
+
+bool
+CoreImpl::canReadInOrder(int64_t seq, mapped_reg &reg)
+{
+    if (theInOrderExecute) {
+        if (reg.theType == xRegisters)
+            return theXRScoreboard[reg.theIndex] >= seq;
+        if (reg.theType == ccBits)
+            return theCCScoreboard[reg.theIndex] >= seq;
+    }
+
+    return false;
+}
+
+bool
+CoreImpl::reqEU(int et)
+{
+    switch (et) {
+        case nDecoder::eALU:
+            if (theUsedALU < numALU) {
+                ++theUsedALU;
+                return true;
+            }
+            return false;
+
+        case nDecoder::eMUL:
+            if (theUsedMUL < numMUL) {
+                ++theUsedMUL;
+                return true;
+            }
+            return false;
+
+        case nDecoder::eAGU:
+            if (theUsedAGU < numAGU) {
+                ++theUsedAGU;
+                return true;
+            }
+            return false;
+    }
+
+    return false;
 }
 
 } // namespace nuArch

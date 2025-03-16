@@ -1,6 +1,7 @@
 
 #include "SemanticInstruction.hpp"
 
+#include "Instruction.hpp"
 #include "SemanticActions.hpp"
 #include "Validations.hpp"
 

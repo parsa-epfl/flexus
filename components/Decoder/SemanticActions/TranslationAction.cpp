@@ -50,6 +50,11 @@ struct TranslationAction : public BaseSemanticAction
         SEMANTICS_DBG(*this);
 
         if (ready()) {
+            if (!core()->reqEU(eAGU)) {
+                reschedule();
+                return;
+            }
+
             DBG_Assert(theInstruction->hasOperand(kAddress));
             VirtualMemoryAddress addr(theInstruction->operand<uint64_t>(kAddress));
 
