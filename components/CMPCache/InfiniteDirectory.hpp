@@ -8,6 +8,7 @@
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index_container.hpp>
 #include <core/checkpoint/json.hpp>
+#include <cstdint>
 #include <fstream>
 using namespace boost::multi_index;
 
@@ -111,6 +112,7 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
 
     uint64_t theNodeId;
     uint64_t theNumNodes;
+    uint64_t theNumBanks;
 
     bool theSameSetReturnValue;
 
@@ -127,6 +129,7 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
     {
         theNumSharers        = theInfo.theCores;
         theBlockSize         = theInfo.theBlockSize;
+        theNumBanks          = theInfo.theNumBanks;
 
         // The current interleaving scheme requires a block size of 64 bytes
         DBG_Assert(theBlockSize == 64);
@@ -150,7 +153,7 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
     virtual boost::intrusive_ptr<AbstractLookupResult<_State>> lookup(MemoryAddress address)
     {
         // Make sure this address is in the right range.
-        uint64_t node_index = (address >> theBlockShift) % theNumNodes;
+        uint64_t node_index = (address >> theBlockShift) % theNumBanks;
 
         DBG_Assert(node_index == theNodeId, (<< "Address " << std::hex << address << " is not in the correct node. Expected node " << theNodeId << " but got node " << node_index));
 
@@ -193,7 +196,7 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
         for (uint32_t i{ 0 }; i < cache_size; i++) {
             uint64_t address = checkpoint.at(i)["tag"];
 
-            uint64_t node_idx_of_cacheline = (address >> theBlockShift) % theNumNodes;
+            uint64_t node_idx_of_cacheline = (address >> theBlockShift) % theNumBanks;
 
             DBG_Assert(node_idx_of_cacheline == theNodeId, (<< "Address " << std::hex << address << " is not in the correct node. Expected node " << theNodeId << " but got node " << node_idx_of_cacheline));
 

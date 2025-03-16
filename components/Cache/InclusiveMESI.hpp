@@ -35,6 +35,7 @@ class InclusiveMESI : public BaseCacheControllerImpl
     bool the2LevelPrivate;
     int32_t thePendingEvicts;
     int32_t theEvictThreshold;
+    bool thePerfect;
 
   public:
     static BaseCacheControllerImpl* createInstance(std::list<std::pair<std::string, std::string>>& args,

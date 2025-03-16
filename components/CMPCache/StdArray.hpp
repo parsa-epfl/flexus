@@ -425,6 +425,8 @@ class StdArray : public AbstractArray<_State>
     uint64_t theSetIndexShift;
     uint64_t theSetIndexMask;
 
+    uint64_t theNumBanks;
+
     uint64_t theNumNodes;
 
     MemoryAddress theTagMask;
@@ -440,6 +442,8 @@ class StdArray : public AbstractArray<_State>
     {
         theBlockSize         = aBlockSize;
 
+        theNumBanks = aCacheInfo.theNumBanks;
+
         // Currently, we only test with 64-byte blocks
         // A larger block can cause wrong interleaving in the LLC.
         DBG_Assert(theBlockSize == 64);
@@ -454,7 +458,7 @@ class StdArray : public AbstractArray<_State>
             } else if (iter->first == "total_sets") {
                 uint64_t total_sets = strtoll(iter->second.c_str(), nullptr, 0);
                 DBG_Assert(total_sets % theNumNodes == 0);
-                theNumSets = total_sets / theNumNodes;
+                theNumSets = total_sets / theNumBanks;
             } else if (strcasecmp(iter->first.c_str(), "assoc") == 0 ||
                        strcasecmp(iter->first.c_str(), "associativity") == 0) {
                 theAssociativity = strtol(iter->second.c_str(), nullptr, 0);
@@ -498,10 +502,11 @@ class StdArray : public AbstractArray<_State>
         DBG_Assert((theNumSets & (theNumSets - 1)) == 0);
         DBG_Assert(((theBlockSize - 1) & theBlockSize) == 0);
         DBG_Assert((theNumNodes & (theNumNodes - 1)) == 0); // Currently, we only support power of 2 nodes.
+        DBG_Assert((theNumBanks & (theNumBanks - 1)) == 0); // Currently, we only support power of 2 nodes.
 
         uint64_t blockOffsetBits      = log_base2(theBlockSize);
         // int32_t indexBits            = log_base2(theNumSets);
-        this->theSetIndexShift       = blockOffsetBits + log_base2(theNumNodes);
+        this->theSetIndexShift       = blockOffsetBits + log_base2(theNumBanks);
         this->theSetIndexMask        = (theNumSets - 1); // mask is applied after shift.
 
         this->theTagMask = MemoryAddress(~0ULL & ~((uint64_t)(theBlockSize - 1)));
@@ -526,7 +531,7 @@ class StdArray : public AbstractArray<_State>
     virtual boost::intrusive_ptr<AbstractArrayLookupResult<_State>> operator[](const MemoryAddress& anAddress)
     {
         uint64_t blockOffsetBits      = log_base2(theBlockSize);
-        uint64_t affiliatedNode = (anAddress >> blockOffsetBits) % this->theNumNodes;
+        uint64_t affiliatedNode = (anAddress >> blockOffsetBits) % this->theNumBanks;
 
         DBG_Assert(
             affiliatedNode == (uint64_t)theInfo.theNodeId,
@@ -615,7 +620,7 @@ class StdArray : public AbstractArray<_State>
                 // Check this cache line.
                 DBG_Assert(target_set == i, (<< "Tag " << std::hex << tag << " is in set " << i << " but should be in set " << target_set));
 
-                uint64_t target_node = (tag >> log_base2(theBlockSize)) % theNumNodes;
+                uint64_t target_node = (tag >> log_base2(theBlockSize)) % theNumBanks;
                 DBG_Assert(target_node == theIndex, (<< "Tag " << std::hex << tag << " is in node " << target_node << " but should be in node " << theIndex));
 
                 theSets[i]->load_set_from_ckpt(j, theAssociativity - j - 1,tag, dirty, writable); // the last element is the most recently used cacheline.

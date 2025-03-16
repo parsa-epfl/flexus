@@ -221,10 +221,13 @@ class MissAddressFile
         int64_t time = Flexus::Core::theFlexus->cycleCount() - theLastAccounting;
         if (time > 0) {
             for (int32_t i = 0; i < kLastType; ++i) {
-                *(theCyclesWith[i]) << std::make_pair(static_cast<int64_t>(theEntries[i]), time);
-                *(theAverage[i]) << std::make_pair(static_cast<int64_t>(theEntries[i]), time);
+                if (theEntries[i] > 0) {
+                    *(theCyclesWith[i]) << std::make_pair(static_cast<int64_t>(theEntries[i]), time);
+                    *(theAverage[i]) << std::make_pair(static_cast<int64_t>(theEntries[i]), time);
+                }
             }
         }
+        theLastAccounting = Flexus::Core::theFlexus->cycleCount();
 
         if (aDelta != 0) {
             // Modify counts
@@ -821,7 +824,8 @@ class CacheController
                     uint32_t aTraceAddress,
                     bool anAllowOffChipStreamFetch,
                     bool anEvictOnSnoop,
-                    bool aUseReplyChannel);
+                    bool aUseReplyChannel,
+                    bool aPerfect);
 
     // These methods are used by the Impl to manipulate the MAF
 

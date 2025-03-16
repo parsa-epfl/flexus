@@ -102,7 +102,8 @@ class FLEXUS_COMPONENT(Cache)
                                                 cfg.TraceAddress,
                                                 false, /* cfg.AllowOffChipStreamFetch */
                                                 cfg.EvictOnSnoop,
-                                                cfg.UseReplyChannel));
+                                                cfg.UseReplyChannel,
+                                                cfg.Perfect));
 
         DBG_Assert(cfg.BusTime_Data > 0);
         DBG_Assert(cfg.BusTime_NoData > 0);
