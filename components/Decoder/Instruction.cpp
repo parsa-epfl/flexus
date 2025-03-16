@@ -80,8 +80,17 @@ ArchInstruction::setWillRaise(eExceptionType aSetting)
     theWillRaise = aSetting;
 }
 
+bool
+ArchInstruction::canDispatch() {
+    return true;
+}
+
 void
-ArchInstruction::doDispatchEffects()
+void ArchInstruction::doDispatchEffects() {
+}
+
+void
+ArchInstruction::doDispatchActions()
 {
     DBG_Assert(bpState(), (<< "No branch predictor state exists, but it must"));
     if (isMicroOp()) return;

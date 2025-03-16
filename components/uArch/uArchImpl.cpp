@@ -141,6 +141,7 @@ class FLEXUS_COMPONENT(uArch)
         options.SBSize               = cfg.SBSize;
         options.NAWBypassSB          = cfg.NAWBypassSB;
         options.NAWWaitAtSync        = cfg.NAWWaitAtSync;
+        options.dispatchWidth        = cfg.DispatchWidth;
         options.retireWidth          = cfg.RetireWidth;
         options.numMemoryPorts       = cfg.MemoryPorts;
         options.numSnoopPorts        = cfg.SnoopPorts;
@@ -174,6 +175,8 @@ class FLEXUS_COMPONENT(uArch)
         options.intMultOpPipelineResetTime = cfg.IntMultOpPipelineResetTime;
         options.intDivOpLatency            = cfg.IntDivOpLatency;
         options.intDivOpPipelineResetTime  = cfg.IntDivOpPipelineResetTime;
+
+        options.numAGU = cfg.NumAGU;
 
         options.numFpAlu                 = cfg.NumFpAlu;
         options.fpAddOpLatency           = cfg.FpAddOpLatency;

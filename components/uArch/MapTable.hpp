@@ -27,9 +27,12 @@ struct PhysicalMap
     std::vector<std::list<pRegister>> theAssignedRegisters;
     std::vector<int> theReverseMappings;
 
-    PhysicalMap(int32_t aNameCount, int32_t aRegisterCount)
+    bool theInOrder;
+
+    PhysicalMap(int32_t aNameCount, int32_t aRegisterCount, bool aInOrder)
       : theNameCount(aNameCount)
       , theRegisterCount(aRegisterCount)
+      , theInOrder(aInOrder)
     {
         theMappings.resize(aNameCount);
         theAssignedRegisters.resize(aNameCount);
@@ -59,6 +62,10 @@ struct PhysicalMap
     pRegister map(regName aRegisterName)
     {
         FLEXUS_PROFILE();
+
+        if (theInOrder)
+            return aRegisterName;
+
         DBG_Assert(aRegisterName < theMappings.size(),
                    (<< "Name: " << aRegisterName << " number of names: " << theMappings.size()));
         return theMappings[aRegisterName];
@@ -67,6 +74,10 @@ struct PhysicalMap
     pRegister mapArchitectural(regName aRegisterName)
     {
         FLEXUS_PROFILE();
+
+        if (theInOrder)
+            return aRegisterName;
+
         DBG_Assert(aRegisterName < theAssignedRegisters.size(),
                    (<< "Name: " << aRegisterName << " number of names: " << theAssignedRegisters.size()));
         return theAssignedRegisters[aRegisterName].front();
@@ -77,6 +88,10 @@ struct PhysicalMap
     {
         FLEXUS_PROFILE();
         DBG_Assert(aRegisterName < theMappings.size());
+
+        if (theInOrder)
+            return std::make_pair(aRegisterName, aRegisterName);
+
         pRegister previous_reg = theMappings[aRegisterName];
         pRegister new_reg      = theFreeList.front();
         theFreeList.pop_front();
@@ -92,6 +107,10 @@ struct PhysicalMap
     void free(pRegister aRegisterName)
     {
         FLEXUS_PROFILE();
+
+        if (theInOrder)
+            return;
+
         theFreeList.push_back(aRegisterName);
         int32_t arch_name                                = theReverseMappings[aRegisterName];
         std::vector<std::list<pRegister>>::iterator iter = theAssignedRegisters.begin() + arch_name;
@@ -110,6 +129,10 @@ struct PhysicalMap
     void restore(regName aRegisterName, pRegister aReg)
     {
         FLEXUS_PROFILE();
+
+        if (theInOrder)
+            return;
+
         pRegister target = *(++theAssignedRegisters[aRegisterName].rbegin());
         DBG_Assert(aReg == target, (<< target));
         theMappings[aRegisterName] = aReg;
@@ -120,6 +143,10 @@ struct PhysicalMap
     bool checkInvariants()
     {
         FLEXUS_PROFILE();
+
+        if (theInOrder)
+            return true;
+
         // No register name appears twice in either table
         std::vector<pRegister> registers;
         registers.resize(theRegisterCount);
