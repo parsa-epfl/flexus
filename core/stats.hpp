@@ -228,7 +228,19 @@ class StatCounter
     // Decrease Counter
     StatCounter& operator-=(stat_value_type::update_type anUpdate)
     {
-        if (theUpdater) theUpdater->update(-anUpdate);
+        if (theUpdater) {
+          theUpdater->update(-anUpdate);
+        }
+        return *this;
+    }
+
+    // Decrease Counter
+    StatCounter& operator=(stat_value_type::update_type anUpdate)
+    {
+        if (theUpdater) {
+          theUpdater->reset();
+          theUpdater->update(anUpdate);
+        }
         return *this;
     }
 

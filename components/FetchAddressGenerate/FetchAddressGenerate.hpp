@@ -12,6 +12,7 @@ COMPONENT_PARAMETERS(
   PARAMETER( Threads, uint32_t, "Number of threads under control of this FAG", "threads", 1 )
   PARAMETER( BTBSets, uint32_t, "Number of sets in the BTB", "btbsets", 512 )
   PARAMETER( BTBWays, uint32_t, "Number of ways in the BTB", "btbways", 4 )
+  PARAMETER( PerfectBPU, bool, "Perfect BPU", "perfect", 0)
 );
 
 COMPONENT_INTERFACE(

@@ -54,7 +54,9 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
         theBranchPredictor = std::make_unique<BranchPredictor>(statName(), flexusIndex(), cfg.BTBSets, cfg.BTBWays);
     }
 
-    void finalize() {}
+    void finalize() {
+        //theBranchPredictor->calculateRedirectCycles();
+    }
 
     bool isQuiesced() const
     {
@@ -63,8 +65,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
     }
 
     void saveState(std::string const& aDirName) { theBranchPredictor->saveState(aDirName); }
-
-    void loadState(std::string const& aDirName) { theBranchPredictor->loadState(aDirName); }
+    void loadState(std::string const& aDirName) { theBranchPredictor->loadState(aDirName, cfg.PerfectBPU); }
 
   public:
     // RedirectIn
@@ -77,10 +78,18 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
             theRedirectPC[anIndex] = redirectRequest->theTarget;
             theRedirect[anIndex]   = true;
 
+            if (cfg.PerfectBPU){
+                theBranchPredictor->recoverOracle(redirectRequest->theBPState->theSerial);
+            }
+
             if (redirectRequest->theBPState) {
                 redirectRequest->theBPState->theCorrectionCycle = theFlexus->cycleCount();
                 theBranchPredictor->recoverHistory(*redirectRequest);
             }
+
+            theBranchPredictor->recordRedirectStats
+                (std::make_pair(redirectRequest->theBPState->thePredCycle, theFlexus->cycleCount()));
+            
         }
     }
 
@@ -153,14 +162,13 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
             theBranchPredictor->checkpointHistory(*faddr.theBPState);
 
             // Advance the PC
-            if (theBranchPredictor->isBranch(faddr.theAddress)) {
+            if (theBranchPredictor->isBranch(faddr.theAddress, cfg.PerfectBPU)) {
                 AGU_DBG("Predicting a Branch");
-                faddr.theBPState->thePredictedType = kUnconditional;
                 if (max_predicts == 0) {
                     AGU_DBG("Config set the max prediction to zero, so no prediction");
                     break;
                 }
-                VirtualMemoryAddress prediction = theBranchPredictor->predict(faddr.theAddress, *faddr.theBPState);
+                VirtualMemoryAddress prediction = theBranchPredictor->predict(faddr.theAddress, *faddr.theBPState, cfg.PerfectBPU);
                 if (prediction == 0) {
                     thePC[anIndex] += 4;
                     faddr.theBPState->thePrediction = kNotTaken;
@@ -173,6 +181,11 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
                 AGU_DBG("Advancing PC to: " << thePC[anIndex] << " for core: " << anIndex);
                 AGU_DBG("Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress);
 
+                /*std::cout << "A: Predicted, address: " << (uint64_t)faddr.theBPState->pc 
+                        << ", target: " << (uint64_t)faddr.theBPState->thePredictedTarget
+                        << ", cycle: " << faddr.theBPState->thePredCycle 
+                        << ", serial: " << faddr.theBPState->theSerial << "\n";*/
+
                 fetch->theFetches.push_back(faddr);
                 --max_predicts;
             } else {
@@ -181,9 +194,18 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
                 faddr.theBPState->thePredictedType = kNonBranch;
                 faddr.theBPState->thePredictedTarget = thePC[anIndex];
                 faddr.theBPState->thePrediction = kNotTaken;
+                faddr.theBPState->thePredCycle = theFlexus->cycleCount();
+                faddr.theBPState->theSerial = theBranchPredictor->getSerial();
 
                 DBG_(VVerb, (<< "Advancing PC to: " << thePC[anIndex] << " for core: " << anIndex));
                 DBG_(VVerb, (<< "Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress));
+
+
+                /*std::cout << "B: Predicted, address: " << (uint64_t)faddr.theBPState->pc 
+                        << ", target: " << (uint64_t)faddr.theBPState->thePredictedTarget
+                        << ", cycle: " << faddr.theBPState->thePredCycle 
+                        << ", serial: " << faddr.theBPState->theSerial << "\n";*/
+
                 fetch->theFetches.push_back(faddr);
             }
 
