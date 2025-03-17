@@ -42,7 +42,6 @@ typedef struct OFFSET : public Operation
         }
     }
     virtual char const* describe() const { return "Add"; }
-    virtual int euType() const { return eMUL; }
 } OFFSET_;
 
 typedef struct ADD : public Operation
@@ -72,7 +71,6 @@ typedef struct ADD : public Operation
         return result;
     }
     virtual char const* describe() const { return "Add"; }
-    virtual int euType() const { return eMUL; }
 } ADD_;
 
 typedef struct ADDS : public Operation
@@ -92,7 +90,7 @@ typedef struct ADDS : public Operation
             carry = pstate.C();
         }
 
-        
+
         // https://developer.arm.com/documentation/ddi0602/2024-03/Shared-Pseudocode/shared-functions-integer?lang=en#impl-shared.AddWithCarry.3
         // (bits(N), bits(4)) AddWithCarry(bits(N) x, bits(N) y, bit carry_in)
         //     integer unsigned_sum = UInt(x) + UInt(y) + UInt(carry_in);
@@ -136,14 +134,13 @@ typedef struct ADDS : public Operation
 
         return result;
     }
-    virtual char const* describe() const { 
+    virtual char const* describe() const {
         if (theSize == 64) {
-            return "ADDS64"; 
+            return "ADDS64";
         } else {
             return "ADDS32";
         }
     }
-    virtual int euType() const { return eMUL; }
 } ADDS_;
 
 typedef struct SUB : public Operation
@@ -164,7 +161,6 @@ typedef struct SUB : public Operation
         }
     }
     virtual char const* describe() const { return "SUB"; }
-    virtual int euType() const { return eMUL; }
 } SUB_;
 
 typedef struct SUBS : public Operation
@@ -186,7 +182,7 @@ typedef struct SUBS : public Operation
             carry = pstate.C();
         }
 
-        
+
         // https://developer.arm.com/documentation/ddi0602/2024-03/Shared-Pseudocode/shared-functions-integer?lang=en#impl-shared.AddWithCarry.3
         // (bits(N), bits(4)) AddWithCarry(bits(N) x, bits(N) y, bit carry_in)
         //     integer unsigned_sum = UInt(x) + UInt(y) + UInt(carry_in);
@@ -230,14 +226,13 @@ typedef struct SUBS : public Operation
 
         return result;
     }
-    virtual char const* describe() const { 
+    virtual char const* describe() const {
         if (theSize == 64) {
-            return "SUBS64"; 
+            return "SUBS64";
         } else {
             return "SUBS32";
         }
     }
-    virtual int euType() const { return eMUL; }
 } SUBS_;
 
 typedef struct CONCAT32 : public Operation
@@ -257,7 +252,6 @@ typedef struct CONCAT32 : public Operation
         return bits((op1 << 32) | op2);
     }
     virtual char const* describe() const { return "CONCAT32"; }
-    virtual int euType() const { return eMUL; }
 } CONCAT32_;
 
 typedef struct CONCAT64 : public Operation
@@ -274,7 +268,6 @@ typedef struct CONCAT64 : public Operation
         return concat_bits((bits)op1, (bits)op2);
     }
     virtual char const* describe() const { return "CONCAT64"; }
-    virtual int euType() const { return eMUL; }
 } CONCAT64_;
 
 typedef struct AND : public Operation
@@ -290,7 +283,6 @@ typedef struct AND : public Operation
         return (boost::get<uint64_t>(operands[0]) & boost::get<uint64_t>(operands[1]));
     }
     virtual char const* describe() const { return "AND"; }
-    virtual int euType() const { return eMUL; }
 } AND_;
 
 typedef struct ANDS : public Operation
@@ -314,7 +306,6 @@ typedef struct ANDS : public Operation
         return result;
     }
     virtual char const* describe() const { return "ANDS"; }
-    virtual int euType() const { return eMUL; }
 } ANDS_;
 
 typedef struct ANDSN : public Operation
@@ -338,7 +329,6 @@ typedef struct ANDSN : public Operation
         return result;
     }
     virtual char const* describe() const { return "ANDSN"; }
-    virtual int euType() const { return eMUL; }
 } ANDSN_;
 
 typedef struct ORR : public Operation
@@ -351,7 +341,6 @@ typedef struct ORR : public Operation
         return boost::get<uint64_t>(operands[0]) | boost::get<uint64_t>(operands[1]);
     }
     virtual char const* describe() const { return "ORR"; }
-    virtual int euType() const { return eMUL; }
 } ORR_;
 
 typedef struct XOR : public Operation
@@ -364,7 +353,6 @@ typedef struct XOR : public Operation
         return boost::get<uint64_t>(operands[0]) ^ boost::get<uint64_t>(operands[1]);
     }
     virtual char const* describe() const { return "XOR"; }
-    virtual int euType() const { return eMUL; }
 } XOR_;
 
 typedef struct AndN : public Operation
@@ -378,7 +366,6 @@ typedef struct AndN : public Operation
         return boost::get<uint64_t>(operands[0]) & ~boost::get<uint64_t>(operands[1]);
     }
     virtual char const* describe() const { return "AndN"; }
-    virtual int euType() const { return eMUL; }
 } AndN_;
 
 typedef struct EoN : public Operation
@@ -392,7 +379,6 @@ typedef struct EoN : public Operation
         return boost::get<uint64_t>(operands[0]) | ~boost::get<uint64_t>(operands[1]);
     }
     virtual char const* describe() const { return "EoN"; }
-    virtual int euType() const { return eMUL; }
 } EoN_;
 
 typedef struct OrN : public Operation
@@ -405,7 +391,6 @@ typedef struct OrN : public Operation
         return boost::get<uint64_t>(operands[0]) | ~boost::get<uint64_t>(operands[1]);
     }
     virtual char const* describe() const { return "OrN"; }
-    virtual int euType() const { return eMUL; }
 } OrN_;
 
 typedef struct Not : public Operation
@@ -418,7 +403,6 @@ typedef struct Not : public Operation
         return ~boost::get<uint64_t>(operands[0]);
     }
     virtual char const* describe() const { return "Invert"; }
-    virtual int euType() const { return eMUL; }
 } Not_;
 
 typedef struct ROR : public Operation
@@ -437,7 +421,6 @@ typedef struct ROR : public Operation
         return ror((uint64_t)input, (uint64_t)input_size, (uint64_t)shift_size);
     }
     virtual char const* describe() const { return "ROR"; }
-    virtual int euType() const { return eMUL; }
 } ROR_;
 
 typedef struct LSL : public Operation
@@ -457,7 +440,6 @@ typedef struct LSL : public Operation
         return (op1 << (op2 % data_size) & mask);
     }
     virtual char const* describe() const { return "LSL"; }
-    virtual int euType() const { return eMUL; }
 } LSL_;
 
 typedef struct ASR : public Operation
@@ -474,7 +456,6 @@ typedef struct ASR : public Operation
         return asr((uint64_t)input, (uint64_t)input_size, (uint64_t)shift_size);
     }
     virtual char const* describe() const { return "ASR"; }
-    virtual int euType() const { return eMUL; }
 } ASR_;
 
 typedef struct LSR : public Operation
@@ -492,7 +473,6 @@ typedef struct LSR : public Operation
         return (op1 >> (op2 % data_size) & mask);
     }
     virtual char const* describe() const { return "LSR"; }
-    virtual int euType() const { return eMUL; }
 } LSR_;
 
 typedef struct SextB : public Operation
@@ -507,7 +487,6 @@ typedef struct SextB : public Operation
         return op1;
     }
     virtual char const* describe() const { return "signed extend Byte"; }
-    virtual int euType() const { return eMUL; }
 } SextB_;
 
 typedef struct SextH : public Operation
@@ -522,7 +501,6 @@ typedef struct SextH : public Operation
         return op1;
     }
     virtual char const* describe() const { return "signed extend Half Word"; }
-    virtual int euType() const { return eMUL; }
 } SextH_;
 
 typedef struct SextW : public Operation
@@ -537,7 +515,6 @@ typedef struct SextW : public Operation
         return op1;
     }
     virtual char const* describe() const { return "signed extend Word"; }
-    virtual int euType() const { return eMUL; }
 } SextW_;
 
 typedef struct SextX : public Operation
@@ -550,7 +527,6 @@ typedef struct SextX : public Operation
         return (uint64_t)(boost::get<uint64_t>(operands[0]) | SIGNED_UPPER_BOUND_X);
     }
     virtual char const* describe() const { return "signed extend Double Word"; }
-    virtual int euType() const { return eMUL; }
 } SextX_;
 
 typedef struct ZextB : public Operation
@@ -565,7 +541,6 @@ typedef struct ZextB : public Operation
         return op;
     }
     virtual char const* describe() const { return "Zero extend Byte"; }
-    virtual int euType() const { return eMUL; }
 } ZextB_;
 
 typedef struct ZextH : public Operation
@@ -580,7 +555,6 @@ typedef struct ZextH : public Operation
         return op;
     }
     virtual char const* describe() const { return "Zero extend Half Word"; }
-    virtual int euType() const { return eMUL; }
 } ZextH_;
 
 typedef struct ZextW : public Operation
@@ -595,7 +569,6 @@ typedef struct ZextW : public Operation
         return op;
     }
     virtual char const* describe() const { return "Zero extend Word"; }
-    virtual int euType() const { return eMUL; }
 } ZextW_;
 
 typedef struct ZextX : public Operation
@@ -608,7 +581,6 @@ typedef struct ZextX : public Operation
         return boost::get<uint64_t>(operands[0]);
     }
     virtual char const* describe() const { return "Zero extend Double Word"; }
-    virtual int euType() const { return eMUL; }
 } ZextX_;
 
 typedef struct Xnor : public Operation
@@ -621,7 +593,6 @@ typedef struct Xnor : public Operation
         return boost::get<uint64_t>(operands[0]) ^ ~boost::get<uint64_t>(operands[1]);
     }
     virtual char const* describe() const { return "Xnor"; }
-    virtual int euType() const { return eMUL; }
 } Xnor_;
 
 typedef struct UMul : public Operation
@@ -849,7 +820,6 @@ typedef struct MOV_ : public Operation
         }
     }
     virtual char const* describe() const { return "MOV"; }
-    virtual int euType() const { return eMUL; }
 } MOV_;
 
 typedef struct MOVN_ : public Operation
@@ -862,7 +832,6 @@ typedef struct MOVN_ : public Operation
         return ~boost::get<uint64_t>(operands[0]);
     }
     virtual char const* describe() const { return "MOVN"; }
-    virtual int euType() const { return eMUL; }
 } MOVN_;
 
 typedef struct MOVK_ : public Operation
@@ -882,7 +851,6 @@ typedef struct MOVK_ : public Operation
         return rd;
     }
     virtual char const* describe() const { return "MOVK"; }
-    virtual int euType() const { return eMUL; }
 } MOVK_;
 
 typedef struct OVERWRITE_ : public Operation
@@ -899,7 +867,6 @@ typedef struct OVERWRITE_ : public Operation
         return ((lhs & mask) | rhs);
     }
     virtual char const* describe() const { return "OVERWRITE_"; }
-    virtual int euType() const { return eMUL; }
 } OVERWRITE_;
 
 std::unique_ptr<Operation>
