@@ -359,6 +359,9 @@ CoreImpl::resetCore()
     theDispatchInteractions.clear();
     thePreserveInteractions = false;
 
+    theDispatchStalled = false;
+    theDispatchingInsts.clear();
+
     theROB.clear();
 
     theSquashRequested = false;
