@@ -19,8 +19,10 @@ BranchPredictor::BranchPredictor(std::string const& aName, uint32_t anIndex, uin
   , theSerial(0)
   , theBTB(aBTBSets, aBTBWays)
   , theBranches(aName + "-branches")
+  , theRedirects(aName + "-redirects")
 
   , theBranchMispredictionPenalty(aName + "-mispredict:penalty")
+  , theRedirectionPenalty(aName + "-redirect:penalty")
 
   , thePredictions_TAGE(aName + "-predictions:TAGE")
   , theCorrect_TAGE(aName + "-correct:TAGE")
@@ -89,8 +91,12 @@ BranchPredictor::recoverHistory(const BPredRedictRequest& aRequest)
 }
 
 bool
-BranchPredictor::isBranch(VirtualMemoryAddress anAddress)
+BranchPredictor::isBranch(VirtualMemoryAddress anAddress, bool PerfectBPU)
 {
+    if (PerfectBPU){
+        return theOracleBTB.find(anAddress) != theOracleBTB.end();
+    }
+
     return theBTB.contains(anAddress);
 }
 
@@ -100,8 +106,60 @@ BranchPredictor::checkpointHistory(BPredState& aBPState) const
     theTage.checkpointHistory(aBPState);
 }
 
+void BranchPredictor::recoverOracle(const uint64_t aSerial){
+    theOracleIdx--;
+    while (theOracleBPU[theOracleIdx].theSerial > aSerial){
+        theOracleBPU[theOracleIdx].theSerial = 0;
+        theOracleIdx--;
+    }
+    theOracleIdx++;
+}
+
+uint32_t BranchPredictor::getSerial(){
+    return theSerial++;
+}
+
+void BranchPredictor::recordRedirectStats(std::pair<uint64_t, uint64_t> aRange){
+    theRedirects++;
+    redirectCycles.push_back(aRange);
+    // fix this by setting the counter at the end 
+    if(redirectCycles.size() % 1000 == 0)
+        theRedirectionPenalty = calculateRedirectCycles(redirectCycles);
+}
+
+uint64_t BranchPredictor::calculateRedirectCycles
+    (std::vector<std::pair<uint64_t, uint64_t>> &ranges){
+    
+    if (ranges.empty()) return 0;
+
+    // Sort ranges based on start points
+    std::sort(ranges.begin(), ranges.end());
+
+    uint64_t totalLength = 0;
+    uint64_t start = ranges[0].first, end = ranges[0].second;
+
+    for (size_t i = 1; i < ranges.size(); ++i) {
+        uint64_t s = ranges[i].first;
+        uint64_t e = ranges[i].second;
+
+        if (s <= end) {
+            // Merge overlapping or adjacent ranges
+            end = std::max(end, e);
+        } else {
+            // Add the previous merged range length and start a new range
+            totalLength += end - start;
+            start = s;
+            end = e;
+        }
+    }
+
+    // Add the last merged range length
+    totalLength += end - start;
+    return totalLength;
+}
+
 VirtualMemoryAddress
-BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState)
+BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, bool PerfectBPU)
 {
     // Implementation of predict function
     aBPState.pc                  = anAddress;
@@ -111,6 +169,27 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState)
     aBPState.thePrediction       = kStronglyTaken;
     aBPState.callUpdatedRAS      = false;
     aBPState.detectedSpecialCall = false;
+
+    if(PerfectBPU){
+        if (anAddress == theOracleBPU[theOracleIdx].pc){
+            aBPState.thePredictedType = static_cast<eBranchType>(theOracleBPU[theOracleIdx].theActualType);
+            if (theOracleBPU[theOracleIdx].theActualTarget - theOracleBPU[theOracleIdx].pc == 4){
+                aBPState.thePredictedTarget = VirtualMemoryAddress(0);    
+            }
+            else{
+                aBPState.thePredictedTarget = VirtualMemoryAddress(theOracleBPU[theOracleIdx].theActualTarget);    
+            }
+            theOracleBPU[theOracleIdx].theSerial = aBPState.theSerial;
+            theOracleIdx++;
+        }
+        else{
+            // The core is in wrong path, continue in fall-through until be redirected
+            // This case should not happen without any blackbox instruction
+            aBPState.thePredictedTarget = VirtualMemoryAddress(0); 
+        }
+        //std::cout << "returning: " << (uint64_t)aBPState.thePredictedTarget << "\n";
+        return aBPState.thePredictedTarget;
+    }
 
     switch (aBPState.thePredictedType) {
         case kNonBranch:
@@ -185,8 +264,19 @@ BranchPredictor::train(const BPredState& aBPState)
     bool is_mispredict = aBPState.theActualTarget != aBPState.thePredictedTarget;
 
     if (is_mispredict) {
+        /*std::cout << "mispredict, pc: " << (uint64_t)aBPState.pc 
+                << ", pred: " << (uint64_t)aBPState.thePredictedTarget 
+                << ", actual: " << (uint64_t)aBPState.theActualTarget 
+                << ", serial: " << aBPState.theSerial 
+                << ", type: " << aBPState.theActualType
+                << ", thePredCycle: " << aBPState.thePredCycle << "\n";*/
+
         if (aBPState.theCorrectionCycle){
-            theBranchMispredictionPenalty += aBPState.theCorrectionCycle - aBPState.thePredCycle;
+            mispredictCycles.push_back(std::make_pair(aBPState.thePredCycle, aBPState.theCorrectionCycle));
+            
+            // fix this by setting the counter at the end 
+            if(mispredictCycles.size() % 1000 == 0)
+                theBranchMispredictionPenalty = calculateRedirectCycles(mispredictCycles);
         }
 
         if(aBPState.theActualType == kReturn){
@@ -253,7 +343,7 @@ BranchPredictor::train(const BPredState& aBPState)
 }
 
 void
-BranchPredictor::loadState(std::string const& aDirName)
+BranchPredictor::loadState(std::string const& aDirName, bool PerfectBPU)
 {
     std::string fname(aDirName);
     fname += "/" + boost::padded_string_cast<3, '0'>(theIndex) + "-bpred" + ".json";
@@ -265,6 +355,27 @@ BranchPredictor::loadState(std::string const& aDirName)
     theBTB.loadState(checkpoint["btb"]);
     theTage.loadState(checkpoint["tage"]);
     ifs.close();
+
+    if (PerfectBPU){
+        std::string fname(aDirName);
+        fname += "/" + boost::padded_string_cast<3, '0'>(theIndex) + "-ideal-bpred" + ".json";
+        std::ifstream ifs(fname.c_str());
+
+        json checkpoint;
+        ifs >> checkpoint;
+
+        for (const auto& item : checkpoint) {
+            theOracleBPU.push_back({
+                item["addr"].get<uint64_t>(),  // Read as uint64_t
+                item["type"].get<int>(),
+                item["tgt"].get<uint64_t>(),  // Read as uint64_t
+                0
+            });
+
+            theOracleBTB.insert(VirtualMemoryAddress(theOracleBPU.back().pc));
+        }
+        ifs.close();
+    }
 }
 
 void

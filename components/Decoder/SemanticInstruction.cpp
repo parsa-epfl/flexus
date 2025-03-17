@@ -154,7 +154,7 @@ SemanticInstruction::setCanRetireCounter(const uint32_t numCycles)
 void
 SemanticInstruction::decrementCanRetireCounter()
 {
-    if (theCanRetireCounter > 0) { --theCanRetireCounter; }
+    if (hasExecuted() && (theCanRetireCounter > 0)) { --theCanRetireCounter; }
 }
 
 InternalDependance
