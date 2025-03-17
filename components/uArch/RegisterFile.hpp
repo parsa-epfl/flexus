@@ -21,8 +21,10 @@ class RegisterFile
     std::vector<std::vector<register_value>> theRegs;
     std::vector<std::vector<int32_t>> theCollectCounts;
 
+    bool theInOrder;
+
   public:
-    void initialize(std::vector<uint32_t> const& aSizes)
+    void initialize(std::vector<uint32_t> const& aSizes, bool anInOrder)
     {
         theDependances.resize(aSizes.size());
         theStatus.resize(aSizes.size());
@@ -37,6 +39,7 @@ class RegisterFile
         }
 
         reset();
+        theInOrder = anInOrder;
     }
 
     void reset()
@@ -93,18 +96,30 @@ class RegisterFile
     void map(mapped_reg aReg)
     {
         FLEXUS_PROFILE();
+
+        if (theInOrder)
+            return;
+
         theStatus[aReg.theType][aReg.theIndex] = kNotReady;
         DBG_Assert(theDependances[aReg.theType][aReg.theIndex].empty());
     }
     void squash(mapped_reg aReg, uArch& aCore)
     {
         FLEXUS_PROFILE();
+
+        if (theInOrder)
+            return;
+
         if (theStatus[aReg.theType][aReg.theIndex] != kUnmapped) { theStatus[aReg.theType][aReg.theIndex] = kNotReady; }
         aCore.squash(theDependances[aReg.theType][aReg.theIndex]);
     }
     void unmap(mapped_reg aReg)
     {
         FLEXUS_PROFILE();
+
+        if (theInOrder)
+            return;
+
         theStatus[aReg.theType][aReg.theIndex] = kUnmapped;
         theDependances[aReg.theType][aReg.theIndex].clear();
     }
@@ -138,7 +153,8 @@ class RegisterFile
 
     register_value read(mapped_reg aReg)
     {
-        DBG_Assert(theStatus[aReg.theType][aReg.theIndex] == kReady);
+        if (!theInOrder)
+            DBG_Assert(theStatus[aReg.theType][aReg.theIndex] == kReady);
         return peek(aReg);
     }
 

@@ -1,6 +1,7 @@
 
 #include "SemanticInstruction.hpp"
 
+#include "Instruction.hpp"
 #include "SemanticActions.hpp"
 #include "Validations.hpp"
 
@@ -262,21 +263,39 @@ SemanticInstruction::reinstate()
     }
 }
 
+bool SemanticInstruction::canDispatch() {
+    FLEXUS_PROFILE();
+    for (auto &a: theDispatchChecks)
+        if (!a->canDispatch())
+            return false;
+    return true;
+}
+
 void
 SemanticInstruction::doDispatchEffects()
 {
-    DISPATCH_DBG("START DISPATCHING ACTIONS");
+    DISPATCH_DBG("START DISPATCHING EFFECTS");
     FLEXUS_PROFILE();
     ArchInstruction::doDispatchEffects();
+    theDispatchEffects.invoke(*this);
+    DISPATCH_DBG("FINISH DISPATCHING EFFECTS");
+};
+
+void
+SemanticInstruction::doDispatchActions()
+{
+    DISPATCH_DBG("START DISPATCHING ACTIONS");
+    FLEXUS_PROFILE();
+    ArchInstruction::doDispatchActions();
     while (!theDispatchActions.empty()) {
-        core()->create(theDispatchActions.front());
+        auto &a = theDispatchActions.front();
+        if (a->evalNow())
+            a->evaluate();
+        else
+            core()->create(a);
         theDispatchActions.pop_front();
     }
     DISPATCH_DBG("FINISH DISPATCHING ACTIONS");
-
-    DISPATCH_DBG("START DISPATCHING EFFECTS");
-    theDispatchEffects.invoke(*this);
-    DISPATCH_DBG("FINISH DISPATCHING EFFECTS");
 };
 
 void

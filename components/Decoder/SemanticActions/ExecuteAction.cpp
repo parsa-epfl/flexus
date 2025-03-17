@@ -97,10 +97,14 @@ struct ExecuteAction : public ExecuteBase
         DBG_(VVerb, (<< "Trying to Execute " << *this));
 
         if (ready()) {
-
             DBG_(VVerb, (<< "Executing " << *this));
 
             if (theInstruction->hasPredecessorExecuted()) {
+                if (!core()->reqEU(theOperation->euType())) {
+                    reschedule();
+                    return;
+                }
+
                 std::vector<Operand> operands;
                 for (int32_t i = 0; i < numOperands(); ++i) {
                     operands.push_back(op(theOperands[i]));

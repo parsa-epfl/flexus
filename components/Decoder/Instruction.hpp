@@ -75,7 +75,9 @@ class ArchInstruction : public nuArch::Instruction
 
     virtual void connectuArch(uArch& auArch) { theuArch = &auArch; };
 
+    virtual bool canDispatch();
     virtual void doDispatchEffects();
+    virtual void doDispatchActions();
     virtual void squash() {}
     virtual void pageFault(bool p = true) { thePageFault = p; }
     virtual bool isPageFault() const { return thePageFault; }

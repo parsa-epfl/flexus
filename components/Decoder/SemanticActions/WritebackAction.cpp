@@ -59,10 +59,19 @@ struct WritebackAction : public BaseSemanticAction
         BaseSemanticAction::squash(anArg);
     }
 
+    bool canDispatch() {
+        return core()->canDispatch(theInstruction->operand<mapped_reg>(theRd), false);
+    }
+
     void doEvaluate()
     {
 
         if (ready()) {
+            if (!theInstruction->hasPredecessorExecuted()) {
+                reschedule();
+                return;
+            }
+
             DBG_(VVerb, (<< "Writing " << theResult << " to " << theRd));
 
             register_value result =

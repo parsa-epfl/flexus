@@ -178,6 +178,7 @@ addReadCC(SemanticInstruction* inst, int32_t anOpNumber, std::list<InternalDepen
     setCCS(inst, cRS, 0);
     inst->addDispatchEffect(mapSource(inst, cRS, cPS));
     simple_action act = readRegisterAction(inst, cPS, cOperand, false, is_64);
+    inst->addDispatchCheck(act.action);
     connect(dependances, act);
     inst->addDispatchAction(act);
 }
@@ -189,6 +190,11 @@ addSetCC(SemanticInstruction* inst, predicated_action& exec, bool is64)
     inst->addDispatchEffect(mapCCDestination(inst));
     dependant_action cc = writeccAction(inst, kCCpd, is64);
     addAnnulment(inst, exec, cc.dependance);
+
+    simple_action map = mapDestInOrderAction(inst, kCCpd);
+    inst->addDispatchCheck(cc.action);
+    inst->addDispatchAction(map);
+
     connectDependance(cc.dependance, exec);
     connectDependance(inst->retirementDependance(), cc);
 }
@@ -216,6 +222,7 @@ addReadXRegister(SemanticInstruction* inst,
     inst->addDispatchEffect(mapSource(inst, cRS, cPS));
     simple_action act = readRegisterAction(inst, cPS, cOperand, rs == 31, is_64);
     connect(dependances, act);
+    inst->addDispatchCheck(act.action);
     inst->addDispatchAction(act);
     inst->addPrevalidation(validateXRegister(rs, cOperand, inst, is_64));
 }
@@ -297,6 +304,11 @@ addWriteback(SemanticInstruction* inst,
     dependant_action wb = writebackAction(inst, aRegisterCode, aMappedRegisterCode, a64, name.theIndex == 31, setflags);
     addAnnulment(inst, exec, wb.dependance);
 
+    simple_action map = mapDestInOrderAction(inst, aMappedRegisterCode);
+
+    inst->addDispatchCheck(wb.action);
+    inst->addDispatchAction(map);
+
     // Make writeback depend on execute, make retirement depend on writeback
     connectDependance(wb.dependance, exec);
     connectDependance(inst->retirementDependance(), wb);
@@ -323,6 +335,11 @@ addWriteback1(SemanticInstruction* inst,
     dependant_action wb = writebackAction(inst, aRegisterCode, aMappedRegisterCode, a64, name.theIndex == 31, setflags);
     addAnnulment(inst, exec, wb.dependance);
 
+    simple_action map = mapDestInOrderAction(inst, aMappedRegisterCode);
+
+    inst->addDispatchCheck(wb.action);
+    inst->addDispatchAction(map);
+
     // Make writeback depend on execute, make retirement depend on writeback
     connectDependance(wb.dependance, exec);
     connectDependance(inst->retirementDependance(), wb);
@@ -348,6 +365,11 @@ addWriteback2(SemanticInstruction* inst,
 
     dependant_action wb = writebackAction(inst, aRegisterCode, aMappedRegisterCode, a64, name.theIndex == 31, setflags);
     addAnnulment(inst, exec, wb.dependance);
+
+    simple_action map = mapDestInOrderAction(inst, aMappedRegisterCode);
+
+    inst->addDispatchCheck(wb.action);
+    inst->addDispatchAction(map);
 
     // Make writeback depend on execute, make retirement depend on writeback
     connectDependance(wb.dependance, exec);

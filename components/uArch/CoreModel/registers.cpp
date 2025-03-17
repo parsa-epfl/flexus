@@ -26,8 +26,10 @@ CoreImpl::mapRegister(mapped_reg aRegister)
 {
     FLEXUS_PROFILE();
     DBG_(VVerb, (<< theName << " Mapping " << aRegister));
-    eResourceStatus status = theRegisters.status(aRegister);
-    DBG_Assert(status == kUnmapped, (<< " aRegister=" << aRegister << " status=" << status));
+    if(!theInOrderExecute) {
+        eResourceStatus status = theRegisters.status(aRegister);
+        DBG_Assert(status == kUnmapped, (<< " aRegister=" << aRegister << " status=" << status));
+    }
     theRegisters.map(aRegister);
 }
 
@@ -126,8 +128,10 @@ CoreImpl::create(reg aReg)
     std::tie(mapped.first.theIndex, mapped.second.theIndex) = mapTable(aReg.theType).create(aReg.theIndex);
     mapRegister(mapped.first);
 
-    eResourceStatus status = theRegisters.status(mapped.second);
-    DBG_Assert(status != kUnmapped, (<< " aRegister=" << mapped.second << " status=" << status));
+    if(!theInOrderExecute) {
+        eResourceStatus status = theRegisters.status(mapped.second);
+        DBG_Assert(status != kUnmapped, (<< " aRegister=" << mapped.second << " status=" << status));
+    }
     // This assertion is extremely slow - 15% of total execution time.  Enable
     // at your own risk.
     /*
@@ -167,6 +171,8 @@ CoreImpl::restore(reg aName, mapped_reg aReg)
                (<< "MapTable Invariant check failed after restoring " << aReg
                 << "MapTable: " << mapTable(aReg.theType)));
     */
+    if (theInOrderExecute)
+        theRegisters.setStatus(aReg, kReady);
 }
 
 void

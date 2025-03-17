@@ -90,7 +90,7 @@ typedef struct ADDS : public Operation
             carry = pstate.C();
         }
 
-        
+
         // https://developer.arm.com/documentation/ddi0602/2024-03/Shared-Pseudocode/shared-functions-integer?lang=en#impl-shared.AddWithCarry.3
         // (bits(N), bits(4)) AddWithCarry(bits(N) x, bits(N) y, bit carry_in)
         //     integer unsigned_sum = UInt(x) + UInt(y) + UInt(carry_in);
@@ -134,9 +134,9 @@ typedef struct ADDS : public Operation
 
         return result;
     }
-    virtual char const* describe() const { 
+    virtual char const* describe() const {
         if (theSize == 64) {
-            return "ADDS64"; 
+            return "ADDS64";
         } else {
             return "ADDS32";
         }
@@ -182,7 +182,7 @@ typedef struct SUBS : public Operation
             carry = pstate.C();
         }
 
-        
+
         // https://developer.arm.com/documentation/ddi0602/2024-03/Shared-Pseudocode/shared-functions-integer?lang=en#impl-shared.AddWithCarry.3
         // (bits(N), bits(4)) AddWithCarry(bits(N) x, bits(N) y, bit carry_in)
         //     integer unsigned_sum = UInt(x) + UInt(y) + UInt(carry_in);
@@ -226,9 +226,9 @@ typedef struct SUBS : public Operation
 
         return result;
     }
-    virtual char const* describe() const { 
+    virtual char const* describe() const {
         if (theSize == 64) {
-            return "SUBS64"; 
+            return "SUBS64";
         } else {
             return "SUBS32";
         }
@@ -610,6 +610,7 @@ typedef struct UMul : public Operation
     virtual Operand operator()(std::vector<Operand> const& operands) { return calc(operands); }
     virtual Operand evalExtra(std::vector<Operand> const& operands) { return calc(operands) >> 32; }
     virtual char const* describe() const { return "UMul"; }
+    virtual int euType() const { return eMUL; }
 } UMul_;
 
 typedef struct UMulH : public Operation
@@ -627,6 +628,7 @@ typedef struct UMulH : public Operation
     virtual Operand operator()(std::vector<Operand> const& operands) { return calc(operands); }
     virtual Operand evalExtra(std::vector<Operand> const& operands) { return calc(operands) >> 32; }
     virtual char const* describe() const { return "UMulH"; }
+    virtual int euType() const { return eMUL; }
 } UMulH_;
 
 typedef struct UMulL : public Operation
@@ -644,6 +646,7 @@ typedef struct UMulL : public Operation
     virtual Operand operator()(std::vector<Operand> const& operands) { return calc(operands); }
     virtual Operand evalExtra(std::vector<Operand> const& operands) { return calc(operands) >> 32; }
     virtual char const* describe() const { return "UMulL"; }
+    virtual int euType() const { return eMUL; }
 } UMulL_;
 
 typedef struct SMul : public Operation
@@ -663,6 +666,7 @@ typedef struct SMul : public Operation
     virtual Operand operator()(std::vector<Operand> const& operands) { return calc(operands); }
     virtual Operand evalExtra(std::vector<Operand> const& operands) { return calc(operands) >> 32; }
     virtual char const* describe() const { return "SMul"; }
+    virtual int euType() const { return eMUL; }
 } SMul_;
 
 typedef struct SMulH : public Operation
@@ -681,6 +685,7 @@ typedef struct SMulH : public Operation
     virtual Operand operator()(std::vector<Operand> const& operands) { return calc(operands); }
     virtual Operand evalExtra(std::vector<Operand> const& operands) { return calc(operands) >> 32; }
     virtual char const* describe() const { return "SMulH"; }
+    virtual int euType() const { return eMUL; }
 } SMulH_;
 
 typedef struct SMulL : public Operation
@@ -698,6 +703,7 @@ typedef struct SMulL : public Operation
     virtual Operand operator()(std::vector<Operand> const& operands) { return calc(operands); }
     virtual Operand evalExtra(std::vector<Operand> const& operands) { return calc(operands) >> 32; }
     virtual char const* describe() const { return "SMulL"; }
+    virtual int euType() const { return eMUL; }
 } SMulL_;
 
 typedef struct UDiv : public Operation
@@ -717,6 +723,7 @@ typedef struct UDiv : public Operation
     virtual Operand operator()(std::vector<Operand> const& operands) { return calc(operands); }
     virtual Operand evalExtra(std::vector<Operand> const& operands) { return calc(operands) >> 32; }
     virtual char const* describe() const { return "UDiv"; }
+    virtual int euType() const { return eMUL; }
 } UDiv_;
 
 typedef struct SDiv : public Operation
@@ -743,6 +750,7 @@ typedef struct SDiv : public Operation
     virtual Operand operator()(std::vector<Operand> const& operands) { return calc(operands); }
     virtual Operand evalExtra(std::vector<Operand> const& operands) { return calc(operands) >> 32; }
     virtual char const* describe() const { return "SDiv"; }
+    virtual int euType() const { return eMUL; }
 } SDiv_;
 
 typedef struct MulX : public Operation
@@ -755,6 +763,7 @@ typedef struct MulX : public Operation
         return boost::get<uint64_t>(operands[0]) * boost::get<uint64_t>(operands[1]);
     }
     virtual char const* describe() const { return "MulX"; }
+    virtual int euType() const { return eMUL; }
 } MulX_;
 
 typedef struct UDivX : public Operation
@@ -772,6 +781,7 @@ typedef struct UDivX : public Operation
         }
     }
     virtual char const* describe() const { return "UDivX"; }
+    virtual int euType() const { return eMUL; }
 } UDivX_;
 
 typedef struct SDivX : public Operation
@@ -791,6 +801,7 @@ typedef struct SDivX : public Operation
         }
     }
     virtual char const* describe() const { return "SDivX"; }
+    virtual int euType() const { return eMUL; }
 } SDivX_;
 
 typedef struct MOV_ : public Operation

@@ -134,6 +134,7 @@ struct freq_opts
 {
     uint32_t* freq;
     uint32_t maxFreq;
+    uint32_t scaleFactor;
 };
 
 } // end namespace Core

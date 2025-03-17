@@ -70,6 +70,10 @@ struct ReadRegisterAction : public BaseSemanticAction
         return true;
     }
 
+    bool canDispatch() {
+        return core()->canDispatch(theInstruction->operand<mapped_reg>(theRegisterCode), true);
+    }
+
     void doEvaluate()
     {
         DBG_(VVerb, (<< *this));
@@ -111,7 +115,7 @@ struct ReadRegisterAction : public BaseSemanticAction
                 mapped_reg name        = theInstruction->operand<mapped_reg>(theRegisterCode);
                 eResourceStatus status = core()->requestRegister(name);
 
-                if (status == kReady) {
+                if ((status == kReady) || core()->canReadInOrder(theInstruction->sequenceNo(), name)) {
                     aValue = core()->readRegister(name);
                     val    = boost::get<uint64_t>(aValue);
                 } else {

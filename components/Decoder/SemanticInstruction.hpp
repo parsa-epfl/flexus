@@ -33,6 +33,8 @@ struct SemanticInstruction : public ArchInstruction
     std::list<std::function<bool()>> thePostValidations;
     std::list<std::function<void()>> theOverrideFns;
 
+    std::list<SemanticAction *> theDispatchChecks;
+
     bool theOverrideSimics;
     bool thePrevalidationsPassed;
     bool theRetirementDepends[4];
@@ -88,9 +90,15 @@ struct SemanticInstruction : public ArchInstruction
     void setIsMicroOp(bool isUop) { theIsMicroOp = isUop; }
     bool isMicroOp() const { return theIsMicroOp; }
 
+    void addDispatchCheck(SemanticAction *anAction) {
+        theDispatchChecks.push_back(anAction);
+}
+
     bool preValidate();
     bool postValidate();
+    bool canDispatch();
     void doDispatchEffects();
+    void doDispatchActions();
     void squash();
     void pageFault();
     bool isPageFault() const;

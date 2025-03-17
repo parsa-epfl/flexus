@@ -15,6 +15,7 @@ COMPONENT_PARAMETERS(
   PARAMETER( SBSize, uint32_t, "Store buffer size", "sb", 256 )
   PARAMETER( NAWBypassSB, bool, "Allow Non-Allocating-Writes to bypass store-buffer", "naw_bypass_sb", false )
   PARAMETER( NAWWaitAtSync, bool, "Force MEMBAR #Sync to wait for non-allocating writes to finish", "naw_wait_at_sync", false )
+  PARAMETER( DispatchWidth, uint32_t, "Dispatch width", "dispatch", 4 )
   PARAMETER( RetireWidth, uint32_t, "Retirement width", "retire", 8 )
   PARAMETER( MemoryPorts, uint32_t, "Memory Ports", "memports", 4 )
   PARAMETER( SnoopPorts, uint32_t, "Snoop Ports", "snoopports", 1 )
@@ -46,6 +47,8 @@ COMPONENT_PARAMETERS(
   PARAMETER( IntMultOpPipelineResetTime, uint32_t, "Number of cycles required between subsequent integer MUL operations", "intMultOpPipelineResetTime", 1)
   PARAMETER( IntDivOpLatency, uint32_t, "End-to-end latency of an integer DIV operation", "intDivOpLatency", 1)
   PARAMETER( IntDivOpPipelineResetTime, uint32_t, "Number of cycles required between subsequent integer DIV operations", "intDivOpPipelineResetTime", 1)
+
+  PARAMETER( NumAGU, uint32_t, "Number of Address Generation Units", "numAgu", 1)
 
   PARAMETER( NumFpAlu, uint32_t, "Number of FP ALUs", "numFpAlu", 1)
   PARAMETER( FpAddOpLatency, uint32_t, "End-to-end latency of an FP ADD/SUB operation", "fpAddOpLatency", 1)

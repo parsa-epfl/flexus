@@ -38,6 +38,7 @@ struct SemanticAction
     virtual void squashDependants() {}
     virtual void addRef() {}
     virtual void releaseRef() {}
+    virtual bool canDispatch() { return true; }
     virtual int64_t instructionNo() const { return 0; }
     virtual ~SemanticAction() {}
 };
@@ -481,6 +482,7 @@ struct uArchOptions_t
     int32_t SBSize;
     bool NAWBypassSB;
     bool NAWWaitAtSync;
+    int32_t dispatchWidth;
     int32_t retireWidth;
     int32_t numMemoryPorts;
     int32_t numSnoopPorts;
@@ -515,6 +517,8 @@ struct uArchOptions_t
     uint32_t intDivOpLatency;
     uint32_t intDivOpPipelineResetTime;
 
+    uint32_t numAGU;
+
     uint32_t numFpAlu;
     uint32_t fpAddOpLatency;
     uint32_t fpAddOpPipelineResetTime;
@@ -535,7 +539,9 @@ struct uArchOptions_t
 struct Instruction : public Flexus::SharedTypes::AbstractInstruction
 {
     virtual void connectuArch(uArch& uArch) = 0;
+    virtual bool canDispatch()              = 0;
     virtual void doDispatchEffects()        = 0; // used
+    virtual void doDispatchActions()        = 0; // used
     virtual void squash()                   = 0;
     virtual void pageFault(bool p = true)   = 0;
     virtual bool isPageFault() const        = 0;
@@ -1080,6 +1086,21 @@ struct uArch
     {
         DBG_Assert(false);
         return 0;
+    }
+    virtual bool canDispatch(mapped_reg &reg, bool isRead) {
+      DBG_Assert(false);
+      return false;
+    }
+    virtual void mapDestInOrder(int64_t seq, mapped_reg &reg) {
+      DBG_Assert(false);
+    }
+    virtual bool canReadInOrder(int64_t seq, mapped_reg &reg) {
+      DBG_Assert(false);
+      return false;
+    }
+    virtual bool reqEU(int et) {
+      DBG_Assert(false);
+      return false;
     }
 };
 

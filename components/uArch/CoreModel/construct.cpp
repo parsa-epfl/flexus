@@ -27,6 +27,12 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , thePendingTrap(kException_None)
   , theBypassNetwork(kxRegs_Total + 3 * options.ROBSize, kvRegs + 4 * options.ROBSize, kccRegs + 2 * options.ROBSize)
   , theLastGarbageCollect(0)
+  , theDispatchStalled(false)
+  , theDispatchWidth(options.dispatchWidth)
+  , theDispatchingInsts()
+  , theUsedALU(0)
+  , theUsedMUL(0)
+  , theUsedAGU(0)
   , thePreserveInteractions(false)
   , theMemoryPortArbiter(*this, options.numMemoryPorts, options.numStorePrefetches)
   , theROBSize(options.ROBSize)
@@ -245,6 +251,9 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , intMultCyclesToReady(options.numIntMult, 0)
   , fpAluCyclesToReady(options.numFpAlu, 0)
   , fpMultCyclesToReady(options.numFpMult, 0)
+  , numALU(options.numIntAlu)
+  , numMUL(options.numIntMult)
+  , numAGU(options.numAGU)
 {
 
     // Msutherl - for MMU verification. Remove when done
@@ -253,21 +262,36 @@ CoreImpl::CoreImpl(uArchOptions_t options,
     // original constructor continues here...
     prepareMemOpAccounting();
 
+    bool inOrder = (theInOrderExecute == 1);
     std::vector<uint32_t> reg_file_sizes;
     reg_file_sizes.resize(kLastMapTableCode + 2);
-    reg_file_sizes[xRegisters] = kxRegs_Total + 3 * theROBSize;
-    reg_file_sizes[vRegisters] = kvRegs + 4 * theROBSize;
-    reg_file_sizes[ccBits]     = kccRegs + 2 * theROBSize;
-    theRegisters.initialize(reg_file_sizes);
+
+    if (inOrder) {
+        reg_file_sizes[xRegisters] = kxRegs_Total;
+        reg_file_sizes[vRegisters] = kvRegs;
+        reg_file_sizes[ccBits]     = kccRegs;
+    } else {
+        reg_file_sizes[xRegisters] = kxRegs_Total + 3 * theROBSize;
+        reg_file_sizes[vRegisters] = kvRegs + 4 * theROBSize;
+        reg_file_sizes[ccBits]     = kccRegs + 2 * theROBSize;
+    }
+
+    theRegisters.initialize(reg_file_sizes, inOrder);
 
     // Map table for xRegisters
-    theMapTables.push_back(std::make_shared<PhysicalMap>(kxRegs_Total, reg_file_sizes[xRegisters]));
+    theMapTables.push_back(std::make_shared<PhysicalMap>(kxRegs_Total, reg_file_sizes[xRegisters], inOrder));
 
     // Map table for vRegisters
-    theMapTables.push_back(std::make_shared<PhysicalMap>(kvRegs, reg_file_sizes[vRegisters]));
+    theMapTables.push_back(std::make_shared<PhysicalMap>(kvRegs, reg_file_sizes[vRegisters], inOrder));
 
     // Map table for ccBits
-    theMapTables.push_back(std::make_shared<PhysicalMap>(kccRegs, reg_file_sizes[ccBits]));
+    theMapTables.push_back(std::make_shared<PhysicalMap>(kccRegs, reg_file_sizes[ccBits], inOrder));
+
+    for (auto i = 0; i < kxRegs_Total; ++i)
+        theXRScoreboard[i] = 0;
+
+    for (auto i = 0; i < kccRegs; ++i)
+        theCCScoreboard[i] = 0;
 
     reset();
 
@@ -334,6 +358,9 @@ CoreImpl::resetCore()
 
     theDispatchInteractions.clear();
     thePreserveInteractions = false;
+
+    theDispatchStalled = false;
+    theDispatchingInsts.clear();
 
     theROB.clear();
 

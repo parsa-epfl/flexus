@@ -95,6 +95,7 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
       private:
         Block* theBlocks;
         int theAssociativity;
+        uint32_t theNumSharers;
 
         friend class StdDirectory;
 
@@ -106,6 +107,8 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
             for (int32_t way = 0; way < theAssociativity; way++) {
                 theBlocks[way].state().reset(aNumSharers);
             }
+
+            theNumSharers = aNumSharers;
         }
         virtual ~Set() {}
 
@@ -153,10 +156,27 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
             return best;
         }
 
-        virtual void load_dir_from_ckpt(std::string const& filename)
+        virtual void load_dir_from_ckpt(const json &set_checkpoint)
         {
-            // Not implemented
-            DBG_Assert(false, (<< "Not IMPLEMENTED"));
+            // Read it from the json. 
+            assert(set_checkpoint.size() <= theAssociativity);
+
+            for (uint64_t i = 0; i < set_checkpoint.size(); i++) {
+                theBlocks[i].setTag(set_checkpoint.at(i)["tag"]);
+                std::bitset<MAX_NUM_SHARERS> sharers(set_checkpoint.at(i)["sharers"].get<std::string>());
+                DBG_Assert(sharers.size() <= MAX_NUM_SHARERS, (<< "Sharers size mismatch"));
+                SimpleDirectoryState state(theNumSharers);
+                state = sharers;
+                theBlocks[i].setState(state);
+                theBlocks[i].setProtected(false);
+            }
+
+            // set the rest of the blocks to be invalid.
+            for (uint64_t i = set_checkpoint.size(); i < theAssociativity; i++) {
+                theBlocks[i].setTag(0);
+                theBlocks[i].setState(SimpleDirectoryState(theNumSharers));
+                theBlocks[i].setProtected(false);
+            }
         }
     };
 
@@ -203,8 +223,10 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
             return ((a >> setLowShift) & setLowMask) | ((a >> setMidShift) & setMidMask) |
                    ((a >> setHighShift) & setHighMask);
         } else {
-            return ((addr >> setLowShift) & setLowMask) | ((addr >> setMidShift) & setMidMask) |
-                   ((addr >> setHighShift) & setHighMask);
+            // return ((addr >> setLowShift) & setLowMask) | ((addr >> setMidShift) & setMidMask) |
+            //        ((addr >> setHighShift) & setHighMask);
+
+            return ((addr >> 6 >> log_base2(theNumSharers / 2))) % theNumSets;
         }
     }
 
@@ -246,6 +268,8 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
         theGroupIndex        = theInfo.theNodeId / theBanks;
         theNumSharers        = theInfo.theCores;
         theTotalBanks        = theBanks * theGroups;
+
+        theSkewSet           = false;
 
         std::list<std::pair<std::string, std::string>>::const_iterator iter = theConfiguration.begin();
         for (; iter != theConfiguration.end(); iter++) {
@@ -342,10 +366,19 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
               << ", NumSharers = " << theNumSharers));
     }
 
+    void checkAddress(uint64_t address) {
+        uint64_t node_idx_of_cacheline = (address >> 6) % (theNumSharers / 2);
+        DBG_Assert(node_idx_of_cacheline == theGlobalBankIndex,
+                    (<< "Address " << std::hex << address << " is not in the correct node. Expected node "
+                    << theTotalBanks << " but got node " << node_idx_of_cacheline));
+    }
+
     virtual bool allocate(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup,
                           MemoryAddress address,
                           const _State& state)
     {
+        // checkAddress((uint64_t)address);
+        
         StdLookupResult* std_lookup = dynamic_cast<StdLookupResult*>(lookup.get());
         DBG_Assert(std_lookup != nullptr, (<< "allocate() was not passed a valid StdLookupResult"));
         bool success, has_victim;
@@ -363,6 +396,8 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
         DBG_(VVerb,
              (<< "StdDirectory::lookup(0x" << std::hex << (uint64_t)address << ") in set 0x" << std::hex
               << makeSet(address)));
+        
+        // checkAddress((uint64_t)address);
         return theSets[makeSet(address)]->lookup(makeTag(address));
     }
 
@@ -372,8 +407,58 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
 
     virtual void load_dir_from_ckpt(std::string const& filename)
     {
-        // Not implemented
-        DBG_Assert(false, (<< "Not IMPLEMENTED"));
+
+        // certain sanity check here:
+        // - Block size has to be 64B.
+        // - The bank size is 1.
+        // - The group size is 1.
+        // - The bank interleaving is 64B.
+
+        DBG_Assert(theBlockSize == 64, (<< "Block size has to be 64B. But got " << theBlockSize));
+        DBG_Assert(theBankInterleaving == 64, (<< "The bank interleaving has to be 64B. But got " << theBankInterleaving));
+
+        std::ifstream ifs(filename.c_str(), std::ios::in);
+
+        if (!ifs.good()) {
+            DBG_(Dev, (<< "checkpoint file: " << filename << " not found."));
+            DBG_Assert(false, (<< "FILE NOT FOUND"));
+        }
+
+        json checkpoint;
+        ifs >> checkpoint;
+
+        // empty the directory
+        for (int32_t i = 0; i < theNumSets; i++) {
+            // before loading the set, we need to make sure all elements in the json
+            // are beloing to this set and the node index.
+            for (uint32_t j = 0; j < checkpoint.at(i).size(); j++) {
+                uint64_t address = checkpoint.at(i).at(j)["tag"];
+                uint64_t node_idx_of_cacheline = (address >> 6) % (theNumSharers / 2);
+                DBG_Assert(node_idx_of_cacheline == theGlobalBankIndex,
+                           (<< "Address " << std::hex << address << " is not in the correct node. Expected node "
+                            << theTotalBanks << " but got node " << node_idx_of_cacheline));
+
+                if (makeSet(PhysicalMemoryAddress(address)) != i) {
+                    DBG_(Crit, (<< "Address " << std::hex << address
+                                << " is not in the correct set. Expected set " << i
+                                << " but got set " << makeSet(PhysicalMemoryAddress(address))));
+                    DBG_(Crit, (<< "theSkewSet: " << theSkewSet << " setLowShift: " << setLowShift << "setLowMask: " << setLowMask << " setMidShift: " << setMidShift
+                                << " setMidMask: " << setMidMask << " setHighShift: " << setHighShift << " setHighMask: " << setHighMask));
+                }
+
+
+                DBG_Assert(makeSet(PhysicalMemoryAddress(address)) == i, (<< "Address " << std::hex << address
+                                                   << " is not in the correct set. Expected set " << i
+                                                   << " but got set " << makeSet(PhysicalMemoryAddress(address))));
+
+            }
+            this->theSets[i]->load_dir_from_ckpt(checkpoint.at(i));
+        }
+
+
+
+        DBG_(Trace, (<< "Directory loaded"));
+        ifs.close();
     }
 };
 

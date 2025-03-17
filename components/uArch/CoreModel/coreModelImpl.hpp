@@ -145,6 +145,16 @@ class CoreImpl : public CoreModel
     std::list<boost::intrusive_ptr<Interaction>> theDispatchInteractions;
     bool thePreserveInteractions;
 
+    bool theDispatchStalled;
+    uint64_t theDispatchWidth;
+    std::list<boost::intrusive_ptr<Instruction>> theDispatchingInsts;
+
+    int64_t theXRScoreboard [kxRegs_Total];
+    int64_t theCCScoreboard [kccRegs];
+    uint64_t theUsedALU;
+    uint64_t theUsedMUL;
+    uint64_t theUsedAGU;
+
     // Resource arbitration
     MemoryPortArbiter theMemoryPortArbiter;
 
@@ -481,6 +491,10 @@ class CoreImpl : public CoreModel
     std::vector<uint32_t> intMultCyclesToReady;
     std::vector<uint32_t> fpAluCyclesToReady;
     std::vector<uint32_t> fpMultCyclesToReady;
+
+    uint64_t numALU;
+    uint64_t numMUL;
+    uint64_t numAGU;
 
     /* Msutherl: Additions for RPCProc */
     bool collectTrace;
@@ -866,6 +880,12 @@ class CoreImpl : public CoreModel
     void finishMiss(boost::intrusive_ptr<TransactionTracker> tracker, bool matched_mshr);
     void processTable();
 
+
+    bool canDispatch(mapped_reg &reg, bool isRead);
+    void mapDestInOrder(int64_t seq, mapped_reg &reg);
+    bool canReadInOrder(int64_t seq, mapped_reg &reg);
+    bool reqEU(int et);
+    
     // Debugging
     //==========================================================================
   public:

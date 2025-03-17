@@ -55,6 +55,8 @@ typedef enum eExtendType
 using nuArch::eSize;
 using nuArch::SemanticAction;
 
+enum euType { eALU, eMUL, eAGU };
+
 struct Operation
 {
     Operation(uint32_t aSize = 64)
@@ -67,6 +69,7 @@ struct Operation
     virtual Operand operator()(std::vector<Operand> const& operands) = 0;
     virtual Operand evalExtra(std::vector<Operand> const& operands) { return (uint64_t)0; }
     virtual char const* describe() const = 0;
+    virtual int euType() const { return eALU; }
 
     void setOperands(Operand aValue) { theOperands.push_back(aValue); }
 
@@ -99,6 +102,7 @@ class BaseSemanticAction
     bool theReady[5];
     int32_t theNumOperands;
 
+    bool theEvalNow;
     struct Dep : public DependanceTarget
     {
         BaseSemanticAction& theAction;
@@ -114,11 +118,12 @@ class BaseSemanticAction
     SemanticInstruction* theInstruction;
     bool theScheduled;
 
-    BaseSemanticAction(SemanticInstruction* anInstruction, int32_t aNumOperands)
+    BaseSemanticAction(SemanticInstruction* anInstruction, int32_t aNumOperands, bool now = false)
       : theEndOfDependances(0)
       , theSignalled(false)
       , theSquashed(false)
       , theNumOperands(aNumOperands)
+      , theEvalNow(now)
       , theDependanceTarget(*this)
       , theInstruction(anInstruction)
       , theScheduled(false)
@@ -143,6 +148,8 @@ class BaseSemanticAction
         DBG_Assert(anArg < theNumOperands);
         return InternalDependance(&theDependanceTarget, anArg);
     }
+
+    bool evalNow() const { return theEvalNow; }
 
   protected:
     virtual void doEvaluate() { DBG_Assert(false); }
@@ -226,6 +233,10 @@ void
 connectDependance(InternalDependance const& aDependant, simple_action& aSource);
 void
 connect(std::list<InternalDependance> const& dependances, simple_action& aSource);
+
+simple_action
+mapDestInOrderAction(SemanticInstruction* anInstruction,
+                     eOperandCode aMappedRegisterCode);
 
 simple_action
 readRegisterAction(SemanticInstruction* anInstruction,

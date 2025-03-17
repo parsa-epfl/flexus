@@ -3,6 +3,7 @@
 
 #include "BTB.hpp"
 #include "TAGEImpl.hpp"
+#include "RAS.hpp"
 #include "core/stats.hpp"
 #include "core/types.hpp"
 
@@ -18,6 +19,7 @@ class BranchPredictor
     uint32_t theSerial;
     BTB theBTB;
     PREDICTOR theTage;
+    ReturnAddressStack RAS;
 
   public:
     Stat::StatCounter theBranches;
@@ -35,6 +37,8 @@ class BranchPredictor
     Stat::StatCounter theMispredict_BTB;
     Stat::StatCounter theMispredict_BTB_User;
     Stat::StatCounter theMispredict_BTB_System;
+    Stat::StatCounter theMispredict_Return;
+    Stat::StatCounter theMispredict_Indirect;
 
 
   private:
