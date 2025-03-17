@@ -87,11 +87,11 @@ class StdLookupResult : public AbstractLookupResult<_State>
     const _State& state() const { return (isHit ? theBlock->state() : theOrigState); }
     void setState(const _State& aNewState, bool force = false) { 
         if (force) {
-            if (theBlock == nullptr)
+            if (theBlock == nullptr) {
                 theBlock = new Block<_State, _DefaultState>();
-
+                theForce = true;
+            }
             isHit = aNewState !=  BasicCacheState::Invalid;
-            theForce = true;
         }
         theBlock->state() = aNewState; 
     }

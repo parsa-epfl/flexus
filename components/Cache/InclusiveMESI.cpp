@@ -720,8 +720,10 @@ InclusiveMESI::handleBackMessage(MemoryTransport transport)
     // Do a cache lookup
     LookupResult_p result = (*theArray)[msg->address()];
 
-    if (thePerfect)
+    if (thePerfect) {
+        DBG_(Crit, (<< " Received message: " << *msg << " while perfect"));
         DBG_Assert(false);
+    }
 
     // Look for an outstanding request
     MemoryMessage_p original_miss;
