@@ -449,7 +449,7 @@ BranchInteraction::operator()(boost::intrusive_ptr<Instruction> anInstruction, u
     //            (<< "BranchInteraction invoked without a target")); // This is possible, because of the misprediction.
     if (anInstruction->pc() != theIssuer->bpState()->theActualTarget) {
         DBG_(Verb, (<< *anInstruction << " Branch Redirection."));
-        if (aCore.squashFrom(anInstruction)) {
+        if (!anInstruction->isSquashed() && aCore.squashFrom(anInstruction)) {
             boost::intrusive_ptr<BPredRedictRequest> aRequest = new BPredRedictRequest();
             aRequest->theTarget = theIssuer->bpState()->theActualTarget;
             aRequest->theBPState = theIssuer->bpState();

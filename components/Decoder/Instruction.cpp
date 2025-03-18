@@ -100,7 +100,7 @@ ArchInstruction::doDispatchActions()
     // Branch predictor identified an instruction that is not a branch as a branch.
     DBG_(VVerb, (<< *this << " predicted as a branch, but is a non-branch. Fixing"));
 
-    if (core()->squashFrom(dynamic_cast<Instruction*>(this), false)) { 
+    if (!this->isSquashed() && core()->squashFrom(dynamic_cast<Instruction*>(this), false)) { 
         boost::intrusive_ptr<BPredRedictRequest> aRequest = new BPredRedictRequest();
         aRequest->theTarget = bpState()->theActualTarget;
         aRequest->theBPState = bpState();
