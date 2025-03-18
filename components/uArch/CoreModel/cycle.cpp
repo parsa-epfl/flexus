@@ -162,11 +162,11 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     thePageWalkReissues.clear();
 
     DBG_(VVerb, (<< "*** Eval *** "));
-    
+
     theUsedALU = 0;
     theUsedMUL = 0;
     theUsedAGU = 0;
-    
+
     evaluate();
 
     // redo dispatch
@@ -1543,6 +1543,11 @@ CoreImpl::doSquash()
             FLEXUS_PROFILE_N("CoreImpl::doSquash() clean-interactions");
             // Discard any defferred interactions
             theDispatchInteractions.clear();
+        }
+
+        if (theInOrderExecute) {
+            theDispatchStalled = false;
+            theDispatchingInsts.clear();
         }
 
         {
