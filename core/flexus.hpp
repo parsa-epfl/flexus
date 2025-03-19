@@ -28,6 +28,7 @@ class FlexusInterface
     virtual void terminateSimulation() = 0;
 
     virtual void setDebug(std::string const& aDebugSeverity) = 0;
+    virtual void setDebugOverride() = 0;
     virtual void setStatInterval(uint64_t aValue)            = 0;
     virtual void setStopCycle(uint64_t aValue)               = 0;
     virtual void set_log_delay(uint64_t aValue)              = 0;

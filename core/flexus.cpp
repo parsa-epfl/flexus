@@ -14,6 +14,7 @@
 
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
+#include <boost/algorithm/string.hpp>
 #include <chrono>
 #include <ctime>
 #include <fstream>
@@ -51,6 +52,8 @@ class FlexusImpl : public FlexusInterface
     bool theQuiesceRequested;
     bool theSaveRequested;
 
+    std::list<std::pair<uint64_t, std::string>> dbgOverrides;
+
   public:
     // Initialization functions
     void initializeComponents();
@@ -79,6 +82,7 @@ class FlexusImpl : public FlexusInterface
     void doLoad(std::string const& aDirName);
     void doSave(std::string const& aDirName);
     void setDebug(std::string const& aDebugSeverity);
+    void setDebugOverride();
     void terminateSimulation();
 
   public:
@@ -134,6 +138,15 @@ FlexusImpl::advanceCycles(uint32_t aCycleCount, uint32_t aTickCount)
 
     for(uint32_t tick = 0; tick < aTickCount; tick++)
         Qemu::API::qemu_api.tick();
+
+    if (dbgOverrides.size()) {
+        auto &front = dbgOverrides.front();
+
+        if (front.first == theCycleCount) {
+            setDebug(front.second);
+            dbgOverrides.pop_front();
+        }
+    }
 
     if ((theStopCycle > 0) && (theCycleCount >= theStopCycle)) {
         DBG_(Dev, (<< "Reached target cycle count. Ending simulation."));
@@ -273,6 +286,27 @@ FlexusImpl::setDebug(std::string const& aDebugSeverity)
         DBG_(Dev, (<< "Switched to Inv debugging."));
     } else {
         std::cout << "Unknown debug severity: " << aDebugSeverity << ". Severity unchanged." << std::endl;
+    }
+}
+
+void FlexusImpl::setDebugOverride() {
+    char *args = getenv("FLEXUS_DBG_OVERRIDE");
+
+    if (args == NULL)
+        return;
+
+    std::string line(args);
+    std::vector<std::string> strs;
+
+    boost::split(strs, line, boost::is_any_of(" \t\""), boost::token_compress_on);
+
+    for (const auto &str: strs) {
+        auto pos = str.find(':');
+
+        if (pos == std::string::npos)
+            continue;
+
+        dbgOverrides.emplace_back(std::stol(str.substr(0, pos)), str.substr(pos + 1));
     }
 }
 
