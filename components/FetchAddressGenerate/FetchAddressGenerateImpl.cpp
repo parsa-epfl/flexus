@@ -87,8 +87,10 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
                 theBranchPredictor->recoverHistory(*redirectRequest);
             }
 
-            theBranchPredictor->recordRedirectStats
-                (std::make_pair(redirectRequest->theBPState->thePredCycle, theFlexus->cycleCount()));
+            if(redirectRequest->theBPState !=  NULL){
+                theBranchPredictor->recordRedirectStats
+                    (std::make_pair(redirectRequest->theBPState->thePredCycle, theFlexus->cycleCount()));
+            }
             
         }
     }
