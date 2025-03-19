@@ -1545,7 +1545,7 @@ CoreImpl::doSquash()
             theDispatchInteractions.clear();
         }
 
-        if (theInOrderExecute) {
+        if (theInOrderExecute && (erase_iter != theROB.end())) {
             // the squash can come from even younger instructions
             auto seq = (*erase_iter)->sequenceNo();
 
