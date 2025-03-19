@@ -171,6 +171,7 @@ extern "C"
 
         if (dbg) Flexus::Core::theFlexus->setDebug(dbg);
 
+        Flexus::Core::theFlexus->setDebugOverride();
 
         Flexus::Core::ComponentManager::getComponentManager().instantiateComponents(ncores, freq);
 
