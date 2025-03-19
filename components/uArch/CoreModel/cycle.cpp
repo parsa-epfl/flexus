@@ -1546,8 +1546,16 @@ CoreImpl::doSquash()
         }
 
         if (theInOrderExecute) {
-            theDispatchStalled = false;
-            theDispatchingInsts.clear();
+            // the squash can come from even younger instructions
+            auto seq = (*erase_iter)->sequenceNo();
+
+            for (auto t = theDispatchingInsts.begin(); t != theDispatchingInsts.end();)
+                if ((*t)->sequenceNo() >= seq)
+                    t = theDispatchingInsts.erase(t);
+                else
+                    ++t;
+
+            theDispatchStalled = !theDispatchingInsts.empty();
         }
 
         {
