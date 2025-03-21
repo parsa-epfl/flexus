@@ -663,7 +663,7 @@ class CoreImpl : public CoreModel
     mapped_reg map(reg aReg);
     std::pair<mapped_reg, mapped_reg> create(reg aReg);
     void free(mapped_reg aReg);
-    void restore(reg aName, mapped_reg aReg);
+    void restore(reg aName, mapped_reg aReg, boost::intrusive_ptr<Instruction> anInstruction);
 
     // Synchronization with Qemu
     //==========================================================================

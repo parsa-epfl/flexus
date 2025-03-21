@@ -76,6 +76,8 @@ class ArchInstruction : public nuArch::Instruction
     virtual void connectuArch(uArch& auArch) { theuArch = &auArch; };
 
     virtual bool canDispatch();
+    virtual bool isDispatched();
+    virtual void setDispatch();
     virtual void doDispatchEffects();
     virtual void doDispatchActions();
     virtual void squash() {}

@@ -69,6 +69,7 @@ SemanticInstruction::SemanticInstruction(VirtualMemoryAddress aPC,
   , thePrevalidationsPassed(false)
   , theRetireDepCount(0)
   , theIsMicroOp(false)
+  , theDispatched(false)
   , theRetirementTarget(*this)
   , theCanRetireCounter(0)
 {
@@ -87,6 +88,7 @@ SemanticInstruction::SemanticInstruction(VirtualMemoryAddress aPC,
   , thePrevalidationsPassed(false)
   , theRetireDepCount(0)
   , theIsMicroOp(false)
+  , theDispatched(false)
   , theRetirementTarget(*this)
   , theCanRetireCounter(0)
 {
@@ -269,6 +271,16 @@ bool SemanticInstruction::canDispatch() {
         if (!a->canDispatch())
             return false;
     return true;
+}
+
+bool SemanticInstruction::isDispatched()
+{
+    return theDispatched;
+}
+
+void SemanticInstruction::setDispatch()
+{
+    theDispatched = true;
 }
 
 void

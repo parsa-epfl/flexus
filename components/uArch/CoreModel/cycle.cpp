@@ -177,6 +177,8 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
                 if (!i->canDispatch())
                     goto dispatch_cont;
                 i->doDispatchActions();
+                i->setDispatch();
+                DBG_(VVerb, (<< theName << " Dispatched " << *i));
                 t = theDispatchingInsts.erase(t);
             }
             theDispatchStalled = false;

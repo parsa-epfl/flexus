@@ -540,6 +540,8 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction
 {
     virtual void connectuArch(uArch& uArch) = 0;
     virtual bool canDispatch()              = 0;
+    virtual void setDispatch()              = 0;
+    virtual bool isDispatched()             = 0;
     virtual void doDispatchEffects()        = 0; // used
     virtual void doDispatchActions()        = 0; // used
     virtual void squash()                   = 0;
@@ -756,7 +758,7 @@ struct uArch
         return std::make_pair(mapped_reg(), mapped_reg());
     }
     virtual void free(mapped_reg aReg) { DBG_Assert(false); }
-    virtual void restore(reg aName, mapped_reg aReg) { DBG_Assert(false); }
+    virtual void restore(reg aName, mapped_reg aReg, boost::intrusive_ptr<Instruction> anInstruction) { DBG_Assert(false); }
     virtual void create(boost::intrusive_ptr<SemanticAction> anAction) { DBG_Assert(false); }
     virtual void reschedule(boost::intrusive_ptr<SemanticAction> anAction) { DBG_Assert(false); }
     virtual eResourceStatus requestRegister(mapped_reg aRegister, InstructionDependance const& aDependance)

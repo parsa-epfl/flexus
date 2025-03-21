@@ -204,6 +204,8 @@ CoreImpl::dispatch(boost::intrusive_ptr<Instruction> anInsn)
 
     anInsn->doDispatchActions();   
 
+    anInsn->setDispatch();
+    DBG_(VVerb, (<< theName << " Dispatched " << *anInsn));
     DISPATCH_DBG("Done");
 }
 

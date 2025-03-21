@@ -155,7 +155,7 @@ struct RestoreMappingEffect : public Effect
         DBG_(VVerb,
              (<< anInstruction.identify() << " MapEffect restore mapping for " << theNameCode << "(" << name << ") to "
               << theMappingCode << "( " << mapping << ")"));
-        anInstruction.core()->restore(name, mapping);
+        anInstruction.core()->restore(name, mapping, &anInstruction);
         Effect::invoke(anInstruction);
     }
 

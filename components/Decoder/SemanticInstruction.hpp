@@ -40,6 +40,7 @@ struct SemanticInstruction : public ArchInstruction
     bool theRetirementDepends[4];
     int32_t theRetireDepCount;
     bool theIsMicroOp;
+    bool theDispatched;
 
     struct Dep : public DependanceTarget
     {
@@ -97,6 +98,8 @@ struct SemanticInstruction : public ArchInstruction
     bool preValidate();
     bool postValidate();
     bool canDispatch();
+    bool isDispatched();
+    void setDispatch();
     void doDispatchEffects();
     void doDispatchActions();
     void squash();

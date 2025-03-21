@@ -159,7 +159,7 @@ CoreImpl::free(mapped_reg aReg)
 }
 
 void
-CoreImpl::restore(reg aName, mapped_reg aReg)
+CoreImpl::restore(reg aName, mapped_reg aReg, boost::intrusive_ptr<Instruction> anInstruction)
 {
     FLEXUS_PROFILE();
     DBG_Assert(aName.theType == aReg.theType);
@@ -171,8 +171,12 @@ CoreImpl::restore(reg aName, mapped_reg aReg)
                (<< "MapTable Invariant check failed after restoring " << aReg
                 << "MapTable: " << mapTable(aReg.theType)));
     */
-    if (theInOrderExecute)
+    if (theInOrderExecute && anInstruction->isDispatched()) {
         theRegisters.setStatus(aReg, kReady);
+        DBG_(VVerb, (<< theName << " Restoring " << aReg << " to Ready"));
+    } else {
+        DBG_(VVerb, (<< theName << " Not restoring " << aReg << " to Ready"));
+    }
 }
 
 void
