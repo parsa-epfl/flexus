@@ -142,7 +142,7 @@ FlexusImpl::advanceCycles(uint32_t aCycleCount, uint32_t aTickCount)
     if (dbgOverrides.size()) {
         auto &front = dbgOverrides.front();
 
-        if (front.first == theCycleCount) {
+        if (front.first <= theCycleCount) {
             setDebug(front.second);
             dbgOverrides.pop_front();
         }

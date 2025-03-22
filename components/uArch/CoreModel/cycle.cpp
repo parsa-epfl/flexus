@@ -1489,7 +1489,9 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
 bool
 CoreImpl::squashFrom(boost::intrusive_ptr<Instruction> anInsn, bool inclusive)
 {
-    if (!theSquashRequested || (anInsn->sequenceNo() <= (*theSquashInstruction)->sequenceNo())) {
+    if (!theSquashRequested ||
+            ((anInsn->sequenceNo() <  (*theSquashInstruction)->sequenceNo()) ||
+             (anInsn->sequenceNo() == (*theSquashInstruction)->sequenceNo() && !theSquashInclusive && inclusive))) {
         theSquashRequested   = true;
         theSquashReason      = kBranchMispredict;
         theEmptyROBCause     = kMispredict;
