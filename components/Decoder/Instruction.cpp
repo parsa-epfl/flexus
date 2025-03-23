@@ -60,7 +60,7 @@ ArchInstruction::describe(std::ostream& anOstream) const
 {
     Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(theCPU);
     anOstream << "#" << std::dec << theSequenceNo << "[" << std::setfill('0') << std::right << std::setw(2) << cpu.id()
-              << "] " << printInstClass() << " QEMU disas: " << cpu.disassemble(thePC) << " [" << thePC << "]";
+              << "] " << printInstClass() << " QEMU disas: " << cpu.disassemble(thePC) << " [" << thePC << ":" << theOpcode << "]";
 
     if (theAnnulled) { anOstream << " {annuled}"; }
     if (theRaisedException != kException_None) { anOstream << " {raised}"; }

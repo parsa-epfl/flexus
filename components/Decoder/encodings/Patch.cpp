@@ -175,6 +175,55 @@ public:
     }
 };
 
+static uint64_t signext(uint64_t val, uint32_t sz) {
+    if (val & (1ul << (sz - 1)))
+        val |= ~((1ul << sz) - 1);
+
+    return val;
+}
+
+static void addImm(SemanticInstruction *ins, uint32_t reg, uint64_t val) {
+    ins->setClass(clsComputation, codeALU);
+
+    std::vector<std::list<InternalDependance>> rn_dep(2);
+
+    auto add = addExecute(ins, operation(kADD_), rn_dep);
+
+    addReadXRegister(ins, 1, reg, rn_dep[0], true);
+    addReadConstant (ins, 2, val, rn_dep[1]);
+
+    addDestination(ins, reg, add, true);
+}
+
+class LSR: public InstrPatch {
+public:
+    LSR(): InstrPatch("ee111100cc0iiiiiiiiix1nnnnnttttt") {
+    }
+
+    virtual void dec(SemanticInstruction *ins, const map &map) {
+        auto imm9 = map.at('i');
+        auto rn   = map.at('n');
+
+        addImm(ins, rn, signext(imm9, 9));
+    }
+};
+
+class LSP: public InstrPatch {
+public:
+    LSP(): InstrPatch("cc10110x1liiiiiii22222nnnnnttttt") {
+    }
+
+    virtual void dec(SemanticInstruction *ins, const map &map) {
+        auto opc  = map.at('c');
+        auto imm7 = map.at('i');
+        auto rn   = map.at('n');
+
+        addImm(ins, rn, signext(imm7, 7) << (opc + 2));
+    }
+};
+
 void nDecoder::initPatch() {
     addPatch(new AMO());
+    addPatch(new LSR());
+    addPatch(new LSP());
 }

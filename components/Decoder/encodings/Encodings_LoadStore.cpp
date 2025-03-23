@@ -303,14 +303,6 @@ archinst
 disas_ldst_pair(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo, int32_t aUop, bool& aLastUop)
 {
     DECODER_TRACE;
-    if (aUop == 0) {
-        aLastUop = false;
-    } else {
-        aLastUop = true;
-    }
-
-    aLastUop = !(aUop == 0);
-
     bool is_vector = extract32(aFetchedOpcode.theOpcode, 26, 1);
     bool is_load   = extract32(aFetchedOpcode.theOpcode, 22, 1);
 
@@ -326,6 +318,14 @@ disas_ldst_pair(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequence
         //            return STFP(aFetchedOpcode, aCPU, aSequenceNo);
         //        }
     } else {
+        if (aUop == 0) {
+            aLastUop = false;
+        } else {
+            aLastUop = true;
+        }
+
+        aLastUop = !(aUop == 0);
+
         if (is_load) {
             return LDP(aFetchedOpcode, aCPU, aSequenceNo, aUop);
         } else {
