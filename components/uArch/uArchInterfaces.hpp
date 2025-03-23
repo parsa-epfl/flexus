@@ -586,6 +586,7 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction
 
     virtual bool mayRetire() const                        = 0;
     virtual bool mayCommit() const                        = 0;
+    virtual bool mayCommitInOrder() const                 = 0;
     virtual bool isResolved() const                       = 0;
     virtual void setResolved(bool value = true)           = 0;
     virtual void raise(eExceptionType anException)        = 0;
@@ -603,6 +604,7 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction
     virtual void setAccessAddress(PhysicalMemoryAddress anAddress) = 0;
     virtual PhysicalMemoryAddress getAccessAddress() const         = 0;
     virtual void setMayCommit(bool aMayCommit)                     = 0;
+    virtual void setMayCommitInOrder(bool aMayCommitInOrder)       = 0;
     virtual void resolveSpeculation()                              = 0;
     virtual void restoreOriginalInstCode()                         = 0;
 

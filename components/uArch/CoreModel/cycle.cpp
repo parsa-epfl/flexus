@@ -1175,6 +1175,9 @@ CoreImpl::retire()
             DBG_(Verb, (<< theName << " Trap raised by " << *theROB.front()));
             stop_retire = true;
         } else {
+            if (theInOrderExecute)
+                theROB.front()->setMayCommitInOrder(true);
+
             theROB.front()->doRetirementEffects();
             if (thePendingTrap != kException_None) {
                 theROB.front()->changeInstCode(codeException);

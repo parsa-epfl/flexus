@@ -45,6 +45,7 @@ class ArchInstruction : public nuArch::Instruction
     bool theHasCheckpoint;
     uint64_t theRetireStallCycles;
     bool theMayCommit;
+    bool theMayCommitInOrder;
     bool theResolved;
     //  boost::optional<Flexus::Qemu::MMU::mmu_t> theMMU;
 
@@ -98,6 +99,8 @@ class ArchInstruction : public nuArch::Instruction
     virtual void resolveSpeculation() { theMayCommit = true; }
     virtual void setMayCommit(bool aMayCommit) { theMayCommit = false; }
     virtual bool mayCommit() const { return theMayCommit; }
+    virtual void setMayCommitInOrder(bool aMayCommitInOrder) { theMayCommitInOrder = aMayCommitInOrder; }
+    virtual bool mayCommitInOrder() const { return theMayCommitInOrder; }
 
     virtual bool isResolved() const { return theResolved; }
 
@@ -271,6 +274,13 @@ class ArchInstruction : public nuArch::Instruction
             return true;
         }
     }
+    bool hasPredecessorCommittedInOrder()
+    {
+        if (thePredecessor)
+            return thePredecessor->mayCommitInOrder();
+        else
+            return true;
+    }
 
     uArch* core() { return theuArch; }
 
@@ -312,6 +322,7 @@ class ArchInstruction : public nuArch::Instruction
       , theHasCheckpoint(false)
       , theRetireStallCycles(0)
       , theMayCommit(true)
+      , theMayCommitInOrder(false)
       , theResolved(false)
       , theUsesIntAlu(true)
       , theUsesIntMult(false)

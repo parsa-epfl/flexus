@@ -67,7 +67,7 @@ struct WritebackAction : public BaseSemanticAction
     {
 
         if (ready()) {
-            if (!theInstruction->hasPredecessorExecuted()) {
+            if (!theInstruction->hasPredecessorCommittedInOrder()) {
                 reschedule();
                 return;
             }
@@ -121,10 +121,19 @@ struct WriteccAction : public BaseSemanticAction
         BaseSemanticAction::squash(anArg);
     }
 
+    bool canDispatch() {
+        return core()->canDispatch(theInstruction->operand<mapped_reg>(theCC), false);
+    }
+
     void doEvaluate()
     {
 
         if (ready()) {
+            if (!theInstruction->hasPredecessorCommittedInOrder()) {
+                reschedule();
+                return;
+            }
+
             mapped_reg name = theInstruction->operand<mapped_reg>(theCC);
             uint64_t ccresult =
               Flexus::Qemu::Processor::getProcessor(theInstruction->cpu()).read_register(Flexus::Qemu::API::PSTATE);

@@ -41,6 +41,7 @@ ArchInstruction::ArchInstruction(VirtualMemoryAddress aPC,
   , theHasCheckpoint(false)
   , theRetireStallCycles(0)
   , theMayCommit(true)
+  , theMayCommitInOrder(false)
   , theResolved(false)
   , theUsesIntAlu(true)
   , theUsesIntMult(false)
@@ -60,7 +61,7 @@ ArchInstruction::describe(std::ostream& anOstream) const
 {
     Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(theCPU);
     anOstream << "#" << std::dec << theSequenceNo << "[" << std::setfill('0') << std::right << std::setw(2) << cpu.id()
-              << "] " << printInstClass() << " QEMU disas: " << cpu.disassemble(thePC) << " [" << thePC << ":" << theOpcode << "]";
+              << "] " << printInstClass() << " QEMU disas: " << cpu.disassemble(thePC) << " [" << thePC << ":" << std::hex << theOpcode << "]";
 
     if (theAnnulled) { anOstream << " {annuled}"; }
     if (theRaisedException != kException_None) { anOstream << " {raised}"; }
@@ -109,14 +110,14 @@ ArchInstruction::doDispatchActions()
     // Branch predictor identified an instruction that is not a branch as a branch.
     DBG_(VVerb, (<< *this << " predicted as a branch, but is a non-branch. Fixing"));
 
-    if (!this->isSquashed() && core()->squashFrom(dynamic_cast<Instruction*>(this), false)) { 
+    if (!this->isSquashed() && core()->squashFrom(dynamic_cast<Instruction*>(this), false)) {
         boost::intrusive_ptr<BPredRedictRequest> aRequest = new BPredRedictRequest();
         aRequest->theTarget = bpState()->theActualTarget;
         aRequest->theBPState = bpState();
         aRequest->theInsertNewHistory = false;
         aRequest->isResync = false;
-        
-        core()->redirectFetch(aRequest); 
+
+        core()->redirectFetch(aRequest);
     }
 }
 
