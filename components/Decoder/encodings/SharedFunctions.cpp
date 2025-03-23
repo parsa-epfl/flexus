@@ -199,7 +199,7 @@ addSetCC(SemanticInstruction* inst, predicated_action& exec, bool is64)
     connectDependance(inst->retirementDependance(), cc);
 }
 
-void
+simple_action
 addReadXRegister(SemanticInstruction* inst,
                  int32_t anOpNumber,
                  uint32_t rs,
@@ -225,9 +225,10 @@ addReadXRegister(SemanticInstruction* inst,
     inst->addDispatchCheck(act.action);
     inst->addDispatchAction(act);
     inst->addPrevalidation(validateXRegister(rs, cOperand, inst, is_64));
+    return act;
 }
 
-void
+simple_action
 readRegister(SemanticInstruction* inst,
              int32_t anOpNumber,
              uint32_t rs,
@@ -235,13 +236,13 @@ readRegister(SemanticInstruction* inst,
              bool is_64)
 {
     if (rs == 31) {
-        addReadConstant(inst, anOpNumber, 0, dependances);
+        return addReadConstant(inst, anOpNumber, 0, dependances);
     } else {
-        addReadXRegister(inst, anOpNumber, rs, dependances, is_64);
+        return addReadXRegister(inst, anOpNumber, rs, dependances, is_64);
     }
 }
 
-void
+simple_action
 addReadConstant(SemanticInstruction* inst, int32_t anOpNumber, uint64_t val, std::list<InternalDependance>& dependances)
 {
 
@@ -253,6 +254,7 @@ addReadConstant(SemanticInstruction* inst, int32_t anOpNumber, uint64_t val, std
     simple_action act = readConstantAction(inst, val, cOperand);
     connect(dependances, act);
     inst->addDispatchAction(act);
+    return act;
 }
 
 void

@@ -51,6 +51,49 @@ enum eSize
     kIllegalSize
 };
 
+enum eRMWOperation {
+  kAMOADDB,
+  kAMOADDH,
+  kAMOADDW,
+  kAMOADD,
+  kAMOCLRB,
+  kAMOCLRH,
+  kAMOCLRW,
+  kAMOCLR,
+  kAMOORB,
+  kAMOORH,
+  kAMOORW,
+  kAMOOR,
+  kAMOSETB,
+  kAMOSETH,
+  kAMOSETW,
+  kAMOSET,
+  kAMOSMAXB,
+  kAMOSMAXH,
+  kAMOSMAXW,
+  kAMOSMAX,
+  kAMOSMINB,
+  kAMOSMINH,
+  kAMOSMINW,
+  kAMOSMIN,
+  kAMOUMAXB,
+  kAMOUMAXH,
+  kAMOUMAXW,
+  kAMOUMAX,
+  kAMOUMINB,
+  kAMOUMINH,
+  kAMOUMINW,
+  kAMOUMIN,
+  kAMOSWPB,
+  kAMOSWPH,
+  kAMOSWPW,
+  kAMOSWP,
+  kAMOCASB,
+  kAMOCASH,
+  kAMOCASW,
+  kAMOCAS,
+};
+
 std::ostream&
 operator<<(std::ostream& anOstream, eSize op);
 

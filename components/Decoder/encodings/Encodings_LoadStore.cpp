@@ -397,7 +397,7 @@ disas_ldst_excl(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequence
         case 10:
         case 11:
         case 14:
-        case 15: return CAS(aFetchedOpcode, aCPU, aSequenceNo); break;
+        case 15: return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
         case 4:
         case 5: return LDXR(aFetchedOpcode, aCPU, aSequenceNo); break;
         case 8:

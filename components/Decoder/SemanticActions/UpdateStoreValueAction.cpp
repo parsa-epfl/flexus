@@ -78,6 +78,57 @@ struct UpdateStoreValueAction : public PredicatedSemanticAction
     void describe(std::ostream& anOstream) const { anOstream << theInstruction->identify() << " UpdateStoreValue"; }
 };
 
+struct UpdateRMWValueAction : public PredicatedSemanticAction {
+    eOperandCode theOp1Code, theOp2Code, theResCode;
+    eRMWOperation theRMW;
+
+    UpdateRMWValueAction(SemanticInstruction *anInstruction, eOperandCode anOp1Code, eOperandCode anOp2Code,
+                         eOperandCode anResCode, eRMWOperation anRMW)
+        : PredicatedSemanticAction(anInstruction, 2 + !!(anOp2Code != kLastOperandCode), true),
+          theOp1Code(anOp1Code),
+          theOp2Code(anOp2Code),
+          theResCode(anResCode),
+          theRMW(anRMW) {
+    }
+
+    void satisfy(int32_t anArg) {
+        BaseSemanticAction::satisfy(anArg);
+        SEMANTICS_DBG(*this);
+        if (!cancelled() && ready() && thePredicate)
+            doRMW();
+    }
+
+    void predicate_on(int32_t anArg) {
+        PredicatedSemanticAction::predicate_on(anArg);
+        if (!cancelled() && ready() && thePredicate)
+            doRMW();
+    }
+
+    void doRMW() {
+        uint64_t op1_value = theInstruction->operand<uint64_t>(theOp1Code);
+        uint64_t op2_value = theOp2Code == kLastOperandCode ? 0 : theInstruction->operand<uint64_t>(theOp2Code);
+        DBG_(Iface, (<< *this << " updating RMW value=" << std::hex << op1_value << " " << op2_value));
+        auto ret = static_cast<uint64_t>(core()->updateRMWValue(boost::intrusive_ptr<Instruction>(theInstruction), op1_value, op2_value, theRMW));
+        theInstruction->setOperand(theResCode, ret);
+        satisfyDependants();
+    }
+
+    void doEvaluate() {
+    }
+
+    void describe(std::ostream &anOstream) const {
+        anOstream << theInstruction->identify() << " UpdateRMWValue";
+    }
+};
+
+predicated_dependant_action updateRMWValueAction(SemanticInstruction *anInstruction,
+                                                 eOperandCode aOp1Code, eOperandCode aOp2Code,
+                                                 eOperandCode aResCode, eRMWOperation anRMW) {
+    UpdateRMWValueAction *act = new UpdateRMWValueAction(anInstruction, aOp1Code, aOp2Code, aResCode, anRMW);
+    anInstruction->addNewComponent(act);
+    return predicated_dependant_action(act, act->dependance(), act->predicate());
+}
+
 struct UpdateCASValueAction : public BaseSemanticAction
 {
 

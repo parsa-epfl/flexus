@@ -957,4 +957,148 @@ CoreImpl::annulStoreValue(boost::intrusive_ptr<Instruction> anInsn)
     }
 }
 
+bits
+CoreImpl::updateRMWValue(boost::intrusive_ptr<Instruction> anInsn, bits aValue, bits aCmpValue,
+                         eRMWOperation anRMW) {
+    FLEXUS_PROFILE();
+    memq_t::index<by_insn>::type::iterator lsq_entry = theMemQueue.get<by_insn>().find(anInsn);
+    DBG_Assert(lsq_entry != theMemQueue.get<by_insn>().end());
+
+    lsq_entry->theAnnulled = false;
+
+    auto ext = lsq_entry->theExtendedValue.get();
+
+    switch (anRMW) {
+        case kAMOADDB:
+            lsq_entry->theValue = (uint8_t)(ext) + (uint8_t)(aValue);
+            break;
+        case kAMOADDH:
+            lsq_entry->theValue = (uint16_t)(ext) + (uint16_t)(aValue);
+            break;
+        case kAMOADDW:
+            lsq_entry->theValue = (uint32_t)(ext) + (uint32_t)(aValue);
+            break;
+        case kAMOADD:
+            lsq_entry->theValue = ext + aValue;
+            break;
+        case kAMOCLRB:
+            lsq_entry->theValue = (uint8_t)(ext) & ~(uint8_t)(aValue);
+            break;
+        case kAMOCLRH:
+            lsq_entry->theValue = (uint16_t)(ext) & ~(uint16_t)(aValue);
+            break;
+        case kAMOCLRW:
+            lsq_entry->theValue = (uint32_t)(ext) & ~(uint32_t)(aValue);
+            break;
+        case kAMOCLR:
+            lsq_entry->theValue = ext & ~aValue;
+            break;
+        case kAMOORB:
+            lsq_entry->theValue = (uint8_t)(ext) ^ (uint8_t)(aValue);
+            break;
+        case kAMOORH:
+            lsq_entry->theValue = (uint16_t)(ext) ^ (uint16_t)(aValue);
+            break;
+        case kAMOORW:
+            lsq_entry->theValue = (uint32_t)(ext) ^ (uint32_t)(aValue);
+            break;
+        case kAMOOR:
+            lsq_entry->theValue = ext ^ aValue;
+            break;
+        case kAMOSETB:
+            lsq_entry->theValue = (uint8_t)(ext) | (uint8_t)(aValue);
+            break;
+        case kAMOSETH:
+            lsq_entry->theValue = (uint16_t)(ext) | (uint16_t)(aValue);
+            break;
+        case kAMOSETW:
+            lsq_entry->theValue = (uint32_t)(ext) | (uint32_t)(aValue);
+            break;
+        case kAMOSET:
+            lsq_entry->theValue = ext | aValue;
+            break;
+        case kAMOSMAXB:
+            lsq_entry->theValue = std::max((int8_t)(ext), (int8_t)(aValue));
+            break;
+        case kAMOSMAXH:
+            lsq_entry->theValue = std::max((int16_t)(ext), (int16_t)(aValue));
+            break;
+        case kAMOSMAXW:
+            lsq_entry->theValue = std::max((int32_t)(ext), (int32_t)(aValue));
+            break;
+        case kAMOSMAX:
+            lsq_entry->theValue = std::max((int64_t)(ext), (int64_t)(aValue));
+            break;
+        case kAMOSMINB:
+            lsq_entry->theValue = std::min((int8_t)(ext), (int8_t)(aValue));
+            break;
+        case kAMOSMINH:
+            lsq_entry->theValue = std::min((int16_t)(ext), (int16_t)(aValue));
+            break;
+        case kAMOSMINW:
+            lsq_entry->theValue = std::min((int32_t)(ext), (int32_t)(aValue));
+            break;
+        case kAMOSMIN:
+            lsq_entry->theValue = std::min((int64_t)(ext), (int64_t)(aValue));
+            break;
+        case kAMOUMAXB:
+            lsq_entry->theValue = std::max((uint8_t)(ext), (uint8_t)(aValue));
+            break;
+        case kAMOUMAXH:
+            lsq_entry->theValue = std::max((uint16_t)(ext), (uint16_t)(aValue));
+            break;
+        case kAMOUMAXW:
+            lsq_entry->theValue = std::max((uint32_t)(ext), (uint32_t)(aValue));
+            break;
+        case kAMOUMAX:
+            lsq_entry->theValue = std::max(ext, aValue);
+            break;
+        case kAMOUMINB:
+            lsq_entry->theValue = std::min((uint8_t)(ext), (uint8_t)(aValue));
+            break;
+        case kAMOUMINH:
+            lsq_entry->theValue = std::min((uint16_t)(ext), (uint16_t)(aValue));
+            break;
+        case kAMOUMINW:
+            lsq_entry->theValue = std::min((uint32_t)(ext), (uint32_t)(aValue));
+            break;
+        case kAMOUMIN:
+            lsq_entry->theValue = std::min(ext, aValue);
+            break;
+        case kAMOSWPB:
+            lsq_entry->theValue = (uint8_t)(aValue);
+            break;
+        case kAMOSWPH:
+            lsq_entry->theValue = (uint16_t)(aValue);
+            break;
+        case kAMOSWPW:
+            lsq_entry->theValue = (uint32_t)(aValue);
+            break;
+        case kAMOSWP:
+            lsq_entry->theValue = aValue;
+            break;
+        case kAMOCASB:
+            lsq_entry->theValue = (uint8_t)(ext) == (uint8_t)(aCmpValue) ? (uint8_t)(aValue) : (uint8_t)(ext);
+            break;
+        case kAMOCASH:
+            lsq_entry->theValue = (uint16_t)(ext) == (uint16_t)(aCmpValue) ? (uint16_t)(aValue) : (uint16_t)(ext);
+            break;
+        case kAMOCASW:
+            lsq_entry->theValue = (uint32_t)(ext) == (uint32_t)(aCmpValue) ? (uint32_t)(aValue) : (uint32_t)(ext);
+            break;
+        case kAMOCAS:
+            lsq_entry->theValue = ext == aCmpValue ? aValue : ext;
+            break;
+        default:
+            DBG_Assert(false);
+    }
+
+    auto ret = lsq_entry->theValue.get();
+
+    if (lsq_entry->theExtendedValue != lsq_entry->theValue)
+        doStore(lsq_entry);
+
+    return ret;
+}
+
 } // namespace nuArch

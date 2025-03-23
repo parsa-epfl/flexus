@@ -119,6 +119,14 @@ loadAction(SemanticInstruction* anInstruction, eSize aSize, eSignCode aSignCode,
 }
 
 predicated_dependant_action
+amoAction(SemanticInstruction* anInstruction, eSize aSize, eSignCode aSignCode, boost::optional<eOperandCode> aBypass)
+{
+    LoadAction *act = new LoadAction(anInstruction, aSize, aSignCode, aBypass, true);
+    anInstruction->addNewComponent(act);
+    return predicated_dependant_action(act, act->dependance(), act->predicate());
+}
+
+predicated_dependant_action
 casAction(SemanticInstruction* anInstruction, eSize aSize, eSignCode aSignCode, boost::optional<eOperandCode> aBypass)
 {
     LoadAction* act = new LoadAction(anInstruction, aSize, aSignCode, aBypass, false);
