@@ -192,6 +192,7 @@ enum ePrivRegs
     kSPSR_UND,
     kSPSR_FIQ,
     kTPIDR_EL0,
+    kTPIDR_EL1,
     kAbstractSysReg, /* Msutherl: Blanket type for all registers to represent as hashed/encoded
                         5-tuple which are then read through QEMU */
     kLastPrivReg
@@ -402,6 +403,7 @@ enum eInstructionCode
     codeStoreFP,
     codeSTD,
     // Atomics
+    codeRMW,
     codeCAS,
     codeCASP,
     // Branches
@@ -832,6 +834,12 @@ struct uArch
         DBG_Assert(false);
     }
     virtual void annulStoreValue(boost::intrusive_ptr<Instruction> anInsn) { DBG_Assert(false); }
+    virtual bits updateRMWValue(boost::intrusive_ptr<Instruction> anInsn, bits aValue, bits aCmpValue,
+                                eRMWOperation aRMWOperation)
+    {
+        DBG_Assert(false);
+        return 0;
+    }
     virtual void updateCASValue(boost::intrusive_ptr<Instruction> anInsn, bits aValue, bits aCMPValue)
     {
         DBG_Assert(false);

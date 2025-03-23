@@ -79,15 +79,15 @@ struct LoadAction : public PredicatedSemanticAction
                 }
                 break;
             case kHalfWord:
-                value &= value;
+                value &= 0xFFFFULL;
                 if ((theSignExtend != kNoExtension) && anyBits(value & (bits)0x8000ULL)) {
-                    value |= theSignExtend == kSignExtend ? (bits)0xFFFFFFFFFFFFFF00ULL : 0ULL;
+                    value |= theSignExtend == kSignExtend ? (bits)0xFFFFFFFFFFFF0000ULL : 0ULL;
                 }
                 break;
             case kWord:
-                value &= value;
+                value &= 0xFFFFFFFFULL;
                 if ((theSignExtend != kNoExtension) && anyBits(value & (bits)0x80000000ULL)) {
-                    value |= theSignExtend == kSignExtend ? (bits)0xFFFFFFFFFFFFFF00ULL : 0ULL;
+                    value |= theSignExtend == kSignExtend ? (bits)0xFFFFFFFF00000000ULL : 0ULL;
                 }
                 break;
             case kDoubleWord: break;
@@ -114,6 +114,14 @@ predicated_dependant_action
 loadAction(SemanticInstruction* anInstruction, eSize aSize, eSignCode aSignCode, boost::optional<eOperandCode> aBypass)
 {
     LoadAction* act = new LoadAction(anInstruction, aSize, aSignCode, aBypass, false);
+    anInstruction->addNewComponent(act);
+    return predicated_dependant_action(act, act->dependance(), act->predicate());
+}
+
+predicated_dependant_action
+amoAction(SemanticInstruction* anInstruction, eSize aSize, eSignCode aSignCode, boost::optional<eOperandCode> aBypass)
+{
+    LoadAction *act = new LoadAction(anInstruction, aSize, aSignCode, aBypass, true);
     anInstruction->addNewComponent(act);
     return predicated_dependant_action(act, act->dependance(), act->predicate());
 }

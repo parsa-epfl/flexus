@@ -40,20 +40,20 @@ void
 addReadCC(SemanticInstruction* inst, int32_t anOpNumber, std::list<InternalDependance>& dependances, bool is_64);
 void
 addSetCC(SemanticInstruction* inst, predicated_action& exec, bool is64);
-void
+simple_action
 addReadXRegister(SemanticInstruction* inst,
                  int32_t anOpNumber,
                  uint32_t rs,
                  std::list<InternalDependance>& dependances,
                  bool is_64);
-void
+simple_action
 readRegister(SemanticInstruction* inst,
              int32_t anOpNumber,
              uint32_t rs,
              std::list<InternalDependance>& dependances,
              bool is_64);
 // void addReadRDs(SemanticInstruction * inst, uint32_t rd, uint32_t rd1 );
-void
+simple_action
 addReadConstant(SemanticInstruction* inst,
                 int32_t anOpNumber,
                 uint64_t val,

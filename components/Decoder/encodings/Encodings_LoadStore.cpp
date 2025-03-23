@@ -223,12 +223,32 @@ disas_ldst_reg_unsigned_imm(archcode const& aFetchedOpcode, uint32_t aCPU, int64
     uint32_t size = extract32(aFetchedOpcode.theOpcode, 30, 2);
     bool V        = extract32(aFetchedOpcode.theOpcode, 26, 1);
     uint32_t opc  = extract32(aFetchedOpcode.theOpcode, 22, 2);
-    bool is_store = ((opc == 0) || ((opc == 2) && (size == 0)));
+    bool is_store = false;
 
-    if (size == 3 && opc == 2) {
+    uint32_t comb = (size << 3) | (V << 2) | opc;
+
+    switch (comb) {
+        case 0x00:
+        case 0x04:
+        case 0x06:
+        case 0x08:
+        case 0x0c:
+        case 0x10:
+        case 0x14:
+        case 0x18:
+        case 0x1c:
+            is_store = true;
+            break;
+    }
+
+    if (comb == 0x1a) {
         return nop(aFetchedOpcode, aCPU, aSequenceNo); // PRFM
     }
-    if (opc == 3 && size > 1) { return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo); }
+    if ((opc == 3 && size > 1) ||
+        (V   == 1 && size > 1 && opc > 1) ||
+        (V   == 1 && size & 1 && opc > 1)) {
+        return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
+    }
 
     if (V) {
         return blackBox(aFetchedOpcode, aCPU, aSequenceNo);
@@ -303,14 +323,6 @@ archinst
 disas_ldst_pair(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo, int32_t aUop, bool& aLastUop)
 {
     DECODER_TRACE;
-    if (aUop == 0) {
-        aLastUop = false;
-    } else {
-        aLastUop = true;
-    }
-
-    aLastUop = !(aUop == 0);
-
     bool is_vector = extract32(aFetchedOpcode.theOpcode, 26, 1);
     bool is_load   = extract32(aFetchedOpcode.theOpcode, 22, 1);
 
@@ -326,6 +338,8 @@ disas_ldst_pair(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequence
         //            return STFP(aFetchedOpcode, aCPU, aSequenceNo);
         //        }
     } else {
+        aLastUop = !(aUop == 0);
+
         if (is_load) {
             return LDP(aFetchedOpcode, aCPU, aSequenceNo, aUop);
         } else {
@@ -397,7 +411,7 @@ disas_ldst_excl(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequence
         case 10:
         case 11:
         case 14:
-        case 15: return CAS(aFetchedOpcode, aCPU, aSequenceNo); break;
+        case 15: return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
         case 4:
         case 5: return LDXR(aFetchedOpcode, aCPU, aSequenceNo); break;
         case 8:

@@ -813,6 +813,8 @@ class CoreImpl : public CoreModel
                           bits aValue,
                           boost::optional<bits> anExtendedValue = boost::none);
     void annulStoreValue(boost::intrusive_ptr<Instruction> anInsn);
+    bits updateRMWValue(boost::intrusive_ptr<Instruction> anInsn, bits aValue, bits aCmpValue,
+                        eRMWOperation aRMWOperation);
     void updateCASValue(boost::intrusive_ptr<Instruction> anInsn, bits aValue, bits aCMPValue);
 
     // Value forwarding

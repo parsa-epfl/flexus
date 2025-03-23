@@ -68,6 +68,7 @@ operator<<(std::ostream& anOstream, eInstructionCode aCode)
         "StoreFP",
         "STD",
         // Atomics
+        "RMW",
         "CAS",
         "CASP",
         // Branches

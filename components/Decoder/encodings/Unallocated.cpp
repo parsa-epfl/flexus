@@ -1,5 +1,6 @@
 
 #include "Unallocated.hpp"
+#include "Patch.h"
 
 namespace nDecoder {
 using namespace nuArch;
@@ -15,12 +16,9 @@ struct BlackBoxInstruction : public ArchInstruction
       : ArchInstruction(aPC, anOpcode, aBPState, aCPU, aSequenceNo)
     {
         setClass(clsSynchronizing, codeBlackBox);
-        forceResync();
     }
 
     virtual bool mayRetire() const { return true; }
-
-    virtual bool postValidate() { return false; }
 
     virtual void describe(std::ostream& anOstream) const
     {
@@ -29,15 +27,28 @@ struct BlackBoxInstruction : public ArchInstruction
     }
 };
 
+static bool patchInit = true;
+
 archinst
 blackBox(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
 {
     DECODER_TRACE;
-    return archinst(new BlackBoxInstruction(aFetchedOpcode.thePC,
-                                            aFetchedOpcode.theOpcode,
-                                            aFetchedOpcode.theBPState,
-                                            aCPU,
-                                            aSequenceNo));
+
+    if (patchInit) {
+        patchInit = false;
+        initPatch();
+    }
+
+    auto patch = hitPatch(aFetchedOpcode.theOpcode);
+
+    if (patch)
+        return patch->dec(aFetchedOpcode, aCPU, aSequenceNo);
+    else
+        return archinst(new BlackBoxInstruction(aFetchedOpcode.thePC,
+                                                aFetchedOpcode.theOpcode,
+                                                aFetchedOpcode.theBPState,
+                                                aCPU,
+                                                aSequenceNo));
 }
 
 archinst

@@ -136,6 +136,41 @@ class TPIDR_EL0_ : public SysRegInfo
     }
 };
 
+class TPIDR_EL1_ : public SysRegInfo
+{
+  public:
+    std::string name                      = "TPIDR_EL1";
+    static const eRegExecutionState state = kARM_STATE_AA64;
+    static const uint8_t opc0             = 3;
+    static const uint8_t opc1             = 0;
+    static const uint8_t opc2             = 4;
+    static const uint8_t crn              = 13;
+    static const uint8_t crm              = 0;
+    static const eAccessRight access      = kPL1_RW;
+    static const eRegInfo type            = kARM_NO_RAW;
+    uint64_t resetvalue                   = -1;
+
+    virtual eAccessResult accessfn(uArch* aCore) override
+    {
+        // fine for now
+        return kACCESS_OK;
+    }
+    virtual void writefn(uArch* aCore, uint64_t aVal) override {}
+    virtual uint64_t readfn(uArch* aCore) override { return aCore->getTPIDR(1); }
+    TPIDR_EL1_()
+      : SysRegInfo("TPIDR_EL1_",
+                   TPIDR_EL1_::state,
+                   TPIDR_EL1_::type,
+                   TPIDR_EL1_::opc0,
+                   TPIDR_EL1_::opc1,
+                   TPIDR_EL1_::opc2,
+                   TPIDR_EL1_::crn,
+                   TPIDR_EL1_::crm,
+                   TPIDR_EL1_::access)
+    {
+    }
+};
+
 class FPCR_ : public SysRegInfo
 {
   public:
@@ -669,6 +704,9 @@ std::vector<std::pair<std::array<uint8_t, 5>, ePrivRegs>> supported_sysRegs = {
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
       { TPIDR_EL0_::opc0, TPIDR_EL0_::opc1, TPIDR_EL0_::opc2, TPIDR_EL0_::crn, TPIDR_EL0_::crm },
       kTPIDR_EL0),
+    std::make_pair<std::array<uint8_t, 5>, ePrivRegs>(
+      { TPIDR_EL1_::opc0, TPIDR_EL1_::opc1, TPIDR_EL1_::opc2, TPIDR_EL1_::crn, TPIDR_EL1_::crm },
+      kTPIDR_EL1),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>({ FPCR_::opc0, FPCR_::opc1, FPCR_::opc2, FPCR_::crn, FPCR_::crm },
                                                       kFPCR),
     std::make_pair<std::array<uint8_t, 5>, ePrivRegs>({ FPSR_::opc0, FPSR_::opc1, FPSR_::opc2, FPSR_::crn, FPSR_::crm },
@@ -742,6 +780,7 @@ getPriv(ePrivRegs aCode)
         case kSPSR_UND: return std::make_unique<SPSR_UND_>();
         case kSPSR_FIQ: return std::make_unique<SPSR_FIQ_>();
         case kTPIDR_EL0: return std::make_unique<TPIDR_EL0_>();
+        case kTPIDR_EL1: return std::make_unique<TPIDR_EL1_>();
         default: // FIXME: Only return default/abstract if implemented by QEMU
             return std::make_unique<SysRegInfo>();
             // DBG_Assert(false, (<< "Unimplemented SysReg Code" << aCode));

@@ -409,10 +409,21 @@ predicated_dependant_action
 updateStoreValueAction(SemanticInstruction* anInstruction, eOperandCode data);
 
 predicated_dependant_action
+updateRMWValueAction(SemanticInstruction *anInstruction, eOperandCode aOp1Code, eOperandCode aOp2Code,
+                     eOperandCode aResCode, eRMWOperation aRMWOperation);
+
+predicated_dependant_action
 loadAction(SemanticInstruction* anInstruction,
            eSize aSize,
            eSignCode aSignExtend,
            boost::optional<eOperandCode> aBypass);
+
+predicated_dependant_action
+amoAction(SemanticInstruction* anInstruction,
+          eSize aSize,
+          eSignCode aSignCode,
+          boost::optional<eOperandCode> aBypass);
+
 predicated_dependant_action
 casAction(SemanticInstruction* anInstruction,
           eSize aSize,
