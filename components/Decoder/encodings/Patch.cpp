@@ -182,17 +182,30 @@ static uint64_t signext(uint64_t val, uint32_t sz) {
     return val;
 }
 
-static void addImm(SemanticInstruction *ins, uint32_t reg, uint64_t val) {
+static void addImm(SemanticInstruction *ins, uint32_t rn, uint64_t val) {
     ins->setClass(clsComputation, codeALU);
 
     std::vector<std::list<InternalDependance>> rn_dep(2);
 
     auto add = addExecute(ins, operation(kADD_), rn_dep);
 
-    addReadXRegister(ins, 1, reg, rn_dep[0], true);
+    addReadXRegister(ins, 1, rn, rn_dep[0], true);
     addReadConstant (ins, 2, val, rn_dep[1]);
 
-    addDestination(ins, reg, add, true);
+    addDestination(ins, rn, add, true);
+}
+
+static void addReg(SemanticInstruction *ins, uint32_t rn, uint32_t rm) {
+    ins->setClass(clsComputation, codeALU);
+
+    std::vector<std::list<InternalDependance>> rn_dep(2);
+
+    auto add = addExecute(ins, operation(kADD_), rn_dep);
+
+    addReadXRegister(ins, 1, rn, rn_dep[0], true);
+    addReadXRegister(ins, 2, rm, rn_dep[1], true);
+
+    addDestination(ins, rn, add, true);
 }
 
 class LSR: public InstrPatch {
@@ -222,9 +235,127 @@ public:
     }
 };
 
+class LSM: public InstrPatch {
+public:
+    LSM(): InstrPatch("0q0011001l0mmmmmooooeennnnnttttt") {
+    }
+
+    virtual void dec(SemanticInstruction *ins, const map &map) {
+        auto rm = map.at('m');
+        auto rn = map.at('n');
+
+        if (rm == 31) {
+            auto q      = map.at('q');
+            auto opcode = map.at('o');
+            auto imm    = 0u;
+
+            switch (opcode) {
+                case 0x0: // ld/st4
+                case 0x2: // ld/st1, 4 reg
+                    imm = q ? 64 : 32;
+                    break;
+                case 0x4: // ld/st3
+                case 0x6: // ld/st1, 3 reg
+                    imm = q ? 48 : 24;
+                    break;
+                case 0x7: // ld/st1, 1 reg
+                    imm = q ? 16 :  8;
+                    break;
+                case 0x8: // ld/st2
+                case 0xa: // ld/st1, 2 reg
+                    imm = q ? 32 : 16;
+                    break;
+            }
+
+            addImm(ins, rn, imm);
+
+        } else
+            addReg(ins, rn, rm);
+    }
+};
+
+class LSS: public InstrPatch {
+public:
+    LSS(): InstrPatch("0q0011011lrmmmmmoooseennnnnttttt") {
+    }
+
+    virtual void dec(SemanticInstruction *ins, const map &map) {
+        auto rm = map.at('m');
+        auto rn = map.at('n');
+
+        if (rm == 31) {
+            auto r      = map.at('r');
+            auto opcode = map.at('o');
+            auto size   = map.at('e');
+            auto imm    = 0u;
+
+            if (r == 0)
+                switch (opcode) {
+                    case 0x0: // st1, 8b
+                        imm = 1;
+                        break;
+                    case 0x1: // st3, 8b
+                        imm = 3;
+                        break;
+                    case 0x2: // st1, 16b
+                        imm = 2;
+                        break;
+                    case 0x3: // st3, 16b
+                        imm = 6;
+                        break;
+                    case 0x4:
+                        imm = size ? 8  :  4; // st1, 64/32b
+                        break;
+                    case 0x5:
+                        imm = size ? 24 : 12; // st3, 64/32b
+                        break;
+                    case 0x6: // ld1r
+                        imm = 1u << size;
+                        break;
+                    case 0x7: // ld3r
+                        imm = 3u << size;
+                        break;
+                }
+            else
+                switch (opcode) {
+                    case 0x0: // st2, 8b
+                        imm = 2;
+                        break;
+                    case 0x1: // st4, 8b
+                        imm = 4;
+                        break;
+                    case 0x2: // st2, 16b
+                        imm = 4;
+                        break;
+                    case 0x3: // st4, 16b
+                        imm = 8;
+                        break;
+                    case 0x4:
+                        imm = size ? 16 :  8; // st2, 64/32b
+                        break;
+                    case 0x5:
+                        imm = size ? 32 : 16; // st4, 64/32b
+                        break;
+                    case 0x6: // ld2r
+                        imm = 2u << size;
+                        break;
+                    case 0x7: // ld4r
+                        imm = 4u << size;
+                        break;
+                }
+
+            addImm(ins, rn, imm);
+
+        } else
+            addReg(ins, rn, rm);
+    }
+};
+
 void nDecoder::initPatch() {
     addPatch(new AMO());
     addPatch(new CAS());
     addPatch(new LSR());
     addPatch(new LSP());
+    addPatch(new LSM());
+    addPatch(new LSS());
 }
