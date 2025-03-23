@@ -27,23 +27,6 @@ class ComponentManagerImpl : public ComponentManager
     Flexus::Core::freq_opts theDriveFreq;
 
   private:
-    // Helper functions to calculate drive frequencies
-    index_t gcd(index_t a, index_t b) {
-        while (b != 0) {
-            int t = b;
-            b     = a % b;
-            a     = t;
-        }
-        return a;
-    }
-
-    std::tuple<index_t, index_t> helper(float number) {
-        index_t num = (index_t)(number * 10);   // Assumption: number only has single digit after decimal point
-        index_t den = 10;
-        index_t g   = gcd(num, den);
-        return std::make_tuple(num / g, den / g);
-    }
-
     std::vector<std::string> splitString(const char * str, char delimiter) {
         std::vector<std::string> tokens;
         if(str == nullptr) return tokens;
@@ -94,31 +77,19 @@ class ComponentManagerImpl : public ComponentManager
         // Drive frequency calculations
         std::vector<std::string> freq_split = splitString(freq, ':');
         DBG_Assert(freq_split.size() == aSystemWidth + 1, (<< "Frequency string does not match the system width."));
-        index_t numerator[aSystemWidth+1], denominator[aSystemWidth+1], driveFreq[aSystemWidth+1];
-
-        // Reduce fractions to their simplest form
+        
+        index_t driveFreq, cyclesPerIter, remCycles;
+        theDriveFreq.mapCyclesIter = new index_t*[aSystemWidth];
         for(index_t i = 0; i <= aSystemWidth; ++i) {
-            float f_freq = std::stof(freq_split[i]);
-            std::tie(numerator[i], denominator[i]) = helper(f_freq);
+            driveFreq = (index_t)(std::stof(freq_split[i]) * 10);
+            cyclesPerIter = driveFreq / 10;
+            remCycles = driveFreq - cyclesPerIter * 10;
+            theDriveFreq.mapCyclesIter[i] = new index_t[10];
+            for(index_t j = 0; j < 10; ++j) {
+                theDriveFreq.mapCyclesIter[i][j] = cyclesPerIter;
+                if(j >= (10-remCycles)) theDriveFreq.mapCyclesIter[i][j]++;
+            }
         }
-
-        // Find the LCM of all denominators
-        index_t lcmDen = denominator[0];
-        for(index_t i = 1; i <= aSystemWidth; ++i) {
-            lcmDen = (lcmDen * denominator[i]) / gcd(lcmDen, denominator[i]);
-        }
-
-        // Calculate the drive frequencies
-        for(index_t i = 0; i <= aSystemWidth; ++i) {
-            driveFreq[i] = (lcmDen / denominator[i]) * numerator[i];
-        }
-
-        // Store the drive frequencies
-        theDriveFreq.freq = new index_t[aSystemWidth + 1];
-        std::copy(driveFreq, driveFreq + aSystemWidth + 1, theDriveFreq.freq);
-        std::sort(driveFreq, driveFreq + aSystemWidth + 1);
-        theDriveFreq.maxFreq = driveFreq[aSystemWidth];
-        theDriveFreq.scaleFactor = lcmDen;
     }
 
     void registerComponent(ComponentInterface* aComponent) { theComponents.push_back(aComponent); }

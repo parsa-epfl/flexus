@@ -9,7 +9,7 @@ struct DriveBase
 {
     // This method is called every cycle.
     virtual ~DriveBase() {};
-    virtual std::tuple<uint32_t, uint32_t> doCycle() = 0;
+    virtual index_t doCycle(index_t iter_idx) = 0;
 };
 
 typedef DriveBase& DriveReference;

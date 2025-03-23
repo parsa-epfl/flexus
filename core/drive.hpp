@@ -55,26 +55,21 @@ struct do_cycle_uncore<0, DriveHandleIter>
 template<class DriveHandles>
 struct do_cycle
 {
-    static std::tuple<uint32_t, uint32_t> doCycle()
+    static index_t doCycle(index_t iter_idx)
     {
         typedef typename mpl::deref<typename mpl::begin<DriveHandles>::type>::type coreDriveHandles;
         typedef typename mpl::deref<typename mpl::next<typename mpl::begin<DriveHandles>::type>::type>::type uncoreDriveHandles;
 
-        index_t* freq = ComponentManager::getComponentManager().getFreq().freq;
-        index_t maxFreq = ComponentManager::getComponentManager().getFreq().maxFreq;
         index_t sysWidth = ComponentManager::getComponentManager().systemWidth();
-
-        uint32_t advanceCycles = freq[sysWidth];
-        uint32_t scaleFactor = ComponentManager::getComponentManager().getFreq().scaleFactor;
-
-        DBG_(Dev, (<< "maxFreq: " << maxFreq << " sysWidth: " << sysWidth));
-        for (index_t id = 0; id <= sysWidth; ++id) {
-            DBG_(Dev, (<< "freq[" << id << "]: " << freq[id]));
+        index_t** mapCyclesIter = ComponentManager::getComponentManager().getFreq().mapCyclesIter;
+        index_t maxFreq = 0;
+        for(index_t i = 0; i <= sysWidth; ++i) {
+            if(mapCyclesIter[i][iter_idx] > maxFreq) maxFreq = mapCyclesIter[i][iter_idx];
         }
 
-        for(index_t iter = 0; iter < maxFreq; ++iter) {
+        for(index_t count = 0; count < maxFreq; ++count) {
             for(index_t id = 0; id <= sysWidth; ++id) {
-                if(iter < freq[id]) {
+                if(count < mapCyclesIter[id][iter_idx]) {
                     if(id == sysWidth) {
                         do_cycle_uncore<mpl::size<uncoreDriveHandles>::value, typename mpl::begin<uncoreDriveHandles>::type>::doCycle();
                     } else {
@@ -83,7 +78,7 @@ struct do_cycle
                 }
             }
         }
-        return std::make_tuple(advanceCycles, scaleFactor);
+        return mapCyclesIter[sysWidth][iter_idx];
     }
 };
 } // namespace aux_
@@ -119,13 +114,13 @@ struct list_drives
 template<class OrderedDriveHandleList>
 class Drive : public DriveBase
 {
-    virtual std::tuple<uint32_t, uint32_t> doCycle()
+    virtual index_t doCycle(index_t iter_idx)
     {
         // Through the magic of template expansion and static dispatch, this calls
         // every Drive's do_cycle() method in the order specified in
         // OrderedDriveHandleList.
         FLEXUS_PROFILE_N("Drive::doCycle");
-        return aux_::do_cycle<OrderedDriveHandleList>::doCycle();
+        return aux_::do_cycle<OrderedDriveHandleList>::doCycle(iter_idx);
     }
 };
 

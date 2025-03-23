@@ -61,8 +61,8 @@ class FlexusImpl : public FlexusInterface
     // The main cycle function
     void doCycle();
     void setCycle(uint64_t cycle);
-    void advanceCycles(uint32_t aCycleCount, uint32_t aTickCount);
-    std::tuple<uint32_t, uint32_t> invokeDrives();
+    void advanceCycles(uint32_t aCycleCount);
+    index_t invokeDrives(index_t iter_idx);
 
     // Simulator state inquiry
     bool quiescing() const { return theQuiesceRequested; }
@@ -127,7 +127,7 @@ FlexusImpl::initializeComponents()
 }
 
 void
-FlexusImpl::advanceCycles(uint32_t aCycleCount, uint32_t aTickCount)
+FlexusImpl::advanceCycles(index_t aCycleCount)
 {
 
     static uint64_t advanced_cycle_count = 0;
@@ -136,8 +136,7 @@ FlexusImpl::advanceCycles(uint32_t aCycleCount, uint32_t aTickCount)
     theCycleCountStat += aCycleCount;
     advanced_cycle_count += aCycleCount;
 
-    for(uint32_t tick = 0; tick < aTickCount; tick++)
-        Qemu::API::qemu_api.tick();
+    Qemu::API::qemu_api.tick();
 
     if (dbgOverrides.size()) {
         auto &front = dbgOverrides.front();
@@ -167,30 +166,30 @@ FlexusImpl::advanceCycles(uint32_t aCycleCount, uint32_t aTickCount)
     Stat::getStatManager()->tick(aCycleCount);
 }
 
-std::tuple<uint32_t, uint32_t>
-FlexusImpl::invokeDrives()
+index_t
+FlexusImpl::invokeDrives(index_t iter_idx)
 {
-    return theDrive.doCycle();
+    return theDrive.doCycle(iter_idx);
 }
 
 void
 FlexusImpl::doCycle()
 {
     FLEXUS_PROFILE();
-
-    FLEXUS_DBG("--------------START FLEXUS CYCLE " << theCycleCount << " ------------------------");
-
-    uint32_t advanceBy, tickBy;
-    uint32_t oldCount = theCycleCount;
-    std::tie(advanceBy, tickBy) = invokeDrives();
-
-    advanceCycles(advanceBy, tickBy);
-
-    // Check the watchdog only every 255 cycles
-    bool hasItBeen255Cycles = (theCycleCount & 0xFF) < (oldCount & 0xFF);
-    if (hasItBeen255Cycles) check_cpu_watchdogs();
-
-    FLEXUS_DBG("--------------FINISH FLEXUS CYCLE " << theCycleCount - 1 << " ------------------------");
+    // Frequencies are normalized to base 10
+    for(index_t iter_idx = 0; iter_idx < 10; iter_idx++) {
+        FLEXUS_DBG("--------------START FLEXUS CYCLE " << theCycleCount << " ------------------------");
+        index_t advanceBy, oldCount = theCycleCount;
+        advanceBy = invokeDrives(iter_idx);
+    
+        advanceCycles(advanceBy);
+    
+        // Check the watchdog only every 255 cycles
+        bool hasItBeen255Cycles = (theCycleCount & 0xFF) < (oldCount & 0xFF);
+        if (hasItBeen255Cycles) check_cpu_watchdogs();
+    
+        FLEXUS_DBG("--------------FINISH FLEXUS CYCLE " << theCycleCount - 1 << " ------------------------");
+    }
 }
 
 void

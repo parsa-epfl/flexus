@@ -132,9 +132,7 @@ typedef uint64_t Word64Bit;
 
 struct freq_opts
 {
-    uint32_t* freq;
-    uint32_t maxFreq;
-    uint32_t scaleFactor;
+    index_t** mapCyclesIter;
 };
 
 } // end namespace Core
