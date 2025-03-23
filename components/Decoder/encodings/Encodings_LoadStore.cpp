@@ -338,12 +338,6 @@ disas_ldst_pair(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequence
         //            return STFP(aFetchedOpcode, aCPU, aSequenceNo);
         //        }
     } else {
-        if (aUop == 0) {
-            aLastUop = false;
-        } else {
-            aLastUop = true;
-        }
-
         aLastUop = !(aUop == 0);
 
         if (is_load) {

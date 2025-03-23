@@ -461,7 +461,7 @@ LDP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo, int32_t 
         /* Msutherl: if signed, only valid encodings are preindex, postindex, imm-index */
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
-    if (rt == rt2 || ((index == kPreIndex || index == kPostIndex) && (rn == rt || rn == rt2))) {
+    if (rt == rt2 || ((index == kPreIndex || index == kPostIndex) && (rn == rt || rn == rt2) && (rn != 31))) {
         // Constrain unpredictable: C6.2.129 LDP Operation
         return unallocated_encoding(aFetchedOpcode, aCPU, aSequenceNo);
     }
@@ -526,16 +526,18 @@ LDP(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo, int32_t 
     if (aUop == 0) {
         if (rt != 31) {
             load = loadAction(inst, sz, is_signed ? kSignExtend : kNoExtension, kPD);
-            addDestination(inst, rt, load, size / 2 == 64);
+            addDestination(inst, rt, load, opc != 0);
         } else {
             load = loadAction(inst, sz, is_signed ? kSignExtend : kNoExtension,  boost::none);
+            connectDependance(inst->retirementDependance(), load);
         }
     } else {
         if (rt2 != 31) {
             load = loadAction(inst, sz, is_signed ? kSignExtend : kNoExtension, kPD);
-            addDestination(inst, rt2, load, size / 2 == 64);
+            addDestination(inst, rt2, load, opc != 0);
         } else {
             load = loadAction(inst, sz, is_signed ? kSignExtend : kNoExtension,  boost::none);
+            connectDependance(inst->retirementDependance(), load);
         }
     }
 

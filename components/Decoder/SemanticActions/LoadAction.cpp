@@ -79,15 +79,15 @@ struct LoadAction : public PredicatedSemanticAction
                 }
                 break;
             case kHalfWord:
-                value &= value;
+                value &= 0xFFFFULL;
                 if ((theSignExtend != kNoExtension) && anyBits(value & (bits)0x8000ULL)) {
-                    value |= theSignExtend == kSignExtend ? (bits)0xFFFFFFFFFFFFFF00ULL : 0ULL;
+                    value |= theSignExtend == kSignExtend ? (bits)0xFFFFFFFFFFFF0000ULL : 0ULL;
                 }
                 break;
             case kWord:
-                value &= value;
+                value &= 0xFFFFFFFFULL;
                 if ((theSignExtend != kNoExtension) && anyBits(value & (bits)0x80000000ULL)) {
-                    value |= theSignExtend == kSignExtend ? (bits)0xFFFFFFFFFFFFFF00ULL : 0ULL;
+                    value |= theSignExtend == kSignExtend ? (bits)0xFFFFFFFF00000000ULL : 0ULL;
                 }
                 break;
             case kDoubleWord: break;
