@@ -148,7 +148,7 @@ public:
             op = (eRMWOperation)((int)(op) + size);
 
         auto ld  = amoAction(ins, sz, se, kPD);
-        auto rmw = updateRMWValueAction(ins, kOperand2, kOperand3, kResult1, op);
+        auto rmw = updateRMWValueAction(ins, kOperand3, kOperand2, kResult1, op);
 
         auto rrn = addReadXRegister(ins, 1, rn, rn_dep[0], true);
         auto rrs = addReadXRegister(ins, 2, rs, rs_dep[0], sz == kDoubleWord);
@@ -224,6 +224,7 @@ public:
 
 void nDecoder::initPatch() {
     addPatch(new AMO());
+    addPatch(new CAS());
     addPatch(new LSR());
     addPatch(new LSP());
 }
