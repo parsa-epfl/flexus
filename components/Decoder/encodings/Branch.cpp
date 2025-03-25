@@ -224,7 +224,6 @@ CONDBR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         DBG_(VVerb,
              (<< "unconditionally branching to " << std::hex << target << " with an offset of 0x" << std::hex << offset
               << std::dec));
-        inst->addPostvalidation(validatePC(inst));
 
         /* 0xe and 0xf are both "always" conditions */
         branch_always(inst, false, target);

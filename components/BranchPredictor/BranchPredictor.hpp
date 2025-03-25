@@ -82,7 +82,9 @@ class BranchPredictor
     uint64_t calculateRedirectCycles(std::vector<std::pair<uint64_t, uint64_t>> &ranges);
 
     // This function is called whenever an instruction triggering a prediction retires.
-    void train(const BPredState& aBPState);
+    void train(BPredState& aBPState);
+
+    void getRAS(std::vector<uint64_t> &vec) { return RAS.get(vec); }
 
     void loadState(std::string const& aDirName, bool PerfectBPU);
     void saveState(std::string const& aDirName);

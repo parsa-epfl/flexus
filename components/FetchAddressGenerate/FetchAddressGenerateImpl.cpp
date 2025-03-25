@@ -198,6 +198,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
                 faddr.theBPState->thePrediction = kNotTaken;
                 faddr.theBPState->thePredCycle = theFlexus->cycleCount();
                 faddr.theBPState->theSerial = theBranchPredictor->getSerial();
+                theBranchPredictor->getRAS(faddr.theBPState->theRAS);
 
                 DBG_(VVerb, (<< "Advancing PC to: " << thePC[anIndex] << " for core: " << anIndex));
                 DBG_(VVerb, (<< "Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress));

@@ -64,9 +64,9 @@ BranchPredictor::predictConditional(VirtualMemoryAddress anAddress, BPredState& 
 void
 BranchPredictor::recoverHistory(const BPredRedictRequest& aRequest)
 {
-    const BPredState &aBPState = *aRequest.theBPState;
+    BPredState &aBPState = *aRequest.theBPState;
 
-    RAS.recover(aBPState.thePredCycle);
+    RAS.recover(aBPState);
 
     theTage.restore_history(*aRequest.theBPState);
     if (!aRequest.theInsertNewHistory) {
@@ -170,6 +170,8 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, b
     aBPState.callUpdatedRAS      = false;
     aBPState.detectedSpecialCall = false;
 
+    RAS.get(aBPState.theRAS);
+
     if(PerfectBPU){
         if (anAddress == theOracleBPU[theOracleIdx].pc){
             aBPState.thePredictedType = static_cast<eBranchType>(theOracleBPU[theOracleIdx].theActualType);
@@ -211,31 +213,32 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, b
             // theTage.get_prediction((uint64_t)anAddress, aBPState);
             theTage.update_history(aBPState, true, aBPState.pc);
             break;
+
         case kIndirectCall:
         case kCall:
-            if (theBTB.target(anAddress)) {
-                aBPState.thePredictedTarget = *theBTB.target(anAddress);
-            } else {
-                aBPState.thePredictedTarget = VirtualMemoryAddress(0);
-            }
-            // theTage.get_prediction((uint64_t)anAddress, aBPState);
             theTage.update_history(aBPState, true, aBPState.pc);
-            RAS.push(anAddress+4, aBPState.thePredCycle);
+
+            // btb must hit
+            aBPState.thePredictedTarget = *theBTB.target(anAddress);
+
+            // speculative
+            RAS.push(anAddress + 4);
             break;
+
         case kReturn:
-            if(RAS.get_occupancy() > 0){
-                aBPState.thePredictedTarget = RAS.pop();
-            }
-            else if (theBTB.target(anAddress)) {
-                aBPState.thePredictedTarget = *theBTB.target(anAddress);
-            } else {
-                aBPState.thePredictedTarget = VirtualMemoryAddress(0);
-            }
-            // theTage.get_prediction((uint64_t)anAddress, aBPState);
             theTage.update_history(aBPState, true, aBPState.pc);
+
+            if (RAS.valid()) {
+                // speculative
+                aBPState.thePredictedTarget = RAS.pop();
+                aBPState.returnUsedRAS = true;
+            } else
+                // btb must hit
+                aBPState.thePredictedTarget = *theBTB.target(anAddress);
             break;
-            
-        default: aBPState.thePredictedTarget = VirtualMemoryAddress(0); break;
+
+        default:
+            aBPState.thePredictedTarget = VirtualMemoryAddress(0); break;
     }
 
     if (aBPState.thePredictedType != kNonBranch) {
@@ -247,7 +250,7 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, b
 }
 
 void
-BranchPredictor::train(const BPredState& aBPState)
+BranchPredictor::train(BPredState& aBPState)
 {
     DBG_(VVerb, (<< "Training Branch Predictor by PC: " << std::hex << aBPState.pc));
     // Implementation of feedback function

@@ -1,23 +1,36 @@
 #ifndef FLEXUS_RAS
 #define FLEXUS_RAS
 
+#include "components/uFetch/uFetchTypes.hpp"
 #include "core/types.hpp"
+
 #include <vector>
-class ReturnAddressStack{
-    private:
-      struct Entry{
-        uint64_t target;
-        uint64_t timestamp;
-      };
 
-      std::vector<Entry> stack;
-      uint64_t size = 64;
+using namespace Flexus::SharedTypes;
 
-    public:
-      ReturnAddressStack();
-      void push(uint64_t target, uint64_t timestamp);
-      uint64_t pop();
-      void recover(uint64_t mispred_timestamp);
-      uint32_t get_occupancy();
+class ReturnAddressStack
+{
+private:
+    std::vector<uint64_t> stack;
+    uint64_t size;
+
+public:
+    ReturnAddressStack():
+        size(64) {
+        stack.resize(size);
+    }
+
+    void push(uint64_t target);
+
+    uint64_t pop();
+
+    void recover(BPredState& bpred);
+
+    bool valid() const {
+        return stack.size() != 0;
+    }
+
+    void get(std::vector<uint64_t> &vec);
 };
-#endif 
+
+#endif

@@ -109,6 +109,8 @@ struct BPredState : boost::counted_base
     uint32_t theBBSize;
     uint32_t theSerial;
 
+    std::vector<uint64_t> theRAS;
+
     BPredState() {
       thePredictedType = kNonBranch;
       theActualType = kNonBranch;

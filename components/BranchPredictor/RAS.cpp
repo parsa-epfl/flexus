@@ -1,36 +1,36 @@
 #include "RAS.hpp"
 
-ReturnAddressStack::ReturnAddressStack(){};
+#include "components/uFetch/uFetchTypes.hpp"
 
-void ReturnAddressStack::push(uint64_t target, uint64_t timestamp){
-    stack.push_back({target, timestamp});
-    if (stack.size() > size){
+void ReturnAddressStack::push(uint64_t target) {
+    stack.push_back(target);
+
+    if (stack.size() > size)
         stack.erase(stack.begin());
-    }
 }
 
-uint64_t ReturnAddressStack::pop(){
-    if (stack.size() == 0){
-        return 0;
-    }
+uint64_t ReturnAddressStack::pop() {
+    auto top = stack.back();
 
-    uint64_t top = stack.back().target;
-    stack.pop_back();
+    if (stack.size())
+        stack.pop_back();
 
     return top;
 }
 
-void ReturnAddressStack::recover(uint64_t mispred_timestamp){
-    for(auto it = stack.begin(); it != stack.end(); ){
-        if (it->timestamp > mispred_timestamp){
-            stack.erase(it);
-        }
-        else{
-            it++;
-        }
-    }
+void ReturnAddressStack::get(std::vector<uint64_t> &vec) {
+    vec = stack;
 }
 
-uint32_t ReturnAddressStack::get_occupancy(){
-    return stack.size();
+void ReturnAddressStack::recover(BPredState &bpred) {
+    // first revert back to the old state before the speculative push/pop
+    stack = bpred.theRAS;
+
+    // then adjust according to the actual branch type
+    if (bpred.theActualType == kCall ||
+        bpred.theActualType == kIndirectCall)
+        push(bpred.pc + 4);
+
+    if (bpred.theActualType == kReturn)
+        pop();
 }
