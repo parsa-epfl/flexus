@@ -24,9 +24,13 @@ BTBSet::BTBSet(uint32_t associativity)
 void
 BTBSet::updateReplacementQueue(uint32_t index)
 {
-    replacementQueue.erase(std::remove(replacementQueue.begin(), replacementQueue.end(), index),
-                           replacementQueue.end());
-    replacementQueue.insert(replacementQueue.end(), index);
+    for (auto i = replacementQueue.begin(); i != replacementQueue.end(); ++i)
+        if (*i == index) {
+            replacementQueue.erase(i);
+            break;
+        }
+
+    replacementQueue.push_back(index);
 }
 
 bool
@@ -56,10 +60,17 @@ BTBSet::access(VirtualMemoryAddress anAddress)
 void
 BTBSet::insert(BTBEntry btbEntry)
 {
-    // TODO: Replacement is not needed if there is an invalid entry
-    uint32_t replacementQueueIndex = replacementQueue[0];
-    blocks[replacementQueueIndex]  = btbEntry;
-    updateReplacementQueue(replacementQueueIndex);
+    for (uint32_t i = 0; i < blocks.size(); ++i) {
+        if (!blocks[i].valid) {
+            blocks[i] = btbEntry;
+            updateReplacementQueue(i);
+            return;
+        }
+    }
+
+    uint32_t index = replacementQueue.front();
+    blocks[index] = btbEntry;
+    updateReplacementQueue(index);
 }
 
 // [MADHUR] Invalidate entry if present

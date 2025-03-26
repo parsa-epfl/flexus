@@ -53,12 +53,10 @@ BranchPredictor::predictConditional(VirtualMemoryAddress anAddress, BPredState& 
 
     aBPState.thePrediction = isTaken ? kTaken : kNotTaken;
 
-    if (aBPState.thePrediction <= kTaken && theBTB.target(anAddress)) { 
-        ++thePredictions_BTB;
+    if (aBPState.thePrediction <= kTaken)
         return *theBTB.target(anAddress); 
-    }
 
-    return VirtualMemoryAddress(0);
+    return aBPState.pc + 4;
 }
 
 void
@@ -69,24 +67,16 @@ BranchPredictor::recoverHistory(const BPredRedictRequest& aRequest)
     RAS.recover(aBPState);
 
     theTage.restore_history(*aRequest.theBPState);
-    if (!aRequest.theInsertNewHistory) {
-        return;
-    }
 
-    if(aBPState.theActualType == Flexus::SharedTypes::kNonBranch) {
+    if (!aRequest.theInsertNewHistory)
         return;
-    }
 
-    if (aBPState.theActualType == kConditional) {
-        if (aBPState.theActualDirection == kTaken) {
-            theTage.update_history(aBPState, true, aBPState.pc);
-        } else if (aBPState.theActualDirection == kNotTaken) {
-            theTage.update_history(aBPState, false, aBPState.pc);
-        } else {
-            DBG_Assert(false, (<< "Should never enter here"));
-        }
-    } else {
-        theTage.update_history(aBPState, true, aBPState.pc);
+    if (aBPState.theActualDirection <= kTaken || aBPState.theActualType == kNonBranch)
+        theBTB.update(aBPState.pc, aBPState.theActualType, aBPState.theActualTarget);
+
+    if (aBPState.theActualType == kConditional || aBPState.thePredictedType == kConditional) {
+        bool isTaken = aBPState.theActualDirection == kTaken;
+        theTage.update_history(aBPState, isTaken, aBPState.pc);
     }
 }
 
@@ -165,7 +155,7 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, b
     aBPState.pc                  = anAddress;
     aBPState.thePredictedType    = theBTB.type(anAddress);
     aBPState.theSerial           = theSerial++;
-    aBPState.thePredictedTarget  = VirtualMemoryAddress(0);
+    aBPState.thePredictedTarget  = anAddress + 4;
     aBPState.thePrediction       = kStronglyTaken;
     aBPState.callUpdatedRAS      = false;
     aBPState.detectedSpecialCall = false;
@@ -194,31 +184,17 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, b
     }
 
     switch (aBPState.thePredictedType) {
-        case kNonBranch:
-            aBPState.thePredictedTarget = VirtualMemoryAddress(0);
-            break;
         case kConditional:
             aBPState.thePredictedTarget = predictConditional(VirtualMemoryAddress(anAddress), aBPState);
             break;
-        // TODO: These cases can be merged because they all have the same effect. However, when logging, they all
-        // increment different stats. So they must be done in their individual cases and increment the corresponding
-        // stats
+
         case kIndirectReg:
         case kUnconditional:
-            if (theBTB.target(anAddress)) {
-                aBPState.thePredictedTarget = *theBTB.target(anAddress);
-            } else {
-                aBPState.thePredictedTarget = VirtualMemoryAddress(0);
-            }
-            // theTage.get_prediction((uint64_t)anAddress, aBPState);
-            theTage.update_history(aBPState, true, aBPState.pc);
+            aBPState.thePredictedTarget = *theBTB.target(anAddress);
             break;
 
         case kIndirectCall:
         case kCall:
-            theTage.update_history(aBPState, true, aBPState.pc);
-
-            // btb must hit
             aBPState.thePredictedTarget = *theBTB.target(anAddress);
 
             // speculative
@@ -226,26 +202,19 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, b
             break;
 
         case kReturn:
-            theTage.update_history(aBPState, true, aBPState.pc);
-
             if (RAS.valid()) {
                 // speculative
                 aBPState.thePredictedTarget = RAS.pop();
                 aBPState.returnUsedRAS = true;
             } else
-                // btb must hit
                 aBPState.thePredictedTarget = *theBTB.target(anAddress);
             break;
 
         default:
-            aBPState.thePredictedTarget = VirtualMemoryAddress(0); break;
+            DBG_Assert(false, (<< "Unknown branch type: " << aBPState.thePredictedType));
+            break;
     }
 
-    if (aBPState.thePredictedType != kNonBranch) {
-        // DBG_(Verb,
-        //      (<< theIndex << "-BPRED-PREDICT: PC \t" << anAddress << " serial " << aBPState.theSerial << " Target \t"
-        //       << aBPState.thePredictedTarget << "\tType " << aBPState.thePredictedType));
-    }
     return aBPState.thePredictedTarget;
 }
 
@@ -253,91 +222,73 @@ void
 BranchPredictor::train(BPredState& aBPState)
 {
     DBG_(VVerb, (<< "Training Branch Predictor by PC: " << std::hex << aBPState.pc));
-    // Implementation of feedback function
 
     DBG_Assert(aBPState.theActualTarget != VirtualMemoryAddress(0));
 
-    if (aBPState.theActualDirection <= kTaken || aBPState.theActualType == kNonBranch) {
-        // BTB is only updated when the branch is taken, or when the branch is not a branch
-        theBTB.update(aBPState.pc, aBPState.theActualType, aBPState.theActualTarget);
-    }
-
     bool is_system = ((uint64_t)aBPState.pc >> 63) != 0;
 
-    bool is_mispredict = aBPState.theActualTarget != aBPState.thePredictedTarget;
+    if (aBPState.theActualType != kNonBranch)
+        ++theBranches;
 
-    if (is_mispredict) {
-        /*std::cout << "mispredict, pc: " << (uint64_t)aBPState.pc 
-                << ", pred: " << (uint64_t)aBPState.thePredictedTarget 
-                << ", actual: " << (uint64_t)aBPState.theActualTarget 
-                << ", serial: " << aBPState.theSerial 
-                << ", type: " << aBPState.theActualType
-                << ", thePredCycle: " << aBPState.thePredCycle << "\n";*/
-
-        if (aBPState.theCorrectionCycle){
+    if (aBPState.theActualTarget != aBPState.thePredictedTarget) {
+        if (aBPState.theCorrectionCycle) {
             mispredictCycles.push_back(std::make_pair(aBPState.thePredCycle, aBPState.theCorrectionCycle));
-            
+
             // fix this by setting the counter at the end 
-            if(mispredictCycles.size() % 1000 == 0)
+            if (mispredictCycles.size() % 1000 == 0)
                 theBranchMispredictionPenalty = calculateRedirectCycles(mispredictCycles);
         }
 
-        if(aBPState.theActualType == kReturn){
-            ++theMispredict_Return;
-        }
-        else if(aBPState.theActualType == kIndirectCall || aBPState.theActualType == kIndirectReg){
-            ++theMispredict_Indirect;
-        }
+        if (aBPState.theActualType != aBPState.thePredictedType) {
+            switch (aBPState.theActualType) {
+                case kIndirectReg:
+                case kIndirectCall:
+                    ++theMispredict_Indirect;
+                    break;
 
-        if(aBPState.theActualType != kConditional) {
-            // Wrong target for non-conditional
-            ++theMispredict_BTB;
-            if (is_system) {
-                ++theMispredict_BTB_System;
-            } else {
-                ++theMispredict_BTB_User;
+                default:
+                    ;
             }
 
-            // theTrainingHistory.push_back(aBPState);
+            ++theMispredict_BTB;
+            if (is_system)
+                ++theMispredict_BTB_System;
+            else
+                ++theMispredict_BTB_User;
+
         } else {
-            if (aBPState.theActualType != aBPState.thePredictedType) {
-                // Wrong type
-                ++theMispredict_BTB;
-                if (is_system) {
-                    ++theMispredict_BTB_System;
-                } else {
-                    ++theMispredict_BTB_User;
-                }
+            switch (aBPState.theActualType) {
+                case kIndirectReg:
+                case kIndirectCall:
+                    ++theMispredict_Indirect;
 
-                // theTrainingHistory.push_back(aBPState);
-            } else {
-                bool direction_matching = 
-                (aBPState.theActualDirection <= kTaken && aBPState.thePrediction <= kTaken) || 
-                (aBPState.theActualDirection > kTaken && aBPState.thePrediction > kTaken);
-                if (!direction_matching) {
-                    // Wrong direction
-                    ++theMispredict_TAGE;
-                    if (is_system) {
-                        ++theMispredict_TAGE_System;
-                    } else {
-                        ++theMispredict_TAGE_User;
-                    }
-                } else {
-                    // Wrong target for conditional
+                case kCall:
+                case kUnconditional:
                     ++theMispredict_BTB;
-                    if (is_system) {
+                    if (is_system)
                         ++theMispredict_BTB_System;
-                    } else {
+                    else
                         ++theMispredict_BTB_User;
-                    }
+                    break;
 
-                    // theTrainingHistory.push_back(aBPState);
-                }
+                case kReturn:
+                    // suppose always using ras
+                    ++theMispredict_Return;
+                    break;
+
+                case kConditional:
+                    ++theMispredict_TAGE;
+                    if (is_system)
+                        ++theMispredict_TAGE_System;
+                    else
+                        ++theMispredict_TAGE_User;
+                    break;
+
+                default:
+                    ;
             }
         }
     }
-
-    ++theBranches;
 
     if (aBPState.thePredictedType == kConditional && aBPState.thePredictedType == kConditional) {
         bool taken = (aBPState.theActualDirection <= kTaken);
