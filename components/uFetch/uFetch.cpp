@@ -400,6 +400,9 @@ class FLEXUS_COMPONENT(uFetch)
 
     bool consume_fetch_slots(index_t idx)
     {
+        if (waitingForOpcodeQueue->theOpcodes.size() >= cfg.FAQSize)
+            return false;
+
         FetchAddr fetch_addr = theFAQ[idx].front();
         VirtualMemoryAddress block_addr(fetch_addr.theAddress & theBlockMask);
         std::set<VirtualMemoryAddress> available_lines;
