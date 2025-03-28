@@ -20,6 +20,10 @@ class BranchPredictor
     uint32_t theSerial;
     std::vector<std::pair<uint64_t, uint64_t>> redirectCycles;
     std::vector<std::pair<uint64_t, uint64_t>> mispredictCycles;
+    std::vector<std::pair<uint64_t, uint64_t>> mispredictCycles_TAGE;
+    std::vector<std::pair<uint64_t, uint64_t>> mispredictCycles_Indirect;
+    std::vector<std::pair<uint64_t, uint64_t>> mispredictCycles_Return;
+    std::vector<std::pair<uint64_t, uint64_t>> mispredictCycles_BTB;
 
     BTB theBTB;
     PREDICTOR theTage;
@@ -39,8 +43,13 @@ class BranchPredictor
   public:
     Stat::StatCounter theBranches;
     Stat::StatCounter theRedirects;
+    Stat::StatCounter theResyncRedirects;
 
     Stat::StatCounter theBranchMispredictionPenalty;
+    Stat::StatCounter theBranchMispredictionPenalty_TAGE;
+    Stat::StatCounter theBranchMispredictionPenalty_Indirect;
+    Stat::StatCounter theBranchMispredictionPenalty_Return;
+    Stat::StatCounter theBranchMispredictionPenalty_BTB;
     Stat::StatCounter theRedirectionPenalty;
 
     Stat::StatCounter thePredictions_TAGE;
@@ -64,6 +73,7 @@ class BranchPredictor
      * If the prediction is taken, we jump to the target address (if present) as given by the BTB
      */
     VirtualMemoryAddress predictConditional(VirtualMemoryAddress anAddress, BPredState& aBPState);
+    void helperPenaltyCalculator(BPredState& aBPState, std::vector<std::pair<uint64_t, uint64_t>> &mispredictList, Stat::StatCounter &stat);
 
   public:
     BranchPredictor(std::string const& aName, uint32_t anIndex, uint32_t aBTBSets, uint32_t aBTBWays);
@@ -79,6 +89,7 @@ class BranchPredictor
     void recoverOracle(const uint64_t aSerial);
     uint32_t getSerial();
     void recordRedirectStats(std::pair<uint64_t, uint64_t> aRange);
+    void recordResyncRedirectStats();
     uint64_t calculateRedirectCycles(std::vector<std::pair<uint64_t, uint64_t>> &ranges);
 
     // This function is called whenever an instruction triggering a prediction retires.

@@ -2,6 +2,7 @@
 
 #include "core/debug/debug.hpp"
 #include "core/types.hpp"
+#include "core/qemu/mai_api.hpp"
 
 #include <components/uFetch/uFetchTypes.hpp>
 #include <core/boost_extensions/padded_string_cast.hpp>
@@ -20,8 +21,13 @@ BranchPredictor::BranchPredictor(std::string const& aName, uint32_t anIndex, uin
   , theBTB(aBTBSets, aBTBWays)
   , theBranches(aName + "-branches")
   , theRedirects(aName + "-redirects")
+  , theResyncRedirects(aName + "-redirects:resync")
 
   , theBranchMispredictionPenalty(aName + "-mispredict:penalty")
+  , theBranchMispredictionPenalty_TAGE(aName + "-mispredict:TAGE:penalty")
+  , theBranchMispredictionPenalty_Indirect(aName + "-mispredict:Indirect:penalty")
+  , theBranchMispredictionPenalty_Return(aName + "-mispredict:Return:penalty")
+  , theBranchMispredictionPenalty_BTB(aName + "-mispredict:BTB:penalty")
   , theRedirectionPenalty(aName + "-redirect:penalty")
 
   , thePredictions_TAGE(aName + "-predictions:TAGE")
@@ -115,6 +121,10 @@ void BranchPredictor::recordRedirectStats(std::pair<uint64_t, uint64_t> aRange){
     // fix this by setting the counter at the end 
     if(redirectCycles.size() % 1000 == 0)
         theRedirectionPenalty = calculateRedirectCycles(redirectCycles);
+}
+
+void BranchPredictor::recordResyncRedirectStats() {
+    theResyncRedirects++;
 }
 
 uint64_t BranchPredictor::calculateRedirectCycles
@@ -224,6 +234,13 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, b
     return aBPState.thePredictedTarget;
 }
 
+void BranchPredictor::helperPenaltyCalculator(BPredState& aBPState, std::vector<std::pair<uint64_t, uint64_t>> &mispredictList, Stat::StatCounter &stat) {
+    mispredictList.push_back(std::make_pair(aBPState.thePredCycle, aBPState.theCorrectionCycle));
+    if (mispredictList.size() % 1000 == 0) {
+        stat = calculateRedirectCycles(mispredictList);
+    }
+}
+
 void
 BranchPredictor::train(BPredState& aBPState)
 {
@@ -237,25 +254,25 @@ BranchPredictor::train(BPredState& aBPState)
         ++theBranches;
 
     if (aBPState.theActualTarget != aBPState.thePredictedTarget) {
-        if (aBPState.theCorrectionCycle) {
-            mispredictCycles.push_back(std::make_pair(aBPState.thePredCycle, aBPState.theCorrectionCycle));
-
-            // fix this by setting the counter at the end 
-            if (mispredictCycles.size() % 1000 == 0)
-                theBranchMispredictionPenalty = calculateRedirectCycles(mispredictCycles);
+        if (!aBPState.theCorrectionCycle) {
+            // Only happens when resync is at the same cycle as the commit
+            aBPState.theCorrectionCycle = theFlexus->cycleCount();
         }
+        helperPenaltyCalculator(aBPState, mispredictCycles, theBranchMispredictionPenalty);
 
         if (aBPState.theActualType != aBPState.thePredictedType) {
             switch (aBPState.theActualType) {
                 case kIndirectReg:
                 case kIndirectCall:
                     ++theMispredict_Indirect;
+                    helperPenaltyCalculator(aBPState, mispredictCycles_Indirect, theBranchMispredictionPenalty_Indirect);
                     break;
 
                 default:
                     ;
             }
 
+            helperPenaltyCalculator(aBPState, mispredictCycles_BTB, theBranchMispredictionPenalty_BTB);
             ++theMispredict_BTB;
             if (is_system)
                 ++theMispredict_BTB_System;
@@ -266,10 +283,12 @@ BranchPredictor::train(BPredState& aBPState)
             switch (aBPState.theActualType) {
                 case kIndirectReg:
                 case kIndirectCall:
+                    helperPenaltyCalculator(aBPState, mispredictCycles_Indirect, theBranchMispredictionPenalty_Indirect);
                     ++theMispredict_Indirect;
 
                 case kCall:
                 case kUnconditional:
+                    helperPenaltyCalculator(aBPState, mispredictCycles_BTB, theBranchMispredictionPenalty_BTB);
                     ++theMispredict_BTB;
                     if (is_system)
                         ++theMispredict_BTB_System;
@@ -279,10 +298,12 @@ BranchPredictor::train(BPredState& aBPState)
 
                 case kReturn:
                     // suppose always using ras
+                    helperPenaltyCalculator(aBPState, mispredictCycles_Return, theBranchMispredictionPenalty_Return);
                     ++theMispredict_Return;
                     break;
 
                 case kConditional:
+                    helperPenaltyCalculator(aBPState, mispredictCycles_TAGE, theBranchMispredictionPenalty_TAGE);
                     ++theMispredict_TAGE;
                     if (is_system)
                         ++theMispredict_TAGE_System;
