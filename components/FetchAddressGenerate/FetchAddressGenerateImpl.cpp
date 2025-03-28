@@ -89,7 +89,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
 
             if(redirectRequest->theBPState !=  NULL){
                 theBranchPredictor->recordRedirectStats
-                    (std::make_pair(redirectRequest->theBPState->thePredCycle, theFlexus->cycleCount()));
+                    (std::make_pair(redirectRequest->theBPState->thePredCycle >> 8, theFlexus->cycleCount()));
             }
 
             if (redirectRequest->isResync) {
