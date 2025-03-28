@@ -235,7 +235,7 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, b
 }
 
 void BranchPredictor::helperPenaltyCalculator(BPredState& aBPState, std::vector<std::pair<uint64_t, uint64_t>> &mispredictList, Stat::StatCounter &stat) {
-    mispredictList.push_back(std::make_pair(aBPState.thePredCycle, aBPState.theCorrectionCycle));
+    mispredictList.push_back(std::make_pair(aBPState.thePredCycle >> 8, aBPState.theCorrectionCycle));
     if (mispredictList.size() % 1000 == 0) {
         stat = calculateRedirectCycles(mispredictList);
     }
