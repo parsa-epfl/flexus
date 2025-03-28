@@ -74,7 +74,7 @@ BranchPredictor::recoverHistory(const BPredRedictRequest& aRequest)
     if (aBPState.theActualDirection <= kTaken || aBPState.theActualType == kNonBranch)
         theBTB.update(aBPState.pc, aBPState.theActualType, aBPState.theActualTarget);
 
-    if (aBPState.theActualType == kConditional || aBPState.thePredictedType == kConditional) {
+    if (aBPState.theActualType != kNonBranch || aBPState.thePredictedType != kNonBranch) {
         bool isTaken = aBPState.theActualDirection == kTaken;
         theTage.update_history(aBPState, isTaken, aBPState.pc);
     }
@@ -191,6 +191,8 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, b
         case kIndirectReg:
         case kUnconditional:
             aBPState.thePredictedTarget = *theBTB.target(anAddress);
+
+            theTage.update_history(aBPState, true, anAddress);
             break;
 
         case kIndirectCall:
@@ -199,6 +201,8 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, b
 
             // speculative
             RAS.push(anAddress + 4);
+
+            theTage.update_history(aBPState, true, anAddress);
             break;
 
         case kReturn:
@@ -208,6 +212,8 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, b
                 aBPState.returnUsedRAS = true;
             } else
                 aBPState.thePredictedTarget = *theBTB.target(anAddress);
+
+            theTage.update_history(aBPState, true, anAddress);
             break;
 
         default:
@@ -290,7 +296,7 @@ BranchPredictor::train(BPredState& aBPState)
         }
     }
 
-    if (aBPState.thePredictedType == kConditional && aBPState.thePredictedType == kConditional) {
+    if (aBPState.thePredictedType != kNonBranch || aBPState.theActualType != kNonBranch) {
         bool taken = (aBPState.theActualDirection <= kTaken);
         theTage.update_predictor(aBPState.pc, aBPState, taken);
     }

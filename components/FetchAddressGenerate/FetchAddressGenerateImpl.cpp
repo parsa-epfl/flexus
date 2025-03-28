@@ -153,12 +153,14 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
 
         //    static int test;
         boost::intrusive_ptr<FetchCommand> fetch(new FetchCommand());
+        int32_t max_addrs_old = max_addrs;
+
         while (max_addrs > 0 /*&& test == 0*/) {
             AGU_DBG("Getting addresses: " << max_addrs << " remaining");
 
             FetchAddr faddr(thePC[anIndex]);
             faddr.theBPState->pc = thePC[anIndex];
-            faddr.theBPState->thePredCycle = theFlexus->cycleCount();
+            faddr.theBPState->thePredCycle = (theFlexus->cycleCount() << 8) + (max_addrs_old - max_addrs);
 
             // Checkpoint the history before advancing the PC
             theBranchPredictor->checkpointHistory(*faddr.theBPState);
@@ -196,7 +198,6 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
                 faddr.theBPState->thePredictedType = kNonBranch;
                 faddr.theBPState->thePredictedTarget = thePC[anIndex];
                 faddr.theBPState->thePrediction = kNotTaken;
-                faddr.theBPState->thePredCycle = theFlexus->cycleCount();
                 faddr.theBPState->theSerial = theBranchPredictor->getSerial();
                 theBranchPredictor->getRAS(faddr.theBPState->theRAS);
 
