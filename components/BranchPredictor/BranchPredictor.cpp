@@ -74,11 +74,11 @@ BranchPredictor::recoverHistory(const BPredRedictRequest& aRequest)
 
     theTage.restore_history(*aRequest.theBPState);
 
-    if (!aRequest.theInsertNewHistory)
-        return;
-
     if (aBPState.theActualDirection <= kTaken || aBPState.theActualType == kNonBranch)
         theBTB.update(aBPState.pc, aBPState.theActualType, aBPState.theActualTarget);
+
+    if (!aRequest.theInsertNewHistory)
+        return;
 
     if (aBPState.theActualType != kNonBranch || aBPState.thePredictedType != kNonBranch) {
         bool isTaken = aBPState.theActualDirection == kTaken;
@@ -189,7 +189,6 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, b
             // This case should not happen without any blackbox instruction
             aBPState.thePredictedTarget = VirtualMemoryAddress(0); 
         }
-        //std::cout << "returning: " << (uint64_t)aBPState.thePredictedTarget << "\n";
         return aBPState.thePredictedTarget;
     }
 
@@ -235,7 +234,7 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, b
 }
 
 void BranchPredictor::helperPenaltyCalculator(BPredState& aBPState, std::vector<std::pair<uint64_t, uint64_t>> &mispredictList, Stat::StatCounter &stat) {
-    mispredictList.push_back(std::make_pair(aBPState.thePredCycle >> 8, aBPState.theCorrectionCycle));
+    mispredictList.push_back(std::make_pair(aBPState.thePredCycle, aBPState.theCorrectionCycle));
     if (mispredictList.size() % 1000 == 0) {
         stat = calculateRedirectCycles(mispredictList);
     }
@@ -255,7 +254,7 @@ BranchPredictor::train(BPredState& aBPState)
 
     if (aBPState.theActualTarget != aBPState.thePredictedTarget) {
         if (!aBPState.theCorrectionCycle) {
-            // Only happens when resync is at the same cycle as the commit
+            // Only happens when redirect is at the same cycle as the commit
             aBPState.theCorrectionCycle = theFlexus->cycleCount();
         }
         helperPenaltyCalculator(aBPState, mispredictCycles, theBranchMispredictionPenalty);

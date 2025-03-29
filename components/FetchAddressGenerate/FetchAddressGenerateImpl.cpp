@@ -89,13 +89,12 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
 
             if(redirectRequest->theBPState !=  NULL){
                 theBranchPredictor->recordRedirectStats
-                    (std::make_pair(redirectRequest->theBPState->thePredCycle >> 8, theFlexus->cycleCount()));
+                    (std::make_pair((redirectRequest->theBPState->thePredCycle), theFlexus->cycleCount()));
             }
 
             if (redirectRequest->isResync) {
                 theBranchPredictor->recordResyncRedirectStats();
-            }
-            
+            } 
         }
     }
 
@@ -159,12 +158,12 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
         boost::intrusive_ptr<FetchCommand> fetch(new FetchCommand());
         int32_t max_addrs_old = max_addrs;
 
-        while (max_addrs > 0 /*&& test == 0*/) {
+        while (max_addrs > 0) {
             AGU_DBG("Getting addresses: " << max_addrs << " remaining");
 
             FetchAddr faddr(thePC[anIndex]);
             faddr.theBPState->pc = thePC[anIndex];
-            faddr.theBPState->thePredCycle = (theFlexus->cycleCount() << 8) + (max_addrs_old - max_addrs);
+            faddr.theBPState->thePredCycle = theFlexus->cycleCount();
 
             // Checkpoint the history before advancing the PC
             theBranchPredictor->checkpointHistory(*faddr.theBPState);
@@ -189,11 +188,6 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
                 AGU_DBG("Advancing PC to: " << thePC[anIndex] << " for core: " << anIndex);
                 AGU_DBG("Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress);
 
-                /*std::cout << "A: Predicted, address: " << (uint64_t)faddr.theBPState->pc 
-                        << ", target: " << (uint64_t)faddr.theBPState->thePredictedTarget
-                        << ", cycle: " << faddr.theBPState->thePredCycle 
-                        << ", serial: " << faddr.theBPState->theSerial << "\n";*/
-
                 fetch->theFetches.push_back(faddr);
                 --max_predicts;
             } else {
@@ -208,17 +202,10 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
                 DBG_(VVerb, (<< "Advancing PC to: " << thePC[anIndex] << " for core: " << anIndex));
                 DBG_(VVerb, (<< "Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress));
 
-
-                /*std::cout << "B: Predicted, address: " << (uint64_t)faddr.theBPState->pc 
-                        << ", target: " << (uint64_t)faddr.theBPState->thePredictedTarget
-                        << ", cycle: " << faddr.theBPState->thePredCycle 
-                        << ", serial: " << faddr.theBPState->theSerial << "\n";*/
-
                 fetch->theFetches.push_back(faddr);
             }
 
             --max_addrs;
-            //      test = 1;
         }
 
         if (fetch->theFetches.size() > 0) {
