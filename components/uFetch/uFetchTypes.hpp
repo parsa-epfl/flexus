@@ -111,6 +111,18 @@ struct BPredState : boost::counted_base
 
     std::vector<uint64_t> theRAS;
 
+    // ITTAGE
+    uint64_t btb_ghr[16];
+    int ittage_hlen[8]; // 8 is random, upper bound on #tables?
+    int64_t ittage_tick;
+    int64_t ittage_hit_bank;
+    int64_t ittage_alt_diff;
+    int64_t ittage_use_alt;
+    uint64_t ittage_hit_pred;
+    uint64_t ittage_alt_pred;
+    uint64_t ittage_hash_idx[8]; // 8 is random, upper bound on #tables?
+    uint64_t ittage_hash_tag[8]; // 8 is random, upper bound on #tables?
+
     BPredState() {
       thePredictedType = kNonBranch;
       theActualType = kNonBranch;

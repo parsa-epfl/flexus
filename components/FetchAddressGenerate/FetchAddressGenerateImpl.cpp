@@ -93,7 +93,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
             }
 
             if (redirectRequest->isResync) {
-                theBranchPredictor->recordResyncRedirectStats();
+                theBranchPredictor->recordResyncRedirectStats(*redirectRequest->theBPState);
             } 
         }
     }
@@ -156,8 +156,6 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
 
         //    static int test;
         boost::intrusive_ptr<FetchCommand> fetch(new FetchCommand());
-        int32_t max_addrs_old = max_addrs;
-
         while (max_addrs > 0) {
             AGU_DBG("Getting addresses: " << max_addrs << " remaining");
 

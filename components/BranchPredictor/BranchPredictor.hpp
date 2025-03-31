@@ -7,6 +7,7 @@
 #include "core/stats.hpp"
 #include "core/types.hpp"
 #include <set>
+#include "ITTAGE.h"
 
 #include <components/uFetch/uFetchTypes.hpp>
 
@@ -19,15 +20,19 @@ class BranchPredictor
     uint32_t theIndex;
     uint32_t theSerial;
     std::vector<std::pair<uint64_t, uint64_t>> redirectCycles;
+    std::vector<std::pair<uint64_t, uint64_t>> redirectCycles_Resync;
     std::vector<std::pair<uint64_t, uint64_t>> mispredictCycles;
     std::vector<std::pair<uint64_t, uint64_t>> mispredictCycles_TAGE;
     std::vector<std::pair<uint64_t, uint64_t>> mispredictCycles_Indirect;
-    std::vector<std::pair<uint64_t, uint64_t>> mispredictCycles_Return;
+    std::vector<std::pair<uint64_t, uint64_t>> mispredictCycles_Return; 
     std::vector<std::pair<uint64_t, uint64_t>> mispredictCycles_BTB;
+    std::vector<std::pair<uint64_t, uint64_t>> mispredictCycles_other;
+    
 
     BTB theBTB;
     PREDICTOR theTage;
-    ReturnAddressStack RAS;
+    ReturnAddressStack theRAS;
+    ITTAGE theITTage;
 
     struct BranchInfo {
       uint64_t pc;
@@ -50,7 +55,9 @@ class BranchPredictor
     Stat::StatCounter theBranchMispredictionPenalty_Indirect;
     Stat::StatCounter theBranchMispredictionPenalty_Return;
     Stat::StatCounter theBranchMispredictionPenalty_BTB;
+    Stat::StatCounter theBranchMispredictionPenalty_other;
     Stat::StatCounter theRedirectionPenalty;
+    Stat::StatCounter theRedirectionPenalty_Resync;
 
     Stat::StatCounter thePredictions_TAGE;
     Stat::StatCounter theCorrect_TAGE;
@@ -65,6 +72,7 @@ class BranchPredictor
     Stat::StatCounter theMispredict_BTB_System;
     Stat::StatCounter theMispredict_Return;
     Stat::StatCounter theMispredict_Indirect;
+    Stat::StatCounter theMispredict_other;
 
 
   private:
@@ -89,13 +97,13 @@ class BranchPredictor
     void recoverOracle(const uint64_t aSerial);
     uint32_t getSerial();
     void recordRedirectStats(std::pair<uint64_t, uint64_t> aRange);
-    void recordResyncRedirectStats();
+    void recordResyncRedirectStats(BPredState& aBPState);
     uint64_t calculateRedirectCycles(std::vector<std::pair<uint64_t, uint64_t>> &ranges);
 
     // This function is called whenever an instruction triggering a prediction retires.
     void train(BPredState& aBPState);
 
-    void getRAS(std::vector<uint64_t> &vec) { return RAS.get(vec); }
+    void getRAS(std::vector<uint64_t> &vec) { return theRAS.get(vec); }
 
     void loadState(std::string const& aDirName, bool PerfectBPU);
     void saveState(std::string const& aDirName);
