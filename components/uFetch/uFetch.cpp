@@ -240,6 +240,9 @@ class FLEXUS_COMPONENT(uFetch)
         int tlbreqs = 4;
         int l1ireqs = cfg.MaxFetchLines; // ufetch ports
 
+        int tlbdeps = 16;
+        int l1ideps = 16;
+
         FLEXUS_CHANNEL_ARRAY(AvailableFIQ, idx) >> fetches;
         fetches = std::min(fetches, (int)(cfg.MaxFetchInstructions));
 
@@ -256,56 +259,61 @@ class FLEXUS_COMPONENT(uFetch)
             DBG_(VVerb, (<< "  " << f.addr.theAddress << std::hex << " " << f.pa << " " << f.state));
 
             switch (f.state) {
-                case S_INIT: {
-                    VirtualMemoryAddress va(f.addr.theAddress & ~0xffflu);
+                case S_INIT:
+                    if (tlbdeps) {
+                        tlbdeps--;
 
-                    if (theTAM.count(va))
-                        f.state = S_ITLB_REQ;
+                        VirtualMemoryAddress va(f.addr.theAddress & ~0xffflu);
 
-                    else if (tlbreqs) {
-                        tlbreqs--;
+                        if (theTAM.count(va))
+                            f.state = S_ITLB_REQ;
 
-                        send_trans(idx, f.addr.theAddress);
+                        else if (tlbreqs) {
+                            tlbreqs--;
 
-                        theTAM.insert(va);
-                        f.state = S_ITLB_REQ;
-                    }
+                            send_trans(idx, f.addr.theAddress);
 
-                    fetches = 0;
-                    t++;
-                    continue;
-                }
-
-                case S_ITLB_RESP: {
-                    PhysicalMemoryAddress pa(f.pa);
-
-                    if (cfg.PerfectICache || l1ihits.count(pa))
-                        f.state = S_DONE;
-
-                    else if (theFAM.count(pa))
-                        f.state = S_MISS;
-
-                    else if (l1ireqs) {
-                        // we lookup a new block
-                        l1ireqs--;
-
-                        if (theI.lookup(pa)) {
-                            // this line is available this cycle
-                            l1ihits.insert(pa);
-
-                            f.state = S_DONE;
-                        } else if (theFAM.size() < cfg.MissQueueSize) {
-                            send_fetch(pa, f.addr.theAddress);
-
-                            theFAM.insert(pa);
-                            f.state = S_MISS;
+                            theTAM.insert(va);
+                            f.state = S_ITLB_REQ;
                         }
                     }
 
                     fetches = 0;
                     t++;
                     continue;
-                }
+
+                case S_ITLB_RESP:
+                    if (l1ideps) {
+                        if (!cfg.PerfectICache)
+                            l1ideps--;
+
+                        PhysicalMemoryAddress pa(f.pa);
+
+                        if (cfg.PerfectICache || l1ihits.count(pa))
+                            f.state = S_DONE;
+
+                        else if (theFAM.count(pa))
+                            f.state = S_MISS;
+
+                        else if (l1ireqs) {
+                            l1ireqs--;
+
+                            if (theI.lookup(pa)) {
+                                l1ihits.insert(pa);
+                                f.state = S_DONE;
+
+                            } else if (theFAM.size() < cfg.MissQueueSize) {
+                                send_fetch(pa, f.addr.theAddress);
+
+                                theFAM.insert(pa);
+                                f.state = S_MISS;
+                            }
+                        }
+                    }
+
+                    fetches = 0;
+                    t++;
+                    continue;
 
                 case S_ITLB_REQ:
                 case S_MISS:
@@ -315,22 +323,6 @@ class FLEXUS_COMPONENT(uFetch)
 
                 case S_DONE:
                     if (fetches) {
-                        PhysicalMemoryAddress pa(f.pa);
-
-                        if (!l1ihits.count(f.pa)){
-                            // we cannot fetch more lines
-                            if (l1ihits.size() >= cfg.MaxFetchLines){
-                                DBG_Assert(l1ireqs == 0);
-                                fetches = 0;
-                                continue;
-                            }
-                            
-                            // add this line to those we looked up and fetched this cycle
-                            l1ireqs--;
-                            l1ihits.insert(pa);   
-                        }
-
-                        // start fetching a new instruction
                         fetches--;
 
                         if (bundle.get() == nullptr) {
