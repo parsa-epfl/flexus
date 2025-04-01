@@ -23,11 +23,38 @@ class FLEXUS_COMPONENT(uFetch)
     FLEXUS_COMPONENT_IMPL(uFetch);
 
   private:
+    enum FetchState {
+        S_INIT,
+        S_ITLB_REQ,
+        S_ITLB_RESP,
+        S_MISS,
+        S_DONE,
+    };
+
+    struct FetchInfo {
+        uint64_t va;
+        uint64_t pa;
+        uint32_t opcode;
+
+        FetchState state;
+        FetchAddr  addr;
+
+        boost::intrusive_ptr<TransactionTracker> tracker;
+
+        FetchInfo(FetchAddr &a):
+            va    (a.theAddress & ~0xffflu),
+            pa    (0),
+            opcode(0),
+            state (S_INIT),
+            addr  (a) {
+        }
+    };
+
     // ==================== FetchAddressGenerate list =================
-    std::vector<std::list<FetchAddr>> theFAQ;
-    pFetchBundle waitingForOpcodeQueue;
-    BijectionMapType_t tr_op_bijection;
-    ExpectedTranslation_t translationsExpected;
+    std::list<FetchInfo> theFAQ;
+
+    std::unordered_set<uint64_t> theTAM;
+    std::unordered_set<uint64_t> theFAM;
 
     // ================== STATS ==================
     Flexus::Stat::StatCounter theFetchAccesses;
@@ -42,22 +69,9 @@ class FLEXUS_COMPONENT(uFetch)
     Flexus::Stat::StatCounter theAvailableFetchSlots;
     Flexus::Stat::StatCounter theUsedFetchSlots;
 
-    uint64_t theLastVTagSet;
-    PhysicalMemoryAddress theLastPhysical;
-
-    std::vector<boost::optional<PhysicalMemoryAddress>> theIcacheMiss;
-    std::vector<boost::optional<VirtualMemoryAddress>> theIcacheVMiss;
-    std::vector<boost::intrusive_ptr<TransactionTracker>> theFetchReplyTransactionTracker;
-    std::vector<boost::optional<std::pair<PhysicalMemoryAddress, tFillLevel>>> theLastMiss;
-    // Indicates whether a prefetch is outstanding, and what paddr was prefetched
-    std::vector<boost::optional<PhysicalMemoryAddress>> theIcachePrefetch;
-    std::vector<boost::optional<uint64_t>> theLastPrefetchVTagSet;
-
-    // Set of outstanding evicts.
     std::set<uint64_t> theEvictSet;
 
     // ================== CACHE ========================
-    int32_t theBundleCoreID;
     uint32_t theIndexShift;
     uint64_t theBlockMask;
 
@@ -68,10 +82,6 @@ class FLEXUS_COMPONENT(uFetch)
     std::list<MemoryTransport> theMissQueue;
     std::list<MemoryTransport> theSnoopQueue;
     std::list<MemoryTransport> theReplyQueue;
-
-    // LLC latency modifications
-    std::map<uint64_t, uint64_t> miss_issue_cycle; 
-    Flexus::Stat::StatCounter llc_latency_cycles;
 
   public:
     FLEXUS_COMPONENT_CONSTRUCTOR(uFetch)
@@ -87,436 +97,276 @@ class FLEXUS_COMPONENT(uFetch)
       , theMaxOutstandingEvicts(statName() + "-MaxEvicts")
       , theAvailableFetchSlots(statName() + "-FetchSlotsPossible")
       , theUsedFetchSlots(statName() + "-FetchSlotsUsed")
-      , theLastVTagSet(0)
-      , theLastPhysical(0)
-      , llc_latency_cycles(statName() + "-LLC_latency_cycles")
     {
     }
 
     //   Msutherl: TLB in-out functions
     FLEXUS_PORT_ALWAYS_AVAILABLE(iTranslationIn);
-    void push(interface::iTranslationIn const&, TranslationPtr& retdTranslations)
+    void push(interface::iTranslationIn const&, TranslationPtr& tr)
     {
+        PhysicalMemoryAddress magic =
+            cpu(tr->theIndex).translate_va2pa(tr->theVaddr,
+                                              tr->getInstruction() ?
+                                                  tr->getInstruction()->unprivAccess():
+                                                  false);
 
-        ExpectedTranslation_t::iterator tr_iter = translationsExpected.find(retdTranslations);
-        if (tr_iter != translationsExpected.end()) {
-            update_translation_response(retdTranslations);
-            translationsExpected.erase(tr_iter);
+        DBG_Assert((tr->thePaddr == magic) || (magic == nuArch::kUnresolved),
+                   Comp(*this)(<< "ERROR: Magic QEMU translation NOT EQUAL TO MMU "
+                                  "Translation. Vaddr = "
+                               << std::hex << tr->theVaddr << std::dec << ", PADDR_MMU = " << std::hex
+                               << tr->thePaddr << std::dec << ", PADDR_QEMU = " << std::hex << magic
+                               << std::dec));
+
+        if (!tr->isPagefault() && (magic == nuArch::kUnresolved))
+            tr->setPagefault();
+
+        uint64_t va = tr->theVaddr & ~0xffflu;
+        uint64_t n  = 0;
+
+        for (auto &f: theFAQ) {
+            if (f.state != S_ITLB_REQ)
+                continue;
+            if (f.va != va)
+                continue;
+
+            f.pa    = tr->isPagefault() ? ~0lu : ((magic & ~0xffflu) | (f.addr.theAddress & 0xffflu & theBlockMask));
+            f.state = tr->isPagefault() ? S_DONE : S_ITLB_RESP;
+
+            n++;
         }
-        DBG_(VVerb, (<< "Got response from iTranslationIn for PC " << retdTranslations->theVaddr));
+
+        theTAM.erase(va);
+
+        DBG_(VVerb, (<< "recving trans " << tr->theVaddr << " " << magic << " wakeup " << n));
     }
 
     // FetchAddressIn
     FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(FetchAddressIn);
     void push(interface::FetchAddressIn const&, index_t anIndex, boost::intrusive_ptr<FetchCommand>& aCommand)
     {
-
-        std::copy(aCommand->theFetches.begin(), aCommand->theFetches.end(), std::back_inserter(theFAQ[anIndex]));
+        for (auto &f: aCommand->theFetches)
+            theFAQ.emplace_back(f);
     }
 
     // AvailableFAQOut
     FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(AvailableFAQOut);
-    int32_t pull(interface::AvailableFAQOut const&, index_t anIndex) { return cfg.FAQSize - theFAQ[anIndex].size(); }
+    int32_t pull(interface::AvailableFAQOut const&, index_t anIndex) { return cfg.FAQSize - theFAQ.size(); }
 
     // SquashIn
     FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(SquashIn);
     void push(interface::SquashIn const&, index_t anIndex, eSquashCause& aReason)
     {
-
-        theFAQ[anIndex].clear();
-        theIcacheMiss[anIndex]                   = boost::none;
-        theIcacheVMiss[anIndex]                  = boost::none;
-        theFetchReplyTransactionTracker[anIndex] = nullptr;
-        theIcachePrefetch[anIndex]               = boost::none;
-        theLastPrefetchVTagSet[anIndex]          = 0;
-        waitingForOpcodeQueue->clear();
-        tr_op_bijection.clear();
-        translationsExpected.clear();
+        theFAQ.clear();
+        theTAM.clear();
+        theFAM.clear();
     }
 
     // FetchMissIn
     FLEXUS_PORT_ALWAYS_AVAILABLE(FetchMissIn);
     void push(interface::FetchMissIn const&, MemoryTransport& aTransport)
     {
-
         DBG_(VVerb,
              Comp(*this)(<< "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex()
                          << "] Fetch Miss Reply Received on Port FMI: " << *aTransport[MemoryMessageTag]));
-        fetch_reply(aTransport);
+        recv_fetch(aTransport);
     }
 
     FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(ICount);
-    int32_t pull(ICount const&, index_t anIndex) { return theFAQ[anIndex].size(); }
+    int32_t pull(ICount const&, index_t anIndex) { return theFAQ.size(); }
 
     FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(Stalled);
     bool pull(Stalled const&, index_t anIndex)
     {
-        int32_t available_fiq = 0;
-        DBG_Assert(FLEXUS_CHANNEL_ARRAY(AvailableFIQ, anIndex).available());
-        FLEXUS_CHANNEL_ARRAY(AvailableFIQ, anIndex) >> available_fiq;
+        int fiq = 0;
+        FLEXUS_CHANNEL_ARRAY(AvailableFIQ, anIndex) >> fiq;
 
-        return theFAQ[anIndex].empty() || available_fiq == 0 || theIcacheMiss[anIndex];
+        return (theFAQ.size() == cfg.FAQSize) || !fiq;
     }
 
-    void push(interface::ResyncIn const&, index_t anIndex, int& aResync) {}
-    bool available(interface::ResyncIn const&, index_t anIndex) { return true; }
+    void push(interface::ResyncIn const&, index_t anIndex, int& aResync) {
+    }
+
+    bool available(interface::ResyncIn const&, index_t anIndex) {
+        return true;
+    }
 
     // =============================== LOGIC =========================
 
-    Processor cpu(index_t anIndex) { return Processor::getProcessor(flexusIndex() * cfg.Threads + anIndex); }
-
-    void update_translation_response(TranslationPtr& tr)
-    {
-
-        DBG_Assert(tr->isDone() || tr->isHit());
-        DBG_(VVerb,
-             Comp(*this)(<< "Updating translation response for " << tr->theVaddr << " @ cpu index " << flexusIndex()));
-        PhysicalMemoryAddress magicTranslation = cpu(tr->theIndex).translate_va2pa(tr->theVaddr, (tr->getInstruction() ? tr->getInstruction()->unprivAccess(): false));
-
-        if (tr->thePaddr == magicTranslation || magicTranslation == nuArch::kUnresolved) {
-            DBG_(VVerb,
-                 Comp(*this)(<< "Magic QEMU translation == MMU Translation. Vaddr = " << std::hex << tr->theVaddr
-                             << std::dec << ", Paddr = " << std::hex << tr->thePaddr << std::dec));
-        } else {
-            DBG_Assert(false,
-                       Comp(*this)(<< "ERROR: Magic QEMU translation NOT EQUAL TO MMU "
-                                      "Translation. Vaddr = "
-                                   << std::hex << tr->theVaddr << std::dec << ", PADDR_MMU = " << std::hex
-                                   << tr->thePaddr << std::dec << ", PADDR_QEMU = " << std::hex << magicTranslation
-                                   << std::dec));
-        }
-        uint32_t opcode = 0xffffffff;
-        // MARK: Look up in the opc bijection and get the correct index
-        BijectionMapType_t::iterator bijection_iter = tr_op_bijection.find(tr);
-        DBG_AssertSev(Crit,
-                      bijection_iter != tr_op_bijection.end(),
-                      Comp(*this)(<< "ERROR: Opcode index was NOT found for translationPtr with ID" << tr->theID
-                                  << " and address" << tr->theVaddr));
-
-        // respect qemu result as flexus does not have pmp
-        // TODO: but this should only happen for access faults
-        if (!tr->isPagefault() && (magicTranslation == nuArch::kUnresolved)) tr->setPagefault();
-
-        if (!tr->isPagefault()) opcode = cpu(tr->theIndex).fetch_inst(tr->theVaddr);
-
-        waitingForOpcodeQueue->updateOpcode(tr->theVaddr, bijection_iter->second, opcode);
-        // Remove this mapping, opcode is updated
-        tr_op_bijection.erase(bijection_iter);
+    Processor cpu(index_t anIndex) {
+        return Processor::getProcessor(flexusIndex() * cfg.Threads + anIndex);
     }
 
-    void send_translation_request(index_t anIndex,
-                                  VirtualMemoryAddress const& anAddress,
-                                  opcodeQIterator newOpcIterator)
+    void send_trans(index_t anIndex, VirtualMemoryAddress const& anAddress)
     {
+        TranslationPtr tr(new Translation());
+        tr->theVaddr     = anAddress;
+        tr->theType      = Translation::eFetch;
+        tr->theException = 0;
+        tr->theIndex     = anIndex;
+        tr->setInstr();
 
-        TranslationPtr xlat{ new Translation() };
-        xlat->theVaddr     = anAddress;
-        xlat->theType      = Translation::eFetch;
-        xlat->theException = 0; // just for now
-        xlat->theIndex     = anIndex;
-        xlat->setInstr();
+        DBG_(VVerb, (<< "sending trans " << tr->theVaddr));
 
-        // Insert an entry into the translation<->opcode map and outstanding translations expected
-        std::pair<BijectionMapType_t::iterator, bool> bijection_insertion =
-          tr_op_bijection.insert(std::make_pair(xlat, newOpcIterator));
-
-        DBG_(VVerb,
-             Comp(*this)(<< "Inserting xlat objection with vaddr " << xlat->theVaddr << " pointing to PC "
-                         << newOpcIterator->thePC << " into waitingForOpcodesQueue bijection "));
-        DBG_AssertSev(Iface,
-                      bijection_insertion.second == true,
-                      (<< "Inserting xlat object with vaddr " << xlat->theVaddr
-                       << " failed!! Clashing object has vaddr: " << bijection_insertion.first->first->theVaddr));
-
-        translationsExpected.emplace(xlat);
-
-        DBG_(VVerb, Comp(*this)(<< "Adding translation request entry for " << xlat->theVaddr));
-
-        DBG_Assert(FLEXUS_CHANNEL(iTranslationOut).available());
-        FLEXUS_CHANNEL(iTranslationOut) << xlat;
+        FLEXUS_CHANNEL(iTranslationOut) << tr;
     }
 
-    void issueFetch(PhysicalMemoryAddress anAddress, VirtualMemoryAddress vPC)
+    boost::intrusive_ptr<TransactionTracker> send_fetch(PhysicalMemoryAddress pa, VirtualMemoryAddress pc)
     {
-        DBG_Assert(anAddress != 0);
-        MemoryTransport transport;
-        boost::intrusive_ptr<MemoryMessage> operation(MemoryMessage::newFetch(anAddress, vPC));
-        operation->reqSize() = 64;
+        boost::intrusive_ptr<MemoryMessage> mm(MemoryMessage::newFetch(pa, pc));
+        mm->reqSize() = 64;
 
-        boost::intrusive_ptr<TransactionTracker> tracker = new TransactionTracker;
-        tracker->setAddress(anAddress);
-        tracker->setInitiator(flexusIndex());
-        tracker->setFetch(true);
-        tracker->setSource("uFetch");
-        transport.set(TransactionTrackerTag, tracker);
-        transport.set(MemoryMessageTag, operation);
+        boost::intrusive_ptr<TransactionTracker> tt(new TransactionTracker);
+        tt->setAddress  (pa);
+        tt->setInitiator(flexusIndex());
+        tt->setFetch    (true);
+        tt->setSource   ("uFetch");
 
-        theMissQueue.push_back(transport);
+        MemoryTransport mt;
+        mt.set(TransactionTrackerTag, tt);
+        mt.set(MemoryMessageTag,      mm);
 
-        miss_issue_cycle[anAddress] = Flexus::Core::theFlexus->cycleCount();
-    }
+        theMissQueue.push_back(std::move(mt));
 
-    bool is_li1_cache_hit(PhysicalMemoryAddress const& anAddress)
-    {
-        if (theI.lookup(anAddress)) {
-            DBG_(VVerb,
-                 Comp(*this)(<< "Core[" << std::setfill('0') << std::setw(2) << flexusIndex()
-                             << "] I-Lookup hit: " << anAddress));
-            DBG_(Verb,
-                 Comp(*this)(<< "Core[" << std::setfill('0') << std::setw(2) << flexusIndex()
-                             << "] I-Lookup hit: " << anAddress));
-            return true;
-        }
+        DBG_(VVerb, (<< "sending fetch " << pa));
 
-        DBG_(VVerb,
-             Comp(*this)(<< "Core[" << std::setfill('0') << std::setw(2) << flexusIndex()
-                         << "] I-Lookup Miss addr: " << anAddress));
-        DBG_(Verb,
-             Comp(*this)(<< "Core[" << std::setfill('0') << std::setw(2) << flexusIndex()
-                         << "] I-Lookup Miss addr: " << anAddress));
-        return false;
-    }
-
-    // Helper functions
-    PhysicalMemoryAddress translateAddress(uint64_t vaddr, int anIndex)
-    {
-        Flexus::SharedTypes::Translation xlat;
-        xlat.theVaddr = vaddr;
-        xlat.theType  = Translation::eFetch;
-        xlat.thePaddr = cpu(anIndex).translate_va2pa(xlat.theVaddr, false);
-        return xlat.thePaddr;
-    }
-
-    void handleCacheMiss(PhysicalMemoryAddress paddr, uint64_t vaddr, int anIndex, uint64_t tagset)
-    {
-        PhysicalMemoryAddress temp(paddr & theBlockMask);
-        theIcacheMiss[anIndex]                   = temp;
-        theIcacheVMiss[anIndex]                  = VirtualMemoryAddress(vaddr);
-        theFetchReplyTransactionTracker[anIndex] = nullptr;
-
-        DBG_(VVerb,
-             Comp(*this)(<< "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << anIndex
-                         << "] L1I MISS " << vaddr << " " << *theIcacheMiss[anIndex]));
-
-        if (theIcachePrefetch[anIndex] && *theIcacheMiss[anIndex] == *theIcachePrefetch[anIndex]) {
-            theIcachePrefetch[anIndex] = boost::none;
-            // We have already sent a prefetch request out for this miss. No need
-            // to request again.  However, we can advance the prefetcher to the
-            // next miss
-            prefetchNext(anIndex);
-        } else {
-            theIcachePrefetch[anIndex] = boost::none;
-            // Need to issue the miss.
-            issueFetch(*theIcacheMiss[anIndex], *theIcacheVMiss[anIndex]);
-            // Also issue a new prefetch
-            theLastPrefetchVTagSet[anIndex] = tagset;
-            prefetchNext(anIndex);
-        }
-    }
-
-    void issuePrefetch(PhysicalMemoryAddress paddr, VirtualMemoryAddress vaddr, int anIndex)
-    {
-        theIcachePrefetch[anIndex] = paddr;
-        DBG_(VVerb,
-             Comp(*this)(<< "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << anIndex
-                         << "] L1I PREFETCH " << *theIcachePrefetch[anIndex]));
-        issueFetch(paddr, vaddr);
-        ++thePrefetches;
-    }
-
-    void prefetchNext(int anIndex)
-    {
-
-        // Limit the number of prefetches. With some backpressure, the number of
-        // outstanding prefetches can otherwise be unbounded.
-        if (theMissQueue.size() >= cfg.MissQueueSize) return;
-        if (!cfg.PrefetchEnabled) return;
-        if (!theLastPrefetchVTagSet[anIndex]) return;
-
-        // Prefetch the line following theLastPrefetchVTagSet
-        //(if it has a valid translation)
-        ++(*theLastPrefetchVTagSet[anIndex]);
-        VirtualMemoryAddress vprefetch(*theLastPrefetchVTagSet[anIndex] << theIndexShift);
-        PhysicalMemoryAddress pprefetch = translateAddress(vprefetch, anIndex);
-
-        if (pprefetch == nuArch::kUnresolved || is_li1_cache_hit(pprefetch)) {
-            theLastPrefetchVTagSet[anIndex] = boost::none;
-            return;
-        }
-
-        issuePrefetch(pprefetch, vprefetch, anIndex);
-    }
-    bool l1i_lookup(index_t anIndex, VirtualMemoryAddress vaddr)
-    {
-        // Translate virtual address to physical.
-        // First, see if it is our cached translation
-        DBG_(VVerb, (<< "Looking up instruction in cache"));
-
-        uint64_t tagset = vaddr >> theIndexShift;
-        PhysicalMemoryAddress paddr;
-
-        // Check if it's the last accessed address
-        if (tagset == theLastVTagSet) {
-            paddr = theLastPhysical;
-            if (paddr == nuArch::kUnresolved) {
-                DBG_(VVerb, (<< "Last Physical translation lookup failed!"));
-                ++theFailedTranslations;
-                return true; // Failed translations cause an MMU miss in the pipe.
-            }
-        } else {
-            DBG_(VVerb, (<< "Not in Flexus cache... Will look into Qemu now!"));
-            paddr = translateAddress(vaddr, anIndex);
-            if (paddr == nuArch::kUnresolved) {
-                DBG_(VVerb, (<< "Translation failed!"));
-                ++theFailedTranslations;
-                return true; // Failed translations cause an MMU miss in the pipe.
-            }
-
-            DBG_(VVerb, (<< "Translation success!"));
-            // Cache translation
-            theLastPhysical = paddr;
-            theLastVTagSet  = tagset;
-        }
-
-        bool hit = is_li1_cache_hit(paddr);
-        ++theFetchAccesses;
-
-        if (hit) {
-            ++theHits;
-            if (theLastPrefetchVTagSet[anIndex] && (*theLastPrefetchVTagSet[anIndex] == tagset)) {
-                prefetchNext(anIndex);
-            }
-            return true;
-        }
-
-        // Handle cache miss
-        ++theMisses;
-        DBG_Assert(!theIcacheMiss[anIndex]);
-        handleCacheMiss(paddr, vaddr, anIndex, tagset);
-
-        DBG_(VVerb, (<< "in icacheLookup before return false"));
-        return false;
-    }
-
-    bool consume_fetch_slots(index_t idx)
-    {
-        if (waitingForOpcodeQueue->theOpcodes.size() >= cfg.FAQSize)
-            return false;
-
-        FetchAddr fetch_addr = theFAQ[idx].front();
-        VirtualMemoryAddress block_addr(fetch_addr.theAddress & theBlockMask);
-        std::set<VirtualMemoryAddress> available_lines;
-
-        if (available_lines.count(block_addr) == 0) {
-            // Line needs to be fetched from I-cache
-            if (available_lines.size() >= cfg.MaxFetchLines) {
-                // Reached limit of I-cache reads per cycle
-                return false;
-            }
-
-            // Notify the PowerTracker of Icache access
-            bool garbage = true;
-            FLEXUS_CHANNEL(InstructionFetchSeen) << garbage;
-
-            if (cfg.PerfectICache) {
-                DBG_(Verb, (<< "FETCH UNIT: Instruction Cache disabled!"));
-            } else {
-                if (!l1i_lookup(idx, block_addr)) return false;
-            }
-
-            available_lines.insert(block_addr);
-        }
-
-        /* MARK: Pseudo-algorithm for rewritten translate->opcode->output code
-         * A) Pop this from the FAQ because it was an I$ hit, add to fetched instruction queue
-         * (waiting for opcode) B) Create a "Transaction" that represents the MMU/Opcode access flow
-         * C) Append said transaction to something like "outstandingOpcodes", get index
-         * D) Associate "Transaction"->index in a hashmap so that when the MMU replies, we set the
-         * exact correct opcode E) Rework the response path to look up said hashmap
-         */
-        theFAQ[idx].pop_front();
-
-        waitingForOpcodeQueue->theOpcodes.emplace_back(
-          new FetchedOpcode(fetch_addr.theAddress,
-                            0xefffffff, // op_code not resolved yet - waiting for translation
-                            fetch_addr.theBPState,
-                            theFetchReplyTransactionTracker[idx]));
-
-        waitingForOpcodeQueue->theFillLevels.emplace_back(new tFillLevel(eL1I));
-
-        DBG_(VVerb, Comp(*this)(<< "added entry in waiting for opcode queue" << fetch_addr.theAddress));
-        send_translation_request(idx, fetch_addr.theAddress, *std::prev(waitingForOpcodeQueue->theOpcodes.end()));
-
-        return (theFAQ[idx].size() > 0);
-    }
-
-    void process_available(uint32_t available_fiq)
-    {
-
-        if (waitingForOpcodeQueue->theOpcodes.size() == 0) return;
-        if ((*waitingForOpcodeQueue->theOpcodes.begin())->theOpcode == 0xefffffff) return;
-
-        pFetchBundle bundle(new FetchBundle);
-        bundle->coreID = theBundleCoreID;
-
-        // Only pop fetched instructions up to the limit of decoder FIQ
-        while ((waitingForOpcodeQueue->theOpcodes.size() > 0) && (bundle->theOpcodes.size() < available_fiq)) {
-            auto i         = waitingForOpcodeQueue->theOpcodes.begin();
-            auto iter      = *i;
-            auto fill_iter = waitingForOpcodeQueue->theFillLevels.begin();
-
-            if (iter->theOpcode == 0xefffffff) break;
-
-            bundle->theOpcodes.emplace_back(*i);
-            bundle->theFillLevels.emplace_back(*fill_iter);
-            DBG_(VVerb, Comp(*this)(<< "popping entry out of the waitingForOpcodeQueue " << iter->thePC));
-            waitingForOpcodeQueue->theOpcodes.erase(i);
-            waitingForOpcodeQueue->theFillLevels.erase(fill_iter);
-        }
-
-        if (bundle->theOpcodes.size() > 0) { FLEXUS_CHANNEL_ARRAY(FetchBundleOut, 0) << bundle; }
+        return tt;
     }
 
     void doFetch(index_t idx)
     {
         FETCH_DBG("--------------START FETCHING------------------------");
 
-        int32_t remaining_fetch = cfg.MaxFetchInstructions;
-        int32_t available_fiq   = 0;
+        int fetches = 0;
+        int tlbreqs = 4;
+        int l1ireqs = cfg.MaxFetchLines; // ufetch ports
 
-        DBG_Assert(FLEXUS_CHANNEL_ARRAY(AvailableFIQ, idx).available());
-        FLEXUS_CHANNEL_ARRAY(AvailableFIQ, idx) >> available_fiq;
+        FLEXUS_CHANNEL_ARRAY(AvailableFIQ, idx) >> fetches;
+        fetches = std::min(fetches, (int)(cfg.MaxFetchInstructions));
 
-        if (available_fiq < remaining_fetch) { remaining_fetch = available_fiq; }
+        DBG_(VVerb, (<< "fetches: " << fetches << " entries: " << theFAQ.size()));
 
-        theAvailableFetchSlots += remaining_fetch;
+        // lines that hit in the cache and looked up in this cycle
+        std::unordered_set<uint64_t> l1ihits; 
 
-        if (theIcacheMiss[idx]) {
-            ++theMissCycles;
-            DBG_(VVerb, (<< "FETCH UNIT: l1I >> " << theMissCycles.theRefCount << " cycles missed so far"));
-            goto fetch_end;
+        pFetchBundle bundle;
+
+        for (auto t = theFAQ.begin(); t != theFAQ.end(); ) {
+            auto &f = *t;
+
+            DBG_(VVerb, (<< "  " << f.addr.theAddress << std::hex << " " << f.pa << " " << f.state));
+
+            switch (f.state) {
+                case S_INIT: {
+                    VirtualMemoryAddress va(f.addr.theAddress & ~0xffflu);
+
+                    if (theTAM.count(va))
+                        f.state = S_ITLB_REQ;
+
+                    else if (tlbreqs) {
+                        tlbreqs--;
+
+                        send_trans(idx, f.addr.theAddress);
+
+                        theTAM.insert(va);
+                        f.state = S_ITLB_REQ;
+                    }
+
+                    fetches = 0;
+                    t++;
+                    continue;
+                }
+
+                case S_ITLB_RESP: {
+                    PhysicalMemoryAddress pa(f.pa);
+
+                    if (cfg.PerfectICache || l1ihits.count(pa))
+                        f.state = S_DONE;
+
+                    else if (theFAM.count(pa))
+                        f.state = S_MISS;
+
+                    else if (l1ireqs) {
+                        // we lookup a new block
+                        l1ireqs--;
+
+                        if (theI.lookup(pa)) {
+                            // this line is available this cycle
+                            l1ihits.insert(pa);
+
+                            f.state = S_DONE;
+                        } else if (theFAM.size() < cfg.MissQueueSize) {
+                            send_fetch(pa, f.addr.theAddress);
+
+                            theFAM.insert(pa);
+                            f.state = S_MISS;
+                        }
+                    }
+
+                    fetches = 0;
+                    t++;
+                    continue;
+                }
+
+                case S_ITLB_REQ:
+                case S_MISS:
+                    fetches = 0;
+                    t++;
+                    continue;
+
+                case S_DONE:
+                    if (fetches) {
+                        PhysicalMemoryAddress pa(f.pa);
+
+                        if (!l1ihits.count(f.pa)){
+                            // we cannot fetch more lines
+                            if (l1ihits.size() >= cfg.MaxFetchLines){
+                                DBG_Assert(l1ireqs == 0);
+                                fetches = 0;
+                                continue;
+                            }
+                            
+                            // add this line to those we looked up and fetched this cycle
+                            l1ireqs--;
+                            l1ihits.insert(pa);   
+                        }
+
+                        // start fetching a new instruction
+                        fetches--;
+
+                        if (bundle.get() == nullptr) {
+                            bundle.reset(new FetchBundle);
+                            bundle->coreID = flexusIndex();
+                        }
+
+                        // pa is all-one if page fault happens
+                        auto opcode = ~f.pa ? cpu(0).fetch_inst(f.addr.theAddress) : 0xefffffff;
+
+                        bundle->theOpcodes.emplace_back(
+                            new FetchedOpcode(f.addr.theAddress, opcode, f.addr.theBPState, f.tracker));
+                        bundle->theFillLevels.emplace_back(
+                            new tFillLevel(eL1I));
+
+                        DBG_Assert(t == theFAQ.begin());
+                        t = theFAQ.erase(t);
+
+                    } else {
+                        t++;
+                        continue;
+                    }
+            }
         }
 
-        if (available_fiq <= 0) goto process_fiq;
-        if (theFAQ[idx].size() <= 0) goto process_fiq;
+        if (bundle.get())
+            DBG_(VVerb, (<< "sending " << bundle->theOpcodes.size()));
 
-        FETCH_DBG("starting to process the fetches..." << remaining_fetch);
+        if (bundle.get() && bundle->theOpcodes.size())
+            FLEXUS_CHANNEL_ARRAY(FetchBundleOut, idx) << bundle;
 
-        while (consume_fetch_slots(idx)) {
-            theFetches++;
-            theUsedFetchSlots++;
-            remaining_fetch--;
-        }
-
-    process_fiq:
-        process_available(available_fiq);
-    fetch_end:
         FETCH_DBG("--------------FINISH FETCHING------------------------");
     }
 
     void sendMisses()
     {
-
         while (!theMissQueue.empty() && FLEXUS_CHANNEL(FetchMissOut).available()) {
             MemoryTransport trans = theMissQueue.front();
 
@@ -565,24 +415,20 @@ class FLEXUS_COMPONENT(uFetch)
             }
         }
     }
+
     void initialize() override
     {
+        DBG_Assert(cfg.Threads == 1);
 
         theI.init(cfg.Size, cfg.Associativity, cfg.ICacheLineSize, statName());
-        theIndexShift                 = LOG2(cfg.ICacheLineSize);
-        theBlockMask                  = ~(cfg.ICacheLineSize - 1);
-        theBundleCoreID               = flexusIndex();
-        waitingForOpcodeQueue         = new FetchBundle();
-        waitingForOpcodeQueue->coreID = theBundleCoreID;
-        theFAQ.resize(cfg.Threads);
-        theIcacheMiss.resize(cfg.Threads);
-        theIcacheVMiss.resize(cfg.Threads);
-        theFetchReplyTransactionTracker.resize(cfg.Threads);
-        theLastMiss.resize(cfg.Threads);
-        theIcachePrefetch.resize(cfg.Threads);
-        theLastPrefetchVTagSet.resize(cfg.Threads);
+
+        theIndexShift = LOG2(cfg.ICacheLineSize);
+        theBlockMask  = ~(cfg.ICacheLineSize - 1);
     }
-    void finalize() override {}
+
+    void finalize() override {
+    }
+
     void drive(interface::uFetchDrive const&) override
     {
 
@@ -624,7 +470,7 @@ class FLEXUS_COMPONENT(uFetch)
     PhysicalMemoryAddress l1i_insert(const PhysicalMemoryAddress& anAddress)
     {
 
-        if (!is_li1_cache_hit(anAddress)) {
+        if (!theI.lookup(anAddress)) {
             ++theAllocations;
             return PhysicalMemoryAddress(theI.insert(anAddress));
         }
@@ -648,7 +494,7 @@ class FLEXUS_COMPONENT(uFetch)
         }
     }
 
-    void fetch_reply(MemoryTransport& aTransport)
+    void recv_fetch(MemoryTransport& aTransport)
     {
 
         boost::intrusive_ptr<MemoryMessage> reply        = aTransport[MemoryMessageTag];
@@ -668,36 +514,25 @@ class FLEXUS_COMPONENT(uFetch)
 
                 issueEvict(replacement);
 
-                // modifications for LLC latency
-                if (miss_issue_cycle[reply->address()]) {
-                    llc_latency_cycles += (Flexus::Core::theFlexus->cycleCount() - miss_issue_cycle[reply->address()]);
-                    miss_issue_cycle.erase(reply->address());
-                }
-                
-
                 // See if it is our outstanding miss or our outstanding prefetch
                 for (uint32_t i = 0; i < cfg.Threads; ++i) {
-                    if (theIcacheMiss[i] && *theIcacheMiss[i] == reply->address()) {
-                        DBG_(VVerb,
-                             Comp(*this)(<< "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << i
-                                         << "] L1I FILL " << reply->address()));
-                        theIcacheMiss[i]                   = boost::none;
-                        theIcacheVMiss[i]                  = boost::none;
-                        theFetchReplyTransactionTracker[i] = tracker;
-                        if (aTransport[TransactionTrackerTag] && aTransport[TransactionTrackerTag]->fillLevel()) {
-                            theLastMiss[i] = std::make_pair(PhysicalMemoryAddress(reply->address() & theBlockMask),
-                                                            *aTransport[TransactionTrackerTag]->fillLevel());
-                        } else {
-                            DBG_(VVerb, (<< "Received Fetch Reply with no TransactionTrackerTag"));
-                        }
+                    auto n = 0;
+
+                    for (auto &f: theFAQ) {
+                        if (f.state != S_MISS)
+                            continue;
+                        if (f.pa != reply->address())
+                            continue;
+
+                        f.state   = S_DONE;
+                        f.tracker = tracker;
+
+                        n++;
                     }
 
-                    if (theIcachePrefetch[i] && *theIcachePrefetch[i] == reply->address()) {
-                        DBG_(VVerb,
-                             Comp(*this)(<< "CPU[" << std::setfill('0') << std::setw(2) << flexusIndex() << "." << i
-                                         << "] L1I PREFETCH-FILL " << reply->address()));
-                        theIcachePrefetch[i] = boost::none;
-                    }
+                    theFAM.erase(reply->address());
+
+                    DBG_(VVerb, (<< "recving fetch " << reply->address() << " wakeup " << n));
                 }
 
                 // Send an Ack if necessary
@@ -743,7 +578,7 @@ class FLEXUS_COMPONENT(uFetch)
                 DBG_Assert(aTransport[DestinationTag]);
                 aTransport[TransactionTrackerTag]->setFillLevel(Flexus::SharedTypes::ePeerL1Cache);
                 aTransport[TransactionTrackerTag]->setPreviousState(eShared);
-                if (is_li1_cache_hit(reply->address())) {
+                if (theI.lookup(reply->address())) {
                     aTransport[DestinationTag]->type = DestinationMessage::Requester;
                     push_back_to_channel(aTransport, MemoryMessage::FwdReply, reply->address());
                 } else {

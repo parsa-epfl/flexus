@@ -197,24 +197,8 @@ struct FetchedOpcode
 struct FetchBundle : public boost::counted_base
 {
     std::list<std::shared_ptr<FetchedOpcode>> theOpcodes;
-    std::list<std::shared_ptr<tFillLevel>>
-      theFillLevels; // Level in memory hierarchy from where the instruction was fetched
+    std::list<std::shared_ptr<tFillLevel>> theFillLevels;
     int32_t coreID;
-
-    void updateOpcode(VirtualMemoryAddress anAddress, std::shared_ptr<FetchedOpcode> it, Opcode anOpcode)
-    {
-        DBG_AssertSev(Crit,
-                      it->thePC == anAddress,
-                      (<< "ERROR: FetchedOpcode iterator did not match!! Iterator PC " << it->thePC
-                       << ", translation returned vaddr " << anAddress));
-        it->theOpcode = anOpcode;
-    }
-
-    void clear()
-    {
-        theOpcodes.clear();
-        theFillLevels.clear();
-    }
 };
 
 } // FLEXUS::SHAREDTYPES

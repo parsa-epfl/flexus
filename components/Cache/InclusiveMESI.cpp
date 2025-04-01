@@ -720,7 +720,7 @@ InclusiveMESI::handleBackMessage(MemoryTransport transport)
     // Do a cache lookup
     LookupResult_p result = (*theArray)[msg->address()];
 
-    if (thePerfect)
+    if (thePerfect && !tracker->isFetch())
         DBG_Assert(false);
 
     // Look for an outstanding request
