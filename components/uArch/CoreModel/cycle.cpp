@@ -1100,12 +1100,12 @@ CoreImpl::retire()
 
     CORE_DBG("ROB size: " << theROB.size());
     if (theROB.empty()) {
+        DBG_(Crit, (<< "Empty"));
         return;
     }
 
     theRetireCount = 0;
     while (!theROB.empty() && !stop_retire) {
-
         if (!theROB.front()->mayRetire()) {
             // wfi still executing
             if (theROB.front()->getOpcode() == 0x7F2003D5) {
@@ -1211,6 +1211,12 @@ CoreImpl::retire()
             theROB.pop_front();
             // Need to squash and retire instructions that cause traps
         }
+    }
+    if (theRetireCount == 0) {
+        DBG_(Crit, (<< *theROB.front()));
+    }
+    else {
+	DBG_(Crit, (<< "Retiring"));
     }
 }
 
