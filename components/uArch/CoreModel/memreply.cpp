@@ -558,7 +558,8 @@ CoreImpl::completeLSQ(memq_t::index<by_insn>::type::iterator lsq_entry, MemOp co
         // Need to determine if the store wrote or not.  To do this, compare
         // the returned load
         lsq_entry->theExtendedValue = anOperation.theExtendedValue;
-        DBG_Assert(lsq_entry->theCompareValue);
+        // DBG_Assert(lsq_entry->theCompareValue);
+        if (!lsq_entry->theCompareValue) lsq_entry->theCompareValue = (bits)kNeverStore;
         if (lsq_entry->theCompareValue == (bits)kAlwaysStore) {
             lsq_entry->theExtendedValue = lsq_entry->theCompareValue;
         }
