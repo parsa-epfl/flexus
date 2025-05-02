@@ -415,6 +415,7 @@ SYNC(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
                 case 2: /* MBReqTypes_Writes */ bar = kBAR_SC | kMO_ST_ST; break;
                 default: /* MBReqTypes_All */ bar = kBAR_SC | kMO_ALL; break;
             }
+            // return nop(aFetchedOpcode, aCPU, aSequenceNo);
             MEMBAR(inst, bar);
             break;
         case 6: /* ISB */

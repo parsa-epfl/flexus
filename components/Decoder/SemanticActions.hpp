@@ -252,6 +252,13 @@ simple_action
 calcAddressAction(SemanticInstruction* anInstruction, std::vector<std::list<InternalDependance>>& opDeps);
 simple_action
 translationAction(SemanticInstruction* anInstruction);
+simple_action
+calcAddressUpdateVATranslateMaybeRegExtendAndShiftAction(SemanticInstruction* anInstruction,
+                                                            std::vector<std::list<InternalDependance>>& opDeps,
+                                                            bool aRegExtend,
+                                                            std::unique_ptr<Operation> aRegExtendType,
+                                                            std::vector<std::list<InternalDependance>>& opDepsExtend,
+                                                            bool aShift);
 
 predicated_action
 exclusiveMonitorAction(SemanticInstruction* anInstruction,
