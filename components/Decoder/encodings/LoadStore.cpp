@@ -281,15 +281,6 @@ LDAQ(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     addReadXRegister(inst, 1, rn, rs_deps[0], true);
     predicated_dependant_action load = loadAction(inst, sz, kZeroExtend, kPD);
 
-    // SID: treating as CAS because making it a barrier is harder
-    // inst->setOperand(kOperand4, (uint64_t)kNeverStore);
-    // multiply_dependant_action update_value = updateCASValueAction(inst, kOperand4, kOperand4);
-    // connectDependance(update_value.dependances[0], addr);
-    // inst->addDispatchEffect(satisfy(inst, update_value.dependances[1]));
-    // inst->addDispatchEffect(satisfy(inst, update_value.dependances[2]));
-    // connectDependance(inst->retirementDependance(), update_value);
-
-    // inst->addDispatchEffect(allocateLoad(inst, sz, load.dependance, acctype));
     inst->addDispatchEffect(allocateCAS(inst, sz, load.dependance, acctype));
     inst->addCheckTrapEffect(mmuPageFaultCheck(inst));
     inst->addRetirementEffect(retireMem(inst));
@@ -850,9 +841,6 @@ LDR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     predicated_action ex, sh, wb;
 
     if (index == kRegOffset) {
-        // ex = addExecute(inst, extend(DecodeRegExtend(option)), { kOperand3 }, rs_deps, kOperand2);
-        // rs_deps.resize(2);
-        // rs2_deps.resize(2);
         if (shift_amount) { 
             inst->setOperand(kResult2, (uint64_t)shift_amount);
             if (option & 0x1) {
@@ -860,20 +848,10 @@ LDR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
             } else  {
                 inst->setOperand(kOperand4, (uint64_t)32);
             }
-            // sh = addExecute(inst, operation(kLSL_), { kOperand2, kResult2, kOperand4 }, rs_deps, kOperand2);
-            // connect(rs_deps[1], ex);
-            // inst->addDispatchEffect(satisfy(inst, sh.action->dependance(2)));
         }
     }
 
     simple_action act = calcAddressUpdateVATranslateMaybeRegExtendAndShiftAction(inst, rs2_deps, index == kRegOffset, extend(DecodeRegExtend(option)), rs_deps, shift_amount != 0);
-    // simple_action act = addAddressCompute(inst, rs2_deps);
-    // if (index == kRegOffset) {
-    //     if (shift_amount)
-    //         connect(rs2_deps[1], sh);
-    //     else
-    //         connect(rs2_deps[1], ex);
-    // }
 
     if (index == kUnsignedOffset) {
         inst->setOperand(kUopAddressOffset, imm);
