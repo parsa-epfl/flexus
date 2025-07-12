@@ -76,11 +76,17 @@ class ComponentManagerImpl : public ComponentManager
 
         // Drive frequency calculations
         std::vector<std::string> freq_split = splitString(freq, ':');
-        DBG_Assert(freq_split.size() == aSystemWidth + 1, (<< "Frequency string does not match the system width."));
+        if (freq_split.size() == 1) {
+            for(index_t i = 0; i < theSystemWidth; ++i) {
+                freq_split.push_back(freq_split[0]);
+            }
+        } else {
+            DBG_Assert(freq_split.size() == theSystemWidth + 1, (<< "Frequency string does not match the system width."));
+        }
         
         index_t driveFreq, cyclesPerIter, remCycles;
-        theDriveFreq.mapCyclesIter = new index_t*[aSystemWidth];
-        for(index_t i = 0; i <= aSystemWidth; ++i) {
+        theDriveFreq.mapCyclesIter = new index_t*[theSystemWidth];
+        for(index_t i = 0; i <= theSystemWidth; ++i) {
             driveFreq = (index_t)(std::stof(freq_split[i]) * 10);
             cyclesPerIter = driveFreq / 10;
             remCycles = driveFreq - cyclesPerIter * 10;

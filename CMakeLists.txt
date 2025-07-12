@@ -17,7 +17,7 @@ include(./target/${SIMULATOR}/${SIMULATOR}.cmake)
 include_directories(.)
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall -fdiagnostics-color=always -g3 -gdwarf-5")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -ggdb -fno-eliminate-unused-debug-symbols -fno-omit-frame-pointer -funroll-loops -fno-inline -fno-lto")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native -fno-omit-frame-pointer")
 
 # Find boost
 set(Boost_USE_DEBUG_LIBS OFF)

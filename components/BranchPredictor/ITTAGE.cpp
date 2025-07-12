@@ -247,9 +247,14 @@ void ITTAGE::checkpointHistory(BPredState &aBPState) const{
     aBPState.ittage_use_alt = ittage_use_alt;
     aBPState.ittage_hit_pred = ittage_hit_pred;
     aBPState.ittage_alt_pred = ittage_alt_pred;
+    aBPState.theITTAGEHistoryValid = true;
 }
 
 void ITTAGE::restore_history(const BPredState &aBPState){
+    if (!aBPState.theITTAGEHistoryValid) {
+        return;
+    }
+
     for (int i = 0; i < 16; i++){
         btb_ghr[i] = aBPState.btb_ghr[i];
     }

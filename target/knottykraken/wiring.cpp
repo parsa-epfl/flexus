@@ -168,7 +168,7 @@ bool initializeParameters() {
 
   theL2Cfg.Cores.initialize(0);
   theL2Cfg.BlockSize.initialize(64);
-  theL2Cfg.Banks.initialize(1);
+  theL2Cfg.Banks.initialize(0);
   theL2Cfg.BankInterleaving.initialize(64);
   theL2Cfg.Groups.initialize(1);
   theL2Cfg.GroupInterleaving.initialize(4096);

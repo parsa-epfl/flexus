@@ -1,6 +1,7 @@
 build/
 lib/
 CMakeUserPresets.json
+build-*kraken*/
 
 
 # Created by https://www.toptal.com/developers/gitignore/api/c,c++,git,vim,cmake,linux,macos,windows,archives,assembler,jetbrains+all,visualstudiocode,conan

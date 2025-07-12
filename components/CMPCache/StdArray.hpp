@@ -450,6 +450,7 @@ class StdArray : public AbstractArray<_State>
 
         theNumNodes = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
         DBG_Assert(theNumNodes > 0);
+        DBG_Assert(theNumNodes == theNumBanks);
 
         std::list<std::pair<std::string, std::string>>::const_iterator iter = theConfiguration.begin();
         for (; iter != theConfiguration.end(); iter++) {
@@ -458,7 +459,7 @@ class StdArray : public AbstractArray<_State>
             } else if (iter->first == "total_sets") {
                 uint64_t total_sets = strtoll(iter->second.c_str(), nullptr, 0);
                 DBG_Assert(total_sets % theNumNodes == 0);
-                theNumSets = total_sets / theNumBanks;
+                theNumSets = total_sets / theNumNodes;
             } else if (strcasecmp(iter->first.c_str(), "assoc") == 0 ||
                        strcasecmp(iter->first.c_str(), "associativity") == 0) {
                 theAssociativity = strtol(iter->second.c_str(), nullptr, 0);

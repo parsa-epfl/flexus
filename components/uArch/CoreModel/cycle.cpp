@@ -1100,7 +1100,7 @@ CoreImpl::retire()
 
     CORE_DBG("ROB size: " << theROB.size());
     if (theROB.empty()) {
-        DBG_(Crit, (<< "Empty"));
+        DBG_(Dev, (<< "Empty"));
         return;
     }
 
@@ -1213,10 +1213,10 @@ CoreImpl::retire()
         }
     }
     if (theRetireCount == 0) {
-        DBG_(Crit, (<< *theROB.front()));
+        DBG_(Dev, (<< *theROB.front()));
     }
     else {
-	DBG_(Crit, (<< "Retiring"));
+	DBG_(Dev, (<< "Retiring"));
     }
 }
 

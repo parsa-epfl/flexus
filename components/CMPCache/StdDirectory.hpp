@@ -191,6 +191,7 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
     int32_t theGroupIndex;
     int32_t theGroupInterleaving;
     int32_t theNumSharers;
+    int32_t theNumNodes;
 
     Tag tagMask;
 
@@ -271,16 +272,18 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
 
         theSkewSet           = false;
 
+        theNumNodes = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+        assert(theNumNodes == theBanks);
+
+
         std::list<std::pair<std::string, std::string>>::const_iterator iter = theConfiguration.begin();
         for (; iter != theConfiguration.end(); iter++) {
             if (iter->first == "sets") {
                 theNumSets = strtoll(iter->second.c_str(), nullptr, 0);
             } else if (iter->first == "total_sets" || iter->first == "global_sets") {
-                int32_t global_sets = strtol(iter->second.c_str(), nullptr, 0);
-                theNumSets          = global_sets / theTotalBanks;
-                DBG_Assert((theNumSets * theTotalBanks) == global_sets,
-                           (<< "global_sets (" << global_sets << ") is not divisible by number of banks ("
-                            << theTotalBanks << ")"));
+                uint64_t global_sets = strtol(iter->second.c_str(), nullptr, 0);
+                DBG_Assert(global_sets % theNumNodes == 0);
+                theNumSets          = global_sets / theNumNodes;
             } else if (iter->first == "assoc" || iter->first == "associativity") {
                 theAssociativity = strtol(iter->second.c_str(), nullptr, 0);
             } else if (iter->first == "skew" || iter->first == "skew_set") {
@@ -426,6 +429,11 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
 
         json checkpoint;
         ifs >> checkpoint;
+
+        DBG_Assert(checkpoint.size() == theNumSets,
+                   (<< "Checkpoint file: " << filename << " has " << checkpoint.size()
+                    << " sets, but the directory has " << theNumSets << " sets."));
+
 
         // empty the directory
         for (int32_t i = 0; i < theNumSets; i++) {

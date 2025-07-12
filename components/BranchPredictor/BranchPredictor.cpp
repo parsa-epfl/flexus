@@ -76,7 +76,7 @@ BranchPredictor::recoverHistory(const BPredRedictRequest& aRequest)
     theRAS.recover(aBPState);
 
     theTage.restore_history(*aRequest.theBPState);
-    theITTage.restore_history(*aRequest.theBPState);
+    // theITTage.restore_history(*aRequest.theBPState);
 
     if (aBPState.theActualDirection <= kTaken || aBPState.theActualType == kNonBranch){
         theBTB.update(aBPState.pc, aBPState.theActualType, aBPState.theActualTarget);
@@ -88,7 +88,7 @@ BranchPredictor::recoverHistory(const BPredRedictRequest& aRequest)
     if (aBPState.theActualType != kNonBranch) {
         bool isTaken = aBPState.theActualDirection == kTaken;
         theTage.update_history(aBPState, isTaken, aBPState.pc);
-        theITTage.update_history(aBPState.pc);
+        // theITTage.update_history(aBPState.pc);
     }
 }
 
@@ -106,7 +106,7 @@ void
 BranchPredictor::checkpointHistory(BPredState& aBPState) const
 {
     theTage.checkpointHistory(aBPState);
-    theITTage.checkpointHistory(aBPState);
+    // theITTage.checkpointHistory(aBPState);
 }
 
 void BranchPredictor::recoverOracle(const uint64_t aSerial){
@@ -124,19 +124,22 @@ uint32_t BranchPredictor::getSerial(){
 
 void BranchPredictor::recordRedirectStats(std::pair<uint64_t, uint64_t> aRange){
     theRedirects++;
-    redirectCycles.push_back(aRange);
+    // redirectCycles.push_back(aRange);
     // fix this by setting the counter at the end 
-    if(redirectCycles.size() % 1000 == 0)
-        theRedirectionPenalty = calculateRedirectCycles(redirectCycles);
+    // if(redirectCycles.size() % 1000 == 0)
+    //     theRedirectionPenalty = calculateRedirectCycles(redirectCycles);
 }
 
 void BranchPredictor::recordResyncRedirectStats(BPredState& aBPState) {
     theResyncRedirects++;
-    helperPenaltyCalculator(aBPState, redirectCycles_Resync, theRedirectionPenalty_Resync);
+    // helperPenaltyCalculator(aBPState, redirectCycles_Resync, theRedirectionPenalty_Resync);
 }
 
-uint64_t BranchPredictor::calculateRedirectCycles
+
+inline uint64_t BranchPredictor::calculateRedirectCycles
     (std::vector<std::pair<uint64_t, uint64_t>> &ranges){
+
+    return 0;
     
     if (ranges.empty()) return 0;
 
@@ -207,8 +210,8 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, b
 
         case kIndirectReg:
             // if ITTAGE is available, read prediction from ITTAGE
-            //aBPState.thePredictedTarget = *theBTB.target(anAddress);
-            aBPState.thePredictedTarget = theITTage.predict(anAddress);
+            aBPState.thePredictedTarget = *theBTB.target(anAddress);
+            // aBPState.thePredictedTarget = theITTage.predict(anAddress);
             theTage.update_history(aBPState, true, anAddress);
             break;
 
@@ -219,8 +222,8 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, b
 
         case kIndirectCall:
             // if ITTAGE is available, read prediction from ITTAGE
-            //aBPState.thePredictedTarget = *theBTB.target(anAddress);
-            aBPState.thePredictedTarget = theITTage.predict(anAddress);
+            aBPState.thePredictedTarget = *theBTB.target(anAddress);
+            // aBPState.thePredictedTarget = theITTage.predict(anAddress);
             // speculative
             theRAS.push(anAddress + 4);
             theTage.update_history(aBPState, true, anAddress);
@@ -250,7 +253,7 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, b
     }
 
     // update history on every branch detected by the BTB
-    theITTage.update_history(anAddress); // create a history with path
+    // theITTage.update_history(anAddress); // create a history with path
 
     return aBPState.thePredictedTarget;
 }
@@ -279,10 +282,10 @@ BranchPredictor::train(BPredState& aBPState)
             // Only happens when redirect is at the same cycle as the commit
             aBPState.theCorrectionCycle = theFlexus->cycleCount();
         }
-        helperPenaltyCalculator(aBPState, mispredictCycles, theBranchMispredictionPenalty);
+        // helperPenaltyCalculator(aBPState, mispredictCycles, theBranchMispredictionPenalty);
 
         if (aBPState.theActualType != aBPState.thePredictedType) {
-            helperPenaltyCalculator(aBPState, mispredictCycles_BTB, theBranchMispredictionPenalty_BTB);
+            // helperPenaltyCalculator(aBPState, mispredictCycles_BTB, theBranchMispredictionPenalty_BTB);
             ++theMispredict_BTB;
             if (is_system)
                 ++theMispredict_BTB_System;
@@ -293,23 +296,23 @@ BranchPredictor::train(BPredState& aBPState)
             switch (aBPState.theActualType) {
                 case kIndirectReg:
                 case kIndirectCall:
-                    helperPenaltyCalculator(aBPState, mispredictCycles_Indirect, theBranchMispredictionPenalty_Indirect);
+                    // helperPenaltyCalculator(aBPState, mispredictCycles_Indirect, theBranchMispredictionPenalty_Indirect);
                     ++theMispredict_Indirect;
                     break;
 
                 case kReturn:
                     // suppose always using ras
-                    helperPenaltyCalculator(aBPState, mispredictCycles_Return, theBranchMispredictionPenalty_Return);
+                    // helperPenaltyCalculator(aBPState, mispredictCycles_Return, theBranchMispredictionPenalty_Return);
                     ++theMispredict_Return;
                     break;
 
                 case kConditional:
-                    helperPenaltyCalculator(aBPState, mispredictCycles_TAGE, theBranchMispredictionPenalty_TAGE);
+                    // helperPenaltyCalculator(aBPState, mispredictCycles_TAGE, theBranchMispredictionPenalty_TAGE);
                     ++theMispredict_TAGE;
                     break;
 
                 default:
-                    helperPenaltyCalculator(aBPState, mispredictCycles_other, theBranchMispredictionPenalty_other);
+                    // helperPenaltyCalculator(aBPState, mispredictCycles_other, theBranchMispredictionPenalty_other);
                     ++theMispredict_other;
                     break;
             }
@@ -323,8 +326,8 @@ BranchPredictor::train(BPredState& aBPState)
     }
 
     if (aBPState.theActualType == kIndirectCall || aBPState.theActualType == kIndirectReg){
-        bool mispredict = (aBPState.theActualTarget != aBPState.thePredictedTarget);
-        uint64_t pred_tgt = theITTage.update_target(aBPState.theActualTarget, mispredict, aBPState);
+        // bool mispredict = (aBPState.theActualTarget != aBPState.thePredictedTarget);
+        // uint64_t pred_tgt = theITTage.update_target(aBPState.theActualTarget, mispredict, aBPState);
     }
 }
 

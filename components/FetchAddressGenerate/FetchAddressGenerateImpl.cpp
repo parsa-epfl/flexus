@@ -92,7 +92,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
                     (std::make_pair((redirectRequest->theBPState->thePredCycle), theFlexus->cycleCount()));
             }
 
-            if (redirectRequest->isResync) {
+            if (redirectRequest->isResync && redirectRequest->theBPState != nullptr) {
                 theBranchPredictor->recordResyncRedirectStats(*redirectRequest->theBPState);
             } 
         }
@@ -163,8 +163,8 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
             faddr.theBPState->pc = thePC[anIndex];
             faddr.theBPState->thePredCycle = theFlexus->cycleCount();
 
-            // Checkpoint the history before advancing the PC
-            theBranchPredictor->checkpointHistory(*faddr.theBPState);
+            // // Checkpoint the history before advancing the PC
+            // theBranchPredictor->checkpointHistory(*faddr.theBPState);
 
             // Advance the PC
             if (theBranchPredictor->isBranch(faddr.theAddress, cfg.PerfectBPU)) {
@@ -173,6 +173,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
                     AGU_DBG("Config set the max prediction to zero, so no prediction");
                     break;
                 }
+                theBranchPredictor->checkpointHistory(*faddr.theBPState);
                 VirtualMemoryAddress prediction = theBranchPredictor->predict(faddr.theAddress, *faddr.theBPState, cfg.PerfectBPU);
                 if (prediction == 0) {
                     thePC[anIndex] += 4;

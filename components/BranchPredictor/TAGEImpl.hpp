@@ -460,7 +460,9 @@ class PREDICTOR
     void restore_history(const BPredState& aBPState)
     {
 
-        DBG_Assert(aBPState.theTageHistoryValid);
+        if(!aBPState.theTageHistoryValid) {
+            return;
+        }
 
         for (int i = 0; i < NHIST; i++) {
             ch_i[i].comp    = aBPState.ch_i[i];

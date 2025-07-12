@@ -98,7 +98,7 @@ class BranchPredictor
     uint32_t getSerial();
     void recordRedirectStats(std::pair<uint64_t, uint64_t> aRange);
     void recordResyncRedirectStats(BPredState& aBPState);
-    uint64_t calculateRedirectCycles(std::vector<std::pair<uint64_t, uint64_t>> &ranges);
+    inline uint64_t calculateRedirectCycles(std::vector<std::pair<uint64_t, uint64_t>> &ranges);
 
     // This function is called whenever an instruction triggering a prediction retires.
     void train(BPredState& aBPState);

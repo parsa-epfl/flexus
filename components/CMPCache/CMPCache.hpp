@@ -10,7 +10,7 @@
 COMPONENT_PARAMETERS(
   PARAMETER( Cores, int, "Number of cores", "cores", 1 )
   PARAMETER( BlockSize, int, "Block size", "bsize", 64 )
-  PARAMETER( Banks, int, "number of directory banks in each group", "banks", 1 )
+  PARAMETER( Banks, int, "number of directory banks in each group", "banks", 0 )
   PARAMETER( BankInterleaving, int, "interleaving between directory banks (64 bytes)", "bank_interleaving", 64 )
   PARAMETER( Groups, int, "number of directory bank groups", "groups", 1 )
   PARAMETER( GroupInterleaving, int, "interleaving between directory bank groups (1024 bytes)", "group_interleaving", 1024 )

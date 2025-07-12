@@ -69,7 +69,7 @@ struct CMPCacheInfo
       , theCacheLevel(aCacheLevel)
       , theCores(aNumCores)
       , theBlockSize(aBlockSize)
-      , theNumBanks(aNumBanks)
+      , theNumBanks(aNumBanks == 0 ? aNumCores : aNumBanks)
       , theBankInterleaving(aBankInterleaving)
       , theNumGroups(aNumGroups)
       , theGroupInterleaving(aGroupInterleaving)

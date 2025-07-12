@@ -112,6 +112,7 @@ struct BPredState : boost::counted_base
     std::vector<uint64_t> theRAS;
 
     // ITTAGE
+    bool theITTAGEHistoryValid;
     uint64_t btb_ghr[16];
     int ittage_hlen[8]; // 8 is random, upper bound on #tables?
     int64_t ittage_tick;
@@ -141,6 +142,7 @@ struct BPredState : boost::counted_base
 
       theTageHistoryValid = false;
       theTagePredictionValid = false;
+      theITTAGEHistoryValid = false;
     }
 };
 

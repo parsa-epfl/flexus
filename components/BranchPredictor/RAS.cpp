@@ -23,6 +23,10 @@ void ReturnAddressStack::get(std::vector<uint64_t> &vec) {
 }
 
 void ReturnAddressStack::recover(BPredState &bpred) {
+    if (bpred.theRAS.empty()) {
+        return;
+    }
+
     // first revert back to the old state before the speculative push/pop
     stack = bpred.theRAS;
 
