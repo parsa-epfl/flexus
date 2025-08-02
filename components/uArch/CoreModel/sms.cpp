@@ -2,6 +2,7 @@
 #include <tuple>
 #include <optional>
 #include <array>
+#include <vector>
 
 template<uint32_t N_BLK>
 std::tuple<uint64_t, uint64_t> get_base_offset(uint64_t addr) {
@@ -301,7 +302,7 @@ public:
         tag = aTag;
         ts = entry.ts;
         valid = true;
-        if SEP_RDWR {
+        if (SEP_RDWR) {
            for (uint32_t i = 0; i < N_BLK; ++i) {
                 read_pattern[i] = (entry.access_pattern[i]) ? (entry.read_pattern[i] ? 2 : 1) : 1;
                 write_pattern[i] = (entry.access_pattern[i]) ? (entry.read_pattern[i] ? 1 : 2) : 1;
@@ -311,8 +312,8 @@ public:
                 access_pattern[i] = (entry.access_pattern[i]) ? 2 : 1;
             }
         }
-        if ROT {
-            if SEP_RDWR {
+        if (ROT) {
+            if (SEP_RDWR) {
                 std::rotate(read_pattern.begin(), read_pattern.begin() + entry.offset, read_pattern.end());
                 std::rotate(write_pattern.begin(), write_pattern.begin() + entry.offset, write_pattern.end());
             } else {
@@ -332,7 +333,7 @@ public:
             uint8_t& p = (type == PatternType::access) ? access_pattern[i] :
                                             (type == PatternType::read) ? read_pattern[i] : write_pattern[i];
 
-            if SAT_CNT {
+            if (SAT_CNT) {
                 p = pattern[i] ? std::min<uint8_t>(p + 1, 3) : std::max<uint8_t>(p - 1, 0);
             } else {
                 p = (pattern[i]) ? 2 : 1;
@@ -341,13 +342,13 @@ public:
     }
 
     void update(AccTableEntry<N_BLK>& entry) {
-        if SEP_RDWR {
+        if (SEP_RDWR) {
             std::array<bool, N_BLK> read_pattern = entry.read_pattern;
             std::array<bool, N_BLK> write_pattern;
-            for(uint32 i = 0; i < N_BLK; ++i) {
+            for(uint32_t i = 0; i < N_BLK; ++i) {
                 write_pattern[i] = entry.access_pattern[i] && !entry.read_pattern[i];
             }
-            if ROT {
+            if (ROT) {
                 std::rotate(read_pattern.begin(), read_pattern.begin() + entry.offset, read_pattern.end());
                 std::rotate(write_pattern.begin(), write_pattern.begin() + entry.offset, write_pattern.end());
             }
@@ -355,7 +356,7 @@ public:
             update_pattern(write_pattern, PatternType::write);
         } else {
             std::array<bool, N_BLK> access_pattern = entry.access_pattern;
-            if ROT {
+            if (ROT) {
                 std::rotate(access_pattern.begin(), access_pattern.begin() + entry.offset, access_pattern.end());
             }
             update_pattern(access_pattern, PatternType::access);
@@ -365,7 +366,7 @@ public:
 
     std::array<bool, N_BLK> get_bitvec(bool is_read) {
         std::array<bool, N_BLK> bitvec;
-        if SEP_RDWR {
+        if (SEP_RDWR) {
             for (uint32_t i = 0; i < N_BLK; ++i) {
                 bitvec[i] = is_read ? (read_pattern[i] >= 2) : (write_pattern[i] >= 2);
             }
@@ -418,10 +419,10 @@ public:
                 lru_idx = i; // Found the LRU entry
             }
         }
-        if empty {
+        if (empty) {
             entries[empty_idx].set(tag, entry);
         } else {
-            if PERFECT {
+            if (PERFECT) {
                 auto new_entry = PHTEntry<N_BLK, ROT, SEP_RDWR, SAT_CNT>();
                 new_entry.set(tag, entry);
                 entries.push_back(new_entry);
@@ -467,7 +468,7 @@ public:
         }
     }
 
-    void insert(uint64_t tag, AccTableEntry<N_BLK>& entry) {
+    void insert(AccTableEntry<N_BLK>& entry) {
         uint64_t key = build_key<N_BLK, PHT_SETS, ROT>(entry.pc, entry.offset);
         uint32_t set_idx = key % PHT_SETS;
         uint64_t tag = key >> __builtin_ctzll(PHT_SETS);
