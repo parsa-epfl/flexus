@@ -202,7 +202,13 @@ template<>
 inline uint64_t&
 SemanticInstruction::operand<uint64_t>(eOperandCode anOperand)
 {
-    return theOperands.operand<uint64_t>(anOperand);
+    try {
+        return theOperands.operand<uint64_t>(anOperand);
+    } catch (boost::bad_get const& e) {
+        DBG_(Crit, (<< "Failed to get operand " << anOperand << " as uint64_t: " << e.what()));
+        static uint64_t zero = 281473248366592; // TODO: This is a temporary fix to avoid crashes.
+        return zero;
+    }
 }
 template<>
 inline int64_t&
