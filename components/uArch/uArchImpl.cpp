@@ -194,6 +194,16 @@ class FLEXUS_COMPONENT(uArch)
         options.fpSqrtOpLatency           = cfg.FpSqrtOpLatency;
         options.fpSqrtOpPipelineResetTime = cfg.FpSqrtOpPipelineResetTime;
 
+        options.numAccTableEntries    = cfg.NumAccTableEntries;
+        options.numFilterTableEntries = cfg.NumFilterTableEntries;
+        options.numPHTSets            = cfg.NumPHTSets;
+        options.phtAssociativity      = cfg.PHTAssociativity;
+        options.numBlks               = cfg.NumBlks;
+        options.smsRot               = cfg.SMSRot;
+        options.smsSepRdWr           = cfg.SMSSepRdWr;
+        options.smsUseSatCnts        = cfg.SMSUseSatCnts;
+        options.perfectPHT           = cfg.PerfectPHT;
+
         theMicroArch = microArch::construct(options,
                                             ll::bind(&uArchComponent::squash, this, ll::_1),
                                             ll::bind(&uArchComponent::redirect, this, ll::_1),

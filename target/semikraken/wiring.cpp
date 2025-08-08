@@ -137,6 +137,16 @@ bool initializeParameters() {
   theuArchCfg.NumIntAlu.initialize(true);
   theuArchCfg.NumIntMult.initialize(true);
 
+  theuArchCfg.NumAccTableEntries.initialize(64);
+  theuArchCfg.NumFilterTableEntries.initialize(64);
+  theuArchCfg.NumPHTSets.initialize(1024);
+  theuArchCfg.PHTAssociativity.initialize(16);
+  theuArchCfg.NumBlks.initialize(32);
+  theuArchCfg.SMSRot.initialize(false);
+  theuArchCfg.SMSSepRdWr.initialize(false);
+  theuArchCfg.SMSUseSatCnts.initialize(false);
+  theuArchCfg.PerfectPHT.initialize(false);
+
   static const int K = 1024;
 
   theL1dCfg.Cores.initialize(1);

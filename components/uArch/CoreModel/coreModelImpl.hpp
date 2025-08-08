@@ -37,6 +37,7 @@ namespace Stat = Flexus::Stat;
 #include "SCTLR_EL.hpp"
 #include "bbv.hpp" /* CMU-ONLY */
 #include "coreModelTypes.hpp"
+#include "sms.hpp"
 
 #include <components/CommonQEMU/Slices/PredictorMessage.hpp> /* CMU-ONLY */
 #include <components/CommonQEMU/Transports/TranslationTransport.hpp>
@@ -188,6 +189,10 @@ class CoreImpl : public CoreModel
 
     // Load Store Queue and associated memory control
     uint64_t theMemorySequenceNum;
+
+    // SMS structures
+    AGT theAGT;
+    PHT thePHT;
 
   public:
     memq_t theMemQueue;

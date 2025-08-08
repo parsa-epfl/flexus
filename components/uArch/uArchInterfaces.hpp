@@ -536,6 +536,16 @@ struct uArchOptions_t
     uint32_t fpDivOpPipelineResetTime;
     uint32_t fpSqrtOpLatency;
     uint32_t fpSqrtOpPipelineResetTime;
+
+    uint32_t numAccTableEntries;
+    uint32_t numFilterTableEntries;
+    uint32_t numPHTSets;
+    uint32_t phtAssociativity;
+    uint32_t numBlks;
+    bool smsRot;
+    bool smsSepRdWr;
+    bool smsUseSatCnts;
+    bool perfectPHT;
 };
 
 struct Instruction : public Flexus::SharedTypes::AbstractInstruction
