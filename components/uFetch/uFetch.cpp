@@ -299,10 +299,13 @@ class FLEXUS_COMPONENT(uFetch)
                             l1ireqs--;
 
                             if (theI.lookup(pa)) {
+                                theHits++;
                                 l1ihits.insert(pa);
                                 f.state = S_DONE;
 
                             } else if (theFAM.size() < cfg.MissQueueSize) {
+                                if (t == theFAQ.begin())
+                                    theMisses++;
                                 send_fetch(pa, f.addr.theAddress);
 
                                 theFAM.insert(pa);
