@@ -9,6 +9,7 @@
 #include FLEXUS_BEGIN_COMPONENT_DECLARATION()
 
 COMPONENT_PARAMETERS(
+  PARAMETER( EnableSMS, bool, "Enable SMS", "enableSMS", false)
   PARAMETER( NumAccTableEntries, uint32_t, "Number of entries in the Accumulation Table", "numAccTableEntries", 64)
   PARAMETER( NumFilterTableEntries, uint32_t, "Number of entries in the Filter Table", "numFilterTableEntries", 64)
   PARAMETER( NumPHTSets, uint32_t, "Number of sets in the Pattern History Table", "numPHTSets", 1024)
@@ -23,6 +24,9 @@ COMPONENT_PARAMETERS(
 COMPONENT_INTERFACE(
   PORT( PushInput, MemoryTransport, RequestIn )
   PORT( PushInput, MemoryTransport, SnoopIn )
+  PORT( PushInput, MemoryTransport, L1DRequestIn )
+  PORT( PushInput, MemoryTransport, L1DSnoopIn )
+
   PORT( PushOutput, MemoryTransport, Prefetch_Request )
 
   DRIVE( SMSDrive )

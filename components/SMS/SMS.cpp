@@ -26,8 +26,8 @@ class FLEXUS_COMPONENT(SMS)
         {
             ts = 0;
             prefetchQueue = std::queue<std::tuple<MemoryTransport, uint64_t>>();
-            thePHT = PHT();
-            theAGT = AGT();
+            thePHT = PHT(cfg.NumPHTSets, cfg.PHTAssociativity, cfg.NumBlks, cfg.SMSRot, cfg.SMSSepRdWr, cfg.SMSUseSatCnts, cfg.PerfectPHT);
+            theAGT = AGT(cfg.NumAccTableEntries, cfg.NumFilterTableEntries, cfg.NumBlks);
         }
 
         FLEXUS_PORT_ALWAYS_AVAILABLE(RequestIn);
@@ -83,22 +83,54 @@ class FLEXUS_COMPONENT(SMS)
             }
         }
 
+        FLEXUS_PORT_ALWAYS_AVAILABLE(L1DRequestIn);
+        void push(interface::L1DRequestIn const&, MemoryTransport& aMessage)
+        {
+            if ((aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictClean) ||
+                (aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictDirty) ||
+                (aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictWritable)) {
+                uint64_t addr = aMessage[MemoryMessageTag]->address();
+                DBG_(VVerb, (<< "Received L1D request to evict address: " << std::hex << addr));
+                auto entry = theAGT.evict(addr);
+                if (entry) {
+                    thePHT.insert(*entry);
+                }
+            }
+        }
+
+        FLEXUS_PORT_ALWAYS_AVAILABLE(L1DSnoopIn);
+        void push(interface::L1DSnoopIn const&, MemoryTransport& aMessage)
+        {
+            if (aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictClean ||
+                aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictDirty ||
+                aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictWritable) {
+                uint64_t addr = aMessage[MemoryMessageTag]->address();
+                DBG_(VVerb, (<< "Received L1D snoop to evict address: " << std::hex << addr));
+                auto entry = theAGT.evict(addr);
+                if (entry) {
+                    thePHT.insert(*entry);
+                }
+            }
+        }
+
         void drive(interface::SMSDrive const&) override
         {
             ts++;
-            while (FLEXUS_CHANNEL(Prefetch_Request).available() && !prefetchQueue.empty()) {
-                MemoryTransport aMessage;
-                uint64_t block;
-                std::tie(aMessage, block) = prefetchQueue.front();
-                PhysicalMemoryAddress blockAddr(block);
-                VirtualMemoryAddress pc(aMessage[MemoryMessageTag]->pc());
-                prefetchQueue.pop();
-                DBG_(VVerb, (<< "Prefetching block: " << std::hex << block));
+            if (cfg.EnableSMS) {
+                while (FLEXUS_CHANNEL(Prefetch_Request).available() && !prefetchQueue.empty()) {
+                    MemoryTransport aMessage;
+                    uint64_t block;
+                    std::tie(aMessage, block) = prefetchQueue.front();
+                    PhysicalMemoryAddress blockAddr(block);
+                    VirtualMemoryAddress pc(aMessage[MemoryMessageTag]->pc());
+                    prefetchQueue.pop();
+                    DBG_(VVerb, (<< "Prefetching block: " << std::hex << block));
 
-                intrusive_ptr<MemoryMessage> operation = new MemoryMessage(MemoryMessage::MemoryMessageType::PrefetchReadAllocReq, blockAddr, pc);
-                operation->theInstruction = aMessage[MemoryMessageTag]->theInstruction;
-                aMessage.set(MemoryMessageTag, operation);
-                FLEXUS_CHANNEL(Prefetch_Request) << aMessage;
+                    intrusive_ptr<MemoryMessage> operation = new MemoryMessage(MemoryMessage::MemoryMessageType::PrefetchReadAllocReq, blockAddr, pc);
+                    operation->theInstruction = aMessage[MemoryMessageTag]->theInstruction;
+                    aMessage.set(MemoryMessageTag, operation);
+                    FLEXUS_CHANNEL(Prefetch_Request) << aMessage;
+                }
             }
         }
 
@@ -106,8 +138,8 @@ class FLEXUS_COMPONENT(SMS)
         {
             ts = 0;
             prefetchQueue = std::queue<std::tuple<MemoryTransport, uint64_t>>();
-            thePHT = PHT();
-            theAGT = AGT();
+            thePHT = PHT(cfg.NumPHTSets, cfg.PHTAssociativity, cfg.NumBlks, cfg.SMSRot, cfg.SMSSepRdWr, cfg.SMSUseSatCnts, cfg.PerfectPHT);
+            theAGT = AGT(cfg.NumAccTableEntries, cfg.NumFilterTableEntries, cfg.NumBlks);
         }
 
         void finalize() override
