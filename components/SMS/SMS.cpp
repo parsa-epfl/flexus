@@ -25,6 +25,7 @@ class FLEXUS_COMPONENT(SMS)
             : base(FLEXUS_PASS_CONSTRUCTOR_ARGS)
         {
             ts = 0;
+            prefetchQueue = std::queue<std::tuple<MemoryTransport, uint64_t>>();
             thePHT = PHT();
             theAGT = AGT();
         }
@@ -69,6 +70,19 @@ class FLEXUS_COMPONENT(SMS)
             }
         }
 
+        FLEXUS_PORT_ALWAYS_AVAILABLE(SnoopIn);
+        void push(interface::SnoopIn const&, MemoryTransport& aMessage)
+        {
+            if (aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::Invalidate) {
+                uint64_t addr = aMessage[MemoryMessageTag]->address();
+                DBG_(VVerb, (<< "Received snoop invalidate for address: " << std::hex << addr));
+                auto entry = theAGT.evict(addr);
+                if (entry) {
+                    thePHT.insert(*entry);
+                }
+            }
+        }
+
         void drive(interface::SMSDrive const&) override
         {
             ts++;
@@ -90,7 +104,10 @@ class FLEXUS_COMPONENT(SMS)
 
         void initialize() override
         {
-
+            ts = 0;
+            prefetchQueue = std::queue<std::tuple<MemoryTransport, uint64_t>>();
+            thePHT = PHT();
+            theAGT = AGT();
         }
 
         void finalize() override

@@ -22,6 +22,7 @@ COMPONENT_PARAMETERS(
 
 COMPONENT_INTERFACE(
   PORT( PushInput, MemoryTransport, RequestIn )
+  PORT( PushInput, MemoryTransport, SnoopIn )
   PORT( PushOutput, MemoryTransport, Prefetch_Request )
 
   DRIVE( SMSDrive )

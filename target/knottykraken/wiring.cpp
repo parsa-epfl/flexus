@@ -317,8 +317,7 @@ WIRE( theuFetchCombiner, FetchMissOut,  theuFetch, FetchMissIn            )
 
 //uArch to SMS
 WIRE( theuArch, MemoryOut_Request,      theSMS, RequestIn                 )
-
-//SMS to L1 D cache
+WIRE( theuArch, MemoryOut_Snoop,        theSMS, SnoopIn                   )
 WIRE( theSMS, Prefetch_Request,         theL1d, FrontSideIn_Prefetch      )
 
 //L1d to NetMapper
