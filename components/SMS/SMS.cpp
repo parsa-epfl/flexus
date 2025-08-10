@@ -16,6 +16,7 @@ class FLEXUS_COMPONENT(SMS)
 {
     FLEXUS_COMPONENT_IMPL(SMS);
     uint64_t ts;    // Internal counter for LRU
+    std::queue<std::tuple<MemoryTransport, uint64_t>> prefetchQueue; // Queue for prefetched blocks (trigger, prefetch addr)
     PHT thePHT;
     AGT theAGT;
 
@@ -31,6 +32,7 @@ class FLEXUS_COMPONENT(SMS)
         FLEXUS_PORT_ALWAYS_AVAILABLE(RequestIn);
         void push(interface::RequestIn const&, MemoryTransport& aMessage)
         {
+            // Record the access
             uint64_t addr = aMessage[MemoryMessageTag]->address();  // TODO: use flexus datatypes
             uint64_t pc = aMessage[MemoryMessageTag]->pc();
             bool is_store;
@@ -53,12 +55,37 @@ class FLEXUS_COMPONENT(SMS)
             if (entry) {
                 thePHT.insert(*entry);
             }
+
+            // Prefetch blocks if applicable
+            auto blocksToPrefetch = thePHT.lookup(pc, addr, !is_store, ts);
+            if (blocksToPrefetch)
+            {
+                for (auto const& block : *blocksToPrefetch) {
+                    if (block != addr) {
+                        prefetchQueue.push(std::tie(aMessage, block));
+                        DBG_(VVerb, (<< "Adding block to prefetch queue: " << std::hex << block));
+                    }
+                }
+            }
         }
 
         void drive(interface::SMSDrive const&) override
         {
             ts++;
+            while (FLEXUS_CHANNEL(Prefetch_Request).available() && !prefetchQueue.empty()) {
+                MemoryTransport aMessage;
+                uint64_t block;
+                std::tie(aMessage, block) = prefetchQueue.front();
+                PhysicalMemoryAddress blockAddr(block);
+                VirtualMemoryAddress pc(aMessage[MemoryMessageTag]->pc());
+                prefetchQueue.pop();
+                DBG_(VVerb, (<< "Prefetching block: " << std::hex << block));
 
+                intrusive_ptr<MemoryMessage> operation = new MemoryMessage(MemoryMessage::MemoryMessageType::PrefetchReadAllocReq, blockAddr, pc);
+                operation->theInstruction = aMessage[MemoryMessageTag]->theInstruction;
+                aMessage.set(MemoryMessageTag, operation);
+                FLEXUS_CHANNEL(Prefetch_Request) << aMessage;
+            }
         }
 
         void initialize() override
