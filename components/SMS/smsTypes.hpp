@@ -1,4 +1,3 @@
-#include "core/types.hpp"
 #include "boost/optional.hpp"
 
 struct AccTableEntry

@@ -41,8 +41,6 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , thePendingInterrupt(kException_None)
   , theInterruptInstruction(0)
   , theMemorySequenceNum(0)
-  , theAGT(options.numAccTableEntries, options.numFilterTableEntries, options.numBlks)
-  , thePHT(options.numPHTSets, options.phtAssociativity, options.numBlks, options.smsRot, options.smsSepRdWr, options.smsUseSatCnts, options.perfectPHT)
   , theLSQCount(0)
   , theSBCount(0)
   , theSBNAWCount(0)
