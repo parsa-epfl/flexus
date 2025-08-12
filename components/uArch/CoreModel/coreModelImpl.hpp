@@ -309,6 +309,10 @@ class CoreImpl : public CoreModel
     Stat::StatCounter theSpinCycles;
     Stat::StatCounter theWFI;
 
+    Stat::StatCounter totalPageWalkLatency;
+    Stat::StatCounter totalPageWalks;
+    Stat::StatCounter totalPageWalksEnds;
+
     Stat::StatCounter theStorePrefetches;
     Stat::StatCounter theAtomicPrefetches;
     Stat::StatCounter theStorePrefetchConflicts;

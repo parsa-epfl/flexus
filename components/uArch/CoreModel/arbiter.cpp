@@ -428,6 +428,8 @@ CoreImpl::issueMMU(TranslationPtr aTranslation)
     op->theOperation = mshr.theOperation = issue_op;
     DBG_Assert(op->theVAddr != kUnresolved);
     op->theVAddr = aTranslation->theVaddr;
+    op->startTime = theCycleCount;
+    totalPageWalks++;
 
     op->thePAddr = mshr.thePaddr = aTranslation->thePaddr;
     op->theSize = mshr.theSize = kDoubleWord /*aTranslate->theSize*/;

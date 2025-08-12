@@ -151,7 +151,7 @@ class microArchImpl : public microArch
     void pushMemOp(boost::intrusive_ptr<MemOp> op)
     {
         FLEXUS_PROFILE();
-        if (op->theOperation == kLoadReply || op->theOperation == kAtomicPreloadReply) {
+        if (op->theOperation == kLoadReply || op->theOperation == kAtomicPreloadReply || op->theOperation == kPageWalkReply) {
 
             bits val     = ValueTracker::valueTracker(theCPU.id()).load(theCPU.id(), op->thePAddr, op->theSize);
             if (val == -1) {

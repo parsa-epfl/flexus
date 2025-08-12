@@ -292,6 +292,14 @@ CoreImpl::processReply(MemOp const& anOperation)
 
     DBG_(Verb, (<< "Processing reply for " << anOperation.theOperation << " at " << anOperation.thePAddr));
     switch (anOperation.theOperation) {
+        case kPageWalkReply:
+            totalPageWalkLatency += (theCycleCount - anOperation.startTime);
+            totalPageWalksEnds++;
+            if (anOperation.theTracker && !anOperation.theTracker->completionCycle()) {
+                anOperation.theTracker->complete(); // The transaction is done.
+            }
+            complete(anOperation);
+            break;
         case kRMWReply:
         case kCASReply:
         case kStoreReply: acquireWritePermission(addr);
@@ -343,7 +351,7 @@ CoreImpl::satisfies(eOperation aResponse, eOperation anOperation)
 {
     switch (anOperation) {
         case kLoad:
-        case kPageWalkRequest: return aResponse == kLoadReply;
+        case kPageWalkRequest: return aResponse == kPageWalkReply;
         case kStore: return aResponse == kStoreReply;
         case kRMW:
             return aResponse == kRMWReply ||
@@ -540,7 +548,7 @@ CoreImpl::completeLSQ(memq_t::index<by_insn>::type::iterator lsq_entry, MemOp co
             DBG_(Verb, (<< theName << " done updating partial snoops: " << *lsq_entry));
         }
 
-    } else if (anOperation.theOperation == kLoadReply) {
+    } else if (anOperation.theOperation == kLoadReply || anOperation.theOperation == kPageWalkReply) {
         DBG_Assert(lsq_entry->theOperation == kLoad, (<< anOperation << " " << *lsq_entry));
         lsq_entry->theValue         = anOperation.theValue;
         lsq_entry->theExtendedValue = anOperation.theExtendedValue;
