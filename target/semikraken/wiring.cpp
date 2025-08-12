@@ -24,6 +24,7 @@ std::string theSimulatorName = "SemiKraken v1.0";
 #include <components/uFetch/PortCombiner.hpp>
 #include <components/uFetch/uFetch.hpp>
 #include <components/PhantomCPU/PhantomCPU.hpp>
+#include <components/SMS/SMS.hpp>
 
 #include FLEXUS_END_DECLARATION_SECTION()
 
@@ -36,6 +37,7 @@ CREATE_CONFIGURATION(PortCombiner, "combiner", theCombinerCfg);
 CREATE_CONFIGURATION(Decoder, "decoder", theDecoderCfg);
 CREATE_CONFIGURATION(uArch, "uarch", theuArchCfg);
 
+CREATE_CONFIGURATION(SMS, "sms", theSMSCfg);
 CREATE_CONFIGURATION(Cache, "L1d", theL1dCfg);
 CREATE_CONFIGURATION(CMPCache, "L2", theL2Cfg);
 CREATE_CONFIGURATION(MultiNic2, "nic", theNicCfg);
@@ -137,15 +139,16 @@ bool initializeParameters() {
   theuArchCfg.NumIntAlu.initialize(true);
   theuArchCfg.NumIntMult.initialize(true);
 
-  theuArchCfg.NumAccTableEntries.initialize(64);
-  theuArchCfg.NumFilterTableEntries.initialize(64);
-  theuArchCfg.NumPHTSets.initialize(1024);
-  theuArchCfg.PHTAssociativity.initialize(16);
-  theuArchCfg.NumBlks.initialize(32);
-  theuArchCfg.SMSRot.initialize(false);
-  theuArchCfg.SMSSepRdWr.initialize(false);
-  theuArchCfg.SMSUseSatCnts.initialize(false);
-  theuArchCfg.PerfectPHT.initialize(false);
+  theSMSCfg.EnableSMS.initialize(false);
+  theSMSCfg.NumAccTableEntries.initialize(64);
+  theSMSCfg.NumFilterTableEntries.initialize(64);
+  theSMSCfg.NumPHTSets.initialize(1024);
+  theSMSCfg.PHTAssociativity.initialize(16);
+  theSMSCfg.NumBlks.initialize(32);
+  theSMSCfg.SMSRot.initialize(false);
+  theSMSCfg.SMSSepRdWr.initialize(false);
+  theSMSCfg.SMSUseSatCnts.initialize(false);
+  theSMSCfg.PerfectPHT.initialize(false);
 
   static const int K = 1024;
 

@@ -33,6 +33,8 @@ class FLEXUS_COMPONENT(SMS)
         FLEXUS_PORT_ALWAYS_AVAILABLE(RequestIn);
         void push(interface::RequestIn const&, MemoryTransport& aMessage)
         {
+            if(!cfg.EnableSMS)
+                return;
             // Record the access
             uint64_t addr = aMessage[MemoryMessageTag]->address();  // TODO: use flexus datatypes
             uint64_t pc = aMessage[MemoryMessageTag]->pc();
@@ -73,6 +75,8 @@ class FLEXUS_COMPONENT(SMS)
         FLEXUS_PORT_ALWAYS_AVAILABLE(SnoopIn);
         void push(interface::SnoopIn const&, MemoryTransport& aMessage)
         {
+            if(!cfg.EnableSMS)
+                return;
             if (aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::Invalidate) {
                 uint64_t addr = aMessage[MemoryMessageTag]->address();
                 DBG_(VVerb, (<< "Received snoop invalidate for address: " << std::hex << addr));
@@ -86,6 +90,8 @@ class FLEXUS_COMPONENT(SMS)
         FLEXUS_PORT_ALWAYS_AVAILABLE(L1DRequestIn);
         void push(interface::L1DRequestIn const&, MemoryTransport& aMessage)
         {
+            if(!cfg.EnableSMS)
+                return;
             if ((aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictClean) ||
                 (aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictDirty) ||
                 (aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictWritable)) {
@@ -101,6 +107,8 @@ class FLEXUS_COMPONENT(SMS)
         FLEXUS_PORT_ALWAYS_AVAILABLE(L1DSnoopIn);
         void push(interface::L1DSnoopIn const&, MemoryTransport& aMessage)
         {
+            if(!cfg.EnableSMS)
+                return;
             if (aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictClean ||
                 aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictDirty ||
                 aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictWritable) {
@@ -136,6 +144,18 @@ class FLEXUS_COMPONENT(SMS)
 
         void initialize() override
         {
+            DBG_(Dev, (<< "Initializing SMS component..."));
+            DBG_(Crit, (<< "SMS Configuration: " << cfg.EnableSMS << ", "
+                         << "NumAccTableEntries: " << cfg.NumAccTableEntries << ", "
+                         << "NumFilterTableEntries: " << cfg.NumFilterTableEntries << ", "
+                         << "NumPHTSets: " << cfg.NumPHTSets << ", "
+                         << "PHTAssociativity: " << cfg.PHTAssociativity << ", "
+                         << "NumBlks: " << cfg.NumBlks << ", "
+                         << "SMSRot: " << cfg.SMSRot << ", "
+                         << "SMSSepRdWr: " << cfg.SMSSepRdWr << ", "
+                         << "SMSUseSatCnts: " << cfg.SMSUseSatCnts << ", "
+                         << "PerfectPHT: " << cfg.PerfectPHT));
+
             ts = 0;
             prefetchQueue = std::queue<std::tuple<MemoryTransport, uint64_t>>();
             thePHT = PHT(cfg.NumPHTSets, cfg.PHTAssociativity, cfg.NumBlks, cfg.SMSRot, cfg.SMSSepRdWr, cfg.SMSUseSatCnts, cfg.PerfectPHT);
