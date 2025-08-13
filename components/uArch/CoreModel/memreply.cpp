@@ -350,7 +350,7 @@ bool
 CoreImpl::satisfies(eOperation aResponse, eOperation anOperation)
 {
     switch (anOperation) {
-        case kLoad:
+        case kLoad: return aResponse == kLoadReply;
         case kPageWalkRequest: return aResponse == kPageWalkReply;
         case kStore: return aResponse == kStoreReply;
         case kRMW:

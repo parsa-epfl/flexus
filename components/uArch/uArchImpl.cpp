@@ -476,7 +476,7 @@ class FLEXUS_COMPONENT(uArch)
 
         switch (msg->type()) {
             case MemoryMessage::LoadReply: 
-                if (msg->isPageWalk())
+                if (op->isPageWalk)
                     op->theOperation = kPageWalkReply;
                 else
                     op->theOperation = kLoadReply;

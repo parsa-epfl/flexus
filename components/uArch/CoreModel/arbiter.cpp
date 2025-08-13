@@ -429,6 +429,7 @@ CoreImpl::issueMMU(TranslationPtr aTranslation)
     DBG_Assert(op->theVAddr != kUnresolved);
     op->theVAddr = aTranslation->theVaddr;
     op->startTime = theCycleCount;
+    op->isPageWalk = true;
     totalPageWalks++;
 
     op->thePAddr = mshr.thePaddr = aTranslation->thePaddr;
@@ -451,7 +452,7 @@ CoreImpl::issueMMU(TranslationPtr aTranslation)
     pair.first->second.theWaitingPagewalks.push_back(aTranslation);
     if (pair.second) theMemoryPorts.push_back(op);
 
-    DBG_(VVerb,
+    DBG_(Crit,
          (<< theName << " "
           << " issuing translation operation " << *op << "  -- ID " << aTranslation->theID));
 }
