@@ -24,7 +24,6 @@ enum eOperation
     kDowngrade,
     kProbe,
     kReturnReq,
-    kPageWalkReply,
     kLoadReply,
     kAtomicPreloadReply,
     kStoreReply,
@@ -117,8 +116,6 @@ struct MemOp : boost::counted_base
     bool theNAW;
     boost::intrusive_ptr<TransactionTracker> theTracker;
     boost::intrusive_ptr<AbstractInstruction> theInstruction;
-    uint64_t startTime;
-    bool isPageWalk;
 
     MemOp()
       : theOperation(kINVALID_OPERATION)
@@ -133,8 +130,6 @@ struct MemOp : boost::counted_base
       , theSideEffect(false)
       , theAtomic(false)
       , theNAW(false)
-      , startTime(0)
-      , isPageWalk(false)
     {
     }
     MemOp(MemOp const& anOther)

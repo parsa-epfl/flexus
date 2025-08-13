@@ -118,7 +118,6 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , theWFI(theName + "-WFICycles")
   , totalPageWalkLatency(theName + "-PageWalkLatency")
   , totalPageWalks(theName + "-PageWalks")
-  , totalPageWalksEnds(theName + "-PageWalks:Ends")
   , theStorePrefetches(theName + "-StorePrefetches")
   , theAtomicPrefetches(theName + "-AtomicPrefetches")
   , theStorePrefetchConflicts(theName + "-StorePrefetchConflicts")

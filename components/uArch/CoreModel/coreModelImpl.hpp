@@ -311,7 +311,6 @@ class CoreImpl : public CoreModel
 
     Stat::StatCounter totalPageWalkLatency;
     Stat::StatCounter totalPageWalks;
-    Stat::StatCounter totalPageWalksEnds;
 
     Stat::StatCounter theStorePrefetches;
     Stat::StatCounter theAtomicPrefetches;

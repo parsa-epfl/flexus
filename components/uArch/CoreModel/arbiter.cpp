@@ -428,9 +428,6 @@ CoreImpl::issueMMU(TranslationPtr aTranslation)
     op->theOperation = mshr.theOperation = issue_op;
     DBG_Assert(op->theVAddr != kUnresolved);
     op->theVAddr = aTranslation->theVaddr;
-    op->startTime = theCycleCount;
-    op->isPageWalk = true;
-    totalPageWalks++;
 
     op->thePAddr = mshr.thePaddr = aTranslation->thePaddr;
     op->theSize = mshr.theSize = kDoubleWord /*aTranslate->theSize*/;
@@ -443,6 +440,7 @@ CoreImpl::issueMMU(TranslationPtr aTranslation)
 
     tracker->setSource("MMU");
     tracker->setOS(system);
+    tracker->setStartCycle(theCycleCount);
     op->theTracker  = tracker;
     mshr.theTracker = tracker;
 
@@ -452,7 +450,7 @@ CoreImpl::issueMMU(TranslationPtr aTranslation)
     pair.first->second.theWaitingPagewalks.push_back(aTranslation);
     if (pair.second) theMemoryPorts.push_back(op);
 
-    DBG_(Crit,
+    DBG_(VVerb,
          (<< theName << " "
           << " issuing translation operation " << *op << "  -- ID " << aTranslation->theID));
 }
