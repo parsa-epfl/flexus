@@ -81,6 +81,8 @@ COMPONENT_INTERFACE(
   PORT( PushOutput, boost::intrusive_ptr<BPredState>, BranchTrainOut )
   PORT( PushOutput, MemoryTransport, MemoryOut_Request )
   PORT( PushOutput, MemoryTransport, MemoryOut_Snoop )
+  PORT( PushOutput, MemoryTransport, uArchSMS_Request )
+  PORT( PushOutput, MemoryTransport, uArchSMS_Snoop )
   PORT( PushInput, MemoryTransport, MemoryIn )
   PORT( PushInput, PhysicalMemoryAddress, WritePermissionLost )
   PORT( PushOutput, bool, StoreForwardingHitSeen) // Signal a store forwarding hit in the LSQ to the PowerTracker

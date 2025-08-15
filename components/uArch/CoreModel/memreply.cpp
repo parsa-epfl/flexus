@@ -299,7 +299,6 @@ CoreImpl::processReply(MemOp const& anOperation)
             if (anOperation.theTracker->source()) {
                 if (*(anOperation.theTracker->source()) == "MMU") {
                     totalPageWalkLatency += (theCycleCount - anOperation.theTracker->startCycle());
-                    DBG_(Crit, (<< "Started at " << anOperation.theTracker->startCycle() << " and finished at " << theCycleCount));
                     totalPageWalks++;
                 }
             }

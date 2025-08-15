@@ -252,6 +252,7 @@ class FLEXUS_COMPONENT(Cache)
                 MemoryTransport transport              = theController->BackSideOut_Request.dequeue();
                 transport[MemoryMessageTag]->coreIdx() = flexusIndex();
                 FLEXUS_CHANNEL(BackSideOut_Request) << transport;
+                FLEXUS_CHANNEL(L1DSMSOut_Request) << transport;
             }
             while (
               !theController->BackSideOut_Prefetch.empty() && FLEXUS_CHANNEL(BackSideOut_Prefetch).available() &&
@@ -268,6 +269,7 @@ class FLEXUS_COMPONENT(Cache)
                 MemoryTransport transport              = theController->BackSideOut_Snoop.dequeue();
                 transport[MemoryMessageTag]->coreIdx() = flexusIndex();
                 FLEXUS_CHANNEL(BackSideOut_Snoop) << transport;
+                FLEXUS_CHANNEL(L1DSMSOut_Snoop) << transport;
             }
             while (!theController->BackSideOut_Reply.empty() && FLEXUS_CHANNEL(BackSideOut_Reply).available()) {
                 MemoryTransport transport              = theController->BackSideOut_Reply.dequeue();
@@ -291,6 +293,7 @@ class FLEXUS_COMPONENT(Cache)
                         transport[MemoryMessageTag]->coreIdx() = flexusIndex();
                         DBG_(VVerb, (<< "sent | BackSideOut(Snoop){} | " << *(transport[MemoryMessageTag])));
                         FLEXUS_CHANNEL(BackSideOut_Snoop) << transport;
+                        FLEXUS_CHANNEL(L1DSMSOut_Snoop) << transport;
                     }
                 }
             }
@@ -371,6 +374,7 @@ class FLEXUS_COMPONENT(Cache)
                         theBusContents[MemoryMessageTag]->coreIdx() = flexusIndex();
                         DBG_(VVerb, (<< "sent | BackSideOut(Snoop){} | " << *(theBusContents[MemoryMessageTag])));
                         FLEXUS_CHANNEL(BackSideOut_Snoop) << theBusContents;
+                        FLEXUS_CHANNEL(L1DSMSOut_Snoop) << theBusContents;
                         theBusDirection = kIdle;
                     } else {
                         // Bus is deadlocked - need to retry
@@ -399,6 +403,7 @@ class FLEXUS_COMPONENT(Cache)
                         theBusContents[MemoryMessageTag]->coreIdx() = flexusIndex();
                         DBG_(VVerb, (<< "sent | BackSideOut(Request){} | " << *(theBusContents[MemoryMessageTag])));
                         FLEXUS_CHANNEL(BackSideOut_Request) << theBusContents;
+                        FLEXUS_CHANNEL(L1DSMSOut_Request) << theBusContents;
                         theBusDirection = kIdle;
                     } else {
                         // Bus is deadlocked - need to retry

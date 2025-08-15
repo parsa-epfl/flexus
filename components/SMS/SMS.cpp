@@ -38,6 +38,7 @@ class FLEXUS_COMPONENT(SMS)
             // Record the access
             uint64_t addr = aMessage[MemoryMessageTag]->address();  // TODO: use flexus datatypes
             uint64_t pc = aMessage[MemoryMessageTag]->pc();
+            DBG_(Crit, (<< "Received memory request: " << std::hex << addr << ", PC: " << std::hex << pc));
             bool is_store;
             switch (aMessage[MemoryMessageTag]->type()) {
                 case MemoryMessage::MemoryMessageType::LoadReq:
@@ -79,7 +80,7 @@ class FLEXUS_COMPONENT(SMS)
                 return;
             if (aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::Invalidate) {
                 uint64_t addr = aMessage[MemoryMessageTag]->address();
-                DBG_(VVerb, (<< "Received snoop invalidate for address: " << std::hex << addr));
+                DBG_(Crit, (<< "Received snoop invalidate for address: " << std::hex << addr));
                 auto entry = theAGT.evict(addr);
                 if (entry) {
                     thePHT.insert(*entry);
@@ -96,7 +97,7 @@ class FLEXUS_COMPONENT(SMS)
                 (aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictDirty) ||
                 (aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictWritable)) {
                 uint64_t addr = aMessage[MemoryMessageTag]->address();
-                DBG_(VVerb, (<< "Received L1D request to evict address: " << std::hex << addr));
+                DBG_(Crit, (<< "Received L1D request to evict address: " << std::hex << addr));
                 auto entry = theAGT.evict(addr);
                 if (entry) {
                     thePHT.insert(*entry);
@@ -113,7 +114,7 @@ class FLEXUS_COMPONENT(SMS)
                 aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictDirty ||
                 aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictWritable) {
                 uint64_t addr = aMessage[MemoryMessageTag]->address();
-                DBG_(VVerb, (<< "Received L1D snoop to evict address: " << std::hex << addr));
+                DBG_(Crit, (<< "Received L1D snoop to evict address: " << std::hex << addr));
                 auto entry = theAGT.evict(addr);
                 if (entry) {
                     thePHT.insert(*entry);
@@ -132,7 +133,7 @@ class FLEXUS_COMPONENT(SMS)
                     PhysicalMemoryAddress blockAddr(block);
                     VirtualMemoryAddress pc(aMessage[MemoryMessageTag]->pc());
                     prefetchQueue.pop();
-                    DBG_(VVerb, (<< "Prefetching block: " << std::hex << block));
+                    DBG_(Crit, (<< "Prefetching block: " << std::hex << block));
 
                     intrusive_ptr<MemoryMessage> operation = new MemoryMessage(MemoryMessage::MemoryMessageType::PrefetchReadAllocReq, blockAddr, pc);
                     operation->theInstruction = aMessage[MemoryMessageTag]->theInstruction;
@@ -144,7 +145,7 @@ class FLEXUS_COMPONENT(SMS)
 
         void initialize() override
         {
-            DBG_(Dev, (<< "Initializing SMS component..."));
+            DBG_(Crit, (<< "Initializing SMS component..."));
             DBG_(Crit, (<< "SMS Configuration: " << cfg.EnableSMS << ", "
                          << "NumAccTableEntries: " << cfg.NumAccTableEntries << ", "
                          << "NumFilterTableEntries: " << cfg.NumFilterTableEntries << ", "

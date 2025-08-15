@@ -51,6 +51,8 @@ COMPONENT_INTERFACE(
   PORT(PushOutput, MemoryTransport, BackSideOut_Reply)
   PORT(PushOutput, MemoryTransport, BackSideOut_Snoop)
   PORT(PushOutput, MemoryTransport, BackSideOut_Request)
+  PORT(PushOutput, MemoryTransport, L1DSMSOut_Snoop)
+  PORT(PushOutput, MemoryTransport, L1DSMSOut_Request)
   PORT(PushOutput, MemoryTransport, BackSideOut_Prefetch)
   PORT(PushInput, MemoryTransport, BackSideIn_Request)
   PORT(PushInput, MemoryTransport, BackSideIn_Reply)

@@ -61,7 +61,8 @@ class FLEXUS_COMPONENT(uFetch)
     Flexus::Stat::StatCounter theFetches;
     Flexus::Stat::StatCounter thePrefetches;
     Flexus::Stat::StatCounter theFailedTranslations;
-    Flexus::Stat::StatCounter theMisses;
+    Flexus::Stat::StatCounter theL1Misses;
+    Flexus::Stat::StatCounter theL2Misses;
     Flexus::Stat::StatCounter theHits;
     Flexus::Stat::StatCounter theMissCycles;
     Flexus::Stat::StatCounter theAllocations;
@@ -90,7 +91,8 @@ class FLEXUS_COMPONENT(uFetch)
       , theFetches(statName() + "-Fetches")
       , thePrefetches(statName() + "-Prefetches")
       , theFailedTranslations(statName() + "-FailedTranslations")
-      , theMisses(statName() + "-Misses")
+      , theL1Misses(statName() + "-L1Misses")
+      , theL2Misses(statName() + "-L2Misses")
       , theHits(statName() + "-Hits")
       , theMissCycles(statName() + "-MissCycles")
       , theAllocations(statName() + "-Allocations")
@@ -210,7 +212,7 @@ class FLEXUS_COMPONENT(uFetch)
         FLEXUS_CHANNEL(iTranslationOut) << tr;
     }
 
-    boost::intrusive_ptr<TransactionTracker> send_fetch(PhysicalMemoryAddress pa, VirtualMemoryAddress pc)
+    boost::intrusive_ptr<TransactionTracker> send_fetch(PhysicalMemoryAddress pa, VirtualMemoryAddress pc, bool is_head)
     {
         boost::intrusive_ptr<MemoryMessage> mm(MemoryMessage::newFetch(pa, pc));
         mm->reqSize() = 64;
@@ -219,7 +221,10 @@ class FLEXUS_COMPONENT(uFetch)
         tt->setAddress  (pa);
         tt->setInitiator(flexusIndex());
         tt->setFetch    (true);
-        tt->setSource   ("uFetch");
+        if (is_head)
+            tt->setSource   ("uFetchHead");
+        else
+            tt->setSource   ("uFetch");
 
         MemoryTransport mt;
         mt.set(TransactionTrackerTag, tt);
@@ -252,6 +257,7 @@ class FLEXUS_COMPONENT(uFetch)
         std::unordered_set<uint64_t> l1ihits; 
 
         pFetchBundle bundle;
+        bool is_head;
 
         for (auto t = theFAQ.begin(); t != theFAQ.end(); ) {
             auto &f = *t;
@@ -304,9 +310,12 @@ class FLEXUS_COMPONENT(uFetch)
                                 f.state = S_DONE;
 
                             } else if (theFAM.size() < cfg.MissQueueSize) {
-                                if (t == theFAQ.begin())
-                                    theMisses++;
-                                send_fetch(pa, f.addr.theAddress);
+                                is_head = false;
+                                if (t == theFAQ.begin()) {
+                                    theL1Misses++;
+                                    is_head = true;
+                                }
+                                send_fetch(pa, f.addr.theAddress, is_head);
 
                                 theFAM.insert(pa);
                                 f.state = S_MISS;
@@ -506,6 +515,10 @@ class FLEXUS_COMPONENT(uFetch)
             case MemoryMessage::MissReplyWritable: {
                 // Insert the address into the array
                 PhysicalMemoryAddress replacement = l1i_insert(reply->address());
+                if (tracker->source()) {
+                    if ((*(tracker->source()) == "uFetchHead") && (tracker->fillLevel() == eLocalMem))
+                        theL2Misses++;
+                }
 
                 issueEvict(replacement);
 

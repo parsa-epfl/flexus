@@ -406,6 +406,7 @@ class FLEXUS_COMPONENT(uArch)
                 handleMemoryMessage(transport);
             } else {
                 FLEXUS_CHANNEL(MemoryOut_Request) << transport;
+                FLEXUS_CHANNEL(uArchSMS_Request) << transport;
             }
         }
 
@@ -452,6 +453,7 @@ class FLEXUS_COMPONENT(uArch)
             transport.set(MemoryMessageTag, operation);
 
             FLEXUS_CHANNEL(MemoryOut_Snoop) << transport;
+            FLEXUS_CHANNEL(uArchSMS_Snoop) << transport;
         }
     }
 
