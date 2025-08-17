@@ -115,6 +115,7 @@ InclusiveMESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transact
     bool is_miss          = false;
     bool is_hit           = false;
     bool was_prefetched   = false;
+    bool is_prefetch      = false;
 
     Action action(kReplyAndRemoveMAF, transport[TransactionTrackerTag], 1);
     MemoryMessage_p msg          = transport[MemoryMessageTag];
@@ -270,6 +271,8 @@ InclusiveMESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transact
             }
             break;
 
+        case MemoryMessage::PrefetchReadAllocReq:
+            is_prefetch = true;
         case MemoryMessage::LoadReq:
             if (lookup->state() == State::Invalid) {
 
@@ -284,14 +287,12 @@ InclusiveMESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transact
 
                 action.theAction = kInsertMAF_WaitResponse;
                 is_miss          = true;
-            } else if (lookup->state() == State::Modified) {
-                // lookup->setState(State::Exclusive);
-                theArray->recordAccess(lookup);
-                msg->type() = MemoryMessage::LoadReply;
-                is_hit      = true;
             } else { // Owned, Exclusive or Shared, no state change
                 theArray->recordAccess(lookup);
-                msg->type() = MemoryMessage::LoadReply;
+                msg->type() = (is_prefetch) ? MemoryMessage::PrefetchReadRedundant : MemoryMessage::LoadReply;
+                if (is_prefetch) {
+                    action.theRequiresData = 0;
+                }
                 is_hit      = true;
             }
             if (lookup->state().prefetched() && is_hit) {
@@ -1475,6 +1476,8 @@ InclusiveMESI::handleBackMessage(MemoryTransport transport)
             action.theFrontToICache = true;
             break;
         }
+        case MemoryMessage::PrefetchReadAllocReq:
+            is_prefetch = true;
         case MemoryMessage::LoadReq: {
             DBG_Assert(state == State::Invalid,
                        (<< "Received reply to read req but block not invalid - " << state << " : " << (*msg)));
@@ -1492,7 +1495,7 @@ InclusiveMESI::handleBackMessage(MemoryTransport transport)
                 default: DBG_Assert(false, (<< "Received invalid reply to a read request : " << (*msg))); break;
             }
 
-            msg->type() = MemoryMessage::LoadReply;
+            msg->type() = (is_prefetch) ? MemoryMessage::PrefetchWritableReply : MemoryMessage::LoadReply;
 
             is_fill  = true;
             is_final = true;

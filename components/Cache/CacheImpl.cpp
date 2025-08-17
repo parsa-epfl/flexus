@@ -210,8 +210,12 @@ class FLEXUS_COMPONENT(Cache)
 
     uint32_t transferTime(const MemoryTransport& trans)
     {
-        DBG_Assert(trans[MemoryMessageTag] != nullptr);
-        return ((trans[MemoryMessageTag]->reqSize() > 0) ? cfg.BusTime_Data : cfg.BusTime_NoData) - 1;
+        // DBG_Assert(trans[MemoryMessageTag] != nullptr);
+        if (trans[MemoryMessageTag] == nullptr) {
+            return cfg.BusTime_NoData - 1; // No data, so no transfer time
+        } else {
+            return ((trans[MemoryMessageTag]->reqSize() > 0) ? cfg.BusTime_Data : cfg.BusTime_NoData) - 1;
+        }
     }
 
     void busCycle()

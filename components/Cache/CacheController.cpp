@@ -883,6 +883,7 @@ CacheController::scheduleNewProcesses()
             reserveEvictBuffer(aProcess);
             reserveMAF(aProcess);
             theMAFPipeline[i].enqueue(aProcess);
+            theCacheControllerImpl->addPendingRequest(transport[MemoryMessageTag]->address());
             scheduled = true;
         }
         if (!scheduled && !BankFrontSideIn_Prefetch[i].empty()) {
@@ -1773,7 +1774,7 @@ CacheController::doTransmitProcess(ProcessEntry_p aProcess)
         theCacheControllerImpl->completeIdleWork(aProcess->transport()[MemoryMessageTag]);
     }
 
-    if ((aProcess->type() == eProcRequest || aProcess->type() == eProcMAFWakeup) &&
+    if ((aProcess->type() == eProcRequest || aProcess->type() == eProcMAFWakeup || aProcess->type() == eProcPrefetch) &&
         aProcess->hasReserved(kResEvictBuffer)) {
         // We might have an evict buffer reserved waiting for the reply that will
         // eventually come back Clear the bit but don't give up the reservation

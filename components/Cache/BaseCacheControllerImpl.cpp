@@ -257,7 +257,9 @@ BaseCacheControllerImpl::handleRequestTransport(MemoryTransport transport, bool 
         // array - redundant for both
         // send a reply to indicate this was redundant
         msg->type() = MemoryMessage::PrefetchReadRedundant;
-        return Action(kSend);
+        Action act(kSend, tracker, false);
+        act.theBackMessage    = true;
+        return act;
     }
     // this is an ordinary request - check if there are other transactions
     // outstanding for this address
