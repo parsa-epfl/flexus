@@ -251,7 +251,7 @@ BaseCacheControllerImpl::handleRequestTransport(MemoryTransport transport, bool 
     }
 
     // if this is a prefetch read request, it should not get a MAF entry
-    if ((msg->type() == MemoryMessage::PrefetchReadNoAllocReq || msg->type() == MemoryMessage::PrefetchReadAllocReq) &&
+    if ((msg->type() == MemoryMessage::PrefetchReadNoAllocReq) &&
         has_maf_entry) {
         // consider a hit in the MAF to be similar to a hit in the
         // array - redundant for both

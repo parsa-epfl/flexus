@@ -514,7 +514,8 @@ void
 CacheController::unreserveBSO(ProcessEntry_p aProcess)
 {
     switch (aProcess->type()) {
-        case eProcPrefetch: unreserveBackSideOut_Prefetch(aProcess); break;
+        // case eProcPrefetch: unreserveBackSideOut_Prefetch(aProcess); break;
+        case eProcPrefetch: unreserveBackSideOut_Request(aProcess); break;
         case eProcSnoop:
         case eProcBackReply:
         case eProcBackRequest: unreserveBackSideOut_Snoop(aProcess); break;
@@ -870,7 +871,8 @@ CacheController::scheduleNewProcesses()
         // the newest waiting snoop process.  Prefetch processes reserve a MAF
         // entry, a BackSideOut_Prefetch buffer, and a FrontSideOut buffer.
         while (theMAFPipeline[i].serverAvail() && !BankFrontSideIn_Prefetch[i].empty() &&
-               !BackSideOut_Prefetch.full() && !isFrontSideOutFull() && !theMaf.full() &&
+               !BackSideOut_Request.full() && !isFrontSideOutFull() && !theMaf.full() &&
+            //    !BackSideOut_Prefetch.full() && !isFrontSideOutFull() && !theMaf.full() &&
                !theCacheControllerImpl->fullEvictBuffer() &&
                (BankFrontSideIn_Snoop[i].empty() ||
                 BankFrontSideIn_Snoop[i].headTimestamp() > BankFrontSideIn_Prefetch[i].headTimestamp())) {
@@ -878,7 +880,8 @@ CacheController::scheduleNewProcesses()
             DBG_(VVerb, (<< " schedule Prefetch " << *transport[MemoryMessageTag]));
 
             ProcessEntry_p aProcess = new ProcessEntry(transport, eProcPrefetch);
-            reserveBackSideOut_Prefetch(aProcess);
+            // reserveBackSideOut_Prefetch(aProcess);
+            reserveBackSideOut_Request(aProcess);
             reserveFrontSideOut(aProcess);
             reserveEvictBuffer(aProcess);
             reserveMAF(aProcess);
@@ -1735,8 +1738,10 @@ CacheController::doTransmitProcess(ProcessEntry_p aProcess)
 
             case eProcPrefetch:
 
-                unreserveBackSideOut_Prefetch(aProcess);
-                sendBack_Prefetch(trans);
+                // unreserveBackSideOut_Prefetch(aProcess);
+                // sendBack_Prefetch(trans);
+                unreserveBackSideOut_Request(aProcess);
+                sendBack_Request(trans);
                 break;
 
             case eProcSnoop:
@@ -1767,7 +1772,9 @@ CacheController::doTransmitProcess(ProcessEntry_p aProcess)
         DBG_Assert(aProcess->frontTransport()[MemoryMessageTag] != nullptr,
                    (<< "Process serial: " << aProcess->serial() << " addr: " << std::hex
                     << (uint64_t)addressOf(aProcess) << " missing Front Transport MemoryMessage."));
-        sendFront(aProcess->frontTransport(), aProcess->sendToD(), aProcess->sendToI());
+        if (!(aProcess->frontTransport()[MemoryMessageTag]->isPrefetchType())) {
+            sendFront(aProcess->frontTransport(), aProcess->sendToD(), aProcess->sendToI());
+        }
     }
 
     if (aProcess->type() == eProcIdleWork) {

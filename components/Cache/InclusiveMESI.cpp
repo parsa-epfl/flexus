@@ -637,7 +637,7 @@ InclusiveMESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transact
                 misses_user_D++;
                 misses_user_D_Read++;
             }
-            theReadTracker.startMiss(tracker);
+            // theReadTracker.startMiss(tracker);
         }
     }
 
@@ -1817,7 +1817,7 @@ InclusiveMESI::handleBackMessage(MemoryTransport transport)
         theTraceTracker.fill(theNodeId, thePeerLevel, msg->address(), *tracker->fillLevel(), is_fetch, is_write);
     }
 
-    theReadTracker.finishMiss(original_tracker);
+    // theReadTracker.finishMiss(original_tracker);
 
     if (result->state() != State::Invalid) {
         if (is_prefetch) {
