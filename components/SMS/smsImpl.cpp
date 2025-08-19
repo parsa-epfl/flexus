@@ -1,5 +1,6 @@
 #include "SMS.hpp"
 #include "core/debug/debug.hpp"
+#include <fstream>
 
 std::tuple<uint64_t, uint64_t> get_base_offset(uint64_t addr, uint32_t N_BLK) {
     uint32_t n_trailing_zeros = __builtin_ctzll(N_BLK);
@@ -347,4 +348,92 @@ void PHT::insert(AccTableEntry& entry) {
     uint32_t set_idx = key % PHT_SETS;
     uint64_t tag = key >> __builtin_ctzll(PHT_SETS);
     sets[set_idx].insert(tag, entry);
+}
+
+uint64_t PHT::loadState(std::string const& aDirName) {
+    std::string fname(aDirName);
+    fname += "/" + boost::padded_string_cast<3, '0'>(theIndex) + "-pht" + ".json";
+    std::ifstream ifs(fname.c_str());
+
+    json fullCheckpoint;
+    ifs >> fullCheckpoint;
+
+    json checkpoint = fullCheckpoint.at("pht").at("sets");
+    DBG_Assert(checkpoint.size() == (size_t)sets.size());
+    
+    uint64_t max_ts = 0;
+    for(size_t set_idx = 0; set_idx < (size_t)PHT_SETS; set_idx++) {
+        json set = checkpoint.at(set_idx).at("entries");
+
+        size_t ways = set.size();
+        if(!sets[set_idx].PERFECT)
+            DBG_Assert(ways <= (size_t)sets[set_idx].entries.size());
+
+        uint64_t ts = 0;
+        for(size_t way_idx = 0; way_idx < ways; way_idx++) {
+            json way = set.at(way_idx);
+
+            uint64_t aTag = way.at("tag").get<uint64_t>();
+            std::vector<uint8_t> access_pattern = way.at("access_pattern").get<std::vector<uint8_t>>();
+            std::vector<uint8_t> read_pattern = way.at("read_pattern").get<std::vector<uint8_t>>();
+            std::vector<uint8_t> write_pattern = way.at("write_pattern").get<std::vector<uint8_t>>();
+            bool valid = way.at("valid").get<bool>();
+
+            DBG_Assert(ts <= way.at("ts").get<uint64_t>());
+            ts = way.at("ts").get<uint64_t>();
+
+            auto entry = PHTEntry(N_BLK, sets[set_idx].ROT, sets[set_idx].SEP_RDWR, sets[set_idx].SAT_CNT);
+            entry.tag = aTag;
+            entry.access_pattern = access_pattern;
+            entry.read_pattern = read_pattern;
+            entry.write_pattern = write_pattern;
+            entry.ts = ts;
+            entry.valid = valid;
+
+            DBG_Assert(access_pattern.size() == sets[set_idx].N_BLK);
+            DBG_Assert(read_pattern.size() == sets[set_idx].N_BLK);
+            DBG_Assert(write_pattern.size() == sets[set_idx].N_BLK);
+
+            if(!sets[set_idx].PERFECT) {
+                sets[set_idx].entries[way_idx] = entry;
+            } else {
+                if ((way_idx + 1) > sets[set_idx].entries.size()) {
+                    sets[set_idx].entries.push_back(entry);
+                } else {
+                    sets[set_idx].entries[way_idx] = entry;
+                }
+            }
+
+            max_ts = std::max(max_ts, ts);
+        }
+
+    }
+    ifs.close();
+    return max_ts;
+}
+
+void PHT::saveState(std::string const& aDirName) {
+    std::string fname(aDirName);
+    fname += "/" + boost::padded_string_cast<3, '0'>(theIndex) + "-pht" + ".json";
+    std::ofstream ofs(fname.c_str());
+
+    json checkpoint;
+    for (size_t set = 0; set < sets.size(); ++set) {
+        json set_json;
+        for (const auto& entry : sets[set].entries) {
+            if (entry.valid) {
+                json entry_json;
+                entry_json["tag"] = entry.tag;
+                entry_json["access_pattern"] = entry.access_pattern;
+                entry_json["read_pattern"] = entry.read_pattern;
+                entry_json["write_pattern"] = entry.write_pattern;
+                entry_json["ts"] = entry.ts;
+                entry_json["valid"] = entry.valid;
+                set_json.push_back(entry_json);
+            }
+        }
+        checkpoint.push_back(set_json);
+    }
+    ofs << std::setw(4) << checkpoint << std::endl;
+    ofs.close();
 }

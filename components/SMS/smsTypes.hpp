@@ -1,4 +1,6 @@
 #include "boost/optional.hpp"
+#include "core/checkpoint/json.hpp"
+using json = nlohmann::json;
 
 struct AccTableEntry
 {
@@ -125,6 +127,7 @@ struct PHTSet
 
 struct PHT
 {
+    uint32_t theIndex;
     std::vector<PHTSet> sets;
     uint32_t PHT_SETS;
     uint32_t N_BLK;
@@ -133,9 +136,11 @@ struct PHT
     PHT()
       : sets(), PHT_SETS(0), N_BLK(0), ROT(false) {}
 
-    PHT(uint32_t pht_sets, uint32_t pht_ways, uint32_t n_blk, bool rot, bool sep_rdwr, bool sat_cnt, bool perfect)
-      : sets(pht_sets, PHTSet(pht_ways, n_blk, rot, sep_rdwr, sat_cnt, perfect)), PHT_SETS(pht_sets), N_BLK(n_blk), ROT(rot) {}
+    PHT(uint32_t theIndex, uint32_t pht_sets, uint32_t pht_ways, uint32_t n_blk, bool rot, bool sep_rdwr, bool sat_cnt, bool perfect)
+      : theIndex(theIndex), sets(pht_sets, PHTSet(pht_ways, n_blk, rot, sep_rdwr, sat_cnt, perfect)), PHT_SETS(pht_sets), N_BLK(n_blk), ROT(rot) {}
 
     boost::optional<std::vector<uint64_t>> lookup(uint64_t pc, uint64_t addr, bool is_read, uint64_t ts);
     void insert(AccTableEntry& entry);
+    uint64_t loadState(std::string const& aDirName);  // Returns the latest time
+    void saveState(std::string const& aDirName);
 };

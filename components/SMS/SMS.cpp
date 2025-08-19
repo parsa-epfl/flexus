@@ -26,7 +26,7 @@ class FLEXUS_COMPONENT(SMS)
         {
             ts = 0;
             prefetchQueue = std::queue<std::tuple<MemoryTransport, uint64_t>>();
-            thePHT = PHT(cfg.NumPHTSets, cfg.PHTAssociativity, cfg.NumBlks, cfg.SMSRot, cfg.SMSSepRdWr, cfg.SMSUseSatCnts, cfg.PerfectPHT);
+            thePHT = PHT(flexusIndex(), cfg.NumPHTSets, cfg.PHTAssociativity, cfg.NumBlks, cfg.SMSRot, cfg.SMSSepRdWr, cfg.SMSUseSatCnts, cfg.PerfectPHT);
             theAGT = AGT(cfg.NumAccTableEntries, cfg.NumFilterTableEntries, cfg.NumBlks);
         }
 
@@ -161,13 +161,22 @@ class FLEXUS_COMPONENT(SMS)
 
             ts = 0;
             prefetchQueue = std::queue<std::tuple<MemoryTransport, uint64_t>>();
-            thePHT = PHT(cfg.NumPHTSets, cfg.PHTAssociativity, cfg.NumBlks, cfg.SMSRot, cfg.SMSSepRdWr, cfg.SMSUseSatCnts, cfg.PerfectPHT);
+            thePHT = PHT(flexusIndex(), cfg.NumPHTSets, cfg.PHTAssociativity, cfg.NumBlks, cfg.SMSRot, cfg.SMSSepRdWr, cfg.SMSUseSatCnts, cfg.PerfectPHT);
             theAGT = AGT(cfg.NumAccTableEntries, cfg.NumFilterTableEntries, cfg.NumBlks);
         }
 
         void finalize() override
         {
         }
+
+        void loadState(std::string const& aDirName) { uint64_t max_ts = thePHT.loadState(aDirName);
+            if (max_ts > ts) {
+                ts = max_ts;
+            }
+            DBG_(VVerb, (<< "SMS state loaded. Max timestamp: " << max_ts << ", Current timestamp: " << ts));
+        }
+
+        void saveState(std::string const& aDirName) { thePHT.saveState(aDirName); }
 };
 
 }
