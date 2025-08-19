@@ -14,6 +14,7 @@ COMPONENT_PARAMETERS(
   PARAMETER( NumFilterTableEntries, uint32_t, "Number of entries in the Filter Table", "numFilterTableEntries", 64)
   PARAMETER( NumPHTSets, uint32_t, "Number of sets in the Pattern History Table", "numPHTSets", 1024)
   PARAMETER( PHTAssociativity, uint32_t, "Associativity of the Pattern History Table", "phtAssociativity", 16)
+  PARAMETER( BlockSize, uint32_t, "Block size in bytes", "blockSize", 64)
   PARAMETER( NumBlks, uint32_t, "Number of blocks in a SMS region", "numBlks", 32)
   PARAMETER( SMSRot, bool, "Use rotation in the SMS", "smsRot", false)
   PARAMETER( SMSSepRdWr, bool, "Use separate read and write patterns", "smsSepRdWr", false)

@@ -25,6 +25,10 @@ uint64_t build_key(uint64_t pc, uint64_t offset, uint32_t N_BLK, uint32_t PHT_SE
     }
 }
 
+uint64_t get_address(uint64_t base, uint64_t offset, uint32_t N_BLK) {
+    return (base << __builtin_ctzll(N_BLK)) | offset;
+}
+
 AccTableEntry& AccTableEntry::operator=(const AccTableEntry& other) {
     if (this != &other) {
         tag = other.tag;
@@ -329,7 +333,7 @@ boost::optional<std::vector<uint64_t>> PHT::lookup(uint64_t pc, uint64_t addr, b
         std::vector<uint64_t> addrs;
         for (uint32_t i = 0; i < N_BLK; ++i) {
             if ((*res)[i]) {
-                addrs.push_back(base + i);
+                addrs.push_back(get_address(base, i, N_BLK));
             }
         }
         return addrs;

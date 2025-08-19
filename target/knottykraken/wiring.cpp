@@ -140,6 +140,7 @@ bool initializeParameters() {
   theSMSCfg.NumFilterTableEntries.initialize(64);
   theSMSCfg.NumPHTSets.initialize(1024);
   theSMSCfg.PHTAssociativity.initialize(16);
+  theSMSCfg.BlockSize.initialize(64);
   theSMSCfg.NumBlks.initialize(32);
   theSMSCfg.SMSRot.initialize(false);
   theSMSCfg.SMSSepRdWr.initialize(false);
