@@ -1155,6 +1155,15 @@ CacheController::runRequestProcess(ProcessEntry_p aProcess)
     DBG_(VVerb, (<< "  Action for " << *aProcess->transport()[MemoryMessageTag] << " is: " << action.theAction));
 
     switch (action.theAction) {
+        case kNoAction:
+            unreserveMAF(aProcess);
+            unreserveFrontSideOut(aProcess);
+            unreserveBackSideOut_Request(aProcess);
+            unreserveEvictBuffer(aProcess);
+
+            enqueueTagPipeline(action, aProcess);
+            break;
+
         case kSend:
             DBG_Assert(aProcess->type() == eProcRequest || aProcess->type() == eProcPrefetch);
             // This is used for PrefetchReadRedundant and other cases which should

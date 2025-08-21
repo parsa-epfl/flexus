@@ -55,7 +55,7 @@ class FLEXUS_COMPONENT(SMS)
                 default:
                     return;
             }
-            DBG_(Crit, (<< ts << ",0," << addr << "," << is_store << ",false," << pc << ",0"));
+            DBG_(VVerb, (<< ts << ",0," << addr << "," << is_store << ",false," << pc << ",0"));
             auto entry = theAGT.record(addr, pc, is_store, ts);
             if (entry) {
                 thePHT.insert(*entry);
