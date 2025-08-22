@@ -144,6 +144,7 @@ bool initializeParameters() {
   theSMSCfg.NumFilterTableEntries.initialize(64);
   theSMSCfg.NumPHTSets.initialize(1024);
   theSMSCfg.PHTAssociativity.initialize(16);
+  theSMSCfg.BlockSize.initialize(64);
   theSMSCfg.NumBlks.initialize(32);
   theSMSCfg.SMSRot.initialize(false);
   theSMSCfg.SMSSepRdWr.initialize(false);
@@ -268,6 +269,7 @@ FLEXUS_INSTANTIATE_COMPONENT_ARRAY( uFetch, theuFetchCfg, theuFetch, SCALE_WITH_
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( PortCombiner, theCombinerCfg, theuFetchCombiner, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( Decoder, theDecoderCfg, theDecoder, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( uArch, theuArchCfg, theuArch, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
+FLEXUS_INSTANTIATE_COMPONENT_ARRAY( SMS, theSMSCfg, theSMS, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( Cache, theL1dCfg, theL1d, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MMU , theMMUCfg, theMMU, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( CMPCache, theL2Cfg, theL2, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1 );
@@ -331,6 +333,15 @@ WIRE( theNetMapper, ICacheReplyOut,     theuFetchCombiner, ReplyIn        )
 
 WIRE( theuFetchCombiner, FetchMissOut,  theuFetch, FetchMissIn            )
 
+//uArch to SMS
+WIRE( theuArch, uArchSMS_Request,       theSMS, RequestIn                 )
+WIRE( theuArch, uArchSMS_Snoop,         theSMS, SnoopIn                   )
+
+//SMS to L1D
+WIRE( theSMS, Prefetch_Request,         theL1d, FrontSideIn_Prefetch      )
+WIRE( theL1d, L1DSMSOut_Request,        theSMS, L1DRequestIn              )
+WIRE( theL1d, L1DSMSOut_Snoop,          theSMS, L1DSnoopIn                )
+
 //L1d to NetMapper
 WIRE( theL1d, BackSideOut_Request,       theNetMapper, CacheRequestIn     )
 WIRE( theL1d, BackSideOut_Snoop,         theNetMapper, CacheSnoopIn       )
@@ -370,6 +381,7 @@ DRIVE( theuFetch, uFetchDrive )
 , DRIVE( theuArch, uArchDrive )
 , DRIVE( theMMU, MMUDrive  )
 , DRIVE( theDecoder, DecoderDrive )
+, DRIVE( theSMS, SMSDrive )
 , DRIVE( theL1d, CacheDrive )
 , DRIVE ( thePhantomCPU, PhantomDrive ) >
 , mpl::vector <
