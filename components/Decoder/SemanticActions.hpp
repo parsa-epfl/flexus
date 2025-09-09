@@ -117,6 +117,7 @@ class BaseSemanticAction
   protected:
     SemanticInstruction* theInstruction;
     bool theScheduled;
+    bool isWb;
 
     BaseSemanticAction(SemanticInstruction* anInstruction, int32_t aNumOperands, bool now = false)
       : theEndOfDependances(0)
@@ -127,6 +128,7 @@ class BaseSemanticAction
       , theDependanceTarget(*this)
       , theInstruction(anInstruction)
       , theScheduled(false)
+      , isWb(false)
     {
         theReady[0] = (aNumOperands < 1);
         theReady[1] = (aNumOperands < 2);
@@ -150,6 +152,8 @@ class BaseSemanticAction
     }
 
     bool evalNow() const { return theEvalNow; }
+
+    bool isWB() const { return isWb; }
 
   protected:
     virtual void doEvaluate() { DBG_Assert(false); }

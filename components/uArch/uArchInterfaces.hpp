@@ -39,6 +39,7 @@ struct SemanticAction
     virtual void addRef() {}
     virtual void releaseRef() {}
     virtual bool canDispatch() { return true; }
+    virtual bool isWB() const { return false; }
     virtual int64_t instructionNo() const { return 0; }
     virtual ~SemanticAction() {}
 };

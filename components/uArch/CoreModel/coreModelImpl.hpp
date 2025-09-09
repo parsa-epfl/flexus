@@ -141,6 +141,7 @@ class CoreImpl : public CoreModel
     // Semantic Action & Effect Management
     action_list_t theActiveActions;
     action_list_t theRescheduledActions;
+    action_list_t theWBActions;
 
     std::list<boost::intrusive_ptr<Interaction>> theDispatchInteractions;
     bool thePreserveInteractions;
@@ -574,6 +575,7 @@ class CoreImpl : public CoreModel
     uint32_t outstandingStorePrefetches() const { return theOutstandingStorePrefetches.size(); }
 
   private:
+    void wb_retire_and_commit();
     void retire();
     void commit();
     void commit(boost::intrusive_ptr<Instruction> anInstruction);
@@ -622,7 +624,7 @@ class CoreImpl : public CoreModel
     {
         return theROB.empty() && theMemQueue.empty() && theMSHRs.empty() &&
                theMemoryPortArbiter.empty() && theMemoryPorts.empty() && theSnoopPorts.empty() &&
-               theMemoryReplies.empty() && theActiveActions.empty() && theRescheduledActions.empty() &&
+               theMemoryReplies.empty() && theActiveActions.empty() && theRescheduledActions.empty() && theWBActions.empty() &&
                !theSquashRequested && !theRedirectRequested;
     }
 

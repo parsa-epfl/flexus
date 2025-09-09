@@ -63,6 +63,9 @@ CoreImpl::checkValidatation()
                  (<< "Register " << (i == 31 ? "SP" : std::to_string(i)) << " mismatch: QEMU= 0x" << std::hex
                   << qemu_dump.regs[i] << " Flexus= 0x" << flexus_dump.regs[i] << std::dec));
             same = false;
+        } else {
+            DBG_(Dev, (<< "Register " << (i == 31 ? "SP" : std::to_string(i)) << " match: 0x" << std::hex
+                      << qemu_dump.regs[i] << std::dec));
         }
     }
 
@@ -211,25 +214,44 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     }
 
     // Retire instruction from the ROB to the SRB
-    retire();
+    if (!theInOrderExecute) {
+        retire();
 
-    if (theRetireCount > 0) { theIdleThisCycle = false; }
+        if (theRetireCount > 0) { theIdleThisCycle = false; }
 
-    // Do cycle accounting
-    completeAccounting();
+        // Do cycle accounting
+        completeAccounting();
 
-    if (theTSOBReplayStalls > 0) { --theTSOBReplayStalls; }
+        if (theTSOBReplayStalls > 0) { --theTSOBReplayStalls; }
 
-    if (theSquashRequested) {
-        DBG_(Verb, (<< " Core triggering Squash: " << theSquashReason));
-        doSquash();
-        squash_fn(theSquashReason);
-        theSquashRequested = false;
-        theIdleThisCycle   = false;
+        if (theSquashRequested) {
+            DBG_(Verb, (<< " Core triggering Squash: " << theSquashReason));
+            doSquash();
+            squash_fn(theSquashReason);
+            theSquashRequested = false;
+            theIdleThisCycle   = false;
+        }
+
+        // Commit instructions the SRB and compare to simics
+        commit();
+    } else {
+        wb_retire_and_commit();
+        
+        if (theRetireCount > 0) { theIdleThisCycle = false; }
+
+        // Do cycle accounting
+        completeAccounting();
+
+        if (theTSOBReplayStalls > 0) { --theTSOBReplayStalls; }
+
+        if (theSquashRequested) {
+            DBG_(Verb, (<< " Core triggering Squash: " << theSquashReason));
+            doSquash();
+            squash_fn(theSquashReason);
+            theSquashRequested = false;
+            theIdleThisCycle   = false;
+        }
     }
-
-    // Commit instructions the SRB and compare to simics
-    commit();
 
     handleTrap();
     //  handlePopTL();
@@ -264,7 +286,7 @@ CoreImpl::prepareCycle()
     FLEXUS_PROFILE();
     thePreserveInteractions = false;
     if (!theRescheduledActions.empty() || !theActiveActions.empty()) { theIdleThisCycle = false; }
-
+    theWBActions = action_list_t();
     std::swap(theRescheduledActions, theActiveActions);
 }
 
@@ -275,8 +297,17 @@ CoreImpl::evaluate()
     CORE_DBG("--------------START EVALUATING------------------------");
 
     while (!theActiveActions.empty()) {
-        theActiveActions.top()->evaluate();
-        theActiveActions.pop();
+        if (theInOrderExecute) {
+            if (theActiveActions.top()->isWB()) {
+                theWBActions.push(theActiveActions.top());
+            } else {
+                theActiveActions.top()->evaluate();
+            }
+            theActiveActions.pop();
+        } else {
+            theActiveActions.top()->evaluate();
+            theActiveActions.pop();
+        }
     }
     CORE_DBG("--------------FINISH EVALUATING------------------------");
 }
@@ -1089,6 +1120,166 @@ CoreImpl::commitStore(boost::intrusive_ptr<Instruction> anInsn)
         // theMemQueue.get<by_insn>().modify( iter, [](auto& x){ x.theQueue = kSB;
         // });//ll::bind( &MemQueueEntry::theQueue, ll::_1 ) = kSB );
         theMemQueue.get<by_insn>().modify(iter, ll::bind(&MemQueueEntry::theQueue, ll::_1) = kSB);
+    }
+}
+
+void
+CoreImpl::wb_retire_and_commit()
+{
+    FLEXUS_PROFILE();
+    bool stop_retire = false;
+
+    CORE_DBG("ROB size: " << theROB.size());
+    if (theROB.empty()) {
+        DBG_(Dev, (<< "Empty"));
+        return;
+    }
+
+    theRetireCount = 0;
+    while (!theROB.empty() && !stop_retire) {
+
+        action_list_t temp_list;
+        while (!theWBActions.empty()) {
+            if (theWBActions.top()->instructionNo() == theROB.front()->sequenceNo())    // Assume unique instruction
+                theWBActions.top()->evaluate();
+            else
+                temp_list.push(theWBActions.top());
+            theWBActions.pop();
+        }
+        std::swap(temp_list, theWBActions);
+
+        if (!theROB.front()->mayRetire()) {
+            // wfi still executing
+            if (theROB.front()->getOpcode() == 0x7F2003D5) {
+                theWFI++;
+                theFlexus->reset_core_watchdog(theNode);
+            }
+            CORE_DBG("Cant Retire due to pending retirement dependance " << *theROB.front());
+            break;
+        }
+
+        if (theTSOBReplayStalls > 0) { break; }
+
+        // Check for sufficient speculative checkpoints
+        DBG_Assert(theAllowedSpeculativeCheckpoints >= 0);
+        if (theIsSpeculating && theAllowedSpeculativeCheckpoints > 0 && theROB.front()->instClass() == clsAtomic &&
+            !theROB.front()->isAnnulled() &&
+            (static_cast<int>(theCheckpoints.size())) >= theAllowedSpeculativeCheckpoints) {
+            DBG_(VVerb, (<< " theROB.front()->instClass() == clsAtomic "));
+            break;
+        }
+
+        if ((thePendingInterrupt != kException_None) && theIsSpeculating) {
+            // stop retiring so we can stop speculating and handle the interrupt
+            DBG_(VVerb, (<< " thePendingInterrupt && theIsSpeculating "));
+            break;
+        }
+
+        if ((theROB.front()->resync() || (theROB.front() == theInterruptInstruction)) && theIsSpeculating) {
+            // Do not retire sync instructions or interrupts while speculating
+            break;
+        }
+
+        // Stop retirement for the cycle if we retire an instruction that
+        // requires resynchronization
+        if (theROB.front()->resync()) { stop_retire = true; }
+
+        if (theSquashRequested && (theROB.begin() == theSquashInstruction)) {
+            if (!theSquashInclusive) {
+                ++theSquashInstruction;
+                theSquashInclusive = true;
+            } else {
+                break;
+            }
+        }
+
+        // the remaining instrs in the ROB are all invalid
+        if (theROB.front()->isSquashed()) break;
+
+        // FOR in-order SMS Experiments only - not normal in-order
+        // Under theInOrderMemory, we do not allow stores or atomics to retire
+        // unless the OoO core is fully idle.  This is not neccessary for loads -
+        // they will only issue when they reach the MemQueue head and the core is
+        // fully stalled
+        // if ( theInOrderMemory && (theROB.front()->instClass() == clsStore ||
+        // theROB.front()->instClass() == clsAtomic ) && ( !isFullyStalled() ||
+        // theRetireCount > 0)) { break;
+        //}
+
+        theSpinRetireSinceReset++;
+
+        CORE_DBG(theName << " Retire:" << *theROB.front());
+        if (!acceptInterrupt()) {
+            theROB.front()->checkTraps(); // take traps only if we don't take interrupt
+        }
+        if (thePendingTrap != kException_None) {
+            theROB.front()->changeInstCode(codeException);
+            DBG_(Verb, (<< theName << " Trap raised by " << *theROB.front()));
+            stop_retire = true;
+        } else {
+            if (theInOrderExecute)
+                theROB.front()->setMayCommitInOrder(true);
+
+            theROB.front()->doRetirementEffects();
+            if (thePendingTrap != kException_None) {
+                theROB.front()->changeInstCode(codeException);
+                DBG_(Verb, (<< theName << " Trap raised by " << *theROB.front()));
+                stop_retire = true;
+            }
+        }
+
+        //    if (theValidateMMU) {
+        //        DBG_( VVerb, ( << "Validate MMU " ));
+
+        //      // save MMU with this instruction so we can check at commit
+        //      theROB.front()->setMMU( Flexus::Qemu::Processor::getProcessor(
+        //      theNode )->getMMU() );
+        //    }
+
+        accountRetire(theROB.front());
+
+        ++theRetireCount;
+        if (theRetireCount >= theRetireWidth) { stop_retire = true; }
+
+        // Value prediction enabled after forward progress is made
+        theValuePredictInhibit = false;
+
+        thePC = theROB.front()->pc() + 4;
+
+        CORE_DBG("Move instruction to the secondary retirement buffer " << *(theROB.front()));
+        theSRB.push_back(theROB.front());
+
+        if (thePendingTrap == kException_None) {
+            theROB.pop_front();
+            // Need to squash and retire instructions that cause traps
+        }
+
+        DBG_Assert(theSRB.front()->mayCommit() || theSRB.front()->isSquashed());
+
+        if (theSRB.front()->hasCheckpoint()) { freeCheckpoint(theSRB.front()); }
+
+        DBG_(VVerb, (<< theName << " FinalCommit:" << *theSRB.front()));
+        if (theSRB.front()->willRaise() == kException_None) {
+            theSRB.front()->doCommitEffects();
+            DBG_(VVerb, (<< theName << " commit effects complete"));
+        }
+
+        theLastTrainingFeedback = nullptr;
+
+        commit(theSRB.front());
+        DBG_(VVerb, (<< theName << " committed in Qemu"));
+
+        theSRB.pop_front();
+    }
+    if (theRetireCount == 0) {
+        DBG_(Dev, (<< *theROB.front()));
+    }
+    else {
+	DBG_(Dev, (<< "Retiring"));
+    }
+    while (!theWBActions.empty()) {
+        theRescheduledActions.push(theWBActions.top());
+        theWBActions.pop();
     }
 }
 

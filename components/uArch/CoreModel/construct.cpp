@@ -357,6 +357,7 @@ CoreImpl::resetCore()
 
     theActiveActions      = action_list_t();
     theRescheduledActions = action_list_t();
+    theWBActions          = action_list_t();
 
     theDispatchInteractions.clear();
     thePreserveInteractions = false;

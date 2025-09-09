@@ -47,6 +47,7 @@ struct WritebackAction : public BaseSemanticAction
       , theSetflags(setflags)
       , theSP(aSP)
     {
+        isWb = true;
     }
 
     void squash(int32_t anArg)
