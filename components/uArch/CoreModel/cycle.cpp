@@ -159,10 +159,47 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
 
     processMemoryReplies();
     prepareCycle();
+    if (theInOrderExecute)
+        sepWB();
 
     for (const auto& tr : thePageWalkReissues)
         issueMMU(tr);
     thePageWalkReissues.clear();
+
+    DBG_(VVerb, (<< "*** WB and Retire *** "));
+
+    // Retire instruction from the ROB to the SRB
+    retire();
+
+    if (theRetireCount > 0) { theIdleThisCycle = false; }
+
+    if (theTSOBReplayStalls > 0) { --theTSOBReplayStalls; }
+
+    if (theSquashRequested) {
+        DBG_(Verb, (<< " Core triggering Squash: " << theSquashReason));
+        doSquash();
+        squash_fn(theSquashReason);
+        theSquashRequested = false;
+        theIdleThisCycle   = false;
+    }
+
+    // Commit instructions the SRB and compare to simics
+    commit();
+
+    handleTrap();
+    //  handlePopTL();
+
+    if (theRedirectRequested) {
+        DBG_(VVerb, (<< " Core triggering Redirect to " << theRedirectRequest));
+        DBG_Assert(theRedirectRequest);
+        redirect_fn(theRedirectRequest);
+        thePC                = theRedirectRequest->theTarget;
+        theRedirectRequested = false;
+        theIdleThisCycle     = false;
+    }
+
+    DBG_(Verb, (<< "*** Arb *** "));
+    arbitrate();
 
     DBG_(VVerb, (<< "*** Eval *** "));
 
@@ -199,9 +236,6 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     //  checkExtraLatencyTimeout();
     resolveCheckpoint();
 
-    DBG_(Verb, (<< "*** Arb *** "));
-    arbitrate();
-
     if (cpuHalted) {
         int qemu_rcode = advance_fn(false); // don't count instructions in halt state
         if (qemu_rcode != QEMU_EXCP_HALTED) {
@@ -213,38 +247,9 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
         return;
     }
 
-    // Retire instruction from the ROB to the SRB
-    retire();
-
-    if (theRetireCount > 0) { theIdleThisCycle = false; }
-
     // Do cycle accounting
     completeAccounting();
 
-    if (theTSOBReplayStalls > 0) { --theTSOBReplayStalls; }
-
-    if (theSquashRequested) {
-        DBG_(Verb, (<< " Core triggering Squash: " << theSquashReason));
-        doSquash();
-        squash_fn(theSquashReason);
-        theSquashRequested = false;
-        theIdleThisCycle   = false;
-    }
-
-    // Commit instructions the SRB and compare to simics
-    commit();
-
-    handleTrap();
-    //  handlePopTL();
-
-    if (theRedirectRequested) {
-        DBG_(VVerb, (<< " Core triggering Redirect to " << theRedirectRequest));
-        DBG_Assert(theRedirectRequest);
-        redirect_fn(theRedirectRequest);
-        thePC                = theRedirectRequest->theTarget;
-        theRedirectRequested = false;
-        theIdleThisCycle     = false;
-    }
     if (theIdleThisCycle) {
         ++theIdleCycleCount;
     } else {
@@ -272,6 +277,22 @@ CoreImpl::prepareCycle()
 }
 
 void
+CoreImpl::sepWB()
+{
+    action_list_t temp;
+    while (!theActiveActions.empty()) {
+        if (theActiveActions.top()->isWB()) {
+            DBG_(VVerb, (<< "Seperating WB action: " << *theActiveActions.top()));
+            theWBActions.push(theActiveActions.top());
+        } else {
+            temp.push(theActiveActions.top());
+        }
+        theActiveActions.pop();
+    }
+    std::swap(theActiveActions, temp);
+}
+
+void
 CoreImpl::evaluate()
 {
     FLEXUS_PROFILE();
@@ -279,16 +300,10 @@ CoreImpl::evaluate()
 
     while (!theActiveActions.empty()) {
         if (theInOrderExecute) {
-            if (theActiveActions.top()->isWB()) {
-                theWBActions.push(theActiveActions.top());
-            } else {
-                theActiveActions.top()->evaluate();
-            }
-            theActiveActions.pop();
-        } else {
-            theActiveActions.top()->evaluate();
-            theActiveActions.pop();
+            DBG_Assert(!theActiveActions.top()->isWB());    // WBs are handled seperately
         }
+        theActiveActions.top()->evaluate();
+        theActiveActions.pop();
     }
     CORE_DBG("--------------FINISH EVALUATING------------------------");
 }

@@ -529,6 +529,7 @@ class CoreImpl : public CoreModel
   private:
     void prepareCycle();
     void arbitrate();
+    void sepWB();
     void evaluate();
     void endCycle();
     void satisfy(InstructionDependance const& aDep);

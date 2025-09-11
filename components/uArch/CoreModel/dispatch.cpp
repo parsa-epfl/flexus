@@ -17,11 +17,10 @@ CoreImpl::availableROB() const
     } else if (theSpinning && theSpinControlEnabled && theLSQCount > 0) {
         return 0;
     } else {
-        if (theDispatchStalled)
-            return 0;
-        
         auto rob = theROBSize - theROB.size();
         auto dsp = theDispatchWidth - theDispatchingInsts.size();
+        DBG_Assert(rob >= 0, (<< "ROB size is " << theROBSize << " and there are " << theROB.size() << " instructions in the ROB"));
+        DBG_Assert(dsp >= 0, (<< "Dispatch width is " << theDispatchWidth << " and there are " << theDispatchingInsts.size() << " dispatching instructions"));
         return std::min(rob, dsp);
     }
 }
