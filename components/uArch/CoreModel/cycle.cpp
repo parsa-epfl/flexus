@@ -155,16 +155,19 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     DBG_Assert((theSBCount + theSBNAWCount) >= 0);
     DBG_Assert((static_cast<int>(theSBLines_Permission.size())) <= theSBCount + theSBNAWCount);
 
+    // ===== End of cycle bookkeeping ===== //
+
     DBG_(VVerb, (<< "*** Prepare *** "));
 
     processMemoryReplies();
     prepareCycle();
-    if (theInOrderExecute)
-        sepWB();
+    sepWB();
 
     for (const auto& tr : thePageWalkReissues)
         issueMMU(tr);
     thePageWalkReissues.clear();
+
+    // ===== WB and Retire ===== //
 
     DBG_(VVerb, (<< "*** WB and Retire *** "));
 
@@ -172,6 +175,9 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     retire();
 
     if (theRetireCount > 0) { theIdleThisCycle = false; }
+
+    // Do cycle accounting
+    completeAccounting();
 
     if (theTSOBReplayStalls > 0) { --theTSOBReplayStalls; }
 
@@ -197,59 +203,6 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
         theRedirectRequested = false;
         theIdleThisCycle     = false;
     }
-
-    DBG_(Verb, (<< "*** Arb *** "));
-    arbitrate();
-
-    DBG_(VVerb, (<< "*** Eval *** "));
-
-    theUsedALU = 0;
-    theUsedMUL = 0;
-    theUsedAGU = 0;
-
-    evaluate();
-
-    // redo dispatch
-    if (theDispatchStalled) {
-            for (auto t = theDispatchingInsts.begin(); t != theDispatchingInsts.end();) {
-                auto &i = *t;
-                DBG_(VVerb, (<< "redispatching " << *i));
-                if (!i->canDispatch())
-                    goto dispatch_cont;
-                i->doDispatchActions();
-                i->setDispatch();
-                DBG_(VVerb, (<< theName << " Dispatched " << *i));
-                t = theDispatchingInsts.erase(t);
-            }
-            theDispatchStalled = false;
-        }
-
-    dispatch_cont:
-    DBG_(VVerb, (<< "*** Issue Mem *** "));
-
-    issuePartialSnoop();
-    issueStore();
-    issueAtomic();
-    issueAtomicSpecWrite();
-    issueSpecial();
-    valuePredictAtomic();
-    //  checkExtraLatencyTimeout();
-    resolveCheckpoint();
-
-    if (cpuHalted) {
-        int qemu_rcode = advance_fn(false); // don't count instructions in halt state
-        if (qemu_rcode != QEMU_EXCP_HALTED) {
-            DBG_(Dev, (<< "Core " << theNode << " leaving halt state, after QEMU sent execution code " << qemu_rcode));
-            cpuHalted = false;
-            throw ResynchronizeWithQemuException(true, false, nullptr);
-        }
-
-        return;
-    }
-
-    // Do cycle accounting
-    completeAccounting();
-
     if (theIdleThisCycle) {
         ++theIdleCycleCount;
     } else {
@@ -261,6 +214,59 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     rob_t::iterator i;
     for (i = theROB.begin(); i != theROB.end(); ++i) {
         i->get()->decrementCanRetireCounter();
+    }
+
+    // ===== Redispatch any instructions that can be dispatched ===== //
+    DBG_(VVerb, (<< "*** Redispatch *** "));
+    
+    // redo dispatch
+    if (theDispatchStalled) {
+            for (auto t = theDispatchingInsts.begin(); t != theDispatchingInsts.end();) {
+                auto &i = *t;
+                DBG_(VVerb, (<< "redispatching " << *i));
+                if (!i->canDispatch())
+                    goto dispatch_cont;
+                i->doDispatchActions(true);
+                i->setDispatch();
+                DBG_(VVerb, (<< theName << " Dispatched " << *i));
+                t = theDispatchingInsts.erase(t);
+            }
+            theDispatchStalled = false;
+        }
+
+    dispatch_cont:
+
+    DBG_(VVerb, (<< "*** Eval *** "));
+
+    theUsedALU = 0;
+    theUsedMUL = 0;
+    theUsedAGU = 0;
+
+    evaluate();
+
+    DBG_(VVerb, (<< "*** Issue Mem *** "));
+
+    issuePartialSnoop();
+    issueStore();
+    issueAtomic();
+    issueAtomicSpecWrite();
+    issueSpecial();
+    valuePredictAtomic();
+    //  checkExtraLatencyTimeout();
+    resolveCheckpoint();
+
+    DBG_(Verb, (<< "*** Arb *** "));
+    arbitrate();
+
+    if (cpuHalted) {
+        int qemu_rcode = advance_fn(false); // don't count instructions in halt state
+        if (qemu_rcode != QEMU_EXCP_HALTED) {
+            DBG_(Dev, (<< "Core " << theNode << " leaving halt state, after QEMU sent execution code " << qemu_rcode));
+            cpuHalted = false;
+            throw ResynchronizeWithQemuException(true, false, nullptr);
+        }
+
+        return;
     }
 
     CORE_DBG("--------------FINISH CORE------------------------");
@@ -279,17 +285,17 @@ CoreImpl::prepareCycle()
 void
 CoreImpl::sepWB()
 {
-    action_list_t temp;
-    while (!theActiveActions.empty()) {
+    FLEXUS_PROFILE();
+    action_list_t tmp;
+    while(!theActiveActions.empty()) {
         if (theActiveActions.top()->isWB()) {
-            DBG_(VVerb, (<< "Seperating WB action: " << *theActiveActions.top()));
             theWBActions.push(theActiveActions.top());
         } else {
-            temp.push(theActiveActions.top());
+            tmp.push(theActiveActions.top());
         }
         theActiveActions.pop();
     }
-    std::swap(theActiveActions, temp);
+    std::swap(theActiveActions, tmp);
 }
 
 void
@@ -300,10 +306,16 @@ CoreImpl::evaluate()
 
     while (!theActiveActions.empty()) {
         if (theInOrderExecute) {
-            DBG_Assert(!theActiveActions.top()->isWB());    // WBs are handled seperately
+            if (theActiveActions.top()->isWB()) {
+                theWBActions.push(theActiveActions.top());
+            } else {
+                theActiveActions.top()->evaluate();
+            }
+            theActiveActions.pop();
+        } else {
+            theActiveActions.top()->evaluate();
+            theActiveActions.pop();
         }
-        theActiveActions.top()->evaluate();
-        theActiveActions.pop();
     }
     CORE_DBG("--------------FINISH EVALUATING------------------------");
 }
@@ -1133,17 +1145,15 @@ CoreImpl::retire()
 
     theRetireCount = 0;
     while (!theROB.empty() && !stop_retire) {
-        if (theInOrderExecute) {
-            action_list_t temp_list;
-            while (!theWBActions.empty()) {
-                if (theWBActions.top()->instructionNo() == theROB.front()->sequenceNo())    // Assume unique instruction
-                    theWBActions.top()->evaluate();
-                else
-                    temp_list.push(theWBActions.top());
-                theWBActions.pop();
-            }
-            std::swap(temp_list, theWBActions);
+        action_list_t temp_list;
+        while (!theWBActions.empty()) {
+            if (theWBActions.top()->instructionNo() == theROB.front()->sequenceNo())    // Assume unique instruction
+                theWBActions.top()->evaluate();
+            else
+                temp_list.push(theWBActions.top());
+            theWBActions.pop();
         }
+        std::swap(temp_list, theWBActions);
 
         if (!theROB.front()->mayRetire()) {
             // wfi still executing
@@ -1257,11 +1267,9 @@ CoreImpl::retire()
     else {
 	DBG_(Dev, (<< "Retiring"));
     }
-    if (theInOrderExecute) {
-        while (!theWBActions.empty()) {
-            theRescheduledActions.push(theWBActions.top());
-            theWBActions.pop();
-        }
+    while (!theWBActions.empty()) {
+        theRescheduledActions.push(theWBActions.top());
+        theWBActions.pop();
     }
 }
 

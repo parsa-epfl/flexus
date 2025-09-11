@@ -294,17 +294,21 @@ SemanticInstruction::doDispatchEffects()
 };
 
 void
-SemanticInstruction::doDispatchActions()
+SemanticInstruction::doDispatchActions(bool is_redispatch)
 {
     DISPATCH_DBG("START DISPATCHING ACTIONS");
     FLEXUS_PROFILE();
-    ArchInstruction::doDispatchActions();
+    ArchInstruction::doDispatchActions(is_redispatch);
     while (!theDispatchActions.empty()) {
         auto &a = theDispatchActions.front();
         if (a->evalNow())
             a->evaluate();
-        else
-            core()->create(a);
+        else {
+            if (is_redispatch)
+                core()->recreate(a);
+            else
+                core()->create(a);
+        }
         theDispatchActions.pop_front();
     }
     DISPATCH_DBG("FINISH DISPATCHING ACTIONS");

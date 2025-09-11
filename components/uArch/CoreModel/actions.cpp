@@ -15,6 +15,12 @@ CoreImpl::reschedule(boost::intrusive_ptr<SemanticAction> anAction)
     CORE_DBG(*anAction);
     theRescheduledActions.push(anAction);
 }
+void
+CoreImpl::recreate(boost::intrusive_ptr<SemanticAction> anAction)
+{
+    CORE_DBG(*anAction);
+    theActiveActions.push(anAction);
+}
 
 bool
 ActionOrder::operator()(boost::intrusive_ptr<SemanticAction> const& l,

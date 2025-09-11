@@ -101,7 +101,7 @@ struct SemanticInstruction : public ArchInstruction
     bool isDispatched();
     void setDispatch();
     void doDispatchEffects();
-    void doDispatchActions();
+    void doDispatchActions(bool is_redispatch);
     void squash();
     void pageFault();
     bool isPageFault() const;

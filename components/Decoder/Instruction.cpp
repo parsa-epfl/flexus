@@ -100,7 +100,7 @@ ArchInstruction::doDispatchEffects() {
 }
 
 void
-ArchInstruction::doDispatchActions()
+ArchInstruction::doDispatchActions(bool is_redispatch)
 {
     DBG_Assert(bpState(), (<< "No branch predictor state exists, but it must"));
     if (isMicroOp()) return;

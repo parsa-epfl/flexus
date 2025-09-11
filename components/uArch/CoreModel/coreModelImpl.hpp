@@ -639,6 +639,7 @@ class CoreImpl : public CoreModel
   public:
     void create(boost::intrusive_ptr<SemanticAction> anAction);
     void reschedule(boost::intrusive_ptr<SemanticAction> anAction);
+    void recreate(boost::intrusive_ptr<SemanticAction> anAction);
 
     // Bypass Network Interface
     //==========================================================================

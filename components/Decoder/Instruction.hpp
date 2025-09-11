@@ -80,7 +80,7 @@ class ArchInstruction : public nuArch::Instruction
     virtual bool isDispatched();
     virtual void setDispatch();
     virtual void doDispatchEffects();
-    virtual void doDispatchActions();
+    virtual void doDispatchActions(bool is_redispatch);
     virtual void squash() {}
     virtual void pageFault(bool p = true) { thePageFault = p; }
     virtual bool isPageFault() const { return thePageFault; }
