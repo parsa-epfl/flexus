@@ -304,18 +304,17 @@ CoreImpl::evaluate()
     FLEXUS_PROFILE();
     CORE_DBG("--------------START EVALUATING------------------------");
 
+    DBG_Assert(theWBActions.empty());
     while (!theActiveActions.empty()) {
-        if (theInOrderExecute) {
-            if (theActiveActions.top()->isWB()) {
-                theWBActions.push(theActiveActions.top());
-            } else {
-                theActiveActions.top()->evaluate();
-            }
-            theActiveActions.pop();
-        } else {
+        if (theActiveActions.top()->isWB())
+            theWBActions.push(theActiveActions.top());  // Separate WB actions for next cycle
+        else
             theActiveActions.top()->evaluate();
-            theActiveActions.pop();
-        }
+        theActiveActions.pop();
+    }
+    while (!theWBActions.empty()) {
+        theRescheduledActions.push(theWBActions.top());
+        theWBActions.pop();
     }
     CORE_DBG("--------------FINISH EVALUATING------------------------");
 }
@@ -1140,6 +1139,10 @@ CoreImpl::retire()
     CORE_DBG("ROB size: " << theROB.size());
     if (theROB.empty()) {
         DBG_(Dev, (<< "Empty"));
+        while (!theWBActions.empty()) {
+            theRescheduledActions.push(theWBActions.top());
+            theWBActions.pop();
+        }
         return;
     }
 
