@@ -279,6 +279,9 @@ CoreImpl::CoreImpl(uArchOptions_t options,
         reg_file_sizes[vRegisters] = kvRegs + extraVRegs;
         reg_file_sizes[ccBits]     = kccRegs + 2 * theROBSize;  // TODO: check later
     }
+    DBG_(Crit, ( << "Number of physical xRegisters: " << reg_file_sizes[xRegisters]));
+    DBG_(Crit, ( << "Number of physical vRegisters: " << reg_file_sizes[vRegisters]));
+    DBG_(Crit, ( << "Number of physical ccBits: " << reg_file_sizes[ccBits]));
 
     theRegisters.initialize(reg_file_sizes, inOrder);
 
