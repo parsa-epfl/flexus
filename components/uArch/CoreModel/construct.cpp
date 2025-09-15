@@ -25,7 +25,7 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , signalStoreForwardingHit_fn(_signalStoreForwardingHit)
   , mmuResync_fn(_mmuResync)
   , thePendingTrap(kException_None)
-  , theBypassNetwork(kxRegs_Total + 3 * options.ROBSize, kvRegs + 4 * options.ROBSize, kccRegs + 2 * options.ROBSize)
+  , theBypassNetwork(((options.inOrderExecute) ? kxRegs_Total : (kxRegs_Total + options.extraXRegs)), ((options.inOrderExecute) ? kvRegs : (kvRegs + options.extraVRegs)), ((options.inOrderExecute) ? kccRegs : (kccRegs + 2 * options.ROBSize)))
   , theLastGarbageCollect(0)
   , theDispatchStalled(false)
   , theDispatchWidth(options.dispatchWidth)
