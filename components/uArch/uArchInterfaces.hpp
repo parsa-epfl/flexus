@@ -510,6 +510,9 @@ struct uArchOptions_t
     uint32_t onChipLatency;
     uint32_t offChipLatency;
 
+    uint32_t extraXRegs;
+    uint32_t extraVRegs;
+
     uint32_t numIntAlu;
     uint32_t intAluOpLatency;
     uint32_t intAluOpPipelineResetTime;

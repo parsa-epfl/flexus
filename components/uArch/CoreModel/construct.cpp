@@ -256,7 +256,9 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , numALU(options.numIntAlu)
   , numMUL(options.numIntMult)
   , numAGU(options.numAGU)
-{
+  , extraXRegs(options.extraXRegs)
+  , extraVRegs(options.extraVRegs)
+  {
 
     // Msutherl - for MMU verification. Remove when done
     theQEMUCPU = Flexus::Qemu::Processor::getProcessor(theNode);
@@ -273,9 +275,9 @@ CoreImpl::CoreImpl(uArchOptions_t options,
         reg_file_sizes[vRegisters] = kvRegs;
         reg_file_sizes[ccBits]     = kccRegs;
     } else {
-        reg_file_sizes[xRegisters] = kxRegs_Total + 3 * theROBSize;
-        reg_file_sizes[vRegisters] = kvRegs + 4 * theROBSize;
-        reg_file_sizes[ccBits]     = kccRegs + 2 * theROBSize;
+        reg_file_sizes[xRegisters] = kxRegs_Total + extraXRegs;
+        reg_file_sizes[vRegisters] = kvRegs + extraVRegs;
+        reg_file_sizes[ccBits]     = kccRegs + 2 * theROBSize;  // TODO: check later
     }
 
     theRegisters.initialize(reg_file_sizes, inOrder);

@@ -38,6 +38,9 @@ COMPONENT_PARAMETERS(
   PARAMETER( OffChipLatency, uint32_t, "Off-Chip Side-Effect latency", "off-chip-se", 0)
   PARAMETER( Multithread, bool, "Enable multi-threaded execution", "multithread", false )
 
+  PARAMETER( ExtraXRegs, uint32_t, "Number of extra physical integer registers", "extra_xregs", 0 )
+  PARAMETER( ExtraVRegs, uint32_t, "Number of extra physical vector/fp registers", "extra_vregs", 0 )
+
   PARAMETER( NumIntAlu, uint32_t, "Number of integer ALUs", "numIntAlu", 1)
   PARAMETER( IntAluOpLatency, uint32_t, "End-to-end latency of an integer ALU operation", "intAluOpLatency", 1)
   PARAMETER( IntAluOpPipelineResetTime, uint32_t, "Number of cycles required between subsequent integer ALU operations", "intAluOpPipelineResetTime", 1)

@@ -496,6 +496,9 @@ class CoreImpl : public CoreModel
     std::vector<uint32_t> fpAluCyclesToReady;
     std::vector<uint32_t> fpMultCyclesToReady;
 
+    uint32_t extraXRegs;
+    uint32_t extraVRegs;
+
     uint64_t numALU;
     uint64_t numMUL;
     uint64_t numAGU;

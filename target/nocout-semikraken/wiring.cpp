@@ -132,6 +132,9 @@ bool initializeParameters() {
   theuArchCfg.IntMultOpLatency.initialize(true);
   theuArchCfg.IntMultOpPipelineResetTime.initialize(true);
 
+  theuArchCfg.ExtraXRegs.initialize(true);
+  theuArchCfg.ExtraVRegs.initialize(true);
+
   theuArchCfg.NumFpAlu.initialize(true);
   theuArchCfg.NumFpMult.initialize(true);
   theuArchCfg.NumIntAlu.initialize(true);
