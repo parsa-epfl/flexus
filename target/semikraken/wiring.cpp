@@ -138,6 +138,10 @@ bool initializeParameters() {
   theuArchCfg.NumFpMult.initialize(true);
   theuArchCfg.NumIntAlu.initialize(true);
   theuArchCfg.NumIntMult.initialize(true);
+  theuArchCfg.NumAGU.initialize(true);
+
+  theuArchCfg.ExtraXRegs.initialize(true);
+  theuArchCfg.ExtraVRegs.initialize(true);
 
   theSMSCfg.EnableSMS.initialize(false);
   theSMSCfg.NumAccTableEntries.initialize(64);

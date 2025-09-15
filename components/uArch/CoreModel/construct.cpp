@@ -25,7 +25,9 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , signalStoreForwardingHit_fn(_signalStoreForwardingHit)
   , mmuResync_fn(_mmuResync)
   , thePendingTrap(kException_None)
-  , theBypassNetwork(kxRegs_Total + 3 * options.ROBSize, kvRegs + 4 * options.ROBSize, kccRegs + 2 * options.ROBSize)
+  , theBypassNetwork((options.inOrderExecute)? kxRegs_Total : (kxRegs_Total + options.extraXRegs), 
+                     (options.inOrderExecute)? kvRegs : (kvRegs + options.extraVRegs),
+                     (options.inOrderExecute)? kccRegs : (kccRegs + (options.extraXRegs + 6) / 7))
   , theLastGarbageCollect(0)
   , theDispatchStalled(false)
   , theDispatchWidth(options.dispatchWidth)
@@ -256,6 +258,8 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , numALU(options.numIntAlu)
   , numMUL(options.numIntMult)
   , numAGU(options.numAGU)
+  , extraXRegs(options.extraXRegs)
+  , extraVRegs(options.extraVRegs)
 {
 
     // Msutherl - for MMU verification. Remove when done
@@ -273,10 +277,13 @@ CoreImpl::CoreImpl(uArchOptions_t options,
         reg_file_sizes[vRegisters] = kvRegs;
         reg_file_sizes[ccBits]     = kccRegs;
     } else {
-        reg_file_sizes[xRegisters] = kxRegs_Total + 3 * theROBSize;
-        reg_file_sizes[vRegisters] = kvRegs + 4 * theROBSize;
-        reg_file_sizes[ccBits]     = kccRegs + 2 * theROBSize;
+        reg_file_sizes[xRegisters] = kxRegs_Total + extraXRegs;
+        reg_file_sizes[vRegisters] = kvRegs + extraVRegs;
+        reg_file_sizes[ccBits]     = kccRegs + (extraXRegs + 6) / 7;
     }
+    DBG_(Crit, (<< "Number of physical xRegisters: " << reg_file_sizes[xRegisters]));
+    DBG_(Crit, (<< "Number of physical vRegisters: " << reg_file_sizes[vRegisters]));
+    DBG_(Crit, (<< "Number of physical ccBits: " << reg_file_sizes[ccBits]));
 
     theRegisters.initialize(reg_file_sizes, inOrder);
 

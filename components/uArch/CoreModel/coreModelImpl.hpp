@@ -156,6 +156,9 @@ class CoreImpl : public CoreModel
     uint64_t theUsedMUL;
     uint64_t theUsedAGU;
 
+    uint32_t extraXRegs;
+    uint32_t extraVRegs;
+
     // Resource arbitration
     MemoryPortArbiter theMemoryPortArbiter;
 

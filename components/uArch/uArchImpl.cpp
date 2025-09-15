@@ -166,6 +166,9 @@ class FLEXUS_COMPONENT(uArch)
         options.name                          = statName();
         options.node                          = flexusIndex();
 
+        options.extraXRegs                  = cfg.ExtraXRegs;
+        options.extraVRegs                  = cfg.ExtraVRegs;
+
         options.numIntAlu                 = cfg.NumIntAlu;
         options.intAluOpLatency           = cfg.IntAluOpLatency;
         options.intAluOpPipelineResetTime = cfg.IntAluOpPipelineResetTime;

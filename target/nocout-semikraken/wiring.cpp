@@ -136,6 +136,10 @@ bool initializeParameters() {
   theuArchCfg.NumFpMult.initialize(true);
   theuArchCfg.NumIntAlu.initialize(true);
   theuArchCfg.NumIntMult.initialize(true);
+  theuArchCfg.NumAGU.initialize(true);
+
+  theuArchCfg.ExtraXRegs.initialize(true);
+  theuArchCfg.ExtraVRegs.initialize(true);
 
   static const int K = 1024;
 

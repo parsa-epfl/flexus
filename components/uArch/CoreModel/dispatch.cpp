@@ -21,7 +21,17 @@ CoreImpl::availableROB() const
         auto dsp = theDispatchWidth - theDispatchingInsts.size();
         DBG_Assert(rob >= 0, (<< "ROB size is " << theROBSize << " and there are " << theROB.size() << " instructions in the ROB"));
         DBG_Assert(dsp >= 0, (<< "Dispatch width is " << theDispatchWidth << " and there are " << theDispatchingInsts.size() << " dispatching instructions"));
-        return std::min(rob, dsp);
+        if (theInOrderExecute)
+            return std::min(rob, dsp);
+
+        auto freeXRegs = theMapTables[0]->theFreeList.size() / 3;
+        auto freeVRegs = theMapTables[1]->theFreeList.size() / 3;
+        auto freeCCs = theMapTables[2]->theFreeList.size() / 3;
+
+        DBG_Assert(freeXRegs >= 0, (<< "There are " << theMapTables[0]->theFreeList.size() << " free xRegisters"));
+        DBG_Assert(freeVRegs >= 0, (<< "There are " << theMapTables[1]->theFreeList.size() << " free vRegisters"));
+        DBG_Assert(freeCCs >= 0, (<< "There are " << theMapTables[2]->theFreeList.size() << " free ccBits"));
+        return std::min(rob, std::min(dsp, std::min(freeXRegs, std::min(freeVRegs, freeCCs))));
     }
 }
 
