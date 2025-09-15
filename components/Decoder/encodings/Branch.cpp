@@ -517,6 +517,10 @@ SYS(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
         setRD(inst, rt);
         inst->addDispatchEffect(mapDestination(inst));
 
+        simple_action map = mapDestInOrderAction(inst, kPD);
+        inst->addDispatchCheck(map.action);
+        inst->addDispatchAction(map);
+
         std::unique_ptr<SysRegInfo> ri = getPriv(op0, op1, op2, crn, crm);
         ri->setSystemRegisterEncodingValues(op0, op1, op2, crn, crm);
         inst->addRetirementEffect(readPR(inst, pr, std::move(ri)));
