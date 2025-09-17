@@ -185,7 +185,7 @@ class FLEXUS_COMPONENT(Decoder)
                     numFreeXRegs -= numReads;   // This is worst case scenario, not all reads need a new physical reg
                     numFreeCCs -= numWCCs;
                     if (numFreeXRegs < 0 || numFreeVRegs < 0 || numFreeCCs < 0) {
-                        DBG_(Crit, (<< "Cannot dispatch " << *theFIQ.front() << " Num Free Int Regs: " << numFreeXRegs
+                        DBG_(VVerb, (<< "Cannot dispatch " << *theFIQ.front() << " Num Free Int Regs: " << numFreeXRegs
                                             << " Num Free FP Regs: " << numFreeVRegs << " Num Free CCs: " << numFreeCCs));
                         break; // No more dispatching this cycle
                     }
@@ -214,7 +214,7 @@ class FLEXUS_COMPONENT(Decoder)
                 numFreeXRegs -= numReads;   // This is worst case scenario, not all reads need a new physical reg
                 numFreeCCs -= numWCCs;
                 if (numFreeXRegs < 0 || numFreeVRegs < 0 || numFreeCCs < 0) {
-                    DBG_(Crit, (<< "Cannot dispatch " << *theFIQ.front() << " Num Free Int Regs: " << numFreeXRegs
+                    DBG_(VVerb, (<< "Cannot dispatch " << *theFIQ.front() << " Num Free Int Regs: " << numFreeXRegs
                                          << " Num Free FP Regs: " << numFreeVRegs << " Num Free CCs: " << numFreeCCs));
                     break; // No more dispatching this cycle
                 }
@@ -226,7 +226,7 @@ class FLEXUS_COMPONENT(Decoder)
 
                 FLEXUS_CHANNEL(DispatchOut) << inst;
             }
-            DBG_(Crit, (<< "Num Free Int Regs: " << numFreeXRegs << " Num Free FP Regs: " << numFreeVRegs << " Num Free CCs: " << numFreeCCs));
+            DBG_(VVerb, (<< "Num Free Int Regs: " << numFreeXRegs << " Num Free FP Regs: " << numFreeVRegs << " Num Free CCs: " << numFreeCCs));
             ++dispatched;
             --available_dispatch;
         }
