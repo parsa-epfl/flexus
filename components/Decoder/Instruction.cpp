@@ -99,6 +99,11 @@ void
 ArchInstruction::doDispatchEffects() {
 }
 
+std::tuple<int, int, int>
+ArchInstruction::numReadsWrites() {
+    return std::make_tuple(0, 0, 0);
+}
+
 void
 ArchInstruction::doDispatchActions(bool is_redispatch)
 {

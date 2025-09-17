@@ -110,6 +110,7 @@ struct WriteccAction : public BaseSemanticAction
       , theCC(anCC)
       , the64(an64)
     {
+        isWcc = true;
     }
 
     void squash(int32_t anArg)

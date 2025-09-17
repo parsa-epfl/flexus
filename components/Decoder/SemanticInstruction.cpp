@@ -314,6 +314,44 @@ SemanticInstruction::doDispatchActions(bool is_redispatch)
     DISPATCH_DBG("FINISH DISPATCHING ACTIONS");
 };
 
+std::tuple<int, int, int>
+SemanticInstruction::numReadsWrites()
+{   
+    int reads = 0, writes = 0, wccs = 0;
+    if (hasOperand(kRS1)) ++reads;
+    if (hasOperand(kRS2)) ++reads;
+    if (hasOperand(kRS3)) ++reads;
+    if (hasOperand(kRS4)) ++reads;
+    if (hasOperand(kRS5)) ++reads;
+    if (hasOperand(kCCs)) ++wccs;
+    if (hasOperand(kRD)) ++writes;
+    if (hasOperand(kRD1)) ++writes;
+    if (hasOperand(kRD2)) ++writes;
+    if (hasOperand(kCCd)) ++wccs;
+
+    // std::list<BaseSemanticAction*> temp;
+    // int reads = 0;
+    // int writes = 0;
+    // int wccs = 0;
+    // while (!theDispatchActions.empty()) {
+    //     auto &a = theDispatchActions.front();
+    //     bool isRead = a->isREAD();
+    //     bool isWb = a->isWB();
+    //     bool isWcc = a->isWCC();
+    //     bool onlyOne = !(isRead && isWb) && !(isRead && isWcc) && !(isWb && isWcc);
+    //     DBG_Assert(onlyOne, (<< "Action is doing more than one of read, writeback, or write condition codes: " << *a));
+
+    //     if (isRead) ++reads;
+    //     if (isWb) ++writes;
+    //     if (isWcc) ++wccs;
+
+    //     temp.push_back(a);
+    //     theDispatchActions.pop_front();
+    // }
+    // std::swap(theDispatchActions, temp);
+    return std::make_tuple(reads, writes, wccs);
+}
+
 void
 SemanticInstruction::doRetirementEffects()
 {

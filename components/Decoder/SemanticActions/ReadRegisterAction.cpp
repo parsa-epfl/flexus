@@ -47,6 +47,7 @@ struct ReadRegisterAction : public BaseSemanticAction
       , the64(is64)
       , theSP(aSP)
     {
+        isRead = true;
     }
 
     bool bypass(register_value aValue)

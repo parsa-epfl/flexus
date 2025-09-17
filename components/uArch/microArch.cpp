@@ -49,6 +49,7 @@ class microArchImpl : public microArch
 
     std::unique_ptr<CoreModel> theCore;
     int32_t theAvailableROB;
+    std::tuple<int32_t, int32_t, int32_t> theAvailableRegs;
     Flexus::Qemu::Processor theCPU;
     Stat::StatCounter theResynchronizations;
     Stat::StatCounter theResyncInstructions;
@@ -83,6 +84,7 @@ class microArchImpl : public microArch
                                      _signalStoreForwardingHit,
                                      _mmuResync))
       , theAvailableROB(0)
+      , theAvailableRegs(std::make_tuple(0, 0, 0))
       , theResynchronizations(options.name + "-ResyncsCaught")
       , theResyncInstructions(options.name + "-ResyncsCaught:Instruction")
       , theOtherResyncs(options.name + "-ResyncsCaught:Other")
@@ -104,6 +106,7 @@ class microArchImpl : public microArch
         if (theNode == 0) { setupDriveClients(); }
 
         theAvailableROB = theCore->availableROB();
+        theAvailableRegs = theCore->availableRegs();
 
         resetArchitecturalState(true);
 
@@ -205,6 +208,7 @@ class microArchImpl : public microArch
     boost::intrusive_ptr<MemOp> popSnoopOp() { return theCore->popSnoopOp(); }
 
     int32_t availableROB() { return theAvailableROB; }
+    std::tuple<int32_t, int32_t, int32_t> availableRegs() const { return theAvailableRegs; }
 
     const uint32_t core() const { return theNode; }
 
@@ -237,6 +241,7 @@ class microArchImpl : public microArch
         //    }
 
         theAvailableROB = theCore->availableROB();
+        theAvailableRegs = theCore->availableRegs();
         theCore->skipCycle();
     }
 
@@ -250,6 +255,7 @@ class microArchImpl : public microArch
 
             // Record free ROB space for next cycle
             theAvailableROB = theCore->availableROB();
+            theAvailableRegs = theCore->availableRegs();
 
             // TODO -
             eExceptionType interrupt = theCPU.has_irq() ? kException_IRQ : kException_None; // HEHE
@@ -315,6 +321,7 @@ class microArchImpl : public microArch
         // Clear out all state in theCore
         theCore->reset();
         theAvailableROB = theCore->availableROB();
+        theAvailableRegs = theCore->availableRegs();
 
         if (theExceptionRaised != (int)(kException_None)) {
             squash(kException);
@@ -404,6 +411,7 @@ class microArchImpl : public microArch
         theCore->restoreState(state);
 
         theAvailableROB = theCore->availableROB();
+        theAvailableRegs = theCore->availableRegs();
         squash(kResynchronize);
 
         // Obtain new state from simics

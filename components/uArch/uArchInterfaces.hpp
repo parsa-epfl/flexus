@@ -550,6 +550,7 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction
     virtual bool isDispatched()             = 0;
     virtual void doDispatchEffects()        = 0; // used
     virtual void doDispatchActions(bool is_redispatch)        = 0; // used
+    virtual std::tuple<int, int, int> numReadsWrites() = 0; // used
     virtual void squash()                   = 0;
     virtual void pageFault(bool p = true)   = 0;
     virtual bool isPageFault() const        = 0;

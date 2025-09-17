@@ -220,9 +220,9 @@ class FLEXUS_COMPONENT(uArch)
     }
 
     FLEXUS_PORT_ALWAYS_AVAILABLE(AvailableDispatchOut);
-    std::pair<int, bool> pull(AvailableDispatchOut const&)
+    std::tuple<int, bool, std::tuple<int, int, int>> pull(AvailableDispatchOut const&)
     {
-        return std::make_pair(theMicroArch->availableROB(), theMicroArch->isSynchronized());
+        return std::make_tuple(theMicroArch->availableROB(), theMicroArch->isSynchronized(), theMicroArch->availableRegs());
     }
 
     FLEXUS_PORT_ALWAYS_AVAILABLE(Stalled);

@@ -81,6 +81,7 @@ class ArchInstruction : public nuArch::Instruction
     virtual void setDispatch();
     virtual void doDispatchEffects();
     virtual void doDispatchActions(bool is_redispatch);
+    virtual std::tuple<int, int, int> numReadsWrites();
     virtual void squash() {}
     virtual void pageFault(bool p = true) { thePageFault = p; }
     virtual bool isPageFault() const { return thePageFault; }

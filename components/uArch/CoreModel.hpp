@@ -54,6 +54,7 @@ struct CoreModel : public uArch
     virtual void reset()             = 0;
 
     virtual int32_t availableROB() const                     = 0;
+    virtual std::tuple<int32_t, int32_t, int32_t> availableRegs() const = 0;
     virtual bool isSynchronized() const                      = 0;
     virtual bool isStalled() const                           = 0;
     virtual bool isHalted() const                            = 0;

@@ -620,6 +620,7 @@ class CoreImpl : public CoreModel
     //==========================================================================
   public:
     int32_t availableROB() const;
+    std::tuple<int32_t, int32_t, int32_t> availableRegs() const;
     const uint32_t core() const;
     bool isSynchronized() const { return theROB.empty(); }
     bool isStalled() const;

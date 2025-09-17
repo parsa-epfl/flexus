@@ -70,7 +70,7 @@ COMPONENT_PARAMETERS(
   PARAMETER( FpSqrtOpPipelineResetTime, uint32_t, "Number of cycles required between subsequent FP SQRT operations", "fpSqrtOpPipelineResetTime", 1)
 );
 
-typedef std::pair<int, bool> dispatch_status;
+typedef std::tuple<int, bool, std::tuple<int, int, int>> dispatch_status;
 typedef VirtualMemoryAddress vaddr_pair;
 
 COMPONENT_INTERFACE(
