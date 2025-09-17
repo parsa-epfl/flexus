@@ -141,7 +141,8 @@ class CoreImpl : public CoreModel
     // Semantic Action & Effect Management
     action_list_t theActiveActions;
     action_list_t theRescheduledActions;
-    action_list_t theWBActions;
+    action_list_t theActiveWBActions;
+    action_list_t theRescheduledWBActions;
 
     std::list<boost::intrusive_ptr<Interaction>> theDispatchInteractions;
     bool thePreserveInteractions;
@@ -532,8 +533,8 @@ class CoreImpl : public CoreModel
   private:
     void prepareCycle();
     void arbitrate();
-    void sepWB();
     void evaluate();
+    void evaluateWB();
     void endCycle();
     void satisfy(InstructionDependance const& aDep);
     void squash(InstructionDependance const& aDep);
@@ -628,7 +629,7 @@ class CoreImpl : public CoreModel
     {
         return theROB.empty() && theMemQueue.empty() && theMSHRs.empty() &&
                theMemoryPortArbiter.empty() && theMemoryPorts.empty() && theSnoopPorts.empty() &&
-               theMemoryReplies.empty() && theActiveActions.empty() && theRescheduledActions.empty() && theWBActions.empty() &&
+               theMemoryReplies.empty() && theActiveActions.empty() && theRescheduledActions.empty() && theActiveWBActions.empty() && theRescheduledWBActions.empty() &&
                !theSquashRequested && !theRedirectRequested;
     }
 

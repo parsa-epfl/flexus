@@ -161,7 +161,6 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
 
     processMemoryReplies();
     prepareCycle();
-    sepWB();
 
     for (const auto& tr : thePageWalkReissues)
         issueMMU(tr);
@@ -173,6 +172,7 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
 
     // Retire instruction from the ROB to the SRB
     retire();
+    evaluateWB();
 
     if (theRetireCount > 0) { theIdleThisCycle = false; }
 
@@ -277,26 +277,26 @@ CoreImpl::prepareCycle()
 {
     FLEXUS_PROFILE();
     thePreserveInteractions = false;
-    if (!theRescheduledActions.empty() || !theActiveActions.empty()) { theIdleThisCycle = false; }
-    theWBActions = action_list_t();
+    if (!(theRescheduledActions.empty() && theRescheduledWBActions.empty()) || !(theActiveActions.empty() && theActiveWBActions.empty())) { theIdleThisCycle = false; }
     std::swap(theRescheduledActions, theActiveActions);
+    std::swap(theRescheduledWBActions, theActiveWBActions);
 }
 
-void
-CoreImpl::sepWB()
-{
-    FLEXUS_PROFILE();
-    action_list_t tmp;
-    while(!theActiveActions.empty()) {
-        if (theActiveActions.top()->isWB()) {
-            theWBActions.push(theActiveActions.top());
-        } else {
-            tmp.push(theActiveActions.top());
-        }
-        theActiveActions.pop();
-    }
-    std::swap(theActiveActions, tmp);
-}
+// void
+// CoreImpl::sepWB()
+// {
+//     FLEXUS_PROFILE();
+//     action_list_t tmp;
+//     while(!theActiveActions.empty()) {
+//         if (theActiveActions.top()->isWB()) {
+//             theWBActions.push(theActiveActions.top());
+//         } else {
+//             tmp.push(theActiveActions.top());
+//         }
+//         theActiveActions.pop();
+//     }
+//     std::swap(theActiveActions, tmp);
+// }
 
 void
 CoreImpl::evaluate()
@@ -304,19 +304,26 @@ CoreImpl::evaluate()
     FLEXUS_PROFILE();
     CORE_DBG("--------------START EVALUATING------------------------");
 
-    DBG_Assert(theWBActions.empty());
     while (!theActiveActions.empty()) {
-        if (theActiveActions.top()->isWB())
-            theWBActions.push(theActiveActions.top());  // Separate WB actions for next cycle
-        else
-            theActiveActions.top()->evaluate();
+        theActiveActions.top()->evaluate();
         theActiveActions.pop();
     }
-    while (!theWBActions.empty()) {
-        theRescheduledActions.push(theWBActions.top());
-        theWBActions.pop();
-    }
+
     CORE_DBG("--------------FINISH EVALUATING------------------------");
+}
+
+void
+CoreImpl::evaluateWB()
+{
+    FLEXUS_PROFILE();
+    CORE_DBG("--------------START EVALUATING WB------------------------");
+
+    while (!theActiveWBActions.empty()) {
+        theActiveWBActions.top()->evaluate();
+        theActiveWBActions.pop();
+    }
+
+    CORE_DBG("--------------FINISH EVALUATING WB------------------------");
 }
 
 void
@@ -1139,24 +1146,20 @@ CoreImpl::retire()
     CORE_DBG("ROB size: " << theROB.size());
     if (theROB.empty()) {
         DBG_(Dev, (<< "Empty"));
-        while (!theWBActions.empty()) {
-            theRescheduledActions.push(theWBActions.top());
-            theWBActions.pop();
-        }
         return;
     }
 
     theRetireCount = 0;
     while (!theROB.empty() && !stop_retire) {
         action_list_t temp_list;
-        while (!theWBActions.empty()) {
-            if (theWBActions.top()->instructionNo() == theROB.front()->sequenceNo())    // Assume unique instruction
-                theWBActions.top()->evaluate();
+        while (!theActiveWBActions.empty()) {
+            if (theActiveWBActions.top()->instructionNo() == theROB.front()->sequenceNo())    // Assume unique instruction
+                theActiveWBActions.top()->evaluate();
             else
-                temp_list.push(theWBActions.top());
-            theWBActions.pop();
+                temp_list.push(theActiveWBActions.top());
+            theActiveWBActions.pop();
         }
-        std::swap(temp_list, theWBActions);
+        std::swap(temp_list, theActiveWBActions);
 
         if (!theROB.front()->mayRetire()) {
             // wfi still executing
@@ -1269,10 +1272,6 @@ CoreImpl::retire()
     }
     else {
 	DBG_(Dev, (<< "Retiring"));
-    }
-    while (!theWBActions.empty()) {
-        theRescheduledActions.push(theWBActions.top());
-        theWBActions.pop();
     }
 }
 
