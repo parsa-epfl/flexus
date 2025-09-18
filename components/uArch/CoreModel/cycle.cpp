@@ -211,11 +211,6 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     }
     theIdleThisCycle = true;
 
-    rob_t::iterator i;
-    for (i = theROB.begin(); i != theROB.end(); ++i) {
-        i->get()->decrementCanRetireCounter();
-    }
-
     // ===== Redispatch any instructions that can be dispatched ===== //
     DBG_(VVerb, (<< "*** Redispatch *** "));
     
@@ -267,6 +262,13 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
         }
 
         return;
+    }
+
+    DBG_(VVerb, (<< "*** Update cycles of all executed instructions *** "));
+
+    rob_t::iterator i;
+    for (i = theROB.begin(); i != theROB.end(); ++i) {
+        i->get()->decrementCanRetireCounter();
     }
 
     CORE_DBG("--------------FINISH CORE------------------------");

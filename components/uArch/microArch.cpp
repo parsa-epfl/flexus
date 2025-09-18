@@ -253,13 +253,13 @@ class microArchImpl : public microArch
 
         try {
 
-            // Record free ROB space for next cycle
-            theAvailableROB = theCore->availableROB();
-            theAvailableRegs = theCore->availableRegs();
-
             // TODO -
             eExceptionType interrupt = theCPU.has_irq() ? kException_IRQ : kException_None; // HEHE
             theCore->cycle(interrupt);
+
+            // Record free ROB space for next cycle
+            theAvailableROB = theCore->availableROB();
+            theAvailableRegs = theCore->availableRegs();
 
         } catch (ResynchronizeWithQemuException& e) {
             ++theResynchronizations;
