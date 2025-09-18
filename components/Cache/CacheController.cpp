@@ -292,7 +292,7 @@ CacheController::CacheController(std::string const& aName,
 
     // Allocate per-bank resources
     for (int32_t i = 0; i < theBanks; i++) {
-        theMAFPipeline.push_back(Pipeline(aName + "-MafServer", aPorts, 1, 0, mafHist));
+        theMAFPipeline.push_back(Pipeline(aName + "-MafServer", aPorts, 0, 0, mafHist));
 
         theTagPipeline.push_back(Pipeline(aName + "-TagServer", aPorts, aTagIssueLatency, aTagLatency, tagHist));
 
