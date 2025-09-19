@@ -160,7 +160,7 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     DBG_(VVerb, (<< "*** Prepare *** "));
 
     processMemoryReplies();
-    prepareCycle();
+    prepareWB();
 
     for (const auto& tr : thePageWalkReissues)
         issueMMU(tr);
@@ -221,7 +221,7 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
                 DBG_(VVerb, (<< "redispatching " << *i));
                 if (!i->canDispatch())
                     goto dispatch_cont;
-                i->doDispatchActions(true);
+                i->doDispatchActions();
                 i->setDispatch();
                 DBG_(VVerb, (<< theName << " Dispatched " << *i));
                 t = theDispatchingInsts.erase(t);
@@ -231,7 +231,13 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
 
     dispatch_cont:
 
+    // ===== Perform ReadRegisterActions ===== //
+    DBG_(VVerb, (<< "*** Read Registers ***"));
+    prepareRD();
+    evaluateRD();
+
     DBG_(VVerb, (<< "*** Eval *** "));
+    prepareCycle();
 
     theUsedALU = 0;
     theUsedMUL = 0;
@@ -279,26 +285,27 @@ CoreImpl::prepareCycle()
 {
     FLEXUS_PROFILE();
     thePreserveInteractions = false;
-    if (!(theRescheduledActions.empty() && theRescheduledWBActions.empty()) || !(theActiveActions.empty() && theActiveWBActions.empty())) { theIdleThisCycle = false; }
+    if (!theRescheduledActions.empty() || !theActiveActions.empty()) { theIdleThisCycle = false; }
     std::swap(theRescheduledActions, theActiveActions);
+}
+
+void
+CoreImpl::prepareWB()
+{
+    FLEXUS_PROFILE();
+    thePreserveInteractions = false;
+    if (!theRescheduledWBActions.empty() || !theActiveWBActions.empty()) { theIdleThisCycle = false; }
     std::swap(theRescheduledWBActions, theActiveWBActions);
 }
 
-// void
-// CoreImpl::sepWB()
-// {
-//     FLEXUS_PROFILE();
-//     action_list_t tmp;
-//     while(!theActiveActions.empty()) {
-//         if (theActiveActions.top()->isWB()) {
-//             theWBActions.push(theActiveActions.top());
-//         } else {
-//             tmp.push(theActiveActions.top());
-//         }
-//         theActiveActions.pop();
-//     }
-//     std::swap(theActiveActions, tmp);
-// }
+void
+CoreImpl::prepareRD()
+{
+    FLEXUS_PROFILE();
+    thePreserveInteractions = false;
+    if (!theRescheduledRDActions.empty() || !theActiveRDActions.empty()) { theIdleThisCycle = false; }
+    std::swap(theRescheduledRDActions, theActiveRDActions);
+}
 
 void
 CoreImpl::evaluate()
@@ -326,6 +333,20 @@ CoreImpl::evaluateWB()
     }
 
     CORE_DBG("--------------FINISH EVALUATING WB------------------------");
+}
+
+void
+CoreImpl::evaluateRD()
+{
+    FLEXUS_PROFILE();
+    CORE_DBG("--------------START RD------------------------");
+
+    while (!theActiveRDActions.empty()) {
+        theActiveRDActions.top()->evaluate();
+        theActiveRDActions.pop();
+    }
+
+    CORE_DBG("--------------FINISH RD------------------------");
 }
 
 void

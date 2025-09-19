@@ -143,6 +143,8 @@ class CoreImpl : public CoreModel
     action_list_t theRescheduledActions;
     action_list_t theActiveWBActions;
     action_list_t theRescheduledWBActions;
+    action_list_t theActiveRDActions;
+    action_list_t theRescheduledRDActions;
 
     std::list<boost::intrusive_ptr<Interaction>> theDispatchInteractions;
     bool thePreserveInteractions;
@@ -532,9 +534,12 @@ class CoreImpl : public CoreModel
 
   private:
     void prepareCycle();
+    void prepareWB();
+    void prepareRD();
     void arbitrate();
     void evaluate();
     void evaluateWB();
+    void evaluateRD();
     void endCycle();
     void satisfy(InstructionDependance const& aDep);
     void squash(InstructionDependance const& aDep);
@@ -644,7 +649,6 @@ class CoreImpl : public CoreModel
   public:
     void create(boost::intrusive_ptr<SemanticAction> anAction);
     void reschedule(boost::intrusive_ptr<SemanticAction> anAction);
-    void recreate(boost::intrusive_ptr<SemanticAction> anAction);
 
     // Bypass Network Interface
     //==========================================================================

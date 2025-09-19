@@ -7,8 +7,14 @@ void
 CoreImpl::create(boost::intrusive_ptr<SemanticAction> anAction)
 {
     CORE_DBG(*anAction);
-    if (anAction->isWB() && theInOrderExecute)
-        theRescheduledWBActions.push(anAction);
+    if (theInOrderExecute) {
+        if (anAction->isWB())
+            theRescheduledWBActions.push(anAction);
+        else if (anAction->isREAD())
+            theRescheduledRDActions.push(anAction);
+        else
+            theRescheduledActions.push(anAction);
+    }
     else
         theRescheduledActions.push(anAction);
 }
@@ -16,16 +22,16 @@ void
 CoreImpl::reschedule(boost::intrusive_ptr<SemanticAction> anAction)
 {
     CORE_DBG(*anAction);
-    if (anAction->isWB() && theInOrderExecute)
-        theRescheduledWBActions.push(anAction);
+    if (theInOrderExecute) {
+        if (anAction->isWB())
+            theRescheduledWBActions.push(anAction);
+        else if (anAction->isREAD())
+            theRescheduledRDActions.push(anAction);
+        else
+            theRescheduledActions.push(anAction);
+    }
     else
         theRescheduledActions.push(anAction);
-}
-void
-CoreImpl::recreate(boost::intrusive_ptr<SemanticAction> anAction)
-{
-    CORE_DBG(*anAction);
-    theActiveActions.push(anAction);
 }
 
 bool
