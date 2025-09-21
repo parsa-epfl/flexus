@@ -359,75 +359,80 @@ MMUComponent::drive(interface::MMUDrive const&)
 }
 
 void
+MMUComponent::lookup(TranslationPtr& item)
+{
+    DBG_(VVerb, (<< "Processing lookup entry for " << item->theVaddr));
+    DBG_Assert(item->isInstr() != item->isData());
+
+    DBG_(VVerb, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry " << item->theVaddr));
+
+    std::pair<bool, PhysicalMemoryAddress> entry = (item->isInstr() ? theInstrTLB : theDataTLB).lookUp(item);
+    if (cfg.PerfectTLB || !mmu_is_init) {
+        PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr, (item->getInstruction() ? item->getInstruction()->unprivAccess(): false)));
+        entry.first  = true;
+        entry.second = perfectPaddr;
+        if (perfectPaddr == 0xFFFFFFFFFFFFFFFF) item->setPagefault();
+    }
+
+    if (item->isInstr() && entry.first) {
+        itlb_accesses++;
+    } else if (entry.first) {
+        dtlb_accesses++;
+    }
+
+    if (entry.first) {
+        DBG_(VVerb, (<< "Item is a Hit " << item->theVaddr));
+
+        // item exists so mark hit
+        item->setHit();
+        PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr, (item->getInstruction() ? item->getInstruction()->unprivAccess(): false)));
+        // item->thePaddr = (PhysicalMemoryAddress)(entry.second | (item->theVaddr & ~(PAGEMASK)));
+        item->thePaddr = perfectPaddr;
+
+        if (item->isInstr())
+            FLEXUS_CHANNEL(iTranslationReply) << item;
+        else
+            FLEXUS_CHANNEL(dTranslationReply) << item;
+    } else {
+        DBG_(VVerb, (<< "Item is a miss " << item->theVaddr));
+
+        if (item->isInstr()) {
+            itlb_misses++;
+        } else {
+            dtlb_misses++;
+        }
+
+        VirtualMemoryAddress pageAddr(item->theVaddr & PAGEMASK);
+        if (alreadyPW.find(pageAddr) == alreadyPW.end()) {
+            // mark miss
+            item->setMiss();
+            if (thePageWalker->push_back(item)) {
+                alreadyPW.insert(pageAddr);
+                thePageWalkEntries.push(item);
+            } else {
+                PhysicalMemoryAddress perfectPaddr(
+                    API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr, (item->getInstruction() ? item->getInstruction()->unprivAccess(): false)));
+                item->setHit();
+                item->thePaddr = perfectPaddr;
+                if (item->isInstr())
+                    FLEXUS_CHANNEL(iTranslationReply) << item;
+                else
+                    FLEXUS_CHANNEL(dTranslationReply) << item;
+            }
+        } else {
+            standingEntries.push_back(item);
+        }
+    }
+}
+
+void
 MMUComponent::busCycle()
 {
 
     while (!theLookUpEntries.empty()) {
-
         TranslationPtr item = theLookUpEntries.front();
         theLookUpEntries.pop();
-        DBG_(VVerb, (<< "Processing lookup entry for " << item->theVaddr));
-        DBG_Assert(item->isInstr() != item->isData());
-
-        DBG_(VVerb, (<< "Item is " << (item->isInstr() ? "Instruction" : "Data") << " entry " << item->theVaddr));
-
-        std::pair<bool, PhysicalMemoryAddress> entry = (item->isInstr() ? theInstrTLB : theDataTLB).lookUp(item);
-        if (cfg.PerfectTLB || !mmu_is_init) {
-            PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr, (item->getInstruction() ? item->getInstruction()->unprivAccess(): false)));
-            entry.first  = true;
-            entry.second = perfectPaddr;
-            if (perfectPaddr == 0xFFFFFFFFFFFFFFFF) item->setPagefault();
-        }
-
-        if (item->isInstr() && entry.first) {
-            itlb_accesses++;
-        } else if (entry.first) {
-            dtlb_accesses++;
-        }
-
-        if (entry.first) {
-            DBG_(VVerb, (<< "Item is a Hit " << item->theVaddr));
-
-            // item exists so mark hit
-            item->setHit();
-            PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr, (item->getInstruction() ? item->getInstruction()->unprivAccess(): false)));
-            // item->thePaddr = (PhysicalMemoryAddress)(entry.second | (item->theVaddr & ~(PAGEMASK)));
-            item->thePaddr = perfectPaddr;
-
-            if (item->isInstr())
-                FLEXUS_CHANNEL(iTranslationReply) << item;
-            else
-                FLEXUS_CHANNEL(dTranslationReply) << item;
-        } else {
-            DBG_(VVerb, (<< "Item is a miss " << item->theVaddr));
-
-            if (item->isInstr()) {
-                itlb_misses++;
-            } else {
-                dtlb_misses++;
-            }
-
-            VirtualMemoryAddress pageAddr(item->theVaddr & PAGEMASK);
-            if (alreadyPW.find(pageAddr) == alreadyPW.end()) {
-                // mark miss
-                item->setMiss();
-                if (thePageWalker->push_back(item)) {
-                    alreadyPW.insert(pageAddr);
-                    thePageWalkEntries.push(item);
-                } else {
-                    PhysicalMemoryAddress perfectPaddr(
-                        API::qemu_api.translate_va2pa(flexusIndex(), item->theVaddr, (item->getInstruction() ? item->getInstruction()->unprivAccess(): false)));
-                    item->setHit();
-                    item->thePaddr = perfectPaddr;
-                    if (item->isInstr())
-                        FLEXUS_CHANNEL(iTranslationReply) << item;
-                    else
-                        FLEXUS_CHANNEL(dTranslationReply) << item;
-                }
-            } else {
-                standingEntries.push_back(item);
-            }
-        }
+        lookup(item);        
     }
 
     while (!thePageWalkEntries.empty()) {
@@ -554,7 +559,10 @@ MMUComponent::push(interface::iRequestIn const&, index_t anIndex, TranslationPtr
     aTranslate->setASID(getASID());
     aTranslate->theIndex = anIndex;
     aTranslate->toggleReady();
-    theLookUpEntries.push(aTranslate);
+    if (cfg.ParallelTLB)
+        lookup(aTranslate);
+    else
+        theLookUpEntries.push(aTranslate);
 }
 
 bool
@@ -571,7 +579,10 @@ MMUComponent::push(interface::dRequestIn const&, index_t anIndex, TranslationPtr
     aTranslate->theIndex = anIndex;
 
     aTranslate->toggleReady();
-    theLookUpEntries.push(aTranslate);
+    if (cfg.ParallelTLB)
+        lookup(aTranslate);
+    else
+        theLookUpEntries.push(aTranslate);
 }
 
 void

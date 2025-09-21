@@ -277,17 +277,32 @@ class FLEXUS_COMPONENT(uFetch)
                         else if (tlbreqs) {
                             tlbreqs--;
 
-                            send_trans(idx, f.addr.theAddress);
-
                             theTAM.insert(va);
                             f.state = S_ITLB_REQ;
+
+                            send_trans(idx, f.addr.theAddress);
                         }
                     }
 
-                    fetches = 0;
                     t++;
                     continue;
 
+                case S_ITLB_REQ:
+                case S_MISS:
+                    t++;
+                    continue;
+                default:            // TLB Responses are handled next, because they can arrive in the same clock cycle
+                    t++;
+                    continue;
+            }
+        }
+
+        for (auto t = theFAQ.begin(); t != theFAQ.end(); ) {    // handle the remaining cases
+            auto &f = *t;
+
+            DBG_(VVerb, (<< "  " << f.addr.theAddress << std::hex << " " << f.pa << " " << f.state));
+
+            switch (f.state) {
                 case S_ITLB_RESP:
                     if (l1ideps) {
                         if (!cfg.PerfectICache)
@@ -327,12 +342,6 @@ class FLEXUS_COMPONENT(uFetch)
                     t++;
                     continue;
 
-                case S_ITLB_REQ:
-                case S_MISS:
-                    fetches = 0;
-                    t++;
-                    continue;
-
                 case S_DONE:
                     if (fetches) {
                         fetches--;
@@ -357,6 +366,11 @@ class FLEXUS_COMPONENT(uFetch)
                         t++;
                         continue;
                     }
+
+                default:         // Already handled before
+                    fetches = 0; // But do not add the next ones into bundle
+                    t++;
+                    continue;
             }
         }
 
