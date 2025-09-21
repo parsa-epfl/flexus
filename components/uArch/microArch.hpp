@@ -21,7 +21,8 @@ struct microArch
                                                 std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect,
                                                 std::function<void(boost::intrusive_ptr<BPredState>)> trainBP,
                                                 std::function<void(bool)> aStoreForwardingHitFunction,
-                                                std::function<void(int32_t)> mmuResyncFunction);
+                                                std::function<void(int32_t)> mmuResyncFunction,
+                                                std::function<void(TranslationPtr&)> reqMMUFunction);
 
     virtual int32_t availableROB()                                                                 = 0;
     virtual std::tuple<int32_t, int32_t, int32_t> availableRegs() const                            = 0;

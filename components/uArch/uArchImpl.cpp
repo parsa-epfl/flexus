@@ -202,7 +202,8 @@ class FLEXUS_COMPONENT(uArch)
                                             ll::bind(&uArchComponent::redirect, this, ll::_1),
                                             ll::bind(&uArchComponent::trainBP, this, ll::_1),
                                             ll::bind(&uArchComponent::signalStoreForwardingHit, this, ll::_1),
-                                            ll::bind(&uArchComponent::resyncMMU, this, ll::_1));
+                                            ll::bind(&uArchComponent::resyncMMU, this, ll::_1),
+                                            ll::bind(&uArchComponent::requestTranslations, this, ll::_1));
 
         theuArchObject = theuArchQemuFactory.create(
           (std::string("uarch-") + boost::padded_string_cast<2, '0'>(flexusIndex())).c_str());
@@ -309,17 +310,23 @@ class FLEXUS_COMPONENT(uArch)
             theMicroArch->cycle();
         }
         sendMemoryMessages();
-        requestTranslations();
+        // requestTranslations();
     }
 
-    void requestTranslations()
-    {
-        while (FLEXUS_CHANNEL(dTranslationOut).available()) {
-            TranslationPtr op(theMicroArch->popTranslation());
-            if (!op) break;
+    // void requestTranslations()
+    // {
+    //     while (FLEXUS_CHANNEL(dTranslationOut).available()) {
+    //         TranslationPtr op(theMicroArch->popTranslation());
+    //         if (!op) break;
 
-            FLEXUS_CHANNEL(dTranslationOut) << op;
-        }
+    //         FLEXUS_CHANNEL(dTranslationOut) << op;
+    //     }
+    // }
+
+    void requestTranslations(TranslationPtr& op)
+    {
+        DBG_Assert(FLEXUS_CHANNEL(dTranslationOut).available());
+        FLEXUS_CHANNEL(dTranslationOut) << op;
     }
 
     void sendMemoryMessages()

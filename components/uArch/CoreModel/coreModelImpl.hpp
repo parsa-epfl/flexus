@@ -91,6 +91,7 @@ class CoreImpl : public CoreModel
     std::function<void(boost::intrusive_ptr<BPredState>)> trainBP_fn;
     std::function<void(bool)> signalStoreForwardingHit_fn;
     std::function<void(int32_t)> mmuResync_fn;
+    std::function<void(TranslationPtr&)> reqMMU_fn;
 
     // register renaming  architectural -> physical
     // Map Tables
@@ -520,7 +521,8 @@ class CoreImpl : public CoreModel
              std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect,
              std::function<void(boost::intrusive_ptr<BPredState>)> trainBP,
              std::function<void(bool)> signalStoreForwardingHit,
-             std::function<void(int32_t)> mmuResync);
+             std::function<void(int32_t)> mmuResync,
+             std::function<void(TranslationPtr&)> reqMMU);
 
     virtual ~CoreImpl() {}
 

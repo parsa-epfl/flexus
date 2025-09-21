@@ -37,7 +37,8 @@ struct CoreModel : public uArch
                                 std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect,
                                 std::function<void(boost::intrusive_ptr<BPredState>)> trainBP,
                                 std::function<void(bool)> signalStoreForwardingHit,
-                                std::function<void(int32_t)> mmuResync);
+                                std::function<void(int32_t)> mmuResync,
+                                std::function<void(TranslationPtr&)> reqMMU);
 
     // Interface to mircoArch
     virtual void initializeRegister(mapped_reg aRegister, register_value aValue)  = 0;

@@ -66,6 +66,7 @@ class microArchImpl : public microArch
     std::function<void(boost::intrusive_ptr<BPredState>)> trainBP;
     std::function<void(bool)> signalStoreForwardingHit;
     std::function<void(int32_t)> mmuResync;
+    std::function<void(TranslationPtr&)> reqMMU;
 
   public:
     microArchImpl(uArchOptions_t options,
@@ -73,7 +74,8 @@ class microArchImpl : public microArch
                   std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> _redirect,
                   std::function<void(boost::intrusive_ptr<BPredState>)> _trainBP,
                   std::function<void(bool)> _signalStoreForwardingHit,
-                  std::function<void(int32_t)> _mmuResync
+                  std::function<void(int32_t)> _mmuResync,
+                  std::function<void(TranslationPtr&)> _reqMMU
                   )
       : theName(options.name)
       , theCore(CoreModel::construct(options,
@@ -82,7 +84,8 @@ class microArchImpl : public microArch
                                      _redirect,
                                      _trainBP,
                                      _signalStoreForwardingHit,
-                                     _mmuResync))
+                                     _mmuResync,
+                                     _reqMMU))
       , theAvailableROB(0)
       , theAvailableRegs(std::make_tuple(0, 0, 0))
       , theResynchronizations(options.name + "-ResyncsCaught")
@@ -97,6 +100,7 @@ class microArchImpl : public microArch
       , squash(_squash)
       , redirect(_redirect)
       , trainBP(_trainBP)
+      , reqMMU(_reqMMU)
       , signalStoreForwardingHit(_signalStoreForwardingHit)
       , mmuResync(_mmuResync)
 
@@ -478,11 +482,12 @@ microArch::construct(uArchOptions_t options,
                      std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect,
                      std::function<void(boost::intrusive_ptr<BPredState>)> trainBP,
                      std::function<void(bool)> signalStoreForwardingHit,
-                     std::function<void(int32_t)> mmuResync
+                     std::function<void(int32_t)> mmuResync,
+                     std::function<void(TranslationPtr&)> reqMMU
 
 )
 {
-    return std::make_shared<microArchImpl>(options, squash, redirect, trainBP, signalStoreForwardingHit, mmuResync);
+    return std::make_shared<microArchImpl>(options, squash, redirect, trainBP, signalStoreForwardingHit, mmuResync, reqMMU);
 }
 
 } // namespace nuArchARM
