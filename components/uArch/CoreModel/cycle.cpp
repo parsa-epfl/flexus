@@ -1174,15 +1174,12 @@ CoreImpl::retire()
 
     theRetireCount = 0;
     while (!theROB.empty() && !stop_retire) {
-        action_list_t temp_list;
-        while (!theActiveWBActions.empty()) {
-            if (theActiveWBActions.top()->instructionNo() == theROB.front()->sequenceNo())    // Assume unique instruction
+        if (!theActiveWBActions.empty()) {
+            if (theActiveWBActions.top()->instructionNo() == theROB.front()->sequenceNo()) {
                 theActiveWBActions.top()->evaluate();
-            else
-                temp_list.push(theActiveWBActions.top());
-            theActiveWBActions.pop();
+                theActiveWBActions.pop();
+            }
         }
-        std::swap(temp_list, theActiveWBActions);
 
         if (!theROB.front()->mayRetire()) {
             // wfi still executing
