@@ -330,7 +330,22 @@ CoreImpl::CoreImpl(uArchOptions_t options,
         theCommitsByCode[1].push_back(new Stat::StatCounter(system_name.str()));
         theCommitsByCode[2].push_back(new Stat::StatCounter(trap_name.str()));
         theCommitsByCode[3].push_back(new Stat::StatCounter(idle_name.str()));
+
+        std::stringstream stall_user_name;
+        stall_user_name << theName << "-StallCount:User:" << eInstructionCode(i);
+        std::stringstream stall_system_name;
+        stall_system_name << theName + "-StallCount:System:" << eInstructionCode(i);
+        std::stringstream stall_trap_name;
+        stall_trap_name << theName + "-StallCount:Trap:" << eInstructionCode(i);
+        std::stringstream stall_idle_name;
+        stall_idle_name << theName + "-StallCount:Idle:" << eInstructionCode(i);
+
+        theStallsByCode[0].push_back(new Stat::StatCounter(stall_user_name.str()));
+        theStallsByCode[1].push_back(new Stat::StatCounter(stall_system_name.str()));
+        theStallsByCode[2].push_back(new Stat::StatCounter(stall_trap_name.str()));
+        theStallsByCode[3].push_back(new Stat::StatCounter(stall_idle_name.str()));
     }
+    theStallsByCode[0].push_back(new Stat::StatCounter((theName + "-StallCount:EmptyROB")));
 
     kTBUser   = theTimeBreakdown.addClass("User");
     kTBSystem = theTimeBreakdown.addClass("System");

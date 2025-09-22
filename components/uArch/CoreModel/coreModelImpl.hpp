@@ -307,6 +307,7 @@ class CoreImpl : public CoreModel
     Stat::StatCounter theCommitCount_Spin_Idle;
     Stat::StatCounter* theCommitUSArray[8];
     std::vector<Stat::StatCounter*> theCommitsByCode[4];
+    std::vector<Stat::StatCounter*> theStallsByCode[4];
 
     Stat::StatInstanceCounter<int64_t> theLSQOccupancy;
     Stat::StatInstanceCounter<int64_t> theSBOccupancy;
@@ -599,6 +600,7 @@ class CoreImpl : public CoreModel
     nXactTimeBreakdown::eCycleClass getStoreStallType(boost::intrusive_ptr<TransactionTracker> tracker);
     void chargeStoreStall(boost::intrusive_ptr<Instruction> inst, boost::intrusive_ptr<TransactionTracker> tracker);
     void accountCommit(boost::intrusive_ptr<Instruction> anInst, bool aRaised);
+    void accountStall(boost::intrusive_ptr<Instruction> anInst, bool emptyROB);
     void completeAccounting();
     void accountAbortSpeculation(uint64_t aCheckpointSequenceNumber);
     void accountStartSpeculation();
