@@ -237,13 +237,18 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     evaluateRD();
 
     DBG_(VVerb, (<< "*** Eval *** "));
-    prepareCycle();
 
-    theUsedALU = 0;
-    theUsedMUL = 0;
-    theUsedAGU = 0;
+    size_t prevNumActions = 0, currentNumActions = theRescheduledActions.size();
+    while(prevNumActions != currentNumActions) {
+        theUsedALU = 0;
+        theUsedMUL = 0;
+        theUsedAGU = 0;
 
-    evaluate();
+        prevNumActions = currentNumActions;
+        prepareCycle();
+        evaluate();
+        currentNumActions = theRescheduledActions.size();
+    }
 
     DBG_(VVerb, (<< "*** Issue Mem *** "));
 
