@@ -7,6 +7,9 @@ void
 CoreImpl::create(boost::intrusive_ptr<SemanticAction> anAction)
 {
     CORE_DBG(*anAction);
+    if (anAction->isREAD())
+        anAction->connectBypass();
+
     if (theInOrderExecute) {
         if (anAction->isWB())
             theRescheduledWBActions.push(anAction);

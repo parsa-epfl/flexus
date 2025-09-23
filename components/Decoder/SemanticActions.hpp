@@ -160,6 +160,7 @@ class BaseSemanticAction
     bool isWB() const { return isWb; }
     bool isREAD() const { return isRead; }
     bool isWCC() const { return isWcc; }
+    void connectBypass() { DBG_Assert(isRead); }
 
   protected:
     virtual void doEvaluate() { DBG_Assert(false); }

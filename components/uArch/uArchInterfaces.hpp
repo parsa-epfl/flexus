@@ -41,6 +41,7 @@ struct SemanticAction
     virtual bool canDispatch() { return true; }
     virtual bool isWB() const { return false; }
     virtual bool isREAD() const { return false; }
+    virtual void connectBypass() {}
     virtual int64_t instructionNo() const { return 0; }
     virtual ~SemanticAction() {}
 };
