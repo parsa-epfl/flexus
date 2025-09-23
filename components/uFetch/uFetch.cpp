@@ -361,7 +361,7 @@ class FLEXUS_COMPONENT(uFetch)
 
                         DBG_Assert(t == theFAQ.begin());
                         t = theFAQ.erase(t);
-
+                        continue;
                     } else {
                         t++;
                         continue;

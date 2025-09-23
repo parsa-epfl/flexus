@@ -1172,8 +1172,8 @@ CoreImpl::retire()
         return;
     }
 
-    if (theROB.empty())
-        accountStall(nullptr, true);
+    // if (theROB.empty())
+    //     accountStall(nullptr, true);
 
     theRetireCount = 0;
     while (!theROB.empty() && !stop_retire) {
@@ -1190,7 +1190,7 @@ CoreImpl::retire()
                 theWFI++;
                 theFlexus->reset_core_watchdog(theNode);
             }
-            accountStall(theROB.front(), false);
+            // accountStall(theROB.front(), false);
             CORE_DBG("Cant Retire due to pending retirement dependance " << *theROB.front());
             break;
         }
