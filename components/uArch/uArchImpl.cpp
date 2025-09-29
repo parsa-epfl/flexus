@@ -168,6 +168,7 @@ class FLEXUS_COMPONENT(uArch)
 
         options.extraXRegs                  = cfg.ExtraXRegs;
         options.extraVRegs                  = cfg.ExtraVRegs;
+        options.numExeStages                = cfg.NumExeStages;
 
         options.numIntAlu                 = cfg.NumIntAlu;
         options.intAluOpLatency           = cfg.IntAluOpLatency;

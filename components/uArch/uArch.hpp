@@ -40,6 +40,7 @@ COMPONENT_PARAMETERS(
 
   PARAMETER( ExtraXRegs, uint32_t, "Number of extra integer registers (beyond 32)", "extra_xregs", 0)
   PARAMETER( ExtraVRegs, uint32_t, "Number of extra vector/FP registers (beyond 32)", "extra_vregs", 0)
+  PARAMETER( NumExeStages, uint32_t, "Number of execution stages", "num_exe_stages", 1)
 
   PARAMETER( NumIntAlu, uint32_t, "Number of integer ALUs", "numIntAlu", 1)
   PARAMETER( IntAluOpLatency, uint32_t, "End-to-end latency of an integer ALU operation", "intAluOpLatency", 1)

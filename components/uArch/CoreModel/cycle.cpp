@@ -238,24 +238,31 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
 
     DBG_(VVerb, (<< "*** Eval *** "));
 
-    if (theInOrderExecute) {
-        size_t prevNumActions = 0, currentNumActions = theRescheduledActions.size();
-        while(prevNumActions != currentNumActions) {
-            theUsedALU = 0;
-            theUsedMUL = 0;
-            theUsedAGU = 0;
-
-            prevNumActions = currentNumActions;
-            prepareCycle();
-            evaluate();
-            currentNumActions = theRescheduledActions.size();
-        }
-    } else {
+    // Finish off all actions in the last EXE stage //
+    int32_t idx = numExeStages - 1;
+    size_t prevNumActions = 0, currentNumActions = theRescheduledActions[idx].size();
+    DBG_(VVerb, (<< "EXE Stage " << idx << " has " << currentNumActions << " actions to process"));
+    while(prevNumActions != currentNumActions) {
         theUsedALU = 0;
         theUsedMUL = 0;
         theUsedAGU = 0;
-        prepareCycle();
-        evaluate();
+
+        prevNumActions = currentNumActions;
+        prepareCycle(idx);
+        evaluate(idx);
+        currentNumActions = theRescheduledActions[idx].size();
+    }
+
+    // Now work backwards through the EXE stages //
+    --idx;
+    for(; idx >= 0; --idx) {
+        DBG_(VVerb, (<< "EXE Stage " << idx << " has " << theRescheduledActions[idx].size() << " actions to process"));
+        theUsedALU = 0;
+        theUsedMUL = 0;
+        theUsedAGU = 0;
+
+        prepareCycle(idx);
+        evaluate(idx);
     }
 
     DBG_(VVerb, (<< "*** Issue Mem *** "));
@@ -294,12 +301,13 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
 }
 
 void
-CoreImpl::prepareCycle()
+CoreImpl::prepareCycle(int32_t idx)
 {
     FLEXUS_PROFILE();
+    DBG_Assert(idx >= 0 && idx < numExeStages);
     thePreserveInteractions = false;
-    if (!theRescheduledActions.empty() || !theActiveActions.empty()) { theIdleThisCycle = false; }
-    std::swap(theRescheduledActions, theActiveActions);
+    if (!theRescheduledActions[idx].empty() || !theActiveActions[idx].empty()) { theIdleThisCycle = false; }
+    std::swap(theRescheduledActions[idx], theActiveActions[idx]);
 }
 
 void
@@ -321,14 +329,15 @@ CoreImpl::prepareRD()
 }
 
 void
-CoreImpl::evaluate()
+CoreImpl::evaluate(int32_t idx)
 {
     FLEXUS_PROFILE();
+    DBG_Assert(idx >= 0 && idx < numExeStages);
     CORE_DBG("--------------START EVALUATING------------------------");
 
-    while (!theActiveActions.empty()) {
-        theActiveActions.top()->evaluate();
-        theActiveActions.pop();
+    while (!theActiveActions[idx].empty()) {
+        theActiveActions[idx].top()->evaluate();
+        theActiveActions[idx].pop();
     }
 
     CORE_DBG("--------------FINISH EVALUATING------------------------");

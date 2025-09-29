@@ -263,6 +263,9 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , numAGU(options.numAGU)
   , extraXRegs(options.extraXRegs)
   , extraVRegs(options.extraVRegs)
+  , numExeStages(options.numExeStages)
+  , theActiveActions(options.numExeStages)
+  , theRescheduledActions(options.numExeStages)
 {
 
     // Msutherl - for MMU verification. Remove when done
@@ -380,8 +383,10 @@ CoreImpl::resetCore()
 
     theBypassNetwork.reset();
 
-    theActiveActions      = action_list_t();
-    theRescheduledActions = action_list_t();
+    for(uint32_t i = 0; i < numExeStages; ++i) {
+        theActiveActions[i]      = action_list_t();
+        theRescheduledActions[i] = action_list_t();
+    }
     theActiveWBActions    = action_list_t();
     theRescheduledWBActions = action_list_t();
     theActiveRDActions      = action_list_t();

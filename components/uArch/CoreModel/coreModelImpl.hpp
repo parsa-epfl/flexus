@@ -140,8 +140,8 @@ class CoreImpl : public CoreModel
     uint64_t theLastGarbageCollect;
 
     // Semantic Action & Effect Management
-    action_list_t theActiveActions;
-    action_list_t theRescheduledActions;
+    // action_list_t theActiveActions;
+    // action_list_t theRescheduledActions;
     action_list_t theActiveWBActions;
     action_list_t theRescheduledWBActions;
     action_list_t theActiveRDActions;
@@ -162,6 +162,10 @@ class CoreImpl : public CoreModel
 
     uint32_t extraXRegs;
     uint32_t extraVRegs;
+    uint32_t numExeStages;
+
+    std::vector<action_list_t> theRescheduledActions;
+    std::vector<action_list_t> theActiveActions;
 
     // Resource arbitration
     MemoryPortArbiter theMemoryPortArbiter;
@@ -536,11 +540,11 @@ class CoreImpl : public CoreModel
     bool checkValidatation();
 
   private:
-    void prepareCycle();
+    void prepareCycle(int32_t idx);
     void prepareWB();
     void prepareRD();
     void arbitrate();
-    void evaluate();
+    void evaluate(int32_t idx);
     void evaluateWB();
     void evaluateRD();
     void endCycle();

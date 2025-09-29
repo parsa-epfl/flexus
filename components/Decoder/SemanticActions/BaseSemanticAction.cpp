@@ -94,6 +94,7 @@ BaseSemanticAction::satisfy(int32_t anArg)
         theSquashed = false;
         if (!was_ready && ready() && core()) {
             setReady(anArg, true);
+            incExeStageIdx();
             reschedule();
         }
     } else {

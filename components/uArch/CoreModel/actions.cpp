@@ -16,25 +16,28 @@ CoreImpl::create(boost::intrusive_ptr<SemanticAction> anAction)
         else if (anAction->isREAD())
             theRescheduledRDActions.push(anAction);
         else
-            theRescheduledActions.push(anAction);
+            theRescheduledActions[0].push(anAction);
     }
     else
-        theRescheduledActions.push(anAction);
+        theRescheduledActions[0].push(anAction);
 }
 void
 CoreImpl::reschedule(boost::intrusive_ptr<SemanticAction> anAction)
 {
     CORE_DBG(*anAction);
+    uint32_t idx = anAction->getExeStageIdx();
+    if (idx >= numExeStages)
+        idx = numExeStages - 1;
     if (theInOrderExecute) {
         if (anAction->isWB())
             theRescheduledWBActions.push(anAction);
         else if (anAction->isREAD())
             theRescheduledRDActions.push(anAction);
         else
-            theRescheduledActions.push(anAction);
+            theRescheduledActions[idx].push(anAction);
     }
     else
-        theRescheduledActions.push(anAction);
+        theRescheduledActions[idx].push(anAction);
 }
 
 bool

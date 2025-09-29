@@ -40,6 +40,7 @@ struct SemanticAction
     virtual void releaseRef() {}
     virtual bool canDispatch() { return true; }
     virtual bool isWB() const { return false; }
+    virtual uint32_t getExeStageIdx() const { return 0; }
     virtual bool isREAD() const { return false; }
     virtual void connectBypass() {}
     virtual int64_t instructionNo() const { return 0; }
@@ -514,6 +515,7 @@ struct uArchOptions_t
 
     uint32_t extraXRegs;
     uint32_t extraVRegs;
+    uint32_t numExeStages;
 
     uint32_t numIntAlu;
     uint32_t intAluOpLatency;
