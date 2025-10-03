@@ -315,4 +315,31 @@ CoreImpl::reqEU(int et)
     return false;
 }
 
+bool
+CoreImpl::canExecute(int et)
+{
+    if (!theInOrderExecute)
+        return true;
+    switch (et) {
+        case nDecoder::eALU: return theFreeALU > 0;
+        case nDecoder::eMUL: return theFreeMUL > 0;
+        case nDecoder::eAGU: return theFreeAGU > 0;
+        default: return true;
+    }
+}
+
+void
+CoreImpl::updateFreeEUs(int et)
+{
+    DBG_Assert(theFreeAGU > 0);
+    DBG_Assert(theFreeMUL > 0);
+    DBG_Assert(theFreeALU > 0);
+    switch (et) {
+        case nDecoder::eALU: theFreeALU--; break;
+        case nDecoder::eMUL: theFreeMUL--; break;
+        case nDecoder::eAGU: theFreeAGU--; break;
+        default: break;
+    }
+}
+
 } // namespace nuArch

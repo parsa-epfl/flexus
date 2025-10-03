@@ -211,31 +211,6 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     }
     theIdleThisCycle = true;
 
-    // ===== Redispatch any instructions that can be dispatched ===== //
-    DBG_(VVerb, (<< "*** Redispatch *** "));
-    
-    // redo dispatch
-    if (theDispatchStalled) {
-            for (auto t = theDispatchingInsts.begin(); t != theDispatchingInsts.end();) {
-                auto &i = *t;
-                DBG_(VVerb, (<< "redispatching " << *i));
-                if (!i->canDispatch())
-                    goto dispatch_cont;
-                i->doDispatchActions();
-                i->setDispatch();
-                DBG_(VVerb, (<< theName << " Dispatched " << *i));
-                t = theDispatchingInsts.erase(t);
-            }
-            theDispatchStalled = false;
-        }
-
-    dispatch_cont:
-
-    // ===== Perform ReadRegisterActions ===== //
-    DBG_(VVerb, (<< "*** Read Registers ***"));
-    prepareRD();
-    evaluateRD();
-
     DBG_(VVerb, (<< "*** Eval *** "));
 
     // Finish off all actions in the last EXE stage //
@@ -264,6 +239,7 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
         prepareCycle(idx);
         evaluate(idx);
     }
+    resetFreeEUs();
 
     DBG_(VVerb, (<< "*** Issue Mem *** "));
 
@@ -278,6 +254,31 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
 
     DBG_(Verb, (<< "*** Arb *** "));
     arbitrate();
+
+    // ===== Redispatch any instructions that can be dispatched ===== //
+    DBG_(VVerb, (<< "*** Redispatch *** "));
+    
+    // redo dispatch
+    if (theDispatchStalled) {
+            for (auto t = theDispatchingInsts.begin(); t != theDispatchingInsts.end();) {
+                auto &i = *t;
+                DBG_(VVerb, (<< "redispatching " << *i));
+                if (!i->canDispatch())
+                    goto dispatch_cont;
+                i->doDispatchActions();
+                i->setDispatch();
+                DBG_(VVerb, (<< theName << " Dispatched " << *i));
+                t = theDispatchingInsts.erase(t);
+            }
+            theDispatchStalled = false;
+        }
+
+    dispatch_cont:
+
+    // ===== Perform ReadRegisterActions ===== //
+    DBG_(VVerb, (<< "*** Read Registers ***"));
+    prepareRD();
+    evaluateRD();
 
     if (cpuHalted) {
         int qemu_rcode = advance_fn(false); // don't count instructions in halt state

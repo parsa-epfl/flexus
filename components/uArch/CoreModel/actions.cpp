@@ -15,8 +15,10 @@ CoreImpl::create(boost::intrusive_ptr<SemanticAction> anAction)
             theRescheduledWBActions.push(anAction);
         else if (anAction->isREAD())
             theRescheduledRDActions.push(anAction);
-        else
+        else {
+            updateFreeEUs(anAction->getEU());
             theRescheduledActions[0].push(anAction);
+        }
     }
     else
         theRescheduledActions[0].push(anAction);
@@ -38,6 +40,24 @@ CoreImpl::reschedule(boost::intrusive_ptr<SemanticAction> anAction)
     }
     else
         theRescheduledActions[idx].push(anAction);
+}
+
+void
+CoreImpl::resetFreeEUs()
+{
+    if (!theInOrderExecute)
+        return;
+    theFreeALU = numALU;
+    theFreeMUL = numMUL;
+    theFreeAGU = numAGU;
+
+    action_list_t tmp;
+    while(!theRescheduledActions[0].empty()) {
+        updateFreeEUs(theRescheduledActions[0].top()->getEU());
+        tmp.push(theRescheduledActions[0].top());
+        theRescheduledActions[0].pop();
+    }
+    std::swap(theRescheduledActions[0], tmp);
 }
 
 bool

@@ -159,6 +159,9 @@ class CoreImpl : public CoreModel
     uint64_t theUsedALU;
     uint64_t theUsedMUL;
     uint64_t theUsedAGU;
+    uint64_t theFreeALU;
+    uint64_t theFreeMUL;
+    uint64_t theFreeAGU;
 
     uint32_t extraXRegs;
     uint32_t extraVRegs;
@@ -657,6 +660,7 @@ class CoreImpl : public CoreModel
   public:
     void create(boost::intrusive_ptr<SemanticAction> anAction);
     void reschedule(boost::intrusive_ptr<SemanticAction> anAction);
+    void updateFreeEUs(int et);
 
     // Bypass Network Interface
     //==========================================================================
@@ -911,6 +915,8 @@ class CoreImpl : public CoreModel
     void mapDestInOrder(int64_t seq, mapped_reg &reg);
     bool canReadInOrder(int64_t seq, mapped_reg &reg);
     bool reqEU(int et);
+    bool canExecute(int et);
+    void resetFreeEUs();
     
     // Debugging
     //==========================================================================

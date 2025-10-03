@@ -42,6 +42,7 @@ struct SemanticAction
     virtual bool isWB() const { return false; }
     virtual uint32_t getExeStageIdx() const { return 0; }
     virtual bool isREAD() const { return false; }
+    virtual int getEU() const { return -1; }
     virtual void connectBypass() {}
     virtual int64_t instructionNo() const { return 0; }
     virtual ~SemanticAction() {}
@@ -1120,6 +1121,10 @@ struct uArch
       return false;
     }
     virtual bool reqEU(int et) {
+      DBG_Assert(false);
+      return false;
+    }
+    virtual bool canExecute(int et) {
       DBG_Assert(false);
       return false;
     }

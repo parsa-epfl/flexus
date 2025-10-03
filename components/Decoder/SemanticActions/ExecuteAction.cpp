@@ -89,6 +89,11 @@ struct ExecuteAction : public ExecuteBase
       , theBypass(aBypass)
     {
         theInstruction->setExecuted(false);
+        theEU = theOperation->euType();
+    }
+
+    bool canDispatch() {
+        return core()->canExecute(theEU);
     }
 
     void doEvaluate()

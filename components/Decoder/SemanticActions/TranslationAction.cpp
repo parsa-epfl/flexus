@@ -39,6 +39,7 @@ struct CalcAddressUpdateVATranslateMaybeRegExtendAndShiftAction : public BaseSem
         , theShift(aShift)
     {
         theRegExtendType = std::move(aRegExtendType);
+        theEU = eAGU;
     }
 
     void squash(int32_t anOperand)
@@ -57,6 +58,9 @@ struct CalcAddressUpdateVATranslateMaybeRegExtendAndShiftAction : public BaseSem
 
     }
 
+    bool canDispatch() {
+        return core()->canExecute(theEU);
+    }
 
     void doEvaluate()
     {
@@ -133,6 +137,7 @@ struct TranslationAction : public BaseSemanticAction
     TranslationAction(SemanticInstruction* anInstruction)
       : BaseSemanticAction(anInstruction, 1)
     {
+        theEU = eAGU;
     }
 
     void squash(int32_t anOperand)
@@ -143,6 +148,10 @@ struct TranslationAction : public BaseSemanticAction
         }
         boost::intrusive_ptr<Instruction>(theInstruction)->setResolved(false);
         BaseSemanticAction::squash(anOperand);
+    }
+
+    bool canDispatch() {
+        return core()->canExecute(eAGU);
     }
 
     void doEvaluate()
