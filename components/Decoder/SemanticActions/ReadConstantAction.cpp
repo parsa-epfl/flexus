@@ -37,6 +37,7 @@ struct ReadConstantAction : public BaseSemanticAction
       , theOperandCode(anOperandCode)
       , theVal(aVal)
     {
+        isRead = true;
     }
 
     void doEvaluate()
