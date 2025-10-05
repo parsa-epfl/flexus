@@ -40,7 +40,7 @@ struct SemanticAction
     virtual void releaseRef() {}
     virtual bool canDispatch() { return true; }
     virtual bool isWB() const { return false; }
-    virtual uint32_t getExeStageIdx() const { return 0; }
+    virtual uint32_t getExeStageIdx() const { DBG_Assert(false); return 0; }
     virtual bool isREAD() const { return false; }
     virtual int getEU() const { return -1; }
     virtual void connectBypass() {}

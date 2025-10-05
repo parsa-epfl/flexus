@@ -49,6 +49,7 @@ class ArchInstruction : public nuArch::Instruction
     bool theResolved;
     //  boost::optional<Flexus::Qemu::MMU::mmu_t> theMMU;
 
+    uint32_t theExeStageIdx = 0;
     bool theUsesIntAlu;
     bool theUsesIntMult;
     bool theUsesIntDiv;
@@ -278,6 +279,9 @@ class ArchInstruction : public nuArch::Instruction
         else
             return true;
     }
+
+    virtual uint32_t getExeStageIdx() const { return theExeStageIdx; }
+    virtual void incExeStageIdx() { ++theExeStageIdx; }
 
     uArch* core() { return theuArch; }
 

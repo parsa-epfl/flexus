@@ -80,6 +80,8 @@ BaseSemanticAction::satisfyDependants()
         }
         theSignalled = true;
         theSquashed  = false;
+        if (!isREAD())
+            theInstruction->incExeStageIdx();
     } else {
         SEMANTICS_DBG(theInstruction << "NOTE: Dependants were canceled!");
     }
@@ -94,7 +96,6 @@ BaseSemanticAction::satisfy(int32_t anArg)
         theSquashed = false;
         if (!was_ready && ready() && core()) {
             setReady(anArg, true);
-            incExeStageIdx();
             reschedule();
         }
     } else {

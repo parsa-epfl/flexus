@@ -137,7 +137,7 @@ class FLEXUS_COMPONENT(uArch)
     {
         uArchOptions_t options;
 
-        options.ROBSize              = cfg.ROBSize;
+        options.ROBSize              = (cfg.InOrderExecute) ? ((2 + cfg.NumExeStages) * cfg.DispatchWidth) : cfg.ROBSize;
         options.SBSize               = cfg.SBSize;
         options.NAWBypassSB          = cfg.NAWBypassSB;
         options.NAWWaitAtSync        = cfg.NAWWaitAtSync;

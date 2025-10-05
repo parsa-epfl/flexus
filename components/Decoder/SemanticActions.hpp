@@ -120,7 +120,6 @@ class BaseSemanticAction
     bool isWb;
     bool isRead;
     bool isWcc;
-    uint32_t exeStageIdx;
     int theEU;
 
     BaseSemanticAction(SemanticInstruction* anInstruction, int32_t aNumOperands, bool now = false)
@@ -135,7 +134,6 @@ class BaseSemanticAction
       , isWb(false)
       , isRead(false)
       , isWcc(false)
-      , exeStageIdx(0)
       , theEU(-1)
     {
         theReady[0] = (aNumOperands < 1);
@@ -165,8 +163,7 @@ class BaseSemanticAction
     bool isREAD() const { return isRead; }
     bool isWCC() const { return isWcc; }
     void connectBypass() { DBG_Assert(isRead); }
-    uint32_t getExeStageIdx() const { return exeStageIdx; }
-    void incExeStageIdx() { ++exeStageIdx; }
+    uint32_t getExeStageIdx() const { return theInstruction->getExeStageIdx(); }
     int getEU() const { return theEU; }
 
   protected:
