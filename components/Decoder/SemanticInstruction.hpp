@@ -92,6 +92,12 @@ struct SemanticInstruction : public ArchInstruction
     bool isMicroOp() const { return theIsMicroOp; }
 
     void addDispatchCheck(SemanticAction *anAction) {
+        if (anAction->getEU() != -1) {              // Attempting to check an action that uses an EU
+            for(auto check: theDispatchChecks) {
+                if (check->getEU() != -1)            // There is already a check for an EU (the exact type doesn't matter)
+                    return;
+            }
+        }
         theDispatchChecks.push_back(anAction);
 }
 

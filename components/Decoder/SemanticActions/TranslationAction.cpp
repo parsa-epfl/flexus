@@ -59,6 +59,7 @@ struct CalcAddressUpdateVATranslateMaybeRegExtendAndShiftAction : public BaseSem
     }
 
     bool canDispatch() {
+        DBG_(VVerb, (<< "[AGU1] Checking dispatch for " << *this));
         return core()->canExecute(theEU);
     }
 
@@ -151,6 +152,7 @@ struct TranslationAction : public BaseSemanticAction
     }
 
     bool canDispatch() {
+        DBG_(VVerb, (<< "[AGU2] Checking dispatch for " << *this));
         return core()->canExecute(eAGU);
     }
 

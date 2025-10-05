@@ -16,6 +16,7 @@ CoreImpl::create(boost::intrusive_ptr<SemanticAction> anAction)
         else if (anAction->isREAD())
             theRescheduledRDActions.push(anAction);
         else {
+            DBG_(VVerb, (<< "Update Free EUs for " << *anAction));
             updateFreeEUs(anAction->getEU());
             theRescheduledActions[0].push(anAction);
         }

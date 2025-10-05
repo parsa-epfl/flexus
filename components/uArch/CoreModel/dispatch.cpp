@@ -331,13 +331,10 @@ CoreImpl::canExecute(int et)
 void
 CoreImpl::updateFreeEUs(int et)
 {
-    DBG_Assert(theFreeAGU > 0);
-    DBG_Assert(theFreeMUL > 0);
-    DBG_Assert(theFreeALU > 0);
     switch (et) {
-        case nDecoder::eALU: theFreeALU--; break;
-        case nDecoder::eMUL: theFreeMUL--; break;
-        case nDecoder::eAGU: theFreeAGU--; break;
+        case nDecoder::eALU: DBG_Assert(theFreeALU > 0); theFreeALU--; break;
+        case nDecoder::eMUL: DBG_Assert(theFreeMUL > 0); theFreeMUL--; break;
+        case nDecoder::eAGU: DBG_Assert(theFreeAGU > 0); theFreeAGU--; break;
         default: break;
     }
 }

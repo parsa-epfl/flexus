@@ -406,6 +406,12 @@ SemanticInstruction::addDispatchEffect(Effect* anEffect)
 void
 SemanticInstruction::addDispatchAction(simple_action const& anAction)
 {
+    if (anAction.action->getEU() != -1) {    // Attempting to add an action that uses an EU
+        for(auto action: theDispatchActions) {
+            if (action->getEU() != -1)      // There is already an action for an EU (the exact type doesn't matter)
+                return;
+        }
+    }
     theDispatchActions.push_back(anAction.action);
 }
 

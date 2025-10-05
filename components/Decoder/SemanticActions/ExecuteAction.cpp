@@ -93,6 +93,7 @@ struct ExecuteAction : public ExecuteBase
     }
 
     bool canDispatch() {
+        DBG_(VVerb, (<< "[ALU] Checking dispatch for " << *this));
         return core()->canExecute(theEU);
     }
 

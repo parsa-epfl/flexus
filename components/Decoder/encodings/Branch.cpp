@@ -260,6 +260,8 @@ BR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     addReadXRegister(inst, 1, rn, rs_deps[0], true);
 
     simple_action target = calcAddressAction(inst, rs_deps);
+    inst->addDispatchCheck(target.action);
+    inst->addDispatchAction(target);
     dependant_action br  = branchToCalcAddressAction(inst);
     connectDependance(br.dependance, target);
     connectDependance(inst->retirementDependance(), br);
@@ -307,6 +309,8 @@ BLR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     std::vector<std::list<InternalDependance>> rs_deps(1);
 
     simple_action target = calcAddressAction(inst, rs_deps);
+    inst->addDispatchCheck(target.action);
+    inst->addDispatchAction(target);
     dependant_action br  = branchRegAction(inst, kAddress, branch_type);
     connectDependance(br.dependance, target);
     connectDependance(inst->retirementDependance(), br);
