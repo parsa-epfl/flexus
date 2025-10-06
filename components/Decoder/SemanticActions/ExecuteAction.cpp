@@ -211,6 +211,8 @@ struct ExecuteAction_WithXTRA : public ExecuteBase
                 DBG_(VVerb, (<< *this << " waiting for predecessor "));
                 reschedule();
             }
+        } else {
+            reschedule();
         }
     }
 
@@ -280,6 +282,8 @@ struct FPExecuteAction : public ExecuteBase
                 DBG_(VVerb, (<< *this << " waiting for predecessor "));
                 reschedule();
             }
+        } else {
+            reschedule();
         }
     }
 

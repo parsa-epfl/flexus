@@ -184,6 +184,8 @@ struct UpdateCASValueAction : public BaseSemanticAction
                 core()->updateCASValue(boost::intrusive_ptr<Instruction>(theInstruction), store, cmp);
                 satisfyDependants();
             }
+        } else {
+            reschedule();
         }
     }
 
@@ -211,6 +213,8 @@ struct UpdateSTPValueAction : public BaseSemanticAction
             } else {
                 reschedule();
             }
+        } else {
+            reschedule();
         }
     }
 
