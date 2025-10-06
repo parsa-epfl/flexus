@@ -116,7 +116,6 @@ class BaseSemanticAction
 
   protected:
     SemanticInstruction* theInstruction;
-    bool theScheduled;
     bool isWb;
     bool isRead;
     bool isWcc;
@@ -144,6 +143,8 @@ class BaseSemanticAction
     }
 
   public:
+    bool theScheduled;
+
     void evaluate();
     virtual void satisfy(int);
     virtual void squash(int);

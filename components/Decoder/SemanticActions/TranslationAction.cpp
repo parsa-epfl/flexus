@@ -34,7 +34,7 @@ struct CalcAddressUpdateVATranslateMaybeRegExtendAndShiftAction : public BaseSem
     std::unique_ptr<Operation> theRegExtendType;
     bool theShift;
     CalcAddressUpdateVATranslateMaybeRegExtendAndShiftAction(SemanticInstruction* anInstruction, bool aRegExtend, std::unique_ptr<Operation> aRegExtendType, bool aShift)
-      : BaseSemanticAction(anInstruction, aRegExtend ? 2 : 1, true)
+      : BaseSemanticAction(anInstruction, aRegExtend ? 2 : 1, false)
         , theRegExtend(aRegExtend)
         , theShift(aShift)
     {

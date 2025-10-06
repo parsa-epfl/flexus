@@ -46,6 +46,7 @@ CoreImpl::resetFreeEUs()
 
     action_list_t tmp;
     while(!theRescheduledActions[0].empty()) {
+        DBG_(VVerb, (<< "Update Free EUs for " << *theRescheduledActions[0].top()));
         updateFreeEUs(theRescheduledActions[0].top()->getEU());
         tmp.push(theRescheduledActions[0].top());
         theRescheduledActions[0].pop();

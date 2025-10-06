@@ -303,8 +303,10 @@ SemanticInstruction::doDispatchActions()
         auto &a = theDispatchActions.front();
         if (a->evalNow())
             a->evaluate();
-        else
+        else {
+            a->theScheduled = true;
             core()->create(a);
+        }
         theDispatchActions.pop_front();
     }
     DISPATCH_DBG("FINISH DISPATCHING ACTIONS");
@@ -412,6 +414,7 @@ SemanticInstruction::addDispatchAction(simple_action const& anAction)
                 return;
         }
     }
+    anAction.action->theScheduled = true;
     theDispatchActions.push_back(anAction.action);
 }
 
