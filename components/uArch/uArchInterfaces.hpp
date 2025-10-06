@@ -43,6 +43,7 @@ struct SemanticAction
     virtual uint32_t getExeStageIdx() const { DBG_Assert(false); return 0; }
     virtual bool isREAD() const { return false; }
     virtual int getEU() const { return -1; }
+    virtual bool usesEU() const { DBG_Assert(false); return false; }
     virtual void connectBypass() {}
     virtual int64_t instructionNo() const { return 0; }
     virtual ~SemanticAction() {}

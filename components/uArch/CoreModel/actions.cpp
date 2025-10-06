@@ -10,19 +10,15 @@ CoreImpl::create(boost::intrusive_ptr<SemanticAction> anAction)
     if (anAction->isREAD())
         anAction->connectBypass();
 
-    if (theInOrderExecute) {
-        if (anAction->isWB())
-            theRescheduledWBActions.push(anAction);
-        else if (anAction->isREAD())
-            theRescheduledRDActions.push(anAction);
-        else {
-            DBG_(VVerb, (<< "Update Free EUs for " << *anAction));
-            updateFreeEUs(anAction->getEU());
-            theRescheduledActions[0].push(anAction);
-        }
-    }
-    else
+    if (anAction->isWB())
+        theRescheduledWBActions.push(anAction);
+    else if (anAction->isREAD())
+        theRescheduledRDActions.push(anAction);
+    else {
+        DBG_(VVerb, (<< "Update Free EUs for " << *anAction));
+        updateFreeEUs(anAction->getEU());
         theRescheduledActions[0].push(anAction);
+    }
 }
 void
 CoreImpl::reschedule(boost::intrusive_ptr<SemanticAction> anAction)
@@ -31,14 +27,10 @@ CoreImpl::reschedule(boost::intrusive_ptr<SemanticAction> anAction)
     uint32_t idx = anAction->getExeStageIdx();
     if (idx >= numExeStages)
         idx = numExeStages - 1;
-    if (theInOrderExecute) {
-        if (anAction->isWB())
-            theRescheduledWBActions.push(anAction);
-        else if (anAction->isREAD())
-            theRescheduledRDActions.push(anAction);
-        else
-            theRescheduledActions[idx].push(anAction);
-    }
+    if (anAction->isWB())
+        theRescheduledWBActions.push(anAction);
+    else if (anAction->isREAD())
+        theRescheduledRDActions.push(anAction);
     else
         theRescheduledActions[idx].push(anAction);
 }

@@ -165,6 +165,7 @@ class BaseSemanticAction
     void connectBypass() { DBG_Assert(isRead); }
     uint32_t getExeStageIdx() const { return theInstruction->getExeStageIdx(); }
     int getEU() const { return theEU; }
+    bool usesEU() const { return theEU != -1; }
 
   protected:
     virtual void doEvaluate() { DBG_Assert(false); }

@@ -331,6 +331,9 @@ CoreImpl::canExecute(int et)
 void
 CoreImpl::updateFreeEUs(int et)
 {
+    if (!theInOrderExecute)
+        return;
+    DBG_(VVerb, (<< theName << " Update Free EUs: " << et));
     switch (et) {
         case nDecoder::eALU: DBG_Assert(theFreeALU > 0); theFreeALU--; break;
         case nDecoder::eMUL: DBG_Assert(theFreeMUL > 0); theFreeMUL--; break;
