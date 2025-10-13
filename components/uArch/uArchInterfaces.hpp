@@ -44,6 +44,8 @@ struct SemanticAction
     virtual bool isREAD() const { return false; }
     virtual int getEU() const { return -1; }
     virtual bool usesEU() const { DBG_Assert(false); return false; }
+    virtual bool isFirst() const { DBG_Assert(false); return false; }
+    virtual void setFirst(bool aFirst) { DBG_Assert(false); }
     virtual void connectBypass() {}
     virtual int64_t instructionNo() const { return 0; }
     virtual ~SemanticAction() {}

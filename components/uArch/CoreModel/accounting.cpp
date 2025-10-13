@@ -208,6 +208,20 @@ CoreImpl::accountStall(boost::intrusive_ptr<Instruction> anInstruction, bool emp
     eInstructionCode code   = anInstruction->instCode();
     eInstructionClass klass = anInstruction->instClass();
     ++(*theStallsByCode[level][code]);
+
+    if (code == codeALU)
+        DBG_(Crit, (<< "ALU instruction caused a stall! Instruction: " << *anInstruction));
+    if (code == codeRev)
+        DBG_(Crit, (<< "REV instruction caused a stall! Instruction: " << *anInstruction));
+    if (code == codeMul)
+        DBG_(Crit, (<< "MUL instruction caused a stall! Instruction: " << *anInstruction));
+    if (code == codeDiv)
+        DBG_(Crit, (<< "DIV instruction caused a stall! Instruction: " << *anInstruction));
+    if (code == codeRDPR)
+        DBG_(Crit, (<< "RDPR instruction caused a stall! Instruction: " << *anInstruction));
+    if (code == codeWRPR)
+        DBG_(Crit, (<< "WRPR instruction caused a stall! Instruction: " << *anInstruction));
+
     return;
 }
 

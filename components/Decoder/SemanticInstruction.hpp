@@ -97,6 +97,7 @@ struct SemanticInstruction : public ArchInstruction
                 if (check->usesEU())            // There is already a check for an EU (the exact type doesn't matter)
                     return;
             }
+            anAction->setFirst(true);
         }
         theDispatchChecks.push_back(anAction);
 }

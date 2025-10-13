@@ -408,11 +408,9 @@ SemanticInstruction::addDispatchEffect(Effect* anEffect)
 void
 SemanticInstruction::addDispatchAction(simple_action const& anAction)
 {
-    if (anAction.action->usesEU()) {    // Attempting to add an action that uses an EU
-        for(auto action: theDispatchActions) {
-            if (action->usesEU())       // There is already an action for an EU (the exact type doesn't matter)
-                return;
-        }
+    if (anAction.action->usesEU()) {     // Attempting to add an action that uses an EU
+        if (!anAction.action->isFirst()) // The others will get rescheduled later
+            return;
     }
     anAction.action->theScheduled = true;
     theDispatchActions.push_back(anAction.action);

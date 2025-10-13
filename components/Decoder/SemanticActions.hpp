@@ -120,6 +120,7 @@ class BaseSemanticAction
     bool isRead;
     bool isWcc;
     int theEU;
+    bool theFirst;
 
     BaseSemanticAction(SemanticInstruction* anInstruction, int32_t aNumOperands, bool now = false)
       : theEndOfDependances(0)
@@ -134,6 +135,7 @@ class BaseSemanticAction
       , isRead(false)
       , isWcc(false)
       , theEU(-1)
+      , theFirst(false)
     {
         theReady[0] = (aNumOperands < 1);
         theReady[1] = (aNumOperands < 2);
@@ -167,6 +169,8 @@ class BaseSemanticAction
     uint32_t getExeStageIdx() const { return theInstruction->getExeStageIdx(); }
     int getEU() const { return theEU; }
     bool usesEU() const { return theEU != -1; }
+    bool isFirst() const { return theFirst; }
+    void setFirst(bool aFirst) { theFirst = aFirst; }
 
   protected:
     virtual void doEvaluate() { DBG_Assert(false); }
