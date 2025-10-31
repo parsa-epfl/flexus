@@ -127,7 +127,22 @@ bool NetContainer::buildMesh() {
         break;
       }
 
-  assert(col >= 0);
+  if (col == -1 || row == -1) {
+    // we will try another ad hoc way. Make it close to square.
+    int starting_col = static_cast<int>(sqrt(static_cast<double>(numSwitches)));
+    for (int i = starting_col; i <= numSwitches; i++) {
+      if (numSwitches % i == 0) {
+        col = i;
+        row = numSwitches / i;
+        break;
+      }
+    }
+  }
+    
+   // print the dimension of the mesh.
+   std::cerr << "NetShim: Building a mesh with " << row << " rows and " << col << " columns." << std::endl;
+
+  DBG_Assert(col >= 0);
 
   int col_m1 = col - 1;
   int row_m1 = row - 1;
