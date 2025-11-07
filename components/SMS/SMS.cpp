@@ -35,9 +35,19 @@ class FLEXUS_COMPONENT(SMS)
         {
             if(!cfg.EnableSMS)
                 return;
+            if(aMessage[uArchStateTag]->theInstruction) {
+                if(aMessage[uArchStateTag]->theInstruction->isMicroOp()) {
+                    DBG_(VVerb, (<< "Microop detected, skipping SMS processing." << std::hex << aMessage[MemoryMessageTag]->address()));
+                    return;
+                }
+            }
             // Record the access
             uint64_t addr = (aMessage[MemoryMessageTag]->address()) >> (__builtin_ctzll(cfg.BlockSize));  // TODO: use flexus datatypes
             uint64_t pc = aMessage[MemoryMessageTag]->pc();
+            if(pc == 0) {   // Why tf is PC 0 sometimes??
+                DBG_(VVerb, (<< "PC is 0, skipping SMS processing for address: " << std::hex << addr));
+                return;
+            }
             DBG_(VVerb, (<< "Received memory request: " << std::hex << addr << ", PC: " << std::hex << pc));
             bool is_store;
             switch (aMessage[MemoryMessageTag]->type()) {
@@ -56,10 +66,6 @@ class FLEXUS_COMPONENT(SMS)
                     return;
             }
             DBG_(VVerb, (<< ts << ",0," << addr << "," << is_store << ",false," << pc << ",0"));
-            auto entry = theAGT.record(addr, pc, is_store, ts);
-            if (entry) {
-                thePHT.insert(*entry);
-            }
 
             // Prefetch blocks if applicable
             auto blocksToPrefetch = thePHT.lookup(pc, addr, !is_store, ts);
@@ -72,6 +78,14 @@ class FLEXUS_COMPONENT(SMS)
                         DBG_(VVerb, (<< "Adding block to prefetch queue: " << std::hex << block));
                     }
                 }
+            }
+
+            DBG_(Crit, (<< "Recording access for block: " << std::hex << addr));
+            auto entry = theAGT.record(addr, pc, is_store, ts);
+            if (entry) {
+                AccTableEntry evicted = *entry;
+                DBG_(Crit, (<< "Recording led to eviction, " << evicted.tag << ", " << evicted.pc << ", " << evicted.offset));
+                thePHT.insert(*entry);
             }
         }
 

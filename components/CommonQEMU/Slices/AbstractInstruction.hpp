@@ -45,6 +45,7 @@ struct AbstractInstruction : public boost::counted_base
     virtual void setSourceLevel(tFillLevel aLevel) { theInsnSourceLevel = aLevel; }
     virtual tFillLevel sourceLevel() const { return theInsnSourceLevel; }
     virtual uint32_t getOpcode() = 0;
+    virtual bool isMicroOp() const = 0;
 };
 
 enum eSquashCause

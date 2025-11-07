@@ -94,8 +94,9 @@ bool AccTable::poke_and_update(uint64_t addr, bool is_store, uint64_t ts) {
 boost::optional<AccTableEntry> AccTable::evict(uint64_t addr) {
     auto idx = poke(addr);
     if (idx) {
+        AccTableEntry evicted_entry = entries[*idx];
         entries[*idx].reset();
-        return entries[*idx];
+        return evicted_entry;
     }
     return boost::none; // No entry found
 }

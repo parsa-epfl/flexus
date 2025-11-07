@@ -232,7 +232,8 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     int32_t idx = numExeStages - 1;
     action_list_t tmp;
 
-    while(!equalTwoLists(theRescheduledActions[idx], tmp)) {
+    uint32_t numIters = 0;
+    while(!equalTwoLists(theRescheduledActions[idx], tmp) && numIters < 4) {    // Tmp fix to prevent livelock, TODO: fix later
         DBG_(VVerb, (<< "EXE Stage " << idx << " has " << theRescheduledActions[idx].size() << " actions to process"));
         tmp = theRescheduledActions[idx];
         theUsedALU = 0;
@@ -241,6 +242,7 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
 
         prepareCycle(idx);
         evaluate(idx);
+        numIters++;
     }
 
     // Now work backwards through the EXE stages //
