@@ -27,6 +27,7 @@ COMPONENT_INTERFACE(
   PORT( PushInput, MemoryTransport, SnoopIn )
   PORT( PushInput, MemoryTransport, L1DRequestIn )
   PORT( PushInput, MemoryTransport, L1DSnoopIn )
+  PORT( PushInput, MemoryTransport, L1DFrontOut )
 
   PORT( PushOutput, MemoryTransport, Prefetch_Request )
 

@@ -65,9 +65,9 @@ class FLEXUS_COMPONENT(SMS)
                 default:
                     return;
             }
-            DBG_(VVerb, (<< ts << ",0," << addr << "," << is_store << ",false," << pc << ",0"));
 
             // Prefetch blocks if applicable
+            DBG_(Crit, (<< "Prefetching blocks for request: " << std::hex << addr << ", PC: " << std::hex << pc));
             auto blocksToPrefetch = thePHT.lookup(pc, addr, !is_store, ts);
             if (blocksToPrefetch)
             {
@@ -75,16 +75,21 @@ class FLEXUS_COMPONENT(SMS)
                     if (block != addr) {
                         uint64_t fullAddr = block << __builtin_ctzll(cfg.BlockSize);
                         prefetchQueue.push(std::tie(aMessage, fullAddr));
-                        DBG_(VVerb, (<< "Adding block to prefetch queue: " << std::hex << block));
+                        DBG_(Crit, (<< "Adding block to prefetch queue: " << std::hex << block << " on trigger address: " << addr));
                     }
                 }
             }
 
-            DBG_(Crit, (<< "Recording access for block: " << std::hex << addr));
+            DBG_(Crit, (<< "Recording access for block: " << std::hex << addr << ", PC: " << std::hex << pc));
             auto entry = theAGT.record(addr, pc, is_store, ts);
             if (entry) {
                 AccTableEntry evicted = *entry;
-                DBG_(Crit, (<< "Recording led to eviction, " << evicted.tag << ", " << evicted.pc << ", " << evicted.offset));
+                DBG_(Crit, (<< "Recording led to eviction, " <<  std::hex << evicted.tag << ", " << evicted.pc << ", " << evicted.offset));
+                // DBG_(Crit, (<< "Pattern is : "));
+                // for (auto bit : evicted.access_pattern) {
+                //     DBG_(Crit, (<< bit));
+                // }
+                // DBG_(Crit, (<< ""));
                 thePHT.insert(*entry);
             }
         }
@@ -94,11 +99,38 @@ class FLEXUS_COMPONENT(SMS)
         {
             if(!cfg.EnableSMS)
                 return;
-            if (aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::Invalidate) {
+            // if (aMessage[MemoryMessageTag]->isInvalidateType() || aMessage[MemoryMessageTag]->isEvictType()) {
+            //     uint64_t addr = (aMessage[MemoryMessageTag]->address())  >> (__builtin_ctzll(cfg.BlockSize));
+            //     DBG_(VVerb, (<< "Received snoop invalidate for address: " << std::hex << addr));
+            //     DBG_(VVerb, (<< "Evicting SMS for block: " << std::hex << addr));
+            //     auto entry = theAGT.evict(addr);
+            //     if (entry) {
+            //         DBG_(VVerb, (<< "Eviction led to recording, " << std::hex << entry->tag << ", " << entry->pc << ", " << entry->offset));
+            //         // for( auto bit : entry->access_pattern) {
+            //         //     DBG_(VVerb, (<< bit));
+            //         // }
+            //         // DBG_(VVerb, (<< ""));
+            //         thePHT.insert(*entry);
+            //     }
+            // }
+        }
+
+        FLEXUS_PORT_ALWAYS_AVAILABLE(L1DFrontOut);
+        void push(interface::L1DFrontOut const&, MemoryTransport& aMessage)
+        {
+            if(!cfg.EnableSMS)
+                return;
+            if (aMessage[MemoryMessageTag]->isInvalidateType() || aMessage[MemoryMessageTag]->isEvictType()) {
                 uint64_t addr = (aMessage[MemoryMessageTag]->address())  >> (__builtin_ctzll(cfg.BlockSize));
-                DBG_(VVerb, (<< "Received snoop invalidate for address: " << std::hex << addr));
+                DBG_(Crit, (<< "Received L1D front out request to evict address: " << std::hex << addr));
+                DBG_(Crit, (<< "Evicting SMS for block: " << std::hex << addr));
                 auto entry = theAGT.evict(addr);
                 if (entry) {
+                    DBG_(Crit, (<< "Eviction led to recording, " << std::hex << entry->tag << ", " << entry->pc << ", " << entry->offset));
+                    // for( auto bit : entry->access_pattern) {
+                    //     DBG_(Crit, (<< bit));
+                    // }
+                    // DBG_(Crit, (<< ""));
                     thePHT.insert(*entry);
                 }
             }
@@ -109,16 +141,20 @@ class FLEXUS_COMPONENT(SMS)
         {
             if(!cfg.EnableSMS)
                 return;
-            if ((aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictClean) ||
-                (aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictDirty) ||
-                (aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictWritable)) {
-                uint64_t addr = (aMessage[MemoryMessageTag]->address())  >> (__builtin_ctzll(cfg.BlockSize));
-                DBG_(VVerb, (<< "Received L1D request to evict address: " << std::hex << addr));
-                auto entry = theAGT.evict(addr);
-                if (entry) {
-                    thePHT.insert(*entry);
-                }
-            }
+            // if (aMessage[MemoryMessageTag]->isInvalidateType() || aMessage[MemoryMessageTag]->isEvictType()) {
+            //     uint64_t addr = (aMessage[MemoryMessageTag]->address())  >> (__builtin_ctzll(cfg.BlockSize));
+            //     DBG_(VVerb, (<< "Received L1D request to evict address: " << std::hex << addr));
+            //     DBG_(VVerb, (<< "Evicting SMS for block: " << std::hex << addr));
+            //     auto entry = theAGT.evict(addr);
+            //     if (entry) {
+            //         DBG_(VVerb, (<< "Eviction led to recording, " << std::hex << entry->tag << ", " << entry->pc << ", " << entry->offset));
+            //         // for( auto bit : entry->access_pattern) {
+            //         //     DBG_(VVerb, (<< bit));
+            //         // }
+            //         // DBG_(VVerb, (<< ""));
+            //         thePHT.insert(*entry);
+            //     }
+            // }
         }
 
         FLEXUS_PORT_ALWAYS_AVAILABLE(L1DSnoopIn);
@@ -130,9 +166,11 @@ class FLEXUS_COMPONENT(SMS)
                 aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictDirty ||
                 aMessage[MemoryMessageTag]->type() == MemoryMessage::MemoryMessageType::EvictWritable) {
                 uint64_t addr = (aMessage[MemoryMessageTag]->address())  >> (__builtin_ctzll(cfg.BlockSize));
-                DBG_(VVerb, (<< "Received L1D snoop to evict address: " << std::hex << addr));
+                DBG_(Crit, (<< "Received L1D snoop to evict address: " << std::hex << addr));
+                DBG_(Crit, (<< "Evicting SMS for block: " << std::hex << addr));
                 auto entry = theAGT.evict(addr);
                 if (entry) {
+                    DBG_(Crit, (<< "Eviction led to recording, " << std::hex << entry->tag << ", " << entry->pc << ", " << entry->offset));
                     thePHT.insert(*entry);
                 }
             }

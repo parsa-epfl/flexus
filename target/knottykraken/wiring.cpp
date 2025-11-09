@@ -325,6 +325,7 @@ WIRE( theuFetch, FetchReplyOut,         theNetMapper, ICacheReplyIn       )
 WIRE( theuArch, MemoryOut_Request,      theL1d, FrontSideIn_Request       )
 WIRE( theuArch, MemoryOut_Snoop,        theL1d, FrontSideIn_Snoop         )
 WIRE( theL1d, FrontSideOut_D,           theuArch, MemoryIn                )
+WIRE( theL1d, L1DSMSFrontSideOut_D,        theSMS, L1DFrontOut            )
 
 WIRE( theNetMapper, ICacheSnoopOut,     theuFetchCombiner, SnoopIn        )
 WIRE( theNetMapper, ICacheReplyOut,     theuFetchCombiner, ReplyIn        )

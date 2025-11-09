@@ -72,6 +72,7 @@ boost::optional<AccTableEntry> AccTable::insert(AccTableEntry& entry) {
     }
     AccTableEntry old_entry = entries[lru_idx];
     entries[lru_idx] = entry;
+    DBG_(Crit, (<< "AccTable full for new entry with tag: " << entry.tag << " and pc: " << entry.pc << ", evicting entry with tag: " << std::hex << old_entry.tag << " and pc: " << old_entry.pc));
     return old_entry; // Return the evicted entry
 }
 
@@ -131,6 +132,7 @@ void FilterTable::insert(FilterTableEntry& entry) {
     for (uint32_t i = 0; i < N_FILTER; ++i) {
         if (!entries[i].valid) {
             entries[i] = entry; // Insert in the first empty slot
+            DBG_(Crit, (<< "FilterTable Insert - Added new entry for Addr: " << std::hex << entry.tag));
             return;
         }
         if (entries[i].ts < lru_ts) {
@@ -138,6 +140,7 @@ void FilterTable::insert(FilterTableEntry& entry) {
             lru_idx = i;
         }
     }
+    DBG_(Crit, (<< "FilterTable full, evicting entry with tag: " << std::hex << entries[lru_idx].tag << " and pc: " << entries[lru_idx].pc));
     entries[lru_idx] = entry; // Replace the LRU entry
 }
 
@@ -150,6 +153,7 @@ boost::optional<AccTableEntry> FilterTable::poke_and_update(uint64_t addr, uint6
             entries[*idx].pc = pc;
             entries[*idx].ts = ts;
             entries[*idx].is_read = !is_store;
+            DBG_(Crit, (<< "FilterTable PokeAndUpdate - Updated existing entry for Addr: " << std::hex << addr));
             return boost::none; // No eviction
         } else {
             AccTableEntry new_entry = AccTableEntry(N_BLK);
@@ -163,6 +167,7 @@ boost::optional<AccTableEntry> FilterTable::poke_and_update(uint64_t addr, uint6
             new_entry.ts = ts;
             new_entry.valid = true;
             entries[*idx].reset();
+            DBG_(Crit, (<< "FilterTable Upgraded, so evicting entry for Addr: " << std::hex << addr));
             return new_entry;
         }
     } else {
@@ -188,6 +193,7 @@ void FilterTable::evict(uint64_t addr) {
 boost::optional<AccTableEntry> AGT::record(uint64_t addr, uint64_t pc, bool is_store, uint64_t ts) {
     bool update = acc_table.poke_and_update(addr, is_store, ts);
     if (update) {
+        DBG_(Crit, (<< "AGT Record - Updated existing AccTable entry for Addr: " << std::hex << addr));
         return boost::none; // No eviction
     } else {
         auto res = filter_table.poke_and_update(addr, pc, is_store, ts);
@@ -281,6 +287,7 @@ std::vector<bool> PHTEntry::get_bitvec(bool is_read) {
 boost::optional<std::vector<bool>> PHTSet::lookup(uint64_t tag, bool is_read, uint64_t ts) {
     for (uint32_t i = 0; i < PHT_WAYS; ++i) {
         if (entries[i].valid && entries[i].tag == tag) {
+            DBG_(VVerb, (<< "PHTSet Lookup - Tag: " << std::hex << tag << " found in way " << i));
             entries[i].ts = ts; // Update timestamp
             return entries[i].get_bitvec(is_read);
         }
@@ -326,6 +333,7 @@ boost::optional<std::vector<uint64_t>> PHT::lookup(uint64_t pc, uint64_t addr, b
     uint64_t key = build_key(pc, offset, N_BLK, PHT_SETS, ROT);
     uint32_t set_idx = key % PHT_SETS;
     uint64_t tag = key >> __builtin_ctzll(PHT_SETS);
+    DBG_(VVerb, (<< "PHT Lookup - PC: " << std::hex << pc << ", Addr: " << addr << ", Key: " << key << ", SetIdx: " << set_idx << ", Tag: " << tag));
 
     auto res = sets[set_idx].lookup(tag, is_read, ts);
     if (res) {
@@ -348,6 +356,7 @@ void PHT::insert(AccTableEntry& entry) {
     uint64_t key = build_key(entry.pc, entry.offset, N_BLK, PHT_SETS, ROT);
     uint32_t set_idx = key % PHT_SETS;
     uint64_t tag = key >> __builtin_ctzll(PHT_SETS);
+    DBG_(VVerb, (<< "PHT Insert - PC: " << std::hex << entry.pc << ", Offset: " << entry.offset << ", Key: " << key << ", SetIdx: " << set_idx << ", Tag: " << tag));
     sets[set_idx].insert(tag, entry);
 }
 

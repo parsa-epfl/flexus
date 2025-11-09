@@ -231,6 +231,7 @@ class FLEXUS_COMPONENT(Cache)
                 MemoryTransport transport = theController->FrontSideOut_D[i].dequeue();
                 DBG_(VVerb, (<< "sent | FrontSideOut_D(){" << i << "} | " << *(transport[MemoryMessageTag])));
                 FLEXUS_CHANNEL_ARRAY(FrontSideOut_D, i) << transport;
+                FLEXUS_CHANNEL_ARRAY(L1DSMSFrontSideOut_D, i) << transport;
             }
             while (!theController->FrontSideOut_I[i].empty() && FLEXUS_CHANNEL_ARRAY(FrontSideOut_I, i).available()) {
                 MemoryTransport transport = theController->FrontSideOut_I[i].dequeue();
@@ -438,6 +439,10 @@ class FLEXUS_COMPONENT(Cache)
 FLEXUS_COMPONENT_INSTANTIATOR(Cache, nCache);
 
 FLEXUS_PORT_ARRAY_WIDTH(Cache, FrontSideOut_D)
+{
+    return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+}
+FLEXUS_PORT_ARRAY_WIDTH(Cache, L1DSMSFrontSideOut_D)
 {
     return cfg.Cores ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 }

@@ -15,7 +15,7 @@
 
 namespace nTraceTracker {
 
-typedef uint32_t address_t;
+typedef uint64_t address_t;
 
 class TraceTracker
 {
