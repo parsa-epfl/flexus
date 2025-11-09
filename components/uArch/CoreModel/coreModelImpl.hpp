@@ -40,6 +40,7 @@ namespace Stat = Flexus::Stat;
 
 #include <components/CommonQEMU/Slices/PredictorMessage.hpp> /* CMU-ONLY */
 #include <components/CommonQEMU/Transports/TranslationTransport.hpp>
+#include <components/CommonQEMU/Transports/MemoryTransport.hpp>
 #include <components/CommonQEMU/XactTimeBreakdown.hpp>
 
 // Msutherl, Oct'18
@@ -89,6 +90,7 @@ class CoreImpl : public CoreModel
     std::function<void(eSquashCause)> squash_fn;
     std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect_fn;
     std::function<void(boost::intrusive_ptr<BPredState>)> trainBP_fn;
+    std::function<void(boost::intrusive_ptr<SMSTrainInfo>)> trainSMS_fn;
     std::function<void(bool)> signalStoreForwardingHit_fn;
     std::function<void(int32_t)> mmuResync_fn;
     std::function<void(TranslationPtr&)> reqMMU_fn;
@@ -528,6 +530,7 @@ class CoreImpl : public CoreModel
              std::function<void(eSquashCause)> squash,
              std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect,
              std::function<void(boost::intrusive_ptr<BPredState>)> trainBP,
+             std::function<void(boost::intrusive_ptr<SMSTrainInfo>)> trainSMS,
              std::function<void(bool)> signalStoreForwardingHit,
              std::function<void(int32_t)> mmuResync,
              std::function<void(TranslationPtr&)> reqMMU);
@@ -624,6 +627,7 @@ class CoreImpl : public CoreModel
     bool squashFrom(boost::intrusive_ptr<Instruction> anInsn, bool inclusive = true);
     void redirectFetch(boost::intrusive_ptr<BPredRedictRequest> aRequest);
     void trainingBranch(boost::intrusive_ptr<BPredState> feedback);
+    void trainingSMS(VirtualMemoryAddress pc, PhysicalMemoryAddress addr, bool isStore);
 
     void takeTrap(boost::intrusive_ptr<Instruction> anInsn, eExceptionType aTrapType);
     void handleTrap();

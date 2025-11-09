@@ -397,6 +397,17 @@ CoreImpl::arbitrate()
 }
 
 void
+CoreImpl::trainingSMS(VirtualMemoryAddress pc, PhysicalMemoryAddress addr, bool isStore)
+{
+    FLEXUS_PROFILE();
+    boost::intrusive_ptr<SMSTrainInfo> info = new SMSTrainInfo();
+    info->pc      = pc;
+    info->address = addr;
+    info->isStore = isStore;
+    trainSMS_fn(info);
+}
+
+void
 CoreImpl::satisfy(InstructionDependance const& aDep)
 {
     aDep.satisfy();
@@ -707,6 +718,8 @@ CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn)
             // TRACE TRACKER : Notify trace tracker of store
             // uint64_t logical_timestamp = theCommitNumber + theSRB.size();
             theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/, isPrivileged(), 0);
+            if (!anInsn->isMicroOp())
+                trainingSMS(anInsn->pc(), iter->thePaddr, false); 
         }
 
         if (iter->theOperation == kRMW) {
@@ -808,6 +821,8 @@ CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn)
             /* CMU-ONLY-BLOCK-END */
         }
         if (!speculate) {
+            if (!anInsn->isMicroOp())
+                trainingSMS(anInsn->pc(), iter->thePaddr, false);
             eraseLSQ(anInsn); // Will setAccessAddress
         }
     } else if (iter->theOperation == kStore) {
@@ -849,6 +864,8 @@ CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn)
             // TRACE TRACKER : Notify trace tracker of store
             //      uint64_t logical_timestamp = theCommitNumber + theSRB.size();
             theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/, isPrivileged(), 0);
+            if (!anInsn->isMicroOp())
+                trainingSMS(anInsn->pc(), iter->thePaddr, true);
 
             requireWritePermission(iter);
         }

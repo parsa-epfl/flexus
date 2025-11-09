@@ -6,6 +6,7 @@
 #include "components/CommonQEMU/Slices/PredictorMessage.hpp" /* CMU-ONLY */
 #include "components/CommonQEMU/Translation.hpp"
 #include "components/uArch/uArchInterfaces.hpp"
+#include <components/CommonQEMU/Transports/MemoryTransport.hpp>
 
 #include <functional>
 #include <memory>
@@ -20,6 +21,7 @@ struct microArch
                                                 std::function<void(eSquashCause)> squash,
                                                 std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect,
                                                 std::function<void(boost::intrusive_ptr<BPredState>)> trainBP,
+                                                std::function<void(boost::intrusive_ptr<SMSTrainInfo>)> trainSMS,
                                                 std::function<void(bool)> aStoreForwardingHitFunction,
                                                 std::function<void(int32_t)> mmuResyncFunction,
                                                 std::function<void(TranslationPtr&)> reqMMUFunction);

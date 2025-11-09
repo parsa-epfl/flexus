@@ -202,6 +202,7 @@ class FLEXUS_COMPONENT(uArch)
                                             ll::bind(&uArchComponent::squash, this, ll::_1),
                                             ll::bind(&uArchComponent::redirect, this, ll::_1),
                                             ll::bind(&uArchComponent::trainBP, this, ll::_1),
+                                            ll::bind(&uArchComponent::trainSMS, this, ll::_1),
                                             ll::bind(&uArchComponent::signalStoreForwardingHit, this, ll::_1),
                                             ll::bind(&uArchComponent::resyncMMU, this, ll::_1),
                                             ll::bind(&uArchComponent::requestTranslations, this, ll::_1));
@@ -292,6 +293,8 @@ class FLEXUS_COMPONENT(uArch)
     }
 
     void trainBP(boost::intrusive_ptr<BPredState> aBPState) { FLEXUS_CHANNEL(BranchTrainOut) << aBPState; }
+
+    void trainSMS(boost::intrusive_ptr<SMSTrainInfo> aTransport) { FLEXUS_CHANNEL(SMSTrainOut) << aTransport; }
 
     void signalStoreForwardingHit(bool garbage)
     {
@@ -417,7 +420,7 @@ class FLEXUS_COMPONENT(uArch)
                 handleMemoryMessage(transport);
             } else {
                 FLEXUS_CHANNEL(MemoryOut_Request) << transport;
-                FLEXUS_CHANNEL(uArchSMS_Request) << transport;
+                FLEXUS_CHANNEL(SMSPredictOut) << transport; // Send a copy to the SMS predictor
             }
         }
 
@@ -464,7 +467,6 @@ class FLEXUS_COMPONENT(uArch)
             transport.set(MemoryMessageTag, operation);
 
             FLEXUS_CHANNEL(MemoryOut_Snoop) << transport;
-            FLEXUS_CHANNEL(uArchSMS_Snoop) << transport;
         }
     }
 

@@ -6,6 +6,7 @@
 
 #include <components/CommonQEMU/Slices/PredictorMessage.hpp> /* CMU-ONLY */
 #include <components/uFetch/uFetchTypes.hpp>
+#include <components/CommonQEMU/Transports/MemoryTransport.hpp>
 
 namespace nuArch {
 
@@ -36,6 +37,7 @@ struct CoreModel : public uArch
                                 std::function<void(eSquashCause)> squash,
                                 std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect,
                                 std::function<void(boost::intrusive_ptr<BPredState>)> trainBP,
+                                std::function<void(boost::intrusive_ptr<SMSTrainInfo>)> trainSMS,
                                 std::function<void(bool)> signalStoreForwardingHit,
                                 std::function<void(int32_t)> mmuResync,
                                 std::function<void(TranslationPtr&)> reqMMU);

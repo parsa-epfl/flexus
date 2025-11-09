@@ -12,6 +12,7 @@ CoreImpl::CoreImpl(uArchOptions_t options,
                    std::function<void(eSquashCause)> _squash,
                    std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> _redirect,
                    std::function<void(boost::intrusive_ptr<BPredState>)> _trainBP,
+                   std::function<void(boost::intrusive_ptr<SMSTrainInfo>)> _trainSMS,
                    std::function<void(bool)> _signalStoreForwardingHit,
                    std::function<void(int32_t)> _mmuResync,
                    std::function<void(TranslationPtr&)> _reqMMU
@@ -24,6 +25,7 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , squash_fn(_squash)
   , redirect_fn(_redirect)
   , trainBP_fn(_trainBP)
+  , trainSMS_fn(_trainSMS)
   , reqMMU_fn(_reqMMU)
   , signalStoreForwardingHit_fn(_signalStoreForwardingHit)
   , mmuResync_fn(_mmuResync)
@@ -655,12 +657,13 @@ CoreModel::construct(uArchOptions_t options,
                      std::function<void(eSquashCause)> squash,
                      std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect,
                      std::function<void(boost::intrusive_ptr<BPredState>)> trainBP,
+                     std::function<void(boost::intrusive_ptr<SMSTrainInfo>)> trainSMS,
                      std::function<void(bool)> signalStoreForwardingHit,
                      std::function<void(int32_t)> mmuResync,
                      std::function<void(TranslationPtr&)> reqMMU)
 {
 
-    return new CoreImpl(options, advance, squash, redirect, trainBP, signalStoreForwardingHit, mmuResync, reqMMU);
+    return new CoreImpl(options, advance, squash, redirect, trainBP, trainSMS, signalStoreForwardingHit, mmuResync, reqMMU);
 }
 
 } // namespace nuArch

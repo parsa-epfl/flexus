@@ -4,6 +4,7 @@
 #include "CoreModel.hpp"
 #include "ValueTracker.hpp"
 #include "components/CommonQEMU/Slices/MemOp.hpp"
+#include <components/CommonQEMU/Transports/MemoryTransport.hpp>
 #include "components/uFetch/uFetchTypes.hpp"
 #include "core/boost_extensions/padded_string_cast.hpp"
 #include "core/debug/debug.hpp"
@@ -64,6 +65,7 @@ class microArchImpl : public microArch
     std::function<void(eSquashCause)> squash;
     std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect;
     std::function<void(boost::intrusive_ptr<BPredState>)> trainBP;
+    std::function<void(boost::intrusive_ptr<SMSTrainInfo>)> trainSMS;
     std::function<void(bool)> signalStoreForwardingHit;
     std::function<void(int32_t)> mmuResync;
     std::function<void(TranslationPtr&)> reqMMU;
@@ -73,6 +75,7 @@ class microArchImpl : public microArch
                   std::function<void(eSquashCause)> _squash,
                   std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> _redirect,
                   std::function<void(boost::intrusive_ptr<BPredState>)> _trainBP,
+                  std::function<void(boost::intrusive_ptr<SMSTrainInfo>)> _trainSMS,
                   std::function<void(bool)> _signalStoreForwardingHit,
                   std::function<void(int32_t)> _mmuResync,
                   std::function<void(TranslationPtr&)> _reqMMU
@@ -83,6 +86,7 @@ class microArchImpl : public microArch
                                      _squash,
                                      _redirect,
                                      _trainBP,
+                                     _trainSMS,
                                      _signalStoreForwardingHit,
                                      _mmuResync,
                                      _reqMMU))
@@ -100,6 +104,7 @@ class microArchImpl : public microArch
       , squash(_squash)
       , redirect(_redirect)
       , trainBP(_trainBP)
+      , trainSMS(_trainSMS)
       , reqMMU(_reqMMU)
       , signalStoreForwardingHit(_signalStoreForwardingHit)
       , mmuResync(_mmuResync)
@@ -481,13 +486,14 @@ microArch::construct(uArchOptions_t options,
                      std::function<void(eSquashCause)> squash,
                      std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect,
                      std::function<void(boost::intrusive_ptr<BPredState>)> trainBP,
+                     std::function<void(boost::intrusive_ptr<SMSTrainInfo>)> trainSMS,
                      std::function<void(bool)> signalStoreForwardingHit,
                      std::function<void(int32_t)> mmuResync,
                      std::function<void(TranslationPtr&)> reqMMU
 
 )
 {
-    return std::make_shared<microArchImpl>(options, squash, redirect, trainBP, signalStoreForwardingHit, mmuResync, reqMMU);
+    return std::make_shared<microArchImpl>(options, squash, redirect, trainBP, trainSMS, signalStoreForwardingHit, mmuResync, reqMMU);
 }
 
 } // namespace nuArchARM

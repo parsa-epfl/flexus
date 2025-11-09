@@ -23,14 +23,10 @@ COMPONENT_PARAMETERS(
 );
 
 COMPONENT_INTERFACE(
-  PORT( PushInput, MemoryTransport, RequestIn )
-  PORT( PushInput, MemoryTransport, SnoopIn )
-  PORT( PushInput, MemoryTransport, L1DRequestIn )
-  PORT( PushInput, MemoryTransport, L1DSnoopIn )
-  PORT( PushInput, MemoryTransport, L1DFrontOut )
-
-  PORT( PushOutput, MemoryTransport, Prefetch_Request )
-
+  PORT( PushInput, MemoryTransport, PredictIn )     // Triggers are sent here
+  PORT( PushInput, boost::intrusive_ptr<SMSTrainInfo>, TrainIn )       // Training is done through here
+  PORT( PushInput, MemoryTransport, EvictInvalIn )  // Evicts/Invalidates are sent here
+  PORT( PushOutput, MemoryTransport, PredictOut )   // Prefetches arising from triggers are sent out from here
   DRIVE( SMSDrive )
 );
 

@@ -338,13 +338,12 @@ WIRE( theNetMapper, ICacheReplyOut,     theuFetchCombiner, ReplyIn        )
 WIRE( theuFetchCombiner, FetchMissOut,  theuFetch, FetchMissIn            )
 
 //uArch to SMS
-WIRE( theuArch, uArchSMS_Request,       theSMS, RequestIn                 )
-WIRE( theuArch, uArchSMS_Snoop,         theSMS, SnoopIn                   )
+WIRE( theuArch, SMSTrainOut,            theSMS, TrainIn                   )
+WIRE( theuArch, SMSPredictOut,          theSMS, PredictIn                 )
 
-//SMS to L1D
-WIRE( theSMS, Prefetch_Request,         theL1d, FrontSideIn_Prefetch      )
-WIRE( theL1d, L1DSMSOut_Request,        theSMS, L1DRequestIn              )
-WIRE( theL1d, L1DSMSOut_Snoop,          theSMS, L1DSnoopIn                )
+// SMS to L1D cache
+WIRE( theSMS, PredictOut,               theL1d, FrontSideIn_Prefetch      )
+WIRE( theL1d, SMSEvictInval,            theSMS, EvictInvalIn              )
 
 //L1d to NetMapper
 WIRE( theL1d, BackSideOut_Request,       theNetMapper, CacheRequestIn     )
