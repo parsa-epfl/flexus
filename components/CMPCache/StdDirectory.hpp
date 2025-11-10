@@ -227,7 +227,7 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
             // return ((addr >> setLowShift) & setLowMask) | ((addr >> setMidShift) & setMidMask) |
             //        ((addr >> setHighShift) & setHighMask);
 
-            return ((addr >> 6 >> log_base2(theNumSharers / 2))) % theNumSets;
+            return ((addr >> 6) / (theNumSharers / 2)) % theNumSets;
         }
     }
 
@@ -400,7 +400,7 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
              (<< "StdDirectory::lookup(0x" << std::hex << (uint64_t)address << ") in set 0x" << std::hex
               << makeSet(address)));
         
-        // checkAddress((uint64_t)address);
+        checkAddress((uint64_t)address);
         return theSets[makeSet(address)]->lookup(makeTag(address));
     }
 

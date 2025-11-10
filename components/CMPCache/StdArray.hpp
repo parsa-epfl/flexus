@@ -422,7 +422,7 @@ class StdArray : public AbstractArray<_State>
     uint64_t theBlockSize;
 
     uint64_t theNumSets;
-    uint64_t theSetIndexShift;
+    uint64_t theBlockOffsetBits;
     uint64_t theSetIndexMask;
 
     uint64_t theNumBanks;
@@ -502,12 +502,13 @@ class StdArray : public AbstractArray<_State>
         // Set indexes and masks
         DBG_Assert((theNumSets & (theNumSets - 1)) == 0);
         DBG_Assert(((theBlockSize - 1) & theBlockSize) == 0);
-        DBG_Assert((theNumNodes & (theNumNodes - 1)) == 0); // Currently, we only support power of 2 nodes.
-        DBG_Assert((theNumBanks & (theNumBanks - 1)) == 0); // Currently, we only support power of 2 nodes.
+        // DBG_Assert((theNumNodes & (theNumNodes - 1)) == 0); // Currently, we only support power of 2 nodes.
+        // DBG_Assert((theNumBanks & (theNumBanks - 1)) == 0); // Currently, we only support power of 2 nodes.
 
         uint64_t blockOffsetBits      = log_base2(theBlockSize);
+        DBG_Assert(blockOffsetBits == 6); // Currently, we only support 64-byte blocks. Why? Because I saw places where 6 is used as a constant. 
         // int32_t indexBits            = log_base2(theNumSets);
-        this->theSetIndexShift       = blockOffsetBits + log_base2(theNumBanks);
+        this->theBlockOffsetBits    = blockOffsetBits;
         this->theSetIndexMask        = (theNumSets - 1); // mask is applied after shift.
 
         this->theTagMask = MemoryAddress(~0ULL & ~((uint64_t)(theBlockSize - 1)));
@@ -645,7 +646,7 @@ class StdArray : public AbstractArray<_State>
 
     SetIndex makeSet(const MemoryAddress& anAddress) const
     {
-        return ((anAddress >> this->theSetIndexShift) & this->theSetIndexMask);
+        return (((anAddress >> this->theBlockOffsetBits) / this->theNumBanks) & this->theSetIndexMask);
     }
 
     virtual bool sameSet(MemoryAddress a, MemoryAddress b) { return (this->makeSet(a) == this->makeSet(b)); }
