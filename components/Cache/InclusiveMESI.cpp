@@ -613,6 +613,14 @@ InclusiveMESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transact
             } else {
                 misses_user_I++;
             }
+        } else if (msg->isPrefetchType()) {
+            if (tracker->OS() && *tracker->OS()) {
+                misses_system_D++;
+                misses_system_D_PrefetchRead++;
+            } else {
+                misses_user_D++;
+                misses_user_D_PrefetchRead++;
+            }
         } else if (is_prefetchwrite) {
             if (tracker->OS() && *tracker->OS()) {
                 misses_system_D++;

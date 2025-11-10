@@ -10,6 +10,7 @@
 #include <core/debug/severity.hpp>
 #include <iostream>
 #include <algorithm>
+#include <boost/optional/optional_io.hpp>
 
 #define DBG_DeclareCategories uArchCat
 #define DBG_SetDefaultOps     AddCat(uArchCat)
@@ -720,6 +721,9 @@ CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn)
             theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/, isPrivileged(), 0);
             if (!anInsn->isMicroOp())
                 trainingSMS(anInsn->pc(), iter->thePaddr, false); 
+            boost::intrusive_ptr<TransactionTracker> tracker = anInsn->getTransactionTracker();
+            if (tracker)
+                DBG_(VVerb, (<< "Address: " << std::hex << iter->thePaddr << ", PC: " << anInsn->pc() << ", Fill level: " << *tracker->fillLevel()));
         }
 
         if (iter->theOperation == kRMW) {
@@ -823,6 +827,9 @@ CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn)
         if (!speculate) {
             if (!anInsn->isMicroOp())
                 trainingSMS(anInsn->pc(), iter->thePaddr, false);
+            boost::intrusive_ptr<TransactionTracker> tracker = anInsn->getTransactionTracker();
+            if (tracker)
+                DBG_(VVerb, (<< "Address: " << std::hex << iter->thePaddr << ", PC: " << anInsn->pc() << ", Fill level: " << *tracker->fillLevel()));
             eraseLSQ(anInsn); // Will setAccessAddress
         }
     } else if (iter->theOperation == kStore) {
@@ -866,7 +873,9 @@ CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn)
             theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/, isPrivileged(), 0);
             if (!anInsn->isMicroOp())
                 trainingSMS(anInsn->pc(), iter->thePaddr, true);
-
+            boost::intrusive_ptr<TransactionTracker> tracker = anInsn->getTransactionTracker();
+            if (tracker)
+                DBG_(VVerb, (<< "Address: " << std::hex << iter->thePaddr << ", PC: " << anInsn->pc() << ", Fill level: " << *tracker->fillLevel()));
             requireWritePermission(iter);
         }
     } else if (iter->theOperation == kMEMBARMarker) {

@@ -43,6 +43,14 @@ AccTableEntry& AccTableEntry::operator=(const AccTableEntry& other) {
     return *this;
 }
 
+std::string AccTableEntry::get_pattern() {
+    std::string pattern;
+    for (bool bit : access_pattern) {
+        pattern += bit ? '1' : '0';
+    }
+    return pattern;
+}
+
 void AccTableEntry::reset() {
     *this = AccTableEntry(N_BLK);
 }
@@ -103,12 +111,14 @@ boost::optional<AccTableEntry> AccTable::evict(uint64_t addr) {
 }
 
 FilterTableEntry& FilterTableEntry::operator=(const FilterTableEntry& other) {
-    tag = other.tag;
-    pc = other.pc;
-    offset = other.offset;
-    is_read = other.is_read;
-    valid = other.valid;
-    ts = other.ts;
+    if (this != &other) {
+        tag = other.tag;
+        pc = other.pc;
+        offset = other.offset;
+        is_read = other.is_read;
+        valid = other.valid;
+        ts = other.ts;
+    }
     return *this;
 }
 

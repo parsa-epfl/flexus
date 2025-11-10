@@ -1,3 +1,4 @@
+#include "string.h"
 #include "boost/optional.hpp"
 #include "core/checkpoint/json.hpp"
 using json = nlohmann::json;
@@ -17,6 +18,7 @@ struct AccTableEntry
       : tag(0), pc(0), offset(0), access_pattern(n_blk, false), read_pattern(n_blk, false), ts(0), valid(false), N_BLK(n_blk) {}
     AccTableEntry& operator=(const AccTableEntry& other);
     void reset();
+    std::string get_pattern();
 };
 
 struct AccTable

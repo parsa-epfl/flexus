@@ -704,10 +704,7 @@ struct MemoryMessage : public boost::counted_base
     bool isInvalidateType() const
     {
         switch (theType) {
-            case Invalidate:
-            case InvalidateAck:
-            case InvalidateNAck:
-            case InvUpdateAck: return true;
+            case Invalidate: return true;
             default: break;
         }
         return false;
