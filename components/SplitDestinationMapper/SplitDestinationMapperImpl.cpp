@@ -91,7 +91,7 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
 
         if (cfg.Banks == 0) cfg.Banks = theTotalNumCores;
 
-        DBG_Assert((cfg.MemControllers & (cfg.MemControllers - 1)) == 0);
+        // DBG_Assert((cfg.MemControllers & (cfg.MemControllers - 1)) == 0);
         // DBG_Assert((cfg.Directories & (cfg.Directories - 1)) == 0);
         DBG_Assert((cfg.MemInterleaving & (cfg.MemInterleaving - 1)) == 0);
         DBG_Assert((cfg.DirInterleaving & (cfg.DirInterleaving - 1)) == 0);
@@ -766,7 +766,8 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
         if (theMemXORShift > 0) {
             return ((anAddress >> theMemShift) ^ (anAddress >> theMemXORShift)) & theMemMask;
         } else {
-            return (anAddress >> theMemShift) & theMemMask;
+            // return (anAddress >> theMemShift) & theMemMask;
+            return (anAddress >> theMemShift) % cfg.MemControllers;
         }
     }
 
