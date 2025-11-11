@@ -220,6 +220,7 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
     int32_t makeSet(MemoryAddress addr)
     {
         if (theSkewSet) {
+            DBG_Assert(false);
             uint64_t a = (uint64_t)addr ^ ((uint64_t)addr >> skewShift);
             return ((a >> setLowShift) & setLowMask) | ((a >> setMidShift) & setMidMask) |
                    ((a >> setHighShift) & setHighMask);
@@ -318,10 +319,6 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
         DBG_Assert(((theBlockSize - 1) & theBlockSize) == 0);
         DBG_Assert(((theBankInterleaving - 1) & theBankInterleaving) == 0);
         DBG_Assert(((theGroupInterleaving - 1) & theGroupInterleaving) == 0);
-
-        DBG_Assert((theBankInterleaving * theBanks) <= theGroupInterleaving,
-                   (<< "Invalid interleaving: BI = " << theBankInterleaving << ", Banks = " << theBanks
-                    << ", GI = " << theGroupInterleaving << ", Groups = " << theGroups));
 
         int32_t blockOffsetBits       = log_base2(theBlockSize);
         int32_t indexBits             = log_base2(theNumSets);
