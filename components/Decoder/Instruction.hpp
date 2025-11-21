@@ -270,7 +270,10 @@ class ArchInstruction : public nuArch::Instruction
     void setExecuted(bool aVal) { theExecuted = aVal; }
     bool hasPredecessorExecuted()
     {
-        return true;
+        if (thePredecessor)
+            return thePredecessor->hasExecuted();
+        else
+            return true;
     }
     bool hasPredecessorCommittedInOrder()
     {
