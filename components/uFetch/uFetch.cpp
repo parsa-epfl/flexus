@@ -62,6 +62,7 @@ class FLEXUS_COMPONENT(uFetch)
     Flexus::Stat::StatCounter thePrefetches;
     Flexus::Stat::StatCounter theFailedTranslations;
     Flexus::Stat::StatCounter theL1Misses;
+    Flexus::Stat::StatCounter theL1MissesAll;
     Flexus::Stat::StatCounter theL2Misses;
     Flexus::Stat::StatCounter theHits;
     Flexus::Stat::StatCounter theMissCycles;
@@ -92,6 +93,7 @@ class FLEXUS_COMPONENT(uFetch)
       , thePrefetches(statName() + "-Prefetches")
       , theFailedTranslations(statName() + "-FailedTranslations")
       , theL1Misses(statName() + "-L1Misses")
+      , theL1MissesAll(statName() + "-L1MissesAll")
       , theL2Misses(statName() + "-L2Misses")
       , theHits(statName() + "-Hits")
       , theMissCycles(statName() + "-MissCycles")
@@ -330,6 +332,7 @@ class FLEXUS_COMPONENT(uFetch)
                                     theL1Misses++;
                                     is_head = true;
                                 }
+                                theL1MissesAll++;
                                 send_fetch(pa, f.addr.theAddress, is_head);
 
                                 theFAM.insert(pa);

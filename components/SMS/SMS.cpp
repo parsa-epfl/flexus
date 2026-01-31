@@ -61,7 +61,7 @@ class FLEXUS_COMPONENT(SMS)
             boost::optional<bool> is_store;
             std::tie(block, pc, is_store) = parseMessage(aMessage);
             DBG_Assert(is_store, (<< "SMS PredictIn received message of unsupported type: " << aMessage[MemoryMessageTag]->type()));
-            DBG_(Crit, (<< "Prefetching blocks for request: " << std::hex << block << ", PC: " << std::hex << pc));
+            DBG_(VVerb, (<< "Prefetching blocks for request: " << std::hex << block << ", PC: " << std::hex << pc));
             auto blocksToPrefetch = thePHT.lookup(pc, block, !(*is_store), ts);
             if (blocksToPrefetch)
             {
@@ -72,7 +72,7 @@ class FLEXUS_COMPONENT(SMS)
                             continue; // Avoid duplicate prefetches
                         }
                         prefetchQueue.push(std::tie(aMessage, fullAddr));
-                        DBG_(Crit, (<< "Adding block to prefetch queue: " << std::hex << prefetchBlock << " on trigger address: " << block));
+                        DBG_(VVerb, (<< "Adding block to prefetch queue: " << std::hex << prefetchBlock << " on trigger address: " << block));
                     }
                 }
             }
@@ -86,94 +86,6 @@ class FLEXUS_COMPONENT(SMS)
             uint64_t block = (aMessage->address) >> (__builtin_ctzll(cfg.BlockSize));  // TODO: use flexus datatypes
             uint64_t pc = aMessage->pc;
             bool is_store = aMessage->isStore;
-            DBG_(Crit, (<< "Recording access for block: " << std::hex << block << ", PC: " << std::hex << pc));
+            DBG_(VVerb, (<< "Recording access for block: " << std::hex << block << ", PC: " << std::hex << pc));
             auto entry = theAGT.record(block, pc, is_store, ts);
-            if (entry) {
-                DBG_(Crit, (<< "Recording led to eviction, " <<  std::hex << entry->tag << ", " << entry->pc << ", " << entry->offset));
-                thePHT.insert(*entry);
-            }
-        }
-
-        FLEXUS_PORT_ALWAYS_AVAILABLE(EvictInvalIn);
-        void push(interface::EvictInvalIn const&, MemoryTransport& aMessage)
-        {
-            if(!cfg.EnableSMS)
-                return;
-            if (aMessage[MemoryMessageTag]->isInvalidateType() || aMessage[MemoryMessageTag]->isEvictType()) {
-                uint64_t block, pc;
-                boost::optional<bool> is_store;
-                std::tie(block, pc, is_store) = parseMessage(aMessage);
-                DBG_Assert(!is_store, (<< "SMS EvictInvalIn received message of unsupported type: " << aMessage[MemoryMessageTag]->type()));
-                DBG_(Crit, (<< "Received evict/invalidate for address: " << std::hex << block));
-                auto entry = theAGT.evict(block);
-                if (entry) {
-                    DBG_(Crit, (<< "Eviction led to recording, " << std::hex << entry->tag << ", " << entry->pc << ", " << entry->offset));
-                    thePHT.insert(*entry);
-                }
-            }
-        }
-
-        void drive(interface::SMSDrive const&) override
-        {
-            if(!cfg.EnableSMS)
-                return;
-            ts++;
-            while (FLEXUS_CHANNEL(PredictOut).available() && !prefetchQueue.empty()) {
-                MemoryTransport aMessage;
-                uint64_t block;
-                std::tie(aMessage, block) = prefetchQueue.front();
-                PhysicalMemoryAddress blockAddr(block);
-                VirtualMemoryAddress pc(aMessage[MemoryMessageTag]->pc());
-                prefetchQueue.pop();
-                DBG_(Crit, (<< "Prefetching block: " << std::hex << block));
-
-                intrusive_ptr<MemoryMessage> operation = new MemoryMessage(MemoryMessage::MemoryMessageType::PrefetchReadAllocReq, blockAddr, pc);
-                operation->theInstruction = aMessage[MemoryMessageTag]->theInstruction;
-                aMessage.set(MemoryMessageTag, operation);
-                FLEXUS_CHANNEL(PredictOut) << aMessage;
-            }
-        }
-
-        void initialize() override
-        {
-            DBG_(VVerb, (<< "Initializing SMS component..."));
-            DBG_(VVerb, (<< "SMS Configuration: " << cfg.EnableSMS << ", "
-                         << "NumAccTableEntries: " << cfg.NumAccTableEntries << ", "
-                         << "NumFilterTableEntries: " << cfg.NumFilterTableEntries << ", "
-                         << "NumPHTSets: " << cfg.NumPHTSets << ", "
-                         << "PHTAssociativity: " << cfg.PHTAssociativity << ", "
-                         << "NumBlks: " << cfg.NumBlks << ", "
-                         << "SMSRot: " << cfg.SMSRot << ", "
-                         << "SMSSepRdWr: " << cfg.SMSSepRdWr << ", "
-                         << "SMSUseSatCnts: " << cfg.SMSUseSatCnts << ", "
-                         << "PerfectPHT: " << cfg.PerfectPHT));
-
-            ts = 0;
-            prefetchQueue = std::queue<std::tuple<MemoryTransport, uint64_t>>();
-            thePHT = PHT(flexusIndex(), cfg.NumPHTSets, cfg.PHTAssociativity, cfg.NumBlks, cfg.SMSRot, cfg.SMSSepRdWr, cfg.SMSUseSatCnts, cfg.PerfectPHT);
-            theAGT = AGT(cfg.NumAccTableEntries, cfg.NumFilterTableEntries, cfg.NumBlks);
-        }
-
-        void finalize() override
-        {
-        }
-
-        void loadState(std::string const& aDirName) { uint64_t max_ts = thePHT.loadState(aDirName);
-            if (max_ts > ts) {
-                ts = max_ts;
-            }
-            DBG_(VVerb, (<< "SMS state loaded. Max timestamp: " << max_ts << ", Current timestamp: " << ts));
-        }
-
-        void saveState(std::string const& aDirName) { thePHT.saveState(aDirName); }
-};
-
-}
-
-FLEXUS_COMPONENT_INSTANTIATOR(SMS, nuSMS);
-
-#include FLEXUS_END_COMPONENT_IMPLEMENTATION()
-#define FLEXUS_END_COMPONENT SMS
-
-#define DBG_Reset
-#include DBG_Control()
+            if (entry)
