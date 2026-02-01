@@ -213,6 +213,35 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
         DBG_(VVerb, (<< "Directory loaded"));
         ifs.close();
     }
+
+    virtual void save_dir_to_ckpt(const std::string& filename)
+    {
+        json checkpoint = json::array();
+
+        // Iterate through all entries in the directory
+        for (auto iter = theDirectory.begin(); iter != theDirectory.end(); ++iter) {
+            // Only save entries with sharers
+            if (!iter->theState.noSharers()) {
+                json entry;
+                entry["tag"]     = static_cast<uint64_t>(iter->theAddress);
+                std::string sharers_str;
+                boost::to_string(iter->theState.getSharers(), sharers_str);
+                entry["sharers"] = sharers_str;
+                checkpoint.push_back(entry);
+            }
+        }
+
+        std::ofstream ofs(filename.c_str(), std::ios::out);
+        if (!ofs.good()) {
+            DBG_(Crit, (<< "Unable to open checkpoint file for writing: " << filename));
+            DBG_Assert(false, (<< "FILE OPEN FAILED"));
+        }
+
+        ofs << checkpoint.dump(2);
+        ofs.close();
+
+        DBG_(Dev, (<< "Directory saved " << checkpoint.size() << " entries to " << filename));
+    }
 };
 
 }; // namespace nCMPCache

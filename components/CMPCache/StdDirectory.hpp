@@ -178,6 +178,25 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
                 theBlocks[i].setProtected(false);
             }
         }
+
+        virtual json save_dir_to_ckpt() const
+        {
+            json set_checkpoint = json::array();
+
+            for (int32_t i = 0; i < theAssociativity; i++) {
+                // Only save blocks with sharers
+                if (!theBlocks[i].state().noSharers()) {
+                    json entry;
+                    entry["tag"]     = static_cast<uint64_t>(theBlocks[i].tag());
+                    std::string sharers_str;
+                    boost::to_string(theBlocks[i].state().getSharers(), sharers_str);
+                    entry["sharers"] = sharers_str;
+                    set_checkpoint.push_back(entry);
+                }
+            }
+
+            return set_checkpoint;
+        }
     };
 
     int32_t theAssociativity;
@@ -464,6 +483,27 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
 
         DBG_(Trace, (<< "Directory loaded"));
         ifs.close();
+    }
+
+    virtual void save_dir_to_ckpt(std::string const& filename)
+    {
+        json checkpoint = json::array();
+
+        // Save each set
+        for (int32_t i = 0; i < theNumSets; i++) {
+            checkpoint.push_back(theSets[i]->save_dir_to_ckpt());
+        }
+
+        std::ofstream ofs(filename.c_str(), std::ios::out);
+        if (!ofs.good()) {
+            DBG_(Crit, (<< "Unable to open checkpoint file for writing: " << filename));
+            DBG_Assert(false, (<< "FILE OPEN FAILED"));
+        }
+
+        ofs << checkpoint.dump(2);
+        ofs.close();
+
+        DBG_(Dev, (<< "Directory saved to " << filename));
     }
 };
 

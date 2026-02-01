@@ -41,6 +41,7 @@ class AbstractDirectory
     virtual int doIdleWork() const { return 0; }
 
     virtual void load_dir_from_ckpt(std::string const&) = 0;
+    virtual void save_dir_to_ckpt(std::string const&)   = 0;
 };
 
 }; // namespace nCMPCache

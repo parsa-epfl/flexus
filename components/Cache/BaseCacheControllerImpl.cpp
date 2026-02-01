@@ -179,6 +179,26 @@ BaseCacheControllerImpl::loadState(std::string const& ckpt_dirname)
     ifs.close();
 }
 
+void
+BaseCacheControllerImpl::saveState(std::string const& ckpt_dirname)
+{
+    std::string ckpt_filename(ckpt_dirname);
+    ckpt_filename += "/" + theName + ".json";
+
+    std::ofstream ofs(ckpt_filename.c_str(), std::ios::out);
+
+    if (!ofs.good()) {
+        DBG_(Crit, (<< "Unable to open checkpoint file for writing: " << ckpt_filename));
+        DBG_Assert(false, (<< "FILE OPEN FAILED"));
+    }
+
+    save_to_ckpt(ofs);
+
+    ofs.close();
+
+    DBG_(Dev, (<< "Cache state saved to " << ckpt_filename));
+}
+
 ///////////////////////////
 // Eviction Processing
 

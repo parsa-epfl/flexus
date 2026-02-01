@@ -205,6 +205,7 @@ class Set
                                     int32_t set_idx,
                                     int32_t tag_shift,
                                     int32_t set_shift) = 0;
+    virtual json save_set_to_ckpt(int32_t set_idx, int32_t tag_shift, int32_t set_shift) const = 0;
 
     MemoryAddress blockAddress(const Block<_State, _DefaultState>* theBlock) { return theBlock->tag(); }
 
@@ -312,6 +313,34 @@ class SetLRU : public Set<_State, _DefaultState>
         for (int32_t i = 0; i < this->theAssociativity; i++) {
             theMRUOrder[i] = this->theAssociativity - i - 1;
         }
+    }
+
+    virtual json save_set_to_ckpt(int32_t set_idx, int32_t tag_shift, int32_t set_shift) const
+    {
+        json set_checkpoint = json::array();
+
+        // Save blocks in the same order as load_set_from_ckpt expects:
+        // load_set_from_ckpt loads blocks into positions 0,1,2,... then sets
+        // MRU order to [assoc-1, assoc-2, ...], meaning JSON index 0 = LRU block.
+        // So we iterate from LRU to MRU (reverse MRU order).
+        for (int32_t i = this->theAssociativity - 1; i >= 0; i--) {
+            SetIndex block_idx = theMRUOrder[i];
+            const Block<_State, _DefaultState>& block = this->theBlocks[block_idx];
+
+            // Only save valid blocks
+            if (block.state().isValid()) {
+                json entry;
+                // Extract the tag portion from the full address
+                uint64_t full_addr = static_cast<uint64_t>(block.tag());
+                uint64_t tag_only  = full_addr >> tag_shift;
+                entry["tag"]      = tag_only;
+                entry["dirty"]    = block.state().isDirty();
+                entry["writable"] = block.state().isWritable();
+                set_checkpoint.push_back(entry);
+            }
+        }
+
+        return set_checkpoint;
     }
 
   protected:
@@ -515,6 +544,20 @@ class StdArray : public AbstractArray<_State>
         for (int32_t i{ 0 }; i < setCount; i++) {
             theSets[i]->load_set_from_ckpt(checkpoint, theIndex, i, theTagShift, setIndexShift);
         }
+    }
+
+    virtual void save_to_ckpt(std::ostream& os, int32_t theIndex)
+    {
+        json checkpoint;
+        checkpoint["associativity"] = theAssociativity;
+        checkpoint["tags"]          = json::array();
+
+        // Save each set
+        for (int32_t i = 0; i < setCount; i++) {
+            checkpoint["tags"].push_back(theSets[i]->save_set_to_ckpt(i, theTagShift, setIndexShift));
+        }
+
+        os << checkpoint.dump(2);
     }
 
     // Addressing helper functions

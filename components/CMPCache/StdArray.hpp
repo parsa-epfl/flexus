@@ -231,6 +231,7 @@ class Set
     virtual void invalidateBlock(Block<_State, _DefaultState>* aBlock) = 0;
 
     virtual void load_set_from_ckpt(uint64_t index, uint64_t mru_index, uint64_t tag, bool dirty, bool writable) = 0;
+    virtual json save_set_to_ckpt() const = 0;
 
     MemoryAddress blockAddress(const Block<_State, _DefaultState>* theBlock)
     {
@@ -366,6 +367,30 @@ class SetLRU : public Set<_State, _DefaultState>
         theMRUOrder[index]                                   = mru_order_index;
         this->theBlocks[index].tag()   = MemoryAddress(tag);
         this->theBlocks[index].state() = state;
+    }
+
+    virtual json save_set_to_ckpt() const
+    {
+        json set_checkpoint = json::array();
+
+        // Save blocks in the same order as load_set_from_ckpt expects:
+        // Position 0 in JSON = block index that will get MRU position (assoc-1) = LRU block
+        // So we iterate from LRU to MRU (reverse MRU order)
+        for (int64_t i = this->theAssociativity - 1; i >= 0; i--) {
+            SetIndex block_idx = theMRUOrder[i];
+            const Block<_State, _DefaultState>& block = this->theBlocks[block_idx];
+
+            // Only save valid blocks
+            if (block.state().isValid()) {
+                json entry;
+                entry["tag"]      = static_cast<uint64_t>(block.tag());
+                entry["dirty"]    = block.state().isDirty();
+                entry["writable"] = block.state().isWritable();
+                set_checkpoint.push_back(entry);
+            }
+        }
+
+        return set_checkpoint;
     }
 
   protected:
@@ -636,6 +661,29 @@ class StdArray : public AbstractArray<_State>
         }
 
         ifs.close();
+    }
+
+    virtual void save_cache_to_ckpt(std::string const& filename, uint64_t theIndex)
+    {
+        json checkpoint;
+        checkpoint["associativity"] = theAssociativity;
+        checkpoint["tags"]          = json::array();
+
+        // Save each set
+        for (uint64_t i = 0; i < theNumSets; i++) {
+            checkpoint["tags"].push_back(theSets[i]->save_set_to_ckpt());
+        }
+
+        std::ofstream ofs(filename.c_str(), std::ios::out);
+        if (!ofs.good()) {
+            DBG_(Crit, (<< "Unable to open checkpoint file for writing: " << filename));
+            DBG_Assert(false, (<< "FILE OPEN FAILED"));
+        }
+
+        ofs << checkpoint.dump(2);
+        ofs.close();
+
+        DBG_(Dev, (<< "Cache saved to " << filename));
     }
 
     // Addressing helper functions

@@ -71,6 +71,18 @@ NonInclusiveMESIPolicy::load_cache_from_ckpt(std::string const& filename)
 {
     theCache->load_cache_from_ckpt(filename, theCMPCacheInfo.theNodeId);
 }
+
+void
+NonInclusiveMESIPolicy::save_dir_to_ckpt(std::string const& filename)
+{
+    theDirectory->save_dir_to_ckpt(filename);
+}
+
+void
+NonInclusiveMESIPolicy::save_cache_to_ckpt(std::string const& filename)
+{
+    theCache->save_cache_to_ckpt(filename, theCMPCacheInfo.theNodeId);
+}
 void
 NonInclusiveMESIPolicy::handleRequest(ProcessEntry_p process)
 {

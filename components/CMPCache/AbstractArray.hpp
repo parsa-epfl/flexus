@@ -66,6 +66,7 @@ class AbstractArray
 
     // Checkpoint reading/writing functions
     virtual void load_cache_from_ckpt(std::string const&, uint64_t anIndex) = 0;
+    virtual void save_cache_to_ckpt(std::string const&, uint64_t anIndex)   = 0;
 
     // Addressing helper functions
     MemoryAddress blockAddress(MemoryAddress const& anAddress) const
