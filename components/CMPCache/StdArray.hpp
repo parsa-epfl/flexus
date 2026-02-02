@@ -230,7 +230,7 @@ class Set
     virtual bool recordAccess(Block<_State, _DefaultState>* aBlock)    = 0;
     virtual void invalidateBlock(Block<_State, _DefaultState>* aBlock) = 0;
 
-    virtual void load_set_from_ckpt(uint64_t index, uint64_t mru_index, uint64_t tag, bool dirty, bool writable) = 0;
+    virtual void load_set_from_ckpt(uint64_t index, uint64_t mru_index, uint64_t tag, bool dirty, bool writable, bool is_valid) = 0;
     virtual json save_set_to_ckpt() const = 0;
 
     MemoryAddress blockAddress(const Block<_State, _DefaultState>* theBlock)
@@ -359,14 +359,18 @@ class SetLRU : public Set<_State, _DefaultState>
         moveToTail(theBlockNum);
     }
 
-    virtual void load_set_from_ckpt(uint64_t index, uint64_t mru_order_index, uint64_t tag, bool dirty, bool writable)
+    virtual void load_set_from_ckpt(uint64_t index, uint64_t mru_order_index, uint64_t tag, bool dirty, bool writable, bool is_valid)
     {
 
         DBG_Assert(index < uint64_t(this->theAssociativity));
         _State state(_State::bool2state(dirty, writable));
-        theMRUOrder[index]                                   = mru_order_index;
+        DBG_Assert(mru_order_index < uint64_t(this->theAssociativity));
+        theMRUOrder[mru_order_index] = index;
         this->theBlocks[index].tag()   = MemoryAddress(tag);
         this->theBlocks[index].state() = state;
+        if (!is_valid) {
+            this->theBlocks[index].state() = _DefaultState;
+        }
     }
 
     virtual json save_set_to_ckpt() const
@@ -637,6 +641,13 @@ class StdArray : public AbstractArray<_State>
 
         for (uint64_t i = 0; i < checkpoint["tags"].size(); i++) {
             assert(checkpoint["tags"].at(i).size() <= (uint64_t)theAssociativity);
+            uint64_t invalid_slot_count = theAssociativity - checkpoint["tags"].at(i).size();
+
+            for (uint64_t j = 0; j < invalid_slot_count; ++j) {
+                theSets[i]->load_set_from_ckpt(j, theAssociativity - j - 1, 0, false, false, false);
+            }
+
+
             for (uint64_t j = 0; j < checkpoint["tags"].at(i).size(); j++) {
                 uint64_t tag  = checkpoint["tags"].at(i).at(j)["tag"];
                 bool dirty    = checkpoint["tags"].at(i).at(j)["dirty"];
@@ -650,13 +661,7 @@ class StdArray : public AbstractArray<_State>
                 uint64_t target_node = (tag >> log_base2(theBlockSize)) % theNumBanks;
                 DBG_Assert(target_node == theIndex, (<< "Tag " << std::hex << tag << " is in node " << target_node << " but should be in node " << theIndex));
 
-                theSets[i]->load_set_from_ckpt(j, theAssociativity - j - 1,tag, dirty, writable); // the last element is the most recently used cacheline.
-            }
-
-            if (checkpoint["tags"].at(i).size() < (uint64_t)theAssociativity) {
-                for (uint64_t j = checkpoint["tags"].at(i).size(); j < (uint64_t)theAssociativity; j++) {
-                    theSets[i]->load_set_from_ckpt(j, theAssociativity - j - 1, 0, false, false);
-                }
+                theSets[i]->load_set_from_ckpt(j + invalid_slot_count, theAssociativity - j - 1 - invalid_slot_count,tag, dirty, writable, true); // the last element is the most recently used cacheline.
             }
         }
 

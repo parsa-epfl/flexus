@@ -692,6 +692,7 @@ class PREDICTOR
             ch_i_json["comp"]     = (uint32_t)ch_i[i].comp;
             ch_i_json["c_length"] = (uint32_t)ch_i[i].CLENGTH;
             ch_i_json["o_length"] = (uint32_t)ch_i[i].OLENGTH;
+            ch_i_json["out_point"] = (uint32_t)ch_i[i].OUTPOINT;
 
             checkpoint["ch_i"].push_back(ch_i_json);
         }
@@ -704,6 +705,7 @@ class PREDICTOR
 
                 ch_t_json["comp"]      = (uint32_t)ch_t[j][i].comp;
                 ch_t_json["o_length"]  = (uint32_t)ch_t[j][i].OLENGTH;
+                ch_t_json["c_length"]  = (uint32_t)ch_t[j][i].CLENGTH;
                 ch_t_json["out_point"] = (uint32_t)ch_t[j][i].OUTPOINT;
 
                 ch_t_array_json.push_back(ch_t_json);
@@ -757,6 +759,8 @@ class PREDICTOR
             ch_i[i].comp    = checkpoint["ch_i"][i]["comp"];
             ch_i[i].CLENGTH = checkpoint["ch_i"][i]["c_length"];
             ch_i[i].OLENGTH = checkpoint["ch_i"][i]["o_length"];
+            // check outpoint
+            DBG_Assert(ch_i[i].OUTPOINT == checkpoint["ch_i"][i]["out_point"]);
         }
 
         for (int j = 0; j < 2; j++) {
@@ -764,6 +768,8 @@ class PREDICTOR
                 ch_t[j][i].comp     = checkpoint["ch_t"][j][i]["comp"];
                 ch_t[j][i].OLENGTH  = checkpoint["ch_t"][j][i]["o_length"];
                 ch_t[j][i].OUTPOINT = checkpoint["ch_t"][j][i]["out_point"];
+                // check c_length
+                DBG_Assert(ch_t[j][i].CLENGTH == checkpoint["ch_t"][j][i]["c_length"]);
             }
         }
 

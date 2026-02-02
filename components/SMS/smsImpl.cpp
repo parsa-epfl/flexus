@@ -437,9 +437,9 @@ void PHT::saveState(std::string const& aDirName) {
     fname += "/" + boost::padded_string_cast<3, '0'>(theIndex) + "-pht" + ".json";
     std::ofstream ofs(fname.c_str());
 
-    json checkpoint;
+    json sets_json;
     for (size_t set = 0; set < sets.size(); ++set) {
-        json set_json;
+        json entries_json = json::array();
         for (const auto& entry : sets[set].entries) {
             if (entry.valid) {
                 json entry_json;
@@ -449,11 +449,17 @@ void PHT::saveState(std::string const& aDirName) {
                 entry_json["write_pattern"] = entry.write_pattern;
                 entry_json["ts"] = entry.ts;
                 entry_json["valid"] = entry.valid;
-                set_json.push_back(entry_json);
+                entries_json.push_back(entry_json);
             }
         }
-        checkpoint.push_back(set_json);
+        json set_json;
+        set_json["entries"] = entries_json;
+        sets_json.push_back(set_json);
     }
+
+    json checkpoint;
+    checkpoint["pht"]["sets"] = sets_json;
+
     ofs << std::setw(4) << checkpoint << std::endl;
     ofs.close();
 }

@@ -300,13 +300,21 @@ class SetLRU : public Set<_State, _DefaultState>
                                     int32_t tag_shift,
                                     int32_t set_shift)
     {
+        // First, calculate the number of invalid slot.
+        uint32_t invalid_slot_count = this->theAssociativity - checkpoint["tags"].at(set_idx).size();
+
+        for(uint32_t i{ 0 }; i < invalid_slot_count; i++) {
+            Set<_State, _DefaultState>::theBlocks[i].tag()   = MemoryAddress(0);
+            Set<_State, _DefaultState>::theBlocks[i].state() = _DefaultState;
+        }
+
         for (uint32_t i{ 0 }; i < checkpoint["tags"].at(set_idx).size(); i++) {
             bool dirty    = checkpoint["tags"].at(set_idx).at(i)["dirty"];
             bool writable = checkpoint["tags"].at(set_idx).at(i)["writable"];
             uint64_t tag  = checkpoint["tags"].at(set_idx).at(i)["tag"];
 
-            Set<_State, _DefaultState>::theBlocks[i].tag() = MemoryAddress((tag << tag_shift) | (set_idx << set_shift));
-            Set<_State, _DefaultState>::theBlocks[i].state() = _State::bool2state(dirty, writable);
+            Set<_State, _DefaultState>::theBlocks[i+invalid_slot_count].tag() = MemoryAddress((tag << tag_shift) | (set_idx << set_shift));
+            Set<_State, _DefaultState>::theBlocks[i+invalid_slot_count].state() = _State::bool2state(dirty, writable);
         }
 
         // reset the MRU order. Least recently used cache line is in the beginning.
