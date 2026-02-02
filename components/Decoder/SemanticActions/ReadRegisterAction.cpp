@@ -93,7 +93,7 @@ struct ReadRegisterAction : public BaseSemanticAction
         theSP = false;
 
         register_value aValue;
-        uint64_t val;
+        uint64_t val = 0;
         if (theSP) {
             if (core()->_PSTATE().SP() == 0) {
                 val = core()->getSP_el(EL0);

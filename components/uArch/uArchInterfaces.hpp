@@ -867,12 +867,6 @@ struct uArch
         DBG_Assert(false);
         return 0;
     }
-    virtual void invalidateCache(eCacheType aType) { DBG_Assert(false); }
-    virtual void invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress) { DBG_Assert(false); }
-    virtual void invalidateCache(eCacheType aType, VirtualMemoryAddress anAddress, uint32_t aSize)
-    {
-        DBG_Assert(false);
-    }
     virtual eAccessResult accessZVA()
     {
         DBG_Assert(false);
@@ -883,7 +877,6 @@ struct uArch
         DBG_Assert(false);
         return 0;
     }
-    virtual void SystemRegisterTrap(uint32_t no) { DBG_Assert(false); }
     virtual bool _SECURE()
     {
         DBG_Assert(false);

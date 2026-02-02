@@ -158,7 +158,7 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
 
         virtual void load_dir_from_ckpt(const json &set_checkpoint)
         {
-            // Read it from the json. 
+            // Read it from the json.
             assert(set_checkpoint.size() <= theAssociativity);
 
             for (uint64_t i = 0; i < set_checkpoint.size(); i++) {
@@ -236,7 +236,7 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
 
     MemoryAddress makeTag(MemoryAddress anAddress) { return MemoryAddress(anAddress & tagMask); }
 
-    int32_t makeSet(MemoryAddress addr)
+    int32_t makeSet(MemoryAddress addr) const
     {
         if (theSkewSet) {
             DBG_Assert(false);
@@ -392,12 +392,12 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
                     << theTotalBanks << " but got node " << node_idx_of_cacheline));
     }
 
-    virtual bool allocate(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup,
+    bool allocate(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup,
                           MemoryAddress address,
                           const _State& state)
     {
         // checkAddress((uint64_t)address);
-        
+
         StdLookupResult* std_lookup = dynamic_cast<StdLookupResult*>(lookup.get());
         DBG_Assert(std_lookup != nullptr, (<< "allocate() was not passed a valid StdLookupResult"));
         bool success, has_victim;
@@ -410,21 +410,21 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
         return success;
     }
 
-    virtual boost::intrusive_ptr<AbstractLookupResult<_State>> lookup(MemoryAddress address)
+    boost::intrusive_ptr<AbstractLookupResult<_State>> lookup(MemoryAddress address)
     {
         DBG_(VVerb,
              (<< "StdDirectory::lookup(0x" << std::hex << (uint64_t)address << ") in set 0x" << std::hex
               << makeSet(address)));
-        
+
         checkAddress((uint64_t)address);
         return theSets[makeSet(address)]->lookup(makeTag(address));
     }
 
-    virtual bool sameSet(MemoryAddress a, MemoryAddress b) { return (makeSet(a) == makeSet(b)); }
+    virtual bool sameSet(MemoryAddress a, MemoryAddress b) const { return (makeSet(a) == makeSet(b)); }
 
-    virtual DirEvictBuffer<_EState>* getEvictBuffer() { return &theEvictBuffer; }
+    DirEvictBuffer<_EState>* getEvictBuffer() { return &theEvictBuffer; }
 
-    virtual void load_dir_from_ckpt(std::string const& filename)
+    void load_dir_from_ckpt(std::string const& filename)
     {
 
         // certain sanity check here:
@@ -485,7 +485,7 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
         ifs.close();
     }
 
-    virtual void save_dir_to_ckpt(std::string const& filename)
+    void save_dir_to_ckpt(std::string const& filename)
     {
         json checkpoint = json::array();
 

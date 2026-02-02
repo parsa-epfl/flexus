@@ -12,7 +12,7 @@ class NetSwitch;
 class NetSwitchInternalBuffer
 {
   public:
-    NetSwitchInternalBuffer(const int32_t bufferCount_, NetSwitch* netSwitch_);
+    NetSwitchInternalBuffer(const int32_t bufferCount_);
 
   public:
     inline bool isFull(const int32_t vc) const { return (buffersUsed[vc] >= bufferCount[vc]); }
@@ -71,8 +71,6 @@ class NetSwitchInternalBuffer
     MessageStateList *ageBufferHead[MAX_VC], *ageBufferTail[MAX_VC], *currMessage;
 
     int currPriority;
-
-    NetSwitch* netSwitch;
 };
 
 class NetSwitch

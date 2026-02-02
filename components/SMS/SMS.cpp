@@ -113,7 +113,7 @@ class FLEXUS_COMPONENT(SMS)
             }
         }
 
-        void drive(interface::SMSDrive const&) override
+        void drive(interface::SMSDrive const&)
         {
             if(!cfg.EnableSMS)
                 return;
@@ -134,7 +134,7 @@ class FLEXUS_COMPONENT(SMS)
             }
         }
 
-        void initialize() override
+        void initialize()
         {
             DBG_(VVerb, (<< "Initializing SMS component..."));
             DBG_(VVerb, (<< "SMS Configuration: " << cfg.EnableSMS << ", "
@@ -154,7 +154,7 @@ class FLEXUS_COMPONENT(SMS)
             theAGT = AGT(cfg.NumAccTableEntries, cfg.NumFilterTableEntries, cfg.NumBlks);
         }
 
-        void finalize() override
+        void finalize()
         {
         }
 

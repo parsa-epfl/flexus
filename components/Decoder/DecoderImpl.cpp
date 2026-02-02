@@ -168,7 +168,7 @@ class FLEXUS_COMPONENT(Decoder)
 
         if (numFreeVRegs == 0)
             DISPATCH_DBG("Can't dispatch REASON: No free FP registers (=" << numFreeVRegs << ")");
-            
+
         if (numFreeCCs == 0)
             DISPATCH_DBG("Can't dispatch REASON: No free CC registers (=" << numFreeCCs << ")");
 

@@ -105,9 +105,9 @@ class microArchImpl : public microArch
       , redirect(_redirect)
       , trainBP(_trainBP)
       , trainSMS(_trainSMS)
-      , reqMMU(_reqMMU)
       , signalStoreForwardingHit(_signalStoreForwardingHit)
       , mmuResync(_mmuResync)
+      , reqMMU(_reqMMU)
 
     {
         theCPU = Flexus::Qemu::Processor::getProcessor(theNode);

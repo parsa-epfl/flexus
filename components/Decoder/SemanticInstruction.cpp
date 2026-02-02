@@ -314,7 +314,7 @@ SemanticInstruction::doDispatchActions()
 
 std::tuple<int, int, int>
 SemanticInstruction::numReadsWrites()
-{   
+{
     int reads = 0, writes = 0, wccs = 0;
     if (hasOperand(kRS1)) ++reads;
     if (hasOperand(kRS2)) ++reads;
@@ -377,9 +377,9 @@ SemanticInstruction::doCommitEffects()
 };
 
 void
-SemanticInstruction::pageFault()
+SemanticInstruction::pageFault(bool p)
 {
-    thePageFault = true;
+    thePageFault = p;
 }
 
 bool

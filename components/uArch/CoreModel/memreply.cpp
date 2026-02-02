@@ -184,7 +184,7 @@ CoreImpl::invalidate(PhysicalMemoryAddress anAddress)
                 }
 
                 // Record invalidate replays
-                if (!temp->status() == kComplete) {
+                if (!(temp->status() == kComplete)) {
                     // Load was squashed and could not forward.
                     if (system) {
                         ++theRaces_LoadReplayed_System;

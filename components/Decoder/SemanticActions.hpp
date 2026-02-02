@@ -130,12 +130,12 @@ class BaseSemanticAction
       , theEvalNow(now)
       , theDependanceTarget(*this)
       , theInstruction(anInstruction)
-      , theScheduled(false)
       , isWb(false)
       , isRead(false)
       , isWcc(false)
       , theEU(-1)
       , theFirst(false)
+      , theScheduled(false)
     {
         theReady[0] = (aNumOperands < 1);
         theReady[1] = (aNumOperands < 2);

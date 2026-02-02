@@ -58,7 +58,7 @@ struct MemoryMapImpl : public MemoryMap
 };
 
 // Initialized upon construction of the MemoryMapComponent
-class MemoryMapFactory;
+struct MemoryMapFactory;
 MemoryMapFactory* theMemoryMapFactory = 0;
 
 // The MemoryMapFactory knows how to create MemoryMap objects

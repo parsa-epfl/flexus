@@ -852,7 +852,7 @@ CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn)
                 if (iter_aligned != 0 && pred_aligned == iter_aligned && pred->theOperation == kStore) {
                     // Can coalesce this with preceding SB enry
                     ++theCoalescedStores;
-                    iter->theBypassSB;
+                    (void)iter->theBypassSB;
                 }
             }
 
@@ -1586,7 +1586,7 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
                 resync_accounted = true;
 
                 // TODO: what does it means
-                if (raised < 0x400) {
+                if (raised < static_cast<eExceptionType>(0x400)) {
                     ++theResync_UnexpectedException;
                 } else {
                     ++theResync_Interrupt;

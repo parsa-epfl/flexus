@@ -67,7 +67,7 @@ BusTag_t BusTag;
 #define FLEXUS_TAG_DirectoryEntryTag
 struct DirectoryEntryTag_t
 {};
-struct DirectoryEntry;
+class DirectoryEntry;
 namespace {
 DirectoryEntryTag_t DirectoryEntryTag;
 }
@@ -77,7 +77,7 @@ DirectoryEntryTag_t DirectoryEntryTag;
 #define FLEXUS_TAG_TransactionTrackerTag
 struct TransactionTrackerTag_t
 {};
-struct TransactionTracker;
+class TransactionTracker;
 namespace {
 TransactionTrackerTag_t TransactionTrackerTag;
 }

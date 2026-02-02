@@ -26,14 +26,15 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , redirect_fn(_redirect)
   , trainBP_fn(_trainBP)
   , trainSMS_fn(_trainSMS)
-  , reqMMU_fn(_reqMMU)
   , signalStoreForwardingHit_fn(_signalStoreForwardingHit)
   , mmuResync_fn(_mmuResync)
+  , reqMMU_fn(_reqMMU)
   , thePendingTrap(kException_None)
-  , theBypassNetwork((options.inOrderExecute)? kxRegs_Total : (kxRegs_Total + options.extraXRegs), 
+  , theBypassNetwork((options.inOrderExecute)? kxRegs_Total : (kxRegs_Total + options.extraXRegs),
                      (options.inOrderExecute)? kvRegs : (kvRegs + options.extraVRegs),
                      (options.inOrderExecute)? kccRegs : (kccRegs + (options.extraXRegs + 6) / 7))
   , theLastGarbageCollect(0)
+  , thePreserveInteractions(false)
   , theDispatchStalled(false)
   , theDispatchWidth(options.dispatchWidth)
   , theDispatchingInsts()
@@ -43,7 +44,6 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , theFreeALU(options.numIntAlu)
   , theFreeMUL(options.numIntMult)
   , theFreeAGU(options.numAGU)
-  , thePreserveInteractions(false)
   , theMemoryPortArbiter(*this, options.numMemoryPorts, options.numStorePrefetches)
   , theROBSize(options.ROBSize)
   , theRetireWidth(options.retireWidth)
@@ -257,18 +257,17 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , fpDivOpPipelineResetTime(options.fpDivOpPipelineResetTime)
   , fpSqrtOpLatency(options.fpSqrtOpLatency)
   , fpSqrtOpPipelineResetTime(options.fpSqrtOpPipelineResetTime)
-  ,
   // Each FU starts ready to accept an operation
-  intAluCyclesToReady(options.numIntAlu, 0)
+  , extraXRegs(options.extraXRegs)
+  , extraVRegs(options.extraVRegs)
+  , numExeStages(options.numExeStages)
+  , intAluCyclesToReady(options.numIntAlu, 0)
   , intMultCyclesToReady(options.numIntMult, 0)
   , fpAluCyclesToReady(options.numFpAlu, 0)
   , fpMultCyclesToReady(options.numFpMult, 0)
   , numALU(options.numIntAlu)
   , numMUL(options.numIntMult)
   , numAGU(options.numAGU)
-  , extraXRegs(options.extraXRegs)
-  , extraVRegs(options.extraVRegs)
-  , numExeStages(options.numExeStages)
   , theActiveActions(options.numExeStages)
   , theRescheduledActions(options.numExeStages)
 {

@@ -117,7 +117,7 @@ class BasicCacheState
     explicit BasicCacheState()
       : val(Invalid.val)
     {
-        /* Never called */ *(int*)0 = 0;
+        __builtin_trap();
     }
     BasicCacheState(const string& name)
       : val(names().size())

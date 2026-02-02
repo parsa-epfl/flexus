@@ -85,7 +85,7 @@ class StdLookupResult : public AbstractLookupResult<_State>
     }
 
     const _State& state() const { return (isHit ? theBlock->state() : theOrigState); }
-    void setState(const _State& aNewState, bool force = false) { 
+    void setState(const _State& aNewState, bool force = false) {
         if (force) {
             if (theBlock == nullptr) {
                 theBlock = new Block<_State, _DefaultState>();
@@ -93,7 +93,7 @@ class StdLookupResult : public AbstractLookupResult<_State>
             }
             isHit = aNewState !=  BasicCacheState::Invalid;
         }
-        theBlock->state() = aNewState; 
+        theBlock->state() = aNewState;
     }
     void setProtected(bool val) { theBlock->state().setProtected(val); }
     void setPrefetched(bool val) { theBlock->state().setPrefetched(val); }
@@ -476,7 +476,7 @@ class StdArray : public AbstractArray<_State>
     }
 
     // Main array lookup function
-    virtual boost::intrusive_ptr<AbstractLookupResult<_State>> operator[](const MemoryAddress& anAddress)
+    boost::intrusive_ptr<AbstractLookupResult<_State>> operator[](const MemoryAddress& anAddress)
     {
         boost::intrusive_ptr<AbstractLookupResult<_State>> ret =
           theSets[makeSet(anAddress)]->lookupBlock(blockAddress(anAddress));
@@ -486,7 +486,7 @@ class StdArray : public AbstractArray<_State>
         return ret;
     }
 
-    virtual bool canAllocate(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup, const MemoryAddress& anAddress)
+    bool canAllocate(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup, const MemoryAddress& anAddress)
     {
         StdLookupResult<_State, _DefaultState>* std_lookup =
           dynamic_cast<StdLookupResult<_State, _DefaultState>*>(lookup.get());
@@ -494,7 +494,7 @@ class StdArray : public AbstractArray<_State>
 
         return std_lookup->theSet->canAllocate(std_lookup, blockAddress(anAddress));
     }
-    virtual boost::intrusive_ptr<AbstractLookupResult<_State>> allocate(
+    boost::intrusive_ptr<AbstractLookupResult<_State>> allocate(
       boost::intrusive_ptr<AbstractLookupResult<_State>> lookup,
       const MemoryAddress& anAddress)
     {
@@ -505,20 +505,20 @@ class StdArray : public AbstractArray<_State>
         return std_lookup->theSet->allocate(std_lookup, blockAddress(anAddress));
     }
 
-    virtual void recordAccess(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup)
+    void recordAccess(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup)
     {
         StdLookupResult<_State, _DefaultState>* std_lookup =
           dynamic_cast<StdLookupResult<_State, _DefaultState>*>(lookup.get());
         DBG_Assert(std_lookup != nullptr);
         DBG_Assert(std_lookup->valid());
 
-        if (std_lookup->theForce) 
+        if (std_lookup->theForce)
             return;
 
         std_lookup->theSet->recordAccess(std_lookup->theBlock);
     }
 
-    virtual void invalidateBlock(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup)
+    void invalidateBlock(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup)
     {
         StdLookupResult<_State, _DefaultState>* std_lookup =
           dynamic_cast<StdLookupResult<_State, _DefaultState>*>(lookup.get());
@@ -528,12 +528,12 @@ class StdArray : public AbstractArray<_State>
         std_lookup->theSet->invalidateBlock(std_lookup->theBlock);
     }
 
-    virtual std::pair<_State, MemoryAddress> getPreemptiveEviction()
+    std::pair<_State, MemoryAddress> getPreemptiveEviction()
     {
         return std::make_pair(_DefaultState, MemoryAddress(0));
     }
 
-    virtual void load_from_ckpt(std::istream& is, int32_t theIndex)
+    void load_from_ckpt(std::istream& is, int32_t theIndex)
     {
         json checkpoint;
         is >> checkpoint;
@@ -546,7 +546,7 @@ class StdArray : public AbstractArray<_State>
         }
     }
 
-    virtual void save_to_ckpt(std::ostream& os, int32_t theIndex)
+    void save_to_ckpt(std::ostream& os, int32_t theIndex)
     {
         json checkpoint;
         checkpoint["associativity"] = theAssociativity;
@@ -575,9 +575,9 @@ class StdArray : public AbstractArray<_State>
 
     virtual bool sameSet(MemoryAddress a, MemoryAddress b) const { return (makeSet(a) == makeSet(b)); }
 
-    virtual std::list<MemoryAddress> getSetTags(MemoryAddress addr) { return theSets[makeSet(addr)]->getTags(); }
+    std::list<MemoryAddress> getSetTags(MemoryAddress addr) { return theSets[makeSet(addr)]->getTags(); }
 
-    virtual std::function<bool(MemoryAddress a, MemoryAddress b)> setCompareFn() const
+    std::function<bool(MemoryAddress a, MemoryAddress b)> setCompareFn() const
     {
         return std::bind(&StdArray<_State, _DefaultState>::sameSet,
                          *this,
@@ -585,9 +585,9 @@ class StdArray : public AbstractArray<_State>
                          std::placeholders::_2);
     }
 
-    virtual uint64_t getSet(MemoryAddress const& addr) const { return (uint64_t)makeSet(addr); }
+    uint64_t getSet(MemoryAddress const& addr) const { return (uint64_t)makeSet(addr); }
 
-    virtual int32_t requestsPerSet() const { return theAssociativity; }
+    int32_t requestsPerSet() const { return theAssociativity; }
 
 }; // class StdArray
 

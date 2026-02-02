@@ -165,12 +165,7 @@ class CoreImpl : public CoreModel
     uint64_t theFreeMUL;
     uint64_t theFreeAGU;
 
-    uint32_t extraXRegs;
-    uint32_t extraVRegs;
-    uint32_t numExeStages;
 
-    std::vector<action_list_t> theRescheduledActions;
-    std::vector<action_list_t> theActiveActions;
 
     // Resource arbitration
     MemoryPortArbiter theMemoryPortArbiter;
@@ -200,7 +195,7 @@ class CoreImpl : public CoreModel
     boost::intrusive_ptr<BPredRedictRequest> theRedirectRequest;
 
     boost::intrusive_ptr<BPredState> theLastTrainingFeedback;
-    
+
     VirtualMemoryAddress theDumpPC;
 
     // Load Store Queue and associated memory control
@@ -507,6 +502,10 @@ class CoreImpl : public CoreModel
     uint32_t fpSqrtOpLatency;
     uint32_t fpSqrtOpPipelineResetTime;
 
+    uint32_t extraXRegs;
+    uint32_t extraVRegs;
+    uint32_t numExeStages;
+
     // Cycles until each FU becomes ready to accept a new operation
     std::vector<uint32_t> intAluCyclesToReady;
     std::vector<uint32_t> intMultCyclesToReady;
@@ -516,6 +515,9 @@ class CoreImpl : public CoreModel
     uint64_t numALU;
     uint64_t numMUL;
     uint64_t numAGU;
+
+    std::vector<action_list_t> theActiveActions;
+    std::vector<action_list_t> theRescheduledActions;
 
     /* Msutherl: Additions for RPCProc */
     bool collectTrace;
@@ -921,7 +923,7 @@ class CoreImpl : public CoreModel
     bool reqEU(int et);
     bool canExecute(int et);
     void resetFreeEUs();
-    
+
     // Debugging
     //==========================================================================
   public:

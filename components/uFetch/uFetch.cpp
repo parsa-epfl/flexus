@@ -190,9 +190,7 @@ class FLEXUS_COMPONENT(uFetch)
     void push(interface::ResyncIn const&, index_t anIndex, int& aResync) {
     }
 
-    bool available(interface::ResyncIn const&, index_t anIndex) {
-        return true;
-    }
+    FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(ResyncIn);
 
     // =============================== LOGIC =========================
 
@@ -256,7 +254,7 @@ class FLEXUS_COMPONENT(uFetch)
         DBG_(VVerb, (<< "fetches: " << fetches << " entries: " << theFAQ.size()));
 
         // lines that hit in the cache and looked up in this cycle
-        std::unordered_set<uint64_t> l1ihits; 
+        std::unordered_set<uint64_t> l1ihits;
 
         pFetchBundle bundle;
         bool is_head;
@@ -437,7 +435,7 @@ class FLEXUS_COMPONENT(uFetch)
         }
     }
 
-    void initialize() override
+    void initialize()
     {
         DBG_Assert(cfg.Threads == 1);
 
@@ -447,10 +445,10 @@ class FLEXUS_COMPONENT(uFetch)
         theBlockMask  = ~(cfg.ICacheLineSize - 1);
     }
 
-    void finalize() override {
+    void finalize() {
     }
 
-    void drive(interface::uFetchDrive const&) override
+    void drive(interface::uFetchDrive const&)
     {
 
         bool garbage = true;
@@ -659,13 +657,13 @@ class FLEXUS_COMPONENT(uFetch)
         }
     }
 
-    void loadState(std::string const& aDirName) override
+    void loadState(std::string const& aDirName)
     {
         // I need to load the instruction cache here.
         this->theI.loadState(aDirName + "/" + statName() + "-L1i.json");
     }
 
-    void saveState(std::string const& aDirName) override
+    void saveState(std::string const& aDirName)
     {
         // Not implemented.
 

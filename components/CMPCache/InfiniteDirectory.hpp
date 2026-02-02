@@ -140,7 +140,7 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
 
     }
 
-    virtual bool allocate(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup,
+    bool allocate(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup,
                           MemoryAddress address,
                           const _State& state)
     {
@@ -150,7 +150,7 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
         inf_lookup->theIterator       = ret.first;
         return ret.second;
     }
-    virtual boost::intrusive_ptr<AbstractLookupResult<_State>> lookup(MemoryAddress address)
+    boost::intrusive_ptr<AbstractLookupResult<_State>> lookup(MemoryAddress address)
     {
         // Make sure this address is in the right range.
         uint64_t node_index = (address >> theBlockShift) % theNumBanks;
@@ -163,18 +163,18 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
 
     virtual void remove(MemoryAddress address) { theDirectory.erase(address); }
 
-    virtual bool sameSet(MemoryAddress a, MemoryAddress b) { return theSameSetReturnValue; }
+    virtual bool sameSet(MemoryAddress a, MemoryAddress b) const { return theSameSetReturnValue; }
 
     virtual void setSameSetReturn(bool ret) { theSameSetReturnValue = ret; }
 
-    virtual DirEvictBuffer<_EState>* getEvictBuffer() { return &theEvictBuffer; }
+    DirEvictBuffer<_EState>* getEvictBuffer() { return &theEvictBuffer; }
 
     virtual boost::intrusive_ptr<AbstractLookupResult<_State>> getDummyResult(_State& state)
     {
         return boost::intrusive_ptr<AbstractLookupResult<_State>>(new DummyLookupResult(state));
     }
 
-    virtual void load_dir_from_ckpt(const std::string& filename)
+    void load_dir_from_ckpt(const std::string& filename)
     {
         std::ifstream ifs(filename.c_str(), std::ios::in);
 
@@ -214,7 +214,7 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
         ifs.close();
     }
 
-    virtual void save_dir_to_ckpt(const std::string& filename)
+    void save_dir_to_ckpt(const std::string& filename)
     {
         json checkpoint = json::array();
 

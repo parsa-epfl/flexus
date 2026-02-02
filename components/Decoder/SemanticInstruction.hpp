@@ -111,7 +111,7 @@ struct SemanticInstruction : public ArchInstruction
     void doDispatchActions();
     std::tuple<int, int, int> numReadsWrites();
     void squash();
-    void pageFault();
+    void pageFault(bool p = true);
     bool isPageFault() const;
     void doRetirementEffects();
     void checkTraps();

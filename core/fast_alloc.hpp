@@ -31,7 +31,7 @@
 #ifndef _fast_alloc_h
 #define _fast_alloc_h
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma interface
 #endif
 

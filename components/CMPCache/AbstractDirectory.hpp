@@ -32,7 +32,7 @@ class AbstractDirectory
 
     virtual bool allocate(LookupResult_p lookup, MemoryAddress address, const _State& state) = 0;
     virtual LookupResult_p lookup(MemoryAddress address)                                     = 0;
-    virtual bool sameSet(MemoryAddress a, MemoryAddress b)                                   = 0;
+    virtual bool sameSet(MemoryAddress a, MemoryAddress b) const                             = 0;
     virtual DirEvictBuffer<_EState>* getEvictBuffer()                                        = 0;
 
     virtual bool idleWorkReady() const { return false; }

@@ -531,7 +531,7 @@ class StdArray : public AbstractArray<_State>
         // DBG_Assert((theNumBanks & (theNumBanks - 1)) == 0); // Currently, we only support power of 2 nodes.
 
         uint64_t blockOffsetBits      = log_base2(theBlockSize);
-        DBG_Assert(blockOffsetBits == 6); // Currently, we only support 64-byte blocks. Why? Because I saw places where 6 is used as a constant. 
+        DBG_Assert(blockOffsetBits == 6); // Currently, we only support 64-byte blocks. Why? Because I saw places where 6 is used as a constant.
         // int32_t indexBits            = log_base2(theNumSets);
         this->theBlockOffsetBits    = blockOffsetBits;
         this->theSetIndexMask        = (theNumSets - 1); // mask is applied after shift.
@@ -555,7 +555,7 @@ class StdArray : public AbstractArray<_State>
     }
 
     // Main array lookup function
-    virtual boost::intrusive_ptr<AbstractArrayLookupResult<_State>> operator[](const MemoryAddress& anAddress)
+    boost::intrusive_ptr<AbstractArrayLookupResult<_State>> operator[](const MemoryAddress& anAddress)
     {
         uint64_t blockOffsetBits      = log_base2(theBlockSize);
         uint64_t affiliatedNode = (anAddress >> blockOffsetBits) % this->theNumBanks;
@@ -581,7 +581,7 @@ class StdArray : public AbstractArray<_State>
         return ret;
     }
 
-    virtual boost::intrusive_ptr<AbstractArrayLookupResult<_State>> allocate(
+    boost::intrusive_ptr<AbstractArrayLookupResult<_State>> allocate(
       boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup,
       const MemoryAddress& anAddress)
     {
@@ -592,7 +592,7 @@ class StdArray : public AbstractArray<_State>
         return std_lookup->theSet->allocate(std_lookup, this->blockAddress(anAddress));
     }
 
-    virtual bool recordAccess(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup)
+    bool recordAccess(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup)
     {
         StdLookupResult<_State, _DefaultState>* std_lookup =
           dynamic_cast<StdLookupResult<_State, _DefaultState>*>(lookup.get());
@@ -602,7 +602,7 @@ class StdArray : public AbstractArray<_State>
         return std_lookup->theSet->recordAccess(std_lookup->theBlock);
     }
 
-    virtual void invalidateBlock(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup)
+    void invalidateBlock(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup)
     {
         StdLookupResult<_State, _DefaultState>* std_lookup =
           dynamic_cast<StdLookupResult<_State, _DefaultState>*>(lookup.get());
@@ -612,14 +612,14 @@ class StdArray : public AbstractArray<_State>
         std_lookup->theSet->invalidateBlock(std_lookup->theBlock);
     }
 
-    virtual std::pair<_State, MemoryAddress> getPreemptiveEviction()
+    std::pair<_State, MemoryAddress> getPreemptiveEviction()
     {
         return std::make_pair(_DefaultState, MemoryAddress(0));
     }
 
     // Checkpoint reading/writing functions
 
-    virtual void load_cache_from_ckpt(std::string const& filename, uint64_t theIndex)
+    void load_cache_from_ckpt(std::string const& filename, uint64_t theIndex)
     {
 
         std::ifstream ifs(filename.c_str(), std::ios::in);
@@ -663,7 +663,7 @@ class StdArray : public AbstractArray<_State>
         ifs.close();
     }
 
-    virtual void save_cache_to_ckpt(std::string const& filename, uint64_t theIndex)
+    void save_cache_to_ckpt(std::string const& filename, uint64_t theIndex)
     {
         json checkpoint;
         checkpoint["associativity"] = theAssociativity;
@@ -697,28 +697,28 @@ class StdArray : public AbstractArray<_State>
         return (((anAddress >> this->theBlockOffsetBits) / this->theNumBanks) & this->theSetIndexMask);
     }
 
-    virtual bool sameSet(MemoryAddress a, MemoryAddress b) { return (this->makeSet(a) == this->makeSet(b)); }
+    virtual bool sameSet(MemoryAddress a, MemoryAddress b) const { return (this->makeSet(a) == this->makeSet(b)); }
 
-    virtual std::list<MemoryAddress> getSetTags(MemoryAddress addr) { return theSets[this->makeSet(addr)]->getTags(); }
-    virtual bool setAlmostFull(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup,
+    std::list<MemoryAddress> getSetTags(MemoryAddress addr) { return theSets[this->makeSet(addr)]->getTags(); }
+    bool setAlmostFull(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup,
                                MemoryAddress const& anAddress) const
     {
         return theSets[this->makeSet(anAddress)]->almostFull(AbstractArray<_State>::theLockedThreshold);
     }
 
-    virtual bool lockedVictimAvailable(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup,
+    bool lockedVictimAvailable(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup,
                                        MemoryAddress const& anAddress) const
     {
         return theSets[this->makeSet(anAddress)]->lockedVictimAvailable();
     }
 
-    virtual bool victimAvailable(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup,
-                                 MemoryAddress const& anAddress) const
+    bool victimAvailable(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup,
+                                  MemoryAddress const& anAddress) const
     {
         return theSets[this->makeSet(anAddress)]->victimAvailable();
     }
 
-    virtual boost::intrusive_ptr<AbstractArrayLookupResult<_State>> replaceLockedBlock(
+    boost::intrusive_ptr<AbstractArrayLookupResult<_State>> replaceLockedBlock(
       boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup,
       MemoryAddress const& anAddress)
     {
@@ -730,7 +730,7 @@ class StdArray : public AbstractArray<_State>
         return std_lookup->theSet->replaceLocked(std_lookup, this->blockAddress(anAddress));
     }
 
-    virtual void setLockedThreshold(uint64_t threshold)
+    void setLockedThreshold(uint64_t threshold)
     {
         DBG_Assert(threshold > 0 && threshold < theAssociativity);
         AbstractArray<_State>::theLockedThreshold = threshold;

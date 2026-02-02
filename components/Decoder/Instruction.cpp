@@ -89,6 +89,7 @@ ArchInstruction::canDispatch() {
 bool
 ArchInstruction::isDispatched() {
     DBG_Assert(false, (<< "isDispatched() not implemented for " << *this));
+    return false;
 }
 
 void

@@ -50,7 +50,6 @@ class FlexusImpl : public FlexusInterface
     void_fn_vector theTerminateFunctions;
 
     bool theQuiesceRequested;
-    bool theSaveRequested;
 
     std::list<std::pair<uint64_t, std::string>> dbgOverrides;
 
@@ -95,7 +94,6 @@ class FlexusImpl : public FlexusInterface
       , cycle_delay_log(0)
       , theCycleCountStat("sys-cycles")
       , theQuiesceRequested(false)
-      , theSaveRequested(false)
     {
         Flexus::Dbg::Debugger::theDebugger->connectCycleCount(&theCycleCount, &cycle_delay_log);
     }
@@ -181,13 +179,13 @@ FlexusImpl::doCycle()
         FLEXUS_DBG("--------------START FLEXUS CYCLE " << theCycleCount << " ------------------------");
         index_t advanceBy, oldCount = theCycleCount;
         advanceBy = invokeDrives(iter_idx);
-    
+
         advanceCycles(advanceBy);
-    
+
         // Check the watchdog only every 255 cycles
         bool hasItBeen255Cycles = (theCycleCount & 0xFF) < (oldCount & 0xFF);
         if (hasItBeen255Cycles) check_cpu_watchdogs();
-    
+
         FLEXUS_DBG("--------------FINISH FLEXUS CYCLE " << theCycleCount - 1 << " ------------------------");
     }
 }

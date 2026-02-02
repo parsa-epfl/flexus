@@ -48,7 +48,7 @@ NetSwitch::NetSwitch(const int32_t name_,     // Name/id of the switch
         outputPorts[i] = new ChannelOutputPort(outputBufferDepth);
     }
 
-    internalBuffer = new NetSwitchInternalBuffer(vcBufferDepth, this);
+    internalBuffer = new NetSwitchInternalBuffer(vcBufferDepth);
 
     // Initialize the routing table to bogus values.  We can't route yet.
     routingTable = new intP[numNodes];
@@ -390,10 +390,9 @@ NetSwitchInternalBuffer::dumpMessageList(ostream& out)
 /////////////////////////////////////////////////////////////////////////////////
 // Internal Buffer code
 
-NetSwitchInternalBuffer::NetSwitchInternalBuffer(const int32_t bufferCount_, NetSwitch* netSwitch_)
+NetSwitchInternalBuffer::NetSwitchInternalBuffer(const int32_t bufferCount_)
   : currMessage(nullptr)
   , currPriority(0)
-  , netSwitch(netSwitch_)
 {
     int i;
 

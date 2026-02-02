@@ -56,6 +56,7 @@ class StatValue_Counter : public StatValueBase
     {
     }
 
+
     void reduceSum(StatValueBase const& aBase)
     {
         StatValue_Counter const& ctr = dynamic_cast<StatValue_Counter const&>(aBase);
@@ -148,6 +149,7 @@ class StatValue_PredictionCounter : public StatValueBase
     {
     }
     boost::intrusive_ptr<StatValueBase> sumAccumulator() { return new StatValue_PredictionCounter(*this); }
+
     void reduceSum(StatValueBase const& aBase)
     {
         const StatValue_PredictionCounter& ptr = dynamic_cast<const StatValue_PredictionCounter&>(aBase);
@@ -206,6 +208,7 @@ class StatValue_Annotation : public StatValueBase
     {
     }
 
+
     void reduceSum(StatValueBase const& aBase)
     {
         const StatValue_Annotation& ptr = dynamic_cast<const StatValue_Annotation&>(aBase);
@@ -259,6 +262,7 @@ class StatValue_Max : public StatValueBase
       , theIsValid(false)
     {
     }
+
     void reduceSum(const StatValueBase& aBase)
     {
         const StatValue_Max& ptr = dynamic_cast<const StatValue_Max&>(aBase);
@@ -337,6 +341,7 @@ class StatValue_Average : public StatValueBase
       , theCount(0)
     {
     }
+
 
     void reduceSum(const StatValueBase& aBase)
     {
@@ -427,6 +432,7 @@ class StatValue_StdDev : public StatValueBase
       , SigmaSqSum(0.0)
     {
     }
+
     void reduceSum(const StatValueBase& aBase)
     {
         const StatValue_StdDev& ptr = dynamic_cast<const StatValue_StdDev&>(aBase);

@@ -84,7 +84,7 @@ class AbstractArray
     virtual void unreserveEvictionResource(uint64_t n) {}
     virtual std::pair<_State, MemoryAddress> getPreemptiveEviction() = 0;
 
-    virtual bool sameSet(MemoryAddress a, MemoryAddress b) { return false; }
+    virtual bool sameSet(MemoryAddress a, MemoryAddress b) const { return false; }
     virtual std::list<MemoryAddress> getSetTags(MemoryAddress addr)
     {
         DBG_Assert(false, (<< "Derived class does not implement getSetTags() function."));
