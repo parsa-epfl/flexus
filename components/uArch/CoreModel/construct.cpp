@@ -111,6 +111,7 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , theCycleCount(0)
   , theCycleCountStat(theName + "-Cycles")
   , theCommitCount(theName + "-Commits")
+  , theHaltedCycleCount(theName + "-HaltedCycles")
   , theCommitCount_NonSpin_User(theName + "-Commits:NonSpin:User")
   , theCommitCount_NonSpin_System(theName + "-Commits:NonSpin:System")
   , theCommitCount_NonSpin_Trap(theName + "-Commits:NonSpin:Trap")

@@ -275,7 +275,7 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
 
     // ===== Redispatch any instructions that can be dispatched ===== //
     DBG_(VVerb, (<< "*** Redispatch *** "));
-    
+
     // redo dispatch
     if (theDispatchStalled) {
             for (auto t = theDispatchingInsts.begin(); t != theDispatchingInsts.end();) {
@@ -299,6 +299,7 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     evaluateRD();
 
     if (cpuHalted) {
+        ++theHaltedCycleCount;
         int qemu_rcode = advance_fn(false); // don't count instructions in halt state
         if (qemu_rcode != QEMU_EXCP_HALTED) {
             DBG_(Dev, (<< "Core " << theNode << " leaving halt state, after QEMU sent execution code " << qemu_rcode));
@@ -720,7 +721,7 @@ CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn)
             // uint64_t logical_timestamp = theCommitNumber + theSRB.size();
             theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/, isPrivileged(), 0);
             if (!anInsn->isMicroOp())
-                trainingSMS(anInsn->pc(), iter->thePaddr, false); 
+                trainingSMS(anInsn->pc(), iter->thePaddr, false);
             boost::intrusive_ptr<TransactionTracker> tracker = anInsn->getTransactionTracker();
             if (tracker)
                 DBG_(VVerb, (<< "Address: " << std::hex << iter->thePaddr << ", PC: " << anInsn->pc() << ", Fill level: " << *tracker->fillLevel()));

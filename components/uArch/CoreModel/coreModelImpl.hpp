@@ -300,6 +300,7 @@ class CoreImpl : public CoreModel
     uint64_t theCycleCount;
     Stat::StatCounter theCycleCountStat;
     Stat::StatCounter theCommitCount;
+    Stat::StatCounter theHaltedCycleCount;
 
     Stat::StatCounter theCommitCount_NonSpin_User;
     Stat::StatCounter theCommitCount_NonSpin_System;
