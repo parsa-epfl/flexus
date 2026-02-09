@@ -150,8 +150,6 @@ class FLEXUS_COMPONENT(MMU)
     bool available(interface::dRequestIn const&, index_t anIndex);
     void push(interface::dRequestIn const&, index_t anIndex, TranslationPtr& aTranslate);
 
-    void sendTLBresponse(TranslationPtr aTranslation);
-
     bool available(interface::TLBReqIn const&, index_t anIndex);
     void push(interface::TLBReqIn const&, index_t anIndex, TranslationPtr& aTranslate);
 

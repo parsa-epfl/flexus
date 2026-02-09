@@ -109,7 +109,7 @@ class FLEXUS_COMPONENT(uFetch)
     void push(interface::iTranslationIn const&, TranslationPtr& tr)
     {
         PhysicalMemoryAddress magic =
-            cpu(tr->theIndex).translate_va2pa(tr->theVaddr,
+            cpu(0).translate_va2pa(tr->theVaddr,
                                               tr->getInstruction() ?
                                                   tr->getInstruction()->unprivAccess():
                                                   false);
@@ -204,7 +204,6 @@ class FLEXUS_COMPONENT(uFetch)
         tr->theVaddr     = anAddress;
         tr->theType      = Translation::eFetch;
         tr->theException = 0;
-        tr->theIndex     = anIndex;
         tr->setInstr();
 
         DBG_(VVerb, (<< "sending trans " << tr->theVaddr));
@@ -280,7 +279,7 @@ class FLEXUS_COMPONENT(uFetch)
                             theTAM.insert(va);
                             f.state = S_ITLB_REQ;
 
-                            send_trans(idx, f.addr.theAddress);
+                            send_trans(idx + flexusIndex() * cfg.Threads, f.addr.theAddress);
                         }
                     }
 

@@ -432,7 +432,7 @@ MMUComponent::busCycle()
     while (!theLookUpEntries.empty()) {
         TranslationPtr item = theLookUpEntries.front();
         theLookUpEntries.pop();
-        lookup(item);        
+        lookup(item);
     }
 
     while (!thePageWalkEntries.empty()) {
@@ -557,7 +557,6 @@ MMUComponent::push(interface::iRequestIn const&, index_t anIndex, TranslationPtr
     CORE_DBG("MMU: Instruction RequestIn");
 
     aTranslate->setASID(getASID());
-    aTranslate->theIndex = anIndex;
     aTranslate->toggleReady();
     if (cfg.ParallelTLB)
         lookup(aTranslate);
@@ -576,23 +575,12 @@ MMUComponent::push(interface::dRequestIn const&, index_t anIndex, TranslationPtr
     CORE_DBG("MMU: Data RequestIn");
 
     aTranslate->setASID(getASID());
-    aTranslate->theIndex = anIndex;
 
     aTranslate->toggleReady();
     if (cfg.ParallelTLB)
         lookup(aTranslate);
     else
         theLookUpEntries.push(aTranslate);
-}
-
-void
-MMUComponent::sendTLBresponse(TranslationPtr aTranslation)
-{
-    if (aTranslation->isInstr()) {
-        FLEXUS_CHANNEL(iTranslationReply) << aTranslation;
-    } else {
-        FLEXUS_CHANNEL(dTranslationReply) << aTranslation;
-    }
 }
 
 bool
