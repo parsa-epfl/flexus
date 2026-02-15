@@ -239,15 +239,15 @@ uint16_t
 MMUComponent::getASID()
 {
     uint16_t ASID;
-    auto TCR_EL1 = theMMU->mmu_regs.TCR[EL1];
+    auto TCR_EL1 = theCPU.read_register(Flexus::Qemu::API::TCR, EL1);
     auto A1bit   = extract64(TCR_EL1, 22, 1);
     if (A1bit) {
         // TTBR1_EL1.ASID defines the ASID.
-        auto TTBR1_EL1 = theMMU->mmu_regs.TTBR1[EL1];
+        auto TTBR1_EL1 = theCPU.read_register(Flexus::Qemu::API::TTBR1, EL1);
         ASID           = extract64(TTBR1_EL1, 48, 16);
     } else {
         // TTBR0_EL1.ASID defines the ASID.
-        auto TTBR0_EL1 = theMMU->mmu_regs.TTBR0[EL1];
+        auto TTBR0_EL1 = theCPU.read_register(Flexus::Qemu::API::TTBR0, EL1);
         ASID           = extract64(TTBR0_EL1, 48, 16);
     }
     return ASID;

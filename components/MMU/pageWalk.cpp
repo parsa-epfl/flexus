@@ -278,9 +278,9 @@ PageWalk::InitialTranslationSetup(TranslationTransport& aTranslation)
 
     uint64_t initialTTBR;
     if (statefulPointer->isBR0)
-        initialTTBR = mmu->theMMU->mmu_regs.TTBR0[EL];
+        initialTTBR = mmu->theCPU.read_register(Flexus::Qemu::API::TTBR0, EL);
     else
-        initialTTBR = mmu->theMMU->mmu_regs.TTBR1[EL];
+        initialTTBR = mmu->theCPU.read_register(Flexus::Qemu::API::TTBR1, EL);
     setupTTResolver(aTranslation, initialTTBR);
     return true;
 }
@@ -335,6 +335,7 @@ PageWalk::cycle()
                      (<< "stlb hit " << (VirtualMemoryAddress)(tr->theVaddr & (PAGEMASK)) << ":" << tr->theID
                       << std::hex << ":" << res.second));
                 tr->setHit();
+                tr->setDone();
                 PhysicalMemoryAddress perfectPaddr(API::qemu_api.translate_va2pa(mmu->flexusIndex(), tr->theVaddr, (tr->getInstruction() ? tr->getInstruction()->unprivAccess(): false)));
                 // tr->thePaddr = (PhysicalMemoryAddress)(res.second | (tr->theVaddr & ~(PAGEMASK)));
                 tr->thePaddr = perfectPaddr;
