@@ -51,6 +51,7 @@ class FlexusImpl : public FlexusInterface
 
     bool theQuiesceRequested;
     bool theSaveRequested;
+    bool paused;
 
     std::list<std::pair<uint64_t, std::string>> dbgOverrides;
 
@@ -85,6 +86,10 @@ class FlexusImpl : public FlexusInterface
     void setDebugOverride();
     void terminateSimulation();
 
+    void pause();
+    void resume();
+    bool isPaused();
+
   public:
     FlexusImpl(Qemu::API::conf_object_t* anObject)
       : cpu_watchdog_timeout(100000)
@@ -96,6 +101,7 @@ class FlexusImpl : public FlexusInterface
       , theCycleCountStat("sys-cycles")
       , theQuiesceRequested(false)
       , theSaveRequested(false)
+      , paused(false)
     {
         Flexus::Dbg::Debugger::theDebugger->connectCycleCount(&theCycleCount, &cycle_delay_log);
     }
@@ -108,6 +114,23 @@ FlexusImpl::setCycle(uint64_t cycle)
     theCycleCount = cycle;
     theStopCycle += cycle;
     cycle_delay_log += cycle;
+}
+
+void FlexusImpl::pause()
+{
+    printf("Pausing flexus\n");
+    paused = true;
+    // TODO see if you need to add in qemu calls here too
+}
+
+void FlexusImpl::resume()
+{
+    printf("Resuming flexus\n");
+    paused = false;
+}
+bool FlexusImpl::isPaused()
+{
+    return paused;
 }
 
 void

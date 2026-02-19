@@ -16,6 +16,8 @@ FLEXUS_get_api(FLEXUS_API_t* api)
     api->stop      = FLEXUS_stop;
     api->qmp       = FLEXUS_qmp;
     api->trace_mem = FLEXUS_trace_mem;
+    api->pause     = FLEXUS_pause;
+    api->resume    = FLEXUS_resume;
 }
 
 using namespace Flexus::Core;
@@ -26,7 +28,21 @@ FLEXUS_start(uint64_t cycle)
     theFlexus->setCycle(cycle);
 
     while (true)
+    {
+        if(theFlexus->isPaused()) {
+            continue;
+        }
         theFlexus->doCycle();
+    }
+}
+
+void FLEXUS_pause()
+{
+    theFlexus->pause();
+}
+void FLEXUS_resume()
+{
+    theFlexus->resume();
 }
 
 void
