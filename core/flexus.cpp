@@ -128,7 +128,6 @@ void FlexusImpl::resume()
     printf("Resuming flexus\n");
     paused = false;
     // Call tick to let host timers fire and avoid immediately pausing again
-    Qemu::API::qemu_api.tick(false);
 }
 bool FlexusImpl::isPaused()
 {
