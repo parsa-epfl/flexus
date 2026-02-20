@@ -127,6 +127,8 @@ void FlexusImpl::resume()
 {
     printf("Resuming flexus\n");
     paused = false;
+    // Call tick to let host timers fire and avoid immediately pausing again
+    Qemu::API::qemu_api.tick(false);
 }
 bool FlexusImpl::isPaused()
 {
@@ -159,7 +161,7 @@ FlexusImpl::advanceCycles(index_t aCycleCount)
     theCycleCountStat += aCycleCount;
     advanced_cycle_count += aCycleCount;
 
-    Qemu::API::qemu_api.tick();
+    Qemu::API::qemu_api.tick(false);
 
     if (dbgOverrides.size()) {
         auto &front = dbgOverrides.front();
@@ -201,6 +203,10 @@ FlexusImpl::doCycle()
     FLEXUS_PROFILE();
     // Frequencies are normalized to base 10
     for(index_t iter_idx = 0; iter_idx < 10; iter_idx++) {
+        if (isPaused()){
+            printf("flexus is paused, breaking execution.\n");
+            break;
+        }
         FLEXUS_DBG("--------------START FLEXUS CYCLE " << theCycleCount << " ------------------------");
         index_t advanceBy, oldCount = theCycleCount;
         advanceBy = invokeDrives(iter_idx);

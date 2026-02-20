@@ -30,7 +30,7 @@ FLEXUS_start(uint64_t cycle)
     while (true)
     {
         if(theFlexus->isPaused()){
-            Qemu::API::qemu_api.tick();  // 0 instructions, but lets host timers fire
+            Qemu::API::qemu_api.tick(true);  // 0 instructions, but lets host timers fire
             continue;
         }
         theFlexus->doCycle();

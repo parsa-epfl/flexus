@@ -237,7 +237,7 @@ typedef size_t (*QEMU_GET_NUM_CORES_t)(void);
 typedef logical_address_t (*QEMU_GET_PC_t)(size_t core_index);
 typedef bool (*QEMU_GET_IRQ_t)(size_t core_index);
 typedef uint64_t (*QEMU_CPU_EXEC_t)(size_t core_index, bool count);
-typedef void (*QEMU_TICK_t)(void);
+typedef void (*QEMU_TICK_t)(bool paused);
 typedef void (*QEMU_GET_MEM_t)(uint8_t* buffer, physical_address_t pa, size_t nb_bytes);
 typedef void (*QEMU_STOP_t)(char const* const msg);
 typedef char* (*QEMU_DISASS_t)(size_t core_index, uint64_t addr, size_t size);
