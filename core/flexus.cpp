@@ -11,6 +11,7 @@
 #include "core/qemu/qmp_api.hpp"
 #include "core/stats.hpp"
 #include "core/target.hpp"
+#include "components/uArch/CoreModel/bbv.hpp"
 
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
@@ -241,6 +242,8 @@ FlexusImpl::writeMeasurement(std::string const& aMeasurement, std::string const&
 {
     std::ofstream out(aFilename.c_str());
     Stat::getStatManager()->printMeasurement(aMeasurement, out);
+    out << std::endl << "=== BBV (Basic Block Vectors) ===" << std::endl;
+    nuArch::BBVTracker::dumpAllBBV(out);
     out.close();
 }
 

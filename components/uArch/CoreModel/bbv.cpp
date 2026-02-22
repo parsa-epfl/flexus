@@ -1,33 +1,16 @@
 
 #include "bbv.hpp"
 
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/serialization/map.hpp>
-#include <core/boost_extensions/padded_string_cast.hpp>
 #include <core/debug/debug.hpp>
-#include <core/flexus.hpp>
-#include <core/target.hpp>
 #include <core/types.hpp>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <list>
 
-#define DBG_DeclareCategories uArchCat
-#define DBG_SetDefaultOps     AddCat(uArchCat)
-#include DBG_Control()
-
-int32_t done_count = 0;
-
 namespace nuArch {
 
 static const int32_t kCountThreshold = 50000;
-
-typedef std::map<uint64_t, int> bbindex_t;
-bbindex_t theBBIndex;
-int32_t theNextBBIndex = 0;
-bool theMapChanged     = false;
 
 struct BBVTrackerImpl : public BBVTracker
 {
@@ -37,7 +20,6 @@ struct BBVTrackerImpl : public BBVTracker
 
     PhysicalMemoryAddress theLastPC;
     bool theLastWasBranch;
-    bool theLastWasBranchDelay;
 
     std::map<uint64_t, long> theBBV;
 
@@ -47,64 +29,74 @@ struct BBVTrackerImpl : public BBVTracker
       , theCountSinceDump(0)
       , theLastPC(PhysicalMemoryAddress(0))
       , theLastWasBranch(false)
-      , theLastWasBranchDelay(false)
     {
+        getAllTrackers().push_back(this);
     }
 
     virtual ~BBVTrackerImpl() {}
 
     virtual void commitInsn(PhysicalMemoryAddress aPC, bool isBranch)
     {
-        // Only process if we just processed a branch delay, or we had a
-        // discontinuous fetch.
-
-        bool same_basic_block = ((aPC == theLastPC + 4 && !theLastWasBranchDelay) || aPC == 0);
-        theLastPC             = aPC;
-        theLastWasBranchDelay = theLastWasBranch;
-        theLastWasBranch      = isBranch;
+        uint64_t current_pc = static_cast<uint64_t>(aPC);
+        uint64_t last_pc = static_cast<uint64_t>(theLastPC);
+        bool same_basic_block = (current_pc == last_pc + 4 && !theLastWasBranch);
 
         if (!same_basic_block) {
-            // We have a new basic block. See if it has an index
-            ++theBBV[aPC];
+            ++theBBV[current_pc];
         }
 
-        // See if it is time to dump stats
+        theLastPC        = aPC;
+        theLastWasBranch = isBranch;
+
         ++theCountSinceDump;
         if (theCountSinceDump >= kCountThreshold) {
-            dump();
             theCountSinceDump = 0;
             theBBV.clear();
         }
     }
 
-    void dump()
+    virtual void dumpToStream(std::ostream& anOstream, int32_t aCoreId) override
     {
-        if (theDumpNo > 100) return; // Don't bother dumping past 100
-        // Write out and then clear the current BBV vector
-        std::string name("bbv.cpu");
-        name += boost::padded_string_cast<2, '0'>(theIndex);
-        name += ".";
-        name += boost::padded_string_cast<3, '0'>(theDumpNo);
-        name += ".out";
-        std::ofstream bbv(name.c_str());
-
-        boost::archive::binary_oarchive oa(bbv);
-
-        oa << const_cast<std::map<uint64_t, long> const&>(theBBV);
-
-        // close archive
-        bbv.close();
-        ++theDumpNo;
-        if (theDumpNo == 51) {
-            ++done_count;
-            if (done_count == 16) {
-                DBG_Assert(false,
-                           (<< "Halting simulation - all CPUs have executed "
-                               "2.5M instructions"));
+        anOstream << "  {" << std::endl;
+        anOstream << "    \"core\": " << aCoreId << "," << std::endl;
+        anOstream << "    \"bbv\": {" << std::endl;
+        bool first = true;
+        for (auto const& kv : theBBV) {
+            if (!first) {
+                anOstream << "," << std::endl;
             }
+            anOstream << "      \"0x" << std::hex << kv.first << "\": " << std::dec << kv.second;
+            first = false;
         }
+        anOstream << std::endl << "    }" << std::endl;
+        anOstream << "  }" << std::endl;
     }
 };
+
+std::vector<BBVTracker*>& 
+BBVTracker::getAllTrackers() 
+{
+    static std::vector<BBVTracker*> trackers;
+    return trackers;
+}
+
+void 
+BBVTracker::dumpAllBBV(std::ostream& anOstream)
+{
+    auto& trackers = getAllTrackers();
+    if (trackers.empty()) {
+        return;
+    }
+    
+    anOstream << "[" << std::endl;
+    for (size_t i = 0; i < trackers.size(); ++i) {
+        trackers[i]->dumpToStream(anOstream, static_cast<int32_t>(i));
+        if (i < trackers.size() - 1) {
+            anOstream << "," << std::endl;
+        }
+    }
+    anOstream << std::endl << "]" << std::endl;
+}
 
 BBVTracker*
 BBVTracker::createBBVTracker(int32_t aCPUIndex)

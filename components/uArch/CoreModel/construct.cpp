@@ -96,7 +96,7 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , theInOrderExecute(options.inOrderExecute)
   , theIdleThisCycle(false)
   , theIdleCycleCount(0)
-  , theBBVTracker(/*BBVTracker::createBBVTracker(aNode)*/ 0)
+  , theBBVTracker(BBVTracker::createBBVTracker(options.node))
   , /* CMU-ONLY */
   theOnChipLatency(options.onChipLatency)
   , theOffChipLatency(options.offChipLatency)
