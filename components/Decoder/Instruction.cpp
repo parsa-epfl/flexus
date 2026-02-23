@@ -21,6 +21,7 @@ ArchInstruction::ArchInstruction(VirtualMemoryAddress aPC,
                                  eInstructionClass aClass,
                                  eInstructionCode aCode)
   : thePC(aPC)
+  , thePhysicalPC(PhysicalMemoryAddress(-1ULL))
   , thePCReg(aPC + 4)
   , theOpcode(anOpcode)
   , theBPState(bp_state)

@@ -1542,9 +1542,6 @@ void
 CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
 {
     FLEXUS_PROFILE();
-    if (theBBVTracker) {
-        theBBVTracker->commitInsn(anInstruction->pc(), anInstruction->isBranch());
-    }
     CORE_DBG(*anInstruction);
     bool validation_passed = true;
     eExceptionType raised  = kException_None;

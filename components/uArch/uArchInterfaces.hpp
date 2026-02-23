@@ -584,6 +584,8 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction
 
     virtual VirtualMemoryAddress pc() const                                             = 0;
     virtual VirtualMemoryAddress pcNext() const                                         = 0;
+    virtual void setPhysicalPC(PhysicalMemoryAddress aPC)                              = 0;
+    virtual PhysicalMemoryAddress physicalPC() const                                   = 0;
     virtual bool isTrap() const                                                         = 0;
     virtual bool preValidate()                                                          = 0;
     virtual bool advancesSimics() const                                                 = 0;

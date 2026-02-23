@@ -10,13 +10,9 @@
 
 namespace nuArch {
 
-static const int32_t kCountThreshold = 50000;
-
 struct BBVTrackerImpl : public BBVTracker
 {
     int32_t theIndex;
-    int32_t theDumpNo;
-    int32_t theCountSinceDump;
 
     PhysicalMemoryAddress theLastPC;
     bool theLastWasBranch;
@@ -25,8 +21,6 @@ struct BBVTrackerImpl : public BBVTracker
 
     BBVTrackerImpl(int32_t anIndex)
       : theIndex(anIndex)
-      , theDumpNo(0)
-      , theCountSinceDump(0)
       , theLastPC(PhysicalMemoryAddress(0))
       , theLastWasBranch(false)
     {
@@ -35,8 +29,10 @@ struct BBVTrackerImpl : public BBVTracker
 
     virtual ~BBVTrackerImpl() {}
 
-    virtual void commitInsn(PhysicalMemoryAddress aPC, bool isBranch)
+    virtual void commitInsn(PhysicalMemoryAddress aPC, bool isBranch) override
     {
+        DBG_Assert(static_cast<uint64_t>(aPC) != -1ULL, (<< "Physical PC should not be -1"));
+
         uint64_t current_pc = static_cast<uint64_t>(aPC);
         uint64_t last_pc = static_cast<uint64_t>(theLastPC);
         bool same_basic_block = (current_pc == last_pc + 4 && !theLastWasBranch);
@@ -47,18 +43,12 @@ struct BBVTrackerImpl : public BBVTracker
 
         theLastPC        = aPC;
         theLastWasBranch = isBranch;
-
-        ++theCountSinceDump;
-        if (theCountSinceDump >= kCountThreshold) {
-            theCountSinceDump = 0;
-            theBBV.clear();
-        }
     }
 
     virtual void dumpToStream(std::ostream& anOstream, int32_t aCoreId) override
     {
         anOstream << "  {" << std::endl;
-        anOstream << "    \"core\": " << aCoreId << "," << std::endl;
+        anOstream << "    \"core\": " << theIndex << "," << std::endl;
         anOstream << "    \"bbv\": {" << std::endl;
         bool first = true;
         for (auto const& kv : theBBV) {

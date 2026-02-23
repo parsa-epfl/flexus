@@ -19,6 +19,7 @@ class ArchInstruction : public nuArch::Instruction
 {
   protected:
     VirtualMemoryAddress thePC;
+    PhysicalMemoryAddress thePhysicalPC;
     std::vector<uint32_t> theInstruction;
     VirtualMemoryAddress thePCReg;
     Opcode theOpcode;
@@ -254,6 +255,9 @@ class ArchInstruction : public nuArch::Instruction
 
     virtual VirtualMemoryAddress pc() const { return thePC; }
 
+    virtual void setPhysicalPC(PhysicalMemoryAddress aPC) { thePhysicalPC = aPC; }
+    virtual PhysicalMemoryAddress physicalPC() const { return thePhysicalPC; }
+
     virtual VirtualMemoryAddress pcNext() const { return thePCReg; }
 
     virtual bool isTrap() const { return theRaisedException != kException_None; }
@@ -304,6 +308,7 @@ class ArchInstruction : public nuArch::Instruction
                     uint32_t aCPU,
                     int64_t aSequenceNo)
       : thePC(aPC)
+      , thePhysicalPC(PhysicalMemoryAddress(-1ULL))
       , thePCReg(aPC + 4)
       , theOpcode(anOpcode)
       , theBPState(bp_state)

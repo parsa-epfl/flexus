@@ -355,7 +355,7 @@ class FLEXUS_COMPONENT(uFetch)
                         auto opcode = ~f.pa ? cpu(0).fetch_inst(f.addr.theAddress) : 0xefffffff;
 
                         bundle->theOpcodes.emplace_back(
-                            new FetchedOpcode(f.addr.theAddress, opcode, f.addr.theBPState, f.tracker));
+                            new FetchedOpcode(f.addr.theAddress, PhysicalMemoryAddress(f.pa), opcode, f.addr.theBPState, f.tracker));
                         bundle->theFillLevels.emplace_back(
                             new tFillLevel(eL1I));
 

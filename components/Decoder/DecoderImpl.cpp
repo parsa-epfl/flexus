@@ -70,6 +70,7 @@ class FLEXUS_COMPONENT(Decoder)
                 boost::tie(insn, final_uop) = decode(*iter, aBundle->coreID, ++theInsnSequenceNo, uop++);
                 if (insn) {
                     insn->setFetchTransactionTracker(iter->theTransaction);
+                    insn->setPhysicalPC(iter->thePhysicalPC);
                     // Set Fill Level for the insn
                     insn->setSourceLevel(**fill_iter);
                     theFIQ.push_back(insn);
