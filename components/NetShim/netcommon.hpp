@@ -26,11 +26,16 @@ typedef int32_t* intP;
 #define MAX_NET_VC (2)
 
 // Maximum number of priorities
-#define NUM_PRIORITIES (4)
+#define NUM_PRIORITIES (7)
 
-#define MAX_PROT_VC (4)
+#define MAX_PROT_VC (7)
 
+// Converts priority (0-6) to network VC (0,2,4,6,8,10,12)
+// Note: We only use even network VCs (NET=0), so this is simply priority * 2
 #define PROTVC_TO_NETVC(VC) ((VC) * MAX_NET_VC)
+
+// Converts network VC back to priority
+// Works because we use only even network VCs: 0,2,4,6,8,10,12 -> 0,1,2,3,4,5,6
 #define NETVC_TO_PROTVC(VC) ((VC) / MAX_NET_VC)
 #define MAX_VC              (MAX_PROT_VC * MAX_NET_VC)
 #define BUILD_VC(PROT, NET) ((PROT) * MAX_NET_VC + (NET))
