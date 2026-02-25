@@ -118,14 +118,12 @@ FlexusImpl::setCycle(uint64_t cycle)
 
 void FlexusImpl::pause()
 {
-    printf("Pausing flexus\n");
     paused = true;
     // TODO see if you need to add in qemu calls here too
 }
 
 void FlexusImpl::resume()
 {
-    printf("Resuming flexus\n");
     paused = false;
     // Call tick to let host timers fire and avoid immediately pausing again
 }
@@ -172,8 +170,10 @@ FlexusImpl::advanceCycles(index_t aCycleCount)
     }
 
     if ((theStopCycle > 0) && (theCycleCount >= theStopCycle)) {
-        DBG_(Dev, (<< "Reached target cycle count. Ending simulation."));
-        terminateSimulation();
+        if (Flexus::Qemu::API::qemu_api.can_stop()){
+            DBG_(Dev, (<< "Reached target cycle count. Ending simulation."));
+            terminateSimulation();
+        }
     }
 
     static uint64_t last_stats = 0;
@@ -203,7 +203,6 @@ FlexusImpl::doCycle()
     // Frequencies are normalized to base 10
     for(index_t iter_idx = 0; iter_idx < 10; iter_idx++) {
         if (isPaused()){
-            printf("flexus is paused, breaking execution.\n");
             break;
         }
         FLEXUS_DBG("--------------START FLEXUS CYCLE " << theCycleCount << " ------------------------");
