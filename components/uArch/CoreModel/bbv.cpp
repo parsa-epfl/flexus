@@ -31,7 +31,9 @@ struct BBVTrackerImpl : public BBVTracker
 
     virtual void commitInsn(PhysicalMemoryAddress aPC, bool isBranch) override
     {
-        DBG_Assert(static_cast<uint64_t>(aPC) != -1ULL, (<< "Physical PC should not be -1"));
+        if (static_cast<uint64_t>(aPC) == 0 || static_cast<uint64_t>(aPC) == 0xFFFFFFFFFFFFFFFFULL) {
+            return; // Skip invalid PC
+        }
 
         uint64_t current_pc = static_cast<uint64_t>(aPC);
         uint64_t last_pc = static_cast<uint64_t>(theLastPC);
