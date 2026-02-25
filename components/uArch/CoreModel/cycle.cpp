@@ -1639,6 +1639,10 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
     if (collectTrace) { trace_stream << anInstruction->pc() << std::endl; }
     DBG_(VVerb, (<< "uARCH Validated "));
     DBG_(VVerb, (<< std::internal << *anInstruction << std::left));
+
+    if (theBBVTracker && anInstruction->advancesSimics()) {
+        theBBVTracker->commitInsn(anInstruction->physicalPC(), anInstruction->instClass() == clsBranch);
+    }
 }
 
 bool

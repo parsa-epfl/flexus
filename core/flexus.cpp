@@ -242,9 +242,18 @@ FlexusImpl::writeMeasurement(std::string const& aMeasurement, std::string const&
 {
     std::ofstream out(aFilename.c_str());
     Stat::getStatManager()->printMeasurement(aMeasurement, out);
-    out << std::endl << "=== BBV (Basic Block Vectors) ===" << std::endl;
-    nuArch::BBVTracker::dumpAllBBV(out);
     out.close();
+
+    std::string bbvFilename = aFilename;
+    size_t extPos = bbvFilename.rfind(".log");
+    if (extPos != std::string::npos) {
+        bbvFilename.replace(extPos, 4, ".bbv.json");
+    } else {
+        bbvFilename += ".bbv.json";
+    }
+    std::ofstream bbvOut(bbvFilename.c_str());
+    nuArch::BBVTracker::dumpAllBBV(bbvOut);
+    bbvOut.close();
 }
 
 void

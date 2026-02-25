@@ -63,21 +63,21 @@ struct BBVTrackerImpl : public BBVTracker
     }
 };
 
-std::vector<BBVTracker*>& 
-BBVTracker::getAllTrackers() 
+std::vector<BBVTracker*>&
+BBVTracker::getAllTrackers()
 {
     static std::vector<BBVTracker*> trackers;
     return trackers;
 }
 
-void 
+void
 BBVTracker::dumpAllBBV(std::ostream& anOstream)
 {
     auto& trackers = getAllTrackers();
     if (trackers.empty()) {
         return;
     }
-    
+
     anOstream << "[" << std::endl;
     for (size_t i = 0; i < trackers.size(); ++i) {
         trackers[i]->dumpToStream(anOstream, static_cast<int32_t>(i));

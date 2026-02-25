@@ -228,9 +228,6 @@ CoreImpl::accountStall(boost::intrusive_ptr<Instruction> anInstruction, bool emp
 void
 CoreImpl::accountCommit(boost::intrusive_ptr<Instruction> anInstruction, bool aRaised)
 {
-    if (theBBVTracker) {
-        theBBVTracker->commitInsn(anInstruction->physicalPC(), anInstruction->instClass() == clsBranch);
-    }
 
     int32_t level = 0 /* user */;
     if (theIsIdle == true)
