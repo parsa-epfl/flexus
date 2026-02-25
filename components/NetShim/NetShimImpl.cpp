@@ -77,7 +77,6 @@ class FLEXUS_COMPONENT(NetShim)
     {
         int32_t node = anIndex / cfg.VChannels;
         int32_t vc   = anIndex % cfg.VChannels;
-        vc           = MAX_PROT_VC - vc - 1;
         DBG_(VVerb,
              Comp(*this)(<< "Check network availability for node: " << node << " vc: " << vc << " -> "
                          << nc->isNodeOutputAvailable(node, vc)));
@@ -132,11 +131,10 @@ class FLEXUS_COMPONENT(NetShim)
     // Encapsulated in a function object "theAvail" to call from outside code
     bool isNodeAvailable(const int32_t node, const int32_t vc) const
     {
-        int32_t real_net_vc = MAX_PROT_VC - vc - 1;
-        index_t pdest       = (node)*cfg.VChannels + real_net_vc;
+        index_t pdest       = (node)*cfg.VChannels + vc;
         DBG_(VVerb,
              (<< "available? "
-              << "node: " << node << " vc: " << real_net_vc << " pdest: " << pdest));
+              << "node: " << node << " vc: " << vc << " pdest: " << pdest));
         return FLEXUS_CHANNEL_ARRAY(ToNode, pdest).available();
     }
 
@@ -200,8 +198,7 @@ class FLEXUS_COMPONENT(NetShim)
 
         msg->srcNode  = transport[NetworkMessageTag]->src;
         msg->destNode = transport[NetworkMessageTag]->dest;
-        msg->priority = MAX_PROT_VC - transport[NetworkMessageTag]->vc -
-                        1; // Note, this field really needs to be added to the NetworkMessage
+        msg->priority = transport[NetworkMessageTag]->vc;
         msg->networkVC = 0;
         // Size is a boolean (!control/data), which is translated into a
         // real latency inside the network simulator

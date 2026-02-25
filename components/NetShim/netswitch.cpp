@@ -138,6 +138,11 @@ NetSwitch::drive(void)
             if (internalBuffer->nextMessage()) break;
         }
 
+        if (bandwidthRemaining == 0) {
+            // there is no need to continue because we do not have enough bandwidth to send any more messages, even if they are waiting.
+            return false;
+        };
+
         // Don't look at an input port if there are no messages waiting
         // on that VC.
         if (!messagesWaiting[vc]) { continue; }
@@ -216,6 +221,7 @@ NetSwitch::routingPolicy(MessageState* msg)
 
             routingPort = routingTable[msg->destNode][i];
             routingVC   = vcTable[msg->destNode][i];
+            assert(routingVC == 0 || routingVC == 1);
 
             // If there is buffer space, send the message this way
             if (outputPorts[routingPort]->hasBufferSpace(BUILD_VC(msg->priority, routingVC))) {

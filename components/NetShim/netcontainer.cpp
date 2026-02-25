@@ -138,7 +138,7 @@ bool NetContainer::buildMesh() {
       }
     }
   }
-    
+
    // print the dimension of the mesh.
    std::cerr << "NetShim: Building a mesh with " << row << " rows and " << col << " columns." << std::endl;
 
@@ -718,7 +718,6 @@ NetContainer::attachSwitchChannels(NetContainer* nc, const int32_t sw, const int
         goto error;
     }
 
-    std::cerr << sw << ":" << port;
     return false;
 
 error:
@@ -735,8 +734,6 @@ NetContainer::attachNodeChannels(NetContainer* nc, const int32_t node)
 
     nc->channels[nc->maxChannelIndex]->setLocalLatencyDivider(nc->localChannelLatencyDivider);
     nc->channels[nc->maxChannelIndex + 1]->setLocalLatencyDivider(nc->localChannelLatencyDivider);
-
-    std::cerr << node;
 
     return false;
 
