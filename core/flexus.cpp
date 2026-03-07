@@ -254,6 +254,15 @@ FlexusImpl::writeMeasurement(std::string const& aMeasurement, std::string const&
     std::ofstream bbvOut(bbvFilename.c_str());
     nuArch::BBVTracker::dumpAllBBV(bbvOut);
     bbvOut.close();
+
+    std::string csvFilename = aFilename;
+    extPos = csvFilename.rfind(".log");
+    if (extPos != std::string::npos) {
+        csvFilename.replace(extPos, 4, ".csv");
+    } else {
+        csvFilename += ".csv";
+    }
+    Flexus::Qemu::API::qemu_api.notify_save_statistics(csvFilename.c_str());
 }
 
 void

@@ -243,6 +243,7 @@ typedef void (*QEMU_STOP_t)(char const* const msg);
 typedef char* (*QEMU_DISASS_t)(size_t core_index, uint64_t addr, size_t size);
 typedef bool (*QEMU_CPU_BUSY_t)(size_t core_index);
 typedef bool (*QEMU_SAVE_CHECKPOINT_REQUEST_t)(const char* snapshot_name);
+typedef void (*QEMU_NOTIFY_SAVE_STATISTICS_t)(const char* file_name);
 // ─────────────────────────────────────────────────────────────────────────────
 
 typedef void (*FLEXUS_START_t)(uint64_t);
@@ -273,6 +274,7 @@ typedef struct QEMU_API_t
     QEMU_DISASS_t disassembly;
     QEMU_CPU_BUSY_t is_busy;
     QEMU_SAVE_CHECKPOINT_REQUEST_t save_checkpoint_request;
+    QEMU_NOTIFY_SAVE_STATISTICS_t notify_save_statistics;
 } QEMU_API_t;
 
 extern QEMU_API_t qemu_api;
