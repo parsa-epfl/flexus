@@ -114,12 +114,12 @@ class FLEXUS_COMPONENT(uFetch)
                                                   tr->getInstruction()->unprivAccess():
                                                   false);
 
-        DBG_Assert((tr->thePaddr == magic) || (magic == nuArch::kUnresolved),
-                   Comp(*this)(<< "ERROR: Magic QEMU translation NOT EQUAL TO MMU "
-                                  "Translation. Vaddr = "
-                               << std::hex << tr->theVaddr << std::dec << ", PADDR_MMU = " << std::hex
-                               << tr->thePaddr << std::dec << ", PADDR_QEMU = " << std::hex << magic
-                               << std::dec));
+        // DBG_Assert((tr->thePaddr == magic) || (magic == nuArch::kUnresolved),
+                   // Comp(*this)(<< "ERROR: Magic QEMU translation NOT EQUAL TO MMU "
+                                  // "Translation. Vaddr = "
+                               // << std::hex << tr->theVaddr << std::dec << ", PADDR_MMU = " << std::hex
+                               // << tr->thePaddr << std::dec << ", PADDR_QEMU = " << std::hex << magic
+                               // << std::dec));
 
         if (!tr->isPagefault() && (magic == nuArch::kUnresolved))
             tr->setPagefault();

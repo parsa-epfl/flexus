@@ -945,6 +945,9 @@ class CoreImpl : public CoreModel
     void dumpActions();
     void dumpCheckpoints();
     void dumpSBPermissions();
+
+    // ASID reading helper
+    uint16_t readASID();
 };
 
 } // namespace nuArch

@@ -1560,7 +1560,16 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
         theInterruptSignalled   = false;
         theInterruptInstruction = 0;
 
+        // Read ASID before QEMU advancement
+        uint16_t oldASID = readASID();
+
         int qemu_rcode = advance_fn(true); // count time
+
+        // Read ASID after QEMU advancement and notify if changed
+        uint16_t newASID = readASID();
+        if (oldASID != newASID) {
+            Flexus::Core::theFlexus->notifyASIDChange(theNode, newASID);
+        }
 
         DBG_(Dev, (<< "c" << theNode << " commit [" << std::hex << qemu_rcode << "] " << *anInstruction << "PC:" << std::hex << anInstruction->pc() << std::dec));
 
@@ -1642,6 +1651,20 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
 
     if (theBBVTracker && anInstruction->advancesSimics()) {
         theBBVTracker->commitInsn(anInstruction->physicalPC(), anInstruction->instClass() == clsBranch);
+    }
+}
+
+uint16_t
+CoreImpl::readASID()
+{
+    auto TCR_EL1 = theQEMUCPU.read_register(Flexus::Qemu::API::TCR, 1);  // EL1
+    auto A1bit = extract64(TCR_EL1, 22, 1);
+    if (A1bit) {
+        auto TTBR1_EL1 = theQEMUCPU.read_register(Flexus::Qemu::API::TTBR1, 1);  // EL1
+        return extract64(TTBR1_EL1, 48, 16);
+    } else {
+        auto TTBR0_EL1 = theQEMUCPU.read_register(Flexus::Qemu::API::TTBR0, 1);  // EL1
+        return extract64(TTBR0_EL1, 48, 16);
     }
 }
 
