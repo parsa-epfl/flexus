@@ -176,7 +176,9 @@ FlexusImpl::advanceCycles(index_t aCycleCount)
         std::string report_name =
           "all.measurement." + boost::padded_string_cast<10, '0'>(advanced_cycle_count) + ".log";
         writeMeasurement("all", report_name);
-        last_stats = advanced_cycle_count;
+        if (theStatInterval && (advanced_cycle_count - last_stats >= theStatInterval)) {
+            last_stats = advanced_cycle_count;
+        }
     }
 
     Flexus::Dbg::Debugger::theDebugger->checkAt();
