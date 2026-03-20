@@ -290,16 +290,16 @@ FlexusImpl::writeMeasurement(std::string const& aMeasurement, std::string const&
     asidOut << std::setw(2) << snapshot << std::endl;
     asidOut.close();
 
-    std::string bbvFilename = aFilename;
-    extPos = bbvFilename.rfind(".log");
-    if (extPos != std::string::npos) {
-        bbvFilename.replace(extPos, 4, ".bbv.json");
-    } else {
-        bbvFilename += ".bbv.json";
-    }
-    std::ofstream bbvOut(bbvFilename.c_str());
-    nuArch::BBVTracker::dumpAllBBV(bbvOut);
-    bbvOut.close();
+    // std::string bbvFilename = aFilename;
+    // extPos = bbvFilename.rfind(".log");
+    // if (extPos != std::string::npos) {
+    //     bbvFilename.replace(extPos, 4, ".bbv.json");
+    // } else {
+    //     bbvFilename += ".bbv.json";
+    // }
+    // std::ofstream bbvOut(bbvFilename.c_str());
+    // nuArch::BBVTracker::dumpAllBBV(bbvOut);
+    // bbvOut.close();
 
     std::string csvFilename = aFilename;
     extPos = csvFilename.rfind(".log");
