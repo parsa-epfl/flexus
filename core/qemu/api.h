@@ -251,6 +251,7 @@ typedef void (*FLEXUS_QMP_t)(qmp_flexus_cmd_t, const char*);
 typedef void (*FLEXUS_TRACE_MEM_t)(uint64_t, memory_transaction_t*);
 typedef void (*FLEXUS_PAUSE_t)(void);
 typedef void (*FLEXUS_RESUME_t)(void);
+typedef bool (*FLEXUS_IS_PAUSED_t)(void);
 
 typedef struct FLEXUS_API_t
 {
@@ -260,6 +261,7 @@ typedef struct FLEXUS_API_t
     FLEXUS_TRACE_MEM_t trace_mem;
     FLEXUS_PAUSE_t pause;
     FLEXUS_RESUME_t resume;
+    FLEXUS_IS_PAUSED_t is_paused;
 } FLEXUS_API_t;
 
 typedef struct QEMU_API_t
@@ -292,6 +294,7 @@ void
 FLEXUS_trace_mem(uint64_t, memory_transaction_t*);
 void FLEXUS_pause(void);
 void FLEXUS_resume(void);
+bool FLEXUS_is_paused(void);
 
 
 void

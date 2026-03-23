@@ -18,6 +18,7 @@ FLEXUS_get_api(FLEXUS_API_t* api)
     api->trace_mem = FLEXUS_trace_mem;
     api->pause     = FLEXUS_pause;
     api->resume    = FLEXUS_resume;
+    api->is_paused = FLEXUS_is_paused;
 }
 
 using namespace Flexus::Core;
@@ -44,6 +45,10 @@ void FLEXUS_pause()
 void FLEXUS_resume()
 {
     theFlexus->resume();
+}
+bool FLEXUS_is_paused()
+{
+    return theFlexus->isPaused();
 }
 
 void
