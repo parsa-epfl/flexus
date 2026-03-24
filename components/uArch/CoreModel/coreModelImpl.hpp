@@ -301,6 +301,12 @@ class CoreImpl : public CoreModel
     Stat::StatCounter theCycleCountStat;
     Stat::StatCounter theCommitCount;
     Stat::StatCounter theHaltedCycleCount;
+    Stat::StatCounter theSquashedRetCount;
+    Stat::StatCounter theSquashedRetCount_ResetCore;  // ROB.clear() in resetCore() (called by reset() and doAbortSpeculation())
+    Stat::StatCounter theSquashedRetCount_SRB_Reset;  // SRB.clear() in reset()
+    Stat::StatCounter theSquashedRetCount_SRB_AbortSpec; // SRB.erase() in doAbortSpeculation()
+    Stat::StatCounter theRetAtHeadOpUnset;
+    Stat::StatCounter theCycleCallCount;
 
     Stat::StatCounter theCommitCount_NonSpin_User;
     Stat::StatCounter theCommitCount_NonSpin_System;
@@ -321,6 +327,7 @@ class CoreImpl : public CoreModel
 
     Stat::StatCounter theSpinCount;
     Stat::StatCounter theSpinCycles;
+    Stat::StatCounter theSpinningCycles;
     Stat::StatCounter theWFI;
 
     Stat::StatCounter totalPageWalkLatency;

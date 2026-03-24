@@ -7,6 +7,7 @@
 #include <components/CommonQEMU/Translation.hpp>
 #include <components/Decoder/BitManip.hpp>
 #include <components/Decoder/Instruction.hpp>
+#include <components/Decoder/SemanticActions.hpp>
 #include <core/debug/severity.hpp>
 #include <iostream>
 #include <algorithm>
@@ -91,6 +92,18 @@ bool equalTwoLists(action_list_t& a, action_list_t& b)
 void
 CoreImpl::cycle(eExceptionType aPendingInterrupt)
 {
+    ++theCycleCallCount;
+    if (theSpinning) ++theSpinningCycles;
+
+    // Cycle-accurate counter: RET at ROB head with kOperand1 not yet set
+    if (!theROB.empty()) {
+        auto* sem = dynamic_cast<nDecoder::SemanticInstruction*>(theROB.front().get());
+        if (sem && theROB.front()->instCode() == nDecoder::codeRETURN
+                && !sem->hasOperand(nDecoder::kOperand1)) {
+            ++theRetAtHeadOpUnset;
+        }
+    }
+
     // qemu warmup
     if (theFlexus->cycleCount() == 1) {
         advance_fn(true);
@@ -1068,10 +1081,10 @@ operator<<(std::ostream& anOstream, eExceptionType aCode)
         "Exception_None                  "
     };
 
-    if (aCode == kException_None) {
-        anOstream << "InvalidExceptionType(" << static_cast<int>(aCode) << ")";
-    } else {
+    if (static_cast<std::size_t>(aCode) < std::size(exceptionTypes)) {
         anOstream << exceptionTypes[aCode];
+    } else {
+        anOstream << "InvalidExceptionType(" << static_cast<int>(aCode) << ")";
     }
     return anOstream;
 }
@@ -1456,6 +1469,9 @@ CoreImpl::doAbortSpeculation()
     //  )->rollbackMMUCkpts(num_ckpts_discarded - 1);
 
     // Clean up SRB and SSB.
+    for (rob_t::iterator srb_count_iter = srb_ckpt; srb_count_iter != theSRB.end(); ++srb_count_iter) {
+        if ((*srb_count_iter)->instCode() == codeRETURN) { ++theSquashedRetCount_SRB_AbortSpec; }
+    }
     theSRB.erase(srb_ckpt, theSRB.end());
     srb_ckpt              = theSRB.end(); // srb_ckpt is no longer valid;
     int32_t remaining_ssb = clearSSB(ckpt_seq_num);
@@ -1720,6 +1736,7 @@ CoreImpl::doSquash()
             rob_t::reverse_iterator iter = theROB.rbegin();
             rob_t::reverse_iterator end  = boost::make_reverse_iterator(erase_iter);
             while (iter != end) {
+                if ((*iter)->instCode() == codeRETURN) { ++theSquashedRetCount; }
                 (*iter)->squash();
                 ++iter;
             }

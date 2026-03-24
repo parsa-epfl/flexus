@@ -112,6 +112,12 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , theCycleCountStat(theName + "-Cycles")
   , theCommitCount(theName + "-Commits")
   , theHaltedCycleCount(theName + "-HaltedCycles")
+  , theSquashedRetCount(theName + "-SquashedRetCount")
+  , theSquashedRetCount_ResetCore(theName + "-SquashedRetCount:ResetCore")
+  , theSquashedRetCount_SRB_Reset(theName + "-SquashedRetCount:SRB_Reset")
+  , theSquashedRetCount_SRB_AbortSpec(theName + "-SquashedRetCount:SRB_AbortSpec")
+  , theRetAtHeadOpUnset(theName + "-RetAtHeadOpUnset")
+  , theCycleCallCount(theName + "-CycleCallCount")
   , theCommitCount_NonSpin_User(theName + "-Commits:NonSpin:User")
   , theCommitCount_NonSpin_System(theName + "-Commits:NonSpin:System")
   , theCommitCount_NonSpin_Trap(theName + "-Commits:NonSpin:Trap")
@@ -126,6 +132,7 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , theSBNAWOccupancy(theName + "-Occupancy:SBNAW")
   , theSpinCount(theName + "-Spins")
   , theSpinCycles(theName + "-SpinCycles")
+  , theSpinningCycles(theName + "-SpinningCycles")
   , theWFI(theName + "-WFICycles")
   , totalPageWalkLatency(theName + "-PageWalkLatency")
   , totalPageWalks(theName + "-PageWalks")
@@ -403,6 +410,9 @@ CoreImpl::resetCore()
     theDispatchStalled = false;
     theDispatchingInsts.clear();
 
+    for (auto const& rob_insn : theROB) {
+        if (rob_insn->instCode() == codeRETURN) { ++theSquashedRetCount_ResetCore; }
+    }
     theROB.clear();
 
     theSquashRequested = false;
@@ -427,6 +437,9 @@ CoreImpl::reset()
 
     resetCore();
 
+    for (auto const& srb_insn : theSRB) {
+        if (srb_insn->instCode() == codeRETURN) { ++theSquashedRetCount_SRB_Reset; }
+    }
     theSRB.clear();
 
     clearSSB();

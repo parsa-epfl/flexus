@@ -1,5 +1,6 @@
 
 #include "coreModelImpl.hpp"
+#include <components/Decoder/SemanticActions.hpp>
 
 #define DBG_DeclareCategories uArchCat
 #define DBG_SetDefaultOps     AddCat(uArchCat)
@@ -415,6 +416,7 @@ void
 CoreImpl::accountRetire(boost::intrusive_ptr<Instruction> anInst)
 {
     FLEXUS_PROFILE();
+    theTimeBreakdown.forceSync();
     DBG_Assert(anInst);
     DBG_(VVerb, (<< " accountRetire: " << *anInst));
 
@@ -826,6 +828,7 @@ void
 CoreImpl::completeAccounting()
 {
     FLEXUS_PROFILE();
+    theTimeBreakdown.forceSync();
 
     // count occupancy in ROB
     theROBOccupancyTotal << std::make_pair(theROB.size(), 1);
@@ -882,13 +885,34 @@ CoreImpl::completeAccounting()
             } else if (theIsSpeculating && theROB.front()->resync()) {
                 // HERE
                 theTimeBreakdown.stall(nXactTimeBreakdown::kSyncWhileSpeculating);
-            } else if (theROB.front()->willRaise()) {
+            } else if (theROB.front()->willRaise() != kException_None) {
                 // Stall because of exception at head of ROB
                 switch (theROB.front()->instClass()) {
                     case clsLoad: theTimeBreakdown.stall(nXactTimeBreakdown::kWillRaise_Load); break;
-                    case clsStore: theTimeBreakdown.stall(nXactTimeBreakdown::kWillRaise_Store); break;
+                    case clsStore: {
+                        memq_t::index<by_insn>::type::iterator iter =
+                            theMemQueue.get<by_insn>().find(theROB.front());
+                        if (iter != theMemQueue.get<by_insn>().end() && iter->theSideEffect &&
+                            !sbEmpty()) {
+                            theTimeBreakdown.stall(nXactTimeBreakdown::kWillRaise_Store_SBDrain);
+                        } else if (sbFull()) {
+                            theTimeBreakdown.stall(nXactTimeBreakdown::kWillRaise_Store_SBFull);
+                        } else {
+                            theTimeBreakdown.stall(nXactTimeBreakdown::kWillRaise_Store);
+                        }
+                        break;
+                    }
                     case clsAtomic: theTimeBreakdown.stall(nXactTimeBreakdown::kWillRaise_Atomic); break;
-                    case clsBranch: theTimeBreakdown.stall(nXactTimeBreakdown::kWillRaise_Branch); break;
+                    case clsBranch:
+                        // Sub-classify: if the branch action hasn't fired yet, the exception
+                        // was detected (via takeTrap from memory reply processing) before the
+                        // branch execute action had a chance to run.
+                        if (!theROB.front()->hasExecuted()) {
+                            theTimeBreakdown.stall(nXactTimeBreakdown::kWillRaise_Branch_ActionPending);
+                        } else {
+                            theTimeBreakdown.stall(nXactTimeBreakdown::kWillRaise_Branch);
+                        }
+                        break;
                     case clsMEMBAR: theTimeBreakdown.stall(nXactTimeBreakdown::kWillRaise_MEMBAR); break;
                     case clsComputation: theTimeBreakdown.stall(nXactTimeBreakdown::kWillRaise_Computation); break;
                     case clsSynchronizing: theTimeBreakdown.stall(nXactTimeBreakdown::kWillRaise_Synchronizing); break;
@@ -930,6 +954,102 @@ CoreImpl::completeAccounting()
                     } /*else if (iter->theMMU) {
                       theTimeBreakdown.stall(nXactTimeBreakdown::kMMUAccess);
                     }*/
+                } else {
+                    // No LSQ entry: instruction stalling at ROB head with no specific
+                    // known cause. Use diagnostic counters to distinguish from the
+                    // retire()-path stall attribution.
+                    switch (theROB.front()->instClass()) {
+                        case clsComputation:
+                            theTimeBreakdown.stall(nXactTimeBreakdown::kDataflow_Blocked);
+                            break;
+                        case clsBranch: {
+                            // Check whether the source register(s) are kNotReady to
+                            // distinguish H-new-A (speculative load, source in-flight)
+                            // from H-new-B (predecessor chain constraint despite kReady source).
+                            bool src_not_ready = false;
+                            auto* sem = dynamic_cast<nDecoder::SemanticInstruction*>(theROB.front().get());
+                            if (sem) {
+                                for (auto code : {nDecoder::kPS1, nDecoder::kPS2, nDecoder::kPS3,
+                                                  nDecoder::kPS4, nDecoder::kPS5, nDecoder::kCCps}) {
+                                    if (sem->hasOperand(code)) {
+                                        auto reg = sem->operand<mapped_reg>(code);
+                                        if (theRegisters.status(reg) == kNotReady) {
+                                            src_not_ready = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            if (src_not_ready) {
+                                theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcNotReady);
+                            } else if (!theROB.front()->hasExecuted()) {
+                                switch (theROB.front()->instCode()) {
+                                    case codeBranchConditional:
+                                    case codeBranchFPConditional:
+                                        theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_NE_Cond);
+                                        break;
+                                    case codeBranchUnconditional:
+                                        theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_NE_Uncond);
+                                        break;
+                                    case codeBranchIndirectReg:
+                                        theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_NE_IndirectReg);
+                                        break;
+                                    case codeCALL:
+                                    case codeBranchIndirectCall:
+                                        theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_NE_Call);
+                                        break;
+                                    case codeRETURN: {
+                                        int32_t ret_cycles = theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_NE_Return);
+                                        // Split: natural 1-cycle gap vs accumulated from previous non-stall path
+                                        theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_NE_Return_OpUnset_Natural, 1);
+                                        if (ret_cycles > 1) {
+                                            theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_NE_Return_OpUnset_Accumulated, ret_cycles - 1);
+                                        }
+                                        if (sem) {
+                                            if (sem->hasOperand(nDecoder::kOperand1)) {
+                                                theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_NE_Return_OpSet, ret_cycles);
+                                            } else {
+                                                theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_NE_Return_OpUnset, ret_cycles);
+                                                if (sem->hasOperand(nDecoder::kPS1)) {
+                                                    theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_NE_Return_OpUnset_PS1Present, ret_cycles);
+
+                                                    // Test 1: NewStall vs ContStall — track distinct RET stall episodes
+                                                    static int64_t s_lastRetSeqNo = -1;
+                                                    int64_t curSeqNo = theROB.front()->sequenceNo();
+                                                    if (curSeqNo != s_lastRetSeqNo) {
+                                                        s_lastRetSeqNo = curSeqNo;
+                                                        theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_NE_Return_OpUnset_PS1Present_NewStall, ret_cycles);
+                                                    } else {
+                                                        theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_NE_Return_OpUnset_PS1Present_ContStall, ret_cycles);
+                                                    }
+
+                                                    // Test 2: DirectNotReady — re-run the exact same register status check
+                                                    // as the src_not_ready loop uses for kPS1
+                                                    {
+                                                        auto reg = sem->operand<mapped_reg>(nDecoder::kPS1);
+                                                        if (theRegisters.status(reg) == kNotReady) {
+                                                            theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_NE_Return_OpUnset_PS1Present_DirectNotReady, ret_cycles);
+                                                        }
+                                                    }
+                                                } else {
+                                                    theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_NE_Return_OpUnset_PS1Absent, ret_cycles);
+                                                }
+                                            }
+                                        }
+                                        break;
+                                    }
+                                    default:
+                                        theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_NE_Other);
+                                        break;
+                                }
+                            } else {
+                                theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_Executed);
+                            }
+                            break;
+                        }
+                        default:
+                            break;
+                    }
                 }
             }
 
