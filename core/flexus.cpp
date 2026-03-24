@@ -160,6 +160,11 @@ FlexusImpl::advanceCycles(index_t aCycleCount)
 
     for (int i = 0; i < aCycleCount; i++) {
         Qemu::API::qemu_api.tick(false);
+        // Pause might be called by virtual timer after updating time, go on busy wait until pause is removed
+        while (isPaused()) {
+            // Make sure timers are still called but time not advanced
+            Qemu::API::qemu_api.tick(true);
+        }
     }
 
     if (dbgOverrides.size()) {
