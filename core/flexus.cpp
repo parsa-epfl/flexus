@@ -158,7 +158,9 @@ FlexusImpl::advanceCycles(index_t aCycleCount)
     theCycleCountStat += aCycleCount;
     advanced_cycle_count += aCycleCount;
 
-    Qemu::API::qemu_api.tick(false);
+    for (int i = 0; i < aCycleCount; i++) {
+        Qemu::API::qemu_api.tick(false);
+    }
 
     if (dbgOverrides.size()) {
         auto &front = dbgOverrides.front();
