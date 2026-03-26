@@ -247,7 +247,8 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
             // return ((addr >> setLowShift) & setLowMask) | ((addr >> setMidShift) & setMidMask) |
             //        ((addr >> setHighShift) & setHighMask);
 
-            return ((addr >> 6) / (theNumSharers / 2)) % theNumSets;
+            // return ((addr >> 6) / (theNumSharers / 2)) % theNumSets;
+            return ((addr >> 6) / (theBanks)) % theNumSets;
         }
     }
 
@@ -293,7 +294,7 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
         theSkewSet           = false;
 
         theNumNodes = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
-        assert(theNumNodes == theBanks);
+        // assert(theNumNodes == theBanks);
 
 
         std::list<std::pair<std::string, std::string>>::const_iterator iter = theConfiguration.begin();
@@ -302,8 +303,9 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
                 theNumSets = strtoll(iter->second.c_str(), nullptr, 0);
             } else if (iter->first == "total_sets" || iter->first == "global_sets") {
                 uint64_t global_sets = strtol(iter->second.c_str(), nullptr, 0);
-                DBG_Assert(global_sets % theNumNodes == 0);
-                theNumSets          = global_sets / theNumNodes;
+                DBG_Assert(global_sets % theBanks == 0);
+                theNumSets          = global_sets / theBanks;
+                DBG_(Crit, (<< "global_sets: " << global_sets << " num_banks: " << theBanks << " sets per bank: " << theNumSets));
             } else if (iter->first == "assoc" || iter->first == "associativity") {
                 theAssociativity = strtol(iter->second.c_str(), nullptr, 0);
             } else if (iter->first == "skew" || iter->first == "skew_set") {
@@ -386,7 +388,8 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
     }
 
     void checkAddress(uint64_t address) {
-        uint64_t node_idx_of_cacheline = (address >> 6) % (theNumSharers / 2);
+        // uint64_t node_idx_of_cacheline = (address >> 6) % (theNumSharers / 2);
+        uint64_t node_idx_of_cacheline = (address >> 6) % (theBanks);
         DBG_Assert(node_idx_of_cacheline == theGlobalBankIndex,
                     (<< "Address " << std::hex << address << " is not in the correct node. Expected node "
                     << theTotalBanks << " but got node " << node_idx_of_cacheline));
@@ -457,12 +460,14 @@ class StdDirectory : public AbstractDirectory<_State, _EState>
             // are beloing to this set and the node index.
             for (uint32_t j = 0; j < checkpoint.at(i).size(); j++) {
                 uint64_t address = checkpoint.at(i).at(j)["tag"];
-                uint64_t node_idx_of_cacheline = (address >> 6) % (theNumSharers / 2);
+                // uint64_t node_idx_of_cacheline = (address >> 6) % (theNumSharers / 2);
+                uint64_t node_idx_of_cacheline = (address >> 6) % (theBanks);
                 DBG_Assert(node_idx_of_cacheline == theGlobalBankIndex,
                            (<< "Address " << std::hex << address << " is not in the correct node. Expected node "
                             << theTotalBanks << " but got node " << node_idx_of_cacheline));
 
                 if (makeSet(PhysicalMemoryAddress(address)) != i) {
+                    DBG_(Crit, (<< "Address shift 6 " << std::hex << (address >> 6) << " num_sets: " << theNumSets << "numSharers: " << theNumSharers));
                     DBG_(Crit, (<< "Address " << std::hex << address
                                 << " is not in the correct set. Expected set " << i
                                 << " but got set " << makeSet(PhysicalMemoryAddress(address))));
