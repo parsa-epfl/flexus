@@ -123,7 +123,7 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
             DBG_Assert(false, (<< "AtMemory directory placement is not supported anymore."));
             theDirLoc = eAtMemory;
         } else {
-            DBG_Assert(false, (<< "AtMemory directory placement is not supported anymore."));
+            // DBG_Assert(false, (<< "AtMemory directory placement is not supported anymore."));
             theDirLoc = eUserSpecified;
             std::string dir_loc_str = cfg.DirLocation;
             std::list<int> dir_loc_list;

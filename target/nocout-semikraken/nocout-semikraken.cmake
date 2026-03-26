@@ -3,6 +3,7 @@ set(REQUIRED_COMPONENTS
   uFetch
   Decoder
   uArch
+  SMS
   FetchAddressGenerate
   BranchPredictor
   Cache
