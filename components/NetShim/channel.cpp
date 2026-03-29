@@ -185,6 +185,13 @@ ChannelInputPort::setLocalDelay(void)
     return false;
 }
 
+bool
+ChannelInputPort::updateLatency(int32_t latency)
+{
+    channelLatency = latency;
+    return false;
+}
+
 //////////////////////////////////////////////////////////////////////
 //
 

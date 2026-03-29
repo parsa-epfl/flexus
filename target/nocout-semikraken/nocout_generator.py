@@ -13,11 +13,13 @@
 
 x=8
 y=6
+channel_lat = 1
+fbfly_lat = 3
 
 def create_boilerplate():
     return f"""
 # Boilerplate stuff
-ChannelLatency 1
+ChannelLatency {channel_lat}
 ChannelLatencyData 4
 ChannelLatencyControl 1
 LocalChannelLatencyDivider 4
@@ -75,7 +77,7 @@ def connect_switches_same_row():
     for yidx in range(y):
         for xidx in range(x-1):
             switchidx = yidx*x + xidx
-            ret += f"Top Switch {switchidx}:3 -> Switch {switchidx+1}:4\n"
+            ret += f"Top Switch {switchidx}:3:{channel_lat} -> Switch {switchidx+1}:4:{channel_lat}\n"
     return ret
 
 def connect_switches_middle_column():
@@ -86,7 +88,7 @@ def connect_switches_middle_column():
             switchidx = yidx*x + xidx
             if switchidx + connection_distance*x >= x*y:
                 break
-            ret += f"Top Switch {switchidx}:{2*connection_distance+3} -> Switch {switchidx + connection_distance*x}:{2*connection_distance+4}\n"
+            ret += f"Top Switch {switchidx}:{2*connection_distance+3}:{fbfly_lat} -> Switch {switchidx + connection_distance*x}:{2*connection_distance+4}:{fbfly_lat}\n"
     return ret
 
 def routing_algorithm():
