@@ -103,6 +103,7 @@ class NetSwitch
 
     // These ports give the minimum delay possible - reserved for the local node
     bool setLocalDelayOnly(const int32_t port);
+    bool updateLatency(const int32_t port, const int32_t latency);
 
     bool notifyWaitingMessage(const int32_t vc)
     {

@@ -357,6 +357,14 @@ NetSwitch::setLocalDelayOnly(const int32_t port)
 }
 
 bool
+NetSwitch::updateLatency(const int32_t port, const int32_t latency)
+{
+    assert(port >= 0 && port < numPorts);
+
+    return inputPorts[port]->updateLatency(latency);
+}
+
+bool
 NetSwitchInternalBuffer::dumpState(ostream& out)
 {
     int i;
