@@ -122,6 +122,14 @@ typedef Transport<mpl::vector<transport_entry<MemoryMessageTag_t, MemoryMessage>
                               transport_entry<TaglessDirMsgTag_t, TaglessDirMsg>>>
   MemoryTransport;
 
+struct SMSTrainInfo
+  : public boost::intrusive_ref_counter<SMSTrainInfo>
+{
+    VirtualMemoryAddress pc;
+    PhysicalMemoryAddress address;
+    bool isStore;
+};
+
 } // namespace SharedTypes
 } // namespace Flexus
 

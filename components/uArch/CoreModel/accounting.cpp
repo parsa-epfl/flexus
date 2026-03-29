@@ -189,6 +189,43 @@ CoreImpl::accountCommitMemOp(boost::intrusive_ptr<Instruction> inst)
 }
 
 void
+CoreImpl::accountStall(boost::intrusive_ptr<Instruction> anInstruction, bool emptyROB)
+{
+    DBG_Assert(emptyROB || anInstruction);
+    int32_t level = 0 /* user */;
+    if (theIsIdle == true)
+        level = 3 /* idle */;
+    else if (anInstruction && anInstruction->isTrap())
+        level = 2 /* trap */;
+    else if (isPrivileged())
+        level = 1 /* system */;
+
+    if (emptyROB) {
+        ++(*theStallsByCode[level][codeLastCode]);
+        return;
+    }
+
+    eInstructionCode code   = anInstruction->instCode();
+    eInstructionClass klass = anInstruction->instClass();
+    ++(*theStallsByCode[level][code]);
+
+    if (code == codeALU)
+        DBG_(Crit, (<< "ALU instruction caused a stall! Instruction: " << *anInstruction));
+    if (code == codeRev)
+        DBG_(Crit, (<< "REV instruction caused a stall! Instruction: " << *anInstruction));
+    if (code == codeMul)
+        DBG_(Crit, (<< "MUL instruction caused a stall! Instruction: " << *anInstruction));
+    if (code == codeDiv)
+        DBG_(Crit, (<< "DIV instruction caused a stall! Instruction: " << *anInstruction));
+    if (code == codeRDPR)
+        DBG_(Crit, (<< "RDPR instruction caused a stall! Instruction: " << *anInstruction));
+    if (code == codeWRPR)
+        DBG_(Crit, (<< "WRPR instruction caused a stall! Instruction: " << *anInstruction));
+
+    return;
+}
+
+void
 CoreImpl::accountCommit(boost::intrusive_ptr<Instruction> anInstruction, bool aRaised)
 {
     int32_t level = 0 /* user */;

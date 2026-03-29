@@ -47,6 +47,7 @@ struct WritebackAction : public BaseSemanticAction
       , theSetflags(setflags)
       , theSP(aSP)
     {
+        isWb = true;
     }
 
     void squash(int32_t anArg)
@@ -90,6 +91,8 @@ struct WritebackAction : public BaseSemanticAction
             DBG_(VVerb, (<< *this << " rd= " << name << " result=" << result));
             core()->bypass(name, result);
             satisfyDependants();
+        } else {
+            reschedule();
         }
     }
 
@@ -109,6 +112,7 @@ struct WriteccAction : public BaseSemanticAction
       , theCC(anCC)
       , the64(an64)
     {
+        isWcc = true;
     }
 
     void squash(int32_t anArg)
@@ -153,6 +157,8 @@ struct WriteccAction : public BaseSemanticAction
             core()->writeRegister(name, ccresult, false);
             core()->bypass(name, ccresult);
             satisfyDependants();
+        } else {
+            reschedule();
         }
     }
 

@@ -296,6 +296,12 @@ CoreImpl::processReply(MemOp const& anOperation)
         case kCASReply:
         case kStoreReply: acquireWritePermission(addr);
         case kLoadReply:
+            if (anOperation.theTracker->source()) {
+                if (*(anOperation.theTracker->source()) == "MMU") {
+                    totalPageWalkLatency += (theCycleCount - anOperation.theTracker->startCycle());
+                    totalPageWalks++;
+                }
+            }
         case kAtomicPreloadReply:
             if (anOperation.theTracker && !anOperation.theTracker->completionCycle()) {
                 anOperation.theTracker->complete(); // The transaction is done.

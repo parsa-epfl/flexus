@@ -48,6 +48,7 @@ COMPONENT_INTERFACE(
   DYNAMIC_PORT_ARRAY(PushInput, MemoryTransport, FrontSideIn_Snoop)
   DYNAMIC_PORT_ARRAY(PushInput, MemoryTransport, FrontSideIn_Request)
   DYNAMIC_PORT_ARRAY(PushInput, MemoryTransport, FrontSideIn_Prefetch)
+  PORT(PushOutput, MemoryTransport, SMSEvictInval)
   PORT(PushOutput, MemoryTransport, BackSideOut_Reply)
   PORT(PushOutput, MemoryTransport, BackSideOut_Snoop)
   PORT(PushOutput, MemoryTransport, BackSideOut_Request)

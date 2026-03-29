@@ -22,6 +22,7 @@ COMPONENT_PARAMETERS(
     PARAMETER( sTLBSet,    size_t,  "Set count of the Second-level TLB", "stlb_sete", 2048 )
     PARAMETER( sTLBAssoc,  size_t,  "Associativity of the Second-level TLB", "stlb_assoc", 4 )
     PARAMETER( PerfectTLB,  bool,   "TLB never misses",             "perfect",  true )
+    PARAMETER( ParallelTLB, bool,      "Lookup in parallel", "parallel", false )
 );
 
 COMPONENT_INTERFACE(

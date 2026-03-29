@@ -12,8 +12,11 @@ CoreImpl::CoreImpl(uArchOptions_t options,
                    std::function<void(eSquashCause)> _squash,
                    std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> _redirect,
                    std::function<void(boost::intrusive_ptr<BPredState>)> _trainBP,
+                   std::function<void(boost::intrusive_ptr<SMSTrainInfo>)> _trainSMS,
                    std::function<void(bool)> _signalStoreForwardingHit,
-                   std::function<void(int32_t)> _mmuResync)
+                   std::function<void(int32_t)> _mmuResync,
+                   std::function<void(TranslationPtr&)> _reqMMU
+                   )
   : theName(options.name)
   , theNode(options.node)
   ,
@@ -22,10 +25,14 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , squash_fn(_squash)
   , redirect_fn(_redirect)
   , trainBP_fn(_trainBP)
+  , trainSMS_fn(_trainSMS)
+  , reqMMU_fn(_reqMMU)
   , signalStoreForwardingHit_fn(_signalStoreForwardingHit)
   , mmuResync_fn(_mmuResync)
   , thePendingTrap(kException_None)
-  , theBypassNetwork(kxRegs_Total + 3 * options.ROBSize, kvRegs + 4 * options.ROBSize, kccRegs + 2 * options.ROBSize)
+  , theBypassNetwork((options.inOrderExecute)? kxRegs_Total : (kxRegs_Total + options.extraXRegs), 
+                     (options.inOrderExecute)? kvRegs : (kvRegs + options.extraVRegs),
+                     (options.inOrderExecute)? kccRegs : (kccRegs + (options.extraXRegs + 6) / 7))
   , theLastGarbageCollect(0)
   , theDispatchStalled(false)
   , theDispatchWidth(options.dispatchWidth)
@@ -33,6 +40,9 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , theUsedALU(0)
   , theUsedMUL(0)
   , theUsedAGU(0)
+  , theFreeALU(options.numIntAlu)
+  , theFreeMUL(options.numIntMult)
+  , theFreeAGU(options.numAGU)
   , thePreserveInteractions(false)
   , theMemoryPortArbiter(*this, options.numMemoryPorts, options.numStorePrefetches)
   , theROBSize(options.ROBSize)
@@ -116,6 +126,8 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , theSpinCount(theName + "-Spins")
   , theSpinCycles(theName + "-SpinCycles")
   , theWFI(theName + "-WFICycles")
+  , totalPageWalkLatency(theName + "-PageWalkLatency")
+  , totalPageWalks(theName + "-PageWalks")
   , theStorePrefetches(theName + "-StorePrefetches")
   , theAtomicPrefetches(theName + "-AtomicPrefetches")
   , theStorePrefetchConflicts(theName + "-StorePrefetchConflicts")
@@ -254,6 +266,11 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , numALU(options.numIntAlu)
   , numMUL(options.numIntMult)
   , numAGU(options.numAGU)
+  , extraXRegs(options.extraXRegs)
+  , extraVRegs(options.extraVRegs)
+  , numExeStages(options.numExeStages)
+  , theActiveActions(options.numExeStages)
+  , theRescheduledActions(options.numExeStages)
 {
 
     // Msutherl - for MMU verification. Remove when done
@@ -271,10 +288,13 @@ CoreImpl::CoreImpl(uArchOptions_t options,
         reg_file_sizes[vRegisters] = kvRegs;
         reg_file_sizes[ccBits]     = kccRegs;
     } else {
-        reg_file_sizes[xRegisters] = kxRegs_Total + 3 * theROBSize;
-        reg_file_sizes[vRegisters] = kvRegs + 4 * theROBSize;
-        reg_file_sizes[ccBits]     = kccRegs + 2 * theROBSize;
+        reg_file_sizes[xRegisters] = kxRegs_Total + extraXRegs;
+        reg_file_sizes[vRegisters] = kvRegs + extraVRegs;
+        reg_file_sizes[ccBits]     = kccRegs + (extraXRegs + 6) / 7;
     }
+    DBG_(Crit, (<< "Number of physical xRegisters: " << reg_file_sizes[xRegisters]));
+    DBG_(Crit, (<< "Number of physical vRegisters: " << reg_file_sizes[vRegisters]));
+    DBG_(Crit, (<< "Number of physical ccBits: " << reg_file_sizes[ccBits]));
 
     theRegisters.initialize(reg_file_sizes, inOrder);
 
@@ -318,7 +338,22 @@ CoreImpl::CoreImpl(uArchOptions_t options,
         theCommitsByCode[1].push_back(new Stat::StatCounter(system_name.str()));
         theCommitsByCode[2].push_back(new Stat::StatCounter(trap_name.str()));
         theCommitsByCode[3].push_back(new Stat::StatCounter(idle_name.str()));
+
+        std::stringstream stall_user_name;
+        stall_user_name << theName << "-StallCount:User:" << eInstructionCode(i);
+        std::stringstream stall_system_name;
+        stall_system_name << theName + "-StallCount:System:" << eInstructionCode(i);
+        std::stringstream stall_trap_name;
+        stall_trap_name << theName + "-StallCount:Trap:" << eInstructionCode(i);
+        std::stringstream stall_idle_name;
+        stall_idle_name << theName + "-StallCount:Idle:" << eInstructionCode(i);
+
+        theStallsByCode[0].push_back(new Stat::StatCounter(stall_user_name.str()));
+        theStallsByCode[1].push_back(new Stat::StatCounter(stall_system_name.str()));
+        theStallsByCode[2].push_back(new Stat::StatCounter(stall_trap_name.str()));
+        theStallsByCode[3].push_back(new Stat::StatCounter(stall_idle_name.str()));
     }
+    theStallsByCode[0].push_back(new Stat::StatCounter((theName + "-StallCount:EmptyROB")));
 
     kTBUser   = theTimeBreakdown.addClass("User");
     kTBSystem = theTimeBreakdown.addClass("System");
@@ -353,8 +388,14 @@ CoreImpl::resetCore()
 
     theBypassNetwork.reset();
 
-    theActiveActions      = action_list_t();
-    theRescheduledActions = action_list_t();
+    for(uint32_t i = 0; i < numExeStages; ++i) {
+        theActiveActions[i]      = action_list_t();
+        theRescheduledActions[i] = action_list_t();
+    }
+    theActiveWBActions    = action_list_t();
+    theRescheduledWBActions = action_list_t();
+    theActiveRDActions      = action_list_t();
+    theRescheduledRDActions = action_list_t();
 
     theDispatchInteractions.clear();
     thePreserveInteractions = false;
@@ -616,11 +657,13 @@ CoreModel::construct(uArchOptions_t options,
                      std::function<void(eSquashCause)> squash,
                      std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect,
                      std::function<void(boost::intrusive_ptr<BPredState>)> trainBP,
+                     std::function<void(boost::intrusive_ptr<SMSTrainInfo>)> trainSMS,
                      std::function<void(bool)> signalStoreForwardingHit,
-                     std::function<void(int32_t)> mmuResync)
+                     std::function<void(int32_t)> mmuResync,
+                     std::function<void(TranslationPtr&)> reqMMU)
 {
 
-    return new CoreImpl(options, advance, squash, redirect, trainBP, signalStoreForwardingHit, mmuResync);
+    return new CoreImpl(options, advance, squash, redirect, trainBP, trainSMS, signalStoreForwardingHit, mmuResync, reqMMU);
 }
 
 } // namespace nuArch

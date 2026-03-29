@@ -39,6 +39,14 @@ struct SemanticAction
     virtual void addRef() {}
     virtual void releaseRef() {}
     virtual bool canDispatch() { return true; }
+    virtual bool isWB() const { return false; }
+    virtual uint32_t getExeStageIdx() const { DBG_Assert(false); return 0; }
+    virtual bool isREAD() const { return false; }
+    virtual int getEU() const { return -1; }
+    virtual bool usesEU() const { DBG_Assert(false); return false; }
+    virtual bool isFirst() const { DBG_Assert(false); return false; }
+    virtual void setFirst(bool aFirst) { DBG_Assert(false); }
+    virtual void connectBypass() {}
     virtual int64_t instructionNo() const { return 0; }
     virtual ~SemanticAction() {}
 };
@@ -509,6 +517,10 @@ struct uArchOptions_t
     uint32_t onChipLatency;
     uint32_t offChipLatency;
 
+    uint32_t extraXRegs;
+    uint32_t extraVRegs;
+    uint32_t numExeStages;
+
     uint32_t numIntAlu;
     uint32_t intAluOpLatency;
     uint32_t intAluOpPipelineResetTime;
@@ -546,6 +558,7 @@ struct Instruction : public Flexus::SharedTypes::AbstractInstruction
     virtual bool isDispatched()             = 0;
     virtual void doDispatchEffects()        = 0; // used
     virtual void doDispatchActions()        = 0; // used
+    virtual std::tuple<int, int, int> numReadsWrites() = 0; // used
     virtual void squash()                   = 0;
     virtual void pageFault(bool p = true)   = 0;
     virtual bool isPageFault() const        = 0;
@@ -1111,6 +1124,10 @@ struct uArch
       return false;
     }
     virtual bool reqEU(int et) {
+      DBG_Assert(false);
+      return false;
+    }
+    virtual bool canExecute(int et) {
       DBG_Assert(false);
       return false;
     }

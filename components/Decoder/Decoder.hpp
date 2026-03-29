@@ -8,7 +8,7 @@
 #include <components/uFetch/uFetchTypes.hpp>
 #include <components/CommonQEMU/Slices/AbstractInstruction.hpp>
 
-typedef std::pair < int32_t /*# of instruction */ , bool /* core synchronized? */ > dispatch_status;
+typedef std::tuple < int32_t /*# of instruction */ , bool /* core synchronized? */, std::tuple <  int32_t, int32_t, int32_t > /* number of free regs */ > dispatch_status;
 
 COMPONENT_PARAMETERS(
   PARAMETER( FIQSize, uint32_t, "Fetch instruction queue size", "fiq", 32 )

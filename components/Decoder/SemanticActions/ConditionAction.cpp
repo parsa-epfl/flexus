@@ -94,6 +94,8 @@ struct ConditionSelectAction : public PredicatedSemanticAction
                 DBG_(VVerb, (<< *this << " waiting for predecessor "));
                 reschedule();
             }
+        } else {
+            reschedule();
         }
     }
 
@@ -170,6 +172,8 @@ struct ConditionCompareAction : public PredicatedSemanticAction
                 DBG_(VVerb, (<< *this << " waiting for predecessor "));
                 reschedule();
             }
+        } else {
+            reschedule();
         }
     }
 

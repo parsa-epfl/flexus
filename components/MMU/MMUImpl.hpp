@@ -111,6 +111,7 @@ class FLEXUS_COMPONENT(MMU)
     // Is true when the MMU has been reseted
     bool mmu_is_init;
     bool cfg_mmu(index_t anIndex);
+    void lookup(TranslationPtr& item);
 
   public:
     FLEXUS_COMPONENT_CONSTRUCTOR(MMU);

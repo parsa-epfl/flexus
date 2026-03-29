@@ -40,6 +40,7 @@ namespace Stat = Flexus::Stat;
 
 #include <components/CommonQEMU/Slices/PredictorMessage.hpp> /* CMU-ONLY */
 #include <components/CommonQEMU/Transports/TranslationTransport.hpp>
+#include <components/CommonQEMU/Transports/MemoryTransport.hpp>
 #include <components/CommonQEMU/XactTimeBreakdown.hpp>
 
 // Msutherl, Oct'18
@@ -89,8 +90,10 @@ class CoreImpl : public CoreModel
     std::function<void(eSquashCause)> squash_fn;
     std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect_fn;
     std::function<void(boost::intrusive_ptr<BPredState>)> trainBP_fn;
+    std::function<void(boost::intrusive_ptr<SMSTrainInfo>)> trainSMS_fn;
     std::function<void(bool)> signalStoreForwardingHit_fn;
     std::function<void(int32_t)> mmuResync_fn;
+    std::function<void(TranslationPtr&)> reqMMU_fn;
 
     // register renaming  architectural -> physical
     // Map Tables
@@ -139,8 +142,12 @@ class CoreImpl : public CoreModel
     uint64_t theLastGarbageCollect;
 
     // Semantic Action & Effect Management
-    action_list_t theActiveActions;
-    action_list_t theRescheduledActions;
+    // action_list_t theActiveActions;
+    // action_list_t theRescheduledActions;
+    action_list_t theActiveWBActions;
+    action_list_t theRescheduledWBActions;
+    action_list_t theActiveRDActions;
+    action_list_t theRescheduledRDActions;
 
     std::list<boost::intrusive_ptr<Interaction>> theDispatchInteractions;
     bool thePreserveInteractions;
@@ -154,6 +161,16 @@ class CoreImpl : public CoreModel
     uint64_t theUsedALU;
     uint64_t theUsedMUL;
     uint64_t theUsedAGU;
+    uint64_t theFreeALU;
+    uint64_t theFreeMUL;
+    uint64_t theFreeAGU;
+
+    uint32_t extraXRegs;
+    uint32_t extraVRegs;
+    uint32_t numExeStages;
+
+    std::vector<action_list_t> theRescheduledActions;
+    std::vector<action_list_t> theActiveActions;
 
     // Resource arbitration
     MemoryPortArbiter theMemoryPortArbiter;
@@ -299,6 +316,7 @@ class CoreImpl : public CoreModel
     Stat::StatCounter theCommitCount_Spin_Idle;
     Stat::StatCounter* theCommitUSArray[8];
     std::vector<Stat::StatCounter*> theCommitsByCode[4];
+    std::vector<Stat::StatCounter*> theStallsByCode[4];
 
     Stat::StatInstanceCounter<int64_t> theLSQOccupancy;
     Stat::StatInstanceCounter<int64_t> theSBOccupancy;
@@ -308,6 +326,9 @@ class CoreImpl : public CoreModel
     Stat::StatCounter theSpinCount;
     Stat::StatCounter theSpinCycles;
     Stat::StatCounter theWFI;
+
+    Stat::StatCounter totalPageWalkLatency;
+    Stat::StatCounter totalPageWalks;
 
     Stat::StatCounter theStorePrefetches;
     Stat::StatCounter theAtomicPrefetches;
@@ -509,8 +530,10 @@ class CoreImpl : public CoreModel
              std::function<void(eSquashCause)> squash,
              std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect,
              std::function<void(boost::intrusive_ptr<BPredState>)> trainBP,
+             std::function<void(boost::intrusive_ptr<SMSTrainInfo>)> trainSMS,
              std::function<void(bool)> signalStoreForwardingHit,
-             std::function<void(int32_t)> mmuResync);
+             std::function<void(int32_t)> mmuResync,
+             std::function<void(TranslationPtr&)> reqMMU);
 
     virtual ~CoreImpl() {}
 
@@ -523,9 +546,13 @@ class CoreImpl : public CoreModel
     bool checkValidatation();
 
   private:
-    void prepareCycle();
+    void prepareCycle(int32_t idx);
+    void prepareWB();
+    void prepareRD();
     void arbitrate();
-    void evaluate();
+    void evaluate(int32_t idx);
+    void evaluateWB();
+    void evaluateRD();
     void endCycle();
     void satisfy(InstructionDependance const& aDep);
     void squash(InstructionDependance const& aDep);
@@ -571,6 +598,7 @@ class CoreImpl : public CoreModel
     uint32_t outstandingStorePrefetches() const { return theOutstandingStorePrefetches.size(); }
 
   private:
+    void wb_retire_and_commit();
     void retire();
     void commit();
     void commit(boost::intrusive_ptr<Instruction> anInstruction);
@@ -582,6 +610,7 @@ class CoreImpl : public CoreModel
     nXactTimeBreakdown::eCycleClass getStoreStallType(boost::intrusive_ptr<TransactionTracker> tracker);
     void chargeStoreStall(boost::intrusive_ptr<Instruction> inst, boost::intrusive_ptr<TransactionTracker> tracker);
     void accountCommit(boost::intrusive_ptr<Instruction> anInst, bool aRaised);
+    void accountStall(boost::intrusive_ptr<Instruction> anInst, bool emptyROB);
     void completeAccounting();
     void accountAbortSpeculation(uint64_t aCheckpointSequenceNumber);
     void accountStartSpeculation();
@@ -598,6 +627,7 @@ class CoreImpl : public CoreModel
     bool squashFrom(boost::intrusive_ptr<Instruction> anInsn, bool inclusive = true);
     void redirectFetch(boost::intrusive_ptr<BPredRedictRequest> aRequest);
     void trainingBranch(boost::intrusive_ptr<BPredState> feedback);
+    void trainingSMS(VirtualMemoryAddress pc, PhysicalMemoryAddress addr, bool isStore);
 
     void takeTrap(boost::intrusive_ptr<Instruction> anInsn, eExceptionType aTrapType);
     void handleTrap();
@@ -610,6 +640,7 @@ class CoreImpl : public CoreModel
     //==========================================================================
   public:
     int32_t availableROB() const;
+    std::tuple<int32_t, int32_t, int32_t> availableRegs() const;
     const uint32_t core() const;
     bool isSynchronized() const { return theROB.empty(); }
     bool isStalled() const;
@@ -619,7 +650,7 @@ class CoreImpl : public CoreModel
     {
         return theROB.empty() && theMemQueue.empty() && theMSHRs.empty() &&
                theMemoryPortArbiter.empty() && theMemoryPorts.empty() && theSnoopPorts.empty() &&
-               theMemoryReplies.empty() && theActiveActions.empty() && theRescheduledActions.empty() &&
+               theMemoryReplies.empty() && theActiveActions.empty() && theRescheduledActions.empty() && theActiveWBActions.empty() && theRescheduledWBActions.empty() &&
                !theSquashRequested && !theRedirectRequested;
     }
 
@@ -633,6 +664,7 @@ class CoreImpl : public CoreModel
   public:
     void create(boost::intrusive_ptr<SemanticAction> anAction);
     void reschedule(boost::intrusive_ptr<SemanticAction> anAction);
+    void updateFreeEUs(int et);
 
     // Bypass Network Interface
     //==========================================================================
@@ -887,6 +919,8 @@ class CoreImpl : public CoreModel
     void mapDestInOrder(int64_t seq, mapped_reg &reg);
     bool canReadInOrder(int64_t seq, mapped_reg &reg);
     bool reqEU(int et);
+    bool canExecute(int et);
+    void resetFreeEUs();
     
     // Debugging
     //==========================================================================

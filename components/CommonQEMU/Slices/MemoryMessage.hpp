@@ -701,6 +701,15 @@ struct MemoryMessage : public boost::counted_base
         return false;
     }
 
+    bool isInvalidateType() const
+    {
+        switch (theType) {
+            case Invalidate: return true;
+            default: break;
+        }
+        return false;
+    }
+
     bool isProbeType() const
     {
         switch (theType) {

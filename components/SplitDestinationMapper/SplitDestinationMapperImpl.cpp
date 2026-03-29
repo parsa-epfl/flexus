@@ -91,8 +91,8 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
 
         if (cfg.Banks == 0) cfg.Banks = theTotalNumCores;
 
-        DBG_Assert((cfg.MemControllers & (cfg.MemControllers - 1)) == 0);
-        DBG_Assert((cfg.Directories & (cfg.Directories - 1)) == 0);
+        // DBG_Assert((cfg.MemControllers & (cfg.MemControllers - 1)) == 0);
+        // DBG_Assert((cfg.Directories & (cfg.Directories - 1)) == 0);
         DBG_Assert((cfg.MemInterleaving & (cfg.MemInterleaving - 1)) == 0);
         DBG_Assert((cfg.DirInterleaving & (cfg.DirInterleaving - 1)) == 0);
 
@@ -120,8 +120,10 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
         if (strcasecmp(cfg.DirLocation.c_str(), "distributed") == 0) {
             theDirLoc = eDistributed;
         } else if (strcasecmp(cfg.DirLocation.c_str(), "AtMemory") == 0) {
+            DBG_Assert(false, (<< "AtMemory directory placement is not supported anymore."));
             theDirLoc = eAtMemory;
         } else {
+            // DBG_Assert(false, (<< "AtMemory directory placement is not supported anymore."));
             theDirLoc = eUserSpecified;
             std::string dir_loc_str = cfg.DirLocation;
             std::list<int> dir_loc_list;
@@ -755,7 +757,7 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
             DBG_Assert(false);
             return ((anAddress >> theDirShift) ^ (anAddress >> theDirXORShift)) & theDirMask;
         } else {
-            return ((anAddress >> theDirShift) & theDirMask) % cfg.Banks;
+            return (anAddress >> theDirShift) % cfg.Banks; 
         }
     }
 
@@ -764,7 +766,8 @@ class FLEXUS_COMPONENT(SplitDestinationMapper)
         if (theMemXORShift > 0) {
             return ((anAddress >> theMemShift) ^ (anAddress >> theMemXORShift)) & theMemMask;
         } else {
-            return (anAddress >> theMemShift) & theMemMask;
+            // return (anAddress >> theMemShift) & theMemMask;
+            return (anAddress >> theMemShift) % cfg.MemControllers;
         }
     }
 

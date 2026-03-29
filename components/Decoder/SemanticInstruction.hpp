@@ -92,6 +92,13 @@ struct SemanticInstruction : public ArchInstruction
     bool isMicroOp() const { return theIsMicroOp; }
 
     void addDispatchCheck(SemanticAction *anAction) {
+        if (anAction->usesEU()) {              // Attempting to check an action that uses an EU
+            for(auto check: theDispatchChecks) {
+                if (check->usesEU())            // There is already a check for an EU (the exact type doesn't matter)
+                    return;
+            }
+            anAction->setFirst(true);
+        }
         theDispatchChecks.push_back(anAction);
 }
 
@@ -102,6 +109,7 @@ struct SemanticInstruction : public ArchInstruction
     void setDispatch();
     void doDispatchEffects();
     void doDispatchActions();
+    std::tuple<int, int, int> numReadsWrites();
     void squash();
     void pageFault();
     bool isPageFault() const;
@@ -202,7 +210,13 @@ template<>
 inline uint64_t&
 SemanticInstruction::operand<uint64_t>(eOperandCode anOperand)
 {
-    return theOperands.operand<uint64_t>(anOperand);
+    try {
+        return theOperands.operand<uint64_t>(anOperand);
+    } catch (boost::bad_get const& e) {
+        DBG_(Crit, (<< "Failed to get operand " << anOperand << " as uint64_t: " << e.what()));
+        static uint64_t zero = 281473248366592; // TODO: This is a temporary fix to avoid crashes.
+        return zero;
+    }
 }
 template<>
 inline int64_t&

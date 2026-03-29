@@ -49,6 +49,7 @@ class ArchInstruction : public nuArch::Instruction
     bool theResolved;
     //  boost::optional<Flexus::Qemu::MMU::mmu_t> theMMU;
 
+    uint32_t theExeStageIdx = 0;
     bool theUsesIntAlu;
     bool theUsesIntMult;
     bool theUsesIntDiv;
@@ -81,6 +82,7 @@ class ArchInstruction : public nuArch::Instruction
     virtual void setDispatch();
     virtual void doDispatchEffects();
     virtual void doDispatchActions();
+    virtual std::tuple<int, int, int> numReadsWrites();
     virtual void squash() {}
     virtual void pageFault(bool p = true) { thePageFault = p; }
     virtual bool isPageFault() const { return thePageFault; }
@@ -268,11 +270,10 @@ class ArchInstruction : public nuArch::Instruction
     void setExecuted(bool aVal) { theExecuted = aVal; }
     bool hasPredecessorExecuted()
     {
-        if (thePredecessor) {
+        if (thePredecessor)
             return thePredecessor->hasExecuted();
-        } else {
+        else
             return true;
-        }
     }
     bool hasPredecessorCommittedInOrder()
     {
@@ -281,6 +282,9 @@ class ArchInstruction : public nuArch::Instruction
         else
             return true;
     }
+
+    virtual uint32_t getExeStageIdx() const { return theExeStageIdx; }
+    virtual void incExeStageIdx() { ++theExeStageIdx; }
 
     uArch* core() { return theuArch; }
 

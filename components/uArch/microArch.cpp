@@ -4,6 +4,7 @@
 #include "CoreModel.hpp"
 #include "ValueTracker.hpp"
 #include "components/CommonQEMU/Slices/MemOp.hpp"
+#include <components/CommonQEMU/Transports/MemoryTransport.hpp>
 #include "components/uFetch/uFetchTypes.hpp"
 #include "core/boost_extensions/padded_string_cast.hpp"
 #include "core/debug/debug.hpp"
@@ -49,6 +50,7 @@ class microArchImpl : public microArch
 
     std::unique_ptr<CoreModel> theCore;
     int32_t theAvailableROB;
+    std::tuple<int32_t, int32_t, int32_t> theAvailableRegs;
     Flexus::Qemu::Processor theCPU;
     Stat::StatCounter theResynchronizations;
     Stat::StatCounter theResyncInstructions;
@@ -63,16 +65,20 @@ class microArchImpl : public microArch
     std::function<void(eSquashCause)> squash;
     std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect;
     std::function<void(boost::intrusive_ptr<BPredState>)> trainBP;
+    std::function<void(boost::intrusive_ptr<SMSTrainInfo>)> trainSMS;
     std::function<void(bool)> signalStoreForwardingHit;
     std::function<void(int32_t)> mmuResync;
+    std::function<void(TranslationPtr&)> reqMMU;
 
   public:
     microArchImpl(uArchOptions_t options,
                   std::function<void(eSquashCause)> _squash,
                   std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> _redirect,
                   std::function<void(boost::intrusive_ptr<BPredState>)> _trainBP,
+                  std::function<void(boost::intrusive_ptr<SMSTrainInfo>)> _trainSMS,
                   std::function<void(bool)> _signalStoreForwardingHit,
-                  std::function<void(int32_t)> _mmuResync
+                  std::function<void(int32_t)> _mmuResync,
+                  std::function<void(TranslationPtr&)> _reqMMU
                   )
       : theName(options.name)
       , theCore(CoreModel::construct(options,
@@ -80,9 +86,12 @@ class microArchImpl : public microArch
                                      _squash,
                                      _redirect,
                                      _trainBP,
+                                     _trainSMS,
                                      _signalStoreForwardingHit,
-                                     _mmuResync))
+                                     _mmuResync,
+                                     _reqMMU))
       , theAvailableROB(0)
+      , theAvailableRegs(std::make_tuple(0, 0, 0))
       , theResynchronizations(options.name + "-ResyncsCaught")
       , theResyncInstructions(options.name + "-ResyncsCaught:Instruction")
       , theOtherResyncs(options.name + "-ResyncsCaught:Other")
@@ -95,6 +104,8 @@ class microArchImpl : public microArch
       , squash(_squash)
       , redirect(_redirect)
       , trainBP(_trainBP)
+      , trainSMS(_trainSMS)
+      , reqMMU(_reqMMU)
       , signalStoreForwardingHit(_signalStoreForwardingHit)
       , mmuResync(_mmuResync)
 
@@ -104,6 +115,7 @@ class microArchImpl : public microArch
         if (theNode == 0) { setupDriveClients(); }
 
         theAvailableROB = theCore->availableROB();
+        theAvailableRegs = theCore->availableRegs();
 
         resetArchitecturalState(true);
 
@@ -205,6 +217,7 @@ class microArchImpl : public microArch
     boost::intrusive_ptr<MemOp> popSnoopOp() { return theCore->popSnoopOp(); }
 
     int32_t availableROB() { return theAvailableROB; }
+    std::tuple<int32_t, int32_t, int32_t> availableRegs() const { return theAvailableRegs; }
 
     const uint32_t core() const { return theNode; }
 
@@ -237,6 +250,7 @@ class microArchImpl : public microArch
         //    }
 
         theAvailableROB = theCore->availableROB();
+        theAvailableRegs = theCore->availableRegs();
         theCore->skipCycle();
     }
 
@@ -248,12 +262,13 @@ class microArchImpl : public microArch
 
         try {
 
-            // Record free ROB space for next cycle
-            theAvailableROB = theCore->availableROB();
-
             // TODO -
             eExceptionType interrupt = theCPU.has_irq() ? kException_IRQ : kException_None; // HEHE
             theCore->cycle(interrupt);
+
+            // Record free ROB space for next cycle
+            theAvailableROB = theCore->availableROB();
+            theAvailableRegs = theCore->availableRegs();
 
         } catch (ResynchronizeWithQemuException& e) {
             ++theResynchronizations;
@@ -315,6 +330,7 @@ class microArchImpl : public microArch
         // Clear out all state in theCore
         theCore->reset();
         theAvailableROB = theCore->availableROB();
+        theAvailableRegs = theCore->availableRegs();
 
         if (theExceptionRaised != (int)(kException_None)) {
             squash(kException);
@@ -404,6 +420,7 @@ class microArchImpl : public microArch
         theCore->restoreState(state);
 
         theAvailableROB = theCore->availableROB();
+        theAvailableRegs = theCore->availableRegs();
         squash(kResynchronize);
 
         // Obtain new state from simics
@@ -469,12 +486,14 @@ microArch::construct(uArchOptions_t options,
                      std::function<void(eSquashCause)> squash,
                      std::function<void(boost::intrusive_ptr<BPredRedictRequest>)> redirect,
                      std::function<void(boost::intrusive_ptr<BPredState>)> trainBP,
+                     std::function<void(boost::intrusive_ptr<SMSTrainInfo>)> trainSMS,
                      std::function<void(bool)> signalStoreForwardingHit,
-                     std::function<void(int32_t)> mmuResync
+                     std::function<void(int32_t)> mmuResync,
+                     std::function<void(TranslationPtr&)> reqMMU
 
 )
 {
-    return std::make_shared<microArchImpl>(options, squash, redirect, trainBP, signalStoreForwardingHit, mmuResync);
+    return std::make_shared<microArchImpl>(options, squash, redirect, trainBP, trainSMS, signalStoreForwardingHit, mmuResync, reqMMU);
 }
 
 } // namespace nuArchARM
