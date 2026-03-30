@@ -6,13 +6,13 @@
 # 3. MemoryController nodes         (port 2)
 # Switches in the same row are connected with port 3 (right) and 4 (left)
 # Switches in the middle column are flattened butterflies and are connected with port 5 (up) and 6 (down)
-#    port 7 (up by 2) and 8 (down by 2) 
+#    port 7 (up by 2) and 8 (down by 2)
 #    port 9 (up by 3) and 10 (down by 3)
 #    port 11 (up by 4) and 12 (down by 4)
 #    ... until port 2*y+3 (up by y-1) and 2*y+4 (down by y-1)
 
 x=8
-y=6
+y=8
 channel_lat = 1
 fbfly_lat = 3
 
