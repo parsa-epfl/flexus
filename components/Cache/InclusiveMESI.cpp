@@ -145,7 +145,9 @@ InclusiveMESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transact
         if (evictee != theEvictBuffer.end()) {
             // If we're in the process of evicting the block, wait for the evict to
             // complete to avoid any races
-            if (evictee->pending()) { return std::make_tuple(false, false, Action(kInsertMAF_WaitEvict, tracker)); }
+            if (evictee->pending() || evictee->snoopScheduled()) {
+                return std::make_tuple(false, false, Action(kInsertMAF_WaitEvict, tracker));
+            }
 
             // Make sure we can allocate the block, wait on the set if not
             DBG_Assert(theArray->canAllocate(lookup, getBlockAddress(msg->address())));
@@ -2400,7 +2402,7 @@ InclusiveMESI::handleWakeSnoop(MemoryTransport transport)
             snp->d_snoop_outstanding = false;
         } else {
             act.theFrontToDCache     = true;
-            snp->d_snoop_outstanding = true; // This is redundant, only here for clarity
+            snp->d_snoop_outstanding = true;
         }
         act.theFrontToICache     = (theCacheLevel != eL1);
         snp->i_snoop_outstanding = (theCacheLevel != eL1);
