@@ -1,5 +1,7 @@
 # CLAUDE.md — flexus/
 
+@MULTI_NODE.md
+
 This is a **submodule** of the QFlex simulator. The parent repo lives at `..`; its [CLAUDE.md](../CLAUDE.md) describes the four-phase QFlex pipeline, the `ExperimentContext` model, and how all the pieces fit together. Read it for the full picture; this file only describes what's specific to *flexus/*.
 
 ## What this submodule is
