@@ -2067,6 +2067,7 @@ InclusiveMESI::finalizeSnoop(MemoryTransport transport, LookupResult_p result)
         case MemoryMessage::EvictDirty:
             if (block_state == State::Modified) { orig_msg->type() = MemoryMessage::EvictDirty; }
             evEntry->setEvictable(true);
+            wake_evicts = true;
             break;
         default: DBG_Assert(false, (<< "Unknown message type in snoop buffer: " << (*orig_msg))); break;
     }
