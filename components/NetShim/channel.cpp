@@ -41,6 +41,7 @@ ChannelPort::insertMessageHelper(MessageState* msg)
     msl = allocMessageStateList(msg);
 
     assert(msg->networkVC >= 0 && msg->networkVC < MAX_VC);
+    msg->bufferEnterTS = currTime;
     if (mslHead[msg->networkVC] == nullptr) {
         mslHead[msg->networkVC] = mslTail[msg->networkVC] = msl;
 
@@ -67,6 +68,10 @@ ChannelPort::removeMessage(const int32_t vc, MessageState*& msg)
     assert(msl != nullptr);
 
     msg = msl->msg;
+
+    DBG_Assert(currTime - msg->bufferEnterTS < 1000,
+               (<< "Message " << msg->serial << " stuck in port buffer for "
+                << (currTime - msg->bufferEnterTS) << " cycles"));
 
     if (msl->next == nullptr)
         mslHead[vc] = mslTail[vc] = nullptr;

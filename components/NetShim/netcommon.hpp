@@ -69,6 +69,7 @@ class MessageState
       , atHeadTime(0)
       , acceptTime(0)
       , startTS(0)
+      , bufferEnterTS(0)
       ,
     // CMU-ONLY-BLOCK-BEGIN
       // CMU-ONLY-BLOCK-END
@@ -94,6 +95,7 @@ class MessageState
       , atHeadTime(0)
       , acceptTime(0)
       , startTS(0)
+      , bufferEnterTS(0)
       ,
     // CMU-ONLY-BLOCK-BEGIN
       // CMU-ONLY-BLOCK-END
@@ -119,6 +121,7 @@ class MessageState
         bufferTime      = 0;
         atHeadTime      = 0;
         acceptTime      = 0;
+        bufferEnterTS   = 0;
         transmitLatency = transmitLatency_;
         myList          = nullptr;
         hopCount        = -1;
@@ -153,8 +156,9 @@ class MessageState
                          * head of an output queue.  This can tell us if we have
                          * channel contention/hot spot channels.
                          */
-    int64_t startTS;    /* When did this message enter the network? */
-                        // CMU-ONLY-BLOCK-BEGIN
+    int64_t startTS;       /* When did this message enter the network? */
+    int64_t bufferEnterTS; /* When did this message enter the current buffer? */
+                           // CMU-ONLY-BLOCK-BEGIN
     // CMU-ONLY-BLOCK-END
 
     /* Note that we calculate the total queuing time statistic with the following

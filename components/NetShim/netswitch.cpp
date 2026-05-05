@@ -445,6 +445,7 @@ NetSwitchInternalBuffer::insertMessage(MessageState* msg)
     // Buffer occupancy statistics
     msg->atHeadTime -= currTime;
     msg->bufferTime -= currTime;
+    msg->bufferEnterTS = currTime;
 
     TRACE(msg, "NetSwitch received message" << " to node " << msg->destNode << " with priority " << msg->priority);
 
@@ -463,6 +464,10 @@ NetSwitchInternalBuffer::removeMessage(void)
     // Buffer occupancy statistics
     msl->msg->atHeadTime += currTime;
     msl->msg->bufferTime += currTime;
+
+    DBG_Assert(currTime - msl->msg->bufferEnterTS < 1000,
+               (<< "Message " << msl->msg->serial << " stuck in internal buffer for "
+                << (currTime - msl->msg->bufferEnterTS) << " cycles"));
 
     if (msl->next == nullptr) {
         ageBufferTail[msl->msg->networkVC] = msl->prev;
