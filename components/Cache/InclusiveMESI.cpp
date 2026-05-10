@@ -937,10 +937,6 @@ InclusiveMESI::handleBackMessage(MemoryTransport transport)
                     // Drop invalidates to avoid duplicate Evict/InvalAck messages
                     return Action(kNoAction, tracker, false);
                 }
-            } else if (((state == State::Exclusive) || (state == State::Modified)) && !the2LevelPrivate) {
-                // We should get a WriteFwd request instead of an Invalidate if we're
-                // modified or exclusive This is bad
-                DBG_Assert(false, (<< "received in Invalidate while in " << state << " state : " << (*msg)));
             } else {
                 // state == Shared or Owner
                 // If we have an outstanind upgrade, change it to a write

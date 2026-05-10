@@ -1456,6 +1456,11 @@ NonInclusiveMESIPolicy::handleReply(ProcessEntry_p process)
                 process->setReplyTransport(rep_transport);
                 process->setRequiresData(true);
 
+                c_lookup->setState(CacheState::Shared);
+                if (rep_msg->type() == MemoryMessage::MissReplyWritable) {
+                    c_lookup->setState(CacheState::Exclusive);
+                }
+
                 TransactionTracker_p tracker = process->transport()[TransactionTrackerTag];
                 tracker->setFillLevel(theCMPCacheInfo.theCacheLevel);
 
