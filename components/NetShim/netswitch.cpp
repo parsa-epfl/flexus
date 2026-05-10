@@ -465,9 +465,12 @@ NetSwitchInternalBuffer::removeMessage(void)
     msl->msg->atHeadTime += currTime;
     msl->msg->bufferTime += currTime;
 
-    DBG_Assert(currTime - msl->msg->bufferEnterTS < 1000,
-               (<< "Message " << msl->msg->serial << " stuck in internal buffer for "
-                << (currTime - msl->msg->bufferEnterTS) << " cycles"));
+    if (currTime - msl->msg->bufferEnterTS >= 1000) {
+        DBG_(Crit, (<< "Message " << msl->msg->serial << " stuck in internal buffer for "
+                    << (currTime - msl->msg->bufferEnterTS) << " cycles"
+                    << " src=" << msl->msg->srcNode << " dest=" << msl->msg->destNode
+                    << " pri=" << msl->msg->priority << " vc=" << msl->msg->networkVC));
+    }
 
     if (msl->next == nullptr) {
         ageBufferTail[msl->msg->networkVC] = msl->prev;

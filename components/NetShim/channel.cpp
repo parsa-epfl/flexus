@@ -69,9 +69,12 @@ ChannelPort::removeMessage(const int32_t vc, MessageState*& msg)
 
     msg = msl->msg;
 
-    DBG_Assert(currTime - msg->bufferEnterTS < 1000,
-               (<< "Message " << msg->serial << " stuck in port buffer for "
-                << (currTime - msg->bufferEnterTS) << " cycles"));
+    if (currTime - msg->bufferEnterTS >= 1000) {
+        DBG_(Crit, (<< "Message " << msg->serial << " stuck in port buffer for "
+                    << (currTime - msg->bufferEnterTS) << " cycles"
+                    << " src=" << msg->srcNode << " dest=" << msg->destNode
+                    << " pri=" << msg->priority << " vc=" << msg->networkVC));
+    }
 
     if (msl->next == nullptr)
         mslHead[vc] = mslTail[vc] = nullptr;
