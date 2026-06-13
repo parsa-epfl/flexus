@@ -161,6 +161,15 @@ FlexusImpl::advanceCycles(index_t aCycleCount)
     for (int i = 0; i < aCycleCount; i++) {
         Qemu::API::qemu_api.tick(false);
         // Pause might be called by virtual timer after updating time, go on busy wait until pause is removed
+        // TODO(perf): this busy-wait burns a full host core for the entire MNQ pause (a peer's whole
+        // quantum, seconds of wall-clock) — measured ~80% CPU on an otherwise-idle phantom node.
+        // tick(true) is time-neutral (libqflex_tick gates BOTH icount advance and warp/deadline on
+        // !paused), so sleeping between iterations changes no simulation semantics, only wall-clock
+        // wake-up latency (<=50us vs multi-second pauses). Suggested:
+        //     Qemu::API::qemu_api.tick(true);
+        //     std::this_thread::sleep_for(std::chrono::microseconds(50));  // + <thread>, <chrono>
+        // Also: `paused` (member, line ~54) is a plain bool written by the QEMU main thread and read
+        // here — should be std::atomic<bool> (today saved only by tick() being an opaque call).
         while (isPaused()) {
             // Make sure timers are still called but time not advanced
             Qemu::API::qemu_api.tick(true);
