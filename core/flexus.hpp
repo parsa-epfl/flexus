@@ -36,6 +36,10 @@ class FlexusInterface
     virtual void doLoad(std::string const& aDirName)         = 0;
     virtual void doSave(std::string const& aDirName)         = 0;
     virtual void writeMeasurement(std::string const& aMeasurement, std::string const& aFilename) = 0;
+
+    virtual void pause()  = 0;
+    virtual void resume() = 0;
+    virtual bool isPaused() = 0;
 };
 
 extern FlexusInterface* theFlexus;

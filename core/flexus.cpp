@@ -51,6 +51,7 @@ class FlexusImpl : public FlexusInterface
 
     bool theQuiesceRequested;
     bool theSaveRequested;
+    bool paused;
 
     std::list<std::pair<uint64_t, std::string>> dbgOverrides;
 
@@ -85,6 +86,10 @@ class FlexusImpl : public FlexusInterface
     void setDebugOverride();
     void terminateSimulation();
 
+    void pause();
+    void resume();
+    bool isPaused();
+
   public:
     FlexusImpl(Qemu::API::conf_object_t* anObject)
       : cpu_watchdog_timeout(100000)
@@ -96,6 +101,7 @@ class FlexusImpl : public FlexusInterface
       , theCycleCountStat("sys-cycles")
       , theQuiesceRequested(false)
       , theSaveRequested(false)
+      , paused(false)
     {
         Flexus::Dbg::Debugger::theDebugger->connectCycleCount(&theCycleCount, &cycle_delay_log);
     }
@@ -108,6 +114,22 @@ FlexusImpl::setCycle(uint64_t cycle)
     theCycleCount = cycle;
     theStopCycle += cycle;
     cycle_delay_log += cycle;
+}
+
+void FlexusImpl::pause()
+{
+    paused = true;
+    // TODO see if you need to add in qemu calls here too
+}
+
+void FlexusImpl::resume()
+{
+    paused = false;
+    // Call tick to let host timers fire and avoid immediately pausing again
+}
+bool FlexusImpl::isPaused()
+{
+    return paused;
 }
 
 void
@@ -136,7 +158,23 @@ FlexusImpl::advanceCycles(index_t aCycleCount)
     theCycleCountStat += aCycleCount;
     advanced_cycle_count += aCycleCount;
 
-    Qemu::API::qemu_api.tick();
+    for (int i = 0; i < aCycleCount; i++) {
+        Qemu::API::qemu_api.tick(false);
+        // Pause might be called by virtual timer after updating time, go on busy wait until pause is removed
+        // TODO(perf): this busy-wait burns a full host core for the entire MNQ pause (a peer's whole
+        // quantum, seconds of wall-clock) — measured ~80% CPU on an otherwise-idle phantom node.
+        // tick(true) is time-neutral (libqflex_tick gates BOTH icount advance and warp/deadline on
+        // !paused), so sleeping between iterations changes no simulation semantics, only wall-clock
+        // wake-up latency (<=50us vs multi-second pauses). Suggested:
+        //     Qemu::API::qemu_api.tick(true);
+        //     std::this_thread::sleep_for(std::chrono::microseconds(50));  // + <thread>, <chrono>
+        // Also: `paused` (member, line ~54) is a plain bool written by the QEMU main thread and read
+        // here — should be std::atomic<bool> (today saved only by tick() being an opaque call).
+        while (isPaused()) {
+            // Make sure timers are still called but time not advanced
+            Qemu::API::qemu_api.tick(true);
+        }
+    }
 
     if (dbgOverrides.size()) {
         auto &front = dbgOverrides.front();
@@ -148,8 +186,10 @@ FlexusImpl::advanceCycles(index_t aCycleCount)
     }
 
     if ((theStopCycle > 0) && (theCycleCount >= theStopCycle)) {
-        DBG_(Dev, (<< "Reached target cycle count. Ending simulation."));
-        terminateSimulation();
+        if (Flexus::Qemu::API::qemu_api.can_stop()){
+            DBG_(Dev, (<< "Reached target cycle count. Ending simulation."));
+            terminateSimulation();
+        }
     }
 
     static uint64_t last_stats = 0;
@@ -178,6 +218,9 @@ FlexusImpl::doCycle()
     FLEXUS_PROFILE();
     // Frequencies are normalized to base 10
     for(index_t iter_idx = 0; iter_idx < 10; iter_idx++) {
+        if (isPaused()){
+            break;
+        }
         FLEXUS_DBG("--------------START FLEXUS CYCLE " << theCycleCount << " ------------------------");
         index_t advanceBy, oldCount = theCycleCount;
         advanceBy = invokeDrives(iter_idx);

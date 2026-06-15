@@ -31,8 +31,8 @@ class Flexus(ConanFile):
     def configure(self):
         if self.name == None:
             raise ConanInvalidConfiguration("Need to set a name to compile [knottykraken]")
-        if self.name == 'knottykraken' and int(self.settings_build.get_safe('compiler.version')) < 13:
-            raise ConanInvalidConfiguration("Need GCC 13.1 at least to build knottykraken")
+        if self.name == 'knottykraken' and int(self.settings_build.get_safe('compiler.version')) < 12:
+            raise ConanInvalidConfiguration("Need GCC 12 at least to build knottykraken")
 
 
     def layout(self):

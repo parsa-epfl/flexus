@@ -16,6 +16,9 @@ FLEXUS_get_api(FLEXUS_API_t* api)
     api->stop      = FLEXUS_stop;
     api->qmp       = FLEXUS_qmp;
     api->trace_mem = FLEXUS_trace_mem;
+    api->pause     = FLEXUS_pause;
+    api->resume    = FLEXUS_resume;
+    api->is_paused = FLEXUS_is_paused;
 }
 
 using namespace Flexus::Core;
@@ -26,7 +29,26 @@ FLEXUS_start(uint64_t cycle)
     theFlexus->setCycle(cycle);
 
     while (true)
+    {
+        if(theFlexus->isPaused()){
+            Qemu::API::qemu_api.tick(true);  // 0 instructions, but lets host timers fire
+            continue;
+        }
         theFlexus->doCycle();
+    }
+}
+
+void FLEXUS_pause()
+{
+    theFlexus->pause();
+}
+void FLEXUS_resume()
+{
+    theFlexus->resume();
+}
+bool FLEXUS_is_paused()
+{
+    return theFlexus->isPaused();
 }
 
 void

@@ -434,6 +434,8 @@ class CoreImpl : public CoreModel
 
     Stat::StatCounter theMix_Total;
     Stat::StatCounter theMix_Exception;
+    Stat::StatCounter theExc_IRQ;   // log-only: async HW IRQ subset of theMix_Exception
+    Stat::StatCounter theExc_Sync;  // log-only: synchronous (syscall/fault/etc.) subset
     Stat::StatCounter theMix_Load;
     Stat::StatCounter theMix_Store;
     Stat::StatCounter theMix_Atomic;
@@ -581,7 +583,7 @@ class CoreImpl : public CoreModel
     void accountRetire(boost::intrusive_ptr<Instruction> anInst);
     nXactTimeBreakdown::eCycleClass getStoreStallType(boost::intrusive_ptr<TransactionTracker> tracker);
     void chargeStoreStall(boost::intrusive_ptr<Instruction> inst, boost::intrusive_ptr<TransactionTracker> tracker);
-    void accountCommit(boost::intrusive_ptr<Instruction> anInst, bool aRaised);
+    void accountCommit(boost::intrusive_ptr<Instruction> anInst, eExceptionType aRaisedType);
     void completeAccounting();
     void accountAbortSpeculation(uint64_t aCheckpointSequenceNumber);
     void accountStartSpeculation();
