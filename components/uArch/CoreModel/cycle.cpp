@@ -207,6 +207,12 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
             throw ResynchronizeWithQemuException(true, false, nullptr);
         }
 
+        // retire()'s `getOpcode()==0x7F2003D5 -> theWFI++` only fires while the WFI instruction still
+        // sits at the ROB head (pre-halt: mayRetire()==false, ROB not yet drained). Once QEMU returns
+        // QEMU_EXCP_HALTED the core is fully halted, cpuHalted is set, and doCycle early-returns HERE —
+        // before ever reaching retire() — so the deep-halt cycles (the bulk of the idle) are otherwise
+        // counted by NOTHING. Count them as WFI here; else an idle window reads as committed-0 ("wedge").
+        ++theWFI;
         return;
     }
 
@@ -1458,7 +1464,7 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
         }
     }
 
-    accountCommit(anInstruction, raised != kException_None);
+    accountCommit(anInstruction, raised);   // pass the eExceptionType so accounting can split IRQ vs sync
 
     theDumpPC = anInstruction->pcNext();
     if (anInstruction->resync()) {

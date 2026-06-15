@@ -202,6 +202,8 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , theTimeBreakdown(theName + "-TB")
   , theMix_Total(theName + "-Mix:Total")
   , theMix_Exception(theName + "-Mix:Exception")
+  , theExc_IRQ(theName + "-Exc:IRQ")
+  , theExc_Sync(theName + "-Exc:Sync")
   , theMix_Load(theName + "-Mix:Load")
   , theMix_Store(theName + "-Mix:Store")
   , theMix_Atomic(theName + "-Mix:Atomic")

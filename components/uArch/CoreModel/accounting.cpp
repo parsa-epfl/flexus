@@ -189,8 +189,9 @@ CoreImpl::accountCommitMemOp(boost::intrusive_ptr<Instruction> inst)
 }
 
 void
-CoreImpl::accountCommit(boost::intrusive_ptr<Instruction> anInstruction, bool aRaised)
+CoreImpl::accountCommit(boost::intrusive_ptr<Instruction> anInstruction, eExceptionType aRaisedType)
 {
+    bool aRaised = (aRaisedType != kException_None);
     int32_t level = 0 /* user */;
     if (theIsIdle == true)
         level = 3 /* idle */;
@@ -215,6 +216,9 @@ CoreImpl::accountCommit(boost::intrusive_ptr<Instruction> anInstruction, bool aR
     if (aRaised) {
         // DBG_(VVerb, (<<"A raised happend!"));
         ++theMix_Exception;
+        // Log-only split: async hardware IRQ vs synchronous exception/syscall/fault. All HW IRQs
+        // collapse to kException_IRQ (can't separate timer/IPI/NIC here — needs /proc/interrupts).
+        if (aRaisedType == kException_IRQ) { ++theExc_IRQ; } else { ++theExc_Sync; }
     } else {
         switch (klass) {
             case clsLoad:
