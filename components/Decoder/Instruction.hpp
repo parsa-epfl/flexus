@@ -19,6 +19,7 @@ class ArchInstruction : public nuArch::Instruction
 {
   protected:
     VirtualMemoryAddress thePC;
+    PhysicalMemoryAddress thePhysicalPC;
     std::vector<uint32_t> theInstruction;
     VirtualMemoryAddress thePCReg;
     Opcode theOpcode;
@@ -49,6 +50,7 @@ class ArchInstruction : public nuArch::Instruction
     bool theResolved;
     //  boost::optional<Flexus::Qemu::MMU::mmu_t> theMMU;
 
+    uint32_t theExeStageIdx = 0;
     bool theUsesIntAlu;
     bool theUsesIntMult;
     bool theUsesIntDiv;
@@ -81,6 +83,7 @@ class ArchInstruction : public nuArch::Instruction
     virtual void setDispatch();
     virtual void doDispatchEffects();
     virtual void doDispatchActions();
+    virtual std::tuple<int, int, int> numReadsWrites();
     virtual void squash() {}
     virtual void pageFault(bool p = true) { thePageFault = p; }
     virtual bool isPageFault() const { return thePageFault; }
@@ -252,6 +255,9 @@ class ArchInstruction : public nuArch::Instruction
 
     virtual VirtualMemoryAddress pc() const { return thePC; }
 
+    virtual void setPhysicalPC(PhysicalMemoryAddress aPC) { thePhysicalPC = aPC; }
+    virtual PhysicalMemoryAddress physicalPC() const { return thePhysicalPC; }
+
     virtual VirtualMemoryAddress pcNext() const { return thePCReg; }
 
     virtual bool isTrap() const { return theRaisedException != kException_None; }
@@ -268,11 +274,7 @@ class ArchInstruction : public nuArch::Instruction
     void setExecuted(bool aVal) { theExecuted = aVal; }
     bool hasPredecessorExecuted()
     {
-        if (thePredecessor) {
-            return thePredecessor->hasExecuted();
-        } else {
-            return true;
-        }
+        return true;
     }
     bool hasPredecessorCommittedInOrder()
     {
@@ -281,6 +283,9 @@ class ArchInstruction : public nuArch::Instruction
         else
             return true;
     }
+
+    virtual uint32_t getExeStageIdx() const { return theExeStageIdx; }
+    virtual void incExeStageIdx() { ++theExeStageIdx; }
 
     uArch* core() { return theuArch; }
 
@@ -303,6 +308,7 @@ class ArchInstruction : public nuArch::Instruction
                     uint32_t aCPU,
                     int64_t aSequenceNo)
       : thePC(aPC)
+      , thePhysicalPC(PhysicalMemoryAddress(-1ULL))
       , thePCReg(aPC + 4)
       , theOpcode(anOpcode)
       , theBPState(bp_state)

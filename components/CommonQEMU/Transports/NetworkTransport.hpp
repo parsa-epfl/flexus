@@ -34,7 +34,7 @@ ProtocolMessageTag_t ProtocolMessageTag;
 #define FLEXUS_TAG_TransactionTrackerTag
 struct TransactionTrackerTag_t
 {};
-struct TransactionTracker;
+class TransactionTracker;
 namespace {
 TransactionTrackerTag_t TransactionTrackerTag;
 }

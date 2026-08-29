@@ -48,7 +48,7 @@ NetSwitch::NetSwitch(const int32_t name_,     // Name/id of the switch
         outputPorts[i] = new ChannelOutputPort(outputBufferDepth);
     }
 
-    internalBuffer = new NetSwitchInternalBuffer(vcBufferDepth, this);
+    internalBuffer = new NetSwitchInternalBuffer(vcBufferDepth);
 
     // Initialize the routing table to bogus values.  We can't route yet.
     routingTable = new intP[numNodes];
@@ -138,6 +138,11 @@ NetSwitch::drive(void)
             if (internalBuffer->nextMessage()) break;
         }
 
+        if (bandwidthRemaining == 0) {
+            // there is no need to continue because we do not have enough bandwidth to send any more messages, even if they are waiting.
+            return false;
+        };
+
         // Don't look at an input port if there are no messages waiting
         // on that VC.
         if (!messagesWaiting[vc]) { continue; }
@@ -216,6 +221,7 @@ NetSwitch::routingPolicy(MessageState* msg)
 
             routingPort = routingTable[msg->destNode][i];
             routingVC   = vcTable[msg->destNode][i];
+            assert(routingVC == 0 || routingVC == 1);
 
             // If there is buffer space, send the message this way
             if (outputPorts[routingPort]->hasBufferSpace(BUILD_VC(msg->priority, routingVC))) {
@@ -357,6 +363,14 @@ NetSwitch::setLocalDelayOnly(const int32_t port)
 }
 
 bool
+NetSwitch::updateLatency(const int32_t port, const int32_t latency)
+{
+    assert(port >= 0 && port < numPorts);
+
+    return inputPorts[port]->updateLatency(latency);
+}
+
+bool
 NetSwitchInternalBuffer::dumpState(ostream& out)
 {
     int i;
@@ -390,10 +404,9 @@ NetSwitchInternalBuffer::dumpMessageList(ostream& out)
 /////////////////////////////////////////////////////////////////////////////////
 // Internal Buffer code
 
-NetSwitchInternalBuffer::NetSwitchInternalBuffer(const int32_t bufferCount_, NetSwitch* netSwitch_)
+NetSwitchInternalBuffer::NetSwitchInternalBuffer(const int32_t bufferCount_)
   : currMessage(nullptr)
   , currPriority(0)
-  , netSwitch(netSwitch_)
 {
     int i;
 
@@ -432,6 +445,7 @@ NetSwitchInternalBuffer::insertMessage(MessageState* msg)
     // Buffer occupancy statistics
     msg->atHeadTime -= currTime;
     msg->bufferTime -= currTime;
+    msg->bufferEnterTS = currTime;
 
     TRACE(msg, "NetSwitch received message" << " to node " << msg->destNode << " with priority " << msg->priority);
 
@@ -450,6 +464,13 @@ NetSwitchInternalBuffer::removeMessage(void)
     // Buffer occupancy statistics
     msl->msg->atHeadTime += currTime;
     msl->msg->bufferTime += currTime;
+
+    if (currTime - msl->msg->bufferEnterTS >= 1000) {
+        DBG_(Crit, (<< "Message " << msl->msg->serial << " stuck in internal buffer for "
+                    << (currTime - msl->msg->bufferEnterTS) << " cycles"
+                    << " src=" << msl->msg->srcNode << " dest=" << msl->msg->destNode
+                    << " pri=" << msl->msg->priority << " vc=" << msl->msg->networkVC));
+    }
 
     if (msl->next == nullptr) {
         ageBufferTail[msl->msg->networkVC] = msl->prev;

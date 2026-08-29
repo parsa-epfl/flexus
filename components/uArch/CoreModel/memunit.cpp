@@ -596,7 +596,8 @@ CoreImpl::translate(boost::intrusive_ptr<Instruction> anInsn)
       Iface,
       (<< "Sending Translation Request to MMU: " << *anInsn << ", VAddr: " << tr->theVaddr << ", ID: " << tr->theID));
 
-    theTranslationQueue.push(tr);
+    // theTranslationQueue.push(tr);
+    reqMMU_fn(tr);
 }
 
 void

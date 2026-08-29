@@ -58,7 +58,7 @@ struct MemoryMapImpl : public MemoryMap
 };
 
 // Initialized upon construction of the MemoryMapComponent
-class MemoryMapFactory;
+struct MemoryMapFactory;
 MemoryMapFactory* theMemoryMapFactory = 0;
 
 // The MemoryMapFactory knows how to create MemoryMap objects
@@ -178,7 +178,6 @@ class FLEXUS_COMPONENT(MemoryMap), public MemoryMapFactory
     PageMap_QemuObject thePageMapObject;
     uint32_t theNumCPUs;
     uint32_t theNode_shift;
-    uint32_t theNode_mask;
 
     bool theMapLoaded;
 
@@ -211,7 +210,6 @@ class FLEXUS_COMPONENT(MemoryMap), public MemoryMapFactory
         // Ensure that PageSize is a non-zero power of 2
         DBG_Assert((cfg.PageSize != 0), Comp(*this));
         DBG_Assert((((cfg.PageSize - 1) & cfg.PageSize) == 0), Comp(*this));
-        DBG_Assert((((nodes - 1) & nodes) == 0), Comp(*this));
         theNumCPUs       = nodes;
         thePageMapObject = thePageMapFactory.create(cfg.name());
         thePageMapObject->setPageMap(thePageMap);
@@ -225,7 +223,6 @@ class FLEXUS_COMPONENT(MemoryMap), public MemoryMapFactory
         --page_size_log2;
 
         theNode_shift = page_size_log2;
-        theNode_mask  = nodes - 1;
 
         for (unsigned i = 0; i < theNumCPUs; i++) {
             thePageCounts.push_back(
@@ -269,8 +266,11 @@ class FLEXUS_COMPONENT(MemoryMap), public MemoryMapFactory
     node_id_t newPage(PhysicalMemoryAddress const& aPageAddr, const node_id_t aRequestingNode)
     {
         node_id_t node = aRequestingNode;
-        if (cfg.RoundRobin) { node = static_cast<node_id_t>((aPageAddr)&theNode_mask); }
-        auto nodes = cfg.NumNodes ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+        auto nodes     = cfg.NumNodes ?: Flexus::Core::ComponentManager::getComponentManager().systemWidth();
+
+        if (cfg.RoundRobin) {
+            node = static_cast<node_id_t>((aPageAddr) % nodes);
+        }
 
         DBG_Assert((node < nodes), Comp(*this));
 

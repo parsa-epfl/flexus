@@ -148,7 +148,7 @@ InclusiveMOESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transac
         if (evictee != theEvictBuffer.end()) {
             // If we're in the process of evicting the block, wait for the evict to
             // complete to avoid any races
-            if (evictee->pending()) { return std::make_tuple(false, false, Action(kInsertMAF_WaitEvict, tracker)); }
+            if (evictee->pending() || evictee->snoopScheduled()) { return std::make_tuple(false, false, Action(kInsertMAF_WaitEvict, tracker)); }
 
             State block_state = evictee->state();
 
@@ -1388,6 +1388,7 @@ InclusiveMOESI::finalizeSnoop(MemoryTransport transport, LookupResult_p result)
         case MemoryMessage::EvictDirty:
             if (block_state == State::Modified) { orig_msg->type() = MemoryMessage::EvictDirty; }
             evEntry->setEvictable(true);
+            wake_evicts = true;
             break;
         default: DBG_Assert(false, (<< "Unknown message type in snoop buffer: " << (*orig_msg))); break;
     }

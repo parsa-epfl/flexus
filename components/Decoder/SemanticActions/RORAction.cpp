@@ -109,6 +109,8 @@ struct RORAction : public PredicatedSemanticAction
                 DBG_(VVerb, (<< *this << " waiting for predecessor "));
                 reschedule();
             }
+        } else {
+            reschedule();
         }
     }
 

@@ -91,6 +91,7 @@ class StatValue_Log2Histogram
 
   public:
     StatValue_Log2Histogram(value_type /*ignored*/) {}
+
     void reduceSum(const StatValueBase& aBase)
     {
         const StatValue_Log2Histogram& ptr = dynamic_cast<const StatValue_Log2Histogram&>(aBase);
@@ -186,6 +187,7 @@ class StatValue_WeightedLog2Histogram
 
   public:
     StatValue_WeightedLog2Histogram(value_type /*ignored*/) {}
+
     void reduceSum(const StatValueBase& aBase)
     {
         const StatValue_WeightedLog2Histogram& ptr = dynamic_cast<const StatValue_WeightedLog2Histogram&>(aBase);
@@ -426,7 +428,7 @@ class StatValue_UniqueCounter<uint32_t> : public StatValueBase
         ar & theSet;
     }
 
-    virtual boost::intrusive_ptr<StatValueBase> serialForm() { return this; }
+    virtual boost::intrusive_ptr<const StatValueBase> serialForm() const { return this; }
 
   public:
     typedef uint32_t update_type;
@@ -437,6 +439,8 @@ class StatValue_UniqueCounter<uint32_t> : public StatValueBase
 
   public:
     StatValue_UniqueCounter() {}
+
+
     void reduceSum(const StatValueBase& aBase)
     {
         const StatValue_UniqueCounter& ptr = dynamic_cast<const StatValue_UniqueCounter&>(aBase);
@@ -539,6 +543,8 @@ class StatValue_InstanceCounter<std::string>
 
   public:
     StatValue_InstanceCounter() {}
+
+
     void reduceSum(const StatValueBase& aBase)
     {
         const StatValue_InstanceCounter& ptr = dynamic_cast<const StatValue_InstanceCounter&>(aBase);
@@ -632,6 +638,7 @@ class StatValue_InstanceCounter<int64_t>
 
   public:
     StatValue_InstanceCounter() {}
+
     void reduceSum(const StatValueBase& aBase)
     {
         const StatValue_InstanceCounter& ptr = dynamic_cast<const StatValue_InstanceCounter&>(aBase);
@@ -830,7 +837,7 @@ class StatValueArray_InstanceCounter : public StatValueArrayBase
 
   public:
     StatValueArray_InstanceCounter() {}
-    void reduceSum(const StatValueBase* aBase)
+    void reduceSum(const StatValueBase& aBase)
     {
         std::cerr << "Reductions not supported (StatValueArray_InstanceCounter)" << std::endl;
     }

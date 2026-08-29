@@ -24,7 +24,7 @@ class NZCV_ : public SysRegInfo
     static const eAccessRight access      = kPL0_RW;
     static const eRegInfo type            = kARM_NZCV;
     static const uint64_t resetvalue      = -1;
-    virtual void writefn(uArch* aCore, uint64_t aVal) override
+    virtual void writefn(uArch* aCore, uint64_t aVal)
     {
         std::bitset<8> a(aCore->_PSTATE().d());
         std::bitset<8> b(aVal);
@@ -34,8 +34,8 @@ class NZCV_ : public SysRegInfo
         CORE_DBG("PSTATE VALUE AFTER NZCV UPDATE: " << std::bitset<8>(aCore->_PSTATE().d()));
 
     } // FIXME
-    virtual uint64_t readfn(uArch* aCore) override { return aCore->_PSTATE().NZCV(); }
-    virtual void sync(uArch* aCore, size_t theNode) override
+    virtual uint64_t readfn(uArch* aCore) { return aCore->_PSTATE().NZCV(); }
+    virtual void sync(uArch* aCore, size_t theNode)
     {
         uint64_t pstate = Flexus::Qemu::API::qemu_api.read_register(theNode, Flexus::Qemu::API::PSTATE, 0);
         writefn(aCore, extract32(pstate, 28, 4));
@@ -75,15 +75,15 @@ class DAIF_ : public SysRegInfo
     static const eRegInfo type            = kARM_NO_RAW;
     uint64_t resetvalue                   = -1;
 
-    virtual eAccessResult accessfn(uArch* aCore) override
+    virtual eAccessResult accessfn(uArch* aCore)
     {
         return kACCESS_OK; // access OK since we assume the access right is EL0_RW
     }
 
-    virtual void writefn(uArch* aCore, uint64_t aVal) override { aCore->setDAIF(aVal); } // FIXME
-    virtual void reset(uArch* aCore) override { DBG_Assert(false); } // FIXME /*arm_cp_reset_ignore*/
-    virtual uint64_t readfn(uArch* aCore) override { return aCore->_PSTATE().DAIF(); }
-    virtual void sync(uArch* aCore, size_t theNode) override
+    virtual void writefn(uArch* aCore, uint64_t aVal) { aCore->setDAIF(aVal); } // FIXME
+    virtual void reset(uArch* aCore) { DBG_Assert(false); } // FIXME /*arm_cp_reset_ignore*/
+    virtual uint64_t readfn(uArch* aCore) { return aCore->_PSTATE().DAIF(); }
+    virtual void sync(uArch* aCore, size_t theNode)
     {
         auto pstate = Flexus::Qemu::API::qemu_api.read_register(theNode, Flexus::Qemu::API::DAIF, 0);
         writefn(aCore, pstate);
@@ -116,12 +116,12 @@ class TPIDR_EL0_ : public SysRegInfo
     static const eRegInfo type            = kARM_NO_RAW;
     uint64_t resetvalue                   = -1;
 
-    virtual eAccessResult accessfn(uArch* aCore) override
+    virtual eAccessResult accessfn(uArch* aCore)
     {
         return kACCESS_OK; // access OK since we assume the access right is EL0_RW
     } // FIXME /*aa64_daif_access*/
-    virtual void writefn(uArch* aCore, uint64_t aVal) override {}
-    virtual uint64_t readfn(uArch* aCore) override { return aCore->getTPIDR(0); }
+    virtual void writefn(uArch* aCore, uint64_t aVal) {}
+    virtual uint64_t readfn(uArch* aCore) { return aCore->getTPIDR(0); }
     TPIDR_EL0_()
       : SysRegInfo("TPIDR_EL0_",
                    TPIDR_EL0_::state,
@@ -150,13 +150,13 @@ class TPIDR_EL1_ : public SysRegInfo
     static const eRegInfo type            = kARM_NO_RAW;
     uint64_t resetvalue                   = -1;
 
-    virtual eAccessResult accessfn(uArch* aCore) override
+    virtual eAccessResult accessfn(uArch* aCore)
     {
         // fine for now
         return kACCESS_OK;
     }
-    virtual void writefn(uArch* aCore, uint64_t aVal) override {}
-    virtual uint64_t readfn(uArch* aCore) override { return aCore->getTPIDR(1); }
+    virtual void writefn(uArch* aCore, uint64_t aVal) {}
+    virtual uint64_t readfn(uArch* aCore) { return aCore->getTPIDR(1); }
     TPIDR_EL1_()
       : SysRegInfo("TPIDR_EL1_",
                    TPIDR_EL1_::state,
@@ -187,15 +187,15 @@ class FPCR_ : public SysRegInfo
     uint64_t resetvalue              = -1;
 
     /* Override for accessfn(). FPSR can be accessed as RW from EL0 and EL1 */
-    virtual eAccessResult accessfn(uArch* aCore) override
+    virtual eAccessResult accessfn(uArch* aCore)
     {
         return kACCESS_OK; // MARK: This is RW-allowed from every exception level
     }
 
     // TODO: This models a single, non-renameable FPSR/FPCR. Will resync
     // with QEMU often since many of the fields are written per-instruction.
-    virtual uint64_t readfn(uArch* aCore) override { return aCore->getFPCR(); }          // /*aa64_fpcr_read*/
-    virtual void writefn(uArch* aCore, uint64_t aVal) override { aCore->setFPCR(aVal); } // /*aa64_fpcr_write*/
+    virtual uint64_t readfn(uArch* aCore) { return aCore->getFPCR(); }          // /*aa64_fpcr_read*/
+    virtual void writefn(uArch* aCore, uint64_t aVal) { aCore->setFPCR(aVal); } // /*aa64_fpcr_write*/
     FPCR_()
       : SysRegInfo("FPCR_",
                    FPCR_::state,
@@ -226,15 +226,15 @@ class FPSR_ : public SysRegInfo
     uint64_t resetvalue              = -1; // architecturally undefined as per manual
 
     /* Override for accessfn(). FPSR can be accessed as RW from EL0 and EL1 */
-    virtual eAccessResult accessfn(uArch* aCore) override
+    virtual eAccessResult accessfn(uArch* aCore)
     {
         return kACCESS_OK; // MARK: This is RW-allowed from every exception level
     }
 
     // TODO: This models a single, non-renameable FPSR/FPCR. Will resync
     // with QEMU often since many of the fields are written per-instruction.
-    virtual uint64_t readfn(uArch* aCore) override { return aCore->getFPSR(); }          /*aa64_fpsr_read*/
-    virtual void writefn(uArch* aCore, uint64_t aVal) override { aCore->setFPSR(aVal); } /*aa64_fpsr_write*/
+    virtual uint64_t readfn(uArch* aCore) { return aCore->getFPSR(); }          /*aa64_fpsr_read*/
+    virtual void writefn(uArch* aCore, uint64_t aVal) { aCore->setFPSR(aVal); } /*aa64_fpsr_write*/
     FPSR_()
       : SysRegInfo("FPSR_",
                    FPSR_::state,
@@ -263,8 +263,8 @@ class DCZID_EL0_ : public SysRegInfo
     static const eRegInfo type            = kARM_NO_RAW;
     uint64_t resetvalue                   = -1;
 
-    virtual uint64_t readfn(uArch* aCore) override { return aCore->readDCZID_EL0(); }
-    virtual void writefn(uArch* aCore, uint64_t aVal) override {
+    virtual uint64_t readfn(uArch* aCore) { return aCore->readDCZID_EL0(); }
+    virtual void writefn(uArch* aCore, uint64_t aVal) {
       aCore->setDCZID_EL0(aVal);
     }
     DCZID_EL0_()
@@ -294,9 +294,9 @@ class DC_ZVA_ : public SysRegInfo
     static const eAccessRight access      = kPL0_W;
     static const eRegInfo type            = kARM_DC_ZVA;
     uint64_t resetvalue                   = -1;
-    virtual eAccessResult accessfn(uArch* aCore) override { return aCore->accessZVA(); }
+    virtual eAccessResult accessfn(uArch* aCore) { return aCore->accessZVA(); }
     // No need for sync, effects are done by the readfn
-    virtual void sync(uArch* aCore, size_t theNode) override {}
+    virtual void sync(uArch* aCore, size_t theNode) {}
     DC_ZVA_()
       : SysRegInfo("DC_ZVA_",
                    DC_ZVA_::state,
@@ -325,12 +325,12 @@ class CURRENT_EL_ : public SysRegInfo
     static const eRegInfo type            = kARM_CURRENTEL;
     uint64_t resetvalue                   = -1;
 
-    virtual uint64_t readfn(uArch* aCore) override { return aCore->_PSTATE().EL(); }
-    virtual void writefn(uArch* aCore, uint64_t aVal) override
+    virtual uint64_t readfn(uArch* aCore) { return aCore->_PSTATE().EL(); }
+    virtual void writefn(uArch* aCore, uint64_t aVal)
     {
         aCore->setPSTATE(deposit32(aCore->_PSTATE().d(), 2, 2, aVal));
     }
-    virtual void sync(uArch* aCore, size_t theNode) override
+    virtual void sync(uArch* aCore, size_t theNode)
     {
         auto pstate = Flexus::Qemu::API::qemu_api.read_register(theNode, Flexus::Qemu::API::PSTATE, 0);
         writefn(aCore, extract32(pstate, 2, 2));
@@ -362,20 +362,20 @@ class ELR_EL1_ : public SysRegInfo
     static const eAccessRight access      = kPL1_RW;
     static const eRegInfo type            = kARM_ALIAS;
 
-    virtual uint64_t readfn(uArch* aCore) override
+    virtual uint64_t readfn(uArch* aCore)
     {
         auto currentel   = aCore->_PSTATE().EL();
         DBG_Assert(currentel == 1, (<< "EL must be EL1"));
         return aCore->getELR_el(currentel);
     }
-    virtual void writefn(uArch* aCore, uint64_t aVal) override
+    virtual void writefn(uArch* aCore, uint64_t aVal)
     {
         auto currentel   = aCore->_PSTATE().EL();
         DBG_Assert(currentel == 1, (<< "EL must be EL1"));
 
         aCore->setELR_el(currentel, aVal);
     }
-    virtual void sync(uArch* aCore, size_t theNode) override
+    virtual void sync(uArch* aCore, size_t theNode)
     {
         auto valELR_EL1  = Flexus::Qemu::API::qemu_api.read_sys_register(theNode, opc0, opc1, opc2, crn, crm, true);
         aCore->setELR_el(1, valELR_EL1);
@@ -407,14 +407,14 @@ class SPSR_EL1_ : public SysRegInfo
     static const eRegInfo type            = kARM_ALIAS;
     uint64_t resetvalue                   = -1;
 
-    virtual uint64_t readfn(uArch* aCore) override
+    virtual uint64_t readfn(uArch* aCore)
     {
         auto currentel   = aCore->_PSTATE().EL();
         DBG_Assert(currentel == 1, (<< "EL must be EL1"));
 
         return aCore->getSPSR_el(1);
     }
-    virtual void writefn(uArch* aCore, uint64_t aVal) override
+    virtual void writefn(uArch* aCore, uint64_t aVal)
     {
         auto currentel   = aCore->_PSTATE().EL();
         DBG_Assert(currentel == 1, (<< "EL must be EL1"));
@@ -422,7 +422,7 @@ class SPSR_EL1_ : public SysRegInfo
 
     }
 
-    virtual void sync(uArch* aCore, size_t theNode) override
+    virtual void sync(uArch* aCore, size_t theNode)
     {
         auto valSPSR_EL1 = Flexus::Qemu::API::qemu_api.read_sys_register(theNode, opc0, opc1, opc2, crn, crm, true);
 
@@ -461,13 +461,13 @@ class SP_EL0_ : public SysRegInfo
     static const eRegInfo type            = kARM_ALIAS;
     uint64_t resetvalue                   = -1;
 
-    virtual uint64_t readfn(uArch* aCore) override { return aCore->getSP_el(0); }
-    virtual eAccessResult accessfn(uArch* aCore) override
+    virtual uint64_t readfn(uArch* aCore) { return aCore->getSP_el(0); }
+    virtual eAccessResult accessfn(uArch* aCore)
     {
         return kACCESS_OK; // access OK since QEMU will check access and trap if necessary
     }
 
-    virtual void writefn(uArch* aCore, uint64_t aVal) override { aCore->setSP_el(0, aVal); }
+    virtual void writefn(uArch* aCore, uint64_t aVal) { aCore->setSP_el(0, aVal); }
 
     SP_EL0_()
       : SysRegInfo("SP_EL0",
@@ -497,9 +497,9 @@ class SP_EL1_ : public SysRegInfo
     static const eRegInfo type            = kARM_ALIAS;
     uint64_t resetvalue                   = -1;
 
-    virtual uint64_t readfn(uArch* aCore) override { return aCore->getSP_el(1); }
+    virtual uint64_t readfn(uArch* aCore) { return aCore->getSP_el(1); }
 
-    virtual void writefn(uArch* aCore, uint64_t aVal) override { aCore->setSP_el(1, aVal); }
+    virtual void writefn(uArch* aCore, uint64_t aVal) { aCore->setSP_el(1, aVal); }
 
     SP_EL1_()
       : SysRegInfo("SP_EL1",
@@ -530,8 +530,8 @@ class SPSel_ : public SysRegInfo
     uint64_t resetvalue                   = -1;
 
     /*spsel_read*/
-    virtual uint64_t readfn(uArch* aCore) override { return aCore->_PSTATE().SP(); }
-    virtual void writefn(uArch* aCore, uint64_t aVal) override
+    virtual uint64_t readfn(uArch* aCore) { return aCore->_PSTATE().SP(); }
+    virtual void writefn(uArch* aCore, uint64_t aVal)
     {
         aCore->setPSTATE(deposit32(aCore->_PSTATE().d(), 0, 1, aVal));
         // unsigned int cur_el = aCore->_PSTATE().EL();

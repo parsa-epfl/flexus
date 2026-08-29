@@ -175,20 +175,24 @@ struct FetchCommand : boost::counted_base
 struct FetchedOpcode
 {
     VirtualMemoryAddress thePC;
+    PhysicalMemoryAddress thePhysicalPC;
     Opcode theOpcode;
     boost::intrusive_ptr<BPredState> theBPState;
     boost::intrusive_ptr<TransactionTracker> theTransaction;
 
     FetchedOpcode(Opcode anOpcode)
-      : theOpcode(anOpcode)
+      : thePhysicalPC(PhysicalMemoryAddress(-1ULL))
+      , theOpcode(anOpcode)
     {
     }
 
     FetchedOpcode(VirtualMemoryAddress anAddr,
+                  PhysicalMemoryAddress aPhysicalPC,
                   Opcode anOpcode,
                   boost::intrusive_ptr<BPredState> aBPState,
                   boost::intrusive_ptr<TransactionTracker> aTransaction)
       : thePC(anAddr)
+      , thePhysicalPC(aPhysicalPC)
       , theOpcode(anOpcode)
       , theBPState(aBPState)
       , theTransaction(aTransaction)

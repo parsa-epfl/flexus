@@ -12,7 +12,7 @@ class NetSwitch;
 class NetSwitchInternalBuffer
 {
   public:
-    NetSwitchInternalBuffer(const int32_t bufferCount_, NetSwitch* netSwitch_);
+    NetSwitchInternalBuffer(const int32_t bufferCount_);
 
   public:
     inline bool isFull(const int32_t vc) const { return (buffersUsed[vc] >= bufferCount[vc]); }
@@ -71,8 +71,6 @@ class NetSwitchInternalBuffer
     MessageStateList *ageBufferHead[MAX_VC], *ageBufferTail[MAX_VC], *currMessage;
 
     int currPriority;
-
-    NetSwitch* netSwitch;
 };
 
 class NetSwitch
@@ -103,6 +101,7 @@ class NetSwitch
 
     // These ports give the minimum delay possible - reserved for the local node
     bool setLocalDelayOnly(const int32_t port);
+    bool updateLatency(const int32_t port, const int32_t latency);
 
     bool notifyWaitingMessage(const int32_t vc)
     {

@@ -798,6 +798,7 @@ class CacheController
     bool isQuiesced() const;
 
     void loadState(std::string const& aDirName);
+    void saveState(std::string const& aDirName);
 
     CacheController(std::string const& aName,
                     int32_t aCores,

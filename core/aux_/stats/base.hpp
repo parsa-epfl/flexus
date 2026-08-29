@@ -66,7 +66,6 @@ struct StatValueBase : public boost::counted_base
         throw 1; /* by default, stat's don't support sum accumulation */
     }
     virtual void reduceSum(StatValueBase const& anRHS) {};
-    virtual void reduceSum(StatValueBase const* anRHS) {};
     virtual boost::intrusive_ptr<StatValueBase> avgAccumulator()
     {
         throw 1; /* by default, stat's don't support average accumulation */
@@ -143,7 +142,7 @@ namespace Flexus {
 namespace Stat {
 namespace aux_ {
 
-class StatUpdaterBase; // fwd decl.
+struct StatUpdaterBase; // fwd decl.
 
 class StatValueHandle_Base
 {

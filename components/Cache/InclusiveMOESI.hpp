@@ -68,6 +68,7 @@ class InclusiveMOESI : public BaseCacheControllerImpl
 
   protected:
     virtual void load_from_ckpt(std::istream& is) { return theArray->load_from_ckpt(is, theNodeId); }
+    virtual void save_to_ckpt(std::ostream& os) { return theArray->save_to_ckpt(os, theNodeId); }
 
     virtual void setProtectedBlock(MemoryAddress addr, bool flag)
     {

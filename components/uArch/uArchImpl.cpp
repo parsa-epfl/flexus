@@ -137,7 +137,7 @@ class FLEXUS_COMPONENT(uArch)
     {
         uArchOptions_t options;
 
-        options.ROBSize              = cfg.ROBSize;
+        options.ROBSize              = (cfg.InOrderExecute) ? ((2 + cfg.NumExeStages) * cfg.DispatchWidth) : cfg.ROBSize;
         options.SBSize               = cfg.SBSize;
         options.NAWBypassSB          = cfg.NAWBypassSB;
         options.NAWWaitAtSync        = cfg.NAWWaitAtSync;
@@ -165,6 +165,10 @@ class FLEXUS_COMPONENT(uArch)
         options.offChipLatency                = cfg.OffChipLatency;
         options.name                          = statName();
         options.node                          = flexusIndex();
+
+        options.extraXRegs                  = cfg.ExtraXRegs;
+        options.extraVRegs                  = cfg.ExtraVRegs;
+        options.numExeStages                = cfg.NumExeStages;
 
         options.numIntAlu                 = cfg.NumIntAlu;
         options.intAluOpLatency           = cfg.IntAluOpLatency;
@@ -198,8 +202,10 @@ class FLEXUS_COMPONENT(uArch)
                                             ll::bind(&uArchComponent::squash, this, ll::_1),
                                             ll::bind(&uArchComponent::redirect, this, ll::_1),
                                             ll::bind(&uArchComponent::trainBP, this, ll::_1),
+                                            ll::bind(&uArchComponent::trainSMS, this, ll::_1),
                                             ll::bind(&uArchComponent::signalStoreForwardingHit, this, ll::_1),
-                                            ll::bind(&uArchComponent::resyncMMU, this, ll::_1));
+                                            ll::bind(&uArchComponent::resyncMMU, this, ll::_1),
+                                            ll::bind(&uArchComponent::requestTranslations, this, ll::_1));
 
         theuArchObject = theuArchQemuFactory.create(
           (std::string("uarch-") + boost::padded_string_cast<2, '0'>(flexusIndex())).c_str());
@@ -217,9 +223,9 @@ class FLEXUS_COMPONENT(uArch)
     }
 
     FLEXUS_PORT_ALWAYS_AVAILABLE(AvailableDispatchOut);
-    std::pair<int, bool> pull(AvailableDispatchOut const&)
+    std::tuple<int, bool, std::tuple<int, int, int>> pull(AvailableDispatchOut const&)
     {
-        return std::make_pair(theMicroArch->availableROB(), theMicroArch->isSynchronized());
+        return std::make_tuple(theMicroArch->availableROB(), theMicroArch->isSynchronized(), theMicroArch->availableRegs());
     }
 
     FLEXUS_PORT_ALWAYS_AVAILABLE(Stalled);
@@ -288,6 +294,8 @@ class FLEXUS_COMPONENT(uArch)
 
     void trainBP(boost::intrusive_ptr<BPredState> aBPState) { FLEXUS_CHANNEL(BranchTrainOut) << aBPState; }
 
+    void trainSMS(boost::intrusive_ptr<SMSTrainInfo> aTransport) { FLEXUS_CHANNEL(SMSTrainOut) << aTransport; }
+
     void signalStoreForwardingHit(bool garbage)
     {
         bool value = true;
@@ -306,17 +314,23 @@ class FLEXUS_COMPONENT(uArch)
             theMicroArch->cycle();
         }
         sendMemoryMessages();
-        requestTranslations();
+        // requestTranslations();
     }
 
-    void requestTranslations()
-    {
-        while (FLEXUS_CHANNEL(dTranslationOut).available()) {
-            TranslationPtr op(theMicroArch->popTranslation());
-            if (!op) break;
+    // void requestTranslations()
+    // {
+    //     while (FLEXUS_CHANNEL(dTranslationOut).available()) {
+    //         TranslationPtr op(theMicroArch->popTranslation());
+    //         if (!op) break;
 
-            FLEXUS_CHANNEL(dTranslationOut) << op;
-        }
+    //         FLEXUS_CHANNEL(dTranslationOut) << op;
+    //     }
+    // }
+
+    void requestTranslations(TranslationPtr& op)
+    {
+        DBG_Assert(FLEXUS_CHANNEL(dTranslationOut).available());
+        FLEXUS_CHANNEL(dTranslationOut) << op;
     }
 
     void sendMemoryMessages()
@@ -406,6 +420,7 @@ class FLEXUS_COMPONENT(uArch)
                 handleMemoryMessage(transport);
             } else {
                 FLEXUS_CHANNEL(MemoryOut_Request) << transport;
+                FLEXUS_CHANNEL(SMSPredictOut) << transport; // Send a copy to the SMS predictor
             }
         }
 

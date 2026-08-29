@@ -127,7 +127,22 @@ bool NetContainer::buildMesh() {
         break;
       }
 
-  assert(col >= 0);
+  if (col == -1 || row == -1) {
+    // we will try another ad hoc way. Make it close to square.
+    int starting_col = static_cast<int>(sqrt(static_cast<double>(numSwitches)));
+    for (int i = starting_col; i <= numSwitches; i++) {
+      if (numSwitches % i == 0) {
+        col = i;
+        row = numSwitches / i;
+        break;
+      }
+    }
+  }
+
+   // print the dimension of the mesh.
+   std::cerr << "NetShim: Building a mesh with " << row << " rows and " << col << " columns." << std::endl;
+
+  DBG_Assert(col >= 0);
 
   int col_m1 = col - 1;
   int row_m1 = row - 1;
@@ -400,6 +415,43 @@ error:
 }
 
 bool
+NetContainer::readTopologyDoubleOrTripleToken(istream& infile, int32_t& sw, int32_t& port, int32_t& lat, NetContainer* nc)
+{
+    char c;
+
+    const char* errMsg = "";
+
+    if (readIntToken(infile, sw)) {
+        errMsg = "token part 1";
+        goto error;
+    }
+
+    infile.get(c);
+    if (c != ':') goto error;
+
+    if (readIntToken(infile, port)) {
+        errMsg = "token part 2";
+        goto error;
+    }
+
+    // Until here same as readTopologyDoubleToken. Now we check if we have a latency specifier or not
+    if (infile.peek() == ':') {
+        infile.get(c);
+        if (readIntToken(infile, lat)) {
+            errMsg = "token part 3";
+            goto error;
+        }
+    } else {
+        lat = -1;
+    }
+
+    return false;
+error:
+    std::cerr << "ERROR: Cannot parse topology 2-ple " << errMsg << endl;
+    return true;
+}
+
+bool
 NetContainer::readFirstToken(istream& infile)
 {
     char firstTok[100];
@@ -578,6 +630,7 @@ NetContainer::readTopSrcDest(istream& infile,
                              int32_t& node,
                              int32_t& sw,
                              int32_t& port,
+                             int32_t& lat,
                              NetContainer* nc)
 {
     char str[100];
@@ -600,7 +653,7 @@ NetContainer::readTopSrcDest(istream& infile,
 
     } else if (strcasecmp(STR_SWITCH, str) == 0) {
 
-        if (readTopologyDoubleToken(infile, sw, port, nc)) return true;
+        if (readTopologyDoubleOrTripleToken(infile, sw, port, lat, nc)) return true;
 
         isSwitch = true;
 
@@ -618,13 +671,13 @@ NetContainer::handleTopology(istream& infile, NetContainer* nc)
     int
 
       node[2],
-      sw[2], port[2];
+      sw[2], port[2], lat[2];
 
     bool fromSwitch = false, toSwitch = false;
 
     char str[100];
 
-    if (readTopSrcDest(infile, fromSwitch, node[0], sw[0], port[0], nc)) return true;
+    if (readTopSrcDest(infile, fromSwitch, node[0], sw[0], port[0], lat[0], nc)) return true;
 
     if (readStringToken(infile, str)) { return true; }
 
@@ -633,7 +686,7 @@ NetContainer::handleTopology(istream& infile, NetContainer* nc)
         return true;
     }
 
-    if (readTopSrcDest(infile, toSwitch, node[1], sw[1], port[1], nc)) return true;
+    if (readTopSrcDest(infile, toSwitch, node[1], sw[1], port[1], lat[1], nc)) return true;
 
     if (!fromSwitch && !toSwitch) {
         std::cerr << "ERROR: topology declaration must have at least one switch endpoint" << endl;
@@ -652,7 +705,7 @@ NetContainer::handleTopology(istream& infile, NetContainer* nc)
     // Similarly for Node->SWITCH connections, we explicitly set the latency on
     // the switch side to be the local delay.
     if (!(fromSwitch && toSwitch)) {
-
+        
         if (fromSwitch) {
             assert(!toSwitch);
             cerr << "Attaching node ";
@@ -675,12 +728,14 @@ NetContainer::handleTopology(istream& infile, NetContainer* nc)
         }
 
     } else {
-
-        cerr << "Attaching switch ";
+        DBG_Assert(lat[0] > 0, (<< "Latency must be specified for switch-to-switch connections in topology declarations" << lat[0]));
+        DBG_Assert(lat[1] > 0, (<< "Latency must be specified for switch-to-switch connections in topology declarations" << lat[1]));
+        DBG_(Crit, (<< "Attaching switch with latency " << lat[0]));
         if (attachSwitchChannels(nc, sw[0], port[0], false)) return true;
-        cerr << " to switch ";
+        DBG_(Crit, (<< " to switch with latency " << lat[1]));
         if (attachSwitchChannels(nc, sw[1], port[1], true)) return true;
-        cerr << endl;
+        if (nc->switches[sw[0]]->updateLatency(port[0], lat[0])) return true;
+        if (nc->switches[sw[1]]->updateLatency(port[1], lat[1])) return true;
     }
 
     nc->maxChannelIndex += 2;
@@ -703,7 +758,7 @@ NetContainer::attachSwitchChannels(NetContainer* nc, const int32_t sw, const int
         goto error;
     }
 
-    std::cerr << sw << ":" << port;
+    DBG_(Crit, (<< sw << ":" << port));
     return false;
 
 error:
@@ -720,8 +775,6 @@ NetContainer::attachNodeChannels(NetContainer* nc, const int32_t node)
 
     nc->channels[nc->maxChannelIndex]->setLocalLatencyDivider(nc->localChannelLatencyDivider);
     nc->channels[nc->maxChannelIndex + 1]->setLocalLatencyDivider(nc->localChannelLatencyDivider);
-
-    std::cerr << node;
 
     return false;
 

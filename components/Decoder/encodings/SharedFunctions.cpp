@@ -444,7 +444,8 @@ addExecute(SemanticInstruction* inst,
     predicated_action exec;
 
     exec = executeAction(inst, anOperation, rs_deps, aResult, aBypass);
-    //    inst->addDispatchAction( exec );
+    inst->addDispatchCheck(exec.action);
+    inst->addDispatchAction(exec);
     return exec;
 }
 
@@ -459,7 +460,8 @@ addExecute(SemanticInstruction* inst,
     predicated_action exec;
 
     exec = executeAction(inst, anOperation, anOperands, rs_deps, aResult, aBypass);
-    //    inst->addDispatchAction( exec );
+    inst->addDispatchCheck(exec.action);
+    inst->addDispatchAction(exec);
     return exec;
 }
 
@@ -469,6 +471,8 @@ addAddressCompute(SemanticInstruction* inst, std::vector<std::list<InternalDepen
     DECODER_TRACE;
 
     simple_action tr                         = translationAction(inst);
+    inst->addDispatchCheck(tr.action);
+    inst->addDispatchAction(tr);
     multiply_dependant_action update_address = updateVirtualAddressAction(inst);
     inst->addDispatchEffect(satisfy(inst, update_address.dependances[1]));
     simple_action exec = calcAddressAction(inst, rs_deps);

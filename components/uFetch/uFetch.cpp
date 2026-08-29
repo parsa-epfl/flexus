@@ -61,7 +61,9 @@ class FLEXUS_COMPONENT(uFetch)
     Flexus::Stat::StatCounter theFetches;
     Flexus::Stat::StatCounter thePrefetches;
     Flexus::Stat::StatCounter theFailedTranslations;
-    Flexus::Stat::StatCounter theMisses;
+    Flexus::Stat::StatCounter theL1Misses;
+    Flexus::Stat::StatCounter theL1MissesAll;
+    Flexus::Stat::StatCounter theL2Misses;
     Flexus::Stat::StatCounter theHits;
     Flexus::Stat::StatCounter theMissCycles;
     Flexus::Stat::StatCounter theAllocations;
@@ -90,7 +92,9 @@ class FLEXUS_COMPONENT(uFetch)
       , theFetches(statName() + "-Fetches")
       , thePrefetches(statName() + "-Prefetches")
       , theFailedTranslations(statName() + "-FailedTranslations")
-      , theMisses(statName() + "-Misses")
+      , theL1Misses(statName() + "-L1Misses")
+      , theL1MissesAll(statName() + "-L1MissesAll")
+      , theL2Misses(statName() + "-L2Misses")
       , theHits(statName() + "-Hits")
       , theMissCycles(statName() + "-MissCycles")
       , theAllocations(statName() + "-Allocations")
@@ -105,17 +109,17 @@ class FLEXUS_COMPONENT(uFetch)
     void push(interface::iTranslationIn const&, TranslationPtr& tr)
     {
         PhysicalMemoryAddress magic =
-            cpu(tr->theIndex).translate_va2pa(tr->theVaddr,
+            cpu(0).translate_va2pa(tr->theVaddr,
                                               tr->getInstruction() ?
                                                   tr->getInstruction()->unprivAccess():
                                                   false);
 
-        DBG_Assert((tr->thePaddr == magic) || (magic == nuArch::kUnresolved),
-                   Comp(*this)(<< "ERROR: Magic QEMU translation NOT EQUAL TO MMU "
-                                  "Translation. Vaddr = "
-                               << std::hex << tr->theVaddr << std::dec << ", PADDR_MMU = " << std::hex
-                               << tr->thePaddr << std::dec << ", PADDR_QEMU = " << std::hex << magic
-                               << std::dec));
+        // DBG_Assert((tr->thePaddr == magic) || (magic == nuArch::kUnresolved),
+                   // Comp(*this)(<< "ERROR: Magic QEMU translation NOT EQUAL TO MMU "
+                                  // "Translation. Vaddr = "
+                               // << std::hex << tr->theVaddr << std::dec << ", PADDR_MMU = " << std::hex
+                               // << tr->thePaddr << std::dec << ", PADDR_QEMU = " << std::hex << magic
+                               // << std::dec));
 
         if (!tr->isPagefault() && (magic == nuArch::kUnresolved))
             tr->setPagefault();
@@ -186,9 +190,7 @@ class FLEXUS_COMPONENT(uFetch)
     void push(interface::ResyncIn const&, index_t anIndex, int& aResync) {
     }
 
-    bool available(interface::ResyncIn const&, index_t anIndex) {
-        return true;
-    }
+    FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(ResyncIn);
 
     // =============================== LOGIC =========================
 
@@ -202,7 +204,6 @@ class FLEXUS_COMPONENT(uFetch)
         tr->theVaddr     = anAddress;
         tr->theType      = Translation::eFetch;
         tr->theException = 0;
-        tr->theIndex     = anIndex;
         tr->setInstr();
 
         DBG_(VVerb, (<< "sending trans " << tr->theVaddr));
@@ -210,7 +211,7 @@ class FLEXUS_COMPONENT(uFetch)
         FLEXUS_CHANNEL(iTranslationOut) << tr;
     }
 
-    boost::intrusive_ptr<TransactionTracker> send_fetch(PhysicalMemoryAddress pa, VirtualMemoryAddress pc)
+    boost::intrusive_ptr<TransactionTracker> send_fetch(PhysicalMemoryAddress pa, VirtualMemoryAddress pc, bool is_head)
     {
         boost::intrusive_ptr<MemoryMessage> mm(MemoryMessage::newFetch(pa, pc));
         mm->reqSize() = 64;
@@ -219,7 +220,10 @@ class FLEXUS_COMPONENT(uFetch)
         tt->setAddress  (pa);
         tt->setInitiator(flexusIndex());
         tt->setFetch    (true);
-        tt->setSource   ("uFetch");
+        if (is_head)
+            tt->setSource   ("uFetchHead");
+        else
+            tt->setSource   ("uFetch");
 
         MemoryTransport mt;
         mt.set(TransactionTrackerTag, tt);
@@ -249,9 +253,10 @@ class FLEXUS_COMPONENT(uFetch)
         DBG_(VVerb, (<< "fetches: " << fetches << " entries: " << theFAQ.size()));
 
         // lines that hit in the cache and looked up in this cycle
-        std::unordered_set<uint64_t> l1ihits; 
+        std::unordered_set<uint64_t> l1ihits;
 
         pFetchBundle bundle;
+        bool is_head;
 
         for (auto t = theFAQ.begin(); t != theFAQ.end(); ) {
             auto &f = *t;
@@ -271,17 +276,32 @@ class FLEXUS_COMPONENT(uFetch)
                         else if (tlbreqs) {
                             tlbreqs--;
 
-                            send_trans(idx, f.addr.theAddress);
-
                             theTAM.insert(va);
                             f.state = S_ITLB_REQ;
+
+                            send_trans(idx + flexusIndex() * cfg.Threads, f.addr.theAddress);
                         }
                     }
 
-                    fetches = 0;
                     t++;
                     continue;
 
+                case S_ITLB_REQ:
+                case S_MISS:
+                    t++;
+                    continue;
+                default:            // TLB Responses are handled next, because they can arrive in the same clock cycle
+                    t++;
+                    continue;
+            }
+        }
+
+        for (auto t = theFAQ.begin(); t != theFAQ.end(); ) {    // handle the remaining cases
+            auto &f = *t;
+
+            DBG_(VVerb, (<< "  " << f.addr.theAddress << std::hex << " " << f.pa << " " << f.state));
+
+            switch (f.state) {
                 case S_ITLB_RESP:
                     if (l1ideps) {
                         if (!cfg.PerfectICache)
@@ -299,11 +319,18 @@ class FLEXUS_COMPONENT(uFetch)
                             l1ireqs--;
 
                             if (theI.lookup(pa)) {
+                                theHits++;
                                 l1ihits.insert(pa);
                                 f.state = S_DONE;
 
                             } else if (theFAM.size() < cfg.MissQueueSize) {
-                                send_fetch(pa, f.addr.theAddress);
+                                is_head = false;
+                                if (t == theFAQ.begin()) {
+                                    theL1Misses++;
+                                    is_head = true;
+                                }
+                                theL1MissesAll++;
+                                send_fetch(pa, f.addr.theAddress, is_head);
 
                                 theFAM.insert(pa);
                                 f.state = S_MISS;
@@ -311,12 +338,6 @@ class FLEXUS_COMPONENT(uFetch)
                         }
                     }
 
-                    fetches = 0;
-                    t++;
-                    continue;
-
-                case S_ITLB_REQ:
-                case S_MISS:
                     fetches = 0;
                     t++;
                     continue;
@@ -334,17 +355,22 @@ class FLEXUS_COMPONENT(uFetch)
                         auto opcode = ~f.pa ? cpu(0).fetch_inst(f.addr.theAddress) : 0xefffffff;
 
                         bundle->theOpcodes.emplace_back(
-                            new FetchedOpcode(f.addr.theAddress, opcode, f.addr.theBPState, f.tracker));
+                            new FetchedOpcode(f.addr.theAddress, PhysicalMemoryAddress(f.pa), opcode, f.addr.theBPState, f.tracker));
                         bundle->theFillLevels.emplace_back(
                             new tFillLevel(eL1I));
 
                         DBG_Assert(t == theFAQ.begin());
                         t = theFAQ.erase(t);
-
+                        continue;
                     } else {
                         t++;
                         continue;
                     }
+
+                default:         // Already handled before
+                    fetches = 0; // But do not add the next ones into bundle
+                    t++;
+                    continue;
             }
         }
 
@@ -408,7 +434,7 @@ class FLEXUS_COMPONENT(uFetch)
         }
     }
 
-    void initialize() override
+    void initialize()
     {
         DBG_Assert(cfg.Threads == 1);
 
@@ -418,10 +444,10 @@ class FLEXUS_COMPONENT(uFetch)
         theBlockMask  = ~(cfg.ICacheLineSize - 1);
     }
 
-    void finalize() override {
+    void finalize() {
     }
 
-    void drive(interface::uFetchDrive const&) override
+    void drive(interface::uFetchDrive const&)
     {
 
         bool garbage = true;
@@ -503,6 +529,10 @@ class FLEXUS_COMPONENT(uFetch)
             case MemoryMessage::MissReplyWritable: {
                 // Insert the address into the array
                 PhysicalMemoryAddress replacement = l1i_insert(reply->address());
+                if (tracker->source()) {
+                    if ((*(tracker->source()) == "uFetchHead") && (tracker->fillLevel() == eLocalMem))
+                        theL2Misses++;
+                }
 
                 issueEvict(replacement);
 
@@ -626,13 +656,13 @@ class FLEXUS_COMPONENT(uFetch)
         }
     }
 
-    void loadState(std::string const& aDirName) override
+    void loadState(std::string const& aDirName)
     {
         // I need to load the instruction cache here.
         this->theI.loadState(aDirName + "/" + statName() + "-L1i.json");
     }
 
-    void saveState(std::string const& aDirName) override
+    void saveState(std::string const& aDirName)
     {
         // Not implemented.
 

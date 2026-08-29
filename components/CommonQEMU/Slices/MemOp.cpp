@@ -52,6 +52,7 @@ operator<<(std::ostream& anOstream, eOperation op)
                                  "Downgrade",
                                  "Probe",
                                  "Return",
+                                 "PageWalkReply",
                                  "LoadReply",
                                  "AtomicPreloadReply",
                                  "StoreReply",

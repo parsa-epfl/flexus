@@ -3,17 +3,17 @@
 ChannelLatency 1
 ChannelLatencyData 1
 ChannelLatencyControl 1
-LocalChannelLatencyDivider 1
-SwitchInputBuffers 5
-SwitchOutputBuffers 5
-SwitchInternalBuffersPerVC 5
+LocalChannelLatencyDivider 4
+SwitchInputBuffers 1
+SwitchOutputBuffers 1
+SwitchInternalBuffersPerVC 1
 
 
 # Basic Switch/Node connections
 NumNodes 192
 NumSwitches 64
 SwitchPorts   19
-SwitchBandwidth 19
+SwitchBandwidth 4
 
 
 # Core connections
@@ -81,6 +81,7 @@ Top Node 60 -> Switch 60:0
 Top Node 61 -> Switch 61:0
 Top Node 62 -> Switch 62:0
 Top Node 63 -> Switch 63:0
+
 
 # LLC connections
 Top Node 64 -> Switch 3:1

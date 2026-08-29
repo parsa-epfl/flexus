@@ -85,7 +85,7 @@ class StdLookupResult : public AbstractLookupResult<_State>
     }
 
     const _State& state() const { return (isHit ? theBlock->state() : theOrigState); }
-    void setState(const _State& aNewState, bool force = false) { 
+    void setState(const _State& aNewState, bool force = false) {
         if (force) {
             if (theBlock == nullptr) {
                 theBlock = new Block<_State, _DefaultState>();
@@ -93,7 +93,7 @@ class StdLookupResult : public AbstractLookupResult<_State>
             }
             isHit = aNewState !=  BasicCacheState::Invalid;
         }
-        theBlock->state() = aNewState; 
+        theBlock->state() = aNewState;
     }
     void setProtected(bool val) { theBlock->state().setProtected(val); }
     void setPrefetched(bool val) { theBlock->state().setPrefetched(val); }
@@ -205,6 +205,7 @@ class Set
                                     int32_t set_idx,
                                     int32_t tag_shift,
                                     int32_t set_shift) = 0;
+    virtual json save_set_to_ckpt(int32_t set_idx, int32_t tag_shift, int32_t set_shift) const = 0;
 
     MemoryAddress blockAddress(const Block<_State, _DefaultState>* theBlock) { return theBlock->tag(); }
 
@@ -299,19 +300,55 @@ class SetLRU : public Set<_State, _DefaultState>
                                     int32_t tag_shift,
                                     int32_t set_shift)
     {
+        // First, calculate the number of invalid slot.
+        uint32_t invalid_slot_count = this->theAssociativity - checkpoint["tags"].at(set_idx).size();
+
+        for(uint32_t i{ 0 }; i < invalid_slot_count; i++) {
+            Set<_State, _DefaultState>::theBlocks[i].tag()   = MemoryAddress(0);
+            Set<_State, _DefaultState>::theBlocks[i].state() = _DefaultState;
+        }
+
         for (uint32_t i{ 0 }; i < checkpoint["tags"].at(set_idx).size(); i++) {
             bool dirty    = checkpoint["tags"].at(set_idx).at(i)["dirty"];
             bool writable = checkpoint["tags"].at(set_idx).at(i)["writable"];
             uint64_t tag  = checkpoint["tags"].at(set_idx).at(i)["tag"];
 
-            Set<_State, _DefaultState>::theBlocks[i].tag() = MemoryAddress((tag << tag_shift) | (set_idx << set_shift));
-            Set<_State, _DefaultState>::theBlocks[i].state() = _State::bool2state(dirty, writable);
+            Set<_State, _DefaultState>::theBlocks[i+invalid_slot_count].tag() = MemoryAddress((tag << tag_shift) | (set_idx << set_shift));
+            Set<_State, _DefaultState>::theBlocks[i+invalid_slot_count].state() = _State::bool2state(dirty, writable);
         }
 
         // reset the MRU order. Least recently used cache line is in the beginning.
         for (int32_t i = 0; i < this->theAssociativity; i++) {
             theMRUOrder[i] = this->theAssociativity - i - 1;
         }
+    }
+
+    virtual json save_set_to_ckpt(int32_t set_idx, int32_t tag_shift, int32_t set_shift) const
+    {
+        json set_checkpoint = json::array();
+
+        // Save blocks in the same order as load_set_from_ckpt expects:
+        // load_set_from_ckpt loads blocks into positions 0,1,2,... then sets
+        // MRU order to [assoc-1, assoc-2, ...], meaning JSON index 0 = LRU block.
+        // So we iterate from LRU to MRU (reverse MRU order).
+        for (int32_t i = this->theAssociativity - 1; i >= 0; i--) {
+            SetIndex block_idx = theMRUOrder[i];
+            const Block<_State, _DefaultState>& block = this->theBlocks[block_idx];
+
+            // Only save valid blocks
+            if (block.state().isValid()) {
+                json entry;
+                // Extract the tag portion from the full address
+                uint64_t full_addr = static_cast<uint64_t>(block.tag());
+                uint64_t tag_only  = full_addr >> tag_shift;
+                entry["tag"]      = tag_only;
+                entry["dirty"]    = block.state().isDirty();
+                entry["writable"] = block.state().isWritable();
+                set_checkpoint.push_back(entry);
+            }
+        }
+
+        return set_checkpoint;
     }
 
   protected:
@@ -447,7 +484,7 @@ class StdArray : public AbstractArray<_State>
     }
 
     // Main array lookup function
-    virtual boost::intrusive_ptr<AbstractLookupResult<_State>> operator[](const MemoryAddress& anAddress)
+    boost::intrusive_ptr<AbstractLookupResult<_State>> operator[](const MemoryAddress& anAddress)
     {
         boost::intrusive_ptr<AbstractLookupResult<_State>> ret =
           theSets[makeSet(anAddress)]->lookupBlock(blockAddress(anAddress));
@@ -457,7 +494,7 @@ class StdArray : public AbstractArray<_State>
         return ret;
     }
 
-    virtual bool canAllocate(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup, const MemoryAddress& anAddress)
+    bool canAllocate(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup, const MemoryAddress& anAddress)
     {
         StdLookupResult<_State, _DefaultState>* std_lookup =
           dynamic_cast<StdLookupResult<_State, _DefaultState>*>(lookup.get());
@@ -465,7 +502,7 @@ class StdArray : public AbstractArray<_State>
 
         return std_lookup->theSet->canAllocate(std_lookup, blockAddress(anAddress));
     }
-    virtual boost::intrusive_ptr<AbstractLookupResult<_State>> allocate(
+    boost::intrusive_ptr<AbstractLookupResult<_State>> allocate(
       boost::intrusive_ptr<AbstractLookupResult<_State>> lookup,
       const MemoryAddress& anAddress)
     {
@@ -476,20 +513,20 @@ class StdArray : public AbstractArray<_State>
         return std_lookup->theSet->allocate(std_lookup, blockAddress(anAddress));
     }
 
-    virtual void recordAccess(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup)
+    void recordAccess(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup)
     {
         StdLookupResult<_State, _DefaultState>* std_lookup =
           dynamic_cast<StdLookupResult<_State, _DefaultState>*>(lookup.get());
         DBG_Assert(std_lookup != nullptr);
         DBG_Assert(std_lookup->valid());
 
-        if (std_lookup->theForce) 
+        if (std_lookup->theForce)
             return;
 
         std_lookup->theSet->recordAccess(std_lookup->theBlock);
     }
 
-    virtual void invalidateBlock(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup)
+    void invalidateBlock(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup)
     {
         StdLookupResult<_State, _DefaultState>* std_lookup =
           dynamic_cast<StdLookupResult<_State, _DefaultState>*>(lookup.get());
@@ -499,12 +536,12 @@ class StdArray : public AbstractArray<_State>
         std_lookup->theSet->invalidateBlock(std_lookup->theBlock);
     }
 
-    virtual std::pair<_State, MemoryAddress> getPreemptiveEviction()
+    std::pair<_State, MemoryAddress> getPreemptiveEviction()
     {
         return std::make_pair(_DefaultState, MemoryAddress(0));
     }
 
-    virtual void load_from_ckpt(std::istream& is, int32_t theIndex)
+    void load_from_ckpt(std::istream& is, int32_t theIndex)
     {
         json checkpoint;
         is >> checkpoint;
@@ -515,6 +552,20 @@ class StdArray : public AbstractArray<_State>
         for (int32_t i{ 0 }; i < setCount; i++) {
             theSets[i]->load_set_from_ckpt(checkpoint, theIndex, i, theTagShift, setIndexShift);
         }
+    }
+
+    void save_to_ckpt(std::ostream& os, int32_t theIndex)
+    {
+        json checkpoint;
+        checkpoint["associativity"] = theAssociativity;
+        checkpoint["tags"]          = json::array();
+
+        // Save each set
+        for (int32_t i = 0; i < setCount; i++) {
+            checkpoint["tags"].push_back(theSets[i]->save_set_to_ckpt(i, theTagShift, setIndexShift));
+        }
+
+        os << checkpoint.dump(2);
     }
 
     // Addressing helper functions
@@ -532,9 +583,9 @@ class StdArray : public AbstractArray<_State>
 
     virtual bool sameSet(MemoryAddress a, MemoryAddress b) const { return (makeSet(a) == makeSet(b)); }
 
-    virtual std::list<MemoryAddress> getSetTags(MemoryAddress addr) { return theSets[makeSet(addr)]->getTags(); }
+    std::list<MemoryAddress> getSetTags(MemoryAddress addr) { return theSets[makeSet(addr)]->getTags(); }
 
-    virtual std::function<bool(MemoryAddress a, MemoryAddress b)> setCompareFn() const
+    std::function<bool(MemoryAddress a, MemoryAddress b)> setCompareFn() const
     {
         return std::bind(&StdArray<_State, _DefaultState>::sameSet,
                          *this,
@@ -542,9 +593,9 @@ class StdArray : public AbstractArray<_State>
                          std::placeholders::_2);
     }
 
-    virtual uint64_t getSet(MemoryAddress const& addr) const { return (uint64_t)makeSet(addr); }
+    uint64_t getSet(MemoryAddress const& addr) const { return (uint64_t)makeSet(addr); }
 
-    virtual int32_t requestsPerSet() const { return theAssociativity; }
+    int32_t requestsPerSet() const { return theAssociativity; }
 
 }; // class StdArray
 

@@ -47,6 +47,18 @@ struct ReadRegisterAction : public BaseSemanticAction
       , the64(is64)
       , theSP(aSP)
     {
+        isRead = true;
+    }
+
+    void connectBypass()
+    {
+        DBG_Assert(!theConnected);
+        mapped_reg name = theInstruction->operand<mapped_reg>(theRegisterCode);
+        setReady(0,
+                    core()->requestRegister(name, theInstruction->makeInstructionDependance(dependance())) ==
+                    kReady);
+        core()->connectBypass(name, theInstruction, ll::bind(&ReadRegisterAction::bypass, this, ll::_1));
+        theConnected = true;
     }
 
     bool bypass(register_value aValue)
@@ -81,7 +93,7 @@ struct ReadRegisterAction : public BaseSemanticAction
         theSP = false;
 
         register_value aValue;
-        uint64_t val;
+        uint64_t val = 0;
         if (theSP) {
             if (core()->_PSTATE().SP() == 0) {
                 val = core()->getSP_el(EL0);
@@ -100,15 +112,7 @@ struct ReadRegisterAction : public BaseSemanticAction
                 }
             }
         } else {
-            if (!theConnected) {
-
-                mapped_reg name = theInstruction->operand<mapped_reg>(theRegisterCode);
-                setReady(0,
-                         core()->requestRegister(name, theInstruction->makeInstructionDependance(dependance())) ==
-                           kReady);
-                core()->connectBypass(name, theInstruction, ll::bind(&ReadRegisterAction::bypass, this, ll::_1));
-                theConnected = true;
-            }
+            DBG_Assert(theConnected);
             if (!signalled()) {
                 SEMANTICS_DBG("Signalling");
 

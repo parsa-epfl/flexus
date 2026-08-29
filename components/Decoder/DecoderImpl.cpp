@@ -12,6 +12,7 @@
 #include DBG_Control()
 
 #include <boost/weak_ptr.hpp>
+#include <boost/polymorphic_pointer_cast.hpp>
 #include <components/MTManager/MTManager.hpp>
 
 namespace nDecoder {
@@ -69,6 +70,7 @@ class FLEXUS_COMPONENT(Decoder)
                 boost::tie(insn, final_uop) = decode(*iter, aBundle->coreID, ++theInsnSequenceNo, uop++);
                 if (insn) {
                     insn->setFetchTransactionTracker(iter->theTransaction);
+                    insn->setPhysicalPC(iter->thePhysicalPC);
                     // Set Fill Level for the insn
                     insn->setSourceLevel(**fill_iter);
                     theFIQ.push_back(insn);
@@ -95,11 +97,12 @@ class FLEXUS_COMPONENT(Decoder)
     {
         int32_t available_dispatch = 0;
         bool is_sync               = false;
-        std::pair<int, bool> dispatch_state;
+        std::tuple<int, int, int> available_regs;
+        std::tuple<int, bool, std::tuple<int, int, int>> dispatch_state;
         FLEXUS_CHANNEL(AvailableDispatchIn) >> dispatch_state;
-        boost::tie(available_dispatch, is_sync) = dispatch_state;
-
-        return (theFIQ.empty() || (available_dispatch == 0) || (theSyncInsnInProgress && !is_sync));
+        std::tie(available_dispatch, is_sync, available_regs) = dispatch_state;
+        bool noRegs = (std::get<0>(available_regs) == 0) || (std::get<1>(available_regs) == 0) || (std::get<2>(available_regs) == 0);
+        return (theFIQ.empty() || (available_dispatch == 0) || (theSyncInsnInProgress && !is_sync) || (noRegs));
     }
 
     FLEXUS_PORT_ALWAYS_AVAILABLE(SquashIn);
@@ -133,9 +136,14 @@ class FLEXUS_COMPONENT(Decoder)
         // ugly construction.
         int32_t available_dispatch = 0;
         bool is_sync               = false;
-        std::pair<int, bool> dispatch_state;
+        std::tuple<int, int, int> available_regs;
+        std::tuple<int, bool, std::tuple<int, int, int>> dispatch_state;
         FLEXUS_CHANNEL(AvailableDispatchIn) >> dispatch_state;
-        boost::tie(available_dispatch, is_sync) = dispatch_state;
+        std::tie(available_dispatch, is_sync, available_regs) = dispatch_state;
+
+        int numFreeXRegs = std::get<0>(available_regs);
+        int numFreeVRegs = std::get<1>(available_regs);
+        int numFreeCCs   = std::get<2>(available_regs);
 
         int64_t theOpcode;
 
@@ -156,12 +164,32 @@ class FLEXUS_COMPONENT(Decoder)
 
         if (theSyncInsnInProgress) DISPATCH_DBG("Can't dispatch REASON: A sync is in progress");
 
-        while (available_dispatch > 0 && dispatched < cfg.DispatchWidth && !theFIQ.empty() && !theSyncInsnInProgress) {
+        if (numFreeXRegs == 0)
+            DISPATCH_DBG("Can't dispatch REASON: No free Int registers (=" << numFreeXRegs << ")");
+
+        if (numFreeVRegs == 0)
+            DISPATCH_DBG("Can't dispatch REASON: No free FP registers (=" << numFreeVRegs << ")");
+
+        if (numFreeCCs == 0)
+            DISPATCH_DBG("Can't dispatch REASON: No free CC registers (=" << numFreeCCs << ")");
+
+        int numReads, numWrites, numWCCs;
+        while (available_dispatch > 0 && dispatched < cfg.DispatchWidth && !theFIQ.empty() && !theSyncInsnInProgress
+                && numFreeXRegs > 0 && numFreeVRegs > 0 && numFreeCCs > 0) {
             if (theFIQ.front()->haltDispatch()) {
                 // May only dispatch black box op when core is synchronized
                 if (is_sync && dispatched == 0) {
                     DISPATCH_DBG("Halt-dispatch " << *theFIQ.front());
                     boost::intrusive_ptr<AbstractInstruction> inst(theFIQ.front());
+                    std::tie(numReads, numWrites, numWCCs) = boost::polymorphic_pointer_downcast<Instruction>(inst)->numReadsWrites();
+                    numFreeXRegs -= numWrites;
+                    numFreeXRegs -= numReads;   // This is worst case scenario, not all reads need a new physical reg
+                    numFreeCCs -= numWCCs;
+                    if (numFreeXRegs < 0 || numFreeVRegs < 0 || numFreeCCs < 0) {
+                        DBG_(VVerb, (<< "Cannot dispatch " << *theFIQ.front() << " Num Free Int Regs: " << numFreeXRegs
+                                            << " Num Free FP Regs: " << numFreeVRegs << " Num Free CCs: " << numFreeCCs));
+                        break; // No more dispatching this cycle
+                    }
                     theFIQ.pop_front();
 
                     // Report the dispatched instruction to the PowerTracker
@@ -169,6 +197,10 @@ class FLEXUS_COMPONENT(Decoder)
                     FLEXUS_CHANNEL(DispatchedInstructionOut) << theOpcode;
 
                     FLEXUS_CHANNEL(DispatchOut) << inst;
+                    std::tie(numReads, numWrites, numWCCs) = boost::polymorphic_pointer_downcast<Instruction>(inst)->numReadsWrites();
+                    numFreeXRegs -= numWrites;
+                    numFreeXRegs -= numReads;   // This is worst case scenario, not all reads need a new physical reg
+                    numFreeCCs -= numWCCs;
                     theSyncInsnInProgress = true;
                 } else {
                     DISPATCH_DBG("No available " << *theFIQ.front());
@@ -178,6 +210,15 @@ class FLEXUS_COMPONENT(Decoder)
             } else {
                 DISPATCH_DBG("Dispatching " << *theFIQ.front());
                 boost::intrusive_ptr<AbstractInstruction> inst(theFIQ.front());
+                std::tie(numReads, numWrites, numWCCs) = boost::polymorphic_pointer_downcast<Instruction>(inst)->numReadsWrites();
+                numFreeXRegs -= numWrites;
+                numFreeXRegs -= numReads;   // This is worst case scenario, not all reads need a new physical reg
+                numFreeCCs -= numWCCs;
+                if (numFreeXRegs < 0 || numFreeVRegs < 0 || numFreeCCs < 0) {
+                    DBG_(VVerb, (<< "Cannot dispatch " << *theFIQ.front() << " Num Free Int Regs: " << numFreeXRegs
+                                         << " Num Free FP Regs: " << numFreeVRegs << " Num Free CCs: " << numFreeCCs));
+                    break; // No more dispatching this cycle
+                }
                 theFIQ.pop_front();
 
                 // Report the dispatched instruction to the PowerTracker
@@ -186,6 +227,7 @@ class FLEXUS_COMPONENT(Decoder)
 
                 FLEXUS_CHANNEL(DispatchOut) << inst;
             }
+            DBG_(VVerb, (<< "Num Free Int Regs: " << numFreeXRegs << " Num Free FP Regs: " << numFreeVRegs << " Num Free CCs: " << numFreeCCs));
             ++dispatched;
             --available_dispatch;
         }

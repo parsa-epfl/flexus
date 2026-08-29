@@ -45,6 +45,7 @@ class TG0_Granule : public TranslationGranule
   public:
     TG0_Granule();
     TG0_Granule(unsigned granuleSize, unsigned PAddrSize, unsigned IAOffset);
+    virtual ~TG0_Granule() {};
     uint64_t GetLowerAddressRangeLimit() const;
     uint64_t GetUpperAddressRangeLimit() const;
 };
@@ -53,6 +54,7 @@ class TG1_Granule : public TranslationGranule
 {
   public:
     TG1_Granule();
+    virtual ~TG1_Granule() {};
     TG1_Granule(unsigned granuleSize, unsigned PAddrSize, unsigned IAOffset);
     uint64_t GetLowerAddressRangeLimit() const;
     uint64_t GetUpperAddressRangeLimit() const;

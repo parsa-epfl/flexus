@@ -103,7 +103,6 @@ struct Translation : public boost::counted_base
     PhysicalMemoryAddress thePaddr;
 
     int thePSTATE;
-    uint32_t theIndex;
     eTranslationType theType;
     eTLBstatus theTLBstatus;
     eTLBtype theTLBtype;

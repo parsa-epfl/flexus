@@ -115,6 +115,7 @@ InclusiveMESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transact
     bool is_miss          = false;
     bool is_hit           = false;
     bool was_prefetched   = false;
+    bool is_prefetch      = false;
 
     Action action(kReplyAndRemoveMAF, transport[TransactionTrackerTag], 1);
     MemoryMessage_p msg          = transport[MemoryMessageTag];
@@ -144,7 +145,9 @@ InclusiveMESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transact
         if (evictee != theEvictBuffer.end()) {
             // If we're in the process of evicting the block, wait for the evict to
             // complete to avoid any races
-            if (evictee->pending()) { return std::make_tuple(false, false, Action(kInsertMAF_WaitEvict, tracker)); }
+            if (evictee->pending() || evictee->snoopScheduled()) {
+                return std::make_tuple(false, false, Action(kInsertMAF_WaitEvict, tracker));
+            }
 
             // Make sure we can allocate the block, wait on the set if not
             DBG_Assert(theArray->canAllocate(lookup, getBlockAddress(msg->address())));
@@ -270,6 +273,8 @@ InclusiveMESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transact
             }
             break;
 
+        case MemoryMessage::PrefetchReadAllocReq:
+            is_prefetch = true;
         case MemoryMessage::LoadReq:
             if (lookup->state() == State::Invalid) {
 
@@ -284,14 +289,12 @@ InclusiveMESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transact
 
                 action.theAction = kInsertMAF_WaitResponse;
                 is_miss          = true;
-            } else if (lookup->state() == State::Modified) {
-                // lookup->setState(State::Exclusive);
-                theArray->recordAccess(lookup);
-                msg->type() = MemoryMessage::LoadReply;
-                is_hit      = true;
             } else { // Owned, Exclusive or Shared, no state change
                 theArray->recordAccess(lookup);
-                msg->type() = MemoryMessage::LoadReply;
+                msg->type() = (is_prefetch) ? MemoryMessage::PrefetchReadRedundant : MemoryMessage::LoadReply;
+                if (is_prefetch) {
+                    action.theRequiresData = 0;
+                }
                 is_hit      = true;
             }
             if (lookup->state().prefetched() && is_hit) {
@@ -612,6 +615,14 @@ InclusiveMESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transact
             } else {
                 misses_user_I++;
             }
+        } else if (msg->isPrefetchType()) {
+            if (tracker->OS() && *tracker->OS()) {
+                misses_system_D++;
+                misses_system_D_PrefetchRead++;
+            } else {
+                misses_user_D++;
+                misses_user_D_PrefetchRead++;
+            }
         } else if (is_prefetchwrite) {
             if (tracker->OS() && *tracker->OS()) {
                 misses_system_D++;
@@ -636,7 +647,7 @@ InclusiveMESI::doRequest(MemoryTransport transport, bool has_maf_entry, Transact
                 misses_user_D++;
                 misses_user_D_Read++;
             }
-            theReadTracker.startMiss(tracker);
+            // theReadTracker.startMiss(tracker);
         }
     }
 
@@ -926,10 +937,6 @@ InclusiveMESI::handleBackMessage(MemoryTransport transport)
                     // Drop invalidates to avoid duplicate Evict/InvalAck messages
                     return Action(kNoAction, tracker, false);
                 }
-            } else if (((state == State::Exclusive) || (state == State::Modified)) && !the2LevelPrivate) {
-                // We should get a WriteFwd request instead of an Invalidate if we're
-                // modified or exclusive This is bad
-                DBG_Assert(false, (<< "received in Invalidate while in " << state << " state : " << (*msg)));
             } else {
                 // state == Shared or Owner
                 // If we have an outstanind upgrade, change it to a write
@@ -1475,6 +1482,8 @@ InclusiveMESI::handleBackMessage(MemoryTransport transport)
             action.theFrontToICache = true;
             break;
         }
+        case MemoryMessage::PrefetchReadAllocReq:
+            is_prefetch = true;
         case MemoryMessage::LoadReq: {
             DBG_Assert(state == State::Invalid,
                        (<< "Received reply to read req but block not invalid - " << state << " : " << (*msg)));
@@ -1492,7 +1501,7 @@ InclusiveMESI::handleBackMessage(MemoryTransport transport)
                 default: DBG_Assert(false, (<< "Received invalid reply to a read request : " << (*msg))); break;
             }
 
-            msg->type() = MemoryMessage::LoadReply;
+            msg->type() = (is_prefetch) ? MemoryMessage::PrefetchWritableReply : MemoryMessage::LoadReply;
 
             is_fill  = true;
             is_final = true;
@@ -1814,7 +1823,7 @@ InclusiveMESI::handleBackMessage(MemoryTransport transport)
         theTraceTracker.fill(theNodeId, thePeerLevel, msg->address(), *tracker->fillLevel(), is_fetch, is_write);
     }
 
-    theReadTracker.finishMiss(original_tracker);
+    // theReadTracker.finishMiss(original_tracker);
 
     if (result->state() != State::Invalid) {
         if (is_prefetch) {
@@ -2054,6 +2063,7 @@ InclusiveMESI::finalizeSnoop(MemoryTransport transport, LookupResult_p result)
         case MemoryMessage::EvictDirty:
             if (block_state == State::Modified) { orig_msg->type() = MemoryMessage::EvictDirty; }
             evEntry->setEvictable(true);
+            wake_evicts = true;
             break;
         default: DBG_Assert(false, (<< "Unknown message type in snoop buffer: " << (*orig_msg))); break;
     }
@@ -2389,7 +2399,7 @@ InclusiveMESI::handleWakeSnoop(MemoryTransport transport)
             snp->d_snoop_outstanding = false;
         } else {
             act.theFrontToDCache     = true;
-            snp->d_snoop_outstanding = true; // This is redundant, only here for clarity
+            snp->d_snoop_outstanding = true;
         }
         act.theFrontToICache     = (theCacheLevel != eL1);
         snp->i_snoop_outstanding = (theCacheLevel != eL1);
