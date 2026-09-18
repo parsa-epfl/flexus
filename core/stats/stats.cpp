@@ -767,7 +767,6 @@ class StatManagerImpl : public StatManager
     int64_t theTick;
     boost::intrusive_ptr<Measurement> theAllMeasurement;
     std::list<std::function<void()>> theFinalizers;
-    bool theLoaded;
 
     struct event
     {
@@ -785,7 +784,6 @@ class StatManagerImpl : public StatManager
     StatManagerImpl()
       : theInitialized(false)
       , theTick(0)
-      , theLoaded(false)
     {
     }
     ~StatManagerImpl()

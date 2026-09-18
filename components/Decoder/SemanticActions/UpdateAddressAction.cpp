@@ -93,6 +93,8 @@ struct UpdateAddressAction : public BaseSemanticAction
                 DBG_Assert(false);
             }
             satisfyDependants();
+        } else {
+            reschedule();
         }
     }
 

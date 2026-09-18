@@ -89,6 +89,12 @@ struct ExecuteAction : public ExecuteBase
       , theBypass(aBypass)
     {
         theInstruction->setExecuted(false);
+        theEU = theOperation->euType();
+    }
+
+    bool canDispatch() {
+        DBG_(VVerb, (<< "[ALU] Checking dispatch for " << *this));
+        return core()->canExecute(theEU);
     }
 
     void doEvaluate()
@@ -142,6 +148,7 @@ struct ExecuteAction : public ExecuteBase
             }
         } else {
             DBG_(VVerb, (<< "cant Execute " << *this << " yet"));
+            reschedule();
         }
     }
 
@@ -204,6 +211,8 @@ struct ExecuteAction_WithXTRA : public ExecuteBase
                 DBG_(VVerb, (<< *this << " waiting for predecessor "));
                 reschedule();
             }
+        } else {
+            reschedule();
         }
     }
 
@@ -273,6 +282,8 @@ struct FPExecuteAction : public ExecuteBase
                 DBG_(VVerb, (<< *this << " waiting for predecessor "));
                 reschedule();
             }
+        } else {
+            reschedule();
         }
     }
 

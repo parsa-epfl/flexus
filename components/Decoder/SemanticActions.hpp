@@ -116,7 +116,11 @@ class BaseSemanticAction
 
   protected:
     SemanticInstruction* theInstruction;
-    bool theScheduled;
+    bool isWb;
+    bool isRead;
+    bool isWcc;
+    int theEU;
+    bool theFirst;
 
     BaseSemanticAction(SemanticInstruction* anInstruction, int32_t aNumOperands, bool now = false)
       : theEndOfDependances(0)
@@ -126,6 +130,11 @@ class BaseSemanticAction
       , theEvalNow(now)
       , theDependanceTarget(*this)
       , theInstruction(anInstruction)
+      , isWb(false)
+      , isRead(false)
+      , isWcc(false)
+      , theEU(-1)
+      , theFirst(false)
       , theScheduled(false)
     {
         theReady[0] = (aNumOperands < 1);
@@ -136,6 +145,8 @@ class BaseSemanticAction
     }
 
   public:
+    bool theScheduled;
+
     void evaluate();
     virtual void satisfy(int);
     virtual void squash(int);
@@ -150,6 +161,16 @@ class BaseSemanticAction
     }
 
     bool evalNow() const { return theEvalNow; }
+
+    bool isWB() const { return isWb; }
+    bool isREAD() const { return isRead; }
+    bool isWCC() const { return isWcc; }
+    void connectBypass() { DBG_Assert(isRead); }
+    uint32_t getExeStageIdx() const { return theInstruction->getExeStageIdx(); }
+    int getEU() const { return theEU; }
+    bool usesEU() const { return theEU != -1; }
+    bool isFirst() const { return theFirst; }
+    void setFirst(bool aFirst) { theFirst = aFirst; }
 
   protected:
     virtual void doEvaluate() { DBG_Assert(false); }

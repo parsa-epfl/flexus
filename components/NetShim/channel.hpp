@@ -133,6 +133,7 @@ class ChannelInputPort : public ChannelPort
     // channel between the local node and the switch.
     // This sets the latency to be low.
     bool setLocalDelay(void);
+    bool updateLatency(int32_t latency);
 
     bool updateAtHeadStatistics(void);
 

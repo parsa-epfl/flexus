@@ -38,6 +38,10 @@ COMPONENT_PARAMETERS(
   PARAMETER( OffChipLatency, uint32_t, "Off-Chip Side-Effect latency", "off-chip-se", 0)
   PARAMETER( Multithread, bool, "Enable multi-threaded execution", "multithread", false )
 
+  PARAMETER( ExtraXRegs, uint32_t, "Number of extra integer registers (beyond 32)", "extra_xregs", 0)
+  PARAMETER( ExtraVRegs, uint32_t, "Number of extra vector/FP registers (beyond 32)", "extra_vregs", 0)
+  PARAMETER( NumExeStages, uint32_t, "Number of execution stages", "num_exe_stages", 1)
+
   PARAMETER( NumIntAlu, uint32_t, "Number of integer ALUs", "numIntAlu", 1)
   PARAMETER( IntAluOpLatency, uint32_t, "End-to-end latency of an integer ALU operation", "intAluOpLatency", 1)
   PARAMETER( IntAluOpPipelineResetTime, uint32_t, "Number of cycles required between subsequent integer ALU operations", "intAluOpPipelineResetTime", 1)
@@ -67,7 +71,7 @@ COMPONENT_PARAMETERS(
   PARAMETER( FpSqrtOpPipelineResetTime, uint32_t, "Number of cycles required between subsequent FP SQRT operations", "fpSqrtOpPipelineResetTime", 1)
 );
 
-typedef std::pair<int, bool> dispatch_status;
+typedef std::tuple<int, bool, std::tuple<int, int, int>> dispatch_status;
 typedef VirtualMemoryAddress vaddr_pair;
 
 COMPONENT_INTERFACE(
@@ -81,6 +85,8 @@ COMPONENT_INTERFACE(
   PORT( PushOutput, boost::intrusive_ptr<BPredState>, BranchTrainOut )
   PORT( PushOutput, MemoryTransport, MemoryOut_Request )
   PORT( PushOutput, MemoryTransport, MemoryOut_Snoop )
+  PORT( PushOutput, boost::intrusive_ptr<SMSTrainInfo>, SMSTrainOut )
+  PORT( PushOutput, MemoryTransport, SMSPredictOut )
   PORT( PushInput, MemoryTransport, MemoryIn )
   PORT( PushInput, PhysicalMemoryAddress, WritePermissionLost )
   PORT( PushOutput, bool, StoreForwardingHitSeen) // Signal a store forwarding hit in the LSQ to the PowerTracker

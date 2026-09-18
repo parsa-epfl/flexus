@@ -108,6 +108,8 @@ struct ReorderAction : public PredicatedSemanticAction
 
             theInstruction->setOperand(theOutputCode, out_val);
             satisfyDependants();
+        } else {
+            reschedule();
         }
     }
 
@@ -166,6 +168,8 @@ struct CountAction : public PredicatedSemanticAction
             DBG_(VVerb, (<< "writing " << out_val << " into " << theOutputCode));
             theInstruction->setOperand(theOutputCode, out_val);
             satisfyDependants();
+        } else {
+            reschedule();
         }
     }
 

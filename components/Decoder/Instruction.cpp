@@ -21,6 +21,7 @@ ArchInstruction::ArchInstruction(VirtualMemoryAddress aPC,
                                  eInstructionClass aClass,
                                  eInstructionCode aCode)
   : thePC(aPC)
+  , thePhysicalPC(PhysicalMemoryAddress(-1ULL))
   , thePCReg(aPC + 4)
   , theOpcode(anOpcode)
   , theBPState(bp_state)
@@ -89,6 +90,7 @@ ArchInstruction::canDispatch() {
 bool
 ArchInstruction::isDispatched() {
     DBG_Assert(false, (<< "isDispatched() not implemented for " << *this));
+    return false;
 }
 
 void
@@ -97,6 +99,11 @@ ArchInstruction::setDispatch() {
 
 void
 ArchInstruction::doDispatchEffects() {
+}
+
+std::tuple<int, int, int>
+ArchInstruction::numReadsWrites() {
+    return std::make_tuple(0, 0, 0);
 }
 
 void

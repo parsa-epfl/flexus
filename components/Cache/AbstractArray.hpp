@@ -68,6 +68,7 @@ class AbstractArray
 
     // Checkpoint reading/writing functions
     virtual void load_from_ckpt(std::istream& s, int32_t anIndex) = 0;
+    virtual void save_to_ckpt(std::ostream& s, int32_t anIndex)   = 0;
 
     // Addressing helper functions
     MemoryAddress blockAddress(MemoryAddress const& anAddress) const
@@ -85,7 +86,7 @@ class AbstractArray
     virtual void unreserveEvictionResource() {}
     virtual std::pair<_State, MemoryAddress> getPreemptiveEviction() = 0;
 
-    virtual bool sameSet(MemoryAddress a, MemoryAddress b) { return false; }
+    virtual bool sameSet(MemoryAddress a, MemoryAddress b) const { return false; }
     virtual std::list<MemoryAddress> getSetTags(MemoryAddress addr)
     {
         DBG_Assert(false, (<< "Derived class does not implement getSetTags() function."));

@@ -34,7 +34,7 @@ namespace nuArch {
 using Flexus::Core::theFlexus;
 
 static const int32_t kxRegs_Global = kGlobalRegCount;
-static const int32_t kvRegs        = 64;
+static const int32_t kvRegs        = 32;
 static const int32_t kSpecialRegs  = kSpecialRegCount;
 static const int32_t kxRegs_Total  = kTotalRegs;
 static const int32_t kccRegs       = 5;

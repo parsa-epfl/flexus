@@ -83,9 +83,9 @@ class ComponentManagerImpl : public ComponentManager
         } else {
             DBG_Assert(freq_split.size() == theSystemWidth + 1, (<< "Frequency string does not match the system width."));
         }
-        
+
         index_t driveFreq, cyclesPerIter, remCycles;
-        theDriveFreq.mapCyclesIter = new index_t*[theSystemWidth];
+        theDriveFreq.mapCyclesIter = new index_t*[theSystemWidth+1];
         for(index_t i = 0; i <= theSystemWidth; ++i) {
             driveFreq = (index_t)(std::stof(freq_split[i]) * 10);
             cyclesPerIter = driveFreq / 10;
@@ -146,8 +146,10 @@ class ComponentManagerImpl : public ComponentManager
     void doSave(std::string const& aDirectory) const
     {
         for (auto* aComponent : theComponents) {
+            DBG_(Dev, (<< "Saving state: " << aComponent->name()));
             aComponent->saveState(aDirectory);
         }
+        DBG_(Crit, (<< " Done saving."));
     }
 
     void doLoad(std::string const& aDirectory)

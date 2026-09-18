@@ -10,6 +10,7 @@
 #include <boost/lambda/lambda.hpp>
 #include <list>
 #include <vector>
+#define TIMEOUT 10
 namespace ll = boost::lambda;
 namespace nuArch {
 
@@ -69,21 +70,21 @@ class BypassNetwork
             case xRegisters:
                 --theXCounts[anIndex.theIndex];
                 if (theXCounts[anIndex.theIndex] <= 0) {
-                    theXCounts[anIndex.theIndex] = 10;
+                    theXCounts[anIndex.theIndex] = TIMEOUT;
                     doCollect(theXDeps[anIndex.theIndex]);
                 }
                 break;
             case vRegisters:
                 --theVCounts[anIndex.theIndex];
                 if (theVCounts[anIndex.theIndex] <= 0) {
-                    theVCounts[anIndex.theIndex] = 10;
+                    theVCounts[anIndex.theIndex] = TIMEOUT;
                     doCollect(theVDeps[anIndex.theIndex]);
                 }
                 break;
             case ccBits:
                 --theCCCounts[anIndex.theIndex];
                 if (theCCCounts[anIndex.theIndex] <= 0) {
-                    theCCCounts[anIndex.theIndex] = 10;
+                    theCCCounts[anIndex.theIndex] = TIMEOUT;
                     doCollect(theCCDeps[anIndex.theIndex]);
                 }
                 break;
@@ -95,15 +96,15 @@ class BypassNetwork
     {
         FLEXUS_PROFILE();
         for (uint32_t i = 0; i < theXRegs; ++i) {
-            theXCounts[i] = 10;
+            theXCounts[i] = TIMEOUT;
             doCollect(theXDeps[i]);
         }
         for (uint32_t i = 0; i < theVRegs; ++i) {
-            theVCounts[i] = 10;
+            theVCounts[i] = TIMEOUT;
             doCollect(theVDeps[i]);
         }
         for (uint32_t i = 0; i < theCCRegs; ++i) {
-            theCCCounts[i] = 10;
+            theCCCounts[i] = TIMEOUT;
             doCollect(theCCDeps[i]);
         }
     }
@@ -120,9 +121,9 @@ class BypassNetwork
         theXCounts.clear();
         theVCounts.clear();
         theCCCounts.clear();
-        theXCounts.resize(theXRegs, 10);
-        theVCounts.resize(theVRegs, 10);
-        theCCCounts.resize(theCCRegs, 10);
+        theXCounts.resize(theXRegs, TIMEOUT);
+        theVCounts.resize(theVRegs, TIMEOUT);
+        theCCCounts.resize(theCCRegs, TIMEOUT);
     }
 
     void connect(mapped_reg anIndex, boost::intrusive_ptr<Instruction> inst, bypass_fn fn)

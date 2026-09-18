@@ -50,6 +50,10 @@ class BasicCacheState
 
     inline const bool isValid() const { return (*this != Invalid); }
 
+    inline const bool isDirty() const { return (*this == Modified) || (*this == Owned); }
+
+    inline const bool isWritable() const { return (*this == Modified) || (*this == Exclusive); }
+
     inline void setPrefetched(bool p)
     {
         if (p) {
@@ -113,7 +117,7 @@ class BasicCacheState
     explicit BasicCacheState()
       : val(Invalid.val)
     {
-        /* Never called */ *(int*)0 = 0;
+        __builtin_trap();
     }
     BasicCacheState(const string& name)
       : val(names().size())

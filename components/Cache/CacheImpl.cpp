@@ -67,6 +67,7 @@ class FLEXUS_COMPONENT(Cache)
     }
 
     void loadState(std::string const& aDirName) { theController->loadState(aDirName); }
+    void saveState(std::string const& aDirName) { theController->saveState(aDirName); }
 
     // Initialization
     void initialize()
@@ -210,8 +211,12 @@ class FLEXUS_COMPONENT(Cache)
 
     uint32_t transferTime(const MemoryTransport& trans)
     {
-        DBG_Assert(trans[MemoryMessageTag] != nullptr);
-        return ((trans[MemoryMessageTag]->reqSize() > 0) ? cfg.BusTime_Data : cfg.BusTime_NoData) - 1;
+        // DBG_Assert(trans[MemoryMessageTag] != nullptr);
+        if (trans[MemoryMessageTag] == nullptr) {
+            return cfg.BusTime_NoData - 1; // No data, so no transfer time
+        } else {
+            return ((trans[MemoryMessageTag]->reqSize() > 0) ? cfg.BusTime_Data : cfg.BusTime_NoData) - 1;
+        }
     }
 
     void busCycle()
@@ -227,6 +232,7 @@ class FLEXUS_COMPONENT(Cache)
                 MemoryTransport transport = theController->FrontSideOut_D[i].dequeue();
                 DBG_(VVerb, (<< "sent | FrontSideOut_D(){" << i << "} | " << *(transport[MemoryMessageTag])));
                 FLEXUS_CHANNEL_ARRAY(FrontSideOut_D, i) << transport;
+                FLEXUS_CHANNEL(SMSEvictInval) << transport;
             }
             while (!theController->FrontSideOut_I[i].empty() && FLEXUS_CHANNEL_ARRAY(FrontSideOut_I, i).available()) {
                 MemoryTransport transport = theController->FrontSideOut_I[i].dequeue();

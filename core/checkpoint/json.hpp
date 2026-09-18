@@ -4372,7 +4372,7 @@ class exception : public std::exception
 {
   public:
     /// returns the explanatory string
-    const char* what() const noexcept override
+    const char* what() const noexcept
     {
         return m.what();
     }
@@ -14968,13 +14968,13 @@ class output_vector_adapter : public output_adapter_protocol<CharType>
         : v(vec)
     {}
 
-    void write_character(CharType c) override
+    void write_character(CharType c)
     {
         v.push_back(c);
     }
 
     JSON_HEDLEY_NON_NULL(2)
-    void write_characters(const CharType* s, std::size_t length) override
+    void write_characters(const CharType* s, std::size_t length)
     {
         v.insert(v.end(), s, s + length);
     }
@@ -14993,13 +14993,13 @@ class output_stream_adapter : public output_adapter_protocol<CharType>
         : stream(s)
     {}
 
-    void write_character(CharType c) override
+    void write_character(CharType c)
     {
         stream.put(c);
     }
 
     JSON_HEDLEY_NON_NULL(2)
-    void write_characters(const CharType* s, std::size_t length) override
+    void write_characters(const CharType* s, std::size_t length)
     {
         stream.write(s, static_cast<std::streamsize>(length));
     }
@@ -15018,13 +15018,13 @@ class output_string_adapter : public output_adapter_protocol<CharType>
         : str(s)
     {}
 
-    void write_character(CharType c) override
+    void write_character(CharType c)
     {
         str.push_back(c);
     }
 
     JSON_HEDLEY_NON_NULL(2)
-    void write_characters(const CharType* s, std::size_t length) override
+    void write_characters(const CharType* s, std::size_t length)
     {
         str.append(s, length);
     }

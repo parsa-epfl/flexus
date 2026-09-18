@@ -67,7 +67,7 @@ BusTag_t BusTag;
 #define FLEXUS_TAG_DirectoryEntryTag
 struct DirectoryEntryTag_t
 {};
-struct DirectoryEntry;
+class DirectoryEntry;
 namespace {
 DirectoryEntryTag_t DirectoryEntryTag;
 }
@@ -77,7 +77,7 @@ DirectoryEntryTag_t DirectoryEntryTag;
 #define FLEXUS_TAG_TransactionTrackerTag
 struct TransactionTrackerTag_t
 {};
-struct TransactionTracker;
+class TransactionTracker;
 namespace {
 TransactionTrackerTag_t TransactionTrackerTag;
 }
@@ -121,6 +121,14 @@ typedef Transport<mpl::vector<transport_entry<MemoryMessageTag_t, MemoryMessage>
                               transport_entry<NetworkMessageTag_t, NetworkMessage>,
                               transport_entry<TaglessDirMsgTag_t, TaglessDirMsg>>>
   MemoryTransport;
+
+struct SMSTrainInfo
+  : public boost::intrusive_ref_counter<SMSTrainInfo>
+{
+    VirtualMemoryAddress pc;
+    PhysicalMemoryAddress address;
+    bool isStore;
+};
 
 } // namespace SharedTypes
 } // namespace Flexus

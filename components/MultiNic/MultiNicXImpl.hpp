@@ -90,6 +90,8 @@ class FLEXUS_COMPONENT(MultiNicX)
              Condition((transport[MemoryMessageTag]))(<< "  Packet contains: " << *transport[MemoryMessageTag])
                Comp(*this));
 
+        DBG_Assert(transport[NetworkMessageTag]->vc < 3);
+
         DBG_Assert(anIndex == (index_t)transport[NetworkMessageTag]->vc,
                    Comp(*this)(<< "Mismatched port/vc assignment"));
 
@@ -157,6 +159,8 @@ class FLEXUS_COMPONENT(MultiNicX)
                         DBG_(VVerb,
                              Condition((transport[MemoryMessageTag]))(<< "  Packet contains: "
                                                                       << *transport[MemoryMessageTag]) Comp(*this));
+
+                        DBG_Assert(transport[NetworkMessageTag]->vc < 3);
 
                         FLEXUS_CHANNEL_ARRAY(ToNetwork, transport[NetworkMessageTag]->vc) << transport;
                         ++theSendCount;

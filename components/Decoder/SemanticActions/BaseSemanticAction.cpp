@@ -75,6 +75,10 @@ void
 BaseSemanticAction::satisfyDependants()
 {
     if (!cancelled() && !signalled()) {
+        if (usesEU()) {    // Note: this is assuming two actions of the same instruction doesnt execute in the same cycle (except the last ALU pipeline stage)
+            DBG_(VVerb, (<< *this << " advancing exe stage"));
+            theInstruction->incExeStageIdx();
+        }
         for (int32_t i = 0; i < theEndOfDependances; ++i) {
             theDependances[i].satisfy();
         }

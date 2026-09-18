@@ -852,6 +852,8 @@ LDR(archcode const& aFetchedOpcode, uint32_t aCPU, int64_t aSequenceNo)
     }
 
     simple_action act = calcAddressUpdateVATranslateMaybeRegExtendAndShiftAction(inst, rs2_deps, index == kRegOffset, extend(DecodeRegExtend(option)), rs_deps, shift_amount != 0);
+    inst->addDispatchCheck(act.action);
+    inst->addDispatchAction(act);
 
     if (index == kUnsignedOffset) {
         inst->setOperand(kUopAddressOffset, imm);

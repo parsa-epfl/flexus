@@ -132,6 +132,7 @@ class TransactionTracker : public boost::counted_base
     void setSource(std::string const& aSource) { theSource.reset(aSource); }
     boost::optional<std::string> source() const { return theSource; }
 
+    void setStartCycle(uint64_t aCycle) { theStartCycle = aCycle; }
     uint64_t startCycle() const { return theStartCycle; }
 
     void complete()

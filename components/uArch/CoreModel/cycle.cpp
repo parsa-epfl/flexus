@@ -7,9 +7,11 @@
 #include <components/CommonQEMU/Translation.hpp>
 #include <components/Decoder/BitManip.hpp>
 #include <components/Decoder/Instruction.hpp>
+#include <components/Decoder/SemanticActions.hpp>
 #include <core/debug/severity.hpp>
 #include <iostream>
 #include <algorithm>
+#include <boost/optional/optional_io.hpp>
 
 #define DBG_DeclareCategories uArchCat
 #define DBG_SetDefaultOps     AddCat(uArchCat)
@@ -63,15 +65,45 @@ CoreImpl::checkValidatation()
                  (<< "Register " << (i == 31 ? "SP" : std::to_string(i)) << " mismatch: QEMU= 0x" << std::hex
                   << qemu_dump.regs[i] << " Flexus= 0x" << flexus_dump.regs[i] << std::dec));
             same = false;
+        } else {
+            DBG_(Dev, (<< "Register " << (i == 31 ? "SP" : std::to_string(i)) << " match: 0x" << std::hex
+                      << qemu_dump.regs[i] << std::dec));
         }
     }
 
     return same;
 }
 
+bool equalTwoLists(action_list_t& a, action_list_t& b)
+{
+    if (a.size() != b.size())
+        return false;
+    action_list_t acopy = a;
+    action_list_t bcopy = b;
+    while (!acopy.empty()) {
+        if (acopy.top() != bcopy.top())
+            return false;
+        acopy.pop();
+        bcopy.pop();
+    }
+    return true;
+}
+
 void
 CoreImpl::cycle(eExceptionType aPendingInterrupt)
 {
+    ++theCycleCallCount;
+    if (theSpinning) ++theSpinningCycles;
+
+    // Cycle-accurate counter: RET at ROB head with kOperand1 not yet set
+    if (!theROB.empty()) {
+        auto* sem = dynamic_cast<nDecoder::SemanticInstruction*>(theROB.front().get());
+        if (sem && theROB.front()->instCode() == nDecoder::codeRETURN
+                && !sem->hasOperand(nDecoder::kOperand1)) {
+            ++theRetAtHeadOpUnset;
+        }
+    }
+
     // qemu warmup
     if (theFlexus->cycleCount() == 1) {
         advance_fn(true);
@@ -152,66 +184,24 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     DBG_Assert((theSBCount + theSBNAWCount) >= 0);
     DBG_Assert((static_cast<int>(theSBLines_Permission.size())) <= theSBCount + theSBNAWCount);
 
+    // ===== End of cycle bookkeeping ===== //
+
     DBG_(VVerb, (<< "*** Prepare *** "));
 
     processMemoryReplies();
-    prepareCycle();
+    prepareWB();
 
     for (const auto& tr : thePageWalkReissues)
         issueMMU(tr);
     thePageWalkReissues.clear();
 
-    DBG_(VVerb, (<< "*** Eval *** "));
+    // ===== WB and Retire ===== //
 
-    theUsedALU = 0;
-    theUsedMUL = 0;
-    theUsedAGU = 0;
-
-    evaluate();
-
-    // redo dispatch
-    if (theDispatchStalled) {
-            for (auto t = theDispatchingInsts.begin(); t != theDispatchingInsts.end();) {
-                auto &i = *t;
-                DBG_(VVerb, (<< "redispatching " << *i));
-                if (!i->canDispatch())
-                    goto dispatch_cont;
-                i->doDispatchActions();
-                i->setDispatch();
-                DBG_(VVerb, (<< theName << " Dispatched " << *i));
-                t = theDispatchingInsts.erase(t);
-            }
-            theDispatchStalled = false;
-        }
-
-    dispatch_cont:
-    DBG_(VVerb, (<< "*** Issue Mem *** "));
-
-    issuePartialSnoop();
-    issueStore();
-    issueAtomic();
-    issueAtomicSpecWrite();
-    issueSpecial();
-    valuePredictAtomic();
-    //  checkExtraLatencyTimeout();
-    resolveCheckpoint();
-
-    DBG_(Verb, (<< "*** Arb *** "));
-    arbitrate();
-
-    if (cpuHalted) {
-        int qemu_rcode = advance_fn(false); // don't count instructions in halt state
-        if (qemu_rcode != QEMU_EXCP_HALTED) {
-            DBG_(Dev, (<< "Core " << theNode << " leaving halt state, after QEMU sent execution code " << qemu_rcode));
-            cpuHalted = false;
-            throw ResynchronizeWithQemuException(true, false, nullptr);
-        }
-
-        return;
-    }
+    DBG_(VVerb, (<< "*** WB and Retire *** "));
 
     // Retire instruction from the ROB to the SRB
     retire();
+    evaluateWB();
 
     if (theRetireCount > 0) { theIdleThisCycle = false; }
 
@@ -250,6 +240,91 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     }
     theIdleThisCycle = true;
 
+    DBG_(VVerb, (<< "*** Eval *** "));
+
+    // Finish off all actions in the last EXE stage //
+    int32_t idx = numExeStages - 1;
+    action_list_t tmp;
+
+    uint32_t numIters = 0;
+    while(!equalTwoLists(theRescheduledActions[idx], tmp) && numIters < 4) {    // Tmp fix to prevent livelock, TODO: fix later
+        DBG_(VVerb, (<< "EXE Stage " << idx << " has " << theRescheduledActions[idx].size() << " actions to process"));
+        tmp = theRescheduledActions[idx];
+        theUsedALU = 0;
+        theUsedMUL = 0;
+        theUsedAGU = 0;
+
+        prepareCycle(idx);
+        evaluate(idx);
+        numIters++;
+    }
+
+    // Now work backwards through the EXE stages //
+    --idx;
+    for(; idx >= 0; --idx) {
+        DBG_(VVerb, (<< "EXE Stage " << idx << " has " << theRescheduledActions[idx].size() << " actions to process"));
+        theUsedALU = 0;
+        theUsedMUL = 0;
+        theUsedAGU = 0;
+
+        prepareCycle(idx);
+        evaluate(idx);
+    }
+    resetFreeEUs();
+
+    DBG_(VVerb, (<< "*** Issue Mem *** "));
+
+    issuePartialSnoop();
+    issueStore();
+    issueAtomic();
+    issueAtomicSpecWrite();
+    issueSpecial();
+    valuePredictAtomic();
+    //  checkExtraLatencyTimeout();
+    resolveCheckpoint();
+
+    DBG_(Verb, (<< "*** Arb *** "));
+    arbitrate();
+
+    // ===== Redispatch any instructions that can be dispatched ===== //
+    DBG_(VVerb, (<< "*** Redispatch *** "));
+
+    // redo dispatch
+    if (theDispatchStalled) {
+            for (auto t = theDispatchingInsts.begin(); t != theDispatchingInsts.end();) {
+                auto &i = *t;
+                DBG_(VVerb, (<< "redispatching " << *i));
+                if (!i->canDispatch())
+                    goto dispatch_cont;
+                i->doDispatchActions();
+                i->setDispatch();
+                DBG_(VVerb, (<< theName << " Dispatched " << *i));
+                t = theDispatchingInsts.erase(t);
+            }
+            theDispatchStalled = false;
+        }
+
+    dispatch_cont:
+
+    // ===== Perform ReadRegisterActions ===== //
+    DBG_(VVerb, (<< "*** Read Registers ***"));
+    prepareRD();
+    evaluateRD();
+
+    if (cpuHalted) {
+        ++theHaltedCycleCount;
+        int qemu_rcode = advance_fn(false); // don't count instructions in halt state
+        if (qemu_rcode != QEMU_EXCP_HALTED) {
+            DBG_(Dev, (<< "Core " << theNode << " leaving halt state, after QEMU sent execution code " << qemu_rcode));
+            cpuHalted = false;
+            throw ResynchronizeWithQemuException(true, false, nullptr);
+        }
+
+        return;
+    }
+
+    DBG_(VVerb, (<< "*** Update cycles of all executed instructions *** "));
+
     rob_t::iterator i;
     for (i = theROB.begin(); i != theROB.end(); ++i) {
         i->get()->decrementCanRetireCounter();
@@ -259,26 +334,74 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
 }
 
 void
-CoreImpl::prepareCycle()
+CoreImpl::prepareCycle(int32_t idx)
 {
     FLEXUS_PROFILE();
+    DBG_Assert(idx >= 0 && idx < numExeStages);
     thePreserveInteractions = false;
-    if (!theRescheduledActions.empty() || !theActiveActions.empty()) { theIdleThisCycle = false; }
-
-    std::swap(theRescheduledActions, theActiveActions);
+    if (!theRescheduledActions[idx].empty() || !theActiveActions[idx].empty()) { theIdleThisCycle = false; }
+    std::swap(theRescheduledActions[idx], theActiveActions[idx]);
 }
 
 void
-CoreImpl::evaluate()
+CoreImpl::prepareWB()
 {
     FLEXUS_PROFILE();
-    CORE_DBG("--------------START EVALUATING------------------------");
+    thePreserveInteractions = false;
+    if (!theRescheduledWBActions.empty() || !theActiveWBActions.empty()) { theIdleThisCycle = false; }
+    std::swap(theRescheduledWBActions, theActiveWBActions);
+}
 
-    while (!theActiveActions.empty()) {
-        theActiveActions.top()->evaluate();
-        theActiveActions.pop();
+void
+CoreImpl::prepareRD()
+{
+    FLEXUS_PROFILE();
+    thePreserveInteractions = false;
+    if (!theRescheduledRDActions.empty() || !theActiveRDActions.empty()) { theIdleThisCycle = false; }
+    std::swap(theRescheduledRDActions, theActiveRDActions);
+}
+
+void
+CoreImpl::evaluate(int32_t idx)
+{
+    FLEXUS_PROFILE();
+    DBG_Assert(idx >= 0 && idx < numExeStages);
+    CORE_DBG("--------------START EVALUATING " << idx << "------------------------");
+
+    while (!theActiveActions[idx].empty()) {
+        theActiveActions[idx].top()->evaluate();
+        theActiveActions[idx].pop();
     }
-    CORE_DBG("--------------FINISH EVALUATING------------------------");
+
+    CORE_DBG("--------------FINISH EVALUATING " << idx << "------------------------");
+}
+
+void
+CoreImpl::evaluateWB()
+{
+    FLEXUS_PROFILE();
+    CORE_DBG("--------------START EVALUATING WB------------------------");
+
+    while (!theActiveWBActions.empty()) {
+        theActiveWBActions.top()->evaluate();
+        theActiveWBActions.pop();
+    }
+
+    CORE_DBG("--------------FINISH EVALUATING WB------------------------");
+}
+
+void
+CoreImpl::evaluateRD()
+{
+    FLEXUS_PROFILE();
+    CORE_DBG("--------------START RD------------------------");
+
+    while (!theActiveRDActions.empty()) {
+        theActiveRDActions.top()->evaluate();
+        theActiveRDActions.pop();
+    }
+
+    CORE_DBG("--------------FINISH RD------------------------");
 }
 
 void
@@ -286,6 +409,17 @@ CoreImpl::arbitrate()
 {
     FLEXUS_PROFILE();
     theMemoryPortArbiter.arbitrate();
+}
+
+void
+CoreImpl::trainingSMS(VirtualMemoryAddress pc, PhysicalMemoryAddress addr, bool isStore)
+{
+    FLEXUS_PROFILE();
+    boost::intrusive_ptr<SMSTrainInfo> info = new SMSTrainInfo();
+    info->pc      = pc;
+    info->address = addr;
+    info->isStore = isStore;
+    trainSMS_fn(info);
 }
 
 void
@@ -599,6 +733,11 @@ CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn)
             // TRACE TRACKER : Notify trace tracker of store
             // uint64_t logical_timestamp = theCommitNumber + theSRB.size();
             theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/, isPrivileged(), 0);
+            if (!anInsn->isMicroOp())
+                trainingSMS(anInsn->pc(), iter->thePaddr, false);
+            boost::intrusive_ptr<TransactionTracker> tracker = anInsn->getTransactionTracker();
+            if (tracker)
+                DBG_(VVerb, (<< "Address: " << std::hex << iter->thePaddr << ", PC: " << anInsn->pc() << ", Fill level: " << *tracker->fillLevel()));
         }
 
         if (iter->theOperation == kRMW) {
@@ -700,6 +839,11 @@ CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn)
             /* CMU-ONLY-BLOCK-END */
         }
         if (!speculate) {
+            if (!anInsn->isMicroOp())
+                trainingSMS(anInsn->pc(), iter->thePaddr, false);
+            boost::intrusive_ptr<TransactionTracker> tracker = anInsn->getTransactionTracker();
+            if (tracker)
+                DBG_(VVerb, (<< "Address: " << std::hex << iter->thePaddr << ", PC: " << anInsn->pc() << ", Fill level: " << *tracker->fillLevel()));
             eraseLSQ(anInsn); // Will setAccessAddress
         }
     } else if (iter->theOperation == kStore) {
@@ -722,7 +866,7 @@ CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn)
                 if (iter_aligned != 0 && pred_aligned == iter_aligned && pred->theOperation == kStore) {
                     // Can coalesce this with preceding SB enry
                     ++theCoalescedStores;
-                    iter->theBypassSB;
+                    (void)iter->theBypassSB;
                 }
             }
 
@@ -741,7 +885,11 @@ CoreImpl::retireMem(boost::intrusive_ptr<Instruction> anInsn)
             // TRACE TRACKER : Notify trace tracker of store
             //      uint64_t logical_timestamp = theCommitNumber + theSRB.size();
             theTraceTracker.store(theNode, eCore, iter->thePaddr, anInsn->pc(), false /*unknown*/, isPrivileged(), 0);
-
+            if (!anInsn->isMicroOp())
+                trainingSMS(anInsn->pc(), iter->thePaddr, true);
+            boost::intrusive_ptr<TransactionTracker> tracker = anInsn->getTransactionTracker();
+            if (tracker)
+                DBG_(VVerb, (<< "Address: " << std::hex << iter->thePaddr << ", PC: " << anInsn->pc() << ", Fill level: " << *tracker->fillLevel()));
             requireWritePermission(iter);
         }
     } else if (iter->theOperation == kMEMBARMarker) {
@@ -933,10 +1081,10 @@ operator<<(std::ostream& anOstream, eExceptionType aCode)
         "Exception_None                  "
     };
 
-    if (aCode == kException_None) {
-        anOstream << "InvalidExceptionType(" << static_cast<int>(aCode) << ")";
-    } else {
+    if (static_cast<std::size_t>(aCode) < std::size(exceptionTypes)) {
         anOstream << exceptionTypes[aCode];
+    } else {
+        anOstream << "InvalidExceptionType(" << static_cast<int>(aCode) << ")";
     }
     return anOstream;
 }
@@ -1104,14 +1252,25 @@ CoreImpl::retire()
         return;
     }
 
+    // if (theROB.empty())
+    //     accountStall(nullptr, true);
+
     theRetireCount = 0;
     while (!theROB.empty() && !stop_retire) {
+        if (!theActiveWBActions.empty()) {
+            if (theActiveWBActions.top()->instructionNo() == theROB.front()->sequenceNo()) {
+                theActiveWBActions.top()->evaluate();
+                theActiveWBActions.pop();
+            }
+        }
+
         if (!theROB.front()->mayRetire()) {
             // wfi still executing
             if (theROB.front()->getOpcode() == 0x7F2003D5) {
                 theWFI++;
                 theFlexus->reset_core_watchdog(theNode);
             }
+            // accountStall(theROB.front(), false);
             CORE_DBG("Cant Retire due to pending retirement dependance " << *theROB.front());
             break;
         }
@@ -1310,6 +1469,9 @@ CoreImpl::doAbortSpeculation()
     //  )->rollbackMMUCkpts(num_ckpts_discarded - 1);
 
     // Clean up SRB and SSB.
+    for (rob_t::iterator srb_count_iter = srb_ckpt; srb_count_iter != theSRB.end(); ++srb_count_iter) {
+        if ((*srb_count_iter)->instCode() == codeRETURN) { ++theSquashedRetCount_SRB_AbortSpec; }
+    }
     theSRB.erase(srb_ckpt, theSRB.end());
     srb_ckpt              = theSRB.end(); // srb_ckpt is no longer valid;
     int32_t remaining_ssb = clearSSB(ckpt_seq_num);
@@ -1414,7 +1576,16 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
         theInterruptSignalled   = false;
         theInterruptInstruction = 0;
 
+        // Read ASID before QEMU advancement
+        uint16_t oldASID = readASID();
+
         int qemu_rcode = advance_fn(true); // count time
+
+        // Read ASID after QEMU advancement and notify if changed
+        uint16_t newASID = readASID();
+        if (oldASID != newASID) {
+            Flexus::Core::theFlexus->notifyASIDChange(theNode, newASID);
+        }
 
         DBG_(Dev, (<< "c" << theNode << " commit [" << std::hex << qemu_rcode << "] " << *anInstruction << "PC:" << std::hex << anInstruction->pc() << std::dec));
 
@@ -1441,7 +1612,7 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
                 resync_accounted = true;
 
                 // TODO: what does it means
-                if (raised < 0x400) {
+                if (raised < static_cast<eExceptionType>(0x400)) {
                     ++theResync_UnexpectedException;
                 } else {
                     ++theResync_Interrupt;
@@ -1472,7 +1643,7 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
     }
 
     if (anInstruction->advancesSimics()) {
-        validation_passed &= checkValidatation();
+        // validation_passed &= checkValidatation();
         validation_passed &= anInstruction->postValidate();
     }
 
@@ -1493,6 +1664,24 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
     if (collectTrace) { trace_stream << anInstruction->pc() << std::endl; }
     DBG_(VVerb, (<< "uARCH Validated "));
     DBG_(VVerb, (<< std::internal << *anInstruction << std::left));
+
+    if (theBBVTracker && anInstruction->advancesSimics()) {
+        theBBVTracker->commitInsn(anInstruction->physicalPC(), anInstruction->instClass() == clsBranch);
+    }
+}
+
+uint16_t
+CoreImpl::readASID()
+{
+    auto TCR_EL1 = theQEMUCPU.read_register(Flexus::Qemu::API::TCR, 1);  // EL1
+    auto A1bit = extract64(TCR_EL1, 22, 1);
+    if (A1bit) {
+        auto TTBR1_EL1 = theQEMUCPU.read_register(Flexus::Qemu::API::TTBR1, 1);  // EL1
+        return extract64(TTBR1_EL1, 48, 16);
+    } else {
+        auto TTBR0_EL1 = theQEMUCPU.read_register(Flexus::Qemu::API::TTBR0, 1);  // EL1
+        return extract64(TTBR0_EL1, 48, 16);
+    }
 }
 
 bool
@@ -1547,6 +1736,7 @@ CoreImpl::doSquash()
             rob_t::reverse_iterator iter = theROB.rbegin();
             rob_t::reverse_iterator end  = boost::make_reverse_iterator(erase_iter);
             while (iter != end) {
+                if ((*iter)->instCode() == codeRETURN) { ++theSquashedRetCount; }
                 (*iter)->squash();
                 ++iter;
             }

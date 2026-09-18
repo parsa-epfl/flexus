@@ -89,6 +89,7 @@ struct EvictEntry
     {
         thePending = val; // it's mutable, so we can change it while maintaining const-ness
     }
+    bool snoopScheduled() const { return theSnoopScheduled; }
     _State& state() const { return theState; }
     friend class boost::serialization::access;
     template<class Archive>

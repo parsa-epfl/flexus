@@ -253,7 +253,8 @@ struct ValueTracker
 
         // mmio
         // higher region of MMIO starts at 0x40_0000_0000 for RAM less than 256GB
-        if (anAddress < 0x40000000 || anAddress >= 0x4000000000) return;
+        // TODO: for future, the end should be (MEMORY_SIZE + 0x40000000) as MMIO ends at 0x40000000
+        if (anAddress < 0x40000000 || anAddress >= 0x4040000000) return;
 
         // Align the address
         PhysicalMemoryAddress aligned = dwAddr(anAddress);
@@ -365,7 +366,8 @@ struct ValueTracker
         //
         // mmio
         // higher region of MMIO starts at 0x40_0000_0000 for RAM less than 256GB
-        if (anAddress < 0x40000000 || anAddress >= 0x4000000000) return;
+        // TODO: for future, the end should be (MEMORY_SIZE + 0x40000000) as MMIO ends at 0x40000000
+        if (anAddress < 0x40000000 || anAddress >= 0x4040000000) return;
 
         Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(aCPU);
 
@@ -439,7 +441,8 @@ struct ValueTracker
 
         // mmio
         // higher region of MMIO starts at 0x40_0000_0000 for RAM less than 256GB
-        if (anAddress < 0x40000000 || anAddress >= 0x4000000000) return -1;
+        // TODO: for future, the end should be (MEMORY_SIZE + 0x40000000) as MMIO ends at 0x40000000
+        if (anAddress < 0x40000000 || anAddress >= 0x4040000000) return -1;
 
         Flexus::Qemu::Processor cpu = Flexus::Qemu::Processor::getProcessor(aCPU);
 

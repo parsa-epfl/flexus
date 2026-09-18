@@ -52,6 +52,7 @@ class StatValue_CountAccumulator : public StatValueBase
     boost::intrusive_ptr<StatValueBase> countAccumulator() { return this; }
     boost::intrusive_ptr<StatValueBase> sumAccumulator() { return this; }
 
+
     void reduceSum(const StatValueBase& aBase)
     {
         const StatValue_CountAccumulator& ptr = dynamic_cast<const StatValue_CountAccumulator&>(aBase);
@@ -105,6 +106,7 @@ class StatValue_AvgAccumulator : public StatValueBase
     {
     }
     boost::intrusive_ptr<StatValueBase> avgAccumulator() { return this; }
+
 
     void reduceSum(const StatValueBase& aBase)
     {

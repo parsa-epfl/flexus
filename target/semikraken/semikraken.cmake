@@ -16,4 +16,5 @@ set(REQUIRED_COMPONENTS
   SplitDestinationMapper
   MMU
   PhantomCPU
+  SMS
 )

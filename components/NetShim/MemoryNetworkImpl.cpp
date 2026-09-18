@@ -50,9 +50,58 @@ class FLEXUS_COMPONENT(MemoryNetwork)
     // added by mehdi
     long long latency;
     long PacketCount;
+    int32_t theNumCores;
     // mehdi
 
     bool isQuiesced() const { return transports.empty(); }
+
+    int32_t computePriority(int32_t srcNode, int32_t interface_vc) const
+    {
+        // Priority mapping: lower number = higher priority
+        // Source       | Interface VC | Priority | Network VC
+        // ------------- | -------------|----------|----------
+        // Memory       | REPLY (0)   | 0        | 0
+        // Directory    | REPLY (0)   | 1        | 2
+        // Cache        | REPLY (0)   | 2        | 4
+        // Cache        | SNOOP (1)   | 3        | 6
+        // Directory    | SNOOP (1)   | 4        | 8
+        // Directory    | REQUEST (2) | 5        | 10
+        // Cache        | REQUEST (2) | 6        | 12
+        
+        if (srcNode >= 2 * theNumCores) {
+            return 0;
+        } else if (srcNode >= theNumCores) {
+            if (interface_vc == 0) return 1;
+            else if (interface_vc == 1) return 4;
+            else return 5;
+        } else {
+            if (interface_vc == 0) return 2;
+            else if (interface_vc == 1) return 3;
+            else return 6;
+        }
+    }
+
+    int32_t computeInterfaceVC(int32_t destNode, int32_t priority) const
+    {
+        // Reverse mapping from priority to interface VC based on destination component
+        // Priority | Dest Component | Interface VC
+        // ---------|----------------|-------------
+        // 0        | Memory        | 0 (REPLY)
+        // 1        | Directory     | 0 (REPLY)
+        // 2        | Cache         | 0 (REPLY)
+        // 3        | Cache         | 1 (SNOOP)
+        // 4        | Directory     | 1 (SNOOP)
+        // 5        | Directory     | 2 (REQUEST)
+        // 6        | Cache         | 2 (REQUEST)
+        
+        if (priority <= 2) {
+            return 0;  // All REPLY messages
+        } else if (priority <= 4) {
+            return 1;  // All SNOOP messages
+        } else {
+            return 2;  // All REQUEST messages
+        }
+    }
 
     // Initialization
     void initialize()
@@ -66,6 +115,7 @@ class FLEXUS_COMPONENT(MemoryNetwork)
         uint64_t equivalent_system_width = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
 
         if (cfg.NumNodes == 0) cfg.NumNodes = equivalent_system_width * 3;
+        theNumCores = cfg.NumNodes / 3;
 
         for (i = 0; i < cfg.VChannels; i++) {
             theNetworkLatencyHistograms.push_back(
@@ -96,11 +146,13 @@ class FLEXUS_COMPONENT(MemoryNetwork)
     {
         int32_t node = anIndex / cfg.VChannels;
         int32_t vc   = anIndex % cfg.VChannels;
-        vc           = MAX_PROT_VC - vc - 1;
+        
+        int32_t priority = computePriority(node, vc);
+        
         DBG_(VVerb,
-             Comp(*this)(<< "Check network availability for node: " << node << " vc: " << vc << " -> "
-                         << nc->isNodeOutputAvailable(node, vc)));
-        return nc->isNodeOutputAvailable(node, vc);
+             Comp(*this)(<< "Check network availability for node: " << node << " vc: " << vc << " priority: " << priority << " -> "
+                         << nc->isNodeOutputAvailable(node, priority)));
+        return nc->isNodeOutputAvailable(node, priority);
     }
     void push(interface::FromNode const&, index_t anIndex, MemoryTransport& transport)
     {
@@ -151,13 +203,13 @@ class FLEXUS_COMPONENT(MemoryNetwork)
 
     // Can another message be removed from the network?
     // Encapsulated in a function object "theAvail" to call from outside code
-    bool isNodeAvailable(const int32_t node, const int32_t vc) const
+    bool isNodeAvailable(const int32_t node, const int32_t priority) const
     {
-        int32_t real_net_vc = MAX_PROT_VC - vc - 1;
-        index_t pdest       = (node)*cfg.VChannels + real_net_vc;
+        int32_t interface_vc = computeInterfaceVC(node, priority);
+        index_t pdest        = (node)*cfg.VChannels + interface_vc;
         DBG_(VVerb,
              (<< "netmessage: available? "
-              << "node: " << node << " vc: " << real_net_vc << " pdest: " << pdest));
+              << "node: " << node << " priority: " << priority << " interface_vc: " << interface_vc << " pdest: " << pdest));
         return FLEXUS_CHANNEL_ARRAY(ToNode, pdest).available();
     }
 
@@ -241,8 +293,9 @@ class FLEXUS_COMPONENT(MemoryNetwork)
 
         msg->srcNode  = transport[NetworkMessageTag]->src;
         msg->destNode = transport[NetworkMessageTag]->dest;
-        msg->priority = MAX_PROT_VC - transport[NetworkMessageTag]->vc -
-                        1; // Note, this field really needs to be added to the NetworkMessage
+        
+        msg->priority = computePriority(msg->srcNode, transport[NetworkMessageTag]->vc);
+        
         msg->networkVC        = 0;
         msg->transmitLatency  = transport[NetworkMessageTag]->size;
         msg->flexusInFastMode = false;

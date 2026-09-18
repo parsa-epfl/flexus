@@ -37,7 +37,20 @@ validateXRegister::operator()()
     DBG_(Dev,
          Condition(flexus != qemu)(<< "qemu value in   " << std::setw(10) << theReg << "  = " << std::hex << qemu
                                    << std::dec));
+    // Check if values match when sign-extended
+    if (flexus != qemu) {
+        std::stringstream ssFlexus;
+        ssFlexus << std::hex << flexus;
+        std::string hexFlexus = ssFlexus.str();
+        std::string extendedHexFlexus = hexFlexus.length() < 16 ? std::string(16 - hexFlexus.length(), hexFlexus[0]) + hexFlexus : hexFlexus;
 
+        std::stringstream ssQemu;
+        ssQemu << std::hex << qemu;
+        std::string hexQemu = ssQemu.str();
+        std::string extendedHexQemu = hexQemu.length() < 16 ? std::string(16 - hexQemu.length(), hexQemu[0]) + hexQemu : hexQemu;
+
+        return (extendedHexFlexus == extendedHexQemu);
+    }
     return (flexus == qemu);
 }
 
@@ -57,7 +70,20 @@ validatePC::operator()()
 
     DBG_(Dev, Condition(flexus != qemu)(<< "flexus PC value " << std::hex << flexus << std::dec));
     DBG_(Dev, Condition(flexus != qemu)(<< "qemu PC value   " << std::hex << qemu << std::dec));
+    // Check if values match when sign-extended
+    if (flexus != qemu) {
+        std::stringstream ssFlexus;
+        ssFlexus << std::hex << flexus;
+        std::string hexFlexus = ssFlexus.str();
+        std::string extendedHexFlexus = hexFlexus.length() < 16 ? std::string(16 - hexFlexus.length(), hexFlexus[0]) + hexFlexus : hexFlexus;
 
+        std::stringstream ssQemu;
+        ssQemu << std::hex << qemu;
+        std::string hexQemu = ssQemu.str();
+        std::string extendedHexQemu = hexQemu.length() < 16 ? std::string(16 - hexQemu.length(), hexQemu[0]) + hexQemu : hexQemu;
+
+        return (extendedHexFlexus == extendedHexQemu);
+    }
     return flexus == qemu;
 }
 
@@ -92,6 +118,21 @@ validateMemory::operator()()
         DBG_Assert((qemu >> (theSize_orig * 8)) == 0);
         PhysicalMemoryAddress paddr_spill = c.translate_va2pa(vaddr_final, theInstruction->unprivAccess());
         qemu |= c.read_pa(paddr_spill, theSize_extra) << (theSize_orig * 8);
+    }
+
+    // Check if values match when sign-extended
+    if (flexus != qemu) {
+        std::stringstream ssFlexus;
+        ssFlexus << std::hex << flexus;
+        std::string hexFlexus = ssFlexus.str();
+        std::string extendedHexFlexus = hexFlexus.length() < 16 ? std::string(16 - hexFlexus.length(), hexFlexus[0]) + hexFlexus : hexFlexus;
+
+        std::stringstream ssQemu;
+        ssQemu << std::hex << qemu;
+        std::string hexQemu = ssQemu.str();
+        std::string extendedHexQemu = hexQemu.length() < 16 ? std::string(16 - hexQemu.length(), hexQemu[0]) + hexQemu : hexQemu;
+
+        if (extendedHexFlexus == extendedHexQemu) return true;
     }
 
     if (flexus == qemu) return true;

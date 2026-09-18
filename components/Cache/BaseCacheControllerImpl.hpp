@@ -355,7 +355,9 @@ struct BaseCacheControllerImpl
     }
 
     virtual void loadState(std::string const& aDirName);
+    virtual void saveState(std::string const& aDirName);
     virtual void load_from_ckpt(std::istream& is) = 0;
+    virtual void save_to_ckpt(std::ostream& os)   = 0;
 
     virtual MemoryAddress getBlockAddress(MemoryAddress const& anAddress) const        = 0;
     virtual BlockOffset getBlockOffset(MemoryAddress const& anAddress) const           = 0;

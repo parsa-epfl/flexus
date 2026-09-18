@@ -9,8 +9,12 @@
 #include "core/performance/profile.hpp"
 #include "core/qemu/configuration_api.hpp"
 #include "core/qemu/qmp_api.hpp"
+#include "core/qemu/mai_api.hpp"
 #include "core/stats.hpp"
 #include "core/target.hpp"
+#include "components/uArch/CoreModel/bbv.hpp"
+#include "components/Decoder/BitManip.hpp"
+#include "core/checkpoint/json.hpp"
 
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
@@ -32,6 +36,7 @@ namespace Core {
 
 using Flexus::Wiring::theDrive;
 using namespace std::chrono;
+using json = nlohmann::json;
 
 class FlexusImpl : public FlexusInterface
 {
@@ -50,9 +55,13 @@ class FlexusImpl : public FlexusInterface
     void_fn_vector theTerminateFunctions;
 
     bool theQuiesceRequested;
-    bool theSaveRequested;
 
     std::list<std::pair<uint64_t, std::string>> dbgOverrides;
+
+    // ASID tracking
+    std::vector<uint16_t> theCoreASIDs;    // Current ASID for each core
+    bool theASIDChanged;                   // Dirty flag - true if any change since last write
+    bool theASIDInitialized;
 
   public:
     // Initialization functions
@@ -85,9 +94,14 @@ class FlexusImpl : public FlexusInterface
     void setDebugOverride();
     void terminateSimulation();
 
+    // ASID tracking interface
+    void initializeASIDList();
+    bool isASIDInitialized() const { return theASIDInitialized; }
+    void notifyASIDChange(int core_id, uint16_t new_asid);
+
   public:
     FlexusImpl(Qemu::API::conf_object_t* anObject)
-      : cpu_watchdog_timeout(100000)
+      : cpu_watchdog_timeout(300000)
       , theInitialized(false)
       , theCycleCount(0)
       , theStatInterval(10000)
@@ -95,7 +109,8 @@ class FlexusImpl : public FlexusInterface
       , cycle_delay_log(0)
       , theCycleCountStat("sys-cycles")
       , theQuiesceRequested(false)
-      , theSaveRequested(false)
+      , theASIDChanged(false)
+      , theASIDInitialized(false)
     {
         Flexus::Dbg::Debugger::theDebugger->connectCycleCount(&theCycleCount, &cycle_delay_log);
     }
@@ -124,6 +139,9 @@ FlexusImpl::initializeComponents()
 
     for (std::size_t i{ 0 }; i < ComponentManager::getComponentManager().systemWidth(); i++)
         cpu_watchdogs.push_back(0);
+
+    // Initialize ASID tracking after all components are ready
+    initializeASIDList();
 }
 
 void
@@ -153,12 +171,14 @@ FlexusImpl::advanceCycles(index_t aCycleCount)
     }
 
     static uint64_t last_stats = 0;
-    if (theStatInterval && (advanced_cycle_count - last_stats >= theStatInterval)) {
+    if ((theStatInterval && (advanced_cycle_count - last_stats >= theStatInterval)) || theASIDChanged) {
         DBG_(Dev, Core()(<< "Saving stats at: " << theCycleCount));
         std::string report_name =
           "all.measurement." + boost::padded_string_cast<10, '0'>(advanced_cycle_count) + ".log";
         writeMeasurement("all", report_name);
-        last_stats = advanced_cycle_count;
+        if (theStatInterval && (advanced_cycle_count - last_stats >= theStatInterval)) {
+            last_stats = advanced_cycle_count;
+        }
     }
 
     Flexus::Dbg::Debugger::theDebugger->checkAt();
@@ -181,13 +201,13 @@ FlexusImpl::doCycle()
         FLEXUS_DBG("--------------START FLEXUS CYCLE " << theCycleCount << " ------------------------");
         index_t advanceBy, oldCount = theCycleCount;
         advanceBy = invokeDrives(iter_idx);
-    
+
         advanceCycles(advanceBy);
-    
+
         // Check the watchdog only every 255 cycles
         bool hasItBeen255Cycles = (theCycleCount & 0xFF) < (oldCount & 0xFF);
         if (hasItBeen255Cycles) check_cpu_watchdogs();
-    
+
         FLEXUS_DBG("--------------FINISH FLEXUS CYCLE " << theCycleCount - 1 << " ------------------------");
     }
 }
@@ -244,6 +264,54 @@ FlexusImpl::writeMeasurement(std::string const& aMeasurement, std::string const&
     std::ofstream out(aFilename.c_str());
     Stat::getStatManager()->printMeasurement(aMeasurement, out);
     out.close();
+
+    // Generate ASID snapshot
+    std::string asidFilename = aFilename;
+    size_t extPos = asidFilename.rfind(".log");
+    if (extPos != std::string::npos) {
+        asidFilename.replace(extPos, 4, ".asid.json");
+    } else {
+        asidFilename += ".asid.json";
+    }
+
+    // Generate ASID snapshot JSON
+    json snapshot;
+    snapshot["cycle"] = theCycleCount;
+    snapshot["cores"] = json::array();
+
+    for (size_t i = 0; i < theCoreASIDs.size(); ++i) {
+        snapshot["cores"].push_back({
+            {"core_id", i},
+            {"asid", theCoreASIDs[i]}
+        });
+    }
+
+    std::ofstream asidOut(asidFilename.c_str());
+    asidOut << std::setw(2) << snapshot << std::endl;
+    asidOut.close();
+
+    // std::string bbvFilename = aFilename;
+    // extPos = bbvFilename.rfind(".log");
+    // if (extPos != std::string::npos) {
+    //     bbvFilename.replace(extPos, 4, ".bbv.json");
+    // } else {
+    //     bbvFilename += ".bbv.json";
+    // }
+    // std::ofstream bbvOut(bbvFilename.c_str());
+    // nuArch::BBVTracker::dumpAllBBV(bbvOut);
+    // bbvOut.close();
+
+    std::string csvFilename = aFilename;
+    extPos = csvFilename.rfind(".log");
+    if (extPos != std::string::npos) {
+        csvFilename.replace(extPos, 4, ".csv");
+    } else {
+        csvFilename += ".csv";
+    }
+    Flexus::Qemu::API::qemu_api.notify_save_statistics(csvFilename.c_str());
+
+    // Reset ASID changed flag after writing measurement
+    theASIDChanged = false;
 }
 
 void
@@ -306,6 +374,38 @@ void FlexusImpl::setDebugOverride() {
             continue;
 
         dbgOverrides.emplace_back(std::stol(str.substr(0, pos)), str.substr(pos + 1));
+    }
+}
+
+// Helper function to read ASID from a QEMU CPU
+static uint16_t readASIDFromCPU(Flexus::Qemu::Processor& cpu) {
+    auto TCR_EL1 = cpu.read_register(Flexus::Qemu::API::TCR, 1);  // EL1
+    auto A1bit = extract64(TCR_EL1, 22, 1);
+    if (A1bit) {
+        auto TTBR1_EL1 = cpu.read_register(Flexus::Qemu::API::TTBR1, 1);  // EL1
+        return extract64(TTBR1_EL1, 48, 16);
+    } else {
+        auto TTBR0_EL1 = cpu.read_register(Flexus::Qemu::API::TTBR0, 1);  // EL1
+        return extract64(TTBR0_EL1, 48, 16);
+    }
+}
+
+void FlexusImpl::initializeASIDList() {
+    size_t numCores = Flexus::Qemu::API::qemu_api.get_num_cores();
+    theCoreASIDs.resize(numCores, 0);
+    // Read initial ASIDs from all QEMU CPUs
+    for (size_t i = 0; i < numCores; ++i) {
+        auto cpu = Flexus::Qemu::Processor::getProcessor(i);
+        theCoreASIDs[i] = readASIDFromCPU(cpu);
+    }
+    theASIDInitialized = true;
+    theASIDChanged = false;
+}
+
+void FlexusImpl::notifyASIDChange(int core_id, uint16_t new_asid) {
+    if (core_id >= 0 && core_id < static_cast<int>(theCoreASIDs.size())) {
+        theCoreASIDs[core_id] = new_asid;
+        theASIDChanged = true;
     }
 }
 

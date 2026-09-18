@@ -194,7 +194,7 @@ class PipelineFifo
       , theInterArrival(anInterArrival)
     {
         DBG_Assert(aNumPipelines > 0);
-        DBG_Assert(theIssueLatency >= 1);
+        DBG_Assert(theIssueLatency >= 0);
         for (uint32_t i = 0; i < aNumPipelines; ++i) {
             theServerReadyTimes.push_back(0);
         }

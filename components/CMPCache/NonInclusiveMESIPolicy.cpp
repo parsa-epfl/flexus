@@ -71,6 +71,18 @@ NonInclusiveMESIPolicy::load_cache_from_ckpt(std::string const& filename)
 {
     theCache->load_cache_from_ckpt(filename, theCMPCacheInfo.theNodeId);
 }
+
+void
+NonInclusiveMESIPolicy::save_dir_to_ckpt(std::string const& filename)
+{
+    theDirectory->save_dir_to_ckpt(filename);
+}
+
+void
+NonInclusiveMESIPolicy::save_cache_to_ckpt(std::string const& filename)
+{
+    theCache->save_cache_to_ckpt(filename, theCMPCacheInfo.theNodeId);
+}
 void
 NonInclusiveMESIPolicy::handleRequest(ProcessEntry_p process)
 {
@@ -1443,6 +1455,11 @@ NonInclusiveMESIPolicy::handleReply(ProcessEntry_p process)
 
                 process->setReplyTransport(rep_transport);
                 process->setRequiresData(true);
+
+                c_lookup->setState(CacheState::Shared);
+                if (rep_msg->type() == MemoryMessage::MissReplyWritable) {
+                    c_lookup->setState(CacheState::Exclusive);
+                }
 
                 TransactionTracker_p tracker = process->transport()[TransactionTrackerTag];
                 tracker->setFillLevel(theCMPCacheInfo.theCacheLevel);

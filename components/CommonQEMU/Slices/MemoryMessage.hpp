@@ -10,6 +10,7 @@
 #include <core/boost_extensions/intrusive_ptr.hpp>
 #include <core/exception.hpp>
 #include <core/types.hpp>
+#include <string>
 
 namespace Flexus {
 namespace SharedTypes {
@@ -584,7 +585,7 @@ struct MemoryMessage : public boost::counted_base
             case StreamFetchRejected: return false;
             default: break;
         }
-        throw FlexusException("isRequest not recognized: " + theType);
+        throw FlexusException(std::string("isRequest not recognized: ") + std::to_string(static_cast<int>(theType)));
     }
 
     bool isWrite() const
@@ -650,7 +651,7 @@ struct MemoryMessage : public boost::counted_base
             case StreamFetchRejected: return false;
             default: break;
         }
-        throw FlexusException("isWrite unrecognizedMessage: " + theType);
+        throw FlexusException(std::string("isWrite unrecognizedMessage: ") + std::to_string(static_cast<int>(theType)));
     }
 
     bool isSnoopType() const
@@ -696,6 +697,15 @@ struct MemoryMessage : public boost::counted_base
             case EvictDirty:
             case EvictWritable:
             case EvictClean: return true;
+            default: break;
+        }
+        return false;
+    }
+
+    bool isInvalidateType() const
+    {
+        switch (theType) {
+            case Invalidate: return true;
             default: break;
         }
         return false;
@@ -802,7 +812,7 @@ struct MemoryMessage : public boost::counted_base
             case StreamFetchRejected: return false;
             default: break;
         }
-        throw FlexusException("usesSnoopChannel unrecognized message: " + theType);
+        throw FlexusException(std::string("usesSnoopChannel unrecognized message: ") + std::to_string(static_cast<int>(theType)));
     }
 
     bool directionToBack() const
@@ -868,7 +878,7 @@ struct MemoryMessage : public boost::counted_base
             case StreamFetchRejected: return false;
             default: break;
         }
-        throw FlexusException("directionToBack unrecognized message: " + theType);
+        throw FlexusException(std::string("directionToBack unrecognized message: ") + std::to_string(static_cast<int>(theType)));
     }
 
     int32_t messageSize()

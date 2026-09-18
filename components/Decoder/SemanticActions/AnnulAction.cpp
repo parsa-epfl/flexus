@@ -68,6 +68,8 @@ struct AnnulAction : public PredicatedSemanticAction
                       << theOutputCode));
                 theInstruction->setExecuted(true);
                 satisfyDependants();
+            } else {
+                reschedule();
             }
         }
     }

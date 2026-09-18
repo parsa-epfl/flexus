@@ -230,7 +230,8 @@ class Set
     virtual bool recordAccess(Block<_State, _DefaultState>* aBlock)    = 0;
     virtual void invalidateBlock(Block<_State, _DefaultState>* aBlock) = 0;
 
-    virtual void load_set_from_ckpt(uint64_t index, uint64_t mru_index, uint64_t tag, bool dirty, bool writable) = 0;
+    virtual void load_set_from_ckpt(uint64_t index, uint64_t mru_index, uint64_t tag, bool dirty, bool writable, bool is_valid) = 0;
+    virtual json save_set_to_ckpt() const = 0;
 
     MemoryAddress blockAddress(const Block<_State, _DefaultState>* theBlock)
     {
@@ -358,14 +359,42 @@ class SetLRU : public Set<_State, _DefaultState>
         moveToTail(theBlockNum);
     }
 
-    virtual void load_set_from_ckpt(uint64_t index, uint64_t mru_order_index, uint64_t tag, bool dirty, bool writable)
+    virtual void load_set_from_ckpt(uint64_t index, uint64_t mru_order_index, uint64_t tag, bool dirty, bool writable, bool is_valid)
     {
 
         DBG_Assert(index < uint64_t(this->theAssociativity));
         _State state(_State::bool2state(dirty, writable));
-        theMRUOrder[index]                                   = mru_order_index;
+        DBG_Assert(mru_order_index < uint64_t(this->theAssociativity));
+        theMRUOrder[mru_order_index] = index;
         this->theBlocks[index].tag()   = MemoryAddress(tag);
         this->theBlocks[index].state() = state;
+        if (!is_valid) {
+            this->theBlocks[index].state() = _DefaultState;
+        }
+    }
+
+    virtual json save_set_to_ckpt() const
+    {
+        json set_checkpoint = json::array();
+
+        // Save blocks in the same order as load_set_from_ckpt expects:
+        // Position 0 in JSON = block index that will get MRU position (assoc-1) = LRU block
+        // So we iterate from LRU to MRU (reverse MRU order)
+        for (int64_t i = this->theAssociativity - 1; i >= 0; i--) {
+            SetIndex block_idx = theMRUOrder[i];
+            const Block<_State, _DefaultState>& block = this->theBlocks[block_idx];
+
+            // Only save valid blocks
+            if (block.state().isValid()) {
+                json entry;
+                entry["tag"]      = static_cast<uint64_t>(block.tag());
+                entry["dirty"]    = block.state().isDirty();
+                entry["writable"] = block.state().isWritable();
+                set_checkpoint.push_back(entry);
+            }
+        }
+
+        return set_checkpoint;
     }
 
   protected:
@@ -422,7 +451,7 @@ class StdArray : public AbstractArray<_State>
     uint64_t theBlockSize;
 
     uint64_t theNumSets;
-    uint64_t theSetIndexShift;
+    uint64_t theBlockOffsetBits;
     uint64_t theSetIndexMask;
 
     uint64_t theNumBanks;
@@ -450,7 +479,7 @@ class StdArray : public AbstractArray<_State>
 
         theNumNodes = Flexus::Core::ComponentManager::getComponentManager().systemWidth();
         DBG_Assert(theNumNodes > 0);
-        DBG_Assert(theNumNodes == theNumBanks);
+        // DBG_Assert(theNumNodes == theNumBanks);
 
         std::list<std::pair<std::string, std::string>>::const_iterator iter = theConfiguration.begin();
         for (; iter != theConfiguration.end(); iter++) {
@@ -458,8 +487,9 @@ class StdArray : public AbstractArray<_State>
                 theNumSets = strtoll(iter->second.c_str(), nullptr, 0);
             } else if (iter->first == "total_sets") {
                 uint64_t total_sets = strtoll(iter->second.c_str(), nullptr, 0);
-                DBG_Assert(total_sets % theNumNodes == 0);
-                theNumSets = total_sets / theNumNodes;
+                DBG_Assert(total_sets % theNumBanks == 0);
+                theNumSets = total_sets / theNumBanks;
+                DBG_(Crit, (<< "total_sets: " << total_sets << " num_banks: " << theNumBanks << " sets per bank: " << theNumSets));
             } else if (strcasecmp(iter->first.c_str(), "assoc") == 0 ||
                        strcasecmp(iter->first.c_str(), "associativity") == 0) {
                 theAssociativity = strtol(iter->second.c_str(), nullptr, 0);
@@ -502,12 +532,13 @@ class StdArray : public AbstractArray<_State>
         // Set indexes and masks
         DBG_Assert((theNumSets & (theNumSets - 1)) == 0);
         DBG_Assert(((theBlockSize - 1) & theBlockSize) == 0);
-        DBG_Assert((theNumNodes & (theNumNodes - 1)) == 0); // Currently, we only support power of 2 nodes.
-        DBG_Assert((theNumBanks & (theNumBanks - 1)) == 0); // Currently, we only support power of 2 nodes.
+        // DBG_Assert((theNumNodes & (theNumNodes - 1)) == 0); // Currently, we only support power of 2 nodes.
+        // DBG_Assert((theNumBanks & (theNumBanks - 1)) == 0); // Currently, we only support power of 2 nodes.
 
         uint64_t blockOffsetBits      = log_base2(theBlockSize);
+        DBG_Assert(blockOffsetBits == 6); // Currently, we only support 64-byte blocks. Why? Because I saw places where 6 is used as a constant.
         // int32_t indexBits            = log_base2(theNumSets);
-        this->theSetIndexShift       = blockOffsetBits + log_base2(theNumBanks);
+        this->theBlockOffsetBits    = blockOffsetBits;
         this->theSetIndexMask        = (theNumSets - 1); // mask is applied after shift.
 
         this->theTagMask = MemoryAddress(~0ULL & ~((uint64_t)(theBlockSize - 1)));
@@ -529,7 +560,7 @@ class StdArray : public AbstractArray<_State>
     }
 
     // Main array lookup function
-    virtual boost::intrusive_ptr<AbstractArrayLookupResult<_State>> operator[](const MemoryAddress& anAddress)
+    boost::intrusive_ptr<AbstractArrayLookupResult<_State>> operator[](const MemoryAddress& anAddress)
     {
         uint64_t blockOffsetBits      = log_base2(theBlockSize);
         uint64_t affiliatedNode = (anAddress >> blockOffsetBits) % this->theNumBanks;
@@ -555,7 +586,7 @@ class StdArray : public AbstractArray<_State>
         return ret;
     }
 
-    virtual boost::intrusive_ptr<AbstractArrayLookupResult<_State>> allocate(
+    boost::intrusive_ptr<AbstractArrayLookupResult<_State>> allocate(
       boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup,
       const MemoryAddress& anAddress)
     {
@@ -566,7 +597,7 @@ class StdArray : public AbstractArray<_State>
         return std_lookup->theSet->allocate(std_lookup, this->blockAddress(anAddress));
     }
 
-    virtual bool recordAccess(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup)
+    bool recordAccess(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup)
     {
         StdLookupResult<_State, _DefaultState>* std_lookup =
           dynamic_cast<StdLookupResult<_State, _DefaultState>*>(lookup.get());
@@ -576,7 +607,7 @@ class StdArray : public AbstractArray<_State>
         return std_lookup->theSet->recordAccess(std_lookup->theBlock);
     }
 
-    virtual void invalidateBlock(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup)
+    void invalidateBlock(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup)
     {
         StdLookupResult<_State, _DefaultState>* std_lookup =
           dynamic_cast<StdLookupResult<_State, _DefaultState>*>(lookup.get());
@@ -586,14 +617,14 @@ class StdArray : public AbstractArray<_State>
         std_lookup->theSet->invalidateBlock(std_lookup->theBlock);
     }
 
-    virtual std::pair<_State, MemoryAddress> getPreemptiveEviction()
+    std::pair<_State, MemoryAddress> getPreemptiveEviction()
     {
         return std::make_pair(_DefaultState, MemoryAddress(0));
     }
 
     // Checkpoint reading/writing functions
 
-    virtual void load_cache_from_ckpt(std::string const& filename, uint64_t theIndex)
+    void load_cache_from_ckpt(std::string const& filename, uint64_t theIndex)
     {
 
         std::ifstream ifs(filename.c_str(), std::ios::in);
@@ -611,6 +642,13 @@ class StdArray : public AbstractArray<_State>
 
         for (uint64_t i = 0; i < checkpoint["tags"].size(); i++) {
             assert(checkpoint["tags"].at(i).size() <= (uint64_t)theAssociativity);
+            uint64_t invalid_slot_count = theAssociativity - checkpoint["tags"].at(i).size();
+
+            for (uint64_t j = 0; j < invalid_slot_count; ++j) {
+                theSets[i]->load_set_from_ckpt(j, theAssociativity - j - 1, 0, false, false, false);
+            }
+
+
             for (uint64_t j = 0; j < checkpoint["tags"].at(i).size(); j++) {
                 uint64_t tag  = checkpoint["tags"].at(i).at(j)["tag"];
                 bool dirty    = checkpoint["tags"].at(i).at(j)["dirty"];
@@ -624,17 +662,34 @@ class StdArray : public AbstractArray<_State>
                 uint64_t target_node = (tag >> log_base2(theBlockSize)) % theNumBanks;
                 DBG_Assert(target_node == theIndex, (<< "Tag " << std::hex << tag << " is in node " << target_node << " but should be in node " << theIndex));
 
-                theSets[i]->load_set_from_ckpt(j, theAssociativity - j - 1,tag, dirty, writable); // the last element is the most recently used cacheline.
-            }
-
-            if (checkpoint["tags"].at(i).size() < (uint64_t)theAssociativity) {
-                for (uint64_t j = checkpoint["tags"].at(i).size(); j < (uint64_t)theAssociativity; j++) {
-                    theSets[i]->load_set_from_ckpt(j, theAssociativity - j - 1, 0, false, false);
-                }
+                theSets[i]->load_set_from_ckpt(j + invalid_slot_count, theAssociativity - j - 1 - invalid_slot_count,tag, dirty, writable, true); // the last element is the most recently used cacheline.
             }
         }
 
         ifs.close();
+    }
+
+    void save_cache_to_ckpt(std::string const& filename, uint64_t theIndex)
+    {
+        json checkpoint;
+        checkpoint["associativity"] = theAssociativity;
+        checkpoint["tags"]          = json::array();
+
+        // Save each set
+        for (uint64_t i = 0; i < theNumSets; i++) {
+            checkpoint["tags"].push_back(theSets[i]->save_set_to_ckpt());
+        }
+
+        std::ofstream ofs(filename.c_str(), std::ios::out);
+        if (!ofs.good()) {
+            DBG_(Crit, (<< "Unable to open checkpoint file for writing: " << filename));
+            DBG_Assert(false, (<< "FILE OPEN FAILED"));
+        }
+
+        ofs << checkpoint.dump(2);
+        ofs.close();
+
+        DBG_(Dev, (<< "Cache saved to " << filename));
     }
 
     // Addressing helper functions
@@ -645,31 +700,31 @@ class StdArray : public AbstractArray<_State>
 
     SetIndex makeSet(const MemoryAddress& anAddress) const
     {
-        return ((anAddress >> this->theSetIndexShift) & this->theSetIndexMask);
+        return (((anAddress >> this->theBlockOffsetBits) / this->theNumBanks) & this->theSetIndexMask);
     }
 
-    virtual bool sameSet(MemoryAddress a, MemoryAddress b) { return (this->makeSet(a) == this->makeSet(b)); }
+    virtual bool sameSet(MemoryAddress a, MemoryAddress b) const { return (this->makeSet(a) == this->makeSet(b)); }
 
-    virtual std::list<MemoryAddress> getSetTags(MemoryAddress addr) { return theSets[this->makeSet(addr)]->getTags(); }
-    virtual bool setAlmostFull(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup,
+    std::list<MemoryAddress> getSetTags(MemoryAddress addr) { return theSets[this->makeSet(addr)]->getTags(); }
+    bool setAlmostFull(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup,
                                MemoryAddress const& anAddress) const
     {
         return theSets[this->makeSet(anAddress)]->almostFull(AbstractArray<_State>::theLockedThreshold);
     }
 
-    virtual bool lockedVictimAvailable(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup,
+    bool lockedVictimAvailable(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup,
                                        MemoryAddress const& anAddress) const
     {
         return theSets[this->makeSet(anAddress)]->lockedVictimAvailable();
     }
 
-    virtual bool victimAvailable(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup,
-                                 MemoryAddress const& anAddress) const
+    bool victimAvailable(boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup,
+                                  MemoryAddress const& anAddress) const
     {
         return theSets[this->makeSet(anAddress)]->victimAvailable();
     }
 
-    virtual boost::intrusive_ptr<AbstractArrayLookupResult<_State>> replaceLockedBlock(
+    boost::intrusive_ptr<AbstractArrayLookupResult<_State>> replaceLockedBlock(
       boost::intrusive_ptr<AbstractArrayLookupResult<_State>> lookup,
       MemoryAddress const& anAddress)
     {
@@ -681,7 +736,7 @@ class StdArray : public AbstractArray<_State>
         return std_lookup->theSet->replaceLocked(std_lookup, this->blockAddress(anAddress));
     }
 
-    virtual void setLockedThreshold(uint64_t threshold)
+    void setLockedThreshold(uint64_t threshold)
     {
         DBG_Assert(threshold > 0 && threshold < theAssociativity);
         AbstractArray<_State>::theLockedThreshold = threshold;

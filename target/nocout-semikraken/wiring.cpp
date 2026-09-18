@@ -24,6 +24,7 @@ std::string theSimulatorName = "SemiKraken v1.0";
 #include <components/uFetch/PortCombiner.hpp>
 #include <components/uFetch/uFetch.hpp>
 #include <components/PhantomCPU/PhantomCPU.hpp>
+#include <components/SMS/SMS.hpp>
 
 #include FLEXUS_END_DECLARATION_SECTION()
 
@@ -36,6 +37,7 @@ CREATE_CONFIGURATION(PortCombiner, "combiner", theCombinerCfg);
 CREATE_CONFIGURATION(Decoder, "decoder", theDecoderCfg);
 CREATE_CONFIGURATION(uArch, "uarch", theuArchCfg);
 
+CREATE_CONFIGURATION(SMS, "sms", theSMSCfg);
 CREATE_CONFIGURATION(Cache, "L1d", theL1dCfg);
 CREATE_CONFIGURATION(CMPCache, "L2", theL2Cfg);
 CREATE_CONFIGURATION(MultiNic2, "nic", theNicCfg);
@@ -136,6 +138,22 @@ bool initializeParameters() {
   theuArchCfg.NumFpMult.initialize(true);
   theuArchCfg.NumIntAlu.initialize(true);
   theuArchCfg.NumIntMult.initialize(true);
+  theuArchCfg.NumAGU.initialize(true);
+
+  theuArchCfg.ExtraXRegs.initialize(true);
+  theuArchCfg.ExtraVRegs.initialize(true);
+
+  theSMSCfg.EnableSMS.initialize(false);
+  theSMSCfg.NumAccTableEntries.initialize(64);
+  theSMSCfg.NumFilterTableEntries.initialize(64);
+  theSMSCfg.NumPHTSets.initialize(1024);
+  theSMSCfg.PHTAssociativity.initialize(16);
+  theSMSCfg.BlockSize.initialize(64);
+  theSMSCfg.NumBlks.initialize(32);
+  theSMSCfg.SMSRot.initialize(false);
+  theSMSCfg.SMSSepRdWr.initialize(false);
+  theSMSCfg.SMSUseSatCnts.initialize(false);
+  theSMSCfg.PerfectPHT.initialize(false);
 
   static const int K = 1024;
 
@@ -255,11 +273,12 @@ FLEXUS_INSTANTIATE_COMPONENT_ARRAY( uFetch, theuFetchCfg, theuFetch, SCALE_WITH_
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( PortCombiner, theCombinerCfg, theuFetchCombiner, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( Decoder, theDecoderCfg, theDecoder, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( uArch, theuArchCfg, theuArch, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
+FLEXUS_INSTANTIATE_COMPONENT_ARRAY( SMS, theSMSCfg, theSMS, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( Cache, theL1dCfg, theL1d, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MMU , theMMUCfg, theMMU, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( CMPCache, theL2Cfg, theL2, FIXED, DIVIDE, 8 );
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( PhantomCPU, thePhantomCfg, thePhantomCPU, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 1);
-FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MemoryLoopback, theMemoryCfg, theMemory, FIXED, DIVIDE, 8 ); //
+FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MemoryLoopback, theMemoryCfg, theMemory, FIXED, DIVIDE, 8 );
 // The above parameter dictates the number of memory controllers in the system.
 // It should always match the postload, and should be set to 1 for single core setup.
 FLEXUS_INSTANTIATE_COMPONENT_ARRAY( MultiNic2, theNicCfg, theNic, SCALE_WITH_SYSTEM_WIDTH, MULTIPLY, 3 );
@@ -291,8 +310,8 @@ WIRE( theMMU, iTranslationReply,        theuFetch, iTranslationIn         )
 WIRE( theuArch, dTranslationOut,        theMMU, dRequestIn                )
 WIRE( theMMU, dTranslationReply,        theuArch, dTranslationIn          )
 WIRE( theMMU, MemoryRequestOut,         theuArch, MemoryRequestIn         )
-WIRE(theuArch, ResyncOut,               theMMU,   ResyncIn                )
-WIRE(theMMU, ResyncOut,                 theuFetch,   ResyncIn             )
+WIRE(theuArch, ResyncOut,               theMMU, ResyncIn                  )
+WIRE(theMMU, ResyncOut,                 theuFetch, ResyncIn               )
 
 //Decoder to uArch
 WIRE( theDecoder, AvailableDispatchIn,  theuArch, AvailableDispatchOut    )
@@ -317,6 +336,14 @@ WIRE( theNetMapper, ICacheSnoopOut,     theuFetchCombiner, SnoopIn        )
 WIRE( theNetMapper, ICacheReplyOut,     theuFetchCombiner, ReplyIn        )
 
 WIRE( theuFetchCombiner, FetchMissOut,  theuFetch, FetchMissIn            )
+
+//uArch to SMS
+WIRE( theuArch, SMSTrainOut,            theSMS, TrainIn                   )
+WIRE( theuArch, SMSPredictOut,          theSMS, PredictIn                 )
+
+// SMS to L1D cache
+WIRE( theSMS, PredictOut,               theL1d, FrontSideIn_Prefetch      )
+WIRE( theL1d, SMSEvictInval,            theSMS, EvictInvalIn              )
 
 //L1d to NetMapper
 WIRE( theL1d, BackSideOut_Request,       theNetMapper, CacheRequestIn     )
@@ -357,9 +384,10 @@ DRIVE( theuFetch, uFetchDrive )
 , DRIVE( theuArch, uArchDrive )
 , DRIVE( theMMU, MMUDrive  )
 , DRIVE( theDecoder, DecoderDrive )
+, DRIVE( theSMS, SMSDrive )
 , DRIVE( theL1d, CacheDrive )
 , DRIVE ( thePhantomCPU, PhantomDrive ) >
-, mpl::vector <
+,  mpl::vector <
   DRIVE( theNic, MultiNicDrive )
 , DRIVE( theNetwork, NetworkDrive )
 , DRIVE( theMemory, LoopbackDrive )

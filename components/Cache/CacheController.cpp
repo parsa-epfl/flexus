@@ -207,6 +207,12 @@ CacheController::loadState(std::string const& aDirName)
     theCacheControllerImpl->loadState(aDirName);
 }
 
+void
+CacheController::saveState(std::string const& aDirName)
+{
+    theCacheControllerImpl->saveState(aDirName);
+}
+
 CacheController::CacheController(std::string const& aName,
                                  int32_t aCores,
                                  std::string const& anArrayConfiguration,
@@ -292,7 +298,7 @@ CacheController::CacheController(std::string const& aName,
 
     // Allocate per-bank resources
     for (int32_t i = 0; i < theBanks; i++) {
-        theMAFPipeline.push_back(Pipeline(aName + "-MafServer", aPorts, 1, 0, mafHist));
+        theMAFPipeline.push_back(Pipeline(aName + "-MafServer", aPorts, 0, 0, mafHist));
 
         theTagPipeline.push_back(Pipeline(aName + "-TagServer", aPorts, aTagIssueLatency, aTagLatency, tagHist));
 
@@ -514,7 +520,8 @@ void
 CacheController::unreserveBSO(ProcessEntry_p aProcess)
 {
     switch (aProcess->type()) {
-        case eProcPrefetch: unreserveBackSideOut_Prefetch(aProcess); break;
+        // case eProcPrefetch: unreserveBackSideOut_Prefetch(aProcess); break;
+        case eProcPrefetch: unreserveBackSideOut_Request(aProcess); break;
         case eProcSnoop:
         case eProcBackReply:
         case eProcBackRequest: unreserveBackSideOut_Snoop(aProcess); break;
@@ -870,7 +877,8 @@ CacheController::scheduleNewProcesses()
         // the newest waiting snoop process.  Prefetch processes reserve a MAF
         // entry, a BackSideOut_Prefetch buffer, and a FrontSideOut buffer.
         while (theMAFPipeline[i].serverAvail() && !BankFrontSideIn_Prefetch[i].empty() &&
-               !BackSideOut_Prefetch.full() && !isFrontSideOutFull() && !theMaf.full() &&
+               !BackSideOut_Request.full() && !isFrontSideOutFull() && !theMaf.full() &&
+            //    !BackSideOut_Prefetch.full() && !isFrontSideOutFull() && !theMaf.full() &&
                !theCacheControllerImpl->fullEvictBuffer() &&
                (BankFrontSideIn_Snoop[i].empty() ||
                 BankFrontSideIn_Snoop[i].headTimestamp() > BankFrontSideIn_Prefetch[i].headTimestamp())) {
@@ -878,11 +886,13 @@ CacheController::scheduleNewProcesses()
             DBG_(VVerb, (<< " schedule Prefetch " << *transport[MemoryMessageTag]));
 
             ProcessEntry_p aProcess = new ProcessEntry(transport, eProcPrefetch);
-            reserveBackSideOut_Prefetch(aProcess);
+            // reserveBackSideOut_Prefetch(aProcess);
+            reserveBackSideOut_Request(aProcess);
             reserveFrontSideOut(aProcess);
             reserveEvictBuffer(aProcess);
             reserveMAF(aProcess);
             theMAFPipeline[i].enqueue(aProcess);
+            theCacheControllerImpl->addPendingRequest(transport[MemoryMessageTag]->address());
             scheduled = true;
         }
         if (!scheduled && !BankFrontSideIn_Prefetch[i].empty()) {
@@ -1151,6 +1161,15 @@ CacheController::runRequestProcess(ProcessEntry_p aProcess)
     DBG_(VVerb, (<< "  Action for " << *aProcess->transport()[MemoryMessageTag] << " is: " << action.theAction));
 
     switch (action.theAction) {
+        case kNoAction:
+            unreserveMAF(aProcess);
+            unreserveFrontSideOut(aProcess);
+            unreserveBackSideOut_Request(aProcess);
+            unreserveEvictBuffer(aProcess);
+
+            enqueueTagPipeline(action, aProcess);
+            break;
+
         case kSend:
             DBG_Assert(aProcess->type() == eProcRequest || aProcess->type() == eProcPrefetch);
             // This is used for PrefetchReadRedundant and other cases which should
@@ -1734,8 +1753,10 @@ CacheController::doTransmitProcess(ProcessEntry_p aProcess)
 
             case eProcPrefetch:
 
-                unreserveBackSideOut_Prefetch(aProcess);
-                sendBack_Prefetch(trans);
+                // unreserveBackSideOut_Prefetch(aProcess);
+                // sendBack_Prefetch(trans);
+                unreserveBackSideOut_Request(aProcess);
+                sendBack_Request(trans);
                 break;
 
             case eProcSnoop:
@@ -1766,14 +1787,16 @@ CacheController::doTransmitProcess(ProcessEntry_p aProcess)
         DBG_Assert(aProcess->frontTransport()[MemoryMessageTag] != nullptr,
                    (<< "Process serial: " << aProcess->serial() << " addr: " << std::hex
                     << (uint64_t)addressOf(aProcess) << " missing Front Transport MemoryMessage."));
-        sendFront(aProcess->frontTransport(), aProcess->sendToD(), aProcess->sendToI());
+        if (!(aProcess->frontTransport()[MemoryMessageTag]->isPrefetchType())) {
+            sendFront(aProcess->frontTransport(), aProcess->sendToD(), aProcess->sendToI());
+        }
     }
 
     if (aProcess->type() == eProcIdleWork) {
         theCacheControllerImpl->completeIdleWork(aProcess->transport()[MemoryMessageTag]);
     }
 
-    if ((aProcess->type() == eProcRequest || aProcess->type() == eProcMAFWakeup) &&
+    if ((aProcess->type() == eProcRequest || aProcess->type() == eProcMAFWakeup || aProcess->type() == eProcPrefetch) &&
         aProcess->hasReserved(kResEvictBuffer)) {
         // We might have an evict buffer reserved waiting for the reply that will
         // eventually come back Clear the bit but don't give up the reservation

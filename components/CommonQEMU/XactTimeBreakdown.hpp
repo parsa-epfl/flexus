@@ -26,8 +26,11 @@ const char* kStallNames[] = { "Unknown",
                               // WillRaise
                               "WillRaise:Load",
                               "WillRaise:Store",
+                              "WillRaise:Store:SBFull",
+                              "WillRaise:Store:SBDrain",
                               "WillRaise:Atomic",
                               "WillRaise:Branch",
+                              "WillRaise:Branch:ActionPending",
                               "WillRaise:MEMBAR",
                               "WillRaise:Computation",
                               "WillRaise:Synchronizing",
@@ -164,12 +167,32 @@ const char* kStallNames[] = { "Unknown",
                               "EmptyROB:Interrupt",
 
                               "Branch",
+                              "Branch:Blocked:SrcNotReady",
+                              "Branch:Blocked:SrcReady:NE:Cond",
+                              "Branch:Blocked:SrcReady:NE:Uncond",
+                              "Branch:Blocked:SrcReady:NE:IndirectReg",
+                              "Branch:Blocked:SrcReady:NE:Call",
+                              "Branch:Blocked:SrcReady:NE:Return",
+                              "Branch:Blocked:SrcReady:NE:Return:OpUnset",
+                              "Branch:Blocked:SrcReady:NE:Return:OpUnset:PS1Absent",
+                              "Branch:Blocked:SrcReady:NE:Return:OpUnset:PS1Present",
+                              "Branch:Blocked:SrcReady:NE:Return:OpUnset:PS1Present:NewStall",
+                              "Branch:Blocked:SrcReady:NE:Return:OpUnset:PS1Present:ContStall",
+                              "Branch:Blocked:SrcReady:NE:Return:OpUnset:PS1Present:DirectNotReady",
+                              "Branch:Blocked:SrcReady:NE:Return:OpUnset:Natural",
+                              "Branch:Blocked:SrcReady:NE:Return:OpUnset:Accumulated",
+                              "Branch:Blocked:SrcReady:NE:Return:OpSet",
+                              "Branch:Blocked:SrcReady:NE:Other",
+                              "Branch:Blocked:SrcReady:Executed",
+                              "Dataflow:Blocked",
 
                               "SyncPipe",
 
                               "FailedSpeculation",
                               "SyncWhileSpeculating",
-                              "TSOBReplay"
+                              "TSOBReplay",
+
+                              "PrevStallCarryOver",
 
 };
 }
@@ -197,8 +220,11 @@ enum eCycleClass
     // WillRaise
     kWillRaise_Load,
     kWillRaise_Store,
+    kWillRaise_Store_SBFull,
+    kWillRaise_Store_SBDrain,
     kWillRaise_Atomic,
     kWillRaise_Branch,
+    kWillRaise_Branch_ActionPending,
     kWillRaise_MEMBAR,
     kWillRaise_Computation,
     kWillRaise_Synchronizing,
@@ -341,6 +367,24 @@ enum eCycleClass
 
     // Branch
     kBranch,
+    kBranch_Blocked_SrcNotReady,
+    kBranch_Blocked_SrcReady_NE_Cond,       // codeBranchConditional, codeBranchFPConditional
+    kBranch_Blocked_SrcReady_NE_Uncond,     // codeBranchUnconditional
+    kBranch_Blocked_SrcReady_NE_IndirectReg,// codeBranchIndirectReg
+    kBranch_Blocked_SrcReady_NE_Call,       // codeCALL or codeBranchIndirectCall
+    kBranch_Blocked_SrcReady_NE_Return,     // codeRETURN
+    kBranch_Blocked_SrcReady_NE_Return_OpUnset,          // codeRETURN: kOperand1 not yet set (ReadXReg not fired)
+    kBranch_Blocked_SrcReady_NE_Return_OpUnset_PS1Absent,  // codeRETURN: kOperand1 unset, kPS1 not in operand map
+    kBranch_Blocked_SrcReady_NE_Return_OpUnset_PS1Present, // codeRETURN: kOperand1 unset, kPS1 in operand map
+    kBranch_Blocked_SrcReady_NE_Return_OpUnset_PS1Present_NewStall,
+    kBranch_Blocked_SrcReady_NE_Return_OpUnset_PS1Present_ContStall,
+    kBranch_Blocked_SrcReady_NE_Return_OpUnset_PS1Present_DirectNotReady,
+    kBranch_Blocked_SrcReady_NE_Return_OpUnset_Natural,
+    kBranch_Blocked_SrcReady_NE_Return_OpUnset_Accumulated,
+    kBranch_Blocked_SrcReady_NE_Return_OpSet,    // codeRETURN: kOperand1 set but calcAddr not fired
+    kBranch_Blocked_SrcReady_NE_Other,      // anything else
+    kBranch_Blocked_SrcReady_Executed,
+    kDataflow_Blocked,
 
     // SyncPipe
     kSyncPipe,
@@ -349,6 +393,8 @@ enum eCycleClass
     kFailedSpeculation,
     kSyncWhileSpeculating,
     kTSOBReplay,
+
+    kPrevStallCarryOver,
 
     kLastStallClass
 };
@@ -608,6 +654,18 @@ struct TimeBreakdown
         return retCycles;
     }
     int32_t commitAccumulatedCycles(eCycleClass aCycleClass, uint64_t aCycles) { return stall(aCycleClass, aCycles); }
+
+    // Drain any accumulated gap beyond 1 cycle into kPrevStallCarryOver,
+    // then set theLastAccountedCycle to exactly 1 behind current so
+    // the subsequent 1-arg stall() call charges exactly 1 cycle.
+    void forceSync()
+    {
+        uint64_t current = theFlexus->cycleCount();
+        if (current > theLastAccountedCycle + 1) {
+            stall(kPrevStallCarryOver, current - theLastAccountedCycle - 1);
+            theLastAccountedCycle = current - 1;
+        }
+    }
 
     // Enqueue stall cycles
     int32_t stall(eCycleClass aCycleClass)

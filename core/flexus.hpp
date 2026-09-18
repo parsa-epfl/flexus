@@ -36,6 +36,11 @@ class FlexusInterface
     virtual void doLoad(std::string const& aDirName)         = 0;
     virtual void doSave(std::string const& aDirName)         = 0;
     virtual void writeMeasurement(std::string const& aMeasurement, std::string const& aFilename) = 0;
+
+    // ASID tracking interface
+    virtual void initializeASIDList() = 0;
+    virtual bool isASIDInitialized() const = 0;
+    virtual void notifyASIDChange(int core_id, uint16_t new_asid) = 0;
 };
 
 extern FlexusInterface* theFlexus;

@@ -94,7 +94,7 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
 
             if (redirectRequest->isResync && redirectRequest->theBPState != nullptr) {
                 theBranchPredictor->recordResyncRedirectStats(*redirectRequest->theBPState);
-            } 
+            }
         }
     }
 

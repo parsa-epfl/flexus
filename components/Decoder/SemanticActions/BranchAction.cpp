@@ -87,6 +87,8 @@ struct BranchCondAction : public BaseSemanticAction
                 DBG_(VVerb, (<< *this << " waiting for predecessor "));
                 reschedule();
             }
+        } else {
+            reschedule();
         }
     }
 
@@ -148,6 +150,8 @@ struct BranchRegAction : public BaseSemanticAction
                 DBG_(VVerb, (<< *this << " waiting for predecessor "));
                 reschedule();
             }
+        } else {
+            reschedule();
         }
     }
 
@@ -196,6 +200,8 @@ struct BranchToCalcAddressAction : public BaseSemanticAction
                 DBG_(VVerb, (<< *this << " waiting for predecessor "));
                 reschedule();
             }
+        } else {
+            reschedule();
         }
     }
 

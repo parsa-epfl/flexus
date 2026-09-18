@@ -140,7 +140,7 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
 
     }
 
-    virtual bool allocate(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup,
+    bool allocate(boost::intrusive_ptr<AbstractLookupResult<_State>> lookup,
                           MemoryAddress address,
                           const _State& state)
     {
@@ -150,7 +150,7 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
         inf_lookup->theIterator       = ret.first;
         return ret.second;
     }
-    virtual boost::intrusive_ptr<AbstractLookupResult<_State>> lookup(MemoryAddress address)
+    boost::intrusive_ptr<AbstractLookupResult<_State>> lookup(MemoryAddress address)
     {
         // Make sure this address is in the right range.
         uint64_t node_index = (address >> theBlockShift) % theNumBanks;
@@ -163,18 +163,18 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
 
     virtual void remove(MemoryAddress address) { theDirectory.erase(address); }
 
-    virtual bool sameSet(MemoryAddress a, MemoryAddress b) { return theSameSetReturnValue; }
+    virtual bool sameSet(MemoryAddress a, MemoryAddress b) const { return theSameSetReturnValue; }
 
     virtual void setSameSetReturn(bool ret) { theSameSetReturnValue = ret; }
 
-    virtual DirEvictBuffer<_EState>* getEvictBuffer() { return &theEvictBuffer; }
+    DirEvictBuffer<_EState>* getEvictBuffer() { return &theEvictBuffer; }
 
     virtual boost::intrusive_ptr<AbstractLookupResult<_State>> getDummyResult(_State& state)
     {
         return boost::intrusive_ptr<AbstractLookupResult<_State>>(new DummyLookupResult(state));
     }
 
-    virtual void load_dir_from_ckpt(const std::string& filename)
+    void load_dir_from_ckpt(const std::string& filename)
     {
         std::ifstream ifs(filename.c_str(), std::ios::in);
 
@@ -212,6 +212,35 @@ class InfiniteDirectory : public AbstractDirectory<_State, _EState>
 
         DBG_(VVerb, (<< "Directory loaded"));
         ifs.close();
+    }
+
+    void save_dir_to_ckpt(const std::string& filename)
+    {
+        json checkpoint = json::array();
+
+        // Iterate through all entries in the directory
+        for (auto iter = theDirectory.begin(); iter != theDirectory.end(); ++iter) {
+            // Only save entries with sharers
+            if (!iter->theState.noSharers()) {
+                json entry;
+                entry["tag"]     = static_cast<uint64_t>(iter->theAddress);
+                std::string sharers_str;
+                boost::to_string(iter->theState.getSharers(), sharers_str);
+                entry["sharers"] = sharers_str;
+                checkpoint.push_back(entry);
+            }
+        }
+
+        std::ofstream ofs(filename.c_str(), std::ios::out);
+        if (!ofs.good()) {
+            DBG_(Crit, (<< "Unable to open checkpoint file for writing: " << filename));
+            DBG_Assert(false, (<< "FILE OPEN FAILED"));
+        }
+
+        ofs << checkpoint.dump(2);
+        ofs.close();
+
+        DBG_(Dev, (<< "Directory saved " << checkpoint.size() << " entries to " << filename));
     }
 };
 

@@ -59,7 +59,7 @@ class qmp_flexus_i
 class qmp_write_measurement : public qmp_flexus_i
 {
 
-    virtual void execute(std::string anArgs) override
+    virtual void execute(std::string anArgs)
     {
         if (!anArgs.empty()) theArgsVector = split(anArgs, ':');
         if (theArgsVector.size() == 2)
@@ -73,7 +73,7 @@ class qmp_write_measurement : public qmp_flexus_i
 class qmp_do_load : public qmp_flexus_i
 {
 
-    virtual void execute(std::string anArgs) override
+    virtual void execute(std::string anArgs)
     {
         if (!anArgs.empty()) theArgsVector = split(anArgs, ':');
         if (theArgsVector.size() == 1)
@@ -87,7 +87,7 @@ class qmp_do_load : public qmp_flexus_i
 class qmp_do_save : public qmp_flexus_i
 {
 
-    virtual void execute(std::string anArgs) override
+    virtual void execute(std::string anArgs)
     {
         if (!anArgs.empty()) theArgsVector = split(anArgs, ':');
         if (theArgsVector.size() == 1)
@@ -101,14 +101,14 @@ class qmp_do_save : public qmp_flexus_i
 class qmp_terminate_simulation : public qmp_flexus_i
 {
 
-    virtual void execute(std::string anArgs) override { theFlexus->terminateSimulation(); }
+    virtual void execute(std::string anArgs) { theFlexus->terminateSimulation(); }
 
 } qmp_terminate_simulation_;
 
 class qmp_default : public qmp_flexus_i
 {
 
-    virtual void execute(std::string anArgs) override { DBG_(Crit, (<< "Wrong qmp command!")); }
+    virtual void execute(std::string anArgs) { DBG_(Crit, (<< "Wrong qmp command!")); }
 
 } qmp_default_;
 

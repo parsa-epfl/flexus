@@ -111,6 +111,7 @@ class FLEXUS_COMPONENT(MMU)
     // Is true when the MMU has been reseted
     bool mmu_is_init;
     bool cfg_mmu(index_t anIndex);
+    void lookup(TranslationPtr& item);
 
   public:
     FLEXUS_COMPONENT_CONSTRUCTOR(MMU);
@@ -148,8 +149,6 @@ class FLEXUS_COMPONENT(MMU)
 
     bool available(interface::dRequestIn const&, index_t anIndex);
     void push(interface::dRequestIn const&, index_t anIndex, TranslationPtr& aTranslate);
-
-    void sendTLBresponse(TranslationPtr aTranslation);
 
     bool available(interface::TLBReqIn const&, index_t anIndex);
     void push(interface::TLBReqIn const&, index_t anIndex, TranslationPtr& aTranslate);

@@ -440,6 +440,7 @@ CoreImpl::issueMMU(TranslationPtr aTranslation)
 
     tracker->setSource("MMU");
     tracker->setOS(system);
+    tracker->setStartCycle(theCycleCount);
     op->theTracker  = tracker;
     mshr.theTracker = tracker;
 

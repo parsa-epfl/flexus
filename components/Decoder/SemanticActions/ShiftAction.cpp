@@ -63,6 +63,8 @@ struct ShiftRegisterAction : public PredicatedSemanticAction
 
             theInstruction->setOperand(theRegisterCode, val);
             satisfyDependants();
+        } else {
+            reschedule();
         }
     }
 

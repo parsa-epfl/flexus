@@ -87,6 +87,22 @@ CMPCacheController::loadState(std::string const& ckpt_dirname)
 }
 
 void
+CMPCacheController::saveState(std::string const& ckpt_dirname)
+{
+    // -- SAVE DIRECTORY
+    std::string ckpt_filename_cachedir(ckpt_dirname);
+    ckpt_filename_cachedir += "/" + theName + "-dir-slice.json";
+    DBG_(Dev, (<< " Start saving Directory state to " << ckpt_filename_cachedir));
+    thePolicy->save_dir_to_ckpt(ckpt_filename_cachedir);
+
+    // -- SAVE CACHE
+    std::string ckpt_filename_cache(ckpt_dirname);
+    ckpt_filename_cache += "/" + theName + "-cache-slice.json";
+    DBG_(Dev, (<< " Start saving Cache state to " << ckpt_filename_cache));
+    thePolicy->save_cache_to_ckpt(ckpt_filename_cache);
+}
+
+void
 CMPCacheController::processMessages()
 {
 

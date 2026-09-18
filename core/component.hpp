@@ -94,13 +94,13 @@ struct ComponentManager
     typedef base::self self /**/
 
 #define FLEXUS_PORT_ALWAYS_AVAILABLE(PortName)                                                                         \
-    bool available(interface::PortName const&)                                                                         \
+    bool available(interface::PortName const&)                                                                \
     {                                                                                                                  \
         return true;                                                                                                   \
     }
 
 #define FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(PortName)                                                                   \
-    bool available(interface::PortName const& pn, Flexus::Core::index_t aWidth)                                        \
+    bool available(interface::PortName const& pn, Flexus::Core::index_t aWidth)                               \
     {                                                                                                                  \
         DBG_Assert(aWidth < width(cfg, pn));                                                                           \
         return true;                                                                                                   \
@@ -255,11 +255,11 @@ struct ComponentInstance
                 case FlexusComponentScalingStyle::MULTIPLY:
                     theWidth = aSystemWidth * theWidth;
                     break;
-                
+
                 case FlexusComponentScalingStyle::DIVIDE:
                     theWidth = aSystemWidth / theWidth;
                     break;
-                
+
                 case FlexusComponentScalingStyle::DIVIDE_BY_TWO_THEN_MULTIPLY:
                     DBG_Assert((aSystemWidth % 2) == 0);
                     theWidth = (aSystemWidth * theWidth) / 2;

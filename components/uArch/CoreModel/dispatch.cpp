@@ -17,12 +17,24 @@ CoreImpl::availableROB() const
     } else if (theSpinning && theSpinControlEnabled && theLSQCount > 0) {
         return 0;
     } else {
-        if (theDispatchStalled)
-            return 0;
-        
         auto rob = theROBSize - theROB.size();
         auto dsp = theDispatchWidth - theDispatchingInsts.size();
+        DBG_Assert(rob >= 0, (<< "ROB size is " << theROBSize << " and there are " << theROB.size() << " instructions in the ROB"));
+        DBG_Assert(dsp >= 0, (<< "Dispatch width is " << theDispatchWidth << " and there are " << theDispatchingInsts.size() << " dispatching instructions"));
         return std::min(rob, dsp);
+    }
+}
+
+std::tuple<int32_t, int32_t, int32_t>
+CoreImpl::availableRegs() const
+{
+    auto freeXRegs = theMapTables[0]->theFreeList.size();
+    auto freeVRegs = theMapTables[1]->theFreeList.size();
+    auto freeCCs = theMapTables[2]->theFreeList.size();
+    if (theInOrderExecute) {
+        return std::make_tuple(kxRegs_Total, kvRegs, kccRegs); // Handled seperately, not through map tables
+    } else {
+        return std::make_tuple(freeXRegs, freeVRegs, freeCCs);
     }
 }
 
@@ -301,6 +313,33 @@ CoreImpl::reqEU(int et)
     }
 
     return false;
+}
+
+bool
+CoreImpl::canExecute(int et)
+{
+    if (!theInOrderExecute)
+        return true;
+    switch (et) {
+        case nDecoder::eALU: return theFreeALU > 0;
+        case nDecoder::eMUL: return theFreeMUL > 0;
+        case nDecoder::eAGU: return theFreeAGU > 0;
+        default: return true;
+    }
+}
+
+void
+CoreImpl::updateFreeEUs(int et)
+{
+    if (!theInOrderExecute)
+        return;
+    DBG_(VVerb, (<< theName << " Update Free EUs: " << et));
+    switch (et) {
+        case nDecoder::eALU: DBG_Assert(theFreeALU > 0); theFreeALU--; break;
+        case nDecoder::eMUL: DBG_Assert(theFreeMUL > 0); theFreeMUL--; break;
+        case nDecoder::eAGU: DBG_Assert(theFreeAGU > 0); theFreeAGU--; break;
+        default: break;
+    }
 }
 
 } // namespace nuArch

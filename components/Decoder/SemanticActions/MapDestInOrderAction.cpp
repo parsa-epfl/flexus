@@ -42,6 +42,10 @@ struct MapDestInOrderAction : public BaseSemanticAction {
         }
     }
 
+    bool canDispatch() {
+        return core()->canDispatch(theInstruction->operand<mapped_reg>(theRd), false);
+    }
+
     void describe(std::ostream &anOstream) const {
         anOstream << theInstruction->identify() << " MapInOrderAction to " << theRd;
     }

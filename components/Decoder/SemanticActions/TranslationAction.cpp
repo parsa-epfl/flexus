@@ -34,11 +34,12 @@ struct CalcAddressUpdateVATranslateMaybeRegExtendAndShiftAction : public BaseSem
     std::unique_ptr<Operation> theRegExtendType;
     bool theShift;
     CalcAddressUpdateVATranslateMaybeRegExtendAndShiftAction(SemanticInstruction* anInstruction, bool aRegExtend, std::unique_ptr<Operation> aRegExtendType, bool aShift)
-      : BaseSemanticAction(anInstruction, aRegExtend ? 2 : 1, true)
+      : BaseSemanticAction(anInstruction, aRegExtend ? 2 : 1, false)
         , theRegExtend(aRegExtend)
         , theShift(aShift)
     {
         theRegExtendType = std::move(aRegExtendType);
+        theEU = eAGU;
     }
 
     void squash(int32_t anOperand)
@@ -57,6 +58,10 @@ struct CalcAddressUpdateVATranslateMaybeRegExtendAndShiftAction : public BaseSem
 
     }
 
+    bool canDispatch() {
+        DBG_(VVerb, (<< "[AGU1] Checking dispatch for " << *this));
+        return core()->canExecute(theEU);
+    }
 
     void doEvaluate()
     {
@@ -133,6 +138,7 @@ struct TranslationAction : public BaseSemanticAction
     TranslationAction(SemanticInstruction* anInstruction)
       : BaseSemanticAction(anInstruction, 1)
     {
+        theEU = eAGU;
     }
 
     void squash(int32_t anOperand)
@@ -143,6 +149,11 @@ struct TranslationAction : public BaseSemanticAction
         }
         boost::intrusive_ptr<Instruction>(theInstruction)->setResolved(false);
         BaseSemanticAction::squash(anOperand);
+    }
+
+    bool canDispatch() {
+        DBG_(VVerb, (<< "[AGU2] Checking dispatch for " << *this));
+        return core()->canExecute(eAGU);
     }
 
     void doEvaluate()

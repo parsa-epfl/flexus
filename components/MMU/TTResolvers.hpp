@@ -47,24 +47,28 @@ class L0Resolver : public TTResolver
 {
   public:
     L0Resolver(bool abro, _TTResolver_Shptr_T aGranule, address_t tbr, uint8_t aPAW);
+    virtual ~L0Resolver() {}
     address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
 };
 class L1Resolver : public TTResolver
 {
   public:
     L1Resolver(bool abro, _TTResolver_Shptr_T aGranule, address_t attbr, uint8_t aPAW);
+    virtual ~L1Resolver() {}
     address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
 };
 class L2Resolver : public TTResolver
 {
   public:
     L2Resolver(bool abro, _TTResolver_Shptr_T aGranule, address_t attbr, uint8_t aPAW);
+    virtual ~L2Resolver() {}
     address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
 };
 class L3Resolver : public TTResolver
 {
   public:
     L3Resolver(bool abro, _TTResolver_Shptr_T aGranule, address_t attbr, uint8_t aPAW);
+    virtual ~L3Resolver() {}
     address_t getBlockOutputBits(address_t rawTTEFromPhysMemory);
 };
 

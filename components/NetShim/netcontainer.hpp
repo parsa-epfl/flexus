@@ -46,11 +46,13 @@ class NetContainer
                                int32_t& node,
                                int32_t& sw,
                                int32_t& port,
+                               int32_t& lat,
                                NetContainer* nc);
 
     static bool readTopologyTripleToken(istream& infile, int32_t& sw, int32_t& port, int32_t& vc, NetContainer* nc);
 
     static bool readTopologyDoubleToken(istream& infile, int32_t& tok1, int32_t& tok2, NetContainer* nc);
+    static bool readTopologyDoubleOrTripleToken(istream& infile, int32_t& sw, int32_t& port, int32_t& lat, NetContainer* nc);    
 
     static bool readStringToken(istream& infile, char* str);
     static bool readIntToken(istream& infile, int32_t& i);
