@@ -276,7 +276,7 @@ struct TimeBreakdown
         std::string theClassName;
 
         Stat::StatCounter theCycles;
-        int32_t pendCycles;
+        int64_t pendCycles;
         Stat::StatCounter theCommits;
         int32_t pendCommits;
         Stat::StatCounter theCommits_Busy;
@@ -284,7 +284,7 @@ struct TimeBreakdown
         Stat::StatCounter theCommits_Spin;
         int32_t pendCommits_Spin;
         std::vector<Stat::StatCounter*> theStallAccumulators;
-        std::vector<int> pendStallAccumulators;
+        std::vector<int64_t> pendStallAccumulators;
         bool theHasPending;
 
         TimeClass(std::string const& aSource, std::string const& aClass)
@@ -312,7 +312,7 @@ struct TimeBreakdown
                 // accumulation_type::Accumulate pending stall cycles
                 std::vector<Stat::StatCounter*>::iterator iter = theStallAccumulators.begin();
                 std::vector<Stat::StatCounter*>::iterator end  = theStallAccumulators.end();
-                std::vector<int>::iterator pend_iter           = pendStallAccumulators.begin();
+                std::vector<int64_t>::iterator pend_iter       = pendStallAccumulators.begin();
                 DBG_Assert(theStallAccumulators.size() == pendStallAccumulators.size());
                 DBG_Assert(theStallAccumulators.size() == kLastStallClass);
                 while (iter != end) {

@@ -408,7 +408,7 @@ void
 CoreImpl::chargeStoreStall(boost::intrusive_ptr<Instruction> inst, boost::intrusive_ptr<TransactionTracker> tracker)
 {
     nXactTimeBreakdown::eCycleClass theStallType = getStoreStallType(tracker);
-    int32_t stall_cycles                         = theTimeBreakdown.stall(theStallType);
+    uint64_t stall_cycles                        = theTimeBreakdown.stall(theStallType);
     inst->setRetireStallCycles(stall_cycles);
 }
 
@@ -780,7 +780,7 @@ CoreImpl::accountRetire(boost::intrusive_ptr<Instruction> anInst)
         }
     }
 
-    int32_t retire_stall_cycles =
+    int64_t retire_stall_cycles =
       theTimeBreakdown.retire(theLastStallCause, theROB.front()->sequenceNo(), theCycleCategory, theSpinning);
     anInst->setRetireStallCycles(retire_stall_cycles);
 }
@@ -999,7 +999,7 @@ CoreImpl::completeAccounting()
                                         theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_NE_Call);
                                         break;
                                     case codeRETURN: {
-                                        int32_t ret_cycles = theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_NE_Return);
+                                        uint64_t ret_cycles = theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_NE_Return);
                                         // Split: natural 1-cycle gap vs accumulated from previous non-stall path
                                         theTimeBreakdown.stall(nXactTimeBreakdown::kBranch_Blocked_SrcReady_NE_Return_OpUnset_Natural, 1);
                                         if (ret_cycles > 1) {

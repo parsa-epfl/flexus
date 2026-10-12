@@ -415,7 +415,7 @@ struct TimeXact
         eBusyRetire,
         eStall
     } theType;
-    uint32_t theCount;
+    uint64_t theCount;
     eCycleClass theCycleClass;
     uint64_t theSequence;
 };
@@ -622,38 +622,38 @@ struct TimeBreakdown
         }
     }
 
-    int32_t accumulateStoreCyclesTmp(void)
+    uint64_t accumulateStoreCyclesTmp(void)
     {
         uint64_t cycles       = theFlexus->cycleCount() - theLastAccountedCycle;
         theLastAccountedCycle = theFlexus->cycleCount();
         tmpStoreStallCycles += cycles;
         return cycles;
     }
-    int32_t commitAccumulatedStoreCycles(eCycleClass aCycleClass)
+    uint64_t commitAccumulatedStoreCycles(eCycleClass aCycleClass)
     {
         uint64_t retCycles  = stall(aCycleClass, tmpStoreStallCycles);
         tmpStoreStallCycles = 0;
         return retCycles;
     }
-    int32_t commitAccumulatedStoreCycles(eCycleClass aCycleClass, uint64_t aCycles)
+    uint64_t commitAccumulatedStoreCycles(eCycleClass aCycleClass, uint64_t aCycles)
     {
         return stall(aCycleClass, aCycles);
     }
 
-    int32_t accumulateCyclesTmp(void)
+    uint64_t accumulateCyclesTmp(void)
     {
         uint64_t cycles       = theFlexus->cycleCount() - theLastAccountedCycle;
         theLastAccountedCycle = theFlexus->cycleCount();
         tmpStallCycles += cycles;
         return cycles;
     }
-    int32_t commitAccumulatedCycles(eCycleClass aCycleClass)
+    uint64_t commitAccumulatedCycles(eCycleClass aCycleClass)
     {
         uint64_t retCycles = stall(aCycleClass, tmpStallCycles);
         tmpStallCycles     = 0;
         return retCycles;
     }
-    int32_t commitAccumulatedCycles(eCycleClass aCycleClass, uint64_t aCycles) { return stall(aCycleClass, aCycles); }
+    uint64_t commitAccumulatedCycles(eCycleClass aCycleClass, uint64_t aCycles) { return stall(aCycleClass, aCycles); }
 
     // Drain any accumulated gap beyond 1 cycle into kPrevStallCarryOver,
     // then set theLastAccountedCycle to exactly 1 behind current so
@@ -668,14 +668,14 @@ struct TimeBreakdown
     }
 
     // Enqueue stall cycles
-    int32_t stall(eCycleClass aCycleClass)
+    uint64_t stall(eCycleClass aCycleClass)
     {
         uint64_t cycles       = theFlexus->cycleCount() - theLastAccountedCycle;
         theLastAccountedCycle = theFlexus->cycleCount();
         stall(aCycleClass, cycles);
         return cycles;
     }
-    int32_t stall(eCycleClass aCycleClass, uint64_t aNumCycles)
+    uint64_t stall(eCycleClass aCycleClass, uint64_t aNumCycles)
     {
         TimeXact xact;
         xact.theType       = TimeXact::eStall;
@@ -687,10 +687,10 @@ struct TimeBreakdown
         return aNumCycles;
     }
 
-    int32_t retire(eCycleClass aPrecedingStallClass, uint64_t anInsnSequence, int32_t aTimeClass, bool isSpin)
+    int64_t retire(eCycleClass aPrecedingStallClass, uint64_t anInsnSequence, int32_t aTimeClass, bool isSpin)
     {
         bool count_retire_cycle = false;
-        int32_t stall_cycles    = 0;
+        int64_t stall_cycles    = 0;
         theLastTimeClass        = aTimeClass;
         if (theLastAccountedCycle != theFlexus->cycleCount()) {
             count_retire_cycle = true;

@@ -168,7 +168,9 @@ CoreImpl::invalidate(PhysicalMemoryAddress anAddress)
             // it must be squashed.  Otherwise, it overrides Simics.
             if (first_incomplete && temp->theSequenceNum >= *first_incomplete) {
                 // Load must be squashed and re-executed
-                int32_t seq_num = 0;
+                // Preserve the full sequence number when resuming the address scan.
+                // Truncation can move lower_bound backwards and replay loads forever.
+                uint64_t seq_num = 0;
                 PhysicalMemoryAddress addr;
                 bool research = false;
                 if (start != end) {

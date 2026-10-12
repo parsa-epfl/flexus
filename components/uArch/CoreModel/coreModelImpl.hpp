@@ -275,7 +275,7 @@ class CoreImpl : public CoreModel
 
   private:
     bool theIdleThisCycle;
-    int32_t theIdleCycleCount;
+    uint64_t theIdleCycleCount;
     BBVTracker* theBBVTracker; /* CMU-ONLY */
     uint32_t theOnChipLatency;
     uint32_t theOffChipLatency;

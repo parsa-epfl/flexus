@@ -199,7 +199,8 @@ FlexusImpl::doCycle()
     // Frequencies are normalized to base 10
     for(index_t iter_idx = 0; iter_idx < 10; iter_idx++) {
         FLEXUS_DBG("--------------START FLEXUS CYCLE " << theCycleCount << " ------------------------");
-        index_t advanceBy, oldCount = theCycleCount;
+        index_t advanceBy = 0;
+        uint64_t oldCount = theCycleCount;
         advanceBy = invokeDrives(iter_idx);
 
         advanceCycles(advanceBy);
