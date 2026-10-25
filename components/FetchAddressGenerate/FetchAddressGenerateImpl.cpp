@@ -156,6 +156,8 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
 
         //    static int test;
         boost::intrusive_ptr<FetchCommand> fetch(new FetchCommand());
+        //max_addrs is the number of addresses that can be genretaed in this cycle
+        //max_predicts is the number of branches that can be predicted in this cycle
         while (max_addrs > 0) {
             AGU_DBG("Getting addresses: " << max_addrs << " remaining");
 
@@ -169,6 +171,9 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
             // Advance the PC
             if (theBranchPredictor->isBranch(faddr.theAddress, cfg.PerfectBPU)) {
                 AGU_DBG("Predicting a Branch");
+                // I believe max_predicts should be decremented even in the else case,
+                //since regardless of a branch existing BTB is being looked up and that
+                //is fundamentally a limit.
                 if (max_predicts == 0) {
                     AGU_DBG("Config set the max prediction to zero, so no prediction");
                     break;
@@ -202,6 +207,10 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
                 DBG_(VVerb, (<< "Enqueing Fetch Thread[" << anIndex << "] " << faddr.theAddress));
 
                 fetch->theFetches.push_back(faddr);
+                
+                // we should think about whether we want to decrement max_predicts here or not. I think we should, 
+                // since the BTB is being looked up regardless and that is fundamentally a limit.
+                // --max_predicts;
             }
 
             --max_addrs;

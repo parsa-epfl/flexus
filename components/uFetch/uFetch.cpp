@@ -7,6 +7,9 @@
 #include "components/uArch/uArchInterfaces.hpp"
 #include "core/stats.hpp"
 
+#include <utility>
+#include <vector>
+
 #define FLEXUS_BEGIN_COMPONENT uFetch
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
 
@@ -55,6 +58,15 @@ class FLEXUS_COMPONENT(uFetch)
 
     std::unordered_set<uint64_t> theTAM;
     std::unordered_set<uint64_t> theFAM;
+
+    // Temporary mode settings; promote these to component parameters later.
+    // false: existing FDIP path. true: head-only demand path below.
+    bool theUseNextLinePath = false;
+    // In the head-only path, false selects no prefetching.
+    bool theNextLinePrefetching = true;
+    // Per-demand lookahead: consider the next X physical cache blocks, starting
+    // at demand_line + ICacheLineSize. Budgets/page boundaries can reduce issuance.
+    uint32_t theNextLineCount = 1;
 
     // ================== STATS ==================
     Flexus::Stat::StatCounter theFetchAccesses;
@@ -162,7 +174,9 @@ class FLEXUS_COMPONENT(uFetch)
     {
         theFAQ.clear();
         theTAM.clear();
-        theFAM.clear();
+        //theFAM should not be cleared here, since it is used to track the addresses that
+        // are currently being fetched and squashing should not affect that.
+        //theFAM.clear();
     }
 
     // FetchMissIn
@@ -239,14 +253,17 @@ class FLEXUS_COMPONENT(uFetch)
     void doFetch(index_t idx)
     {
         FETCH_DBG("--------------START FETCHING------------------------");
-
+        
         int fetches = 0;
-        int tlbreqs = 4;
+        int tlbreqs = 4; //this should be parametrized
         int l1ireqs = cfg.MaxFetchLines; // ufetch ports
 
+        // these should both be prarameterized
         int tlbdeps = 16;
         int l1ideps = 16;
 
+        // Get the number of fetches that can be sent this cycle based on 
+        // instruction queue availability and the max fetch instructions config parameter
         FLEXUS_CHANNEL_ARRAY(AvailableFIQ, idx) >> fetches;
         fetches = std::min(fetches, (int)(cfg.MaxFetchInstructions));
 
@@ -343,6 +360,14 @@ class FLEXUS_COMPONENT(uFetch)
                     continue;
 
                 case S_DONE:
+                    /*
+                     * TODO: Revalidate L1-I residency before delivering to decode.
+                     * An entry can remain S_DONE after its line is evicted or
+                     * invalidated while it waits in the FAQ. Delivery currently
+                     * reads the opcode from QEMU without another cache lookup,
+                     * so it can bypass the miss penalty for a line no longer in L1-I.
+                     */
+                    
                     if (fetches) {
                         fetches--;
 
@@ -381,6 +406,136 @@ class FLEXUS_COMPONENT(uFetch)
             FLEXUS_CHANNEL_ARRAY(FetchBundleOut, idx) << bundle;
 
         FETCH_DBG("--------------FINISH FETCHING------------------------");
+    }
+
+    void prefetchNextLines(uint64_t demand_line, VirtualMemoryAddress pc, int& l1ireqs)
+    {
+        // Match the 4 KiB page granularity used by fetch translation.
+        constexpr uint64_t page_size = 4096;
+        uint64_t pa = demand_line & theBlockMask;
+
+        // Restart the X-block window for each demand trigger. Cached/outstanding
+        // blocks still count toward X; lookup/request capacity is shared this cycle.
+        for (uint32_t line = 0; line < theNextLineCount; ++line) {
+            if (l1ireqs == 0 || theFAM.size() >= cfg.MissQueueSize)
+                break;
+
+            // Check before adding, so even the final physical page cannot wrap.
+            if (cfg.ICacheLineSize >= page_size - (pa & (page_size - 1)))
+                break;
+            pa += cfg.ICacheLineSize;
+
+            if (theFAM.count(pa))
+                continue;
+
+            --l1ireqs;
+            if (theI.lookup(pa))
+                continue;
+
+            send_fetch(PhysicalMemoryAddress(pa), pc, false);
+            theFAM.insert(pa);
+            ++thePrefetches;
+            ++theL1MissesAll;
+        }
+    }
+
+    void doFetchNextLine(index_t idx)
+    {
+        int fetches = 0;
+        FLEXUS_CHANNEL_ARRAY(AvailableFIQ, idx) >> fetches;
+        fetches = std::min(fetches, (int)(cfg.MaxFetchInstructions));
+
+        int tlbreqs = 4;
+        int tlbdeps = 16;
+        int l1ireqs = cfg.MaxFetchLines;
+        int l1ideps = 16;
+
+        // Translation may still run ahead, independently of demand delivery.
+        for (auto& f : theFAQ) {
+            if (f.state != S_INIT || tlbdeps == 0)
+                continue;
+            --tlbdeps;
+
+            VirtualMemoryAddress va(f.addr.theAddress & ~0xffflu);
+            if (theTAM.count(va)) {
+                f.state = S_ITLB_REQ;
+            } else if (tlbreqs) {
+                --tlbreqs;
+                theTAM.insert(va);
+                f.state = S_ITLB_REQ;
+                send_trans(idx + flexusIndex() * cfg.Threads, f.addr.theAddress);
+            }
+        }
+
+        std::unordered_set<uint64_t> l1ihits;
+        pFetchBundle bundle;
+        std::vector<std::pair<uint64_t, VirtualMemoryAddress>> demand_accesses;
+
+        // Only the current head can access the cache or initiate a demand miss.
+        // Removing a delivered entry exposes the next head in this same cycle.
+        while (fetches > 0 && !theFAQ.empty()) {
+            auto& f = theFAQ.front();
+
+            if (f.state == S_ITLB_RESP) {
+                if (l1ideps == 0)
+                    break;
+                if (!cfg.PerfectICache)
+                    --l1ideps;
+
+                bool accessed = false;
+                if (cfg.PerfectICache || l1ihits.count(f.pa)) {
+                    f.state = S_DONE;
+                    // accessed = true;
+                } else if (theFAM.count(f.pa)) {
+                    f.state = S_MISS;
+                    // accessed = true;
+                } else if (l1ireqs) {
+                    --l1ireqs;
+                    accessed = true;
+                    if (theI.lookup(f.pa)) {
+                        ++theHits;
+                        l1ihits.insert(f.pa);
+                        f.state = S_DONE;
+                    } else if (theFAM.size() < cfg.MissQueueSize) {
+                        ++theL1Misses;
+                        ++theL1MissesAll;
+                        send_fetch(PhysicalMemoryAddress(f.pa), f.addr.theAddress, true);
+                        theFAM.insert(f.pa);
+                        f.state = S_MISS;
+                    }
+                }
+
+                // Record logical instruction accesses, including shared hits
+                // and coalesced misses. Waiting without an access is not a trigger.
+                if (accessed && theNextLinePrefetching && !cfg.PerfectICache)
+                    demand_accesses.emplace_back(f.pa, f.addr.theAddress);
+            }
+
+            if (f.state != S_DONE)
+                break;
+
+            // Preserve the existing S_DONE semantics, including page faults:
+            // no additional residency check is performed before delivery.
+            if (!bundle.get()) {
+                bundle.reset(new FetchBundle);
+                bundle->coreID = flexusIndex();
+            }
+            auto opcode = ~f.pa ? cpu(0).fetch_inst(f.addr.theAddress) : 0xefffffff;
+            bundle->theOpcodes.emplace_back(
+                new FetchedOpcode(f.addr.theAddress, PhysicalMemoryAddress(f.pa), opcode, f.addr.theBPState, f.tracker));
+            bundle->theFillLevels.emplace_back(new tFillLevel(eL1I));
+            theFAQ.pop_front();
+            --fetches;
+        }
+
+        if (bundle.get())
+            FLEXUS_CHANNEL_ARRAY(FetchBundleOut, idx) << bundle;
+
+        // Demand accesses have priority over prefetch probes. Every accessed
+        // instruction contributes a trigger, even if its miss prevented delivery.
+        // The helper shares the remaining lookup and outstanding-request budgets.
+        for (const auto& access : demand_accesses)
+            prefetchNextLines(access.first, access.second, l1ireqs);
     }
 
     void sendMisses()
@@ -457,7 +612,10 @@ class FLEXUS_COMPONENT(uFetch)
 
         if (cfg.Threads > 1) { td = nMTManager::MTManager::get()->scheduleFThread(flexusIndex()); }
 
-        doFetch(td);
+        if (theUseNextLinePath)
+            doFetchNextLine(td);
+        else
+            doFetch(td);
         sendMisses();
     }
 
