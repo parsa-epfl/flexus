@@ -7,8 +7,8 @@
 #include "components/uArch/uArchInterfaces.hpp"
 #include "core/stats.hpp"
 
+#include <deque>
 #include <utility>
-#include <vector>
 
 #define FLEXUS_BEGIN_COMPONENT uFetch
 #include FLEXUS_BEGIN_COMPONENT_IMPLEMENTATION()
@@ -62,11 +62,35 @@ class FLEXUS_COMPONENT(uFetch)
     // Temporary mode settings; promote these to component parameters later.
     // false: existing FDIP path. true: head-only demand path below.
     bool theUseNextLinePath = false;
+
     // In the head-only path, false selects no prefetching.
     bool theNextLinePrefetching = true;
-    // Per-demand lookahead: consider the next X physical cache blocks, starting
-    // at demand_line + ICacheLineSize. Budgets/page boundaries can reduce issuance.
+
+    // Local trigger selection; add future policies here and in
+    // shouldTriggerNextLinePrefetch(), then promote the setting to Flexus config.
+    enum class PrefetchTrigger : uint32_t {
+        OnAccess = 0,
+        OnMiss = 1,
+    };
+
+    PrefetchTrigger thePrefetchTrigger = PrefetchTrigger::OnAccess;
+
+    // Per-trigger lookahead: enqueue the next N physical blocks in the same page.
     uint32_t theNextLineCount = 1;
+
+    // Local tag_lookup parameter: dedicated prefetch tag probes per cycle.
+    // Unused MaxFetchLines slots are added after demand; promote to config later.
+    uint32_t theTagLookupsPerCycle = 1;
+
+    // Maximum number of unissued candidates; issued requests use theFAM instead.
+    uint32_t thePrefetchQueueSize = 16;
+
+    struct PrefetchRequest {
+        uint64_t pa;
+        VirtualMemoryAddress pc;
+    };
+    std::deque<PrefetchRequest> thePrefetchQueue;
+    std::unordered_set<uint64_t> theQueuedPrefetches;
 
     // ================== STATS ==================
     Flexus::Stat::StatCounter theFetchAccesses;
@@ -174,6 +198,10 @@ class FLEXUS_COMPONENT(uFetch)
     {
         theFAQ.clear();
         theTAM.clear();
+        // Discard unissued candidates from the old path, but keep issued misses
+        // in theFAM until their replies arrive, just like demand requests.
+        thePrefetchQueue.clear();
+        theQueuedPrefetches.clear();
         //theFAM should not be cleared here, since it is used to track the addresses that
         // are currently being fetched and squashing should not affect that.
         //theFAM.clear();
@@ -259,6 +287,7 @@ class FLEXUS_COMPONENT(uFetch)
         int l1ireqs = cfg.MaxFetchLines; // ufetch ports
 
         // these should both be prarameterized
+        // number of all entries that can be checked
         int tlbdeps = 16;
         int l1ideps = 16;
 
@@ -408,34 +437,89 @@ class FLEXUS_COMPONENT(uFetch)
         FETCH_DBG("--------------FINISH FETCHING------------------------");
     }
 
-    void prefetchNextLines(uint64_t demand_line, VirtualMemoryAddress pc, int& l1ireqs)
+    bool shouldTriggerNextLinePrefetch(bool accessed, bool demand_missed) const
+    {
+        // Waiting in S_MISS/S_DONE without a new access is never a new trigger.
+        if (!accessed)
+            return false;
+
+        switch (thePrefetchTrigger) {
+            case PrefetchTrigger::OnAccess:
+                return true;
+            case PrefetchTrigger::OnMiss:
+                return demand_missed;
+        }
+        return false;
+    }
+
+    void enqueueNextLines(uint64_t demand_line, VirtualMemoryAddress pc)
     {
         // Match the 4 KiB page granularity used by fetch translation.
         constexpr uint64_t page_size = 4096;
         uint64_t pa = demand_line & theBlockMask;
 
-        // Restart the X-block window for each demand trigger. Cached/outstanding
-        // blocks still count toward X; lookup/request capacity is shared this cycle.
+        // N counts physical positions, including duplicates/outstanding lines.
+        // Enqueue only: cache tags are checked later using their own cycle budget.
         for (uint32_t line = 0; line < theNextLineCount; ++line) {
-            if (l1ireqs == 0 || theFAM.size() >= cfg.MissQueueSize)
-                break;
-
             // Check before adding, so even the final physical page cannot wrap.
             if (cfg.ICacheLineSize >= page_size - (pa & (page_size - 1)))
                 break;
             pa += cfg.ICacheLineSize;
 
-            if (theFAM.count(pa))
+            if (theFAM.count(pa) || theQueuedPrefetches.count(pa))
                 continue;
 
-            --l1ireqs;
-            if (theI.lookup(pa))
-                continue;
+            // Keep older candidates when full; discard the rest of this trigger
+            // without delaying demand fetching.
+            if (thePrefetchQueue.size() >= thePrefetchQueueSize)
+                break;
 
-            send_fetch(PhysicalMemoryAddress(pa), pc, false);
-            theFAM.insert(pa);
-            ++thePrefetches;
-            ++theL1MissesAll;
+            thePrefetchQueue.push_back({pa, pc});
+            theQueuedPrefetches.insert(pa);
+        }
+    }
+
+    void issueNextLinePrefetches(uint32_t unused_fetch_lookups)
+    {
+        // Keep fetch capacity separate: a tag hit needs only a probe, while a
+        // tag miss also needs a remaining demand-port slot to issue its fetch.
+        // Spare demand slots still augment tag capacity as well. This budget
+        // arithmetic performs no access and does not update LRU state.
+        // Widen before addition so the two uint32_t budgets cannot overflow.
+        uint64_t tag_lookups = uint64_t(theTagLookupsPerCycle) + unused_fetch_lookups;
+        uint32_t fetch_accesses = unused_fetch_lookups;
+
+        // Service the FIFO even when no demand access/delivery occurred this
+        // cycle. Exhausting either budget leaves work queued for a later cycle.
+        while (!thePrefetchQueue.empty()) {
+            const auto& request = thePrefetchQueue.front();
+
+            // A demand or an earlier prefetch may have requested this line
+            // since it was enqueued. Merging needs no cache tag probe.
+            if (!theFAM.count(request.pa)) {
+                if (tag_lookups == 0)
+                    break;
+                --tag_lookups;
+
+                // Presence only: no demand data port or replacement-state update.
+                if (!theI.lookupTag(request.pa)) {
+                    // A miss requires both fetch bandwidth and an outstanding-
+                    // request slot. If either is unavailable, stop at this FIFO
+                    // head and retry later, including a fresh tag check in case
+                    // the line has arrived in the meantime.
+                    if (fetch_accesses == 0 || theFAM.size() >= cfg.MissQueueSize)
+                        break;
+
+                    --fetch_accesses;
+                    send_fetch(PhysicalMemoryAddress(request.pa), request.pc, false);
+                    theFAM.insert(request.pa);
+                    ++thePrefetches;
+                    ++theL1MissesAll;
+                }
+            }
+
+            theQueuedPrefetches.erase(request.pa);
+            thePrefetchQueue.pop_front();
         }
     }
 
@@ -467,53 +551,13 @@ class FLEXUS_COMPONENT(uFetch)
             }
         }
 
-        std::unordered_set<uint64_t> l1ihits;
         pFetchBundle bundle;
-        std::vector<std::pair<uint64_t, VirtualMemoryAddress>> demand_accesses;
 
-        // Only the current head can access the cache or initiate a demand miss.
-        // Removing a delivered entry exposes the next head in this same cycle.
-        while (fetches > 0 && !theFAQ.empty()) {
+        // Deliver the already-completed prefix first. Cache accesses below may
+        // set S_DONE, but cannot deliver those entries until the next cycle.
+        // Delivery itself performs no additional modeled cache access.
+        while (fetches > 0 && !theFAQ.empty() && theFAQ.front().state == S_DONE) {
             auto& f = theFAQ.front();
-
-            if (f.state == S_ITLB_RESP) {
-                if (l1ideps == 0)
-                    break;
-                if (!cfg.PerfectICache)
-                    --l1ideps;
-
-                bool accessed = false;
-                if (cfg.PerfectICache || l1ihits.count(f.pa)) {
-                    f.state = S_DONE;
-                    // accessed = true;
-                } else if (theFAM.count(f.pa)) {
-                    f.state = S_MISS;
-                    // accessed = true;
-                } else if (l1ireqs) {
-                    --l1ireqs;
-                    accessed = true;
-                    if (theI.lookup(f.pa)) {
-                        ++theHits;
-                        l1ihits.insert(f.pa);
-                        f.state = S_DONE;
-                    } else if (theFAM.size() < cfg.MissQueueSize) {
-                        ++theL1Misses;
-                        ++theL1MissesAll;
-                        send_fetch(PhysicalMemoryAddress(f.pa), f.addr.theAddress, true);
-                        theFAM.insert(f.pa);
-                        f.state = S_MISS;
-                    }
-                }
-
-                // Record logical instruction accesses, including shared hits
-                // and coalesced misses. Waiting without an access is not a trigger.
-                if (accessed && theNextLinePrefetching && !cfg.PerfectICache)
-                    demand_accesses.emplace_back(f.pa, f.addr.theAddress);
-            }
-
-            if (f.state != S_DONE)
-                break;
-
             // Preserve the existing S_DONE semantics, including page faults:
             // no additional residency check is performed before delivery.
             if (!bundle.get()) {
@@ -528,14 +572,79 @@ class FLEXUS_COMPONENT(uFetch)
             --fetches;
         }
 
+        // Only the current head initiates a demand access. This stage is
+        // independent of delivery capacity: it can prepare the next head even
+        // after finst is exhausted, overlapping lookup and delivery as a pipeline.
+        if (!theFAQ.empty() && theFAQ.front().state == S_ITLB_RESP) {
+            auto& f = theFAQ.front();
+            if (!cfg.PerfectICache)
+                --l1ideps;
+            bool accessed = false;
+            bool demand_missed = false;
+
+            // Match doFetch: a perfect I-cache bypasses tag/data access, pending
+            // misses, and cache budgets. Delivery still waits until next cycle.
+            if (cfg.PerfectICache) {
+                f.state = S_DONE;
+            } else if (theFAM.count(f.pa)) {
+                f.state = S_MISS;
+                accessed = true;
+                // Joining an outstanding request is still a demand miss, even
+                // when no new request (or miss-counter increment) is needed.
+                demand_missed = true;
+            } else if (l1ireqs) {
+                --l1ireqs;
+                accessed = true;
+                if (theI.lookup(f.pa)) {
+                    ++theHits;
+                    f.state = S_DONE;
+                } else {
+                    // A detected miss does not create an OnMiss trigger if no
+                    // outstanding-request slot is available yet.
+                    if (theFAM.size() < cfg.MissQueueSize) {
+                        demand_missed = true;
+                        ++theL1Misses;
+                        ++theL1MissesAll;
+                        send_fetch(PhysicalMemoryAddress(f.pa), f.addr.theAddress, true);
+                        theFAM.insert(f.pa);
+                        f.state = S_MISS;
+                    }
+                }
+            }
+
+            // One line access also serves consecutive translated instructions
+            // on that line. This preserves multi-instruction delivery next cycle
+            // without giving younger lines their own demand cache lookups.
+            // With a perfect I-cache, all consecutive translated entries are
+            // ready regardless of line, without consuming the entry-check budget.
+            if (f.state == S_DONE || f.state == S_MISS) {
+                auto t = theFAQ.begin();
+                for (++t; t != theFAQ.end() && l1ideps > 0; ++t) {
+                    if (t->state != S_ITLB_RESP || (!cfg.PerfectICache && t->pa != f.pa))
+                        break;
+                    if (!cfg.PerfectICache)
+                        --l1ideps;
+                    t->state = f.state;
+                }
+            }
+
+            // Trigger selection only controls candidate generation. The FIFO
+            // continues draining on later cycles without another trigger.
+            // Instructions sharing this line have the same N targets, so their
+            // candidates are represented by this one enqueue operation.
+            if (theNextLinePrefetching && !cfg.PerfectICache &&
+                shouldTriggerNextLinePrefetch(accessed, demand_missed))
+                enqueueNextLines(f.pa, f.addr.theAddress);
+        }
+
         if (bundle.get())
             FLEXUS_CHANNEL_ARRAY(FetchBundleOut, idx) << bundle;
 
-        // Demand accesses have priority over prefetch probes. Every accessed
-        // instruction contributes a trigger, even if its miss prevented delivery.
-        // The helper shares the remaining lookup and outstanding-request budgets.
-        for (const auto& access : demand_accesses)
-            prefetchNextLines(access.first, access.second, l1ireqs);
+        // Demand has first use of MaxFetchLines. Remaining slots bound prefetch
+        // fetch issuance and also augment the independent tag-probe budget for
+        // this cycle. A tag hit does not consume a fetch slot.
+        if (theNextLinePrefetching && !cfg.PerfectICache)
+            issueNextLinePrefetches(l1ireqs);
     }
 
     void sendMisses()

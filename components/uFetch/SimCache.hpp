@@ -98,6 +98,12 @@ struct SimCache
         return false; // not present
     }
 
+    // Prefetch filtering checks tags without a demand data access or LRU update.
+    bool lookupTag(uint64_t addr)
+    {
+        return theCache.find(addr >> theCacheBlockShift) != theCache.end();
+    }
+
     bool inval(uint64_t addr)
     {
         addr              = addr >> theCacheBlockShift;
