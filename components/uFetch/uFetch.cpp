@@ -5,9 +5,11 @@
 #include "SimCache.hpp"
 #include "components/MTManager/MTManager.hpp"
 #include "components/uArch/uArchInterfaces.hpp"
+#include "core/exception.hpp"
 #include "core/stats.hpp"
 
 #include <deque>
+#include <limits>
 #include <unordered_map>
 #include <utility>
 
@@ -64,30 +66,19 @@ class FLEXUS_COMPONENT(uFetch)
     std::unordered_set<uint64_t> theTAM;
     std::unordered_set<uint64_t> theFAM;
 
-    // Temporary mode settings; promote these to component parameters later.
-    // false: existing FDIP path. true: head-only demand path below.
+    // Keep the original local settings used by the fetch implementation.
+    // Their configured values are loaded once in initialize().
     bool theUseNextLinePath = false;
-
-    // In the head-only path, false selects no prefetching.
     bool theNextLinePrefetching = true;
 
-    // Local trigger selection; add future policies here and in
-    // shouldTriggerNextLinePrefetch(), then promote the setting to Flexus config.
     enum class PrefetchTrigger : uint32_t {
         OnAccess = 0,
         OnMiss = 1,
     };
-
     PrefetchTrigger thePrefetchTrigger = PrefetchTrigger::OnAccess;
 
-    // Per-trigger lookahead: enqueue the next N physical blocks in the same page.
     uint32_t theNextLineCount = 1;
-
-    // Local tag_lookup parameter: dedicated prefetch tag probes per cycle.
-    // Unused MaxFetchLines slots are added after demand; promote to config later.
     uint32_t theTagLookupsPerCycle = 1;
-
-    // Maximum number of unissued candidates; issued requests use theFAM instead.
     uint32_t thePrefetchQueueSize = 16;
 
     struct PrefetchRequest {
@@ -426,10 +417,10 @@ class FLEXUS_COMPONENT(uFetch)
         int tlbreqs = 4; //this should be parametrized
         int l1ireqs = cfg.MaxFetchLines; // ufetch ports
 
-        // these should both be prarameterized
-        // number of all entries that can be checked
+        // Translation-entry checks remain local; cache-entry checks are shared
+        // with the next-line path through the component configuration.
         int tlbdeps = 16;
-        int l1ideps = 16;
+        int l1ideps = cfg.MaxICacheEntryChecks;
 
         // Get the number of fetches that can be sent this cycle based on 
         // instruction queue availability and the max fetch instructions config parameter
@@ -673,7 +664,7 @@ class FLEXUS_COMPONENT(uFetch)
         int tlbreqs = 4;
         int tlbdeps = 16;
         int l1ireqs = cfg.MaxFetchLines;
-        int l1ideps = 4;
+        int l1ideps = cfg.MaxICacheEntryChecks;
 
         // Translation may still run ahead, independently of demand delivery.
         for (auto& f : theFAQ) {
@@ -876,6 +867,23 @@ class FLEXUS_COMPONENT(uFetch)
     void initialize()
     {
         DBG_Assert(cfg.Threads == 1);
+
+        if (cfg.PrefetchTrigger != static_cast<uint32_t>(PrefetchTrigger::OnAccess) &&
+            cfg.PrefetchTrigger != static_cast<uint32_t>(PrefetchTrigger::OnMiss))
+            throw Flexus::Core::FlexusException("uFetch PrefetchTrigger must be 0 (OnAccess) or 1 (OnMiss)");
+        // Both fetch paths keep their original int cycle budget. Require a
+        // positive, representable configured limit before assigning that budget.
+        if (cfg.MaxICacheEntryChecks == 0 || cfg.MaxICacheEntryChecks > std::numeric_limits<int>::max())
+            throw Flexus::Core::FlexusException("uFetch MaxICacheEntryChecks must be between 1 and INT_MAX");
+
+        // Feed configuration into the original settings; keep the fetch logic
+        // using its existing names and typed trigger selection.
+        theUseNextLinePath = cfg.UseNextLinePath;
+        theNextLinePrefetching = cfg.NextLinePrefetching;
+        thePrefetchTrigger = static_cast<PrefetchTrigger>(cfg.PrefetchTrigger);
+        theNextLineCount = cfg.NextLineCount;
+        theTagLookupsPerCycle = cfg.TagLookupsPerCycle;
+        thePrefetchQueueSize = cfg.PrefetchQueueSize;
 
         theI.init(cfg.Size, cfg.Associativity, cfg.ICacheLineSize, statName());
 

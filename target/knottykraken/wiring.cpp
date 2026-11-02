@@ -68,6 +68,13 @@ bool initializeParameters() {
   theuFetchCfg.ICacheLineSize.initialize(64);
   theuFetchCfg.PerfectICache.initialize(true);
   theuFetchCfg.PrefetchEnabled.initialize(true);
+  theuFetchCfg.UseNextLinePath.initialize(false);
+  theuFetchCfg.NextLinePrefetching.initialize(true);
+  theuFetchCfg.PrefetchTrigger.initialize(0);
+  theuFetchCfg.NextLineCount.initialize(1);
+  theuFetchCfg.TagLookupsPerCycle.initialize(1);
+  theuFetchCfg.PrefetchQueueSize.initialize(16);
+  theuFetchCfg.MaxICacheEntryChecks.initialize(16);
   theuFetchCfg.Size.initialize(65536);
   theuFetchCfg.Associativity.initialize(2);
   theuFetchCfg.MissQueueSize.initialize(4);
