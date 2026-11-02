@@ -8,6 +8,7 @@
 #include "core/stats.hpp"
 
 #include <deque>
+#include <unordered_map>
 #include <utility>
 
 #define FLEXUS_BEGIN_COMPONENT uFetch
@@ -41,6 +42,10 @@ class FLEXUS_COMPONENT(uFetch)
 
         FetchState state;
         FetchAddr  addr;
+
+        // Next-line measurements only. Keep the first access classification
+        // across stalls, retries, miss completion and eventual delivery.
+        bool accessCounted = false;
 
         boost::intrusive_ptr<TransactionTracker> tracker;
 
@@ -92,6 +97,20 @@ class FLEXUS_COMPONENT(uFetch)
     std::deque<PrefetchRequest> thePrefetchQueue;
     std::unordered_set<uint64_t> theQueuedPrefetches;
 
+    enum class RequestOrigin { Demand, Prefetch };
+    enum class NextLineAccess { Hit, PrefetchTimely, Miss, PrefetchNotTimely, Fault };
+
+    struct ResidentLineInfo {
+        RequestOrigin origin;
+        bool accessed;
+    };
+
+    // Measurement-only sidecars, keyed by aligned physical cache-line address.
+    // They never control requests, cache replacement, or cycle budgets. An
+    // outstanding request retains its original issuer when demand joins it.
+    std::unordered_map<uint64_t, RequestOrigin> theNextLineOutstandingOrigins;
+    std::unordered_map<uint64_t, ResidentLineInfo> theNextLineResidentLines;
+
     // ================== STATS ==================
     Flexus::Stat::StatCounter theFetchAccesses;
     Flexus::Stat::StatCounter theFetches;
@@ -106,6 +125,17 @@ class FLEXUS_COMPONENT(uFetch)
     Flexus::Stat::StatMax theMaxOutstandingEvicts;
     Flexus::Stat::StatCounter theAvailableFetchSlots;
     Flexus::Stat::StatCounter theUsedFetchSlots;
+
+    // Per-FAQ-instruction outcomes for the next-line path only. Timely is a
+    // subset of normal hits; not-timely is a subset of normal misses. Existing
+    // Hits/L1Misses/L1MissesAll retain their lookup/request-based meanings.
+    Flexus::Stat::StatCounter theNextLineInstructionsCounted;
+    Flexus::Stat::StatCounter theNextLineNormalHits;
+    Flexus::Stat::StatCounter theNextLineNormalMisses;
+    Flexus::Stat::StatCounter theNextLinePrefetchTimely;
+    Flexus::Stat::StatCounter theNextLinePrefetchNotTimely;
+    Flexus::Stat::StatCounter theNextLineOverFetch;
+    Flexus::Stat::StatCounter theNextLineFaults;
 
     std::set<uint64_t> theEvictSet;
 
@@ -137,6 +167,13 @@ class FLEXUS_COMPONENT(uFetch)
       , theMaxOutstandingEvicts(statName() + "-MaxEvicts")
       , theAvailableFetchSlots(statName() + "-FetchSlotsPossible")
       , theUsedFetchSlots(statName() + "-FetchSlotsUsed")
+      , theNextLineInstructionsCounted(statName() + "-NextLine-InstructionsCounted")
+      , theNextLineNormalHits(statName() + "-NextLine-normal_hit")
+      , theNextLineNormalMisses(statName() + "-NextLine-normal_miss")
+      , theNextLinePrefetchTimely(statName() + "-NextLine-prefetch_timely")
+      , theNextLinePrefetchNotTimely(statName() + "-NextLine-prefetch_not_timely")
+      , theNextLineOverFetch(statName() + "-NextLine-over_fetch")
+      , theNextLineFaults(statName() + "-NextLine-instruction_fault")
     {
     }
 
@@ -235,6 +272,109 @@ class FLEXUS_COMPONENT(uFetch)
     FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(ResyncIn);
 
     // =============================== LOGIC =========================
+
+    NextLineAccess classifyNextLineAccess(uint64_t pa, bool hit) const
+    {
+        pa &= theBlockMask;
+        if (hit) {
+            auto resident = theNextLineResidentLines.find(pa);
+            return resident != theNextLineResidentLines.end() &&
+                       resident->second.origin == RequestOrigin::Prefetch
+                     ? NextLineAccess::PrefetchTimely : NextLineAccess::Hit;
+        }
+
+        // Outstanding provenance takes precedence over a queued duplicate. A
+        // prefetch candidate cannot claim a miss already issued by demand.
+        if (theFAM.count(pa)) {
+            auto pending = theNextLineOutstandingOrigins.find(pa);
+            return pending != theNextLineOutstandingOrigins.end() &&
+                       pending->second == RequestOrigin::Prefetch
+                     ? NextLineAccess::PrefetchNotTimely : NextLineAccess::Miss;
+        }
+        return theQueuedPrefetches.count(pa)
+                 ? NextLineAccess::PrefetchNotTimely : NextLineAccess::Miss;
+    }
+
+    void markNextLineLineAccessed(uint64_t pa)
+    {
+        if (!theUseNextLinePath)
+            return;
+        pa &= theBlockMask;
+        // Lines restored from an existing checkpoint have no saved prefetch
+        // provenance; treat them as demand-origin lines when first accessed.
+        auto resident = theNextLineResidentLines.emplace(pa, ResidentLineInfo{RequestOrigin::Demand, false});
+        resident.first->second.accessed = true;
+    }
+
+    void recordNextLineAccess(FetchInfo& f, NextLineAccess access)
+    {
+        if (!theUseNextLinePath)
+            return;
+
+        // Even a previously counted miss may retry and hit a newly installed
+        // line. Record that residence's use without changing the first outcome.
+        if (!cfg.PerfectICache && (access == NextLineAccess::Hit || access == NextLineAccess::PrefetchTimely))
+            markNextLineLineAccessed(f.pa);
+        if (f.accessCounted)
+            return;
+        f.accessCounted = true;
+        ++theNextLineInstructionsCounted;
+
+        switch (access) {
+            case NextLineAccess::PrefetchTimely:
+                ++theNextLinePrefetchTimely;
+                ++theNextLineNormalHits;
+                break;
+            case NextLineAccess::Hit:
+                ++theNextLineNormalHits;
+                break;
+            case NextLineAccess::PrefetchNotTimely:
+                ++theNextLinePrefetchNotTimely;
+                ++theNextLineNormalMisses;
+                break;
+            case NextLineAccess::Miss:
+                ++theNextLineNormalMisses;
+                break;
+            case NextLineAccess::Fault:
+                // A translation-fault placeholder never accessed the I-cache.
+                ++theNextLineFaults;
+                break;
+        }
+    }
+
+    void recordNextLineRequest(uint64_t pa, RequestOrigin origin)
+    {
+        if (theUseNextLinePath)
+            theNextLineOutstandingOrigins.emplace(pa & theBlockMask, origin);
+    }
+
+    void recordNextLineFill(uint64_t pa)
+    {
+        if (!theUseNextLinePath)
+            return;
+        pa &= theBlockMask;
+        auto pending = theNextLineOutstandingOrigins.find(pa);
+        const RequestOrigin origin = pending == theNextLineOutstandingOrigins.end()
+                                       ? RequestOrigin::Demand : pending->second;
+        // Only an actual insertion starts a residence. A duplicate reply must
+        // not reset a resident line's origin or its accessed bit.
+        theNextLineResidentLines.emplace(pa, ResidentLineInfo{origin, false});
+        theNextLineOutstandingOrigins.erase(pa);
+    }
+
+    void recordNextLineRemoval(uint64_t pa)
+    {
+        if (!theUseNextLinePath)
+            return;
+        auto resident = theNextLineResidentLines.find(pa & theBlockMask);
+        if (resident == theNextLineResidentLines.end())
+            return;
+        // Eviction and invalidation both end a residence. Still-resident unused
+        // lines are not charged at shutdown: this measures actual removals.
+        if (resident->second.origin == RequestOrigin::Prefetch && !resident->second.accessed)
+            ++theNextLineOverFetch;
+        theNextLineResidentLines.erase(resident);
+    }
 
     Processor cpu(index_t anIndex) {
         return Processor::getProcessor(flexusIndex() * cfg.Threads + anIndex);
@@ -512,6 +652,7 @@ class FLEXUS_COMPONENT(uFetch)
 
                     --fetch_accesses;
                     send_fetch(PhysicalMemoryAddress(request.pa), request.pc, false);
+                    recordNextLineRequest(request.pa, RequestOrigin::Prefetch);
                     theFAM.insert(request.pa);
                     ++thePrefetches;
                     ++theL1MissesAll;
@@ -532,7 +673,7 @@ class FLEXUS_COMPONENT(uFetch)
         int tlbreqs = 4;
         int tlbdeps = 16;
         int l1ireqs = cfg.MaxFetchLines;
-        int l1ideps = 16;
+        int l1ideps = 4;
 
         // Translation may still run ahead, independently of demand delivery.
         for (auto& f : theFAQ) {
@@ -558,8 +699,20 @@ class FLEXUS_COMPONENT(uFetch)
         // Delivery itself performs no additional modeled cache access.
         while (fetches > 0 && !theFAQ.empty() && theFAQ.front().state == S_DONE) {
             auto& f = theFAQ.front();
+            // Normal hit/miss outcomes were counted when this entry received
+            // its cache result, including same-line propagation. Faults bypass
+            // that stage; classify them separately rather than inventing a hit.
+            if (!f.accessCounted) {
+                if (f.pa == ~uint64_t(0))
+                    recordNextLineAccess(f, NextLineAccess::Fault);
+                else if (cfg.PerfectICache)
+                    recordNextLineAccess(f, NextLineAccess::Hit);
+                else
+                    recordNextLineAccess(f, classifyNextLineAccess(f.pa, theI.lookupTag(f.pa)));
+            }
             // Preserve the existing S_DONE semantics, including page faults:
-            // no additional residency check is performed before delivery.
+            // a measurement-only tag observation cannot block delivery or
+            // issue a new fetch, even if this line has since disappeared.
             if (!bundle.get()) {
                 bundle.reset(new FetchBundle);
                 bundle->coreID = flexusIndex();
@@ -581,14 +734,24 @@ class FLEXUS_COMPONENT(uFetch)
                 --l1ideps;
             bool accessed = false;
             bool demand_missed = false;
+            // Keep the CURRENT access outcome separate from the head's first
+            // counted outcome: a retried miss can later hit, and new followers
+            // sharing that hit must be counted as hits themselves.
+            NextLineAccess current_access = NextLineAccess::Hit;
 
             // Match doFetch: a perfect I-cache bypasses tag/data access, pending
             // misses, and cache budgets. Delivery still waits until next cycle.
             if (cfg.PerfectICache) {
+                recordNextLineAccess(f, current_access);
                 f.state = S_DONE;
             } else if (theFAM.count(f.pa)) {
+                //requests that reach here must be prefetches
+                current_access = classifyNextLineAccess(f.pa, false);
+                recordNextLineAccess(f, current_access);
                 f.state = S_MISS;
                 accessed = true;
+                ++theL1Misses;
+                ++theL1MissesAll;
                 // Joining an outstanding request is still a demand miss, even
                 // when no new request (or miss-counter increment) is needed.
                 demand_missed = true;
@@ -596,16 +759,25 @@ class FLEXUS_COMPONENT(uFetch)
                 --l1ireqs;
                 accessed = true;
                 if (theI.lookup(f.pa)) {
+                    current_access = classifyNextLineAccess(f.pa, true);
+                    recordNextLineAccess(f, current_access);
                     ++theHits;
                     f.state = S_DONE;
                 } else {
+                    // Count the detected miss even if admission is blocked.
+                    // Classify before inserting our own demand request, so a
+                    // queued-only prefetch still counts as not timely.
+                    
                     // A detected miss does not create an OnMiss trigger if no
                     // outstanding-request slot is available yet.
                     if (theFAM.size() < cfg.MissQueueSize) {
+                        current_access = classifyNextLineAccess(f.pa, false);
+                        recordNextLineAccess(f, current_access);
                         demand_missed = true;
                         ++theL1Misses;
                         ++theL1MissesAll;
                         send_fetch(PhysicalMemoryAddress(f.pa), f.addr.theAddress, true);
+                        recordNextLineRequest(f.pa, RequestOrigin::Demand);
                         theFAM.insert(f.pa);
                         f.state = S_MISS;
                     }
@@ -624,6 +796,9 @@ class FLEXUS_COMPONENT(uFetch)
                         break;
                     if (!cfg.PerfectICache)
                         --l1ideps;
+                    // Every instruction sharing this access receives exactly
+                    // one outcome, before a miss reply can turn it into S_DONE.
+                    // recordNextLineAccess(*t, current_access);
                     t->state = f.state;
                 }
             }
@@ -728,7 +903,13 @@ class FLEXUS_COMPONENT(uFetch)
         sendMisses();
     }
 
-    bool invalidate(PhysicalMemoryAddress const& anAddress) { return theI.inval(anAddress); }
+    bool invalidate(PhysicalMemoryAddress const& anAddress)
+    {
+        const bool invalidated = theI.inval(anAddress);
+        if (invalidated && theUseNextLinePath)
+            recordNextLineRemoval(anAddress);
+        return invalidated;
+    }
     void issueEvict(PhysicalMemoryAddress anAddress)
     {
         if (!cfg.CleanEvict || anAddress == 0) return;
@@ -757,8 +938,21 @@ class FLEXUS_COMPONENT(uFetch)
 
         if (!theI.lookup(anAddress)) {
             ++theAllocations;
-            return PhysicalMemoryAddress(theI.insert(anAddress));
+            if (!theUseNextLinePath)
+                return PhysicalMemoryAddress(theI.insert(anAddress));
+
+            // Observe actual array replacement, independent of CleanEvict and
+            // including victim address zero, whose old return value is ambiguous.
+            bool replaced = false;
+            const uint64_t victim = theI.insert(anAddress, &replaced);
+            if (replaced)
+                recordNextLineRemoval(victim);
+            recordNextLineFill(anAddress);
+            return PhysicalMemoryAddress(victim);
         }
+
+        if (theUseNextLinePath)
+            theNextLineOutstandingOrigins.erase(uint64_t(anAddress) & theBlockMask);
 
         return PhysicalMemoryAddress(0);
     }
@@ -813,6 +1007,11 @@ class FLEXUS_COMPONENT(uFetch)
                         if (f.pa != reply->address())
                             continue;
 
+                        // A fill serving an active demand is used, even though
+                        // its instructions were already counted as misses. If
+                        // all waiters were squashed, the new residence stays unused.
+                        if (theUseNextLinePath)
+                            markNextLineLineAccessed(f.pa);
                         f.state   = S_DONE;
                         f.tracker = tracker;
 

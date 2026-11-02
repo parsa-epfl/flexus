@@ -70,8 +70,13 @@ struct SimCache
         ifs.close();
     }
 
-    uint64_t insert(uint64_t addr)
+    // Optional measurement output: zero is the existing return for both no
+    // replacement and eviction of physical line zero. Preserve that behavior
+    // while allowing next-line statistics to distinguish the two cases.
+    uint64_t insert(uint64_t addr, bool* replaced = nullptr)
     {
+        if (replaced)
+            *replaced = false;
         uint64_t ret_val  = 0;
         addr              = addr >> theCacheBlockShift;
         SimCacheIter iter = theCache.find(addr);
@@ -80,6 +85,8 @@ struct SimCache
             return ret_val; // already present
         }
         if ((int)theCache.size() >= theCacheAssoc) {
+            if (replaced)
+                *replaced = true;
             ret_val = theCache.front_key() << theCacheBlockShift;
             theCache.pop_front();
         }
