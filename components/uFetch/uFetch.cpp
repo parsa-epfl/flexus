@@ -66,6 +66,11 @@ class FLEXUS_COMPONENT(uFetch)
     std::unordered_set<uint64_t> theTAM;
     std::unordered_set<uint64_t> theFAM;
 
+    // Measurement only: lines whose current absence has already caused a head
+    // miss. Keep these across squash/retries; a fill ends the missing episode.
+    // A later eviction and demand miss for the same line can then count again.
+    std::unordered_set<uint64_t> theCountedL1Misses;
+
     // Keep the original local settings used by the fetch implementation.
     // Their configured values are loaded once in initialize().
     bool theUseNextLinePath = false;
@@ -118,8 +123,9 @@ class FLEXUS_COMPONENT(uFetch)
     Flexus::Stat::StatCounter theUsedFetchSlots;
 
     // Per-FAQ-instruction outcomes for the next-line path only. Timely is a
-    // subset of normal hits; not-timely is a subset of normal misses. Existing
-    // Hits/L1Misses/L1MissesAll retain their lookup/request-based meanings.
+    // subset of normal hits; not-timely is a subset of normal misses. These are
+    // separate from the line-based head misses counted by theL1Misses and the
+    // existing lookup/request accounting in Hits and L1MissesAll.
     Flexus::Stat::StatCounter theNextLineInstructionsCounted;
     Flexus::Stat::StatCounter theNextLineNormalHits;
     Flexus::Stat::StatCounter theNextLineNormalMisses;
@@ -232,7 +238,9 @@ class FLEXUS_COMPONENT(uFetch)
         theQueuedPrefetches.clear();
         //theFAM should not be cleared here, since it is used to track the addresses that
         // are currently being fetched and squashing should not affect that.
-        //theFAM.clear();
+        theFAM.clear();
+        // Also retain theCountedL1Misses: a redirected head can join the same
+        // still-missing line without creating a second visible miss for it.
     }
 
     // FetchMissIn
@@ -263,6 +271,17 @@ class FLEXUS_COMPONENT(uFetch)
     FLEXUS_PORT_ARRAY_ALWAYS_AVAILABLE(ResyncIn);
 
     // =============================== LOGIC =========================
+
+    void recordL1Miss(uint64_t pa)
+    {
+        // Call only when the actual FAQ head observes a missing cache line.
+        // This does not access the cache or change fetch timing/resources.
+        // Fault placeholders and the perfect-cache model are not L1-I misses.
+        if (cfg.PerfectICache || pa == ~uint64_t(0))
+            return;
+        if (theCountedL1Misses.insert(pa & theBlockMask).second)
+            ++theL1Misses;
+    }
 
     NextLineAccess classifyNextLineAccess(uint64_t pa, bool hit) const
     {
@@ -314,14 +333,14 @@ class FLEXUS_COMPONENT(uFetch)
         switch (access) {
             case NextLineAccess::PrefetchTimely:
                 ++theNextLinePrefetchTimely;
-                ++theNextLineNormalHits;
+                // ++theNextLineNormalHits;
                 break;
             case NextLineAccess::Hit:
                 ++theNextLineNormalHits;
                 break;
             case NextLineAccess::PrefetchNotTimely:
                 ++theNextLinePrefetchNotTimely;
-                ++theNextLineNormalMisses;
+                // ++theNextLineNormalMisses;
                 break;
             case NextLineAccess::Miss:
                 ++theNextLineNormalMisses;
@@ -489,9 +508,13 @@ class FLEXUS_COMPONENT(uFetch)
                         if (cfg.PerfectICache || l1ihits.count(pa))
                             f.state = S_DONE;
 
-                        else if (theFAM.count(pa))
+                        else if (theFAM.count(pa)) {
                             f.state = S_MISS;
+                            if (t == theFAQ.begin())
+                                recordL1Miss(pa);
+                            theL1MissesAll++;
 
+                        }
                         else if (l1ireqs) {
                             l1ireqs--;
 
@@ -500,21 +523,33 @@ class FLEXUS_COMPONENT(uFetch)
                                 l1ihits.insert(pa);
                                 f.state = S_DONE;
 
-                            } else if (theFAM.size() < cfg.MissQueueSize) {
-                                is_head = false;
-                                if (t == theFAQ.begin()) {
-                                    theL1Misses++;
-                                    is_head = true;
-                                }
-                                theL1MissesAll++;
-                                send_fetch(pa, f.addr.theAddress, is_head);
+                            } else {
+                                // The head sees a miss even if there is no room
+                                // to issue its request yet. Retries count once.
+                                is_head = (t == theFAQ.begin());
+                                if (is_head)
+                                    recordL1Miss(pa);
+                                if (theFAM.size() < cfg.MissQueueSize) {
+                                    theL1MissesAll++;
+                                    send_fetch(pa, f.addr.theAddress, is_head);
 
-                                theFAM.insert(pa);
-                                f.state = S_MISS;
+                                    theFAM.insert(pa);
+                                    f.state = S_MISS;
+                                }
                             }
                         }
                     }
 
+                    fetches = 0;
+                    t++;
+                    continue;
+
+                case S_MISS:
+                    // A younger FDIP request can reach the head before its fill.
+                    // Count that demand miss now, even though no new lookup or
+                    // request is needed. Keep scanning younger prefetch entries.
+                    if (t == theFAQ.begin())
+                        recordL1Miss(f.pa);
                     fetches = 0;
                     t++;
                     continue;
@@ -719,6 +754,11 @@ class FLEXUS_COMPONENT(uFetch)
         // Only the current head initiates a demand access. This stage is
         // independent of delivery capacity: it can prepare the next head even
         // after finst is exhausted, overlapping lookup and delivery as a pipeline.
+        // Observe waiting heads too; line-based deduplication prevents a count
+        // on every stalled cycle or after a squash rejoins the same request.
+        if (!theFAQ.empty() && theFAQ.front().state == S_MISS)
+            recordL1Miss(theFAQ.front().pa);
+
         if (!theFAQ.empty() && theFAQ.front().state == S_ITLB_RESP) {
             auto& f = theFAQ.front();
             if (!cfg.PerfectICache)
@@ -741,10 +781,10 @@ class FLEXUS_COMPONENT(uFetch)
                 recordNextLineAccess(f, current_access);
                 f.state = S_MISS;
                 accessed = true;
-                ++theL1Misses;
+                recordL1Miss(f.pa);
                 ++theL1MissesAll;
-                // Joining an outstanding request is still a demand miss, even
-                // when no new request (or miss-counter increment) is needed.
+                // Joining an outstanding request is still a demand miss; the
+                // shared line record suppresses repeated counts until its fill.
                 demand_missed = true;
             } else if (l1ireqs) {
                 --l1ireqs;
@@ -755,7 +795,9 @@ class FLEXUS_COMPONENT(uFetch)
                     ++theHits;
                     f.state = S_DONE;
                 } else {
-                    // Count the detected miss even if admission is blocked.
+                    // Count the head's missing line even if admission is blocked.
+                    // This observation changes no request/trigger decisions.
+                    recordL1Miss(f.pa);
                     // Classify before inserting our own demand request, so a
                     // queued-only prefetch still counts as not timely.
                     
@@ -765,7 +807,6 @@ class FLEXUS_COMPONENT(uFetch)
                         current_access = classifyNextLineAccess(f.pa, false);
                         recordNextLineAccess(f, current_access);
                         demand_missed = true;
-                        ++theL1Misses;
                         ++theL1MissesAll;
                         send_fetch(PhysicalMemoryAddress(f.pa), f.addr.theAddress, true);
                         recordNextLineRequest(f.pa, RequestOrigin::Demand);
@@ -1030,6 +1071,10 @@ class FLEXUS_COMPONENT(uFetch)
 
                     DBG_(VVerb, (<< "recving fetch " << reply->address() << " wakeup " << n));
                 }
+
+                // The line is available again. End its counted absence even if
+                // all waiters were squashed; a future miss is a new episode.
+                theCountedL1Misses.erase(uint64_t(reply->address()) & theBlockMask);
 
                 // Send an Ack if necessary
                 if (cfg.SendAcks && reply->ackRequired()) {
