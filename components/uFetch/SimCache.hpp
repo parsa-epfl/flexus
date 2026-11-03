@@ -13,7 +13,24 @@ using json = nlohmann::json;
         _x ? (63 - __builtin_clzl(_x)) : 0;                                                                            \
     })
 
-typedef flexus_boost_set_assoc<uint64_t, int> SimCacheArray;
+// Keep provenance with the actual resident tag, so eviction/invalidation also
+// removes its measurement state. These fields never affect replacement.
+enum class FetchOrigin
+{
+    Demand,
+    Prefetch
+};
+
+struct SimCacheLineInfo
+{
+    FetchOrigin origin = FetchOrigin::Demand;
+    // First demand claim for this line lifetime, including one that joined its
+    // outstanding fetch. Carrying that claim through fill prevents a late
+    // prefetch from also becoming timely or over-fetch after a squash.
+    bool used = false;
+};
+
+typedef flexus_boost_set_assoc<uint64_t, SimCacheLineInfo> SimCacheArray;
 typedef SimCacheArray::iterator SimCacheIter;
 
 struct SimCache
@@ -63,6 +80,8 @@ struct SimCache
             for (uint32_t j = 0; j < checkpoint["tags"].at(i).size(); j++) {
                 uint64_t tag  = checkpoint["tags"].at(i).at(j)["tag"];
 
+                // Checkpoints contain tags, not prefetch provenance. Treat a
+                // restored line as demand-origin, awaiting its first observed use.
                 this->insert(((tag << tag_shift) | i) << theCacheBlockShift);
             }
         }
@@ -73,7 +92,10 @@ struct SimCache
     // Optional measurement output: zero is the existing return for both no
     // replacement and eviction of physical line zero. Preserve that behavior
     // while allowing next-line statistics to distinguish the two cases.
-    uint64_t insert(uint64_t addr, bool* replaced = nullptr)
+    uint64_t insert(uint64_t addr,
+                    bool* replaced = nullptr,
+                    SimCacheLineInfo incoming = {},
+                    SimCacheLineInfo* evicted = nullptr)
     {
         if (replaced)
             *replaced = false;
@@ -82,15 +104,18 @@ struct SimCache
         SimCacheIter iter = theCache.find(addr);
         if (iter != theCache.end()) {
             theCache.move_back(iter);
+            // A duplicate reply does not begin a new residence or reset usage.
             return ret_val; // already present
         }
         if ((int)theCache.size() >= theCacheAssoc) {
             if (replaced)
                 *replaced = true;
+            if (evicted)
+                *evicted = theCache.front();
             ret_val = theCache.front_key() << theCacheBlockShift;
             theCache.pop_front();
         }
-        theCache.insert(std::make_pair(addr, 0));
+        theCache.insert(std::make_pair(addr, incoming));
         return ret_val;
     }
 
@@ -111,11 +136,21 @@ struct SimCache
         return theCache.find(addr >> theCacheBlockShift) != theCache.end();
     }
 
-    bool inval(uint64_t addr)
+    // Measurement-only access: finding metadata neither fetches data nor moves
+    // the tag in LRU order. The pointer remains valid until the tag is removed.
+    SimCacheLineInfo* lineInfo(uint64_t addr)
+    {
+        SimCacheIter iter = theCache.find(addr >> theCacheBlockShift);
+        return iter == theCache.end() ? nullptr : &iter->second;
+    }
+
+    bool inval(uint64_t addr, SimCacheLineInfo* removed = nullptr)
     {
         addr              = addr >> theCacheBlockShift;
         SimCacheIter iter = theCache.find(addr);
         if (iter != theCache.end()) {
+            if (removed)
+                *removed = iter->second;
             theCache.erase(iter);
             return true; // invalidated
         }
