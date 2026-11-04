@@ -45,12 +45,17 @@ class FLEXUS_COMPONENT(uFetch)
         FetchState state;
         FetchAddr  addr;
 
-        // Transient next-line measurement state for a detected miss that cannot
+        // Transient measurement state for a detected miss that cannot
         // allocate a FAM entry yet. Once issued, the request/cache line carries
         // the classification, so younger FAQ entries do not each count it again.
         // Squash ends an unissued attempt; there is no surviving request or
         // resident line to associate with a later attempt at that address.
         bool accessCounted = false;
+
+        // FDIP candidate discovery is independent of demand readiness. Once an
+        // entry is covered by demand, queued, or outstanding, discovery skips it
+        // without spending another FAQ-entry check. Queue-full retries stay unseen.
+        bool prefetchSeen = false;
 
         boost::intrusive_ptr<TransactionTracker> tracker;
 
@@ -104,8 +109,8 @@ class FLEXUS_COMPONENT(uFetch)
 
     // A failed translation has no physical cache line. Count consecutive fault
     // placeholders once per virtual cache block, separately from cache outcomes.
-    bool theNextLineFaultActive = false;
-    uint64_t theNextLineFaultLine = 0;
+    bool theFetchFaultActive = false;
+    uint64_t theFetchFaultLine = 0;
 
     // ================== STATS ==================
     Flexus::Stat::StatCounter theFetchAccesses;
@@ -122,18 +127,18 @@ class FLEXUS_COMPONENT(uFetch)
     Flexus::Stat::StatCounter theAvailableFetchSlots;
     Flexus::Stat::StatCounter theUsedFetchSlots;
 
-    // First-demand outcomes per physical line lifetime, next-line path only.
-    // Hit, miss, timely and not-timely are mutually exclusive. The historical
-    // InstructionsCounted name now totals those four LINE outcomes, not FAQ
-    // instructions. Faults and unused-prefetch removals are separate events.
+    // Shared first-demand outcomes per physical line lifetime in both paths.
+    // Hit, miss, timely and not-timely are mutually exclusive. LinesCounted
+    // totals those four outcomes, not FAQ instructions. Faults and unused-
+    // prefetch removals are separate events.
     // None of these counters participates in theL1Misses accounting.
-    Flexus::Stat::StatCounter theNextLineInstructionsCounted;
-    Flexus::Stat::StatCounter theNextLineNormalHits;
-    Flexus::Stat::StatCounter theNextLineNormalMisses;
-    Flexus::Stat::StatCounter theNextLinePrefetchTimely;
-    Flexus::Stat::StatCounter theNextLinePrefetchNotTimely;
-    Flexus::Stat::StatCounter theNextLineOverFetch;
-    Flexus::Stat::StatCounter theNextLineFaults;
+    Flexus::Stat::StatCounter theFetchLinesCounted;
+    Flexus::Stat::StatCounter theFetchNormalHits;
+    Flexus::Stat::StatCounter theFetchNormalMisses;
+    Flexus::Stat::StatCounter theFetchPrefetchTimely;
+    Flexus::Stat::StatCounter theFetchPrefetchNotTimely;
+    Flexus::Stat::StatCounter theFetchOverFetch;
+    Flexus::Stat::StatCounter theFetchFaults;
 
     std::set<uint64_t> theEvictSet;
 
@@ -165,13 +170,13 @@ class FLEXUS_COMPONENT(uFetch)
       , theMaxOutstandingEvicts(statName() + "-MaxEvicts")
       , theAvailableFetchSlots(statName() + "-FetchSlotsPossible")
       , theUsedFetchSlots(statName() + "-FetchSlotsUsed")
-      , theNextLineInstructionsCounted(statName() + "-NextLine-InstructionsCounted")
-      , theNextLineNormalHits(statName() + "-NextLine-normal_hit")
-      , theNextLineNormalMisses(statName() + "-NextLine-normal_miss")
-      , theNextLinePrefetchTimely(statName() + "-NextLine-prefetch_timely")
-      , theNextLinePrefetchNotTimely(statName() + "-NextLine-prefetch_not_timely")
-      , theNextLineOverFetch(statName() + "-NextLine-over_fetch")
-      , theNextLineFaults(statName() + "-NextLine-instruction_fault")
+      , theFetchLinesCounted(statName() + "-FetchTaxonomy-LinesCounted")
+      , theFetchNormalHits(statName() + "-FetchTaxonomy-normal_hit")
+      , theFetchNormalMisses(statName() + "-FetchTaxonomy-normal_miss")
+      , theFetchPrefetchTimely(statName() + "-FetchTaxonomy-prefetch_timely")
+      , theFetchPrefetchNotTimely(statName() + "-FetchTaxonomy-prefetch_not_timely")
+      , theFetchOverFetch(statName() + "-FetchTaxonomy-over_fetch")
+      , theFetchFaults(statName() + "-FetchTaxonomy-instruction_fault")
     {
     }
 
@@ -237,7 +242,7 @@ class FLEXUS_COMPONENT(uFetch)
         // in theFAM until their replies arrive, just like demand requests.
         thePrefetchQueue.clear();
         theQueuedPrefetches.clear();
-        theNextLineFaultActive = false;
+        theFetchFaultActive = false;
         // Changed: squash does not cancel issued requests. Keep their origin
         // and first-demand observation until the reply, avoiding duplicate
         // requests and duplicate line classifications after a redirect.
@@ -286,11 +291,11 @@ class FLEXUS_COMPONENT(uFetch)
             ++theL1Misses;
     }
 
-    void recordNextLineAccess(FetchInfo& f, bool hit)
+    void recordFetchAccess(FetchInfo& f, bool hit)
     {
         // Perfect-cache execution bypasses real tags, requests and residences;
         // it therefore contributes no physical-line access classifications.
-        if (!theUseNextLinePath || cfg.PerfectICache)
+        if (cfg.PerfectICache)
             return;
 
         bool counted = f.accessCounted;
@@ -318,47 +323,49 @@ class FLEXUS_COMPONENT(uFetch)
         if (counted)
             return;
 
-        ++theNextLineInstructionsCounted;
+        ++theFetchLinesCounted;
         if (hit) {
             if (prefetch)
-                ++theNextLinePrefetchTimely;
+                ++theFetchPrefetchTimely;
             else
-                ++theNextLineNormalHits;
+                ++theFetchNormalHits;
         } else {
             // A queued candidate has not issued a request. Only the actual
             // outstanding issuer can make a demand miss a late prefetch.
             if (prefetch)
-                ++theNextLinePrefetchNotTimely;
+                ++theFetchPrefetchNotTimely;
             else
-                ++theNextLineNormalMisses;
+                ++theFetchNormalMisses;
         }
     }
 
-    void recordNextLineRequest(uint64_t pa, FetchOrigin origin)
+    void trackOutstandingFetch(uint64_t pa, FetchOrigin origin)
     {
-        const bool observed = theUseNextLinePath && origin == FetchOrigin::Demand;
+        // Both paths classify a demand miss before issuing it. Carry that
+        // observation in FAM across stalls/squashes; prefetches begin unobserved.
+        const bool observed = origin == FetchOrigin::Demand;
         theFAM.emplace(pa & theBlockMask, PendingFetch{origin, observed});
     }
 
-    void recordNextLineFault(const FetchInfo& f)
+    void recordFetchFault(const FetchInfo& f)
     {
         // Fault placeholders carry pa == ~0, not a physical line address.
         // Group consecutive delivered placeholders by their virtual cache line
         // rather than treating all faults as one physical line or counting each
         // instruction. A valid delivery or squash ends this fault episode.
         const uint64_t line = uint64_t(f.addr.theAddress) & theBlockMask;
-        if (!theNextLineFaultActive || line != theNextLineFaultLine)
-            ++theNextLineFaults;
-        theNextLineFaultLine = line;
-        theNextLineFaultActive = true;
+        if (!theFetchFaultActive || line != theFetchFaultLine)
+            ++theFetchFaults;
+        theFetchFaultLine = line;
+        theFetchFaultActive = true;
     }
 
-    void recordNextLineRemoval(const SimCacheLineInfo& line)
+    void recordFetchRemoval(const SimCacheLineInfo& line)
     {
         // Eviction and invalidation both end a residence. Still-resident unused
         // lines are not charged at shutdown: this measures actual removals.
-        if (theUseNextLinePath && line.origin == FetchOrigin::Prefetch && !line.used)
-            ++theNextLineOverFetch;
+        if (line.origin == FetchOrigin::Prefetch && !line.used)
+            ++theFetchOverFetch;
     }
 
     Processor cpu(index_t anIndex) {
@@ -406,173 +413,173 @@ class FLEXUS_COMPONENT(uFetch)
     void doFetch(index_t idx)
     {
         FETCH_DBG("--------------START FETCHING------------------------");
-        
+
         int fetches = 0;
-        int tlbreqs = 4; //this should be parametrized
-        int l1ireqs = cfg.MaxFetchLines; // ufetch ports
-
-        // Translation-entry checks remain local; cache-entry checks are shared
-        // with the next-line path through the component configuration.
-        int tlbdeps = 16;
-        int l1ideps = cfg.MaxICacheEntryChecks;
-
-        // Get the number of fetches that can be sent this cycle based on 
-        // instruction queue availability and the max fetch instructions config parameter
         FLEXUS_CHANNEL_ARRAY(AvailableFIQ, idx) >> fetches;
         fetches = std::min(fetches, (int)(cfg.MaxFetchInstructions));
+        int tlbreqs = 4;
+        int tlbdeps = 16;
+        int l1ireqs = cfg.MaxFetchLines;
+        int l1ideps = cfg.MaxICacheEntryChecks;
 
-        DBG_(VVerb, (<< "fetches: " << fetches << " entries: " << theFAQ.size()));
+        // Translation may run ahead independently of demand. Passing an entry
+        // before its translation completes does not mark it prefetchSeen.
+        for (auto& f : theFAQ) {
+            if (f.state != S_INIT || tlbdeps == 0)
+                continue;
+            --tlbdeps;
 
-        // lines that hit in the cache and looked up in this cycle
-        std::unordered_set<uint64_t> l1ihits;
-
-        pFetchBundle bundle;
-        bool is_head;
-
-        for (auto t = theFAQ.begin(); t != theFAQ.end(); ) {
-            auto &f = *t;
-
-            DBG_(VVerb, (<< "  " << f.addr.theAddress << std::hex << " " << f.pa << " " << f.state));
-
-            switch (f.state) {
-                case S_INIT:
-                    if (tlbdeps) {
-                        tlbdeps--;
-
-                        VirtualMemoryAddress va(f.addr.theAddress & ~0xffflu);
-
-                        if (theTAM.count(va))
-                            f.state = S_ITLB_REQ;
-
-                        else if (tlbreqs) {
-                            tlbreqs--;
-
-                            theTAM.insert(va);
-                            f.state = S_ITLB_REQ;
-
-                            send_trans(idx + flexusIndex() * cfg.Threads, f.addr.theAddress);
-                        }
-                    }
-
-                    t++;
-                    continue;
-
-                case S_ITLB_REQ:
-                case S_MISS:
-                    t++;
-                    continue;
-                default:            // TLB Responses are handled next, because they can arrive in the same clock cycle
-                    t++;
-                    continue;
+            VirtualMemoryAddress va(f.addr.theAddress & ~0xffflu);
+            if (theTAM.count(va)) {
+                f.state = S_ITLB_REQ;
+            } else if (tlbreqs) {
+                --tlbreqs;
+                theTAM.insert(va);
+                f.state = S_ITLB_REQ;
+                send_trans(idx + flexusIndex() * cfg.Threads, f.addr.theAddress);
             }
         }
 
-        for (auto t = theFAQ.begin(); t != theFAQ.end(); ) {    // handle the remaining cases
-            auto &f = *t;
+        pFetchBundle bundle;
 
-            DBG_(VVerb, (<< "  " << f.addr.theAddress << std::hex << " " << f.pa << " " << f.state));
+        // Deliver the already-completed prefix before preparing the new head,
+        // just as in next-line mode. A hit found below delivers next cycle;
+        // delivery itself spends no additional cache-access budget.
+        while (fetches > 0 && !theFAQ.empty() && theFAQ.front().state == S_DONE) {
+            auto& f = theFAQ.front();
+            // Faults bypass cache lookup and have their own virtual-line count.
+            // Valid instructions were classified at the demand head, never here.
+            if (f.pa == ~uint64_t(0))
+                recordFetchFault(f);
+            else
+                theFetchFaultActive = false;
+            /*
+             * TODO: Revalidate L1-I residency before delivery if required later.
+             * S_DONE currently remains latched after eviction/invalidation;
+             * delivery reads the opcode from QEMU without another cache lookup.
+             * Preserve that existing behavior in this FDIP rework.
+             */
+            if (!bundle.get()) {
+                bundle.reset(new FetchBundle);
+                bundle->coreID = flexusIndex();
+            }
+            auto opcode = ~f.pa ? cpu(0).fetch_inst(f.addr.theAddress) : 0xefffffff;
+            bundle->theOpcodes.emplace_back(
+                new FetchedOpcode(f.addr.theAddress, PhysicalMemoryAddress(f.pa), opcode, f.addr.theBPState, f.tracker));
+            bundle->theFillLevels.emplace_back(new tFillLevel(eL1I));
+            theFAQ.pop_front();
+            --fetches;
+        }
 
-            switch (f.state) {
-                case S_ITLB_RESP:
-                    if (l1ideps) {
-                        if (!cfg.PerfectICache)
-                            l1ideps--;
+        // Demand gets the first entry check and cache-data port. Waiting for a
+        // miss still checks the head, but does not repeat its data access.
+        if (!theFAQ.empty()) {
+            auto& f = theFAQ.front();
+            if ((f.state == S_ITLB_RESP || f.state == S_MISS) && l1ideps > 0) {
+                if (!cfg.PerfectICache)
+                    --l1ideps;
 
-                        PhysicalMemoryAddress pa(f.pa);
-
-                        if (cfg.PerfectICache || l1ihits.count(pa))
-                            f.state = S_DONE;
-
-                        else if (theFAM.count(pa)) {
-                            f.state = S_MISS;
-                            if (t == theFAQ.begin())
-                                recordL1Miss(pa);
-                            theL1MissesAll++;
-
-                        }
-                        else if (l1ireqs) {
-                            l1ireqs--;
-
-                            if (theI.lookup(pa)) {
-                                theHits++;
-                                l1ihits.insert(pa);
-                                f.state = S_DONE;
-
-                            } else {
-                                // The head sees a miss even if there is no room
-                                // to issue its request yet. Retries count once.
-                                is_head = (t == theFAQ.begin());
-                                if (is_head)
-                                    recordL1Miss(pa);
-                                if (theFAM.size() < cfg.MissQueueSize) {
-                                    theL1MissesAll++;
-                                    send_fetch(pa, f.addr.theAddress, is_head);
-                                    recordNextLineRequest(pa, is_head ? FetchOrigin::Demand : FetchOrigin::Prefetch);
-                                    f.state = S_MISS;
-                                }
-                            }
-                        }
-                    }
-
-                    fetches = 0;
-                    t++;
-                    continue;
-
-                case S_MISS:
-                    // A younger FDIP request can reach the head before its fill.
-                    // Count that demand miss now, even though no new lookup or
-                    // request is needed. Keep scanning younger prefetch entries.
-                    if (t == theFAQ.begin())
-                        recordL1Miss(f.pa);
-                    fetches = 0;
-                    t++;
-                    continue;
-
-                case S_DONE:
-                    /*
-                     * TODO: Revalidate L1-I residency before delivering to decode.
-                     * An entry can remain S_DONE after its line is evicted or
-                     * invalidated while it waits in the FAQ. Delivery currently
-                     * reads the opcode from QEMU without another cache lookup,
-                     * so it can bypass the miss penalty for a line no longer in L1-I.
-                     */
-                    
-                    if (fetches) {
-                        fetches--;
-
-                        if (bundle.get() == nullptr) {
-                            bundle.reset(new FetchBundle);
-                            bundle->coreID = flexusIndex();
-                        }
-
-                        // pa is all-one if page fault happens
-                        auto opcode = ~f.pa ? cpu(0).fetch_inst(f.addr.theAddress) : 0xefffffff;
-
-                        bundle->theOpcodes.emplace_back(
-                            new FetchedOpcode(f.addr.theAddress, PhysicalMemoryAddress(f.pa), opcode, f.addr.theBPState, f.tracker));
-                        bundle->theFillLevels.emplace_back(
-                            new tFillLevel(eL1I));
-
-                        DBG_Assert(t == theFAQ.begin());
-                        t = theFAQ.erase(t);
-                        continue;
+                if (f.state == S_MISS) {
+                    recordL1Miss(f.pa);
+                    // A new FAQ entry can rejoin a retained request after a
+                    // squash. Shared FAM metadata suppresses another outcome.
+                    recordFetchAccess(f, false);
+                } else if (cfg.PerfectICache) {
+                    f.state = S_DONE;
+                } else if (theFAM.count(f.pa)) {
+                    recordL1Miss(f.pa);
+                    recordFetchAccess(f, false);
+                    ++theL1MissesAll;
+                    f.state = S_MISS;
+                } else if (l1ireqs) {
+                    --l1ireqs;
+                    if (theI.lookup(f.pa)) {
+                        recordFetchAccess(f, true);
+                        ++theHits;
+                        f.state = S_DONE;
                     } else {
-                        t++;
-                        continue;
+                        // Detect absence even if FAM is full. Keep the head in
+                        // S_ITLB_RESP until allocation succeeds, so its retry
+                        // retains demand priority over queued prefetches.
+                        recordL1Miss(f.pa);
+                        // Observe the first miss before allocation, including a
+                        // queued-only candidate, which is an ordinary miss.
+                        recordFetchAccess(f, false);
+                        if (theFAM.size() < cfg.MissQueueSize) {
+                            ++theL1MissesAll;
+                            send_fetch(PhysicalMemoryAddress(f.pa), f.addr.theAddress, true);
+                            trackOutstandingFetch(f.pa, FetchOrigin::Demand);
+                            f.state = S_MISS;
+                        }
                     }
+                }
 
-                default:         // Already handled before
-                    fetches = 0; // But do not add the next ones into bundle
-                    t++;
+                if (f.state == S_DONE || f.state == S_MISS) {
+                    // One shared physical-line outcome already covers these
+                    // followers. Propagating readiness adds no taxonomy counts.
+                    f.prefetchSeen = true;
+                    auto t = theFAQ.begin();
+                    for (++t; t != theFAQ.end(); ++t) {
+                        // A real cache result covers only the consecutive
+                        // translated instructions on this physical line. A
+                        // perfect-cache hit bypasses line matching and budgets.
+                        const bool same_line_required = !cfg.PerfectICache || f.state == S_MISS;
+                        if (same_line_required && t->pa != f.pa)
+                            break;
+
+                        if (t->state == S_MISS || t->state == S_DONE) {
+                            // Do not repeatedly charge old same-line waiters:
+                            // new translated arrivals must still be able to join
+                            // the pending line in subsequent cycles.
+                            t->prefetchSeen = true;
+                            continue;
+                        }
+                        if (t->state != S_ITLB_RESP || l1ideps == 0)
+                            break;
+                        if (!cfg.PerfectICache)
+                            --l1ideps;
+                        t->state = f.state;
+                        t->prefetchSeen = true;
+                    }
+                }
+            }
+        }
+
+        if (!cfg.PerfectICache && !theFAQ.empty()) {
+            // Discover candidates only from younger FAQ entries. Do not enqueue
+            // the head entry as a prefetch when its demand allocation is blocked.
+            // Discovery itself never probes cache tags or changes demand states.
+            auto t = theFAQ.begin();
+            for (++t; t != theFAQ.end(); ++t) {
+                if (t->prefetchSeen || t->state != S_ITLB_RESP)
                     continue;
+                if (l1ideps == 0)
+                    break;
+                --l1ideps;
+
+                if (theFAM.count(t->pa) || theQueuedPrefetches.count(t->pa)) {
+                    // Coalesced entries are seen even if the FIFO is full.
+                    t->prefetchSeen = true;
+                    continue;
+                }
+                if (thePrefetchQueue.size() >= thePrefetchQueueSize)
+                    break; // Leave this entry unseen and retry when space frees.
+
+                thePrefetchQueue.push_back({t->pa, t->addr.theAddress});
+                theQueuedPrefetches.insert(t->pa);
+                t->prefetchSeen = true;
             }
         }
 
         if (bundle.get())
-            DBG_(VVerb, (<< "sending " << bundle->theOpcodes.size()));
-
-        if (bundle.get() && bundle->theOpcodes.size())
             FLEXUS_CHANNEL_ARRAY(FetchBundleOut, idx) << bundle;
+
+        // Reuse the shared FIFO issuer. It independently
+        // drains old candidates even when no new discovery/delivery occurred.
+        // Only the candidate source differs: FAQ addresses here, next N lines
+        // in doFetchNextLine. NextLinePrefetching does not disable FDIP.
+        if (!cfg.PerfectICache)
+            issuePrefetches(l1ireqs);
 
         FETCH_DBG("--------------FINISH FETCHING------------------------");
     }
@@ -619,7 +626,7 @@ class FLEXUS_COMPONENT(uFetch)
         }
     }
 
-    void issueNextLinePrefetches(uint32_t unused_fetch_lookups)
+    void issuePrefetches(uint32_t unused_fetch_lookups)
     {
         // Keep fetch capacity separate: a tag hit needs only a probe, while a
         // tag miss also needs a remaining demand-port slot to issue its fetch.
@@ -652,7 +659,7 @@ class FLEXUS_COMPONENT(uFetch)
 
                     --fetch_accesses;
                     send_fetch(PhysicalMemoryAddress(request.pa), request.pc, false);
-                    recordNextLineRequest(request.pa, FetchOrigin::Prefetch);
+                    trackOutstandingFetch(request.pa, FetchOrigin::Prefetch);
                     ++thePrefetches;
                     ++theL1MissesAll;
                 }
@@ -702,9 +709,9 @@ class FLEXUS_COMPONENT(uFetch)
             // delivery. In particular, do not reclassify S_DONE after eviction.
             // Translation faults bypass cache access and have their own count.
             if (f.pa == ~uint64_t(0))
-                recordNextLineFault(f);
+                recordFetchFault(f);
             else
-                theNextLineFaultActive = false;
+                theFetchFaultActive = false;
             // Preserve the existing S_DONE semantics, including page faults:
             // delivery cannot block or issue a new fetch if the line has since
             // disappeared. This taxonomy change does not add a cache access.
@@ -728,20 +735,26 @@ class FLEXUS_COMPONENT(uFetch)
         if (!theFAQ.empty() && theFAQ.front().state == S_MISS)
             recordL1Miss(theFAQ.front().pa);
 
-        if (!theFAQ.empty() && theFAQ.front().state == S_ITLB_RESP) {
+        if (!theFAQ.empty() &&
+            (theFAQ.front().state == S_ITLB_RESP || theFAQ.front().state == S_MISS) && l1ideps > 0) {
             auto& f = theFAQ.front();
             if (!cfg.PerfectICache)
                 --l1ideps;
             bool accessed = false;
             bool demand_missed = false;
-            // Match doFetch: a perfect I-cache bypasses tag/data access, pending
-            // misses, and cache budgets. Delivery still waits until next cycle.
-            if (cfg.PerfectICache) {
+            if (f.state == S_MISS) {
+                // Match FDIP: revisit a waiting head so more same-line entries
+                // can join its outstanding fill. This is no new cache access,
+                // request, or prefetch trigger; shared metadata deduplicates it.
+                recordFetchAccess(f, false);
+            } else if (cfg.PerfectICache) {
+                // A perfect I-cache bypasses tag/data access, pending misses,
+                // and cache budgets. Delivery still waits until next cycle.
                 f.state = S_DONE;
             } else if (theFAM.count(f.pa)) {
                 // This may join demand or prefetch. Only the recorded issuer
                 // determines whether its first demand observation is late.
-                recordNextLineAccess(f, false);
+                recordFetchAccess(f, false);
                 f.state = S_MISS;
                 accessed = true;
                 recordL1Miss(f.pa);
@@ -753,7 +766,7 @@ class FLEXUS_COMPONENT(uFetch)
                 --l1ireqs;
                 accessed = true;
                 if (theI.lookup(f.pa)) {
-                    recordNextLineAccess(f, true);
+                    recordFetchAccess(f, true);
                     ++theHits;
                     f.state = S_DONE;
                 } else {
@@ -763,7 +776,7 @@ class FLEXUS_COMPONENT(uFetch)
                     // Count the first detected miss even if allocation must
                     // wait. An unissued prefetch candidate gives no credit:
                     // with no FAM entry this is an ordinary demand miss.
-                    recordNextLineAccess(f, false);
+                    recordFetchAccess(f, false);
 
                     // A detected miss does not create an OnMiss trigger if no
                     // outstanding-request slot is available yet.
@@ -771,21 +784,27 @@ class FLEXUS_COMPONENT(uFetch)
                         demand_missed = true;
                         ++theL1MissesAll;
                         send_fetch(PhysicalMemoryAddress(f.pa), f.addr.theAddress, true);
-                        recordNextLineRequest(f.pa, FetchOrigin::Demand);
+                        trackOutstandingFetch(f.pa, FetchOrigin::Demand);
                         f.state = S_MISS;
                     }
                 }
             }
 
-            // One line access also serves consecutive translated instructions
-            // on that line. This preserves multi-instruction delivery next cycle
-            // without giving younger lines their own demand cache lookups.
-            // With a perfect I-cache, all consecutive translated entries are
-            // ready regardless of line, without consuming the entry-check budget.
+            // Match FDIP's demand cohort, including later arrivals while the
+            // head waits in S_MISS. The head costs one entry check; each newly
+            // attached instruction costs another, but old waiters cost nothing.
+            // No extra cache-data access or request is needed to share a fill.
             if (f.state == S_DONE || f.state == S_MISS) {
                 auto t = theFAQ.begin();
-                for (++t; t != theFAQ.end() && l1ideps > 0; ++t) {
-                    if (t->state != S_ITLB_RESP || (!cfg.PerfectICache && t->pa != f.pa))
+                for (++t; t != theFAQ.end(); ++t) {
+                    // Real requests cover only this physical line. A perfect-
+                    // cache hit bypasses line matching and entry-check charges.
+                    const bool same_line_required = !cfg.PerfectICache || f.state == S_MISS;
+                    if (same_line_required && t->pa != f.pa)
+                        break;
+                    if (t->state == S_MISS || t->state == S_DONE)
+                        continue;
+                    if (t->state != S_ITLB_RESP || l1ideps == 0)
                         break;
                     if (!cfg.PerfectICache)
                         --l1ideps;
@@ -811,7 +830,7 @@ class FLEXUS_COMPONENT(uFetch)
         // fetch issuance and also augment the independent tag-probe budget for
         // this cycle. A tag hit does not consume a fetch slot.
         if (theNextLinePrefetching && !cfg.PerfectICache)
-            issueNextLinePrefetches(l1ireqs);
+            issuePrefetches(l1ireqs);
     }
 
     void sendMisses()
@@ -916,8 +935,8 @@ class FLEXUS_COMPONENT(uFetch)
     {
         SimCacheLineInfo removed;
         const bool invalidated = theI.inval(anAddress, &removed);
-        if (invalidated && theUseNextLinePath)
-            recordNextLineRemoval(removed);
+        if (invalidated)
+            recordFetchRemoval(removed);
         return invalidated;
     }
     void issueEvict(PhysicalMemoryAddress anAddress)
@@ -948,9 +967,6 @@ class FLEXUS_COMPONENT(uFetch)
 
         if (!theI.lookup(anAddress)) {
             ++theAllocations;
-            if (!theUseNextLinePath)
-                return PhysicalMemoryAddress(theI.insert(anAddress));
-
             // Copy provenance directly from the actual outstanding request.
             // A demand fill is used immediately; a joined late prefetch also
             // keeps its prior classification across installation. Unobserved
@@ -968,7 +984,7 @@ class FLEXUS_COMPONENT(uFetch)
             SimCacheLineInfo removed;
             const uint64_t victim = theI.insert(anAddress, &replaced, incoming, &removed);
             if (replaced)
-                recordNextLineRemoval(removed);
+                recordFetchRemoval(removed);
             return PhysicalMemoryAddress(victim);
         }
 

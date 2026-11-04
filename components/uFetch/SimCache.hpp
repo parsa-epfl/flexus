@@ -91,7 +91,7 @@ struct SimCache
 
     // Optional measurement output: zero is the existing return for both no
     // replacement and eviction of physical line zero. Preserve that behavior
-    // while allowing next-line statistics to distinguish the two cases.
+    // while allowing shared fetch statistics to distinguish the two cases.
     uint64_t insert(uint64_t addr,
                     bool* replaced = nullptr,
                     SimCacheLineInfo incoming = {},
