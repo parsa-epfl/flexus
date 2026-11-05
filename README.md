@@ -70,13 +70,19 @@ N is configurable. It stops before crossing the current 4 KiB physical region,
 even within a larger mapped page. N counts positions rather than successful
 requests: skipping a duplicate does not extend the lookahead farther. A full
 queue discards the remaining candidates from that trigger without blocking
-demand. Two triggers are available. **OnAccess** generates candidates after a
+demand. Three triggers are available. **OnAccess** generates candidates after a
 new demand hit or miss, including joining an outstanding request. **OnMiss**
 generates them after joining an outstanding request or successfully admitting a
 new demand miss. A detected miss blocked by full outstanding-request capacity
 does not trigger OnMiss until admission succeeds. Waiting for an already-issued
 miss and instruction delivery do not generate additional triggers. A
 capacity-blocked retry performs a new lookup and can trigger OnAccess again.
+**OnMissOrFirstPrefetchHit** uses the same miss events as OnMiss and also
+generates candidates on the first demand hit to an unused prefetch-origin
+resident line. Subsequent hits do not trigger. A prefetch first accessed while
+still outstanding triggers as a miss; its eventual fill retains that use and
+does not trigger again on a later hit. Eviction and a new prefetch fill begin a
+new line lifetime.
 
 Both policies feed the same bounded FIFO of unissued physical-line candidates.
 An accompanying membership set prevents duplicate queued lines; outstanding
@@ -105,7 +111,7 @@ The resource limits describe different pieces of hardware:
 | `-ufetch:prefetch_queue_size` | Number of unissued physical-line candidates that the shared FIFO can hold. |
 | `-ufetch:miss_queue_size` | Maximum distinct outstanding instruction-line requests, shared by demand and prefetching. |
 | `-ufetch:next_line_count` | Number of successive physical line positions considered by each next-line trigger. |
-| `-ufetch:prefetch_trigger` | Next-line trigger selection: `0` for OnAccess and `1` for OnMiss. |
+| `-ufetch:prefetch_trigger` | Next-line trigger selection: `0` for OnAccess, `1` for OnMiss, or `2` for OnMissOrFirstPrefetchHit. |
 
 A prefetch tag hit consumes one tag-probe slot. A tag miss consumes a tag-probe
 slot and, if issued, one remaining `flines` slot plus an outstanding-request slot.
@@ -157,8 +163,9 @@ access. A lifetime spans an outstanding fetch and its subsequent cache residence
 Request origin and demand-observation state are retained with outstanding
 requests and then transferred to the actual resident cache tags. Repeated
 instructions and subsequent hits do not create additional classifications.
-These provenance and first-use flags affect statistics, not request priority or
-cache replacement decisions.
+These provenance and first-use flags support statistics and the optional
+OnMissOrFirstPrefetchHit trigger. They do not change request priority or cache
+replacement decisions.
 
 | Counter suffix under `<component>-FetchTaxonomy-` | Meaning |
 | --- | --- |

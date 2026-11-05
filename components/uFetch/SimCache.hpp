@@ -14,7 +14,8 @@ using json = nlohmann::json;
     })
 
 // Keep provenance with the actual resident tag, so eviction/invalidation also
-// removes its measurement state. These fields never affect replacement.
+// removes its provenance/first-use state. Statistics and the optional first-
+// prefetch-hit trigger share these fields; they never affect replacement.
 enum class FetchOrigin
 {
     Demand,
@@ -136,7 +137,7 @@ struct SimCache
         return theCache.find(addr >> theCacheBlockShift) != theCache.end();
     }
 
-    // Measurement-only access: finding metadata neither fetches data nor moves
+    // Metadata access: finding provenance/usage neither fetches data nor moves
     // the tag in LRU order. The pointer remains valid until the tag is removed.
     SimCacheLineInfo* lineInfo(uint64_t addr)
     {

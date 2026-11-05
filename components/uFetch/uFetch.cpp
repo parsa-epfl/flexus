@@ -93,6 +93,7 @@ class FLEXUS_COMPONENT(uFetch)
     enum class PrefetchTrigger : uint32_t {
         OnAccess = 0,
         OnMiss = 1,
+        OnMissOrFirstPrefetchHit = 2,
     };
     PrefetchTrigger thePrefetchTrigger = PrefetchTrigger::OnAccess;
 
@@ -584,7 +585,7 @@ class FLEXUS_COMPONENT(uFetch)
         FETCH_DBG("--------------FINISH FETCHING------------------------");
     }
 
-    bool shouldTriggerNextLinePrefetch(bool accessed, bool demand_missed) const
+    bool shouldTriggerNextLinePrefetch(bool accessed, bool demand_missed, bool first_prefetch_hit) const
     {
         // Waiting in S_MISS/S_DONE without a new access is never a new trigger.
         if (!accessed)
@@ -595,6 +596,10 @@ class FLEXUS_COMPONENT(uFetch)
                 return true;
             case PrefetchTrigger::OnMiss:
                 return demand_missed;
+            case PrefetchTrigger::OnMissOrFirstPrefetchHit:
+                // Extend the miss trigger with one hit per unused prefetch
+                // residence; ordinary and subsequent hits do not trigger.
+                return demand_missed || first_prefetch_hit;
         }
         return false;
     }
@@ -742,6 +747,7 @@ class FLEXUS_COMPONENT(uFetch)
                 --l1ideps;
             bool accessed = false;
             bool demand_missed = false;
+            bool first_prefetch_hit = false;
             if (f.state == S_MISS) {
                 // Match FDIP: revisit a waiting head so more same-line entries
                 // can join its outstanding fill. This is no new cache access,
@@ -766,6 +772,14 @@ class FLEXUS_COMPONENT(uFetch)
                 --l1ireqs;
                 accessed = true;
                 if (theI.lookup(f.pa)) {
+                    if (thePrefetchTrigger == PrefetchTrigger::OnMissOrFirstPrefetchHit) {
+                        // Sample before recordFetchAccess marks the line used.
+                        // A prefetch already claimed while outstanding arrives
+                        // used, so its later hit cannot trigger a second time.
+                        const auto* line = theI.lineInfo(f.pa);
+                        DBG_Assert(line);
+                        first_prefetch_hit = line->origin == FetchOrigin::Prefetch && !line->used;
+                    }
                     recordFetchAccess(f, true);
                     ++theHits;
                     f.state = S_DONE;
@@ -819,7 +833,7 @@ class FLEXUS_COMPONENT(uFetch)
             // Instructions sharing this line have the same N targets, so their
             // candidates are represented by this one enqueue operation.
             if (theNextLinePrefetching && !cfg.PerfectICache &&
-                shouldTriggerNextLinePrefetch(accessed, demand_missed))
+                shouldTriggerNextLinePrefetch(accessed, demand_missed, first_prefetch_hit))
                 enqueueNextLines(f.pa, f.addr.theAddress);
         }
 
@@ -889,8 +903,10 @@ class FLEXUS_COMPONENT(uFetch)
         DBG_Assert(cfg.Threads == 1);
 
         if (cfg.PrefetchTrigger != static_cast<uint32_t>(PrefetchTrigger::OnAccess) &&
-            cfg.PrefetchTrigger != static_cast<uint32_t>(PrefetchTrigger::OnMiss))
-            throw Flexus::Core::FlexusException("uFetch PrefetchTrigger must be 0 (OnAccess) or 1 (OnMiss)");
+            cfg.PrefetchTrigger != static_cast<uint32_t>(PrefetchTrigger::OnMiss) &&
+            cfg.PrefetchTrigger != static_cast<uint32_t>(PrefetchTrigger::OnMissOrFirstPrefetchHit))
+            throw Flexus::Core::FlexusException(
+                "uFetch PrefetchTrigger must be 0 (OnAccess), 1 (OnMiss), or 2 (OnMissOrFirstPrefetchHit)");
         // Both fetch paths keep their original int cycle budget. Require a
         // positive, representable configured limit before assigning that budget.
         if (cfg.MaxICacheEntryChecks == 0 || cfg.MaxICacheEntryChecks > std::numeric_limits<int>::max())
