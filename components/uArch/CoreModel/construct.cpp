@@ -112,6 +112,10 @@ CoreImpl::CoreImpl(uArchOptions_t options,
   , theCycleCountStat(theName + "-Cycles")
   , theCommitCount(theName + "-Commits")
   , theHaltedCycleCount(theName + "-HaltedCycles")
+  , theKernelSkipCycles(theName + "-KernelSkip:Cycles")
+  , theKernelSkipInsns(theName + "-KernelSkip:Insns")
+  , theKernelSkipCalls(theName + "-KernelSkip:Calls")
+  , theKernelSkipYieldExits(theName + "-KernelSkip:YieldLimitExits")
   , theSquashedRetCount(theName + "-SquashedRetCount")
   , theSquashedRetCount_ResetCore(theName + "-SquashedRetCount:ResetCore")
   , theSquashedRetCount_SRB_Reset(theName + "-SquashedRetCount:SRB_Reset")
@@ -372,6 +376,15 @@ CoreImpl::CoreImpl(uArchOptions_t options,
 
     cpuHalted = false;
 
+    theUserOnly         = options.userOnly;
+    theKernelYieldLimit = options.kernelYieldLimit;
+    theKernelInsnLimit  = options.kernelInsnLimit;
+    // The checkpoint may have been taken while QEMU was in the kernel. Start
+    // in the "skip kernel" state so the first cycle fast-forwards to EL0
+    // before fetch is allowed to enqueue kernel instructions.
+    theSkippingKernel   = theUserOnly && (theQEMUCPU.current_el() != 0);
+    DBG_(Dev, Cond(theUserOnly)(<< theName << " user_only mode: privileged code is fast-forwarded (yield limit "
+                                << theKernelYieldLimit << ", insn warning every " << theKernelInsnLimit << ")"));
 }
 
 void

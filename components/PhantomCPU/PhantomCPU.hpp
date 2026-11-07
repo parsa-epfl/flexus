@@ -16,6 +16,9 @@
 COMPONENT_PARAMETERS(
   PARAMETER( IndexOffSet, uint32_t, "Index Offset", "index_offset", 0)
   PARAMETER( EstimatedIPC, uint32_t, "Estimated IPC", "estimated_ipc", 5)
+  PARAMETER( UserOnly, bool, "Only count user-space (EL0) instructions towards the IPC; privileged code is fast-forwarded in zero cycles", "user_only", false)
+  PARAMETER( KernelYieldLimit, uint64_t, "[user_only] Return after this many WFE/YIELD hints in one kernel fast-forward (0 = never)", "kernel_yield_limit", 1000)
+  PARAMETER( KernelInsnLimit, uint64_t, "[user_only] Print a warning every this many instructions in one kernel fast-forward (0 = never)", "kernel_insn_limit", 10000000)
 );
 
 COMPONENT_INTERFACE(

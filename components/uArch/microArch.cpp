@@ -338,6 +338,12 @@ class microArchImpl : public microArch
             squash(kResynchronize);
         }
 
+        // user_only mode: if QEMU is in privileged code, fast-forward it until
+        // it returns to EL0. If it does not get there in this cycle (halted or
+        // spinning), fetch stays stopped and the core retries from its cycle();
+        // that path resynchronizes again once QEMU is back at EL0.
+        if (!theCore->skipKernel()) { return; }
+
         resetArchitecturalState(was_expected);
 
         // Obtain new state from simics

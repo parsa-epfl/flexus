@@ -50,7 +50,9 @@ CoreImpl::isStalled() const
 bool
 CoreImpl::isHalted() const
 {
-    return cpuHalted;
+    // While fast-forwarding the kernel (user_only), report halted so that
+    // fetch does not run down kernel paths.
+    return cpuHalted || theSkippingKernel;
 }
 
 int32_t

@@ -198,6 +198,10 @@ class FLEXUS_COMPONENT(uArch)
         options.fpSqrtOpLatency           = cfg.FpSqrtOpLatency;
         options.fpSqrtOpPipelineResetTime = cfg.FpSqrtOpPipelineResetTime;
 
+        options.userOnly         = cfg.UserOnly;
+        options.kernelYieldLimit = cfg.KernelYieldLimit;
+        options.kernelInsnLimit  = cfg.KernelInsnLimit;
+
         theMicroArch = microArch::construct(options,
                                             ll::bind(&uArchComponent::squash, this, ll::_1),
                                             ll::bind(&uArchComponent::redirect, this, ll::_1),

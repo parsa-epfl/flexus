@@ -69,6 +69,10 @@ COMPONENT_PARAMETERS(
   PARAMETER( FpDivOpPipelineResetTime, uint32_t, "Number of cycles required between subsequent FP DIV operations", "fpDivOpPipelineResetTime", 1)
   PARAMETER( FpSqrtOpLatency, uint32_t, "End-to-end latency of an FP SQRT operation", "fpSqrtOpLatency", 1)
   PARAMETER( FpSqrtOpPipelineResetTime, uint32_t, "Number of cycles required between subsequent FP SQRT operations", "fpSqrtOpPipelineResetTime", 1)
+
+  PARAMETER( UserOnly, bool, "Only simulate user-space (EL0) instructions; privileged code is fast-forwarded in QEMU without touching the microarchitecture", "user_only", false)
+  PARAMETER( KernelYieldLimit, uint64_t, "[user_only] Return to Flexus after this many WFE/YIELD hints in one kernel fast-forward (0 = never)", "kernel_yield_limit", 1000)
+  PARAMETER( KernelInsnLimit, uint64_t, "[user_only] Print a warning every this many instructions in one kernel fast-forward (0 = never)", "kernel_insn_limit", 10000000)
 );
 
 typedef std::tuple<int, bool, std::tuple<int, int, int>> dispatch_status;

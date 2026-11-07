@@ -61,6 +61,9 @@ struct CoreModel : public uArch
     virtual bool isSynchronized() const                      = 0;
     virtual bool isStalled() const                           = 0;
     virtual bool isHalted() const                            = 0;
+    // user_only mode: fast-forward privileged code in QEMU.
+    // Returns true if the core is at EL0 and the pipeline may run.
+    virtual bool skipKernel()                                = 0;
     virtual int32_t iCount() const                           = 0;
     virtual bool isQuiesced() const                          = 0;
     virtual void dispatch(boost::intrusive_ptr<Instruction>) = 0;

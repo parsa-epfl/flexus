@@ -49,6 +49,18 @@ class Processor
 
     uint64_t advance(bool count_time = true) { return API::qemu_api.cpu_exec(core_index, count_time); }
 
+    // Fast-forward through privileged code until the core returns to EL0.
+    // Returns 0 when at EL0, QEMU_EXCP_HALTED (0x10003) when halted,
+    // QEMU_EXCP_YIELD (0x10004) when the yield limit is reached, or an
+    // EXCP_QFLEX_* code when the core could not run.
+    uint64_t run_until_el0(uint64_t yield_limit, uint64_t insn_warn, uint64_t* executed)
+    {
+        return API::qemu_api.run_until_el0(core_index, yield_limit, insn_warn, executed);
+    }
+
+    // Current exception level, as seen by QEMU.
+    uint32_t current_el() { return (read_register(API::PSTATE) >> 2) & 0x3; }
+
     PhysicalMemoryAddress translate_va2pa(VirtualMemoryAddress addr, bool unprivileged)
     {
         return PhysicalMemoryAddress(API::qemu_api.translate_va2pa(core_index, addr, unprivileged));

@@ -89,6 +89,63 @@ bool equalTwoLists(action_list_t& a, action_list_t& b)
     return true;
 }
 
+/*
+ * user_only mode: fast-forward QEMU through privileged code without
+ * touching the microarchitecture. Kernel instructions take zero cycles.
+ *
+ * Returns true if the core is at EL0 and the pipeline may run. Otherwise the
+ * core is either halted (cpuHalted, handled by the regular halt path), or
+ * still in the kernel (theSkippingKernel, retried in the next cycle so that
+ * other cores, e.g. a lock holder, can make progress).
+ */
+bool
+CoreImpl::skipKernel()
+{
+    if (!theUserOnly) { return true; }
+
+    if (theQEMUCPU.current_el() == 0) {
+        theSkippingKernel = false;
+        return true;
+    }
+
+    // The ASID is changed by the kernel during a context switch, i.e. inside
+    // the region we skip, so the per-commit check in commit() never sees it.
+    uint16_t oldASID = readASID();
+
+    uint64_t executed = 0;
+    uint64_t rcode    = theQEMUCPU.run_until_el0(theKernelYieldLimit, theKernelInsnLimit, &executed);
+
+    ++theKernelSkipCalls;
+    theKernelSkipInsns += executed;
+    theFlexus->reset_core_watchdog(theNode);
+
+    uint16_t newASID = readASID();
+    if (oldASID != newASID) { theFlexus->notifyASIDChange(theNode, newASID); }
+
+    switch (rcode) {
+        case 0: // Back to EL0.
+            theSkippingKernel = false;
+            return true;
+        case QEMU_EXCP_HALTED:
+            // Idle loop (WFI). Let the regular halt path wait for the interrupt,
+            // which resynchronizes and fast-forwards the handler again.
+            DBG_(VVerb, (<< theName << " user_only: core halted while fast-forwarding the kernel"));
+            theSkippingKernel = false;
+            cpuHalted         = true;
+            return false;
+        case QEMU_EXCP_YIELD:
+            // Likely spinning on a lock held by another core: yield this cycle.
+            ++theKernelSkipYieldExits;
+            theSkippingKernel = true;
+            return false;
+        default:
+            // EXCP_QFLEX_*: QEMU could not run the core now, retry next cycle.
+            DBG_(VVerb, (<< theName << " user_only: kernel fast-forward returned 0x" << std::hex << rcode << std::dec));
+            theSkippingKernel = true;
+            return false;
+    }
+}
+
 void
 CoreImpl::cycle(eExceptionType aPendingInterrupt)
 {
@@ -111,6 +168,16 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     }
     theCycleCountStat++;
     theCycleCount++;
+
+    // user_only mode: the core is still in the kernel, keep fast-forwarding.
+    if (theSkippingKernel) {
+        ++theKernelSkipCycles;
+        if (skipKernel()) {
+            // Back to EL0: reload the architectural state and restart fetch.
+            throw ResynchronizeWithQemuException(true, false, nullptr);
+        }
+        return;
+    }
 
     CORE_DBG("--------------START CORE------------------------");
 
@@ -1576,6 +1643,18 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
         theInterruptSignalled   = false;
         theInterruptInstruction = 0;
 
+        // user_only mode: privileged code must never reach commit, it is
+        // fast-forwarded on resynchronization. The instruction that enters
+        // the kernel (svc, faulting access, interrupted instruction) is
+        // itself a user instruction, so this is checked before stepping QEMU.
+        if (theUserOnly) {
+            DBG_Assert(theQEMUCPU.current_el() == 0,
+                       (<< theName << " user_only: committing an instruction while QEMU is at EL"
+                        << theQEMUCPU.current_el() << ": " << *anInstruction));
+            DBG_Assert((static_cast<uint64_t>(anInstruction->pc()) >> 55) == 0,
+                       (<< theName << " user_only: committing a kernel-space instruction: " << *anInstruction));
+        }
+
         // Read ASID before QEMU advancement
         uint16_t oldASID = readASID();
 
@@ -1599,6 +1678,14 @@ CoreImpl::commit(boost::intrusive_ptr<Instruction> anInstruction)
         }
         if ((qemu_rcode != (int)(kException_None)) && (qemu_rcode < QEMU_EXCP_INTERRUPT))
             raised = (eExceptionType)(qemu_rcode);
+
+        // user_only mode: QEMU entered the kernel during this step (exception or
+        // interrupt). Resynchronize so the kernel is fast-forwarded, even when
+        // the core did not see an exception (e.g., an interrupt taken by QEMU).
+        if (theUserOnly && !anInstruction->resync() && theQEMUCPU.current_el() != 0) {
+            DBG_(VVerb, (<< theName << " user_only: QEMU left EL0 after " << *anInstruction));
+            anInstruction->forceResync();
+        }
 
         if (raised != kException_None) {
             if (anInstruction->willRaise() != raised) { // FIXME get exception mapper

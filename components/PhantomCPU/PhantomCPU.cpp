@@ -32,13 +32,19 @@ private:
     uint64_t theCPUIndex;
 
     Stat::StatCounter theCommitCount;
+    Stat::StatCounter theKernelSkipInsns;
+    Stat::StatCounter theKernelSkipCalls;
+    Stat::StatCounter theKernelSkipYieldExits;
 
 public:
     FLEXUS_COMPONENT_CONSTRUCTOR(PhantomCPU)
       : base(FLEXUS_PASS_CONSTRUCTOR_ARGS),
         theCPU(),
         theCPUIndex(0),
-        theCommitCount(std::string("Phantom-") + std::to_string(flexusIndex()) + std::string("-CommitCount"))
+        theCommitCount(std::string("Phantom-") + std::to_string(flexusIndex()) + std::string("-CommitCount")),
+        theKernelSkipInsns(std::string("Phantom-") + std::to_string(flexusIndex()) + std::string("-KernelSkip:Insns")),
+        theKernelSkipCalls(std::string("Phantom-") + std::to_string(flexusIndex()) + std::string("-KernelSkip:Calls")),
+        theKernelSkipYieldExits(std::string("Phantom-") + std::to_string(flexusIndex()) + std::string("-KernelSkip:YieldLimitExits"))
     {
     }
 
@@ -57,13 +63,49 @@ public:
     void drive(interface::PhantomDrive const&) { doCycle(); }
 
 private:
+    // Fast-forward privileged code. Returns true if the core is back at EL0.
+    // Note: like the regular phantom path, ASID changes are not reported.
+    bool skipKernel() {
+        uint64_t executed = 0;
+        uint64_t rcode = theCPU.run_until_el0(cfg.KernelYieldLimit, cfg.KernelInsnLimit, &executed);
+        ++theKernelSkipCalls;
+        theKernelSkipInsns += executed;
+        if (rcode == 0x10004) { ++theKernelSkipYieldExits; } // EXCP_YIELD: spinning, yield this cycle.
+        return rcode == 0;
+    }
+
     void doCycle() {
-        // 1. advance the CPU by the estimated IPC.
-        for(std::size_t i = 0; i < cfg.EstimatedIPC; i++) {
-            uint64_t return_value = theCPU.advance();
-            if(return_value != 0x10003){
-                ++theCommitCount;
+        if (!cfg.UserOnly) {
+            // 1. advance the CPU by the estimated IPC.
+            for(std::size_t i = 0; i < cfg.EstimatedIPC; i++) {
+                uint64_t return_value = theCPU.advance();
+                if(return_value != 0x10003){
+                    ++theCommitCount;
+                }
             }
+            return;
+        }
+
+        // user_only: only EL0 instructions count towards the estimated IPC,
+        // privileged code is fast-forwarded in zero cycles.
+        for(std::size_t i = 0; i < cfg.EstimatedIPC; i++) {
+            if (theCPU.current_el() != 0 && !skipKernel()) {
+                // Halted, spinning, or not runnable: done for this cycle.
+                return;
+            }
+
+            DBG_Assert(theCPU.current_el() == 0,
+                       (<< "Phantom-" << flexusIndex() << " user_only: stepping while QEMU is not at EL0"));
+            DBG_Assert((static_cast<uint64_t>(theCPU.get_pc()) >> 55) == 0,
+                       (<< "Phantom-" << flexusIndex() << " user_only: stepping a kernel-space instruction at "
+                        << theCPU.get_pc()));
+
+            uint64_t return_value = theCPU.advance();
+            if (return_value == 0x10003) {
+                // Halted (cannot happen at EL0 in Linux, which traps WFI).
+                return;
+            }
+            ++theCommitCount;
         }
     }
 };

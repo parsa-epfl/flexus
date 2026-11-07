@@ -301,6 +301,10 @@ class CoreImpl : public CoreModel
     Stat::StatCounter theCycleCountStat;
     Stat::StatCounter theCommitCount;
     Stat::StatCounter theHaltedCycleCount;
+    Stat::StatCounter theKernelSkipCycles;      // cycles spent waiting in a kernel fast-forward (user_only)
+    Stat::StatCounter theKernelSkipInsns;       // instructions fast-forwarded in privileged mode (user_only)
+    Stat::StatCounter theKernelSkipCalls;       // number of kernel fast-forward calls (user_only)
+    Stat::StatCounter theKernelSkipYieldExits;  // fast-forwards that stopped on the WFE/YIELD limit (user_only)
     Stat::StatCounter theSquashedRetCount;
     Stat::StatCounter theSquashedRetCount_ResetCore;  // ROB.clear() in resetCore() (called by reset() and doAbortSpeculation())
     Stat::StatCounter theSquashedRetCount_SRB_Reset;  // SRB.clear() in reset()
@@ -757,6 +761,16 @@ class CoreImpl : public CoreModel
 
     // Msutherl: State variable indicating this has no work to do. Set by QEMU upon instruction retire
     bool cpuHalted;
+
+    // user_only mode: only EL0 instructions go through the pipeline.
+    bool theUserOnly;
+    uint64_t theKernelYieldLimit;
+    uint64_t theKernelInsnLimit;
+    // Set while the core is in privileged code that is being fast-forwarded
+    // across cycles (e.g., after hitting the WFE/YIELD limit). Fetch is stopped.
+    bool theSkippingKernel;
+
+    bool skipKernel();
 
     // Interface to Memory Unit
     //==========================================================================
