@@ -10,7 +10,7 @@
 
 COMPONENT_PARAMETERS(
   PARAMETER( FAQSize, uint32_t, "Fetch address queue size", "faq", 32 )
-  PARAMETER( MaxFetchLines, uint32_t, "Max i-cache lines fetched per cycle", "flines", 2 )
+  PARAMETER( MaxFetchLines, uint32_t, "Max demand i-cache line lookups per cycle", "flines", 2 )
   PARAMETER( MaxFetchInstructions, uint32_t, "Max instructions fetched per cycle", "finst", 10 )
   PARAMETER( ICacheLineSize, uint64_t, "Icache line size in bytes", "iline", 64 )
   PARAMETER( PerfectICache, bool, "Use a perfect ICache", "perfect", true )
@@ -20,7 +20,7 @@ COMPONENT_PARAMETERS(
   PARAMETER( NextLinePrefetching, bool, "Enable prefetching in the next-line fetch path", "next_line_prefetching", true )
   PARAMETER( PrefetchTrigger, uint32_t, "Next-line trigger: 0 = OnAccess, 1 = OnMiss, 2 = OnMissOrFirstPrefetchHit", "prefetch_trigger", 0 )
   PARAMETER( NextLineCount, uint32_t, "Next physical cache lines considered per prefetch trigger", "next_line_count", 1 )
-  PARAMETER( TagLookupsPerCycle, uint32_t, "Dedicated prefetch tag probes per cycle, plus unused fetch slots", "tag_lookups", 1 )
+  PARAMETER( TagLookupsPerCycle, uint32_t, "Dedicated prefetch tag probes per cycle, plus unused demand lookup slots", "tag_lookups", 1 )
   PARAMETER( PrefetchQueueSize, uint32_t, "Maximum queued unissued instruction-prefetch candidates in either path", "prefetch_queue_size", 16 )
   PARAMETER( MaxICacheEntryChecks, uint32_t, "Shared demand readiness and FDIP prefetch-discovery entry checks per cycle (positive)", "icache_entry_checks", 16 )
   PARAMETER( CleanEvict, bool, "Enable eviction messages", "clean_evict", true)

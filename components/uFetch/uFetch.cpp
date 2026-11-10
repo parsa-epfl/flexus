@@ -633,16 +633,15 @@ class FLEXUS_COMPONENT(uFetch)
 
     void issuePrefetches(uint32_t unused_fetch_lookups)
     {
-        // Keep fetch capacity separate: a tag hit needs only a probe, while a
-        // tag miss also needs a remaining demand-port slot to issue its fetch.
-        // Spare demand slots still augment tag capacity as well. This budget
-        // arithmetic performs no access and does not update LRU state.
+        // Prefetches need only tag probes, not instruction data from L1-I.
+        // Borrow unused demand lookup slots to augment the dedicated probes;
+        // each hit or miss spends one credit from this combined budget. A miss
+        // can request the line without another demand data-port credit.
         // Widen before addition so the two uint32_t budgets cannot overflow.
         uint64_t tag_lookups = uint64_t(theTagLookupsPerCycle) + unused_fetch_lookups;
-        uint32_t fetch_accesses = unused_fetch_lookups;
 
         // Service the FIFO even when no demand access/delivery occurred this
-        // cycle. Exhausting either budget leaves work queued for a later cycle.
+        // cycle. Exhausting tag credits leaves work queued for a later cycle.
         while (!thePrefetchQueue.empty()) {
             const auto& request = thePrefetchQueue.front();
 
@@ -655,14 +654,13 @@ class FLEXUS_COMPONENT(uFetch)
 
                 // Presence only: no demand data port or replacement-state update.
                 if (!theI.lookupTag(request.pa)) {
-                    // A miss requires both fetch bandwidth and an outstanding-
-                    // request slot. If either is unavailable, stop at this FIFO
-                    // head and retry later, including a fresh tag check in case
-                    // the line has arrived in the meantime.
-                    if (fetch_accesses == 0 || theFAM.size() >= cfg.MissQueueSize)
+                    // The probe already paid for this miss. Only an outstanding-
+                    // request slot is needed to enqueue its hierarchy request;
+                    // sendMisses handles downstream acceptance separately.
+                    // If full, retain the FIFO head and recheck its tag later.
+                    if (theFAM.size() >= cfg.MissQueueSize)
                         break;
 
-                    --fetch_accesses;
                     send_fetch(PhysicalMemoryAddress(request.pa), request.pc, false);
                     trackOutstandingFetch(request.pa, FetchOrigin::Prefetch);
                     ++thePrefetches;
@@ -840,9 +838,9 @@ class FLEXUS_COMPONENT(uFetch)
         if (bundle.get())
             FLEXUS_CHANNEL_ARRAY(FetchBundleOut, idx) << bundle;
 
-        // Demand has first use of MaxFetchLines. Remaining slots bound prefetch
-        // fetch issuance and also augment the independent tag-probe budget for
-        // this cycle. A tag hit does not consume a fetch slot.
+        // Demand has first use of MaxFetchLines. Unused lookup slots augment
+        // the prefetch tag budget; a prefetch miss needs no additional data-port
+        // slot because it requests the missing line from the hierarchy.
         if (theNextLinePrefetching && !cfg.PerfectICache)
             issuePrefetches(l1ireqs);
     }

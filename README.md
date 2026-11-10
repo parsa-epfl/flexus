@@ -95,9 +95,10 @@ Prefetch issuance is separate from candidate generation and continues on cycles
 with no new demand access. The FIFO first checks whether its head already has an
 outstanding request. Otherwise, it probes the L1-I tags. These probes retrieve no
 instruction data and do not update LRU replacement state. A resident candidate
-is removed; a missing candidate requires both fetch bandwidth and a free
-outstanding-request slot before it can issue. An unissuable miss stays at the
-head and blocks younger candidates, including younger hits.
+is removed; a missing candidate requires a free outstanding-request slot before
+it can issue. It does not retrieve L1-I data or need another demand lookup slot.
+An unissuable miss stays at the head and blocks younger candidates, including
+younger hits.
 
 The resource limits describe different pieces of hardware:
 
@@ -105,7 +106,7 @@ The resource limits describe different pieces of hardware:
 | --- | --- |
 | `-ufetch:faq` | Predicted instruction-address queue capacity, measured in instruction entries. |
 | `-ufetch:finst` | Maximum instructions delivered toward decode per cycle, also constrained by downstream queue space. |
-| `-ufetch:flines` | Per-cycle demand cache-lookup and prefetch-issue budget. Demand has first use; a demand joining an outstanding request consumes no cache-data slot. |
+| `-ufetch:flines` | Per-cycle demand cache-lookup budget. Unused slots augment prefetch tag probes; a demand joining an outstanding request consumes no cache-data slot. |
 | `-ufetch:icache_entry_checks` | Entry checks shared by head processing, same-line waiter attachment, and FDIP discovery. The waiting head costs one check; each newly attached follower costs another. |
 | `-ufetch:tag_lookups` | Dedicated prefetch tag probes per cycle. Unused `flines` slots augment this probe budget. |
 | `-ufetch:prefetch_queue_size` | Number of unissued physical-line candidates that the shared FIFO can hold. |
@@ -113,12 +114,12 @@ The resource limits describe different pieces of hardware:
 | `-ufetch:next_line_count` | Number of successive physical line positions considered by each next-line trigger. |
 | `-ufetch:prefetch_trigger` | Next-line trigger selection: `0` for OnAccess, `1` for OnMiss, or `2` for OnMissOrFirstPrefetchHit. |
 
-A prefetch tag hit consumes one tag-probe slot. A tag miss consumes a tag-probe
-slot and, if issued, one remaining `flines` slot plus an outstanding-request slot.
-Recognizing an already-outstanding line requires neither a tag probe nor another
-request. Thus increasing tag bandwidth alone does not increase miss-issuance
-bandwidth. With `flines = 1`, a new demand cache lookup leaves no prefetch-issue
-slot that cycle, although prefetches can issue while demand waits for a fill.
+Each prefetch tag probe, hit or miss, consumes one credit from the combined
+budget of dedicated `tag_lookups` plus unused `flines` slots. A missing line can
+issue immediately if an outstanding-request slot is available; it does not
+consume another `flines` slot. Recognizing an already-outstanding line requires
+neither a tag probe nor another request. With `flines = 1` and `tag_lookups = 1`,
+a new demand cache lookup can therefore coexist with one prefetch miss issuance.
 
 The outstanding-line pool (FAM) is the front end's MSHR-like limit. It includes
 allocated requests still buffered for transmission as well as requests already
