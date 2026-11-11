@@ -49,6 +49,7 @@ class microArchImpl : public microArch
     std::string theName;
 
     std::unique_ptr<CoreModel> theCore;
+    boost::intrusive_ptr<Instruction> theKernelResyncSource;
     int32_t theAvailableROB;
     std::tuple<int32_t, int32_t, int32_t> theAvailableRegs;
     Flexus::Qemu::Processor theCPU;
@@ -229,6 +230,18 @@ class microArchImpl : public microArch
 
     bool isHalted() { return theCore->isHalted(); }
 
+    Flexus::Core::KernelServiceResult serviceKernel() override
+    {
+        auto result = theCore->serviceKernel();
+        if (result == Flexus::Core::KernelServiceResult::Ready) {
+            auto source = std::move(theKernelResyncSource);
+            resynchronize(true, source);
+            theAvailableROB = theCore->availableROB();
+            theAvailableRegs = theCore->availableRegs();
+        }
+        return result;
+    }
+
     int32_t iCount() { return theCore->iCount(); }
 
     void writePermissionLost(PhysicalMemoryAddress anAddress)
@@ -338,11 +351,12 @@ class microArchImpl : public microArch
             squash(kResynchronize);
         }
 
-        // user_only mode: if QEMU is in privileged code, fast-forward it until
-        // it returns to EL0. If it does not get there in this cycle (halted or
-        // spinning), fetch stays stopped and the core retries from its cycle();
-        // that path resynchronizes again once QEMU is back at EL0.
-        if (!theCore->skipKernel()) { return; }
+        // Kernel execution belongs to the scheduler's zero-time phase. Keep
+        // fetch stopped until that phase brings QEMU back to EL0.
+        if (!theCore->deferKernel()) {
+            theKernelResyncSource = source;
+            return;
+        }
 
         resetArchitecturalState(was_expected);
 

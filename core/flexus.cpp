@@ -50,6 +50,8 @@ class FlexusImpl : public FlexusInterface
     uint64_t theStopCycle;
     uint64_t cycle_delay_log;
     Stat::StatCounter theCycleCountStat;
+    KernelScheduler theKernelScheduler;
+    Stat::StatCounter theKernelServiceBudgetExits;
 
     typedef std::vector<std::function<void()>> void_fn_vector;
     void_fn_vector theTerminateFunctions;
@@ -69,6 +71,14 @@ class FlexusImpl : public FlexusInterface
 
     // The main cycle function
     void doCycle();
+    void registerKernelService(KernelScheduler::Service service) override
+    {
+        theKernelScheduler.add(std::move(service));
+    }
+    void serviceKernels() override
+    {
+        if (!theKernelScheduler.service()) { ++theKernelServiceBudgetExits; }
+    }
     void setCycle(uint64_t cycle);
     void advanceCycles(uint32_t aCycleCount);
     index_t invokeDrives(index_t iter_idx);
@@ -108,6 +118,7 @@ class FlexusImpl : public FlexusInterface
       , theStopCycle(2000000000)
       , cycle_delay_log(0)
       , theCycleCountStat("sys-cycles")
+      , theKernelServiceBudgetExits("sys-KernelSkip:BudgetExits")
       , theQuiesceRequested(false)
       , theASIDChanged(false)
       , theASIDInitialized(false)

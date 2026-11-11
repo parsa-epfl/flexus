@@ -4,6 +4,7 @@
 #include <functional>
 #include <stdint.h>
 #include <string>
+#include <core/kernel_scheduler.hpp>
 
 namespace Flexus::Core {
 class FlexusInterface
@@ -14,6 +15,8 @@ class FlexusInterface
 
     // The main cycle function
     virtual void doCycle()                = 0;
+    virtual void registerKernelService(KernelScheduler::Service service) = 0;
+    virtual void serviceKernels() = 0;
     virtual void setCycle(uint64_t cycle) = 0;
     virtual bool quiescing() const        = 0;
     // fast-forward through cycles

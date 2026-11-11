@@ -89,23 +89,25 @@ bool equalTwoLists(action_list_t& a, action_list_t& b)
     return true;
 }
 
-/*
- * user_only mode: fast-forward QEMU through privileged code without
- * touching the microarchitecture. Kernel instructions take zero cycles.
- *
- * Returns true if the core is at EL0 and the pipeline may run. Otherwise the
- * core is either halted (cpuHalted, handled by the regular halt path), or
- * still in the kernel (theSkippingKernel, retried in the next cycle so that
- * other cores, e.g. a lock holder, can make progress).
- */
 bool
-CoreImpl::skipKernel()
+CoreImpl::deferKernel()
 {
     if (!theUserOnly) { return true; }
+    if (theQEMUCPU.current_el() == 0) { return true; }
+    theSkippingKernel = !cpuHalted;
+    return false;
+}
+
+// Called only by the scheduler's zero-time phase, never by a timed core drive.
+Flexus::Core::KernelServiceResult
+CoreImpl::serviceKernel()
+{
+    using Result = Flexus::Core::KernelServiceResult;
+    if (!theUserOnly || !theSkippingKernel || cpuHalted) { return Result::Inactive; }
 
     if (theQEMUCPU.current_el() == 0) {
         theSkippingKernel = false;
-        return true;
+        return Result::Ready;
     }
 
     // The ASID is changed by the kernel during a context switch, i.e. inside
@@ -125,24 +127,27 @@ CoreImpl::skipKernel()
     switch (rcode) {
         case 0: // Back to EL0.
             theSkippingKernel = false;
-            return true;
+            return Result::Ready;
         case QEMU_EXCP_HALTED:
             // Idle loop (WFI). Let the regular halt path wait for the interrupt,
             // which resynchronizes and fast-forwards the handler again.
             DBG_(VVerb, (<< theName << " user_only: core halted while fast-forwarding the kernel"));
             theSkippingKernel = false;
             cpuHalted         = true;
-            return false;
+            return Result::Halted;
         case QEMU_EXCP_YIELD:
-            // Likely spinning on a lock held by another core: yield this cycle.
+            // Let other kernel cores run at this same timestamp.
             ++theKernelSkipYieldExits;
             theSkippingKernel = true;
-            return false;
+            return Result::Yielded;
+        case QEMU_EXCP_KERNEL_QUANTUM:
+            theSkippingKernel = true;
+            return Result::Yielded;
         default:
             // EXCP_QFLEX_*: QEMU could not run the core now, retry next cycle.
             DBG_(VVerb, (<< theName << " user_only: kernel fast-forward returned 0x" << std::hex << rcode << std::dec));
             theSkippingKernel = true;
-            return false;
+            return Result::NotRunnable;
     }
 }
 
@@ -162,20 +167,17 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     }
 
     // qemu warmup
-    if (theFlexus->cycleCount() == 1) {
+    if (theFlexus->cycleCount() == 1 && (!theUserOnly || (!theSkippingKernel && !cpuHalted))) {
         advance_fn(true);
         throw ResynchronizeWithQemuException(true, false, nullptr);
     }
     theCycleCountStat++;
     theCycleCount++;
 
-    // user_only mode: the core is still in the kernel, keep fast-forwarding.
+    // The zero-time phase has already serviced kernel execution. If still
+    // pending, this is real elapsed waiting for user code or a timed event.
     if (theSkippingKernel) {
         ++theKernelSkipCycles;
-        if (skipKernel()) {
-            // Back to EL0: reload the architectural state and restart fetch.
-            throw ResynchronizeWithQemuException(true, false, nullptr);
-        }
         return;
     }
 

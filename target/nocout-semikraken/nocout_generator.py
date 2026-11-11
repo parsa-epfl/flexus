@@ -11,8 +11,8 @@
 #    port 11 (up by 4) and 12 (down by 4)
 #    ... until port 2*y+3 (up by y-1) and 2*y+4 (down by y-1)
 
-x=8
-y=8
+x=4
+y=4
 channel_lat = 1
 fbfly_lat = 3
 

@@ -214,6 +214,10 @@ class FLEXUS_COMPONENT(uArch)
         theuArchObject = theuArchQemuFactory.create(
           (std::string("uarch-") + boost::padded_string_cast<2, '0'>(flexusIndex())).c_str());
         theuArchObject->setMicroArch(theMicroArch);
+        if (cfg.UserOnly) {
+            Flexus::Core::theFlexus->registerKernelService(
+                [this]() { return theMicroArch->serviceKernel(); });
+        }
     }
 
     void finalize() {}

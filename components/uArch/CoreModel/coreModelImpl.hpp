@@ -301,7 +301,7 @@ class CoreImpl : public CoreModel
     Stat::StatCounter theCycleCountStat;
     Stat::StatCounter theCommitCount;
     Stat::StatCounter theHaltedCycleCount;
-    Stat::StatCounter theKernelSkipCycles;      // cycles spent waiting in a kernel fast-forward (user_only)
+    Stat::StatCounter theKernelSkipCycles;      // timed waits after zero-time kernel servicing (user_only)
     Stat::StatCounter theKernelSkipInsns;       // instructions fast-forwarded in privileged mode (user_only)
     Stat::StatCounter theKernelSkipCalls;       // number of kernel fast-forward calls (user_only)
     Stat::StatCounter theKernelSkipYieldExits;  // fast-forwards that stopped on the WFE/YIELD limit (user_only)
@@ -770,7 +770,8 @@ class CoreImpl : public CoreModel
     // across cycles (e.g., after hitting the WFE/YIELD limit). Fetch is stopped.
     bool theSkippingKernel;
 
-    bool skipKernel();
+    bool deferKernel();
+    Flexus::Core::KernelServiceResult serviceKernel();
 
     // Interface to Memory Unit
     //==========================================================================

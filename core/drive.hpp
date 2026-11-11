@@ -3,6 +3,7 @@
 
 #include <boost/mpl/deref.hpp>
 #include <core/drive_reference.hpp>
+#include <core/flexus.hpp>
 #include <core/performance/profile.hpp>
 
 namespace Flexus {
@@ -68,6 +69,7 @@ struct do_cycle
         }
 
         for(index_t count = 0; count < maxFreq; ++count) {
+            theFlexus->serviceKernels();
             for(index_t id = 0; id <= sysWidth; ++id) {
                 if(count < mapCyclesIter[id][iter_idx]) {
                     if(id == sysWidth) {
@@ -78,6 +80,9 @@ struct do_cycle
                 }
             }
         }
+        // Service kernel entries made by the last timed round before ticking
+        // QEMU or advancing statistics. This also covers phantom clients.
+        theFlexus->serviceKernels();
         return mapCyclesIter[sysWidth][iter_idx];
     }
 };

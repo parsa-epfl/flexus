@@ -51,7 +51,8 @@ class Processor
 
     // Fast-forward through privileged code until the core returns to EL0.
     // Returns 0 when at EL0, QEMU_EXCP_HALTED (0x10003) when halted,
-    // QEMU_EXCP_YIELD (0x10004) when the yield limit is reached, or an
+    // QEMU_EXCP_YIELD (0x10004) when the yield limit is reached,
+    // QEMU_EXCP_KERNEL_QUANTUM after a bounded instruction slice, or an
     // EXCP_QFLEX_* code when the core could not run.
     uint64_t run_until_el0(uint64_t yield_limit, uint64_t insn_warn, uint64_t* executed)
     {

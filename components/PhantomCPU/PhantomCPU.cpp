@@ -30,6 +30,7 @@ class FLEXUS_COMPONENT(PhantomCPU)
 private:
     Flexus::Qemu::Processor theCPU;
     uint64_t theCPUIndex;
+    bool theKernelHalted = false;
 
     Stat::StatCounter theCommitCount;
     Stat::StatCounter theKernelSkipInsns;
@@ -55,6 +56,10 @@ public:
 
         theCPU = Flexus::Qemu::Processor::getProcessor(cpu_index);
         theCPUIndex = cpu_index;
+        if (cfg.UserOnly) {
+            Flexus::Core::theFlexus->registerKernelService(
+                [this]() { return serviceKernel(); });
+        }
     }
 
     void finalize() {}
@@ -63,15 +68,23 @@ public:
     void drive(interface::PhantomDrive const&) { doCycle(); }
 
 private:
-    // Fast-forward privileged code. Returns true if the core is back at EL0.
+    // Functional-only service, shared with the detailed cores' scheduler phase.
     // Note: like the regular phantom path, ASID changes are not reported.
-    bool skipKernel() {
+    Flexus::Core::KernelServiceResult serviceKernel() {
+        using Result = Flexus::Core::KernelServiceResult;
+        if (theKernelHalted || theCPU.current_el() == 0) { return Result::Inactive; }
         uint64_t executed = 0;
         uint64_t rcode = theCPU.run_until_el0(cfg.KernelYieldLimit, cfg.KernelInsnLimit, &executed);
         ++theKernelSkipCalls;
         theKernelSkipInsns += executed;
-        if (rcode == 0x10004) { ++theKernelSkipYieldExits; } // EXCP_YIELD: spinning, yield this cycle.
-        return rcode == 0;
+        if (rcode == 0x10004) { ++theKernelSkipYieldExits; } // WFE/YIELD limit; retry at the same timestamp.
+        if (rcode == 0) { return Result::Ready; }
+        if (rcode == 0x10003) {
+            theKernelHalted = true;
+            return Result::Halted;
+        }
+        if (rcode == 0x10004 || rcode == QEMU_EXCP_KERNEL_QUANTUM) { return Result::Yielded; }
+        return Result::NotRunnable;
     }
 
     void doCycle() {
@@ -86,12 +99,20 @@ private:
             return;
         }
 
+        if (theKernelHalted) {
+            // WFI is a real timed wait. Poll only from the timed drive.
+            if (theCPU.advance(false) != 0x10003) { theKernelHalted = false; }
+            return;
+        }
+
         // user_only: only EL0 instructions count towards the estimated IPC,
         // privileged code is fast-forwarded in zero cycles.
         for(std::size_t i = 0; i < cfg.EstimatedIPC; i++) {
-            if (theCPU.current_el() != 0 && !skipKernel()) {
-                // Halted, spinning, or not runnable: done for this cycle.
-                return;
+            if (theCPU.current_el() != 0) {
+                // Preserve the userspace IPC budget across syscalls, while
+                // giving every kernel vCPU a chance to make zero-time progress.
+                Flexus::Core::theFlexus->serviceKernels();
+                if (theKernelHalted || theCPU.current_el() != 0) { return; }
             }
 
             DBG_Assert(theCPU.current_el() == 0,

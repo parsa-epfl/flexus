@@ -10,6 +10,7 @@
 
 #include <functional>
 #include <memory>
+#include <core/kernel_scheduler.hpp>
 
 using namespace Flexus::SharedTypes;
 
@@ -37,6 +38,7 @@ struct microArch
     virtual void dispatch(boost::intrusive_ptr<AbstractInstruction>)                               = 0;
     virtual void skipCycle()                                                                       = 0;
     virtual void cycle()                                                                           = 0;
+    virtual Flexus::Core::KernelServiceResult serviceKernel() = 0;
     virtual void issueMMU(TranslationPtr aTranslation)                                             = 0;
     virtual void pushMemOp(boost::intrusive_ptr<MemOp>)                                            = 0;
     virtual bool canPushMemOp()                                                                    = 0;

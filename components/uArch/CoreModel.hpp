@@ -3,6 +3,7 @@
 #define FLEXUS_uARCH_COREMODEL_HPP_INCLUDED
 
 #include "uArchInterfaces.hpp"
+#include <core/kernel_scheduler.hpp>
 
 #include <components/CommonQEMU/Slices/PredictorMessage.hpp> /* CMU-ONLY */
 #include <components/uFetch/uFetchTypes.hpp>
@@ -61,9 +62,9 @@ struct CoreModel : public uArch
     virtual bool isSynchronized() const                      = 0;
     virtual bool isStalled() const                           = 0;
     virtual bool isHalted() const                            = 0;
-    // user_only mode: fast-forward privileged code in QEMU.
-    // Returns true if the core is at EL0 and the pipeline may run.
-    virtual bool skipKernel()                                = 0;
+    // Stop fetch on kernel entry; execution is deferred to the zero-time phase.
+    virtual bool deferKernel()                               = 0;
+    virtual Flexus::Core::KernelServiceResult serviceKernel() = 0;
     virtual int32_t iCount() const                           = 0;
     virtual bool isQuiesced() const                          = 0;
     virtual void dispatch(boost::intrusive_ptr<Instruction>) = 0;

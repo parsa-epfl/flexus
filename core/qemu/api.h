@@ -244,6 +244,8 @@ typedef char* (*QEMU_DISASS_t)(size_t core_index, uint64_t addr, size_t size);
 typedef bool (*QEMU_CPU_BUSY_t)(size_t core_index);
 typedef bool (*QEMU_SAVE_CHECKPOINT_REQUEST_t)(const char* snapshot_name);
 typedef void (*QEMU_NOTIFY_SAVE_STATISTICS_t)(const char* file_name);
+// Functional execution quantum exhausted; retry without advancing time.
+#define QEMU_EXCP_KERNEL_QUANTUM 0x10014
 typedef uint64_t (*QEMU_RUN_UNTIL_EL0_t)(size_t core_index,
                                          uint64_t yield_limit,
                                          uint64_t insn_warn,
