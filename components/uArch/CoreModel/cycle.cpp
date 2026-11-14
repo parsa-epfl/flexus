@@ -381,6 +381,8 @@ CoreImpl::cycle(eExceptionType aPendingInterrupt)
     evaluateRD();
 
     if (cpuHalted) {
+        // Waiting for an interrupt is legitimate inactivity, not a stuck core.
+        theFlexus->reset_core_watchdog(theNode);
         ++theHaltedCycleCount;
         int qemu_rcode = advance_fn(false); // don't count instructions in halt state
         if (qemu_rcode != QEMU_EXCP_HALTED) {
