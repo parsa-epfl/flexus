@@ -51,7 +51,9 @@ class FLEXUS_COMPONENT(FetchAddressGenerate)
             theRedirect[i]   = false;
         }
         theCurrentThread   = cfg.Threads;
-        theBranchPredictor = std::make_unique<BranchPredictor>(statName(), flexusIndex(), cfg.BTBSets, cfg.BTBWays);
+        theBranchPredictor = std::make_unique<BranchPredictor>(statName(), flexusIndex(), cfg.BTBSets, cfg.BTBWays,
+                                                             cfg.Predictor, cfg.GShareHistoryLength,
+                                                             cfg.GShareTableSize);
     }
 
     void finalize() {

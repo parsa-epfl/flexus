@@ -7,9 +7,105 @@ instruction prefetching into the L1 instruction cache (L1-I).
 Relative to the branch starting point, `13234a5`, it adds a physical next-line
 prefetcher and a no-prefetch baseline, reworks fetch-directed instruction
 prefetching (FDIP) to use the same demand-fetch behavior, and introduces a shared
-prefetch queue and cache-line classification. Address generation and branch
-prediction retain their original functionality. The purpose is to compare
-prefetch candidate selection behind a common demand front end.
+prefetch queue and cache-line classification. Address generation and the default
+TAGE branch predictor retain their original functionality. The purpose is to
+compare prefetch candidate selection behind a common demand front end.
+
+## Branch direction prediction
+
+The front end supports TAGE and GShare direction predictors. Select the predictor
+before simulation initialization; both use the same BTB, return-address stack,
+address-generation bandwidth, and prediction/training ports.
+
+| Parameter | Default | Meaning |
+| --- | --- | --- |
+| `-fag:predictor` | `TAGE` | Direction predictor: exactly `TAGE` or `GShare`. |
+| `-fag:gshare_history` | `13` | GShare global-history length in bits, from `0` through `64`. |
+| `-fag:gshare_size` | `8192` | Number of GShare 2-bit counter entries; must be a positive power of two. |
+
+For example, select GShare in the Flexus configuration file with:
+
+```text
+flexus.set "-fag:predictor" "GShare"
+flexus.set "-fag:gshare_history" "13"
+flexus.set "-fag:gshare_size" "8192"
+```
+
+GShare starts with zero history and every counter at `1` (weakly not taken).
+Counters range from `0` through `3`; `0` and `1` predict not taken, and `2` and `3`
+predict taken. Its table index is
+`((PC >> 2) ^ GHR) & (gshare_size - 1)`. Only the low index-width bits contribute:
+a history longer than `log2(gshare_size)` is truncated by the mask, without
+folding. A zero-bit history gives a PC-indexed counter table.
+
+TAGE (`PREDICTOR`) and `GShare` both implement `DirectionPredictor`, overriding
+the same five runtime methods and two checkpoint methods:
+
+```cpp
+class DirectionPredictor {
+public:
+    virtual ~DirectionPredictor() = default;
+    virtual void checkpointHistory(BPredState& state) const = 0;
+    virtual bool get_prediction(uint64_t pc, BPredState& state) = 0;
+    virtual void update_history(const BPredState& state, bool taken, uint64_t pc) = 0;
+    virtual void restore_history(const BPredState& state) = 0;
+    virtual void update_predictor(uint64_t pc, const BPredState& state, bool taken) = 0;
+    virtual nlohmann::json saveState() const = 0;
+    virtual void loadState(nlohmann::json checkpoint) = 0;
+};
+```
+
+`BranchPredictor` owns one `std::unique_ptr<DirectionPredictor>`. Selection is
+confined to construction, statistics, and checkpoint payloads; prediction,
+history, and training callers use the common interface. Adding a predictor
+requires implementing this interface and registering its construction. Matching
+signatures and lifecycle rules allow each algorithm to keep its own history,
+counter tables, and per-instruction metadata.
+
+Prediction occurs in `FetchAddressGenerate`, before instruction translation,
+I-cache service, or decode. The BTB first identifies whether the current PC is a
+known branch and supplies its type/target. A recognized conditional branch looks
+up the selected direction predictor; the predicted outcome immediately advances
+speculative history. Other recognized branches shift in taken. History is
+checkpointed at the same recognized-branch boundary for both predictors. On a
+redirect, the checkpoint is restored and the actual outcome is inserted when the
+redirect requests it; redirects that request no insertion only restore history.
+Both implementations assert that checkpoint history metadata is unused and that
+direction lookups are conditional. Both `update_history` implementations force
+taken for a nonconditional predicted type, even if the supplied outcome is false.
+
+GShare trains its counters at commit, using the index saved at prediction time
+and the actual branch direction. Younger predictions therefore cannot change
+which entry is trained, and counter training does not shift history again. Both
+predictors require a saved conditional lookup for training; absent prediction
+metadata makes training a no-op, and training preserves live speculative history.
+The inherited BTB gating also means a BTB-missed branch has no history snapshot or
+direction prediction and does not train GShare on that occurrence. It becomes
+eligible for direction prediction/training once the BTB recognizes it.
+
+Checkpoint loading still reads the common BTB from `<core>-bpred.json`, for
+example `000-bpred.json`. In GShare mode, any `tage` field is ignored and every
+restore resets GShare history/counters to their initial values. GShare saves
+contain the BTB only: its interface `saveState()` returns an empty JSON object,
+and `loadState(json)` resets the predictor. GShare state serialization is not
+implemented. Existing TAGE checkpoint contents and restore behavior are unchanged.
+Setting `-fag:perfect` to `1` selects the existing perfect-BPU path, overriding the
+direction-predictor selection.
+
+GShare conditional lookups and conditional mispredictions use separate
+`<component>-predictions:GShare` and `<component>-mispredict:GShare` counters;
+they do not increment the corresponding TAGE counters. BTB, indirect-target,
+and return prediction continue to use their shared statistics.
+
+The standalone checks verify method signatures at compile time and exercise both
+predictors through common pointers, including their shared lifecycle rules. Run
+them with:
+
+```sh
+bash tests/branch_predictor/run.sh --sanitize
+```
+
+## Instruction fetching and prefetching
 
 The front end separates prediction, translation, demand fetching, and prefetch
 issuance. Branch prediction produces an ordered stream of instruction addresses

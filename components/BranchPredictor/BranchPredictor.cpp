@@ -8,13 +8,16 @@
 #include <core/boost_extensions/padded_string_cast.hpp>
 #include <core/checkpoint/json.hpp>
 #include <fstream>
+#include <stdexcept>
 using json = nlohmann::json;
 
 // #define DBG_DefineCategories BPred
 // #define DBG_SetDefaultOps    AddCat(BPred)
 // #include DBG_Control()
 
-BranchPredictor::BranchPredictor(std::string const& aName, uint32_t anIndex, uint32_t aBTBSets, uint32_t aBTBWays)
+BranchPredictor::BranchPredictor(std::string const& aName, uint32_t anIndex, uint32_t aBTBSets, uint32_t aBTBWays,
+                                 std::string const& aPredictor, uint32_t aGShareHistoryLength,
+                                 uint32_t aGShareTableSize)
   : theName(aName)
   , theIndex(anIndex)
   , theSerial(0)
@@ -38,6 +41,9 @@ BranchPredictor::BranchPredictor(std::string const& aName, uint32_t anIndex, uin
   , theMispredict_TAGE_User(aName + "-mispredict:TAGE:User")
   , theMispredict_TAGE_System(aName + "-mispredict:TAGE:System")
 
+  , thePredictions_GShare(aName + "-predictions:GShare")
+  , theMispredict_GShare(aName + "-mispredict:GShare")
+
   , thePredictions_BTB(aName + "-predictions:BTB")
   , theCorrect_BTB(aName + "-correct:BTB")
   , theMispredict_BTB(aName + "-mispredict:BTB")
@@ -47,6 +53,13 @@ BranchPredictor::BranchPredictor(std::string const& aName, uint32_t anIndex, uin
   , theMispredict_Indirect(aName + "-mispredict:Indirect")
   , theMispredict_other(aName + "-mispredict:other")
 {
+    if (aPredictor == "TAGE") {
+        theTage = std::make_unique<PREDICTOR>();
+    } else if (aPredictor == "GShare") {
+        theGShare = std::make_unique<GShare>(aGShareHistoryLength, aGShareTableSize);
+    } else {
+        throw std::invalid_argument("-fag:predictor must be TAGE or GShare; got '" + aPredictor + "'");
+    }
 }
 
 /* Depending on whether the prediction of the Branch Predictor we use is Taken or Not Taken, the target is returned
@@ -56,9 +69,14 @@ BranchPredictor::BranchPredictor(std::string const& aName, uint32_t anIndex, uin
 VirtualMemoryAddress
 BranchPredictor::predictConditional(VirtualMemoryAddress anAddress, BPredState& aBPState)
 {
-    ++thePredictions_TAGE;
-
-    bool isTaken = theTage.get_prediction((uint64_t)anAddress, aBPState);
+    bool isTaken;
+    if (theGShare) {
+        ++thePredictions_GShare;
+        isTaken = theGShare->get_prediction((uint64_t)anAddress, aBPState);
+    } else {
+        ++thePredictions_TAGE;
+        isTaken = theTage->get_prediction((uint64_t)anAddress, aBPState);
+    }
 
     aBPState.thePrediction = isTaken ? kTaken : kNotTaken;
 
@@ -69,13 +87,25 @@ BranchPredictor::predictConditional(VirtualMemoryAddress anAddress, BPredState& 
 }
 
 void
+BranchPredictor::updateHistory(const BPredState& aBPState, bool taken, uint64_t address)
+{
+    if (theGShare)
+        theGShare->update_history(aBPState, taken, address);
+    else
+        theTage->update_history(aBPState, taken, address);
+}
+
+void
 BranchPredictor::recoverHistory(const BPredRedictRequest& aRequest)
 {
     BPredState &aBPState = *aRequest.theBPState;
 
     theRAS.recover(aBPState);
 
-    theTage.restore_history(*aRequest.theBPState);
+    if (theGShare)
+        theGShare->restore_history(aBPState);
+    else
+        theTage->restore_history(aBPState);
     // theITTage.restore_history(*aRequest.theBPState);
 
     if (aBPState.theActualDirection <= kTaken || aBPState.theActualType == kNonBranch){
@@ -87,7 +117,7 @@ BranchPredictor::recoverHistory(const BPredRedictRequest& aRequest)
 
     if (aBPState.theActualType != kNonBranch) {
         bool isTaken = aBPState.theActualDirection == kTaken;
-        theTage.update_history(aBPState, isTaken, aBPState.pc);
+        updateHistory(aBPState, isTaken, aBPState.pc);
         // theITTage.update_history(aBPState.pc);
     }
 }
@@ -105,7 +135,10 @@ BranchPredictor::isBranch(VirtualMemoryAddress anAddress, bool PerfectBPU)
 void
 BranchPredictor::checkpointHistory(BPredState& aBPState) const
 {
-    theTage.checkpointHistory(aBPState);
+    if (theGShare)
+        theGShare->checkpointHistory(aBPState);
+    else
+        theTage->checkpointHistory(aBPState);
     // theITTage.checkpointHistory(aBPState);
 }
 
@@ -212,12 +245,12 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, b
             // if ITTAGE is available, read prediction from ITTAGE
             aBPState.thePredictedTarget = *theBTB.target(anAddress);
             // aBPState.thePredictedTarget = theITTage.predict(anAddress);
-            theTage.update_history(aBPState, true, anAddress);
+            updateHistory(aBPState, true, anAddress);
             break;
 
         case kUnconditional:
             aBPState.thePredictedTarget = *theBTB.target(anAddress);
-            theTage.update_history(aBPState, true, anAddress);
+            updateHistory(aBPState, true, anAddress);
             break;
 
         case kIndirectCall:
@@ -226,14 +259,14 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, b
             // aBPState.thePredictedTarget = theITTage.predict(anAddress);
             // speculative
             theRAS.push(anAddress + 4);
-            theTage.update_history(aBPState, true, anAddress);
+            updateHistory(aBPState, true, anAddress);
             break;
 
         case kCall:
             aBPState.thePredictedTarget = *theBTB.target(anAddress);
             // speculative
             theRAS.push(anAddress + 4);
-            theTage.update_history(aBPState, true, anAddress);
+            updateHistory(aBPState, true, anAddress);
             break;
 
         case kReturn:
@@ -244,7 +277,7 @@ BranchPredictor::predict(VirtualMemoryAddress anAddress, BPredState& aBPState, b
             } else
                 aBPState.thePredictedTarget = *theBTB.target(anAddress);
 
-            theTage.update_history(aBPState, true, anAddress);
+            updateHistory(aBPState, true, anAddress);
             break;
 
         default:
@@ -308,7 +341,10 @@ BranchPredictor::train(BPredState& aBPState)
 
                 case kConditional:
                     // helperPenaltyCalculator(aBPState, mispredictCycles_TAGE, theBranchMispredictionPenalty_TAGE);
-                    ++theMispredict_TAGE;
+                    if (theGShare)
+                        ++theMispredict_GShare;
+                    else
+                        ++theMispredict_TAGE;
                     break;
 
                 default:
@@ -322,7 +358,10 @@ BranchPredictor::train(BPredState& aBPState)
 
     if (aBPState.theActualType != kNonBranch) {
         bool taken = (aBPState.theActualDirection <= kTaken);
-        theTage.update_predictor(aBPState.pc, aBPState, taken);
+        if (theGShare)
+            theGShare->update_predictor(aBPState.pc, aBPState, taken);
+        else
+            theTage->update_predictor(aBPState.pc, aBPState, taken);
     }
 
     if (aBPState.theActualType == kIndirectCall || aBPState.theActualType == kIndirectReg){
@@ -342,7 +381,10 @@ BranchPredictor::loadState(std::string const& aDirName, bool PerfectBPU)
     ifs >> checkpoint;
 
     theBTB.loadState(checkpoint["btb"]);
-    theTage.loadState(checkpoint["tage"]);
+    if (theGShare)
+        theGShare->reset(); // GShare intentionally starts cold on every checkpoint restore.
+    else
+        theTage->loadState(checkpoint["tage"]);
     ifs.close();
 
     if (PerfectBPU){
@@ -377,7 +419,8 @@ BranchPredictor::saveState(std::string const& aDirName)
     json checkpoint;
 
     checkpoint["btb"]  = theBTB.saveState();
-    checkpoint["tage"] = theTage.saveState();
+    if (theTage)
+        checkpoint["tage"] = theTage->saveState();
 
     ofs << std::setw(4) << checkpoint << std::endl;
     ofs.close();

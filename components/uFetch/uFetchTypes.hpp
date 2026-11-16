@@ -4,9 +4,13 @@
 #include "components/CommonQEMU/Translation.hpp"
 #include "core/types.hpp"
 
+#include <bitset>
 #include <cstdint>
+#include <list>
+#include <memory>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 using boost::counted_base;
 using Flexus::SharedTypes::TransactionTracker;
@@ -87,6 +91,13 @@ struct BPredState : boost::counted_base
     bool pred_taken;
     bool alt_pred;
 
+    // GShare carries its own speculative-history checkpoint and lookup index.
+    // The index, rather than the current history, identifies the entry to train.
+    bool theGShareHistoryValid;
+    uint64_t theGShareHistory;
+    bool theGSharePredictionValid;
+    uint32_t theGShareIndex;
+
     uint32_t last_miss_distance;
     VirtualMemoryAddress ICache_miss_address;
 
@@ -143,6 +154,10 @@ struct BPredState : boost::counted_base
       theTageHistoryValid = false;
       theTagePredictionValid = false;
       theITTAGEHistoryValid = false;
+      theGShareHistoryValid = false;
+      theGShareHistory = 0;
+      theGSharePredictionValid = false;
+      theGShareIndex = 0;
     }
 };
 

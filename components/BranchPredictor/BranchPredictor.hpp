@@ -2,10 +2,12 @@
 #define FLEXUS_BRANCHPREDICTOR
 
 #include "BTB.hpp"
+#include "GShare.hpp"
 #include "TAGEImpl.hpp"
 #include "RAS.hpp"
 #include "core/stats.hpp"
 #include "core/types.hpp"
+#include <memory>
 #include <set>
 #include "ITTAGE.h"
 
@@ -30,7 +32,9 @@ class BranchPredictor
     
 
     BTB theBTB;
-    PREDICTOR theTage;
+    // Only the configured direction predictor is constructed. BTB/RAS are shared.
+    std::unique_ptr<PREDICTOR> theTage;
+    std::unique_ptr<GShare> theGShare;
     ReturnAddressStack theRAS;
     ITTAGE theITTage;
 
@@ -65,6 +69,9 @@ class BranchPredictor
     Stat::StatCounter theMispredict_TAGE_User;
     Stat::StatCounter theMispredict_TAGE_System;
 
+    Stat::StatCounter thePredictions_GShare;
+    Stat::StatCounter theMispredict_GShare;
+
     Stat::StatCounter thePredictions_BTB;
     Stat::StatCounter theCorrect_BTB;
     Stat::StatCounter theMispredict_BTB;
@@ -81,17 +88,20 @@ class BranchPredictor
      * If the prediction is taken, we jump to the target address (if present) as given by the BTB
      */
     VirtualMemoryAddress predictConditional(VirtualMemoryAddress anAddress, BPredState& aBPState);
+    void updateHistory(const BPredState& aBPState, bool taken, uint64_t address);
     void helperPenaltyCalculator(BPredState& aBPState, std::vector<std::pair<uint64_t, uint64_t>> &mispredictList, Stat::StatCounter &stat);
 
   public:
-    BranchPredictor(std::string const& aName, uint32_t anIndex, uint32_t aBTBSets, uint32_t aBTBWays);
+    BranchPredictor(std::string const& aName, uint32_t anIndex, uint32_t aBTBSets, uint32_t aBTBWays,
+                    std::string const& aPredictor = "TAGE", uint32_t aGShareHistoryLength = 13,
+                    uint32_t aGShareTableSize = 8192);
     bool isBranch(VirtualMemoryAddress anAddress, bool PerfectBPU);
 
     void checkpointHistory(BPredState& aBPState) const;
 
     VirtualMemoryAddress predict(VirtualMemoryAddress anAddress, BPredState& aBPState, bool PerfectBPU);
 
-    // This function is called whenever a prediction is resolved.
+    // Repair speculative history when a redirect is delivered.
     void recoverHistory(const BPredRedictRequest& aRequest);
 
     void recoverOracle(const uint64_t aSerial);
@@ -100,7 +110,7 @@ class BranchPredictor
     void recordResyncRedirectStats(BPredState& aBPState);
     inline uint64_t calculateRedirectCycles(std::vector<std::pair<uint64_t, uint64_t>> &ranges);
 
-    // This function is called whenever an instruction triggering a prediction retires.
+    // Train direction tables when the instruction reaches final commit.
     void train(BPredState& aBPState);
 
     void getRAS(std::vector<uint64_t> &vec) { return theRAS.get(vec); }

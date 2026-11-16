@@ -60,6 +60,9 @@ bool initializeParameters() {
   theFAGCfg.MaxBPred.initialize(1);
   theFAGCfg.BTBSets.initialize(512);
   theFAGCfg.BTBWays.initialize(4);
+  theFAGCfg.Predictor.initialize("TAGE");
+  theFAGCfg.GShareHistoryLength.initialize(13);
+  theFAGCfg.GShareTableSize.initialize(8192);
 
   theuFetchCfg.Threads.initialize(1);
   theuFetchCfg.FAQSize.initialize(1000);
